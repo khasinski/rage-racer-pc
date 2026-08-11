@@ -967,6 +967,16 @@ and select its lowest-RMSE image.  On the timer-330..370 checkpoint series this
 correctly pairs PSX timer 350 with native timer 348, only 49 world units apart,
 instead of comparing it with a visibly different camera phase.
 
+RMSE is often dominated by HUD digits, animated signs and a one-frame texture
+phase even when the road is correct.  For terrain-hole searches pass the same
+road rectangle as `--clear-region X,Y,W,H` and use `--rank clear`.  Each bundle
+then records `native_only_clear.count` plus up to 32 sample coordinates where
+native exposes Rage Racer's dark-blue clear colour (`r < 8, g < 8, b > 35`)
+but the emulator does not.  On the coarse timer-600..800 series this ranked
+timer 620 first with 58 pixels; a dense timer-610..630 refinement paired PSX
+620 with native 617 and reduced the count to 26, proving that the apparent
+wedge was alignment/raster drift rather than a missing terrain face.
+
 At synchronized race timer 220, the reference and native captures align in
 car, HUD, start lights and perspective. Filtering for tpage `0x0005` and CLUT
 `0x7943` proves that the apparently missing perspective quads are present in

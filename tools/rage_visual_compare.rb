@@ -11,7 +11,8 @@ require "open3"
 require "optparse"
 require "pathname"
 
-options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil }
+options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil,
+            clear_region: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -33,6 +34,11 @@ OptionParser.new do |parser|
   parser.on("--region X,Y,W,H", "Limit automatic hotspots to a screen region") do |value|
     options[:region] = value.split(",", 4).map { |part| Integer(part) }
     abort "--region requires X,Y,W,H" unless options[:region].length == 4
+  end
+  parser.on("--clear-region X,Y,W,H",
+            "Count native-only dark-blue clear pixels in a road region") do |value|
+    options[:clear_region] = value.split(",", 4).map { |part| Integer(part) }
+    abort "--clear-region requires X,Y,W,H" unless options[:clear_region].length == 4
   end
 end.parse!
 
@@ -105,6 +111,29 @@ def find_hotspots(psx_pixels, native_pixels, width, height, count, radius, regio
   selected
 end
 
+def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
+  return { count: 0, samples: [] } unless region
+  left, top, region_width, region_height = region
+  abort "clear region is outside the image" if left.negative? || top.negative? ||
+    region_width <= 0 || region_height <= 0 || left + region_width > width ||
+    top + region_height > height
+  samples = []
+  count = 0
+  (top...(top + region_height)).each do |y|
+    (left...(left + region_width)).each do |x|
+      index = y * width + x
+      psx = psx_pixels[index]
+      native = native_pixels[index]
+      psx_clear = psx[0] < 8 && psx[1] < 8 && psx[2] > 35
+      native_clear = native[0] < 8 && native[1] < 8 && native[2] > 35
+      next unless native_clear && !psx_clear
+      count += 1
+      samples << { x: x, y: y, psx_rgb: psx, native_rgb: native } if samples.length < 32
+    end
+  end
+  { count: count, samples: samples }
+end
+
 def trace_lines(path, frame, pixel)
   return [] unless path
 
@@ -142,6 +171,8 @@ native_pixels = rgb_pixels(native_png.to_s, *size)
 hotspots = find_hotspots(psx_pixels, native_pixels, *size,
                          options[:hotspots], options[:hotspot_radius],
                          options[:region])
+clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
+                                        options[:clear_region])
 unless hotspots.empty?
   draws = hotspots.map do |spot|
     x = spot[:x]
@@ -182,6 +213,7 @@ report = {
   pixel: options[:pixel],
   hotspot_region: options[:region],
   hotspots: hotspots,
+  native_only_clear: clear_pixels.merge(region: options[:clear_region]),
   artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png
                 psx-hotspots.png native-hotspots.png packet-trace.txt]
 }

@@ -13,13 +13,15 @@ require "pathname"
 require "rbconfig"
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
-            max_position_distance: 256.0, visual_refine: 0 }
+            max_position_distance: 256.0, visual_refine: 0,
+            clear_region: nil, rank: "rmse" }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
   parser.on("--native-dir DIR") { |value| options[:native_dir] = value }
   parser.on("--output DIR") { |value| options[:output] = value }
   parser.on("--region X,Y,W,H") { |value| options[:region] = value }
+  parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
   parser.on("--hotspots N", Integer) { |value| options[:hotspots] = value }
   parser.on("--hotspot-radius N", Integer) { |value| options[:radius] = value }
   parser.on("--match MODE", %w[timer position],
@@ -33,6 +35,10 @@ OptionParser.new do |parser|
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
+  end
+  parser.on("--rank METRIC", %w[rmse clear],
+            "rank output by RMSE or native-only clear pixels") do |value|
+    options[:rank] = value
   end
 end.parse!
 
@@ -138,6 +144,7 @@ rows = pairs.map do |pair|
              "--hotspots", options[:hotspots].to_s,
              "--hotspot-radius", options[:radius].to_s]
   command.concat(["--region", options[:region]]) if options[:region]
+  command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
   stdout, stderr, status = Open3.capture3(*command)
   abort "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}" unless status.success?
   report = JSON.parse(File.read(frame_output / "report.json"))
@@ -147,6 +154,7 @@ rows = pairs.map do |pair|
     native_frame: pair[:native].basename.to_s,
     state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
+    native_only_clear: report.fetch("native_only_clear").fetch("count"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
   }
@@ -156,11 +164,19 @@ summary = {
   psx_directory: psx_dir.to_s,
   native_directory: native_dir.to_s,
   match: options[:match],
+  rank: options[:rank],
   matched_frames: rows.length,
   frames: rows
 }
 File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
-rows.sort_by { |row| -row[:normalized_rmse].to_f }.each do |row|
+ranked = if options[:rank] == "clear"
+           rows.sort_by do |row|
+             [-row[:native_only_clear], -row[:normalized_rmse].to_f]
+           end
+         else
+           rows.sort_by { |row| -row[:normalized_rmse].to_f }
+         end
+ranked.each do |row|
   hotspot = row[:worst_hotspot]
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
   delta = row[:state_delta]
@@ -168,6 +184,8 @@ rows.sort_by { |row| -row[:normalized_rmse].to_f }.each do |row|
                              "speed_delta=%d timer_delta=%d",
                              delta[:distance], delta[:view_distance],
                              delta[:speed], delta[:timer]) : ""
-  puts format("%s RMSE=%.6f%s%s", row[:frame], row[:normalized_rmse],
-              location, alignment)
+  clear = options[:clear_region] ?
+    " native_only_clear=#{row[:native_only_clear]}" : ""
+  puts format("%s RMSE=%.6f%s%s%s", row[:frame], row[:normalized_rmse],
+              location, clear, alignment)
 end
