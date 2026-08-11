@@ -34,6 +34,7 @@ extern int g_MenuViewOffset;
 extern int g_MenuViewSpin;
 extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
+extern s32 g_SkyRowBase;
 extern Vec4 g_MirrorVisibleCellList[];
 extern unsigned long long g_RageNearFacesCrossing;
 extern unsigned long long g_RageNearTrianglesEmitted;
@@ -153,10 +154,11 @@ int main(void) {
                 printf("%s%04x", sample ? "," : "", texture[sample]);
             putchar('\n');
         }
-        printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d key=%p",
+        printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
+               "sky_row=%d key=%p",
                SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-               SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR,
+               SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR, g_SkyRowBase,
                (void *)g_RaceIntroCameraCursor);
         printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
                g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],

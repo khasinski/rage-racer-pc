@@ -1341,7 +1341,9 @@ unsigned char D_801E4F49[99] __attribute__((aligned(16)));
 unsigned char g_RaceProgress[8] __attribute__((aligned(16)));
 unsigned char g_EnvironmentModePrev[8] __attribute__((aligned(16)));
 unsigned char g_DragScale[8] __attribute__((aligned(16)));
-unsigned char g_ShuttleScenery[14] __attribute__((aligned(16)));
+/* The symbol map split the two retail 0x34-byte shuttle records after the
+ * first 0x0e bytes.  Game code addresses the complete pair through this base. */
+unsigned char g_ShuttleScenery[104] __attribute__((aligned(16)));
 unsigned char D_801E4FC6[38] __attribute__((aligned(16)));
 unsigned char g_TerrainCellGrid[8] __attribute__((aligned(16)));
 unsigned char g_GpuQueue[8] __attribute__((aligned(16)));

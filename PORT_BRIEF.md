@@ -970,6 +970,22 @@ quads retain the compatibility adjustment. `RAGE_GPU_TRACE_AREA=1` logs
 draw-area changes and pending batch sizes when diagnosing mirror scissor
 ordering.
 
+The Ruby reference runner enables YJIT itself when the installed Ruby exposes
+`RubyVM::YJIT.enable`, and prints `ruby_yjit=true` at startup. On the current
+Apple Silicon host this reduces a 99-VBlank savestate capture from minutes to
+about 12 seconds; a synchronized timer-593 race capture takes about 147
+seconds. Keep the saved scene-12 state as the input for repeated packet traces,
+which then need only one or two VBlanks.
+
+`g_ShuttleScenery` is two contiguous `0x34`-byte records. The old host-state
+definition used only the symbol map's `0x0e`-byte named prefix; writes to the
+first record's position and angles therefore landed in separately allocated
+globals, starting with `g_SkyRowBase`. This changed the retail value zero to
+`0x51ac`, selected the textured-cloud sky branch and corrupted more state. The
+host backing allocation now covers both complete records, while
+`GameShuttleScenery` has a compile-time `0x34` layout assertion. Backport the
+complete object boundary rather than preserving the split placeholder symbol.
+
 The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
 destination pixel untouched for both opaque and semi-transparent textured
 primitives. Writing RGBA `(0,0,0,0)` is not equivalent when the host blend

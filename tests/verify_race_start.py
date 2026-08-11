@@ -90,6 +90,22 @@ def main() -> int:
             raise AssertionError(
                 f"rear-view mirror is missing road texture: {mirror_road_pixels}"
             )
+
+        # The first shuttle state is a complete 0x34-byte record.  When its
+        # host backing symbol was only the 0x0e-byte prefix from the symbol
+        # map, InitShuttleScenery overwrote g_SkyRowBase and selected the
+        # textured-cloud branch instead of the retail blue gradient.
+        blue_sky_pixels = sum(
+            20 <= r <= 80 and 50 <= g <= 125 and 100 <= b <= 190
+            for y in range(55, 105)
+            for r, g, b in pixels[y * 320 + 100:y * 320 + 220]
+        )
+        if blue_sky_pixels < 2000:
+            raise AssertionError(
+                f"sky environment state was corrupted: {blue_sky_pixels}"
+            )
+    if "scene=12 frontend=3 sky_row=0" not in result.stdout:
+        raise AssertionError("Grand Prix sky row does not match retail")
     if "scene 12" not in result.stdout:
         raise AssertionError("Grand Prix did not survive through race start")
     player_state = re.search(r"speed=(-?\d+) accelerator=(-?\d+)", result.stdout)

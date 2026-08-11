@@ -28,6 +28,7 @@ static int g_SmokeRawPadPath;
 extern int g_SceneId;
 extern int g_FrontendState;
 extern int g_TrackLength;
+extern int g_SkyRowBase;
 void UpdatePadState(void);
 
 static unsigned short RageSmokeButton(const char *name) {
@@ -150,8 +151,9 @@ int RagePortShouldExit(int frame_number) {
             g_PadPressed |= 0x40;
     }
     if (g_SceneId != lastScene || g_FrontendState != lastFrontend) {
-        fprintf(stderr, "smoke state frame=%d scene=%d frontend=%d\n",
-                frame_number, g_SceneId, g_FrontendState);
+        fprintf(stderr,
+                "smoke state frame=%d scene=%d frontend=%d sky_row=%d\n",
+                frame_number, g_SceneId, g_FrontendState, g_SkyRowBase);
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
     }
