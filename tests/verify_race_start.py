@@ -104,6 +104,20 @@ def main() -> int:
             raise AssertionError(
                 f"sky environment state was corrupted: {blue_sky_pixels}"
             )
+
+        # Quadrant-three cell traversal uses opposite signs for the main and
+        # reflected views.  Reusing the mirror signs in the main pass removes
+        # the stone overpass on the left side of this synchronized frame.
+        overpass_pixels = sum(
+            70 <= r <= 190 and 65 <= g <= 180 and 45 <= b <= 140
+            and r >= b + 15
+            for y in range(90, 126)
+            for r, g, b in pixels[y * 320:y * 320 + 140]
+        )
+        if overpass_pixels < 700:
+            raise AssertionError(
+                f"main-view visible cells are missing: {overpass_pixels}"
+            )
     if "scene=12 frontend=3 sky_row=0" not in result.stdout:
         raise AssertionError("Grand Prix sky row does not match retail")
     if "scene 12" not in result.stdout:

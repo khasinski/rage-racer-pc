@@ -171,11 +171,15 @@ void BuildVisibleCells(s32 near, s32 far) {
             k = j + (k << 7);
             dx = g_CellScanOffsetX[k];
             dy = g_CellScanOffsetY[k];
-            /* Retail adds X and subtracts Y in this quadrant.  The previous
-             * reconstruction had both signs reversed, selecting the terrain
-             * in front of the car for the rear-view pass. */
-            sx = cx + dx;
-            sy = cy - dy;
+            /* The rear-view pass reflects this quadrant.  Applying its signs
+             * to the main view drops the left-hand cells ahead of the car. */
+            if (SCRATCH_MIRROR) {
+                sx = cx + dx;
+                sy = cy - dy;
+            } else {
+                sx = cx - dx;
+                sy = cy + dy;
+            }
             break;
         }
         if (sx < 32U && sy < 32U && IsCellVisibleFromRegion(sx, sy, ret0)) {

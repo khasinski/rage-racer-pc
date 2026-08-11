@@ -233,7 +233,10 @@ int main(void) {
     if (getenv("RAGE_PORT_SMOKE_VISIBLE_CELLS") != NULL) {
         int cell;
         for (cell = 0; cell < 64; cell++) {
+            const Vec4 *mainEntry = &g_VisibleCellList[cell];
             const Vec4 *entry = &g_MirrorVisibleCellList[cell];
+            printf("visible-cell %d=%d,%d,%d,%d\n", cell, mainEntry->x,
+                   mainEntry->y, mainEntry->z, mainEntry->w);
             printf("mirror-cell %d=%d,%d,%d,%d\n", cell, entry->x,
                    entry->y, entry->z, entry->w);
         }

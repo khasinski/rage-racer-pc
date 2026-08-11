@@ -949,11 +949,15 @@ first triangle of an otherwise visible child degenerate, leaving triangular
 holes which expose the dark-blue clear colour. `RageScreenQuadVisible` now
 only rejects a child when all four corners lie beyond the same screen edge.
 
-`BuildVisibleCells` quadrant 3 uses `sx = cx + dx` and `sy = cy - dy`. The
-previous reconstruction reversed both signs, so the mirror list contained the
-opposite neighbouring cells even though the checked-in scan table was byte-for-
-byte identical to retail. This is game-code control flow and must be backported
-to the decompilation.
+`BuildVisibleCells` quadrant 3 uses opposite signs for the two passes. The main
+view uses `sx = cx - dx`, `sy = cy + dy`; the reflected pass uses
+`sx = cx + dx`, `sy = cy - dy`. Applying either pair globally makes one list
+correct while reversing the other. In the synchronized frame the retail main
+list starts with cell IDs `167,166,168,165`, while the mirror starts
+`167,168,166,169`; the port now reproduces both orders. The wrong main-view
+signs removed the stone overpass on the left even though the checked-in scan
+table was byte-for-byte identical to retail. This is game-code control flow
+and must be backported to the decompilation.
 
 The rear-view terrain dispatcher reflects the first GTE rotation row. Because
 the cell center has already been transformed by `BuildVisibleCells`, its X
