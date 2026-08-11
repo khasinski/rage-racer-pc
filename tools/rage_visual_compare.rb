@@ -12,7 +12,7 @@ require "optparse"
 require "pathname"
 
 options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil,
-            clear_region: nil, black_region: nil }
+            clear_region: nil, black_region: nil, artifact_radius: 2 }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -44,6 +44,11 @@ OptionParser.new do |parser|
             "Count native-only near-black pixels in a render region") do |value|
     options[:black_region] = value.split(",", 4).map { |part| Integer(part) }
     abort "--black-region requires X,Y,W,H" unless options[:black_region].length == 4
+  end
+  parser.on("--artifact-radius N", Integer,
+            "Ignore clear/black matches within N reference pixels (default: 2)") do |value|
+    abort "--artifact-radius must be non-negative" if value.negative?
+    options[:artifact_radius] = value
   end
 end.parse!
 
@@ -116,7 +121,20 @@ def find_hotspots(psx_pixels, native_pixels, width, height, count, radius, regio
   selected
 end
 
-def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
+def reference_near?(pixels, width, height, x, y, radius)
+  left = [0, x - radius].max
+  right = [width - 1, x + radius].min
+  top = [0, y - radius].max
+  bottom = [height - 1, y + radius].min
+  (top..bottom).any? do |sample_y|
+    (left..right).any? do |sample_x|
+      yield pixels[sample_y * width + sample_x]
+    end
+  end
+end
+
+def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region,
+                             radius)
   return { count: 0, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "clear region is outside the image" if left.negative? || top.negative? ||
@@ -129,9 +147,11 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
       index = y * width + x
       psx = psx_pixels[index]
       native = native_pixels[index]
-      psx_clear = psx[0] < 8 && psx[1] < 8 && psx[2] > 35
       native_clear = native[0] < 8 && native[1] < 8 && native[2] > 35
-      next unless native_clear && !psx_clear
+      next unless native_clear
+      next if reference_near?(psx_pixels, width, height, x, y, radius) do |sample|
+        sample[0] < 8 && sample[1] < 8 && sample[2] > 35
+      end
       count += 1
       samples << { x: x, y: y, psx_rgb: psx, native_rgb: native } if samples.length < 32
     end
@@ -139,7 +159,8 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
   { count: count, samples: samples }
 end
 
-def native_only_black_pixels(psx_pixels, native_pixels, width, height, region)
+def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
+                             radius)
   return { count: 0, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "black region is outside the image" if left.negative? || top.negative? ||
@@ -155,6 +176,9 @@ def native_only_black_pixels(psx_pixels, native_pixels, width, height, region)
       # reference has visible surface colour. Requiring a useful reference
       # intensity excludes genuine shadows and black letterbox/background.
       next unless native.max < 12 && psx.max >= 32
+      next if reference_near?(psx_pixels, width, height, x, y, radius) do |sample|
+        sample.max < 12
+      end
       score = 3.times.sum { |channel| (psx[channel] - native[channel])**2 }
       matches << { x: x, y: y, squared_error: score,
                    psx_rgb: psx, native_rgb: native }
@@ -221,9 +245,11 @@ hotspots = find_hotspots(psx_pixels, native_pixels, *size,
                          options[:hotspots], options[:hotspot_radius],
                          options[:region])
 clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
-                                        options[:clear_region])
+                                        options[:clear_region],
+                                        options[:artifact_radius])
 black_pixels = native_only_black_pixels(psx_pixels, native_pixels, *size,
-                                        options[:black_region])
+                                        options[:black_region],
+                                        options[:artifact_radius])
 region_rmse = normalized_region_rmse(psx_pixels, native_pixels, *size,
                                     options[:region])
 unless hotspots.empty?
@@ -269,6 +295,7 @@ report = {
   hotspots: hotspots,
   native_only_clear: clear_pixels.merge(region: options[:clear_region]),
   native_only_black: black_pixels.merge(region: options[:black_region]),
+  artifact_radius: options[:artifact_radius],
   artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png
                 psx-hotspots.png native-hotspots.png packet-trace.txt]
 }

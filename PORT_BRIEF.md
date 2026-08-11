@@ -1002,7 +1002,11 @@ near-black only in native while the PSX reference has visible surface colour.
 Treat this as candidate ranking, not proof by itself: a one-tick camera shift
 also moves legitimate shadows and dark texture edges. The report retains the
 32 highest-error samples so a candidate can be followed with
-`RAGE_GPU_TRACE_PIXEL` on both renderers.
+`RAGE_GPU_TRACE_PIXEL` on both renderers. `--artifact-radius N` (default 2)
+suppresses a candidate when the same clear/black class exists within N pixels
+of the reference coordinate. This removes shifted texture edges without
+erasing a solid triangular hole; use radius 0 when investigating exact raster
+coverage.
 
 Timer labels are not identical render checkpoints across the two runtimes. In
 the repeatable turning scenario, PSX timer 501 has the same car state as native

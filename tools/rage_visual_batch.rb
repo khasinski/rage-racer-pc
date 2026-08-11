@@ -14,7 +14,8 @@ require "rbconfig"
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 256.0, visual_refine: 0,
-            clear_region: nil, black_region: nil, rank: "rmse" }
+            clear_region: nil, black_region: nil, artifact_radius: 2,
+            rank: "rmse" }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
@@ -23,6 +24,9 @@ OptionParser.new do |parser|
   parser.on("--region X,Y,W,H") { |value| options[:region] = value }
   parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
   parser.on("--black-region X,Y,W,H") { |value| options[:black_region] = value }
+  parser.on("--artifact-radius N", Integer) do |value|
+    options[:artifact_radius] = value
+  end
   parser.on("--hotspots N", Integer) { |value| options[:hotspots] = value }
   parser.on("--hotspot-radius N", Integer) { |value| options[:radius] = value }
   parser.on("--match MODE", %w[timer position],
@@ -150,7 +154,8 @@ rows = pairs.map do |pair|
              "--native", pair[:native].to_s,
              "--output", frame_output.to_s,
              "--hotspots", options[:hotspots].to_s,
-             "--hotspot-radius", options[:radius].to_s]
+             "--hotspot-radius", options[:radius].to_s,
+             "--artifact-radius", options[:artifact_radius].to_s]
   command.concat(["--region", options[:region]]) if options[:region]
   command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
   command.concat(["--black-region", options[:black_region]]) if options[:black_region]
