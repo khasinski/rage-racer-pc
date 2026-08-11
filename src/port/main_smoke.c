@@ -51,6 +51,8 @@ extern unsigned long long g_RageGt4RejectOffscreen;
 extern unsigned long long g_RageGt4RejectBackface;
 extern unsigned long long g_RageGt4RejectDepth;
 extern unsigned long long g_RageTerrainSecondTriangleVisible;
+extern unsigned long long g_RageTerrainChildRejectBackface;
+extern unsigned long long g_RageTerrainChildSecondTriangleVisible;
 
 int RageWriteCapturedFrame(const char *path) {
     unsigned char *pixels;
@@ -281,7 +283,8 @@ int main(void) {
            "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
            "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
            "gp_round=%d class_done=%d series_done=%d rpm=%d jitter=%d "
-           "terrain_second=%llu\n",
+           "terrain_second=%llu terrain_child_reject=%llu "
+           "terrain_child_second=%llu\n",
            g_FrameCounter, g_SceneId, g_FrontendState,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
@@ -289,7 +292,9 @@ int main(void) {
            g_PlayerCar.trackProgress, g_PlayerCar.lap, g_GrandPrixClass,
            g_GrandPrixRound, g_ClassCompleted, g_SeriesCleared,
            g_EngineRpm, g_EngineRpmJitter,
-           g_RageTerrainSecondTriangleVisible);
+           g_RageTerrainSecondTriangleVisible,
+           g_RageTerrainChildRejectBackface,
+           g_RageTerrainChildSecondTriangleVisible);
     printf("memory card: phase=%d status=%d files=%d free=%d mask=%x page=%d\n",
            g_McMenuPhase, g_McStatusResult, g_McCardFileCount,
            g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);

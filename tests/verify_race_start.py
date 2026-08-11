@@ -137,6 +137,14 @@ def main() -> int:
         raise AssertionError("tachometer still reads detached zeroed target RPM")
     if int(rpm_state.group(2)) == 0:
         raise AssertionError("terrain never exercised retail second-triangle culling")
+    child_cull = re.search(
+        r"terrain_child_reject=(\d+) terrain_child_second=(\d+)",
+        result.stdout,
+    )
+    if child_cull is None or int(child_cull.group(1)) == 0:
+        raise AssertionError("subdivided terrain never exercised retail child culling")
+    if int(child_cull.group(2)) == 0:
+        raise AssertionError("terrain child culling lost its second-triangle rescue")
     for failure in (
         "primitive buffer exhausted", "misaligned OT link",
         "likely corrupted",

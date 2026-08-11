@@ -973,12 +973,21 @@ layout fix for the decompilation, not runtime asset copying.
 
 ### Terrain subdivision and rear-view cell selection (backport)
 
-The retail terrain dispatcher performs the face `NCLIP` before subdivision.
-Its screen-space subdivision emitter does not repeat `NCLIP` for every small
-quad. Re-culling the children is incorrect: integer interpolation can make the
-first triangle of an otherwise visible child degenerate, leaving triangular
-holes which expose the dark-blue clear colour. `RageScreenQuadVisible` now
-only rejects a child when all four corners lie beyond the same screen edge.
+The retail terrain dispatcher performs the face `NCLIP` before subdivision and
+then repeats a *two-triangle* test for every interpolated child.  At
+`0x80028A74` it loads `(v0,v1,v2)` into SXY0..2 and runs `NCLIP`; when that
+half fails, `0x80028AB4` replaces only SXY0 with `v3` and runs the FIFO test
+again on `(v3,v1,v2)`.  In the main view the child survives when
+`clip0 > 0 || clip1 < 0`; the mirror reverses both signs.  The earlier native
+one-triangle approximation punched holes where an interpolated first half was
+degenerate.  Removing child `NCLIP` entirely avoided those holes but emitted
+hundreds of back-facing children per frame, allowing overlapping road pieces
+to stretch across the near view.  `RageScreenQuadVisible` now reproduces both
+retail tests before its four-corner screen-edge rejection.  At synchronized
+timer 151 this reduces textured tpage-5 packets from 442 to 277, close to the
+PSX stream's 293; the remaining difference follows the adjacent displayed
+frame.  Smoke counters `terrain_child_reject` and `terrain_child_second` prove
+both the rejection and second-half rescue paths execute.
 
 `BuildVisibleCells` quadrant 3 uses opposite signs for the two passes. The main
 view uses `sx = cx - dx`, `sy = cy + dy`; the reflected pass uses

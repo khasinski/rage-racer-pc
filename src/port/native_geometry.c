@@ -39,6 +39,8 @@ unsigned long long g_RageGt4RejectOffscreen;
 unsigned long long g_RageGt4RejectBackface;
 unsigned long long g_RageGt4RejectDepth;
 unsigned long long g_RageTerrainSecondTriangleVisible;
+unsigned long long g_RageTerrainChildRejectBackface;
+unsigned long long g_RageTerrainChildSecondTriangleVisible;
 static int g_RageProjectionReject;
 
 static int RagePrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
@@ -176,7 +178,26 @@ static int RageBilerpSxy(
 
 static int RageScreenQuadVisible(const int sxy[4]) {
     int i;
+    int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
+    int clip1 = NormalClip(sxy[3], sxy[1], sxy[2]);
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
+
+    /* EmitSubdividedTerrainQuad repeats the retail two-half NCLIP test for
+     * every interpolated child.  It first tests (v0,v1,v2), then loads v3
+     * into SXY0 and tests the FIFO (v3,v1,v2).  The latter is a cyclic
+     * permutation of (v1,v2,v3), hence the opposite stored-quad winding.
+     * A former native workaround removed both tests after a one-triangle
+     * approximation punched holes in the road; that emitted hundreds of
+     * retail-rejected children and let overlapping/back-facing texture
+     * triangles bend across the near road instead. */
+    if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
+        (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)) {
+        g_RageTerrainChildRejectBackface++;
+        return 0;
+    }
+    if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
+        (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0))
+        g_RageTerrainChildSecondTriangleVisible++;
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
         int y = (int16_t)(sxy[i] >> 16);
