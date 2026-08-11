@@ -693,6 +693,13 @@ digital confirm every 60 frames after its start. Together they cover finish
 camera, replay, result, prize-money, and next-round setup without weakening the
 game code. `grand_prix_results` characterizes that complete transition.
 
+Whenever the smoke executable is rebuilt, rebuild the ordinary interactive
+game in the same invocation as well. Use the full
+`cmake --build build-host -j4`, not an individual `rage-racer-smoke` target.
+This keeps `rage-racer` available for manual testing in parallel with every
+automated smoke/debug iteration and prevents the two executables from silently
+drifting onto different object revisions.
+
 Native memory-card I/O uses the existing PsyZ `bu00:` path mapping, but the
 port must forward the game's `BiosFileOpen/Read/Write/Seek/Close`, directory
 scan, and format calls instead of returning stub failures. The Unix
@@ -863,6 +870,43 @@ final 1024x512 little-endian 16-bit VRAM image from the smoke executable.
 This made it possible to prove that the car-select texture page and CLUT match
 the emulator byte-for-byte before investigating rasterization differences.
 
+For repeatable frame comparisons, stop both implementations by game state,
+not host time or raw loop count. The smoke harness accepts
+`RAGE_PORT_SMOKE_STOP_SCENE=12` and
+`RAGE_PORT_SMOKE_STOP_SCENE_TIMER=220`; the Ruby runner has the matching
+`RAGE_EMU_STOP_SCENE` and `RAGE_EMU_STOP_SCENE_TIMER` controls and saves both
+a screenshot and a reusable savestate at that point. Keep a generous frame
+limit only as a safety timeout. The PSX game advances this race timer once per
+two PAL VBlanks while the current native build advances it once per loop, so
+equal raw frame numbers are not equivalent states.
+
+`tools/rage_visual_compare.rb` turns a cached emulator capture and a fresh
+native capture into one debug bundle:
+
+```sh
+ruby tools/rage_visual_compare.rb \
+  --psx /tmp/reference.ppm --native /tmp/native.ppm \
+  --output /tmp/rage-compare --pixel 260,100 \
+  --psx-log /tmp/reference.log --native-log /tmp/native.log
+```
+
+The bundle contains normalized inputs, an absolute difference image, an
+amplified heatmap, a side-by-side view, normalized RMSE and the ordered GPU
+packets that cover the selected screen pixel. `RAGE_GPU_TRACE_PIXEL=x,y` and
+optional `RAGE_GPU_TRACE_FRAME=n` use the same `gpu-cover` record format in
+PsyZ SDL_GPU/GL and the Ruby emulator. Coverage includes draw/display offsets
+and rejects degenerate triangles. Configuration is parsed once, so disabled
+or frame-filtered tracing stays cheap enough for repeated smoke runs.
+
+At synchronized race timer 220, the reference and native captures align in
+car, HUD, start lights and perspective, but the trace proves a pre-rasterizer
+divergence in missing scenery. The emulator's last relevant textured quad at
+the mirror/right-scenery boundary is perspective-shaped, uses tpage `0x0005`
+and CLUT `0x7943`; native submits an axis-aligned 64x128 quad using internal
+tpage `0x4018` and CLUT `0x798e`. Therefore this black-wedge case must be
+debugged in primitive construction/clipping or its initialized inputs, not
+hidden with a shader workaround.
+
 The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
 destination pixel untouched for both opaque and semi-transparent textured
 primitives. Writing RGBA `(0,0,0,0)` is not equivalent when the host blend
@@ -884,10 +928,18 @@ was already at race timer 56 and had legitimately faded the overlay away.
 ### FMV cadence
 
 Do not pace every extracted MP4 at its tagged 15 fps. Retail blocks on frames
-arriving from `RAGE.STR` in double-speed Stream2 mode (150 sectors/second), and
-compressed frame sizes differ between movies. The stream offsets and final
-ISO extent give 12048 sectors / 1800 frames for the intro (about 22.41 fps),
-1581 / 150 for each class movie (about 14.23 fps), and 15168 / 1500 for the
-ending (about 14.83 fps). `fmv_host.c` advances three sectors per PAL VBlank
-and uses those spans as a deterministic frame accumulator. Emulator checks
-must compare emulated VBlank numbers, never host wall time.
+arriving from `RAGE.STR`, and MDEC/ring-buffer stalls mean that dividing the
+double-speed CD extent by the final frame number is only a theoretical upper
+bound. In a stable 493-PAL-VBlank emulator window the intro presents 204 new
+frames, or about 20.69 fps; five independent 100-VBlank windows measure
+20.62--20.92 fps. The host uses the compact 53/128-frame-per-VBlank cadence
+(20.70 fps) plus the measured ten-VBlank pipeline fill.
+
+This was verified from a pre-FMV savestate, not host wall time: the emulator
+enters scene 5 at relative VBlank 313 and the port at 314. At emulator frame
+850 and port frame 851 both display MP4 frame 218; full-frame RMSE is 0.83%.
+The convenience `fmv00.mp4` contains 2000 frames, but frames 1800 onward are a
+white tail outside the retail final-frame value, not content that should be
+resampled into the movie. Class and ending streams retain their sector-derived
+cadence until they receive the same per-stream emulator measurement. Emulator
+checks must always compare emulated VBlank numbers, never host wall time.

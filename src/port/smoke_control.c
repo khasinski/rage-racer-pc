@@ -18,6 +18,10 @@ static int g_SmokeInputCount;
 static long g_SmokeFrameLimit;
 static long g_SmokeFinishFrame;
 static long g_SmokeAutoConfirmFrame;
+static long g_SmokeStopScene;
+static long g_SmokeStopSceneTimer;
+static int g_SmokeHasStopScene;
+static int g_SmokeHasStopSceneTimer;
 static int g_SmokeInitialized;
 static int g_SmokeRawPadPath;
 
@@ -42,12 +46,18 @@ static void RageSmokeInitialize(void) {
     const char *script = getenv("RAGE_PORT_RAW_INPUT_SCRIPT");
     const char *finish = getenv("RAGE_PORT_SMOKE_FINISH_FRAME");
     const char *autoConfirm = getenv("RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME");
+    const char *stopScene = getenv("RAGE_PORT_SMOKE_STOP_SCENE");
+    const char *stopTimer = getenv("RAGE_PORT_SMOKE_STOP_SCENE_TIMER");
     char *copy;
     char *token;
 
     g_SmokeFrameLimit = limit ? strtol(limit, NULL, 10) : 0;
     g_SmokeFinishFrame = finish ? strtol(finish, NULL, 10) : 0;
     g_SmokeAutoConfirmFrame = autoConfirm ? strtol(autoConfirm, NULL, 10) : 0;
+    g_SmokeHasStopScene = stopScene != NULL;
+    g_SmokeHasStopSceneTimer = stopTimer != NULL;
+    g_SmokeStopScene = stopScene ? strtol(stopScene, NULL, 10) : 0;
+    g_SmokeStopSceneTimer = stopTimer ? strtol(stopTimer, NULL, 10) : 0;
     if (script != NULL && script[0] != '\0') {
         g_SmokeRawPadPath = 1;
     } else {
@@ -144,6 +154,13 @@ int RagePortShouldExit(int frame_number) {
                 frame_number, g_SceneId, g_FrontendState);
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
+    }
+    if (g_SmokeHasStopScene && g_SmokeHasStopSceneTimer &&
+        g_SceneId == g_SmokeStopScene &&
+        g_SceneTimer >= g_SmokeStopSceneTimer) {
+        fprintf(stderr, "smoke synchronized stop frame=%d scene=%d timer=%d\n",
+                frame_number, g_SceneId, g_SceneTimer);
+        return 1;
     }
     return g_SmokeFrameLimit > 0 && frame_number >= g_SmokeFrameLimit;
 }

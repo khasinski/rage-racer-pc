@@ -18,7 +18,9 @@ def main() -> int:
         environment = os.environ.copy()
         environment.update(
             SDL_AUDIODRIVER="dummy",
-            RAGE_PORT_SMOKE_FRAMES="1420",
+            RAGE_PORT_SMOKE_FRAMES="1500",
+            RAGE_PORT_SMOKE_STOP_SCENE="12",
+            RAGE_PORT_SMOKE_STOP_SCENE_TIMER="56",
             RAGE_PORT_INPUT_SCRIPT=(
                 "400:START,500:START,650:CROSS,950:CROSS,"
                 "1100:CROSS,1200:CROSS"
@@ -36,6 +38,8 @@ def main() -> int:
             return result.returncode or 1
         if "stopped at frame 1420, scene 12" not in result.stdout:
             raise AssertionError("input script did not reach the Grand Prix intro")
+        if "smoke synchronized stop frame=1420 scene=12 timer=56" not in result.stdout:
+            raise AssertionError("scene/timer synchronized capture did not trigger")
         if "primitive buffer exhausted" in result.stdout:
             raise AssertionError("Grand Prix geometry exhausted the primitive buffer")
         if "unsupported command" in result.stdout:
