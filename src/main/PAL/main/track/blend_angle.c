@@ -20,11 +20,13 @@ s32 BlendAngle(s32 angleA, s32 angleB, s32 weight) {
         lhs += 0x1000;
     }
 
-    sum = lhs * inv + rhs * weight;
+    /* The original MIPS addu/mult path wraps at 32 bits.  Express that
+     * explicitly so large transient interpolation weights cannot be folded
+     * under host signed-overflow rules. */
+    sum = (s32)((u32)lhs * (u32)inv + (u32)rhs * (u32)weight);
     if (sum < 0) {
         sum += 0x3FF;
     }
 
     return (sum >> 10) & 0xFFF;
 }
-

@@ -176,7 +176,11 @@ void InitPlayerCar(PlayerCarRuntime *car)
   for (j = 0; j < 6; j++)
   {
     scaledGearRatio = (g_CarSpec->gearRatio[j + 1] * 0x490) / 160;
-    g_CarSpec->gearLoad[j + 1] = (((scaledGearRatio * 6) / 100) << 17) / 10000;
+    /* Retail intentionally indexes one word past gearLoad: slot 6 is the
+     * adjacent gearRatio[0] word in the packed asset.  Address it as the
+     * contiguous 32-bit asset table instead of invoking C array-bounds UB. */
+    ((s32 *)(void *)((u8 *)g_CarSpec + 0xCC))[j + 1] =
+        (((scaledGearRatio * 6) / 100) << 17) / 10000;
     value = (g_CarSpec->torqueScale[j] * g_CarSpec->gearRatio[j + 1]) / 100;
     divisor = value;
     divisor = (divisor > 0) ? divisor : g_CarSpec->gearRatio[j + 1];
@@ -213,7 +217,9 @@ void InitPlayerCar(PlayerCarRuntime *car)
     accelBandOut = accelBand;
     while (i < 10)
     {
-      if ((curveSpec->torqueLossRpm[i] / bandSpeed) > 0)
+      /* Likewise, the tenth loss boundary is the following gearLoad[0]
+       * word in the retail block. */
+      if (((s32 *)(void *)((u8 *)curveSpec + 0xA8))[i] / bandSpeed > 0)
       {
         *accelBandOut = i;
         break;

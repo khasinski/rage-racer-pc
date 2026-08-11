@@ -1245,3 +1245,25 @@ white tail outside the retail final-frame value, not content that should be
 resampled into the movie. Class and ending streams retain their sector-derived
 cadence until they receive the same per-stream emulator measurement. Emulator
 checks must always compare emulated VBlank numbers, never host wall time.
+
+### Fixed-width arithmetic audit
+
+Run the complete scripted race under UBSan when geometry or physics diverges;
+ordinary smoke screenshots do not expose host undefined behaviour. The first
+audit found game-code UB in all three relevant paths. `BuildVisibleCells`
+left-shifted negative camera-relative coordinates, `BlendAngle` relied on MIPS
+32-bit signed multiply/add wrap, and the car-spec initializer deliberately
+walked across the declared ends of `torqueLossRpm[9]` and `gearLoad[6]`. Those
+last accesses are real packed-asset aliases: loss slot 9 is `gearLoad[0]`, and
+load slot 6 is `gearRatio[0]`. Preserve the asset offsets (`0xA8` and `0xCC`)
+and make the contiguous access explicit; do not enlarge fields and move every
+following member. The collision knockback sign-extension idiom likewise uses
+an unsigned shift followed by a signed 16-bit conversion on the host.
+
+PsyZ's GTE had the same portability problem in the shared transform path:
+negative translations and sine products were left-shifted as signed C values,
+and colour registers were copied through potentially unaligned `unsigned int
+*` casts. Multiplication by 4096 and `memcpy` retain the PS1 bit-level result
+without depending on compiler or CPU behaviour. These fixes belong in PsyZ;
+the packed car-table and wrapping arithmetic fixes belong in the game and
+should be backported to the decompilation.

@@ -189,9 +189,12 @@ void BuildVisibleCells(s32 near, s32 far) {
             g_VisibleCellMask[sy] |= 1 << sx;
             center = 1024;
             if (clut != 0x3FF) {
-                vec[0] = ((sx << 11) - (view->position.components.x.value - center)) << 2;
-                vec[1] = (-view->position.components.y.value) << 2;
-                vec[2] = ((sy << 11) - (view->position.components.z.value - center)) << 2;
+                /* Retail uses signed MIPS shifts here.  Multiplication has the
+                 * same result for this bounded cell/camera range without C's
+                 * undefined left-shift-of-negative behaviour. */
+                vec[0] = ((sx << 11) - (view->position.components.x.value - center)) * 4;
+                vec[1] = (-view->position.components.y.value) * 4;
+                vec[2] = ((sy << 11) - (view->position.components.z.value - center)) * 4;
                 ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, vec, proj);
                 if (proj[2] >= near && far >= proj[2]) {
                     out->x = proj[0];
