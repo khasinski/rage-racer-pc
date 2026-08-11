@@ -909,6 +909,31 @@ creates a false 240-line displacement. Coverage rejects degenerate triangles.
 Configuration is parsed once, so disabled or frame-filtered tracing stays cheap
 enough for repeated smoke runs.
 
+Without `--pixel`, the comparison also reports separated maximum-error
+hotspots with the PSX/native RGB values and writes marked copies of both
+frames.  Use `--region X,Y,W,H` to keep animated HUD or scenery out of a road,
+mirror, or dashboard investigation; `--hotspots` and `--hotspot-radius`
+control the number and spacing of candidates.
+
+For sequences, both runners can emit the same timer-based filenames.  Create
+the output directories first, then set
+`RAGE_EMU_TIMER_FILENAMES=1` on `rage-frame-capture`, and set
+`RAGE_PORT_SMOKE_CAPTURE_DIR` plus
+`RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE` on the smoke binary.  The smoke capture
+is restricted to `RAGE_PORT_SMOKE_STOP_SCENE` when that variable is present.
+This produces `timer-00150-s12.ppm`-style files without replaying the frontend
+for every sample.  Pair the cached emulator sequence with any fresh native
+sequence using:
+
+```sh
+ruby tools/rage_visual_batch.rb \
+  --psx-dir /tmp/rage-psx-series --native-dir /tmp/rage-native-series \
+  --output /tmp/rage-series-compare --region 0,55,250,150
+```
+
+Each matched timer gets its own standard comparison bundle, while
+`summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
+
 At synchronized race timer 220, the reference and native captures align in
 car, HUD, start lights and perspective. Filtering for tpage `0x0005` and CLUT
 `0x7943` proves that the apparently missing perspective quads are present in

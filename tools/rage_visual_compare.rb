@@ -11,7 +11,7 @@ require "open3"
 require "optparse"
 require "pathname"
 
-options = { pixel: nil }
+options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -22,6 +22,18 @@ OptionParser.new do |parser|
   end
   parser.on("--psx-log PATH", "PSX gpu-cover log") { |value| options[:psx_log] = value }
   parser.on("--native-log PATH", "Native gpu-cover log") { |value| options[:native_log] = value }
+  parser.on("--hotspots N", Integer,
+            "Find N separated pixels with the largest RGB error (default: 8)") do |value|
+    options[:hotspots] = value
+  end
+  parser.on("--hotspot-radius N", Integer,
+            "Minimum distance between reported hotspots (default: 12)") do |value|
+    options[:hotspot_radius] = value
+  end
+  parser.on("--region X,Y,W,H", "Limit automatic hotspots to a screen region") do |value|
+    options[:region] = value.split(",", 4).map { |part| Integer(part) }
+    abort "--region requires X,Y,W,H" unless options[:region].length == 4
+  end
 end.parse!
 
 abort "--psx, --native and --output are required" unless
@@ -46,6 +58,51 @@ def normalize(source, destination, expected_size = nil)
   end
   run!("magick", source, "-alpha", "off", "-colorspace", "sRGB", destination)
   [width, height]
+end
+
+def rgb_pixels(path, width, height)
+  ppm = run!("magick", path, "-alpha", "off", "-colorspace", "sRGB",
+             "-depth", "8", "ppm:-")
+  ppm.force_encoding(Encoding::BINARY)
+  match = ppm.match(/\AP6\s+(?:#[^\n]*\s+)*([0-9]+)\s+([0-9]+)\s+255\s/mn)
+  abort "cannot decode ImageMagick PPM output for #{path}" unless match
+  actual_size = [Integer(match[1]), Integer(match[2])]
+  abort "decoded size differs for #{path}: #{actual_size.join('x')}" unless
+    actual_size == [width, height]
+  payload = ppm.byteslice(match.end(0)..)
+  abort "short RGB payload for #{path}" unless payload&.bytesize == width * height * 3
+  payload.bytes.each_slice(3).map(&:freeze)
+end
+
+def find_hotspots(psx_pixels, native_pixels, width, height, count, radius, region)
+  left, top, region_width, region_height = region || [0, 0, width, height]
+  abort "hotspot region is outside the image" if left.negative? || top.negative? ||
+    region_width <= 0 || region_height <= 0 || left + region_width > width ||
+    top + region_height > height
+  indices = (top...(top + region_height)).flat_map do |y|
+    ((y * width + left)...(y * width + left + region_width)).to_a
+  end
+  errors = indices.map do |index|
+    a = psx_pixels[index]
+    b = native_pixels[index]
+    score = (a[0] - b[0])**2 + (a[1] - b[1])**2 + (a[2] - b[2])**2
+    [score, index]
+  end
+  radius_squared = radius * radius
+  selected = []
+  errors.sort_by! { |score, _index| -score }
+  errors.each do |score, index|
+    break if selected.length >= count
+    break if score.zero?
+    x = index % width
+    y = index / width
+    next if selected.any? { |item| (item[:x] - x)**2 + (item[:y] - y)**2 < radius_squared }
+    selected << {
+      x: x, y: y, squared_error: score,
+      psx_rgb: psx_pixels[index], native_rgb: native_pixels[index]
+    }
+  end
+  selected
 end
 
 def trace_lines(path, frame, pixel)
@@ -80,6 +137,26 @@ _stdout, metric_stderr, metric_status = Open3.capture3(
 abort "ImageMagick comparison failed: #{metric_stderr}" unless [0, 1].include?(metric_status.exitstatus)
 rmse = metric_stderr[/\(([0-9.eE+-]+)\)/, 1]&.to_f
 
+psx_pixels = rgb_pixels(psx_png.to_s, *size)
+native_pixels = rgb_pixels(native_png.to_s, *size)
+hotspots = find_hotspots(psx_pixels, native_pixels, *size,
+                         options[:hotspots], options[:hotspot_radius],
+                         options[:region])
+unless hotspots.empty?
+  draws = hotspots.map do |spot|
+    x = spot[:x]
+    y = spot[:y]
+    "circle #{x},#{y} #{x + 4},#{y}"
+  end
+  [psx_png, native_png].each do |source|
+    destination = output / "#{source.basename('.png')}-hotspots.png"
+    command = ["magick", source.to_s, "-stroke", "#ff00ff",
+               "-strokewidth", "1", "-fill", "none"]
+    draws.each { |draw| command.concat(["-draw", draw]) }
+    run!(*command, destination.to_s)
+  end
+end
+
 if options[:pixel]
   x, y = options[:pixel]
   marker = "circle #{x},#{y} #{x + 4},#{y}"
@@ -103,7 +180,10 @@ report = {
   dimensions: size,
   normalized_rmse: rmse,
   pixel: options[:pixel],
-  artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png packet-trace.txt]
+  hotspot_region: options[:region],
+  hotspots: hotspots,
+  artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png
+                psx-hotspots.png native-hotspots.png packet-trace.txt]
 }
 File.write(output / "report.json", JSON.pretty_generate(report) + "\n")
 puts "visual comparison: #{output} (RMSE=#{rmse || 'unavailable'})"

@@ -52,7 +52,7 @@ extern unsigned long long g_RageGt4RejectBackface;
 extern unsigned long long g_RageGt4RejectDepth;
 extern unsigned long long g_RageTerrainSecondTriangleVisible;
 
-static int RageWriteCapturedFrame(const char *path) {
+int RageWriteCapturedFrame(const char *path) {
     unsigned char *pixels;
     FILE *output;
     int width;

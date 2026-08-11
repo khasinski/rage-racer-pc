@@ -20,6 +20,8 @@ static long g_SmokeFinishFrame;
 static long g_SmokeAutoConfirmFrame;
 static long g_SmokeStopScene;
 static long g_SmokeStopSceneTimer;
+static long g_SmokeCaptureTimerStride;
+static const char *g_SmokeCaptureDirectory;
 static int g_SmokeHasStopScene;
 static int g_SmokeHasStopSceneTimer;
 static int g_SmokeInitialized;
@@ -29,6 +31,7 @@ extern int g_SceneId;
 extern int g_FrontendState;
 extern int g_TrackLength;
 extern int g_SkyRowBase;
+int RageWriteCapturedFrame(const char *path);
 void UpdatePadState(void);
 
 static unsigned short RageSmokeButton(const char *name) {
@@ -49,6 +52,9 @@ static void RageSmokeInitialize(void) {
     const char *autoConfirm = getenv("RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME");
     const char *stopScene = getenv("RAGE_PORT_SMOKE_STOP_SCENE");
     const char *stopTimer = getenv("RAGE_PORT_SMOKE_STOP_SCENE_TIMER");
+    const char *captureDirectory = getenv("RAGE_PORT_SMOKE_CAPTURE_DIR");
+    const char *captureStride =
+        getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
     char *copy;
     char *token;
 
@@ -59,6 +65,9 @@ static void RageSmokeInitialize(void) {
     g_SmokeHasStopSceneTimer = stopTimer != NULL;
     g_SmokeStopScene = stopScene ? strtol(stopScene, NULL, 10) : 0;
     g_SmokeStopSceneTimer = stopTimer ? strtol(stopTimer, NULL, 10) : 0;
+    g_SmokeCaptureDirectory = captureDirectory;
+    g_SmokeCaptureTimerStride =
+        captureStride ? strtol(captureStride, NULL, 10) : 0;
     if (script != NULL && script[0] != '\0') {
         g_SmokeRawPadPath = 1;
     } else {
@@ -100,6 +109,8 @@ static void RageSmokeInitialize(void) {
 int RagePortShouldExit(int frame_number) {
     static int lastScene = -1;
     static int lastFrontend = -1;
+    static int lastCapturedScene = -1;
+    static int lastCapturedTimer = -1;
     int index;
     if (!g_SmokeInitialized) {
         g_SmokeInitialized = 1;
@@ -156,6 +167,31 @@ int RagePortShouldExit(int frame_number) {
                 frame_number, g_SceneId, g_FrontendState, g_SkyRowBase);
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
+    }
+    if (g_SmokeCaptureDirectory != NULL &&
+        g_SmokeCaptureDirectory[0] != '\0' &&
+        g_SmokeCaptureTimerStride > 0 &&
+        (!g_SmokeHasStopScene || g_SceneId == g_SmokeStopScene) &&
+        g_SceneTimer >= 0 &&
+        g_SceneTimer % g_SmokeCaptureTimerStride == 0 &&
+        (g_SceneId != lastCapturedScene ||
+         g_SceneTimer != lastCapturedTimer)) {
+        char path[1024];
+        int length = snprintf(path, sizeof(path), "%s/timer-%05d-s%02d.ppm",
+                              g_SmokeCaptureDirectory, g_SceneTimer,
+                              g_SceneId);
+        if (length <= 0 || (size_t)length >= sizeof(path) ||
+            !RageWriteCapturedFrame(path)) {
+            fprintf(stderr, "failed synchronized series capture: %s\n",
+                    length > 0 && (size_t)length < sizeof(path) ? path :
+                    "path too long");
+        } else {
+            fprintf(stderr,
+                    "smoke capture=%s frame=%d scene=%d timer=%d\n",
+                    path, frame_number, g_SceneId, g_SceneTimer);
+        }
+        lastCapturedScene = g_SceneId;
+        lastCapturedTimer = g_SceneTimer;
     }
     if (g_SmokeHasStopScene && g_SmokeHasStopSceneTimer &&
         g_SceneId == g_SmokeStopScene &&
