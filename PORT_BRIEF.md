@@ -863,6 +863,24 @@ final 1024x512 little-endian 16-bit VRAM image from the smoke executable.
 This made it possible to prove that the car-select texture page and CLUT match
 the emulator byte-for-byte before investigating rasterization differences.
 
+The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
+destination pixel untouched for both opaque and semi-transparent textured
+primitives. Writing RGBA `(0,0,0,0)` is not equivalent when the host blend
+state is disabled, because it replaces the destination with black. PsyZ's GL
+and SDL_GPU shaders therefore discard these fragments. The PsyZ regression
+`opaque_texture_zero_texel_preserves_framebuffer` checks VRAM directly. This
+is a HAL fix, not a change to Rage Racer's model or texture data.
+
+When comparing an animated showroom capture, match `g_MenuViewAngle`,
+`g_MenuViewOffset`, body/model yaw and menu state together. Matching yaw alone
+can still compare the car while it is being eased vertically into view; in the
+reference capture screen 4 starts at VBlank 323 and the offset reaches zero
+later. Likewise, compare the race intro by `g_SceneTimer`, not by the smoke
+loop's `g_FrameCounter`: LIMITLESS smoke mode consumes the required VBlank
+units inside a loop iteration. At race timer 25, the native ROUND overlay and
+background geometry match the emulator; the old port frame 1420 comparison
+was already at race timer 56 and had legitimately faded the overlay away.
+
 ### FMV cadence
 
 Do not pace every extracted MP4 at its tagged 15 fps. Retail blocks on frames

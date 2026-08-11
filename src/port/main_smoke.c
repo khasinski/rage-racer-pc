@@ -31,6 +31,8 @@ extern int g_MenuViewAngle;
 extern int g_MenuViewAngleTarget;
 extern int g_MenuViewOffset;
 extern int g_MenuViewSpin;
+extern int g_FadeLevel;
+extern int g_FrameSyncThreshold;
 extern unsigned long long g_RageNearFacesCrossing;
 extern unsigned long long g_RageNearTrianglesEmitted;
 extern unsigned long long g_RageGt4FacesEmitted;
@@ -158,6 +160,8 @@ int main(void) {
                g_MenuScreen, GameMenuBusy, g_MenuViewAngle,
                g_MenuViewAngleTarget, g_MenuViewOffset, g_MenuViewSpin,
                g_PlayerCar.bodyYaw, g_PlayerCar.modelYaw);
+        printf(" scene_timer=%d fade=%d sync=%x",
+               g_SceneTimer, g_FadeLevel, g_FrameSyncThreshold);
         if (g_RaceIntroCameraCursor != NULL) {
             printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
                    g_RaceIntroCameraCursor->mode,
