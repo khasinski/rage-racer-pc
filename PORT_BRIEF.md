@@ -996,6 +996,24 @@ timer 620 first with 58 pixels; a dense timer-610..630 refinement paired PSX
 620 with native 617 and reduced the count to 26, proving that the apparent
 wedge was alignment/raster drift rather than a missing terrain face.
 
+Black textured artifacts need a separate signal from exposed clear colour.
+Pass `--black-region X,Y,W,H` and `--rank black` to count pixels that are
+near-black only in native while the PSX reference has visible surface colour.
+Treat this as candidate ranking, not proof by itself: a one-tick camera shift
+also moves legitimate shadows and dark texture edges. The report retains the
+32 highest-error samples so a candidate can be followed with
+`RAGE_GPU_TRACE_PIXEL` on both renderers.
+
+Timer labels are not identical render checkpoints across the two runtimes. In
+the repeatable turning scenario, PSX timer 501 has the same car state as native
+timer 500; comparing equal timer numbers advances native physics once and can
+make the neighbouring terrain segment look like a huge bent-road wedge. Use
+the capture manifests and `--match position --visual-refine N`, and verify
+position, progress and view yaw before interpreting a polygon difference. The
+smoke input parser accepts combinations such as `CROSS+LEFT`, matching
+`RAGE_EMU_INPUT_SCRIPT`, so steering cases can now be replayed rather than
+approximated by straight-line captures.
+
 At synchronized race timer 220, the reference and native captures align in
 car, HUD, start lights and perspective. Filtering for tpage `0x0005` and CLUT
 `0x7943` proves that the apparently missing perspective quads are present in

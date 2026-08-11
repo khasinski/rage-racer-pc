@@ -37,6 +37,7 @@ extern int g_SceneId;
 extern int g_FrontendState;
 extern int g_TrackLength;
 extern int g_SkyRowBase;
+extern int g_IsEnvironmentMode4;
 extern s32 g_MirrorPanelY;
 int RageWriteCapturedFrame(const char *path);
 void UpdatePadState(void);
@@ -93,7 +94,8 @@ static void RageSmokeInitialize(void) {
             if (g_SmokeCaptureManifest != NULL) {
                 fputs("filename,frame,scene,timer,x,z,speed,progress,lap," \
                       "body_yaw,model_yaw,mirror_y,view_x,view_y,view_z," \
-                      "view_angle_x,view_angle_y,view_angle_z\n",
+                      "view_angle_x,view_angle_y,view_angle_z," \
+                      "environment_mode4,scratch_env_mode4\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -117,7 +119,18 @@ static void RageSmokeInitialize(void) {
         *separator = '\0';
         name = separator + 1;
         while (isspace((unsigned char)*name)) name++;
-        buttons = RageSmokeButton(name);
+        buttons = 0;
+        while (*name != '\0') {
+            char *next = strpbrk(name, "+|");
+            char *end;
+            if (next != NULL) *next = '\0';
+            end = name + strlen(name);
+            while (end > name && isspace((unsigned char)end[-1])) *--end = '\0';
+            buttons |= RageSmokeButton(name);
+            if (next == NULL) break;
+            name = next + 1;
+            while (isspace((unsigned char)*name)) name++;
+        }
         if (buttons == 0) continue;
         rangeSeparator = strchr(token, '-');
         if (rangeSeparator != NULL) {
@@ -227,7 +240,7 @@ int RagePortShouldExit(int frame_number) {
             if (g_SmokeCaptureManifest != NULL) {
                 fprintf(g_SmokeCaptureManifest,
                         "timer-%05d-s%02d.ppm,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
                         g_SceneTimer, g_SceneId, frame_number, g_SceneId,
                         g_SceneTimer, g_PlayerCar.x, g_PlayerCar.z,
                         g_PlayerCar.speed, g_PlayerCar.trackProgress,
@@ -235,7 +248,8 @@ int RagePortShouldExit(int frame_number) {
                         g_PlayerCar.modelYaw, g_MirrorPanelY,
                         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                         SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-                        SCRATCH_VIEW_ANGLE_Z);
+                        SCRATCH_VIEW_ANGLE_Z, g_IsEnvironmentMode4,
+                        SCRATCH_ENV_MODE4);
                 fflush(g_SmokeCaptureManifest);
             }
         }

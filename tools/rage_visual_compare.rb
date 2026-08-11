@@ -12,7 +12,7 @@ require "optparse"
 require "pathname"
 
 options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil,
-            clear_region: nil }
+            clear_region: nil, black_region: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -39,6 +39,11 @@ OptionParser.new do |parser|
             "Count native-only dark-blue clear pixels in a road region") do |value|
     options[:clear_region] = value.split(",", 4).map { |part| Integer(part) }
     abort "--clear-region requires X,Y,W,H" unless options[:clear_region].length == 4
+  end
+  parser.on("--black-region X,Y,W,H",
+            "Count native-only near-black pixels in a render region") do |value|
+    options[:black_region] = value.split(",", 4).map { |part| Integer(part) }
+    abort "--black-region requires X,Y,W,H" unless options[:black_region].length == 4
   end
 end.parse!
 
@@ -134,6 +139,31 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
   { count: count, samples: samples }
 end
 
+def native_only_black_pixels(psx_pixels, native_pixels, width, height, region)
+  return { count: 0, samples: [] } unless region
+  left, top, region_width, region_height = region
+  abort "black region is outside the image" if left.negative? || top.negative? ||
+    region_width <= 0 || region_height <= 0 || left + region_width > width ||
+    top + region_height > height
+  matches = []
+  (top...(top + region_height)).each do |y|
+    (left...(left + region_width)).each do |x|
+      index = y * width + x
+      psx = psx_pixels[index]
+      native = native_pixels[index]
+      # A black textured hole is dark in every native channel while the
+      # reference has visible surface colour. Requiring a useful reference
+      # intensity excludes genuine shadows and black letterbox/background.
+      next unless native.max < 12 && psx.max >= 32
+      score = 3.times.sum { |channel| (psx[channel] - native[channel])**2 }
+      matches << { x: x, y: y, squared_error: score,
+                   psx_rgb: psx, native_rgb: native }
+    end
+  end
+  { count: matches.length,
+    samples: matches.sort_by { |sample| -sample[:squared_error] }.first(32) }
+end
+
 def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)
   return nil unless region
   left, top, region_width, region_height = region
@@ -192,6 +222,8 @@ hotspots = find_hotspots(psx_pixels, native_pixels, *size,
                          options[:region])
 clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
                                         options[:clear_region])
+black_pixels = native_only_black_pixels(psx_pixels, native_pixels, *size,
+                                        options[:black_region])
 region_rmse = normalized_region_rmse(psx_pixels, native_pixels, *size,
                                     options[:region])
 unless hotspots.empty?
@@ -236,6 +268,7 @@ report = {
   hotspot_region: options[:region],
   hotspots: hotspots,
   native_only_clear: clear_pixels.merge(region: options[:clear_region]),
+  native_only_black: black_pixels.merge(region: options[:black_region]),
   artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png
                 psx-hotspots.png native-hotspots.png packet-trace.txt]
 }

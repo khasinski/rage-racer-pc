@@ -14,7 +14,7 @@ require "rbconfig"
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 256.0, visual_refine: 0,
-            clear_region: nil, rank: "rmse" }
+            clear_region: nil, black_region: nil, rank: "rmse" }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
@@ -22,6 +22,7 @@ OptionParser.new do |parser|
   parser.on("--output DIR") { |value| options[:output] = value }
   parser.on("--region X,Y,W,H") { |value| options[:region] = value }
   parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
+  parser.on("--black-region X,Y,W,H") { |value| options[:black_region] = value }
   parser.on("--hotspots N", Integer) { |value| options[:hotspots] = value }
   parser.on("--hotspot-radius N", Integer) { |value| options[:radius] = value }
   parser.on("--match MODE", %w[timer position],
@@ -36,8 +37,8 @@ OptionParser.new do |parser|
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
   end
-  parser.on("--rank METRIC", %w[rmse clear],
-            "rank output by RMSE or native-only clear pixels") do |value|
+  parser.on("--rank METRIC", %w[rmse clear black],
+            "rank output by RMSE, native-only clear, or native-only black pixels") do |value|
     options[:rank] = value
   end
 end.parse!
@@ -152,6 +153,7 @@ rows = pairs.map do |pair|
              "--hotspot-radius", options[:radius].to_s]
   command.concat(["--region", options[:region]]) if options[:region]
   command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
+  command.concat(["--black-region", options[:black_region]]) if options[:black_region]
   stdout, stderr, status = Open3.capture3(*command)
   abort "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}" unless status.success?
   report = JSON.parse(File.read(frame_output / "report.json"))
@@ -163,6 +165,7 @@ rows = pairs.map do |pair|
     normalized_rmse: report.fetch("normalized_rmse"),
     normalized_region_rmse: report["normalized_region_rmse"],
     native_only_clear: report.fetch("native_only_clear").fetch("count"),
+    native_only_black: report.fetch("native_only_black").fetch("count"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
   }
@@ -184,6 +187,10 @@ ranked = if options[:rank] == "clear"
            rows.sort_by do |row|
              [-row[:native_only_clear], -rank_rmse.call(row).to_f]
            end
+         elsif options[:rank] == "black"
+           rows.sort_by do |row|
+             [-row[:native_only_black], -rank_rmse.call(row).to_f]
+           end
          else
            rows.sort_by { |row| -rank_rmse.call(row).to_f }
          end
@@ -197,8 +204,10 @@ ranked.each do |row|
                              delta[:speed], delta[:timer]) : ""
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""
+  black = options[:black_region] ?
+    " native_only_black=#{row[:native_only_black]}" : ""
   metric = rank_rmse.call(row)
   metric_name = row[:normalized_region_rmse] ? "region_RMSE" : "RMSE"
-  puts format("%s %s=%.6f%s%s%s", row[:frame], metric_name, metric,
-              location, clear, alignment)
+  puts format("%s %s=%.6f%s%s%s%s", row[:frame], metric_name, metric,
+              location, clear, black, alignment)
 end
