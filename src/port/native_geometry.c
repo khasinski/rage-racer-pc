@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "game/render_internal.h"
@@ -11,6 +12,7 @@
 
 extern int g_CourseModelCount;
 extern int g_AnimTimer;
+extern int g_SceneTimer;
 void DpqColor(CVECTOR *source, long depthCue, CVECTOR *destination);
 
 /* Portable C counterpart of the hand-written MIPS/GTE model dispatcher in
@@ -44,6 +46,26 @@ unsigned long long g_RageTerrainSecondTriangleVisible;
 unsigned long long g_RageTerrainChildRejectBackface;
 unsigned long long g_RageTerrainChildSecondTriangleVisible;
 static int g_RageProjectionReject;
+static int g_RageTerrainTraceInitialized;
+static int g_RageTerrainTraceEnabled;
+static int g_RageTerrainTraceTimer = -1;
+static int g_RageTerrainTraceClut = -1;
+static int g_RageTerrainTraceTpage = -1;
+
+static void RageInitializeTerrainTrace(void) {
+    const char *timer;
+    const char *clut;
+    const char *tpage;
+    if (g_RageTerrainTraceInitialized) return;
+    g_RageTerrainTraceInitialized = 1;
+    timer = getenv("RAGE_PORT_TERRAIN_TRACE_TIMER");
+    clut = getenv("RAGE_PORT_TERRAIN_TRACE_CLUT");
+    tpage = getenv("RAGE_PORT_TERRAIN_TRACE_TPAGE");
+    if (timer != NULL) g_RageTerrainTraceTimer = (int)strtol(timer, NULL, 0);
+    if (clut != NULL) g_RageTerrainTraceClut = (int)strtol(clut, NULL, 16);
+    if (tpage != NULL) g_RageTerrainTraceTpage = (int)strtol(tpage, NULL, 16);
+    g_RageTerrainTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
+}
 
 static int RagePrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
     int i;
@@ -931,6 +953,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     int decodedFaces = 0;
     int emittedFaces = 0;
     (void)ctx;
+    RageInitializeTerrainTrace();
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
@@ -995,9 +1018,35 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     ? RageReadU32(stream + 32) : 0;
                 int bias;
                 if (farCell && (stream[20] & 2) != 0) continue;
-                if (!RageProjectQuad(v0, v1, v2, v3, sxy, &depth, &fog,
-                                     &rawDepth, 1))
-                    continue;
+                {
+                    int projected = RageProjectQuad(
+                        v0, v1, v2, v3, sxy, &depth, &fog, &rawDepth, 1);
+                    if (g_RageTerrainTraceEnabled &&
+                        (g_RageTerrainTraceTimer < 0 ||
+                         g_RageTerrainTraceTimer == g_SceneTimer) &&
+                        (g_RageTerrainTraceClut < 0 ||
+                         g_RageTerrainTraceClut == clut) &&
+                        (g_RageTerrainTraceTpage < 0 ||
+                         g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
+                        fprintf(stderr,
+                                "terrain-face timer=%d cell=%d face=%d "
+                                "mode=%d reject=%d depth=%d raw=%d "
+                                "rgb=%02x%02x%02x indices=%u,%u,%u,%u "
+                                "translation=%d,%d,%d "
+                                "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
+                                g_SceneTimer, cellIndex, faceIndex, dispatch,
+                                projected ? 0 : g_RageProjectionReject, depth,
+                                rawDepth, color[0], color[1], color[2],
+                                RageReadU16(stream + 0), RageReadU16(stream + 2),
+                                RageReadU16(stream + 4), RageReadU16(stream + 6),
+                                translation.vx, translation.vy, translation.vz,
+                                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
+                    }
+                    if (!projected) continue;
+                }
                 /* The retail cell dispatcher tests bit 0 of the halfword at
                  * +0x14 when OTZ reaches 0x800.  In that case it halves all
                  * four UV pairs before either the direct or subdivided

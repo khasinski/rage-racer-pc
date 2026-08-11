@@ -1018,6 +1018,13 @@ of the reference coordinate. This removes shifted texture edges without
 erasing a solid triangular hole; use radius 0 when investigating exact raster
 coverage.
 
+For packet-level follow-up, the native terrain dispatcher accepts optional
+`RAGE_PORT_TERRAIN_TRACE_TIMER`, `RAGE_PORT_TERRAIN_TRACE_CLUT`, and
+`RAGE_PORT_TERRAIN_TRACE_TPAGE` filters. Matching faces report their cell and
+face indices, dispatch mode, rejection reason, OT depth, colour, vertex
+indices, cell translation, and projected coordinates. The trace is inactive
+unless at least one filter is present and does not alter assets or game state.
+
 Timer labels are not identical render checkpoints across the two runtimes. In
 the repeatable turning scenario, PSX timer 501 has the same car state as native
 timer 500; comparing equal timer numbers advances native physics once and can
