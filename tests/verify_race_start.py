@@ -19,11 +19,13 @@ def main() -> int:
         environment = os.environ.copy()
         environment.update(
             SDL_AUDIODRIVER="dummy",
-            RAGE_PORT_SMOKE_FRAMES="2000",
+            RAGE_PORT_SMOKE_FRAMES="2400",
             RAGE_PORT_INPUT_SCRIPT=(
                 "400:START,500:START,650:CROSS,950:CROSS,"
-                "1100:CROSS,1200:CROSS,1700-2000:CROSS"
+                "1100:CROSS,1200:CROSS,1470-2400:CROSS"
             ),
+            RAGE_PORT_SMOKE_STOP_SCENE="12",
+            RAGE_PORT_SMOKE_STOP_SCENE_TIMER="562",
             RAGE_PORT_CAPTURE_PATH=str(capture),
         )
         result = subprocess.run(
@@ -62,7 +64,33 @@ def main() -> int:
         )
         if needle_pixels < 8:
             raise AssertionError("tachometer needle is missing")
-    if "stopped at frame 2000, scene 12" not in result.stdout:
+
+        # The portable terrain path used to run NCLIP again on every
+        # screen-space subdivision.  Rounding made adjacent road pieces
+        # disappear and exposed the dark-blue clear colour as triangular
+        # wedges.  The synchronized retail state has no such pixels here.
+        blue_road_pixels = sum(
+            r < 8 and g < 8 and b > 35
+            for y in range(140, 165)
+            for r, g, b in pixels[y * 320 + 60:y * 320 + 260]
+        )
+        if blue_road_pixels >= 80:
+            raise AssertionError(
+                f"road still contains blue terrain wedges: {blue_road_pixels}"
+            )
+
+        # The rear-view pass must contain textured road, not a mostly black
+        # panel or the vertically striped wrong terrain cell.
+        mirror_road_pixels = sum(
+            r > 25 and abs(r - g) < 12 and abs(r - b) < 12
+            for y in range(18, 54)
+            for r, g, b in pixels[y * 320 + 86:y * 320 + 234]
+        )
+        if mirror_road_pixels < 3000:
+            raise AssertionError(
+                f"rear-view mirror is missing road texture: {mirror_road_pixels}"
+            )
+    if "scene 12" not in result.stdout:
         raise AssertionError("Grand Prix did not survive through race start")
     player_state = re.search(r"speed=(-?\d+) accelerator=(-?\d+)", result.stdout)
     if player_state is None or int(player_state.group(1)) <= 0:

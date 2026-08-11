@@ -8,7 +8,6 @@
 #include "game/vector.h"
 #include "psyq/gte.h"
 
-
 /*
  * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For
  * each visible object (id != -1, passing the per-sector visibility bitmask test
@@ -172,11 +171,13 @@ void BuildVisibleCells(s32 near, s32 far) {
             k = j + (k << 7);
             dx = g_CellScanOffsetX[k];
             dy = g_CellScanOffsetY[k];
-            sx = cx - dx;
-            sy = cy + dy;
+            /* Retail adds X and subtracts Y in this quadrant.  The previous
+             * reconstruction had both signs reversed, selecting the terrain
+             * in front of the car for the rear-view pass. */
+            sx = cx + dx;
+            sy = cy - dy;
             break;
         }
-
         if (sx < 32U && sy < 32U && IsCellVisibleFromRegion(sx, sy, ret0)) {
             s32 clut = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;
 

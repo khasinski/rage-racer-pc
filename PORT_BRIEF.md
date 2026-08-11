@@ -940,6 +940,36 @@ their indexed views explicitly contain U `{e8,50,78,a0}`, V `{30,10,10,10}`
 and width `{10,28,28,30}` at indices 0, 3, 6 and 9. Treat this as a game-data
 layout fix for the decompilation, not runtime asset copying.
 
+### Terrain subdivision and rear-view cell selection (backport)
+
+The retail terrain dispatcher performs the face `NCLIP` before subdivision.
+Its screen-space subdivision emitter does not repeat `NCLIP` for every small
+quad. Re-culling the children is incorrect: integer interpolation can make the
+first triangle of an otherwise visible child degenerate, leaving triangular
+holes which expose the dark-blue clear colour. `RageScreenQuadVisible` now
+only rejects a child when all four corners lie beyond the same screen edge.
+
+`BuildVisibleCells` quadrant 3 uses `sx = cx + dx` and `sy = cy - dy`. The
+previous reconstruction reversed both signs, so the mirror list contained the
+opposite neighbouring cells even though the checked-in scan table was byte-for-
+byte identical to retail. This is game-code control flow and must be backported
+to the decompilation.
+
+The rear-view terrain dispatcher reflects the first GTE rotation row. Because
+the cell center has already been transformed by `BuildVisibleCells`, its X
+translation must be reflected as well before `SetTransVector`; otherwise the
+correct mirror terrain is displaced by tens of pixels. The synchronized visual
+test checks both the road for clear-colour wedges and the mirror for a textured
+road surface.
+
+PsyZ's `FixupFlipUV` now ignores edges whose screen or texture delta on the
+tested axis is zero. Such an edge carries no flip direction; treating a
+slightly sloped terrain edge with equal V as a flip added one to every V and
+sampled the transparent border of the tile. Genuine flipped-XY and flipped-UV
+quads retain the compatibility adjustment. `RAGE_GPU_TRACE_AREA=1` logs
+draw-area changes and pending batch sizes when diagnosing mirror scissor
+ordering.
+
 The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
 destination pixel untouched for both opaque and semi-transparent textured
 primitives. Writing RGBA `(0,0,0,0)` is not equivalent when the host blend

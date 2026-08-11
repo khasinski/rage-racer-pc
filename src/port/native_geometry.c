@@ -167,9 +167,6 @@ static int RageBilerpSxy(
 static int RageScreenQuadVisible(const int sxy[4]) {
     int i;
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-    int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
-    if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0))
-        return 0;
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
         int y = (int16_t)(sxy[i] >> 16);
@@ -724,7 +721,10 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         int farCell = visible[2] >= 0xa000;
         if (cellIndex < 0 || cellIndex >= GAME_TERRAIN_CELL_LIMIT ||
             cellTable[cellIndex] == NULL) continue;
-        translation.vx = visible[0];
+        /* The rear-view dispatcher reflects both RT1 and the already
+         * transformed cell-center X.  Reflecting only the rotation row moves
+         * otherwise correct terrain quads tens of pixels to the right. */
+        translation.vx = SCRATCH_MIRROR ? -visible[0] : visible[0];
         translation.vy = visible[1];
         translation.vz = visible[2];
         translation.pad = 0;

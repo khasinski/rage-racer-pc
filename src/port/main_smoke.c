@@ -16,6 +16,7 @@
 #include "game/asset.h"
 #include "game/car_internal.h"
 #include "game/scratchpad.h"
+#include "game/render_internal.h"
 #include "game/sound.h"
 
 void MainLoop(void);
@@ -33,6 +34,7 @@ extern int g_MenuViewOffset;
 extern int g_MenuViewSpin;
 extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
+extern Vec4 g_MirrorVisibleCellList[];
 extern unsigned long long g_RageNearFacesCrossing;
 extern unsigned long long g_RageNearTrianglesEmitted;
 extern unsigned long long g_RageGt4FacesEmitted;
@@ -156,6 +158,12 @@ int main(void) {
                SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
                SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR,
                (void *)g_RaceIntroCameraCursor);
+        printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
+               g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
+               g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
+               g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
+               g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
+               g_MirrorViewMatrix.m[2][2]);
         printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
                g_MenuScreen, GameMenuBusy, g_MenuViewAngle,
                g_MenuViewAngleTarget, g_MenuViewOffset, g_MenuViewSpin,
@@ -219,6 +227,14 @@ int main(void) {
                g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,
                g_RageGt4RejectBackface, g_RageGt4RejectDepth);
         putchar('\n');
+    }
+    if (getenv("RAGE_PORT_SMOKE_VISIBLE_CELLS") != NULL) {
+        int cell;
+        for (cell = 0; cell < 64; cell++) {
+            const Vec4 *entry = &g_MirrorVisibleCellList[cell];
+            printf("mirror-cell %d=%d,%d,%d,%d\n", cell, entry->x,
+                   entry->y, entry->z, entry->w);
+        }
     }
     if (getenv("RAGE_PORT_SMOKE_SAVE_ROUNDTRIP") != NULL) {
         GameSaveHeaderRow header = {0};
