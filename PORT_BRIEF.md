@@ -1085,6 +1085,28 @@ large close-road faces whose subdivision is intended to make them safe.  The
 portable path now uses only the retail NCLIP, screen-bound and OT-depth
 decisions.
 
+Course-model faces use a related but distinct retail dispatcher and must not
+be collapsed into the ordinary model FT4 path. Its four record modes are F4
+(`0x10` bytes), FT4 (`0x1c`), subdivided FT4 (`0x20`) and scrolling,
+subdivided FT4 (`0x20`). Modes 2 and 3 store the horizontal and vertical
+subdivision levels at bytes 26/27 and a GPU texture-window word at byte 28.
+The effective levels subtract `OTZ >> SCRATCH_FACE_OT_SHIFT`, clamp at zero,
+and select the same two-stage GTE `INTPL` interpolation used by retail terrain.
+Every child is emitted between texture-window set/reset packets. Mode 3 first
+adds `g_AnimTimer & 0x7f` to the four packed UV pairs, retaining the retail
+word/halfword carry behaviour. Ignoring these fields made large scenery quads
+sample unrelated texture data and removed the perspective subdivision intended
+near the camera.
+
+Course faces also have their own winding convention. The parent accepts a
+positive first-triangle `NCLIP` in the main view and a negative result in the
+mirror. A subdivided main-view child survives when `clip0 < 0 || clip1 > 0`,
+with both signs reversed in the mirror; the second triangle is the FIFO order
+`(v3,v1,v2)`. The portable course dispatcher now reproduces these decisions,
+the per-record OT bias, fogged `DPCS` colour path, texture windows and scrolling
+UVs. This is fixed-width game asset decoding and should be backported to the
+decompilation rather than implemented as a PsyZ heuristic.
+
 PsyZ's `FixupFlipUV` now ignores edges whose screen or texture delta on the
 tested axis is zero. Such an edge carries no flip direction; treating a
 slightly sloped terrain edge with equal V as a flip added one to every V and

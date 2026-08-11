@@ -10,6 +10,7 @@
 #include "game/asset.h"
 
 extern int g_CourseModelCount;
+extern int g_AnimTimer;
 void DpqColor(CVECTOR *source, long depthCue, CVECTOR *destination);
 
 /* Portable C counterpart of the hand-written MIPS/GTE model dispatcher in
@@ -161,6 +162,39 @@ static int RageProjectModelFace(
         sxy, depth, fog, NULL, 0);
 }
 
+static int RageProjectCourseFace(
+    const uint8_t *face, const SVECTOR *vertices, int sxy[4], int *depth,
+    int *fog, int *rawDepth) {
+    int p;
+    int flag;
+    long otz = RotAverage4(
+        (SVECTOR *)&vertices[RageReadU16(face + 0)],
+        (SVECTOR *)&vertices[RageReadU16(face + 2)],
+        (SVECTOR *)&vertices[RageReadU16(face + 4)],
+        (SVECTOR *)&vertices[RageReadU16(face + 6)],
+        &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
+    int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
+    int i;
+    int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
+    (void)flag;
+    if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0))
+        return 0;
+    for (i = 0; i < 4; i++) {
+        int x = (int16_t)sxy[i];
+        int y = (int16_t)(sxy[i] >> 16);
+        allLeft &= x < g_RageScratchpadState.x0;
+        allRight &= x > g_RageScratchpadState.x1;
+        allAbove &= y < g_RageScratchpadState.y0;
+        allBelow &= y > g_RageScratchpadState.y1;
+    }
+    if (allLeft || allRight || allAbove || allBelow) return 0;
+    *depth = (int)otz >> SCRATCH_OT_SHIFT;
+    if (*depth <= 0 || *depth >= 448) return 0;
+    if (fog != NULL) *fog = p;
+    if (rawDepth != NULL) *rawDepth = (int)otz;
+    return 1;
+}
+
 static int RageFloorShift12(int64_t value) {
     if (value >= 0) return (int)(value >> 12);
     return -(int)((-value + 0xfff) >> 12);
@@ -229,6 +263,25 @@ static int RageScreenQuadVisible(const int sxy[4]) {
     return !(allLeft || allRight || allAbove || allBelow);
 }
 
+static int RageCourseScreenQuadVisible(const int sxy[4]) {
+    int i;
+    int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
+    int clip1 = NormalClip(sxy[3], sxy[1], sxy[2]);
+    int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
+    if ((!SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0) ||
+        (SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0))
+        return 0;
+    for (i = 0; i < 4; i++) {
+        int x = (int16_t)sxy[i];
+        int y = (int16_t)(sxy[i] >> 16);
+        allLeft &= x < g_RageScratchpadState.x0;
+        allRight &= x > g_RageScratchpadState.x1;
+        allAbove &= y < g_RageScratchpadState.y0;
+        allBelow &= y > g_RageScratchpadState.y1;
+    }
+    return !(allLeft || allRight || allAbove || allBelow);
+}
+
 static uint8_t RageBilerpByte(
     uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3,
     int u, int v, int uSteps, int vSteps) {
@@ -286,6 +339,49 @@ static uint8_t *RageEmitTerrainFt4(
     window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
     window->code[1] = 0;
 
+    setaddr(reset, getaddr(&ot[depth]));
+    setaddr(poly, reset);
+    setaddr(window, poly);
+    setaddr(&ot[depth], window);
+    return cursor;
+}
+
+static uint8_t *RageEmitCourseFt4(
+    uint8_t *cursor, OT_TYPE *ot, int depth, const int sxy[4],
+    const uint8_t uv[8], uint16_t clut, uint16_t tpage,
+    const uint8_t color[3], uint32_t textureWindow, int windowed) {
+    POLY_FT4 *poly;
+    DR_TWIN *window;
+    DR_TWIN *reset;
+    size_t packetSize = sizeof(POLY_FT4);
+    if (windowed) packetSize += sizeof(DR_TWIN) * 2;
+    if (!RagePrimitiveSpaceAvailable(cursor, packetSize)) return NULL;
+    poly = (POLY_FT4 *)cursor;
+    SetPolyFT4(poly);
+    poly->r0 = color[0]; poly->g0 = color[1]; poly->b0 = color[2];
+    poly->u0=uv[0]; poly->v0=uv[1]; poly->u1=uv[2]; poly->v1=uv[3];
+    poly->u2=uv[4]; poly->v2=uv[5]; poly->u3=uv[6]; poly->v3=uv[7];
+    poly->clut = clut;
+    poly->tpage = tpage;
+    RageStoreSxy(&poly->x0,&poly->y0,sxy[0]);
+    RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
+    RageStoreSxy(&poly->x2,&poly->y2,sxy[2]);
+    RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
+    cursor += sizeof(*poly);
+    if (!windowed) {
+        AddPrim(&ot[depth], poly);
+        return cursor;
+    }
+    reset = (DR_TWIN *)cursor;
+    cursor += sizeof(*reset);
+    setlen(reset, 2);
+    reset->code[0] = 0xE2000000u;
+    reset->code[1] = 0;
+    window = (DR_TWIN *)cursor;
+    cursor += sizeof(*window);
+    setlen(window, 2);
+    window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+    window->code[1] = 0;
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
     setaddr(window, poly);
@@ -680,13 +776,13 @@ void SubmitModel(void *ctx, int index) {
  * non-rendering bodies here makes the remaining fidelity gap visible and
  * avoids hiding it among generic platform adapters. */
 static void RageSubmitCourseModel(int index, int fogged) {
+    static const uint8_t strides[4] = {16, 28, 32, 32};
     NativeCourseModel *models = (NativeCourseModel *)SCRATCH_COURSE_BANK;
     uint8_t *stream;
     uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     const SVECTOR *vertices;
     uint32_t opcode;
-    (void)fogged;
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
     vertices = (const SVECTOR *)models[index].geometry;
@@ -694,36 +790,125 @@ static void RageSubmitCourseModel(int index, int fogged) {
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
         int count = (int)(opcode >> 16);
-        int stride = type == 0 ? 16 : (type == 1 ? 28 : 32);
+        int stride;
         int i;
         stream += 4;
         if ((unsigned)type >= 4 || count <= 0) break;
+        stride = strides[type];
         for (i = 0; i < count; i++, stream += stride) {
-            int sxy[4], depth;
-            int bias = (int8_t)stream[stride - 3];
-            if (!RageProjectModelFace(stream, vertices, sxy, &depth, NULL)) continue;
+            int sxy[4], depth, fog, rawDepth;
+            int bias = (int8_t)stream[type == 0 ? 13 : 25];
+            uint8_t color[3] = {stream[8], stream[9], stream[10]};
+            if (!RageProjectCourseFace(stream, vertices, sxy, &depth, &fog,
+                                       &rawDepth))
+                continue;
+            if (fogged) {
+                CVECTOR base = {color[0], color[1], color[2], 0};
+                CVECTOR shaded;
+                DpqColor(&base, fog, &shaded);
+                color[0] = shaded.r;
+                color[1] = shaded.g;
+                color[2] = shaded.b;
+            }
             depth += bias;
             if (depth <= 0 || depth >= 448) continue;
             if (type == 0) {
                 if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
                 POLY_F4 *poly = (POLY_F4 *)cursor;
                 SetPolyF4(poly);
-                poly->r0=stream[8]; poly->g0=stream[9]; poly->b0=stream[10];
+                poly->r0=color[0]; poly->g0=color[1]; poly->b0=color[2];
                 RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
                 RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
                 AddPrim(&ot[depth],poly); cursor += sizeof(*poly);
+            } else if (type == 1) {
+                uint8_t uv[8] = {
+                    stream[12], stream[13], stream[16], stream[17],
+                    stream[20], stream[21], stream[22], stream[23]
+                };
+                uint8_t *next = RageEmitCourseFt4(
+                    cursor, ot, depth, sxy, uv, RageReadU16(stream + 14),
+                    RageReadU16(stream + 18), color, 0, 0);
+                if (next == NULL) goto course_buffer_full;
+                cursor = next;
             } else {
-                if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_FT4))) break;
-                POLY_FT4 *poly = (POLY_FT4 *)cursor;
-                SetPolyFT4(poly);
-                poly->r0=stream[8]; poly->g0=stream[9]; poly->b0=stream[10];
-                RageCopyFt4Uv(poly, stream + 12);
-                RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
-                RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
-                AddPrim(&ot[depth],poly); cursor += sizeof(*poly);
+                uint8_t uvRecord[12];
+                uint8_t uv[8];
+                uint16_t clut;
+                uint16_t tpage;
+                uint32_t textureWindow = RageReadU32(stream + 28);
+                int uLevel = stream[26] -
+                    (rawDepth >> SCRATCH_FACE_OT_SHIFT);
+                int vLevel = stream[27] -
+                    (rawDepth >> SCRATCH_FACE_OT_SHIFT);
+                int uSteps, vSteps;
+                int sy, sx;
+                memcpy(uvRecord, stream + 12, sizeof(uvRecord));
+                if (type == 3) {
+                    uint32_t scroll = (uint32_t)g_AnimTimer & 0x7f;
+                    uint32_t uv0 = RageReadU32(uvRecord + 0) + scroll;
+                    uint16_t uv1 = (uint16_t)(RageReadU16(uvRecord + 4) +
+                                              scroll);
+                    uint16_t uv2 = (uint16_t)(RageReadU16(uvRecord + 8) +
+                                              scroll);
+                    uint16_t uv3 = (uint16_t)(RageReadU16(uvRecord + 10) +
+                                              scroll);
+                    memcpy(uvRecord + 0, &uv0, sizeof(uv0));
+                    memcpy(uvRecord + 4, &uv1, sizeof(uv1));
+                    memcpy(uvRecord + 8, &uv2, sizeof(uv2));
+                    memcpy(uvRecord + 10, &uv3, sizeof(uv3));
+                }
+                uv[0]=uvRecord[0]; uv[1]=uvRecord[1];
+                uv[2]=uvRecord[4]; uv[3]=uvRecord[5];
+                uv[4]=uvRecord[8]; uv[5]=uvRecord[9];
+                uv[6]=uvRecord[10]; uv[7]=uvRecord[11];
+                clut = RageReadU16(uvRecord + 2);
+                tpage = RageReadU16(uvRecord + 6);
+                if (uLevel < 0) uLevel = 0;
+                if (vLevel < 0) vLevel = 0;
+                if (uLevel > 6 || vLevel > 6) continue;
+                uSteps = 1 << uLevel;
+                vSteps = 1 << vLevel;
+                if (uSteps == 1 && vSteps == 1) {
+                    uint8_t *next = RageEmitCourseFt4(
+                        cursor, ot, depth, sxy, uv, clut, tpage, color,
+                        textureWindow, 1);
+                    if (next == NULL) goto course_buffer_full;
+                    cursor = next;
+                    continue;
+                }
+                for (sy = 0; sy < vSteps; sy++) {
+                    for (sx = 0; sx < uSteps; sx++) {
+                        int subSxy[4];
+                        uint8_t subUv[8];
+                        uint8_t *next;
+                        subSxy[0] = RageBilerpSxy(sxy,sx,sy,uSteps,vSteps);
+                        subSxy[1] = RageBilerpSxy(sxy,sx+1,sy,uSteps,vSteps);
+                        subSxy[2] = RageBilerpSxy(sxy,sx,sy+1,uSteps,vSteps);
+                        subSxy[3] = RageBilerpSxy(sxy,sx+1,sy+1,uSteps,vSteps);
+#define RAGE_COURSE_SUB_UV(out, corner, uu, vv) do { \
+    (out)[(corner)*2] = RageBilerpByte(uv[0],uv[2],uv[4],uv[6],(uu),(vv),uSteps,vSteps); \
+    (out)[(corner)*2+1] = RageBilerpByte(uv[1],uv[3],uv[5],uv[7],(uu),(vv),uSteps,vSteps); \
+} while (0)
+                        RAGE_COURSE_SUB_UV(subUv,0,sx,sy);
+                        RAGE_COURSE_SUB_UV(subUv,1,sx+1,sy);
+                        RAGE_COURSE_SUB_UV(subUv,2,sx,sy+1);
+                        RAGE_COURSE_SUB_UV(subUv,3,sx+1,sy+1);
+#undef RAGE_COURSE_SUB_UV
+                        if (!RageCourseScreenQuadVisible(subSxy)) continue;
+                        next = RageEmitCourseFt4(
+                            cursor, ot, depth, subSxy, subUv, clut, tpage,
+                            color, textureWindow, 1);
+                        if (next == NULL) goto course_buffer_full;
+                        cursor = next;
+                    }
+                }
             }
         }
     }
+    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    return;
+course_buffer_full:
+    fprintf(stderr, "rage course: primitive buffer exhausted\n");
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
 }
 
