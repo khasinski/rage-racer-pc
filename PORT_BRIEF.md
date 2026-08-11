@@ -1055,6 +1055,17 @@ the portable terrain dispatcher while retaining the original one-triangle
 rule for models.  The smoke summary's `terrain_second` counter and race test
 prove that the retail-only rescue path is exercised.
 
+Do not add a screen-span near-plane heuristic to the direct terrain path.
+Retail `SubmitTerrainCells` has no `maxX-minX`/`maxY-minY` rejection: after
+the two `NCLIP` decisions it tests all four projected X coordinates against
+the scratchpad bounds at `0x80028324..0x80028360`, repeats that for Y at
+`0x8002837C..0x800283BC`, and then accepts OT indices 1..447 at
+`0x800283C0..0x800283CC`.  A former native `640x512` span cutoff was an
+undocumented substitute for PS1 projection behaviour and could discard the
+large close-road faces whose subdivision is intended to make them safe.  The
+portable path now uses only the retail NCLIP, screen-bound and OT-depth
+decisions.
+
 PsyZ's `FixupFlipUV` now ignores edges whose screen or texture delta on the
 tested axis is zero. Such an edge carries no flip direction; treating a
 slightly sloped terrain edge with equal V as a flip added one to every V and

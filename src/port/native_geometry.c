@@ -81,7 +81,7 @@ static void RageStoreSxy(short *x, short *y, int packed) {
 static int RageProjectQuad(
     const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
     const SVECTOR *v3, int sxy[4], int *depth, int *fog, int *rawDepth,
-    int rejectLargeSpan, int terrainQuad) {
+    int terrainQuad) {
     int p;
     int flag;
     long otz;
@@ -95,14 +95,9 @@ static int RageProjectQuad(
     {
         int x[4], y[4], i;
         int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-        int minX = 32767, maxX = -32768, minY = 32767, maxY = -32768;
         for (i = 0; i < 4; i++) {
             x[i] = (int16_t)(sxy[i] & 0xffff);
             y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
-            if (x[i] < minX) minX = x[i];
-            if (x[i] > maxX) maxX = x[i];
-            if (y[i] < minY) minY = y[i];
-            if (y[i] > maxY) maxY = y[i];
             allLeft &= x[i] < g_RageScratchpadState.x0;
             allRight &= x[i] > g_RageScratchpadState.x1;
             allAbove &= y[i] < g_RageScratchpadState.y0;
@@ -112,11 +107,6 @@ static int RageProjectQuad(
             g_RageProjectionReject = 1;
             return 0;
         }
-        /* Retail subdivides quads which cross the near plane. Until that
-         * path is decoded, never submit their wrapped GTE coordinates as a
-         * single screen-sized polygon. */
-        if (rejectLargeSpan && (maxX - minX > 640 || maxY - minY > 512))
-            { g_RageProjectionReject = 1; return 0; }
     }
     {
         int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
@@ -168,7 +158,7 @@ static int RageProjectModelFace(
     return RageProjectQuad(
         &vertices[RageReadU16(face + 0)], &vertices[RageReadU16(face + 2)],
         &vertices[RageReadU16(face + 4)], &vertices[RageReadU16(face + 6)],
-        sxy, depth, fog, NULL, 0, 0);
+        sxy, depth, fog, NULL, 0);
 }
 
 static int RageBilerpSxy(
@@ -805,7 +795,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 int bias;
                 if (farCell && (stream[20] & 2) != 0) continue;
                 if (!RageProjectQuad(v0, v1, v2, v3, sxy, &depth, &fog,
-                                     &rawDepth, 0, 1))
+                                     &rawDepth, 1))
                     continue;
                 /* The retail cell dispatcher tests bit 0 of the halfword at
                  * +0x14 when OTZ reaches 0x800.  In that case it halves all
@@ -828,8 +818,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 vSteps = 1 << vLevel;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
-                    if (!RageProjectQuad(v0,v1,v2,v3,sxy,&depth,&fog,
-                                         &rawDepth,1,1)) continue;
                     depth += bias;
                     if (depth <= 0 || depth >= 448) continue;
                     next = RageEmitTerrainFt4(cursor, ot, depth, fog, dispatch,
