@@ -1227,6 +1227,19 @@ pixels or triangle-shaped diffs until the candidate was aligned in the same
 region.  `report.json` retains both `normalized_rmse` and
 `normalized_region_rmse` so this distinction is testable.
 
+The capture manifest must also include `g_AnimTimer`. Terrain mode 3 scrolls
+its packed UV/CLUT words by `g_AnimTimer & 0x7f`; matching the car and camera
+while allowing a neighbouring animation phase creates thousands of convincing
+but false black-texture candidates. `rage_visual_batch.rb` now requires equal
+phase modulo 128, limits camera distance, speed, body angles and lateral offset,
+and prevents `--visual-refine` from escaping to a different phase. For the
+timer-800 race checkpoint used here, delaying the native continuous CROSS input
+from smoke frame 1470 to 1471 gives an exact timer-903 match: player position,
+camera position, speed, progress, lateral offset and animation phase are all
+identical. Starting LEFT at smoke frame 2164 similarly aligns the first turn.
+Use those offsets for cached comparisons; do not weaken the state tolerances to
+manufacture more pairs.
+
 ### FMV cadence
 
 Do not pace every extracted MP4 at its tagged 15 fps. Retail blocks on frames

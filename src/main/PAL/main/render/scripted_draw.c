@@ -208,15 +208,16 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     }
 
     y1Reg = (s16)y1;
-    x0 <<= 0x10;
-    y1 = y0Call << 0x10;
-    x1 <<= 0x10;
+    /* Retail's sll/sra pair sign-extends the low halfword. */
+    x0 = (s16)x0;
+    y1 = (s16)y0Call;
+    x1 = (s16)x1;
     asm("" : "=r"(x0) : "0"(x0));
     DrawLine(
         &otBase[mode],
-        x0 >> 0x10,
-        y1 >> 0x10,
-        x1 >> 0x10,
+        x0,
+        y1,
+        x1,
         y1Reg,
         shapeReg->r,
         shapeReg->g,
@@ -574,7 +575,6 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     s32 limit;
     s32 packed;
     u32 offsetProduct;
-    u32 packedDrawY;
 
     shapePtr = g_MenuRowScript[0].shape.spriteShape;
     elapsed = progress - g_MenuRowScript[0].time;
@@ -637,13 +637,8 @@ loop:
     drawX = (u16)motionPtr->x;
     drawY = (u16)motionPtr->y;
     drawW = shapePtr->width;
-    drawX = drawX + xOffset;
-    drawX <<= 0x10;
-    drawY = drawY + yOffset;
-    packedDrawY = drawY;
-    drawY = packedDrawY << 16;
-    drawX >>= 16;
-    drawY >>= 16;
+    drawX = (s16)(drawX + xOffset);
+    drawY = (s16)(drawY + yOffset);
 
     DrawSprite(ot + 2,
                   drawX,

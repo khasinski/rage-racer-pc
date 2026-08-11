@@ -13,7 +13,9 @@ require "pathname"
 require "rbconfig"
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
-            max_position_distance: 64.0, visual_refine: 0,
+            max_position_distance: 64.0, max_view_distance: 32.0,
+            max_speed_delta: 16, max_angle_delta: 32,
+            max_lateral_delta: 32, visual_refine: 0,
             clear_region: nil, black_region: nil, artifact_radius: 2,
             rank: "rmse" }
 OptionParser.new do |parser|
@@ -36,6 +38,22 @@ OptionParser.new do |parser|
   parser.on("--max-position-distance N", Float,
             "skip position matches farther apart than N world units") do |value|
     options[:max_position_distance] = value
+  end
+  parser.on("--max-view-distance N", Float,
+            "skip camera positions farther apart than N world units") do |value|
+    options[:max_view_distance] = value
+  end
+  parser.on("--max-speed-delta N", Integer,
+            "skip states whose car speeds differ by more than N") do |value|
+    options[:max_speed_delta] = value
+  end
+  parser.on("--max-angle-delta N", Integer,
+            "skip states whose body pitch/roll/yaw differ by more than N") do |value|
+    options[:max_angle_delta] = value
+  end
+  parser.on("--max-lateral-delta N", Integer,
+            "skip track lateral offsets farther apart than N") do |value|
+    options[:max_lateral_delta] = value
   end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
@@ -121,6 +139,12 @@ if options[:match] == "position"
                      else
                        0
                      end
+      phase_penalty = if candidate.key?(:anim_timer) && psx.key?(:anim_timer) &&
+                         (candidate[:anim_timer] - psx[:anim_timer]) % 128 != 0
+                        1024
+                      else
+                        0
+                      end
       # The VBlank checkpoint can observe the renderer during its mirror pass,
       # whose yaw is the main camera plus exactly 180 degrees.  Modulo 2048
       # compares the underlying view without turning that phase difference
@@ -128,30 +152,52 @@ if options[:match] == "position"
       view_yaw = ((candidate[:view_angle_y] - psx[:view_angle_y] + 1024) % 2048 - 1024).abs
       Math.hypot(dx, dz) + Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) * 2 +
         speed * 4 + yaw / 4.0 + pitch / 2.0 + roll / 2.0 +
-        lateral / 4.0 + view_yaw * 2 + seed_penalty +
+        lateral / 4.0 + view_yaw * 2 + seed_penalty + phase_penalty +
         (candidate[:timer] - psx[:timer]).abs
     end
     if options[:visual_refine] > 0
       nearby = candidates.select do |candidate|
-        (candidate[:timer] - native[:timer]).abs <= options[:visual_refine]
+        (candidate[:timer] - psx[:timer]).abs <= options[:visual_refine] &&
+          (!candidate.key?(:anim_timer) || !psx.key?(:anim_timer) ||
+           (candidate[:anim_timer] - psx[:anim_timer]) % 128 == 0)
       end
-      native = nearby.min_by do |candidate|
+      refined = nearby.min_by do |candidate|
         image_rmse(psx[:path], candidate[:path], options[:region])
       end
+      native = refined unless refined.nil?
     end
     dx = native[:x] - psx[:x]
     dz = native[:z] - psx[:z]
-    next if Math.hypot(dx, dz) > options[:max_position_distance]
     dvx = native[:view_x] - psx[:view_x]
     dvy = native[:view_y] - psx[:view_y]
     dvz = native[:view_z] - psx[:view_z]
+    position_distance = Math.hypot(dx, dz)
+    view_distance = Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz)
+    speed_delta = native[:speed] - psx[:speed]
+    angle_delta = %i[body_yaw body_pitch body_roll].map do |key|
+      next unless native.key?(key) && psx.key?(key)
+      ((native[key] - psx[key] + 2048) % 4096 - 2048).abs
+    end.compact.max || 0
+    lateral_delta = if native.key?(:track_lateral) && psx.key?(:track_lateral)
+                      (native[:track_lateral] - psx[:track_lateral]).abs
+                    else
+                      0
+                    end
+    next if position_distance > options[:max_position_distance] ||
+            view_distance > options[:max_view_distance] ||
+            speed_delta.abs > options[:max_speed_delta] ||
+            angle_delta > options[:max_angle_delta] ||
+            lateral_delta > options[:max_lateral_delta]
+    next if native.key?(:anim_timer) && psx.key?(:anim_timer) &&
+            (native[:anim_timer] - psx[:anim_timer]) % 128 != 0
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
       state_delta: {
-        x: dx, z: dz, distance: Math.hypot(dx, dz),
-        view_distance: Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz),
-        speed: native[:speed] - psx[:speed],
+        x: dx, z: dz, distance: position_distance,
+        view_distance: view_distance,
+        speed: speed_delta,
+        angle: angle_delta,
         timer: native[:timer] - psx[:timer],
         body_pitch: native.key?(:body_pitch) && psx.key?(:body_pitch) ?
           native[:body_pitch] - psx[:body_pitch] : nil,
@@ -160,7 +206,9 @@ if options[:match] == "position"
         track_lateral: native.key?(:track_lateral) && psx.key?(:track_lateral) ?
           native[:track_lateral] - psx[:track_lateral] : nil,
         random_seed_equal: native.key?(:random_seed) && psx.key?(:random_seed) ?
-          native[:random_seed] == psx[:random_seed] : nil
+          native[:random_seed] == psx[:random_seed] : nil,
+        anim_timer: native.key?(:anim_timer) && psx.key?(:anim_timer) ?
+          native[:anim_timer] - psx[:anim_timer] : nil
       }
     }
   end.compact
