@@ -862,3 +862,14 @@ For renderer comparisons, `RAGE_PORT_DUMP_VRAM=/path/vram.bin` writes the
 final 1024x512 little-endian 16-bit VRAM image from the smoke executable.
 This made it possible to prove that the car-select texture page and CLUT match
 the emulator byte-for-byte before investigating rasterization differences.
+
+### FMV cadence
+
+Do not pace every extracted MP4 at its tagged 15 fps. Retail blocks on frames
+arriving from `RAGE.STR` in double-speed Stream2 mode (150 sectors/second), and
+compressed frame sizes differ between movies. The stream offsets and final
+ISO extent give 12048 sectors / 1800 frames for the intro (about 22.41 fps),
+1581 / 150 for each class movie (about 14.23 fps), and 15168 / 1500 for the
+ending (about 14.83 fps). `fmv_host.c` advances three sectors per PAL VBlank
+and uses those spans as a deterministic frame accumulator. Emulator checks
+must compare emulated VBlank numbers, never host wall time.

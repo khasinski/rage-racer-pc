@@ -11,12 +11,27 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
+extern int g_FrameCounter;
+
 static FILE *g_RageFmvPipe;
 static unsigned char *g_RageFmvPixels;
 static int g_RageFmvWidth;
 static int g_RageFmvHeight;
 static int g_RageFmvClock;
 static unsigned int g_RageFmvFrame;
+static unsigned int g_RageFmvSectorSpan;
+
+/* RAGE.STR is read in double-speed Stream2 mode (150 sectors/second).  The
+ * retail offsets delimit each multiplexed movie; its last ISO extent is
+ * 41445 sectors.  Frame availability therefore differs by stream according
+ * to compressed size instead of following the 15 fps tag on the extracted
+ * convenience MP4 files. */
+static const unsigned int g_RageFmvSectorSpans[11] = {
+    0x2F10,
+    0x062D, 0x062D, 0x062D, 0x062D, 0x062D,
+    0x062D, 0x062D, 0x062D, 0x062D,
+    0x3B40,
+};
 
 static int RageHostReadFmvFrame(void) {
     size_t bytes = (size_t)g_RageFmvWidth * (size_t)g_RageFmvHeight * 3;
@@ -28,6 +43,10 @@ static int RageHostReadFmvFrame(void) {
         return 0;
     }
     g_RageFmvFrame++;
+    if (getenv("RAGE_PORT_FMV_TRACE") != NULL) {
+        fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d\n",
+                g_RageFmvFrame - 1, g_FrameCounter, g_SceneTimer);
+    }
     if (g_StreamSectorCount != 0 && g_RageFmvFrame >= g_StreamSectorCount) {
         g_FmvStreamEnded = 1;
     }
@@ -44,6 +63,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     if (streamIndex < 0 || streamIndex > 10) streamIndex = 0;
     g_RageFmvWidth = 320;
     g_RageFmvHeight = streamIndex == 10 ? 240 : 192;
+    g_RageFmvSectorSpan = g_RageFmvSectorSpans[streamIndex];
     path = "assets/PAL/fmv";
     snprintf(command, sizeof(command),
              "ffmpeg -v error -i %s/fmv%02ld.mp4 -f rawvideo -pix_fmt rgb24 - 2>/dev/null",
@@ -77,9 +97,11 @@ void DecodeFmvFrame(void) {
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
-    g_RageFmvClock += 15;
-    if (g_RageFmvClock >= 50) {
-        g_RageFmvClock -= 50;
+    /* One PAL VBlank advances the double-speed CD by three sectors.  Keep the
+     * accumulator in sector*frame units so no host wall clock is involved. */
+    g_RageFmvClock += 3 * (int)g_StreamSectorCount;
+    if ((unsigned int)g_RageFmvClock >= g_RageFmvSectorSpan) {
+        g_RageFmvClock -= (int)g_RageFmvSectorSpan;
         if (!RageHostReadFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;
