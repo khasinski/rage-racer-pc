@@ -38,6 +38,7 @@ unsigned long long g_RageGt4ClipNegative;
 unsigned long long g_RageGt4RejectOffscreen;
 unsigned long long g_RageGt4RejectBackface;
 unsigned long long g_RageGt4RejectDepth;
+unsigned long long g_RageModelRejectBackface;
 unsigned long long g_RageTerrainSecondTriangleVisible;
 unsigned long long g_RageTerrainChildRejectBackface;
 unsigned long long g_RageTerrainChildSecondTriangleVisible;
@@ -137,9 +138,19 @@ static int RageProjectQuad(
             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
              (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0)))
             g_RageTerrainSecondTriangleVisible++;
-        if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
-            (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)) {
+        /* SubmitModelFaces has only one NCLIP result.  Its retail branches
+         * accept clip > 0 in the main pass and clip >= 0 after the mirror
+         * ordering flag is toggled.  Do not feed the duplicated clip0 into
+         * the terrain two-half expression: that reduces both rejection
+         * tests to clip0 == 0 and submits every back-facing model face. */
+        if ((!terrainQuad &&
+             ((!SCRATCH_MIRROR && clip0 <= 0) ||
+              (SCRATCH_MIRROR && clip0 < 0))) ||
+            (terrainQuad &&
+             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
+              (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
             g_RageProjectionReject = 2;
+            if (!terrainQuad) g_RageModelRejectBackface++;
             return 0;
         }
     }

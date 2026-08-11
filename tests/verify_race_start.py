@@ -145,6 +145,9 @@ def main() -> int:
         raise AssertionError("subdivided terrain never exercised retail child culling")
     if int(child_cull.group(2)) == 0:
         raise AssertionError("terrain child culling lost its second-triangle rescue")
+    model_cull = re.search(r"model_backface=(\d+)", result.stdout)
+    if model_cull is None or int(model_cull.group(1)) == 0:
+        raise AssertionError("model rendering never rejected a back-facing face")
     for failure in (
         "primitive buffer exhausted", "misaligned OT link",
         "likely corrupted",

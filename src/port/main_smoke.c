@@ -35,6 +35,7 @@ extern int g_MenuViewSpin;
 extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
 extern s32 g_SkyRowBase;
+extern s32 g_MirrorPanelY;
 extern Vec4 g_MirrorVisibleCellList[];
 extern u32 g_MainVisibleCellMask[];
 extern u32 g_MirrorVisibleCellMask[];
@@ -50,6 +51,7 @@ extern unsigned long long g_RageGt4ClipNegative;
 extern unsigned long long g_RageGt4RejectOffscreen;
 extern unsigned long long g_RageGt4RejectBackface;
 extern unsigned long long g_RageGt4RejectDepth;
+extern unsigned long long g_RageModelRejectBackface;
 extern unsigned long long g_RageTerrainSecondTriangleVisible;
 extern unsigned long long g_RageTerrainChildRejectBackface;
 extern unsigned long long g_RageTerrainChildSecondTriangleVisible;
@@ -284,7 +286,7 @@ int main(void) {
            "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
            "gp_round=%d class_done=%d series_done=%d rpm=%d jitter=%d "
            "terrain_second=%llu terrain_child_reject=%llu "
-           "terrain_child_second=%llu\n",
+           "terrain_child_second=%llu model_backface=%llu mirror_y=%d\n",
            g_FrameCounter, g_SceneId, g_FrontendState,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
@@ -294,7 +296,8 @@ int main(void) {
            g_EngineRpm, g_EngineRpmJitter,
            g_RageTerrainSecondTriangleVisible,
            g_RageTerrainChildRejectBackface,
-           g_RageTerrainChildSecondTriangleVisible);
+           g_RageTerrainChildSecondTriangleVisible,
+           g_RageModelRejectBackface, g_MirrorPanelY);
     printf("memory card: phase=%d status=%d files=%d free=%d mask=%x page=%d\n",
            g_McMenuPhase, g_McStatusResult, g_McCardFileCount,
            g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);

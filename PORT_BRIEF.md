@@ -870,6 +870,18 @@ halves the lighting result and turns weakly lit body textures into apparently
 black or missing panels. This applies both to ordinary GT4 faces and the
 near-plane clipping path.
 
+Model and terrain backface tests must remain separate in a portable rewrite.
+Retail `SubmitModelFaces` performs one `NCLIP`: the main pass accepts only
+`clip > 0`, while the mirror pass accepts `clip >= 0`.  The terrain dispatcher
+performs a second `NCLIP` after projecting its fourth corner and therefore has
+a genuinely different two-half rule.  Reusing that terrain expression for a
+model by setting `clip1 = clip0` reduces the rejection condition to
+`clip0 == 0`; almost every back-facing model polygon is then emitted.  In the
+starting-grid reference frame this submitted a dark untextured car quad after
+the correctly lit body and produced the large black triangular panel.  Keep
+the single-result model branches equivalent to the original MIPS when this
+change is backported to another portable target.
+
 For renderer comparisons, `RAGE_PORT_DUMP_VRAM=/path/vram.bin` writes the
 final 1024x512 little-endian 16-bit VRAM image from the smoke executable.
 This made it possible to prove that the car-select texture page and CLUT match
