@@ -12,7 +12,8 @@ require "optparse"
 require "pathname"
 require "rbconfig"
 
-options = { region: nil, hotspots: 8, radius: 12 }
+options = { region: nil, hotspots: 8, radius: 12, match: "timer",
+            max_position_distance: 256.0, visual_refine: 0 }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
@@ -21,6 +22,18 @@ OptionParser.new do |parser|
   parser.on("--region X,Y,W,H") { |value| options[:region] = value }
   parser.on("--hotspots N", Integer) { |value| options[:hotspots] = value }
   parser.on("--hotspot-radius N", Integer) { |value| options[:radius] = value }
+  parser.on("--match MODE", %w[timer position],
+            "pair by identical timer filename or nearest runtime position") do |value|
+    options[:match] = value
+  end
+  parser.on("--max-position-distance N", Float,
+            "skip position matches farther apart than N world units") do |value|
+    options[:max_position_distance] = value
+  end
+  parser.on("--visual-refine N", Integer,
+            "choose the lowest-RMSE native image within N timer ticks") do |value|
+    options[:visual_refine] = value
+  end
 end.parse!
 
 abort "--psx-dir, --native-dir and --output are required" unless
@@ -31,26 +44,108 @@ native_dir = Pathname(options[:native_dir]).expand_path
 output = Pathname(options[:output]).expand_path
 FileUtils.mkdir_p(output)
 
-psx_frames = psx_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
-native_frames = native_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
-names = (psx_frames.keys & native_frames.keys).sort
-abort "no matching timer-*-s*.ppm captures" if names.empty?
+def manifest_rows(directory)
+  path = directory / "capture-manifest.csv"
+  abort "missing capture manifest: #{path}" unless path.file?
+  lines = File.readlines(path, chomp: true)
+  header = lines.shift&.split(",")&.map(&:to_sym)
+  abort "empty capture manifest: #{path}" unless header
+  lines.map do |line|
+    values = line.split(",", -1)
+    row = header.zip(values).to_h
+    row.each { |key, value| row[key] = Integer(value) unless key == :filename }
+    image = directory / row[:filename]
+    image.file? ? row.merge(path: image) : nil
+  end.compact
+end
+
+if options[:match] == "position"
+  psx_states = manifest_rows(psx_dir)
+  native_states = manifest_rows(native_dir)
+  abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
+  pairs = psx_states.map do |psx|
+    candidates = native_states.select do |native|
+      native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
+    end
+    abort "no native state candidate for #{psx[:filename]}" if candidates.empty?
+    native = candidates.min_by do |candidate|
+      dx = candidate[:x] - psx[:x]
+      dz = candidate[:z] - psx[:z]
+      dvx = candidate[:view_x] - psx[:view_x]
+      dvy = candidate[:view_y] - psx[:view_y]
+      dvz = candidate[:view_z] - psx[:view_z]
+      speed = (candidate[:speed] - psx[:speed]).abs
+      yaw = ((candidate[:body_yaw] - psx[:body_yaw] + 2048) % 4096 - 2048).abs
+      # The VBlank checkpoint can observe the renderer during its mirror pass,
+      # whose yaw is the main camera plus exactly 180 degrees.  Modulo 2048
+      # compares the underlying view without turning that phase difference
+      # into a false state mismatch.
+      view_yaw = ((candidate[:view_angle_y] - psx[:view_angle_y] + 1024) % 2048 - 1024).abs
+      Math.hypot(dx, dz) + Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) * 2 +
+        speed * 4 + yaw / 4.0 + view_yaw * 2 +
+        (candidate[:timer] - psx[:timer]).abs
+    end
+    if options[:visual_refine] > 0
+      nearby = candidates.select do |candidate|
+        (candidate[:timer] - native[:timer]).abs <= options[:visual_refine]
+      end
+      native = nearby.min_by do |candidate|
+        _stdout, metric, status = Open3.capture3(
+          "magick", "compare", "-metric", "RMSE", psx[:path].to_s,
+          candidate[:path].to_s, "null:"
+        )
+        abort "visual alignment failed for #{candidate[:filename]}: #{metric}" unless
+          [0, 1].include?(status.exitstatus)
+        metric[/\(([0-9.eE+-]+)\)/, 1]&.to_f || Float::INFINITY
+      end
+    end
+    dx = native[:x] - psx[:x]
+    dz = native[:z] - psx[:z]
+    next if Math.hypot(dx, dz) > options[:max_position_distance]
+    dvx = native[:view_x] - psx[:view_x]
+    dvy = native[:view_y] - psx[:view_y]
+    dvz = native[:view_z] - psx[:view_z]
+    {
+      psx: psx[:path], native: native[:path],
+      label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
+      state_delta: {
+        x: dx, z: dz, distance: Math.hypot(dx, dz),
+        view_distance: Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz),
+        speed: native[:speed] - psx[:speed],
+        timer: native[:timer] - psx[:timer]
+      }
+    }
+  end.compact
+  abort "no state-aligned frame pairs within the position limit" if pairs.empty?
+else
+  psx_frames = psx_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
+  native_frames = native_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
+  names = (psx_frames.keys & native_frames.keys).sort
+  abort "no matching timer-*-s*.ppm captures" if names.empty?
+  pairs = names.map do |name|
+    { psx: psx_frames.fetch(name), native: native_frames.fetch(name),
+      label: name.delete_suffix(".ppm"), state_delta: nil }
+  end
+end
 
 compare = Pathname(__dir__) / "rage_visual_compare.rb"
-rows = names.map do |name|
-  frame_output = output / name.delete_suffix(".ppm")
+rows = pairs.map do |pair|
+  frame_output = output / pair[:label]
   command = [RbConfig.ruby, compare.to_s,
-             "--psx", psx_frames.fetch(name).to_s,
-             "--native", native_frames.fetch(name).to_s,
+             "--psx", pair[:psx].to_s,
+             "--native", pair[:native].to_s,
              "--output", frame_output.to_s,
              "--hotspots", options[:hotspots].to_s,
              "--hotspot-radius", options[:radius].to_s]
   command.concat(["--region", options[:region]]) if options[:region]
   stdout, stderr, status = Open3.capture3(*command)
-  abort "comparison failed for #{name}:\n#{stdout}#{stderr}" unless status.success?
+  abort "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}" unless status.success?
   report = JSON.parse(File.read(frame_output / "report.json"))
   {
-    frame: name,
+    frame: pair[:label],
+    psx_frame: pair[:psx].basename.to_s,
+    native_frame: pair[:native].basename.to_s,
+    state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
@@ -60,6 +155,7 @@ end
 summary = {
   psx_directory: psx_dir.to_s,
   native_directory: native_dir.to_s,
+  match: options[:match],
   matched_frames: rows.length,
   frames: rows
 }
@@ -67,5 +163,11 @@ File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
 rows.sort_by { |row| -row[:normalized_rmse].to_f }.each do |row|
   hotspot = row[:worst_hotspot]
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
-  puts format("%s RMSE=%.6f%s", row[:frame], row[:normalized_rmse], location)
+  delta = row[:state_delta]
+  alignment = delta ? format(" distance=%.1f view_distance=%.1f " \
+                             "speed_delta=%d timer_delta=%d",
+                             delta[:distance], delta[:view_distance],
+                             delta[:speed], delta[:timer]) : ""
+  puts format("%s RMSE=%.6f%s%s", row[:frame], row[:normalized_rmse],
+              location, alignment)
 end

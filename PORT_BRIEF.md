@@ -933,6 +933,10 @@ the output directories first, then set
 `RAGE_PORT_SMOKE_CAPTURE_DIR` plus
 `RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE` on the smoke binary.  The smoke capture
 is restricted to `RAGE_PORT_SMOKE_STOP_SCENE` when that variable is present.
+Use `RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN/MAX` or the matching
+`RAGE_EMU_CAPTURE_TIMER_MIN/MAX` bounds for dense one-timer captures around a
+problem without writing the whole race.  Timer-named emulator captures are
+deduplicated when two VBlanks observe the same game timer.
 Long emulator runs can be split into sub-minute chunks by also setting
 `RAGE_EMU_SAVE_CAPTURE_STATES=1`.  Each periodic PPM then receives a matching
 `.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue
@@ -951,6 +955,17 @@ ruby tools/rage_visual_batch.rb \
 
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
+Both runners also write `capture-manifest.csv` with the filename, scene/timer,
+player position, speed, progress, yaw, mirror position and active scratchpad
+view.  This makes later divergence explicit instead of attributing a shifted
+camera to the renderer.  `rage_visual_batch.rb --match position` selects the
+nearest same-scene/same-lap state and rejects matches farther than
+`--max-position-distance` (256 by default).  The displayed VRAM page can lag
+the state sampled at VBlank because of double buffering; add
+`--visual-refine 3` to test only a small timer window around the state match
+and select its lowest-RMSE image.  On the timer-330..370 checkpoint series this
+correctly pairs PSX timer 350 with native timer 348, only 49 world units apart,
+instead of comparing it with a visibly different camera phase.
 
 At synchronized race timer 220, the reference and native captures align in
 car, HUD, start lights and perspective. Filtering for tpage `0x0005` and CLUT

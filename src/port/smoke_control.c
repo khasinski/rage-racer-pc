@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "game/player_car_internal.h"
+#include "game/scratchpad.h"
 #include "game/state.h"
 
 typedef struct RageSmokeInput {
@@ -21,9 +22,14 @@ static long g_SmokeAutoConfirmFrame;
 static long g_SmokeStopScene;
 static long g_SmokeStopSceneTimer;
 static long g_SmokeCaptureTimerStride;
+static long g_SmokeCaptureTimerMin;
+static long g_SmokeCaptureTimerMax;
 static const char *g_SmokeCaptureDirectory;
+static FILE *g_SmokeCaptureManifest;
 static int g_SmokeHasStopScene;
 static int g_SmokeHasStopSceneTimer;
+static int g_SmokeHasCaptureTimerMin;
+static int g_SmokeHasCaptureTimerMax;
 static int g_SmokeInitialized;
 static int g_SmokeRawPadPath;
 
@@ -31,6 +37,7 @@ extern int g_SceneId;
 extern int g_FrontendState;
 extern int g_TrackLength;
 extern int g_SkyRowBase;
+extern s32 g_MirrorPanelY;
 int RageWriteCapturedFrame(const char *path);
 void UpdatePadState(void);
 
@@ -55,6 +62,8 @@ static void RageSmokeInitialize(void) {
     const char *captureDirectory = getenv("RAGE_PORT_SMOKE_CAPTURE_DIR");
     const char *captureStride =
         getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
+    const char *captureMin = getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN");
+    const char *captureMax = getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
     char *copy;
     char *token;
 
@@ -68,6 +77,28 @@ static void RageSmokeInitialize(void) {
     g_SmokeCaptureDirectory = captureDirectory;
     g_SmokeCaptureTimerStride =
         captureStride ? strtol(captureStride, NULL, 10) : 0;
+    g_SmokeHasCaptureTimerMin = captureMin != NULL;
+    g_SmokeHasCaptureTimerMax = captureMax != NULL;
+    g_SmokeCaptureTimerMin = captureMin ? strtol(captureMin, NULL, 10) : 0;
+    g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
+    if (g_SmokeCaptureDirectory != NULL &&
+        g_SmokeCaptureDirectory[0] != '\0' &&
+        g_SmokeCaptureTimerStride > 0) {
+        char manifestPath[1024];
+        int length = snprintf(manifestPath, sizeof(manifestPath),
+                              "%s/capture-manifest.csv",
+                              g_SmokeCaptureDirectory);
+        if (length > 0 && (size_t)length < sizeof(manifestPath)) {
+            g_SmokeCaptureManifest = fopen(manifestPath, "w");
+            if (g_SmokeCaptureManifest != NULL) {
+                fputs("filename,frame,scene,timer,x,z,speed,progress,lap," \
+                      "body_yaw,model_yaw,mirror_y,view_x,view_y,view_z," \
+                      "view_angle_x,view_angle_y,view_angle_z\n",
+                      g_SmokeCaptureManifest);
+                fflush(g_SmokeCaptureManifest);
+            }
+        }
+    }
     if (script != NULL && script[0] != '\0') {
         g_SmokeRawPadPath = 1;
     } else {
@@ -173,6 +204,10 @@ int RagePortShouldExit(int frame_number) {
         g_SmokeCaptureTimerStride > 0 &&
         (!g_SmokeHasStopScene || g_SceneId == g_SmokeStopScene) &&
         g_SceneTimer >= 0 &&
+        (!g_SmokeHasCaptureTimerMin ||
+         g_SceneTimer >= g_SmokeCaptureTimerMin) &&
+        (!g_SmokeHasCaptureTimerMax ||
+         g_SceneTimer <= g_SmokeCaptureTimerMax) &&
         g_SceneTimer % g_SmokeCaptureTimerStride == 0 &&
         (g_SceneId != lastCapturedScene ||
          g_SceneTimer != lastCapturedTimer)) {
@@ -189,6 +224,20 @@ int RagePortShouldExit(int frame_number) {
             fprintf(stderr,
                     "smoke capture=%s frame=%d scene=%d timer=%d\n",
                     path, frame_number, g_SceneId, g_SceneTimer);
+            if (g_SmokeCaptureManifest != NULL) {
+                fprintf(g_SmokeCaptureManifest,
+                        "timer-%05d-s%02d.ppm,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                        g_SceneTimer, g_SceneId, frame_number, g_SceneId,
+                        g_SceneTimer, g_PlayerCar.x, g_PlayerCar.z,
+                        g_PlayerCar.speed, g_PlayerCar.trackProgress,
+                        g_PlayerCar.lap, g_PlayerCar.bodyYaw,
+                        g_PlayerCar.modelYaw, g_MirrorPanelY,
+                        SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
+                        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
+                        SCRATCH_VIEW_ANGLE_Z);
+                fflush(g_SmokeCaptureManifest);
+            }
         }
         lastCapturedScene = g_SceneId;
         lastCapturedTimer = g_SceneTimer;
