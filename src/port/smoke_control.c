@@ -38,6 +38,7 @@ extern int g_FrontendState;
 extern int g_TrackLength;
 extern int g_SkyRowBase;
 extern int g_IsEnvironmentMode4;
+extern unsigned int g_RandomSeed;
 extern s32 g_MirrorPanelY;
 int RageWriteCapturedFrame(const char *path);
 void UpdatePadState(void);
@@ -93,9 +94,10 @@ static void RageSmokeInitialize(void) {
             g_SmokeCaptureManifest = fopen(manifestPath, "w");
             if (g_SmokeCaptureManifest != NULL) {
                 fputs("filename,frame,scene,timer,x,z,speed,progress,lap," \
-                      "body_yaw,model_yaw,mirror_y,view_x,view_y,view_z," \
+                      "body_yaw,body_pitch,body_roll,track_lateral," \
+                      "model_yaw,mirror_y,view_x,view_y,view_z," \
                       "view_angle_x,view_angle_y,view_angle_z," \
-                      "environment_mode4,scratch_env_mode4\n",
+                      "environment_mode4,scratch_env_mode4,random_seed\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -240,16 +242,19 @@ int RagePortShouldExit(int frame_number) {
             if (g_SmokeCaptureManifest != NULL) {
                 fprintf(g_SmokeCaptureManifest,
                         "timer-%05d-s%02d.ppm,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%u\n",
                         g_SceneTimer, g_SceneId, frame_number, g_SceneId,
                         g_SceneTimer, g_PlayerCar.x, g_PlayerCar.z,
                         g_PlayerCar.speed, g_PlayerCar.trackProgress,
                         g_PlayerCar.lap, g_PlayerCar.bodyYaw,
+                        g_PlayerCar.bodyPitch, g_PlayerCar.bodyRoll,
+                        g_PlayerCar.trackLateralOffset,
                         g_PlayerCar.modelYaw, g_MirrorPanelY,
                         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                         SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
                         SCRATCH_VIEW_ANGLE_Z, g_IsEnvironmentMode4,
-                        SCRATCH_ENV_MODE4);
+                        SCRATCH_ENV_MODE4, g_RandomSeed);
                 fflush(g_SmokeCaptureManifest);
             }
         }

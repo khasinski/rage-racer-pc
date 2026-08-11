@@ -975,9 +975,10 @@ ruby tools/rage_visual_batch.rb \
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
 Both runners also write `capture-manifest.csv` with the filename, scene/timer,
-player position, speed, progress, yaw, mirror position and active scratchpad
-view.  This makes later divergence explicit instead of attributing a shifted
-camera to the renderer.  `rage_visual_batch.rb --match position` selects the
+player position, speed, progress, body pitch/yaw/roll, lateral track offset,
+RNG seed, mirror position and active scratchpad view. This makes later
+divergence explicit instead of attributing a shifted or collision-rolled camera
+to the renderer. `rage_visual_batch.rb --match position` selects the
 nearest same-scene/same-lap state and rejects matches farther than
 `--max-position-distance` (256 by default).  The displayed VRAM page can lag
 the state sampled at VBlank because of double buffering; add
@@ -985,6 +986,13 @@ the state sampled at VBlank because of double buffering; add
 and select its lowest-RMSE image.  On the timer-330..370 checkpoint series this
 correctly pairs PSX timer 350 with native timer 348, only 49 world units apart,
 instead of comparing it with a visibly different camera phase.
+
+The state score also penalizes pitch, roll, lateral offset and unequal RNG
+seeds when those newer manifest columns are present, while remaining compatible
+with cached older captures. This matters immediately after contact: two frames
+can have identical position, speed and yaw but different body roll, which the
+chase camera copies into `SCRATCH_VIEW_ANGLE_Z` and therefore changes every
+terrain and sky projection.
 
 RMSE is often dominated by HUD digits, animated signs and a one-frame texture
 phase even when the road is correct.  For terrain-hole searches pass the same

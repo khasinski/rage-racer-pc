@@ -100,13 +100,35 @@ if options[:match] == "position"
       dvz = candidate[:view_z] - psx[:view_z]
       speed = (candidate[:speed] - psx[:speed]).abs
       yaw = ((candidate[:body_yaw] - psx[:body_yaw] + 2048) % 4096 - 2048).abs
+      pitch = if candidate.key?(:body_pitch) && psx.key?(:body_pitch)
+                ((candidate[:body_pitch] - psx[:body_pitch] + 2048) % 4096 - 2048).abs
+              else
+                0
+              end
+      roll = if candidate.key?(:body_roll) && psx.key?(:body_roll)
+               ((candidate[:body_roll] - psx[:body_roll] + 2048) % 4096 - 2048).abs
+             else
+               0
+             end
+      lateral = if candidate.key?(:track_lateral) && psx.key?(:track_lateral)
+                  (candidate[:track_lateral] - psx[:track_lateral]).abs
+                else
+                  0
+                end
+      seed_penalty = if candidate.key?(:random_seed) && psx.key?(:random_seed) &&
+                        candidate[:random_seed] != psx[:random_seed]
+                       512
+                     else
+                       0
+                     end
       # The VBlank checkpoint can observe the renderer during its mirror pass,
       # whose yaw is the main camera plus exactly 180 degrees.  Modulo 2048
       # compares the underlying view without turning that phase difference
       # into a false state mismatch.
       view_yaw = ((candidate[:view_angle_y] - psx[:view_angle_y] + 1024) % 2048 - 1024).abs
       Math.hypot(dx, dz) + Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) * 2 +
-        speed * 4 + yaw / 4.0 + view_yaw * 2 +
+        speed * 4 + yaw / 4.0 + pitch / 2.0 + roll / 2.0 +
+        lateral / 4.0 + view_yaw * 2 + seed_penalty +
         (candidate[:timer] - psx[:timer]).abs
     end
     if options[:visual_refine] > 0
@@ -130,7 +152,15 @@ if options[:match] == "position"
         x: dx, z: dz, distance: Math.hypot(dx, dz),
         view_distance: Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz),
         speed: native[:speed] - psx[:speed],
-        timer: native[:timer] - psx[:timer]
+        timer: native[:timer] - psx[:timer],
+        body_pitch: native.key?(:body_pitch) && psx.key?(:body_pitch) ?
+          native[:body_pitch] - psx[:body_pitch] : nil,
+        body_roll: native.key?(:body_roll) && psx.key?(:body_roll) ?
+          native[:body_roll] - psx[:body_roll] : nil,
+        track_lateral: native.key?(:track_lateral) && psx.key?(:track_lateral) ?
+          native[:track_lateral] - psx[:track_lateral] : nil,
+        random_seed_equal: native.key?(:random_seed) && psx.key?(:random_seed) ?
+          native[:random_seed] == psx[:random_seed] : nil
       }
     }
   end.compact
