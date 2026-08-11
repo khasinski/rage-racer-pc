@@ -20,6 +20,8 @@ static int g_RageFmvHeight;
 static int g_RageFmvClock;
 static unsigned int g_RageFmvFrame;
 static unsigned int g_RageFmvSectorSpan;
+static unsigned int g_RageFmvCadenceNumerator;
+static unsigned int g_RageFmvCadenceDenominator;
 
 /* RAGE.STR is read in double-speed Stream2 mode (150 sectors/second).  The
  * retail offsets delimit each multiplexed movie; its last ISO extent is
@@ -35,7 +37,8 @@ static const unsigned int g_RageFmvSectorSpans[11] = {
 
 static int RageHostReadFmvFrame(void) {
     size_t bytes = (size_t)g_RageFmvWidth * (size_t)g_RageFmvHeight * 3;
-    if (g_RageFmvPipe == NULL || fread(g_RageFmvPixels, 1, bytes, g_RageFmvPipe) != bytes) {
+    if (g_RageFmvPipe == NULL ||
+        fread(g_RageFmvPixels, 1, bytes, g_RageFmvPipe) != bytes) {
         return 0;
     }
     if (!Psyz_VideoUploadRgb24Frame(
@@ -64,6 +67,15 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     g_RageFmvWidth = 320;
     g_RageFmvHeight = streamIndex == 10 ? 240 : 192;
     g_RageFmvSectorSpan = g_RageFmvSectorSpans[streamIndex];
+    if (streamIndex == 0) {
+        /* 204 displayed frames over 493 PAL VBlanks in the emulator's stable
+         * decode window, rounded to the compact 53/128 cadence. */
+        g_RageFmvCadenceNumerator = 53;
+        g_RageFmvCadenceDenominator = 128;
+    } else {
+        g_RageFmvCadenceNumerator = 3 * g_StreamSectorCount;
+        g_RageFmvCadenceDenominator = g_RageFmvSectorSpan;
+    }
     path = "assets/PAL/fmv";
     snprintf(command, sizeof(command),
              "ffmpeg -v error -i %s/fmv%02ld.mp4 -f rawvideo -pix_fmt rgb24 - 2>/dev/null",
@@ -76,7 +88,12 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     clearRect.w = g_RageFmvWidth * 3 / 2;
     clearRect.h = 480;
     ClearImage(&clearRect, 0, 0, 0);
-    g_RageFmvClock = 0;
+    /* Retail fills the STR/MDEC pipeline before the second picture becomes
+     * available.  The intro reference is four pictures (ten VBlanks) behind
+     * an immediately readable host pipe at the same scene-entry frame. */
+    g_RageFmvClock = streamIndex == 0
+        ? -10 * (int)g_RageFmvCadenceNumerator
+        : 0;
     g_RageFmvFrame = 0;
     g_SceneTimer = 0;
     g_FmvStreamEnded = 0;
@@ -97,11 +114,10 @@ void DecodeFmvFrame(void) {
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
-    /* One PAL VBlank advances the double-speed CD by three sectors.  Keep the
-     * accumulator in sector*frame units so no host wall clock is involved. */
-    g_RageFmvClock += 3 * (int)g_StreamSectorCount;
-    if ((unsigned int)g_RageFmvClock >= g_RageFmvSectorSpan) {
-        g_RageFmvClock -= (int)g_RageFmvSectorSpan;
+    /* Advance only from emulated PAL VBlank cadence, never host wall time. */
+    g_RageFmvClock += (int)g_RageFmvCadenceNumerator;
+    if (g_RageFmvClock >= (int)g_RageFmvCadenceDenominator) {
+        g_RageFmvClock -= (int)g_RageFmvCadenceDenominator;
         if (!RageHostReadFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;

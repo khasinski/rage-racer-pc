@@ -20,6 +20,7 @@ def main() -> int:
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="360",
             RAGE_PORT_CAPTURE_PATH=str(capture),
+            RAGE_PORT_FMV_TRACE="1",
         )
         result = subprocess.run(
             [executable], cwd=source_dir, env=environment,
@@ -29,6 +30,10 @@ def main() -> int:
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
+        if "fmv frame=14 vblank=357" not in result.stdout:
+            raise AssertionError("intro FMV cadence no longer matches the emulator")
+        if "fmv frame=15" in result.stdout:
+            raise AssertionError("intro FMV advanced before its reference VBlank")
 
         data = capture.read_bytes()
         header, pixels = data.split(b"\n255\n", 1)
@@ -42,7 +47,7 @@ def main() -> int:
             raise AssertionError("320x192 FMV is not vertically centered")
         if sum(value != 0 for value in picture) < 10_000:
             raise AssertionError("FMV picture region is empty")
-    print("FMV is centered at y=24 in a 4:3 320x240 output")
+    print("FMV layout and emulator-matched intro cadence are stable")
     return 0
 
 
