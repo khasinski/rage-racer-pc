@@ -703,6 +703,19 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     (void)ctx;
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
 
+    /* The hand-written retail dispatcher mirrors the active GTE view by
+     * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
+     * leaves that matrix installed: DrawCourseObjects and DrawCars share it
+     * for the remainder of the rear-view pass. */
+    if (SCRATCH_MIRROR) {
+        MATRIX mirrorMatrix;
+        memcpy(&mirrorMatrix, SCRATCH_VIEW_MATRIX_GTE, sizeof(mirrorMatrix));
+        mirrorMatrix.m[0][0] = -mirrorMatrix.m[0][0];
+        mirrorMatrix.m[0][1] = -mirrorMatrix.m[0][1];
+        mirrorMatrix.m[0][2] = -mirrorMatrix.m[0][2];
+        SetRotMatrix(&mirrorMatrix);
+    }
+
     for (cell = 0; cell < count; cell++, visible += 4) {
         uint8_t *stream;
         uint32_t opcode;
@@ -752,6 +765,17 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 if (!RageProjectQuad(v0, v1, v2, v3, sxy, &depth, &fog,
                                      &rawDepth, 0))
                     continue;
+                /* The retail cell dispatcher tests bit 0 of the halfword at
+                 * +0x14 when OTZ reaches 0x800.  In that case it halves all
+                 * four UV pairs before either the direct or subdivided
+                 * emitter sees them.  Omitting this selected the other half
+                 * of 4-bit terrain pages (and made a 0..127 tile become
+                 * 0..254), which looked like missing/black terrain. */
+                if (rawDepth >= 0x800 && (stream[20] & 1) != 0) {
+                    int uvIndex;
+                    for (uvIndex = 0; uvIndex < 8; uvIndex++)
+                        baseUv[uvIndex] >>= 1;
+                }
                 bias = (int8_t)stream[21];
                 uLevel = stream[22] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);
                 vLevel = stream[23] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);

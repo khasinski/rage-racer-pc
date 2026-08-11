@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/prim.h"
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -179,9 +180,10 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         /* Not SCRATCH: this read has to stay volatile. Spelling it as the
          * plain macro lets the cursor written above be reused instead of
          * reloaded, which changes the output. */
-        u8 *q = DrawHudDigit(SCRATCH_PRIM_CURSOR_VOLATILE, x, y, g_PlayerGear, g_HudGlyphClut);
+        u8 *q = DrawHudDigit(SCRATCH_PRIM_CURSOR_VOLATILE, x, y,
+                             g_PlayerCar.drive.gear, g_HudGlyphClut);
         SCRATCH = q;
-        DrawSpeedDigits(cx, cy, g_PlayerSpeed * 160 / 1168);
+        DrawSpeedDigits(cx, cy, g_PlayerCar.speed * 160 / 1168);
     }
 
     {

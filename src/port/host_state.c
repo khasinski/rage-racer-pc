@@ -232,8 +232,17 @@ unsigned char g_TrackTextureRect[8] __attribute__((aligned(16))) = {0x40,0x02,0x
 unsigned char g_TeamLogoClutLoadRect[8] __attribute__((aligned(16))) = {0x50,0x00,0xe5,0x01,0x10,0x00,0x01,0x00};
 unsigned char g_TeamLogoClutMoveRect[8] __attribute__((aligned(16))) = {0xf0,0x03,0xec,0x00,0x10,0x00,0x01,0x00};
 unsigned char g_CarMirrorBadgeStyles[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x01,0x02,0x02,0x02,0x03,0x03,0x03,0x00,0x02,0x03,0x00,0x00,0x00};
-unsigned char g_MirrorBadgeTexU[8] __attribute__((aligned(16))) = {0xe8,0};
-unsigned char g_MirrorBadgeTexV[8] __attribute__((aligned(16))) = {0x30,0};
+/* Retail stores the four mirror-badge styles as interleaved {u,v,width}
+ * triples beginning at 0x8007C738.  The three linker symbols point one byte
+ * apart into that table and DrawMirrorFrame indexes each by style * 3.  Native
+ * globals cannot overlap that way, so preserve the same indexed view in each
+ * array explicitly. */
+unsigned char g_MirrorBadgeTexU[10] __attribute__((aligned(16))) = {
+    0xe8,0,0, 0x50,0,0, 0x78,0,0, 0xa0
+};
+unsigned char g_MirrorBadgeTexV[10] __attribute__((aligned(16))) = {
+    0x30,0,0, 0x10,0,0, 0x10,0,0, 0x10
+};
 unsigned char g_MirrorBadgeWidths[10] __attribute__((aligned(16))) = {0x10,0x50,0x10,0x28,0x78,0x10,0x28,0xa0,0x10,0x30};
 unsigned char g_AttractCycleCount[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
 unsigned char g_RoundScreenFadeDelays[8] __attribute__((aligned(16))) = {0x0f,0x00,0x00,0x01,0x00,0x02,0x00,0x00};
@@ -893,12 +902,10 @@ unsigned char g_PlayerSteerAngle[8] __attribute__((aligned(16)));
 unsigned char g_PlayerCarWheelAngle[8] __attribute__((aligned(16)));
 unsigned char g_PlayerRenderRotation[16] __attribute__((aligned(16)));
 unsigned char g_PlayerRenderY[8] __attribute__((aligned(16)));
-unsigned char g_PlayerSpeed[10] __attribute__((aligned(16)));
 unsigned char g_PlayerFacingBackwards[12] __attribute__((aligned(16)));
 unsigned char g_PlayerVelocity[32] __attribute__((aligned(16)));
 unsigned char g_PlayerTireCompound[76] __attribute__((aligned(16)));
 unsigned char g_PlayerTransmission[8] __attribute__((aligned(16)));
-unsigned char g_PlayerGear[8] __attribute__((aligned(16)));
 unsigned char g_PlayerTargetRpm[40] __attribute__((aligned(16)));
 unsigned char g_PlayerThrottle[8] __attribute__((aligned(16)));
 unsigned char g_RacePosition[8] __attribute__((aligned(16)));

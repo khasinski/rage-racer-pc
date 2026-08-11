@@ -845,8 +845,13 @@ equal 1000 ms. Running every scene handler once per host VBlank therefore makes
 the race physics and its displayed timers exactly twice as fast.
 
 The native build keeps the original game loop. PsyZ implements `VSync(1)` in
-1/256-VBlank units, including a deterministic LIMITLESS path for smoke tests;
-the timing policy belongs in the HAL, not in special cases in the game code.
+1/256-VBlank units, including a deterministic LIMITLESS path for smoke tests.
+The returned counter is quantized to hardware VBlank boundaries: it can move
+from `0x100` to `0x200`, but must never report the continuous intermediate
+`0x180`. Consequently a menu threshold of `0x80` completes on the first
+VBlank, while a race threshold of `0x180` completes on the second. Returning
+continuous wall-time fractions was the source of the too-fast native race.
+This timing policy belongs in the HAL, not in special cases in the game code.
 
 ### Showroom ordering and model lighting (backport to the decompilation)
 
@@ -892,20 +897,48 @@ ruby tools/rage_visual_compare.rb \
 
 The bundle contains normalized inputs, an absolute difference image, an
 amplified heatmap, a side-by-side view, normalized RMSE and the ordered GPU
-packets that cover the selected screen pixel. `RAGE_GPU_TRACE_PIXEL=x,y` and
-optional `RAGE_GPU_TRACE_FRAME=n` use the same `gpu-cover` record format in
-PsyZ SDL_GPU/GL and the Ruby emulator. Coverage includes draw/display offsets
-and rejects degenerate triangles. Configuration is parsed once, so disabled
-or frame-filtered tracing stays cheap enough for repeated smoke runs.
+packets that cover the selected screen pixel. `RAGE_GPU_TRACE_PIXEL=x,y`,
+optional `RAGE_GPU_TRACE_FRAME=n`, and packet-wide `RAGE_GPU_TRACE_TPAGE` /
+`RAGE_GPU_TRACE_CLUT` filters use the same record format in PsyZ SDL_GPU/GL and
+the Ruby emulator. Coordinates use the page-local raster position
+`packet XY + draw offset - drawing-page base`; the page base is selected from
+the draw-area Y (0 or 240), never from the currently displayed page. Raw packet
+coordinates lose the mirror's deliberately changed geometry offset, while
+subtracting `display_start` compares the back buffer with the front buffer and
+creates a false 240-line displacement. Coverage rejects degenerate triangles.
+Configuration is parsed once, so disabled or frame-filtered tracing stays cheap
+enough for repeated smoke runs.
 
 At synchronized race timer 220, the reference and native captures align in
-car, HUD, start lights and perspective, but the trace proves a pre-rasterizer
-divergence in missing scenery. The emulator's last relevant textured quad at
-the mirror/right-scenery boundary is perspective-shaped, uses tpage `0x0005`
-and CLUT `0x7943`; native submits an axis-aligned 64x128 quad using internal
-tpage `0x4018` and CLUT `0x798e`. Therefore this black-wedge case must be
-debugged in primitive construction/clipping or its initialized inputs, not
-hidden with a shader workaround.
+car, HUD, start lights and perspective. Filtering for tpage `0x0005` and CLUT
+`0x7943` proves that the apparently missing perspective quads are present in
+both streams; after expressing both in draw-page-local coordinates their
+geometry is close. Continue black-wedge investigation from a genuinely
+differing pixel/packet rather than treating page-flip coordinates as a game or
+clipping bug.
+
+The terrain face record's byte at `+0x14` also controls retail UV reduction.
+When OTZ is at least `0x800` and bit 0 is set, the hand-written dispatcher
+halves all four UV pairs before direct emission or subdivision. The portable
+dispatcher must do the same: otherwise a retail `0..127` tile becomes
+`0..254` and samples unrelated parts of the 4-bit texture page. This decoding
+belongs in the portable counterpart of `SubmitTerrainCells` and should be
+backported with it.
+
+Several apparent HUD globals are interior labels in the retail player object,
+not independent storage. `g_PlayerSpeed` at `0x8009E778` is
+`g_PlayerCar.speed` (`+0xA4`), and `g_PlayerGear` at `0x8009E806` is
+`g_PlayerCar.drive.gear`. Native code must name those fields directly; separate
+zero-initialized globals make the tachometer display `000`, gear `0`, and feed
+zero speed to path scenery. The race-start framebuffer regression checks that
+the deterministic moving state has distinct speed glyphs and a visible needle.
+
+The mirror badge table has the same overlapping-symbol trap. Retail stores four
+`{u,v,width}` triples at `0x8007C738`; the U, V and width symbols point at bytes
+0, 1 and 2 and are indexed by `style * 3`. Native arrays cannot overlap, so
+their indexed views explicitly contain U `{e8,50,78,a0}`, V `{30,10,10,10}`
+and width `{10,28,28,30}` at indices 0, 3, 6 and 9. Treat this as a game-data
+layout fix for the decompilation, not runtime asset copying.
 
 The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
 destination pixel untouched for both opaque and semi-transparent textured

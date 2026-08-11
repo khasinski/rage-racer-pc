@@ -368,7 +368,6 @@ extern u8 g_NameEntryCharset[];
 extern s32 g_NameEntryCursor;
 extern s16 g_PadMirrorMasks[];
 extern u8 *g_PlaceSuffixNames[];
-extern s16 g_PlayerGear;
 extern Vec4 g_PlayerVelocity[2];
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
