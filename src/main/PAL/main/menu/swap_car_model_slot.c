@@ -177,7 +177,11 @@ void DrawMenuCarView(void) {
     *q = s2 + 30;
     g_PlayerCar.pose.position[2] = 0;
     SelectModelBank(14);
-    D_1F800004 += 120;
+    /* 0x1f800004 is the scratchpad OT-base slot on PS1.  Keep the retail
+     * 120-byte (30-entry) showroom-depth bias, but express it through the
+     * native pointer-sized slot instead of relying on the absolute-address
+     * scalar alias. */
+    SCRATCH_OT_BASE_AS(OT_TYPE) += 30;
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PlayerCar.pose.position[0], &mtxA);
     SCRATCH_ENV_MODE4 = 0;
     {
@@ -187,7 +191,7 @@ void DrawMenuCarView(void) {
         }
         SubmitModel(SCRATCHPAD, a1);
     }
-    D_1F800004 -= 120;
+    SCRATCH_OT_BASE_AS(OT_TYPE) -= 30;
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */

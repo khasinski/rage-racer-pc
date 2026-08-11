@@ -25,6 +25,12 @@ int RageHostInitDisc(void);
 extern int g_SceneId;
 extern int g_FrameCounter;
 extern int g_FrontendState;
+extern int GameMenuBusy;
+extern int g_MenuScreen;
+extern int g_MenuViewAngle;
+extern int g_MenuViewAngleTarget;
+extern int g_MenuViewOffset;
+extern int g_MenuViewSpin;
 extern unsigned long long g_RageNearFacesCrossing;
 extern unsigned long long g_RageNearTrianglesEmitted;
 extern unsigned long long g_RageGt4FacesEmitted;
@@ -85,6 +91,25 @@ int main(void) {
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
     MainLoop();
+    if (getenv("RAGE_PORT_DUMP_VRAM") != NULL) {
+        const char *path = getenv("RAGE_PORT_DUMP_VRAM");
+        RECT rect = {0, 0, 1024, 512};
+        u16 *vram = malloc(1024u * 512u * sizeof(*vram));
+        FILE *output;
+        if (vram == NULL) return EXIT_FAILURE;
+        DrawSync(0);
+        StoreImage(&rect, (u_long *)vram);
+        DrawSync(0);
+        output = fopen(path, "wb");
+        if (output == NULL ||
+            fwrite(vram, sizeof(*vram), 1024u * 512u, output) != 1024u * 512u) {
+            if (output != NULL) fclose(output);
+            free(vram);
+            return EXIT_FAILURE;
+        }
+        fclose(output);
+        free(vram);
+    }
     if (getenv("RAGE_PORT_SMOKE_INITIAL_STATE") != NULL) {
         int enabled = 0;
         int car;
@@ -129,6 +154,10 @@ int main(void) {
                SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
                SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR,
                (void *)g_RaceIntroCameraCursor);
+        printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
+               g_MenuScreen, GameMenuBusy, g_MenuViewAngle,
+               g_MenuViewAngleTarget, g_MenuViewOffset, g_MenuViewSpin,
+               g_PlayerCar.bodyYaw, g_PlayerCar.modelYaw);
         if (g_RaceIntroCameraCursor != NULL) {
             printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
                    g_RaceIntroCameraCursor->mode,

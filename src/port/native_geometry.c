@@ -378,7 +378,8 @@ static uint8_t *RageEmitNearClippedModelFace(
     if (type == RAGE_MODEL_G4 || type == RAGE_MODEL_GT4) {
         CVECTOR base = type == RAGE_MODEL_G4
             ? *(const CVECTOR *)(face + 16)
-            : (CVECTOR){0x80, 0x80, 0x80, 0x3c};
+            : (CVECTOR){SCRATCH_GT4_R, SCRATCH_GT4_G, SCRATCH_GT4_B,
+                        SCRATCH_GT4_CODE};
         for (i = 0; i < 4; i++)
             NormalColorCol((SVECTOR *)&normals[RageReadU16(face + 8 + i * 2)],
                            &base, &lit[i]);
@@ -524,7 +525,6 @@ static void RageSubmitModelFaces(
         }
         g_RageInsideModelProjection = 0;
         if (depth <= 0 || depth >= 448) continue;
-
         if (type == RAGE_MODEL_F4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
             POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -574,7 +574,8 @@ static void RageSubmitModelFaces(
         } else {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_GT4))) break;
             POLY_GT4 *poly = (POLY_GT4 *)cursor;
-            CVECTOR base = {0x80, 0x80, 0x80, 0x3c};
+            CVECTOR base = {SCRATCH_GT4_R, SCRATCH_GT4_G, SCRATCH_GT4_B,
+                            SCRATCH_GT4_CODE};
             CVECTOR colors[4];
             SetPolyGT4(poly);
             RageCopyGt4UvWithMode(poly, faces + 16,

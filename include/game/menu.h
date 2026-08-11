@@ -436,7 +436,6 @@ void UploadTeamLogoClut(void);
 /* Declared identically by 178 translation units before this
  * header carried them. */
 
-extern s32 D_1F800004;
 extern char g_MsgInsertController[];
 extern char g_MsgControllerError[];
 extern char g_MsgNegconUntwistedLine1[];

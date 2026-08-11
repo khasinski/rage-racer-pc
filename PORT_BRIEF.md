@@ -840,3 +840,25 @@ the race physics and its displayed timers exactly twice as fast.
 The native build keeps the original game loop. PsyZ implements `VSync(1)` in
 1/256-VBlank units, including a deterministic LIMITLESS path for smoke tests;
 the timing policy belongs in the HAL, not in special cases in the game code.
+
+### Showroom ordering and model lighting (backport to the decompilation)
+
+`DrawMenuCarView` temporarily adds 120 bytes to the word at PS1 scratchpad
+address `0x1f800004` before submitting the showroom stand. That word is the
+ordering-table base pointer, so the retail operation means a 30-bucket OT
+bias. It must be expressed as `SCRATCH_OT_BASE_AS(OT_TYPE) += 30` on a native
+target: keeping `D_1F800004` as an unrelated scalar makes the operation a
+no-op and draws the stand over the car. This is a game-code 32/64-bit aliasing
+fix and should be backported.
+
+The native `SubmitModel` implementation must also use the initialized
+`SCRATCH_GT4_R/G/B/CODE` values as the base passed to `NormalColorCol`.
+`InitRenderState` deliberately sets GT4 RGB to `0xff`; a hard-coded `0x80`
+halves the lighting result and turns weakly lit body textures into apparently
+black or missing panels. This applies both to ordinary GT4 faces and the
+near-plane clipping path.
+
+For renderer comparisons, `RAGE_PORT_DUMP_VRAM=/path/vram.bin` writes the
+final 1024x512 little-endian 16-bit VRAM image from the smoke executable.
+This made it possible to prove that the car-select texture page and CLUT match
+the emulator byte-for-byte before investigating rasterization differences.

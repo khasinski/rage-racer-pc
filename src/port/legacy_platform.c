@@ -19,7 +19,6 @@
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
-unsigned char D_1F800004[4096];
 unsigned char g_AudioRuntimeState[4096];
 int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
