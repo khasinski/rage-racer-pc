@@ -36,6 +36,8 @@ extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
 extern s32 g_SkyRowBase;
 extern Vec4 g_MirrorVisibleCellList[];
+extern u32 g_MainVisibleCellMask[];
+extern u32 g_MirrorVisibleCellMask[];
 extern unsigned long long g_RageNearFacesCrossing;
 extern unsigned long long g_RageNearTrianglesEmitted;
 extern unsigned long long g_RageGt4FacesEmitted;
@@ -48,6 +50,7 @@ extern unsigned long long g_RageGt4ClipNegative;
 extern unsigned long long g_RageGt4RejectOffscreen;
 extern unsigned long long g_RageGt4RejectBackface;
 extern unsigned long long g_RageGt4RejectDepth;
+extern unsigned long long g_RageTerrainSecondTriangleVisible;
 
 static int RageWriteCapturedFrame(const char *path) {
     unsigned char *pixels;
@@ -240,6 +243,12 @@ int main(void) {
             printf("mirror-cell %d=%d,%d,%d,%d\n", cell, entry->x,
                    entry->y, entry->z, entry->w);
         }
+        for (cell = 0; cell < 32; cell++) {
+            printf("visible-mask %d=%08x\n", cell,
+                   (unsigned)g_MainVisibleCellMask[cell]);
+            printf("mirror-mask %d=%08x\n", cell,
+                   (unsigned)g_MirrorVisibleCellMask[cell]);
+        }
     }
     if (getenv("RAGE_PORT_SMOKE_SAVE_ROUNDTRIP") != NULL) {
         GameSaveHeaderRow header = {0};
@@ -271,13 +280,16 @@ int main(void) {
     printf("Rage Racer smoke stopped at frame %d, scene %d, frontend %d, "
            "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
            "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
-           "gp_round=%d class_done=%d series_done=%d\n",
+           "gp_round=%d class_done=%d series_done=%d rpm=%d jitter=%d "
+           "terrain_second=%llu\n",
            g_FrameCounter, g_SceneId, g_FrontendState,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
            g_PadButtonMapping[2], g_PadType, g_RacePhase,
            g_PlayerCar.trackProgress, g_PlayerCar.lap, g_GrandPrixClass,
-           g_GrandPrixRound, g_ClassCompleted, g_SeriesCleared);
+           g_GrandPrixRound, g_ClassCompleted, g_SeriesCleared,
+           g_EngineRpm, g_EngineRpmJitter,
+           g_RageTerrainSecondTriangleVisible);
     printf("memory card: phase=%d status=%d files=%d free=%d mask=%x page=%d\n",
            g_McMenuPhase, g_McStatusResult, g_McCardFileCount,
            g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);

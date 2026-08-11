@@ -447,7 +447,11 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     {
-        s32 d = g_PlayerTargetRpm;
+        /* Retail address 0x8009E808 is not independent storage: it is the
+         * +0x78 engine-RPM word inside g_PlayerCar.drive.  Keeping the symbol
+         * as a separate native global leaves it zero and pins the HUD needle
+         * to the 500-rpm clamp. */
+        s32 d = p->engineRpm;
         s32 cab = g_EngineRpm;
         s32 sum;
         s32 rpmLimit;

@@ -280,9 +280,17 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
 }
 
 void TransformCollisionVector(const int16_t *input, int32_t *output) {
-    output[0] = input[0];
-    output[1] = input[1];
-    output[2] = input[2];
+    SVECTOR vector;
+    VECTOR transformed;
+
+    vector.vx = input[0];
+    vector.vy = input[1];
+    vector.vz = input[2];
+    vector.pad = 0;
+    ApplyRotMatrix(&vector, &transformed);
+    output[0] = transformed.vx;
+    output[1] = transformed.vy;
+    output[2] = transformed.vz;
 }
 
 /* The following adapters keep optional PS1 services non-fatal on the host.

@@ -966,6 +966,18 @@ correct mirror terrain is displaced by tens of pixels. The synchronized visual
 test checks both the road for clear-colour wedges and the mirror for a textured
 road surface.
 
+The terrain face loop is not allowed to reuse the model face's single-triangle
+back-face test.  Retail runs `NCLIP` once after `RTPT(v0,v1,v2)`, projects the
+fourth corner with `RTPS`, then runs it again on the resulting FIFO
+`(v1,v2,v3)`.  The second triangle has the opposite winding in the stored quad
+order; a main-view face survives when `clip0 > 0 || clip1 < 0` (with both signs
+reversed in the mirror).  Testing only the first triangle discarded complete
+terrain quads whenever that half became degenerate near the camera, producing
+recurrent holes and an apparently bending road.  Keep the two-triangle rule in
+the portable terrain dispatcher while retaining the original one-triangle
+rule for models.  The smoke summary's `terrain_second` counter and race test
+prove that the retail-only rescue path is exercised.
+
 PsyZ's `FixupFlipUV` now ignores edges whose screen or texture delta on the
 tested axis is zero. Such an edge carries no flip direction; treating a
 slightly sloped terrain edge with equal V as a flip added one to every V and
@@ -989,6 +1001,42 @@ globals, starting with `g_SkyRowBase`. This changed the retail value zero to
 host backing allocation now covers both complete records, while
 `GameShuttleScenery` has a compile-time `0x34` layout assertion. Backport the
 complete object boundary rather than preserving the split placeholder symbol.
+
+The tachometer exposed three more overlapping-layout failures which must be
+backported as game-code fixes:
+
+- `g_PlayerTargetRpm` at `0x8009E808` is the interior word
+  `g_PlayerCar.drive.engineRpm` (`+0x134`), not independent BSS.  Reading a
+  detached host global pins `g_EngineRpm` to its 500-rpm lower clamp.
+- `g_TachoNeedleQuad` spans all eight halfwords at `0x8019C7D4..0x8019C7E3`;
+  the seven following `D_*` labels are interior coordinates, not separate
+  globals.
+- `BuildTachoNeedleQuad` must address the named draw-mode packets directly.
+  Subtracting two PS1 packets from the `SPRT` pointer assumes the original
+  contiguous BSS layout.  A native `DrawPacket` is 32 bytes because of its
+  pointer-sized OT link, so retaining 12-byte PS1 backing objects also writes
+  past their host allocations.  Allocate the native object sizes and never
+  reconstruct cross-global aliases with pointer arithmetic.
+
+`RAGE_PORT_TACHO_TRACE=1` prints RPM, angle, colour, source quad and emitted
+vertices.  The race framebuffer regression now counts red needle pixels rather
+than accidentally accepting the orange dial numerals.
+
+Car collision had the same class of non-portable reconstruction.  The host
+`TransformCollisionVector` was an identity stub even though retail executes a
+rotation-matrix `MVMVA`; rival collision hulls therefore remained axis-aligned.
+It now calls `ApplyRotMatrix`.  `CollidePlayerWithCars` also cast the address of
+its first stack local to a synthetic structure covering every subsequent local.
+That encoded the MIPS stack layout into C and reads unrelated storage on a
+modern compiler.  Its polygon tests now use the actual named `playerGrid`,
+`opponentSamples`, and `opponentCorners` arrays.  These are 32/64-bit game-code
+fixes, not HAL behaviour.
+
+The indexed sound-effect table had another split interior symbol:
+`g_IndexedEffectBaseVolumes` is `g_IndexedEffects + 8`, not a separate object.
+Keeping an eight-byte first allocation made normal indexed access walk past
+the host object (and was caught by ASan).  The host now owns the complete three
+`IndexedEffect` records as one 36-byte table.
 
 The PS1 treats texture colour `0x0000` as a colour key: the GPU must leave the
 destination pixel untouched for both opaque and semi-transparent textured

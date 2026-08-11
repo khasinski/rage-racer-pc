@@ -57,13 +57,18 @@ def main() -> int:
         if speed_glyph_mask(1) == speed_glyph_mask(2):
             raise AssertionError("speedometer still renders zeroed speed digits")
 
+        # Count the red needle itself, not the orange dial markings.  The
+        # broken host layout collapsed three vertices to the dial centre; the
+        # old broad orange-pixel check still passed on the numeral ring.
         needle_pixels = sum(
-            r > 100 and 25 < g < 150 and b < 70
-            for y in range(170, 225)
-            for r, g, b in pixels[y * 320 + 225:y * 320 + 310]
+            r > 100 and r > g + 60 and r > b + 60
+            for y in range(155, 215)
+            for r, g, b in pixels[y * 320 + 250:y * 320 + 300]
         )
-        if needle_pixels < 8:
-            raise AssertionError("tachometer needle is missing")
+        if needle_pixels < 330:
+            raise AssertionError(
+                f"tachometer needle is missing or degenerate: {needle_pixels}"
+            )
 
         # The portable terrain path used to run NCLIP again on every
         # screen-space subdivision.  Rounding made adjacent road pieces
@@ -127,6 +132,11 @@ def main() -> int:
         raise AssertionError("Grand Prix did not accept acceleration after countdown")
     if int(player_state.group(2)) != 256:
         raise AssertionError("digital accelerator was not sampled at full pressure")
+    rpm_state = re.search(r"rpm=(-?\d+).*terrain_second=(\d+)", result.stdout)
+    if rpm_state is None or int(rpm_state.group(1)) <= 1000:
+        raise AssertionError("tachometer still reads detached zeroed target RPM")
+    if int(rpm_state.group(2)) == 0:
+        raise AssertionError("terrain never exercised retail second-triangle culling")
     for failure in (
         "primitive buffer exhausted", "misaligned OT link",
         "likely corrupted",

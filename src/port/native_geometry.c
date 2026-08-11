@@ -38,6 +38,7 @@ unsigned long long g_RageGt4ClipNegative;
 unsigned long long g_RageGt4RejectOffscreen;
 unsigned long long g_RageGt4RejectBackface;
 unsigned long long g_RageGt4RejectDepth;
+unsigned long long g_RageTerrainSecondTriangleVisible;
 static int g_RageProjectionReject;
 
 static int RagePrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
@@ -77,7 +78,7 @@ static void RageStoreSxy(short *x, short *y, int packed) {
 static int RageProjectQuad(
     const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
     const SVECTOR *v3, int sxy[4], int *depth, int *fog, int *rawDepth,
-    int rejectLargeSpan) {
+    int rejectLargeSpan, int terrainQuad) {
     int p;
     int flag;
     long otz;
@@ -116,17 +117,26 @@ static int RageProjectQuad(
     }
     {
         int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
+        int clip1 = terrainQuad
+            ? NormalClip(sxy[1], sxy[2], sxy[3]) : clip0;
         if (g_RageInsideModelProjection && g_RageSubmittedModelIndex == 0 &&
             g_RageSubmittedModelType == RAGE_MODEL_GT4) {
             if (clip0 > 0) g_RageGt4ClipPositive++;
             if (clip0 < 0) g_RageGt4ClipNegative++;
         }
-        /* The retail face loop executes one NCLIP after RTPT, before it
-         * projects the fourth vertex.  Testing the second half of the quad
-         * as an alternative admits twisted/back-facing records and produces
-         * the large stray polygons visible in the prologue. */
-        if ((!SCRATCH_MIRROR && clip0 <= 0) ||
-            (SCRATCH_MIRROR && clip0 >= 0)) {
+        /* Model faces use the single NCLIP performed by SubmitModelFaces.
+         * The terrain dispatcher is different: after RTPT it runs NCLIP for
+         * v0/v1/v2, projects v3 with RTPS, then runs NCLIP again on the GTE
+         * FIFO (v1/v2/v3).  That second triangle has the opposite winding in
+         * the retail four-corner order.  Retail keeps the quad when either
+         * triangle faces the camera.  Applying the model rule to terrain
+         * drops whole quads whenever only their first half is degenerate. */
+        if (terrainQuad &&
+            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
+             (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0)))
+            g_RageTerrainSecondTriangleVisible++;
+        if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
+            (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)) {
             g_RageProjectionReject = 2;
             return 0;
         }
@@ -145,7 +155,7 @@ static int RageProjectModelFace(
     return RageProjectQuad(
         &vertices[RageReadU16(face + 0)], &vertices[RageReadU16(face + 2)],
         &vertices[RageReadU16(face + 4)], &vertices[RageReadU16(face + 6)],
-        sxy, depth, fog, NULL, 0);
+        sxy, depth, fog, NULL, 0, 0);
 }
 
 static int RageBilerpSxy(
@@ -763,7 +773,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 int bias;
                 if (farCell && (stream[20] & 2) != 0) continue;
                 if (!RageProjectQuad(v0, v1, v2, v3, sxy, &depth, &fog,
-                                     &rawDepth, 0))
+                                     &rawDepth, 0, 1))
                     continue;
                 /* The retail cell dispatcher tests bit 0 of the halfword at
                  * +0x14 when OTZ reaches 0x800.  In that case it halves all
@@ -787,7 +797,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
                     if (!RageProjectQuad(v0,v1,v2,v3,sxy,&depth,&fog,
-                                         &rawDepth,1)) continue;
+                                         &rawDepth,1,1)) continue;
                     depth += bias;
                     if (depth <= 0 || depth >= 448) continue;
                     next = RageEmitTerrainFt4(cursor, ot, depth, fog, dispatch,

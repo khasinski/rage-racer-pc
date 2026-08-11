@@ -9,6 +9,9 @@
 #include "game/track.h"
 #include "psyq/gpu.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 /* The GPU packet cursor: scratchpad word 0. Every emitter here packs its
  * primitive at this address and bumps it past what it wrote. */
 #define SCRATCH (SCRATCH_PRIM_CURSOR_AS(u8))
@@ -166,6 +169,18 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
 
     prim->code = code7;
+    if (getenv("RAGE_PORT_TACHO_TRACE") != NULL) {
+        printf("tacho rpm=%d angle=%d color=%02x%02x%02x "
+               "quad=%d,%d/%d,%d/%d,%d/%d,%d "
+               "v=%d,%d/%d,%d/%d,%d/%d,%d\n",
+               rpm, angle, prim->r0, prim->g0, prim->b0,
+               g_TachoNeedleQuad[0][0], g_TachoNeedleQuad[0][1],
+               g_TachoNeedleQuad[1][0], g_TachoNeedleQuad[1][1],
+               g_TachoNeedleQuad[2][0], g_TachoNeedleQuad[2][1],
+               g_TachoNeedleQuad[3][0], g_TachoNeedleQuad[3][1],
+               prim->x0, prim->y0, prim->x1, prim->y1,
+               prim->x2, prim->y2, prim->x3, prim->y3);
+    }
     AddPrim(GamePrimaryOrderingTable(0), prim);
     prim++;
     {
