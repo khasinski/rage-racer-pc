@@ -161,19 +161,38 @@ static int RageProjectModelFace(
         sxy, depth, fog, NULL, 0);
 }
 
+static int RageFloorShift12(int64_t value) {
+    if (value >= 0) return (int)(value >> 12);
+    return -(int)((-value + 0xfff) >> 12);
+}
+
+/* GTE INTPL with sf=1/lm=0 as used by EmitSubdividedTerrainQuad.  Retail
+ * programs IR0 to 4096-index*(4096/steps), FC to start and IR to end. */
+static int RageIntplComponent(int start, int end, int index, int steps) {
+    int ir0 = 4096 - index * (4096 / steps);
+    int difference = start - end;
+    int result;
+    if (difference < -32768) difference = -32768;
+    if (difference > 32767) difference = 32767;
+    result = RageFloorShift12((int64_t)end * 4096 +
+                              (int64_t)ir0 * difference);
+    if (result < -32768) result = -32768;
+    if (result > 32767) result = 32767;
+    return result;
+}
+
 static int RageBilerpSxy(
     const int sxy[4], int u, int v, int uSteps, int vSteps) {
-    int64_t w0 = (int64_t)(uSteps - u) * (vSteps - v);
-    int64_t w1 = (int64_t)u * (vSteps - v);
-    int64_t w2 = (int64_t)(uSteps - u) * v;
-    int64_t w3 = (int64_t)u * v;
-    int64_t divisor = (int64_t)uSteps * vSteps;
-    int x = ((int16_t)sxy[0] * w0 + (int16_t)sxy[1] * w1 +
-             (int16_t)sxy[2] * w2 + (int16_t)sxy[3] * w3) / divisor;
-    int y = ((int16_t)(sxy[0] >> 16) * w0 +
-             (int16_t)(sxy[1] >> 16) * w1 +
-             (int16_t)(sxy[2] >> 16) * w2 +
-             (int16_t)(sxy[3] >> 16) * w3) / divisor;
+    int topX = RageIntplComponent((int16_t)sxy[0], (int16_t)sxy[1],
+                                  u, uSteps);
+    int bottomX = RageIntplComponent((int16_t)sxy[2], (int16_t)sxy[3],
+                                     u, uSteps);
+    int topY = RageIntplComponent((int16_t)(sxy[0] >> 16),
+                                  (int16_t)(sxy[1] >> 16), u, uSteps);
+    int bottomY = RageIntplComponent((int16_t)(sxy[2] >> 16),
+                                     (int16_t)(sxy[3] >> 16), u, uSteps);
+    int x = RageIntplComponent(topX, bottomX, v, vSteps);
+    int y = RageIntplComponent(topY, bottomY, v, vSteps);
     return (int)((uint16_t)x | ((uint32_t)(uint16_t)y << 16));
 }
 
@@ -213,12 +232,9 @@ static int RageScreenQuadVisible(const int sxy[4]) {
 static uint8_t RageBilerpByte(
     uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3,
     int u, int v, int uSteps, int vSteps) {
-    int w0 = (uSteps - u) * (vSteps - v);
-    int w1 = u * (vSteps - v);
-    int w2 = (uSteps - u) * v;
-    int w3 = u * v;
-    return (uint8_t)((c0*w0 + c1*w1 + c2*w2 + c3*w3) /
-                     (uSteps*vSteps));
+    int top = RageIntplComponent(c0, c1, u, uSteps);
+    int bottom = RageIntplComponent(c2, c3, u, uSteps);
+    return (uint8_t)RageIntplComponent(top, bottom, v, vSteps);
 }
 
 static uint8_t *RageEmitTerrainFt4(

@@ -393,6 +393,16 @@ quad. Reprojecting every subquad produced roughly 37,000 packets per frame and
 exhausted even a 2 MiB native arena, while the screen-space path completes the
 same prologue frames without exhaustion.
 
+The interpolation is separable and must retain the GTE rounding between its
+two axes. `InterpolateSubdivRow` programs `INTPL` with `sf=1`, fixed `FC`/IR
+endpoints and decreasing IR0; `EmitSubdividedTerrainQuad` first interpolates
+the top and bottom edges and then interpolates between those results. A single
+four-weight bilinear expression rounds only once and is not equivalent,
+especially for negative projected coordinates. The portable path therefore
+uses the retail signed arithmetic shift and s16 saturation after each INTPL
+stage for both screen XY and UV. On the timer 500..800 road series this lowers
+mean region RMSE from 0.134218 to 0.131723 across 61 state-aligned frames.
+
 ### Reset paths must not depend on unloaded assets
 
 `InitMenuMode` resets every menu widget before `RequestCarSelectAssets` has
@@ -942,6 +952,15 @@ Long emulator runs can be split into sub-minute chunks by also setting
 `.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue
 to the next timer.  This retains deterministic emulated time while avoiding a
 new BIOS, frontend, and race-intro run for every trace.
+
+A fixed frame-number input script is not reusable from a fresh boot because
+FMV cadence determines whether those presses occur at the title, menu, or
+inside the movie. For the current local reference cache, resume the saved
+scene-8 `NOW LOADING` state, issue a one-frame `CROSS` edge after loading has
+settled, and save the first scene-12 checkpoint. The resulting race-intro
+timer-141 state can be resumed with held `CROSS`; reaching timer 800 with
+timer-named screenshots and per-capture states takes about two minutes with
+Ruby 4/YJIT and avoids replaying BIOS, FMV, and menus thereafter.
 
 This produces `timer-00150-s12.ppm`-style files without replaying the frontend
 for every sample.  Pair the cached emulator sequence with any fresh native
