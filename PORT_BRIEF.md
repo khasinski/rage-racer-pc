@@ -980,7 +980,9 @@ RNG seed, mirror position and active scratchpad view. This makes later
 divergence explicit instead of attributing a shifted or collision-rolled camera
 to the renderer. `rage_visual_batch.rb --match position` selects the
 nearest same-scene/same-lap state and rejects matches farther than
-`--max-position-distance` (256 by default).  The displayed VRAM page can lag
+`--max-position-distance` (64 by default). A wider limit is useful for
+simulation-divergence diagnostics but is too permissive for pixel-level
+renderer ranking. The displayed VRAM page can lag
 the state sampled at VBlank because of double buffering; add
 `--visual-refine 3` to test only a small timer window around the state match
 and select its lowest-RMSE image.  On the timer-330..370 checkpoint series this

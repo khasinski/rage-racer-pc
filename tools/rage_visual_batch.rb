@@ -13,7 +13,7 @@ require "pathname"
 require "rbconfig"
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
-            max_position_distance: 256.0, visual_refine: 0,
+            max_position_distance: 64.0, visual_refine: 0,
             clear_region: nil, black_region: nil, artifact_radius: 2,
             rank: "rmse" }
 OptionParser.new do |parser|
