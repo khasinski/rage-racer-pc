@@ -1133,6 +1133,16 @@ units inside a loop iteration. At race timer 25, the native ROUND overlay and
 background geometry match the emulator; the old port frame 1420 comparison
 was already at race timer 56 and had legitimately faded the overlay away.
 
+For race geometry comparisons, `--region` is also the RMSE domain used by
+`rage_visual_batch.rb` during visual refinement, not merely a filter for the
+reported hotspots.  A full-frame score can otherwise select a candidate by
+the HUD, mirror, or an animated texture phase while the road is several ticks
+out of alignment.  Use independent regions for the road (`0,100,240,100`),
+mirror (`84,16,152,40`), and tachometer/HUD; do not interpret clear-colour
+pixels or triangle-shaped diffs until the candidate was aligned in the same
+region.  `report.json` retains both `normalized_rmse` and
+`normalized_region_rmse` so this distinction is testable.
+
 ### FMV cadence
 
 Do not pace every extracted MP4 at its tagged 15 fps. Retail blocks on frames

@@ -65,6 +65,19 @@ def manifest_rows(directory)
   end.compact
 end
 
+def image_rmse(psx, native, region)
+  command = ["magick", "compare", "-metric", "RMSE"]
+  if region
+    x, y, width, height = region.split(",", 4).map { |part| Integer(part) }
+    command.concat(["-extract", "#{width}x#{height}+#{x}+#{y}"])
+  end
+  command.concat([psx.to_s, native.to_s, "null:"])
+  _stdout, metric, status = Open3.capture3(*command)
+  abort "visual alignment failed for #{native}: #{metric}" unless
+    [0, 1].include?(status.exitstatus)
+  metric[/\(([0-9.eE+-]+)\)/, 1]&.to_f || Float::INFINITY
+end
+
 if options[:match] == "position"
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
@@ -96,13 +109,7 @@ if options[:match] == "position"
         (candidate[:timer] - native[:timer]).abs <= options[:visual_refine]
       end
       native = nearby.min_by do |candidate|
-        _stdout, metric, status = Open3.capture3(
-          "magick", "compare", "-metric", "RMSE", psx[:path].to_s,
-          candidate[:path].to_s, "null:"
-        )
-        abort "visual alignment failed for #{candidate[:filename]}: #{metric}" unless
-          [0, 1].include?(status.exitstatus)
-        metric[/\(([0-9.eE+-]+)\)/, 1]&.to_f || Float::INFINITY
+        image_rmse(psx[:path], candidate[:path], options[:region])
       end
     end
     dx = native[:x] - psx[:x]
@@ -154,6 +161,7 @@ rows = pairs.map do |pair|
     native_frame: pair[:native].basename.to_s,
     state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
+    normalized_region_rmse: report["normalized_region_rmse"],
     native_only_clear: report.fetch("native_only_clear").fetch("count"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
@@ -169,12 +177,15 @@ summary = {
   frames: rows
 }
 File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
+rank_rmse = lambda do |row|
+  row[:normalized_region_rmse] || row[:normalized_rmse]
+end
 ranked = if options[:rank] == "clear"
            rows.sort_by do |row|
-             [-row[:native_only_clear], -row[:normalized_rmse].to_f]
+             [-row[:native_only_clear], -rank_rmse.call(row).to_f]
            end
          else
-           rows.sort_by { |row| -row[:normalized_rmse].to_f }
+           rows.sort_by { |row| -rank_rmse.call(row).to_f }
          end
 ranked.each do |row|
   hotspot = row[:worst_hotspot]
@@ -186,6 +197,8 @@ ranked.each do |row|
                              delta[:speed], delta[:timer]) : ""
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""
-  puts format("%s RMSE=%.6f%s%s%s", row[:frame], row[:normalized_rmse],
+  metric = rank_rmse.call(row)
+  metric_name = row[:normalized_region_rmse] ? "region_RMSE" : "RMSE"
+  puts format("%s %s=%.6f%s%s%s", row[:frame], metric_name, metric,
               location, clear, alignment)
 end

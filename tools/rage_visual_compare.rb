@@ -134,6 +134,25 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region)
   { count: count, samples: samples }
 end
 
+def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)
+  return nil unless region
+  left, top, region_width, region_height = region
+  abort "RMSE region is outside the image" if left.negative? || top.negative? ||
+    region_width <= 0 || region_height <= 0 || left + region_width > width ||
+    top + region_height > height
+  squared_error = 0
+  (top...(top + region_height)).each do |y|
+    (left...(left + region_width)).each do |x|
+      index = y * width + x
+      3.times do |channel|
+        delta = psx_pixels[index][channel] - native_pixels[index][channel]
+        squared_error += delta * delta
+      end
+    end
+  end
+  Math.sqrt(squared_error.to_f / (region_width * region_height * 3)) / 255.0
+end
+
 def trace_lines(path, frame, pixel)
   return [] unless path
 
@@ -173,6 +192,8 @@ hotspots = find_hotspots(psx_pixels, native_pixels, *size,
                          options[:region])
 clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
                                         options[:clear_region])
+region_rmse = normalized_region_rmse(psx_pixels, native_pixels, *size,
+                                    options[:region])
 unless hotspots.empty?
   draws = hotspots.map do |spot|
     x = spot[:x]
@@ -210,6 +231,7 @@ report = {
   native_source: File.expand_path(options[:native]),
   dimensions: size,
   normalized_rmse: rmse,
+  normalized_region_rmse: region_rmse,
   pixel: options[:pixel],
   hotspot_region: options[:region],
   hotspots: hotspots,
