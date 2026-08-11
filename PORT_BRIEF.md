@@ -921,6 +921,12 @@ the output directories first, then set
 `RAGE_PORT_SMOKE_CAPTURE_DIR` plus
 `RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE` on the smoke binary.  The smoke capture
 is restricted to `RAGE_PORT_SMOKE_STOP_SCENE` when that variable is present.
+Long emulator runs can be split into sub-minute chunks by also setting
+`RAGE_EMU_SAVE_CAPTURE_STATES=1`.  Each periodic PPM then receives a matching
+`.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue
+to the next timer.  This retains deterministic emulated time while avoiding a
+new BIOS, frontend, and race-intro run for every trace.
+
 This produces `timer-00150-s12.ppm`-style files without replaying the frontend
 for every sample.  Pair the cached emulator sequence with any fresh native
 sequence using:
