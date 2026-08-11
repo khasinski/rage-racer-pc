@@ -13,13 +13,12 @@ void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
     volatile SPRT *packet;
     long idx;
     u_char *next;
-    register u_char *sr __asm("$21");
-    register u_char *tableA __asm("$23");
+    register u_char *sr;
+    register u_char *tableA;
     long ga;
     long gb;
     long w;
     volatile SPRT *oldPacket;
-    u_char *otv;
     u_char *tableB;
     RenderBufferAddress packetAddress;
 
@@ -38,7 +37,7 @@ void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
                 packetAddress.bytes = next;
                 SetSprt(packetAddress.sprite);
                 SetShadeTex(next, 1);
-                next += 0x14;
+                packet = packetAddress.volatileSprite;
                 oldPacket = packet;
                 packet->x0 = x;
                 packet->y0 = y;
@@ -46,20 +45,19 @@ void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
                 packet->v0 = gb;
                 w = g_SpriteFontWidth[idx];
                 packet->h = 0x18;
-                otv = g_DrawBuffer;
                 packet->clut = clutIndex;
                 packet->w = w;
-                packet++;
+                next += sizeof(SPRT);
                 packetAddress.volatileSprite = oldPacket;
-                AddPrim(otv + 0xCC, packetAddress.sprite);
+                AddPrim(GamePrimaryOrderingTable(0), packetAddress.sprite);
             }
             x += g_SpriteFontWidth[idx];
         } while (*sr != 0);
     }
     packetAddress.bytes = next;
     SetDrawMode(packetAddress.drawPacket, 0, 1, 0x1D, g_DrawModeEnv);
-    AddPrim(g_DrawBuffer + 0xCC, next);
-    SCRATCH_PRIM_CURSOR_AS(u_char) = next + 0xC;
+    AddPrim(GamePrimaryOrderingTable(0), next);
+    SCRATCH_PRIM_CURSOR_AS(u_char) = next + sizeof(DrawPacket);
 }
 
 u8 *DrawShadowedTile(void *ot, u8 *prim, s32 x, s32 y) {

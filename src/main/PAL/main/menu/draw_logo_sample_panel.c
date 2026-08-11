@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/scratchpad.h"
 void DrawLogoSamplePanel(s32 step, s32 sample) {
     void *ot = SCRATCH_OT_BASE_AS(void);
@@ -56,7 +57,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     s16 height;
     s16 nameY;
     s16 rowY;
-    s32 ot;
+    void *ot;
     s32 lowered;
     s32 raised;
     s32 rounded;
@@ -71,7 +72,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     u32 rise;
     u8 ch;
 
-    ot = SCRATCH_OT_BASE_WORD;
+    ot = SCRATCH_OT_BASE;
     if (step == 0) {
         g_TeamNameEntrySlide = 0;
         return;

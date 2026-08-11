@@ -23,7 +23,7 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
         if (enabled != 0) {
             voiceArg = voicePacked >> 16;
             raw = 0x3C;
-            left = g_VabIds[0];
+            left = g_SoundScale.vabIds[0];
             right = g_MusicChannels[i].left.half[0];
             zeroArg = 0;
             SsUtKeyOnV(voiceArg, left, right, zeroArg, raw, 0, 0, 0);
@@ -165,7 +165,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
     do {
         if (state != 0) {
             voiceArg = voicePacked >> 16;
-            left = g_VabIds[0];
+            left = g_SoundScale.vabIds[0];
             right = noteCursor->half.value;
             keyTone = (s16)GetEffectVoiceAtByteOffset(offset)->tone;
             raw = 0x3C;

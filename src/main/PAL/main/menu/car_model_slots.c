@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/car.h"
 #include "game/car_internal.h"
 #include "game/asset.h"
 #include "game/render.h"
@@ -10,7 +11,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     s32 state;
     u32 value;
 
-    state = GetCarUnlockLevel() + 1;
+    state = GetCarUnlockLevel(model) + 1;
 
     switch (model) {
     case 0:

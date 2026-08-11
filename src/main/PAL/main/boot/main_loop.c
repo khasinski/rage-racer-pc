@@ -70,7 +70,6 @@ void InitSubsystems(void) {
  * pad.
  */
 void MainLoop(void) {
-    s32 frameLimit;
     s32 elapsed;
     s32 ticks;
 
@@ -92,14 +91,15 @@ void MainLoop(void) {
     g_FrameCounter = 0;
     for (;;) {
         s32 parity = g_FrameCounter & 1;
-        u8 *frame = g_FrameContexts[0].bytes + parity * GAME_FRAME_CONTEXT_SIZE;
+        u8 *frame = g_FrameContexts[parity].bytes;
 
         g_DrawBuffer = frame;
         g_FrameParity = parity;
-        SCRATCH_OT_BASE_AS(u8) = frame + 0xCC;
         {
             GameFrameContextAddress frameAddress;
             frameAddress.bytes = frame;
+            SCRATCH_OT_BASE_AS(OT_TYPE) =
+                frameAddress.context->layout.orderingTables[0];
             SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
             ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
         }
@@ -115,10 +115,7 @@ void MainLoop(void) {
         g_SceneHandlers[g_SceneId]();
         DrawSync(0);
         StepTrackTextureSwap();
-        frameLimit = g_FrameSyncThreshold;
-        while (VSync(1) < frameLimit) {
-        }
-        elapsed = VSync(1);
+        elapsed = 0;
         ticks = g_GameClock + 1;
         g_GameClock = ticks + elapsed / 256;
         VSync(0);
@@ -136,13 +133,12 @@ void MainLoop(void) {
             GameFrameContextAddress drawBuffer;
             drawBuffer.bytes = g_DrawBuffer;
             DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
             DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
         }
         UpdatePadState();
         g_FrameCounter = g_FrameCounter + 1;
+        if (RagePortShouldExit(g_FrameCounter)) {
+            return;
+        }
     }
 }

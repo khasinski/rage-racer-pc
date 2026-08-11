@@ -148,7 +148,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     SVec verts[4];
     MenuProjectedVertex out[4];
     Matrix mtx;
-    u32 *scratch2;
+    OT_TYPE *scratch2;
     s32 n;
     s32 v;
     s32 depth;
@@ -158,7 +158,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     verts[2] = g_CourseCardVerts[2];
     verts[3] = g_CourseCardVerts[3];
 
-    scratch2 = SCRATCH_OT_BASE_AS(u32) + 1;
+    scratch2 = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
 
     n = *p0 - *p1;
     if (n != 0) {
@@ -314,7 +314,6 @@ void InitMenuLighting(void) {
 
 void InitMenuMode(void) {
     GameRaceProgress *p;
-    s32 *scratch;
 
     SetDispMask(0);
     g_MirrorMode = 0;
@@ -343,13 +342,12 @@ void InitMenuMode(void) {
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
     InitMenuLighting();
 
-    scratch = &SCRATCH_PRIM_CURSOR_WORD;
-    scratch[3] = -64;
-    scratch[4] = -256;
-    scratch[2] = 0;
-    scratch[6] = 0x100;
-    scratch[7] = 0;
-    scratch[8] = 0;
+    SCRATCH_VIEW_X = 0;
+    SCRATCH_VIEW_Y = -64;
+    SCRATCH_VIEW_Z = -256;
+    SCRATCH_VIEW_ANGLE_X = 0x100;
+    SCRATCH_VIEW_ANGLE_Y = 0;
+    SCRATCH_VIEW_ANGLE_Z = 0;
     SetCameraRotMatrix();
     ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
 

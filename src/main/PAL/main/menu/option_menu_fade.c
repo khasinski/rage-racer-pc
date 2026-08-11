@@ -2,6 +2,7 @@
 #include "game/prim.h"
 #include "game/menu.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 
@@ -15,7 +16,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
     s32 height;
     u8 *scratchValue;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     if (color < 0) {
         color = 0;
     } else if (color >= 0x100) {

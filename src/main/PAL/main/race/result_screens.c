@@ -7,6 +7,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
@@ -39,7 +40,7 @@ void DrawSeriesClearedWash(s32 x, s32 y) {
     s32 width;
     s32 height;
 
-    ot = g_DrawBuffer + 0xCC;
+    ot = GamePrimaryOrderingTable(0);
     prim = SCRATCH_PRIM_CURSOR_AS(void);
 
     redStack = y;
@@ -221,7 +222,7 @@ void DrawGrandprixIntro(void) {
         s32 color;
 
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-        base = g_DrawBuffer + 0xCC;
+        base = GamePrimaryOrderingTable(0);
         height = 8;
         color = 0x78CB;
         next = GameQueueSprite(
@@ -284,7 +285,7 @@ void DrawGrandprixIntro(void) {
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
         DrawResultScreen();
 
-        base = g_DrawBuffer + 0xCC;
+        base = GamePrimaryOrderingTable(0);
         selectionAddress.value = &g_RacePosition;
         selection = selectionAddress.selection;
         next = GameQueueSprite(

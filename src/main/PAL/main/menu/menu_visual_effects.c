@@ -3,6 +3,7 @@
 #include "game/audio.h"
 #include "game/menu_types.h"
 #include "game/race.h"
+#include "game/render.h"
 #include "game/render_types.h"
 #include "game/scratchpad.h"
 #include "game/screens.h"
@@ -35,6 +36,11 @@ static inline TeamLogoColorSlot *GetTeamLogoPenSlot(void) {
 /* Identical to the declaration in game/menu.h; this unit cannot include that
  * header yet because four of its own definitions still disagree with it
  * (ScrollTeamLogoUp, GameDrawMenuButton, g_RankingRecords, g_TimeRecords). */
+void FlipTeamLogoVertical(void);
+void ScrollTeamLogoUp(void);
+void ScrollTeamLogoDown(void);
+void ScrollTeamLogoLeft(void);
+void ScrollTeamLogoRight(void);
 
 /* The logo canvas is 64 rows of eight words, and each word packs eight
  * four-bit pixels. Flipping a row therefore swaps word j with word 7 - j and
@@ -674,7 +680,7 @@ void UpdateTeamLogoCanvas(void) {
                 }
             } else if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
                 if (heldValue & 0x1000) {
-                    ScrollTeamLogoUp(g_TeamLogoDpadRepeatTimer);
+                    ScrollTeamLogoUp();
                 }
                 if (*held & 0x4000) {
                     ScrollTeamLogoDown();
@@ -781,11 +787,7 @@ void DrawMenuLightBurst(s32 arg) {
     void *s3;
     MenuLightBurstBand l1;
     MenuLightBurstBand l2;
-    MenuOrderingTableAddress orderingTableAddress;
-
-    orderingTableAddress.pointer = SCRATCH_OT_BASE;
-    orderingTableAddress.bytes += 0xAFC;
-    s3 = orderingTableAddress.pointer;
+    s3 = &SCRATCH_OT_BASE_AS(OT_TYPE)[0x2BF];
     l1 = g_MenuLightBurstBandX;
     l2 = g_MenuLightBurstBandY;
 
@@ -859,11 +861,11 @@ void DrawMenuLightBurst(s32 arg) {
             quad->y3 = 0x1DF;
             quad->y2 = 0x1DF;
             quad->r1 = 0;
-            quad->t.r0 = 0;
+            quad->r0 = 0;
             quad->g1 = 0;
-            quad->t.g0 = 0;
+            quad->g0 = 0;
             quad->b1 = 0;
-            quad->t.b0 = 0;
+            quad->b0 = 0;
             quad->r3 = scaled;
             quad->r2 = scaled;
             quad->g3 = scaled;
@@ -873,7 +875,7 @@ void DrawMenuLightBurst(s32 arg) {
         }
         {
             u8 *oldPrim = prim;
-            prim += 0x24;
+            prim += sizeof(POLY_G4);
             AddPrim(s3, oldPrim);
         }
         SCRATCH_PRIM_CURSOR_AS(u8) = prim;
@@ -900,7 +902,7 @@ typedef union PackedCoordinate {
 /* The animated five-row ranking/time-record panel. */
 s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     u8 text[16];
-    u32 *ot;
+    OT_TYPE *ot;
     s32 phase;
     u32 slide;
     s32 headerTextureU;
@@ -918,11 +920,11 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     s32 badgeXWord;
     s16 rectLeft;
 
-    ot = SCRATCH_OT_BASE_AS(u32);
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     if (step == 0) {
         *progress = 0;
         /* Initialization-only call; its caller ignores the return value. */
-        return;
+        return 0;
     }
 
     if (step < 0) {

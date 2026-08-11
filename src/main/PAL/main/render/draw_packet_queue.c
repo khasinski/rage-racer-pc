@@ -72,9 +72,9 @@ u8 *GameQueueShadedTexturedRect(ot, prim, x, y, w, h, u, v, clutIndex, tpage, in
     packet->v2 = v0 + height;
     packet->u3 = u0 + width;
     packet->v3 = v0 + height;
-    packet->t.r0 = intensity;
-    packet->t.g0 = intensity;
-    packet->t.b0 = intensity;
+    packet->r0 = intensity;
+    packet->g0 = intensity;
+    packet->b0 = intensity;
     packet->clut = clutIndex;
     packet->tpage = tpage;
     prim += sizeof(POLY_FT4);

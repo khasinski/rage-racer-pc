@@ -35,7 +35,6 @@ s32 BeginMirrorPass(void) {
     s32 v1reg;
     s32 y0;
     MirrorPanelPositionAddress panelPosition;
-    RenderBufferAddress drawBuffer;
 
     mirrorEnabled = 0;
     scratch = SCRATCHPAD;
@@ -59,16 +58,13 @@ s32 BeginMirrorPass(void) {
         scratch->mode = v0reg;
         v0reg = 0x56;
         scratch->x0 = v0reg;
-        drawBuffer.bytes = g_DrawBuffer;
-        v0reg = drawBuffer.value;
         panelPosition.position = &g_MirrorPanelY;
         y0 = *panelPosition.screenY;
         scratch->x1 = 0xEA;
         __asm__("");
         v1reg = g_MirrorPanelY;
-        v0reg += 0xBCC;
-        drawBuffer.value = v0reg;
-        scratch->primData = drawBuffer.pointer;
+        scratch->primData =
+            &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][0];
         v0reg = scratch->orderingFlag;
         scratch->y0 = y0;
         v0reg ^= 1;
@@ -114,8 +110,6 @@ void EndMirrorPass(void) {
     GameScratchpadRenderState *scratch;
     register s32 v0reg asm("$2");
     s32 v1reg;
-    VisibilityMaskAddress visibilityMask;
-    RenderBufferAddress drawBuffer;
 
     scratch = SCRATCHPAD;
 
@@ -128,19 +122,13 @@ void EndMirrorPass(void) {
     scratch->x1 = v0reg;
     v0reg = 0xF0;
     scratch->y1 = v0reg;
-    visibilityMask.pointer = g_MainVisibleCellMask;
-    v0reg = visibilityMask.value;
-    visibilityMask.value = v0reg;
-    g_VisibleCellMask = visibilityMask.pointer;
-    drawBuffer.bytes = g_DrawBuffer;
-    v0reg = drawBuffer.value;
+    g_VisibleCellMask = g_MainVisibleCellMask;
     g_VisibleCellList = g_MainVisibleCellList;
     v1reg = scratch->depth;
     scratch->x0 = 0;
     scratch->y0 = 0;
-    v0reg += 0xCC;
-    drawBuffer.value = v0reg;
-    scratch->primData = drawBuffer.pointer;
+    scratch->primData =
+        &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][0];
     v0reg = scratch->orderingFlag;
     scratch->depth = v1reg - 0x800;
     scratch->orderingFlag = v0reg ^ 1;
@@ -149,11 +137,9 @@ void EndMirrorPass(void) {
 
 DrawPacket *DrawMirrorFrame(u8 *packet) {
     MirrorPanelPositionAddress panelPosition;
-    u8 *otArg;
+    OT_TYPE *otArg;
     u8 *prim;
-    u8 *ot;
-    u8 *base;
-    u8 *base2;
+    OT_TYPE *ot;
     s32 colorIndex;
     s32 paletteIndex;
     s32 color;
@@ -161,8 +147,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
     TILE *tile;
     RenderBufferAddress tileAddress;
 
-    base = g_DrawBuffer;
-    ot = base + 0xD0;
+    ot = &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][1];
 
     tileAddress.bytes = packet;
     tile = tileAddress.tile;
@@ -172,9 +157,9 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 
     tile->x0 = 0x54;
     color = 0x98;
-    tile->t.r0 = 0;
-    tile->t.g0 = 0;
-    tile->t.b0 = 0;
+    tile->r0 = 0;
+    tile->g0 = 0;
+    tile->b0 = 0;
     tile->w = color;
     panelPosition.position = &g_MirrorPanelY;
     tile->y0 = *panelPosition.screenY - 2;
@@ -184,8 +169,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 
     colorIndex = g_CarMirrorBadgeStyles[g_PlayerCarIndex];
     paletteIndex = colorIndex * 3;
-    base2 = g_DrawBuffer;
-    ot = base2 + 0xBD0;
+    ot = &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][1];
     next = GameQueueSprite(ot, packet, 0x56, g_MirrorPanelY, g_MirrorBadgeWidths[paletteIndex], 8, g_MirrorBadgeTexU[paletteIndex], g_MirrorBadgeTexV[paletteIndex], 0x7800);
     tileAddress.bytes = QueueDrawModePrim(ot, next, 9);
     return tileAddress.drawPacket;
@@ -221,7 +205,8 @@ void DrawRearViewMirror(s32 mode) {
                              ->environment.mirrorDraw.clip);
             prim = packet;
             packet++;
-            AddPrim(g_DrawBuffer + 0x16C8, prim);
+            AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1]
+                         [GAME_FRAME_OT_LENGTH - 1], prim);
             *scratch = packet;
             BuildVisibleCells(-0x3000, 0x6000);
             SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
@@ -233,7 +218,8 @@ void DrawRearViewMirror(s32 mode) {
                         &GetGameFrameContext(g_DrawBuffer)->environment.draw.clip);
             prim = packet;
             packet++;
-            AddPrim(g_DrawBuffer + 0xBD0, prim);
+            AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][1],
+                    prim);
             *scratch = packet;
             DrawCourseObjects();
             DrawCars();

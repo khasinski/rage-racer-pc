@@ -61,7 +61,7 @@ extern s32 g_TitleMenuSelection;
 extern s32 g_MenuOverlayPattern;
 
 /* Debug/status phase code written through an asset-load state machine. */
-extern s32 GameMenuLoadPhase;
+extern volatile s32 GameMenuLoadPhase;
 
 /*
  * Alternate menu layout. The garage screens copy the setting into the live
@@ -90,7 +90,7 @@ extern u8 g_TeamNameChars[];
 extern s32 g_McMenuState;
 extern volatile s32 g_McCardStatus;
 extern s32 g_McMenuSelection;
-extern s32 g_McMenuSubState;
+extern volatile s32 g_McMenuSubState;
 
 /* The two eased current/target pairs of the 3D menu view, in 1/1000 units:
  * an angle (carousel wraps at 500000 per entry) and a translation. Screens set
@@ -212,6 +212,7 @@ void InitMenuMode(void);
  */
 
 /* id 1 -- course + class picker; left/right change course, up/down the rows. */
+void EnterCourseSelectScreen(void);
 void UpdateCourseSelectScreen(void);
 s32 DrawCourseSelectScreen(s32 step);
 
@@ -264,6 +265,7 @@ s32 DrawCarShopScreen(s32 step);
 /* id 12 -- "SHOP" (engineer shop): pay the tune-up fee to grade the car up. */
 void UpdateEngineerShopScreen(void);
 u32 DrawEngineerShopScreen(s32 step);
+void ShopScreenNoOp(void);
 
 /*
  * Menu widgets shared across those screens. Each keeps its own accumulator and

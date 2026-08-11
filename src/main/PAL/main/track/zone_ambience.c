@@ -103,9 +103,7 @@ void TriggerRaceCues(void) {
     base.pointer = &g_TrackEventData->raceCues;
 
     if (!(current & 8)) {
-        finishAddress.finishPointer = base.pointer->finish;
-        finishAddress.value =
-            (g_RaceSeries * sizeof(TrackFinishCue)) + finishAddress.value;
+        finishAddress.finishPointer = &base.pointer->finish[g_RaceSeries];
         if (g_PlayerCar.trackSection == finishAddress.finishPointer->trackSection) {
             entry.value = g_PlayerCar.lap;
             if (entry.value == g_LapCount) {
@@ -131,9 +129,9 @@ void TriggerRaceCues(void) {
         temp = mask & loopFlags;
         if (temp == 0) {
             temp = g_RaceSeries;
-            entry.value =
-                (((temp * 3) + i) * sizeof(TrackSpeedCue)) + base.value;
-            current = entry.pointer->speed[0][0].trackSection;
+            entry.bytePointer =
+                (u8 *)&base.pointer->speed[g_RaceSeries][i];
+            current = ((TrackSpeedCue *)entry.bytePointer)->trackSection;
             temp = -1;
             if (current == temp) {
                 return;
@@ -141,7 +139,7 @@ void TriggerRaceCues(void) {
 
             temp = state->trackSection;
             if (temp == current) {
-                entry.value = entry.pointer->speed[0][0].speedPercent;
+                entry.value = ((TrackSpeedCue *)entry.bytePointer)->speedPercent;
                 temp = state->speedScale;
                 product = entry.value * temp;
                 temp = product / 100;

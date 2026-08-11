@@ -2,6 +2,8 @@
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/render.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 /* BIOS InitPAD over the two 0x28-byte pad buffers, then StartPAD. */
 void GameInitPad(void) {
@@ -195,5 +197,18 @@ void UpdatePadState(void) {
     }
     if (pad->buttonL >= 0x6B) {
         pad->buttonL = 0x6A;
+    }
+    g_PadHeld = pad->held;
+    g_PadPressed = pad->pressed;
+    g_PadPressedRepeat = pad->pressedRepeat;
+    g_NegconAnalogI = pad->buttonI;
+    g_NegconAnalogII = pad->buttonII;
+    g_NegconAnalogL = pad->buttonL;
+    g_NegconSteer = pad->steer;
+    if (getenv("RAGE_PORT_INPUT_DEBUG") != NULL &&
+        (pad->held != 0 || pad->pressed != 0)) {
+        printf("pad input: raw=%02x,%02x,%02x,%02x type=%02x held=%04x pressed=%04x\n",
+               raw[0], raw[1], raw[2], raw[3], g_PadType,
+               (u16)pad->held, (u16)pad->pressed);
     }
 }

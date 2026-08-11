@@ -11,8 +11,9 @@
 void DrawRaceHudLabels(s32 mode) {
     s32 count;
     s32 i;
-    s32 offset;
     void **scratch;
+    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
 
     count = 9;
     if (mode != 0) {
@@ -21,21 +22,15 @@ void DrawRaceHudLabels(s32 mode) {
 
     i = 6;
     if (i < count) {
-        offset = 0x23770;
         do {
-            RenderBufferAddress base;
-            RenderBufferAddress prim;
-
-            base.bytes = g_DrawBuffer;
+            SPRT *prim = &frame->layout.raceHud.labels[i - 6];
             i++;
-            prim.value = offset + base.value;
-            AddPrim(base.bytes + 0xCC, prim.pointer);
-            offset += 0x14;
+            AddPrim(ot, prim);
         } while (i < count);
     }
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(void);
-    *scratch = QueueDrawModePrim(g_DrawBuffer + 0xCC, *scratch, 9);
+    *scratch = QueueDrawModePrim(ot, *scratch, 9);
 }
 
 u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s32 b) {
@@ -52,9 +47,9 @@ u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s3
     tile->y0 = y;
     tile->w = w;
     tile->h = h;
-    tile->t.r0 = r;
-    tile->t.g0 = g;
-    tile->t.b0 = b;
+    tile->r0 = r;
+    tile->g0 = g;
+    tile->b0 = b;
 
     prim += sizeof(*tile);
     AddPrim(ot, oldPrim);
@@ -85,13 +80,9 @@ void DrawLapTimes(void) {
     s32 activeIndex;
     s32 tile;
     s32 y;
-    s32 primOffset;
-    s32 baseOffset;
     s32 *valuePtr;
-    RenderBufferAddress base;
-    void *ot;
-    RenderBufferAddress prim;
-    RenderBufferAddress sprite;
+    GameFrameContext *frame;
+    OT_TYPE *ot;
     s32 framePad[2];
     s32 value;
 
@@ -103,8 +94,8 @@ void DrawLapTimes(void) {
     i = 0;
     activeIndex = g_HudLapHighlightRow;
     if (g_LapCount > 0) {
-        baseOffset = 0x236F8;
-        primOffset = 0;
+        frame = GetGameFrameContext(g_DrawBuffer);
+        ot = GamePrimaryOrderingTable(0);
         y = 0x2E;
         valuePtr = g_PlayerCar.lapTimes.table.milliseconds;
 
@@ -126,15 +117,9 @@ void DrawLapTimes(void) {
             DrawTimeValue(0xFA, y, value, tile, 0x3E8);
             y += 0xA;
             valuePtr++;
-            base.bytes = g_DrawBuffer;
-            ot = base.bytes + 0xCC;
-            prim.value = baseOffset + base.value;
-            sprite.value = primOffset + base.value + 0x236F8;
-            sprite.sprite->clut = tile;
-            AddPrim(ot, prim.pointer);
+            frame->layout.raceHud.lapTimes[i].clut = tile;
+            AddPrim(ot, &frame->layout.raceHud.lapTimes[i]);
             i++;
-            baseOffset += 0x14;
-            primOffset += 0x14;
         } while (i < g_LapCount);
     }
 
@@ -199,39 +184,32 @@ void SetHudBlinkColor(s32 phase) {
 
 void DrawSplitDelta(s32 delta, s32 y) {
     GameFrameContextAddress drawBuffer;
-    u8 *base;
-    u8 *prim;
-    RenderBufferAddress firstPrim;
+    SPRT *firstPrim;
+    SPRT *secondPrim;
     s32 value;
     s32 temp;
-    u8 *ot;
+    OT_TYPE *ot;
 
-    firstPrim.hudPacketOffset = 0x237AC;
-    temp = 0x237C0;
     value = delta * 8;
-    base = g_DrawBuffer;
-    drawBuffer.bytes = base;
+    drawBuffer.bytes = g_DrawBuffer;
     value += 0x50;
-    prim = base + temp;
+    firstPrim = &drawBuffer.context->layout.raceHud.labels[3];
+    secondPrim = &drawBuffer.context->layout.raceHud.labels[4];
+    ot = GamePrimaryOrderingTable(0);
 
-    drawBuffer.context->layout.raceHud.labels[3].u0 = value;
-    AddPrim(g_DrawBuffer + 0xCC, base + firstPrim.hudPacketOffset);
-    firstPrim.bytes = prim;
+    firstPrim->u0 = value;
+    AddPrim(ot, firstPrim);
 
     if (y > 0) {
-        firstPrim.volatileSprite->u0 = 0x88;
-        ot = g_DrawBuffer;
-        __asm__ volatile("" : : "r"(ot), "r"(prim));
+        secondPrim->u0 = 0x88;
         temp = 0x7810;
     } else if (y < 0) {
-        firstPrim.volatileSprite->u0 = 0x78;
-        ot = g_DrawBuffer;
-        __asm__ volatile("" : : "r"(ot));
+        secondPrim->u0 = 0x78;
         temp = 0x780F;
     } else {
         return;
     }
 
-    drawBuffer.context->layout.raceHud.labels[4].clut = temp;
-    AddPrim(ot + 0xCC, firstPrim.pointer);
+    secondPrim->clut = temp;
+    AddPrim(ot, secondPrim);
 }

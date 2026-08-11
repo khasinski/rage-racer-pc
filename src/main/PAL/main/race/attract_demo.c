@@ -63,7 +63,7 @@ void DrawAttractTitle(void) {
     u32 one;
     u32 flags;
 
-    ptr = g_DrawBuffer + 0xCC;
+    ptr = (u8 *)GamePrimaryOrderingTable(0);
     value = GetAttractTitleFade(0);
     one = 1;
     flags = 0x29;

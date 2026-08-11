@@ -301,7 +301,7 @@ u32 DrawEngineerShopScreen(s32 step) {
 
     if (step == 0) {
         g_EngineSpecStep = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

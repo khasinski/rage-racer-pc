@@ -138,7 +138,7 @@ pos:
 }
 
 s32 DrawCarSelectScreen(s32 step) {
-    u32 *ot = SCRATCH_OT_BASE_AS(u32);
+    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     OrderingTableAddress otAddress;
     s32 p;
     u32 *buf = ot + 1;
@@ -623,7 +623,7 @@ s32 DrawCustomizeScreen(s32 step) {
 
     if (step == 0) {
         g_CustomizeFadeAccum = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

@@ -24,7 +24,7 @@ s32 DrawDesignModeScreen(s32 step) {
 
     if (step == 0) {
         g_DesignModeScreenFade = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {
@@ -195,7 +195,7 @@ s32 DrawTeamLogoScreen(s32 step) {
 
     if (step == 0) {
         g_TeamLogoScreenFade = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

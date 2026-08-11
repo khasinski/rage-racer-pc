@@ -160,7 +160,7 @@ s32 DrawTeamNameScreen(s32 step) {
 
     if (step == 0) {
         g_TeamNameScreenProgress = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {
@@ -279,7 +279,7 @@ s32 DrawPaintColorScreen(s32 step) {
 
     if (step == 0) {
         g_PaintColorScreenProgress = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {
@@ -430,7 +430,7 @@ s32 DrawCarShopScreen(s32 step) {
 
     if (step == 0) {
         g_CarShopScreenProgress = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

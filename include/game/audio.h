@@ -8,6 +8,13 @@ typedef struct EffectCueProgram {
     s32 tone;
 } EffectCueProgram;
 
+void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot);
+#ifdef __psyz
+void SsSeqPlay(short sequence, char playMode, short loopCount);
+void SsSeqStop(short sequence);
+void SsSeqSetVol(short sequence, short left, short right);
+#endif
+
 typedef struct EffectCueBankHeader {
     s32 voiceCount;
     s32 volumeScale;
@@ -176,7 +183,7 @@ extern s32 g_ActiveSpecialCue;
 extern s32 g_AudioLoadSlot;
 extern s32 g_AudioLoadedSlotMask;
 extern s32 g_CarSoundVolumeScales[];
-extern const EffectCueBank g_EffectCueTable[3];
+extern EffectCueBank g_EffectCueTable[3];
 extern s32 g_IndexedEffectIndex;
 extern s32 g_IndexedEffectIndexPrev;
 extern s32 g_IndexedEffectPitch;
@@ -200,11 +207,11 @@ typedef struct SoundCueParams {
     s32 reserved;
 } SoundCueParams;
 
-extern const SoundCueParams g_SoundCueParams[];
-extern const SoundCueParams g_SoundCueParams2[];
+extern SoundCueParams g_SoundCueParams[];
+extern SoundCueParams g_SoundCueParams2[];
 extern s32 g_SpecialCueVoiceA;
 extern s32 g_SpecialCueVoiceB;
-extern const s32 g_SpecialVoiceBits[];
+extern s32 g_SpecialVoiceBits[];
 extern s32 g_StereoOutput;
 extern VabSlotVoice g_VabSlotVoices[10];
 /*

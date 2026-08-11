@@ -120,8 +120,6 @@ void UpdateEnvironment(void) {
     s32 frac;
     Rgb *p1;
     Rgb *p2;
-    EnvironmentPaletteAddress paletteAddress;
-    EnvironmentPaletteAddress colorAddress;
     GameEnvironmentCue *cur;
 
     if (g_EnvScriptEnabled == 0) {
@@ -155,26 +153,12 @@ void UpdateEnvironment(void) {
 
     for (i = 0; i < 0x10; i++) {
         s16 *dst;
-        paletteAddress.palettePointer = &g_EnvPaletteTable[g_EnvironmentModePrev];
-        colorAddress.value = (i * sizeof(Rgb)) + paletteAddress.value;
-        p1 = colorAddress.colorPointer;
-        local[0] = p1->r << 4;
-        local[1] = p1->g << 4;
-        local[2] = p1->b << 4;
-        paletteAddress.palettePointer = &g_EnvPaletteTable[g_EnvironmentMode];
-        colorAddress.value = (i * sizeof(Rgb)) + paletteAddress.value;
-        p2 = colorAddress.colorPointer;
-        SetFarColor(p2->r, p2->g, p2->b);
-        Intpl(local, frac, out);
-        {
-            EnvironmentClutAddress idx;
-            register s32 palo asm("$5");
-
-            idx.clutOffset = i * sizeof(g_EnvironmentClut[0]);
-            LA_ORDERED(palo, g_EnvironmentClut, idx.clutOffset);
-            idx.value = idx.clutOffset + palo;
-            dst = idx.signedPointer;
-        }
+        p1 = &g_EnvPaletteTable[g_EnvironmentModePrev].colors[i];
+        p2 = &g_EnvPaletteTable[g_EnvironmentMode].colors[i];
+        out[0] = LerpColorChannel(p1->r, p2->r, frac);
+        out[1] = LerpColorChannel(p1->g, p2->g, frac);
+        out[2] = LerpColorChannel(p1->b, p2->b, frac);
+        dst = (s16 *)&g_EnvironmentClut[i];
         *dst = 0;
         *dst = out[0];
         *dst |= out[1] << 5;
@@ -185,7 +169,7 @@ void UpdateEnvironment(void) {
     rect.y = 0x1E6;
     rect.w = 0x10;
     rect.h = 0x1;
-    LoadImage(&rect);
+    LoadImage(&rect, (u_long *)g_EnvironmentClut);
 
     LerpEnvColor(&g_EnvironmentColors.fields.slots[0].from, &g_EnvironmentColors.fields.slots[0].to,
                  &g_EnvironmentColors.fields.slots[0].cur, frac);

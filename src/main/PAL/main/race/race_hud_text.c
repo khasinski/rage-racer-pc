@@ -4,6 +4,7 @@
 #include "game/save_internal.h"
 #include "game/fmv_internal.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
@@ -15,22 +16,8 @@ typedef union CountdownPhase {
     u32 unsignedValue;
 } CountdownPhase;
 
-/* The strip buffers hold back-to-back 0x10-byte TILEs; SetTile is
- * SetTile. The retail code reloads the buffer base before each field store,
- * so the base is passed in rather than held in a pointer. */
-typedef union TileStripAddress {
-    s32 byteOffset;
-    s32 value;
-    u8 *bytes;
-    TILE *tile;
-} TileStripAddress;
-
 static __inline__ TILE *GetTileAtByteOffset(u8 *base, s32 byteOffset) {
-    TileStripAddress address;
-
-    address.bytes = base;
-    address.value = byteOffset + address.value;
-    return address.tile;
+    return (TILE *)(base + (byteOffset / 0x10) * sizeof(TILE));
 }
 
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
@@ -155,7 +142,7 @@ void BuildTileStrips(void) {
     initBuffers = g_TileStripBuffers;
     firstBuffer = g_TileStripStorage;
     initBuffers[0].bytes = firstBuffer;
-    g_TileStripBuffers[1].bytes = firstBuffer + 12000;
+    g_TileStripBuffers[1].bytes = firstBuffer + 512 * sizeof(TILE);
     DrawSync(0);
 
     color = 0x20;
@@ -181,9 +168,9 @@ void BuildTileStrips(void) {
                 GetTileAtByteOffset(storeBaseV1, offset)->x0 = 0xCD - xStep;
                 storeBaseV0 = buffers[0].bytes;
                 GetTileAtByteOffset(storeBaseV0, offset)->y0 = yStart;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->t.r0 = color;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->t.g0 = color;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->t.b0 = color;
+                GetTileAtByteOffset(buffers[0].bytes, offset)->r0 = color;
+                GetTileAtByteOffset(buffers[0].bytes, offset)->g0 = color;
+                GetTileAtByteOffset(buffers[0].bytes, offset)->b0 = color;
 
                 if (linear > 0) {
                     addPrimBase = buffers[0].bytes;
@@ -221,7 +208,6 @@ void DrawStartCountdown(s32 sceneTimer) {
     u32 *phasePattern;
     TILE *tiles;
     u8 *cursor;
-    u8 *packet;
     s32 rangeTimer;
     u8 *orderingTable;
     SPRT *sprite;
@@ -229,7 +215,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     RenderBufferAddress packetAddress;
 
     timer = sceneTimer;
-    orderingTable = g_DrawBuffer + 0xD0;
+    orderingTable = GamePrimaryOrderingTable(1);
     if (timer < 105) {
         return;
     }
@@ -266,8 +252,14 @@ void DrawStartCountdown(s32 sceneTimer) {
 
     do {
         firstPattern = g_CountdownDigitPatterns;
-        patternBeforeFirst = firstPattern - 64;
-        phasePattern = patternBeforeFirst + (phase.value * 16);
+        patternBeforeFirst = g_CountdownGlyphTable;
+        if (phase.value <= 0) {
+            phasePattern = firstPattern;
+        } else if (phase.value < 4) {
+            phasePattern = patternBeforeFirst + (phase.value * 16);
+        } else {
+            phasePattern = firstPattern + ((phase.value - 4) * 16);
+        }
         if (phase.value == 0) {
             pattern = -1;
         } else if (phaseIsNegative) {
@@ -283,19 +275,14 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
         rowOffset = row * 32;
         do {
-            RenderBufferAddress tileBase;
-            RenderBufferAddress color;
-
-            tileBase.pointer = tiles;
-            color.value = ((rowOffset + column) << 4) +
-                tileBase.value + sizeof(u32);
+            TILE *tile = &tiles[rowOffset + column];
             colorBank = 0;
             if (phase.value == 4 || phaseIsNegative) {
                 colorBank = 1;
             }
             {
                 CVec *colors = &g_CountdownCellColors[colorBank * 2];
-                *color.color = colors[pattern & 1];
+                *(CVec *)&tile->r0 = colors[pattern & 1];
             }
             pattern >>= 1;
             column++;
@@ -314,7 +301,7 @@ void DrawStartCountdown(s32 sceneTimer) {
 
     cursor = SCRATCH_PRIM_CURSOR_AS(u8);
     backdrop = QueueDrawModePrim(
-        g_DrawBuffer + 0xD0, cursor, 9);
+        GamePrimaryOrderingTable(1), cursor, 9);
     pattern = g_CountdownBoardOffset;
     SCRATCH_PRIM_CURSOR_AS(u8) = backdrop;
     cursor = GameQueueTexturePacketWide(
@@ -327,8 +314,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
 
-    packet = cursor;
-    packetAddress.bytes = packet;
+    packetAddress.bytes = cursor;
     sprite = packetAddress.sprite;
     for (row = 0; row < 6; row++) {
         SetSprt(cursor);
@@ -370,21 +356,20 @@ void DrawStartCountdown(s32 sceneTimer) {
             sprite->clut = 0x7850;
         }
 
-        sprite->t.r0 = pattern;
-        sprite->t.g0 = pattern;
-        sprite->t.b0 = pattern;
+        sprite->r0 = pattern;
+        sprite->g0 = pattern;
+        sprite->b0 = pattern;
         {
             SPRT *currentSprite = sprite;
 
-            sprite++;
-            packet += 20;
-            cursor += 20;
+            cursor += sizeof(SPRT);
+            sprite = (SPRT *)cursor;
             AddPrim(orderingTable, currentSprite);
         }
     }
 
     SCRATCH_PRIM_CURSOR_AS(u8) = cursor;
-    cursor = QueueDrawModePrim(g_DrawBuffer + 0xD0, cursor, 0xC);
+    cursor = QueueDrawModePrim(GamePrimaryOrderingTable(1), cursor, 0xC);
     SCRATCH_PRIM_CURSOR_AS(u8) = cursor;
 
     if (phase.value > 0) {
@@ -399,9 +384,9 @@ void DrawStartCountdown(s32 sceneTimer) {
     tiles->w = 0x64;
     tiles->h = 0x24;
     tiles->x0 = 0x6E;
-    tiles->t.r0 = 5;
-    tiles->t.g0 = 5;
-    tiles->t.b0 = 5;
+    tiles->r0 = 5;
+    tiles->g0 = 5;
+    tiles->b0 = 5;
     tiles->y0 = rangeTimer;
     AddPrim(orderingTable, tiles++);
     SCRATCH_PRIM_CURSOR_AS(TILE) = tiles;
@@ -416,7 +401,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     s32 marquee;
     register RenderBufferAddress prim asm("$18");
 
-    ot = g_DrawBuffer + 0xCC;
+    ot = GamePrimaryOrderingTable(0);
     {
         register void *drawPrim;
 
@@ -436,9 +421,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         } else {
             brightness = 0x40;
         }
-        prim.sprite->t.r0 = brightness;
-        prim.sprite->t.g0 = brightness;
-        prim.sprite->t.b0 = brightness;
+        prim.sprite->r0 = brightness;
+        prim.sprite->g0 = brightness;
+        prim.sprite->b0 = brightness;
         asm("" ::: "memory");
         drawPrim = prim.pointer;
         prim.bytes += sizeof(SPRT);
@@ -560,9 +545,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 quad = quadBase;
                 g_RaceOptionPulseAngle += 0x20;
                 SetPolyFT4(quad);
-                quad->t.r0 = 0x60;
-                quad->t.g0 = 0x60;
-                quad->t.b0 = 0x60;
+                quad->r0 = 0x60;
+                quad->g0 = 0x60;
+                quad->b0 = 0x60;
                 g_RaceOptionPulseAngle &= 0xFFF;
                 leftTrig = rcos(g_RaceOptionPulseAngle) * 0x2C;
                 if (leftTrig < 0) {
@@ -605,11 +590,11 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 drawPrim->v3 = 0xE0;
                 drawPrim->clut = 0x784B;
                 drawPrim->tpage = 9;
-                AddPrim(g_DrawBuffer + 0xCC, drawPrim);
+                AddPrim(GamePrimaryOrderingTable(0), drawPrim);
 
                 cursor.polyFT4 = quad;
                 SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(
-                    g_DrawBuffer + 0xCC, cursor.bytes, 9);
+                    GamePrimaryOrderingTable(0), cursor.bytes, 9);
             }
         }
     }

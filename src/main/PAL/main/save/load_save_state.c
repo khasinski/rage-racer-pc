@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/audio.h"
 #include "game/car.h"
 #include "game/memcard.h"
 #include "game/race.h"
@@ -185,130 +186,16 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
             }
         }
 
-        /* g_BestLapTimes / g_BestTotalTimes */
-        {
-            i = 0;
-            for (; i < 2; i++) {
-                j = 0;
-                for (; j < 4; j++) {
-                    g_BestLapTimes[i][j][0] =
-                        base->bestLapTimes[i][j][0];
-                    g_BestTotalTimes[i][j][0] =
-                        base->bestTotalTimes[i][j][0];
-                }
-            }
-        }
-
-        /* g_RankingRecords / g_TimeRecords */
-        {
-            s32 *cb78;
-            s32 *d1base;
-            s32 ioff;
-            i = 0;
-            cb78 = GetRaceRecordWords(&g_TimeRecords[0][0][0]);
-            d1base = GetRaceRecordWords(&g_RankingRecords[0][0][0]);
-            ioff = 0;
-            for (; i < 2; i++) {
-                s32 iofc;
-                s32 *d1;
-                s32 joff;
-                j = 0;
-                iofc = ioff;
-                d1 = d1base;
-                joff = 0;
-                for (; j < 4; j++) {
-                    register RaceRecordAddress timeAddress asm("$2");
-                    RaceRecordAddress destinationAddress;
-                    register s32 *dst2 asm("$11");
-                    register GameSaveBlockAddress saveAddress asm("$3");
-                    RaceRecordAddress timeSourceAddress;
-                    RaceRecordAddress sourceAddress;
-                    s32 *src2;
-                    s32 *dst1;
-                    register s32 *src1 asm("$6");
-                    RaceRecordAddress rankingSourceAddress;
-                    k = 0;
-                    timeAddress.wordPointer = cb78;
-                    timeAddress.value = iofc + timeAddress.value;
-                    destinationAddress.value = joff + timeAddress.value;
-                    dst2 = destinationAddress.wordPointer;
-                    saveAddress.pointer = base;
-                    saveAddress.offset = iofc + saveAddress.offset;
-                    timeSourceAddress.pointer = &saveAddress.pointer->timeRecords[0][0][0];
-                    sourceAddress.value = joff + timeSourceAddress.value;
-                    src2 = sourceAddress.wordPointer;
-                    dst1 = d1;
-                    rankingSourceAddress.pointer =
-                        &saveAddress.pointer->rankingRecords[0][0][0];
-                    sourceAddress.value = joff + rankingSourceAddress.value;
-                    src1 = sourceAddress.wordPointer;
-                    do {
-                        s32 a0 = src1[0], a1 = src1[1], a2 = src1[2], a3 = src1[3];
-                        dst1[0] = a0;
-                        dst1[1] = a1;
-                        dst1[2] = a2;
-                        dst1[3] = a3;
-                        {
-                            s32 b0 = src2[0], b1 = src2[1], b2 = src2[2], b3 = src2[3];
-                            dst2[0] = b0;
-                            dst2[1] = b1;
-                            dst2[2] = b2;
-                            dst2[3] = b3;
-                        }
-                        dst2 += 4;
-                        __asm__("" : "=r"(src2) : "0"(src2), "r"(dst2));
-                        src2 += 4;
-                        __asm__("" : "=r"(dst1) : "0"(dst1), "r"(src2));
-                        dst1 += 4;
-                        __asm__("" : "=r"(k) : "0"(k), "r"(dst1));
-                        k++;
-                        __asm__("" : "=r"(src1) : "0"(src1), "r"(k));
-                        src1 += 4;
-                    } while (k < 5);
-                    d1 += sizeof(g_RankingRecords[0][0]) / sizeof(*d1);
-                    joff += 0x50;
-                }
-                d1base += sizeof(g_RankingRecords[0]) / sizeof(*d1base);
-                ioff += 0x140;
-            }
-        }
-
-        /* g_BestSectorTimes */
-        {
-            register s32 *e41e8 asm("$10");
-            s32 ioff;
-            i = 0;
-            e41e8 = &g_BestSectorTimes[0][0][0];
-            ioff = 0;
-            for (; i < 2; i++) {
-                s32 iofc;
-                s32 *dbase;
-                s32 joff;
-                j = 0;
-                iofc = ioff;
-                dbase = e41e8;
-                joff = 0;
-                for (; j < 4; j++) {
-                    s32 *dst;
-                    SectorTimeTableAddress sourceAddress;
-                    s32 *src;
-                    k = 0;
-                    dst = dbase;
-                    sourceAddress.saveBlock = base;
-                    sourceAddress.value =
-                        iofc + sourceAddress.value + 0xF5C;
-                    sourceAddress.value = joff + sourceAddress.value;
-                    src = sourceAddress.pointer;
-                    for (; k < 3; k++) {
-                        *dst++ = *src++;
-                    }
-                    dbase += sizeof(g_BestSectorTimes[0][0]) / sizeof(*dbase);
-                    joff += 0xC;
-                }
-                e41e8 += sizeof(g_BestSectorTimes[0]) / sizeof(*e41e8);
-                ioff += 0x30;
-            }
-        }
+        memcpy((u8 *)g_BestLapTimes, (u8 *)base->bestLapTimes,
+               sizeof(g_BestLapTimes));
+        memcpy((u8 *)g_BestTotalTimes, (u8 *)base->bestTotalTimes,
+               sizeof(g_BestTotalTimes));
+        memcpy((u8 *)g_RankingRecords, (u8 *)base->rankingRecords,
+               sizeof(base->rankingRecords));
+        memcpy((u8 *)g_TimeRecords, (u8 *)base->timeRecords,
+               sizeof(base->timeRecords));
+        memcpy((u8 *)g_BestSectorTimes, (u8 *)base->bestSectorTimes,
+               sizeof(g_BestSectorTimes));
     }
 
     /* g_BgmVolumeSetting / g_SfxVolumeSetting / g_MonoOutput clamps */

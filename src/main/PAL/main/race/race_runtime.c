@@ -261,7 +261,7 @@ void DrawLapNumber(void) {
             packet->u0 = (quotient - tens * 10) * 24;
 
             packet++;
-            AddPrim(g_DrawBuffer + 0xCC, oldPacket);
+            AddPrim(GamePrimaryOrderingTable(0), oldPacket);
         }
     }
 
@@ -274,7 +274,7 @@ void DrawLapNumber(void) {
         scratchAddress.sprite = scratch;
         finalScratch = scratchAddress.bytes;
         packet = SCRATCHPAD_AS(SPRT);
-        ot = g_DrawBuffer + 0xCC;
+        ot = GamePrimaryOrderingTable(0);
         tpage = 9;
         scratchAddress.sprite = packet;
         *scratchAddress.packetLink = finalScratch;

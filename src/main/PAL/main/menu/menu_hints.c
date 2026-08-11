@@ -2,6 +2,7 @@
 #include "game/prim.h"
 #include "game/menu.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 
 
@@ -28,7 +29,7 @@ void DrawOptionHintBar(s32 variant) {
     u8 *base;
     u8 *prim;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     prim = SCRATCH_PRIM_CURSOR_AS(u8);
     which = variant;
 
@@ -68,7 +69,7 @@ void DrawPadTypeHint(void) {
     u8 *scratch;
     u8 *prim;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     rawPadType = g_PadType;
     scratch = SCRATCH_PRIM_CURSOR_AS(u8);
     prim = scratch;

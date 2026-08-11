@@ -2,6 +2,7 @@
 #define GAME_RENDER_H
 
 #include "common.h"
+#include "game/angle.h"
 #include "game/camera_types.h"
 #include "game/environment.h"
 #include "game/render_types.h"
@@ -168,13 +169,6 @@ extern TimedDrawCommand g_MenuRowScript[];
 
 /* Angles are 12 bits throughout: 0x1000 is one full turn, and any angle that
  * has to survive arithmetic is masked back down with ANGLE_MASK. */
-enum Angle {
-    ANGLE_MASK = 0xFFF,
-    ANGLE_QUARTER_TURN = 0x400,
-    ANGLE_HALF_TURN = 0x800,
-    ANGLE_FULL_TURN = 0x1000
-};
-
 typedef struct GameRenderAxisMatrix {
     s16 m[3][3];
 } GameRenderAxisMatrix;
@@ -336,7 +330,6 @@ s32 Atan2(s32 x, s32 y);
 s32 GetAngleDelta(s32 from, s32 to);
 /* (s32 a, s32 b); left unprototyped because UpdateCarDrivetrain calls it with two
  * extra arguments that the original left live in a2/a3. */
-s32 GetAngleDistance();
 
 /*
  * Sets up both environments for the frame and clears to (r, g, b):
@@ -349,9 +342,9 @@ void InitRenderState(s32 otShift);
 void DrawFullscreenFadeTile(s32 color, s32 tpage);
 void DrawFullscreenFadeTile480(s32 color, s32 tpage);
 void DrawTerrainCellsWide(void);
-void RequestTrackTexturePage();
-void UpdateCamera();
-void DrawPlayerCarModel();
+void RequestTrackTexturePage(s32 trackSection);
+void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
+void DrawPlayerCarModel(GameRenderObject *obj);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*
@@ -404,6 +397,18 @@ void DrawSprite(
     s32 shadeTex,
     s32 semiTrans,
     u32 flags);
+void GameDrawMenuButton(
+    s32 x0,
+    s32 y0,
+    s32 x1,
+    s32 y1,
+    u8 r,
+    u8 g,
+    u8 b,
+    s32 flags,
+    s32 textX,
+    s32 textY,
+    u8 *caption);
 void DrawFlatTriangle(
     void *ot,
     s32 x0,
@@ -936,7 +941,9 @@ s32 rsinCore(s32 angle);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
 void *ApplyMatrixLV();
+#ifndef __psyz
 s32 SquareRoot0(s32 square);
+#endif
 void SubmitTerrainCells(void *ctx, void *cells, s32 count);
 s32 SetLookAtMatrix(const CameraLookAt *camera);
 void SetTrackTexturePageNow(s32 trackSection);
@@ -983,7 +990,7 @@ extern SPRT g_TachoNeedlePrim1[];
 extern u8 g_RaceHudSprite11U0[];
 extern s16 g_MirrorDrawEnv1ClipY;
 extern s16 g_MirrorDrawEnv1ClipH;
-extern u8 g_TrackTextureShadowPage[];
+extern u8 g_TrackTextureShadowPage[256];
 extern u8 g_TrackTextureShadowPageLast;
 extern s16 g_AtanTable[];
 extern volatile s32 g_CameraPathKey;
@@ -1005,26 +1012,29 @@ extern volatile s16 g_FmvUploadRectX;
 extern volatile s16 g_FmvUploadRectY;
 extern u8 g_Font8x8Cells[];
 extern u8 g_GpuJumpTable[];
-extern u8 g_HighFontU[];
-extern u8 g_HighFontV[];
-extern u8 g_HighFontWidth[];
-extern u8 g_HighFontYOffset[];
+extern u8 g_HighFontCell[4];
+#define g_HighFontU g_HighFontCell
+#define g_HighFontV (g_HighFontCell + 1)
+#define g_HighFontWidth (g_HighFontCell + 2)
+#define g_HighFontYOffset (g_HighFontCell + 3)
 extern s32 g_MirrorPanelY;
 extern s32 g_MirrorUnlocked;
 extern char g_MsgFmvDecodeTimeout[];
 extern char g_MsgFmvSector[];
 extern s32 g_NegconPlayScale[];
-extern u8 g_PropFontU[];
-extern u8 g_PropFontV[];
+extern u8 g_PropFontCells[0x80];
+#define g_PropFontU g_PropFontCells
+#define g_PropFontV (g_PropFontCells + 1)
 extern s32 g_TrackTextureCursorRow;
 extern s32 g_TrackTexturePageWanted;
 extern s32 g_TrackTextureTargetRow;
 extern u8 g_VramHeightTable[];
 extern u8 g_VramWidthTable[];
-extern u8 g_WordFontAdvance[];
-extern u8 g_WordFontU[];
-extern u8 g_WordFontV[];
-extern u8 g_WordFontWidth[];
+extern u8 g_WordFontCells[40];
+#define g_WordFontU g_WordFontCells
+#define g_WordFontV (g_WordFontCells + 1)
+#define g_WordFontWidth (g_WordFontCells + 2)
+#define g_WordFontAdvance (g_WordFontCells + 3)
 
 void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm, s32 axis);
 s32 CdRead2(s32 mode);

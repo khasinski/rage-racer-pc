@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-extern u16 g_PadButtonMapping[];
+extern u16 g_PadButtonMapping[16];
 typedef s16 ControllerMappingIndex;
 extern ControllerMappingIndex g_PadMappingIndex;
 extern ControllerMappingIndex g_NegconMappingIndex;

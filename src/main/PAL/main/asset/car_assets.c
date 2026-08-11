@@ -84,15 +84,9 @@ void LoadCarSelectAssets(void) {
                 SelectCarModelSlot(0);
 
                 model = g_CarModelAsset;
-                relOffset = model->modelData.offset;
-                modelPtr = carModelBase + relOffset;
-                model->modelData.pointer = modelPtr;
                 RegisterModelBank(model->modelData.modelBank, 0);
 
                 model = g_CarModelAsset;
-                relOffset = model->imageData.offset;
-                modelPtr = carModelBase + relOffset;
-                model->imageData.pointer = modelPtr;
                 SetCarImageSlot(model->imageData.carImage, 0);
 
                 carIndex = g_PlayerCarIndex;
@@ -145,11 +139,8 @@ void LoadCarModel(s32 carIndex) {
         if (LoadAsset(assetId, ptr) != 0) {
             asset = GetCarModelAsset(ptr);
             SetCarModelSlot(asset, g_CarModelSlot < 1);
-
-            asset->modelData.pointer = ptr + asset->modelData.offset;
+            asset = g_CarModelSlots[g_CarModelSlot < 1];
             RegisterModelBank(asset->modelData.modelBank, g_CarModelSlot < 1);
-
-            asset->imageData.pointer = ptr + asset->imageData.offset;
             SetCarImageSlot(asset->imageData.carImage, g_CarModelSlot < 1);
 
             if (carIndex < 10) {

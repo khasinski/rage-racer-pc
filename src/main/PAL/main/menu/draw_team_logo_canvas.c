@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
+#include "game/render.h"
 #include "game/render_types.h"
 #include "game/scratchpad.h"
 #include "psyq/gpu.h"

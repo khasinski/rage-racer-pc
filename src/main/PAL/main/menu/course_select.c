@@ -129,8 +129,8 @@ static __inline__ s32 GameDrawSlidingSprite(
 
 s32 DrawCourseSelectScreen(s32 step)
 {
-    u32 *otBase;
-    u32 *ot;
+    OT_TYPE *otBase;
+    OT_TYPE *ot;
     u8 fade;
     u16 slide;
     s16 headerWidth;
@@ -153,7 +153,7 @@ s32 DrawCourseSelectScreen(s32 step)
     u32 fadeValue;
     OrderingTableAddress otAddress;
 
-    otBase = SCRATCH_OT_BASE_AS(u32);
+    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;
@@ -810,7 +810,7 @@ s32 DrawRankingScreen(s32 step) {
 
     if (step == 0) {
         g_RankingScrollState = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

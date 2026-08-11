@@ -1,0 +1,10 @@
+#ifndef RAGE_TEST_RENDER_H
+#define RAGE_TEST_RENDER_H
+
+enum {
+    ANGLE_MASK = 0xFFF,
+    ANGLE_HALF_TURN = 0x800,
+    ANGLE_FULL_TURN = 0x1000
+};
+
+#endif

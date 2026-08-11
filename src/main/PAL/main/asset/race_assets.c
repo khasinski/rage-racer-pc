@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/state.h"
 #include "game/asset.h"
+#include "game/audio.h"
 #include "game/car.h"
 #include "game/race.h"
 #include "game/cd.h"

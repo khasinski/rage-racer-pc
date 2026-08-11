@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/race.h"
+#include "game/render.h"
 #include "game/render_types.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
@@ -48,7 +49,8 @@ enum SkyOrderingTableIndex
 };
 void DrawSkyBackground(void)
 {
-  SkyRenderScratchpad *scratch = SCRATCHPAD_AS(SkyRenderScratchpad);
+  SkyRenderScratchpad nativeScratch;
+  SkyRenderScratchpad *scratch = &nativeScratch;
   s32 panelXFixed;
   s32 panelYFixed;
   s32 columnStepX;
@@ -67,6 +69,15 @@ void DrawSkyBackground(void)
   s32 screenX2;
   s32 screenX3;
   s32 savedCourseX0;
+  scratch->packetCursor = SCRATCH_PRIM_CURSOR_AS(u8);
+  scratch->orderingTable = SCRATCH_OT_BASE_AS(OT_TYPE);
+  scratch->cameraX = SCRATCH_VIEW_X;
+  scratch->cameraY = SCRATCH_VIEW_Y;
+  scratch->cameraZ = SCRATCH_VIEW_Z;
+  scratch->pitch = SCRATCH_VIEW_ANGLE_X;
+  scratch->yaw = SCRATCH_VIEW_ANGLE_Y;
+  scratch->roll = SCRATCH_VIEW_ANGLE_Z;
+  scratch->mirrorFlag = SCRATCH_MIRROR;
   u8 *packetCursor = scratch->packetCursor;
   s32 savedCourseX1;
   s32 heldBandY;
@@ -267,7 +278,7 @@ void DrawSkyBackground(void)
             quad->tpage = 0x18;
             uvAddress.bytes = &quad->u0;
             *uvAddress.packed = tileUv->corner[0].packed;
-            packetCursor += 0x28;
+            packetCursor += sizeof(POLY_FT4);
             uvAddress.bytes = &quad->u1;
             *uvAddress.packed = tileUv->corner[1].packed;
             uvAddress.bytes = &quad->u2;
@@ -278,10 +289,10 @@ void DrawSkyBackground(void)
             quad->x1 = screenX1;
             quad->x2 = screenX2;
             quad->x3 = screenX3;
-            quad->t.r0 = 0x80;
-            quad->t.g0 = 0x80;
+            quad->r0 = 0x80;
+            quad->g0 = 0x80;
             heldScreenY = screenY0;
-            quad->t.b0 = 0x80;
+            quad->b0 = 0x80;
             quad->y0 = heldScreenY;
             quad->y1 = screenY1;
             quad->y2 = screenY2;
@@ -439,7 +450,7 @@ void DrawSkyBackground(void)
             quad->tpage = 0x18;
             uvAddress.bytes = &quad->u0;
             *uvAddress.packed = tileUv->corner[0].packed;
-            packetCursor += 0x28;
+            packetCursor += sizeof(POLY_FT4);
             uvAddress.bytes = &quad->u1;
             *uvAddress.packed = tileUv->corner[1].packed;
             uvAddress.bytes = &quad->u2;
@@ -450,9 +461,9 @@ void DrawSkyBackground(void)
             quad->x1 = screenX1;
             quad->x2 = screenX2;
             quad->x3 = screenX3;
-            quad->t.r0 = 0x80;
-            quad->t.g0 = 0x80;
-            quad->t.b0 = 0x80;
+            quad->r0 = 0x80;
+            quad->g0 = 0x80;
+            quad->b0 = 0x80;
             quad->y0 = screenY0;
             quad->y1 = screenY1;
             quad->y2 = screenY2;
@@ -485,7 +496,7 @@ void DrawSkyBackground(void)
         screenY2 = GameRoundTerrainCoordinate(panelYFixed + rowStepY);
         bandFarY = lowestY + rowStepY;
         screenY3 = bandFarY / 256;
-        nextPacket = packetCursor + 0x24;
+        nextPacket = packetCursor + sizeof(POLY_G4);
         SetPolyG4(packetCursor);
         packetAddress.bytes = packetCursor;
         firstG4 = packetAddress.polyG4;
@@ -499,19 +510,19 @@ void DrawSkyBackground(void)
         firstG4->y3 = screenY3;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.r;
         firstG4->r1 = color;
-        firstG4->t.r0 = color;
+        firstG4->r0 = color;
         color = g_EnvironmentColors.fields.slots[3].cur.bytes.r;
         firstG4->r3 = color;
         firstG4->r2 = color;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.g;
         firstG4->g1 = color;
-        firstG4->t.g0 = color;
+        firstG4->g0 = color;
         color = g_EnvironmentColors.fields.slots[3].cur.bytes.g;
         firstG4->g3 = color;
         firstG4->g2 = color;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.b;
         firstG4->b1 = color;
-        firstG4->t.b0 = color;
+        firstG4->b0 = color;
         color = g_EnvironmentColors.fields.slots[3].cur.bytes.b;
         firstG4->b3 = color;
         firstG4->b2 = color;
@@ -524,7 +535,7 @@ void DrawSkyBackground(void)
       {
         u8 color;
         POLY_G4 *g4Cursor;
-        u32 *orderingTableBase;
+        OT_TYPE *orderingTableBase;
         RenderBufferAddress cursor;
         cursor.bytes = packetCursor;
         g4Cursor = cursor.polyG4;
@@ -554,7 +565,7 @@ void DrawSkyBackground(void)
           adjW = savedCourseY1 + 0xFF;
         }
         screenY3 = adjW >> 8;
-        nextPacket = packetCursor + 0x24;
+        nextPacket = packetCursor + sizeof(POLY_G4);
         SetPolyG4(g4Cursor);
         g4Cursor->x0 = screenX0;
         g4Cursor->x1 = screenX1;
@@ -566,19 +577,19 @@ void DrawSkyBackground(void)
         g4Cursor->y3 = screenY3;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.r;
         g4Cursor->r1 = color;
-        g4Cursor->t.r0 = color;
+        g4Cursor->r0 = color;
         color = g_EnvironmentColors.fields.slots[1].cur.bytes.r;
         g4Cursor->r3 = color;
         g4Cursor->r2 = color;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.g;
         g4Cursor->g1 = color;
-        g4Cursor->t.g0 = color;
+        g4Cursor->g0 = color;
         color = g_EnvironmentColors.fields.slots[1].cur.bytes.g;
         g4Cursor->g3 = color;
         g4Cursor->g2 = color;
         color = g_EnvironmentColors.fields.slots[2].cur.bytes.b;
         g4Cursor->b1 = color;
-        g4Cursor->t.b0 = color;
+        g4Cursor->b0 = color;
         color = g_EnvironmentColors.fields.slots[1].cur.bytes.b;
         g4Cursor->b3 = color;
         g4Cursor->b2 = color;
@@ -627,22 +638,22 @@ void DrawSkyBackground(void)
         SetPolyG4(g4Cursor);
         g4Cursor->x0 = screenX0;
         g4Cursor->x1 = screenX1;
-        asm volatile("" : "=r"(geomValueX2) : "0"((u16) screenX2) : "$2");
+        geomValueX2 = (u16)screenX2;
         g4Cursor->x2 = geomValueX2;
         g4Cursor->x3 = screenX3;
         g4Cursor->y0 = screenY0;
         g4Cursor->y1 = screenY1;
         g4Cursor->y2 = screenY2;
         g4Cursor->y3 = screenY3;
-        g4Cursor->t.r0 = (g4Cursor->r1 = g_EnvironmentColors.fields.slots[1].cur.bytes.r);
+        g4Cursor->r0 = (g4Cursor->r1 = g_EnvironmentColors.fields.slots[1].cur.bytes.r);
         g4Cursor->r2 = (g4Cursor->r3 = 0);
         {
           packetColor = g_EnvironmentColors.fields.slots[1].cur.bytes.g;
           g4Cursor->g2 = (g4Cursor->g3 = 0);
-          g4Cursor->t.g0 = (g4Cursor->g1 = packetColor);
+          g4Cursor->g0 = (g4Cursor->g1 = packetColor);
           {
             u8 packetColor = g_EnvironmentColors.fields.slots[1].cur.bytes.b;
-            g4Cursor->t.b0 = (g4Cursor->b1 = packetColor);
+            g4Cursor->b0 = (g4Cursor->b1 = packetColor);
             g4Cursor->b2 = (g4Cursor->b3 = 16);
           }
           AddPrim(&scratch->orderingTable[SKY_OT_NEAR], g4Cursor);
@@ -693,20 +704,20 @@ void DrawSkyBackground(void)
         courseG4->y3 = screenY3;
         color = g_EnvironmentColors.fields.slots[7].cur.bytes.r;
         courseG4->r1 = color;
-        courseG4->t.r0 = color;
+        courseG4->r0 = color;
         color = g_EnvironmentColors.fields.slots[8].cur.bytes.r;
         courseG4->r3 = color;
         courseG4->r2 = color;
         color = g_EnvironmentColors.fields.slots[7].cur.bytes.g;
         courseG4->g1 = color;
-        courseG4->t.g0 = color;
+        courseG4->g0 = color;
         courseSaveY1 = screenY3;
         color = g_EnvironmentColors.fields.slots[8].cur.bytes.g;
         courseG4->g3 = color;
         courseG4->g2 = color;
         color = g_EnvironmentColors.fields.slots[7].cur.bytes.b;
         courseG4->b1 = color;
-        courseG4->t.b0 = color;
+        courseG4->b0 = color;
         cursor.polyG4 = courseG4 + 1;
         nextPacket = cursor.bytes;
         color = g_EnvironmentColors.fields.slots[8].cur.bytes.b;
@@ -748,19 +759,19 @@ void DrawSkyBackground(void)
         courseG4->y3 = screenY3;
         color = g_EnvironmentColors.fields.slots[5].cur.bytes.r;
         courseG4->r1 = color;
-        courseG4->t.r0 = color;
+        courseG4->r0 = color;
         color = g_EnvironmentColors.fields.slots[6].cur.bytes.r;
         courseG4->r3 = color;
         courseG4->r2 = color;
         color = g_EnvironmentColors.fields.slots[5].cur.bytes.g;
         courseG4->g1 = color;
-        courseG4->t.g0 = color;
+        courseG4->g0 = color;
         color = g_EnvironmentColors.fields.slots[6].cur.bytes.g;
         courseG4->g3 = color;
         courseG4->g2 = color;
         color = g_EnvironmentColors.fields.slots[5].cur.bytes.b;
         courseG4->b1 = color;
-        courseG4->t.b0 = color;
+        courseG4->b0 = color;
         color = g_EnvironmentColors.fields.slots[6].cur.bytes.b;
         courseG4->b3 = color;
         courseG4->b2 = color;
@@ -785,19 +796,19 @@ void DrawSkyBackground(void)
         courseF4->y1 = screenY1;
         courseF4->y2 = screenY2;
         courseF4->y3 = screenY3;
-        courseF4->t.r0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.r;
-        courseF4->t.g0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.g;
+        courseF4->r0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.r;
+        courseF4->g0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.g;
         {
           u8 *nextPacket;
           RenderBufferAddress cursor;
           cursor.polyF4 = courseF4 + 1;
           nextPacket = cursor.bytes;
-          courseF4->t.b0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.b;
+          courseF4->b0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.b;
           AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseF4);
           packetCursor = nextPacket;
         }
       }
-      scratch->packetCursor = packetCursor;
+      SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
     }
   }
   return;

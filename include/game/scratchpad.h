@@ -20,20 +20,34 @@
  * moves the emitted code, a macro cannot.
  */
 typedef struct GameScratchpadRenderState {
-    s32 pad0;
+    void *packetCursor;
     void *primData;
-    u8 pad8[0x14];
+    s32 viewX;
+    s32 viewY;
+    s32 viewZ;
+    s32 reserved14;
+    s32 viewAngleX;
+    s32 viewAngleY;
+    s32 viewAngleZ;
     s32 depth;
-    u8 pad20[8];
     Matrix matrix;
-    u8 pad48[0x20];
+    void *courseBank;
+    void *modelModels;
+    void *modelTable1;
+    void *modelNormals;
+    void *cellTable;
+    void *cellFaces;
+    s32 otShift;
     s32 orderingFlag;
+    s32 faceOtShift;
     s32 mode;
-    u8 pad70[8];
+    u8 ft4Color[4];
+    u8 gt4Color[4];
     s16 x0;
     s16 y0;
     s16 x1;
     s16 y1;
+    s32 envMode4;
 } GameScratchpadRenderState;
 
 typedef struct ObjectMatrixWork {
@@ -44,7 +58,12 @@ typedef struct ObjectMatrixWork {
     Matrix mtx;
 } ObjectMatrixWork;
 
-#define SCRATCH_OBJECT_MATRIX_WORK ((ObjectMatrixWork *)0x1F80011C)
+extern u8 g_RageScratchpad[0x400];
+extern GameScratchpadRenderState g_RageScratchpadState;
+#define SCRATCHPAD_ADDR ((void *)g_RageScratchpad)
+#define RAGE_SCRATCH_ADDRESS(offset) ((void *)(g_RageScratchpad + (offset)))
+
+#define SCRATCH_OBJECT_MATRIX_WORK ((ObjectMatrixWork *)RAGE_SCRATCH_ADDRESS(0x11C))
 
 typedef union ScratchViewCoordinate {
     s32 value;
@@ -72,6 +91,13 @@ typedef struct ScratchViewState {
     s32 angleY;
     s32 angleZ;
 } ScratchViewState;
+
+/* Local compatibility view for algorithms recovered with the original PS1
+ * word indices.  Keep it off the canonical scratch state: words 0 and 1 were
+ * 32-bit pointers on PS1 and cannot share storage with native pointers. */
+typedef struct ScratchLegacyViewWords {
+    s32 words[10];
+} ScratchLegacyViewWords;
 
 typedef union ScratchBlockAddress {
     s32 *words;
@@ -129,12 +155,11 @@ typedef struct CarTrackScratch {
     u16 segmentLength;
 } CarTrackScratch;
 
-#define CAR_TRACK_SCRATCH ((CarTrackScratch *)0x1F80011C)
-#define CAR_TRACK_POINT_RADIUS (*(s32 *)0x1F800130)
+#define CAR_TRACK_SCRATCH ((CarTrackScratch *)RAGE_SCRATCH_ADDRESS(0x11C))
+#define CAR_TRACK_POINT_RADIUS (*(s32 *)RAGE_SCRATCH_ADDRESS(0x130))
 
-#define SCRATCHPAD_ADDR 0x1F800000
 #define SCRATCHPAD_AS(type) ((type *)SCRATCHPAD_ADDR)
-#define SCRATCHPAD SCRATCHPAD_AS(GameScratchpadRenderState)
+#define SCRATCHPAD (&g_RageScratchpadState)
 #define SCRATCHPAD_BYTES SCRATCHPAD_AS(u8)
 
 /*
@@ -144,44 +169,66 @@ typedef struct CarTrackScratch {
  * repeating the address; _WORD is the same slot where the retail code carried
  * the cursor in an integer instead.
  */
-#define SCRATCH_PRIM_CURSOR_AS(type) (*(type **)0x1F800000)
+#define SCRATCH_PRIM_CURSOR_AS(type) (*(type **)&g_RageScratchpadState.packetCursor)
 #define SCRATCH_PRIM_CURSOR          SCRATCH_PRIM_CURSOR_AS(void)
-#define SCRATCH_PRIM_CURSOR_WORD     (*(s32 *)0x1F800000)
-#define SCRATCH_PRIM_CURSOR_VOLATILE (*(u8 *volatile *)SCRATCHPAD_ADDR)
+#define SCRATCH_PRIM_CURSOR_WORD     (*(s32 *)&g_RageScratchpadState.packetCursor)
+#define SCRATCH_PRIM_CURSOR_VOLATILE (*(u8 *volatile *)&g_RageScratchpadState.packetCursor)
 #define SCRATCH_PRIM_CURSOR_SLOT     (&SCRATCH_PRIM_CURSOR_VOLATILE)
 
 /* Ordering table the emitters link finished packets into. */
-#define SCRATCH_OT_BASE_AS(type)     (*(type **)0x1F800004)
+#define SCRATCH_OT_BASE_AS(type)     (*(type **)&g_RageScratchpadState.primData)
 #define SCRATCH_OT_BASE              SCRATCH_OT_BASE_AS(void)
-#define SCRATCH_OT_BASE_WORD         (*(s32 *)0x1F800004)
+#define SCRATCH_OT_BASE_WORD         (*(s32 *)&g_RageScratchpadState.primData)
 
 /* The srav amount InitRenderState installs; see SCRATCH_FACE_OT_SHIFT below. */
-#define SCRATCH_OT_SHIFT             (*(s32 *)0x1F800064)
+#define SCRATCH_OT_SHIFT             (g_RageScratchpadState.otShift)
 
 /* View transform consumed by the model render path. SetCameraRotMatrix builds
  * the matrix at 0x28 from the three angles; the position words are the camera
  * translation passed to SetGteObjectMatrix. */
-#define SCRATCH_VIEW_X       (*(s32 *)0x1F800008)
-#define SCRATCH_VIEW_Y       (*(s32 *)0x1F80000C)
-#define SCRATCH_VIEW_Z       (*(s32 *)0x1F800010)
-#define SCRATCH_VIEW_ANGLE_X (*(s32 *)0x1F800018)
-#define SCRATCH_VIEW_ANGLE_Y (*(s32 *)0x1F80001C)
-#define SCRATCH_VIEW_ANGLE_Z (*(s32 *)0x1F800020)
-#define SCRATCH_VIEW_POSITION_BLOCK ((Vec4 *)0x1F800008)
-#define SCRATCH_VIEW_STATE   ((ScratchViewState *)0x1F800008)
-#define SCRATCH_VIEW_MATRIX_GTE ((Matrix *)0x1F800028)
+#define SCRATCH_VIEW_X       (g_RageScratchpadState.viewX)
+#define SCRATCH_VIEW_Y       (g_RageScratchpadState.viewY)
+#define SCRATCH_VIEW_Z       (g_RageScratchpadState.viewZ)
+#define SCRATCH_VIEW_ANGLE_X (g_RageScratchpadState.viewAngleX)
+#define SCRATCH_VIEW_ANGLE_Y (g_RageScratchpadState.viewAngleY)
+#define SCRATCH_VIEW_ANGLE_Z (g_RageScratchpadState.viewAngleZ)
+#define SCRATCH_VIEW_POSITION_BLOCK ((Vec4 *)&g_RageScratchpadState.viewX)
+#define SCRATCH_VIEW_STATE   ((ScratchViewState *)&g_RageScratchpadState.viewX)
+#define SCRATCH_VIEW_MATRIX_GTE (&g_RageScratchpadState.matrix)
 
-extern s32 g_ScratchViewX asm("0x1F800008");
-extern s32 g_ScratchViewY asm("0x1F80000C");
-extern volatile s32 g_ScratchViewZVolatile asm("0x1F800010");
-extern s32 g_ScratchViewAngleX asm("0x1F800018");
-extern s32 g_ScratchViewAngleY asm("0x1F80001C");
-extern s32 g_ScratchViewAngleZ asm("0x1F800020");
-extern s32 g_ScratchEnvMode4 asm("0x1F800084");
+static inline void LoadScratchLegacyView(ScratchLegacyViewWords *legacy) {
+    legacy->words[2] = SCRATCH_VIEW_X;
+    legacy->words[3] = SCRATCH_VIEW_Y;
+    legacy->words[4] = SCRATCH_VIEW_Z;
+    legacy->words[5] = g_RageScratchpadState.reserved14;
+    legacy->words[6] = SCRATCH_VIEW_ANGLE_X;
+    legacy->words[7] = SCRATCH_VIEW_ANGLE_Y;
+    legacy->words[8] = SCRATCH_VIEW_ANGLE_Z;
+    legacy->words[9] = g_RageScratchpadState.depth;
+}
+
+static inline void StoreScratchLegacyView(const ScratchLegacyViewWords *legacy) {
+    SCRATCH_VIEW_X = legacy->words[2];
+    SCRATCH_VIEW_Y = legacy->words[3];
+    SCRATCH_VIEW_Z = legacy->words[4];
+    g_RageScratchpadState.reserved14 = legacy->words[5];
+    SCRATCH_VIEW_ANGLE_X = legacy->words[6];
+    SCRATCH_VIEW_ANGLE_Y = legacy->words[7];
+    SCRATCH_VIEW_ANGLE_Z = legacy->words[8];
+    g_RageScratchpadState.depth = legacy->words[9];
+}
+
+#define g_ScratchViewX SCRATCH_VIEW_X
+#define g_ScratchViewY SCRATCH_VIEW_Y
+#define g_ScratchViewZVolatile SCRATCH_VIEW_Z
+#define g_ScratchViewAngleX SCRATCH_VIEW_ANGLE_X
+#define g_ScratchViewAngleY SCRATCH_VIEW_ANGLE_Y
+#define g_ScratchViewAngleZ SCRATCH_VIEW_ANGLE_Z
+#define g_ScratchEnvMode4 (g_RageScratchpadState.envMode4)
 
 /* Course object bank. SubmitCourseModel / SubmitCourseModel2 (0x800296BC,
  * 0x80029E58) load it and index by model id; size is g_CourseModelCount. */
-#define SCRATCH_COURSE_BANK    (*(void **)0x1F800048)
+#define SCRATCH_COURSE_BANK    (g_RageScratchpadState.courseBank)
 
 /* Model bank cursor, pointed at one g_ModelBanks entry by SelectModelBank.
  * MODELS is the model pointer array (bank + 0xC) that SubmitModel indexes by
@@ -189,52 +236,52 @@ extern s32 g_ScratchEnvMode4 asm("0x1F800084");
  * Emit*G4 / Emit*GT4 quad builders index by id << 3 and feed to ncct/nccs
  * (0x80029168). TABLE1 is bank[1] rebased; nothing in the disassembled engine
  * reads it, so it is named for where it comes from, not what it holds. */
-#define SCRATCH_MODEL_MODELS   (*(void **)0x1F800050)
-#define SCRATCH_MODEL_TABLE1   (*(void **)0x1F800054)
-#define SCRATCH_MODEL_NORMALS  (*(void **)0x1F800058)
+#define SCRATCH_MODEL_MODELS   (g_RageScratchpadState.modelModels)
+#define SCRATCH_MODEL_TABLE1   (g_RageScratchpadState.modelTable1)
+#define SCRATCH_MODEL_NORMALS  (g_RageScratchpadState.modelNormals)
 
 /* Terrain: the per-cell record array SubmitTerrainCells indexes by cell id
  * (0x80028078) and the face array SubmitTerrainCellFaces walks (0x80028168). */
-#define SCRATCH_CELL_TABLE     (*(void **)0x1F80005C)
-#define SCRATCH_CELL_FACES     (*(void **)0x1F800060)
+#define SCRATCH_CELL_TABLE     (g_RageScratchpadState.cellTable)
+#define SCRATCH_CELL_FACES     (g_RageScratchpadState.cellFaces)
 
 /* The srav amount that turns a transformed Z into an ordering-table index:
  * OT_SHIFT on the cell-face path (0x800283C0), FACE_OT_SHIFT on the mode-1
  * path, where it is read as a halfword (0x80028474). InitRenderState sets
  * OT_SHIFT from its parameter, 5 for the race scene and 1 for two menus. */
-#define SCRATCH_FACE_OT_SHIFT  (*(s32 *)0x1F80006C)
+#define SCRATCH_FACE_OT_SHIFT  (g_RageScratchpadState.faceOtShift)
 
 /* Mirror flag. Non-zero makes the engine negate the GTE rotation matrix
  * (0x80028000, 0x80028E00); track/draw_terrain_cells.c compares it against
  * g_MirrorMode. Same word as the struct's `orderingFlag`. */
-#define SCRATCH_MIRROR         (*(s32 *)0x1F800068)
+#define SCRATCH_MIRROR         (g_RageScratchpadState.orderingFlag)
 
 /* Two packed GTE RGBC words, read whole with lwc2 into cop2 register 6:
  * EmitPolyFT4Fog takes 0x70 (0x80029468), EmitPolyGT4Fog takes 0x74
  * (0x80029620). The fourth byte is the GPU primitive code the emitter stamps
  * into the packet, 0x2C for a 40-byte POLY_FT4 and 0x3C for a 52-byte
  * POLY_GT4. */
-#define SCRATCH_FT4_R          (*(u8 *)0x1F800070)
-#define SCRATCH_FT4_G          (*(u8 *)0x1F800071)
-#define SCRATCH_FT4_B          (*(u8 *)0x1F800072)
-#define SCRATCH_FT4_CODE       (*(u8 *)0x1F800073)
-#define SCRATCH_GT4_R          (*(u8 *)0x1F800074)
-#define SCRATCH_GT4_G          (*(u8 *)0x1F800075)
-#define SCRATCH_GT4_B          (*(u8 *)0x1F800076)
-#define SCRATCH_GT4_CODE       (*(u8 *)0x1F800077)
+#define SCRATCH_FT4_R          (g_RageScratchpadState.ft4Color[0])
+#define SCRATCH_FT4_G          (g_RageScratchpadState.ft4Color[1])
+#define SCRATCH_FT4_B          (g_RageScratchpadState.ft4Color[2])
+#define SCRATCH_FT4_CODE       (g_RageScratchpadState.ft4Color[3])
+#define SCRATCH_GT4_R          (g_RageScratchpadState.gt4Color[0])
+#define SCRATCH_GT4_G          (g_RageScratchpadState.gt4Color[1])
+#define SCRATCH_GT4_B          (g_RageScratchpadState.gt4Color[2])
+#define SCRATCH_GT4_CODE       (g_RageScratchpadState.gt4Color[3])
 
 /* Screen clip rectangle every emitter rejects primitives against; the same
  * four halfwords as the struct's x0/y0/x1/y1. menu/frontend.c raises Y1 to 0x1E0 for
  * the 480-line modes. */
-#define SCRATCH_CLIP_X0        (*(u16 *)0x1F800078)
-#define SCRATCH_CLIP_Y0        (*(u16 *)0x1F80007A)
-#define SCRATCH_CLIP_X1        (*(u16 *)0x1F80007C)
-#define SCRATCH_CLIP_Y1        (*(u16 *)0x1F80007E)
+#define SCRATCH_CLIP_X0        (*(u16 *)&g_RageScratchpadState.x0)
+#define SCRATCH_CLIP_Y0        (*(u16 *)&g_RageScratchpadState.y0)
+#define SCRATCH_CLIP_X1        (*(u16 *)&g_RageScratchpadState.x1)
+#define SCRATCH_CLIP_Y1        (*(u16 *)&g_RageScratchpadState.y1)
 
 /* g_IsEnvironmentMode4, forwarded here by every car and track renderer for the
  * GTE engine to read. Spelled as a macro rather than an `extern ... asm()`
  * symbol on purpose: the extern form lets gcc 2.6.3 hold the address in a
  * register across calls, which changes the output. */
-#define SCRATCH_ENV_MODE4   (*(s32 *)0x1F800084)
+#define SCRATCH_ENV_MODE4   (g_RageScratchpadState.envMode4)
 
 #endif

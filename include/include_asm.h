@@ -1,7 +1,7 @@
 #ifndef RAGE_PC_INCLUDE_ASM_H
 #define RAGE_PC_INCLUDE_ASM_H
 
-#if !defined(M2CTX) && !defined(PERMUTER)
+#if !defined(M2CTX) && !defined(PERMUTER) && !defined(__psyz)
 
 #ifndef INCLUDE_ASM_USE_MACRO_INC
 #define INCLUDE_ASM_USE_MACRO_INC 1

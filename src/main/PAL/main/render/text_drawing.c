@@ -4,6 +4,10 @@
 #include "game/state.h"
 #include "game/render_internal.h"
 
+void DrawSprite(void *ot, s32 x0, s32 y0, s32 w, s32 h, s32 u0, s32 v0,
+                s32 r, s32 g, s32 b, s32 clutIndex, s32 shadeTex,
+                s32 semiTrans, u32 flags);
+
 
 
 void DrawSmallText(x0, y, str0, color, g, b, clut, flags)
@@ -19,7 +23,7 @@ void DrawSmallText(x0, y, str0, color, g, b, clut, flags)
     const char *str;
     s32 x;
     u8 fl = flags;
-    u32 *ot;
+    OT_TYPE *ot;
     s32 fixed;
     s32 idx;
     s32 u0;
@@ -30,7 +34,7 @@ void DrawSmallText(x0, y, str0, color, g, b, clut, flags)
 
     str = str0;
     x = x0;
-    ot = SCRATCH_OT_BASE_AS(u32);
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
         fixed = flags & 0x80;
@@ -143,7 +147,7 @@ void DrawLargeText(x0, y, str0, color, g, b, clut, flags)
     s32 x;
     u8 fl = flags;
     s32 fixed;
-    u32 *ot;
+    OT_TYPE *ot;
     s32 idx;
     s32 u0;
     s32 v0;
@@ -152,7 +156,7 @@ void DrawLargeText(x0, y, str0, color, g, b, clut, flags)
 
     str = str0;
     x = x0;
-    ot = SCRATCH_OT_BASE_AS(u32);
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
         fixed = flags & 0x80;
@@ -252,7 +256,7 @@ s32 GameDrawNumber(x, y, flags, value, r, g, b, clut, primitiveCount)
 {
     u8 digits[11];
     u16 drawVValue;
-    u32 *ot;
+    OT_TYPE *ot;
     s32 width;
     s32 height;
     s32 v;
@@ -268,9 +272,9 @@ s32 GameDrawNumber(x, y, flags, value, r, g, b, clut, primitiveCount)
 
     i = 9;
     if (flags & 8) {
-        ot = SCRATCH_OT_BASE_AS(u32) + 1;
+        ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
     } else {
-        ot = SCRATCH_OT_BASE_AS(u32);
+        ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     }
 
     height = 16;
@@ -357,7 +361,7 @@ s32 GameDrawNumber(x, y, flags, value, r, g, b, clut, primitiveCount)
 
 
 void DrawBitPatternOverlay(s32 pattern) {
-    u32 *ot = SCRATCH_OT_BASE_AS(u32);
+    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     u8 *patternTable = g_MenuOverlayPatternTable;
     u8 *row = patternTable;
     u8 *candidate;

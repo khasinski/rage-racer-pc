@@ -7,6 +7,7 @@
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/fmv_internal.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -31,7 +32,7 @@ void DrawBootLogo(void) {
     }
     fade = value;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     scratch = &SCRATCH_PRIM_CURSOR_AS(void);
 
     next = *scratch;

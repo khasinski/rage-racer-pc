@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/input_internal.h"
 #include "game/player_car_internal.h"
 #include "game/cd.h"
 #include "game/menu.h"
@@ -280,21 +281,17 @@ timing_done:
 
 void EnterRaceScene(void) {
     s32 pad[2];
-    LapTimeTableAddress lapTableRow;
     PlayerCarRuntime *player;
     s32 mode;
     s32 scene;
     s32 tableOffset;
     s32 trackLength;
-    s32 *entry;
     s32 count;
     s32 i;
     s32 *first;
-    s32 scratch;
     s32 *second;
     SectorTimeTableAddress sectorAddress;
     SectorTimeTableAddress lastSectorAddress;
-    LapTimeTableAddress lapAddress;
 
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
@@ -324,33 +321,19 @@ void EnterRaceScene(void) {
     sectorAddress.table = g_BestSectorTimes;
     sectorAddress.bytes += tableOffset;
     g_RefSectorTimes.fields.first = sectorAddress.pointer[0];
-    scene *= 32;
     sectorAddress.table = g_BestSectorTimes;
     sectorAddress.bytes += tableOffset;
     g_RefSectorTime1 = sectorAddress.pointer[1];
-    mode *= 8;
-    do {
-        do {
-            g_SectorIndex = -2;
-        } while (0);
-        /* g_BestLapTimes[g_RaceSeries][g_CourseIndex][g_GrandPrixMode],
-         * which is how the same table is spelled four times elsewhere in
-         * this file. Written indexed here, or with the three offsets folded
-         * together, the schedule around these address calculations changes. */
-        lapAddress.table = g_BestLapTimes;
-        lapAddress.bytes += scene;
-        lapTableRow.bytes = lapAddress.bytes;
-        count = mode + lapTableRow.value;
-        scratch = g_GrandPrixMode * 4;
-        scratch += count;
-        lapAddress.value = scratch;
-        entry = lapAddress.pointer;
-        lastSectorAddress.table = g_BestSectorTimes;
-        lastSectorAddress.bytes += tableOffset;
-        g_RefSectorTime2 = lastSectorAddress.pointer[2];
-    } while (0);
-    g_RefLapTime = *entry;
-    count = (scratch = g_LapCount);
+    g_SectorIndex = -2;
+    lastSectorAddress.table = g_BestSectorTimes;
+    lastSectorAddress.bytes += tableOffset;
+    g_RefSectorTime2 = lastSectorAddress.pointer[2];
+    /* The retail expression builds a 32-bit address through integer/union
+     * arithmetic. On a 64-bit host that truncates the native table pointer.
+     * This is the same game lookup expressed with its actual dimensions. */
+    g_RefLapTime =
+        g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][g_GrandPrixMode];
+    count = g_LapCount;
     g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
     if (count > 0) {
@@ -531,7 +514,7 @@ void UpdateRaceScene(void) {
             selectorMask = g_PadType;
             inputMask = g_PadHeld;
             selectorMask = selectorMask == 0x23;
-            if ((inputMask & g_PadMirrorMasks[selectorMask * 8]) &&
+            if ((inputMask & g_PadButtonMapping[6 + selectorMask * 8]) &&
                 g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
                 if (g_PadPressed & 8) {
                     g_MirrorViewEnabled = 1;
@@ -649,7 +632,7 @@ update_race:
             selectorMask = g_PadType;
             inputMask = g_PadPressed;
             selectorMask = selectorMask == 0x23;
-            if ((inputMask & g_PadMirrorMasks[selectorMask * 8]) &&
+            if ((inputMask & g_PadButtonMapping[6 + selectorMask * 8]) &&
             ((u16)g_RacePhase - 2) < 2U) {
                 g_CameraViewMode ^= 1;
             }

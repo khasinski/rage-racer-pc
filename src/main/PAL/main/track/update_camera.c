@@ -52,9 +52,9 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 *angleState;
     s32 *case3Angle;
     s32 *modeAngle;
+    ScratchLegacyViewWords legacyView;
     s32 *scratch;
     s32 cameraMode;
-    GameTrackCameraNodeAddress case4Base;
     s32 chaseTargetYaw;
     s32 yawError;
     s32 pathBlend;
@@ -81,7 +81,6 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 chaseYawDamping;
     s32 chaseYawStepLimit;
     s32 cameraNodeIndex;
-    s32 introNodeOffset;
     s32 yawStepAhead;
     s32 yawStepWrapped;
     s32 yawStepBehind;
@@ -112,12 +111,12 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     GameTrackCameraNode *chaseNode;
     GameTrackCameraNode *chaseNodeOffsets;
     GameTrackCameraNode *prevNode;
-    GameTrackCameraNodeAddress introNode;
     CameraCarAddress playerAddress;
     ScratchBlockAddress scratchAddress;
 
     cameraNodeIndex = FindNearestTrackCamera(car);
-    scratch = &SCRATCH_PRIM_CURSOR_WORD;
+    LoadScratchLegacyView(&legacyView);
+    scratch = legacyView.words;
     previousNodeIndex = g_CameraNodeIndex;
     g_CameraNodeIndex = cameraNodeIndex;
     nodeChanged = cameraNodeIndex != previousNodeIndex;
@@ -545,11 +544,8 @@ block_52:
         g_CameraModePrev = 3;
         break;
     case 4:
-        case4Base.pointer = g_TrackCameras;
-        introNodeOffset = cameraNodeIndex * sizeof(GameTrackCameraNode);
-        introNode.value = introNodeOffset + case4Base.value;
         scratchAddress.words = &scratch[2];
-        scratchAddress.blocks[0] = introNode.pointer->data.block;
+        scratchAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
         if (((u8)nodeChanged) || (g_CameraModePrev != 4)) {
             g_CamPathFrame = 0;
         } else if (g_CamPathFrame < g_TrackCameras[cameraNodeIndex].duration) {
@@ -624,6 +620,7 @@ block_52:
         scratch[4] -= sp38[2];
         break;
     }
+    StoreScratchLegacyView(&legacyView);
     SetCameraRotMatrix();
     if (cameraModeSel > 0) {
         playerAddress.player = &g_PlayerCar;

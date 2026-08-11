@@ -268,7 +268,7 @@ s32 DrawLogoSampleScreen(s32 step) {
 
     if (step == 0) {
         g_LogoSampleScreenFade = 0;
-        return;
+        return 0;
     }
 
     if (step > 0) {

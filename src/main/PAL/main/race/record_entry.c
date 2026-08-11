@@ -10,9 +10,11 @@
 #include "game/records_internal.h"
 #include "game/race_internal.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "psyq/cd.h"
 #include "psyq/gpu.h"
 
 typedef union SignedDivisionWork {
@@ -154,7 +156,7 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
     if (g_AnimTimer & 8) {
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
         *scratch = AddTilePrim(
-            g_DrawBuffer + 0xCC,
+            GamePrimaryOrderingTable(0),
             *scratch,
             (charIndex * 8) + 0x7C,
             ((row * 5) << 2) + 0x7E,

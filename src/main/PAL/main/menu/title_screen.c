@@ -10,6 +10,7 @@
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/fmv_internal.h"
 #include "game/save_internal.h"
 #include "game/scratchpad.h"
@@ -75,8 +76,7 @@ void DrawTitleFadeOverlay(s32 brightness) {
     s32 color;
 
     color = (u8)brightness;
-    base = g_DrawBuffer;
-    base += 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     scratch = &SCRATCH_PRIM_CURSOR_AS(void);
     current = *scratch;
     next = GameQueueTileTrans(base, current, 0, 0x18, 0x140, 0xC0, color, color, color);
@@ -100,8 +100,7 @@ void DrawPressStartPrompt(void) {
     frame = (sinValue / 64) + 0x80;
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(void);
-    base = g_DrawBuffer;
-    base += 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     next = *scratch;
     next = GameQueueShadedSprite(base, next, 0x68, 0xC8, 0x70, 0x10, 0x70, 0xA0, 0x7E84, frame);
     *scratch = QueueDrawModePrim(base, next, 0x39);
@@ -132,7 +131,7 @@ void DrawMainMenuRows(void) {
     s32 width;
     s32 y;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     scratch = SCRATCH_PRIM_CURSOR_AS(void);
     row = 0;
     i = 0;

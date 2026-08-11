@@ -220,10 +220,10 @@ extern u8 g_LibcUpperDigits[];
 extern u16 g_NegconButtonPresets[];
 extern u8 g_NegconConfigButtonRows[];
 extern u8 g_NegconConfigLabelRows[];
-extern u8 g_PadBufferButtonsHigh;
-extern u8 g_PadBufferButtonsLow;
-extern u8 g_PadBufferType;
-extern u8 g_PadBuffers[];
+extern u8 g_PadBuffers[0x50];
+#define g_PadBufferType g_PadBuffers[1]
+#define g_PadBufferButtonsHigh g_PadBuffers[2]
+#define g_PadBufferButtonsLow g_PadBuffers[3]
 extern u16 g_PadButtonPresets[];
 extern u8 g_PadConfigButtonRows[];
 extern u8 g_PadConfigLabelRows[];
@@ -261,6 +261,10 @@ static inline PadPressedView *GetPadPressedView(void) {
 }
 
 extern u8 g_PadRepeatTimer[];
+extern s16 g_NegconAnalogI;
+extern s16 g_NegconAnalogII;
+extern s16 g_NegconAnalogL;
+extern s16 g_NegconSteer;
 
 void BiosSetMemSize(s32 megabytes);
 void DrawBootLogo(void);
@@ -269,7 +273,11 @@ void InitGeom(void);
 void InitPad(void *buf0, s32 len0, void *buf1, s32 len1);
 void InitRecordTables(void);
 void InstallSceneLighting(void);
+#ifdef __psyz
+s32 ResetGraph(s32 mode);
+#else
 void ResetGraph(s32 mode);
+#endif
 void ResetReplayFrameCounts(void);
 void StartPad(void);
 void StepTrackTextureSwap(void);

@@ -3,6 +3,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/replay.h"
 #include "game/replay_internal.h"
 #include "game/scratchpad.h"
@@ -219,7 +220,7 @@ void DrawReplayBadge(void) {
     if ((g_SceneTimer & 0x10) && (g_SeriesCleared == 0)) {
         scratch = SCRATCH_PRIM_CURSOR_SLOT;
         value = *scratch;
-        base = g_DrawBuffer + 0xCC;
+        base = GamePrimaryOrderingTable(0);
         next = GameQueueSprite(base, value, 0x10, 0x10, 0x48, 0x10, 0, 0x68, 0x780D);
         *scratch = QueueDrawModePrim(base, next, 9);
     }

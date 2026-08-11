@@ -1,5 +1,5 @@
 #include "common.h"
-#include "game/render.h"
+#include "game/angle.h"
 
 /*
  * Unsigned angular difference between two 12-bit angles, wrapped to [0, 0x800]

@@ -8,12 +8,7 @@
 #include "game/scratchpad.h"
 #include "game/track.h"
 #include "psyq/gpu.h"
-
-typedef union ModelBankCountValue {
-    s32 value;
-    s32 *wordPointer;
-    ModelBankHeader *bank;
-} ModelBankCountValue;
+#include "string.h"
 
 /* Kept local: this unit only stores an address into them, while track/ and
  * render/ read them as u32[] rows, Vec4[] entries and plain s32, four
@@ -48,30 +43,26 @@ void InitRenderState(s32 otShift) {
 }
 
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
-    AssetAddress *ptr;
+    NativeModelBank *bank;
     u32 i;
 
-    ptr = base->models;
-    g_ModelBanks[index] = base;
-    base->table.pointer = ResolveAssetAddress(base, base->table.offset);
-    base->normals.pointer = ResolveAssetAddress(base, base->normals.offset);
-    for (i = 0; i < base->modelCount; i++) {
-        ptr->pointer = ResolveAssetAddress(base, ptr->offset);
-        ptr++;
+    if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
+    bank = &g_ModelBanks[index];
+    bank->modelCount = base->modelCount;
+    if (bank->modelCount > GAME_MODEL_PER_BANK_LIMIT) {
+        bank->modelCount = GAME_MODEL_PER_BANK_LIMIT;
+    }
+    bank->table = ResolveAssetAddress(base, base->tableOffset);
+    bank->normals = ResolveAssetAddress(base, base->normalsOffset);
+    for (i = 0; i < (u32)bank->modelCount; i++) {
+        bank->models[i] = ResolveAssetAddress(base, base->modelOffsets[i]);
     }
 }
 
 void UnrelocateModelBank(ModelBankHeader *base, s32 offset) {
-    AssetAddress *ptr;
-    u32 i;
-
-    ptr = base->models;
-    base->table.offset -= offset;
-    base->normals.offset -= offset;
-    for (i = 0; i < base->modelCount; i++) {
-        ptr->offset -= offset;
-        ptr++;
-    }
+    /* Serialized model banks now remain offset-based at all times. */
+    (void)base;
+    (void)offset;
 }
 
 /*
@@ -82,22 +73,12 @@ void UnrelocateModelBank(ModelBankHeader *base, s32 offset) {
  * retail's base-first addu; `&g_ModelBanks[index]` loses it.
  */
 void SelectModelBank(s32 index) {
-    ModelBankTableAddress banks;
-    ModelBankHeader **entry;
-    ModelBankHeader *bank;
-    ModelBankCountValue count;
-
-    banks.pointer = g_ModelBanks;
-    banks.byteAddress += index * sizeof(*entry);
-    entry = banks.pointer;
-    count.bank = *entry;
-    count.value = *count.wordPointer;
-    bank = *entry;
-    SCRATCH_MODEL_TABLE1 = bank->table.pointer;
-    bank = *entry;
-    SCRATCH_MODEL_NORMALS = bank->normals.pointer;
-    bank = *entry;
-    g_ModelBankCount = count.value;
+    NativeModelBank *bank;
+    if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
+    bank = &g_ModelBanks[index];
+    SCRATCH_MODEL_TABLE1 = bank->table;
+    SCRATCH_MODEL_NORMALS = bank->normals;
+    g_ModelBankCount = bank->modelCount;
     SCRATCH_MODEL_MODELS = bank->models;
 }
 
@@ -116,14 +97,18 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
     (void)&pad;
     entry = base->models;
     count = base->modelCount;
-    SCRATCH_COURSE_BANK = entry;
+    SCRATCH_COURSE_BANK = g_NativeCourseModels;
+    if (count > GAME_COURSE_MODEL_LIMIT) count = GAME_COURSE_MODEL_LIMIT;
     g_CourseModelCount = count;
     i = 0;
     if (count > 0) {
         limit = count;
         do {
-            entry->geometry.pointer = ResolveAssetAddress(base, entry->geometry.offset);
-            entry->model.pointer = ResolveAssetAddress(base, entry->model.offset);
+            g_NativeCourseModels[i].geometry =
+                ResolveAssetAddress(base, entry->geometryOffset);
+            g_NativeCourseModels[i].vertexCount = entry->vertexCount;
+            g_NativeCourseModels[i].model =
+                ResolveAssetAddress(base, entry->modelOffset);
             entry++;
             i++;
         } while (i < limit);
@@ -133,7 +118,6 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
 void InstallTerrainCellData(void *data) {
     TerrainCellAssetAddress address;
     TerrainCellAssetHeader *header;
-    AssetAddress *ptr;
     s32 count;
     s32 i;
 
@@ -143,14 +127,13 @@ void InstallTerrainCellData(void *data) {
     g_CellVisibilityTable = address.visibilityRows;
     address.bytes += CELL_VISIBILITY_TABLE_SIZE;
     header = address.header;
-    ptr = header->cells;
     count = header->cellCount;
-    SCRATCH_CELL_TABLE = ptr;
+    if (count > GAME_TERRAIN_CELL_LIMIT) count = GAME_TERRAIN_CELL_LIMIT;
+    SCRATCH_CELL_TABLE = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    SCRATCH_CELL_FACES = address.bytes + header->faces.offset;
+    SCRATCH_CELL_FACES = address.bytes + header->facesOffset;
     for (i = 0; i < count; i++) {
-        ptr->pointer = address.bytes + ptr->offset;
-        ptr++;
+        g_NativeTerrainCells[i] = address.bytes + header->cellOffsets[i];
     }
 }
 
@@ -162,8 +145,30 @@ void UploadCarImage(s32 index) {
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
 }
 
+static CarModelAsset g_NativeCarModelAssets[2];
+static CarModelAsset *g_SerializedCarModelAssets[2];
+
 void SetCarModelSlot(CarModelAsset *asset, s32 index) {
-    g_CarModelSlots[index] = asset;
+    u8 *bytes = (u8 *)asset;
+    s32 modelOffset;
+    s32 imageOffset;
+    if ((u32)index >= 2) return;
+    memcpy((u8 *)&g_NativeCarModelAssets[index], bytes, 0x20);
+    memcpy((u8 *)&modelOffset, bytes + 0x20, sizeof(modelOffset));
+    memcpy((u8 *)&imageOffset, bytes + 0x24, sizeof(imageOffset));
+    g_NativeCarModelAssets[index].modelData.pointer = bytes + modelOffset;
+    g_NativeCarModelAssets[index].imageData.pointer = bytes + imageOffset;
+    g_SerializedCarModelAssets[index] = asset;
+    g_CarModelSlots[index] = &g_NativeCarModelAssets[index];
+}
+
+CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
+    u32 i;
+    for (i = 0; i < 2; i++) {
+        if (nativeAsset == g_CarModelSlots[i])
+            return g_SerializedCarModelAssets[i];
+    }
+    return nativeAsset;
 }
 
 void SelectCarModelSlot(s32 index) {

@@ -17,7 +17,8 @@
  * zeroed clamp record passed to the track-marker builder UpdateCarTrackState.
  */
 void UpdateFinishCamera(GameRenderObject *obj) {
-    s32 *view = &SCRATCH_PRIM_CURSOR_WORD;
+    ScratchLegacyViewWords legacyView;
+    s32 *view;
     s32 delta[3];
     s32 coords[3];
     s16 markerClamp[2];
@@ -30,6 +31,8 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     GameCarRuntimeAddress cameraAddress;
     ScratchBlockAddress viewAddress;
 
+    LoadScratchLegacyView(&legacyView);
+    view = legacyView.words;
     offset = g_CameraCarTrackPoint;
     if (obj->facingBackwards != 0) {
         index = offset + 2;
@@ -81,6 +84,7 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     view[6] = 0x400 - Atan2(delta[1], value >> 6);
     view[8] = 0;
 
+    StoreScratchLegacyView(&legacyView);
     SetCameraRotMatrix();
     SelectModelBank(0);
     DrawPlayerCarModel(obj);

@@ -80,7 +80,7 @@ typedef union GameSaveHeaderRowsAddress {
 } GameSaveHeaderRowsAddress;
 
 typedef struct MemoryCardMessageRow {
-    s32 text;
+    u8 *text;
     u8 column;
     u8 reserved[3];
 } MemoryCardMessageRow;
@@ -231,7 +231,9 @@ void EnableMemoryCardEvents(void);
 void DisableMemoryCardEvents(void);
 void CloseMemoryCardEvents(void);
 /* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
+#ifndef __psyz
 s32 _card_clear(s32 chan);
+#endif
 void CardReadAndSetMode(s32 param);
 void CardSeekParam(s32 param);
 s32 CardReadStatusPair(s32 high, s32 low);
@@ -327,9 +329,13 @@ extern char g_SaveTitleSjis[];
 
 void BiosBuInit(void);
 void DrawMemoryCardMessage(s32 message);
+#ifndef __psyz
 void InitCARD(s32 padEnable);
+#endif
 s32 PollMemoryCardStatus(s32 a, s32 b);
+#ifndef __psyz
 void StartCARD(void);
+#endif
 void StoreSaveStateBlock(GameSaveBlock *block);
 void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow);
 

@@ -33,11 +33,8 @@ void LoadUpgradedCarModel(s32 carIndex) {
         if (LoadAsset(assetId, ptr) != 0) {
             asset = GetCarModelAsset(ptr);
             SetCarModelSlot(asset, g_CarModelSlot < 1);
-
-            asset->modelData.pointer = ptr + asset->modelData.offset;
+            asset = g_CarModelSlots[g_CarModelSlot < 1];
             RegisterModelBank(asset->modelData.modelBank, g_CarModelSlot < 1);
-
-            asset->imageData.pointer = ptr + asset->imageData.offset;
             SetCarImageSlot(asset->imageData.carImage, g_CarModelSlot < 1);
 
             if (g_PlayerCarIndex < 10) {
@@ -159,7 +156,7 @@ void RelocateCarModel(void) {
     u32 *src;
     u32 count;
 
-    address.pointer = g_CarModelAsset;
+    address.pointer = GetSerializedCarModelAsset(g_CarModelAsset);
     if (address.offset != 0) {
         src = address.pointer;
     } else {
@@ -186,9 +183,8 @@ void RelocateCarModel(void) {
     }
 
     SetCarModelSlot(GetCarModelAsset(g_AssetBase), 0);
-    address.pointer = g_CarModelAsset->modelData.pointer;
-    UnrelocateModelBank(GetModelBankHeader(g_AssetBase + 0x28), address.offset);
     SelectCarModelSlot(0);
+    UnrelocateModelBank(GetModelBankHeader(g_AssetBase + 0x28), 0);
     g_CarModelAsset->modelData.pointer = g_AssetBase + 0x28;
     RegisterModelBank(GetModelBankHeader(g_AssetBase + 0x28), 0);
 }

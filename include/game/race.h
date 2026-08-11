@@ -46,7 +46,11 @@ typedef struct GrandPrixPrizeTable {
     s32 values[4][6][3];
 } GrandPrixPrizeTable;
 
-extern GrandPrixPrizeTable g_PrizeMoney;
+extern struct RagePrizeMoneyStorage {
+    unsigned char prefix[8];
+    unsigned char values[280];
+} g_PrizeMoneyState;
+#define g_PrizeMoney (*(GrandPrixPrizeTable *)(void *)&g_PrizeMoneyState)
 
 /* Round number within the current class; drives the "R O U N D %d" overlay. */
 extern s32 g_GrandPrixRound;
@@ -330,18 +334,20 @@ extern s32 g_CarClassNames[];
 extern s32 g_CarNames[];
 extern s16 g_ChanceDigits[];
 extern s32 g_ClassPromoted;
-extern u8 g_ClockTextBuffer;
-extern u8 g_ClockTextMinUnits[];
-extern u8 g_ClockTextSecTens;
-extern u8 g_ClockTextSecUnits;
+extern u8 g_ClockTextCells[8];
+#define g_ClockTextBuffer (g_ClockTextCells[0])
+#define g_ClockTextMinUnits (g_ClockTextCells + 1)
+#define g_ClockTextSecTens (g_ClockTextCells[3])
+#define g_ClockTextSecUnits (g_ClockTextCells[4])
 extern s32 g_CountdownBoardOffset;
+extern u32 g_CountdownGlyphTable[64];
 extern u32 g_CountdownDigitPatterns[16];
 extern char *g_CourseNames[];
-extern s32 g_DefaultLapTimes;
+extern s32 g_DefaultLapTimes[8];
 extern u16 g_DefaultRecordCars;
 extern s32 g_DefaultRecordRows;
 extern s32 g_DefaultRecordTimes;
-extern s32 g_DefaultTotalTimes;
+extern s32 g_DefaultTotalTimes[8];
 extern s32 g_EndingWashLevel;
 extern char g_FmtCarName[];
 extern char g_FmtClassGrandPrix[];
@@ -364,7 +370,7 @@ extern s16 g_PadMirrorMasks[];
 extern u8 *g_PlaceSuffixNames[];
 extern s16 g_PlayerGear;
 extern Vec4 g_PlayerVelocity[2];
-extern s32 g_PrizeMoney3rd[][6][3];
+#define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
     s16 x;

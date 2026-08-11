@@ -1,6 +1,8 @@
 #include "common.h"
 #include "game/prim.h"
+#include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
@@ -40,7 +42,7 @@ void DrawEndingStill(void) {
     u8 *volatile *scratch;
     u8 *next;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     height = 0xF0;
     clut = 0x3FDB;
     scratch = SCRATCH_PRIM_CURSOR_SLOT;

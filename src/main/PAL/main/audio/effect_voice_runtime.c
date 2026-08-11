@@ -99,7 +99,7 @@ void ApplyPanVoiceVolume(void) {
             voice = 0x15;
             asm volatile("" : : "r"(voice));
             raw = 0x3C;
-            left = g_VabIds[0];
+            left = g_SoundScale.vabIds[0];
             zeroArg = 0;
             SsUtKeyOnV(voice, left, right, zeroArg, raw, 0, 0, 0);
         }
@@ -111,7 +111,7 @@ void ApplyPanVoiceVolume(void) {
 }
 
 void StartIndexedEffectVoice(s32 baseTone) {
-    SsUtKeyOnV(0x14, g_VabIds[0], (s16)baseTone, 0, 0x3C, 0, 0, 0);
+    SsUtKeyOnV(0x14, g_SoundScale.vabIds[0], (s16)baseTone, 0, 0x3C, 0, 0, 0);
 }
 
 void StopIndexedEffectVoice(void) {
@@ -328,8 +328,7 @@ after_match:
                 g_MusicChannels[i].left.value = inactiveValue;
                 g_MusicChannels[i].right.value = inactiveValue;
                 g_MusicChannels[i].mode = activeValue;
-                runtime = &g_AudioRuntimeState;
-                runtime->musicChannels[i].volRight = 0;
+                g_MusicChannels[i].volRight.value = 0;
                 g_MusicChannels[i].volLeft.value = 0;
                 i++;
             } while (i < resetCount);
@@ -516,7 +515,7 @@ void UpdateBasicEffectVoices(void) {
             leftToneAddress.bytes += offset;
             rightToneAddress.halfwordPointer = &g_MusicChannels[0].right.half[0];
             rightToneAddress.bytes += offset;
-            SsUtKeyOnV(voicePacked >> 16, g_VabIds[0],
+            SsUtKeyOnV(voicePacked >> 16, g_SoundScale.vabIds[0],
                           *leftToneAddress.halfwordPointer,
                           *rightToneAddress.halfwordPointer, 0x3C, 0, 0, 0);
             START_BASIC_EFFECT_VOLUME();

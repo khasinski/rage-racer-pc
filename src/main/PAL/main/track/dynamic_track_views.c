@@ -24,7 +24,8 @@
  * track-marker builder UpdateCarTrackState.
  */
 void UpdateFreeLookCamera(void *car, s32 updateMotion) {
-    s32 *view = &SCRATCH_PRIM_CURSOR_WORD;
+    ScratchLegacyViewWords legacyView;
+    s32 *view;
     s32 delta[3];
     s32 coords[3];
     s16 markerClamp[2];
@@ -43,6 +44,8 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion) {
     CarBodyRotationAddress rotationAddress;
     ScratchBlockAddress viewAddress;
 
+    LoadScratchLegacyView(&legacyView);
+    view = legacyView.words;
     offset = g_CameraCar.trackPointIndex;
     if (g_GrandPrixSeries != 0) {
         index = offset + 2;
@@ -148,6 +151,7 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion) {
     g_PlayerCar.progressA = g_CameraCar.progressA;
     g_PlayerCar.progressB = g_CameraCar.progressB;
     g_PlayerCar.trackProgress = g_CameraCar.trackProgress;
+    StoreScratchLegacyView(&legacyView);
     SetCameraRotMatrix();
 }
 

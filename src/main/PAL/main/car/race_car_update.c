@@ -499,12 +499,13 @@ void UpdateAttractCars(void) {
                 car->x = car->x + base->motionX;
                 base->z = base->z + base->motionZ;
             }
+            /* Preserve the vertical coordinate and fourth word while moving
+             * the attract car in X/Z.  Copying an otherwise uninitialized
+             * stack Vec4 happened to work in the retail executable, but is
+             * undefined and makes the result depend on the host ABI. */
+            vTmp = *GetCarVector4(car);
             vTmp.x = drive->worldVelocityX * 6 / 1280 + car->x;
             vTmp.z = drive->worldVelocityZ * 6 / 1280 + base->z;
-            /*
-             * Retail only initializes x and z before copying all four words.
-             * Its uninitialized y and w stores are intentionally preserved.
-             */
             *GetCarVector4(car) = vTmp;
             if (base->steeringAngle >= 0x41) {
                 base->bodyRollVelocity = base->bodyRollVelocity - 6;
@@ -623,25 +624,27 @@ void UpdateAttractCars(void) {
 
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     PlayerCarPositionView target;
-    s32 *spad = &SCRATCH_PRIM_CURSOR_WORD;
+    ScratchLegacyViewWords legacyView;
+    s32 *spad;
     register s32 s0v asm("$16");
     s32 delta[3];
 
+    LoadScratchLegacyView(&legacyView);
+    spad = legacyView.words;
     target.car = car;
     __asm__("" : "=r"(s0v) : "0"(28), "r"(spad));
     if (mode < 90) {
         if (mode < 2) {
             RaceIntroCameraScript *script = g_RaceIntroCameraScript;
             s16 n = script->firstKeyIndex[ReadStableRaceSeries()];
-            s32 off = n * sizeof(RaceIntroCameraKey) + sizeof(script->firstKeyIndex);
-            RaceIntroCameraScriptAddress keyAddress;
             RaceIntroCameraKey *p;
             RaceIntroCameraKey *q;
-            keyAddress.scriptPointer = script;
-            keyAddress.value = off + keyAddress.value;
-            p = keyAddress.keyPointer;
+            p = &script->keys[n];
             g_RaceIntroCameraCursor = p;
-            *SCRATCH_VIEW_POSITION_BLOCK = *keyAddress.vectorPointer;
+            SCRATCH_VIEW_X = p->x.word;
+            SCRATCH_VIEW_Y = p->y.word;
+            SCRATCH_VIEW_Z = p->z.word;
+            g_RageScratchpadState.reserved14 = p->mode;
             q = g_RaceIntroCameraCursor;
             g_RaceIntroCameraDelta.vx = -q[0].x.half.value + q[1].x.half.value;
             g_RaceIntroCameraDelta.vy = -q[0].y.half.value + q[1].y.half.value;
@@ -685,6 +688,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             s0v = s0v - Atan2(delta[1], SquareRoot12(delta[0] * delta[0] + delta[2] * delta[2]) >> 6);
             spad[6] = s0v;
             spad[8] = 0;
+            StoreScratchLegacyView(&legacyView);
             SetCameraRotMatrix();
             SelectModelBank(0);
             DrawPlayerCarModel(car);
@@ -713,10 +717,11 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                 spad[9] = c3;
             }
             __asm__ volatile("");
+            StoreScratchLegacyView(&legacyView);
             SetCameraRotMatrix();
         }
     } else {
-        UpdateCamera(car, 0);
+        UpdateCamera(CAMERA_VIEW_CAR, (GameRenderObject *)car);
     }
 }
 
@@ -727,8 +732,6 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     Block16 *end;
     GameCarRuntimeAddress sourceAddress;
     GameTrackPoint *track;
-    TrackPointTableAddress pointAddress;
-    TrackPointTableAddress trackAddress;
     GameCarRuntimeAddress destinationAddress;
     GameTrackPoint *point;
     register s32 index asm("$3");
@@ -751,24 +754,15 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
 
     index = car->trackPointIndex;
     track = g_TrackPoints;
-    pointAddress.pointOffset = (index * 3) << 3;
-    trackAddress.pointPointer = track;
-    pointAddress.value = pointAddress.pointOffset + trackAddress.value;
-    point = pointAddress.pointPointer;
+    point = &track[index];
     g_CameraCar.x = point->x;
 
     index = car->trackPointIndex;
-    pointAddress.pointOffset = (index * 3) << 3;
-    trackAddress.pointPointer = track;
-    pointAddress.value = pointAddress.pointOffset + trackAddress.value;
-    point = pointAddress.pointPointer;
+    point = &track[index];
     g_CameraCar.z = point->z;
 
     index = car->trackPointIndex;
-    pointAddress.pointOffset = (index * 3) << 3;
-    trackAddress.pointPointer = track;
-    pointAddress.value = pointAddress.pointOffset + trackAddress.value;
-    point = pointAddress.pointPointer;
+    point = &track[index];
     index = g_CameraCar.speed;
     word0 = point->y;
     index += 0x40;
@@ -779,10 +773,7 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     index = car->facingBackwards;
     lastIndex = car->trackPointIndex;
     index <<= 11;
-    pointAddress.pointOffset = (lastIndex * 3) << 3;
-    trackAddress.pointPointer = track;
-    pointAddress.value = pointAddress.pointOffset + trackAddress.value;
-    point = pointAddress.pointPointer;
+    point = &track[lastIndex];
     index += 0xC00;
     index -= point->angle;
     g_CameraCar.headingAngle = index;

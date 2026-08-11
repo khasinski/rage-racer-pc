@@ -1,15 +1,16 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/scratchpad.h"
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
-    u32 *ot;
+    OT_TYPE *ot;
     u32 idx;
     u32 shade;
 
-    ot = SCRATCH_OT_BASE_AS(u32) + 1;
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
     if (step == 0) {
         g_CarNamePlateFade = 0;
         return;

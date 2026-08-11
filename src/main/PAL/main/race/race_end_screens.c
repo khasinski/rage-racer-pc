@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/cd.h"
 #include "game/audio.h"
 #include "game/menu.h"
@@ -133,7 +134,7 @@ void DrawRaceEndBanner(s32 level) {
         level = 0xFF;
     }
     level >>= 1;
-    DrawSprite(g_DrawBuffer + 204, 0x50, 0x6C, 0xA0, 0x18, 0, 0x28, level, level, level, 0xC, 0, 1, 0x29);
+    DrawSprite(GamePrimaryOrderingTable(0), 0x50, 0x6C, 0xA0, 0x18, 0, 0x28, level, level, level, 0xC, 0, 1, 0x29);
 }
 
 void EnterRaceEndScreen(void) {

@@ -263,7 +263,7 @@ void UpdateEffectVoiceStates(void) {
         case 0:
             toneAddress.pointer = g_EffectVoices;
             toneAddress.bytes += offset;
-            SsUtKeyOnV(voice >> 16, g_VabIds[0], *f0Ptr,
+            SsUtKeyOnV(voice >> 16, g_SoundScale.vabIds[0], *f0Ptr,
                           (s16)toneAddress.pointer->tone,
                           0x3C, 0, 0, 0);
             VOLPITCH();
@@ -486,10 +486,10 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
     }
     sy = volumeRight >> 7;
 
-    if ((SpuGetKeyStatus(g_SpecialVoiceBits4) == 0) || (id == 0x3D) || (id == 0x2B)) {
+    if ((SpuGetKeyStatus(g_SpecialVoiceBits[4]) == 0) || (id == 0x3D) || (id == 0x2B)) {
         result = (s16)SsUtKeyOnV(
             0x16,
-            g_VabIds[vab],
+            g_SoundScale.vabIds[vab],
             (s16)prog,
             (s16)tone,
             0x3C,
@@ -500,7 +500,7 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
         nextTone = (s16)nextTone;
         result = (s16)SsUtKeyOnV(
             0x17,
-            g_VabIds[(g_SpecialCueVoiceA = result, vab)],
+            g_SoundScale.vabIds[(g_SpecialCueVoiceA = result, vab)],
             (s16)prog,
             nextTone,
             0x3C,

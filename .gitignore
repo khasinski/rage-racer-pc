@@ -1,5 +1,6 @@
 .venv/
 build/
+build-*/
 disc/**
 !disc/.gitkeep
 !disc/PAL/
@@ -63,7 +64,13 @@ tools/maspsx_*/
 tools/wibo/
 tools/mkpsxiso-bin/
 tools/psyq-gcc-*/
+tools/psx-ruby/
 local.mk
+
+# Retail game data is required locally but cannot be distributed with the
+# source port.
+assets/*/RAGE.BIN
+assets/*/fmv/
 
 # Generated reports.
 tools/asm_report.html

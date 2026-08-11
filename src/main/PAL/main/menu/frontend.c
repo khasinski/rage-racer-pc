@@ -15,10 +15,6 @@
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 
-#define FRAME_CONTEXT_ENVIRONMENT(offset)                                      \
-    (*(volatile GameFrameEnvironmentHeader *)(g_FrameContexts[0].bytes + (offset)))
-
-
 void UpdateMainMenuExit(void) {
     s32 value;
     GameRaceProgress *ptr;
@@ -91,15 +87,15 @@ void UpdateTitleAttract(void) {
     yA0 = 0xA0;
     asm("" : "=r"(x28), "=r"(yA0) : "0"(x28), "1"(yA0)); /* Match note: materialize first-call argument registers before the stack-arg temp. */
     color = 0x7E00;
-    scratch.value = SCRATCHPAD_ADDR;
+    scratch.pointerLink = &SCRATCH_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
-    asm("" : "=r"(scratch.value), "=r"(hF0) : "0"(scratch.value), "1"(hF0)); /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
+    asm("" : "=r"(scratch.pointer), "=r"(hF0) : "0"(scratch.pointer), "1"(hF0)); /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
     tmp = 0x18;
     next = *scratch.pointerLink;
     h88 = 0x88;
     clut0 = 0x7DC0;
 
-    next = GameQueueShadedSprite(base = g_DrawBuffer + 0xD0, next, x28, yA0, hF0, tmp, 0, h88, clut0, alpha);
+    next = GameQueueShadedSprite(base = (u8 *)GamePrimaryOrderingTable(1), next, x28, yA0, hF0, tmp, 0, h88, clut0, alpha);
     next = GameQueueShadedSprite(base, next, 0x20, 0xB8, 0x100, 0x10, 0, hF0, 0x7DC1, alpha);
     next = GameQueueShadedSprite(base, next, 0x11A, 0xAF, 0xC, 8, 0xE0, 0xB0, clut0, alpha);
     next = QueueDrawModePrim(base, next, 0x19);
@@ -221,6 +217,7 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     height = 0xF0;
     SetDefDrawEnv(&context->environment.draw, 0, 0, 0x140, height);
     SetDefDrawEnv(&g_DrawEnv1, 0, 0xF0, 0x140, height);
+    g_FrameContexts[1].environment.draw = g_DrawEnv1;
     SetDefDispEnv(&context->environment.display, 0, 0xF0, 0x140, height);
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 
@@ -238,6 +235,7 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
         small_height = 0x24;
         SetDefDrawEnv(ptr, g, b, smallWidth, small_height);
         SetDefDrawEnv(&g_MirrorDrawEnv1, 0x56, 0x102, 0x94, small_height);
+        g_FrameContexts[1].environment.mirrorDraw = g_MirrorDrawEnv1;
     }
 
     i = 0;
@@ -247,22 +245,22 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     offset = 0;
     do {
         stride = 0x20000;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.dtd = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.isbg = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.r0 = r;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.g0 = g;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.b0 = b;
+        g_FrameContexts[i].environment.draw.dtd = one;
+        g_FrameContexts[i].environment.draw.isbg = one;
+        g_FrameContexts[i].environment.draw.r0 = r;
+        g_FrameContexts[i].environment.draw.g0 = g;
+        g_FrameContexts[i].environment.draw.b0 = b;
         value = *src0;
         stride |= 0x37E8;
-        FRAME_CONTEXT_ENVIRONMENT(offset).display.screen.x = value;
+        g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
+        g_FrameContexts[i].environment.mirrorDraw.dtd = one;
+        g_FrameContexts[i].environment.mirrorDraw.isbg = 0;
+        g_FrameContexts[i].environment.mirrorDraw.r0 = r;
+        g_FrameContexts[i].environment.mirrorDraw.g0 = g;
+        g_FrameContexts[i].environment.mirrorDraw.b0 = b;
+        g_FrameContexts[i].environment.display.screen.y = value2 + 0x1D;
         i++;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.dtd = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.isbg = 0;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.r0 = r;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.g0 = g;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.b0 = b;
-        FRAME_CONTEXT_ENVIRONMENT(offset).display.screen.y = value2 + 0x1D;
         offset += stride;
     } while (i < 2);
 
@@ -290,6 +288,7 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     height = 0x1E0;
     SetDefDrawEnv(&context->environment.draw, 0, 0, 0x140, height);
     SetDefDrawEnv(&g_DrawEnv1, 0, 0, 0x140, height);
+    g_FrameContexts[1].environment.draw = g_DrawEnv1;
     SetDefDispEnv(&context->environment.display, 0, 0, 0x140, height);
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 
@@ -300,22 +299,22 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     offset = 0;
     do {
         stride = 0x20000;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.dtd = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.isbg = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.r0 = mode;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.g0 = x;
-        FRAME_CONTEXT_ENVIRONMENT(offset).draw.b0 = y;
+        g_FrameContexts[i].environment.draw.dtd = one;
+        g_FrameContexts[i].environment.draw.isbg = one;
+        g_FrameContexts[i].environment.draw.r0 = mode;
+        g_FrameContexts[i].environment.draw.g0 = x;
+        g_FrameContexts[i].environment.draw.b0 = y;
         value = *src0;
         stride |= 0x37E8;
-        FRAME_CONTEXT_ENVIRONMENT(offset).display.screen.x = value;
+        g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
+        g_FrameContexts[i].environment.mirrorDraw.dtd = one;
+        g_FrameContexts[i].environment.mirrorDraw.isbg = 0;
+        g_FrameContexts[i].environment.mirrorDraw.r0 = mode;
+        g_FrameContexts[i].environment.mirrorDraw.g0 = x;
+        g_FrameContexts[i].environment.mirrorDraw.b0 = y;
+        g_FrameContexts[i].environment.display.screen.y = value2 + 0x1D;
         i++;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.dtd = one;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.isbg = 0;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.r0 = mode;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.g0 = x;
-        FRAME_CONTEXT_ENVIRONMENT(offset).mirrorDraw.b0 = y;
-        FRAME_CONTEXT_ENVIRONMENT(offset).display.screen.y = value2 + 0x1D;
         offset += stride;
     } while (i < 2);
 
@@ -324,5 +323,3 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
 
     SCRATCH_CLIP_Y1 = 0x1E0;
 }
-
-#undef FRAME_CONTEXT_ENVIRONMENT

@@ -140,7 +140,7 @@ void DrawRoundScreen(void) {
     char buf[88];
     s32 col;
     s32 y0;
-    void *ot = g_DrawBuffer + 204;
+    void *ot = GamePrimaryOrderingTable(0);
 
     col = UpdateRoundScreenFade(0);
     DrawSprite(ot, 0x74, 0x14, 0x58, 0x38, 0xa8, 0xa8, col, col, col, 0x1f, 0, 1, 0x29);
@@ -182,7 +182,7 @@ void DrawBgmSelector(void) {
     char buf[88];
     u8 **scr = &SCRATCH_PRIM_CURSOR_AS(u8);
     u8 *p;
-    void *ot = g_DrawBuffer + 208;
+    void *ot = GamePrimaryOrderingTable(1);
 
     p = *scr;
     p = GameQueueSprite(ot, p, 0x14, 0xce, 0x58, 8, 0xa8, 0xe0, 0x7812);

@@ -8,6 +8,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -107,7 +108,12 @@ def stage(version: Version) -> None:
     build_dir = ROOT / "build" / "extract" / version.name
 
     force_symlink(version.cue, disc_dir / version.cue.name)
-    force_symlink(version.track01, disc_dir / version.track01.name)
+    for match in re.finditer(r'^FILE\s+"([^"]+)"',
+                             version.cue.read_text(errors="replace"), re.MULTILINE):
+        track = version.cue.parent / match.group(1)
+        if not track.exists():
+            raise FileNotFoundError(track)
+        force_symlink(track, disc_dir / track.name)
 
     iso_path = build_dir / "track01.iso"
     raw2352_to_iso(version.track01, iso_path)

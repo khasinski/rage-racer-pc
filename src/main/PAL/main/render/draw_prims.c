@@ -127,9 +127,9 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
     prim->h = y1Reg;
     prim->u0 = u0Reg;
     prim->v0 = v0Reg;
-    prim->t.r0 = rReg;
-    prim->t.g0 = gLocal;
-    prim->t.b0 = bLocal;
+    prim->r0 = rReg;
+    prim->g0 = gLocal;
+    prim->b0 = bLocal;
 
     div = (clutReg & 0xFFFF) / 20U;
     clutReg &= 0xFFFF;
@@ -199,9 +199,9 @@ void DrawFlatTriangle(ot, x0, y0, x1, y1, x2, y2, r, g, b, semiTrans, flags)
     prim->y1 = y1Reg;
     prim->x2 = x2Reg;
     prim->y2 = y2Reg;
-    prim->t.r0 = rReg;
-    prim->t.g0 = gReg;
-    prim->t.b0 = bReg;
+    prim->r0 = rReg;
+    prim->g0 = gReg;
+    prim->b0 = bReg;
 
     cursor.polyF3 = prim;
     oldPrim = cursor.bytes;
@@ -281,9 +281,9 @@ void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
     prim->y2 = y2Reg;
     prim->x3 = x3Reg;
     prim->y3 = y3Reg;
-    prim->t.r0 = rReg;
-    prim->t.g0 = gLocal;
-    prim->t.b0 = bLocal;
+    prim->r0 = rReg;
+    prim->g0 = gLocal;
+    prim->b0 = bLocal;
 
     cursor.polyF4 = prim;
     oldPrim = cursor.bytes;
@@ -361,9 +361,9 @@ void GameDrawTexturedQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3,
     prim->v2 = v2;
     prim->u3 = u3;
     prim->v3 = v3;
-    prim->t.r0 = r;
-    prim->t.g0 = g;
-    prim->t.b0 = b;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
     prim->tpage = tpage;
     d = clutIndex;
     clutRow = d / 20;
@@ -414,9 +414,9 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
     prim->y0 = y0Reg;
     prim->w = x1Reg;
     prim->h = y1Reg;
-    prim->t.r0 = rReg;
-    prim->t.g0 = gReg;
-    prim->t.b0 = bReg;
+    prim->r0 = rReg;
+    prim->g0 = gReg;
+    prim->b0 = bReg;
 
     oldPrim = cursor.bytes;
     prim++;
@@ -467,9 +467,9 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
     prim->y0 = y0Reg;
     prim->x1 = x1Reg;
     prim->y1 = y1Reg;
-    prim->t.r0 = rReg;
-    prim->t.g0 = gReg;
-    prim->t.b0 = bReg;
+    prim->r0 = rReg;
+    prim->g0 = gReg;
+    prim->b0 = bReg;
 
     oldPrim = cursor.bytes;
     prim++;
@@ -512,9 +512,9 @@ void DrawPolyLine3(ot, x0, y0, x1, y1, x2, y2, r, g, b, alpha)
     prim->y1 = y1;
     prim->x2 = x2;
     prim->y2 = y2;
-    prim->t.r0 = r;
-    prim->t.g0 = g;
-    prim->t.b0 = b;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
 
     cursor.lineF3 = prim;
     oldPrim = cursor.bytes;
@@ -571,9 +571,9 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8
     prim->y0 = y0Reg;
     prim->x1 = x1Reg;
     prim->y1 = y1Reg;
-    prim->t.r0 = r0Reg;
-    prim->t.g0 = g0Reg;
-    prim->t.b0 = b0Reg;
+    prim->r0 = r0Reg;
+    prim->g0 = g0Reg;
+    prim->b0 = b0Reg;
     prim->r1 = r1Local;
     prim->g1 = g1Local;
     prim->b1 = b1Local;

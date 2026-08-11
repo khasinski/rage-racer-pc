@@ -153,7 +153,7 @@ void DrawClassRecordGrid(void) {
     s32 x, y;
     s32 flag;
 
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     next = SCRATCH_PRIM_CURSOR_AS(u8);
     next = GameQueueSpriteTrans(base, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
@@ -274,7 +274,7 @@ void UpdateClassRecordBrowse(void) {
 
 void DrawVolumeBar(s32 level, s32 y) {
     s32 b = y;
-    u8 *base = g_DrawBuffer + 0xCC;
+    u8 *base = (u8 *)GamePrimaryOrderingTable(0);
     u8 *next;
     s32 i;
     s32 segmentOffset;
@@ -311,7 +311,7 @@ void DrawSoundOptionScreen(void) {
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     s3 = 0x18;
     s0 = 0x78;
-    base = g_DrawBuffer + 0xCC;
+    base = (u8 *)GamePrimaryOrderingTable(0);
 
     n = *scratch;
     n = GameQueueSpriteTrans(base, n, 0x24, 0x38, 0x2C, s3, 0x9C, s0, 0x7F40);

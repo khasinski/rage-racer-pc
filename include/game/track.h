@@ -109,6 +109,9 @@ typedef union TrackEventOffsetBase {
     struct PathSceneryRotationData *pathSceneryRotation;
 } TrackEventOffsetBase;
 
+s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
+s32 LerpColorChannel(s32 from, s32 to, s32 blend);
+
 typedef struct TrackAmbienceZone {
     s32 start;
     s32 end;
@@ -409,8 +412,9 @@ extern s32 g_CameraCarSpeedRamp;
 extern s32 g_CameraCarTrackPoint;
 extern u8 g_CameraModePrev;
 extern s32 g_CameraNodeIndex;
-extern s8 g_CellScanOffsetX[];
-extern s8 g_CellScanOffsetY[];
+extern s8 g_CellScanOffsets[0x1000];
+#define g_CellScanOffsetX g_CellScanOffsets
+#define g_CellScanOffsetY (g_CellScanOffsets + 1)
 extern s32 g_ChaseCameraPreset;
 extern s32 g_ChaseCarSpeed;
 extern s32 g_ChaseTargetYaw;
@@ -461,7 +465,8 @@ typedef struct FlybySceneryState {
 extern SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 extern s32 g_FogNear;
 extern s16 g_FreeCameraAngleOffset[];
-extern s32 g_HighClassSceneryYaw;
+extern unsigned char g_StaticSceneryState[32];
+#define g_HighClassSceneryYaw (*(s32 *)(void *)(g_StaticSceneryState + 28))
 extern s32 g_OrbitCameraDistance;
 extern s32 g_OrbitCameraYaw;
 extern s16 g_PathSceneryHalfDelta[3];
@@ -517,26 +522,12 @@ typedef union PathSceneryKeyAddress {
 
 static __inline__ PathSceneryPositionKey *GetPathSceneryPositionKey(
     PathSceneryPositionData *data, s32 index) {
-    PathSceneryKeyAddress address;
-    PathSceneryKeyAddress base;
-
-    address.value = index * sizeof(PathSceneryPositionKey);
-    address.value += sizeof(data->firstKey);
-    base.positionData = data;
-    address.value += base.value;
-    return address.positionPointer;
+    return &data->keys[index];
 }
 
 static __inline__ PathSceneryRotationKey *GetPathSceneryRotationKey(
     PathSceneryRotationData *data, s32 index) {
-    PathSceneryKeyAddress address;
-    PathSceneryKeyAddress base;
-
-    address.value = index * sizeof(PathSceneryRotationKey);
-    address.value += sizeof(data->firstKey);
-    base.rotationData = data;
-    address.value += base.value;
-    return address.rotationPointer;
+    return &data->keys[index];
 }
 
 extern PathSceneryPositionKey *g_PathSceneryPosKeys;
@@ -589,7 +580,7 @@ typedef union SpinningSceneryDataAddress {
 } SpinningSceneryDataAddress;
 extern SpinningSceneryOrientation g_SpinningSceneryYaw[];
 extern s32 g_StartGridSceneryAngle[];
-extern s32 g_StaticSceneryYaw;
+#define g_StaticSceneryYaw (*(s32 *)(void *)(g_StaticSceneryState + 12))
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 extern s32 FindNearestTrackCamera(struct GameRenderObject *car);
@@ -605,7 +596,7 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion);
 extern Vec4 g_AnimSceneryPos[];
 extern SVec g_ShuttlePathAngles[];
 extern Vec4 g_StartGridSceneryPos[];
-extern Vec4 g_StaticSceneryPos;
+#define g_StaticSceneryPos (*(Vec4 *)(void *)g_StaticSceneryState)
 
 /* The two tables InstallTerrainCellData splits out of sub-block 7: the
  * 32x32 cell grid (clut index in the low 10 bits) and the per-cell

@@ -12,6 +12,14 @@ typedef signed int s32;
 typedef unsigned int u32;
 typedef float f32;
 
+/* MIPS register pins and empty compiler barriers are matching-only metadata.
+ * The native port deliberately discards them before the host compiler parses
+ * register names such as $4 and v0. */
+#ifdef __psyz
+#include <stdint.h>
+#define asm(...)
+#endif
+
 /*
  * Reads or writes a struct member without the compiler's "this lives inside a
  * struct" mark. That mark makes gcc 2.6.3 assume the access cannot alias a
@@ -41,6 +49,10 @@ typedef float f32;
  * difference. Two rounds of this tree's results were wrong for that reason.
  */
 
+#ifdef __psyz
+#define RAW(x) (*(__typeof__(x) *)(uintptr_t)&(x))
+#else
 #define RAW(x) (*(__typeof__(x) *)((s32)&(x)))
+#endif
 
 #endif

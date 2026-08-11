@@ -48,7 +48,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     car->facingBackwards = IsCarFacingBackwards(car);
 
     if (car->drive.manual != 0) {
-        if (g_PadPressed & g_PadShiftMasks[mode23][0]) {
+        if (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) {
             s32 g = car->drive.gear;
 
             if (g < g_CarSpec->topGear && car->drive.clutch == 0) {
@@ -56,7 +56,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 g_SteerHoldFrames = 0;
             }
         }
-        if (g_PadPressed & g_PadShiftMasks[mode23][1]) {
+        if (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) {
             s32 g = p->gear;
 
             if (g >= 2) {
@@ -72,9 +72,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
             g = car->drive.gear;
             idx = g - 1;
-            tableValue = (s32)g_CarSpec;
-            tableValue += idx * 4;
-            tableValue = ((GameCarSpec *)tableValue)->shiftPoints[0].downshiftSpeed;
+            tableValue = g_CarSpec->shiftPoints[idx].downshiftSpeed;
             if (car->speed < tableValue &&
                 g_AutoShiftCooldown <= 0 && car->drive.clutch == 0) {
                 if (g >= 2) {
@@ -134,12 +132,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     if (g_RacePhase < 4) {
         if (g_PadType == 0x41) {
             p->acceleratorInput.sampled =
-                ((g_PadHeld & g_PadAccelMask) != 0) << 8;
-            p->brakeInput = ((g_PadHeld & g_PadBrakeMask) != 0) << 8;
+                ((g_PadHeld & g_PadButtonMapping[2]) != 0) << 8;
+            p->brakeInput = ((g_PadHeld & g_PadButtonMapping[3]) != 0) << 8;
         } else if (g_PadType == 0x23) {
             p->acceleratorInput.sampled =
-                ((g_PadHeld & g_NegconAccelMask) != 0) << 8;
-            p->brakeInput = ((g_PadHeld & g_NegconBrakeMask) != 0) << 8;
+                ((g_PadHeld & g_PadButtonMapping[10]) != 0) << 8;
+            p->brakeInput = ((g_PadHeld & g_PadButtonMapping[11]) != 0) << 8;
             switch (g_NegconMappingIndex) {
             case 0:
             case 5:

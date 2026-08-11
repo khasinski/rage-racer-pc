@@ -27,11 +27,7 @@ typedef union CamRowAddress {
 } CamRowAddress;
 
 static __inline__ CamRow *GetCamRow(u8 *table, s32 index) {
-    CamRowAddress address;
-
-    address.bytes = table;
-    address.byteOffset += index << 3;
-    return address.row;
+    return (CamRow *)(table + (index << 3));
 }
 
 #endif

@@ -1,0 +1,231 @@
+#include <psyz.h>
+#include <psyz/video.h>
+#include <psyz/audio.h>
+#include <libetc.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "input_config.h"
+#include "game/player_car_internal.h"
+#include "game/input_internal.h"
+#include "game/state.h"
+#include "game/race.h"
+#include "game/memcard.h"
+#include "game/audio.h"
+#include "game/asset.h"
+#include "game/car_internal.h"
+#include "game/scratchpad.h"
+#include "game/sound.h"
+
+void MainLoop(void);
+int RageMapPs1Scratchpad(void);
+int RageInitNativeGameData(void);
+int RageHostInitDisc(void);
+extern int g_SceneId;
+extern int g_FrameCounter;
+extern int g_FrontendState;
+extern unsigned long long g_RageNearFacesCrossing;
+extern unsigned long long g_RageNearTrianglesEmitted;
+extern unsigned long long g_RageGt4FacesEmitted;
+extern unsigned long long g_RageNearGt4TrianglesEmitted;
+extern unsigned g_RageGt4ColorMaximum;
+extern int g_RageGt4DepthMinimum;
+extern int g_RageGt4DepthMaximum;
+extern unsigned long long g_RageGt4ClipPositive;
+extern unsigned long long g_RageGt4ClipNegative;
+extern unsigned long long g_RageGt4RejectOffscreen;
+extern unsigned long long g_RageGt4RejectBackface;
+extern unsigned long long g_RageGt4RejectDepth;
+
+static int RageWriteCapturedFrame(const char *path) {
+    unsigned char *pixels;
+    FILE *output;
+    int width;
+    int height;
+
+    if (path == NULL || path[0] == '\0') return 1;
+    /* Prime the reusable GPU download buffer before the asserted capture. */
+    pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    if (pixels == NULL) return 0;
+    free(pixels);
+    pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    if (pixels == NULL) return 0;
+    output = fopen(path, "wb");
+    if (output == NULL) {
+        free(pixels);
+        return 0;
+    }
+    fprintf(output, "P6\n%d %d\n255\n", width, height);
+    if (fwrite(pixels, 3, (size_t)width * (size_t)height, output) !=
+        (size_t)width * (size_t)height) {
+        fclose(output);
+        free(pixels);
+        return 0;
+    }
+    fclose(output);
+    free(pixels);
+    return 1;
+}
+
+int main(void) {
+    RageInputConfig inputConfig;
+    int inputIndex;
+
+    Psyz_SetTitle("Rage Racer smoke");
+    Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
+    Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
+    PadInit(0);
+    RageInputConfigDefaults(&inputConfig);
+    RageInputConfigLoad(&inputConfig, "rage-input.cfg");
+    for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
+        Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
+    }
+    if (!RageHostInitDisc()) return EXIT_FAILURE;
+    if (!RageInitNativeGameData()) return EXIT_FAILURE;
+    if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
+    MainLoop();
+    if (getenv("RAGE_PORT_SMOKE_INITIAL_STATE") != NULL) {
+        int enabled = 0;
+        int car;
+        for (car = 0; car < 13; car++)
+            enabled += g_TimeAttackCars[car].enabled != 0;
+        printf("initial state: time_attack_enabled=%d selected_car=%d\n",
+               enabled, g_TimeAttackSave.carIndex);
+    }
+    if (getenv("RAGE_PORT_SMOKE_WINDOW_SIZE") != NULL) {
+        PsyzSize size = Psyz_VideoGetDisplaySize();
+        printf("window size: %dx%d\n", size.w, size.h);
+    }
+    if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
+        printf("audio metrics: frames=%llu energy=%llu loaded=%x cue_bank=%d "
+               "vab=%d,%d,%d,%d\n",
+               Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
+               g_AudioLoadedSlotMask, g_SoundCueBank,
+               g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
+               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3]);
+    }
+    if (getenv("RAGE_PORT_SMOKE_CAMERA_STATE") != NULL) {
+        {
+            RECT paletteRect = {752, 224, 16, 1};
+            RECT textureRect = {704, 120, 16, 1};
+            u16 palette[16] = {0};
+            u16 texture[16] = {0};
+            int sample;
+            DrawSync(0);
+            StoreImage(&paletteRect, (u_long *)palette);
+            StoreImage(&textureRect, (u_long *)texture);
+            DrawSync(0);
+            printf("vram: clut=");
+            for (sample = 0; sample < 16; sample++)
+                printf("%s%04x", sample ? "," : "", palette[sample]);
+            printf(" tex=");
+            for (sample = 0; sample < 16; sample++)
+                printf("%s%04x", sample ? "," : "", texture[sample]);
+            putchar('\n');
+        }
+        printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d key=%p",
+               SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
+               SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
+               SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR,
+               (void *)g_RaceIntroCameraCursor);
+        if (g_RaceIntroCameraCursor != NULL) {
+            printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
+                   g_RaceIntroCameraCursor->mode,
+                   g_RaceIntroCameraCursor->startFrame,
+                   g_RaceIntroCameraCursor->duration,
+                   g_RaceIntroCameraCursor->x.word,
+                   g_RaceIntroCameraCursor->y.word,
+                   g_RaceIntroCameraCursor->z.word);
+        }
+        if (g_CarTable != NULL) {
+            CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
+            printf(" car=%d paint=%d,%d rgb=%04x,%04x",
+                   g_PlayerCarIndex, entry->paintColor1, entry->paintColor2,
+                   g_BodyColorPrimary[entry->paintColor1],
+                   g_BodyColorPrimary[entry->paintColor2]);
+        }
+        if (g_ModelBanks[0].modelCount > 0 && g_ModelBanks[0].models[0]) {
+            const u8 *stream = g_ModelBanks[0].models[0];
+            u32 opcode = stream[0] | ((u32)stream[1] << 8) |
+                         ((u32)stream[2] << 16) | ((u32)stream[3] << 24);
+            printf(" bank0=%d opcode=%08x face=%08x,%08x,%08x",
+                   g_ModelBanks[0].modelCount, opcode,
+                   *(const u32 *)(stream + 4), *(const u32 *)(stream + 8),
+                   *(const u32 *)(stream + 12));
+            {
+                int block;
+                const u8 *cursor = stream;
+                printf(" blocks=");
+                for (block = 0; block < 8; block++) {
+                    u32 header = cursor[0] | ((u32)cursor[1] << 8) |
+                                 ((u32)cursor[2] << 16) |
+                                 ((u32)cursor[3] << 24);
+                    int type = header & 0xffff;
+                    int count = header >> 16;
+                    printf("%s%d:%d", block ? "," : "", type, count);
+                    if (type == 3 && count > 0) {
+                        const u8 *uv = cursor + 4 + 16;
+                        printf("[uv=%02x%02x/%02x%02x/%02x%02x/%02x%02x "
+                               "clut=%02x%02x tp=%02x%02x]",
+                               uv[0], uv[1], uv[4], uv[5], uv[8], uv[9],
+                               uv[10], uv[11], uv[2], uv[3], uv[6], uv[7]);
+                    }
+                    if (header == 0 || (unsigned)type >= 4) break;
+                    cursor += 4 + count * (const int[]){16,24,24,32}[type];
+                }
+            }
+        }
+        printf(" ref_lap=%d time_text=%s near=%llu/%llu gt4=%llu+%llu max=%u z=%d..%d clip=%llu/%llu reject=%llu/%llu/%llu",
+               g_BestLapThisRace,
+               g_TimeTextBuffer,
+               g_RageNearFacesCrossing, g_RageNearTrianglesEmitted,
+               g_RageGt4FacesEmitted, g_RageNearGt4TrianglesEmitted,
+               g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
+               g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
+               g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,
+               g_RageGt4RejectBackface, g_RageGt4RejectDepth);
+        putchar('\n');
+    }
+    if (getenv("RAGE_PORT_SMOKE_SAVE_ROUNDTRIP") != NULL) {
+        GameSaveHeaderRow header = {0};
+        const int marker = 123456789;
+
+        BiosBuInit();
+        if (g_RaceProgress == NULL) {
+            fprintf(stderr, "save roundtrip has no active progress slot\n");
+            return EXIT_FAILURE;
+        }
+        g_RaceProgress->money.value = marker;
+        if (!WriteMemoryCardSaveSlot(0, &header)) {
+            fprintf(stderr, "save roundtrip write failed\n");
+            return EXIT_FAILURE;
+        }
+        g_RaceProgress->money.value = 0;
+        if (!LoadMemoryCardSaveSlot(0, &header) ||
+            g_RaceProgress->money.value != marker) {
+            fprintf(stderr, "save roundtrip load failed: money=%d\n",
+                    g_RaceProgress->money.value);
+            return EXIT_FAILURE;
+        }
+        printf("save roundtrip ok: money=%d\n", g_RaceProgress->money.value);
+    }
+    if (!RageWriteCapturedFrame(getenv("RAGE_PORT_CAPTURE_PATH"))) {
+        fprintf(stderr, "failed to capture smoke frame\n");
+        return EXIT_FAILURE;
+    }
+    printf("Rage Racer smoke stopped at frame %d, scene %d, frontend %d, "
+           "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
+           "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
+           "gp_round=%d class_done=%d series_done=%d\n",
+           g_FrameCounter, g_SceneId, g_FrontendState,
+           g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
+           g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
+           g_PadButtonMapping[2], g_PadType, g_RacePhase,
+           g_PlayerCar.trackProgress, g_PlayerCar.lap, g_GrandPrixClass,
+           g_GrandPrixRound, g_ClassCompleted, g_SeriesCleared);
+    printf("memory card: phase=%d status=%d files=%d free=%d mask=%x page=%d\n",
+           g_McMenuPhase, g_McStatusResult, g_McCardFileCount,
+           g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);
+    return EXIT_SUCCESS;
+}

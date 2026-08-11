@@ -7,14 +7,7 @@
 #include "game/render.h"
 #include "psyq/kernel.h"
 
-/*
- * Old-style definition on purpose: SetTrackTexturePageNow and RequestTrackTexturePage call this
- * with no argument at all (the original relied on whatever was left in $4), so
- * the unit must not expose a prototype for it.
- */
-s32 SelectTrackTexturePage(section)
-s32 section;
-{
+s32 SelectTrackTexturePage(s32 section) {
     s32 ret;
     s32 one;
 
@@ -71,30 +64,26 @@ void SwapTrackTexturePageNow(void) {
 void SetTrackTexturePageNow(s32 trackSection) {
     s32 temp;
 
-    temp = SelectTrackTexturePage();
+    temp = SelectTrackTexturePage(trackSection);
     g_TrackTextureTargetRow = temp;
     g_TrackTextureCursorRow = temp;
     SwapTrackTexturePageNow();
 }
 
 void ResetTrackTextureSwap(void) {
-    s32 value = 1;
-    s32 i = 0xFF;
-    u8 *ptr = &g_TrackTextureShadowPageLast;
+    s32 i;
 
-    do {
-        *ptr = value;
-        i--;
-        ptr--;
-    } while (i >= 0);
+    for (i = 0; i < 0x100; i++) {
+        g_TrackTextureShadowPage[i] = 1;
+    }
 
     g_TrackTexturePageWanted = 0;
     g_TrackTextureTargetRow = 0;
     g_TrackTextureCursorRow = 0;
 }
 
-void RequestTrackTexturePage(void) {
-    g_TrackTextureTargetRow = SelectTrackTexturePage();
+void RequestTrackTexturePage(s32 trackSection) {
+    g_TrackTextureTargetRow = SelectTrackTexturePage(trackSection);
 }
 
 void SwapTrackTextureRow(void) {

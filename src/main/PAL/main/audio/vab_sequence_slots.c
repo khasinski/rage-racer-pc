@@ -32,8 +32,7 @@ s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *seq) {
 }
 
 s32 CloseAudioSlot(s32 slot) {
-    AudioRuntimeState *runtime = &g_AudioRuntimeState;
-    s32 *flagsPtr = &runtime->loadedSlotMask;
+    s32 *flagsPtr = &g_AudioLoadedSlotMask;
     s32 bit = 1;
     s32 flags = *flagsPtr;
     s32 ret;
@@ -47,7 +46,7 @@ s32 CloseAudioSlot(s32 slot) {
         SsUtSetReverbDepth(0, 0);
         _SsVmInit(0);
         SsSeqCloseWrapper(g_SeqHandle.value);
-        ids = runtime->soundScale.vabIds;
+        ids = g_SoundScale.vabIds;
         SsVabClose(ids[slot]);
         ret = 1;
     }

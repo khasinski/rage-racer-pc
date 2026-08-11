@@ -6,9 +6,9 @@
 #include "common.h"
 #include "psyq/cd_types.h"
 
-extern CdlLOC g_CdTrackLocs[];
-extern CdlLOC g_CdBgmTrackLocs[];
-extern CdlLOC g_CdTrackLoopPoint[];
+extern CdlLOC g_CdTrackLocs[18];
+extern CdlLOC *g_CdBgmTrackLocs;
+extern CdlLOC g_CdTrackLoopPoint[18];
 extern u32 g_CdMixLL;
 extern u32 g_CdMixLR;
 extern u32 g_CdMixRR;

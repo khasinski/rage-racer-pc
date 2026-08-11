@@ -235,7 +235,7 @@ void DrawOptionSceneOverlay(void) {
 /* Scene 23: the setup / OPTION scene, dispatching g_GameModeHandlers[g_GameMode]. */
 void UpdateOptionScene(void) {
     SCRATCH_PRIM_CURSOR_AS(u8) = AddTilePrim(
-        g_DrawBuffer + 204, SCRATCH_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 2, 0, 0, 0);
+        GamePrimaryOrderingTable(0), SCRATCH_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 2, 0, 0, 0);
     g_AnimTimer = g_AnimTimer + 1;
     g_SceneTimer = g_SceneTimer + 1;
     if (g_SceneTimer == 2) {

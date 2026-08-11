@@ -21,7 +21,7 @@ void DrawBgmSelectBar(void) {
     s32 value;
     u8 *next;
 
-    base = g_DrawBuffer + 0xD0;
+    base = (u8 *)GamePrimaryOrderingTable(1);
     next = SCRATCH_PRIM_CURSOR_AS(u8);
     temp = (g_BgmSelectCursor == 0) ? 0x3FEC : 0x3FEF;
     tileW = 0x14;

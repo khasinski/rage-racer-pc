@@ -32,7 +32,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     s32 m_118[8];
     s32 v_138[3];
     s32 unused_144[4]; /* reserved stack slot present in the original */
-    s32 clipHandle;
+    s32 clipHandle = 0;
     s32 otDepth;
     s32 i;
 
@@ -153,11 +153,10 @@ void DrawCar(GameRenderObject *obj) {
     s32 v_128[4];
     s32 v_138[4];
     s32 v_148[4];
-    s32 clipHandle;
+    s32 clipHandle = 0;
     s32 otDepth;
     s32 i;
     s32 model;
-    s32 *cam = &SCRATCH_PRIM_CURSOR_WORD;
     s16 *lod;
 
     model = g_CarModelByCourse[g_CourseIndex][obj->modelIndex];
@@ -165,9 +164,9 @@ void DrawCar(GameRenderObject *obj) {
     obj->y -= GetCamRow(g_CamRow, model)->horizon;
     obj->modelY -= GetCamRow(g_CamRow, model)->horizon;
 
-    v_128[0] = obj->x - cam[2];
+    v_128[0] = obj->x - SCRATCH_VIEW_X;
     v_128[1] = 0;
-    v_128[2] = obj->z - cam[4];
+    v_128[2] = obj->z - SCRATCH_VIEW_Z;
     ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, v_128, v_148);
     if (v_128[0] < 0) {
         v_128[0] = -v_128[0];

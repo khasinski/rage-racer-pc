@@ -5,14 +5,6 @@
 #include "game/scratchpad.h"
 #include "psyq/gpu.h"
 
-/*
- * Keep the first font base opaque after materialising it. This empty constraint
- * makes gcc emit that base before the sprite cursor while still rematerialising
- * g_Font8x8Cells + 1 in the loop, as retail does.
- */
-#define INIT_TEXT_FONT(font) \
-    asm("" : "=r"(font) : "0"(g_Font8x8Cells))
-
 void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
@@ -20,9 +12,8 @@ void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
     packet.bytes = *scratch;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
-        u8 *font;
+        u8 *font = g_Font8x8Cells;
         RenderBufferAddress spriteAddress;
-        INIT_TEXT_FONT(font);
         spriteAddress.bytes = packet.bytes;
         sprt = spriteAddress.volatileSprite8;
         do {
@@ -33,14 +24,11 @@ void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
                 s32 index;
                 u8 *fontUCell;
                 u8 *fontV;
-                AssetAddress fontAddress;
                 s32 u;
                 s32 v;
 
                 index = cell * 2;
-                fontAddress.pointer = font;
-                fontAddress.offset = index + fontAddress.offset;
-                fontUCell = fontAddress.pointer;
+                fontUCell = &font[index];
                 fontV = &g_Font8x8Cells[1];
                 u = *fontUCell * 8;
                 v = *(index + fontV) * 8;
@@ -53,7 +41,7 @@ void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
                 sprt->v0 = v;
                 sprt->clut = clutIndex;
                 spriteAddress.volatileSprite8 = sprt;
-                AddPrim(g_DrawBuffer + 0xCC, spriteAddress.pointer);
+                AddPrim(GamePrimaryOrderingTable(0), spriteAddress.pointer);
                 sprt++;
                 packet.bytes += sizeof(SPRT_8);
             }
@@ -61,7 +49,7 @@ void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
         } while (*str != 0);
     }
     SetDrawMode(packet.drawPacket, 0, 1, 9, g_DrawModeEnv);
-    AddPrim(g_DrawBuffer + 0xCC, packet.pointer);
+    AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
     *scratch = packet.bytes + sizeof(DrawPacket);
 }
 
@@ -79,9 +67,8 @@ void GameDrawText8x8Shaded(
     packet.bytes = *scratch;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
-        u8 *font;
+        u8 *font = g_Font8x8Cells;
 
-        INIT_TEXT_FONT(font);
         primAddress.bytes = packet.bytes;
         sprt = primAddress.volatileSprite8;
         do {
@@ -96,12 +83,9 @@ void GameDrawText8x8Shaded(
                     s32 index;
                     u8 *fontUCell;
                     u8 *fontV;
-                    AssetAddress fontAddress;
 
                     index = cell * 2;
-                    fontAddress.pointer = font;
-                    fontAddress.offset = index + fontAddress.offset;
-                    fontUCell = fontAddress.pointer;
+                    fontUCell = &font[index];
                     fontV = &g_Font8x8Cells[1];
                     u = *fontUCell * 8;
                     v = *(index + fontV) * 8;
@@ -113,14 +97,14 @@ void GameDrawText8x8Shaded(
                 sprt->y0 = y;
                 sprt->u0 = u;
                 sprt->v0 = v;
-                sprt->t.r0 = intensity;
-                sprt->t.g0 = intensity;
-                sprt->t.b0 = intensity;
+                sprt->r0 = intensity;
+                sprt->g0 = intensity;
+                sprt->b0 = intensity;
                 asm("");
                 primAddress.volatileSprite8 = sprt;
                 prim = primAddress.bytes;
                 sprt->clut = clutIndex;
-                AddPrim(g_DrawBuffer + 0xCC, prim);
+                AddPrim(GamePrimaryOrderingTable(0), prim);
                 sprt++;
                 packet.bytes += sizeof(SPRT_8);
             }
@@ -128,7 +112,7 @@ void GameDrawText8x8Shaded(
         } while (*str != 0);
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
-    AddPrim(g_DrawBuffer + 0xCC, packet.pointer);
+    AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
     *scratch = packet.bytes + sizeof(DrawPacket);
 }
 
@@ -139,9 +123,8 @@ void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
     packet.bytes = *scratch;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
-        u8 *font;
+        u8 *font = g_Font8x8Cells;
         RenderBufferAddress spriteAddress;
-        INIT_TEXT_FONT(font);
         spriteAddress.bytes = packet.bytes;
         sprt = spriteAddress.volatileSprite8;
         do {
@@ -152,14 +135,11 @@ void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
                 s32 index;
                 u8 *fontUCell;
                 u8 *fontV;
-                AssetAddress fontAddress;
                 s32 u;
                 s32 v;
 
                 index = cell * 2;
-                fontAddress.pointer = font;
-                fontAddress.offset = index + fontAddress.offset;
-                fontUCell = fontAddress.pointer;
+                fontUCell = &font[index];
                 fontV = &g_Font8x8Cells[1];
                 u = *fontUCell * 8;
                 v = *(index + fontV) * 8;
@@ -173,7 +153,7 @@ void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
                 sprt->v0 = v;
                 sprt->clut = clutIndex;
                 spriteAddress.volatileSprite8 = sprt;
-                AddPrim(g_DrawBuffer + 0xCC, spriteAddress.pointer);
+                AddPrim(GamePrimaryOrderingTable(0), spriteAddress.pointer);
                 sprt++;
                 packet.bytes += sizeof(SPRT_8);
             }
@@ -181,7 +161,7 @@ void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
         } while (*str != 0);
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x49, g_DrawModeEnv);
-    AddPrim(g_DrawBuffer + 0xCC, packet.pointer);
+    AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
     *scratch = packet.bytes + sizeof(DrawPacket);
 }
 
@@ -239,7 +219,6 @@ typedef union TextRenderWork {
                 s32 index = offset * 4;
                 s32 width;
                 SPRT *prim;
-                u8 *ot;
                 s16 yOffset;
 
                 asm(
@@ -254,9 +233,9 @@ typedef union TextRenderWork {
                     sprt->x0 = xPos;
                 } else {
                     SetSemiTrans(packet.bytes, 1);
-                    sprt->t.r0 = shade;
-                    sprt->t.g0 = shade;
-                    sprt->t.b0 = shade;
+                    sprt->r0 = shade;
+                    sprt->g0 = shade;
+                    sprt->b0 = shade;
                     sprt->x0 = xPos;
                 }
                 yOffset = g_HighFontYOffset[index];
@@ -264,7 +243,7 @@ typedef union TextRenderWork {
                 asm(
                     "" : "=r"(yOffset), "=r"(t0.value) :
                     "0"(yOffset), "1"(t0.value));
-                packet.bytes += 20;
+                packet.bytes += sizeof(SPRT);
                 sprt->y0 = yOffset + t0.value;
                 width = g_HighFontWidth[index];
                 prim = sprt;
@@ -273,12 +252,10 @@ typedef union TextRenderWork {
                 /* RAW() keeps this store ahead of the g_DrawBuffer load --
                  * see common.h. */
                 RAW(sprt->h) = height;
-                ot = g_DrawBuffer;
                 t0.value = (u16)home.clut;
-                ot += 0xCC;
                 sprt->clut = t0.value;
                 sprt->w = width;
-                AddPrim(ot, prim);
+                AddPrim(GamePrimaryOrderingTable(0), prim);
                 advance = g_WordFontWidth[index];
                 sprt++;
                 xPos += advance;
@@ -288,7 +265,6 @@ typedef union TextRenderWork {
                 s32 offset = ch - 0x61;
                 s32 width;
                 SPRT *prim;
-                u8 *ot;
 
                 s1 = offset * 4;
                 text++;
@@ -300,13 +276,13 @@ typedef union TextRenderWork {
                     sprt->x0 = xPos;
                 } else {
                     SetSemiTrans(packet.bytes, 1);
-                    sprt->t.r0 = shade;
-                    sprt->t.g0 = shade;
-                    sprt->t.b0 = shade;
+                    sprt->r0 = shade;
+                    sprt->g0 = shade;
+                    sprt->b0 = shade;
                     sprt->x0 = xPos;
                 }
                 t0.value = (u16)home.y;
-                packet.bytes += 20;
+                packet.bytes += sizeof(SPRT);
                 sprt->y0 = t0.value;
                 width = g_WordFontWidth[s1];
                 prim = sprt;
@@ -315,12 +291,10 @@ typedef union TextRenderWork {
                 /* RAW() keeps this store ahead of the g_DrawBuffer load --
                  * see common.h. */
                 RAW(sprt->h) = height;
-                ot = g_DrawBuffer;
                 t0.value = (u16)home.clut;
-                ot += 0xCC;
                 sprt->clut = t0.value;
                 sprt->w = width;
-                AddPrim(ot, prim);
+                AddPrim(GamePrimaryOrderingTable(0), prim);
                 advance = g_WordFontAdvance[s1];
                 sprt++;
                 xPos += advance;
@@ -336,9 +310,7 @@ typedef union TextRenderWork {
                     u8 *uCell;
                     u8 *vCell;
                     SPRT *prim;
-                    u8 *ot;
 
-                    asm volatile("" : "=r"(index) : "0"(index) : "$2");
                     t0.bytes = g_PropFontU;
                     uCell = index + t0.bytes;
                     t0.bytes = g_PropFontV;
@@ -352,9 +324,9 @@ typedef union TextRenderWork {
                         sprt->x0 = xPos;
                     } else {
                         SetSemiTrans(packet.bytes, 1);
-                        sprt->t.r0 = shade;
-                        sprt->t.g0 = shade;
-                        sprt->t.b0 = shade;
+                        sprt->r0 = shade;
+                        sprt->g0 = shade;
+                        sprt->b0 = shade;
                         sprt->x0 = xPos;
                     }
                     t0.value = (u16)home.y;
@@ -363,17 +335,15 @@ typedef union TextRenderWork {
                     asm("" : "=r"(prim) : "0"(prim));
                     sprt->u0 = u;
                     sprt->v0 = v;
-                    ot = g_DrawBuffer;
-                    packet.bytes += 20;
+                    packet.bytes += sizeof(SPRT);
                     sprt->w = height;
                     sprt->h = height;
                     sprt->y0 = t0.value;
                     t0.value = (u16)home.clut;
-                    ot += 0xCC;
                     sprt->clut = t0.value;
                     asm volatile("" ::);
                     sprt++;
-                    AddPrim(ot, prim);
+                    AddPrim(GamePrimaryOrderingTable(0), prim);
                 }
                 xPos += 12;
             }
@@ -381,8 +351,8 @@ typedef union TextRenderWork {
         } while (*text != 0);
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
-    AddPrim(g_DrawBuffer + 0xCC, packet.pointer);
-    SCRATCH_PRIM_CURSOR_AS(u8) = packet.bytes + 12;
+    AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
+    SCRATCH_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
 #undef OPAQUE_VALUE
 }
 
@@ -427,7 +397,7 @@ u8 *GameQueueSprite(
     sprt->u0 = u;
     sprt->v0 = v;
     sprt->clut = clutIndex;
-    prim += 20;
+    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
     return prim;
 }
@@ -461,11 +431,11 @@ u8 *GameQueueShadedSprite(
     sprt->h = h;
     sprt->u0 = u;
     sprt->v0 = v;
-    sprt->t.r0 = intensity;
-    sprt->t.g0 = intensity;
-    sprt->t.b0 = intensity;
+    sprt->r0 = intensity;
+    sprt->g0 = intensity;
+    sprt->b0 = intensity;
     sprt->clut = clutIndex;
-    prim += 20;
+    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
     return prim;
 }
@@ -496,11 +466,11 @@ u8 *GameQueueShadedSpriteTrans(
     sprt->h = h;
     sprt->u0 = u;
     sprt->v0 = v;
-    sprt->t.r0 = intensity;
-    sprt->t.g0 = intensity;
-    sprt->t.b0 = intensity;
+    sprt->r0 = intensity;
+    sprt->g0 = intensity;
+    sprt->b0 = intensity;
     sprt->clut = clutIndex;
-    prim += 20;
+    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
     return prim;
 }
@@ -532,7 +502,7 @@ u8 *GameQueueSpriteTrans(
     sprt->u0 = u;
     sprt->v0 = v;
     sprt->clut = clutIndex;
-    prim += 20;
+    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
     return prim;
 }
@@ -561,10 +531,10 @@ u8 *GameQueueTileTrans(
     tile->y0 = y;
     tile->w = w;
     tile->h = h;
-    tile->t.r0 = r;
-    tile->t.g0 = g;
-    tile->t.b0 = b;
-    prim += 16;
+    tile->r0 = r;
+    tile->g0 = g;
+    tile->b0 = b;
+    prim += sizeof(*tile);
     AddPrim(ot, tile);
     return prim;
 }
@@ -599,10 +569,10 @@ u8 *GameQueueLine(
     line->y0 = y0;
     line->x1 = x1;
     line->y1 = y1;
-    line->t.r0 = r;
-    line->t.g0 = g;
-    line->t.b0 = b;
-    prim += 16;
+    line->r0 = r;
+    line->g0 = g;
+    line->b0 = b;
+    prim += sizeof(*line);
     AddPrim(ot, line);
     return prim;
 }

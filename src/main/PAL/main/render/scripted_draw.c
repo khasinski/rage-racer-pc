@@ -14,7 +14,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     register ScriptedSpriteMotion *motionReg asm("$10") = motion;
     register ScriptedSpriteShape *shapeReg asm("$9");
     s32 flags8;
-    u32 *otBase;
+    OT_TYPE *otBase;
     s32 mode;
     s32 flags4;
     register s32 limit asm("$8");
@@ -29,7 +29,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
 
     /* Match note: materialize motionReg in $t2 before the first load. */
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(u32);
+    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
     packed = motionReg->packedVelocity;
     shapeReg = shape;
     if (limit < elapsed) {
@@ -109,7 +109,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
 void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion *motion) {
     register ScriptedLineMotion *motionReg asm("$8") = motion;
     ScriptedLineShape *shapeReg;
-    void *otBase;
+    OT_TYPE *otBase;
     s32 mode;
     register s32 y1Reg asm("$2");
     s32 x0;
@@ -117,7 +117,6 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     s32 x1Base;
     s32 x1;
     s32 y1;
-    s32 otPtr;
     s32 limit;
     s32 xPacked;
     s32 yPacked;
@@ -125,11 +124,10 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     s32 interp;
     u32 interpProduct;
     s32 alpha;
-    OrderingTableAddress otAddress;
 
     /* Match note: materialize motionReg in $t0 before the first load. */
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(void);
+    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
     xPacked = motionReg->packedVelocity0;
     yPacked = motionReg->packedVelocity1;
     shapeReg = shape;
@@ -210,16 +208,12 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     }
 
     y1Reg = (s16)y1;
-    elapsed = mode * 4;
     x0 <<= 0x10;
     y1 = y0Call << 0x10;
     x1 <<= 0x10;
-    otAddress.pointer = otBase;
-    otPtr = otAddress.value + elapsed;
-    asm("" : "=r"(otPtr), "=r"(x0) : "0"(otPtr), "1"(x0));
-    otAddress.value = otPtr;
+    asm("" : "=r"(x0) : "0"(x0));
     DrawLine(
-        otAddress.pointer,
+        &otBase[mode],
         x0 >> 0x10,
         y1 >> 0x10,
         x1 >> 0x10,
@@ -233,7 +227,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
 void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTriangleMotion *recordArg) {
     ScriptedTriangleShape *style;
     ScriptedTriangleMotion *record;
-    u32 *ot;
+    OT_TYPE *ot;
     s32 limit;
     register s32 packedSpeed asm("$3");
     s32 product;
@@ -251,7 +245,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     /* The barrier is load-bearing: without it the scheduler sinks the
      * scratchpad load past the second record load. */
     limit = record->limit;
-    ot = SCRATCH_OT_BASE_AS(u32);
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     asm volatile("");
     packedSpeed = record->packedVelocity;
     if (limit < time) {
@@ -367,7 +361,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     s32 flags;
 
     duration = ctx->limit;
-    table = SCRATCH_OT_BASE_AS(u8);
+    table = (u8 *)SCRATCH_OT_BASE_AS(OT_TYPE);
     velocity0 = ctx->packedVelocity;
     velocity1 = ctx->packedSizeVelocity;
     entry = desc;
@@ -435,7 +429,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     }
 
     flags = entry->flags;
-    GameDrawTexturedQuad(table + index * 4, (s16)x, (s16)y,
+    GameDrawTexturedQuad(&((OT_TYPE *)table)[index], (s16)x, (s16)y,
                   (s16)(x + dx), (s16)y, (s16)x, (s16)(y + dy),
                   (s16)(x + dx), (s16)(y + dy), entry->u0, entry->v0,
                   entry->u1, entry->v1, entry->u2, entry->v2, entry->u3,
@@ -559,7 +553,7 @@ timed_commands_done:
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     ScriptedSpriteShape *shapePtr;
     register ScriptedSpriteMotion *motionPtr asm("$9");
-    u32 *ot;
+    OT_TYPE *ot;
     register s32 countReg asm("$21");
     register s32 i asm("$18");
     TimedDrawCommand *cmd;
@@ -585,7 +579,7 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     shapePtr = g_MenuRowScript[0].shape.spriteShape;
     elapsed = progress - g_MenuRowScript[0].time;
     motionPtr = g_MenuRowScript[0].motion.spriteMotion;
-    ot = SCRATCH_OT_BASE_AS(u32);
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     countReg = count;
     packed = motionPtr->packedVelocity;
     i = 0;

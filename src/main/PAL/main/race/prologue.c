@@ -170,9 +170,8 @@ void DrawPrologueText(void) {
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
         tmp = fadeLevel * 7;
         greenScale = tmp * 32;
-        base = g_DrawBuffer;
         prim = *scratch;
-        ptr = base + 0xD0;
+        ptr = (u8 *)GamePrimaryOrderingTable(1);
         green = (greenScale / 0x100) + 0x20;
         blueScale = (fadeLevel * 3) << 6;
         blue = (blueScale / 0x100) + 0x40;

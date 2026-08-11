@@ -7,180 +7,24 @@
 #include "game/records_internal.h"
 
 void InitRecordTables(void) {
-    RaceRecordAddress recordAddress;
-    RaceRecordAddress r2;
-    LapTimeTableAddress r3;
-    RaceRecordAddress r4;
-    register RaceRecordAddress r5 asm("$5");
-    s32 r6;
-    register s32 r7 asm("$7");
-    RaceRecordAddress r8;
-    RaceRecordAddress r9;
-    RaceRecordAddress r10;
-    s32 r11;
-    s32 r12;
-    s32 r13;
-    register s32 r14 asm("$14");
-    s32 r15;
-    RaceRecordAddress r16;
-    RaceRecordAddress r17;
-    register RaceRecordAddress r18 asm("$18");
-    s32 r19;
-    s32 r20;
-    register s32 r21 asm("$21");
-    RaceRecordAddress rankingBaseAddress;
-    register s32 r24 asm("$24");
-    register s32 r25 asm("$25");
-    register s32 r23 asm("$23");
-    s32 r30;
+    s32 series;
+    s32 course;
+    s32 slot;
+    const s32 *defaultLapTimes = g_DefaultLapTimes;
+    const s32 *defaultTotalTimes = g_DefaultTotalTimes;
 
-    r14 = 0;
-    r18.wordPointer = &g_DefaultLapTimes;
-    r17.wordPointer = &g_BestTotalTimes[0][0][0];
-    r16.wordPointer = &g_BestLapTimes[0][0][0];
-    do {
-        r7 = 0;
-        r15 = r14 * 32;
-        r12 = r14 << 4;
-        r11 = r16.value;
-        do {
-            r5.value = 0;
-            r13 = r7 * 8;
-            r8.value = r11;
-            do {
-                r4.value = 0;
-                r10.wordPointer = r8.wordPointer;
-                r2.value = r12 + r18.value;
-                r6 = r7 * 4;
-                r9.value = r6 + r2.value;
-                r3.timeOffset = r5.value * sizeof(s32);
-                r2.value = r15 + r17.value;
-                r2.value = r13 + r2.value;
-                r3.value = r3.timeOffset + r2.value;
-                do {
-                    r2.value = *r9.wordPointer;
-                    *r10.wordPointer = r2.value;
-                    r2.wordPointer = &g_DefaultTotalTimes;
-                    r2.value = r12 + r2.value;
-                    r2.value = r6 + r2.value;
-                    r2.value = *r2.wordPointer;
-                    r4.value++;
-                    *r3.wordPointer = r2.value;
-                } while (r4.value < 4);
-                r5.value++;
-                r8.wordPointer++;
-            } while (r5.value < 2);
-            r7++;
-            r11 += 8;
-        } while (r7 < 4);
-        r14++;
-        r16.wordPointer += 8;
-    } while (r14 < 2);
-
-    r14 = 0;
-    rankingBaseAddress.pointer = &g_RankingRecords[0][0][0];
-    r30 = rankingBaseAddress.value + 4;
-    r20 = 0;
-    do {
-        r7 = 0;
-        r16.recordOffset = r20;
-        r15 = 0;
-        do {
-            r6 = 0;
-            r19 = r15;
-            r18.pointer = &g_TimeRecords[0][0][0];
-            r21 = r18.value + 4;
-            r25 = r7 * 4;
-            __asm__("" : "=r"(r25) : "0"(r25));
-            r2.wordPointer = &g_DefaultLapTimes;
-            r24 = r14 << 4;
-            r2.value = r24 + r2.value;
-            r17.value = r25 + r2.value;
-            r10.halfwordPointer = &g_DefaultRecordCars;
-            r13 = 0;
-            r12 = 0;
-            r11 = r15;
-            r9.wordPointer = &g_DefaultRecordTimes;
-            r8.wordPointer = &g_DefaultRecordRows;
-            do {
-                r5.recordOffset = r11 + r16.recordOffset;
-                r11 += 0x10;
-                r4.recordOffset = r6 * 16;
-                r6++;
-                r2.recordOffset = r16.recordOffset + r19;
-                r4.recordOffset = r4.recordOffset + r2.recordOffset;
-                r3.value = *r8.wordPointer;
-                r2.value = r4.recordOffset + rankingBaseAddress.value;
-                *r2.wordPointer = r3.value;
-                r3.value = *r9.wordPointer;
-                r2.value = r4.recordOffset + r30;
-                *r2.wordPointer = r3.value;
-                r3.value = *r8.wordPointer;
-                r8.wordPointer += 3;
-                r2.value = r4.recordOffset + r18.value;
-                *r2.wordPointer = r3.value;
-                r2.value = *r9.wordPointer;
-                r4.value = r4.recordOffset + r21;
-                *r4.wordPointer = r2.value;
-                r2.value = *r17.wordPointer;
-                r9.wordPointer += 3;
-                r2.value = r12 + r2.value;
-                recordAddress.pointer = &g_RankingRecords[0][0][0];
-                recordAddress.bytePointer += r5.recordOffset;
-                recordAddress.pointer->raceTime = r2.value;
-                r2.wordPointer = &g_DefaultTotalTimes;
-                r2.value = r24 + r2.value;
-                r2.value = r25 + r2.value;
-                r2.value = *r2.wordPointer;
-                r12 += 0x7D0;
-                r2.value = r13 + r2.value;
-                recordAddress.pointer = &g_TimeRecords[0][0][0];
-                recordAddress.bytePointer += r5.recordOffset;
-                recordAddress.pointer->raceTime = r2.value;
-                r2.value = *r10.halfwordPointer;
-                r13 += 0x2710;
-                recordAddress.pointer = &g_RankingRecords[0][0][0];
-                recordAddress.bytePointer += r5.recordOffset;
-                recordAddress.pointer->carIndex = r2.value;
-                r2.value = *r10.halfwordPointer;
-                recordAddress.pointer = &g_TimeRecords[0][0][0];
-                recordAddress.bytePointer += r5.recordOffset;
-                recordAddress.pointer->carIndex = r2.value;
-                r10.halfwordPointer += 6;
-            } while (r6 < 5);
-            r7++;
-            r15 += 0x50;
-        } while (r7 < 4);
-        r14++;
-        r20 += 0x140;
-    } while (r14 < 2);
-
-    r14 = 0;
-    r8.wordPointer = &g_DefaultLapTimes;
-    r9.wordPointer = &g_BestSectorTimes[0][0][0];
-    do {
-        r7 = 0;
-        r4.wordPointer = r9.wordPointer;
-        do {
-            r6 = 0;
-            r2.value = r7 * 4;
-            r5.value = r2.value + r8.value;
-            r3.wordPointer = r4.wordPointer;
-            do {
-                r2.value = *r5.wordPointer;
-                r6++;
-                *r3.wordPointer = r2.value;
-                r3.wordPointer++;
-            } while (r6 < 3);
-            r7++;
-            r4.wordPointer += 3;
-        } while (r7 < 4);
-        r8.wordPointer += 4;
-        r14++;
-        r9.wordPointer += 12;
-    } while (r14 < 2);
-
-    __asm__("" : : "r"(r23));
+    for (series = 0; series < 2; series++) {
+        for (course = 0; course < 4; course++) {
+            for (slot = 0; slot < 2; slot++) {
+                g_BestLapTimes[series][course][slot] = defaultLapTimes[series * 4 + course];
+                g_BestTotalTimes[series][course][slot] = defaultTotalTimes[series * 4 + course];
+            }
+            for (slot = 0; slot < 5; slot++) {
+                g_RankingRecords[series][course][slot] = (RaceRecord){0};
+                g_TimeRecords[series][course][slot] = (RaceRecord){0};
+            }
+        }
+    }
 }
 
 void *FormatLapTime(void *dst, s32 value) {

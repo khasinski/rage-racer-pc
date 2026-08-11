@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/asset_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
@@ -9,8 +10,8 @@
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
 void DrawTireCompoundSlider(u8 x, s32 useFlag) {
-    u32 *ot;
-    u32 *scratch;
+    OT_TYPE *ot;
+    OT_TYPE *scratch;
     s32 gray;
     s32 alpha;
     s32 angle;
@@ -20,7 +21,7 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     s32 yLarge;
     s32 ySmall;
 
-    scratch = SCRATCH_OT_BASE_AS(u32);
+    scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
 
     switch ((u8)x) {
     case 4:
@@ -245,7 +246,12 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     s32 shadowX;
     s32 shadowY;
 
-    ot = SCRATCH_OT_BASE_AS(u32) + 3;
+    if (step == 0) {
+        g_CarSpecGraphProgress = 0;
+        return;
+    }
+
+    ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 3;
     sourceColors = &g_CarSpecGraphColors;
     colors = *sourceColors;
     markerClut = 0x26C;
@@ -315,10 +321,6 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
         break;
     }
 
-    if (step == 0) {
-        g_CarSpecGraphProgress = 0;
-        return;
-    }
     if (step > 0) {
         g_CarSpecGraphProgress += step;
         if (g_CarSpecGraphProgress >= 0x61) {
@@ -414,7 +416,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
         baseX = 0x66;
         offset = 0;
         do {
-        revealedBar = (s32 *)((i * 4) + (u32)revealed);
+        revealedBar = &revealed[i];
         revealedValue = *revealedBar;
         if (revealedValue != 0) {
             bar = g_CarSpecBars + i;

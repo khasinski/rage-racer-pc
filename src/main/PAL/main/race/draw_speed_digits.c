@@ -3,6 +3,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 
 
@@ -35,5 +36,5 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     prim = DrawHudDigit(prim, screenX, screenY, hundreds, color);
     prim = DrawHudDigit(prim, screenX + 8, screenY, tens, color);
     prim = DrawHudDigit(prim, screenX + 0x10, screenY, ones, color);
-    *scratch = QueueDrawModePrim(g_DrawBuffer + 0xCC, prim, 9);
+    *scratch = QueueDrawModePrim(GamePrimaryOrderingTable(0), prim, 9);
 }

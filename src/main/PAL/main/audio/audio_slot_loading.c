@@ -70,8 +70,7 @@ s32 PollAudioSlotLoad(void) {
 }
 
 s32 CloseVabOnlyAudioSlot(s32 slot) {
-    AudioRuntimeState *runtime = &g_AudioRuntimeState;
-    s32 *flagsPtr = &runtime->loadedSlotMask;
+    s32 *flagsPtr = &g_AudioLoadedSlotMask;
     s32 bit = 1;
     s32 flags = *flagsPtr;
     s32 zeroArg = 0;
@@ -86,7 +85,7 @@ s32 CloseVabOnlyAudioSlot(s32 slot) {
     *flagsPtr = bit ^ flags;
     SsUtSetReverbDepth(zeroArg, 0);
     _SsVmInit(0);
-    ids = runtime->soundScale.vabIds;
+    ids = g_SoundScale.vabIds;
     SsVabClose(ids[slot]);
     ret = 1;
     }

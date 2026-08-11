@@ -369,10 +369,19 @@ void RelocateCarModel(void);
 
 typedef struct ModelBankHeader {
     u32 modelCount;
-    AssetAddress table;
-    AssetAddress normals;
-    AssetAddress models[1];
+    s32 tableOffset;
+    s32 normalsOffset;
+    s32 modelOffsets[1];
 } ModelBankHeader;
+
+#define GAME_MODEL_BANK_LIMIT 16
+#define GAME_MODEL_PER_BANK_LIMIT 256
+typedef struct NativeModelBank {
+    s32 modelCount;
+    void *table;
+    void *normals;
+    void *models[GAME_MODEL_PER_BANK_LIMIT];
+} NativeModelBank;
 
 typedef struct OptionScreenAsset {
     s32 imageOffset;
@@ -393,9 +402,12 @@ typedef union ModelBankTableAddress {
 
 typedef struct TerrainCellAssetHeader {
     s32 cellCount;
-    AssetAddress faces;
-    AssetAddress cells[1];
+    s32 facesOffset;
+    s32 cellOffsets[1];
 } TerrainCellAssetHeader;
+
+#define GAME_TERRAIN_CELL_LIMIT 2048
+extern void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 
 typedef struct TerrainCellAsset {
     u16 grid[32][32];
@@ -413,15 +425,23 @@ typedef union TerrainCellAssetAddress {
 } TerrainCellAssetAddress;
 
 typedef struct CourseModelAssetEntry {
-    AssetAddress geometry;
-    s32 reserved;
-    AssetAddress model;
+    s32 geometryOffset;
+    s32 vertexCount;
+    s32 modelOffset;
 } CourseModelAssetEntry;
 
 typedef struct CourseModelAssetHeader {
     s32 modelCount;
     CourseModelAssetEntry models[1];
 } CourseModelAssetHeader;
+
+#define GAME_COURSE_MODEL_LIMIT 256
+typedef struct NativeCourseModel {
+    void *geometry;
+    s32 vertexCount;
+    void *model;
+} NativeCourseModel;
+extern NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
 
 /* Asset-installation helpers. RegisterModelBank/RegisterCourseModels
  * rebase a pack's internal offsets to absolute addresses; UnrelocateModelBank
@@ -464,11 +484,11 @@ s32 GetCarAssetIndex(s32 model, s32 grade);
 
 extern u32 g_StreamSectorLimit;
 extern s32 g_TerrainCellCount;
-extern u32 g_CarImageRect;
+extern RECT g_CarImageRect;
 struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[];
 extern CarModelAsset *g_CarModelSlots[];
-extern ModelBankHeader *g_ModelBanks[];
+extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 extern char g_MsgFileNotFound[];
 extern char g_MsgFileReadError[];
 extern char g_MsgNowLoading[];

@@ -1,19 +1,20 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
 
 void UpdateMenuMode(void) {
-    u32 *scratch;
+    OT_TYPE *scratch;
     s32 c0;
     s32 c1;
     u32 screenRange;
 
     c0 = g_AnimTimer;
     c1 = g_SceneTimer;
-    scratch = SCRATCH_OT_BASE_AS(u32);
+    scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
     c0 += 1;
     c1 += 1;
     g_AnimTimer = c0;
@@ -47,7 +48,8 @@ void UpdateMenuMode(void) {
             return;
         }
     }
-    if (RunTimedDrawScript(&g_MenuHintBarScript, &g_MenuHintBarProgress) == 0) {
+    if (RunTimedDrawScript(&g_MenuHintBarScript, &g_MenuHintBarProgress,
+                           g_MenuHintBarStep) == 0) {
         return;
     }
 
