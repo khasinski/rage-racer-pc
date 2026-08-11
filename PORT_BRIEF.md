@@ -827,3 +827,16 @@ creates a larger backing store automatically; dividing 640×480 by pixel density
 created a visibly 320×240 window on Retina. The SDL HAL now requests logical
 640×480 directly and tracks backing-store pixels separately. Set
 `RAGE_PORT_WINDOW_DEBUG=1` to log logical size, pixel size, and density.
+
+### Race update cadence
+
+Do not remove the `g_FrameSyncThreshold` wait from `MainLoop`. The PAL game uses
+`0x80` for menus and `0x180` after `InitRaceScene`: menu logic advances every
+VBlank, while race physics and lap-frame counters advance every second VBlank.
+`FramesToMilliseconds` makes the intended race rate explicit: 25 update frames
+equal 1000 ms. Running every scene handler once per host VBlank therefore makes
+the race physics and its displayed timers exactly twice as fast.
+
+The native build keeps the original game loop. PsyZ implements `VSync(1)` in
+1/256-VBlank units, including a deterministic LIMITLESS path for smoke tests;
+the timing policy belongs in the HAL, not in special cases in the game code.

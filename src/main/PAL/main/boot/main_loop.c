@@ -70,6 +70,7 @@ void InitSubsystems(void) {
  * pad.
  */
 void MainLoop(void) {
+    s32 frameLimit;
     s32 elapsed;
     s32 ticks;
 
@@ -115,7 +116,10 @@ void MainLoop(void) {
         g_SceneHandlers[g_SceneId]();
         DrawSync(0);
         StepTrackTextureSwap();
-        elapsed = 0;
+        frameLimit = g_FrameSyncThreshold;
+        while (VSync(1) < frameLimit) {
+        }
+        elapsed = VSync(1);
         ticks = g_GameClock + 1;
         g_GameClock = ticks + elapsed / 256;
         VSync(0);
