@@ -1046,6 +1046,15 @@ images are not visual acceptance frames. `--alignment-only` performs the same
 captures and state gates but skips ImageMagick, heatmaps and per-frame bundles;
 on a cached sequence the manifest scan takes about 0.06 seconds. Use it to find
 strictly aligned candidates in long routes before generating detailed bundles.
+Zero eligible pairs are a successful discovery result: `summary.json` still
+contains every rejected row and gate reason, while normal image-comparison mode
+continues to fail when it has nothing valid to compare. A 701-phase PSX versus
+351-frame native scan found 279 exact-projection/mask pairs, but their scene and
+animation timers were consistently seven to nine ticks apart. Large black-mask
+scores on those pairs followed shifted barrier texture segments and are not
+renderer evidence. Changing the native accelerator start did not remove that
+offset; synchronize game-update cadence before using that long cache for UV or
+HUD conclusions.
 For example:
 
 ```sh

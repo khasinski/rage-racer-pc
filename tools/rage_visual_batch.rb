@@ -362,11 +362,10 @@ if options[:match] == "position"
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
+  native_by_scene_lap = native_states.group_by { |state| [state[:scene], state[:lap]] }
   rejected = []
   pairs = psx_states.map do |psx|
-    scene_candidates = native_states.select do |native|
-      native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
-    end
+    scene_candidates = native_by_scene_lap.fetch([psx[:scene], psx[:lap]], [])
     if scene_candidates.empty?
       unless options[:skip_unmatched]
         abort "no native state candidate for #{psx[:filename]}"
@@ -536,6 +535,16 @@ if options[:match] == "position"
     }
   end.compact
   if pairs.empty?
+    if options[:alignment_only]
+      summary = {
+        psx_directory: psx_dir.to_s, native_directory: native_dir.to_s,
+        match: options[:match], alignment_only: true, matched_frames: 0,
+        rejected_frames: rejected.length, rejections: rejected, frames: []
+      }
+      File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
+      puts "aligned=0 rejected=#{rejected.length}"
+      exit
+    end
     details = rejected.first(5).map do |row|
       "#{row[:psx]} -> #{row[:native]}: #{row[:reasons].join(', ')}"
     end
