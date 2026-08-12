@@ -1035,6 +1035,30 @@ preset. Stdout always includes raw animation-timer delta and main/mirror mask
 equality, so a zero count cannot be mistaken for a detector that never ran or a
 pair aligned only in the wrong render pass.
 
+`tools/rage_visual_run.rb` is the one-command repeatable path. It starts the
+Ruby/YJIT emulator and native smoke capture in parallel, forces draw-page and
+all-phase timer captures, writes separate logs, then invokes the selected
+diagnostic preset. `run.json` records cwd, argv, environment, timer range and a
+shell-escaped reproduction command for all three stages. Use `--dry-run` to
+audit the route without starting either game; repeat `--match-arg=VALUE` for
+batch tolerances. For example:
+
+```sh
+ruby tools/rage_visual_run.rb \
+  --checkpoint /tmp/rage-cont-700/sync-00199-t00700-s12.psxstate \
+  --output /tmp/rage-road-866 --profile road \
+  --timer-min 866 --timer-max 870 --psx-frames 342 --native-frames 2240 \
+  --psx-input '0-500:CROSS' \
+  --native-input '400:START,500:START,650:CROSS,950:CROSS,1100:CROSS,1200:CROSS,1469-2240:CROSS' \
+  --match-arg=--max-position-distance --match-arg=8 \
+  --match-arg=--max-view-distance --match-arg=8 \
+  --match-arg=--max-projection-delta --match-arg=16 --top 5
+```
+
+The end-to-end regression route reproduces timer 868 with equal animation and
+main/mirror visible-cell hashes, position/view distance 3, zero native-only
+clear pixels and ten isolated native-only black pixels.
+
 Race captures include the X/Z positions of all four active rivals as well as
 the player state. New manifests also retain each rival's speed, progress, body
 yaw, lateral offset, collision flag and active flag. Position matching adds
