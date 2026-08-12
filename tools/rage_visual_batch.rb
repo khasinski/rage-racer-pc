@@ -48,6 +48,8 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             require_visible_cells: false,
             require_main_visible_cells: false,
             require_mirror_visible_cells: false,
+            require_main_visible_list: false,
+            require_mirror_visible_list: false,
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
             skip_unmatched: false, alignment_only: false,
@@ -143,6 +145,14 @@ OptionParser.new do |parser|
             "reject pairs whose mirror-pass visible-cell masks differ") do
     options[:require_mirror_visible_cells] = true
     explicit_options[:require_mirror_visible_cells] = true
+  end
+  parser.on("--require-main-visible-list",
+            "reject pairs whose complete main visible-cell lists differ") do
+    options[:require_main_visible_list] = true
+  end
+  parser.on("--require-mirror-visible-list",
+            "reject pairs whose complete mirror visible-cell lists differ") do
+    options[:require_mirror_visible_list] = true
   end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
@@ -305,16 +315,16 @@ if options[:match] == "position"
                         end,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
-      main_visible_cells_equal: (!candidate.key?(:main_visible_hash) ||
-        !psx.key?(:main_visible_hash) || candidate[:main_visible_hash] == psx[:main_visible_hash]) &&
-        (!candidate.key?(:main_visible_list_hash) ||
-         !psx.key?(:main_visible_list_hash) ||
-         candidate[:main_visible_list_hash] == psx[:main_visible_list_hash]),
-      mirror_visible_cells_equal: (!candidate.key?(:mirror_visible_hash) ||
-        !psx.key?(:mirror_visible_hash) || candidate[:mirror_visible_hash] == psx[:mirror_visible_hash]) &&
-        (!candidate.key?(:mirror_visible_list_hash) ||
-         !psx.key?(:mirror_visible_list_hash) ||
-         candidate[:mirror_visible_list_hash] == psx[:mirror_visible_list_hash])
+      main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
+        !psx.key?(:main_visible_hash) || candidate[:main_visible_hash] == psx[:main_visible_hash],
+      mirror_visible_cells_equal: !candidate.key?(:mirror_visible_hash) ||
+        !psx.key?(:mirror_visible_hash) || candidate[:mirror_visible_hash] == psx[:mirror_visible_hash],
+      main_visible_list_equal: !candidate.key?(:main_visible_list_hash) ||
+        !psx.key?(:main_visible_list_hash) ||
+        candidate[:main_visible_list_hash] == psx[:main_visible_list_hash],
+      mirror_visible_list_equal: !candidate.key?(:mirror_visible_list_hash) ||
+        !psx.key?(:mirror_visible_list_hash) ||
+        candidate[:mirror_visible_list_hash] == psx[:mirror_visible_list_hash]
     }
   end
   eligible = lambda do |metrics|
@@ -333,6 +343,8 @@ if options[:match] == "position"
         (metrics[:main_visible_cells_equal] && metrics[:mirror_visible_cells_equal])) &&
       (!options[:require_main_visible_cells] || metrics[:main_visible_cells_equal]) &&
       (!options[:require_mirror_visible_cells] || metrics[:mirror_visible_cells_equal]) &&
+      (!options[:require_main_visible_list] || metrics[:main_visible_list_equal]) &&
+      (!options[:require_mirror_visible_list] || metrics[:mirror_visible_list_equal]) &&
       metrics[:projection_phase_equal]
   end
   rejection_reasons = lambda do |metrics, candidate, psx|
@@ -364,6 +376,10 @@ if options[:match] == "position"
     reasons << "mirror_visible_cells" if
       (options[:require_visible_cells] || options[:require_mirror_visible_cells]) &&
       !metrics[:mirror_visible_cells_equal]
+    reasons << "main_visible_list" if options[:require_main_visible_list] &&
+      !metrics[:main_visible_list_equal]
+    reasons << "mirror_visible_list" if options[:require_mirror_visible_list] &&
+      !metrics[:mirror_visible_list_equal]
     reasons << "anim_phase=#{metrics[:anim_timer_delta]}>#{options[:max_anim_timer_delta]}" if
       metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
     reasons << "random_seed" if options[:require_random_seed] &&

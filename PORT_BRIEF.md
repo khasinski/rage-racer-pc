@@ -1853,8 +1853,12 @@ carries its camera-relative translation, which feeds GTE OTZ.  Capture
 manifests therefore hash the complete 1024-byte main and mirror lists as
 `main_visible_list_hash` and `mirror_visible_list_hash`.  The existing
 `--require-main-visible-cells` / `--require-mirror-visible-cells` gates require
-both mask and list equality when those newer columns are present, while
-remaining compatible with older captures.
+mask equality only, which is appropriate for aligning images whose camera
+translation may differ by one unit.  Use the separate
+`--require-main-visible-list` / `--require-mirror-visible-list` gates for a
+bit-exact LOD oracle that also requires equal per-cell translations.  Mixing
+these contracts can reject visually comparable states merely because their
+active list hashes retain the legitimate one-unit camera delta.
 
 Canonicalize inactive visible-list entries before hashing: `BuildVisibleCells`
 sets only `w = -1` on rejection and deliberately leaves the old x/y/z words in
@@ -1907,3 +1911,13 @@ keeps a real triangular hole ahead of scattered legal black texels and
 one-pixel phase contours.  The road preset stops at scanline 199: lines
 200..204 contain the lower HUD/world boundary and previously produced a long
 false-positive component unrelated to terrain.
+
+Treat even a large black component as discovery evidence, not proof.  In the
+timer-1670 long-route capture, a 276-pixel component was the legal black half
+of the yellow/black barrier shifted by a one-unit camera delta.  Pixel tracing
+showed the same textured packet, tpage `0x1a`, CLUT `0x7c80`, texture window,
+UV neighbourhood and VRAM contents on both sides.  Exposed dark-blue clear
+colour remains the stronger missing-coverage signal.  Run summaries therefore
+retain maxima and frame identities for both clear and black connected
+components so automated scans can prioritize clear coverage failures and use
+black results only for packet-level follow-up.

@@ -165,6 +165,12 @@ batch_commands.each do |profile, command|
   end
   worst_clear = frames.max_by { |frame| frame.fetch("native_only_clear") }
   worst_black = frames.max_by { |frame| frame.fetch("native_only_black") }
+  worst_clear_component = frames.max_by do |frame|
+    frame.fetch("native_only_clear_component", 0)
+  end
+  worst_black_component = frames.max_by do |frame|
+    frame.fetch("native_only_black_component", 0)
+  end
   worst_needle = frames.max_by do |frame|
     frame.dig("tachometer_needle", "mismatch_pixels") || 0
   end
@@ -172,10 +178,16 @@ batch_commands.each do |profile, command|
     matched_frames: summary.fetch("matched_frames"),
     maximum_clear: frames.map { |frame| frame.fetch("native_only_clear") }.max || 0,
     maximum_black: frames.map { |frame| frame.fetch("native_only_black") }.max || 0,
+    maximum_clear_component: frames.map { |frame| frame.fetch("native_only_clear_component", 0) }.max || 0,
+    maximum_black_component: frames.map { |frame| frame.fetch("native_only_black_component", 0) }.max || 0,
     maximum_needle_mismatch: frames.map { |frame| frame.dig("tachometer_needle", "mismatch_pixels") || 0 }.max || 0,
     worst_region_rmse: frames.map { |frame| frame["normalized_region_rmse"] || frame["normalized_rmse"] }.max,
     maximum_clear_frame: worst_clear && { frame: worst_clear["frame"], state_delta: worst_clear["state_delta"] },
     maximum_black_frame: worst_black && { frame: worst_black["frame"], state_delta: worst_black["state_delta"] },
+    maximum_clear_component_frame: worst_clear_component &&
+      { frame: worst_clear_component["frame"], state_delta: worst_clear_component["state_delta"] },
+    maximum_black_component_frame: worst_black_component &&
+      { frame: worst_black_component["frame"], state_delta: worst_black_component["state_delta"] },
     maximum_needle_frame: worst_needle && { frame: worst_needle["frame"], state_delta: worst_needle["state_delta"],
                                            tacho: worst_needle["tachometer_needle"] }
   }
