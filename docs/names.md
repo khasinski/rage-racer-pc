@@ -2427,8 +2427,9 @@ a distance LOD. All four `jtbl_8007D9F4` modes emit POLY_FT4; two of them wrap
 it in a pair of 12-byte GP0 0xE2 texture-window packets, and two skip the depth
 cue and instead add 1 to the CLUT row. When a face's subdivision counters survive
 the distance reduction, the mode calls `EmitSubdividedTerrainQuad`
-(func_80028874), which lerps screen XY and UVs with `INTPL` through
-`InterpolateSubdivRow` (func_80028C54) and emits one POLY_FT4 per cell.
+(func_80028874), which lerps local XYZ and UVs with `INTPL` through
+`InterpolateSubdivRow` (func_80028C54), projects each generated child with
+`RTPT`, and emits one POLY_FT4 per cell.
 
 Naming style: `GameSubmit*` for the entry points that walk a model's opcode list
 (matching the existing `SubmitModel` / `SubmitCourseModel`), and
@@ -2442,10 +2443,10 @@ Not settled, and therefore not in any name:
 * What the alternate CLUT row selected by `func_80028120`'s modes 1 and 3
   actually is. The selector is `g_IsEnvironmentMode4` and the effect is
   `clut += 1`; what the second palette row contains is on the disc.
-* `EmitSubdividedTerrainQuad` also emits two `LINE_F3` packets per
-  subdivided quad, guarded on a sign bit, 64 OT entries further back. The
-  primitive type and the guard are certain; whether they are seam filler, a road
-  edge stripe or debug output is not.
+* `EmitSubdividedTerrainQuad` also emits two `LINE_F3` seam-cover packets per
+  subdivided quad, guarded on the combined GTE/record sign bit, 64 OT entries
+  farther back. Their chains are `v0-v1-v3` and `v0-v2-v3`; restoring them in
+  the native path removes the thin clear-colour gaps between road children.
 * `func_80029FD8` and `func_8002A2CC` are each simultaneously a jump-table entry
   point, an emitter body and the host of a shared face loop. Their names describe
   the entry-point role, which is how they are reached; the file comments say so.

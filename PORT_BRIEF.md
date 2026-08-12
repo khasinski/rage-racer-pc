@@ -384,24 +384,32 @@ instead of the retail `0x237E8` stride when walking the two host contexts.
 
 Retail terrain subdivision levels are the two bytes at record offsets 22/23,
 reduced by `OTZ >> SCRATCH_FACE_OT_SHIFT` and clamped at zero. A level `n`
-means a fixed-point step of `4096 >> n`, or `2^n` pieces on that axis. Retail's
-`EmitSubdividedTerrainQuad` and `InterpolateSubdivRow` repurpose the GTE
-`INTPL`/`RTPT` pipeline to interpolate the already projected screen XY and UV
-rows; they do not bilerp local vertices and project the world quad again. The
-native path mirrors that screen-space interpolation and clips each generated
-quad. Reprojecting every subquad produced roughly 37,000 packets per frame and
-exhausted even a 2 MiB native arena, while the screen-space path completes the
-same prologue frames without exhaustion.
+means a fixed-point step of `4096 >> n`, or `2^n` pieces on that axis.
 
-The interpolation is separable and must retain the GTE rounding between its
-two axes. `InterpolateSubdivRow` programs `INTPL` with `sf=1`, fixed `FC`/IR
-endpoints and decreasing IR0; `EmitSubdividedTerrainQuad` first interpolates
-the top and bottom edges and then interpolates between those results. A single
-four-weight bilinear expression rounds only once and is not equivalent,
-especially for negative projected coordinates. The portable path therefore
-uses the retail signed arithmetic shift and s16 saturation after each INTPL
-stage for both screen XY and UV. On the timer 500..800 road series this lowers
-mean region RMSE from 0.134218 to 0.131723 across 61 state-aligned frames.
+The GTE trace settles what `EmitSubdividedTerrainQuad` and
+`InterpolateSubdivRow` interpolate. The values loaded into `VXY0..VZ2` before
+the `RTPT` at `0x80028D5C` are interpolated local XYZ coordinates, not packed
+screen XY. The resulting SXY FIFO is then tested with `NCLIP` and written to a
+POLY_FT4. The portable path must therefore interpolate the four local vertices
+with the same separable `INTPL sf=1,lm=0` stages and project every child.
+Screen-space interpolation happens to hide some gaps but bends near-camera
+road faces and is not retail behavior.
+
+The two subdivision axes are asymmetric in the hand-written loop. Record byte
+22 controls the outer interpolation from `v0` to `v1` and `v2` to `v3`; byte
+23 controls the inner row from those results toward the `v0`-`v2` /
+`v1`-`v3` side. The emitted packet order is current, next outer, next inner,
+then next outer+inner. Swapping the loop bounds changes a retail 4x8 face into
+8x4 and produces incorrect textures and clipping. Children inherit their
+parent's OT depth: retail runs `RTPT` and `NCLIP` for each child but no child
+`AVSZ4` depth rejection.
+
+Before the child loop, faces without a negative GTE/record sign bit also emit
+two `LINE_F3` packets at `parent OT + 64`. Their vertex chains are
+`v0-v1-v3` and `v0-v2-v3`, use the command/colour word at record offset 24,
+and end in the standard `0x55555555` polyline terminator. These are the retail
+seam cover: omitting them raised exposed clear-colour road pixels in the race
+regression from 91 to 252.
 
 ### Reset paths must not depend on unloaded assets
 

@@ -46,6 +46,7 @@ unsigned long long g_RageTerrainSecondTriangleVisible;
 unsigned long long g_RageTerrainChildRejectBackface;
 unsigned long long g_RageTerrainChildSecondTriangleVisible;
 static int g_RageProjectionReject;
+static int g_RageProjectionFlag;
 static int g_RageTerrainTraceInitialized;
 static int g_RageTerrainTraceEnabled;
 static int g_RageTerrainTraceTimer = -1;
@@ -112,6 +113,7 @@ static int RageProjectQuad(
     otz = RotAverage4((SVECTOR *)v0, (SVECTOR *)v1, (SVECTOR *)v2,
                       (SVECTOR *)v3, &sxy[0], &sxy[1], &sxy[2], &sxy[3],
                       &p, &flag);
+    g_RageProjectionFlag = flag;
     g_RageProjectionReject = 0;
     if (fog != NULL) *fog = p;
     if (rawDepth != NULL) *rawDepth = (int)otz;
@@ -148,9 +150,13 @@ static int RageProjectQuad(
          * triangle faces the camera.  Applying the model rule to terrain
          * drops whole quads whenever only their first half is degenerate. */
         if (terrainQuad &&
-            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
-             (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0)))
-            g_RageTerrainSecondTriangleVisible++;
+            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 > 0) ||
+             (SCRATCH_MIRROR && clip0 >= 0 && clip1 < 0))) {
+            if (terrainQuad == 2)
+                g_RageTerrainChildSecondTriangleVisible++;
+            else
+                g_RageTerrainSecondTriangleVisible++;
+        }
         /* SubmitModelFaces has only one NCLIP result.  Its retail branches
          * accept clip > 0 in the main pass and clip >= 0 after the mirror
          * ordering flag is toggled.  Do not feed the duplicated clip0 into
@@ -160,15 +166,18 @@ static int RageProjectQuad(
              ((!SCRATCH_MIRROR && clip0 <= 0) ||
               (SCRATCH_MIRROR && clip0 < 0))) ||
             (terrainQuad &&
-             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
-              (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
+             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 <= 0) ||
+              (SCRATCH_MIRROR && clip0 >= 0 && clip1 >= 0)))) {
             g_RageProjectionReject = 2;
             if (!terrainQuad) g_RageModelRejectBackface++;
+            if (terrainQuad == 2) g_RageTerrainChildRejectBackface++;
             return 0;
         }
     }
     *depth = ((int)otz >> SCRATCH_OT_SHIFT);
-    if (*depth <= 0 || *depth >= 448) {
+    /* Subdivided terrain children inherit the parent's OT slot.  Retail
+     * projects them with RTPT/NCLIP only and never runs AVSZ4 per child. */
+    if (terrainQuad != 2 && (*depth <= 0 || *depth >= 448)) {
         g_RageProjectionReject = 3;
         return 0;
     }
@@ -252,37 +261,22 @@ static int RageBilerpSxy(
     return (int)((uint16_t)x | ((uint32_t)(uint16_t)y << 16));
 }
 
-static int RageScreenQuadVisible(const int sxy[4]) {
-    int i;
-    int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
-    int clip1 = NormalClip(sxy[3], sxy[1], sxy[2]);
-    int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-
-    /* EmitSubdividedTerrainQuad repeats the retail two-half NCLIP test for
-     * every interpolated child.  It first tests (v0,v1,v2), then loads v3
-     * into SXY0 and tests the FIFO (v3,v1,v2).  The latter is a cyclic
-     * permutation of (v1,v2,v3), hence the opposite stored-quad winding.
-     * A former native workaround removed both tests after a one-triangle
-     * approximation punched holes in the road; that emitted hundreds of
-     * retail-rejected children and let overlapping/back-facing texture
-     * triangles bend across the near road instead. */
-    if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
-        (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)) {
-        g_RageTerrainChildRejectBackface++;
-        return 0;
-    }
-    if ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
-        (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0))
-        g_RageTerrainChildSecondTriangleVisible++;
-    for (i = 0; i < 4; i++) {
-        int x = (int16_t)sxy[i];
-        int y = (int16_t)(sxy[i] >> 16);
-        allLeft &= x < g_RageScratchpadState.x0;
-        allRight &= x > g_RageScratchpadState.x1;
-        allAbove &= y < g_RageScratchpadState.y0;
-        allBelow &= y > g_RageScratchpadState.y1;
-    }
-    return !(allLeft || allRight || allAbove || allBelow);
+static SVECTOR RageBilerpVertex(
+    const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
+    const SVECTOR *v3, int outer, int inner, int outerSteps,
+    int innerSteps) {
+    SVECTOR result;
+#define RAGE_BILERP_VERTEX_COMPONENT(field) \
+    RageIntplComponent( \
+        RageIntplComponent(v0->field, v1->field, outer, outerSteps), \
+        RageIntplComponent(v2->field, v3->field, outer, outerSteps), \
+        inner, innerSteps)
+    result.vx = (short)RAGE_BILERP_VERTEX_COMPONENT(vx);
+    result.vy = (short)RAGE_BILERP_VERTEX_COMPONENT(vy);
+    result.vz = (short)RAGE_BILERP_VERTEX_COMPONENT(vz);
+#undef RAGE_BILERP_VERTEX_COMPONENT
+    result.pad = 0;
+    return result;
 }
 
 static int RageCourseScreenQuadVisible(const int sxy[4]) {
@@ -366,6 +360,38 @@ static uint8_t *RageEmitTerrainFt4(
     setaddr(window, poly);
     setaddr(&ot[depth], window);
     return cursor;
+}
+
+static uint8_t *RageEmitTerrainSubdivisionLines(
+    uint8_t *cursor, OT_TYPE *ot, int depth, const int sxy[4],
+    uint32_t command) {
+    LINE_F3 *first;
+    LINE_F3 *second;
+    if (!RagePrimitiveSpaceAvailable(cursor, sizeof(LINE_F3) * 2))
+        return NULL;
+    first = (LINE_F3 *)cursor;
+    second = first + 1;
+    SetLineF3(first);
+    SetLineF3(second);
+    memcpy(&first->r0, &command, sizeof(command));
+    memcpy(&second->r0, &command, sizeof(command));
+    first->x0 = (int16_t)sxy[0];
+    first->y0 = (int16_t)(sxy[0] >> 16);
+    first->x1 = (int16_t)sxy[1];
+    first->y1 = (int16_t)(sxy[1] >> 16);
+    first->x2 = (int16_t)sxy[3];
+    first->y2 = (int16_t)(sxy[3] >> 16);
+    second->x0 = first->x0;
+    second->y0 = first->y0;
+    second->x1 = (int16_t)sxy[2];
+    second->y1 = (int16_t)(sxy[2] >> 16);
+    second->x2 = first->x2;
+    second->y2 = first->y2;
+    first->pad = 0x55555555;
+    second->pad = 0x55555555;
+    AddPrim(&ot[depth + 64], first);
+    AddPrim(&ot[depth + 64], second);
+    return cursor + sizeof(LINE_F3) * 2;
 }
 
 static uint8_t *RageEmitCourseFt4(
@@ -1078,24 +1104,80 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     emittedFaces++;
                 } else {
                     int sy, sx;
-                    for (sy = 0; sy < vSteps; sy++) {
-                        for (sx = 0; sx < uSteps; sx++) {
+                    uint32_t lineCommand = RageReadU32(stream + 24);
+                    if ((((uint32_t)g_RageProjectionFlag | lineCommand) &
+                         0x80000000u) == 0) {
+                        uint8_t *next = RageEmitTerrainSubdivisionLines(
+                            cursor, ot, depth, sxy, lineCommand);
+                        if (next == NULL) goto terrain_buffer_full;
+                        cursor = next;
+                    }
+                    /* Retail's low subdivision byte is the outer v0-v1 /
+                     * v2-v3 interpolation.  The high byte is the inner
+                     * v0-v2 / v1-v3 row interpolation. */
+                    for (sy = 0; sy < uSteps; sy++) {
+                        for (sx = 0; sx < vSteps; sx++) {
                             int subSxy[4];
                             int subDepth = depth + bias;
+                            int childDepth, childFog, childRawDepth;
+                            SVECTOR child[4];
                             uint8_t uv[8];
                             uint8_t *next;
-                            subSxy[0] = RageBilerpSxy(sxy,sx,sy,uSteps,vSteps);
-                            subSxy[1] = RageBilerpSxy(sxy,sx+1,sy,uSteps,vSteps);
-                            subSxy[2] = RageBilerpSxy(sxy,sx,sy+1,uSteps,vSteps);
-                            subSxy[3] = RageBilerpSxy(sxy,sx+1,sy+1,uSteps,vSteps);
+                            child[0] = RageBilerpVertex(
+                                v0, v1, v2, v3, sy, sx, uSteps, vSteps);
+                            child[1] = RageBilerpVertex(
+                                v0, v1, v2, v3, sy + 1, sx,
+                                uSteps, vSteps);
+                            child[2] = RageBilerpVertex(
+                                v0, v1, v2, v3, sy, sx + 1,
+                                uSteps, vSteps);
+                            child[3] = RageBilerpVertex(
+                                v0, v1, v2, v3, sy + 1, sx + 1,
+                                uSteps, vSteps);
+                            if (!RageProjectQuad(
+                                    &child[0], &child[1], &child[2], &child[3],
+                                    subSxy, &childDepth, &childFog,
+                                    &childRawDepth, 2))
+                                continue;
 #define RAGE_SUB_UV(out, corner, uu, vv) do { \
     (out)[(corner)*2] = RageBilerpByte(baseUv[0],baseUv[2],baseUv[4],baseUv[6],(uu),(vv),uSteps,vSteps); \
     (out)[(corner)*2+1] = RageBilerpByte(baseUv[1],baseUv[3],baseUv[5],baseUv[7],(uu),(vv),uSteps,vSteps); \
 } while (0)
-                            RAGE_SUB_UV(uv,0,sx,sy); RAGE_SUB_UV(uv,1,sx+1,sy);
-                            RAGE_SUB_UV(uv,2,sx,sy+1); RAGE_SUB_UV(uv,3,sx+1,sy+1);
+                            RAGE_SUB_UV(uv,0,sy,sx);
+                            RAGE_SUB_UV(uv,1,sy+1,sx);
+                            RAGE_SUB_UV(uv,2,sy,sx+1);
+                            RAGE_SUB_UV(uv,3,sy+1,sx+1);
 #undef RAGE_SUB_UV
-                            if (!RageScreenQuadVisible(subSxy)) continue;
+                            {
+                                if (g_RageTerrainTraceEnabled &&
+                                    (g_RageTerrainTraceTimer < 0 ||
+                                     g_RageTerrainTraceTimer == g_SceneTimer) &&
+                                    (g_RageTerrainTraceClut < 0 ||
+                                     g_RageTerrainTraceClut == clut) &&
+                                    (g_RageTerrainTraceTpage < 0 ||
+                                     g_RageTerrainTraceTpage ==
+                                         (tpage & 0x9ff))) {
+                                    fprintf(stderr,
+                                            "terrain-child timer=%d cell=%d "
+                                            "face=%d child=%d,%d/%d,%d "
+                                            "visible=%d rgb=%02x%02x%02x "
+                                            "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
+                                            "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
+                                            g_SceneTimer, cellIndex, faceIndex,
+                                            sy, sx, uSteps, vSteps, 1,
+                                            color[0], color[1], color[2],
+                                            (int16_t)subSxy[0],
+                                            (int16_t)(subSxy[0] >> 16),
+                                            (int16_t)subSxy[1],
+                                            (int16_t)(subSxy[1] >> 16),
+                                            (int16_t)subSxy[2],
+                                            (int16_t)(subSxy[2] >> 16),
+                                            (int16_t)subSxy[3],
+                                            (int16_t)(subSxy[3] >> 16),
+                                            uv[0], uv[1], uv[2], uv[3],
+                                            uv[4], uv[5], uv[6], uv[7]);
+                                }
+                            }
                             if (subDepth <= 0 || subDepth >= 448) continue;
                             next = RageEmitTerrainFt4(cursor,ot,subDepth,fog,
                                                       dispatch,subSxy,uv,clut,
