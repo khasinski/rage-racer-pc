@@ -1055,6 +1055,29 @@ scores on those pairs followed shifted barrier texture segments and are not
 renderer evidence. Changing the native accelerator start did not remove that
 offset; synchronize game-update cadence before using that long cache for UV or
 HUD conclusions.
+
+`RAGE_GPU_DIGEST=1` provides the next stage after alignment discovery. Both the
+Ruby GPU and PsyZ hash the decoded primitive stream with the same FNV-1a format:
+command, normalized PS1 tpage (`& 0x9ff`), CLUT, vertex count, and every
+little-endian `x/y/u/v/rgba` field. One `gpu-digest` record per completed frame
+contains the total and a command histogram; it does not enable the verbose
+per-primitive trace. `RAGE_GPU_DIGEST_GROUPS=1` additionally groups counts by
+`code/tpage/clut`. `tools/rage_gpu_digest_compare.rb` joins these records to an
+alignment-only summary by the relative `-fNNNNN-` filenames, reporting total,
+hash, and primitive-class deltas. The workflow is therefore: capture once with
+digest enabled, run alignment-only, compare digests, then enable the full packet
+trace only around the first differing class/frame.
+
+The exact-projection timer-868 pair gives a concrete baseline. Every primitive
+class except `POLY_FT4` has the same count; retail submits 1,135 FT4 packets and
+native 1,257. The largest grouped delta is tpage `0x0005`, CLUT `0x7943`
+(`763` retail versus `834` native), followed by smaller tpage `0x001b` road
+groups. This proves that the mismatch exists in the submitted/decoded primitive
+stream rather than being only a final framebuffer-rasterization artifact. The
+current digest combines main and mirror passes; add explicit draw-area/pass
+markers before attributing the `0x0005/0x7943` excess to mirror culling rather
+than a VBlank/pass-boundary difference.
+
 For example:
 
 ```sh
