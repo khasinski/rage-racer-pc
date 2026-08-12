@@ -1046,6 +1046,27 @@ test removing PsyZ's derivative-based UV offset increased road-region RMSE
 from 0.15657 to 0.15865 and was therefore rejected rather than retained as a
 visual workaround.
 
+Packet coverage alone is insufficient for black-polygon diagnosis. With
+`RAGE_GPU_TRACE_PIXEL=x,y`, PsyZ also reports the selected triangle, affine UV
+derivatives, rounded texel coordinate, and the coordinate after the active
+texture window. The Ruby reference accepts `RAGE_GPU_TRACE_TEXEL=1` with the
+same pixel/frame filters and reports the UV, palette index, and final 16-bit
+CLUT colour actually used by its scanline rasterizer. At race timer 826 this
+proved that the apparently missing road geometry was submitted, but the host
+selected palette index zero, whose CLUT entry is opaque black (`0x8000`).
+
+At native resolution, PS1-compatible hardware renderers place integer polygon
+vertices at pixel centres and round interpolated texture coordinates to the
+nearest even integer. PsyZ previously placed vertices on modern pixel
+boundaries and tried to compensate in the fragment shader by subtracting only
+`abs(dU/dx)` from U and `abs(dV/dy)` from V. The SDL_GPU shader now applies a
+half-pixel vertex offset and `roundEven(rawUV)` instead. Across the synchronized
+timer-800..920 road series this reduces native-only clear pixels from an
+average 444.9 to 311.1 and the worst frame from 5713 to 5597. The Ruby
+emulator's inclusive floating-point scanline rasterizer does not yet implement
+the same edge convention, so edge-only black-pixel rankings remain a candidate
+finder rather than an acceptance oracle.
+
 Timer labels are not identical render checkpoints across the two runtimes. In
 the repeatable turning scenario, PSX timer 501 has the same car state as native
 timer 500; comparing equal timer numbers advances native physics once and can
