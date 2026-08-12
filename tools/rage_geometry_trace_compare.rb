@@ -19,7 +19,8 @@ def parse(path)
     {
       timer: Integer(fields.fetch("timer")), index: Integer(fields.fetch("index")),
       mirror: Integer(fields.fetch("mirror")), clut: fields.fetch("clut"),
-      tpage: fields.fetch("tpage"), clip: clip,
+      tpage: fields.fetch("tpage"), vertices: fields["vertices"],
+      translation: fields["translation"], clip: clip,
       sxy: fields["sxy"], bounds: fields["bounds"],
       raw: fields["raw"] == "na" ? nil : Integer(fields.fetch("raw")),
       depth: fields["depth"] == "na" ? nil : Integer(fields.fetch("depth")),
@@ -34,7 +35,9 @@ count = [psx.length, native.length].min
 first = (0...count).find do |index|
   left = psx[index]
   right = native[index]
-  structural = %i[mirror clut tpage result].any? { |field| left[field] != right[field] }
+  structural = %i[mirror clut tpage vertices translation result].any? do |field|
+    left[field] && right[field] && left[field] != right[field]
+  end
   depth = left[:depth] && right[:depth] &&
     (left[:depth] - right[:depth]).abs > options[:depth_tolerance]
   clip = left[:clip].zip(right[:clip]).any? do |a, b|

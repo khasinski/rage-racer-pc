@@ -2181,6 +2181,17 @@ the first real difference at word 105, one projected X coordinate (`122` on
 retail, `123` native).  Texture, CLUT, tpage, colour and the other vertices are
 already equal at that point.
 
+That remaining one-pixel coordinate is not a GTE mismatch.  The extended
+decision trace identifies the same asset vertex indices on both sides
+(`6816,6812,6817,6814`), but the actual GTE translation registers differ:
+retail `-5957,-21237,43871`, native `-5959,-21231,43971`.  The resulting SXY is
+retail `105,123 / 102,122 / 103,120 / 101,120` versus native
+`105,123 / 102,123 / 103,120 / 101,120`.  Treat this bundle as a coverage
+discovery pair, not a bit-exact projection oracle.  Terrain decision records
+now include source vertex indices and the real TRX/TRY/TRZ control registers;
+`rage_geometry_trace_compare.rb` treats either input difference as structural
+and reports it before clip/depth output is interpreted.
+
 The first application of this oracle found a real portable terrain-emitter bug.
 Retail windowed faces submit `E2000000, E2xxxxxx` before the FT4 and
 `E2000000, 00000000` after it.  `RageEmitTerrainFt4` and

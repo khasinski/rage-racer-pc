@@ -98,6 +98,7 @@ static void RageInitializeTerrainDecisionTrace(void) {
 
 static void RageTraceTerrainDecision(
     int cell, int face, uint16_t clut, uint16_t tpage, int projected,
+    const uint16_t vertexIndices[4], const VECTOR *translation,
     int clip0, int clip1, const int sxy[4], int rawDepth, int depth) {
     const char *reason;
     if (!g_RageTerrainDecisionTraceEnabled ||
@@ -111,11 +112,15 @@ static void RageTraceTerrainDecision(
     if (projected)
         fprintf(stderr,
                 "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x clip=%d,%d "
+                "clut=%04x tpage=%04x vertices=%u,%u,%u,%u "
+                "translation=%d,%d,%d clip=%d,%d "
                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
                 "raw=%d depth=%d result=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1,
+                SCRATCH_MIRROR, clut, tpage & 0x9ff,
+                vertexIndices[0], vertexIndices[1], vertexIndices[2],
+                vertexIndices[3], translation->vx, translation->vy,
+                translation->vz, clip0, clip1,
                 (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
@@ -126,12 +131,16 @@ static void RageTraceTerrainDecision(
     else
         fprintf(stderr,
                 "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x clip=%d,%d "
+                "clut=%04x tpage=%04x vertices=%u,%u,%u,%u "
+                "translation=%d,%d,%d clip=%d,%d "
                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
                 "raw=na depth=na result=reject "
                 "reason=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1,
+                SCRATCH_MIRROR, clut, tpage & 0x9ff,
+                vertexIndices[0], vertexIndices[1], vertexIndices[2],
+                vertexIndices[3], translation->vx, translation->vy,
+                translation->vz, clip0, clip1,
                 (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
@@ -1192,6 +1201,10 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 uint16_t tpage = RageReadU16(stream + 14);
                 uint32_t textureWindow = dispatch >= 2
                     ? RageReadU32(stream + 32) : 0;
+                uint16_t vertexIndices[4] = {
+                    RageReadU16(stream + 0), RageReadU16(stream + 2),
+                    RageReadU16(stream + 4), RageReadU16(stream + 6)
+                };
                 int bias;
                 if (farCell && (stream[20] & 2) != 0) continue;
                 {
@@ -1227,6 +1240,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     }
                     RageTraceTerrainDecision(
                         cellIndex, faceIndex, clut, tpage, projected,
+                        vertexIndices, &translation,
                         g_RageTerrainClip0, g_RageTerrainClip1, sxy,
                         rawDepth, depth);
                     if (!projected) continue;
