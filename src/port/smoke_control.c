@@ -243,7 +243,7 @@ int RagePortShouldExit(int frame_number) {
     for (index = 0; index < g_SmokeStateInputCount; index++) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
         if (!input->fired && g_SceneId == input->scene &&
-            g_SceneTimer >= input->timer) {
+            g_SceneTimer == input->timer) {
             input->fired = 1;
             g_PadPressed |= input->buttons;
             fprintf(stderr,
