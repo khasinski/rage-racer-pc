@@ -1997,8 +1997,10 @@ the same course/class/mode, texture-page state, course-object count and byte
 hash. The actual difference was `g_AnimSceneryVariant`: retail RNG had selected
 0 and native RNG 2, and `DrawAnimatedScenery` deliberately submits
 `variant + 7`. Capture manifests therefore include both animated-scenery
-variants, course selectors, texture-page state and the course-object hash; the
-batch matcher rejects unequal variants before image ranking. Do not diagnose
+variants, course selectors, texture-page state and the course-object hash. The
+normal race matcher gates `g_AnimSceneryVariant`, which selects this path's
+models; `g_AnimScenery2Variant` is retained for replay/attract diagnosis but is
+not a normal-race gate. Do not diagnose
 UV, CLUT, clipping or missing faces from a pair that fails this gate.
 
 Use `--save-psx-states` for discovery scans.  It enables the emulator's

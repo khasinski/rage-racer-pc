@@ -342,9 +342,9 @@ if options[:match] == "position"
                         else
                           0
                         end,
-      scenery_variants_equal: %i[anim_scenery_variant anim_scenery2_variant].all? do |key|
-        !candidate.key?(key) || !psx.key?(key) || candidate[key] == psx[key]
-      end,
+      scenery_variants_equal: !candidate.key?(:anim_scenery_variant) ||
+        !psx.key?(:anim_scenery_variant) ||
+        candidate[:anim_scenery_variant] == psx[:anim_scenery_variant],
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
       main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
