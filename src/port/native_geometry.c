@@ -1161,11 +1161,19 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             "terrain-child timer=%d cell=%d "
                                             "face=%d child=%d,%d/%d,%d "
                                             "visible=%d rgb=%02x%02x%02x "
+                                            "xyz=%d,%d,%d/%d,%d,%d/"
+                                            "%d,%d,%d/%d,%d,%d "
                                             "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps, 1,
                                             color[0], color[1], color[2],
+                                            child[0].vx, child[0].vy,
+                                            child[0].vz, child[1].vx,
+                                            child[1].vy, child[1].vz,
+                                            child[2].vx, child[2].vy,
+                                            child[2].vz, child[3].vx,
+                                            child[3].vy, child[3].vz,
                                             (int16_t)subSxy[0],
                                             (int16_t)(subSxy[0] >> 16),
                                             (int16_t)subSxy[1],

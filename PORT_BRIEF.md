@@ -1030,8 +1030,21 @@ For packet-level follow-up, the native terrain dispatcher accepts optional
 `RAGE_PORT_TERRAIN_TRACE_TIMER`, `RAGE_PORT_TERRAIN_TRACE_CLUT`, and
 `RAGE_PORT_TERRAIN_TRACE_TPAGE` filters. Matching faces report their cell and
 face indices, dispatch mode, rejection reason, OT depth, colour, vertex
-indices, cell translation, and projected coordinates. The trace is inactive
+indices, cell translation, and projected coordinates. Subdivided children
+also report all four interpolated local XYZ vertices before projection. This
+allows a captured retail GTE `RTPT` input to be matched directly to a native
+child, independently of later rasterization and texture sampling. The trace is inactive
 unless at least one filter is present and does not alter assets or game state.
+
+For example, the timer-826 road edge identified by the clear-pixel ranker has
+the native local vertex `(3779,24000,-3103)`. Retail's GTE trace loads the same
+values (`VXY=0x5dc00ec3`, `VZ=0xfffff3e1`) before the child projection. The
+native packet also covers the investigated screen coordinate, so that case is
+not evidence of a missing terrain face or an incorrect draw distance; its
+remaining difference occurs after game geometry submission. A controlled
+test removing PsyZ's derivative-based UV offset increased road-region RMSE
+from 0.15657 to 0.15865 and was therefore rejected rather than retained as a
+visual workaround.
 
 Timer labels are not identical render checkpoints across the two runtimes. In
 the repeatable turning scenario, PSX timer 501 has the same car state as native
