@@ -141,11 +141,11 @@ if psx_replay_frames && psx_replay_state
     psx_draw_areas[frame] == native_draw_area &&
       psx_contexts[frame] == [native_scene, native_timer]
   end
-  if native_draw_area && matching_surface.empty?
+  if native_draw_area && matching_surface.empty? && available_frames.length > 1
     abort "PSX replay has no scene=#{native_scene} timer=#{native_timer} frame " \
           "on native draw page #{format('%08x', native_draw_area)}"
   end
-  candidates = matching_surface || available_frames
+  candidates = matching_surface.empty? ? available_frames : matching_surface
   psx_frame = candidates.min_by { |frame| [(frame - psx_frame).abs, frame] }
 end
 

@@ -2211,6 +2211,16 @@ halved UV but left the window unchanged: timer 270 therefore produced native
 Applying the original conversion removes that mismatch.  This belongs in the
 game's `SubmitTerrainCells` port, not in PsyZ or a modern renderer.
 
+Course geometry has two related but distinct rules.  `EmitCoursePolyFT4` and
+its subdivided sibling store `set+NOP` in their pre-polygon `DR_TWIN`; copying
+the direct-terrain `reset+set` layout inserts an extra GP0 word.  In addition,
+the original emitter adds the 32-bit scratchpad render mode at `scratch+0x84`
+to the first packed UV/CLUT word before emitting every textured course face.
+The portable course decoder omitted this for both type 1 and windowed type
+2/3 records.  On timer 270, model 8 therefore selected CLUT `0x7a0c` instead
+of retail `0x7a0d`; applying the original packed-word addition fixes the
+whole emitter rather than special-casing that model.
+
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves
 13 matched frames.  The timer-280 tachometer packet is identical on retail and

@@ -556,8 +556,10 @@ static uint8_t *RageEmitCourseFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    window->code[0] = 0xE2000000u;
-    window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+    /* The course-model emitter stores set+NOP here; unlike direct terrain
+     * faces it does not prefix the window command with another reset. */
+    window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+    window->code[1] = 0;
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
     setaddr(window, poly);
@@ -1033,8 +1035,11 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     stream[12], stream[13], stream[16], stream[17],
                     stream[20], stream[21], stream[22], stream[23]
                 };
+                uint32_t uv0 = RageReadU32(stream + 12) +
+                               (uint32_t)g_ScratchRenderMode;
+                memcpy(&uv[0], &uv0, 2);
                 uint8_t *next = RageEmitCourseFt4(
-                    cursor, ot, depth, sxy, uv, RageReadU16(stream + 14),
+                    cursor, ot, depth, sxy, uv, (uint16_t)(uv0 >> 16),
                     RageReadU16(stream + 18), color, 0, 0);
                 if (next == NULL) goto course_buffer_full;
                 cursor = next;
@@ -1051,6 +1056,11 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 int uSteps, vSteps;
                 int sy, sx;
                 memcpy(uvRecord, stream + 12, sizeof(uvRecord));
+                {
+                    uint32_t uv0 = RageReadU32(uvRecord) +
+                                   (uint32_t)g_ScratchRenderMode;
+                    memcpy(uvRecord, &uv0, sizeof(uv0));
+                }
                 if (type == 3) {
                     uint32_t scroll = (uint32_t)g_AnimTimer & 0x7f;
                     uint32_t uv0 = RageReadU32(uvRecord + 0) + scroll;
@@ -1224,7 +1234,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 "terrain-face timer=%d cell=%d face=%d "
                                 "mode=%d mirror=%d reject=%d depth=%d raw=%d fog=%d "
                                 "bias=%d lod=%u,%u shift=%d "
-                                "rgb=%02x%02x%02x indices=%u,%u,%u,%u "
+                                "rgb=%02x%02x%02x clut=%04x tpage=%04x "
+                                "window=%05x indices=%u,%u,%u,%u "
                                 "translation=%d,%d,%d "
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                                 g_SceneTimer, cellIndex, faceIndex, dispatch,
@@ -1233,6 +1244,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
                                 SCRATCH_FACE_OT_SHIFT,
                                 color[0], color[1], color[2],
+                                clut, tpage, textureWindow & 0xfffff,
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
                                 RageReadU16(stream + 4), RageReadU16(stream + 6),
                                 translation.vx, translation.vy, translation.vz,
