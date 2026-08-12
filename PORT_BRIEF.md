@@ -994,6 +994,11 @@ two frames can have an identical player pose while a rival differs by tens of
 world units, shifting its silhouette by a pixel and dominating mirror RMSE.
 Regenerate old cached manifests when diagnosing cars in the mirror; the batch
 tool remains backward compatible with caches that lack these columns.
+Use `--max-rival-distance N` for mirror investigations to reject pairs whose
+aggregate four-car X/Z displacement is too large; the selected distance is
+printed beside player and camera alignment. A value around 180 retains enough
+samples in the current 837..987 dense run while excluding the most misleading
+car-silhouette comparisons.
 
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.

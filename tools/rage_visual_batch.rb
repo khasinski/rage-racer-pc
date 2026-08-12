@@ -27,7 +27,8 @@ REGION_PRESETS = {
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 64.0, max_view_distance: 32.0,
             max_speed_delta: 16, max_angle_delta: 32,
-            max_lateral_delta: 32, visual_refine: 0,
+            max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
+            visual_refine: 0,
             clear_region: nil, black_region: nil, artifact_radius: 2,
             rank: "rmse", jobs: [Etc.nprocessors, 8].min, top: nil }
 OptionParser.new do |parser|
@@ -70,6 +71,10 @@ OptionParser.new do |parser|
   parser.on("--max-lateral-delta N", Integer,
             "skip track lateral offsets farther apart than N") do |value|
     options[:max_lateral_delta] = value
+  end
+  parser.on("--max-rival-distance N", Float,
+            "skip matches whose four rivals exceed this aggregate X/Z distance") do |value|
+    options[:max_rival_distance] = value
   end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
@@ -225,7 +230,8 @@ if options[:match] == "position"
             view_distance > options[:max_view_distance] ||
             speed_delta.abs > options[:max_speed_delta] ||
             angle_delta > options[:max_angle_delta] ||
-            lateral_delta > options[:max_lateral_delta]
+            lateral_delta > options[:max_lateral_delta] ||
+            rival_distance > options[:max_rival_distance]
     next if native.key?(:anim_timer) && psx.key?(:anim_timer) &&
             (native[:anim_timer] - psx[:anim_timer]) % 128 != 0
     {
@@ -338,8 +344,9 @@ ranked = if options[:rank] == "clear"
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
   delta = row[:state_delta]
   alignment = delta ? format(" distance=%.1f view_distance=%.1f " \
-                             "speed_delta=%d timer_delta=%d",
+                             "rival_distance=%.1f speed_delta=%d timer_delta=%d",
                              delta[:distance], delta[:view_distance],
+                             delta[:rival_distance],
                              delta[:speed], delta[:timer]) : ""
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""
