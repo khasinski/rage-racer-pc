@@ -392,7 +392,6 @@ void InterpolateTrackPoint(s32 pointIndex, s32* out, s32 weight);
 /* Declared identically by 113 translation units before this
  * header carried them. */
 
-extern s32 g_ChaseYawPrev;
 extern volatile s16 g_RouteSceneryArmed;
 extern s16 g_AnimScenery2Frame;
 extern s32 g_AnimScenery2Tint;
@@ -404,6 +403,7 @@ extern s32 g_AnimSceneryTint;
 extern s16 g_AnimSceneryVariant;
 extern s32 g_CamPathAngle[4];
 extern s32 g_CamPathAngleDelta[4];
+#define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]
 extern s32 g_CamPathAngleStart[4];
 extern s32 g_CamPathFrame;
 extern s32 g_CamPathNode;

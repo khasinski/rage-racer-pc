@@ -6,6 +6,18 @@ sources.each do |path, source|
   if path.end_with?("host_state.c")
     abort "#{path}: best-sector backing object is smaller than its game declaration" unless
       source.include?("unsigned char g_BestSectorTimes[96]")
+    { "g_CamPathOffsetDelta" => 12, "g_CamPathOffsetStart" => 12,
+      "g_CamPathOffset" => 12, "g_CamPathAngleDelta" => 16,
+      "g_CamPathAngleStart" => 16, "g_CamPathAngle" => 16 }.each do |name, bytes|
+      abort "#{path}: #{name} backing object is truncated" unless
+        source.include?("unsigned char #{name}[#{bytes}]")
+    end
+    next
+  end
+
+  if path.end_with?("track.h")
+    abort "#{path}: chase yaw is detached from its retail camera-path alias" unless
+      source.include?("#define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]")
     next
   end
 

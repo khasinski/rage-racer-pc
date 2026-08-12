@@ -2602,3 +2602,13 @@ shows retail's `1'40"765` rather than `0'00"000`. With this fixed, the complete
 normalized GP0 stream for that frame matches exactly: 10097 words. Its residual
 82-pixel road-region component is therefore PsyZ raster precision, not a
 missing game triangle or different texture packet.
+
+The scripted camera state had the same truncated/split-object problem. The
+three `g_CamPathOffset*` arrays require 12 bytes each and the three
+`g_CamPathAngle*` arrays require 16, but every host backing object was only
+eight bytes. In addition, retail `g_ChaseYawPrev` is exactly
+`g_CamPathAngleDelta[CAMPATH_YAW]` at `0x8009B1EC`, not independent state.
+Allocate the complete arrays and express that alias in `track.h`. This prevents
+camera-path writes from escaping their objects and keeps chase-camera and path
+camera users on the same retail word, which is essential before diagnosing
+projection, clipping, road bending or mirror-matrix differences.
