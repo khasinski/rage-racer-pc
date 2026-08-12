@@ -21,14 +21,14 @@ options = {
                 "1200:CROSS,1469-3000:CROSS",
   psx_state_input: nil, native_state_input: nil,
   match_args: [], budgets: [], draw_page: false, alignment_only: false,
-  dry_run: false,
+  compare_only: false, dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
 }
 
 parser = OptionParser.new do |cli|
-  cli.banner = "usage: rage_visual_run.rb --checkpoint STATE --output DIR [options]"
+  cli.banner = "usage: rage_visual_run.rb --output DIR (--checkpoint STATE | --compare-only) [options]"
   cli.on("--checkpoint PATH", "PSX save state used as the deterministic start") { |v| options[:checkpoint] = v }
   cli.on("--output DIR", "create psx/, native/, compare/ and run.json here") { |v| options[:output] = v }
   cli.on("--profile NAME", %w[all road mirror mirror-road tacho hud]) { |v| options[:profile] = v }
@@ -69,11 +69,14 @@ parser = OptionParser.new do |cli|
   cli.on("--alignment-only", "capture and report eligible state pairs without image bundles") do
     options[:alignment_only] = true
   end
+  cli.on("--compare-only", "reuse existing psx/native captures; do not run either game") do
+    options[:compare_only] = true
+  end
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
 parser.parse!
 
-abort parser.to_s unless options[:checkpoint] && options[:output]
+abort parser.to_s unless options[:output] && (options[:checkpoint] || options[:compare_only])
 abort "timer range is invalid" if options[:timer_min] > options[:timer_max]
 abort "capture stride must be positive" unless options[:capture_stride].positive?
 options[:psx_capture_stride] ||= options[:capture_stride]
@@ -89,13 +92,13 @@ compare_dirs = profiles.to_h { |profile| [profile, output / "compare" / profile]
 FileUtils.mkdir_p([psx_dir, native_dir, *compare_dirs.values])
 
 psx_env = {
-  "RAGE_EMU_LOAD_STATE" => Pathname(options[:checkpoint]).expand_path.to_s,
   "RAGE_EMU_INPUT_SCRIPT" => options[:psx_input],
   "RAGE_EMU_TIMER_FILENAMES" => "1", "RAGE_EMU_CAPTURE_ALL_PHASES" => "1",
   "RAGE_EMU_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_EMU_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RUBYOPT" => "--yjit"
 }
+psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
@@ -137,6 +140,7 @@ metadata = {
   created_at: Time.now.iso8601, profile: options[:profile],
   budgets: options[:budgets],
   alignment_only: options[:alignment_only],
+  compare_only: options[:compare_only],
   timer_range: [options[:timer_min], options[:timer_max]],
   capture_strides: {
     psx_vblank: options[:psx_capture_stride],
@@ -159,16 +163,23 @@ run_capture = lambda do |name, env, command, cwd, log_path|
   pid = Process.spawn(env, *command, chdir: cwd.to_s, out: log, err: [:child, :out])
   [name, pid, log]
 end
-captures = [
-  run_capture.call("psx", psx_env, psx_command, root / "tools/psx-ruby", psx_dir / "run.log"),
-  run_capture.call("native", native_env, native_command, root, native_dir / "run.log")
-]
-failures = captures.map do |name, pid, log|
-  _waited, status = Process.wait2(pid)
-  log.close
-  status.success? ? nil : "#{name} capture failed with #{status.exitstatus} (#{log.path})"
-end.compact
-abort failures.join("\n") unless failures.empty?
+unless options[:compare_only]
+  captures = [
+    run_capture.call("psx", psx_env, psx_command, root / "tools/psx-ruby", psx_dir / "run.log"),
+    run_capture.call("native", native_env, native_command, root, native_dir / "run.log")
+  ]
+  failures = captures.map do |name, pid, log|
+    _waited, status = Process.wait2(pid)
+    log.close
+    status.success? ? nil : "#{name} capture failed with #{status.exitstatus} (#{log.path})"
+  end.compact
+  abort failures.join("\n") unless failures.empty?
+else
+  [psx_dir, native_dir].each do |directory|
+    manifest = directory / "capture-manifest.csv"
+    abort "--compare-only requires existing #{manifest}" unless manifest.file?
+  end
+end
 
 comparison_results = {}
 batch_commands.each do |profile, command|

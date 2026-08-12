@@ -65,4 +65,16 @@ Dir.mktmpdir("rage-visual-run-alignment-") do |output|
     metadata.dig("comparisons", "road", "argv").include?("--alignment-only")
 end
 
-puts "visual run defaults to front buffers and records explicit draw-page diagnostics"
+Dir.mktmpdir("rage-visual-run-compare-only-") do |output|
+  command = [RbConfig.ruby, tool, "--output", output, "--compare-only"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "compare-only unexpectedly accepted missing captures" if status.success?
+  expected = "--compare-only requires existing #{File.join(output, "psx", "capture-manifest.csv")}"
+  abort stdout + stderr unless (stdout + stderr).include?(expected)
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "compare-only mode was not recorded" unless metadata.fetch("compare_only")
+  abort "compare-only should not invent a checkpoint" if
+    metadata.dig("psx", "env").key?("RAGE_EMU_LOAD_STATE")
+end
+
+puts "visual run supports cached comparisons and records explicit capture diagnostics"

@@ -1041,7 +1041,13 @@ front buffers at all timer phases, writes separate logs, then invokes the select
 diagnostic preset. `run.json` records cwd, argv, environment, timer range and a
 shell-escaped reproduction command for all three stages. Use `--dry-run` to
 audit the route without starting either game; repeat `--match-arg=VALUE` for
-batch tolerances. Pass `--draw-page` only for raw VRAM/packet diagnosis; those
+batch tolerances. After the expensive capture, use `--compare-only --output DIR`
+without a checkpoint to rerun matching, profiles, bundle generation and budgets
+against the existing `psx/capture-manifest.csv` and
+`native/capture-manifest.csv`. This makes detector and alignment iteration take
+seconds and guarantees that it is operating on the identical captured frames;
+the runner fails if either manifest is missing instead of silently starting a
+new route. Pass `--draw-page` only for raw VRAM/packet diagnosis; those
 images are not visual acceptance frames. `--alignment-only` performs the same
 captures and state gates but skips ImageMagick, heatmaps and per-frame bundles;
 on a cached sequence the manifest scan takes about 0.06 seconds. Use it to find
