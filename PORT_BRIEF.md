@@ -1988,6 +1988,19 @@ phase and one-unit camera differences.  This interval is useful as a negative
 control for culling: do not manufacture a terrain or HUD fix from it; search a
 different route interval when looking for a real missing-primitive oracle.
 
+Animated course scenery is another state gate, not renderer output. A dense
+timer-200..800 scan initially ranked timer 410 with a 504-pixel connected black
+road component despite equal player/camera/projection state and visible-cell
+hashes. Pixel tracing showed identical screen geometry but PSX used course
+model 7 (`V=96..127`) while native used model 9 (`V=160..191`). Both runs had
+the same course/class/mode, texture-page state, course-object count and byte
+hash. The actual difference was `g_AnimSceneryVariant`: retail RNG had selected
+0 and native RNG 2, and `DrawAnimatedScenery` deliberately submits
+`variant + 7`. Capture manifests therefore include both animated-scenery
+variants, course selectors, texture-page state and the course-object hash; the
+batch matcher rejects unequal variants before image ranking. Do not diagnose
+UV, CLUT, clipping or missing faces from a pair that fails this gate.
+
 Use `--save-psx-states` for discovery scans.  It enables the emulator's
 per-capture save states, and the batch comparator copies the matching file to
 each result bundle as `reference.psxstate` while recording its path in

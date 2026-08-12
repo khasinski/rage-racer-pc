@@ -612,6 +612,30 @@ Dir.mktmpdir("rage-visual-capture-surface-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-scenery-variant-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00410-s12.ppm"
+  write_ppm(File.join(psx, filename), 32)
+  write_ppm(File.join(native, filename), 32)
+  variant_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+                   "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                   "view_angle_z,anim_timer,anim_scenery_variant," \
+                   "anim_scenery2_variant\n"
+  common = "0,12,410,10,20,30,40,1,0,10,20,30,0,0,0,410"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             variant_header + "#{filename},#{common},0,0\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             variant_header + "#{filename},#{common},2,0\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "mismatched animated scenery variants entered visual ranking" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("scenery_variants")
+end
+
 Dir.mktmpdir("rage-visual-reference-state-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

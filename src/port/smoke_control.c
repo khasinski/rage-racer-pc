@@ -6,11 +6,13 @@
 
 #include "game/player_car_internal.h"
 #include "game/menu.h"
+#include "game/race.h"
 #include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/track_internal.h"
 
 typedef struct RageSmokeInput {
     long firstFrame;
@@ -29,6 +31,17 @@ static uint32_t RageSmokeHashWords(const u32 *words, size_t count) {
             hash ^= (value >> (byteIndex * 8)) & 0xff;
             hash *= 16777619u;
         }
+    }
+    return hash;
+}
+
+static uint32_t RageSmokeHashBytes(const void *data, size_t size) {
+    const unsigned char *bytes = data;
+    uint32_t hash = 2166136261u;
+    size_t index;
+    for (index = 0; index < size; index++) {
+        hash ^= bytes[index];
+        hash *= 16777619u;
     }
     return hash;
 }
@@ -163,7 +176,12 @@ static void RageSmokeInitialize(void) {
                       "main_visible_hash,mirror_visible_hash," \
                       "main_visible_list_hash,mirror_visible_list_hash," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
-                      "anim_timer,tacho_rpm,rival0_x,rival0_z,rival1_x,rival1_z," \
+                      "anim_timer,tacho_rpm,course_index,grand_prix_class," \
+                      "grand_prix_mode,player_car_index,texture_page_wanted," \
+                      "texture_cursor_row,texture_target_row," \
+                      "course_object_count,course_objects_hash," \
+                      "anim_scenery_variant,anim_scenery2_variant," \
+                      "rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
                       "rival0_speed,rival0_progress,rival0_yaw," \
                       "rival0_lateral,rival0_collision,rival0_active," \
@@ -375,6 +393,7 @@ int RagePortShouldExit(int frame_number) {
                 fprintf(g_SmokeCaptureManifest,
                         "%s,%s," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -418,6 +437,13 @@ int RagePortShouldExit(int frame_number) {
                         g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
+                        g_CourseIndex, g_GrandPrixClass, g_GrandPrixMode,
+                        g_PlayerCarIndex, g_TrackTexturePageWanted,
+                        g_TrackTextureCursorRow, g_TrackTextureTargetRow,
+                        g_CourseObjectCount,
+                        RageSmokeHashBytes(g_CourseObjects,
+                            (size_t)g_CourseObjectCount * sizeof(CourseObject)),
+                        g_AnimSceneryVariant, g_AnimScenery2Variant,
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,
                         g_Cars[2].x, g_Cars[2].z,

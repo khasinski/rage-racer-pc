@@ -217,6 +217,10 @@ def manifest_rows(directory)
       main_visible_hash mirror_visible_hash main_visible_list_hash mirror_visible_list_hash
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       tacho_rpm
+      course_index grand_prix_class grand_prix_mode player_car_index
+      texture_page_wanted texture_cursor_row texture_target_row
+      course_object_count course_objects_hash
+      anim_scenery_variant anim_scenery2_variant
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
       rival0_lateral rival0_collision rival0_active rival1_speed
       rival1_progress rival1_yaw rival1_lateral rival1_collision rival1_active
@@ -228,7 +232,7 @@ def manifest_rows(directory)
       row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
     end
     %i[main_visible_hash mirror_visible_hash
-       main_visible_list_hash mirror_visible_list_hash].each do |key|
+       main_visible_list_hash mirror_visible_list_hash course_objects_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
     end
     image = directory / row[:filename]
@@ -338,6 +342,9 @@ if options[:match] == "position"
                         else
                           0
                         end,
+      scenery_variants_equal: %i[anim_scenery_variant anim_scenery2_variant].all? do |key|
+        !candidate.key?(key) || !psx.key?(key) || candidate[key] == psx[key]
+      end,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
       main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
@@ -364,6 +371,7 @@ if options[:match] == "position"
       (!explicit_options[:max_tacho_rpm_delta] || metrics[:tacho_rpm_present]) &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
+      metrics[:scenery_variants_equal] &&
       (!options[:require_visible_cells] ||
         (metrics[:main_visible_cells_equal] && metrics[:mirror_visible_cells_equal])) &&
       (!options[:require_main_visible_cells] || metrics[:main_visible_cells_equal]) &&
@@ -407,6 +415,7 @@ if options[:match] == "position"
       !metrics[:mirror_visible_list_equal]
     reasons << "anim_phase=#{metrics[:anim_timer_delta]}>#{options[:max_anim_timer_delta]}" if
       metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
+    reasons << "scenery_variants" unless metrics[:scenery_variants_equal]
     reasons << "random_seed" if options[:require_random_seed] &&
       candidate.key?(:random_seed) && psx.key?(:random_seed) &&
       candidate[:random_seed] != psx[:random_seed]
