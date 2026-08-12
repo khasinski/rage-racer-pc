@@ -996,6 +996,14 @@ their aggregate distance to its score
 and records it in each report. This matters especially for the narrow mirror:
 two frames can have an identical player pose while a rival differs by tens of
 world units, shifting its silhouette by a pixel and dominating mirror RMSE.
+
+The interactive-race car update had the same portable-C defect previously
+fixed in the attract-car path: it assigned only X/Z in a stack `Vec4` and then
+copied all four words into the car. Retail's MIPS stack happened to contribute
+zero for `positionW`, whereas the 64-bit host reproducibly contributed one.
+`UpdateRaceCars` now preserves the existing Y/W and changes only X/Z. This is
+a game-code 32/64-bit compatibility fix to backport to the decompilation, not
+a HAL workaround; `positionW` is subsequently read by camera/render code.
 Regenerate old cached manifests when diagnosing cars in the mirror; the batch
 tool remains backward compatible with caches that lack these columns.
 Use `--max-rival-distance N` for mirror investigations to reject pairs whose

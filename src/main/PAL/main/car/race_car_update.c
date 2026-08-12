@@ -260,12 +260,17 @@ void UpdateRaceCars(void) {
                 base->x = base->x + walk->motionX;
                 walk->z = walk->z + walk->motionZ;
             }
+            /*
+             * Retail copied an otherwise uninitialized stack Vec4 after
+             * assigning only x and z. Its MIPS stack happened to leave zero
+             * in positionW, while a 64-bit host does not. Preserve the two
+             * untouched coordinates explicitly: positionW is later consumed
+             * by camera/render paths, so retaining the undefined copy makes
+             * game behaviour depend on the compiler ABI.
+             */
+            vpos = *GetCarVector4(base);
             vpos.x = drive->worldVelocityX * 6 / 1280 + base->x;
             vpos.z = drive->worldVelocityZ * 6 / 1280 + walk->z;
-            /*
-             * Retail only initializes x and z before copying all four words.
-             * Its uninitialized y and w stores are intentionally preserved.
-             */
             *GetCarVector4(base) = vpos;
             if (walk->steeringAngle >= 0x41) {
                 walk->bodyRollVelocity = walk->bodyRollVelocity - 6;

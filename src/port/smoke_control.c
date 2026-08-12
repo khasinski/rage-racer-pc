@@ -112,7 +112,8 @@ static void RageSmokeInitialize(void) {
                       "rival2_speed,rival2_progress,rival2_yaw," \
                       "rival2_lateral,rival2_collision,rival2_active," \
                       "rival3_speed,rival3_progress,rival3_yaw," \
-                      "rival3_lateral,rival3_collision,rival3_active\n",
+                      "rival3_lateral,rival3_collision,rival3_active," \
+                      "rival0_raw,rival1_raw,rival2_raw,rival3_raw\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -270,7 +271,7 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
                         filename, frame_number, g_SceneId, g_SceneTimer,
                         g_PlayerCar.x, g_PlayerCar.z,
                         g_PlayerCar.speed, g_PlayerCar.trackProgress,
@@ -298,6 +299,21 @@ int RagePortShouldExit(int frame_number) {
                         g_Cars[3].speed, g_Cars[3].trackProgress,
                         g_Cars[3].bodyYaw, g_Cars[3].trackLateralOffset,
                         g_Cars[3].collisionFlag, g_Cars[3].activeFlag);
+                {
+                    int rivalIndex;
+                    for (rivalIndex = 0; rivalIndex < 4; rivalIndex++) {
+                        const unsigned char *bytes =
+                            (const unsigned char *)&g_Cars[rivalIndex];
+                        size_t byteIndex;
+                        fputc(',', g_SmokeCaptureManifest);
+                        for (byteIndex = 0; byteIndex < sizeof(GameCarRuntime);
+                             byteIndex++) {
+                            fprintf(g_SmokeCaptureManifest, "%02x",
+                                    bytes[byteIndex]);
+                        }
+                    }
+                    fputc('\n', g_SmokeCaptureManifest);
+                }
                 fflush(g_SmokeCaptureManifest);
             }
         }
