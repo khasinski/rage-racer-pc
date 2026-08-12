@@ -580,4 +580,28 @@ Dir.mktmpdir("rage-visual-capture-surface-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-reference-state-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  File.binwrite(File.join(psx, "timer-00100-s12.psxstate"), "state-oracle")
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  row = ([filename] + state + [100, "deadbeef"]).join(",")
+  File.write(File.join(psx, "capture-manifest.csv"), header + "\n" + row + "\n")
+  File.write(File.join(native, "capture-manifest.csv"), header + "\n" + row + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  copied = File.join(frame.fetch("bundle"), "reference.psxstate")
+  abort "ranked bundle did not retain its PSX replay state" unless
+    frame.fetch("psx_state") == copied && File.binread(copied) == "state-oracle"
+end
+
 puts "visual refinement separates sampled state from the displayed buffer; state gates precede ranking"

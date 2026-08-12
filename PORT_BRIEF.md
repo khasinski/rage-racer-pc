@@ -1973,6 +1973,13 @@ phase and one-unit camera differences.  This interval is useful as a negative
 control for culling: do not manufacture a terrain or HUD fix from it; search a
 different route interval when looking for a real missing-primitive oracle.
 
+Use `--save-psx-states` for discovery scans.  It enables the emulator's
+per-capture save states, and the batch comparator copies the matching file to
+each result bundle as `reference.psxstate` while recording its path in
+`summary.json`.  A ranked hotspot can therefore go straight into pixel,
+packet, GTE or VRAM tracing without replaying the full route and hoping to hit
+the same VBlank phase again.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position

@@ -14,6 +14,7 @@ root = Pathname(__dir__).parent.expand_path
 options = {
   profile: "road", timer_min: 800, timer_max: 900, capture_stride: 1,
   psx_capture_stride: nil, native_capture_stride: nil,
+  save_psx_states: false,
   psx_frames: 500, native_frames: 2400, jobs: 8, top: nil,
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
@@ -62,6 +63,9 @@ parser = OptionParser.new do |cli|
   cli.on("--draw-page", "capture the active VRAM drawing page (packet/VRAM diagnosis only)") do
     options[:draw_page] = true
   end
+  cli.on("--save-psx-states", "save a PSX state beside every captured reference frame") do
+    options[:save_psx_states] = true
+  end
   cli.on("--alignment-only", "capture and report eligible state pairs without image bundles") do
     options[:alignment_only] = true
   end
@@ -93,6 +97,7 @@ psx_env = {
   "RUBYOPT" => "--yjit"
 }
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
+psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
 psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
                "bin/rage-frame-capture", options[:bios].expand_path.to_s,
@@ -138,6 +143,7 @@ metadata = {
     native_timer: options[:native_capture_stride]
   },
   draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
+  save_psx_states: options[:save_psx_states],
   native: serialize.call(native_env, native_command, root),
   comparisons: batch_commands.transform_values { |command| serialize.call({}, command, root) }
 }

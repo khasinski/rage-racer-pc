@@ -683,9 +683,14 @@ errors = Queue.new
         next
       end
   report = JSON.parse(File.read(frame_output / "report.json"))
+      psx_state = pair[:psx].sub_ext(".psxstate")
+      if psx_state.file?
+        FileUtils.cp(psx_state, frame_output / "reference.psxstate")
+      end
       rows[index] = {
     frame: pair[:label],
     psx_frame: pair[:psx].basename.to_s,
+    psx_state: psx_state.file? ? (frame_output / "reference.psxstate").to_s : nil,
     native_frame: pair[:native].basename.to_s,
     state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
