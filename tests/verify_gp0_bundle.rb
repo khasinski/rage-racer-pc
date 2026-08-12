@@ -5,6 +5,8 @@ source = File.read(ARGV.fetch(0))
 required = [
   'report.fetch("psx_source")', 'report.fetch("native_source")',
   'summary_frame["psx_replay_frames"]', 'summary_frame["psx_replay_pre_state"]',
+  'env.delete("RAGE_GPU_GP0_TRACE_FRAME")',
+  'available_frames.min_by',
   'native_row["capture_surface"] == "display"',
   'dir / "run.json"', '"RAGE_GPU_GP0_TRACE_FRAME"',
   'bundle / "gp0-psx.log"', 'bundle / "gp0-native.log"',

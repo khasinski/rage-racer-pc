@@ -2162,6 +2162,14 @@ interval.  Display-page captures select the preceding native submission;
 draw-page captures select the current one.  The emulator replay uses its local
 pre-state frame rather than the global `fNNNNN` capture filename.
 
+A saved checkpoint can sit on either side of the VBlank/DMA boundary.  A
+one-VBlank replay therefore does not imply that commands are tagged as local
+frame zero (and in practice may submit on frame two).  Bundle replay leaves the
+short checkpoint trace unfiltered and selects the nearest local frame which
+actually contains GP0 commands.  This prevents valid one-step visual bundles
+from producing an empty retail trace while retaining the chosen frame in
+`gp0-diff.txt` packet provenance.
+
 The first application of this oracle found a real portable terrain-emitter bug.
 Retail windowed faces submit `E2000000, E2xxxxxx` before the FT4 and
 `E2000000, 00000000` after it.  `RageEmitTerrainFt4` and

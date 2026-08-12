@@ -47,7 +47,10 @@ native_frame -= 1 if native_row["capture_surface"] == "display"
 psx_replay_frames = summary_frame["psx_replay_frames"]
 psx_replay_state = summary_frame["psx_replay_pre_state"]
 if psx_replay_frames && psx_replay_state
-  psx_frame = [Integer(psx_replay_frames) - 1, 0].max
+  # Checkpoints may straddle the VBlank/DMA boundary.  Use the replay distance
+  # only as a target; after replay we select the nearest frame that actually
+  # submitted GP0 commands.
+  psx_frame = Integer(psx_replay_frames)
 end
 
 run_path = bundle.ascend.map { |dir| dir / "run.json" }.find(&:file?)
@@ -68,6 +71,7 @@ prepare = lambda do |side, frame|
     output_index = argv.index("bin/rage-frame-capture") + 3
     argv[output_index] = (replay_root / "psx-capture").to_s
     if psx_replay_frames && psx_replay_state
+      env.delete("RAGE_GPU_GP0_TRACE_FRAME")
       env["RAGE_EMU_LOAD_STATE"] = psx_replay_state
       argv[output_index + 1] = (psx_replay_frames + 2).to_s
       argv[output_index + 2] = (psx_replay_frames + 2).to_s
@@ -91,6 +95,15 @@ failures = runs.map do |side, pid, log|
   "#{side} replay failed (#{log.path})" unless status.success?
 end.compact
 abort failures.join("\n") unless failures.empty?
+
+if psx_replay_frames && psx_replay_state
+  available_frames = File.foreach(bundle / "gp0-psx.log").map do |line|
+    match = line.match(/\Agp0-command frame=(\d+)\b/)
+    Integer(match[1], 10) if match
+  end.compact.uniq
+  abort "replayed PSX checkpoint submitted no GP0 commands" if available_frames.empty?
+  psx_frame = available_frames.min_by { |frame| [(frame - psx_frame).abs, frame] }
+end
 
 compare = [RbConfig.ruby, (root / "tools/rage_gp0_compare.rb").to_s,
            "--psx", (bundle / "gp0-psx.log").to_s,
