@@ -1106,6 +1106,12 @@ same pixel/frame filters and reports the UV, palette index, and final 16-bit
 CLUT colour actually used by its scanline rasterizer. At race timer 826 this
 proved that the apparently missing road geometry was submitted, but the host
 selected palette index zero, whose CLUT entry is opaque black (`0x8000`).
+`RAGE_GPU_TRACE_TEXEL=1` now also emits `gpu-raster` records from the Ruby
+emulator's actual polygon and sprite inner loops. These include the final
+windowed UV, palette result and whether the texel wrote VRAM. Use these rather
+than the geometric `gpu-cover` estimate when a narrow mirror polygon lies on a
+scanline edge; the coverage helper and the reference scanline rasterizer can
+legitimately disagree at such an edge.
 
 At native resolution, PS1-compatible hardware renderers place integer polygon
 vertices at pixel centres. Texture coordinates come from a fixed-point DDA and
