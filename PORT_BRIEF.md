@@ -1875,3 +1875,11 @@ explained by the approximately 11-unit state offset.  The native semantic GPU
 digest fell from the earlier 1346-primitives class to 1263 in the nearby
 fixed capture, removing 83 spurious packets.  This is a game/decompilation
 scratch-layout fix, not a PsyZ renderer heuristic.
+
+The deterministic `race_start` regression now enables the terrain LOD trace at
+timer 562 and requires both contracts in one rendered frame: main entries use
+shift 10 and mirror entries use shift 9.  The earlier Grand Prix timer-56
+frame predates the active rear-view pass and can only assert the main shift.
+That same race regression already verifies nonzero speed glyphs, a
+nondegenerate red needle, bounded clear-colour road wedges, and textured mirror
+road, so it is the fast host gate for this group of symptoms.

@@ -27,6 +27,7 @@ def main() -> int:
             ),
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_SMOKE_CAMERA_STATE="1",
+            RAGE_PORT_TERRAIN_TRACE_TIMER="56",
         )
         result = subprocess.run(
             [executable], cwd=source_dir, env=environment,
@@ -57,6 +58,12 @@ def main() -> int:
             )
         if "time_text=1'40\"765" not in result.stdout:
             raise AssertionError("Grand Prix record text was not fully formatted")
+        if not any(
+            "terrain-lod timer=56" in line and
+            "mirror=0" in line and "shift=10" in line
+            for line in result.stdout.splitlines()
+        ):
+            raise AssertionError("main terrain lost the retail LOD shift 10")
 
         header, pixels = capture.read_bytes().split(b"\n255\n", 1)
         if header.splitlines() != [b"P6", b"320 240"]:

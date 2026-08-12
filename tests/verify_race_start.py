@@ -27,6 +27,7 @@ def main() -> int:
             RAGE_PORT_SMOKE_STOP_SCENE="12",
             RAGE_PORT_SMOKE_STOP_SCENE_TIMER="562",
             RAGE_PORT_CAPTURE_PATH=str(capture),
+            RAGE_PORT_TERRAIN_TRACE_TIMER="562",
         )
         result = subprocess.run(
             [executable], cwd=source_dir, env=environment,
@@ -36,6 +37,18 @@ def main() -> int:
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
+        if not any(
+            "terrain-lod timer=562" in line and
+            "mirror=0" in line and "shift=10" in line
+            for line in result.stdout.splitlines()
+        ):
+            raise AssertionError("main terrain lost the retail LOD shift 10")
+        if not any(
+            "terrain-lod timer=562" in line and
+            "mirror=1" in line and "shift=9" in line
+            for line in result.stdout.splitlines()
+        ):
+            raise AssertionError("mirror terrain lost the retail LOD shift 9")
         header, payload = capture.read_bytes().split(b"\n255\n", 1)
         if header.splitlines() != [b"P6", b"320 240"]:
             raise AssertionError(f"unexpected race capture header: {header!r}")
