@@ -915,12 +915,16 @@ limit only as a safety timeout. The PSX game advances this race timer once per
 two PAL VBlanks while the current native build advances it once per loop, so
 equal raw frame numbers are not equivalent states.
 
-For renderer diagnosis, set `RAGE_PORT_CAPTURE_DRAW_PAGE=1` and
+For raw VRAM diagnosis, set `RAGE_PORT_CAPTURE_DRAW_PAGE=1` and
 `RAGE_EMU_CAPTURE_DRAW_PAGE=1`. These make both capture paths read the VRAM
-page selected by the current drawing area instead of the previously presented
-front buffer. This is required when correlating a screenshot with the current
-OT/GP0 packet trace; comparing a front-buffer image to back-buffer packets can
-produce plausible but false texture and coverage conclusions.
+page selected by the current drawing area instead of the presented front
+buffer. Do not use that mode as the visual acceptance image at VBlank: after
+buffer exchange, draw area already selects the next page, while the completed
+OT belongs to the page just presented. Use the default front-buffer captures
+for PSX/native image scoring, normally with `--visual-refine 3`; reserve draw
+page captures for texture/CLUT inspection while rendering is stopped inside a
+known packet phase. Mixing the two produces plausible but false texture and
+coverage conclusions.
 
 `tools/rage_visual_compare.rb` turns a cached emulator capture and a fresh
 native capture into one debug bundle:
