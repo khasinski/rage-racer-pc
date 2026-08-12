@@ -1066,6 +1066,12 @@ object quads even when player, camera, rivals and timer all match. The option
 rejects such pairs instead of ranking a simulation divergence as a renderer
 error. Road, static HUD and mirror-road comparisons can remain useful without
 this gate, but their reports still expose `random_seed_equal`.
+To find the first cause of an RNG divergence, enable
+`RAGE_PORT_RANDOM_TRACE=1` on native and `RAGE_EMU_RANDOM_TRACE=1` on the Ruby
+runner. Both log the call index, frame, resulting seed/value and caller
+location (`caller_delta` from `Random15` natively, retail return PC in the
+emulator). Start both from equivalent checkpoints and compare the first
+unequal call rather than inferring a cause from a later manifest seed.
 
 RMSE is often dominated by HUD digits, animated signs and a one-frame texture
 phase even when the road is correct.  For terrain-hole searches pass the same
