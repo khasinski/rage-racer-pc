@@ -64,10 +64,18 @@ int RageWriteCapturedFrame(const char *path) {
 
     if (path == NULL || path[0] == '\0') return 1;
     /* Prime the reusable GPU download buffer before the asserted capture. */
-    pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    if (getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL) {
+        pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
+    } else {
+        pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    }
     if (pixels == NULL) return 0;
     free(pixels);
-    pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    if (getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL) {
+        pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
+    } else {
+        pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    }
     if (pixels == NULL) return 0;
     output = fopen(path, "wb");
     if (output == NULL) {
