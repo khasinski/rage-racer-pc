@@ -1883,3 +1883,14 @@ frame predates the active rear-view pass and can only assert the main shift.
 That same race regression already verifies nonzero speed glyphs, a
 nondegenerate red needle, bounded clear-colour road wedges, and textured mirror
 road, so it is the fast host gate for this group of symptoms.
+
+After the mirror-shift fix, reuse the 701-frame retail cache covering race
+timers 700..1050 and regenerate only the 351-frame native side.  With position
+distance at most 12, equal animation phase, projection delta at most 32 and
+one-frame display refinement, sixteen state pairs survive.  Every mirror pair
+has zero native-only clear and zero native-only interior-black pixels.  Fifteen
+of sixteen main-road pairs also have zero clear pixels; timer 880 has 21 pixels
+forming a one-pixel road/barrier seam, not a filled triangular hole, and all
+main pairs have at most one interior-black pixel.  This longer route is the
+coverage evidence for the fix; the semantic digest/LOD trace explains why it
+works, while a single framebuffer does not.
