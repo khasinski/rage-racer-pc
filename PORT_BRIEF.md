@@ -2020,6 +2020,26 @@ difference into a 10--16-pixel screen shift.  This is a useful near-plane
 alignment stress case, not evidence of a missing child, wrong texture lookup,
 or a PsyZ rasterizer stretching an identical packet.
 
+For a decision-level terrain comparison, enable
+`RAGE_TERRAIN_DECISION_TRACE=1` plus `RAGE_TERRAIN_DECISION_TIMER=N` in the
+Ruby emulator and the corresponding `RAGE_PORT_TERRAIN_DECISION_TRACE=1` /
+`RAGE_PORT_TERRAIN_DECISION_TIMER=N` variables on native.  Both logs contain
+the ordered texture page, CLUT, main/mirror pass, two NCLIP results, OTZ/depth,
+and final submit/reject decision.  Compare them with
+`tools/rage_geometry_trace_compare.rb`; optional clip/depth tolerances apply
+only to numeric drift and never hide a different texture, pass, or final
+decision.  The emulator samples NCLIP immediately after the COP2 command,
+before the R3000A delayed MFC2 result reaches a CPU register.
+
+At aligned timer 890 the first 500 records have identical texture/CLUT order;
+without comparing NCLIP, all 500 semantic decisions initially appeared equal.
+The full trace exposes four submit/reject differences, but this capture retains
+the documented roughly 2.8-unit camera delta and is therefore a sensitivity
+case rather than fix evidence.  Re-run the decision oracle at an exact state
+match (the timer-903 route is known to provide one) before changing clipping.
+This prevents both image alignment and trace instrumentation errors from being
+misdiagnosed as a game renderer bug.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position

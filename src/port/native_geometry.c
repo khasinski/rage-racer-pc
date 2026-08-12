@@ -54,6 +54,11 @@ static int g_RageTerrainTraceEnabled;
 static int g_RageTerrainTraceTimer = -1;
 static int g_RageTerrainTraceClut = -1;
 static int g_RageTerrainTraceTpage = -1;
+static int g_RageTerrainDecisionTraceInitialized;
+static int g_RageTerrainDecisionTraceEnabled;
+static int g_RageTerrainDecisionTraceTimer = -1;
+static int g_RageTerrainDecisionTraceLimit = 10000;
+static int g_RageTerrainDecisionTraceCount;
 static int g_RageCourseTraceInitialized;
 static int g_RageCourseTraceEnabled;
 static int g_RageCourseTraceTimer = -1;
@@ -73,6 +78,51 @@ static void RageInitializeTerrainTrace(void) {
     if (clut != NULL) g_RageTerrainTraceClut = (int)strtol(clut, NULL, 16);
     if (tpage != NULL) g_RageTerrainTraceTpage = (int)strtol(tpage, NULL, 16);
     g_RageTerrainTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
+}
+
+static void RageInitializeTerrainDecisionTrace(void) {
+    const char *enabled;
+    const char *timer;
+    const char *limit;
+    if (g_RageTerrainDecisionTraceInitialized) return;
+    g_RageTerrainDecisionTraceInitialized = 1;
+    enabled = getenv("RAGE_PORT_TERRAIN_DECISION_TRACE");
+    timer = getenv("RAGE_PORT_TERRAIN_DECISION_TIMER");
+    limit = getenv("RAGE_PORT_TERRAIN_DECISION_LIMIT");
+    g_RageTerrainDecisionTraceEnabled = enabled != NULL || timer != NULL;
+    if (timer != NULL)
+        g_RageTerrainDecisionTraceTimer = (int)strtol(timer, NULL, 0);
+    if (limit != NULL)
+        g_RageTerrainDecisionTraceLimit = (int)strtol(limit, NULL, 0);
+}
+
+static void RageTraceTerrainDecision(
+    int cell, int face, uint16_t clut, uint16_t tpage, int projected,
+    int clip0, int clip1, int rawDepth, int depth) {
+    const char *reason;
+    if (!g_RageTerrainDecisionTraceEnabled ||
+        (g_RageTerrainDecisionTraceTimer >= 0 &&
+         g_RageTerrainDecisionTraceTimer != g_SceneTimer) ||
+        g_RageTerrainDecisionTraceCount >= g_RageTerrainDecisionTraceLimit)
+        return;
+    reason = g_RageProjectionReject == 1 ? "offscreen" :
+        g_RageProjectionReject == 2 ? "backface" :
+        g_RageProjectionReject == 3 ? "depth" : "unknown";
+    if (projected)
+        fprintf(stderr,
+                "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
+                "clut=%04x tpage=%04x clip=%d,%d raw=%d depth=%d result=%s\n",
+                g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
+                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1,
+                rawDepth, depth, "submit");
+    else
+        fprintf(stderr,
+                "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
+                "clut=%04x tpage=%04x clip=%d,%d raw=na depth=na result=reject "
+                "reason=%s\n",
+                g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
+                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1, reason);
+    g_RageTerrainDecisionTraceCount++;
 }
 
 static void RageInitializeCourseTrace(void) {
@@ -1059,6 +1109,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     int emittedFaces = 0;
     (void)ctx;
     RageInitializeTerrainTrace();
+    RageInitializeTerrainDecisionTrace();
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
@@ -1154,6 +1205,9 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                                 (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
                     }
+                    RageTraceTerrainDecision(
+                        cellIndex, faceIndex, clut, tpage, projected,
+                        g_RageTerrainClip0, g_RageTerrainClip1, rawDepth, depth);
                     if (!projected) continue;
                 }
                 /* The retail cell dispatcher tests bit 0 of the halfword at
