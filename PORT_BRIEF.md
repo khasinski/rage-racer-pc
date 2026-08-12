@@ -1988,6 +1988,18 @@ Start packet/GTE tracing from that pre-state and advance exactly the recorded
 number of VBlanks; starting from `reference.psxstate` traces the following
 buffer and can falsely attribute a full-screen clear to the ranked image.
 
+GPU trace lines include the active draw area.  This matters because Rage
+normalizes the two VRAM pages into screen coordinates for diagnostics: a quad
+whose normalized vertices cover a road pixel may actually be clipped to the
+rear-view rectangle and cannot overwrite it.  At canonical draw-page timer
+868 the clear detector found a 3x2 component at `(63..65,138..139)`.  Both
+retail and native submit the two textured road quads at that location; retail
+vertices are `68,128 / 67,149 / 65,128 / 62,149`, while native's three-unit
+camera delta produces `67,128 / 66,148 / 64,128 / 60,148`.  The flagged pixels
+sit on that shifted edge.  The later apparent full-screen clear has draw area
+`86,18..233,53` and is the mirror pass.  Therefore this component is an
+alignment seam, not a missing primitive or evidence for changing culling.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
