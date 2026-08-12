@@ -6,8 +6,14 @@
 #include "game/render.h"
 #include "game/race.h"
 #include "game/scratchpad.h"
+#include "game/state.h"
 #include "game/track_internal.h"
 #include "game/vector.h"
+
+#ifdef __psyz
+#include <stdio.h>
+#include <stdlib.h>
+#endif
 
 typedef union TrackCarAddress {
     PlayerCarRuntime *player;
@@ -81,6 +87,26 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     GameTrackArcCenter *arcCenter;
     CarTrackScratch *spad;
     TrackCarAddress playerAddress;
+#ifdef __psyz
+    static int traceEnabled = -1;
+    static int traceTimer = -1;
+    int traceThisCall;
+    if (traceEnabled < 0) {
+        const char *timerText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER");
+        traceEnabled = getenv("RAGE_PORT_CAR_TRACK_TRACE") != NULL;
+        traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
+    }
+    traceThisCall = traceEnabled && obj == (GameCarRuntime *)&g_PlayerCar &&
+        (traceTimer < 0 || g_SceneTimer == traceTimer);
+    if (traceThisCall) {
+        printf("car-track-enter timer=%d point=%d x=%d z=%d speed=%d "
+               "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d\n",
+               g_SceneTimer, trackPointIndex, obj->x, obj->z, obj->speed,
+               obj->trackProgress, obj->trackLateralOffset, obj->bodyYaw,
+               limits->leftInset, limits->rightInset,
+               limits->leftKnockbackMode, limits->rightKnockbackMode);
+    }
+#endif
 
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
     spad = CAR_TRACK_SCRATCH;
@@ -392,6 +418,19 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
             obj->trackSection = (s16)(finalAngle >> 8);
         }
     }
+#ifdef __psyz
+    if (traceThisCall) {
+        printf("car-track-exit timer=%d point=%d x=%d z=%d progress=%d "
+               "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
+               "correction=%d,%d knockback=%d motion=%d,%d,%d,%d\n",
+               g_SceneTimer, trackPointIndex, obj->x, obj->z,
+               obj->trackProgress, obj->trackLateralOffset, alongSegment,
+               spad->heading, spad->curveMode, spad->leftHalfWidth,
+               spad->rightHalfWidth, spad->correctionX, spad->correctionZ,
+               spad->knockbackMode, obj->motionActive, obj->motionTimer,
+               obj->velocityX, obj->velocityZ);
+    }
+#endif
     return spad->knockbackMode;
 }
 

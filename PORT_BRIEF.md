@@ -2488,3 +2488,26 @@ per-capture checkpoint.  Previously it reused the original capture's full
 limit, so the second pixel/texel pass could keep Ruby at 100% CPU for minutes
 after the useful trace had already been written.  Per-capture checkpoint
 replays retain their existing `psx_replay_frames + 2` boundary tolerance.
+
+The acceleration-only route is not state-comparable indefinitely.  Retail and
+native remain within tens of world units through timer 2700, then diverge
+sharply between 2740 and 2800: retail stays near progress 25220 against the
+barrier while native advances by roughly 1800 track units.  At timer 3400 the
+position delta is already about 7900, so later image pairing is invalid even
+when the scenery looks superficially similar.  A three-frame native LEFT
+impulse near host frame 4100 delays but does not remove the divergence; input
+compensation is not an acceptable renderer oracle or a collision fix.
+
+Use `RAGE_PORT_CAR_TRACK_TRACE=1` plus
+`RAGE_PORT_CAR_TRACK_TRACE_TIMER=N` on native, and `RAGE_CAR_TRACK_TRACE=1`
+plus `RAGE_CAR_TRACK_TRACE_TIMER=N` in the Ruby emulator, to log the player
+entry/exit state around the original `UpdateCarTrackState`.  The trace records
+position, track point, speed, progress, lateral offset, hull limits, computed
+track geometry, boundary result and knockback state.  A synchronized retail
+checkpoint at timer 2741 shows that the manifest's retail timer phase normally
+pairs with native `N-1`; compare state, not equal textual timer labels.  At the
+2742-retail/2741-native pair both calls return `knockback=0`, but their entry
+position, lateral offset and existing motion timer are already different.
+Therefore the long-route desynchronization precedes this track-clamp call and
+must be traced backward through the prior knockback/motion integration before
+using post-2800 captures for visual acceptance.
