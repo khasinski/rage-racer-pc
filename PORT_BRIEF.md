@@ -2388,3 +2388,13 @@ buffering compares the newly drawn page with the page displayed before it.
 Timer 868 supplies a stable 11805-word reproducer in which PsyZ retains the HUD
 and nearby scenery but loses large world regions that retail renders.  This is
 a backend replay failure, not a reason to alter game draw-distance or LOD code.
+The replay's optional `LAST_PACKET` and `ONLY_PACKET` arguments reduce that
+frame to a packet prefix or one primitive plus its E1--E6 state.  At screen
+pixel `(50,150)`, retail primitive order 520 is FT4 packet 909
+(`address=1c90a4`): retail samples palette texel `94a5` and dithers it to
+`9084`, while SDL_GPU leaves the previous pixel untouched.  The quad is only
+one pixel high at that point, so this is a PS1 edge-coverage/subpixel
+rasterization discrepancy.  Neither changing the game culling distance nor
+forcing a higher model LOD can correct it.  Simple +/- half-pixel vertex
+offsets were tested and rejected because they did not restore the sample and
+worsened whole-frame error; coverage must be emulated deliberately.

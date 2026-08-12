@@ -8,7 +8,8 @@
 #include <psyz/video.h>
 
 static void usage(const char *program) {
-    fprintf(stderr, "usage: %s VRAM.RAW GP0.LOG FRAME OUTPUT.PPM\n", program);
+    fprintf(stderr, "usage: %s VRAM.RAW GP0.LOG FRAME OUTPUT.PPM [LAST_PACKET [ONLY_PACKET]]\n",
+            program);
 }
 
 static int append_words(const char *text, uint32_t **words, size_t *count,
@@ -40,6 +41,9 @@ int main(int argc, char **argv) {
     size_t word_count = 0, word_capacity = 0;
     char line[65536];
     long wanted_frame;
+    long last_packet = -1;
+    long only_packet = -1;
+    long packet_index = 0;
     char frame_field[64];
     RECT rect = {0, 0, 1024, 512};
     DRAWENV draw;
@@ -48,8 +52,13 @@ int main(int argc, char **argv) {
     uint16_t *page;
     int width = 320, height = 240, page_y = 0, y;
 
-    if (argc != 5) { usage(argv[0]); return 2; }
+    if (argc < 5 || argc > 7) { usage(argv[0]); return 2; }
     wanted_frame = strtol(argv[3], NULL, 0);
+    if (argc == 6) last_packet = strtol(argv[5], NULL, 0);
+    if (argc == 7) {
+        last_packet = strtol(argv[5], NULL, 0);
+        only_packet = strtol(argv[6], NULL, 0);
+    }
     snprintf(frame_field, sizeof(frame_field), "frame=%ld ", wanted_frame);
 
     file = fopen(argv[1], "rb");
@@ -105,11 +114,19 @@ int main(int argc, char **argv) {
         uint32_t *packet = NULL;
         size_t packet_count = 0, packet_capacity = 0;
         char *payload;
+        int code;
         if (!strstr(line, frame_field) || !(payload = strstr(line, "words="))) continue;
-        if (append_words(payload + 6, &packet, &packet_count, &packet_capacity) != 0 ||
+        if (last_packet >= 0 && packet_index > last_packet) break;
+        if (append_words(payload + 6, &packet, &packet_count, &packet_capacity) != 0) {
+            fclose(file); free(packet); return 1;
+        }
+        code = packet_count ? (int)(packet[0] >> 24) : -1;
+        if ((only_packet < 0 || packet_index == only_packet ||
+             (code >= 0xe1 && code <= 0xe6)) &&
             Psyz_GpuReplayPacket(packet, (int)packet_count) != 0) {
             fclose(file); free(packet); return 1;
         }
+        packet_index++;
         if ((word_count & 0x3ff) == 0) fflush(stderr);
         free(packet);
     }
