@@ -50,6 +50,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             require_mirror_visible_cells: false,
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
+            skip_unmatched: false,
             jobs: [Etc.nprocessors, 8].min, top: nil }
 explicit_options = {}
 OptionParser.new do |parser|
@@ -145,6 +146,10 @@ OptionParser.new do |parser|
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
+  end
+  parser.on("--skip-unmatched",
+            "skip PSX rows with no eligible native state; report every rejection") do
+    options[:skip_unmatched] = true
   end
   parser.on("--rank METRIC", %w[rmse clear black needle],
             "rank output by RMSE, clear, black, or needle mismatch") do |value|
@@ -358,7 +363,16 @@ if options[:match] == "position"
     scene_candidates = native_states.select do |native|
       native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
     end
-    abort "no native state candidate for #{psx[:filename]}" if scene_candidates.empty?
+    if scene_candidates.empty?
+      unless options[:skip_unmatched]
+        abort "no native state candidate for #{psx[:filename]}"
+      end
+      rejected << {
+        psx: psx[:filename], native: nil,
+        reasons: ["no native candidate for scene=#{psx[:scene]} lap=#{psx[:lap]}"]
+      }
+      next
+    end
     candidates = scene_candidates.select do |candidate|
       metrics = state_metrics.call(candidate, psx)
       rejection_reasons.call(metrics, candidate, psx).empty?
@@ -603,6 +617,8 @@ summary = {
   match: options[:match],
   rank: options[:rank],
   matched_frames: rows.length,
+  rejected_frames: defined?(rejected) && rejected ? rejected.length : 0,
+  rejections: defined?(rejected) && rejected ? rejected : [],
   frames: rows
 }
 File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")

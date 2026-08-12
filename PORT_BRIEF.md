@@ -1591,6 +1591,13 @@ IoU is normally `0.95..0.98`; timer 895 is `0.981`. Packet tracing at that state
 also finds the retail `POLY_F4` colour `c0,18,00` and the same four vertices in
 native, proving that remaining full-tachometer RMSE is not a missing needle.
 
+Position matching can use `--skip-unmatched` for captures where the emulator
+records more display/VBlank phases than native. It only skips manifest rows
+which have no eligible scene/lap state or fail the normal state gates; it does
+not relax any accepted pair. The JSON summary retains every rejection and its
+reason. Pair it with a `matched_min` visual budget so a mostly unmatched run
+cannot pass silently.
+
 Car collision had the same class of non-portable reconstruction.  The host
 `TransformCollisionVector` was an identity stub even though retail executes a
 rotation-matrix `MVMVA`; rival collision hulls therefore remained axis-aligned.

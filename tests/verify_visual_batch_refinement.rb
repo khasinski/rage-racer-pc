@@ -345,6 +345,39 @@ Dir.mktmpdir("rage-visual-tacho-rpm-gate-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-skip-unmatched-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  skipped_name = "timer-00099-f00001-s11.ppm"
+  matched_name = "timer-00100-f00002-s12.ppm"
+  [skipped_name, matched_name].each { |name| write_ppm(File.join(psx, name), 16) }
+  write_ppm(File.join(native, matched_name), 16)
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  skipped = state.dup
+  skipped[1] = 11
+  skipped[2] = 99
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" +
+             ([skipped_name] + skipped + [99, "deadbeef"]).join(",") + "\n" +
+             ([matched_name] + state + [100, "deadbeef"]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" +
+             ([matched_name] + state + [100, "deadbeef"]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--skip-unmatched"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  summary = JSON.parse(File.read(File.join(output, "summary.json")))
+  abort "skip-unmatched lost the valid state pair" unless summary.fetch("matched_frames") == 1
+  abort "skip-unmatched did not report the rejected row" unless summary.fetch("rejected_frames") == 1
+  rejection = summary.fetch("rejections").first
+  abort "skip-unmatched rejection lacks an actionable reason" unless
+    rejection.fetch("reasons").first.include?("scene=11 lap=1")
+end
+
 Dir.mktmpdir("rage-visual-needle-refinement-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
