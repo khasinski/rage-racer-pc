@@ -2645,6 +2645,15 @@ split the native C objects.
 
 ### Deterministic RNG and scenery tap for visual comparisons
 
+The retail `g_PlayerThrottle` label at `0x8009E830` is an interior view of
+`g_PlayerCar + 0x15C`, specifically `drive.acceleratorInput`; it is not an
+independent global.  A flat host definition leaves the value permanently zero
+even while the player input field is 256.  Code shared by 32- and 64-bit builds
+must read `p->acceleratorInput.value` directly.  Otherwise the rev-limit jitter,
+tachometer/audio throttle state and related RPM behaviour diverge from retail.
+This source-level fix should be backported to the decompilation rather than
+recreating the PS1 linker alias in the HAL.
+
 `rage_visual_run.rb --sync-random scene@timer=seed[:variant:variant2]` now
 installs the same one-shot debug tap in the Ruby emulator and native smoke
 harness. Both log the exact frame, scene, timer, seed and active scenery
@@ -2656,15 +2665,14 @@ where different frontend RNG histories otherwise look like wrong textures.
 Do not assume a tap well before the comparison window makes later absolute RNG
 states equal. A trace starting from the current retail checkpoint found 589
 common consecutive LCG states with a constant PSX-minus-native call-index
-offset of -397, proving that `Random15` and the gameplay call sequence agree.
-However, PSX and native currently execute different numbers of game/render
-updates per displayed race timer: after a symmetric timer-200 tap, the first
-manifest row was four LCG calls later on PSX and 85 calls later on native.
-Consequently `--require-random-seed` is valid only at a directly verified tap
-boundary or after cadence has been synchronized. For static road/HUD work,
-force the two scenery variants and retain the seed delta as reported evidence;
-for collision/mirror work, use the RNG trace aligner and an actually equal
-runtime phase rather than weakening the gate.
+offset of -397, proving that `Random15` and the gameplay sequence occur in the
+same order after their different frontend histories.  The tap must run at the
+scene-handler entry: a VBlank-boundary tap changes state after the draw page was
+already produced and makes a manifest row describe a different phase than its
+pixels.  `--require-random-seed` is valid only for a directly verified render
+boundary.  The timer-200 investigation also exposed the independent throttle
+alias bug above; its missing native `Random15` call was not evidence of a
+50/60-Hz or game-update cadence difference.
 
 As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
 route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without

@@ -1,6 +1,13 @@
 #include "rage/compat.h"
 #include <libgte.h>
 
+void RagePortSmokeBeforeSceneHandler(void) __attribute__((weak));
+void RagePortSmokeBeforeSceneHandler(void) {}
+
+void RagePortBeforeSceneHandler(void) {
+    RagePortSmokeBeforeSceneHandler();
+}
+
 long SpuTransferStatus(void *address, long mode) {
     (void)address;
     (void)mode;

@@ -540,7 +540,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_EngineRpm >= g_CarSpec->revLimit - 100 && g_PlayerThrottle >= 129) {
+    if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
+        p->acceleratorInput.value >= 129) {
         s32 r = Random15();
 
         g_TachoNeedleFlash = g_AnimTimer & 2;
@@ -581,12 +582,13 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     if (p->manual != 0) {
         UpdateLoadedAudioVoices(g_EngineRpm + g_EngineRpmJitter,
-                      (0 < g_PlayerThrottle) & (p->clutch == 0) & revFlag);
+                      (0 < p->acceleratorInput.value) &
+                      (p->clutch == 0) & revFlag);
     } else {
         s32 flag = 0;
         s32 vol = g_EngineRpm + g_EngineRpmJitter;
 
-        if (g_PlayerThrottle > 0) {
+        if (p->acceleratorInput.value > 0) {
             flag = revFlag & 1;
         }
         UpdateLoadedAudioVoices(vol, flag);

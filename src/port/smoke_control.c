@@ -12,6 +12,7 @@
 #include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/random.h"
 #include "game/track_internal.h"
 
 typedef struct RageSmokeInput {
@@ -135,6 +136,33 @@ static unsigned long g_SmokeRandomSyncSeed;
 static long g_SmokeRandomSyncVariant;
 static long g_SmokeRandomSyncVariant2;
 static int g_SmokeRandomSyncHasVariants;
+static void RageSmokeInitialize(void);
+
+void RagePortSmokeBeforeSceneHandler(void) {
+    if (!g_SmokeInitialized) {
+        g_SmokeInitialized = 1;
+        RageSmokeInitialize();
+    }
+    if (!g_SmokeRandomSyncEnabled || g_SmokeRandomSyncFired) return;
+    if (g_SceneId == g_SmokeRandomSyncScene &&
+        g_SceneTimer <= g_SmokeRandomSyncTimer) {
+        g_SmokeRandomSyncArmed = 1;
+    }
+    if (g_SmokeRandomSyncArmed && g_SceneId == g_SmokeRandomSyncScene &&
+        g_SceneTimer >= g_SmokeRandomSyncTimer) {
+        g_RandomSeed = (unsigned int)g_SmokeRandomSyncSeed;
+        if (g_SmokeRandomSyncHasVariants) {
+            g_AnimSceneryVariant = (s16)g_SmokeRandomSyncVariant;
+            g_AnimScenery2Variant = (s16)g_SmokeRandomSyncVariant2;
+        }
+        g_SmokeRandomSyncFired = 1;
+        fprintf(stderr,
+                "random sync before-scene frame=%d scene=%d timer=%d "
+                "seed=%08x variants=%d,%d\n",
+                g_FrameCounter, g_SceneId, g_SceneTimer, g_RandomSeed,
+                g_AnimSceneryVariant, g_AnimScenery2Variant);
+    }
+}
 static int g_SmokeStateInputCount;
 
 extern int g_SceneId;
@@ -237,7 +265,10 @@ static void RageSmokeInitialize(void) {
                       "main_visible_hash,mirror_visible_hash," \
                       "main_visible_list_hash,mirror_visible_list_hash," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
-                      "anim_timer,tacho_rpm,course_index,grand_prix_class," \
+                      "anim_timer,tacho_rpm,engine_rpm,engine_rpm_jitter," \
+                      "tacho_needle_flash,player_throttle,rev_limit," \
+                      "drive_engine_rpm,race_phase,pad_type,pad_held," \
+                      "course_index,grand_prix_class," \
                       "grand_prix_mode,player_car_index,texture_page_wanted," \
                       "texture_cursor_row,texture_target_row," \
                       "course_object_count,course_objects_hash," \
@@ -362,25 +393,6 @@ int RagePortShouldExit(int frame_number) {
         g_PadBuffers[3] = (u8)~buttons;
         UpdatePadState();
     }
-    if (g_SmokeRandomSyncEnabled && !g_SmokeRandomSyncFired) {
-        if (g_SceneId == g_SmokeRandomSyncScene &&
-            g_SceneTimer <= g_SmokeRandomSyncTimer) {
-            g_SmokeRandomSyncArmed = 1;
-        }
-        if (g_SmokeRandomSyncArmed && g_SceneId == g_SmokeRandomSyncScene &&
-            g_SceneTimer >= g_SmokeRandomSyncTimer) {
-            g_RandomSeed = (unsigned int)g_SmokeRandomSyncSeed;
-            if (g_SmokeRandomSyncHasVariants) {
-                g_AnimSceneryVariant = (s16)g_SmokeRandomSyncVariant;
-                g_AnimScenery2Variant = (s16)g_SmokeRandomSyncVariant2;
-            }
-            g_SmokeRandomSyncFired = 1;
-            fprintf(stderr,
-                    "random sync frame=%d scene=%d timer=%d seed=%08x variants=%d,%d\n",
-                    frame_number, g_SceneId, g_SceneTimer, g_RandomSeed,
-                    g_AnimSceneryVariant, g_AnimScenery2Variant);
-        }
-    }
     for (index = 0; index < g_SmokeInputCount; index++) {
         if (!g_SmokeRawPadPath &&
             g_SmokeInputs[index].firstFrame == frame_number) {
@@ -479,9 +491,10 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%u,%u,%u," \
                         "%d,%d,%u," \
+                        "%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -519,6 +532,11 @@ int RagePortShouldExit(int frame_number) {
                         g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
+                        g_EngineRpm, g_EngineRpmJitter, g_TachoNeedleFlash,
+                        g_PlayerCar.drive.acceleratorInput.value,
+                        g_CarSpec->revLimit,
+                        g_PlayerCar.drive.engineRpm, g_RacePhase,
+                        g_PadType, g_PadHeld,
                         g_CourseIndex, g_GrandPrixClass, g_GrandPrixMode,
                         g_PlayerCarIndex, g_TrackTexturePageWanted,
                         g_TrackTextureCursorRow, g_TrackTextureTargetRow,

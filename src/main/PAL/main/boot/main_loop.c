@@ -116,6 +116,9 @@ void MainLoop(void) {
         TickSequenceAudio();
         ServiceAssetLoad();
         AdvanceSaveHeaderCounter();
+#ifdef __psyz
+        RagePortBeforeSceneHandler();
+#endif
         g_SceneHandlers[g_SceneId]();
         DrawSync(0);
         StepTrackTextureSwap();

@@ -19,5 +19,6 @@ void StUnSetRing(void);
 int RageHostLoadArchiveIndex(void *entries, int count);
 int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination);
 int RagePortShouldExit(int frame_number);
+void RagePortBeforeSceneHandler(void);
 
 #endif

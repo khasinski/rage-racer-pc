@@ -37,6 +37,18 @@ Dir.mktmpdir("rage-visual-run-") do |output|
     compare.each_cons(2).include?(["--max-position-distance", "8"])
 end
 
+Dir.mktmpdir("rage-visual-run-asymmetric-sync-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--psx-sync-random", "12@200=1:0:0",
+             "--native-sync-random", "12@199=1:0:0", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "asymmetric state-tap boundaries were not retained" unless
+    metadata.dig("psx", "env", "RAGE_EMU_SYNC_RANDOM") == "12@200=1:0:0" &&
+    metadata.dig("native", "env", "RAGE_PORT_SYNC_RANDOM") == "12@199=1:0:0"
+end
+
 Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--draw-page", "--dry-run"]

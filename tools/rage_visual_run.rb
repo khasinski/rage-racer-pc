@@ -20,7 +20,7 @@ options = {
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
                 "1200:CROSS,1469-3000:CROSS",
   psx_state_input: nil, native_state_input: nil,
-  sync_random: nil,
+  sync_random: nil, psx_sync_random: nil, native_sync_random: nil,
   match_args: [], budgets: [], draw_page: false, alignment_only: false,
   compare_only: false, dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
@@ -76,6 +76,12 @@ parser = OptionParser.new do |cli|
   cli.on("--sync-random STATE=SEED",
          "set Random15 seed and optional scenery variants: scene@timer=seed[:v1:v2]") do |v|
     options[:sync_random] = v
+  end
+  cli.on("--psx-sync-random STATE=SEED", "override the PSX state-tap boundary") do |v|
+    options[:psx_sync_random] = v
+  end
+  cli.on("--native-sync-random STATE=SEED", "override the native state-tap boundary") do |v|
+    options[:native_sync_random] = v
   end
   cli.on("--bios PATH") { |v| options[:bios] = Pathname(v) }
   cli.on("--cue PATH") { |v| options[:cue] = Pathname(v) }
@@ -136,7 +142,8 @@ psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
-psx_env["RAGE_EMU_SYNC_RANDOM"] = options[:sync_random] if options[:sync_random]
+psx_sync_random = options[:psx_sync_random] || options[:sync_random]
+psx_env["RAGE_EMU_SYNC_RANDOM"] = psx_sync_random if psx_sync_random
 psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
                "bin/rage-frame-capture", options[:bios].expand_path.to_s,
                options[:cue].expand_path.to_s, psx_dir.to_s,
@@ -153,7 +160,8 @@ native_env = {
 }
 native_env["RAGE_PORT_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 native_env["RAGE_PORT_STATE_INPUT_SCRIPT"] = options[:native_state_input] if options[:native_state_input]
-native_env["RAGE_PORT_SYNC_RANDOM"] = options[:sync_random] if options[:sync_random]
+native_sync_random = options[:native_sync_random] || options[:sync_random]
+native_env["RAGE_PORT_SYNC_RANDOM"] = native_sync_random if native_sync_random
 native_command = [options[:native].expand_path.to_s]
 
 batch_commands = profiles.to_h do |profile|

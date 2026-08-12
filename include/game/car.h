@@ -876,7 +876,6 @@ extern volatile u16 g_PaintSlots3StopA[];
 extern volatile u16 g_PaintSlots3StopB[];
 extern volatile u16 g_PaintSlots4Stop[];
 extern s32 g_PlayerTargetRpm;
-extern s16 g_PlayerThrottle;
 extern RaceGridSlot g_RaceGridSlots[];
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:
