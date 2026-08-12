@@ -1207,6 +1207,24 @@ large close-road faces whose subdivision is intended to make them safe.  The
 portable path now uses only the retail NCLIP, screen-bound and OT-depth
 decisions.
 
+All three retail geometry dispatchers start from an ordering-table pointer
+shifted by `0x200` bytes. On PS1 this is 128 four-byte OT entries: the model
+dispatcher loads it at `0x80028ECC..0x80028ED0`, and the course dispatcher at
+`0x8002973C..0x80029748`; terrain shares the model dispatcher setup. The
+portable renderer must therefore submit model, course and terrain primitives
+relative to `SCRATCH_OT_BASE + 128`, not the start of the frame OT.
+
+The depth tests and the signed record bias have a deliberately asymmetric
+order. Retail first validates the un-biased projected depth in `1..447`, then
+adds the face bias to the already shifted OT pointer without a second range
+rejection. Subdivided children inherit that biased parent OT position. A
+second native check after applying the bias incorrectly discarded valid near
+faces: at synchronized race timer 948, terrain cell 161 face 50 has parent
+depth 3 and bias -3, and must be emitted at absolute OT entry 128. Dropping it
+exposed a large clear-colour road wedge. This fixed OT base and validation
+order are game-renderer semantics to backport, not a HAL workaround or a
+32/64-bit compatibility heuristic.
+
 Course-model faces use a related but distinct retail dispatcher and must not
 be collapsed into the ordinary model FT4 path. Its four record modes are F4
 (`0x10` bytes), FT4 (`0x1c`), subdivided FT4 (`0x20`) and scrolling,

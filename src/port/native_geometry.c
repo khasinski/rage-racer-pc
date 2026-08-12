@@ -52,6 +52,11 @@ static int g_RageTerrainTraceEnabled;
 static int g_RageTerrainTraceTimer = -1;
 static int g_RageTerrainTraceClut = -1;
 static int g_RageTerrainTraceTpage = -1;
+static int g_RageCourseTraceInitialized;
+static int g_RageCourseTraceEnabled;
+static int g_RageCourseTraceTimer = -1;
+static int g_RageCourseTraceClut = -1;
+static int g_RageCourseTraceTpage = -1;
 
 static void RageInitializeTerrainTrace(void) {
     const char *timer;
@@ -66,6 +71,21 @@ static void RageInitializeTerrainTrace(void) {
     if (clut != NULL) g_RageTerrainTraceClut = (int)strtol(clut, NULL, 16);
     if (tpage != NULL) g_RageTerrainTraceTpage = (int)strtol(tpage, NULL, 16);
     g_RageTerrainTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
+}
+
+static void RageInitializeCourseTrace(void) {
+    const char *timer;
+    const char *clut;
+    const char *tpage;
+    if (g_RageCourseTraceInitialized) return;
+    g_RageCourseTraceInitialized = 1;
+    timer = getenv("RAGE_PORT_COURSE_TRACE_TIMER");
+    clut = getenv("RAGE_PORT_COURSE_TRACE_CLUT");
+    tpage = getenv("RAGE_PORT_COURSE_TRACE_TPAGE");
+    if (timer != NULL) g_RageCourseTraceTimer = (int)strtol(timer, NULL, 0);
+    if (clut != NULL) g_RageCourseTraceClut = (int)strtol(clut, NULL, 16);
+    if (tpage != NULL) g_RageCourseTraceTpage = (int)strtol(tpage, NULL, 16);
+    g_RageCourseTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
 }
 
 static int RagePrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
@@ -95,6 +115,17 @@ static uint32_t RageReadU32(const uint8_t *p) {
     uint32_t value;
     memcpy(&value, p, sizeof(value));
     return value;
+}
+
+static int RageCourseTraceMatches(int timer, int type, const uint8_t *face) {
+    uint16_t clut;
+    uint16_t tpage;
+    if (!g_RageCourseTraceEnabled || type == 0) return 0;
+    clut = RageReadU16(face + 14);
+    tpage = RageReadU16(face + 18) & 0x9ff;
+    return (g_RageCourseTraceTimer < 0 || g_RageCourseTraceTimer == timer) &&
+           (g_RageCourseTraceClut < 0 || g_RageCourseTraceClut == clut) &&
+           (g_RageCourseTraceTpage < 0 || g_RageCourseTraceTpage == tpage);
 }
 
 static void RageStoreSxy(short *x, short *y, int packed) {
@@ -208,8 +239,11 @@ static int RageProjectCourseFace(
     int i;
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
     (void)flag;
-    if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0))
+    g_RageProjectionReject = 0;
+    if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0)) {
+        g_RageProjectionReject = 2;
         return 0;
+    }
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
         int y = (int16_t)(sxy[i] >> 16);
@@ -218,9 +252,15 @@ static int RageProjectCourseFace(
         allAbove &= y < g_RageScratchpadState.y0;
         allBelow &= y > g_RageScratchpadState.y1;
     }
-    if (allLeft || allRight || allAbove || allBelow) return 0;
+    if (allLeft || allRight || allAbove || allBelow) {
+        g_RageProjectionReject = 1;
+        return 0;
+    }
     *depth = (int)otz >> SCRATCH_OT_SHIFT;
-    if (*depth <= 0 || *depth >= 448) return 0;
+    if (*depth <= 0 || *depth >= 448) {
+        g_RageProjectionReject = 3;
+        return 0;
+    }
     if (fog != NULL) *fog = p;
     if (rawDepth != NULL) *rawDepth = (int)otz;
     return 1;
@@ -679,7 +719,9 @@ static void RageSubmitModelFaces(
     const SVECTOR *normals) {
     static const uint8_t strides[4] = {16, 24, 24, 32};
     uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    /* Retail seeds t5 with scratch OT + 0x200 bytes before dispatching any
+     * model face.  On PS1 that is 128 four-byte OT entries. */
+    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     int i;
 
     if ((unsigned)type >= 4 || count <= 0 || faces == NULL || vertices == NULL)
@@ -828,9 +870,11 @@ static void RageSubmitCourseModel(int index, int fogged) {
     NativeCourseModel *models = (NativeCourseModel *)SCRATCH_COURSE_BANK;
     uint8_t *stream;
     uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    /* The course dispatcher applies the same fixed +0x200-byte OT base. */
+    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     const SVECTOR *vertices;
     uint32_t opcode;
+    RageInitializeCourseTrace();
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
     vertices = (const SVECTOR *)models[index].geometry;
@@ -845,10 +889,37 @@ static void RageSubmitCourseModel(int index, int fogged) {
         stride = strides[type];
         for (i = 0; i < count; i++, stream += stride) {
             int sxy[4], depth, fog, rawDepth;
+            int projected;
+            int trace = RageCourseTraceMatches(g_SceneTimer, type, stream);
             int bias = (int8_t)stream[type == 0 ? 13 : 25];
             uint8_t color[3] = {stream[8], stream[9], stream[10]};
-            if (!RageProjectCourseFace(stream, vertices, sxy, &depth, &fog,
-                                       &rawDepth))
+            projected = RageProjectCourseFace(stream, vertices, sxy, &depth,
+                                               &fog, &rawDepth);
+            if (trace) {
+                int clip = projected ? NormalClip(sxy[0], sxy[1], sxy[2]) : 0;
+                fprintf(stderr,
+                        "course-face timer=%d model=%d type=%d face=%d "
+                        "fogged=%d projected=%d reject=%d mirror=%d "
+                        "idx=%u,%u,%u,%u clut=%04x tpage=%04x "
+                        "raw_depth=%d depth=%d bias=%d clip=%d "
+                        "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
+                        "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
+                        g_SceneTimer, index, type, i, fogged, projected,
+                        projected ? 0 : g_RageProjectionReject,
+                        SCRATCH_MIRROR, RageReadU16(stream + 0),
+                        RageReadU16(stream + 2), RageReadU16(stream + 4),
+                        RageReadU16(stream + 6), RageReadU16(stream + 14),
+                        RageReadU16(stream + 18) & 0x9ff,
+                        projected ? rawDepth : -1,
+                        projected ? depth : -1, bias, clip,
+                        (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                        (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                        (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                        (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
+                        stream[12], stream[13], stream[16], stream[17],
+                        stream[20], stream[21], stream[22], stream[23]);
+            }
+            if (!projected)
                 continue;
             if (fogged) {
                 CVECTOR base = {color[0], color[1], color[2], 0};
@@ -858,8 +929,9 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 color[1] = shaded.g;
                 color[2] = shaded.b;
             }
+            /* Retail validates the un-biased parent OTZ in 1..447, then adds
+             * the signed record bias to the already shifted +128 base. */
             depth += bias;
-            if (depth <= 0 || depth >= 448) continue;
             if (type == 0) {
                 if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
                 POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -974,7 +1046,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     void **cellTable = (void **)SCRATCH_CELL_TABLE;
     const SVECTOR *vertices = (const SVECTOR *)SCRATCH_CELL_FACES;
     uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    /* func_80028E9C seeds its terrain OT register from scratch+4 + 0x200. */
+    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     int cell;
     int decodedFaces = 0;
     int emittedFaces = 0;
@@ -1057,14 +1130,14 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                         fprintf(stderr,
                                 "terrain-face timer=%d cell=%d face=%d "
                                 "mode=%d mirror=%d reject=%d depth=%d raw=%d "
-                                "lod=%u,%u shift=%d "
+                                "bias=%d lod=%u,%u shift=%d "
                                 "rgb=%02x%02x%02x indices=%u,%u,%u,%u "
                                 "translation=%d,%d,%d "
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                                 g_SceneTimer, cellIndex, faceIndex, dispatch,
                                 SCRATCH_MIRROR,
                                 projected ? 0 : g_RageProjectionReject, depth,
-                                rawDepth, stream[22], stream[23],
+                                rawDepth, (int8_t)stream[21], stream[22], stream[23],
                                 SCRATCH_FACE_OT_SHIFT,
                                 color[0], color[1], color[2],
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
@@ -1099,7 +1172,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
                     depth += bias;
-                    if (depth <= 0 || depth >= 448) continue;
                     next = RageEmitTerrainFt4(cursor, ot, depth, fog, dispatch,
                                               sxy, baseUv, clut, tpage, color,
                                               textureWindow);
@@ -1164,7 +1236,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                     fprintf(stderr,
                                             "terrain-child timer=%d cell=%d "
                                             "face=%d child=%d,%d/%d,%d "
-                                            "visible=%d mirror=%d "
+                                            "visible=%d mirror=%d depth=%d bias=%d ot=%d "
                                             "rgb=%02x%02x%02x "
                                             "xyz=%d,%d,%d/%d,%d,%d/"
                                             "%d,%d,%d/%d,%d,%d "
@@ -1172,7 +1244,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps, 1,
-                                            SCRATCH_MIRROR,
+                                            SCRATCH_MIRROR, depth, bias,
+                                            subDepth + 128,
                                             color[0], color[1], color[2],
                                             child[0].vx, child[0].vy,
                                             child[0].vz, child[1].vx,
@@ -1192,7 +1265,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             uv[4], uv[5], uv[6], uv[7]);
                                 }
                             }
-                            if (subDepth <= 0 || subDepth >= 448) continue;
                             next = RageEmitTerrainFt4(cursor,ot,subDepth,fog,
                                                       dispatch,subSxy,uv,clut,
                                                       tpage,color,textureWindow);
