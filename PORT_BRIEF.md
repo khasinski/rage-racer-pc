@@ -990,7 +990,9 @@ machine-readable `summary.json` and all per-frame bundles are still written,
 so limiting console output does not discard evidence.
 
 Race captures include the X/Z positions of all four active rivals as well as
-the player state. Position matching adds their aggregate distance to its score
+the player state. New manifests also retain each rival's speed, progress, body
+yaw, lateral offset, collision flag and active flag. Position matching adds
+their aggregate distance to its score
 and records it in each report. This matters especially for the narrow mirror:
 two frames can have an identical player pose while a rival differs by tens of
 world units, shifting its silhouette by a pixel and dominating mirror RMSE.
@@ -1001,6 +1003,15 @@ aggregate four-car X/Z displacement is too large; the selected distance is
 printed beside player and camera alignment. A value around 180 retains enough
 samples in the current 837..987 dense run while excluding the most misleading
 car-silhouette comparisons.
+
+One game timer can span several VBlanks, and rival updates need not be visible
+in the first VBlank carrying that timer. `RAGE_EMU_CAPTURE_ALL_PHASES=1` and
+`RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES=1` preserve every occurrence as
+`timer-T-fFRAME-sSCENE.ppm` instead of deduplicating by timer. This is required
+for collision and mirror-car diagnosis: at timers 854..857, comparing only the
+first PSX occurrence reports about 372 aggregate rival-position units, while
+the updated occurrence of the same timer reduces it to about 149. Neither path
+sets a collision flag; the larger jump is capture phase, not game physics.
 
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
