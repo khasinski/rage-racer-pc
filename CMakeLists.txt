@@ -71,6 +71,10 @@ if(RAGE_BUILD_PORT)
         DEFAULT_FRONT_W=640
         DEFAULT_FRONT_H=480
     )
+    if(BUILD_TESTING)
+        add_executable(rage-gte-replay tools/rage_gte_replay.c)
+        target_link_libraries(rage-gte-replay PRIVATE psyz)
+    endif()
 endif()
 
 if(BUILD_TESTING)

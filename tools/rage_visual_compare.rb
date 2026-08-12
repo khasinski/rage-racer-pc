@@ -179,12 +179,12 @@ end
 
 def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
                              radius)
-  return { count: 0, samples: [] } unless region
+  return { count: 0, raw_count: 0, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "black region is outside the image" if left.negative? || top.negative? ||
     region_width <= 0 || region_height <= 0 || left + region_width > width ||
     top + region_height > height
-  matches = []
+  matches = {}
   (top...(top + region_height)).each do |y|
     (left...(left + region_width)).each do |x|
       index = y * width + x
@@ -200,12 +200,19 @@ def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
         sample.max <= 2
       end
       score = 3.times.sum { |channel| (psx[channel] - native[channel])**2 }
-      matches << { x: x, y: y, squared_error: score,
-                   psx_rgb: psx, native_rgb: native }
+      matches[[x, y]] = { x: x, y: y, squared_error: score,
+                          psx_rgb: psx, native_rgb: native }
     end
   end
-  { count: matches.length,
-    samples: matches.sort_by { |sample| -sample[:squared_error] }.first(32) }
+  interior = matches.values.select do |sample|
+    x = sample[:x]
+    y = sample[:y]
+    horizontal = matches.key?([x - 1, y]) || matches.key?([x + 1, y])
+    vertical = matches.key?([x, y - 1]) || matches.key?([x, y + 1])
+    horizontal && vertical
+  end
+  { count: interior.length, raw_count: matches.length,
+    samples: interior.sort_by { |sample| -sample[:squared_error] }.first(32) }
 end
 
 def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)

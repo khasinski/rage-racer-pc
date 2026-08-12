@@ -16,6 +16,37 @@ def write_pixels(path, width, height, pixels)
   File.binwrite(path, "P6\n#{width} #{height}\n255\n" + pixels.flatten.pack("C*"))
 end
 
+Dir.mktmpdir("rage-black-area-") do |root|
+  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  psx = File.join(root, "psx.ppm")
+  native = File.join(root, "native.ppm")
+  output = File.join(root, "output")
+  width = height = 8
+  road = [80, 80, 80]
+  black = [0, 0, 0]
+  psx_pixels = Array.new(width * height) { road }
+  native_pixels = Array.new(width * height) { road.dup }
+  (1..6).each { |value| native_pixels[value * width + value] = black }
+  write_pixels(psx, width, height, psx_pixels)
+  write_pixels(native, width, height, native_pixels)
+  command = [RbConfig.ruby, compare, "--psx", psx, "--native", native,
+             "--output", output, "--black-region", "0,0,8,8",
+             "--artifact-radius", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_black")
+  abort "one-pixel black contour was ranked as missing geometry" unless
+    report.fetch("raw_count") == 6 && report.fetch("count") == 0
+
+  (2..4).each { |y| (2..4).each { |x| native_pixels[y * width + x] = black } }
+  write_pixels(native, width, height, native_pixels)
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_black")
+  abort "black-area filter removed the interior of a real hole" unless
+    report.fetch("count") > 0
+end
+
 def write_needle_frame(path, needle_x, distractor_red)
   pixels = Array.new(16) { [0, 0, 0] }
   pixels[needle_x] = [255, 0, 0]

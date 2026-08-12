@@ -1085,6 +1085,28 @@ RPM is equally aligned; those profiles retain the relevant state on their
 worst-frame records precisely so phase drift is not mislabeled as rendering
 loss.
 
+The black detector follows the same area rule as the clear-colour detector.
+`raw_count` retains every isolated native-only black pixel for raster-edge
+diagnosis, while `count` requires both a horizontal and vertical neighbour and
+therefore represents the interior of a real two-dimensional hole.  In the
+synchronized timer-868 road pair the old value of ten is `raw_count=10` but
+the regression value is `count=0`; none of those samples form a black triangle.
+
+For geometry below the framebuffer level, the Ruby emulator accepts
+`RAGE_GTE_TRACE_PC`, `RAGE_GTE_TRACE_TIMER`, `RAGE_GTE_TRACE_OPCODES`, and
+`RAGE_GTE_TRACE_LIMIT`.  Each selected command records all 32 data and control
+registers before and after execution.  `tools/rage_gte_replay.c` restores the
+captured input into PsyZ and executes the same COP2 command, providing a direct
+runtime comparison of SXY/SZ/OTZ/MAC/FLAG rather than inferring GTE behaviour
+from pixels.  The emulator uses the PS1 UNR reciprocal table/refinement instead
+of ordinary integer division: on 5,000 real timer-868 terrain commands this
+removed every SXY/SZ/OTZ/MAC difference.  Sixteen remaining differences are
+only FLAG bit 15 (MAC0 negative overflow); Rage's terrain decision consumes
+bit 31, whose relevant seam-line decision remains equal.  This evidence rules
+out transform, projection, NCLIP, and AVSZ data as the source of a large hole
+in that checkpoint, but does not generalize to a route which has not been
+captured.
+
 Race captures include the X/Z positions of all four active rivals as well as
 the player state. New manifests also retain each rival's speed, progress, body
 yaw, lateral offset, collision flag and active flag. Position matching adds

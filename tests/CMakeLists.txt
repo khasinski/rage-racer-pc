@@ -40,6 +40,11 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_budget.rb
 )
 
+if(TARGET rage-gte-replay)
+    add_test(NAME gte_replay_usage COMMAND rage-gte-replay)
+    set_tests_properties(gte_replay_usage PROPERTIES WILL_FAIL TRUE)
+endif()
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame
