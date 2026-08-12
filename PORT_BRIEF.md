@@ -2221,6 +2221,15 @@ The portable course decoder omitted this for both type 1 and windowed type
 of retail `0x7a0d`; applying the original packed-word addition fixes the
 whole emitter rather than special-casing that model.
 
+Course OT depth is also not an `AVSZ4` average.  The original dispatcher
+projects three vertices with RTPT and the fourth with RTPS, then computes the
+bucket from the first and fourth saved screen-Z values: `(SZ(first) +
+SZ(fourth)) >> 3` (`0x8002a110..0x8002a1d8`).  Because the portable PsyQ
+helper returns SZ divided by four, the equivalent portable expression is the
+half-sum of the first and fourth `RotTransPers` results.  Using `RotAverage4`
+changed OT ordering whenever the middle vertices had a different depth,
+which can change which coplanar texture wins and appear as flicker or holes.
+
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves
 13 matched frames.  The timer-280 tachometer packet is identical on retail and

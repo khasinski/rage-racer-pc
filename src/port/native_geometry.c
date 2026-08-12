@@ -308,14 +308,22 @@ static int RageProjectModelFace(
 static int RageProjectCourseFace(
     const uint8_t *face, const SVECTOR *vertices, int sxy[4], int *depth,
     int *fog, int *rawDepth) {
-    int p;
-    int flag;
-    long otz = RotAverage4(
-        (SVECTOR *)&vertices[RageReadU16(face + 0)],
-        (SVECTOR *)&vertices[RageReadU16(face + 2)],
-        (SVECTOR *)&vertices[RageReadU16(face + 4)],
-        (SVECTOR *)&vertices[RageReadU16(face + 6)],
-        &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
+    int p = 0;
+    int flag = 0;
+    int vertexFlag;
+    long vertexDepth[4];
+    int vertex;
+    for (vertex = 0; vertex < 4; vertex++) {
+        vertexDepth[vertex] = RotTransPers(
+            (SVECTOR *)&vertices[RageReadU16(face + vertex * 2)],
+            &sxy[vertex], &p, &vertexFlag);
+        flag |= vertexFlag;
+    }
+    /* The retail course loop does not issue AVSZ4.  It adds SZ1 from the
+     * first RTPT vertex to SZ3 from the following RTPS vertex and shifts that
+     * sum by three (0x8002a110..0x8002a1d8).  RotTransPers returns SZ/4, so
+     * the equivalent bucket depth is their half-sum. */
+    long otz = (vertexDepth[0] + vertexDepth[3]) >> 1;
     int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
     int i;
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
@@ -556,8 +564,6 @@ static uint8_t *RageEmitCourseFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    /* The course-model emitter stores set+NOP here; unlike direct terrain
-     * faces it does not prefix the window command with another reset. */
     window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
     window->code[1] = 0;
     setaddr(reset, getaddr(&ot[depth]));
@@ -965,6 +971,11 @@ static void RageSubmitCourseModel(int index, int fogged) {
     const SVECTOR *vertices;
     uint32_t opcode;
     RageInitializeCourseTrace();
+    if (g_RageCourseTraceEnabled &&
+        (g_RageCourseTraceTimer < 0 || g_RageCourseTraceTimer == g_SceneTimer)) {
+        fprintf(stderr, "course-model timer=%d model=%d fogged=%d\n",
+                g_SceneTimer, index, fogged);
+    }
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
     vertices = (const SVECTOR *)models[index].geometry;
