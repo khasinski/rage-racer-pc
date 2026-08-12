@@ -2632,3 +2632,13 @@ normal indexed accesses otherwise escape the C object, corrupt adjacent host
 state, and make menu/HUD symptoms depend on native linker placement. Allocate
 each complete declared object; this is game-state portability work, not a
 renderer-specific workaround.
+
+All three persistent car-entry tables were truncated too. `g_GrandPrixCars`,
+`g_ExtraGrandPrixCars` and `g_TimeAttackCars` each contain thirteen eight-byte
+`CarEntry` records, so their native backing must be 104 bytes. Save defaults,
+memory-card loading and the car-selection/customization screens all index or
+copy the full tables. Eight-byte backing made every entry after car zero an
+out-of-bounds access, corrupting unrelated globals and producing invalid car
+availability and appearance state. Preserve the complete game-owned tables on
+the host; the retail interior byte labels are map views and are not a reason to
+split the native C objects.

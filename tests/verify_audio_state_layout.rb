@@ -8,7 +8,8 @@ sources.each do |path, source|
       source.include?("unsigned char g_BestSectorTimes[96]")
     { "g_RankedCars" => 32, "g_SectorEndDistance" => 12,
       "g_CarSpecBars" => 16, "g_TeamLogoClut" => 32,
-      "g_PadShiftMasks" => 32 }.each do |name, bytes|
+      "g_PadShiftMasks" => 32, "g_GrandPrixCars" => 104,
+      "g_ExtraGrandPrixCars" => 104, "g_TimeAttackCars" => 104 }.each do |name, bytes|
       abort "#{path}: #{name} backing object is truncated" unless
         source.include?("unsigned char #{name}[#{bytes}]")
     end
