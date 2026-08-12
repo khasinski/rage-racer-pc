@@ -31,6 +31,31 @@ static void RageTraceCarMotion(const char *phase, PlayerCarRuntime *car) {
            car->trackPointIndex, car->trackProgress, car->trackLateralOffset,
            car->speed);
 }
+
+static void RageTraceCarStates(void) {
+    static int enabled = -1;
+    static int timerMin = -1;
+    static int timerMax = -1;
+    int index;
+    if (enabled < 0) {
+        const char *minText = getenv("RAGE_PORT_CAR_STATE_TRACE_TIMER_MIN");
+        const char *maxText = getenv("RAGE_PORT_CAR_STATE_TRACE_TIMER_MAX");
+        enabled = getenv("RAGE_PORT_CAR_STATE_TRACE") != NULL;
+        timerMin = minText != NULL ? (int)strtol(minText, NULL, 0) : -1;
+        timerMax = maxText != NULL ? (int)strtol(maxText, NULL, 0) : -1;
+    }
+    if (!enabled || (timerMin >= 0 && g_SceneTimer < timerMin) ||
+        (timerMax >= 0 && g_SceneTimer > timerMax)) return;
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *opponent = &g_Cars[index];
+        printf("car-state timer=%d index=%d x=%d z=%d progress=%d lateral=%d "
+               "speed=%d point=%d yaw=%d active=%d collision=%d\n",
+               g_SceneTimer, index, opponent->x, opponent->z,
+               opponent->trackProgress, opponent->trackLateralOffset,
+               opponent->speed, opponent->trackPointIndex, opponent->bodyYaw,
+               opponent->activeFlag, opponent->collisionFlag);
+    }
+}
 #endif
 
 /*
@@ -65,6 +90,10 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 i;
     s32 cornerIndex;
     u32 skidRange;
+
+#ifdef __psyz
+    RageTraceCarStates();
+#endif
 
     mode23 = g_PadType == 0x23;
     car->facingBackwards = IsCarFacingBackwards(car);

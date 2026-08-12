@@ -2526,6 +2526,14 @@ next update.  The collision is opponent index 5, region 4, at player
 but offset by roughly 74 world units, and the original retail collision
 routine reports no player-car hit anywhere from timer 2741 through 2790.
 
+Instrumenting the retail `IsPointInQuad` entry at `0x8002D2E8` resolves the
+remaining ambiguity: during the corresponding retail interval the player-car
+collision routine never reaches a point-in-quad call. Its earlier proximity
+filter rejects opponent 5. Native reaches the exact half-plane test and gets a
+valid region-4 hit for its already different opponent position. Thus there is
+no evidence for changing `NormalClip` or `IsPointInQuad`; doing so would hide
+the upstream AI-state divergence and change valid collisions.
+
 This is a reproducible false native car-car collision, not a terrain clamp,
 renderer, draw-distance or visual-alignment failure.  `RAGE_PORT_CAR_MOTION_TRACE`
 marks pre-integration, post-position, post-progress, post-knockback,
@@ -2535,3 +2543,14 @@ identifies the struck opponent/region.  The Ruby equivalents
 without modifying game RAM.  Keep post-2800 visual captures excluded until
 opponent 5 is synchronized or the collision test is compared from an identical
 input state.
+
+Use two routes for renderer work until that gameplay divergence is fixed. A
+Time Attack route, which has no opponent collision updates, is the long-lived
+reference for road geometry, textures, sky and the common HUD. Grand Prix
+captures remain necessary for the rear-view mirror, but must stay before the
+first state divergence (or use a later independently synchronized checkpoint).
+Do not accept a visually similar post-divergence Grand Prix frame as renderer
+evidence. Both routes retain the original PS1 LOD and draw-distance policy
+while compatibility is being established; extended distance and forced
+highest-detail models belong to a separate modern-renderer mode after the
+baseline agrees.
