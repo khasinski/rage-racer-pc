@@ -2196,10 +2196,22 @@ and reports it before clip/depth output is interpreted.
 
 The first application of this oracle found real portable terrain-emitter bugs.
 Direct retail windowed faces submit `reset+set` before the FT4 and `reset+NOP`
-after it.  Children emitted by `EmitSubdividedTerrainQuad` use `set+NOP` for
-each child because their sequence is already bracketed.  Keep these paths
+after it.  A subdivided face instead brackets the complete visible-child group
+once: `set+NOP`, every child FT4, then `reset+NOP`.  The portable emitter used
+to bracket every child independently, inserting E2 commands between adjacent
+children and disturbing the OT stream.  Keep the direct and grouped paths
 separate when backporting; one universal packet layout makes one class match
-by breaking the other.
+by breaking the other.  Because PS1 ordering tables are LIFO, link the group
+reset before the first child and the set command after the last child.
+
+Subdivision guide lines have a related OT rule.  Retail adds the record's
+signed byte-21 depth bias to the parent terrain bucket before the guide emitter
+adds its fixed 64-bucket band.  Passing the unbiased face depth placed every
+guide from such a record in the wrong bucket.  At timer 270 the representative
+record `0x80149100` uses raw depth 3807, parent slot 249 (base 128 + depth 118 +
+bias 3), and guide slot 313.  Applying the bias moved the strict GP0 mismatch
+from word 2506 to 4123; grouping the texture-window commands moved it again to
+5486.  Both are game-emitter fixed-point/OT semantics, not PsyZ workarounds.
 
 The same trace exposed a missing game-side far-face conversion.  When
 `rawDepth >= 0x800` and face flag bit 0 is set, retail halves all UV bytes and,

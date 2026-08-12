@@ -450,7 +450,8 @@ static uint8_t *RageEmitTerrainFt4(
     CVECTOR base;
     CVECTOR shaded;
     size_t packetSize = sizeof(POLY_FT4);
-    if (dispatch >= 2) packetSize += sizeof(DR_TWIN) * 2;
+    if (dispatch >= 2 && !subdivided)
+        packetSize += sizeof(DR_TWIN) * 2;
     if (!RagePrimitiveSpaceAvailable(cursor, packetSize)) return NULL;
     poly = (POLY_FT4 *)cursor;
     SetPolyFT4(poly);
@@ -476,6 +477,10 @@ static uint8_t *RageEmitTerrainFt4(
         AddPrim(&ot[depth], poly);
         return cursor;
     }
+    if (subdivided) {
+        AddPrim(&ot[depth], poly);
+        return cursor;
+    }
 
     reset = (DR_TWIN *)cursor;
     cursor += sizeof(*reset);
@@ -486,15 +491,8 @@ static uint8_t *RageEmitTerrainFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    /* Direct faces use reset+set; EmitSubdividedTerrainQuad has already
-     * bracketed its child sequence and emits set+NOP for each child. */
-    if (subdivided) {
-        window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
-        window->code[1] = 0;
-    } else {
-        window->code[0] = 0xE2000000u;
-        window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
-    }
+    window->code[0] = 0xE2000000u;
+    window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
 
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
@@ -1336,6 +1334,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     emittedFaces++;
                 } else {
                     int sy, sx;
+                    DR_TWIN *subdivisionWindow = NULL;
                     uint32_t lineCommand = RageReadU32(stream + 24);
                     if (g_RageTerrainDecisionTraceEnabled &&
                         (g_RageTerrainDecisionTraceTimer < 0 ||
@@ -1352,12 +1351,12 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 (uint32_t)g_RageProjectionFlag, lineCommand,
                                 (((uint32_t)g_RageProjectionFlag | lineCommand) &
                                  0x80000000u) == 0,
-                                depth);
+                                depth + bias);
                     }
                     if ((((uint32_t)g_RageProjectionFlag | lineCommand) &
                          0x80000000u) == 0) {
                         uint8_t *next = RageEmitTerrainSubdivisionLines(
-                            cursor, ot, depth, sxy, lineCommand);
+                            cursor, ot, depth + bias, sxy, lineCommand);
                         if (next == NULL) goto terrain_buffer_full;
                         cursor = next;
                     }
@@ -1406,6 +1405,28 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             childVisible ? 0 : g_RageProjectionReject);
                                 }
                                 if (!childVisible) continue;
+                            }
+                            /* The retail emitter brackets the complete set of
+                             * visible children with one texture-window pair.
+                             * Since an OT is LIFO, link the reset before the
+                             * first child and the set command after the last. */
+                            if (dispatch >= 2 && subdivisionWindow == NULL) {
+                                DR_TWIN *reset;
+                                if (!RagePrimitiveSpaceAvailable(
+                                        cursor, sizeof(DR_TWIN) * 2))
+                                    goto terrain_buffer_full;
+                                reset = (DR_TWIN *)cursor;
+                                subdivisionWindow = reset + 1;
+                                cursor += sizeof(DR_TWIN) * 2;
+                                setlen(reset, 2);
+                                reset->code[0] = 0xE2000000u;
+                                reset->code[1] = 0;
+                                setlen(subdivisionWindow, 2);
+                                subdivisionWindow->code[0] =
+                                    0xE2000000u |
+                                    (textureWindow & 0x000FFFFFu);
+                                subdivisionWindow->code[1] = 0;
+                                AddPrim(&ot[subDepth], reset);
                             }
 #define RAGE_SUB_UV(out, corner, uu, vv) do { \
     (out)[(corner)*2] = RageBilerpByte(baseUv[0],baseUv[2],baseUv[4],baseUv[6],(uu),(vv),uSteps,vSteps); \
@@ -1466,6 +1487,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                             emittedFaces++;
                         }
                     }
+                    if (subdivisionWindow != NULL)
+                        AddPrim(&ot[depth + bias], subdivisionWindow);
                 }
             }
         }
