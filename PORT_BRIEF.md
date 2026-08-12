@@ -1074,9 +1074,11 @@ native 1,257. The largest grouped delta is tpage `0x0005`, CLUT `0x7943`
 (`763` retail versus `834` native), followed by smaller tpage `0x001b` road
 groups. This proves that the mismatch exists in the submitted/decoded primitive
 stream rather than being only a final framebuffer-rasterization artifact. The
-current digest combines main and mirror passes; add explicit draw-area/pass
-markers before attributing the `0x0005/0x7943` excess to mirror culling rather
-than a VBlank/pass-boundary difference.
+Optional digest groups also include the active draw area, separating the full
+main pass from the mirror scissor. At timer 868, tpage `0x0005` / CLUT `0x7943`
+is `570` retail versus `573` native in the main pass, but `193` versus `261` in
+the mirror pass. Thus 68 of the 71 excess packets are specifically mirror-pass
+geometry, not a VBlank boundary or a general main-road/rasterization mismatch.
 
 For example:
 
