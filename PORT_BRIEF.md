@@ -1948,6 +1948,9 @@ needle with the preceding displayed frame.  Use draw-page captures for packet
 coverage and display-page captures for user-visible regressions, and record
 which page supplied every oracle.  A standalone PsyZ polygon test must be
 derived from a controlled PS1 GPU capture, not from this mixed-page pair.
+Capture manifests label this explicitly as `capture_surface=draw|display`.
+The batch comparator rejects mixed surfaces before state matching, so a packet
+diagnostic cannot silently enter a user-visible framebuffer regression.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst

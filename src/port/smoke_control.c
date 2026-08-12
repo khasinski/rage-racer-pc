@@ -151,7 +151,7 @@ static void RageSmokeInitialize(void) {
         if (length > 0 && (size_t)length < sizeof(manifestPath)) {
             g_SmokeCaptureManifest = fopen(manifestPath, "w");
             if (g_SmokeCaptureManifest != NULL) {
-                fputs("filename,frame,scene,timer,x,z,speed,progress,lap," \
+                fputs("filename,capture_surface,frame,scene,timer,x,z,speed,progress,lap," \
                       "body_yaw,body_pitch,body_roll,track_lateral," \
                       "model_yaw,mirror_y,view_x,view_y,view_z," \
                       "view_angle_x,view_angle_y,view_angle_z," \
@@ -373,7 +373,7 @@ int RagePortShouldExit(int frame_number) {
                 const char *filename = strrchr(path, '/');
                 filename = filename != NULL ? filename + 1 : path;
                 fprintf(g_SmokeCaptureManifest,
-                        "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%s,%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%u,%u,%u," \
@@ -381,7 +381,10 @@ int RagePortShouldExit(int frame_number) {
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-                        filename, frame_number, g_SceneId, g_SceneTimer,
+                        filename,
+                        getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL ?
+                            "draw" : "display",
+                        frame_number, g_SceneId, g_SceneTimer,
                         g_PlayerCar.x, g_PlayerCar.z,
                         g_PlayerCar.speed, g_PlayerCar.trackProgress,
                         g_PlayerCar.lap, g_PlayerCar.bodyYaw,

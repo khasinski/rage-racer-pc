@@ -236,6 +236,12 @@ def manifest_rows(directory)
   end.compact
 end
 
+def capture_surface(rows, label)
+  surfaces = rows.map { |row| row[:capture_surface] }.compact.uniq
+  abort "#{label} manifest mixes capture surfaces: #{surfaces.join(', ')}" if surfaces.length > 1
+  surfaces.first
+end
+
 def ppm_capture_stats(path, threshold = 8)
   data = File.binread(path)
   header_end = data.index("\n255\n")
@@ -408,6 +414,11 @@ if options[:match] == "position"
   end
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
+  psx_surface = capture_surface(psx_states, "PSX")
+  native_surface = capture_surface(native_states, "native")
+  if psx_surface && native_surface && psx_surface != native_surface
+    abort "capture surface mismatch: PSX=#{psx_surface}, native=#{native_surface}"
+  end
   blank_psx_states, psx_states = psx_states.partition { |state| !usable_capture?(state) }
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
   native_by_scene_lap = native_states.group_by { |state| [state[:scene], state[:lap]] }

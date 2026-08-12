@@ -555,4 +555,29 @@ Dir.mktmpdir("rage-visual-needle-refinement-") do |root|
     frame.fetch("native_frame") == right_name
 end
 
+Dir.mktmpdir("rage-visual-capture-surface-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  surface_header = "filename,capture_surface,frame,scene,timer,x,z,speed,progress,lap," \
+                   "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                   "view_angle_z,random_seed\n"
+  state = "0,12,100,10,20,30,40,1,0,10,20,30,0,0,0,7"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             surface_header + "#{filename},draw,#{state}\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             surface_header + "#{filename},display,#{state}\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "mixed draw/display surfaces were accepted" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?(
+    "capture surface mismatch: PSX=draw, native=display"
+  )
+end
+
 puts "visual refinement separates sampled state from the displayed buffer; state gates precede ranking"
