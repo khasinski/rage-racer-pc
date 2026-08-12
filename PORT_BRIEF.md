@@ -1851,3 +1851,27 @@ manifests therefore hash the complete 1024-byte main and mirror lists as
 `--require-main-visible-cells` / `--require-mirror-visible-cells` gates require
 both mask and list equality when those newer columns are present, while
 remaining compatible with older captures.
+
+Canonicalize inactive visible-list entries before hashing: `BuildVisibleCells`
+sets only `w = -1` on rejection and deliberately leaves the old x/y/z words in
+place.  Hashing those stale words compares unused history, not renderer input.
+The canonical hash substitutes `(0,0,0,-1)` while retaining every active entry
+and its order.
+
+The mirror LOD bug was a native scratchpad aliasing regression.  In retail,
+`BeginMirrorPass` stores mode 9 at scratch offset `0x6c`, and the terrain
+dispatcher reads that same word as the variable shift in
+`record[22/23] - (OTZ >> shift)`.  `EndMirrorPass` restores 10 at the same
+address.  The typed host scratch representation had separate `mode` and
+`faceOtShift` members, so only mode changed and mirror terrain incorrectly kept
+shift 10.  Explicitly setting `faceOtShift` to 9/10 reproduces the original
+alias without reintroducing overlapping native fields.
+
+At timer 866, before the fix native mirror parents had only 100 unsplit 1x1
+faces versus retail's 136 and promoted many faces into 1x2, 2x2 and deeper
+subdivision.  After the fix every subdivided step class matches retail exactly;
+native has 131 unsplit faces, with the remaining five-parent difference
+explained by the approximately 11-unit state offset.  The native semantic GPU
+digest fell from the earlier 1346-primitives class to 1263 in the nearby
+fixed capture, removing 83 spurious packets.  This is a game/decompilation
+scratch-layout fix, not a PsyZ renderer heuristic.

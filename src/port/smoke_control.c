@@ -33,6 +33,27 @@ static uint32_t RageSmokeHashWords(const u32 *words, size_t count) {
     return hash;
 }
 
+static uint32_t RageSmokeHashVisibleList(const Vec4 *entries) {
+    uint32_t hash = 2166136261u;
+    size_t entryIndex;
+    for (entryIndex = 0; entryIndex < 64; entryIndex++) {
+        u32 words[4];
+        int wordIndex;
+        words[0] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].x;
+        words[1] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].y;
+        words[2] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].z;
+        words[3] = (u32)entries[entryIndex].w;
+        for (wordIndex = 0; wordIndex < 4; wordIndex++) {
+            int byteIndex;
+            for (byteIndex = 0; byteIndex < 4; byteIndex++) {
+                hash ^= (words[wordIndex] >> (byteIndex * 8)) & 0xff;
+                hash *= 16777619u;
+            }
+        }
+    }
+    return hash;
+}
+
 typedef struct RageSmokeStateInput {
     long scene;
     long timer;
@@ -385,8 +406,8 @@ int RagePortShouldExit(int frame_number) {
                         g_MirrorViewMatrix.m[2][2],
                         RageSmokeHashWords(g_MainVisibleCellMask, 32),
                         RageSmokeHashWords(g_MirrorVisibleCellMask, 32),
-                        RageSmokeHashWords((const u32 *)g_MainVisibleCellList, 256),
-                        RageSmokeHashWords((const u32 *)g_MirrorVisibleCellList, 256),
+                        RageSmokeHashVisibleList(g_MainVisibleCellList),
+                        RageSmokeHashVisibleList(g_MirrorVisibleCellList),
                         g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,

@@ -56,6 +56,11 @@ s32 BeginMirrorPass(void) {
 
         v0reg = 9;
         scratch->mode = v0reg;
+        /* Retail scratch+0x6c is one aliased word: the mirror mode write is
+         * also the terrain OTZ/LOD shift read by SubmitTerrainCells.  The
+         * native scratch representation keeps the meanings separate, so
+         * reproduce the alias explicitly. */
+        scratch->faceOtShift = v0reg;
         v0reg = 0x56;
         scratch->x0 = v0reg;
         panelPosition.position = &g_MirrorPanelY;
@@ -118,6 +123,7 @@ void EndMirrorPass(void) {
 
     v0reg = 0xA;
     scratch->mode = v0reg;
+    scratch->faceOtShift = v0reg;
     v0reg = 0x140;
     scratch->x1 = v0reg;
     v0reg = 0xF0;
