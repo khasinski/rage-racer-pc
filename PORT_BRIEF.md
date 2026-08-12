@@ -2582,3 +2582,11 @@ timer-530 native capture now displays the retail value `5'10"765`.
 named-field write. The `audio_state_layout` regression checks both reset paths
 so a future matching-oriented rewrite cannot silently restore the PS1 linker
 layout dependency.
+
+The drivetrain had another split-symbol dependency. On retail,
+`g_TorqueBandStart` is the halfword immediately before `g_TorqueBandEnd[]`, so
+for RPM band `b > 0`, `(&g_TorqueBandStart)[b]` means
+`g_TorqueBandEnd[b - 1]`; the loss curve uses the same representation. Native
+globals have no such adjacency guarantee. Use the predecessor entries of the
+two end tables explicitly. This retains the original curve search ranges while
+removing another 32/64-bit and linker-layout dependency from game code.

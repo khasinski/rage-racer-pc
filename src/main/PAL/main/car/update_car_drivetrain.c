@@ -309,7 +309,10 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     }
     else
     {
-      bandStart = *((&g_TorqueBandStart) + bandIndex);
+      /* Retail's start symbol is the halfword immediately before the end
+       * table: start[b] aliases b == 0 to the standalone halfword and b > 0
+       * to end[b - 1]. Independently linked host globals are not adjacent. */
+      bandStart = g_TorqueBandEnd[bandIndex - 1];
       if (bandStart == 0)
       {
         bandBase = 0;
@@ -360,7 +363,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     }
     else
     {
-      lossStart = *((&g_TorqueLossBandStart) + bandIndex);
+      /* Same split-symbol layout as the torque-band table above. */
+      lossStart = g_TorqueLossBandEnd[bandIndex - 1];
       lossBase = 0;
       if (lossStart != 0)
       {

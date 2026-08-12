@@ -25,6 +25,7 @@ add_test(
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/loaded_audio_voices.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
 )
 
 add_test(
