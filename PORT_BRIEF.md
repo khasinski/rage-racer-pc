@@ -2414,3 +2414,21 @@ are column-major, so the row-major PS1 dither table must be sampled as
 packet matches 23 of the 31 retail writes; the three missing writes are edge
 coverage and the remaining five are interpolation/raster precision.  This
 also reduces full timer-868 RGB RMSE from 0.0282 to 0.0207.
+
+A fresh native timer-1600..2400 capture after the dither fix was compared
+against the retained retail capture.  With position, camera, projection,
+animation-phase and mirror-visible-cell gates, every accepted mirror pair has
+`native_only_clear=0`, `native_only_black=0`, and no black connected component.
+The remaining mirror RMSE is not a strict content oracle: rival-position
+deltas are 474--840 world units, and requiring a 64-unit aggregate rival gate
+correctly rejects every pair.  Do not diagnose mirror texture loss from those
+moving-car residuals.
+
+The worst fresh tachometer pair (timer 1900, retail frame 600/native frame
+3264) reports a large red-mask mismatch, but the actual needle GP0 packet is
+bit-identical on both sides:
+`280018c0,00c20101,00b30122,00c60103,00b50123`.  The broad mask includes dial
+artwork and raster-edge coverage; it is not evidence of a missing needle.  A
+road comparison requiring the complete main visible-cell list finds no
+eligible pairs, so this capture cannot prove course-surface pixel parity
+without first synchronizing simulation visibility state.
