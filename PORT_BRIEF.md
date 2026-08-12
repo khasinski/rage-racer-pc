@@ -2061,6 +2061,30 @@ rules out the HAL GTE transform and clipping arithmetic for that captured
 route.  Continue above that boundary in the portable asset decoder, parent LOD
 and packet emitter, while keeping the GTE replay as the fast bit-exact gate.
 
+A freshly regenerated draw-page cache over race timers 200..260 provides 40
+state-aligned pairs with exact player position/speed, animation, visible-cell
+masks and many exact camera/projection phases.  Across those pairs the road has
+zero native-only clear pixels; the mirror-road region has zero native-only
+black pixels and no black component.  The largest road black component is only
+six pixels, a 2x3 block at timer 250 around `(142..143,127..129)`, and the
+surface detector rejects it as a missing area.
+
+Pixel tracing at `(142,128)` proves both sides submit the same final textured
+quads, including identical XY, UV, tpage 1c and CLUT 7bc0.  Retail's scanline
+rasterizer writes palette index 1 / colour c232 from the final shared-edge
+quad, while the native hardware rasterizer leaves the prior black texel.  This
+is a small triangle-edge fill-rule difference, not missing game geometry,
+wrong clipping or draw distance.  Removing SDL_GPU's half-pixel vertex offset
+was tested and rejected: timer-250 road RMSE rose from 0.0511 to 0.1388 and
+coherent surface components grew to 15 pixels.  Keep the established +0.5
+pixel-centre convention rather than trading a 2x3 seam for broad regressions.
+
+The same cache cannot prove tachometer geometry from equal timer/speed alone:
+no pair has equal `tacho_rpm`, because the smoothed `g_EngineRpm` retains prior
+update history even when the complete current car record is identical.  The
+worst 37-pixel needle mismatch corresponds to 6972 versus 6948 RPM.  Require
+an exact RPM phase before classifying it as a HUD emitter failure.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
