@@ -520,10 +520,16 @@ forcing raw textures.
 
 The native `SubmitModelFaces` translation must follow the retail GTE loop:
 project and clamp the original quad, cull it with NCLIP, compute AVSZ4, and
-submit it without reading a made-up per-face depth bias. In particular, byte
-29 of a GT4 record is not a depth bias. A temporary near-plane triangle
-clipper turned the close Grand Prix camera shot into malformed GT3 packets;
-retail does not take that path for model faces.
+then add the signed byte at `stride - 3` to the OT position for all four record
+types.  Earlier diagnostics incorrectly labelled byte 29 of GT4 as a non-bias
+field while investigating an experimental near-plane clipper.  The DMA/OT
+oracle disproves that conclusion directly: at timer 270 six model-0 GT4 faces
+have projected depths 62..64 and byte 29 `0xee` (-18); retail links them
+exactly 18 buckets earlier.  Model-15 F4 face 5 likewise has depth 67 and byte
+13 `0xf0` (-16), and retail selects slot `128 + 67 - 16`.  Apply the bias only
+after validating the un-biased depth, just like the terrain path.  The
+temporary near-plane triangle clipper turned the close Grand Prix camera shot
+into malformed GT3 packets; retail does not take that path for model faces.
 
 The same rule applies to `g_AtanTable` at `0x8007B664`: it contains 1026
 signed halfwords used by the game's `Atan2` camera math.  A zero-filled host
@@ -2285,6 +2291,16 @@ FT4 eight native packets later; this proves a local OT interleave instead of an
 FT4-to-F4 conversion.  The emulator's optional `RAGE_GPU_OT_TRACE=1` records
 every DMA node including zero-length OT links, so the exact bucket boundary can
 then be inspected without changing emulated memory or registers.
+
+With `RAGE_GPU_OT_TRACE=1` enabled on both builds, `rage_gp0_compare.rb
+--nodes` reconstructs retail's several GP0 commands back into their original
+DMA node and retains empty ordering-table links.  This exposed the ordinary
+model bias bug above: fixing all four record types moved the strict timer-270
+oracle from word 5486 to 6045.  The remaining mismatch has identical GT4
+geometry and differs only by one lighting unit (`0x20` retail versus `0x1f`
+native on selected vertices).  Replacing four NCCS calls with the original
+NCCT-plus-NCCS sequence does not change PsyZ's result, so treat that remainder
+as GTE arithmetic evidence rather than an OT or geometry failure.
 
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves

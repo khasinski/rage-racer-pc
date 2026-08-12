@@ -14,6 +14,8 @@ extern int g_CourseModelCount;
 extern int g_AnimTimer;
 extern int g_SceneTimer;
 void DpqColor(CVECTOR *source, long depthCue, CVECTOR *destination);
+void NormalColorCol3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *base,
+                     CVECTOR *out0, CVECTOR *out1, CVECTOR *out2);
 
 /* Portable C counterpart of the hand-written MIPS/GTE model dispatcher in
  * main/render/terrain_submission.c.  Asset records stay in their retail
@@ -876,10 +878,11 @@ static void RageSubmitModelFaces(
             (g_RageModelTraceTimer < 0 ||
              g_RageModelTraceTimer == g_SceneTimer)) {
             fprintf(stderr,
-                    "model-face timer=%d model=%d type=%d face=%d depth=%d "
+                    "model-face timer=%d model=%d type=%d face=%d depth=%d bias=%d "
                     "packet=%p indices=%u,%u,%u,%u "
                     "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                     g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
+                    (int8_t)faces[strides[type] - 3],
                     (void *)cursor, RageReadU16(faces), RageReadU16(faces + 2),
                     RageReadU16(faces + 4), RageReadU16(faces + 6),
                     (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
@@ -887,6 +890,9 @@ static void RageSubmitModelFaces(
                     (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                     (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
         }
+        /* Every model record ends with a signed OT adjustment.  Apply it
+         * only after retail's range test of the projected parent depth. */
+        depth += (int8_t)faces[strides[type] - 3];
         if (type == RAGE_MODEL_F4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
             POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -918,12 +924,11 @@ static void RageSubmitModelFaces(
             CVECTOR base = *(const CVECTOR *)(faces + 16);
             CVECTOR colors[4];
             SetPolyG4(poly);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 8)], &base,
-                           &colors[0]);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 10)], &base,
-                           &colors[1]);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 12)], &base,
-                           &colors[2]);
+            NormalColorCol3(
+                (SVECTOR *)&normals[RageReadU16(faces + 8)],
+                (SVECTOR *)&normals[RageReadU16(faces + 10)],
+                (SVECTOR *)&normals[RageReadU16(faces + 12)], &base,
+                &colors[0], &colors[1], &colors[2]);
             NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
                            &colors[3]);
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;
@@ -942,12 +947,11 @@ static void RageSubmitModelFaces(
             SetPolyGT4(poly);
             RageCopyGt4UvWithMode(poly, faces + 16,
                                   (uint32_t)g_ScratchRenderMode);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 8)], &base,
-                           &colors[0]);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 10)], &base,
-                           &colors[1]);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 12)], &base,
-                           &colors[2]);
+            NormalColorCol3(
+                (SVECTOR *)&normals[RageReadU16(faces + 8)],
+                (SVECTOR *)&normals[RageReadU16(faces + 10)],
+                (SVECTOR *)&normals[RageReadU16(faces + 12)], &base,
+                &colors[0], &colors[1], &colors[2]);
             NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
                            &colors[3]);
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;

@@ -3,7 +3,7 @@
 
 require "optparse"
 
-options = { raw: false, resync_window: 0 }
+options = { raw: false, resync_window: 0, nodes: false }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_gp0_compare.rb --psx LOG --native LOG [options]"
   parser.on("--psx PATH", "Retail emulator GP0 trace") { |v| options[:psx] = v }
@@ -16,6 +16,9 @@ OptionParser.new do |parser|
   parser.on("--resync-window N", Integer,
             "Find the next equal packet within N packets on either side") do |value|
     options[:resync_window] = value
+  end
+  parser.on("--nodes", "Compare DMA/OT nodes, including empty bucket links") do
+    options[:nodes] = true
   end
 end.parse!
 abort "both --psx and --native are required" unless options[:psx] && options[:native]
@@ -43,11 +46,45 @@ native_packets = read_packets.call(options[:native], "gp0-packet ", options[:nat
 abort "no gp0-command records in #{options[:psx]}" if psx_packets.empty?
 abort "no gp0-packet records in #{options[:native]}" if native_packets.empty?
 
+if options[:nodes]
+  read_nodes = lambda do |path, command_prefix, wanted_frame|
+    commands = Hash.new { |hash, key| hash[key] = [] }
+    nodes = []
+    File.foreach(path).with_index(1) do |line, number|
+      if line.start_with?(command_prefix)
+        frame = line[/\bframe=(\d+)/, 1]&.to_i
+        next if wanted_frame && frame != wanted_frame
+        chain = line[/\bchain=(\d+)/, 1]
+        node = line[/\bnode=(\d+)/, 1]
+        node ||= line[/\bpacket=(\d+)/, 1] if command_prefix == "gp0-packet "
+        words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
+        next unless chain && node && words
+        commands[[chain.to_i, node.to_i]].concat(
+          words.split(",").map { |word| Integer(word, 16) }
+        )
+      elsif line.start_with?("gp0-node ")
+        chain = line[/\bchain=(\d+)/, 1]
+        node = line[/\bnode=(\d+)/, 1]
+        next unless chain && node
+        nodes << [chain.to_i, node.to_i, number, line.strip]
+      end
+    end
+    abort "no gp0-node records in #{path}" if nodes.empty?
+    nodes.map do |chain, node, number, metadata|
+      Packet.new(source: path, line: number, metadata: metadata,
+                 words: commands[[chain, node]])
+    end
+  end
+  psx_packets = read_nodes.call(options[:psx], "gp0-command ", options[:psx_frame])
+  native_packets = read_nodes.call(options[:native], "gp0-packet ", options[:native_frame])
+end
+
 normalize_draw_page = lambda do |packets|
   draw_top = packets.flat_map(&:words).find { |word| (word >> 24) == 0xe3 }
   draw_y = draw_top ? ((draw_top >> 10) & 0x1ff) : 0
   return if draw_y.zero? || options[:raw]
   packets.each do |packet|
+    next if packet.words.empty?
     command = (packet.words.first >> 24) & 0xff
     if command == 0xe3 || command == 0xe4
       packet.words.map! do |word|
@@ -96,6 +133,7 @@ normalize_draw_page.call(native_packets)
 
 flatten = lambda do |packets|
   packets.flat_map.with_index do |packet, packet_index|
+    next [] if packet.words.empty?
     command = (packet.words.first >> 24) & 0xff
     ignored_color_words = case command & 0xfc
                           when 0x30 then [2, 4]       # POLY_G3
