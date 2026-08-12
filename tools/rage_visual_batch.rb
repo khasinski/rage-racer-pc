@@ -11,19 +11,35 @@ require "open3"
 require "optparse"
 require "pathname"
 require "rbconfig"
+require "etc"
+
+REGION_PRESETS = {
+  "road" => "0,55,250,150",
+  "mirror" => "84,16,152,40",
+  "mirror-frame" => "80,12,160,48",
+  "rank" => "0,0,84,64",
+  "record" => "236,0,84,64",
+  "tacho" => "225,145,95,95",
+  "time" => "0,188,125,52",
+  "hud" => "0,176,320,64"
+}.freeze
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 64.0, max_view_distance: 32.0,
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, visual_refine: 0,
             clear_region: nil, black_region: nil, artifact_radius: 2,
-            rank: "rmse" }
+            rank: "rmse", jobs: [Etc.nprocessors, 8].min, top: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
   parser.on("--native-dir DIR") { |value| options[:native_dir] = value }
   parser.on("--output DIR") { |value| options[:output] = value }
   parser.on("--region X,Y,W,H") { |value| options[:region] = value }
+  parser.on("--preset NAME", REGION_PRESETS.keys,
+            "named region: #{REGION_PRESETS.keys.join(', ')}") do |value|
+    options[:region] = REGION_PRESETS.fetch(value)
+  end
   parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
   parser.on("--black-region X,Y,W,H") { |value| options[:black_region] = value }
   parser.on("--artifact-radius N", Integer) do |value|
@@ -63,10 +79,18 @@ OptionParser.new do |parser|
             "rank output by RMSE, native-only clear, or native-only black pixels") do |value|
     options[:rank] = value
   end
+  parser.on("--jobs N", Integer, "parallel frame comparisons") do |value|
+    options[:jobs] = value
+  end
+  parser.on("--top N", Integer, "print only the N worst frames") do |value|
+    options[:top] = value
+  end
 end.parse!
 
 abort "--psx-dir, --native-dir and --output are required" unless
   options.values_at(:psx_dir, :native_dir, :output).all?
+abort "--jobs must be positive" unless options[:jobs].positive?
+abort "--top must be positive" if options[:top] && !options[:top].positive?
 
 psx_dir = Pathname(options[:psx_dir]).expand_path
 native_dir = Pathname(options[:native_dir]).expand_path
@@ -225,7 +249,14 @@ else
 end
 
 compare = Pathname(__dir__) / "rage_visual_compare.rb"
-rows = pairs.map do |pair|
+work = Queue.new
+pairs.each_with_index { |pair, index| work << [index, pair] }
+rows = Array.new(pairs.length)
+errors = Queue.new
+[options[:jobs], pairs.length].min.times.map do
+  Thread.new do
+    loop do
+      index, pair = work.pop(true)
   frame_output = output / pair[:label]
   command = [RbConfig.ruby, compare.to_s,
              "--psx", pair[:psx].to_s,
@@ -238,9 +269,12 @@ rows = pairs.map do |pair|
   command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
   command.concat(["--black-region", options[:black_region]]) if options[:black_region]
   stdout, stderr, status = Open3.capture3(*command)
-  abort "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}" unless status.success?
+      unless status.success?
+        errors << "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}"
+        next
+      end
   report = JSON.parse(File.read(frame_output / "report.json"))
-  {
+      rows[index] = {
     frame: pair[:label],
     psx_frame: pair[:psx].basename.to_s,
     native_frame: pair[:native].basename.to_s,
@@ -251,8 +285,15 @@ rows = pairs.map do |pair|
     native_only_black: report.fetch("native_only_black").fetch("count"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
-  }
-end
+      }
+    rescue ThreadError
+      break
+    rescue StandardError => error
+      errors << "comparison worker failed: #{error.full_message}"
+    end
+  end
+end.each(&:join)
+abort errors.pop unless errors.empty?
 
 summary = {
   psx_directory: psx_dir.to_s,
@@ -277,7 +318,7 @@ ranked = if options[:rank] == "clear"
          else
            rows.sort_by { |row| -rank_rmse.call(row).to_f }
          end
-ranked.each do |row|
+(options[:top] ? ranked.first(options[:top]) : ranked).each do |row|
   hotspot = row[:worst_hotspot]
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
   delta = row[:state_delta]

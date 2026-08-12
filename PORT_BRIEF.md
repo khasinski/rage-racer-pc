@@ -980,6 +980,13 @@ ruby tools/rage_visual_batch.rb \
   --output /tmp/rage-series-compare --region 0,55,250,150
 ```
 
+For repeated renderer iteration, the batch tool also accepts stable named
+regions: `road`, `mirror`, `mirror-frame`, `rank`, `record`, `tacho`, `time`
+and `hud`. For example, use `--preset tacho --jobs 8 --top 10` to compare the
+cached sequence in parallel and print only the ten worst frames. The complete
+machine-readable `summary.json` and all per-frame bundles are still written,
+so limiting console output does not discard evidence.
+
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
 Both runners also write `capture-manifest.csv` with the filename, scene/timer,
