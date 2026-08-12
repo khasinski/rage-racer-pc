@@ -2158,9 +2158,11 @@ surface, `replay-pre.psxstate`, replay VBlank count and original commands from
 the visual bundle and its parent `run.json`; it then leaves `gp0-psx.log`,
 `gp0-native.log` and `gp0-diff.txt` beside the heatmap.  Both backends accept
 `RAGE_GPU_GP0_TRACE_FRAME` so a long replay records only the selected render
-interval.  Display-page captures select the preceding native submission;
-draw-page captures select the current one.  The emulator replay uses its local
-pre-state frame rather than the global `fNNNNN` capture filename.
+interval.  Both native display- and draw-page captures select the submission
+tagged with the frame in their filename.  An earlier display-page `frame-1`
+rule selected stale geometry (for example timer-263 commands for a timer-265
+image), fabricating colour and HUD differences.  The emulator replay uses its
+local pre-state frame rather than the global `fNNNNN` capture filename.
 
 A saved checkpoint can sit on either side of the VBlank/DMA boundary.  A
 one-VBlank replay therefore does not imply that commands are tagged as local
@@ -2169,6 +2171,15 @@ short checkpoint trace unfiltered and selects the nearest local frame which
 actually contains GP0 commands.  This prevents valid one-step visual bundles
 from producing an empty retail trace while retaining the chosen frame in
 `gp0-diff.txt` packet provenance.
+
+When more than one local retail frame contains commands, bundle replay also
+matches the first GP0 E3 draw-area word against the selected native frame.
+Choosing merely the numerically nearest local frame can land on the opposite
+VRAM page.  For the timer-265 bundle, draw-area matching selects retail local
+frame 2 and native frame 1629; this removes the stale `575757` colour and leaves
+the first real difference at word 105, one projected X coordinate (`122` on
+retail, `123` native).  Texture, CLUT, tpage, colour and the other vertices are
+already equal at that point.
 
 The first application of this oracle found a real portable terrain-emitter bug.
 Retail windowed faces submit `E2000000, E2xxxxxx` before the FT4 and
@@ -2193,12 +2204,13 @@ has no clear-colour holes, and its largest black component is ten pixels with
 no corresponding surface-divergence component.  Keep these small edge signals
 separate from the earlier systemic missing-texture failures.
 
-The next command-stream mismatch is a one-level fog-colour difference.  Do not
-compensate for it in the game emitter: both the native PsyZ GTE and the Ruby
-reference emulator implement DPCS, and the emulator currently labels its
-interpolation as an approximation.  Establish the hardware GTE rounding with a
-controlled instruction fixture before assigning that difference to either
-backend.
+The apparent next command-stream mismatch, a one-level fog-colour difference,
+was also caused by that stale native-frame selection.  For the concrete terrain
+cell 168 face 7, native receives base RGB `3f3f3f`, IR0 `1512`, and far colour
+`128,128,128`; `DpqColor` produces the retail `565656`, and the correctly
+aligned canonical packet contains the same value.  A standalone PsyZ regression
+records this DPCS case.  Do not compensate for the discarded `575757` result in
+the game emitter—it belonged to an earlier submitted frame.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst

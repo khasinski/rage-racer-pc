@@ -43,7 +43,9 @@ native_row = native_manifest.find do |row|
   row["filename"] == File.basename(report.fetch("native_source"))
 end
 abort "native capture is absent from its manifest" unless native_row
-native_frame -= 1 if native_row["capture_surface"] == "display"
+# PsyZ tags commands with the presentation interval in which their completed
+# framebuffer is captured.  Display and draw-page manifests therefore both
+# map to the filename's native frame; subtracting one selects stale geometry.
 psx_replay_frames = summary_frame["psx_replay_frames"]
 psx_replay_state = summary_frame["psx_replay_pre_state"]
 if psx_replay_frames && psx_replay_state
@@ -97,12 +99,30 @@ end.compact
 abort failures.join("\n") unless failures.empty?
 
 if psx_replay_frames && psx_replay_state
+  native_draw_area = File.foreach(bundle / "gp0-native.log").map do |line|
+    next unless line.start_with?("gp0-packet ") && line[/\bframe=(\d+)/, 1].to_i == native_frame
+    words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
+    next unless words
+    words.split(",").map { |word| Integer(word, 16) }.find { |word| (word >> 24) == 0xe3 }
+  end.compact.first
+  psx_draw_areas = {}
   available_frames = File.foreach(bundle / "gp0-psx.log").map do |line|
     match = line.match(/\Agp0-command frame=(\d+)\b/)
-    Integer(match[1], 10) if match
+    next unless match
+    frame = Integer(match[1], 10)
+    words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
+    if words
+      draw_area = words.split(",").map { |word| Integer(word, 16) }.find { |word| (word >> 24) == 0xe3 }
+      psx_draw_areas[frame] ||= draw_area if draw_area
+    end
+    frame
   end.compact.uniq
   abort "replayed PSX checkpoint submitted no GP0 commands" if available_frames.empty?
-  psx_frame = available_frames.min_by { |frame| [(frame - psx_frame).abs, frame] }
+  matching_surface = native_draw_area && available_frames.select do |frame|
+    psx_draw_areas[frame] == native_draw_area
+  end
+  candidates = matching_surface && !matching_surface.empty? ? matching_surface : available_frames
+  psx_frame = candidates.min_by { |frame| [(frame - psx_frame).abs, frame] }
 end
 
 compare = [RbConfig.ruby, (root / "tools/rage_gp0_compare.rb").to_s,

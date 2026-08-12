@@ -59,6 +59,19 @@ Dir.mktmpdir("rage-gp0-compare-") do |directory|
                                    "--native", native)
   raise "different streams passed" if status.success?
   raise output unless output.include?("word=2") && output.include?("00000001")
+
+  File.write(psx, "gp0-command frame=7 code=2c length=3 " \
+                  "words=2c565656,0069007b,001e427e\n")
+  File.write(native, <<~LOG)
+    gp0-packet frame=9 code=2c length=3 words=2c575757,0069007b,001e427e
+    gp0-packet frame=9 code=2c length=3 words=2c565656,0069007b,001e427e
+  LOG
+  output, status = Open3.capture2e(RbConfig.ruby, tool, "--psx", psx,
+                                   "--native", native)
+  raise "variant stream unexpectedly equal" if status.success?
+  raise output unless output.include?("same-payload variants=") &&
+                      output.include?("word0=2c565656") &&
+                      output.include?("word0=2c575757")
 end
 
 puts "GP0 comparison ignores packet grouping and reports the first changed word"

@@ -94,7 +94,36 @@ describe = lambda do |label, words, packets, index|
   puts "#{label}: packet_words=#{packet.words.map { |v| format('%08x', v) }.join(',')}"
 end
 
+describe_payload_variants = lambda do |label, packets, words, index|
+  next if index >= words.length
+  _, packet_index, word_index, = words[index]
+  next unless word_index == 0
+  packet = packets[packet_index]
+  command = (packet.words.first >> 24) & 0xff
+  next unless command.between?(0x20, 0x3f) && packet.words.length > 1
+  # Colour is word zero.  XY/UV/tpage/CLUT identify duplicate geometry much
+  # more reliably when diagnosing a colour mismatch; ignored UV padding is
+  # normalized by flatten above, so compare the canonical payload words.
+  signature = flatten.call([packet]).drop(1).map(&:first)
+  variants = packets.each_index.map do |candidate_index|
+    candidate = packets[candidate_index]
+    next unless candidate.words.length == packet.words.length
+    next unless ((candidate.words.first >> 24) & 0xff) == command
+    candidate_flat = flatten.call([candidate])
+    next unless candidate_flat.drop(1).map(&:first) == signature
+    [candidate_index, candidate.words.first]
+  end.compact
+  colors = variants.map(&:last).uniq
+  return unless variants.length > 1 || colors.length > 1
+  variant_text = variants.map do |candidate_index, color|
+    format("packet=%d word0=%08x", candidate_index, color)
+  end.join("; ")
+  puts "#{label}: same-payload variants=#{variant_text}"
+end
+
 puts "first GP0 difference at word=#{difference}"
 describe.call("psx", psx_words, psx_packets, difference)
 describe.call("native", native_words, native_packets, difference)
+describe_payload_variants.call("psx", psx_packets, psx_words, difference)
+describe_payload_variants.call("native", native_packets, native_words, difference)
 exit 1

@@ -1206,7 +1206,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                          g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
                         fprintf(stderr,
                                 "terrain-face timer=%d cell=%d face=%d "
-                                "mode=%d mirror=%d reject=%d depth=%d raw=%d "
+                                "mode=%d mirror=%d reject=%d depth=%d raw=%d fog=%d "
                                 "bias=%d lod=%u,%u shift=%d "
                                 "rgb=%02x%02x%02x indices=%u,%u,%u,%u "
                                 "translation=%d,%d,%d "
@@ -1214,7 +1214,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 g_SceneTimer, cellIndex, faceIndex, dispatch,
                                 SCRATCH_MIRROR,
                                 projected ? 0 : g_RageProjectionReject, depth,
-                                rawDepth, (int8_t)stream[21], stream[22], stream[23],
+                                rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
                                 SCRATCH_FACE_OT_SHIFT,
                                 color[0], color[1], color[2],
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
