@@ -59,6 +59,18 @@ Dir.mktmpdir("rage-visual-run-all-") do |output|
     metadata.fetch("comparisons").keys == %w[road mirror-road tacho hud]
 end
 
+Dir.mktmpdir("rage-visual-run-time-attack-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--route", "time-attack", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "time-attack route did not select the menu entry" unless
+    metadata.dig("native", "env", "RAGE_PORT_INPUT_SCRIPT").include?("610:DOWN")
+  abort "time-attack route did not retain continuous acceleration" unless
+    metadata.dig("psx", "env", "RAGE_EMU_INPUT_SCRIPT") == "0-10000:CROSS"
+end
+
 Dir.mktmpdir("rage-visual-run-alignment-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--alignment-only", "--dry-run"]

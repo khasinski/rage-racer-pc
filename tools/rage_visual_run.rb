@@ -27,11 +27,28 @@ options = {
   native: root / "build-host/rage-racer-smoke"
 }
 
+route_presets = {
+  "grand-prix" => {
+    native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
+                  "1200:CROSS,1469-3000:CROSS",
+    psx_input: "0-1000:CROSS"
+  },
+  "time-attack" => {
+    native_input: "400:START,500:START,610:DOWN,650:CROSS,950:CROSS," \
+                  "1100:CROSS,1200:CROSS,1470-10000:CROSS",
+    psx_input: "0-10000:CROSS"
+  }
+}.freeze
+
 parser = OptionParser.new do |cli|
   cli.banner = "usage: rage_visual_run.rb --output DIR (--checkpoint STATE | --compare-only) [options]"
   cli.on("--checkpoint PATH", "PSX save state used as the deterministic start") { |v| options[:checkpoint] = v }
   cli.on("--output DIR", "create psx/, native/, compare/ and run.json here") { |v| options[:output] = v }
   cli.on("--profile NAME", %w[all road mirror mirror-road tacho hud]) { |v| options[:profile] = v }
+  cli.on("--route NAME", route_presets.keys,
+         "input preset used unless an explicit per-runtime script is supplied") do |v|
+    options[:route] = v
+  end
   cli.on("--timer-min N", Integer) { |v| options[:timer_min] = v }
   cli.on("--timer-max N", Integer) { |v| options[:timer_max] = v }
   cli.on("--capture-stride N", Integer) { |v| options[:capture_stride] = v }
@@ -45,8 +62,14 @@ parser = OptionParser.new do |cli|
   end
   cli.on("--psx-frames N", Integer) { |v| options[:psx_frames] = v }
   cli.on("--native-frames N", Integer) { |v| options[:native_frames] = v }
-  cli.on("--psx-input SCRIPT") { |v| options[:psx_input] = v }
-  cli.on("--native-input SCRIPT") { |v| options[:native_input] = v }
+  cli.on("--psx-input SCRIPT") do |v|
+    options[:psx_input] = v
+    options[:psx_input_explicit] = true
+  end
+  cli.on("--native-input SCRIPT") do |v|
+    options[:native_input] = v
+    options[:native_input_explicit] = true
+  end
   cli.on("--psx-state-input SCRIPT") { |v| options[:psx_state_input] = v }
   cli.on("--native-state-input SCRIPT") { |v| options[:native_state_input] = v }
   cli.on("--bios PATH") { |v| options[:bios] = Pathname(v) }
@@ -75,6 +98,12 @@ parser = OptionParser.new do |cli|
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
 parser.parse!
+
+if options[:route]
+  preset = route_presets.fetch(options[:route])
+  options[:psx_input] = preset.fetch(:psx_input) unless options[:psx_input_explicit]
+  options[:native_input] = preset.fetch(:native_input) unless options[:native_input_explicit]
+end
 
 abort parser.to_s unless options[:output] && (options[:checkpoint] || options[:compare_only])
 abort "timer range is invalid" if options[:timer_min] > options[:timer_max]

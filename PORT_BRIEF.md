@@ -1043,8 +1043,9 @@ once when that timer is reached or crossed. This accommodates an emulator
 callback that can cross a game tick between observations without allowing a
 new scene ID paired briefly with the previous scene's larger timer to fire. The
 optional `SCENE@TIMER@PHASE:BUTTON` form also gates asynchronous substates;
-phase names `g_MenuScreen` for scene 8 and `g_PrologueStep` for scene 32, so
-`8@300@4:CROSS` waits for menu screen 4, while `32@169@3:CROSS`
+phase names `g_FrontendState` for scene 4, `g_MenuScreen` for scene 8 and
+`g_PrologueStep` for scene 32. Thus `4@150@2:DOWN` waits for the interactive
+main menu, `8@300@4:CROSS` waits for car selection, while `32@169@3:CROSS`
 cannot fire while the same scene and timer still belong to its CD-loading
 step. This distinction is required for repeatable native/emulator routes.
 The
@@ -2554,3 +2555,9 @@ evidence. Both routes retain the original PS1 LOD and draw-distance policy
 while compatibility is being established; extended distance and forced
 highest-detail models belong to a separate modern-renderer mode after the
 baseline agrees.
+
+`rage_visual_run.rb --route time-attack` selects Time Attack during the fresh
+native boot and holds acceleration for the long capture. The supplied emulator
+checkpoint must already be a Time Attack scene-12 state; `--route` deliberately
+does not mutate retail RAM or reinterpret a Grand Prix checkpoint. Use
+`--route grand-prix` (the historical default input path) for mirror captures.

@@ -348,6 +348,7 @@ int RagePortShouldExit(int frame_number) {
     for (index = 0; index < g_SmokeStateInputCount; index++) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
         int phaseMatches = !input->hasPhase ||
+            (input->scene == 4 && g_FrontendState == input->phase) ||
             (input->scene == 8 && g_MenuScreen == input->phase) ||
             (input->scene == 32 && g_PrologueStep == input->phase);
         if (!input->fired && g_SceneId == input->scene && phaseMatches &&
