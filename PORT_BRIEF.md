@@ -1079,6 +1079,13 @@ main pass from the mirror scissor. At timer 868, tpage `0x0005` / CLUT `0x7943`
 is `570` retail versus `573` native in the main pass, but `193` versus `261` in
 the mirror pass. Thus 68 of the 71 excess packets are specifically mirror-pass
 geometry, not a VBlank boundary or a general main-road/rasterization mismatch.
+Retail disassembly at `0x80028a9c..0x80028ad4` confirms the portable child
+backface expression including its zero boundaries: main accepts when the first
+`NCLIP > 0` or the second `< 0`; mirror negates the first result and accepts
+when the original first `< 0` or the second `> 0`. Therefore the 68-packet
+mirror excess is not evidence for reversing that condition. Compare the child
+`NCLIP` distribution near zero under the remaining three-unit camera
+translation before changing culling.
 
 For example:
 
