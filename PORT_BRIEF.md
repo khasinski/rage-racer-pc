@@ -1108,16 +1108,16 @@ proved that the apparently missing road geometry was submitted, but the host
 selected palette index zero, whose CLUT entry is opaque black (`0x8000`).
 
 At native resolution, PS1-compatible hardware renderers place integer polygon
-vertices at pixel centres and round interpolated texture coordinates to the
-nearest even integer. PsyZ previously placed vertices on modern pixel
-boundaries and tried to compensate in the fragment shader by subtracting only
-`abs(dU/dx)` from U and `abs(dV/dy)` from V. The SDL_GPU shader now applies a
-half-pixel vertex offset and `roundEven(rawUV)` instead. Across the synchronized
-timer-800..920 road series this reduces native-only clear pixels from an
-average 444.9 to 311.1 and the worst frame from 5713 to 5597. The Ruby
-emulator's inclusive floating-point scanline rasterizer does not yet implement
-the same edge convention, so edge-only black-pixel rankings remain a candidate
-finder rather than an acceptance oracle.
+vertices at pixel centres. Texture coordinates come from a fixed-point DDA and
+the sampled coordinate is its integer part: it must be truncated, not rounded
+to nearest. PsyZ previously used `roundEven(rawUV)`, which coherently selected
+an adjacent palette index across large triangles and frequently landed on
+index zero, producing black wedges. The SDL_GPU and GL shaders now use
+`floor(rawUV)`. On the exact timer-896 state this reduced road RMSE from
+0.070685 to 0.033125 and native-only black pixels from 29 to zero; timer-894
+road RMSE fell from 0.081101 to 0.019267. The game submitted identical packets
+and vertices in both runs, so this is a HAL rasterization correction and does
+not require a Rage Racer game-code backport.
 
 PsyZ must not infer texture flipping from projected screen coordinates. Its
 old `FixupFlipUV` compared XY and UV orientation and incremented every U or V
