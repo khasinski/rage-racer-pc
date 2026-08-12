@@ -1058,6 +1058,12 @@ ruby tools/rage_visual_run.rb \
 The end-to-end regression route reproduces timer 868 with equal animation and
 main/mirror visible-cell hashes, position/view distance 3, zero native-only
 clear pixels and ten isolated native-only black pixels.
+Use `--profile all` to reuse one expensive capture for `road`, `mirror-road`,
+`tacho`, and `hud`. Each profile gets its own comparison directory, while the
+top-level `summary.json` records maxima and the complete state delta of the
+frame producing each maximum. A large raw mirror/needle count is therefore
+always accompanied by translation, RPM, animation, and mask evidence needed to
+decide whether it is a renderer regression.
 
 Race captures include the X/Z positions of all four active rivals as well as
 the player state. New manifests also retain each rival's speed, progress, body
