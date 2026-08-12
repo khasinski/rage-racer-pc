@@ -2277,6 +2277,15 @@ slot 193 (`128 + 66 - 1`).  Therefore this case does not justify removing the
 mode-0 terrain bias.  Use address/owner correlation before changing an asset
 decoder in response to a stream-order symptom.
 
+`rage_gp0_compare.rb --resync-window N` complements the strict first-word
+failure by finding the nearest identical packet after a local divergence.  It
+classifies the gap as native-extra, PSX-extra, or divergence on both sides and
+reports both packet identities.  At word 5486 a window of 100 finds the retail
+FT4 eight native packets later; this proves a local OT interleave instead of an
+FT4-to-F4 conversion.  The emulator's optional `RAGE_GPU_OT_TRACE=1` records
+every DMA node including zero-length OT links, so the exact bucket boundary can
+then be inspected without changing emulated memory or registers.
+
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves
 13 matched frames.  The timer-280 tachometer packet is identical on retail and

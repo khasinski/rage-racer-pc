@@ -74,6 +74,24 @@ Dir.mktmpdir("rage-gp0-compare-") do |directory|
                       output.include?("word0=2c575757")
 
   File.write(psx, <<~LOG)
+    gp0-command frame=7 packet=0 code=28 length=1 words=28000001
+    gp0-command frame=7 packet=1 code=28 length=1 words=28000002
+    gp0-command frame=7 packet=2 code=28 length=1 words=28000003
+  LOG
+  File.write(native, <<~LOG)
+    gp0-packet frame=9 packet=0 code=28 length=1 words=28000001
+    gp0-packet frame=9 packet=1 code=28 length=1 words=280000ff
+    gp0-packet frame=9 packet=2 code=28 length=1 words=28000002
+    gp0-packet frame=9 packet=3 code=28 length=1 words=28000003
+  LOG
+  output, status = Open3.capture2e(RbConfig.ruby, tool, "--psx", psx,
+                                   "--native", native,
+                                   "--resync-window", "4")
+  raise "extra packet stream unexpectedly equal" if status.success?
+  raise output unless output.include?("resync: kind=native-extra") &&
+                      output.include?("psx_skip=0 native_skip=1")
+
+  File.write(psx, <<~LOG)
     gp0-command frame=7 code=e3 length=1 words=e3000000
     gp0-command frame=7 code=28 length=5 words=28000000,00100010,00200020,00300030,00400040
   LOG
@@ -86,4 +104,4 @@ Dir.mktmpdir("rage-gp0-compare-") do |directory|
   raise output unless status.success? && output.include?("gp0 streams equal")
 end
 
-puts "GP0 comparison ignores packet grouping and reports the first changed word"
+puts "GP0 comparison reports changed words and locally resynchronizes packets"

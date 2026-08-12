@@ -3,7 +3,7 @@
 
 require "optparse"
 
-options = { raw: false }
+options = { raw: false, resync_window: 0 }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_gp0_compare.rb --psx LOG --native LOG [options]"
   parser.on("--psx PATH", "Retail emulator GP0 trace") { |v| options[:psx] = v }
@@ -13,6 +13,10 @@ OptionParser.new do |parser|
   parser.on("--psx-frame N", Integer, "Compare only this retail frame") { |v| options[:psx_frame] = v }
   parser.on("--native-frame N", Integer, "Compare only this native frame") { |v| options[:native_frame] = v }
   parser.on("--raw", "Compare ignored/padding bits too") { options[:raw] = true }
+  parser.on("--resync-window N", Integer,
+            "Find the next equal packet within N packets on either side") do |value|
+    options[:resync_window] = value
+  end
 end.parse!
 abort "both --psx and --native are required" unless options[:psx] && options[:native]
 
@@ -177,4 +181,41 @@ describe.call("psx", psx_words, psx_packets, difference)
 describe.call("native", native_words, native_packets, difference)
 describe_payload_variants.call("psx", psx_packets, psx_words, difference)
 describe_payload_variants.call("native", native_packets, native_words, difference)
+
+if options[:resync_window] > 0 && difference < limit
+  _, psx_index, = psx_words[difference]
+  _, native_index, = native_words[difference]
+  packet_signature = lambda do |packets, index|
+    flatten.call([packets[index]]).map(&:first)
+  end
+  candidates = []
+  (0..options[:resync_window]).each do |psx_skip|
+    (0..options[:resync_window]).each do |native_skip|
+      next if psx_skip.zero? && native_skip.zero?
+      left = psx_index + psx_skip
+      right = native_index + native_skip
+      next if left >= psx_packets.length || right >= native_packets.length
+      next unless packet_signature.call(psx_packets, left) ==
+                  packet_signature.call(native_packets, right)
+      candidates << [psx_skip + native_skip, [psx_skip, native_skip].max,
+                     psx_skip, native_skip, left, right]
+    end
+  end
+  if candidates.empty?
+    puts "resync: no equal packet within window=#{options[:resync_window]}"
+  else
+    _, _, psx_skip, native_skip, left, right = candidates.min
+    kind = if psx_skip.zero?
+             "native-extra"
+           elsif native_skip.zero?
+             "psx-extra"
+           else
+             "both-diverged"
+           end
+    puts "resync: kind=#{kind} psx_skip=#{psx_skip} native_skip=#{native_skip} " \
+         "psx_packet=#{left} native_packet=#{right}"
+    puts "resync-psx: #{psx_packets[left].metadata}"
+    puts "resync-native: #{native_packets[right].metadata}"
+  end
+end
 exit 1
