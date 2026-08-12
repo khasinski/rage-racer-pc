@@ -1096,6 +1096,15 @@ object quads even when player, camera, rivals and timer all match. The option
 rejects such pairs instead of ranking a simulation divergence as a renderer
 error. Road, static HUD and mirror-road comparisons can remain useful without
 this gate, but their reports still expose `random_seed_equal`.
+Collision frames are the exception: require the RNG gate even for
+`mirror-road`. Player contact calls `StartCarBodyKick(2)`, which selects the
+sign of the body kick from `Random15() & 0x80`; the chase camera copies that
+body roll into `SCRATCH_VIEW_ANGLE_Z`, and `SetCameraRotMatrix` consequently
+changes the mirror matrix. In the synchronized timer-889 sample the player
+positions differ by only `(3,-2)`, but unequal inherited seeds produce roll
+`-9` versus `-10` and mirror-matrix entries `-56` versus `-62`. That is
+simulation/RNG divergence, not evidence of a mirror viewport or shader defect.
+Use a pre-contact frame with matching roll, or require equal RNG state.
 To find the first cause of an RNG divergence, enable
 `RAGE_PORT_RANDOM_TRACE=1` on native and `RAGE_EMU_RANDOM_TRACE=1` on the Ruby
 runner. Both log the call index, frame, resulting seed/value and caller
