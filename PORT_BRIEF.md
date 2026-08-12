@@ -980,6 +980,23 @@ creates a false 240-line displacement. Coverage rejects degenerate triangles.
 Configuration is parsed once, so disabled or frame-filtered tracing stays cheap
 enough for repeated smoke runs.
 
+Once a batch bundle identifies a credible pixel, `rage_gp0_bundle.rb` can now
+replay both sides with every relevant layer of evidence in one command:
+
+```sh
+ruby tools/rage_gp0_bundle.rb --bundle /tmp/compare/frame-pair \
+  --pixel 120,141 --texel --ot --resync-window 200
+```
+
+The first pass discovers the exact replay frame on both clocks and compares
+the GP0 stream; the second pass applies those discovered frame numbers to
+packet coverage and actual PSX texel/CLUT tracing.  `--ot` retains DMA-node
+ownership and `--resync-window` distinguishes a local insertion from a
+divergent suffix.  Outputs are self-contained as `gp0-{psx,native}.log`,
+`pixel-{psx,native}.log`, and `gp0-diff.txt` beside the image bundle.  Do not
+guess the trace frame from the original capture filename after loading a
+savestate: replay frame numbering is relative to the checkpoint.
+
 Without `--pixel`, the comparison also reports separated maximum-error
 hotspots with the PSX/native RGB values and writes marked copies of both
 frames.  Use `--region X,Y,W,H` to keep animated HUD or scenery out of a road,

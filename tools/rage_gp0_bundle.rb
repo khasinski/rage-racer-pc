@@ -9,13 +9,26 @@ require "pathname"
 require "tmpdir"
 require "csv"
 
-options = { keep_temp: false }
+options = { keep_temp: false, ot_trace: false, texel_trace: false,
+            resync_window: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_gp0_bundle.rb --bundle DIR [options]"
   parser.on("--bundle DIR", "visual comparison frame bundle") { |v| options[:bundle] = v }
   parser.on("--keep-temp", "retain replay capture directories") { options[:keep_temp] = true }
+  parser.on("--pixel X,Y", "rerun the selected frame with packet coverage tracing") do |value|
+    abort "invalid --pixel #{value.inspect}" unless value.match?(/\A\d+,\d+\z/)
+    options[:pixel] = value
+  end
+  parser.on("--texel", "include actual PSX raster texel/CLUT tracing (requires --pixel)") do
+    options[:texel_trace] = true
+  end
+  parser.on("--ot", "include ordering-table node tracing") { options[:ot_trace] = true }
+  parser.on("--resync-window N", Integer, "find the next matching packet after a divergence") do |value|
+    options[:resync_window] = value
+  end
 end.parse!
 abort "--bundle is required" unless options[:bundle]
+abort "--texel requires --pixel" if options[:texel_trace] && !options[:pixel]
 
 bundle = Pathname(options[:bundle]).expand_path
 report_path = bundle / "report.json"
@@ -72,6 +85,7 @@ prepare = lambda do |side, frame|
     "RAGE_GPU_GP0_TRACE_SCENE" => native_scene.to_s,
     "RAGE_GPU_GP0_TRACE_TIMER" => native_timer.to_s
   )
+  env["RAGE_GPU_OT_TRACE"] = "1" if options[:ot_trace]
   argv = metadata.fetch("argv").dup
   if side == "psx"
     output_index = argv.index("bin/rage-frame-capture") + 3
@@ -88,18 +102,28 @@ prepare = lambda do |side, frame|
   [env, argv, metadata.fetch("cwd"), bundle / "gp0-#{side}.log"]
 end
 
-runs = { "psx" => psx_frame, "native" => native_frame }.map do |side, frame|
-  env, argv, cwd, log_path = prepare.call(side, frame)
-  log = File.open(log_path, "w")
-  pid = Process.spawn(env, *argv, chdir: cwd, out: log, err: [:child, :out])
-  [side, pid, log]
+execute_replays = lambda do |suffix, frame_filters = nil|
+  runs = { "psx" => psx_frame, "native" => native_frame }.map do |side, frame|
+    env, argv, cwd, default_log_path = prepare.call(side, frame)
+    log_path = suffix.empty? ? default_log_path : bundle / "#{suffix}-#{side}.log"
+    if frame_filters
+      env["RAGE_GPU_TRACE_PIXEL"] = options.fetch(:pixel)
+      env["RAGE_GPU_TRACE_FRAME"] = frame_filters.fetch(side).to_s
+      env["RAGE_GPU_TRACE_TEXEL"] = "1" if options[:texel_trace]
+    end
+    log = File.open(log_path, "w")
+    pid = Process.spawn(env, *argv, chdir: cwd, out: log, err: [:child, :out])
+    [side, pid, log]
+  end
+  failures = runs.map do |side, pid, log|
+    _, status = Process.wait2(pid)
+    log.close
+    "#{side} replay failed (#{log.path})" unless status.success?
+  end.compact
+  abort failures.join("\n") unless failures.empty?
 end
-failures = runs.map do |side, pid, log|
-  _, status = Process.wait2(pid)
-  log.close
-  "#{side} replay failed (#{log.path})" unless status.success?
-end.compact
-abort failures.join("\n") unless failures.empty?
+
+execute_replays.call("")
 
 native_frames = File.foreach(bundle / "gp0-native.log").map do |line|
   next unless line.start_with?("gp0-packet ") &&
@@ -153,9 +177,14 @@ compare = [RbConfig.ruby, (root / "tools/rage_gp0_compare.rb").to_s,
            "--psx", (bundle / "gp0-psx.log").to_s,
            "--native", (bundle / "gp0-native.log").to_s,
            "--psx-frame", psx_frame.to_s, "--native-frame", native_frame.to_s]
+compare.concat(["--resync-window", options[:resync_window].to_s]) if options[:resync_window]
 output, status = Open3.capture2e(*compare, chdir: root.to_s)
 File.write(bundle / "gp0-diff.txt", output)
 puts output
+if options[:pixel]
+  execute_replays.call("pixel", { "psx" => psx_frame, "native" => native_frame })
+  puts "Pixel trace written to #{bundle / 'pixel-psx.log'} and #{bundle / 'pixel-native.log'}"
+end
 puts "GP0 logs written to #{bundle}"
 FileUtils.remove_entry(replay_root) unless options[:keep_temp]
 exit(status.success? ? 0 : 1)
