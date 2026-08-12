@@ -142,13 +142,12 @@ end
 
 def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region,
                              radius)
-  return { count: 0, samples: [] } unless region
+  return { count: 0, raw_count: 0, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "clear region is outside the image" if left.negative? || top.negative? ||
     region_width <= 0 || region_height <= 0 || left + region_width > width ||
     top + region_height > height
-  samples = []
-  count = 0
+  matches = {}
   (top...(top + region_height)).each do |y|
     (left...(left + region_width)).each do |x|
       index = y * width + x
@@ -159,11 +158,23 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region,
       next if reference_near?(psx_pixels, width, height, x, y, radius) do |sample|
         sample[0] < 8 && sample[1] < 8 && sample[2] > 35
       end
-      count += 1
-      samples << { x: x, y: y, psx_rgb: psx, native_rgb: native } if samples.length < 32
+      matches[[x, y]] = { x: x, y: y, psx_rgb: psx, native_rgb: native }
     end
   end
-  { count: count, samples: samples }
+  # A sub-pixel camera or front-buffer phase shift exposes the clear colour as
+  # a one-pixel contour along an otherwise present polygon. Missing geometry
+  # has an area: retain pixels that participate in both a horizontal and a
+  # vertical run, which rejects diagonal/edge contours without eroding the
+  # interior of a real triangular hole.
+  interior = matches.values.select do |sample|
+    x = sample[:x]
+    y = sample[:y]
+    horizontal = matches.key?([x - 1, y]) || matches.key?([x + 1, y])
+    vertical = matches.key?([x, y - 1]) || matches.key?([x, y + 1])
+    horizontal && vertical
+  end
+  { count: interior.length, raw_count: matches.length,
+    samples: interior.first(32) }
 end
 
 def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,

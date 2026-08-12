@@ -12,6 +12,10 @@ def write_ppm(path, red)
   File.binwrite(path, "P6\n1 1\n255\n" + [red, 0, 0].pack("C3"))
 end
 
+def write_pixels(path, width, height, pixels)
+  File.binwrite(path, "P6\n#{width} #{height}\n255\n" + pixels.flatten.pack("C*"))
+end
+
 Dir.mktmpdir("rage-visual-all-phases-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
@@ -29,6 +33,37 @@ Dir.mktmpdir("rage-visual-all-phases-") do |root|
   abort "all-phase timer pairing did not select the matching display phase" unless
     frame.fetch("psx_frame") == "timer-00100-f00010-s12.ppm" &&
     frame.fetch("native_frame") == "timer-00100-f00901-s12.ppm"
+end
+
+Dir.mktmpdir("rage-clear-area-") do |root|
+  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  psx = File.join(root, "psx.ppm")
+  native = File.join(root, "native.ppm")
+  output = File.join(root, "output")
+  width = height = 8
+  road = [48, 48, 48]
+  clear = [0, 0, 53]
+  psx_pixels = Array.new(width * height) { road }
+  native_pixels = Array.new(width * height) { road.dup }
+  (1..6).each { |value| native_pixels[value * width + value] = clear }
+  write_pixels(psx, width, height, psx_pixels)
+  write_pixels(native, width, height, native_pixels)
+  command = [RbConfig.ruby, compare, "--psx", psx, "--native", native,
+             "--output", output, "--clear-region", "0,0,8,8",
+             "--artifact-radius", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  clear_report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_clear")
+  abort "one-pixel clear contour was ranked as missing geometry" unless
+    clear_report.fetch("raw_count") == 6 && clear_report.fetch("count") == 0
+
+  (2..4).each { |y| (2..4).each { |x| native_pixels[y * width + x] = clear } }
+  write_pixels(native, width, height, native_pixels)
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  clear_report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_clear")
+  abort "clear-area filter removed the interior of a real hole" unless
+    clear_report.fetch("count") > 0
 end
 
 header = %w[

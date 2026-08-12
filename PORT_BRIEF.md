@@ -1455,6 +1455,20 @@ one-pixel camera difference shifts their high-contrast pattern. Diagnose
 uncovered framebuffer separately with `native_only_clear`; otherwise the
 ranking is dominated by false positives rather than missing geometry.
 
+`native_only_clear` reports both `raw_count` and an area-filtered `count`.
+The filtered count requires a candidate pixel to belong to horizontal and
+vertical runs. A one-pixel diagonal contour is the normal result of a small
+camera/front-buffer displacement and must not rank as a missing triangle; a
+real triangular hole retains a two-dimensional interior and survives this
+filter. Use the raw count only when deliberately examining raster-edge rules.
+
+The synchronized pre-contact timer-882 candidate illustrates the required
+packet-level check. Native showed a 5x3 clear-colour patch at `(10..14,130..132)`,
+but both renderers submitted a GT4 covering pixel `(12,131)`. Retail actually
+wrote palette index `0xf`, colour `0x8441`, from windowed UV `(75,104)`; native's
+corresponding packet reached `(71,104)`. Thus this candidate was texture/projection
+phase drift, not culling, draw-distance loss, or an absent terrain packet.
+
 The capture manifest must also include `g_AnimTimer`. Terrain mode 3 scrolls
 its packed UV/CLUT words by `g_AnimTimer & 0x7f`; the simulation-state match
 therefore requires equal phase modulo 128 and limits camera distance, speed,
