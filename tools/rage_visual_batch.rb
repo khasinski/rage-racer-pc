@@ -139,7 +139,7 @@ if options[:match] == "position"
       native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
     end
     abort "no native state candidate for #{psx[:filename]}" if candidates.empty?
-    native = candidates.min_by do |candidate|
+    native_state = candidates.min_by do |candidate|
       dx = candidate[:x] - psx[:x]
       dz = candidate[:z] - psx[:z]
       dvx = candidate[:view_x] - psx[:view_x]
@@ -192,39 +192,43 @@ if options[:match] == "position"
         seed_penalty + phase_penalty +
         (candidate[:timer] - psx[:timer]).abs
     end
+    native = native_state
     if options[:visual_refine] > 0
       nearby = candidates.select do |candidate|
-        (candidate[:timer] - psx[:timer]).abs <= options[:visual_refine] &&
-          (!candidate.key?(:anim_timer) || !psx.key?(:anim_timer) ||
-           (candidate[:anim_timer] - psx[:anim_timer]) % 128 == 0)
+        (candidate[:timer] - native_state[:timer]).abs <= options[:visual_refine]
       end
       refined = nearby.min_by do |candidate|
         image_rmse(psx[:path], candidate[:path], options[:region])
       end
       native = refined unless refined.nil?
     end
-    dx = native[:x] - psx[:x]
-    dz = native[:z] - psx[:z]
-    dvx = native[:view_x] - psx[:view_x]
-    dvy = native[:view_y] - psx[:view_y]
-    dvz = native[:view_z] - psx[:view_z]
+    # The manifest describes the state sampled at VBlank, but its screenshot
+    # can still show the preceding front buffer. Keep state validation tied to
+    # the simulation match while visual refinement selects that displayed
+    # image independently (including its preceding animation phase).
+    dx = native_state[:x] - psx[:x]
+    dz = native_state[:z] - psx[:z]
+    dvx = native_state[:view_x] - psx[:view_x]
+    dvy = native_state[:view_y] - psx[:view_y]
+    dvz = native_state[:view_z] - psx[:view_z]
     position_distance = Math.hypot(dx, dz)
     view_distance = Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz)
-    speed_delta = native[:speed] - psx[:speed]
+    speed_delta = native_state[:speed] - psx[:speed]
     angle_delta = %i[body_yaw body_pitch body_roll].map do |key|
-      next unless native.key?(key) && psx.key?(key)
-      ((native[key] - psx[key] + 2048) % 4096 - 2048).abs
+      next unless native_state.key?(key) && psx.key?(key)
+      ((native_state[key] - psx[key] + 2048) % 4096 - 2048).abs
     end.compact.max || 0
-    lateral_delta = if native.key?(:track_lateral) && psx.key?(:track_lateral)
-                      (native[:track_lateral] - psx[:track_lateral]).abs
+    lateral_delta = if native_state.key?(:track_lateral) && psx.key?(:track_lateral)
+                      (native_state[:track_lateral] - psx[:track_lateral]).abs
                     else
                       0
                     end
     rival_distance = (0...4).sum do |index|
       x_key = :"rival#{index}_x"
       z_key = :"rival#{index}_z"
-      next 0 unless native.key?(x_key) && psx.key?(x_key)
-      Math.hypot(native[x_key] - psx[x_key], native[z_key] - psx[z_key])
+      next 0 unless native_state.key?(x_key) && psx.key?(x_key)
+      Math.hypot(native_state[x_key] - psx[x_key],
+                 native_state[z_key] - psx[z_key])
     end
     next if position_distance > options[:max_position_distance] ||
             view_distance > options[:max_view_distance] ||
@@ -232,8 +236,8 @@ if options[:match] == "position"
             angle_delta > options[:max_angle_delta] ||
             lateral_delta > options[:max_lateral_delta] ||
             rival_distance > options[:max_rival_distance]
-    next if native.key?(:anim_timer) && psx.key?(:anim_timer) &&
-            (native[:anim_timer] - psx[:anim_timer]) % 128 != 0
+    next if native_state.key?(:anim_timer) && psx.key?(:anim_timer) &&
+            (native_state[:anim_timer] - psx[:anim_timer]) % 128 != 0
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
@@ -242,18 +246,19 @@ if options[:match] == "position"
         view_distance: view_distance,
         speed: speed_delta,
         angle: angle_delta,
-        timer: native[:timer] - psx[:timer],
-        body_pitch: native.key?(:body_pitch) && psx.key?(:body_pitch) ?
-          native[:body_pitch] - psx[:body_pitch] : nil,
-        body_roll: native.key?(:body_roll) && psx.key?(:body_roll) ?
-          native[:body_roll] - psx[:body_roll] : nil,
-        track_lateral: native.key?(:track_lateral) && psx.key?(:track_lateral) ?
-          native[:track_lateral] - psx[:track_lateral] : nil,
+        timer: native_state[:timer] - psx[:timer],
+        display_timer: native[:timer] - psx[:timer],
+        body_pitch: native_state.key?(:body_pitch) && psx.key?(:body_pitch) ?
+          native_state[:body_pitch] - psx[:body_pitch] : nil,
+        body_roll: native_state.key?(:body_roll) && psx.key?(:body_roll) ?
+          native_state[:body_roll] - psx[:body_roll] : nil,
+        track_lateral: native_state.key?(:track_lateral) && psx.key?(:track_lateral) ?
+          native_state[:track_lateral] - psx[:track_lateral] : nil,
         rival_distance: rival_distance,
-        random_seed_equal: native.key?(:random_seed) && psx.key?(:random_seed) ?
-          native[:random_seed] == psx[:random_seed] : nil,
-        anim_timer: native.key?(:anim_timer) && psx.key?(:anim_timer) ?
-          native[:anim_timer] - psx[:anim_timer] : nil
+        random_seed_equal: native_state.key?(:random_seed) && psx.key?(:random_seed) ?
+          native_state[:random_seed] == psx[:random_seed] : nil,
+        anim_timer: native_state.key?(:anim_timer) && psx.key?(:anim_timer) ?
+          native_state[:anim_timer] - psx[:anim_timer] : nil
       }
     }
   end.compact
@@ -344,10 +349,12 @@ ranked = if options[:rank] == "clear"
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
   delta = row[:state_delta]
   alignment = delta ? format(" distance=%.1f view_distance=%.1f " \
-                             "rival_distance=%.1f speed_delta=%d timer_delta=%d",
+                             "rival_distance=%.1f speed_delta=%d " \
+                             "timer_delta=%d display_timer_delta=%d",
                              delta[:distance], delta[:view_distance],
                              delta[:rival_distance],
-                             delta[:speed], delta[:timer]) : ""
+                             delta[:speed], delta[:timer],
+                             delta[:display_timer]) : ""
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""
   black = options[:black_region] ?

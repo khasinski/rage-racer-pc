@@ -1343,17 +1343,23 @@ uncovered framebuffer separately with `native_only_clear`; otherwise the
 ranking is dominated by false positives rather than missing geometry.
 
 The capture manifest must also include `g_AnimTimer`. Terrain mode 3 scrolls
-its packed UV/CLUT words by `g_AnimTimer & 0x7f`; matching the car and camera
-while allowing a neighbouring animation phase creates thousands of convincing
-but false black-texture candidates. `rage_visual_batch.rb` now requires equal
-phase modulo 128, limits camera distance, speed, body angles and lateral offset,
-and prevents `--visual-refine` from escaping to a different phase. For the
-timer-800 race checkpoint used here, delaying the native continuous CROSS input
-from smoke frame 1470 to 1471 gives an exact timer-903 match: player position,
-camera position, speed, progress, lateral offset and animation phase are all
-identical. Starting LEFT at smoke frame 2164 similarly aligns the first turn.
-Use those offsets for cached comparisons; do not weaken the state tolerances to
-manufacture more pairs.
+its packed UV/CLUT words by `g_AnimTimer & 0x7f`; the simulation-state match
+therefore requires equal phase modulo 128 and limits camera distance, speed,
+body angles and lateral offset. The image selected by `--visual-refine` is a
+separate concern: a VBlank manifest samples current globals while its front
+buffer may still contain a neighbouring render and animation phase. Refinement
+may select that adjacent displayed image, but reports both `timer_delta` for
+the validated state and `display_timer_delta` for the chosen framebuffer. At
+timer 930, wrongly forcing the image phase to equal the sampled state paired
+PSX/native timer 930 and reported 2429 native-only black pixels; the actual
+display match is native timer 929, reducing that false ranking to 246.
+
+For the timer-800 race checkpoint used here, delaying the native continuous
+CROSS input from smoke frame 1470 to 1471 gives an exact timer-903 state match:
+player position, camera position, speed, progress, lateral offset and animation
+phase are all identical. Starting LEFT at smoke frame 2164 similarly aligns
+the first turn. Use those offsets for cached comparisons; do not weaken the
+state tolerances to manufacture more pairs.
 
 ### FMV cadence
 

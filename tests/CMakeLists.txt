@@ -19,6 +19,13 @@ endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
 
+add_test(
+    NAME visual_batch_refinement
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_visual_batch_refinement.rb
+        ${CMAKE_SOURCE_DIR}/tools/rage_visual_batch.rb
+)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame
