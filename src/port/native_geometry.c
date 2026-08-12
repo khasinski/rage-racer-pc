@@ -1337,6 +1337,23 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 } else {
                     int sy, sx;
                     uint32_t lineCommand = RageReadU32(stream + 24);
+                    if (g_RageTerrainDecisionTraceEnabled &&
+                        (g_RageTerrainDecisionTraceTimer < 0 ||
+                         g_RageTerrainDecisionTraceTimer == g_SceneTimer)) {
+                        fprintf(stderr,
+                                "terrain-subdivision-lines timer=%d cell=%d face=%d "
+                                "sxy=%d,%d/%d,%d/%d,%d/%d,%d flag=%08x "
+                                "command=%08x emit=%d depth=%d\n",
+                                g_SceneTimer, cellIndex, faceIndex,
+                                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
+                                (uint32_t)g_RageProjectionFlag, lineCommand,
+                                (((uint32_t)g_RageProjectionFlag | lineCommand) &
+                                 0x80000000u) == 0,
+                                depth);
+                    }
                     if ((((uint32_t)g_RageProjectionFlag | lineCommand) &
                          0x80000000u) == 0) {
                         uint8_t *next = RageEmitTerrainSubdivisionLines(

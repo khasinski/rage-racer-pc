@@ -2244,6 +2244,15 @@ four corresponding `RotTransPers` depths.  Filtering both with timer 270 turns
 an OT-ordering symptom into a record-for-record fixed-point comparison without
 interpreting screenshots manually.
 
+Variable-length GP0 polylines need the same treatment in the packet oracle.
+The emulator originally executed `0x48` packets through its terminator-driven
+polyline path without calling the ordinary command logger.  Native traces then
+appeared to contain extra subdivision guides even though timer 270 has the same
+12 line pairs on retail and native.  The emulator trace now records the full
+packet including `0x55555555`/`0x50005000`; a regression test covers that
+special path.  Do not diagnose a missing or extra primitive from a command
+stream until all variable-length GP0 families are represented in the trace.
+
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves
 13 matched frames.  The timer-280 tachometer packet is identical on retail and
