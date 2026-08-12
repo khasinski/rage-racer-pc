@@ -236,6 +236,25 @@ def manifest_rows(directory)
   end.compact
 end
 
+def ppm_capture_stats(path, threshold = 8)
+  data = File.binread(path)
+  header_end = data.index("\n255\n")
+  return { pixels: 0, nonblack: 0 } unless header_end
+  pixels = data.byteslice((header_end + 5)..)
+  { pixels: pixels.bytesize / 3,
+    nonblack: pixels.bytes.each_slice(3).count do |rgb|
+      rgb.length == 3 && rgb.max > threshold
+    end }
+end
+
+def usable_capture?(row)
+  # A transient emulator readback can yield a valid 320x240 PPM containing an
+  # entirely black framebuffer.  It is not a visual reference: accepting it
+  # makes every HUD/road pixel appear to be a native-only artifact.
+  stats = ppm_capture_stats(row[:path])
+  stats[:pixels] != 320 * 240 || stats[:nonblack].positive?
+end
+
 def image_rmse(psx, native, region)
   command = ["magick", "compare", "-metric", "RMSE"]
   if region
@@ -389,9 +408,12 @@ if options[:match] == "position"
   end
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
+  blank_psx_states, psx_states = psx_states.partition { |state| !usable_capture?(state) }
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
   native_by_scene_lap = native_states.group_by { |state| [state[:scene], state[:lap]] }
-  rejected = []
+  rejected = blank_psx_states.map do |state|
+    { psx: state[:filename], native: nil, reasons: ["blank_reference"] }
+  end
   pairs = psx_states.map do |psx|
     scene_candidates = native_by_scene_lap.fetch([psx[:scene], psx[:lap]], [])
     if scene_candidates.empty?

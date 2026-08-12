@@ -75,6 +75,48 @@ Dir.mktmpdir("rage-visual-all-phases-") do |root|
     frame.fetch("native_frame") == "timer-00100-f00901-s12.ppm"
 end
 
+Dir.mktmpdir("rage-visual-blank-reference-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  blank_name = "timer-00100-f00001-s12.ppm"
+  valid_name = "timer-00101-f00002-s12.ppm"
+  native_name = "timer-00101-f00003-s12.ppm"
+  black = Array.new(320 * 240) { [0, 0, 0] }
+  visible = Array.new(320 * 240) { [32, 32, 32] }
+  write_pixels(File.join(psx, blank_name), 320, 240, black)
+  write_pixels(File.join(psx, valid_name), 320, 240, visible)
+  write_pixels(File.join(native, native_name), 320, 240, visible)
+  rows = lambda do |name, timer|
+    state = [0, 12, timer, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+             10, 20, 30, 0, 0, 0, 0, 0, 7]
+    ([name] + state + [timer, "deadbeef"]).join(",")
+  end
+  blank_header = %w[
+    filename frame scene timer x z speed progress lap body_yaw body_pitch
+    body_roll track_lateral model_yaw mirror_y view_x view_y view_z
+    view_angle_x view_angle_y view_angle_z environment_mode4
+    scratch_env_mode4 random_seed anim_timer rival0_raw
+  ].join(",")
+  File.write(File.join(psx, "capture-manifest.csv"),
+             blank_header + "\n" + rows.call(blank_name, 100) + "\n" +
+             rows.call(valid_name, 101) + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             blank_header + "\n" + rows.call(native_name, 101) + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--skip-unmatched"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  summary = JSON.parse(File.read(File.join(output, "summary.json")))
+  abort "blank emulator framebuffer entered visual ranking" unless
+    summary.fetch("matched_frames") == 1 &&
+    summary.fetch("rejections").any? do |rejection|
+      rejection.fetch("psx") == blank_name &&
+        rejection.fetch("reasons").include?("blank_reference")
+    end
+end
+
 Dir.mktmpdir("rage-clear-area-") do |root|
   compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")

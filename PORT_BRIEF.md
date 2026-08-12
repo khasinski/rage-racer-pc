@@ -1921,3 +1921,20 @@ colour remains the stronger missing-coverage signal.  Run summaries therefore
 retain maxima and frame identities for both clear and black connected
 components so automated scans can prioritize clear coverage failures and use
 black results only for packet-level follow-up.
+
+Reject fully black 320x240 emulator readbacks before state pairing.  The long
+timer-1600..2400 capture contained transient blank reference frames at timers
+2070 and 2280; accepting them produced impossible tachometer IoU zero and the
+two worst mirror RMSE results even though neither was a rendered retail frame.
+`rage_visual_batch.rb` records these rows as `blank_reference`, so every visual
+profile shares the same guard instead of rediscovering the capture failure.
+
+The red-pixel tachometer mask is a discovery metric, not a geometry oracle: the
+needle can connect to red dial markings and digits.  At synchronized timer
+1900 both sides record 6208 RPM.  Retail packet trace and native
+`RAGE_PORT_TACHO_TRACE` independently produce the identical untextured
+`POLY_F4`, colour `c0,18,00`, with vertices
+`257,194 / 290,179 / 259,198 / 291,181`.  Any residual silhouette difference
+for that state is a PsyZ polygon raster-edge question, not missing game state
+or a malformed tachometer quad.  Prefer exact packet evidence when the image
+mask overlaps the surrounding dial.
