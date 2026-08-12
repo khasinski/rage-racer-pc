@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "game/player_car_internal.h"
+#include "game/menu.h"
 #include "game/race_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
@@ -255,6 +256,7 @@ int RagePortShouldExit(int frame_number) {
     for (index = 0; index < g_SmokeStateInputCount; index++) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
         int phaseMatches = !input->hasPhase ||
+            (input->scene == 8 && g_MenuScreen == input->phase) ||
             (input->scene == 32 && g_PrologueStep == input->phase);
         if (!input->fired && g_SceneId == input->scene && phaseMatches &&
             g_SceneTimer <= input->timer) {

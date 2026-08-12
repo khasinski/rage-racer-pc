@@ -293,13 +293,27 @@ if options[:match] == "position"
   end.compact
   abort "no state-aligned frame pairs within the position limit" if pairs.empty?
 else
-  psx_frames = psx_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
-  native_frames = native_dir.glob("timer-*-s*.ppm").to_h { |path| [path.basename.to_s, path] }
-  names = (psx_frames.keys & native_frames.keys).sort
-  abort "no matching timer-*-s*.ppm captures" if names.empty?
-  pairs = names.map do |name|
-    { psx: psx_frames.fetch(name), native: native_frames.fetch(name),
-      label: name.delete_suffix(".ppm"), state_delta: nil }
+  timer_key = lambda do |path|
+    match = path.basename.to_s.match(/\Atimer-(\d+)(?:-f\d+)?-s(\d+)\.ppm\z/)
+    match && [Integer(match[1], 10), Integer(match[2], 10)]
+  end
+  collect = lambda do |directory|
+    directory.glob("timer-*.ppm").each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |path, groups|
+      key = timer_key.call(path)
+      groups[key] << path if key
+    end
+  end
+  psx_frames = collect.call(psx_dir)
+  native_frames = collect.call(native_dir)
+  keys = (psx_frames.keys & native_frames.keys).sort
+  abort "no matching timer[-fFRAME]-sSCENE captures" if keys.empty?
+  pairs = keys.map do |key|
+    psx, native = psx_frames.fetch(key).product(native_frames.fetch(key)).min_by do |psx_candidate, native_candidate|
+      image_rmse(psx_candidate, native_candidate, options[:region])
+    end
+    timer, scene = key
+    { psx: psx, native: native,
+      label: format("timer-%05d-s%02d", timer, scene), state_delta: nil }
   end
 end
 

@@ -12,6 +12,25 @@ def write_ppm(path, red)
   File.binwrite(path, "P6\n1 1\n255\n" + [red, 0, 0].pack("C3"))
 end
 
+Dir.mktmpdir("rage-visual-all-phases-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  write_ppm(File.join(psx, "timer-00100-f00010-s12.ppm"), 16)
+  write_ppm(File.join(psx, "timer-00100-f00011-s12.ppm"), 80)
+  write_ppm(File.join(native, "timer-00100-f00900-s12.ppm"), 240)
+  write_ppm(File.join(native, "timer-00100-f00901-s12.ppm"), 16)
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "timer"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  abort "all-phase timer pairing did not select the matching display phase" unless
+    frame.fetch("psx_frame") == "timer-00100-f00010-s12.ppm" &&
+    frame.fetch("native_frame") == "timer-00100-f00901-s12.ppm"
+end
+
 header = %w[
   filename frame scene timer x z speed progress lap body_yaw body_pitch
   body_roll track_lateral model_yaw mirror_y view_x view_y view_z
@@ -77,4 +96,4 @@ Dir.mktmpdir("rage-visual-seed-gate-") do |root|
   )
 end
 
-puts "visual refinement separates sampled state from the displayed buffer; RNG gate rejects divergent states"
+puts "visual refinement separates sampled state from the displayed buffer; all-phase timer pairing and RNG gate work"

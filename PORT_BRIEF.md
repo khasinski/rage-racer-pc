@@ -981,7 +981,8 @@ once when that timer is reached or crossed. This accommodates an emulator
 callback that can cross a game tick between observations without allowing a
 new scene ID paired briefly with the previous scene's larger timer to fire. The
 optional `SCENE@TIMER@PHASE:BUTTON` form also gates asynchronous substates;
-currently phase names `g_PrologueStep` for scene 32, so `32@169@3:CROSS`
+phase names `g_MenuScreen` for scene 8 and `g_PrologueStep` for scene 32, so
+`8@300@4:CROSS` waits for menu screen 4, while `32@169@3:CROSS`
 cannot fire while the same scene and timer still belong to its CD-loading
 step. This distinction is required for repeatable native/emulator routes.
 The
@@ -1060,6 +1061,10 @@ for collision and mirror-car diagnosis: at timers 854..857, comparing only the
 first PSX occurrence reports about 372 aggregate rival-position units, while
 the updated occurrence of the same timer reduces it to about 149. Neither path
 sets a collision flag; the larger jump is capture phase, not game physics.
+In `--match timer` mode, `rage_visual_batch.rb` groups these names by scene and
+game timer, then selects the lowest-RMSE PSX/native VBlank combination inside
+the requested comparison region. Relative host frame numbers intentionally do
+not need to match.
 
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
