@@ -1053,6 +1053,10 @@ images are not visual acceptance frames. `--alignment-only` performs the same
 captures and state gates but skips ImageMagick, heatmaps and per-frame bundles;
 on a cached sequence the manifest scan takes about 0.06 seconds. Use it to find
 strictly aligned candidates in long routes before generating detailed bundles.
+The runner uses `--visual-refine 3` for presented front buffers because the
+VBlank manifest state can describe the newly submitted frame while the display
+page still contains the preceding timer. Draw-page captures use refinement 0
+so packet traces remain tied to their exact submission phase.
 Zero eligible pairs are a successful discovery result: `summary.json` still
 contains every rejected row and gate reason, while normal image-comparison mode
 continues to fail when it has nothing valid to compare. A 701-phase PSX versus

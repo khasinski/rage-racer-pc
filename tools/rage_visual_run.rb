@@ -124,7 +124,7 @@ batch_commands = profiles.to_h do |profile|
   command = [RbConfig.ruby, (root / "tools/rage_visual_batch.rb").to_s,
              "--psx-dir", psx_dir.to_s, "--native-dir", native_dir.to_s,
              "--output", compare_dirs.fetch(profile).to_s, "--preset", profile,
-             "--match", "position", "--visual-refine", "0",
+             "--match", "position", "--visual-refine", options[:draw_page] ? "0" : "3",
              "--jobs", options[:jobs].to_s, *options[:match_args]]
   command << "--alignment-only" if options[:alignment_only]
   command.concat(["--top", options[:top].to_s]) if options[:top]

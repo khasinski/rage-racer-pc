@@ -27,6 +27,8 @@ Dir.mktmpdir("rage-visual-run-") do |output|
     metadata.dig("native", "env", "RAGE_PORT_STATE_INPUT_SCRIPT") == "12@700+200:CROSS"
   compare = metadata.dig("comparisons", "mirror-road", "argv")
   abort "diagnostic preset is missing" unless compare.each_cons(2).include?(["--preset", "mirror-road"])
+  abort "front-buffer comparison did not refine presentation phase" unless
+    compare.each_cons(2).include?(["--visual-refine", "3"])
   abort "repeated matcher arguments were not retained" unless
     compare.each_cons(2).include?(["--max-position-distance", "8"])
 end
@@ -41,6 +43,9 @@ Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
     metadata.fetch("draw_page") &&
     metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DRAW_PAGE") == "1" &&
     metadata.dig("native", "env", "RAGE_PORT_CAPTURE_DRAW_PAGE") == "1"
+  compare = metadata.dig("comparisons", "road", "argv")
+  abort "draw-page comparison must retain the exact packet phase" unless
+    compare.each_cons(2).include?(["--visual-refine", "0"])
 end
 
 
