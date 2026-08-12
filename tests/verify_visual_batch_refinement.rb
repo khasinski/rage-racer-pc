@@ -36,7 +36,8 @@ Dir.mktmpdir("rage-black-area-") do |root|
   abort stdout + stderr unless status.success?
   report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_black")
   abort "one-pixel black contour was ranked as missing geometry" unless
-    report.fetch("raw_count") == 6 && report.fetch("count") == 0
+    report.fetch("raw_count") == 6 && report.fetch("count") == 0 &&
+    report.fetch("largest_component") == 0
 
   (2..4).each { |y| (2..4).each { |x| native_pixels[y * width + x] = black } }
   write_pixels(native, width, height, native_pixels)
@@ -44,7 +45,8 @@ Dir.mktmpdir("rage-black-area-") do |root|
   abort stdout + stderr unless status.success?
   report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_black")
   abort "black-area filter removed the interior of a real hole" unless
-    report.fetch("count") > 0
+    report.fetch("count") > 0 && report.fetch("largest_component") == 9 &&
+    report.fetch("largest_component_bounds") == [2, 2, 3, 3]
 end
 
 def write_needle_frame(path, needle_x, distractor_red)
@@ -93,7 +95,8 @@ Dir.mktmpdir("rage-clear-area-") do |root|
   abort stdout + stderr unless status.success?
   clear_report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_clear")
   abort "one-pixel clear contour was ranked as missing geometry" unless
-    clear_report.fetch("raw_count") == 6 && clear_report.fetch("count") == 0
+    clear_report.fetch("raw_count") == 6 && clear_report.fetch("count") == 0 &&
+    clear_report.fetch("largest_component") == 0
 
   (2..4).each { |y| (2..4).each { |x| native_pixels[y * width + x] = clear } }
   write_pixels(native, width, height, native_pixels)
@@ -101,7 +104,9 @@ Dir.mktmpdir("rage-clear-area-") do |root|
   abort stdout + stderr unless status.success?
   clear_report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("native_only_clear")
   abort "clear-area filter removed the interior of a real hole" unless
-    clear_report.fetch("count") > 0
+    clear_report.fetch("count") > 0 &&
+    clear_report.fetch("largest_component") == 9 &&
+    clear_report.fetch("largest_component_bounds") == [2, 2, 3, 3]
 end
 
 Dir.mktmpdir("rage-visual-diagnostic-preset-") do |root|

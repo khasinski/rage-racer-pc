@@ -1898,3 +1898,12 @@ forming a one-pixel road/barrier seam, not a filled triangular hole, and all
 main pairs have at most one interior-black pixel.  This longer route is the
 coverage evidence for the fix; the semantic digest/LOD trace explains why it
 works, while a single framebuffer does not.
+
+Missing-geometry discovery must rank connected area, not a raw count of black
+pixels.  `rage_visual_compare.rb` reports the largest four-connected component
+after its two-axis interior filter, including its bounding box, and the batch
+tool's `--rank black` sorts by that component before total pixel count.  This
+keeps a real triangular hole ahead of scattered legal black texels and
+one-pixel phase contours.  The road preset stops at scanline 199: lines
+200..204 contain the lower HUD/world boundary and previously produced a long
+false-positive component unrelated to terrain.

@@ -140,9 +140,49 @@ def reference_near?(pixels, width, height, x, y, radius)
   end
 end
 
+def largest_four_connected_component(matches)
+  remaining = matches.keys.to_h { |point| [point, true] }
+  largest = []
+  until remaining.empty?
+    seed = remaining.each_key.first
+    remaining.delete(seed)
+    queue = [seed]
+    component = []
+    until queue.empty?
+      point = queue.pop
+      component << point
+      x, y = point
+      [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].each do |neighbor|
+        next unless remaining.delete(neighbor)
+        queue << neighbor
+      end
+    end
+    largest = component if component.length > largest.length
+  end
+  largest
+end
+
+def missing_area_report(matches, interior, sample_order = nil)
+  interior_matches = interior.to_h { |sample| [[sample[:x], sample[:y]], sample] }
+  largest = largest_four_connected_component(interior_matches)
+  samples = sample_order ? interior.sort_by(&sample_order) : interior
+  { count: interior.length, raw_count: matches.length,
+    largest_component: largest.length,
+    largest_component_bounds: if largest.empty?
+                                nil
+                              else
+                                xs = largest.map(&:first)
+                                ys = largest.map(&:last)
+                                [xs.min, ys.min, xs.max - xs.min + 1,
+                                 ys.max - ys.min + 1]
+                              end,
+    samples: samples.first(32) }
+end
+
 def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region,
                              radius)
-  return { count: 0, raw_count: 0, samples: [] } unless region
+  return { count: 0, raw_count: 0, largest_component: 0,
+           largest_component_bounds: nil, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "clear region is outside the image" if left.negative? || top.negative? ||
     region_width <= 0 || region_height <= 0 || left + region_width > width ||
@@ -173,13 +213,13 @@ def native_only_clear_pixels(psx_pixels, native_pixels, width, height, region,
     vertical = matches.key?([x, y - 1]) || matches.key?([x, y + 1])
     horizontal && vertical
   end
-  { count: interior.length, raw_count: matches.length,
-    samples: interior.first(32) }
+  missing_area_report(matches, interior)
 end
 
 def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
                              radius)
-  return { count: 0, raw_count: 0, samples: [] } unless region
+  return { count: 0, raw_count: 0, largest_component: 0,
+           largest_component_bounds: nil, samples: [] } unless region
   left, top, region_width, region_height = region
   abort "black region is outside the image" if left.negative? || top.negative? ||
     region_width <= 0 || region_height <= 0 || left + region_width > width ||
@@ -211,8 +251,8 @@ def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
     vertical = matches.key?([x, y - 1]) || matches.key?([x, y + 1])
     horizontal && vertical
   end
-  { count: interior.length, raw_count: matches.length,
-    samples: interior.sort_by { |sample| -sample[:squared_error] }.first(32) }
+  missing_area_report(matches, interior,
+                      ->(sample) { -sample[:squared_error] })
 end
 
 def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)

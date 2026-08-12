@@ -25,7 +25,7 @@ REGION_PRESETS = {
   "hud" => "0,176,320,64"
 }.freeze
 DIAGNOSTIC_PRESETS = {
-  "road" => { clear_region: "0,100,250,100", black_region: "0,55,250,150",
+  "road" => { clear_region: "0,100,250,100", black_region: "0,55,250,145",
               rank: "clear", require_main_visible_cells: true },
   "mirror" => { clear_region: "84,16,152,40", black_region: "84,16,152,40",
                 rank: "clear", require_mirror_visible_cells: true },
@@ -642,7 +642,9 @@ errors = Queue.new
     normalized_rmse: report.fetch("normalized_rmse"),
     normalized_region_rmse: report["normalized_region_rmse"],
     native_only_clear: report.fetch("native_only_clear").fetch("count"),
+    native_only_clear_component: report.fetch("native_only_clear").fetch("largest_component"),
     native_only_black: report.fetch("native_only_black").fetch("count"),
+    native_only_black_component: report.fetch("native_only_black").fetch("largest_component"),
     tachometer_needle: report.fetch("tachometer_needle"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
@@ -676,7 +678,8 @@ ranked = if options[:rank] == "clear"
            end
          elsif options[:rank] == "black"
            rows.sort_by do |row|
-             [-row[:native_only_black], -rank_rmse.call(row).to_f]
+             [-row[:native_only_black_component], -row[:native_only_black],
+              -rank_rmse.call(row).to_f]
            end
          elsif options[:rank] == "needle"
            rows.sort_by do |row|
@@ -705,7 +708,8 @@ ranked = if options[:rank] == "clear"
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""
   black = options[:black_region] ?
-    " native_only_black=#{row[:native_only_black]}" : ""
+    " native_only_black=#{row[:native_only_black]}" \
+    " largest_black_component=#{row[:native_only_black_component]}" : ""
   needle = options[:needle_region] ?
     format(" needle_mismatch=%d needle_iou=%s",
            row[:tachometer_needle].fetch("mismatch_pixels"),
