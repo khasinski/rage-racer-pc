@@ -35,6 +35,9 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_anim_timer_delta: 0,
             visual_refine: 0,
             require_random_seed: false,
+            require_visible_cells: false,
+            require_main_visible_cells: false,
+            require_mirror_visible_cells: false,
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
             jobs: [Etc.nprocessors, 8].min, top: nil }
@@ -104,6 +107,18 @@ OptionParser.new do |parser|
             "reject state pairs whose RNG seeds differ") do
     options[:require_random_seed] = true
   end
+  parser.on("--require-visible-cells",
+            "reject pairs whose main or mirror visible-cell masks differ") do
+    options[:require_visible_cells] = true
+  end
+  parser.on("--require-main-visible-cells",
+            "reject pairs whose main-pass visible-cell masks differ") do
+    options[:require_main_visible_cells] = true
+  end
+  parser.on("--require-mirror-visible-cells",
+            "reject pairs whose mirror-pass visible-cell masks differ") do
+    options[:require_mirror_visible_cells] = true
+  end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
@@ -151,6 +166,7 @@ def manifest_rows(directory)
       proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
       mirror_m00 mirror_m01 mirror_m02 mirror_m10 mirror_m11 mirror_m12
       mirror_m20 mirror_m21 mirror_m22
+      main_visible_hash mirror_visible_hash
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       tacho_rpm
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
@@ -162,6 +178,9 @@ def manifest_rows(directory)
     ]
     numeric_fields.each do |key|
       row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
+    end
+    %i[main_visible_hash mirror_visible_hash].each do |key|
+      row[key] &= 0xffff_ffff if row.key?(key)
     end
     image = directory / row[:filename]
     image.file? ? row.merge(path: image) : nil
@@ -245,7 +264,11 @@ if options[:match] == "position"
                           0
                         end,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
-        candidate[:proj_order] == psx[:proj_order]
+        candidate[:proj_order] == psx[:proj_order],
+      main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
+        !psx.key?(:main_visible_hash) || candidate[:main_visible_hash] == psx[:main_visible_hash],
+      mirror_visible_cells_equal: !candidate.key?(:mirror_visible_hash) ||
+        !psx.key?(:mirror_visible_hash) || candidate[:mirror_visible_hash] == psx[:mirror_visible_hash]
     }
   end
   eligible = lambda do |metrics|
@@ -259,6 +282,10 @@ if options[:match] == "position"
       metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
+      (!options[:require_visible_cells] ||
+        (metrics[:main_visible_cells_equal] && metrics[:mirror_visible_cells_equal])) &&
+      (!options[:require_main_visible_cells] || metrics[:main_visible_cells_equal]) &&
+      (!options[:require_mirror_visible_cells] || metrics[:mirror_visible_cells_equal]) &&
       metrics[:projection_phase_equal]
   end
   rejection_reasons = lambda do |metrics, candidate, psx|
@@ -282,6 +309,12 @@ if options[:match] == "position"
     reasons << "tacho_rpm=#{metrics[:tacho_rpm_delta]}>#{options[:max_tacho_rpm_delta]}" if
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
+    reasons << "main_visible_cells" if
+      (options[:require_visible_cells] || options[:require_main_visible_cells]) &&
+      !metrics[:main_visible_cells_equal]
+    reasons << "mirror_visible_cells" if
+      (options[:require_visible_cells] || options[:require_mirror_visible_cells]) &&
+      !metrics[:mirror_visible_cells_equal]
     reasons << "anim_phase=#{metrics[:anim_timer_delta]}>#{options[:max_anim_timer_delta]}" if
       metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
     reasons << "random_seed" if options[:require_random_seed] &&
@@ -447,6 +480,8 @@ if options[:match] == "position"
         tacho_rpm: native_state.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
           native_state[:tacho_rpm] - psx[:tacho_rpm] : nil,
         projection_phase_equal: projection_phase_equal,
+        main_visible_cells_equal: state_metrics.call(native_state, psx)[:main_visible_cells_equal],
+        mirror_visible_cells_equal: state_metrics.call(native_state, psx)[:mirror_visible_cells_equal],
         random_seed_equal: native_state.key?(:random_seed) && psx.key?(:random_seed) ?
           native_state[:random_seed] == psx[:random_seed] : nil,
         anim_timer: native_state.key?(:anim_timer) && psx.key?(:anim_timer) ?

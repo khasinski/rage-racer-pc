@@ -1601,6 +1601,24 @@ translation and tens of fixed-angle units. Always derive these offsets from
 manifested scene/timer transitions rather than subtracting timer numbers from
 host frame numbers.
 
+Capture manifests also hash the complete 32-word (`1024`-bit) main and mirror
+visible-cell masks using bytewise FNV-1a. Retail reads the fixed arrays at
+`0x8019c86c` and `0x8019c7e4`; native hashes the named globals. Normalize hashes
+to unsigned 32-bit before comparison because the host CSV can print a value as
+signed while retail prints the identical bit pattern unsigned. Use
+`--require-main-visible-cells` for road/scenery and
+`--require-mirror-visible-cells` for rear-view geometry; the older
+`--require-visible-cells` requires both and is intentionally stricter.
+
+On the corrected turn, five close pairs with identical main-pass masks all
+have zero area-filtered native-only clear pixels. One close pair also has an
+identical mirror-pass mask and zero mirror-road clear pixels. This verifies that
+the original visibility code selects the same terrain cells and PsyZ preserves
+their coverage in those samples. Earlier 118-pixel mirror clear regions occurred
+when the mirror masks themselves differed after a few world units of camera
+translation; they are not evidence of post-submit triangle loss or a shorter
+native draw distance.
+
 For the timer-800 race checkpoint used here, delaying the native continuous
 CROSS input from smoke frame 1470 to 1471 gives an exact timer-903 state match:
 player position, camera position, speed, progress, lateral offset and animation

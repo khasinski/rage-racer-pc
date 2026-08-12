@@ -213,6 +213,28 @@ Dir.mktmpdir("rage-visual-mirror-projection-gate-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-visible-cell-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  visible_header = header + ",main_visible_hash,mirror_visible_hash"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             visible_header + "\n" + ([filename] + state + [100, "deadbeef", 1, 2]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             visible_header + "\n" + ([filename] + state + [100, "deadbeef", 1, 3]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--require-visible-cells"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "visible-cell gate accepted unequal mirror masks" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("mirror_visible_cells")
+end
+
 Dir.mktmpdir("rage-visual-gate-before-ranking-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

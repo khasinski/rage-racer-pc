@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "game/player_car_internal.h"
 #include "game/menu.h"
 #include "game/race_internal.h"
 #include "game/render_internal.h"
+#include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 
@@ -16,6 +18,20 @@ typedef struct RageSmokeInput {
     unsigned short buttons;
     int held;
 } RageSmokeInput;
+
+static uint32_t RageSmokeHashWords(const u32 *words, size_t count) {
+    uint32_t hash = 2166136261u;
+    size_t index;
+    for (index = 0; index < count; index++) {
+        u32 value = words[index];
+        int byteIndex;
+        for (byteIndex = 0; byteIndex < 4; byteIndex++) {
+            hash ^= (value >> (byteIndex * 8)) & 0xff;
+            hash *= 16777619u;
+        }
+    }
+    return hash;
+}
 
 typedef struct RageSmokeStateInput {
     long scene;
@@ -123,6 +139,7 @@ static void RageSmokeInitialize(void) {
                       "proj_x0,proj_y0,proj_x1,proj_y1,proj_order," \
                       "mirror_m00,mirror_m01,mirror_m02,mirror_m10,mirror_m11," \
                       "mirror_m12,mirror_m20,mirror_m21,mirror_m22," \
+                      "main_visible_hash,mirror_visible_hash," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
                       "anim_timer,tacho_rpm,rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
@@ -337,6 +354,7 @@ int RagePortShouldExit(int frame_number) {
                         "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%u,%u," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -363,7 +381,10 @@ int RagePortShouldExit(int frame_number) {
                         g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
                         g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
                         g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
-                        g_MirrorViewMatrix.m[2][2], g_IsEnvironmentMode4,
+                        g_MirrorViewMatrix.m[2][2],
+                        RageSmokeHashWords(g_MainVisibleCellMask, 32),
+                        RageSmokeHashWords(g_MirrorVisibleCellMask, 32),
+                        g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
                         g_Cars[0].x, g_Cars[0].z,
