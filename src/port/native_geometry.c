@@ -45,6 +45,8 @@ unsigned long long g_RageModelRejectBackface;
 unsigned long long g_RageTerrainSecondTriangleVisible;
 unsigned long long g_RageTerrainChildRejectBackface;
 unsigned long long g_RageTerrainChildSecondTriangleVisible;
+static int g_RageTerrainClip0;
+static int g_RageTerrainClip1;
 static int g_RageProjectionReject;
 static int g_RageProjectionFlag;
 static int g_RageTerrainTraceInitialized;
@@ -168,6 +170,10 @@ static int RageProjectQuad(
         int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
         int clip1 = terrainQuad
             ? NormalClip(sxy[1], sxy[2], sxy[3]) : clip0;
+        if (terrainQuad) {
+            g_RageTerrainClip0 = clip0;
+            g_RageTerrainClip1 = clip1;
+        }
         if (g_RageInsideModelProjection && g_RageSubmittedModelIndex == 0 &&
             g_RageSubmittedModelType == RAGE_MODEL_GT4) {
             if (clip0 > 0) g_RageGt4ClipPositive++;
@@ -1210,11 +1216,30 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                             child[3] = RageBilerpVertex(
                                 v0, v1, v2, v3, sy + 1, sx + 1,
                                 uSteps, vSteps);
-                            if (!RageProjectQuad(
+                            {
+                                int childVisible = RageProjectQuad(
                                     &child[0], &child[1], &child[2], &child[3],
                                     subSxy, &childDepth, &childFog,
-                                    &childRawDepth, 2))
-                                continue;
+                                    &childRawDepth, 2);
+                                if (g_RageTerrainTraceEnabled &&
+                                    (g_RageTerrainTraceTimer < 0 ||
+                                     g_RageTerrainTraceTimer == g_SceneTimer) &&
+                                    (g_RageTerrainTraceClut < 0 ||
+                                     g_RageTerrainTraceClut == clut) &&
+                                    (g_RageTerrainTraceTpage < 0 ||
+                                     g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
+                                    fprintf(stderr,
+                                            "terrain-nclip timer=%d cell=%d face=%d "
+                                            "child=%d,%d/%d,%d mirror=%d "
+                                            "clip=%d,%d visible=%d reject=%d\n",
+                                            g_SceneTimer, cellIndex, faceIndex,
+                                            sy, sx, uSteps, vSteps,
+                                            SCRATCH_MIRROR, g_RageTerrainClip0,
+                                            g_RageTerrainClip1, childVisible,
+                                            childVisible ? 0 : g_RageProjectionReject);
+                                }
+                                if (!childVisible) continue;
+                            }
 #define RAGE_SUB_UV(out, corner, uu, vv) do { \
     (out)[(corner)*2] = RageBilerpByte(baseUv[0],baseUv[2],baseUv[4],baseUv[6],(uu),(vv),uSteps,vSteps); \
     (out)[(corner)*2+1] = RageBilerpByte(baseUv[1],baseUv[3],baseUv[5],baseUv[7],(uu),(vv),uSteps,vSteps); \

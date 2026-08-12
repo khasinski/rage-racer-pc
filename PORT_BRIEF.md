@@ -1807,3 +1807,26 @@ and colour registers were copied through potentially unaligned `unsigned int
 without depending on compiler or CPU behaviour. These fixes belong in PsyZ;
 the packed car-table and wrapping arithmetic fixes belong in the game and
 should be backported to the decompilation.
+
+### Terrain subdivision and NCLIP oracle
+
+Do not infer a terrain culling fix from the number of black pixels.  At the
+exact timer-868 state pair, semantic GPU digests differ only in textured quads:
+the main `tpage=0x05, clut=0x7943` pass is 570 retail versus 573 native, while
+the mirror is 193 versus 261.  The excess therefore exists in submitted game
+packets before PsyZ rasterization.
+
+Retail GTE traces at `0x80028a88` and `0x80028ac0` also prove the portable
+two-triangle winding test is algebraically correct.  Main terrain accepts the
+first positive NCLIP or the second negative one; mirror terrain accepts the
+first negative NCLIP or the second positive one.  Zero-area child triangles
+are common in retail and are not by themselves a host bug.
+
+An unfiltered child trace at timer 868 narrows the systematic discrepancy to
+subdivision before child culling.  Retail projects 1284 main and 700 mirror
+children; native creates 1314 main and 1208 mirror children.  The matching
+visible-cell masks and near-matching main count rule out draw distance and the
+cell builder.  Audit the parent OTZ/fog result and the `stream[22/23] - OTZ`
+LOD calculation against the retail dispatcher before changing NCLIP signs or
+adding rasterizer workarounds: each one-bit LOD error multiplies the number of
+children.
