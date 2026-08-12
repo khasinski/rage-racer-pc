@@ -20,7 +20,9 @@ required = [
   '"RAGE_GPU_GP0_TRACE_VRAM_POST"', 'bundle / "gp0-post.vram"',
   '"--dump-psx-packet N"', '"RAGE_GPU_GP0_TRACE_DUMP_PACKET"',
   '"RAGE_GPU_GP0_TRACE_DUMP_VRAM"',
-  'execute_replays.call("pixel"'
+  'execute_replays.call("pixel"',
+  'argv[output_index + 1] = (frame + 2).to_s',
+  'env["RAGE_PORT_SMOKE_FRAMES"] = (frame + 2).to_s'
 ]
 missing = required.reject { |text| source.include?(text) }
 raise "bundle replay lost: #{missing.join(', ')}" unless missing.empty?

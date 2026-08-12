@@ -42,7 +42,9 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_projection_delta: Float::INFINITY,
             max_mirror_projection_delta: Float::INFINITY,
             max_tacho_rpm_delta: Float::INFINITY,
+            max_timer_delta: Float::INFINITY,
             max_anim_timer_delta: 0,
+            require_scenery_variants: true,
             visual_refine: 0,
             require_random_seed: false,
             require_visible_cells: false,
@@ -124,9 +126,17 @@ OptionParser.new do |parser|
     options[:max_tacho_rpm_delta] = value
     explicit_options[:max_tacho_rpm_delta] = true
   end
+  parser.on("--max-timer-delta N", Integer,
+            "skip state matches farther than N game-timer ticks") do |value|
+    options[:max_timer_delta] = value
+  end
   parser.on("--max-anim-timer-delta N", Integer,
             "allow this wrapped 7-bit animation-phase distance (default: 0)") do |value|
     options[:max_anim_timer_delta] = value
+  end
+  parser.on("--ignore-scenery-variants",
+            "allow different animated-scenery variants (static/HUD diagnosis only)") do
+    options[:require_scenery_variants] = false
   end
   parser.on("--require-random-seed",
             "reject state pairs whose RNG seeds differ") do
@@ -336,6 +346,7 @@ if options[:match] == "position"
       tacho_rpm_present: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm),
       tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
         (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
+      timer_delta: (candidate[:timer] - psx[:timer]).abs,
       anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
                           raw = (candidate[:anim_timer] - psx[:anim_timer]) % 128
                           [raw, 128 - raw].min
@@ -370,8 +381,9 @@ if options[:match] == "position"
       metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
       (!explicit_options[:max_tacho_rpm_delta] || metrics[:tacho_rpm_present]) &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
+      metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
-      metrics[:scenery_variants_equal] &&
+      (!options[:require_scenery_variants] || metrics[:scenery_variants_equal]) &&
       (!options[:require_visible_cells] ||
         (metrics[:main_visible_cells_equal] && metrics[:mirror_visible_cells_equal])) &&
       (!options[:require_main_visible_cells] || metrics[:main_visible_cells_equal]) &&
@@ -402,6 +414,8 @@ if options[:match] == "position"
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
     reasons << "missing_tacho_rpm" if explicit_options[:max_tacho_rpm_delta] &&
       !metrics[:tacho_rpm_present]
+    reasons << "timer=#{metrics[:timer_delta]}>#{options[:max_timer_delta]}" if
+      metrics[:timer_delta] > options[:max_timer_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
     reasons << "main_visible_cells" if
       (options[:require_visible_cells] || options[:require_main_visible_cells]) &&
@@ -415,7 +429,8 @@ if options[:match] == "position"
       !metrics[:mirror_visible_list_equal]
     reasons << "anim_phase=#{metrics[:anim_timer_delta]}>#{options[:max_anim_timer_delta]}" if
       metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
-    reasons << "scenery_variants" unless metrics[:scenery_variants_equal]
+    reasons << "scenery_variants" if options[:require_scenery_variants] &&
+      !metrics[:scenery_variants_equal]
     reasons << "random_seed" if options[:require_random_seed] &&
       candidate.key?(:random_seed) && psx.key?(:random_seed) &&
       candidate[:random_seed] != psx[:random_seed]

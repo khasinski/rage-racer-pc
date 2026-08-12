@@ -636,6 +636,19 @@ Dir.mktmpdir("rage-visual-scenery-variant-") do |root|
   stdout, stderr, status = Open3.capture3(*command)
   abort "mismatched animated scenery variants entered visual ranking" if status.success?
   abort stdout + stderr unless (stdout + stderr).include?("scenery_variants")
+
+  ignored_output = File.join(root, "ignored-output")
+  ignored_command = command.each_slice(2).flat_map { |pair| pair }
+  ignored_command[ignored_command.index(output)] = ignored_output
+  ignored_command << "--ignore-scenery-variants"
+  ignored_command.concat(["--max-timer-delta", "0"])
+  ignored_stdout, ignored_stderr, ignored_status = Open3.capture3(*ignored_command)
+  abort ignored_stdout + ignored_stderr unless ignored_status.success?
+  ignored_frames = JSON.parse(
+    File.read(File.join(ignored_output, "summary.json"))
+  ).fetch("frames")
+  abort "explicit scenery opt-out did not admit the static comparison" unless
+    ignored_frames.length == 1
 end
 
 Dir.mktmpdir("rage-visual-reference-state-") do |root|

@@ -107,9 +107,17 @@ prepare = lambda do |side, frame|
       env["RAGE_EMU_LOAD_STATE"] = psx_replay_state
       argv[output_index + 1] = (psx_replay_frames + 2).to_s
       argv[output_index + 2] = (psx_replay_frames + 2).to_s
+    else
+      # The visual filename's frame is relative to the same checkpoint used by
+      # this command.  The original capture often ran thousands of VBlanks
+      # beyond it; repeating that tail for every GP0/pixel pass only wastes
+      # emulator time and can leave a long-running child after an interrupted
+      # diagnostic.  Two extra VBlanks retain the existing boundary tolerance.
+      argv[output_index + 1] = (frame + 2).to_s
     end
   else
     env["RAGE_PORT_SMOKE_CAPTURE_DIR"] = (replay_root / "native-capture").to_s
+    env["RAGE_PORT_SMOKE_FRAMES"] = (frame + 2).to_s
   end
   FileUtils.mkdir_p(env[side == "psx" ? "RAGE_EMU_CAPTURE_DIR" : "RAGE_PORT_SMOKE_CAPTURE_DIR"].to_s) unless side == "psx"
   [env, argv, metadata.fetch("cwd"), bundle / "gp0-#{side}.log"]

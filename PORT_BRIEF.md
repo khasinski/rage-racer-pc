@@ -2465,3 +2465,26 @@ texture selection or PsyZ sampling.  A genuine missing-geometry candidate must
 survive visible-cell membership/mask comparison and show either a missing game
 packet or a different result when replaying the same packet from identical
 VRAM.
+
+Long-route visual scans need two additional alignment safeguards.  Position
+alone is ambiguous on a circuit (and while the scripted car is held against a
+barrier): the 2400--3400 scan initially matched three reference frames to
+native states 129 game-timer ticks later, with otherwise plausible camera
+positions but rival deltas around 28000.  Use `--max-timer-delta N` (normally
+1 or 2 for adjacent VBlank phases) to exclude those loop aliases.  Animated
+scenery variants remain an equality requirement by default, but
+`--ignore-scenery-variants` permits an explicit static-road or HUD audit when
+the cached reference inherited a different variant; do not use that opt-out to
+judge moving scenery itself.  With `--max-timer-delta 2`, the scan retains 13
+state-valid pairs and none contains a connected native-only black region.
+Visual inspection also shows that the acceleration-only input has left the car
+at roughly 33 km/h against the same barrier, so this route cannot substantiate
+the user's later in-race missing-triangle report; the next capture must include
+deterministic steering or start from a manually obtained later checkpoint.
+
+`rage_gp0_bundle.rb` now caps each replay just after the requested filename
+frame (`frame + 2` VBlanks/host frames) when it does not have a closer
+per-capture checkpoint.  Previously it reused the original capture's full
+limit, so the second pixel/texel pass could keep Ruby at 100% CPU for minutes
+after the useful trace had already been written.  Per-capture checkpoint
+replays retain their existing `psx_replay_frames + 2` boundary tolerance.
