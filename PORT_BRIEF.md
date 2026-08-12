@@ -2133,6 +2133,16 @@ the previously suspected timer-508 physics divergence was a pairing/run-phase
 artifact.  Compare named scalar state first, then use byte offsets in
 `player_raw` to locate the first internal writer when a real divergence remains.
 
+The native SDK boundary now canonicalizes every ordering-table element into a
+dense sequence of 32-bit GP0 words before dispatch, using the same code on
+32-bit and 64-bit hosts.  Set `RAGE_GPU_GP0_TRACE=1` to print stable
+`chain`/`packet`, opcode, length and word payload records.  Pointer-sized OT
+links and host struct padding never enter this stream, so it is the correct
+compatibility contract for a future software oracle or renderer backend.  A
+`code=00 length=4` record containing four zero words is four legal GP0 NOPs,
+not an uninitialized geometry primitive; classify packets by their GP0 opcode
+before treating zero payload as missing HUD or terrain.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
