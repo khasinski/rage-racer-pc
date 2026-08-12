@@ -120,6 +120,7 @@ OptionParser.new do |parser|
   parser.on("--max-tacho-rpm-delta N", Float,
             "skip states whose displayed tachometer RPM differs by more than N") do |value|
     options[:max_tacho_rpm_delta] = value
+    explicit_options[:max_tacho_rpm_delta] = true
   end
   parser.on("--max-anim-timer-delta N", Integer,
             "allow this wrapped 7-bit animation-phase distance (default: 0)") do |value|
@@ -293,6 +294,7 @@ if options[:match] == "position"
         (candidate[:track_lateral] - psx[:track_lateral]).abs : 0,
       rival_distance: rival_distance, projection_delta: projection_delta,
       mirror_projection_delta: mirror_projection_delta,
+      tacho_rpm_present: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm),
       tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
         (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
       anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
@@ -324,6 +326,7 @@ if options[:match] == "position"
       metrics[:rival_distance] <= options[:max_rival_distance] &&
       metrics[:projection_delta] <= options[:max_projection_delta] &&
       metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
+      (!explicit_options[:max_tacho_rpm_delta] || metrics[:tacho_rpm_present]) &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       (!options[:require_visible_cells] ||
@@ -352,6 +355,8 @@ if options[:match] == "position"
       metrics[:mirror_projection_delta] > options[:max_mirror_projection_delta]
     reasons << "tacho_rpm=#{metrics[:tacho_rpm_delta]}>#{options[:max_tacho_rpm_delta]}" if
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
+    reasons << "missing_tacho_rpm" if explicit_options[:max_tacho_rpm_delta] &&
+      !metrics[:tacho_rpm_present]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
     reasons << "main_visible_cells" if
       (options[:require_visible_cells] || options[:require_main_visible_cells]) &&

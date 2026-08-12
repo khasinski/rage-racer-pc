@@ -1622,7 +1622,11 @@ than accidentally accepting the orange dial numerals.
 For sequence comparison, pass `--needle-region 250,160,45,42 --rank needle`.
 New manifests record `tacho_rpm = g_EngineRpm + g_EngineRpmJitter`, the exact
 value passed to `DrawTachometer`; use `--max-tacho-rpm-delta N` so similar car
-speed does not masquerade as an equal needle state. When `--needle-region` is
+speed does not masquerade as an equal needle state. An explicitly requested
+RPM gate now rejects either manifest when that column is absent and reports
+`missing_tacho_rpm`; it must never treat an unavailable diagnostic as a
+zero-delta match. Regenerate older caches before using them as tachometer
+geometry evidence. When `--needle-region` is
 present, visual refinement now minimizes the binary red-needle silhouette
 rather than full-region RMSE. The dial, speed digits, and gear glyph otherwise
 outweigh the thin needle and can select the wrong front buffer. In the

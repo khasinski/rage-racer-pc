@@ -128,6 +128,28 @@ header = %w[
   scratch_env_mode4 random_seed anim_timer rival0_raw
 ].join(",")
 
+Dir.mktmpdir("rage-visual-missing-tacho-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  [psx, native].each do |directory|
+    File.write(File.join(directory, "capture-manifest.csv"),
+               header + "\n" + ([filename] + state + [100, "deadbeef"]).join(",") + "\n")
+  end
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-tacho-rpm-delta", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "explicit tacho gate accepted a manifest without tacho_rpm" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("missing_tacho_rpm")
+end
+
 Dir.mktmpdir("rage-visual-refinement-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
