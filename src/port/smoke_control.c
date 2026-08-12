@@ -99,7 +99,8 @@ static void RageSmokeInitialize(void) {
                       "model_yaw,mirror_y,view_x,view_y,view_z," \
                       "view_angle_x,view_angle_y,view_angle_z," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
-                      "anim_timer\n",
+                      "anim_timer,rival0_x,rival0_z,rival1_x,rival1_z," \
+                      "rival2_x,rival2_z,rival3_x,rival3_z\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -245,7 +246,7 @@ int RagePortShouldExit(int frame_number) {
                 fprintf(g_SmokeCaptureManifest,
                         "timer-%05d-s%02d.ppm,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%u,%d\n",
+                        "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
                         g_SceneTimer, g_SceneId, frame_number, g_SceneId,
                         g_SceneTimer, g_PlayerCar.x, g_PlayerCar.z,
                         g_PlayerCar.speed, g_PlayerCar.trackProgress,
@@ -256,7 +257,11 @@ int RagePortShouldExit(int frame_number) {
                         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                         SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
                         SCRATCH_VIEW_ANGLE_Z, g_IsEnvironmentMode4,
-                        SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer);
+                        SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
+                        g_Cars[0].x, g_Cars[0].z,
+                        g_Cars[1].x, g_Cars[1].z,
+                        g_Cars[2].x, g_Cars[2].z,
+                        g_Cars[3].x, g_Cars[3].z);
                 fflush(g_SmokeCaptureManifest);
             }
         }

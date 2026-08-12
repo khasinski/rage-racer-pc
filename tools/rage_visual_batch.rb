@@ -174,9 +174,17 @@ if options[:match] == "position"
       # compares the underlying view without turning that phase difference
       # into a false state mismatch.
       view_yaw = ((candidate[:view_angle_y] - psx[:view_angle_y] + 1024) % 2048 - 1024).abs
+      rival_distance = (0...4).sum do |index|
+        x_key = :"rival#{index}_x"
+        z_key = :"rival#{index}_z"
+        next 0 unless candidate.key?(x_key) && psx.key?(x_key)
+        Math.hypot(candidate[x_key] - psx[x_key],
+                   candidate[z_key] - psx[z_key])
+      end
       Math.hypot(dx, dz) + Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) * 2 +
         speed * 4 + yaw / 4.0 + pitch / 2.0 + roll / 2.0 +
-        lateral / 4.0 + view_yaw * 2 + seed_penalty + phase_penalty +
+        lateral / 4.0 + view_yaw * 2 + rival_distance * 2 +
+        seed_penalty + phase_penalty +
         (candidate[:timer] - psx[:timer]).abs
     end
     if options[:visual_refine] > 0
@@ -207,6 +215,12 @@ if options[:match] == "position"
                     else
                       0
                     end
+    rival_distance = (0...4).sum do |index|
+      x_key = :"rival#{index}_x"
+      z_key = :"rival#{index}_z"
+      next 0 unless native.key?(x_key) && psx.key?(x_key)
+      Math.hypot(native[x_key] - psx[x_key], native[z_key] - psx[z_key])
+    end
     next if position_distance > options[:max_position_distance] ||
             view_distance > options[:max_view_distance] ||
             speed_delta.abs > options[:max_speed_delta] ||
@@ -229,6 +243,7 @@ if options[:match] == "position"
           native[:body_roll] - psx[:body_roll] : nil,
         track_lateral: native.key?(:track_lateral) && psx.key?(:track_lateral) ?
           native[:track_lateral] - psx[:track_lateral] : nil,
+        rival_distance: rival_distance,
         random_seed_equal: native.key?(:random_seed) && psx.key?(:random_seed) ?
           native[:random_seed] == psx[:random_seed] : nil,
         anim_timer: native.key?(:anim_timer) && psx.key?(:anim_timer) ?

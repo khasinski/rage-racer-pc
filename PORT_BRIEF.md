@@ -987,6 +987,14 @@ cached sequence in parallel and print only the ten worst frames. The complete
 machine-readable `summary.json` and all per-frame bundles are still written,
 so limiting console output does not discard evidence.
 
+Race captures include the X/Z positions of all four active rivals as well as
+the player state. Position matching adds their aggregate distance to its score
+and records it in each report. This matters especially for the narrow mirror:
+two frames can have an identical player pose while a rival differs by tens of
+world units, shifting its silhouette by a pixel and dominating mirror RMSE.
+Regenerate old cached manifests when diagnosing cars in the mirror; the batch
+tool remains backward compatible with caches that lack these columns.
+
 Each matched timer gets its own standard comparison bundle, while
 `summary.json` and stdout rank frames by RMSE and identify the worst hotspot.
 Both runners also write `capture-manifest.csv` with the filename, scene/timer,
