@@ -65,6 +65,21 @@ static int g_RageCourseTraceTimer = -1;
 static int g_RageCourseTraceClut = -1;
 static int g_RageCourseTraceTpage = -1;
 static long g_RageCourseVertexDepth[4];
+static int g_RageModelTraceInitialized;
+static int g_RageModelTraceEnabled;
+static int g_RageModelTraceTimer = -1;
+
+static void RageInitializeModelTrace(void) {
+    const char *enabled;
+    const char *timer;
+    if (g_RageModelTraceInitialized) return;
+    g_RageModelTraceInitialized = 1;
+    enabled = getenv("RAGE_PORT_MODEL_TRACE");
+    timer = getenv("RAGE_PORT_MODEL_TRACE_TIMER");
+    g_RageModelTraceEnabled = enabled != NULL || timer != NULL;
+    if (timer != NULL)
+        g_RageModelTraceTimer = (int)strtol(timer, NULL, 0);
+}
 
 static void RageInitializeTerrainTrace(void) {
     const char *timer;
@@ -823,6 +838,8 @@ static void RageSubmitModelFaces(
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     int i;
 
+    RageInitializeModelTrace();
+
     if ((unsigned)type >= 4 || count <= 0 || faces == NULL || vertices == NULL)
         return;
 
@@ -855,6 +872,21 @@ static void RageSubmitModelFaces(
         }
         g_RageInsideModelProjection = 0;
         if (depth <= 0 || depth >= 448) continue;
+        if (g_RageModelTraceEnabled &&
+            (g_RageModelTraceTimer < 0 ||
+             g_RageModelTraceTimer == g_SceneTimer)) {
+            fprintf(stderr,
+                    "model-face timer=%d model=%d type=%d face=%d depth=%d "
+                    "packet=%p indices=%u,%u,%u,%u "
+                    "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
+                    g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
+                    (void *)cursor, RageReadU16(faces), RageReadU16(faces + 2),
+                    RageReadU16(faces + 4), RageReadU16(faces + 6),
+                    (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                    (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                    (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                    (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
+        }
         if (type == RAGE_MODEL_F4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
             POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -1247,14 +1279,15 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                         (g_RageTerrainTraceTpage < 0 ||
                          g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
                         fprintf(stderr,
-                                "terrain-face timer=%d cell=%d face=%d "
+                                "terrain-face timer=%d cell=%d face=%d packet=%p "
                                 "mode=%d mirror=%d reject=%d depth=%d raw=%d fog=%d "
                                 "bias=%d lod=%u,%u shift=%d "
                                 "rgb=%02x%02x%02x clut=%04x tpage=%04x "
                                 "window=%05x indices=%u,%u,%u,%u "
                                 "translation=%d,%d,%d "
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
-                                g_SceneTimer, cellIndex, faceIndex, dispatch,
+                                g_SceneTimer, cellIndex, faceIndex, (void *)cursor,
+                                dispatch,
                                 SCRATCH_MIRROR,
                                 projected ? 0 : g_RageProjectionReject, depth,
                                 rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
@@ -1448,7 +1481,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                          (tpage & 0x9ff))) {
                                     fprintf(stderr,
                                             "terrain-child timer=%d cell=%d "
-                                            "face=%d child=%d,%d/%d,%d "
+                                            "face=%d child=%d,%d/%d,%d packet=%p "
                                             "visible=%d mirror=%d depth=%d bias=%d ot=%d "
                                             "rgb=%02x%02x%02x "
                                             "xyz=%d,%d,%d/%d,%d,%d/"
@@ -1456,7 +1489,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
-                                            sy, sx, uSteps, vSteps, 1,
+                                            sy, sx, uSteps, vSteps, (void *)cursor, 1,
                                             SCRATCH_MIRROR, depth, bias,
                                             subDepth + 128,
                                             color[0], color[1], color[2],

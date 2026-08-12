@@ -2265,6 +2265,18 @@ packet including `0x55555555`/`0x50005000`; a regression test covers that
 special path.  Do not diagnose a missing or extra primitive from a command
 stream until all variable-length GP0 families are represented in the trace.
 
+GP0 traces on both sides now carry the packet address, and the native model,
+course and terrain diagnostics carry their allocation cursor.  Correlating
+those fields is substantially safer than guessing ownership from a primitive's
+XY payload: the same small F4/FT4 geometry can occur several times in one OT.
+For example, the apparent timer-270 FT4-versus-F4 mismatch at strict word 5486
+maps the native F4 to `SubmitModel` model 15 face 5.  The retail emitter reports
+the identical face at depth 67.  The nearby terrain face (cell 151 face 2) has
+base depth 66 and bias -1 on both builds; retail proves its final OT pointer is
+slot 193 (`128 + 66 - 1`).  Therefore this case does not justify removing the
+mode-0 terrain bias.  Use address/owner correlation before changing an asset
+decoder in response to a stream-order symptom.
+
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves
 13 matched frames.  The timer-280 tachometer packet is identical on retail and
