@@ -1109,6 +1109,12 @@ the remaining 50-unit scratch-view difference is a camera-update phase and the
 best displayed native image is still two timer phases earlier. Keep simulation
 state, projection state, and front-buffer image phase separate when deciding
 whether a road patch is genuinely missing.
+For that exact-projection road pair, both area-filtered detectors report zero
+native-only clear and zero native-only black pixels. This disproves the earlier
+missing-road diagnosis for that sample only; it is not evidence that every
+in-race hole is fixed. Expand the synchronized capture window and require the
+projection gate before classifying further candidates as culling or draw-range
+failures.
 For scenery-heavy regions such as the full mirror, add
 `--require-random-seed`. Position equality is not enough there: animated
 track objects consume `Random15`, so unequal seeds can produce different
