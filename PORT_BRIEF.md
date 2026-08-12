@@ -1141,6 +1141,22 @@ by unresolved sub-tick camera translation, not evidence for changing PsyZ or
 Rage Racer culling. Require both the mirror-matrix gate and tighter translation
 before treating such a thin-strip displacement as a renderer defect.
 
+The same strict timer-868 pair is useful for the remaining HUD/road audit.
+Across the full lower HUD band native has zero native-only black pixels. The
+largest main-road black sample at `(120,140)` is also not a missing primitive:
+both builds submit matching `tpage 0x1b`, CLUT `0x7c51/0x7c45` quads, with a
+one-pixel vertex displacement from the residual translation; native also
+submits a `tpage 0x15`, CLUT `0x7c03` strip over that coordinate. Do not classify
+that isolated black texel as a triangle hole.
+
+At timer 868 the sampled tachometer inputs are 6698 RPM on retail and 6733 on
+native. Native trace maps these nearby values to needle angles around 866 and
+879, enough to move the narrow tip by a pixel. Comparing the PSX needle against
+the adjacent native 6692-RPM draw page reduces mismatch from 41 pixels (IoU
+0.880) to three pixels (IoU 0.991). Thus the current needle geometry is correct;
+HUD comparisons must select the displayed/draw phase by `tacho_rpm`, not just
+car speed or scene timer.
+
 Use display-page captures for user-visible acceptance and draw-page captures
 for packet-level diagnosis. A timer-841 display-page pair appeared to contain a
 four-pixel clear hole at `(115..116,138..139)`: retail submitted two textured
