@@ -114,7 +114,25 @@ def manifest_rows(directory)
   lines.map do |line|
     values = line.split(",", -1)
     row = header.zip(values).to_h
-    row.each { |key, value| row[key] = Integer(value) unless key == :filename }
+    # Manifests may carry opaque diagnostic payloads (for example complete
+    # car structs encoded as hex). Matching only consumes scalar state fields;
+    # keep every other column verbatim so extending capture diagnostics cannot
+    # break the visual pipeline.
+    numeric_fields = %i[
+      frame scene timer x z speed progress lap body_yaw body_pitch body_roll
+      track_lateral model_yaw mirror_y view_x view_y view_z view_angle_x
+      view_angle_y view_angle_z environment_mode4 scratch_env_mode4
+      random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
+      rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
+      rival0_lateral rival0_collision rival0_active rival1_speed
+      rival1_progress rival1_yaw rival1_lateral rival1_collision rival1_active
+      rival2_speed rival2_progress rival2_yaw rival2_lateral rival2_collision
+      rival2_active rival3_speed rival3_progress rival3_yaw rival3_lateral
+      rival3_collision rival3_active
+    ]
+    numeric_fields.each do |key|
+      row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
+    end
     image = directory / row[:filename]
     image.file? ? row.merge(path: image) : nil
   end.compact

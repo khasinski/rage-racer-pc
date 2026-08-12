@@ -996,6 +996,10 @@ their aggregate distance to its score
 and records it in each report. This matters especially for the narrow mirror:
 two frames can have an identical player pose while a rival differs by tens of
 world units, shifting its silhouette by a pixel and dominating mirror RMSE.
+The manifest may also contain opaque diagnostic columns such as hex-encoded
+raw car structures. `rage_visual_batch.rb` converts only its documented scalar
+matching fields to integers and leaves unknown fields untouched, so adding a
+capture diagnostic cannot break the visual-comparison pipeline.
 
 The interactive-race car update had the same portable-C defect previously
 fixed in the attract-car path: it assigned only X/Z in a stack `Vec4` and then

@@ -16,7 +16,7 @@ header = %w[
   filename frame scene timer x z speed progress lap body_yaw body_pitch
   body_roll track_lateral model_yaw mirror_y view_x view_y view_z
   view_angle_x view_angle_y view_angle_z environment_mode4
-  scratch_env_mode4 random_seed anim_timer
+  scratch_env_mode4 random_seed anim_timer rival0_raw
 ].join(",")
 
 Dir.mktmpdir("rage-visual-refinement-") do |root|
@@ -31,12 +31,12 @@ Dir.mktmpdir("rage-visual-refinement-") do |root|
   state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
            10, 20, 30, 0, 0, 0, 0, 0, 7]
   File.write(File.join(psx, "capture-manifest.csv"),
-             header + "\n" + (["timer-00100-s12.ppm"] + state + [100]).join(",") + "\n")
+             header + "\n" + (["timer-00100-s12.ppm"] + state + [100, "deadbeef"]).join(",") + "\n")
   previous_state = state.dup
   previous_state[2] = 99
   native_rows = [
-    (["timer-00099-s12.ppm"] + previous_state + [99]).join(","),
-    (["timer-00100-s12.ppm"] + state + [100]).join(",")
+    (["timer-00099-s12.ppm"] + previous_state + [99, "deadbeef"]).join(","),
+    (["timer-00100-s12.ppm"] + state + [100, "deadbeef"]).join(",")
   ]
   File.write(File.join(native, "capture-manifest.csv"),
              header + "\n" + native_rows.join("\n") + "\n")
