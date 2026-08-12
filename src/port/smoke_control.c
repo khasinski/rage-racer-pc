@@ -373,14 +373,18 @@ int RagePortShouldExit(int frame_number) {
                 const char *filename = strrchr(path, '/');
                 filename = filename != NULL ? filename + 1 : path;
                 fprintf(g_SmokeCaptureManifest,
-                        "%s,%s,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%s,%s," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d," \
                         "%u,%u,%u,%u," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+                        "%d,%d,%u," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d",
                         filename,
                         getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL ?
                             "draw" : "display",

@@ -1951,6 +1951,10 @@ derived from a controlled PS1 GPU capture, not from this mixed-page pair.
 Capture manifests label this explicitly as `capture_surface=draw|display`.
 The batch comparator rejects mixed surfaces before state matching, so a packet
 diagnostic cannot silently enter a user-visible framebuffer regression.
+Keep the native CSV format signed for projection and mirror-matrix elements;
+only the four FNV hashes and random seed are unsigned.  A misplaced `%u`
+turned negative mirror coefficients into values near `2^32`, defeating the
+mirror-projection alignment gate even when both matrices differed by one unit.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
