@@ -2222,13 +2222,27 @@ of retail `0x7a0d`; applying the original packed-word addition fixes the
 whole emitter rather than special-casing that model.
 
 Course OT depth is also not an `AVSZ4` average.  The original dispatcher
-projects three vertices with RTPT and the fourth with RTPS, then computes the
-bucket from the first and fourth saved screen-Z values: `(SZ(first) +
-SZ(fourth)) >> 3` (`0x8002a110..0x8002a1d8`).  Because the portable PsyQ
-helper returns SZ divided by four, the equivalent portable expression is the
-half-sum of the first and fourth `RotTransPers` results.  Using `RotAverage4`
-changed OT ordering whenever the middle vertices had a different depth,
-which can change which coplanar texture wins and appear as flicker or holes.
+projects three vertices with RTPT and the fourth with RTPS.  Its transform
+stage quantizes every GTE Z into a 16-bit scratch-table entry first; the face
+loop adds the first and fourth saved entries and only then shifts the sum by
+three (`0x8002a37c..0x8002a43c`).  `RotTransPers` exposes a value eight times
+larger than that saved entry, so the portable equivalent is
+`((z0 >> 3) + (z3 >> 3)) >> 3`.  Do not replace it with
+`(z0 + z3) >> 6`: quantization and addition do not commute.  At timer 270,
+model 57 type-2 face 28, retail saves `865` and `869` and selects bucket 216;
+the wider-value average selected 217 despite identical source indices and
+screen XY.  Correcting the quantization order moves the strict GP0 stream's
+first mismatch from word 988 to word 2528, removing the earlier course/terrain
+interleave error.  This fixed-point semantic belongs to the game-code port and
+must be preserved on both 32- and 64-bit targets when backporting.
+
+For repeatable course-depth diagnosis, `RAGE_COURSE_FT4_TRACE` in the Ruby
+emulator now hooks both direct emitters and `SubmitCourseSubdividedFaces`.
+Each record includes its source pointer, four vertex indices, four saved Z
+values, pre-shift sum and selected depth.  The native course trace prints its
+four corresponding `RotTransPers` depths.  Filtering both with timer 270 turns
+an OT-ordering symptom into a record-for-record fixed-point comparison without
+interpreting screenshots manually.
 
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves

@@ -64,6 +64,7 @@ static int g_RageCourseTraceEnabled;
 static int g_RageCourseTraceTimer = -1;
 static int g_RageCourseTraceClut = -1;
 static int g_RageCourseTraceTpage = -1;
+static long g_RageCourseVertexDepth[4];
 
 static void RageInitializeTerrainTrace(void) {
     const char *timer;
@@ -318,12 +319,16 @@ static int RageProjectCourseFace(
             (SVECTOR *)&vertices[RageReadU16(face + vertex * 2)],
             &sxy[vertex], &p, &vertexFlag);
         flag |= vertexFlag;
+        g_RageCourseVertexDepth[vertex] = vertexDepth[vertex];
     }
-    /* The retail course loop does not issue AVSZ4.  It adds SZ1 from the
-     * first RTPT vertex to SZ3 from the following RTPS vertex and shifts that
-     * sum by three (0x8002a110..0x8002a1d8).  RotTransPers returns SZ/4, so
-     * the equivalent bucket depth is their half-sum. */
+    /* The retail course transform first stores each GTE Z in its 16-bit
+     * scratch table at 1/8 of RotTransPers' result.  The face loop then adds
+     * the already-quantized first and fourth values and shifts by three
+     * (0x8002a37c..0x8002a43c).  Quantize before adding: averaging the wider
+     * values first rounds some faces into the next OT bucket. */
     long otz = (vertexDepth[0] + vertexDepth[3]) >> 1;
+    long retailDepth = ((vertexDepth[0] >> 3) +
+                        (vertexDepth[3] >> 3)) >> 3;
     int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
     int i;
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
@@ -345,7 +350,7 @@ static int RageProjectCourseFace(
         g_RageProjectionReject = 1;
         return 0;
     }
-    *depth = (int)otz >> SCRATCH_OT_SHIFT;
+    *depth = (int)retailDepth;
     if (*depth <= 0 || *depth >= 448) {
         g_RageProjectionReject = 3;
         return 0;
@@ -1002,7 +1007,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         "course-face timer=%d model=%d type=%d face=%d "
                         "fogged=%d projected=%d reject=%d mirror=%d "
                         "idx=%u,%u,%u,%u clut=%04x tpage=%04x "
-                        "raw_depth=%d depth=%d bias=%d clip=%d "
+                        "z=%ld,%ld,%ld,%ld raw_depth=%d depth=%d bias=%d clip=%d "
                         "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
                         "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                         g_SceneTimer, index, type, i, fogged, projected,
@@ -1011,6 +1016,8 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         RageReadU16(stream + 2), RageReadU16(stream + 4),
                         RageReadU16(stream + 6), RageReadU16(stream + 14),
                         RageReadU16(stream + 18) & 0x9ff,
+                        g_RageCourseVertexDepth[0], g_RageCourseVertexDepth[1],
+                        g_RageCourseVertexDepth[2], g_RageCourseVertexDepth[3],
                         projected ? rawDepth : -1,
                         projected ? depth : -1, bias, clip,
                         (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
