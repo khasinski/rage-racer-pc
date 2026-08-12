@@ -10,18 +10,23 @@ Dir.mktmpdir("rage-gp0-compare-") do |directory|
   native = File.join(directory, "native.log")
   File.write(psx, <<~LOG)
     noise
-    gp0-command chain=1 node=0 packet=0 address=001000 code=e3 length=1 words=e3000000
-    gp0-command chain=1 node=0 packet=1 address=001004 code=02 length=3 words=02000000,00000000,00f00140
+    gp0-command frame=7 chain=1 node=0 packet=0 address=001000 code=e3 length=1 words=e3000000
+    gp0-command frame=7 chain=1 node=0 packet=1 address=001004 code=02 length=3 words=02000000,00000000,00f00140
   LOG
   File.write(native, <<~LOG)
-    gp0-packet chain=0 packet=0 code=e3 length=4 words=e3000000,02000000,00000000,00f00140
+    gp0-packet frame=9 chain=0 packet=0 code=e3 length=4 words=e3000000,02000000,00000000,00f00140
   LOG
   output, status = Open3.capture2e(RbConfig.ruby, tool, "--psx", psx,
                                    "--native", native)
   raise output unless status.success? && output.include?("gp0 streams equal")
+  output, status = Open3.capture2e(
+    RbConfig.ruby, tool, "--psx", psx, "--native", native,
+    "--psx-frame", "7", "--native-frame", "9"
+  )
+  raise output unless status.success? && output.include?("gp0 streams equal")
 
   File.write(native, <<~LOG)
-    gp0-packet chain=0 packet=0 code=e3 length=4 words=e3000000,02000000,00000001,00f00140
+    gp0-packet frame=9 chain=0 packet=0 code=e3 length=4 words=e3000000,02000000,00000001,00f00140
   LOG
   output, status = Open3.capture2e(RbConfig.ruby, tool, "--psx", psx,
                                    "--native", native)

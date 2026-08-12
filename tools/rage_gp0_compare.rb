@@ -10,15 +10,19 @@ OptionParser.new do |parser|
   parser.on("--native PATH", "Native PsyZ GP0 trace") { |v| options[:native] = v }
   parser.on("--skip-words N", Integer,
             "Ignore this many leading words on each side") { |v| options[:skip] = v }
+  parser.on("--psx-frame N", Integer, "Compare only this retail frame") { |v| options[:psx_frame] = v }
+  parser.on("--native-frame N", Integer, "Compare only this native frame") { |v| options[:native_frame] = v }
 end.parse!
 abort "both --psx and --native are required" unless options[:psx] && options[:native]
 
 Packet = Struct.new(:source, :line, :metadata, :words, keyword_init: true)
 
-read_packets = lambda do |path, prefix|
+read_packets = lambda do |path, prefix, wanted_frame|
   packets = []
   File.foreach(path).with_index(1) do |line, number|
     next unless line.start_with?(prefix)
+    frame = line[/\bframe=(\d+)/, 1]&.to_i
+    next if wanted_frame && frame != wanted_frame
     words_text = line[/\bwords=([0-9a-fA-F,]+)/, 1]
     next unless words_text
     packets << Packet.new(
@@ -29,8 +33,8 @@ read_packets = lambda do |path, prefix|
   packets
 end
 
-psx_packets = read_packets.call(options[:psx], "gp0-command ")
-native_packets = read_packets.call(options[:native], "gp0-packet ")
+psx_packets = read_packets.call(options[:psx], "gp0-command ", options[:psx_frame])
+native_packets = read_packets.call(options[:native], "gp0-packet ", options[:native_frame])
 abort "no gp0-command records in #{options[:psx]}" if psx_packets.empty?
 abort "no gp0-packet records in #{options[:native]}" if native_packets.empty?
 
