@@ -126,6 +126,15 @@ static int g_SmokeInitialized;
 static int g_SmokeRawPadPath;
 static int g_SmokeCaptureAllPhases;
 static RageSmokeStateInput g_SmokeStateInputs[32];
+static int g_SmokeRandomSyncEnabled;
+static int g_SmokeRandomSyncArmed;
+static int g_SmokeRandomSyncFired;
+static long g_SmokeRandomSyncScene;
+static long g_SmokeRandomSyncTimer;
+static unsigned long g_SmokeRandomSyncSeed;
+static long g_SmokeRandomSyncVariant;
+static long g_SmokeRandomSyncVariant2;
+static int g_SmokeRandomSyncHasVariants;
 static int g_SmokeStateInputCount;
 
 extern int g_SceneId;
@@ -165,6 +174,7 @@ static void RageSmokeInitialize(void) {
     const char *captureAllPhases =
         getenv("RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
     const char *stateScript = getenv("RAGE_PORT_STATE_INPUT_SCRIPT");
+    const char *randomSync = getenv("RAGE_PORT_SYNC_RANDOM");
     char *copy;
     char *token;
 
@@ -183,6 +193,28 @@ static void RageSmokeInitialize(void) {
     g_SmokeCaptureTimerMin = captureMin ? strtol(captureMin, NULL, 10) : 0;
     g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
     g_SmokeCaptureAllPhases = captureAllPhases != NULL;
+    if (randomSync != NULL && randomSync[0] != '\0') {
+        char *end;
+        g_SmokeRandomSyncScene = strtol(randomSync, &end, 0);
+        if (*end == '@') {
+            g_SmokeRandomSyncTimer = strtol(end + 1, &end, 0);
+            if (*end == '=') {
+                g_SmokeRandomSyncSeed = strtoul(end + 1, &end, 0);
+                if (*end == ':') {
+                    g_SmokeRandomSyncVariant = strtol(end + 1, &end, 0);
+                    if (*end == ':') {
+                        g_SmokeRandomSyncVariant2 = strtol(end + 1, &end, 0);
+                        g_SmokeRandomSyncHasVariants = *end == '\0';
+                    }
+                }
+                g_SmokeRandomSyncEnabled = *end == '\0';
+            }
+        }
+        if (!g_SmokeRandomSyncEnabled) {
+            fprintf(stderr,
+                    "RAGE_PORT_SYNC_RANDOM must be scene@timer=seed[:variant:variant2]\n");
+        }
+    }
     if (g_SmokeCaptureDirectory != NULL &&
         g_SmokeCaptureDirectory[0] != '\0' &&
         g_SmokeCaptureTimerStride > 0) {
@@ -329,6 +361,25 @@ int RagePortShouldExit(int frame_number) {
         g_PadBuffers[2] = (u8)~(buttons >> 8);
         g_PadBuffers[3] = (u8)~buttons;
         UpdatePadState();
+    }
+    if (g_SmokeRandomSyncEnabled && !g_SmokeRandomSyncFired) {
+        if (g_SceneId == g_SmokeRandomSyncScene &&
+            g_SceneTimer <= g_SmokeRandomSyncTimer) {
+            g_SmokeRandomSyncArmed = 1;
+        }
+        if (g_SmokeRandomSyncArmed && g_SceneId == g_SmokeRandomSyncScene &&
+            g_SceneTimer >= g_SmokeRandomSyncTimer) {
+            g_RandomSeed = (unsigned int)g_SmokeRandomSyncSeed;
+            if (g_SmokeRandomSyncHasVariants) {
+                g_AnimSceneryVariant = (s16)g_SmokeRandomSyncVariant;
+                g_AnimScenery2Variant = (s16)g_SmokeRandomSyncVariant2;
+            }
+            g_SmokeRandomSyncFired = 1;
+            fprintf(stderr,
+                    "random sync frame=%d scene=%d timer=%d seed=%08x variants=%d,%d\n",
+                    frame_number, g_SceneId, g_SceneTimer, g_RandomSeed,
+                    g_AnimSceneryVariant, g_AnimScenery2Variant);
+        }
     }
     for (index = 0; index < g_SmokeInputCount; index++) {
         if (!g_SmokeRawPadPath &&

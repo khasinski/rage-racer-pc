@@ -2642,3 +2642,32 @@ out-of-bounds access, corrupting unrelated globals and producing invalid car
 availability and appearance state. Preserve the complete game-owned tables on
 the host; the retail interior byte labels are map views and are not a reason to
 split the native C objects.
+
+### Deterministic RNG and scenery tap for visual comparisons
+
+`rage_visual_run.rb --sync-random scene@timer=seed[:variant:variant2]` now
+installs the same one-shot debug tap in the Ruby emulator and native smoke
+harness. Both log the exact frame, scene, timer, seed and active scenery
+variants, and `run.json` retains the setting. This is deliberately harness-only
+state injection; normal game binaries and game logic do not read it. Supplying
+the two optional variants is useful for billboard/animated-prop comparisons,
+where different frontend RNG histories otherwise look like wrong textures.
+
+Do not assume a tap well before the comparison window makes later absolute RNG
+states equal. A trace starting from the current retail checkpoint found 589
+common consecutive LCG states with a constant PSX-minus-native call-index
+offset of -397, proving that `Random15` and the gameplay call sequence agree.
+However, PSX and native currently execute different numbers of game/render
+updates per displayed race timer: after a symmetric timer-200 tap, the first
+manifest row was four LCG calls later on PSX and 85 calls later on native.
+Consequently `--require-random-seed` is valid only at a directly verified tap
+boundary or after cadence has been synchronized. For static road/HUD work,
+force the two scenery variants and retain the seed delta as reported evidence;
+for collision/mirror work, use the RNG trace aligner and an actually equal
+runtime phase rather than weakening the gate.
+
+As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
+route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
+a report. This makes remaining large visual differences more likely to be
+submission/culling, cadence or backend behaviour than another ordinary
+out-of-bounds access on that route; it is not evidence for untested courses.
