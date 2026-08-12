@@ -6,6 +6,7 @@
 #include "game/player_car_internal.h"
 #include "game/menu.h"
 #include "game/race_internal.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 
@@ -120,6 +121,8 @@ static void RageSmokeInitialize(void) {
                       "proj_m00,proj_m01,proj_m02,proj_m10,proj_m11," \
                       "proj_m12,proj_m20,proj_m21,proj_m22," \
                       "proj_x0,proj_y0,proj_x1,proj_y1,proj_order," \
+                      "mirror_m00,mirror_m01,mirror_m02,mirror_m10,mirror_m11," \
+                      "mirror_m12,mirror_m20,mirror_m21,mirror_m22," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
                       "anim_timer,tacho_rpm,rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
@@ -333,6 +336,7 @@ int RagePortShouldExit(int frame_number) {
                 fprintf(g_SmokeCaptureManifest,
                         "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -354,7 +358,12 @@ int RagePortShouldExit(int frame_number) {
                         SCRATCHPAD->matrix.m[2][2],
                         SCRATCHPAD->x0, SCRATCHPAD->y0,
                         SCRATCHPAD->x1, SCRATCHPAD->y1,
-                        SCRATCHPAD->orderingFlag & 1, g_IsEnvironmentMode4,
+                        SCRATCHPAD->orderingFlag & 1,
+                        g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
+                        g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
+                        g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
+                        g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
+                        g_MirrorViewMatrix.m[2][2], g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
                         g_Cars[0].x, g_Cars[0].z,

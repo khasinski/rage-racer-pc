@@ -1125,6 +1125,22 @@ in-race hole is fixed. Expand the synchronized capture window and require the
 projection gate before classifying further candidates as culling or draw-range
 failures.
 
+Mirror comparisons additionally record all nine entries of
+`g_MirrorViewMatrix` (retail `0x8019cb18`) and accept
+`--max-mirror-projection-delta N`. The restored scratch matrix normally
+describes the main pass, so its equality alone cannot validate rear-view
+geometry. In the strict timer-868 draw-page pair, both main and mirror matrices
+are exactly equal; player/view translation differs by three world units and
+speed by four. Retail writes mirror pixel `(220,42)` from a thin `tpage 0x05`,
+`CLUT 0x7943` quad, while native submits the corresponding strip one to two
+screen pixels higher/lower and leaves the sample clear. Shifting native CROSS
+to frame 1469/1471 and emulator CROSS to relative VBlank 0/1 is the closest
+reachable input cadence; the next parity jumps by 17 player-X and 62 view-X
+units. Therefore the 118-pixel mirror-road clear mask in this pair is explained
+by unresolved sub-tick camera translation, not evidence for changing PsyZ or
+Rage Racer culling. Require both the mirror-matrix gate and tighter translation
+before treating such a thin-strip displacement as a renderer defect.
+
 Use display-page captures for user-visible acceptance and draw-page captures
 for packet-level diagnosis. A timer-841 display-page pair appeared to contain a
 four-pixel clear hole at `(115..116,138..139)`: retail submitted two textured

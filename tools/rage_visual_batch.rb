@@ -30,6 +30,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
             max_projection_delta: Float::INFINITY,
+            max_mirror_projection_delta: Float::INFINITY,
             max_tacho_rpm_delta: Float::INFINITY,
             visual_refine: 0,
             require_random_seed: false,
@@ -86,6 +87,10 @@ OptionParser.new do |parser|
             "skip states whose projection fingerprint differs by more than N") do |value|
     options[:max_projection_delta] = value
   end
+  parser.on("--max-mirror-projection-delta N", Float,
+            "skip states whose rear-view matrix differs by more than N") do |value|
+    options[:max_mirror_projection_delta] = value
+  end
   parser.on("--max-tacho-rpm-delta N", Float,
             "skip states whose displayed tachometer RPM differs by more than N") do |value|
     options[:max_tacho_rpm_delta] = value
@@ -139,6 +144,8 @@ def manifest_rows(directory)
       view_angle_y view_angle_z environment_mode4 scratch_env_mode4
       proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12 proj_m20 proj_m21
       proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
+      mirror_m00 mirror_m01 mirror_m02 mirror_m10 mirror_m11 mirror_m12
+      mirror_m20 mirror_m21 mirror_m22
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       tacho_rpm
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
@@ -190,6 +197,10 @@ if options[:match] == "position"
     proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12
     proj_m20 proj_m21 proj_m22 proj_x0 proj_y0 proj_x1 proj_y1
   ]
+  mirror_projection_fields = %i[
+    mirror_m00 mirror_m01 mirror_m02 mirror_m10 mirror_m11 mirror_m12
+    mirror_m20 mirror_m21 mirror_m22
+  ]
   state_metrics = lambda do |candidate, psx|
     dx = candidate[:x] - psx[:x]
     dz = candidate[:z] - psx[:z]
@@ -209,6 +220,9 @@ if options[:match] == "position"
     projection_delta = projection_fields.sum do |key|
       candidate.key?(key) && psx.key?(key) ? (candidate[key] - psx[key]).abs : 0
     end
+    mirror_projection_delta = mirror_projection_fields.sum do |key|
+      candidate.key?(key) && psx.key?(key) ? (candidate[key] - psx[key]).abs : 0
+    end
     {
       dx: dx, dz: dz, position_distance: Math.hypot(dx, dz),
       view_distance: Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz),
@@ -216,6 +230,7 @@ if options[:match] == "position"
       lateral_delta: candidate.key?(:track_lateral) && psx.key?(:track_lateral) ?
         (candidate[:track_lateral] - psx[:track_lateral]).abs : 0,
       rival_distance: rival_distance, projection_delta: projection_delta,
+      mirror_projection_delta: mirror_projection_delta,
       tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
         (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
@@ -230,6 +245,7 @@ if options[:match] == "position"
       metrics[:lateral_delta] <= options[:max_lateral_delta] &&
       metrics[:rival_distance] <= options[:max_rival_distance] &&
       metrics[:projection_delta] <= options[:max_projection_delta] &&
+      metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:projection_phase_equal]
   end
@@ -249,6 +265,8 @@ if options[:match] == "position"
       metrics[:rival_distance] > options[:max_rival_distance]
     reasons << "projection=#{metrics[:projection_delta]}>#{options[:max_projection_delta]}" if
       metrics[:projection_delta] > options[:max_projection_delta]
+    reasons << "mirror_projection=#{metrics[:mirror_projection_delta]}>#{options[:max_mirror_projection_delta]}" if
+      metrics[:mirror_projection_delta] > options[:max_mirror_projection_delta]
     reasons << "tacho_rpm=#{metrics[:tacho_rpm_delta]}>#{options[:max_tacho_rpm_delta]}" if
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
@@ -278,6 +296,7 @@ if options[:match] == "position"
         metrics[:position_distance] + metrics[:view_distance] * 2 +
           metrics[:speed_delta].abs * 4 + metrics[:angle_delta] +
           metrics[:lateral_delta] + metrics[:projection_delta] * 4
+          + metrics[:mirror_projection_delta] * 4
       end
       metrics = state_metrics.call(nearest, psx)
       rejected << {
@@ -412,6 +431,7 @@ if options[:match] == "position"
           native_state[:track_lateral] - psx[:track_lateral] : nil,
         rival_distance: rival_distance,
         projection_delta: projection_delta,
+        mirror_projection_delta: state_metrics.call(native_state, psx)[:mirror_projection_delta],
         tacho_rpm: native_state.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
           native_state[:tacho_rpm] - psx[:tacho_rpm] : nil,
         projection_phase_equal: projection_phase_equal,

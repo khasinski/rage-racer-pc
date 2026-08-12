@@ -165,6 +165,31 @@ Dir.mktmpdir("rage-visual-projection-gate-") do |root|
     (stdout + stderr).include?("projection=1>0.0")
 end
 
+Dir.mktmpdir("rage-visual-mirror-projection-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  mirror_header = header + ",mirror_m00"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             mirror_header + "\n" + ([filename] + state + [100, "deadbeef", 4096]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             mirror_header + "\n" + ([filename] + state + [100, "deadbeef", 4095]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-mirror-projection-delta", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "mirror projection gate accepted unequal matrices" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?(
+    "mirror_projection=1>0.0"
+  )
+end
+
 Dir.mktmpdir("rage-visual-gate-before-ranking-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
