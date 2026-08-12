@@ -1042,7 +1042,11 @@ diagnostic preset. `run.json` records cwd, argv, environment, timer range and a
 shell-escaped reproduction command for all three stages. Use `--dry-run` to
 audit the route without starting either game; repeat `--match-arg=VALUE` for
 batch tolerances. Pass `--draw-page` only for raw VRAM/packet diagnosis; those
-images are not visual acceptance frames. For example:
+images are not visual acceptance frames. `--alignment-only` performs the same
+captures and state gates but skips ImageMagick, heatmaps and per-frame bundles;
+on a cached sequence the manifest scan takes about 0.06 seconds. Use it to find
+strictly aligned candidates in long routes before generating detailed bundles.
+For example:
 
 ```sh
 ruby tools/rage_visual_run.rb \

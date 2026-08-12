@@ -378,6 +378,30 @@ Dir.mktmpdir("rage-visual-skip-unmatched-") do |root|
     rejection.fetch("reasons").first.include?("scene=11 lap=1")
 end
 
+Dir.mktmpdir("rage-visual-alignment-only-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  # Alignment-only must not inspect image contents. Empty files are enough to
+  # make the manifest rows addressable and would fail an ImageMagick compare.
+  File.binwrite(File.join(psx, filename), "")
+  File.binwrite(File.join(native, filename), "")
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  row = ([filename] + state + [100, "deadbeef"]).join(",")
+  File.write(File.join(psx, "capture-manifest.csv"), header + "\n" + row + "\n")
+  File.write(File.join(native, "capture-manifest.csv"), header + "\n" + row + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--alignment-only"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  summary = JSON.parse(File.read(File.join(output, "summary.json")))
+  abort "alignment-only did not retain the eligible pair" unless
+    summary.fetch("alignment_only") && summary.fetch("matched_frames") == 1
+end
+
 Dir.mktmpdir("rage-visual-needle-refinement-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

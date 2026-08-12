@@ -50,7 +50,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             require_mirror_visible_cells: false,
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
-            skip_unmatched: false,
+            skip_unmatched: false, alignment_only: false,
             jobs: [Etc.nprocessors, 8].min, top: nil }
 explicit_options = {}
 OptionParser.new do |parser|
@@ -150,6 +150,10 @@ OptionParser.new do |parser|
   parser.on("--skip-unmatched",
             "skip PSX rows with no eligible native state; report every rejection") do
     options[:skip_unmatched] = true
+  end
+  parser.on("--alignment-only",
+            "write eligible state pairs without running image comparisons") do
+    options[:alignment_only] = true
   end
   parser.on("--rank METRIC", %w[rmse clear black needle],
             "rank output by RMSE, clear, black, or needle mismatch") do |value|
@@ -560,6 +564,26 @@ else
     { psx: psx, native: native,
       label: format("timer-%05d-s%02d", timer, scene), state_delta: nil }
   end
+end
+
+if options[:alignment_only]
+  frames = pairs.map do |pair|
+    {
+      frame: pair[:label], psx_frame: pair[:psx].basename.to_s,
+      native_frame: pair[:native].basename.to_s,
+      state_delta: pair[:state_delta]
+    }
+  end
+  summary = {
+    psx_directory: psx_dir.to_s, native_directory: native_dir.to_s,
+    match: options[:match], alignment_only: true,
+    matched_frames: frames.length,
+    rejected_frames: defined?(rejected) && rejected ? rejected.length : 0,
+    rejections: defined?(rejected) && rejected ? rejected : [], frames: frames
+  }
+  File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
+  puts "aligned=#{frames.length} rejected=#{summary[:rejected_frames]}"
+  exit
 end
 
 compare = Pathname(__dir__) / "rage_visual_compare.rb"

@@ -18,7 +18,8 @@ options = {
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
                 "1200:CROSS,1469-3000:CROSS",
   psx_state_input: nil, native_state_input: nil,
-  match_args: [], budgets: [], draw_page: false, dry_run: false,
+  match_args: [], budgets: [], draw_page: false, alignment_only: false,
+  dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
@@ -51,6 +52,9 @@ parser = OptionParser.new do |cli|
   end
   cli.on("--draw-page", "capture the active VRAM drawing page (packet/VRAM diagnosis only)") do
     options[:draw_page] = true
+  end
+  cli.on("--alignment-only", "capture and report eligible state pairs without image bundles") do
+    options[:alignment_only] = true
   end
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
@@ -101,6 +105,7 @@ batch_commands = profiles.to_h do |profile|
              "--output", compare_dirs.fetch(profile).to_s, "--preset", profile,
              "--match", "position", "--visual-refine", "0",
              "--jobs", options[:jobs].to_s, *options[:match_args]]
+  command << "--alignment-only" if options[:alignment_only]
   command.concat(["--top", options[:top].to_s]) if options[:top]
   [profile, command]
 end
@@ -113,6 +118,7 @@ end
 metadata = {
   created_at: Time.now.iso8601, profile: options[:profile],
   budgets: options[:budgets],
+  alignment_only: options[:alignment_only],
   timer_range: [options[:timer_min], options[:timer_max]],
   draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   native: serialize.call(native_env, native_command, root),
@@ -149,6 +155,14 @@ batch_commands.each do |profile, command|
   warn stderr unless stderr.empty?
   summary = JSON.parse(File.read(compare_dirs.fetch(profile) / "summary.json"))
   frames = summary.fetch("frames")
+  if options[:alignment_only]
+    comparison_results[profile] = {
+      matched_frames: summary.fetch("matched_frames"),
+      rejected_frames: summary.fetch("rejected_frames"),
+      frames: frames
+    }
+    next
+  end
   worst_clear = frames.max_by { |frame| frame.fetch("native_only_clear") }
   worst_black = frames.max_by { |frame| frame.fetch("native_only_black") }
   worst_needle = frames.max_by do |frame|

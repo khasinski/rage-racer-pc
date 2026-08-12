@@ -54,4 +54,15 @@ Dir.mktmpdir("rage-visual-run-all-") do |output|
     metadata.fetch("comparisons").keys == %w[road mirror-road tacho hud]
 end
 
+Dir.mktmpdir("rage-visual-run-alignment-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--alignment-only", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "alignment-only mode was not recorded or forwarded" unless
+    metadata.fetch("alignment_only") &&
+    metadata.dig("comparisons", "road", "argv").include?("--alignment-only")
+end
+
 puts "visual run defaults to front buffers and records explicit draw-page diagnostics"
