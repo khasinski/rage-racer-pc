@@ -1059,6 +1059,13 @@ with cached older captures. This matters immediately after contact: two frames
 can have identical position, speed and yaw but different body roll, which the
 chase camera copies into `SCRATCH_VIEW_ANGLE_Z` and therefore changes every
 terrain and sky projection.
+For scenery-heavy regions such as the full mirror, add
+`--require-random-seed`. Position equality is not enough there: animated
+track objects consume `Random15`, so unequal seeds can produce different
+object quads even when player, camera, rivals and timer all match. The option
+rejects such pairs instead of ranking a simulation divergence as a renderer
+error. Road, static HUD and mirror-road comparisons can remain useful without
+this gate, but their reports still expose `random_seed_equal`.
 
 RMSE is often dominated by HUD digits, animated signs and a one-frame texture
 phase even when the road is correct.  For terrain-hole searches pass the same

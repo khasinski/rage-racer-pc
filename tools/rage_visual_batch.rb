@@ -30,6 +30,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
             visual_refine: 0,
+            require_random_seed: false,
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
             jobs: [Etc.nprocessors, 8].min, top: nil }
@@ -78,6 +79,10 @@ OptionParser.new do |parser|
   parser.on("--max-rival-distance N", Float,
             "skip matches whose four rivals exceed this aggregate X/Z distance") do |value|
     options[:max_rival_distance] = value
+  end
+  parser.on("--require-random-seed",
+            "reject state pairs whose RNG seeds differ") do
+    options[:require_random_seed] = true
   end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
@@ -259,6 +264,9 @@ if options[:match] == "position"
             rival_distance > options[:max_rival_distance]
     next if native_state.key?(:anim_timer) && psx.key?(:anim_timer) &&
             (native_state[:anim_timer] - psx[:anim_timer]) % 128 != 0
+    next if options[:require_random_seed] &&
+            native_state.key?(:random_seed) && psx.key?(:random_seed) &&
+            native_state[:random_seed] != psx[:random_seed]
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",

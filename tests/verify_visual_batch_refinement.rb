@@ -54,4 +54,27 @@ Dir.mktmpdir("rage-visual-refinement-") do |root|
   abort "display timer delta was not recorded" unless delta.fetch("display_timer") == -1
 end
 
-puts "visual refinement separates sampled state from the displayed buffer"
+Dir.mktmpdir("rage-visual-seed-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  write_ppm(File.join(psx, "timer-00100-s12.ppm"), 16)
+  write_ppm(File.join(native, "timer-00100-s12.ppm"), 16)
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" + (["timer-00100-s12.ppm"] + state + [100, "deadbeef"]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" + (["timer-00100-s12.ppm"] + state + [101, "deadbeef"]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--require-random-seed"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "seed gate accepted unequal RNG states" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?(
+    "no state-aligned frame pairs within the position limit"
+  )
+end
+
+puts "visual refinement separates sampled state from the displayed buffer; RNG gate rejects divergent states"
