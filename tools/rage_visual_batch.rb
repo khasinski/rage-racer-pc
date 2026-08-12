@@ -203,7 +203,7 @@ def manifest_rows(directory)
       proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
       mirror_m00 mirror_m01 mirror_m02 mirror_m10 mirror_m11 mirror_m12
       mirror_m20 mirror_m21 mirror_m22
-      main_visible_hash mirror_visible_hash
+      main_visible_hash mirror_visible_hash main_visible_list_hash mirror_visible_list_hash
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       tacho_rpm
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
@@ -216,7 +216,8 @@ def manifest_rows(directory)
     numeric_fields.each do |key|
       row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
     end
-    %i[main_visible_hash mirror_visible_hash].each do |key|
+    %i[main_visible_hash mirror_visible_hash
+       main_visible_list_hash mirror_visible_list_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
     end
     image = directory / row[:filename]
@@ -302,10 +303,16 @@ if options[:match] == "position"
                         end,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
-      main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
-        !psx.key?(:main_visible_hash) || candidate[:main_visible_hash] == psx[:main_visible_hash],
-      mirror_visible_cells_equal: !candidate.key?(:mirror_visible_hash) ||
-        !psx.key?(:mirror_visible_hash) || candidate[:mirror_visible_hash] == psx[:mirror_visible_hash]
+      main_visible_cells_equal: (!candidate.key?(:main_visible_hash) ||
+        !psx.key?(:main_visible_hash) || candidate[:main_visible_hash] == psx[:main_visible_hash]) &&
+        (!candidate.key?(:main_visible_list_hash) ||
+         !psx.key?(:main_visible_list_hash) ||
+         candidate[:main_visible_list_hash] == psx[:main_visible_list_hash]),
+      mirror_visible_cells_equal: (!candidate.key?(:mirror_visible_hash) ||
+        !psx.key?(:mirror_visible_hash) || candidate[:mirror_visible_hash] == psx[:mirror_visible_hash]) &&
+        (!candidate.key?(:mirror_visible_list_hash) ||
+         !psx.key?(:mirror_visible_list_hash) ||
+         candidate[:mirror_visible_list_hash] == psx[:mirror_visible_list_hash])
     }
   end
   eligible = lambda do |metrics|

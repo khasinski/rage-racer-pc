@@ -1839,3 +1839,15 @@ before `SubmitTerrainCells`: a state made inside the subdivision emitter can
 resume after the parent decision and silently produce no LOD records.  GTE
 trace limits can likewise truncate before the mirror parents, so compare
 complete per-pass counts rather than treating a prefix as a distribution.
+The emulator probe covers all four equivalent post-LOD PCs (`0x800284a4`,
+`0x80028554`, `0x80028600`, and `0x80028758`); tracing only the first silently
+misses the other terrain dispatch modes.
+
+Visible-cell mask equality is necessary but not sufficient for LOD diagnosis.
+The mask records which cells were selected, while each 16-byte list entry also
+carries its camera-relative translation, which feeds GTE OTZ.  Capture
+manifests therefore hash the complete 1024-byte main and mirror lists as
+`main_visible_list_hash` and `mirror_visible_list_hash`.  The existing
+`--require-main-visible-cells` / `--require-mirror-visible-cells` gates require
+both mask and list equality when those newer columns are present, while
+remaining compatible with older captures.

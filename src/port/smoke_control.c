@@ -140,6 +140,7 @@ static void RageSmokeInitialize(void) {
                       "mirror_m00,mirror_m01,mirror_m02,mirror_m10,mirror_m11," \
                       "mirror_m12,mirror_m20,mirror_m21,mirror_m22," \
                       "main_visible_hash,mirror_visible_hash," \
+                      "main_visible_list_hash,mirror_visible_list_hash," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
                       "anim_timer,tacho_rpm,rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
@@ -354,7 +355,7 @@ int RagePortShouldExit(int frame_number) {
                         "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%u,%u," \
+                        "%u,%u,%u,%u," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -384,6 +385,8 @@ int RagePortShouldExit(int frame_number) {
                         g_MirrorViewMatrix.m[2][2],
                         RageSmokeHashWords(g_MainVisibleCellMask, 32),
                         RageSmokeHashWords(g_MirrorVisibleCellMask, 32),
+                        RageSmokeHashWords((const u32 *)g_MainVisibleCellList, 256),
+                        RageSmokeHashWords((const u32 *)g_MirrorVisibleCellList, 256),
                         g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
