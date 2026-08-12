@@ -1067,6 +1067,16 @@ emulator's inclusive floating-point scanline rasterizer does not yet implement
 the same edge convention, so edge-only black-pixel rankings remain a candidate
 finder rather than an acceptance oracle.
 
+PsyZ must not infer texture flipping from projected screen coordinates. Its
+old `FixupFlipUV` compared XY and UV orientation and incremented every U or V
+in a packet when they appeared reversed. The PS1 consumes the packet UVs
+verbatim; orientation is already expressed by which UV belongs to each
+vertex. At synchronized timer 877 the retail packet contained U `126..0`,
+while this heuristic changed the identical native packet to `127..1` and
+could move sampling onto palette index zero (`0x8000`, opaque black). Removing
+the heuristic improves road-region RMSE, the maximum mirror black-pixel count,
+and the maximum HUD black-pixel count without changing submitted geometry.
+
 Timer labels are not identical render checkpoints across the two runtimes. In
 the repeatable turning scenario, PSX timer 501 has the same car state as native
 timer 500; comparing equal timer numbers advances native physics once and can
