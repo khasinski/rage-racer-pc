@@ -2674,6 +2674,11 @@ boundary.  The timer-200 investigation also exposed the independent throttle
 alias bug above; its missing native `Random15` call was not evidence of a
 50/60-Hz or game-update cadence difference.
 
+The capture manifest must read `g_TachoNeedleFlash` at `0x801E40B0`;
+`0x801E40AC` is `g_SndUpdateLock`.  State pairing rejects unequal needle-flash
+phases, because equal RPM alone can still select different tachometer colors
+and otherwise produces a large, misleading HUD pixel delta.
+
 As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
 route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
 a report. This makes remaining large visual differences more likely to be

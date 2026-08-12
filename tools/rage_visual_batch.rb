@@ -42,6 +42,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_projection_delta: Float::INFINITY,
             max_mirror_projection_delta: Float::INFINITY,
             max_tacho_rpm_delta: Float::INFINITY,
+            require_tacho_flash: false,
             max_timer_delta: Float::INFINITY,
             max_anim_timer_delta: 0,
             require_scenery_variants: true,
@@ -125,6 +126,10 @@ OptionParser.new do |parser|
             "skip states whose displayed tachometer RPM differs by more than N") do |value|
     options[:max_tacho_rpm_delta] = value
     explicit_options[:max_tacho_rpm_delta] = true
+  end
+  parser.on("--require-tacho-flash",
+            "require the same tachometer needle flash phase") do
+    options[:require_tacho_flash] = true
   end
   parser.on("--max-timer-delta N", Integer,
             "skip state matches farther than N game-timer ticks") do |value|
@@ -226,7 +231,7 @@ def manifest_rows(directory)
       mirror_m20 mirror_m21 mirror_m22
       main_visible_hash mirror_visible_hash main_visible_list_hash mirror_visible_list_hash
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
-      tacho_rpm
+      tacho_rpm tacho_needle_flash
       course_index grand_prix_class grand_prix_mode player_car_index
       texture_page_wanted texture_cursor_row texture_target_row
       course_object_count course_objects_hash
@@ -346,6 +351,11 @@ if options[:match] == "position"
       tacho_rpm_present: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm),
       tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
         (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
+      tacho_flash_present: candidate.key?(:tacho_needle_flash) &&
+        psx.key?(:tacho_needle_flash),
+      tacho_flash_equal: !candidate.key?(:tacho_needle_flash) ||
+        !psx.key?(:tacho_needle_flash) ||
+        candidate[:tacho_needle_flash] == psx[:tacho_needle_flash],
       timer_delta: (candidate[:timer] - psx[:timer]).abs,
       anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
                           raw = (candidate[:anim_timer] - psx[:anim_timer]) % 128
@@ -381,6 +391,8 @@ if options[:match] == "position"
       metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
       (!explicit_options[:max_tacho_rpm_delta] || metrics[:tacho_rpm_present]) &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
+      (!options[:require_tacho_flash] ||
+        (metrics[:tacho_flash_present] && metrics[:tacho_flash_equal])) &&
       metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       (!options[:require_scenery_variants] || metrics[:scenery_variants_equal]) &&
@@ -414,6 +426,10 @@ if options[:match] == "position"
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
     reasons << "missing_tacho_rpm" if explicit_options[:max_tacho_rpm_delta] &&
       !metrics[:tacho_rpm_present]
+    reasons << "missing_tacho_flash" if options[:require_tacho_flash] &&
+      !metrics[:tacho_flash_present]
+    reasons << "tacho_flash" if options[:require_tacho_flash] &&
+      metrics[:tacho_flash_present] && !metrics[:tacho_flash_equal]
     reasons << "timer=#{metrics[:timer_delta]}>#{options[:max_timer_delta]}" if
       metrics[:timer_delta] > options[:max_timer_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
@@ -609,6 +625,9 @@ if options[:match] == "position"
         mirror_projection_delta: state_metrics.call(native_state, psx)[:mirror_projection_delta],
         tacho_rpm: native_state.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
           native_state[:tacho_rpm] - psx[:tacho_rpm] : nil,
+        tacho_flash_equal: native_state.key?(:tacho_needle_flash) &&
+          psx.key?(:tacho_needle_flash) ?
+          native_state[:tacho_needle_flash] == psx[:tacho_needle_flash] : nil,
         projection_phase_equal: projection_phase_equal,
         main_visible_cells_equal: state_metrics.call(native_state, psx)[:main_visible_cells_equal],
         mirror_visible_cells_equal: state_metrics.call(native_state, psx)[:mirror_visible_cells_equal],
