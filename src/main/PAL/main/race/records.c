@@ -18,6 +18,12 @@ void InitRecordTables(void) {
                 g_BestLapTimes[series][course][slot] = defaultLapTimes[series * 4 + course];
                 g_BestTotalTimes[series][course][slot] = defaultTotalTimes[series * 4 + course];
             }
+            for (slot = 0; slot < 3; slot++) {
+                /* Retail seeds all three sector references from the course's
+                 * default lap time; memory-card data may replace them later. */
+                g_BestSectorTimes[series][course][slot] =
+                    defaultLapTimes[series * 4 + course];
+            }
             for (slot = 0; slot < 5; slot++) {
                 g_RankingRecords[series][course][slot] = (RaceRecord){0};
                 g_TimeRecords[series][course][slot] = (RaceRecord){0};

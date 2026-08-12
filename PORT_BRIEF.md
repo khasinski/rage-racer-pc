@@ -2590,3 +2590,15 @@ for RPM band `b > 0`, `(&g_TorqueBandStart)[b]` means
 globals have no such adjacency guarantee. Use the predecessor entries of the
 two end tables explicitly. This retains the original curve search ranges while
 removing another 32/64-bit and linker-layout dependency from game code.
+
+`g_BestSectorTimes[2][4][3]` was another truncated host object: its declaration
+requires 96 bytes, while `host_state.c` allocated only eight and treated the
+following two retail labels as separate globals. Reads therefore returned zero
+or unrelated state, and the save loader's 96-byte copy could overwrite later
+host globals. Allocate the complete table and initialize all three sectors of
+each course from the same default lap time used by retail before an optional
+memory-card load. At synchronized Time Attack timer 315, `SECTION TIME` now
+shows retail's `1'40"765` rather than `0'00"000`. With this fixed, the complete
+normalized GP0 stream for that frame matches exactly: 10097 words. Its residual
+82-pixel road-region component is therefore PsyZ raster precision, not a
+missing game triangle or different texture packet.

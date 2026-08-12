@@ -3,6 +3,19 @@
 sources = ARGV.map { |path| [path, File.read(path)] }.to_h
 
 sources.each do |path, source|
+  if path.end_with?("host_state.c")
+    abort "#{path}: best-sector backing object is smaller than its game declaration" unless
+      source.include?("unsigned char g_BestSectorTimes[96]")
+    next
+  end
+
+  if path.end_with?("records.c")
+    abort "#{path}: default sector records are not initialized" unless
+      source.include?("g_BestSectorTimes[series][course][slot]") &&
+      source.include?("defaultLapTimes[series * 4 + course]")
+    next
+  end
+
   if path.end_with?("update_car_drivetrain.c")
     abort "#{path}: torque lookup still depends on adjacent linker symbols" if
       source.include?("(&g_TorqueBandStart) + bandIndex") ||

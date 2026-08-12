@@ -26,6 +26,8 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/loaded_audio_voices.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
+        ${CMAKE_SOURCE_DIR}/src/port/host_state.c
 )
 
 add_test(

@@ -1181,7 +1181,9 @@ unsigned char g_EngineRpmSnapshot[8] __attribute__((aligned(16)));
 unsigned char g_ClassPromoted[8] __attribute__((aligned(16)));
 unsigned char g_NegconSteerNeutralSaved[8] __attribute__((aligned(16)));
 unsigned char g_NextOwnedCarIndex[8] __attribute__((aligned(16)));
-unsigned char g_BestSectorTimes[8] __attribute__((aligned(16)));
+/* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following
+ * retail labels are interior aliases, not the bounds of this object. */
+unsigned char g_BestSectorTimes[96] __attribute__((aligned(16)));
 unsigned char D_801E41EC[8] __attribute__((aligned(16)));
 unsigned char D_801E41F0[88] __attribute__((aligned(16)));
 unsigned char D_801E4248[8] __attribute__((aligned(16)));
