@@ -71,6 +71,14 @@ int main(int argc, char **argv) {
     fclose(file);
 
     if (Psyz_GpuReplayBegin() != 0) return 1;
+    {
+        const char *resolution = getenv("RAGE_GP0_REPLAY_INTERNAL_RES");
+        if (resolution &&
+            Psyz_VideoSetInternalResolution((unsigned)strtoul(resolution, NULL, 0)) != 0) {
+            fprintf(stderr, "invalid replay internal resolution: %s\n", resolution);
+            return 1;
+        }
+    }
     file = fopen(argv[2], "r");
     if (!file) { perror(argv[2]); free(vram); return 1; }
     while (fgets(line, sizeof(line), file)) {

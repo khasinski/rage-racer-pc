@@ -2398,3 +2398,11 @@ rasterization discrepancy.  Neither changing the game culling distance nor
 forcing a higher model LOD can correct it.  Simple +/- half-pixel vertex
 offsets were tested and rejected because they did not restore the sample and
 worsened whole-frame error; coverage must be emulated deliberately.
+For an authoritative one-packet oracle, `rage_gp0_bundle.rb
+--dump-psx-packet N` writes `gp0-before-NNNN.vram` immediately before retail
+executes packet N.  Capture N and N+1, then use `rage_vram_delta.rb` to report
+the exact changed-pixel count, bounds and an optional pixel value.  Packet 909
+changes 22 pixels in `(39..59,390..391)` and changes `(50,390)` from `1800` to
+`9084`; replaying only packet 909 from its exact pre-packet snapshot leaves
+that pixel at `1800`.  This proves the discrepancy is coverage rather than
+simulation state, texture data, draw order or later overdraw.

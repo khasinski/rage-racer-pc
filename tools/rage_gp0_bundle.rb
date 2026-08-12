@@ -23,6 +23,10 @@ OptionParser.new do |parser|
     options[:texel_trace] = true
   end
   parser.on("--ot", "include ordering-table node tracing") { options[:ot_trace] = true }
+  parser.on("--dump-psx-packet N", Integer,
+            "dump retail VRAM immediately before GP0 packet N") do |value|
+    options[:dump_psx_packet] = value
+  end
   parser.on("--resync-window N", Integer, "find the next matching packet after a divergence") do |value|
     options[:resync_window] = value
   end
@@ -89,6 +93,11 @@ prepare = lambda do |side, frame|
   if side == "psx"
     env["RAGE_GPU_GP0_TRACE_VRAM"] = (bundle / "gp0-pre.vram").to_s
     env["RAGE_GPU_GP0_TRACE_VRAM_POST"] = (bundle / "gp0-post.vram").to_s
+    if options[:dump_psx_packet]
+      env["RAGE_GPU_GP0_TRACE_DUMP_PACKET"] = options[:dump_psx_packet].to_s
+      env["RAGE_GPU_GP0_TRACE_DUMP_VRAM"] =
+        (bundle / format("gp0-before-%04d.vram", options[:dump_psx_packet])).to_s
+    end
   end
   argv = metadata.fetch("argv").dup
   if side == "psx"
