@@ -73,6 +73,23 @@ Dir.mktmpdir("rage-clear-area-") do |root|
     clear_report.fetch("count") > 0
 end
 
+Dir.mktmpdir("rage-visual-diagnostic-preset-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  pixels = Array.new(320 * 240) { [48, 48, 48] }
+  write_pixels(File.join(psx, filename), 320, 240, pixels)
+  write_pixels(File.join(native, filename), 320, 240, pixels)
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "timer", "--preset", "road"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  abort "road preset did not enable its clear-pixel diagnostic" unless
+    stdout.include?("native_only_clear=0")
+end
+
 header = %w[
   filename frame scene timer x z speed progress lap body_yaw body_pitch
   body_roll track_lateral model_yaw mirror_y view_x view_y view_z

@@ -24,6 +24,16 @@ REGION_PRESETS = {
   "time" => "0,188,125,52",
   "hud" => "0,176,320,64"
 }.freeze
+DIAGNOSTIC_PRESETS = {
+  "road" => { clear_region: "0,100,250,100", black_region: "0,55,250,150",
+              rank: "clear", require_main_visible_cells: true },
+  "mirror" => { clear_region: "84,16,152,40", black_region: "84,16,152,40",
+                rank: "clear", require_mirror_visible_cells: true },
+  "mirror-road" => { clear_region: "84,40,152,16", black_region: "84,40,152,16",
+                     rank: "clear", require_mirror_visible_cells: true },
+  "tacho" => { needle_region: "250,160,45,42", rank: "needle" },
+  "hud" => { black_region: "0,176,320,64" }
+}.freeze
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 64.0, max_view_distance: 32.0,
@@ -41,6 +51,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             clear_region: nil, black_region: nil, needle_region: nil,
             artifact_radius: 2, rank: "rmse",
             jobs: [Etc.nprocessors, 8].min, top: nil }
+explicit_options = {}
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
@@ -50,10 +61,20 @@ OptionParser.new do |parser|
   parser.on("--preset NAME", REGION_PRESETS.keys,
             "named region: #{REGION_PRESETS.keys.join(', ')}") do |value|
     options[:region] = REGION_PRESETS.fetch(value)
+    options[:preset] = value
   end
-  parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
-  parser.on("--black-region X,Y,W,H") { |value| options[:black_region] = value }
-  parser.on("--needle-region X,Y,W,H") { |value| options[:needle_region] = value }
+  parser.on("--clear-region X,Y,W,H") do |value|
+    options[:clear_region] = value
+    explicit_options[:clear_region] = true
+  end
+  parser.on("--black-region X,Y,W,H") do |value|
+    options[:black_region] = value
+    explicit_options[:black_region] = true
+  end
+  parser.on("--needle-region X,Y,W,H") do |value|
+    options[:needle_region] = value
+    explicit_options[:needle_region] = true
+  end
   parser.on("--artifact-radius N", Integer) do |value|
     options[:artifact_radius] = value
   end
@@ -114,10 +135,12 @@ OptionParser.new do |parser|
   parser.on("--require-main-visible-cells",
             "reject pairs whose main-pass visible-cell masks differ") do
     options[:require_main_visible_cells] = true
+    explicit_options[:require_main_visible_cells] = true
   end
   parser.on("--require-mirror-visible-cells",
             "reject pairs whose mirror-pass visible-cell masks differ") do
     options[:require_mirror_visible_cells] = true
+    explicit_options[:require_mirror_visible_cells] = true
   end
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
@@ -126,6 +149,7 @@ OptionParser.new do |parser|
   parser.on("--rank METRIC", %w[rmse clear black needle],
             "rank output by RMSE, clear, black, or needle mismatch") do |value|
     options[:rank] = value
+    explicit_options[:rank] = true
   end
   parser.on("--jobs N", Integer, "parallel frame comparisons") do |value|
     options[:jobs] = value
@@ -134,6 +158,10 @@ OptionParser.new do |parser|
     options[:top] = value
   end
 end.parse!
+
+DIAGNOSTIC_PRESETS.fetch(options[:preset], {}).each do |key, value|
+  options[key] = value unless explicit_options[key]
+end
 
 abort "--psx-dir, --native-dir and --output are required" unless
   options.values_at(:psx_dir, :native_dir, :output).all?
@@ -603,11 +631,15 @@ ranked = if options[:rank] == "clear"
   delta = row[:state_delta]
   alignment = delta ? format(" distance=%.1f view_distance=%.1f " \
                              "rival_distance=%.1f projection_delta=%.1f speed_delta=%d " \
+                             "anim_delta=%s main_cells=%s mirror_cells=%s " \
                              "timer_delta=%d display_timer_delta=%d",
                              delta[:distance], delta[:view_distance],
                              delta[:rival_distance],
                              delta[:projection_delta],
-                             delta[:speed], delta[:timer],
+                             delta[:speed], delta[:anim_timer] || "-",
+                             delta[:main_visible_cells_equal].nil? ? "-" : delta[:main_visible_cells_equal],
+                             delta[:mirror_visible_cells_equal].nil? ? "-" : delta[:mirror_visible_cells_equal],
+                             delta[:timer],
                              delta[:display_timer]) : ""
   clear = options[:clear_region] ?
     " native_only_clear=#{row[:native_only_clear]}" : ""

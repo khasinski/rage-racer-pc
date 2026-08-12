@@ -1026,6 +1026,15 @@ cached sequence in parallel and print only the ten worst frames. The complete
 machine-readable `summary.json` and all per-frame bundles are still written,
 so limiting console output does not discard evidence.
 
+The primary presets are diagnostic profiles, not merely RMSE crops. `road`
+enables main-visible-cell equality plus clear/black road detectors and ranks by
+clear coverage; `mirror` and `mirror-road` enable the corresponding mirror-mask
+gate and detectors; `tacho` enables the red-needle mask/ranking; `hud` enables
+the lower-band black detector. Explicit detector/rank options still override a
+preset. Stdout always includes raw animation-timer delta and main/mirror mask
+equality, so a zero count cannot be mistaken for a detector that never ran or a
+pair aligned only in the wrong render pass.
+
 Race captures include the X/Z positions of all four active rivals as well as
 the player state. New manifests also retain each rival's speed, progress, body
 yaw, lateral offset, collision flag and active flag. Position matching adds
