@@ -20,6 +20,7 @@ def parse(path)
       timer: Integer(fields.fetch("timer")), index: Integer(fields.fetch("index")),
       mirror: Integer(fields.fetch("mirror")), clut: fields.fetch("clut"),
       tpage: fields.fetch("tpage"), clip: clip,
+      sxy: fields["sxy"], bounds: fields["bounds"],
       raw: fields["raw"] == "na" ? nil : Integer(fields.fetch("raw")),
       depth: fields["depth"] == "na" ? nil : Integer(fields.fetch("depth")),
       result: fields.fetch("result")

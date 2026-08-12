@@ -98,7 +98,7 @@ static void RageInitializeTerrainDecisionTrace(void) {
 
 static void RageTraceTerrainDecision(
     int cell, int face, uint16_t clut, uint16_t tpage, int projected,
-    int clip0, int clip1, int rawDepth, int depth) {
+    int clip0, int clip1, const int sxy[4], int rawDepth, int depth) {
     const char *reason;
     if (!g_RageTerrainDecisionTraceEnabled ||
         (g_RageTerrainDecisionTraceTimer >= 0 &&
@@ -111,17 +111,33 @@ static void RageTraceTerrainDecision(
     if (projected)
         fprintf(stderr,
                 "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x clip=%d,%d raw=%d depth=%d result=%s\n",
+                "clut=%04x tpage=%04x clip=%d,%d "
+                "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
+                "raw=%d depth=%d result=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
                 SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1,
+                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
+                g_RageScratchpadState.x0, g_RageScratchpadState.x1,
+                g_RageScratchpadState.y0, g_RageScratchpadState.y1,
                 rawDepth, depth, "submit");
     else
         fprintf(stderr,
                 "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x clip=%d,%d raw=na depth=na result=reject "
+                "clut=%04x tpage=%04x clip=%d,%d "
+                "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
+                "raw=na depth=na result=reject "
                 "reason=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1, reason);
+                SCRATCH_MIRROR, clut, tpage & 0x9ff, clip0, clip1,
+                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
+                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
+                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
+                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
+                g_RageScratchpadState.x0, g_RageScratchpadState.x1,
+                g_RageScratchpadState.y0, g_RageScratchpadState.y1, reason);
     g_RageTerrainDecisionTraceCount++;
 }
 
@@ -1207,7 +1223,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     }
                     RageTraceTerrainDecision(
                         cellIndex, faceIndex, clut, tpage, projected,
-                        g_RageTerrainClip0, g_RageTerrainClip1, rawDepth, depth);
+                        g_RageTerrainClip0, g_RageTerrainClip1, sxy,
+                        rawDepth, depth);
                     if (!projected) continue;
                 }
                 /* The retail cell dispatcher tests bit 0 of the halfword at

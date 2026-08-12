@@ -2047,6 +2047,20 @@ match (the timer-903 route is known to provide one) before changing clipping.
 This prevents both image alignment and trace instrumentation errors from being
 misdiagnosed as a game renderer bug.
 
+With corrected raw NCLIP capture, the first semantic difference in that
+non-exact timer-890 pair is record 81 (`tpage=1a`, `clut=7b10`).  Retail has
+NCLIP `190,-159` and projected X coordinates `350,321,354,324`, all beyond its
+right bound 320, so it rejects the parent as off-screen.  Native's displaced
+camera produces NCLIP `188,-188` and submits it.  This difference adds native
+geometry rather than making a hole and is fully explained by the screen-edge
+state delta; it is not evidence for weakening or removing the bounds test.
+
+A separate retail timer-903 GTE capture containing 5,000 consecutive terrain
+RTPT/NCLIP/RTPS/AVSZ commands replays through PsyZ with zero mismatches.  This
+rules out the HAL GTE transform and clipping arithmetic for that captured
+route.  Continue above that boundary in the portable asset decoder, parent LOD
+and packet emitter, while keeping the GTE replay as the fast bit-exact gate.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position

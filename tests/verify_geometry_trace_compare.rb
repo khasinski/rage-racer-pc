@@ -7,7 +7,8 @@ require "rbconfig"
 
 tool = ARGV.fetch(0, File.expand_path("../tools/rage_geometry_trace_compare.rb", __dir__))
 line = "terrain-decision timer=1 index=0 mirror=0 clut=7c00 tpage=0015 " \
-       "clip=12,-4 raw=1024 depth=32 result=submit\n"
+       "clip=12,-4 sxy=1,2/3,4/5,6/7,8 bounds=0,320,0,240 " \
+       "raw=1024 depth=32 result=submit\n"
 
 Dir.mktmpdir("rage-geometry-trace-") do |root|
   psx = File.join(root, "psx.log")
