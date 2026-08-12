@@ -117,6 +117,9 @@ static void RageSmokeInitialize(void) {
                       "body_yaw,body_pitch,body_roll,track_lateral," \
                       "model_yaw,mirror_y,view_x,view_y,view_z," \
                       "view_angle_x,view_angle_y,view_angle_z," \
+                      "proj_m00,proj_m01,proj_m02,proj_m10,proj_m11," \
+                      "proj_m12,proj_m20,proj_m21,proj_m22," \
+                      "proj_x0,proj_y0,proj_x1,proj_y1,proj_order," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
                       "anim_timer,rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
@@ -330,6 +333,7 @@ int RagePortShouldExit(int frame_number) {
                 fprintf(g_SmokeCaptureManifest,
                         "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
@@ -342,7 +346,15 @@ int RagePortShouldExit(int frame_number) {
                         g_PlayerCar.modelYaw, g_MirrorPanelY,
                         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                         SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-                        SCRATCH_VIEW_ANGLE_Z, g_IsEnvironmentMode4,
+                        SCRATCH_VIEW_ANGLE_Z,
+                        SCRATCHPAD->matrix.m[0][0], SCRATCHPAD->matrix.m[0][1],
+                        SCRATCHPAD->matrix.m[0][2], SCRATCHPAD->matrix.m[1][0],
+                        SCRATCHPAD->matrix.m[1][1], SCRATCHPAD->matrix.m[1][2],
+                        SCRATCHPAD->matrix.m[2][0], SCRATCHPAD->matrix.m[2][1],
+                        SCRATCHPAD->matrix.m[2][2],
+                        SCRATCHPAD->x0, SCRATCHPAD->y0,
+                        SCRATCHPAD->x1, SCRATCHPAD->y1,
+                        SCRATCHPAD->orderingFlag & 1, g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,

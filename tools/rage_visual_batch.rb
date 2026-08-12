@@ -29,6 +29,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_position_distance: 64.0, max_view_distance: 32.0,
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
+            max_projection_delta: Float::INFINITY,
             visual_refine: 0,
             require_random_seed: false,
             clear_region: nil, black_region: nil, needle_region: nil,
@@ -80,6 +81,10 @@ OptionParser.new do |parser|
             "skip matches whose four rivals exceed this aggregate X/Z distance") do |value|
     options[:max_rival_distance] = value
   end
+  parser.on("--max-projection-delta N", Float,
+            "skip states whose projection fingerprint differs by more than N") do |value|
+    options[:max_projection_delta] = value
+  end
   parser.on("--require-random-seed",
             "reject state pairs whose RNG seeds differ") do
     options[:require_random_seed] = true
@@ -127,6 +132,8 @@ def manifest_rows(directory)
       frame scene timer x z speed progress lap body_yaw body_pitch body_roll
       track_lateral model_yaw mirror_y view_x view_y view_z view_angle_x
       view_angle_y view_angle_z environment_mode4 scratch_env_mode4
+      proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12 proj_m20 proj_m21
+      proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
       rival0_lateral rival0_collision rival0_active rival1_speed
@@ -157,14 +164,67 @@ def image_rmse(psx, native, region)
 end
 
 if options[:match] == "position"
+  projection_fields = %i[
+    proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12
+    proj_m20 proj_m21 proj_m22 proj_x0 proj_y0 proj_x1 proj_y1
+  ]
+  state_metrics = lambda do |candidate, psx|
+    dx = candidate[:x] - psx[:x]
+    dz = candidate[:z] - psx[:z]
+    dvx = candidate[:view_x] - psx[:view_x]
+    dvy = candidate[:view_y] - psx[:view_y]
+    dvz = candidate[:view_z] - psx[:view_z]
+    angle_delta = %i[body_yaw body_pitch body_roll].map do |key|
+      next unless candidate.key?(key) && psx.key?(key)
+      ((candidate[key] - psx[key] + 2048) % 4096 - 2048).abs
+    end.compact.max || 0
+    rival_distance = (0...4).sum do |index|
+      x_key = :"rival#{index}_x"
+      z_key = :"rival#{index}_z"
+      next 0 unless candidate.key?(x_key) && psx.key?(x_key)
+      Math.hypot(candidate[x_key] - psx[x_key], candidate[z_key] - psx[z_key])
+    end
+    projection_delta = projection_fields.sum do |key|
+      candidate.key?(key) && psx.key?(key) ? (candidate[key] - psx[key]).abs : 0
+    end
+    {
+      dx: dx, dz: dz, position_distance: Math.hypot(dx, dz),
+      view_distance: Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz),
+      speed_delta: candidate[:speed] - psx[:speed], angle_delta: angle_delta,
+      lateral_delta: candidate.key?(:track_lateral) && psx.key?(:track_lateral) ?
+        (candidate[:track_lateral] - psx[:track_lateral]).abs : 0,
+      rival_distance: rival_distance, projection_delta: projection_delta,
+      projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
+        candidate[:proj_order] == psx[:proj_order]
+    }
+  end
+  eligible = lambda do |metrics|
+    metrics[:position_distance] <= options[:max_position_distance] &&
+      metrics[:view_distance] <= options[:max_view_distance] &&
+      metrics[:speed_delta].abs <= options[:max_speed_delta] &&
+      metrics[:angle_delta] <= options[:max_angle_delta] &&
+      metrics[:lateral_delta] <= options[:max_lateral_delta] &&
+      metrics[:rival_distance] <= options[:max_rival_distance] &&
+      metrics[:projection_delta] <= options[:max_projection_delta] &&
+      metrics[:projection_phase_equal]
+  end
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
   pairs = psx_states.map do |psx|
-    candidates = native_states.select do |native|
+    scene_candidates = native_states.select do |native|
       native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
     end
-    abort "no native state candidate for #{psx[:filename]}" if candidates.empty?
+    abort "no native state candidate for #{psx[:filename]}" if scene_candidates.empty?
+    candidates = scene_candidates.select do |candidate|
+      metrics = state_metrics.call(candidate, psx)
+      eligible.call(metrics) &&
+        (!candidate.key?(:anim_timer) || !psx.key?(:anim_timer) ||
+          (candidate[:anim_timer] - psx[:anim_timer]) % 128 == 0) &&
+        (!options[:require_random_seed] || !candidate.key?(:random_seed) ||
+          !psx.key?(:random_seed) || candidate[:random_seed] == psx[:random_seed])
+    end
+    next if candidates.empty?
     native_state = candidates.min_by do |candidate|
       dx = candidate[:x] - psx[:x]
       dz = candidate[:z] - psx[:z]
@@ -212,15 +272,21 @@ if options[:match] == "position"
         Math.hypot(candidate[x_key] - psx[x_key],
                    candidate[z_key] - psx[z_key])
       end
+      projection_delta = %i[
+        proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12
+        proj_m20 proj_m21 proj_m22 proj_x0 proj_y0 proj_x1 proj_y1
+      ].sum do |key|
+        candidate.key?(key) && psx.key?(key) ? (candidate[key] - psx[key]).abs : 0
+      end
       Math.hypot(dx, dz) + Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) * 2 +
         speed * 4 + yaw / 4.0 + pitch / 2.0 + roll / 2.0 +
         lateral / 4.0 + view_yaw * 2 + rival_distance * 2 +
-        seed_penalty + phase_penalty +
+        seed_penalty + phase_penalty + projection_delta * 4 +
         (candidate[:timer] - psx[:timer]).abs
     end
     native = native_state
     if options[:visual_refine] > 0
-      nearby = candidates.select do |candidate|
+      nearby = scene_candidates.select do |candidate|
         (candidate[:timer] - native_state[:timer]).abs <= options[:visual_refine]
       end
       refined = nearby.min_by do |candidate|
@@ -256,17 +322,13 @@ if options[:match] == "position"
       Math.hypot(native_state[x_key] - psx[x_key],
                  native_state[z_key] - psx[z_key])
     end
-    next if position_distance > options[:max_position_distance] ||
-            view_distance > options[:max_view_distance] ||
-            speed_delta.abs > options[:max_speed_delta] ||
-            angle_delta > options[:max_angle_delta] ||
-            lateral_delta > options[:max_lateral_delta] ||
-            rival_distance > options[:max_rival_distance]
-    next if native_state.key?(:anim_timer) && psx.key?(:anim_timer) &&
-            (native_state[:anim_timer] - psx[:anim_timer]) % 128 != 0
-    next if options[:require_random_seed] &&
-            native_state.key?(:random_seed) && psx.key?(:random_seed) &&
-            native_state[:random_seed] != psx[:random_seed]
+    projection_delta = projection_fields.sum do |key|
+      native_state.key?(key) && psx.key?(key) ?
+        (native_state[key] - psx[key]).abs : 0
+    end
+    projection_phase_equal = %i[proj_order].all? do |key|
+      !native_state.key?(key) || !psx.key?(key) || native_state[key] == psx[key]
+    end
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
@@ -284,6 +346,8 @@ if options[:match] == "position"
         track_lateral: native_state.key?(:track_lateral) && psx.key?(:track_lateral) ?
           native_state[:track_lateral] - psx[:track_lateral] : nil,
         rival_distance: rival_distance,
+        projection_delta: projection_delta,
+        projection_phase_equal: projection_phase_equal,
         random_seed_equal: native_state.key?(:random_seed) && psx.key?(:random_seed) ?
           native_state[:random_seed] == psx[:random_seed] : nil,
         anim_timer: native_state.key?(:anim_timer) && psx.key?(:anim_timer) ?
@@ -399,10 +463,11 @@ ranked = if options[:rank] == "clear"
   location = hotspot ? " hotspot=#{hotspot['x']},#{hotspot['y']}" : ""
   delta = row[:state_delta]
   alignment = delta ? format(" distance=%.1f view_distance=%.1f " \
-                             "rival_distance=%.1f speed_delta=%d " \
+                             "rival_distance=%.1f projection_delta=%.1f speed_delta=%d " \
                              "timer_delta=%d display_timer_delta=%d",
                              delta[:distance], delta[:view_distance],
                              delta[:rival_distance],
+                             delta[:projection_delta],
                              delta[:speed], delta[:timer],
                              delta[:display_timer]) : ""
   clear = options[:clear_region] ?

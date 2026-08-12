@@ -1089,6 +1089,26 @@ with cached older captures. This matters immediately after contact: two frames
 can have identical position, speed and yaw but different body roll, which the
 chase camera copies into `SCRATCH_VIEW_ANGLE_Z` and therefore changes every
 terrain and sky projection.
+
+New captures additionally fingerprint the renderer state that directly controls
+projection: the nine signed 12-bit-fixed rotation-matrix entries, viewport
+`x0/y0/x1/y1`, and the main/mirror ordering phase. On retail these live at
+scratchpad offsets `0x28`, `0x78..0x7e`, and `0x68`; the host capture reads the
+named `SCRATCHPAD` members instead. Do not share raw structure offsets between
+the two builds because native pointers change the layout on 64-bit hosts.
+`rage_visual_batch.rb --max-projection-delta N` rejects candidates whose
+aggregate matrix/viewport difference exceeds `N`, and always requires the same
+ordering phase when both manifests provide it. Old manifests remain usable.
+
+Candidate limits are applied before choosing the lowest-score state. Applying
+them only after `min_by` allowed an ineligible frame with an attractive
+projection score to hide another candidate that satisfied every requested
+limit. In the synchronized timer-880 sample, the corrected matcher finds a
+state with `projection_delta=0`, position distance 9, and equal animation phase;
+the remaining 50-unit scratch-view difference is a camera-update phase and the
+best displayed native image is still two timer phases earlier. Keep simulation
+state, projection state, and front-buffer image phase separate when deciding
+whether a road patch is genuinely missing.
 For scenery-heavy regions such as the full mirror, add
 `--require-random-seed`. Position equality is not enough there: animated
 track objects consume `Random15`, so unequal seeds can produce different

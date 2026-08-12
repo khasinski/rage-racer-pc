@@ -131,4 +131,66 @@ Dir.mktmpdir("rage-visual-seed-gate-") do |root|
   )
 end
 
-puts "visual refinement separates sampled state from the displayed buffer; all-phase timer pairing and RNG gate work"
+Dir.mktmpdir("rage-visual-projection-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  projection_header = header + ",proj_m00,proj_order"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             projection_header + "\n" + ([filename] + state + [100, "deadbeef", 4096, 0]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             projection_header + "\n" + ([filename] + state + [100, "deadbeef", 4095, 0]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-projection-delta", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "projection gate accepted unequal matrices" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?(
+    "no state-aligned frame pairs within the position limit"
+  )
+end
+
+Dir.mktmpdir("rage-visual-gate-before-ranking-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  psx_name = "timer-00100-s12.ppm"
+  rejected_name = "timer-00100-f00001-s12.ppm"
+  accepted_name = "timer-00101-f00002-s12.ppm"
+  [psx_name, rejected_name, accepted_name].each do |name|
+    directory = name == psx_name ? psx : native
+    write_ppm(File.join(directory, name), 16)
+  end
+  projection_header = header + ",proj_m00,proj_order"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             projection_header + "\n" + ([psx_name] + state + [100, "deadbeef", 4096, 0]).join(",") + "\n")
+  rejected = state.dup
+  rejected[3] = 200
+  accepted = state.dup
+  accepted[2] = 101
+  native_rows = [
+    ([rejected_name] + rejected + [100, "deadbeef", 4096, 0]).join(","),
+    ([accepted_name] + accepted + [100, "deadbeef", 4095, 0]).join(",")
+  ]
+  File.write(File.join(native, "capture-manifest.csv"),
+             projection_header + "\n" + native_rows.join("\n") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-position-distance", "16", "--max-projection-delta", "1"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  abort "ranking selected an ineligible state before applying gates" unless
+    frame.fetch("native_frame") == accepted_name
+end
+
+puts "visual refinement separates sampled state from the displayed buffer; state gates precede ranking"
