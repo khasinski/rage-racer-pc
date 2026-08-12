@@ -1962,6 +1962,17 @@ timer.  `rage_visual_run.rb` therefore exposes `--psx-capture-stride` and
 and a larger native timer stride; giving both the same value can accidentally
 leave only a handful of timer intersections.
 
+A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
+native timer stride 5, equal main/mirror visible-cell masks, projection deltas
+at most 64 and camera/view distance at most 12.  Forty timer groups survive.
+Every road and mirror-road pair has zero native-only clear pixels and zero
+connected native-only black area.  HUD pairs likewise have no native-only
+black component, and the speed digits plus tachometer needle are present on
+the native draw page.  Residual RMSE hotspots follow moving rivals, road-edge
+phase and one-unit camera differences.  This interval is useful as a negative
+control for culling: do not manufacture a terrain or HUD fix from it; search a
+different route interval when looking for a real missing-primitive oracle.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
