@@ -121,7 +121,7 @@ static void RageSmokeInitialize(void) {
                       "proj_m12,proj_m20,proj_m21,proj_m22," \
                       "proj_x0,proj_y0,proj_x1,proj_y1,proj_order," \
                       "environment_mode4,scratch_env_mode4,random_seed," \
-                      "anim_timer,rival0_x,rival0_z,rival1_x,rival1_z," \
+                      "anim_timer,tacho_rpm,rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
                       "rival0_speed,rival0_progress,rival0_yaw," \
                       "rival0_lateral,rival0_collision,rival0_active," \
@@ -334,7 +334,7 @@ int RagePortShouldExit(int frame_number) {
                         "%s,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%u,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
                         filename, frame_number, g_SceneId, g_SceneTimer,
@@ -356,6 +356,7 @@ int RagePortShouldExit(int frame_number) {
                         SCRATCHPAD->x1, SCRATCHPAD->y1,
                         SCRATCHPAD->orderingFlag & 1, g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
+                        g_EngineRpm + g_EngineRpmJitter,
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,
                         g_Cars[2].x, g_Cars[2].z,

@@ -30,6 +30,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
             max_projection_delta: Float::INFINITY,
+            max_tacho_rpm_delta: Float::INFINITY,
             visual_refine: 0,
             require_random_seed: false,
             clear_region: nil, black_region: nil, needle_region: nil,
@@ -85,6 +86,10 @@ OptionParser.new do |parser|
             "skip states whose projection fingerprint differs by more than N") do |value|
     options[:max_projection_delta] = value
   end
+  parser.on("--max-tacho-rpm-delta N", Float,
+            "skip states whose displayed tachometer RPM differs by more than N") do |value|
+    options[:max_tacho_rpm_delta] = value
+  end
   parser.on("--require-random-seed",
             "reject state pairs whose RNG seeds differ") do
     options[:require_random_seed] = true
@@ -135,6 +140,7 @@ def manifest_rows(directory)
       proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12 proj_m20 proj_m21
       proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
+      tacho_rpm
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
       rival0_lateral rival0_collision rival0_active rival1_speed
       rival1_progress rival1_yaw rival1_lateral rival1_collision rival1_active
@@ -161,6 +167,22 @@ def image_rmse(psx, native, region)
   abort "visual alignment failed for #{native}: #{metric}" unless
     [0, 1].include?(status.exitstatus)
   metric[/\(([0-9.eE+-]+)\)/, 1]&.to_f || Float::INFINITY
+end
+
+def needle_mismatch(psx, native, region)
+  left, top, width, height = region.split(",", 4).map { |part| Integer(part) }
+  crop = "#{width}x#{height}+#{left}+#{top}"
+  mask = "(r>0.392)&&(r>g+0.235)&&(r>b+0.235)"
+  command = ["magick",
+             "(", psx.to_s, "-alpha", "off", "-crop", crop, "+repage",
+             "-fx", mask, ")",
+             "(", native.to_s, "-alpha", "off", "-crop", crop, "+repage",
+             "-fx", mask, ")",
+             "-compose", "difference", "-composite",
+             "-format", "%[fx:mean]", "info:"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "needle alignment failed for #{native}: #{stderr}" unless status.success?
+  stdout.to_f
 end
 
 if options[:match] == "position"
@@ -194,6 +216,8 @@ if options[:match] == "position"
       lateral_delta: candidate.key?(:track_lateral) && psx.key?(:track_lateral) ?
         (candidate[:track_lateral] - psx[:track_lateral]).abs : 0,
       rival_distance: rival_distance, projection_delta: projection_delta,
+      tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
+        (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order]
     }
@@ -206,6 +230,7 @@ if options[:match] == "position"
       metrics[:lateral_delta] <= options[:max_lateral_delta] &&
       metrics[:rival_distance] <= options[:max_rival_distance] &&
       metrics[:projection_delta] <= options[:max_projection_delta] &&
+      metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:projection_phase_equal]
   end
   psx_states = manifest_rows(psx_dir)
@@ -290,7 +315,11 @@ if options[:match] == "position"
         (candidate[:timer] - native_state[:timer]).abs <= options[:visual_refine]
       end
       refined = nearby.min_by do |candidate|
-        image_rmse(psx[:path], candidate[:path], options[:region])
+        if options[:needle_region]
+          needle_mismatch(psx[:path], candidate[:path], options[:needle_region])
+        else
+          image_rmse(psx[:path], candidate[:path], options[:region])
+        end
       end
       native = refined unless refined.nil?
     end
@@ -347,6 +376,8 @@ if options[:match] == "position"
           native_state[:track_lateral] - psx[:track_lateral] : nil,
         rival_distance: rival_distance,
         projection_delta: projection_delta,
+        tacho_rpm: native_state.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
+          native_state[:tacho_rpm] - psx[:tacho_rpm] : nil,
         projection_phase_equal: projection_phase_equal,
         random_seed_equal: native_state.key?(:random_seed) && psx.key?(:random_seed) ?
           native_state[:random_seed] == psx[:random_seed] : nil,

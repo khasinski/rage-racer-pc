@@ -16,6 +16,13 @@ def write_pixels(path, width, height, pixels)
   File.binwrite(path, "P6\n#{width} #{height}\n255\n" + pixels.flatten.pack("C*"))
 end
 
+def write_needle_frame(path, needle_x, distractor_red)
+  pixels = Array.new(16) { [0, 0, 0] }
+  pixels[needle_x] = [255, 0, 0]
+  pixels[3] = [distractor_red, distractor_red, distractor_red]
+  write_pixels(path, 4, 4, pixels)
+end
+
 Dir.mktmpdir("rage-visual-all-phases-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
@@ -191,6 +198,63 @@ Dir.mktmpdir("rage-visual-gate-before-ranking-") do |root|
   frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
   abort "ranking selected an ineligible state before applying gates" unless
     frame.fetch("native_frame") == accepted_name
+end
+
+Dir.mktmpdir("rage-visual-tacho-rpm-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  rpm_header = header + ",tacho_rpm"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             rpm_header + "\n" + ([filename] + state + [100, "deadbeef", 5000]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             rpm_header + "\n" + ([filename] + state + [100, "deadbeef", 5100]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-tacho-rpm-delta", "50"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "tachometer RPM gate accepted unequal needle inputs" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?(
+    "no state-aligned frame pairs within the position limit"
+  )
+end
+
+Dir.mktmpdir("rage-visual-needle-refinement-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  psx_name = "timer-00100-s12.ppm"
+  wrong_name = "timer-00100-f00001-s12.ppm"
+  right_name = "timer-00101-s12.ppm"
+  write_needle_frame(File.join(psx, psx_name), 5, 255)
+  write_needle_frame(File.join(native, wrong_name), 6, 255)
+  write_needle_frame(File.join(native, right_name), 5, 0)
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" + ([psx_name] + state + [100, "deadbeef"]).join(",") + "\n")
+  native_rows = [wrong_name, right_name].zip([100, 101]).map do |name, timer|
+    candidate = state.dup
+    candidate[2] = timer
+    ([name] + candidate + [100, "deadbeef"]).join(",")
+  end
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" + native_rows.join("\n") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--visual-refine", "1",
+             "--needle-region", "0,0,4,4"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  abort "needle refinement selected the background instead of the needle mask" unless
+    frame.fetch("native_frame") == right_name
 end
 
 puts "visual refinement separates sampled state from the displayed buffer; state gates precede ranking"

@@ -1423,6 +1423,16 @@ vertices.  The race framebuffer regression now counts red needle pixels rather
 than accidentally accepting the orange dial numerals.
 
 For sequence comparison, pass `--needle-region 250,160,45,42 --rank needle`.
+New manifests record `tacho_rpm = g_EngineRpm + g_EngineRpmJitter`, the exact
+value passed to `DrawTachometer`; use `--max-tacho-rpm-delta N` so similar car
+speed does not masquerade as an equal needle state. When `--needle-region` is
+present, visual refinement now minimizes the binary red-needle silhouette
+rather than full-region RMSE. The dial, speed digits, and gear glyph otherwise
+outweigh the thin needle and can select the wrong front buffer. In the
+timer-841 reference this changes the selected native display phase from timer
+839 to 845 and reduces the needle mismatch from 92 pixels (IoU 0.766) to five
+pixels (IoU 0.986). The needle is therefore present and geometrically correct
+in this sample; its prior apparent failure was capture-phase selection.
 The report extracts the same strongly red silhouette in both images and records
 pixel counts, mismatch count and intersection-over-union independently of the
 transparent dial background. In the synchronized timer-837..987 run the needle
