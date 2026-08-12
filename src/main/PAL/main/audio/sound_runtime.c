@@ -55,18 +55,18 @@ void ResetSoundState(void) {
 
     {
         s32 neg;
-        s32 *ptr;
 
         i = 0;
         neg = -1;
-        ptr = &g_AudioLoadedSlotMask;
         for (; i < 2; i++) {
             g_MusicChannels[i].mode = neg;
             g_MusicChannels[i].left.value = neg;
             g_MusicChannels[i].right.value = neg;
-            ptr[0x78 / 4] = 0;
-            ptr += sizeof(MusicChannel) / sizeof(*ptr);
             g_MusicChannels[i].volLeft.value = 0;
+            /* These are fields of the PS1's contiguous audio work area. Do
+             * not reconstruct their addresses from a separately linked host
+             * global: that can overwrite unrelated game state. */
+            g_MusicChannels[i].volRight.value = 0;
         }
     }
 

@@ -20,6 +20,14 @@ endif()
 add_test(NAME game_logic COMMAND game_logic_tests)
 
 add_test(
+    NAME audio_state_layout
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/loaded_audio_voices.c
+)
+
+add_test(
     NAME visual_batch_refinement
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_visual_batch_refinement.rb

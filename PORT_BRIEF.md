@@ -2578,3 +2578,7 @@ Write `g_MusicChannels[i].volRight.value` directly. This preserves the retail
 field update on both 32- and 64-bit targets and is a game-code compatibility
 fix to backport to the decompilation, not a PsyZ workaround. The synchronized
 timer-530 native capture now displays the retail value `5'10"765`.
+`ResetSoundState` contained the same unsafe expression and must use the same
+named-field write. The `audio_state_layout` regression checks both reset paths
+so a future matching-oriented rewrite cannot silently restore the PS1 linker
+layout dependency.
