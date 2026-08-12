@@ -166,8 +166,8 @@ OptionParser.new do |parser|
             "write eligible state pairs without running image comparisons") do
     options[:alignment_only] = true
   end
-  parser.on("--rank METRIC", %w[rmse clear black needle],
-            "rank output by RMSE, clear, black, or needle mismatch") do |value|
+  parser.on("--rank METRIC", %w[rmse clear black needle surface],
+            "rank output by RMSE, clear, black, needle, or surface mismatch") do |value|
     options[:rank] = value
     explicit_options[:rank] = true
   end
@@ -716,6 +716,8 @@ errors = Queue.new
     native_only_clear_component: report.fetch("native_only_clear").fetch("largest_component"),
     native_only_black: report.fetch("native_only_black").fetch("count"),
     native_only_black_component: report.fetch("native_only_black").fetch("largest_component"),
+    surface_divergence: report.fetch("surface_divergence").fetch("count"),
+    surface_divergence_component: report.fetch("surface_divergence").fetch("largest_component"),
     tachometer_needle: report.fetch("tachometer_needle"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
@@ -757,6 +759,11 @@ ranked = if options[:rank] == "clear"
              [-row[:tachometer_needle].fetch("mismatch_pixels"),
               -rank_rmse.call(row).to_f]
            end
+         elsif options[:rank] == "surface"
+           rows.sort_by do |row|
+             [-row[:surface_divergence_component], -row[:surface_divergence],
+              -rank_rmse.call(row).to_f]
+           end
          else
            rows.sort_by { |row| -rank_rmse.call(row).to_f }
          end
@@ -785,8 +792,10 @@ ranked = if options[:rank] == "clear"
     format(" needle_mismatch=%d needle_iou=%s",
            row[:tachometer_needle].fetch("mismatch_pixels"),
            row[:tachometer_needle]["iou"]&.then { |value| "%.3f" % value } || "n/a") : ""
+  surface = " surface_divergence=#{row[:surface_divergence]}" \
+            " largest_surface_component=#{row[:surface_divergence_component]}"
   metric = rank_rmse.call(row)
   metric_name = row[:normalized_region_rmse] ? "region_RMSE" : "RMSE"
-  puts format("%s %s=%.6f%s%s%s%s%s", row[:frame], metric_name, metric,
-              location, clear, black, needle, alignment)
+  puts format("%s %s=%.6f%s%s%s%s%s%s", row[:frame], metric_name, metric,
+              location, clear, black, needle, surface, alignment)
 end

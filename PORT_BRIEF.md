@@ -1363,6 +1363,14 @@ of the reference coordinate. This removes shifted texture edges without
 erasing a solid triangular hole; use radius 0 when investigating exact raster
 coverage.
 
+For larger dark surface losses, pass the comparison rectangle as `--region`
+and use `--rank surface`.  The detector requires a large RGB error, a native
+luminance deficit of at least 48, a native colour absent from the nearby PSX
+reference, and two-axis interior support.  This is still a discovery rank,
+not proof of a missing primitive: repeating textures and near-plane projection
+can create a large coherent component even when both renderers submit the same
+face.  `--surface-error N` controls the RGB-distance threshold (default 96).
+
 For packet-level follow-up, the native terrain dispatcher accepts optional
 `RAGE_PORT_TERRAIN_TRACE_TIMER`, `RAGE_PORT_TERRAIN_TRACE_CLUT`, and
 `RAGE_PORT_TERRAIN_TRACE_TPAGE` filters. Matching faces report their cell and
@@ -1999,6 +2007,18 @@ camera delta produces `67,128 / 66,148 / 64,128 / 60,148`.  The flagged pixels
 sit on that shifted edge.  The later apparent full-screen clear has draw area
 `86,18..233,53` and is the mirror pass.  Therefore this component is an
 alignment seam, not a missing primitive or evidence for changing culling.
+
+The largest `--rank surface` result in the canonical timer-840..900 scan is
+timer 890.  Packet tracing identifies native terrain cell 162, face 50,
+subdivision child 2,2/4,8 at OT depth 127.  Retail and native use the same
+texture page 15 and CLUT 7c03, while their projected vertices are respectively
+`121,98 / 120,165 / -52,82 / -54,203` and
+`111,97 / 110,166 / -68,82 / -70,203`.  The projection matrices match, but
+the aligned captures retain a roughly 2.8-unit camera-position delta and the
+face crosses the near-camera projection boundary, amplifying that small state
+difference into a 10--16-pixel screen shift.  This is a useful near-plane
+alignment stress case, not evidence of a missing child, wrong texture lookup,
+or a PsyZ rasterizer stretching an identical packet.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst

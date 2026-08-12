@@ -13,7 +13,7 @@ require "pathname"
 
 options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil,
             clear_region: nil, black_region: nil, needle_region: nil,
-            artifact_radius: 2 }
+            artifact_radius: 2, surface_error: 96 }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -56,6 +56,11 @@ OptionParser.new do |parser|
             "Ignore clear/black matches within N reference pixels (default: 2)") do |value|
     abort "--artifact-radius must be non-negative" if value.negative?
     options[:artifact_radius] = value
+  end
+  parser.on("--surface-error N", Integer,
+            "Minimum RGB distance for dark surface divergence (default: 96)") do |value|
+    abort "--surface-error must be positive" unless value.positive?
+    options[:surface_error] = value
   end
 end.parse!
 
@@ -255,6 +260,45 @@ def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
                       ->(sample) { -sample[:squared_error] })
 end
 
+def surface_divergence_pixels(psx_pixels, native_pixels, width, height,
+                              region, radius, threshold)
+  return { count: 0, raw_count: 0, largest_component: 0,
+           largest_component_bounds: nil, samples: [] } unless region
+  left, top, region_width, region_height = region
+  threshold_squared = threshold * threshold
+  matches = {}
+  (top...(top + region_height)).each do |y|
+    (left...(left + region_width)).each do |x|
+      index = y * width + x
+      psx = psx_pixels[index]
+      native = native_pixels[index]
+      score = 3.times.sum { |channel| (psx[channel] - native[channel])**2 }
+      next if score < threshold_squared
+      psx_luma = (psx[0] * 54 + psx[1] * 183 + psx[2] * 19) >> 8
+      native_luma = (native[0] * 54 + native[1] * 183 + native[2] * 19) >> 8
+      # Target missing/darkened surfaces, not arbitrary palette or texture
+      # phase changes. A black triangle is a strong luminance deficit.
+      next unless native_luma + 48 <= psx_luma
+      # A small camera delta moves high-contrast texture edges coherently.
+      # Retain a mismatch only when the native colour is absent from the
+      # nearby reference neighbourhood, within PS1 5-bit colour precision.
+      next if reference_near?(psx_pixels, width, height, x, y, radius) do |sample|
+        3.times.all? { |channel| (sample[channel] - native[channel]).abs <= 8 }
+      end
+      matches[[x, y]] = { x: x, y: y, squared_error: score,
+                          psx_rgb: psx, native_rgb: native }
+    end
+  end
+  interior = matches.values.select do |sample|
+    x = sample[:x]
+    y = sample[:y]
+    (matches.key?([x - 1, y]) || matches.key?([x + 1, y])) &&
+      (matches.key?([x, y - 1]) || matches.key?([x, y + 1]))
+  end
+  missing_area_report(matches, interior,
+                      ->(sample) { -sample[:squared_error] })
+end
+
 def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)
   return nil unless region
   left, top, region_width, region_height = region
@@ -351,6 +395,10 @@ clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
 black_pixels = native_only_black_pixels(psx_pixels, native_pixels, *size,
                                         options[:black_region],
                                         options[:artifact_radius])
+surface_divergence = surface_divergence_pixels(
+  psx_pixels, native_pixels, *size, options[:region],
+  options[:artifact_radius], options[:surface_error]
+)
 needle_difference = tachometer_needle_difference(
   psx_pixels, native_pixels, *size, options[:needle_region]
 )
@@ -399,6 +447,9 @@ report = {
   hotspots: hotspots,
   native_only_clear: clear_pixels.merge(region: options[:clear_region]),
   native_only_black: black_pixels.merge(region: options[:black_region]),
+  surface_divergence: surface_divergence.merge(
+    region: options[:region], threshold: options[:surface_error]
+  ),
   tachometer_needle: needle_difference.merge(region: options[:needle_region]),
   artifact_radius: options[:artifact_radius],
   artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png

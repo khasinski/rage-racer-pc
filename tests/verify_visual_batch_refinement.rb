@@ -49,6 +49,38 @@ Dir.mktmpdir("rage-black-area-") do |root|
     report.fetch("largest_component_bounds") == [2, 2, 3, 3]
 end
 
+Dir.mktmpdir("rage-surface-area-") do |root|
+  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  psx = File.join(root, "psx.ppm")
+  native = File.join(root, "native.ppm")
+  output = File.join(root, "output")
+  width = height = 8
+  reference = Array.new(width * height) { [96, 96, 96] }
+  shifted = reference.map(&:dup)
+  # A one-pixel moved edge is rejected because its new colour exists nearby.
+  (1..6).each { |y| reference[y * width + 1] = [192, 192, 192] }
+  (1..6).each { |y| shifted[y * width + 2] = [192, 192, 192] }
+  write_pixels(psx, width, height, reference)
+  write_pixels(native, width, height, shifted)
+  command = [RbConfig.ruby, compare, "--psx", psx, "--native", native,
+             "--output", output, "--region", "0,0,8,8",
+             "--artifact-radius", "2", "--surface-error", "80"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("surface_divergence")
+  abort "surface detector retained a shifted reference edge" unless
+    report.fetch("largest_component") == 0
+
+  (3..5).each { |y| (3..5).each { |x| shifted[y * width + x] = [0, 0, 0] } }
+  write_pixels(native, width, height, shifted)
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  report = JSON.parse(File.read(File.join(output, "report.json"))).fetch("surface_divergence")
+  abort "surface detector missed a coherent wrong-colour patch" unless
+    report.fetch("largest_component") == 9 &&
+    report.fetch("largest_component_bounds") == [3, 3, 3, 3]
+end
+
 def write_needle_frame(path, needle_x, distractor_red)
   pixels = Array.new(16) { [0, 0, 0] }
   pixels[needle_x] = [255, 0, 0]
