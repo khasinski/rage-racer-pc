@@ -2182,6 +2182,24 @@ rounding at word 102.  The GP0 comparator masks only documented ignored struct
 bytes (Gouraud colour padding and FT/GT UV padding); use `--raw` when auditing
 the host layouts themselves.
 
+A strict draw-page replay over timers 260..280, gated on exact player/view
+position, speed, projection, tachometer RPM and both visible-cell masks, leaves
+13 matched frames.  The timer-280 tachometer packet is identical on retail and
+native: `280018c0,00c80107,00a40107,00c7010a,00a30108`.  The apparent
+33-pixel red-mask difference is therefore not a missing needle or malformed HUD
+geometry; the mask also includes red dial artwork and PS1/native edge coverage.
+In the same strict cache the mirror has no native-only black pixels, the road
+has no clear-colour holes, and its largest black component is ten pixels with
+no corresponding surface-divergence component.  Keep these small edge signals
+separate from the earlier systemic missing-texture failures.
+
+The next command-stream mismatch is a one-level fog-colour difference.  Do not
+compensate for it in the game emitter: both the native PsyZ GTE and the Ruby
+reference emulator implement DPCS, and the emulator currently labels its
+interpolation as an approximation.  Establish the hardware GTE rounding with a
+controlled instruction fixture before assigning that difference to either
+backend.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
