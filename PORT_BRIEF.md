@@ -1980,6 +1980,14 @@ each result bundle as `reference.psxstate` while recording its path in
 packet, GTE or VRAM tracing without replaying the full route and hoping to hit
 the same VBlank phase again.
 
+`reference.psxstate` is the post-capture state and is authoritative for the
+captured VRAM contents, but it is too late to replay the packets that produced
+that page.  When earlier per-frame states exist, the comparator also copies
+the nearest one as `replay-pre.psxstate` and records `psx_replay_frames`.
+Start packet/GTE tracing from that pre-state and advance exactly the recorded
+number of VBlanks; starting from `reference.psxstate` traces the following
+buffer and can falsely attribute a full-screen clear to the ranked image.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position

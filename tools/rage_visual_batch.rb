@@ -687,10 +687,27 @@ errors = Queue.new
       if psx_state.file?
         FileUtils.cp(psx_state, frame_output / "reference.psxstate")
       end
+      psx_frame_number = pair[:psx].basename.to_s[/\-f(\d+)\-s\d+\.ppm\z/, 1]&.to_i
+      replay_pre = nil
+      replay_frames = nil
+      if psx_frame_number
+        candidates = psx_dir.glob("*-f*-s*.psxstate").each_with_object([]) do |state, found|
+          frame = state.basename.to_s[/\-f(\d+)\-s\d+\.psxstate\z/, 1]&.to_i
+          found << [frame, state] if frame && frame < psx_frame_number
+        end
+        previous = candidates.max_by(&:first)
+        if previous
+          replay_frames = psx_frame_number - previous[0]
+          replay_pre = frame_output / "replay-pre.psxstate"
+          FileUtils.cp(previous[1], replay_pre)
+        end
+      end
       rows[index] = {
     frame: pair[:label],
     psx_frame: pair[:psx].basename.to_s,
     psx_state: psx_state.file? ? (frame_output / "reference.psxstate").to_s : nil,
+    psx_replay_pre_state: replay_pre&.to_s,
+    psx_replay_frames: replay_frames,
     native_frame: pair[:native].basename.to_s,
     state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
