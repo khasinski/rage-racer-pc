@@ -2624,3 +2624,11 @@ complete native objects; the separately named labels at retail array elements
 port. The layout regression checks the host-sized pointer table explicitly so
 this fix remains valid on 64-bit hosts and can be backported as a declaration
 correction rather than a HAL workaround.
+
+The same audit found three frontend/input objects with complete public types
+but eight-byte host backing: `g_CarSpecBars[4]` needs 16 bytes,
+`g_TeamLogoClut[16]` needs 32, and `g_PadShiftMasks[2][8]` needs 32. Their
+normal indexed accesses otherwise escape the C object, corrupt adjacent host
+state, and make menu/HUD symptoms depend on native linker placement. Allocate
+each complete declared object; this is game-state portability work, not a
+renderer-specific workaround.
