@@ -931,6 +931,21 @@ static void RageSubmitModelFaces(
                 &colors[0], &colors[1], &colors[2]);
             NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
                            &colors[3]);
+            if (g_RageModelTraceEnabled &&
+                (g_RageModelTraceTimer < 0 ||
+                 g_RageModelTraceTimer == g_SceneTimer)) {
+                fprintf(stderr,
+                        "model-color timer=%d model=%d type=%d face=%d "
+                        "normal=%u,%u,%u,%u rgb=%02x%02x%02x/%02x%02x%02x/"
+                        "%02x%02x%02x/%02x%02x%02x\n",
+                        g_SceneTimer, g_RageSubmittedModelIndex, type, i,
+                        RageReadU16(faces + 8), RageReadU16(faces + 10),
+                        RageReadU16(faces + 12), RageReadU16(faces + 14),
+                        colors[0].r, colors[0].g, colors[0].b,
+                        colors[1].r, colors[1].g, colors[1].b,
+                        colors[2].r, colors[2].g, colors[2].b,
+                        colors[3].r, colors[3].g, colors[3].b);
+            }
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;
             poly->r1=colors[1].r; poly->g1=colors[1].g; poly->b1=colors[1].b;
             poly->r2=colors[2].r; poly->g2=colors[2].g; poly->b2=colors[2].b;
@@ -947,13 +962,29 @@ static void RageSubmitModelFaces(
             SetPolyGT4(poly);
             RageCopyGt4UvWithMode(poly, faces + 16,
                                   (uint32_t)g_ScratchRenderMode);
-            NormalColorCol3(
+            NormalColor3(
                 (SVECTOR *)&normals[RageReadU16(faces + 8)],
                 (SVECTOR *)&normals[RageReadU16(faces + 10)],
-                (SVECTOR *)&normals[RageReadU16(faces + 12)], &base,
+                (SVECTOR *)&normals[RageReadU16(faces + 12)],
+                &base,
                 &colors[0], &colors[1], &colors[2]);
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
-                           &colors[3]);
+            NormalColor((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
+                        &colors[3]);
+            if (g_RageModelTraceEnabled &&
+                (g_RageModelTraceTimer < 0 ||
+                 g_RageModelTraceTimer == g_SceneTimer)) {
+                fprintf(stderr,
+                        "model-color timer=%d model=%d type=%d face=%d "
+                        "normal=%u,%u,%u,%u rgb=%02x%02x%02x/%02x%02x%02x/"
+                        "%02x%02x%02x/%02x%02x%02x\n",
+                        g_SceneTimer, g_RageSubmittedModelIndex, type, i,
+                        RageReadU16(faces + 8), RageReadU16(faces + 10),
+                        RageReadU16(faces + 12), RageReadU16(faces + 14),
+                        colors[0].r, colors[0].g, colors[0].b,
+                        colors[1].r, colors[1].g, colors[1].b,
+                        colors[2].r, colors[2].g, colors[2].b,
+                        colors[3].r, colors[3].g, colors[3].b);
+            }
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;
             poly->r1=colors[1].r; poly->g1=colors[1].g; poly->b1=colors[1].b;
             poly->r2=colors[2].r; poly->g2=colors[2].g; poly->b2=colors[2].b;

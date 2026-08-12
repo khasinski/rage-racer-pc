@@ -92,7 +92,9 @@ void DrawLapTimes(void) {
     }
 
     i = 0;
-    activeIndex = g_HudLapHighlightRow;
+    /* Retail address 0x8009e836 is not an independent global: it is the
+     * hudLapHighlightRow member inside g_PlayerCar.drive. */
+    activeIndex = g_PlayerCar.drive.hudLapHighlightRow;
     if (g_LapCount > 0) {
         frame = GetGameFrameContext(g_DrawBuffer);
         ot = GamePrimaryOrderingTable(0);

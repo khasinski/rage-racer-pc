@@ -38,6 +38,16 @@ Dir.mktmpdir("rage-gp0-compare-") do |directory|
                                   "--native", native, "--raw")
   raise "raw comparison ignored G4 padding" if raw_status.success?
 
+  # Raw textured commands ignore RGB modulation; stale packet bytes must not
+  # create a visual mismatch in the oracle.
+  File.write(psx, "gp0-command frame=7 code=65 length=4 " \
+                  "words=65010203,00100020,00040005,00080008\n")
+  File.write(native, "gp0-packet frame=9 code=65 length=4 " \
+                     "words=65a0b0c0,00100020,00040005,00080008\n")
+  output, status = Open3.capture2e(RbConfig.ruby, tool, "--psx", psx,
+                                   "--native", native)
+  raise output unless status.success? && output.include?("gp0 streams equal")
+
   # PSY-Q structs retain ignored high bytes beside UV2/UV3.  They differ with
   # compiler/register history but never reach a PS1 GPU field.
   File.write(psx, "gp0-command frame=7 code=2c length=9 " \

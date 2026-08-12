@@ -547,8 +547,20 @@ Zero host definitions make every correctly decoded normal shade black.
 
 Native model G4 and GT4 records carry four normal indices at offsets
 8/10/12/14.  Their emitters must run those normals through the active light
-and color matrices (retail `NCCT` for the first three and `NCCS` for the
-fourth), rather than assigning one flat placeholder color.
+and color matrices rather than assigning one flat placeholder color.  The two
+record types do not use the same GTE operations: the retail GT4 emitter at
+`0x80029298` issues `NCT` (`0x4AD80420`) for the first three normals and at
+`0x80029304` issues `NCS` (`0x4AC8041E`) for the fourth.  These operations do
+not apply the scratch base RGB.  G4 retains the colour-modulating
+`NCCT`/`NCCS` path.  Preserve that distinction when backporting the emitter or
+GT4 vertices can differ by a lighting unit and produce unstable texture seams.
+
+The apparent global `g_HudLapHighlightRow` at retail address `0x8009E836` is
+not independent storage.  It aliases `g_PlayerCar.drive.hudLapHighlightRow`
+inside the full player-car object and is initialized to `-1` by game code.
+Generating a separate zero-filled host BSS symbol makes lap row zero appear
+selected, changing its CLUT from retail `0x78CC` to `0x780F`.  Reads must use
+the embedded field (or the host data layout must retain the alias).
 
 ### Full-size car state is game data, not a symbol-map-sized placeholder
 
@@ -2296,11 +2308,13 @@ With `RAGE_GPU_OT_TRACE=1` enabled on both builds, `rage_gp0_compare.rb
 --nodes` reconstructs retail's several GP0 commands back into their original
 DMA node and retains empty ordering-table links.  This exposed the ordinary
 model bias bug above: fixing all four record types moved the strict timer-270
-oracle from word 5486 to 6045.  The remaining mismatch has identical GT4
-geometry and differs only by one lighting unit (`0x20` retail versus `0x1f`
-native on selected vertices).  Replacing four NCCS calls with the original
-NCCT-plus-NCCS sequence does not change PsyZ's result, so treat that remainder
-as GTE arithmetic evidence rather than an OT or geometry failure.
+oracle from word 5486 to 6045.  Runtime GTE tracing then identified the exact
+retail GT4 `NCT`/`NCS` sequence described above and moved the mismatch to word
+10602.  Raw-texture GP0 commands ignore the low 24 RGB bits of their command
+word, so the visual oracle normalizes those bytes while `--raw` still compares
+them exactly.  The next real difference was the lap-highlight CLUT caused by
+the false standalone global.  After reading the embedded player-car field,
+the complete normalized timer-270 stream matches: 10809 GP0 words.
 
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves

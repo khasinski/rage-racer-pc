@@ -153,6 +153,13 @@ flatten = lambda do |packets|
     packet.words.map.with_index do |word, word_index|
       normalized = word
       unless options[:raw]
+        # Bit 0 selects raw texture: RGB modulation is disabled and the low
+        # 24 bits of the command word have no visual effect.
+        if word_index == 0 && (command & 1) != 0 &&
+           ((command >= 0x24 && command <= 0x3f) ||
+            (command >= 0x64 && command <= 0x7f))
+          normalized &= 0xff00_0000
+        end
         normalized &= 0x00ff_ffff if ignored_color_words.include?(word_index)
         normalized &= 0x0000_ffff if ignored_high_half_words.include?(word_index)
       end
