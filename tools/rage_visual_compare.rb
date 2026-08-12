@@ -12,7 +12,8 @@ require "optparse"
 require "pathname"
 
 options = { pixel: nil, hotspots: 8, hotspot_radius: 12, region: nil,
-            clear_region: nil, black_region: nil, artifact_radius: 2 }
+            clear_region: nil, black_region: nil, needle_region: nil,
+            artifact_radius: 2 }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_compare.rb --psx IMAGE --native IMAGE --output DIR [options]"
   parser.on("--psx PATH", "Ruby PSX emulator PPM/PNG") { |value| options[:psx] = value }
@@ -44,6 +45,12 @@ OptionParser.new do |parser|
             "Count native-only near-black pixels in a render region") do |value|
     options[:black_region] = value.split(",", 4).map { |part| Integer(part) }
     abort "--black-region requires X,Y,W,H" unless options[:black_region].length == 4
+  end
+  parser.on("--needle-region X,Y,W,H",
+            "Compare the red tachometer-needle silhouette") do |value|
+    options[:needle_region] = value.split(",", 4).map { |part| Integer(part) }
+    abort "--needle-region requires X,Y,W,H" unless
+      options[:needle_region].length == 4
   end
   parser.on("--artifact-radius N", Integer,
             "Ignore clear/black matches within N reference pixels (default: 2)") do |value|
@@ -209,6 +216,40 @@ def normalized_region_rmse(psx_pixels, native_pixels, width, height, region)
   Math.sqrt(squared_error.to_f / (region_width * region_height * 3)) / 255.0
 end
 
+def tachometer_needle_difference(psx_pixels, native_pixels, width, height,
+                                 region)
+  return { psx_pixels: 0, native_pixels: 0, mismatch_pixels: 0,
+           intersection_pixels: 0, union_pixels: 0, iou: nil } unless region
+  left, top, region_width, region_height = region
+  abort "needle region is outside the image" if left.negative? || top.negative? ||
+    region_width <= 0 || region_height <= 0 || left + region_width > width ||
+    top + region_height > height
+  is_needle = lambda do |pixel|
+    pixel[0] > 100 && pixel[0] > pixel[1] + 60 &&
+      pixel[0] > pixel[2] + 60
+  end
+  psx_count = 0
+  native_count = 0
+  mismatch = 0
+  intersection = 0
+  union = 0
+  (top...(top + region_height)).each do |y|
+    (left...(left + region_width)).each do |x|
+      index = y * width + x
+      psx = is_needle.call(psx_pixels[index])
+      native = is_needle.call(native_pixels[index])
+      psx_count += 1 if psx
+      native_count += 1 if native
+      mismatch += 1 if psx != native
+      intersection += 1 if psx && native
+      union += 1 if psx || native
+    end
+  end
+  { psx_pixels: psx_count, native_pixels: native_count,
+    mismatch_pixels: mismatch, intersection_pixels: intersection,
+    union_pixels: union, iou: union.zero? ? nil : intersection.to_f / union }
+end
+
 def trace_lines(path, frame, pixel)
   return [] unless path
 
@@ -252,6 +293,9 @@ clear_pixels = native_only_clear_pixels(psx_pixels, native_pixels, *size,
 black_pixels = native_only_black_pixels(psx_pixels, native_pixels, *size,
                                         options[:black_region],
                                         options[:artifact_radius])
+needle_difference = tachometer_needle_difference(
+  psx_pixels, native_pixels, *size, options[:needle_region]
+)
 region_rmse = normalized_region_rmse(psx_pixels, native_pixels, *size,
                                     options[:region])
 unless hotspots.empty?
@@ -297,6 +341,7 @@ report = {
   hotspots: hotspots,
   native_only_clear: clear_pixels.merge(region: options[:clear_region]),
   native_only_black: black_pixels.merge(region: options[:black_region]),
+  tachometer_needle: needle_difference.merge(region: options[:needle_region]),
   artifact_radius: options[:artifact_radius],
   artifacts: %w[psx.png native.png difference.png heatmap.png side-by-side.png
                 psx-hotspots.png native-hotspots.png packet-trace.txt]

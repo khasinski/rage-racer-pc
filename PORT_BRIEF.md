@@ -981,8 +981,10 @@ ruby tools/rage_visual_batch.rb \
 ```
 
 For repeated renderer iteration, the batch tool also accepts stable named
-regions: `road`, `mirror`, `mirror-frame`, `rank`, `record`, `tacho`, `time`
-and `hud`. For example, use `--preset tacho --jobs 8 --top 10` to compare the
+regions: `road`, `mirror`, `mirror-road`, `mirror-frame`, `rank`, `record`,
+`tacho`, `time` and `hud`. `mirror-road` isolates the lower 16 lines of the
+mirror so divergent rival positions and upper scenery do not dominate terrain
+diagnosis. For example, use `--preset tacho --jobs 8 --top 10` to compare the
 cached sequence in parallel and print only the ten worst frames. The complete
 machine-readable `summary.json` and all per-frame bundles are still written,
 so limiting console output does not discard evidence.
@@ -1290,6 +1292,14 @@ backported as game-code fixes:
 `RAGE_PORT_TACHO_TRACE=1` prints RPM, angle, colour, source quad and emitted
 vertices.  The race framebuffer regression now counts red needle pixels rather
 than accidentally accepting the orange dial numerals.
+
+For sequence comparison, pass `--needle-region 250,160,45,42 --rank needle`.
+The report extracts the same strongly red silhouette in both images and records
+pixel counts, mismatch count and intersection-over-union independently of the
+transparent dial background. In the synchronized timer-837..987 run the needle
+IoU is normally `0.95..0.98`; timer 895 is `0.981`. Packet tracing at that state
+also finds the retail `POLY_F4` colour `c0,18,00` and the same four vertices in
+native, proving that remaining full-tachometer RMSE is not a missing needle.
 
 Car collision had the same class of non-portable reconstruction.  The host
 `TransformCollisionVector` was an identity stub even though retail executes a

@@ -16,6 +16,7 @@ require "etc"
 REGION_PRESETS = {
   "road" => "0,55,250,150",
   "mirror" => "84,16,152,40",
+  "mirror-road" => "84,40,152,16",
   "mirror-frame" => "80,12,160,48",
   "rank" => "0,0,84,64",
   "record" => "236,0,84,64",
@@ -29,8 +30,9 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_speed_delta: 16, max_angle_delta: 32,
             max_lateral_delta: 32, max_rival_distance: Float::INFINITY,
             visual_refine: 0,
-            clear_region: nil, black_region: nil, artifact_radius: 2,
-            rank: "rmse", jobs: [Etc.nprocessors, 8].min, top: nil }
+            clear_region: nil, black_region: nil, needle_region: nil,
+            artifact_radius: 2, rank: "rmse",
+            jobs: [Etc.nprocessors, 8].min, top: nil }
 OptionParser.new do |parser|
   parser.banner = "usage: rage_visual_batch.rb --psx-dir DIR --native-dir DIR --output DIR [options]"
   parser.on("--psx-dir DIR") { |value| options[:psx_dir] = value }
@@ -43,6 +45,7 @@ OptionParser.new do |parser|
   end
   parser.on("--clear-region X,Y,W,H") { |value| options[:clear_region] = value }
   parser.on("--black-region X,Y,W,H") { |value| options[:black_region] = value }
+  parser.on("--needle-region X,Y,W,H") { |value| options[:needle_region] = value }
   parser.on("--artifact-radius N", Integer) do |value|
     options[:artifact_radius] = value
   end
@@ -80,8 +83,8 @@ OptionParser.new do |parser|
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
   end
-  parser.on("--rank METRIC", %w[rmse clear black],
-            "rank output by RMSE, native-only clear, or native-only black pixels") do |value|
+  parser.on("--rank METRIC", %w[rmse clear black needle],
+            "rank output by RMSE, clear, black, or needle mismatch") do |value|
     options[:rank] = value
   end
   parser.on("--jobs N", Integer, "parallel frame comparisons") do |value|
@@ -294,6 +297,7 @@ errors = Queue.new
   command.concat(["--region", options[:region]]) if options[:region]
   command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
   command.concat(["--black-region", options[:black_region]]) if options[:black_region]
+  command.concat(["--needle-region", options[:needle_region]]) if options[:needle_region]
   stdout, stderr, status = Open3.capture3(*command)
       unless status.success?
         errors << "comparison failed for #{pair[:label]}:\n#{stdout}#{stderr}"
@@ -309,6 +313,7 @@ errors = Queue.new
     normalized_region_rmse: report["normalized_region_rmse"],
     native_only_clear: report.fetch("native_only_clear").fetch("count"),
     native_only_black: report.fetch("native_only_black").fetch("count"),
+    tachometer_needle: report.fetch("tachometer_needle"),
     worst_hotspot: report.fetch("hotspots").first,
     bundle: frame_output.to_s
       }
@@ -341,6 +346,11 @@ ranked = if options[:rank] == "clear"
            rows.sort_by do |row|
              [-row[:native_only_black], -rank_rmse.call(row).to_f]
            end
+         elsif options[:rank] == "needle"
+           rows.sort_by do |row|
+             [-row[:tachometer_needle].fetch("mismatch_pixels"),
+              -rank_rmse.call(row).to_f]
+           end
          else
            rows.sort_by { |row| -rank_rmse.call(row).to_f }
          end
@@ -359,8 +369,12 @@ ranked = if options[:rank] == "clear"
     " native_only_clear=#{row[:native_only_clear]}" : ""
   black = options[:black_region] ?
     " native_only_black=#{row[:native_only_black]}" : ""
+  needle = options[:needle_region] ?
+    format(" needle_mismatch=%d needle_iou=%s",
+           row[:tachometer_needle].fetch("mismatch_pixels"),
+           row[:tachometer_needle]["iou"]&.then { |value| "%.3f" % value } || "n/a") : ""
   metric = rank_rmse.call(row)
   metric_name = row[:normalized_region_rmse] ? "region_RMSE" : "RMSE"
-  puts format("%s %s=%.6f%s%s%s%s", row[:frame], metric_name, metric,
-              location, clear, black, alignment)
+  puts format("%s %s=%.6f%s%s%s%s%s", row[:frame], metric_name, metric,
+              location, clear, black, needle, alignment)
 end
