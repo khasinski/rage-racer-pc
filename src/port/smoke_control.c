@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "game/player_car_internal.h"
+#include "game/race_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 
@@ -17,7 +18,10 @@ typedef struct RageSmokeInput {
 typedef struct RageSmokeStateInput {
     long scene;
     long timer;
+    long phase;
+    int hasPhase;
     unsigned short buttons;
+    int armed;
     int fired;
 } RageSmokeStateInput;
 
@@ -181,17 +185,25 @@ static void RageSmokeInitialize(void) {
     for (token = strtok(copy, ","); token != NULL &&
          g_SmokeStateInputCount < 32; token = strtok(NULL, ",")) {
         char *at = strchr(token, '@');
+        char *phaseAt;
         char *colon = strchr(token, ':');
         unsigned short buttons;
         if (at == NULL || colon == NULL || at > colon) continue;
         *at = '\0';
         *colon = '\0';
+        phaseAt = strchr(at + 1, '@');
+        if (phaseAt != NULL) *phaseAt = '\0';
         buttons = RageSmokeButton(colon + 1);
         if (buttons == 0) continue;
         g_SmokeStateInputs[g_SmokeStateInputCount].scene =
             strtol(token, NULL, 0);
         g_SmokeStateInputs[g_SmokeStateInputCount].timer =
             strtol(at + 1, NULL, 0);
+        if (phaseAt != NULL) {
+            g_SmokeStateInputs[g_SmokeStateInputCount].phase =
+                strtol(phaseAt + 1, NULL, 0);
+            g_SmokeStateInputs[g_SmokeStateInputCount].hasPhase = 1;
+        }
         g_SmokeStateInputs[g_SmokeStateInputCount].buttons = buttons;
         g_SmokeStateInputCount++;
     }
@@ -242,8 +254,14 @@ int RagePortShouldExit(int frame_number) {
     }
     for (index = 0; index < g_SmokeStateInputCount; index++) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
-        if (!input->fired && g_SceneId == input->scene &&
-            g_SceneTimer == input->timer) {
+        int phaseMatches = !input->hasPhase ||
+            (input->scene == 32 && g_PrologueStep == input->phase);
+        if (!input->fired && g_SceneId == input->scene && phaseMatches &&
+            g_SceneTimer <= input->timer) {
+            input->armed = 1;
+        }
+        if (input->armed && !input->fired && g_SceneId == input->scene &&
+            g_SceneTimer >= input->timer && phaseMatches) {
             input->fired = 1;
             g_PadPressed |= input->buttons;
             fprintf(stderr,

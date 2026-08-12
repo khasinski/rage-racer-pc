@@ -975,9 +975,16 @@ new BIOS, frontend, and race-intro run for every trace.
 For new deterministic paths prefer state-triggered input.
 `RAGE_PORT_STATE_INPUT_SCRIPT` and `RAGE_EMU_STATE_INPUT_SCRIPT` accept
 comma-separated `SCENE@TIMER:BUTTON` events, for example
-`4@0:START,8@20:CROSS`. Each event fires once on the exact matching state. An
-exact timer is intentional: during a scene transition the new scene ID can be
-visible briefly with the previous scene's larger timer before it is reset. The
+`4@0:START,8@20:CROSS`. Each event arms only after observing the requested
+scene (and phase, when supplied) at or below the requested timer, then fires
+once when that timer is reached or crossed. This accommodates an emulator
+callback that can cross a game tick between observations without allowing a
+new scene ID paired briefly with the previous scene's larger timer to fire. The
+optional `SCENE@TIMER@PHASE:BUTTON` form also gates asynchronous substates;
+currently phase names `g_PrologueStep` for scene 32, so `32@169@3:CROSS`
+cannot fire while the same scene and timer still belong to its CD-loading
+step. This distinction is required for repeatable native/emulator routes.
+The
 native harness injects `g_PadPressed`; the emulator holds the raw active-low
 pad level across two VBlanks so the game's polling cadence observes exactly
 one rising edge. This keeps both implementations on the same menu
@@ -988,6 +995,7 @@ For screens that poll less frequently, add an emulator hold duration after the
 timer, for example `32@169+8:CROSS`. The default remains two VBlanks; extending
 the level does not create another rising edge. Native injects the edge directly
 and ignores this emulator-only duration suffix.
+When phase and duration are both present, use `32@169@3+8:CROSS`.
 
 A fixed frame-number input script is not reusable from a fresh boot because
 FMV cadence determines whether those presses occur at the title, menu, or
