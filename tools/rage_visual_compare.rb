@@ -172,12 +172,14 @@ def native_only_black_pixels(psx_pixels, native_pixels, width, height, region,
       index = y * width + x
       psx = psx_pixels[index]
       native = native_pixels[index]
-      # A black textured hole is dark in every native channel while the
-      # reference has visible surface colour. Requiring a useful reference
-      # intensity excludes genuine shadows and black letterbox/background.
-      next unless native.max < 12 && psx.max >= 32
+      # Missing PS1 texels are true black. A looser near-black threshold also
+      # classifies legitimate dark-green barrier stripes (for example 0,8,0)
+      # as holes whenever a small camera delta shifts their high-contrast
+      # pattern. Keep this detector specific and use the separate clear-pixel
+      # detector for uncovered framebuffer areas.
+      next unless native.max <= 2 && psx.max >= 32
       next if reference_near?(psx_pixels, width, height, x, y, radius) do |sample|
-        sample.max < 12
+        sample.max <= 2
       end
       score = 3.times.sum { |channel| (psx[channel] - native[channel])**2 }
       matches << { x: x, y: y, squared_error: score,

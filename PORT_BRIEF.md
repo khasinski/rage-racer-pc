@@ -1317,6 +1317,13 @@ pixels or triangle-shaped diffs until the candidate was aligned in the same
 region.  `report.json` retains both `normalized_rmse` and
 `normalized_region_rmse` so this distinction is testable.
 
+The `native_only_black` detector deliberately means true black (`RGB <= 2` in
+every channel), not merely a dark texel. A threshold such as `< 12` marks the
+course's legitimate `(0,8,0)` barrier stripes as holes whenever even a
+one-pixel camera difference shifts their high-contrast pattern. Diagnose
+uncovered framebuffer separately with `native_only_clear`; otherwise the
+ranking is dominated by false positives rather than missing geometry.
+
 The capture manifest must also include `g_AnimTimer`. Terrain mode 3 scrolls
 its packed UV/CLUT words by `g_AnimTimer & 0x7f`; matching the car and camera
 while allowing a neighbouring animation phase creates thousands of convincing
