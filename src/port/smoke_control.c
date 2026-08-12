@@ -191,7 +191,7 @@ static void RageSmokeInitialize(void) {
                       "rival2_lateral,rival2_collision,rival2_active," \
                       "rival3_speed,rival3_progress,rival3_yaw," \
                       "rival3_lateral,rival3_collision,rival3_active," \
-                      "rival0_raw,rival1_raw,rival2_raw,rival3_raw\n",
+                      "player_raw,rival0_raw,rival1_raw,rival2_raw,rival3_raw\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -462,6 +462,16 @@ int RagePortShouldExit(int frame_number) {
                         g_Cars[3].collisionFlag, g_Cars[3].activeFlag);
                 {
                     int rivalIndex;
+                    const unsigned char *playerBytes =
+                        (const unsigned char *)&g_PlayerCar;
+                    size_t playerByteIndex;
+                    fputc(',', g_SmokeCaptureManifest);
+                    for (playerByteIndex = 0;
+                         playerByteIndex < sizeof(GameCarRuntime);
+                         playerByteIndex++) {
+                        fprintf(g_SmokeCaptureManifest, "%02x",
+                                playerBytes[playerByteIndex]);
+                    }
                     for (rivalIndex = 0; rivalIndex < 4; rivalIndex++) {
                         const unsigned char *bytes =
                             (const unsigned char *)&g_Cars[rivalIndex];

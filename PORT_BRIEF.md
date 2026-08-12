@@ -11,8 +11,19 @@ Where a number appears, it came from a command you can re-run.
 
 ## 1. The goal, and the hard constraints
 
-**Goal:** the retail game, running natively, identical in behaviour to the PS1
-original.
+**Immediate goal:** the retail game, running natively, identical in behaviour
+to the PS1 original.  That compatibility renderer remains a permanent oracle,
+not the architectural ceiling of the port.
+
+**Renderer direction (decision 2026-08-12):** keep two explicit paths.  The
+`compat` path retains the original game transforms, clipping, ordering tables,
+GP0 packets and PS1 raster behaviour so emulator comparisons remain meaningful.
+The later `enhanced` path consumes semantic scene submissions before PS1 screen
+projection and is allowed to use a depth buffer, arbitrary resolution/aspect,
+independent mirror render targets, extended draw distance, configurable model
+LOD, replacement meshes/materials/sprites and modern effects.  PsyZ is a
+transitional compatibility backend, not the public API of the enhanced
+renderer.
 
 **Hard constraints — do not violate these:**
 
@@ -20,7 +31,8 @@ original.
    until the game is 100% playable start to finish. No widescreen, no higher
    internal resolution, no re-textures, no framerate changes, no bug fixes —
    even for bugs you are certain are bugs. Original bugs are in scope to
-   reproduce, not to fix.
+   reproduce, not to fix.  This constrains the current compatibility milestone,
+   not the design of the later opt-in enhanced renderer.
 2. **Windowed, original resolution scaled ×2** (integer scale, nearest
    neighbour). PAL Rage Racer runs 320×240-class modes; scale the final
    framebuffer ×2 so it is visible on a modern display. Do not change the
@@ -2110,6 +2122,16 @@ no pair has equal `tacho_rpm`, because the smoothed `g_EngineRpm` retains prior
 update history even when the complete current car record is identical.  The
 worst 37-pixel needle mismatch corresponds to 6972 versus 6948 RPM.  Require
 an exact RPM phase before classifying it as a HUD emitter failure.
+
+For physics/render-boundary diagnosis the capture manifest also records the
+complete 0x19c-byte player runtime as `player_raw`, alongside the existing four
+rival records.  This is diagnostic evidence rather than a default alignment
+gate: several cached/output-only fields legitimately differ even when the
+observable player position, speed and progress match.  A checkpoint replay at
+timers 499..525 produced identical player x/z, speed and progress throughout;
+the previously suspected timer-508 physics divergence was a pairing/run-phase
+artifact.  Compare named scalar state first, then use byte offsets in
+`player_raw` to locate the first internal writer when a real divergence remains.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
