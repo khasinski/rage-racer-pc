@@ -233,9 +233,36 @@ if options[:match] == "position"
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       metrics[:projection_phase_equal]
   end
+  rejection_reasons = lambda do |metrics, candidate, psx|
+    reasons = []
+    reasons << "position=#{format('%.1f', metrics[:position_distance])}>#{options[:max_position_distance]}" if
+      metrics[:position_distance] > options[:max_position_distance]
+    reasons << "view=#{format('%.1f', metrics[:view_distance])}>#{options[:max_view_distance]}" if
+      metrics[:view_distance] > options[:max_view_distance]
+    reasons << "speed=#{metrics[:speed_delta].abs}>#{options[:max_speed_delta]}" if
+      metrics[:speed_delta].abs > options[:max_speed_delta]
+    reasons << "angle=#{metrics[:angle_delta]}>#{options[:max_angle_delta]}" if
+      metrics[:angle_delta] > options[:max_angle_delta]
+    reasons << "lateral=#{metrics[:lateral_delta]}>#{options[:max_lateral_delta]}" if
+      metrics[:lateral_delta] > options[:max_lateral_delta]
+    reasons << "rivals=#{format('%.1f', metrics[:rival_distance])}>#{options[:max_rival_distance]}" if
+      metrics[:rival_distance] > options[:max_rival_distance]
+    reasons << "projection=#{metrics[:projection_delta]}>#{options[:max_projection_delta]}" if
+      metrics[:projection_delta] > options[:max_projection_delta]
+    reasons << "tacho_rpm=#{metrics[:tacho_rpm_delta]}>#{options[:max_tacho_rpm_delta]}" if
+      metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
+    reasons << "projection_phase" unless metrics[:projection_phase_equal]
+    reasons << "anim_phase" if candidate.key?(:anim_timer) && psx.key?(:anim_timer) &&
+      (candidate[:anim_timer] - psx[:anim_timer]) % 128 != 0
+    reasons << "random_seed" if options[:require_random_seed] &&
+      candidate.key?(:random_seed) && psx.key?(:random_seed) &&
+      candidate[:random_seed] != psx[:random_seed]
+    reasons
+  end
   psx_states = manifest_rows(psx_dir)
   native_states = manifest_rows(native_dir)
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
+  rejected = []
   pairs = psx_states.map do |psx|
     scene_candidates = native_states.select do |native|
       native[:scene] == psx[:scene] && native[:lap] == psx[:lap]
@@ -243,13 +270,22 @@ if options[:match] == "position"
     abort "no native state candidate for #{psx[:filename]}" if scene_candidates.empty?
     candidates = scene_candidates.select do |candidate|
       metrics = state_metrics.call(candidate, psx)
-      eligible.call(metrics) &&
-        (!candidate.key?(:anim_timer) || !psx.key?(:anim_timer) ||
-          (candidate[:anim_timer] - psx[:anim_timer]) % 128 == 0) &&
-        (!options[:require_random_seed] || !candidate.key?(:random_seed) ||
-          !psx.key?(:random_seed) || candidate[:random_seed] == psx[:random_seed])
+      rejection_reasons.call(metrics, candidate, psx).empty?
     end
-    next if candidates.empty?
+    if candidates.empty?
+      nearest = scene_candidates.min_by do |candidate|
+        metrics = state_metrics.call(candidate, psx)
+        metrics[:position_distance] + metrics[:view_distance] * 2 +
+          metrics[:speed_delta].abs * 4 + metrics[:angle_delta] +
+          metrics[:lateral_delta] + metrics[:projection_delta] * 4
+      end
+      metrics = state_metrics.call(nearest, psx)
+      rejected << {
+        psx: psx[:filename], native: nearest[:filename],
+        reasons: rejection_reasons.call(metrics, nearest, psx)
+      }
+      next
+    end
     native_state = candidates.min_by do |candidate|
       dx = candidate[:x] - psx[:x]
       dz = candidate[:z] - psx[:z]
@@ -386,7 +422,12 @@ if options[:match] == "position"
       }
     }
   end.compact
-  abort "no state-aligned frame pairs within the position limit" if pairs.empty?
+  if pairs.empty?
+    details = rejected.first(5).map do |row|
+      "#{row[:psx]} -> #{row[:native]}: #{row[:reasons].join(', ')}"
+    end
+    abort (["no state-aligned frame pairs within configured limits"] + details).join("\n")
+  end
 else
   timer_key = lambda do |path|
     match = path.basename.to_s.match(/\Atimer-(\d+)(?:-f\d+)?-s(\d+)\.ppm\z/)

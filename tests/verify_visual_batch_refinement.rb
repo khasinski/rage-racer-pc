@@ -134,7 +134,7 @@ Dir.mktmpdir("rage-visual-seed-gate-") do |root|
   stdout, stderr, status = Open3.capture3(*command)
   abort "seed gate accepted unequal RNG states" if status.success?
   abort stdout + stderr unless (stdout + stderr).include?(
-    "no state-aligned frame pairs within the position limit"
+    "no state-aligned frame pairs within configured limits"
   )
 end
 
@@ -159,8 +159,10 @@ Dir.mktmpdir("rage-visual-projection-gate-") do |root|
   stdout, stderr, status = Open3.capture3(*command)
   abort "projection gate accepted unequal matrices" if status.success?
   abort stdout + stderr unless (stdout + stderr).include?(
-    "no state-aligned frame pairs within the position limit"
+    "no state-aligned frame pairs within configured limits"
   )
+  abort "projection rejection did not identify its failed gate" unless
+    (stdout + stderr).include?("projection=1>0.0")
 end
 
 Dir.mktmpdir("rage-visual-gate-before-ranking-") do |root|
@@ -221,7 +223,7 @@ Dir.mktmpdir("rage-visual-tacho-rpm-gate-") do |root|
   stdout, stderr, status = Open3.capture3(*command)
   abort "tachometer RPM gate accepted unequal needle inputs" if status.success?
   abort stdout + stderr unless (stdout + stderr).include?(
-    "no state-aligned frame pairs within the position limit"
+    "no state-aligned frame pairs within configured limits"
   )
 end
 

@@ -1109,6 +1109,15 @@ the remaining 50-unit scratch-view difference is a camera-update phase and the
 best displayed native image is still two timer phases earlier. Keep simulation
 state, projection state, and front-buffer image phase separate when deciding
 whether a road patch is genuinely missing.
+When no pair passes, the batch tool prints up to five nearest PSX/native rows
+and every failed gate (`position`, `view`, `speed`, `angle`, `lateral`, rivals,
+projection, tachometer RPM, projection phase, animation phase, or RNG). Use
+this report to tune the deterministic input route; do not widen unrelated
+limits until a misleading image happens to pass. In the current acceleration
+offset scan, native `CROSS` starts 1469/1471 produce a best aggregate state
+error of 34 (mostly three-unit position/view/speed/lateral differences), while
+1468/1470 score 56 with eight-to-ten-unit differences. This two-frame parity
+effect is simulation/input cadence, not visual rendering.
 For that exact-projection road pair, both area-filtered detectors report zero
 native-only clear and zero native-only black pixels. This disproves the earlier
 missing-road diagnosis for that sample only; it is not evidence that every
