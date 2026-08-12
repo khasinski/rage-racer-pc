@@ -2406,3 +2406,11 @@ of retail's 22 changed pixels bit-for-bit, including `(50,390)`, and full
 timer-868 replay RMSE falls from about 0.489 to 0.0282.  The remaining
 one-pixel difference is ordinary raster edge coverage; the earlier large
 missing-world replay was not evidence for changing game culling or LOD.
+The same packet-boundary oracle isolated tachometer FT4 packet 454
+(`address=1c8584`).  Retail changes 31 pixels in `(246..253,354..360)`;
+PsyZ changes 29, but initially only 9 values match bit-for-bit.  GLSL matrices
+are column-major, so the row-major PS1 dither table must be sampled as
+`ditherMatrix[dx][dy]`, not `[dy][dx]`.  After that correction the isolated
+packet matches 23 of the 31 retail writes; the three missing writes are edge
+coverage and the remaining five are interpolation/raster precision.  This
+also reduces full timer-868 RGB RMSE from 0.0282 to 0.0207.
