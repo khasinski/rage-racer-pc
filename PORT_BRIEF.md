@@ -2030,6 +2030,13 @@ and final submit/reject decision.  Compare them with
 only to numeric drift and never hide a different texture, pass, or final
 decision.  The emulator samples NCLIP immediately after the COP2 command,
 before the R3000A delayed MFC2 result reaches a CPU register.
+Normalize the diagnostic PC to its physical `0x0002xxxx` address before the
+range check, because a restored state may execute through either cached or
+uncached aliases.  Mixing a masked PC with `0x8002xxxx` bounds silently
+produces `na` NCLIP fields even though emulation itself remains correct.
+Install the hook in the inlined COP2 fast path as well as `execute_cop2`:
+normal game execution under YJIT uses the former, so a probe placed only in
+the cold method never observes terrain commands.
 
 At aligned timer 890 the first 500 records have identical texture/CLUT order;
 without comparing NCLIP, all 500 semantic decisions initially appeared equal.
