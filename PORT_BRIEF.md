@@ -975,8 +975,10 @@ new BIOS, frontend, and race-intro run for every trace.
 For new deterministic paths prefer state-triggered input.
 `RAGE_PORT_STATE_INPUT_SCRIPT` and `RAGE_EMU_STATE_INPUT_SCRIPT` accept
 comma-separated `SCENE@TIMER:BUTTON` events, for example
-`4@0:START,8@20:CROSS`. Each event fires once on the first matching state and
-produces a one-frame edge. This keeps both implementations on the same menu
+`4@0:START,8@20:CROSS`. Each event fires once on the first matching state. The
+native harness injects `g_PadPressed`; the emulator holds the raw active-low
+pad level across two VBlanks so the game's polling cadence observes exactly
+one rising edge. This keeps both implementations on the same menu
 route even when BIOS, FMV or presentation consumes a different number of
 VBlanks. Frame-number scripts remain useful for held race controls and old
 cached checkpoints.
