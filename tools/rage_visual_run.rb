@@ -13,6 +13,7 @@ require "time"
 root = Pathname(__dir__).parent.expand_path
 options = {
   profile: "road", timer_min: 800, timer_max: 900, capture_stride: 1,
+  psx_capture_stride: nil, native_capture_stride: nil,
   psx_frames: 500, native_frames: 2400, jobs: 8, top: nil,
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
@@ -33,6 +34,14 @@ parser = OptionParser.new do |cli|
   cli.on("--timer-min N", Integer) { |v| options[:timer_min] = v }
   cli.on("--timer-max N", Integer) { |v| options[:timer_max] = v }
   cli.on("--capture-stride N", Integer) { |v| options[:capture_stride] = v }
+  cli.on("--psx-capture-stride N", Integer,
+         "PSX VBlank sampling stride (defaults to --capture-stride)") do |v|
+    options[:psx_capture_stride] = v
+  end
+  cli.on("--native-capture-stride N", Integer,
+         "native game-timer sampling stride (defaults to --capture-stride)") do |v|
+    options[:native_capture_stride] = v
+  end
   cli.on("--psx-frames N", Integer) { |v| options[:psx_frames] = v }
   cli.on("--native-frames N", Integer) { |v| options[:native_frames] = v }
   cli.on("--psx-input SCRIPT") { |v| options[:psx_input] = v }
@@ -63,6 +72,10 @@ parser.parse!
 abort parser.to_s unless options[:checkpoint] && options[:output]
 abort "timer range is invalid" if options[:timer_min] > options[:timer_max]
 abort "capture stride must be positive" unless options[:capture_stride].positive?
+options[:psx_capture_stride] ||= options[:capture_stride]
+options[:native_capture_stride] ||= options[:capture_stride]
+abort "PSX capture stride must be positive" unless options[:psx_capture_stride].positive?
+abort "native capture stride must be positive" unless options[:native_capture_stride].positive?
 
 output = Pathname(options[:output]).expand_path
 psx_dir = output / "psx"
@@ -84,13 +97,13 @@ psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:p
 psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
                "bin/rage-frame-capture", options[:bios].expand_path.to_s,
                options[:cue].expand_path.to_s, psx_dir.to_s,
-               options[:psx_frames].to_s, options[:capture_stride].to_s]
+               options[:psx_frames].to_s, options[:psx_capture_stride].to_s]
 
 native_env = {
   "SDL_AUDIODRIVER" => "dummy", "RAGE_PORT_SMOKE_FRAMES" => options[:native_frames].to_s,
   "RAGE_PORT_INPUT_SCRIPT" => options[:native_input], "RAGE_PORT_SMOKE_STOP_SCENE" => "12",
   "RAGE_PORT_SMOKE_CAPTURE_DIR" => native_dir.to_s,
-  "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:capture_stride].to_s,
+  "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:native_capture_stride].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
@@ -120,6 +133,10 @@ metadata = {
   budgets: options[:budgets],
   alignment_only: options[:alignment_only],
   timer_range: [options[:timer_min], options[:timer_max]],
+  capture_strides: {
+    psx_vblank: options[:psx_capture_stride],
+    native_timer: options[:native_capture_stride]
+  },
   draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   native: serialize.call(native_env, native_command, root),
   comparisons: batch_commands.transform_values { |command| serialize.call({}, command, root) }

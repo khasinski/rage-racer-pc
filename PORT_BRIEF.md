@@ -1955,6 +1955,12 @@ Keep the native CSV format signed for projection and mirror-matrix elements;
 only the four FNV hashes and random seed are unsigned.  A misplaced `%u`
 turned negative mirror coefficients into values near `2^32`, defeating the
 mirror-projection alignment gate even when both matrices differed by one unit.
+The two capture strides have different clocks: the Ruby argument samples
+emulated VBlanks, while `RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE` samples the game
+timer.  `rage_visual_run.rb` therefore exposes `--psx-capture-stride` and
+`--native-capture-stride` separately.  For sparse route scans use PSX stride 1
+and a larger native timer stride; giving both the same value can accidentally
+leave only a handful of timer intersections.
 
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
