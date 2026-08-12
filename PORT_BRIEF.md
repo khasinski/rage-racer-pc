@@ -1580,6 +1580,27 @@ timer 930, wrongly forcing the image phase to equal the sampled state paired
 PSX/native timer 930 and reported 2429 native-only black pixels; the actual
 display match is native timer 929, reducing that false ranking to 246.
 
+`--max-anim-timer-delta N` exposes a wrapped 7-bit animation tolerance; its
+default is zero. A small nonzero value is appropriate only for geometry/clear
+coverage, because UV animation cannot create an uncovered framebuffer pixel.
+Keep it at zero for black-texel and texture-content diagnosis. On the corrected
+turn route, allowing three ticks yields eleven tightly aligned draw-page pairs
+and every one reports zero area-filtered native-only clear pixels, including
+timer 997/994 with position distance 3.2, equal speed, lateral delta 1, and an
+identical projection matrix. The 285..332 black-pixel counts in other pairs
+coincide with two-to-three-tick texture-animation differences and are not valid
+missing-triangle evidence.
+
+Input scripts for an emulator checkpoint use relative VBlank frames, not game
+timer ticks. From the timer-700 checkpoint the emulator observes roughly two
+VBlanks per race timer. Matching native LEFT at smoke frame 2164 therefore
+requires emulator LEFT at relative VBlank 200, not 268. The incorrect 268 start
+already differed at timer 900 by about 1278 position units and 429 yaw units;
+the corrected start reduces the closest early-turn differences to single-digit
+translation and tens of fixed-angle units. Always derive these offsets from
+manifested scene/timer transitions rather than subtracting timer numbers from
+host frame numbers.
+
 For the timer-800 race checkpoint used here, delaying the native continuous
 CROSS input from smoke frame 1470 to 1471 gives an exact timer-903 state match:
 player position, camera position, speed, progress, lateral offset and animation

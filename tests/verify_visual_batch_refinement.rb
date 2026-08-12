@@ -138,6 +138,29 @@ Dir.mktmpdir("rage-visual-seed-gate-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-animation-tolerance-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  native_state = state.dup
+  native_state[-1] = 10
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" + ([filename] + state + [100, "deadbeef"]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" + ([filename] + native_state + [100, "deadbeef"]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-anim-timer-delta", "3"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+end
+
 Dir.mktmpdir("rage-visual-projection-gate-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

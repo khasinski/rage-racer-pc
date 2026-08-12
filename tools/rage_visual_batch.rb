@@ -32,6 +32,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_projection_delta: Float::INFINITY,
             max_mirror_projection_delta: Float::INFINITY,
             max_tacho_rpm_delta: Float::INFINITY,
+            max_anim_timer_delta: 0,
             visual_refine: 0,
             require_random_seed: false,
             clear_region: nil, black_region: nil, needle_region: nil,
@@ -94,6 +95,10 @@ OptionParser.new do |parser|
   parser.on("--max-tacho-rpm-delta N", Float,
             "skip states whose displayed tachometer RPM differs by more than N") do |value|
     options[:max_tacho_rpm_delta] = value
+  end
+  parser.on("--max-anim-timer-delta N", Integer,
+            "allow this wrapped 7-bit animation-phase distance (default: 0)") do |value|
+    options[:max_anim_timer_delta] = value
   end
   parser.on("--require-random-seed",
             "reject state pairs whose RNG seeds differ") do
@@ -233,6 +238,12 @@ if options[:match] == "position"
       mirror_projection_delta: mirror_projection_delta,
       tacho_rpm_delta: candidate.key?(:tacho_rpm) && psx.key?(:tacho_rpm) ?
         (candidate[:tacho_rpm] - psx[:tacho_rpm]).abs : 0,
+      anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
+                          raw = (candidate[:anim_timer] - psx[:anim_timer]) % 128
+                          [raw, 128 - raw].min
+                        else
+                          0
+                        end,
       projection_phase_equal: !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order]
     }
@@ -247,6 +258,7 @@ if options[:match] == "position"
       metrics[:projection_delta] <= options[:max_projection_delta] &&
       metrics[:mirror_projection_delta] <= options[:max_mirror_projection_delta] &&
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
+      metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       metrics[:projection_phase_equal]
   end
   rejection_reasons = lambda do |metrics, candidate, psx|
@@ -270,8 +282,8 @@ if options[:match] == "position"
     reasons << "tacho_rpm=#{metrics[:tacho_rpm_delta]}>#{options[:max_tacho_rpm_delta]}" if
       metrics[:tacho_rpm_delta] > options[:max_tacho_rpm_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
-    reasons << "anim_phase" if candidate.key?(:anim_timer) && psx.key?(:anim_timer) &&
-      (candidate[:anim_timer] - psx[:anim_timer]) % 128 != 0
+    reasons << "anim_phase=#{metrics[:anim_timer_delta]}>#{options[:max_anim_timer_delta]}" if
+      metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
     reasons << "random_seed" if options[:require_random_seed] &&
       candidate.key?(:random_seed) && psx.key?(:random_seed) &&
       candidate[:random_seed] != psx[:random_seed]
