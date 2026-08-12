@@ -2156,13 +2156,15 @@ Use `tools/rage_gp0_bundle.rb --bundle COMPARE/FRAME` for the repeatable
 second-stage diagnosis.  It reads the matched PSX/native capture filenames,
 surface, `replay-pre.psxstate`, replay VBlank count and original commands from
 the visual bundle and its parent `run.json`; it then leaves `gp0-psx.log`,
-`gp0-native.log` and `gp0-diff.txt` beside the heatmap.  Both backends accept
-`RAGE_GPU_GP0_TRACE_FRAME` so a long replay records only the selected render
-interval.  Both native display- and draw-page captures select the submission
-tagged with the frame in their filename.  An earlier display-page `frame-1`
+`gp0-native.log` and `gp0-diff.txt` beside the heatmap.  Each ordering-table
+submission is tagged with the game's `scene` and `timer`; bundle replay filters
+both runtimes by those values and then requires the same E3 draw page.  It
+aborts instead of falling back to an unrelated frame.  This is stronger than
+selecting by presentation-frame number: an earlier display-page `frame-1`
 rule selected stale geometry (for example timer-263 commands for a timer-265
-image), fabricating colour and HUD differences.  The emulator replay uses its
-local pre-state frame rather than the global `fNNNNN` capture filename.
+image), fabricating colour and HUD differences.  The comparator normalizes
+only physical draw-page state (E3/E4/E5 and fill Y), never primitive XY, which
+is already relative to E5 on both sides.
 
 A saved checkpoint can sit on either side of the VBlank/DMA boundary.  A
 one-VBlank replay therefore does not imply that commands are tagged as local
@@ -2192,17 +2194,22 @@ now include source vertex indices and the real TRX/TRY/TRZ control registers;
 `rage_geometry_trace_compare.rb` treats either input difference as structural
 and reports it before clip/depth output is interpreted.
 
-The first application of this oracle found a real portable terrain-emitter bug.
-Retail windowed faces submit `E2000000, E2xxxxxx` before the FT4 and
-`E2000000, 00000000` after it.  `RageEmitTerrainFt4` and
-`RageEmitCourseFt4` instead submitted set+NOP before the face, allowing the
-previous face's texture window to remain active until the new command.  This
-can select the wrong texels and appears as black/glitched terrain.  Restoring
-the retail reset+set packet moved the first meaningful GP0 mismatch from the
-texture-window command at word 100 to the following face's one-level fog-colour
-rounding at word 102.  The GP0 comparator masks only documented ignored struct
-bytes (Gouraud colour padding and FT/GT UV padding); use `--raw` when auditing
-the host layouts themselves.
+The first application of this oracle found real portable terrain-emitter bugs.
+Direct retail windowed faces submit `reset+set` before the FT4 and `reset+NOP`
+after it.  Children emitted by `EmitSubdividedTerrainQuad` use `set+NOP` for
+each child because their sequence is already bracketed.  Keep these paths
+separate when backporting; one universal packet layout makes one class match
+by breaking the other.
+
+The same trace exposed a missing game-side far-face conversion.  When
+`rawDepth >= 0x800` and face flag bit 0 is set, retail halves all UV bytes and,
+for windowed dispatches, transforms the packed texture window as
+`((window >> 1) & 0x7bfff) | 0x210` (original instructions at
+`0x80028608..0x80028620` and `0x80028760..0x80028778`).  The portable decoder
+halved UV but left the window unchanged: timer 270 therefore produced native
+`E20C0300` where retail produced `E2060390`, despite identical FT4 XY and UV.
+Applying the original conversion removes that mismatch.  This belongs in the
+game's `SubmitTerrainCells` port, not in PsyZ or a modern renderer.
 
 A strict draw-page replay over timers 260..280, gated on exact player/view
 position, speed, projection, tachometer RPM and both visible-cell masks, leaves

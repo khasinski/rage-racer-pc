@@ -430,7 +430,7 @@ static uint8_t RageBilerpByte(
 static uint8_t *RageEmitTerrainFt4(
     uint8_t *cursor, OT_TYPE *ot, int depth, int fog, int dispatch,
     const int sxy[4], const uint8_t uv[8], uint16_t clut, uint16_t tpage,
-    const uint8_t color[3], uint32_t textureWindow) {
+    const uint8_t color[3], uint32_t textureWindow, int subdivided) {
     POLY_FT4 *poly;
     DR_TWIN *window;
     DR_TWIN *reset;
@@ -473,12 +473,15 @@ static uint8_t *RageEmitTerrainFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    /* Retail brackets every windowed quad with two-word DR_TWIN packets:
-     * reset+set before the polygon, reset+NOP after it.  Treating the first
-     * packet as set+NOP leaves the preceding face's window active while the
-     * new window command is reached through the OT chain. */
-    window->code[0] = 0xE2000000u;
-    window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+    /* Direct faces use reset+set; EmitSubdividedTerrainQuad has already
+     * bracketed its child sequence and emits set+NOP for each child. */
+    if (subdivided) {
+        window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+        window->code[1] = 0;
+    } else {
+        window->code[0] = 0xE2000000u;
+        window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
+    }
 
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
@@ -1255,6 +1258,17 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     int uvIndex;
                     for (uvIndex = 0; uvIndex < 8; uvIndex++)
                         baseUv[uvIndex] >>= 1;
+                    /* The retail dispatcher applies the same far-face mode
+                     * to the packed texture-window command.  This is not a
+                     * generic GP0 conversion: it is part of Rage Racer's
+                     * terrain record decoder at 0x80028608/0x80028760.
+                     * Keeping the source window unchanged selects a
+                     * different part of the page even though XY and UV are
+                     * otherwise identical. */
+                    if (dispatch >= 2) {
+                        textureWindow = ((textureWindow >> 1) & 0x0007BFFFu) |
+                                        0x00000210u;
+                    }
                 }
                 bias = (int8_t)stream[21];
                 uLevel = stream[22] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);
@@ -1286,7 +1300,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     depth += bias;
                     next = RageEmitTerrainFt4(cursor, ot, depth, fog, dispatch,
                                               sxy, baseUv, clut, tpage, color,
-                                              textureWindow);
+                                              textureWindow, 0);
                     if (next == NULL) goto terrain_buffer_full;
                     cursor = next;
                     emittedFaces++;
@@ -1398,7 +1412,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                             }
                             next = RageEmitTerrainFt4(cursor,ot,subDepth,fog,
                                                       dispatch,subSxy,uv,clut,
-                                                      tpage,color,textureWindow);
+                                                      tpage,color,textureWindow,
+                                                      1);
                             if (next == NULL) goto terrain_buffer_full;
                             cursor = next;
                             emittedFaces++;

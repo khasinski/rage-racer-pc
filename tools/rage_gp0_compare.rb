@@ -39,6 +39,57 @@ native_packets = read_packets.call(options[:native], "gp0-packet ", options[:nat
 abort "no gp0-command records in #{options[:psx]}" if psx_packets.empty?
 abort "no gp0-packet records in #{options[:native]}" if native_packets.empty?
 
+normalize_draw_page = lambda do |packets|
+  draw_top = packets.flat_map(&:words).find { |word| (word >> 24) == 0xe3 }
+  draw_y = draw_top ? ((draw_top >> 10) & 0x1ff) : 0
+  return if draw_y.zero? || options[:raw]
+  packets.each do |packet|
+    command = (packet.words.first >> 24) & 0xff
+    if command == 0xe3 || command == 0xe4
+      packet.words.map! do |word|
+        case word >> 24
+        when 0xe3, 0xe4
+          y = ((word >> 10) & 0x1ff) - draw_y
+          (word & ~0x0007_fc00) | ((y & 0x1ff) << 10)
+        when 0xe5
+          y = ((word >> 11) & 0x7ff) - draw_y
+          (word & ~0x003f_f800) | ((y & 0x7ff) << 11)
+        when 0x02
+          # The following word is the fill origin and is handled below after
+          # packet grouping; keep the opcode unchanged here.
+          word
+        else
+          word
+        end
+      end
+      packet.words.each_index do |index|
+        next unless (packet.words[index] >> 24) == 0x02 && index + 1 < packet.words.length
+        origin = packet.words[index + 1]
+        y = ((origin >> 16) & 0xffff) - draw_y
+        packet.words[index + 1] = (origin & 0xffff) | ((y & 0xffff) << 16)
+      end
+      next
+    end
+    if command == 0xe5
+      word = packet.words[0]
+      y = ((word >> 11) & 0x7ff) - draw_y
+      packet.words[0] = (word & ~0x003f_f800) | ((y & 0x7ff) << 11)
+      next
+    end
+    if command == 0x02 && packet.words.length >= 2
+      word = packet.words[1]
+      y = ((word >> 16) & 0xffff) - draw_y
+      packet.words[1] = (word & 0xffff) | ((y & 0xffff) << 16)
+      next
+    end
+    # Primitive XY is already expressed relative to E5 on both sides.  Only
+    # physical VRAM commands above need page normalization.
+  end
+end
+
+normalize_draw_page.call(psx_packets)
+normalize_draw_page.call(native_packets)
+
 flatten = lambda do |packets|
   packets.flat_map.with_index do |packet, packet_index|
     command = (packet.words.first >> 24) & 0xff

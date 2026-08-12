@@ -1,4 +1,7 @@
 #include "common.h"
+#ifdef __psyz
+#include <psyz/gpu.h>
+#endif
 #include <stdio.h>
 #include "game/asset.h"
 #include "game/audio.h"
@@ -123,6 +126,9 @@ void MainLoop(void) {
         ticks = g_GameClock + 1;
         g_GameClock = ticks + elapsed / 256;
         VSync(0);
+#ifdef __psyz
+        Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
+#endif
         {
             GameFrameContextAddress drawBuffer;
             drawBuffer.bytes = g_DrawBuffer;

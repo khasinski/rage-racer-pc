@@ -43,6 +43,8 @@ native_row = native_manifest.find do |row|
   row["filename"] == File.basename(report.fetch("native_source"))
 end
 abort "native capture is absent from its manifest" unless native_row
+native_scene = Integer(native_row.fetch("scene"), 10)
+native_timer = Integer(native_row.fetch("timer"), 10)
 # PsyZ tags commands with the presentation interval in which their completed
 # framebuffer is captured.  Display and draw-page manifests therefore both
 # map to the filename's native frame; subtracting one selects stale geometry.
@@ -66,14 +68,15 @@ FileUtils.mkdir_p(replay_root)
 prepare = lambda do |side, frame|
   metadata = run.fetch(side)
   env = metadata.fetch("env").merge(
-    "RAGE_GPU_GP0_TRACE" => "1", "RAGE_GPU_GP0_TRACE_FRAME" => frame.to_s
+    "RAGE_GPU_GP0_TRACE" => "1",
+    "RAGE_GPU_GP0_TRACE_SCENE" => native_scene.to_s,
+    "RAGE_GPU_GP0_TRACE_TIMER" => native_timer.to_s
   )
   argv = metadata.fetch("argv").dup
   if side == "psx"
     output_index = argv.index("bin/rage-frame-capture") + 3
     argv[output_index] = (replay_root / "psx-capture").to_s
     if psx_replay_frames && psx_replay_state
-      env.delete("RAGE_GPU_GP0_TRACE_FRAME")
       env["RAGE_EMU_LOAD_STATE"] = psx_replay_state
       argv[output_index + 1] = (psx_replay_frames + 2).to_s
       argv[output_index + 2] = (psx_replay_frames + 2).to_s
@@ -98,18 +101,34 @@ failures = runs.map do |side, pid, log|
 end.compact
 abort failures.join("\n") unless failures.empty?
 
+native_frames = File.foreach(bundle / "gp0-native.log").map do |line|
+  next unless line.start_with?("gp0-packet ") &&
+              line[/\bscene=(-?\d+)/, 1].to_i == native_scene &&
+              line[/\btimer=(-?\d+)/, 1].to_i == native_timer
+  line[/\bframe=(\d+)/, 1]&.to_i
+end.compact.uniq
+abort "native replay submitted no GP0 commands for scene=#{native_scene} timer=#{native_timer}" if native_frames.empty?
+native_frame = native_frames.min_by { |frame| [(frame - native_frame).abs, frame] }
+
 if psx_replay_frames && psx_replay_state
   native_draw_area = File.foreach(bundle / "gp0-native.log").map do |line|
-    next unless line.start_with?("gp0-packet ") && line[/\bframe=(\d+)/, 1].to_i == native_frame
+    next unless line.start_with?("gp0-packet ") &&
+                line[/\bframe=(\d+)/, 1].to_i == native_frame &&
+                line[/\bscene=(-?\d+)/, 1].to_i == native_scene &&
+                line[/\btimer=(-?\d+)/, 1].to_i == native_timer
     words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
     next unless words
     words.split(",").map { |word| Integer(word, 16) }.find { |word| (word >> 24) == 0xe3 }
   end.compact.first
   psx_draw_areas = {}
+  psx_contexts = {}
   available_frames = File.foreach(bundle / "gp0-psx.log").map do |line|
     match = line.match(/\Agp0-command frame=(\d+)\b/)
     next unless match
     frame = Integer(match[1], 10)
+    scene = line[/\bscene=(-?\d+)/, 1]
+    timer = line[/\btimer=(-?\d+)/, 1]
+    psx_contexts[frame] ||= [scene.to_i, timer.to_i] if scene && timer
     words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
     if words
       draw_area = words.split(",").map { |word| Integer(word, 16) }.find { |word| (word >> 24) == 0xe3 }
@@ -119,9 +138,14 @@ if psx_replay_frames && psx_replay_state
   end.compact.uniq
   abort "replayed PSX checkpoint submitted no GP0 commands" if available_frames.empty?
   matching_surface = native_draw_area && available_frames.select do |frame|
-    psx_draw_areas[frame] == native_draw_area
+    psx_draw_areas[frame] == native_draw_area &&
+      psx_contexts[frame] == [native_scene, native_timer]
   end
-  candidates = matching_surface && !matching_surface.empty? ? matching_surface : available_frames
+  if native_draw_area && matching_surface.empty?
+    abort "PSX replay has no scene=#{native_scene} timer=#{native_timer} frame " \
+          "on native draw page #{format('%08x', native_draw_area)}"
+  end
+  candidates = matching_surface || available_frames
   psx_frame = candidates.min_by { |frame| [(frame - psx_frame).abs, frame] }
 end
 
