@@ -18,7 +18,7 @@ options = {
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
                 "1200:CROSS,1469-3000:CROSS",
   psx_state_input: nil, native_state_input: nil,
-  match_args: [], budgets: [], dry_run: false,
+  match_args: [], budgets: [], draw_page: false, dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
@@ -49,6 +49,9 @@ parser = OptionParser.new do |cli|
   cli.on("--budget SPEC", "assert PROFILE.clear/black/needle/rmse/matched_min=VALUE") do |v|
     options[:budgets] << v
   end
+  cli.on("--draw-page", "capture the active VRAM drawing page (packet/VRAM diagnosis only)") do
+    options[:draw_page] = true
+  end
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
 parser.parse!
@@ -68,11 +71,11 @@ psx_env = {
   "RAGE_EMU_LOAD_STATE" => Pathname(options[:checkpoint]).expand_path.to_s,
   "RAGE_EMU_INPUT_SCRIPT" => options[:psx_input],
   "RAGE_EMU_TIMER_FILENAMES" => "1", "RAGE_EMU_CAPTURE_ALL_PHASES" => "1",
-  "RAGE_EMU_CAPTURE_DRAW_PAGE" => "1",
   "RAGE_EMU_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_EMU_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RUBYOPT" => "--yjit"
 }
+psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
 psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
                "bin/rage-frame-capture", options[:bios].expand_path.to_s,
@@ -82,12 +85,13 @@ psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
 native_env = {
   "SDL_AUDIODRIVER" => "dummy", "RAGE_PORT_SMOKE_FRAMES" => options[:native_frames].to_s,
   "RAGE_PORT_INPUT_SCRIPT" => options[:native_input], "RAGE_PORT_SMOKE_STOP_SCENE" => "12",
-  "RAGE_PORT_CAPTURE_DRAW_PAGE" => "1", "RAGE_PORT_SMOKE_CAPTURE_DIR" => native_dir.to_s,
+  "RAGE_PORT_SMOKE_CAPTURE_DIR" => native_dir.to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:capture_stride].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
 }
+native_env["RAGE_PORT_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 native_env["RAGE_PORT_STATE_INPUT_SCRIPT"] = options[:native_state_input] if options[:native_state_input]
 native_command = [options[:native].expand_path.to_s]
 
@@ -110,7 +114,7 @@ metadata = {
   created_at: Time.now.iso8601, profile: options[:profile],
   budgets: options[:budgets],
   timer_range: [options[:timer_min], options[:timer_max]],
-  draw_page: true, psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
+  draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   native: serialize.call(native_env, native_command, root),
   comparisons: batch_commands.transform_values { |command| serialize.call({}, command, root) }
 }

@@ -18,10 +18,10 @@ Dir.mktmpdir("rage-visual-run-") do |output|
   abort stdout + stderr unless status.success?
   metadata = JSON.parse(File.read(File.join(output, "run.json")))
   abort "visual runner profile was not retained" unless metadata.fetch("profile") == "mirror-road"
-  abort "PSX capture is not draw-page deterministic" unless
-    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DRAW_PAGE") == "1"
-  abort "native capture is not draw-page deterministic" unless
-    metadata.dig("native", "env", "RAGE_PORT_CAPTURE_DRAW_PAGE") == "1"
+  abort "visual comparison must default to the presented front buffer" if
+    metadata.dig("psx", "env").key?("RAGE_EMU_CAPTURE_DRAW_PAGE") ||
+    metadata.dig("native", "env").key?("RAGE_PORT_CAPTURE_DRAW_PAGE") ||
+    metadata.fetch("draw_page")
   abort "state-relative input was not applied symmetrically" unless
     metadata.dig("psx", "env", "RAGE_EMU_STATE_INPUT_SCRIPT") == "12@700+200:CROSS" &&
     metadata.dig("native", "env", "RAGE_PORT_STATE_INPUT_SCRIPT") == "12@700+200:CROSS"
@@ -29,6 +29,18 @@ Dir.mktmpdir("rage-visual-run-") do |output|
   abort "diagnostic preset is missing" unless compare.each_cons(2).include?(["--preset", "mirror-road"])
   abort "repeated matcher arguments were not retained" unless
     compare.each_cons(2).include?(["--max-position-distance", "8"])
+end
+
+Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--draw-page", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "explicit draw-page mode was not applied symmetrically" unless
+    metadata.fetch("draw_page") &&
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DRAW_PAGE") == "1" &&
+    metadata.dig("native", "env", "RAGE_PORT_CAPTURE_DRAW_PAGE") == "1"
 end
 
 
@@ -42,4 +54,4 @@ Dir.mktmpdir("rage-visual-run-all-") do |output|
     metadata.fetch("comparisons").keys == %w[road mirror-road tacho hud]
 end
 
-puts "visual run records reproducible parallel draw-page commands"
+puts "visual run defaults to front buffers and records explicit draw-page diagnostics"

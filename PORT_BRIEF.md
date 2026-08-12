@@ -1036,12 +1036,13 @@ equality, so a zero count cannot be mistaken for a detector that never ran or a
 pair aligned only in the wrong render pass.
 
 `tools/rage_visual_run.rb` is the one-command repeatable path. It starts the
-Ruby/YJIT emulator and native smoke capture in parallel, forces draw-page and
-all-phase timer captures, writes separate logs, then invokes the selected
+Ruby/YJIT emulator and native smoke capture in parallel, captures presented
+front buffers at all timer phases, writes separate logs, then invokes the selected
 diagnostic preset. `run.json` records cwd, argv, environment, timer range and a
 shell-escaped reproduction command for all three stages. Use `--dry-run` to
 audit the route without starting either game; repeat `--match-arg=VALUE` for
-batch tolerances. For example:
+batch tolerances. Pass `--draw-page` only for raw VRAM/packet diagnosis; those
+images are not visual acceptance frames. For example:
 
 ```sh
 ruby tools/rage_visual_run.rb \
