@@ -1072,6 +1072,12 @@ runner. Both log the call index, frame, resulting seed/value and caller
 location (`caller_delta` from `Random15` natively, retail return PC in the
 emulator). Start both from equivalent checkpoints and compare the first
 unequal call rather than inferring a cause from a later manifest seed.
+`ruby tools/rage_random_align.rb PSX_LOG NATIVE_LOG` aligns the logs by their
+32-bit LCG states and reports the dominant call-index offset. A constant offset
+means the two runs inherited a different number of earlier calls (commonly a
+different frontend route); it is not evidence that `Random15` itself or the
+race renderer diverged. A changing offset identifies the interval containing
+the first extra/missing runtime call.
 
 RMSE is often dominated by HUD digits, animated signs and a one-frame texture
 phase even when the road is correct.  For terrain-hole searches pass the same
