@@ -89,6 +89,35 @@ static long g_SmokeCaptureTimerMin;
 static long g_SmokeCaptureTimerMax;
 static const char *g_SmokeCaptureDirectory;
 static FILE *g_SmokeCaptureManifest;
+
+static void RageSmokeWriteVisibleCells(const char *captureDirectory,
+                                       int frameNumber) {
+    char path[1024];
+    FILE *file;
+    int index;
+    if (getenv("RAGE_PORT_SMOKE_VISIBLE_CELLS") == NULL) return;
+    if (snprintf(path, sizeof(path), "%s/visible-cells.log", captureDirectory) >=
+        (int)sizeof(path)) return;
+    file = fopen(path, "a");
+    if (file == NULL) return;
+    fprintf(file, "visible-frame frame=%d scene=%d timer=%d\n",
+            frameNumber, g_SceneId, g_SceneTimer);
+    for (index = 0; index < 64; index++) {
+        const Vec4 *mainEntry = &g_MainVisibleCellList[index];
+        const Vec4 *mirrorEntry = &g_MirrorVisibleCellList[index];
+        fprintf(file, "visible-cell %d=%d,%d,%d,%d\n", index,
+                mainEntry->x, mainEntry->y, mainEntry->z, mainEntry->w);
+        fprintf(file, "mirror-cell %d=%d,%d,%d,%d\n", index,
+                mirrorEntry->x, mirrorEntry->y, mirrorEntry->z, mirrorEntry->w);
+    }
+    for (index = 0; index < 32; index++) {
+        fprintf(file, "visible-mask %d=%08x\n", index,
+                (unsigned)g_MainVisibleCellMask[index]);
+        fprintf(file, "mirror-mask %d=%08x\n", index,
+                (unsigned)g_MirrorVisibleCellMask[index]);
+    }
+    fclose(file);
+}
 static int g_SmokeHasStopScene;
 static int g_SmokeHasStopSceneTimer;
 static int g_SmokeHasCaptureTimerMin;
@@ -387,6 +416,7 @@ int RagePortShouldExit(int frame_number) {
             fprintf(stderr,
                     "smoke capture=%s frame=%d scene=%d timer=%d\n",
                     path, frame_number, g_SceneId, g_SceneTimer);
+            RageSmokeWriteVisibleCells(g_SmokeCaptureDirectory, frame_number);
             if (g_SmokeCaptureManifest != NULL) {
                 const char *filename = strrchr(path, '/');
                 filename = filename != NULL ? filename + 1 : path;

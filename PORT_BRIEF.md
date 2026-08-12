@@ -2432,3 +2432,21 @@ artwork and raster-edge coverage; it is not evidence of a missing needle.  A
 road comparison requiring the complete main visible-cell list finds no
 eligible pairs, so this capture cannot prove course-surface pixel parity
 without first synchronizing simulation visibility state.
+
+`RAGE_EMU_VISIBLE_CELLS=1` and `RAGE_PORT_SMOKE_VISIBLE_CELLS=1` now write the
+same per-capture `visible-cells.log`: 64 main records, 64 mirror records and 32
+masks for each pass.  `rage_visible_cells_compare.rb PSX.LOG NATIVE.LOG TIMER`
+reports exact differences and separates membership, active-coordinate and mask
+changes.  At timer 1900 the old full-list hashes differ in 66 records, but
+membership differences are zero and all masks are identical; 25 active records
+only contain small coordinate deltas caused by the one-unit view-position
+difference.  Requiring byte-identical full lists was therefore too strict for
+surface comparison even though requiring the visible-cell masks remains valid.
+
+With that corrected gate, the fresh road scan finds apparent native-only black
+components at timers 1670 and 1735.  Visual inspection of the worst timer-1670
+component (`x=24..83, y=55..68` in the road preset) places it inside the legal
+black arrow texture on the barrier, shifted by the one-unit camera delta; it is
+not missing road geometry.  Keep the black detector sensitive, but confirm a
+candidate with membership/mask logs and packet/pixel tracing before treating a
+textured black region as a dropped triangle.
