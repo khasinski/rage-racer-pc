@@ -43,7 +43,6 @@ int main(int argc, char **argv) {
     long wanted_frame;
     long last_packet = -1;
     long only_packet = -1;
-    long packet_index = 0;
     char frame_field[64];
     RECT rect = {0, 0, 1024, 512};
     DRAWENV draw;
@@ -122,25 +121,49 @@ int main(int argc, char **argv) {
         uint32_t *packet = NULL;
         size_t packet_count = 0, packet_capacity = 0;
         char *payload;
+        char *packet_field;
+        long traced_packet = -1;
         int code;
         if (!strstr(line, frame_field) || !(payload = strstr(line, "words="))) continue;
-        if (last_packet >= 0 && packet_index > last_packet) break;
+        packet_field = strstr(line, "packet=");
+        if (packet_field) traced_packet = strtol(packet_field + 7, NULL, 0);
+        if (last_packet >= 0 && traced_packet > last_packet) break;
         if (append_words(payload + 6, &packet, &packet_count, &packet_capacity) != 0) {
             fclose(file); free(packet); return 1;
         }
         code = packet_count ? (int)(packet[0] >> 24) : -1;
-        if ((only_packet < 0 || packet_index == only_packet ||
+        if ((only_packet < 0 || traced_packet == only_packet ||
              (code >= 0xe1 && code <= 0xe6)) &&
             Psyz_GpuReplayPacket(packet, (int)packet_count) != 0) {
             fclose(file); free(packet); return 1;
         }
-        packet_index++;
+        if (only_packet >= 0 && traced_packet == only_packet) {
+            fprintf(stderr, "selected GP0 packet %ld code=%02x words=%zu\n",
+                    traced_packet, code, packet_count);
+        }
         if ((word_count & 0x3ff) == 0) fflush(stderr);
         free(packet);
     }
     fclose(file);
     if (Psyz_GpuReplayEnd() != 0) return 1;
     DrawSync(0);
+    {
+        size_t output_len = strlen(argv[4]);
+        if (output_len >= 5 && strcmp(argv[4] + output_len - 5, ".vram") == 0) {
+            rect = (RECT){0, 0, 1024, 512};
+            StoreImage(&rect, (u_long *)vram);
+            DrawSync(0);
+            file = fopen(argv[4], "wb");
+            if (!file) { perror(argv[4]); return 1; }
+            fwrite(vram, sizeof(*vram), 1024u * 512u, file);
+            fclose(file);
+            fprintf(stderr, "replayed %zu GP0 words to %s (1024x512 RGB5551)\n",
+                    word_count, argv[4]);
+            free(vram); free(words);
+            ResetGraph(0);
+            return 0;
+        }
+    }
     page = malloc((size_t)width * height * sizeof(*page));
     pixels = malloc((size_t)width * height * 3);
     if (!page || !pixels) { fprintf(stderr, "capture allocation failed\n"); return 1; }

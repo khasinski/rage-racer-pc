@@ -2386,23 +2386,23 @@ the canonical commands to PsyZ while preserving packet boundaries.  It derives
 the destination VRAM page from GP0(E3) before readback; otherwise Rage's double
 buffering compares the newly drawn page with the page displayed before it.
 Timer 868 supplies a stable 11805-word reproducer in which PsyZ retains the HUD
-and nearby scenery but loses large world regions that retail renders.  This is
-a backend replay failure, not a reason to alter game draw-distance or LOD code.
+and nearby scenery but initially appeared to lose large world regions.
 The replay's optional `LAST_PACKET` and `ONLY_PACKET` arguments reduce that
 frame to a packet prefix or one primitive plus its E1--E6 state.  At screen
 pixel `(50,150)`, retail primitive order 520 is FT4 packet 909
 (`address=1c90a4`): retail samples palette texel `94a5` and dithers it to
-`9084`, while SDL_GPU leaves the previous pixel untouched.  The quad is only
-one pixel high at that point, so this is a PS1 edge-coverage/subpixel
-rasterization discrepancy.  Neither changing the game culling distance nor
-forcing a higher model LOD can correct it.  Simple +/- half-pixel vertex
-offsets were tested and rejected because they did not restore the sample and
-worsened whole-frame error; coverage must be emulated deliberately.
+`9084`.
 For an authoritative one-packet oracle, `rage_gp0_bundle.rb
 --dump-psx-packet N` writes `gp0-before-NNNN.vram` immediately before retail
 executes packet N.  Capture N and N+1, then use `rage_vram_delta.rb` to report
 the exact changed-pixel count, bounds and an optional pixel value.  Packet 909
 changes 22 pixels in `(39..59,390..391)` and changes `(50,390)` from `1800` to
-`9084`; replaying only packet 909 from its exact pre-packet snapshot leaves
-that pixel at `1800`.  This proves the discrepancy is coverage rather than
-simulation state, texture data, draw order or later overdraw.
+`9084`.  This packet exposed a 64-bit bug in the diagnostic replay API:
+canonical GP0 words are 32-bit, but `Psyz_GpuReplayPacket` cast their buffer to
+PsyZ's pointer-sized `u_long *`, making `DispatchPackets` read every other word
+on 64-bit hosts.  Expanding every input word into a real `u_long` fixes the
+harness without changing game data.  The isolated PsyZ packet then matches 21
+of retail's 22 changed pixels bit-for-bit, including `(50,390)`, and full
+timer-868 replay RMSE falls from about 0.489 to 0.0282.  The remaining
+one-pixel difference is ordinary raster edge coverage; the earlier large
+missing-world replay was not evidence for changing game culling or LOD.

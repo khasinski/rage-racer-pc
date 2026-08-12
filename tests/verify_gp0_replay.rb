@@ -7,7 +7,9 @@ required = [
   "frame_field", 'strstr(line, "words=")',
   "Psyz_GpuReplayBegin", "Psyz_GpuReplayPacket", "Psyz_GpuReplayEnd",
   "StoreImage", "page_y", "LAST_PACKET", "ONLY_PACKET",
-  "packet_index > last_packet", "packet_index == only_packet",
+  'strstr(line, "packet=")', "traced_packet > last_packet",
+  "traced_packet == only_packet",
+  'strcmp(argv[4] + output_len - 5, ".vram")',
   "P6\\n%d %d\\n255\\n"
 ]
 missing = required.reject { |text| source.include?(text) }
