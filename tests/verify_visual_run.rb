@@ -71,10 +71,11 @@ Dir.mktmpdir("rage-visual-run-compare-only-") do |output|
   abort "compare-only unexpectedly accepted missing captures" if status.success?
   expected = "--compare-only requires existing #{File.join(output, "psx", "capture-manifest.csv")}"
   abort stdout + stderr unless (stdout + stderr).include?(expected)
-  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  metadata = JSON.parse(File.read(File.join(output, "compare-run.json")))
   abort "compare-only mode was not recorded" unless metadata.fetch("compare_only")
   abort "compare-only should not invent a checkpoint" if
     metadata.dig("psx", "env").key?("RAGE_EMU_LOAD_STATE")
+  abort "compare-only overwrote capture provenance" if File.exist?(File.join(output, "run.json"))
 end
 
 puts "visual run supports cached comparisons and records explicit capture diagnostics"

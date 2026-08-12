@@ -151,7 +151,8 @@ metadata = {
   native: serialize.call(native_env, native_command, root),
   comparisons: batch_commands.transform_values { |command| serialize.call({}, command, root) }
 }
-File.write(output / "run.json", JSON.pretty_generate(metadata) + "\n")
+metadata_path = output / (options[:compare_only] ? "compare-run.json" : "run.json")
+File.write(metadata_path, JSON.pretty_generate(metadata) + "\n")
 
 if options[:dry_run]
   puts JSON.pretty_generate(metadata)
