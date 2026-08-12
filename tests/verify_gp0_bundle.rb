@@ -16,6 +16,8 @@ required = [
   'bundle / "gp0-diff.txt"', 'tools/rage_gp0_compare.rb',
   '"--pixel X,Y"', '"RAGE_GPU_TRACE_PIXEL"', '"RAGE_GPU_TRACE_FRAME"',
   '"RAGE_GPU_TRACE_TEXEL"', '"RAGE_GPU_OT_TRACE"', '"--resync-window"',
+  '"RAGE_GPU_GP0_TRACE_VRAM"', 'bundle / "gp0-pre.vram"',
+  '"RAGE_GPU_GP0_TRACE_VRAM_POST"', 'bundle / "gp0-post.vram"',
   'execute_replays.call("pixel"'
 ]
 missing = required.reject { |text| source.include?(text) }

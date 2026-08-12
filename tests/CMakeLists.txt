@@ -60,6 +60,11 @@ add_test(
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_bundle.rb
         ${CMAKE_SOURCE_DIR}/tools/rage_gp0_bundle.rb
 )
+add_test(
+    NAME gp0_replay
+    COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_replay.rb
+            ${CMAKE_SOURCE_DIR}/tools/rage_gp0_replay.c
+)
 
 if(TARGET rage-gte-replay)
     add_test(NAME gte_replay_usage COMMAND rage-gte-replay)

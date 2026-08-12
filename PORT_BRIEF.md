@@ -997,6 +997,21 @@ divergent suffix.  Outputs are self-contained as `gp0-{psx,native}.log`,
 guess the trace frame from the original capture filename after loading a
 savestate: replay frame numbering is relative to the checkpoint.
 
+`rage-gp0-replay` is the lower-level deterministic renderer harness. It loads
+a raw 1024x512 RGB5551 VRAM image, consumes the emulator's canonical
+`gp0-command` records for one frame while preserving every packet boundary,
+and writes PsyZ's 320x240 draw page as PPM. The PsyZ diagnostic API exposes
+`Psyz_GpuReplayBegin/Packet/End`, so variable polylines are never reparsed from
+an ambiguous flattened word stream. `tools/psx-ruby/bin/rage-state-vram`
+extracts the VRAM payload from a validated emulator savestate.
+
+The VRAM snapshot must represent the exact instant before the selected DMA
+chain. A generic earlier `replay-pre.psxstate` is useful for bootstrapping
+textures and CLUTs, but commands executed between that state and the target
+DMA can change either VRAM page; its replay image is therefore diagnostic, not
+a pixel oracle. The final capture path must snapshot VRAM at the first traced
+GP0 command and pair that snapshot with the same frame's command records.
+
 Without `--pixel`, the comparison also reports separated maximum-error
 hotspots with the PSX/native RGB values and writes marked copies of both
 frames.  Use `--region X,Y,W,H` to keep animated HUD or scenery out of a road,
@@ -2363,3 +2378,13 @@ valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
 delta and projection fingerprint delta 14; both images contain the mirror
 frame, road and distant geometry.  The residual is a shifted high-contrast
 texture/raster edge, not evidence of mirror culling or draw-distance loss.
+
+For deterministic backend work, `rage_gp0_bundle.rb` now stores exact
+`gp0-pre.vram` and `gp0-post.vram` RGB5551 images around the traced retail GP0
+frame.  `rage-gp0-replay VRAM GP0 FRAME OUTPUT` loads the former and submits
+the canonical commands to PsyZ while preserving packet boundaries.  It derives
+the destination VRAM page from GP0(E3) before readback; otherwise Rage's double
+buffering compares the newly drawn page with the page displayed before it.
+Timer 868 supplies a stable 11805-word reproducer in which PsyZ retains the HUD
+and nearby scenery but loses large world regions that retail renders.  This is
+a backend replay failure, not a reason to alter game draw-distance or LOD code.

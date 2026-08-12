@@ -74,6 +74,8 @@ if(RAGE_BUILD_PORT)
     if(BUILD_TESTING)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)
         target_link_libraries(rage-gte-replay PRIVATE psyz)
+        add_executable(rage-gp0-replay tools/rage_gp0_replay.c)
+        target_link_libraries(rage-gp0-replay PRIVATE psyz)
     endif()
 endif()
 

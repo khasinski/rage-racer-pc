@@ -86,6 +86,10 @@ prepare = lambda do |side, frame|
     "RAGE_GPU_GP0_TRACE_TIMER" => native_timer.to_s
   )
   env["RAGE_GPU_OT_TRACE"] = "1" if options[:ot_trace]
+  if side == "psx"
+    env["RAGE_GPU_GP0_TRACE_VRAM"] = (bundle / "gp0-pre.vram").to_s
+    env["RAGE_GPU_GP0_TRACE_VRAM_POST"] = (bundle / "gp0-post.vram").to_s
+  end
   argv = metadata.fetch("argv").dup
   if side == "psx"
     output_index = argv.index("bin/rage-frame-capture") + 3
