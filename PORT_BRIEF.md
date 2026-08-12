@@ -2450,3 +2450,18 @@ black arrow texture on the barrier, shifted by the one-unit camera delta; it is
 not missing road geometry.  Keep the black detector sensitive, but confirm a
 candidate with membership/mask logs and packet/pixel tracing before treating a
 textured black region as a dropped triangle.
+
+Timer 1750 provides a second, packet-level check of the same barrier.  The
+large surface-divergence mask is not an UV, CLUT or TPAGE mismatch: at hotspot
+`(164,57)` both renderers select the wall FT4 with physical `tpage=0x15`,
+`clut=0x7c03`, and nearly identical interpolated UV (`89.08,2.46` retail versus
+`88.71,2.47` native).  Its projected vertices are shifted by three to four
+pixels, so the narrow repeating black-arrow texture legitimately covers a
+different set of screen pixels.  The complete GP0 stream first differs even
+earlier at word 103, again only in projected XY; that packet's colour, UV,
+CLUT and TPAGE words agree.  Therefore neither the timer-1670/1735 black mask
+nor the timer-1750 surface mask is evidence for changing terrain culling,
+texture selection or PsyZ sampling.  A genuine missing-geometry candidate must
+survive visible-cell membership/mask comparison and show either a missing game
+packet or a different result when replaying the same packet from identical
+VRAM.
