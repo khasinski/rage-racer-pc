@@ -464,8 +464,12 @@ static uint8_t *RageEmitTerrainFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
-    window->code[1] = 0;
+    /* Retail brackets every windowed quad with two-word DR_TWIN packets:
+     * reset+set before the polygon, reset+NOP after it.  Treating the first
+     * packet as set+NOP leaves the preceding face's window active while the
+     * new window command is reached through the OT chain. */
+    window->code[0] = 0xE2000000u;
+    window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
 
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
@@ -540,8 +544,8 @@ static uint8_t *RageEmitCourseFt4(
     window = (DR_TWIN *)cursor;
     cursor += sizeof(*window);
     setlen(window, 2);
-    window->code[0] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
-    window->code[1] = 0;
+    window->code[0] = 0xE2000000u;
+    window->code[1] = 0xE2000000u | (textureWindow & 0x000FFFFFu);
     setaddr(reset, getaddr(&ot[depth]));
     setaddr(poly, reset);
     setaddr(window, poly);

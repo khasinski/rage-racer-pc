@@ -2152,6 +2152,28 @@ commands) and reports the first changed 32-bit word plus both enclosing
 packets.  Do not compare unrelated boot and checkpoint logs: unlike image
 alignment, this oracle deliberately performs no heuristic state matching.
 
+Use `tools/rage_gp0_bundle.rb --bundle COMPARE/FRAME` for the repeatable
+second-stage diagnosis.  It reads the matched PSX/native capture filenames,
+surface, `replay-pre.psxstate`, replay VBlank count and original commands from
+the visual bundle and its parent `run.json`; it then leaves `gp0-psx.log`,
+`gp0-native.log` and `gp0-diff.txt` beside the heatmap.  Both backends accept
+`RAGE_GPU_GP0_TRACE_FRAME` so a long replay records only the selected render
+interval.  Display-page captures select the preceding native submission;
+draw-page captures select the current one.  The emulator replay uses its local
+pre-state frame rather than the global `fNNNNN` capture filename.
+
+The first application of this oracle found a real portable terrain-emitter bug.
+Retail windowed faces submit `E2000000, E2xxxxxx` before the FT4 and
+`E2000000, 00000000` after it.  `RageEmitTerrainFt4` and
+`RageEmitCourseFt4` instead submitted set+NOP before the face, allowing the
+previous face's texture window to remain active until the new command.  This
+can select the wrong texels and appears as black/glitched terrain.  Restoring
+the retail reset+set packet moved the first meaningful GP0 mismatch from the
+texture-window command at word 100 to the following face's one-level fog-colour
+rounding at word 102.  The GP0 comparator masks only documented ignored struct
+bytes (Gouraud colour padding and FT/GT UV padding); use `--raw` when auditing
+the host layouts themselves.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
