@@ -150,8 +150,8 @@ static int RageProjectQuad(
          * triangle faces the camera.  Applying the model rule to terrain
          * drops whole quads whenever only their first half is degenerate. */
         if (terrainQuad &&
-            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 > 0) ||
-             (SCRATCH_MIRROR && clip0 >= 0 && clip1 < 0))) {
+            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
+             (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0))) {
             if (terrainQuad == 2)
                 g_RageTerrainChildSecondTriangleVisible++;
             else
@@ -166,8 +166,8 @@ static int RageProjectQuad(
              ((!SCRATCH_MIRROR && clip0 <= 0) ||
               (SCRATCH_MIRROR && clip0 < 0))) ||
             (terrainQuad &&
-             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 <= 0) ||
-              (SCRATCH_MIRROR && clip0 >= 0 && clip1 >= 0)))) {
+             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
+              (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
             g_RageProjectionReject = 2;
             if (!terrainQuad) g_RageModelRejectBackface++;
             if (terrainQuad == 2) g_RageTerrainChildRejectBackface++;
@@ -1056,13 +1056,17 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                          g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
                         fprintf(stderr,
                                 "terrain-face timer=%d cell=%d face=%d "
-                                "mode=%d reject=%d depth=%d raw=%d "
+                                "mode=%d mirror=%d reject=%d depth=%d raw=%d "
+                                "lod=%u,%u shift=%d "
                                 "rgb=%02x%02x%02x indices=%u,%u,%u,%u "
                                 "translation=%d,%d,%d "
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                                 g_SceneTimer, cellIndex, faceIndex, dispatch,
+                                SCRATCH_MIRROR,
                                 projected ? 0 : g_RageProjectionReject, depth,
-                                rawDepth, color[0], color[1], color[2],
+                                rawDepth, stream[22], stream[23],
+                                SCRATCH_FACE_OT_SHIFT,
+                                color[0], color[1], color[2],
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
                                 RageReadU16(stream + 4), RageReadU16(stream + 6),
                                 translation.vx, translation.vy, translation.vz,
@@ -1160,13 +1164,15 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                     fprintf(stderr,
                                             "terrain-child timer=%d cell=%d "
                                             "face=%d child=%d,%d/%d,%d "
-                                            "visible=%d rgb=%02x%02x%02x "
+                                            "visible=%d mirror=%d "
+                                            "rgb=%02x%02x%02x "
                                             "xyz=%d,%d,%d/%d,%d,%d/"
                                             "%d,%d,%d/%d,%d,%d "
                                             "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps, 1,
+                                            SCRATCH_MIRROR,
                                             color[0], color[1], color[2],
                                             child[0].vx, child[0].vy,
                                             child[0].vz, child[1].vx,

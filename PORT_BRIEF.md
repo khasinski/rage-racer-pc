@@ -1103,6 +1103,17 @@ dispatcher must do the same: otherwise a retail `0..127` tile becomes
 belongs in the portable counterpart of `SubmitTerrainCells` and should be
 backported with it.
 
+The two triangle tests of a subdivided terrain child intentionally have
+opposite winding. At `0x80028A9C..0x80028AD4`, retail accepts a main-view child
+when the first `NCLIP` is positive or the second is negative; the mirror pass
+accepts it when the first is negative or the second is positive. Treating both
+triangles as if they had the same sign submits back-facing folded quads and
+drops visible ones, producing large terrain wedges and holes. The three IR0
+decrements at `0x80028D58..0x80028D64` prepare three adjacent vertices for
+RTPT; they are not a four-cell packet stride. Portable subdivision must still
+emit each adjacent grid interval. Backport both the opposite-winding test and
+the one-interval iteration semantics.
+
 Several apparent HUD globals are interior labels in the retail player object,
 not independent storage. `g_PlayerSpeed` at `0x8009E778` is
 `g_PlayerCar.speed` (`+0xA4`), and `g_PlayerGear` at `0x8009E806` is
