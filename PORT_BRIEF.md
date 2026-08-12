@@ -1115,6 +1115,28 @@ missing-road diagnosis for that sample only; it is not evidence that every
 in-race hole is fixed. Expand the synchronized capture window and require the
 projection gate before classifying further candidates as culling or draw-range
 failures.
+
+Use display-page captures for user-visible acceptance and draw-page captures
+for packet-level diagnosis. A timer-841 display-page pair appeared to contain a
+four-pixel clear hole at `(115..116,138..139)`: retail submitted two textured
+quads there, while the visually refined native image submitted neither. The
+same timer compared on the active draw page has zero native-only clear pixels,
+proving that candidate was a cross-buffer phase mismatch. Conversely, the
+draw-page timer-880 candidate at `(23..26,128..130)` is not yet a PsyZ
+rasterization case: retail submits two quads using CLUTs `0x7c49/0x7c4b`, while
+native submits a differently projected quad using `0x7c03`. That divergence is
+already present in Rage Racer's submitted geometry/visible-cell selection and
+must be aligned or traced before changing the HAL rasterizer.
+
+Do not gate the visually refined image by its own manifest row. The manifest
+samples current globals at VBlank while the display-page image can be an older
+buffer; doing so forced `display_timer_delta=0` and increased a known road case
+from zero to 57 native-only clear pixels. Instead use draw-page captures with
+`--visual-refine 0` whenever the manifest and submitted packets must describe
+the same render. A previously documented exact timer-903 route is also not a
+permanent golden state: after later fixes the regenerated runs differed by
+position `(29,-9)`, speed 42, and body roll 5. Always prove exactness from the
+current manifests rather than relying on old frame offsets.
 For scenery-heavy regions such as the full mirror, add
 `--require-random-seed`. Position equality is not enough there: animated
 track objects consume `Random15`, so unequal seeds can produce different
