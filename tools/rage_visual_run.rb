@@ -35,7 +35,7 @@ route_presets = {
   },
   "time-attack" => {
     native_input: "400:START,500:START,610:DOWN,650:CROSS,950:CROSS," \
-                  "1100:CROSS,1200:CROSS,1470-10000:CROSS",
+                  "1100:CROSS,1200:CROSS,1264-10000:CROSS",
     psx_input: "0-10000:CROSS"
   }
 }.freeze

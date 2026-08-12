@@ -151,18 +151,20 @@ void InitEffectVoiceRuntime(void) {
 
     {
         s32 neg;
-        s32 *ptr;
 
         i = 0;
         neg = -1;
-        ptr = &g_AudioLoadedSlotMask;
         for (; i < 2; i++) {
             g_MusicChannels[i].mode = neg;
             g_MusicChannels[i].left.value = neg;
             g_MusicChannels[i].right.value = neg;
-            ptr[0x78 / 4] = 0;
-            ptr += sizeof(MusicChannel) / sizeof(*ptr);
             g_MusicChannels[i].volLeft.value = 0;
+            /* Retail reaches this field as
+             * &g_AudioLoadedSlotMask + 0x78 + i * sizeof(MusicChannel).
+             * That only works while independently named PS1 globals retain
+             * their original contiguous addresses. Name the actual field so
+             * the same game state is updated on 32- and 64-bit hosts. */
+            g_MusicChannels[i].volRight.value = 0;
         }
     }
 

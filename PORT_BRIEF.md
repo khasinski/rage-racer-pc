@@ -2561,3 +2561,20 @@ native boot and holds acceleration for the long capture. The supplied emulator
 checkpoint must already be a Time Attack scene-12 state; `--route` deliberately
 does not mutate retail RAM or reinterpret a Grand Prix checkpoint. Use
 `--route grand-prix` (the historical default input path) for mirror captures.
+Acceleration starts at native host frame 1264, the observed scene-12 entry,
+not at the countdown end: delaying it to frame 1470 left native at idle RPM
+while the checkpointed retail car was already near 7050 RPM. With the corrected
+route, all 54 available timer-200 onward reference frames pass state alignment
+without a rejection (using the explicit scenery-variant opt-out while the
+fresh boots retain different RNG history).
+
+One HUD failure was unrelated to drawing. `InitEffectVoiceRuntime` reproduced
+retail pointer arithmetic from `g_AudioLoadedSlotMask` to the right-volume
+field of each `MusicChannel`. On PS1 those globals occupy one fixed contiguous
+work area; independently linked host globals do not. The first write landed on
+`g_BestTotalTimes[0][0][0]`, replacing the initialized 310765 ms record with
+zero exactly when a race was entered, so Time Attack displayed `0'00"000`.
+Write `g_MusicChannels[i].volRight.value` directly. This preserves the retail
+field update on both 32- and 64-bit targets and is a game-code compatibility
+fix to backport to the decompilation, not a PsyZ workaround. The synchronized
+timer-530 native capture now displays the retail value `5'10"765`.
