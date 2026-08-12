@@ -1112,6 +1112,11 @@ windowed UV, palette result and whether the texel wrote VRAM. Use these rather
 than the geometric `gpu-cover` estimate when a narrow mirror polygon lies on a
 scanline edge; the coverage helper and the reference scanline rasterizer can
 legitimately disagree at such an edge.
+The runner assigns its relative trace frame inside the emulator at the exact
+VBlank transition. Do not set the trace frame only before a large host-side
+`run(steps:)` batch: one batch may cross a VBlank and would then label packets
+from two phases with the previous frame number. Capture filenames, manifests,
+and `gpu-raster frame=N` now share the same VBlank index.
 
 At native resolution, PS1-compatible hardware renderers place integer polygon
 vertices at pixel centres. Texture coordinates come from a fixed-point DDA and
