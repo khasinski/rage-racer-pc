@@ -972,6 +972,15 @@ Long emulator runs can be split into sub-minute chunks by also setting
 to the next timer.  This retains deterministic emulated time while avoiding a
 new BIOS, frontend, and race-intro run for every trace.
 
+For new deterministic paths prefer state-triggered input.
+`RAGE_PORT_STATE_INPUT_SCRIPT` and `RAGE_EMU_STATE_INPUT_SCRIPT` accept
+comma-separated `SCENE@TIMER:BUTTON` events, for example
+`4@0:START,8@20:CROSS`. Each event fires once on the first matching state and
+produces a one-frame edge. This keeps both implementations on the same menu
+route even when BIOS, FMV or presentation consumes a different number of
+VBlanks. Frame-number scripts remain useful for held race controls and old
+cached checkpoints.
+
 A fixed frame-number input script is not reusable from a fresh boot because
 FMV cadence determines whether those presses occur at the title, menu, or
 inside the movie. For the current local reference cache, resume the saved

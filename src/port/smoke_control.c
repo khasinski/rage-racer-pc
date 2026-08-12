@@ -14,6 +14,13 @@ typedef struct RageSmokeInput {
     int held;
 } RageSmokeInput;
 
+typedef struct RageSmokeStateInput {
+    long scene;
+    long timer;
+    unsigned short buttons;
+    int fired;
+} RageSmokeStateInput;
+
 static RageSmokeInput g_SmokeInputs[64];
 static int g_SmokeInputCount;
 static long g_SmokeFrameLimit;
@@ -33,6 +40,8 @@ static int g_SmokeHasCaptureTimerMax;
 static int g_SmokeInitialized;
 static int g_SmokeRawPadPath;
 static int g_SmokeCaptureAllPhases;
+static RageSmokeStateInput g_SmokeStateInputs[32];
+static int g_SmokeStateInputCount;
 
 extern int g_SceneId;
 extern int g_FrontendState;
@@ -70,6 +79,7 @@ static void RageSmokeInitialize(void) {
     const char *captureMax = getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
     const char *captureAllPhases =
         getenv("RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
+    const char *stateScript = getenv("RAGE_PORT_STATE_INPUT_SCRIPT");
     char *copy;
     char *token;
 
@@ -124,11 +134,9 @@ static void RageSmokeInitialize(void) {
     } else {
         script = getenv("RAGE_PORT_INPUT_SCRIPT");
     }
-    if (script == NULL || script[0] == '\0') return;
-    copy = strdup(script);
-    if (copy == NULL) return;
-    for (token = strtok(copy, ","); token != NULL && g_SmokeInputCount < 64;
-         token = strtok(NULL, ",")) {
+    copy = script != NULL && script[0] != '\0' ? strdup(script) : NULL;
+    for (token = copy != NULL ? strtok(copy, ",") : NULL;
+         token != NULL && g_SmokeInputCount < 64; token = strtok(NULL, ",")) {
         char *separator = strchr(token, ':');
         char *rangeSeparator;
         unsigned short buttons;
@@ -164,6 +172,28 @@ static void RageSmokeInitialize(void) {
         }
         g_SmokeInputs[g_SmokeInputCount].buttons = buttons;
         g_SmokeInputCount++;
+    }
+    free(copy);
+
+    if (stateScript == NULL || stateScript[0] == '\0') return;
+    copy = strdup(stateScript);
+    if (copy == NULL) return;
+    for (token = strtok(copy, ","); token != NULL &&
+         g_SmokeStateInputCount < 32; token = strtok(NULL, ",")) {
+        char *at = strchr(token, '@');
+        char *colon = strchr(token, ':');
+        unsigned short buttons;
+        if (at == NULL || colon == NULL || at > colon) continue;
+        *at = '\0';
+        *colon = '\0';
+        buttons = RageSmokeButton(colon + 1);
+        if (buttons == 0) continue;
+        g_SmokeStateInputs[g_SmokeStateInputCount].scene =
+            strtol(token, NULL, 0);
+        g_SmokeStateInputs[g_SmokeStateInputCount].timer =
+            strtol(at + 1, NULL, 0);
+        g_SmokeStateInputs[g_SmokeStateInputCount].buttons = buttons;
+        g_SmokeStateInputCount++;
     }
     free(copy);
 }
@@ -208,6 +238,17 @@ int RagePortShouldExit(int frame_number) {
             /* UpdatePlayerCar selects digital/analog input by controller type. */
             g_PadType = 0x41;
             g_PadHeld |= g_SmokeInputs[index].buttons;
+        }
+    }
+    for (index = 0; index < g_SmokeStateInputCount; index++) {
+        RageSmokeStateInput *input = &g_SmokeStateInputs[index];
+        if (!input->fired && g_SceneId == input->scene &&
+            g_SceneTimer >= input->timer) {
+            input->fired = 1;
+            g_PadPressed |= input->buttons;
+            fprintf(stderr,
+                    "smoke state input frame=%d scene=%d timer=%d buttons=%04x\n",
+                    frame_number, g_SceneId, g_SceneTimer, input->buttons);
         }
     }
     if (g_SmokeFinishFrame > 0 && frame_number >= g_SmokeFinishFrame &&
