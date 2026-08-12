@@ -2143,6 +2143,15 @@ compatibility contract for a future software oracle or renderer backend.  A
 not an uninitialized geometry primitive; classify packets by their GP0 opcode
 before treating zero payload as missing HUD or terrain.
 
+The Ruby retail GPU accepts the same `RAGE_GPU_GP0_TRACE=1` switch and emits
+decoded `gp0-command` records with DMA chain/node and RAM-address provenance.
+Compare a controlled pair with `tools/rage_gp0_compare.rb --psx PSX.LOG
+--native NATIVE.LOG`.  It flattens packet grouping (for example PsyZ's one
+nine-word drawing-environment packet versus the retail GPU's seven decoded
+commands) and reports the first changed 32-bit word plus both enclosing
+packets.  Do not compare unrelated boot and checkpoint logs: unlike image
+alignment, this oracle deliberately performs no heuristic state matching.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position

@@ -47,6 +47,13 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_gpu_digest_compare.rb
 )
 
+add_test(
+    NAME gp0_compare
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_compare.rb
+        ${CMAKE_SOURCE_DIR}/tools/rage_gp0_compare.rb
+)
+
 if(TARGET rage-gte-replay)
     add_test(NAME gte_replay_usage COMMAND rage-gte-replay)
     set_tests_properties(gte_replay_usage PROPERTIES WILL_FAIL TRUE)
