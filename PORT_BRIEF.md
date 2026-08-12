@@ -2612,3 +2612,15 @@ Allocate the complete arrays and express that alias in `track.h`. This prevents
 camera-path writes from escaping their objects and keeps chase-camera and path
 camera users on the same retail word, which is essential before diagnosing
 projection, clipping, road bending or mirror-matrix differences.
+
+Two more race-state objects were truncated by the generated host backing.
+`g_RankedCars[4]` contains four pointers: it occupies 16 bytes in the 32-bit
+retail image but requires 32 bytes on a 64-bit host. Its eight-byte backing let
+the ranking pass overwrite 24 bytes beyond the object every frame, corrupting
+unrelated native globals and invalidating AI, collision and mirror comparisons.
+`g_SectorEndDistance[3]` likewise requires 12 bytes, not eight. Keep both as
+complete native objects; the separately named labels at retail array elements
+1 and 2 are linker-map views, not independent runtime state needed by this
+port. The layout regression checks the host-sized pointer table explicitly so
+this fix remains valid on 64-bit hosts and can be backported as a declaration
+correction rather than a HAL workaround.
