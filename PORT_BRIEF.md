@@ -1085,6 +1085,13 @@ RPM is equally aligned; those profiles retain the relevant state on their
 worst-frame records precisely so phase drift is not mislabeled as rendering
 loss.
 
+State-relative taps can be passed as matching `--psx-state-input` and
+`--native-state-input` strings. Do not yet use scene-timer durations to drive a
+long route: the checkpointed PS1 observes roughly two VBlanks/car updates per
+race timer while native smoke normally advances one update per loop. Equal
+timer durations therefore do not mean equal numbers of game updates; this is
+part of the outstanding native cadence bug, not an input-script tolerance.
+
 The black detector follows the same area rule as the clear-colour detector.
 `raw_count` retains every isolated native-only black pixel for raster-edge
 diagnosis, while `count` requires both a horizontal and vertical neighbour and

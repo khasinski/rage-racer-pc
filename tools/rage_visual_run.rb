@@ -17,6 +17,7 @@ options = {
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
                 "1200:CROSS,1469-3000:CROSS",
+  psx_state_input: nil, native_state_input: nil,
   match_args: [], budgets: [], dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
@@ -35,6 +36,8 @@ parser = OptionParser.new do |cli|
   cli.on("--native-frames N", Integer) { |v| options[:native_frames] = v }
   cli.on("--psx-input SCRIPT") { |v| options[:psx_input] = v }
   cli.on("--native-input SCRIPT") { |v| options[:native_input] = v }
+  cli.on("--psx-state-input SCRIPT") { |v| options[:psx_state_input] = v }
+  cli.on("--native-state-input SCRIPT") { |v| options[:native_state_input] = v }
   cli.on("--bios PATH") { |v| options[:bios] = Pathname(v) }
   cli.on("--cue PATH") { |v| options[:cue] = Pathname(v) }
   cli.on("--native PATH") { |v| options[:native] = Pathname(v) }
@@ -70,6 +73,7 @@ psx_env = {
   "RAGE_EMU_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RUBYOPT" => "--yjit"
 }
+psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
 psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
                "bin/rage-frame-capture", options[:bios].expand_path.to_s,
                options[:cue].expand_path.to_s, psx_dir.to_s,
@@ -84,6 +88,7 @@ native_env = {
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
 }
+native_env["RAGE_PORT_STATE_INPUT_SCRIPT"] = options[:native_state_input] if options[:native_state_input]
 native_command = [options[:native].expand_path.to_s]
 
 batch_commands = profiles.to_h do |profile|
