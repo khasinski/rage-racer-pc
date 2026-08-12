@@ -1830,3 +1830,12 @@ cell builder.  Audit the parent OTZ/fog result and the `stream[22/23] - OTZ`
 LOD calculation against the retail dispatcher before changing NCLIP signs or
 adding rasterizer workarounds: each one-bit LOD error multiplies the number of
 children.
+
+Use `RAGE_PORT_TERRAIN_TRACE_TIMER` on native and
+`RAGE_TERRAIN_LOD_TRACE=1 RAGE_TERRAIN_LOD_TIMER=N` in the Ruby emulator to
+record the parent `OTZ`, record bytes 22/23, reduced levels and final step
+counts at the retail decision point (`0x800284a4`).  Capture from a state saved
+before `SubmitTerrainCells`: a state made inside the subdivision emitter can
+resume after the parent decision and silently produce no LOD records.  GTE
+trace limits can likewise truncate before the mirror parents, so compare
+complete per-pass counts rather than treating a prefix as a distribution.

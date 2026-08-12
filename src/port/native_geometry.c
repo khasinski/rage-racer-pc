@@ -1172,6 +1172,23 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 vLevel = stream[23] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);
                 if (uLevel < 0) uLevel = 0;
                 if (vLevel < 0) vLevel = 0;
+                if (g_RageTerrainTraceEnabled &&
+                    (g_RageTerrainTraceTimer < 0 ||
+                     g_RageTerrainTraceTimer == g_SceneTimer) &&
+                    (g_RageTerrainTraceClut < 0 ||
+                     g_RageTerrainTraceClut == clut) &&
+                    (g_RageTerrainTraceTpage < 0 ||
+                     g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
+                    fprintf(stderr,
+                            "terrain-lod timer=%d cell=%d face=%d mirror=%d "
+                            "raw=%d shift=%d source=%u,%u level=%d,%d "
+                            "steps=%u,%u\n",
+                            g_SceneTimer, cellIndex, faceIndex, SCRATCH_MIRROR,
+                            rawDepth, SCRATCH_FACE_OT_SHIFT, stream[22],
+                            stream[23], uLevel, vLevel,
+                            uLevel < 31 ? 1u << uLevel : 0,
+                            vLevel < 31 ? 1u << vLevel : 0);
+                }
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
