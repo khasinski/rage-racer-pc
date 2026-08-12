@@ -1938,3 +1938,10 @@ needle can connect to red dial markings and digits.  At synchronized timer
 for that state is a PsyZ polygon raster-edge question, not missing game state
 or a malformed tachometer quad.  Prefer exact packet evidence when the image
 mask overlaps the surrounding dial.
+
+After removing blank references, the timer-1600..2400 mirror-road scan has no
+native-only clear pixels and no connected native-only black area.  Its worst
+valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
+delta and projection fingerprint delta 14; both images contain the mirror
+frame, road and distant geometry.  The residual is a shifted high-contrast
+texture/raster edge, not evidence of mirror culling or draw-distance loss.
