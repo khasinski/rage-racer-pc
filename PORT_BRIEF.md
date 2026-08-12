@@ -1939,6 +1939,16 @@ for that state is a PsyZ polygon raster-edge question, not missing game state
 or a malformed tachometer quad.  Prefer exact packet evidence when the image
 mask overlaps the surrounding dial.
 
+Do not compare that packet trace directly with the display-page screenshot.
+Rage Racer double-buffers VRAM: the trace describes primitives submitted to
+the current draw page, while the normal capture reads the page selected by the
+display environment.  At timer 1900 this phase mismatch made `(270,190)` look
+like a rasterizer failure even though it merely compared the newly submitted
+needle with the preceding displayed frame.  Use draw-page captures for packet
+coverage and display-page captures for user-visible regressions, and record
+which page supplied every oracle.  A standalone PsyZ polygon test must be
+derived from a controlled PS1 GPU capture, not from this mixed-page pair.
+
 After removing blank references, the timer-1600..2400 mirror-road scan has no
 native-only clear pixels and no connected native-only black area.  Its worst
 valid frame is timer 2030 (region RMSE 0.136) with a one-unit view-position
