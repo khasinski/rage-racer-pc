@@ -90,14 +90,22 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
 #ifdef __psyz
     static int traceEnabled = -1;
     static int traceTimer = -1;
+    static int traceTimerMin = -1;
+    static int traceTimerMax = -1;
     int traceThisCall;
     if (traceEnabled < 0) {
         const char *timerText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER");
+        const char *timerMinText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER_MIN");
+        const char *timerMaxText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER_MAX");
         traceEnabled = getenv("RAGE_PORT_CAR_TRACK_TRACE") != NULL;
         traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
+        traceTimerMin = timerMinText != NULL ? (int)strtol(timerMinText, NULL, 0) : -1;
+        traceTimerMax = timerMaxText != NULL ? (int)strtol(timerMaxText, NULL, 0) : -1;
     }
     traceThisCall = traceEnabled && obj == (GameCarRuntime *)&g_PlayerCar &&
-        (traceTimer < 0 || g_SceneTimer == traceTimer);
+        (traceTimer < 0 || g_SceneTimer == traceTimer) &&
+        (traceTimerMin < 0 || g_SceneTimer >= traceTimerMin) &&
+        (traceTimerMax < 0 || g_SceneTimer <= traceTimerMax);
     if (traceThisCall) {
         printf("car-track-enter timer=%d point=%d x=%d z=%d speed=%d "
                "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d\n",

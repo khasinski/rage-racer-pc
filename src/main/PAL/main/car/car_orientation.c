@@ -11,6 +11,9 @@
 #include "game/render.h"
 #include "psyq/gte.h"
 #include "game/audio.h"
+#ifdef __psyz
+#include <stdlib.h>
+#endif
 
 void InitPlayerCar(PlayerCarRuntime *car)
 {
@@ -658,6 +661,21 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
     return collisionRegion;
   }
   collision_found:
+#ifdef __psyz
+  if (getenv("RAGE_PORT_CAR_COLLISION_TRACE") != NULL)
+  {
+    const char *timerText = getenv("RAGE_PORT_CAR_COLLISION_TRACE_TIMER");
+    if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0))
+    {
+      printf("car-collision timer=%d opponent=%d region=%d sample=%d quad=%d "
+             "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d\n",
+             g_SceneTimer, index, collisionRegion, sampleIndex, quadIndex,
+             car->x, car->z, car->trackProgress, car->trackLateralOffset,
+             opponent->x, opponent->z, opponent->trackProgress,
+             opponent->trackLateralOffset, progressDelta, trackDelta);
+    }
+  }
+#endif
   if (((s16)car->motionTimer < 0xB) && (g_RacePhase < 3))
   {
     s32 sid;

@@ -2511,3 +2511,27 @@ position, lateral offset and existing motion timer are already different.
 Therefore the long-route desynchronization precedes this track-clamp call and
 must be traced backward through the prior knockback/motion integration before
 using post-2800 captures for visual acceptance.
+
+Range tracing resolves that divergence further.  Both runtimes repeatedly hit
+the same left boundary: every clamp ends at `x=20235`, lateral `-162`, mode 1,
+motion timer 30 and velocity `(-58,-1)`.  Retail events occur at timers
+2613/2634/2655/2676/2703/2724 and native at 2610/2631/2652/2673/2700/2721/2742;
+the three-tick phase offset is stable and the clamp geometry is not the bug.
+For 18 updates after the last aligned clamp, X and speed are bit-identical and
+Z differs by only one unit.  At native timer 2759,
+`CollidePlayerWithCars` alone changes the active knockback from `(-5,0)` to
+`(-62,-184)`; `ApplyCarKnockback` applies the resulting `(62,184)` jump on the
+next update.  The collision is opponent index 5, region 4, at player
+`(20311,14574)` and opponent `(20379,14481)`.  The retail opponent is nearby
+but offset by roughly 74 world units, and the original retail collision
+routine reports no player-car hit anywhere from timer 2741 through 2790.
+
+This is a reproducible false native car-car collision, not a terrain clamp,
+renderer, draw-distance or visual-alignment failure.  `RAGE_PORT_CAR_MOTION_TRACE`
+marks pre-integration, post-position, post-progress, post-knockback,
+post-track and post-car-collision phases; `RAGE_PORT_CAR_COLLISION_TRACE`
+identifies the struck opponent/region.  The Ruby equivalents
+`RAGE_CAR_STATE_TRACE` and `RAGE_CAR_COLLISION_TRACE` read the retail runtime
+without modifying game RAM.  Keep post-2800 visual captures excluded until
+opponent 5 is synchronized or the collision test is compared from an identical
+input state.
