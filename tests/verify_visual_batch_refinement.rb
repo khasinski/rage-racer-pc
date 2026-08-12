@@ -500,6 +500,8 @@ Dir.mktmpdir("rage-visual-skip-unmatched-") do |root|
   summary = JSON.parse(File.read(File.join(output, "summary.json")))
   abort "skip-unmatched lost the valid state pair" unless summary.fetch("matched_frames") == 1
   abort "skip-unmatched did not report the rejected row" unless summary.fetch("rejected_frames") == 1
+  abort "skip-unmatched omitted aggregate rejection counts" unless
+    summary.fetch("rejection_counts").values.sum >= 1
   rejection = summary.fetch("rejections").first
   abort "skip-unmatched rejection lacks an actionable reason" unless
     rejection.fetch("reasons").first.include?("scene=11 lap=1")

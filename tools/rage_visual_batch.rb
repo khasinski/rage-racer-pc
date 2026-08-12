@@ -604,12 +604,17 @@ if options[:match] == "position"
       }
     }
   end.compact
+  rejection_counts = rejected.flat_map { |row| row[:reasons] }
+    .each_with_object(Hash.new(0)) do |reason, counts|
+      counts[reason.sub(/[=>].*/, "")] += 1
+    end.sort_by { |reason, count| [-count, reason] }.to_h
   if pairs.empty?
     if options[:alignment_only]
       summary = {
         psx_directory: psx_dir.to_s, native_directory: native_dir.to_s,
         match: options[:match], alignment_only: true, matched_frames: 0,
-        rejected_frames: rejected.length, rejections: rejected, frames: []
+        rejected_frames: rejected.length, rejection_counts: rejection_counts,
+        rejections: rejected, frames: []
       }
       File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
       puts "aligned=0 rejected=#{rejected.length}"
@@ -618,7 +623,9 @@ if options[:match] == "position"
     details = rejected.first(5).map do |row|
       "#{row[:psx]} -> #{row[:native]}: #{row[:reasons].join(', ')}"
     end
-    abort (["no state-aligned frame pairs within configured limits"] + details).join("\n")
+    counts = rejection_counts.map { |reason, count| "#{reason}=#{count}" }.join(", ")
+    abort (["no state-aligned frame pairs within configured limits",
+            "rejection counts: #{counts}"] + details).join("\n")
   end
 else
   timer_key = lambda do |path|
@@ -658,6 +665,7 @@ if options[:alignment_only]
     match: options[:match], alignment_only: true,
     matched_frames: frames.length,
     rejected_frames: defined?(rejected) && rejected ? rejected.length : 0,
+    rejection_counts: defined?(rejection_counts) && rejection_counts ? rejection_counts : {},
     rejections: defined?(rejected) && rejected ? rejected : [], frames: frames
   }
   File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
@@ -747,6 +755,7 @@ summary = {
   rank: options[:rank],
   matched_frames: rows.length,
   rejected_frames: defined?(rejected) && rejected ? rejected.length : 0,
+  rejection_counts: defined?(rejection_counts) && rejection_counts ? rejection_counts : {},
   rejections: defined?(rejected) && rejected ? rejected : [],
   frames: rows
 }

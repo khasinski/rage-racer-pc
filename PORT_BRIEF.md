@@ -2052,7 +2052,12 @@ variants, course selectors, texture-page state and the course-object hash. The
 normal race matcher gates `g_AnimSceneryVariant`, which selects this path's
 models; `g_AnimScenery2Variant` is retained for replay/attract diagnosis but is
 not a normal-race gate. Do not diagnose
-UV, CLUT, clipping or missing faces from a pair that fails this gate.
+UV, CLUT, clipping or missing faces from a pair that fails this gate.  The
+batch summary includes aggregate `rejection_counts`, and a zero-pair error
+prints them in descending frequency. Inspect these before relaxing any
+tolerance: dominant scenery-variant, rival, or visible-list rejection counts
+mean the runs are different simulation states, not that the renderer lost a
+face.
 
 Use `--save-psx-states` for discovery scans.  It enables the emulator's
 per-capture save states, and the batch comparator copies the matching file to
