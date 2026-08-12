@@ -33,6 +33,13 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_run.rb
 )
 
+add_test(
+    NAME visual_budget
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_visual_budget.rb
+        ${CMAKE_SOURCE_DIR}/tools/rage_visual_budget.rb
+)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame

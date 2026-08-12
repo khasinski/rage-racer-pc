@@ -1065,6 +1065,26 @@ frame producing each maximum. A large raw mirror/needle count is therefore
 always accompanied by translation, RPM, animation, and mask evidence needed to
 decide whether it is a renderer regression.
 
+The runner can also turn those measurements into an explicit regression gate.
+Repeat `--budget PROFILE.METRIC=VALUE`; supported maximum metrics are `clear`,
+`black`, `needle`, and `rmse`, while `matched_min` is a minimum.  The budgets
+are recorded in `run.json`, their results are written under `validation` in the
+top-level summary, and a failed check exits nonzero with the offending worst
+frame.  Thresholds deliberately belong to a checkpoint and diagnostic route,
+not to a hidden universal tolerance.  For the synchronized timer-868 route,
+the established non-loss assertions can be expressed as:
+
+```sh
+  --profile all \
+  --budget road.clear=0 --budget hud.black=0 \
+  --budget road.matched_min=1
+```
+
+Do not gate the raw mirror or needle maximum until rival pose/translation or
+RPM is equally aligned; those profiles retain the relevant state on their
+worst-frame records precisely so phase drift is not mislabeled as rendering
+loss.
+
 Race captures include the X/Z positions of all four active rivals as well as
 the player state. New manifests also retain each rival's speed, progress, body
 yaw, lateral offset, collision flag and active flag. Position matching adds

@@ -17,7 +17,7 @@ options = {
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
                 "1200:CROSS,1469-3000:CROSS",
-  match_args: [], dry_run: false,
+  match_args: [], budgets: [], dry_run: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
@@ -42,6 +42,9 @@ parser = OptionParser.new do |cli|
   cli.on("--top N", Integer) { |v| options[:top] = v }
   cli.on("--match-arg ARG", "append one argument to rage_visual_batch.rb; repeatable") do |v|
     options[:match_args] << v
+  end
+  cli.on("--budget SPEC", "assert PROFILE.clear/black/needle/rmse/matched_min=VALUE") do |v|
+    options[:budgets] << v
   end
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
@@ -100,6 +103,7 @@ serialize = lambda do |env, command, cwd|
 end
 metadata = {
   created_at: Time.now.iso8601, profile: options[:profile],
+  budgets: options[:budgets],
   timer_range: [options[:timer_min], options[:timer_max]],
   draw_page: true, psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   native: serialize.call(native_env, native_command, root),
@@ -154,3 +158,10 @@ batch_commands.each do |profile, command|
   }
 end
 File.write(output / "summary.json", JSON.pretty_generate(comparison_results) + "\n")
+unless options[:budgets].empty?
+  budget_command = [RbConfig.ruby, (root / "tools/rage_visual_budget.rb").to_s,
+                    "--summary", (output / "summary.json").to_s,
+                    *options[:budgets].flat_map { |budget| ["--budget", budget] }]
+  system(*budget_command, chdir: root.to_s)
+  exit 1 unless $?.success?
+end
