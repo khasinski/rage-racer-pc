@@ -43,6 +43,8 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_mirror_projection_delta: Float::INFINITY,
             max_tacho_rpm_delta: Float::INFINITY,
             require_tacho_flash: false,
+            require_rival_render_state: false,
+            max_display_timer_delta: Float::INFINITY,
             max_timer_delta: Float::INFINITY,
             max_anim_timer_delta: 0,
             require_scenery_variants: true,
@@ -131,6 +133,10 @@ OptionParser.new do |parser|
             "require the same tachometer needle flash phase") do
     options[:require_tacho_flash] = true
   end
+  parser.on("--require-rival-render-state",
+            "require all 11 cars' canonical render state to match") do
+    options[:require_rival_render_state] = true
+  end
   parser.on("--max-timer-delta N", Integer,
             "skip state matches farther than N game-timer ticks") do |value|
     options[:max_timer_delta] = value
@@ -172,6 +178,10 @@ OptionParser.new do |parser|
   parser.on("--visual-refine N", Integer,
             "choose the lowest-RMSE native image within N timer ticks") do |value|
     options[:visual_refine] = value
+  end
+  parser.on("--max-display-timer-delta N", Integer,
+            "limit the presented native frame's timer offset from PSX") do |value|
+    options[:max_display_timer_delta] = value
   end
   parser.on("--skip-unmatched",
             "skip PSX rows with no eligible native state; report every rejection") do
@@ -236,6 +246,7 @@ def manifest_rows(directory)
       texture_page_wanted texture_cursor_row texture_target_row
       course_object_count course_objects_hash
       anim_scenery_variant anim_scenery2_variant
+      rival_render_hash drawable_rival_count
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
       rival0_lateral rival0_collision rival0_active rival1_speed
       rival1_progress rival1_yaw rival1_lateral rival1_collision rival1_active
@@ -247,7 +258,8 @@ def manifest_rows(directory)
       row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
     end
     %i[main_visible_hash mirror_visible_hash
-       main_visible_list_hash mirror_visible_list_hash course_objects_hash].each do |key|
+       main_visible_list_hash mirror_visible_list_hash course_objects_hash
+       rival_render_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
     end
     image = directory / row[:filename]
@@ -356,6 +368,11 @@ if options[:match] == "position"
       tacho_flash_equal: !candidate.key?(:tacho_needle_flash) ||
         !psx.key?(:tacho_needle_flash) ||
         candidate[:tacho_needle_flash] == psx[:tacho_needle_flash],
+      rival_render_state_present: candidate.key?(:rival_render_hash) &&
+        psx.key?(:rival_render_hash),
+      rival_render_state_equal: !candidate.key?(:rival_render_hash) ||
+        !psx.key?(:rival_render_hash) ||
+        candidate[:rival_render_hash] == psx[:rival_render_hash],
       timer_delta: (candidate[:timer] - psx[:timer]).abs,
       anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
                           raw = (candidate[:anim_timer] - psx[:anim_timer]) % 128
@@ -393,6 +410,9 @@ if options[:match] == "position"
       metrics[:tacho_rpm_delta] <= options[:max_tacho_rpm_delta] &&
       (!options[:require_tacho_flash] ||
         (metrics[:tacho_flash_present] && metrics[:tacho_flash_equal])) &&
+      (!options[:require_rival_render_state] ||
+        (metrics[:rival_render_state_present] &&
+         metrics[:rival_render_state_equal])) &&
       metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       (!options[:require_scenery_variants] || metrics[:scenery_variants_equal]) &&
@@ -430,6 +450,10 @@ if options[:match] == "position"
       !metrics[:tacho_flash_present]
     reasons << "tacho_flash" if options[:require_tacho_flash] &&
       metrics[:tacho_flash_present] && !metrics[:tacho_flash_equal]
+    reasons << "missing_rival_render_state" if options[:require_rival_render_state] &&
+      !metrics[:rival_render_state_present]
+    reasons << "rival_render_state" if options[:require_rival_render_state] &&
+      metrics[:rival_render_state_present] && !metrics[:rival_render_state_equal]
     reasons << "timer=#{metrics[:timer_delta]}>#{options[:max_timer_delta]}" if
       metrics[:timer_delta] > options[:max_timer_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]
@@ -558,7 +582,8 @@ if options[:match] == "position"
     native = native_state
     if options[:visual_refine] > 0
       nearby = scene_candidates.select do |candidate|
-        (candidate[:timer] - native_state[:timer]).abs <= options[:visual_refine]
+        (candidate[:timer] - native_state[:timer]).abs <= options[:visual_refine] &&
+          (candidate[:timer] - psx[:timer]).abs <= options[:max_display_timer_delta]
       end
       refined = nearby.min_by do |candidate|
         if options[:needle_region]

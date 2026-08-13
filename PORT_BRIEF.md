@@ -2700,6 +2700,22 @@ buffer; draw-page evidence identifies this as presentation history rather than
 missing geometry.  After one warm-up frame, the timer-1600..1620 display scan
 had no road or mirror black/clear components in its strict pairs.
 
+State matching now also requires `rival_render_hash`, a canonical FNV-1a
+fingerprint of the render-relevant fields of all eleven `g_Cars` entries.  It
+contains position, body/model orientation, model origin, progress, model and
+active flags, and `aiEnabled`; it intentionally excludes padding and unrelated
+AI storage so it is stable in both 32- and 64-bit builds.  The accompanying
+`drawable_rival_count` is diagnostic.  This supersedes treating the aggregate
+position of only cars 0..3 as proof that the traffic shown by the main and
+mirror passes is identical.
+
+Presented-frame refinement is limited to one game-timer tick by default (zero
+for draw-page captures).  The framebuffer can legitimately lag the VBlank
+manifest state by one tick, but selecting a visually convenient frame two or
+three ticks away produced false HUD/tachometer alarms even though the chosen
+simulation state matched exactly.  Reports retain `display_timer_delta` so a
+comparison bundle always exposes this distinction.
+
 Reference capture is normally the slow half of an iteration.  Pass
 `--psx-cache DIR` to reuse a directory containing the emulator PPMs and
 `capture-manifest.csv`; the runner then executes only the current native smoke

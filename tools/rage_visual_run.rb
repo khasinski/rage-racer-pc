@@ -185,7 +185,8 @@ batch_commands = profiles.to_h do |profile|
              "--psx-dir", psx_dir.to_s, "--native-dir", native_dir.to_s,
              "--output", compare_dirs.fetch(profile).to_s, "--preset", profile,
              "--match", "position", "--visual-refine", options[:draw_page] ? "0" : "3",
-             "--require-tacho-flash",
+             "--require-tacho-flash", "--require-rival-render-state",
+             "--max-display-timer-delta", options[:draw_page] ? "0" : "1",
              "--jobs", options[:jobs].to_s, *options[:match_args]]
   command << "--alignment-only" if options[:alignment_only]
   command.concat(["--top", options[:top].to_s]) if options[:top]

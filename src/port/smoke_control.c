@@ -47,6 +47,46 @@ static uint32_t RageSmokeHashBytes(const void *data, size_t size) {
     return hash;
 }
 
+static uint32_t RageSmokeHashCarRenderState(const GameCarRuntime *cars,
+                                            size_t count) {
+    uint32_t hash = 2166136261u;
+    size_t carIndex;
+    for (carIndex = 0; carIndex < count; carIndex++) {
+        const GameCarRuntime *car = &cars[carIndex];
+        const u32 values[] = {
+            (u32)car->x, (u32)car->y, (u32)car->z,
+            (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
+            (u32)car->modelPitch, (u32)car->modelYaw, (u32)car->modelRoll,
+            (u32)car->modelY, (u32)car->trackProgress,
+            (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex,
+            (u32)car->aiEnabled
+        };
+        size_t valueIndex;
+        for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
+             valueIndex++) {
+            u32 value = values[valueIndex];
+            int byteIndex;
+            for (byteIndex = 0; byteIndex < 4; byteIndex++) {
+                hash ^= (value >> (byteIndex * 8)) & 0xff;
+                hash *= 16777619u;
+            }
+        }
+    }
+    return hash;
+}
+
+static int RageSmokeCountDrawableCars(const GameCarRuntime *cars,
+                                      size_t count) {
+    int drawable = 0;
+    size_t index;
+    for (index = 0; index < count; index++) {
+        if (cars[index].activeFlag != -1 && cars[index].aiEnabled == 1) {
+            drawable++;
+        }
+    }
+    return drawable;
+}
+
 static uint32_t RageSmokeHashVisibleList(const Vec4 *entries) {
     uint32_t hash = 2166136261u;
     size_t entryIndex;
@@ -279,6 +319,7 @@ static void RageSmokeInitialize(void) {
                       "texture_cursor_row,texture_target_row," \
                       "course_object_count,course_objects_hash," \
                       "anim_scenery_variant,anim_scenery2_variant," \
+                      "rival_render_hash,drawable_rival_count," \
                       "rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
                       "rival0_speed,rival0_progress,rival0_yaw," \
@@ -495,6 +536,7 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%u,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
@@ -550,6 +592,8 @@ int RagePortShouldExit(int frame_number) {
                         RageSmokeHashBytes(g_CourseObjects,
                             (size_t)g_CourseObjectCount * sizeof(CourseObject)),
                         g_AnimSceneryVariant, g_AnimScenery2Variant,
+                        RageSmokeHashCarRenderState(g_Cars, 11),
+                        RageSmokeCountDrawableCars(g_Cars, 11),
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,
                         g_Cars[2].x, g_Cars[2].z,
