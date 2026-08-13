@@ -3454,3 +3454,19 @@ the executable at runtime.  This is another game-data 32/64-bit layout fix to
 backport.  The `grand_prix_exit` regression enters course selection, chooses
 the third option, confirms it, and requires the save-screen transition without
 a sanitizer error.
+
+`native_ui_script_layout` statically scans every direct global passed to
+`RunTimedDrawScript`.  Such a symbol must be a native `TimedDrawCommand[]`, an
+explicit `g_Native...` alias decoded from the checked-in retail bytes, or a
+declared pointer variable selecting one of those scripts.  This catches a
+serialized 12-byte PS1 command accidentally consumed with the host's 24-byte
+stride without relying on runtime menu coverage.
+
+The sanitizer suite remains the broader dynamic 32/64-bit guard.  Run the
+integration tests from `build-asan` to catch layout, bounds, alignment and
+undefined-behaviour defects on exercised paths.  On the current machine the
+full parallel run passes 28 of 31 tests; `prologue_frame`, `race_start` and
+`grand_prix_results` hit their subprocess timeouts under sanitizer overhead,
+without reporting a sanitizer failure.  Run those long cases serially or give
+the sanitizer configuration larger timeouts before treating that result as a
+clean full-suite gate.

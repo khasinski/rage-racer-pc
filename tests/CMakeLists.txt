@@ -20,6 +20,13 @@ endif()
 add_test(NAME game_logic COMMAND game_logic_tests)
 
 add_test(
+    NAME native_ui_script_layout
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_ui_script_layout.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
     NAME frame_environment_aliases
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb
