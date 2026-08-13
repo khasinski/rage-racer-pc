@@ -491,10 +491,23 @@ if options[:match] == "position"
   end
   blank_psx_states, psx_states = psx_states.partition { |state| !usable_capture?(state) }
   abort "capture manifest contains no usable frames" if psx_states.empty? || native_states.empty?
+  inactive_mirror_states = []
+  if options[:dynamic_mirror_region]
+    mirror_active = lambda do |state|
+      state.key?(:mirror_y) && state[:mirror_y] < 240 && state[:mirror_y] + 36 > 0
+    end
+    inactive_mirror_states, psx_states = psx_states.partition do |state|
+      !mirror_active.call(state)
+    end
+    native_states = native_states.select { |state| mirror_active.call(state) }
+  end
   native_by_scene_lap = native_states.group_by { |state| [state[:scene], state[:lap]] }
   rejected = blank_psx_states.map do |state|
     { psx: state[:filename], native: nil, reasons: ["blank_reference"] }
   end
+  rejected.concat(inactive_mirror_states.map do |state|
+    { psx: state[:filename], native: nil, reasons: ["mirror_inactive"] }
+  end)
   pairs = psx_states.map do |psx|
     scene_candidates = native_by_scene_lap.fetch([psx[:scene], psx[:lap]], [])
     if scene_candidates.empty?
@@ -638,8 +651,7 @@ if options[:match] == "position"
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
-      dynamic_region: if options[:dynamic_mirror_region] &&
-                         psx.key?(:mirror_y) && native.key?(:mirror_y)
+      dynamic_region: if options[:dynamic_mirror_region]
                         top = [psx[:mirror_y], native[:mirror_y], 0].max
                         bottom = [psx[:mirror_y] + 36,
                                   native[:mirror_y] + 36, 240].min
@@ -684,15 +696,15 @@ if options[:match] == "position"
       counts[reason.sub(/[=>].*/, "")] += 1
     end.sort_by { |reason, count| [-count, reason] }.to_h
   if pairs.empty?
-    if options[:alignment_only]
+    if options[:alignment_only] || options[:dynamic_mirror_region]
       summary = {
         psx_directory: psx_dir.to_s, native_directory: native_dir.to_s,
-        match: options[:match], alignment_only: true, matched_frames: 0,
+        match: options[:match], alignment_only: options[:alignment_only], matched_frames: 0,
         rejected_frames: rejected.length, rejection_counts: rejection_counts,
         rejections: rejected, frames: []
       }
       File.write(output / "summary.json", JSON.pretty_generate(summary) + "\n")
-      puts "aligned=0 rejected=#{rejected.length}"
+      puts "matched=0 rejected=#{rejected.length}"
       exit
     end
     details = rejected.first(5).map do |row|

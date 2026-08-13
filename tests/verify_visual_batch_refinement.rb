@@ -200,6 +200,31 @@ Dir.mktmpdir("rage-visual-diagnostic-preset-") do |root|
     stdout.include?("native_only_clear=0")
 end
 
+Dir.mktmpdir("rage-visual-inactive-mirror-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  pixels = Array.new(320 * 240) { [48, 48, 48] }
+  write_pixels(File.join(psx, filename), 320, 240, pixels)
+  write_pixels(File.join(native, filename), 320, 240, pixels)
+  mirror_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+                  "body_yaw,mirror_y,view_x,view_y,view_z," \
+                  "view_angle_x,view_angle_y,view_angle_z,anim_timer\n"
+  row = "#{filename},0,12,100,10,20,30,40,1,0,-44,10,20,30,0,0,0,100\n"
+  File.write(File.join(psx, "capture-manifest.csv"), mirror_header + row)
+  File.write(File.join(native, "capture-manifest.csv"), mirror_header + row)
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--preset", "mirror-road"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  summary = JSON.parse(File.read(File.join(output, "summary.json")))
+  abort "inactive mirror entered visual ranking" unless
+    summary.fetch("matched_frames") == 0 &&
+    summary.dig("rejection_counts", "mirror_inactive") == 1
+end
+
 header = %w[
   filename frame scene timer x z speed progress lap body_yaw body_pitch
   body_roll track_lateral model_yaw mirror_y view_x view_y view_z

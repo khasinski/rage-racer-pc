@@ -2062,6 +2062,14 @@ continuing the route. `--psx-frames` and `--native-frames` remain safety
 ceilings; they no longer need to be estimated precisely and should not make a
 short diagnostic continue emulating long after its useful range.
 
+Dynamic mirror profiles admit a frame only when the 36-line panel intersects
+the 320x240 framebuffer in both manifests. Time Attack normally keeps
+`g_MirrorPanelY` at `-44`; treating that as a clipped rectangle previously
+produced a zero-height region outside the image and aborted an otherwise valid
+multi-profile scan. Such rows are now reported as `mirror_inactive`, and a
+window with no active mirror completes with an empty mirror summary instead of
+inventing mirror evidence or failing the road/HUD run.
+
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
 at most 64 and camera/view distance at most 12.  Forty timer groups survive.
