@@ -2836,3 +2836,29 @@ route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
 a report. This makes remaining large visual differences more likely to be
 submission/culling, cadence or backend behaviour than another ordinary
 out-of-bounds access on that route; it is not evidence for untested courses.
+
+### Frame-matched VRAM comparison
+
+`rage_gp0_bundle.rb` captures the complete 1024x512 RGB5551 VRAM after the
+selected retail and native submissions.  The native dump is
+`gp0-native-post.vram`; the retail before/after dumps remain `gp0-pre.vram` and
+`gp0-post.vram`.  The bundle aborts unless all three files are exactly 1 MiB,
+so a missing environment variable or failed backend readback cannot silently
+turn into an empty reference.
+
+`rage_vram_refs.rb` parses the selected native GP0 stream, collects every
+referenced tpage and CLUT, and compares only those source regions while
+reporting RGB15 differences separately from bit-15-only differences.  Its
+output is retained as `gp0-vram-refs.txt`.  This is the fast discriminator for
+an identical packet stream that produces different pixels: matching source
+regions implicate rasterization, while differing pages or palettes implicate
+asset upload, VRAM moves, or game-owned streaming state.
+
+The strict Grand Prix timer-59 pair has an identical 2,080-word draw stream but
+does not have identical texture sources.  Native tpage `0x0005` is missing
+1,664 retail words and tpage `0x0016` is missing 1,296; several other referenced
+pages contain the native magenta diagnostic pattern where retail VRAM is zero.
+Do not patch the black road triangles as geometry or clipping symptoms until
+the image-transfer/track-texture swap path explains these source differences.
+This comparison workflow is host-only diagnostic infrastructure and does not
+change the game logic that will be backported to the decompilation.

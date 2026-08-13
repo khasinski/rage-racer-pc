@@ -18,6 +18,8 @@ required = [
   '"RAGE_GPU_TRACE_TEXEL"', '"RAGE_GPU_OT_TRACE"', '"--resync-window"',
   '"RAGE_GPU_GP0_TRACE_VRAM"', 'bundle / "gp0-pre.vram"',
   '"RAGE_GPU_GP0_TRACE_VRAM_POST"', 'bundle / "gp0-post.vram"',
+  'bundle / "gp0-native-post.vram"', 'expected_vram_bytes = 1024 * 512 * 2',
+  'tools/rage_vram_refs.rb', 'bundle / "gp0-vram-refs.txt"',
   '"--dump-psx-packet N"', '"RAGE_GPU_GP0_TRACE_DUMP_PACKET"',
   '"RAGE_GPU_GP0_TRACE_DUMP_VRAM"',
   'execute_replays.call("pixel"',

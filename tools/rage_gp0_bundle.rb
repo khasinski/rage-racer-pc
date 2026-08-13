@@ -98,6 +98,8 @@ prepare = lambda do |side, frame|
       env["RAGE_GPU_GP0_TRACE_DUMP_VRAM"] =
         (bundle / format("gp0-before-%04d.vram", options[:dump_psx_packet])).to_s
     end
+  else
+    env["RAGE_GPU_GP0_TRACE_VRAM"] = (bundle / "gp0-native-post.vram").to_s
   end
   argv = metadata.fetch("argv").dup
   if side == "psx"
@@ -145,6 +147,17 @@ execute_replays = lambda do |suffix, frame_filters = nil|
 end
 
 execute_replays.call("")
+
+expected_vram_bytes = 1024 * 512 * 2
+{
+  "retail pre-frame VRAM" => bundle / "gp0-pre.vram",
+  "retail post-frame VRAM" => bundle / "gp0-post.vram",
+  "native post-frame VRAM" => bundle / "gp0-native-post.vram"
+}.each do |label, path|
+  abort "missing #{label}: #{path}" unless path.file?
+  abort "invalid #{label} size #{path.size}, expected #{expected_vram_bytes}: #{path}" unless
+    path.size == expected_vram_bytes
+end
 
 native_frames = File.foreach(bundle / "gp0-native.log").map do |line|
   next unless line.start_with?("gp0-packet ") &&
@@ -202,6 +215,15 @@ compare.concat(["--resync-window", options[:resync_window].to_s]) if options[:re
 output, status = Open3.capture2e(*compare, chdir: root.to_s)
 File.write(bundle / "gp0-diff.txt", output)
 puts output
+vram_compare = [RbConfig.ruby, (root / "tools/rage_vram_refs.rb").to_s,
+                "--log", (bundle / "gp0-native.log").to_s,
+                "--frame", native_frame.to_s,
+                "--retail", (bundle / "gp0-post.vram").to_s,
+                "--native", (bundle / "gp0-native-post.vram").to_s]
+vram_output, vram_status = Open3.capture2e(*vram_compare, chdir: root.to_s)
+abort vram_output unless vram_status.success?
+File.write(bundle / "gp0-vram-refs.txt", vram_output)
+puts vram_output
 if options[:pixel]
   execute_replays.call("pixel", { "psx" => psx_frame, "native" => native_frame })
   puts "Pixel trace written to #{bundle / 'pixel-psx.log'} and #{bundle / 'pixel-native.log'}"
