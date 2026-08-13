@@ -64,7 +64,9 @@ profiles.each do |profile|
     command = [RbConfig.ruby, bundle_tool.to_s, "--bundle", bundle.to_s]
     if !canonical_path.file? && !options[:reuse_only] && !options[:dry_run]
       stdout, stderr, status = Open3.capture3(*command, chdir: root.to_s)
-      abort "GP0 triage failed for #{bundle}:\n#{stdout}#{stderr}" unless status.success?
+      File.write(bundle / "triage.log", stdout + stderr)
+      abort "GP0 triage failed for #{bundle}; see #{bundle / 'triage.log'}" unless
+        status.success? || canonical_path.file?
     end
     canonical = canonical_path.file? ? JSON.parse(canonical_path.read) : nil
     region = canonical&.dig("regions", canonical_regions.fetch(profile))

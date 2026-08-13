@@ -7,6 +7,8 @@ require "open3"
 require "tmpdir"
 
 tool = ARGV.fetch(0)
+abort "triage rejects a complete canonical report after expected GP0 stream divergence" unless
+  File.read(tool).include?("status.success? || canonical_path.file?")
 Dir.mktmpdir("rage-visual-triage-") do |run|
   profile = File.join(run, "compare", "mirror-road")
   bundle = File.join(profile, "candidate")

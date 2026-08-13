@@ -3367,6 +3367,11 @@ runtime, and later PsyZ iterations can rerun the saved bundle's `--raster-only`
 stage. On current evidence timer 1510 road is visual component 40 / canonical
 0, and timer 2760 mirror is 83 / canonical 1, so both are correctly classified
 as pose or game-packet differences rather than renderer bugs.
+`rage_gp0_bundle.rb` may return nonzero after successfully writing the raster
+report when the retail and native game GP0 streams differ. Triage accepts that
+status only if `gp0-raster/report.json` exists and preserves the subprocess
+output as `triage.log`; a failed or partial capture without the report remains
+a hard error.
 
 Visual runs set `RAGE_PORT_DISABLE_HOST_INPUT=1`, making the smoke executable
 disable physical keyboard and gamepad reads at the PsyZ HAL boundary. Scripted
