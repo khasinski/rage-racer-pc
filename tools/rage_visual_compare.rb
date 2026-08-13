@@ -102,6 +102,22 @@ def rgb_pixels(path, width, height)
   payload.bytes.each_slice(3).map(&:freeze)
 end
 
+def canonical_rgb555_pixels(pixels)
+  pixels.map do |pixel|
+    pixel.map do |channel|
+      value5 = channel >> 3
+      (value5 * 255 + 15) / 31
+    end.freeze
+  end
+end
+
+def write_rgb_pixels(path, pixels, width, height)
+  payload = pixels.flatten.pack("C*")
+  ppm = "P6\n#{width} #{height}\n255\n".b + payload
+  IO.popen(["magick", "ppm:-", path.to_s], "wb") { |io| io.write(ppm) }
+  abort "cannot write normalized RGB555 image #{path}" unless $?.success?
+end
+
 def find_hotspots(psx_pixels, native_pixels, width, height, count, radius, region)
   left, top, region_width, region_height = region || [0, 0, width, height]
   abort "hotspot region is outside the image" if left.negative? || top.negative? ||
@@ -368,6 +384,11 @@ native_png = output / "native.png"
 size = normalize(options[:psx], psx_png.to_s)
 normalize(options[:native], native_png.to_s, size)
 
+psx_pixels = canonical_rgb555_pixels(rgb_pixels(psx_png.to_s, *size))
+native_pixels = canonical_rgb555_pixels(rgb_pixels(native_png.to_s, *size))
+write_rgb_pixels(psx_png, psx_pixels, *size)
+write_rgb_pixels(native_png, native_pixels, *size)
+
 run!("magick", psx_png.to_s, native_png.to_s, "-compose", "difference",
      "-composite", (output / "difference.png").to_s)
 run!("magick", output / "difference.png", "-colorspace", "gray",
@@ -376,16 +397,8 @@ run!("magick", output / "difference.png", "-colorspace", "gray",
 run!("magick", psx_png.to_s, native_png.to_s, output / "heatmap.png", "+append",
      (output / "side-by-side.png").to_s)
 
-# ImageMagick writes metrics to stderr and exits 1 when images differ. Run it
-# separately because that exit status is a comparison result, not a tool error.
-_stdout, metric_stderr, metric_status = Open3.capture3(
-  "magick", "compare", "-metric", "RMSE", psx_png.to_s, native_png.to_s, "null:"
-)
-abort "ImageMagick comparison failed: #{metric_stderr}" unless [0, 1].include?(metric_status.exitstatus)
-rmse = metric_stderr[/\(([0-9.eE+-]+)\)/, 1]&.to_f
-
-psx_pixels = rgb_pixels(psx_png.to_s, *size)
-native_pixels = rgb_pixels(native_png.to_s, *size)
+rmse = normalized_region_rmse(psx_pixels, native_pixels, *size,
+                              [0, 0, size[0], size[1]])
 hotspots = find_hotspots(psx_pixels, native_pixels, *size,
                          options[:hotspots], options[:hotspot_radius],
                          options[:region])

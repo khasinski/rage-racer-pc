@@ -3060,6 +3060,35 @@ road FT4 packets underneath, and the GP0 streams already diverge at word 19.
 The `hud` diagnostic therefore ranks coherent native-only black holes; use the
 tachometer mask for the needle and packet/texel traces for other HUD elements.
 
+Visual comparison must canonicalize both captures through RGB555 before any
+RMSE, hotspot, surface or needle calculation. The Ruby emulator exposes a
+maximum five-bit channel as `248`, while PsyZ expands the same value to `255`;
+raw eight-bit comparison fabricates differences in otherwise identical HUD
+pixels. `rage_visual_compare.rb` now converts each channel to five bits and
+expands both sides with the same rule before writing bundle images and metrics.
+
+The strict draw-page timer-391 route is the current renderer oracle. Starting
+native acceleration at smoke frame `1468` (rather than `1469`) makes player
+position, speed and progress exactly equal to PSX. Synchronizing at
+`12@390=1528615804:1:2` makes timer 391 RNG/scenery, player render state and all
+rival render state equal too. The resulting GP0 stream is byte-identical:
+`11,381` words (`2,645` emulator trace records versus `1,917` native packet
+records, because command grouping differs). Therefore its residual pixels are
+backend rasterization, not game submission or timing.
+
+At that oracle, road has zero native-only black pixels and eleven surface
+pixels (largest component four); mirror-road has no surface component. The
+tachometer's 29-pixel needle mismatch is real missing coverage. Its untextured
+F4 packet is `280018c0,00c40102,00ad011d,00c70105,00ae011e`, i.e. vertices
+`(258,196) (285,173) (261,199) (286,174)`. PS1 scanlines draw a continuous
+one-pixel diagonal from roughly `(284,172)` to `(261,199)`, while Metal's two
+triangles leave most of the thin quad empty. Pixel `(278,178)` lies outside
+both modern triangle tests but inside the PS1 horizontal span. This and the
+road component at `(183,102)` (two exact zero edge functions on FT4 order 682)
+are two manifestations of the remaining general PS1 scan-conversion gap. Do
+not patch the tachometer packet or game-owned quad dimensions; fix the
+compatibility rasterizer.
+
 Two attempted generalizations of the axis-aligned endpoint strip were rejected
 against that oracle. Widening all external FT4 edges by one pixel fills the
 known timer-392 boundary but also draws fractional-span pixels absent on PS1;

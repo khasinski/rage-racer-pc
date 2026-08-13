@@ -10,6 +10,8 @@ tool = ARGV.fetch(0)
 tool_source = File.read(tool)
 abort "HUD preset ranks pose-dependent road pixels as HUD RMSE" unless
   tool_source.include?('"hud" => { black_region: "0,176,320,64", rank: "black" }')
+abort "draw-page pairs are incorrectly gated by display-buffer phase" unless
+  tool_source.scan('capture_surface] == "draw"').length >= 4
 
 def write_ppm(path, red)
   File.binwrite(path, "P6\n1 1\n255\n" + [red, 0, 0].pack("C3"))
@@ -17,6 +19,23 @@ end
 
 def write_pixels(path, width, height, pixels)
   File.binwrite(path, "P6\n#{width} #{height}\n255\n" + pixels.flatten.pack("C*"))
+end
+
+Dir.mktmpdir("rage-rgb555-normalization-") do |root|
+  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  psx = File.join(root, "psx.ppm")
+  native = File.join(root, "native.ppm")
+  output = File.join(root, "output")
+  write_pixels(psx, 1, 1, [[248, 248, 248]])
+  write_pixels(native, 1, 1, [[255, 255, 255]])
+  stdout, stderr, status = Open3.capture3(
+    RbConfig.ruby, compare, "--psx", psx, "--native", native,
+    "--output", output, "--region", "0,0,1,1"
+  )
+  abort stdout + stderr unless status.success?
+  report = JSON.parse(File.read(File.join(output, "report.json")))
+  abort "equivalent RGB555 white was reported as a visual mismatch" unless
+    report.fetch("normalized_rmse").zero? && report.fetch("hotspots").empty?
 end
 
 Dir.mktmpdir("rage-black-area-") do |root|
