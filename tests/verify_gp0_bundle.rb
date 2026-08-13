@@ -2,6 +2,10 @@
 # frozen_string_literal: true
 
 source = File.read(ARGV.fetch(0))
+
+abort "GP0 bundle lacks a pixel-only replay mode" unless
+  source.include?("--trace-only") &&
+  source.include?('execute_replays.call("") unless options[:trace_only]')
 required = [
   'report.fetch("psx_source")', 'report.fetch("native_source")',
   'summary_frame["psx_replay_frames"]', 'summary_frame["psx_replay_pre_state"]',

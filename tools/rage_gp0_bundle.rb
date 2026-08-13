@@ -15,6 +15,9 @@ OptionParser.new do |parser|
   parser.banner = "usage: rage_gp0_bundle.rb --bundle DIR [options]"
   parser.on("--bundle DIR", "visual comparison frame bundle") { |v| options[:bundle] = v }
   parser.on("--keep-temp", "retain replay capture directories") { options[:keep_temp] = true }
+  parser.on("--trace-only", "reuse existing GP0/VRAM artifacts and run only --pixel tracing") do
+    options[:trace_only] = true
+  end
   parser.on("--pixel X,Y", "rerun the selected frame with packet coverage tracing") do |value|
     abort "invalid --pixel #{value.inspect}" unless value.match?(/\A\d+,\d+\z/)
     options[:pixel] = value
@@ -33,6 +36,7 @@ OptionParser.new do |parser|
 end.parse!
 abort "--bundle is required" unless options[:bundle]
 abort "--texel requires --pixel" if options[:texel_trace] && !options[:pixel]
+abort "--trace-only requires --pixel" if options[:trace_only] && !options[:pixel]
 
 bundle = Pathname(options[:bundle]).expand_path
 report_path = bundle / "report.json"
@@ -147,7 +151,7 @@ execute_replays = lambda do |suffix, frame_filters = nil|
   abort failures.join("\n") unless failures.empty?
 end
 
-execute_replays.call("")
+execute_replays.call("") unless options[:trace_only]
 
 expected_vram_bytes = 1024 * 512 * 2
 {
@@ -211,18 +215,24 @@ compare = [RbConfig.ruby, (root / "tools/rage_gp0_compare.rb").to_s,
            "--native", (bundle / "gp0-native.log").to_s,
            "--psx-frame", psx_frame.to_s, "--native-frame", native_frame.to_s]
 compare.concat(["--resync-window", options[:resync_window].to_s]) if options[:resync_window]
-output, status = Open3.capture2e(*compare, chdir: root.to_s)
-File.write(bundle / "gp0-diff.txt", output)
-puts output
+if options[:trace_only]
+  status = Struct.new(:success?).new(true)
+else
+  output, status = Open3.capture2e(*compare, chdir: root.to_s)
+  File.write(bundle / "gp0-diff.txt", output)
+  puts output
+end
 vram_compare = [RbConfig.ruby, (root / "tools/rage_vram_refs.rb").to_s,
                 "--log", (bundle / "gp0-native.log").to_s,
                 "--frame", native_frame.to_s,
                 "--retail", (bundle / "gp0-post.vram").to_s,
                 "--native", (bundle / "gp0-native-post.vram").to_s]
-vram_output, vram_status = Open3.capture2e(*vram_compare, chdir: root.to_s)
-abort vram_output unless vram_status.success?
-File.write(bundle / "gp0-vram-refs.txt", vram_output)
-puts vram_output
+unless options[:trace_only]
+  vram_output, vram_status = Open3.capture2e(*vram_compare, chdir: root.to_s)
+  abort vram_output unless vram_status.success?
+  File.write(bundle / "gp0-vram-refs.txt", vram_output)
+  puts vram_output
+end
 if options[:pixel]
   execute_replays.call("pixel", { "psx" => psx_frame, "native" => native_frame })
   puts "Pixel trace written to #{bundle / 'pixel-psx.log'} and #{bundle / 'pixel-native.log'}"

@@ -3016,3 +3016,16 @@ native-only black pixel, and changes mirror-road RMSE from `0.1223` to
 remains IoU `0.991` (three mismatched pixels). Timer 59 remains at RMSE
 `0.01845` with no black component. Keep synthetic edge vertices out of GP0
 traces: diagnostics must continue to describe the original submitted packet.
+
+After a bundle has complete GP0 logs and VRAM dumps, use
+`rage_gp0_bundle.rb --trace-only --pixel X,Y` for additional hotspots. It
+skips the unchanged base replay, GP0 comparison and referenced-VRAM scan, and
+performs only the filtered pixel replay. Coverage lines now include signed
+`ab/bc/ca` edge-function values and name every exactly-zero edge. At timer 392
+pixel `(65,84)`, later orders 327 and 334 both have one zero edge and retail
+writes colour `0x94c6`, while Metal's top-left rule excludes both and leaves
+the earlier white `0xfbff`. This establishes that remaining large colour
+hotspots include arbitrary rotated-edge coverage, not only axis-aligned FT4
+right endpoints. An eventual general solution must emulate PS1 scan
+conversion; platform conservative rasterization is neither portable through
+SDL GPU nor equivalent to the PS1's endpoint interpolation.
