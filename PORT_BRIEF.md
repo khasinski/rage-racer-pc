@@ -948,13 +948,14 @@ equal raw frame numbers are not equivalent states.
 For raw VRAM diagnosis, set `RAGE_PORT_CAPTURE_DRAW_PAGE=1` and
 `RAGE_EMU_CAPTURE_DRAW_PAGE=1`. These make both capture paths read the VRAM
 page selected by the current drawing area instead of the presented front
-buffer. Do not use that mode as the visual acceptance image at VBlank: after
-buffer exchange, draw area already selects the next page, while the completed
-OT belongs to the page just presented. Use the default front-buffer captures
-for PSX/native image scoring, normally with `--visual-refine 3`; reserve draw
-page captures for texture/CLUT inspection while rendering is stopped inside a
-known packet phase. Mixing the two produces plausible but false texture and
-coverage conclusions.
+buffer. A draw-page capture sampled only at VBlank is ambiguous: after buffer
+exchange, the drawing area can select the next page while the manifest still
+describes another rendering phase. Exact visual acceptance therefore also
+requires `RAGE_EMU_CAPTURE_DMA_PHASES=1` and the final-DMA selection performed
+by `rage_visual_batch.rb`; `rage_visual_run.rb --strict-race` configures all of
+these together. The default front-buffer path remains useful for presentation
+cadence with `--visual-refine 3`, but it must not be mixed with a draw-page
+reference.
 
 `tools/rage_visual_compare.rb` turns a cached emulator capture and a fresh
 native capture into one debug bundle:
@@ -1064,6 +1065,21 @@ later-range RMSE is `0.017558` for road, `0.003401` for mirror road,
 VRAM output along the tested route, not a claim about every course or the SDL
 presentation path; reports from other locations should be captured with the
 same strict preset.
+Each matched frame now records its absolute scene, timer, course, lap, track
+progress, position and speed. The aggregate summary reports timer/progress
+ranges and course/lap sets, so a green sparse audit cannot be mistaken for
+whole-track coverage. For example, the current 520-700 segment has exact
+coverage at timers 560-680 and progress 7645-12213 on course 0, lap 1.
+
+On the current PC default (`internal_res == 1`), SDL presentation reads the
+same `vram_render` texture audited above, crops exactly `display_area` /
+`display_size`, and performs one nearest-neighbour blit into the fitted window
+rectangle. That stage cannot independently create or remove interior
+triangles. `Psyz_VideoAllocCapturedFrame` also downloads that display rectangle
+from `vram_render`; it does not capture the scaled swapchain. If a future
+non-default internal-resolution mode shows artifacts while the strict raw-page
+audit stays green, add a capture of `GetRenderTarget()` before blaming game
+geometry—the higher-resolution `scaled_vram_render` is a distinct path.
 Long emulator runs can be split into sub-minute chunks by also setting
 `RAGE_EMU_SAVE_CAPTURE_STATES=1`.  Each periodic PPM then receives a matching
 `.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue

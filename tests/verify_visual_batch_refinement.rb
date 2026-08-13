@@ -303,6 +303,9 @@ Dir.mktmpdir("rage-visual-refinement-") do |root|
   stdout, stderr, status = Open3.capture3(*command)
   abort stdout + stderr unless status.success?
   frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  abort "matched frame omitted its reproducible game-state anchor" unless
+    frame.dig("state", "scene") == 12 && frame.dig("state", "timer") == 100 &&
+    frame.dig("state", "progress") == 40
   abort "refinement did not select the displayed previous buffer" unless
     frame.fetch("native_frame") == "timer-00099-s12.ppm"
   delta = frame.fetch("state_delta")

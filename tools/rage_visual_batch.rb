@@ -683,6 +683,9 @@ if options[:match] == "position"
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
+      state: %i[scene timer course_index lap progress x z speed].to_h do |key|
+        [key, psx[key]]
+      end,
       dynamic_region: if options[:dynamic_mirror_region]
                         top = [psx[:mirror_y], native[:mirror_y], 0].max
                         bottom = [psx[:mirror_y] + 36,
@@ -776,6 +779,7 @@ if options[:alignment_only]
     {
       frame: pair[:label], psx_frame: pair[:psx].basename.to_s,
       native_frame: pair[:native].basename.to_s,
+      state: pair[:state],
       state_delta: pair[:state_delta]
     }
   end
@@ -853,6 +857,7 @@ errors = Queue.new
     psx_replay_pre_state: replay_pre&.to_s,
     psx_replay_frames: replay_frames,
     native_frame: pair[:native].basename.to_s,
+    state: pair[:state],
     state_delta: pair[:state_delta],
     normalized_rmse: report.fetch("normalized_rmse"),
     normalized_region_rmse: report["normalized_region_rmse"],

@@ -325,6 +325,12 @@ batch_commands.each do |profile, command|
   end
   comparison_results[profile] = {
     matched_frames: summary.fetch("matched_frames"),
+    coverage: {
+      timer: frames.map { |frame| frame.dig("state", "timer") }.compact.minmax,
+      progress: frames.map { |frame| frame.dig("state", "progress") }.compact.minmax,
+      courses: frames.map { |frame| frame.dig("state", "course_index") }.compact.uniq.sort,
+      laps: frames.map { |frame| frame.dig("state", "lap") }.compact.uniq.sort
+    },
     maximum_clear: frames.map { |frame| frame.fetch("native_only_clear") }.max || 0,
     maximum_black: frames.map { |frame| frame.fetch("native_only_black") }.max || 0,
     maximum_clear_component: frames.map { |frame| frame.fetch("native_only_clear_component", 0) }.max || 0,
