@@ -2070,6 +2070,15 @@ multi-profile scan. Such rows are now reported as `mirror_inactive`, and a
 window with no active mirror completes with an empty mirror summary instead of
 inventing mirror evidence or failing the road/HUD run.
 
+Use `rage_visual_run.rb --checkpoint-stride N` for long discovery scans. It
+asks the Ruby emulator to save one state whenever `(timer - timer_min) % N ==
+0`, independently of the image capture stride. A state is about 3.7 MB, so the
+option is deliberately off by default: `N=100` costs roughly 15 MB for a
+400-tick window, while `--save-psx-states` on every dense reference can exceed
+one gigabyte. Sparse checkpoints let a ranked middle-of-window bundle replay
+at most `N` ticks before its GP0/pixel trace; they are emulator debugging
+artifacts and never enter Rage Racer's game state or normal binary.
+
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
 at most 64 and camera/view distance at most 12.  Forty timer groups survive.

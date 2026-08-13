@@ -15,6 +15,7 @@ options = {
   profile: "road", timer_min: 800, timer_max: 900, capture_stride: 1,
   psx_capture_stride: nil, native_capture_stride: nil,
   save_psx_states: false,
+  checkpoint_stride: nil,
   psx_cache: nil,
   psx_frames: 500, native_frames: 2400, jobs: 8, top: nil,
   psx_input: "0-1000:CROSS",
@@ -109,6 +110,10 @@ parser = OptionParser.new do |cli|
   cli.on("--save-psx-states", "save a PSX state beside every captured reference frame") do
     options[:save_psx_states] = true
   end
+  cli.on("--checkpoint-stride N", Integer,
+         "save a PSX replay checkpoint every N game-timer ticks") do |v|
+    options[:checkpoint_stride] = v
+  end
   cli.on("--alignment-only", "capture and report eligible state pairs without image bundles") do
     options[:alignment_only] = true
   end
@@ -133,6 +138,8 @@ options[:psx_capture_stride] ||= 2
 options[:native_capture_stride] ||= options[:capture_stride]
 abort "PSX capture stride must be positive" unless options[:psx_capture_stride].positive?
 abort "native capture stride must be positive" unless options[:native_capture_stride].positive?
+abort "checkpoint stride must be positive" if options[:checkpoint_stride] &&
+  !options[:checkpoint_stride].positive?
 
 output = Pathname(options[:output]).expand_path
 psx_dir = options[:psx_cache] ? options[:psx_cache].expand_path : output / "psx"
@@ -157,6 +164,8 @@ psx_env = {
 psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
+psx_env["RAGE_EMU_CHECKPOINT_TIMER_STRIDE"] = options[:checkpoint_stride].to_s if
+  options[:checkpoint_stride]
 psx_env["RAGE_EMU_STATE_INPUT_SCRIPT"] = options[:psx_state_input] if options[:psx_state_input]
 psx_sync_random = options[:psx_sync_random] || options[:sync_random]
 psx_env["RAGE_EMU_SYNC_RANDOM"] = psx_sync_random if psx_sync_random
@@ -214,6 +223,7 @@ metadata = {
   },
   draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   save_psx_states: options[:save_psx_states],
+  checkpoint_stride: options[:checkpoint_stride],
   native: serialize.call(native_env, native_command, root),
   comparisons: batch_commands.transform_values { |command| serialize.call({}, command, root) }
 }

@@ -69,6 +69,17 @@ Dir.mktmpdir("rage-visual-run-explicit-strides-") do |output|
     metadata.dig("capture_strides", "native_timer") == 5
 end
 
+Dir.mktmpdir("rage-visual-run-checkpoints-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--checkpoint-stride", "100", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "sparse PSX checkpoint cadence was not retained" unless
+    metadata.fetch("checkpoint_stride") == 100 &&
+    metadata.dig("psx", "env", "RAGE_EMU_CHECKPOINT_TIMER_STRIDE") == "100"
+end
+
 Dir.mktmpdir("rage-visual-run-asymmetric-sync-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--psx-sync-random", "12@200=1:0:0",
