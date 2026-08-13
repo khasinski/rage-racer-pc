@@ -248,6 +248,9 @@ def manifest_rows(directory)
       course_object_count course_objects_hash
       anim_scenery_variant anim_scenery2_variant
       rival_render_hash drawable_rival_count
+      car0_render_hash car1_render_hash car2_render_hash car3_render_hash
+      car4_render_hash car5_render_hash car6_render_hash car7_render_hash
+      car8_render_hash car9_render_hash car10_render_hash
       rival2_z rival3_x rival3_z rival0_speed rival0_progress rival0_yaw
       rival0_lateral rival0_collision rival0_active rival1_speed
       rival1_progress rival1_yaw rival1_lateral rival1_collision rival1_active
@@ -266,7 +269,9 @@ def manifest_rows(directory)
     end
     %i[random_seed main_visible_hash mirror_visible_hash
        main_visible_list_hash mirror_visible_list_hash course_objects_hash
-       rival_render_hash].each do |key|
+       rival_render_hash car0_render_hash car1_render_hash car2_render_hash
+       car3_render_hash car4_render_hash car5_render_hash car6_render_hash
+       car7_render_hash car8_render_hash car9_render_hash car10_render_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
     end
     image = directory / row[:filename]

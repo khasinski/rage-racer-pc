@@ -2088,6 +2088,14 @@ Comparing those textual integers directly created false lateral deltas of
 positions, angles, projection matrices and RPM-related fields; it is a visual
 harness correction, not a change to game data.
 
+Capture manifests retain the aggregate canonical render hash for all eleven
+`g_Cars` entries and now append `car0_render_hash` through
+`car10_render_hash`. The per-car hashes use the identical position,
+body/model orientation, model origin, progress, active/model and AI fields as
+the aggregate gate. They localize a Grand Prix mismatch without bloating every
+CSV row with seven additional raw 188-byte structs; normal game builds neither
+calculate nor consume these smoke/emulator diagnostics.
+
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
 at most 64 and camera/view distance at most 12.  Forty timer groups survive.

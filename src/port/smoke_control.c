@@ -76,6 +76,29 @@ static uint32_t RageSmokeHashCarRenderState(const GameCarRuntime *cars,
     return hash;
 }
 
+static uint32_t RageSmokeHashOneCarRenderState(const GameCarRuntime *car) {
+    const u32 values[] = {
+        (u32)car->x, (u32)car->y, (u32)car->z,
+        (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
+        (u32)car->modelPitch, (u32)car->modelYaw, (u32)car->modelRoll,
+        (u32)car->modelY, (u32)car->trackProgress,
+        (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex,
+        (u32)car->aiEnabled
+    };
+    uint32_t hash = 2166136261u;
+    size_t valueIndex;
+    for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
+         valueIndex++) {
+        u32 value = values[valueIndex];
+        int byteIndex;
+        for (byteIndex = 0; byteIndex < 4; byteIndex++) {
+            hash ^= (value >> (byteIndex * 8)) & 0xff;
+            hash *= 16777619u;
+        }
+    }
+    return hash;
+}
+
 static int RageSmokeCountDrawableCars(const GameCarRuntime *cars,
                                       size_t count) {
     int drawable = 0;
@@ -341,7 +364,11 @@ static void RageSmokeInitialize(void) {
                       "rival2_lateral,rival2_collision,rival2_active," \
                       "rival3_speed,rival3_progress,rival3_yaw," \
                       "rival3_lateral,rival3_collision,rival3_active," \
-                      "player_raw,rival0_raw,rival1_raw,rival2_raw,rival3_raw\n",
+                      "player_raw,rival0_raw,rival1_raw,rival2_raw,rival3_raw," \
+                      "car0_render_hash,car1_render_hash,car2_render_hash," \
+                      "car3_render_hash,car4_render_hash,car5_render_hash," \
+                      "car6_render_hash,car7_render_hash,car8_render_hash," \
+                      "car9_render_hash,car10_render_hash\n",
                       g_SmokeCaptureManifest);
                 fflush(g_SmokeCaptureManifest);
             }
@@ -646,6 +673,11 @@ int RagePortShouldExit(int frame_number) {
                             fprintf(g_SmokeCaptureManifest, "%02x",
                                     bytes[byteIndex]);
                         }
+                    }
+                    for (rivalIndex = 0; rivalIndex < 11; rivalIndex++) {
+                        fprintf(g_SmokeCaptureManifest, ",%u",
+                                RageSmokeHashOneCarRenderState(
+                                    &g_Cars[rivalIndex]));
                     }
                     fputc('\n', g_SmokeCaptureManifest);
                 }
