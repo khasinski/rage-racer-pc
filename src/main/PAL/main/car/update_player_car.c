@@ -302,6 +302,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     sv1.vz = -p->bodyLiftOffset - 50;
     ApplyMatrix(&m2, &sv1, &car->motionX);
 
+    /* Retail copied a stack Vec4 after assigning only X/Z. Preserve Y/W
+     * explicitly so player state does not depend on the host stack ABI. */
+    tmp = GetPlayerPosition(car);
     tmp.x = (p->accelPos * 6) / 1280 + car->x + car->motionX;
     tmp.z = (p->brakePos * 6) / 1280 + car->z + car->motionZ;
     SetPlayerPosition(car, &tmp);

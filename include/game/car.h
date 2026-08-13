@@ -676,6 +676,13 @@ static inline void SetPlayerPosition(PlayerCarRuntime *car, const Vec4 *position
     *address.vector4 = *position;
 }
 
+static inline Vec4 GetPlayerPosition(PlayerCarRuntime *car) {
+    GameCarRuntimeAddress address;
+
+    address.player = car;
+    return *address.vector4;
+}
+
 static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
     GameCarRuntimeAddress source;
     GameCarRuntimeAddress destination;

@@ -1340,6 +1340,14 @@ zero for `positionW`, whereas the 64-bit host reproducibly contributed one.
 `UpdateRaceCars` now preserves the existing Y/W and changes only X/Z. This is
 a game-code 32/64-bit compatibility fix to backport to the decompilation, not
 a HAL workaround; `positionW` is subsequently read by camera/render code.
+The player path had a second copy of the same defect in `UpdatePlayerCar`:
+local `Vec4 tmp` received only X/Z before `SetPlayerPosition` copied all four
+words. A dense timer-1800..1830 PSX/native trace proves retail `positionW`
+remains zero while the 64-bit host reproducibly writes nine. Initialize `tmp`
+from the player's existing four-word position before replacing X/Z. This is
+also game-owned 32/64-bit compatibility code to backport, not a PsyZ fix.
+It fixes the otherwise nondeterministic fourth position word, but does not fix
+the separate one-unit Z/track-progress drift first observed at timer 1811.
 Regenerate old cached manifests when diagnosing cars in the mirror; the batch
 tool remains backward compatible with caches that lack these columns.
 Use `--max-rival-distance N` for mirror investigations to reject pairs whose
