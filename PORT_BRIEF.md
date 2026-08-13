@@ -3189,3 +3189,17 @@ interiors unchanged. Packet 1327 becomes pixel-identical, packet 1332 retains
 one sub-threshold RGB555 difference, and the complete exact frame now has only
 three isolated significant pixels. Road has one; mirror-road, HUD and both
 tachometer regions have zero.
+
+Draw-page capture does not make renderer projection phase irrelevant. A
+timer-392..400 replay from the exact timer-391 PSX state exposed two VBlank
+samples per game tick: one has the matching main projection scratchpad but the
+previous simulation state, while the other has the matching car/rival state
+but the mirror projection scratchpad. Native currently samples once per game
+tick after its main phase. The old matcher bypassed `proj_order` whenever both
+files said `capture_surface=draw`, admitted timer 396 despite a projection
+delta of 17,904, and its GP0 first diverged at word 5,609. Draw-page pairing
+now still requires equal `proj_order`; it removes front/back display ambiguity,
+not main/mirror DMA phase. Capture every PSX VBlank when diagnosing this and
+reject the pair unless both state and projection phase match. A future capture
+hook should snapshot manifest state at the same DMA/VSync boundary in both
+runtimes rather than weakening this gate.

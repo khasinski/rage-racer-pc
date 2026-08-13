@@ -10,8 +10,8 @@ tool = ARGV.fetch(0)
 tool_source = File.read(tool)
 abort "HUD preset ranks pose-dependent road pixels as HUD RMSE" unless
   tool_source.include?('"hud" => { black_region: "0,176,320,64", rank: "black" }')
-abort "draw-page pairs are incorrectly gated by display-buffer phase" unless
-  tool_source.scan('capture_surface] == "draw"').length >= 4
+abort "draw-page pairing still bypasses the renderer projection phase" if
+  tool_source.include?('capture_surface] == "draw"')
 
 def write_ppm(path, red)
   File.binwrite(path, "P6\n1 1\n255\n" + [red, 0, 0].pack("C3"))
@@ -382,6 +382,31 @@ Dir.mktmpdir("rage-visual-projection-gate-") do |root|
   )
   abort "projection rejection did not identify its failed gate" unless
     (stdout + stderr).include?("projection=1>0.0")
+end
+
+Dir.mktmpdir("rage-visual-draw-projection-phase-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  phase_header = header.sub("filename,", "filename,capture_surface,") +
+                 ",proj_order"
+  state = [0, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             phase_header + "\n" +
+             ([filename, "draw"] + state + [100, "deadbeef", 1]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             phase_header + "\n" +
+             ([filename, "draw"] + state + [100, "deadbeef", 0]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "draw-page matcher accepted mirror/main projection phases" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("projection_phase")
 end
 
 Dir.mktmpdir("rage-visual-mirror-projection-gate-") do |root|

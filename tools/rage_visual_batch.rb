@@ -405,7 +405,6 @@ if options[:match] == "position"
         !psx.key?(:anim_scenery_variant) ||
         candidate[:anim_scenery_variant] == psx[:anim_scenery_variant],
       projection_phase_equal:
-        (candidate[:capture_surface] == "draw" && psx[:capture_surface] == "draw") ||
         !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
       main_visible_cells_equal: !candidate.key?(:main_visible_hash) ||
@@ -664,11 +663,9 @@ if options[:match] == "position"
       native_state.key?(key) && psx.key?(key) ?
         (native_state[key] - psx[key]).abs : 0
     end
-    projection_phase_equal =
-      (native_state[:capture_surface] == "draw" && psx[:capture_surface] == "draw") ||
-      %i[proj_order].all? do |key|
+    projection_phase_equal = %i[proj_order].all? do |key|
       !native_state.key?(key) || !psx.key?(key) || native_state[key] == psx[key]
-      end
+    end
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
