@@ -2962,3 +2962,16 @@ At Grand Prix timer 59, the atomic files confirm screen `(7,93)` / VRAM
 `(7,333)` as retail `0x294a` and native `0x8000`. The earlier post-replay native
 value `0xad6b` belonged to a later state. Use the sidecars as the authoritative
 texture/framebuffer source for pixel debugging.
+
+The packet/texel trace narrows that timer-59 black component further. At
+screen pixel `(7,93)`, retail and native report the same covering textured
+quads, vertex coordinates, UV interpolation, texture windows and submission
+orders (notably orders 11 and 95). Retail resolves the order-95 sample to
+palette index `4`, CLUT colour `0xef7b`, and writes it. The referenced tpage
+`0x1d` has zero differing source words and CLUT `0x7a40` has zero differing
+palette words between the frame-matched VRAM dumps, yet native finishes black.
+Therefore this specimen is not missing game geometry, visible-cell culling,
+LOD or draw distance. It is a PsyZ sampling/raster/write-path discrepancy.
+Continue by exposing the native shader's resolved texel, palette value and
+discard/blend decision for this pixel; do not modify Rage Racer's culling to
+hide it.
