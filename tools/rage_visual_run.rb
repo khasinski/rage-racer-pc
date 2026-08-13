@@ -201,9 +201,10 @@ batch_commands = profiles.to_h do |profile|
              "--psx-dir", psx_dir.to_s, "--native-dir", native_dir.to_s,
              "--output", compare_dirs.fetch(profile).to_s, "--preset", profile,
              "--match", "position", "--visual-refine", options[:draw_page] ? "0" : "3",
-             "--require-tacho-flash", "--require-rival-render-state",
+             "--require-tacho-flash",
              "--max-display-timer-delta", options[:draw_page] ? "0" : "1",
              "--jobs", options[:jobs].to_s, *options[:match_args]]
+  command << "--require-rival-render-state" if %w[road mirror-road].include?(profile)
   command << "--alignment-only" if options[:alignment_only]
   command.concat(["--top", options[:top].to_s]) if options[:top]
   [profile, command]
@@ -266,9 +267,17 @@ else
 end
 
 comparison_results = {}
+comparison_failures = []
 batch_commands.each do |profile, command|
   stdout, stderr, status = Open3.capture3(*command, chdir: root.to_s)
-  abort "#{profile} comparison failed:\n#{stdout}#{stderr}" unless status.success?
+  unless status.success?
+    message = "#{profile} comparison failed:\n#{stdout}#{stderr}"
+    comparison_failures << message
+    comparison_results[profile] = {
+      matched_frames: 0, failed: true, error: (stdout + stderr).strip
+    }
+    next
+  end
   print stdout
   warn stderr unless stderr.empty?
   summary = JSON.parse(File.read(compare_dirs.fetch(profile) / "summary.json"))
@@ -311,6 +320,9 @@ batch_commands.each do |profile, command|
   }
 end
 File.write(output / "summary.json", JSON.pretty_generate(comparison_results) + "\n")
+unless comparison_failures.empty?
+  warn comparison_failures.join("\n")
+end
 unless options[:budgets].empty?
   budget_command = [RbConfig.ruby, (root / "tools/rage_visual_budget.rb").to_s,
                     "--summary", (output / "summary.json").to_s,
@@ -318,3 +330,4 @@ unless options[:budgets].empty?
   system(*budget_command, chdir: root.to_s)
   exit 1 unless $?.success?
 end
+exit 1 unless comparison_failures.empty?

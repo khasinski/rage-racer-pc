@@ -2571,6 +2571,18 @@ scenery variants remain an equality requirement by default, but
 the cached reference inherited a different variant; do not use that opt-out to
 judge moving scenery itself.  With `--max-timer-delta 2`, the scan retains 13
 state-valid pairs and none contains a connected native-only black region.
+Rival render-state equality is also profile-specific. Road and mirror-road
+retain the strict player/all-rivals hash gate because rival geometry can enter
+those regions. HUD and tachometer profiles do not: unrelated padding or
+collision state in a distant rival must not discard an otherwise exact timer,
+camera, RPM and needle-flash pair. The visual runner therefore applies the
+rival gate only to the two world-render profiles, increasing repeatable HUD
+coverage without weakening geometry diagnosis.
+When `--profile all` is used, every profile runs even if another profile has
+no eligible pairs or its comparison fails. The top-level `summary.json` keeps
+the failed profile's error alongside successful independent HUD/tachometer
+results, and the runner returns nonzero only after all profiles finish. This
+prevents a strict road gate from hiding useful HUD evidence in large scans.
 Visual inspection also shows that the acceleration-only input has left the car
 at roughly 33 km/h against the same barrier, so this route cannot substantiate
 the user's later in-race missing-triangle report; the next capture must include

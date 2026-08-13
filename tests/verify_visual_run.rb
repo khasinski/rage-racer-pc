@@ -31,6 +31,8 @@ Dir.mktmpdir("rage-visual-run-") do |output|
     metadata.dig("native", "env", "RAGE_PORT_SYNC_RANDOM") == "12@700=0x12345678"
   compare = metadata.dig("comparisons", "mirror-road", "argv")
   abort "diagnostic preset is missing" unless compare.each_cons(2).include?(["--preset", "mirror-road"])
+  abort "mirror comparison did not require identical rival render state" unless
+    compare.include?("--require-rival-render-state")
   abort "front-buffer comparison did not refine presentation phase" unless
     compare.each_cons(2).include?(["--visual-refine", "3"])
   abort "repeated matcher arguments were not retained" unless
@@ -146,6 +148,14 @@ Dir.mktmpdir("rage-visual-run-all-") do |output|
   metadata = JSON.parse(File.read(File.join(output, "run.json")))
   abort "all profile did not schedule every diagnostic" unless
     metadata.fetch("comparisons").keys == %w[road mirror-road tacho hud]
+  abort "road profiles must retain rival-state gating" unless
+    %w[road mirror-road].all? do |profile|
+      metadata.dig("comparisons", profile, "argv").include?("--require-rival-render-state")
+    end
+  abort "HUD profiles must not be discarded solely by unrelated rival state" unless
+    %w[tacho hud].none? do |profile|
+      metadata.dig("comparisons", profile, "argv").include?("--require-rival-render-state")
+    end
 end
 
 Dir.mktmpdir("rage-visual-run-time-attack-") do |output|
@@ -187,3 +197,9 @@ Dir.mktmpdir("rage-visual-run-compare-only-") do |output|
 end
 
 puts "visual run supports cached comparisons and records explicit capture diagnostics"
+
+source = File.read(tool)
+abort "multi-profile comparison still aborts before independent profiles run" unless
+  source.include?("comparison_failures << message") &&
+  source.index('batch_commands.each do |profile, command|') <
+    source.index('exit 1 unless comparison_failures.empty?')
