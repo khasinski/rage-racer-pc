@@ -24,9 +24,13 @@ static void RageTraceCarMotion(const char *phase, PlayerCarRuntime *car) {
         timer = text != NULL ? (int)strtol(text, NULL, 0) : -1;
     }
     if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
-    printf("car-motion phase=%s timer=%d x=%d z=%d motion=%d,%d "
+    printf("car-motion phase=%s timer=%d x=%d z=%d rotation=%d,%d,%d "
+           "roll_velocity=%d kick=%d,%d,%d,%d motion=%d,%d "
            "knockback=%d,%d,%d,%d point=%d progress=%d lateral=%d speed=%d\n",
-           phase, g_SceneTimer, car->x, car->z, car->motionX, car->motionZ,
+           phase, g_SceneTimer, car->x, car->z, car->bodyYaw, car->bodyPitch,
+           car->bodyRoll, car->bodyRollVelocity, car->motionMode,
+           car->motionModeTimer, car->motionValue.value, car->bodyKickOffset,
+           car->motionX, car->motionZ,
            car->motionActive, car->motionTimer, car->velocityX, car->velocityZ,
            car->trackPointIndex, car->trackProgress, car->trackLateralOffset,
            car->speed);
@@ -611,6 +615,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     p->gearDisp = p->gear;
+#ifdef __psyz
+    RageTraceCarMotion("post-update", car);
+#endif
 }
 
 s32 DrawPlayerTachometer(void) {
