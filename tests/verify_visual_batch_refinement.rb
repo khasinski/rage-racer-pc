@@ -675,6 +675,31 @@ Dir.mktmpdir("rage-visual-reference-state-") do |root|
     frame.fetch("psx_state") == copied && File.binread(copied) == "state-oracle"
 end
 
+Dir.mktmpdir("rage-visual-unsigned-rng-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00410-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  rng_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+               "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+               "view_angle_z,random_seed\n"
+  common = "0,12,410,10,20,30,40,1,0,10,20,30,0,0,0"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             rng_header + "#{filename},#{common},3691806134\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             rng_header + "#{filename},#{common},-603161162\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position", "--require-random-seed"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  abort "signed and unsigned spellings of the same RNG state did not match" unless
+    frame.dig("state_delta", "random_seed_equal")
+end
+
 Dir.mktmpdir("rage-visual-pre-state-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

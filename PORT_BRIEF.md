@@ -2716,6 +2716,19 @@ three ticks away produced false HUD/tachometer alarms even though the chosen
 simulation state matched exactly.  Reports retain `display_timer_delta` so a
 comparison bundle always exposes this distinction.
 
+Normalize `random_seed` to an unsigned 32-bit value while reading manifests.
+The emulator writes values such as `3691806134`, while C's `%d` can spell the
+same bit pattern as `-603161162`; comparing those Ruby integers directly
+discarded exact pairs and made synchronized scenery look divergent.
+
+Mirror diagnostics must follow `g_MirrorPanelY`. During the opening animation
+the valid mirror image is the intersection of the two captures' rectangles
+`x=86..233, y=mirror_y..mirror_y+35`; a fixed `y=40..55` region can lie mostly
+below the panel and report the ordinary forward road as a broken mirror. The
+`mirror` and `mirror-road` profiles now derive the full or lower-half region
+per pair. In the strict timer-410 case this changed a false 1,636-pixel
+"missing mirror" component into zero clear/black or divergent components.
+
 Reference capture is normally the slow half of an iteration.  Pass
 `--psx-cache DIR` to reuse a directory containing the emulator PPMs and
 `capture-manifest.csv`; the runner then executes only the current native smoke

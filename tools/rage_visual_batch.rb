@@ -27,10 +27,10 @@ REGION_PRESETS = {
 DIAGNOSTIC_PRESETS = {
   "road" => { clear_region: "0,100,250,100", black_region: "0,55,250,145",
               rank: "clear", require_main_visible_cells: true },
-  "mirror" => { clear_region: "84,16,152,40", black_region: "84,16,152,40",
+  "mirror" => { dynamic_mirror_region: "full",
                 rank: "clear", require_mirror_visible_cells: true },
-  "mirror-road" => { clear_region: "84,40,152,16", black_region: "84,40,152,16",
-                     rank: "clear", require_mirror_visible_cells: true },
+  "mirror-road" => { dynamic_mirror_region: "lower",
+                rank: "clear", require_mirror_visible_cells: true },
   "tacho" => { needle_region: "250,160,45,42", rank: "needle" },
   "hud" => { black_region: "0,176,320,64" }
 }.freeze
@@ -257,7 +257,7 @@ def manifest_rows(directory)
     numeric_fields.each do |key|
       row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
     end
-    %i[main_visible_hash mirror_visible_hash
+    %i[random_seed main_visible_hash mirror_visible_hash
        main_visible_list_hash mirror_visible_list_hash course_objects_hash
        rival_render_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
@@ -632,6 +632,16 @@ if options[:match] == "position"
     {
       psx: psx[:path], native: native[:path],
       label: "#{File.basename(psx[:filename], '.ppm')}__#{File.basename(native[:filename], '.ppm')}",
+      dynamic_region: if options[:dynamic_mirror_region] &&
+                         psx.key?(:mirror_y) && native.key?(:mirror_y)
+                        top = [psx[:mirror_y], native[:mirror_y], 0].max
+                        bottom = [psx[:mirror_y] + 36,
+                                  native[:mirror_y] + 36, 240].min
+                        if options[:dynamic_mirror_region] == "lower"
+                          top += (bottom - top) / 2
+                        end
+                        [86, top, 148, [bottom - top, 0].max].join(",")
+                      end,
       state_delta: {
         x: dx, z: dz, distance: position_distance,
         view_distance: view_distance,
@@ -749,9 +759,12 @@ errors = Queue.new
              "--hotspots", options[:hotspots].to_s,
              "--hotspot-radius", options[:radius].to_s,
              "--artifact-radius", options[:artifact_radius].to_s]
-  command.concat(["--region", options[:region]]) if options[:region]
-  command.concat(["--clear-region", options[:clear_region]]) if options[:clear_region]
-  command.concat(["--black-region", options[:black_region]]) if options[:black_region]
+  region = pair[:dynamic_region] || options[:region]
+  clear_region = pair[:dynamic_region] || options[:clear_region]
+  black_region = pair[:dynamic_region] || options[:black_region]
+  command.concat(["--region", region]) if region
+  command.concat(["--clear-region", clear_region]) if clear_region
+  command.concat(["--black-region", black_region]) if black_region
   command.concat(["--needle-region", options[:needle_region]]) if options[:needle_region]
   stdout, stderr, status = Open3.capture3(*command)
       unless status.success?
