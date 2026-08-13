@@ -10,11 +10,11 @@ original PlayStation release.
 
 ## 0.1-alpha
 
-The first alpha is an unsigned arm64 macOS application.  It contains no game
-data.  On first launch, the app asks the player to locate the `.cue` sheet for
-their legally obtained PAL copy of Rage Racer, then saves that local choice for
-future launches.  The game image and its data files are never uploaded to this
-repository or attached to GitHub Releases.
+The first alpha provides unsigned builds for arm64 macOS and x86-64 Linux. It
+contains no game data. On first launch, the app asks the player to locate the
+`.cue` sheet for their legally obtained PAL copy of Rage Racer, then saves that
+local choice for future launches. The game image and its data files are never
+uploaded to this repository or attached to GitHub Releases.
 
 ## Build from source
 
@@ -27,12 +27,13 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
-The resulting executable is `build/release/rage-racer`.  A macOS app bundle is
-provided with the GitHub release.
+The resulting executable is `build/release/rage-racer` on Linux and
+`build/release/Rage Racer.app` on macOS. Release downloads are supplied for
+macOS arm64 and Linux x86-64.
 
 ## Runtime requirements
 
-- macOS on Apple Silicon (arm64)
+- macOS on Apple Silicon (arm64), or a glibc-based x86-64 Linux distribution
 - A legally obtained PAL Rage Racer disc image, with its `.cue` sheet and
   referenced track files kept together
 
@@ -59,7 +60,9 @@ The default bindings emulate the original PlayStation pad:
 | L3 / R3 | `1` / `2` |
 
 Put `rage-input.cfg` in `~/Library/Application Support/Rage Racer/` to override
-any of these bindings (a file in the current directory is also accepted).
+any of these bindings (a file in the current directory is also accepted). On
+Linux the same directory is under `$HOME/Library/Application Support/` for this
+alpha.
 Button names are PlayStation pad names, key names are SDL key names, and lines
 beginning with `#` or `;` are comments.  For example:
 

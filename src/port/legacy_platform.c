@@ -285,6 +285,26 @@ static int RageHostChooseDiscCue(char *cue, size_t size) {
     pclose(pipe);
     cue[strcspn(cue, "\r\n")] = '\0';
     return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+#elif defined(__linux__)
+    static const char *const commands[] = {
+        "zenity --file-selection --title='Select your Rage Racer PAL .cue file' --file-filter='CUE files | *.cue'",
+        "kdialog --getopenfilename . '*.cue|CUE files'",
+    };
+    size_t index;
+    for (index = 0; index < sizeof(commands) / sizeof(commands[0]); index++) {
+        FILE *pipe = popen(commands[index], "r");
+        if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
+            if (pipe != NULL) pclose(pipe);
+            continue;
+        }
+        pclose(pipe);
+        cue[strcspn(cue, "\r\n")] = '\0';
+        if (RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0) return 1;
+    }
+    fprintf(stderr, "Enter the path to your Rage Racer PAL .cue file: ");
+    if (fgets(cue, (int)size, stdin) == NULL) return 0;
+    cue[strcspn(cue, "\r\n")] = '\0';
+    return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
 #else
     (void)cue;
     (void)size;

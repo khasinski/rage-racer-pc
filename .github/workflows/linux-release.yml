@@ -1,0 +1,44 @@
+name: Linux x86-64 release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version used in the archive name
+        required: true
+        default: 0.1-alpha
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/release --parallel
+      - name: Verify portable tests
+        run: ctest --test-dir build/release --output-on-failure -R '^(game_logic|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$'
+      - name: Package
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          package="Rage-Racer-${VERSION}-linux-x86_64"
+          mkdir -p "dist/${package}"
+          cp build/release/rage-racer "dist/${package}/rage-racer"
+          cp README.md LICENSE.md "dist/${package}/"
+          tar -C dist -czf "dist/${package}.tar.gz" "${package}"
+          sha256sum "dist/${package}.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Rage-Racer-${{ inputs.version || github.ref_name }}-linux-x86_64
+          path: dist/*.tar.gz
+          if-no-files-found: error
