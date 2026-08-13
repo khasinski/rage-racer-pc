@@ -2971,7 +2971,13 @@ palette index `4`, CLUT colour `0xef7b`, and writes it. The referenced tpage
 `0x1d` has zero differing source words and CLUT `0x7a40` has zero differing
 palette words between the frame-matched VRAM dumps, yet native finishes black.
 Therefore this specimen is not missing game geometry, visible-cell culling,
-LOD or draw distance. It is a PsyZ sampling/raster/write-path discrepancy.
-Continue by exposing the native shader's resolved texel, palette value and
-discard/blend decision for this pixel; do not modify Rage Racer's culling to
-hide it.
+LOD or draw distance. A controlled PsyZ experiment identified the exact
+backend fault: `vram_render` contained the correct texture and CLUT, but the
+separate `vram_sample` texture was updated only through a lossy dirty
+rectangle. Copying complete VRAM before every textured batch changed native
+pixel `(7,93)` from `[0,0,0]` to `[82,82,82]` against retail `[80,80,80]`,
+removed all 479 native-only black pixels (largest component 166), and reduced
+road-region RMSE from `0.13585` to `0.01845`. The SDL GPU backend now keeps
+the render-target feedback workaround but gives each textured batch a complete
+frame-current VRAM sampling snapshot. This belongs solely in PsyZ; do not
+modify Rage Racer's culling to hide the symptom.
