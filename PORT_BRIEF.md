@@ -3173,3 +3173,19 @@ pixel-identical (11 mismatches to zero). The complete exact frame falls from
 144 to 27 significant pixels and RGB555 RMSE from `0.49582` to `0.43382`.
 Mirror-road, HUD, tachometer and tachometer-needle report zero significant
 pixels; road retains three small connected components of 9, 7 and 4 pixels.
+
+The fragment shader also adds half of one 16.16 unit before flooring raw UV.
+This is too small to advance a distinct PS1 fixed-point value, but prevents a
+mathematically integral coordinate from landing on the previous texel because
+of float interpolation error. It removes the later transparent-texel failure
+at `(77,117)` and reduces the exact frame from 27 to 10 significant pixels.
+
+The remaining seven-pixel component at `(94,132)` belonged to opaque textured
+Gouraud F4 packets 1327 and 1332 (`code 0x3c`). Their shared point lies on two
+edges, so the flat-colour compatibility path did not apply. Textured scanline
+spans now carry the PS1-truncated edge colour and 16.16 horizontal RGB steps;
+Gouraud quads use them only for genuinely missing coverage, leaving covered
+interiors unchanged. Packet 1327 becomes pixel-identical, packet 1332 retains
+one sub-threshold RGB555 difference, and the complete exact frame now has only
+three isolated significant pixels. Road has one; mirror-road, HUD and both
+tachometer regions have zero.
