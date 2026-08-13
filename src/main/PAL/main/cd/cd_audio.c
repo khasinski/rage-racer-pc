@@ -27,7 +27,7 @@ void StepCdPauseRequest(void) {
         /* fallthrough */
 
     case 1:
-        if (CdControl(0x11, 0, &g_CdLocResult) != 0) {
+        if (CdControl(0x11, 0, g_CdLocResult) != 0) {
             g_CdCommandStep = 2;
         }
         break;
@@ -42,9 +42,9 @@ void StepCdPauseRequest(void) {
         break;
 
     case 3:
-        g_CdTrackElapsedLoc.minute = g_CdLocMinute;
+        g_CdTrackElapsedLoc.minute = g_CdLocResult[2];
         g_CdTrackElapsedLoc.sector = 0;
-        g_CdTrackElapsedLoc.second = g_CdLocSecond;
+        g_CdTrackElapsedLoc.second = g_CdLocResult[3];
 
         currentTime = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
         bestTime = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
@@ -158,7 +158,7 @@ void TickCdAudio(void) {
         StepCdTrackRequest();
     }
 
-    status = CdReady(1, &g_CdLocResult);
+    status = CdReady(1, g_CdLocResult);
     if (status == 4) {
         if (g_SceneId == 0x1C) {
             g_CdTrackEnded = 1;

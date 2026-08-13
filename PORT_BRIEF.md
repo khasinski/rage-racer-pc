@@ -794,6 +794,15 @@ and the following `CdlPlay` must reopen the requested track even if another
 track is currently playing. The `race_cdda` integration test proves the switch
 from prologue Track 02 to an actual race music track.
 
+The eight-byte `CdlGetlocP` response at `0x8009B16C` is another retail alias:
+the symbols at `0x8009B16E` and `0x8009B16F` name its relative minute and second
+bytes, not independent objects. Keep one `g_CdLocResult[8]` and read offsets 2
+and 3 explicitly. Detached host globals stay zero, so `StepCdPauseRequest`
+cannot snapshot the playing track correctly. This is a game-state layout fix
+to backport to the decompilation. PsyZ must also implement `CdlGetlocP`; without
+it the prologue pause state machine never reaches `CdlPause`, leaving Track 02
+playing through the menus.
+
 - **Do not "fix" the code toward testability.** Byte-match forbids it while the
   PS1 target lives. Tests live *beside* the code, not inside it.
 - **`make split` regenerates `asm/` and currently rewrites

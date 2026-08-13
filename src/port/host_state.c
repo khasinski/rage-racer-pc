@@ -657,8 +657,6 @@ unsigned char g_CdTrackElapsedLoc[8] __attribute__((aligned(16))) = {0x00,0x00,0
 unsigned char D_8009B000[360] __attribute__((aligned(16)));
 unsigned char g_CdModeParam[8] __attribute__((aligned(16)));
 unsigned char g_CdLocResult[8] __attribute__((aligned(16)));
-unsigned char g_CdLocMinute[8] __attribute__((aligned(16)));
-unsigned char g_CdLocSecond[8] __attribute__((aligned(16)));
 unsigned char g_CdMixLL[8] __attribute__((aligned(16)));
 unsigned char g_CdMixLR[8] __attribute__((aligned(16)));
 unsigned char g_CdMixRR[8] __attribute__((aligned(16)));
