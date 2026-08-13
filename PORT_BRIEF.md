@@ -3116,10 +3116,11 @@ coverage design for textured FT4, adding PS1 UV/color accumulator interpolation
 rather than stretching geometry.
 
 PsyZ now applies that design to opaque, flat-colour textured FT4 packets too.
-For each triangle scanline it considers only the inclusive left/right endpoint,
-subtracts pixels accepted by Metal's top-left rule, and emits each missing
-pixel with the integer part of the PS1 16.16 UV accumulator. Limiting the check
-to at most four endpoint candidates per row avoids scanning polygon interiors.
+For each triangle scanline it reproduces the inclusive span, its truncated
+16.16 start UV and its separately truncated per-pixel UV step. Pixels rejected
+by Metal receive their missing texel; covered pixels are overwritten only when
+the PS1 accumulator and the hardware barycentric interpolator resolve to
+different windowed UVs.
 The old axis-aligned right-edge strip and its approximate one-texel U adjustment
 were removed; arbitrary rotated FT4s use the same path. Semi-transparent and
 Gouraud textured quads remain excluded until their repeated coverage and colour
@@ -3146,11 +3147,17 @@ comparison invocations. In the post-FT4 exact frame, the tachometer needle has
 zero significant pixels, while road's remaining largest component is the
 26-pixel vertical line at `(207,103..128)`.
 
-That component is not missing coverage. Retail and native cover pixel
+That component was not missing coverage. Retail and native cover pixel
 `(207,103)` with the same later FT4s, but native packet 1721 exposes a UV
 accumulator boundary: retail's scanline selects windowed U `110`, while the
 mathematical GPU interpolation lies at raw U `47.0` and can floor to windowed
 U `111`. Isolated packet 1721 has 14 significant pixels, including eleven at
 `x=207`. Treat this as the next distinct compatibility class: PS1 16.16
-scanline UV truncation versus hardware barycentric interpolation. Do not widen
-coverage or modify game UVs to hide it.
+scanline UV truncation versus hardware barycentric interpolation. The opaque
+flat-textured compatibility path now corrects both classes. Isolated packet
+1721 falls from 14 significant pixels to zero (RGB555 RMSE `0.05758` to
+`0.01898`); the complete exact frame falls from 362 to 144 significant pixels
+and RMSE from `0.56973` to `0.49582`. Road's largest remaining component is ten
+pixels, mirror-road's is one, HUD has two significant pixels total, and both
+tachometer regions have zero. Do not widen coverage or modify game UVs to hide
+these accumulator differences.
