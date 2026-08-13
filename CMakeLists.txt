@@ -58,6 +58,12 @@ if(RAGE_BUILD_PORT)
         include
     )
     target_link_libraries(rage-game-full PUBLIC psyz)
+    # The recovered game sources retain PS1-era tentative globals.  Host
+    # initialized state deliberately provides their concrete definitions; GCC
+    # otherwise treats the tentative copies as duplicate ELF definitions.
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(rage-game-full PRIVATE -fcommon)
+    endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE src/port/include)
         target_compile_options(${RAGE_PORT_TARGET} PRIVATE
