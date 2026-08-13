@@ -211,11 +211,13 @@ int main(void) {
         printf("window size: %dx%d\n", size.w, size.h);
     }
     if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
-        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu pitch_updates=%llu cdda=%d "
+        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
+               "pitch_updates=%llu cdda=%d "
                "loaded=%x cue_bank=%d "
                "vab=%d,%d,%d,%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
                Psyz_SeqNoteOnCount(),
+               Psyz_SeqVoiceStartCount(),
                Psyz_SndPitchUpdateCount(),
                Psyz_CdAudioPlaying(),
                g_AudioLoadedSlotMask, g_SoundCueBank,

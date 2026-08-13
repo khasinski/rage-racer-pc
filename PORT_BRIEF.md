@@ -3586,3 +3586,22 @@ capture shows the newly visible prize list together with the preceding MUSIC
 SELECT row because the displayed page is still the previous buffer while the
 new page is submitted.  The recovered 121-tick scene transition and fade-delay
 table are therefore retained unchanged.
+
+The menu VAB contains programs with overlapping tone ranges (program 6 has two
+tones spanning the full MIDI range), so a SEQ note cannot be represented by a
+single remembered SPU voice.  PsyZ now records every allocated voice belonging
+to a channel/note pair and releases all of its layers on note-off or sequence
+close.  Voice ownership also carries an allocation generation: if the
+eight-voice automatic pool steals a voice, a delayed note-off from its old SEQ
+owner must not silence the newer sound.  The smoke metrics report both SEQ
+note events and VAB voice starts, retaining evidence for layered programs.
+
+The retail menu sequence also contains live pan-controller messages and pitch
+bends.  The host parser retains channel volume, pan and bend state for future
+notes and applies bend changes to voices already owned by that channel.
+Controller changes must not be implemented by blindly calling
+`SsUtSetVVol`: that API interprets its arguments as a fresh logical voice
+volume and would discard the VAB master/program/tone gain already folded into
+the current register value.  Live pan/volume rescaling still needs an exact
+PsyQ-equivalent calculation if a sequence depends audibly on sustained-note
+controller changes.
