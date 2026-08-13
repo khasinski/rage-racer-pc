@@ -163,6 +163,7 @@ int main(void) {
     int inputIndex;
 
     Psyz_SetTitle("Rage Racer smoke");
+    setenv("RAGE_PORT_TEST_MODE", "1", 0);
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);

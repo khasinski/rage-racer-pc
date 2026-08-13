@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -215,12 +218,229 @@ int RageMapPs1Scratchpad(void) {
     return 1;
 }
 
+enum { RAGE_CD_SECTOR_SIZE = 2352, RAGE_ISO_SECTOR_SIZE = 2048 };
+
+typedef struct RageHostDisc {
+    FILE *file;
+    long track_offset;
+    long archive_sector;
+    long archive_size;
+    int user_offset;
+} RageHostDisc;
+
+static RageHostDisc g_RageHostDisc;
+
+static int RageHostPathEndsWithCue(const char *path) {
+    size_t length = strlen(path);
+    return length > 4 && strcasecmp(path + length - 4, ".cue") == 0;
+}
+
+static int RageHostReadTextFile(const char *path, char *value, size_t size) {
+    FILE *file = fopen(path, "r");
+    if (file == NULL || fgets(value, (int)size, file) == NULL) {
+        if (file != NULL) fclose(file);
+        return 0;
+    }
+    fclose(file);
+    value[strcspn(value, "\r\n")] = '\0';
+    return value[0] != '\0';
+}
+
+static void RageHostMakeDiscConfigPath(char *path, size_t size) {
+    const char *home = getenv("HOME");
+    if (home == NULL || home[0] == '\0') home = ".";
+    snprintf(path, size, "%s/Library/Application Support/Rage Racer/disc-cue-path", home);
+}
+
+static void RageHostSaveDiscCue(const char *cue) {
+    char directory[PATH_MAX];
+    char path[PATH_MAX];
+    const char *home = getenv("HOME");
+    FILE *file;
+
+    if (home == NULL || home[0] == '\0') return;
+    snprintf(directory, sizeof(directory), "%s/Library", home);
+    mkdir(directory, 0700);
+    snprintf(directory, sizeof(directory), "%s/Library/Application Support", home);
+    mkdir(directory, 0700);
+    snprintf(directory, sizeof(directory), "%s/Library/Application Support/Rage Racer", home);
+    mkdir(directory, 0700);
+    RageHostMakeDiscConfigPath(path, sizeof(path));
+    file = fopen(path, "w");
+    if (file == NULL) return;
+    fputs(cue, file);
+    fputc('\n', file);
+    fclose(file);
+}
+
+static int RageHostChooseDiscCue(char *cue, size_t size) {
+#ifdef __APPLE__
+    static const char command[] =
+        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer PAL .cue file\" of type {\"cue\"})'";
+    FILE *pipe = popen(command, "r");
+    if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
+        if (pipe != NULL) pclose(pipe);
+        return 0;
+    }
+    pclose(pipe);
+    cue[strcspn(cue, "\r\n")] = '\0';
+    return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+#else
+    (void)cue;
+    (void)size;
+    return 0;
+#endif
+}
+
+static unsigned int RageHostLe32(const unsigned char *value) {
+    return (unsigned int)value[0] | ((unsigned int)value[1] << 8)
+         | ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
+}
+
+static int RageHostParseCue(const char *cue, char *image, size_t image_size,
+                            long *track_offset) {
+    FILE *file = fopen(cue, "r");
+    char line[PATH_MAX + 64];
+    char cue_directory[PATH_MAX];
+    char image_name[PATH_MAX] = {0};
+    char *slash;
+    int data_track_seen = 0;
+
+    if (file == NULL) return 0;
+    snprintf(cue_directory, sizeof(cue_directory), "%s", cue);
+    slash = strrchr(cue_directory, '/');
+    if (slash != NULL) *slash = '\0'; else snprintf(cue_directory, sizeof(cue_directory), ".");
+    *track_offset = 0;
+    while (fgets(line, sizeof(line), file)) {
+        char *quote;
+        if (strncasecmp(line, "FILE", 4) == 0) {
+            quote = strchr(line, '\"');
+            if (quote != NULL) {
+                char *end = strchr(quote + 1, '\"');
+                if (end != NULL) {
+                    *end = '\0';
+                    snprintf(image_name, sizeof(image_name), "%s", quote + 1);
+                }
+            }
+        } else if (strncasecmp(line, "  TRACK", 7) == 0 || strncasecmp(line, "TRACK", 5) == 0) {
+            data_track_seen = strstr(line, "MODE1/2352") != NULL || strstr(line, "MODE2/2352") != NULL;
+        } else if (data_track_seen && (strncasecmp(line, "    INDEX 01", 12) == 0 || strncasecmp(line, "INDEX 01", 8) == 0)) {
+            int minute, second, frame;
+            if (sscanf(line, "%*s %*s %d:%d:%d", &minute, &second, &frame) == 3)
+                *track_offset = (long)(minute * 60 * 75 + second * 75 + frame) * RAGE_CD_SECTOR_SIZE;
+            break;
+        }
+    }
+    fclose(file);
+    if (image_name[0] == '\0') return 0;
+    if (image_name[0] == '/') snprintf(image, image_size, "%s", image_name);
+    else snprintf(image, image_size, "%s/%s", cue_directory, image_name);
+    return access(image, R_OK) == 0;
+}
+
+static int RageHostReadSector(long sector, unsigned char *buffer) {
+    if (g_RageHostDisc.file == NULL
+        || fseek(g_RageHostDisc.file, g_RageHostDisc.track_offset
+                 + sector * RAGE_CD_SECTOR_SIZE + g_RageHostDisc.user_offset, SEEK_SET) != 0)
+        return 0;
+    return fread(buffer, 1, RAGE_ISO_SECTOR_SIZE, g_RageHostDisc.file) == RAGE_ISO_SECTOR_SIZE;
+}
+
+static int RageHostFindArchive(void) {
+    unsigned char sector[RAGE_ISO_SECTOR_SIZE];
+    unsigned int root_sector;
+    unsigned int root_size;
+    unsigned int offset;
+    int user_offset;
+
+    for (user_offset = 16; user_offset <= 24; user_offset += 8) {
+        g_RageHostDisc.user_offset = user_offset;
+        if (RageHostReadSector(16, sector) && memcmp(&sector[1], "CD001", 5) == 0) break;
+    }
+    if (user_offset > 24 || sector[156] < 34) return 0;
+    root_sector = RageHostLe32(&sector[158]);
+    root_size = RageHostLe32(&sector[166]);
+    for (offset = 0; offset < root_size; offset += RAGE_ISO_SECTOR_SIZE) {
+        unsigned int cursor = 0;
+        if (!RageHostReadSector(root_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        while (cursor < RAGE_ISO_SECTOR_SIZE) {
+            unsigned int length = sector[cursor];
+            unsigned int name_length;
+            const unsigned char *record;
+            if (length == 0) break;
+            if (length < 34 || cursor + length > RAGE_ISO_SECTOR_SIZE) return 0;
+            record = &sector[cursor];
+            name_length = record[32];
+            if (name_length >= 8 && strncasecmp((const char *)&record[33], "RAGE.BIN", 8) == 0
+                && (name_length == 8 || record[41] == ';')) {
+                g_RageHostDisc.archive_sector = RageHostLe32(&record[2]);
+                g_RageHostDisc.archive_size = RageHostLe32(&record[10]);
+                return g_RageHostDisc.archive_size > 0;
+            }
+            cursor += length;
+        }
+    }
+    return 0;
+}
+
+static int RageHostReadArchive(unsigned int offset, void *destination, unsigned int size) {
+    unsigned char sector[RAGE_ISO_SECTOR_SIZE];
+    unsigned char *output = destination;
+    FILE *test_archive;
+
+    if (g_RageHostDisc.file == NULL && getenv("RAGE_PORT_TEST_MODE") != NULL) {
+        size_t loaded;
+        test_archive = fopen("assets/PAL/RAGE.BIN", "rb");
+        if (test_archive == NULL || fseek(test_archive, (long)offset, SEEK_SET) != 0) {
+            if (test_archive != NULL) fclose(test_archive);
+            return 0;
+        }
+        loaded = fread(destination, 1, size, test_archive);
+        fclose(test_archive);
+        return loaded == size;
+    }
+    if ((long)offset + size > g_RageHostDisc.archive_size) return 0;
+    while (size > 0) {
+        unsigned int sector_offset = offset % RAGE_ISO_SECTOR_SIZE;
+        unsigned int chunk = RAGE_ISO_SECTOR_SIZE - sector_offset;
+        if (chunk > size) chunk = size;
+        if (!RageHostReadSector(g_RageHostDisc.archive_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        memcpy(output, sector + sector_offset, chunk);
+        output += chunk;
+        offset += chunk;
+        size -= chunk;
+    }
+    return 1;
+}
+
 int RageHostInitDisc(void) {
-    const char *cue = getenv("RAGE_PORT_DISC_CUE");
-    if (cue == NULL || cue[0] == '\0')
-        cue = "disc/PAL/Rage Racer (Europe).cue";
-    if (access(cue, R_OK) != 0) return 1;
-    return Psyz_CdSetDiskPath(cue) == 0;
+    const char *environment_cue = getenv("RAGE_PORT_DISC_CUE");
+    char cue[PATH_MAX];
+    char image[PATH_MAX];
+    char config_path[PATH_MAX];
+
+    memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
+    /* The smoke executable characterizes renderer and game state without
+     * bundling retail data.  The release executable never sets this flag. */
+    if (getenv("RAGE_PORT_TEST_MODE") != NULL) return 1;
+    if (environment_cue != NULL && environment_cue[0] != '\0') {
+        snprintf(cue, sizeof(cue), "%s", environment_cue);
+    } else {
+        RageHostMakeDiscConfigPath(config_path, sizeof(config_path));
+        if (!RageHostReadTextFile(config_path, cue, sizeof(cue)) || access(cue, R_OK) != 0) {
+            if (!RageHostChooseDiscCue(cue, sizeof(cue))) return 0;
+            RageHostSaveDiscCue(cue);
+        }
+    }
+    if (!RageHostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0
+        || !RageHostParseCue(cue, image, sizeof(image), &g_RageHostDisc.track_offset)) return 0;
+    g_RageHostDisc.file = fopen(image, "rb");
+    if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
+        if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+        g_RageHostDisc.file = NULL;
+        return 0;
+    }
+    return 1;
 }
 
 typedef struct RageHostCdEntry {
@@ -231,13 +451,8 @@ typedef struct RageHostCdEntry {
 int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
-    FILE *file = fopen("assets/PAL/RAGE.BIN", "rb");
     int index;
-    if (!file || count > 135 || fread(words, 1, sizeof(words), file) != sizeof(words)) {
-        if (file) fclose(file);
-        return 0;
-    }
-    fclose(file);
+    if (count > 135 || !RageHostReadArchive(0, words, sizeof(words))) return 0;
     for (index = 0; index < count; index++) {
         entries[index].byte_offset = words[index * 2] * 2048u;
         entries[index].size = words[index * 2 + 1];
@@ -246,15 +461,7 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
 }
 
 int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
-    FILE *file = fopen("assets/PAL/RAGE.BIN", "rb");
-    size_t loaded;
-    if (!file || fseek(file, (long)byte_offset, SEEK_SET) != 0) {
-        if (file) fclose(file);
-        return 0;
-    }
-    loaded = fread(destination, 1, size, file);
-    fclose(file);
-    return loaded == size ? (int)(size & ~3u) : 0;
+    return RageHostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
 }
 
 void ApplyMatrixLV(void *matrix, const int32_t *input, int32_t *output) {

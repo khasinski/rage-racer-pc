@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(rage_racer_port LANGUAGES C)
+project(rage_racer_port VERSION 0.1.0 LANGUAGES C)
+
+set(RAGE_RACER_RELEASE_VERSION "0.1-alpha")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -37,6 +39,7 @@ if(RAGE_BUILD_PORT)
         src/port/fmv_host.c
     )
     add_executable(rage-racer
+        MACOSX_BUNDLE
         src/port/main.c
         src/port/runtime_control.c
         ${RAGE_PORT_COMMON_SOURCES}
@@ -71,6 +74,16 @@ if(RAGE_BUILD_PORT)
         DEFAULT_FRONT_W=640
         DEFAULT_FRONT_H=480
     )
+    if(APPLE)
+        set_target_properties(rage-racer PROPERTIES
+            OUTPUT_NAME "Rage Racer"
+            MACOSX_BUNDLE_BUNDLE_NAME "Rage Racer"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "com.khasinski.rage-racer"
+            MACOSX_BUNDLE_BUNDLE_VERSION "${RAGE_RACER_RELEASE_VERSION}"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "${RAGE_RACER_RELEASE_VERSION}"
+            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in"
+        )
+    endif()
     if(BUILD_TESTING)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)
         target_link_libraries(rage-gte-replay PRIVATE psyz)

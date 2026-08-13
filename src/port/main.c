@@ -2,6 +2,7 @@
 #include <psyz/video.h>
 #include <libetc.h>
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,6 +12,18 @@ void MainLoop(void);
 int RageMapPs1Scratchpad(void);
 int RageInitNativeGameData(void);
 int RageHostInitDisc(void);
+
+static void RageLoadInputConfig(RageInputConfig *config) {
+    const char *home = getenv("HOME");
+    char path[PATH_MAX];
+
+    if (home != NULL && home[0] != '\0') {
+        snprintf(path, sizeof(path), "%s/Library/Application Support/Rage Racer/rage-input.cfg", home);
+        if (RageInputConfigLoad(config, path) > 0) return;
+    }
+    RageInputConfigLoad(config, "rage-input.cfg");
+}
+
 int main(void) {
     RageInputConfig inputConfig;
     int inputIndex;
@@ -21,7 +34,7 @@ int main(void) {
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);
     RageInputConfigDefaults(&inputConfig);
-    RageInputConfigLoad(&inputConfig, "rage-input.cfg");
+    RageLoadInputConfig(&inputConfig);
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }

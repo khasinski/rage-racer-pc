@@ -1,4 +1,4 @@
 [submodule "external/psyz"]
 	path = external/psyz
-	url = https://github.com/Xeeynamo/psyz.git
+	url = https://github.com/khasinski/rage-racer-psyz.git
 	branch = rage-racer-port
