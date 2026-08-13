@@ -2847,8 +2847,8 @@ so a missing environment variable or failed backend readback cannot silently
 turn into an empty reference.
 
 `rage_vram_refs.rb` parses the selected native GP0 stream, collects every
-referenced tpage and CLUT, and compares only texture words reached by the
-primitives' actual UV coordinates (plus their palettes), while reporting
+referenced tpage and CLUT, and conservatively compares every texture word in
+each primitive's UV bounding box (plus its palette), while reporting
 RGB15 differences separately from bit-15-only differences.  Its
 output is retained as `gp0-vram-refs.txt`.  This is the fast discriminator for
 an identical packet stream that produces different pixels: matching source
@@ -2856,16 +2856,19 @@ regions implicate rasterization, while differing pages or palettes implicate
 asset upload, VRAM moves, or game-owned streaming state.
 
 The strict Grand Prix timer-59 pair has an identical 2,080-word draw stream.
-Comparing whole tpage rectangles originally reported thousands of differences,
-but most were texels no primitive could reach.  The UV-constrained report
-reduced this to six referenced words on tpage `0x0005`, 37 on `0x0017`, and a
-few palette words.  The twenty in-scene CPU-to-VRAM uploads have matching
+Comparing whole tpage rectangles originally included many texels no primitive
+could reach. An early vertex-only filter was also insufficient because it
+missed triangle interiors; the current conservative UV bounding-box report
+finds 320 differing words on tpage `0x0005`, 880 on `0x0017`, and a few palette
+words. The twenty in-scene CPU-to-VRAM uploads have matching
 rectangles and data hashes.  PsyZ nevertheless returned `0xfc1f` in untouched
 texture words because SDL GPU texture creation leaves contents undefined;
 retail PS1 VRAM is zero after reset.  The SDL3 GPU backend now explicitly zeros
 both its render and sampling VRAM textures before the first game upload.  This
-removed the magenta values and reduced the timer-59 `0x0017` discrepancy from
-37 referenced words to 16.  Do not patch the residual pixels as geometry or
+removed the magenta values from the vertex-only diagnostic. A fresh visual run
+still has the same 479 native-only black pixels at timer 59, so zeroing is a
+required deterministic reset fix but not the cause of that road component.
+Do not patch the residual pixels as geometry or
 clipping symptoms; continue from the remaining uploaded/overwritten texels.
 This comparison workflow is host-only diagnostic infrastructure and does not
 change the game logic that will be backported to the decompilation.

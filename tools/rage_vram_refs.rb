@@ -44,10 +44,16 @@ File.foreach(options[:log]) do |line|
     tpage = words[uv_indices[1]] >> 16
     clut = words[uv_indices[0]] >> 16
     depth = (tpage >> 7) & 3
-    uv_indices.each do |index|
-      u = words[index] & 0xff
-      v = (words[index] >> 8) & 0xff
-      tpages[tpage][[u >> [2, 1, 0, 0][depth], v]] = true
+    uvs = uv_indices.map { |index| [words[index] & 0xff, (words[index] >> 8) & 0xff] }
+    u_min, u_max = uvs.map(&:first).minmax
+    v_min, v_max = uvs.map(&:last).minmax
+    # A conservative UV bounding box includes every texel a non-wrapping
+    # affine triangle can sample. It may include a few words outside the
+    # triangle, but unlike vertex-only sampling cannot miss its interior.
+    (v_min..v_max).each do |v|
+      ((u_min >> [2, 1, 0, 0][depth])..(u_max >> [2, 1, 0, 0][depth])).each do |u|
+        tpages[tpage][[u, v]] = true
+      end
     end
     cluts[clut] = [cluts.fetch(clut, 0), depth == 1 ? 256 : 16].max
   elsif (code & 0xe0) == 0x60 && (code & 4) == 4
