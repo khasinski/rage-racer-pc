@@ -288,6 +288,20 @@ def capture_surface(rows, label)
   surfaces.first
 end
 
+def final_dma_states(rows)
+  dma_rows, ordinary_rows = rows.partition do |row|
+    row[:filename].match?(/-d\d+-s\d+\.ppm\z/)
+  end
+  final_rows = dma_rows.group_by do |row|
+    [row[:scene], row[:timer], row[:frame]]
+  end.values.map do |phase_rows|
+    phase_rows.max_by do |row|
+      row[:filename][/-d(\d+)-s\d+\.ppm\z/, 1].to_i
+    end
+  end
+  ordinary_rows + final_rows
+end
+
 def ppm_capture_stats(path, threshold = 8)
   data = File.binread(path)
   header_end = data.index("\n255\n")
@@ -500,7 +514,7 @@ if options[:match] == "position"
       candidate[:random_seed] != psx[:random_seed]
     reasons
   end
-  psx_states = manifest_rows(psx_dir)
+  psx_states = final_dma_states(manifest_rows(psx_dir))
   native_states = manifest_rows(native_dir)
   psx_surface = capture_surface(psx_states, "PSX")
   native_surface = capture_surface(native_states, "native")

@@ -1026,8 +1026,25 @@ the output directories first, then set
 is restricted to `RAGE_PORT_SMOKE_STOP_SCENE` when that variable is present.
 Use `RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN/MAX` or the matching
 `RAGE_EMU_CAPTURE_TIMER_MIN/MAX` bounds for dense one-timer captures around a
-problem without writing the whole race.  Timer-named emulator captures are
-deduplicated when two VBlanks observe the same game timer.
+problem without writing the whole race. Timer-named emulator captures are
+deduplicated when two VBlanks observe the same game timer. Draw-page
+comparisons instead set `RAGE_EMU_CAPTURE_DMA_PHASES=1`: the emulator captures
+immediately after each completed GPU linked-list DMA and the batch tool retains
+the final DMA for a scene/timer/frame tuple. This matters in the race because a
+VBlank sample can combine post-update game globals with the preceding
+main/mirror projection phase. Such a record is not an exact renderer
+comparison even if its timer and car position match. `rage_visual_run.rb
+--draw-page` enables DMA-phase capture automatically.
+
+The independent timer-396 race check demonstrates the gate. The final PSX DMA
+and native draw page match position, camera, all rival render hashes, complete
+main/mirror visibility lists, projection and animation phase exactly. Results:
+road RMSE `0.014348`, zero native-only black pixels; HUD RMSE `0.012587`, zero
+native-only black pixels; tachometer RMSE `0.018776`, needle IoU `1.0`; mirror
+road RMSE `0.011195`, zero surface-divergence pixels. The earlier timer-396
+mirror discrepancy was therefore a capture-phase bug, not evidence of a game
+or HAL mirror defect. Keep the strict `proj_order` gate and diagnose later
+mirror failures only from final-DMA captures.
 Long emulator runs can be split into sub-minute chunks by also setting
 `RAGE_EMU_SAVE_CAPTURE_STATES=1`.  Each periodic PPM then receives a matching
 `.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue

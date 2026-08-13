@@ -409,6 +409,44 @@ Dir.mktmpdir("rage-visual-draw-projection-phase-") do |root|
   abort stdout + stderr unless (stdout + stderr).include?("projection_phase")
 end
 
+Dir.mktmpdir("rage-visual-final-dma-phase-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  dma_names = %w[
+    timer-00100-f00010-d000001-s12.ppm
+    timer-00100-f00010-d000002-s12.ppm
+    timer-00100-f00010-d000003-s12.ppm
+  ]
+  dma_names.each_with_index do |filename, index|
+    write_ppm(File.join(psx, filename), index == 2 ? 16 : 240)
+  end
+  native_name = "timer-00100-f00100-s12.ppm"
+  write_ppm(File.join(native, native_name), 16)
+  state = [10, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7]
+  psx_rows = dma_names.map do |filename|
+    ([filename] + state + [100, "deadbeef"]).join(",")
+  end
+  native_state = state.dup
+  native_state[0] = 100
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" + psx_rows.join("\n") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" +
+             ([native_name] + native_state + [100, "deadbeef"]).join(",") + "\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  summary = JSON.parse(File.read(File.join(output, "summary.json")))
+  frame = summary.fetch("frames").first
+  abort "DMA capture kept partial render phases" unless
+    summary.fetch("matched_frames") == 1 &&
+    frame.fetch("psx_frame") == dma_names.last
+end
+
 Dir.mktmpdir("rage-visual-mirror-projection-gate-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

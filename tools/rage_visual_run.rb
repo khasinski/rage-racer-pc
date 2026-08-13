@@ -164,6 +164,7 @@ psx_env = {
 }
 psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
+psx_env["RAGE_EMU_CAPTURE_DMA_PHASES"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_CAPTURE_VRAM_SIDECAR"] = "1"
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_CHECKPOINT_TIMER_STRIDE"] = options[:checkpoint_stride].to_s if
