@@ -2899,6 +2899,26 @@ On the strict timer-392 pair this changed mirror-road RMSE from `0.159682` to
 20) to zero. This ownership correction belongs in the decompilation and is
 independent of the HAL.
 
+The race HUD has the same linker-alias requirement. In the retail map,
+`g_TachoNeedlePrim0PageA`, `g_TachoNeedlePrim0`, and
+`g_RaceHudSprite11U0` are successive interior views of frame context 0's
+`RaceHudPackets`; the three `g_TachoNeedlePrim1...` labels view the matching
+packets in frame context 1. The host used to allocate all six names as
+independent buffers, so `BuildTachoNeedleQuad` initialized sprites and draw
+modes that were not the packets later reached through the frame context and
+ordering table. Access `g_FrameContexts[i].layout.raceHud.tachometerFace` and
+`.tachometerDrawModes[]` directly and do not instantiate these map labels as
+host globals. This is game-state ownership code to backport, not a renderer
+workaround.
+
+On the synchronized timer-392 checkpoint this ownership change is deliberately
+not claimed as a visual improvement: the native/retail tachometer comparison
+remains at RMSE `0.0310`, three mismatched needle pixels and IoU `0.991`, while
+the HUD has zero native-only black pixels. It fixes invalid host ownership and
+prevents initialization from depending on detached storage, but the reported
+fully missing needle must be captured in another race phase before assigning
+it the same cause.
+
 `rage_gp0_bundle.rb` captures the complete 1024x512 RGB5551 VRAM after the
 selected retail and native submissions.  The native dump is
 `gp0-native-post.vram`; the retail before/after dumps remain `gp0-pre.vram` and

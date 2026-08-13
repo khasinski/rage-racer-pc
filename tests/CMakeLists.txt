@@ -26,6 +26,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rear_view_mirror.c
         ${CMAKE_SOURCE_DIR}/src/port/host_state.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
 )
 
 add_test(
