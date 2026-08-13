@@ -61,6 +61,19 @@ Dir.mktmpdir("rage-visual-run-frame-rng-") do |output|
     metadata.dig("native", "env", "RAGE_PORT_SYNC_RANDOM_EACH_FRAME") == "1"
 end
 
+Dir.mktmpdir("rage-visual-run-psx-cache-") do |output|
+  Dir.mktmpdir("rage-visual-run-reference-") do |cache|
+    File.write(File.join(cache, "capture-manifest.csv"), "filename,frame,scene,timer\n")
+    command = [RbConfig.ruby, tool, "--psx-cache", cache, "--output", output,
+               "--dry-run"]
+    stdout, stderr, status = Open3.capture3(*command)
+    abort stdout + stderr unless status.success?
+    metadata = JSON.parse(File.read(File.join(output, "run.json")))
+    abort "cached PSX capture path was not retained" unless
+      metadata.fetch("psx_cache") == File.expand_path(cache)
+  end
+end
+
 Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--draw-page", "--dry-run"]

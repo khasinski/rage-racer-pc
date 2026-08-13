@@ -2693,6 +2693,21 @@ projection, rivals and visible-cell masks.  Road and mirror-road had no clear
 or black components in any pair; the largest needle delta was 16 raster-edge
 pixels, with the other accepted samples at 2--4 pixels.
 
+Use display-page captures for the user-visible gate, but start the per-frame
+tap at least one submitted frame before `--timer-min`.  The first displayed
+sample can still contain the pre-tap animated texture from the old front
+buffer; draw-page evidence identifies this as presentation history rather than
+missing geometry.  After one warm-up frame, the timer-1600..1620 display scan
+had no road or mirror black/clear components in its strict pairs.
+
+Reference capture is normally the slow half of an iteration.  Pass
+`--psx-cache DIR` to reuse a directory containing the emulator PPMs and
+`capture-manifest.csv`; the runner then executes only the current native smoke
+binary and compares it against that immutable reference.  Keep the cache tied
+to its checkpoint, input script, tap settings, surface and timer window (the
+original `run.json` records all of them).  Use `--compare-only` when neither
+runtime needs to be executed.
+
 As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
 route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
 a report. This makes remaining large visual differences more likely to be

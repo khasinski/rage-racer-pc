@@ -15,6 +15,7 @@ options = {
   profile: "road", timer_min: 800, timer_max: 900, capture_stride: 1,
   psx_capture_stride: nil, native_capture_stride: nil,
   save_psx_states: false,
+  psx_cache: nil,
   psx_frames: 500, native_frames: 2400, jobs: 8, top: nil,
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
@@ -45,6 +46,9 @@ route_presets = {
 parser = OptionParser.new do |cli|
   cli.banner = "usage: rage_visual_run.rb --output DIR (--checkpoint STATE | --compare-only) [options]"
   cli.on("--checkpoint PATH", "PSX save state used as the deterministic start") { |v| options[:checkpoint] = v }
+  cli.on("--psx-cache DIR", "reuse an existing PSX capture and run only native") do |v|
+    options[:psx_cache] = Pathname(v)
+  end
   cli.on("--output DIR", "create psx/, native/, compare/ and run.json here") { |v| options[:output] = v }
   cli.on("--profile NAME", %w[all road mirror mirror-road tacho hud]) { |v| options[:profile] = v }
   cli.on("--route NAME", route_presets.keys,
@@ -121,7 +125,8 @@ if options[:route]
   options[:native_input] = preset.fetch(:native_input) unless options[:native_input_explicit]
 end
 
-abort parser.to_s unless options[:output] && (options[:checkpoint] || options[:compare_only])
+abort parser.to_s unless options[:output] &&
+  (options[:checkpoint] || options[:compare_only] || options[:psx_cache])
 abort "timer range is invalid" if options[:timer_min] > options[:timer_max]
 abort "capture stride must be positive" unless options[:capture_stride].positive?
 options[:psx_capture_stride] ||= options[:capture_stride]
@@ -130,11 +135,15 @@ abort "PSX capture stride must be positive" unless options[:psx_capture_stride].
 abort "native capture stride must be positive" unless options[:native_capture_stride].positive?
 
 output = Pathname(options[:output]).expand_path
-psx_dir = output / "psx"
+psx_dir = options[:psx_cache] ? options[:psx_cache].expand_path : output / "psx"
 native_dir = output / "native"
 profiles = options[:profile] == "all" ? %w[road mirror-road tacho hud] : [options[:profile]]
 compare_dirs = profiles.to_h { |profile| [profile, output / "compare" / profile] }
-FileUtils.mkdir_p([psx_dir, native_dir, *compare_dirs.values])
+FileUtils.mkdir_p([native_dir, *compare_dirs.values])
+FileUtils.mkdir_p(psx_dir) unless options[:psx_cache]
+if options[:psx_cache] && !(psx_dir / "capture-manifest.csv").file?
+  abort "--psx-cache requires #{psx_dir / 'capture-manifest.csv'}"
+end
 
 psx_env = {
   "RAGE_EMU_INPUT_SCRIPT" => options[:psx_input],
@@ -193,6 +202,7 @@ metadata = {
   budgets: options[:budgets],
   alignment_only: options[:alignment_only],
   compare_only: options[:compare_only],
+  psx_cache: options[:psx_cache]&.expand_path&.to_s,
   timer_range: [options[:timer_min], options[:timer_max]],
   capture_strides: {
     psx_vblank: options[:psx_capture_stride],
@@ -217,10 +227,13 @@ run_capture = lambda do |name, env, command, cwd, log_path|
   [name, pid, log]
 end
 unless options[:compare_only]
-  captures = [
-    run_capture.call("psx", psx_env, psx_command, root / "tools/psx-ruby", psx_dir / "run.log"),
-    run_capture.call("native", native_env, native_command, root, native_dir / "run.log")
-  ]
+  captures = []
+  captures << run_capture.call(
+    "psx", psx_env, psx_command, root / "tools/psx-ruby", psx_dir / "run.log"
+  ) unless options[:psx_cache]
+  captures << run_capture.call(
+    "native", native_env, native_command, root, native_dir / "run.log"
+  )
   failures = captures.map do |name, pid, log|
     _waited, status = Process.wait2(pid)
     log.close
