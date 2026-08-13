@@ -2872,3 +2872,13 @@ Do not patch the residual pixels as geometry or
 clipping symptoms; continue from the remaining uploaded/overwritten texels.
 This comparison workflow is host-only diagnostic infrastructure and does not
 change the game logic that will be backported to the decompilation.
+
+Every visual-run PPM now has an optional same-basename `.vram` sidecar on both
+retail and native. It is written by the same capture operation, before the
+manifest row, rather than reconstructed later by a GP0 replay. This matters for
+Rage's double buffering: a later full-VRAM dump can already contain another
+submission and falsely exonerate a pixel which was black in the captured PPM.
+At Grand Prix timer 59, the atomic files confirm screen `(7,93)` / VRAM
+`(7,333)` as retail `0x294a` and native `0x8000`. The earlier post-replay native
+value `0xad6b` belonged to a later state. Use the sidecars as the authoritative
+texture/framebuffer source for pixel debugging.

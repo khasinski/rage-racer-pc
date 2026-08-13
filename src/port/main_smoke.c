@@ -61,6 +61,9 @@ int RageWriteCapturedFrame(const char *path) {
     FILE *output;
     int width;
     int height;
+    unsigned short *vram = NULL;
+    int vramWidth = 0;
+    int vramHeight = 0;
 
     if (path == NULL || path[0] == '\0') return 1;
     /* Prime the reusable GPU download buffer before the asserted capture. */
@@ -77,6 +80,39 @@ int RageWriteCapturedFrame(const char *path) {
         pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
     }
     if (pixels == NULL) return 0;
+    if (getenv("RAGE_PORT_CAPTURE_VRAM_SIDECAR") != NULL) {
+        size_t pathLength = strlen(path);
+        char *vramPath;
+        FILE *vramOutput;
+        vram = Psyz_VideoAllocCapturedVram(&vramWidth, &vramHeight);
+        if (vram == NULL || vramWidth != 1024 || vramHeight != 512) {
+            free(vram);
+            free(pixels);
+            return 0;
+        }
+        vramPath = malloc(pathLength + 6);
+        if (vramPath == NULL) {
+            free(vram);
+            free(pixels);
+            return 0;
+        }
+        memcpy(vramPath, path, pathLength + 1);
+        if (pathLength >= 4 && strcmp(vramPath + pathLength - 4, ".ppm") == 0)
+            memcpy(vramPath + pathLength - 4, ".vram", 6);
+        else
+            memcpy(vramPath + pathLength, ".vram", 6);
+        vramOutput = fopen(vramPath, "wb");
+        free(vramPath);
+        if (vramOutput == NULL ||
+            fwrite(vram, sizeof(*vram), 1024u * 512u, vramOutput) != 1024u * 512u) {
+            if (vramOutput != NULL) fclose(vramOutput);
+            free(vram);
+            free(pixels);
+            return 0;
+        }
+        fclose(vramOutput);
+        free(vram);
+    }
     output = fopen(path, "wb");
     if (output == NULL) {
         free(pixels);

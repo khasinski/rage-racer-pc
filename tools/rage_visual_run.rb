@@ -163,6 +163,7 @@ psx_env = {
 }
 psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
+psx_env["RAGE_EMU_CAPTURE_VRAM_SIDECAR"] = "1"
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_CHECKPOINT_TIMER_STRIDE"] = options[:checkpoint_stride].to_s if
   options[:checkpoint_stride]
@@ -186,6 +187,7 @@ native_env = {
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
 }
 native_env["RAGE_PORT_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
+native_env["RAGE_PORT_CAPTURE_VRAM_SIDECAR"] = "1"
 native_env["RAGE_PORT_STATE_INPUT_SCRIPT"] = options[:native_state_input] if options[:native_state_input]
 native_sync_random = options[:native_sync_random] || options[:sync_random]
 native_env["RAGE_PORT_SYNC_RANDOM"] = native_sync_random if native_sync_random
