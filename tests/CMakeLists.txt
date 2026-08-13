@@ -70,6 +70,13 @@ add_test(
 )
 
 add_test(
+    NAME visual_triage
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_visual_triage.rb
+        ${CMAKE_SOURCE_DIR}/tools/rage_visual_triage.rb
+)
+
+add_test(
     NAME gpu_digest_compare
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_gpu_digest_compare.rb

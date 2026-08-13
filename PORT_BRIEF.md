@@ -3356,6 +3356,18 @@ geometry. The next synchronization improvement should eliminate the remaining
 one-unit game-state drift; do not relax PsyZ geometry or mirror culling to make
 nearby poses look identical.
 
+Use `tools/rage_visual_triage.rb --run RUN` to automate that decision across
+road, mirror-road, HUD and tachometer profiles. It ranks only components above
+the configured canonical limit, invokes `rage_gp0_bundle.rb` once when a
+bundle lacks GP0 artifacts, then reads the same-GP0 raster report and writes
+`RUN/triage.json`. `renderer` means the connected component survives canonical
+replay; `pose_or_game_packets` means the visual component disappears when both
+rasterizers receive the retail stream. `--reuse-only` never starts either
+runtime, and later PsyZ iterations can rerun the saved bundle's `--raster-only`
+stage. On current evidence timer 1510 road is visual component 40 / canonical
+0, and timer 2760 mirror is 83 / canonical 1, so both are correctly classified
+as pose or game-packet differences rather than renderer bugs.
+
 Visual runs set `RAGE_PORT_DISABLE_HOST_INPUT=1`, making the smoke executable
 disable physical keyboard and gamepad reads at the PsyZ HAL boundary. Scripted
 pad frames continue through the game's normal pad code, but an accidental key
