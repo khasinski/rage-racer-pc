@@ -35,6 +35,38 @@ Dir.mktmpdir("rage-visual-run-") do |output|
     compare.each_cons(2).include?(["--visual-refine", "3"])
   abort "repeated matcher arguments were not retained" unless
     compare.each_cons(2).include?(["--max-position-distance", "8"])
+  abort "logical capture stride did not account for the two PSX VBlanks per game tick" unless
+    metadata.dig("capture_strides", "psx_vblank") == 2 &&
+    metadata.dig("capture_strides", "native_timer") == 1
+  abort "timer window did not stop both runtimes at its upper boundary" unless
+    metadata.dig("psx", "env", "RAGE_EMU_STOP_SCENE") == "12" &&
+    metadata.dig("psx", "env", "RAGE_EMU_STOP_SCENE_TIMER") == "870" &&
+    metadata.dig("native", "env", "RAGE_PORT_SMOKE_STOP_SCENE") == "12" &&
+    metadata.dig("native", "env", "RAGE_PORT_SMOKE_STOP_SCENE_TIMER") == "870"
+end
+
+Dir.mktmpdir("rage-visual-run-sparse-stride-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--capture-stride", "10", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "sparse native sampling made the PSX timer oracle sparse" unless
+    metadata.dig("capture_strides", "psx_vblank") == 2 &&
+    metadata.dig("capture_strides", "native_timer") == 10
+end
+
+Dir.mktmpdir("rage-visual-run-explicit-strides-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--capture-stride", "7",
+             "--psx-capture-stride", "3", "--native-capture-stride", "5",
+             "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "explicit runtime capture strides were not retained" unless
+    metadata.dig("capture_strides", "psx_vblank") == 3 &&
+    metadata.dig("capture_strides", "native_timer") == 5
 end
 
 Dir.mktmpdir("rage-visual-run-asymmetric-sync-") do |output|

@@ -59,7 +59,7 @@ parser = OptionParser.new do |cli|
   cli.on("--timer-max N", Integer) { |v| options[:timer_max] = v }
   cli.on("--capture-stride N", Integer) { |v| options[:capture_stride] = v }
   cli.on("--psx-capture-stride N", Integer,
-         "PSX VBlank sampling stride (defaults to --capture-stride)") do |v|
+         "PSX VBlank sampling stride (defaults to 2 for timer coverage)") do |v|
     options[:psx_capture_stride] = v
   end
   cli.on("--native-capture-stride N", Integer,
@@ -129,7 +129,7 @@ abort parser.to_s unless options[:output] &&
   (options[:checkpoint] || options[:compare_only] || options[:psx_cache])
 abort "timer range is invalid" if options[:timer_min] > options[:timer_max]
 abort "capture stride must be positive" unless options[:capture_stride].positive?
-options[:psx_capture_stride] ||= options[:capture_stride]
+options[:psx_capture_stride] ||= 2
 options[:native_capture_stride] ||= options[:capture_stride]
 abort "PSX capture stride must be positive" unless options[:psx_capture_stride].positive?
 abort "native capture stride must be positive" unless options[:native_capture_stride].positive?
@@ -150,6 +150,8 @@ psx_env = {
   "RAGE_EMU_TIMER_FILENAMES" => "1", "RAGE_EMU_CAPTURE_ALL_PHASES" => "1",
   "RAGE_EMU_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_EMU_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
+  "RAGE_EMU_STOP_SCENE" => "12",
+  "RAGE_EMU_STOP_SCENE_TIMER" => options[:timer_max].to_s,
   "RUBYOPT" => "--yjit"
 }
 psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
@@ -171,6 +173,7 @@ native_env = {
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:native_capture_stride].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
+  "RAGE_PORT_SMOKE_STOP_SCENE_TIMER" => options[:timer_max].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
 }
 native_env["RAGE_PORT_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]

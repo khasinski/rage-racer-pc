@@ -2040,9 +2040,27 @@ mirror-projection alignment gate even when both matrices differed by one unit.
 The two capture strides have different clocks: the Ruby argument samples
 emulated VBlanks, while `RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE` samples the game
 timer.  `rage_visual_run.rb` therefore exposes `--psx-capture-stride` and
-`--native-capture-stride` separately.  For sparse route scans use PSX stride 1
-and a larger native timer stride; giving both the same value can accidentally
-leave only a handful of timer intersections.
+`--native-capture-stride` separately.  Its logical `--capture-stride N` keeps
+the PSX oracle dense at two VBlanks and thins only native capture to every `N`
+game-timer ticks.  PAL's timer cadence is not uniform enough for multiplying
+both steps: even nominally equivalent sparse steps drift between timer values.
+Explicit per-runtime values remain available for unusual scene phases. Giving
+both runtimes the same raw value can accidentally leave only a handful of
+timer intersections:
+a Time Attack 540..1800 attempt with raw stride 10 yielded just one strict pair
+in its first 66 PSX samples.  The corrected PSX-2/native-1 draw-page scan over
+540..650 yielded 58 exact-timer pairs with equal player, camera, projection,
+RNG, visible-cell and all-car render state.  Fifty-four pairs had no
+native-only black road pixel; the largest connected black remainder was six
+pixels, making this window a useful negative baseline rather than evidence for
+a broad culling fix.
+
+The runner also forwards `--timer-max` as the scene-12 stop timer to both
+runtimes.  The Ruby emulator's synchronized stop capture includes a
+`.psxstate`, so every completed window leaves a deterministic checkpoint for
+continuing the route. `--psx-frames` and `--native-frames` remain safety
+ceilings; they no longer need to be estimated precisely and should not make a
+short diagnostic continue emulating long after its useful range.
 
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
