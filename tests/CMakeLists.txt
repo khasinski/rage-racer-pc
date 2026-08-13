@@ -95,6 +95,11 @@ add_test(
             ${CMAKE_SOURCE_DIR}/tools/rage_gp0_replay.c
 )
 add_test(
+    NAME gp0_raster_compare
+    COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_raster_compare.rb
+            ${CMAKE_SOURCE_DIR}/tools/rage_gp0_raster_compare.rb
+)
+add_test(
     NAME vram_delta
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_vram_delta.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_vram_delta.rb

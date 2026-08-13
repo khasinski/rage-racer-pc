@@ -3029,3 +3029,22 @@ hotspots include arbitrary rotated-edge coverage, not only axis-aligned FT4
 right endpoints. An eventual general solution must emulate PS1 scan
 conversion; platform conservative rasterization is neither portable through
 SDL GPU nor equivalent to the PS1's endpoint interpolation.
+
+For renderer-only iteration, `tools/rage_gp0_raster_compare.rb` removes the
+remaining full-game replay from the loop. Give it one 1 MiB pre-frame VRAM
+snapshot, one canonical GP0 trace and its frame number; it sends the exact same
+commands through the Ruby PS1 GPU and `rage-gp0-replay`, writes `psx.ppm`,
+`native.ppm`, and a machine-readable `report.json`, and compares channels in
+RGB555 precision. `--last-packet N` bisects the submitted frame, while
+`--only-packet N` keeps the draw-state commands and isolates a single polygon.
+This is the preferred seconds-scale oracle for rasterization, texture sampling,
+HUD and mirror packet cases after a visual bundle has captured them once.
+
+Two attempted generalizations of the axis-aligned endpoint strip were rejected
+against that oracle. Widening all external FT4 edges by one pixel fills the
+known timer-392 boundary but also draws fractional-span pixels absent on PS1;
+a nominal 1/256-pixel strip is degenerate and Metal does not rasterize it
+portably. Do not restore either geometry workaround. The remaining rotated-edge
+case requires explicit PS1 scan conversion (CPU or a dedicated GPU path), not
+conservative expansion of the original triangles. Until that path exists, keep
+the verified axis-aligned FT4 correction narrowly scoped.
