@@ -21,7 +21,7 @@ end
 retail = load_vram.call(options[:retail])
 native = load_vram.call(options[:native])
 
-tpages = {}
+tpages = Hash.new { |hash, key| hash[key] = {} }
 cluts = {}
 current_tpage = nil
 File.foreach(options[:log]) do |line|
@@ -36,12 +36,40 @@ File.foreach(options[:log]) do |line|
   end
   textured_polygon = (code & 0x24) == 0x24 && (code & 0xe0).between?(0x20, 0x60)
   if textured_polygon
-    cluts[words[2] >> 16] = true if words.length > 2
-    tpage_index = (code & 0x10).zero? ? 4 : 5
-    tpages[words[tpage_index] >> 16] = true if words.length > tpage_index
+    gouraud = (code & 0x10) != 0
+    quad = (code & 8) != 0
+    uv_indices = gouraud ? [2, 5, 8, 11] : [2, 4, 6, 8]
+    uv_indices.pop unless quad
+    next unless uv_indices.all? { |index| words[index] }
+    tpage = words[uv_indices[1]] >> 16
+    clut = words[uv_indices[0]] >> 16
+    depth = (tpage >> 7) & 3
+    uv_indices.each do |index|
+      u = words[index] & 0xff
+      v = (words[index] >> 8) & 0xff
+      tpages[tpage][[u >> [2, 1, 0, 0][depth], v]] = true
+    end
+    cluts[clut] = [cluts.fetch(clut, 0), depth == 1 ? 256 : 16].max
   elsif (code & 0xe0) == 0x60 && (code & 4) == 4
-    cluts[words[2] >> 16] = true if words.length > 2
-    tpages[current_tpage] = true if current_tpage
+    next unless words[2] && current_tpage
+    depth = (current_tpage >> 7) & 3
+    size_mode = (code >> 3) & 3
+    width, height = case size_mode
+                    when 0 then [words[3] & 0x3ff, (words[3] >> 16) & 0x1ff]
+                    when 1 then [1, 1]
+                    when 2 then [8, 8]
+                    else [16, 16]
+                    end
+    u0 = words[2] & 0xff
+    v0 = (words[2] >> 8) & 0xff
+    height.times do |dv|
+      width.times do |du|
+        tpages[current_tpage][[((u0 + du) & 0xff) >> [2, 1, 0, 0][depth],
+                               (v0 + dv) & 0xff]] = true
+      end
+    end
+    clut = words[2] >> 16
+    cluts[clut] = [cluts.fetch(clut, 0), depth == 1 ? 256 : 16].max
   end
 end
 
@@ -66,18 +94,24 @@ end
 puts "referenced_tpages=#{tpages.length} referenced_cluts=#{cluts.length}"
 tpages.keys.sort.each do |tpage|
   depth = (tpage >> 7) & 3
-  width = [64, 128, 256, 256][depth]
   x = (tpage & 0xf) * 64
   y = ((tpage >> 4) & 1) * 256
-  exact, rgb, bit15 = compare_region.call(x, y, width, 256)
-  puts format("tpage=%04x depth=%d rect=%d,%d,%d,256 exact=%d rgb15=%d bit15=%d",
-              tpage, depth, x, y, width, exact, rgb, bit15)
+  samples = tpages[tpage].keys
+  exact = rgb = bit15 = 0
+  samples.each do |word_x, word_y|
+    a = retail[(y + word_y) * 1024 + x + word_x]
+    b = native[(y + word_y) * 1024 + x + word_x]
+    next if a == b
+    exact += 1
+    (a & 0x7fff) == (b & 0x7fff) ? bit15 += 1 : rgb += 1
+  end
+  puts format("tpage=%04x depth=%d referenced_words=%d exact=%d rgb15=%d bit15=%d",
+              tpage, depth, samples.length, exact, rgb, bit15)
 end
 cluts.keys.sort.each do |clut|
   x = (clut & 0x3f) * 16
   y = (clut >> 6) & 0x1ff
-  # The referenced tpage determines whether 16 or 256 entries are consumed.
-  width = tpages.keys.any? { |tpage| ((tpage >> 7) & 3) == 1 } ? 256 : 16
+  width = cluts.fetch(clut)
   exact, rgb, bit15 = compare_region.call(x, y, width, 1)
   puts format("clut=%04x rect=%d,%d,%d,1 exact=%d rgb15=%d bit15=%d",
               clut, x, y, width, exact, rgb, bit15)

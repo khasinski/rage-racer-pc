@@ -6,6 +6,7 @@ required = [
   'report.fetch("psx_source")', 'report.fetch("native_source")',
   'summary_frame["psx_replay_frames"]', 'summary_frame["psx_replay_pre_state"]',
   '"RAGE_GPU_GP0_TRACE_SCENE"', '"RAGE_GPU_GP0_TRACE_TIMER"',
+  '"RAGE_GPU_VRAM_TRANSFER_TRACE"',
   'native_draw_area', 'psx_draw_areas[frame] == native_draw_area',
   'psx_contexts[frame] == [native_scene, native_timer]',
   'matching_surface.empty? && available_frames.length > 1',

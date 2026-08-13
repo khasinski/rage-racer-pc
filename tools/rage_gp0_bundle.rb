@@ -86,6 +86,7 @@ prepare = lambda do |side, frame|
   metadata = run.fetch(side)
   env = metadata.fetch("env").merge(
     "RAGE_GPU_GP0_TRACE" => "1",
+    "RAGE_GPU_VRAM_TRANSFER_TRACE" => "1",
     "RAGE_GPU_GP0_TRACE_SCENE" => native_scene.to_s,
     "RAGE_GPU_GP0_TRACE_TIMER" => native_timer.to_s
   )
