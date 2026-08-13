@@ -3097,3 +3097,20 @@ portably. Do not restore either geometry workaround. The remaining rotated-edge
 case requires explicit PS1 scan conversion (CPU or a dedicated GPU path), not
 conservative expansion of the original triangles. Until that path exists, keep
 the verified axis-aligned FT4 correction narrowly scoped.
+
+The first explicit scan-conversion path now covers flat, untextured F4 packets
+in PsyZ. It reproduces the emulator's per-triangle `ceil(left)..floor(right)`
+inclusive spans, evaluates which of those pixels Metal's top-left triangle rule
+already covers, and appends one-pixel-high quads only for the missing runs.
+Existing pixels are never submitted twice, which preserves primitive order and
+semi-transparency. This is a primitive-class compatibility rule, not a
+tachometer-coordinate exception. On isolated packet 2192 from the exact
+timer-391 oracle, significant RGB555 mismatches fall from 27 to zero and RMSE
+from `0.25069` to `0.02244`. In the complete 11,381-word frame, significant
+raster mismatches fall from 902 to 875 and RMSE from `1.01998` to `0.99659`;
+the exact 27-pixel needle component is gone. The remaining 116 low-level
+isolated mismatches are below the RGB555 significance threshold. The game F4
+packet remains unchanged, so there is nothing from this fix to backport into
+the decompilation: it belongs to the modern HAL. Use the same span-minus-native
+coverage design for the forthcoming textured FT4 path, adding PS1 UV/color
+accumulator interpolation rather than stretching geometry.
