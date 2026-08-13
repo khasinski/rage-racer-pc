@@ -27,6 +27,13 @@ add_test(
 )
 
 add_test(
+    NAME native_frame_offsets
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_frame_offsets.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
     NAME frame_environment_aliases
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb

@@ -3489,3 +3489,28 @@ semantics and does not require a Rage Racer game-code backport.  The
 rejects the characteristic full-frame blue flood.  The cached PS1 reference
 has no flooded frame; before the fix the two bad native frames contained about
 75,000 blue-dominant pixels each, versus fewer than 10,000 after the fix.
+
+### Typed frame-context ordering tables (backport to the decompilation)
+
+`DrawResultScreen` and `DrawCarSlotHighlight` formed their ordering-table
+pointer as `g_DrawBuffer + 0xCC`, the packed PS1 offset immediately following
+the frame's draw/display environments.  On the 64-bit host those environment
+records contain native-width fields and the ordering table no longer begins at
+that byte offset.  The result screen still drew its text through correct helper
+paths, but its red `y=0..47` and white `y=48..71` background tiles were linked
+into invalid storage and the top of the screen remained black.  The showroom
+slot highlight had the same latent defect.
+
+Both paths now use `GamePrimaryOrderingTable(0)`.  This is game-code 32/64-bit
+portability work and must be backported.  `native_frame_offsets` rejects any
+new direct `g_DrawBuffer + 0xCC` or equivalent increment; code must access
+native frame members through `GameFrameContext` helpers while retaining the
+packed layout in the original 32-bit build.
+
+The `world` visual-comparison preset covers `0,40,320,136`: the complete 3D
+viewport below the sky and above the HUD.  It complements the narrower road
+preset so right-edge terrain and roadside-object holes are not silently
+excluded.  On the synchronized timer-1500..1800 cache its largest candidate is
+timer 1510, a 38-pixel edge displacement caused by the admitted three-unit
+pose delta; replaying identical GP0 streams removes it, so it is not evidence
+for changing PsyZ rasterization.

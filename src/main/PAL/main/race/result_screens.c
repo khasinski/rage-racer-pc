@@ -202,9 +202,8 @@ void DrawResultScreen(void) {
     DrawText8x8Trans(0x60, y, g_CourseNames[g_CourseIndex], 0x78CC);
 
     width = 0x140;
-    base = g_DrawBuffer;
+    base = (u8 *)GamePrimaryOrderingTable(0);
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    base += 0xCC;
 
     next = *scratch;
     next = AddTilePrim(base, next, 0, 0, width, 0x30, 0x85, 0x15, 0xE);

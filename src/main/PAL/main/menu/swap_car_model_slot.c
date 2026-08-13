@@ -6,6 +6,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
@@ -22,10 +23,11 @@ void SwapCarModelSlot(void) {
 
 void DrawCarSlotHighlight(s32 slot) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    u8 *base = g_DrawBuffer;
     u8 *value = *scratch;
 
-    *scratch = GameQueueTileTrans(base + 0xCC, value, 0x24, (slot * 16) + 0x24, 0x50, 0x10, 0, 0, 0xFF);
+    *scratch = GameQueueTileTrans(
+        GamePrimaryOrderingTable(0), value, 0x24, (slot * 16) + 0x24,
+        0x50, 0x10, 0, 0, 0xFF);
 }
 
 void DrawMenuCarView(void) {
