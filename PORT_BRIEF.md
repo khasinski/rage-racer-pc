@@ -3004,3 +3004,15 @@ interpolation and produced red instead of retail white. It was not retained.
 The correct PsyZ fix needs an explicit inclusive right/bottom edge strip (or a
 PS1 scan-conversion path) whose UV and colour values remain those of the
 original endpoint; globally stretching triangle geometry is not equivalent.
+PsyZ now leaves the original FT4 triangles untouched and appends a one-pixel
+right-edge strip only for axis-aligned textured quads. Both sides of the strip
+carry the original endpoint attributes, with U stepped one texel toward the
+interior to match the PS1 accumulator (`95` endpoint becomes sampled U `94`
+in the traced packet). A bottom strip was tested and rejected because the PS1
+does not include that endpoint in this scanline case. On the strict timer-392
+profiles this changes road RMSE from `0.1080` to `0.0721`, removes its final
+native-only black pixel, and changes mirror-road RMSE from `0.1223` to
+`0.1023`; HUD remains at RMSE `0.01931` with zero black holes and the needle
+remains IoU `0.991` (three mismatched pixels). Timer 59 remains at RMSE
+`0.01845` with no black component. Keep synthetic edge vertices out of GP0
+traces: diagnostics must continue to describe the original submitted packet.
