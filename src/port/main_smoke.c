@@ -166,6 +166,9 @@ int main(void) {
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);
+    if (getenv("RAGE_PORT_DISABLE_HOST_INPUT") != NULL) {
+        Psyz_SetHostInputEnabled(0);
+    }
     RageInputConfigDefaults(&inputConfig);
     RageInputConfigLoad(&inputConfig, "rage-input.cfg");
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {

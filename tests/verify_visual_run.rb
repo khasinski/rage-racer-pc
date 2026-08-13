@@ -134,6 +134,8 @@ Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
     metadata.dig("native", "env", "RAGE_PORT_CAPTURE_DRAW_PAGE") == "1" &&
     metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_VRAM_SIDECAR") == "1" &&
     metadata.dig("native", "env", "RAGE_PORT_CAPTURE_VRAM_SIDECAR") == "1"
+  abort "visual run did not isolate physical host input" unless
+    metadata.dig("native", "env", "RAGE_PORT_DISABLE_HOST_INPUT") == "1"
   compare = metadata.dig("comparisons", "road", "argv")
   abort "draw-page comparison must retain the exact packet phase" unless
     compare.each_cons(2).include?(["--visual-refine", "0"])

@@ -3313,3 +3313,10 @@ as a 129-pixel missing road component. Road clear coverage is now measured in
 its separate `0,176,320,64` profile. Keep these regions disjoint when adding
 new presets, otherwise a correct HUD phase difference can masquerade as a
 geometry hole.
+
+Visual runs set `RAGE_PORT_DISABLE_HOST_INPUT=1`, making the smoke executable
+disable physical keyboard and gamepad reads at the PsyZ HAL boundary. Scripted
+pad frames continue through the game's normal pad code, but an accidental key
+press can no longer alter a deterministic visual run. Ordinary smoke runs and
+the interactive executable leave host input enabled. This isolation belongs
+to the host test harness/HAL and must not be backported as game logic.

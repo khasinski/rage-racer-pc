@@ -211,6 +211,7 @@ psx_command = ["mise", "exec", "--", "bundle", "exec", "ruby",
 
 native_env = {
   "SDL_AUDIODRIVER" => "dummy", "RAGE_PORT_SMOKE_FRAMES" => options[:native_frames].to_s,
+  "RAGE_PORT_DISABLE_HOST_INPUT" => "1",
   "RAGE_PORT_INPUT_SCRIPT" => options[:native_input], "RAGE_PORT_SMOKE_STOP_SCENE" => "12",
   "RAGE_PORT_SMOKE_CAPTURE_DIR" => native_dir.to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:native_capture_stride].to_s,
