@@ -101,3 +101,7 @@ debug_source.c
 
 # Scratch work from decompilation sessions.
 tools/decomp-wip/
+
+# Local emulator/native visual checkpoints and replay artifacts. Durable
+# conclusions and reproduction commands belong in PORT_BRIEF.md.
+.visual-cache/
