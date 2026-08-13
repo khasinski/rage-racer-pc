@@ -28,6 +28,7 @@ def main() -> int:
             RAGE_PORT_SMOKE_STOP_SCENE_TIMER="562",
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_TERRAIN_TRACE_TIMER="562",
+            RAGE_PORT_SMOKE_AUDIO_METRICS="1",
         )
         result = subprocess.run(
             [executable], cwd=source_dir, env=environment,
@@ -153,6 +154,13 @@ def main() -> int:
         raise AssertionError("tachometer still reads detached zeroed target RPM")
     if int(rpm_state.group(2)) == 0:
         raise AssertionError("terrain never exercised retail second-triangle culling")
+    audio_state = re.search(
+        r"audio metrics: frames=(\d+) energy=(\d+) seq_notes=(\d+) "
+        r"pitch_updates=(\d+)",
+        result.stdout,
+    )
+    if audio_state is None or int(audio_state.group(4)) == 0:
+        raise AssertionError("race effects never exercised live voice pitch updates")
     child_cull = re.search(
         r"terrain_child_reject=(\d+) terrain_child_second=(\d+)",
         result.stdout,

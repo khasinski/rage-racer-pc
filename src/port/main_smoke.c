@@ -210,10 +210,12 @@ int main(void) {
         printf("window size: %dx%d\n", size.w, size.h);
     }
     if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
-        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu loaded=%x cue_bank=%d "
+        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu pitch_updates=%llu "
+               "loaded=%x cue_bank=%d "
                "vab=%d,%d,%d,%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
                Psyz_SeqNoteOnCount(),
+               Psyz_SndPitchUpdateCount(),
                g_AudioLoadedSlotMask, g_SoundCueBank,
                g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
                g_SoundScale.vabIds[2], g_SoundScale.vabIds[3]);

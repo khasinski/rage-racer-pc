@@ -3535,3 +3535,28 @@ excluded.  On the synchronized timer-1500..1800 cache its largest candidate is
 timer 1510, a 38-pixel edge displacement caused by the admitted three-unit
 pose delta; replaying identical GP0 streams removes it, so it is not evidence
 for changing PsyZ rasterization.
+
+### Host libsnd sequence and effect playback
+
+Rage Racer keeps the original scene-level audio code and calls the PsyQ
+libsnd API through PsyZ.  The host backend must therefore play the checked-in
+SEQ/VAB data; substituting a host soundtrack or copying state from `main.exe`
+would hide game behaviour.  PsyZ parses the retail little-endian `pQES`
+stream, advances it from the game's `SsSeqCalledTbyT` tick, selects tones by
+their VAB key ranges, and allocates normal SPU voices.  `_SsVmInit(0)` must not
+discard already loaded VAB metadata: Rage calls it while changing audio slots.
+
+`SsSeqCloseWrapper` must forward to `SsSeqClose`.  Leaving it as a host zero
+adapter keeps `_snd_openflag` slots occupied and allows an old scene's
+sequence state to survive into later menus.  This is a port adapter fix; the
+original game wrapper already performs the forwarding call.
+
+Race effects also use fixed hardware voices 18..23 even though Rage reserves
+only eight voices for automatic allocation.  Explicit `SsUtKeyOffV`,
+`SsUtChangePitch`, and `SsUtPitchBend` operations must consequently validate
+against all 24 SPU voices, not `_SsVmMaxVoice`.  Pitch bend uses each selected
+tone's asymmetric VAB `pbmin`/`pbmax` limits and the original note stored at
+key-on; a generic linear bend makes engine sounds audibly wrong.  The
+`race_start` regression requires real pitch updates during an accelerating
+race, while `audio_output` requires dispatched menu SEQ notes and non-silent
+SPU output.
