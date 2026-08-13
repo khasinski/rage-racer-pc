@@ -13,15 +13,15 @@
  * g_CameraCar toward the sampled centre-line point
  * (InterpolateTrackPoint + atan2), nudges its position, then seeds the scratchpad view
  * state (view[2..4]=eye XYZ, view[6]=pitch, view[7]=yaw, view[8]=roll) from the
- * eye object and submits the render object (DrawPlayerCarModel). markerClamp is the
- * zeroed clamp record passed to the track-marker builder UpdateCarTrackState.
+ * eye object and submits the render object (DrawPlayerCarModel). markerClamp is
+ * the complete zeroed track-limit record passed to UpdateCarTrackState.
  */
 void UpdateFinishCamera(GameRenderObject *obj) {
     ScratchLegacyViewWords legacyView;
     s32 *view;
     s32 delta[3];
     s32 coords[3];
-    s16 markerClamp[2];
+    CarTrackLimits markerClamp;
     s32 index;
     s32 rem;
     s32 offset;
@@ -66,9 +66,11 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     g_CameraCarZ = g_CameraCarStepZ / 256 + g_CameraCarZ;
 
     AccumulateLapProgress(&g_CameraCar);
-    markerClamp[0] = 0;
-    markerClamp[1] = 0;
-    UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, markerClamp);
+    markerClamp.rightInset = 0;
+    markerClamp.leftInset = 0;
+    markerClamp.rightKnockbackMode = 0;
+    markerClamp.leftKnockbackMode = 0;
+    UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &markerClamp);
 
     cameraAddress.runtime = &g_CameraCar;
     viewAddress.words = &view[2];
