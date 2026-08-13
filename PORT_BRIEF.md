@@ -2729,6 +2729,21 @@ below the panel and report the ordinary forward road as a broken mirror. The
 per pair. In the strict timer-410 case this changed a false 1,636-pixel
 "missing mirror" component into zero clear/black or divergent components.
 
+Alternative-camera comparisons use the real configured camera button rather
+than a hard-coded assumption. The capture manifest records both
+`camera_view_mode` and `camera_button` (`g_PadButtonMapping[6]`; the current
+default is Triangle/`0x10`), and state matching rejects different view modes.
+The smoke-only input parser accepts the full digital PS1 button set so the same
+raw rising edge can be scripted on both runtimes. From the timer-408 checkpoint
+the emulator sequence `1-3:TRIANGLE` switches to chase view reliably.
+
+The first displayed chase sample at timer 420 contained an apparent 37-pixel
+black road wedge while every state gate was exact. Its draw-page pair has zero
+native-only black or divergent pixels: the wedge belongs to the previously
+presented cockpit frame while the manifest already describes chase mode. Treat
+camera transitions like RNG taps and animated textures: warm up at least one
+submitted frame, or use draw-page captures for packet/geometry diagnosis.
+
 Reference capture is normally the slow half of an iteration.  Pass
 `--psx-cache DIR` to reuse a directory containing the emulator PPMs and
 `capture-manifest.csv`; the runner then executes only the current native smoke

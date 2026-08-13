@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "game/player_car_internal.h"
+#include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
@@ -220,9 +221,18 @@ int RageWriteCapturedFrame(const char *path);
 void UpdatePadState(void);
 
 static unsigned short RageSmokeButton(const char *name) {
+    if (strcmp(name, "L2") == 0) return 0x1;
+    if (strcmp(name, "R2") == 0) return 0x2;
+    if (strcmp(name, "L1") == 0) return 0x4;
+    if (strcmp(name, "R1") == 0) return 0x8;
+    if (strcmp(name, "TRIANGLE") == 0) return 0x10;
     if (strcmp(name, "START") == 0) return 0x800;
     if (strcmp(name, "CROSS") == 0 || strcmp(name, "CONFIRM") == 0) return 0x40;
     if (strcmp(name, "CIRCLE") == 0 || strcmp(name, "CANCEL") == 0) return 0x20;
+    if (strcmp(name, "SQUARE") == 0) return 0x80;
+    if (strcmp(name, "SELECT") == 0) return 0x100;
+    if (strcmp(name, "L3") == 0) return 0x200;
+    if (strcmp(name, "R3") == 0) return 0x400;
     if (strcmp(name, "UP") == 0) return 0x1000;
     if (strcmp(name, "RIGHT") == 0) return 0x2000;
     if (strcmp(name, "DOWN") == 0) return 0x4000;
@@ -314,6 +324,7 @@ static void RageSmokeInitialize(void) {
                       "anim_timer,tacho_rpm,engine_rpm,engine_rpm_jitter," \
                       "tacho_needle_flash,player_throttle,rev_limit," \
                       "drive_engine_rpm,race_phase,pad_type,pad_held," \
+                      "camera_view_mode,camera_button," \
                       "course_index,grand_prix_class," \
                       "grand_prix_mode,player_car_index,texture_page_wanted," \
                       "texture_cursor_row,texture_target_row," \
@@ -534,6 +545,7 @@ int RagePortShouldExit(int frame_number) {
                 fprintf(g_SmokeCaptureManifest,
                         "%s,%s," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%u," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%u,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d," \
@@ -585,6 +597,8 @@ int RagePortShouldExit(int frame_number) {
                         g_CarSpec->revLimit,
                         g_PlayerCar.drive.engineRpm, g_RacePhase,
                         g_PadType, g_PadHeld,
+                        g_CameraViewMode,
+                        g_PadButtonMapping[6],
                         g_CourseIndex, g_GrandPrixClass, g_GrandPrixMode,
                         g_PlayerCarIndex, g_TrackTexturePageWanted,
                         g_TrackTextureCursorRow, g_TrackTextureTargetRow,

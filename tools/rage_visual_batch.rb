@@ -242,6 +242,7 @@ def manifest_rows(directory)
       main_visible_hash mirror_visible_hash main_visible_list_hash mirror_visible_list_hash
       random_seed anim_timer rival0_x rival0_z rival1_x rival1_z rival2_x
       tacho_rpm tacho_needle_flash
+      camera_view_mode camera_button
       course_index grand_prix_class grand_prix_mode player_car_index
       texture_page_wanted texture_cursor_row texture_target_row
       course_object_count course_objects_hash
@@ -373,6 +374,9 @@ if options[:match] == "position"
       rival_render_state_equal: !candidate.key?(:rival_render_hash) ||
         !psx.key?(:rival_render_hash) ||
         candidate[:rival_render_hash] == psx[:rival_render_hash],
+      camera_view_equal: !candidate.key?(:camera_view_mode) ||
+        !psx.key?(:camera_view_mode) ||
+        candidate[:camera_view_mode] == psx[:camera_view_mode],
       timer_delta: (candidate[:timer] - psx[:timer]).abs,
       anim_timer_delta: if candidate.key?(:anim_timer) && psx.key?(:anim_timer)
                           raw = (candidate[:anim_timer] - psx[:anim_timer]) % 128
@@ -413,6 +417,7 @@ if options[:match] == "position"
       (!options[:require_rival_render_state] ||
         (metrics[:rival_render_state_present] &&
          metrics[:rival_render_state_equal])) &&
+      metrics[:camera_view_equal] &&
       metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       (!options[:require_scenery_variants] || metrics[:scenery_variants_equal]) &&
@@ -454,6 +459,7 @@ if options[:match] == "position"
       !metrics[:rival_render_state_present]
     reasons << "rival_render_state" if options[:require_rival_render_state] &&
       metrics[:rival_render_state_present] && !metrics[:rival_render_state_equal]
+    reasons << "camera_view" unless metrics[:camera_view_equal]
     reasons << "timer=#{metrics[:timer_delta]}>#{options[:max_timer_delta]}" if
       metrics[:timer_delta] > options[:max_timer_delta]
     reasons << "projection_phase" unless metrics[:projection_phase_equal]

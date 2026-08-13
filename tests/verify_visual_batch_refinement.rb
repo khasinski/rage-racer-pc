@@ -614,6 +614,29 @@ Dir.mktmpdir("rage-visual-capture-surface-") do |root|
   )
 end
 
+Dir.mktmpdir("rage-visual-camera-view-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00420-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  view_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+                "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                "view_angle_z,camera_view_mode\n"
+  common = "0,12,420,10,20,30,40,1,0,10,20,30,0,0,0"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             view_header + "#{filename},#{common},0\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             view_header + "#{filename},#{common},1\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "different camera modes entered visual ranking" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("camera_view")
+end
+
 Dir.mktmpdir("rage-visual-scenery-variant-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
