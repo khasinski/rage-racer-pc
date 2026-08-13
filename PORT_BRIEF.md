@@ -3470,3 +3470,22 @@ full parallel run passes 28 of 31 tests; `prologue_frame`, `race_start` and
 without reporting a sanitizer failure.  Run those long cases serially or give
 the sanitizer configuration larger timeouts before treating that result as a
 clean full-suite gate.
+
+### Empty mirror draw areas
+
+The mirror is unlocked at race timer 361 and slides from `g_MirrorPanelY=-44`.
+Until its bottom edge reaches the display, retail deliberately submits the
+mirror sky and scenery under a zero-height GPU drawing area.  The PS1 discards
+those primitives.  PsyZ's SDL GPU backend previously ignored an invalid/empty
+area update, retained the preceding full-screen scissor, and batched the mirror
+sky until the normal area returned.  On alternating buffers this produced a
+near-full-screen dark-blue flash at timers 366 and 368.
+
+An area update must always flush the preceding batch.  An empty new area must
+be represented as an empty scissor, and primitives accumulated under it must
+be discarded before a later valid area is installed.  This is PS1 GPU/HAL
+semantics and does not require a Rage Racer game-code backport.  The
+`mirror_entry` integration regression captures timers 365 through 371 and
+rejects the characteristic full-frame blue flood.  The cached PS1 reference
+has no flooded frame; before the fix the two bad native frames contained about
+75,000 blue-dominant pixels each, versus fewer than 10,000 after the fix.
