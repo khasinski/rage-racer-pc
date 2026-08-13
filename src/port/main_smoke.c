@@ -64,8 +64,14 @@ int RageWriteCapturedFrame(const char *path) {
     unsigned short *vram = NULL;
     int vramWidth = 0;
     int vramHeight = 0;
+    PsyzVideoCaptureState captureState;
 
     if (path == NULL || path[0] == '\0') return 1;
+    /* DrawOTag is asynchronous. The synchronized smoke capture runs directly
+     * after submission, so execute the queued OT before reading either its
+     * page or full VRAM; otherwise the PPM describes the previous buffer while
+     * the manifest describes the current game state. */
+    DrawSync(0);
     /* Prime the reusable GPU download buffer before the asserted capture. */
     if (getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL) {
         pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
@@ -111,6 +117,28 @@ int RageWriteCapturedFrame(const char *path) {
             return 0;
         }
         fclose(vramOutput);
+        if (Psyz_VideoGetCaptureState(&captureState) == 0) {
+            unsigned hash0 = 2166136261u, hash1 = 2166136261u;
+            size_t i;
+            for (i = 0; i < 320u * 240u; i++) {
+                unsigned short values[2] = {
+                    vram[(i / 320u) * 1024u + (i % 320u)],
+                    vram[(240u + i / 320u) * 1024u + (i % 320u)]};
+                int page;
+                for (page = 0; page < 2; page++) {
+                    unsigned *hash = page ? &hash1 : &hash0;
+                    *hash ^= values[page] & 0xff; *hash *= 16777619u;
+                    *hash ^= values[page] >> 8; *hash *= 16777619u;
+                }
+            }
+            fprintf(stderr,
+                    "capture-vram path=%s draw=%d,%d,%d,%d display=%d,%d,%d,%d "
+                    "page0=%08x page1=%08x\n",
+                    path, captureState.draw_x, captureState.draw_y,
+                    captureState.draw_w, captureState.draw_h,
+                    captureState.display_x, captureState.display_y,
+                    captureState.display_w, captureState.display_h, hash0, hash1);
+        }
         free(vram);
     }
     output = fopen(path, "wb");

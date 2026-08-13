@@ -1291,6 +1291,20 @@ and select its lowest-RMSE image.  On the timer-330..370 checkpoint series this
 correctly pairs PSX timer 350 with native timer 348, only 49 world units apart,
 instead of comparing it with a visibly different camera phase.
 
+Native diagnostic capture must also finish the ordering table submitted by the
+current game tick before downloading the draw page or full VRAM. `DrawOTag` is
+asynchronous in PsyZ, while `RagePortShouldExit` records the manifest immediately
+after submission. Without the capture-only `DrawSync(0)`, the manifest described
+timer 59 but the image and VRAM still contained the preceding page; this produced
+479 apparent native-only black pixels and a 1537-pixel surface divergence in an
+otherwise identical road frame. After synchronization the same exact-state pair
+has zero native-only black pixels and zero surface divergence (region RMSE
+0.018452). Keep this synchronization in the smoke capture boundary only: it is a
+debug-harness phase fix, not a timing change to the game or normal executable.
+When a full VRAM sidecar is requested, the native log also records the draw and
+display rectangles plus hashes of both 320x240 pages so a future phase mismatch
+can be diagnosed without guessing from screenshots.
+
 The state score also penalizes pitch, roll, lateral offset and unequal RNG
 seeds when those newer manifest columns are present, while remaining compatible
 with cached older captures. This matters immediately after contact: two frames

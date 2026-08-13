@@ -46,6 +46,13 @@ add_test(
 )
 
 add_test(
+    NAME capture_sync
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_capture_sync.rb
+        ${CMAKE_SOURCE_DIR}/src/port/main_smoke.c
+)
+
+add_test(
     NAME visual_budget
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_visual_budget.rb
