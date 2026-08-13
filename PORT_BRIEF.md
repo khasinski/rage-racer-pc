@@ -3330,6 +3330,17 @@ as a 129-pixel missing road component. Road clear coverage is now measured in
 its separate `0,176,320,64` profile. Keep these regions disjoint when adding
 new presets, otherwise a correct HUD phase difference can masquerade as a
 geometry hole.
+The generic road RMSE region must use the same `0,55,250,121` lower boundary;
+leaving it at y=204 made a large lower-screen car/road edge at timer 2080 rank
+as the worst road candidate even though black and clear metrics correctly
+excluded it. Canonical GP0 replay of that frame has zero significant pixels in
+road, mirror, HUD and tachometer regions, confirming it is not a PsyZ defect.
+
+The verified Grand Prix input trajectory begins continuous acceleration at
+native frame 1468 and keeps it through frame 10000. Starting at 1469 already
+diverges substantially by timer 1800, while ending the old range at frame 3000
+silently corrupts later lap captures. Keep this boundary in the runner preset;
+it is deterministic test provenance, not a gameplay timing adjustment.
 
 Visual runs set `RAGE_PORT_DISABLE_HOST_INPUT=1`, making the smoke executable
 disable physical keyboard and gamepad reads at the PsyZ HAL boundary. Scripted

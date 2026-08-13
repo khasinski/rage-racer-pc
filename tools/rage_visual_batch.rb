@@ -14,7 +14,7 @@ require "rbconfig"
 require "etc"
 
 REGION_PRESETS = {
-  "road" => "0,55,250,150",
+  "road" => "0,55,250,121",
   "mirror" => "84,16,152,40",
   "mirror-road" => "84,40,152,16",
   "mirror-frame" => "80,12,160,48",

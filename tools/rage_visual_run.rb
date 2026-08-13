@@ -20,7 +20,7 @@ options = {
   psx_frames: 500, native_frames: 2400, jobs: 8, top: nil,
   psx_input: "0-1000:CROSS",
   native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
-                "1200:CROSS,1469-3000:CROSS",
+                "1200:CROSS,1468-10000:CROSS",
   psx_state_input: nil, native_state_input: nil,
   sync_random: nil, psx_sync_random: nil, native_sync_random: nil,
   sync_random_each_frame: false,
@@ -35,7 +35,7 @@ options = {
 route_presets = {
   "grand-prix" => {
     native_input: "400:START,500:START,650:CROSS,950:CROSS,1100:CROSS," \
-                  "1200:CROSS,1469-3000:CROSS",
+                  "1200:CROSS,1468-10000:CROSS",
     psx_input: "0-1000:CROSS"
   },
   "time-attack" => {

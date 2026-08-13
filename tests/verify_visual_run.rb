@@ -6,6 +6,8 @@ require "open3"
 require "tmpdir"
 
 tool = ARGV.fetch(0)
+abort "default Grand Prix trajectory lost its verified acceleration boundary" unless
+  File.read(tool).scan('1468-10000:CROSS').length == 2
 Dir.mktmpdir("rage-visual-run-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--profile", "mirror-road",

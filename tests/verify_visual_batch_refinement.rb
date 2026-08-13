@@ -11,6 +11,7 @@ tool_source = File.read(tool)
 abort "HUD preset ranks pose-dependent road pixels as HUD RMSE" unless
   tool_source.include?('"hud" => { black_region: "0,176,320,64", rank: "black" }')
 abort "road preset still includes the lower HUD band" unless
+  tool_source.include?('"road" => "0,55,250,121"') &&
   tool_source.include?('black_region: "0,55,250,121"') &&
   tool_source.include?('clear_region: "0,100,250,76"')
 abort "final-DMA captures cannot select a replay checkpoint" unless
