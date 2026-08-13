@@ -89,6 +89,37 @@ TimedDrawCommand g_MenuHintBarScript[61];
 TimedDrawCommand g_CarSelectMenuScriptGp[18];
 TimedDrawCommand g_CarSelectMenuScriptTimeAttack[12];
 TimedDrawCommand g_UiChromeScript2[9];
+#define RAGE_DEFINE_NATIVE_UI_SCRIPT(name, count) \
+    TimedDrawCommand g_Native##name[count]
+RAGE_DEFINE_NATIVE_UI_SCRIPT(RankingPanelScript, 5);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CustomizeMenuScriptGp, 13);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CustomizeMenuScriptTimeAttack, 11);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(DesignModeScript, 16);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(TeamLogoScreenScript, 12);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(LogoSampleScreenScript, 12);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(TeamNameScreenScript, 61);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(PaintColorScreenScript, 15);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopScreenScript, 9);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopScreenScript, 68);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuDialogPanelUpperScript, 4);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuDialogPanelLowerScript, 8);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CourseSelectSavePromptScript, 4);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuRow0MarkerScript, 4);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuRow1MarkerScript, 16);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(RankingMenuScript, 9);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(TransmissionUnavailableScript, 4);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(TeamLogoScreenScript2, 2);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopUnavailableScript, 2);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopUnavailableScript, 3);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopNoFundsScript, 2);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopNoFundsScript, 5);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(DesignModeDeniedScript, 2);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript2, 7);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript1, 7);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript3, 7);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript4, 7);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
+#undef RAGE_DEFINE_NATIVE_UI_SCRIPT
 char g_FmtBgmNumber[] = "%d";
 static char g_BgmName00[] = "\"RANDOM PLAY\"";
 static char g_BgmName01[] = "\"RAGE RACER\"";
@@ -129,6 +160,82 @@ static char g_CourseName02[] = "LAKESIDE GATE";
 static char g_CourseName03[] = "THE EXTREME OVAL";
 char *g_CourseNames[4] = {
     g_CourseName00, g_CourseName01, g_CourseName02, g_CourseName03
+};
+static u8 g_PlaceSuffix1st[] = "1ST";
+static u8 g_PlaceSuffix2nd[] = "2ND";
+static u8 g_PlaceSuffix3rd[] = "3RD";
+static u8 g_PlaceSuffix4th[] = "4TH";
+static u8 g_PlaceSuffix5th[] = "5TH";
+u8 *g_NativePlaceSuffixNames[5] = {
+    g_PlaceSuffix1st, g_PlaceSuffix2nd, g_PlaceSuffix3rd,
+    g_PlaceSuffix4th, g_PlaceSuffix5th
+};
+static char g_CarName00[] = "SQUALDON";
+static char g_CarName01[] = "BULSHADE";
+static char g_CarName02[] = "VAINQURE";
+static char g_CarName03[] = "GHEPARDO";
+static char g_CarName04[] = "ISTANTE";
+static char g_CarName05[] = "FATALITA";
+static char g_CarName06[] = "HIJACK";
+static char g_CarName07[] = "BAYONET";
+static char g_CarName08[] = "ACCERON";
+static char g_CarName09[] = "ESPERANZA";
+static char g_CarName10[] = "PEGASE";
+static char g_CarName11[] = "ABEILLE";
+static char g_CarName12[] = "ERRISO";
+char *g_NativeCarNames[13] = {
+    g_CarName00, g_CarName01, g_CarName02, g_CarName03, g_CarName04,
+    g_CarName05, g_CarName06, g_CarName07, g_CarName08, g_CarName09,
+    g_CarName10, g_CarName11, g_CarName12
+};
+static char g_CarClassAge[] = "AGE";
+static char g_CarClassGnade[] = "GNADE";
+static char g_CarClassLizard[] = "LIZARD";
+static char g_CarClassAssolute[] = "ASSOLUTE";
+char *g_NativeCarClassNames[13] = {
+    g_CarClassAge, g_CarClassAge, g_CarClassAge, g_CarClassGnade,
+    g_CarClassLizard, g_CarClassLizard, g_CarClassLizard,
+    g_CarClassAssolute, g_CarClassAssolute, g_CarClassAssolute,
+    g_CarClassAge, g_CarClassLizard, g_CarClassAssolute
+};
+static char g_CarManufacturerAge[] = "AGE";
+static char g_CarManufacturerGnade[] = "GNADE";
+static char g_CarManufacturerLeizard[] = "LEIZARD";
+static char g_CarManufacturerAssoluto[] = "ASSOLUTO";
+char *g_NativeCarManufacturerNames[13] = {
+    g_CarManufacturerAge, g_CarManufacturerAge, g_CarManufacturerAge,
+    g_CarManufacturerGnade, g_CarManufacturerLeizard,
+    g_CarManufacturerLeizard, g_CarManufacturerLeizard,
+    g_CarManufacturerAssoluto, g_CarManufacturerAssoluto,
+    g_CarManufacturerAssoluto, g_CarManufacturerAge,
+    g_CarManufacturerLeizard, g_CarManufacturerAssoluto
+};
+static char g_EngineSpecLabel00[] = "CAR-0";
+static char g_EngineSpecLabel01[] = "CAR-1";
+static char g_EngineSpecLabel02[] = "CAR-2";
+static char g_EngineSpecLabel03[] = "CAR-3";
+static char g_EngineSpecLabel04[] = "CAR-4";
+static char g_EngineSpecLabel05[] = "CAR-5";
+static char g_EngineSpecLabel06[] = "CAR-6";
+static char g_EngineSpecLabel07[] = "CAR-7";
+static char g_EngineSpecLabel08[] = "CAR-8";
+static char g_EngineSpecLabel09[] = "CAR-9";
+static char g_EngineSpecLabel10[] = "CAR-A";
+static char g_EngineSpecLabel11[] = "CAR-B";
+static char g_EngineSpecLabel12[] = "CAR-C";
+char *g_NativeEngineSpecLabels[13] = {
+    g_EngineSpecLabel00, g_EngineSpecLabel01, g_EngineSpecLabel02,
+    g_EngineSpecLabel03, g_EngineSpecLabel04, g_EngineSpecLabel05,
+    g_EngineSpecLabel06, g_EngineSpecLabel07, g_EngineSpecLabel08,
+    g_EngineSpecLabel09, g_EngineSpecLabel10, g_EngineSpecLabel11,
+    g_EngineSpecLabel12
+};
+void (*g_NativeBgmSelectSteps[])(void) = {
+    UpdateBgmSelectLoad, UpdateBgmSelectFadeIn, UpdateBgmSelect,
+    ExitBgmSelect, NULL
+};
+void (*g_NativeAttractDemoSteps[])(void) = {
+    UpdateAttractDemoStart, UpdateAttractDemoRace, NULL
 };
 char g_SaveTitleSjis[212];
 char g_SaveFilePath[80];
@@ -264,7 +371,35 @@ int RageInitNativeGameData(void) {
         RageLoadTimedDrawScript(g_MenuHintBarScript, 61, 0x80082a90u) &&
         RageLoadTimedDrawScript(g_CarSelectMenuScriptGp, 18, 0x800818ccu) &&
         RageLoadTimedDrawScript(g_CarSelectMenuScriptTimeAttack, 12, 0x800819a4u) &&
-        RageLoadTimedDrawScript(g_UiChromeScript2, 9, 0x80082790u);
+        RageLoadTimedDrawScript(g_UiChromeScript2, 9, 0x80082790u) &&
+        RageLoadTimedDrawScript(g_NativeRankingPanelScript, 5, 0x80081890u) &&
+        RageLoadTimedDrawScript(g_NativeCustomizeMenuScriptGp, 13, 0x80081a34u) &&
+        RageLoadTimedDrawScript(g_NativeCustomizeMenuScriptTimeAttack, 11, 0x80081ad0u) &&
+        RageLoadTimedDrawScript(g_NativeDesignModeScript, 16, 0x80081b54u) &&
+        RageLoadTimedDrawScript(g_NativeTeamLogoScreenScript, 12, 0x80081c14u) &&
+        RageLoadTimedDrawScript(g_NativeLogoSampleScreenScript, 12, 0x80081ca4u) &&
+        RageLoadTimedDrawScript(g_NativeTeamNameScreenScript, 61, 0x80081d34u) &&
+        RageLoadTimedDrawScript(g_NativePaintColorScreenScript, 15, 0x80082010u) &&
+        RageLoadTimedDrawScript(g_NativeCarShopScreenScript, 9, 0x800820c4u) &&
+        RageLoadTimedDrawScript(g_NativeEngineerShopScreenScript, 68, 0x80082130u) &&
+        RageLoadTimedDrawScript(g_NativeMenuDialogPanelUpperScript, 4, 0x80082574u) &&
+        RageLoadTimedDrawScript(g_NativeMenuDialogPanelLowerScript, 8, 0x800825a4u) &&
+        RageLoadTimedDrawScript(g_NativeCourseSelectSavePromptScript, 4, 0x80082604u) &&
+        RageLoadTimedDrawScript(g_NativeMenuRow0MarkerScript, 4, 0x80082634u) &&
+        RageLoadTimedDrawScript(g_NativeMenuRow1MarkerScript, 16, 0x80082664u) &&
+        RageLoadTimedDrawScript(g_NativeRankingMenuScript, 9, 0x80082724u) &&
+        RageLoadTimedDrawScript(g_NativeTransmissionUnavailableScript, 4, 0x80082814u) &&
+        RageLoadTimedDrawScript(g_NativeTeamLogoScreenScript2, 2, 0x80082844u) &&
+        RageLoadTimedDrawScript(g_NativeCarShopUnavailableScript, 2, 0x8008285cu) &&
+        RageLoadTimedDrawScript(g_NativeEngineerShopUnavailableScript, 3, 0x80082874u) &&
+        RageLoadTimedDrawScript(g_NativeEngineerShopNoFundsScript, 2, 0x80082898u) &&
+        RageLoadTimedDrawScript(g_NativeCarShopNoFundsScript, 5, 0x800828b0u) &&
+        RageLoadTimedDrawScript(g_NativeDesignModeDeniedScript, 2, 0x800828ecu) &&
+        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript2, 7, 0x80082904u) &&
+        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript1, 7, 0x80082958u) &&
+        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript3, 7, 0x800829acu) &&
+        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript4, 7, 0x80082a00u) &&
+        RageLoadTimedDrawScript(g_NativeEngineerShopTuneUpPromptScript, 5, 0x80082a54u);
 }
 static const u8 g_RagePrologueText0[] = "NO ONE KNOWS HOW THE RACE BEGAN";
 static const u8 g_RagePrologueText1[] = "OR HOW ITS DRIVERS BECAME KNOWN";

@@ -8,12 +8,11 @@
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
 void DrawMenuCursorArrow(s32 x, s32 y) {
-    u8 *base = g_DrawBuffer;
+    OT_TYPE *base = GamePrimaryOrderingTable(51);
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     u8 *prim;
     u8 *scratchValue;
 
-    base += 0xCC;
     scratchValue = *scratch;
     prim = GameQueueSpriteTrans(base, scratchValue, x, y, 0xC, 0x18, 0xE0, 0x48, 0x7F40);
     *scratch = QueueDrawModePrim(base, prim, 0x3F);

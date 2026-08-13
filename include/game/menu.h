@@ -8,6 +8,9 @@
 #include "game/state.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+#ifdef __psyz
+#include "game/render.h"
+#endif
 
 /*
  * Menu / UI state block at 0x8009B200 (~0x550 bytes). Retail addresses it field
@@ -508,9 +511,19 @@ extern u8 g_CarShopBuyPromptScript3;
 extern u8 g_CarShopBuyPromptScript4;
 extern u8 g_EngineerShopTuneUpPromptScript;
 extern s32 g_CarTuneUpPriceTable[];
+#ifdef __psyz
+extern char *g_NativeCarManufacturerNames[];
+#define g_CarManufacturerNames g_NativeCarManufacturerNames
+#else
 extern s32 g_CarManufacturerNames[];
+#endif
 /* The eight PS / rpm / kgm captions DrawEngineSpecLabel picks between. */
+#ifdef __psyz
+extern char *g_NativeEngineSpecLabels[];
+#define g_EngineSpecLabels g_NativeEngineSpecLabels
+#else
 extern s32 g_EngineSpecLabels[];
+#endif
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
@@ -571,6 +584,73 @@ extern s32 g_ClassRecordMenuCursor;
 extern s32 g_ExtraGrandPrixSaveMaxClass;
 extern u8 g_LastValidPadType;
 extern u8 g_MenuHintBarScript;
+
+/* Retail stores timed-draw commands as packed 12-byte records containing
+ * 32-bit PSX addresses. Native pointers widen those records, so the host must
+ * use decoded TimedDrawCommand arrays instead of walking the serialized data
+ * in host_state.c directly. */
+#ifdef __psyz
+#define RAGE_NATIVE_UI_SCRIPT(name, count) \
+    extern TimedDrawCommand g_Native##name[count]
+RAGE_NATIVE_UI_SCRIPT(RankingPanelScript, 5);
+RAGE_NATIVE_UI_SCRIPT(CustomizeMenuScriptGp, 13);
+RAGE_NATIVE_UI_SCRIPT(CustomizeMenuScriptTimeAttack, 11);
+RAGE_NATIVE_UI_SCRIPT(DesignModeScript, 16);
+RAGE_NATIVE_UI_SCRIPT(TeamLogoScreenScript, 12);
+RAGE_NATIVE_UI_SCRIPT(LogoSampleScreenScript, 12);
+RAGE_NATIVE_UI_SCRIPT(TeamNameScreenScript, 61);
+RAGE_NATIVE_UI_SCRIPT(PaintColorScreenScript, 15);
+RAGE_NATIVE_UI_SCRIPT(CarShopScreenScript, 9);
+RAGE_NATIVE_UI_SCRIPT(EngineerShopScreenScript, 68);
+RAGE_NATIVE_UI_SCRIPT(MenuDialogPanelUpperScript, 4);
+RAGE_NATIVE_UI_SCRIPT(MenuDialogPanelLowerScript, 8);
+RAGE_NATIVE_UI_SCRIPT(CourseSelectSavePromptScript, 4);
+RAGE_NATIVE_UI_SCRIPT(MenuRow0MarkerScript, 4);
+RAGE_NATIVE_UI_SCRIPT(MenuRow1MarkerScript, 16);
+RAGE_NATIVE_UI_SCRIPT(RankingMenuScript, 9);
+RAGE_NATIVE_UI_SCRIPT(TransmissionUnavailableScript, 4);
+RAGE_NATIVE_UI_SCRIPT(TeamLogoScreenScript2, 2);
+RAGE_NATIVE_UI_SCRIPT(CarShopUnavailableScript, 2);
+RAGE_NATIVE_UI_SCRIPT(EngineerShopUnavailableScript, 3);
+RAGE_NATIVE_UI_SCRIPT(EngineerShopNoFundsScript, 2);
+RAGE_NATIVE_UI_SCRIPT(CarShopNoFundsScript, 5);
+RAGE_NATIVE_UI_SCRIPT(DesignModeDeniedScript, 2);
+RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript2, 7);
+RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript1, 7);
+RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript3, 7);
+RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript4, 7);
+RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
+#undef RAGE_NATIVE_UI_SCRIPT
+
+#define g_RankingPanelScript g_NativeRankingPanelScript
+#define g_CustomizeMenuScriptGp g_NativeCustomizeMenuScriptGp
+#define g_CustomizeMenuScriptTimeAttack g_NativeCustomizeMenuScriptTimeAttack
+#define g_DesignModeScript g_NativeDesignModeScript
+#define g_TeamLogoScreenScript g_NativeTeamLogoScreenScript
+#define g_LogoSampleScreenScript g_NativeLogoSampleScreenScript
+#define g_TeamNameScreenScript g_NativeTeamNameScreenScript
+#define g_PaintColorScreenScript g_NativePaintColorScreenScript
+#define g_CarShopScreenScript g_NativeCarShopScreenScript
+#define g_EngineerShopScreenScript g_NativeEngineerShopScreenScript
+#define g_MenuDialogPanelUpperScript g_NativeMenuDialogPanelUpperScript
+#define g_MenuDialogPanelLowerScript g_NativeMenuDialogPanelLowerScript
+#define g_CourseSelectSavePromptScript g_NativeCourseSelectSavePromptScript
+#define g_MenuRow0MarkerScript g_NativeMenuRow0MarkerScript
+#define g_MenuRow1MarkerScript g_NativeMenuRow1MarkerScript
+#define g_RankingMenuScript g_NativeRankingMenuScript
+#define g_TransmissionUnavailableScript g_NativeTransmissionUnavailableScript
+#define g_TeamLogoScreenScript2 g_NativeTeamLogoScreenScript2
+#define g_CarShopUnavailableScript g_NativeCarShopUnavailableScript
+#define g_EngineerShopUnavailableScript g_NativeEngineerShopUnavailableScript
+#define g_EngineerShopNoFundsScript g_NativeEngineerShopNoFundsScript
+#define g_CarShopNoFundsScript g_NativeCarShopNoFundsScript
+#define g_DesignModeDeniedScript g_NativeDesignModeDeniedScript
+#define g_CarShopBuyPromptScript2 g_NativeCarShopBuyPromptScript2
+#define g_CarShopBuyPromptScript1 g_NativeCarShopBuyPromptScript1
+#define g_CarShopBuyPromptScript3 g_NativeCarShopBuyPromptScript3
+#define g_CarShopBuyPromptScript4 g_NativeCarShopBuyPromptScript4
+#define g_EngineerShopTuneUpPromptScript g_NativeEngineerShopTuneUpPromptScript
+#endif
 extern u8 g_NegconAxisI;
 extern u8 g_NegconAxisII;
 extern u8 g_NegconAxisL;
