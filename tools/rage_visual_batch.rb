@@ -14,6 +14,7 @@ require "rbconfig"
 require "etc"
 
 REGION_PRESETS = {
+  "world" => "0,40,320,136",
   "road" => "0,55,250,121",
   "mirror" => "84,16,152,40",
   "mirror-road" => "84,40,152,16",
@@ -25,6 +26,10 @@ REGION_PRESETS = {
   "hud" => "0,176,320,64"
 }.freeze
 DIAGNOSTIC_PRESETS = {
+  # Full 3D viewport below the sky and above the HUD.  This catches terrain,
+  # roadside-object and right-edge holes omitted by the narrower road preset.
+  "world" => { clear_region: "0,40,320,136", black_region: "0,40,320,136",
+                rank: "black", require_main_visible_cells: true },
   # Stop above y=176: the lower band contains TIME LIMIT and other HUD sprites
   # whose animation must not be classified as missing road geometry.
   "road" => { clear_region: "0,100,250,76", black_region: "0,55,250,121",

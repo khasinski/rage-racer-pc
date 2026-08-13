@@ -52,7 +52,7 @@ parser = OptionParser.new do |cli|
     options[:psx_cache] = Pathname(v)
   end
   cli.on("--output DIR", "create psx/, native/, compare/ and run.json here") { |v| options[:output] = v }
-  cli.on("--profile NAME", %w[all road mirror mirror-road tacho hud]) { |v| options[:profile] = v }
+  cli.on("--profile NAME", %w[all world road mirror mirror-road tacho hud]) { |v| options[:profile] = v }
   cli.on("--route NAME", route_presets.keys,
          "input preset used unless an explicit per-runtime script is supplied") do |v|
     options[:route] = v
