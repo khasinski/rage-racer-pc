@@ -539,7 +539,11 @@ extern u32 g_EngineSpecStep;
 extern s32 D_8009B304;
 extern s32 D_8009B328;
 extern s32 g_PlayerRenderY;
-extern s32 g_PlayerTireCompound;
+/* Retail address 0x8009E7B8 aliases g_PlayerCar + 0xE4. In the showroom this
+ * word is the selected tire compound; DrawPlayerCarModel reads the same word
+ * as renderDepth. Keep one storage location on native hosts too. */
+#define g_PlayerTireCompound \
+    (((GameRenderObject *)(void *)&g_PlayerCar)->renderDepth)
 extern s16 g_PlayerTransmission;
 extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;

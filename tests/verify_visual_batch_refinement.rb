@@ -804,6 +804,17 @@ Dir.mktmpdir("rage-visual-player-render-gate-") do |root|
   abort stdout + stderr unless (stdout + stderr).include?("rival_render_state")
 end
 
+source = File.read(File.expand_path("../src/port/smoke_control.c", __dir__))
+abort "player render hash omits model-selection renderDepth" unless
+  source.match?(/RageSmokeHashPlayerRenderState.*?renderObject->renderDepth/m)
+abort "player render hash omits wheel phase" unless
+  source.match?(/RageSmokeHashPlayerRenderState.*?car->wheelRotation/m)
+menu_header = File.read(File.expand_path("../include/game/menu.h", __dir__))
+host_state = File.read(File.expand_path("../src/port/host_state.c", __dir__))
+abort "split player tire/render-depth global was reintroduced" unless
+  menu_header.match?(/#define g_PlayerTireCompound.*?g_PlayerCar.*?renderDepth/m) &&
+  !host_state.match?(/^unsigned char g_PlayerTireCompound\b/)
+
 Dir.mktmpdir("rage-visual-pre-state-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

@@ -2096,25 +2096,32 @@ the aggregate gate. They localize a Grand Prix mismatch without bloating every
 CSV row with seven additional raw 188-byte structs; normal game builds neither
 calculate nor consume these smoke/emulator diagnostics.
 
-The strict car-state gate also requires `player_render_hash`, covering the
-player's common world/body/model transform, model origin, progress and
+The strict car-state gate also requires `player_render_hash`, covering every
+player field read by `DrawPlayerCarModel`: world/body/model transforms, model
+origin, steering, wheel phase, body-roll velocity, progress, render depth and
 active/model selectors. Do not reuse the rival `aiEnabled` field at `+0xBC`:
-that offset begins `PlayerCarRuntime.drive`, and drivetrain/timing differences
-such as `+0xE4`, `+0x140` and `+0x160` do not by themselves change submitted
-model geometry. `--require-rival-render-state` now means the canonical player
-render state plus all eleven rival states; older manifests without the player
-hash are intentionally rejected as incomplete oracles.
+that offset begins `PlayerCarRuntime.drive`. `--require-rival-render-state`
+means this canonical player render state plus all eleven rival states; older
+manifests without the player hash are intentionally rejected as incomplete
+oracles.
 
-This gate makes the early Grand Prix mismatch at timer 59 a valid renderer
-oracle: camera, visibility, RNG, player render state and all eleven rival
-render states agree.  The GP0 streams first diverge at the same GT4 packet
-(retail packet 187/native packet 757): its first UV byte is `0x66` on retail
-but `0x36` on native, while the projected XY and packed CLUT remain equal.
-Both streams resynchronize after twelve packets.  The corresponding frame has
-479 native-only black road pixels (largest component 113), so this is evidence
-for a model texture/packet construction error, not a transform or simulation
-error.  Preserve this timer/checkpoint as the first packet-level regression
-when correcting the portable model emitter.
+In particular, `PlayerCarRuntime.renderDepth` at `+0xE4` must not be omitted.
+The early Grand Prix timer-59 pair appeared to have identical geometry but
+retail submitted model 5 from `DrawPlayerCarModel` caller `0x8001DE88` while
+native submitted model 3. The model choice is derived from render depth and
+wheel phase, so its `0x66` versus `0x36` UV packet difference is a simulation
+state mismatch, not a renderer defect. This false positive is the regression
+case for keeping all model-selection inputs in the alignment hash.
+
+The same timer exposed another split-global bug. Retail symbol
+`g_PlayerTireCompound` at `0x8009E7B8` is not independent storage: it is
+exactly `g_PlayerCar + 0xE4`, the word `DrawPlayerCarModel` views as
+`GameRenderObject.renderDepth`. The generated host state incorrectly allocated
+a separate 76-byte object, so showroom/race setup wrote the tire/LOD selector
+there while the player render object remained zero and selected model 3 rather
+than retail model 5. Native code defines this name as an lvalue into
+`g_PlayerCar` and removes the duplicate host allocation. Backport this as a
+symbol/struct alias; do not synchronize two globals at runtime.
 
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas

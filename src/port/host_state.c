@@ -907,7 +907,6 @@ unsigned char g_PlayerRenderRotation[16] __attribute__((aligned(16)));
 unsigned char g_PlayerRenderY[8] __attribute__((aligned(16)));
 unsigned char g_PlayerFacingBackwards[12] __attribute__((aligned(16)));
 unsigned char g_PlayerVelocity[32] __attribute__((aligned(16)));
-unsigned char g_PlayerTireCompound[76] __attribute__((aligned(16)));
 unsigned char g_PlayerTransmission[8] __attribute__((aligned(16)));
 unsigned char g_PlayerTargetRpm[40] __attribute__((aligned(16)));
 unsigned char g_PlayerThrottle[8] __attribute__((aligned(16)));

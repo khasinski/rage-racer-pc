@@ -877,13 +877,20 @@ static void RageSubmitModelFaces(
         if (g_RageModelTraceEnabled &&
             (g_RageModelTraceTimer < 0 ||
              g_RageModelTraceTimer == g_SceneTimer)) {
+            char recordBytes[65];
+            int byteIndex;
+            for (byteIndex = 0; byteIndex < strides[type]; byteIndex++)
+                snprintf(recordBytes + byteIndex * 2, 3, "%02x", faces[byteIndex]);
             fprintf(stderr,
                     "model-face timer=%d model=%d type=%d face=%d depth=%d bias=%d "
-                    "packet=%p indices=%u,%u,%u,%u "
+                    "packet=%p mode=%08x record=%p record_bytes=%s "
+                    "indices=%u,%u,%u,%u "
                     "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                     g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
                     (int8_t)faces[strides[type] - 3],
-                    (void *)cursor, RageReadU16(faces), RageReadU16(faces + 2),
+                    (void *)cursor, (unsigned)g_ScratchRenderMode,
+                    (const void *)faces, recordBytes,
+                    RageReadU16(faces), RageReadU16(faces + 2),
                     RageReadU16(faces + 4), RageReadU16(faces + 6),
                     (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
                     (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
@@ -1016,6 +1023,11 @@ void SubmitModel(void *ctx, int index) {
     if (models == NULL || index < 0 || models[index] == NULL) return;
     stream = (uint8_t *)models[index];
     g_RageSubmittedModelIndex = index;
+    if (g_RageModelTraceEnabled &&
+        (g_RageModelTraceTimer < 0 ||
+         g_RageModelTraceTimer == g_SceneTimer))
+        fprintf(stderr, "model-submit timer=%d model=%d table=%p stream=%p\n",
+                g_SceneTimer, index, (void *)models, (void *)stream);
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
         int count = (int)(opcode >> 16);

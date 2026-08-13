@@ -208,13 +208,6 @@ char *g_CdAudioFileNames[16] = {
     g_CdAudioName08, g_CdAudioName09, g_CdAudioName10, g_CdAudioName11,
     g_CdAudioName12, g_CdAudioName13, g_CdAudioName14, g_CdAudioName15
 };
-s16 g_CarModelBankTable[11][2];
-u8 g_CarModelByCourse[4][11];
-u16 g_BodyColorPrimary[18];
-u16 g_BodyColorSecondary[18];
-volatile u16 g_PaintSlots3StopA[10];
-volatile u16 g_PaintSlots3StopB[8];
-volatile u16 g_PaintSlots4Stop[4];
 s32 g_DefaultLapTimes[8];
 s32 g_DefaultTotalTimes[8];
 s16 g_AtanTable[1026];
