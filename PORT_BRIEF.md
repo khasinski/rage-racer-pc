@@ -3290,3 +3290,26 @@ not main/mirror DMA phase. Capture every PSX VBlank when diagnosing this and
 reject the pair unless both state and projection phase match. A future capture
 hook should snapshot manifest state at the same DMA/VSync boundary in both
 runtimes rather than weakening this gate.
+
+The strict race audit now treats a coherent missing surface as the regression
+unit, rather than requiring every isolated black edge pixel to be identical.
+`black_component` budgets use the largest four-connected component already
+reported by the comparator. This matters after timer 1200: the closest exact
+state pairs differ by only 3.0--3.3 world units while retaining identical
+timer, animation phase, projections, rival state and main/mirror visibility
+masks. A four-unit pose gate admits those sub-pixel pairs without confusing
+different render states. The timer-1230..1490 audit covers course 0, lap 1 and
+progress 24105..24774; its road result has no missing-clear pixels and only
+2x2/2x3 black edge clusters (eight pixels total, largest component four), the
+mirror has no missing surface, and the exact-RPM tachometer needle matches.
+The strict road budget is therefore `black_component=8`, while exact clear,
+mirror and needle budgets remain zero. This is a comparison tolerance only;
+it changes neither game state nor rendering.
+
+Road artifact regions must end above screen y=176. The previous road region
+continued through y=199 and classified the animated `TIME LIMIT` HUD glyphs
+as a 129-pixel missing road component. Road clear coverage is now measured in
+`0,100,250,76` and black coverage in `0,55,250,121`; the HUD continues to use
+its separate `0,176,320,64` profile. Keep these regions disjoint when adding
+new presets, otherwise a correct HUD phase difference can masquerade as a
+geometry hole.

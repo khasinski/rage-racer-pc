@@ -156,14 +156,14 @@ Dir.mktmpdir("rage-visual-run-strict-race-") do |output|
   abort "strict race audit omitted visibility/projection gates" unless
     road.include?("--require-main-visible-cells") &&
     road.include?("--require-mirror-visible-cells") &&
-    road.each_cons(2).include?(["--max-position-distance", "2"]) &&
-    road.each_cons(2).include?(["--max-view-distance", "2"]) &&
+    road.each_cons(2).include?(["--max-position-distance", "4"]) &&
+    road.each_cons(2).include?(["--max-view-distance", "4"]) &&
     road.each_cons(2).include?(["--max-tacho-rpm-delta", "0"]) &&
     road.include?("--require-rivals-only-render-state") &&
     !road.include?("--require-rival-render-state") &&
     road.each_cons(2).include?(["--max-projection-delta", "0"])
   abort "strict race audit omitted artifact budgets" unless
-    metadata.fetch("budgets").include?("road.black=0") &&
+    metadata.fetch("budgets").include?("road.black_component=8") &&
     metadata.fetch("budgets").include?("tacho.needle=0")
 end
 

@@ -25,7 +25,9 @@ REGION_PRESETS = {
   "hud" => "0,176,320,64"
 }.freeze
 DIAGNOSTIC_PRESETS = {
-  "road" => { clear_region: "0,100,250,100", black_region: "0,55,250,145",
+  # Stop above y=176: the lower band contains TIME LIMIT and other HUD sprites
+  # whose animation must not be classified as missing road geometry.
+  "road" => { clear_region: "0,100,250,76", black_region: "0,55,250,121",
               rank: "clear", require_main_visible_cells: true },
   "mirror" => { dynamic_mirror_region: "full",
                 rank: "clear", require_mirror_visible_cells: true },

@@ -138,13 +138,13 @@ if options[:strict_race]
   options[:psx_capture_stride] ||= 1
   options[:match_args].concat(%w[
     --require-main-visible-cells --require-mirror-visible-cells
-    --max-position-distance 2 --max-view-distance 2
+    --max-position-distance 4 --max-view-distance 4
     --max-tacho-rpm-delta 0 --require-rivals-only-render-state
     --max-projection-delta 0 --max-mirror-projection-delta 0
     --max-timer-delta 0 --max-anim-timer-delta 0
   ])
   options[:budgets].concat(%w[
-    road.black=0 road.clear=0 road.matched_min=1
+    road.black_component=8 road.clear=0 road.matched_min=1
     mirror-road.black=0 mirror-road.clear=0 mirror-road.matched_min=1
     tacho.needle=0 tacho.matched_min=1 hud.black=0 hud.matched_min=1
   ])

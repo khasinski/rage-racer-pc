@@ -8,7 +8,7 @@ options = { budgets: [] }
 OptionParser.new do |cli|
   cli.banner = "usage: rage_visual_budget.rb --summary PATH --budget PROFILE.METRIC=VALUE [...]"
   cli.on("--summary PATH") { |value| options[:summary] = value }
-  cli.on("--budget SPEC", "metrics: clear, black, needle, rmse, matched_min") do |value|
+  cli.on("--budget SPEC", "metrics: clear, black, clear_component, black_component, needle, rmse, matched_min") do |value|
     options[:budgets] << value
   end
 end.parse!
@@ -18,12 +18,16 @@ abort "--summary and at least one --budget are required" unless
 metric_fields = {
   "clear" => ["maximum_clear", :maximum],
   "black" => ["maximum_black", :maximum],
+  "clear_component" => ["maximum_clear_component", :maximum],
+  "black_component" => ["maximum_black_component", :maximum],
   "needle" => ["maximum_needle_mismatch", :maximum],
   "rmse" => ["worst_region_rmse", :maximum],
   "matched_min" => ["matched_frames", :minimum]
 }.freeze
 frame_fields = {
   "clear" => "maximum_clear_frame", "black" => "maximum_black_frame",
+  "clear_component" => "maximum_clear_component_frame",
+  "black_component" => "maximum_black_component_frame",
   "needle" => "maximum_needle_frame"
 }.freeze
 
