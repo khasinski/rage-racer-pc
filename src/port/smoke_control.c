@@ -57,8 +57,10 @@ static uint32_t RageSmokeHashCarRenderState(const GameCarRuntime *cars,
         const u32 values[] = {
             (u32)car->x, (u32)car->y, (u32)car->z,
             (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
+            (u32)car->steeringAngle, (u32)car->wheelRotation,
             (u32)car->modelPitch, (u32)car->modelYaw, (u32)car->modelRoll,
-            (u32)car->modelY, (u32)car->trackProgress,
+            (u32)car->modelY, (u32)car->bodyRollVelocity,
+            (u32)car->trackProgress, (u32)car->renderDepth,
             (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex,
             (u32)car->aiEnabled
         };
