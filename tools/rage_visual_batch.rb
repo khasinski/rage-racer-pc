@@ -256,7 +256,13 @@ def manifest_rows(directory)
       rival3_collision rival3_active
     ]
     numeric_fields.each do |key|
-      row[key] = Integer(row[key]) if row.key?(key) && !row[key].empty?
+      next unless row.key?(key) && !row[key].empty?
+      value = Integer(row[key])
+      # The emulator reads game globals as raw 32-bit words, while the native
+      # manifest prints the same signed C fields with %d. Normalize the raw
+      # spelling before computing position, lateral, matrix and RPM deltas.
+      value -= 0x1_0000_0000 if value.between?(0x8000_0000, 0xffff_ffff)
+      row[key] = value
     end
     %i[random_seed main_visible_hash mirror_visible_hash
        main_visible_list_hash mirror_visible_list_hash course_objects_hash

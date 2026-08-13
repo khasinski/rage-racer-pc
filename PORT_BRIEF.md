@@ -2079,6 +2079,15 @@ one gigabyte. Sparse checkpoints let a ranked middle-of-window bundle replay
 at most `N` ticks before its GP0/pixel trace; they are emulator debugging
 artifacts and never enter Rage Racer's game state or normal binary.
 
+Normalize every raw emulator manifest scalar through signed 32-bit before
+state-distance calculations, then explicitly restore only hashes and RNG to
+unsigned. The memory reader naturally spells a game value such as
+`track_lateral == -17` as `4294967279`, whereas native `%d` writes `-17`.
+Comparing those textual integers directly created false lateral deltas of
+`2^32` and discarded valid Grand Prix frames. The same rule covers signed
+positions, angles, projection matrices and RPM-related fields; it is a visual
+harness correction, not a change to game data.
+
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
 at most 64 and camera/view distance at most 12.  Forty timer groups survive.

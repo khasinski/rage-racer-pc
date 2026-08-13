@@ -748,6 +748,38 @@ Dir.mktmpdir("rage-visual-unsigned-rng-") do |root|
     frame.dig("state_delta", "random_seed_equal")
 end
 
+Dir.mktmpdir("rage-visual-signed-game-state-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00410-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  signed_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+                  "body_yaw,body_pitch,body_roll,track_lateral,model_yaw," \
+                  "mirror_y,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                  "view_angle_z,proj_m00,anim_timer\n"
+  psx_row = "#{filename},0,12,410,10,20,30,40,1,4294967190," \
+            "4294967295,4294967294,4294967279,4294967190,4294967252," \
+            "10,20,30,4294967290,0,4294967295,4294967190,410\n"
+  native_row = "#{filename},0,12,410,10,20,30,40,1,-106,-1,-2,-17," \
+               "-106,-44,10,20,30,-6,0,-1,-106,410\n"
+  File.write(File.join(psx, "capture-manifest.csv"), signed_header + psx_row)
+  File.write(File.join(native, "capture-manifest.csv"), signed_header + native_row)
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--max-lateral-delta", "0", "--max-angle-delta", "0",
+             "--max-projection-delta", "0"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  delta = JSON.parse(File.read(File.join(output, "summary.json")))
+    .fetch("frames").first.fetch("state_delta")
+  abort "unsigned emulator spelling changed signed game-state deltas" unless
+    delta.fetch("track_lateral") == 0 && delta.fetch("angle") == 0 &&
+    delta.fetch("projection_delta") == 0
+end
+
 Dir.mktmpdir("rage-visual-pre-state-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")
