@@ -812,8 +812,10 @@ errors = Queue.new
       replay_pre = nil
       replay_frames = nil
       if psx_frame_number
-        candidates = psx_dir.glob("*-f*-s*.psxstate").each_with_object([]) do |state, found|
-          frame = state.basename.to_s[/\-f(\d+)\-s\d+\.psxstate\z/, 1]&.to_i
+        candidates = psx_dir.glob("*.psxstate").each_with_object([]) do |state, found|
+          basename = state.basename.to_s
+          frame = basename[/\-f(\d+)\-s\d+\.psxstate\z/, 1]&.to_i
+          frame ||= basename[/\Ascene\-(\d+)\-s\d+\.psxstate\z/, 1]&.to_i
           found << [frame, state] if frame && frame < psx_frame_number
         end
         previous = candidates.max_by(&:first)

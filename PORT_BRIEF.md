@@ -2981,3 +2981,13 @@ road-region RMSE from `0.13585` to `0.01845`. The SDL GPU backend now keeps
 the render-target feedback workaround but gives each textured batch a complete
 frame-current VRAM sampling snapshot. This belongs solely in PsyZ; do not
 modify Rage Racer's culling to hide the symptom.
+
+For fast follow-up pixel traces, capture periodic emulator states with
+`rage_visual_run.rb --checkpoint-stride N`. Visual bundles now select the
+nearest preceding state from timer/frame, `checkpoint-t...-f...`, or
+`scene-...-s...` filenames and retain it as `replay-pre.psxstate` together
+with the exact replay distance. Previously scene-entry states were silently
+ignored because the selector required `-f` in every filename, so a pixel trace
+could replay BIOS and the entire menu route. Do not use a nearby checkpoint
+from another input trajectory merely because its scene and timer match; the
+manifest state gates remain authoritative.
