@@ -5,7 +5,10 @@ source = File.read(ARGV.fetch(0))
 
 abort "GP0 bundle lacks a pixel-only replay mode" unless
   source.include?("--trace-only") &&
-  source.include?('execute_replays.call("") unless options[:trace_only]')
+  source.include?('execute_replays.call("") unless options[:trace_only] || options[:raster_only]')
+abort "GP0 bundle lacks an artifact-only raster iteration mode" unless
+  source.include?("--raster-only") &&
+  source.include?('options[:trace_only] || options[:raster_only]')
 required = [
   'report.fetch("psx_source")', 'report.fetch("native_source")',
   'summary_frame["psx_replay_frames"]', 'summary_frame["psx_replay_pre_state"]',
@@ -25,6 +28,8 @@ required = [
   '"RAGE_GPU_GP0_TRACE_VRAM_POST"', 'bundle / "gp0-post.vram"',
   'bundle / "gp0-native-post.vram"', 'expected_vram_bytes = 1024 * 512 * 2',
   'tools/rage_vram_refs.rb', 'bundle / "gp0-vram-refs.txt"',
+  'tools/rage_gp0_raster_compare.rb', 'bundle / "gp0-raster"',
+  'bundle / "gp0-raster.txt"',
   '"--dump-psx-packet N"', '"RAGE_GPU_GP0_TRACE_DUMP_PACKET"',
   '"RAGE_GPU_GP0_TRACE_DUMP_VRAM"',
   'execute_replays.call("pixel"',

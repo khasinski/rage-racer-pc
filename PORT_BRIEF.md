@@ -3039,6 +3039,10 @@ RGB555 precision. `--last-packet N` bisects the submitted frame, while
 `--only-packet N` keeps the draw-state commands and isolates a single polygon.
 This is the preferred seconds-scale oracle for rasterization, texture sampling,
 HUD and mirror packet cases after a visual bundle has captured them once.
+The full `rage_gp0_bundle.rb` run now creates this `gp0-raster/` result
+automatically. After changing PsyZ, rerun only that stage with
+`rage_gp0_bundle.rb --bundle FRAME_BUNDLE --raster-only`; it reuses the saved
+VRAM and GP0 artifacts and does not start either complete game runtime.
 
 Two attempted generalizations of the axis-aligned endpoint strip were rejected
 against that oracle. Widening all external FT4 edges by one pixel fills the
