@@ -1045,6 +1045,25 @@ road RMSE `0.011195`, zero surface-divergence pixels. The earlier timer-396
 mirror discrepancy was therefore a capture-phase bug, not evidence of a game
 or HAL mirror defect. Keep the strict `proj_order` gate and diagnose later
 mirror failures only from final-DMA captures.
+
+Use `tools/rage_visual_run.rb --strict-race` for the recurring race audit. It
+selects all four profiles, final-DMA draw pages, complete main/mirror visible
+list gates, exact projection/timer/animation gates, and budgets requiring no
+road/mirror clear or black holes, no missing HUD black area, no tachometer
+needle mismatch, and at least one exact state match per profile. Add
+`--compare-only` to recheck an existing capture in seconds. Long runs should
+still use `--checkpoint-stride` so the next timer range can start at the final
+saved state.
+
+The strict audit has now covered exact matched samples through race timer 680:
+11 samples in 392-430, 6 in 430-520, and 13 in 520-700. Across all 30 accepted
+states, road/HUD native-only black and road native-only clear counts are zero,
+mirror surface divergence is zero, and tachometer needle IoU is `1.0`. Worst
+later-range RMSE is `0.017558` for road, `0.003401` for mirror road,
+`0.022673` for tachometer and `0.009921` for HUD. This is evidence for the raw
+VRAM output along the tested route, not a claim about every course or the SDL
+presentation path; reports from other locations should be captured with the
+same strict preset.
 Long emulator runs can be split into sub-minute chunks by also setting
 `RAGE_EMU_SAVE_CAPTURE_STATES=1`.  Each periodic PPM then receives a matching
 `.psxstate`; load the last checkpoint with `RAGE_EMU_LOAD_STATE` and continue

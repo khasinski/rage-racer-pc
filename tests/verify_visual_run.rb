@@ -139,6 +139,27 @@ Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
     compare.each_cons(2).include?(["--visual-refine", "0"])
 end
 
+Dir.mktmpdir("rage-visual-run-strict-race-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--strict-race", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "strict race audit did not select exact final-DMA captures" unless
+    metadata.fetch("strict_race") && metadata.fetch("draw_page") &&
+    metadata.fetch("profile") == "all" &&
+    metadata.dig("capture_strides", "psx_vblank") == 1 &&
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DMA_PHASES") == "1"
+  road = metadata.dig("comparisons", "road", "argv")
+  abort "strict race audit omitted visibility/projection gates" unless
+    road.include?("--require-main-visible-list") &&
+    road.include?("--require-mirror-visible-list") &&
+    road.each_cons(2).include?(["--max-projection-delta", "0"])
+  abort "strict race audit omitted artifact budgets" unless
+    metadata.fetch("budgets").include?("road.black=0") &&
+    metadata.fetch("budgets").include?("tacho.needle=0")
+end
+
 
 Dir.mktmpdir("rage-visual-run-all-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",

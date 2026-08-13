@@ -25,7 +25,7 @@ options = {
   sync_random: nil, psx_sync_random: nil, native_sync_random: nil,
   sync_random_each_frame: false,
   match_args: [], budgets: [], draw_page: false, alignment_only: false,
-  compare_only: false, dry_run: false,
+  compare_only: false, dry_run: false, strict_race: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
@@ -107,6 +107,10 @@ parser = OptionParser.new do |cli|
   cli.on("--draw-page", "capture the active VRAM drawing page (packet/VRAM diagnosis only)") do
     options[:draw_page] = true
   end
+  cli.on("--strict-race",
+         "exact final-DMA audit of road, mirror, tachometer and HUD") do
+    options[:strict_race] = true
+  end
   cli.on("--save-psx-states", "save a PSX state beside every captured reference frame") do
     options[:save_psx_states] = true
   end
@@ -123,6 +127,22 @@ parser = OptionParser.new do |cli|
   cli.on("--dry-run", "write/print the reproducible commands without executing") { options[:dry_run] = true }
 end
 parser.parse!
+
+if options[:strict_race]
+  options[:profile] = "all"
+  options[:draw_page] = true
+  options[:psx_capture_stride] ||= 1
+  options[:match_args].concat(%w[
+    --require-main-visible-list --require-mirror-visible-list
+    --max-projection-delta 0 --max-mirror-projection-delta 0
+    --max-timer-delta 0 --max-anim-timer-delta 0
+  ])
+  options[:budgets].concat(%w[
+    road.black=0 road.clear=0 road.matched_min=1
+    mirror-road.black=0 mirror-road.clear=0 mirror-road.matched_min=1
+    tacho.needle=0 tacho.matched_min=1 hud.black=0 hud.matched_min=1
+  ])
+end
 
 if options[:route]
   preset = route_presets.fetch(options[:route])
@@ -227,7 +247,8 @@ metadata = {
     psx_vblank: options[:psx_capture_stride],
     native_timer: options[:native_capture_stride]
   },
-  draw_page: options[:draw_page], psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
+  draw_page: options[:draw_page], strict_race: options[:strict_race],
+  psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   save_psx_states: options[:save_psx_states],
   checkpoint_stride: options[:checkpoint_stride],
   native: serialize.call(native_env, native_command, root),
