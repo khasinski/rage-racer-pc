@@ -32,7 +32,10 @@ DIAGNOSTIC_PRESETS = {
   "mirror-road" => { dynamic_mirror_region: "lower",
                 rank: "clear", require_mirror_visible_cells: true },
   "tacho" => { needle_region: "250,160,45,42", rank: "needle" },
-  "hud" => { black_region: "0,176,320,64" }
+  # The lower band contains live road geometry behind transparent HUD sprites.
+  # Rank only coherent native-only black holes; raw RMSE primarily measures a
+  # slightly different camera/car pose and is not evidence of missing HUD.
+  "hud" => { black_region: "0,176,320,64", rank: "black" }
 }.freeze
 
 options = { region: nil, hotspots: 8, radius: 12, match: "timer",
@@ -808,7 +811,10 @@ errors = Queue.new
       if psx_state.file?
         FileUtils.cp(psx_state, frame_output / "reference.psxstate")
       end
-      psx_frame_number = pair[:psx].basename.to_s[/\-f(\d+)\-s\d+\.ppm\z/, 1]&.to_i
+      psx_basename = pair[:psx].basename.to_s
+      psx_frame_number = psx_basename[/\-f(\d+)\-s\d+\.ppm\z/, 1]&.to_i
+      psx_frame_number ||=
+        psx_basename[/\Async\-(\d+)\-t\d+\-s\d+\.ppm\z/, 1]&.to_i
       replay_pre = nil
       replay_frames = nil
       if psx_frame_number

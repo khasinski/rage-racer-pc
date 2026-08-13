@@ -3046,6 +3046,19 @@ The full `rage_gp0_bundle.rb` run now creates this `gp0-raster/` result
 automatically. After changing PsyZ, rerun only that stage with
 `rage_gp0_bundle.rb --bundle FRAME_BUNDLE --raster-only`; it reuses the saved
 VRAM and GP0 artifacts and does not start either complete game runtime.
+Terminal `sync-FRAME-tTIMER-sSCENE.ppm` captures are valid bundle inputs too.
+Their frame number must participate in nearest-checkpoint selection, and a GP0
+replay must drop the original terminal timer stop condition: otherwise a
+checkpoint resumed at the target timer exits before submitting that frame.
+
+Do not use lower-band RMSE alone as evidence of a broken HUD. Much of the
+nominal `hud` rectangle is transparent and shows live road geometry. At the
+current timer-395 pair, hotspot `(307,198)` is covered by the same HUD sprite
+with identical vertices and UVs on both runtimes; its sampled texel is
+transparent on both. The colour difference comes from differently positioned
+road FT4 packets underneath, and the GP0 streams already diverge at word 19.
+The `hud` diagnostic therefore ranks coherent native-only black holes; use the
+tachometer mask for the needle and packet/texel traces for other HUD elements.
 
 Two attempted generalizations of the axis-aligned endpoint strip were rejected
 against that oracle. Widening all external FT4 edges by one pixel fills the

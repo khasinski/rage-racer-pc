@@ -7,6 +7,9 @@ require "open3"
 require "tmpdir"
 
 tool = ARGV.fetch(0)
+tool_source = File.read(tool)
+abort "HUD preset ranks pose-dependent road pixels as HUD RMSE" unless
+  tool_source.include?('"hud" => { black_region: "0,176,320,64", rank: "black" }')
 
 def write_ppm(path, red)
   File.binwrite(path, "P6\n1 1\n255\n" + [red, 0, 0].pack("C3"))
@@ -869,6 +872,35 @@ Dir.mktmpdir("rage-visual-scene-pre-state-") do |root|
   abort "bundle ignores nearest periodic replay checkpoint" unless
     frame.fetch("psx_replay_frames") == 2 &&
     File.binread(pre) == "checkpoint-pre-state"
+end
+
+Dir.mktmpdir("rage-visual-sync-pre-state-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  psx_filename = "sync-00012-t00100-s12.ppm"
+  native_filename = "timer-00100-f00900-s12.ppm"
+  write_ppm(File.join(psx, psx_filename), 16)
+  write_ppm(File.join(native, native_filename), 16)
+  File.binwrite(File.join(psx, "checkpoint-t00099-f00010-s12.psxstate"),
+                "sync-checkpoint")
+  surface_header = "filename,capture_surface,frame,scene,timer,x,z,speed,progress,lap," \
+                   "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                   "view_angle_z,random_seed\n"
+  state = "12,12,100,10,20,30,40,1,0,10,20,30,0,0,0,7"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             surface_header + "#{psx_filename},draw,#{state}\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             surface_header + "#{native_filename},draw,#{state}\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  frame = JSON.parse(File.read(File.join(output, "summary.json"))).fetch("frames").first
+  pre = frame.fetch("psx_replay_pre_state")
+  abort "terminal sync capture ignores nearest replay checkpoint" unless
+    frame.fetch("psx_replay_frames") == 2 && File.binread(pre) == "sync-checkpoint"
 end
 
 puts "visual refinement separates sampled state from the displayed buffer; state gates precede ranking"

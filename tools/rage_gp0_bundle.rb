@@ -55,7 +55,9 @@ end
 abort "bundle is absent from #{summary_path}" unless summary_frame
 
 parse_frame = lambda do |path|
-  match = File.basename(path).match(/-f(\d+)-s\d+\.ppm\z/)
+  basename = File.basename(path)
+  match = basename.match(/-f(\d+)-s\d+\.ppm\z/) ||
+          basename.match(/\Async-(\d+)-t\d+-s\d+\.ppm\z/)
   abort "cannot parse frame from #{path}" unless match
   Integer(match[1], 10)
 end
@@ -101,6 +103,12 @@ prepare = lambda do |side, frame|
   )
   env["RAGE_GPU_OT_TRACE"] = "1" if options[:ot_trace]
   if side == "psx"
+    # A nearby checkpoint may resume with the target timer already visible at
+    # the first VBlank. The original capture's stop condition would then exit
+    # before that frame submits GP0 commands. Replay length is already bounded
+    # by argv, so never inherit the terminal timer stop here.
+    env.delete("RAGE_EMU_STOP_SCENE")
+    env.delete("RAGE_EMU_STOP_SCENE_TIMER")
     env["RAGE_GPU_GP0_TRACE_VRAM"] = (bundle / "gp0-pre.vram").to_s
     env["RAGE_GPU_GP0_TRACE_VRAM_POST"] = (bundle / "gp0-post.vram").to_s
     if options[:dump_psx_packet]

@@ -34,10 +34,13 @@ required = [
   '"RAGE_GPU_GP0_TRACE_DUMP_VRAM"',
   'execute_replays.call("pixel"',
   'argv[output_index + 1] = (frame + 2).to_s',
-  'env["RAGE_PORT_SMOKE_FRAMES"] = (frame + 2).to_s'
+  'env["RAGE_PORT_SMOKE_FRAMES"] = (frame + 2).to_s',
+  'env.delete("RAGE_EMU_STOP_SCENE_TIMER")'
 ]
 missing = required.reject { |text| source.include?(text) }
 raise "bundle replay lost: #{missing.join(', ')}" unless missing.empty?
 raise "PSX command-frame correction is limited to checkpoint replays" if
   source.match?(/if psx_replay_frames && psx_replay_state\s+native_draw_area/m)
+raise "bundle cannot parse synchronized terminal PSX captures" unless
+  source.include?('basename.match(/\\Async-(\\d+)-t\\d+-s\\d+\\.ppm\\z/)')
 puts "GP0 bundle replay uses captured provenance and leaves a self-contained diff"
