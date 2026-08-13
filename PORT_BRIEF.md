@@ -3136,3 +3136,21 @@ Across the complete exact frame, significant mismatches fall from 875 to 362
 and RMSE from `0.99659` to `0.56973`; the 41-pixel component rooted at
 `(183,102)` disappears. This is again a HAL scan-conversion fix and changes no
 game packet or decompilation-owned geometry.
+
+Every `rage_gp0_raster_compare.rb` report now includes fixed named summaries
+for `road`, `mirror_road`, `hud`, `tachometer`, and `tachometer_needle`. Each
+records its rectangle, RGB555 RMSE, raw and significant mismatch counts, and
+largest four-connected significant component. This makes `--raster-only` a
+single-command regression dashboard instead of requiring four separate visual
+comparison invocations. In the post-FT4 exact frame, the tachometer needle has
+zero significant pixels, while road's remaining largest component is the
+26-pixel vertical line at `(207,103..128)`.
+
+That component is not missing coverage. Retail and native cover pixel
+`(207,103)` with the same later FT4s, but native packet 1721 exposes a UV
+accumulator boundary: retail's scanline selects windowed U `110`, while the
+mathematical GPU interpolation lies at raw U `47.0` and can floor to windowed
+U `111`. Isolated packet 1721 has 14 significant pixels, including eleven at
+`x=207`. Treat this as the next distinct compatibility class: PS1 16.16
+scanline UV truncation versus hardware barycentric interpolation. Do not widen
+coverage or modify game UVs to hide it.

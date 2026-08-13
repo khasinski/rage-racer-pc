@@ -148,6 +148,70 @@ significant_mask.each_index do |start|
 end
 components.sort_by! { |component| -component[:pixels] }
 
+region_rects = {
+  road: [0, 55, 250, 150],
+  mirror_road: [84, 40, 152, 16],
+  hud: [0, 176, 320, 64],
+  tachometer: [225, 145, 95, 95],
+  tachometer_needle: [250, 160, 45, 42]
+}
+region_profiles = region_rects.transform_values do |(left, top, width, height)|
+  region_sum_sq = 0
+  region_mismatches = 0
+  region_significant = 0
+  region_mask = Array.new(width * height, false)
+  height.times do |dy|
+    width.times do |dx|
+      pixel = (top + dy) * 320 + left + dx
+      offset = pixel * 3
+      delta = 3.times.map do |channel|
+        (native.getbyte(offset + channel) >> 3) -
+          (psx.getbyte(offset + channel) >> 3)
+      end
+      next if delta.all?(&:zero?)
+      region_mismatches += 1
+      region_sum_sq += delta.sum { |value| value * value }
+      if delta.any? { |value| value.abs > 1 }
+        region_significant += 1
+        region_mask[dy * width + dx] = true
+      end
+    end
+  end
+
+  local_visited = Array.new(region_mask.length, false)
+  largest_component = 0
+  region_mask.each_index do |start|
+    next unless region_mask[start] && !local_visited[start]
+    queue = [start]
+    local_visited[start] = true
+    size = 0
+    until queue.empty?
+      pixel = queue.pop
+      size += 1
+      x = pixel % width
+      y = pixel / width
+      neighbours = []
+      neighbours << pixel - 1 if x.positive?
+      neighbours << pixel + 1 if x + 1 < width
+      neighbours << pixel - width if y.positive?
+      neighbours << pixel + width if y + 1 < height
+      neighbours.each do |other|
+        next unless region_mask[other] && !local_visited[other]
+        local_visited[other] = true
+        queue << other
+      end
+    end
+    largest_component = size if size > largest_component
+  end
+  {
+    rect: [left, top, width, height],
+    rmse_rgb5: Math.sqrt(region_sum_sq.to_f / (width * height * 3)),
+    mismatched_pixels: region_mismatches,
+    significant_pixels: region_significant,
+    largest_component: largest_component
+  }
+end
+
 diff_rgb = String.new(capacity: 320 * 240 * 3, encoding: Encoding::BINARY)
 significant_mask.each do |different|
   diff_rgb << (different ? "\xff\x00\xff" : "\x00\x00\x00")
@@ -159,6 +223,7 @@ report = {
   significant_pixels: significant.length,
   rmse_rgb5: Math.sqrt(sum_sq.to_f / (320 * 240 * 3)),
   components: components.first(64), examples: significant.first(32),
+  regions: region_profiles,
   inputs: {
     vram: options[:vram].to_s, vram_sha256: Digest::SHA256.file(options[:vram]).hexdigest,
     log: options[:log].to_s, log_sha256: Digest::SHA256.file(options[:log]).hexdigest
@@ -168,4 +233,4 @@ report = {
 }
 File.write(output / "report.json", JSON.pretty_generate(report) + "\n")
 puts JSON.generate(report.slice(:mismatched_pixels, :significant_pixels,
-                                :rmse_rgb5, :components, :examples))
+                                :rmse_rgb5, :regions, :components, :examples))
