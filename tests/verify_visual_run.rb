@@ -154,12 +154,29 @@ Dir.mktmpdir("rage-visual-run-strict-race-") do |output|
     metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_TIMER_STRIDE") == "1"
   road = metadata.dig("comparisons", "road", "argv")
   abort "strict race audit omitted visibility/projection gates" unless
-    road.include?("--require-main-visible-list") &&
-    road.include?("--require-mirror-visible-list") &&
+    road.include?("--require-main-visible-cells") &&
+    road.include?("--require-mirror-visible-cells") &&
+    road.each_cons(2).include?(["--max-position-distance", "2"]) &&
+    road.each_cons(2).include?(["--max-view-distance", "2"]) &&
+    road.each_cons(2).include?(["--max-tacho-rpm-delta", "0"]) &&
+    road.include?("--require-rivals-only-render-state") &&
+    !road.include?("--require-rival-render-state") &&
     road.each_cons(2).include?(["--max-projection-delta", "0"])
   abort "strict race audit omitted artifact budgets" unless
     metadata.fetch("budgets").include?("road.black=0") &&
     metadata.fetch("budgets").include?("tacho.needle=0")
+end
+
+Dir.mktmpdir("rage-visual-run-visible-cells-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--visible-cells", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "visibility diagnostics were not enabled symmetrically" unless
+    metadata.fetch("visible_cells") &&
+    metadata.dig("psx", "env", "RAGE_EMU_VISIBLE_CELLS") == "1" &&
+    metadata.dig("native", "env", "RAGE_PORT_SMOKE_VISIBLE_CELLS") == "1"
 end
 
 

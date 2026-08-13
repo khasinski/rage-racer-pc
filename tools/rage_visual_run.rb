@@ -26,6 +26,7 @@ options = {
   sync_random_each_frame: false,
   match_args: [], budgets: [], draw_page: false, alignment_only: false,
   compare_only: false, dry_run: false, strict_race: false,
+  visible_cells: false,
   bios: Pathname(Dir.home) / "Downloads/SCPH1001.BIN",
   cue: root / "disc/PAL/Rage Racer (Europe).cue",
   native: root / "build-host/rage-racer-smoke"
@@ -111,6 +112,9 @@ parser = OptionParser.new do |cli|
          "exact final-DMA audit of road, mirror, tachometer and HUD") do
     options[:strict_race] = true
   end
+  cli.on("--visible-cells", "dump complete main/mirror visibility diagnostics") do
+    options[:visible_cells] = true
+  end
   cli.on("--save-psx-states", "save a PSX state beside every captured reference frame") do
     options[:save_psx_states] = true
   end
@@ -133,7 +137,9 @@ if options[:strict_race]
   options[:draw_page] = true
   options[:psx_capture_stride] ||= 1
   options[:match_args].concat(%w[
-    --require-main-visible-list --require-mirror-visible-list
+    --require-main-visible-cells --require-mirror-visible-cells
+    --max-position-distance 2 --max-view-distance 2
+    --max-tacho-rpm-delta 0 --require-rivals-only-render-state
     --max-projection-delta 0 --max-mirror-projection-delta 0
     --max-timer-delta 0 --max-anim-timer-delta 0
   ])
@@ -190,6 +196,7 @@ if options[:strict_race]
   psx_env["RAGE_EMU_CAPTURE_TIMER_STRIDE"] = options[:native_capture_stride].to_s
 end
 psx_env["RAGE_EMU_CAPTURE_VRAM_SIDECAR"] = "1"
+psx_env["RAGE_EMU_VISIBLE_CELLS"] = "1" if options[:visible_cells]
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_CHECKPOINT_TIMER_STRIDE"] = options[:checkpoint_stride].to_s if
   options[:checkpoint_stride]
@@ -215,6 +222,7 @@ native_env = {
 }
 native_env["RAGE_PORT_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 native_env["RAGE_PORT_CAPTURE_VRAM_SIDECAR"] = "1"
+native_env["RAGE_PORT_SMOKE_VISIBLE_CELLS"] = "1" if options[:visible_cells]
 native_env["RAGE_PORT_STATE_INPUT_SCRIPT"] = options[:native_state_input] if options[:native_state_input]
 native_sync_random = options[:native_sync_random] || options[:sync_random]
 native_env["RAGE_PORT_SYNC_RANDOM"] = native_sync_random if native_sync_random
@@ -229,7 +237,8 @@ batch_commands = profiles.to_h do |profile|
              "--require-tacho-flash",
              "--max-display-timer-delta", options[:draw_page] ? "0" : "1",
              "--jobs", options[:jobs].to_s, *options[:match_args]]
-  command << "--require-rival-render-state" if %w[road mirror-road].include?(profile)
+  command << "--require-rival-render-state" if
+    %w[road mirror-road].include?(profile) && !options[:strict_race]
   command << "--alignment-only" if options[:alignment_only]
   command.concat(["--top", options[:top].to_s]) if options[:top]
   [profile, command]
@@ -252,6 +261,7 @@ metadata = {
     native_timer: options[:native_capture_stride]
   },
   draw_page: options[:draw_page], strict_race: options[:strict_race],
+  visible_cells: options[:visible_cells],
   psx: serialize.call(psx_env, psx_command, root / "tools/psx-ruby"),
   save_psx_states: options[:save_psx_states],
   checkpoint_stride: options[:checkpoint_stride],

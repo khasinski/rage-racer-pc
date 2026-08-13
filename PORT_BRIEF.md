@@ -1081,6 +1081,25 @@ progress 16200-21830 (course 0, lap 1). It also has zero road/HUD black holes,
 zero road clear holes, zero mirror surface divergence, and zero tachometer
 needle mismatches. Its worst regional RMSE values are `0.012643` road,
 `0.008821` mirror road, `0.020162` tachometer and `0.010811` HUD.
+The 1000-1200 segment initially produced no matches because the strict preset
+required hashes of complete transformed visibility lists and a combined
+player+rival render hash. At timer 966, the eleven-rival hash and both visible
+cell masks are identical, while player/camera coordinates differ by only one
+world unit. Transformed list coordinates necessarily inherit that harmless
+offset, so requiring their byte identity rejects a valid comparison. Strict
+mode now requires identical main/mirror cell masks and identical state for all
+eleven rivals, permits at most two world units of player/camera displacement,
+and still requires identical timer, projections and tachometer RPM. It does
+not use this small pose tolerance to claim colour/RMSE identity; artifact
+budgets concern coherent missing surfaces and the separately anchored needle.
+
+With that corrected gate, the 1000-1200 cache yields 14 matched states at
+timers 1000-1160 and progress 22314-23756 (course 0, lap 1), with zero
+road/HUD black holes, zero road clear holes, zero mirror surface divergence,
+and zero needle mismatches. A preliminary 15-pixel needle candidate at timer
+1120 was invalid: the PSX and native displayed RPM were 6704 and 6703. Strict
+mode now explicitly sets `--max-tacho-rpm-delta 0`, so one-RPM geometry changes
+cannot be misreported as rasterizer defects.
 Each matched frame now records its absolute scene, timer, course, lap, track
 progress, position and speed. The aggregate summary reports timer/progress
 ranges and course/lap sets, so a green sparse audit cannot be mistaken for

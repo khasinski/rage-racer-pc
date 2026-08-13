@@ -47,6 +47,7 @@ options = { region: nil, hotspots: 8, radius: 12, match: "timer",
             max_tacho_rpm_delta: Float::INFINITY,
             require_tacho_flash: false,
             require_rival_render_state: false,
+            require_rivals_only_render_state: false,
             max_display_timer_delta: Float::INFINITY,
             max_timer_delta: Float::INFINITY,
             max_anim_timer_delta: 0,
@@ -139,6 +140,10 @@ OptionParser.new do |parser|
   parser.on("--require-rival-render-state",
             "require player and all 11 rivals' canonical render state to match") do
     options[:require_rival_render_state] = true
+  end
+  parser.on("--require-rivals-only-render-state",
+            "require all 11 rivals' canonical render state to match") do
+    options[:require_rivals_only_render_state] = true
   end
   parser.on("--max-timer-delta N", Integer,
             "skip state matches farther than N game-timer ticks") do |value|
@@ -405,6 +410,11 @@ if options[:match] == "position"
         psx.key?(:rival_render_hash) &&
         candidate[:player_render_hash] == psx[:player_render_hash] &&
         candidate[:rival_render_hash] == psx[:rival_render_hash],
+      rivals_only_render_state_present: candidate.key?(:rival_render_hash) &&
+        psx.key?(:rival_render_hash),
+      rivals_only_render_state_equal: candidate.key?(:rival_render_hash) &&
+        psx.key?(:rival_render_hash) &&
+        candidate[:rival_render_hash] == psx[:rival_render_hash],
       camera_view_equal: !candidate.key?(:camera_view_mode) ||
         !psx.key?(:camera_view_mode) ||
         candidate[:camera_view_mode] == psx[:camera_view_mode],
@@ -449,6 +459,9 @@ if options[:match] == "position"
       (!options[:require_rival_render_state] ||
         (metrics[:rival_render_state_present] &&
          metrics[:rival_render_state_equal])) &&
+      (!options[:require_rivals_only_render_state] ||
+        (metrics[:rivals_only_render_state_present] &&
+         metrics[:rivals_only_render_state_equal])) &&
       metrics[:camera_view_equal] &&
       metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
@@ -491,6 +504,13 @@ if options[:match] == "position"
       !metrics[:rival_render_state_present]
     reasons << "rival_render_state" if options[:require_rival_render_state] &&
       metrics[:rival_render_state_present] && !metrics[:rival_render_state_equal]
+    reasons << "missing_rivals_only_render_state" if
+      options[:require_rivals_only_render_state] &&
+      !metrics[:rivals_only_render_state_present]
+    reasons << "rivals_only_render_state" if
+      options[:require_rivals_only_render_state] &&
+      metrics[:rivals_only_render_state_present] &&
+      !metrics[:rivals_only_render_state_equal]
     reasons << "camera_view" unless metrics[:camera_view_equal]
     reasons << "timer=#{metrics[:timer_delta]}>#{options[:max_timer_delta]}" if
       metrics[:timer_delta] > options[:max_timer_delta]
