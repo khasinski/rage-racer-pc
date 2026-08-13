@@ -17,6 +17,7 @@
 #include "game/scratchpad.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
+extern char SsSetReservedVoice(char voices);
 
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
 unsigned char g_AudioRuntimeState[4096];
@@ -371,11 +372,12 @@ ZERO_ADAPTER(SpuGetKeyStatus)
 ZERO_ADAPTER(SpuVmDamperStep)
 ZERO_ADAPTER(SsSeqCloseWrapper)
 ZERO_ADAPTER(SsSetSpuInputAttr)
-ZERO_ADAPTER(SsSetVoiceCount)
+unsigned char SsSetVoiceCount(unsigned char voices) {
+    return (unsigned char)SsSetReservedVoice((char)voices);
+}
 ZERO_ADAPTER(SsStartSoundTickMode1)
 ZERO_ADAPTER(SsStopSoundTick)
 ZERO_ADAPTER(SsUtChangePitch)
-ZERO_ADAPTER(SsUtKeyOffV)
 ZERO_ADAPTER(SsUtPitchBend)
 ZERO_ADAPTER(StGetBackloc)
 ZERO_ADAPTER(ssinit)

@@ -783,6 +783,18 @@ With those restored, the original VAB path produces non-zero PCM through the
 emulated SPU; `audio_output` measures rendered frames and sample energy rather
 than accepting successful SDL initialization as evidence of sound.
 
+Menu music is a PsyQ SEQ stream backed by the menu VAB, not CD-DA. PsyZ must
+parse the little-endian `pQES` header, advance MIDI events at the selected
+libsnd tick rate, select VAB tones by their note ranges, and release allocated
+voices on note-off. Rage also calls `_SsVmInit(0)` after loading the menu bank:
+on retail this resets voice state without discarding the VAB registry. Clearing
+`_svm_vab_used` there leaves a valid game-side VAB id pointing at an unloaded
+backend bank, which makes both sequences and later effects silent or wrong.
+The host adapter for `SsSetVoiceCount` must forward to libsnd's voice limit;
+a zero-return stub leaves `_SsVmMaxVoice` at zero and prevents all allocation.
+`audio_output` now requires successfully dispatched SEQ notes in addition to
+non-zero PCM, covering the prologue-to-menu music transition.
+
 CD-DA has a similar aliasing requirement. Retail's two-entry
 `g_CdTrackLocs` object is immediately followed by the sixteen BGM locations at
 `g_CdBgmTrackLocs`; game requests deliberately index the former with track
