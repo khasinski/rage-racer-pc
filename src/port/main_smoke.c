@@ -1,6 +1,7 @@
 #include <psyz.h>
 #include <psyz/video.h>
 #include <psyz/audio.h>
+#include <psyz/cd.h>
 #include <libetc.h>
 
 #include <stdio.h>
@@ -210,12 +211,13 @@ int main(void) {
         printf("window size: %dx%d\n", size.w, size.h);
     }
     if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
-        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu pitch_updates=%llu "
+        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu pitch_updates=%llu cdda=%d "
                "loaded=%x cue_bank=%d "
                "vab=%d,%d,%d,%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
                Psyz_SeqNoteOnCount(),
                Psyz_SndPitchUpdateCount(),
+               Psyz_CdAudioPlaying(),
                g_AudioLoadedSlotMask, g_SoundCueBank,
                g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
                g_SoundScale.vabIds[2], g_SoundScale.vabIds[3]);

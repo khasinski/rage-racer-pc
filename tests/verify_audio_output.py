@@ -29,16 +29,19 @@ def main() -> int:
         print(result.stdout, file=sys.stderr)
         return result.returncode or 1
     metrics = re.search(
-        r"audio metrics: frames=(\d+) energy=(\d+) seq_notes=(\d+)",
+        r"audio metrics: frames=(\d+) energy=(\d+) seq_notes=(\d+) "
+        r"pitch_updates=(\d+) cdda=(\d+)",
         result.stdout,
     )
     if metrics is None:
         raise AssertionError("audio backend did not report rendered PCM")
-    frames, energy, seq_notes = map(int, metrics.groups())
+    frames, energy, seq_notes, _pitch_updates, cdda = map(int, metrics.groups())
     if frames < 10_000 or energy < 1_000_000:
         raise AssertionError(f"SPU output remained silent: frames={frames}, energy={energy}")
     if seq_notes == 0:
         raise AssertionError("menu SEQ opened but never dispatched a VAB note")
+    if cdda != 0:
+        raise AssertionError("prologue CD-DA was still playing under the menu sequence")
     print(
         f"SPU rendered VAB effects and menu sequence: frames={frames}, "
         f"energy={energy}, seq_notes={seq_notes}"

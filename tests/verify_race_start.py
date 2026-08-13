@@ -156,7 +156,7 @@ def main() -> int:
         raise AssertionError("terrain never exercised retail second-triangle culling")
     audio_state = re.search(
         r"audio metrics: frames=(\d+) energy=(\d+) seq_notes=(\d+) "
-        r"pitch_updates=(\d+)",
+        r"pitch_updates=(\d+) cdda=(\d+)",
         result.stdout,
     )
     if audio_state is None or int(audio_state.group(4)) == 0:

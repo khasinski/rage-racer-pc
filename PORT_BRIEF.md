@@ -3560,3 +3560,29 @@ key-on; a generic linear bend makes engine sounds audibly wrong.  The
 `race_start` regression requires real pitch updates during an accelerating
 race, while `audio_output` requires dispatched menu SEQ notes and non-silent
 SPU output.
+
+The host archive reader services `RAGE.BIN` through a normal file, but it must
+still preserve the single-drive behaviour visible to the game.  Starting a
+data read pauses active CD-DA, just as seeking the physical PS1 pickup away
+from an audio track does.  This matters when leaving the prologue: Rage queues
+`PauseCdAudio`, then `RequestSelectBgmAssets` resets the asynchronous CD command
+state.  Retail asset I/O nevertheless interrupts track 2; without the HAL
+notification PsyZ continued mixing that track underneath the newly loaded menu
+SEQ.  `audio_output` now requires CD-DA to be inactive while menu SEQ notes are
+being dispatched, and `race_cdda` still requires a later switch to race BGM.
+
+`SpuGetKeyStatus` must query the backend's live key and ADSR state, not the
+stored `ENVX` register word.  The latter is updated by the emulated envelope
+pipeline and is zero during the key-on delay, so treating it as an ordinary
+register made Rage believe voices 18..23 were free and overwrite active menu
+or race effects.  PsyZ now returns all four PsyQ states, including key-on with
+zero envelope and key-off during release; its unit test covers those
+transitions.  The public constants follow the recovered Rage/PsyQ table:
+`SPU_ON_ENV_OFF` is 3 and `SPU_OFF_ENV_ON` is 2.
+
+The ROUND/BGM transition was checked against the saved PS1 capture rather than
+retimed.  Native and PS1 timer-120 frames are pixel-identical.  The PS1 scene-11
+capture shows the newly visible prize list together with the preceding MUSIC
+SELECT row because the displayed page is still the previous buffer while the
+new page is submitted.  The recovered 121-tick scene transition and fade-delay
+table are therefore retained unchanged.

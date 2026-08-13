@@ -233,8 +233,10 @@ typedef struct RageHostCdEntry {
 int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
-    FILE *file = fopen("assets/PAL/RAGE.BIN", "rb");
+    FILE *file;
     int index;
+    Psyz_CdBeginDataRead();
+    file = fopen("assets/PAL/RAGE.BIN", "rb");
     if (!file || count > 135 || fread(words, 1, sizeof(words), file) != sizeof(words)) {
         if (file) fclose(file);
         return 0;
@@ -248,8 +250,10 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
 }
 
 int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
-    FILE *file = fopen("assets/PAL/RAGE.BIN", "rb");
+    FILE *file;
     size_t loaded;
+    Psyz_CdBeginDataRead();
+    file = fopen("assets/PAL/RAGE.BIN", "rb");
     if (!file || fseek(file, (long)byte_offset, SEEK_SET) != 0) {
         if (file) fclose(file);
         return 0;
