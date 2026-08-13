@@ -20,6 +20,15 @@ endif()
 add_test(NAME game_logic COMMAND game_logic_tests)
 
 add_test(
+    NAME frame_environment_aliases
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rear_view_mirror.c
+        ${CMAKE_SOURCE_DIR}/src/port/host_state.c
+)
+
+add_test(
     NAME audio_state_layout
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb

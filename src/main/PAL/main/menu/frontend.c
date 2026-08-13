@@ -216,8 +216,8 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     base = context->bytes;
     height = 0xF0;
     SetDefDrawEnv(&context->environment.draw, 0, 0, 0x140, height);
-    SetDefDrawEnv(&g_DrawEnv1, 0, 0xF0, 0x140, height);
-    g_FrameContexts[1].environment.draw = g_DrawEnv1;
+    SetDefDrawEnv(&g_FrameContexts[1].environment.draw,
+                  0, 0xF0, 0x140, height);
     SetDefDispEnv(&context->environment.display, 0, 0xF0, 0x140, height);
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 
@@ -234,8 +234,8 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
         smallWidth = 0x94;
         small_height = 0x24;
         SetDefDrawEnv(ptr, g, b, smallWidth, small_height);
-        SetDefDrawEnv(&g_MirrorDrawEnv1, 0x56, 0x102, 0x94, small_height);
-        g_FrameContexts[1].environment.mirrorDraw = g_MirrorDrawEnv1;
+        SetDefDrawEnv(&g_FrameContexts[1].environment.mirrorDraw,
+                      0x56, 0x102, 0x94, small_height);
     }
 
     i = 0;
@@ -287,8 +287,8 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
 
     height = 0x1E0;
     SetDefDrawEnv(&context->environment.draw, 0, 0, 0x140, height);
-    SetDefDrawEnv(&g_DrawEnv1, 0, 0, 0x140, height);
-    g_FrameContexts[1].environment.draw = g_DrawEnv1;
+    SetDefDrawEnv(&g_FrameContexts[1].environment.draw,
+                  0, 0, 0x140, height);
     SetDefDispEnv(&context->environment.display, 0, 0, 0x140, height);
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 

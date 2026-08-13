@@ -78,23 +78,24 @@ s32 BeginMirrorPass(void) {
         scratch->y1 = v0reg;
 
         if (v1reg > 0) {
-            g_MirrorDrawEnv0ClipY = y0;
+            g_FrameContexts[0].environment.mirrorDraw.clip.y = y0;
             v0reg = y0 + 0xF0;
         } else {
             v0reg = 0xF0;
-            g_MirrorDrawEnv0ClipY = 0;
+            g_FrameContexts[0].environment.mirrorDraw.clip.y = 0;
         }
-        g_MirrorDrawEnv1ClipY = v0reg;
+        g_FrameContexts[1].environment.mirrorDraw.clip.y = v0reg;
 
         v0reg = g_MirrorPanelY;
         v1reg = v0reg + 0x24;
         if (v1reg > 0) {
-            v0reg = v1reg - g_MirrorDrawEnv0ClipY;
-            g_MirrorDrawEnv0ClipH = v0reg;
-            g_MirrorDrawEnv1ClipH = v0reg;
+            v0reg = v1reg -
+                g_FrameContexts[0].environment.mirrorDraw.clip.y;
+            g_FrameContexts[0].environment.mirrorDraw.clip.h = v0reg;
+            g_FrameContexts[1].environment.mirrorDraw.clip.h = v0reg;
         } else {
-            g_MirrorDrawEnv0ClipH = 0;
-            g_MirrorDrawEnv1ClipH = 0;
+            g_FrameContexts[0].environment.mirrorDraw.clip.h = 0;
+            g_FrameContexts[1].environment.mirrorDraw.clip.h = 0;
         }
 
         g_VisibleCellMask = g_MirrorVisibleCellMask;

@@ -2871,6 +2871,22 @@ out-of-bounds access on that route; it is not evidence for untested courses.
 
 ### Frame-matched VRAM comparison
 
+The rear-view mirror clip labels in the retail map are interior views, not
+independent globals. `g_MirrorDrawEnv0ClipY/H` address
+`g_FrameContexts[0].environment.mirrorDraw.clip.y/h`; the corresponding
+`...1...` labels address frame context 1. Likewise, the retail `g_DrawEnv1`
+and `g_MirrorDrawEnv1` names view complete fields of the second frame context.
+Allocating all of these names independently on the host made
+`BeginMirrorPass` update detached storage while `PutDrawEnv` still submitted
+the main viewport's `clip.y=72`. The PSX mirror pass submitted GP0 `E3000056`,
+but native submitted `E3004856`, clipping away the top render area used by the
+mirror. Initialize and mutate the typed `g_FrameContexts[i].environment`
+fields directly; do not reproduce linker-map aliases as separate C objects.
+On the strict timer-392 pair this changed mirror-road RMSE from `0.159682` to
+`0.094208` and reduced surface divergence from 37 pixels (largest component
+20) to zero. This ownership correction belongs in the decompilation and is
+independent of the HAL.
+
 `rage_gp0_bundle.rb` captures the complete 1024x512 RGB5551 VRAM after the
 selected retail and native submissions.  The native dump is
 `gp0-native-post.vram`; the retail before/after dumps remain `gp0-pre.vram` and

@@ -112,8 +112,6 @@ extern GameFrameContext g_FrameContexts[2];
 extern ScreenOffset g_ScreenOffsetX;
 extern ScreenOffset g_ScreenOffsetY;
 extern volatile s32 g_FrameParity;
-extern DrawEnv g_DrawEnv1;
-extern DrawEnv g_MirrorDrawEnv1;
 extern u8 g_Font8x8Cells[];
 extern u8 g_DrawModeEnv[];
 extern u8 g_PropFontCells[0x80];
