@@ -149,7 +149,9 @@ Dir.mktmpdir("rage-visual-run-strict-race-") do |output|
     metadata.fetch("strict_race") && metadata.fetch("draw_page") &&
     metadata.fetch("profile") == "all" &&
     metadata.dig("capture_strides", "psx_vblank") == 1 &&
-    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DMA_PHASES") == "1"
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_DMA_PHASES") == "1" &&
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_FINAL_DMA_ONLY") == "1" &&
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_TIMER_STRIDE") == "1"
   road = metadata.dig("comparisons", "road", "argv")
   abort "strict race audit omitted visibility/projection gates" unless
     road.include?("--require-main-visible-list") &&
@@ -223,4 +225,7 @@ source = File.read(tool)
 abort "multi-profile comparison still aborts before independent profiles run" unless
   source.include?("comparison_failures << message") &&
   source.index('batch_commands.each do |profile, command|') <
-    source.index('exit 1 unless comparison_failures.empty?')
+    source.index('unless comparison_failures.empty?')
+abort "budget evaluation still masks an earlier comparison failure" unless
+  source.index('unless comparison_failures.empty?') <
+    source.index('unless options[:budgets].empty?')

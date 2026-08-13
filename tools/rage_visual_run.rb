@@ -185,6 +185,10 @@ psx_env = {
 psx_env["RAGE_EMU_LOAD_STATE"] = Pathname(options[:checkpoint]).expand_path.to_s if options[:checkpoint]
 psx_env["RAGE_EMU_CAPTURE_DRAW_PAGE"] = "1" if options[:draw_page]
 psx_env["RAGE_EMU_CAPTURE_DMA_PHASES"] = "1" if options[:draw_page]
+if options[:strict_race]
+  psx_env["RAGE_EMU_CAPTURE_FINAL_DMA_ONLY"] = "1"
+  psx_env["RAGE_EMU_CAPTURE_TIMER_STRIDE"] = options[:native_capture_stride].to_s
+end
 psx_env["RAGE_EMU_CAPTURE_VRAM_SIDECAR"] = "1"
 psx_env["RAGE_EMU_SAVE_CAPTURE_STATES"] = "1" if options[:save_psx_states]
 psx_env["RAGE_EMU_CHECKPOINT_TIMER_STRIDE"] = options[:checkpoint_stride].to_s if
@@ -350,6 +354,7 @@ end
 File.write(output / "summary.json", JSON.pretty_generate(comparison_results) + "\n")
 unless comparison_failures.empty?
   warn comparison_failures.join("\n")
+  exit 1
 end
 unless options[:budgets].empty?
   budget_command = [RbConfig.ruby, (root / "tools/rage_visual_budget.rb").to_s,
@@ -358,4 +363,3 @@ unless options[:budgets].empty?
   system(*budget_command, chdir: root.to_s)
   exit 1 unless $?.success?
 end
-exit 1 unless comparison_failures.empty?

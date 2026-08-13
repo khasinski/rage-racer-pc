@@ -1056,6 +1056,17 @@ needle mismatch, and at least one exact state match per profile. Add
 still use `--checkpoint-stride` so the next timer range can start at the final
 saved state.
 
+Strict race capture also enables `RAGE_EMU_CAPTURE_FINAL_DMA_ONLY=1` and a
+timer-based capture stride. Scene 12 submits three GPU linked lists for each
+rendered game tick; only the third contains the complete draw page used by the
+matcher. Skipping the two intermediate downloads does not relax any state or
+image gate. In the 700-1000 audit this wrote 60 timer images / 92 MiB, compared
+with 540 images / 685 MiB for the older 520-700 all-phase run. Ruby MIPS
+execution remains the dominant wall-time cost, but capture I/O and subsequent
+batch analysis are an order of magnitude smaller. This optimization is
+intentionally race-specific; do not assume that another scene also has three
+linked-list phases without tracing it first.
+
 The strict audit has now covered exact matched samples through race timer 680:
 11 samples in 392-430, 6 in 430-520, and 13 in 520-700. Across all 30 accepted
 states, road/HUD native-only black and road native-only clear counts are zero,
@@ -1065,6 +1076,11 @@ later-range RMSE is `0.017558` for road, `0.003401` for mirror road,
 VRAM output along the tested route, not a claim about every course or the SDL
 presentation path; reports from other locations should be captured with the
 same strict preset.
+The following 700-1000 run adds 27 exact matches at timers 785-965 and track
+progress 16200-21830 (course 0, lap 1). It also has zero road/HUD black holes,
+zero road clear holes, zero mirror surface divergence, and zero tachometer
+needle mismatches. Its worst regional RMSE values are `0.012643` road,
+`0.008821` mirror road, `0.020162` tachometer and `0.010811` HUD.
 Each matched frame now records its absolute scene, timer, course, lap, track
 progress, position and speed. The aggregate summary reports timer/progress
 ranges and course/lap sets, so a green sparse audit cannot be mistaken for
