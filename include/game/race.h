@@ -330,8 +330,15 @@ extern char g_CaptionRanking2[];
 extern u8 g_CaptionTotalMoney[];
 extern char g_CaptionTotalTime[];
 extern char g_CaptionTotalTime2[];
+#ifdef __psyz
+extern char *g_NativeCarClassNames[];
+extern char *g_NativeCarNames[];
+#define g_CarClassNames g_NativeCarClassNames
+#define g_CarNames g_NativeCarNames
+#else
 extern s32 g_CarClassNames[];
 extern s32 g_CarNames[];
+#endif
 extern s16 g_ChanceDigits[];
 extern s32 g_ClassPromoted;
 extern u8 g_ClockTextCells[8];
@@ -367,7 +374,12 @@ extern s32 g_NameEntryChar;
 extern u8 g_NameEntryCharset[];
 extern s32 g_NameEntryCursor;
 extern s16 g_PadMirrorMasks[];
+#ifdef __psyz
+extern u8 *g_NativePlaceSuffixNames[];
+#define g_PlaceSuffixNames g_NativePlaceSuffixNames
+#else
 extern u8 *g_PlaceSuffixNames[];
+#endif
 extern Vec4 g_PlayerVelocity[2];
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
@@ -487,8 +499,21 @@ void AdvanceBgmShuffleBag(u32 track);
 void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj);
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj);
+#ifdef __psyz
+extern void (*g_NativeAttractDemoSteps[])(void);
+extern void (*g_NativeBgmSelectSteps[])(void);
+#define g_AttractDemoSteps g_NativeAttractDemoSteps
+#define g_BgmSelectSteps g_NativeBgmSelectSteps
+#else
 extern void (*g_AttractDemoSteps[])(void);
 extern void (*g_BgmSelectSteps[])(void);
+#endif
+void UpdateBgmSelectLoad(void);
+void UpdateBgmSelectFadeIn(void);
+void UpdateBgmSelect(void);
+void ExitBgmSelect(void);
+void UpdateAttractDemoStart(void);
+void UpdateAttractDemoRace(void);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */

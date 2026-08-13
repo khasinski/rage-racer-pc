@@ -4,6 +4,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/input_internal.h"
@@ -30,7 +31,7 @@ void DrawNegconSteerPlayScreen(void) {
 
     unused = g_NegconSteerPlayUvQuad;
     DrawSpriteString(0x18, 0x30, g_MsgNegconSteerPlay, 0x7F81);
-    ot = g_DrawBuffer + 0xCC;
+    ot = (u8 *)GamePrimaryOrderingTable(51);
     prim = SCRATCH_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, g_NegconSteerPlay != 0);
     prim = DrawRightArrow(ot, prim, 0x108, 0xE0, g_NegconSteerPlay != 3);
@@ -114,7 +115,7 @@ void DrawNegconMaxTwistScreen(void) {
 
     unused = g_NegconMaxTwistUvQuad;
     DrawSpriteString(0x18, 0x30, g_MsgNegconMaxTwist, 0x7F81);
-    ot = g_DrawBuffer + 0xCC;
+    ot = (u8 *)GamePrimaryOrderingTable(51);
     prim = SCRATCH_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, g_NegconMaxTwist != 0);
     prim = DrawRightArrow(ot, prim, 0x108, 0xE0, g_NegconMaxTwist != 3);

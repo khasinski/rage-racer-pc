@@ -193,6 +193,24 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 75)
 
     add_test(
+        NAME menu_sweep
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(menu_sweep PROPERTIES TIMEOUT 75)
+
+    add_test(
+        NAME time_attack_records
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_time_attack_records.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(time_attack_records PROPERTIES TIMEOUT 75)
+
+    add_test(
         NAME save_roundtrip
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_save_roundtrip.py

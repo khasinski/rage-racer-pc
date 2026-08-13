@@ -12,7 +12,7 @@
 
 
 void DrawOptionRootMenu(void) {
-    u8 *base = g_DrawBuffer;
+    OT_TYPE *base = GamePrimaryOrderingTable(51);
     s32 h18 = 0x18;
     s32 h48 = 0x48;
     s32 color = 0x7F40;
@@ -20,7 +20,6 @@ void DrawOptionRootMenu(void) {
     u8 *tmp;
     s32 state;
 
-    base += 0xCC;
     tmp = GameQueueSpriteTrans(base, *scratch, 0x24, 0x94, 0x3C, h18, 0, h48, color);
     tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xB4, 0x88, h18, 0x40, h48, color);
     tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xD4, 0x74, h18, 0, 0x60, color);
@@ -107,8 +106,7 @@ void UpdateOptionRootMenu(void) {
 }
 
 void DrawClassRecordDetail(void) {
-    u8 *raw = g_DrawBuffer;
-    u8 *base = raw + 0xCC;
+    OT_TYPE *base = GamePrimaryOrderingTable(51);
     u8 *next = SCRATCH_PRIM_CURSOR_AS(u8);
     s32 idx = g_ScreenOffsetEditY * 6 + g_ScreenOffsetEditX;
     s32 x;
@@ -116,7 +114,7 @@ void DrawClassRecordDetail(void) {
     s32 i;
 
     if (g_GameMode == 3) {
-        next = AddTilePrim(raw + 0xD4, next,
+        next = AddTilePrim(GamePrimaryOrderingTable(53), next,
                           g_ClassRecordCellPoints[idx].vx - 2, g_ClassRecordCellPoints[idx].vy - 4,
                           0x24, 0x58, 0x89, 0xFF, 0x76);
     }
@@ -147,13 +145,13 @@ void DrawClassRecordDetail(void) {
 }
 
 void DrawClassRecordGrid(void) {
-    u8 *base;
+    OT_TYPE *base;
     u8 *next;
     s32 i;
     s32 x, y;
     s32 flag;
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
+    base = GamePrimaryOrderingTable(0);
     next = SCRATCH_PRIM_CURSOR_AS(u8);
     next = GameQueueSpriteTrans(base, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
@@ -180,14 +178,14 @@ void DrawClassRecordGrid(void) {
             break;
         }
         if (g_ClassRecords[i].place <= 0) {
-            next = GameQueueSprite(base + 4, next, x, y, 0x20, 0x50, 0x60, 0x70, 0x7E80);
+            next = GameQueueSprite(base + 1, next, x, y, 0x20, 0x50, 0x60, 0x70, 0x7E80);
         } else {
-            next = GameQueueSprite(base + 4, next, x, y, 0x20, 0x50, 0x80, 0x70, 0x7E81);
+            next = GameQueueSprite(base + 1, next, x, y, 0x20, 0x50, 0x80, 0x70, 0x7E81);
         }
     }
 
     next = QueueDrawModePrim(base, next, 0x3E);
-    next = QueueDrawModePrim(base + 4, next, 0x3C);
+    next = QueueDrawModePrim(base + 1, next, 0x3C);
     SCRATCH_PRIM_CURSOR_AS(u8) = next;
     DrawOptionHintBar(0);
 }

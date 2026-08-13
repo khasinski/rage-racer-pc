@@ -77,6 +77,18 @@ void EnterRecordEntry(void);
 void UpdateRecordEntry(void);
 void EnterAttractScene(void);
 void UpdateOptionScene(void);
+void UpdateOptionMenuFade(void);
+void UpdateOptionRootMenu(void);
+void UpdateClassRecordMenu(void);
+void UpdateClassRecordBrowse(void);
+void UpdateSoundOptionMenu(void);
+void UpdateSoundSettingAdjust(void);
+void UpdateScreenAdjustScreen(void);
+void UpdateControllerConfigScreen(void);
+void BeginNegconCalibration(void);
+void UpdateNegconNeutralScreen(void);
+void UpdateNegconSteerPlayScreen(void);
+void UpdateNegconMaxTwistScreen(void);
 void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
@@ -97,6 +109,21 @@ void (*g_PrologueSteps[])(void) = {
     UpdatePrologueLoadStep1,
     UpdatePrologueLoadStep2,
     UpdatePrologue,
+};
+void (*g_NativeGameModeHandlers[13])(void) = {
+    UpdateOptionMenuFade,
+    UpdateOptionRootMenu,
+    UpdateClassRecordMenu,
+    UpdateClassRecordBrowse,
+    UpdateSoundOptionMenu,
+    UpdateSoundSettingAdjust,
+    UpdateScreenAdjustScreen,
+    UpdateControllerConfigScreen,
+    BeginNegconCalibration,
+    UpdateNegconNeutralScreen,
+    UpdateNegconSteerPlayScreen,
+    UpdateNegconMaxTwistScreen,
+    NULL,
 };
 void (*g_SceneHandlers[40])(void) = {
     [1] = UpdateBootLogoScene,

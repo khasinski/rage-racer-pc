@@ -67,6 +67,9 @@ enum PadButton {
 /* Current top-level game mode; indexes g_GameModeHandlers, dispatched each
  * frame by UpdateOptionScene. */
 extern s32 g_GameMode;
+#ifdef __psyz
+#define g_GameModeHandlers g_NativeGameModeHandlers
+#endif
 extern void (*g_GameModeHandlers[])(void);
 
 /* MainLoop is the PS-EXE `main` and never returns: init chain, then an

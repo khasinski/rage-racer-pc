@@ -102,7 +102,7 @@ void UpdateSoundSettingAdjust(void) {
 }
 
 void DrawScreenAdjustScreen(void) {
-    u8 *base = g_DrawBuffer;
+    OT_TYPE *base = GamePrimaryOrderingTable(51);
     s32 color = 0x7F40;
     s32 y48 = 0x48;
     s32 h18 = 0x18;
@@ -110,7 +110,6 @@ void DrawScreenAdjustScreen(void) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     u8 *next;
 
-    base += 0xCC;
     next = *scratch;
     next = GameQueueSpriteTrans(base, next, 0x9A, 0x88, w0c, h18, 0xC8, y48, color);
     next = GameQueueSpriteTrans(base, next, 0x9A, 0xB8, w0c, h18, 0xD4, y48, color);
@@ -215,7 +214,7 @@ void DrawOptionSceneOverlay(void) {
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     rawBase = g_DrawBuffer;
-    base = rawBase + 0xBC8;
+    base = &GetGameFrameContext(rawBase)->layout.orderingTables[1][50];
     pkt = *scratch;
 
     if (g_GameMode == 6) {

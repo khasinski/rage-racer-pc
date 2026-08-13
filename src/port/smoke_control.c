@@ -490,12 +490,44 @@ static void RageSmokeInitialize(void) {
 int RagePortShouldExit(int frame_number) {
     static int lastScene = -1;
     static int lastFrontend = -1;
+    static int lastMenuScreen = -1;
+    static int lastSweepScreen = -1;
+    static int lastGameMode = -1;
+    static int lastOptionSweepMode = -1;
     static int lastCapturedScene = -1;
     static int lastCapturedTimer = -1;
     int index;
+    const char *menuSweep;
     if (!g_SmokeInitialized) {
         g_SmokeInitialized = 1;
         RageSmokeInitialize();
+    }
+    menuSweep = getenv("RAGE_PORT_SMOKE_MENU_SWEEP");
+    if (menuSweep != NULL && g_SceneId == 8 && g_SceneTimer >= 200) {
+        int screen = 1 + (g_SceneTimer - 200) / 100;
+        if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
+            lastSweepScreen != screen) {
+            g_MenuScreen = screen;
+            g_MenuHandlerIndex = screen;
+            g_MenuHandlerIndex2 = -1;
+            GameMenuBusy = 0;
+            g_UiScriptProgress = 0;
+            g_UiScriptProgress2 = 0;
+            g_MenuScreenDraw[screen](0);
+            fprintf(stderr, "smoke menu sweep frame=%d timer=%d screen=%d\n",
+                    frame_number, g_SceneTimer, screen);
+            lastSweepScreen = screen;
+        }
+    }
+    if (getenv("RAGE_PORT_SMOKE_OPTION_SWEEP") != NULL &&
+        g_SceneId == 23 && g_SceneTimer >= 200) {
+        int mode = 1 + (g_SceneTimer - 200) / 100;
+        if (mode <= 11 && lastOptionSweepMode != mode) {
+            g_GameMode = mode;
+            lastOptionSweepMode = mode;
+            fprintf(stderr, "smoke option sweep frame=%d timer=%d mode=%d\n",
+                    frame_number, g_SceneTimer, mode);
+        }
     }
     if (g_SmokeRawPadPath) {
         u16 buttons = 0;
@@ -567,6 +599,16 @@ int RagePortShouldExit(int frame_number) {
                 frame_number, g_SceneId, g_FrontendState, g_SkyRowBase);
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
+    }
+    if (g_SceneId == 8 && g_MenuScreen != lastMenuScreen) {
+        fprintf(stderr, "smoke menu frame=%d timer=%d screen=%d\n",
+                frame_number, g_SceneTimer, g_MenuScreen);
+        lastMenuScreen = g_MenuScreen;
+    }
+    if (g_SceneId == 23 && g_GameMode != lastGameMode) {
+        fprintf(stderr, "smoke option frame=%d timer=%d mode=%d\n",
+                frame_number, g_SceneTimer, g_GameMode);
+        lastGameMode = g_GameMode;
     }
     if (g_SmokeCaptureDirectory != NULL &&
         g_SmokeCaptureDirectory[0] != '\0' &&
@@ -658,7 +700,7 @@ int RagePortShouldExit(int frame_number) {
                         g_EngineRpm + g_EngineRpmJitter,
                         g_EngineRpm, g_EngineRpmJitter, g_TachoNeedleFlash,
                         g_PlayerCar.drive.acceleratorInput.value,
-                        g_CarSpec->revLimit,
+                        g_CarSpec != NULL ? g_CarSpec->revLimit : 0,
                         g_PlayerCar.drive.engineRpm, g_RacePhase,
                         g_PadType, g_PadHeld,
                         g_CameraViewMode,
