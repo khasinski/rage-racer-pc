@@ -2,13 +2,16 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "digest"
 require "json"
 require "open3"
 require "optparse"
 require "pathname"
 require "rbconfig"
+require "shellwords"
 
 root = Pathname(__dir__).parent.expand_path
+reproduction_argv = [$PROGRAM_NAME, *ARGV]
 options = { native: root / "build-host/rage-gp0-replay" }
 OptionParser.new do |cli|
   cli.banner = "usage: rage_gp0_raster_compare.rb --vram RAW --log GP0.LOG --frame N --output DIR"
@@ -156,7 +159,12 @@ report = {
   significant_pixels: significant.length,
   rmse_rgb5: Math.sqrt(sum_sq.to_f / (320 * 240 * 3)),
   components: components.first(64), examples: significant.first(32),
-  psx: psx_ppm.to_s, native: native_ppm.to_s
+  inputs: {
+    vram: options[:vram].to_s, vram_sha256: Digest::SHA256.file(options[:vram]).hexdigest,
+    log: options[:log].to_s, log_sha256: Digest::SHA256.file(options[:log]).hexdigest
+  },
+  command: reproduction_argv.shelljoin,
+  psx: psx_ppm.to_s, native: native_ppm.to_s, diff: (output / "diff.ppm").to_s
 }
 File.write(output / "report.json", JSON.pretty_generate(report) + "\n")
 puts JSON.generate(report.slice(:mismatched_pixels, :significant_pixels,
