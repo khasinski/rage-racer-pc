@@ -21,6 +21,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Install SDL build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libdbus-1-dev libdecor-0-dev libegl1-mesa-dev \
+            libgl1-mesa-dev libglvnd-dev libibus-1.0-dev libpulse-dev \
+            libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev \
+            libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
       - name: Build
