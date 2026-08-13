@@ -49,6 +49,18 @@ Dir.mktmpdir("rage-visual-run-asymmetric-sync-") do |output|
     metadata.dig("native", "env", "RAGE_PORT_SYNC_RANDOM") == "12@199=1:0:0"
 end
 
+Dir.mktmpdir("rage-visual-run-frame-rng-") do |output|
+  command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
+             "--output", output, "--sync-random", "12@700=1:0:0",
+             "--sync-random-each-frame", "--dry-run"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort stdout + stderr unless status.success?
+  metadata = JSON.parse(File.read(File.join(output, "run.json")))
+  abort "per-frame RNG reset was not applied symmetrically" unless
+    metadata.dig("psx", "env", "RAGE_EMU_SYNC_RANDOM_EACH_FRAME") == "1" &&
+    metadata.dig("native", "env", "RAGE_PORT_SYNC_RANDOM_EACH_FRAME") == "1"
+end
+
 Dir.mktmpdir("rage-visual-run-draw-page-") do |output|
   command = [RbConfig.ruby, tool, "--checkpoint", "/tmp/reference.psxstate",
              "--output", output, "--draw-page", "--dry-run"]

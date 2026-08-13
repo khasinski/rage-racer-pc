@@ -136,6 +136,7 @@ static unsigned long g_SmokeRandomSyncSeed;
 static long g_SmokeRandomSyncVariant;
 static long g_SmokeRandomSyncVariant2;
 static int g_SmokeRandomSyncHasVariants;
+static int g_SmokeRandomSyncEachFrame;
 static void RageSmokeInitialize(void);
 
 void RagePortSmokeBeforeSceneHandler(void) {
@@ -143,7 +144,8 @@ void RagePortSmokeBeforeSceneHandler(void) {
         g_SmokeInitialized = 1;
         RageSmokeInitialize();
     }
-    if (!g_SmokeRandomSyncEnabled || g_SmokeRandomSyncFired) return;
+    if (!g_SmokeRandomSyncEnabled ||
+        (g_SmokeRandomSyncFired && !g_SmokeRandomSyncEachFrame)) return;
     if (g_SceneId == g_SmokeRandomSyncScene &&
         g_SceneTimer <= g_SmokeRandomSyncTimer) {
         g_SmokeRandomSyncArmed = 1;
@@ -156,7 +158,8 @@ void RagePortSmokeBeforeSceneHandler(void) {
             g_AnimScenery2Variant = (s16)g_SmokeRandomSyncVariant2;
         }
         g_SmokeRandomSyncFired = 1;
-        fprintf(stderr,
+        if (!g_SmokeRandomSyncEachFrame ||
+            g_SceneTimer == g_SmokeRandomSyncTimer) fprintf(stderr,
                 "random sync before-scene frame=%d scene=%d timer=%d "
                 "seed=%08x variants=%d,%d\n",
                 g_FrameCounter, g_SceneId, g_SceneTimer, g_RandomSeed,
@@ -203,6 +206,8 @@ static void RageSmokeInitialize(void) {
         getenv("RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
     const char *stateScript = getenv("RAGE_PORT_STATE_INPUT_SCRIPT");
     const char *randomSync = getenv("RAGE_PORT_SYNC_RANDOM");
+    const char *randomSyncEachFrame =
+        getenv("RAGE_PORT_SYNC_RANDOM_EACH_FRAME");
     char *copy;
     char *token;
 
@@ -221,6 +226,7 @@ static void RageSmokeInitialize(void) {
     g_SmokeCaptureTimerMin = captureMin ? strtol(captureMin, NULL, 10) : 0;
     g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
     g_SmokeCaptureAllPhases = captureAllPhases != NULL;
+    g_SmokeRandomSyncEachFrame = randomSyncEachFrame != NULL;
     if (randomSync != NULL && randomSync[0] != '\0') {
         char *end;
         g_SmokeRandomSyncScene = strtol(randomSync, &end, 0);

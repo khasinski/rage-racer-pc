@@ -2679,6 +2679,20 @@ The capture manifest must read `g_TachoNeedleFlash` at `0x801E40B0`;
 phases, because equal RPM alone can still select different tachometer colors
 and otherwise produces a large, misleading HUD pixel delta.
 
+For a short diagnostic window far from the initial tap, add
+`--sync-random-each-frame`.  The emulator and smoke harness then restore the
+chosen seed and optional scenery variants at every matching scene-handler
+entry from the requested timer onward.  This does not belong in the normal
+binary or game logic: it is a render-test fixture which removes accumulated
+frontend/VBlank RNG history while preserving the player's, rivals', camera's
+and course's real runtime state.  Keep `--require-random-seed` enabled; a
+different post-handler seed then proves that the two versions actually took a
+different random-consuming code path in that frame.  A timer-1080..1100 race
+window using this mode produced five strict pairs with equal RPM, flash, RNG,
+projection, rivals and visible-cell masks.  Road and mirror-road had no clear
+or black components in any pair; the largest needle delta was 16 raster-edge
+pixels, with the other accepted samples at 2--4 pixels.
+
 As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
 route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
 a report. This makes remaining large visual differences more likely to be
