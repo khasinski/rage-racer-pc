@@ -3342,6 +3342,20 @@ diverges substantially by timer 1800, while ending the old range at frame 3000
 silently corrupts later lap captures. Keep this boundary in the runner preset;
 it is deterministic test provenance, not a gameplay timing adjustment.
 
+With that trajectory restored, the strict timer-1820..2380 audit has 54
+matched course-0/lap-1 states (progress 25045..25184): zero road black/clear
+holes, zero mirror black/clear holes and an exact tachometer needle. The next
+timer-2400..3000 window exposes why near-state visual budgets still need the
+packet oracle. At timer 2760 the paired poses differ by only one world unit and
+all mirror projection/visibility and rival-state gates match, yet the narrow
+mirror magnifies that delta into an apparent 83-pixel black component. Replaying
+the exact retail GP0 stream through both rasterizers leaves only three isolated
+significant mirror pixels (largest component one), not the 83-pixel area.
+Therefore this is another pose-induced image difference, not missing mirror
+geometry. The next synchronization improvement should eliminate the remaining
+one-unit game-state drift; do not relax PsyZ geometry or mirror culling to make
+nearby poses look identical.
+
 Visual runs set `RAGE_PORT_DISABLE_HOST_INPUT=1`, making the smoke executable
 disable physical keyboard and gamepad reads at the PsyZ HAL boundary. Scripted
 pad frames continue through the game's normal pad code, but an accidental key
