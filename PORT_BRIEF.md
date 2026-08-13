@@ -3161,3 +3161,15 @@ and RMSE from `0.56973` to `0.49582`. Road's largest remaining component is ten
 pixels, mirror-road's is one, HUD has two significant pixels total, and both
 tachometer regions have zero. Do not widen coverage or modify game UVs to hide
 these accumulator differences.
+
+A second UV boundary exists even when the mathematical affine value and the
+PS1 accumulator are the same integer. In packet 724, scanline V is exactly
+`128.0`; Metal can interpolate it infinitesimally below the boundary, and the
+fragment shader's `floor` samples row 127. At `(101,130)` that changes palette
+index `b` / colour `0x98d0` into index `6` / colour `0xd6b9`. The opaque
+compatibility path now treats mathematically integral affine UVs as unstable
+and explicitly submits the PS1 accumulator texel. Isolated packet 724 becomes
+pixel-identical (11 mismatches to zero). The complete exact frame falls from
+144 to 27 significant pixels and RGB555 RMSE from `0.49582` to `0.43382`.
+Mirror-road, HUD, tachometer and tachometer-needle report zero significant
+pixels; road retains three small connected components of 9, 7 and 4 pixels.
