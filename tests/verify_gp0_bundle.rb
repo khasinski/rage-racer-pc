@@ -29,4 +29,6 @@ required = [
 ]
 missing = required.reject { |text| source.include?(text) }
 raise "bundle replay lost: #{missing.join(', ')}" unless missing.empty?
+raise "PSX command-frame correction is limited to checkpoint replays" if
+  source.match?(/if psx_replay_frames && psx_replay_state\s+native_draw_area/m)
 puts "GP0 bundle replay uses captured provenance and leaves a self-contained diff"

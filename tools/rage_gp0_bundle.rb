@@ -169,8 +169,7 @@ end.compact.uniq
 abort "native replay submitted no GP0 commands for scene=#{native_scene} timer=#{native_timer}" if native_frames.empty?
 native_frame = native_frames.min_by { |frame| [(frame - native_frame).abs, frame] }
 
-if psx_replay_frames && psx_replay_state
-  native_draw_area = File.foreach(bundle / "gp0-native.log").map do |line|
+native_draw_area = File.foreach(bundle / "gp0-native.log").map do |line|
     next unless line.start_with?("gp0-packet ") &&
                 line[/\bframe=(\d+)/, 1].to_i == native_frame &&
                 line[/\bscene=(-?\d+)/, 1].to_i == native_scene &&
@@ -178,10 +177,10 @@ if psx_replay_frames && psx_replay_state
     words = line[/\bwords=([0-9a-fA-F,]+)/, 1]
     next unless words
     words.split(",").map { |word| Integer(word, 16) }.find { |word| (word >> 24) == 0xe3 }
-  end.compact.first
-  psx_draw_areas = {}
-  psx_contexts = {}
-  available_frames = File.foreach(bundle / "gp0-psx.log").map do |line|
+end.compact.first
+psx_draw_areas = {}
+psx_contexts = {}
+available_frames = File.foreach(bundle / "gp0-psx.log").map do |line|
     match = line.match(/\Agp0-command frame=(\d+)\b/)
     next unless match
     frame = Integer(match[1], 10)
@@ -194,19 +193,18 @@ if psx_replay_frames && psx_replay_state
       psx_draw_areas[frame] ||= draw_area if draw_area
     end
     frame
-  end.compact.uniq
-  abort "replayed PSX checkpoint submitted no GP0 commands" if available_frames.empty?
-  matching_surface = native_draw_area && available_frames.select do |frame|
-    psx_draw_areas[frame] == native_draw_area &&
-      psx_contexts[frame] == [native_scene, native_timer]
-  end
-  if native_draw_area && matching_surface.empty? && available_frames.length > 1
-    abort "PSX replay has no scene=#{native_scene} timer=#{native_timer} frame " \
-          "on native draw page #{format('%08x', native_draw_area)}"
-  end
-  candidates = matching_surface.empty? ? available_frames : matching_surface
-  psx_frame = candidates.min_by { |frame| [(frame - psx_frame).abs, frame] }
+end.compact.uniq
+abort "replayed PSX run submitted no GP0 commands" if available_frames.empty?
+matching_surface = native_draw_area && available_frames.select do |frame|
+  psx_draw_areas[frame] == native_draw_area &&
+    psx_contexts[frame] == [native_scene, native_timer]
 end
+if native_draw_area && matching_surface.empty? && available_frames.length > 1
+  abort "PSX replay has no scene=#{native_scene} timer=#{native_timer} frame " \
+        "on native draw page #{format('%08x', native_draw_area)}"
+end
+candidates = matching_surface.empty? ? available_frames : matching_surface
+psx_frame = candidates.min_by { |frame| [(frame - psx_frame).abs, frame] }
 
 compare = [RbConfig.ruby, (root / "tools/rage_gp0_compare.rb").to_s,
            "--psx", (bundle / "gp0-psx.log").to_s,
