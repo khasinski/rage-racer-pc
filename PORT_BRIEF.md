@@ -2991,3 +2991,16 @@ ignored because the selector required `-f` in every filename, so a pixel trace
 could replay BIOS and the entire menu route. Do not use a nearby checkpoint
 from another input trajectory merely because its scene and timer match; the
 manifest state gates remain authoritative.
+
+At the strict timer-392 road hotspot `(124,131)`, the complete GP0 streams are
+equal (`11,255` words). Retail and native both submit adjacent FT4 packets at
+orders 135 and 137 with the same coordinates and UVs. The pixel lies on their
+shared endpoint: retail's inclusive scanline rasterizer lets order 137 sample
+UV `(94,159)`, palette index `0xb`, colour `0xffff`, while Metal's top-left
+rule assigns the pixel only to order 135 and leaves its `0x8000` sample. A
+diagnostic one-pixel expansion of axis-aligned quads reduced road RMSE from
+`0.1080` to `0.0821`, proving the coverage cause, but changed endpoint UV
+interpolation and produced red instead of retail white. It was not retained.
+The correct PsyZ fix needs an explicit inclusive right/bottom edge strip (or a
+PS1 scan-conversion path) whose UV and colour values remain those of the
+original endpoint; globally stretching triangle geometry is not equivalent.
