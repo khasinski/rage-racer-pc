@@ -177,6 +177,36 @@ Dir.mktmpdir("rage-visual-blank-reference-") do |root|
     end
 end
 
+Dir.mktmpdir("rage-visual-spinning-scenery-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00100-s12.ppm"
+  visible = Array.new(320 * 240) { [32, 32, 32] }
+  write_pixels(File.join(psx, filename), 320, 240, visible)
+  write_pixels(File.join(native, filename), 320, 240, visible)
+  header = %w[
+    filename frame scene timer x z speed progress lap body_yaw body_pitch
+    body_roll track_lateral model_yaw mirror_y view_x view_y view_z
+    view_angle_x view_angle_y view_angle_z environment_mode4 scratch_env_mode4
+    random_seed anim_timer spinning_angle0 spinning_angle1 spinning_angle2
+    spinning_angle3
+  ].join(",")
+  state = [filename, 1, 12, 100, 10, 20, 30, 40, 1, 0, 0, 0, 0, 0, 18,
+           10, 20, 30, 0, 0, 0, 0, 0, 7, 100]
+  File.write(File.join(psx, "capture-manifest.csv"),
+             header + "\n" + (state + [3360, 64, 128, 256]).join(",") + "\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             header + "\n" + (state + [1280, 64, 128, 256]).join(",") + "\n")
+  stdout, stderr, status = Open3.capture3(
+    RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+    "--output", output, "--match", "position", "--skip-unmatched"
+  )
+  abort "different spinning scenery phases entered visual ranking" unless
+    !status.success? && (stdout + stderr).include?("spinning_scenery")
+end
+
 Dir.mktmpdir("rage-clear-area-") do |root|
   compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")

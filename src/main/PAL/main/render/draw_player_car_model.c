@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -7,6 +8,11 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "psyq/gte.h"
+
+#ifdef __psyz
+#include <stdio.h>
+#include <stdlib.h>
+#endif
 
 
 
@@ -168,6 +174,24 @@ void DrawCar(GameRenderObject *obj) {
     v_128[1] = 0;
     v_128[2] = obj->z - SCRATCH_VIEW_Z;
     ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, v_128, v_148);
+#ifdef __psyz
+    if (getenv("RAGE_PORT_CAR_DRAW_TRACE") != NULL &&
+        g_RageScratchpadState.mode == 9) {
+        const char *timerText = getenv("RAGE_PORT_CAR_DRAW_TRACE_TIMER");
+        if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+            printf("car-draw timer=%d mirror=1 index=%ld "
+                   "matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
+                   "input=%d,%d,%d output=%d,%d,%d\n", g_SceneTimer,
+                   (long)(((GameCarRuntime *)(void *)obj - g_Cars)),
+                   SCRATCH_VIEW_MATRIX_GTE->m[0][0], SCRATCH_VIEW_MATRIX_GTE->m[0][1],
+                   SCRATCH_VIEW_MATRIX_GTE->m[0][2], SCRATCH_VIEW_MATRIX_GTE->m[1][0],
+                   SCRATCH_VIEW_MATRIX_GTE->m[1][1], SCRATCH_VIEW_MATRIX_GTE->m[1][2],
+                   SCRATCH_VIEW_MATRIX_GTE->m[2][0], SCRATCH_VIEW_MATRIX_GTE->m[2][1],
+                   SCRATCH_VIEW_MATRIX_GTE->m[2][2], v_128[0], v_128[1], v_128[2],
+                   v_148[0], v_148[1], v_148[2]);
+        }
+    }
+#endif
     if (v_128[0] < 0) {
         v_128[0] = -v_128[0];
     }

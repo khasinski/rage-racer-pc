@@ -3353,16 +3353,16 @@ it is deterministic test provenance, not a gameplay timing adjustment.
 With that trajectory restored, the strict timer-1820..2380 audit has 54
 matched course-0/lap-1 states (progress 25045..25184): zero road black/clear
 holes, zero mirror black/clear holes and an exact tachometer needle. The next
-timer-2400..3000 window exposes why near-state visual budgets still need the
-packet oracle. At timer 2760 the paired poses differ by only one world unit and
-all mirror projection/visibility and rival-state gates match, yet the narrow
-mirror magnifies that delta into an apparent 83-pixel black component. Replaying
-the exact retail GP0 stream through both rasterizers leaves only three isolated
-significant mirror pixels (largest component one), not the 83-pixel area.
-Therefore this is another pose-induced image difference, not missing mirror
-geometry. The next synchronization improvement should eliminate the remaining
-one-unit game-state drift; do not relax PsyZ geometry or mirror culling to make
-nearby poses look identical.
+timer-2400..3000 window initially appeared to contain an 83-pixel mirror hole
+at timer 2760. Canonical GP0 replay reduced it to three isolated significant
+pixels (largest component one), proving it was not a PsyZ raster failure. An
+exact-state trace found the more precise cause: the black region is the
+course's spinning scenery. Its PSX angle is 3360 while native is 1280, even
+though car state, camera, projection and visibility masks match; those angles
+legitimately produce different object matrices. Capture manifests now include
+all four `g_SpinningSceneryAngle` values and the matcher always rejects unequal
+phases as `spinning_scenery`. Do not relax PsyZ geometry or mirror culling to
+make different animated-world states look identical.
 
 Use `tools/rage_visual_triage.rb --run RUN` to automate that decision across
 road, mirror-road, HUD and tachometer profiles. It ranks only components above
@@ -3373,8 +3373,8 @@ replay; `pose_or_game_packets` means the visual component disappears when both
 rasterizers receive the retail stream. `--reuse-only` never starts either
 runtime, and later PsyZ iterations can rerun the saved bundle's `--raster-only`
 stage. On current evidence timer 1510 road is visual component 40 / canonical
-0, and timer 2760 mirror is 83 / canonical 1, so both are correctly classified
-as pose or game-packet differences rather than renderer bugs.
+0. The former timer-2760 mirror candidate is now rejected before triage because
+its spinning-scenery state differs.
 `rage_gp0_bundle.rb` may return nonzero after successfully writing the raster
 report when the retail and native game GP0 streams differ. Triage accepts that
 status only if `gp0-raster/report.json` exists and preserves the subprocess
@@ -3387,3 +3387,32 @@ pad frames continue through the game's normal pad code, but an accidental key
 press can no longer alter a deterministic visual run. Ordinary smoke runs and
 the interactive executable leave host input enabled. This isolation belongs
 to the host test harness/HAL and must not be backported as game logic.
+
+PsyZ `RotMatrix` must use the packed PsyQ `rcossin_tbl`, not independent
+`rsin`/`rcos` calls. The retail table deliberately contains paired rounding:
+at angle 474 its cosine is 3056 and sine is 2723, while the independent cosine
+path returned 3056/2727. That four-unit matrix error first changed the player's
+hull correction at race timer 966 and later produced divergent collision and
+render state. PsyZ now reconstructs every quadrant from a canonical 1024-word
+first-quadrant table; a byte-for-byte check reconstructs all 4096 retail words,
+and focused `RotMatrix` tests pin the observed angle-474 result. Exact race
+captures after the fix retain identical player, camera, projection and rival
+state through timer 3000. This is a HAL fidelity fix, not game logic.
+
+The game's public PSY-Q `Matrix` declaration contained a separate 32/64-bit ABI
+bug: `long t[3]` is 32-bit on PS1 but 64-bit on LP64 hosts. The translation is
+now `s32 t[3]`, with a compile-time `sizeof(Matrix) == 32` assertion. This did
+not remove the timer-2760 mirror candidate, but it prevents adjacent matrices
+and stack layouts from depending on host word size. Backport this declaration
+and assertion to the decompilation.
+
+For symmetric runtime localization, `RAGE_CAR_KNOCKBACK_TRACE` in the Ruby PS1
+emulator and `RAGE_PORT_CAR_KNOCKBACK_TRACE` natively log comparable knockback
+inputs and results; the emulator trace also exposes the retail trigonometric
+intermediates. Their optional `_TIMER_MIN` and `_TIMER_MAX` bounds keep traces
+short. `RAGE_CAR_TRACK_TRACE` /
+`RAGE_PORT_CAR_TRACK_TRACE` also include player hull-limit matrix results.
+`RAGE_CAR_DRAW_TRACE` / `RAGE_PORT_CAR_DRAW_TRACE`, with an optional `_TIMER`,
+log mirror-pass car view transforms and each final object matrix. Use a saved
+PSX checkpoint plus one timer filter before adding another symptom-specific
+instrumentation path.

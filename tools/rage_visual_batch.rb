@@ -257,6 +257,7 @@ def manifest_rows(directory)
       texture_page_wanted texture_cursor_row texture_target_row
       course_object_count course_objects_hash
       anim_scenery_variant anim_scenery2_variant
+      spinning_angle0 spinning_angle1 spinning_angle2 spinning_angle3
       player_render_hash rival_render_hash drawable_rival_count
       car0_render_hash car1_render_hash car2_render_hash car3_render_hash
       car4_render_hash car5_render_hash car6_render_hash car7_render_hash
@@ -430,6 +431,11 @@ if options[:match] == "position"
       scenery_variants_equal: !candidate.key?(:anim_scenery_variant) ||
         !psx.key?(:anim_scenery_variant) ||
         candidate[:anim_scenery_variant] == psx[:anim_scenery_variant],
+      spinning_scenery_equal: !candidate.key?(:spinning_angle0) ||
+        !psx.key?(:spinning_angle0) ||
+        (0...4).all? do |index|
+          candidate[:"spinning_angle#{index}"] == psx[:"spinning_angle#{index}"]
+        end,
       projection_phase_equal:
         !candidate.key?(:proj_order) || !psx.key?(:proj_order) ||
         candidate[:proj_order] == psx[:proj_order],
@@ -468,6 +474,7 @@ if options[:match] == "position"
       metrics[:timer_delta] <= options[:max_timer_delta] &&
       metrics[:anim_timer_delta] <= options[:max_anim_timer_delta] &&
       (!options[:require_scenery_variants] || metrics[:scenery_variants_equal]) &&
+      metrics[:spinning_scenery_equal] &&
       (!options[:require_visible_cells] ||
         (metrics[:main_visible_cells_equal] && metrics[:mirror_visible_cells_equal])) &&
       (!options[:require_main_visible_cells] || metrics[:main_visible_cells_equal]) &&
@@ -531,6 +538,7 @@ if options[:match] == "position"
       metrics[:anim_timer_delta] > options[:max_anim_timer_delta]
     reasons << "scenery_variants" if options[:require_scenery_variants] &&
       !metrics[:scenery_variants_equal]
+    reasons << "spinning_scenery" unless metrics[:spinning_scenery_equal]
     reasons << "random_seed" if options[:require_random_seed] &&
       candidate.key?(:random_seed) && psx.key?(:random_seed) &&
       candidate[:random_seed] != psx[:random_seed]

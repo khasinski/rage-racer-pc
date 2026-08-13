@@ -1,9 +1,15 @@
 #include "common.h"
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
 #include "game/random.h"
+
+#ifdef __psyz
+#include <stdio.h>
+#include <stdlib.h>
+#endif
 
 typedef union CarSpeedAddress {
     s32 *value;
@@ -240,6 +246,12 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     s32 trig;
     s32 product;
     u32 hitSign;
+#ifdef __psyz
+    static int traceEnabled = -1;
+    static int traceTimer = -1;
+    static int traceTimerMin = -1;
+    static int traceTimerMax = -1;
+#endif
 
     carReg = car;
     asm("" : : "r"(carReg));
@@ -351,6 +363,27 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     carReg->motionTimer = tmp;
     carReg->velocityX = hitX;
     carReg->velocityZ = hitZ;
+#ifdef __psyz
+    if (traceEnabled < 0) {
+        const char *timerText = getenv("RAGE_PORT_CAR_KNOCKBACK_TRACE_TIMER");
+        const char *timerMinText = getenv("RAGE_PORT_CAR_KNOCKBACK_TRACE_TIMER_MIN");
+        const char *timerMaxText = getenv("RAGE_PORT_CAR_KNOCKBACK_TRACE_TIMER_MAX");
+        traceEnabled = getenv("RAGE_PORT_CAR_KNOCKBACK_TRACE") != NULL;
+        traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
+        traceTimerMin = timerMinText != NULL ? (int)strtol(timerMinText, NULL, 0) : -1;
+        traceTimerMax = timerMaxText != NULL ? (int)strtol(timerMaxText, NULL, 0) : -1;
+    }
+    if (traceEnabled &&
+        (traceTimer < 0 || g_SceneTimer == traceTimer) &&
+        (traceTimerMin < 0 || g_SceneTimer >= traceTimerMin) &&
+        (traceTimerMax < 0 || g_SceneTimer <= traceTimerMax)) {
+        printf("car-knockback timer=%d player=%d input=%d,%d mode=%d "
+               "output=%d,%d duration=%d heading=%d lateral=%d\n", g_SceneTimer,
+               carReg == (GameCarRuntime *)&g_PlayerCar, x, z, mode,
+               carReg->velocityX, carReg->velocityZ, carReg->motionTimer,
+               carReg->trackHeading.half.low, carReg->trackLateralOffset);
+    }
+#endif
 }
 
 void StartCarBodyKick(s32 strength, GameCarRuntime *car) {

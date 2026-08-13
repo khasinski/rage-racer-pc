@@ -7,6 +7,12 @@
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
+#ifdef __psyz
+#include <stdio.h>
+#include <stdlib.h>
+#include "game/state.h"
+#endif
+
 
 /* DR_MODE, 12 bytes: sets the texture page (and the blend mode packed into it)
  * for the primitives that follow, links it into the ordering table and returns
@@ -171,4 +177,21 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     w->mtx.t[2] = w->view.z * 4;
     SetRotMatrix(rot);
     SetTransMatrix(&w->mtx);
+#ifdef __psyz
+    if (getenv("RAGE_PORT_CAR_DRAW_TRACE") != NULL &&
+        g_RageScratchpadState.mode == 9) {
+        const char *timerText = getenv("RAGE_PORT_CAR_DRAW_TRACE_TIMER");
+        if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+            printf("object-matrix timer=%d position=%d,%d,%d relative=%d,%d,%d "
+                   "view=%d,%d,%d rotation=%d,%d,%d,%d,%d,%d,%d,%d,%d "
+                   "translation=%d,%d,%d\n", g_SceneTimer,
+                   pos->x, pos->y, pos->z, w->relative[0], w->relative[1],
+                   w->relative[2], w->view.x, w->view.y, w->view.z,
+                   rot->m[0][0], rot->m[0][1], rot->m[0][2],
+                   rot->m[1][0], rot->m[1][1], rot->m[1][2],
+                   rot->m[2][0], rot->m[2][1], rot->m[2][2],
+                   w->mtx.t[0], w->mtx.t[1], w->mtx.t[2]);
+        }
+    }
+#endif
 }

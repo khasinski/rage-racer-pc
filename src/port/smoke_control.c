@@ -388,6 +388,8 @@ static void RageSmokeInitialize(void) {
                       "texture_cursor_row,texture_target_row," \
                       "course_object_count,course_objects_hash," \
                       "anim_scenery_variant,anim_scenery2_variant," \
+                      "spinning_angle0,spinning_angle1," \
+                      "spinning_angle2,spinning_angle3," \
                       "rival_render_hash,drawable_rival_count," \
                       "rival0_x,rival0_z,rival1_x,rival1_z," \
                       "rival2_x,rival2_z,rival3_x,rival3_z," \
@@ -656,6 +658,7 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
+                        "%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%u,%u,%u,%u," \
@@ -712,6 +715,8 @@ int RagePortShouldExit(int frame_number) {
                         RageSmokeHashBytes(g_CourseObjects,
                             (size_t)g_CourseObjectCount * sizeof(CourseObject)),
                         g_AnimSceneryVariant, g_AnimScenery2Variant,
+                        g_SpinningSceneryAngle[0], g_SpinningSceneryAngle[1],
+                        g_SpinningSceneryAngle[2], g_SpinningSceneryAngle[3],
                         RageSmokeHashCarRenderState(g_Cars, 11),
                         RageSmokeCountDrawableCars(g_Cars, 11),
                         g_Cars[0].x, g_Cars[0].z,
