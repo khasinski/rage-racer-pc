@@ -200,6 +200,15 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 75)
 
     add_test(
+        NAME grand_prix_exit
+        COMMAND ruby
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_exit.rb
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(grand_prix_exit PROPERTIES TIMEOUT 75)
+
+    add_test(
         NAME menu_sweep
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.py

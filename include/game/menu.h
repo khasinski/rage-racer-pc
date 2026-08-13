@@ -605,6 +605,7 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopScreenScript, 68);
 RAGE_NATIVE_UI_SCRIPT(MenuDialogPanelUpperScript, 4);
 RAGE_NATIVE_UI_SCRIPT(MenuDialogPanelLowerScript, 8);
 RAGE_NATIVE_UI_SCRIPT(CourseSelectSavePromptScript, 4);
+RAGE_NATIVE_UI_SCRIPT(CourseSelectSavePromptBanner, 2);
 RAGE_NATIVE_UI_SCRIPT(MenuRow0MarkerScript, 4);
 RAGE_NATIVE_UI_SCRIPT(MenuRow1MarkerScript, 16);
 RAGE_NATIVE_UI_SCRIPT(RankingMenuScript, 9);
@@ -635,6 +636,7 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #define g_MenuDialogPanelUpperScript g_NativeMenuDialogPanelUpperScript
 #define g_MenuDialogPanelLowerScript g_NativeMenuDialogPanelLowerScript
 #define g_CourseSelectSavePromptScript g_NativeCourseSelectSavePromptScript
+#define g_CourseSelectSavePromptBanner g_NativeCourseSelectSavePromptBanner
 #define g_MenuRow0MarkerScript g_NativeMenuRow0MarkerScript
 #define g_MenuRow1MarkerScript g_NativeMenuRow1MarkerScript
 #define g_RankingMenuScript g_NativeRankingMenuScript

@@ -3416,3 +3416,41 @@ short. `RAGE_CAR_TRACK_TRACE` /
 log mirror-pass car view transforms and each final object matrix. Use a saved
 PSX checkpoint plus one timer filter before adding another symptom-specific
 instrumentation path.
+
+An aligned Grand Prix replay must preserve the complete input history rather
+than patching runtime globals.  Relative to the existing PSX scene-8
+checkpoint, delaying the native scene-8 confirmation by 65 frames produces
+the same animation timer and all four spinning-scenery angles; shift the later
+scripted inputs by the same amount.  The resulting native scene-12 entry has
+the exact PSX animation state.  Reuse the expensive PSX half of a visual bundle
+when iterating on PsyZ, but continue to require equal game state and projection
+phase before comparing pixels.
+
+### Race-exit finish-camera overflow (backport to the decompilation)
+
+The finish-camera path passed a two-element `s16` array to
+`UpdateCarTrackState` as though it were a complete `CarTrackLimits`.  The
+callee reads four `s16` fields, so exiting a Grand Prix race read beyond the
+stack object when leaving an active race.  `UpdateFinishCamera` now declares
+and zeroes a complete `CarTrackLimits`; this is a game-code type/layout fix,
+not a HAL workaround, and must be backported.
+
+The visual behaviour of that finish camera is not validated by the memory
+safety fix.  Its zoom-out currently exposes geometry outside the course and
+must be compared against the same retail PSX sequence before changing camera
+distance or clipping constants.
+
+### End Grand Prix UI-script layout (backport to the decompilation)
+
+`END GRAND PRIX` is the third option on the course-selection screen.  Opening
+its confirmation prompt runs `g_CourseSelectSavePromptBanner`.  This symbol was
+still exposed to the native build as two serialized 12-byte PS1 commands,
+while `RunTimedDrawScript` advances through 24-byte native commands containing
+host pointers.  It consequently read the terminator beyond the global and
+crashed immediately.  Decode the two checked-in records at retail address
+`0x800827FC` into `g_NativeCourseSelectSavePromptBanner`, just like the other
+pointer-bearing UI scripts; do not depend on linker adjacency and do not read
+the executable at runtime.  This is another game-data 32/64-bit layout fix to
+backport.  The `grand_prix_exit` regression enters course selection, chooses
+the third option, confirms it, and requires the save-screen transition without
+a sanitizer error.

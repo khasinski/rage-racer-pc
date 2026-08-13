@@ -104,6 +104,7 @@ RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopScreenScript, 68);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuDialogPanelUpperScript, 4);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuDialogPanelLowerScript, 8);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(CourseSelectSavePromptScript, 4);
+RAGE_DEFINE_NATIVE_UI_SCRIPT(CourseSelectSavePromptBanner, 2);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuRow0MarkerScript, 4);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(MenuRow1MarkerScript, 16);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(RankingMenuScript, 9);
@@ -385,6 +386,7 @@ int RageInitNativeGameData(void) {
         RageLoadTimedDrawScript(g_NativeMenuDialogPanelUpperScript, 4, 0x80082574u) &&
         RageLoadTimedDrawScript(g_NativeMenuDialogPanelLowerScript, 8, 0x800825a4u) &&
         RageLoadTimedDrawScript(g_NativeCourseSelectSavePromptScript, 4, 0x80082604u) &&
+        RageLoadTimedDrawScript(g_NativeCourseSelectSavePromptBanner, 2, 0x800827fcu) &&
         RageLoadTimedDrawScript(g_NativeMenuRow0MarkerScript, 4, 0x80082634u) &&
         RageLoadTimedDrawScript(g_NativeMenuRow1MarkerScript, 16, 0x80082664u) &&
         RageLoadTimedDrawScript(g_NativeRankingMenuScript, 9, 0x80082724u) &&
