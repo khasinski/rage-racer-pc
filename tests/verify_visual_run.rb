@@ -43,6 +43,9 @@ Dir.mktmpdir("rage-visual-run-") do |output|
     metadata.dig("psx", "env", "RAGE_EMU_STOP_SCENE_TIMER") == "870" &&
     metadata.dig("native", "env", "RAGE_PORT_SMOKE_STOP_SCENE") == "12" &&
     metadata.dig("native", "env", "RAGE_PORT_SMOKE_STOP_SCENE_TIMER") == "870"
+  abort "capture window was not restricted to the race scene" unless
+    metadata.dig("psx", "env", "RAGE_EMU_CAPTURE_SCENE") == "12" &&
+    metadata.dig("native", "env", "RAGE_PORT_SMOKE_CAPTURE_SCENE") == "12"
 end
 
 Dir.mktmpdir("rage-visual-run-sparse-stride-") do |output|

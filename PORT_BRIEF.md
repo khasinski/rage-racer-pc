@@ -2845,6 +2845,24 @@ to its checkpoint, input script, tap settings, surface and timer window (the
 original `run.json` records all of them).  Use `--compare-only` when neither
 runtime needs to be executed.
 
+Capture timer bounds are not scene bounds: menus and the race can reuse the
+same timer values. The visual runner therefore sets `RAGE_EMU_CAPTURE_SCENE=12`
+and `RAGE_PORT_SMOKE_CAPTURE_SCENE=12`; both capture implementations reject
+all other scenes before writing images or manifest rows. This removes the need
+to hand-filter manifests and prevents a menu row from being matched as a race
+frame.
+
+A save-state is an authoritative visual oracle only when its VRAM provenance
+matches the native route. Rage Racer preserves VRAM across scene changes, so a
+state created by jumping directly into scene 12 can have the same game globals
+and emit the same current GP0 stream while still missing textures uploaded in
+the prologue and menus. Such a pair measures different asset history, not a
+renderer bug. For Grand Prix, create or retain the PSX checkpoint by following
+the complete state route through scenes 5, 4, 32 and 8 before scene 12, and
+keep its originating `run.json` with every reusable cache. Atomic state and
+GP0 equality remain necessary gates, but are not sufficient without this VRAM
+history.
+
 As a separate memory-safety check, the current 3,800-frame Grand Prix smoke
 route completes under AddressSanitizer plus UndefinedBehaviorSanitizer without
 a report. This makes remaining large visual differences more likely to be

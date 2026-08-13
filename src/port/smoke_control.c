@@ -182,6 +182,7 @@ static long g_SmokeStopSceneTimer;
 static long g_SmokeCaptureTimerStride;
 static long g_SmokeCaptureTimerMin;
 static long g_SmokeCaptureTimerMax;
+static long g_SmokeCaptureScene;
 static const char *g_SmokeCaptureDirectory;
 static FILE *g_SmokeCaptureManifest;
 
@@ -217,6 +218,7 @@ static int g_SmokeHasStopScene;
 static int g_SmokeHasStopSceneTimer;
 static int g_SmokeHasCaptureTimerMin;
 static int g_SmokeHasCaptureTimerMax;
+static int g_SmokeHasCaptureScene;
 static int g_SmokeInitialized;
 static int g_SmokeRawPadPath;
 static int g_SmokeCaptureAllPhases;
@@ -305,6 +307,7 @@ static void RageSmokeInitialize(void) {
         getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
     const char *captureMin = getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN");
     const char *captureMax = getenv("RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
+    const char *captureScene = getenv("RAGE_PORT_SMOKE_CAPTURE_SCENE");
     const char *captureAllPhases =
         getenv("RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
     const char *stateScript = getenv("RAGE_PORT_STATE_INPUT_SCRIPT");
@@ -328,6 +331,8 @@ static void RageSmokeInitialize(void) {
     g_SmokeHasCaptureTimerMax = captureMax != NULL;
     g_SmokeCaptureTimerMin = captureMin ? strtol(captureMin, NULL, 10) : 0;
     g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
+    g_SmokeHasCaptureScene = captureScene != NULL;
+    g_SmokeCaptureScene = captureScene ? strtol(captureScene, NULL, 10) : 0;
     g_SmokeCaptureAllPhases = captureAllPhases != NULL;
     g_SmokeRandomSyncEachFrame = randomSyncEachFrame != NULL;
     if (randomSync != NULL && randomSync[0] != '\0') {
@@ -566,6 +571,7 @@ int RagePortShouldExit(int frame_number) {
     if (g_SmokeCaptureDirectory != NULL &&
         g_SmokeCaptureDirectory[0] != '\0' &&
         g_SmokeCaptureTimerStride > 0 &&
+        (!g_SmokeHasCaptureScene || g_SceneId == g_SmokeCaptureScene) &&
         (!g_SmokeHasStopScene || g_SceneId == g_SmokeStopScene) &&
         g_SceneTimer >= 0 &&
         (!g_SmokeHasCaptureTimerMin ||

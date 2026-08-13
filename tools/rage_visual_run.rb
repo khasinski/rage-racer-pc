@@ -157,6 +157,7 @@ psx_env = {
   "RAGE_EMU_TIMER_FILENAMES" => "1", "RAGE_EMU_CAPTURE_ALL_PHASES" => "1",
   "RAGE_EMU_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_EMU_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
+  "RAGE_EMU_CAPTURE_SCENE" => "12",
   "RAGE_EMU_STOP_SCENE" => "12",
   "RAGE_EMU_STOP_SCENE_TIMER" => options[:timer_max].to_s,
   "RUBYOPT" => "--yjit"
@@ -183,6 +184,7 @@ native_env = {
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE" => options[:native_capture_stride].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN" => options[:timer_min].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX" => options[:timer_max].to_s,
+  "RAGE_PORT_SMOKE_CAPTURE_SCENE" => "12",
   "RAGE_PORT_SMOKE_STOP_SCENE_TIMER" => options[:timer_max].to_s,
   "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES" => "1"
 }
