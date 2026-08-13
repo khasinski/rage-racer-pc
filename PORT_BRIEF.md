@@ -3112,5 +3112,27 @@ the exact 27-pixel needle component is gone. The remaining 116 low-level
 isolated mismatches are below the RGB555 significance threshold. The game F4
 packet remains unchanged, so there is nothing from this fix to backport into
 the decompilation: it belongs to the modern HAL. Use the same span-minus-native
-coverage design for the forthcoming textured FT4 path, adding PS1 UV/color
-accumulator interpolation rather than stretching geometry.
+coverage design for textured FT4, adding PS1 UV/color accumulator interpolation
+rather than stretching geometry.
+
+PsyZ now applies that design to opaque, flat-colour textured FT4 packets too.
+For each triangle scanline it considers only the inclusive left/right endpoint,
+subtracts pixels accepted by Metal's top-left rule, and emits each missing
+pixel with the integer part of the PS1 16.16 UV accumulator. Limiting the check
+to at most four endpoint candidates per row avoids scanning polygon interiors.
+The old axis-aligned right-edge strip and its approximate one-texel U adjustment
+were removed; arbitrary rotated FT4s use the same path. Semi-transparent and
+Gouraud textured quads remain excluded until their repeated coverage and colour
+accumulators can be reproduced without double blending.
+
+The exact timer-391 road specimen is native packet 1934:
+`2c7f7f7f,004000b1,7b05a080,003300bb,001ea09f,006600b7,054ebf80,`
+`005e00c2,0000bf9f`. In isolation its four significant endpoint mismatches
+fall to zero and RGB555 RMSE falls from `0.10895` to `0.04672`. The formerly
+missing vertex `(177,64)` is a two-edge endpoint; retail samples UV `(128,160)`,
+palette index `2`, colour `0xd6d4`. Treating multi-edge vertices as definitely
+covered was therefore incorrect even after modelling ordinary top-left edges.
+Across the complete exact frame, significant mismatches fall from 875 to 362
+and RMSE from `0.99659` to `0.56973`; the 41-pixel component rooted at
+`(183,102)` disappears. This is again a HAL scan-conversion fix and changes no
+game packet or decompilation-owned geometry.
