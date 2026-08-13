@@ -3137,6 +3137,23 @@ Terminal `sync-FRAME-tTIMER-sSCENE.ppm` captures are valid bundle inputs too.
 Their frame number must participate in nearest-checkpoint selection, and a GP0
 replay must drop the original terminal timer stop condition: otherwise a
 checkpoint resumed at the target timer exits before submitting that frame.
+Final-DMA timer captures add `-dDMA` between frame and scene in their filename;
+the bundle parser accepts that suffix so exact phase captures can enter the
+same packet/texel workflow.
+
+Timer 1510 is the first strict visual-budget failure after extending the race
+audit through timer 1790. Its apparent road hole is a 38-pixel, 2x19 vertical
+component at `(191,71)`, but it is not a PsyZ raster defect. The paired states
+have identical timer, RPM, animation, projection fingerprints, rival render
+state and visibility masks, while their cameras differ by 3.0--3.2 world
+units. Their GP0 streams therefore diverge immediately: retail packet 18 starts
+at `(82,238)` and native packet 528 at `(80,239)`. Replaying the canonical
+retail GP0 stream through both the Ruby GPU and PsyZ produces zero significant
+road pixels (and zero in mirror, HUD and tachometer regions). Classify this as
+a pose-induced image edge, not missing geometry; do not widen primitives or
+change culling to hide it. Visual component budgets are a fast candidate
+selector, while the same-GP0 raster oracle remains authoritative for backend
+faults whenever paired game poses are merely near rather than bit-exact.
 
 Do not use lower-band RMSE alone as evidence of a broken HUD. Much of the
 nominal `hud` rectangle is transparent and shows live road geometry. At the

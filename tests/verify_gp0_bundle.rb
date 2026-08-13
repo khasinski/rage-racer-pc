@@ -43,4 +43,6 @@ raise "PSX command-frame correction is limited to checkpoint replays" if
   source.match?(/if psx_replay_frames && psx_replay_state\s+native_draw_area/m)
 raise "bundle cannot parse synchronized terminal PSX captures" unless
   source.include?('basename.match(/\\Async-(\\d+)-t\\d+-s\\d+\\.ppm\\z/)')
+raise "bundle cannot parse final-DMA timer captures" unless
+  source.include?('basename.match(/-f(\\d+)(?:-d\\d+)?-s\\d+\\.ppm\\z/)')
 puts "GP0 bundle replay uses captured provenance and leaves a self-contained diff"

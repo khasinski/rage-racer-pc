@@ -13,6 +13,8 @@ abort "HUD preset ranks pose-dependent road pixels as HUD RMSE" unless
 abort "road preset still includes the lower HUD band" unless
   tool_source.include?('black_region: "0,55,250,121"') &&
   tool_source.include?('clear_region: "0,100,250,76"')
+abort "final-DMA captures cannot select a replay checkpoint" unless
+  tool_source.include?('[/\\-f(\\d+)(?:\\-d\\d+)?\\-s\\d+\\.ppm\\z/, 1]')
 abort "draw-page pairing still bypasses the renderer projection phase" if
   tool_source.include?('capture_surface] == "draw"')
 

@@ -853,7 +853,8 @@ errors = Queue.new
         FileUtils.cp(psx_state, frame_output / "reference.psxstate")
       end
       psx_basename = pair[:psx].basename.to_s
-      psx_frame_number = psx_basename[/\-f(\d+)\-s\d+\.ppm\z/, 1]&.to_i
+      psx_frame_number =
+        psx_basename[/\-f(\d+)(?:\-d\d+)?\-s\d+\.ppm\z/, 1]&.to_i
       psx_frame_number ||=
         psx_basename[/\Async\-(\d+)\-t\d+\-s\d+\.ppm\z/, 1]&.to_i
       replay_pre = nil

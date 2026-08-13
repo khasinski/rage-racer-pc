@@ -56,7 +56,7 @@ abort "bundle is absent from #{summary_path}" unless summary_frame
 
 parse_frame = lambda do |path|
   basename = File.basename(path)
-  match = basename.match(/-f(\d+)-s\d+\.ppm\z/) ||
+  match = basename.match(/-f(\d+)(?:-d\d+)?-s\d+\.ppm\z/) ||
           basename.match(/\Async-(\d+)-t\d+-s\d+\.ppm\z/)
   abort "cannot parse frame from #{path}" unless match
   Integer(match[1], 10)
