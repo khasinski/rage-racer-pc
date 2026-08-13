@@ -780,6 +780,30 @@ Dir.mktmpdir("rage-visual-signed-game-state-") do |root|
     delta.fetch("projection_delta") == 0
 end
 
+Dir.mktmpdir("rage-visual-player-render-gate-") do |root|
+  psx = File.join(root, "psx")
+  native = File.join(root, "native")
+  output = File.join(root, "output")
+  FileUtils.mkdir_p([psx, native])
+  filename = "timer-00410-s12.ppm"
+  write_ppm(File.join(psx, filename), 16)
+  write_ppm(File.join(native, filename), 16)
+  render_header = "filename,frame,scene,timer,x,z,speed,progress,lap," \
+                  "body_yaw,view_x,view_y,view_z,view_angle_x,view_angle_y," \
+                  "view_angle_z,anim_timer,player_render_hash,rival_render_hash\n"
+  common = "#{filename},0,12,410,10,20,30,40,1,0,10,20,30,0,0,0,410"
+  File.write(File.join(psx, "capture-manifest.csv"),
+             render_header + "#{common},100,200\n")
+  File.write(File.join(native, "capture-manifest.csv"),
+             render_header + "#{common},101,200\n")
+  command = [RbConfig.ruby, tool, "--psx-dir", psx, "--native-dir", native,
+             "--output", output, "--match", "position",
+             "--require-rival-render-state"]
+  stdout, stderr, status = Open3.capture3(*command)
+  abort "player model-state mismatch entered visual ranking" if status.success?
+  abort stdout + stderr unless (stdout + stderr).include?("rival_render_state")
+end
+
 Dir.mktmpdir("rage-visual-pre-state-") do |root|
   psx = File.join(root, "psx")
   native = File.join(root, "native")

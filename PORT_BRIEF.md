@@ -2096,6 +2096,26 @@ the aggregate gate. They localize a Grand Prix mismatch without bloating every
 CSV row with seven additional raw 188-byte structs; normal game builds neither
 calculate nor consume these smoke/emulator diagnostics.
 
+The strict car-state gate also requires `player_render_hash`, covering the
+player's common world/body/model transform, model origin, progress and
+active/model selectors. Do not reuse the rival `aiEnabled` field at `+0xBC`:
+that offset begins `PlayerCarRuntime.drive`, and drivetrain/timing differences
+such as `+0xE4`, `+0x140` and `+0x160` do not by themselves change submitted
+model geometry. `--require-rival-render-state` now means the canonical player
+render state plus all eleven rival states; older manifests without the player
+hash are intentionally rejected as incomplete oracles.
+
+This gate makes the early Grand Prix mismatch at timer 59 a valid renderer
+oracle: camera, visibility, RNG, player render state and all eleven rival
+render states agree.  The GP0 streams first diverge at the same GT4 packet
+(retail packet 187/native packet 757): its first UV byte is `0x66` on retail
+but `0x36` on native, while the projected XY and packed CLUT remain equal.
+Both streams resynchronize after twelve packets.  The corresponding frame has
+479 native-only black road pixels (largest component 113), so this is evidence
+for a model texture/packet construction error, not a transform or simulation
+error.  Preserve this timer/checkpoint as the first packet-level regression
+when correcting the portable model emitter.
+
 A dense draw-page scan over race timers 1600..1800 uses PSX VBlank stride 1,
 native timer stride 5, equal main/mirror visible-cell masks, projection deltas
 at most 64 and camera/view distance at most 12.  Forty timer groups survive.

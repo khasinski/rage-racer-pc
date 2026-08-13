@@ -134,7 +134,7 @@ OptionParser.new do |parser|
     options[:require_tacho_flash] = true
   end
   parser.on("--require-rival-render-state",
-            "require all 11 cars' canonical render state to match") do
+            "require player and all 11 rivals' canonical render state to match") do
     options[:require_rival_render_state] = true
   end
   parser.on("--max-timer-delta N", Integer,
@@ -247,7 +247,7 @@ def manifest_rows(directory)
       texture_page_wanted texture_cursor_row texture_target_row
       course_object_count course_objects_hash
       anim_scenery_variant anim_scenery2_variant
-      rival_render_hash drawable_rival_count
+      player_render_hash rival_render_hash drawable_rival_count
       car0_render_hash car1_render_hash car2_render_hash car3_render_hash
       car4_render_hash car5_render_hash car6_render_hash car7_render_hash
       car8_render_hash car9_render_hash car10_render_hash
@@ -269,7 +269,7 @@ def manifest_rows(directory)
     end
     %i[random_seed main_visible_hash mirror_visible_hash
        main_visible_list_hash mirror_visible_list_hash course_objects_hash
-       rival_render_hash car0_render_hash car1_render_hash car2_render_hash
+       player_render_hash rival_render_hash car0_render_hash car1_render_hash car2_render_hash
        car3_render_hash car4_render_hash car5_render_hash car6_render_hash
        car7_render_hash car8_render_hash car9_render_hash car10_render_hash].each do |key|
       row[key] &= 0xffff_ffff if row.key?(key)
@@ -380,10 +380,13 @@ if options[:match] == "position"
       tacho_flash_equal: !candidate.key?(:tacho_needle_flash) ||
         !psx.key?(:tacho_needle_flash) ||
         candidate[:tacho_needle_flash] == psx[:tacho_needle_flash],
-      rival_render_state_present: candidate.key?(:rival_render_hash) &&
+      rival_render_state_present: candidate.key?(:player_render_hash) &&
+        psx.key?(:player_render_hash) && candidate.key?(:rival_render_hash) &&
         psx.key?(:rival_render_hash),
-      rival_render_state_equal: !candidate.key?(:rival_render_hash) ||
-        !psx.key?(:rival_render_hash) ||
+      rival_render_state_equal: candidate.key?(:player_render_hash) &&
+        psx.key?(:player_render_hash) && candidate.key?(:rival_render_hash) &&
+        psx.key?(:rival_render_hash) &&
+        candidate[:player_render_hash] == psx[:player_render_hash] &&
         candidate[:rival_render_hash] == psx[:rival_render_hash],
       camera_view_equal: !candidate.key?(:camera_view_mode) ||
         !psx.key?(:camera_view_mode) ||

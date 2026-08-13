@@ -99,6 +99,28 @@ static uint32_t RageSmokeHashOneCarRenderState(const GameCarRuntime *car) {
     return hash;
 }
 
+static uint32_t RageSmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
+    const u32 values[] = {
+        (u32)car->x, (u32)car->y, (u32)car->z,
+        (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
+        (u32)car->modelPitch, (u32)car->modelYaw, (u32)car->modelRoll,
+        (u32)car->modelY, (u32)car->trackProgress,
+        (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex
+    };
+    uint32_t hash = 2166136261u;
+    size_t valueIndex;
+    for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
+         valueIndex++) {
+        u32 value = values[valueIndex];
+        int byteIndex;
+        for (byteIndex = 0; byteIndex < 4; byteIndex++) {
+            hash ^= (value >> (byteIndex * 8)) & 0xff;
+            hash *= 16777619u;
+        }
+    }
+    return hash;
+}
+
 static int RageSmokeCountDrawableCars(const GameCarRuntime *cars,
                                       size_t count) {
     int drawable = 0;
@@ -364,6 +386,7 @@ static void RageSmokeInitialize(void) {
                       "rival2_lateral,rival2_collision,rival2_active," \
                       "rival3_speed,rival3_progress,rival3_yaw," \
                       "rival3_lateral,rival3_collision,rival3_active," \
+                      "player_render_hash," \
                       "player_raw,rival0_raw,rival1_raw,rival2_raw,rival3_raw," \
                       "car0_render_hash,car1_render_hash,car2_render_hash," \
                       "car3_render_hash,car4_render_hash,car5_render_hash," \
@@ -585,7 +608,7 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
-                        "%d,%d,%d,%d",
+                        "%d,%d,%d,%d,%u",
                         filename,
                         getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL ?
                             "draw" : "display",
@@ -650,7 +673,8 @@ int RagePortShouldExit(int frame_number) {
                         g_Cars[2].collisionFlag, g_Cars[2].activeFlag,
                         g_Cars[3].speed, g_Cars[3].trackProgress,
                         g_Cars[3].bodyYaw, g_Cars[3].trackLateralOffset,
-                        g_Cars[3].collisionFlag, g_Cars[3].activeFlag);
+                        g_Cars[3].collisionFlag, g_Cars[3].activeFlag,
+                        RageSmokeHashPlayerRenderState(&g_PlayerCar));
                 {
                     int rivalIndex;
                     const unsigned char *playerBytes =
