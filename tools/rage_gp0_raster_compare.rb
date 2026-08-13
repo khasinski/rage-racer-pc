@@ -95,6 +95,7 @@ psx = payload.call(psx_ppm)
 native = payload.call(native_ppm)
 mismatches = []
 significant = []
+significant_mask = Array.new(320 * 240, false)
 sum_sq = 0
 (320 * 240).times do |pixel|
   offset = pixel * 3
@@ -108,16 +109,55 @@ sum_sq = 0
   item = [pixel % 320, pixel / 320,
           psx.byteslice(offset, 3).bytes, native.byteslice(offset, 3).bytes]
   mismatches << item
-  significant << item if delta.any? { |value| value.abs > 1 }
+  if delta.any? { |value| value.abs > 1 }
+    significant << item
+    significant_mask[pixel] = true
+  end
 end
+
+components = []
+visited = Array.new(significant_mask.length, false)
+significant_mask.each_index do |start|
+  next unless significant_mask[start] && !visited[start]
+  queue = [start]
+  visited[start] = true
+  pixels = []
+  until queue.empty?
+    pixel = queue.pop
+    pixels << pixel
+    x = pixel % 320
+    y = pixel / 320
+    neighbours = []
+    neighbours << pixel - 1 if x.positive?
+    neighbours << pixel + 1 if x < 319
+    neighbours << pixel - 320 if y.positive?
+    neighbours << pixel + 320 if y < 239
+    neighbours.each do |other|
+      next unless significant_mask[other] && !visited[other]
+      visited[other] = true
+      queue << other
+    end
+  end
+  xs = pixels.map { |pixel| pixel % 320 }
+  ys = pixels.map { |pixel| pixel / 320 }
+  components << { pixels: pixels.length, bbox: [xs.min, ys.min, xs.max, ys.max],
+                  sample: [pixels[0] % 320, pixels[0] / 320] }
+end
+components.sort_by! { |component| -component[:pixels] }
+
+diff_rgb = String.new(capacity: 320 * 240 * 3, encoding: Encoding::BINARY)
+significant_mask.each do |different|
+  diff_rgb << (different ? "\xff\x00\xff" : "\x00\x00\x00")
+end
+File.binwrite(output / "diff.ppm", "P6\n320 240\n255\n" + diff_rgb)
 report = {
   frame: options[:frame], last_packet: options[:last_packet],
   only_packet: options[:only_packet], mismatched_pixels: mismatches.length,
   significant_pixels: significant.length,
   rmse_rgb5: Math.sqrt(sum_sq.to_f / (320 * 240 * 3)),
-  examples: significant.first(32),
+  components: components.first(64), examples: significant.first(32),
   psx: psx_ppm.to_s, native: native_ppm.to_s
 }
 File.write(output / "report.json", JSON.pretty_generate(report) + "\n")
 puts JSON.generate(report.slice(:mismatched_pixels, :significant_pixels,
-                                :rmse_rgb5, :examples))
+                                :rmse_rgb5, :components, :examples))

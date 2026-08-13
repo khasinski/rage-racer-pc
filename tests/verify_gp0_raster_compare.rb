@@ -10,5 +10,8 @@ abort "raster compare lacks packet isolation" unless
 abort "raster compare ignores RGB555 precision" unless
   source.include?("significant_pixels") && source.include?("rmse_rgb5") &&
   source.include?(">> 3")
+abort "raster compare does not rank connected visual defects" unless
+  source.include?("diff.ppm") && source.include?("components.sort_by!") &&
+  source.include?("bbox:") && source.include?("sample:")
 
 puts "GP0 raster comparison reuses one VRAM/log oracle across Ruby PS1 and PsyZ"

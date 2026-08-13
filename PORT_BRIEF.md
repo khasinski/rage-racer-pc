@@ -3035,7 +3035,10 @@ remaining full-game replay from the loop. Give it one 1 MiB pre-frame VRAM
 snapshot, one canonical GP0 trace and its frame number; it sends the exact same
 commands through the Ruby PS1 GPU and `rage-gp0-replay`, writes `psx.ppm`,
 `native.ppm`, and a machine-readable `report.json`, and compares channels in
-RGB555 precision. `--last-packet N` bisects the submitted frame, while
+RGB555 precision. It also writes a magenta `diff.ppm` and ranks four-connected
+components by pixel count, bounding box and representative sample coordinate;
+use the largest sample directly for the next filtered pixel trace.
+`--last-packet N` bisects the submitted frame, while
 `--only-packet N` keeps the draw-state commands and isolates a single polygon.
 This is the preferred seconds-scale oracle for rasterization, texture sampling,
 HUD and mirror packet cases after a visual bundle has captured them once.
