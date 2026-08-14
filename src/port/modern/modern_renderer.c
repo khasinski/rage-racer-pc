@@ -100,7 +100,7 @@ static int s_spanCount;
  * may be negative (the +128 ordering-table base admits ot[-128..-1], which
  * the player car's biased faces use). Mapped linearly into [0,1]. */
 #define MODERN_DEPTH_MIN (-80000.0f)
-#define MODERN_DEPTH_RANGE (200000.0f)
+#define MODERN_DEPTH_RANGE (240000.0f)
 
 /* ---- MSL shaders ---- */
 
@@ -882,12 +882,21 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
 
 /* ---- 2D packet replay ---- */
 
+/* When set (during the sky background pass), the 2D layer stretches across
+ * the full widened width instead of staying 4:3-centered: the sky panorama
+ * must cover the corners a wide view exposes. */
+static int s_orthoStretch;
+
 static void ModernOrtho(ModernVertex *out, float px, float py) {
     /* The 2D layer stays 4:3, centered inside a widened target. Edge
      * mapping, not the compat rasterizer's half-pixel centres: at scale
      * factors above 1 the +0.5 convention shifts the whole layer by half a
      * logical pixel, leaving one-line gaps around full-screen masks. */
-    out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
+    if (s_orthoStretch) {
+        out->x = px / 160.0f - 1.0f;
+    } else {
+        out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
+    }
     out->y = -(py / 120.0f - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
@@ -1202,7 +1211,10 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
 
-    /* Background 2D: sky layers at the far ordering-table buckets. */
+    /* Background 2D: sky layers at the far ordering-table buckets,
+     * stretched across the widened view so the panorama reaches the
+     * corners 16:9 exposes. */
+    s_orthoStretch = 1;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         if (packet->table != 0) continue;
@@ -1217,6 +1229,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
         }
     }
+    s_orthoStretch = 0;
 
     /* Opaque 3D, z-buffered. Drawn in reverse submission order: within a
      * compat ordering-table bucket AddPrim prepends, so the first-submitted
