@@ -472,6 +472,10 @@ typedef struct Modern2DState {
     int offsetX, offsetY; /* GP0(E5) relative offset */
 } Modern2DState;
 
+/* GPU state at the end of the main ordering table, inherited by the mirror
+ * table exactly like the real GPU carries it across DrawOTag calls. */
+static Modern2DState s_mainEnd2D;
+
 static uint8_t s_currentPass;
 
 static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
@@ -577,39 +581,42 @@ static void ModernLerpGte(const RageCaptureGteState *a,
     out->dqb = b->dqb;
 }
 
-/* Match this frame's draws/terrain against the previous frame and lerp the
- * transforms. Camera cuts and scene changes snap instead of interpolating. */
-static void ModernPrepareInterpolation(const RageSceneSnapshot *current,
-                                       const RageSceneSnapshot *previous,
+/* Lerp the BASE frame's draws/terrain toward the newer TARGET frame. The
+ * rendered face set is the base's: its trailing edge (nearest road, faces
+ * the target frame already culled) is clipped naturally by the GPU instead
+ * of vanishing for a whole logic tick, and the leading edge only pops far
+ * away at the horizon. Camera cuts and scene changes snap instead. */
+static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
+                                       const RageSceneSnapshot *target,
                                        float t) {
     int i;
-    int timerDelta = current->sceneTimer - previous->sceneTimer;
+    int timerDelta = target->sceneTimer - base->sceneTimer;
     long long cameraDelta = 0;
     s_useLerp = 0;
-    if (t >= 0.999f) return;
-    if (current->sceneId != previous->sceneId) return;
+    if (t <= 0.001f) return;
+    if (target->sceneId != base->sceneId) return;
     if (timerDelta < 0 || timerDelta > 2) return;
     for (i = 0; i < 3; i++) {
-        long long delta = (long long)current->viewPosition[i] -
-                          previous->viewPosition[i];
+        long long delta = (long long)target->viewPosition[i] -
+                          base->viewPosition[i];
         cameraDelta += delta < 0 ? -delta : delta;
     }
     if (cameraDelta > 16384) return;
-    for (i = 0; i < current->drawCount; i++) {
-        const RageCaptureModelDraw *draw = &current->draws[i];
+    for (i = 0; i < base->drawCount; i++) {
+        const RageCaptureModelDraw *draw = &base->draws[i];
         const RageCaptureModelDraw *match = NULL;
         int occurrence = 0;
         int j;
         for (j = 0; j < i; j++) {
-            const RageCaptureModelDraw *other = &current->draws[j];
+            const RageCaptureModelDraw *other = &base->draws[j];
             if (other->kind == draw->kind &&
                 other->modelIndex == draw->modelIndex &&
                 other->mirror == draw->mirror && other->table == draw->table) {
                 occurrence++;
             }
         }
-        for (j = 0; j < previous->drawCount; j++) {
-            const RageCaptureModelDraw *other = &previous->draws[j];
+        for (j = 0; j < target->drawCount; j++) {
+            const RageCaptureModelDraw *other = &target->draws[j];
             if (other->kind == draw->kind &&
                 other->modelIndex == draw->modelIndex &&
                 other->mirror == draw->mirror && other->table == draw->table) {
@@ -621,22 +628,22 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *current,
             }
         }
         if (match != NULL) {
-            ModernLerpGte(&match->gte, &draw->gte, t, &s_lerpDrawGte[i]);
+            ModernLerpGte(&draw->gte, &match->gte, t, &s_lerpDrawGte[i]);
         } else {
             s_lerpDrawGte[i] = draw->gte;
         }
     }
-    for (i = 0; i < current->terrainCount; i++) {
-        const RageCaptureTerrainBatch *batch = &current->terrain[i];
+    for (i = 0; i < base->terrainCount; i++) {
+        const RageCaptureTerrainBatch *batch = &base->terrain[i];
         const RageCaptureTerrainBatch *match =
-            i < previous->terrainCount &&
-                    previous->terrain[i].mirror == batch->mirror
-                ? &previous->terrain[i]
+            i < target->terrainCount &&
+                    target->terrain[i].mirror == batch->mirror
+                ? &target->terrain[i]
                 : NULL;
         int cell;
         s_lerpTerrain[i] = *batch;
         if (match == NULL) continue;
-        ModernLerpGte(&match->gte, &batch->gte, t, &s_lerpTerrain[i].gte);
+        ModernLerpGte(&batch->gte, &match->gte, t, &s_lerpTerrain[i].gte);
         for (cell = 0; cell < batch->cellCount; cell++) {
             int other;
             for (other = 0; other < match->cellCount; other++) {
@@ -644,9 +651,9 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *current,
                     int axis;
                     for (axis = 0; axis < 3; axis++) {
                         s_lerpTerrain[i].cells[cell][axis] = (int32_t)(
-                            match->cells[other][axis] +
-                            (batch->cells[cell][axis] -
-                             match->cells[other][axis]) *
+                            batch->cells[cell][axis] +
+                            (match->cells[other][axis] -
+                             batch->cells[cell][axis]) *
                                 (double)t);
                     }
                     break;
@@ -1209,19 +1216,27 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
         ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
     }
+    /* The mirror table inherits the drawing-area state the main chain left
+     * behind; keep it for the mirror sections below. */
+    s_mainEnd2D = state2d;
 
     /* Mirror overlay: the second ordering table draws after the main scene
-     * with its own drawing area. 3D mirror faces render into a recleared
-     * depth buffer, scissored to the first complete area the mirror stream
-     * installs; an empty or missing area discards them, which is the retail
-     * slide-in behaviour. */
+     * and INHERITS the GPU drawing-area state the main table's chain left
+     * behind - that inherited area is how retail suppresses the mirror
+     * content while the panel slides in (DrawMirrorFrame's partial or
+     * zero-height area sits at the end of the main chain). The mirror 3D is
+     * scissored to the intersection of the inherited area and the mirror
+     * stream's own area. */
     s_currentPass = 1;
     {
-        SDL_Rect area = {0, 0, 0, 0};
+        SDL_Rect area;
         int haveArea = 0;
-        Modern2DState scan;
-        memset(&scan, 0, sizeof(scan));
-        for (i = 0; i < snapshot->packetCount && !haveArea; i++) {
+        Modern2DState scan = s_mainEnd2D;
+        int inheritedEmpty =
+            s_mainEnd2D.hasScissor &&
+            (s_mainEnd2D.areaEmpty || s_mainEnd2D.scissor.w <= 0 ||
+             s_mainEnd2D.scissor.h <= 0);
+        for (i = 0; i < snapshot->packetCount; i++) {
             const RageCapturePacket *packet = &snapshot->packets[i];
             int word;
             if (packet->table != 1) continue;
@@ -1230,17 +1245,31 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
                 ModernApply2DStateWord(packet->words[word], &scan);
             }
             if (scan.hasScissor && scan.scissor.w != 0) {
-                area = scan.scissor;
-                haveArea = 1;
+                break;
             }
         }
-        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D.
-         * Nothing in the mirror table draws until its stream has installed
-         * a drawing area: during the slide-in retail suppresses the mirror
-         * sky with an empty area, and replaying those packets under no
-         * scissor floods the screen blue. */
-        memset(&state2d, 0, sizeof(state2d));
-        state2d.twin = 0x0000FFFFu;
+        haveArea = scan.hasScissor && !scan.areaEmpty && scan.scissor.w > 0 &&
+                   scan.scissor.h > 0 && !inheritedEmpty;
+        area = scan.scissor;
+        if (haveArea && s_mainEnd2D.hasScissor && !inheritedEmpty) {
+            int x0 = area.x > s_mainEnd2D.scissor.x ? area.x : s_mainEnd2D.scissor.x;
+            int y0 = area.y > s_mainEnd2D.scissor.y ? area.y : s_mainEnd2D.scissor.y;
+            int x1 = area.x + area.w < s_mainEnd2D.scissor.x + s_mainEnd2D.scissor.w
+                         ? area.x + area.w
+                         : s_mainEnd2D.scissor.x + s_mainEnd2D.scissor.w;
+            int y1 = area.y + area.h < s_mainEnd2D.scissor.y + s_mainEnd2D.scissor.h
+                         ? area.y + area.h
+                         : s_mainEnd2D.scissor.y + s_mainEnd2D.scissor.h;
+            area.x = x0;
+            area.y = y0;
+            area.w = x1 - x0;
+            area.h = y1 - y0;
+            if (area.w <= 0 || area.h <= 0) haveArea = 0;
+        }
+        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D,
+         * starting from the inherited main-table state so slide-in frames
+         * clip exactly like retail. */
+        state2d = s_mainEnd2D;
         for (i = 0; i < snapshot->packetCount; i++) {
             const RageCapturePacket *packet = &snapshot->packets[i];
             uint32_t command = packet->words[0] >> 24;
@@ -1252,7 +1281,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             }
             ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
         }
-        if (haveArea && !scan.areaEmpty && area.w > 0 && area.h > 0) {
+        if (haveArea) {
             Modern2DState scissorState;
             memset(&scissorState, 0, sizeof(scissorState));
             scissorState.hasScissor = 1;
@@ -1284,9 +1313,8 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     }
 
     /* Mirror-table foreground 2D (frame border, text), in compat order;
-     * the same no-area-no-draw rule as the backdrop applies. */
-    memset(&state2d, 0, sizeof(state2d));
-    state2d.twin = 0x0000FFFFu;
+     * starts from the inherited main-table state like the backdrop. */
+    state2d = s_mainEnd2D;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
@@ -1514,7 +1542,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     }
     if (!s_enabled || s_device == NULL) return;
     fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
-    snapshot = fpsMode ? RageCaptureCurrent() : RageCapturePrevious();
+    /* Both modes render the PREVIOUS logic frame - the one compat is
+     * presenting during this tick; fps mode moves its transforms toward
+     * the newest frame by the wall-clock fraction of the tick. */
+    snapshot = RageCapturePrevious();
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
@@ -1524,18 +1555,17 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     }
     if (!ModernEnsureResources()) return;
     if (fpsMode) {
-        /* Present the newest logic frame, its transforms interpolated from
-         * the one before by the wall-clock fraction of the logic tick. */
+        const RageSceneSnapshot *target = RageCaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
         float t = 1.0f;
-        if (snapshot->frameCounter != s_tickFrame) {
+        if (target->frameCounter != s_tickFrame) {
             if (s_tickTimeNs != 0) {
                 Uint64 delta = now - s_tickTimeNs;
                 if (delta > 1000000 && delta < 200000000) {
                     s_tickIntervalNs = delta;
                 }
             }
-            s_tickFrame = snapshot->frameCounter;
+            s_tickFrame = target->frameCounter;
             s_tickTimeNs = now;
         }
         if (s_tickIntervalNs > 0) {
@@ -1543,7 +1573,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                               (double)s_tickIntervalNs;
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
-        ModernPrepareInterpolation(snapshot, RageCapturePrevious(), t);
+        ModernPrepareInterpolation(snapshot, target, t);
         ModernRender(snapshot);
         s_useLerp = 0;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
