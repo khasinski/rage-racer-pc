@@ -31,10 +31,12 @@ if(RAGE_BUILD_PORT)
     )
     set(RAGE_PORT_COMMON_SOURCES
         src/port/input_config.c
+        src/port/port_config.c
         src/port/platform_stubs.c
         src/port/legacy_platform.c
         src/port/native_geometry.c
         src/port/fmv_host.c
+        src/port/modern/modern_renderer.c
     )
     add_executable(rage-racer
         src/port/main.c

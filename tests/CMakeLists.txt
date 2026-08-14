@@ -7,6 +7,7 @@ add_executable(game_logic_tests
     ../src/main/PAL/main/track/interpolate_track_angle.c
     ../src/main/PAL/main/track/lerp_color_channel.c
     ../src/port/input_config.c
+    ../src/port/port_config.c
 )
 
 target_include_directories(game_logic_tests PRIVATE
