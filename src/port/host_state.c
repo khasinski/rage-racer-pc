@@ -769,7 +769,6 @@ unsigned char g_CarSwapFromIndex[8] __attribute__((aligned(16)));
 unsigned char g_CarSwapToIndex[8] __attribute__((aligned(16)));
 unsigned char g_TeamNameCharModel[8] __attribute__((aligned(16)));
 unsigned char GameMenuCursorAnim[56] __attribute__((aligned(16)));
-unsigned char g_SndTableArea[344] __attribute__((aligned(16)));
 unsigned char g_VabSlotVoices[40] __attribute__((aligned(16)));
 unsigned char g_McHwEventIoe[8] __attribute__((aligned(16)));
 unsigned char g_McHwEventError[8] __attribute__((aligned(16)));

@@ -3698,3 +3698,12 @@ same latent corruption, and Extra GP's separately allocated
 three as complete typed objects and preserve the Extra GP interior alias.
 Compile-time size/offset checks and `race_progress_layout` protect the layout
 and the Time Attack store/restore contract for the decompilation backport.
+
+`g_SndTableArea` is two `SeqStruct` records, not an invariant 0x158-byte blob.
+The retail size is `2 * 0xAC`, but each record contains three pointers and is
+therefore larger on a 64-bit host.  Initializing two records through
+`SsSetTableSize` overran the fixed byte allocation, corrupting adjacent state;
+long-lived menu sequence playback could consequently change speed and stutter.
+Allocate the table as `SeqStruct[2]` and cast only at the original libsnd API
+boundary.  `sequence_state_layout` rejects a return to fixed 32-bit backing;
+this is a game-code pointer-width correction for the decompilation backport.
