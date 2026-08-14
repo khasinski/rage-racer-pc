@@ -11,6 +11,12 @@ FILE *fopen(const char *path, const char *mode);
 char *fgets(char *buffer, int size, FILE *stream);
 int fclose(FILE *stream);
 int fprintf(FILE *stream, const char *format, ...);
+int fputs(const char *text, FILE *stream);
+int fputc(int ch, FILE *stream);
+int fseek(FILE *stream, long offset, int origin);
+unsigned long long fread(void *buffer, unsigned long long size,
+                         unsigned long long count, FILE *stream);
+int sscanf(const char *text, const char *format, ...);
 int snprintf(char *buffer, unsigned long long size, const char *format, ...);
 FILE *__acrt_iob_func(unsigned index);
 #define stderr (__acrt_iob_func(2))

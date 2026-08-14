@@ -5,6 +5,7 @@
 
 #ifdef _WIN32
 int isspace(int ch);
+int isalpha(int ch);
 int tolower(int ch);
 int toupper(int ch);
 #else

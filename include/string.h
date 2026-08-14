@@ -11,6 +11,11 @@ int strcmp(const char *lhs, const char *rhs);
 int strncmp(const char *lhs, const char *rhs, unsigned long long len);
 unsigned long long strlen(const char *str);
 char *strchr(const char *str, int ch);
+char *strrchr(const char *str, int ch);
+char *strstr(const char *str, const char *needle);
+char *strncpy(char *dest, const char *src, unsigned long long count);
+int memcmp(const void *lhs, const void *rhs, unsigned long long count);
+unsigned long long strcspn(const char *str, const char *reject);
 #else
 u8 *memchr(u8 *buf, s32 ch, s32 len);
 void memcpy(u8 *dest, u8 *src, long count);

@@ -14,6 +14,8 @@
 #include <commdlg.h>
 #include <direct.h>
 #include <io.h>
+int _stricmp(const char *lhs, const char *rhs);
+int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 /* WinAPI's OpenEvent macro collides with PSY-Q's OpenEvent function. */
 #ifdef OpenEvent
 #undef OpenEvent
