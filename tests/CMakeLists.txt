@@ -216,6 +216,15 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(prologue_frame PROPERTIES TIMEOUT 30)
 
     add_test(
+        NAME scene_capture
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scene_capture.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(scene_capture PROPERTIES TIMEOUT 120)
+
+    add_test(
         NAME grand_prix_terrain_frame
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_terrain_frame.py

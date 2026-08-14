@@ -120,6 +120,9 @@ void MainLoop(void) {
         RagePortBeforeSceneHandler();
 #endif
         g_SceneHandlers[g_SceneId]();
+#ifdef __psyz
+        RagePortAfterSceneHandler();
+#endif
         DrawSync(0);
         StepTrackTextureSwap();
         frameLimit = g_FrameSyncThreshold;

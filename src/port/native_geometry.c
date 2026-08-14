@@ -10,6 +10,8 @@
 #include "game/scratchpad.h"
 #include "game/asset.h"
 
+#include "modern/scene_capture.h"
+
 extern int g_CourseModelCount;
 extern int g_AnimTimer;
 extern int g_SceneTimer;
@@ -1028,6 +1030,7 @@ void SubmitModel(void *ctx, int index) {
          g_RageModelTraceTimer == g_SceneTimer))
         fprintf(stderr, "model-submit timer=%d model=%d table=%p stream=%p\n",
                 g_SceneTimer, index, (void *)models, (void *)stream);
+    RageCaptureModelBegin(RAGE_CAPTURE_KIND_MODEL, index, 0);
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
         int count = (int)(opcode >> 16);
@@ -1038,6 +1041,7 @@ void SubmitModel(void *ctx, int index) {
         if ((unsigned)type >= 4) break;
         stream += count * (const uint8_t[]){16,24,24,32}[type];
     }
+    RageCaptureSubmitEnd();
 }
 
 /* Course and terrain decoders are implemented next. Keeping these explicit
@@ -1060,6 +1064,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
     }
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
+    RageCaptureModelBegin(RAGE_CAPTURE_KIND_COURSE, index, fogged);
     vertices = (const SVECTOR *)models[index].geometry;
     stream = (uint8_t *)models[index].model;
     while ((opcode = RageReadU32(stream)) != 0) {
@@ -1219,10 +1224,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
     return;
 course_buffer_full:
     fprintf(stderr, "rage course: primitive buffer exhausted\n");
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
 }
 
 void SubmitCourseModel(void *ctx, int index) {
@@ -1248,6 +1255,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     RageInitializeTerrainTrace();
     RageInitializeTerrainDecisionTrace();
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
+    RageCaptureTerrainBegin(cells, count);
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
      * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
@@ -1574,9 +1582,11 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",
             decodedFaces, emittedFaces);
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
 }

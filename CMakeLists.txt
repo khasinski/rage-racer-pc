@@ -37,6 +37,7 @@ if(RAGE_BUILD_PORT)
         src/port/native_geometry.c
         src/port/fmv_host.c
         src/port/modern/modern_renderer.c
+        src/port/modern/scene_capture.c
     )
     add_executable(rage-racer
         src/port/main.c
