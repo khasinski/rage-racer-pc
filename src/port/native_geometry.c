@@ -298,6 +298,7 @@ static int RageProjectQuad(
          * ordering flag is toggled.  Do not feed the duplicated clip0 into
          * the terrain two-half expression: that reduces both rejection
          * tests to clip0 == 0 and submits every back-facing model face. */
+        *depth = ((int)otz >> SCRATCH_OT_SHIFT);
         if ((!terrainQuad &&
              ((!SCRATCH_MIRROR && clip0 <= 0) ||
               (SCRATCH_MIRROR && clip0 < 0))) ||
@@ -310,7 +311,6 @@ static int RageProjectQuad(
             return 0;
         }
     }
-    *depth = ((int)otz >> SCRATCH_OT_SHIFT);
     /* Subdivided terrain children inherit the parent's OT slot.  Retail
      * projects them with RTPT/NCLIP only and never runs AVSZ4 per child. */
     if (terrainQuad != 2 && (*depth <= 0 || *depth >= 448)) {
@@ -1405,14 +1405,16 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     /* The hand-written retail dispatcher mirrors the active GTE view by
      * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
      * leaves that matrix installed: DrawCourseObjects and DrawCars share it
-     * for the remainder of the rear-view pass. */
+     * for the remainder of the rear-view pass.  The negation must therefore
+     * happen IN PLACE on the shared scratch matrix, not on a local copy:
+     * with only the GTE register updated, DrawCar composed rival cars with
+     * the un-reflected matrix and the mirror showed them moving opposite to
+     * the track.  EndMirrorPass restores the saved camera matrix. */
     if (SCRATCH_MIRROR) {
-        MATRIX mirrorMatrix;
-        memcpy(&mirrorMatrix, SCRATCH_VIEW_MATRIX_GTE, sizeof(mirrorMatrix));
-        mirrorMatrix.m[0][0] = -mirrorMatrix.m[0][0];
-        mirrorMatrix.m[0][1] = -mirrorMatrix.m[0][1];
-        mirrorMatrix.m[0][2] = -mirrorMatrix.m[0][2];
-        SetRotMatrix(&mirrorMatrix);
+        SCRATCH_VIEW_MATRIX_GTE->m[0][0] = -SCRATCH_VIEW_MATRIX_GTE->m[0][0];
+        SCRATCH_VIEW_MATRIX_GTE->m[0][1] = -SCRATCH_VIEW_MATRIX_GTE->m[0][1];
+        SCRATCH_VIEW_MATRIX_GTE->m[0][2] = -SCRATCH_VIEW_MATRIX_GTE->m[0][2];
+        SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
     }
     /* Capture after the mirror matrix install so the batch GTE state is the
      * one the cells are actually projected with. */
@@ -1520,8 +1522,13 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     if (!projected) {
                         /* Faces beyond the retail depth cutoff are captured
                          * for the modern renderer's extended draw distance
-                         * but never emitted to the compat stream. */
-                        if (g_RageProjectionReject == 3 &&
+                         * but never emitted to the compat stream. Distant
+                         * road quads are nearly edge-on, so their NCLIP
+                         * orientation flickers; past bucket 300 capture
+                         * them regardless of facing - the depth buffer
+                         * sorts them out. */
+                        int reject = g_RageProjectionReject;
+                        if ((reject == 3 || (reject == 2 && depth >= 300)) &&
                             RageModernExtendedDepth() && depth > 0 &&
                             depth < 896) {
                             extendedDepth = 1;
