@@ -75,9 +75,15 @@ if(RAGE_BUILD_PORT)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32)
         endif()
     endforeach()
-    target_compile_options(rage-game-full PRIVATE
-        "-include${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/compat.h"
-    )
+    if(MSVC)
+        target_compile_options(rage-game-full PRIVATE
+            "/FI${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/compat.h"
+        )
+    else()
+        target_compile_options(rage-game-full PRIVATE
+            "-include${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/compat.h"
+        )
+    endif()
     target_compile_definitions(psyz PRIVATE
         PSYZ_TITLE="Rage Racer"
         DEFAULT_FRONT_W=640

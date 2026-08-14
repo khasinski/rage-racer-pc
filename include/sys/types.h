@@ -10,6 +10,10 @@
 typedef unsigned char u_char;
 typedef unsigned short u_short;
 typedef unsigned int u_int;
+#ifdef _WIN64
+typedef unsigned long long u_long;
+#else
 typedef unsigned long u_long;
+#endif
 
 #endif

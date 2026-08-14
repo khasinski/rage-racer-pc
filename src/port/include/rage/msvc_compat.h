@@ -5,6 +5,7 @@
 /* Generated retail-state declarations use GNU alignment annotations.  The
  * host does not require a PS1 linker layout, so MSVC can safely omit them. */
 #define __attribute__(x)
+#define __inline__ inline
 #endif
 
 #endif
