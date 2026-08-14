@@ -3623,3 +3623,11 @@ the right channel above 64 at the tone, program and caller layers—the exact
 opposite channel.  ROUND cue `0x19` exposed this as two mono voices.  The PS1
 key-on snapshots are voice 22 at `8561/6289` and voice 23 at `6058/8561`;
 `audio_output` now requires those exact stereo register values.
+
+Automatic libsnd voice selection also follows the recovered SDK algorithm,
+not a generic oldest-voice policy.  A voice is free only when both its active
+flag and sampled envelope/pitch state are zero.  If all voices are occupied,
+PsyQ first chooses the lowest-priority eligible voice, then the lowest current
+pitch, then the oldest voice.  The previous host simplification ignored the
+pitch tie-break and treated a logically inactive voice with a live envelope as
+free, allowing menu/race notes to cut off effects which the PS1 retains.
