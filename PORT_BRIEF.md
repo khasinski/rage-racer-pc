@@ -3615,3 +3615,11 @@ game data or synthesizing expected sounds.  The Ruby emulator must forward the
 entire 16-bit SPU register window (`0x1f801c00..0x1f801dff`) to its SPU model:
 Rage writes voice parameters as halfwords, and dropping those writes produced
 plausible key-on events whose voice snapshots were all zero.
+
+PsyZ's `_SsVmKeyOnNow` must apply the PsyQ pan convention consistently with
+Rage's recovered libsnd: pan 0 is hard left and pan 127 is hard right.  The
+old host implementation attenuated the left channel for values below 64 and
+the right channel above 64 at the tone, program and caller layers—the exact
+opposite channel.  ROUND cue `0x19` exposed this as two mono voices.  The PS1
+key-on snapshots are voice 22 at `8561/6289` and voice 23 at `6058/8561`;
+`audio_output` now requires those exact stereo register values.
