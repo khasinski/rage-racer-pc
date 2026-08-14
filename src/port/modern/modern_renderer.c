@@ -804,8 +804,12 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
                 &snapshot->draws[face->drawIndex];
             float groupBias = (float)s_drawGroupBias[face->drawIndex];
             unit = (float)(4 << draw->otShift);
+            /* 16 z units per residual bias bucket: enough for the bias
+             * order to hide wheels inset behind body panels (retail's
+             * bucket painter did), small enough not to punch through the
+             * width of a car. */
             zBias = unit * (groupBias + (float)draw->otBaseBias) +
-                    4.0f * ((float)face->bias - groupBias);
+                    16.0f * ((float)face->bias - groupBias);
             windowMin = -1.0e9f;
             windowMax = 1.0e9f;
             (void)bucket;
