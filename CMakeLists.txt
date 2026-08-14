@@ -84,7 +84,14 @@ if(RAGE_BUILD_PORT)
         DEFAULT_FRONT_H=480
     )
     if(MSVC)
-        target_compile_options(psyz PRIVATE /std:c11)
+        set_property(TARGET psyz PROPERTY C_STANDARD 11)
+        set_property(TARGET psyz PROPERTY C_STANDARD_REQUIRED ON)
+        target_compile_options(psyz PRIVATE "$<$<COMPILE_LANGUAGE:C>:/std:c11>")
+        foreach(RAGE_MSVC_TARGET rage-game-full rage-host-state)
+            target_compile_options(${RAGE_MSVC_TARGET} PRIVATE
+                "/FI${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/msvc_compat.h"
+            )
+        endforeach()
     endif()
     if(APPLE)
         set_target_properties(rage-racer PROPERTIES
