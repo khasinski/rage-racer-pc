@@ -176,6 +176,12 @@ int main(void) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     if (!RageHostInitDisc()) return EXIT_FAILURE;
+    if (getenv("RAGE_PORT_SPU_TRACE") != NULL &&
+        Psyz_SpuSetKeyOnTracePath(getenv("RAGE_PORT_SPU_TRACE")) != 0) {
+        fprintf(stderr, "unable to open SPU trace: %s\n",
+                getenv("RAGE_PORT_SPU_TRACE"));
+        return EXIT_FAILURE;
+    }
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
     MainLoop();

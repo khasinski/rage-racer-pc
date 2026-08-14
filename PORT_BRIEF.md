@@ -3605,3 +3605,13 @@ volume and would discard the VAB master/program/tone gain already folded into
 the current register value.  Live pan/volume rescaling still needs an exact
 PsyQ-equivalent calculation if a sequence depends audibly on sustained-note
 controller changes.
+
+For exact sound-effect comparison, the native smoke accepts
+`RAGE_PORT_SPU_TRACE=/path/events.csv`; the Ruby reference capture accepts the
+matching `RAGE_EMU_SPU_TRACE`.  Both record the hardware voice, VAG start
+address, pitch, left/right volume and ADSR words at every key-on.  These traces
+compare the original Rage/PsyQ decisions with the host HAL without replacing
+game data or synthesizing expected sounds.  The Ruby emulator must forward the
+entire 16-bit SPU register window (`0x1f801c00..0x1f801dff`) to its SPU model:
+Rage writes voice parameters as halfwords, and dropping those writes produced
+plausible key-on events whose voice snapshots were all zero.
