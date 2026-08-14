@@ -8,10 +8,11 @@ on the complete clean-room decompilation in
 compatibility layer.  The decompilation remains the reference source for the
 original PlayStation release.
 
-## 0.1-alpha
+## 0.2-alpha
 
-The first alpha provides unsigned builds for arm64 macOS, x86-64 Linux and
-x86-64 Windows. It
+This alpha provides unsigned builds for arm64 macOS, x86-64 Linux and x86-64
+Windows. It includes current work on game-state recovery, menu flow, save
+state, input replay, and more accurate PsyZ CD and sound behaviour. It
 contains no game data. On first launch, the app asks the player to locate the
 `.cue` sheet for their legally obtained PAL copy of Rage Racer, then saves that
 local choice for future launches. The game image and its data files are never
