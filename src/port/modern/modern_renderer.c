@@ -33,6 +33,8 @@ static RagePortConfig s_config;
 /* ---- GPU resources ---- */
 
 static int s_targetW, s_targetH;
+static float s_logicalW = 320.0f; /* 16:9 widens this; 240 rows stay */
+static float s_overscanX;         /* (logicalW - 320) / 2 */
 static SDL_GPUTexture *s_target;
 static SDL_GPUTexture *s_depth;
 static SDL_GPUSampler *s_sampler;
@@ -282,8 +284,13 @@ static int ModernEnsureResources(void) {
 
     scale = s_config.modernInternalScale;
     if (scale < 0.5f) scale = 0.5f;
-    s_targetW = (int)(320.0f * scale + 0.5f);
-    s_targetH = (int)(240.0f * scale + 0.5f);
+    /* 16:9 widens the field of view; the vertical view is unchanged. */
+    s_logicalW = s_config.modernAspect == RAGE_MODERN_ASPECT_16_9
+                     ? 320.0f * (16.0f / 9.0f) / (4.0f / 3.0f)
+                     : 320.0f;
+    s_overscanX = (s_logicalW - 320.0f) * 0.5f;
+    s_targetW = (int)(s_logicalW * scale + 0.5f) & ~1;
+    s_targetH = (int)(240.0f * scale + 0.5f) & ~1;
 
     {
         SDL_GPUTextureCreateInfo info = {0};
@@ -571,8 +578,11 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         if (depthZ < windowMin) depthZ = windowMin;
         if (depthZ > windowMax) depthZ = windowMax;
         zSum += z < 1.0f ? 1.0f : z;
-        out->x = z * ((float)gte->ofx / 160.0f - 1.0f) + x * h / 160.0f;
-        out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
+        {
+            float halfW = s_logicalW * 0.5f;
+            out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
+            out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
+        }
         out->z = ((depthZ - MODERN_DEPTH_MIN) / MODERN_DEPTH_RANGE) * z;
         out->w = z;
         out->u = (float)face->uv[vertex][0];
@@ -597,10 +607,19 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
 /* ---- 2D packet replay ---- */
 
 static void ModernOrtho(ModernVertex *out, float px, float py) {
-    out->x = (px + 0.5f) / 160.0f - 1.0f;
+    /* The 2D layer stays 4:3, centered inside a widened target. */
+    out->x = (px + s_overscanX + 0.5f) / (s_logicalW * 0.5f) - 1.0f;
     out->y = -((py + 0.5f) / 120.0f - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
+}
+
+static void ModernScissorToPixels(SDL_Rect *rect) {
+    float scale = (float)s_targetW / s_logicalW;
+    rect->x = (int)(((float)rect->x + s_overscanX) * scale);
+    rect->y = rect->y * s_targetH / 240;
+    rect->w = (int)((float)rect->w * scale);
+    rect->h = rect->h * s_targetH / 240;
 }
 
 static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
@@ -666,10 +685,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
         /* The overlay renders at 320x240 logical coordinates; scale the
          * scissor to the target. */
         if (spanState.hasScissor) {
-            spanState.scissor.x = spanState.scissor.x * s_targetW / 320;
-            spanState.scissor.y = spanState.scissor.y * s_targetH / 240;
-            spanState.scissor.w = spanState.scissor.w * s_targetW / 320;
-            spanState.scissor.h = spanState.scissor.h * s_targetH / 240;
+            ModernScissorToPixels(&spanState.scissor);
             if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
         }
         if (isPoly) {
@@ -977,10 +993,8 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             Modern2DState scissorState;
             memset(&scissorState, 0, sizeof(scissorState));
             scissorState.hasScissor = 1;
-            scissorState.scissor.x = area.x * s_targetW / 320;
-            scissorState.scissor.y = area.y * s_targetH / 240;
-            scissorState.scissor.w = area.w * s_targetW / 320;
-            scissorState.scissor.h = area.h * s_targetH / 240;
+            scissorState.scissor = area;
+            ModernScissorToPixels(&scissorState.scissor);
             for (i = snapshot->faceCount - 1; i >= 0; i--) {
                 const RageCaptureFace *face = &snapshot->faces[i];
                 ModernVertex corners[4];
@@ -1225,8 +1239,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     info->texture = s_target;
     info->w = (Uint32)s_targetW;
     info->h = (Uint32)s_targetH;
-    info->aspect = 4.0f / 3.0f;
-    info->filter = SDL_GPU_FILTER_NEAREST;
+    info->aspect = (4.0f / 3.0f) * (s_logicalW / 320.0f);
+    info->filter = s_config.modernTextureFilterLinear
+                       ? SDL_GPU_FILTER_LINEAR
+                       : SDL_GPU_FILTER_NEAREST;
 }
 
 int RageModernInit(const RagePortConfig *config) {
