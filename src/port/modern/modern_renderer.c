@@ -495,6 +495,7 @@ typedef struct Modern2DState {
     uint32_t tpage;    /* from GP0(E1) for sprites */
     uint32_t twin;     /* current texture window bytes */
     SDL_Rect scissor;  /* current draw area, overlay pixels */
+    int areaTopVram;   /* raw GP0(E3) row, VRAM-absolute */
     int hasScissor;
     int areaEmpty;
     int offsetX, offsetY; /* GP0(E5) relative offset */
@@ -937,20 +938,15 @@ static void ModernScissorToPixels(SDL_Rect *rect) {
     rect->h = rect->h * s_targetH / 240;
 }
 
-/* Map a VRAM-absolute drawing-area row onto the CURRENT frame page's local
- * space. The sliding mirror deliberately places its area above the page
- * (negative rows wrap to >=480 through the 9-bit field) or on the OTHER
- * page, and the PS1 clips either away; folding rows onto the local page
- * unconditionally resurrected those discarded areas and flashed the mirror
- * backdrop (sky) during the slide-in - on alternating frames only, which
- * is why the fix keyed on rows >=480 alone missed half of them. */
+/* Drawing-area rows are VRAM-absolute; the PS1 draws a pixel only when it
+ * lies inside the area AND the current page. Model that literally: keep the
+ * raw E3 row and intersect [top..bottom] with the frame's page on E4. The
+ * sliding mirror leans on this - a slide of zero rows arrives as
+ * (top=pageY, bottom=pageY-1), and any folding heuristic that "repairs"
+ * such rows turns a deliberately empty area into a full-height band (the
+ * navy flash captured at ring frame 3103: (86,240)-(233,239) became
+ * y=0,h=241). */
 static int s_areaPageY;
-
-static int Modern2DAreaLocalY(int y) {
-    int local = y - s_areaPageY;
-    if (local < 0 || local >= 240) return 240; /* off-page: empty area */
-    return local;
-}
 
 static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
     switch (word >> 24) {
@@ -964,15 +960,19 @@ static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
         int x = (int)(word & 0x3FFu);
         int y = (int)((word >> 10) & 0x1FFu);
         state->scissor.x = x;
-        state->scissor.y = Modern2DAreaLocalY(y);
+        state->areaTopVram = y;
         state->hasScissor = 1;
         break;
     }
     case 0xE4: {
         int x = (int)(word & 0x3FFu);
         int y = (int)((word >> 10) & 0x1FFu);
+        int top = state->areaTopVram > s_areaPageY ? state->areaTopVram
+                                                   : s_areaPageY;
+        int bottom = y < s_areaPageY + 239 ? y : s_areaPageY + 239;
         state->scissor.w = x - state->scissor.x + 1;
-        state->scissor.h = Modern2DAreaLocalY(y) - state->scissor.y + 1;
+        state->scissor.y = top - s_areaPageY;
+        state->scissor.h = bottom - top + 1;
         state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
         break;
     }

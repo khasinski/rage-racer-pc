@@ -117,6 +117,19 @@ int main(int argc, char **argv) {
     }
     printf("faces: terrain=%d course=%d model=%d extended(>=448)=%d\n",
            terrainFaces, courseFaces, modelFaces, extended);
+    if (getenv("MARKER_LIST_PACKETS") != NULL) {
+        int p;
+        for (p = 0; p < s->packetCount; p++) {
+            const RageCapturePacket *packet = &s->packets[p];
+            int word;
+            printf("packet %d table=%d bucket=%d words=", p, packet->table,
+                   packet->bucket);
+            for (word = 0; word < packet->size; word++) {
+                printf("%s%08x", word ? "," : "", packet->words[word]);
+            }
+            printf("\n");
+        }
+    }
     if (getenv("MARKER_CELL_STATS") != NULL) {
         static int slotCount[16][64];
         static float slotMinZ[16][64], slotMaxZ[16][64];
