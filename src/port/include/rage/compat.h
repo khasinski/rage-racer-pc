@@ -12,7 +12,7 @@ int LoadExtraVabSlotWithTable();
 void SetEffectVoicesEnabled(int enabled);
 void SetReverbPreset(int type, int left, int right);
 struct CdlLOC;
-void DecDCTout(volatile unsigned long *cells, long size);
+void DecDCTout(volatile u_long *cells, long size);
 void DecDCToutCallback(long callback);
 long StGetBackloc(struct CdlLOC *location);
 void StUnSetRing(void);
