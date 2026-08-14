@@ -1,8 +1,8 @@
+#include <stdint.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
