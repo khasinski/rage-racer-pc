@@ -3648,3 +3648,19 @@ For fixed-voice diagnosis, `PSYZ_SND_KEY_TRACE=1` reports successful key-ons,
 setup failures and empty VAB tones, while the smoke audio metrics include the
 six game-side engine-slot active flags.  These are observational debug paths;
 they do not synthesize or replace any Rage audio state.
+
+### Native OPTION and memory-card layout fixes
+
+The OPTION root background belongs to the primary ordering table at depth 54,
+behind its depth-51 menu sprites.  Submitting the `0x140 x 0xf0` red tile to
+the secondary ordering table makes it execute after the entire primary UI and
+therefore hides exactly the three rows whose y coordinates are below 240.
+This is a recovered game submission error, not a texture or display-size fix.
+
+The memory-card row renderer must not derive the `NO FILE` label with
+`g_McSlotLabels + row * 10`.  That happened to cross from `NEW FILE` into the
+next linker object in the retail 32-bit image, but independent native globals
+need not be adjacent (and ASan inserts redzones).  The game now selects the
+named `NEW FILE` or `NO FILE` object explicitly.  `save_roundtrip` drives the
+real pad polling path through LOAD GAME with both an existing save and an empty
+card, so this 32/64-bit-safe behavior can be backported to the decompilation.

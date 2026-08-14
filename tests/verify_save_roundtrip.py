@@ -59,6 +59,40 @@ def main() -> int:
             raise AssertionError("title-screen memory-card menu did not open")
         if "files=1 free=15 mask=1 page=0" not in menu.stdout:
             raise AssertionError("graphical memory-card menu did not detect slot 0")
+
+        for label, with_save in (("existing", True), ("empty", False)):
+            load_work = work / f"load-{label}"
+            load_work.mkdir()
+            (load_work / "assets").symlink_to(
+                source_dir / "assets", target_is_directory=True
+            )
+            (load_work / "bu00").mkdir()
+            if with_save:
+                source_save = files[0]
+                (load_work / "bu00" / source_save.name).write_bytes(
+                    source_save.read_bytes()
+                )
+            load_environment = os.environ.copy()
+            load_environment.update(
+                SDL_AUDIODRIVER="dummy",
+                RAGE_PORT_SMOKE_FRAMES="1150",
+                RAGE_PORT_RAW_INPUT_SCRIPT=(
+                    "400:START,500:START,600:DOWN,620:DOWN,650:CROSS,"
+                    "880:UP,900:CROSS,1050:CROSS"
+                ),
+            )
+            load = subprocess.run(
+                [executable], cwd=load_work, env=load_environment,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                timeout=25,
+            )
+            if load.returncode != 0:
+                print(load.stdout, file=sys.stderr)
+                raise AssertionError(
+                    f"LOAD GAME with {label} slot crashed ({load.returncode})"
+                )
+            if "stopped at frame 1150, scene 26" not in load.stdout:
+                raise AssertionError(f"LOAD GAME with {label} slot left the card menu")
     print("Save round trip and graphical memory-card menu both succeeded")
     return 0
 

@@ -194,7 +194,6 @@ void DrawOptionSceneOverlay(void) {
     s32 two;
     s32 white;
     s32 h1c0;
-    u8 *rawBase;
 
     if (g_GameMode != 9) {
         DrawPadTypeHint();
@@ -213,8 +212,10 @@ void DrawOptionSceneOverlay(void) {
     }
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    rawBase = g_DrawBuffer;
-    base = &GetGameFrameContext(rawBase)->layout.orderingTables[1][50];
+    /* This is the OPTION background, analogous to the memory-card screen's
+     * depth-54 tile.  Putting it in the secondary OT draws it after every
+     * primary menu sprite and hides all rows above y=240. */
+    base = GamePrimaryOrderingTable(54);
     pkt = *scratch;
 
     if (g_GameMode == 6) {

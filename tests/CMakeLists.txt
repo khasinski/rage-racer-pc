@@ -263,7 +263,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 30)
+    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME audio_output
