@@ -114,14 +114,20 @@ typedef struct RageCaptureFaceInput {
 void RageCaptureFace3D(const RageCaptureFaceInput *input);
 
 #define RAGE_CAPTURE_MAX_DRAWS 2048
-#define RAGE_CAPTURE_MAX_TERRAIN 8
+#define RAGE_CAPTURE_MAX_TERRAIN 16
 #define RAGE_CAPTURE_MAX_PACKETS 32768
 #define RAGE_CAPTURE_MAX_FACES 49152
+
+/* Extra horizontal screen-rect margin (pixels) the compat cull should
+ * accept when the modern renderer presents a widened field of view.
+ * Implemented by the modern renderer; 0 whenever it is off or 4:3. */
+int RageModernCullMarginX(void);
 
 typedef struct RageSceneSnapshot {
     uint32_t frameCounter;
     int32_t sceneId;
     int32_t sceneTimer;
+    int32_t displayHeight; /* draw-env rows: 240, or 480 for menu scenes */
     RageCaptureMatrix viewMatrix; /* SCRATCH_VIEW_MATRIX_GTE at frame end */
     int32_t viewPosition[3];
     int32_t drawCount, terrainCount, packetCount, faceCount;

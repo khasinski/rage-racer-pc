@@ -181,6 +181,14 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input) {
         snapshot->faceOverflow++;
         return;
     }
+    /* A face must belong to a recorded draw/batch; if the owner overflowed
+     * the capture arrays, indexing terrain[-1]/draws[-1] would crash. */
+    if (input->kind == RAGE_CAPTURE_KIND_TERRAIN
+            ? snapshot->terrainCount <= 0
+            : snapshot->drawCount <= 0) {
+        snapshot->faceOverflow++;
+        return;
+    }
     face = &snapshot->faces[snapshot->faceCount++];
     memset(face, 0, sizeof(*face));
     face->kind = (uint8_t)input->kind;
@@ -320,12 +328,24 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
         const uint8_t *tableBegin = (const uint8_t *)table;
         const uint8_t *tableEnd =
             (const uint8_t *)&table[GAME_FRAME_OT_LENGTH];
+        /* Mirror PsyZ's GPU_Enqueue defenses: a game/pause path can link a
+         * packet with a garbage or misaligned tag; the compat renderer
+         * truncates the chain gracefully there, so the capture must too. */
+        if ((uintptr_t)address < 4096 ||
+            ((uintptr_t)address & (sizeof(uint32_t) - 1)) != 0) {
+            snapshot->oversizedPackets++;
+            break;
+        }
         if (address >= tableBegin && address < tableEnd) {
             bucket = (int)((OT_TYPE *)node - table);
         } else if (CaptureIs3DPacket(address)) {
             snapshot->skipped3DPackets++;
         } else {
             int length = getlen(node);
+            if (length > 0x100) {
+                snapshot->oversizedPackets++;
+                break;
+            }
             if (length > RAGE_CAPTURE_PACKET_WORDS) {
                 snapshot->oversizedPackets++;
             } else if (length > 0) {
@@ -366,6 +386,7 @@ void RageCaptureFrameEnd(void) {
     snapshot->viewPosition[2] = SCRATCH_VIEW_Z;
     frame = CaptureFrameContext();
     if (frame != NULL) {
+        snapshot->displayHeight = frame->layout.environment.draw.clip.h;
         CaptureWalkTable(snapshot, 0, frame->layout.orderingTables[0]);
         CaptureWalkTable(snapshot, 1, frame->layout.orderingTables[1]);
     }

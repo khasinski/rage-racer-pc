@@ -248,11 +248,15 @@ static int RageProjectQuad(
     {
         int x[4], y[4], i;
         int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
+        /* A widened modern view accepts faces the 4:3 screen rect would
+         * cull; the compat image is unchanged because the PS1 drawing area
+         * still clips them. Never widen the mirror's deliberate bounds. */
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             x[i] = (int16_t)(sxy[i] & 0xffff);
             y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
-            allLeft &= x[i] < g_RageScratchpadState.x0;
-            allRight &= x[i] > g_RageScratchpadState.x1;
+            allLeft &= x[i] < g_RageScratchpadState.x0 - marginX;
+            allRight &= x[i] > g_RageScratchpadState.x1 + marginX;
             allAbove &= y[i] < g_RageScratchpadState.y0;
             allBelow &= y[i] > g_RageScratchpadState.y1;
         }
@@ -357,13 +361,16 @@ static int RageProjectCourseFace(
         g_RageProjectionReject = 2;
         return 0;
     }
-    for (i = 0; i < 4; i++) {
-        int x = (int16_t)sxy[i];
-        int y = (int16_t)(sxy[i] >> 16);
-        allLeft &= x < g_RageScratchpadState.x0;
-        allRight &= x > g_RageScratchpadState.x1;
-        allAbove &= y < g_RageScratchpadState.y0;
-        allBelow &= y > g_RageScratchpadState.y1;
+    {
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
+        for (i = 0; i < 4; i++) {
+            int x = (int16_t)sxy[i];
+            int y = (int16_t)(sxy[i] >> 16);
+            allLeft &= x < g_RageScratchpadState.x0 - marginX;
+            allRight &= x > g_RageScratchpadState.x1 + marginX;
+            allAbove &= y < g_RageScratchpadState.y0;
+            allBelow &= y > g_RageScratchpadState.y1;
+        }
     }
     if (allLeft || allRight || allAbove || allBelow) {
         g_RageProjectionReject = 1;

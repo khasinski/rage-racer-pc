@@ -924,6 +924,8 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             int vertex;
             int cursor = 1; /* word 0 = command + colour 0 */
             uint32_t colors[4];
+            float rawX[4], rawY[4];
+            int minX = 4096, minY = 4096, maxX = -4096, maxY = -4096;
             colors[0] = words[0] & 0xFFFFFFu;
             for (vertex = 0; vertex < count; vertex++) {
                 uint32_t xy;
@@ -933,13 +935,18 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 }
                 xy = words[cursor++];
                 {
-                    int px = (int)((xy & 0x7FFu) ^ 1024) - 1024;
-                    int py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024;
-                    ModernVertex *out = &corners[vertex];
-                    memset(out, 0, sizeof(*out));
-                    ModernOrtho(out, (float)(px + state->offsetX),
-                                (float)(py + state->offsetY));
+                    int px = (int)((xy & 0x7FFu) ^ 1024) - 1024 +
+                             state->offsetX;
+                    int py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024 +
+                             state->offsetY;
+                    rawX[vertex] = (float)px;
+                    rawY[vertex] = (float)py;
+                    if (px < minX) minX = px;
+                    if (px > maxX) maxX = px;
+                    if (py < minY) minY = py;
+                    if (py > maxY) maxY = py;
                 }
+                memset(&corners[vertex], 0, sizeof(corners[vertex]));
                 if (textured) {
                     uint32_t uvWord = words[cursor++];
                     corners[vertex].u = (float)(uvWord & 0xFFu);
@@ -947,6 +954,19 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     if (vertex == 0) clut = (uvWord >> 16) & 0xFFFFu;
                     if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
                 }
+            }
+            /* Full-screen overlays (fades, night filters) stretch across a
+             * widened view; otherwise they mask only the 4:3 centre. */
+            if (s_overscanX > 0.0f && minX <= 0 && minY <= 0 && maxX >= 320 &&
+                maxY >= 240) {
+                for (vertex = 0; vertex < count; vertex++) {
+                    if (rawX[vertex] <= 0.0f) rawX[vertex] = -s_overscanX;
+                    else if (rawX[vertex] >= 320.0f)
+                        rawX[vertex] = 320.0f + s_overscanX;
+                }
+            }
+            for (vertex = 0; vertex < count; vertex++) {
+                ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
             }
             for (vertex = 0; vertex < count; vertex++) {
                 ModernVertex *out = &corners[vertex];
@@ -996,6 +1016,12 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             }
             px += state->offsetX;
             py += state->offsetY;
+            if (s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
+                px + w >= 320 && py + h >= 240) {
+                /* Full-screen fade/filter tiles cover the widened view. */
+                px = (int)(-s_overscanX - 1.0f);
+                w = 320 - 2 * px;
+            }
             {
                 int vertex;
                 for (vertex = 0; vertex < 4; vertex++) {
@@ -1477,8 +1503,13 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     if (!s_enabled || s_device == NULL) return;
     fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
     snapshot = fpsMode ? RageCaptureCurrent() : RageCapturePrevious();
-    /* Scenes with no captured 3D pass through to the compat image. */
+    /* Scenes with no captured 3D pass through to the compat image, and so
+     * do 480-line menu scenes: their double-height buffer follows PS1
+     * interlace conventions the compat presenter already handles. */
     if (snapshot->faceCount == 0) return;
+    if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240) {
+        return;
+    }
     if (!ModernEnsureResources()) return;
     if (fpsMode) {
         /* Present the newest logic frame, its transforms interpolated from
@@ -1579,4 +1610,13 @@ void RageModernShutdown(void) {
 
 int RageModernIsEnabled(void) {
     return s_enabled;
+}
+
+int RageModernCullMarginX(void) {
+    if (!s_enabled || s_config.modernAspect != RAGE_MODERN_ASPECT_16_9) {
+        return 0;
+    }
+    /* Half the widened logical width, rounded up: 320*(16/9)/(4/3) adds
+     * ~53.3 columns per side. */
+    return 54;
 }
