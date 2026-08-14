@@ -17,6 +17,10 @@ int fseek(FILE *stream, long offset, int origin);
 unsigned long long fread(void *buffer, unsigned long long size,
                          unsigned long long count, FILE *stream);
 int sscanf(const char *text, const char *format, ...);
+FILE *_popen(const char *command, const char *mode);
+int _pclose(FILE *stream);
+#define popen _popen
+#define pclose _pclose
 int snprintf(char *buffer, unsigned long long size, const char *format, ...);
 FILE *__acrt_iob_func(unsigned index);
 #define stderr (__acrt_iob_func(2))
