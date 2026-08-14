@@ -605,27 +605,45 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
     for (i = 0; i < base->drawCount; i++) {
         const RageCaptureModelDraw *draw = &base->draws[i];
         const RageCaptureModelDraw *match = NULL;
-        int occurrence = 0;
+        long long bestDistance = 0;
         int j;
-        for (j = 0; j < i; j++) {
-            const RageCaptureModelDraw *other = &base->draws[j];
-            if (other->kind == draw->kind &&
-                other->modelIndex == draw->modelIndex &&
-                other->mirror == draw->mirror && other->table == draw->table) {
-                occurrence++;
-            }
-        }
+        /* Match by nearest translation among same-key candidates. The four
+         * wheels of one car share a model index, and occurrence-order
+         * pairing slipped by one whenever a wheel was culled for a frame,
+         * lerping each wheel toward another corner (wheels flashing through
+         * the body, mirrored rivals spinning the wrong way). */
         for (j = 0; j < target->drawCount; j++) {
             const RageCaptureModelDraw *other = &target->draws[j];
-            if (other->kind == draw->kind &&
-                other->modelIndex == draw->modelIndex &&
-                other->mirror == draw->mirror && other->table == draw->table) {
-                if (occurrence == 0) {
-                    match = other;
-                    break;
-                }
-                occurrence--;
+            long long distance = 0;
+            int axis;
+            if (other->kind != draw->kind ||
+                other->modelIndex != draw->modelIndex ||
+                other->mirror != draw->mirror ||
+                other->table != draw->table) {
+                continue;
             }
+            for (axis = 0; axis < 3; axis++) {
+                long long delta = (long long)other->gte.rot.t[axis] -
+                                  draw->gte.rot.t[axis];
+                distance += delta * delta;
+            }
+            if (match == NULL || distance < bestDistance) {
+                match = other;
+                bestDistance = distance;
+            }
+        }
+        /* Snap draws whose orientation changed too much in one tick:
+         * lerping across a large rotation produces inverted-looking spin. */
+        if (match != NULL) {
+            long dot = 0;
+            int axis;
+            for (axis = 0; axis < 3; axis++) {
+                dot += (long)draw->gte.rot.m[0][axis] *
+                       match->gte.rot.m[0][axis];
+                dot += (long)draw->gte.rot.m[2][axis] *
+                       match->gte.rot.m[2][axis];
+            }
+            if (dot < 0) match = NULL;
         }
         if (match != NULL) {
             ModernLerpGte(&draw->gte, &match->gte, t, &s_lerpDrawGte[i]);
@@ -748,6 +766,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
     int vertex;
     float zSum = 0.0f;
     float windowMin, windowMax;
+    float zBias = 0.0f;
     int textured = face->klass == 1 || face->klass == 3;
     /* Depth policy: the compat renderer orders faces by ordering-table
      * bucket (average z quantized by 4<<otShift, plus the per-face bias and
@@ -761,18 +780,32 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         float unit;
         if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
             unit = (float)(4 << snapshot->terrain[face->drawIndex].otShift);
+            windowMin = (float)bucket * unit;
+            windowMax = windowMin + unit;
         } else if (face->kind == RAGE_CAPTURE_KIND_COURSE) {
             /* The course dispatcher quantizes ((z0>>3)+(z3>>3))>>3 on
              * OTZ-scale (z/4) vertex depths: one bucket is 128 z units,
              * independent of the scratch OT shift. */
             unit = 128.0f;
             bucket += snapshot->draws[face->drawIndex].otBaseBias;
+            windowMin = (float)bucket * unit;
+            windowMax = windowMin + unit;
         } else {
-            unit = (float)(4 << snapshot->draws[face->drawIndex].otShift);
-            bucket += snapshot->draws[face->drawIndex].otBaseBias;
+            /* Model faces (cars, scenery models) use their true per-pixel
+             * depth. The per-face bias byte is a painter's overlay order
+             * for decals on the model's own surface; translating it into
+             * a whole-bucket depth shift let biased faces (wheels, decals)
+             * punch through body panels the moment quantized buckets
+             * disagreed with the real geometry - retail never shows that.
+             * A small epsilon keeps genuinely coplanar overlays ordered. */
+            zBias = 4.0f * (float)(face->bias +
+                                   snapshot->draws[face->drawIndex]
+                                       .otBaseBias);
+            windowMin = -1.0e9f;
+            windowMax = 1.0e9f;
+            (void)bucket;
+            (void)unit;
         }
-        windowMin = (float)bucket * unit;
-        windowMax = windowMin + unit;
     }
     ModernFaceViewPositions(snapshot, face, view, &mirror);
     if (getenv("RAGE_PORT_MODERN_FACE_TRACE") != NULL) {
@@ -809,7 +842,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         /* w is the true view z, negative behind the camera: the GPU's
          * homogeneous clipping then performs the near clip the compat path
          * approximates with GTE saturation. */
-        depthZ = z;
+        depthZ = z + zBias;
         if (depthZ < windowMin) depthZ = windowMin;
         if (depthZ > windowMax) depthZ = windowMax;
         zSum += z < 1.0f ? 1.0f : z;
@@ -1682,4 +1715,8 @@ int RageModernCullMarginX(void) {
     /* Half the widened logical width, rounded up: 320*(16/9)/(4/3) adds
      * ~53.3 columns per side. */
     return 54;
+}
+
+int RageModernExtendedDepth(void) {
+    return s_enabled;
 }

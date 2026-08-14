@@ -123,6 +123,10 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input);
  * Implemented by the modern renderer; 0 whenever it is off or 4:3. */
 int RageModernCullMarginX(void);
 
+/* 1 when faces beyond the retail depth cutoff should be captured (not
+ * emitted) so the modern renderer can draw an extended distance. */
+int RageModernExtendedDepth(void);
+
 typedef struct RageSceneSnapshot {
     uint32_t frameCounter;
     int32_t sceneId;

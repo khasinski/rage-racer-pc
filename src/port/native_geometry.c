@@ -377,12 +377,12 @@ static int RageProjectCourseFace(
         return 0;
     }
     *depth = (int)retailDepth;
+    if (fog != NULL) *fog = p;
+    if (rawDepth != NULL) *rawDepth = (int)otz;
     if (*depth <= 0 || *depth >= 448) {
         g_RageProjectionReject = 3;
         return 0;
     }
-    if (fog != NULL) *fog = p;
-    if (rawDepth != NULL) *rawDepth = (int)otz;
     return 1;
 }
 
@@ -1163,6 +1163,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
             int trace = RageCourseTraceMatches(g_SceneTimer, type, stream);
             int bias = (int8_t)stream[type == 0 ? 13 : 25];
             uint8_t color[3] = {stream[8], stream[9], stream[10]};
+            int extendedDepth = 0;
             projected = RageProjectCourseFace(stream, vertices, sxy, &depth,
                                                &fog, &rawDepth);
             if (trace) {
@@ -1191,8 +1192,15 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         stream[12], stream[13], stream[16], stream[17],
                         stream[20], stream[21], stream[22], stream[23]);
             }
-            if (!projected)
-                continue;
+            if (!projected) {
+                /* Beyond-cutoff faces feed only the modern far view. */
+                if (g_RageProjectionReject == 3 &&
+                    RageModernExtendedDepth() && depth > 0 && depth < 896) {
+                    extendedDepth = 1;
+                } else {
+                    continue;
+                }
+            }
             if (fogged) {
                 CVECTOR base = {color[0], color[1], color[2], 0};
                 CVECTOR shaded;
@@ -1236,6 +1244,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                  * scrolled/mode-adjusted UVs are final. */
                 if (type <= 1) RageCaptureFace3D(&capture);
             }
+            if (extendedDepth && type <= 1) continue;
             if (type == 0) {
                 if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
                 POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -1322,6 +1331,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     capture.colorCount = 1;
                     RageCaptureFace3D(&capture);
                 }
+                if (extendedDepth) continue;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next = RageEmitCourseFt4(
                         cursor, ot, depth, sxy, uv, clut, tpage, color,
@@ -1460,6 +1470,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     RageReadU16(stream + 4), RageReadU16(stream + 6)
                 };
                 int bias;
+                int extendedDepth = 0;
                 if (farCell && (stream[20] & 2) != 0) continue;
                 {
                     int projected = RageProjectQuad(
@@ -1500,7 +1511,18 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                         vertexIndices, &translation,
                         g_RageTerrainClip0, g_RageTerrainClip1, sxy,
                         rawDepth, depth);
-                    if (!projected) continue;
+                    if (!projected) {
+                        /* Faces beyond the retail depth cutoff are captured
+                         * for the modern renderer's extended draw distance
+                         * but never emitted to the compat stream. */
+                        if (g_RageProjectionReject == 3 &&
+                            RageModernExtendedDepth() && depth > 0 &&
+                            depth < 896) {
+                            extendedDepth = 1;
+                        } else {
+                            continue;
+                        }
+                    }
                 }
                 /* The retail cell dispatcher tests bit 0 of the halfword at
                  * +0x14 when OTZ reaches 0x800.  In that case it halves all
@@ -1589,6 +1611,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     capture.colorCount = 1;
                     RageCaptureFace3D(&capture);
                 }
+                if (extendedDepth) continue;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
                     depth += bias;
