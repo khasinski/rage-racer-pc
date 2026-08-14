@@ -127,6 +127,9 @@ void MainLoop(void) {
         StepTrackTextureSwap();
         frameLimit = g_FrameSyncThreshold;
         while (VSync(1) < frameLimit) {
+#ifdef __psyz
+            RagePortDuringFrameWait(frameLimit);
+#endif
         }
         elapsed = VSync(1);
         ticks = g_GameClock + 1;

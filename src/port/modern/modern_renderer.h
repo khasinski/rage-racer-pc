@@ -19,4 +19,8 @@ void RageModernShutdown(void);
  * only. */
 int RageModernIsEnabled(void);
 
+/* Frame-sync wait hook: presents interpolated frames between logic ticks
+ * when an FPS mode is configured. No-op otherwise. */
+void RageModernFrameWaitTick(int frameLimit);
+
 #endif

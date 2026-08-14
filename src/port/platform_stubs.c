@@ -6,6 +6,7 @@ void RagePortSmokeBeforeSceneHandler(void) {}
 
 void RageCaptureFrameBegin(void);
 void RageCaptureFrameEnd(void);
+void RageModernFrameWaitTick(int frameLimit);
 
 void RagePortBeforeSceneHandler(void) {
     RagePortSmokeBeforeSceneHandler();
@@ -14,6 +15,10 @@ void RagePortBeforeSceneHandler(void) {
 
 void RagePortAfterSceneHandler(void) {
     RageCaptureFrameEnd();
+}
+
+void RagePortDuringFrameWait(int frameLimit) {
+    RageModernFrameWaitTick(frameLimit);
 }
 
 long SpuTransferStatus(void *address, long mode) {

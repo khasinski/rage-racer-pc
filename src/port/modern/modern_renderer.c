@@ -2,6 +2,7 @@
 
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
+#include <psyz/video.h>
 
 #include <math.h>
 #include <stddef.h>
@@ -432,6 +433,122 @@ static uint32_t ModernTwinFromE2(uint32_t word) {
            (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
 }
 
+/* ---- snapshot interpolation (arbitrary-FPS presentation) ---- */
+
+static int s_useLerp;
+static RageCaptureGteState s_lerpDrawGte[RAGE_CAPTURE_MAX_DRAWS];
+static RageCaptureTerrainBatch s_lerpTerrain[RAGE_CAPTURE_MAX_TERRAIN];
+static Uint64 s_tickTimeNs;
+static Uint64 s_tickIntervalNs;
+static uint32_t s_tickFrame = 0xFFFFFFFFu;
+
+static void ModernLerpGte(const RageCaptureGteState *a,
+                          const RageCaptureGteState *b, float t,
+                          RageCaptureGteState *out) {
+    int row, column, axis;
+    for (row = 0; row < 3; row++) {
+        for (column = 0; column < 3; column++) {
+            out->rot.m[row][column] =
+                (int16_t)(a->rot.m[row][column] +
+                          (b->rot.m[row][column] - a->rot.m[row][column]) * t);
+            out->light.m[row][column] = b->light.m[row][column];
+            out->color.m[row][column] = b->color.m[row][column];
+        }
+    }
+    for (axis = 0; axis < 3; axis++) {
+        out->rot.t[axis] =
+            (int32_t)(a->rot.t[axis] +
+                      (b->rot.t[axis] - a->rot.t[axis]) * (double)t);
+        out->light.t[axis] = b->light.t[axis];
+        out->color.t[axis] = b->color.t[axis];
+    }
+    out->ofx = b->ofx;
+    out->ofy = b->ofy;
+    out->h = b->h;
+    out->dqa = b->dqa;
+    out->dqb = b->dqb;
+}
+
+/* Match this frame's draws/terrain against the previous frame and lerp the
+ * transforms. Camera cuts and scene changes snap instead of interpolating. */
+static void ModernPrepareInterpolation(const RageSceneSnapshot *current,
+                                       const RageSceneSnapshot *previous,
+                                       float t) {
+    int i;
+    int timerDelta = current->sceneTimer - previous->sceneTimer;
+    long long cameraDelta = 0;
+    s_useLerp = 0;
+    if (t >= 0.999f) return;
+    if (current->sceneId != previous->sceneId) return;
+    if (timerDelta < 0 || timerDelta > 2) return;
+    for (i = 0; i < 3; i++) {
+        long long delta = (long long)current->viewPosition[i] -
+                          previous->viewPosition[i];
+        cameraDelta += delta < 0 ? -delta : delta;
+    }
+    if (cameraDelta > 16384) return;
+    for (i = 0; i < current->drawCount; i++) {
+        const RageCaptureModelDraw *draw = &current->draws[i];
+        const RageCaptureModelDraw *match = NULL;
+        int occurrence = 0;
+        int j;
+        for (j = 0; j < i; j++) {
+            const RageCaptureModelDraw *other = &current->draws[j];
+            if (other->kind == draw->kind &&
+                other->modelIndex == draw->modelIndex &&
+                other->mirror == draw->mirror && other->table == draw->table) {
+                occurrence++;
+            }
+        }
+        for (j = 0; j < previous->drawCount; j++) {
+            const RageCaptureModelDraw *other = &previous->draws[j];
+            if (other->kind == draw->kind &&
+                other->modelIndex == draw->modelIndex &&
+                other->mirror == draw->mirror && other->table == draw->table) {
+                if (occurrence == 0) {
+                    match = other;
+                    break;
+                }
+                occurrence--;
+            }
+        }
+        if (match != NULL) {
+            ModernLerpGte(&match->gte, &draw->gte, t, &s_lerpDrawGte[i]);
+        } else {
+            s_lerpDrawGte[i] = draw->gte;
+        }
+    }
+    for (i = 0; i < current->terrainCount; i++) {
+        const RageCaptureTerrainBatch *batch = &current->terrain[i];
+        const RageCaptureTerrainBatch *match =
+            i < previous->terrainCount &&
+                    previous->terrain[i].mirror == batch->mirror
+                ? &previous->terrain[i]
+                : NULL;
+        int cell;
+        s_lerpTerrain[i] = *batch;
+        if (match == NULL) continue;
+        ModernLerpGte(&match->gte, &batch->gte, t, &s_lerpTerrain[i].gte);
+        for (cell = 0; cell < batch->cellCount; cell++) {
+            int other;
+            for (other = 0; other < match->cellCount; other++) {
+                if (match->cells[other][3] == batch->cells[cell][3]) {
+                    int axis;
+                    for (axis = 0; axis < 3; axis++) {
+                        s_lerpTerrain[i].cells[cell][axis] = (int32_t)(
+                            match->cells[other][axis] +
+                            (batch->cells[cell][axis] -
+                             match->cells[other][axis]) *
+                                (double)t);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    s_useLerp = 1;
+}
+
 /* ---- 3D faces ---- */
 
 typedef struct ModernFaceOrder {
@@ -454,7 +571,8 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
     int vertex;
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
         const RageCaptureTerrainBatch *batch =
-            &snapshot->terrain[face->drawIndex];
+            s_useLerp ? &s_lerpTerrain[face->drawIndex]
+                      : &snapshot->terrain[face->drawIndex];
         const int32_t *cell = batch->cells[face->cellSlot];
         gte = &batch->gte;
         *mirror = batch->mirror;
@@ -463,7 +581,7 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
         tz = (float)cell[2];
     } else {
         const RageCaptureModelDraw *draw = &snapshot->draws[face->drawIndex];
-        gte = &draw->gte;
+        gte = s_useLerp ? &s_lerpDrawGte[face->drawIndex] : &draw->gte;
         *mirror = draw->mirror;
         tx = (float)gte->rot.t[0];
         ty = (float)gte->rot.t[1];
@@ -489,9 +607,11 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
 static const RageCaptureGteState *ModernFaceGte(
     const RageSceneSnapshot *snapshot, const RageCaptureFace *face) {
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        return &snapshot->terrain[face->drawIndex].gte;
+        return s_useLerp ? &s_lerpTerrain[face->drawIndex].gte
+                         : &snapshot->terrain[face->drawIndex].gte;
     }
-    return &snapshot->draws[face->drawIndex].gte;
+    return s_useLerp ? &s_lerpDrawGte[face->drawIndex]
+                     : &snapshot->draws[face->drawIndex].gte;
 }
 
 static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
@@ -1222,15 +1342,42 @@ static void ModernOverlayInit(SDL_Window *window, SDL_GPUDevice *device) {
 }
 
 static void ModernPresentSource(PsyzPresentSourceInfo *info) {
-    const RageSceneSnapshot *snapshot = RageCapturePrevious();
+    const RageSceneSnapshot *snapshot;
+    int fpsMode;
     if (s_prev_present_source) {
         s_prev_present_source(info);
     }
     if (!s_enabled || s_device == NULL) return;
+    fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
+    snapshot = fpsMode ? RageCaptureCurrent() : RageCapturePrevious();
     /* Scenes with no captured 3D pass through to the compat image. */
     if (snapshot->faceCount == 0) return;
     if (!ModernEnsureResources()) return;
-    if (snapshot->frameCounter != s_lastRenderedFrame) {
+    if (fpsMode) {
+        /* Present the newest logic frame, its transforms interpolated from
+         * the one before by the wall-clock fraction of the logic tick. */
+        Uint64 now = SDL_GetTicksNS();
+        float t = 1.0f;
+        if (snapshot->frameCounter != s_tickFrame) {
+            if (s_tickTimeNs != 0) {
+                Uint64 delta = now - s_tickTimeNs;
+                if (delta > 1000000 && delta < 200000000) {
+                    s_tickIntervalNs = delta;
+                }
+            }
+            s_tickFrame = snapshot->frameCounter;
+            s_tickTimeNs = now;
+        }
+        if (s_tickIntervalNs > 0) {
+            double fraction = (double)(now - s_tickTimeNs) /
+                              (double)s_tickIntervalNs;
+            t = fraction >= 1.0 ? 1.0f : (float)fraction;
+        }
+        ModernPrepareInterpolation(snapshot, RageCapturePrevious(), t);
+        ModernRender(snapshot);
+        s_useLerp = 0;
+        if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
+    } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         ModernRender(snapshot);
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
@@ -1243,6 +1390,32 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     info->filter = s_config.modernTextureFilterLinear
                        ? SDL_GPU_FILTER_LINEAR
                        : SDL_GPU_FILTER_NEAREST;
+}
+
+/* Called by the main loop's frame-sync wait. When an FPS mode is selected,
+ * present additional interpolated frames while race logic (threshold 0x180,
+ * one tick per two VBlanks) waits out its interval; menu-rate scenes already
+ * present every VBlank. Calling the platform present directly skips the
+ * BIOS pad refresh, so input edge semantics are untouched. */
+void RageModernFrameWaitTick(int frameLimit) {
+    if (!s_enabled || s_device == NULL) return;
+    if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
+    if (frameLimit < 0x180) return;
+    if (RageCaptureCurrent()->faceCount == 0) return;
+    {
+        /* Explicit targets pace to 1/fps; vsync mode leans on the present's
+         * own pacing but still caps the busy-wait loop at 500 presents/s so
+         * uncapped (LIMITLESS) runs cannot spin into thousands of renders
+         * per logic tick. */
+        static Uint64 lastPresentNs;
+        Uint64 now = SDL_GetTicksNS();
+        Uint64 interval = s_config.modernFps > 0
+                              ? (Uint64)(1000000000.0 / s_config.modernFps)
+                              : 2000000u;
+        if (now - lastPresentNs < interval) return;
+        lastPresentNs = now;
+    }
+    Psyz_VideoPresentIntermediate();
 }
 
 int RageModernInit(const RagePortConfig *config) {
