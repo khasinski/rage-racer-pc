@@ -641,6 +641,16 @@ typedef struct PlayerCarRuntime {
     PlayerLapTimes lapTimes;
 } PlayerCarRuntime;
 
+/* Retail address 0x8009E804 is g_PlayerCar + 0x130, not independent storage.
+ * CUSTOMIZE writes this name while the drivetrain reads drive.manual. */
+#define g_PlayerTransmission \
+    (*(s16 *)((u8 *)(void *)&g_PlayerCar + 0x130))
+
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, manual) == 0x130,
+    "player transmission must retain its retail alias offset");
+
 typedef union PlayerRaceCueStateAddress {
     s16 *trackSection;
     PlayerRaceCueState *state;

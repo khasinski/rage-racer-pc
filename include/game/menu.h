@@ -557,7 +557,6 @@ extern s32 g_PlayerRenderY;
  * as renderDepth. Keep one storage location on native hosts too. */
 #define g_PlayerTireCompound \
     (((GameRenderObject *)(void *)&g_PlayerCar)->renderDepth)
-extern s16 g_PlayerTransmission;
 extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;

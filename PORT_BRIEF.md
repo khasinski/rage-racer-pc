@@ -3664,3 +3664,11 @@ need not be adjacent (and ASan inserts redzones).  The game now selects the
 named `NEW FILE` or `NO FILE` object explicitly.  `save_roundtrip` drives the
 real pad polling path through LOAD GAME with both an existing save and an empty
 card, so this 32/64-bit-safe behavior can be backported to the decompilation.
+
+CUSTOMIZE's `g_PlayerTransmission` is another retail interior symbol, at
+`0x8009E804 = g_PlayerCar + 0x130`.  That offset is
+`g_PlayerCar.drive.manual`: the menu and drivetrain are meant to access the
+same halfword.  A standalone host global lets the AT/MT selector appear to
+work while `UpdatePlayerCar` continues reading zero and running the automatic
+shift path.  The native declaration now preserves the alias explicitly, with
+both an offset assertion and a behavioral characterization test.
