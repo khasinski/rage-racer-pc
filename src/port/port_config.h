@@ -23,6 +23,11 @@ typedef enum RageModernAspect {
 #define RAGE_MODERN_FPS_LOGIC 0
 #define RAGE_MODERN_FPS_VSYNC (-1)
 
+typedef enum RageModernPost {
+    RAGE_MODERN_POST_NONE = 0,
+    RAGE_MODERN_POST_FXAA = 1
+} RageModernPost;
+
 typedef struct RagePortConfig {
     RageRendererKind renderer;
     float modernInternalScale;  /* multiplier of 320x240, default 2 */
@@ -30,6 +35,7 @@ typedef struct RagePortConfig {
     int modernFps;
     float modernDrawDistance;   /* multiplier, default 1 */
     int modernTextureFilterLinear; /* 0 nearest, 1 linear */
+    RageModernPost modernPost;
 } RagePortConfig;
 
 void RagePortConfigDefaults(RagePortConfig *config);

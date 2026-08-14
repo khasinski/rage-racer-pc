@@ -1,9 +1,80 @@
 # Modern Renderer Plan
 
-Status: proposal (2026-08-14). Implements the renderer direction recorded in
-`PORT_BRIEF.md` §1 (decision 2026-08-12): two explicit paths, `compat` and
-`enhanced`. This document names the enhanced path the **modern renderer** and
-plans it end to end.
+Status: implemented through phase R6 (2026-08-14). Implements the renderer
+direction recorded in `PORT_BRIEF.md` §1 (decision 2026-08-12): two explicit
+paths, `compat` and `enhanced`. This document names the enhanced path the
+**modern renderer**; §0 records what was built and where it deviates from the
+original plan below.
+
+## 0. Implementation status
+
+All phases R0–R5 and the post-processing part of R6 are implemented:
+
+- **R0** — `rage-port.cfg` (`renderer=compat|modern` + `modern.*` keys,
+  parsed by `src/port/port_config.c`), PsyZ present-source hook
+  (`Psyz_PresentSource_SDL3GPU`) and the `src/port/modern/` module.
+- **R1** — `src/port/modern/scene_capture.c` records per logic frame: 3D
+  submissions with their GTE state at the `native_geometry.c` seam, every
+  emitted 3D face semantically (local vertices, lit colours, UV/CLUT/tpage,
+  texture window, OT depth and bias — terrain captured at parent-quad level,
+  so the modern path needs no subdivision or seam lines), and the 2D layer
+  packet-by-packet from an end-of-frame ordering-table walk that skips 3D
+  byte ranges. Fields the PS1 GPU ignores are zeroed so captures compare
+  equal whenever they render equal. The `scene_capture` test requires
+  deterministic traces and populated layers.
+- **R2** — `src/port/modern/modern_renderer.c` renders snapshots on the
+  shared SDL3 GPU device: float transforms, depth buffer,
+  perspective-correct texturing, PS1 blend semantics (premultiplied
+  ONE/ONE_MINUS_SRC_ALPHA with a reverse-subtract pipeline for ABR 2).
+  **Deviation:** instead of a decoded-texture cache with VRAM-write
+  invalidation, the fragment shader samples PsyZ's live VRAM texture with
+  CLUT indirection, like the compat rasterizer — no cache or invalidation
+  needed (the cache design in §3.3 becomes relevant only for replacement
+  textures or raytracing).
+- **R3** — depth policy: each vertex's true z is clamped into its face's
+  compat ordering-table bucket window (model/terrain buckets are 4<<otShift
+  z units, the course dispatcher's are 128; negative buckets from the +128
+  OT base are representable), so cross-bucket ordering matches the oracle
+  exactly while same-bucket faces intersect with real depth; opaque faces
+  draw in reverse submission order to keep compat's within-bucket LIFO rule.
+  True view z in w gives hardware near clipping. The mirror renders as a
+  second pass over a recleared depth buffer, scissored to the drawing area
+  its stream installs, layered backdrop → 3D → frame; environment packets
+  apply every E-command word (DR_AREA carries E3+E4 in one packet). Scenes
+  without 3D (menus, FMV, 480-line screens) pass through to the compat
+  image.
+- **R4** — `modern.internal_scale` (free target size),
+  `modern.aspect=16:9` (widened 3D FOV, 4:3-centered 2D and mirror),
+  `modern.texture_filter=linear` (presentation blit). **Not done:** extended
+  draw distance — the compat path's culling and the retail 64-entry
+  visible-cell list decide what is captured, so geometry can pop in at the
+  16:9 edges.
+- **R5** — `modern.fps=vsync|<n>`: the main loop's frame-sync wait presents
+  interpolated frames through `Psyz_VideoPresentIntermediate` (present
+  without VBlank bookkeeping — presenting via VSync(0) deadlocks the wait).
+  Draws are matched by kind/model/mirror/table occurrence, terrain cells by
+  cell index; scene changes, timer jumps and camera teleports snap. Scene
+  hashes are identical with fps mode on.
+- **R6** — post-processing pass with one built-in effect
+  (`modern.post=fxaa`, edge anti-aliasing); the pass is the extension point
+  for further effects. **Not implemented:** replacement textures (needs the
+  §3.3 decoded cache), modernised lighting, raytracing (appendix B
+  unchanged).
+
+Verification: game-state and scene-hash parity with the renderer toggled
+(§3's capture-alongside design makes this structural); visual A/B against
+the compat oracle at prologue frame 899 (road/wall/stand pixels within a few
+units, subtractive night tile correct) and Grand Prix frames including the
+live rear-view mirror. Diagnostics: `RAGE_PORT_MODERN=1` (smoke),
+`RAGE_PORT_MODERN_DUMP[_FRAME]`, `RAGE_PORT_MODERN_SPAN_TRACE`,
+`RAGE_PORT_MODERN_FACE_TRACE`, `RAGE_PORT_MODERN_SOLID`,
+`RAGE_PORT_SCENE_TRACE[_VERBOSE]`.
+
+Known issues: a localized ordering/UV mismatch in the prologue's top-left
+building cluster (overlapping same-CLUT terrain walls from neighbouring
+cells); 16:9 edge pop-in per R4 above; interpolated presentation needs
+interactive verification for perceived smoothness (headless runs only prove
+state parity and pacing).
 
 ## 1. Goals and non-goals
 

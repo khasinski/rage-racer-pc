@@ -46,6 +46,9 @@ static SDL_GPUGraphicsPipeline *s_pipe2d;
 static SDL_GPUGraphicsPipeline *s_pipe2dSub;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
+static SDL_GPUTexture *s_postTarget;
+static SDL_GPUGraphicsPipeline *s_pipePost;
+static SDL_GPUSampler *s_samplerLinear;
 static int s_resourcesReady;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
@@ -198,18 +201,95 @@ static const char MODERN_SHADER_MSL[] =
     "    return float4(modColor, 1.0);\n"
     "}\n";
 
+/* Post-processing: a fullscreen pass over the finished frame. One built-in
+ * effect for now (FXAA edge anti-aliasing); the pass is the extension point
+ * for further effects. */
+static const char MODERN_POST_MSL[] =
+    "#include <metal_stdlib>\n"
+    "using namespace metal;\n"
+    "struct PostOut { float4 pos [[position]]; float2 uv; };\n"
+    "vertex PostOut vs_post(uint vid [[vertex_id]]) {\n"
+    "    PostOut out;\n"
+    "    float2 corner = float2((vid << 1) & 2, vid & 2);\n"
+    "    out.pos = float4(corner * 2.0 - 1.0, 0.0, 1.0);\n"
+    "    out.uv = float2(corner.x, 1.0 - corner.y);\n"
+    "    return out;\n"
+    "}\n"
+    "static float fxaaLuma(float3 c) {\n"
+    "    return dot(c, float3(0.299, 0.587, 0.114));\n"
+    "}\n"
+    "fragment float4 fs_post(PostOut in [[stage_in]],\n"
+    "                        texture2d<float> frame [[texture(0)]],\n"
+    "                        sampler smp [[sampler(0)]]) {\n"
+    "    float2 texel = 1.0 / float2(frame.get_width(), frame.get_height());\n"
+    "    float3 rgbNW = frame.sample(smp, in.uv + float2(-1, -1) * texel).rgb;\n"
+    "    float3 rgbNE = frame.sample(smp, in.uv + float2(1, -1) * texel).rgb;\n"
+    "    float3 rgbSW = frame.sample(smp, in.uv + float2(-1, 1) * texel).rgb;\n"
+    "    float3 rgbSE = frame.sample(smp, in.uv + float2(1, 1) * texel).rgb;\n"
+    "    float4 center = frame.sample(smp, in.uv);\n"
+    "    float lumaNW = fxaaLuma(rgbNW), lumaNE = fxaaLuma(rgbNE);\n"
+    "    float lumaSW = fxaaLuma(rgbSW), lumaSE = fxaaLuma(rgbSE);\n"
+    "    float lumaM = fxaaLuma(center.rgb);\n"
+    "    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE),\n"
+    "                                   min(lumaSW, lumaSE)));\n"
+    "    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE),\n"
+    "                                   max(lumaSW, lumaSE)));\n"
+    "    float2 dir = float2(-((lumaNW + lumaNE) - (lumaSW + lumaSE)),\n"
+    "                        (lumaNW + lumaSW) - (lumaNE + lumaSE));\n"
+    "    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *\n"
+    "                              0.25 * (1.0 / 8.0),\n"
+    "                          1.0 / 128.0);\n"
+    "    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);\n"
+    "    dir = clamp(dir * rcpDirMin, float2(-8.0), float2(8.0)) * texel;\n"
+    "    float3 rgbA = 0.5 *\n"
+    "        (frame.sample(smp, in.uv + dir * (1.0 / 3.0 - 0.5)).rgb +\n"
+    "         frame.sample(smp, in.uv + dir * (2.0 / 3.0 - 0.5)).rgb);\n"
+    "    float3 rgbB = rgbA * 0.5 + 0.25 *\n"
+    "        (frame.sample(smp, in.uv + dir * -0.5).rgb +\n"
+    "         frame.sample(smp, in.uv + dir * 0.5).rgb);\n"
+    "    float lumaB = fxaaLuma(rgbB);\n"
+    "    float3 result = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;\n"
+    "    return float4(result, center.a);\n"
+    "}\n";
+
 /* ---- resource creation ---- */
 
-static SDL_GPUShader *ModernCreateShader(SDL_GPUShaderStage stage,
+static SDL_GPUShader *ModernCreateShader(const char *source, size_t sourceSize,
+                                         SDL_GPUShaderStage stage,
                                          const char *entry, int samplers) {
     SDL_GPUShaderCreateInfo info = {0};
-    info.code = (const Uint8 *)MODERN_SHADER_MSL;
-    info.code_size = sizeof(MODERN_SHADER_MSL);
+    info.code = (const Uint8 *)source;
+    info.code_size = sourceSize;
     info.entrypoint = entry;
     info.format = SDL_GPU_SHADERFORMAT_MSL;
     info.stage = stage;
     info.num_samplers = (Uint32)samplers;
     return SDL_CreateGPUShader(s_device, &info);
+}
+
+static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
+    SDL_GPUShader *vs =
+        ModernCreateShader(MODERN_POST_MSL, sizeof(MODERN_POST_MSL),
+                           SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
+    SDL_GPUShader *fs =
+        ModernCreateShader(MODERN_POST_MSL, sizeof(MODERN_POST_MSL),
+                           SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_post", 1);
+    SDL_GPUGraphicsPipeline *pipeline = NULL;
+    if (vs && fs) {
+        const SDL_GPUColorTargetDescription target = {
+            .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        };
+        SDL_GPUGraphicsPipelineCreateInfo info = {0};
+        info.vertex_shader = vs;
+        info.fragment_shader = fs;
+        info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+        info.target_info.color_target_descriptions = &target;
+        info.target_info.num_color_targets = 1;
+        pipeline = SDL_CreateGPUGraphicsPipeline(s_device, &info);
+    }
+    if (vs) SDL_ReleaseGPUShader(s_device, vs);
+    if (fs) SDL_ReleaseGPUShader(s_device, fs);
+    return pipeline;
 }
 
 static SDL_GPUGraphicsPipeline *ModernCreatePipeline(
@@ -314,8 +394,10 @@ static int ModernEnsureResources(void) {
         info.mag_filter = SDL_GPU_FILTER_NEAREST;
         s_sampler = SDL_CreateGPUSampler(s_device, &info);
     }
-    vs = ModernCreateShader(SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
-    fs = ModernCreateShader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
+    vs = ModernCreateShader(MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
+                            SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
+    fs = ModernCreateShader(MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
+                            SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
     if (vs && fs) {
         s_pipe3dOpaque = ModernCreatePipeline(vs, fs, 1, 1, 0);
         s_pipe3dBlend = ModernCreatePipeline(vs, fs, 1, 0, 0);
@@ -339,6 +421,32 @@ static int ModernEnsureResources(void) {
     }
     s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
     s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
+
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
+        SDL_GPUTextureCreateInfo info = {0};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = (Uint32)s_targetW;
+        info.height = (Uint32)s_targetH;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        s_postTarget = SDL_CreateGPUTexture(s_device, &info);
+        s_pipePost = ModernCreatePostPipeline();
+        {
+            SDL_GPUSamplerCreateInfo samplerInfo = {0};
+            samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+            samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+            s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
+        }
+        if (!s_postTarget || !s_pipePost || !s_samplerLinear) {
+            fprintf(stderr,
+                    "rage-port: post-process setup failed, disabling: %s\n",
+                    SDL_GetError());
+            s_config.modernPost = RAGE_MODERN_POST_NONE;
+        }
+    }
 
     if (!s_target || !s_depth || !s_sampler || !s_pipe3dOpaque ||
         !s_pipe3dBlend || !s_pipe3dSub || !s_pipe2d || !s_pipe2dSub ||
@@ -1243,6 +1351,22 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPURenderPass(pass);
         }
     }
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE && s_pipePost != NULL) {
+        const SDL_GPUColorTargetInfo color = {
+            .texture = s_postTarget,
+            .load_op = SDL_GPU_LOADOP_DONT_CARE,
+            .store_op = SDL_GPU_STOREOP_STORE,
+        };
+        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, NULL);
+        if (pass != NULL) {
+            const SDL_GPUTextureSamplerBinding sampler = {
+                .texture = s_target, .sampler = s_samplerLinear};
+            SDL_BindGPUGraphicsPipeline(pass, s_pipePost);
+            SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
+            SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+            SDL_EndGPURenderPass(pass);
+        }
+    }
     SDL_SubmitGPUCommandBuffer(cmd);
     s_haveRenderedFrame = 1;
     if (getenv("RAGE_PORT_MODERN_SPAN_TRACE") != NULL) {
@@ -1290,7 +1414,10 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
     if (cmd != NULL) {
         SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
         const SDL_GPUTextureRegion region = {
-            .texture = s_target,
+            .texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
+                               s_postTarget != NULL
+                           ? s_postTarget
+                           : s_target,
             .w = (Uint32)s_targetW,
             .h = (Uint32)s_targetH,
             .d = 1,
@@ -1383,7 +1510,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     }
     if (!s_haveRenderedFrame) return;
-    info->texture = s_target;
+    info->texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
+                            s_postTarget != NULL
+                        ? s_postTarget
+                        : s_target;
     info->w = (Uint32)s_targetW;
     info->h = (Uint32)s_targetH;
     info->aspect = (4.0f / 3.0f) * (s_logicalW / 320.0f);

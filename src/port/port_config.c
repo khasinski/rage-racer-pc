@@ -21,6 +21,7 @@ void RagePortConfigDefaults(RagePortConfig *config) {
     config->modernFps = RAGE_MODERN_FPS_LOGIC;
     config->modernDrawDistance = 1.0f;
     config->modernTextureFilterLinear = 0;
+    config->modernPost = RAGE_MODERN_POST_NONE;
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -84,6 +85,17 @@ static int ApplySetting(RagePortConfig *config, const char *name,
     if (strcmp(name, "modern.draw_distance") == 0) {
         return ParseFloat(value, &config->modernDrawDistance, 0.5f, 16.0f);
     }
+    if (strcmp(name, "modern.post") == 0) {
+        if (strcmp(value, "none") == 0) {
+            config->modernPost = RAGE_MODERN_POST_NONE;
+            return 1;
+        }
+        if (strcmp(value, "fxaa") == 0) {
+            config->modernPost = RAGE_MODERN_POST_FXAA;
+            return 1;
+        }
+        return 0;
+    }
     if (strcmp(name, "modern.texture_filter") == 0) {
         if (strcmp(value, "nearest") == 0) {
             config->modernTextureFilterLinear = 0;
@@ -122,7 +134,7 @@ int RagePortConfigLoad(RagePortConfig *config, const char *path) {
 
 static RagePortConfig active_config = {
     RAGE_RENDERER_COMPAT, 2.0f, RAGE_MODERN_ASPECT_AUTO,
-    RAGE_MODERN_FPS_LOGIC, 1.0f, 0
+    RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE
 };
 
 void RagePortConfigSetActive(const RagePortConfig *config) {
