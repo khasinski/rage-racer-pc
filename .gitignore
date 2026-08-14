@@ -110,3 +110,4 @@ tools/decomp-wip/
 # conclusions and reproduction commands belong in PORT_BRIEF.md.
 .visual-cache/
 rage-port.cfg
+markers/

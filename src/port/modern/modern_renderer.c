@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "scene_capture.h"
 
@@ -1508,31 +1509,18 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
 }
 
-/* Diagnostic: write the modern target as a binary PPM when
- * RAGE_PORT_MODERN_DUMP names a path and RAGE_PORT_MODERN_DUMP_FRAME (if
- * set) matches the captured frame counter. */
-static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
-    static int initialized;
-    static const char *path;
-    static long frame = -1;
-    static int done;
+/* Download the presented modern target and write it as a binary PPM. */
+static int ModernWriteTargetPpm(const char *path) {
     SDL_GPUTransferBuffer *transfer;
     SDL_GPUCommandBuffer *cmd;
-    if (!initialized) {
-        const char *frameText = getenv("RAGE_PORT_MODERN_DUMP_FRAME");
-        path = getenv("RAGE_PORT_MODERN_DUMP");
-        if (frameText != NULL) frame = strtol(frameText, NULL, 0);
-        initialized = 1;
-    }
-    if (path == NULL || done) return;
-    if (frame >= 0 && (long)snapshot->frameCounter < frame) return;
+    int written = 0;
     {
         SDL_GPUTransferBufferCreateInfo info = {0};
         info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
         info.size = (Uint32)(s_targetW * s_targetH * 4);
         transfer = SDL_CreateGPUTransferBuffer(s_device, &info);
     }
-    if (transfer == NULL) return;
+    if (transfer == NULL) return 0;
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd != NULL) {
         SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
@@ -1569,16 +1557,134 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
                         fwrite(pixels + i * 4, 1, 3, file);
                     }
                     fclose(file);
-                    fprintf(stderr,
-                            "rage-port: modern dump frame=%u -> %s\n",
-                            snapshot->frameCounter, path);
+                    written = 1;
                 }
                 SDL_UnmapGPUTransferBuffer(s_device, transfer);
             }
         }
     }
     SDL_ReleaseGPUTransferBuffer(s_device, transfer);
+    return written;
+}
+
+/* Diagnostic: write the modern target as a binary PPM when
+ * RAGE_PORT_MODERN_DUMP names a path and RAGE_PORT_MODERN_DUMP_FRAME (if
+ * set) matches the captured frame counter. */
+static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
+    static int initialized;
+    static const char *path;
+    static long frame = -1;
+    static int done;
+    if (!initialized) {
+        const char *frameText = getenv("RAGE_PORT_MODERN_DUMP_FRAME");
+        path = getenv("RAGE_PORT_MODERN_DUMP");
+        if (frameText != NULL) frame = strtol(frameText, NULL, 0);
+        initialized = 1;
+    }
+    if (path == NULL || done) return;
+    if (frame >= 0 && (long)snapshot->frameCounter < frame) return;
+    if (ModernWriteTargetPpm(path)) {
+        fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
+                snapshot->frameCounter, path);
+    }
     done = 1;
+}
+
+/* Debug marker: pressing M writes markers/marker-N-{modern,compat}.ppm,
+ * an info.txt with camera/draw/terrain state and the raw scene snapshot,
+ * so a moment the player flags can be analysed offline. Works in menus and
+ * attract too (compat image only when the scene has no 3D). */
+static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
+                              int haveModernImage) {
+    static int wasDown;
+    const bool *keys = SDL_GetKeyboardState(NULL);
+    int down = keys != NULL && keys[SDL_SCANCODE_M];
+    if (!down || wasDown) {
+        wasDown = down;
+        return;
+    }
+    wasDown = down;
+    {
+        static int markerIndex;
+        char path[256];
+        int index = markerIndex++;
+        FILE *file;
+        int i;
+        mkdir("markers", 0755);
+        if (haveModernImage) {
+            snprintf(path, sizeof(path), "markers/marker-%d-modern.ppm",
+                     index);
+            ModernWriteTargetPpm(path);
+        }
+        {
+            int w = 0, h = 0;
+            unsigned char *pixels = Psyz_VideoAllocCapturedFrame(&w, &h);
+            if (pixels != NULL) {
+                snprintf(path, sizeof(path), "markers/marker-%d-compat.ppm",
+                         index);
+                file = fopen(path, "wb");
+                if (file != NULL) {
+                    fprintf(file, "P6\n%d %d\n255\n", w, h);
+                    fwrite(pixels, 3, (size_t)w * h, file);
+                    fclose(file);
+                }
+                free(pixels);
+            }
+        }
+        snprintf(path, sizeof(path), "markers/marker-%d-scene.bin", index);
+        file = fopen(path, "wb");
+        if (file != NULL) {
+            fwrite(snapshot, sizeof(*snapshot), 1, file);
+            fclose(file);
+        }
+        snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
+        file = fopen(path, "w");
+        if (file != NULL) {
+            fprintf(file,
+                    "frame=%u scene=%d timer=%d displayHeight=%d\n"
+                    "modernImage=%d target=%dx%d logicalW=%.1f fps=%d\n"
+                    "camera pos=%d,%d,%d\n"
+                    "view=[%d %d %d / %d %d %d / %d %d %d] t=%d,%d,%d\n"
+                    "draws=%d terrain=%d faces=%d packets=%d\n",
+                    snapshot->frameCounter, snapshot->sceneId,
+                    snapshot->sceneTimer, snapshot->displayHeight,
+                    haveModernImage, s_targetW, s_targetH, s_logicalW,
+                    s_config.modernFps, snapshot->viewPosition[0],
+                    snapshot->viewPosition[1], snapshot->viewPosition[2],
+                    snapshot->viewMatrix.m[0][0], snapshot->viewMatrix.m[0][1],
+                    snapshot->viewMatrix.m[0][2], snapshot->viewMatrix.m[1][0],
+                    snapshot->viewMatrix.m[1][1], snapshot->viewMatrix.m[1][2],
+                    snapshot->viewMatrix.m[2][0], snapshot->viewMatrix.m[2][1],
+                    snapshot->viewMatrix.m[2][2], snapshot->viewMatrix.t[0],
+                    snapshot->viewMatrix.t[1], snapshot->viewMatrix.t[2],
+                    snapshot->drawCount, snapshot->terrainCount,
+                    snapshot->faceCount, snapshot->packetCount);
+            for (i = 0; i < snapshot->drawCount && i < 64; i++) {
+                const RageCaptureModelDraw *draw = &snapshot->draws[i];
+                fprintf(file,
+                        "draw[%d] kind=%d model=%d mirror=%d table=%d "
+                        "otBase=%d shift=%d trans=%d,%d,%d\n",
+                        i, draw->kind, draw->modelIndex, draw->mirror,
+                        draw->table, draw->otBaseBias, draw->otShift,
+                        draw->gte.rot.t[0], draw->gte.rot.t[1],
+                        draw->gte.rot.t[2]);
+            }
+            for (i = 0; i < snapshot->terrainCount; i++) {
+                const RageCaptureTerrainBatch *batch = &snapshot->terrain[i];
+                fprintf(file,
+                        "terrain[%d] mirror=%d cells=%d shift=%d "
+                        "cell0=%d,%d,%d#%d\n",
+                        i, batch->mirror, batch->cellCount, batch->otShift,
+                        batch->cells[0][0], batch->cells[0][1],
+                        batch->cells[0][2], batch->cells[0][3]);
+            }
+            fclose(file);
+        }
+        fprintf(stderr,
+                "rage-port: marker %d saved (frame=%u scene=%d timer=%d)\n",
+                index, snapshot->frameCounter, snapshot->sceneId,
+                snapshot->sceneTimer);
+    }
 }
 
 /* ---- hooks ---- */
@@ -1603,6 +1709,13 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * presenting during this tick; fps mode moves its transforms toward
      * the newest frame by the wall-clock fraction of the tick. */
     snapshot = RageCapturePrevious();
+    {
+        int passthrough =
+            snapshot->faceCount == 0 ||
+            (snapshot->displayHeight != 0 && snapshot->displayHeight != 240);
+        ModernMarkerCheck(snapshot, !passthrough && s_resourcesReady &&
+                                        s_haveRenderedFrame);
+    }
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
