@@ -783,6 +783,18 @@ With those restored, the original VAB path produces non-zero PCM through the
 emulated SPU; `audio_output` measures rendered frames and sample energy rather
 than accepting successful SDL initialization as evidence of sound.
 
+Menu music is a PsyQ SEQ stream backed by the menu VAB, not CD-DA. PsyZ must
+parse the little-endian `pQES` header, advance MIDI events at the selected
+libsnd tick rate, select VAB tones by their note ranges, and release allocated
+voices on note-off. Rage also calls `_SsVmInit(0)` after loading the menu bank:
+on retail this resets voice state without discarding the VAB registry. Clearing
+`_svm_vab_used` there leaves a valid game-side VAB id pointing at an unloaded
+backend bank, which makes both sequences and later effects silent or wrong.
+The host adapter for `SsSetVoiceCount` must forward to libsnd's voice limit;
+a zero-return stub leaves `_SsVmMaxVoice` at zero and prevents all allocation.
+`audio_output` now requires successfully dispatched SEQ notes in addition to
+non-zero PCM, covering the prologue-to-menu music transition.
+
 CD-DA has a similar aliasing requirement. Retail's two-entry
 `g_CdTrackLocs` object is immediately followed by the sixteen BGM locations at
 `g_CdBgmTrackLocs`; game requests deliberately index the former with track
@@ -793,6 +805,15 @@ race BGM to zero/Track 01. The 18 initialized `g_CdTrackLoopPoint` entries at
 and the following `CdlPlay` must reopen the requested track even if another
 track is currently playing. The `race_cdda` integration test proves the switch
 from prologue Track 02 to an actual race music track.
+
+The eight-byte `CdlGetlocP` response at `0x8009B16C` is another retail alias:
+the symbols at `0x8009B16E` and `0x8009B16F` name its relative minute and second
+bytes, not independent objects. Keep one `g_CdLocResult[8]` and read offsets 2
+and 3 explicitly. Detached host globals stay zero, so `StepCdPauseRequest`
+cannot snapshot the playing track correctly. This is a game-state layout fix
+to backport to the decompilation. PsyZ must also implement `CdlGetlocP`; without
+it the prologue pause state machine never reaches `CdlPause`, leaving Track 02
+playing through the menus.
 
 - **Do not "fix" the code toward testability.** Byte-match forbids it while the
   PS1 target lives. Tests live *beside* the code, not inside it.
@@ -3514,3 +3535,175 @@ excluded.  On the synchronized timer-1500..1800 cache its largest candidate is
 timer 1510, a 38-pixel edge displacement caused by the admitted three-unit
 pose delta; replaying identical GP0 streams removes it, so it is not evidence
 for changing PsyZ rasterization.
+
+### Host libsnd sequence and effect playback
+
+Rage Racer keeps the original scene-level audio code and calls the PsyQ
+libsnd API through PsyZ.  The host backend must therefore play the checked-in
+SEQ/VAB data; substituting a host soundtrack or copying state from `main.exe`
+would hide game behaviour.  PsyZ parses the retail little-endian `pQES`
+stream, advances it from the game's `SsSeqCalledTbyT` tick, selects tones by
+their VAB key ranges, and allocates normal SPU voices.  `_SsVmInit(0)` must not
+discard already loaded VAB metadata: Rage calls it while changing audio slots.
+
+`SsSeqCloseWrapper` must forward to `SsSeqClose`.  Leaving it as a host zero
+adapter keeps `_snd_openflag` slots occupied and allows an old scene's
+sequence state to survive into later menus.  This is a port adapter fix; the
+original game wrapper already performs the forwarding call.
+
+Race effects also use fixed hardware voices 18..23 even though Rage reserves
+only eight voices for automatic allocation.  Explicit `SsUtKeyOffV`,
+`SsUtChangePitch`, and `SsUtPitchBend` operations must consequently validate
+against all 24 SPU voices, not `_SsVmMaxVoice`.  Pitch bend uses each selected
+tone's asymmetric VAB `pbmin`/`pbmax` limits and the original note stored at
+key-on; a generic linear bend makes engine sounds audibly wrong.  The
+`race_start` regression requires real pitch updates during an accelerating
+race, while `audio_output` requires dispatched menu SEQ notes and non-silent
+SPU output.
+
+The host archive reader services `RAGE.BIN` through a normal file, but it must
+still preserve the single-drive behaviour visible to the game.  Starting a
+data read pauses active CD-DA, just as seeking the physical PS1 pickup away
+from an audio track does.  This matters when leaving the prologue: Rage queues
+`PauseCdAudio`, then `RequestSelectBgmAssets` resets the asynchronous CD command
+state.  Retail asset I/O nevertheless interrupts track 2; without the HAL
+notification PsyZ continued mixing that track underneath the newly loaded menu
+SEQ.  `audio_output` now requires CD-DA to be inactive while menu SEQ notes are
+being dispatched, and `race_cdda` still requires a later switch to race BGM.
+
+`SpuGetKeyStatus` must query the backend's live key and ADSR state, not the
+stored `ENVX` register word.  The latter is updated by the emulated envelope
+pipeline and is zero during the key-on delay, so treating it as an ordinary
+register made Rage believe voices 18..23 were free and overwrite active menu
+or race effects.  PsyZ now returns all four PsyQ states, including key-on with
+zero envelope and key-off during release; its unit test covers those
+transitions.  The public constants follow the recovered Rage/PsyQ table:
+`SPU_ON_ENV_OFF` is 3 and `SPU_OFF_ENV_ON` is 2.
+
+The ROUND/BGM transition was checked against the saved PS1 capture rather than
+retimed.  Native and PS1 timer-120 frames are pixel-identical.  The PS1 scene-11
+capture shows the newly visible prize list together with the preceding MUSIC
+SELECT row because the displayed page is still the previous buffer while the
+new page is submitted.  The recovered 121-tick scene transition and fade-delay
+table are therefore retained unchanged.
+
+The menu VAB contains programs with overlapping tone ranges (program 6 has two
+tones spanning the full MIDI range), so a SEQ note cannot be represented by a
+single remembered SPU voice.  PsyZ now records every allocated voice belonging
+to a channel/note pair and releases all of its layers on note-off or sequence
+close.  Voice ownership also carries an allocation generation: if the
+eight-voice automatic pool steals a voice, a delayed note-off from its old SEQ
+owner must not silence the newer sound.  The smoke metrics report both SEQ
+note events and VAB voice starts, retaining evidence for layered programs.
+
+The retail menu sequence also contains live pan-controller messages and pitch
+bends.  The host parser retains channel volume, pan and bend state for future
+notes and applies bend changes to voices already owned by that channel.
+Controller changes must not be implemented by blindly calling
+`SsUtSetVVol`: that API interprets its arguments as a fresh logical voice
+volume and would discard the VAB master/program/tone gain already folded into
+the current register value.  Live pan/volume rescaling still needs an exact
+PsyQ-equivalent calculation if a sequence depends audibly on sustained-note
+controller changes.
+
+For exact sound-effect comparison, the native smoke accepts
+`RAGE_PORT_SPU_TRACE=/path/events.csv`; the Ruby reference capture accepts the
+matching `RAGE_EMU_SPU_TRACE`.  Both record the hardware voice, VAG start
+address, pitch, left/right volume and ADSR words at every key-on.  These traces
+compare the original Rage/PsyQ decisions with the host HAL without replacing
+game data or synthesizing expected sounds.  The Ruby emulator must forward the
+entire 16-bit SPU register window (`0x1f801c00..0x1f801dff`) to its SPU model:
+Rage writes voice parameters as halfwords, and dropping those writes produced
+plausible key-on events whose voice snapshots were all zero.
+
+PsyZ's `_SsVmKeyOnNow` must apply the PsyQ pan convention consistently with
+Rage's recovered libsnd: pan 0 is hard left and pan 127 is hard right.  The
+old host implementation attenuated the left channel for values below 64 and
+the right channel above 64 at the tone, program and caller layers—the exact
+opposite channel.  ROUND cue `0x19` exposed this as two mono voices.  The PS1
+key-on snapshots are voice 22 at `8561/6289` and voice 23 at `6058/8561`;
+`audio_output` now requires those exact stereo register values.
+
+Automatic libsnd voice selection also follows the recovered SDK algorithm,
+not a generic oldest-voice policy.  A voice is free only when both its active
+flag and sampled envelope/pitch state are zero.  If all voices are occupied,
+PsyQ first chooses the lowest-priority eligible voice, then the lowest current
+pitch, then the oldest voice.  The previous host simplification ignored the
+pitch tie-break and treated a logically inactive voice with a live envelope as
+free, allowing menu/race notes to cut off effects which the PS1 retains.
+
+Race audio has a separate flush path from menu SEQ playback.  In scene 12,
+`TickSequenceAudio` calls `SpuVmDamperStep`; the retail function is a
+re-entrancy-guarded `SsUtFlush`, not a no-op.  Leaving the host adapter empty
+allowed Rage to calculate engine pitch/volume continuously while every KON
+and dirty voice register remained pending, which explained audible CD-DA but
+almost no race effects.  `_SsVmInit(0)` also performs no per-voice reset in
+PsyQ: treating zero as all 24 voices queues KOFF bits that cancel the engine
+KON on voices 16..18.  The host retains loaded VAB metadata across this reset,
+but otherwise follows the zero-count loop semantics.  `race_start` records the
+SPU trace and requires the four retail engine layers (voices 14, 16, 17 and 18)
+to reach hardware.
+
+For fixed-voice diagnosis, `PSYZ_SND_KEY_TRACE=1` reports successful key-ons,
+setup failures and empty VAB tones, while the smoke audio metrics include the
+six game-side engine-slot active flags.  These are observational debug paths;
+they do not synthesize or replace any Rage audio state.
+
+### Native OPTION and memory-card layout fixes
+
+The OPTION root background belongs to the primary ordering table at depth 54,
+behind its depth-51 menu sprites.  Submitting the `0x140 x 0xf0` red tile to
+the secondary ordering table makes it execute after the entire primary UI and
+therefore hides exactly the three rows whose y coordinates are below 240.
+This is a recovered game submission error, not a texture or display-size fix.
+
+The memory-card row renderer must not derive the `NO FILE` label with
+`g_McSlotLabels + row * 10`.  That happened to cross from `NEW FILE` into the
+next linker object in the retail 32-bit image, but independent native globals
+need not be adjacent (and ASan inserts redzones).  The game now selects the
+named `NEW FILE` or `NO FILE` object explicitly.  `save_roundtrip` drives the
+real pad polling path through LOAD GAME with both an existing save and an empty
+card, so this 32/64-bit-safe behavior can be backported to the decompilation.
+
+CUSTOMIZE's `g_PlayerTransmission` is another retail interior symbol, at
+`0x8009E804 = g_PlayerCar + 0x130`.  That offset is
+`g_PlayerCar.drive.manual`: the menu and drivetrain are meant to access the
+same halfword.  A standalone host global lets the AT/MT selector appear to
+work while `UpdatePlayerCar` continues reading zero and running the automatic
+shift path.  The native declaration now preserves the alias explicitly, with
+both an offset assertion and a behavioral characterization test.
+
+The follow-up audit found that the same mistaken host allocation pattern
+covered the rest of the named `g_PlayerCar` interior views: track interpolation
+at `+0x38/+0x3C`, showroom steering and transform state at
+`+0x44/+0x48/+0x50/+0x60`, the wrong-way flag at `+0xB8`, the 32-byte velocity
+view at `+0xC4`, target RPM at `+0x134`, and race/HUD state at `+0x160/+0x162`.
+They now share the one 0x19C-byte player object again.  A neutral storage
+accessor is necessary because race translation units declare that object as
+`PlayerCarRuntime`, while showroom translation units use the overlapping
+`ShowroomPlayerCarState` union.  Compile-time member-offset assertions validate
+the typed runtime layout; `player_car_interior_aliases` also checks every PAL
+map address and rejects future standalone host backing or extern declarations.
+The `+0x15C` throttle label remains intentionally absent: game code reads
+`drive.acceleratorInput.value` directly, as documented above.
+
+The three `GameRaceProgress` objects were also emitted as eight-byte host
+placeholders despite their 0x14-byte retail layout.  This was especially
+visible after a Time Attack race: its series selector lives in the low
+halfword of `money` at `+0x10`; writing or restoring that field outside the
+truncated object made `InitMenuMode` compose every course with series bit 4,
+leaving only the four reverse cards.  Grand Prix and Extra Grand Prix had the
+same latent corruption, and Extra GP's separately allocated
+`g_ExtraGrandPrixSaveMaxClass` was really the `+0x0C` member.  Allocate all
+three as complete typed objects and preserve the Extra GP interior alias.
+Compile-time size/offset checks and `race_progress_layout` protect the layout
+and the Time Attack store/restore contract for the decompilation backport.
+
+`g_SndTableArea` is two `SeqStruct` records, not an invariant 0x158-byte blob.
+The retail size is `2 * 0xAC`, but each record contains three pointers and is
+therefore larger on a 64-bit host.  Initializing two records through
+`SsSetTableSize` overran the fixed byte allocation, corrupting adjacent state;
+long-lived menu sequence playback could consequently change speed and stutter.
+Allocate the table as `SeqStruct[2]` and cast only at the original libsnd API
+boundary.  `sequence_state_layout` rejects a return to fixed 32-bit backing;
+this is a game-code pointer-width correction for the decompilation backport.

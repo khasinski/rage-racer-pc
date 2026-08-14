@@ -44,6 +44,10 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/scratchpad.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
+extern char SsSetReservedVoice(char voices);
+extern void SsSeqClose(short sequence);
+extern int _snd_ev_flag;
+extern void _SsVmFlush(void);
 
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
 unsigned char g_AudioRuntimeState[4096];
@@ -651,16 +655,20 @@ void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }
 ZERO_ADAPTER(MdecUnpackStatus)
-ZERO_ADAPTER(SpuGetKeyStatus)
-ZERO_ADAPTER(SpuVmDamperStep)
-ZERO_ADAPTER(SsSeqCloseWrapper)
+void SpuVmDamperStep(void) {
+    if (_snd_ev_flag != 1) {
+        _snd_ev_flag = 1;
+        _SsVmFlush();
+        _snd_ev_flag = 0;
+    }
+}
+void SsSeqCloseWrapper(short sequence) { SsSeqClose(sequence); }
 ZERO_ADAPTER(SsSetSpuInputAttr)
-ZERO_ADAPTER(SsSetVoiceCount)
+unsigned char SsSetVoiceCount(unsigned char voices) {
+    return (unsigned char)SsSetReservedVoice((char)voices);
+}
 ZERO_ADAPTER(SsStartSoundTickMode1)
 ZERO_ADAPTER(SsStopSoundTick)
-ZERO_ADAPTER(SsUtChangePitch)
-ZERO_ADAPTER(SsUtKeyOffV)
-ZERO_ADAPTER(SsUtPitchBend)
 ZERO_ADAPTER(StGetBackloc)
 ZERO_ADAPTER(ssinit)
 

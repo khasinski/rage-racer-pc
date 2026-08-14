@@ -196,7 +196,6 @@ extern char g_MsgVabTransBodyError[];
 extern s32 g_PanVoiceActive;
 extern s32 g_PanVoiceVolumeL;
 extern s32 g_PanVoiceVolumeR;
-extern u8 g_SndTableArea[];
 extern s32 g_SoundCueBank;
 typedef struct SoundCueParams {
     s32 volume;

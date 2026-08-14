@@ -4,6 +4,12 @@ sources = ARGV.map { |path| [path, File.read(path)] }.to_h
 
 sources.each do |path, source|
   if path.end_with?("host_state.c")
+    abort "#{path}: CdlGetlocP response must remain one eight-byte backing object" unless
+      source.include?("unsigned char g_CdLocResult[8]")
+    %w[g_CdLocMinute g_CdLocSecond].each do |name|
+      abort "#{path}: #{name} incorrectly detaches a byte from CdlGetlocP response" if
+        source.match?(/^unsigned char #{name}\b/)
+    end
     abort "#{path}: best-sector backing object is smaller than its game declaration" unless
       source.include?("unsigned char g_BestSectorTimes[96]")
     { "g_RankedCars" => 32, "g_SectorEndDistance" => 12,
@@ -19,6 +25,14 @@ sources.each do |path, source|
       abort "#{path}: #{name} backing object is truncated" unless
         source.include?("unsigned char #{name}[#{bytes}]")
     end
+    next
+  end
+
+  if path.end_with?("cd_audio.c")
+    abort "#{path}: pause request does not pass the complete GetlocP response" unless
+      source.include?("CdControl(0x11, 0, g_CdLocResult)")
+    abort "#{path}: pause snapshot does not use GetlocP relative MSF bytes" unless
+      source.include?("g_CdLocResult[2]") && source.include?("g_CdLocResult[3]")
     next
   end
 

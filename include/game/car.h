@@ -641,6 +641,46 @@ typedef struct PlayerCarRuntime {
     PlayerLapTimes lapTimes;
 } PlayerCarRuntime;
 
+/* These retail symbols are interior views of the single g_PlayerCar object,
+ * not independent globals.  Keep the named views because the original game
+ * uses them across subsystems, but preserve their shared storage on hosts. */
+#include "game/player_car_aliases.h"
+
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, segmentFraction) == 0x38,
+               "player segment weight must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, normalizedLateralOffset) == 0x3C,
+               "player field 3C must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, steeringAngle) == 0x44,
+               "player steering must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, wheelRotation) == 0x48,
+               "player wheel angle must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, modelPitch) == 0x50,
+               "player render rotation must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, modelY) == 0x60,
+               "player render Y must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, facingBackwards) == 0xB8,
+               "player facing flag must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, accelPos) == 0xC4,
+    "player velocity view must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, manual) == 0x130,
+    "player transmission must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, engineRpm) == 0x134,
+    "player target RPM must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, racePosition) == 0x160,
+    "race position must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, hudLapHighlightRow) == 0x162,
+    "HUD lap highlight must retain its retail alias offset");
+
 typedef union PlayerRaceCueStateAddress {
     s16 *trackSection;
     PlayerRaceCueState *state;
@@ -882,7 +922,6 @@ extern volatile u16 g_PaintBlendShade2;
 extern volatile u16 g_PaintSlots3StopA[];
 extern volatile u16 g_PaintSlots3StopB[];
 extern volatile u16 g_PaintSlots4Stop[];
-extern s32 g_PlayerTargetRpm;
 extern RaceGridSlot g_RaceGridSlots[];
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:

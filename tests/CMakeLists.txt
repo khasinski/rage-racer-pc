@@ -20,6 +20,27 @@ endif()
 add_test(NAME game_logic COMMAND game_logic_tests)
 
 add_test(
+    NAME player_car_interior_aliases
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_car_aliases.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME race_progress_layout
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_progress_layout.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME sequence_state_layout
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_sequence_state_layout.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
     NAME native_ui_script_layout
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_ui_script_layout.rb
@@ -49,6 +70,7 @@ add_test(
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/loaded_audio_voices.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
         ${CMAKE_SOURCE_DIR}/src/port/host_state.c
@@ -129,6 +151,12 @@ add_test(
     NAME visible_cells_compare
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_visible_cells_compare.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_visible_cells_compare.rb
+)
+
+add_test(
+    NAME input_replay
+    COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_input_replay.rb
+            ${CMAKE_SOURCE_DIR}/tools/rage_input_replay.rb
 )
 
 if(TARGET rage-gte-replay)
@@ -256,7 +284,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 30)
+    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME audio_output

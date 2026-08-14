@@ -172,7 +172,8 @@ typedef struct RageSmokeStateInput {
     int fired;
 } RageSmokeStateInput;
 
-static RageSmokeInput g_SmokeInputs[64];
+enum { RAGE_SMOKE_INPUT_CAPACITY = 256 };
+static RageSmokeInput g_SmokeInputs[RAGE_SMOKE_INPUT_CAPACITY];
 static int g_SmokeInputCount;
 static long g_SmokeFrameLimit;
 static long g_SmokeFinishFrame;
@@ -419,7 +420,8 @@ static void RageSmokeInitialize(void) {
     }
     copy = script != NULL && script[0] != '\0' ? strdup(script) : NULL;
     for (token = copy != NULL ? strtok(copy, ",") : NULL;
-         token != NULL && g_SmokeInputCount < 64; token = strtok(NULL, ",")) {
+         token != NULL && g_SmokeInputCount < RAGE_SMOKE_INPUT_CAPACITY;
+         token = strtok(NULL, ",")) {
         char *separator = strchr(token, ':');
         char *rangeSeparator;
         unsigned short buttons;

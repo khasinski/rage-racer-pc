@@ -1,6 +1,7 @@
 #include <psyz.h>
 #include <psyz/video.h>
 #include <psyz/audio.h>
+#include <psyz/cd.h>
 #include <libetc.h>
 
 #include <stdio.h>
@@ -176,6 +177,12 @@ int main(void) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     if (!RageHostInitDisc()) return EXIT_FAILURE;
+    if (getenv("RAGE_PORT_SPU_TRACE") != NULL &&
+        Psyz_SpuSetKeyOnTracePath(getenv("RAGE_PORT_SPU_TRACE")) != 0) {
+        fprintf(stderr, "unable to open SPU trace: %s\n",
+                getenv("RAGE_PORT_SPU_TRACE"));
+        return EXIT_FAILURE;
+    }
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
     MainLoop();
@@ -211,12 +218,24 @@ int main(void) {
         printf("window size: %dx%d\n", size.w, size.h);
     }
     if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
-        printf("audio metrics: frames=%llu energy=%llu loaded=%x cue_bank=%d "
-               "vab=%d,%d,%d,%d\n",
+        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
+               "pitch_updates=%llu cdda=%d "
+               "loaded=%x cue_bank=%d "
+               "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
+               Psyz_SeqNoteOnCount(),
+               Psyz_SeqVoiceStartCount(),
+               Psyz_SndPitchUpdateCount(),
+               Psyz_CdAudioPlaying(),
                g_AudioLoadedSlotMask, g_SoundCueBank,
                g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
-               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3]);
+               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
+               g_EngineSoundState.slotActive[0],
+               g_EngineSoundState.slotActive[1],
+               g_EngineSoundState.slotActive[2],
+               g_EngineSoundState.slotActive[3],
+               g_EngineSoundState.slotActive[4],
+               g_EngineSoundState.slotActive[5], g_SoundScale.scale);
     }
     if (getenv("RAGE_PORT_SMOKE_CAMERA_STATE") != NULL) {
         {

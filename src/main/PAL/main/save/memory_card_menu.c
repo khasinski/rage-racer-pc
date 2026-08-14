@@ -57,9 +57,16 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
             sprintf(text, g_FmtSaveRowEmpty, row_bit);
             DrawLargeText(0x48, y, text, 0x7F, color, color, width, height);
         } else {
+            char *slotLabel;
+
             sprintf(text, g_FmtSaveRow, row_bit);
             DrawLargeText(0x48, y, text, 0x7F, color, color, width, height);
-            DrawLargeText(0x90, y, g_McSlotLabels + (g_McMenuRowCursor * 10), 0x7F, color, color, width, height);
+            /* The retail link layout placed NEW FILE and NO FILE ten bytes
+             * apart.  Name the two objects explicitly so the game does not
+             * depend on unrelated globals remaining adjacent on a host ABI. */
+            slotLabel = g_McMenuRowCursor == 0 ?
+                g_McSlotLabels : g_McSlotLabelNoFile;
+            DrawLargeText(0x90, y, slotLabel, 0x7F, color, color, width, height);
         }
 
         row_bit++;

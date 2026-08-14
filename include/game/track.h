@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/vector.h"
+#include "game/player_car_aliases.h"
 #include "game/visibility.h"
 
 union GameEnvColor;
@@ -558,8 +559,6 @@ extern PathSceneryCursors g_PathSceneryCursors;
 extern s16 g_PathSceneryRotHalfDelta[3];
 extern PathSceneryRotationKey *g_PathSceneryRotKeys;
 extern s32 g_PathSceneryVolume;
-extern s32 g_PlayerField3C;
-extern s32 g_PlayerSegmentWeight;
 extern s32 g_RouteSceneryY;
 extern s32 g_RouteSceneryZ;
 extern ShuttlePath g_ShuttlePath2Points;

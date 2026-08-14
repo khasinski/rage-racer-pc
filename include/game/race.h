@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/waypoint.h"
 #include "game/vector.h"
+#include "game/player_car_aliases.h"
 #include "game/replay.h"
 #include "game/render_types.h"
 
@@ -39,7 +40,6 @@ extern char *g_GrandPrixNames[];
 
 /* Race position, 1 = leading; recomputed each frame from how many cars are
  * further along. At the finish it indexes g_PrizeMoney. */
-extern s16 g_RacePosition;
 
 /* Prize money per [course][class][place], place 0 = 1st. */
 typedef struct GrandPrixPrizeTable {
@@ -128,6 +128,13 @@ typedef struct GameRaceProgress {
                        g_GrandPrixSeries, read back as u16. */
 } GameRaceProgress;
 
+_Static_assert(sizeof(GameRaceProgress) == 0x14,
+               "race progress must retain its retail size");
+_Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
+               "race progress max class must retain its retail offset");
+_Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
+               "race progress money/series must retain its retail offset");
+
 /* The save slot the front end is editing; repointed at one of the three below,
  * matching the title-menu row that g_CarTable was repointed for. Declared s32
  * because most translation units only touch the first word. */
@@ -137,6 +144,9 @@ extern GameRaceProgress *g_RaceProgress;
 extern GameRaceProgress g_GrandPrixSave;
 extern GameRaceProgress g_ExtraGrandPrixSave;
 extern GameRaceProgress g_TimeAttackSave;
+
+/* Retail 0x801E6E88 is g_ExtraGrandPrixSave + 0x0C. */
+#define g_ExtraGrandPrixSaveMaxClass (g_ExtraGrandPrixSave.maxClassReached)
 
 void ResetProgressSlot(struct CarEntry *cars, GameRaceProgress *progress);
 
@@ -215,7 +225,6 @@ extern s16 g_WrongWayTimer;
 
 /* g_PlayerCar.facingBackwards. Wrong way is `!= g_RaceSeries`, because the
  * advanced series drives the course in the other direction. */
-extern s16 g_PlayerFacingBackwards;
 
 /* Non-zero while rival proximity / position sound cues may play: set only in
  * the middle of a lap and cleared by the wrong-way warning. */
@@ -380,7 +389,6 @@ extern u8 *g_NativePlaceSuffixNames[];
 #else
 extern u8 *g_PlaceSuffixNames[];
 #endif
-extern Vec4 g_PlayerVelocity[2];
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {

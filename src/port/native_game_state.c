@@ -1,4 +1,7 @@
 #include <string.h>
+#include <sys/types.h>
+
+#include "psyq/snd_types.h"
 
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -11,6 +14,7 @@
 #include "game/work_buffer.h"
 #include "game/sound.h"
 #include "game/audio.h"
+#include "game/audio_state_internal.h"
 #include "game/cd_internal.h"
 #include "game/memcard.h"
 
@@ -34,6 +38,18 @@ Matrix g_MenuLightMatrix;
  * following native globals as soon as BuildStartingGrid initializes them. */
 GameCarRuntime g_Cars[11];
 PlayerCarRuntime g_PlayerCar;
+GameRaceProgress g_GrandPrixSave;
+GameRaceProgress g_ExtraGrandPrixSave;
+GameRaceProgress g_TimeAttackSave;
+SeqStruct g_SndTableArea[2];
+
+void *GetSndTableArea(void) {
+    return g_SndTableArea;
+}
+
+void *GetPlayerCarStorage(void) {
+    return &g_PlayerCar;
+}
 GameSpriteDesc g_RaceHudSpriteDescsGp[12];
 GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[11];
 RaceGridSlot g_RaceGridSlots[12];

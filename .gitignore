@@ -24,6 +24,10 @@ __pycache__/
 *.map
 *.mcd
 
+# Native PsyZ memory-card directories.
+bu00/
+bu10/
+
 # Generated split output.
 asm/**
 !asm/

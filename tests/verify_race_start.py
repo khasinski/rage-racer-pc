@@ -16,6 +16,7 @@ def main() -> int:
     source_dir = Path(sys.argv[2])
     with tempfile.TemporaryDirectory(prefix="rage-race-start-") as directory:
         capture = Path(directory) / "race.ppm"
+        spu_trace = Path(directory) / "spu.csv"
         environment = os.environ.copy()
         environment.update(
             SDL_AUDIODRIVER="dummy",
@@ -28,6 +29,8 @@ def main() -> int:
             RAGE_PORT_SMOKE_STOP_SCENE_TIMER="562",
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_TERRAIN_TRACE_TIMER="562",
+            RAGE_PORT_SMOKE_AUDIO_METRICS="1",
+            RAGE_PORT_SPU_TRACE=str(spu_trace),
         )
         result = subprocess.run(
             [executable], cwd=source_dir, env=environment,
@@ -37,6 +40,7 @@ def main() -> int:
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
+        spu_rows = spu_trace.read_text().splitlines()
         if not any(
             "terrain-lod timer=562" in line and
             "mirror=0" in line and "shift=10" in line
@@ -153,6 +157,26 @@ def main() -> int:
         raise AssertionError("tachometer still reads detached zeroed target RPM")
     if int(rpm_state.group(2)) == 0:
         raise AssertionError("terrain never exercised retail second-triangle culling")
+    audio_state = re.search(
+        r"audio metrics: frames=(\d+) energy=(\d+) seq_notes=(\d+) "
+        r"seq_voices=(\d+) pitch_updates=(\d+) cdda=(\d+)",
+        result.stdout,
+    )
+    if audio_state is None or int(audio_state.group(5)) == 0:
+        raise AssertionError("race effects never exercised live voice pitch updates")
+    # These four zero-volume voices are armed by InitEffectVoiceRuntime and
+    # become the continuously updated engine layers.  The race uses
+    # SpuVmDamperStep rather than the menu sequencer to flush their KON bits.
+    for prefix in (
+        "14,54272,4216,",
+        "16,54272,4216,",
+        "17,59128,4216,",
+        "18,54272,4216,",
+    ):
+        if not any(row.startswith(prefix) for row in spu_rows):
+            raise AssertionError(
+                f"race audio never flushed the retail engine voice {prefix!r}"
+            )
     child_cull = re.search(
         r"terrain_child_reject=(\d+) terrain_child_second=(\d+)",
         result.stdout,

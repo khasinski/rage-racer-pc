@@ -82,9 +82,10 @@ extern s32 g_CdTrackStep;
  * header carried them. */
 
 extern char *g_CdAudioFileNames[];
-extern u8 g_CdLocMinute;
-extern u8 g_CdLocResult;
-extern u8 g_CdLocSecond;
+/* Eight-byte CdlGetlocP response. Retail also names bytes 2 and 3 as
+ * g_CdLocMinute/g_CdLocSecond; indexing the shared buffer preserves that
+ * overlap on hosts where separately declared globals cannot alias safely. */
+extern u8 g_CdLocResult[8];
 extern u8 g_CdMixPresets[];
 extern u8 g_CdModeParam;
 extern struct CdlFILE g_CdSearchFile;

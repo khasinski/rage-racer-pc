@@ -6,6 +6,7 @@
 #include "game/camera_types.h"
 #include "game/environment.h"
 #include "game/render_types.h"
+#include "game/player_car_aliases.h"
 #include "game/vector.h"
 
 #include "game/scratchpad.h"
@@ -977,7 +978,6 @@ extern GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[];
 extern Matrix g_CameraMatrixSaved;
 extern s32 g_MenuRowFlashLevels[];
 extern s32 g_MenuCursorPulsePhase;
-extern s16 g_HudLapHighlightRow;
 extern Vec4 g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];

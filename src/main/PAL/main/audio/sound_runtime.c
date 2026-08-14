@@ -1,6 +1,7 @@
 #include "common.h"
 #include <stdio.h>
 #include "game/audio.h"
+#include "game/audio_state_internal.h"
 #include "game/sound.h"
 #include "psyq/snd.h"
 #include "psyq/kernel.h"
@@ -117,7 +118,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     s16 *vabIdPtr = g_SoundScale.vabIds;
     s16 vabId;
 
-    SsSetTableSize(g_SndTableArea, 2, 1);
+    SsSetTableSize((u8 *)GetSndTableArea(), 2, 1);
     SsSetTickMode(1);
     SsStartSoundTickMode1();
     SsSetVoiceCount(0xA);
@@ -145,7 +146,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
 }
 
 s32 InitSoundRuntime(void) {
-    SsSetTableSize(g_SndTableArea, 2, 1);
+    SsSetTableSize((u8 *)GetSndTableArea(), 2, 1);
     SsSetTickMode(0x1000);
     SsStartSoundTickMode1();
     SsSetVoiceCount(0xA);
