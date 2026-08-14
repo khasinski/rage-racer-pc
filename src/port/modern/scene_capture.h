@@ -40,6 +40,8 @@ typedef struct RageCaptureModelDraw {
     uint8_t mirror;     /* SCRATCH_MIRROR at submission time */
     uint8_t table;      /* ordering table index the draw targets (0/1) */
     uint8_t fogged;
+    uint8_t otShift;    /* SCRATCH_OT_SHIFT: one bucket is 4<<shift z units */
+    uint8_t pad[3];
     int32_t modelIndex;
     int32_t otBaseBias; /* SCRATCH_OT_BASE offset from the table start */
     uint32_t renderMode; /* g_ScratchRenderMode (CLUT row select) */
@@ -52,6 +54,8 @@ typedef struct RageCaptureModelDraw {
 typedef struct RageCaptureTerrainBatch {
     uint8_t mirror;
     uint8_t envMode4;
+    uint8_t otShift;
+    uint8_t pad;
     int16_t cellCount;
     /* Visible-cell records: translated x, y, z and the cell index. */
     int32_t cells[RAGE_CAPTURE_MAX_CELLS][4];

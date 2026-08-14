@@ -67,6 +67,7 @@ enum {
 typedef struct ModernSpan {
     uint8_t pipeline;
     uint8_t hasScissor;
+    uint8_t pass; /* 0 = main scene, 1 = mirror overlay (depth recleared) */
     SDL_Rect scissor;
     int32_t start, count;
     float depthKey; /* semi-transparent 3D sorting */
@@ -87,6 +88,12 @@ static int s_spanCount;
 
 #define MODERN_NEAR 16.0f
 #define MODERN_FAR 262144.0f
+
+/* Depth-key range: ordering keys are compat bucket windows in z units and
+ * may be negative (the +128 ordering-table base admits ot[-128..-1], which
+ * the player car's biased faces use). Mapped linearly into [0,1]. */
+#define MODERN_DEPTH_MIN (-80000.0f)
+#define MODERN_DEPTH_RANGE (200000.0f)
 
 /* ---- MSL shaders ---- */
 
@@ -349,12 +356,15 @@ typedef struct Modern2DState {
     int offsetX, offsetY; /* GP0(E5) relative offset */
 } Modern2DState;
 
+static uint8_t s_currentPass;
+
 static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
                                    float depthKey) {
     ModernSpan *span;
     if (s_spanCount > 0) {
         span = &s_spans[s_spanCount - 1];
         if (span->pipeline == pipeline && depthKey == span->depthKey &&
+            span->pass == s_currentPass &&
             ((state == NULL && !span->hasScissor) ||
              (state != NULL && state->hasScissor == span->hasScissor &&
               (!state->hasScissor ||
@@ -368,6 +378,7 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
     if (s_spanCount >= MODERN_MAX_SPANS) return NULL;
     span = &s_spans[s_spanCount++];
     span->pipeline = (uint8_t)pipeline;
+    span->pass = s_currentPass;
     span->hasScissor = state != NULL && state->hasScissor;
     if (span->hasScissor) span->scissor = state->scissor;
     span->start = s_vertexCount;
@@ -494,19 +505,75 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
     int mirror = 0;
     int vertex;
     float zSum = 0.0f;
+    float windowMin, windowMax;
     int textured = face->klass == 1 || face->klass == 3;
+    /* Depth policy: the compat renderer orders faces by ordering-table
+     * bucket (average z quantized by 4<<otShift, plus the per-face bias and
+     * the scratch OT base shift). Clamp each vertex's true z into its
+     * face's compat bucket window: ordering between faces in different
+     * buckets reproduces the oracle exactly (including deliberate biases),
+     * while faces meeting inside one bucket still intersect with real
+     * per-pixel depth. */
+    {
+        int bucket = face->otDepth;
+        float unit;
+        if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+            unit = (float)(4 << snapshot->terrain[face->drawIndex].otShift);
+        } else if (face->kind == RAGE_CAPTURE_KIND_COURSE) {
+            /* The course dispatcher quantizes ((z0>>3)+(z3>>3))>>3 on
+             * OTZ-scale (z/4) vertex depths: one bucket is 128 z units,
+             * independent of the scratch OT shift. */
+            unit = 128.0f;
+            bucket += snapshot->draws[face->drawIndex].otBaseBias;
+        } else {
+            unit = (float)(4 << snapshot->draws[face->drawIndex].otShift);
+            bucket += snapshot->draws[face->drawIndex].otBaseBias;
+        }
+        windowMin = (float)bucket * unit;
+        windowMax = windowMin + unit;
+    }
     ModernFaceViewPositions(snapshot, face, view, &mirror);
+    if (getenv("RAGE_PORT_MODERN_FACE_TRACE") != NULL) {
+        float h = (float)gte->h;
+        fprintf(stderr,
+                "modern-face kind=%d klass=%d ot=%d bias=%d window=%.0f..%.0f "
+                "z=%.0f,%.0f,%.0f,%.0f clut=%04x tpage=%04x "
+                "sxy=%.0f,%.0f/%.0f,%.0f/%.0f,%.0f/%.0f,%.0f\n",
+                face->kind, face->klass, face->otDepth, face->bias, windowMin,
+                windowMax, view[0][2], view[1][2], view[2][2], view[3][2],
+                face->clut, face->tpage,
+                gte->ofx + view[0][0] * h / (view[0][2] < 1 ? 1 : view[0][2]),
+                gte->ofy + view[0][1] * h / (view[0][2] < 1 ? 1 : view[0][2]),
+                gte->ofx + view[1][0] * h / (view[1][2] < 1 ? 1 : view[1][2]),
+                gte->ofy + view[1][1] * h / (view[1][2] < 1 ? 1 : view[1][2]),
+                gte->ofx + view[2][0] * h / (view[2][2] < 1 ? 1 : view[2][2]),
+                gte->ofy + view[2][1] * h / (view[2][2] < 1 ? 1 : view[2][2]),
+                gte->ofx + view[3][0] * h / (view[3][2] < 1 ? 1 : view[3][2]),
+                gte->ofy + view[3][1] * h / (view[3][2] < 1 ? 1 : view[3][2]));
+        fprintf(stderr,
+                "modern-face-tex window=%05x uv=%02x,%02x/%02x,%02x/"
+                "%02x,%02x/%02x,%02x\n",
+                face->textureWindow, face->uv[0][0], face->uv[0][1],
+                face->uv[1][0], face->uv[1][1], face->uv[2][0],
+                face->uv[2][1], face->uv[3][0], face->uv[3][1]);
+    }
     for (vertex = 0; vertex < 4; vertex++) {
         ModernVertex *out = &corners[vertex];
         float x = view[vertex][0];
         float y = view[vertex][1];
         float z = view[vertex][2];
+        float depthZ;
         float h = (float)gte->h;
-        if (z < 1.0f) z = 1.0f;
-        zSum += z;
+        /* w is the true view z, negative behind the camera: the GPU's
+         * homogeneous clipping then performs the near clip the compat path
+         * approximates with GTE saturation. */
+        depthZ = z;
+        if (depthZ < windowMin) depthZ = windowMin;
+        if (depthZ > windowMax) depthZ = windowMax;
+        zSum += z < 1.0f ? 1.0f : z;
         out->x = z * ((float)gte->ofx / 160.0f - 1.0f) + x * h / 160.0f;
         out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
-        out->z = (z - MODERN_NEAR) * (MODERN_FAR / (MODERN_FAR - MODERN_NEAR));
+        out->z = ((depthZ - MODERN_DEPTH_MIN) / MODERN_DEPTH_RANGE) * z;
         out->w = z;
         out->u = (float)face->uv[vertex][0];
         out->v = (float)face->uv[vertex][1];
@@ -516,6 +583,9 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         out->color[3] =
             (uint8_t)((face->flags & RAGE_CAPTURE_FACE_SEMI) ? 0 : 255);
         out->attr = textured ? face->tpage : (face->tpage | 0x8000u);
+        if (getenv("RAGE_PORT_MODERN_SOLID") != NULL) {
+            out->attr |= 0x8000u;
+        }
         out->twin = face->textureWindow != 0
                         ? ModernTwinFromE2(face->textureWindow)
                         : 0x0000FFFFu;
@@ -533,43 +603,52 @@ static void ModernOrtho(ModernVertex *out, float px, float py) {
     out->w = 1.0f;
 }
 
+static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
+    switch (word >> 24) {
+    case 0xE1:
+        state->tpage = word & 0x1FFu;
+        break;
+    case 0xE2:
+        state->twin = ModernTwinFromE2(word);
+        break;
+    case 0xE3: {
+        int x = (int)(word & 0x3FFu);
+        int y = (int)((word >> 10) & 0x1FFu);
+        state->scissor.x = x;
+        state->scissor.y = y % 240;
+        state->hasScissor = 1;
+        break;
+    }
+    case 0xE4: {
+        int x = (int)(word & 0x3FFu);
+        int y = (int)((word >> 10) & 0x1FFu);
+        state->scissor.w = x - state->scissor.x + 1;
+        state->scissor.h = (y % 240) - state->scissor.y + 1;
+        state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
+        break;
+    }
+    case 0xE5: {
+        int x = (int)(word & 0x7FFu);
+        int y = (int)((word >> 11) & 0x7FFu);
+        state->offsetX = (x ^ 1024) - 1024;
+        state->offsetY = (y ^ 1024) - 1024;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                  Modern2DState *state, int pipelineBase) {
     const uint32_t *words = packet->words;
     uint32_t command = words[0] >> 24;
     if (command >= 0xE0) {
-        switch (command) {
-        case 0xE1:
-            state->tpage = words[0] & 0x1FFu;
-            break;
-        case 0xE2:
-            state->twin = ModernTwinFromE2(words[0]);
-            break;
-        case 0xE3: {
-            int x = (int)(words[0] & 0x3FFu);
-            int y = (int)((words[0] >> 10) & 0x1FFu);
-            state->scissor.x = x;
-            state->scissor.y = y % 240;
-            state->hasScissor = 1;
-            break;
-        }
-        case 0xE4: {
-            int x = (int)(words[0] & 0x3FFu);
-            int y = (int)((words[0] >> 10) & 0x1FFu);
-            state->scissor.w = x - state->scissor.x + 1;
-            state->scissor.h = (y % 240) - state->scissor.y + 1;
-            state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
-            break;
-        }
-        case 0xE5: {
-            int x = (int)(words[0] & 0x7FFu);
-            int y = (int)((words[0] >> 11) & 0x7FFu);
-            state->offsetX = (x ^ 1024) - 1024;
-            state->offsetY = (y ^ 1024) - 1024;
-            break;
-        }
-        default:
-            break;
+        /* Environment packets (DR_MODE, DR_TWIN, DR_AREA...) carry one
+         * E-command per word; apply them all. */
+        int word;
+        for (word = 0; word < packet->size; word++) {
+            ModernApply2DStateWord(words[word], state);
         }
         return;
     }
@@ -797,23 +876,29 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
     }
 
-    /* Opaque 3D, in submission order, z-buffered. */
-    for (i = 0; i < snapshot->faceCount; i++) {
+    /* Opaque 3D, z-buffered. Drawn in reverse submission order: within a
+     * compat ordering-table bucket AddPrim prepends, so the first-submitted
+     * face is drawn last and wins; LESS_OR_EQUAL plus reverse order keeps
+     * that rule for equal-depth (coplanar) faces. */
+    for (i = snapshot->faceCount - 1; i >= 0; i--) {
         const RageCaptureFace *face = &snapshot->faces[i];
         ModernVertex corners[4];
         float averageZ;
         if (ModernFaceIsMirror(snapshot, face)) continue;
-        if (face->flags & RAGE_CAPTURE_FACE_SEMI) {
-            if (semiCount < RAGE_CAPTURE_MAX_FACES) {
-                semiOrder[semiCount].index = i;
-                semiOrder[semiCount].depth = 0.0f;
-                semiCount++;
-            }
-            continue;
-        }
+        if (face->flags & RAGE_CAPTURE_FACE_SEMI) continue;
         ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
         ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_OPAQUE, NULL, 0.0f),
                        corners);
+    }
+    for (i = 0; i < snapshot->faceCount; i++) {
+        const RageCaptureFace *face = &snapshot->faces[i];
+        if (ModernFaceIsMirror(snapshot, face)) continue;
+        if (!(face->flags & RAGE_CAPTURE_FACE_SEMI)) continue;
+        if (semiCount < RAGE_CAPTURE_MAX_FACES) {
+            semiOrder[semiCount].index = i;
+            semiOrder[semiCount].depth = 0.0f;
+            semiCount++;
+        }
     }
 
     /* Semi-transparent 3D, back to front. */
@@ -839,19 +924,101 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         ModernEmitQuad(ModernBeginSpan(pipeline, NULL, (float)i), corners);
     }
 
-    /* Foreground 2D: everything nearer than the sky, both tables, in
-     * compat draw order. */
+    /* Foreground 2D of the main ordering table, in compat draw order. */
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
-        if (packet->table == 0 && packet->bucket >= MODERN_BACKGROUND_BUCKET &&
-            command < 0xE0u) {
+        if (packet->table != 0) continue;
+        if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
             continue;
         }
         ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
     }
+
+    /* Mirror overlay: the second ordering table draws after the main scene
+     * with its own drawing area. 3D mirror faces render into a recleared
+     * depth buffer, scissored to the first complete area the mirror stream
+     * installs; an empty or missing area discards them, which is the retail
+     * slide-in behaviour. */
+    s_currentPass = 1;
+    {
+        SDL_Rect area = {0, 0, 0, 0};
+        int haveArea = 0;
+        Modern2DState scan;
+        memset(&scan, 0, sizeof(scan));
+        for (i = 0; i < snapshot->packetCount && !haveArea; i++) {
+            const RageCapturePacket *packet = &snapshot->packets[i];
+            int word;
+            if (packet->table != 1) continue;
+            if ((packet->words[0] >> 24) < 0xE0u) continue;
+            for (word = 0; word < packet->size; word++) {
+                ModernApply2DStateWord(packet->words[word], &scan);
+            }
+            if (scan.hasScissor && scan.scissor.w != 0) {
+                area = scan.scissor;
+                haveArea = 1;
+            }
+        }
+        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D. */
+        memset(&state2d, 0, sizeof(state2d));
+        state2d.twin = 0x0000FFFFu;
+        for (i = 0; i < snapshot->packetCount; i++) {
+            const RageCapturePacket *packet = &snapshot->packets[i];
+            uint32_t command = packet->words[0] >> 24;
+            if (packet->table != 1) continue;
+            if (packet->bucket < MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
+                continue;
+            }
+            ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+        }
+        if (haveArea && !scan.areaEmpty && area.w > 0 && area.h > 0) {
+            Modern2DState scissorState;
+            memset(&scissorState, 0, sizeof(scissorState));
+            scissorState.hasScissor = 1;
+            scissorState.scissor.x = area.x * s_targetW / 320;
+            scissorState.scissor.y = area.y * s_targetH / 240;
+            scissorState.scissor.w = area.w * s_targetW / 320;
+            scissorState.scissor.h = area.h * s_targetH / 240;
+            for (i = snapshot->faceCount - 1; i >= 0; i--) {
+                const RageCaptureFace *face = &snapshot->faces[i];
+                ModernVertex corners[4];
+                float averageZ;
+                if (!ModernFaceIsMirror(snapshot, face)) continue;
+                if (face->flags & RAGE_CAPTURE_FACE_SEMI) continue;
+                ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
+                ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_OPAQUE,
+                                               &scissorState, 0.0f),
+                               corners);
+            }
+            for (i = 0; i < snapshot->faceCount; i++) {
+                const RageCaptureFace *face = &snapshot->faces[i];
+                ModernVertex corners[4];
+                float averageZ;
+                if (!ModernFaceIsMirror(snapshot, face)) continue;
+                if (!(face->flags & RAGE_CAPTURE_FACE_SEMI)) continue;
+                ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
+                ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_BLEND,
+                                               &scissorState, 0.0f),
+                               corners);
+            }
+        }
+    }
+
+    /* Mirror-table foreground 2D (frame border, text), in compat order. */
+    memset(&state2d, 0, sizeof(state2d));
+    state2d.twin = 0x0000FFFFu;
+    for (i = 0; i < snapshot->packetCount; i++) {
+        const RageCapturePacket *packet = &snapshot->packets[i];
+        uint32_t command = packet->words[0] >> 24;
+        if (packet->table != 1) continue;
+        if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
+            continue;
+        }
+        ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+    }
+    s_currentPass = 0;
 }
 
 /* ---- rendering ---- */
@@ -886,51 +1053,61 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
     }
     {
-        const SDL_GPUColorTargetInfo color = {
-            .texture = s_target,
-            .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_STORE,
-        };
-        const SDL_GPUDepthStencilTargetInfo depth = {
-            .texture = s_depth,
-            .clear_depth = 1.0f,
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_DONT_CARE,
-        };
-        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1,
-                                                         &depth);
-        if (pass != NULL && s_vertexCount > 0) {
-            SDL_GPUGraphicsPipeline *pipelines[5];
+        SDL_GPUGraphicsPipeline *pipelines[5];
+        int spanIndex = 0;
+        int passNumber;
+        pipelines[MODERN_PIPE_3D_OPAQUE] = s_pipe3dOpaque;
+        pipelines[MODERN_PIPE_3D_BLEND] = s_pipe3dBlend;
+        pipelines[MODERN_PIPE_3D_SUB] = s_pipe3dSub;
+        pipelines[MODERN_PIPE_2D] = s_pipe2d;
+        pipelines[MODERN_PIPE_2D_SUB] = s_pipe2dSub;
+        /* Pass 0 clears colour and depth and draws the main scene; pass 1
+         * reclears only depth and draws the mirror overlay over it. */
+        for (passNumber = 0; passNumber < 2; passNumber++) {
+            SDL_GPUColorTargetInfo color = {
+                .texture = s_target,
+                .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+                .load_op = passNumber == 0 ? SDL_GPU_LOADOP_CLEAR
+                                           : SDL_GPU_LOADOP_LOAD,
+                .store_op = SDL_GPU_STOREOP_STORE,
+            };
+            SDL_GPUDepthStencilTargetInfo depth = {
+                .texture = s_depth,
+                .clear_depth = 1.0f,
+                .load_op = SDL_GPU_LOADOP_CLEAR,
+                .store_op = SDL_GPU_STOREOP_DONT_CARE,
+            };
+            SDL_GPURenderPass *pass;
             SDL_GPUGraphicsPipeline *bound = NULL;
-            const SDL_GPUBufferBinding binding = {.buffer = s_vertexBuffer,
-                                                  .offset = 0};
-            const SDL_GPUTextureSamplerBinding sampler = {
-                .texture = vram, .sampler = s_sampler};
-            pipelines[MODERN_PIPE_3D_OPAQUE] = s_pipe3dOpaque;
-            pipelines[MODERN_PIPE_3D_BLEND] = s_pipe3dBlend;
-            pipelines[MODERN_PIPE_3D_SUB] = s_pipe3dSub;
-            pipelines[MODERN_PIPE_2D] = s_pipe2d;
-            pipelines[MODERN_PIPE_2D_SUB] = s_pipe2dSub;
-            SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
-            SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
-            for (i = 0; i < s_spanCount; i++) {
-                const ModernSpan *span = &s_spans[i];
-                if (span->count == 0) continue;
-                if (pipelines[span->pipeline] != bound) {
-                    bound = pipelines[span->pipeline];
-                    SDL_BindGPUGraphicsPipeline(pass, bound);
+            if (passNumber == 1 && spanIndex >= s_spanCount) break;
+            pass = SDL_BeginGPURenderPass(cmd, &color, 1, &depth);
+            if (pass == NULL) break;
+            if (s_vertexCount > 0) {
+                const SDL_GPUBufferBinding binding = {
+                    .buffer = s_vertexBuffer, .offset = 0};
+                const SDL_GPUTextureSamplerBinding sampler = {
+                    .texture = vram, .sampler = s_sampler};
+                SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
+                SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
+                for (; spanIndex < s_spanCount; spanIndex++) {
+                    const ModernSpan *span = &s_spans[spanIndex];
+                    if (span->pass != passNumber) break;
+                    if (span->count == 0) continue;
+                    if (pipelines[span->pipeline] != bound) {
+                        bound = pipelines[span->pipeline];
+                        SDL_BindGPUGraphicsPipeline(pass, bound);
+                    }
+                    {
+                        SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
+                        if (span->hasScissor) scissor = span->scissor;
+                        SDL_SetGPUScissor(pass, &scissor);
+                    }
+                    SDL_DrawGPUPrimitives(pass, (Uint32)span->count, 1,
+                                          (Uint32)span->start, 0);
                 }
-                {
-                    SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
-                    if (span->hasScissor) scissor = span->scissor;
-                    SDL_SetGPUScissor(pass, &scissor);
-                }
-                SDL_DrawGPUPrimitives(pass, (Uint32)span->count,
-                                      1, (Uint32)span->start, 0);
             }
+            SDL_EndGPURenderPass(pass);
         }
-        if (pass != NULL) SDL_EndGPURenderPass(pass);
     }
     SDL_SubmitGPUCommandBuffer(cmd);
     s_haveRenderedFrame = 1;

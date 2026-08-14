@@ -139,6 +139,7 @@ void RageCaptureModelBegin(int kind, int index, int fogged) {
     draw->kind = (uint8_t)kind;
     draw->mirror = SCRATCH_MIRROR != 0;
     draw->fogged = (uint8_t)fogged;
+    draw->otShift = (uint8_t)SCRATCH_OT_SHIFT;
     draw->modelIndex = index;
     draw->renderMode = (uint32_t)g_ScratchRenderMode;
     draw->bankId = (uint64_t)(uintptr_t)(kind == RAGE_CAPTURE_KIND_MODEL
@@ -161,6 +162,7 @@ void RageCaptureTerrainBegin(const void *cells, int count) {
     memset(batch, 0, sizeof(*batch));
     batch->mirror = SCRATCH_MIRROR != 0;
     batch->envMode4 = g_ScratchEnvMode4 != 0;
+    batch->otShift = (uint8_t)SCRATCH_OT_SHIFT;
     if (count > RAGE_CAPTURE_MAX_CELLS) count = RAGE_CAPTURE_MAX_CELLS;
     batch->cellCount = (int16_t)count;
     for (i = 0; i < count * 4; i++) {
