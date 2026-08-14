@@ -19,6 +19,8 @@
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
 extern void SsSeqClose(short sequence);
+extern int _snd_ev_flag;
+extern void _SsVmFlush(void);
 
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
 unsigned char g_AudioRuntimeState[4096];
@@ -373,7 +375,13 @@ void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }
 ZERO_ADAPTER(MdecUnpackStatus)
-ZERO_ADAPTER(SpuVmDamperStep)
+void SpuVmDamperStep(void) {
+    if (_snd_ev_flag != 1) {
+        _snd_ev_flag = 1;
+        _SsVmFlush();
+        _snd_ev_flag = 0;
+    }
+}
 void SsSeqCloseWrapper(short sequence) { SsSeqClose(sequence); }
 ZERO_ADAPTER(SsSetSpuInputAttr)
 unsigned char SsSetVoiceCount(unsigned char voices) {

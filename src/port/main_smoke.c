@@ -220,7 +220,7 @@ int main(void) {
         printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
                "pitch_updates=%llu cdda=%d "
                "loaded=%x cue_bank=%d "
-               "vab=%d,%d,%d,%d\n",
+               "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
                Psyz_SeqNoteOnCount(),
                Psyz_SeqVoiceStartCount(),
@@ -228,7 +228,13 @@ int main(void) {
                Psyz_CdAudioPlaying(),
                g_AudioLoadedSlotMask, g_SoundCueBank,
                g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
-               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3]);
+               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
+               g_EngineSoundState.slotActive[0],
+               g_EngineSoundState.slotActive[1],
+               g_EngineSoundState.slotActive[2],
+               g_EngineSoundState.slotActive[3],
+               g_EngineSoundState.slotActive[4],
+               g_EngineSoundState.slotActive[5]);
     }
     if (getenv("RAGE_PORT_SMOKE_CAMERA_STATE") != NULL) {
         {

@@ -3631,3 +3631,20 @@ PsyQ first chooses the lowest-priority eligible voice, then the lowest current
 pitch, then the oldest voice.  The previous host simplification ignored the
 pitch tie-break and treated a logically inactive voice with a live envelope as
 free, allowing menu/race notes to cut off effects which the PS1 retains.
+
+Race audio has a separate flush path from menu SEQ playback.  In scene 12,
+`TickSequenceAudio` calls `SpuVmDamperStep`; the retail function is a
+re-entrancy-guarded `SsUtFlush`, not a no-op.  Leaving the host adapter empty
+allowed Rage to calculate engine pitch/volume continuously while every KON
+and dirty voice register remained pending, which explained audible CD-DA but
+almost no race effects.  `_SsVmInit(0)` also performs no per-voice reset in
+PsyQ: treating zero as all 24 voices queues KOFF bits that cancel the engine
+KON on voices 16..18.  The host retains loaded VAB metadata across this reset,
+but otherwise follows the zero-count loop semantics.  `race_start` records the
+SPU trace and requires the four retail engine layers (voices 14, 16, 17 and 18)
+to reach hardware.
+
+For fixed-voice diagnosis, `PSYZ_SND_KEY_TRACE=1` reports successful key-ons,
+setup failures and empty VAB tones, while the smoke audio metrics include the
+six game-side engine-slot active flags.  These are observational debug paths;
+they do not synthesize or replace any Rage audio state.
