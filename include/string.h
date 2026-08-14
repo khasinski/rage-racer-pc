@@ -1,6 +1,10 @@
 #ifndef RAGE_PC_STRING_H
 #define RAGE_PC_STRING_H
 
+#ifdef RAGE_HOST_PORT
+#include_next <string.h>
+#else
+
 #include "common.h"
 
 #ifdef _WIN32
@@ -23,6 +27,8 @@ void *memmove(u8 *dest, u8 *src, s32 count);
 long strcmp(u8 *lhs, u8 *rhs);
 long strncmp(u8 *lhs, u8 *rhs, long len);
 s32 strlen(u8 *str);
+#endif
+
 #endif
 
 #endif

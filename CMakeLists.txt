@@ -69,6 +69,7 @@ if(RAGE_BUILD_PORT)
             src/port/include
             include
         )
+        target_compile_definitions(${RAGE_PORT_TARGET} PRIVATE RAGE_HOST_PORT=1)
         if(NOT WIN32)
             target_compile_options(${RAGE_PORT_TARGET} PRIVATE
                 "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"

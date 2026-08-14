@@ -1,6 +1,10 @@
 #ifndef RAGE_PC_STDIO_H
 #define RAGE_PC_STDIO_H
 
+#ifdef RAGE_HOST_PORT
+#include_next <stdio.h>
+#else
+
 #include "common.h"
 
 #ifdef _WIN32
@@ -29,6 +33,8 @@ s32 printf(const char *format, ...);
 s32 sprintf(char *dest, const char *format, ...);
 void putchar(s32 ch);
 void puts(u8 *str);
+#endif
+
 #endif
 
 #endif
