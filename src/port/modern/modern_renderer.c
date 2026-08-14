@@ -1174,18 +1174,23 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     s_vertexCount = 0;
     s_spanCount = 0;
 
-    /* The common (minimum) face bias of each model draw: applied at full
-     * bucket scale to the whole model so it keeps retail's crest-winning
-     * placement without letting faces shift relative to each other. */
-    for (i = 0; i < snapshot->drawCount; i++) {
-        s_drawGroupBias[i] = 0;
-    }
-    for (i = 0; i < snapshot->faceCount; i++) {
-        const RageCaptureFace *face = &snapshot->faces[i];
-        if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) continue;
-        if (face->kind == RAGE_CAPTURE_KIND_COURSE) continue;
-        if (face->bias < s_drawGroupBias[face->drawIndex]) {
-            s_drawGroupBias[face->drawIndex] = face->bias;
+    /* One common model bias for the whole frame, applied at full bucket
+     * scale to every model draw uniformly. Retail wins hill crests against
+     * the road by linking cars ~14..20 buckets nearer via the per-face
+     * bias; a uniform shift keeps that without ever moving the separately
+     * drawn parts of one car (body and spinning wheels are distinct draws)
+     * relative to each other. */
+    {
+        int16_t globalBias = 0;
+        for (i = 0; i < snapshot->faceCount; i++) {
+            const RageCaptureFace *face = &snapshot->faces[i];
+            if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) continue;
+            if (face->kind == RAGE_CAPTURE_KIND_COURSE) continue;
+            if (face->bias < globalBias) globalBias = face->bias;
+        }
+        if (globalBias < -32) globalBias = -32;
+        for (i = 0; i < snapshot->drawCount; i++) {
+            s_drawGroupBias[i] = globalBias;
         }
     }
 
