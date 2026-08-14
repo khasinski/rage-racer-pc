@@ -59,6 +59,7 @@ static SDL_GPUTexture *s_ring[MODERN_RING];
 static uint32_t s_ringFrame[MODERN_RING];
 static float s_ringT[MODERN_RING];
 static int s_ringNext;
+static RageSceneSnapshot *s_ringScene; /* MODERN_RING copies */
 static int s_resourcesReady;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
@@ -446,6 +447,7 @@ static int ModernEnsureResources(void) {
         for (slot = 0; slot < MODERN_RING; slot++) {
             s_ring[slot] = SDL_CreateGPUTexture(s_device, &info);
         }
+        s_ringScene = malloc(MODERN_RING * sizeof(RageSceneSnapshot));
     }
 
     if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
@@ -1566,6 +1568,9 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         SDL_BlitGPUTexture(cmd, &blit);
         s_ringFrame[s_ringNext] = snapshot->frameCounter;
         s_ringT[s_ringNext] = s_useLerp ? -2.0f : -1.0f;
+        if (s_ringScene != NULL) {
+            memcpy(&s_ringScene[s_ringNext], snapshot, sizeof(*snapshot));
+        }
         s_ringNext = (s_ringNext + 1) % MODERN_RING;
     }
     SDL_SubmitGPUCommandBuffer(cmd);
@@ -1699,6 +1704,17 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
                      slot, s_ringFrame[ordinal],
                      s_ringT[ordinal] < -1.5f ? "lerp" : "snap");
             ModernWriteTexturePpm(s_ring[ordinal], path);
+            if (s_ringScene != NULL) {
+                snprintf(path, sizeof(path),
+                         "markers/ring-%02d-f%u-scene.bin", slot,
+                         s_ringFrame[ordinal]);
+                file = fopen(path, "wb");
+                if (file != NULL) {
+                    fwrite(&s_ringScene[ordinal], sizeof(RageSceneSnapshot),
+                           1, file);
+                    fclose(file);
+                }
+            }
         }
         fprintf(stderr, "rage-port: ring of %d frames dumped\n", MODERN_RING);
     }
