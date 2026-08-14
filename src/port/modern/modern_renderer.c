@@ -1347,13 +1347,16 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
      * stream's own area. */
     s_currentPass = 1;
     {
+        /* The mirror 3D content sits between the mirror stream's own area
+         * pair and its restore, so that pair alone is the authoritative
+         * scissor (with VRAM-page intersection the slide-in phases produce
+         * genuinely empty pairs by themselves; intersecting with the main
+         * chain's final area wrongly blanked the mirror whenever the pause
+         * menu left its dim-box area installed there). The inherited state
+         * only seeds streams that never install their own pair. */
         SDL_Rect area;
         int haveArea = 0;
         Modern2DState scan = s_mainEnd2D;
-        int inheritedEmpty =
-            s_mainEnd2D.hasScissor &&
-            (s_mainEnd2D.areaEmpty || s_mainEnd2D.scissor.w <= 0 ||
-             s_mainEnd2D.scissor.h <= 0);
         for (i = 0; i < snapshot->packetCount; i++) {
             const RageCapturePacket *packet = &snapshot->packets[i];
             int word;
@@ -1367,23 +1370,8 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             }
         }
         haveArea = scan.hasScissor && !scan.areaEmpty && scan.scissor.w > 0 &&
-                   scan.scissor.h > 0 && !inheritedEmpty;
+                   scan.scissor.h > 0;
         area = scan.scissor;
-        if (haveArea && s_mainEnd2D.hasScissor && !inheritedEmpty) {
-            int x0 = area.x > s_mainEnd2D.scissor.x ? area.x : s_mainEnd2D.scissor.x;
-            int y0 = area.y > s_mainEnd2D.scissor.y ? area.y : s_mainEnd2D.scissor.y;
-            int x1 = area.x + area.w < s_mainEnd2D.scissor.x + s_mainEnd2D.scissor.w
-                         ? area.x + area.w
-                         : s_mainEnd2D.scissor.x + s_mainEnd2D.scissor.w;
-            int y1 = area.y + area.h < s_mainEnd2D.scissor.y + s_mainEnd2D.scissor.h
-                         ? area.y + area.h
-                         : s_mainEnd2D.scissor.y + s_mainEnd2D.scissor.h;
-            area.x = x0;
-            area.y = y0;
-            area.w = x1 - x0;
-            area.h = y1 - y0;
-            if (area.w <= 0 || area.h <= 0) haveArea = 0;
-        }
         /* Mirror backdrop 2D (sky bands at far buckets) before the 3D,
          * starting from the inherited main-table state so slide-in frames
          * clip exactly like retail. */
