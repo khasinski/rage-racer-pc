@@ -27,6 +27,13 @@ add_test(
 )
 
 add_test(
+    NAME race_progress_layout
+    COMMAND ruby
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_progress_layout.rb
+        ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
     NAME native_ui_script_layout
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_ui_script_layout.rb

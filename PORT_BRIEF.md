@@ -3686,3 +3686,15 @@ the typed runtime layout; `player_car_interior_aliases` also checks every PAL
 map address and rejects future standalone host backing or extern declarations.
 The `+0x15C` throttle label remains intentionally absent: game code reads
 `drive.acceleratorInput.value` directly, as documented above.
+
+The three `GameRaceProgress` objects were also emitted as eight-byte host
+placeholders despite their 0x14-byte retail layout.  This was especially
+visible after a Time Attack race: its series selector lives in the low
+halfword of `money` at `+0x10`; writing or restoring that field outside the
+truncated object made `InitMenuMode` compose every course with series bit 4,
+leaving only the four reverse cards.  Grand Prix and Extra Grand Prix had the
+same latent corruption, and Extra GP's separately allocated
+`g_ExtraGrandPrixSaveMaxClass` was really the `+0x0C` member.  Allocate all
+three as complete typed objects and preserve the Extra GP interior alias.
+Compile-time size/offset checks and `race_progress_layout` protect the layout
+and the Time Attack store/restore contract for the decompilation backport.

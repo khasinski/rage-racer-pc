@@ -578,7 +578,6 @@ extern s32 g_CarPriceTable[];
 extern s32 g_CarSpecBars[4];
 extern s32 g_CarSpecGraphProgress;
 extern s32 g_ClassRecordMenuCursor;
-extern s32 g_ExtraGrandPrixSaveMaxClass;
 extern u8 g_LastValidPadType;
 extern u8 g_MenuHintBarScript;
 

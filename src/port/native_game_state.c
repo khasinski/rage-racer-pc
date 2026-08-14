@@ -34,6 +34,9 @@ Matrix g_MenuLightMatrix;
  * following native globals as soon as BuildStartingGrid initializes them. */
 GameCarRuntime g_Cars[11];
 PlayerCarRuntime g_PlayerCar;
+GameRaceProgress g_GrandPrixSave;
+GameRaceProgress g_ExtraGrandPrixSave;
+GameRaceProgress g_TimeAttackSave;
 
 void *GetPlayerCarStorage(void) {
     return &g_PlayerCar;
