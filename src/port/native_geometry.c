@@ -1471,7 +1471,13 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 };
                 int bias;
                 int extendedDepth = 0;
-                if (farCell && (stream[20] & 2) != 0) continue;
+                if (farCell && (stream[20] & 2) != 0) {
+                    /* Retail's far-cell path skips these records entirely;
+                     * capture them for the modern renderer's continuous far
+                     * road without emitting to the compat stream. */
+                    if (!RageModernExtendedDepth()) continue;
+                    extendedDepth = 1;
+                }
                 {
                     int projected = RageProjectQuad(
                         v0, v1, v2, v3, sxy, &depth, &fog, &rawDepth, 1);

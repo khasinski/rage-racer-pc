@@ -548,6 +548,7 @@ static uint32_t ModernTwinFromE2(uint32_t word) {
 /* ---- snapshot interpolation (arbitrary-FPS presentation) ---- */
 
 static int s_useLerp;
+static int16_t s_drawGroupBias[RAGE_CAPTURE_MAX_DRAWS];
 static RageCaptureGteState s_lerpDrawGte[RAGE_CAPTURE_MAX_DRAWS];
 static RageCaptureTerrainBatch s_lerpTerrain[RAGE_CAPTURE_MAX_TERRAIN];
 static Uint64 s_tickTimeNs;
@@ -791,20 +792,22 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
             windowMin = (float)bucket * unit;
             windowMax = windowMin + unit;
         } else {
-            /* Model faces (cars, scenery models) use their true per-pixel
-             * depth. The per-face bias byte is a painter's overlay order
-             * for decals on the model's own surface; translating it into
-             * a whole-bucket depth shift let biased faces (wheels, decals)
-             * punch through body panels the moment quantized buckets
-             * disagreed with the real geometry - retail never shows that.
-             * A small epsilon keeps genuinely coplanar overlays ordered. */
-            zBias = 4.0f * (float)(face->bias +
-                                   snapshot->draws[face->drawIndex]
-                                       .otBaseBias);
+            /* Model faces use true per-pixel depth. Retail wins hill
+             * crests against the road by linking whole cars ~14..20
+             * buckets nearer through the per-face bias, so the DRAW's
+             * common bias applies at full bucket scale, moving the model
+             * as one rigid group (nothing can punch through its own
+             * body); the residual per-face bias differences are decal
+             * overlay order and shrink to an epsilon. */
+            const RageCaptureModelDraw *draw =
+                &snapshot->draws[face->drawIndex];
+            float groupBias = (float)s_drawGroupBias[face->drawIndex];
+            unit = (float)(4 << draw->otShift);
+            zBias = unit * (groupBias + (float)draw->otBaseBias) +
+                    4.0f * ((float)face->bias - groupBias);
             windowMin = -1.0e9f;
             windowMax = 1.0e9f;
             (void)bucket;
-            (void)unit;
         }
     }
     ModernFaceViewPositions(snapshot, face, view, &mirror);
@@ -1170,6 +1173,22 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
     s_vertexCount = 0;
     s_spanCount = 0;
+
+    /* The common (minimum) face bias of each model draw: applied at full
+     * bucket scale to the whole model so it keeps retail's crest-winning
+     * placement without letting faces shift relative to each other. */
+    for (i = 0; i < snapshot->drawCount; i++) {
+        s_drawGroupBias[i] = 0;
+    }
+    for (i = 0; i < snapshot->faceCount; i++) {
+        const RageCaptureFace *face = &snapshot->faces[i];
+        if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) continue;
+        if (face->kind == RAGE_CAPTURE_KIND_COURSE) continue;
+        if (face->bias < s_drawGroupBias[face->drawIndex]) {
+            s_drawGroupBias[face->drawIndex] = face->bias;
+        }
+    }
+
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
 
