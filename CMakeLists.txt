@@ -83,6 +83,9 @@ if(RAGE_BUILD_PORT)
         DEFAULT_FRONT_W=640
         DEFAULT_FRONT_H=480
     )
+    if(MSVC)
+        target_compile_options(psyz PRIVATE /std:c11)
+    endif()
     if(APPLE)
         set_target_properties(rage-racer PROPERTIES
             OUTPUT_NAME "Rage Racer"
