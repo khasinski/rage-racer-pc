@@ -60,6 +60,10 @@ def main() -> int:
         )
     if cdda != 0:
         raise AssertionError("prologue CD-DA was still playing under the menu sequence")
+    if "18,13896,1024,9219,6773,33023,8128" not in trace_rows:
+        raise AssertionError("title cue lost the retail left-biased voice")
+    if "19,13896,1035,6524,9219,33023,19968" not in trace_rows:
+        raise AssertionError("title cue lost the retail right-biased voice")
     # ROUND cue 0x19 is a two-tone stereo effect.  These are the retail
     # voice-register snapshots at scene timer 32.  Reversing the libsnd pan
     # attenuation makes both voices mono and is audible across many effects.
