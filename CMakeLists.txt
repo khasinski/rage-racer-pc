@@ -71,6 +71,9 @@ if(RAGE_BUILD_PORT)
             "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
         )
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz)
+        if(WIN32)
+            target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32)
+        endif()
     endforeach()
     target_compile_options(rage-game-full PRIVATE
         "-include${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/compat.h"

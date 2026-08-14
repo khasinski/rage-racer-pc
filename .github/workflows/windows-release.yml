@@ -1,0 +1,46 @@
+name: Windows x86-64 release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version used in the archive name
+        required: true
+        default: 0.1-alpha
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64
+      - name: Build
+        run: cmake --build build/release --config Release --parallel
+      - name: Verify portable tests
+        run: ctest --test-dir build/release -C Release --output-on-failure -R "^(game_logic|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$"
+      - name: Package
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          $package = "Rage-Racer-$env:VERSION-windows-x86_64"
+          $root = "dist/$package"
+          New-Item -ItemType Directory -Force $root | Out-Null
+          Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
+          Copy-Item README.md, LICENSE.md $root
+          Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
+          (Get-FileHash "dist/$package.zip" -Algorithm SHA256).Hash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Rage-Racer-${{ inputs.version || github.ref_name }}-windows-x86_64
+          path: dist/*.zip
+          if-no-files-found: error

@@ -8,17 +8,31 @@
 
 #include "input_config.h"
 
+#ifdef _WIN32
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+#endif
+
 void MainLoop(void);
 int RageMapPs1Scratchpad(void);
 int RageInitNativeGameData(void);
 int RageHostInitDisc(void);
 
 static void RageLoadInputConfig(RageInputConfig *config) {
+#ifdef _WIN32
+    const char *home = getenv("APPDATA");
+#else
     const char *home = getenv("HOME");
+#endif
     char path[PATH_MAX];
 
     if (home != NULL && home[0] != '\0') {
+#ifdef _WIN32
+        snprintf(path, sizeof(path), "%s\\Rage Racer\\rage-input.cfg", home);
+#else
         snprintf(path, sizeof(path), "%s/Library/Application Support/Rage Racer/rage-input.cfg", home);
+#endif
         if (RageInputConfigLoad(config, path) > 0) return;
     }
     RageInputConfigLoad(config, "rage-input.cfg");

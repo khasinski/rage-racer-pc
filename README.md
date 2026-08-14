@@ -10,7 +10,8 @@ original PlayStation release.
 
 ## 0.1-alpha
 
-The first alpha provides unsigned builds for arm64 macOS and x86-64 Linux. It
+The first alpha provides unsigned builds for arm64 macOS, x86-64 Linux and
+x86-64 Windows. It
 contains no game data. On first launch, the app asks the player to locate the
 `.cue` sheet for their legally obtained PAL copy of Rage Racer, then saves that
 local choice for future launches. The game image and its data files are never
@@ -27,13 +28,15 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
-The resulting executable is `build/release/rage-racer` on Linux and
-`build/release/Rage Racer.app` on macOS. Release downloads are supplied for
-macOS arm64 and Linux x86-64.
+The resulting executable is `build/release/rage-racer` on Linux,
+`build/release/Rage Racer.app` on macOS and `build/release/Release/rage-racer.exe`
+with the Visual Studio generator on Windows. Release downloads are supplied
+for macOS arm64, Linux x86-64 and Windows x86-64.
 
 ## Runtime requirements
 
-- macOS on Apple Silicon (arm64), or a glibc-based x86-64 Linux distribution
+- macOS on Apple Silicon (arm64), a glibc-based x86-64 Linux distribution, or
+  64-bit Windows 10/11
 - A legally obtained PAL Rage Racer disc image, with its `.cue` sheet and
   referenced track files kept together
 
@@ -62,7 +65,7 @@ The default bindings emulate the original PlayStation pad:
 Put `rage-input.cfg` in `~/Library/Application Support/Rage Racer/` to override
 any of these bindings (a file in the current directory is also accepted). On
 Linux the same directory is under `$HOME/Library/Application Support/` for this
-alpha.
+alpha. On Windows the directory is `%APPDATA%\Rage Racer\`.
 Button names are PlayStation pad names, key names are SDL key names, and lines
 beginning with `#` or `;` are comments.  For example:
 

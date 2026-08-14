@@ -4,13 +4,31 @@
 #include <stdint.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+#include <direct.h>
+#include <io.h>
+#define access _access
+#define close _close
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#ifndef R_OK
+#define R_OK 4
+#endif
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+#else
 #include <strings.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <unistd.h>
+#endif
 
 #include <libapi.h>
 #include <psyz.h>
@@ -247,17 +265,29 @@ static int RageHostReadTextFile(const char *path, char *value, size_t size) {
 }
 
 static void RageHostMakeDiscConfigPath(char *path, size_t size) {
+#ifdef _WIN32
+    const char *appdata = getenv("APPDATA");
+    if (appdata == NULL || appdata[0] == '\0') appdata = ".";
+    snprintf(path, size, "%s\\Rage Racer\\disc-cue-path", appdata);
+#else
     const char *home = getenv("HOME");
     if (home == NULL || home[0] == '\0') home = ".";
     snprintf(path, size, "%s/Library/Application Support/Rage Racer/disc-cue-path", home);
+#endif
 }
 
 static void RageHostSaveDiscCue(const char *cue) {
     char directory[PATH_MAX];
     char path[PATH_MAX];
-    const char *home = getenv("HOME");
     FILE *file;
 
+#ifdef _WIN32
+    const char *appdata = getenv("APPDATA");
+    if (appdata == NULL || appdata[0] == '\0') return;
+    snprintf(directory, sizeof(directory), "%s\\Rage Racer", appdata);
+    _mkdir(directory);
+#else
+    const char *home = getenv("HOME");
     if (home == NULL || home[0] == '\0') return;
     snprintf(directory, sizeof(directory), "%s/Library", home);
     mkdir(directory, 0700);
@@ -265,6 +295,7 @@ static void RageHostSaveDiscCue(const char *cue) {
     mkdir(directory, 0700);
     snprintf(directory, sizeof(directory), "%s/Library/Application Support/Rage Racer", home);
     mkdir(directory, 0700);
+#endif
     RageHostMakeDiscConfigPath(path, sizeof(path));
     file = fopen(path, "w");
     if (file == NULL) return;
@@ -305,6 +336,18 @@ static int RageHostChooseDiscCue(char *cue, size_t size) {
     if (fgets(cue, (int)size, stdin) == NULL) return 0;
     cue[strcspn(cue, "\r\n")] = '\0';
     return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+#elif defined(_WIN32)
+    OPENFILENAMEA dialog = {0};
+    static const char filter[] = "Cue sheets (*.cue)\0*.cue\0All files\0*.*\0\0";
+
+    dialog.lStructSize = sizeof(dialog);
+    dialog.lpstrFilter = filter;
+    dialog.lpstrFile = cue;
+    dialog.nMaxFile = (DWORD)size;
+    dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+    cue[0] = '\0';
+    return GetOpenFileNameA(&dialog) != 0 &&
+           RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
 #else
     (void)cue;
     (void)size;
@@ -324,11 +367,16 @@ static int RageHostParseCue(const char *cue, char *image, size_t image_size,
     char cue_directory[PATH_MAX];
     char image_name[PATH_MAX] = {0};
     char *slash;
+    char *backslash;
     int data_track_seen = 0;
 
     if (file == NULL) return 0;
     snprintf(cue_directory, sizeof(cue_directory), "%s", cue);
     slash = strrchr(cue_directory, '/');
+    backslash = strrchr(cue_directory, '\\');
+    if (backslash != NULL && (slash == NULL || backslash > slash)) {
+        slash = backslash;
+    }
     if (slash != NULL) *slash = '\0'; else snprintf(cue_directory, sizeof(cue_directory), ".");
     *track_offset = 0;
     while (fgets(line, sizeof(line), file)) {
@@ -353,7 +401,10 @@ static int RageHostParseCue(const char *cue, char *image, size_t image_size,
     }
     fclose(file);
     if (image_name[0] == '\0') return 0;
-    if (image_name[0] == '/') snprintf(image, image_size, "%s", image_name);
+    if (image_name[0] == '/' ||
+        (isalpha((unsigned char)image_name[0]) && image_name[1] == ':')) {
+        snprintf(image, image_size, "%s", image_name);
+    }
     else snprintf(image, image_size, "%s/%s", cue_directory, image_name);
     return access(image, R_OK) == 0;
 }
