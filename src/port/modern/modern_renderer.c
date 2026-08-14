@@ -50,6 +50,15 @@ static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUTexture *s_postTarget;
 static SDL_GPUGraphicsPipeline *s_pipePost;
 static SDL_GPUSampler *s_samplerLinear;
+
+/* Ring of recent presented frames, copied on the GPU every present so a
+ * transient artifact can be dumped AFTER being seen (the synchronous burst
+ * capture stalls presentation and suppresses timing-dependent flashes). */
+#define MODERN_RING 16
+static SDL_GPUTexture *s_ring[MODERN_RING];
+static uint32_t s_ringFrame[MODERN_RING];
+static float s_ringT[MODERN_RING];
+static int s_ringNext;
 static int s_resourcesReady;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
@@ -422,6 +431,22 @@ static int ModernEnsureResources(void) {
     }
     s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
     s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
+
+    {
+        SDL_GPUTextureCreateInfo info = {0};
+        int slot;
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = (Uint32)s_targetW;
+        info.height = (Uint32)s_targetH;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        for (slot = 0; slot < MODERN_RING; slot++) {
+            s_ring[slot] = SDL_CreateGPUTexture(s_device, &info);
+        }
+    }
 
     if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
         SDL_GPUTextureCreateInfo info = {0};
@@ -1524,6 +1549,25 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPURenderPass(pass);
         }
     }
+    if (s_ring[s_ringNext] != NULL) {
+        const SDL_GPUBlitInfo blit = {
+            .source = {.texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
+                                          s_postTarget != NULL
+                                      ? s_postTarget
+                                      : s_target,
+                       .w = (Uint32)s_targetW,
+                       .h = (Uint32)s_targetH},
+            .destination = {.texture = s_ring[s_ringNext],
+                            .w = (Uint32)s_targetW,
+                            .h = (Uint32)s_targetH},
+            .load_op = SDL_GPU_LOADOP_DONT_CARE,
+            .filter = SDL_GPU_FILTER_NEAREST,
+        };
+        SDL_BlitGPUTexture(cmd, &blit);
+        s_ringFrame[s_ringNext] = snapshot->frameCounter;
+        s_ringT[s_ringNext] = s_useLerp ? -2.0f : -1.0f;
+        s_ringNext = (s_ringNext + 1) % MODERN_RING;
+    }
     SDL_SubmitGPUCommandBuffer(cmd);
     s_haveRenderedFrame = 1;
     if (getenv("RAGE_PORT_MODERN_SPAN_TRACE") != NULL) {
@@ -1542,8 +1586,8 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
 }
 
-/* Download the presented modern target and write it as a binary PPM. */
-static int ModernWriteTargetPpm(const char *path) {
+/* Download a target-sized texture and write it as a binary PPM. */
+static int ModernWriteTexturePpm(SDL_GPUTexture *texture, const char *path) {
     SDL_GPUTransferBuffer *transfer;
     SDL_GPUCommandBuffer *cmd;
     int written = 0;
@@ -1558,10 +1602,7 @@ static int ModernWriteTargetPpm(const char *path) {
     if (cmd != NULL) {
         SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
         const SDL_GPUTextureRegion region = {
-            .texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
-                               s_postTarget != NULL
-                           ? s_postTarget
-                           : s_target,
+            .texture = texture,
             .w = (Uint32)s_targetW,
             .h = (Uint32)s_targetH,
             .d = 1,
@@ -1600,6 +1641,14 @@ static int ModernWriteTargetPpm(const char *path) {
     return written;
 }
 
+static int ModernWriteTargetPpm(const char *path) {
+    return ModernWriteTexturePpm(
+        s_config.modernPost != RAGE_MODERN_POST_NONE && s_postTarget != NULL
+            ? s_postTarget
+            : s_target,
+        path);
+}
+
 /* Diagnostic: write the modern target as a binary PPM when
  * RAGE_PORT_MODERN_DUMP names a path and RAGE_PORT_MODERN_DUMP_FRAME (if
  * set) matches the captured frame counter. */
@@ -1635,9 +1684,24 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
     int down = keys != NULL && keys[SDL_SCANCODE_M];
     int pressed = down && !wasDown;
     wasDown = down;
-    /* One key press captures a BURST of consecutive presented frames so a
-     * transient artifact (a one-tick flash) cannot slip between markers. */
-    if (pressed) burstLeft = 12;
+    /* One key press dumps the RING of the last presented frames (captured
+     * continuously on the GPU, so pressing M right AFTER seeing a transient
+     * flash still has it), then a burst of the next few presents. */
+    if (pressed) burstLeft = 4;
+    if (pressed && s_ring[0] != NULL) {
+        char path[256];
+        int slot;
+        mkdir("markers", 0755);
+        for (slot = 0; slot < MODERN_RING; slot++) {
+            int ordinal = (s_ringNext + slot) % MODERN_RING;
+            if (s_ringFrame[ordinal] == 0) continue;
+            snprintf(path, sizeof(path), "markers/ring-%02d-f%u-%s.ppm",
+                     slot, s_ringFrame[ordinal],
+                     s_ringT[ordinal] < -1.5f ? "lerp" : "snap");
+            ModernWriteTexturePpm(s_ring[ordinal], path);
+        }
+        fprintf(stderr, "rage-port: ring of %d frames dumped\n", MODERN_RING);
+    }
     if (burstLeft <= 0) return;
     burstLeft--;
     {
