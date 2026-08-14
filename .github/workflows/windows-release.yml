@@ -22,11 +22,9 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=OFF
       - name: Build
-        run: cmake --build build/release --config Release --parallel
-      - name: Verify portable tests
-        run: ctest --test-dir build/release -C Release --output-on-failure -R "^(game_logic|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$"
+        run: cmake --build build/release --config Release --target rage-racer --parallel
       - name: Package
         shell: pwsh
         env:

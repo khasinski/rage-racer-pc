@@ -65,11 +65,16 @@ if(RAGE_BUILD_PORT)
         target_compile_options(rage-game-full PRIVATE -fcommon)
     endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
-        target_include_directories(${RAGE_PORT_TARGET} PRIVATE src/port/include)
-        target_compile_options(${RAGE_PORT_TARGET} PRIVATE
-            "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
-            "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
+        target_include_directories(${RAGE_PORT_TARGET} PRIVATE
+            src/port/include
+            include
         )
+        if(NOT WIN32)
+            target_compile_options(${RAGE_PORT_TARGET} PRIVATE
+                "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
+                "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
+            )
+        endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32)

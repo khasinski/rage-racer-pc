@@ -14,6 +14,10 @@
 #include <commdlg.h>
 #include <direct.h>
 #include <io.h>
+/* WinAPI's OpenEvent macro collides with PSY-Q's OpenEvent function. */
+#ifdef OpenEvent
+#undef OpenEvent
+#endif
 #define access _access
 #define close _close
 #define strcasecmp _stricmp
