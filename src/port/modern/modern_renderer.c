@@ -1696,6 +1696,7 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
     if (pressed && s_ring[0] != NULL) {
         char path[256];
         int slot;
+        FILE *file;
         mkdir("markers", 0755);
         for (slot = 0; slot < MODERN_RING; slot++) {
             int ordinal = (s_ringNext + slot) % MODERN_RING;
