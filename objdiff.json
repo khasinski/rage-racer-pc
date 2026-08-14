@@ -2,19 +2,4471 @@
   "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/config.schema.json",
   "min_version": "2.0.0",
   "custom_make": "make",
-  "custom_args": ["-j"],
+  "custom_args": [
+    "-j"
+  ],
   "build_target": false,
   "build_base": true,
-  "target_dir": "expected/build/PAL",
-  "base_dir": "build/PAL",
   "watch_patterns": [
     "src/**/*.c",
     "src/**/*.h",
+    "src/**/*.s",
     "include/**/*.h",
     "asm/**/*.s",
     "configs/**/*.yaml",
     "configs/**/*.txt",
     "Makefile"
   ],
-  "units": []
+  "progress_categories": [
+    {
+      "id": "game",
+      "name": "Game code"
+    },
+    {
+      "id": "psyq",
+      "name": "PsyQ libraries"
+    }
+  ],
+  "units": [
+    {
+      "name": "PAL/main/header",
+      "target_path": "expected/PAL/build/asm/PAL/main/header.s.o",
+      "base_path": "build/PAL/asm/PAL/main/header.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/header.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/000800_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/000800_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/000800_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/000800_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/asset_loader",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/asset_loader.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/asset_loader.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/asset_loader.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001338_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001338_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001338_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001338_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/asset_requests",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/asset_requests.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/asset_requests.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/asset_requests.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/race_assets",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/race_assets.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/race_assets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/race_assets.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0013D0_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0013D0_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0013D0_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0013D0_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/fmv_requests",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/fmv_requests.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/fmv_requests.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/fmv_requests.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/title_screen",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/title_screen.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/title_screen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/title_screen.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001418_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001418_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001418_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001418_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/frontend",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/frontend.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/frontend.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/frontend.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001430_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001430_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001430_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001430_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/prize_money_screen",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/prize_money_screen.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/prize_money_screen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/prize_money_screen.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001668_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001668_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001668_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001668_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/record_entry",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/record_entry.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/record_entry.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/record_entry.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/option_menu",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/option_menu.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/option_menu.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/option_menu.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001810_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001810_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001810_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001810_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/update_player_car",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/update_player_car.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/update_player_car.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/update_player_car.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001C38_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001C38_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001C38_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001C38_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/car_ai",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/car_ai.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/car_ai.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/car_ai.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_scripted_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_scripted_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_scripted_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_scripted_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/zone_ambience",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/zone_ambience.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/zone_ambience.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/zone_ambience.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001CD4_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001CD4_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001CD4_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001CD4_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/cd_track_requests",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/cd_track_requests.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/cd_track_requests.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/cd_track_requests.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/cd_audio",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/cd_audio.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/cd_audio.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/cd_audio.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/update_camera",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/update_camera.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/update_camera.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/update_camera.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/matrix_builders",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/matrix_builders.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/matrix_builders.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/matrix_builders.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/text_drawing",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/text_drawing.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/text_drawing.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/text_drawing.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/001FB8_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/001FB8_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/001FB8_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/001FB8_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/scripted_draw",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/scripted_draw.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/scripted_draw.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/scripted_draw.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/car_spec_panel",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/car_spec_panel.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/car_spec_panel.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/car_spec_panel.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/002098_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/002098_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/002098_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/002098_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/menu_visual_effects",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/menu_visual_effects.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/menu_visual_effects.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/menu_visual_effects.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0021A0_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0021A0_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0021A0_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0021A0_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_car_name_plate",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_car_name_plate.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_car_name_plate.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_car_name_plate.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/002248_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/002248_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/002248_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/002248_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/car_model_slots",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/car_model_slots.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/car_model_slots.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/car_model_slots.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0022B4_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0022B4_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0022B4_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0022B4_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/course_select",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/course_select.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/course_select.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/course_select.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0023A0_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0023A0_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0023A0_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0023A0_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/car_select",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/car_select.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/car_select.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/car_select.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0023D4_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0023D4_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0023D4_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0023D4_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/shop_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/shop_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/shop_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/shop_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/00242C_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/00242C_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/00242C_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/00242C_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_runtime.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/002FCC_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/002FCC_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/002FCC_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/002FCC_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/update_memory_card_menu",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/update_memory_card_menu.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/update_memory_card_menu.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/update_memory_card_menu.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0039E4_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0039E4_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0039E4_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0039E4_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/sprintf",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/sprintf.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/sprintf.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/sprintf.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/003AC0_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/003AC0_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/003AC0_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/003AC0_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/interrupt_status",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/interrupt_status.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/interrupt_status.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/interrupt_status.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/00409C_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/00409C_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/00409C_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/00409C_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqDispatchControlChange",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqDispatchControlChange.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqDispatchControlChange.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqDispatchControlChange.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqApplyNrpn",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqApplyNrpn.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqApplyNrpn.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqApplyNrpn.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSetTickMode",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSetTickMode.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSetTickMode.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSetTickMode.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/0046C0_main.rodata",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/0046C0_main.rodata.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/0046C0_main.rodata.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/0046C0_main.rodata.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuSetCommonAttr",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuSetCommonAttr.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuSetCommonAttr.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuSetCommonAttr.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/pad/init_pad",
+      "target_path": "expected/PAL/build/src/main/PAL/main/pad/init_pad.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/pad/init_pad.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/pad/init_pad.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/pad/controller_setup_scene",
+      "target_path": "expected/PAL/build/src/main/PAL/main/pad/controller_setup_scene.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/pad/controller_setup_scene.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/pad/controller_setup_scene.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/pad/pad_config_screen",
+      "target_path": "expected/PAL/build/src/main/PAL/main/pad/pad_config_screen.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/pad/pad_config_screen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/pad/pad_config_screen.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/pad/begin_controller_config",
+      "target_path": "expected/PAL/build/src/main/PAL/main/pad/begin_controller_config.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/pad/begin_controller_config.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/pad/begin_controller_config.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/controller_config",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/controller_config.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/controller_config.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/controller_config.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/negcon_calibration",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/negcon_calibration.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/negcon_calibration.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/negcon_calibration.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/boot/main_loop",
+      "target_path": "expected/PAL/build/src/main/PAL/main/boot/main_loop.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/boot/main_loop.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/boot/main_loop.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/printf",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/printf.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/printf.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/printf.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/text",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/text.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/text.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/text.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/draw_packet_queue",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/draw_packet_queue.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/draw_packet_queue.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/draw_packet_queue.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/model_banks",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/model_banks.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/model_banks.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/model_banks.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/car_assets",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/car_assets.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/car_assets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/car_assets.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/menu_car_assets",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/menu_car_assets.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/menu_car_assets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/menu_car_assets.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/install_course_assets",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/install_course_assets.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/install_course_assets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/install_course_assets.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/track_textures",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/track_textures.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/track_textures.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/track_textures.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/image_upload",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/image_upload.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/image_upload.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/image_upload.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/rot_matrix",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/rot_matrix.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/rot_matrix.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/rot_matrix.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/rear_view_mirror",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/rear_view_mirror.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/rear_view_mirror.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/rear_view_mirror.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/round_screen",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/round_screen.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/round_screen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/round_screen.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/load_track_texture_page_range",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/load_track_texture_page_range.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/load_track_texture_page_range.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/load_track_texture_page_range.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/team_logo",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/team_logo.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/team_logo.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/team_logo.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/team_name_texture",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/team_name_texture.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/team_name_texture.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/team_name_texture.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/paint_color",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/paint_color.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/paint_color.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/paint_color.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/draw_player_car_model",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/draw_player_car_model.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/draw_player_car_model.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/draw_player_car_model.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/fmv_scene",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/fmv_scene.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/fmv_scene.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/fmv_scene.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/start_fmv_playback",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/start_fmv_playback.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/start_fmv_playback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/start_fmv_playback.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/fmv_decode",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/fmv_decode.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/fmv_decode.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/fmv_decode.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/setup_fmv_buffers",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/setup_fmv_buffers.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/setup_fmv_buffers.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/setup_fmv_buffers.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/open_fmv_stream",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/open_fmv_stream.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/open_fmv_stream.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/open_fmv_stream.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/fmv/stream_playback",
+      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/stream_playback.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/fmv/stream_playback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/fmv/stream_playback.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/replay_recording",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/replay_recording.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/replay_recording.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/replay_recording.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/replay",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/replay.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/replay.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/replay.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/result_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/result_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/result_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/result_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/class_progress",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/class_progress.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/class_progress.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/class_progress.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/apply_audio_settings",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/apply_audio_settings.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/apply_audio_settings.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/apply_audio_settings.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/save_defaults",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/save_defaults.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/save_defaults.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/save_defaults.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/class_grade",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/class_grade.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/class_grade.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/class_grade.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/race_end_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/race_end_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/race_end_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/race_end_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/records",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/records.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/records.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/records.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/ending_still",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/ending_still.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/ending_still.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/ending_still.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/boot/boot_scene",
+      "target_path": "expected/PAL/build/src/main/PAL/main/boot/boot_scene.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/boot/boot_scene.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/boot/boot_scene.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/menu_hints",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/menu_hints.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/menu_hints.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/menu_hints.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/option_menu_fade",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/option_menu_fade.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/option_menu_fade.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/option_menu_fade.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/option_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/option_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/option_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/option_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/bgm_select",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/bgm_select.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/bgm_select.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/bgm_select.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/exit_bgm_select",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/exit_bgm_select.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/exit_bgm_select.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/exit_bgm_select.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/attract_demo",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/attract_demo.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/attract_demo.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/attract_demo.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/prologue",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/prologue.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/prologue.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/prologue.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/prologue_step",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/prologue_step.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/prologue_step.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/prologue_step.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/read_callbacks",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/read_callbacks.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/read_callbacks.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/read_callbacks.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/read",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/read.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/read.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/read.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/sprite_string",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/sprite_string.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/sprite_string.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/sprite_string.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/draw_memory_card_screen",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/draw_memory_card_screen.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/draw_memory_card_screen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/draw_memory_card_screen.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/terrain_submission",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/terrain_submission.s.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/terrain_submission.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/terrain_submission.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/install_track_points",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/install_track_points.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/install_track_points.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/install_track_points.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/angle_math",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/angle_math.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/angle_math.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/angle_math.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/update_car_drivetrain",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/update_car_drivetrain.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/update_car_drivetrain.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/update_car_drivetrain.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/lap_progress",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/lap_progress.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/lap_progress.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/lap_progress.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/car_orientation",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/car_orientation.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/car_orientation.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/car_orientation.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/advance_car_position",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/advance_car_position.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/advance_car_position.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/advance_car_position.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/update_car_driving",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/update_car_driving.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/update_car_driving.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/update_car_driving.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/blend_angle",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/blend_angle.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/blend_angle.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/blend_angle.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/interpolate_track_angle",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/interpolate_track_angle.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/interpolate_track_angle.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/interpolate_track_angle.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/reverse_track_angle",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/reverse_track_angle.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/reverse_track_angle.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/reverse_track_angle.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/interpolate_track_point",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/interpolate_track_point.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/interpolate_track_point.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/interpolate_track_point.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/smooth_track_angle",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/smooth_track_angle.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/smooth_track_angle.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/smooth_track_angle.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/steer_car_to_track_line",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/steer_car_to_track_line.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/steer_car_to_track_line.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/steer_car_to_track_line.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/car_track_state",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/car_track_state.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/car_track_state.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/car_track_state.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/track_contact",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/track_contact.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/track_contact.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/track_contact.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/tachometer_needle",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/tachometer_needle.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/tachometer_needle.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/tachometer_needle.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/build_race_hud_prims",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/build_race_hud_prims.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/build_race_hud_prims.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/build_race_hud_prims.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/race_hud",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/race_hud.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/race_hud.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/race_hud.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/draw_wrong_way_warning",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/draw_wrong_way_warning.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/draw_wrong_way_warning.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/draw_wrong_way_warning.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/draw_speed_digits",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/draw_speed_digits.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/draw_speed_digits.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/draw_speed_digits.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/race_hud_text",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/race_hud_text.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/race_hud_text.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/race_hud_text.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/asset/race_data_installation",
+      "target_path": "expected/PAL/build/src/main/PAL/main/asset/race_data_installation.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/asset/race_data_installation.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/asset/race_data_installation.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/sound_initialization",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/sound_initialization.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/sound_initialization.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/sound_initialization.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/time_conversion",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/time_conversion.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/time_conversion.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/time_conversion.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/replay_cars",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/replay_cars.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/replay_cars.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/replay_cars.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/draw_split_times",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/draw_split_times.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/draw_split_times.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/draw_split_times.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/race_scene",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/race_scene.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/race_scene.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/race_scene.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/waypoint_race",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/waypoint_race.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/waypoint_race.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/waypoint_race.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/race_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/race_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/race_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/race_runtime.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/car_draw_and_knockback",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/car_draw_and_knockback.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/car_draw_and_knockback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/car_draw_and_knockback.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/clamp_car_lateral_offset",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/clamp_car_lateral_offset.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/clamp_car_lateral_offset.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/clamp_car_lateral_offset.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/rival_ai",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/rival_ai.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/rival_ai.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/rival_ai.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/update_race_position",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/update_race_position.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/update_race_position.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/update_race_position.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/car/race_car_update",
+      "target_path": "expected/PAL/build/src/main/PAL/main/car/race_car_update.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/car/race_car_update.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/car/race_car_update.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/update_finish_camera",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/update_finish_camera.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/update_finish_camera.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/update_finish_camera.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/seed_finish_camera_alt",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/seed_finish_camera_alt.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/seed_finish_camera_alt.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/seed_finish_camera_alt.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/dynamic_track_views",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/dynamic_track_views.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/dynamic_track_views.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/dynamic_track_views.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_spinning_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_spinning_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_spinning_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_spinning_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_flyby_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_flyby_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_flyby_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_flyby_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/update_route_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/update_route_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/update_route_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/update_route_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_route_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_route_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_route_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_route_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/update_shuttle_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/update_shuttle_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/update_shuttle_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/update_shuttle_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_path_scenery",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_path_scenery.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_path_scenery.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_path_scenery.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/race/course_event_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/main/race/course_event_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/race/course_event_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/race/course_event_runtime.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/visible_cells",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/visible_cells.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/visible_cells.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/visible_cells.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/draw_terrain_cells",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/draw_terrain_cells.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/draw_terrain_cells.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/draw_terrain_cells.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/cd_audio_control",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/cd_audio_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/cd_audio_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/cd_audio_control.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/cd_volume_fade",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/cd_volume_fade.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/cd_volume_fade.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/cd_volume_fade.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/cd_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/cd_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/cd_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/cd_volume.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/cd/set_cd_mix_preset",
+      "target_path": "expected/PAL/build/src/main/PAL/main/cd/set_cd_mix_preset.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/cd/set_cd_mix_preset.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/cd/set_cd_mix_preset.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/find_nearest_track_camera",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/find_nearest_track_camera.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/find_nearest_track_camera.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/find_nearest_track_camera.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/env_palette",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/env_palette.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/env_palette.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/env_palette.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/load_environment_cue",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/load_environment_cue.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/load_environment_cue.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/load_environment_cue.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/track/environment_script",
+      "target_path": "expected/PAL/build/src/main/PAL/main/track/environment_script.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/track/environment_script.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/track/environment_script.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/update_scripted_camera",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/update_scripted_camera.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/update_scripted_camera.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/update_scripted_camera.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/draw_prims",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/draw_prims.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/draw_prims.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/draw_prims.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_team_logo_canvas",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_team_logo_canvas.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_team_logo_canvas.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_team_logo_canvas.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_logo_sample_panel",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_logo_sample_panel.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_logo_sample_panel.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_logo_sample_panel.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_paint_color_palette",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_paint_color_palette.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_paint_color_palette.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_paint_color_palette.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_car_shop_price_panel",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_car_shop_price_panel.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_car_shop_price_panel.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_car_shop_price_panel.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_engineer_shop_price_panel",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_engineer_shop_price_panel.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_engineer_shop_price_panel.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_engineer_shop_price_panel.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_class_change_curtain",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_class_change_curtain.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_class_change_curtain.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_class_change_curtain.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/menu_mode",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/menu_mode.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/menu_mode.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/menu_mode.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/swap_car_model_slot",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/swap_car_model_slot.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/swap_car_model_slot.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/swap_car_model_slot.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/draw_car_engine_spec",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/draw_car_engine_spec.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/draw_car_engine_spec.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/draw_car_engine_spec.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/design_mode",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/design_mode.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/design_mode.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/design_mode.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/logo_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/logo_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/logo_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/logo_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/design_screens",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/design_screens.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/design_screens.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/design_screens.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/menu/update_menu_mode",
+      "target_path": "expected/PAL/build/src/main/PAL/main/menu/update_menu_mode.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/menu/update_menu_mode.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/menu/update_menu_mode.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/audio_runtime_control",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/audio_runtime_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/audio_runtime_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/audio_runtime_control.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/stop_sound_slot_voice",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/stop_sound_slot_voice.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/stop_sound_slot_voice.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/stop_sound_slot_voice.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/sound_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/sound_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/sound_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/sound_runtime.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/audio_slot_loading",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/audio_slot_loading.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/audio_slot_loading.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/audio_slot_loading.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/audio_settings",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/audio_settings.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/audio_settings.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/audio_settings.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/effect_voice_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/effect_voice_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/effect_voice_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/effect_voice_runtime.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/sound_cues",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/sound_cues.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/sound_cues.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/sound_cues.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/loaded_audio_voices",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/loaded_audio_voices.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/loaded_audio_voices.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/loaded_audio_voices.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/forced_voice_playback",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/forced_voice_playback.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/forced_voice_playback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/forced_voice_playback.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/vab_sequence_slots",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/vab_sequence_slots.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/vab_sequence_slots.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/vab_sequence_slots.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/set_vab_slot_voice_enabled",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/set_vab_slot_voice_enabled.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/set_vab_slot_voice_enabled.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/set_vab_slot_voice_enabled.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/sequence_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/sequence_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/sequence_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/sequence_volume.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/sequence_playback",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/sequence_playback.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/sequence_playback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/sequence_playback.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/audio/apply_current_sequence_audio",
+      "target_path": "expected/PAL/build/src/main/PAL/main/audio/apply_current_sequence_audio.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/audio/apply_current_sequence_audio.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/audio/apply_current_sequence_audio.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_event_session",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_event_session.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_event_session.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_event_session.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/card_status",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/card_status.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/card_status.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/card_status.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_event_polling",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_event_polling.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_event_polling.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_event_polling.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/save_header",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/save_header.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/save_header.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/save_header.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/store_save_state",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/store_save_state.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/store_save_state.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/store_save_state.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/load_save_state",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/load_save_state.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/load_save_state.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/load_save_state.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_io",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_io.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_io.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_io.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_status",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_status.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_status.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_status.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/memory_card_menu",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/memory_card_menu.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/memory_card_menu.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/memory_card_menu.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/save/enter_memory_card_menu_from_load",
+      "target_path": "expected/PAL/build/src/main/PAL/main/save/enter_memory_card_menu_from_load.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/save/enter_memory_card_menu_from_load.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/save/enter_memory_card_menu_from_load.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/boot/__main",
+      "target_path": "expected/PAL/build/src/main/PAL/main/boot/__main.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/boot/__main.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/boot/__main.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/boot/_start",
+      "target_path": "expected/PAL/build/src/main/PAL/main/boot/_start.s.o",
+      "base_path": "build/PAL/src/main/PAL/main/boot/_start.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/boot/_start.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/exit_critical_section",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/exit_critical_section.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/exit_critical_section.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/exit_critical_section.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/bios_file_stubs",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/bios_file_stubs.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/bios_file_stubs.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/bios_file_stubs.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/random/random15",
+      "target_path": "expected/PAL/build/src/main/PAL/main/random/random15.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/random/random15.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/random/random15.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/random/seed_random",
+      "target_path": "expected/PAL/build/src/main/PAL/main/random/seed_random.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/random/seed_random.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/random/seed_random.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/memchr",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/memchr.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/memchr.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/memchr.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/memmove",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/memmove.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/memmove.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/memmove.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/strlen",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/strlen.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/strlen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/strlen.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/puts",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/puts.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/puts.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/puts.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/putchar",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/putchar.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/putchar.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/putchar.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/toupper",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/toupper.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/toupper.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/toupper.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/tolower",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/tolower.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/tolower.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/tolower.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/bios_call_stubs",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/bios_call_stubs.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/bios_call_stubs.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/bios_call_stubs.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcard/_card_clear",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcard/_card_clear.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcard/_card_clear.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcard/_card_clear.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcard/_card_write",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcard/_card_write.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcard/_card_write.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcard/_card_write.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/new_card_stub",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/new_card_stub.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/new_card_stub.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/new_card_stub.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/mdec_api",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/mdec_api.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/mdec_api.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/mdec_api.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/mdec_callbacks",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/mdec_callbacks.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/mdec_callbacks.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/mdec_callbacks.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/mdec_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/mdec_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/mdec_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/mdec_runtime.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/texture_primitives",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/texture_primitives.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/texture_primitives.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/texture_primitives.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/primitive_debug",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/primitive_debug.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/primitive_debug.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/primitive_debug.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/primitive_packets",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/primitive_packets.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/primitive_packets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/primitive_packets.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/draw_packets",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/draw_packets.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/draw_packets.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/draw_packets.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/graph_control",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/graph_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/graph_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/graph_control.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/image_transfer",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/image_transfer.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/image_transfer.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/image_transfer.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/ordering_tables",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/ordering_tables.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/ordering_tables.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/ordering_tables.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/draw_environment_state",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/draw_environment_state.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/draw_environment_state.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/draw_environment_state.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/display_environment",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/display_environment.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/display_environment.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/display_environment.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/draw_environment",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/draw_environment.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/draw_environment.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/draw_environment.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/gpu_internal",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/gpu_internal.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/gpu_internal.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/gpu_internal.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/image_commands",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/image_commands.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/image_commands.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/image_commands.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/gpu_commands",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/gpu_commands.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/gpu_commands.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/gpu_commands.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/command_queue",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/command_queue.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/command_queue.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/command_queue.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/command_queue_execution",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/command_queue_execution.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/command_queue_execution.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/command_queue_execution.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/gpu_reset",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/gpu_reset.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/gpu_reset.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/gpu_reset.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/gpu_sync",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/gpu_sync.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/gpu_sync.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/gpu_sync.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgpu/gpu_timeout",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgpu/gpu_timeout.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgpu/gpu_timeout.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgpu/gpu_timeout.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/render/matrix_apply",
+      "target_path": "expected/PAL/build/src/main/PAL/main/render/matrix_apply.c.o",
+      "base_path": "build/PAL/src/main/PAL/main/render/matrix_apply.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/main/render/matrix_apply.c",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/geo_00",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/geo_00.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/geo_00.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/geo_00.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/fog_geometry",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/fog_geometry.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/fog_geometry.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/fog_geometry.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/matrix_stack",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/matrix_stack.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/matrix_stack.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/matrix_stack.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/multiply_matrix",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/multiply_matrix.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/multiply_matrix.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/multiply_matrix.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/multiply_matrix_2",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/multiply_matrix_2.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/multiply_matrix_2.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/multiply_matrix_2.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/apply_matrix",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/apply_matrix.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/apply_matrix.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/apply_matrix.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/scale_matrix",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/scale_matrix.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/scale_matrix.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/scale_matrix.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/set_matrices",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/set_matrices.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/set_matrices.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/set_matrices.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/register_access",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/register_access.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/register_access.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/register_access.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/geometry_math",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/geometry_math.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/geometry_math.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/geometry_math.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/leading_zero_count",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/leading_zero_count.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/leading_zero_count.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/leading_zero_count.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/rotation_matrix",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/rotation_matrix.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/rotation_matrix.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/rotation_matrix.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libgte/exception_patch",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libgte/exception_patch.s.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libgte/exception_patch.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libgte/exception_patch.s",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/stream_setup",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/stream_setup.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/stream_setup.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/stream_setup.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/initialization_and_toc",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/initialization_and_toc.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/initialization_and_toc.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/initialization_and_toc.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/deliver_event_stub",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/deliver_event_stub.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/deliver_event_stub.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/deliver_event_stub.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/drive_state",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/drive_state.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/drive_state.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/drive_state.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/callbacks_and_sync",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/callbacks_and_sync.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/callbacks_and_sync.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/callbacks_and_sync.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/command_control",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/command_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/command_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/command_control.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/sector_data",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/sector_data.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/sector_data.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/sector_data.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/command_sync",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/command_sync.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/command_sync.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/command_sync.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/command_ready",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/command_ready.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/command_ready.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/command_ready.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/command_write",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/command_write.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/command_write.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/command_write.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/drive_initialization",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/drive_initialization.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/drive_initialization.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/drive_initialization.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/data_sync",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/data_sync.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/data_sync.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/data_sync.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/sector_interrupts",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/sector_interrupts.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/sector_interrupts.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/sector_interrupts.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libds/search_file",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libds/search_file.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libds/search_file.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libds/search_file.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/iso_name_compare",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/iso_name_compare.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/iso_name_compare.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/iso_name_compare.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/iso_media",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/iso_media.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/iso_media.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/iso_media.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/iso_cache_file",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/iso_cache_file.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/iso_cache_file.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/iso_cache_file.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/iso_read",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/iso_read.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/iso_read.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/iso_read.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/memcpy",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/memcpy.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/memcpy.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/memcpy.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/strcmp",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/strcmp.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/strcmp.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/strcmp.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libc/strncmp",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libc/strncmp.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libc/strncmp.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libc/strncmp.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/stream_read",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/stream_read.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/stream_read.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/stream_read.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/stream_ring",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/stream_ring.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/stream_ring.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/stream_ring.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libpress/StCdInterrupt",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libpress/StCdInterrupt.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libpress/StCdInterrupt.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libpress/StCdInterrupt.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/kernel_word_copy",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/kernel_word_copy.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/kernel_word_copy.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/kernel_word_copy.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libcd/dma_start",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libcd/dma_start.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libcd/dma_start.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libcd/dma_start.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libetc/vertical_sync",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libetc/vertical_sync.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libetc/vertical_sync.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libetc/vertical_sync.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/interrupt_initialization",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/interrupt_initialization.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/interrupt_initialization.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/interrupt_initialization.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/interrupt_dispatch",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/interrupt_dispatch.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/interrupt_dispatch.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/interrupt_dispatch.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/interrupt_callbacks",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/interrupt_callbacks.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/interrupt_callbacks.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/interrupt_callbacks.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/stop_interrupts",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/stop_interrupts.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/stop_interrupts.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/stop_interrupts.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/interrupt_runtime",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/interrupt_runtime.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/interrupt_runtime.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/interrupt_runtime.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/master_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/master_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/master_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/master_volume.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqParseHeader",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqParseHeader.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqParseHeader.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqParseHeader.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqOpen",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqOpen.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqOpen.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqOpen.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqAdvanceChannelDelta",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqAdvanceChannelDelta.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqAdvanceChannelDelta.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqAdvanceChannelDelta.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqDispatchMidiEvent",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqDispatchMidiEvent.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqDispatchMidiEvent.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqDispatchMidiEvent.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqSetChannelPitchBend",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqSetChannelPitchBend.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqSetChannelPitchBend.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqSetChannelPitchBend.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/sequence_tone_modulation",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/sequence_tone_modulation.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/sequence_tone_modulation.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/sequence_tone_modulation.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/seq_channel_params",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/seq_channel_params.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/seq_channel_params.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/seq_channel_params.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/controller_data",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/controller_data.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/controller_data.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/controller_data.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/sequence_program_change",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/sequence_program_change.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/sequence_program_change.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/sequence_program_change.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqCalledTbyT",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqCalledTbyT.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqCalledTbyT.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqCalledTbyT.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/_SsSndDecrescendo",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/_SsSndDecrescendo.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/_SsSndDecrescendo.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/_SsSndDecrescendo.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqPause",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqPause.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqPause.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqPause.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqAdvanceChannelTick",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqAdvanceChannelTick.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqAdvanceChannelTick.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqAdvanceChannelTick.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqResume",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqResume.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqResume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqResume.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqClose",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqClose.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqClose.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqClose.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSeqCloseWrapper",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSeqCloseWrapper.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSeqCloseWrapper.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSeqCloseWrapper.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/_SsInitTables",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/_SsInitTables.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/_SsInitTables.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/_SsInitTables.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/ssinit",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/ssinit.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/ssinit.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/ssinit.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsQuit",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsQuit.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsQuit.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsQuit.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsStartSoundTick",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsStartSoundTick.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsStartSoundTick.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsStartSoundTick.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsStartSoundTickMode1",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsStartSoundTickMode1.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsStartSoundTickMode1.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsStartSoundTickMode1.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsStartSoundTickMode0",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsStartSoundTickMode0.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsStartSoundTickMode0.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsStartSoundTickMode0.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSoundTickCallback",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSoundTickCallback.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSoundTickCallback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSoundTickCallback.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSoundTickVSyncCallback",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSoundTickVSyncCallback.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSoundTickVSyncCallback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSoundTickVSyncCallback.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/root_counters",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/root_counters.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/root_counters.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/root_counters.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsStopSoundTick",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsStopSoundTick.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsStopSoundTick.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsStopSoundTick.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsSetTableSize",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsSetTableSize.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsSetTableSize.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsSetTableSize.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/sequence_playback_control",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/sequence_playback_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/sequence_playback_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/sequence_playback_control.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/_SsSndTempo",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/_SsSndTempo.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/_SsSndTempo.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/_SsSndTempo.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_configuration",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_configuration.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_configuration.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_configuration.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/vab_opening",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/vab_opening.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/vab_opening.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/vab_opening.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/vab_transfer",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/vab_transfer.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/vab_transfer.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/vab_transfer.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/damper",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/damper.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/damper.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/damper.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/program_attributes",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/program_attributes.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/program_attributes.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/program_attributes.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/reverb_control",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/reverb_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/reverb_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/reverb_control.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsUtSetVagAtr",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsUtSetVagAtr.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsUtSetVagAtr.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsUtSetVagAtr.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_allocation",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_allocation.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_allocation.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_allocation.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmNoiseKeyOn",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmNoiseKeyOn.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmNoiseKeyOn.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmNoiseKeyOn.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmKeyOnCore",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmKeyOnCore.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmKeyOnCore.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmKeyOnCore.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_pitch",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_pitch.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_pitch.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_pitch.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmPitchBendVoice",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmPitchBendVoice.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmPitchBendVoice.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmPitchBendVoice.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/automatic_voice_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/automatic_voice_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/automatic_voice_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/automatic_voice_volume.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmInit",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmInit.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmInit.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmInit.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_key_on_with_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_key_on_with_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_key_on_with_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_key_on_with_volume.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/spu_vm_pitchbend",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/spu_vm_pitchbend.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/spu_vm_pitchbend.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/spu_vm_pitchbend.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsUtFlush",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsUtFlush.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsUtFlush.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsUtFlush.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmSeKeyOn",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmSeKeyOn.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmSeKeyOn.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmSeKeyOn.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmSeKeyOff",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmSeKeyOff.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmSeKeyOff.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmSeKeyOff.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_key_on_internal",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_key_on_internal.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_key_on_internal.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_key_on_internal.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/sequence_voice_volume",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/sequence_voice_volume.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/sequence_voice_volume.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/sequence_voice_volume.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SpuVmSeqKeyOff",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SpuVmSeqKeyOff.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SpuVmSeqKeyOff.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SpuVmSeqKeyOff.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/program_volume_pan",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/program_volume_pan.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/program_volume_pan.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/program_volume_pan.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_key_on",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_key_on.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_key_on.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_key_on.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsUtKeyOff",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsUtKeyOff.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsUtKeyOff.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsUtKeyOff.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsUtKeyOnV",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsUtKeyOnV.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsUtKeyOnV.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsUtKeyOnV.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/SsUtKeyOffV",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/SsUtKeyOffV.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/SsUtKeyOffV.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/SsUtKeyOffV.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/voice_parameter_updates",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/voice_parameter_updates.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/voice_parameter_updates.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/voice_parameter_updates.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libsnd/_SsVmInit",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libsnd/_SsVmInit.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libsnd/_SsVmInit.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libsnd/_SsVmInit.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/initialization",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/initialization.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/initialization.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/initialization.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_resetTransferControl",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_resetTransferControl.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_resetTransferControl.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_resetTransferControl.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_init",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_init.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_init.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_init.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_writeByIO",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_writeByIO.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_writeByIO.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_writeByIO.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_transferCallback",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_transferCallback.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_transferCallback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_transferCallback.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_startDmaTransfer",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_startDmaTransfer.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_startDmaTransfer.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_startDmaTransfer.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_t",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_t.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_t.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_t.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_spu_Fw",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_spu_Fw.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_spu_Fw.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_spu_Fw.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_SpuDataCallback",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_SpuDataCallback.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_SpuDataCallback.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_SpuDataCallback.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuQuit",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuQuit.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuQuit.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuQuit.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/allocator",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/allocator.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/allocator.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/allocator.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuSetNoiseVoice",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuSetNoiseVoice.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuSetNoiseVoice.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuSetNoiseVoice.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_SpuSetAnyVoice",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_SpuSetAnyVoice.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_SpuSetAnyVoice.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_SpuSetAnyVoice.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuSetReverb",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuSetReverb.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuSetReverb.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuSetReverb.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/_SpuIsInAllocateArea",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/_SpuIsInAllocateArea.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/_SpuIsInAllocateArea.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/_SpuIsInAllocateArea.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/reverb_parameters",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/reverb_parameters.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/reverb_parameters.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/reverb_parameters.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libapi/wait_event",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libapi/wait_event.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libapi/wait_event.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libapi/wait_event.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuTransferStatus",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuTransferStatus.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuTransferStatus.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuTransferStatus.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/SpuGetKeyStatus",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/SpuGetKeyStatus.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/SpuGetKeyStatus.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/SpuGetKeyStatus.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/lib/libspu/transfer_control",
+      "target_path": "expected/PAL/build/src/main/PAL/lib/libspu/transfer_control.c.o",
+      "base_path": "build/PAL/src/main/PAL/lib/libspu/transfer_control.c.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "src/main/PAL/lib/libspu/transfer_control.c",
+        "progress_categories": [
+          "psyq"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/6BE64.data",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/6BE64.data.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/6BE64.data.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/6BE64.data.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    },
+    {
+      "name": "PAL/main/data/main/bss.bss",
+      "target_path": "expected/PAL/build/asm/PAL/main/data/main/bss.bss.s.o",
+      "base_path": "build/PAL/asm/PAL/main/data/main/bss.bss.s.o",
+      "metadata": {
+        "complete": true,
+        "source_path": "asm/PAL/main/data/main/bss.bss.s",
+        "progress_categories": [
+          "game"
+        ]
+      }
+    }
+  ]
 }

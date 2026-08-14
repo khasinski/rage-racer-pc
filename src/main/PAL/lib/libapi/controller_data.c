@@ -4,10 +4,10 @@
 /*
  * ContDataEntry - the real libsnd name, recovered from Runtime Library 2.6's
  * LIBSND.LIB export table, where SEQREAD.C's helpers are still separate symbols
- * because that build did not inline them. See docs/LIBSND_NAMES_FROM_RL26.md.
+ * because that build did not inline them.
  * Reached from SsSeqDispatchControlChange's `case 6:`. Applies the pending
  * RPN (unk29 == 2) or NRPN (unk2a == 2) to the channel's VAB program by
- * rewriting the VagAtr of every tone. See docs/names.md 17.
+ * rewriting the VagAtr of every tone.
  */
 static inline s32 SsSeqCheckDataEntryValue(s32 data_entry_value) {
     switch (data_entry_value) {

@@ -14,13 +14,11 @@
 #include "psyq/gte.h"
 
 typedef union OrderingTableAddress {
-    s32 byteOffset;
     s32 value;
     void *pointer;
 } OrderingTableAddress;
 
 typedef union VisibilityMaskAddress {
-    s32 byteOffset;
     s32 value;
     u32 *pointer;
 } VisibilityMaskAddress;
@@ -138,7 +136,6 @@ typedef struct TimedDrawCommand {
 } TimedDrawCommand;
 
 typedef union TimedDrawCommandAddress {
-    s32 byteOffset;
     s32 value;
     TimedDrawCommand *pointer;
 } TimedDrawCommandAddress;
@@ -174,10 +171,6 @@ typedef struct GameRenderAxisMatrix {
     s16 m[3][3];
 } GameRenderAxisMatrix;
 
-/*
- * Camera / horizon row. Base g_CamRow, indexed +8*screen. `horizon` is added
- * to / subtracted from a GameRenderObject's y during the view transform.
- */
 /* One display buffer, which is what InitRenderState sets that rectangle to.
  * See SetupDisplay240 below: the 240 mode is "two 320x240 buffers stacked at
  * y=0 / y=0xF0" and sets the GTE projection with SetGeomScreen(0x140). The
@@ -873,7 +866,6 @@ typedef struct EnvironmentPalette {
 } EnvironmentPalette;
 
 typedef union EnvironmentPaletteAddress {
-    s32 byteOffset;
     s32 value;
     EnvironmentPalette *palettePointer;
     Rgb *colorPointer;
@@ -900,7 +892,7 @@ extern s32 g_IsEnvironmentMode4;
 
 /*
  * Per-view cell culling, rebuilt every frame by BuildVisibleCells and swapped in
- * lockstep for the mirror pass. Per-file types; see docs/names.md 12c.
+ * lockstep for the mirror pass. Per-file types.
  *   g_VisibleCellMask  g_VisibleCellMask  32 words, mask[sy] |= 1 << sx over the grid
  *   g_VisibleCellList  g_VisibleCellList  the matching visible-cell record list
  *   g_SceneLightMatrix g_SceneLightMatrix  assigned from a per-scene constant, then

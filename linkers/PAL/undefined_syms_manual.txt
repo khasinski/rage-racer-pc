@@ -18,6 +18,7 @@ g_ScratchRenderMode = 0x1F800084;
 /* Mid-function entry points, as offsets from the function that contains
    them.  Written this way so .text can change size: an absolute address
    here would pin every function ahead of it. */
+func_8002846C = func_80028120_mode_1;
 func_80028874 = func_80028120_mode_2 + 0x154;
 func_80028C54 = func_80028120_mode_2 + 0x534;
 func_80028D84 = func_80028120_mode_2 + 0x664;
@@ -48,49 +49,24 @@ func_80063190 = func_80063170 + 0x20;
 func_800631F0 = DisableEvent + 0x10;
 func_80063200 = DisableEvent + 0x20;
 func_800632B0 = BiosNextFile + 0x10;
-func_80063DAC = g_BiosCallStubs + 0x10;
-func_80063DBC = g_BiosCallStubs + 0x20;
-func_80063DCC = g_BiosCallStubs + 0x30;
-func_80063DDC = g_BiosCallStubs + 0x40;
-func_80063DEC = g_BiosCallStubs + 0x50;
+func_80063DEC = StartCARD + 0x10;
 func_80063E44 = _new_card + 0x10;
 func_800681BC = GPU_cw + 0x10;
 /* Start of the GTE exception-handler body that Gte_PatchExceptionHandler
    copies into the BIOS vector. It sits inside that unit, 0x68 in. */
 D_8006A010 = func_80069FA8 + 0x68;
-func_8006A048 = func_8006A018 + 0x30;
-func_8006A058 = func_8006A018 + 0x40;
+func_8006A058 = func_8006A048 + 0x10;
 func_8006A3E8 = DeliverEvent + 0x10;
-func_8006DF24 = ChangeClearRCntStub + 0x10;
-func_8006DF34 = ChangeClearRCntStub + 0x20;
-func_8006E654 = SysEnqIntRPStub + 0x10;
-func_8006E664 = SysEnqIntRPStub + 0x20;
-func_8006E674 = SysEnqIntRPStub + 0x30;
-func_8006E684 = SysEnqIntRPStub + 0x40;
+func_8006DF24 = ChangeClearInterruptMask;
+func_8006DF34 = ChangeClearInterruptMask + 0x10;
 
 /* BIOS A0/B0 call stubs that live inside a hand-written block, so no object
    file gives them their real names.  Spelled through the func_ aliases above
    rather than as literal addresses, so they move with the code. */
-BiosSetMemSize = func_80063190;
-InitPad = func_800631F0;
-StartPad = func_80063200;
-_card_info = func_80063DAC;
-_card_load = func_80063DBC;
-InitCARD = func_80063DCC;
-StartCARD = func_80063DDC;
-ReturnFromException = func_8006E654;
-ResetEntryInt = func_8006E664;
-HookEntryInt = func_8006E674;
-SaveKernelRegisters = func_8006E684;
 
 /* Each of these is the first word of a hand-assembled block that a C file
    emits as a u_long[] in .text; the block carries the array's name, so the
    routine's name is an alias for it. */
-BiosExit = g_BiosCallStubs;
-ChangeClearRCnt = ChangeClearRCntStub;
-ChangeClearInterruptMask = ChangeClearInterruptMaskStub;
-SysEnqIntRP = SysEnqIntRPStub;
-ExitCriticalSection = ExitCriticalSectionStub;
 
 /* Branch targets inside a function, reached from a sibling function that
    is still hand-written assembly. */
@@ -117,3 +93,32 @@ ExitCriticalSection = ExitCriticalSectionStub;
    because the assembler cannot emit a difference of two linker symbols in a
    .word; see tools/scripts/symbolise_header.py. */
 main_LOAD_SIZE = main_ROM_END - main_ROM_START;
+
+/* Address halves for the lui/ori pairs inside the hand-written terrain
+   submission unit. The assembler cannot fold an offset into %hi/%lo, and
+   these used to be generated - that unit is now a checked-in .s the split
+   no longer regenerates, so they are stated here. */
+EmitCoursePolyF4Fog_0x14_hi = (EmitCoursePolyF4Fog + 0x14) >> 16;
+EmitCoursePolyF4Fog_0x14_lo = (EmitCoursePolyF4Fog + 0x14) & 0xFFFF;
+EmitCoursePolyF4_0x10_hi = (EmitCoursePolyF4 + 0x10) >> 16;
+EmitCoursePolyF4_0x10_lo = (EmitCoursePolyF4 + 0x10) & 0xFFFF;
+EmitCoursePolyFT4Fog_hi = (EmitCoursePolyFT4Fog) >> 16;
+EmitCoursePolyFT4Fog_lo = (EmitCoursePolyFT4Fog) & 0xFFFF;
+EmitCoursePolyFT4_0x10_hi = (EmitCoursePolyFT4 + 0x10) >> 16;
+EmitCoursePolyFT4_0x10_lo = (EmitCoursePolyFT4 + 0x10) & 0xFFFF;
+EmitCourseSubdividedFT4Fog_hi = (EmitCourseSubdividedFT4Fog) >> 16;
+EmitCourseSubdividedFT4Fog_lo = (EmitCourseSubdividedFT4Fog) & 0xFFFF;
+EmitCourseSubdividedFT4_0xC_hi = (EmitCourseSubdividedFT4 + 0xC) >> 16;
+EmitCourseSubdividedFT4_0xC_lo = (EmitCourseSubdividedFT4 + 0xC) & 0xFFFF;
+SubmitCourseSubdividedFaces_0x2A8_hi = (SubmitCourseSubdividedFaces + 0x2A8) >> 16;
+SubmitCourseSubdividedFaces_0x2A8_lo = (SubmitCourseSubdividedFaces + 0x2A8) & 0xFFFF;
+SubmitCourseSubdividedFaces_0x350_hi = (SubmitCourseSubdividedFaces + 0x350) >> 16;
+SubmitCourseSubdividedFaces_0x350_lo = (SubmitCourseSubdividedFaces + 0x350) & 0xFFFF;
+jtbl_8007D9F4_hi = (jtbl_8007D9F4) >> 16;
+jtbl_8007D9F4_lo = (jtbl_8007D9F4) & 0xFFFF;
+jtbl_8007DA14_0x40_hi = (jtbl_8007DA14 + 0x40) >> 16;
+jtbl_8007DA14_0x40_lo = (jtbl_8007DA14 + 0x40) & 0xFFFF;
+jtbl_8007DA14_0x50_hi = (jtbl_8007DA14 + 0x50) >> 16;
+jtbl_8007DA14_0x50_lo = (jtbl_8007DA14 + 0x50) & 0xFFFF;
+jtbl_8007DA14_hi = (jtbl_8007DA14) >> 16;
+jtbl_8007DA14_lo = (jtbl_8007DA14) & 0xFFFF;

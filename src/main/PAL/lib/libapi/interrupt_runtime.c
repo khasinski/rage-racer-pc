@@ -36,59 +36,9 @@ void clearKernelInterruptState(u_long *dst, long count) {
     }
 }
 
-u_long SysEnqIntRPStub[31] __attribute__((section(".text"))) = {
-    0x240A00A0,
-    0x01400008,
-    0x24090072,
-    0,
-    0x240A00B0,
-    0x01400008,
-    0x24090017,
-    0,
-    0x240A00B0,
-    0x01400008,
-    0x24090018,
-    0,
-    0x240A00B0,
-    0x01400008,
-    0x24090019,
-    0,
-    0xAC9F0000,
-    0xAC9C002C,
-    0xAC9D0004,
-    0xAC9E0008,
-    0xAC90000C,
-    0xAC910010,
-    0xAC920014,
-    0xAC930018,
-    0xAC94001C,
-    0xAC950020,
-    0xAC960024,
-    0xAC970028,
-    0x00001021,
-    0x03E00008,
-    0,
-};
-
-u_long RestoreKernelRegistersStub[17] asm("RestoreKernelRegisters") __attribute__((section(".text"))) = {
-    0x8C9F0000,
-    0x8C9C002C,
-    0x8C9D0004,
-    0x8C9E0008,
-    0x8C90000C,
-    0x8C910010,
-    0x8C920014,
-    0x8C930018,
-    0x8C94001C,
-    0x8C950020,
-    0x8C960024,
-    0x8C970028,
-    0x00A01021,
-    0x03E00008,
-    0,
-    0,
-    0,
-};
+/* BIOS call stubs and the kernel context save/restore.
+ * See src/main/PAL/lib/libapi/interrupt_runtime.s. */
+HANDWRITTEN_ASM("src/main/PAL/lib/libapi", interrupt_runtime);
 
 void *startIntrVSync(void) {
     *g_Timer1ModeReg = 0x107;

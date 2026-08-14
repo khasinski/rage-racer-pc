@@ -12,7 +12,6 @@ typedef union EngineRpmAddress {
 } EngineRpmAddress;
 
 
-
 /*
  * AI route steering: projects a target point ahead of (or behind, per the
  * direction flag at car+0x110) the car on the track centre-line, offset
@@ -90,7 +89,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
  * Car motion-state handler for motionState == CAR_MOTION_TAKEOFF: the one-frame takeoff of a jump.
  * Turns the launch spin UpdateCarDriving seeded into clamped yaw, recomputes revs /
  * tacho / world velocity, then sets route+0x38 = 0x14 and route+0x98 = 2 to hand
- * the car to the airborne handler UpdateCarAirborne. See docs/names.md 1.
+ * the car to the airborne handler UpdateCarAirborne.
  */
 
 

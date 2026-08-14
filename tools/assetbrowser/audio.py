@@ -1,7 +1,7 @@
 """PSY-Q VAB / VAG audio.
 
 The game hands these blocks straight to the SDK, so the format is Sony's, not
-Namco's: src/main/PAL/main/audio/audio.c StartAudioSlotLoad(slot, header, body,
+Namco's: src/main/PAL/main/audio/audio_slot_loading.c StartAudioSlotLoad(slot, header, body,
 table) calls SsVabOpenHeadSticky(header) + SsVabTransBody(body), i.e. argument 2
 is a VAB header (VH) and argument 3 its body (VB). Which sub-block is which is
 therefore fixed by the call, not guessed:
@@ -20,7 +20,7 @@ sits from the tone's `center`/`shift`. A VAG therefore has no rate of its own,
 only a rate per note, and which note that is depends on how the bank is driven:
 
   key-on banks (RG3.VH, VOICE.BIN, the CAR_xx.2ND engine banks) are played by
-      audio/audio.c, and every key-on there passes note 0x3C - SsUtKeyOnV at
+      audio/audio_slot_loading.c, and every key-on there passes note 0x3C - SsUtKeyOnV at
       lines 561, 961, 1233 and 1395, SsUtKeyOn at 1343, and SsUtChangePitch at
       666 and 1204, which bends away from 0x3C as the reference. So the note is
       known, and the rates land on the familiar ladder: 26 of VOICE.BIN's 27
@@ -91,7 +91,7 @@ def parse_vab_header(buf: bytes, off: int) -> dict | None:
 
 
 SPU_BASE_RATE = 44100      # what SPU pitch 0x1000 plays a VAG at
-NOTE_KEY_ON = 0x3C         # the note every key-on in audio.c passes
+NOTE_KEY_ON = 0x3C         # the note every key-on in audio_slot_loading.c passes
 TONE_SIZE = 32
 PROGRAM_TONES = 16
 

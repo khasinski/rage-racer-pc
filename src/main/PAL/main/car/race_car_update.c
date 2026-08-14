@@ -12,8 +12,6 @@
 #include "psyq/gte.h"
 
 
-
-
 /*
  * Car route-steering update. Samples a look-ahead track point (two ahead or two
  * behind depending on the lap-direction flag g_RaceSeries), clamps the lateral

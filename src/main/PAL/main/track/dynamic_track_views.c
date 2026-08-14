@@ -12,7 +12,6 @@
 #include "psyq/gte.h"
 
 
-
 /*
  * Fuller sibling of UpdateFinishCamera: camera track-follower with bob/shake. Aims
  * the eye object g_CameraCar at a look-ahead centre-line point, and when

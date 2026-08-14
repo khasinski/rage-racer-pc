@@ -983,7 +983,7 @@ unsigned char g_DriveBoostTimer[8] __attribute__((aligned(16)));
 unsigned char g_BgmSelectStep[8] __attribute__((aligned(16)));
 unsigned char g_StEndCallback[8] __attribute__((aligned(16)));
 unsigned char g_TrackSectionCount[8] __attribute__((aligned(16)));
-unsigned char g_CamRow[8] __attribute__((aligned(16)));
+unsigned char g_TrackRenderTable[8] __attribute__((aligned(16)));
 unsigned char g_PlayerAutoSteer[8] __attribute__((aligned(16)));
 unsigned char g_SndVabProgTable[64] __attribute__((aligned(16)));
 unsigned char g_UiScriptProgress[8] __attribute__((aligned(16)));

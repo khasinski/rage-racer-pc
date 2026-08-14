@@ -71,19 +71,7 @@ void waitVSync(long target, long timeoutFrames) {
     }
 }
 
-u_long ChangeClearRCntStub[4] __attribute__((section(".text"))) = {
-    0x240A00B0,
-    0x01400008,
-    0x2409005B,
-    0,
-};
-
-u_long ChangeClearInterruptMaskStub[4] __attribute__((section(".text"))) = {
-    0x240A00C0,
-    0x01400008,
-    0x2409000A,
-    0,
-};
+HANDWRITTEN_ASM("src/main/PAL/lib/libetc", vertical_sync);
 
 void KernelCallbackSlot3(void) {
     ((CallbackTable *)g_IntrRpNode)->callback();

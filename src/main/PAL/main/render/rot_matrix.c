@@ -4,7 +4,6 @@
 #include "psyq/gte.h"
 
 
-
 void BuildRotMatrixZ(Matrix *mtx, s32 angle) {
     s32 s;
     s32 c;
@@ -57,7 +56,6 @@ void BuildRotMatrixX(Matrix *mtx, s32 angle) {
     mtx->m[2][1] = s;
     mtx->m[2][2] = c;
 }
-
 
 
 void SetCameraRotMatrix(void) {

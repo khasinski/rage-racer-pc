@@ -3,7 +3,6 @@
 #include "psyq/cd_internal.h"
 
 
-
 long CD_getsector2(long madr, u_long size) {
     volatile u_char *status;
     volatile u_long *cdDpcr;

@@ -5,7 +5,6 @@
 #include "game/player_car_internal.h"
 
 
-
 void DrawSplitTimes(void) {
     s32 value;
     s32 tile;

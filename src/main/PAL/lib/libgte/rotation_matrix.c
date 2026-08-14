@@ -53,7 +53,7 @@ Matrix *TransposeMatrix(Matrix *src, Matrix *dst) {
 }
 
 /*
- * HANDWRITTEN_ASM - excluded from progress (see docs/ASM_AND_GTE_POLICY.md).
+ * HANDWRITTEN_ASM - excluded from progress; see README.md.
  *
  * Symbol:   func_80069D18 = RotMatrix (PSY-Q libgte; Sony's Run-Time Library
  *           Reference, 8-140). Builds a rotation MATRIX from an SVECTOR of
@@ -77,4 +77,4 @@ Matrix *TransposeMatrix(Matrix *src, Matrix *dst) {
  * Revisit:  only if the exact cc1 variant that emits narrow multu is obtained
  *           AND verified not to regress already-matched functions.
  */
-INCLUDE_ASM("asm/PAL/main/nonmatchings/lib/libgte/rotation_matrix", RotMatrix);
+HANDWRITTEN_ASM("src/main/PAL/lib/libgte", rotation_matrix);

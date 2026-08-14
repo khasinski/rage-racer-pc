@@ -36,7 +36,7 @@ ASSET_COUNT = 135
 STR_FPS = 15          # the rate the STR header's sectorsInFrame implies, and
                       # what ffmpeg's psxstr demuxer reports for these streams
 
-# Resolved from g_AssetPaths in the PAL executable (see docs/names.md 45a).
+# Resolved from g_AssetPaths in the PAL executable.
 # --exe re-reads them from a real SCES_006.50 if you want to prove it again.
 ASSET_NAMES = (
     ["LOGO.TMS", "TITLE.TMS", "RG3.VH", "RG3.VB", "RES.DAT", "CAR.TMS", "SAVE.TMS",

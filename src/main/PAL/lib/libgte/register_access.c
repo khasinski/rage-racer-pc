@@ -6,7 +6,7 @@
  * writers, SetVertex0..SetDQB.  Exports SetVertex0/1/2, SetVertexTri,
  * SetRGBfifo, SetIR123, SetIR0, SetSZfifo3/4, SetSXSYfifo, SetRii, SetMAC123,
  * SetData32, SetDQA, SetDQB.  Boundaries byte-matched against reg03.o
- * (docs/names.md section 25).  Bodies use the named GTE macros.
+ *.  Bodies use the named GTE macros.
  */
 
 void SetVertex0(void *v) { gte_ldv0(v); }

@@ -62,7 +62,7 @@ extern char *g_AssetPaths[];
  * Index of the first entry of each variable-size family in that table. Read off
  * g_AssetPaths itself (asm/PAL/main/data/main/6BE64.data.s, resolved against the
  * string blob at g_MsgNegconMaxTwist) and cross-checked against the 135-entry RAGE.BIN
- * index on the retail PAL disc; see docs/names.md 45.
+ * index on the retail PAL disc.
  *
  * ROUND_SCREEN: [0x4A] = "\DATA\GP0.TMS". Six screens per series, the sixth
  * being GP10 / GP11, so LoadGrandPrixScreen wants base + series * 6 + class.
@@ -252,7 +252,6 @@ typedef union GameSceneAssetOffsetAddress {
 } GameSceneAssetOffsetAddress;
 
 typedef union GameSceneAssetAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     void *pointer;
@@ -299,7 +298,7 @@ static __inline__ void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 o
  * the incoming model never lands on the one still being drawn; the buffer is
  * therefore two strides long, which is where g_ImageBlockBuffer starts.
  * The stride is generous rather than tight: the largest CAR_xx.1ST on the
- * retail PAL disc is 0xD4A0 (see docs/names.md 45).
+ * retail PAL disc is 0xD4A0.
  */
 #define CAR_MODEL_SLOT_SIZE   0x20000
 #define CAR_MODEL_BUFFER_SIZE 0x40000
@@ -317,7 +316,7 @@ extern u8 *g_AssetSubBlockPtr;
  * advances g_AssetLoadState until it reaches 0. A screen starts a load with the
  * matching GameRequest* (which sets g_AssetRequestType and returns 1 while busy) and
  * polls the same GameRequest* until it returns 0. Asset indices are documented
- * on g_AssetPaths above; see docs/names.md 13.
+ * on g_AssetPaths above.
  */
 void ServiceAssetLoad(void);
 /* Cancel an in-flight load: aborts a running CdRead and clears all three
@@ -467,7 +466,6 @@ void RegisterCourseModels(CourseModelAssetHeader *base);
 s32 RequestRaceStart(void);
 void ResetTrackTextureSwap(void);
 void SelectTrackCameraTable(void* block, s32 variant);
-/* Install sub-block 0 of the loaded .2ND track pack as the CamRow base. */
 void SetTrackCameraTable(void *table);
 void SetCourseObjects(void* table);
 void SetEnvPaletteTable(void* table);

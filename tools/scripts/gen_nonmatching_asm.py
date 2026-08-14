@@ -20,7 +20,10 @@ BASE_OFF = 0x800
 
 
 SUBSEGMENT_RE = re.compile(r"\[0x([0-9A-Fa-f]+),\s*([^,\]]+),\s*([^,\]\s]+)")
-ASM_WRAP_RE = re.compile(r"INCLUDE_ASM\([^,]+,\s*([A-Za-z0-9_]+)\)")
+# Only an include that points into the generated asm/ tree names a symbol this
+# script must disassemble. One that points at src/ names a checked-in file, and
+# reading its stem as a symbol invents a function the game does not have.
+ASM_WRAP_RE = re.compile(r'INCLUDE_ASM(?:_TU)?\(\s*"asm/[^"]*"\s*,\s*([A-Za-z0-9_]+)\)')
 RODATA_WRAP_RE = re.compile(r"INCLUDE_RODATA\([^,]+,\s*([A-Za-z0-9_]+)\)")
 C_FUNC_RE = re.compile(
     r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*\s+)+(?P<name>func_[0-9A-Fa-f]{8})\s*\([^;]*\)\s*\{",
@@ -41,6 +44,10 @@ C_NAMED_DEF_RE = re.compile(
 # The .globl may carry the routine's real name, in which case symbol_addrs says
 # where it is, exactly as it does for a named C function.
 ASM_GLOBL_RE = re.compile(r"\.globl\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)")
+# The same, for a HANDWRITTEN_ASM unit's .s file: glabel and dlabel name a
+# function and a data object, and a bare .globl names either.
+HANDWRITTEN_LABEL_RE = re.compile(
+    r"^(?:glabel|dlabel|\.globl)\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 FUNC_NAME_RE = re.compile(r"func_[0-9A-Fa-f]{8}")
 # The object may carry its real name rather than func_XXXXXXXX, in which case
 # the address comes from symbol_addrs like a named function's does.
@@ -134,6 +141,21 @@ def parse_wrappers(
                 symbol = match.group("name")
             if symbol is not None:
                 names.append(symbol)
+        # A HANDWRITTEN_ASM unit keeps its assembly in a .s beside the source,
+        # so the labels that end the preceding stub are in that file rather
+        # than in the C. Without them a stub runs on past the hand-written
+        # block and redefines every label inside it.
+        sibling = path.with_suffix(".s")
+        if sibling.exists():
+            for match in HANDWRITTEN_LABEL_RE.finditer(sibling.read_text()):
+                label = match.group("name")
+                if FUNC_NAME_RE.fullmatch(label):
+                    names.append(label)
+                    continue
+                symbol = aliases.get(label)
+                if symbol is not None:
+                    names.append(symbol)
+                    globl_names[symbol] = label
         c_funcs_by_unit[f"{version}/{rel}"] = names
         for match in RODATA_WRAP_RE.finditer(text):
             rodata_by_name[match.group(1)] = rel

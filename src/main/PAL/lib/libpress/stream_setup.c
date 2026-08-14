@@ -4,24 +4,9 @@
 #include "psyq/cd.h"
 #include "psyq/press_internal.h"
 
-u_long func_8006A018[16] __attribute__((section(".text"))) = {
-    0x241A0100,
-    0x8F5A0008,
-    0x00000000,
-    0x8F5A0000,
-    0x00000000,
-    0x235A0008,
-    0xAF410004,
-    0xAF420008,
-    0xAF43000C,
-    0xAF5F007C,
-    0x40026800,
-    0x00000000,
-    0x240A00A0,
-    0x01400008,
-    0x24090044,
-    0x00000000,
-};
+/* The exception entry, reached by the hardware rather than called.
+ * See src/main/PAL/lib/libpress/stream_setup.s. */
+HANDWRITTEN_ASM("src/main/PAL/lib/libpress", stream_setup);
 
 /* StSetRing: installs the stream ring buffer (`base`, `size`) then clears it. */
 void StSetRing(void *base, long size) { g_StRingBase = base; g_StRingSize = size; StClearRing(); }

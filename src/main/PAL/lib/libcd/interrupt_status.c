@@ -9,7 +9,7 @@
 #define CD_ERROR_WORD (*(u_long *)(void *)&g_CdErrorByte)
 
 /*
- * LEFT RAW ON PURPOSE (docs/names.md 17i). This is libcd's interrupt decoder:
+ * LEFT RAW ON PURPOSE. This is libcd's interrupt decoder:
  * it reads the 8-byte response FIFO, decodes intr codes 1..5 into g_CdSyncStatus
  * and the two result buffers, and is drained in a while loop by CD_sync,
  * CD_ready, CD_cw and the IRQ2 handler. Every other libcd internal in this

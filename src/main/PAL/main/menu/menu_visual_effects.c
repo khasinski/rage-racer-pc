@@ -781,8 +781,6 @@ void RestoreTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, &g_TeamLogoBlank
 void UploadTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut); }
 
 
-
-
 void DrawMenuLightBurst(s32 arg) {
     void *s3;
     MenuLightBurstBand l1;

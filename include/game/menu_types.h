@@ -19,7 +19,6 @@ typedef struct RaceRecord {
 typedef s32 RaceRecordOffset;
 
 typedef union RaceRecordAddress {
-    s32 byteOffset;
     RaceRecordOffset recordOffset;
 #ifdef __psyz
     uintptr_t value;
@@ -79,7 +78,6 @@ typedef union TeamLogoCanvas {
 } TeamLogoCanvas;
 
 typedef union TeamLogoCanvasAddress {
-    s32 byteOffset;
 #ifdef __psyz
     uintptr_t value;
 #else
@@ -101,7 +99,6 @@ typedef struct PaintColorTable {
 } PaintColorTable;
 
 typedef union PaintColorAddress {
-    s32 byteOffset;
 #ifdef __psyz
     uintptr_t value;
 #else

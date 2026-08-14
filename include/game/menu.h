@@ -34,7 +34,7 @@ extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuHandlerIndex2;
 
 /* Which menu-mode screen is running; the id dispatched through
- * g_MenuScreenUpdate. Id -> screen map in docs/names.md section 3a. */
+ * g_MenuScreenUpdate. */
 extern s32 g_MenuScreen;
 
 /*
@@ -212,7 +212,6 @@ void InitMenuMode(void);
  * g_MenuScreenDraw[g_MenuHandlerIndex] (fade overlay). Each Draw entry owns a
  * private accumulator in 0x8009B2C4..0x8009B2EC, clamped to [0, 0x1FC]; a
  * `step` of 0 resets it, positive fades in, negative fades out.
- * Full id -> screen table with the on-screen titles: docs/names.md section 3a.
  */
 
 /* id 1 -- course + class picker; left/right change course, up/down the rows. */
@@ -274,8 +273,7 @@ void ShopScreenNoOp(void);
 /*
  * Menu widgets shared across those screens. Each keeps its own accumulator and
  * follows the same `step` convention as the Draw handlers above: 0 resets and
- * draws nothing, positive ramps in, negative ramps out. docs/names.md 1 has the
- * data layouts.
+ * draws nothing, positive ramps in, negative ramps out.
  */
 /* The four-bar car performance chart; only visible on CUSTOMIZE. */
 /* menu_mode.c calls it with the step alone, so the parameter list stays
@@ -303,7 +301,7 @@ void UpdateTeamLogoCanvas(void);
  * The eight whole-canvas transforms UpdateTeamLogoCanvas offers, each
  * operating in place on g_TeamLogoCanvas (64 rows x 8 words x 8 nibbles).
  * The four scrolls wrap and play cue 1; the flips and rotations play cue 8.
- * Directions are derived from the arithmetic - see docs/names.md 13.
+ * Directions are derived from the arithmetic.
  */
 void ScrollTeamLogoUp(void);
 void ScrollTeamLogoDown(void);
@@ -320,7 +318,7 @@ void RotateTeamLogoCcw(void);
 void RotateTeamLogoCw(void);
 
 /*
- * TEAM LOGO editor data, all per-file types; see docs/names.md 12c.
+ * TEAM LOGO editor data, all per-file types.
  *   g_TeamLogoCanvas   D_801E6F2C  2048 bytes = 64x64 4bpp
  *   g_TeamLogoClut     g_TeamLogoClut  16 x u16
  *   g_TeamLogoRect     g_TeamLogoRect  RECT{0x290,0x30,64,16} for the canvas

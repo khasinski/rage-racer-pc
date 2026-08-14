@@ -7,7 +7,6 @@
 #include "game/state.h"
 
 
-
 s32 DrawDesignModeScreen(s32 step) {
     DesignModeCellMask mask;
     void *ot;

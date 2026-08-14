@@ -17,14 +17,14 @@ void DrawGrandprixIntro(void);       /* "CLASS%d %s GRANDPRIX" */
 void DrawEndingScreen(void);         /* "CONGRATULATIONS!!" */
 /* The in-race option/pause overlay; `cursorRow` is g_RaceOptionCursor. The
  * "RAGE RACER GE" string is one half of a scrolling marquee, not a title -
- * this is not the title screen. See docs/names.md 1. */
+ * this is not the title screen. */
 void DrawRaceOptionMenu(s32 cursorRow);
 
 /*
  * Title screen and main menu. UpdateFrontend runs one of the
  * four handlers below each frame via the jump table at g_FrontendDrawHandlers, indexed by
  * the sub-state g_FrontendState: 0 title -> 1 menu wipe-in -> 2 cursor/confirm ->
- * 3 fade out and request the selected scene. Details in names.md section 5.
+ * 3 fade out and request the selected scene.
  */
 
 /* Enters the title screen (g_GameModeHandlers slot 3, requested when an attract

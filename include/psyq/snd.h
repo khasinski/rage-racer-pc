@@ -106,7 +106,7 @@ void SpuVmDamperOff(void);
 void SpuVmDamperOn(void);
 /* The tick entry point: interprets SEQ/SEP data and carries out playback
  * (LibRef47 14-32). It is the only caller of SsSeqAdvanceChannelTick.
- * Was bound to SpuVmDamperStep here; that was wrong (docs/names.md 17). */
+ * Was bound to SpuVmDamperStep here; that was wrong. */
 void SsSeqCalledTbyT(void);
 long SsUtGetProgAtr(long vab_id, long program, ProgAtr *out);
 long SpuVmVSetUp(long vab_id, long program);
@@ -128,7 +128,7 @@ void SpuVmRebuildVoiceTable(void);
 void SpuVmNoiseKeyOn(u_char voice);
 void SpuVmScaleVabVolume(long vabId, long value);
 /* LibRef47 14-103/14-104. func_80076B30 (6 args, void) and func_80076C1C
- * (3 args) cannot be these; they are left raw (docs/names.md 17). */
+ * (3 args) cannot be these; they are left raw. */
 short SsUtKeyOn(short vabId, short prog, short tone, short note, short fine, short volL, short volR);
 long SsUtKeyOff(long voice, long vabId, long prog, long tone, long note);
 void SpuVmSeqKeyOff(long seq_sep);

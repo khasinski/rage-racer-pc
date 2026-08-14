@@ -115,7 +115,7 @@ typedef struct SavedRaceProgress {
 /*
  * The 0x1000-byte memory-card payload: a flat dump of live globals, named per
  * field below. checksum = ~sum(u16[0..0x7FE]). Written by StoreSaveStateBlock, read
- * by LoadSaveStateBlock - both keep raw offsets, see names.md 3b.
+ * by LoadSaveStateBlock - both keep raw offsets.
  *
  * The file WriteMemoryCardSaveFile lays down around it is four writes:
  *

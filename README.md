@@ -27,26 +27,50 @@ The USA executable `SLUS_004.03` is kept as a comparison target with SHA-1
 
 ## Progress
 
-**The decompilation is complete.** Every function in the PAL executable is
-plain C, and the built executable is byte-identical to retail.
+The linked executable is byte-identical to retail, and every object is compared
+against the game function by function.
 
-| Binary | Functions | Code bytes |
-|---|---:|---:|
-| `SCES_006.50 (main)` | 1105 / 1105 (100%) | 407904 / 407904 (100%) |
+| Scope | Functions | Code bytes | Data bytes |
+|---|---:|---:|---:|
+| Game code | 705 / 705 (100.00%) | 100.00% | 99.88% |
+| PsyQ libraries | 497 / 497 (100.00%) | 100.00% | 0.00% |
+| **Whole executable** | **1202 / 1202 (100.00%)** | **100.00%** | **99.82%** |
 
-A function counts as decompiled when it carries no `INCLUDE_ASM` or
-`INCLUDE_RODATA` and no non-empty inline assembly. Three things are sanctioned
-and do not lower the count: GTE/COP2 operations expressed through
-`psyq/gte_macros.h`, which are the hardware interface and cannot be written in
-C; register and symbol `asm` labels; and empty barriers used to hold statement
-order. Functions are counted individually rather than per file, so one function
-needing a crutch cannot reclassify the plain C beside it.
+### What "matched" means here
 
-A further 48 functions (15804 code bytes) are documented handwritten assembly
-in the original game, marked `HANDWRITTEN_ASM`, and are excluded from the totals
-above rather than counted as failures.
+Two separate checks, and neither is a judgement about the source text:
 
-Regenerate the table and the badge JSON with `make progress`.
+- `make check` links the executable and compares its SHA-1 against retail. This
+  is the whole-image claim, and it either holds or it does not.
+- `make report` disassembles the retail executable into one `.s` per
+  translation unit, assembles those, and has
+  [objdiff](https://github.com/encounter/objdiff) compare them with the objects
+  this tree compiles, function by function. That report is what feeds the table
+  above and [decomp.dev](https://decomp.dev/khasinski/rage-racer-decomp). See
+  `tools/scripts/gen_expected.py`.
+
+Earlier revisions of this file called a function decompiled when its source
+carried no `INCLUDE_ASM` and no inline assembly. That describes how the source
+is written, not whether it reproduces the game, and using it as the headline
+number overstated the result. It is still counted, separately and under its own
+name: **237 of 337 translation units are plain C**, the rest holding
+hand-written assembly the original shipped that way.
+
+### Where the remaining gap is
+
+Both halves of the binary are reported. decomp.dev requires a report to account
+for every function in the executable so that projects on the site are measured
+the same way, so the game and the PsyQ libraries are separated with a progress
+category rather than by leaving the libraries out.
+
+Every function matches. What is left is **2788 bytes of data**, all of it jump
+tables: gcc emits a `switch` table into `.rodata` and addresses it relative to
+the section without giving it a name, while the disassembler has to invent one
+for the branch target. objdiff pairs data by symbol name, so there is nothing
+to pair it against. The bytes themselves are identical, and the linked image
+proves it.
+
+Regenerate everything with `make report progress`.
 
 ## Layout
 
@@ -55,11 +79,11 @@ Regenerate the table and the badge JSON with `make progress`.
 - `src/main/` - decompiled C translation units for the main executable.
 - `include/` - project headers and local PSYQ-compatible declarations.
 - `tools/scripts/` - project-specific build and analysis helpers.
-- `docs/names.md` - the naming evidence: what each function and global is, and
-  why. Source files are named after their subject, not after whichever function
-  happens to sit first in them.
-Generated directories such as `asm/`, `linkers/`, `build/`, `assets/`, and
-`disc/` are intentionally ignored, along with local scratch/proposal work.
+
+Source files are named after their subject, not after whichever function happens
+to sit first in them. Generated directories such as `asm/`, `linkers/`, `build/`,
+`assets/`, and `disc/` are intentionally ignored, along with local
+scratch/proposal work.
 
 ## Toolchain
 
@@ -96,13 +120,15 @@ cp /path/to/your/SCES_006.50 assets/PAL/main.exe
 make split VERSION=PAL
 make build VERSION=PAL
 make check VERSION=PAL
-make progress
+make report progress
 ```
 
 `make split` regenerates `asm/` and `linkers/` from the user-supplied
 executable, `make build` compiles and links `build/PAL/main.exe`, and
-`make check` verifies its SHA-1 against retail. `make progress` refreshes the
-badge JSON and prints the table shown above.
+`make check` verifies its SHA-1 against retail. `make report` disassembles the
+retail executable into a second set of objects and has objdiff compare them
+unit by unit; `make progress` turns that report into the badge JSON and the
+table shown above.
 
 ## License
 

@@ -10,7 +10,6 @@
 #include "game/state.h"
 
 
-
 void UpdateCarShopScreen(void) {
     void *ot;
     s32 value;

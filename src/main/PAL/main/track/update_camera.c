@@ -632,7 +632,7 @@ block_52:
 }
 
 /* Deliberately raw: the environment script header word 0 is stored here and
- * never read anywhere in the image (docs/names.md 15g). */
+ * never read anywhere in the image. */
 
 void SetEnvironmentScript(u32 *script) {
     GameEnvironmentScriptAddress address;

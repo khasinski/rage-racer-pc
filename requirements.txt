@@ -1,4 +1,4 @@
-splat64[mips]>=0.39.1
+splat64[mips]==0.50.0
 spimdisasm
 mapfile-parser
 pycparser

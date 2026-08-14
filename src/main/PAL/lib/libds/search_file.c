@@ -5,7 +5,6 @@
 #include "psyq/cd_internal.h"
 
 
-
 CdlFILE *DsSearchFile(CdlFILE *out, char *path) {
     char buf[32];
     char *p;

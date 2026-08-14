@@ -108,7 +108,6 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
 }
 
 
-
 void DrawOwnedCarCounter(s32 owned, s32 step) {
     s32 ownedCount;
     s32 a1v;

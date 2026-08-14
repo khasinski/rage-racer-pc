@@ -1,7 +1,7 @@
 """Read a PS1 MODE2/2352 disc image and pull RAGE.BIN / RAGE.STR apart.
 
-The archive format is documented in docs/names.md section 6 and section 45a,
-derived from the game's own loader (LoadDiscArchiveIndex / LoadAsset):
+The archive format is derived from the game's own loader
+(LoadDiscArchiveIndex / LoadAsset):
 
     RAGE.BIN sector 0 = 135 entries of { u32 sectorOffset, u32 sizeInBytes }
     asset i: LBA = LBA(RAGE.BIN) + sectorOffset, length = sizeInBytes

@@ -5,7 +5,6 @@
 #include "psyq/snd_internal.h"
 
 
-
 void SsStopSoundTick(void) {
     if (g_SndNoTickFlag == 0) {
         g_SndTickHalfRate = 0;

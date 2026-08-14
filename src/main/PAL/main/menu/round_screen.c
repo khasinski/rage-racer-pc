@@ -67,7 +67,6 @@ void ApplyZoneLighting(s32 a0, Matrix *mtx) {
 void RestoreColorMatrix(void) { SetColorMatrix(&g_SceneColorMatrix); }
 
 
-
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
 void EnterRoundScreen(void) {
     s32 count;
@@ -132,7 +131,6 @@ s32 UpdateRoundScreenFade(s32 stage) {
     }
     return ret;
 }
-
 
 
 /* The ROUND screen: course name, round number and either the prize lines or the best times. */

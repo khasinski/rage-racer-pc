@@ -49,7 +49,6 @@ typedef struct MusicChannel {
 } MusicChannel; /* sizeof 0x18 */
 
 typedef union MusicChannelAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     s16 *halfwordPointer;
@@ -110,7 +109,6 @@ typedef struct EffectVoice {
 } EffectVoice; /* sizeof 0x14 */
 
 typedef union EffectVoiceAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     s32 *wordPointer;
@@ -170,7 +168,6 @@ extern s32 g_PrizeCountStep; /* +0x20 */
 extern s16 g_SoundSlotTone[][2];
 
 typedef union SoundToneTableAddress {
-    s32 byteOffset;
     s32 value;
     s16 *pointer;
 } SoundToneTableAddress;
@@ -202,7 +199,6 @@ typedef struct SoundModeEntry {
 } SoundModeEntry;
 
 typedef union SoundModeEntryAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     s32 *wordPointer;

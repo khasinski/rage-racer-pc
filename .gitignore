@@ -84,12 +84,11 @@ build/**/report.json
 
 # Internal agent briefs, their reports, and the decompilation guide: kept
 # locally, not published. These describe how a particular session was run and
-# mean nothing to someone cloning the repository; durable findings belong in
-# docs/names.md instead.
+# mean nothing to someone cloning the repository.
 docs/TASK_FOR_*.md
 docs/*_REPORT.md
 docs/*_REPORT_*.md
-# Per-function agent notes: durable findings belong in docs/names.md instead.
+# Per-function agent notes.
 docs/func_*.md
 docs/DECOMPILATION_GUIDE.md
 

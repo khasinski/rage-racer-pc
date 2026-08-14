@@ -103,7 +103,7 @@ void DrawControllerSetupScene(s32 variant);
 /*
  * Controller-configuration screen widgets. Two independent 0..7 selections:
  * g_PadMappingIndex for the standard pad, g_NegconMappingIndex for the NeGcon (pad type byte
- * g_PadType == 0x23 picks which diagram is drawn). See docs/names.md 1.
+ * g_PadType == 0x23 picks which diagram is drawn).
  */
 /* 16x32 arrow sprites at (0x28, 0xE0) and (0x108, 0xE0); `pulse` adds the glow. */
 u8 *DrawLeftArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse);
@@ -142,7 +142,7 @@ extern s32 g_AnimTimer;
  * The per-TU-typed members of the family - StartFmvPlayback,
  * SetupFmvBuffers, InitFmvContext, OpenFmvStream,
  * PresentFmvFrame, WaitFmvDecode, StartStreamRead - keep their
- * aliased declarations in each file; see docs/names.md 13.
+ * aliased declarations in each file.
  */
 /* Start one of the three streams; returnScene is the g_SceneId to come back
  * to when it ends. Each is a thin wrapper that forwards its argument to

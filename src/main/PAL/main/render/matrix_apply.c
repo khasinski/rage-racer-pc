@@ -51,7 +51,7 @@ void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX, s3
     }
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 #define FAST_LOAD(offset)                              \
     do {                                               \

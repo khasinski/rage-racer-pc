@@ -13,7 +13,6 @@ void SsSetMVol(short left, short right) {
 }
 
 
-
 void SsSetSpuInputAttr(u_char source, u_char field, u_char value) {
     SpuCommonAttr attr;
 

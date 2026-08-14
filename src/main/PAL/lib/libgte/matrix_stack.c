@@ -5,13 +5,13 @@
  * Exports, in link order: CompMatrix, MulMatrix0, MulRotMatrix0,
  * MulRotMatrix, SetMulMatrix, ApplyMatrixLV, ApplyRotMatrix (TransformCollisionVector),
  * ScaleMatrixL, PushMatrix, PopMatrix, ReadRotMatrix, ReadLightMatrix,
- * ReadColorMatrix.  Boundaries and names byte-matched against mtx_00.o;
- * see docs/names.md section 25.  HANDWRITTEN_ASM (asm-in-C), excluded from
- * progress per docs/ASM_AND_GTE_POLICY.md.
+ * ReadColorMatrix.  Boundaries and names byte-matched against mtx_00.o.
+ * HANDWRITTEN_ASM (asm-in-C), excluded from
+ * progress; see README.md.
  */
 
 /*
- * HANDWRITTEN_ASM - excluded from progress (see docs/ASM_AND_GTE_POLICY.md).
+ * HANDWRITTEN_ASM - excluded from progress; see README.md.
  * CompMatrix is a hand-inlined PSY-Q libgte CompMatrix routine: batched
  * cop2 (ctc2/mtc2/mvmva/mfc2) transfers interleaved with by-hand 16-bit column
  * packing (lui/and/or/sll) that GCC 2.6.3 cannot reproduce from C or from GTE
@@ -132,7 +132,7 @@ void *CompMatrix(s32 *m0, void *m1, void *m2) {
 }
 
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 void *MulMatrix0(s32 *matrix, void *src, void *dst) {
@@ -207,7 +207,7 @@ void *MulMatrix0(s32 *matrix, void *src, void *dst) {
     asm volatile("move $2,$6");
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 void *MulRotMatrix0(void *lhs, void *rhs) {
@@ -272,7 +272,7 @@ void *MulRotMatrix0(void *lhs, void *rhs) {
     asm volatile("move $2,$5");
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 void *MulRotMatrix(void *mtx) {
@@ -338,7 +338,7 @@ void *MulRotMatrix(void *mtx) {
     asm volatile("move $2,$4");
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 void *SetMulMatrix(s32 *matrix, void *src) {
@@ -414,7 +414,7 @@ void *SetMulMatrix(s32 *matrix, void *src) {
     asm volatile("move $2,$4");
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 void *ApplyMatrixLV(void *mtx, void *vec, void *out) {
@@ -530,7 +530,7 @@ void *ApplyMatrixLV(void *mtx, void *vec, void *out) {
     return o;
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 s32 TransformCollisionVector(s32 *in, s32 *out, s32 flag) {
@@ -551,7 +551,7 @@ s32 TransformCollisionVector(s32 *in, s32 *out, s32 flag) {
 }
 
 /*
- * HANDWRITTEN_ASM - excluded from progress (see docs/ASM_AND_GTE_POLICY.md).
+ * HANDWRITTEN_ASM - excluded from progress; see README.md.
  *
  * Symbol:   func_80069110 = ScaleMatrixL (PSY-Q libgte; see include/psyq/gte.h).
  *           m[i][j] *= v[i], the row-scaling twin of ScaleMatrix
@@ -570,108 +570,10 @@ s32 TransformCollisionVector(s32 *in, s32 *out, s32 flag) {
  *           obtained AND verified not to regress already-matched functions.
  */
 
-INCLUDE_ASM("asm/PAL/main/nonmatchings/lib/libgte/matrix_stack", ScaleMatrixL);
-
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
-
-
-/* libgte PushMatrix: cfc2 $0..$7 into the matrix stack at 0x80094CAC,
- * indexed by 0x80094CA8, then index += 32; errors once index reaches
- * 0x280 (20 levels). PopMatrix is the exact inverse. */
-void PushMatrix(void) {
-    asm volatile(
-        ".set noreorder\n"
-        ".set noat\n"
-        "lui $14,0x8009\n"
-        "lw $14,0x4CA8($14)\n"
-        "nop\n"
-        "slti $1,$14,0x280\n"
-        "bnez $1,1f\n"
-        "lui $1,0x8009\n"
-        "sw $31,0x4C9C($1)\n"
-        "lui $4,0x8009\n"
-        ".word 0x0C0059D3\n"
-        "addiu $4,$4,0x4F2C\n"
-        "lui $31,0x8009\n"
-        "lw $31,0x4C9C($31)\n"
-        "nop\n"
-        "jr $31\n"
-        "nop\n"
-        "1:\n"
-        "lui $15,0x8009\n"
-        "addu $15,$15,$14\n"
-        "addiu $15,$15,0x4CAC\n"
-        "cfc2 $8,$0\n"
-        "cfc2 $9,$1\n"
-        "sw $8,0($15)\n"
-        "sw $9,4($15)\n"
-        "cfc2 $8,$2\n"
-        "cfc2 $9,$3\n"
-        "sw $8,8($15)\n"
-        "sw $9,12($15)\n"
-        "cfc2 $8,$4\n"
-        "nop\n"
-        "sw $8,16($15)\n"
-        "cfc2 $8,$5\n"
-        "cfc2 $9,$6\n"
-        "cfc2 $10,$7\n"
-        "sw $8,20($15)\n"
-        "sw $9,24($15)\n"
-        "sw $10,28($15)\n"
-        "addi $14,$14,32\n"
-        "lui $1,0x8009\n"
-        "sw $14,0x4CA8($1)");
-}
-
-
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
-
-
-/* libgte PopMatrix: index -= 32, then ctc2 $0..$7 back from the matrix
- * stack at 0x80094CAC; errors when the index is already 0. */
-void PopMatrix(void) {
-    asm volatile(
-        ".set noreorder\n"
-        ".set noat\n"
-        "lui $14,0x8009\n"
-        "lw $14,0x4CA8($14)\n"
-        "nop\n"
-        ".word 0x1DC0000A\n"
-        "lui $1,0x8009\n"
-        "sw $31,0x4C9C($1)\n"
-        "lui $4,0x8009\n"
-        ".word 0x0C0059D3\n"
-        "addiu $4,$4,0x4F5D\n"
-        "lui $31,0x8009\n"
-        "lw $31,0x4C9C($31)\n"
-        "nop\n"
-        "jr $31\n"
-        "nop\n"
-        "addi $14,$14,-32\n"
-        "lui $1,0x8009\n"
-        "sw $14,0x4CA8($1)\n"
-        "lui $15,0x8009\n"
-        "addu $15,$15,$14\n"
-        "addiu $15,$15,0x4CAC\n"
-        "lw $8,0($15)\n"
-        "lw $9,4($15)\n"
-        "ctc2 $8,$0\n"
-        "ctc2 $9,$1\n"
-        "lw $8,8($15)\n"
-        "lw $9,12($15)\n"
-        "ctc2 $8,$2\n"
-        "ctc2 $9,$3\n"
-        "lw $8,16($15)\n"
-        "nop\n"
-        "ctc2 $8,$4\n"
-        "nop\n"
-        "lw $8,20($15)\n"
-        "lw $9,24($15)\n"
-        "lw $10,28($15)\n"
-        "ctc2 $8,$5\n"
-        "ctc2 $9,$6\n"
-        "ctc2 $10,$7");
-}
+/* PushMatrix and PopMatrix: GTE control registers moved to and from the
+ * matrix stack, hand-written in the original. Excluded from progress.
+ * See src/main/PAL/lib/libgte/matrix_stack.s. */
+HANDWRITTEN_ASM("src/main/PAL/lib/libgte", matrix_stack);
 
 /* Read GTE rotation matrix + translation (control regs $0..$7) into p[0..7]. */
 void ReadRotMatrix(volatile u32 *p) {

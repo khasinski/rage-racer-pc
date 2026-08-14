@@ -20,6 +20,7 @@ if(RAGE_BUILD_PORT)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/boot/_start.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/render/matrix_apply.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/render/terrain_submission.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/asset_loader.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/start_fmv_playback.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_decode.c"
     )
@@ -35,6 +36,7 @@ if(RAGE_BUILD_PORT)
         src/port/platform_stubs.c
         src/port/legacy_platform.c
         src/port/native_geometry.c
+        src/port/native_asset_loader.c
         src/port/fmv_host.c
         src/port/modern/modern_renderer.c
         src/port/modern/scene_capture.c

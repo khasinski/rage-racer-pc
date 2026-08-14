@@ -44,15 +44,6 @@ static __inline__ void GameDebugLapResult(
 }
 
 
-
-
-
-
-
-
-
-
-
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 value;
     s32 result;
@@ -350,7 +341,7 @@ void EnterRaceScene(void) {
     }
     g_RaceTotalTime = 0;
     ResetMirrorState();
-    SeekEnvironmentScript(GetCamRow(g_CamRow, 0)->environmentScriptOffset);
+    SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
     BuildTileStrips();
     BuildRaceHudPrims(g_GrandPrixMode);
     g_AnimTimer = 0;

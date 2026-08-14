@@ -6,7 +6,7 @@
 
 /* The libgpu copy of the hardware pointers, initialised in the data
  * segment: GP0 0x1F801810, GP1 0x1F801814, DMA channel 2 (GPU) MADR/BCR/CHCR
- * 0x1F8010A0/A4/A8. See docs/names.md "Hardware mirrors". */
+ * 0x1F8010A0/A4/A8. */
 
 void Gpu_WriteGp1(u_long command) {
     *g_GpuGp1 = command;

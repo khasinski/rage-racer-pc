@@ -18,8 +18,8 @@ right answer for the I/O and scratchpad addresses at 0x1F80xxxx: those really
 are absolute and must not move.
 
 The output is byte-identical to the input by construction, because every symbol
-still resolves to the address that was encoded there.  `verify_nonmatching_asm.py`
-proves that per function by assembling and linking the result back.
+still resolves to the address that was encoded there.  `make check` proves it
+for the image as a whole, and `make report` proves it per object.
 """
 
 from __future__ import annotations

@@ -379,7 +379,7 @@ void DrawPrim(u_char *prim);
  * `dfe` comes from the buffer height and the DMA interrupt state. */
 DrawEnv *SetDefDrawEnv(DrawEnv *env, long x, long y, long w, long h);
 /* Fills the 0x14-byte DISPENV: disp Rect, screen Rect, isinter, isrgb24.
- * Was bound to SetDefDrawEnv here; that was wrong (see docs/names.md 17). */
+ * Was bound to SetDefDrawEnv here; that was wrong. */
 DispEnv *SetDefDispEnv(DispEnv *env, long x, long y, long w, long h);
 void SetDrawTPage(u_char *prim, long dfe, long dtd, long tpage);
 void SetTexWindow(DrawPacket *prim, void *tw);

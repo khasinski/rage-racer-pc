@@ -9,7 +9,7 @@
  * smp_00.o).  Kept as one residual TU: the smp_00.o boundary at 0x80069A88
  * sits under load-bearing `.align 4` padding (func_80069A70/A84) that cannot
  * be split off without disturbing byte-exactness, so smp_00.o is NOT carved
- * out here.  See docs/names.md section 25.
+ * out here. 
  */
 
 void SetBackColor(s32 a, s32 b, s32 c) {
