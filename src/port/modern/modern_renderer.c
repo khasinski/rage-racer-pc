@@ -1630,13 +1630,16 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
 static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
                               int haveModernImage) {
     static int wasDown;
+    static int burstLeft;
     const bool *keys = SDL_GetKeyboardState(NULL);
     int down = keys != NULL && keys[SDL_SCANCODE_M];
-    if (!down || wasDown) {
-        wasDown = down;
-        return;
-    }
+    int pressed = down && !wasDown;
     wasDown = down;
+    /* One key press captures a BURST of consecutive presented frames so a
+     * transient artifact (a one-tick flash) cannot slip between markers. */
+    if (pressed) burstLeft = 12;
+    if (burstLeft <= 0) return;
+    burstLeft--;
     {
         static int markerIndex = -1;
         char path[256];
