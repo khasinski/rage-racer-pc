@@ -12,6 +12,10 @@
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
+/* The recovered game headers provide only the PS1-era stdio surface. */
+extern int snprintf(char *buffer, unsigned long long size, const char *format, ...);
+extern int fprintf(void *stream, const char *format, ...);
+extern void *stderr;
 #endif
 
 void MainLoop(void);
