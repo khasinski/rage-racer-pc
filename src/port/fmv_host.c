@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
+#endif
+
 #include "game/asset.h"
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
