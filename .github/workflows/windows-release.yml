@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL
       - name: Build
         run: cmake --build build/release --config Release --parallel
       - name: Verify portable tests
