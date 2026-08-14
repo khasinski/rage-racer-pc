@@ -835,9 +835,12 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
 /* ---- 2D packet replay ---- */
 
 static void ModernOrtho(ModernVertex *out, float px, float py) {
-    /* The 2D layer stays 4:3, centered inside a widened target. */
-    out->x = (px + s_overscanX + 0.5f) / (s_logicalW * 0.5f) - 1.0f;
-    out->y = -((py + 0.5f) / 120.0f - 1.0f);
+    /* The 2D layer stays 4:3, centered inside a widened target. Edge
+     * mapping, not the compat rasterizer's half-pixel centres: at scale
+     * factors above 1 the +0.5 convention shifts the whole layer by half a
+     * logical pixel, leaving one-line gaps around full-screen masks. */
+    out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
+    out->y = -(py / 120.0f - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
 }
@@ -1231,14 +1234,20 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
                 haveArea = 1;
             }
         }
-        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D. */
+        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D.
+         * Nothing in the mirror table draws until its stream has installed
+         * a drawing area: during the slide-in retail suppresses the mirror
+         * sky with an empty area, and replaying those packets under no
+         * scissor floods the screen blue. */
         memset(&state2d, 0, sizeof(state2d));
         state2d.twin = 0x0000FFFFu;
         for (i = 0; i < snapshot->packetCount; i++) {
             const RageCapturePacket *packet = &snapshot->packets[i];
             uint32_t command = packet->words[0] >> 24;
             if (packet->table != 1) continue;
-            if (packet->bucket < MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
+            if (command < 0xE0u &&
+                (!state2d.hasScissor ||
+                 packet->bucket < MODERN_BACKGROUND_BUCKET)) {
                 continue;
             }
             ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
@@ -1274,14 +1283,17 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
     }
 
-    /* Mirror-table foreground 2D (frame border, text), in compat order. */
+    /* Mirror-table foreground 2D (frame border, text), in compat order;
+     * the same no-area-no-draw rule as the backdrop applies. */
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
         if (packet->table != 1) continue;
-        if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
+        if (command < 0xE0u &&
+            (!state2d.hasScissor ||
+             packet->bucket >= MODERN_BACKGROUND_BUCKET)) {
             continue;
         }
         ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
@@ -1563,16 +1575,37 @@ void RageModernFrameWaitTick(int frameLimit) {
     if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
     if (frameLimit < 0x180) return;
     if (RageCaptureCurrent()->faceCount == 0) return;
+    /* Stop presenting when less than a whole VBlank remains: an
+     * intermediate present here consumes the swapchain image the game's
+     * own VSync(0) present is about to wait for, stretching the logic
+     * tick by a display refresh. */
+    if (Psyz_VideoVSync(1) + 0x100 > frameLimit) return;
     {
-        /* Explicit targets pace to 1/fps; vsync mode leans on the present's
-         * own pacing but still caps the busy-wait loop at 500 presents/s so
-         * uncapped (LIMITLESS) runs cannot spin into thousands of renders
-         * per logic tick. */
+        /* Explicit targets pace to 1/fps. Vsync mode paces to the actual
+         * display refresh: presenting faster only queues swapchain images
+         * the game's own VSync(0) present then has to wait out, which
+         * stretches the race tick (observed as cars at half speed while
+         * the VBlank-derived clock stayed correct). */
         static Uint64 lastPresentNs;
+        static Uint64 displayIntervalNs;
         Uint64 now = SDL_GetTicksNS();
-        Uint64 interval = s_config.modernFps > 0
-                              ? (Uint64)(1000000000.0 / s_config.modernFps)
-                              : 2000000u;
+        Uint64 interval;
+        if (s_config.modernFps > 0) {
+            interval = (Uint64)(1000000000.0 / s_config.modernFps);
+        } else {
+            if (displayIntervalNs == 0) {
+                const SDL_DisplayMode *mode =
+                    s_window != NULL
+                        ? SDL_GetCurrentDisplayMode(
+                              SDL_GetDisplayForWindow(s_window))
+                        : NULL;
+                displayIntervalNs =
+                    mode != NULL && mode->refresh_rate > 1.0f
+                        ? (Uint64)(1000000000.0 / mode->refresh_rate)
+                        : 16666667u;
+            }
+            interval = displayIntervalNs;
+        }
         if (now - lastPresentNs < interval) return;
         lastPresentNs = now;
     }
