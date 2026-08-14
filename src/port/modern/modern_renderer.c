@@ -3,13 +3,1010 @@
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
 
+#include <math.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "scene_capture.h"
+
+/* The modern renderer (plan phase R2). Consumes the RageScene snapshot the
+ * capture layer records each logic frame and renders it with float
+ * transforms, a real depth buffer and perspective-correct texturing into an
+ * offscreen target, which the PsyZ present-source hook then presents in
+ * place of the PS1 VRAM image. Scenes that submit no 3D pass through to the
+ * compat image untouched (menus, FMV, 480-line screens).
+ *
+ * Textures are sampled live from PsyZ's emulated VRAM with CLUT
+ * indirection, exactly like the compat rasterizer, so no texture cache or
+ * invalidation is needed; VRAM content lags one presented frame, which only
+ * affects textures drawn by GP0 rendering, not asset uploads. */
 
 static int s_enabled;
 static SDL_Window *s_window;
 static SDL_GPUDevice *s_device;
 static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
 static PsyzPresentSourceCB_SDL3GPU s_prev_present_source;
+static RagePortConfig s_config;
+
+/* ---- GPU resources ---- */
+
+static int s_targetW, s_targetH;
+static SDL_GPUTexture *s_target;
+static SDL_GPUTexture *s_depth;
+static SDL_GPUSampler *s_sampler;
+static SDL_GPUGraphicsPipeline *s_pipe3dOpaque;
+static SDL_GPUGraphicsPipeline *s_pipe3dBlend;
+static SDL_GPUGraphicsPipeline *s_pipe3dSub;
+static SDL_GPUGraphicsPipeline *s_pipe2d;
+static SDL_GPUGraphicsPipeline *s_pipe2dSub;
+static SDL_GPUBuffer *s_vertexBuffer;
+static SDL_GPUTransferBuffer *s_vertexTransfer;
+static int s_resourcesReady;
+static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
+static int s_haveRenderedFrame;
+
+typedef struct ModernVertex {
+    float x, y, z, w; /* clip space */
+    float u, v;       /* texture-page texel coordinates */
+    uint8_t color[4]; /* rgb + semi flag in alpha (0 semi, 255 opaque) */
+    uint32_t attr;    /* tpage | 0x8000 when untextured */
+    uint32_t twin;    /* texture window {andX, andY, orX, orY} bytes */
+    uint32_t clut;
+} ModernVertex;
+
+enum {
+    MODERN_PIPE_3D_OPAQUE,
+    MODERN_PIPE_3D_BLEND,
+    MODERN_PIPE_3D_SUB,
+    MODERN_PIPE_2D,
+    MODERN_PIPE_2D_SUB,
+};
+
+typedef struct ModernSpan {
+    uint8_t pipeline;
+    uint8_t hasScissor;
+    SDL_Rect scissor;
+    int32_t start, count;
+    float depthKey; /* semi-transparent 3D sorting */
+} ModernSpan;
+
+#define MODERN_MAX_VERTICES 400000
+#define MODERN_MAX_SPANS 16384
+
+static ModernVertex *s_vertices;
+static int s_vertexCount;
+static ModernSpan *s_spans;
+static int s_spanCount;
+
+/* The far bucket boundary: captured 2D packets at or beyond this ordering
+ * table index draw behind the 3D scene (sky layers); everything nearer
+ * draws over it. */
+#define MODERN_BACKGROUND_BUCKET 576
+
+#define MODERN_NEAR 16.0f
+#define MODERN_FAR 262144.0f
+
+/* ---- MSL shaders ---- */
+
+static const char MODERN_SHADER_MSL[] =
+    "#include <metal_stdlib>\n"
+    "using namespace metal;\n"
+    "struct VSIn {\n"
+    "    float4 pos [[attribute(0)]];\n"
+    "    float2 uv [[attribute(1)]];\n"
+    "    uchar4 color [[attribute(2)]];\n"
+    "    uint attr [[attribute(3)]];\n"
+    "    uint twin [[attribute(4)]];\n"
+    "    uint clut [[attribute(5)]];\n"
+    "};\n"
+    "struct VSOut {\n"
+    "    float4 pos [[position]];\n"
+    "    float4 color;\n"
+    "    float2 uv;\n"
+    "    uint attr [[flat]];\n"
+    "    uint twin [[flat]];\n"
+    "    uint clut [[flat]];\n"
+    "};\n"
+    "vertex VSOut vs_main(VSIn in [[stage_in]]) {\n"
+    "    VSOut out;\n"
+    "    out.pos = in.pos;\n"
+    "    out.color = float4(in.color) / 255.0;\n"
+    "    out.uv = in.uv;\n"
+    "    out.attr = in.attr;\n"
+    "    out.twin = in.twin;\n"
+    "    out.clut = in.clut;\n"
+    "    return out;\n"
+    "}\n"
+    "static uint rgb5551(float4 c) {\n"
+    "    uint r = uint(c.r * 31.0 + 0.5);\n"
+    "    uint g = uint(c.g * 31.0 + 0.5);\n"
+    "    uint b = uint(c.b * 31.0 + 0.5);\n"
+    "    uint a = uint(c.a + 0.5);\n"
+    "    return r | (g << 5) | (b << 10) | (a << 15);\n"
+    "}\n"
+    "fragment float4 fs_main(VSOut in [[stage_in]],\n"
+    "                        texture2d<float> vram [[texture(0)]],\n"
+    "                        sampler smp [[sampler(0)]]) {\n"
+    "    uint texWord = in.attr;\n"
+    "    uint tpage = texWord & 0x1FFu;\n"
+    "    bool untextured = (texWord & 0x8000u) != 0u;\n"
+    "    float4 texColor;\n"
+    "    if (untextured) {\n"
+    "        texColor = float4(1.0, 1.0, 1.0, 2.0);\n"
+    "    } else {\n"
+    "        uint2 twAnd = uint2(in.twin & 0xFFu, (in.twin >> 8) & 0xFFu);\n"
+    "        uint2 twOr = uint2((in.twin >> 16) & 0xFFu,\n"
+    "                           (in.twin >> 24) & 0xFFu);\n"
+    "        uint2 pageBase = uint2(((tpage % 32u) % 16u) * 64u,\n"
+    "                               ((tpage % 32u) / 16u) * 256u);\n"
+    "        float2 fuv = clamp(floor(in.uv + float2(1.0 / 131072.0)),\n"
+    "                           0.0, 255.0);\n"
+    "        uint2 texel = (uint2(fuv) & twAnd) | twOr;\n"
+    "        uint mode = (tpage >> 7) & 3u;\n"
+    "        if (mode >= 2u) {\n"
+    "            texColor = vram.read(pageBase + texel);\n"
+    "        } else {\n"
+    "            uint texelShift = (mode == 1u) ? 1u : 2u;\n"
+    "            uint subMask = (mode == 1u) ? 1u : 3u;\n"
+    "            uint idxShift = (mode == 1u) ? 8u : 4u;\n"
+    "            uint idxMask = (mode == 1u) ? 0xFFu : 0xFu;\n"
+    "            uint sub = texel.x & subMask;\n"
+    "            uint2 pos = uint2(texel.x >> texelShift, texel.y);\n"
+    "            uint word16 = rgb5551(vram.read(pageBase + pos));\n"
+    "            uint colorIdx = (word16 >> (sub * idxShift)) & idxMask;\n"
+    "            uint2 clutBase = uint2((in.clut % 64u) * 16u,\n"
+    "                                   in.clut / 64u);\n"
+    "            texColor = vram.read(clutBase + uint2(colorIdx, 0u));\n"
+    "        }\n"
+    "        if (all(texColor == float4(0.0))) {\n"
+    "            discard_fragment();\n"
+    "        }\n"
+    "    }\n"
+    "    bool semiPrim = in.color.a < 0.75;\n"
+    "    bool texelSemi = texColor.a > 0.0;\n"
+    "    float3 modColor;\n"
+    "    if (untextured) {\n"
+    "        modColor = in.color.rgb;\n"
+    "    } else {\n"
+    "        float3 tex5 = floor(texColor.rgb * 31.0 + 0.5);\n"
+    "        float3 col8 = min(floor(in.color.rgb * 255.0 + 0.5),\n"
+    "                          float3(255.0));\n"
+    "        float3 prod8 = min(tex5 * col8 / 16.0, float3(255.0));\n"
+    "        modColor = prod8 / 255.0;\n"
+    "    }\n"
+    "    if (texelSemi && semiPrim) {\n"
+    "        uint abr = (tpage & 0x60u) >> 5u;\n"
+    "        if (abr == 0u) {\n"
+    "            return float4(modColor * 0.5, 0.5);\n"
+    "        } else if (abr == 3u) {\n"
+    "            return float4(modColor * 0.25, 0.0);\n"
+    "        }\n"
+    "        return float4(modColor, 0.0);\n"
+    "    }\n"
+    "    return float4(modColor, 1.0);\n"
+    "}\n";
+
+/* ---- resource creation ---- */
+
+static SDL_GPUShader *ModernCreateShader(SDL_GPUShaderStage stage,
+                                         const char *entry, int samplers) {
+    SDL_GPUShaderCreateInfo info = {0};
+    info.code = (const Uint8 *)MODERN_SHADER_MSL;
+    info.code_size = sizeof(MODERN_SHADER_MSL);
+    info.entrypoint = entry;
+    info.format = SDL_GPU_SHADERFORMAT_MSL;
+    info.stage = stage;
+    info.num_samplers = (Uint32)samplers;
+    return SDL_CreateGPUShader(s_device, &info);
+}
+
+static SDL_GPUGraphicsPipeline *ModernCreatePipeline(
+    SDL_GPUShader *vs, SDL_GPUShader *fs, int depthTest, int depthWrite,
+    int subtract) {
+    const SDL_GPUVertexBufferDescription buffer = {
+        .slot = 0,
+        .pitch = sizeof(ModernVertex),
+        .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+    };
+    const SDL_GPUVertexAttribute attributes[] = {
+        {.location = 0, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+         .offset = offsetof(ModernVertex, x)},
+        {.location = 1, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+         .offset = offsetof(ModernVertex, u)},
+        {.location = 2, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4,
+         .offset = offsetof(ModernVertex, color)},
+        {.location = 3, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
+         .offset = offsetof(ModernVertex, attr)},
+        {.location = 4, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
+         .offset = offsetof(ModernVertex, twin)},
+        {.location = 5, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
+         .offset = offsetof(ModernVertex, clut)},
+    };
+    const SDL_GPUBlendOp op = subtract ? SDL_GPU_BLENDOP_REVERSE_SUBTRACT
+                                       : SDL_GPU_BLENDOP_ADD;
+    const SDL_GPUColorTargetDescription target = {
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .blend_state = {
+            .src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+            .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+            .color_blend_op = op,
+            .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+            .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+            .alpha_blend_op = op,
+            .enable_blend = true,
+        },
+    };
+    SDL_GPUGraphicsPipelineCreateInfo info = {0};
+    info.vertex_shader = vs;
+    info.fragment_shader = fs;
+    info.vertex_input_state.vertex_buffer_descriptions = &buffer;
+    info.vertex_input_state.num_vertex_buffers = 1;
+    info.vertex_input_state.vertex_attributes = attributes;
+    info.vertex_input_state.num_vertex_attributes =
+        sizeof(attributes) / sizeof(attributes[0]);
+    info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+    info.depth_stencil_state.compare_op =
+        depthTest ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL
+                  : SDL_GPU_COMPAREOP_ALWAYS;
+    info.depth_stencil_state.enable_depth_test = true;
+    info.depth_stencil_state.enable_depth_write = depthWrite != 0;
+    info.target_info.color_target_descriptions = &target;
+    info.target_info.num_color_targets = 1;
+    info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    info.target_info.has_depth_stencil_target = true;
+    return SDL_CreateGPUGraphicsPipeline(s_device, &info);
+}
+
+static int ModernEnsureResources(void) {
+    SDL_GPUShader *vs;
+    SDL_GPUShader *fs;
+    float scale;
+    if (s_resourcesReady) return 1;
+    if (s_device == NULL) return 0;
+
+    scale = s_config.modernInternalScale;
+    if (scale < 0.5f) scale = 0.5f;
+    s_targetW = (int)(320.0f * scale + 0.5f);
+    s_targetH = (int)(240.0f * scale + 0.5f);
+
+    {
+        SDL_GPUTextureCreateInfo info = {0};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = (Uint32)s_targetW;
+        info.height = (Uint32)s_targetH;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        s_target = SDL_CreateGPUTexture(s_device, &info);
+        info.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        s_depth = SDL_CreateGPUTexture(s_device, &info);
+    }
+    {
+        SDL_GPUSamplerCreateInfo info = {0};
+        info.min_filter = SDL_GPU_FILTER_NEAREST;
+        info.mag_filter = SDL_GPU_FILTER_NEAREST;
+        s_sampler = SDL_CreateGPUSampler(s_device, &info);
+    }
+    vs = ModernCreateShader(SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
+    fs = ModernCreateShader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
+    if (vs && fs) {
+        s_pipe3dOpaque = ModernCreatePipeline(vs, fs, 1, 1, 0);
+        s_pipe3dBlend = ModernCreatePipeline(vs, fs, 1, 0, 0);
+        s_pipe3dSub = ModernCreatePipeline(vs, fs, 1, 0, 1);
+        s_pipe2d = ModernCreatePipeline(vs, fs, 0, 0, 0);
+        s_pipe2dSub = ModernCreatePipeline(vs, fs, 0, 0, 1);
+    }
+    if (vs) SDL_ReleaseGPUShader(s_device, vs);
+    if (fs) SDL_ReleaseGPUShader(s_device, fs);
+    {
+        SDL_GPUBufferCreateInfo info = {0};
+        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+        info.size = MODERN_MAX_VERTICES * sizeof(ModernVertex);
+        s_vertexBuffer = SDL_CreateGPUBuffer(s_device, &info);
+    }
+    {
+        SDL_GPUTransferBufferCreateInfo info = {0};
+        info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        info.size = MODERN_MAX_VERTICES * sizeof(ModernVertex);
+        s_vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &info);
+    }
+    s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
+    s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
+
+    if (!s_target || !s_depth || !s_sampler || !s_pipe3dOpaque ||
+        !s_pipe3dBlend || !s_pipe3dSub || !s_pipe2d || !s_pipe2dSub ||
+        !s_vertexBuffer || !s_vertexTransfer || !s_vertices || !s_spans) {
+        fprintf(stderr, "rage-port: modern renderer resource setup failed: %s\n",
+                SDL_GetError());
+        return 0;
+    }
+    s_resourcesReady = 1;
+    fprintf(stderr, "rage-port: modern renderer target %dx%d\n", s_targetW,
+            s_targetH);
+    return 1;
+}
+
+/* ---- frame building ---- */
+
+typedef struct Modern2DState {
+    uint32_t tpage;    /* from GP0(E1) for sprites */
+    uint32_t twin;     /* current texture window bytes */
+    SDL_Rect scissor;  /* current draw area, overlay pixels */
+    int hasScissor;
+    int areaEmpty;
+    int offsetX, offsetY; /* GP0(E5) relative offset */
+} Modern2DState;
+
+static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
+                                   float depthKey) {
+    ModernSpan *span;
+    if (s_spanCount > 0) {
+        span = &s_spans[s_spanCount - 1];
+        if (span->pipeline == pipeline && depthKey == span->depthKey &&
+            ((state == NULL && !span->hasScissor) ||
+             (state != NULL && state->hasScissor == span->hasScissor &&
+              (!state->hasScissor ||
+               (state->scissor.x == span->scissor.x &&
+                state->scissor.y == span->scissor.y &&
+                state->scissor.w == span->scissor.w &&
+                state->scissor.h == span->scissor.h))))) {
+            return span;
+        }
+    }
+    if (s_spanCount >= MODERN_MAX_SPANS) return NULL;
+    span = &s_spans[s_spanCount++];
+    span->pipeline = (uint8_t)pipeline;
+    span->hasScissor = state != NULL && state->hasScissor;
+    if (span->hasScissor) span->scissor = state->scissor;
+    span->start = s_vertexCount;
+    span->count = 0;
+    span->depthKey = depthKey;
+    return span;
+}
+
+static int ModernPushVertices(ModernSpan *span, const ModernVertex *v,
+                              int count) {
+    if (span == NULL) return 0;
+    if (s_vertexCount + count > MODERN_MAX_VERTICES) return 0;
+    memcpy(&s_vertices[s_vertexCount], v, count * sizeof(*v));
+    s_vertexCount += count;
+    span->count += count;
+    return 1;
+}
+
+/* Quad corners arrive in PS1 order (0,1,2,3 = top-left, top-right,
+ * bottom-left, bottom-right); triangles are {0,1,2} and {1,3,2}. */
+static void ModernEmitQuad(ModernSpan *span, const ModernVertex corners[4]) {
+    ModernVertex tri[6];
+    tri[0] = corners[0];
+    tri[1] = corners[1];
+    tri[2] = corners[2];
+    tri[3] = corners[1];
+    tri[4] = corners[3];
+    tri[5] = corners[2];
+    ModernPushVertices(span, tri, 6);
+}
+
+static void ModernEmitTriangle(ModernSpan *span,
+                               const ModernVertex corners[3]) {
+    ModernPushVertices(span, corners, 3);
+}
+
+static uint32_t ModernTwinFromE2(uint32_t word) {
+    uint32_t maskX = word & 0x1Fu;
+    uint32_t maskY = (word >> 5) & 0x1Fu;
+    uint32_t offX = (word >> 10) & 0x1Fu;
+    uint32_t offY = (word >> 15) & 0x1Fu;
+    if (maskX == 0 && maskY == 0) return 0x0000FFFFu;
+    return ((~(maskX * 8) & 0xFFu)) | ((~(maskY * 8) & 0xFFu) << 8) |
+           (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
+}
+
+/* ---- 3D faces ---- */
+
+typedef struct ModernFaceOrder {
+    int32_t index;
+    float depth;
+} ModernFaceOrder;
+
+static int ModernCompareFaceOrder(const void *a, const void *b) {
+    const ModernFaceOrder *fa = a, *fb = b;
+    if (fa->depth > fb->depth) return -1;
+    if (fa->depth < fb->depth) return 1;
+    return fa->index < fb->index ? -1 : 1;
+}
+
+static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
+                                    const RageCaptureFace *face,
+                                    float out[4][3], int *mirror) {
+    const RageCaptureGteState *gte;
+    float tx, ty, tz;
+    int vertex;
+    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+        const RageCaptureTerrainBatch *batch =
+            &snapshot->terrain[face->drawIndex];
+        const int32_t *cell = batch->cells[face->cellSlot];
+        gte = &batch->gte;
+        *mirror = batch->mirror;
+        tx = (float)(batch->mirror ? -cell[0] : cell[0]);
+        ty = (float)cell[1];
+        tz = (float)cell[2];
+    } else {
+        const RageCaptureModelDraw *draw = &snapshot->draws[face->drawIndex];
+        gte = &draw->gte;
+        *mirror = draw->mirror;
+        tx = (float)gte->rot.t[0];
+        ty = (float)gte->rot.t[1];
+        tz = (float)gte->rot.t[2];
+    }
+    for (vertex = 0; vertex < 4; vertex++) {
+        float vx = face->pos[vertex][0];
+        float vy = face->pos[vertex][1];
+        float vz = face->pos[vertex][2];
+        int row;
+        for (row = 0; row < 3; row++) {
+            float sum = (gte->rot.m[row][0] * vx + gte->rot.m[row][1] * vy +
+                         gte->rot.m[row][2] * vz) *
+                        (1.0f / 4096.0f);
+            out[vertex][row] = sum;
+        }
+        out[vertex][0] += tx;
+        out[vertex][1] += ty;
+        out[vertex][2] += tz;
+    }
+}
+
+static const RageCaptureGteState *ModernFaceGte(
+    const RageSceneSnapshot *snapshot, const RageCaptureFace *face) {
+    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+        return &snapshot->terrain[face->drawIndex].gte;
+    }
+    return &snapshot->draws[face->drawIndex].gte;
+}
+
+static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
+                              const RageCaptureFace *face) {
+    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+        return snapshot->terrain[face->drawIndex].mirror;
+    }
+    return snapshot->draws[face->drawIndex].mirror ||
+           snapshot->draws[face->drawIndex].table != 0;
+}
+
+static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
+                                    const RageCaptureFace *face,
+                                    ModernVertex corners[4],
+                                    float *averageZ) {
+    const RageCaptureGteState *gte = ModernFaceGte(snapshot, face);
+    float view[4][3];
+    int mirror = 0;
+    int vertex;
+    float zSum = 0.0f;
+    int textured = face->klass == 1 || face->klass == 3;
+    ModernFaceViewPositions(snapshot, face, view, &mirror);
+    for (vertex = 0; vertex < 4; vertex++) {
+        ModernVertex *out = &corners[vertex];
+        float x = view[vertex][0];
+        float y = view[vertex][1];
+        float z = view[vertex][2];
+        float h = (float)gte->h;
+        if (z < 1.0f) z = 1.0f;
+        zSum += z;
+        out->x = z * ((float)gte->ofx / 160.0f - 1.0f) + x * h / 160.0f;
+        out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
+        out->z = (z - MODERN_NEAR) * (MODERN_FAR / (MODERN_FAR - MODERN_NEAR));
+        out->w = z;
+        out->u = (float)face->uv[vertex][0];
+        out->v = (float)face->uv[vertex][1];
+        out->color[0] = face->color[vertex][0];
+        out->color[1] = face->color[vertex][1];
+        out->color[2] = face->color[vertex][2];
+        out->color[3] =
+            (uint8_t)((face->flags & RAGE_CAPTURE_FACE_SEMI) ? 0 : 255);
+        out->attr = textured ? face->tpage : (face->tpage | 0x8000u);
+        out->twin = face->textureWindow != 0
+                        ? ModernTwinFromE2(face->textureWindow)
+                        : 0x0000FFFFu;
+        out->clut = face->clut;
+    }
+    *averageZ = zSum * 0.25f;
+}
+
+/* ---- 2D packet replay ---- */
+
+static void ModernOrtho(ModernVertex *out, float px, float py) {
+    out->x = (px + 0.5f) / 160.0f - 1.0f;
+    out->y = -((py + 0.5f) / 120.0f - 1.0f);
+    out->z = 0.0f;
+    out->w = 1.0f;
+}
+
+static void ModernReplay2DPacket(const RageCapturePacket *packet,
+                                 Modern2DState *state, int pipelineBase) {
+    const uint32_t *words = packet->words;
+    uint32_t command = words[0] >> 24;
+    if (command >= 0xE0) {
+        switch (command) {
+        case 0xE1:
+            state->tpage = words[0] & 0x1FFu;
+            break;
+        case 0xE2:
+            state->twin = ModernTwinFromE2(words[0]);
+            break;
+        case 0xE3: {
+            int x = (int)(words[0] & 0x3FFu);
+            int y = (int)((words[0] >> 10) & 0x1FFu);
+            state->scissor.x = x;
+            state->scissor.y = y % 240;
+            state->hasScissor = 1;
+            break;
+        }
+        case 0xE4: {
+            int x = (int)(words[0] & 0x3FFu);
+            int y = (int)((words[0] >> 10) & 0x1FFu);
+            state->scissor.w = x - state->scissor.x + 1;
+            state->scissor.h = (y % 240) - state->scissor.y + 1;
+            state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
+            break;
+        }
+        case 0xE5: {
+            int x = (int)(words[0] & 0x7FFu);
+            int y = (int)((words[0] >> 11) & 0x7FFu);
+            state->offsetX = (x ^ 1024) - 1024;
+            state->offsetY = (y ^ 1024) - 1024;
+            break;
+        }
+        default:
+            break;
+        }
+        return;
+    }
+    if (state->areaEmpty) return;
+    {
+        int isPoly = (command & 0xE0u) == 0x20u;
+        int isLine = (command & 0xE0u) == 0x40u;
+        int isRect = (command & 0xE0u) == 0x60u;
+        int textured = (command & 0x04u) != 0;
+        int gouraud = (command & 0x10u) != 0;
+        int quad = (command & 0x08u) != 0;
+        int semi = (command & 0x02u) != 0;
+        int raw = (command & 0x01u) != 0;
+        Modern2DState spanState = *state;
+        /* The overlay renders at 320x240 logical coordinates; scale the
+         * scissor to the target. */
+        if (spanState.hasScissor) {
+            spanState.scissor.x = spanState.scissor.x * s_targetW / 320;
+            spanState.scissor.y = spanState.scissor.y * s_targetH / 240;
+            spanState.scissor.w = spanState.scissor.w * s_targetW / 320;
+            spanState.scissor.h = spanState.scissor.h * s_targetH / 240;
+            if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
+        }
+        if (isPoly) {
+            ModernVertex corners[4];
+            uint32_t prim_tpage = state->tpage;
+            uint32_t clut = 0;
+            int count = quad ? 4 : 3;
+            int vertex;
+            int cursor = 1; /* word 0 = command + colour 0 */
+            uint32_t colors[4];
+            colors[0] = words[0] & 0xFFFFFFu;
+            for (vertex = 0; vertex < count; vertex++) {
+                uint32_t xy;
+                if (vertex > 0) {
+                    if (gouraud) colors[vertex] = words[cursor++] & 0xFFFFFFu;
+                    else colors[vertex] = colors[0];
+                }
+                xy = words[cursor++];
+                {
+                    int px = (int)((xy & 0x7FFu) ^ 1024) - 1024;
+                    int py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024;
+                    ModernVertex *out = &corners[vertex];
+                    memset(out, 0, sizeof(*out));
+                    ModernOrtho(out, (float)(px + state->offsetX),
+                                (float)(py + state->offsetY));
+                }
+                if (textured) {
+                    uint32_t uvWord = words[cursor++];
+                    corners[vertex].u = (float)(uvWord & 0xFFu);
+                    corners[vertex].v = (float)((uvWord >> 8) & 0xFFu);
+                    if (vertex == 0) clut = (uvWord >> 16) & 0xFFFFu;
+                    if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
+                }
+            }
+            for (vertex = 0; vertex < count; vertex++) {
+                ModernVertex *out = &corners[vertex];
+                uint32_t color = raw && textured ? 0x808080u : colors[vertex];
+                out->color[0] = (uint8_t)(color & 0xFFu);
+                out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
+                out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
+                out->color[3] = (uint8_t)(semi ? 0 : 255);
+                out->attr = textured ? prim_tpage : (prim_tpage | 0x8000u);
+                out->twin = state->twin;
+                out->clut = clut;
+            }
+            {
+                uint32_t abr = (prim_tpage >> 5) & 3u;
+                int pipeline = (semi && abr == 2u) ? pipelineBase + 1
+                                                   : pipelineBase;
+                ModernSpan *span = ModernBeginSpan(pipeline, &spanState, 0.0f);
+                if (quad) ModernEmitQuad(span, corners);
+                else ModernEmitTriangle(span, corners);
+            }
+        } else if (isRect) {
+            ModernVertex corners[4];
+            int sizeMode = (int)((command >> 3) & 3u);
+            int cursor = 1;
+            uint32_t xy, uvWord = 0, clut = 0;
+            int px, py, w, h;
+            int u0 = 0, v0 = 0;
+            xy = words[cursor++];
+            px = (int)((xy & 0x7FFu) ^ 1024) - 1024;
+            py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024;
+            if (textured) {
+                uvWord = words[cursor++];
+                u0 = (int)(uvWord & 0xFFu);
+                v0 = (int)((uvWord >> 8) & 0xFFu);
+                clut = (uvWord >> 16) & 0xFFFFu;
+            }
+            if (sizeMode == 0) {
+                uint32_t wh = words[cursor++];
+                w = (int)(wh & 0x3FFu);
+                h = (int)((wh >> 16) & 0x1FFu);
+            } else if (sizeMode == 1) {
+                w = h = 1;
+            } else if (sizeMode == 2) {
+                w = h = 8;
+            } else {
+                w = h = 16;
+            }
+            px += state->offsetX;
+            py += state->offsetY;
+            {
+                int vertex;
+                for (vertex = 0; vertex < 4; vertex++) {
+                    ModernVertex *out = &corners[vertex];
+                    int right = vertex & 1;
+                    int bottom = vertex >> 1;
+                    memset(out, 0, sizeof(*out));
+                    ModernOrtho(out, (float)(px + (right ? w : 0)),
+                                (float)(py + (bottom ? h : 0)));
+                    out->u = (float)(u0 + (right ? w : 0));
+                    out->v = (float)(v0 + (bottom ? h : 0));
+                    {
+                        uint32_t color =
+                            raw && textured ? 0x808080u : (words[0] & 0xFFFFFFu);
+                        out->color[0] = (uint8_t)(color & 0xFFu);
+                        out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
+                        out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
+                        out->color[3] = (uint8_t)(semi ? 0 : 255);
+                    }
+                    out->attr =
+                        textured ? state->tpage : (state->tpage | 0x8000u);
+                    out->twin = state->twin;
+                    out->clut = clut;
+                }
+            }
+            {
+                uint32_t abr = (state->tpage >> 5) & 3u;
+                int pipeline = (semi && abr == 2u) ? pipelineBase + 1
+                                                   : pipelineBase;
+                ModernSpan *span = ModernBeginSpan(pipeline, &spanState, 0.0f);
+                ModernEmitQuad(span, corners);
+            }
+        } else if (isLine) {
+            /* Fixed two/three-point lines; expand each segment to a thin
+             * quad, PS1-style single-pixel thickness. */
+            int points[8][2];
+            uint32_t colors[8];
+            int count = 0;
+            int cursor = 1;
+            int vertex;
+            colors[0] = words[0] & 0xFFFFFFu;
+            while (cursor < packet->size && count < 8) {
+                uint32_t word;
+                if (count > 0 && gouraud) {
+                    if (cursor >= packet->size) break;
+                    colors[count] = words[cursor++] & 0xFFFFFFu;
+                }
+                if (cursor >= packet->size) break;
+                word = words[cursor++];
+                if ((word & 0xF000F000u) == 0x50005000u && count >= 2) break;
+                points[count][0] =
+                    (int)((word & 0x7FFu) ^ 1024) - 1024 + state->offsetX;
+                points[count][1] =
+                    (int)(((word >> 16) & 0x7FFu) ^ 1024) - 1024 +
+                    state->offsetY;
+                if (count > 0 && !gouraud) colors[count] = colors[0];
+                count++;
+            }
+            for (vertex = 0; vertex + 1 < count; vertex++) {
+                ModernVertex corners[4];
+                int x0 = points[vertex][0], y0 = points[vertex][1];
+                int x1 = points[vertex + 1][0], y1 = points[vertex + 1][1];
+                int horizontal = abs(x1 - x0) >= abs(y1 - y0);
+                int corner;
+                for (corner = 0; corner < 4; corner++) {
+                    ModernVertex *out = &corners[corner];
+                    int end = corner & 1;
+                    int side = corner >> 1;
+                    float px = (float)(end ? x1 : x0);
+                    float py = (float)(end ? y1 : y0);
+                    if (horizontal) py += side;
+                    else px += side;
+                    memset(out, 0, sizeof(*out));
+                    ModernOrtho(out, px, py);
+                    {
+                        uint32_t color = colors[end ? vertex + 1 : vertex];
+                        out->color[0] = (uint8_t)(color & 0xFFu);
+                        out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
+                        out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
+                        out->color[3] = (uint8_t)(semi ? 0 : 255);
+                    }
+                    out->attr = state->tpage | 0x8000u;
+                    out->twin = state->twin;
+                    out->clut = 0;
+                }
+                {
+                    ModernSpan *span =
+                        ModernBeginSpan(pipelineBase, &spanState, 0.0f);
+                    ModernEmitQuad(span, corners);
+                }
+            }
+        }
+    }
+}
+
+/* ---- snapshot -> vertex/span lists ---- */
+
+static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
+    Modern2DState state2d;
+    int i;
+    static ModernFaceOrder semiOrder[RAGE_CAPTURE_MAX_FACES];
+    int semiCount = 0;
+
+    s_vertexCount = 0;
+    s_spanCount = 0;
+    memset(&state2d, 0, sizeof(state2d));
+    state2d.twin = 0x0000FFFFu;
+
+    /* Background 2D: sky layers at the far ordering-table buckets. */
+    for (i = 0; i < snapshot->packetCount; i++) {
+        const RageCapturePacket *packet = &snapshot->packets[i];
+        if (packet->table != 0) continue;
+        if (packet->bucket < MODERN_BACKGROUND_BUCKET &&
+            (packet->words[0] >> 24) < 0xE0u) {
+            continue;
+        }
+        /* State packets always replay so tpage/window state stays right for
+         * the foreground pass below; draw packets only in far buckets. */
+        if (packet->bucket >= MODERN_BACKGROUND_BUCKET ||
+            (packet->words[0] >> 24) >= 0xE0u) {
+            ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+        }
+    }
+
+    /* Opaque 3D, in submission order, z-buffered. */
+    for (i = 0; i < snapshot->faceCount; i++) {
+        const RageCaptureFace *face = &snapshot->faces[i];
+        ModernVertex corners[4];
+        float averageZ;
+        if (ModernFaceIsMirror(snapshot, face)) continue;
+        if (face->flags & RAGE_CAPTURE_FACE_SEMI) {
+            if (semiCount < RAGE_CAPTURE_MAX_FACES) {
+                semiOrder[semiCount].index = i;
+                semiOrder[semiCount].depth = 0.0f;
+                semiCount++;
+            }
+            continue;
+        }
+        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
+        ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_OPAQUE, NULL, 0.0f),
+                       corners);
+    }
+
+    /* Semi-transparent 3D, back to front. */
+    for (i = 0; i < semiCount; i++) {
+        const RageCaptureFace *face = &snapshot->faces[semiOrder[i].index];
+        ModernVertex corners[4];
+        float averageZ;
+        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
+        semiOrder[i].depth = averageZ;
+    }
+    if (semiCount > 1) {
+        qsort(semiOrder, semiCount, sizeof(semiOrder[0]),
+              ModernCompareFaceOrder);
+    }
+    for (i = 0; i < semiCount; i++) {
+        const RageCaptureFace *face = &snapshot->faces[semiOrder[i].index];
+        ModernVertex corners[4];
+        float averageZ;
+        uint32_t abr = (face->tpage >> 5) & 3u;
+        int pipeline =
+            abr == 2u ? MODERN_PIPE_3D_SUB : MODERN_PIPE_3D_BLEND;
+        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
+        ModernEmitQuad(ModernBeginSpan(pipeline, NULL, (float)i), corners);
+    }
+
+    /* Foreground 2D: everything nearer than the sky, both tables, in
+     * compat draw order. */
+    memset(&state2d, 0, sizeof(state2d));
+    state2d.twin = 0x0000FFFFu;
+    for (i = 0; i < snapshot->packetCount; i++) {
+        const RageCapturePacket *packet = &snapshot->packets[i];
+        uint32_t command = packet->words[0] >> 24;
+        if (packet->table == 0 && packet->bucket >= MODERN_BACKGROUND_BUCKET &&
+            command < 0xE0u) {
+            continue;
+        }
+        ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+    }
+}
+
+/* ---- rendering ---- */
+
+static void ModernRender(const RageSceneSnapshot *snapshot) {
+    SDL_GPUCommandBuffer *cmd;
+    SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
+    int i;
+    if (vram == NULL) return;
+    ModernBuildFrame(snapshot);
+    cmd = SDL_AcquireGPUCommandBuffer(s_device);
+    if (cmd == NULL) return;
+    if (s_vertexCount > 0) {
+        void *mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer,
+                                                true);
+        if (mapped == NULL) {
+            SDL_CancelGPUCommandBuffer(cmd);
+            return;
+        }
+        memcpy(mapped, s_vertices, s_vertexCount * sizeof(ModernVertex));
+        SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+        {
+            SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+            const SDL_GPUTransferBufferLocation source = {
+                .transfer_buffer = s_vertexTransfer, .offset = 0};
+            const SDL_GPUBufferRegion destination = {
+                .buffer = s_vertexBuffer,
+                .offset = 0,
+                .size = (Uint32)(s_vertexCount * sizeof(ModernVertex))};
+            SDL_UploadToGPUBuffer(copy, &source, &destination, true);
+            SDL_EndGPUCopyPass(copy);
+        }
+    }
+    {
+        const SDL_GPUColorTargetInfo color = {
+            .texture = s_target,
+            .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+            .load_op = SDL_GPU_LOADOP_CLEAR,
+            .store_op = SDL_GPU_STOREOP_STORE,
+        };
+        const SDL_GPUDepthStencilTargetInfo depth = {
+            .texture = s_depth,
+            .clear_depth = 1.0f,
+            .load_op = SDL_GPU_LOADOP_CLEAR,
+            .store_op = SDL_GPU_STOREOP_DONT_CARE,
+        };
+        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1,
+                                                         &depth);
+        if (pass != NULL && s_vertexCount > 0) {
+            SDL_GPUGraphicsPipeline *pipelines[5];
+            SDL_GPUGraphicsPipeline *bound = NULL;
+            const SDL_GPUBufferBinding binding = {.buffer = s_vertexBuffer,
+                                                  .offset = 0};
+            const SDL_GPUTextureSamplerBinding sampler = {
+                .texture = vram, .sampler = s_sampler};
+            pipelines[MODERN_PIPE_3D_OPAQUE] = s_pipe3dOpaque;
+            pipelines[MODERN_PIPE_3D_BLEND] = s_pipe3dBlend;
+            pipelines[MODERN_PIPE_3D_SUB] = s_pipe3dSub;
+            pipelines[MODERN_PIPE_2D] = s_pipe2d;
+            pipelines[MODERN_PIPE_2D_SUB] = s_pipe2dSub;
+            SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
+            SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
+            for (i = 0; i < s_spanCount; i++) {
+                const ModernSpan *span = &s_spans[i];
+                if (span->count == 0) continue;
+                if (pipelines[span->pipeline] != bound) {
+                    bound = pipelines[span->pipeline];
+                    SDL_BindGPUGraphicsPipeline(pass, bound);
+                }
+                {
+                    SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
+                    if (span->hasScissor) scissor = span->scissor;
+                    SDL_SetGPUScissor(pass, &scissor);
+                }
+                SDL_DrawGPUPrimitives(pass, (Uint32)span->count,
+                                      1, (Uint32)span->start, 0);
+            }
+        }
+        if (pass != NULL) SDL_EndGPURenderPass(pass);
+    }
+    SDL_SubmitGPUCommandBuffer(cmd);
+    s_haveRenderedFrame = 1;
+}
+
+/* Diagnostic: write the modern target as a binary PPM when
+ * RAGE_PORT_MODERN_DUMP names a path and RAGE_PORT_MODERN_DUMP_FRAME (if
+ * set) matches the captured frame counter. */
+static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
+    static int initialized;
+    static const char *path;
+    static long frame = -1;
+    static int done;
+    SDL_GPUTransferBuffer *transfer;
+    SDL_GPUCommandBuffer *cmd;
+    if (!initialized) {
+        const char *frameText = getenv("RAGE_PORT_MODERN_DUMP_FRAME");
+        path = getenv("RAGE_PORT_MODERN_DUMP");
+        if (frameText != NULL) frame = strtol(frameText, NULL, 0);
+        initialized = 1;
+    }
+    if (path == NULL || done) return;
+    if (frame >= 0 && (long)snapshot->frameCounter < frame) return;
+    {
+        SDL_GPUTransferBufferCreateInfo info = {0};
+        info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
+        info.size = (Uint32)(s_targetW * s_targetH * 4);
+        transfer = SDL_CreateGPUTransferBuffer(s_device, &info);
+    }
+    if (transfer == NULL) return;
+    cmd = SDL_AcquireGPUCommandBuffer(s_device);
+    if (cmd != NULL) {
+        SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+        const SDL_GPUTextureRegion region = {
+            .texture = s_target,
+            .w = (Uint32)s_targetW,
+            .h = (Uint32)s_targetH,
+            .d = 1,
+        };
+        const SDL_GPUTextureTransferInfo destination = {
+            .transfer_buffer = transfer,
+        };
+        SDL_DownloadFromGPUTexture(copy, &region, &destination);
+        SDL_EndGPUCopyPass(copy);
+        {
+            SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
+            if (fence != NULL) {
+                SDL_WaitForGPUFences(s_device, true, &fence, 1);
+                SDL_ReleaseGPUFence(s_device, fence);
+            }
+        }
+        {
+            const uint8_t *pixels =
+                SDL_MapGPUTransferBuffer(s_device, transfer, false);
+            if (pixels != NULL) {
+                FILE *file = fopen(path, "wb");
+                if (file != NULL) {
+                    int i;
+                    fprintf(file, "P6\n%d %d\n255\n", s_targetW, s_targetH);
+                    for (i = 0; i < s_targetW * s_targetH; i++) {
+                        fwrite(pixels + i * 4, 1, 3, file);
+                    }
+                    fclose(file);
+                    fprintf(stderr,
+                            "rage-port: modern dump frame=%u -> %s\n",
+                            snapshot->frameCounter, path);
+                }
+                SDL_UnmapGPUTransferBuffer(s_device, transfer);
+            }
+        }
+    }
+    SDL_ReleaseGPUTransferBuffer(s_device, transfer);
+    done = 1;
+}
+
+/* ---- hooks ---- */
 
 static void ModernOverlayInit(SDL_Window *window, SDL_GPUDevice *device) {
     s_window = window;
@@ -20,11 +1017,25 @@ static void ModernOverlayInit(SDL_Window *window, SDL_GPUDevice *device) {
 }
 
 static void ModernPresentSource(PsyzPresentSourceInfo *info) {
-    /* R0: the modern renderer has no image of its own yet; leaving
-     * info->texture NULL presents the compat PS1 VRAM as usual. */
+    const RageSceneSnapshot *snapshot = RageCapturePrevious();
     if (s_prev_present_source) {
         s_prev_present_source(info);
     }
+    if (!s_enabled || s_device == NULL) return;
+    /* Scenes with no captured 3D pass through to the compat image. */
+    if (snapshot->faceCount == 0) return;
+    if (!ModernEnsureResources()) return;
+    if (snapshot->frameCounter != s_lastRenderedFrame) {
+        ModernRender(snapshot);
+        s_lastRenderedFrame = snapshot->frameCounter;
+        if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
+    }
+    if (!s_haveRenderedFrame) return;
+    info->texture = s_target;
+    info->w = (Uint32)s_targetW;
+    info->h = (Uint32)s_targetH;
+    info->aspect = 4.0f / 3.0f;
+    info->filter = SDL_GPU_FILTER_NEAREST;
 }
 
 int RageModernInit(const RagePortConfig *config) {
@@ -34,10 +1045,12 @@ int RageModernInit(const RagePortConfig *config) {
     if (s_enabled) {
         return 1;
     }
+    s_config = *config;
     s_prev_overlay_init = Psyz_OverlayInit_SDL3GPU(ModernOverlayInit);
     s_prev_present_source = Psyz_PresentSource_SDL3GPU(ModernPresentSource);
     s_enabled = 1;
-    fprintf(stderr, "rage-port: modern renderer enabled (presenting compat image until R2)\n");
+    fprintf(stderr, "rage-port: modern renderer enabled (scale %.2f)\n",
+            s_config.modernInternalScale);
     return 1;
 }
 

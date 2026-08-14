@@ -913,6 +913,22 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x3, &poly->y3, sxy[3]);
             AddPrim(&ot[depth], poly);
             cursor += sizeof(*poly);
+            {
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 0;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.colors = &poly->r0;
+                capture.colorCount = 1;
+                RageCaptureFace3D(&capture);
+            }
         } else if (type == RAGE_MODEL_FT4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_FT4))) break;
             POLY_FT4 *poly = (POLY_FT4 *)cursor;
@@ -927,6 +943,28 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x3, &poly->y3, sxy[3]);
             AddPrim(&ot[depth], poly);
             cursor += sizeof(*poly);
+            {
+                uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
+                                 poly->u2, poly->v2, poly->u3, poly->v3};
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 1;
+                capture.raw = 1; /* forced command byte 0x2D */
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.uv = uv;
+                capture.clut = poly->clut;
+                capture.tpage = poly->tpage;
+                capture.colors = &poly->r0;
+                capture.colorCount = 1;
+                RageCaptureFace3D(&capture);
+            }
         } else if (type == RAGE_MODEL_G4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_G4))) break;
             POLY_G4 *poly = (POLY_G4 *)cursor;
@@ -962,6 +1000,22 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
             RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
             AddPrim(&ot[depth], poly); cursor += sizeof(*poly);
+            {
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 2;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.colors = &colors[0].r;
+                capture.colorCount = 4;
+                RageCaptureFace3D(&capture);
+            }
         } else {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_GT4))) break;
             POLY_GT4 *poly = (POLY_GT4 *)cursor;
@@ -1012,6 +1066,27 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
             RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
             AddPrim(&ot[depth], poly); cursor += sizeof(*poly);
+            {
+                uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
+                                 poly->u2, poly->v2, poly->u3, poly->v3};
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 3;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.uv = uv;
+                capture.clut = poly->clut;
+                capture.tpage = poly->tpage;
+                capture.colors = &colors[0].r;
+                capture.colorCount = 4;
+                RageCaptureFace3D(&capture);
+            }
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
@@ -1122,6 +1197,38 @@ static void RageSubmitCourseModel(int index, int fogged) {
             /* Retail validates the un-biased parent OTZ in 1..447, then adds
              * the signed record bias to the already shifted +128 base. */
             depth += bias;
+            {
+                RageCaptureFaceInput capture = {0};
+                uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                capture.kind = RAGE_CAPTURE_KIND_COURSE;
+                capture.klass = type == 0 ? 0 : 1;
+                capture.bias = bias;
+                capture.otDepth = depth;
+                capture.fog = fogged ? fog : -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(stream + 0)];
+                capture.v[1] = &vertices[RageReadU16(stream + 2)];
+                capture.v[2] = &vertices[RageReadU16(stream + 4)];
+                capture.v[3] = &vertices[RageReadU16(stream + 6)];
+                capture.colors = flat;
+                capture.colorCount = 1;
+                if (type == 1) {
+                    uint32_t uv0 = RageReadU32(stream + 12) +
+                                   (uint32_t)g_ScratchRenderMode;
+                    uint8_t uv[8] = {
+                        (uint8_t)uv0, (uint8_t)(uv0 >> 8),
+                        stream[16], stream[17],
+                        stream[20], stream[21], stream[22], stream[23]
+                    };
+                    memcpy(capture.uvStorage, uv, sizeof(uv));
+                    capture.uv = capture.uvStorage;
+                    capture.clut = (uint16_t)(uv0 >> 16);
+                    capture.tpage = RageReadU16(stream + 18);
+                }
+                /* Types 2/3 are captured at their subdivision site where the
+                 * scrolled/mode-adjusted UVs are final. */
+                if (type <= 1) RageCaptureFace3D(&capture);
+            }
             if (type == 0) {
                 if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
                 POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -1186,6 +1293,28 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
+                {
+                    RageCaptureFaceInput capture = {0};
+                    uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                    capture.kind = RAGE_CAPTURE_KIND_COURSE;
+                    capture.klass = 1;
+                    capture.bias = bias;
+                    capture.otDepth = depth;
+                    capture.fog = fogged ? fog : -1;
+                    capture.cellSlot = -1;
+                    capture.v[0] = &vertices[RageReadU16(stream + 0)];
+                    capture.v[1] = &vertices[RageReadU16(stream + 2)];
+                    capture.v[2] = &vertices[RageReadU16(stream + 4)];
+                    capture.v[3] = &vertices[RageReadU16(stream + 6)];
+                    memcpy(capture.uvStorage, uv, 8);
+                    capture.uv = capture.uvStorage;
+                    capture.clut = clut;
+                    capture.tpage = tpage;
+                    capture.textureWindow = textureWindow & 0xFFFFFu;
+                    capture.colors = flat;
+                    capture.colorCount = 1;
+                    RageCaptureFace3D(&capture);
+                }
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next = RageEmitCourseFt4(
                         cursor, ot, depth, sxy, uv, clut, tpage, color,
@@ -1255,7 +1384,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     RageInitializeTerrainTrace();
     RageInitializeTerrainDecisionTrace();
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
-    RageCaptureTerrainBegin(cells, count);
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
      * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
@@ -1269,6 +1397,9 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         mirrorMatrix.m[0][2] = -mirrorMatrix.m[0][2];
         SetRotMatrix(&mirrorMatrix);
     }
+    /* Capture after the mirror matrix install so the batch GTE state is the
+     * one the cells are actually projected with. */
+    RageCaptureTerrainBegin(cells, count);
 
     for (cell = 0; cell < count; cell++, visible += 4) {
         uint8_t *stream;
@@ -1411,6 +1542,46 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
+                {
+                    /* Capture the parent quad exactly as the emitter shades
+                     * it: zero colour promotes to 0x80 and odd dispatches
+                     * select the adjacent CLUT row. */
+                    RageCaptureFaceInput capture = {0};
+                    uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                    if ((flat[0] | flat[1] | flat[2]) == 0)
+                        flat[0] = flat[1] = flat[2] = 0x80;
+                    capture.kind = RAGE_CAPTURE_KIND_TERRAIN;
+                    capture.klass = 1;
+                    capture.fogged = dispatch == 0 || dispatch == 2;
+                    if (capture.fogged) {
+                        /* Bake the same depth cue the emitter applies so the
+                         * captured colour matches the compat packet. */
+                        CVECTOR base = {flat[0], flat[1], flat[2],
+                                        POLY_FT4_CODE};
+                        CVECTOR shaded;
+                        DpqColor(&base, fog, &shaded);
+                        flat[0] = shaded.r;
+                        flat[1] = shaded.g;
+                        flat[2] = shaded.b;
+                    }
+                    capture.bias = bias;
+                    capture.otDepth = depth + bias;
+                    capture.fog = fog;
+                    capture.cellSlot = cell;
+                    capture.v[0] = v0;
+                    capture.v[1] = v1;
+                    capture.v[2] = v2;
+                    capture.v[3] = v3;
+                    memcpy(capture.uvStorage, baseUv, 8);
+                    capture.uv = capture.uvStorage;
+                    capture.clut = (uint16_t)(clut + ((dispatch & 1) != 0));
+                    capture.tpage = tpage;
+                    capture.textureWindow =
+                        dispatch >= 2 ? (textureWindow & 0xFFFFFu) : 0;
+                    capture.colors = flat;
+                    capture.colorCount = 1;
+                    RageCaptureFace3D(&capture);
+                }
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
                     depth += bias;

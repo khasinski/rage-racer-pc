@@ -18,8 +18,8 @@ from pathlib import Path
 
 LINE = re.compile(
     r"scene-frame frame=(\d+) scene=(-?\d+) timer=(-?\d+) draws=(\d+) "
-    r"terrain=(\d+) cells=(\d+) packets=(\d+) skipped3d=(\d+) "
-    r"overflow=(\d+),(\d+),(\d+),(\d+) hash=([0-9a-f]{16})"
+    r"terrain=(\d+) cells=(\d+) packets=(\d+) faces=(\d+) skipped3d=(\d+) "
+    r"overflow=(\d+),(\d+),(\d+),(\d+),(\d+) hash=([0-9a-f]{16})"
 )
 
 
@@ -61,13 +61,13 @@ def main() -> int:
         frames = [LINE.match(line) for line in first_text.splitlines()]
         if any(match is None for match in frames):
             raise AssertionError("malformed scene-frame line in trace")
-        rows = [tuple(int(g, 16 if i == 12 else 10) for i, g in
+        rows = [tuple(int(g, 16 if i == 14 else 10) for i, g in
                       enumerate(match.groups())) for match in frames]
         if len(rows) < 1200:
             raise AssertionError(f"expected >=1200 captured frames, got {len(rows)}")
 
         for row in rows:
-            if any(row[8:12]):
+            if any(row[9:14]):
                 raise AssertionError(f"capture overflow at frame {row[0]}: {row}")
 
         race = [row for row in rows if row[1] == 32]
@@ -75,7 +75,12 @@ def main() -> int:
             raise AssertionError("scenario never reached the race demo scene")
         with_models = [row for row in race if row[3] >= 5]
         with_terrain = [row for row in race if row[4] >= 1 and row[5] >= 32]
-        with_skipped = [row for row in race if row[7] >= 100]
+        with_skipped = [row for row in race if row[8] >= 100]
+        with_faces = [row for row in race if row[7] >= 200]
+        if len(with_faces) < 100:
+            raise AssertionError(
+                f"expected >=100 race frames with >=200 3D faces, got {len(with_faces)}"
+            )
         if len(with_models) < 100:
             raise AssertionError(
                 f"expected >=100 race frames with >=5 model draws, got {len(with_models)}"

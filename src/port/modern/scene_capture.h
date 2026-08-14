@@ -67,9 +67,52 @@ typedef struct RageCapturePacket {
     uint32_t words[RAGE_CAPTURE_PACKET_WORDS];
 } RageCapturePacket;
 
+/* One 3D face in model-local space, captured at the compat emission point
+ * with its final texture state and (lit, pre-fog for terrain) colours. The
+ * modern renderer re-projects these with float math and a depth buffer. */
+typedef struct RageCaptureFace {
+    uint8_t kind;   /* RAGE_CAPTURE_KIND_* / 2 = terrain */
+    uint8_t klass;  /* 0 F4, 1 FT4, 2 G4, 3 GT4 */
+    uint8_t flags;  /* RAGE_CAPTURE_FACE_* */
+    int8_t bias;
+    int16_t drawIndex; /* draws[] index; terrain: terrain[] batch index */
+    int16_t cellSlot;  /* terrain: cells[] slot, else -1 */
+    int32_t otDepth;   /* final compat bucket, bias included */
+    int32_t fog;       /* GTE IR0 depth-cue factor, -1 when not fogged */
+    uint16_t clut, tpage;
+    uint32_t textureWindow;
+    int16_t pos[4][4]; /* local SVECTOR x,y,z (word 3 unused) */
+    uint8_t uv[4][2];
+    uint8_t color[4][4];
+} RageCaptureFace;
+
+#define RAGE_CAPTURE_FACE_SEMI 0x01
+#define RAGE_CAPTURE_FACE_RAW 0x02
+#define RAGE_CAPTURE_FACE_FOGGED 0x04
+#define RAGE_CAPTURE_KIND_TERRAIN 2
+
+typedef struct RageCaptureFaceInput {
+    int kind, klass;
+    int semi, raw, fogged;
+    int bias;
+    int otDepth;
+    int fog;
+    int cellSlot;
+    const void *v[4];       /* SVECTOR* */
+    const uint8_t *uv;      /* 8 bytes u0v0..u3v3, or NULL */
+    uint8_t uvStorage[8];   /* scratch space call sites may point uv at */
+    uint16_t clut, tpage;
+    uint32_t textureWindow;
+    const uint8_t *colors;  /* colorCount * 4 bytes (CVECTOR layout) */
+    int colorCount;         /* 1 = flat, 4 = per-vertex */
+} RageCaptureFaceInput;
+
+void RageCaptureFace3D(const RageCaptureFaceInput *input);
+
 #define RAGE_CAPTURE_MAX_DRAWS 2048
 #define RAGE_CAPTURE_MAX_TERRAIN 8
 #define RAGE_CAPTURE_MAX_PACKETS 32768
+#define RAGE_CAPTURE_MAX_FACES 49152
 
 typedef struct RageSceneSnapshot {
     uint32_t frameCounter;
@@ -77,12 +120,13 @@ typedef struct RageSceneSnapshot {
     int32_t sceneTimer;
     RageCaptureMatrix viewMatrix; /* SCRATCH_VIEW_MATRIX_GTE at frame end */
     int32_t viewPosition[3];
-    int32_t drawCount, terrainCount, packetCount;
-    int32_t drawOverflow, packetOverflow, oversizedPackets;
+    int32_t drawCount, terrainCount, packetCount, faceCount;
+    int32_t drawOverflow, packetOverflow, oversizedPackets, faceOverflow;
     int32_t skipped3DPackets;
     RageCaptureModelDraw draws[RAGE_CAPTURE_MAX_DRAWS];
     RageCaptureTerrainBatch terrain[RAGE_CAPTURE_MAX_TERRAIN];
     RageCapturePacket packets[RAGE_CAPTURE_MAX_PACKETS];
+    RageCaptureFace faces[RAGE_CAPTURE_MAX_FACES];
 } RageSceneSnapshot;
 
 /* Capture runs when the modern renderer is enabled or RAGE_PORT_SCENE_TRACE

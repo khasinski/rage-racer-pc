@@ -8,6 +8,8 @@
 #include <stdlib.h>
 
 #include "input_config.h"
+#include "port_config.h"
+#include "modern/modern_renderer.h"
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
 #include "game/state.h"
@@ -184,6 +186,15 @@ int main(void) {
     }
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
+    if (getenv("RAGE_PORT_MODERN") != NULL) {
+        RagePortConfig portConfig;
+        RagePortConfigDefaults(&portConfig);
+        portConfig.renderer = RAGE_RENDERER_MODERN;
+        RagePortConfigLoad(&portConfig, "rage-port.cfg");
+        portConfig.renderer = RAGE_RENDERER_MODERN;
+        RagePortConfigSetActive(&portConfig);
+        RageModernInit(&portConfig);
+    }
     MainLoop();
     if (getenv("RAGE_PORT_DUMP_VRAM") != NULL) {
         const char *path = getenv("RAGE_PORT_DUMP_VRAM");

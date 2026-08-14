@@ -113,9 +113,11 @@ void RageCaptureFrameBegin(void) {
     snapshot->drawCount = 0;
     snapshot->terrainCount = 0;
     snapshot->packetCount = 0;
+    snapshot->faceCount = 0;
     snapshot->drawOverflow = 0;
     snapshot->packetOverflow = 0;
     snapshot->oversizedPackets = 0;
+    snapshot->faceOverflow = 0;
     snapshot->skipped3DPackets = 0;
     s_rangeCount = 0;
     s_rangeOverflow = 0;
@@ -165,6 +167,53 @@ void RageCaptureTerrainBegin(const void *cells, int count) {
         batch->cells[i / 4][i % 4] = records[i];
     }
     CaptureGte(&batch->gte);
+}
+
+void RageCaptureFace3D(const RageCaptureFaceInput *input) {
+    RageSceneSnapshot *snapshot;
+    RageCaptureFace *face;
+    int vertex;
+    if (!RageCaptureActive()) return;
+    snapshot = &s_snapshots[s_current];
+    if (snapshot->faceCount >= RAGE_CAPTURE_MAX_FACES) {
+        snapshot->faceOverflow++;
+        return;
+    }
+    face = &snapshot->faces[snapshot->faceCount++];
+    memset(face, 0, sizeof(*face));
+    face->kind = (uint8_t)input->kind;
+    face->klass = (uint8_t)input->klass;
+    face->flags = (uint8_t)((input->semi ? RAGE_CAPTURE_FACE_SEMI : 0) |
+                            (input->raw ? RAGE_CAPTURE_FACE_RAW : 0) |
+                            (input->fogged ? RAGE_CAPTURE_FACE_FOGGED : 0));
+    face->bias = (int8_t)input->bias;
+    face->drawIndex = (int16_t)(input->kind == RAGE_CAPTURE_KIND_TERRAIN
+                                    ? snapshot->terrainCount - 1
+                                    : snapshot->drawCount - 1);
+    face->cellSlot = (int16_t)input->cellSlot;
+    face->otDepth = input->otDepth;
+    face->fog = input->fog;
+    face->clut = input->clut;
+    face->tpage = input->tpage;
+    face->textureWindow = input->textureWindow;
+    for (vertex = 0; vertex < 4; vertex++) {
+        const SVECTOR *v = (const SVECTOR *)input->v[vertex];
+        face->pos[vertex][0] = v->vx;
+        face->pos[vertex][1] = v->vy;
+        face->pos[vertex][2] = v->vz;
+        if (input->uv != NULL) {
+            face->uv[vertex][0] = input->uv[vertex * 2];
+            face->uv[vertex][1] = input->uv[vertex * 2 + 1];
+        }
+        {
+            const uint8_t *color = input->colorCount == 4
+                                       ? input->colors + vertex * 4
+                                       : input->colors;
+            face->color[vertex][0] = color[0];
+            face->color[vertex][1] = color[1];
+            face->color[vertex][2] = color[2];
+        }
+    }
 }
 
 void RageCaptureSubmitEnd(void) {
@@ -326,13 +375,14 @@ void RageCaptureFrameEnd(void) {
         }
         fprintf(s_trace,
                 "scene-frame frame=%u scene=%d timer=%d draws=%d terrain=%d "
-                "cells=%d packets=%d skipped3d=%d overflow=%d,%d,%d,%d "
-                "hash=%016llx\n",
+                "cells=%d packets=%d faces=%d skipped3d=%d "
+                "overflow=%d,%d,%d,%d,%d hash=%016llx\n",
                 snapshot->frameCounter, snapshot->sceneId,
                 snapshot->sceneTimer, snapshot->drawCount,
                 snapshot->terrainCount, cells, snapshot->packetCount,
-                snapshot->skipped3DPackets, snapshot->drawOverflow,
-                snapshot->packetOverflow, snapshot->oversizedPackets,
+                snapshot->faceCount, snapshot->skipped3DPackets,
+                snapshot->drawOverflow, snapshot->packetOverflow,
+                snapshot->oversizedPackets, snapshot->faceOverflow,
                 s_rangeOverflow,
                 (unsigned long long)RageCaptureSnapshotHash(snapshot));
         if (getenv("RAGE_PORT_SCENE_TRACE_VERBOSE") != NULL) {
@@ -395,6 +445,10 @@ uint64_t RageCaptureSnapshotHash(const RageSceneSnapshot *snapshot) {
     for (i = 0; i < snapshot->packetCount; i++) {
         hash = HashBytes(hash, &snapshot->packets[i],
                          sizeof(snapshot->packets[i]));
+    }
+    for (i = 0; i < snapshot->faceCount; i++) {
+        hash = HashBytes(hash, &snapshot->faces[i],
+                         sizeof(snapshot->faces[i]));
     }
     return hash;
 }
