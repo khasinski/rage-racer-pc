@@ -934,6 +934,20 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
     SDL_SubmitGPUCommandBuffer(cmd);
     s_haveRenderedFrame = 1;
+    if (getenv("RAGE_PORT_MODERN_SPAN_TRACE") != NULL) {
+        int counts[5] = {0};
+        int verts[5] = {0};
+        for (i = 0; i < s_spanCount; i++) {
+            counts[s_spans[i].pipeline]++;
+            verts[s_spans[i].pipeline] += s_spans[i].count;
+        }
+        fprintf(stderr,
+                "modern-spans frame=%u spans=%d verts=%d "
+                "opaque=%d/%d blend=%d/%d sub=%d/%d 2d=%d/%d 2dsub=%d/%d\n",
+                snapshot->frameCounter, s_spanCount, s_vertexCount,
+                counts[0], verts[0], counts[1], verts[1], counts[2], verts[2],
+                counts[3], verts[3], counts[4], verts[4]);
+    }
 }
 
 /* Diagnostic: write the modern target as a binary PPM when
