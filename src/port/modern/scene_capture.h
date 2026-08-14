@@ -132,6 +132,7 @@ typedef struct RageSceneSnapshot {
     int32_t sceneId;
     int32_t sceneTimer;
     int32_t displayHeight; /* draw-env rows: 240, or 480 for menu scenes */
+    int32_t displayPageY;  /* draw-env top row in VRAM: 0 or 240 */
     RageCaptureMatrix viewMatrix; /* SCRATCH_VIEW_MATRIX_GTE at frame end */
     int32_t viewPosition[3];
     int32_t drawCount, terrainCount, packetCount, faceCount;

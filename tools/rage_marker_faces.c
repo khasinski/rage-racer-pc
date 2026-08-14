@@ -96,6 +96,13 @@ int main(int argc, char **argv) {
         }
         printf("terrain[%d] mirror=%d cells=%d cellZ=%d..%d\n", i,
                batch->mirror, batch->cellCount, minZ, maxZ);
+        if (getenv("MARKER_LIST_CELLS") != NULL) {
+            for (c = 0; c < batch->cellCount; c++) {
+                printf("  cell slot=%d index=%d xyz=%d,%d,%d\n", c,
+                       batch->cells[c][3], batch->cells[c][0],
+                       batch->cells[c][1], batch->cells[c][2]);
+            }
+        }
     }
     for (i = 0; i < s->faceCount; i++) {
         const RageCaptureFace *f = &s->faces[i];
@@ -110,6 +117,44 @@ int main(int argc, char **argv) {
     }
     printf("faces: terrain=%d course=%d model=%d extended(>=448)=%d\n",
            terrainFaces, courseFaces, modelFaces, extended);
+    if (getenv("MARKER_CELL_STATS") != NULL) {
+        static int slotCount[16][64];
+        static float slotMinZ[16][64], slotMaxZ[16][64];
+        int b, c;
+        for (i = 0; i < s->faceCount; i++) {
+            const RageCaptureFace *f = &s->faces[i];
+            float view[4][3];
+            int vertex;
+            if (f->kind != RAGE_CAPTURE_KIND_TERRAIN) continue;
+            if (f->drawIndex < 0 || f->drawIndex >= 16) continue;
+            if (f->cellSlot < 0 || f->cellSlot >= 64) continue;
+            faceView(s, f, view);
+            for (vertex = 0; vertex < 4; vertex++) {
+                float z = view[vertex][2];
+                int *count = &slotCount[f->drawIndex][f->cellSlot];
+                if (*count == 0 || z < slotMinZ[f->drawIndex][f->cellSlot])
+                    slotMinZ[f->drawIndex][f->cellSlot] = z;
+                if (*count == 0 || z > slotMaxZ[f->drawIndex][f->cellSlot])
+                    slotMaxZ[f->drawIndex][f->cellSlot] = z;
+            }
+            slotCount[f->drawIndex][f->cellSlot]++;
+        }
+        for (b = 0; b < s->terrainCount; b++) {
+            for (c = 0; c < s->terrain[b].cellCount; c++) {
+                if (slotCount[b][c] == 0) {
+                    if (s->terrain[b].cells[c][3] >= 0) {
+                        printf("cellstat batch=%d slot=%d index=%d faces=0\n",
+                               b, c, s->terrain[b].cells[c][3]);
+                    }
+                    continue;
+                }
+                printf("cellstat batch=%d slot=%d index=%d faces=%d "
+                       "z=%.0f..%.0f\n",
+                       b, c, s->terrain[b].cells[c][3], slotCount[b][c],
+                       slotMinZ[b][c], slotMaxZ[b][c]);
+            }
+        }
+    }
     printf("bucket histogram (128 buckets/bin): ");
     for (i = 0; i < 8; i++) printf("%d ", histogram[i]);
     printf("\n");

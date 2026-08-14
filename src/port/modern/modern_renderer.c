@@ -910,16 +910,19 @@ static void ModernScissorToPixels(SDL_Rect *rect) {
     rect->h = rect->h * s_targetH / 240;
 }
 
-/* Map a VRAM-absolute drawing-area row onto the 320x240 page-local space.
- * The two frame pages sit at rows 0 and 240; a row past both (a sliding
- * mirror wraps its 9-bit coordinate there deliberately) lands BELOW the
- * page so the resulting area is empty, exactly like the PS1 clips it.
- * Folding with a plain %240 instead resurrected those discarded areas and
- * flashed the mirror backdrop during the slide-in. */
+/* Map a VRAM-absolute drawing-area row onto the CURRENT frame page's local
+ * space. The sliding mirror deliberately places its area above the page
+ * (negative rows wrap to >=480 through the 9-bit field) or on the OTHER
+ * page, and the PS1 clips either away; folding rows onto the local page
+ * unconditionally resurrected those discarded areas and flashed the mirror
+ * backdrop (sky) during the slide-in - on alternating frames only, which
+ * is why the fix keyed on rows >=480 alone missed half of them. */
+static int s_areaPageY;
+
 static int Modern2DAreaLocalY(int y) {
-    if (y >= 480) return 240;
-    if (y >= 240) return y - 240;
-    return y;
+    int local = y - s_areaPageY;
+    if (local < 0 || local >= 240) return 240; /* off-page: empty area */
+    return local;
 }
 
 static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
@@ -1199,6 +1202,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
     s_vertexCount = 0;
     s_spanCount = 0;
+    s_areaPageY = snapshot->displayPageY;
 
     /* One common model bias for the whole frame, applied at full bucket
      * scale to every model draw uniformly. Retail wins hill crests against

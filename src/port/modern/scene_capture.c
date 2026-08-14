@@ -387,6 +387,7 @@ void RageCaptureFrameEnd(void) {
     frame = CaptureFrameContext();
     if (frame != NULL) {
         snapshot->displayHeight = frame->layout.environment.draw.clip.h;
+        snapshot->displayPageY = frame->layout.environment.draw.clip.y;
         CaptureWalkTable(snapshot, 0, frame->layout.orderingTables[0]);
         CaptureWalkTable(snapshot, 1, frame->layout.orderingTables[1]);
     }
