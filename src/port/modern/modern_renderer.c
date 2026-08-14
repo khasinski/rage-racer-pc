@@ -910,6 +910,18 @@ static void ModernScissorToPixels(SDL_Rect *rect) {
     rect->h = rect->h * s_targetH / 240;
 }
 
+/* Map a VRAM-absolute drawing-area row onto the 320x240 page-local space.
+ * The two frame pages sit at rows 0 and 240; a row past both (a sliding
+ * mirror wraps its 9-bit coordinate there deliberately) lands BELOW the
+ * page so the resulting area is empty, exactly like the PS1 clips it.
+ * Folding with a plain %240 instead resurrected those discarded areas and
+ * flashed the mirror backdrop during the slide-in. */
+static int Modern2DAreaLocalY(int y) {
+    if (y >= 480) return 240;
+    if (y >= 240) return y - 240;
+    return y;
+}
+
 static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
     switch (word >> 24) {
     case 0xE1:
@@ -922,7 +934,7 @@ static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
         int x = (int)(word & 0x3FFu);
         int y = (int)((word >> 10) & 0x1FFu);
         state->scissor.x = x;
-        state->scissor.y = y % 240;
+        state->scissor.y = Modern2DAreaLocalY(y);
         state->hasScissor = 1;
         break;
     }
@@ -930,7 +942,7 @@ static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
         int x = (int)(word & 0x3FFu);
         int y = (int)((word >> 10) & 0x1FFu);
         state->scissor.w = x - state->scissor.x + 1;
-        state->scissor.h = (y % 240) - state->scissor.y + 1;
+        state->scissor.h = Modern2DAreaLocalY(y) - state->scissor.y + 1;
         state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
         break;
     }
@@ -1622,12 +1634,25 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
     }
     wasDown = down;
     {
-        static int markerIndex;
+        static int markerIndex = -1;
         char path[256];
-        int index = markerIndex++;
+        int index;
         FILE *file;
         int i;
         mkdir("markers", 0755);
+        if (markerIndex < 0) {
+            /* Continue numbering across sessions so old markers survive. */
+            markerIndex = 0;
+            for (i = 0; i < 1000; i++) {
+                snprintf(path, sizeof(path), "markers/marker-%d-info.txt", i);
+                file = fopen(path, "r");
+                if (file != NULL) {
+                    fclose(file);
+                    markerIndex = i + 1;
+                }
+            }
+        }
+        index = markerIndex++;
         if (haveModernImage) {
             snprintf(path, sizeof(path), "markers/marker-%d-modern.ppm",
                      index);
