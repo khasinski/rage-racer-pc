@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/save_format.h"
 
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
@@ -13,17 +14,6 @@
  * DrawMemoryCardMessage is called with the value minus one. The names come
  * from the retail strings the index reaches through g_McMessageRows, quoted here.
  */
-/* Geometry of the payload. The file around it is icon + header + this block
- * + header again; see the layout note above. */
-/* The three CarEntry tables inside the block: grand prix, extra grand
- * prix and time attack, 13 rows of 8 bytes each. */
-#define MC_GP_CARS_OFS    0x58
-#define MC_EXTRA_CARS_OFS 0xC0
-#define MC_TIME_CARS_OFS  0x128
-
-#define MC_BLOCK_SIZE         0x1000
-#define MC_BLOCK_CHECKSUM_OFS 0xFFC
-
 typedef enum MemoryCardPrompt {
     MC_PROMPT_INVALID = -1,
     MC_PROMPT_NONE = 0x00,
@@ -45,132 +35,11 @@ typedef enum MemoryCardPrompt {
 
 extern MemoryCardPrompt g_McMenuPhase;
 
-typedef union GameSaveHeaderRow {
-    struct {
-        u8 nameLength;
-        u8 name[7];
-        s32 saveCounter;
-        u8 reserved[0x70];
-        u32 checksum;
-    } fields;
-    u8 bytes[0x80];
-    u16 halfwords[0x40];
-} GameSaveHeaderRow;
-
-typedef union GameSaveHeaderRowAddress {
-#ifdef __psyz
-    uintptr_t value;
-#else
-    s32 value;
-#endif
-    GameSaveHeaderRow *pointer;
-} GameSaveHeaderRowAddress;
-
-typedef union GameSaveHeaderWordAddress {
-    u8 *bytes;
-    volatile u32 *word;
-} GameSaveHeaderWordAddress;
-
-typedef struct GameSaveHeaderClearCursor {
-    u8 prefix[0xC];
-    u16 reservedHalfword;
-    u8 suffix[0x74];
-} GameSaveHeaderClearCursor;
-
-typedef union GameSaveHeaderRowsAddress {
-    u8 *bytes;
-    GameSaveHeaderRow *rows;
-    GameSaveHeaderClearCursor *clearCursors;
-} GameSaveHeaderRowsAddress;
-
 typedef struct MemoryCardMessageRow {
     u8 *text;
     u8 column;
     u8 reserved[3];
 } MemoryCardMessageRow;
-
-typedef struct SavedCarSetup {
-    u8 modelVariant;
-    u8 tireCompound;
-    u8 transmission;
-    u8 paintColor1;
-    u8 paintColor2;
-    u8 enabled;
-    u8 reserved[2];
-} SavedCarSetup;
-
-typedef struct SavedClassRecord {
-    u16 grade;
-    u16 clears;
-} SavedClassRecord;
-
-typedef struct SavedRaceProgress {
-    s32 course;
-    s32 carIndex;
-    s32 classIndex;
-    s32 maxClassReached;
-    s32 money;
-} SavedRaceProgress;
-
-/*
- * The 0x1000-byte memory-card payload: a flat dump of live globals, named per
- * field below. checksum = ~sum(u16[0..0x7FE]). Written by StoreSaveStateBlock, read
- * by LoadSaveStateBlock - both keep raw offsets.
- *
- * The file WriteMemoryCardSaveFile lays down around it is four writes:
- *
- *     0x0000  0x200  icon block, "SC" + title + CLUT at 0x60 + 16x16 4bpp icon
- *     0x0200  0x080  GameSaveHeaderRow
- *     0x0280  0x1000 this struct
- *     0x1280  0x080  the same header row again
- *
- * 0x1300 total, one memory card block. The three slots are named
- * "bu00:BESCES-00650 RAGE000".."RAGE002" (g_SaveFilePath).
- *
- * The payload is region independent: US (BASLUS-00403) and JP (BISLPS-00600)
- * saves both satisfy the checksum rules above and decode field for field
- * against this struct, so only the directory filename identifies the region.
- */
-typedef struct GameSaveBlock {
-    u16 padMappingIndex;
-    u16 negconMappingIndex;
-    u16 negconSteerNeutral;
-    u16 negconSteerPlay;
-    u16 negconNeutralI;
-    u16 negconNeutralII;
-    u16 negconNeutralL;
-    u16 negconMaxTwist;
-    SavedRaceProgress grandPrixProgress;
-    SavedRaceProgress extraGrandPrixProgress;
-    SavedRaceProgress timeAttackProgress;
-    s16 bgmSelection;             /* +0x4C g_BgmSelection */
-    u16 advancedUnlocked;  /* +0x4E g_AdvancedSeriesUnlocked */
-    s32 maxClassReached[2];/* +0x50 g_MaxClassReached */
-    SavedCarSetup carSetup[3][13];
-    SavedClassRecord classRecords[11];
-    u16 teamLogoClut[16];
-    u16 teamLogoCanvas[0x400];
-    s32 bestLapTimes[2][4][2];
-    s32 bestTotalTimes[2][4][2];
-    RaceRecord rankingRecords[2][4][5];
-    RaceRecord timeRecords[2][4][5]; /* +0xCDC g_TimeRecords time rows */
-    s32 bestSectorTimes[2][4][3];
-    s32 bgmVolume;            /* +0xFBC g_BgmVolumeSetting, clamped to 0..0xF on load */
-    s32 sfxVolume;            /* +0xFC0 g_SfxVolumeSetting, clamped to 0..0xF on load */
-    s32 monoOutput;            /* +0xFC4 g_MonoOutput, forced to 0/1 on load */
-    u8 grandPrixCourseProgress[8];
-    u8 extraGrandPrixCourseProgress[8];
-    u8 reserved[0x24];
-    u32 checksum;          /* +0xFFC */
-} GameSaveBlock;
-
-typedef union GameSaveBlockAddress {
-    s32 offset;
-    u8 *bytePointer;
-    u16 *halfwordPointer;
-    s32 *wordPointer;
-    GameSaveBlock *pointer;
-} GameSaveBlockAddress;
 
 void AdvanceSaveHeaderCounter(void);
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);

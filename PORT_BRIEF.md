@@ -3707,3 +3707,22 @@ long-lived menu sequence playback could consequently change speed and stutter.
 Allocate the table as `SeqStruct[2]` and cast only at the original libsnd API
 boundary.  `sequence_state_layout` rejects a return to fixed 32-bit backing;
 this is a game-code pointer-width correction for the decompilation backport.
+## Complete-save generator
+
+`rage-save-generator` creates a retail-compatible PAL memory-card file, not a
+sidecar or runtime override. It writes the complete `0x1300` layout and both
+retail halfword checksums. The complete preset enables Advanced Series, all
+classes (4 in the original series and 5 in Advanced), all 13 cars in all three
+mode tables, every valid car model upgrade, maximum GP money and first-place
+clears for every class record.
+
+```
+build-host/rage-save-generator --slot 0 --name UNLOCK
+```
+
+The default output is `bu00/BESCES-00650 RAGE000`; slots 1 and 2 select the
+other filenames. `--output PATH` writes elsewhere, and `--name` accepts one to
+seven characters from the game's save-name alphabet. The generator and game
+share `include/game/save_format.h`. `save_generator` verifies the binary,
+while `save_roundtrip` loads it through the real `LoadMemoryCardSaveSlot` and
+checks the complete progression and car tables.
