@@ -6,7 +6,7 @@
  * PSY-Q 3.5 libgte object geo_00.o (LIBGTE.A): the fixed-point sine/cosine
  * helpers rsin, rsinCore and rcos
  * (rcos) that read the 0x80094308 sine table.  Byte-matched against
- * geo_00.o (rsin anchor); see docs/names.md section 25.
+ * geo_00.o (rsin anchor).
  */
 
 s32 rsin(s32 angle) {

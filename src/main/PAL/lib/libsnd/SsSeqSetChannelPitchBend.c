@@ -26,7 +26,6 @@ void SsSeqSetChannelPitchBend(long seq, long sep, long pitch, long amount) {
 }
 
 
-
 void SsSeqSetNoteParam2C(long seq, long sep, u_char value) {
     SeqStruct *state = &g_SndSeqTable[(short)seq][(short)sep];
 

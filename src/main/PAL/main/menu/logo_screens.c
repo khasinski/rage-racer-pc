@@ -18,7 +18,6 @@
 #include "psyq/gpu.h"
 
 
-
 void UpdateTeamLogoScreen(void)
 {
   void *ot;

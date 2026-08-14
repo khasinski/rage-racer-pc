@@ -183,7 +183,6 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 }
 
 
-
 void DrawRearViewMirror(s32 mode) {
     void **scratch;
     DrawPacket *packet;

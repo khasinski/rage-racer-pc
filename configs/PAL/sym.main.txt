@@ -1451,3 +1451,5 @@ g_FmtGpuClut = 0x8001338C;
 g_MsgGpuTimeout = 0x8001362C;
 g_MsgGpuTimeoutCallback = 0x80013660;
 g_IntrJmpBufSp = 0x8009946C;
+func_8006A018 = 0x8006A018; // type:func size:0x30
+func_8006A048 = 0x8006A048; // type:func size:0xC

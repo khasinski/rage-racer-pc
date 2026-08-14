@@ -5,7 +5,6 @@
 #include "psyq/cd_internal.h"
 
 
-
 /*
  * Low-level DMA-channel transfer helper. Spins on the channel's CHCR busy bit
  * (register window at 0x1F801088 + ch*0x10, timing out after 0x10000 polls),

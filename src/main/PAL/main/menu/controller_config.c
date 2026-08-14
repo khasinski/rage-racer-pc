@@ -157,7 +157,7 @@ void DrawNegconNeutralScreen(void) {
  *
  * The pins and the empty barrier only hold the reads ahead of the clears and
  * keep the last two snapshots in the registers retail used; the code itself is
- * ordinary C (see docs/ASM_AND_GTE_POLICY.md).
+ * ordinary C.
  */
 void BeginNegconCalibration(void) {
     register u16 twist asm("$3");

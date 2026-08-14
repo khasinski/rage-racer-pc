@@ -108,46 +108,12 @@ s32 SquareRoot12(s32 square) {
     return ret;
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
-
-void InitGeom(void) {
-    asm volatile(
-        ".set noreorder\n"
-        ".set noat\n"
-        "lui $1,0x8009\n"
-        "sw $31,0x4B0C($1)\n"
-        ".word 0x0C01A7EA\n"
-        "nop\n"
-        "lui $31,0x8009\n"
-        "lw $31,0x4B0C($31)\n"
-        "nop\n"
-        "mfc0 $2,$12\n"
-        "lui $3,0x4000\n"
-        "or $2,$2,$3\n"
-        "mtc0 $2,$12\n"
-        "nop\n"
-        "addiu $8,$0,0x155\n"
-        "ctc2 $8,$29\n"
-        "nop\n"
-        "addiu $8,$0,0x100\n"
-        "ctc2 $8,$30\n"
-        "nop\n"
-        "addiu $8,$0,0x3E8\n"
-        "ctc2 $8,$26\n"
-        "nop\n"
-        "addiu $8,$0,0xEF9E\n"
-        "ctc2 $8,$27\n"
-        "nop\n"
-        "lui $8,0x140\n"
-        "ctc2 $8,$28\n"
-        "nop\n"
-        "ctc2 $0,$24\n"
-        "ctc2 $0,$25\n"
-        "nop");
-}
+/* InitGeom: COP0 and GTE control registers, hand-written in the original.
+ * Excluded from progress. See src/main/PAL/lib/libgte/fog_geometry.s. */
+HANDWRITTEN_ASM("src/main/PAL/lib/libgte", fog_geometry);
 
 /*
- * HANDWRITTEN_ASM - excluded from progress (see docs/ASM_AND_GTE_POLICY.md).
+ * HANDWRITTEN_ASM - excluded from progress; see README.md.
  *
  * Symbol:   SquareRoot0
  * Address:  0x800689A8 (PAL/main, retail range [0x591A8, 0x5922C))
@@ -179,4 +145,3 @@ void InitGeom(void) {
  *   available to the build, or the routine is confirmed as a shippable
  *   library .s.
  */
-INCLUDE_ASM("asm/PAL/main/nonmatchings/lib/libgte/fog_geometry", SquareRoot0);

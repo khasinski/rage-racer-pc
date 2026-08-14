@@ -12,8 +12,6 @@
 #include "game/state.h"
 
 
-
-
 void UpdateRankingScreen(void) {
     s32 state;
 

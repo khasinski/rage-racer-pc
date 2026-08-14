@@ -67,6 +67,7 @@ PATTERNS = {
 }
 
 HEADER_PATTERNS = {
+    "header_byte_offset_members": re.compile(r"\bs32\s+byteOffset\s*;"),
     "header_address_integer_arithmetic": re.compile(
         r"\.(?:value|offset)\s*(?:\+=|-=|=[^;\n]*(?:\+|<<))"
     ),

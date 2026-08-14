@@ -33,7 +33,6 @@ long MoveImage(GpuRectPacked *rect, u_long x, u_long y) {
 }
 
 
-
 void *ClearOTag(u_long *ot, long count) {
     long remaining = count;
 

@@ -6,6 +6,7 @@
 #include "common.h"
 #include "game/track.h"
 #include "../src/port/input_config.h"
+#include "../src/port/port_config.h"
 
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 Random15(void);
@@ -116,6 +117,45 @@ static void test_input_config(void) {
     }
 }
 
+static void test_port_config(void) {
+    RagePortConfig config;
+    char path[] = "/tmp/rage-port-test-XXXXXX";
+    const char contents[] =
+        "# video settings\n"
+        "renderer = modern\n"
+        "modern.internal_scale = 3.5\n"
+        "modern.aspect = 16:9\n"
+        "modern.fps = 120\n"
+        "modern.texture_filter = linear\n"
+        "modern.post = fxaa\n"
+        "modern.draw_distance = nonsense\n"
+        "unknown.key = 1\n";
+    int fd;
+
+    RagePortConfigDefaults(&config);
+    EXPECT_EQ(RAGE_RENDERER_COMPAT, config.renderer);
+    EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
+    EXPECT_EQ(0, RagePortConfigLoad(&config, "/path/which/does/not/exist"));
+    EXPECT_EQ(RAGE_RENDERER_COMPAT, config.renderer);
+
+    fd = mkstemp(path);
+    if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
+        failures++;
+    } else {
+        close(fd);
+        EXPECT_EQ(6, RagePortConfigLoad(&config, path));
+        EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
+        EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
+        EXPECT_EQ(120, config.modernFps);
+        EXPECT_EQ(1, config.modernTextureFilterLinear);
+        EXPECT_EQ(RAGE_MODERN_POST_FXAA, config.modernPost);
+        EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
+        /* invalid value keeps the default */
+        EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));
+        unlink(path);
+    }
+}
+
 static void test_color_interpolation(void) {
     EXPECT_EQ(10, LerpColorChannel(10, 250, 0));
     EXPECT_EQ(250, LerpColorChannel(10, 250, 0x1000));
@@ -130,6 +170,7 @@ int main(void) {
     test_angle_blending();
     test_track_angle_interpolation();
     test_input_config();
+    test_port_config();
     test_color_interpolation();
 
     if (failures != 0) {

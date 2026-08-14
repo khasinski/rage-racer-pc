@@ -52,7 +52,7 @@ void SetCdMixPreset(s32 preset);
  * issues at most one CdControl: a pending track goes to StepCdTrackRequest,
  * otherwise g_CdCommandPending selects play, pause, or resume. Each step
  * function is a small state machine over g_CdTrackStep / g_CdCommandStep that
- * clears the pending value when it finishes. See docs/names.md 13.
+ * clears the pending value when it finishes.
  */
 void TickCdAudio(void);
 void StepCdTrackRequest(void);   /* CdlSeekP 0x16 */

@@ -27,13 +27,23 @@ AS         := mipsel-none-elf-as
 LD         := mipsel-none-elf-ld
 NM         := mipsel-none-elf-nm
 OBJCOPY    := mipsel-none-elf-objcopy
+READELF    := mipsel-none-elf-readelf
+OBJDIFF    ?= build/toolchain/bin/objdiff-cli
 
 ASM_SRCS := $(shell find $(ASM_DIR) -name '*.s' -not -path '*/nonmatchings/*' 2>/dev/null)
 C_SRCS   := $(shell find $(SRC_DIR)/$(VERSION) -name '*.c' 2>/dev/null)
 
+# A .s under src/ is either a translation unit in its own right - the original
+# shipped it as assembly and there is no C to write - or the assembly half of a
+# unit whose C sits beside it. Only the first kind is assembled on its own; the
+# second is pulled in by its .c and would collide with it here.
+SRC_ASM_ALL := $(shell find $(SRC_DIR)/$(VERSION) -name '*.s' 2>/dev/null)
+SRC_ASM  := $(foreach s,$(SRC_ASM_ALL),$(if $(wildcard $(s:.s=.c)),,$(s)))
+
 ASM_OBJS := $(ASM_SRCS:%.s=$(BUILD)/%.s.o)
 C_OBJS   := $(C_SRCS:%=$(BUILD)/%.o)
-OBJS := $(ASM_OBJS) $(C_OBJS)
+SRC_ASM_OBJS := $(SRC_ASM:%=$(BUILD)/%.o)
+OBJS := $(ASM_OBJS) $(C_OBJS) $(SRC_ASM_OBJS)
 
 # Header dependencies, written by cpp -MD in tools/scripts/cc.sh. Without
 # these a change under include/ leaves every dependent object stale, which
@@ -41,7 +51,7 @@ OBJS := $(ASM_OBJS) $(C_OBJS)
 C_DEPS := $(C_OBJS:.o=.o.d)
 -include $(C_DEPS)
 
-.PHONY: all setup stage split build check audit-code progress clean distclean help
+.PHONY: all setup stage split build check audit-code test progress expected report clean distclean help
 
 all: build check
 
@@ -52,12 +62,16 @@ setup:
 stage:
 	$(PY) tools/scripts/stage_discs.py
 
+# Objects go too: a unit that pulls in generated assembly with `.include` has
+# no recorded dependency on it, so a re-split would otherwise leave it built
+# against the previous disassembly.
 split:
-	rm -rf $(ASM_DIR) $(LD_SCRIPT) $(UNDEFINED_SYMS) $(UNDEFINED_FUNCS) $(ADDR_ALIASES) $(ADDR_HALVES)
+	rm -rf $(BUILD)/src $(ASM_DIR) $(LD_SCRIPT) $(UNDEFINED_SYMS) $(UNDEFINED_FUNCS) $(ADDR_ALIASES) $(ADDR_HALVES)
 	$(PY) -m splat split $(SPLAT_CFG)
 	$(PY) tools/scripts/gen_nonmatching_asm.py --version $(VERSION) --basename $(BASENAME)
 	$(PY) tools/scripts/symbolise_data_words.py --version $(VERSION) --basename $(BASENAME)
 	$(PY) tools/scripts/symbolise_header.py --version $(VERSION) --basename $(BASENAME)
+	$(PY) tools/scripts/strip_nonmatching_markers.py --version $(VERSION) --basename $(BASENAME)
 
 $(BUILD)/asm/%.s.o: asm/%.s
 	@mkdir -p $(dir $@)
@@ -70,6 +84,15 @@ endef
 
 $(BUILD)/src/%.c.o: src/%.c | $(BUILD)
 	$(call compile_c_object)
+
+$(BUILD)/src/%.s.o: src/%.s | $(BUILD)
+	@mkdir -p $(dir $@)
+	$(AS) -EL -G0 -march=r3000 -mtune=r3000 -no-pad-sections -Iinclude -I$(ASM_DIR) -o $@ $<
+
+# A HANDWRITTEN_ASM unit pulls its assembly in with `.include`, which cpp never
+# sees, so -MD does not record it. Without this an edit to the .s leaves the
+# object stale and the build silently keeps the previous instructions.
+$(BUILD)/src/%.c.o: src/%.s
 
 $(BUILD):
 	@mkdir -p $@
@@ -107,8 +130,29 @@ audit-code:
 	$(PY) tools/scripts/code_debt.py --check
 	$(PY) -m unittest tools.tests.test_code_debt
 
+# Enumerated rather than discovered: tools/ has no __init__.py, so unittest
+# discovery cannot import it, but the namespace package resolves by name.
+TESTS := tools.tests.test_code_debt tools.tests.test_gen_expected \
+         tools.tests.test_gen_objdiff_config \
+         tools.tests.test_progress_report tools.tests.test_strip_nonmatching_markers
+
+test:
+	$(PY) -m unittest $(TESTS)
+
 progress:
-	$(PY) tools/scripts/progress_report.py
+	$(PY) tools/scripts/progress_report.py --version $(VERSION)
+
+# objdiff compares what this tree builds against objects disassembled from the
+# game itself. `expected` produces that second side; `report` scores it and
+# writes the file decomp.dev ingests. Both need a build that already passed
+# `check`, because the target side is named from the verified build's symbols.
+expected: check
+	$(PY) tools/scripts/gen_expected.py --version $(VERSION) --basename $(BASENAME) \
+	      --python $(PY) --as $(AS) --objcopy $(OBJCOPY) --readelf $(READELF)
+
+report: expected
+	$(PY) tools/scripts/gen_objdiff_config.py --version $(VERSION) --basename $(BASENAME)
+	$(OBJDIFF) report generate -p . -o $(BUILD)/report.json
 
 clean:
 	rm -rf $(BUILD)
@@ -125,6 +169,9 @@ help:
 	@echo "  build VERSION=PAL Build split output"
 	@echo "  check VERSION=PAL Verify rebuilt EXE SHA-1"
 	@echo "  audit-code        Check that game-code scaffolding debt did not increase"
+	@echo "  test              Run the tooling unit tests"
 	@echo "  progress          Refresh badge JSON and print the progress table"
+	@echo "  expected          Build the objdiff target objects from the game EXE"
+	@echo "  report            Write build/$$(VERSION)/report.json for decomp.dev"
 	@echo "  clean             Remove build/ for selected VERSION"
 	@echo "  distclean         Also remove generated asm/linker output"

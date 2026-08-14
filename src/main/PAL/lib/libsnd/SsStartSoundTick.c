@@ -5,7 +5,6 @@
 #include "psyq/snd_internal.h"
 
 
-
 void SsStartSoundTick(long mode) {
     long size;
     long channel;

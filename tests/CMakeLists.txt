@@ -7,6 +7,7 @@ add_executable(game_logic_tests
     ../src/main/PAL/main/track/interpolate_track_angle.c
     ../src/main/PAL/main/track/lerp_color_channel.c
     ../src/port/input_config.c
+    ../src/port/port_config.c
 )
 
 target_include_directories(game_logic_tests PRIVATE
@@ -213,6 +214,15 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(prologue_frame PROPERTIES TIMEOUT 30)
+
+    add_test(
+        NAME scene_capture
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scene_capture.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(scene_capture PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME grand_prix_terrain_frame

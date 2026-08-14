@@ -253,7 +253,7 @@ void SeedFlybyScenery(void) {
  * Ticks the course's one scripted airborne prop and its engine sound; the model
  * is submitted elsewhere. Armed by a scene-counter match, then runs 451 frames,
  * integrating position from a keyframed heading and feeding a distance-attenuated
- * volume to SetPitchedSoundCue. See docs/names.md 1.
+ * volume to SetPitchedSoundCue.
  */
 void UpdateFlybyScenery(void) {
     Matrix mtxY;

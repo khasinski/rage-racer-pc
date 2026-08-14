@@ -23,7 +23,6 @@ void TickSequenceAudio(void) {
 }
 
 
-
 s32 IsSpuTransferDone(void) {
     SpuTransferSampleBuffer *buffer;
     s32 value0;

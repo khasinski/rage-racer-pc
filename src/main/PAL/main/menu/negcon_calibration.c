@@ -58,7 +58,6 @@ void DrawNegconSteerPlayScreen(void) {
 }
 
 
-
 /*
  * Game mode 10: pick the steering play with left/right, confirm with
  * start/cross (on to mode 11, the max-twist screen) or cancel with

@@ -132,6 +132,19 @@ void f(void *pointer, s32 value) {
 
         self.assertEqual(counts["header_address_integer_arithmetic"], 1)
 
+    def test_counts_byte_offset_members_in_game_headers(self):
+        with tempfile.TemporaryDirectory() as source_directory, tempfile.TemporaryDirectory() as header_directory:
+            Path(source_directory, "sample.c").write_text("void f(void) {}\n")
+            Path(header_directory, "sample.h").write_text(
+                "typedef union Address {\n"
+                "    s32 byteOffset;\n"
+                "    void *pointer;\n"
+                "} Address;\n"
+            )
+            counts = count_debt(Path(source_directory), Path(header_directory))
+
+        self.assertEqual(counts["header_byte_offset_members"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

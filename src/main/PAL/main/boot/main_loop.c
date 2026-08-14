@@ -120,10 +120,16 @@ void MainLoop(void) {
         RagePortBeforeSceneHandler();
 #endif
         g_SceneHandlers[g_SceneId]();
+#ifdef __psyz
+        RagePortAfterSceneHandler();
+#endif
         DrawSync(0);
         StepTrackTextureSwap();
         frameLimit = g_FrameSyncThreshold;
         while (VSync(1) < frameLimit) {
+#ifdef __psyz
+            RagePortDuringFrameWait(frameLimit);
+#endif
         }
         elapsed = VSync(1);
         ticks = g_GameClock + 1;

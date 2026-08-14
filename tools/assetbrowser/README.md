@@ -42,8 +42,8 @@ The file comments name the exact source. In short:
 
 | thing | source |
 |---|---|
-| archive TOC | `LoadDiscArchiveIndex`, `docs/names.md` §6 |
-| asset names | `g_AssetPaths`, `docs/names.md` §45a |
+| archive TOC | `LoadDiscArchiveIndex` |
+| asset names | `g_AssetPaths` |
 | model bank | `RegisterModelBank` / `SelectModelBank` in `asset/model_banks.c` |
 | model faces | `SubmitModel` / `SubmitModelFaces` + `jtbl_8007DA14` |
 | course objects | `RegisterCourseModels` / `SubmitCourseModel` + `jtbl_8007DA54` |

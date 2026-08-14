@@ -4,8 +4,21 @@
 void RagePortSmokeBeforeSceneHandler(void) __attribute__((weak));
 void RagePortSmokeBeforeSceneHandler(void) {}
 
+void RageCaptureFrameBegin(void);
+void RageCaptureFrameEnd(void);
+void RageModernFrameWaitTick(int frameLimit);
+
 void RagePortBeforeSceneHandler(void) {
     RagePortSmokeBeforeSceneHandler();
+    RageCaptureFrameBegin();
+}
+
+void RagePortAfterSceneHandler(void) {
+    RageCaptureFrameEnd();
+}
+
+void RagePortDuringFrameWait(int frameLimit) {
+    RageModernFrameWaitTick(frameLimit);
 }
 
 long SpuTransferStatus(void *address, long mode) {

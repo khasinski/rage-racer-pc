@@ -14,7 +14,6 @@
 #include "psyq/gpu.h"
 
 
-
 void UpdateBgmSelectScene(void) {
     void (*func)(void);
 

@@ -4,8 +4,6 @@
 #include "psyq/gpu_internal.h"
 
 
-
-
 void DrawOTag(void *ot) {
     if (g_GraphDebug >= 2) {
         GPU_printf(g_GpuTraceDrawOTag, ot);

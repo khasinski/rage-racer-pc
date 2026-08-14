@@ -10,7 +10,6 @@ typedef struct StReadyStatus {
 } StReadyStatus;
 
 
-
 void StCdInterrupt(void) {
     volatile StReadyStatus readyStatus;
     CdlLOC location;

@@ -7,8 +7,6 @@
 #include "game/race.h"
 
 
-
-
 void InstallResourceData(void *data) {
     printf(g_MsgResOk);
 }

@@ -5,7 +5,6 @@
 #include "game/render.h"
 
 
-
 void LoadTrackDataAssets(void) {
     GameSceneAssetHeader *header;
     void *dst;

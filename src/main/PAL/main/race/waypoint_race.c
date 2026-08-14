@@ -11,13 +11,6 @@
 #include "game/player_car_internal.h"
 
 
-
-
-
-
-
-
-
 /*
  * Initializes the 6 TrackWaypointRuntime slots for the current course. The
  * `magic`/mult/mfhi block is the compiler's divide-by-10 idiom computing the

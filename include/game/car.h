@@ -55,7 +55,7 @@ typedef struct GameCarRuntime {
     /* +0x04 32 bits wide, not 16: `lw`/`sw` at nine sites in each of
      * UpdateRaceCars / UpdateAttractCars, `s32 unk04` in
      * UpdatePlayerCar's own layout, and the `*(s32 *)&ent->y` cast in
-     * InitRivalCar that the old `s16` forced. See names.md 30. */
+     * InitRivalCar that the old `s16` forced. */
     s32 y;
     s32 z;
     /* +0x10..+0x18: per-frame motion, measured in-race. Not the world
@@ -320,7 +320,7 @@ extern CarHullPoint g_CarCornerOffsets[4];
 extern CarCollisionPoint g_CarCollisionCorners[4];
 
 /* Per-car runtime state, player in slot 0. Individual slots and single fields
- * also have their own split symbols; see docs/names.md section 3b. */
+ * also have their own split symbols. */
 extern GameCarRuntime g_Cars[11];
 extern GameCarRuntime g_CameraCar;
 
@@ -343,7 +343,7 @@ extern CarEntry g_TimeAttackCars[];
 extern s32 g_CameraCarIndex;
 
 /* Index into g_CarTable of the car the player drives; selects the model and
- * texture pack to install. Distinct from g_CarListCursor (names.md 3). */
+ * texture pack to install. Distinct from g_CarListCursor. */
 extern s32 g_PlayerCarIndex;
 
 /* Cursor of the car list being browsed in the shop; steps to the next entry
@@ -412,7 +412,6 @@ typedef struct GameCarSpec {
 } GameCarSpec;
 
 typedef union GameCarSpecAddress {
-    s32 byteOffset;
     s32 value;
     void *data;
     u8 *bytes;
@@ -436,7 +435,6 @@ typedef struct GearCurveRow {
 } GearCurveRow;
 
 typedef union GearCurveAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     s32 *valuePointer;
@@ -470,7 +468,7 @@ typedef union CarInputAddress {
  * g_Cars: it shares the stride but not the meaning of every byte.
  * +0x30, +0x38, +0x74 and +0x76 are 16-bit gearDisp/jumpTimer/manual/gear on the
  * player object and 32-bit / AI-speed fields on the rival cars, so use
- * GameCarAiBlock for a g_Cars[] element. Evidence in names.md 30f. */
+ * GameCarAiBlock for a g_Cars[] element. */
 typedef struct GameCarDrive {
     s32 unk00;
     s32 unk04;
@@ -540,7 +538,6 @@ enum {
 };
 
 typedef union PlayerLapTimeAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     s16 *halfwordPointer;
@@ -753,7 +750,7 @@ typedef union PlayerCarPositionView {
 } PlayerCarPositionView;
 
 /* A second, halfword-wide view of that same block, for the code that loads
- * 0x104..0x134 as s16 where GameCarDrive declares s32. See names.md 3b. */
+ * 0x104..0x134 as s16 where GameCarDrive declares s32. */
 typedef struct GameCarAiBlock {
     s32 enabled;
     u8 pad4[8];
@@ -805,7 +802,7 @@ typedef union RaceGridSlot {
 } RaceGridSlot;
 
 /*
- * The car pipeline. docs/names.md 1 has the evidence and the data layouts.
+ * The car pipeline.
  */
 /* Race-entry init for the player object: start pose plus the speed/gear lookup
  * tables g_GearTorqueCurve / g_TorqueBandEnd / g_TorqueLossBandEnd. Logs "init_car" .. "init_ok". */
@@ -840,7 +837,7 @@ void DrawCars(void);
 void UpdateCarLaunch(PlayerCarRuntime *car, s32 unused);
 
 /*
- * The player's own 0x19C-byte car object. See docs/names.md 12c.
+ * The player's own 0x19C-byte car object.
  */
 
 /* Declared identically by 58 translation units before this

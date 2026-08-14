@@ -31,7 +31,6 @@ extern s32 g_BestTotalTimes[2][4][2];
 extern s32 g_BestSectorTimes[2][4][3];
 
 typedef union SectorTimeTableAddress {
-    s32 byteOffset;
     s32 value;
     s32 *pointer;
     s32 (*table)[4][3];
@@ -42,7 +41,6 @@ typedef union SectorTimeTableAddress {
 typedef s32 LapTimeOffset;
 
 typedef union LapTimeTableAddress {
-    s32 byteOffset;
     LapTimeOffset timeOffset;
     s32 value;
     s32 *pointer;

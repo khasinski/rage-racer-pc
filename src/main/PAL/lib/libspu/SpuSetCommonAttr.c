@@ -2,8 +2,6 @@
 #include "psyq/spu_internal.h"
 
 
-
-
 void SpuSetCommonAttr(SpuCommonAttr *attr) {
     u_short mainModeLeft;
     u_short mainModeRight;

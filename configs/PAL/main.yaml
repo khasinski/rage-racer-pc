@@ -16,6 +16,10 @@ options:
   find_file_boundaries: True
   use_legacy_include_asm: True
 
+  # Hand-written assembly lives beside the C it belongs with, under src/, not
+  # in the generated asm/ tree that every split wipes.
+  hasm_in_src_path: True
+
   asm_function_macro: glabel
   asm_jtbl_label_macro: jlabel
   asm_data_macro: dlabel
@@ -175,7 +179,7 @@ segments:
       - [0x17E88, c, PAL/lib/libcd/read]
       - [0x18074, c, PAL/main/render/sprite_string]
       - [0x18284, c, PAL/main/save/draw_memory_card_screen]
-      - [0x187F4, c, PAL/main/render/terrain_submission]
+      - [0x187F4, hasm, PAL/main/render/terrain_submission]
       - [0x1AEB0, c, PAL/main/track/install_track_points]
       - [0x1AF88, c, PAL/main/car/angle_math]
       - [0x1B010, c, PAL/main/car/update_car_drivetrain]
@@ -290,8 +294,8 @@ segments:
       - [0x51C58, c, PAL/main/save/enter_memory_card_menu_from_load]
       - [0x51D20, c, PAL/main/save/update_memory_card_menu]
       - [0x538AC, c, PAL/main/boot/__main]
-      - [0x538B4, c, PAL/main/boot/_start]
-      - [0x53A20, c, PAL/lib/libapi/exit_critical_section]
+      - [0x538B4, hasm, PAL/main/boot/_start]
+      - [0x53A20, hasm, PAL/lib/libapi/exit_critical_section]
       - [0x53A30, c, PAL/lib/libapi/bios_file_stubs]
       - [0x53AB0, c, PAL/main/random/random15]
       - [0x53AE0, c, PAL/main/random/seed_random]
@@ -303,7 +307,7 @@ segments:
       - [0x54488, c, PAL/lib/libc/putchar]
       - [0x5453C, c, PAL/lib/libc/toupper]
       - [0x5456C, c, PAL/lib/libc/tolower]
-      - [0x5459C, c, PAL/lib/libapi/bios_call_stubs]
+      - [0x5459C, hasm, PAL/lib/libapi/bios_call_stubs]
       - [0x545EC, c, PAL/lib/libcard/_card_clear]
       - [0x54624, c, PAL/lib/libcard/_card_write]
       - [0x54634, c, PAL/lib/libapi/new_card_stub]
@@ -332,16 +336,16 @@ segments:
       - [0x58D68, c, PAL/lib/libgte/geo_00]
       - [0x58ED4, c, PAL/lib/libgte/fog_geometry]
       - [0x5922C, c, PAL/lib/libgte/matrix_stack]
-      - [0x59C58, c, PAL/lib/libgte/multiply_matrix]
-      - [0x59D68, c, PAL/lib/libgte/multiply_matrix_2]
+      - [0x59C58, hasm, PAL/lib/libgte/multiply_matrix]
+      - [0x59D68, hasm, PAL/lib/libgte/multiply_matrix_2]
       - [0x59E78, c, PAL/lib/libgte/apply_matrix]
-      - [0x59F28, c, PAL/lib/libgte/scale_matrix]
+      - [0x59F28, hasm, PAL/lib/libgte/scale_matrix]
       - [0x5A058, c, PAL/lib/libgte/set_matrices]
       - [0x5A108, c, PAL/lib/libgte/register_access]
       - [0x5A218, c, PAL/lib/libgte/geometry_math]
       - [0x5A47C, c, PAL/lib/libgte/leading_zero_count]
       - [0x5A4BC, c, PAL/lib/libgte/rotation_matrix]
-      - [0x5A7A8, c, PAL/lib/libgte/exception_patch]
+      - [0x5A7A8, hasm, PAL/lib/libgte/exception_patch]
       - [0x5A818, c, PAL/lib/libpress/stream_setup]
       - [0x5A8AC, c, PAL/lib/libcd/initialization_and_toc]
       - [0x5ABD8, c, PAL/lib/libapi/deliver_event_stub]

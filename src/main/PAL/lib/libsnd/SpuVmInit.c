@@ -12,9 +12,6 @@
 #include "psyq/spu_internal.h"
 
 
-
-
-
 void SpuVmInit(long voices) {
     s16 i;
     long ff;

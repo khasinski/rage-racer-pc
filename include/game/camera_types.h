@@ -10,24 +10,18 @@ typedef enum CameraViewMode {
     CAMERA_VIEW_TRACK
 } CameraViewMode;
 
-typedef struct CamRow {
-    s32 textureSectionLo;
-    s32 textureSectionHi;
-    s32 environmentScriptOffset;
+typedef struct CarModelRenderParams {
     s16 axis0;
     u16 axis1;
     u16 axis2;
     s16 horizon;
-} CamRow;
+} CarModelRenderParams;
 
-typedef union CamRowAddress {
-    s32 byteOffset;
-    u8 *bytes;
-    CamRow *row;
-} CamRowAddress;
-
-static __inline__ CamRow *GetCamRow(u8 *table, s32 index) {
-    return (CamRow *)(table + (index << 3));
-}
+typedef struct TrackRenderTable {
+    s32 textureSectionLo;
+    s32 textureSectionHi;
+    s32 environmentScriptOffset;
+    CarModelRenderParams models[1];
+} TrackRenderTable;
 
 #endif

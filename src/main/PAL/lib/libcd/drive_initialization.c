@@ -7,7 +7,6 @@
 #define CD_ERROR_WORD (*(long *)(void *)&g_CdErrorByte)
 
 
-
 long CD_vol(CdlATV *vol) {
     *g_CdReg0 = 2;
     *g_CdReg2 = vol->val0;

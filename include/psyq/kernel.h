@@ -27,7 +27,7 @@ void ChangeClearInterruptMask(long index, long clear);
 void KernelCallbackSlot3(void);
 long KernelCallbackSlot2();
 /* BIOS DMA callback installer: spec 0=MDECin 1=MDECout 2=GPU 3=CD-ROM 4=SPU.
- * Was declared ResetCallback here; that was wrong (docs/names.md 17). */
+ * Was declared ResetCallback here; that was wrong. */
 void DMACallback(long spec, long callback);
 /* Callers hand it a Callback, the body takes a long; an empty parameter
  * list lets both spellings stand. */

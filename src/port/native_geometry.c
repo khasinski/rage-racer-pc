@@ -10,6 +10,8 @@
 #include "game/scratchpad.h"
 #include "game/asset.h"
 
+#include "modern/scene_capture.h"
+
 extern int g_CourseModelCount;
 extern int g_AnimTimer;
 extern int g_SceneTimer;
@@ -246,11 +248,15 @@ static int RageProjectQuad(
     {
         int x[4], y[4], i;
         int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
+        /* A widened modern view accepts faces the 4:3 screen rect would
+         * cull; the compat image is unchanged because the PS1 drawing area
+         * still clips them. Never widen the mirror's deliberate bounds. */
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             x[i] = (int16_t)(sxy[i] & 0xffff);
             y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
-            allLeft &= x[i] < g_RageScratchpadState.x0;
-            allRight &= x[i] > g_RageScratchpadState.x1;
+            allLeft &= x[i] < g_RageScratchpadState.x0 - marginX;
+            allRight &= x[i] > g_RageScratchpadState.x1 + marginX;
             allAbove &= y[i] < g_RageScratchpadState.y0;
             allBelow &= y[i] > g_RageScratchpadState.y1;
         }
@@ -292,6 +298,7 @@ static int RageProjectQuad(
          * ordering flag is toggled.  Do not feed the duplicated clip0 into
          * the terrain two-half expression: that reduces both rejection
          * tests to clip0 == 0 and submits every back-facing model face. */
+        *depth = ((int)otz >> SCRATCH_OT_SHIFT);
         if ((!terrainQuad &&
              ((!SCRATCH_MIRROR && clip0 <= 0) ||
               (SCRATCH_MIRROR && clip0 < 0))) ||
@@ -304,7 +311,6 @@ static int RageProjectQuad(
             return 0;
         }
     }
-    *depth = ((int)otz >> SCRATCH_OT_SHIFT);
     /* Subdivided terrain children inherit the parent's OT slot.  Retail
      * projects them with RTPT/NCLIP only and never runs AVSZ4 per child. */
     if (terrainQuad != 2 && (*depth <= 0 || *depth >= 448)) {
@@ -355,25 +361,28 @@ static int RageProjectCourseFace(
         g_RageProjectionReject = 2;
         return 0;
     }
-    for (i = 0; i < 4; i++) {
-        int x = (int16_t)sxy[i];
-        int y = (int16_t)(sxy[i] >> 16);
-        allLeft &= x < g_RageScratchpadState.x0;
-        allRight &= x > g_RageScratchpadState.x1;
-        allAbove &= y < g_RageScratchpadState.y0;
-        allBelow &= y > g_RageScratchpadState.y1;
+    {
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
+        for (i = 0; i < 4; i++) {
+            int x = (int16_t)sxy[i];
+            int y = (int16_t)(sxy[i] >> 16);
+            allLeft &= x < g_RageScratchpadState.x0 - marginX;
+            allRight &= x > g_RageScratchpadState.x1 + marginX;
+            allAbove &= y < g_RageScratchpadState.y0;
+            allBelow &= y > g_RageScratchpadState.y1;
+        }
     }
     if (allLeft || allRight || allAbove || allBelow) {
         g_RageProjectionReject = 1;
         return 0;
     }
     *depth = (int)retailDepth;
+    if (fog != NULL) *fog = p;
+    if (rawDepth != NULL) *rawDepth = (int)otz;
     if (*depth <= 0 || *depth >= 448) {
         g_RageProjectionReject = 3;
         return 0;
     }
-    if (fog != NULL) *fog = p;
-    if (rawDepth != NULL) *rawDepth = (int)otz;
     return 1;
 }
 
@@ -911,6 +920,22 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x3, &poly->y3, sxy[3]);
             AddPrim(&ot[depth], poly);
             cursor += sizeof(*poly);
+            {
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 0;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.colors = &poly->r0;
+                capture.colorCount = 1;
+                RageCaptureFace3D(&capture);
+            }
         } else if (type == RAGE_MODEL_FT4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_FT4))) break;
             POLY_FT4 *poly = (POLY_FT4 *)cursor;
@@ -925,6 +950,28 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x3, &poly->y3, sxy[3]);
             AddPrim(&ot[depth], poly);
             cursor += sizeof(*poly);
+            {
+                uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
+                                 poly->u2, poly->v2, poly->u3, poly->v3};
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 1;
+                capture.raw = 1; /* forced command byte 0x2D */
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.uv = uv;
+                capture.clut = poly->clut;
+                capture.tpage = poly->tpage;
+                capture.colors = &poly->r0;
+                capture.colorCount = 1;
+                RageCaptureFace3D(&capture);
+            }
         } else if (type == RAGE_MODEL_G4) {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_G4))) break;
             POLY_G4 *poly = (POLY_G4 *)cursor;
@@ -960,6 +1007,22 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
             RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
             AddPrim(&ot[depth], poly); cursor += sizeof(*poly);
+            {
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 2;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.colors = &colors[0].r;
+                capture.colorCount = 4;
+                RageCaptureFace3D(&capture);
+            }
         } else {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_GT4))) break;
             POLY_GT4 *poly = (POLY_GT4 *)cursor;
@@ -1010,6 +1073,27 @@ static void RageSubmitModelFaces(
             RageStoreSxy(&poly->x0,&poly->y0,sxy[0]); RageStoreSxy(&poly->x1,&poly->y1,sxy[1]);
             RageStoreSxy(&poly->x2,&poly->y2,sxy[2]); RageStoreSxy(&poly->x3,&poly->y3,sxy[3]);
             AddPrim(&ot[depth], poly); cursor += sizeof(*poly);
+            {
+                uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
+                                 poly->u2, poly->v2, poly->u3, poly->v3};
+                RageCaptureFaceInput capture = {0};
+                capture.kind = RAGE_CAPTURE_KIND_MODEL;
+                capture.klass = 3;
+                capture.bias = (int8_t)faces[strides[type] - 3];
+                capture.otDepth = depth;
+                capture.fog = -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(faces + 0)];
+                capture.v[1] = &vertices[RageReadU16(faces + 2)];
+                capture.v[2] = &vertices[RageReadU16(faces + 4)];
+                capture.v[3] = &vertices[RageReadU16(faces + 6)];
+                capture.uv = uv;
+                capture.clut = poly->clut;
+                capture.tpage = poly->tpage;
+                capture.colors = &colors[0].r;
+                capture.colorCount = 4;
+                RageCaptureFace3D(&capture);
+            }
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
@@ -1028,6 +1112,7 @@ void SubmitModel(void *ctx, int index) {
          g_RageModelTraceTimer == g_SceneTimer))
         fprintf(stderr, "model-submit timer=%d model=%d table=%p stream=%p\n",
                 g_SceneTimer, index, (void *)models, (void *)stream);
+    RageCaptureModelBegin(RAGE_CAPTURE_KIND_MODEL, index, 0);
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
         int count = (int)(opcode >> 16);
@@ -1038,6 +1123,7 @@ void SubmitModel(void *ctx, int index) {
         if ((unsigned)type >= 4) break;
         stream += count * (const uint8_t[]){16,24,24,32}[type];
     }
+    RageCaptureSubmitEnd();
 }
 
 /* Course and terrain decoders are implemented next. Keeping these explicit
@@ -1060,6 +1146,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
     }
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
+    RageCaptureModelBegin(RAGE_CAPTURE_KIND_COURSE, index, fogged);
     vertices = (const SVECTOR *)models[index].geometry;
     stream = (uint8_t *)models[index].model;
     while ((opcode = RageReadU32(stream)) != 0) {
@@ -1076,6 +1163,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
             int trace = RageCourseTraceMatches(g_SceneTimer, type, stream);
             int bias = (int8_t)stream[type == 0 ? 13 : 25];
             uint8_t color[3] = {stream[8], stream[9], stream[10]};
+            int extendedDepth = 0;
             projected = RageProjectCourseFace(stream, vertices, sxy, &depth,
                                                &fog, &rawDepth);
             if (trace) {
@@ -1104,8 +1192,15 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         stream[12], stream[13], stream[16], stream[17],
                         stream[20], stream[21], stream[22], stream[23]);
             }
-            if (!projected)
-                continue;
+            if (!projected) {
+                /* Beyond-cutoff faces feed only the modern far view. */
+                if (g_RageProjectionReject == 3 &&
+                    RageModernExtendedDepth() && depth > 0 && depth < 896) {
+                    extendedDepth = 1;
+                } else {
+                    continue;
+                }
+            }
             if (fogged) {
                 CVECTOR base = {color[0], color[1], color[2], 0};
                 CVECTOR shaded;
@@ -1117,6 +1212,39 @@ static void RageSubmitCourseModel(int index, int fogged) {
             /* Retail validates the un-biased parent OTZ in 1..447, then adds
              * the signed record bias to the already shifted +128 base. */
             depth += bias;
+            {
+                RageCaptureFaceInput capture = {0};
+                uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                capture.kind = RAGE_CAPTURE_KIND_COURSE;
+                capture.klass = type == 0 ? 0 : 1;
+                capture.bias = bias;
+                capture.otDepth = depth;
+                capture.fog = fogged ? fog : -1;
+                capture.cellSlot = -1;
+                capture.v[0] = &vertices[RageReadU16(stream + 0)];
+                capture.v[1] = &vertices[RageReadU16(stream + 2)];
+                capture.v[2] = &vertices[RageReadU16(stream + 4)];
+                capture.v[3] = &vertices[RageReadU16(stream + 6)];
+                capture.colors = flat;
+                capture.colorCount = 1;
+                if (type == 1) {
+                    uint32_t uv0 = RageReadU32(stream + 12) +
+                                   (uint32_t)g_ScratchRenderMode;
+                    uint8_t uv[8] = {
+                        (uint8_t)uv0, (uint8_t)(uv0 >> 8),
+                        stream[16], stream[17],
+                        stream[20], stream[21], stream[22], stream[23]
+                    };
+                    memcpy(capture.uvStorage, uv, sizeof(uv));
+                    capture.uv = capture.uvStorage;
+                    capture.clut = (uint16_t)(uv0 >> 16);
+                    capture.tpage = RageReadU16(stream + 18);
+                }
+                /* Types 2/3 are captured at their subdivision site where the
+                 * scrolled/mode-adjusted UVs are final. */
+                if (type <= 1) RageCaptureFace3D(&capture);
+            }
+            if (extendedDepth && type <= 1) continue;
             if (type == 0) {
                 if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_F4))) break;
                 POLY_F4 *poly = (POLY_F4 *)cursor;
@@ -1181,6 +1309,29 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
+                {
+                    RageCaptureFaceInput capture = {0};
+                    uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                    capture.kind = RAGE_CAPTURE_KIND_COURSE;
+                    capture.klass = 1;
+                    capture.bias = bias;
+                    capture.otDepth = depth;
+                    capture.fog = fogged ? fog : -1;
+                    capture.cellSlot = -1;
+                    capture.v[0] = &vertices[RageReadU16(stream + 0)];
+                    capture.v[1] = &vertices[RageReadU16(stream + 2)];
+                    capture.v[2] = &vertices[RageReadU16(stream + 4)];
+                    capture.v[3] = &vertices[RageReadU16(stream + 6)];
+                    memcpy(capture.uvStorage, uv, 8);
+                    capture.uv = capture.uvStorage;
+                    capture.clut = clut;
+                    capture.tpage = tpage;
+                    capture.textureWindow = textureWindow & 0xFFFFFu;
+                    capture.colors = flat;
+                    capture.colorCount = 1;
+                    RageCaptureFace3D(&capture);
+                }
+                if (extendedDepth) continue;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next = RageEmitCourseFt4(
                         cursor, ot, depth, sxy, uv, clut, tpage, color,
@@ -1219,10 +1370,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
     return;
 course_buffer_full:
     fprintf(stderr, "rage course: primitive buffer exhausted\n");
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
 }
 
 void SubmitCourseModel(void *ctx, int index) {
@@ -1233,6 +1386,54 @@ void SubmitCourseModel2(void *ctx, int index) {
     (void)ctx;
     RageSubmitCourseModel(index, 1);
 }
+void SubmitTerrainCells(void *ctx, void *cells, int count);
+
+/* Capture-only extension of the visible-cell list. Retail's authored scan
+ * pattern and region PVS reach ~42k units; everything farther simply never
+ * enters g_VisibleCellList, which is what left holes in the modern far
+ * road. Scan the whole 32x32 grid with the same view transform retail
+ * uses, keep cells the compat list does not draw, and run them through the
+ * normal dispatcher with the capture-only flag: faces are recorded for the
+ * modern renderer, nothing is emitted to the compat stream. */
+static int g_RageCaptureOnlyCells;
+extern u16 *g_TerrainCellGrid;
+void *ApplyMatrixLV();
+
+static void RageCaptureExtendedCells(void *ctx) {
+    ScratchViewState *view = SCRATCH_VIEW_STATE;
+    int32_t extras[64][4];
+    int count = 0;
+    int sx, sy;
+    if (g_TerrainCellGrid == NULL || g_VisibleCellMask == NULL) return;
+    for (sy = 0; sy < 32 && count < 64; sy++) {
+        for (sx = 0; sx < 32 && count < 64; sx++) {
+            int cellIndex = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;
+            int inCompatList = (g_VisibleCellMask[sy] >> sx) & 1;
+            s32 vec[3];
+            s32 proj[3];
+            if (cellIndex == 0x3FF) continue;
+            vec[0] = ((sx << 11) -
+                      (view->position.components.x.value - 1024)) * 4;
+            vec[1] = (-view->position.components.y.value) * 4;
+            vec[2] = ((sy << 11) -
+                      (view->position.components.z.value - 1024)) * 4;
+            ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, vec, proj);
+            if (proj[2] < 0x800 || proj[2] > 0x1C000) continue;
+            /* Cells the compat list already drew stay compat's. */
+            if (inCompatList && proj[2] <= 0x14000) continue;
+            extras[count][0] = proj[0];
+            extras[count][1] = proj[1];
+            extras[count][2] = proj[2];
+            extras[count][3] = cellIndex;
+            count++;
+        }
+    }
+    if (count == 0) return;
+    g_RageCaptureOnlyCells = 1;
+    SubmitTerrainCells(ctx, extras, count);
+    g_RageCaptureOnlyCells = 0;
+}
+
 void SubmitTerrainCells(void *ctx, void *cells, int count) {
     static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
     const int32_t *visible = (const int32_t *)cells;
@@ -1252,15 +1453,20 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     /* The hand-written retail dispatcher mirrors the active GTE view by
      * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
      * leaves that matrix installed: DrawCourseObjects and DrawCars share it
-     * for the remainder of the rear-view pass. */
+     * for the remainder of the rear-view pass.  The negation must therefore
+     * happen IN PLACE on the shared scratch matrix, not on a local copy:
+     * with only the GTE register updated, DrawCar composed rival cars with
+     * the un-reflected matrix and the mirror showed them moving opposite to
+     * the track.  EndMirrorPass restores the saved camera matrix. */
     if (SCRATCH_MIRROR) {
-        MATRIX mirrorMatrix;
-        memcpy(&mirrorMatrix, SCRATCH_VIEW_MATRIX_GTE, sizeof(mirrorMatrix));
-        mirrorMatrix.m[0][0] = -mirrorMatrix.m[0][0];
-        mirrorMatrix.m[0][1] = -mirrorMatrix.m[0][1];
-        mirrorMatrix.m[0][2] = -mirrorMatrix.m[0][2];
-        SetRotMatrix(&mirrorMatrix);
+        SCRATCH_VIEW_MATRIX_GTE->m[0][0] = -SCRATCH_VIEW_MATRIX_GTE->m[0][0];
+        SCRATCH_VIEW_MATRIX_GTE->m[0][1] = -SCRATCH_VIEW_MATRIX_GTE->m[0][1];
+        SCRATCH_VIEW_MATRIX_GTE->m[0][2] = -SCRATCH_VIEW_MATRIX_GTE->m[0][2];
+        SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
     }
+    /* Capture after the mirror matrix install so the batch GTE state is the
+     * one the cells are actually projected with. */
+    RageCaptureTerrainBegin(cells, count);
 
     for (cell = 0; cell < count; cell++, visible += 4) {
         uint8_t *stream;
@@ -1314,7 +1520,14 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     RageReadU16(stream + 4), RageReadU16(stream + 6)
                 };
                 int bias;
-                if (farCell && (stream[20] & 2) != 0) continue;
+                int extendedDepth = g_RageCaptureOnlyCells;
+                if (farCell && (stream[20] & 2) != 0) {
+                    /* Retail's far-cell path skips these records entirely;
+                     * capture them for the modern renderer's continuous far
+                     * road without emitting to the compat stream. */
+                    if (!RageModernExtendedDepth()) continue;
+                    extendedDepth = 1;
+                }
                 {
                     int projected = RageProjectQuad(
                         v0, v1, v2, v3, sxy, &depth, &fog, &rawDepth, 1);
@@ -1354,7 +1567,24 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                         vertexIndices, &translation,
                         g_RageTerrainClip0, g_RageTerrainClip1, sxy,
                         rawDepth, depth);
-                    if (!projected) continue;
+                    if (!projected) {
+                        /* Faces beyond the retail depth cutoff are captured
+                         * for the modern renderer's extended draw distance
+                         * but never emitted to the compat stream. Distant
+                         * road quads are nearly edge-on, so their NCLIP
+                         * orientation flickers; past bucket 300 capture
+                         * them regardless of facing - the depth buffer
+                         * sorts them out. */
+                        int reject = g_RageProjectionReject;
+                        if ((reject == 3 || (reject == 2 && depth >= 300) ||
+                             g_RageCaptureOnlyCells) &&
+                            RageModernExtendedDepth() && depth > 0 &&
+                            depth < 1024) {
+                            extendedDepth = 1;
+                        } else {
+                            continue;
+                        }
+                    }
                 }
                 /* The retail cell dispatcher tests bit 0 of the halfword at
                  * +0x14 when OTZ reaches 0x800.  In that case it halves all
@@ -1403,6 +1633,47 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
+                {
+                    /* Capture the parent quad exactly as the emitter shades
+                     * it: zero colour promotes to 0x80 and odd dispatches
+                     * select the adjacent CLUT row. */
+                    RageCaptureFaceInput capture = {0};
+                    uint8_t flat[4] = {color[0], color[1], color[2], 0};
+                    if ((flat[0] | flat[1] | flat[2]) == 0)
+                        flat[0] = flat[1] = flat[2] = 0x80;
+                    capture.kind = RAGE_CAPTURE_KIND_TERRAIN;
+                    capture.klass = 1;
+                    capture.fogged = dispatch == 0 || dispatch == 2;
+                    if (capture.fogged) {
+                        /* Bake the same depth cue the emitter applies so the
+                         * captured colour matches the compat packet. */
+                        CVECTOR base = {flat[0], flat[1], flat[2],
+                                        POLY_FT4_CODE};
+                        CVECTOR shaded;
+                        DpqColor(&base, fog, &shaded);
+                        flat[0] = shaded.r;
+                        flat[1] = shaded.g;
+                        flat[2] = shaded.b;
+                    }
+                    capture.bias = bias;
+                    capture.otDepth = depth + bias;
+                    capture.fog = fog;
+                    capture.cellSlot = cell;
+                    capture.v[0] = v0;
+                    capture.v[1] = v1;
+                    capture.v[2] = v2;
+                    capture.v[3] = v3;
+                    memcpy(capture.uvStorage, baseUv, 8);
+                    capture.uv = capture.uvStorage;
+                    capture.clut = (uint16_t)(clut + ((dispatch & 1) != 0));
+                    capture.tpage = tpage;
+                    capture.textureWindow =
+                        dispatch >= 2 ? (textureWindow & 0xFFFFFu) : 0;
+                    capture.colors = flat;
+                    capture.colorCount = 1;
+                    RageCaptureFace3D(&capture);
+                }
+                if (extendedDepth) continue;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
                     depth += bias;
@@ -1574,9 +1845,15 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         }
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
+    if (!g_RageCaptureOnlyCells && !SCRATCH_MIRROR &&
+        RageModernExtendedDepth()) {
+        RageCaptureExtendedCells(ctx);
+    }
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",
             decodedFaces, emittedFaces);
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RageCaptureSubmitEnd();
 }

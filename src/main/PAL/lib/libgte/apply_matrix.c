@@ -5,7 +5,7 @@
  * v1 = m * v0 through MVMVA; ApplyMatrix stores a LONG vector, ApplyMatrixSV a
  * SHORT vector. Not byte-matchable to a named PSY-Q 3.5 object symbol, so this
  * TU keeps its descriptive name rather than an mtx_NN.o label.
- * HANDWRITTEN_ASM - excluded from progress (see docs/ASM_AND_GTE_POLICY.md).
+ * HANDWRITTEN_ASM - excluded from progress; see README.md.
  */
 
 /* libgte ApplyMatrixSV: SVECTOR in, SVECTOR out, returns out. */
@@ -35,7 +35,7 @@ s32 *ApplyMatrix(s32 *matrix, s32 *vec, s32 *out) {
     asm volatile("move $2,$6");
 }
 
-/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress (docs/ASM_AND_GTE_POLICY.md). */
+/* HANDWRITTEN_ASM - PSY-Q libgte hand-asm (matrix/GTE), excluded from progress. */
 
 
 s16 *ApplyMatrixSV(s32 *matrix, void *vec, s16 *out) {

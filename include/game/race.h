@@ -23,7 +23,7 @@ typedef union ReplayCarAddress {
 
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
  * tier: course asset index = 0x57 + (course << 1) + (class << 3). OVAL is
- * gated to class >= 2. See names.md 3. */
+ * gated to class >= 2. */
 extern s32 g_GrandPrixClass;
 
 /* Course selector: low 2 bits are the course (0 BIG, 1 MID, 2 HI, 3 OVAL).
@@ -57,12 +57,12 @@ extern s32 g_GrandPrixRound;
 
 /* 1 = Grand Prix (championship), 0 = Time Attack. Picks the pre-race panel, the
  * innermost index of the record tables, and the in-race option count
- * (2 - mode). See names.md 3. */
+ * (2 - mode). */
 extern s16 g_GrandPrixMode;
 
 /* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
  * index of the per-series tables and, because the advanced series runs the
- * courses backwards, also the lap-direction flag. See names.md 3. */
+ * courses backwards, also the lap-direction flag. */
 typedef union RaceSeriesValue {
     s32 series;
     u16 trackDirection;
@@ -153,12 +153,12 @@ void ResetProgressSlot(struct CarEntry *cars, GameRaceProgress *progress);
 extern s32 g_ClosestRivalRank;
 
 /* Course-select gate: `g_CourseIndex < (class < 2 ? 2 : 3)`, or 6 : 7 for the
- * advanced series. This is the OVAL unlock; see names.md 5. */
+ * advanced series. This is the OVAL unlock. */
 s32 CanSelectNextCourse(void);
 
 /* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
  * "2" / "1" / "GO" dot-matrix board from g_CountdownGlyphTable[1..4] plus the six start
- * lamps. See docs/names.md 1. */
+ * lamps. */
 void DrawStartCountdown(s32 sceneTimer);
 void DrawRaceEndBanner(s32 level);
 
@@ -174,7 +174,7 @@ void DrawRaceEndBanner(s32 level);
 
 /*
  * Live race timing. Times are milliseconds; 0x927BF is the saturation value
- * for anything over 9'59"998, which the HUD prints as dashes. See names.md 15.
+ * for anything over 9'59"998, which the HUD prints as dashes.
  */
 
 /* Elapsed time of the lap in progress. */

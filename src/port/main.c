@@ -7,6 +7,8 @@
 #include <stdlib.h>
 
 #include "input_config.h"
+#include "port_config.h"
+#include "modern/modern_renderer.h"
 
 #ifdef _WIN32
 #ifndef PATH_MAX
@@ -40,10 +42,15 @@ static void RageLoadInputConfig(RageInputConfig *config) {
 
 int main(void) {
     RageInputConfig inputConfig;
+    RagePortConfig portConfig;
     int inputIndex;
 
     Psyz_SetTitle("Rage Racer");
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
+    RagePortConfigDefaults(&portConfig);
+    RagePortConfigLoad(&portConfig, "rage-port.cfg");
+    RagePortConfigSetActive(&portConfig);
+    RageModernInit(&portConfig);
     /* Initialize SDL input before configurable names are resolved to
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);

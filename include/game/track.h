@@ -18,7 +18,7 @@ typedef struct GameEnvironmentCue GameEnvironmentCue;
  * right half-widths (SteerCarAlongRoute clamps the lateral offset to
  * [-leftHalfWidth, rightHalfWidth]); the surface fields are interpolated between
  * a segment's two endpoints by UpdateCarTrackState and its non-clamping
- * twin ResetCarTrackState. See docs/names.md 31.
+ * twin ResetCarTrackState.
  */
 typedef struct GameTrackPoint {
     s32 x;
@@ -90,7 +90,6 @@ typedef struct TrackZone {
 } TrackZone;
 
 typedef union TrackZoneAddress {
-    s32 byteOffset;
     s32 value;
     TrackZone *pointer;
 } TrackZoneAddress;
@@ -142,7 +141,6 @@ typedef struct TrackEventSoundZone {
 } TrackEventSoundZone;
 
 typedef union TrackEventSoundZoneAddress {
-    s32 byteOffset;
     s32 value;
     TrackEventSoundZone *pointer;
 } TrackEventSoundZoneAddress;
@@ -174,7 +172,6 @@ typedef struct TrackRaceCueData {
 } TrackRaceCueData;
 
 typedef union TrackRaceCueAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytePointer;
     TrackFinishCue *finishPointer;
@@ -198,7 +195,6 @@ typedef struct TrackEventData {
 } TrackEventData;
 
 typedef union TrackEventDataAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytePointer;
     TrackEventData *pointer;
@@ -255,7 +251,7 @@ extern s32 g_TrackPointCount;
  * Animated course scenery (func_8003Dxxx / func_8003Fxxx). All four courses
  * share one coordinate space, so prop positions are one static table at
  * 0x8007E2C0 and each prop culls itself against the visible-terrain bitmask
- * g_VisibleCellMask. Full write-up in docs/names.md section 5b.
+ * g_VisibleCellMask.
  */
 
 /* Per-frame update+draw of the current course's props, dispatched on the course
@@ -289,7 +285,6 @@ typedef struct ShuttlePath {
 } ShuttlePath;
 
 typedef union ShuttlePathPointAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     Vec4 *pointer;
@@ -298,7 +293,7 @@ typedef union ShuttlePathPointAddress {
 extern ShuttlePath g_ShuttlePathPoints[];
 
 /* State of a shuttling prop: it runs between the two endpoints of its path in
- * g_ShuttlePathPoints, dwells, then reverses. Paths and timings in names.md 5b. */
+ * g_ShuttlePathPoints, dwells, then reverses. */
 typedef struct GameShuttleScenery {
     s32 dwellCounter;  /* +0x00 frames waited at the endpoint, capped at g_ShuttlePathDwellMax[path] */
     s32 reserved04;
@@ -504,7 +499,6 @@ typedef struct PathSceneryPositionData {
 } PathSceneryPositionData;
 
 typedef union SpinningSceneryAngleAddress {
-    s32 byteOffset;
     s32 value;
     s16 *pointer;
 } SpinningSceneryAngleAddress;
@@ -515,7 +509,6 @@ typedef struct PathSceneryRotationData {
 } PathSceneryRotationData;
 
 typedef union PathSceneryKeyAddress {
-    s32 byteOffset;
     s32 value;
     PathSceneryPositionData *positionData;
     PathSceneryRotationData *rotationData;
@@ -572,7 +565,6 @@ typedef struct SpinningSceneryOrientation {
     u8 reserved[12];
 } SpinningSceneryOrientation;
 typedef union SpinningSceneryDataAddress {
-    s32 byteOffset;
     s32 value;
     u8 *bytes;
     SpinningSceneryOrientation *orientationPointer;

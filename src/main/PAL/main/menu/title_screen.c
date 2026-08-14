@@ -225,8 +225,6 @@ void ShuffleBgmOrder(void) {
 }
 
 
-
-
 void UpdateMainMenuInput(void) {
     volatile u16 *flagp = &g_PadPressed;
     s32 idx;
