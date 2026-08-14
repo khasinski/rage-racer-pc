@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/waypoint.h"
 #include "game/vector.h"
+#include "game/player_car_aliases.h"
 #include "game/replay.h"
 #include "game/render_types.h"
 
@@ -39,7 +40,6 @@ extern char *g_GrandPrixNames[];
 
 /* Race position, 1 = leading; recomputed each frame from how many cars are
  * further along. At the finish it indexes g_PrizeMoney. */
-extern s16 g_RacePosition;
 
 /* Prize money per [course][class][place], place 0 = 1st. */
 typedef struct GrandPrixPrizeTable {
@@ -215,7 +215,6 @@ extern s16 g_WrongWayTimer;
 
 /* g_PlayerCar.facingBackwards. Wrong way is `!= g_RaceSeries`, because the
  * advanced series drives the course in the other direction. */
-extern s16 g_PlayerFacingBackwards;
 
 /* Non-zero while rival proximity / position sound cues may play: set only in
  * the middle of a lap and cleared by the wrong-way warning. */
@@ -380,7 +379,6 @@ extern u8 *g_NativePlaceSuffixNames[];
 #else
 extern u8 *g_PlaceSuffixNames[];
 #endif
-extern Vec4 g_PlayerVelocity[2];
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {

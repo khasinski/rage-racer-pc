@@ -20,9 +20,9 @@ endif()
 add_test(NAME game_logic COMMAND game_logic_tests)
 
 add_test(
-    NAME player_transmission_alias
+    NAME player_car_interior_aliases
     COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_transmission_alias.rb
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_car_aliases.rb
         ${CMAKE_SOURCE_DIR}
 )
 

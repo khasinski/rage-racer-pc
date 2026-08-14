@@ -3672,3 +3672,17 @@ same halfword.  A standalone host global lets the AT/MT selector appear to
 work while `UpdatePlayerCar` continues reading zero and running the automatic
 shift path.  The native declaration now preserves the alias explicitly, with
 both an offset assertion and a behavioral characterization test.
+
+The follow-up audit found that the same mistaken host allocation pattern
+covered the rest of the named `g_PlayerCar` interior views: track interpolation
+at `+0x38/+0x3C`, showroom steering and transform state at
+`+0x44/+0x48/+0x50/+0x60`, the wrong-way flag at `+0xB8`, the 32-byte velocity
+view at `+0xC4`, target RPM at `+0x134`, and race/HUD state at `+0x160/+0x162`.
+They now share the one 0x19C-byte player object again.  A neutral storage
+accessor is necessary because race translation units declare that object as
+`PlayerCarRuntime`, while showroom translation units use the overlapping
+`ShowroomPlayerCarState` union.  Compile-time member-offset assertions validate
+the typed runtime layout; `player_car_interior_aliases` also checks every PAL
+map address and rejects future standalone host backing or extern declarations.
+The `+0x15C` throttle label remains intentionally absent: game code reads
+`drive.acceleratorInput.value` directly, as documented above.

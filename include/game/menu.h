@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/player_car_aliases.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/vector.h"
@@ -349,8 +350,6 @@ extern s32 g_MenuOutgoingScreenProgress;
 extern s32 g_CourseCardSpin;
 extern s32 g_CourseCardSpinTarget;
 extern s32 g_CourseCardPendingGrade;
-extern s32 g_PlayerSteerAngle;
-extern s32 g_PlayerCarWheelAngle;
 extern void *g_LogoSampleSubPanelScript;
 extern s32 g_TeamLogoPaintArmed;
 extern s32 g_CarSelectCursor;
@@ -551,7 +550,6 @@ extern s32 g_CarShopScreenProgress;
 extern u32 g_EngineSpecStep;
 extern s32 D_8009B304;
 extern s32 D_8009B328;
-extern s32 g_PlayerRenderY;
 /* Retail address 0x8009E7B8 aliases g_PlayerCar + 0xE4. In the showroom this
  * word is the selected tire compound; DrawPlayerCarModel reads the same word
  * as renderDepth. Keep one storage location on native hosts too. */
@@ -720,7 +718,6 @@ extern DVec g_ClassRecordCellPoints[];
 extern Rgb g_ClassRecordNameSprites[];
 extern Matrix g_MenuColorMatrix;
 extern Matrix g_MenuLightMatrix;
-extern Vec4 g_PlayerRenderRotation;
 extern Vec4 g_MenuViewScale;
 extern Matrix g_SceneColorMatrix;
 
