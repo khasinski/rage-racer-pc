@@ -975,6 +975,7 @@ static const RageCaptureGteState *ModernFaceGte(
 
 static int s_faceFogSmooth;
 static int s_terrainSnapOff;
+static float s_sliverCenterSy;
 
 static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
                               const RageCaptureFace *face) {
@@ -1079,7 +1080,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         for (vertex = 0; vertex < 4; vertex++) {
             float z = view[vertex][2];
             float sy;
-            if (z < 2000.0f) {
+            if (z < 500.0f) {
                 usable = 0;
                 break;
             }
@@ -1088,6 +1089,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
             if (sy > maxSy) maxSy = sy;
         }
         snapSliver = usable && maxSy - minSy < 2.5f;
+        s_sliverCenterSy = (minSy + maxSy) * 0.5f;
     }
     if (getenv("RAGE_PORT_MODERN_FACE_TRACE") != NULL) {
         float h = (float)gte->h;
@@ -1129,13 +1131,19 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         zSum += z < 1.0f ? 1.0f : z;
         {
             float halfW = s_logicalW * 0.5f;
+            out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
             if (snapSliver) {
-                float sx = floorf((float)gte->ofx + x * h / z);
-                float sy = floorf((float)gte->ofy + y * h / z);
-                out->x = (sx - 160.0f) * z / halfW;
+                /* Far (upper) edges truncate like the GTE, so the road's
+                 * horizon silhouette matches retail; near (lower) edges
+                 * round UP instead - a strip may slightly overlap its
+                 * nearer neighbour (invisible: same road, nearer depth
+                 * wins) but can never retreat from an edge it shares with
+                 * unsnapped geometry, which a plain floor did at the LOD
+                 * hand-off, opening a brand-new seam there. */
+                float sy = (float)gte->ofy + y * h / z;
+                sy = sy <= s_sliverCenterSy ? floorf(sy) : ceilf(sy);
                 out->y = -(sy - 120.0f) * z / 120.0f;
             } else {
-                out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
                 out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) +
                            y * h / 120.0f);
             }
