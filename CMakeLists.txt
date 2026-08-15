@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(rage_racer_port VERSION 0.2.0 LANGUAGES C)
+project(rage_racer_port VERSION 0.3.0 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "0.2-alpha")
+set(RAGE_RACER_RELEASE_VERSION "0.3-alpha")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

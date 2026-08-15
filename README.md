@@ -8,6 +8,27 @@ on the complete clean-room decompilation in
 compatibility layer.  The decompilation remains the reference source for the
 original PlayStation release.
 
+## 0.3-alpha
+
+This alpha adds an opt-in modern renderer next to the faithful PS1 one:
+z-buffered rendering at a configurable internal scale, optional 16:9
+presentation, an uncapped interpolated frame rate, an extended draw distance
+and FXAA. Select it by placing a `rage-port.cfg` next to the executable (or in
+the app data directory):
+
+```ini
+renderer=modern
+modern.internal_scale=4
+modern.aspect=16:9
+modern.fps=vsync
+modern.post=fxaa
+```
+
+Without the file the game runs with the classic PS1-accurate renderer. The
+release also fixes the rear-view mirror rendering rivals with a mirrored view
+matrix, mirror slide-in flashes, paused-mirror rendering, and depth ordering
+of car models at hill crests.
+
 ## 0.2-alpha
 
 This alpha provides unsigned builds for arm64 macOS, x86-64 Linux and x86-64
