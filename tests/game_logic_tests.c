@@ -128,6 +128,8 @@ static void test_port_config(void) {
         "modern.fps = 120\n"
         "modern.texture_filter = linear\n"
         "modern.post = fxaa\n"
+        "modern.bloom = on\n"
+        "modern.grading = vibrant\n"
         "modern.draw_distance = nonsense\n"
         "unknown.key = 1\n";
     int fd;
@@ -143,12 +145,14 @@ static void test_port_config(void) {
         failures++;
     } else {
         close(fd);
-        EXPECT_EQ(6, RagePortConfigLoad(&config, path));
+        EXPECT_EQ(8, RagePortConfigLoad(&config, path));
         EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
         EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
         EXPECT_EQ(120, config.modernFps);
         EXPECT_EQ(1, config.modernTextureFilterLinear);
         EXPECT_EQ(RAGE_MODERN_POST_FXAA, config.modernPost);
+        EXPECT_EQ(6, (s32)(config.modernBloom * 10.0f));
+        EXPECT_EQ(1, config.modernGrading);
         EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
         /* invalid value keeps the default */
         EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));

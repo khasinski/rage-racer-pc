@@ -22,6 +22,8 @@ void RagePortConfigDefaults(RagePortConfig *config) {
     config->modernDrawDistance = 1.0f;
     config->modernTextureFilterLinear = 0;
     config->modernPost = RAGE_MODERN_POST_NONE;
+    config->modernBloom = 0.0f;
+    config->modernGrading = 0;
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -96,6 +98,28 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         }
         return 0;
     }
+    if (strcmp(name, "modern.bloom") == 0) {
+        if (strcmp(value, "off") == 0) {
+            config->modernBloom = 0.0f;
+            return 1;
+        }
+        if (strcmp(value, "on") == 0) {
+            config->modernBloom = 0.6f;
+            return 1;
+        }
+        return ParseFloat(value, &config->modernBloom, 0.0f, 2.0f);
+    }
+    if (strcmp(name, "modern.grading") == 0) {
+        if (strcmp(value, "off") == 0) {
+            config->modernGrading = 0;
+            return 1;
+        }
+        if (strcmp(value, "vibrant") == 0) {
+            config->modernGrading = 1;
+            return 1;
+        }
+        return 0;
+    }
     if (strcmp(name, "modern.texture_filter") == 0) {
         if (strcmp(value, "nearest") == 0) {
             config->modernTextureFilterLinear = 0;
@@ -134,7 +158,8 @@ int RagePortConfigLoad(RagePortConfig *config, const char *path) {
 
 static RagePortConfig active_config = {
     RAGE_RENDERER_COMPAT, 2.0f, RAGE_MODERN_ASPECT_AUTO,
-    RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE
+    RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE,
+    0.0f, 0
 };
 
 void RagePortConfigSetActive(const RagePortConfig *config) {

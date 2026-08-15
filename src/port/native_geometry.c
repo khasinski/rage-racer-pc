@@ -1219,6 +1219,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 capture.klass = type == 0 ? 0 : 1;
                 capture.bias = bias;
                 capture.otDepth = depth;
+                capture.fogged = fogged;
                 capture.fog = fogged ? fog : -1;
                 capture.cellSlot = -1;
                 capture.v[0] = &vertices[RageReadU16(stream + 0)];
@@ -1316,6 +1317,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     capture.klass = 1;
                     capture.bias = bias;
                     capture.otDepth = depth;
+                    capture.fogged = fogged;
                     capture.fog = fogged ? fog : -1;
                     capture.cellSlot = -1;
                     capture.v[0] = &vertices[RageReadU16(stream + 0)];
