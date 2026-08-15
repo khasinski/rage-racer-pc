@@ -1032,13 +1032,33 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
             const RageCaptureModelDraw *draw =
                 &snapshot->draws[face->drawIndex];
             float groupBias = (float)s_drawGroupBias[face->drawIndex];
+            float residualScale = 16.0f;
             unit = (float)(4 << draw->otShift);
             /* 16 z units per residual bias bucket: enough for the bias
              * order to hide wheels inset behind body panels (retail's
              * bucket painter did), small enough not to punch through the
-             * width of a car. */
+             * width of a car. The flat near-black untextured quads are the
+             * exception: they are the car's shadow and underbody plates,
+             * pure painter decals the artists push several buckets back,
+             * and geometrically they extend TOWARD a low camera - seen
+             * front-on in the mirror they are truly nearer than the
+             * bodywork and 16 z per bucket cannot hide them (the lower
+             * half of the car went black). Honour their full bucket
+             * distance; the frame-wide model shift keeps them above the
+             * road they are cast on. */
+            if (!textured) {
+                int channel, corner, brightest = 0;
+                for (corner = 0; corner < 4; corner++) {
+                    for (channel = 0; channel < 3; channel++) {
+                        if (face->color[corner][channel] > brightest) {
+                            brightest = face->color[corner][channel];
+                        }
+                    }
+                }
+                if (brightest <= 32) residualScale = unit;
+            }
             zBias = unit * (groupBias + (float)draw->otBaseBias) +
-                    16.0f * ((float)face->bias - groupBias);
+                    residualScale * ((float)face->bias - groupBias);
             windowMin = -1.0e9f;
             windowMax = 1.0e9f;
             (void)bucket;

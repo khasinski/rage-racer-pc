@@ -219,6 +219,34 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (getenv("MARKER_DRAW_FACES") != NULL) {
+        int want = atoi(getenv("MARKER_DRAW_FACES"));
+        for (i = 0; i < s->faceCount; i++) {
+            const RageCaptureFace *f = &s->faces[i];
+            float view[4][3];
+            if (f->kind == RAGE_CAPTURE_KIND_TERRAIN) continue;
+            if (f->drawIndex != want) continue;
+            faceView(s, f, view);
+            {
+                const RageCaptureGteState *gte = &s->draws[f->drawIndex].gte;
+                float z0 = view[0][2] < 1.0f ? 1.0f : view[0][2];
+                printf("dface %d sxy=%.1f,%.1f ", i,
+                       gte->ofx + view[0][0] * gte->h / z0,
+                       gte->ofy + view[0][1] * gte->h / z0);
+            }
+            printf("klass=%d flags=%02x bias=%d ot=%d clut=%04x "
+                   "tpage=%04x z=%.0f rgb=%d,%d,%d/%d,%d,%d/%d,%d,%d/"
+                   "%d,%d,%d uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
+                   f->klass, f->flags, f->bias, f->otDepth, f->clut,
+                   f->tpage, view[0][2],
+                   f->color[0][0], f->color[0][1], f->color[0][2],
+                   f->color[1][0], f->color[1][1], f->color[1][2],
+                   f->color[2][0], f->color[2][1], f->color[2][2],
+                   f->color[3][0], f->color[3][1], f->color[3][2],
+                   f->uv[0][0], f->uv[0][1], f->uv[1][0], f->uv[1][1],
+                   f->uv[2][0], f->uv[2][1], f->uv[3][0], f->uv[3][1]);
+        }
+    }
     printf("bucket histogram (128 buckets/bin): ");
     for (i = 0; i < 8; i++) printf("%d ", histogram[i]);
     printf("\n");

@@ -2,6 +2,7 @@
 #include <psyz/video.h>
 #include <psyz/audio.h>
 #include <psyz/cd.h>
+#include <psyz/spu.h>
 #include <libetc.h>
 
 #include <stdio.h>
@@ -196,6 +197,13 @@ int main(void) {
         RageModernInit(&portConfig);
     }
     MainLoop();
+    if (getenv("RAGE_PORT_DUMP_SPU_RAM") != NULL) {
+        FILE *output = fopen(getenv("RAGE_PORT_DUMP_SPU_RAM"), "wb");
+        if (output != NULL) {
+            fwrite(Psyz_SpuGetRam(), 1, 512 * 1024, output);
+            fclose(output);
+        }
+    }
     if (getenv("RAGE_PORT_DUMP_VRAM") != NULL) {
         const char *path = getenv("RAGE_PORT_DUMP_VRAM");
         RECT rect = {0, 0, 1024, 512};
