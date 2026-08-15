@@ -38,10 +38,18 @@ typedef char GameFrameEnvironmentHeaderSizeCheck[
 #endif
 
 #define GAME_FRAME_OT_LENGTH 0x2C0
+#ifdef __psyz
 /* Native packets carry pointer-sized OT links and are substantially larger
  * than their packed PS1 counterparts. The Grand Prix terrain subdivision can
  * emit about 20k packets in one frame, including paired texture-window state. */
 #define GAME_FRAME_PRIMITIVE_BUFFER_SIZE 0x800000
+#else
+#define GAME_FRAME_PRIMITIVE_BUFFER_SIZE 0x22000
+#endif
+
+#ifndef OT_TYPE
+#define OT_TYPE u_long
+#endif
 
 typedef struct RaceHudPackets {
     DrawPacket tachometerDrawModes[2];
@@ -64,7 +72,14 @@ typedef struct GameFrameLayout {
     RaceHudPackets raceHud;
 } GameFrameLayout;
 
+#ifdef __psyz
 #define GAME_FRAME_CONTEXT_SIZE ((s32)sizeof(GameFrameLayout))
+#else
+#define GAME_FRAME_CONTEXT_SIZE 0x237E8
+
+typedef char GameFrameLayoutSizeCheck[
+    sizeof(GameFrameLayout) == GAME_FRAME_CONTEXT_SIZE ? 1 : -1];
+#endif
 
 typedef union GameFrameContext {
     GameFrameEnvironmentHeader environment;
