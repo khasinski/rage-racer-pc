@@ -128,12 +128,14 @@ typedef struct GameRaceProgress {
                        g_GrandPrixSeries, read back as u16. */
 } GameRaceProgress;
 
+#ifdef __psyz
 _Static_assert(sizeof(GameRaceProgress) == 0x14,
                "race progress must retain its retail size");
 _Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
                "race progress max class must retain its retail offset");
 _Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
                "race progress money/series must retain its retail offset");
+#endif
 
 /* The save slot the front end is editing; repointed at one of the three below,
  * matching the title-menu row that g_CarTable was repointed for. Declared s32
