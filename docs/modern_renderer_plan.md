@@ -60,6 +60,50 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
   for further effects. **Not implemented:** replacement textures (needs the
   §3.3 decoded cache), modernised lighting, raytracing (appendix B
   unchanged).
+- **R7 (effects round 1)** —
+  - `modern.texture_filter=linear` now also selects CLUT-aware 4-tap
+    bilinear texel filtering in the 3D fragment shader (per-tap palette
+    lookup, transparency-key taps drop out of the blend, the nearest texel
+    keeps the cutout/semi decision, so silhouettes stay compat-identical);
+    2D/HUD stays nearest.
+  - Per-vertex GTE depth cueing: fogged faces un-bake the captured flat
+    IR0 and re-apply `IR0 = (H/z·DQA + DQB) >> 12` toward the far colour at
+    each vertex (course walls now carry the FOGGED flag too);
+    `RAGE_PORT_MODERN_FLAT_FOG=1` restores per-face fog. Note Rage Racer
+    depth-cues only some geometry (spinning scenery, terrain dispatches
+    0/2), so many scenes are unchanged.
+  - `modern.bloom=on|off|<0..2>` — highlight glow: bright-pass into a
+    quarter-res target, separable Gaussian blur, screen-blend composite.
+  - `modern.grading=vibrant|off` — vibrance + gentle contrast in the same
+    composite pass (constants baked into the generated MSL).
+
+### Future effect ideas (not scheduled)
+
+- **Bloom without the HUD** — the current bloom samples the finished frame,
+  and the brightest content is usually the HUD (tachometer, timer text), so
+  the glow lands mostly on the overlay. Running the bright pass on a
+  3D-only intermediate target (before the foreground 2D replay) would
+  restrict the glow to scene highlights; until then the effect defaults
+  off.
+
+- **SSAO** — depth buffer exists; low intensity to avoid noise on low-poly
+  geometry.
+- **Dynamic shadow maps** — the captured GTE light matrix gives the light
+  direction and the semantic scene gives geometry; a depth-only pass with
+  PCF could replace the retail blob shadows. Largest visual win, largest
+  effort (bias/peter-panning tuning on low-poly meshes).
+- **Specular / environment mapping on cars** — normals are not captured
+  (lighting is baked by the GTE) but face normals can be recomputed from
+  positions; subtle highlights only, easy to overdo.
+- **xBRZ-style texture upscaling** — offline cache keyed by tpage+CLUT;
+  significant engineering around VRAM invalidation.
+- **Quality downsample** — verify the internal-scale → window resolve uses
+  a proper filter (effectively free SSAA improvement).
+- **Distance haze for the extended draw distance** — geometry past the
+  retail cutoff pops in unfaded today; a synthetic haze ramp would soften
+  it (retail has no fog there to match).
+- Motion blur was considered and **rejected by the project owner** — do
+  not propose it again.
 
 Verification: game-state and scene-hash parity with the renderer toggled
 (§3's capture-alongside design makes this structural); visual A/B against
@@ -388,6 +432,9 @@ modern.aspect = 4:3 | 16:9 | auto
 modern.fps = logic | vsync | <n>  # 'logic' = no interpolation
 modern.draw_distance = 1.0        # multiplier, phase R4
 modern.texture_filter = nearest | linear
+modern.post = none | fxaa         # edge anti-aliasing pass
+modern.bloom = off | on | <0..2>  # highlight glow ('on' = 0.6)
+modern.grading = off | vibrant    # vibrance + gentle contrast
 ```
 
 Runtime: a debug hotkey toggles presented renderer (both images exist), a

@@ -313,4 +313,12 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(race_cdda PROPERTIES TIMEOUT 45)
+    add_test(
+        NAME engine_audio
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_engine_audio.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(engine_audio PROPERTIES TIMEOUT 70)
 endif()

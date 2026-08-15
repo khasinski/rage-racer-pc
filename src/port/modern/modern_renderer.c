@@ -156,12 +156,29 @@ static const char MODERN_SHADER_MSL[] =
     "    uint a = uint(c.a + 0.5);\n"
     "    return r | (g << 5) | (b << 10) | (a << 15);\n"
     "}\n"
+    "static float4 texelLookup(texture2d<float> vram, uint2 pageBase,\n"
+    "                          uint2 texel, uint mode, uint clut) {\n"
+    "    if (mode >= 2u) {\n"
+    "        return vram.read(pageBase + texel);\n"
+    "    }\n"
+    "    uint texelShift = (mode == 1u) ? 1u : 2u;\n"
+    "    uint subMask = (mode == 1u) ? 1u : 3u;\n"
+    "    uint idxShift = (mode == 1u) ? 8u : 4u;\n"
+    "    uint idxMask = (mode == 1u) ? 0xFFu : 0xFu;\n"
+    "    uint sub = texel.x & subMask;\n"
+    "    uint2 pos = uint2(texel.x >> texelShift, texel.y);\n"
+    "    uint word16 = rgb5551(vram.read(pageBase + pos));\n"
+    "    uint colorIdx = (word16 >> (sub * idxShift)) & idxMask;\n"
+    "    uint2 clutBase = uint2((clut % 64u) * 16u, clut / 64u);\n"
+    "    return vram.read(clutBase + uint2(colorIdx, 0u));\n"
+    "}\n"
     "fragment float4 fs_main(VSOut in [[stage_in]],\n"
     "                        texture2d<float> vram [[texture(0)]],\n"
     "                        sampler smp [[sampler(0)]]) {\n"
     "    uint texWord = in.attr;\n"
     "    uint tpage = texWord & 0x1FFu;\n"
     "    bool untextured = (texWord & 0x8000u) != 0u;\n"
+    "    bool filterTex = (texWord & 0x10000u) != 0u;\n"
     "    float4 texColor;\n"
     "    if (untextured) {\n"
     "        texColor = float4(1.0, 1.0, 1.0, 2.0);\n"
@@ -171,27 +188,40 @@ static const char MODERN_SHADER_MSL[] =
     "                           (in.twin >> 24) & 0xFFu);\n"
     "        uint2 pageBase = uint2(((tpage % 32u) % 16u) * 64u,\n"
     "                               ((tpage % 32u) / 16u) * 256u);\n"
+    "        uint mode = (tpage >> 7) & 3u;\n"
     "        float2 fuv = clamp(floor(in.uv + float2(1.0 / 131072.0)),\n"
     "                           0.0, 255.0);\n"
     "        uint2 texel = (uint2(fuv) & twAnd) | twOr;\n"
-    "        uint mode = (tpage >> 7) & 3u;\n"
-    "        if (mode >= 2u) {\n"
-    "            texColor = vram.read(pageBase + texel);\n"
-    "        } else {\n"
-    "            uint texelShift = (mode == 1u) ? 1u : 2u;\n"
-    "            uint subMask = (mode == 1u) ? 1u : 3u;\n"
-    "            uint idxShift = (mode == 1u) ? 8u : 4u;\n"
-    "            uint idxMask = (mode == 1u) ? 0xFFu : 0xFu;\n"
-    "            uint sub = texel.x & subMask;\n"
-    "            uint2 pos = uint2(texel.x >> texelShift, texel.y);\n"
-    "            uint word16 = rgb5551(vram.read(pageBase + pos));\n"
-    "            uint colorIdx = (word16 >> (sub * idxShift)) & idxMask;\n"
-    "            uint2 clutBase = uint2((in.clut % 64u) * 16u,\n"
-    "                                   in.clut / 64u);\n"
-    "            texColor = vram.read(clutBase + uint2(colorIdx, 0u));\n"
-    "        }\n"
+    "        texColor = texelLookup(vram, pageBase, texel, mode, in.clut);\n"
+    "        /* The nearest texel keeps the transparency-key and semi bits:\n"
+    "         * cutout silhouettes stay pixel-identical to compat, only the\n"
+    "         * interior colour is smoothed. Transparent-key neighbours drop\n"
+    "         * out of the blend so they never bleed black into edges. */\n"
     "        if (all(texColor == float4(0.0))) {\n"
     "            discard_fragment();\n"
+    "        }\n"
+    "        if (filterTex) {\n"
+    "            float2 pos = in.uv + float2(1.0 / 131072.0) - 0.5;\n"
+    "            float2 cell = floor(pos);\n"
+    "            float2 frac = pos - cell;\n"
+    "            float3 acc = float3(0.0);\n"
+    "            float weightSum = 0.0;\n"
+    "            for (int tap = 0; tap < 4; tap++) {\n"
+    "                float2 offset = float2(float(tap & 1), float(tap >> 1));\n"
+    "                float2 at = clamp(cell + offset, 0.0, 255.0);\n"
+    "                float2 axis = abs(offset - frac);\n"
+    "                float weight = (1.0 - axis.x) * (1.0 - axis.y);\n"
+    "                uint2 t = (uint2(at) & twAnd) | twOr;\n"
+    "                float4 c = texelLookup(vram, pageBase, t, mode,\n"
+    "                                       in.clut);\n"
+    "                if (!all(c == float4(0.0))) {\n"
+    "                    acc += c.rgb * weight;\n"
+    "                    weightSum += weight;\n"
+    "                }\n"
+    "            }\n"
+    "            if (weightSum > 0.0) {\n"
+    "                texColor = float4(acc / weightSum, texColor.a);\n"
+    "            }\n"
     "        }\n"
     "    }\n"
     "    bool semiPrim = in.color.a < 0.75;\n"
@@ -200,7 +230,8 @@ static const char MODERN_SHADER_MSL[] =
     "    if (untextured) {\n"
     "        modColor = in.color.rgb;\n"
     "    } else {\n"
-    "        float3 tex5 = floor(texColor.rgb * 31.0 + 0.5);\n"
+    "        float3 tex5 = filterTex ? texColor.rgb * 31.0\n"
+    "                                : floor(texColor.rgb * 31.0 + 0.5);\n"
     "        float3 col8 = min(floor(in.color.rgb * 255.0 + 0.5),\n"
     "                          float3(255.0));\n"
     "        float3 prod8 = min(tex5 * col8 / 16.0, float3(255.0));\n"
@@ -269,6 +300,86 @@ static const char MODERN_POST_MSL[] =
     "    return float4(result, center.a);\n"
     "}\n";
 
+/* Highlight glow and colour grading. The bright pass extracts highlights
+ * into a quarter-resolution target, two separable Gaussian passes blur
+ * them, and the composite pass screen-blends the glow over the frame and
+ * optionally applies a vibrance/contrast grade. The composite shader is
+ * generated with its config baked in as constants. */
+static const char MODERN_EFFECTS_MSL[] =
+    "#include <metal_stdlib>\n"
+    "using namespace metal;\n"
+    "struct PostOut { float4 pos [[position]]; float2 uv; };\n"
+    "vertex PostOut vs_fx(uint vid [[vertex_id]]) {\n"
+    "    PostOut out;\n"
+    "    float2 corner = float2((vid << 1) & 2, vid & 2);\n"
+    "    out.pos = float4(corner * 2.0 - 1.0, 0.0, 1.0);\n"
+    "    out.uv = float2(corner.x, 1.0 - corner.y);\n"
+    "    return out;\n"
+    "}\n"
+    "fragment float4 fs_bright(PostOut in [[stage_in]],\n"
+    "                          texture2d<float> frame [[texture(0)]],\n"
+    "                          sampler smp [[sampler(0)]]) {\n"
+    "    float3 c = frame.sample(smp, in.uv).rgb;\n"
+    "    float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
+    "    return float4(c * smoothstep(0.55, 0.9, luma), 1.0);\n"
+    "}\n"
+    "static float4 blurPass(PostOut in, texture2d<float> frame, sampler smp,\n"
+    "                       float2 dir) {\n"
+    "    float2 texel = dir / float2(frame.get_width(), frame.get_height());\n"
+    "    const float w[5] = {0.227027, 0.1945946, 0.1216216, 0.054054,\n"
+    "                        0.016216};\n"
+    "    float3 acc = frame.sample(smp, in.uv).rgb * w[0];\n"
+    "    for (int i = 1; i < 5; i++) {\n"
+    "        acc += frame.sample(smp, in.uv + texel * float(i)).rgb * w[i];\n"
+    "        acc += frame.sample(smp, in.uv - texel * float(i)).rgb * w[i];\n"
+    "    }\n"
+    "    return float4(acc, 1.0);\n"
+    "}\n"
+    "fragment float4 fs_blur_h(PostOut in [[stage_in]],\n"
+    "                          texture2d<float> frame [[texture(0)]],\n"
+    "                          sampler smp [[sampler(0)]]) {\n"
+    "    return blurPass(in, frame, smp, float2(1.0, 0.0));\n"
+    "}\n"
+    "fragment float4 fs_blur_v(PostOut in [[stage_in]],\n"
+    "                          texture2d<float> frame [[texture(0)]],\n"
+    "                          sampler smp [[sampler(0)]]) {\n"
+    "    return blurPass(in, frame, smp, float2(0.0, 1.0));\n"
+    "}\n";
+
+/* Composite prologue + body; the generated "constant float kBloom = ...;
+ * constant int kGrading = ...;" lines are inserted between them. */
+static const char MODERN_COMPOSITE_PROLOGUE_MSL[] =
+    "#include <metal_stdlib>\n"
+    "using namespace metal;\n";
+static const char MODERN_COMPOSITE_MSL[] =
+    "struct PostOut { float4 pos [[position]]; float2 uv; };\n"
+    "fragment float4 fs_composite(PostOut in [[stage_in]],\n"
+    "                             texture2d<float> frame [[texture(0)]],\n"
+    "                             sampler smpFrame [[sampler(0)]],\n"
+    "                             texture2d<float> bloom [[texture(1)]],\n"
+    "                             sampler smpBloom [[sampler(1)]]) {\n"
+    "    float3 c = frame.sample(smpFrame, in.uv).rgb;\n"
+    "    if (kBloom > 0.0) {\n"
+    "        float3 b = saturate(bloom.sample(smpBloom, in.uv).rgb * kBloom);\n"
+    "        c = 1.0 - (1.0 - saturate(c)) * (1.0 - b);\n"
+    "    }\n"
+    "    if (kGrading != 0) {\n"
+    "        float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
+    "        c = mix(float3(luma), c, 1.16);\n"
+    "        c = (c - 0.5) * 1.04 + 0.5;\n"
+    "    }\n"
+    "    return float4(saturate(c), 1.0);\n"
+    "}\n";
+
+static SDL_GPUTexture *s_finalTarget;
+static SDL_GPUTexture *s_bloomA;
+static SDL_GPUTexture *s_bloomB;
+static SDL_GPUGraphicsPipeline *s_pipeBright;
+static SDL_GPUGraphicsPipeline *s_pipeBlurH;
+static SDL_GPUGraphicsPipeline *s_pipeBlurV;
+static SDL_GPUGraphicsPipeline *s_pipeComposite;
+static int s_bloomW, s_bloomH;
+
 /* ---- resource creation ---- */
 
 static SDL_GPUShader *ModernCreateShader(const char *source, size_t sourceSize,
@@ -284,13 +395,15 @@ static SDL_GPUShader *ModernCreateShader(const char *source, size_t sourceSize,
     return SDL_CreateGPUShader(s_device, &info);
 }
 
-static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
-    SDL_GPUShader *vs =
-        ModernCreateShader(MODERN_POST_MSL, sizeof(MODERN_POST_MSL),
-                           SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
-    SDL_GPUShader *fs =
-        ModernCreateShader(MODERN_POST_MSL, sizeof(MODERN_POST_MSL),
-                           SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_post", 1);
+static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
+    const char *vsSource, size_t vsSize, const char *vsEntry,
+    const char *fsSource, size_t fsSize, const char *fsEntry, int samplers) {
+    SDL_GPUShader *vs = ModernCreateShader(vsSource, vsSize,
+                                           SDL_GPU_SHADERSTAGE_VERTEX,
+                                           vsEntry, 0);
+    SDL_GPUShader *fs = ModernCreateShader(fsSource, fsSize,
+                                           SDL_GPU_SHADERSTAGE_FRAGMENT,
+                                           fsEntry, samplers);
     SDL_GPUGraphicsPipeline *pipeline = NULL;
     if (vs && fs) {
         const SDL_GPUColorTargetDescription target = {
@@ -306,6 +419,39 @@ static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
     }
     if (vs) SDL_ReleaseGPUShader(s_device, vs);
     if (fs) SDL_ReleaseGPUShader(s_device, fs);
+    return pipeline;
+}
+
+static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
+    return ModernCreateFullscreenPipeline(
+        MODERN_POST_MSL, sizeof(MODERN_POST_MSL), "vs_post",
+        MODERN_POST_MSL, sizeof(MODERN_POST_MSL), "fs_post", 1);
+}
+
+static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
+    char header[128];
+    size_t headerLen;
+    char *source;
+    size_t sourceSize;
+    SDL_GPUGraphicsPipeline *pipeline;
+    snprintf(header, sizeof(header),
+             "constant float kBloom = %.4f;\nconstant int kGrading = %d;\n",
+             (double)s_config.modernBloom, s_config.modernGrading);
+    headerLen = strlen(header);
+    sourceSize = sizeof(MODERN_COMPOSITE_PROLOGUE_MSL) - 1 + headerLen +
+                 sizeof(MODERN_COMPOSITE_MSL);
+    source = malloc(sourceSize);
+    if (source == NULL) return NULL;
+    memcpy(source, MODERN_COMPOSITE_PROLOGUE_MSL,
+           sizeof(MODERN_COMPOSITE_PROLOGUE_MSL) - 1);
+    memcpy(source + sizeof(MODERN_COMPOSITE_PROLOGUE_MSL) - 1, header,
+           headerLen);
+    memcpy(source + sizeof(MODERN_COMPOSITE_PROLOGUE_MSL) - 1 + headerLen,
+           MODERN_COMPOSITE_MSL, sizeof(MODERN_COMPOSITE_MSL));
+    pipeline = ModernCreateFullscreenPipeline(
+        MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
+        source, sourceSize, "fs_composite", 2);
+    free(source);
     return pipeline;
 }
 
@@ -456,6 +602,13 @@ static int ModernEnsureResources(void) {
         s_ringScene = malloc(MODERN_RING * sizeof(RageSceneSnapshot));
     }
 
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE ||
+        s_config.modernBloom > 0.0f || s_config.modernGrading) {
+        SDL_GPUSamplerCreateInfo samplerInfo = {0};
+        samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+        samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+        s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
+    }
     if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -468,17 +621,54 @@ static int ModernEnsureResources(void) {
         info.num_levels = 1;
         s_postTarget = SDL_CreateGPUTexture(s_device, &info);
         s_pipePost = ModernCreatePostPipeline();
-        {
-            SDL_GPUSamplerCreateInfo samplerInfo = {0};
-            samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-            samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-            s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
-        }
         if (!s_postTarget || !s_pipePost || !s_samplerLinear) {
             fprintf(stderr,
                     "rage-port: post-process setup failed, disabling: %s\n",
                     SDL_GetError());
             s_config.modernPost = RAGE_MODERN_POST_NONE;
+        }
+    }
+    if (s_config.modernBloom > 0.0f || s_config.modernGrading) {
+        SDL_GPUTextureCreateInfo info = {0};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = (Uint32)s_targetW;
+        info.height = (Uint32)s_targetH;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        s_finalTarget = SDL_CreateGPUTexture(s_device, &info);
+        s_pipeComposite = ModernCreateCompositePipeline();
+        if (s_config.modernBloom > 0.0f) {
+            s_bloomW = s_targetW / 4 > 0 ? s_targetW / 4 : 1;
+            s_bloomH = s_targetH / 4 > 0 ? s_targetH / 4 : 1;
+            info.width = (Uint32)s_bloomW;
+            info.height = (Uint32)s_bloomH;
+            s_bloomA = SDL_CreateGPUTexture(s_device, &info);
+            s_bloomB = SDL_CreateGPUTexture(s_device, &info);
+            s_pipeBright = ModernCreateFullscreenPipeline(
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_bright",
+                1);
+            s_pipeBlurH = ModernCreateFullscreenPipeline(
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_blur_h",
+                1);
+            s_pipeBlurV = ModernCreateFullscreenPipeline(
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
+                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_blur_v",
+                1);
+        }
+        if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear ||
+            (s_config.modernBloom > 0.0f &&
+             (!s_bloomA || !s_bloomB || !s_pipeBright || !s_pipeBlurH ||
+              !s_pipeBlurV))) {
+            fprintf(stderr,
+                    "rage-port: bloom/grading setup failed, disabling: %s\n",
+                    SDL_GetError());
+            s_config.modernBloom = 0.0f;
+            s_config.modernGrading = 0;
         }
     }
 
@@ -783,6 +973,10 @@ static const RageCaptureGteState *ModernFaceGte(
                      : &snapshot->draws[face->drawIndex].gte;
 }
 
+static int s_faceFogSmooth;
+static int s_terrainSnapOff;
+static float s_sliverCenterSy;
+
 static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
                               const RageCaptureFace *face) {
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
@@ -803,6 +997,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
     float zSum = 0.0f;
     float windowMin, windowMax;
     float zBias = 0.0f;
+    int snapSliver;
     int textured = face->klass == 1 || face->klass == 3;
     /* Depth policy: the compat renderer orders faces by ordering-table
      * bucket (average z quantized by 4<<otShift, plus the per-face bias and
@@ -837,19 +1032,85 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
             const RageCaptureModelDraw *draw =
                 &snapshot->draws[face->drawIndex];
             float groupBias = (float)s_drawGroupBias[face->drawIndex];
+            float residualScale = 16.0f;
             unit = (float)(4 << draw->otShift);
             /* 16 z units per residual bias bucket: enough for the bias
              * order to hide wheels inset behind body panels (retail's
              * bucket painter did), small enough not to punch through the
-             * width of a car. */
+             * width of a car. The flat near-black untextured quads are the
+             * exception: they are the car's shadow and underbody plates,
+             * pure painter decals the artists push several buckets back,
+             * and geometrically they extend TOWARD a low camera - seen
+             * front-on in the mirror they are truly nearer than the
+             * bodywork and 16 z per bucket cannot hide them (the lower
+             * half of the car went black). Honour their full bucket
+             * distance; the frame-wide model shift keeps them above the
+             * road they are cast on. */
+            if (!textured) {
+                int channel, corner, brightest = 0;
+                for (corner = 0; corner < 4; corner++) {
+                    for (channel = 0; channel < 3; channel++) {
+                        if (face->color[corner][channel] > brightest) {
+                            brightest = face->color[corner][channel];
+                        }
+                    }
+                }
+                if (brightest <= 32) residualScale = unit;
+            }
             zBias = unit * (groupBias + (float)draw->otBaseBias) +
-                    16.0f * ((float)face->bias - groupBias);
+                    residualScale * ((float)face->bias - groupBias);
             windowMin = -1.0e9f;
             windowMax = 1.0e9f;
             (void)bucket;
         }
     }
+    /* Per-vertex depth cueing: the compat emitter bakes ONE GTE fog factor
+     * into the whole face's colour, which bands on large or oblique faces.
+     * Un-bake that flat factor and re-apply the same GTE curve
+     * (IR0 = (H/z * DQA + DQB) >> 12, interpolating toward the far colour)
+     * at each vertex's true depth; Gouraud interpolation then shades the
+     * face's interior smoothly. RAGE_PORT_MODERN_FLAT_FOG restores the
+     * captured per-face colours. */
+    {
+        static int flatFog = -1;
+        if (flatFog < 0) {
+            flatFog = getenv("RAGE_PORT_MODERN_FLAT_FOG") != NULL;
+            s_terrainSnapOff =
+                getenv("RAGE_PORT_MODERN_NO_TERRAIN_SNAP") != NULL;
+        }
+        s_faceFogSmooth = !flatFog &&
+                          (face->flags & RAGE_CAPTURE_FACE_FOGGED) != 0 &&
+                          face->fog >= 0;
+    }
     ModernFaceViewPositions(snapshot, face, view, &mirror);
+    /* The road's distance LOD is authored as sparse strips about one
+     * 320x240 pixel tall, with real holes between consecutive strips.
+     * Retail's GTE truncates vertex coordinates to integer pixels, which
+     * tiles the strips seamlessly; sub-pixel float projection exposes the
+     * holes as background-coloured lines across the road. Detect the
+     * strips by their projected shape (a short screen sliver, everything
+     * comfortably in front of the camera) and reproduce the GTE
+     * truncation for them - adjacent strips are slivers too, so their
+     * snapped edges land on the same row and tile again, while ordinary
+     * terrain keeps sub-pixel precision. */
+    snapSliver = 0;
+    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN && !s_terrainSnapOff) {
+        float minSy = 1.0e9f, maxSy = -1.0e9f;
+        int usable = 1;
+        for (vertex = 0; vertex < 4; vertex++) {
+            float z = view[vertex][2];
+            float sy;
+            if (z < 500.0f) {
+                usable = 0;
+                break;
+            }
+            sy = (float)gte->ofy + view[vertex][1] * (float)gte->h / z;
+            if (sy < minSy) minSy = sy;
+            if (sy > maxSy) maxSy = sy;
+        }
+        snapSliver = usable && maxSy - minSy < 2.5f;
+        s_sliverCenterSy = (minSy + maxSy) * 0.5f;
+    }
     if (getenv("RAGE_PORT_MODERN_FACE_TRACE") != NULL) {
         float h = (float)gte->h;
         fprintf(stderr,
@@ -891,18 +1152,67 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         {
             float halfW = s_logicalW * 0.5f;
             out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
-            out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
+            if (snapSliver) {
+                /* Far (upper) edges truncate like the GTE, so the road's
+                 * horizon silhouette matches retail; near (lower) edges
+                 * round UP instead - a strip may slightly overlap its
+                 * nearer neighbour (invisible: same road, nearer depth
+                 * wins) but can never retreat from an edge it shares with
+                 * unsnapped geometry, which a plain floor did at the LOD
+                 * hand-off, opening a brand-new seam there. */
+                float sy = (float)gte->ofy + y * h / z;
+                sy = sy <= s_sliverCenterSy ? floorf(sy) : ceilf(sy);
+                out->y = -(sy - 120.0f) * z / 120.0f;
+            } else {
+                out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) +
+                           y * h / 120.0f);
+            }
         }
         out->z = ((depthZ - MODERN_DEPTH_MIN) / MODERN_DEPTH_RANGE) * z;
         out->w = z;
         out->u = (float)face->uv[vertex][0];
         out->v = (float)face->uv[vertex][1];
-        out->color[0] = face->color[vertex][0];
-        out->color[1] = face->color[vertex][1];
-        out->color[2] = face->color[vertex][2];
+        if (s_faceFogSmooth) {
+            /* The GTE computes IR0 from the perspective-divide result
+             * (H*65536/SZ3, saturated to 0x1FFFF), scaled by DQA plus DQB.
+             * The far colour registers hold colour*16. */
+            float div = h * 65536.0f / (z < 1.0f ? 1.0f : z);
+            float fogFace = (float)face->fog * (1.0f / 4096.0f);
+            float fogHere;
+            int channel;
+            if (div > 131071.0f) div = 131071.0f;
+            fogHere = (div * (float)gte->dqa + (float)gte->dqb) *
+                      (1.0f / (4096.0f * 4096.0f));
+            if (fogHere < 0.0f) fogHere = 0.0f;
+            if (fogHere > 1.0f) fogHere = 1.0f;
+            for (channel = 0; channel < 3; channel++) {
+                float far = (float)gte->color.t[channel] * (1.0f / 16.0f);
+                float baked = (float)face->color[vertex][channel];
+                float base;
+                float shaded;
+                if (fogFace > 0.999f) {
+                    base = baked; /* fully fogged: the base is gone, ~far */
+                } else {
+                    base = (baked - fogFace * far) / (1.0f - fogFace);
+                }
+                if (base < 0.0f) base = 0.0f;
+                if (base > 255.0f) base = 255.0f;
+                shaded = base + fogHere * (far - base);
+                if (shaded < 0.0f) shaded = 0.0f;
+                if (shaded > 255.0f) shaded = 255.0f;
+                out->color[channel] = (uint8_t)(shaded + 0.5f);
+            }
+        } else {
+            out->color[0] = face->color[vertex][0];
+            out->color[1] = face->color[vertex][1];
+            out->color[2] = face->color[vertex][2];
+        }
         out->color[3] =
             (uint8_t)((face->flags & RAGE_CAPTURE_FACE_SEMI) ? 0 : 255);
         out->attr = textured ? face->tpage : (face->tpage | 0x8000u);
+        if (textured && s_config.modernTextureFilterLinear) {
+            out->attr |= 0x10000u; /* CLUT-aware 4-tap filtering, 3D only */
+        }
         if (getenv("RAGE_PORT_MODERN_SOLID") != NULL) {
             out->attr |= 0x8000u;
         }
@@ -1443,6 +1753,41 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
 /* ---- rendering ---- */
 
+/* The texture the frame chain ends in: composite > fxaa > raw target. */
+static SDL_GPUTexture *ModernPresentTexture(void) {
+    if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
+        s_finalTarget != NULL && s_pipeComposite != NULL) {
+        return s_finalTarget;
+    }
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE && s_postTarget != NULL) {
+        return s_postTarget;
+    }
+    return s_target;
+}
+
+static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
+                                 SDL_GPUGraphicsPipeline *pipeline,
+                                 SDL_GPUTexture *target,
+                                 SDL_GPUTexture *sources[], int sourceCount) {
+    const SDL_GPUColorTargetInfo color = {
+        .texture = target,
+        .load_op = SDL_GPU_LOADOP_DONT_CARE,
+        .store_op = SDL_GPU_STOREOP_STORE,
+    };
+    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, NULL);
+    SDL_GPUTextureSamplerBinding bindings[2];
+    int i;
+    if (pass == NULL) return;
+    for (i = 0; i < sourceCount && i < 2; i++) {
+        bindings[i].texture = sources[i];
+        bindings[i].sampler = s_samplerLinear;
+    }
+    SDL_BindGPUGraphicsPipeline(pass, pipeline);
+    SDL_BindGPUFragmentSamplers(pass, 0, bindings, (Uint32)sourceCount);
+    SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+    SDL_EndGPURenderPass(pass);
+}
+
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
@@ -1529,28 +1874,37 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPURenderPass(pass);
         }
     }
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE && s_pipePost != NULL) {
-        const SDL_GPUColorTargetInfo color = {
-            .texture = s_postTarget,
-            .load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .store_op = SDL_GPU_STOREOP_STORE,
-        };
-        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, NULL);
-        if (pass != NULL) {
-            const SDL_GPUTextureSamplerBinding sampler = {
-                .texture = s_target, .sampler = s_samplerLinear};
-            SDL_BindGPUGraphicsPipeline(pass, s_pipePost);
-            SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
-            SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
-            SDL_EndGPURenderPass(pass);
+    {
+        SDL_GPUTexture *chain = s_target;
+        if (s_config.modernPost != RAGE_MODERN_POST_NONE &&
+            s_pipePost != NULL && s_postTarget != NULL) {
+            SDL_GPUTexture *sources[1];
+            sources[0] = chain;
+            ModernFullscreenPass(cmd, s_pipePost, s_postTarget, sources, 1);
+            chain = s_postTarget;
+        }
+        if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
+            s_pipeComposite != NULL && s_finalTarget != NULL) {
+            SDL_GPUTexture *sources[2];
+            if (s_config.modernBloom > 0.0f && s_pipeBright != NULL) {
+                sources[0] = chain;
+                ModernFullscreenPass(cmd, s_pipeBright, s_bloomA, sources, 1);
+                sources[0] = s_bloomA;
+                ModernFullscreenPass(cmd, s_pipeBlurH, s_bloomB, sources, 1);
+                sources[0] = s_bloomB;
+                ModernFullscreenPass(cmd, s_pipeBlurV, s_bloomA, sources, 1);
+            }
+            sources[0] = chain;
+            /* With bloom off the composite's kBloom constant is 0 and the
+             * second texture is never sampled; any resident texture works. */
+            sources[1] = s_bloomA != NULL ? s_bloomA : chain;
+            ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources,
+                                 2);
         }
     }
     if (s_ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
-            .source = {.texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
-                                          s_postTarget != NULL
-                                      ? s_postTarget
-                                      : s_target,
+            .source = {.texture = ModernPresentTexture(),
                        .w = (Uint32)s_targetW,
                        .h = (Uint32)s_targetH},
             .destination = {.texture = s_ring[s_ringNext],
@@ -1641,11 +1995,7 @@ static int ModernWriteTexturePpm(SDL_GPUTexture *texture, const char *path) {
 }
 
 static int ModernWriteTargetPpm(const char *path) {
-    return ModernWriteTexturePpm(
-        s_config.modernPost != RAGE_MODERN_POST_NONE && s_postTarget != NULL
-            ? s_postTarget
-            : s_target,
-        path);
+    return ModernWriteTexturePpm(ModernPresentTexture(), path);
 }
 
 /* Diagnostic: write the modern target as a binary PPM when
@@ -1655,18 +2005,46 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
     static int initialized;
     static const char *path;
     static long frame = -1;
+    static long every = 0;
+    static long lastDumped = -1;
     static int done;
     if (!initialized) {
         const char *frameText = getenv("RAGE_PORT_MODERN_DUMP_FRAME");
+        const char *everyText = getenv("RAGE_PORT_MODERN_DUMP_EVERY");
         path = getenv("RAGE_PORT_MODERN_DUMP");
         if (frameText != NULL) frame = strtol(frameText, NULL, 0);
+        if (everyText != NULL) every = strtol(everyText, NULL, 0);
         initialized = 1;
     }
     if (path == NULL || done) return;
     if (frame >= 0 && (long)snapshot->frameCounter < frame) return;
+    if (every > 0) {
+        /* Periodic sweep: path gets a -NNNN frame suffix per dump. */
+        char numbered[512];
+        if (lastDumped >= 0 &&
+            (long)snapshot->frameCounter < lastDumped + every) {
+            return;
+        }
+        snprintf(numbered, sizeof(numbered), "%s-%06u.ppm", path,
+                 snapshot->frameCounter);
+        if (ModernWriteTexturePpm(ModernPresentTexture(), numbered)) {
+            lastDumped = (long)snapshot->frameCounter;
+        }
+        return;
+    }
     if (ModernWriteTargetPpm(path)) {
         fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
                 snapshot->frameCounter, path);
+    }
+    if (getenv("RAGE_PORT_MODERN_DUMP_SCENE") != NULL) {
+        char scenePath[512];
+        FILE *file;
+        snprintf(scenePath, sizeof(scenePath), "%s.scene.bin", path);
+        file = fopen(scenePath, "wb");
+        if (file != NULL) {
+            fwrite(snapshot, sizeof(*snapshot), 1, file);
+            fclose(file);
+        }
     }
     done = 1;
 }
@@ -1877,10 +2255,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     }
     if (!s_haveRenderedFrame) return;
-    info->texture = s_config.modernPost != RAGE_MODERN_POST_NONE &&
-                            s_postTarget != NULL
-                        ? s_postTarget
-                        : s_target;
+    info->texture = ModernPresentTexture();
     info->w = (Uint32)s_targetW;
     info->h = (Uint32)s_targetH;
     info->aspect = (4.0f / 3.0f) * (s_logicalW / 320.0f);
