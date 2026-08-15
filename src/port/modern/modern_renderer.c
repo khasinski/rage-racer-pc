@@ -896,7 +896,12 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
              * half of the car went black). Honour their full bucket
              * distance; the frame-wide model shift keeps them above the
              * road they are cast on. */
-            if (!textured) {
+            /* Semi faces are excluded: the spin-blur wheel variant the game
+             * swaps in on alternating rotation phases is a dark untextured
+             * SEMI cone, and pushing it back like a shadow plate made the
+             * rivals' wheels vanish on exactly those frames. The plates are
+             * opaque. */
+            if (!textured && !(face->flags & RAGE_CAPTURE_FACE_SEMI)) {
                 int channel, corner, brightest = 0;
                 for (corner = 0; corner < 4; corner++) {
                     for (channel = 0; channel < 3; channel++) {
