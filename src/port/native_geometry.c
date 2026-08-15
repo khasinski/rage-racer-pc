@@ -1574,11 +1574,14 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                          * for the modern renderer's extended draw distance
                          * but never emitted to the compat stream. Distant
                          * road quads are nearly edge-on, so their NCLIP
-                         * orientation flickers; past bucket 300 capture
+                         * orientation flickers; past bucket 96 (the same
+                         * z 12288 as the far-field vertex snap) capture
                          * them regardless of facing - the depth buffer
-                         * sorts them out. */
+                         * sorts them out. A higher cutoff left multi-row
+                         * sky holes across the road where a whole stretch
+                         * of strips was NCLIP-rejected in one frame. */
                         int reject = g_RageProjectionReject;
-                        if ((reject == 3 || (reject == 2 && depth >= 300) ||
+                        if ((reject == 3 || (reject == 2 && depth >= 96) ||
                              g_RageCaptureOnlyCells) &&
                             RageModernExtendedDepth() && depth > 0 &&
                             depth < 1024) {

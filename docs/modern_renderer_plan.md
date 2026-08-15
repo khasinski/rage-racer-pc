@@ -79,6 +79,13 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
 
 ### Future effect ideas (not scheduled)
 
+- **Bloom without the HUD** — the current bloom samples the finished frame,
+  and the brightest content is usually the HUD (tachometer, timer text), so
+  the glow lands mostly on the overlay. Running the bright pass on a
+  3D-only intermediate target (before the foreground 2D replay) would
+  restrict the glow to scene highlights; until then the effect defaults
+  off.
+
 - **SSAO** — depth buffer exists; low intensity to avoid noise on low-poly
   geometry.
 - **Dynamic shadow maps** — the captured GTE light matrix gives the light

@@ -168,6 +168,57 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (getenv("MARKER_BAND") != NULL) {
+        /* MARKER_BAND="x yMin yMax": every non-mirror face whose projected
+         * quad crosses column x within [yMin,yMax], with exact view-space
+         * corners, for crack diagnosis. */
+        float bandX, bandY0, bandY1;
+        if (sscanf(getenv("MARKER_BAND"), "%f %f %f", &bandX, &bandY0,
+                   &bandY1) == 3) {
+            for (i = 0; i < s->faceCount; i++) {
+                const RageCaptureFace *f = &s->faces[i];
+                const RageCaptureGteState *gte;
+                float view[4][3];
+                float sx[4], sy[4];
+                int vertex, behind = 0, mirror;
+                float minX = 1e9f, maxX = -1e9f, minY = 1e9f, maxY = -1e9f;
+                if (f->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+                    mirror = s->terrain[f->drawIndex].mirror;
+                    gte = &s->terrain[f->drawIndex].gte;
+                } else {
+                    mirror = s->draws[f->drawIndex].mirror;
+                    gte = &s->draws[f->drawIndex].gte;
+                }
+                if (mirror) continue;
+                faceView(s, f, view);
+                for (vertex = 0; vertex < 4; vertex++) {
+                    float z = view[vertex][2];
+                    if (z < 1.0f) { behind = 1; break; }
+                    sx[vertex] = gte->ofx + view[vertex][0] * gte->h / z;
+                    sy[vertex] = gte->ofy + view[vertex][1] * gte->h / z;
+                    if (sx[vertex] < minX) minX = sx[vertex];
+                    if (sx[vertex] > maxX) maxX = sx[vertex];
+                    if (sy[vertex] < minY) minY = sy[vertex];
+                    if (sy[vertex] > maxY) maxY = sy[vertex];
+                }
+                if (behind) continue;
+                if (minX > bandX + 0.5f || maxX < bandX - 0.5f) continue;
+                if (minY > bandY1 || maxY < bandY0) continue;
+                printf("band face=%d kind=%d cell=%d draw=%d ot=%d "
+                       "clut=%04x tpage=%04x\n",
+                       i, f->kind, f->cellSlot, f->drawIndex, f->otDepth,
+                       f->clut, f->tpage);
+                for (vertex = 0; vertex < 4; vertex++) {
+                    printf("  v%d local=%d,%d,%d view=%.2f,%.2f,%.2f "
+                           "s=%.3f,%.3f\n",
+                           vertex, f->pos[vertex][0], f->pos[vertex][1],
+                           f->pos[vertex][2], view[vertex][0],
+                           view[vertex][1], view[vertex][2], sx[vertex],
+                           sy[vertex]);
+                }
+            }
+        }
+    }
     printf("bucket histogram (128 buckets/bin): ");
     for (i = 0; i < 8; i++) printf("%d ", histogram[i]);
     printf("\n");
@@ -191,17 +242,116 @@ int main(int argc, char **argv) {
                 sx[vertex] = gte->ofx + view[vertex][0] * gte->h / z;
                 sy[vertex] = gte->ofy + view[vertex][1] * gte->h / z;
             }
-            if (behind) continue;
+            if (behind) {
+                /* Near-plane clip each triangle in view space (like the
+                 * GPU's homogeneous clip) and test the clipped polygon. */
+                const int tris[2][3] = {{0, 1, 2}, {1, 3, 2}};
+                int t, hit = 0;
+                for (t = 0; t < 2 && !hit; t++) {
+                    float poly[8][3];
+                    int count = 0;
+                    int a;
+                    for (a = 0; a < 3; a++) {
+                        const float *cur = view[tris[t][a]];
+                        const float *nxt = view[tris[t][(a + 1) % 3]];
+                        if (cur[2] >= 1.0f) {
+                            memcpy(poly[count++], cur, sizeof(poly[0]));
+                        }
+                        if ((cur[2] >= 1.0f) != (nxt[2] >= 1.0f)) {
+                            float span = nxt[2] - cur[2];
+                            float k = span != 0.0f ? (1.0f - cur[2]) / span
+                                                   : 0.0f;
+                            poly[count][0] = cur[0] + k * (nxt[0] - cur[0]);
+                            poly[count][1] = cur[1] + k * (nxt[1] - cur[1]);
+                            poly[count][2] = 1.0f;
+                            count++;
+                        }
+                    }
+                    if (count >= 3) {
+                        float px[8], py[8];
+                        int e, inside = 1;
+                        for (e = 0; e < count; e++) {
+                            px[e] = gte->ofx +
+                                    poly[e][0] * gte->h / poly[e][2];
+                            py[e] = gte->ofy +
+                                    poly[e][1] * gte->h / poly[e][2];
+                        }
+                        /* Fan containment test. */
+                        inside = 0;
+                        for (e = 1; e + 1 < count; e++) {
+                            if (pointInTri(probeX, probeY, px[0], py[0],
+                                           px[e], py[e], px[e + 1],
+                                           py[e + 1])) {
+                                inside = 1;
+                                break;
+                            }
+                        }
+                        if (inside) hit = 1;
+                    }
+                }
+                if (hit) {
+                    printf("cover-clipped kind=%d klass=%d flags=%02x ot=%d "
+                           "bias=%d cell=%d draw=%d mirror=%d clut=%04x "
+                           "tpage=%04x z=%.0f,%.0f,%.0f,%.0f\n",
+                           f->kind, f->klass, f->flags, f->otDepth, f->bias,
+                           f->cellSlot, f->drawIndex,
+                           f->kind == RAGE_CAPTURE_KIND_TERRAIN
+                               ? s->terrain[f->drawIndex].mirror
+                               : s->draws[f->drawIndex].mirror,
+                           f->clut, f->tpage, view[0][2], view[1][2],
+                           view[2][2], view[3][2]);
+                }
+                continue;
+            }
             if (pointInTri(probeX, probeY, sx[0], sy[0], sx[1], sy[1], sx[2],
                            sy[2]) ||
                 pointInTri(probeX, probeY, sx[1], sy[1], sx[3], sy[3], sx[2],
                            sy[2])) {
-                printf("cover kind=%d klass=%d ot=%d bias=%d cell=%d "
+                printf("cover kind=%d klass=%d flags=%02x ot=%d bias=%d "
+                       "cell=%d draw=%d mirror=%d "
                        "clut=%04x tpage=%04x z=%.0f..%.0f "
                        "sxy=%.0f,%.0f/%.0f,%.0f/%.0f,%.0f/%.0f,%.0f\n",
-                       f->kind, f->klass, f->otDepth, f->bias, f->cellSlot,
+                       f->kind, f->klass, f->flags, f->otDepth, f->bias,
+                       f->cellSlot, f->drawIndex,
+                       f->kind == RAGE_CAPTURE_KIND_TERRAIN
+                           ? s->terrain[f->drawIndex].mirror
+                           : s->draws[f->drawIndex].mirror,
                        f->clut, f->tpage, view[0][2], view[3][2], sx[0],
                        sy[0], sx[1], sy[1], sx[2], sy[2], sx[3], sy[3]);
+                {
+                    /* Perspective-correct UV at the probe (screen-space
+                     * barycentric over 1/z, both triangles of the quad). */
+                    const int tris[2][3] = {{0, 1, 2}, {1, 3, 2}};
+                    int t;
+                    for (t = 0; t < 2; t++) {
+                        int a = tris[t][0], b = tris[t][1], c = tris[t][2];
+                        float d = (sy[b] - sy[c]) * (sx[a] - sx[c]) +
+                                  (sx[c] - sx[b]) * (sy[a] - sy[c]);
+                        float w0, w1, w2, iz, u, v;
+                        if (d == 0.0f) continue;
+                        w0 = ((sy[b] - sy[c]) * (probeX - sx[c]) +
+                              (sx[c] - sx[b]) * (probeY - sy[c])) / d;
+                        w1 = ((sy[c] - sy[a]) * (probeX - sx[c]) +
+                              (sx[a] - sx[c]) * (probeY - sy[c])) / d;
+                        w2 = 1.0f - w0 - w1;
+                        if (w0 < -0.001f || w1 < -0.001f || w2 < -0.001f)
+                            continue;
+                        iz = w0 / view[a][2] + w1 / view[b][2] +
+                             w2 / view[c][2];
+                        u = (w0 * f->uv[a][0] / view[a][2] +
+                             w1 * f->uv[b][0] / view[b][2] +
+                             w2 * f->uv[c][0] / view[c][2]) / iz;
+                        v = (w0 * f->uv[a][1] / view[a][2] +
+                             w1 * f->uv[b][1] / view[b][2] +
+                             w2 * f->uv[c][1] / view[c][2]) / iz;
+                        printf("  tri%d uv=%.3f,%.3f corners=%u,%u/%u,%u/"
+                               "%u,%u/%u,%u twin=%05x\n",
+                               t, u, v, f->uv[0][0], f->uv[0][1],
+                               f->uv[1][0], f->uv[1][1], f->uv[2][0],
+                               f->uv[2][1], f->uv[3][0], f->uv[3][1],
+                               f->textureWindow);
+                    }
+                }
             }
         }
     }

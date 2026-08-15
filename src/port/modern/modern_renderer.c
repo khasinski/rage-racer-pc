@@ -974,6 +974,7 @@ static const RageCaptureGteState *ModernFaceGte(
 }
 
 static int s_faceFogSmooth;
+static int s_terrainSnapOff;
 
 static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
                               const RageCaptureFace *face) {
@@ -1052,6 +1053,8 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         static int flatFog = -1;
         if (flatFog < 0) {
             flatFog = getenv("RAGE_PORT_MODERN_FLAT_FOG") != NULL;
+            s_terrainSnapOff =
+                getenv("RAGE_PORT_MODERN_NO_TERRAIN_SNAP") != NULL;
         }
         s_faceFogSmooth = !flatFog &&
                           (face->flags & RAGE_CAPTURE_FACE_FOGGED) != 0 &&
@@ -1098,8 +1101,25 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         zSum += z < 1.0f ? 1.0f : z;
         {
             float halfW = s_logicalW * 0.5f;
-            out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
-            out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) + y * h / 120.0f);
+            /* The far terrain LOD is authored as sparse screen-row strips:
+             * retail's GTE truncates vertex coordinates to integer pixels,
+             * which tiles the strips seamlessly at 320x240; sub-pixel float
+             * projection exposes the gaps between them as background-
+             * coloured lines across the road. Reproduce the GTE truncation
+             * per vertex beyond the near field - shared vertices get the
+             * same decision, so watertight nearby geometry stays smooth
+             * and watertight. */
+            if (face->kind == RAGE_CAPTURE_KIND_TERRAIN && z > 12288.0f &&
+                !s_terrainSnapOff) {
+                float sx = floorf((float)gte->ofx + x * h / z);
+                float sy = floorf((float)gte->ofy + y * h / z);
+                out->x = (sx - 160.0f) * z / halfW;
+                out->y = -(sy - 120.0f) * z / 120.0f;
+            } else {
+                out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
+                out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) +
+                           y * h / 120.0f);
+            }
         }
         out->z = ((depthZ - MODERN_DEPTH_MIN) / MODERN_DEPTH_RANGE) * z;
         out->w = z;
@@ -1938,18 +1958,46 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
     static int initialized;
     static const char *path;
     static long frame = -1;
+    static long every = 0;
+    static long lastDumped = -1;
     static int done;
     if (!initialized) {
         const char *frameText = getenv("RAGE_PORT_MODERN_DUMP_FRAME");
+        const char *everyText = getenv("RAGE_PORT_MODERN_DUMP_EVERY");
         path = getenv("RAGE_PORT_MODERN_DUMP");
         if (frameText != NULL) frame = strtol(frameText, NULL, 0);
+        if (everyText != NULL) every = strtol(everyText, NULL, 0);
         initialized = 1;
     }
     if (path == NULL || done) return;
     if (frame >= 0 && (long)snapshot->frameCounter < frame) return;
+    if (every > 0) {
+        /* Periodic sweep: path gets a -NNNN frame suffix per dump. */
+        char numbered[512];
+        if (lastDumped >= 0 &&
+            (long)snapshot->frameCounter < lastDumped + every) {
+            return;
+        }
+        snprintf(numbered, sizeof(numbered), "%s-%06u.ppm", path,
+                 snapshot->frameCounter);
+        if (ModernWriteTexturePpm(ModernPresentTexture(), numbered)) {
+            lastDumped = (long)snapshot->frameCounter;
+        }
+        return;
+    }
     if (ModernWriteTargetPpm(path)) {
         fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
                 snapshot->frameCounter, path);
+    }
+    if (getenv("RAGE_PORT_MODERN_DUMP_SCENE") != NULL) {
+        char scenePath[512];
+        FILE *file;
+        snprintf(scenePath, sizeof(scenePath), "%s.scene.bin", path);
+        file = fopen(scenePath, "wb");
+        if (file != NULL) {
+            fwrite(snapshot, sizeof(*snapshot), 1, file);
+            fclose(file);
+        }
     }
     done = 1;
 }
