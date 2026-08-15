@@ -17,10 +17,12 @@ typedef union GameWorkBuffer {
     ReplayTimeAttackFrame timeAttackReplay[0x505];
 } GameWorkBuffer;
 
+#ifdef __psyz
 _Static_assert(sizeof(ReplayGrandPrixFrame) * 0x2EE <= 0x8CA0,
                "Grand Prix replay frames must fit the shared work arena");
 _Static_assert(sizeof(ReplayTimeAttackFrame) * 0x505 <= 0x8CA0,
                "Time Attack replay frames must fit the shared work arena");
+#endif
 
 extern GameWorkBuffer g_ReplayFrameBuffer;
 

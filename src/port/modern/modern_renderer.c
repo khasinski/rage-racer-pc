@@ -9,7 +9,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <direct.h>
+#define RageModernMkdir(path) _mkdir(path)
+#else
 #include <sys/stat.h>
+#define RageModernMkdir(path) mkdir(path, 0755)
+#endif
 
 #include "scene_capture.h"
 
@@ -1685,7 +1691,7 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
         char path[256];
         int slot;
         FILE *file;
-        mkdir("markers", 0755);
+        RageModernMkdir("markers");
         for (slot = 0; slot < MODERN_RING; slot++) {
             int ordinal = (s_ringNext + slot) % MODERN_RING;
             if (s_ringFrame[ordinal] == 0) continue;
@@ -1715,7 +1721,7 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
         int index;
         FILE *file;
         int i;
-        mkdir("markers", 0755);
+        RageModernMkdir("markers");
         if (markerIndex < 0) {
             /* Continue numbering across sessions so old markers survive. */
             markerIndex = 0;

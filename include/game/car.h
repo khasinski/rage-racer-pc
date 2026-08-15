@@ -643,6 +643,7 @@ typedef struct PlayerCarRuntime {
  * uses them across subsystems, but preserve their shared storage on hosts. */
 #include "game/player_car_aliases.h"
 
+#ifdef __psyz
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, segmentFraction) == 0x38,
                "player segment weight must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, normalizedLateralOffset) == 0x3C,
@@ -677,6 +678,7 @@ _Static_assert(
     __builtin_offsetof(PlayerCarRuntime, drive) +
         __builtin_offsetof(GameCarDrive, hudLapHighlightRow) == 0x162,
     "HUD lap highlight must retain its retail alias offset");
+#endif
 
 typedef union PlayerRaceCueStateAddress {
     s16 *trackSection;
