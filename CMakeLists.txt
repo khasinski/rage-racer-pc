@@ -58,6 +58,12 @@ if(RAGE_BUILD_PORT)
         $<TARGET_OBJECTS:rage-game-full>
         $<TARGET_OBJECTS:rage-host-state>
     )
+    add_executable(rage-save-generator tools/rage_save_generator.c)
+    target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
+    target_compile_options(rage-save-generator PRIVATE
+        "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
+    )
     target_include_directories(rage-game-full PRIVATE
         src/port/include
         include
@@ -125,6 +131,8 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(rage-gte-replay PRIVATE psyz)
         add_executable(rage-gp0-replay tools/rage_gp0_replay.c)
         target_link_libraries(rage-gp0-replay PRIVATE psyz)
+        add_test(NAME save_generator
+            COMMAND rage-save-generator --self-test)
     endif()
 endif()
 

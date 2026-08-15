@@ -13,6 +13,7 @@ from pathlib import Path
 def main() -> int:
     executable = Path(sys.argv[1]).resolve()
     source_dir = Path(sys.argv[2]).resolve()
+    generator = Path(sys.argv[3]).resolve()
     with tempfile.TemporaryDirectory(prefix="rage-save-test-") as directory:
         work = Path(directory)
         (work / "assets").symlink_to(source_dir / "assets", target_is_directory=True)
@@ -93,6 +94,37 @@ def main() -> int:
                 )
             if "stopped at frame 1150, scene 26" not in load.stdout:
                 raise AssertionError(f"LOAD GAME with {label} slot left the card menu")
+
+        complete_work = work / "complete"
+        complete_work.mkdir()
+        (complete_work / "assets").symlink_to(
+            source_dir / "assets", target_is_directory=True
+        )
+        generated = subprocess.run(
+            [generator, "--name", "UNLOCK"], cwd=complete_work,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            timeout=5,
+        )
+        if generated.returncode != 0:
+            print(generated.stdout, file=sys.stderr)
+            raise AssertionError("complete save generator failed")
+        complete_environment = os.environ.copy()
+        complete_environment.update(
+            SDL_AUDIODRIVER="dummy",
+            RAGE_PORT_SMOKE_FRAMES="700",
+            RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD="1",
+            RAGE_PORT_INPUT_SCRIPT="400:START,500:START,650:CROSS",
+        )
+        complete = subprocess.run(
+            [executable], cwd=complete_work, env=complete_environment,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            timeout=25,
+        )
+        if complete.returncode != 0:
+            print(complete.stdout, file=sys.stderr)
+            raise AssertionError("game rejected the generated complete save")
+        if "complete generated save loaded: classes=4/5 cars=13/13/13" not in complete.stdout:
+            raise AssertionError("generated save did not unlock complete progress")
     print("Save round trip and graphical memory-card menu both succeeded")
     return 0
 

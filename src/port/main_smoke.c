@@ -391,6 +391,35 @@ int main(void) {
         }
         printf("save roundtrip ok: money=%d\n", g_RaceProgress->money.value);
     }
+    if (getenv("RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD") != NULL) {
+        GameSaveHeaderRow header = {0};
+        int table;
+        int car;
+        CarEntry *tables[3] = {
+            g_GrandPrixCars, g_ExtraGrandPrixCars, g_TimeAttackCars
+        };
+
+        BiosBuInit();
+        if (!LoadMemoryCardSaveSlot(0, &header) ||
+            g_AdvancedSeriesUnlocked != 1 ||
+            g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
+            g_GrandPrixSave.money.value != 999999999 ||
+            g_ExtraGrandPrixSave.money.value != 999999999) {
+            fprintf(stderr, "complete generated save failed progression load\n");
+            return EXIT_FAILURE;
+        }
+        for (table = 0; table < 3; table++) {
+            for (car = 0; car < 13; car++) {
+                if (tables[table][car].enabled != 1) {
+                    fprintf(stderr,
+                            "complete generated save missing table %d car %d\n",
+                            table, car);
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+        printf("complete generated save loaded: classes=4/5 cars=13/13/13\n");
+    }
     if (!RageWriteCapturedFrame(getenv("RAGE_PORT_CAPTURE_PATH"))) {
         fprintf(stderr, "failed to capture smoke frame\n");
         return EXIT_FAILURE;

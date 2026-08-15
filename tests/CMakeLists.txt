@@ -293,6 +293,7 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_save_roundtrip.py
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
+            $<TARGET_FILE:rage-save-generator>
     )
     set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 90)
 
