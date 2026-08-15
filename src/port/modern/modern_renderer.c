@@ -996,6 +996,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
     float zSum = 0.0f;
     float windowMin, windowMax;
     float zBias = 0.0f;
+    int snapSliver;
     int textured = face->klass == 1 || face->klass == 3;
     /* Depth policy: the compat renderer orders faces by ordering-table
      * bucket (average z quantized by 4<<otShift, plus the per-face bias and
@@ -1061,6 +1062,33 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
                           face->fog >= 0;
     }
     ModernFaceViewPositions(snapshot, face, view, &mirror);
+    /* The road's distance LOD is authored as sparse strips about one
+     * 320x240 pixel tall, with real holes between consecutive strips.
+     * Retail's GTE truncates vertex coordinates to integer pixels, which
+     * tiles the strips seamlessly; sub-pixel float projection exposes the
+     * holes as background-coloured lines across the road. Detect the
+     * strips by their projected shape (a short screen sliver, everything
+     * comfortably in front of the camera) and reproduce the GTE
+     * truncation for them - adjacent strips are slivers too, so their
+     * snapped edges land on the same row and tile again, while ordinary
+     * terrain keeps sub-pixel precision. */
+    snapSliver = 0;
+    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN && !s_terrainSnapOff) {
+        float minSy = 1.0e9f, maxSy = -1.0e9f;
+        int usable = 1;
+        for (vertex = 0; vertex < 4; vertex++) {
+            float z = view[vertex][2];
+            float sy;
+            if (z < 2000.0f) {
+                usable = 0;
+                break;
+            }
+            sy = (float)gte->ofy + view[vertex][1] * (float)gte->h / z;
+            if (sy < minSy) minSy = sy;
+            if (sy > maxSy) maxSy = sy;
+        }
+        snapSliver = usable && maxSy - minSy < 2.5f;
+    }
     if (getenv("RAGE_PORT_MODERN_FACE_TRACE") != NULL) {
         float h = (float)gte->h;
         fprintf(stderr,
@@ -1101,16 +1129,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
         zSum += z < 1.0f ? 1.0f : z;
         {
             float halfW = s_logicalW * 0.5f;
-            /* The far terrain LOD is authored as sparse screen-row strips:
-             * retail's GTE truncates vertex coordinates to integer pixels,
-             * which tiles the strips seamlessly at 320x240; sub-pixel float
-             * projection exposes the gaps between them as background-
-             * coloured lines across the road. Reproduce the GTE truncation
-             * per vertex beyond the near field - shared vertices get the
-             * same decision, so watertight nearby geometry stays smooth
-             * and watertight. */
-            if (face->kind == RAGE_CAPTURE_KIND_TERRAIN && z > 12288.0f &&
-                !s_terrainSnapOff) {
+            if (snapSliver) {
                 float sx = floorf((float)gte->ofx + x * h / z);
                 float sy = floorf((float)gte->ofy + y * h / z);
                 out->x = (sx - 160.0f) * z / halfW;
