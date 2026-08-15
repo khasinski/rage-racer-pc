@@ -47,7 +47,9 @@ typedef char GameFrameEnvironmentHeaderSizeCheck[
 #define GAME_FRAME_PRIMITIVE_BUFFER_SIZE 0x22000
 #endif
 
-#ifndef OT_TYPE
+#ifndef __psyz
+/* PSY-Z's libgpu.h provides the host OT_TYPE (a pointer-sized tag pair);
+ * retail ordering tables hold packed 32-bit links. */
 #define OT_TYPE u_long
 #endif
 
