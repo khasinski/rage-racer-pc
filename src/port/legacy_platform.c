@@ -502,8 +502,16 @@ int RageHostInitDisc(void) {
 
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
-     * bundling retail data.  The release executable never sets this flag. */
-    if (getenv("RAGE_PORT_TEST_MODE") != NULL) return 1;
+     * bundling retail data.  The release executable never sets this flag.
+     * A checked-out disc image still has to reach PsyZ, or CD-DA plays
+     * nothing during the smoke runs. */
+    if (getenv("RAGE_PORT_TEST_MODE") != NULL) {
+        const char *test_cue = environment_cue;
+        if (test_cue == NULL || test_cue[0] == '\0')
+            test_cue = "disc/PAL/Rage Racer (Europe).cue";
+        if (access(test_cue, R_OK) == 0) Psyz_CdSetDiskPath(test_cue);
+        return 1;
+    }
     if (environment_cue != NULL && environment_cue[0] != '\0') {
         snprintf(cue, sizeof(cue), "%s", environment_cue);
     } else {
@@ -533,6 +541,9 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
     int index;
+    /* The PS1 drive cannot stream CD-DA while reading data; pausing here is
+     * what actually stops the prologue music when menu assets load. */
+    Psyz_CdBeginDataRead();
     if (count > 135 || !RageHostReadArchive(0, words, sizeof(words))) return 0;
     for (index = 0; index < count; index++) {
         entries[index].byte_offset = words[index * 2] * 2048u;
@@ -542,6 +553,7 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
 }
 
 int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
+    Psyz_CdBeginDataRead();
     return RageHostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
 }
 
