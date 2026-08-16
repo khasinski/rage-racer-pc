@@ -43,7 +43,7 @@ void DrawControllerConfigScreen(void) {
             DrawProportionalText(0x40, 0xEA, g_MsgControllerError, 0x7812);
         }
     } else {
-        ot = (u8 *)GamePrimaryOrderingTable(51);
+        ot = (u8 *)GameSecondaryOrderingTable(51);
         prim = SCRATCH_PRIM_CURSOR_AS(u8);
         prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, leftLit);
         prim = DrawRightArrow(ot, prim, 0x108, 0xE0, rightLit);
@@ -189,6 +189,15 @@ void BeginNegconCalibration(void) {
     g_NegconMaxTwistSaved = mode;
 }
 
+void RestoreNegconCalibrationSettings(void) {
+    g_NegconSteerNeutral = g_NegconSteerNeutralSaved;
+    g_NegconNeutralI = g_NegconNeutralISaved;
+    g_NegconNeutralII = g_NegconNeutralIISaved;
+    g_NegconNeutralL = g_NegconNeutralLSaved;
+    g_NegconSteerPlay = g_NegconSteerPlaySaved;
+    g_NegconMaxTwist = g_NegconMaxTwistSaved;
+}
+
 /*
  * Game mode 9: hold the NeGcon still and press start. Start latches the four
  * axes as the neutral point and advances to mode 10 (the steering play
@@ -205,6 +214,7 @@ void UpdateNegconNeutralScreen(void) {
         g_NegconNeutralL = g_NegconAxisL;
     }
     if (g_PadType != 0x23) {
+        RestoreNegconCalibrationSettings();
         g_GameMode = 1;
     }
     DrawNegconNeutralScreen();

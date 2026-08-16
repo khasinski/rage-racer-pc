@@ -3711,8 +3711,8 @@ this is a game-code pointer-width correction for the decompilation backport.
 
 `rage-save-generator` creates a retail-compatible PAL memory-card file, not a
 sidecar or runtime override. It writes the complete `0x1300` layout and both
-retail halfword checksums. The complete preset enables Advanced Series, all
-classes (4 in the original series and 5 in Advanced), all 13 cars in all three
+retail halfword checksums. The complete preset enables Extra GP, all
+classes (4 in the Grand Prix and 5 in Extra GP), all 13 cars in all three
 mode tables, every valid car model upgrade, maximum GP money and first-place
 clears for every class record.
 

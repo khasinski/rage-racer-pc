@@ -50,6 +50,13 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
+For local decompilation assets, stage either legally obtained disc image by
+passing its cue sheet explicitly (paths may be relative or absolute):
+
+```sh
+make stage STAGE_ARGS='--pal-cue "/path/to/Rage Racer (Europe).cue"'
+```
+
 The resulting executable is `build/release/rage-racer` on Linux,
 `build/release/Rage Racer.app` on macOS and `build/release/Release/rage-racer.exe`
 with the Visual Studio generator on Windows. Release downloads are supplied

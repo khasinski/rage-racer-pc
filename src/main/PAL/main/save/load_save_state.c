@@ -95,12 +95,12 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
             base->timeAttackProgress.money;
         {
             s32 bgmSelection = base->bgmSelection;
-            u16 advancedUnlocked = base->advancedUnlocked;
+            u16 extraGrandPrixUnlocked = base->extraGrandPrixUnlocked;
             s32 maxClassReached1;
             g_MaxClassReached[0] = base->maxClassReached[0];
             maxClassReached1 = base->maxClassReached[1];
             g_BgmSelection = bgmSelection;
-            g_AdvancedSeriesUnlocked = advancedUnlocked;
+            g_ExtraGrandPrixUnlocked = extraGrandPrixUnlocked;
             g_MaxClassReached[1] = maxClassReached1;
         }
     }

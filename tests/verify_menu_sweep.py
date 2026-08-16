@@ -12,13 +12,19 @@ from pathlib import Path
 
 def run(executable: Path, source_dir: Path, variable: str, expected: set[int]) -> None:
     environment = os.environ.copy()
-    direction = "DOWN" if variable.endswith("MENU_SWEEP") else "UP"
+    option_sweep = variable.endswith("OPTION_SWEEP")
+    input_script = (
+        "400:START,500:UP,520:CROSS" if option_sweep
+        else "400:START,500:DOWN,520:CROSS"
+    )
     environment.update(
         SDL_AUDIODRIVER="dummy",
         RAGE_PORT_SMOKE_FRAMES="2200",
-        RAGE_PORT_INPUT_SCRIPT=f"400:START,500:START,610:{direction},650:CROSS",
+        RAGE_PORT_INPUT_SCRIPT=input_script,
     )
     environment[variable] = "1"
+    if option_sweep:
+        environment["RAGE_PORT_SCENE_TRACE"] = "1"
     result = subprocess.run(
         [executable], cwd=source_dir, env=environment,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=45,
@@ -30,7 +36,16 @@ def run(executable: Path, source_dir: Path, variable: str, expected: set[int]) -
     visited = {int(value) for value in re.findall(pattern, result.stdout)}
     if visited != expected:
         raise AssertionError(f"{variable} visited {sorted(visited)}, expected {sorted(expected)}")
-    for failure in ("primitive buffer exhausted", "ERROR: AddressSanitizer"):
+    if option_sweep and not re.search(
+        r"scene-frame .* scene=23 .*draws=[1-9]\d* .*faces=[1-9]\d*",
+        result.stdout,
+    ):
+        raise AssertionError("OPTION controller screens emitted no 3D model faces")
+    for failure in (
+        "primitive buffer exhausted",
+        "ERROR: AddressSanitizer",
+        "runtime error:",
+    ):
         if failure in result.stdout:
             raise AssertionError(f"{variable} reported {failure!r}")
 

@@ -5,10 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* BIOS InitPAD over the two 0x28-byte pad buffers, then StartPAD. */
+/* Attach the two retail 0x28-byte pad buffers to the host input backend. */
 void GameInitPad(void) {
     InitPad(g_PadBuffers, 0x28, g_PadBuffers + 0x28, 0x28);
-    StartPad();
 }
 
 /* The live mapping UpdatePadState reads: the pad's eight masks at +0,

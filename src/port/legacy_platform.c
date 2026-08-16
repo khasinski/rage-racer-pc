@@ -632,7 +632,6 @@ VOID_ADAPTER(BiosExit)
 VOID_ADAPTER(BiosSetMemSize)
 VOID_ADAPTER(KernelCallbackSlot3)
 VOID_ADAPTER(SetDMAInterruptState)
-void StartPad(void) { (void)StartPAD(); }
 VOID_ADAPTER(StCdInterrupt)
 VOID_ADAPTER(StUnSetRing)
 long BiosFileOpen(void *path, long mode) {
@@ -663,6 +662,7 @@ void *BiosNextFile(void *entry) { return nextfile(entry); }
 long BiosFormatDevice(void *device) { return format(device); }
 ZERO_ADAPTER(CdPosToInt_Local)
 ZERO_ADAPTER(CdReadBreak)
+long RageHostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }

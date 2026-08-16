@@ -168,7 +168,7 @@ void UpdateBgmSelect(void) {
     g_CameraCarIndex = CycleBgmSelectCameraCar(0xff, g_CameraCarIndex);
     UpdateAttractCars();
     RequestTrackTexturePage(g_Cars[g_CameraCarIndex].trackSection);
-    UpdateCamera(g_CameraViewMode, &g_Cars[g_CameraCarIndex]);
+    UpdateCamera(g_CameraViewMode, (GameRenderObject *)&g_Cars[g_CameraCarIndex]);
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();

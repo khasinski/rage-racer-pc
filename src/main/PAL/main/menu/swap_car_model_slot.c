@@ -172,7 +172,7 @@ void DrawMenuCarView(void) {
     g_PlayerRenderY = *q;
     SelectModelBank(modelSlot);
     q--;
-    DrawPlayerCarModel(q);
+    DrawPlayerCarModel((GameRenderObject *)q);
 
     *q = (g_MenuAltLayout != 0 ? 23 : 52) - s3;
     q = &g_PlayerCar.pose.position[1];

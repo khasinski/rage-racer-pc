@@ -146,7 +146,7 @@ void DrawMainMenuRows(void) {
 
         code = 0x7E85;
 
-        if ((g_AdvancedSeriesUnlocked == 0) && (i == one)) {
+        if ((g_ExtraGrandPrixUnlocked == 0) && (i == one)) {
             i = 2;
         }
 
@@ -239,13 +239,13 @@ void UpdateMainMenuInput(void) {
     if (flags & 0x1000) {
         s32 n = idx - 1;
         g_TitleMenuSelection = n;
-        if (g_AdvancedSeriesUnlocked == 0 && n == 1) {
+        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
             g_TitleMenuSelection = idx - 2;
         }
     } else if (flags & 0x4000) {
         s32 n = idx + 1;
         g_TitleMenuSelection = n;
-        if (g_AdvancedSeriesUnlocked == 0 && n == 1) {
+        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
             g_TitleMenuSelection = idx + 2;
         }
     }

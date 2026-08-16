@@ -526,6 +526,9 @@ int RagePortShouldExit(int frame_number) {
     if (getenv("RAGE_PORT_SMOKE_OPTION_SWEEP") != NULL &&
         g_SceneId == 23 && g_SceneTimer >= 200) {
         int mode = 1 + (g_SceneTimer - 200) / 100;
+        if (mode >= 8 && mode <= 11) {
+            g_PadType = 0x23;
+        }
         if (mode <= 11 && lastOptionSweepMode != mode) {
             g_GameMode = mode;
             lastOptionSweepMode = mode;

@@ -1250,7 +1250,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             s32 rectHeight;
             s32 rectAlpha;
 
-            rectOt = ot + 1;
+            rectOt = (u32 *)(ot + 1);
             rectCallOt = rectOt;
             rectX = rectLeft;
             rectY = panelY + 0x7A;

@@ -85,7 +85,7 @@ typedef struct GameSaveBlock {
     SavedRaceProgress extraGrandPrixProgress;
     SavedRaceProgress timeAttackProgress;
     s16 bgmSelection;
-    u16 advancedUnlocked;
+    u16 extraGrandPrixUnlocked;
     s32 maxClassReached[2];
     SavedCarSetup carSetup[3][13];
     SavedClassRecord classRecords[11];

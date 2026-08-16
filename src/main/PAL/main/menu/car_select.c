@@ -139,7 +139,7 @@ s32 DrawCarSelectScreen(s32 step) {
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
     OrderingTableAddress otAddress;
     s32 p;
-    u32 *buf = ot + 1;
+    u32 *buf = (u32 *)(ot + 1);
     s32 v;
     s32 col;
     s32 xpos;
@@ -310,9 +310,9 @@ void UpdateCarSelectScreen(void) {
     if (g_GrandPrixMode != 0) {
         mode = 4;
     }
-    cmdList = &g_CarSelectMenuScriptTimeAttack;
+    cmdList = (u8 *)&g_CarSelectMenuScriptTimeAttack;
     if (g_GrandPrixMode != 0) {
-        cmdList = &g_CarSelectMenuScriptGp;
+        cmdList = (u8 *)&g_CarSelectMenuScriptGp;
     }
 
     if (GameMenuBusy == 0) {
@@ -462,7 +462,7 @@ void UpdateCarSelectScreen(void) {
                                     return;
                                 }
                                 PlaySoundCue(5);
-                                g_CarSelectPopupScript = &g_CarShopUnavailableScript;
+                                g_CarSelectPopupScript = (u8 *)&g_CarShopUnavailableScript;
                                 GameMenuBusy = car;
                                 g_UiScriptProgress2 = 0;
                                 return;
@@ -482,7 +482,7 @@ void UpdateCarSelectScreen(void) {
                                     }
                                 }
                                 PlaySoundCue(5);
-                                g_CarSelectPopupScript = &g_EngineerShopUnavailableScript;
+                                g_CarSelectPopupScript = (u8 *)&g_EngineerShopUnavailableScript;
                                 GameMenuBusy = -2;
                                 g_UiScriptProgress2 = 0;
                                 return;
@@ -667,9 +667,9 @@ void UpdateCustomizeScreen(void) {
     if (g_GrandPrixMode != 0) {
         mode = 3;
     }
-    cmdList = &g_CustomizeMenuScriptTimeAttack;
+    cmdList = (u8 *)&g_CustomizeMenuScriptTimeAttack;
     if (g_GrandPrixMode != 0) {
-        cmdList = &g_CustomizeMenuScriptGp;
+        cmdList = (u8 *)&g_CustomizeMenuScriptGp;
     }
 
     if (GameMenuBusy == 0) {
@@ -695,7 +695,7 @@ void UpdateCustomizeScreen(void) {
                 if (sel == 0) {
                     PlaySoundCue(2);
                     carByte = g_CarTable[g_PlayerCarIndex].tireCompound;
-                    g_CustomizePopupScript = &g_MenuDialogPanelUpperScript;
+                    g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelUpperScript;
                     GameMenuBusy = -1;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = carByte;
@@ -705,14 +705,14 @@ void UpdateCustomizeScreen(void) {
                     if (g_CarModelAsset->transmissionAvailable != 0) {
                         PlaySoundCue(2);
                         carByte = g_CarTable[g_PlayerCarIndex].transmission;
-                        g_CustomizePopupScript = &g_MenuDialogPanelLowerScript;
+                        g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelLowerScript;
                         GameMenuBusy = -2;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = carByte;
                         return;
                     }
                     PlaySoundCue(5);
-                    g_CustomizePopupScript = &g_TransmissionUnavailableScript;
+                    g_CustomizePopupScript = (u8 *)&g_TransmissionUnavailableScript;
                     GameMenuBusy = -3;
                     g_UiScriptProgress2 = 0;
                     return;

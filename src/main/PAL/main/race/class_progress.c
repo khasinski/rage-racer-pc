@@ -108,7 +108,7 @@ void CommitClassProgress(void) {
     if (g_ClassCompleted != 0) {
         if ((g_SeriesSelection == 0 && g_GrandPrixClass == 4) || (g_SeriesSelection == 1 && g_GrandPrixClass == 5)) {
             g_SeriesCleared = 1;
-            g_AdvancedSeriesUnlocked = 1;
+            g_ExtraGrandPrixUnlocked = 1;
         }
     }
 

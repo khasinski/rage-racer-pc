@@ -406,7 +406,7 @@ s32 CanSelectNextCourse(void) {
         } else {
             limit = (g_GrandPrixClass < 2) ? 2 : 3;
         }
-    } else if (g_AdvancedSeriesUnlocked != 0) {
+    } else if (g_ExtraGrandPrixUnlocked != 0) {
         limit = (g_MaxClassReached[1] < 2) ? 6 : 7;
     } else {
         limit = (g_MaxClassReached[0] < 2) ? 2 : 3;
@@ -437,9 +437,9 @@ void UpdateCourseSelectScreen(void) {
     }
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCourseView();
-    hdr = &g_CourseSelectTimeAttackScript;
+    hdr = (u8 *)&g_CourseSelectTimeAttackScript;
     if (g_GrandPrixMode != 0) {
-        hdr = &g_CourseSelectGpScript;
+        hdr = (u8 *)&g_CourseSelectGpScript;
     }
     state = GameMenuBusy;
     if (state == 0) {
@@ -540,7 +540,7 @@ void UpdateCourseSelectScreen(void) {
                         if (g_GrandPrixClass < 5) {
                             hv = (u16)g_GrandPrixSeries;
                         }
-                        g_CourseSelectModalScript = &g_CourseSelectSavePromptScript;
+                        g_CourseSelectModalScript = (u8 *)&g_CourseSelectSavePromptScript;
                         GameMenuBusy = -1;
                         g_GrandPrixSeries = hv;
                         g_UiScriptProgress2 = 0;
@@ -559,7 +559,7 @@ void UpdateCourseSelectScreen(void) {
                 } else {
                     PlaySoundCue(2);
                     if (g_GrandPrixMode != 0) {
-                        g_CourseSelectModalScript = &g_MenuDialogPanelLowerScript;
+                        g_CourseSelectModalScript = (u8 *)&g_MenuDialogPanelLowerScript;
                         GameMenuBusy = -2;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = g_GrandPrixClass;

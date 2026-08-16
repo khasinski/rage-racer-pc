@@ -238,7 +238,8 @@ int main(void) {
     }
     if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
         printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
-               "pitch_updates=%llu cdda=%d "
+               "pitch_updates=%llu cdda=%d reverb_in=%llu reverb_out=%llu "
+               "reverb_tail=%llu "
                "loaded=%x cue_bank=%d "
                "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
@@ -246,6 +247,9 @@ int main(void) {
                Psyz_SeqVoiceStartCount(),
                Psyz_SndPitchUpdateCount(),
                Psyz_CdAudioPlaying(),
+               Psyz_SpuReverbInputEnergy(),
+               Psyz_SpuReverbOutputEnergy(),
+               Psyz_SpuReverbTailFrames(),
                g_AudioLoadedSlotMask, g_SoundCueBank,
                g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
                g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
@@ -401,7 +405,7 @@ int main(void) {
 
         BiosBuInit();
         if (!LoadMemoryCardSaveSlot(0, &header) ||
-            g_AdvancedSeriesUnlocked != 1 ||
+            g_ExtraGrandPrixUnlocked != 1 ||
             g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
             g_GrandPrixSave.money.value != 999999999 ||
             g_ExtraGrandPrixSave.money.value != 999999999) {

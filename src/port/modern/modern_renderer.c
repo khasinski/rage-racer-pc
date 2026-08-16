@@ -18,6 +18,10 @@
 #endif
 
 #include "scene_capture.h"
+#include "shaders/modern_vert_spv.h"
+#include "shaders/modern_frag_spv.h"
+#include "shaders/post_vert_spv.h"
+#include "shaders/post_frag_spv.h"
 
 /* The modern renderer (plan phase R2). Consumes the RageScene snapshot the
  * capture layer records each logic frame and renders it with float
@@ -382,28 +386,41 @@ static int s_bloomW, s_bloomH;
 
 /* ---- resource creation ---- */
 
-static SDL_GPUShader *ModernCreateShader(const char *source, size_t sourceSize,
-                                         SDL_GPUShaderStage stage,
-                                         const char *entry, int samplers) {
+static SDL_GPUShader *ModernCreateShader(
+    const unsigned char *spirv, size_t spirvSize,
+    const char *msl, size_t mslSize, SDL_GPUShaderStage stage,
+    const char *mslEntry, int samplers) {
+    SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(s_device);
     SDL_GPUShaderCreateInfo info = {0};
-    info.code = (const Uint8 *)source;
-    info.code_size = sourceSize;
-    info.entrypoint = entry;
-    info.format = SDL_GPU_SHADERFORMAT_MSL;
     info.stage = stage;
     info.num_samplers = (Uint32)samplers;
+    if ((formats & SDL_GPU_SHADERFORMAT_SPIRV) && spirv != NULL) {
+        info.code = spirv;
+        info.code_size = spirvSize;
+        info.entrypoint = "main";
+        info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+    } else if ((formats & SDL_GPU_SHADERFORMAT_MSL) && msl != NULL) {
+        info.code = (const Uint8 *)msl;
+        info.code_size = mslSize;
+        info.entrypoint = mslEntry;
+        info.format = SDL_GPU_SHADERFORMAT_MSL;
+    } else {
+        return NULL;
+    }
     return SDL_CreateGPUShader(s_device, &info);
 }
 
 static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
-    const char *vsSource, size_t vsSize, const char *vsEntry,
-    const char *fsSource, size_t fsSize, const char *fsEntry, int samplers) {
-    SDL_GPUShader *vs = ModernCreateShader(vsSource, vsSize,
-                                           SDL_GPU_SHADERSTAGE_VERTEX,
-                                           vsEntry, 0);
-    SDL_GPUShader *fs = ModernCreateShader(fsSource, fsSize,
-                                           SDL_GPU_SHADERSTAGE_FRAGMENT,
-                                           fsEntry, samplers);
+    const unsigned char *vsSpirv, size_t vsSpirvSize,
+    const char *vsMsl, size_t vsMslSize, const char *vsMslEntry,
+    const unsigned char *fsSpirv, size_t fsSpirvSize,
+    const char *fsMsl, size_t fsMslSize, const char *fsMslEntry, int samplers) {
+    SDL_GPUShader *vs = ModernCreateShader(
+        vsSpirv, vsSpirvSize, vsMsl, vsMslSize, SDL_GPU_SHADERSTAGE_VERTEX,
+        vsMslEntry, 0);
+    SDL_GPUShader *fs = ModernCreateShader(
+        fsSpirv, fsSpirvSize, fsMsl, fsMslSize, SDL_GPU_SHADERSTAGE_FRAGMENT,
+        fsMslEntry, samplers);
     SDL_GPUGraphicsPipeline *pipeline = NULL;
     if (vs && fs) {
         const SDL_GPUColorTargetDescription target = {
@@ -424,7 +441,9 @@ static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
 
 static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
     return ModernCreateFullscreenPipeline(
+        post_vert_spv, post_vert_spv_len,
         MODERN_POST_MSL, sizeof(MODERN_POST_MSL), "vs_post",
+        post_frag_spv, post_frag_spv_len,
         MODERN_POST_MSL, sizeof(MODERN_POST_MSL), "fs_post", 1);
 }
 
@@ -449,8 +468,8 @@ static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
     memcpy(source + sizeof(MODERN_COMPOSITE_PROLOGUE_MSL) - 1 + headerLen,
            MODERN_COMPOSITE_MSL, sizeof(MODERN_COMPOSITE_MSL));
     pipeline = ModernCreateFullscreenPipeline(
-        MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
-        source, sourceSize, "fs_composite", 2);
+        NULL, 0, MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
+        NULL, 0, source, sourceSize, "fs_composite", 2);
     free(source);
     return pipeline;
 }
@@ -557,10 +576,14 @@ static int ModernEnsureResources(void) {
         info.mag_filter = SDL_GPU_FILTER_NEAREST;
         s_sampler = SDL_CreateGPUSampler(s_device, &info);
     }
-    vs = ModernCreateShader(MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
-                            SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
-    fs = ModernCreateShader(MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
-                            SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
+    vs = ModernCreateShader(
+        modern_vert_spv, modern_vert_spv_len,
+        MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
+        SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
+    fs = ModernCreateShader(
+        modern_frag_spv, modern_frag_spv_len,
+        MODERN_SHADER_MSL, sizeof(MODERN_SHADER_MSL),
+        SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
     if (vs && fs) {
         s_pipe3dOpaque = ModernCreatePipeline(vs, fs, 1, 1, 0);
         s_pipe3dBlend = ModernCreatePipeline(vs, fs, 1, 0, 0);
@@ -648,17 +671,17 @@ static int ModernEnsureResources(void) {
             s_bloomA = SDL_CreateGPUTexture(s_device, &info);
             s_bloomB = SDL_CreateGPUTexture(s_device, &info);
             s_pipeBright = ModernCreateFullscreenPipeline(
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_bright",
-                1);
+                NULL, 0, MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL),
+                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
+                sizeof(MODERN_EFFECTS_MSL), "fs_bright", 1);
             s_pipeBlurH = ModernCreateFullscreenPipeline(
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_blur_h",
-                1);
+                NULL, 0, MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL),
+                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
+                sizeof(MODERN_EFFECTS_MSL), "fs_blur_h", 1);
             s_pipeBlurV = ModernCreateFullscreenPipeline(
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "vs_fx",
-                MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL), "fs_blur_v",
-                1);
+                NULL, 0, MODERN_EFFECTS_MSL, sizeof(MODERN_EFFECTS_MSL),
+                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
+                sizeof(MODERN_EFFECTS_MSL), "fs_blur_v", 1);
         }
         if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear ||
             (s_config.modernBloom > 0.0f &&

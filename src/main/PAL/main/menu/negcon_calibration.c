@@ -70,7 +70,7 @@ void UpdateNegconSteerPlayScreen(void) {
     if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
-        g_NegconSteerPlay = g_NegconSteerPlaySaved;
+        RestoreNegconCalibrationSettings();
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 11;
@@ -89,7 +89,7 @@ void UpdateNegconSteerPlayScreen(void) {
     }
     if (g_PadType != 0x23) {
         g_GameMode = 1;
-        g_NegconSteerPlay = g_NegconSteerPlaySaved;
+        RestoreNegconCalibrationSettings();
     }
     g_ControllerSceneAngleX = -896;
     DrawNegconSteerPlayScreen();
@@ -144,7 +144,7 @@ void UpdateNegconMaxTwistScreen(void) {
     if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
-        g_NegconMaxTwist = g_NegconMaxTwistSaved;
+        RestoreNegconCalibrationSettings();
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 1;
@@ -163,7 +163,7 @@ void UpdateNegconMaxTwistScreen(void) {
     }
     if (g_PadType != 0x23) {
         g_GameMode = 1;
-        g_NegconMaxTwist = g_NegconMaxTwistSaved;
+        RestoreNegconCalibrationSettings();
     }
     g_ControllerSceneAngleX = -896;
     DrawNegconMaxTwistScreen();

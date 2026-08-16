@@ -694,7 +694,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             StoreScratchLegacyView(&legacyView);
             SetCameraRotMatrix();
             SelectModelBank(0);
-            DrawPlayerCarModel(car);
+            DrawPlayerCarModel((GameRenderObject *)car);
         } else {
             DrawFullscreenFadeTile(g_RaceIntroCameraTimer * 26, 0x29);
             {

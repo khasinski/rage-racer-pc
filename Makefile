@@ -60,7 +60,7 @@ setup:
 	.venv/bin/pip install -r requirements.txt
 
 stage:
-	$(PY) tools/scripts/stage_discs.py
+	$(PY) tools/scripts/stage_discs.py $(STAGE_ARGS)
 
 # Objects go too: a unit that pulls in generated assembly with `.include` has
 # no recorded dependency on it, so a re-split would otherwise leave it built

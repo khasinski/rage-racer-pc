@@ -125,6 +125,9 @@ extern u8 *g_DrawBuffer;
 static __inline__ OT_TYPE *GamePrimaryOrderingTable(s32 depth) {
     return &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][depth];
 }
+static __inline__ OT_TYPE *GameSecondaryOrderingTable(s32 depth) {
+    return &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][depth];
+}
 extern GameFrameContext g_FrameContexts[2];
 extern ScreenOffset g_ScreenOffsetX;
 extern ScreenOffset g_ScreenOffsetY;

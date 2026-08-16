@@ -31,10 +31,10 @@ extern s32 g_GrandPrixClass;
 extern s32 g_CourseIndex;
 
 /* Which Grand Prix series is played: 0 = first (6 classes), non-zero =
- * advanced (5 classes). Outer index of every per-series table. */
+ * Extra GP (5 classes). Outer index of every per-series table. */
 extern s16 g_GrandPrixSeries;
 
-/* Display names: [0..5] first-series classes, [6..10] advanced-series classes,
+/* Display names: [0..5] first-series classes, [6..10] Extra-GP classes,
  * [11..13] course names. */
 extern char *g_GrandPrixNames[];
 
@@ -61,7 +61,7 @@ extern s32 g_GrandPrixRound;
 extern s16 g_GrandPrixMode;
 
 /* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
- * index of the per-series tables and, because the advanced series runs the
+ * index of the per-series tables and, because the Extra GP runs the
  * courses backwards, also the lap-direction flag. */
 typedef union RaceSeriesValue {
     s32 series;
@@ -94,15 +94,15 @@ static inline s32 ReadStableRaceSeries(void) {
  * finished, 7 goal/retire, 8 aborted. */
 extern s16 g_RacePhase;
 
-/* Series / save file the title menu picked (0 first, 1 advanced); also indexes
- * g_MaxClassReached. Final class is 4 for the first series, 5 for advanced. */
+/* Series / save file the title menu picked (0 first, 1 Extra GP); also indexes
+ * g_MaxClassReached. Final class is 4 for the Grand Prix, 5 for Extra GP. */
 extern s16 g_SeriesSelection;
 
-/* Non-zero once the advanced series is unlocked (first series' last class
+/* Non-zero once the Extra GP is unlocked (Grand Prix' last class
  * cleared). Saved at save+0x4E; gates title-menu entry 1. */
-extern s16 g_AdvancedSeriesUnlocked;
+extern s16 g_ExtraGrandPrixUnlocked;
 
-/* Highest class reached per series/save file ([1] is the old g_MaxClassReachedAdvanced).
+/* Highest class reached per series/save file ([1] is the old g_MaxClassReachedExtraGrandPrix).
  * Unlocks courses and bounds the attract-demo class roll. Saved at save+0x50. */
 extern s32 g_MaxClassReached[2];
 
@@ -155,7 +155,7 @@ void ResetProgressSlot(struct CarEntry *cars, GameRaceProgress *progress);
 extern s32 g_ClosestRivalRank;
 
 /* Course-select gate: `g_CourseIndex < (class < 2 ? 2 : 3)`, or 6 : 7 for the
- * advanced series. This is the OVAL unlock. */
+ * Extra GP. This is the OVAL unlock. */
 s32 CanSelectNextCourse(void);
 
 /* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
@@ -226,7 +226,7 @@ extern s32 g_LapTimeSaturated;
 extern s16 g_WrongWayTimer;
 
 /* g_PlayerCar.facingBackwards. Wrong way is `!= g_RaceSeries`, because the
- * advanced series drives the course in the other direction. */
+ * Extra GP drives the course in the other direction. */
 
 /* Non-zero while rival proximity / position sound cues may play: set only in
  * the middle of a lap and cleared by the wrong-way warning. */

@@ -40,7 +40,7 @@ void UpdateTitleScreen(void);
 
 /* Draws the five main-menu rows (112x16 cells at x = 0x68, y = 0x64 + 0x18*row);
  * the cursor row uses CLUT 0x7E86 instead of 0x7E85 and entry 1 is skipped
- * while g_AdvancedSeriesUnlocked == 0, leaving four visible rows. */
+ * while g_ExtraGrandPrixUnlocked == 0, leaving four visible rows. */
 void DrawMainMenuRows(void);
 
 /* Frontend state 1: the 48-frame menu wipe-in (counter g_MainMenuSlide to 0x30). */

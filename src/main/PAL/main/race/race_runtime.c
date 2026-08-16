@@ -355,7 +355,7 @@ race_intro_update_done:
     DrawLapNumber();
 
     if (g_RacePhase > 0) {
-        UpdateCamera(CAMERA_VIEW_CAR, &g_PlayerCar);
+        UpdateCamera(CAMERA_VIEW_CAR, (GameRenderObject *)&g_PlayerCar);
     }
 
     p = &g_PlayerCar.trackSection;

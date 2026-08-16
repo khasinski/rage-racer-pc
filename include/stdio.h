@@ -1,7 +1,7 @@
 #ifndef RAGE_PC_STDIO_H
 #define RAGE_PC_STDIO_H
 
-#ifdef RAGE_HOST_PORT
+#if defined(RAGE_HOST_PORT) || defined(__psyz)
 #include_next <stdio.h>
 #else
 

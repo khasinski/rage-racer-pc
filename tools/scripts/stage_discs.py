@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import os
 import shutil
 import struct
@@ -14,17 +15,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HOME = Path.home()
-
-
 @dataclass(frozen=True)
 class Version:
     name: str
     serial: str
     exe_name: str
     sha1: str
-    cue: Path
-    track01: Path
 
 
 VERSIONS = [
@@ -33,21 +29,20 @@ VERSIONS = [
         serial="SCES-006.50",
         exe_name="SCES_006.50",
         sha1="2913e15648eddef40821c5f666460abc04155ee6",
-        cue=HOME / "Downloads/Rage Racer (Europe)/Rage Racer (Europe)/Rage Racer (Europe).cue",
-        track01=HOME / "Downloads/Rage Racer (Europe)/Rage Racer (Europe)/Rage Racer (Europe) (Track 01).bin",
     ),
     Version(
         name="USA",
         serial="SLUS-004.03",
         exe_name="SLUS_004.03",
         sha1="2661e8bf18d209c98fd70d33e18ab88b10abd52b",
-        cue=HOME / "Downloads/Rage Racer/Rage Racer.cue",
-        track01=HOME / "Downloads/Rage Racer/Rage Racer (Track 01).bin",
     ),
 ]
 
 
 def force_symlink(src: Path, dest: Path) -> None:
+    src = src.resolve()
+    if dest.exists() and dest.resolve() == src:
+        return
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() or dest.is_symlink():
         dest.unlink()
@@ -98,25 +93,33 @@ def sha1(path: Path) -> str:
     return h.hexdigest()
 
 
-def stage(version: Version) -> None:
-    for path in (version.cue, version.track01):
-        if not path.exists():
-            raise FileNotFoundError(path)
+def cue_tracks(cue: Path) -> list[Path]:
+    names = re.findall(r'^FILE\s+"([^"]+)"', cue.read_text(errors="replace"), re.MULTILINE)
+    if not names:
+        raise ValueError(f"{cue}: no FILE entries")
+    return [cue.parent / name for name in names]
+
+
+def stage(version: Version, cue: Path) -> None:
+    cue = cue.expanduser().resolve()
+    if not cue.is_file():
+        raise FileNotFoundError(cue)
+    tracks = cue_tracks(cue)
+    for track in tracks:
+        if not track.is_file():
+            raise FileNotFoundError(track)
+    track01 = tracks[0]
 
     disc_dir = ROOT / "disc" / version.name
     asset_dir = ROOT / "assets" / version.name
     build_dir = ROOT / "build" / "extract" / version.name
 
-    force_symlink(version.cue, disc_dir / version.cue.name)
-    for match in re.finditer(r'^FILE\s+"([^"]+)"',
-                             version.cue.read_text(errors="replace"), re.MULTILINE):
-        track = version.cue.parent / match.group(1)
-        if not track.exists():
-            raise FileNotFoundError(track)
+    force_symlink(cue, disc_dir / cue.name)
+    for track in tracks:
         force_symlink(track, disc_dir / track.name)
 
     iso_path = build_dir / "track01.iso"
-    raw2352_to_iso(version.track01, iso_path)
+    raw2352_to_iso(track01, iso_path)
     with tempfile.TemporaryDirectory(prefix=f"rage-{version.name.lower()}-") as tmp:
         extracted = Path(tmp)
         extract_from_iso(iso_path, extracted, version.exe_name, "SYSTEM.CNF")
@@ -136,8 +139,16 @@ def stage(version: Version) -> None:
 
 
 def main() -> int:
-    for version in VERSIONS:
-        stage(version)
+    parser = argparse.ArgumentParser(description="Stage legally obtained Rage Racer disc images")
+    parser.add_argument("--pal-cue", type=Path, help="path to the PAL .cue file")
+    parser.add_argument("--usa-cue", type=Path, help="path to the USA .cue file")
+    args = parser.parse_args()
+    requested = [(VERSIONS[0], args.pal_cue), (VERSIONS[1], args.usa_cue)]
+    if not any(cue is not None for _, cue in requested):
+        parser.error("provide --pal-cue and/or --usa-cue")
+    for version, cue in requested:
+        if cue is not None:
+            stage(version, cue)
     return 0
 
 

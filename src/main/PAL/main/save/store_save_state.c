@@ -66,10 +66,10 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
             *maxClassAddress.wordPointer = g_TimeAttackSave.maxClassReached;
         }
         {
-            u16 advancedUnlocked = g_AdvancedSeriesUnlocked;
+            u16 extraGrandPrixUnlocked = g_ExtraGrandPrixUnlocked;
             saveAddress.offset = g_TimeAttackSave.money.value;
             block->bgmSelection = bgmSelection;
-            block->advancedUnlocked = advancedUnlocked;
+            block->extraGrandPrixUnlocked = extraGrandPrixUnlocked;
             block->timeAttackProgress.money = saveAddress.offset;
         }
     }

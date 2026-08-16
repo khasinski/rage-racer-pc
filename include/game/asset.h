@@ -100,7 +100,7 @@ typedef struct GameCdLoadEntry {
 extern GameCdLoadEntry g_AssetCdEntries[];
 
 /* The same for the 11 streams in "\RAGE.STR;1"; BeginClassFmv picks
- * `1 + class` in the first series and `5 + class` in the advanced one. */
+ * `1 + class` in the Grand Prix and `5 + class` in the Extra GP. */
 extern GameCdLoadEntry g_StreamCdEntries[];
 
 /* The one of them the streaming player is reading, set by BeginIntroFmv and

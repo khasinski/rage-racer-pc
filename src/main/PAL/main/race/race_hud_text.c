@@ -215,7 +215,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     RenderBufferAddress packetAddress;
 
     timer = sceneTimer;
-    orderingTable = GamePrimaryOrderingTable(1);
+    orderingTable = (u8 *)GamePrimaryOrderingTable(1);
     if (timer < 105) {
         return;
     }
@@ -401,7 +401,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     s32 marquee;
     register RenderBufferAddress prim asm("$18");
 
-    ot = GamePrimaryOrderingTable(0);
+    ot = (u8 *)GamePrimaryOrderingTable(0);
     {
         register void *drawPrim;
 

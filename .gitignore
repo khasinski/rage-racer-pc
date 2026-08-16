@@ -74,7 +74,8 @@ local.mk
 # Retail game data is required locally but cannot be distributed with the
 # source port.
 assets/*/RAGE.BIN
-assets/*/fmv/
+assets/*/fmv/*
+!assets/*/fmv/.gitkeep
 
 # Generated reports.
 tools/asm_report.html

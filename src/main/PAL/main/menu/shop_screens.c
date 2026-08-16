@@ -140,22 +140,22 @@ void UpdateCarShopScreen(void) {
                             case 1:
                             case 2:
                             case 10:
-                                g_CarShopModalScript = &g_CarShopBuyPromptScript1;
+                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript1;
                                 return;
                             case 3:
-                                g_CarShopModalScript = &g_CarShopBuyPromptScript2;
+                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript2;
                                 return;
                             case 4:
                             case 5:
                             case 6:
                             case 11:
-                                g_CarShopModalScript = &g_CarShopBuyPromptScript3;
+                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript3;
                                 return;
                             case 7:
                             case 8:
                             case 9:
                             case 12:
-                                g_CarShopModalScript = &g_CarShopBuyPromptScript4;
+                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript4;
                                 return;
                             }
                         }
@@ -206,7 +206,7 @@ void UpdateCarShopScreen(void) {
                                     g_MenuConfirmTimer = 0x23;
                                 } else {
                                     PlaySoundCue(5);
-                                    g_CarShopModalScript = &g_CarShopNoFundsScript;
+                                    g_CarShopModalScript = (u8 *)&g_CarShopNoFundsScript;
                                     GameMenuBusy = -2;
                                 }
                             } else {
@@ -363,13 +363,13 @@ void UpdateEngineerShopScreen(void) {
                 if (sel == 0) {
                     if (g_PlayerMoney >= value) {
                         PlaySoundCue(2);
-                        g_EngineerShopModalScript = &g_EngineerShopTuneUpPromptScript;
+                        g_EngineerShopModalScript = (u8 *)&g_EngineerShopTuneUpPromptScript;
                         GameMenuBusy = -1;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = 0;
                     } else {
                         PlaySoundCue(5);
-                        g_EngineerShopModalScript = &g_EngineerShopNoFundsScript;
+                        g_EngineerShopModalScript = (u8 *)&g_EngineerShopNoFundsScript;
                         GameMenuBusy = -3;
                         g_UiScriptProgress2 = 0;
                     }

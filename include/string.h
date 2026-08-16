@@ -7,7 +7,7 @@
 
 #include "common.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__psyz)
 void *memchr(const void *buf, int ch, unsigned long long len);
 void *memcpy(void *dest, const void *src, unsigned long long count);
 void *memmove(void *dest, const void *src, unsigned long long count);

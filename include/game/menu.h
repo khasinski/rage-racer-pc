@@ -49,7 +49,7 @@ extern s32 (*g_MenuScreenDraw[])(s32 step);
 
 /*
  * Title-menu cursor, 0..4 (UpdateMainMenuInput wraps it with `(sel + 5) % 5` on the
- * up/down pad edges and skips entry 1 while g_AdvancedSeriesUnlocked is 0). 0 and 1 are the
+ * up/down pad edges and skips entry 1 while g_ExtraGrandPrixUnlocked is 0). 0 and 1 are the
  * two Grand Prix save files - they repoint g_CarTable / g_RaceProgress / g_CourseProgress
  * at that file's tables and set g_GrandPrixMode to 1 - 2 is Time Attack
  * (g_GrandPrixMode 0), 3 starts the attract demo and 4 opens the options.
@@ -668,6 +668,7 @@ void DrawLogoSamplePanel(s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(s32 arg);
 void DrawOptionHintBar(s32 variant);
+void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(s32 owned, s32 step);
 void DrawSpriteString();
 void RampTeamLogoCanvas(s32 from, s32 to);

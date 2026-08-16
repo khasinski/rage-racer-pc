@@ -40,7 +40,7 @@ void DrawSeriesClearedWash(s32 x, s32 y) {
     s32 width;
     s32 height;
 
-    ot = GamePrimaryOrderingTable(0);
+    ot = (u8 *)GamePrimaryOrderingTable(0);
     prim = SCRATCH_PRIM_CURSOR_AS(void);
 
     redStack = y;
@@ -167,7 +167,7 @@ void UpdateReplayScene(void) {
         g_ReplayReadCursor = 0;
     }
     UpdateReplayCars();
-    UpdateCamera(CAMERA_VIEW_TRACK, &g_PlayerCar);
+    UpdateCamera(CAMERA_VIEW_TRACK, (GameRenderObject *)&g_PlayerCar);
     SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     if (g_GrandPrixMode != 0) {
@@ -221,7 +221,7 @@ void DrawGrandprixIntro(void) {
         s32 color;
 
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-        base = GamePrimaryOrderingTable(0);
+        base = (u8 *)GamePrimaryOrderingTable(0);
         height = 8;
         color = 0x78CB;
         next = GameQueueSprite(
@@ -284,7 +284,7 @@ void DrawGrandprixIntro(void) {
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
         DrawResultScreen();
 
-        base = GamePrimaryOrderingTable(0);
+        base = (u8 *)GamePrimaryOrderingTable(0);
         selectionAddress.value = &g_RacePosition;
         selection = selectionAddress.selection;
         next = GameQueueSprite(

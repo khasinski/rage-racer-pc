@@ -54,7 +54,7 @@ void InitSubsystems(void) {
     InitSaveDefaults();
     SCRATCH_VIEW_Y = -64;
     SCRATCH_VIEW_Z = -256;
-    g_AdvancedSeriesUnlocked = 0;
+    g_ExtraGrandPrixUnlocked = 0;
     SCRATCH_VIEW_X = 0;
     SCRATCH_VIEW_ANGLE_X = 0x100;
     SCRATCH_VIEW_ANGLE_Y = 0;

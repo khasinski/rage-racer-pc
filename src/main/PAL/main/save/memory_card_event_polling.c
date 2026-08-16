@@ -106,7 +106,10 @@ MemoryCardEvent WaitMemoryCardSwEvent(void) {
         }
     }
 }
-void RestartMemoryCard(void) { InitCARD(1); StartCARD(); BiosBuInit(); g_SaveElapsedTicks = 0; }
+void RestartMemoryCard(void) {
+    BiosBuInit();
+    g_SaveElapsedTicks = 0;
+}
 
 
 void AdvanceSaveHeaderCounter(void) {

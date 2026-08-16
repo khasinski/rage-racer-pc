@@ -47,7 +47,21 @@ def main() -> int:
         raise AssertionError(
             f"pitched effect voices stalled: pitch_updates={pitch_updates}"
         )
-    print(f"pitched effects alive: pitch_updates={pitch_updates}")
+    reverb = re.search(
+        r"reverb_in=(\d+) reverb_out=(\d+) reverb_tail=(\d+)", result.stdout
+    )
+    if reverb is None:
+        raise AssertionError("audio backend did not report reverb metrics")
+    reverb_in, reverb_out, reverb_tail = map(int, reverb.groups())
+    if reverb_in == 0 or reverb_out == 0 or reverb_tail == 0:
+        raise AssertionError(
+            "race reverb did not produce a wet tail: "
+            f"input={reverb_in} output={reverb_out} tail={reverb_tail}"
+        )
+    print(
+        f"pitched effects alive: pitch_updates={pitch_updates}, "
+        f"reverb={reverb_in}/{reverb_out}, tail={reverb_tail}"
+    )
     return 0
 
 

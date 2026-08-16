@@ -86,7 +86,7 @@ static void fill_complete_payload(GameSaveBlock *save) {
     save->extraGrandPrixProgress =
         (SavedRaceProgress){0, 3, 0, 5, COMPLETE_MONEY};
     save->timeAttackProgress = (SavedRaceProgress){0, 3, 0, 5, 0};
-    save->advancedUnlocked = 1;
+    save->extraGrandPrixUnlocked = 1;
     save->maxClassReached[0] = 4;
     save->maxClassReached[1] = 5;
 
@@ -163,7 +163,7 @@ static int validate_complete_save(const u8 file[SAVE_FILE_SIZE]) {
         memcmp(header, trailing, sizeof(*header)) != 0 ||
         header->fields.checksum != complement_halfword_sum(header, 0x3E) ||
         save->checksum != complement_halfword_sum(save, 0x7FE) ||
-        save->advancedUnlocked != 1 || save->maxClassReached[0] != 4 ||
+        save->extraGrandPrixUnlocked != 1 || save->maxClassReached[0] != 4 ||
         save->maxClassReached[1] != 5) {
         return 0;
     }

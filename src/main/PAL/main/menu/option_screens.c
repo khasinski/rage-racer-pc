@@ -212,9 +212,7 @@ void DrawOptionSceneOverlay(void) {
     }
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    /* This is the OPTION background, analogous to the memory-card screen's
-     * depth-54 tile.  Putting it in the secondary OT draws it after every
-     * primary menu sprite and hides all rows above y=240. */
+    /* The OPTION backdrop lives behind the depth-0/51 2D foreground. */
     base = GamePrimaryOrderingTable(54);
     pkt = *scratch;
 
