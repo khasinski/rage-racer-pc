@@ -8,6 +8,14 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+# Link the Visual C++ runtime statically. Windows does not ship it, and an
+# archive that expects the player to install a redistributable first fails
+# before main() with STATUS_DLL_NOT_FOUND and no log to explain why.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY
+        "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 include(CTest)
 
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)

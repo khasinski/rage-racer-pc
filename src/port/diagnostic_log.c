@@ -30,7 +30,14 @@ int RageDiagnosticLogOpen(char *path, size_t pathSize) {
     }
     file = freopen(path, "a", stderr);
     if (file == NULL) return 0;
+    /* Microsoft's CRT accepts _IOLBF but buffers a whole block anyway, so a
+     * crash takes the diagnostics down with it and leaves an empty file.
+     * Write straight through there; the log exists for the runs that die. */
+#ifdef _WIN32
+    setvbuf(stderr, NULL, _IONBF, 0);
+#else
     setvbuf(stderr, NULL, _IOLBF, 0);
+#endif
     now = time(NULL);
     local = localtime(&now);
     fprintf(stderr, "\n=== Rage Racer session %04d-%02d-%02d %02d:%02d:%02d ===\n",
