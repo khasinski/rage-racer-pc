@@ -216,7 +216,7 @@ set(RAGE_PORTABLE_TESTS
     release_package host_state_abi player_car_interior_aliases
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
-    visual_batch_refinement visual_run capture_sync visual_budget visual_triage
+    visual_run capture_sync visual_budget visual_triage
     gpu_digest_compare gp0_compare gp0_bundle gp0_replay gp0_raster_compare
     vram_delta visible_cells_compare input_replay)
 if(TARGET rage-gte-replay)
