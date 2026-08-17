@@ -10,6 +10,7 @@
 #include "diagnostic_log.h"
 #include "port_config.h"
 #include "runtime_config.h"
+#include "timing_control.h"
 #include "modern/modern_renderer.h"
 #include "platform_paths.h"
 
@@ -47,6 +48,7 @@ int main(int argc, char **argv) {
     RagePortConfigDefaults(&portConfig);
     RagePortConfigApplyRuntime(&portConfig);
     RagePortConfigSetActive(&portConfig);
+    RageTimingInit();
     fprintf(stderr,
             "rage-port: renderer=%s scale=%.2f aspect=%d fps=%d draw_distance=%.2f post=%d\n",
             portConfig.renderer == RAGE_RENDERER_MODERN ? "modern" : "classic",

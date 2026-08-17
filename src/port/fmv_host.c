@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL3/SDL_timer.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -25,6 +26,7 @@
 #include "psyq/cd.h"
 #include "runtime_config.h"
 #include "platform_paths.h"
+#include "timing_control.h"
 
 extern int g_FrameCounter;
 
@@ -37,6 +39,8 @@ static unsigned int s_frame;
 static unsigned int s_sectorSpan;
 static unsigned int s_cadenceNumerator;
 static unsigned int s_cadenceDenominator;
+static Uint64 s_introStartNs;
+static int s_wallClockIntro;
 static char s_streamPath[1024];
 static int s_xaPlaying;
 #ifdef _WIN32
@@ -48,7 +52,7 @@ static pid_t s_ffmpegProcess = -1;
 enum {
     RAGE_CDL_SETLOC = 0x02, RAGE_CDL_READN = 0x06, RAGE_CDL_PAUSE = 0x09,
     RAGE_CDL_SETFILTER = 0x0d, RAGE_CDL_SETMODE = 0x0e,
-    RAGE_CDL_MODE_RT = 0x40
+    RAGE_CDL_MODE_DA = 0x01, RAGE_CDL_MODE_RT = 0x40
 };
 
 int RageHostReadStreamSector(unsigned int sector, unsigned char *raw);
@@ -236,7 +240,8 @@ static int RageHostReadFmvFrame(void) {
         fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d\n",
                 s_frame - 1, g_FrameCounter, g_SceneTimer);
     }
-    if (g_StreamSectorCount != 0 && s_frame >= g_StreamSectorCount) {
+    if (!s_wallClockIntro && g_StreamSectorCount != 0 &&
+        s_frame >= g_StreamSectorCount) {
         g_FmvStreamEnded = 1;
     }
     return 1;
@@ -254,8 +259,8 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     s_sectorSpan = s_sectorSpans[streamIndex];
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
     if (streamIndex == 0) {
-        s_cadenceNumerator = 53;
-        s_cadenceDenominator = 128;
+        s_cadenceNumerator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 1 : 5;
+        s_cadenceDenominator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 2 : 12;
     } else {
         s_cadenceNumerator = 3 * g_StreamSectorCount;
         s_cadenceDenominator = s_sectorSpan;
@@ -275,26 +280,41 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     ClearImage(&clearRect, 0, 0, 0);
     s_clock = streamIndex == 0 ? -10 * (int)s_cadenceNumerator : 0;
     s_frame = 0;
+    s_wallClockIntro = streamIndex == 0 && getenv("RAGE_PORT_TEST_MODE") == NULL;
     g_SceneTimer = 0;
     g_FmvStreamEnded = 0;
     g_FmvState = FMV_PLAYBACK_DECODE;
     g_FrameContexts[0].environment.draw.isbg = 0;
     g_FrameContexts[1].environment.draw.isbg = 0;
     SetDispMask(1);
-    /* The opening movie is accompanied by the separately selected prologue
-     * CD-DA track. The remaining STR movies carry their own XA stream. */
-    s_xaPlaying = streamIndex != 0;
-    if (s_xaPlaying) RageStartXaAudio(firstSector);
+    /* Every movie in RAGE.STR, including the opening movie, carries its own
+     * interleaved XA stream.  The prologue CD-DA cue ends before playback and
+     * must not be mistaken for the opening movie's soundtrack. */
+    s_xaPlaying = 1;
+    RageStartXaAudio(firstSector);
     if (!RageHostReadFmvFrame()) {
         fprintf(stderr, "rage-port: FFmpeg could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
+    s_introStartNs = SDL_GetTicksNS();
 }
 
 void DecodeFmvFrame(void) {
     g_SceneTimer++;
     if (g_FmvStreamEnded || (g_PadPressed & PAD_START)) {
         g_FmvState = FMV_PLAYBACK_FINISH;
+        return;
+    }
+    if (s_wallClockIntro) {
+        Uint64 elapsed = SDL_GetTicksNS() - s_introStartNs;
+        unsigned int target = 1u + (unsigned int)((elapsed * 25u) / 1000000000u);
+        while (s_frame < target) {
+            if (!RageHostReadFmvFrame()) {
+                g_FmvStreamEnded = 1;
+                g_FmvState = FMV_PLAYBACK_FINISH;
+                break;
+            }
+        }
         return;
     }
     s_clock += (int)s_cadenceNumerator;
@@ -309,7 +329,11 @@ void DecodeFmvFrame(void) {
 
 void EndFmv(void) {
     if (s_xaPlaying) {
+        unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
         CdControl(RAGE_CDL_PAUSE, NULL, NULL);
+        /* XA playback temporarily changes the drive mode.  CD music requests
+         * use CdPlay and rely on the normal CD-DA mode being restored. */
+        CdControl(RAGE_CDL_SETMODE, &mode, NULL);
         s_xaPlaying = 0;
     }
     if (!RageCloseFfmpeg())

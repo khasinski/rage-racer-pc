@@ -12,6 +12,7 @@
 #include "diagnostic_log.h"
 #include "port_config.h"
 #include "runtime_config.h"
+#include "timing_control.h"
 #include "modern/modern_renderer.h"
 #include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
@@ -202,6 +203,7 @@ int main(int argc, char **argv) {
     if (RageRuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
     RagePortConfigSetActive(&portConfig);
+    RageTimingInit();
     RageModernInit(&portConfig);
     MainLoop();
     if (RageRuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM") != NULL) {

@@ -39,6 +39,7 @@ if(RAGE_BUILD_PORT)
         src/port/diagnostic_log.c
         src/port/game_diagnostics.c
         src/port/runtime_config.c
+        src/port/timing_control.c
         src/port/port_config.c
         src/port/scenario_control.c
         src/port/platform_stubs.c

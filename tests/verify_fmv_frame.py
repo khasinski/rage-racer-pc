@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -21,9 +22,11 @@ def main() -> int:
             RAGE_PORT_SMOKE_FRAMES="360",
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_FMV_TRACE="1",
+            RAGE_PORT_SMOKE_AUDIO_METRICS="1",
         )
         result = subprocess.run(
-            [executable], cwd=source_dir, env=environment,
+            [executable, "--set", "timing.standard=ntsc"], cwd=source_dir,
+            env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=20,
         )
@@ -31,9 +34,12 @@ def main() -> int:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
         if "fmv frame=14 vblank=357" not in result.stdout:
-            raise AssertionError("intro FMV cadence no longer matches the emulator")
-        if "fmv frame=15" in result.stdout:
-            raise AssertionError("intro FMV advanced before its reference VBlank")
+            raise AssertionError("intro FMV cadence no longer matches the stream")
+        if "fmv frame=16" in result.stdout:
+            raise AssertionError("intro FMV advanced before its next interval")
+        metrics = re.search(r"audio metrics: frames=(\d+) energy=(\d+)", result.stdout)
+        if metrics is None or int(metrics.group(1)) < 10_000 or int(metrics.group(2)) == 0:
+            raise AssertionError("intro FMV XA soundtrack remained silent")
 
         data = capture.read_bytes()
         header, pixels = data.split(b"\n255\n", 1)
@@ -47,7 +53,7 @@ def main() -> int:
             raise AssertionError("320x192 FMV is not vertically centered")
         if sum(value != 0 for value in picture) < 10_000:
             raise AssertionError("FMV picture region is empty")
-    print("FMV layout and emulator-matched intro cadence are stable")
+    print("FMV layout and measured intro cadence are stable")
     return 0
 
 

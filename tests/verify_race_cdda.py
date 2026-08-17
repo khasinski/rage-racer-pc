@@ -34,13 +34,15 @@ def main() -> int:
         int(value)
         for value in re.findall(r"opened track .*\(Track (\d+)\)\.bin", result.stdout)
     ]
-    if len(tracks) < 2 or tracks[0] != 2 or tracks[-1] <= 2:
+    # Track 1 is the data track containing the opening movie's XA stream.
+    # The final opened track must still be the requested race CD-DA music.
+    if len(tracks) < 2 or tracks[0] != 1 or tracks[-1] <= 2:
         raise AssertionError(
             f"race did not switch from prologue CD-DA to race BGM: {tracks}"
         )
     if "stopped at frame 1800, scene 12" not in result.stdout:
         raise AssertionError("script did not remain in the active race")
-    print(f"CD-DA switched from prologue track 2 to race track {tracks[-1]}")
+    print(f"audio switched from intro XA to race CD-DA track {tracks[-1]}")
     return 0
 
 

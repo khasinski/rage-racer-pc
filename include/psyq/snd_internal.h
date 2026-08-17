@@ -21,10 +21,24 @@ extern short g_SndDamper;
 extern short g_SndMonoMode;
 extern u_char g_SndReservedVoiceCount;
 extern SpuReverbAttr g_SndReverbAttr;
+#ifdef RAGE_HOST_PORT
+/* Retail stored these work areas contiguously at fixed PS1 addresses.  Host
+ * globals are independently aligned/reordered, so pointer arithmetic across
+ * the generated symbols corrupts unrelated state and drops voice updates. */
+extern SpuCommonRegs *g_HostSndSpuRegs;
+extern SpuVoiceRegs g_HostSndVoiceRegs[24];
+extern u_char g_HostSndVoiceFlags[24];
+extern SpuVoice g_HostSndVoiceState[24];
+#define g_SndSpuRegs g_HostSndSpuRegs
+#define g_SndVoiceRegs g_HostSndVoiceRegs
+#define g_SndVoiceFlags g_HostSndVoiceFlags
+#define g_SndVoiceState g_HostSndVoiceState
+#else
 extern SpuCommonRegs *g_SndSpuRegs;
 extern SpuVoiceRegs g_SndVoiceRegs[];
 extern u_char g_SndVoiceFlags[];
 extern SpuVoice g_SndVoiceState[];
+#endif
 extern SvmCurrentAttr g_SndCurrentAttr;
 extern short g_SndCurrentSeqSep;
 #ifndef SND_CURRENT_VOICE_QUALIFIER
