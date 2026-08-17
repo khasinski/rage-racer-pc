@@ -21,6 +21,7 @@ course = 1
 car = 4
 
 [video]
+renderer = classic
 toggle_renderer_key = F9
 
 [run]

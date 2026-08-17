@@ -21,6 +21,9 @@ class = 0
 course = 0
 car = 3
 
+[video]
+renderer = classic
+
 [run]
 frames = 2450
 
