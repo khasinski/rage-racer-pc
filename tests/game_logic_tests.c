@@ -177,30 +177,62 @@ static void test_port_config(void) {
 static void test_platform_config_path(void) {
     char root[] = "/tmp/rage-path-test-XXXXXX";
     char directory[256], filePath[320], found[320];
+#ifdef __APPLE__
+    const char *previous = getenv("HOME");
+#else
     const char *previous = getenv("XDG_CONFIG_HOME");
+#endif
     char *saved = previous != NULL ? strdup(previous) : NULL;
     FILE *file;
     if (mkdtemp(root) == NULL) {
         failures++;
         return;
     }
+#ifdef __APPLE__
+    snprintf(directory, sizeof(directory), "%s/Library", root);
+    mkdir(directory, 0700);
+    snprintf(directory, sizeof(directory), "%s/Library/Application Support",
+             root);
+    mkdir(directory, 0700);
+    snprintf(directory, sizeof(directory),
+             "%s/Library/Application Support/Rage Racer", root);
+    setenv("HOME", root, 1);
+#else
     snprintf(directory, sizeof(directory), "%s/rage-racer", root);
+    setenv("XDG_CONFIG_HOME", root, 1);
+#endif
     snprintf(filePath, sizeof(filePath), "%s/rage-port.ini", directory);
     if (mkdir(directory, 0700) != 0 || (file = fopen(filePath, "wb")) == NULL) {
         failures++;
     } else {
         fclose(file);
-        setenv("XDG_CONFIG_HOME", root, 1);
         EXPECT_EQ(1, RagePlatformFindConfigFile(NULL, "rage-port.ini", found,
                                                 sizeof(found)));
         EXPECT_EQ(0, strcmp(filePath, found));
     }
     if (saved != NULL) {
+#ifdef __APPLE__
+        setenv("HOME", saved, 1);
+#else
         setenv("XDG_CONFIG_HOME", saved, 1);
+#endif
         free(saved);
-    } else unsetenv("XDG_CONFIG_HOME");
+    } else {
+#ifdef __APPLE__
+        unsetenv("HOME");
+#else
+        unsetenv("XDG_CONFIG_HOME");
+#endif
+    }
     unlink(filePath);
     rmdir(directory);
+#ifdef __APPLE__
+    snprintf(directory, sizeof(directory), "%s/Library/Application Support",
+             root);
+    rmdir(directory);
+    snprintf(directory, sizeof(directory), "%s/Library", root);
+    rmdir(directory);
+#endif
     rmdir(root);
 }
 
