@@ -7,7 +7,14 @@
 #include <SDL3/SDL_timer.h>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+/* PsyQ exposes its own RECT and LoadImage symbols. Keep the Win32 header's
+ * namespace from colliding with those compatibility declarations. */
+#define RECT WIN32_RECT
 #include <windows.h>
+#undef RECT
+#undef LoadImage
 #include <fcntl.h>
 #include <io.h>
 #else
