@@ -102,6 +102,14 @@ if(RAGE_BUILD_PORT)
                 "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
                 -Wall -Wextra -Werror
             )
+            # Apple Clang 16 diagnoses the recovered PS1-era declarations
+            # without prototypes. Keep the diagnostics visible while the
+            # legacy headers are incrementally typed, but do not fail release
+            # builds solely on this compatibility warning.
+            if(APPLE AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
+                target_compile_options(${RAGE_PORT_TARGET} PRIVATE
+                    -Wno-error=deprecated-non-prototype)
+            endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz)
         if(WIN32)
