@@ -12,7 +12,7 @@ on:
       - "*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -37,6 +37,12 @@ jobs:
           resources="build/release/Rage Racer.app/Contents/Resources"
           mkdir -p "$resources" dist
           cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "$resources/"
+          # The linker ad-hoc signs the executable, but that signature expects a
+          # sealed resource directory. Staging files into Contents/Resources
+          # without re-signing leaves the bundle inconsistent, and Gatekeeper
+          # rejects the downloaded app as damaged. Sign after staging.
+          codesign --force --deep --sign - "build/release/Rage Racer.app"
+          codesign --verify --deep --strict "build/release/Rage Racer.app"
           ditto -c -k --sequesterRsrc --keepParent \
             "build/release/Rage Racer.app" "dist/${package}.zip"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
@@ -46,3 +52,9 @@ jobs:
           name: Rage-Racer-${{ inputs.version || github.ref_name }}-macos-arm64
           path: dist/*.zip
           if-no-files-found: error
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: gh release upload "$VERSION" dist/*.zip --clobber

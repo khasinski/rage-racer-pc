@@ -12,7 +12,7 @@ on:
       - "*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -51,3 +51,9 @@ jobs:
           name: Rage-Racer-${{ inputs.version || github.ref_name }}-windows-x86_64
           path: dist/*.zip
           if-no-files-found: error
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: gh release upload "$VERSION" dist/*.zip --clobber

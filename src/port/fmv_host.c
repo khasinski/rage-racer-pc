@@ -37,7 +37,6 @@
 
 extern int g_FrameCounter;
 
-static FILE *s_pipe;
 static unsigned char *s_pixels;
 static int s_width;
 static int s_height;
@@ -48,13 +47,29 @@ static unsigned int s_cadenceNumerator;
 static unsigned int s_cadenceDenominator;
 static Uint64 s_introStartNs;
 static int s_wallClockIntro;
-static char s_streamPath[1024];
 static int s_xaPlaying;
-#ifdef _WIN32
-static HANDLE s_ffmpegProcess;
-#else
-static pid_t s_ffmpegProcess = -1;
-#endif
+
+/* RAGE.STR plays at 30 frames per second. The format carries no frame rate,
+ * so it has to be derived from the disc: one sector in eight is XA audio, and
+ * XA level B stereo consumes 18.75 sectors per second, which pins the stream
+ * to 150 sectors per second (double speed). Frames span five sectors, so
+ * 150/5 = 30. */
+#define RAGE_FMV_FPS 30
+
+/* Movie sectors, held as read off the disc, plus the decoder's scratch. */
+#define RAGE_STR_SECTOR_SIZE 2352
+#define RAGE_STR_PAYLOAD_OFFSET 32
+#define RAGE_STR_PAYLOAD_SIZE 0x7E0
+#define RAGE_STR_MAGIC 0x80010160u
+#define RAGE_BS_MAX 0x20000
+#define RAGE_CODES_MAX 0x20000
+
+static unsigned char *s_sectors;
+static unsigned int s_sectorCount;
+static unsigned int s_sectorCursor;
+static unsigned char *s_bitstream;
+static u_long *s_codes;
+static u_long s_macroblock[192];
 
 enum {
     RAGE_CDL_SETLOC = 0x02, RAGE_CDL_READN = 0x06, RAGE_CDL_PAUSE = 0x09,
@@ -65,6 +80,10 @@ enum {
 int RageHostReadStreamSector(unsigned int sector, unsigned char *raw);
 int RageHostStreamAbsoluteSector(unsigned int sector);
 
+/* The rest of the MDEC front end comes from game/render.h and psyq/cd.h;
+ * only the VLC stage has no declaration there. */
+int DecDCTvlc(u_long *bs, u_long *buf);
+
 static const unsigned int s_sectorSpans[11] = {
     0x2F10,
     0x062D, 0x062D, 0x062D, 0x062D, 0x062D,
@@ -72,146 +91,109 @@ static const unsigned int s_sectorSpans[11] = {
     0x3B40,
 };
 
+static void RageReleaseFmvBuffers(void) {
+    free(s_sectors);
+    s_sectors = NULL;
+    free(s_bitstream);
+    s_bitstream = NULL;
+    free(s_codes);
+    s_codes = NULL;
+    s_sectorCount = 0;
+    s_sectorCursor = 0;
+}
+
 static int RageHostExtractFmv(unsigned int first, unsigned int count) {
-    unsigned char raw[2352];
-    FILE *file;
     unsigned int index;
-#ifdef _WIN32
-    char temporary[768];
-    if (!RagePlatformTemporaryDirectory(temporary, sizeof(temporary))) return 0;
-    if (GetTempFileNameA(temporary, "RGR", 0, s_streamPath) == 0) return 0;
-    file = fopen(s_streamPath, "wb");
-#else
-    char temporary[768];
-    if (!RagePlatformTemporaryDirectory(temporary, sizeof(temporary))) return 0;
-    if (snprintf(s_streamPath, sizeof(s_streamPath),
-                 "%s/rage-racer-XXXXXX", temporary) >=
-        (int)sizeof(s_streamPath)) return 0;
-    {
-        int descriptor = mkstemp(s_streamPath);
-        if (descriptor < 0) return 0;
-        file = fdopen(descriptor, "wb");
-        if (file == NULL) close(descriptor);
-    }
-#endif
-    if (file == NULL) {
-        remove(s_streamPath);
-        s_streamPath[0] = '\0';
+    RageReleaseFmvBuffers();
+    if (count == 0) return 0;
+    s_sectors = malloc((size_t)count * RAGE_STR_SECTOR_SIZE);
+    s_bitstream = malloc(RAGE_BS_MAX);
+    s_codes = malloc((size_t)RAGE_CODES_MAX * 2 + 64);
+    if (s_sectors == NULL || s_bitstream == NULL || s_codes == NULL) {
+        RageReleaseFmvBuffers();
         return 0;
     }
     for (index = 0; index < count; index++) {
-        if (!RageHostReadStreamSector(first + index, raw) ||
-            fwrite(raw, 1, sizeof(raw), file) != sizeof(raw)) {
-            fclose(file);
-            remove(s_streamPath);
-            s_streamPath[0] = '\0';
+        if (!RageHostReadStreamSector(
+                first + index,
+                s_sectors + (size_t)index * RAGE_STR_SECTOR_SIZE)) {
+            RageReleaseFmvBuffers();
             return 0;
         }
     }
-    if (fclose(file) != 0) {
-        remove(s_streamPath);
-        s_streamPath[0] = '\0';
-        return 0;
-    }
+    s_sectorCount = count;
+    s_sectorCursor = 0;
     return 1;
 }
 
-static FILE *RageOpenFfmpeg(const char *path) {
-#ifdef _WIN32
-    SECURITY_ATTRIBUTES security = {sizeof(security), NULL, TRUE};
-    PROCESS_INFORMATION process;
-    STARTUPINFOA startup;
-    HANDLE readPipe, writePipe, nullOutput;
-    char command[1400];
-    int descriptor;
-    if (!CreatePipe(&readPipe, &writePipe, &security, 0)) return NULL;
-    SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
-    nullOutput = CreateFileA("NUL", GENERIC_WRITE,
-                             FILE_SHARE_READ | FILE_SHARE_WRITE, &security,
-                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    memset(&startup, 0, sizeof(startup));
-    memset(&process, 0, sizeof(process));
-    startup.cb = sizeof(startup);
-    startup.dwFlags = STARTF_USESTDHANDLES;
-    startup.hStdOutput = writePipe;
-    startup.hStdError = nullOutput;
-    startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-    snprintf(command, sizeof(command),
-             "ffmpeg -v error -i \"%s\" -f rawvideo -pix_fmt rgb24 -", path);
-    if (!CreateProcessA(NULL, command, NULL, NULL, TRUE,
-                        CREATE_NO_WINDOW, NULL, NULL, &startup, &process)) {
-        CloseHandle(readPipe);
-        CloseHandle(writePipe);
-        if (nullOutput != INVALID_HANDLE_VALUE) CloseHandle(nullOutput);
-        return NULL;
-    }
-    CloseHandle(writePipe);
-    if (nullOutput != INVALID_HANDLE_VALUE) CloseHandle(nullOutput);
-    CloseHandle(process.hThread);
-    s_ffmpegProcess = process.hProcess;
-    descriptor = _open_osfhandle((intptr_t)readPipe, _O_RDONLY | _O_BINARY);
-    if (descriptor < 0) {
-        CloseHandle(readPipe);
-        TerminateProcess(s_ffmpegProcess, 1);
-        WaitForSingleObject(s_ffmpegProcess, INFINITE);
-        CloseHandle(s_ffmpegProcess);
-        s_ffmpegProcess = NULL;
-        return NULL;
-    }
-    return _fdopen(descriptor, "rb");
-#else
-    int output[2];
-    pid_t child;
-    if (pipe(output) != 0) return NULL;
-    child = fork();
-    if (child < 0) {
-        close(output[0]);
-        close(output[1]);
-        return NULL;
-    }
-    if (child == 0) {
-        int nullOutput = open("/dev/null", O_WRONLY);
-        dup2(output[1], STDOUT_FILENO);
-        if (nullOutput >= 0) dup2(nullOutput, STDERR_FILENO);
-        close(output[0]);
-        close(output[1]);
-        if (nullOutput >= 0) close(nullOutput);
-        execlp("ffmpeg", "ffmpeg", "-v", "error", "-i", path,
-               "-f", "rawvideo", "-pix_fmt", "rgb24", "-", (char *)NULL);
-        _exit(127);
-    }
-    close(output[1]);
-    s_ffmpegProcess = child;
-    s_pipe = fdopen(output[0], "rb");
-    if (s_pipe == NULL) close(output[0]);
-    return s_pipe;
-#endif
+static unsigned int RageReadLe16(const unsigned char *data) {
+    return (unsigned int)data[0] | ((unsigned int)data[1] << 8);
 }
 
-static int RageCloseFfmpeg(void) {
-    int success = 1;
-    if (s_pipe != NULL) {
-        fclose(s_pipe);
-        s_pipe = NULL;
+static unsigned int RageReadLe32(const unsigned char *data) {
+    return RageReadLe16(data) | (RageReadLe16(data + 2) << 16);
+}
+
+/* Reassembles the next frame from its STR chunks and decodes it with the
+ * software MDEC. Returns 0 once the movie runs out of frames. */
+static int RageDecodeFmvFrame(void) {
+    size_t size = 0;
+    unsigned int chunks = 0;
+    unsigned int seen = 0;
+    int width = 0;
+    int height = 0;
+    int x;
+    int y;
+
+    while (s_sectorCursor < s_sectorCount) {
+        const unsigned char *body =
+            s_sectors + (size_t)s_sectorCursor * RAGE_STR_SECTOR_SIZE + 24;
+        unsigned int chunk;
+        s_sectorCursor++;
+        if (RageReadLe32(body) != RAGE_STR_MAGIC) continue;
+        chunk = RageReadLe16(body + 4);
+        if (size == 0 && chunk != 0) continue; /* resynchronise on a frame */
+        if (chunk == 0) {
+            size = 0;
+            seen = 0;
+            chunks = RageReadLe16(body + 6);
+            width = (int)RageReadLe16(body + 16);
+            height = (int)RageReadLe16(body + 18);
+        }
+        if (size + RAGE_STR_PAYLOAD_SIZE > RAGE_BS_MAX) return 0;
+        memcpy(s_bitstream + size, body + RAGE_STR_PAYLOAD_OFFSET,
+               RAGE_STR_PAYLOAD_SIZE);
+        size += RAGE_STR_PAYLOAD_SIZE;
+        if (++seen >= chunks && chunks != 0) break;
     }
-#ifdef _WIN32
-    if (s_ffmpegProcess != NULL) {
-        DWORD code = 1;
-        WaitForSingleObject(s_ffmpegProcess, INFINITE);
-        GetExitCodeProcess(s_ffmpegProcess, &code);
-        CloseHandle(s_ffmpegProcess);
-        s_ffmpegProcess = NULL;
-        success = code == 0;
+    if (size == 0 || chunks == 0 || seen < chunks) return 0;
+    if (width <= 0 || height <= 0 || width > s_width || height > s_height)
+        return 0;
+
+    DecDCTReset(0);
+    if (DecDCTvlc((u_long *)s_bitstream, s_codes) < 0) return 0;
+    DecDCTin((volatile u32 *)s_codes, 3);
+
+    /* The decoder hands back macroblocks in the order the hardware did:
+     * down each column of the frame, then on to the next column. */
+    for (x = 0; x < width; x += 16) {
+        for (y = 0; y < height; y += 16) {
+            const unsigned char *src = (const unsigned char *)s_macroblock;
+            int row;
+            DecDCTout(s_macroblock, 192);
+            for (row = 0; row < 16; row++) {
+                int column;
+                if (y + row >= height) break;
+                for (column = 0; column < 16; column++) {
+                    if (x + column >= width) break;
+                    memcpy(s_pixels + (((size_t)(y + row) * width) +
+                                       (size_t)(x + column)) * 3,
+                           src + ((size_t)row * 16 + column) * 3, 3);
+                }
+            }
+        }
     }
-#else
-    if (s_ffmpegProcess > 0) {
-        int status;
-        success = waitpid(s_ffmpegProcess, &status, 0) == s_ffmpegProcess &&
-                  WIFEXITED(status) && WEXITSTATUS(status) == 0;
-        s_ffmpegProcess = -1;
-    }
-#endif
-    return success;
+    return 1;
 }
 
 static void RageStartXaAudio(unsigned int firstSector) {
@@ -238,8 +220,7 @@ static void RageStartXaAudio(unsigned int firstSector) {
 }
 
 static int RageHostReadFmvFrame(void) {
-    size_t bytes = (size_t)s_width * (size_t)s_height * 3;
-    if (s_pipe == NULL || fread(s_pixels, 1, bytes, s_pipe) != bytes) return 0;
+    if (s_pixels == NULL || !RageDecodeFmvFrame()) return 0;
     if (!Psyz_VideoUploadRgb24Frame(s_pixels, s_width, s_height)) return 0;
     s_frame++;
     if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
@@ -266,8 +247,9 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     s_sectorSpan = s_sectorSpans[streamIndex];
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
     if (streamIndex == 0) {
-        s_cadenceNumerator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 1 : 5;
-        s_cadenceDenominator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 2 : 12;
+        /* Frames advanced per vblank: 30/50 on PAL, 30/60 on NTSC. */
+        s_cadenceNumerator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 3 : 1;
+        s_cadenceDenominator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 5 : 2;
     } else {
         s_cadenceNumerator = 3 * g_StreamSectorCount;
         s_cadenceDenominator = s_sectorSpan;
@@ -279,7 +261,6 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
         return;
     }
     s_pixels = malloc((size_t)s_width * (size_t)s_height * 3);
-    s_pipe = s_pixels != NULL ? RageOpenFfmpeg(s_streamPath) : NULL;
     clearRect.x = 0;
     clearRect.y = 0;
     clearRect.w = s_width * 3 / 2;
@@ -300,7 +281,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     s_xaPlaying = 1;
     RageStartXaAudio(firstSector);
     if (!RageHostReadFmvFrame()) {
-        fprintf(stderr, "rage-port: FFmpeg could not decode FMV %ld\n", streamIndex);
+        fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
     s_introStartNs = SDL_GetTicksNS();
@@ -314,7 +295,8 @@ void DecodeFmvFrame(void) {
     }
     if (s_wallClockIntro) {
         Uint64 elapsed = SDL_GetTicksNS() - s_introStartNs;
-        unsigned int target = 1u + (unsigned int)((elapsed * 25u) / 1000000000u);
+        unsigned int target =
+            1u + (unsigned int)((elapsed * RAGE_FMV_FPS) / 1000000000u);
         while (s_frame < target) {
             if (!RageHostReadFmvFrame()) {
                 g_FmvStreamEnded = 1;
@@ -343,14 +325,9 @@ void EndFmv(void) {
         CdControl(RAGE_CDL_SETMODE, &mode, NULL);
         s_xaPlaying = 0;
     }
-    if (!RageCloseFfmpeg())
-        fprintf(stderr, "rage-port: FFmpeg exited with an error\n");
+    RageReleaseFmvBuffers();
     free(s_pixels);
     s_pixels = NULL;
-    if (s_streamPath[0] != '\0') {
-        remove(s_streamPath);
-        s_streamPath[0] = '\0';
-    }
     g_SceneId = g_StreamReturnScene;
     g_StreamReturnScene = g_FmvStreamEnded;
 }
