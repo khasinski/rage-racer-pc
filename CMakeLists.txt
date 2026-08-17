@@ -106,7 +106,7 @@ if(RAGE_BUILD_PORT)
             # without prototypes. Keep the diagnostics visible while the
             # legacy headers are incrementally typed, but do not fail release
             # builds solely on this compatibility warning.
-            if(APPLE AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
+            if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
                 target_compile_options(${RAGE_PORT_TARGET} PRIVATE
                     -Wno-error=deprecated-non-prototype)
             endif()
