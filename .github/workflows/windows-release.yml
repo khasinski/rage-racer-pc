@@ -56,4 +56,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ github.ref_name }}
-        run: gh release upload "$VERSION" dist/*.zip --clobber
+        shell: pwsh
+        run: gh release upload $env:VERSION (Get-ChildItem dist/*.zip) --clobber
