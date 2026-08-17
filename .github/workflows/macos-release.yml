@@ -29,20 +29,66 @@ jobs:
         run: cmake --build build/release --parallel
       - name: Verify portable tests
         run: ctest --test-dir build/release --output-on-failure -R '^(game_logic|release_package|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$'
-      - name: Package
+      - name: Stage bundle resources
+        run: |
+          resources="build/release/Rage Racer.app/Contents/Resources"
+          mkdir -p "$resources" dist
+          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "$resources/"
+      - name: Sign and notarize
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          app="build/release/Rage Racer.app"
+          # The linker ad-hoc signs the executable, and that signature expects a
+          # sealed resource directory. Staging files into Contents/Resources
+          # without re-signing leaves the bundle inconsistent, which Gatekeeper
+          # reports as a damaged download. Either branch below re-signs.
+          if [ -z "${CERT_P12:-}" ]; then
+            echo "No Developer ID configured; signing ad-hoc (not notarized)."
+            codesign --force --deep --sign - "$app"
+            codesign --verify --deep --strict "$app"
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 900 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain-db
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" \
+            -P "$CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          # Without this codesign would block on an interactive keychain prompt.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$keychain_password" "$keychain" > /dev/null
+          identity="$(security find-identity -v -p codesigning "$keychain" \
+            | awk 'NR==1 {print $2}')"
+          # Notarization requires the hardened runtime and a secure timestamp.
+          codesign --force --deep --options runtime --timestamp \
+            --sign "$identity" "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          printf '%s' "$NOTARY_KEY" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          ditto -c -k --sequesterRsrc --keepParent "$app" \
+            "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
+          # Staple the ticket into the bundle so it validates without a network
+          # round trip; the archive built below then carries it.
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary.p8"
+      - name: Archive
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           package="Rage-Racer-${VERSION}-macos-arm64"
-          resources="build/release/Rage Racer.app/Contents/Resources"
-          mkdir -p "$resources" dist
-          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "$resources/"
-          # The linker ad-hoc signs the executable, but that signature expects a
-          # sealed resource directory. Staging files into Contents/Resources
-          # without re-signing leaves the bundle inconsistent, and Gatekeeper
-          # rejects the downloaded app as damaged. Sign after staging.
-          codesign --force --deep --sign - "build/release/Rage Racer.app"
-          codesign --verify --deep --strict "build/release/Rage Racer.app"
           ditto -c -k --sequesterRsrc --keepParent \
             "build/release/Rage Racer.app" "dist/${package}.zip"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
