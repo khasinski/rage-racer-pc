@@ -555,12 +555,28 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
     return 1;
 }
 
+/* Resolves a cue all the way to a readable archive, so a path that no longer
+ * works is reported as such instead of failing later on. */
+static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
+    if (!RageHostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
+        !RageHostParseCue(cue, image, image_size,
+                          &g_RageHostDisc.track_offset)) return 0;
+    g_RageHostDisc.file = fopen(image, "rb");
+    if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
+        if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+        g_RageHostDisc.file = NULL;
+        return 0;
+    }
+    return 1;
+}
+
 int RageHostInitDisc(void) {
     const char *environment_cue = RageRuntimeConfigGetOverride(
         "disc.cue", "RAGE_PORT_DISC_CUE");
     char cue[PATH_MAX];
     char image[PATH_MAX];
     char config_path[PATH_MAX];
+    int choose;
 
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
@@ -587,28 +603,26 @@ int RageHostInitDisc(void) {
     }
     if (environment_cue != NULL && environment_cue[0] != '\0') {
         snprintf(cue, sizeof(cue), "%s", environment_cue);
-    } else {
-        /* Remembering the choice means an install that once worked never
-         * asks again, so offer a way back to the picker. */
-        int choose = RageRuntimeConfigEnabled("disc.choose",
-                                              "RAGE_PORT_CHOOSE_DISC");
-        RageHostMakeDiscConfigPath(config_path, sizeof(config_path));
-        if (choose || !RageHostReadTextFile(config_path, cue, sizeof(cue)) ||
-            access(cue, R_OK) != 0) {
-            if (choose || !RageHostFindAdjacentCue(cue, sizeof(cue))) {
-                if (!RageHostChooseDiscCue(cue, sizeof(cue))) return 0;
-            }
-            RageHostSaveDiscCue(cue);
-        }
+        return RageHostOpenDisc(cue, image, sizeof(image));
     }
-    if (!RageHostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0
-        || !RageHostParseCue(cue, image, sizeof(image), &g_RageHostDisc.track_offset)) return 0;
-    g_RageHostDisc.file = fopen(image, "rb");
-    if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
-        if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
-        g_RageHostDisc.file = NULL;
-        return 0;
+    /* Remembering the choice means an install that once worked never asks
+     * again, so offer a way back to the picker. */
+    choose = RageRuntimeConfigEnabled("disc.choose", "RAGE_PORT_CHOOSE_DISC");
+    RageHostMakeDiscConfigPath(config_path, sizeof(config_path));
+    /* Opening the disc is the test, not whether the cue is still there: its
+     * track files move or get deleted on their own, and a cue that no longer
+     * resolves has to send the player back to the picker rather than end the
+     * session. */
+    if (!choose && RageHostReadTextFile(config_path, cue, sizeof(cue)) &&
+        RageHostOpenDisc(cue, image, sizeof(image))) return 1;
+    if (!choose && RageHostFindAdjacentCue(cue, sizeof(cue)) &&
+        RageHostOpenDisc(cue, image, sizeof(image))) {
+        RageHostSaveDiscCue(cue);
+        return 1;
     }
+    if (!RageHostChooseDiscCue(cue, sizeof(cue)) ||
+        !RageHostOpenDisc(cue, image, sizeof(image))) return 0;
+    RageHostSaveDiscCue(cue);
     return 1;
 }
 
