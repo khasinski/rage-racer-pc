@@ -45,7 +45,8 @@ jobs:
           Copy-Item tools/rage-launcher.py "$root/tools/rage-launcher.py"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or
-              !(Test-Path "$root/tools/rage-launcher.py")) {
+              !(Test-Path "$root/tools/rage-launcher.py") -or
+              !(Test-Path "$root/rage-port.ini")) {
             throw "release package is incomplete"
           }
           (Get-FileHash "dist/$package.zip" -Algorithm SHA256).Hash

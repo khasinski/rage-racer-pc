@@ -26,20 +26,20 @@ post = fxaa
 toggle_renderer_key = F10
 ```
 
-The supplied file defaults to the classic PS1-accurate renderer, and `F10`
+The supplied file defaults to the modern renderer preset shown above, and `F10`
 switches between both renderers without restarting the race. The
 release also fixes the rear-view mirror rendering rivals with a mirrored view
 matrix, mirror slide-in flashes, paused-mirror rendering, and depth ordering
 of car models at hill crests.
 
-The release additionally restores race sound effects and engine audio, fixes
-sequenced menu music timing, enables original intro/ending FMVs through
-FFmpeg, repairs mirrored-track control and geometry, keeps Lakeside Gate's
-waterfalls visible at close range, and corrects Trophy View, controller setup,
-retire-camera and title-logo sprite rendering. Runtime settings now use
-`rage-port.ini`, normal sessions write `rage-racer.log`, and the scenario
-launcher can start any GP, Extra GP or Time Attack race at deterministic track
-positions.
+The release additionally restores race sound effects, engine audio and native
+CD-DA music, fixes sequenced menu music timing, and enables original
+intro/ending FMVs through FFmpeg. It also repairs mirrored-track control and
+geometry, keeps Lakeside Gate's waterfalls visible at close range, and
+corrects Trophy View, controller setup, retire-camera and title-logo sprite
+rendering. Runtime settings now use `rage-port.ini`, normal sessions write
+`rage-racer.log`, and the scenario launcher can start any GP, Extra GP or Time
+Attack race at deterministic track positions.
 
 ## 0.2-alpha
 
@@ -72,7 +72,8 @@ make stage STAGE_ARGS='--pal-cue "/path/to/Rage Racer (Europe).cue"'
 The resulting executable is `build/release/rage-racer` on Linux,
 `build/release/Rage Racer.app` on macOS and `build/release/Release/rage-racer.exe`
 with the Visual Studio generator on Windows. Release downloads are supplied
-for macOS arm64, Linux x86-64 and Windows x86-64.
+as ZIP archives for macOS arm64, Linux x86-64 and Windows x86-64. Every archive
+contains the documented `rage-port.ini` modern-renderer preset.
 
 ## Scenario launcher
 
@@ -139,6 +140,11 @@ application-state directory. Configure `[diagnostics] log` to choose another
 file. The disc can likewise be pinned with `[disc] cue`; the legacy
 `RAGE_PORT_LOG_PATH` and `RAGE_PORT_DISC_CUE` overrides remain available for
 automation.
+
+Rage Racer uses mixed-mode CD audio. The selected CUE must describe Track 01
+and audio Tracks 02–17; a CUE containing only the data track can run the game
+and FMVs but cannot provide the Grand Prix intro or race soundtrack. Keep all
+BIN files referenced by the CUE together and select that full CUE on first run.
 
 ## Keyboard controls
 

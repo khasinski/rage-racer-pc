@@ -47,12 +47,13 @@ jobs:
           cp build/release/rage-racer "dist/${package}/rage-racer"
           cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "dist/${package}/"
           cp tools/rage-launcher.py "dist/${package}/tools/"
-          tar -C dist -czf "dist/${package}.tar.gz" "${package}"
+          (cd dist && zip -qr "${package}.zip" "${package}")
           test -x "dist/${package}/rage-racer"
-          tar -tzf "dist/${package}.tar.gz" | grep -q "/tools/rage-launcher.py$"
-          sha256sum "dist/${package}.tar.gz"
+          unzip -l "dist/${package}.zip" | grep -q "/rage-port.ini$"
+          unzip -l "dist/${package}.zip" | grep -q "/tools/rage-launcher.py$"
+          sha256sum "dist/${package}.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Rage-Racer-${{ inputs.version || github.ref_name }}-linux-x86_64
-          path: dist/*.tar.gz
+          path: dist/*.zip
           if-no-files-found: error
