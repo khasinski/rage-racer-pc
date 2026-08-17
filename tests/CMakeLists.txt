@@ -349,13 +349,13 @@ if(TARGET rage-racer-smoke)
     )
     set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 25)
     add_test(
-        NAME fmv_missing_ffmpeg
+        NAME fmv_without_ffmpeg
         COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_fallback.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_without_ffmpeg.py
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_missing_ffmpeg PROPERTIES TIMEOUT 30)
+    set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 30)
     add_test(
         NAME prologue_frame
         COMMAND python3

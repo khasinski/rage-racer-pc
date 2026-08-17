@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FMV failure is graceful when the movie is unreadable and paths are Unicode."""
+"""The in-process MDEC decoder plays FMV without external executables."""
 
 import os
 import subprocess
@@ -12,7 +12,7 @@ def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     with tempfile.TemporaryDirectory(prefix="rage fmv ąę ") as directory:
         root = Path(directory)
-        empty_path = root / "bez ffmpeg"
+        empty_path = root / "pusta ścieżka"
         temporary = root / "pliki tymczasowe żółte"
         empty_path.mkdir()
         temporary.mkdir()
@@ -22,6 +22,7 @@ def main() -> int:
             PATH=str(empty_path),
             TMPDIR=str(temporary),
             RAGE_PORT_SMOKE_FRAMES="380",
+            RAGE_PORT_FMV_TRACE="1",
         )
         result = subprocess.run(
             [executable], cwd=source, env=environment,
@@ -30,12 +31,9 @@ def main() -> int:
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
-            raise AssertionError("missing FFmpeg terminated the game")
-        expected = ("FFmpeg could not decode FMV", "could not extract FMV")
-        if not any(message in result.stdout for message in expected):
-            raise AssertionError(
-                f"FMV fallback was not observable\n{result.stdout}"
-            )
+            raise AssertionError("in-process FMV playback terminated the game")
+        if "fmv frame=" not in result.stdout:
+            raise AssertionError(f"in-process FMV playback was not observable\n{result.stdout}")
         leftovers = list(temporary.iterdir())
         if leftovers:
             raise AssertionError(f"FMV temporary files leaked: {leftovers}")

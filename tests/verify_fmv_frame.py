@@ -33,9 +33,9 @@ def main() -> int:
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
-        if "fmv frame=14 vblank=357" not in result.stdout:
+        if "fmv frame=17 vblank=357" not in result.stdout:
             raise AssertionError("intro FMV cadence no longer matches the stream")
-        if "fmv frame=16" in result.stdout:
+        if "fmv frame=19" in result.stdout:
             raise AssertionError("intro FMV advanced before its next interval")
         metrics = re.search(r"audio metrics: frames=(\d+) energy=(\d+)", result.stdout)
         if metrics is None or int(metrics.group(1)) < 10_000 or int(metrics.group(2)) == 0:
