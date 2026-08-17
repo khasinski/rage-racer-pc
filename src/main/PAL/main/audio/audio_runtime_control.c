@@ -12,10 +12,18 @@
 #include "psyq/snd.h"
 
 void TickSequenceAudio(void) {
+    static u32 sequenceTickDivider;
+
     if (g_SceneId == 0xC) {
         SpuVmDamperStep();
     } else {
-        SsSeqCalledTbyT();
+        /* Menu logic runs once per VBlank, while Rage Racer's sequence
+         * service is half-rate. Driving it on every host frame halves all
+         * MIDI delays and makes the car/course music play at 2x speed. */
+        sequenceTickDivider ^= 1;
+        if (sequenceTickDivider != 0) {
+            SsSeqCalledTbyT();
+        }
         if (g_SeqVolumeFadeStep != 0) {
             UpdateSequenceFadeOut();
         }

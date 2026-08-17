@@ -246,7 +246,9 @@ int main(int argc, char **argv) {
     }
     if (RageRuntimeConfigEnabled("report.audio_metrics", "RAGE_PORT_SMOKE_AUDIO_METRICS")) {
         printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
-               "pitch_updates=%llu cdda=%d reverb_in=%llu reverb_out=%llu "
+               "pitch_updates=%llu cdda=%d cdda_frames=%llu cdda_energy=%llu "
+               "cdda_mix_energy=%llu "
+               "reverb_in=%llu reverb_out=%llu "
                "reverb_tail=%llu "
                "loaded=%x cue_bank=%d "
                "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d\n",
@@ -255,6 +257,9 @@ int main(int argc, char **argv) {
                Psyz_SeqVoiceStartCount(),
                Psyz_SndPitchUpdateCount(),
                Psyz_CdAudioPlaying(),
+               Psyz_CdAudioFramesPulled(),
+               Psyz_CdAudioEnergy(),
+               Psyz_SpuCdMixEnergy(),
                Psyz_SpuReverbInputEnergy(),
                Psyz_SpuReverbOutputEnergy(),
                Psyz_SpuReverbTailFrames(),

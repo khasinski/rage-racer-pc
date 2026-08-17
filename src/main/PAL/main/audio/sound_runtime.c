@@ -119,7 +119,14 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     s16 vabId;
 
     SsSetTableSize((char *)GetSndTableArea(), 2, 1);
+    /* The native port advances the sequencer from TickSequenceAudio in the
+     * game loop.  Starting the Psy-Q timer as well dispatches every event
+     * twice, which makes the car/track-selection music run at double speed. */
+#ifdef __psyz
+    SsSetTickMode(0x1000);
+#else
     SsSetTickMode(1);
+#endif
     SsStartSoundTickMode1();
     SsSetVoiceCount(0xA);
     SsUtReverbOff();
