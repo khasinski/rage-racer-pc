@@ -21,13 +21,13 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
        call result and that value is still there to hand to SsVabTransBody. */
     vabId = g_SoundScale.vabIds[slot];
     if (vabId == -1) {
-        printf(g_MsgVabOpenHeadError);
+        printf("%s", g_MsgVabOpenHeadError);
         BiosExit(1);
     }
 
     g_SoundScale.vabIds[slot] = SsVabTransBody(body, vabId);
     if (g_SoundScale.vabIds[slot] == -1) {
-        printf(g_MsgVabTransBodyError);
+        printf("%s", g_MsgVabTransBodyError);
         BiosExit(1);
     }
 
@@ -103,6 +103,7 @@ s32 CloseLoadedAudioSlots(void) {
     if (CloseVabOnlyAudioSlot(3) == 0) {
         return 0;
     }
+    return 1;
 }
 
 s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
@@ -122,13 +123,13 @@ s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
     *vabIdPtr = SsVabOpenHeadSticky(header, -1, g_VabSpuAddress[3]);
     vabId = *vabIdPtr;
     if (vabId == -1) {
-        printf(g_MsgVabOpenHeadError);
+        printf("%s", g_MsgVabOpenHeadError);
         BiosExit(1);
     }
 
     *vabIdPtr = SsVabTransBody(body, vabId);
     if (*vabIdPtr == -1) {
-        printf(g_MsgVabTransBodyError);
+        printf("%s", g_MsgVabTransBodyError);
         BiosExit(1);
     }
 
@@ -150,13 +151,13 @@ s32 LoadExtraVabSlotWithTable(u8 *header, u8 *body, u16 *table) {
     *vabIdPtr = SsVabOpenHeadSticky(header, -1, 0x6A000);
     vabId = *vabIdPtr;
     if (vabId == -1) {
-        printf(g_MsgVabOpenHeadError);
+        printf("%s", g_MsgVabOpenHeadError);
         BiosExit(1);
     }
 
     *vabIdPtr = SsVabTransBody(body, vabId);
     if (*vabIdPtr == -1) {
-        printf(g_MsgVabTransBodyError);
+        printf("%s", g_MsgVabTransBodyError);
         BiosExit(1);
     }
 
@@ -172,7 +173,7 @@ s32 LoadExtraVabSlotWithTable(u8 *header, u8 *body, u16 *table) {
 }
 
 void CloseExtraVabSlot(void) {
-    s32 liveSlot;
+    s32 liveSlot = 0x15;
     s32 *flagsPtr = &g_AudioLoadedSlotMask;
     s32 flags = *flagsPtr;
     s32 newFlags;

@@ -62,7 +62,7 @@ void BuildSaveIconBlock(u8 *block, char *title, s32 iconTile, s32 imageX, s32 im
     block[1] = 'C';
     block[2] = 0x11;
     block[3] = 1;
-    sprintf(block + 4, g_FmtString, title);
+    sprintf((char *)block + 4, g_FmtString, title);
 
     tileRow = iconTile / 20;
     iconRect = &g_SaveIconRect;

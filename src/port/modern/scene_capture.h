@@ -133,6 +133,7 @@ typedef struct RageSceneSnapshot {
     int32_t sceneTimer;
     int32_t displayHeight; /* draw-env rows: 240, or 480 for menu scenes */
     int32_t displayPageY;  /* draw-env top row in VRAM: 0 or 240 */
+    int32_t courseMirror;  /* g_MirrorMode: base pass polarity this frame */
     RageCaptureMatrix viewMatrix; /* SCRATCH_VIEW_MATRIX_GTE at frame end */
     int32_t viewPosition[3];
     int32_t drawCount, terrainCount, packetCount, faceCount;
@@ -144,8 +145,8 @@ typedef struct RageSceneSnapshot {
     RageCaptureFace faces[RAGE_CAPTURE_MAX_FACES];
 } RageSceneSnapshot;
 
-/* Capture runs when the modern renderer is enabled or RAGE_PORT_SCENE_TRACE
- * is set. Checked lazily on the first frame. */
+/* Capture follows the renderer dynamically, so classic -> modern switching
+ * starts recording on the same frame. A scene trace keeps capture active. */
 int RageCaptureActive(void);
 
 /* Frame hooks, called from the port scene-handler hooks in the main loop. */

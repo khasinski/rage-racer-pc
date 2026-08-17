@@ -138,7 +138,7 @@ void LoadDiscArchiveIndex(void) {
     if (DsSearchFile(&file, g_PathRageStr) == 0) {
         printf(g_MsgFileNotFound, g_PathRageStr);
     } else {
-        printf(g_MsgSearchOk);
+        printf("%s", g_MsgSearchOk);
     }
 
     base = CdPosToInt_Local(&file.pos);

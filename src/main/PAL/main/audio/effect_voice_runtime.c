@@ -36,7 +36,6 @@ void ApplyPanVoiceVolume(void) {
     s32 changed;
     s32 i;
     s32 *dst;
-    s32 *src;
     s32 raw;
     s32 loopValue;
     s32 scale;
@@ -48,9 +47,8 @@ void ApplyPanVoiceVolume(void) {
     changed = 0;
     i = 0;
     dst = values;
-    src = &g_PanVoiceVolumeL;
     do {
-        loopValue = *src;
+        loopValue = i == 0 ? g_PanVoiceVolumeL : g_PanVoiceVolumeR;
         if (loopValue < 2) {
             *dst = 0;
         } else {
@@ -59,7 +57,6 @@ void ApplyPanVoiceVolume(void) {
         }
         dst++;
         i++;
-        src++;
     } while (i < 2);
 
     if (changed != 0) {
@@ -232,7 +229,6 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     register s32 scaledLeft asm("$2");
     s32 scaledRight;
     s32 entryOffset;
-    AudioRuntimeState *runtime;
     s32 currentA;
     s32 currentB;
     s32 matchValue;

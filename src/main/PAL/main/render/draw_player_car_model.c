@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/race.h"
@@ -36,7 +37,6 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     s16 v_110[4];
     s32 m_118[8];
     s32 v_138[3];
-    s32 unused_144[4]; /* reserved stack slot present in the original */
     s32 clipHandle = 0;
     s32 otDepth;
     s32 i;
@@ -164,7 +164,7 @@ void DrawCar(GameRenderObject *obj) {
     s32 model;
     s16 *lod;
 
-    model = g_CarModelByCourse[g_CourseIndex][obj->modelIndex];
+    model = g_CarModelByCourse[RageSeriesCourseIndex()][obj->modelIndex];
     lod = g_CarModelBankTable[model];
     obj->y -= g_TrackRenderTable->models[model].horizon;
     obj->modelY -= g_TrackRenderTable->models[model].horizon;
@@ -174,9 +174,9 @@ void DrawCar(GameRenderObject *obj) {
     v_128[2] = obj->z - SCRATCH_VIEW_Z;
     ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, v_128, v_148);
 #ifdef __psyz
-    if (getenv("RAGE_PORT_CAR_DRAW_TRACE") != NULL &&
+    if (RageDiagnosticsEnabled("render.car_draw_trace") &&
         g_RageScratchpadState.mode == 9) {
-        const char *timerText = getenv("RAGE_PORT_CAR_DRAW_TRACE_TIMER");
+        const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
             printf("car-draw timer=%d mirror=1 index=%ld "
                    "matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "

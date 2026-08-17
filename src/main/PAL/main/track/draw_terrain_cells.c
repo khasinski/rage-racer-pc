@@ -84,7 +84,6 @@ void DrawSkyBackground(void)
   s32 xWork_late;
   s32 adjW;
   s32 courseSaveY1;
-  u8 *heldPacket;
   s32 doubleRowStepY;
   s32 nextCellXFixed;
   s32 rowOffsetYFixed;
@@ -327,7 +326,6 @@ void DrawSkyBackground(void)
       s32 lowestY;
       s32 upperBandXFixed;
       s32 bandNextY;
-      s32 bandSpareY;
       panelYFixed = coordinateAccumulator;
       {
         panelXFixed = lowerPanelXFixed;
@@ -602,8 +600,6 @@ void DrawSkyBackground(void)
       {
         u8 packetColor;
         POLY_G4 *g4Cursor;
-        s32 reloadD8;
-        u16 geomX2;
         u16 geomValueX2;
         s32 x3Raw;
         s32 doubleStepX;

@@ -77,7 +77,7 @@ s32 WriteMemoryCardSaveFile(
 
 s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
     u8 block0[0x200];
-    u8 block1[MC_BLOCK_SIZE];
+    _Alignas(GameSaveBlock) u8 block1[MC_BLOCK_SIZE];
     s32 i;
 
     for (i = 0x1FF; i >= 0; i--) {
@@ -127,7 +127,7 @@ s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
      * register; a `== ~sum` in the test needs a second one. */
     sum = ~sum;
 
-    if (buffer->fields.checksum == sum) {
+    if (buffer->fields.checksum == (u32)sum) {
         return 1;
     }
 
@@ -151,7 +151,7 @@ s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
      * register; a `== ~sum` in the test needs a second one. */
     sum = ~sum;
 
-    if (buffer->fields.checksum == sum) {
+    if (buffer->fields.checksum == (u32)sum) {
         return 1;
     }
 

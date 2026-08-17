@@ -21,6 +21,7 @@ void StepCdTrackRequest(void) {
         }
         g_CdFadeFrames = 0;
         g_CdTrackStep = 1;
+        /* fall through */
     case 1:
         if (CdControl(0x16, &g_CdTrackLocs[g_CdTrackPending], 0) == 0) {
             break;
@@ -51,6 +52,7 @@ void StepCdTrackRequest(void) {
             break;
         }
         g_CdTrackStep = 5;
+        /* fall through */
     case 5:
         if (CdControl(0x16, &g_CdTrackLocs[g_CdTrackPending], 0) == 0) {
             break;
@@ -89,6 +91,7 @@ void StepCdPlayRequest(void) {
             break;
         }
         g_CdCommandStep = 1;
+        /* fall through */
     case 1:
         if (CdControl(3, 0, 0) == 0) {
             break;

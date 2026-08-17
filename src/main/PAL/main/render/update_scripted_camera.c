@@ -26,7 +26,6 @@ void UpdateScriptedCamera(void) {
     s32 currentOffset;
     register s32 nextOffset asm("$5");
     register s32 currentValue asm("$7");
-    s32 scale;
     s32 blend;
     s32 scaledTick;
     CameraLookAt camera;
@@ -41,7 +40,6 @@ void UpdateScriptedCamera(void) {
     nextOffset = g_CameraPathNextKey;
     currentOffset <<= 5;
     nextOffset <<= 5;
-    scale = 0x68DB8BAD;
 
     tick = GetCameraKey(nextOffset)->eyeX;
     currentValue = GetCameraKey(currentOffset)->eyeX;

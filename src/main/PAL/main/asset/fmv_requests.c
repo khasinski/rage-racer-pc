@@ -125,6 +125,9 @@ void BeginEndingFmv(s32 returnScene) {
 void ServiceAssetLoad(void) {
     if (g_AssetLoadState != 0) {
         switch (g_AssetRequestType) {
+        case ASSET_REQUEST_INVALID:
+        case ASSET_REQUEST_IDLE:
+            break;
         case ASSET_REQUEST_BOOT:
             LoadBootAssets();
             break;

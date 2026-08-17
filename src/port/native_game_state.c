@@ -63,6 +63,9 @@ u8 g_TimeTextBuffer[12];
 GameWorkBuffer g_ReplayFrameBuffer;
 RaceRecord g_RankingRecords[2][4][5];
 RaceRecord g_TimeRecords[2][4][5];
+_Static_assert(sizeof(RaceRecord) == 16, "RaceRecord must retain the game ABI");
+_Static_assert(sizeof(g_RankingRecords) == 640, "ranking table ABI changed");
+_Static_assert(sizeof(g_TimeRecords) == 640, "time table ABI changed");
 Rect g_TrackTextureRowRect;
 u8 g_TrackTextureShadowPage[256];
 u16 g_PadButtonMapping[16];
@@ -284,16 +287,19 @@ static u8 g_McMessage20[] = "SAVE DATA OK!";
 static u8 g_McMessage21[] = "FORMAT DATA OK!";
 static u8 g_McMessage22[] = "No file found.";
 static u8 g_McMessage23[] = "Choose another file.";
+#define MC_MESSAGE_ROW(message_, flags_) \
+    {.text = (message_), .column = (flags_), .reserved = {0, 0, 0}}
 static MemoryCardMessageRow g_RageMcMessageRowStorage[24] = {
-    {g_McMessage00, 0}, {g_McMessage01, 0}, {g_McMessage02, 2},
-    {g_McMessage03, 0}, {g_McMessage04, 2}, {g_McMessage05, 0},
-    {g_McMessage06, 2}, {g_McMessage07, 0}, {g_McMessage08, 0},
-    {g_McMessage09, 2}, {g_McMessage10, 0}, {g_McMessage11, 2},
-    {g_McMessage10, 0}, {g_McMessage11, 2}, {g_McMessage10, 0},
-    {g_McMessage11, 2}, {g_McMessage10, 0}, {g_McMessage17, 0},
-    {g_McMessage18, 0}, {g_McMessage19, 0}, {g_McMessage20, 0},
-    {g_McMessage21, 0}, {g_McMessage22, 2}, {g_McMessage23, 0}
+    MC_MESSAGE_ROW(g_McMessage00, 0), MC_MESSAGE_ROW(g_McMessage01, 0), MC_MESSAGE_ROW(g_McMessage02, 2),
+    MC_MESSAGE_ROW(g_McMessage03, 0), MC_MESSAGE_ROW(g_McMessage04, 2), MC_MESSAGE_ROW(g_McMessage05, 0),
+    MC_MESSAGE_ROW(g_McMessage06, 2), MC_MESSAGE_ROW(g_McMessage07, 0), MC_MESSAGE_ROW(g_McMessage08, 0),
+    MC_MESSAGE_ROW(g_McMessage09, 2), MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage11, 2),
+    MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage11, 2), MC_MESSAGE_ROW(g_McMessage10, 0),
+    MC_MESSAGE_ROW(g_McMessage11, 2), MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage17, 0),
+    MC_MESSAGE_ROW(g_McMessage18, 0), MC_MESSAGE_ROW(g_McMessage19, 0), MC_MESSAGE_ROW(g_McMessage20, 0),
+    MC_MESSAGE_ROW(g_McMessage21, 0), MC_MESSAGE_ROW(g_McMessage22, 2), MC_MESSAGE_ROW(g_McMessage23, 0)
 };
+#undef MC_MESSAGE_ROW
 MemoryCardMessageRow *g_McMessageRows[19] = {
     &g_RageMcMessageRowStorage[0], &g_RageMcMessageRowStorage[1],
     &g_RageMcMessageRowStorage[2], &g_RageMcMessageRowStorage[4],

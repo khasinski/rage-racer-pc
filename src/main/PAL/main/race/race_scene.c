@@ -19,6 +19,12 @@
 #include "game/track.h"
 #include "psyq/gte.h"
 
+/* A retirement is not a finish-line event. Keep following the player's car
+ * instead of advancing the autonomous finish camera down the track. */
+static s32 s_RetireCameraActive;
+
+int RageRetireCameraActive(void) { return s_RetireCameraActive; }
+
 /* The first union field and the two trailing split symbols keep separate
  * %hi/%lo accesses. Indexing the union here makes GCC 2.6.3 CSE its base and
  * shifts the allocation of the surrounding block. */
@@ -88,8 +94,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     }
     if (g_LapCount < route->timing.fields.lap) {
         if (g_RaceTotalTime <
-            g_BestTotalTimes[ReadStableRaceSeries()][g_CourseIndex][grandPrixMode]) {
-            g_BestTotalTimes[ReadStableRaceSeries()][g_CourseIndex][grandPrixMode] = g_RaceTotalTime;
+            g_BestTotalTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode]) {
+            g_BestTotalTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_RaceTotalTime;
         }
     }
 
@@ -162,12 +168,12 @@ timing_done:
                 if (g_RaceTotalTime > 0x927BE) {
                     g_RaceTotalTime = 0x927BF;
                 }
-                if (g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][grandPrixMode] >
+                if (g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] >
                     g_BestLapThisRace) {
-                    g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][grandPrixMode] = g_BestLapThisRace;
+                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_BestLapThisRace;
                 }
                 if (grandPrixMode == 0) {
-                    tableOffset = g_CourseIndex * 12 + ReadStableRaceSeries() * 48;
+                    tableOffset = (RageSeriesCourseIndex()) * 12 + ReadStableRaceSeries() * 48;
                     sectorAddress.table = g_BestSectorTimes;
                     sectorAddress.bytes += tableOffset;
                     sectorAddress.pointer[0] = g_RefSectorTimes.fields.first;
@@ -234,8 +240,8 @@ timing_done:
                (((car->progressB + car->progressA) <= -g_TrackLength) ||
                 ((g_PlayerCar.lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
         g_RacePhase = 5;
-        g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][0] =
-            g_RankingRecords[ReadStableRaceSeries()][g_CourseIndex][0].raceTime;
+        g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
+            g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
         StartCdVolumeFade(8);
         ForceAllEffectVoicesEnabled(0);
         g_RaceFadeTimer = 0;
@@ -300,7 +306,8 @@ void EnterRaceScene(void) {
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
     trackLength = g_TrackLength;
-    mode = (count = g_CourseIndex);
+    count = g_CourseIndex;
+    mode = count & 3;
     scene = ReadStableRaceSeries();
     g_LapTimeMs = 0;
     D_801E4248 = 0;
@@ -323,7 +330,7 @@ void EnterRaceScene(void) {
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
     g_RefLapTime =
-        g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][g_GrandPrixMode];
+        g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][g_GrandPrixMode];
     count = g_LapCount;
     g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
@@ -348,6 +355,7 @@ void EnterRaceScene(void) {
     g_SceneTimer = 0;
     g_CameraViewMode = CAMERA_VIEW_CAR;
     g_RacePhase = 0;
+    s_RetireCameraActive = 0;
     g_RaceCueFlags = 0;
     g_RivalCueFlags = 0x1FE;
     g_RivalCueCooldown3 = 0;
@@ -370,7 +378,7 @@ void EnterRaceScene(void) {
     g_SceneId = 12;
     g_FrameSyncThreshold = 0x180;
     DrawRoundScreen();
-    printf(g_MsgGame0Ok);
+    printf("%s", g_MsgGame0Ok);
 
     (void)pad;
 }
@@ -416,17 +424,18 @@ void UpdateRaceScene(void) {
             if (g_GrandPrixMode == 0 || (s16)mode < 2) {
                 g_RacePhase = 7;
                 if (g_GrandPrixMode == 0) {
-                    g_BestLapTimes[ReadStableRaceSeries()][g_CourseIndex][0] =
-                        g_RankingRecords[ReadStableRaceSeries()][g_CourseIndex][0].raceTime;
+                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
+                        g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
                 }
             } else {
                 value = g_CourseProgress->retriesRemaining;
                 g_RacePhase = 5;
+                s_RetireCameraActive = 1;
                 if (value != 0) {
                     PlaySoundCue(0x3D);
                 }
             }
-            SeedFinishCamera(&g_PlayerCar);
+            if (!s_RetireCameraActive) SeedFinishCamera(&g_PlayerCar);
             StartCdVolumeFade(8);
         } else if (g_RaceOptionCursor == 1 && g_GrandPrixMode == 0) {
             ExitRaceScene(0xB);
@@ -535,9 +544,9 @@ void UpdateRaceScene(void) {
             DrawScriptedScenery(0);
             DrawRearViewMirror(g_SceneTimer);
         }
-        DrawCourseScenery(g_CourseIndex & 3, g_SceneTimer, 0);
+        DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
         if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(g_CourseIndex & 3, g_SceneTimer, 0);
+            DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
             EndMirrorPass();
         }
     } else {
@@ -559,7 +568,7 @@ void UpdateRaceScene(void) {
             RunRaceIntroCamera(&g_PlayerCar, frameValue);
         } else {
 update_race:
-            if ((g_RacePhase == 1) && (g_SceneTimer >= 0xD3U)) {
+            if ((g_RacePhase == 1) && (g_SceneTimer >= 0xD3)) {
                 BeginCarStandingStart(&g_PlayerCar, frameValue);
                 StartCdAudio();
                 g_RacePhase = 2;
@@ -624,18 +633,19 @@ update_race:
             inputMask = g_PadPressed;
             selectorMask = selectorMask == 0x23;
             if ((inputMask & g_PadButtonMapping[6 + selectorMask * 8]) &&
-            ((u16)g_RacePhase - 2) < 2U) {
+                (u32)((u16)g_RacePhase - 2) < 2U) {
                 g_CameraViewMode ^= 1;
             }
         }
 
-        if (g_RacePhase == 5) {
+        if (g_RacePhase == 5 && !s_RetireCameraActive) {
             UpdateFinishCamera(&g_PlayerCar);
         } else if (g_RacePhase > 0) {
-            UpdateCamera(g_CameraViewMode, (GameRenderObject *)&g_PlayerCar);
+            UpdateCamera(s_RetireCameraActive ? CAMERA_VIEW_CAR : g_CameraViewMode,
+                         (GameRenderObject *)&g_PlayerCar);
         }
 
-        if (g_RacePhase != 5) {
+        if (g_RacePhase != 5 || s_RetireCameraActive) {
             next = g_PlayerCar.trackSection;
         } else {
             next = g_CameraCarTrackSection;
@@ -677,9 +687,9 @@ update_race:
             DrawScriptedScenery(1);
             DrawRearViewMirror(g_SceneTimer);
         }
-        DrawCourseScenery(g_CourseIndex & 3, g_SceneTimer, 1);
+        DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);
         if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(g_CourseIndex & 3, g_SceneTimer, 0);
+            DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
             EndMirrorPass();
         }
 

@@ -13,7 +13,7 @@ void DrawEngineSpecLabel(s32 x, s32 y, s32 label) {
 
 void DrawCarEngineSpec(s32 slideRaw, s32 brightness) {
     OT_TYPE *ot;
-    u8 buf[0x40];
+    char buf[0x40];
     s32 slide;
     s32 n;
     s32 p;

@@ -146,6 +146,8 @@ void TickCdAudio(void) {
 
     if (g_CdTrackPending < 0) {
         switch (g_CdCommandPending) {
+        case CD_COMMAND_NONE:
+            break;
         case CD_COMMAND_PLAY:
             StepCdPlayRequest();
             break;

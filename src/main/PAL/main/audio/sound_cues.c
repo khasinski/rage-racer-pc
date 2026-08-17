@@ -299,7 +299,8 @@ s32 StartSoundCueVoice(s32 cue, s32 note, s32 volL, s32 volR) {
     s32 baseVol;
     s32 scale;
     s32 scaled;
-    s32 result;
+    s32 result = -1;
+    (void)note;
     s32 i;
 
     tone = 0;
@@ -384,7 +385,7 @@ s32 StartSoundCueVoice(s32 cue, s32 note, s32 volL, s32 volR) {
     }
 
     if (result < 0) {
-        printf(g_MsgTooManyVoices);
+        printf("%s", g_MsgTooManyVoices);
         return -1;
     }
     return result;
@@ -452,7 +453,7 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
     s32 tone;
     s32 sx;
     s32 sy;
-    s32 result;
+    s32 result = -1;
     s32 baseVol;
     s32 scale;
     s32 vx;

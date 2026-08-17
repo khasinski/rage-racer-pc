@@ -10,7 +10,7 @@
 #include "game/save_internal.h"
 
 void DrawPrizeMoneyPanel(s32 s0) {
-    u8 sp[16];
+    char sp[16];
     if (g_RaceProgress->money.value > 0x3B9AC9FF) {
         g_RaceProgress->money.value = 0x3B9AC9FF;
     }
@@ -37,7 +37,7 @@ void CommitClassProgress(void) {
     s32 value;
     GameRaceProgress *state;
 
-    slots = &g_CourseProgress->bestPlace[g_CourseIndex];
+    slots = &g_CourseProgress->bestPlace[RageSeriesCourseIndex()];
     g_ClassClearFanfareTimer = 0;
 
     if (*slots == 0 || g_RacePosition < *slots) {
@@ -85,9 +85,6 @@ void CommitClassProgress(void) {
         value = ComputeClassGrade();
         g_ClassResultPlace = value;
         if (value != 0) {
-            s32 offset;
-
-            offset = score_index * 4;
             if (g_ClassRecords[score_index].place == 0 || value < g_ClassRecords[score_index].place) {
                 g_ClassRecords[score_index].place = (u16)g_ClassResultPlace;
             }

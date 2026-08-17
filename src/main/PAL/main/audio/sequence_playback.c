@@ -13,20 +13,17 @@ void StartSequenceFadeOut(void) {
 
 
 void UpdateSequenceFadeOut(void) {
-    register s32 *fadeStep asm("$4");
     s32 delta;
     s32 value;
     s32 depthLeft;
     s32 depthRight;
 
-    fadeStep = &g_ReverbFadeStep;
-    asm volatile("" : "=r"(fadeStep) : "0"(fadeStep));
-    delta = *fadeStep;
+    delta = g_ReverbFadeStep;
     if (delta != 0) {
-        value = fadeStep[-2];
+        value = g_ReverbDepthL;
         value += delta;
-        if ((fadeStep[-2] = value) < 0) {
-            fadeStep[-2] = 0;
+        if ((g_ReverbDepthL = value) < 0) {
+            g_ReverbDepthL = 0;
         }
 
         value = g_ReverbDepthR;
@@ -36,8 +33,8 @@ void UpdateSequenceFadeOut(void) {
             g_ReverbDepthR = 0;
         }
 
-        if ((fadeStep[-2] == 0) && (g_ReverbDepthR == 0)) {
-            *fadeStep = 0;
+        if ((g_ReverbDepthL == 0) && (g_ReverbDepthR == 0)) {
+            g_ReverbFadeStep = 0;
         }
     }
 

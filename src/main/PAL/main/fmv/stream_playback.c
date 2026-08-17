@@ -97,6 +97,7 @@ void *GetFmvFrame(FmvDecodeContext *ctx) {
 }
 
 void WaitFmvDecode(FmvDecodeContext *state, s32 mode) {
+    (void)mode;
     volatile s32 timeout = 0x800000;
     s32 one;
     u16 x;
@@ -106,9 +107,9 @@ void WaitFmvDecode(FmvDecodeContext *state, s32 mode) {
         do {
             timeout = timeout - 1;
             if (timeout == 0) {
-                printf(g_MsgFmvDecodeTimeout);
+                printf("%s", g_MsgFmvDecodeTimeout);
                 state->decodeComplete = one;
-                state->frameParity = state->frameParity < 1U;
+                state->frameParity = state->frameParity < 1;
                 x = state->displayRects[state->frameParity].x;
                 state->stripWidth = x;
                 state->stripHeight = state->displayRects[state->frameParity].y;

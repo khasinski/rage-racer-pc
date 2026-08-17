@@ -71,6 +71,8 @@ void UpdateBootLogoScene(void) {
 
     state = g_BootLogoState;
     switch (state) {
+    case BOOT_LOGO_STATE_INVALID:
+        break;
     case BOOT_LOGO_STATE_FADE_IN: {
         u32 sceneTime;
 

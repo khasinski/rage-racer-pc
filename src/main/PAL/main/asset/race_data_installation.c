@@ -8,7 +8,8 @@
 
 
 void InstallResourceData(void *data) {
-    printf(g_MsgResOk);
+    (void)data;
+    printf("%s", g_MsgResOk);
 }
 void SetCarSpec(GameCarSpec *spec) {
     g_CarSpec = spec;
@@ -43,5 +44,5 @@ void InstallTrackEventData(void *resourceData) {
     base.bytes += offset1;
     g_PathSceneryPosData = cursor.pathSceneryPosition;
     g_PathSceneryRotData = base.pathSceneryRotation;
-    printf(callArg);
+    printf("%s", callArg);
 }

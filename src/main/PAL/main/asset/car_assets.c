@@ -35,8 +35,6 @@ void LoadCarSelectAssets(void) {
     u8 *secondBlock;
     s32 blockOffset;
     s32 assetOffset;
-    void *modelPtr;
-    s32 relOffset;
 
     switch (state) {
     case 1:

@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.3-alpha
+        default: 0.4-alpha
   push:
     tags:
       - "*"
@@ -21,10 +21,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Install runtime dependencies
+        run: choco install ffmpeg-shared -y --no-progress
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=OFF
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=ON
       - name: Build
-        run: cmake --build build/release --config Release --target rage-racer --parallel
+        run: cmake --build build/release --config Release --parallel
+      - name: Verify runtime dependencies
+        run: ffmpeg -version
+      - name: Verify portable tests
+        run: ctest --test-dir build/release -C Release --output-on-failure -L portable
       - name: Package
         shell: pwsh
         env:
@@ -33,9 +39,15 @@ jobs:
           $package = "Rage-Racer-$env:VERSION-windows-x86_64"
           $root = "dist/$package"
           New-Item -ItemType Directory -Force $root | Out-Null
+          New-Item -ItemType Directory -Force "$root/tools" | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
-          Copy-Item README.md, LICENSE.md $root
+          Copy-Item README.md, LICENSE.md, rage-port.ini, rage-input.cfg, race-scenario.ini $root
+          Copy-Item tools/rage-launcher.py "$root/tools/rage-launcher.py"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
+          if (!(Test-Path "$root/Rage-Racer.exe") -or
+              !(Test-Path "$root/tools/rage-launcher.py")) {
+            throw "release package is incomplete"
+          }
           (Get-FileHash "dist/$package.zip" -Algorithm SHA256).Hash
       - uses: actions/upload-artifact@v4
         with:

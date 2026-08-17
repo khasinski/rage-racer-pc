@@ -7,25 +7,10 @@
 #include "game/race.h"
 #include "game/audio.h"
 
-enum TrafficAvoidanceAnchorIndex {
-    CAR_SPEED_ACTIVE_FLAG_HALFWORD = 4,
-    CAR_SPEED_TRACK_LATERAL_WORD = -28,
-    CAR_SPEED_TRACK_PROGRESS_WORD = -13,
-    PLAYER_PROGRESS_TRACK_LATERAL_WORD = -15,
-    PLAYER_PROGRESS_SPEED_HALFWORD = 26
-};
-
 typedef union RivalCueCooldownAddress {
     s16 *signedCounter;
     u16 *unsignedCounter;
 } RivalCueCooldownAddress;
-
-typedef union TrafficAvoidanceAnchorAddress {
-    u8 *bytes;
-    s16 *signedHalfwords;
-    u16 *halfwords;
-    s32 *words;
-} TrafficAvoidanceAnchorAddress;
 
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     GameCarAiBlock *state = GetCarAiBlock(car);
@@ -33,11 +18,9 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 acc9 = 0;
     register s32 i asm("$10") = 0;
     s32 k11 = 0xB;
-    TrafficAvoidanceAnchorAddress playerAnchor;
     s32 carProgress;
     s32 carLateralOffset;
     s32 carA4low;
-    register TrafficAvoidanceAnchorAddress carAnchor asm("$11");
     register s32 track asm("$12");
     s32 t6;
     s32 lateralMin;
@@ -49,8 +32,6 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     carProgress = car->trackProgress;
     carLateralOffset = car->trackLateralOffset;
     carA4low = (u16)car->speed;
-    playerAnchor.words = &g_PlayerCar.trackProgress;
-    carAnchor.words = &g_Cars[0].speed;
     car->avoidanceStep = 0;
     car->nearbyCarCount = 0;
     sums[3] = 0;
@@ -66,7 +47,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     lateralMax = (s16)(carLateralOffset + 0x30);
     trackMinus = track - 0x400;
 
-    for (; i < 12; i++, carAnchor.bytes += sizeof(GameCarRuntime)) {
+    for (; i < 12; i++) {
         s32 otherLateralOffset;
         s32 otherA4;
         s32 a2;
@@ -83,29 +64,24 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         if (i == carIndex) {
             continue;
         }
-        if (carAnchor.signedHalfwords[CAR_SPEED_ACTIVE_FLAG_HALFWORD] == -1) {
-            continue;
-        }
-
         if (i == k11) {
-            s32 op = playerAnchor.words[0];
+            s32 op = g_PlayerCar.trackProgress;
             a2 = op + track;
-            otherLateralOffset =
-                playerAnchor.words[PLAYER_PROGRESS_TRACK_LATERAL_WORD];
+            otherLateralOffset = g_PlayerCar.trackLateralOffset;
             if (carIndex < 4) {
                 otherA4 = 0;
             } else {
-                otherA4 =
-                    playerAnchor.halfwords[PLAYER_PROGRESS_SPEED_HALFWORD];
+                otherA4 = (u16)g_PlayerCar.speed;
             }
             t1 = 0;
             t6 = 0x1800 - (g_PlayerCar.speed * 2);
         } else {
+            GameCarRuntime *other = &g_Cars[i];
             s32 op;
-            otherLateralOffset =
-                carAnchor.words[CAR_SPEED_TRACK_LATERAL_WORD];
-            otherA4 = carAnchor.halfwords[0];
-            op = carAnchor.words[CAR_SPEED_TRACK_PROGRESS_WORD];
+            if (other->activeFlag == -1) continue;
+            otherLateralOffset = other->trackLateralOffset;
+            otherA4 = (u16)other->speed;
+            op = other->trackProgress;
             a2 = op + track;
             t1 = (u16)state->avoidanceActive;
         }
@@ -191,13 +167,11 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
 
 void SlowRivalAhead(GameCarRuntime *car, s32 carIndex) {
     GameCarRuntime *entry;
-    s32 offset;
     s32 pos0Base;
     s32 pos0;
     s32 pos1;
     s32 value;
 
-    offset = carIndex * 4;
     pos0Base = car->progressA;
     entry = g_RankedCars[carIndex - 1];
     pos0 = pos0Base + car->progressB;
@@ -227,7 +201,7 @@ void RankContenders(void) {
     s32 value;
     s32 sums[4];
     s32 *sumPtr;
-    s16 indices[4];
+    s16 indices[4] = {0, 0, 0, 0};
 
     i = 0;
     sumPtr = sums;
@@ -289,7 +263,7 @@ void UpdateRivalRubberBand(void) {
     s32 s0;
 
     s6 = g_PlayerCar.progressA + g_PlayerCar.progressB;
-    if ((g_CourseIndex & 3) == 3) {
+    if ((RageSeriesCourseIndex()) == 3) {
         s5 = 0xC00;
         s4 = 0x1400;
     } else {

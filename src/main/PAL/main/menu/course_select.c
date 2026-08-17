@@ -133,7 +133,7 @@ s32 DrawCourseSelectScreen(s32 step)
     OT_TYPE *ot;
     u8 fade;
     u16 slide;
-    s16 headerWidth;
+    s16 headerWidth = 0;
     u32 deltaY;
     /* Load-bearing in the prize loop: without this pin the function is 848 words. */
     register s32 coordinateY asm("$16");
@@ -308,7 +308,7 @@ s32 DrawCourseSelectScreen(s32 step)
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    switch (g_CourseIndex & 3) {
+    switch (RageSeriesCourseIndex()) {
     case 0:
         coordinateY = GameDrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 8, 0x18,
@@ -375,7 +375,7 @@ s32 DrawCourseSelectScreen(s32 step)
             coordinateY = row * 0x10 - prizeOffset;
             digitCount = GameDrawNumber(
                 0x65, coordinateY, 9,
-                prizeTable->values[g_CourseIndex & 3][g_GrandPrixClass][row],
+                prizeTable->values[RageSeriesCourseIndex()][g_GrandPrixClass][row],
                 prizeFade, prizeFade, prizeFade, prizeClut, 0x20);
             row++;
             DrawSprite(
@@ -421,11 +421,9 @@ void UpdateCourseSelectScreen(void) {
     s32 state;
     s32 res;
     s32 sel;
-    s32 prev;
     s32 cnt;
     s32 t;
     s32 u;
-    s32 lap;
     s32 i;
     GameRaceProgress *p;
     ot = SCRATCH_OT_BASE_AS(void);
@@ -779,7 +777,7 @@ void UpdateCourseSelectScreen(void) {
                     s32 lapc;
                     s32 half;
                     g_SceneId = 0x18;
-                    raw = g_CourseIndex & 3;
+                    raw = RageSeriesCourseIndex();
                     g_RaceProgress->course = (g_CourseIndex = raw);
                     d = g_PlayerCarIndex;
                     lapc = g_GrandPrixClass;

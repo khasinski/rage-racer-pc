@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.3-alpha
+        default: 0.4-alpha
   push:
     tags:
       - "*"
@@ -29,22 +29,27 @@ jobs:
             libgl1-mesa-dev libglvnd-dev libibus-1.0-dev libpulse-dev \
             libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev \
             libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev \
-            libxtst-dev
+            libxtst-dev ffmpeg
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/release --parallel
+      - name: Verify runtime dependencies
+        run: ffmpeg -version
       - name: Verify portable tests
-        run: ctest --test-dir build/release --output-on-failure -R '^(game_logic|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$'
+        run: ctest --test-dir build/release --output-on-failure -L portable
       - name: Package
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           package="Rage-Racer-${VERSION}-linux-x86_64"
-          mkdir -p "dist/${package}"
+          mkdir -p "dist/${package}/tools"
           cp build/release/rage-racer "dist/${package}/rage-racer"
-          cp README.md LICENSE.md "dist/${package}/"
+          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "dist/${package}/"
+          cp tools/rage-launcher.py "dist/${package}/tools/"
           tar -C dist -czf "dist/${package}.tar.gz" "${package}"
+          test -x "dist/${package}/rage-racer"
+          tar -tzf "dist/${package}.tar.gz" | grep -q "/tools/rage-launcher.py$"
           sha256sum "dist/${package}.tar.gz"
       - uses: actions/upload-artifact@v4
         with:

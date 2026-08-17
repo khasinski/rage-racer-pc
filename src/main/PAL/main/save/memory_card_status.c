@@ -4,7 +4,6 @@
 #include "game/render.h"
 
 s32 CalculateMemoryCardFreeBlocks(s32 port) {
-    u8 scratch[8];
     s32 i;
     s32 sum;
     DirEntry *ptr;
@@ -38,6 +37,7 @@ s32 CalculateMemoryCardFreeBlocks(s32 port) {
 s32 RefreshMemoryCardSaveStatus(s32 slot, GameSaveHeaderRow *header) {
     s32 ret;
 
+    (void)slot;
     GameMenuLoadPhase = 0x100;
     ClearSaveHeaderRows(header);
     g_McCardFileCount = CountMemoryCardFiles(0, 0);
@@ -60,6 +60,7 @@ char *FormatSaveElapsedTime(char *dst, u32 seconds) {
 }
 
 void DrawMemoryCardMessageLine(s32 unused, s32 messageIndex) {
+    (void)unused;
     DrawText8x8(0x28, 0xB8, &g_McMessageText[messageIndex * 30], 0x78CC);
 }
 

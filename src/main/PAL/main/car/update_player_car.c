@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
 #include "game/state.h"
@@ -19,8 +20,8 @@ static void RageTraceCarMotion(const char *phase, PlayerCarRuntime *car) {
     static int enabled = -1;
     static int timer = -1;
     if (enabled < 0) {
-        const char *text = getenv("RAGE_PORT_CAR_MOTION_TRACE_TIMER");
-        enabled = getenv("RAGE_PORT_CAR_MOTION_TRACE") != NULL;
+        const char *text = RageDiagnosticsValue("car.motion_trace_timer");
+        enabled = RageDiagnosticsEnabled("car.motion_trace");
         timer = text != NULL ? (int)strtol(text, NULL, 0) : -1;
     }
     if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
@@ -42,9 +43,9 @@ static void RageTraceCarStates(void) {
     static int timerMax = -1;
     int index;
     if (enabled < 0) {
-        const char *minText = getenv("RAGE_PORT_CAR_STATE_TRACE_TIMER_MIN");
-        const char *maxText = getenv("RAGE_PORT_CAR_STATE_TRACE_TIMER_MAX");
-        enabled = getenv("RAGE_PORT_CAR_STATE_TRACE") != NULL;
+        const char *minText = RageDiagnosticsValue("car.state_trace_timer_min");
+        const char *maxText = RageDiagnosticsValue("car.state_trace_timer_max");
+        enabled = RageDiagnosticsEnabled("car.state_trace");
         timerMin = minText != NULL ? (int)strtol(minText, NULL, 0) : -1;
         timerMax = maxText != NULL ? (int)strtol(maxText, NULL, 0) : -1;
     }
@@ -76,10 +77,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
     Matrix m2;
     SVec sv1;
-    Matrix mScratch1;
-    Vec4 vScratch1;
     Vec4 tmp;
-    Vec4 vScratch2;
     Matrix mA;
     SVec sv2;
     Vec4 vout;
@@ -90,7 +88,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 slip;
     s32 skid;
     s32 crash;
-    s32 revFlag;
+    s32 revFlag = 0;
     s32 i;
     s32 cornerIndex;
     u32 skidRange;
@@ -340,8 +338,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         sv2.vy = 0;
         ApplyMatrix(&mA, &sv2, &vout);
 #ifdef __psyz
-        if (getenv("RAGE_PORT_CAR_TRACK_TRACE") != NULL) {
-            const char *timerText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER");
+        if (RageDiagnosticsEnabled("car.track_trace")) {
+            const char *timerText = RageDiagnosticsValue("car.track_trace_timer");
             if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
                 printf("car-limit timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
                        "vector=%d,%d,%d output=%d,%d,%d\n", g_SceneTimer,
@@ -620,7 +618,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 #endif
 }
 
-s32 DrawPlayerTachometer(void) {
+void DrawPlayerTachometer(void) {
     s32 value;
     s32 type;
     u32 amount;
@@ -649,5 +647,5 @@ s32 DrawPlayerTachometer(void) {
         amount = 0;
     }
 
-    return DrawTachometer(g_EngineRpm + g_EngineRpmJitter, g_TachoNeedleFlash, type, amount);
+    DrawTachometer(g_EngineRpm + g_EngineRpmJitter, g_TachoNeedleFlash, type, amount);
 }

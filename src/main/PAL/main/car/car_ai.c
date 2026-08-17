@@ -428,7 +428,6 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
   register s32 d_R3 asm("$3");
   s32 pitch;
   s32 q;
-  s32 v20_R4;
   s32 cnt;
   s32 one;
   int lowValue;
@@ -478,7 +477,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
     range = 1;
   }
   d_R3 = rpm - lo_R7;
-  v20_R4 = (lowValue = val[0]);
+  lowValue = val[0];
   q = ((val[1] - lowValue) * d_R3) / range;
   sub_R9->accelerationLimit = ((((lowValue + q) * 1168) / 160) * 6) / 100;
   goto target_speed_done;

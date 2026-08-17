@@ -77,7 +77,7 @@ void DrawRaceEndPrompt(void) {
     DrawProportionalText(0x76, 0xB8, g_TextChance, 0x7812);
 
     index = g_CourseProgress->retriesRemaining;
-    DrawProportionalText(0xBE, 0xB8, &g_ChanceDigits[index], 0x7812);
+    DrawProportionalText(0xBE, 0xB8, g_ChanceDigits[index], 0x7812);
 
     DrawText8x8(0x58, 0xD0, g_TextPressStart, 0x78CC);
     DrawLostRaceCaption(0xFF);

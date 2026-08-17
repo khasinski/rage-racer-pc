@@ -6,9 +6,13 @@
 
 typedef struct CdlFILE {
     CdlLOC pos;
-    long size;
+    /* PsyQ's long is 32-bit even on LP64 hosts. Keep the recovered 24-byte
+     * ABI: game state reserves exactly that much storage for this record. */
+    s32 size;
     char name[16];
 } CdlFILE;
+
+_Static_assert(sizeof(CdlFILE) == 24, "CdlFILE must retain the PsyQ ABI");
 
 typedef union CdlLBA {
     long sector;

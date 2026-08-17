@@ -6,62 +6,53 @@
 #include "psyq/gpu.h"
 #include "game/audio.h"
 
-void UpdateMemoryCardMenu(void) {
-    s32 fadeBusy = 0;
-    s32 two = 2;
-    u32 fadeTime;
-    s32 code;
-    s32 tmp;
-    u16 pad;
-    s32 wtmp;
-    s32 mst;
-    s32 mcue;
-    s32 mslot;
+static s32 UpdateMemoryCardFade(void) {
+    s32 busy = 0;
+    s32 step;
 
-    if (g_SceneTimer == two) {
-        SetDispMask(1);
+    if (g_SceneTimer == 2) SetDispMask(1);
+    if ((u32)g_SceneTimer < 6) {
+        DrawMenuFadeOverlay(g_McFadeLevel);
+        return 0;
     }
-
-    fadeTime = g_SceneTimer;
-    if (fadeTime >= 6) {
-        s32 step = g_McFadeStep;
-        if (step < 0) {
-            g_McFadeLevel = g_McFadeLevel + g_McFadeStep;
-            fadeBusy = 1;
-            if (g_McFadeLevel > 0) goto fade_update_done;
+    step = g_McFadeStep;
+    if (step < 0) {
+        g_McFadeLevel += step;
+        busy = 1;
+        if (g_McFadeLevel <= 0) {
             g_McFadeStep = 0;
             g_McFadeLevel = 0;
-
-        } else if (step > 0) {
-            g_McActionBusy = 1;
-            g_McFadeLevel = g_McFadeLevel + g_McFadeStep;
-            fadeBusy = 1;
-            if (g_McFadeLevel < 0xFF) goto fade_update_done;
+        }
+    } else if (step > 0) {
+        g_McActionBusy = 1;
+        g_McFadeLevel += step;
+        busy = 1;
+        if (g_McFadeLevel >= 0xFF) {
             g_McFadeStep = 0;
             g_McFadeLevel = 0;
             g_McActionBusy = 0;
-            g_SceneId = two;
-        } else {
-            goto fade_update_done;
+            g_SceneId = 2;
         }
-        fadeBusy = 1;
     }
-fade_update_done:
     DrawMenuFadeOverlay(g_McFadeLevel);
+    return busy;
+}
 
-    {
-    u32 cur = g_SceneTimer;
-    if (cur < 5) {
-        s32 ns = cur + 1;
-        g_SceneTimer = ns;
-        g_McMenuPhase = MC_PROMPT_ACCESSING;
-        if (!(ns != 3)) {
+static s32 AdvanceMemoryCardMenuStartup(void) {
+    s32 next;
+    if ((u32)g_SceneTimer >= 5) {
+        g_SceneTimer++;
+        return 1;
+    }
+    next = ++g_SceneTimer;
+    g_McMenuPhase = MC_PROMPT_ACCESSING;
+    if (next == 3) {
         g_McSlotUsedMask = 0;
         ClearSaveHeaderRows(g_McSaveHeaders);
         g_McLastMenuState = -1;
         g_McMenuPhase = MC_PROMPT_NONE;
-        g_McMenuSelection = ns;
-        g_McMenuState = ns;
+        g_McMenuSelection = next;
+        g_McMenuState = next;
         g_McActionState = 0;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
@@ -69,16 +60,20 @@ fade_update_done:
         g_McActionTimer = 0;
         g_McActionBusy = 0;
         g_McDrawEnabled = 1;
-        }
-        goto menu_state_update_done;
     }
+    return 0;
+}
 
-    /* state >= 5: active-menu entry */
-    {
-        s32 nx = cur + 1;
-        g_SceneTimer = nx;
-    }
-    }
+void UpdateMemoryCardMenu(void) {
+    s32 fadeBusy;
+    s32 tmp;
+    u16 pad;
+    s32 wtmp;
+    s32 mst;
+    s32 mslot;
+
+    fadeBusy = UpdateMemoryCardFade();
+    if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
     if (!(g_McActionBusy == 0)) {
     if (g_McErrorPending == 0) goto L_sw2;
 

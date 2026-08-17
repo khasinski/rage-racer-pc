@@ -19,7 +19,6 @@
  */
 void DrawCourseObjects(void) {
     Matrix mtx;
-    volatile s32 pad[10];
     CourseObject *obj;
     s32 i;
     s32 visShift;
@@ -65,12 +64,12 @@ void DrawCourseObjects(void) {
                         &SCRATCH_OBJECT_MATRIX_WORK->view);
             transformed = SCRATCH_OBJECT_MATRIX_WORK->view.x;
             camera = SCRATCH_OBJECT_MATRIX_WORK->view.z;
-            transformed <<= 2;
+            transformed *= 4;
             SCRATCH_OBJECT_MATRIX_WORK->mtx.t[0] = transformed;
             transformed = SCRATCH_OBJECT_MATRIX_WORK->view.y;
-            camera <<= 2;
+            camera *= 4;
             SCRATCH_OBJECT_MATRIX_WORK->mtx.t[2] = camera;
-            transformed <<= 2;
+            transformed *= 4;
             SCRATCH_OBJECT_MATRIX_WORK->mtx.t[1] = transformed;
         }
         SetRotMatrix(&mtx);
@@ -182,7 +181,8 @@ void BuildVisibleCells(s32 near, s32 far) {
             }
             break;
         }
-        if (sx < 32U && sy < 32U && IsCellVisibleFromRegion(sx, sy, ret0)) {
+        if ((u32)sx < 32U && (u32)sy < 32U &&
+            IsCellVisibleFromRegion(sx, sy, ret0)) {
             s32 clut = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;
 
             out->w = clut;

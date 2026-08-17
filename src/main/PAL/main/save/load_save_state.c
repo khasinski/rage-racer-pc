@@ -28,7 +28,7 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
             i++;
             checksumIndex = i;
         } while (checksumIndex < 0x7FE);
-        printf(g_MsgSaveChecksumOk);
+        printf("%s", g_MsgSaveChecksumOk);
         sum = ~sum;
         printf(g_FmtSaveChecksum, base->checksum, sum);
         if (base->checksum != sum) {
@@ -106,18 +106,16 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
     }
 
     {
-        register GameSaveBlockAddress srcAddress asm("$6");
         s32 i;
 
-        srcAddress.pointer = base;
         for (i = 0; i < 13; i++) {
             SavedCarSetup *grandPrixCar;
             SavedCarSetup *extraGrandPrixCar;
             SavedCarSetup *timeAttackCar;
 
-            grandPrixCar = &srcAddress.pointer->carSetup[0][0];
-            extraGrandPrixCar = &srcAddress.pointer->carSetup[1][0];
-            timeAttackCar = &srcAddress.pointer->carSetup[2][0];
+            grandPrixCar = &base->carSetup[0][i];
+            extraGrandPrixCar = &base->carSetup[1][i];
+            timeAttackCar = &base->carSetup[2][i];
 
             g_GrandPrixCars[i].modelVariant = grandPrixCar->modelVariant;
             g_GrandPrixCars[i].tireCompound = grandPrixCar->tireCompound;
@@ -137,66 +135,31 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
             g_TimeAttackCars[i].paintColor1 = timeAttackCar->paintColor1;
             g_TimeAttackCars[i].paintColor2 = timeAttackCar->paintColor2;
             g_TimeAttackCars[i].enabled = timeAttackCar->enabled;
-            srcAddress.bytePointer += sizeof(SavedCarSetup);
         }
     }
 
     {
-        register GameSaveBlockAddress srcAddress asm("$4");
         s32 index = 0;
 
-        srcAddress.pointer = base;
         for (; index < 11; index++) {
-            SavedClassRecord *saved =
-                &srcAddress.pointer->classRecords[0];
+            SavedClassRecord *saved = &base->classRecords[index];
 
             g_ClassRecords[index].place = saved->grade;
             g_ClassRecords[index].clears = saved->clears;
-            srcAddress.bytePointer += sizeof(SavedClassRecord);
         }
     }
 
-    {
-        s32 j;
-        register s32 k asm("$7");
-
-        {
-            u16 *dst;
-            GameSaveBlockAddress srcAddress;
-
-            i = 0;
-            dst = g_TeamLogoClut;
-            srcAddress.pointer = base;
-            for (; i < 0x10; i++) {
-                *dst++ = srcAddress.pointer->teamLogoClut[0];
-                srcAddress.halfwordPointer++;
-            }
-        }
-
-        {
-            u16 *dst;
-            GameSaveBlockAddress srcAddress;
-
-            i = 0;
-            dst = g_TeamLogoCanvas.halfwords;
-            srcAddress.pointer = base;
-            for (; i < 0x400; i++) {
-                *dst++ = srcAddress.pointer->teamLogoCanvas[0];
-                srcAddress.halfwordPointer++;
-            }
-        }
-
-        memcpy((u8 *)g_BestLapTimes, (u8 *)base->bestLapTimes,
-               sizeof(g_BestLapTimes));
-        memcpy((u8 *)g_BestTotalTimes, (u8 *)base->bestTotalTimes,
-               sizeof(g_BestTotalTimes));
-        memcpy((u8 *)g_RankingRecords, (u8 *)base->rankingRecords,
-               sizeof(base->rankingRecords));
-        memcpy((u8 *)g_TimeRecords, (u8 *)base->timeRecords,
-               sizeof(base->timeRecords));
-        memcpy((u8 *)g_BestSectorTimes, (u8 *)base->bestSectorTimes,
-               sizeof(g_BestSectorTimes));
-    }
+    memcpy(g_TeamLogoClut, base->teamLogoClut, sizeof(base->teamLogoClut));
+    memcpy(g_TeamLogoCanvas.halfwords, base->teamLogoCanvas,
+           sizeof(base->teamLogoCanvas));
+    memcpy(g_BestLapTimes, base->bestLapTimes, sizeof(g_BestLapTimes));
+    memcpy(g_BestTotalTimes, base->bestTotalTimes,
+           sizeof(g_BestTotalTimes));
+    memcpy(g_RankingRecords, base->rankingRecords,
+           sizeof(base->rankingRecords));
+    memcpy(g_TimeRecords, base->timeRecords, sizeof(base->timeRecords));
+    memcpy(g_BestSectorTimes, base->bestSectorTimes,
+           sizeof(g_BestSectorTimes));
 
     /* g_BgmVolumeSetting / g_SfxVolumeSetting / g_MonoOutput clamps */
     {

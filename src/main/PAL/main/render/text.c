@@ -176,7 +176,7 @@ void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
 void GameDrawProportionalTextShaded(
     s32 x,
     s32 y,
-    u8 *str,
+    const char *str,
     s32 clutIndex,
     s32 intensity) {
 typedef union TextRenderWork {
@@ -187,7 +187,7 @@ typedef union TextRenderWork {
 #define OPAQUE_VALUE (t0.value = 0x100)
     s32 xPos = x;
     RenderBufferAddress packet;
-    u8 *text = str;
+    const u8 *text = (const u8 *)str;
     register s32 shade asm("$23");
     register TextRenderWork t0 asm("$8");
     s32 s1;
@@ -360,7 +360,7 @@ typedef union TextRenderWork {
 /* Opaque wrapper over GameDrawProportionalTextShaded: intensity 0x100 selects
  * the raw-texture (SetShadeTex) path instead of a modulated, semi-transparent
  * one. */
-void DrawProportionalText(s32 x, s32 y, u8 *str, s32 clutIndex) {
+void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
     GameDrawProportionalTextShaded(x, y, str, clutIndex, 0x100);
 }
 

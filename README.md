@@ -1,33 +1,45 @@
 # Rage Racer PC
 
-Native macOS port of *Rage Racer* (PAL / Europe, `SCES-006.50`).  It is based
+Native Windows, Linux and macOS port of *Rage Racer* (PAL / Europe,
+`SCES-006.50`). It is based
 on the complete clean-room decompilation in
 [rage-racer-decomp](https://github.com/khasinski/rage-racer-decomp).
 
-`rage-racer-pc` contains the host port, macOS packaging and the runtime
+`rage-racer-pc` contains the host port, platform packaging and the runtime
 compatibility layer.  The decompilation remains the reference source for the
 original PlayStation release.
 
-## 0.3-alpha
+## 0.4-alpha
 
 This alpha adds an opt-in modern renderer next to the faithful PS1 one:
 z-buffered rendering at a configurable internal scale, optional 16:9
 presentation, an uncapped interpolated frame rate, an extended draw distance
-and FXAA. Select it by placing a `rage-port.cfg` next to the executable (or in
-the app data directory):
+and FXAA. Select it in `rage-port.ini` next to the executable:
 
 ```ini
-renderer=modern
-modern.internal_scale=4
-modern.aspect=16:9
-modern.fps=vsync
-modern.post=fxaa
+[video]
+renderer = modern
+internal_scale = 4
+aspect = 16:9
+fps = vsync
+post = fxaa
+toggle_renderer_key = F10
 ```
 
-Without the file the game runs with the classic PS1-accurate renderer. The
+The supplied file defaults to the classic PS1-accurate renderer, and `F10`
+switches between both renderers without restarting the race. The
 release also fixes the rear-view mirror rendering rivals with a mirrored view
 matrix, mirror slide-in flashes, paused-mirror rendering, and depth ordering
 of car models at hill crests.
+
+The release additionally restores race sound effects and engine audio, fixes
+sequenced menu music timing, enables original intro/ending FMVs through
+FFmpeg, repairs mirrored-track control and geometry, keeps Lakeside Gate's
+waterfalls visible at close range, and corrects Trophy View, controller setup,
+retire-camera and title-logo sprite rendering. Runtime settings now use
+`rage-port.ini`, normal sessions write `rage-racer.log`, and the scenario
+launcher can start any GP, Extra GP or Time Attack race at deterministic track
+positions.
 
 ## 0.2-alpha
 
@@ -62,15 +74,71 @@ The resulting executable is `build/release/rage-racer` on Linux,
 with the Visual Studio generator on Windows. Release downloads are supplied
 for macOS arm64, Linux x86-64 and Windows x86-64.
 
+## Scenario launcher
+
+`race-scenario.ini` can launch a race through the normal asset-loading flow
+without manually navigating the menus:
+
+```sh
+./tools/rage-launcher.py
+./tools/rage-launcher.py --class 3 --course 2 --car 8
+./tools/rage-launcher.py custom.ini --grid 0,1,2,3,4,5,6,7,8,9,10
+```
+
+CLI options override values from the INI file. The optional `grid` contains
+the eleven rival car IDs in retail start-position order; `-1` leaves a slot
+empty. The player retains the normal starting position.
+The launcher passes this file directly to the game as `--scenario`; it no
+longer expands it into a collection of environment variables.
+
+After the race, `after_finish = menu` (the default) leaves the replay and
+result screens to the retail flow but stops scenario automation, returning
+control to the player. Use `repeat` to launch the configured race again or
+`exit` to close the port after leaving the result screens. The same setting is
+available as `--after-finish menu|repeat|exit`.
+
+For renderer and rear-view debugging, scenarios may start cars at exact points
+of the loaded track:
+
+```ini
+[start]
+player_track_point = 120
+rival_track_points = 118,116,114,112,110,108,106,104,102,100,98
+# Reapply these positions every frame for deterministic rendering diagnostics.
+freeze = true
+```
+
+The engine recalculates world position, height, heading, track section and lap
+progress from these indices. A `-` entry keeps that rival's retail grid pose.
+
 ## Runtime requirements
 
 - macOS on Apple Silicon (arm64), a glibc-based x86-64 Linux distribution, or
   64-bit Windows 10/11
 - A legally obtained PAL Rage Racer disc image, with its `.cue` sheet and
   referenced track files kept together
+- The `ffmpeg` command available on `PATH`. It decodes original `RAGE.STR`
+  sectors; the game never links against FFmpeg's unstable internal ABI and
+  does not require pre-converted FMV files.
+
+Verify FFmpeg before starting the game with `ffmpeg -version`. Windows users
+can install it with `winget install Gyan.FFmpeg`; common Linux distributions
+provide an `ffmpeg` package. If FFmpeg is unavailable, gameplay remains
+available and the port falls back past movies, recording the failure in
+`rage-racer.log`.
+
+Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
+an alternative file and `--set section.key=value` for an individual override.
+Press `F10` while playing to switch between classic and modern rendering; the
+key is configurable as `[video] toggle_renderer_key`.
 
 Input defaults are loaded from `rage-input.cfg` when present.  The port keeps
 game saves and the selected disc location in the user's local application data.
+Each normal launch appends diagnostics to `rage-racer.log` in the platform's
+application-state directory. Configure `[diagnostics] log` to choose another
+file. The disc can likewise be pinned with `[disc] cue`; the legacy
+`RAGE_PORT_LOG_PATH` and `RAGE_PORT_DISC_CUE` overrides remain available for
+automation.
 
 ## Keyboard controls
 
@@ -91,10 +159,11 @@ The default bindings emulate the original PlayStation pad:
 | Select / back | Backspace |
 | L3 / R3 | `1` / `2` |
 
-Put `rage-input.cfg` in `~/Library/Application Support/Rage Racer/` to override
-any of these bindings (a file in the current directory is also accepted). On
-Linux the same directory is under `$HOME/Library/Application Support/` for this
-alpha. On Windows the directory is `%APPDATA%\Rage Racer\`.
+Put `rage-input.cfg` in the user configuration directory to override any of
+these bindings. This is `~/Library/Application Support/Rage Racer/` on macOS,
+`${XDG_CONFIG_HOME:-$HOME/.config}/rage-racer/` on Linux, and
+`%APPDATA%\Rage Racer\` on Windows. A bundled file beside the executable is
+used when no user override exists.
 Button names are PlayStation pad names, key names are SDL key names, and lines
 beginning with `#` or `;` are comments.  For example:
 
@@ -117,6 +186,18 @@ RIGHT=Right
 DOWN=Down
 LEFT=Left
 ```
+
+## Known limitations
+
+- Controller configuration currently retains the original preset-oriented
+  UI. Full per-action controller remapping is planned after 0.4-alpha.
+- Left-stick-as-D-pad and analog steering are not exposed yet. The eventual
+  analog path will share the existing NeGcon calibration and steering
+  mechanics instead of adding a second physics input model.
+- Release builds are unsigned. Operating systems may require the user to
+  explicitly allow the downloaded application.
+- Only the legally obtained PAL/Europe disc (`SCES-006.50`) is supported and
+  no game data is included in release archives.
 
 ## Related repositories
 

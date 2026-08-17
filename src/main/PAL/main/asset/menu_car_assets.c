@@ -95,7 +95,7 @@ s32 RequestRoundAssets(void) {
     if (g_GrandPrixMode == 0) {
         value = (Random15() & 0xFFF) % (g_MaxClassReached[g_GrandPrixSeries] + 1);
         g_GrandPrixClass = value;
-        if (((g_CourseIndex & 3) == 3) && (value < 2)) {
+        if (((RageSeriesCourseIndex()) == 3) && (value < 2)) {
             g_GrandPrixClass = ((Random15() & 0xFFF) % (g_MaxClassReached[g_GrandPrixSeries] - 1)) + 2;
         }
     }

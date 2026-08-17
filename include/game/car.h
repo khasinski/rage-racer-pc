@@ -703,8 +703,8 @@ static inline void CopyPlayerBodyRotationToModel(PlayerCarRuntime *car) {
     GameCarRuntimeAddress source;
     GameCarRuntimeAddress destination;
 
-    source.words = &car->bodyPitch;
-    destination.words = &car->modelPitch;
+    source.words = (u32 *)&car->bodyPitch;
+    destination.words = (u32 *)&car->modelPitch;
     *destination.vector4 = *source.vector4;
 }
 
@@ -726,8 +726,8 @@ static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
     GameCarRuntimeAddress source;
     GameCarRuntimeAddress destination;
 
-    source.words = &car->bodyPitch;
-    destination.words = &car->modelPitch;
+    source.words = (u32 *)&car->bodyPitch;
+    destination.words = (u32 *)&car->modelPitch;
     *destination.vector4 = *source.vector4;
 }
 
@@ -915,9 +915,10 @@ extern s16 g_NegconBrakeMask;
 extern s16 g_PadAccelMask;
 extern s16 g_PadBrakeMask;
 extern s16 g_PadShiftMasks[2][8];
-extern volatile u16 g_PaintBlendShade0;
-extern volatile u16 g_PaintBlendShade1;
-extern volatile u16 g_PaintBlendShade2;
+extern volatile u16 g_PaintBlendShades[3];
+#define g_PaintBlendShade0 g_PaintBlendShades[0]
+#define g_PaintBlendShade1 g_PaintBlendShades[1]
+#define g_PaintBlendShade2 g_PaintBlendShades[2]
 extern volatile u16 g_PaintSlots3StopA[];
 extern volatile u16 g_PaintSlots3StopB[];
 extern volatile u16 g_PaintSlots4Stop[];
@@ -974,8 +975,8 @@ void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop();
 void UpdateCarTiltCounter();
 s32 UpdateCarTrackState();
-s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
-s32 DrawPlayerTachometer(void);
+void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
+void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer);
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode);
 void UpdatePlayerCar(PlayerCarRuntime *car);

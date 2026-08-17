@@ -16,7 +16,6 @@
 void DrawPathScenery(void) {
     Matrix mtx0;
     Matrix mtx1;
-    volatile s32 pad[4];
     s32 drawId;
     s32 frameValue;
     Matrix *mtx1Ptr;
@@ -195,6 +194,9 @@ void UpdatePointAmbience(s32 arg) {
     s5 = 0;
     a2v = 0;
     s2 = 0;
+    s3 = 0;
+    s4 = 0;
+    s6 = 0;
     s0v = 0;
     sentinel = -1;
     seg = startp;

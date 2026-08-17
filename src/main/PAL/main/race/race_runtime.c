@@ -365,7 +365,7 @@ race_intro_update_done:
     SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCells();
     DrawCourseObjects();
-    DrawCourseScenery(g_CourseIndex & 3, g_SceneTimer, 1);
+    DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);
     GetTrackZoneBlend(g_PlayerCar.trackProgress);
     SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
     DrawPlayerTachometer();
@@ -402,52 +402,6 @@ void ApplyTrackReverbZone(s32 position) {
 
     depth = result;
     SetReverbDepth(depth, depth);
-}
-
-s32 GetWaypointAngle(s32 position) {
-    s32 trackLength;
-    s32 value;
-    register s32 temp asm("v0");
-    s32 angle;
-    register s32 remainder asm("a0");
-    register s32 scale;
-
-    trackLength = g_TrackLength;
-    temp = 0xB875;
-    value = trackLength + temp;
-    value -= position;
-    remainder = value % trackLength;
-    value = remainder;
-
-    if (value < 0x1A97) {
-        temp = value / 100;
-        value = 0x80 - temp;
-    } else {
-        value = trackLength - remainder;
-        if (value < 0x801) {
-            temp = value / 10;
-            value = 0x80 - temp;
-        } else {
-            value = 0;
-        }
-    }
-
-    if (value != 0) {
-        temp = Atan2(0x29DD - SCRATCH_VIEW_X, 0x6EF3 - SCRATCH_VIEW_Z);
-        value = 0xC00 - temp;
-        temp = SCRATCH_VIEW_ANGLE_Y;
-        value &= 0xFFF;
-        temp -= value;
-        angle = temp & 0xFFF;
-        temp = rsin(angle);
-        temp = rsin(angle);
-        scale = -0x40;
-        value = temp * scale;
-        if (value < 0) {
-            value += 0xFFF;
-        }
-        return temp;
-    }
 }
 
 void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {

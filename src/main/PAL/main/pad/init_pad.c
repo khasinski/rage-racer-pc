@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/render.h"
@@ -204,7 +205,7 @@ void UpdatePadState(void) {
     g_NegconAnalogII = pad->buttonII;
     g_NegconAnalogL = pad->buttonL;
     g_NegconSteer = pad->steer;
-    if (getenv("RAGE_PORT_INPUT_DEBUG") != NULL &&
+    if (RageDiagnosticsEnabled("input.debug") &&
         (pad->held != 0 || pad->pressed != 0)) {
         printf("pad input: raw=%02x,%02x,%02x,%02x type=%02x held=%04x pressed=%04x\n",
                raw[0], raw[1], raw[2], raw[3], g_PadType,

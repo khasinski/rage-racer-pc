@@ -13,6 +13,7 @@
  * the GameCarDrive view beginning at offset +0xBC.
  */
 void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
+    (void)unused;
     GameCarDrive *route = &car->drive;
     s32 sinA;
     s32 cosA;

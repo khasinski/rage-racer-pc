@@ -1,4 +1,6 @@
+#include "scenario_control.h"
+
 int RagePortShouldExit(int frame_number) {
     (void)frame_number;
-    return 0;
+    return RagePortScenarioShouldExit();
 }

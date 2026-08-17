@@ -11,6 +11,9 @@
 #include "game/asset.h"
 
 #include "modern/scene_capture.h"
+#include "native_geometry_diagnostics.h"
+#include "native_geometry_interpolation.h"
+#include "runtime_config.h"
 
 extern int g_CourseModelCount;
 extern int g_AnimTimer;
@@ -30,10 +33,7 @@ enum {
     RAGE_MODEL_GT4 = 3,
 };
 
-unsigned long long g_RageNearFacesCrossing;
-unsigned long long g_RageNearTrianglesEmitted;
 unsigned long long g_RageGt4FacesEmitted;
-unsigned long long g_RageNearGt4TrianglesEmitted;
 unsigned g_RageGt4ColorMaximum;
 int g_RageGt4DepthMinimum = 0x7fffffff;
 int g_RageGt4DepthMaximum = -0x7fffffff;
@@ -53,68 +53,25 @@ static int g_RageTerrainClip0;
 static int g_RageTerrainClip1;
 static int g_RageProjectionReject;
 static int g_RageProjectionFlag;
-static int g_RageTerrainTraceInitialized;
-static int g_RageTerrainTraceEnabled;
-static int g_RageTerrainTraceTimer = -1;
-static int g_RageTerrainTraceClut = -1;
-static int g_RageTerrainTraceTpage = -1;
-static int g_RageTerrainDecisionTraceInitialized;
-static int g_RageTerrainDecisionTraceEnabled;
-static int g_RageTerrainDecisionTraceTimer = -1;
-static int g_RageTerrainDecisionTraceLimit = 10000;
-static int g_RageTerrainDecisionTraceCount;
-static int g_RageCourseTraceInitialized;
-static int g_RageCourseTraceEnabled;
-static int g_RageCourseTraceTimer = -1;
-static int g_RageCourseTraceClut = -1;
-static int g_RageCourseTraceTpage = -1;
+static RageGeometryDiagnostics s_diagnostics;
+#define g_RageTerrainTraceEnabled s_diagnostics.terrainTraceEnabled
+#define g_RageTerrainTraceTimer s_diagnostics.terrainTraceTimer
+#define g_RageTerrainTraceClut s_diagnostics.terrainTraceClut
+#define g_RageTerrainTraceTpage s_diagnostics.terrainTraceTpage
+#define g_RageTerrainDecisionTraceEnabled s_diagnostics.terrainDecisionTraceEnabled
+#define g_RageTerrainDecisionTraceTimer s_diagnostics.terrainDecisionTraceTimer
+#define g_RageTerrainDecisionTraceLimit s_diagnostics.terrainDecisionTraceLimit
+#define g_RageTerrainDecisionTraceCount s_diagnostics.terrainDecisionTraceCount
+#define g_RageCourseTraceEnabled s_diagnostics.courseTraceEnabled
+#define g_RageCourseTraceTimer s_diagnostics.courseTraceTimer
+#define g_RageCourseTraceClut s_diagnostics.courseTraceClut
+#define g_RageCourseTraceTpage s_diagnostics.courseTraceTpage
+#define g_RageModelTraceEnabled s_diagnostics.modelTraceEnabled
+#define g_RageModelTraceTimer s_diagnostics.modelTraceTimer
 static long g_RageCourseVertexDepth[4];
-static int g_RageModelTraceInitialized;
-static int g_RageModelTraceEnabled;
-static int g_RageModelTraceTimer = -1;
 
-static void RageInitializeModelTrace(void) {
-    const char *enabled;
-    const char *timer;
-    if (g_RageModelTraceInitialized) return;
-    g_RageModelTraceInitialized = 1;
-    enabled = getenv("RAGE_PORT_MODEL_TRACE");
-    timer = getenv("RAGE_PORT_MODEL_TRACE_TIMER");
-    g_RageModelTraceEnabled = enabled != NULL || timer != NULL;
-    if (timer != NULL)
-        g_RageModelTraceTimer = (int)strtol(timer, NULL, 0);
-}
 
-static void RageInitializeTerrainTrace(void) {
-    const char *timer;
-    const char *clut;
-    const char *tpage;
-    if (g_RageTerrainTraceInitialized) return;
-    g_RageTerrainTraceInitialized = 1;
-    timer = getenv("RAGE_PORT_TERRAIN_TRACE_TIMER");
-    clut = getenv("RAGE_PORT_TERRAIN_TRACE_CLUT");
-    tpage = getenv("RAGE_PORT_TERRAIN_TRACE_TPAGE");
-    if (timer != NULL) g_RageTerrainTraceTimer = (int)strtol(timer, NULL, 0);
-    if (clut != NULL) g_RageTerrainTraceClut = (int)strtol(clut, NULL, 16);
-    if (tpage != NULL) g_RageTerrainTraceTpage = (int)strtol(tpage, NULL, 16);
-    g_RageTerrainTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
-}
 
-static void RageInitializeTerrainDecisionTrace(void) {
-    const char *enabled;
-    const char *timer;
-    const char *limit;
-    if (g_RageTerrainDecisionTraceInitialized) return;
-    g_RageTerrainDecisionTraceInitialized = 1;
-    enabled = getenv("RAGE_PORT_TERRAIN_DECISION_TRACE");
-    timer = getenv("RAGE_PORT_TERRAIN_DECISION_TIMER");
-    limit = getenv("RAGE_PORT_TERRAIN_DECISION_LIMIT");
-    g_RageTerrainDecisionTraceEnabled = enabled != NULL || timer != NULL;
-    if (timer != NULL)
-        g_RageTerrainDecisionTraceTimer = (int)strtol(timer, NULL, 0);
-    if (limit != NULL)
-        g_RageTerrainDecisionTraceLimit = (int)strtol(limit, NULL, 0);
-}
 
 static void RageTraceTerrainDecision(
     int cell, int face, uint16_t clut, uint16_t tpage, int projected,
@@ -170,20 +127,6 @@ static void RageTraceTerrainDecision(
     g_RageTerrainDecisionTraceCount++;
 }
 
-static void RageInitializeCourseTrace(void) {
-    const char *timer;
-    const char *clut;
-    const char *tpage;
-    if (g_RageCourseTraceInitialized) return;
-    g_RageCourseTraceInitialized = 1;
-    timer = getenv("RAGE_PORT_COURSE_TRACE_TIMER");
-    clut = getenv("RAGE_PORT_COURSE_TRACE_CLUT");
-    tpage = getenv("RAGE_PORT_COURSE_TRACE_TPAGE");
-    if (timer != NULL) g_RageCourseTraceTimer = (int)strtol(timer, NULL, 0);
-    if (clut != NULL) g_RageCourseTraceClut = (int)strtol(clut, NULL, 16);
-    if (tpage != NULL) g_RageCourseTraceTpage = (int)strtol(tpage, NULL, 16);
-    g_RageCourseTraceEnabled = timer != NULL || clut != NULL || tpage != NULL;
-}
 
 static int RagePrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
     int i;
@@ -293,15 +236,15 @@ static int RageProjectQuad(
             else
                 g_RageTerrainSecondTriangleVisible++;
         }
-        /* SubmitModelFaces has only one NCLIP result.  Its retail branches
-         * accept clip > 0 in the main pass and clip >= 0 after the mirror
-         * ordering flag is toggled.  Do not feed the duplicated clip0 into
+        /* SubmitModelFaces has only one NCLIP result.  Reflection reverses
+         * projected winding, so the mirror pass must accept the opposite
+         * sign from the main pass.  The ordering flag only selects the OT;
+         * it must not turn back-facing model polygons into front faces.
+         * Do not feed the duplicated clip0 into
          * the terrain two-half expression: that reduces both rejection
          * tests to clip0 == 0 and submits every back-facing model face. */
         *depth = ((int)otz >> SCRATCH_OT_SHIFT);
-        if ((!terrainQuad &&
-             ((!SCRATCH_MIRROR && clip0 <= 0) ||
-              (SCRATCH_MIRROR && clip0 < 0))) ||
+        if ((!terrainQuad && !RageModelFaceVisible(SCRATCH_MIRROR, clip0)) ||
             (terrainQuad &&
              ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
               (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
@@ -386,66 +329,16 @@ static int RageProjectCourseFace(
     return 1;
 }
 
-static int RageFloorShift12(int64_t value) {
-    if (value >= 0) return (int)(value >> 12);
-    return -(int)((-value + 0xfff) >> 12);
-}
-
-/* GTE INTPL with sf=1/lm=0 as used by EmitSubdividedTerrainQuad.  Retail
- * programs IR0 to 4096-index*(4096/steps), FC to start and IR to end. */
-static int RageIntplComponent(int start, int end, int index, int steps) {
-    int ir0 = 4096 - index * (4096 / steps);
-    int difference = start - end;
-    int result;
-    if (difference < -32768) difference = -32768;
-    if (difference > 32767) difference = 32767;
-    result = RageFloorShift12((int64_t)end * 4096 +
-                              (int64_t)ir0 * difference);
-    if (result < -32768) result = -32768;
-    if (result > 32767) result = 32767;
-    return result;
-}
-
-static int RageBilerpSxy(
-    const int sxy[4], int u, int v, int uSteps, int vSteps) {
-    int topX = RageIntplComponent((int16_t)sxy[0], (int16_t)sxy[1],
-                                  u, uSteps);
-    int bottomX = RageIntplComponent((int16_t)sxy[2], (int16_t)sxy[3],
-                                     u, uSteps);
-    int topY = RageIntplComponent((int16_t)(sxy[0] >> 16),
-                                  (int16_t)(sxy[1] >> 16), u, uSteps);
-    int bottomY = RageIntplComponent((int16_t)(sxy[2] >> 16),
-                                     (int16_t)(sxy[3] >> 16), u, uSteps);
-    int x = RageIntplComponent(topX, bottomX, v, vSteps);
-    int y = RageIntplComponent(topY, bottomY, v, vSteps);
-    return (int)((uint16_t)x | ((uint32_t)(uint16_t)y << 16));
-}
-
-static SVECTOR RageBilerpVertex(
-    const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
-    const SVECTOR *v3, int outer, int inner, int outerSteps,
-    int innerSteps) {
-    SVECTOR result;
-#define RAGE_BILERP_VERTEX_COMPONENT(field) \
-    RageIntplComponent( \
-        RageIntplComponent(v0->field, v1->field, outer, outerSteps), \
-        RageIntplComponent(v2->field, v3->field, outer, outerSteps), \
-        inner, innerSteps)
-    result.vx = (short)RAGE_BILERP_VERTEX_COMPONENT(vx);
-    result.vy = (short)RAGE_BILERP_VERTEX_COMPONENT(vy);
-    result.vz = (short)RAGE_BILERP_VERTEX_COMPONENT(vz);
-#undef RAGE_BILERP_VERTEX_COMPONENT
-    result.pad = 0;
-    return result;
-}
-
 static int RageCourseScreenQuadVisible(const int sxy[4]) {
     int i;
     int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
     int clip1 = NormalClip(sxy[3], sxy[1], sxy[2]);
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-    if ((!SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0) ||
-        (SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0))
+    /* The second half is evaluated as v3/v1/v2, i.e. with the opposite
+     * winding from v0/v1/v2.  Reject only when both halves are back-facing.
+     * The old comparisons did the inverse and discarded every front-facing
+     * child as soon as a course quad entered its near subdivision path. */
+    if (!RageCourseQuadVisible(SCRATCH_MIRROR, clip0, clip1))
         return 0;
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
@@ -456,14 +349,6 @@ static int RageCourseScreenQuadVisible(const int sxy[4]) {
         allBelow &= y > g_RageScratchpadState.y1;
     }
     return !(allLeft || allRight || allAbove || allBelow);
-}
-
-static uint8_t RageBilerpByte(
-    uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3,
-    int u, int v, int uSteps, int vSteps) {
-    int top = RageIntplComponent(c0, c1, u, uSteps);
-    int bottom = RageIntplComponent(c2, c3, u, uSteps);
-    return (uint8_t)RageIntplComponent(top, bottom, v, vSteps);
 }
 
 static uint8_t *RageEmitTerrainFt4(
@@ -619,10 +504,6 @@ static void RageCopyFt4UvWithMode(
     poly->v3 = (uint8_t)(uv23 >> 24);
 }
 
-static void RageCopyFt4Uv(POLY_FT4 *poly, const uint8_t *record) {
-    RageCopyFt4UvWithMode(poly, record, 0);
-}
-
 static void RageCopyGt4UvWithMode(
     POLY_GT4 *poly, const uint8_t *record, uint32_t mode) {
     uint32_t uv0 = RageReadU32(record + 0) + mode;
@@ -640,205 +521,6 @@ static void RageCopyGt4UvWithMode(
     poly->v3 = (uint8_t)(uv23 >> 24);
 }
 
-static void RageCopyGt4Uv(POLY_GT4 *poly, const uint8_t *record) {
-    RageCopyGt4UvWithMode(poly, record, 0);
-}
-
-typedef struct RageNearVertex {
-    int64_t x, y, z;
-    int u, v;
-    int r, g, b;
-} RageNearVertex;
-
-static RageNearVertex RageInterpolateNearVertex(
-    const RageNearVertex *a, const RageNearVertex *b, int64_t nearZ) {
-    RageNearVertex out;
-    int64_t numerator = nearZ - a->z;
-    int64_t denominator = b->z - a->z;
-#define RAGE_LERP(field) \
-    (a->field + (int)((b->field - a->field) * numerator / denominator))
-    out.x = a->x + (b->x - a->x) * numerator / denominator;
-    out.y = a->y + (b->y - a->y) * numerator / denominator;
-    out.z = nearZ;
-    out.u = RAGE_LERP(u); out.v = RAGE_LERP(v);
-    out.r = RAGE_LERP(r); out.g = RAGE_LERP(g); out.b = RAGE_LERP(b);
-#undef RAGE_LERP
-    return out;
-}
-
-static int RageClipTriangleNear(
-    const RageNearVertex input[3], RageNearVertex output[4], int64_t nearZ) {
-    int outCount = 0;
-    int i;
-    for (i = 0; i < 3; i++) {
-        const RageNearVertex *a = &input[i];
-        const RageNearVertex *b = &input[(i + 1) % 3];
-        int aInside = a->z >= nearZ;
-        int bInside = b->z >= nearZ;
-        if (aInside) output[outCount++] = *a;
-        if (aInside != bInside)
-            output[outCount++] = RageInterpolateNearVertex(a, b, nearZ);
-    }
-    return outCount;
-}
-
-static int RageProjectNearVertex(const RageNearVertex *v) {
-    int offsetX, offsetY;
-    int64_t screen = ReadGeomScreen();
-    int x, y;
-    ReadGeomOffset(&offsetX, &offsetY);
-    x = offsetX + (int)(v->x * screen / v->z);
-    y = offsetY + (int)(v->y * screen / v->z);
-    if (x < -1024) x = -1024;
-    if (x > 1023) x = 1023;
-    if (y < -1024) y = -1024;
-    if (y > 1023) y = 1023;
-    return (int)((uint16_t)x | ((uint32_t)(uint16_t)y << 16));
-}
-
-static uint8_t *RageEmitNearClippedModelFace(
-    uint8_t *cursor, OT_TYPE *ot, int type, const uint8_t *face,
-    const SVECTOR *vertices, const SVECTOR *normals, int bias) {
-    static const int triangles[2][3] = {{0, 1, 2}, {1, 3, 2}};
-    RageNearVertex source[4];
-    uint16_t indices[4];
-    CVECTOR lit[4];
-    int uv[4][2] = {{0}};
-    uint16_t clut = 0, tpage = 0;
-    int i, triangle;
-    int anyBehind = 0, anyInFront = 0;
-    const int64_t nearZ = 32;
-
-    for (i = 0; i < 4; i++) indices[i] = RageReadU16(face + i * 2);
-    if (type == RAGE_MODEL_FT4) {
-        POLY_FT4 temp = {0};
-        RageCopyFt4UvWithMode(&temp, face + 8,
-                              (uint32_t)g_ScratchRenderMode);
-        uv[0][0]=temp.u0; uv[0][1]=temp.v0;
-        uv[1][0]=temp.u1; uv[1][1]=temp.v1;
-        uv[2][0]=temp.u2; uv[2][1]=temp.v2;
-        uv[3][0]=temp.u3; uv[3][1]=temp.v3;
-        clut=temp.clut; tpage=temp.tpage;
-    } else if (type == RAGE_MODEL_GT4) {
-        POLY_GT4 temp = {0};
-        RageCopyGt4UvWithMode(&temp, face + 16,
-                              (uint32_t)g_ScratchRenderMode);
-        uv[0][0]=temp.u0; uv[0][1]=temp.v0;
-        uv[1][0]=temp.u1; uv[1][1]=temp.v1;
-        uv[2][0]=temp.u2; uv[2][1]=temp.v2;
-        uv[3][0]=temp.u3; uv[3][1]=temp.v3;
-        clut=temp.clut; tpage=temp.tpage;
-    }
-    if (type == RAGE_MODEL_G4 || type == RAGE_MODEL_GT4) {
-        CVECTOR base = type == RAGE_MODEL_G4
-            ? *(const CVECTOR *)(face + 16)
-            : (CVECTOR){SCRATCH_GT4_R, SCRATCH_GT4_G, SCRATCH_GT4_B,
-                        SCRATCH_GT4_CODE};
-        for (i = 0; i < 4; i++)
-            NormalColorCol((SVECTOR *)&normals[RageReadU16(face + 8 + i * 2)],
-                           &base, &lit[i]);
-    } else {
-        for (i = 0; i < 4; i++) {
-            lit[i].r = type == RAGE_MODEL_F4 ? face[8] : 0x80;
-            lit[i].g = type == RAGE_MODEL_F4 ? face[9] : 0x80;
-            lit[i].b = type == RAGE_MODEL_F4 ? face[10] : 0x80;
-        }
-    }
-    for (i = 0; i < 4; i++) {
-        VECTOR transformed;
-        int flag;
-        RotTrans((SVECTOR *)&vertices[indices[i]], &transformed, &flag);
-        source[i].x=transformed.vx; source[i].y=transformed.vy;
-        source[i].z=transformed.vz;
-        source[i].u=uv[i][0]; source[i].v=uv[i][1];
-        source[i].r=lit[i].r; source[i].g=lit[i].g; source[i].b=lit[i].b;
-        anyBehind |= source[i].z < nearZ;
-        anyInFront |= source[i].z >= nearZ;
-    }
-    if (!anyBehind || !anyInFront) return cursor;
-    g_RageNearFacesCrossing++;
-
-    for (triangle = 0; triangle < 2; triangle++) {
-        RageNearVertex input[3], clipped[4];
-        int count, fan;
-        for (i = 0; i < 3; i++) input[i] = source[triangles[triangle][i]];
-        count = RageClipTriangleNear(input, clipped, nearZ);
-        for (fan = 1; fan + 1 < count; fan++) {
-            RageNearVertex *v[3] = {&clipped[0], &clipped[fan],
-                                      &clipped[fan + 1]};
-            int sxy[3] = {RageProjectNearVertex(v[0]),
-                          RageProjectNearVertex(v[1]),
-                          RageProjectNearVertex(v[2])};
-            int depth = (int)(((v[0]->z + v[1]->z + v[2]->z) / 3) >> 7)
-                        + bias;
-            if (depth <= 0) depth = 1;
-            if (depth >= 448)
-                continue;
-            if (type == RAGE_MODEL_F4) {
-                POLY_F3 *p;
-                if (!RagePrimitiveSpaceAvailable(cursor, sizeof(*p))) return cursor;
-                p=(POLY_F3 *)cursor; SetPolyF3(p);
-                p->r0=v[0]->r; p->g0=v[0]->g; p->b0=v[0]->b;
-                RageStoreSxy(&p->x0,&p->y0,sxy[0]);
-                RageStoreSxy(&p->x1,&p->y1,sxy[1]);
-                RageStoreSxy(&p->x2,&p->y2,sxy[2]);
-                AddPrim(&ot[depth],p); cursor += sizeof(*p);
-            } else if (type == RAGE_MODEL_FT4) {
-                POLY_FT3 *p;
-                if (!RagePrimitiveSpaceAvailable(cursor, sizeof(*p))) return cursor;
-                p=(POLY_FT3 *)cursor; SetPolyFT3(p); SetShadeTex(p,1);
-                p->r0=p->g0=p->b0=0x80; p->clut=clut; p->tpage=tpage;
-                p->u0=v[0]->u; p->v0=v[0]->v;
-                p->u1=v[1]->u; p->v1=v[1]->v;
-                p->u2=v[2]->u; p->v2=v[2]->v;
-                RageStoreSxy(&p->x0,&p->y0,sxy[0]);
-                RageStoreSxy(&p->x1,&p->y1,sxy[1]);
-                RageStoreSxy(&p->x2,&p->y2,sxy[2]);
-                AddPrim(&ot[depth],p); cursor += sizeof(*p);
-            } else if (type == RAGE_MODEL_G4) {
-                POLY_G3 *p;
-                if (!RagePrimitiveSpaceAvailable(cursor, sizeof(*p))) return cursor;
-                p=(POLY_G3 *)cursor; SetPolyG3(p);
-                p->r0=v[0]->r;p->g0=v[0]->g;p->b0=v[0]->b;
-                p->r1=v[1]->r;p->g1=v[1]->g;p->b1=v[1]->b;
-                p->r2=v[2]->r;p->g2=v[2]->g;p->b2=v[2]->b;
-                RageStoreSxy(&p->x0,&p->y0,sxy[0]);
-                RageStoreSxy(&p->x1,&p->y1,sxy[1]);
-                RageStoreSxy(&p->x2,&p->y2,sxy[2]);
-                AddPrim(&ot[depth],p); cursor += sizeof(*p);
-            } else {
-                POLY_GT3 *p;
-                if (!RagePrimitiveSpaceAvailable(cursor, sizeof(*p))) return cursor;
-                p=(POLY_GT3 *)cursor; SetPolyGT3(p);
-                p->r0=v[0]->r;p->g0=v[0]->g;p->b0=v[0]->b;
-                p->r1=v[1]->r;p->g1=v[1]->g;p->b1=v[1]->b;
-                p->r2=v[2]->r;p->g2=v[2]->g;p->b2=v[2]->b;
-                {
-                    int vertex;
-                    for (vertex = 0; vertex < 3; vertex++) {
-                        unsigned value = v[vertex]->r;
-                        if ((unsigned)v[vertex]->g > value) value = v[vertex]->g;
-                        if ((unsigned)v[vertex]->b > value) value = v[vertex]->b;
-                        if (value > g_RageGt4ColorMaximum)
-                            g_RageGt4ColorMaximum = value;
-                    }
-                }
-                p->clut=clut;p->tpage=tpage;
-                p->u0=v[0]->u;p->v0=v[0]->v;
-                p->u1=v[1]->u;p->v1=v[1]->v;
-                p->u2=v[2]->u;p->v2=v[2]->v;
-                RageStoreSxy(&p->x0,&p->y0,sxy[0]);
-                RageStoreSxy(&p->x1,&p->y1,sxy[1]);
-                RageStoreSxy(&p->x2,&p->y2,sxy[2]);
-                AddPrim(&ot[depth],p); cursor += sizeof(*p);
-                g_RageNearGt4TrianglesEmitted++;
-            }
-            g_RageNearTrianglesEmitted++;
-        }
-    }
-    return cursor;
-}
-
 static void RageSubmitModelFaces(
     int type, int count, const uint8_t *faces, const SVECTOR *vertices,
     const SVECTOR *normals) {
@@ -849,7 +531,7 @@ static void RageSubmitModelFaces(
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     int i;
 
-    RageInitializeModelTrace();
+    RageGeometryDiagnosticsInit(&s_diagnostics);
 
     if ((unsigned)type >= 4 || count <= 0 || faces == NULL || vertices == NULL)
         return;
@@ -1138,7 +820,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     const SVECTOR *vertices;
     uint32_t opcode;
-    RageInitializeCourseTrace();
+    RageGeometryDiagnosticsInit(&s_diagnostics);
     if (g_RageCourseTraceEnabled &&
         (g_RageCourseTraceTimer < 0 || g_RageCourseTraceTimer == g_SceneTimer)) {
         fprintf(stderr, "course-model timer=%d model=%d fogged=%d\n",
@@ -1158,7 +840,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
         if ((unsigned)type >= 4 || count <= 0) break;
         stride = strides[type];
         for (i = 0; i < count; i++, stream += stride) {
-            int sxy[4], depth, fog, rawDepth;
+            int sxy[4] = {0}, depth = 0, fog = 0, rawDepth = 0;
             int projected;
             int trace = RageCourseTraceMatches(g_SceneTimer, type, stream);
             int bias = (int8_t)stream[type == 0 ? 13 : 25];
@@ -1305,9 +987,14 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 uv[6]=uvRecord[10]; uv[7]=uvRecord[11];
                 clut = RageReadU16(uvRecord + 2);
                 tpage = RageReadU16(uvRecord + 6);
-                if (uLevel < 0) uLevel = 0;
-                if (vLevel < 0) vLevel = 0;
-                if (uLevel > 6 || vLevel > 6) continue;
+                /* Large animated course quads (notably the Lakeside Gate
+                 * waterfall sheets) request more subdivision as the camera
+                 * approaches.  Dropping the whole record above the native
+                 * safety limit makes the texture abruptly disappear.  Keep
+                 * the face and saturate tessellation at the highest level we
+                 * can emit instead. */
+                uLevel = RageClampSubdivisionLevel(uLevel);
+                vLevel = RageClampSubdivisionLevel(vLevel);
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
                 {
@@ -1448,8 +1135,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     int decodedFaces = 0;
     int emittedFaces = 0;
     (void)ctx;
-    RageInitializeTerrainTrace();
-    RageInitializeTerrainDecisionTrace();
+    RageGeometryDiagnosticsInit(&s_diagnostics);
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by

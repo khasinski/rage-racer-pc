@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/state.h"
 #include <stdio.h>
 #include "game/vector.h"
@@ -34,7 +35,6 @@ void InitPlayerCar(PlayerCarRuntime *car)
   s32 peakRpm;
   s32 value;
   s32 j;
-  s32 k;
   GameCarSpec *carSpec;
   GameCarSpec *curveSpec;
   s16 *torqueBand;
@@ -43,7 +43,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   s32 bandSpeed;
   player = car;
   eventData = g_TrackEventData;
-  printf(g_MsgInitCar);
+  printf("%s", g_MsgInitCar);
   value = g_GrandPrixSeries;
   g_RacePhase = 2;
   g_RaceSeries = value & 1;
@@ -73,7 +73,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   player->progressA = 0;
   player->progressB = 0;
   player->trackProgress = 0;
-  printf(g_MsgHTbl);
+  printf("%s", g_MsgHTbl);
   player->trackPointIndex = eventData->rivalStarts[ReadStableRaceSeries()][0].trackPointIndex;
   player->x = eventData->rivalStarts[ReadStableRaceSeries()][0].x;
   player->z = eventData->rivalStarts[ReadStableRaceSeries()][0].z;
@@ -142,7 +142,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   player->drive.shiftRpmDelta = 0;
   g_ShiftTargetRpm = 0;
   drive = &car->drive;
-  printf(g_MsgInit0);
+  printf("%s", g_MsgInit0);
   carSpec = g_CarSpec;
   if (carSpec->topGear < 6)
   {
@@ -156,7 +156,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
     carSpec->topGear = 6;
   }
   drive->speedScale = (g_CarSpec->tachometer.speedScale * 0x490) / 160;
-  printf(g_MsgInit1);
+  printf("%s", g_MsgInit1);
   j = 0;
   for (i = 0; i < 16; i++)
   {
@@ -174,7 +174,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   revLimitPtr = &g_CarSpec->revLimit;
   g_PeakToRevLimitRpmHalf = ((*revLimitPtr) - ((s16) peakRpm)) / 2;
   g_PeakOutputRpm = peakRpm;
-  printf(g_MsgInit1b);
+  printf("%s", g_MsgInit1b);
   printf(g_FmtDecimalLine, g_CarSpec->topGear);
   for (j = 0; j < 6; j++)
   {
@@ -198,7 +198,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   {
     g_CarSpec->baseSteeringGrip = 1;
   }
-  printf(g_MsgInit2);
+  printf("%s", g_MsgInit2);
   curveSpec = g_CarSpec;
   accelBand = g_TorqueLossBandEnd;
   speedBandOffset = 0;
@@ -236,10 +236,10 @@ void InitPlayerCar(PlayerCarRuntime *car)
     torqueBand++;
   }
   while (speedBandOffset < 20);
-  printf(g_MsgInit4);
+  printf("%s", g_MsgInit4);
   drive->launchEnergyThreshold = g_LaunchEnergyThresholds[drive->launchThresholdIndex % 5] * 0xE;
   drive->steeringGripResponse = g_CarSpec->steeringGripResponse;
-  printf(g_MsgInit5);
+  printf("%s", g_MsgInit5);
   player->shiftState = 0;
   drive->brakeLatch = 0;
   drive->acceleratorLatch = 0;
@@ -261,9 +261,9 @@ void InitPlayerCar(PlayerCarRuntime *car)
   g_GripLossTimer = 0;
   g_WrongWayTimer = 0;
   g_PlayerAutoSteer = 0;
-  printf(g_MsgInit6);
+  printf("%s", g_MsgInit6);
   printf(g_FmtLongLine, player->progressA);
-  printf(g_MsgInitOk);
+  printf("%s", g_MsgInitOk);
 }
 
 /*
@@ -279,7 +279,8 @@ s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
     return backwardRange < 0x7FFU;
 }
 
-/* The live button mapping; masks 0 and 1 steer, g_MirrorMode swaps them. */
+/* Steering remains driver-relative on mirrored courses. World and scenery
+ * transforms handle mirroring; reversing input here makes left steer right. */
 
 
 /*
@@ -299,13 +300,8 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     } else if ((mode < 4) && (g_PlayerAutoSteer == 0)) {
     if (g_PadType == 0x41) {
 
-    if (g_MirrorMode != 0) {
-        a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
-        v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
-    } else {
-        v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
-        a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
-    }
+    v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
+    a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
 
     if (v1 != 0) {
     a0v = 2;
@@ -339,7 +335,6 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     }
     } else if (g_PadType == 0x23) {
     a1 = ((g_NegconSteer * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
-    if (g_MirrorMode != 0) a1 = -a1;
     if (!(a1 >= 0)) {
 
     a0v = 2;
@@ -662,9 +657,9 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
   }
   collision_found:
 #ifdef __psyz
-  if (getenv("RAGE_PORT_CAR_COLLISION_TRACE") != NULL)
+  if (RageDiagnosticsEnabled("car.collision_trace"))
   {
-    const char *timerText = getenv("RAGE_PORT_CAR_COLLISION_TRACE_TIMER");
+    const char *timerText = RageDiagnosticsValue("car.collision_trace_timer");
     if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0))
     {
       printf("car-collision timer=%d opponent=%d region=%d sample=%d quad=%d "

@@ -7,15 +7,17 @@
 #include <string.h>
 
 #include "game/render_internal.h"
+#include "game/race.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
 
 #include "scene_capture.h"
 #include "modern_renderer.h"
+#include "../runtime_config.h"
 
 static RageSceneSnapshot s_snapshots[2];
 static int s_current;
-static int s_active = -1;
+static int s_traceInitialized;
 static FILE *s_trace;
 
 /* Byte ranges of the primitive buffer written by 3D submissions this frame;
@@ -32,9 +34,10 @@ static int s_rangeOverflow;
 static const uint8_t *s_scopeStart;
 
 int RageCaptureActive(void) {
-    if (s_active < 0) {
-        const char *trace = getenv("RAGE_PORT_SCENE_TRACE");
-        s_active = RageModernIsEnabled() || trace != NULL;
+    if (!s_traceInitialized) {
+        const char *trace = RageRuntimeConfigGetLegacy(
+            "diagnostics.scene_trace", "RAGE_PORT_SCENE_TRACE");
+        s_traceInitialized = 1;
         if (trace != NULL && *trace != '\0' && strcmp(trace, "1") != 0) {
             s_trace = fopen(trace, "w");
             if (s_trace == NULL) {
@@ -45,7 +48,7 @@ int RageCaptureActive(void) {
             s_trace = stderr;
         }
     }
-    return s_active;
+    return RageModernIsEnabled() || s_trace != NULL;
 }
 
 static void CaptureMatrixFromRegs(RageCaptureMatrix *out, unsigned base) {
@@ -375,6 +378,7 @@ void RageCaptureFrameEnd(void) {
     snapshot = &s_snapshots[s_current];
     snapshot->frameCounter = (uint32_t)g_FrameCounter;
     snapshot->sceneId = g_SceneId;
+    snapshot->courseMirror = g_MirrorMode != 0;
     snapshot->sceneTimer = g_SceneTimer;
     view = SCRATCH_VIEW_MATRIX_GTE;
     memcpy(snapshot->viewMatrix.m, view->m, sizeof(snapshot->viewMatrix.m));
@@ -409,7 +413,8 @@ void RageCaptureFrameEnd(void) {
                 snapshot->oversizedPackets, snapshot->faceOverflow,
                 s_rangeOverflow,
                 (unsigned long long)RageCaptureSnapshotHash(snapshot));
-        if (getenv("RAGE_PORT_SCENE_TRACE_VERBOSE") != NULL) {
+        if (RageRuntimeConfigEnabled("diagnostics.scene_trace_verbose",
+                                     "RAGE_PORT_SCENE_TRACE_VERBOSE")) {
             for (i = 0; i < snapshot->packetCount; i++) {
                 const RageCapturePacket *packet = &snapshot->packets[i];
                 int word;

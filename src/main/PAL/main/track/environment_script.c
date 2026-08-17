@@ -113,7 +113,6 @@ void SeekEnvironmentScript(s32 targetTime) {
 
 void UpdateEnvironment(void) {
     Rect rect;
-    s32 local[3];
     u8 out[4];
     s32 i;
     s32 diff;

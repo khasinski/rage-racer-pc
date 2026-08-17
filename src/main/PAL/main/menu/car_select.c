@@ -488,7 +488,7 @@ void UpdateCarSelectScreen(void) {
                                 return;
                             }
                         } else if ((g_PadPressed & PAD_CANCEL) &&
-                                   ((g_MenuViewAngle - 0x2710) >
+                                   ((u32)(g_MenuViewAngle - 0x2710) >
                                     0x120160U)) {
                             PlaySoundCue(3);
                             GameMenuBusy = 5;

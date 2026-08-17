@@ -118,7 +118,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     s16 *vabIdPtr = g_SoundScale.vabIds;
     s16 vabId;
 
-    SsSetTableSize((u8 *)GetSndTableArea(), 2, 1);
+    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
     SsSetTickMode(1);
     SsStartSoundTickMode1();
     SsSetVoiceCount(0xA);
@@ -129,13 +129,13 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     *vabIdPtr = SsVabOpenHeadSticky(header, -1, 0x1000);
     vabId = *vabIdPtr;
     if (vabId == -1) {
-        printf(g_MsgVabOpenHeadError);
+        printf("%s", g_MsgVabOpenHeadError);
         BiosExit(1);
     }
 
     *vabIdPtr = SsVabTransBody(body, vabId);
     if (*vabIdPtr == -1) {
-        printf(g_MsgVabTransBodyError);
+        printf("%s", g_MsgVabTransBodyError);
         BiosExit(1);
     }
 
@@ -146,7 +146,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
 }
 
 s32 InitSoundRuntime(void) {
-    SsSetTableSize((u8 *)GetSndTableArea(), 2, 1);
+    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
     SsSetTickMode(0x1000);
     SsStartSoundTickMode1();
     SsSetVoiceCount(0xA);

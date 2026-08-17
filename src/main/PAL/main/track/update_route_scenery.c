@@ -12,7 +12,6 @@ void UpdateRouteScenery(void) {
     Matrix mtx1;
     SVec vin;
     LVec vout;
-    volatile s32 pad[6];
     volatile s32 *cnt;
     SceneryMotionData *base;
     SceneryMotionKeyframe *kp;

@@ -7,8 +7,11 @@
 #include <stdlib.h>
 
 #include "input_config.h"
+#include "diagnostic_log.h"
 #include "port_config.h"
+#include "runtime_config.h"
 #include "modern/modern_renderer.h"
+#include "platform_paths.h"
 
 #ifdef _WIN32
 #ifndef PATH_MAX
@@ -21,41 +24,41 @@ int RageMapPs1Scratchpad(void);
 int RageInitNativeGameData(void);
 int RageHostInitDisc(void);
 
-static void RageLoadInputConfig(RageInputConfig *config) {
-#ifdef _WIN32
-    const char *home = getenv("APPDATA");
-#else
-    const char *home = getenv("HOME");
-#endif
+static void RageLoadInputConfig(RageInputConfig *config, const char *argv0) {
     char path[PATH_MAX];
-
-    if (home != NULL && home[0] != '\0') {
-#ifdef _WIN32
-        snprintf(path, sizeof(path), "%s\\Rage Racer\\rage-input.cfg", home);
-#else
-        snprintf(path, sizeof(path), "%s/Library/Application Support/Rage Racer/rage-input.cfg", home);
-#endif
-        if (RageInputConfigLoad(config, path) > 0) return;
-    }
-    RageInputConfigLoad(config, "rage-input.cfg");
+    if (RagePlatformFindConfigFile(argv0, "rage-input.cfg", path,
+                                   sizeof(path)))
+        RageInputConfigLoad(config, path);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
     int inputIndex;
+    char logPath[PATH_MAX];
+
+    if (!RageRuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if (!RageDiagnosticLogOpen(logPath, sizeof(logPath))) {
+        fprintf(stderr, "rage-port: could not open diagnostic log\n");
+    }
 
     Psyz_SetTitle("Rage Racer");
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     RagePortConfigDefaults(&portConfig);
-    RagePortConfigLoad(&portConfig, "rage-port.cfg");
+    RagePortConfigApplyRuntime(&portConfig);
     RagePortConfigSetActive(&portConfig);
+    fprintf(stderr,
+            "rage-port: renderer=%s scale=%.2f aspect=%d fps=%d draw_distance=%.2f post=%d\n",
+            portConfig.renderer == RAGE_RENDERER_MODERN ? "modern" : "classic",
+            portConfig.modernInternalScale, portConfig.modernAspect,
+            portConfig.modernFps, portConfig.modernDrawDistance,
+            portConfig.modernPost);
     RageModernInit(&portConfig);
     /* Initialize SDL input before configurable names are resolved to
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);
     RageInputConfigDefaults(&inputConfig);
-    RageLoadInputConfig(&inputConfig);
+    RageLoadInputConfig(&inputConfig, argc > 0 ? argv[0] : NULL);
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }

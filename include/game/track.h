@@ -284,13 +284,7 @@ typedef struct ShuttlePath {
     Vec4 endpoint[2];
 } ShuttlePath;
 
-typedef union ShuttlePathPointAddress {
-    s32 value;
-    u8 *bytes;
-    Vec4 *pointer;
-} ShuttlePathPointAddress;
-
-extern ShuttlePath g_ShuttlePathPoints[];
+extern ShuttlePath g_ShuttlePathPoints[3];
 
 /* State of a shuttling prop: it runs between the two endpoints of its path in
  * g_ShuttlePathPoints, dwells, then reverses. */
@@ -369,7 +363,10 @@ extern s32 g_RouteSceneryRotZ;
  * UpdateRouteScenery re-materialises it for each of the three `+=` in its
  * tail, so its component accesses were not member accesses.
  */
-extern s32 g_RouteSceneryX;
+extern Vec4 g_RouteSceneryPosition;
+#define g_RouteSceneryX g_RouteSceneryPosition.x
+#define g_RouteSceneryY g_RouteSceneryPosition.y
+#define g_RouteSceneryZ g_RouteSceneryPosition.z
 
 typedef union RouteSceneryPositionAddress {
     s32 *x;
@@ -379,7 +376,7 @@ typedef union RouteSceneryPositionAddress {
 static inline void SetRouteSceneryPosition(const Vec4 *position) {
     RouteSceneryPositionAddress address;
 
-    address.x = &g_RouteSceneryX;
+    address.position = &g_RouteSceneryPosition;
     *address.position = *position;
 }
 
@@ -554,18 +551,18 @@ extern PathSceneryCursors g_PathSceneryCursors;
 extern s16 g_PathSceneryRotHalfDelta[3];
 extern PathSceneryRotationKey *g_PathSceneryRotKeys;
 extern s32 g_PathSceneryVolume;
-extern s32 g_RouteSceneryY;
-extern s32 g_RouteSceneryZ;
-extern ShuttlePath g_ShuttlePath2Points;
+#define g_ShuttlePath2Points g_ShuttlePathPoints[2]
 extern s16 g_ShuttlePathTravelMax[];
 extern s16 g_SkyTileMap[][16];
 extern s16 g_SpinningSceneryAngle[];
-extern Vec4 g_SpinningSceneryPos[];
 extern u16 g_SpinningSceneryRate[];
 typedef struct SpinningSceneryOrientation {
     s32 yaw;
     u8 reserved[12];
 } SpinningSceneryOrientation;
+extern u8 g_SpinningSceneryRecords[64];
+#define g_SpinningSceneryPos ((Vec4 *)(void *)g_SpinningSceneryRecords)
+#define g_SpinningSceneryYaw ((SpinningSceneryOrientation *)(void *)(g_SpinningSceneryRecords + 12))
 typedef union SpinningSceneryDataAddress {
     s32 value;
     u8 *bytes;
@@ -573,7 +570,6 @@ typedef union SpinningSceneryDataAddress {
     Vec4 *positionPointer;
     void *pointer;
 } SpinningSceneryDataAddress;
-extern SpinningSceneryOrientation g_SpinningSceneryYaw[];
 extern s32 g_StartGridSceneryAngle[];
 #define g_StaticSceneryYaw (*(s32 *)(void *)(g_StaticSceneryState + 12))
 

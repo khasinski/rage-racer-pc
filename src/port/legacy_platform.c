@@ -42,6 +42,8 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 
 #include "psyq/cd_types.h"
 #include "game/scratchpad.h"
+#include "platform_paths.h"
+#include "runtime_config.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -253,6 +255,8 @@ typedef struct RageHostDisc {
     long track_offset;
     long archive_sector;
     long archive_size;
+    long stream_sector;
+    long stream_size;
     int user_offset;
 } RageHostDisc;
 
@@ -275,15 +279,8 @@ static int RageHostReadTextFile(const char *path, char *value, size_t size) {
 }
 
 static void RageHostMakeDiscConfigPath(char *path, size_t size) {
-#ifdef _WIN32
-    const char *appdata = getenv("APPDATA");
-    if (appdata == NULL || appdata[0] == '\0') appdata = ".";
-    snprintf(path, size, "%s\\Rage Racer\\disc-cue-path", appdata);
-#else
-    const char *home = getenv("HOME");
-    if (home == NULL || home[0] == '\0') home = ".";
-    snprintf(path, size, "%s/Library/Application Support/Rage Racer/disc-cue-path", home);
-#endif
+    if (!RagePlatformUserConfigPath("disc-cue-path", path, size))
+        snprintf(path, size, "%s", "disc-cue-path");
 }
 
 static void RageHostSaveDiscCue(const char *cue) {
@@ -291,21 +288,8 @@ static void RageHostSaveDiscCue(const char *cue) {
     char path[PATH_MAX];
     FILE *file;
 
-#ifdef _WIN32
-    const char *appdata = getenv("APPDATA");
-    if (appdata == NULL || appdata[0] == '\0') return;
-    snprintf(directory, sizeof(directory), "%s\\Rage Racer", appdata);
-    _mkdir(directory);
-#else
-    const char *home = getenv("HOME");
-    if (home == NULL || home[0] == '\0') return;
-    snprintf(directory, sizeof(directory), "%s/Library", home);
-    mkdir(directory, 0700);
-    snprintf(directory, sizeof(directory), "%s/Library/Application Support", home);
-    mkdir(directory, 0700);
-    snprintf(directory, sizeof(directory), "%s/Library/Application Support/Rage Racer", home);
-    mkdir(directory, 0700);
-#endif
+    if (!RagePlatformUserConfigDirectory(directory, sizeof(directory)) ||
+        !RagePlatformEnsureDirectory(directory)) return;
     RageHostMakeDiscConfigPath(path, sizeof(path));
     file = fopen(path, "w");
     if (file == NULL) return;
@@ -415,7 +399,14 @@ static int RageHostParseCue(const char *cue, char *image, size_t image_size,
         (isalpha((unsigned char)image_name[0]) && image_name[1] == ':')) {
         snprintf(image, image_size, "%s", image_name);
     }
-    else snprintf(image, image_size, "%s/%s", cue_directory, image_name);
+    else {
+        size_t directory_length = strlen(cue_directory);
+        size_t name_length = strlen(image_name);
+        if (directory_length + 1 + name_length + 1 > image_size) return 0;
+        memcpy(image, cue_directory, directory_length);
+        image[directory_length] = '/';
+        memcpy(image + directory_length + 1, image_name, name_length + 1);
+    }
     return access(image, R_OK) == 0;
 }
 
@@ -456,12 +447,34 @@ static int RageHostFindArchive(void) {
                 && (name_length == 8 || record[41] == ';')) {
                 g_RageHostDisc.archive_sector = RageHostLe32(&record[2]);
                 g_RageHostDisc.archive_size = RageHostLe32(&record[10]);
-                return g_RageHostDisc.archive_size > 0;
+            } else if (name_length >= 8 &&
+                       strncasecmp((const char *)&record[33], "RAGE.STR", 8) == 0 &&
+                       (name_length == 8 || record[41] == ';')) {
+                g_RageHostDisc.stream_sector = RageHostLe32(&record[2]);
+                g_RageHostDisc.stream_size = RageHostLe32(&record[10]);
             }
             cursor += length;
         }
     }
-    return 0;
+    return g_RageHostDisc.archive_size > 0 && g_RageHostDisc.stream_size > 0;
+}
+
+int RageHostReadStreamSector(unsigned int sector, unsigned char *raw) {
+    long offset;
+    if (raw == NULL || g_RageHostDisc.file == NULL ||
+        sector >= (unsigned long)((g_RageHostDisc.stream_size + 2047) / 2048)) {
+        return 0;
+    }
+    offset = g_RageHostDisc.track_offset +
+             (g_RageHostDisc.stream_sector + (long)sector) * RAGE_CD_SECTOR_SIZE;
+    if (fseek(g_RageHostDisc.file, offset, SEEK_SET) != 0) return 0;
+    return fread(raw, 1, RAGE_CD_SECTOR_SIZE, g_RageHostDisc.file) ==
+           RAGE_CD_SECTOR_SIZE;
+}
+
+int RageHostStreamAbsoluteSector(unsigned int sector) {
+    if (g_RageHostDisc.stream_size <= 0) return -1;
+    return (int)(g_RageHostDisc.stream_sector + sector);
 }
 
 static int RageHostReadArchive(unsigned int offset, void *destination, unsigned int size) {
@@ -469,7 +482,8 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
     unsigned char *output = destination;
     FILE *test_archive;
 
-    if (g_RageHostDisc.file == NULL && getenv("RAGE_PORT_TEST_MODE") != NULL) {
+    if (g_RageHostDisc.file == NULL &&
+        RageRuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
         size_t loaded;
         test_archive = fopen("assets/PAL/RAGE.BIN", "rb");
         if (test_archive == NULL || fseek(test_archive, (long)offset, SEEK_SET) != 0) {
@@ -495,7 +509,8 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
 }
 
 int RageHostInitDisc(void) {
-    const char *environment_cue = getenv("RAGE_PORT_DISC_CUE");
+    const char *environment_cue = RageRuntimeConfigGetOverride(
+        "disc.cue", "RAGE_PORT_DISC_CUE");
     char cue[PATH_MAX];
     char image[PATH_MAX];
     char config_path[PATH_MAX];
@@ -505,11 +520,22 @@ int RageHostInitDisc(void) {
      * bundling retail data.  The release executable never sets this flag.
      * A checked-out disc image still has to reach PsyZ, or CD-DA plays
      * nothing during the smoke runs. */
-    if (getenv("RAGE_PORT_TEST_MODE") != NULL) {
+    if (RageRuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
         const char *test_cue = environment_cue;
         if (test_cue == NULL || test_cue[0] == '\0')
             test_cue = "disc/PAL/Rage Racer (Europe).cue";
-        if (access(test_cue, R_OK) == 0) Psyz_CdSetDiskPath(test_cue);
+        if (access(test_cue, R_OK) == 0) {
+            Psyz_CdSetDiskPath(test_cue);
+            if (RageHostParseCue(test_cue, image, sizeof(image),
+                                 &g_RageHostDisc.track_offset)) {
+                g_RageHostDisc.file = fopen(image, "rb");
+                if (g_RageHostDisc.file != NULL && RageHostFindArchive()) {
+                    return 1;
+                }
+                if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+                g_RageHostDisc.file = NULL;
+            }
+        }
         return 1;
     }
     if (environment_cue != NULL && environment_cue[0] != '\0') {

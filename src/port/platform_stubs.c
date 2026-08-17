@@ -3,13 +3,23 @@
 
 void RagePortSmokeBeforeSceneHandler(void) __attribute__((weak));
 void RagePortSmokeBeforeSceneHandler(void) {}
+void RagePortScenarioBeforeSceneHandler(void) __attribute__((weak));
+void RagePortScenarioBeforeSceneHandler(void) {}
 
 void RageCaptureFrameBegin(void);
 void RageCaptureFrameEnd(void);
 void RageModernFrameWaitTick(int frameLimit);
 
 void RagePortBeforeSceneHandler(void) {
+#ifdef RAGE_SMOKE_TARGET
     RagePortSmokeBeforeSceneHandler();
+    /* Scenario input is synthesized after physical/test input sampling so it
+     * cannot be cleared by the pad edge update in the same frame. */
+    RagePortScenarioBeforeSceneHandler();
+#else
+    RagePortScenarioBeforeSceneHandler();
+    RagePortSmokeBeforeSceneHandler();
+#endif
     RageCaptureFrameBegin();
 }
 

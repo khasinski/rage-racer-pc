@@ -1,0 +1,200 @@
+#include "modern_renderer_diagnostics.h"
+
+#include <SDL3/SDL.h>
+#include <psyz/video.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "modern_texture_dump.h"
+#include "../runtime_config.h"
+#include "../platform_paths.h"
+
+static int WriteModern(const RageModernDiagnosticFrame *frame,
+                       const char *path) {
+    return frame->texture != NULL &&
+           RageModernWriteTexturePpm(frame->device, frame->texture,
+                                     frame->width, frame->height, path);
+}
+
+void RageModernDiagnosticsMaybeDump(
+    const RageSceneSnapshot *snapshot,
+    const RageModernDiagnosticFrame *output) {
+    static int initialized;
+    static const char *path;
+    static long frame = -1;
+    static long every;
+    static long lastDumped = -1;
+    static int done;
+    if (!initialized) {
+        const char *frameText = RageRuntimeConfigGetLegacy(
+            "diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME");
+        const char *everyText = RageRuntimeConfigGetLegacy(
+            "diagnostics.modern_dump_every", "RAGE_PORT_MODERN_DUMP_EVERY");
+        path = RageRuntimeConfigGetLegacy(
+            "diagnostics.modern_dump", "RAGE_PORT_MODERN_DUMP");
+        if (frameText != NULL) frame = strtol(frameText, NULL, 0);
+        if (everyText != NULL) every = strtol(everyText, NULL, 0);
+        initialized = 1;
+    }
+    if (path == NULL || done ||
+        (frame >= 0 && (long)snapshot->frameCounter < frame)) return;
+    if (every > 0) {
+        char numbered[512];
+        if (lastDumped >= 0 &&
+            (long)snapshot->frameCounter < lastDumped + every) return;
+        snprintf(numbered, sizeof(numbered), "%s-%06u.ppm", path,
+                 snapshot->frameCounter);
+        if (WriteModern(output, numbered))
+            lastDumped = (long)snapshot->frameCounter;
+        return;
+    }
+    if (WriteModern(output, path))
+        fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
+                snapshot->frameCounter, path);
+    if (RageRuntimeConfigEnabled("diagnostics.modern_dump_scene",
+                                 "RAGE_PORT_MODERN_DUMP_SCENE")) {
+        char scenePath[512];
+        FILE *file;
+        snprintf(scenePath, sizeof(scenePath), "%s.scene.bin", path);
+        file = fopen(scenePath, "wb");
+        if (file != NULL) {
+            fwrite(snapshot, sizeof(*snapshot), 1, file);
+            fclose(file);
+        }
+    }
+    done = 1;
+}
+
+static void WriteCompat(const char *path) {
+    int width = 0, height = 0;
+    unsigned char *pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
+    FILE *file;
+    if (pixels == NULL) return;
+    file = fopen(path, "wb");
+    if (file != NULL) {
+        fprintf(file, "P6\n%d %d\n255\n", width, height);
+        fwrite(pixels, 3, (size_t)width * height, file);
+        fclose(file);
+    }
+    free(pixels);
+}
+
+static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
+                           const RageModernDiagnosticFrame *output,
+                           int haveModernImage) {
+    int index;
+    fprintf(file,
+            "frame=%u scene=%d timer=%d displayHeight=%d\n"
+            "modernImage=%d target=%dx%d logicalW=%.1f fps=%d\n"
+            "camera pos=%d,%d,%d\n"
+            "view=[%d %d %d / %d %d %d / %d %d %d] t=%d,%d,%d\n"
+            "draws=%d terrain=%d faces=%d packets=%d\n",
+            snapshot->frameCounter, snapshot->sceneId, snapshot->sceneTimer,
+            snapshot->displayHeight, haveModernImage, output->width,
+            output->height, output->logicalWidth, output->fps,
+            snapshot->viewPosition[0], snapshot->viewPosition[1],
+            snapshot->viewPosition[2], snapshot->viewMatrix.m[0][0],
+            snapshot->viewMatrix.m[0][1], snapshot->viewMatrix.m[0][2],
+            snapshot->viewMatrix.m[1][0], snapshot->viewMatrix.m[1][1],
+            snapshot->viewMatrix.m[1][2], snapshot->viewMatrix.m[2][0],
+            snapshot->viewMatrix.m[2][1], snapshot->viewMatrix.m[2][2],
+            snapshot->viewMatrix.t[0], snapshot->viewMatrix.t[1],
+            snapshot->viewMatrix.t[2], snapshot->drawCount,
+            snapshot->terrainCount, snapshot->faceCount,
+            snapshot->packetCount);
+    for (index = 0; index < snapshot->drawCount && index < 64; index++) {
+        const RageCaptureModelDraw *draw = &snapshot->draws[index];
+        fprintf(file,
+                "draw[%d] kind=%d model=%d mirror=%d table=%d "
+                "otBase=%d shift=%d trans=%d,%d,%d\n",
+                index, draw->kind, draw->modelIndex, draw->mirror, draw->table,
+                draw->otBaseBias, draw->otShift, draw->gte.rot.t[0],
+                draw->gte.rot.t[1], draw->gte.rot.t[2]);
+    }
+    for (index = 0; index < snapshot->terrainCount; index++) {
+        const RageCaptureTerrainBatch *batch = &snapshot->terrain[index];
+        fprintf(file,
+                "terrain[%d] mirror=%d cells=%d shift=%d "
+                "cell0=%d,%d,%d#%d\n",
+                index, batch->mirror, batch->cellCount, batch->otShift,
+                batch->cells[0][0], batch->cells[0][1], batch->cells[0][2],
+                batch->cells[0][3]);
+    }
+}
+
+void RageModernDiagnosticsCheckMarker(
+    const RageSceneSnapshot *snapshot,
+    const RageModernDiagnosticFrame *output,
+    int haveModernImage) {
+    static int wasDown;
+    static int burstLeft;
+    static int markerIndex = -1;
+    const bool *keys = SDL_GetKeyboardState(NULL);
+    int down = keys != NULL && keys[SDL_SCANCODE_M];
+    int pressed = down && !wasDown;
+    char path[256];
+    FILE *file;
+    int index;
+    wasDown = down;
+    if (pressed) burstLeft = 4;
+    if (pressed && output->ringTextures != NULL) {
+        RagePlatformEnsureDirectory("markers");
+        for (index = 0; index < output->ringCount; index++) {
+            int slot = (output->ringNext + index) % output->ringCount;
+            if (output->ringFrames[slot] == 0) continue;
+            snprintf(path, sizeof(path), "markers/ring-%02d-f%u-%s.ppm",
+                     index, output->ringFrames[slot],
+                     output->ringInterpolation[slot] < -1.5f ? "lerp" : "snap");
+            RageModernWriteTexturePpm(output->device,
+                                      output->ringTextures[slot], output->width,
+                                      output->height, path);
+            if (output->ringScenes != NULL) {
+                snprintf(path, sizeof(path),
+                         "markers/ring-%02d-f%u-scene.bin", index,
+                         output->ringFrames[slot]);
+                file = fopen(path, "wb");
+                if (file != NULL) {
+                    fwrite(&output->ringScenes[slot], sizeof(*snapshot), 1, file);
+                    fclose(file);
+                }
+            }
+        }
+        fprintf(stderr, "rage-port: ring of %d frames dumped\n",
+                output->ringCount);
+    }
+    if (burstLeft <= 0) return;
+    burstLeft--;
+    RagePlatformEnsureDirectory("markers");
+    if (markerIndex < 0) {
+        markerIndex = 0;
+        for (index = 0; index < 1000; index++) {
+            snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
+            file = fopen(path, "r");
+            if (file != NULL) {
+                fclose(file);
+                markerIndex = index + 1;
+            }
+        }
+    }
+    index = markerIndex++;
+    if (haveModernImage) {
+        snprintf(path, sizeof(path), "markers/marker-%d-modern.ppm", index);
+        WriteModern(output, path);
+    }
+    snprintf(path, sizeof(path), "markers/marker-%d-compat.ppm", index);
+    WriteCompat(path);
+    snprintf(path, sizeof(path), "markers/marker-%d-scene.bin", index);
+    file = fopen(path, "wb");
+    if (file != NULL) {
+        fwrite(snapshot, sizeof(*snapshot), 1, file);
+        fclose(file);
+    }
+    snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
+    file = fopen(path, "w");
+    if (file != NULL) {
+        WriteSceneInfo(file, snapshot, output, haveModernImage);
+        fclose(file);
+    }
+    fprintf(stderr, "rage-port: marker %d saved (frame=%u scene=%d timer=%d)\n",
+            index, snapshot->frameCounter, snapshot->sceneId,
+            snapshot->sceneTimer);
+}

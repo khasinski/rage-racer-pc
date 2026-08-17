@@ -41,7 +41,7 @@ void InitShuttleScenery(void) {
     AssetAddress angleAddress;
 
     state = &g_ShuttleScenery[0];
-    if ((g_CourseIndex & 3) == 2) {
+    if ((RageSeriesCourseIndex()) == 2) {
         g_ShuttleScenery[1].pathIndex = 2;
         g_ShuttleScenery[1].position = g_ShuttlePath2Points.endpoint[0];
 

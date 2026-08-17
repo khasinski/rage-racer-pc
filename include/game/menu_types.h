@@ -10,7 +10,7 @@ typedef struct ScoreRecord {
 } ScoreRecord;
 
 typedef struct RaceRecord {
-    s8 driverName[8];
+    char driverName[8];
     s32 raceTime;
     s16 carIndex;
     s16 unused;

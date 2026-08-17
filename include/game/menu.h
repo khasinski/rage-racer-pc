@@ -455,7 +455,7 @@ extern const char g_MsgOrdinalNd[4];
 extern const char g_MsgOrdinalRd[4];
 extern const char g_MsgOrdinalTh[8];
 /* "%d": the only format string the menu code passes to sprintf. */
-extern u8 g_FormatDecimal[];
+extern char g_FormatDecimal[];
 extern s32 g_AttractCycleCount;
 extern u8 g_TeamNameFontGlyphs[];
 extern u8 g_TeamNameBlankTile;

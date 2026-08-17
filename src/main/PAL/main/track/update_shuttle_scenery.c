@@ -12,14 +12,11 @@ void UpdateShuttleScenery(s32 instance) {
     s32 phase;
     s32 side;
     s32 step;
-    s32 baseIndex;
-    s32 altIndex;
-    s32 phaseShift;
     s16 *limitPtr;
     s16 *tailLimitPtr;
     s16 denom;
-    ShuttlePathPointAddress basePointAddress;
-    ShuttlePathPointAddress altPointAddress;
+    const Vec4 *basePoint;
+    const Vec4 *altPoint;
 
     entry = &g_ShuttleScenery[instance];
     asm("" : "=r"(entry) : "0"(entry));
@@ -27,35 +24,20 @@ void UpdateShuttleScenery(s32 instance) {
     side = entry->startEndpoint;
     phase = entry->pathIndex;
     step = entry->travelStep;
-    baseIndex = side << 4;
-    phaseShift = phase * 32;
-    baseIndex += phaseShift;
     limitPtr = &limitPtr[phase];
     denom = *limitPtr;
-    altIndex = (1 - side) << 4;
-    altIndex += phaseShift;
-    basePointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    basePointAddress.bytes += baseIndex;
-    altPointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    altPointAddress.bytes += altIndex;
-    entry->position.x = ((denom - step) * basePointAddress.pointer->x +
-                         step * altPointAddress.pointer->x) / denom;
+    basePoint = &g_ShuttlePathPoints[phase].endpoint[side];
+    altPoint = &g_ShuttlePathPoints[phase].endpoint[1 - side];
+    entry->position.x = ((denom - step) * basePoint->x +
+                         step * altPoint->x) / denom;
 
     denom = *limitPtr;
-    basePointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    basePointAddress.bytes += baseIndex;
-    altPointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    altPointAddress.bytes += altIndex;
-    entry->position.y = ((denom - step) * basePointAddress.pointer->y +
-                         step * altPointAddress.pointer->y) / denom;
+    entry->position.y = ((denom - step) * basePoint->y +
+                         step * altPoint->y) / denom;
 
     denom = *limitPtr;
-    basePointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    basePointAddress.bytes += baseIndex;
-    altPointAddress.pointer = g_ShuttlePathPoints->endpoint;
-    altPointAddress.bytes += altIndex;
-    entry->position.z = ((denom - step) * basePointAddress.pointer->z +
-                         step * altPointAddress.pointer->z) / denom;
+    entry->position.z = ((denom - step) * basePoint->z +
+                         step * altPoint->z) / denom;
 
     if (entry->travelStep >= *limitPtr) {
         entry->travelStep = 0;
@@ -120,7 +102,7 @@ void DrawShuttleScenery(s32 instance) {
         BuildRotMatrixZ(mtx1Ptr, state->angleZ);
         MulMatrix2(&mtx0, mtx1Ptr);
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
-        if ((g_CourseIndex & 3) >= 2) {
+        if ((RageSeriesCourseIndex()) >= 2) {
             drawArg = 0x3C;
         }
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state->position, mtx1Ptr);

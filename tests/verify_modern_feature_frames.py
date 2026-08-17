@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Capture stable reference frames for baseline and enhanced modern modes."""
+
+import hashlib
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+
+CASES = {
+    "baseline": ("auto", "nearest", "none", "off", "off", (320, 240)),
+    "enhanced": ("16:9", "linear", "fxaa", "0.6", "vibrant", (426, 240)),
+}
+MODERN_GOLDENS = {
+    "baseline": "6bf528fab7fa1f60b51ffc6d6ac418e319f2a63e703e0248620824dc1a5b58ff",
+    "enhanced": "5717ab047316e81714873c57984e8135798bb1846808b03d3cc1f828b4547213",
+}
+
+
+def read_ppm(path: Path) -> tuple[tuple[int, int], bytes]:
+    data = path.read_bytes()
+    header, pixels = data.split(b"\n255\n", 1)
+    lines = header.splitlines()
+    if len(lines) != 2 or lines[0] != b"P6":
+        raise AssertionError(f"invalid modern PPM header: {header!r}")
+    width, height = map(int, lines[1].split())
+    if len(pixels) != width * height * 3:
+        raise AssertionError("truncated modern PPM")
+    return (width, height), pixels
+
+
+def main() -> int:
+    executable, source = map(Path, sys.argv[1:3])
+    digests = {}
+    with tempfile.TemporaryDirectory(prefix="rage modern ąę ") as directory:
+        root = Path(directory)
+        for name, (aspect, filtering, post, bloom, grading, dimensions) in CASES.items():
+            capture = root / f"{name} żółty.ppm"
+            scenario = root / f"{name} ustawienia.ini"
+            scenario.write_text(
+                f"""[video]
+renderer = modern
+internal_scale = 1
+aspect = {aspect}
+texture_filter = {filtering}
+post = {post}
+bloom = {bloom}
+grading = {grading}
+
+[diagnostics]
+modern_dump = {capture}
+modern_dump_frame = 2300
+
+[race]
+enabled = true
+mode = grand-prix
+series = gp
+class = 0
+course = 0
+car = 3
+
+[run]
+frames = 2500
+
+[stop]
+scene = 12
+timer = 120
+""",
+                encoding="utf-8",
+            )
+            environment = os.environ.copy()
+            environment["SDL_AUDIODRIVER"] = "dummy"
+            result = subprocess.run(
+                [executable, "--scenario", scenario], cwd=source,
+                env=environment, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, text=True, timeout=55,
+            )
+            if result.returncode != 0 or not capture.exists():
+                print(result.stdout, file=sys.stderr)
+                raise AssertionError(f"modern {name} capture failed")
+            actual_dimensions, pixels = read_ppm(capture)
+            if actual_dimensions != dimensions:
+                raise AssertionError(
+                    f"modern {name} dimensions {actual_dimensions} != {dimensions}"
+                )
+            if sum(channel != 0 for channel in pixels) < 100:
+                raise AssertionError(f"modern {name} frame is effectively empty")
+            digests[name] = hashlib.sha256(capture.read_bytes()).hexdigest()
+            if digests[name] != MODERN_GOLDENS[name]:
+                raise AssertionError(
+                    f"modern {name} reference changed: {digests[name]}"
+                )
+    if digests["baseline"] == digests["enhanced"]:
+        raise AssertionError("modern enhancement pipeline did not affect output")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

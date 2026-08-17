@@ -533,7 +533,7 @@ void SetDrawClipRect(
 void DrawSmallText(
     s32 x,
     s32 y,
-    u8 *str,
+    const char *str,
     s32 r,
     s32 g,
     s32 b,
@@ -809,13 +809,13 @@ void DrawText8x8Trans();
 void GameDrawProportionalTextShaded(
     s32 x,
     s32 y,
-    u8 *str,
+    const char *str,
     s32 clutIndex,
     s32 intensity);
 /* Body: (s32 x, s32 y, u8 *str, s32 clutIndex). The list stays empty because
  * callers spell x as a packet pointer and str as char * / void *, and cc1
  * 2.6.3 segfaults on both conversions. */
-void DrawProportionalText();
+void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 
 /* Loads the GTE light matrix with g_SceneLightMatrix * `view`. */
 void SetGteLightMatrix(Matrix *view);

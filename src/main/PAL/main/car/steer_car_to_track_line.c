@@ -101,11 +101,9 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
     register s32 v0 asm("$2");
     register s32 first24 asm("$4");
     register s32 firstHeading asm("$5");
-    s32 sinF24;
-    s32 cosF24;
     u32 shiftRpmRange;
-    /* The two adjacent motion-state handlers use this same vector at sp+0x10. */
-    s32 coords[3];
+
+    (void)unused;
 
     first24 = car->bodyYaw;
     v0 = car->drive.spinRate;
@@ -302,8 +300,6 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
         car->headingAngle = saved;
     }
 
-    sinF24 = rsin(car->bodyYaw);
-    cosF24 = rcos(car->bodyYaw);
     drive->accelPos = rsin(car->headingAngle) * car->speed / 256;
     drive->brakePos = rcos(car->headingAngle) * car->speed / 256;
 }
@@ -318,6 +314,8 @@ void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
     s32 sinF24;
     s32 cosF24;
     volatile s32 coords[3];
+
+    (void)unused;
     s32 flag = g_ShiftSoundLevel;
 
     if (flag == 0) {
@@ -388,6 +386,8 @@ void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
     s32 base;
     s32 r;
     s32 coords[3];
+
+    (void)unused;
 
     r = GetAngleDelta(car->bodyYaw, route->targetHeading);
     base = car->bodyYaw;

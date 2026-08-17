@@ -171,7 +171,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
 
     DrawAnimatedScenery2(value, 0, g_SceneId == 0x11, flag);
 
-    mode = g_CourseIndex & 3;
+    mode = RageSeriesCourseIndex();
     switch (mode) {
     case 0:
         DrawSpinningScenery(value, flag);
@@ -260,7 +260,6 @@ void UpdateFlybyScenery(void) {
     Matrix mtxX;
     s16 dir[4];
     s32 step[4];
-    s32 delta[4];
     SceneryMotionData *data;
     FlybySceneryState *state;
     s32 series;
@@ -338,9 +337,9 @@ void UpdateFlybyScenery(void) {
         state->position.y = step[1] / 4 + state->position.y;
         state->position.z = step[2] / 4 + state->position.z;
         if (state->soundEnabled == 1) {
-            delta[0] = dx = g_PlayerCar.x - state->position.x;
-            delta[1] = dy = g_PlayerCar.y - state->position.y;
-            delta[2] = dz = g_PlayerCar.z - state->position.z;
+            dx = g_PlayerCar.x - state->position.x;
+            dy = g_PlayerCar.y - state->position.y;
+            dz = g_PlayerCar.z - state->position.z;
             dist = SquareRoot12(dx * dx / 8 + dy * dy / 16 + dz * dz / 8) >> 12;
             if (dist < 0) {
                 state->soundEnabled = 0;
@@ -371,7 +370,7 @@ void UpdateFlybyScenery(void) {
         vol = 0;
     }
 
-    switch (g_CourseIndex & 3) {
+    switch (RageSeriesCourseIndex()) {
     default:
         cue = 1;
         pitch = 0;

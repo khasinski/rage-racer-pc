@@ -23,13 +23,11 @@
  * into pixels.
  */
 void DrawNegconSteerPlayScreen(void) {
-    NegconUvTemplate unused;
     u8 *ot;
     u8 *prim;
     s32 span;
     s32 y;
 
-    unused = g_NegconSteerPlayUvQuad;
     DrawSpriteString(0x18, 0x30, g_MsgNegconSteerPlay, 0x7F81);
     ot = (u8 *)GamePrimaryOrderingTable(51);
     prim = SCRATCH_PRIM_CURSOR_AS(u8);
@@ -106,13 +104,11 @@ void UpdateNegconSteerPlayScreen(void) {
  * column follow the 0..3 setting, its end cap, and the framed panel.
  */
 void DrawNegconMaxTwistScreen(void) {
-    NegconUvTemplate unused;
     u8 *ot;
     u8 *prim;
     s32 xoff;
     s32 w;
 
-    unused = g_NegconMaxTwistUvQuad;
     DrawSpriteString(0x18, 0x30, g_MsgNegconMaxTwist, 0x7F81);
     ot = (u8 *)GamePrimaryOrderingTable(51);
     prim = SCRATCH_PRIM_CURSOR_AS(u8);

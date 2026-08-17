@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "runtime_config.h"
 
 static char *Trim(char *text) {
     char *end;
@@ -38,7 +39,7 @@ static int ParseFloat(const char *value, float *out, float min, float max) {
 static int ApplySetting(RagePortConfig *config, const char *name,
                         const char *value) {
     if (strcmp(name, "renderer") == 0) {
-        if (strcmp(value, "compat") == 0) {
+        if (strcmp(value, "compat") == 0 || strcmp(value, "classic") == 0) {
             config->renderer = RAGE_RENDERER_COMPAT;
             return 1;
         }
@@ -134,26 +135,24 @@ static int ApplySetting(RagePortConfig *config, const char *name,
     return 0;
 }
 
-int RagePortConfigLoad(RagePortConfig *config, const char *path) {
-    FILE *file = fopen(path, "r");
-    char line[256];
-    int loaded = 0;
-    if (!file) return 0;
-    while (fgets(line, sizeof(line), file)) {
-        char *equals;
-        char *name = Trim(line);
-        char *value;
-        if (*name == '\0' || *name == '#' || *name == ';') continue;
-        equals = strchr(name, '=');
-        if (!equals) continue;
-        *equals = '\0';
-        value = Trim(equals + 1);
-        name = Trim(name);
-        if (*name == '\0' || *value == '\0') continue;
-        loaded += ApplySetting(config, name, value);
+int RagePortConfigApplyRuntime(RagePortConfig *config) {
+    static const struct { const char *runtimeKey, *legacyKey; } keys[] = {
+        {"video.renderer", "renderer"},
+        {"video.internal_scale", "modern.internal_scale"},
+        {"video.aspect", "modern.aspect"},
+        {"video.fps", "modern.fps"},
+        {"video.draw_distance", "modern.draw_distance"},
+        {"video.texture_filter", "modern.texture_filter"},
+        {"video.post", "modern.post"},
+        {"video.bloom", "modern.bloom"},
+        {"video.grading", "modern.grading"}
+    };
+    int index, applied = 0;
+    for (index = 0; index < (int)(sizeof(keys) / sizeof(keys[0])); index++) {
+        const char *value = RageRuntimeConfigGet(keys[index].runtimeKey);
+        if (value) applied += ApplySetting(config, keys[index].legacyKey, value);
     }
-    fclose(file);
-    return loaded;
+    return applied;
 }
 
 static RagePortConfig active_config = {

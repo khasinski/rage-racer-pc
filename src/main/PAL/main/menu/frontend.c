@@ -192,12 +192,12 @@ void UpdateFrontend(void) {
  * so the parameter is declared and ignored.
  */
 void ResetFrameContext(int buffer) {
+    (void)buffer;
 }
 
 
 void SetupDisplay240(s32 r, s32 g, s32 b) {
     GameFrameContext *context;
-    u8 *base;
     s32 height;
     u16 *src0;
     u16 *src1;
@@ -212,7 +212,6 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     SetGeomScreen(0x140);
 
     context = g_FrameContexts;
-    base = context->bytes;
     height = 0xF0;
     SetDefDrawEnv(&context->environment.draw, 0, 0, 0x140, height);
     SetDefDrawEnv(&g_FrameContexts[1].environment.draw,
@@ -270,7 +269,6 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
 
 void SetupDisplay480(s32 mode, s32 x, s32 y) {
     GameFrameContext *context = g_FrameContexts;
-    u8 *base = context->bytes;
     s32 height;
     u16 *src0;
     u16 *src1;

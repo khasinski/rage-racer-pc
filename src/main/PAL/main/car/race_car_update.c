@@ -113,12 +113,10 @@ void UpdateRaceCars(void) {
      * GCC 2.6.3 keeps these two Matrix-sized source workspaces in the debug
      * frame even though their high-level scratch values are optimized away.
      */
-    Matrix matrixScratch0;
     CarTrackLimits limits;
     Matrix m1;
     Matrix m2;
     SVec sv;
-    Matrix matrixScratch3;
     /* These pins reproduce the retail induction and matrix registers. */
     register GameCarRuntime *base asm("$18");
     register GameCarAiBlock *drive;
@@ -389,12 +387,10 @@ void UpdateRaceCars(void) {
 void UpdateAttractCars(void) {
     Vec4 vTmp;
     /* See UpdateRaceCars: these two Matrix workspaces shape retail's frame. */
-    Matrix matrixScratch0;
     CarTrackLimits limits;
     Matrix m1;
     Matrix m2;
     SVec sv1;
-    Matrix matrixScratch3;
     /* These pins reproduce the retail induction registers. */
     register GameCarRuntime *car;
     GameCarRuntime *sub;

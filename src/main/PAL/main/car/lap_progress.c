@@ -8,6 +8,7 @@
 void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
     s32 value;
     s16 index;
+    (void)sceneTimer;
 
     value = ((g_EngineRpm - g_PeakOutputRpm) * 10000) / g_CarSpec->revLimit;
     g_StandingStartState = 0;
@@ -135,7 +136,6 @@ void AccumulateLapProgress(GameCarRuntime *car) {
     s32 n;
     s32 i;
     s32 j;
-    s32 idx;
     s32 fwd;
     s32 back;
     register s32 bv asm("$2");

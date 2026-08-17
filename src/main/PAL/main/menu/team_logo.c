@@ -68,7 +68,6 @@ void ComposeSampleTeamLogo(s32 character, s32 background)
     u16 *src0;
     s32 row0;
     s32 row1;
-    s32 adjusted;
     s32 outer;
     s32 j;
     u16 value;

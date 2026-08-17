@@ -146,18 +146,25 @@ void DrawClassRecordDetail(void) {
 
 void DrawClassRecordGrid(void) {
     OT_TYPE *base;
+    OT_TYPE *labelBase;
     u8 *next;
     s32 i;
     s32 x, y;
     s32 flag;
 
-    base = GamePrimaryOrderingTable(0);
+    /* The row labels live on OPTION's text page (0x3f), while the trophy
+     * cells below switch between pages 0x3e and 0x3c.  Keeping all of them
+     * in OT 0 made the later trophy draw mode reinterpret TROPHIES/EXIT as
+     * trophy pixels. */
+    labelBase = GamePrimaryOrderingTable(51);
     next = SCRATCH_PRIM_CURSOR_AS(u8);
-    next = GameQueueSpriteTrans(base, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
-    next = GameQueueSpriteTrans(base, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
-    SCRATCH_PRIM_CURSOR_AS(u8) = next;
+    next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
+    next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
+    SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(labelBase, next, 0x3F);
     DrawMenuCursorArrow(0x14, (g_ClassRecordMenuCursor * 32) + 56);
     next = SCRATCH_PRIM_CURSOR_AS(u8);
+
+    base = GamePrimaryOrderingTable(0);
 
     for (i = 0; i < 11; i++) {
         x = g_ClassRecordCellPoints[i].vx;

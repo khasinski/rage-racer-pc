@@ -7,7 +7,7 @@ s32 FindNearestTrackCamera(GameRenderObject *car) {
     s32 best;
     GameTrackCameraNode *entry;
     s32 index;
-    s32 selected;
+    s32 selected = 0;
     s32 span;
     s32 halfSpan;
     s32 target;

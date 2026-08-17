@@ -25,6 +25,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 3;
         }
+        return -1;
 
 
     case 1:
@@ -36,6 +37,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 6;
         }
+        return -1;
 
 
     case 2:
@@ -45,6 +47,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 8;
         }
+        return -1;
 
 
     case 3:
@@ -63,6 +66,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
                 return 13;
             }
         }
+        return -1;
 
     case 4:
         switch (state) {
@@ -75,6 +79,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 17;
         }
+        return -1;
 
 
     case 5:
@@ -86,6 +91,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 20;
         }
+        return -1;
 
 
     case 6:
@@ -95,6 +101,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 22;
         }
+        return -1;
 
 
     case 7:
@@ -106,6 +113,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
         case 5:
             return 25;
         }
+        return -1;
 
 
     case 8:

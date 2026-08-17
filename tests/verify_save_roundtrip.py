@@ -22,7 +22,7 @@ def main() -> int:
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="700",
             RAGE_PORT_SMOKE_SAVE_ROUNDTRIP="1",
-            RAGE_PORT_INPUT_SCRIPT="400:START,500:START,650:CROSS",
+            RAGE_PORT_STATE_INPUT_SCRIPT="4@80@0:START,4@180@2:CROSS",
         )
         result = subprocess.run(
             [executable], cwd=work, env=environment,
@@ -44,8 +44,8 @@ def main() -> int:
         menu_environment.update(
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="900",
-            RAGE_PORT_INPUT_SCRIPT=(
-                "400:START,500:START,600:DOWN,620:DOWN,650:CROSS"
+            RAGE_PORT_STATE_INPUT_SCRIPT=(
+                "4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@220@2:CROSS"
             ),
         )
         menu = subprocess.run(
@@ -78,8 +78,10 @@ def main() -> int:
                 SDL_AUDIODRIVER="dummy",
                 RAGE_PORT_SMOKE_FRAMES="1150",
                 RAGE_PORT_RAW_INPUT_SCRIPT=(
-                    "400:START,500:START,600:DOWN,620:DOWN,650:CROSS,"
                     "880:UP,900:CROSS,1050:CROSS"
+                ),
+                RAGE_PORT_STATE_INPUT_SCRIPT=(
+                    "4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@220@2:CROSS"
                 ),
             )
             load = subprocess.run(

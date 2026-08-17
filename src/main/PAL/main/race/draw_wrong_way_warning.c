@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/prim.h"
 #include "game/car.h"
 #include "game/player_car_internal.h"
@@ -76,7 +77,7 @@ void DrawWrongWayWarning(void) {
 }
 
 
-s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
+void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     CarTachometerSpec *p = &g_CarSpec->tachometer;
     s32 cx = p->needleX;
     s32 cy = p->needleY;
@@ -115,7 +116,7 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         prim->g0 = (amt * 32 + p->needleColor[1] * (96 - amt)) / 96;
         prim->b0 = (amt * 32 + p->needleColor[2] * (96 - amt)) / 96;
     } else if (type == 3) {
-        s16 *clutAddress;
+        u16 *clutAddress;
 
         amt -= 32;
         if (amt < 0) amt = 0;
@@ -134,7 +135,7 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     } else if (type == 2) {
         TachometerColorAddress packetColor;
         TachometerColorAddress needleColor;
-        s16 *clutAddress;
+        u16 *clutAddress;
 
         {
             GameFrameContextAddress frame;
@@ -151,8 +152,8 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     } else {
         TachometerColorAddress packetColor;
         TachometerColorAddress needleColor;
-        s16 *clutAddress;
-        s16 rv = 0x33A8;
+        u16 *clutAddress;
+        u16 rv = 0x33A8;
 
         {
             GameFrameContextAddress frame;
@@ -169,7 +170,7 @@ s32 DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
 
     prim->code = code7;
-    if (getenv("RAGE_PORT_TACHO_TRACE") != NULL) {
+    if (RageDiagnosticsEnabled("render.tachometer_trace")) {
         printf("tacho rpm=%d angle=%d color=%02x%02x%02x "
                "quad=%d,%d/%d,%d/%d,%d/%d,%d "
                "v=%d,%d/%d,%d/%d,%d/%d,%d\n",

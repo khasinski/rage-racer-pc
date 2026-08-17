@@ -19,9 +19,10 @@ def main() -> int:
         RAGE_PORT_SMOKE_FINISH_FRAME="2000",
         RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME="3000",
         RAGE_PORT_INPUT_SCRIPT=(
-            "400:START,500:START,610:DOWN,650:CROSS,950:CROSS,1100:CROSS,"
+            "950:CROSS,1100:CROSS,"
             "1200:CROSS,1264-2600:CROSS"
         ),
+        RAGE_PORT_STATE_INPUT_SCRIPT="4@80@0:START,4@180@2:DOWN,4@220@2:CROSS",
     )
     result = subprocess.run(
         [executable], cwd=source_dir, env=environment,

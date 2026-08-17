@@ -5,68 +5,23 @@
 #include "game/car.h"
 
 s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
-    s32 value = position;
-    s32 index;
-    s32 index_offset;
-    s32 *base = g_EngineSoundCurves[0][0].positions;
-    s32 row_offset;
-    s32 bank_offset;
-    s32 *base_minus;
-    s32 *entry;
-    s32 *scan;
-    s32 *lower_position;
-    s32 lower_position_value;
-    s32 lower_value_value;
-    s32 upper_value_value;
+    const EngineSoundCurveRow *curve;
+    s32 index = 1;
     s32 numerator;
     s32 denominator;
     s32 raw_result;
     s32 result;
-    EngineSoundCurveAddress curveAddress;
-    EngineSoundCurveAddress entryAddress;
-    EngineSoundCurveAddress denominatorAddress;
-    EngineSoundCurveAddress lowerValueAddress;
-    EngineSoundCurveAddress upperValueAddress;
 
-    index = 1;
-    row_offset = (parameter * 9) << 3;
-    bank_offset = (((bank * 7) * 4) - bank) << 5;
-    bank = row_offset + bank_offset;
-    entryAddress.pointer = base;
-    entryAddress.bytes += bank;
-    entry = entryAddress.pointer;
-    scan = entry + 1;
-    while (index < 9) {
-        raw_result = *scan;
-        if (value < raw_result) {
-            break;
-        }
+    curve = &g_EngineSoundCurves[bank][parameter];
+    while (index < 9 && position >= curve->positions[index]) {
         index++;
-        scan++;
     }
-
-    base_minus = base - 1;
-    index_offset = index * 4;
-    curveAddress.pointer = base_minus;
-    curveAddress.value = index_offset + curveAddress.value;
-    curveAddress.bytes += bank;
-    lower_position = curveAddress.pointer;
-    lowerValueAddress.pointer = base + 8;
-    lowerValueAddress.value = index_offset + lowerValueAddress.value;
-    lowerValueAddress.bytes += bank;
-    upperValueAddress.pointer = base + 9;
-    upperValueAddress.value = bank + upperValueAddress.value;
-    upperValueAddress.value = index_offset + upperValueAddress.value;
-    lower_value_value = *lowerValueAddress.pointer;
-    upper_value_value = *upperValueAddress.pointer;
-    lower_position_value = *lower_position;
+    if (index == 9) return curve->values[8];
     numerator =
-        (upper_value_value - lower_value_value) *
-        (value - lower_position_value);
-    denominatorAddress.pointer = entry;
-    denominatorAddress.value = index_offset + denominatorAddress.value;
-    denominator = *denominatorAddress.pointer - lower_position_value;
-    raw_result = numerator / denominator + lower_value_value;
+        (curve->values[index] - curve->values[index - 1]) *
+        (position - curve->positions[index - 1]);
+    denominator = curve->positions[index] - curve->positions[index - 1];
+    raw_result = numerator / denominator + curve->values[index - 1];
 
     if (raw_result >= 0) {
         result = raw_result;
@@ -213,7 +168,6 @@ void RestoreReverbDepth(s32 enabled) {
 void ForcePanVoiceEnabled(s32 enabled) {
     s32 values[2];
     s32 i;
-    s32 *src;
     s32 *dst;
     s32 scale;
     s32 raw;
@@ -225,16 +179,15 @@ void ForcePanVoiceEnabled(s32 enabled) {
 
     i = 0;
     dst = values;
-    src = &g_PanVoiceVolumeL;
     do {
-        if (*src < 2) {
+        s32 volume = i == 0 ? g_PanVoiceVolumeL : g_PanVoiceVolumeR;
+        if (volume < 2) {
             *dst = 0;
         } else {
-            *dst = *src;
+            *dst = volume;
         }
         dst++;
         i++;
-        src++;
     } while (i < 2);
 
     if (enabled != 0) {

@@ -16,6 +16,6 @@ abort "native state lacks two complete sequence states" unless
 abort "native sequence table accessor does not return the typed storage" unless
   native_state.match?(/void \*GetSndTableArea\(void\).*?return g_SndTableArea;/m)
 abort "sound runtime does not pass the typed storage to retail libsnd" unless
-  runtime.scan(/SsSetTableSize\(\(u8 \*\)GetSndTableArea\(\), 2, 1\)/).length == 2
+  runtime.scan(/SsSetTableSize\(\(char \*\)GetSndTableArea\(\), 2, 1\)/).length == 2
 
 puts "Sequence state storage follows the native pointer width"

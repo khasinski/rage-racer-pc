@@ -19,10 +19,8 @@ void ClearMemoryCardSwEvents(void) {
 
 MemoryCardEvent PollMemoryCardHwEvent(void) {
     MemoryCardEvent result;
-    s32 ready;
     s32 count;
 
-    ready = 1;
     if (TestEvent(g_McHwEventIoe) == 1) {
         result = MC_EVENT_IO_COMPLETE;
     }
@@ -68,9 +66,6 @@ MemoryCardEvent PollMemoryCardHwEventLimit(s32 limit) {
 }
 
 MemoryCardEvent WaitMemoryCardHwEvent(void) {
-    s32 ready;
-
-    ready = 1;
     while (1) {
         if (TestEvent(g_McHwEventIoe) == 1) {
             return MC_EVENT_IO_COMPLETE;
@@ -88,9 +83,6 @@ MemoryCardEvent WaitMemoryCardHwEvent(void) {
 }
 
 MemoryCardEvent WaitMemoryCardSwEvent(void) {
-    s32 ready;
-
-    ready = 1;
     while (1) {
         if (TestEvent(g_McSwEventIoe) == 1) {
             return MC_EVENT_IO_COMPLETE;

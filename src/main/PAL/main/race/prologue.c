@@ -164,7 +164,6 @@ void DrawPrologueText(void) {
         u8 *ptr;
         s32 greenScale;
         s32 tmp;
-        u8 *base;
 
         fadeLevel = g_FadeLevel;
         scratch = &SCRATCH_PRIM_CURSOR_AS(u8);

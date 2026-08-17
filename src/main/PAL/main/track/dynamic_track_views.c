@@ -23,6 +23,7 @@
  * track-marker builder UpdateCarTrackState.
  */
 void UpdateFreeLookCamera(void *car, s32 updateMotion) {
+    (void)car;
     ScratchLegacyViewWords legacyView;
     s32 *view;
     s32 delta[3];
@@ -173,7 +174,7 @@ void DrawStartGridScenery(s32 flags) {
             state.x +=
                 g_StartGridSceneryStep[ReadStableRaceSeries()].x * (s0 = s1 / 15);
             state.z += g_StartGridSceneryStep[ReadStableRaceSeries()].y * s0;
-            if (g_CourseIndex % 4 == 3) {
+            if (RageSeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -185,7 +186,7 @@ void DrawStartGridScenery(s32 flags) {
             drawArg = (value < lim) ? value : 1;
         } else {
             state = g_StartGridSceneryPos[ReadStableRaceSeries()];
-            if (g_CourseIndex % 4 == 3) {
+            if (RageSeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -221,7 +222,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
 
     state = g_AnimSceneryPos[instance];
 
-    if ((g_CourseIndex & 3) == 3) {
+    if ((RageSeriesCourseIndex()) == 3) {
         state.z += 0x5000;
     }
     if (g_GrandPrixClass == 5) {
@@ -337,7 +338,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     }
 
     state = g_AnimSceneryPos[instance];
-    if ((g_CourseIndex & 3) == 3) {
+    if ((RageSeriesCourseIndex()) == 3) {
         state.z += 0x5000;
     }
 

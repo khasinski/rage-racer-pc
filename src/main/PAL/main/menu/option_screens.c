@@ -16,82 +16,39 @@
 
 /* g_GameModeHandlers[5]: left/right edits the selected audio setting, cancel restores it. */
 void UpdateSoundSettingAdjust(void) {
+    s32 *setting = NULL;
     s32 old;
+    s32 maximum = 15;
     u16 pad;
 
     DrawSoundOptionScreen();
 
     switch (g_SoundOptionCursor) {
     case 0:
-        old = g_BgmVolumeSetting;
-        if ((g_PadPressed & PAD_LEFT) && old > 0) {
-            g_BgmVolumeSetting = old - 1;
-        }
-        if (g_PadPressed & PAD_RIGHT) {
-            s32 value = g_BgmVolumeSetting;
-            if (value < 15) {
-                g_BgmVolumeSetting = value + 1;
-            }
-        }
-        if (old != g_BgmVolumeSetting) {
-            PlaySoundCue(1);
-        }
-        pad = g_PadPressed;
-        if (pad & 0x860) {
-            g_GameMode = 4;
-        } else if (pad & 0x90) {
-            g_GameMode = 4;
-            g_BgmVolumeSetting = g_ScreenOffsetEditX;
-        }
+        setting = &g_BgmVolumeSetting;
         break;
-
     case 1:
-        old = g_SfxVolumeSetting;
-        if ((g_PadPressed & PAD_LEFT) && old > 0) {
-            g_SfxVolumeSetting = old - 1;
-        }
-        if (g_PadPressed & PAD_RIGHT) {
-            s32 value = g_SfxVolumeSetting;
-            if (value < 15) {
-                g_SfxVolumeSetting = value + 1;
-            }
-        }
-        if (old != g_SfxVolumeSetting) {
-            PlaySoundCue(1);
-        }
-        pad = g_PadPressed;
-        if (pad & 0x860) {
-            g_GameMode = 4;
-        } else if (pad & 0x90) {
-            g_GameMode = 4;
-            g_SfxVolumeSetting = g_ScreenOffsetEditX;
-        }
+        setting = &g_SfxVolumeSetting;
         break;
-
     case 2:
-        old = g_MonoOutput;
-        if ((g_PadPressed & PAD_LEFT) && old > 0) {
-            g_MonoOutput = old - 1;
-        }
-        if (g_PadPressed & PAD_RIGHT) {
-            s32 value = g_MonoOutput;
-            if (value <= 0) {
-                g_MonoOutput = value + 1;
-            }
-        }
-        if (old != g_MonoOutput) {
-            PlaySoundCue(1);
-        }
-        pad = g_PadPressed;
-        if (pad & 0x860) {
-            g_GameMode = 4;
-        } else if (pad & 0x90) {
-            g_GameMode = 4;
-            g_MonoOutput = g_ScreenOffsetEditX;
-        }
+        setting = &g_MonoOutput;
+        maximum = 1;
         break;
     }
 
+    if (setting != NULL) {
+        old = *setting;
+        if ((g_PadPressed & PAD_LEFT) && *setting > 0) (*setting)--;
+        if ((g_PadPressed & PAD_RIGHT) && *setting < maximum) (*setting)++;
+        if (old != *setting) PlaySoundCue(1);
+        pad = g_PadPressed;
+        if (pad & 0x860) {
+            g_GameMode = 4;
+        } else if (pad & 0x90) {
+            g_GameMode = 4;
+            *setting = g_ScreenOffsetEditX;
+        }
+    }
     ApplyAudioSettings();
     pad = g_PadPressed;
     if (pad & 0x860) {

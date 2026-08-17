@@ -11,14 +11,13 @@
 void OpenFmvStream(s32 callback) {
     DecDCTReset(0);
     DecDCToutCallback(callback);
-    StSetRing(g_FmvRingBuffer, 0x20);
+    StSetRing((void *)g_FmvRingBuffer, 0x20);
     StSetStream(1, 1, -1, 0, 0);
     StartStreamRead(g_StreamLoc);
 }
 
 void UploadFmvSlice(void) {
     Rect rect;
-    FmvUploadRectAddress rectAddress;
     register FmvStripCursorAddress bufferCursor asm("$6");
     FmvStripCursorAddress bufferAddress;
     FmvWorkBufferAddress uploadAddress;
@@ -38,8 +37,10 @@ void UploadFmvSlice(void) {
         g_StInterruptPending = 0;
     }
 
-    rectAddress.componentPointer = &g_FmvUploadRectX;
-    rect = *rectAddress.rectPointer;
+    rect.x = g_FmvUploadRectX;
+    rect.y = g_FmvUploadRectY;
+    rect.w = g_FmvStripWidth;
+    rect.h = g_FmvStripHeight;
 
     bufferCursor.index = &g_FmvStripIndex;
     oldBuffer = *bufferCursor.index;

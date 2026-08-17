@@ -1,7 +1,8 @@
 #ifndef RAGE_PORT_CONFIG_H
 #define RAGE_PORT_CONFIG_H
 
-/* Host-side port configuration, read from rage-port.cfg at startup.
+/* Host-side presentation configuration. rage-port.ini is authoritative;
+ * the old flat rage-port.cfg remains a temporary compatibility input.
  * Selects the presented renderer and the modern renderer's options.
  * The compat renderer always runs; these settings never affect game
  * behaviour, only presentation. */
@@ -41,9 +42,8 @@ typedef struct RagePortConfig {
 } RagePortConfig;
 
 void RagePortConfigDefaults(RagePortConfig *config);
-/* Returns the number of recognized settings applied; 0 when the file is
- * missing or contains nothing usable. Unknown keys are ignored. */
-int RagePortConfigLoad(RagePortConfig *config, const char *path);
+/* Applies [video] values loaded by runtime_config. */
+int RagePortConfigApplyRuntime(RagePortConfig *config);
 
 /* Publish/read the process-wide active configuration. */
 void RagePortConfigSetActive(const RagePortConfig *config);

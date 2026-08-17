@@ -684,10 +684,10 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
 
     if (flags & 0x10) {
         if (flags % 2) {
-            DrawLargeText((s16)(x0 + textX), (s16)(y0 + textY), caption,
+            DrawLargeText((s16)(x0 + textX), (s16)(y0 + textY), (char *)caption,
                           0x7f, 0x7f, 0x7f, 0x244, (flags & 8) ? 0x20 : 0x40);
         } else {
-            DrawSmallText((s16)(x0 + textX), (s16)(y0 + textY), caption,
+            DrawSmallText((s16)(x0 + textX), (s16)(y0 + textY), (char *)caption,
                           0x7f, 0x7f, 0x7f, 0x244, (flags & 8) ? 0x20 : 0x40);
         }
     }

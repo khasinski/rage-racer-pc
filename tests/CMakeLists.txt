@@ -8,17 +8,60 @@ add_executable(game_logic_tests
     ../src/main/PAL/main/track/lerp_color_channel.c
     ../src/port/input_config.c
     ../src/port/port_config.c
+    ../src/port/runtime_config.c
+    ../src/port/game_diagnostics.c
+    ../src/port/platform_paths.c
 )
 
 target_include_directories(game_logic_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(game_logic_tests PRIVATE -Wall -Wextra -Werror)
 endif()
+if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(game_logic_tests PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(game_logic_tests PRIVATE -fsanitize=address,undefined)
+endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
+
+add_executable(course_index_tests course_index_tests.c)
+target_include_directories(course_index_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(course_index_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_index COMMAND course_index_tests)
+
+add_executable(native_geometry_interpolation_tests
+    native_geometry_interpolation_tests.c
+    ../src/port/native_geometry_interpolation.c)
+target_include_directories(native_geometry_interpolation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(native_geometry_interpolation_tests PRIVATE psyz)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(native_geometry_interpolation_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(native_geometry_interpolation_tests PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(native_geometry_interpolation_tests PRIVATE
+        -fsanitize=address,undefined)
+endif()
+add_test(NAME native_geometry_interpolation
+         COMMAND native_geometry_interpolation_tests)
+
+add_test(NAME release_package COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify_release_package.py ${CMAKE_SOURCE_DIR})
+
+add_test(NAME host_state_abi COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify_host_state_abi.py ${CMAKE_SOURCE_DIR})
 
 add_test(
     NAME player_car_interior_aliases
@@ -165,6 +208,22 @@ if(TARGET rage-gte-replay)
     set_tests_properties(gte_replay_usage PROPERTIES WILL_FAIL TRUE)
 endif()
 
+# These tests need neither a staged disc image nor a windowing session and are
+# therefore safe in every release-packaging job. Runtime tests below exercise
+# the real PAL data in local/pre-release validation instead.
+set(RAGE_PORTABLE_TESTS
+    game_logic course_index native_geometry_interpolation
+    release_package host_state_abi player_car_interior_aliases
+    race_progress_layout sequence_state_layout native_ui_script_layout
+    native_frame_offsets frame_environment_aliases audio_state_layout
+    visual_batch_refinement visual_run capture_sync visual_budget visual_triage
+    gpu_digest_compare gp0_compare gp0_bundle gp0_replay gp0_raster_compare
+    vram_delta visible_cells_compare input_replay)
+if(TARGET rage-gte-replay)
+    list(APPEND RAGE_PORTABLE_TESTS gte_replay_usage)
+endif()
+set_tests_properties(${RAGE_PORTABLE_TESTS} PROPERTIES LABELS portable)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame
@@ -174,6 +233,78 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(boot_frame PROPERTIES TIMEOUT 20)
+    add_test(
+        NAME title_page_stability
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_title_page_stability.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(title_page_stability PROPERTIES TIMEOUT 20)
+    add_test(
+        NAME scenario_control
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_control.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(scenario_control PROPERTIES TIMEOUT 50)
+    add_test(
+        NAME scenario_after_finish
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_after_finish.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(scenario_after_finish PROPERTIES TIMEOUT 70)
+    add_test(
+        NAME runtime_config
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_runtime_config.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(runtime_config PROPERTIES TIMEOUT 60)
+    add_test(
+        NAME renderer_toggle_cycles
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_renderer_toggle_cycles.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(renderer_toggle_cycles PROPERTIES TIMEOUT 65)
+    add_test(
+        NAME course_matrix
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_course_matrix.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(course_matrix PROPERTIES TIMEOUT 360)
+    add_test(
+        NAME track_start
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_track_start.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(track_start PROPERTIES TIMEOUT 55)
+    add_test(
+        NAME diagnostic_log
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_diagnostic_log.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 20)
+    add_test(NAME retire_camera COMMAND python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_retire_camera.py
+        $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+    set_tests_properties(retire_camera PROPERTIES TIMEOUT 55)
+    add_test(NAME mirrored_track COMMAND python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.py
+        $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+    set_tests_properties(mirrored_track PROPERTIES TIMEOUT 120)
     add_test(
         NAME keyboard_input
         COMMAND python3
@@ -190,6 +321,17 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(window_size PROPERTIES TIMEOUT 20)
+    find_program(RAGE_XDOTOOL xdotool)
+    if(RAGE_XDOTOOL)
+        add_test(
+            NAME window_lifecycle
+            COMMAND python3
+                ${CMAKE_CURRENT_SOURCE_DIR}/verify_window_lifecycle.py
+                $<TARGET_FILE:rage-racer-smoke>
+                ${CMAKE_SOURCE_DIR}
+        )
+        set_tests_properties(window_lifecycle PROPERTIES TIMEOUT 65)
+    endif()
     add_test(
         NAME initial_state
         COMMAND python3
@@ -207,6 +349,14 @@ if(TARGET rage-racer-smoke)
     )
     set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 25)
     add_test(
+        NAME fmv_missing_ffmpeg
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_fallback.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(fmv_missing_ffmpeg PROPERTIES TIMEOUT 30)
+    add_test(
         NAME prologue_frame
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.py
@@ -223,6 +373,14 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(scene_capture PROPERTIES TIMEOUT 120)
+    add_test(
+        NAME modern_feature_frames
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_modern_feature_frames.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME grand_prix_terrain_frame
@@ -241,6 +399,14 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(race_start PROPERTIES TIMEOUT 50)
+    add_test(
+        NAME race_restart
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_restart.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(race_restart PROPERTIES TIMEOUT 65)
 
     add_test(
         NAME grand_prix_results
@@ -268,6 +434,10 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(mirror_entry PROPERTIES TIMEOUT 50)
+    add_test(NAME mirror_cars COMMAND python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.py
+        $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+    set_tests_properties(mirror_cars PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME menu_sweep
@@ -277,6 +447,24 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(menu_sweep PROPERTIES TIMEOUT 75)
+
+    add_test(
+        NAME trophy_view
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_trophy_view.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(trophy_view PROPERTIES TIMEOUT 55)
+
+    add_test(
+        NAME waterfall
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_waterfall.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(waterfall PROPERTIES TIMEOUT 60)
 
     add_test(
         NAME time_attack_records

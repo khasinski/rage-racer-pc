@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/track.h"
@@ -94,10 +95,10 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     static int traceTimerMax = -1;
     int traceThisCall;
     if (traceEnabled < 0) {
-        const char *timerText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER");
-        const char *timerMinText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER_MIN");
-        const char *timerMaxText = getenv("RAGE_PORT_CAR_TRACK_TRACE_TIMER_MAX");
-        traceEnabled = getenv("RAGE_PORT_CAR_TRACK_TRACE") != NULL;
+        const char *timerText = RageDiagnosticsValue("car.track_trace_timer");
+        const char *timerMinText = RageDiagnosticsValue("car.track_trace_timer_min");
+        const char *timerMaxText = RageDiagnosticsValue("car.track_trace_timer_max");
+        traceEnabled = RageDiagnosticsEnabled("car.track_trace");
         traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
         traceTimerMin = timerMinText != NULL ? (int)strtol(timerMinText, NULL, 0) : -1;
         traceTimerMax = timerMaxText != NULL ? (int)strtol(timerMaxText, NULL, 0) : -1;

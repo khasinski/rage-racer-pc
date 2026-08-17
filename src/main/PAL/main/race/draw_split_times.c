@@ -51,7 +51,7 @@ split_current_done:
         s32 finalA1 = 0x7C;
         s32 finalA3 = 0x78CC;
 
-        finalValue = g_BestTotalTimes[g_RaceSeries][g_CourseIndex][0];
+        finalValue = g_BestTotalTimes[g_RaceSeries][RageSeriesCourseIndex()][0];
         DrawTimeValue(finalA0, finalA1, finalValue, finalA3, timeout);
     }
 }

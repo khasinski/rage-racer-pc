@@ -61,7 +61,6 @@ void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm, s32
 s32 SetLookAtMatrix(const CameraLookAt *camera) {
     Matrix m;
     GameRenderAxisMatrix am;
-    volatile s32 pad[18];
     s32 outX;
     s32 outY;
     s32 outZ;

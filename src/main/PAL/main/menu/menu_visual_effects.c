@@ -899,7 +899,7 @@ typedef union PackedCoordinate {
 
 /* The animated five-row ranking/time-record panel. */
 s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
-    u8 text[16];
+    char text[16];
     OT_TYPE *ot;
     s32 phase;
     u32 slide;
@@ -967,7 +967,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             contentY = contentYWide;
             DrawSprite(ot, 0xA4, contentY, 0x48, 0x10, 0x48, 0xAC,
                              0, 0, 0, headerClut, 1, 1, headerFlags);
-            switch (g_CourseIndex & 3) {
+            switch (RageSeriesCourseIndex()) {
             case 0:
                 DrawSprite(ot, 0xA4, (s16)(slide + 0x25C), 0x54, 0x10,
                                  0, 0x9C, 0, 0, 0, headerClut, 1, 1, headerFlags);
@@ -1036,28 +1036,28 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             if (ranking != 0) {
                 FormatLapTime(
                     text,
-                    g_RankingRecords[((g_CourseIndex & 4) >> 2)]
-                                    [(g_CourseIndex & 3)][row].raceTime);
+                    g_RankingRecords[RageCourseSeries(g_CourseIndex)]
+                                    [(RageSeriesCourseIndex())][row].raceTime);
                 rowY = panelY + rowYStep;
                 DrawLargeText(0x36, rowY, text, 0x7F, 0x7F, 0x7F,
                                   loopClut, 0x20);
                 DrawLargeText(
                     0x77, rowY,
-                    g_RankingRecords[((g_CourseIndex & 4) >> 2)]
-                                    [(g_CourseIndex & 3)][row].driverName,
+                    g_RankingRecords[RageCourseSeries(g_CourseIndex)]
+                                    [(RageSeriesCourseIndex())][row].driverName,
                     0x7F, 0x7F, 0x7F, loopClut, 0xA0);
             } else {
                 FormatLapTime(
                     text,
-                    g_TimeRecords[((g_CourseIndex & 4) >> 2)]
-                                 [(g_CourseIndex & 3)][row].raceTime);
+                    g_TimeRecords[RageCourseSeries(g_CourseIndex)]
+                                 [(RageSeriesCourseIndex())][row].raceTime);
                 rowY = panelY + rowYStep;
                 DrawLargeText(0x36, rowY, text, 0x7F, 0x7F, 0x7F,
                                   loopClut, 0x20);
                 DrawLargeText(
                     0x77, rowY,
-                    g_TimeRecords[((g_CourseIndex & 4) >> 2)]
-                                 [(g_CourseIndex & 3)][row].driverName,
+                    g_TimeRecords[RageCourseSeries(g_CourseIndex)]
+                                 [(RageSeriesCourseIndex())][row].driverName,
                     0x7F, 0x7F, 0x7F, loopClut, 0xA0);
             }
 
@@ -1072,11 +1072,11 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
                              spriteOne, spriteOne, 0x3B);
 
             if (ranking != 0) {
-                car = (u16)g_RankingRecords[((g_CourseIndex & 4) >> 2)]
-                                             [(g_CourseIndex & 3)][row].carIndex;
+                car = (u16)g_RankingRecords[RageCourseSeries(g_CourseIndex)]
+                                             [(RageSeriesCourseIndex())][row].carIndex;
             } else {
-                car = (u16)g_TimeRecords[((g_CourseIndex & 4) >> 2)]
-                                          [(g_CourseIndex & 3)][row].carIndex;
+                car = (u16)g_TimeRecords[RageCourseSeries(g_CourseIndex)]
+                                          [(RageSeriesCourseIndex())][row].carIndex;
             }
             switch (car) {
                 case 0:

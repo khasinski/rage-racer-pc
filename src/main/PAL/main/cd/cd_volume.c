@@ -6,7 +6,6 @@
 void SetCdVolume(s32 volume) {
     s32 offset;
     s32 scale;
-    s32 magic;
     s32 product;
     s32 value;
 
@@ -16,7 +15,6 @@ void SetCdVolume(s32 volume) {
     offset <<= 2;
 
     product = g_CdMixPresets[offset] * scale;
-    magic = 0x81020409;
     value = (product / 127) << 12;
     g_CdMixFullLL = value;
     g_CdMixLL = value;

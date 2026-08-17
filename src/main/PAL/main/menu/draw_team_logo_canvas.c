@@ -373,7 +373,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       register s32 swatchWidth asm("$7");
       s32 gxArg;
       s32 gyArg;
-      register s32 clutArg asm("$20");
+      s32 clutArg;
 
       x1 = x0 + vs6;
       if (g_PadType == 0x23)
@@ -401,7 +401,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       drawValue.pointer = ot.pointer;
       asm("" : : "r"(drawValue.pointer));
       asm("" : : "r"(x1));
-      asm("" : "=r"(clutArg) : "0"(clut));
+      clutArg = clut;
       DrawSprite(drawValue.pointer, (s16)(x1 + 0x13), (s16)(yA0 >> 16), (s16)swatchWidth, (s16)0x18,
                             gxArg, gyArg, 0, 0, 0, (u16) pal, 1, 0, clutArg);
       asm("" : "=r"(shade) : "0"(shade));

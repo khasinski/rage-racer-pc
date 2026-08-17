@@ -5,6 +5,6 @@
 #include "game/menu_types.h"
 
 extern TeamLogoSample *g_TeamLogoSampleData;
-extern u8 g_TextNowLoading[];
+extern char g_TextNowLoading[];
 
 #endif

@@ -23,7 +23,7 @@ s32 DrawClassChangeCurtain(s32 step) {
 
     if (delta == 0) {
         g_ClassChangeCurtainSlide = 0;
-        return temp;
+        return g_ClassChangeCurtainSlide;
     } else {
         if (delta < 0) {
             temp = g_ClassChangeCurtainSlide;

@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/waypoint.h"
+#include "game/course_index.h"
 #include "game/vector.h"
 #include "game/player_car_aliases.h"
 #include "game/replay.h"
@@ -26,9 +27,9 @@ typedef union ReplayCarAddress {
  * gated to class >= 2. */
 extern s32 g_GrandPrixClass;
 
-/* Course selector: low 2 bits are the course (0 BIG, 1 MID, 2 HI, 3 OVAL).
- * Bits 2+ transiently carry g_GrandPrixSeries, so mask with 3. */
-extern s32 g_CourseIndex;
+/* Physical course asset selector. Extra GP uses indices 4..7 for its track
+ * variants, while progress/record tables have four slots per series. Never
+ * index a four-course table with this value directly. */
 
 /* Which Grand Prix series is played: 0 = first (6 classes), non-zero =
  * Extra GP (5 classes). Outer index of every per-series table. */
@@ -333,12 +334,12 @@ extern s32 g_CameraCarProgressA;
 extern s16 g_CameraCarTrackSection;
 extern char g_CaptionLapTime[];
 extern char g_CaptionLapTime2[];
-extern u8 g_CaptionLostRace;
-extern u8 g_CaptionPrizeMoney[];
-extern u8 g_CaptionPromotionBonus[];
+extern char g_CaptionLostRace;
+extern char g_CaptionPrizeMoney[];
+extern char g_CaptionPromotionBonus[];
 extern char g_CaptionRanking[];
 extern char g_CaptionRanking2[];
-extern u8 g_CaptionTotalMoney[];
+extern char g_CaptionTotalMoney[];
 extern char g_CaptionTotalTime[];
 extern char g_CaptionTotalTime2[];
 #ifdef __psyz
@@ -350,7 +351,7 @@ extern char *g_NativeCarNames[];
 extern s32 g_CarClassNames[];
 extern s32 g_CarNames[];
 #endif
-extern s16 g_ChanceDigits[];
+extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern u8 g_ClockTextCells[8];
 #define g_ClockTextBuffer (g_ClockTextCells[0])
@@ -370,7 +371,7 @@ extern s32 g_EndingWashLevel;
 extern char g_FmtCarName[];
 extern char g_FmtClassGrandPrix[];
 extern char g_FmtLapTime[];
-extern u8 g_FmtMoney[];
+extern char g_FmtMoney[];
 extern char g_FmtRecordName[];
 extern char g_FmtRoundIn[];
 extern s32 g_LostRaceChoice;

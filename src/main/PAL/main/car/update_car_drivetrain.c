@@ -61,7 +61,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 radialDistance;
   s32 shiftTargetRpm;
   s32 pointCurveMode;
-  GameCarSpecAddress gearRatioSlot;
   s32 headingError;
   s32 shiftMode;
   s32 gradeScale;
@@ -117,7 +116,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GameTrackArcCenter *arcCentre;
   GameTrackPoint *trackPoint;
   GearCurveAddress curveSlot;
-  GameCarSpecAddress specSlot;
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;

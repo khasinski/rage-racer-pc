@@ -83,7 +83,6 @@ void DrawLapTimes(void) {
     s32 *valuePtr;
     GameFrameContext *frame;
     OT_TYPE *ot;
-    s32 framePad[2];
     s32 value;
 
     visibleCount = g_PlayerCar.lap;

@@ -95,7 +95,6 @@ void ResetCarTrackState(GameCarRuntime *car) {
     s32 cosPointAngle;
     s32 cosNextAngle;
     s32 cosHeading;
-    s32 sinHeading;
     s32 nextCamber;
     s32 arcCenterZ;
     s32 sweptAngle;
@@ -108,7 +107,6 @@ void ResetCarTrackState(GameCarRuntime *car) {
     s32 arcLateral;
     s32 lateralProduct;
     s32 pointHeading;
-    s32 lateralOffset;
     s32 alongSegment;
     s32 carRadius;
     s32 pointRadius;
@@ -236,18 +234,6 @@ void ResetCarTrackState(GameCarRuntime *car) {
         rotated += 0xFFF;
     }
     alongSegment = rotated >> 0xE;
-
-    /*
-     * The non-clamping path does not consume the lateral component. GCC 2.6.3
-     * removes its mflo/add/round/shift but leaves the two HI/LO-setting mults.
-     */
-    sinHeading = rsin(spad->heading);
-    rotated = ((0 - sinHeading) * (s16)spad->offsetX) +
-             (rcos(spad->heading) * spad->offsetZ);
-    if (rotated < 0) {
-        rotated += 0xFFF;
-    }
-    lateralOffset = rotated >> 0xE;
 
     if ((s16)spad->segmentLength < alongSegment) {
         alongSegment = (s16)spad->segmentLength;

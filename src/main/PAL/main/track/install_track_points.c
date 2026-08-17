@@ -20,7 +20,6 @@ void InstallTrackPoints(TrackPointTable *trackData) {
     TrackPointTableAddress arcCenterAddress;
     TrackPointTableAddress pointAddress;
     s32 total;
-    s32 pad[2];
 
     count = trackData->count;
     points = trackData->points;

@@ -148,6 +148,7 @@ void LoadSelectBgmAssets(void) {
     case 1:
         CloseLoadedAudioSlots();
         g_AssetLoadState = 2;
+        /* fall through */
     case 2:
         if (LoadAsset(7, g_AssetBase) != 0) {
             firstBlockAddress.pointer = g_AssetBase;

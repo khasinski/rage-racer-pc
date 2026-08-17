@@ -23,6 +23,8 @@ void UpdateFmv(void) {
     FmvWorkBufferAddress workAddress;
 
     switch (g_FmvState) {
+    case FMV_PLAYBACK_INVALID:
+        break;
     case FMV_PLAYBACK_START:
         workAddress.bytes = g_AssetBase;
         StartFmvPlayback(workAddress.buffers);

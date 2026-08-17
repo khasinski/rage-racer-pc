@@ -1,0 +1,23 @@
+name: Sanitizers
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev libxrender-dev libxss-dev libxtst-dev xvfb ffmpeg
+      - name: Configure ASan and UBSan
+        run: cmake -S . -B build/sanitize -DCMAKE_BUILD_TYPE=Debug -DRAGE_ENABLE_SANITIZERS=ON
+      - name: Build
+        run: cmake --build build/sanitize --parallel
+      - name: Unit and portable tests
+        run: ctest --test-dir build/sanitize --output-on-failure -L portable
+      # Runtime tests consume the legally supplied PAL disc and run in the
+      # pre-release checkout; public CI deliberately has no game data.

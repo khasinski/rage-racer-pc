@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(rage_racer_port VERSION 0.3.0 LANGUAGES C)
+project(rage_racer_port VERSION 0.4.0 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "0.3-alpha")
+set(RAGE_RACER_RELEASE_VERSION "0.4-alpha")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -11,6 +11,7 @@ set(CMAKE_C_EXTENSIONS ON)
 include(CTest)
 
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)
+option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
 
 if(RAGE_BUILD_PORT)
     add_subdirectory(external/psyz/psyz external-psyz)
@@ -34,13 +35,23 @@ if(RAGE_BUILD_PORT)
     )
     set(RAGE_PORT_COMMON_SOURCES
         src/port/input_config.c
+        src/port/platform_paths.c
+        src/port/diagnostic_log.c
+        src/port/game_diagnostics.c
+        src/port/runtime_config.c
         src/port/port_config.c
+        src/port/scenario_control.c
         src/port/platform_stubs.c
         src/port/legacy_platform.c
         src/port/native_geometry.c
+        src/port/native_geometry_diagnostics.c
+        src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
         src/port/fmv_host.c
         src/port/modern/modern_renderer.c
+        src/port/modern/modern_shader_sources.c
+        src/port/modern/modern_texture_dump.c
+        src/port/modern/modern_renderer_diagnostics.c
         src/port/modern/scene_capture.c
     )
     add_executable(rage-racer
@@ -58,6 +69,7 @@ if(RAGE_BUILD_PORT)
         $<TARGET_OBJECTS:rage-game-full>
         $<TARGET_OBJECTS:rage-host-state>
     )
+    target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-save-generator tools/rage_save_generator.c)
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
     target_compile_options(rage-save-generator PRIVATE
@@ -69,11 +81,13 @@ if(RAGE_BUILD_PORT)
         include
     )
     target_link_libraries(rage-game-full PUBLIC psyz)
+    target_compile_definitions(rage-game-full PRIVATE RAGE_HOST_PORT=1)
     # The recovered game sources retain PS1-era tentative globals.  Host
     # initialized state deliberately provides their concrete definitions; GCC
     # otherwise treats the tentative copies as duplicate ELF definitions.
     if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(rage-game-full PRIVATE -fcommon)
+        target_compile_options(rage-game-full PRIVATE
+            -fcommon -Wall -Wextra -Werror)
     endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE
@@ -85,6 +99,7 @@ if(RAGE_BUILD_PORT)
             target_compile_options(${RAGE_PORT_TARGET} PRIVATE
                 "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
                 "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
+                -Wall -Wextra -Werror
             )
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz)
@@ -92,6 +107,18 @@ if(RAGE_BUILD_PORT)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()
     endforeach()
+    if(RAGE_ENABLE_SANITIZERS AND
+       CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+        foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state
+                                      rage-racer rage-racer-smoke)
+            target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
+                -fsanitize=address,undefined -fno-omit-frame-pointer)
+        endforeach()
+        foreach(RAGE_SANITIZER_TARGET rage-racer rage-racer-smoke)
+            target_link_options(${RAGE_SANITIZER_TARGET} PRIVATE
+                -fsanitize=address,undefined)
+        endforeach()
+    endif()
     if(MSVC)
         target_compile_options(rage-game-full PRIVATE
             "/FI${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/compat.h"
@@ -133,6 +160,7 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(rage-gp0-replay PRIVATE psyz)
         add_test(NAME save_generator
             COMMAND rage-save-generator --self-test)
+        set_tests_properties(save_generator PROPERTIES LABELS portable)
     endif()
 endif()
 

@@ -158,7 +158,6 @@ void InitPathScenery(void) {
  * cue zero with distance attenuation and a Doppler-like pitch shift.
  */
 void UpdatePathScenerySound(void) {
-    s32 delta[3];
     PathSceneryPositionKey *positionKeys;
     PathSceneryRotationKey *rotationKeys;
     s16 rate;
@@ -404,9 +403,8 @@ void UpdatePathScenerySound(void) {
     posFrame = posFrame + 1;
     frames.halfwords[0] = posFrame;
     frames.halfwords[1] = rotFrame + 1;
-    delta[0] = dx;
-    delta[1] = dy = g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
-    delta[2] = dz = g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
+    dy = g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
+    dz = g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
 
     if (dx < 0x1000 && dz < 0x1000 && dx >= -0xFFF && dz >= -0xFFF) {
         slew =

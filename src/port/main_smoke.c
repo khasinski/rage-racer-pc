@@ -9,8 +9,11 @@
 #include <stdlib.h>
 
 #include "input_config.h"
+#include "diagnostic_log.h"
 #include "port_config.h"
+#include "runtime_config.h"
 #include "modern/modern_renderer.h"
+#include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
 #include "game/state.h"
@@ -43,10 +46,7 @@ extern s32 g_MirrorPanelY;
 extern Vec4 g_MirrorVisibleCellList[];
 extern u32 g_MainVisibleCellMask[];
 extern u32 g_MirrorVisibleCellMask[];
-extern unsigned long long g_RageNearFacesCrossing;
-extern unsigned long long g_RageNearTrianglesEmitted;
 extern unsigned long long g_RageGt4FacesEmitted;
-extern unsigned long long g_RageNearGt4TrianglesEmitted;
 extern unsigned g_RageGt4ColorMaximum;
 extern int g_RageGt4DepthMinimum;
 extern int g_RageGt4DepthMaximum;
@@ -59,6 +59,7 @@ extern unsigned long long g_RageModelRejectBackface;
 extern unsigned long long g_RageTerrainSecondTriangleVisible;
 extern unsigned long long g_RageTerrainChildRejectBackface;
 extern unsigned long long g_RageTerrainChildSecondTriangleVisible;
+int RageRetireCameraActive(void);
 
 int RageWriteCapturedFrame(const char *path) {
     unsigned char *pixels;
@@ -77,20 +78,20 @@ int RageWriteCapturedFrame(const char *path) {
      * the manifest describes the current game state. */
     DrawSync(0);
     /* Prime the reusable GPU download buffer before the asserted capture. */
-    if (getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL) {
+    if (RageRuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE")) {
         pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
     } else {
         pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
     }
     if (pixels == NULL) return 0;
     free(pixels);
-    if (getenv("RAGE_PORT_CAPTURE_DRAW_PAGE") != NULL) {
+    if (RageRuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE")) {
         pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
     } else {
         pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
     }
     if (pixels == NULL) return 0;
-    if (getenv("RAGE_PORT_CAPTURE_VRAM_SIDECAR") != NULL) {
+    if (RageRuntimeConfigEnabled("capture.vram_sidecar", "RAGE_PORT_CAPTURE_VRAM_SIDECAR")) {
         size_t pathLength = strlen(path);
         char *vramPath;
         FILE *vramOutput;
@@ -162,16 +163,22 @@ int RageWriteCapturedFrame(const char *path) {
     return 1;
 }
 
-int main(void) {
+int main(int argc, char **argv) {
     RageInputConfig inputConfig;
+    RagePortConfig portConfig;
     int inputIndex;
+    char logPath[1024];
+
+    if (!RageRuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if (RageRuntimeConfigEnabled("diagnostics.test_log", "RAGE_PORT_TEST_LOG") &&
+        !RageDiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
 
     Psyz_SetTitle("Rage Racer smoke");
     setenv("RAGE_PORT_TEST_MODE", "1", 0);
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);
-    if (getenv("RAGE_PORT_DISABLE_HOST_INPUT") != NULL) {
+    if (RageRuntimeConfigEnabled("input.disable_host", "RAGE_PORT_DISABLE_HOST_INPUT")) {
         Psyz_SetHostInputEnabled(0);
     }
     RageInputConfigDefaults(&inputConfig);
@@ -180,33 +187,32 @@ int main(void) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     if (!RageHostInitDisc()) return EXIT_FAILURE;
-    if (getenv("RAGE_PORT_SPU_TRACE") != NULL &&
-        Psyz_SpuSetKeyOnTracePath(getenv("RAGE_PORT_SPU_TRACE")) != 0) {
+    if (RageRuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE") != NULL &&
+        Psyz_SpuSetKeyOnTracePath(RageRuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE")) != 0) {
         fprintf(stderr, "unable to open SPU trace: %s\n",
-                getenv("RAGE_PORT_SPU_TRACE"));
+                RageRuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE"));
         return EXIT_FAILURE;
     }
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
-    if (getenv("RAGE_PORT_MODERN") != NULL) {
-        RagePortConfig portConfig;
-        RagePortConfigDefaults(&portConfig);
+    RagePortConfigDefaults(&portConfig);
+    if (RageRuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
-        RagePortConfigLoad(&portConfig, "rage-port.cfg");
+    RagePortConfigApplyRuntime(&portConfig);
+    if (RageRuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
-        RagePortConfigSetActive(&portConfig);
-        RageModernInit(&portConfig);
-    }
+    RagePortConfigSetActive(&portConfig);
+    RageModernInit(&portConfig);
     MainLoop();
-    if (getenv("RAGE_PORT_DUMP_SPU_RAM") != NULL) {
-        FILE *output = fopen(getenv("RAGE_PORT_DUMP_SPU_RAM"), "wb");
+    if (RageRuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM") != NULL) {
+        FILE *output = fopen(RageRuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM"), "wb");
         if (output != NULL) {
             fwrite(Psyz_SpuGetRam(), 1, 512 * 1024, output);
             fclose(output);
         }
     }
-    if (getenv("RAGE_PORT_DUMP_VRAM") != NULL) {
-        const char *path = getenv("RAGE_PORT_DUMP_VRAM");
+    if (RageRuntimeConfigGetLegacy("dump.vram", "RAGE_PORT_DUMP_VRAM") != NULL) {
+        const char *path = RageRuntimeConfigGetLegacy("dump.vram", "RAGE_PORT_DUMP_VRAM");
         RECT rect = {0, 0, 1024, 512};
         u16 *vram = malloc(1024u * 512u * sizeof(*vram));
         FILE *output;
@@ -224,7 +230,7 @@ int main(void) {
         fclose(output);
         free(vram);
     }
-    if (getenv("RAGE_PORT_SMOKE_INITIAL_STATE") != NULL) {
+    if (RageRuntimeConfigEnabled("report.initial_state", "RAGE_PORT_SMOKE_INITIAL_STATE")) {
         int enabled = 0;
         int car;
         for (car = 0; car < 13; car++)
@@ -232,11 +238,11 @@ int main(void) {
         printf("initial state: time_attack_enabled=%d selected_car=%d\n",
                enabled, g_TimeAttackSave.carIndex);
     }
-    if (getenv("RAGE_PORT_SMOKE_WINDOW_SIZE") != NULL) {
+    if (RageRuntimeConfigEnabled("report.window_size", "RAGE_PORT_SMOKE_WINDOW_SIZE")) {
         PsyzSize size = Psyz_VideoGetDisplaySize();
         printf("window size: %dx%d\n", size.w, size.h);
     }
-    if (getenv("RAGE_PORT_SMOKE_AUDIO_METRICS") != NULL) {
+    if (RageRuntimeConfigEnabled("report.audio_metrics", "RAGE_PORT_SMOKE_AUDIO_METRICS")) {
         printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
                "pitch_updates=%llu cdda=%d reverb_in=%llu reverb_out=%llu "
                "reverb_tail=%llu "
@@ -260,7 +266,7 @@ int main(void) {
                g_EngineSoundState.slotActive[4],
                g_EngineSoundState.slotActive[5], g_SoundScale.scale);
     }
-    if (getenv("RAGE_PORT_SMOKE_CAMERA_STATE") != NULL) {
+    if (RageRuntimeConfigEnabled("report.camera_state", "RAGE_PORT_SMOKE_CAMERA_STATE")) {
         {
             RECT paletteRect = {752, 224, 16, 1};
             RECT textureRect = {704, 120, 16, 1};
@@ -344,18 +350,17 @@ int main(void) {
                 }
             }
         }
-        printf(" ref_lap=%d time_text=%s near=%llu/%llu gt4=%llu+%llu max=%u z=%d..%d clip=%llu/%llu reject=%llu/%llu/%llu",
+        printf(" ref_lap=%d time_text=%s gt4=%llu max=%u z=%d..%d clip=%llu/%llu reject=%llu/%llu/%llu",
                g_BestLapThisRace,
                g_TimeTextBuffer,
-               g_RageNearFacesCrossing, g_RageNearTrianglesEmitted,
-               g_RageGt4FacesEmitted, g_RageNearGt4TrianglesEmitted,
+               g_RageGt4FacesEmitted,
                g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
                g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
                g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,
                g_RageGt4RejectBackface, g_RageGt4RejectDepth);
         putchar('\n');
     }
-    if (getenv("RAGE_PORT_SMOKE_VISIBLE_CELLS") != NULL) {
+    if (RageRuntimeConfigEnabled("capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS")) {
         int cell;
         for (cell = 0; cell < 64; cell++) {
             const Vec4 *mainEntry = &g_VisibleCellList[cell];
@@ -372,7 +377,7 @@ int main(void) {
                    (unsigned)g_MirrorVisibleCellMask[cell]);
         }
     }
-    if (getenv("RAGE_PORT_SMOKE_SAVE_ROUNDTRIP") != NULL) {
+    if (RageRuntimeConfigEnabled("checks.save_roundtrip", "RAGE_PORT_SMOKE_SAVE_ROUNDTRIP")) {
         GameSaveHeaderRow header = {0};
         const int marker = 123456789;
 
@@ -395,7 +400,7 @@ int main(void) {
         }
         printf("save roundtrip ok: money=%d\n", g_RaceProgress->money.value);
     }
-    if (getenv("RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD") != NULL) {
+    if (RageRuntimeConfigEnabled("checks.complete_save_load", "RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD")) {
         GameSaveHeaderRow header = {0};
         int table;
         int car;
@@ -424,7 +429,8 @@ int main(void) {
         }
         printf("complete generated save loaded: classes=4/5 cars=13/13/13\n");
     }
-    if (!RageWriteCapturedFrame(getenv("RAGE_PORT_CAPTURE_PATH"))) {
+    if (!RageWriteCapturedFrame(
+            RageRuntimeConfigGetLegacy("capture.path", "RAGE_PORT_CAPTURE_PATH"))) {
         fprintf(stderr, "failed to capture smoke frame\n");
         return EXIT_FAILURE;
     }
@@ -433,7 +439,8 @@ int main(void) {
            "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
            "gp_round=%d class_done=%d series_done=%d rpm=%d jitter=%d "
            "terrain_second=%llu terrain_child_reject=%llu "
-           "terrain_child_second=%llu model_backface=%llu mirror_y=%d\n",
+           "terrain_child_second=%llu model_backface=%llu mirror_y=%d "
+           "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d\n",
            g_FrameCounter, g_SceneId, g_FrontendState,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
@@ -444,7 +451,9 @@ int main(void) {
            g_RageTerrainSecondTriangleVisible,
            g_RageTerrainChildRejectBackface,
            g_RageTerrainChildSecondTriangleVisible,
-           g_RageModelRejectBackface, g_MirrorPanelY);
+           g_RageModelRejectBackface, g_MirrorPanelY,
+           g_PlayerCar.drive.steerPos, g_MirrorMode,
+           RageRetireCameraActive(), RageCaptureCurrent()->faceCount);
     printf("memory card: phase=%d status=%d files=%d free=%d mask=%x page=%d\n",
            g_McMenuPhase, g_McStatusResult, g_McCardFileCount,
            g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);

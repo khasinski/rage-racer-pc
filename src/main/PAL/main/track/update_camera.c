@@ -66,8 +66,6 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 pathPitch;
     s32 squaredX;
     s32 squaredZ;
-    s32 orbitNodeOffset;
-    s32 chaseNodeOffset;
     s32 pathOffsetZ;
     s32 pathOffsetY;
     s32 camPathOffset;
@@ -353,7 +351,6 @@ block_52:
         g_CameraModePrev = 1;
         break;
     case 2:
-        chaseNodeOffset = cameraNodeIndex * 0x24;
         chaseNode = &g_TrackCameras[cameraNodeIndex];
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = chaseNode->data.block;
@@ -558,7 +555,6 @@ block_52:
         MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
         TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
         sp18[0] = 0;
-        orbitNodeOffset = cameraNodeIndex * 0x24;
         sp18[1] = g_TrackCameras[cameraNodeIndex].data.orientation.distance;
         sp18[2] = 0x32;
         ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp28[0]);

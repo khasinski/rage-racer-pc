@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "symbols": {
+    "g_CdSearchFile": 24,
+    "g_FlybyScenery": 52,
+    "g_RouteSceneryPosition": 16,
+    "g_SpinningSceneryRecords": 64,
+    "g_BestSectorTimes": 96,
+    "g_BestLapTimes": 64,
+    "g_BestTotalTimes": 68,
+    "g_PaintBlendShades": 6,
+    "g_ShuttlePathPoints": 96
+  },
+  "forbidden_detached_aliases": [
+    "g_FlybySceneryArmed",
+    "g_FlybySceneryFrame",
+    "g_FlybySceneryLap",
+    "g_FlybySceneryKeyIndex",
+    "g_RouteSceneryX",
+    "g_RouteSceneryY",
+    "g_RouteSceneryZ",
+    "g_SpinningSceneryPos",
+    "g_SpinningSceneryYaw",
+    "g_PaintBlendShade0",
+    "g_PaintBlendShade1",
+    "g_PaintBlendShade2",
+    "g_ShuttlePath2Points"
+  ]
+}

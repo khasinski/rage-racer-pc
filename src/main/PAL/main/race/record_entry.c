@@ -90,10 +90,10 @@ void DrawRankingPanel(s32 slideX) {
         text.value[1] = g_PlaceSuffixNames[countOrIndex][1];
         text.value[2] = g_PlaceSuffixNames[countOrIndex][2];
         text.value[3] = 0x2F;
-        FormatLapTime(&text.value[4], g_RankingRecords[g_GrandPrixSeries][g_CourseIndex][countOrIndex].raceTime);
-        xOrField = g_RankingRecords[g_GrandPrixSeries][g_CourseIndex][countOrIndex].carIndex;
+        FormatLapTime(&text.value[4], g_RankingRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][countOrIndex].raceTime);
+        xOrField = g_RankingRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][countOrIndex].carIndex;
         sprintf(&text.value[0xC], g_FmtRecordName,
-                      &g_RankingRecords[g_GrandPrixSeries][g_CourseIndex][countOrIndex],
+                      &g_RankingRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][countOrIndex],
                       g_CarClassNames[xOrField]);
         color = 0x78CC;
         if (g_RankingInsertRow == countOrIndex) {
@@ -130,11 +130,11 @@ void DrawTimeRecordPanel(s32 s5) {
         text[1] = g_PlaceSuffixNames[s2][1];
         text[2] = g_PlaceSuffixNames[s2][2];
         text[3] = 0x2F;
-        FormatLapTime(&text[4], g_TimeRecords[g_GrandPrixSeries][g_CourseIndex][s2].raceTime);
+        FormatLapTime(&text[4], g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2].raceTime);
 
-        idx = g_TimeRecords[g_GrandPrixSeries][g_CourseIndex][s2].carIndex;
+        idx = g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2].carIndex;
         sprintf(&text[0xC], g_FmtRecordName,
-                      &g_TimeRecords[g_GrandPrixSeries][g_CourseIndex][s2], g_CarClassNames[idx]);
+                      &g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2], g_CarClassNames[idx]);
 
         color = 0x78CC;
         if (g_TimeRecordInsertRow == s2) {
@@ -359,6 +359,8 @@ void UpdateRecordEntry(void) {
     g_AnimTimer++;
 
     switch (g_RecordEntryState) {
+    case RECORD_ENTRY_STATE_INVALID:
+        break;
     case RECORD_ENTRY_STATE_FADE_IN:
         g_SceneTimer -= 8;
         DrawFullscreenFadeTile(g_SceneTimer, 0x49);
@@ -434,7 +436,7 @@ void UpdateRecordEntry(void) {
         }
         i = 0;
         do {
-            g_RankingRecords[g_GrandPrixSeries][g_CourseIndex]
+            g_RankingRecords[g_GrandPrixSeries][RageSeriesCourseIndex()]
                             [g_RankingInsertRow].driverName[i] =
                 g_NameEntryCharset[g_RankingNameCodes[i]];
             i++;
@@ -502,7 +504,7 @@ void UpdateRecordEntry(void) {
         }
         i = 0;
         do {
-            g_TimeRecords[g_GrandPrixSeries][g_CourseIndex]
+            g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()]
                          [g_TimeRecordInsertRow].driverName[i] =
                 g_NameEntryCharset[g_TimeRecordNameCodes[i]];
             i++;

@@ -17,8 +17,6 @@ void DrawBgmSelectBar(void) {
     s32 tileW;
     s32 tileH;
     s32 temp;
-    s32 product;
-    s32 value;
     u8 *next;
 
     base = (u8 *)GamePrimaryOrderingTable(1);

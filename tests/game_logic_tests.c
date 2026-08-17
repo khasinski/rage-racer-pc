@@ -2,11 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "common.h"
 #include "game/track.h"
 #include "../src/port/input_config.h"
 #include "../src/port/port_config.h"
+#include "../src/port/runtime_config.h"
+#include "../src/port/platform_paths.h"
 
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 Random15(void);
@@ -122,30 +125,30 @@ static void test_port_config(void) {
     char path[] = "/tmp/rage-port-test-XXXXXX";
     const char contents[] =
         "# video settings\n"
+        "[video]\n"
         "renderer = modern\n"
-        "modern.internal_scale = 3.5\n"
-        "modern.aspect = 16:9\n"
-        "modern.fps = 120\n"
-        "modern.texture_filter = linear\n"
-        "modern.post = fxaa\n"
-        "modern.bloom = on\n"
-        "modern.grading = vibrant\n"
-        "modern.draw_distance = nonsense\n"
+        "internal_scale = 3.5\n"
+        "aspect = 16:9\n"
+        "fps = 120\n"
+        "texture_filter = linear\n"
+        "post = fxaa\n"
+        "bloom = on\n"
+        "grading = vibrant\n"
+        "draw_distance = nonsense\n"
         "unknown.key = 1\n";
     int fd;
 
     RagePortConfigDefaults(&config);
     EXPECT_EQ(RAGE_RENDERER_COMPAT, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
-    EXPECT_EQ(0, RagePortConfigLoad(&config, "/path/which/does/not/exist"));
-    EXPECT_EQ(RAGE_RENDERER_COMPAT, config.renderer);
-
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
     } else {
+        char *arguments[] = {"rage-test", "--config", path};
         close(fd);
-        EXPECT_EQ(8, RagePortConfigLoad(&config, path));
+        EXPECT_EQ(1, RageRuntimeConfigInit(3, arguments));
+        EXPECT_EQ(8, RagePortConfigApplyRuntime(&config));
         EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
         EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
         EXPECT_EQ(120, config.modernFps);
@@ -158,6 +161,47 @@ static void test_port_config(void) {
         EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));
         unlink(path);
     }
+    {
+        char *booleanArguments[] = {
+            "rage-test", "--set", "feature.enabled=False"};
+        char *invalidSet[] = {"rage-test", "--set", "broken"};
+        char *missingConfig[] = {
+            "rage-test", "--config", "/path/which/does/not/exist"};
+        EXPECT_EQ(1, RageRuntimeConfigInit(3, booleanArguments));
+        EXPECT_EQ(0, RageRuntimeConfigEnabled("feature.enabled", NULL));
+        EXPECT_EQ(0, RageRuntimeConfigInit(3, invalidSet));
+        EXPECT_EQ(0, RageRuntimeConfigInit(3, missingConfig));
+    }
+}
+
+static void test_platform_config_path(void) {
+    char root[] = "/tmp/rage-path-test-XXXXXX";
+    char directory[256], filePath[320], found[320];
+    const char *previous = getenv("XDG_CONFIG_HOME");
+    char *saved = previous != NULL ? strdup(previous) : NULL;
+    FILE *file;
+    if (mkdtemp(root) == NULL) {
+        failures++;
+        return;
+    }
+    snprintf(directory, sizeof(directory), "%s/rage-racer", root);
+    snprintf(filePath, sizeof(filePath), "%s/rage-port.ini", directory);
+    if (mkdir(directory, 0700) != 0 || (file = fopen(filePath, "wb")) == NULL) {
+        failures++;
+    } else {
+        fclose(file);
+        setenv("XDG_CONFIG_HOME", root, 1);
+        EXPECT_EQ(1, RagePlatformFindConfigFile(NULL, "rage-port.ini", found,
+                                                sizeof(found)));
+        EXPECT_EQ(0, strcmp(filePath, found));
+    }
+    if (saved != NULL) {
+        setenv("XDG_CONFIG_HOME", saved, 1);
+        free(saved);
+    } else unsetenv("XDG_CONFIG_HOME");
+    unlink(filePath);
+    rmdir(directory);
+    rmdir(root);
 }
 
 static void test_color_interpolation(void) {
@@ -175,6 +219,7 @@ int main(void) {
     test_track_angle_interpolation();
     test_input_config();
     test_port_config();
+    test_platform_config_path();
     test_color_interpolation();
 
     if (failures != 0) {
