@@ -91,6 +91,10 @@ if(RAGE_BUILD_PORT)
         CMAKE_C_COMPILER_ID MATCHES "Clang"))
         target_compile_options(rage-game-full PRIVATE
             -fcommon -Wall -Wextra -Werror)
+        if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+            target_compile_options(rage-game-full PRIVATE
+                -Wno-error=deprecated-non-prototype)
+        endif()
     endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE
