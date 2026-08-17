@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FMV failure is graceful when FFmpeg is absent and temp paths are Unicode."""
+"""FMV failure is graceful when the movie is unreadable and paths are Unicode."""
 
 import os
 import subprocess

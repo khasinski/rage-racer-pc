@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install runtime dependencies
-        run: brew install ffmpeg
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
       - name: Build
@@ -89,9 +87,22 @@ jobs:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           package="Rage-Racer-${VERSION}-macos-arm64"
+          # The copies inside the bundle are sealed by the signature and cannot
+          # be edited without breaking it, so lay the editable ones beside the
+          # app, the way the Linux archive does.
+          mkdir -p "dist/${package}"
+          ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
+          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini \
+            "dist/${package}/"
           ditto -c -k --sequesterRsrc --keepParent \
-            "build/release/Rage Racer.app" "dist/${package}.zip"
+            "dist/${package}" "dist/${package}.zip"
+          unzip -l "dist/${package}.zip" | grep -q "${package}/rage-port.ini$"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
+          # The archived copy must still validate, ditto included.
+          rm -rf "$RUNNER_TEMP/verify" && mkdir -p "$RUNNER_TEMP/verify"
+          ditto -x -k "dist/${package}.zip" "$RUNNER_TEMP/verify"
+          codesign --verify --deep --strict \
+            "$RUNNER_TEMP/verify/${package}/Rage Racer.app"
           shasum -a 256 "dist/${package}.zip"
       - uses: actions/upload-artifact@v4
         with:

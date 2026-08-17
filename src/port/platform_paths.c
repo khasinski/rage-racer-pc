@@ -180,6 +180,15 @@ int RagePlatformFindConfigFile(const char *argv0, const char *name,
             RagePathExists(path)) return 1;
 #ifdef __APPLE__
         {
+            char beside[4096];
+            /* Beside the .app, where the archive keeps the editable copies.
+             * Anything inside Contents/Resources is sealed by the code
+             * signature, so editing it there stops the app from launching. */
+            if (RageJoinPath(beside, sizeof(beside), directory, "../../..") &&
+                RageJoinPath(path, pathSize, beside, name) &&
+                RagePathExists(path)) return 1;
+        }
+        {
             char resources[4096];
             if (RageJoinPath(resources, sizeof(resources), directory,
                              "../Resources") &&

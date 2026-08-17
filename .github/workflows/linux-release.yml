@@ -29,13 +29,11 @@ jobs:
             libgl1-mesa-dev libglvnd-dev libibus-1.0-dev libpulse-dev \
             libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev \
             libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev \
-            libxtst-dev ffmpeg
+            libxtst-dev
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/release --parallel
-      - name: Verify runtime dependencies
-        run: ffmpeg -version
       - name: Verify portable tests
         run: ctest --test-dir build/release --output-on-failure -L portable
       - name: Package

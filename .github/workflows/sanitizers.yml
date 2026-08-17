@@ -12,7 +12,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev libxrender-dev libxss-dev libxtst-dev xvfb ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev libxrender-dev libxss-dev libxtst-dev xvfb
       - name: Configure ASan and UBSan
         run: cmake -S . -B build/sanitize -DCMAKE_BUILD_TYPE=Debug -DRAGE_ENABLE_SANITIZERS=ON
       - name: Build
