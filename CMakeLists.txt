@@ -86,7 +86,9 @@ if(RAGE_BUILD_PORT)
     # The recovered game sources retain PS1-era tentative globals.  Host
     # initialized state deliberately provides their concrete definitions; GCC
     # otherwise treats the tentative copies as duplicate ELF definitions.
-    if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    if(NOT WIN32 AND
+       (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR
+        CMAKE_C_COMPILER_ID MATCHES "Clang"))
         target_compile_options(rage-game-full PRIVATE
             -fcommon -Wall -Wextra -Werror)
     endif()
