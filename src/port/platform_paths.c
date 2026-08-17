@@ -84,6 +84,11 @@ static int RageExecutableDirectory(const char *argv0, char *out,
     return 1;
 }
 
+int RagePlatformExecutableDirectory(const char *argv0, char *out,
+                                    size_t outSize) {
+    return RageExecutableDirectory(argv0, out, outSize);
+}
+
 int RagePlatformUserConfigDirectory(char *out, size_t outSize) {
     const char *base;
     int written;

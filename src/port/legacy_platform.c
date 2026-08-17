@@ -32,6 +32,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #define PATH_MAX 4096
 #endif
 #else
+#include <dirent.h>
 #include <strings.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -277,6 +278,51 @@ static int RageHostReadTextFile(const char *path, char *value, size_t size) {
     fclose(file);
     value[strcspn(value, "\r\n")] = '\0';
     return value[0] != '\0';
+}
+
+/* A disc image dropped next to the executable is the layout the release
+ * archives invite, and the one players reach for first. */
+static int RageHostFindAdjacentCue(char *cue, size_t size) {
+    char directory[PATH_MAX];
+    if (!RagePlatformExecutableDirectory(NULL, directory, sizeof(directory)))
+        return 0;
+#ifdef _WIN32
+    {
+        char pattern[PATH_MAX];
+        WIN32_FIND_DATAA entry;
+        HANDLE search;
+        if (snprintf(pattern, sizeof(pattern), "%s\\*.cue", directory) >=
+            (int)sizeof(pattern)) return 0;
+        search = FindFirstFileA(pattern, &entry);
+        if (search == INVALID_HANDLE_VALUE) return 0;
+        do {
+            if (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            if (snprintf(cue, size, "%s\\%s", directory, entry.cFileName) <
+                    (int)size && access(cue, R_OK) == 0) {
+                FindClose(search);
+                return 1;
+            }
+        } while (FindNextFileA(search, &entry));
+        FindClose(search);
+    }
+#else
+    {
+        DIR *handle = opendir(directory);
+        struct dirent *entry;
+        if (handle == NULL) return 0;
+        while ((entry = readdir(handle)) != NULL) {
+            if (!RageHostPathEndsWithCue(entry->d_name)) continue;
+            if (snprintf(cue, size, "%s/%s", directory, entry->d_name) <
+                    (int)size && access(cue, R_OK) == 0) {
+                closedir(handle);
+                return 1;
+            }
+        }
+        closedir(handle);
+    }
+#endif
+    cue[0] = '\0';
+    return 0;
 }
 
 static void RageHostMakeDiscConfigPath(char *path, size_t size) {
@@ -542,9 +588,16 @@ int RageHostInitDisc(void) {
     if (environment_cue != NULL && environment_cue[0] != '\0') {
         snprintf(cue, sizeof(cue), "%s", environment_cue);
     } else {
+        /* Remembering the choice means an install that once worked never
+         * asks again, so offer a way back to the picker. */
+        int choose = RageRuntimeConfigEnabled("disc.choose",
+                                              "RAGE_PORT_CHOOSE_DISC");
         RageHostMakeDiscConfigPath(config_path, sizeof(config_path));
-        if (!RageHostReadTextFile(config_path, cue, sizeof(cue)) || access(cue, R_OK) != 0) {
-            if (!RageHostChooseDiscCue(cue, sizeof(cue))) return 0;
+        if (choose || !RageHostReadTextFile(config_path, cue, sizeof(cue)) ||
+            access(cue, R_OK) != 0) {
+            if (choose || !RageHostFindAdjacentCue(cue, sizeof(cue))) {
+                if (!RageHostChooseDiscCue(cue, sizeof(cue))) return 0;
+            }
             RageHostSaveDiscCue(cue);
         }
     }

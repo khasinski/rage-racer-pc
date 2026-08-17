@@ -34,7 +34,8 @@ of car models at hill crests.
 
 The release additionally restores race sound effects, engine audio and native
 CD-DA music, fixes sequenced menu music timing, and enables original
-intro/ending FMVs through FFmpeg. It also repairs mirrored-track control and
+intro/ending FMVs through a software MDEC decoder that needs no external
+tools. It also repairs mirrored-track control and
 geometry, keeps Lakeside Gate's waterfalls visible at close range, and
 corrects Trophy View, controller setup, retire-camera and title-logo sprite
 rendering. Runtime settings now use `rage-port.ini`, normal sessions write
@@ -118,15 +119,12 @@ progress from these indices. A `-` entry keeps that rival's retail grid pose.
   64-bit Windows 10/11
 - A legally obtained PAL Rage Racer disc image, with its `.cue` sheet and
   referenced track files kept together
-- The `ffmpeg` command available on `PATH`. It decodes original `RAGE.STR`
-  sectors; the game never links against FFmpeg's unstable internal ABI and
-  does not require pre-converted FMV files.
+Movies are decoded in process, so no external tools are needed.
 
-Verify FFmpeg before starting the game with `ffmpeg -version`. Windows users
-can install it with `winget install Gyan.FFmpeg`; common Linux distributions
-provide an `ffmpeg` package. If FFmpeg is unavailable, gameplay remains
-available and the port falls back past movies, recording the failure in
-`rage-racer.log`.
+On first launch the port looks for a `.cue` sheet next to the executable and
+uses it when one is there. Otherwise it asks, and remembers the answer. To pick
+a different disc later, start the game with `--set disc.choose=1`, or pin one
+with `[disc] cue` in `rage-port.ini`.
 
 Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
 an alternative file and `--set section.key=value` for an individual override.
