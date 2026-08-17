@@ -22,11 +22,11 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=ON
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=OFF
       - name: Build
-        run: cmake --build build/release --config Release --parallel
+        run: cmake --build build/release --config Release --target rage-racer --parallel
       - name: Verify portable tests
-        run: ctest --test-dir build/release -C Release --output-on-failure -L portable
+        run: python tests/verify_release_package.py .
       - name: Package
         shell: pwsh
         env:

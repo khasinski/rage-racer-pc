@@ -95,6 +95,8 @@ if(RAGE_BUILD_PORT)
             target_compile_options(rage-game-full PRIVATE
                 -Wno-error)
         endif()
+    elseif(WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+        target_compile_options(rage-game-full PRIVATE /clang:-fcommon)
     endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE
