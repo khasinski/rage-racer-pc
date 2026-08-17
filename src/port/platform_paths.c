@@ -11,7 +11,9 @@
 #define RageMkdir(path) _mkdir(path)
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#define RageMkdir(path) mkdir(path, 0755)
 #else
 #include <unistd.h>
 #include <sys/stat.h>
@@ -108,13 +110,13 @@ int RagePlatformUserConfigDirectory(char *out, size_t outSize) {
 }
 
 int RagePlatformUserStateDirectory(char *out, size_t outSize) {
-    const char *base;
-    int written;
 #ifdef _WIN32
     return RagePlatformUserConfigDirectory(out, outSize);
 #elif defined(__APPLE__)
     return RagePlatformUserConfigDirectory(out, outSize);
 #else
+    const char *base;
+    int written;
     base = getenv("XDG_STATE_HOME");
     if (base != NULL && base[0] != '\0')
         written = snprintf(out, outSize, "%s/rage-racer", base);
