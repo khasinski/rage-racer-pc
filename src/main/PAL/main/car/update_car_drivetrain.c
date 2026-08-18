@@ -575,19 +575,19 @@ shift_interpolation_done:
     switch (driveModeLate)
     {
       case 0:
-        UpdateCarDriving(car, dragTerm);
+        UpdateCarDriving(car);
         break;
 
       case 1:
-        UpdateCarLaunch(car, dragTerm);
+        UpdateCarLaunch(car);
         break;
 
       case 2:
-        UpdateCarAirborne(car, dragTerm);
+        UpdateCarAirborne(car);
         break;
 
       case 3:
-        UpdateCarStandingStart(car, dragTerm);
+        UpdateCarStandingStart(car);
         break;
 
     }

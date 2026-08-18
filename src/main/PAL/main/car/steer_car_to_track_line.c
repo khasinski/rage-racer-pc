@@ -93,7 +93,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
  */
 
 
-void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
+void UpdateCarLaunch(PlayerCarRuntime *carArg) {
     register PlayerCarRuntime *car = carArg;
     register GameCarDrive *drive;
     register s32 s4val;
@@ -103,7 +103,6 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
     register s32 firstHeading asm("$5");
     u32 shiftRpmRange;
 
-    (void)unused;
 
     first24 = car->bodyYaw;
     v0 = car->drive.spinRate;
@@ -309,13 +308,12 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
  * spin, advances the car (AdvanceCarPosition), and lands it when it returns to the
  * ground. The drive sub-block is the GameCarDrive view beginning at +0xBC.
  */
-void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
+void UpdateCarAirborne(PlayerCarRuntime *car) {
     GameCarDrive *r = &car->drive;
     s32 sinF24;
     s32 cosF24;
     volatile s32 coords[3];
 
-    (void)unused;
     s32 flag = g_ShiftSoundLevel;
 
     if (flag == 0) {
@@ -379,7 +377,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
     }
 }
 
-void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
+void UpdateCarStandingStart(PlayerCarRuntime *car) {
     GameCarDrive *route = &car->drive;
     s32 sinA;
     s32 cosA;
@@ -387,7 +385,6 @@ void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
     s32 r;
     s32 coords[3];
 
-    (void)unused;
 
     r = GetAngleDelta(car->bodyYaw, route->targetHeading);
     base = car->bodyYaw;
