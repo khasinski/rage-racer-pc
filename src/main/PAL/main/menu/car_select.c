@@ -10,6 +10,7 @@
 #include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/game_context.h"
 
 
 void UpdateRankingScreen(void) {
@@ -542,7 +543,7 @@ void UpdateCarSelectScreen(void) {
                 (g_MenuViewOffset <= 0x3D08F)) {
                 return;
             }
-            g_SceneId = 9;
+            GameSceneSet(SCENE_ROUND_ENTER);
             g_CourseIndex &= 3;
             g_RaceProgress->course = g_CourseIndex;
             g_RaceProgress->carIndex = g_PlayerCarIndex;

@@ -11,6 +11,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 
@@ -221,7 +222,7 @@ void EnterBgmSelectScreen(void) {
     g_FrameSyncThreshold = 0x80;
     g_FadeLevel = 0x13C;
     g_FadeStep = -4;
-    g_SceneId = 0x1C;
+    GameSceneSet(SCENE_BGM_SELECT);
     g_BgmSelectCursor = 1;
     g_BgmSelectShowUi = 1;
     g_BgmSelectCdTrack = 3;

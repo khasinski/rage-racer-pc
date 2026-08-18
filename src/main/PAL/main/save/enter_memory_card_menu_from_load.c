@@ -5,6 +5,7 @@
 #include "psyq/gpu.h"
 #include "game/render.h"
 #include "game/memcard.h"
+#include "game/game_context.h"
 void EnterMemoryCardMenuFromLoad(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
@@ -20,6 +21,6 @@ void EnterMemoryCardMenuFromLoad(void) {
         StartMemoryCardEvents();
         g_McFadeStep = -8;
         g_McFadeLevel = 0xFF;
-        g_SceneId = 0x1A;
+        GameSceneSet(SCENE_MEMORY_CARD);
     }
 }

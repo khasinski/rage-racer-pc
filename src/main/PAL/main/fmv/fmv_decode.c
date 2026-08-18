@@ -8,6 +8,7 @@
 #include "game/render.h"
 #include "game/fmv_decode_internal.h"
 #include "game/fmv_internal.h"
+#include "game/game_context.h"
 
 void DecodeFmvFrame(void) {
     s32 value;
@@ -46,7 +47,7 @@ void DecodeFmvFrame(void) {
 void EndFmv(void) {
     DecDCToutCallback(0);
     StUnSetRing();
-    g_SceneId = g_StreamReturnScene;
+    GameSceneSet((SceneId)g_StreamReturnScene);
     g_StreamReturnScene = g_FmvStreamEnded;
 }
 

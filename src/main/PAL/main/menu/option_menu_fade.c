@@ -5,6 +5,7 @@
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/game_context.h"
 
 /* The 0x140x0x1E0 twin of DrawFullscreenFadeTile, for the 480-line setup scene. */
 
@@ -46,7 +47,7 @@ void UpdateOptionMenuFade(void) {
         g_FadeStep = 0;
         g_GameMode = 1;
     } else if (g_FadeLevel >= 0x101) {
-        g_SceneId = g_OptionMenuExitScene;
+        GameSceneSet((SceneId)g_OptionMenuExitScene);
     }
 
     DrawFullscreenFadeTile480(g_FadeLevel, 0x49);

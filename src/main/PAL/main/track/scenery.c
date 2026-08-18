@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/scene_manager.h"
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/race.h"
@@ -169,7 +170,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
         flag = 0;
     }
 
-    DrawAnimatedScenery2(value, 0, g_SceneId == 0x11, flag);
+    DrawAnimatedScenery2(value, 0, g_SceneId == SCENE_REPLAY, flag);
 
     mode = RageSeriesCourseIndex();
     switch (mode) {
@@ -200,7 +201,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
         DrawStaticScenery(0);
         break;
     case 3:
-        DrawAnimatedScenery2(value, 1, g_SceneId == 0x11, flag);
+        DrawAnimatedScenery2(value, 1, g_SceneId == SCENE_REPLAY, flag);
         DrawStaticScenery(1);
         break;
     default:

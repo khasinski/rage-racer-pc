@@ -11,6 +11,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 
@@ -37,7 +38,7 @@ void EnterAttractDemo(void) {
     g_AttractDemoStep = ATTRACT_DEMO_STEP_LOAD;
     g_FadeLevel = initialValue;
     g_SceneTimer = 0;
-    g_SceneId = 0x1E;
+    GameSceneSet(SCENE_ATTRACT_DEMO);
     g_CameraCarIndex = 0;
 }
 
@@ -105,7 +106,7 @@ void UpdateAttractDemoStart(void) {
 }
 
 void ReturnToTitleScene(void) {
-    g_SceneId = 3;
+    GameSceneSet(SCENE_TITLE_ENTER);
     g_StreamReturnScene = 0;
     ResetCdAudioState();
 }

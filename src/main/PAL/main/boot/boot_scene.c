@@ -8,6 +8,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/fmv_internal.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -137,7 +138,7 @@ void EnterAttractScene(void) {
         g_MirrorMode = 0;
         InitRenderState(5);
         SetupDisplay480(0, 0, 0);
-        g_SceneId = 0x17;
+        GameSceneSet(SCENE_OPTIONS);
         g_SceneTimer = 0;
         InstallSceneLighting();
         SCRATCH_VIEW_X = 0;

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/scene_manager.h"
 #include "psyq/cd.h"
 #include "game/state.h"
 #include "game/cd.h"
@@ -165,7 +166,7 @@ void TickCdAudio(void) {
 
     status = RageHostCdAudioEnded() ? 4 : 2;
     if (status == 4) {
-        if (g_SceneId == 0x1C) {
+        if (g_SceneId == SCENE_BGM_SELECT) {
             g_CdTrackEnded = 1;
         } else {
             temp = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);

@@ -16,6 +16,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 
@@ -28,7 +29,7 @@ void EnterFrontend(void) {
     UploadLoadBufferImage();
 
     g_FrameSyncThreshold = 0x80;
-    g_SceneId = 4;
+    GameSceneSet(SCENE_FRONTEND);
     g_SceneTimer = 0;
     g_FrontendIdleTimer = 0;
     g_TitleFadeLevel = 0;
@@ -58,7 +59,7 @@ void EnterTitleScreen(void) {
     }
     g_FrameSyncThreshold = 0x80;
     g_SceneTimer = 0;
-    g_SceneId = 4;
+    GameSceneSet(SCENE_FRONTEND);
     g_FrontendIdleTimer = 0;
     g_MainMenuSlide = 0;
     g_FrontendState = FRONTEND_STATE_TITLE;

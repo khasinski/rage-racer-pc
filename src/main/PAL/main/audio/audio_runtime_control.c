@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/scene_manager.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/render.h"
@@ -14,7 +15,7 @@
 void TickSequenceAudio(void) {
     static u32 sequenceTickDivider;
 
-    if (g_SceneId == 0xC) {
+    if (g_SceneId == SCENE_RACE) {
         SpuVmDamperStep();
     } else {
         /* Menu logic runs once per VBlank, while Rage Racer's sequence

@@ -30,6 +30,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/cd.h"
 #include "runtime_config.h"
 #include "platform_paths.h"
@@ -343,6 +344,6 @@ void EndFmv(void) {
     RageReleaseFmvBuffers();
     free(s_pixels);
     s_pixels = NULL;
-    g_SceneId = g_StreamReturnScene;
+    GameSceneSet((SceneId)g_StreamReturnScene);
     g_StreamReturnScene = g_FmvStreamEnded;
 }

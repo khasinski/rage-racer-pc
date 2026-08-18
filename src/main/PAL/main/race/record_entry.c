@@ -14,6 +14,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 
@@ -348,7 +349,7 @@ void EnterRecordEntry(void) {
     g_SceneTimer = 0x100;
     g_FrameSyncThreshold = 0x80;
     g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
-    g_SceneId = 0x15;
+    GameSceneSet(SCENE_RECORD);
     InsertRaceRecords();
 }
 
@@ -532,7 +533,7 @@ void UpdateRecordEntry(void) {
             u32 sceneFrame = g_SceneTimer;
             if (sceneFrame >= 0x100) {
                 RequestSelectBgmAssets();
-                g_SceneId = 6;
+                GameSceneSet(SCENE_MENU_ENTER);
             }
         }
         DrawTimeRecordPanel(0);
@@ -545,7 +546,7 @@ void UpdateRecordEntry(void) {
 void ReturnFromClassFmv(void) {
     CdSync(0, 0);
     CdControl(9, 0, 0);
-    g_SceneId = 6;
+    GameSceneSet(SCENE_MENU_ENTER);
     RequestSelectBgmAssets();
 }
 
@@ -557,6 +558,6 @@ void ReturnFromEndingFmv(void) {
     g_FrameSyncThreshold = 0x80;
     g_FadeStep = 4;
     g_FadeLevel = 0;
-    g_SceneId = 0x22;
+    GameSceneSet(SCENE_ENDING_STILL);
     g_SceneTimer = 0;
 }

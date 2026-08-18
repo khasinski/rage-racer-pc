@@ -15,6 +15,7 @@
 #include "game/state.h"
 #include "game/random.h"
 #include "game/track_internal.h"
+#include "game/scene_manager.h"
 #include "runtime_config.h"
 #include "scenario_control.h"
 #include "modern/modern_renderer.h"
@@ -532,25 +533,26 @@ int RagePortShouldExit(int frame_number) {
         RageModernToggle();
     }
     restartRaceFrames = RageRuntimeConfigGet("hooks.restart_race_frames");
-    if (g_SceneId == 12 &&
+    if (g_SceneId == SCENE_RACE &&
         RageSmokeFrameListContains(restartRaceFrames, frame_number)) {
         fprintf(stderr, "smoke race restart frame=%d timer=%d\n",
                 frame_number, g_SceneTimer);
         ExitRaceScene(11);
     }
-    if (RageRuntimeConfigEnabled("hooks.mirror_track", "RAGE_PORT_SMOKE_MIRROR_TRACK") && g_SceneId >= 10 &&
-        g_SceneId <= 12) {
+    if (RageRuntimeConfigEnabled("hooks.mirror_track", "RAGE_PORT_SMOKE_MIRROR_TRACK") &&
+        g_SceneId >= SCENE_ROUND && g_SceneId <= SCENE_RACE) {
         g_MirrorMode = 1;
     }
     /* Most scenario tests target post-intro state and historically ran
      * without extracted movies. Native STR playback makes the real intro
      * available, so skip it unless this is explicitly an FMV test. */
-    if (g_SceneId == 5 && !RageRuntimeConfigEnabled("trace.fmv", "RAGE_PORT_FMV_TRACE") &&
+    if (g_SceneId == SCENE_FMV &&
+        !RageRuntimeConfigEnabled("trace.fmv", "RAGE_PORT_FMV_TRACE") &&
         !RageRuntimeConfigEnabled("hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV")) {
         g_PadPressed |= PAD_START;
     }
     menuSweep = RageRuntimeConfigGetLegacy("hooks.menu_sweep", "RAGE_PORT_SMOKE_MENU_SWEEP");
-    if (menuSweep != NULL && g_SceneId == 8 && g_SceneTimer >= 200) {
+    if (menuSweep != NULL && g_SceneId == SCENE_MENU && g_SceneTimer >= 200) {
         int screen = 1 + (g_SceneTimer - 200) / 100;
         if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
             lastSweepScreen != screen) {
@@ -567,7 +569,7 @@ int RagePortShouldExit(int frame_number) {
         }
     }
     if (RageRuntimeConfigEnabled("hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP") &&
-        g_SceneId == 23 && g_SceneTimer >= 200) {
+        g_SceneId == SCENE_OPTIONS && g_SceneTimer >= 200) {
         int mode = 1 + (g_SceneTimer - 200) / 100;
         if (mode >= 8 && mode <= 11) {
             g_PadType = 0x23;
@@ -643,7 +645,8 @@ int RagePortShouldExit(int frame_number) {
         if ((frame_number - g_SmokeAutoConfirmFrame) % 60 == 0)
             g_PadPressed |= 0x40;
     }
-    if (RageRuntimeConfigEnabled("hooks.retire", "RAGE_PORT_SMOKE_RETIRE") && g_SceneId == 12) {
+    if (RageRuntimeConfigEnabled("hooks.retire", "RAGE_PORT_SMOKE_RETIRE") &&
+        g_SceneId == SCENE_RACE) {
         if (retireStep == 0 && g_RacePhase == 2 && g_PauseDebounce <= 0) {
             g_PadPressed |= PAD_START;
             retireStep = 1;
@@ -664,12 +667,12 @@ int RagePortShouldExit(int frame_number) {
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
     }
-    if (g_SceneId == 8 && g_MenuScreen != lastMenuScreen) {
+    if (g_SceneId == SCENE_MENU && g_MenuScreen != lastMenuScreen) {
         fprintf(stderr, "smoke menu frame=%d timer=%d screen=%d\n",
                 frame_number, g_SceneTimer, g_MenuScreen);
         lastMenuScreen = g_MenuScreen;
     }
-    if (g_SceneId == 23 && g_GameMode != lastGameMode) {
+    if (g_SceneId == SCENE_OPTIONS && g_GameMode != lastGameMode) {
         fprintf(stderr, "smoke option frame=%d timer=%d mode=%d\n",
                 frame_number, g_SceneTimer, g_GameMode);
         lastGameMode = g_GameMode;

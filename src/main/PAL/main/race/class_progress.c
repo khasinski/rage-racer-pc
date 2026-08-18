@@ -8,6 +8,7 @@
 #include "game/sound.h"
 #include "game/render.h"
 #include "game/save_internal.h"
+#include "game/game_context.h"
 
 void DrawPrizeMoneyPanel(s32 s0) {
     char sp[16];
@@ -163,7 +164,7 @@ void AdvanceGrandPrixClass(void) {
             ResetCourseProgress(g_GrandPrixClass);
         }
     } else {
-        g_SceneId = 6;
+        GameSceneSet(SCENE_MENU_ENTER);
     }
 }
 
@@ -179,7 +180,7 @@ void EnterPrizeScreen(void) {
     car = g_GrandPrixClass;
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_PrizeAmount = g_PrizeMoney.values[mode][car][g_RacePosition - 1];
-    g_SceneId = 0x13;
+    GameSceneSet(SCENE_PRIZE);
 
     if (g_ClassPromoted != 0) {
         g_PromotionBonus = g_PromotionBonusTable[car];

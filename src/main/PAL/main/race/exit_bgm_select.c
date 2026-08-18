@@ -3,6 +3,7 @@
 #include "game/asset_internal.h"
 #include "game/render.h"
 #include "game/state.h"
+#include "game/game_context.h"
 
 
 void ExitBgmSelect(void) {
@@ -21,7 +22,7 @@ void ExitBgmSelect(void) {
         g_FadeLevel += g_FadeStep;
         DrawFullscreenFadeTile(g_FadeLevel, 0x49);
         if (g_FadeLevel >= 0x101) {
-            g_SceneId = 0x16;
+            GameSceneSet(SCENE_ATTRACT_ENTER);
         }
     }
 

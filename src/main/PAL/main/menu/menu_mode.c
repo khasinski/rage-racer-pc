@@ -9,6 +9,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/vector.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -332,7 +333,7 @@ void InitMenuMode(void) {
     InitRenderState(1);
 
     SetupDisplay480(0, 0, 0);
-    g_SceneId = 8;
+    GameSceneSet(SCENE_MENU);
     g_SceneTimer = 0;
     if (g_GrandPrixMode != 0) {
         g_GrandPrixSeries = g_SeriesSelection;

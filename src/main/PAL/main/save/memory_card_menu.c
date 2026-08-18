@@ -5,6 +5,7 @@
 #include "game/state.h"
 #include "psyq/gpu.h"
 #include "game/render.h"
+#include "game/game_context.h"
 
 
 void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
@@ -167,5 +168,5 @@ void EnterMemoryCardMenu(void) {
     StartMemoryCardEvents();
     g_McFadeStep = -8;
     g_McFadeLevel = 0xFF;
-    g_SceneId = 0x1A;
+    GameSceneSet(SCENE_MEMORY_CARD);
 }

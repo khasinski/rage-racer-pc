@@ -12,6 +12,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 
@@ -31,21 +32,21 @@ void UpdateMainMenuExit(void) {
             g_GrandPrixMode = 1;
             if (ptr->maxClassReached == -1) {
                 ptr->maxClassReached = 0;
-                g_SceneId = 0x1F;
+                GameSceneSet(SCENE_PROLOGUE_ENTER);
                 g_GrandPrixSeries = 0;
             } else {
-                g_SceneId = 6;
+                GameSceneSet(SCENE_MENU_ENTER);
             }
             break;
         case 2:
             g_GrandPrixMode = 0;
-            g_SceneId = 6;
+            GameSceneSet(SCENE_MENU_ENTER);
             break;
         case 3:
-            g_SceneId = 0x19;
+            GameSceneSet(SCENE_MEMORY_CARD_LOAD_ENTER);
             break;
         case 4:
-            g_SceneId = 0x16;
+            GameSceneSet(SCENE_ATTRACT_ENTER);
             break;
         }
     }
@@ -178,7 +179,7 @@ void UpdateFrontend(void) {
         } else {
             if (g_SceneTimer == 0x1cf) {
                 g_GrandPrixMode = 1;
-                g_SceneId = 0x1d;
+                GameSceneSet(SCENE_ATTRACT_DEMO_ENTER);
                 g_AttractCycleCount++;
             }
         }

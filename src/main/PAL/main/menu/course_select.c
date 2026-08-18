@@ -11,6 +11,7 @@
 #include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 const u8 g_NowLoadingText[] = "NOW LOADING";
@@ -747,7 +748,7 @@ void UpdateCourseSelectScreen(void) {
                     raw = g_CourseIndex;
                     p = g_RaceProgress;
                     d = g_PlayerCarIndex;
-                    g_SceneId = 2;
+                    GameSceneSet(SCENE_FRONTEND_ENTER);
                     lapc = g_GrandPrixClass;
                     half = g_GrandPrixMode;
                     raw = raw & 3;
@@ -776,7 +777,7 @@ void UpdateCourseSelectScreen(void) {
                     s32 d;
                     s32 lapc;
                     s32 half;
-                    g_SceneId = 0x18;
+                    GameSceneSet(SCENE_MEMORY_CARD_ENTER);
                     raw = RageSeriesCourseIndex();
                     g_RaceProgress->course = (g_CourseIndex = raw);
                     d = g_PlayerCarIndex;

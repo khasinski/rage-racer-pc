@@ -7,13 +7,14 @@
 #include "game/fmv_internal.h"
 #include "game/cd.h"
 #include "game/audio.h"
+#include "game/game_context.h"
 
 void BeginFmv(s32 returnScene) {
     CloseLoadedAudioSlots();
     ResetCdAudioState();
     g_FmvState = FMV_PLAYBACK_START;
     g_StreamReturnScene = returnScene;
-    g_SceneId = 5;
+    GameSceneSet(SCENE_FMV);
     CdSync(0, 0);
     CdControl(9, 0, 0);
 }

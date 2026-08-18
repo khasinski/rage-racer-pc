@@ -12,15 +12,17 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 void UpdateAttractDemoScene(void) {
     g_AttractDemoSteps[g_AttractDemoStep]();
 
-    if ((g_SceneId == 0x1E) && ((g_PadPressed & PAD_CONFIRM) != 0)) {
+    if ((g_SceneId == SCENE_ATTRACT_DEMO) &&
+        ((g_PadPressed & PAD_CONFIRM) != 0)) {
         if (g_AssetLoadState != 0) {
             ResetAssetLoader();
-            g_SceneId = 3;
+            GameSceneSet(SCENE_TITLE_ENTER);
             g_StreamReturnScene = 0;
         } else {
             ReturnToTitleScene();
@@ -35,7 +37,7 @@ void EnterPrologue(void) {
     g_FrameSyncThreshold = 0x80;
     g_FadeLevel = 0x108;
     g_FadeStep = -4;
-    g_SceneId = 0x20;
+    GameSceneSet(SCENE_PROLOGUE);
     g_PrologueStep = 0;
     g_PrologueCutIndex = 0;
     g_SceneTimer = 0;
@@ -181,7 +183,7 @@ void DrawPrologueText(void) {
 }
 
 void ExitPrologue(void) {
-    g_SceneId = 6;
+    GameSceneSet(SCENE_MENU_ENTER);
     PauseCdAudio();
     RequestSelectBgmAssets();
 }

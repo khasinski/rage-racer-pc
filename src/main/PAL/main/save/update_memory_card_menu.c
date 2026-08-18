@@ -5,6 +5,7 @@
 #include "game/menu.h"
 #include "psyq/gpu.h"
 #include "game/audio.h"
+#include "game/game_context.h"
 
 static s32 UpdateMemoryCardFade(void) {
     s32 busy = 0;
@@ -31,7 +32,7 @@ static s32 UpdateMemoryCardFade(void) {
             g_McFadeStep = 0;
             g_McFadeLevel = 0;
             g_McActionBusy = 0;
-            g_SceneId = 2;
+            GameSceneSet(SCENE_FRONTEND_ENTER);
         }
     }
     DrawMenuFadeOverlay(g_McFadeLevel);

@@ -12,6 +12,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -83,7 +84,7 @@ void EnterRoundScreen(void) {
 
         g_FrameSyncThreshold = 0x180;
         g_SceneTimer = 0;
-        g_SceneId = 10;
+        GameSceneSet(SCENE_ROUND);
         g_FadeLevel = 0;
         count = (g_GrandPrixClass < 2) ? 3 : 4;
         g_GrandPrixRound = 0;
@@ -109,7 +110,7 @@ s32 UpdateRoundScreenFade(s32 stage) {
     s32 value;
     s32 ret;
 
-    if (g_SceneId == 10) {
+    if (g_SceneId == SCENE_ROUND) {
         value = (g_SceneTimer * 4) - g_RoundScreenFadeDelays[stage];
     } else {
         value = g_FadeLevel;
@@ -227,7 +228,7 @@ void UpdateRoundScreen(void) {
     } else {
         u32 sceneTime = g_SceneTimer;
         if (sceneTime >= 121) {
-            g_SceneId = 0xb;
+            GameSceneSet(SCENE_RACE_ENTER);
             if ((ReadStablePadHeld() & (PAD_START | PAD_R1 | PAD_L1)) == 0x80c) {
                 g_MirrorMode = 1;
             } else {
@@ -249,7 +250,7 @@ void UpdateRoundScreen(void) {
             }
         }
     }
-    if (g_SceneId == 0xa) {
+    if (g_SceneId == SCENE_ROUND) {
         u16 flags = g_PadPressed;
         if (flags & 0x8000) {
             g_BgmSelection = g_BgmSelection - 1;

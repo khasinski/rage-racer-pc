@@ -5,6 +5,7 @@
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "psyq/gpu.h"
 
 
@@ -29,7 +30,7 @@ void UpdateEndingStill(void) {
             g_FadeStep = -4;
         }
     } else if (v0 == 0) {
-        g_SceneId = 2;
+        GameSceneSet(SCENE_FRONTEND_ENTER);
     }
     DrawRaceEndBanner(g_FadeLevel);
 }
