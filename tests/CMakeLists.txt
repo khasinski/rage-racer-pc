@@ -83,6 +83,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rival_update COMMAND rival_update_tests)
 
+add_executable(memory_card_controller_tests memory_card_controller_tests.c
+    ../src/main/PAL/main/save/memory_card_controller.c)
+target_include_directories(memory_card_controller_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(memory_card_controller_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(memory_card_controller_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME memory_card_controller COMMAND memory_card_controller_tests)
+
 add_executable(render_scene_tests
     render_scene_tests.c
     ../src/port/render/render_scene.c)

@@ -7,6 +7,7 @@
 #include "psyq/gpu.h"
 #include "game/audio.h"
 #include "game/game_context.h"
+#include "game/memory_card_controller.h"
 
 static s32 UpdateMemoryCardFade(void) {
     s32 busy = 0;
@@ -73,40 +74,21 @@ void UpdateMemoryCardMenu(void) {
     s32 wtmp;
     s32 mst;
     s32 mslot;
+    MemoryCardControllerState controller;
 
     fadeBusy = UpdateMemoryCardFade();
     if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
-    if (!(g_McActionBusy == 0)) {
-    if (g_McErrorPending == 0) goto L_sw2;
+    controller = (MemoryCardControllerState){
+        g_McMenuState, g_McMenuSelection, g_McMenuSubState, g_McCardStatus,
+        g_McNoCardTicks, g_McErrorTicks, g_McLastMenuState};
+    if (MemoryCardControllerShouldPoll(g_McActionBusy, g_McErrorPending))
+        MemoryCardControllerApplyStatus(
+            &controller, PollMemoryCardStatus(0, 0));
+    g_McCardStatus = controller.cardStatus;
+    g_McNoCardTicks = controller.noCardTicks;
+    g_McMenuSubState = controller.subState;
+    g_McMenuSelection = controller.selection;
 
-    }
-    {
-        s32 st = PollMemoryCardStatus(0, 0);
-        s32 c;
-        s32 sd;
-        g_McCardStatus = st;
-        switch (st) {
-        case 0: {
-            s32 b = g_McNoCardTicks;
-            g_McNoCardTicks = b + 1;
-            if (b >= 6) {
-                g_McMenuSelection = 3;
-            }
-            goto L_sw2;
-        }
-        case 1: sd = g_McCardStatus; c = 2; break;
-        case 2: sd = g_McCardStatus; c = 1; break;
-        case -1: sd = g_McCardStatus; c = 0xA; break;
-        case -2: sd = g_McCardStatus; c = 0xB; break;
-        case -3: sd = g_McCardStatus; c = 0x11; break;
-        default: sd = g_McCardStatus; c = 0x11; break;
-        }
-        g_McNoCardTicks = 0;
-        g_McMenuSubState = c;
-        g_McMenuSelection = sd;
-    }
-
-L_sw2:
     switch (g_McMenuState) {
 
     case 3:
@@ -119,44 +101,13 @@ L_sw2:
         StartMenuExitFade();
     }
     }
-    switch (g_McMenuSelection) {
-    case 1:
-    {
-        s32 cardStatus = g_McCardStatus;
-        if (cardStatus == 1) {
-            if (g_McLastMenuState != 2) {
-                g_McMenuState = 2;
-            } else {
-                g_McMenuState = cardStatus;
-            }
-        }
-        break;
-    }
-    case 2:
-        g_McMenuState = 2;
-        break;
-    case -1:
-    case -2:
-        g_McMenuState = g_McMenuSelection;
-        break;
-    case 3:
-        break;
-    case -3:
-    default:
-    {
-        s32 cardStatus = g_McCardStatus;
-        if (cardStatus == -3) {
-            s32 r = g_McErrorTicks;
-            g_McErrorTicks = r + 1;
-            if (r >= 4) {
-                g_McMenuState = cardStatus;
-            }
-        }
-    }
-    }
-    if (g_McMenuState != 3) {
-        g_McErrorTicks = 0;
-    }
+    controller.menuState = g_McMenuState;
+    controller.selection = g_McMenuSelection;
+    controller.cardStatus = g_McCardStatus;
+    controller.errorTicks = g_McErrorTicks;
+    MemoryCardControllerResolveDetection(&controller);
+    g_McMenuState = controller.menuState;
+    g_McErrorTicks = controller.errorTicks;
     break;
 
     case 1:
