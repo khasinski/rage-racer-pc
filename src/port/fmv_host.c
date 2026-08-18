@@ -219,9 +219,8 @@ static void RageStartXaAudio(unsigned int firstSector) {
     CdControl(RAGE_CDL_READN, NULL, NULL);
 }
 
-static int RageHostReadFmvFrame(void) {
+static int RageHostDecodeFmvFrame(void) {
     if (s_pixels == NULL || !RageDecodeFmvFrame()) return 0;
-    if (!Psyz_VideoUploadRgb24Frame(s_pixels, s_width, s_height)) return 0;
     s_frame++;
     if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
                                  "RAGE_PORT_FMV_TRACE")) {
@@ -233,6 +232,11 @@ static int RageHostReadFmvFrame(void) {
         g_FmvStreamEnded = 1;
     }
     return 1;
+}
+
+static int RageHostUploadFmvFrame(void) {
+    return s_pixels != NULL &&
+           Psyz_VideoUploadRgb24Frame(s_pixels, s_width, s_height);
 }
 
 void StartFmvPlayback(FmvWorkBuffers *buffers) {
@@ -280,7 +284,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
      * must not be mistaken for the opening movie's soundtrack. */
     s_xaPlaying = 1;
     RageStartXaAudio(firstSector);
-    if (!RageHostReadFmvFrame()) {
+    if (!RageHostDecodeFmvFrame() || !RageHostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
@@ -294,22 +298,33 @@ void DecodeFmvFrame(void) {
         return;
     }
     if (s_wallClockIntro) {
+        int decoded = 0;
         Uint64 elapsed = SDL_GetTicksNS() - s_introStartNs;
         unsigned int target =
             1u + (unsigned int)((elapsed * RAGE_FMV_FPS) / 1000000000u);
         while (s_frame < target) {
-            if (!RageHostReadFmvFrame()) {
+            if (!RageHostDecodeFmvFrame()) {
                 g_FmvStreamEnded = 1;
                 g_FmvState = FMV_PLAYBACK_FINISH;
                 break;
             }
+            decoded = 1;
+        }
+        /* A slow host can fall several movie frames behind. Decode all of
+         * them to preserve wall-clock cadence, but upload only the newest
+         * image. Reusing one GPU transfer buffer several times in the same
+         * pending command buffer lets later CPU writes overwrite data that
+         * earlier copies have not consumed yet on some Vulkan drivers. */
+        if (decoded && !RageHostUploadFmvFrame()) {
+            g_FmvStreamEnded = 1;
+            g_FmvState = FMV_PLAYBACK_FINISH;
         }
         return;
     }
     s_clock += (int)s_cadenceNumerator;
     if (s_clock >= (int)s_cadenceDenominator) {
         s_clock -= (int)s_cadenceDenominator;
-        if (!RageHostReadFmvFrame()) {
+        if (!RageHostDecodeFmvFrame() || !RageHostUploadFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;
         }
