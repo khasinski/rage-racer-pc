@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-typedef struct MemoryCardControllerState {
+typedef struct SaveSession {
     s32 menuState;
     s32 selection;
     s32 subState;
@@ -13,12 +13,12 @@ typedef struct MemoryCardControllerState {
     s32 lastMenuState;
     s32 errorPending;
     s32 errorCountdown;
-} MemoryCardControllerState;
+} SaveSession;
 
 s32 MemoryCardControllerShouldPoll(s32 actionBusy, s32 errorPending);
-void MemoryCardControllerApplyStatus(MemoryCardControllerState *state,
+void MemoryCardControllerApplyStatus(SaveSession *state,
                                      s32 cardStatus);
-void MemoryCardControllerResolveDetection(MemoryCardControllerState *state);
-void MemoryCardControllerResolveTransition(MemoryCardControllerState *state);
+void MemoryCardControllerResolveDetection(SaveSession *state);
+void MemoryCardControllerResolveTransition(SaveSession *state);
 
 #endif

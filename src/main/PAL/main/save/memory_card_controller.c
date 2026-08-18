@@ -4,7 +4,7 @@ s32 MemoryCardControllerShouldPoll(s32 actionBusy, s32 errorPending) {
     return actionBusy == 0 || errorPending != 0;
 }
 
-void MemoryCardControllerApplyStatus(MemoryCardControllerState *state,
+void MemoryCardControllerApplyStatus(SaveSession *state,
                                      s32 cardStatus) {
     s32 subState;
     state->cardStatus = cardStatus;
@@ -25,7 +25,7 @@ void MemoryCardControllerApplyStatus(MemoryCardControllerState *state,
     state->selection = cardStatus;
 }
 
-void MemoryCardControllerResolveDetection(MemoryCardControllerState *state) {
+void MemoryCardControllerResolveDetection(SaveSession *state) {
     switch (state->selection) {
     case 1:
         if (state->cardStatus == 1)
@@ -50,7 +50,7 @@ void MemoryCardControllerResolveDetection(MemoryCardControllerState *state) {
     if (state->menuState != 3) state->errorTicks = 0;
 }
 
-static void ResolveCardError(MemoryCardControllerState *state) {
+static void ResolveCardError(SaveSession *state) {
     state->errorPending = 1;
     if (state->cardStatus == -3) {
         state->errorCountdown--;
@@ -58,14 +58,14 @@ static void ResolveCardError(MemoryCardControllerState *state) {
     }
 }
 
-static void ClearPendingError(MemoryCardControllerState *state) {
+static void ClearPendingError(SaveSession *state) {
     if (state->errorPending != 0) {
         state->errorPending = 0;
         state->errorCountdown = 3;
     }
 }
 
-void MemoryCardControllerResolveTransition(MemoryCardControllerState *state) {
+void MemoryCardControllerResolveTransition(SaveSession *state) {
     s32 current = state->menuState;
 
     if (state->selection == 3) {

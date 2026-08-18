@@ -68,18 +68,18 @@ static s32 AdvanceMemoryCardMenuStartup(void) {
 }
 
 static void ResolveMemoryCardMenuTransition(
-    MemoryCardControllerState *controller) {
-    controller->menuState = g_McMenuState;
-    controller->selection = g_McMenuSelection;
-    controller->cardStatus = g_McCardStatus;
-    controller->lastMenuState = g_McLastMenuState;
-    controller->errorPending = g_McErrorPending;
-    controller->errorCountdown = g_McErrorCountdown;
-    MemoryCardControllerResolveTransition(controller);
-    g_McMenuState = controller->menuState;
-    g_McLastMenuState = controller->lastMenuState;
-    g_McErrorPending = controller->errorPending;
-    g_McErrorCountdown = controller->errorCountdown;
+    SaveSession *session) {
+    session->menuState = g_McMenuState;
+    session->selection = g_McMenuSelection;
+    session->cardStatus = g_McCardStatus;
+    session->lastMenuState = g_McLastMenuState;
+    session->errorPending = g_McErrorPending;
+    session->errorCountdown = g_McErrorCountdown;
+    MemoryCardControllerResolveTransition(session);
+    g_McMenuState = session->menuState;
+    g_McLastMenuState = session->lastMenuState;
+    g_McErrorPending = session->errorPending;
+    g_McErrorCountdown = session->errorCountdown;
 }
 
 void UpdateMemoryCardMenu(void) {
@@ -88,21 +88,21 @@ void UpdateMemoryCardMenu(void) {
     u16 pad;
     s32 wtmp;
     s32 mst;
-    MemoryCardControllerState controller;
+    SaveSession session;
 
     fadeBusy = UpdateMemoryCardFade();
     if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
-    controller = (MemoryCardControllerState){
+    session = (SaveSession){
         g_McMenuState, g_McMenuSelection, g_McMenuSubState, g_McCardStatus,
         g_McNoCardTicks, g_McErrorTicks, g_McLastMenuState,
         g_McErrorPending, g_McErrorCountdown};
     if (MemoryCardControllerShouldPoll(g_McActionBusy, g_McErrorPending))
         MemoryCardControllerApplyStatus(
-            &controller, PollMemoryCardStatus(0, 0));
-    g_McCardStatus = controller.cardStatus;
-    g_McNoCardTicks = controller.noCardTicks;
-    g_McMenuSubState = controller.subState;
-    g_McMenuSelection = controller.selection;
+            &session, PollMemoryCardStatus(0, 0));
+    g_McCardStatus = session.cardStatus;
+    g_McNoCardTicks = session.noCardTicks;
+    g_McMenuSubState = session.subState;
+    g_McMenuSelection = session.selection;
 
     switch (g_McMenuState) {
 
@@ -116,13 +116,13 @@ void UpdateMemoryCardMenu(void) {
         StartMenuExitFade();
     }
     }
-    controller.menuState = g_McMenuState;
-    controller.selection = g_McMenuSelection;
-    controller.cardStatus = g_McCardStatus;
-    controller.errorTicks = g_McErrorTicks;
-    MemoryCardControllerResolveDetection(&controller);
-    g_McMenuState = controller.menuState;
-    g_McErrorTicks = controller.errorTicks;
+    session.menuState = g_McMenuState;
+    session.selection = g_McMenuSelection;
+    session.cardStatus = g_McCardStatus;
+    session.errorTicks = g_McErrorTicks;
+    MemoryCardControllerResolveDetection(&session);
+    g_McMenuState = session.menuState;
+    g_McErrorTicks = session.errorTicks;
     break;
 
     case 1:
@@ -524,7 +524,7 @@ slot_prompt_done:
             g_McMenuRowCursor = cm1;
         }
     }
-    ResolveMemoryCardMenuTransition(&controller);
+    ResolveMemoryCardMenuTransition(&session);
     if (!(g_McMenuState == 1)) {
     g_McActionState = 0;
     g_McActionResult = 0;
@@ -634,7 +634,7 @@ slot_prompt_done:
     default:
     }
 
-    ResolveMemoryCardMenuTransition(&controller);
+    ResolveMemoryCardMenuTransition(&session);
 
     if (g_McMenuState == 2) break;
     g_McMenuSubState = 1;
@@ -713,7 +713,7 @@ L_b1280:
     default:
     break;
     }
-    ResolveMemoryCardMenuTransition(&controller);
+    ResolveMemoryCardMenuTransition(&session);
 
     if (!(g_McMenuState == -1)) {
     g_McActionState = 0;
@@ -843,7 +843,7 @@ L_b1280:
     default:
     break;
     }
-    ResolveMemoryCardMenuTransition(&controller);
+    ResolveMemoryCardMenuTransition(&session);
 
     if (!(g_McMenuState == -2)) {
     g_McActionState = 0;
