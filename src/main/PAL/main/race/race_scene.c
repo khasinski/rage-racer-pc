@@ -9,6 +9,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_clock.h"
+#include "game/lap_tracker.h"
 #include "game/race_pause.h"
 #include "game/race_end.h"
 #include "game/race_session.h"
@@ -73,6 +74,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     PlayerCarRaceState *route;
     SectorTimeTableAddress sectorAddress;
     RaceLapClock lapClock;
+    LapTrackerInput lapTrackerInput;
+    LapTrackerDecision lapDecision;
 
     route = GetPlayerCarRaceState(car);
     if (route->timing.fields.lap > 0) {
@@ -102,15 +105,15 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
 
 timing_done:
     progress = route->timing.fields.lap;
-    if (progress * g_TrackLength <= g_PlayerCar.progressB + g_PlayerCar.progressA) {
+    lapTrackerInput = (LapTrackerInput){
+        progress, g_LapCount,
+        g_PlayerCar.progressB + g_PlayerCar.progressA, g_TrackLength};
+    lapDecision = LapTrackerEvaluate(&lapTrackerInput);
+    if (lapDecision.crossedLine) {
         s32 progressLimit;
 
-        progressLimit = g_LapCount;
-        if (progress > progressLimit) {
-            returnValue = 0;
-        } else {
         returnValue = 1;
-        route->timing.fields.lap = progress + 1;
+        route->timing.fields.lap = lapDecision.nextLap;
         g_LapTimeSaturated = 0;
         g_RaceCueFlags &= 0xF;
         if (g_RaceCueDelay == 0) {
@@ -200,8 +203,6 @@ timing_done:
             g_MirrorViewEnabled = 0;
 
         }
-        }
-
     } else {
         returnValue = 0;
     }
