@@ -210,7 +210,6 @@ void AdvanceCarPosition(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);
 void ClearCarMotionState(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex);
-s32 InterpolateTrackAngle();
 s32 IsCarFacingBackwards(PlayerCarRuntime *car);
 s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 point);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);

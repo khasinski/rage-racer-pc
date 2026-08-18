@@ -4,6 +4,7 @@
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
+#include "game/track.h"
 #include "game/render.h"
 #include "game/random.h"
 
@@ -414,7 +415,8 @@ void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
         return;
 
 angled_body_kick:
-    value = InterpolateTrackAngle(obj->trackPointIndex);
+    value = InterpolateTrackAngle(obj->trackPointIndex,
+                                  obj->segmentFraction);
     temp = GetAngleDistance(value, obj->bodyYaw);
     if (temp >= 0x401) {
         temp = 0x800 - temp;
