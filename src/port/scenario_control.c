@@ -271,6 +271,10 @@ void RagePortScenarioBeforeSceneHandler(void) {
     g_PlayerCarIndex = (s16)s_scenario.car;
     if (g_SceneId < 11) g_CourseIndex = s_scenario.course + s_scenario.series * 4;
     if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
+    /* Scene 5 is movie playback, which START skips. The opening movie runs
+     * about eighty seconds and a scenario exists to reach a race, so waiting
+     * it out costs more than every menu step that follows put together. */
+    if (g_SceneId == 5) g_PadPressed |= PAD_START;
 
     changed = g_SceneId != s_scenario.lastScene ||
               (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
