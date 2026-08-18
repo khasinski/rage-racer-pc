@@ -17,6 +17,7 @@
 #include "game/save_internal.h"
 #include "game/sound.h"
 #include "game/track.h"
+#include "game/scene_manager.h"
 #include "runtime_config.h"
 #include "scenario_control.h"
 
@@ -436,7 +437,7 @@ void RagePortScenarioBeforeSceneHandler(void) {
 
     /* A completed circuit race always hands off from the live race (12) to
      * replay (17). Restarts and pause-menu exits use other destinations. */
-    if (s_scenario.lastScene == 12 && g_SceneId == 17) {
+    if (s_scenario.lastScene == SCENE_RACE && g_SceneId == SCENE_REPLAY) {
         s_scenario.raceFinished = 1;
         s_scenario.resultSeen = 1;
         fprintf(stderr, "rage-port: scenario race finished after_finish=%s\n",
@@ -450,7 +451,7 @@ void RagePortScenarioBeforeSceneHandler(void) {
     }
     if (s_scenario.raceFinished &&
         s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT) {
-        if (g_SceneId >= 17 && g_SceneId <= 21) {
+        if (g_SceneId >= SCENE_REPLAY && g_SceneId <= SCENE_RECORD) {
             s_scenario.resultSeen = 1;
         } else if (s_scenario.resultSeen) {
             s_scenario.exitRequested = 1;
@@ -468,14 +469,15 @@ void RagePortScenarioBeforeSceneHandler(void) {
      * the scenario's class across those made them fetch another class's
      * assets. The title screen's hand-off phase is excluded for the same
      * reason - it is where UpdateMainMenuExit picks the prologue's class. */
-    if (g_SceneId >= 2 && g_SceneId <= 12 &&
-        !(g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
+    if (g_SceneId >= SCENE_FRONTEND_ENTER && g_SceneId <= SCENE_RACE &&
+        !(g_SceneId == SCENE_FRONTEND &&
+          g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
         g_GrandPrixMode = (s16)s_scenario.mode;
         g_SeriesSelection = (s16)s_scenario.series;
         g_GrandPrixSeries = (s16)s_scenario.series;
         g_GrandPrixClass = s_scenario.classIndex;
         g_PlayerCarIndex = (s16)s_scenario.car;
-        if (g_SceneId < 11) {
+        if (g_SceneId < SCENE_RACE_ENTER) {
             /* The menus index course progress with the series in bit 2, and
              * the retail car-select confirm masks it back to the physical
              * course before the race loads (car_select.c). Asset slots run
@@ -484,18 +486,22 @@ void RagePortScenarioBeforeSceneHandler(void) {
              * reverse grid went, leaving every rival at the origin with no
              * track segment, which deactivates them. Direct boot shows none
              * of those menus, so it uses the physical course throughout. */
-            int menuIndexed = !s_scenario.directBoot && g_SceneId <= 8;
+            int menuIndexed = !s_scenario.directBoot &&
+                              g_SceneId <= SCENE_MENU;
             g_CourseIndex =
                 s_scenario.course + (menuIndexed ? s_scenario.series * 4 : 0);
         }
     }
-    if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
+    if (g_SceneId == SCENE_FRONTEND)
+        g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
 
     changed = g_SceneId != s_scenario.lastScene ||
-              (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
-              (g_SceneId == 8 && g_MenuScreen != s_scenario.lastMenuScreen);
+              (g_SceneId == SCENE_FRONTEND &&
+               g_FrontendState != s_scenario.lastFrontend) ||
+              (g_SceneId == SCENE_MENU &&
+               g_MenuScreen != s_scenario.lastMenuScreen);
     if (changed) {
-        if (s_scenario.lastScene == 12 && g_SceneId != 12) {
+        if (s_scenario.lastScene == SCENE_RACE && g_SceneId != SCENE_RACE) {
             s_scenario.startApplied = 0;
             s_scenario.gridApplied = 0;
         }
@@ -520,10 +526,11 @@ void RagePortScenarioBeforeSceneHandler(void) {
     if (!s_scenario.skipSequences) {
         /* Leave the boot logo, the intro movie and the prologue to run at
          * their retail length. */
-    } else if (g_SceneId == 5 || g_SceneId == 32) {
+    } else if (g_SceneId == SCENE_FMV ||
+               g_SceneId == SCENE_PROLOGUE) {
         g_PadType = 0x41;
         g_PadPressed |= PAD_CONFIRM;
-    } else if (g_SceneId == 1) {
+    } else if (g_SceneId == SCENE_BOOT_LOGO) {
         /* The boot logo drops its remaining hold as soon as a button is down
          * and the assets behind it have finished loading. What is left after
          * that is the load itself, which nothing can skip. */
@@ -541,7 +548,7 @@ void RagePortScenarioBeforeSceneHandler(void) {
      * turns the display on at its own g_SceneTimer 0xf, and a timer held at
      * zero never gets there - which leaves the race that follows drawing into
      * a masked display. */
-    if (s_scenario.directBoot && g_SceneId == 4 &&
+    if (s_scenario.directBoot && g_SceneId == SCENE_FRONTEND &&
         s_scenario.directStep != RAGE_DIRECT_DONE) {
         if (g_SceneTimer > 0x1C0) g_SceneTimer = 0x1C0;
         if (g_FrontendIdleTimer > 800) g_FrontendIdleTimer = 800;
@@ -549,26 +556,29 @@ void RagePortScenarioBeforeSceneHandler(void) {
         return;
     }
 
-    if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&
+    if (g_SceneId == SCENE_FRONTEND &&
+         g_FrontendState == FRONTEND_STATE_TITLE &&
         s_scenario.stableFrames >= 20 && s_scenario.retryFrames >= 60) {
         RageScenarioConfirm();
-    } else if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
+    } else if (g_SceneId == SCENE_FRONTEND &&
+               g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
                s_scenario.stableFrames >= 10 && s_scenario.retryFrames >= 30) {
         RageScenarioConfirm();
-    } else if (g_SceneId == 8 && s_scenario.stableFrames >= 20 &&
+    } else if (g_SceneId == SCENE_MENU && s_scenario.stableFrames >= 20 &&
                s_scenario.retryFrames >= 60) {
         RageScenarioConfirm();
     }
 
-    if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
+    if (g_SceneId == SCENE_RACE_ENTER && s_scenario.customGrid &&
+        !s_scenario.gridApplied) {
         for (index = 0; index < 11; index++) g_RaceGridSlots[index].value = s_scenario.grid[index];
         s_scenario.gridApplied = 1;
         fprintf(stderr, "rage-port: custom rival grid applied\n");
     }
-    if (g_SceneId == 12 && s_scenario.customStart &&
+    if (g_SceneId == SCENE_RACE && s_scenario.customStart &&
         !s_scenario.startApplied && g_TrackPointCount > 0) {
         RageScenarioApplyTrackStarts();
-    } else if (g_SceneId == 12 && s_scenario.startApplied &&
+    } else if (g_SceneId == SCENE_RACE && s_scenario.startApplied &&
                s_scenario.freezeStarts && g_TrackPointCount > 0) {
         RageScenarioHoldTrackStarts();
     }
