@@ -115,8 +115,7 @@ void UpdateRankingScreen(void) {
     RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
     return;
 pos:
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 2;
+    MenuFlowFadeOut(MENU_SCREEN_RANKING);
     RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
     RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, -1);
@@ -124,8 +123,7 @@ pos:
     if (g_UiScriptProgress > 0) {
         return;
     }
-    g_MenuScreen = 1;
-    g_MenuHandlerIndex = 1;
+    MenuFlowOpen(MENU_SCREEN_COURSE_SELECT);
     g_RankingCursor = 0;
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;
@@ -527,8 +525,7 @@ void UpdateCarSelectScreen(void) {
         return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 4;
+    MenuFlowFadeOut(MENU_SCREEN_CAR_SELECT);
     DrawBrowseArrows(
         -1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
     if (g_GrandPrixMode == 0) {
@@ -556,12 +553,10 @@ void UpdateCarSelectScreen(void) {
             }
             break;
         case 2:
-            g_MenuScreen = 5;
-            g_MenuHandlerIndex = 5;
+            MenuFlowOpen(MENU_SCREEN_CUSTOMIZE);
             break;
         case 3:
-            g_MenuScreen = 0xB;
-            g_MenuHandlerIndex = 0xB;
+            MenuFlowOpen(MENU_SCREEN_CAR_SHOP);
             DrawCarShopPricePanel(0, 0, 0);
             DrawBrowseArrows(0, 0, 0, 0);
             DrawMenuAltPanel(0, 0);
@@ -571,8 +566,7 @@ void UpdateCarSelectScreen(void) {
             RestoreTeamLogoClut();
             break;
         case 4:
-            g_MenuScreen = 0xC;
-            g_MenuHandlerIndex = 0xC;
+            MenuFlowOpen(MENU_SCREEN_ENGINEER_SHOP);
             DrawEngineerShopPricePanel(0, 0, 0);
             break;
         case 5:
@@ -595,8 +589,7 @@ void UpdateCarSelectScreen(void) {
             minusOne = -1;
             g_MenuViewAngle = angle;
             g_MenuViewAngleTarget = angle;
-            g_MenuScreen = one;
-            g_MenuHandlerIndex = one;
+            MenuFlowOpen((enum MenuScreenId)one);
             g_CarSelectCursor = 0;
             g_MenuPendingCourseIndex = minusOne;
             g_MenuViewOffset = offset;
@@ -847,8 +840,7 @@ void UpdateCustomizeScreen(void) {
         return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 5;
+    MenuFlowFadeOut(MENU_SCREEN_CUSTOMIZE);
     RunTimedDrawScript(cmdList, &g_UiScriptProgress, -1);
     RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, mode, g_RankingOption);
@@ -858,12 +850,10 @@ void UpdateCustomizeScreen(void) {
             if (g_MenuViewOffset <= 0x3D08F) {
                 return;
             }
-            g_MenuScreen = 6;
-            g_MenuHandlerIndex = 6;
+            MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
             break;
         case 2:
-            g_MenuScreen = 4;
-            g_MenuHandlerIndex = 4;
+            MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_RankingOption = 0;
             break;
         }

@@ -715,8 +715,7 @@ void UpdateCourseSelectScreen(void) {
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
         DrawMenuLightBurst(7);
     } else {
-        g_MenuHandlerIndex = -1;
-        g_MenuHandlerIndex2 = 1;
+        MenuFlowFadeOut(MENU_SCREEN_COURSE_SELECT);
         res = CanSelectPrevCourse();
         DrawBrowseArrows(-1, 1, res, CanSelectNextCourse());
         RunTimedDrawScript(hdr, &g_UiScriptProgress, -1);
@@ -767,8 +766,7 @@ void UpdateCourseSelectScreen(void) {
                 }
                 break;
             case 3:
-                g_MenuScreen = 2;
-                g_MenuHandlerIndex = 2;
+                MenuFlowOpen(MENU_SCREEN_RANKING);
                 g_UiScriptProgress = 0;
                 GameMenuBusy = 0;
                 break;

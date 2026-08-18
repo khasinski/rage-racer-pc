@@ -149,21 +149,18 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
     } else {
-        g_MenuHandlerIndex = -1;
-        g_MenuHandlerIndex2 = 6;
+        MenuFlowFadeOut(MENU_SCREEN_DESIGN_MODE);
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, -1);
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         if (g_UiScriptProgress <= 0) {
             switch (GameMenuBusy) {
             case 1:
-                g_MenuScreen = MENU_SCREEN_TEAM_LOGO;
-                g_MenuHandlerIndex = MENU_SCREEN_TEAM_LOGO;
+                MenuFlowOpen(MENU_SCREEN_TEAM_LOGO);
                 DrawTeamLogoCanvas(0, 0);
                 break;
             case 2:
-                g_MenuScreen = MENU_SCREEN_TEAM_NAME;
-                g_MenuHandlerIndex = MENU_SCREEN_TEAM_NAME;
+                MenuFlowOpen(MENU_SCREEN_TEAM_NAME);
                 DrawTeamNameEntry(0, 0);
                 g_MenuViewOffset = 0x3D090;
                 g_MenuViewOffsetTarget = 0;
@@ -173,15 +170,13 @@ void UpdateDesignModeScreen(void) {
                 g_TeamNameCharModel = GameMenuCursor;
                 break;
             case 3:
-                g_MenuScreen = MENU_SCREEN_PAINT_COLOR;
-                g_MenuHandlerIndex = MENU_SCREEN_PAINT_COLOR;
+                MenuFlowOpen(MENU_SCREEN_PAINT_COLOR);
                 g_UiScriptProgress2 = 0;
                 g_MenuViewOffset = 0x3D090;
                 g_MenuViewOffsetTarget = 0;
                 break;
             case 4:
-                g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
-                g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+                MenuFlowOpen(MENU_SCREEN_CUSTOMIZE);
                 g_DesignModeOption = 0;
                 g_MenuViewOffset = 0x3D090;
                 g_MenuViewOffsetTarget = 0;

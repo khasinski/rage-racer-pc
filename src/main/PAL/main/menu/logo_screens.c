@@ -216,8 +216,7 @@ void UpdateTeamLogoScreen(void)
   {
     if (g_GameInput.pressed)
     {
-      g_MenuHandlerIndex = -1;
-      g_MenuHandlerIndex2 = 7;
+      MenuFlowFadeOut(MENU_SCREEN_TEAM_LOGO);
       DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
       RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
       RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -225,8 +224,7 @@ void UpdateTeamLogoScreen(void)
     }
     else
     {
-      g_MenuHandlerIndex = -1;
-      g_MenuHandlerIndex2 = 7;
+      MenuFlowFadeOut(MENU_SCREEN_TEAM_LOGO);
       DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
       RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
       RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -237,14 +235,12 @@ void UpdateTeamLogoScreen(void)
       switch (GameMenuBusy)
       {
         case 1:
-          g_MenuScreen = MENU_SCREEN_LOGO_SAMPLE;
-          g_MenuHandlerIndex = MENU_SCREEN_LOGO_SAMPLE;
+          MenuFlowOpen(MENU_SCREEN_LOGO_SAMPLE);
           DrawLogoSamplePanel(0, 0);
           break;
 
         case 2:
-          g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
-          g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+          MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
           g_TeamLogoOption = 0;
           g_TeamLogoClut[0] = 0;
           LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);

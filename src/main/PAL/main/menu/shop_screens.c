@@ -273,8 +273,7 @@ void UpdateCarShopScreen(void) {
             RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
             return;
         }
-        g_MenuHandlerIndex = -1;
-        g_MenuHandlerIndex2 = 0xB;
+        MenuFlowFadeOut(MENU_SCREEN_CAR_SHOP);
         DrawBrowseArrows(-1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
         DrawCarShopPricePanel(-1, g_PlayerMoney, value);
         RunTimedDrawScript(&g_CarShopScreenScript, &g_UiScriptProgress, -1);
@@ -284,8 +283,7 @@ void UpdateCarShopScreen(void) {
             if (GameMenuBusy == 2) {
                 g_PlayerMoney -= value;
             }
-            g_MenuScreen = 4;
-            g_MenuHandlerIndex = 4;
+            MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_UiScriptProgress = 0;
             GameMenuBusy = 0;
             g_CarShopOption = 0;
@@ -463,8 +461,7 @@ void UpdateEngineerShopScreen(void) {
             RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
             return;
         }
-        g_MenuHandlerIndex = -1;
-        g_MenuHandlerIndex2 = 0xC;
+        MenuFlowFadeOut(MENU_SCREEN_ENGINEER_SHOP);
         DrawEngineerShopPricePanel(-1, g_PlayerMoney, value);
         RunTimedDrawScript(&g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -477,8 +474,7 @@ void UpdateEngineerShopScreen(void) {
                 }
                 g_PlayerMoney -= value;
             }
-            g_MenuScreen = 4;
-            g_MenuHandlerIndex = 4;
+            MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_UiScriptProgress = 0;
             GameMenuBusy = 0;
             g_EngineerShopOption = 0;

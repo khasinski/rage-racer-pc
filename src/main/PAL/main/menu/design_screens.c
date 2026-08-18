@@ -141,15 +141,13 @@ void UpdateLogoSampleScreen(void) {
         return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 8;
+    MenuFlowFadeOut(MENU_SCREEN_LOGO_SAMPLE);
     DrawLogoSamplePanel(-1, 0);
     RunTimedDrawScript(&g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_LogoSampleCursor);
     if (g_UiScriptProgress <= 0) {
-        g_MenuScreen = 7;
-        g_MenuHandlerIndex = 7;
+        MenuFlowOpen(MENU_SCREEN_TEAM_LOGO);
         g_LogoSampleCursor = 0;
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;
@@ -261,14 +259,12 @@ pop:
     return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 9;
+    MenuFlowFadeOut(MENU_SCREEN_TEAM_NAME);
     DrawTeamNameEntry(-1, GameMenuCursor);
     RunTimedDrawScript(&g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0) return;
     if (0x3D08F < g_MenuViewOffset) {
-        g_MenuScreen = 6;
-        g_MenuHandlerIndex = 6;
+        MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
         UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;
@@ -408,14 +404,12 @@ void UpdatePaintColorScreen(void) {
         return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 10;
+    MenuFlowFadeOut(MENU_SCREEN_PAINT_COLOR);
     RunTimedDrawScript(&g_PaintColorScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
     if (g_UiScriptProgress <= 0) {
-        g_MenuScreen = 6;
-        g_MenuHandlerIndex = 6;
+        MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
         g_PaintColorCursor = 0;
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;

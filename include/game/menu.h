@@ -105,6 +105,7 @@ extern s32 g_MenuViewOffset;
 extern s32 g_MenuViewOffsetTarget;
 
 enum MenuScreenId {
+    MENU_SCREEN_LOADING = 0,
     MENU_SCREEN_COURSE_SELECT = 1,
     MENU_SCREEN_RANKING,
     MENU_SCREEN_ENTER_CAR_SELECT,
@@ -118,6 +119,11 @@ enum MenuScreenId {
     MENU_SCREEN_CAR_SHOP,
     MENU_SCREEN_ENGINEER_SHOP
 };
+
+/* Central transition boundary for the legacy menu screen tables. Screens use
+ * these operations instead of coordinating the three dispatcher globals. */
+void MenuFlowOpen(enum MenuScreenId screen);
+void MenuFlowFadeOut(enum MenuScreenId screen);
 
 enum MenuLayout {
     MENU_FADE_MAX = 0x1FC,
