@@ -456,26 +456,38 @@ void RagePortScenarioBeforeSceneHandler(void) {
         return;
     }
 
-    g_GrandPrixMode = (s16)s_scenario.mode;
-    g_SeriesSelection = (s16)s_scenario.series;
-    g_GrandPrixSeries = (s16)s_scenario.series;
-    g_GrandPrixClass = s_scenario.classIndex;
-    g_PlayerCarIndex = (s16)s_scenario.car;
-    if (g_SceneId < 11) {
-        /* The menus index course progress with the series in bit 2, and the
-         * retail car-select confirm masks it back to the physical course
-         * before the race loads (car_select.c). Asset slots run class * 8 +
-         * course * 2 with four courses to a class, so an unmasked index reads
-         * the next class's data. Extra GP raced course 4 that way and got a
-         * block with no rival start table: every rival landed on the origin,
-         * FindTrackSegment refused it, and AccumulateLapProgress deactivated
-         * them, which DrawCars then skips. Direct boot shows none of those
-         * menus, so it uses the physical course throughout. */
-        int menuIndexed = !s_scenario.directBoot && g_SceneId <= 8;
-        g_CourseIndex =
-            s_scenario.course + (menuIndexed ? s_scenario.series * 4 : 0);
+    /* The scenario steers the frontend by holding its race selection in the
+     * globals the menus read, but only the scenes that actually choose a race
+     * may be steered. Two others read the same globals for their own purpose
+     * and load assets from them: the Grand Prix prologue runs at its own class
+     * and course, and the result flow reports the race just finished. Holding
+     * the scenario's class across those made them fetch another class's
+     * assets, which is what left the prologue and the prize screen garbled.
+     * The title screen's hand-off phase is excluded for the same reason - it
+     * is where UpdateMainMenuExit picks the prologue's class. */
+    if (g_SceneId >= 2 && g_SceneId <= 12 &&
+        !(g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
+        g_GrandPrixMode = (s16)s_scenario.mode;
+        g_SeriesSelection = (s16)s_scenario.series;
+        g_GrandPrixSeries = (s16)s_scenario.series;
+        g_GrandPrixClass = s_scenario.classIndex;
+        g_PlayerCarIndex = (s16)s_scenario.car;
+        if (g_SceneId < 11) {
+            /* The menus index course progress with the series in bit 2, and the
+             * retail car-select confirm masks it back to the physical course
+             * before the race loads (car_select.c). Asset slots run class * 8 +
+             * course * 2 with four courses to a class, so an unmasked index reads
+             * the next class's data. Extra GP raced course 4 that way and got a
+             * block with no rival start table: every rival landed on the origin,
+             * FindTrackSegment refused it, and AccumulateLapProgress deactivated
+             * them, which DrawCars then skips. Direct boot shows none of those
+             * menus, so it uses the physical course throughout. */
+            int menuIndexed = !s_scenario.directBoot && g_SceneId <= 8;
+            g_CourseIndex =
+                s_scenario.course + (menuIndexed ? s_scenario.series * 4 : 0);
+        }
+        if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
     }
-    if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
 
     changed = g_SceneId != s_scenario.lastScene ||
               (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
