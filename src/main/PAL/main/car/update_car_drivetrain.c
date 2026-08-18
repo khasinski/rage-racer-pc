@@ -55,7 +55,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 engineSpeed;
   s32 engineSpeedLoss;
   s32 bandIndex;
-  s32 speedForPath;
   s32 centreAngle;
   s32 radialDistance;
   s32 shiftTargetRpm;
@@ -95,14 +94,10 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 lateralSum;
   s32 dragBase;
   s32 camberLean;
-  s32 netTorqueRoundedA;
-  s32 netTorqueRoundedC;
   s32 lossBelowLimit;
   s32 shiftedSpeed;
-  s32 netTorqueRoundedB;
   s32 bandBase;
   s32 lossBase;
-  s32 throttleTorque;
   s32 speedScaled;
   s32 torqueLate;
   s32 coefficientBase;
@@ -215,44 +210,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   loadTorque = drive->drivetrainTorque;
   netTorque = gearTorque - loadTorque;
   driveMode = drive->motionState;
-  accel = 0;
-  if (driveMode == 1)
-  {
-    netTorqueRoundedA = netTorque;
-    if (netTorque < 0)
-    {
-      netTorqueRoundedA = netTorque + 0xFFF;
-    }
-    accel = netTorqueRoundedA;
-    accel = accel >> 0xC;
-  }
-  else
-    if (netTorque >= (-0x30D3))
-  {
-    if (netTorque > 0x186A0)
-    {
-      netTorqueRoundedB = netTorque;
-      if (netTorque < 0)
-      {
-        netTorqueRoundedB = netTorque + 0xFF;
-      }
-      accel = ((netTorqueRoundedB >> 8) * 0x46) / 200;
-    }
-  }
-  else
-    if (driveMode == 3)
-  {
-    accel = (gearTorque - loadTorque) / 768;
-  }
-  else
-  {
-    netTorqueRoundedC = netTorque;
-    if (netTorque < 0)
-    {
-      netTorqueRoundedC = netTorque + 0x7FF;
-    }
-    accel = netTorqueRoundedC >> 0xB;
-  }
+  accel = CarCalculateLoadResistance(driveMode, gearTorque, loadTorque);
   revLimit = config.pointer->revLimit;
   if (drive->engineRpm >= revLimit)
   {
@@ -521,12 +479,8 @@ shift_interpolation_done:
       }
     }
   }
-  throttleTorque = netTorque * drive->acceleratorInput.value * drive->drivetrainCoupled;
-  if (throttleTorque < 0)
-  {
-    throttleTorque += 0xFF;
-  }
-  throttleAccel = throttleTorque >> 8;
+  throttleAccel = CarCalculateThrottleAcceleration(
+      netTorque, drive->acceleratorInput.value, drive->drivetrainCoupled);
   if (g_GripLossTimer > 0)
   {
     g_GripLossTimer -= 1;
@@ -653,20 +607,9 @@ shift_interpolation_done:
     throttleAccel *= 2;
     steerLoad = 0;
   }
-  if ((drive->jumpTimer <= 0) && (drive->clutch <= 0))
-  {
-    drive->engineRpm = throttleAccel - accel - steerLoad + drive->engineRpm;
-  }
-  speedForPath = drive->engineRpm;
-  if (speedForPath < 0)
-  {
-    drive->engineRpm = 0;
-  }
-  else
-    if (speedForPath >= 0x3A99)
-  {
-    drive->engineRpm = 0x3A98;
-  }
+  drive->engineRpm = CarIntegrateEngineRpm(
+      drive->engineRpm, throttleAccel, accel, steerLoad,
+      drive->jumpTimer, drive->clutch);
   gearTorqueLate = gearRatio * drive->engineRpm;
   drive->drivetrainTorque = gearTorqueLate;
   if (drive->motionState == CAR_MOTION_TAKEOFF)
