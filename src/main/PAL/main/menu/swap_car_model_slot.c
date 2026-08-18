@@ -37,7 +37,9 @@ void DrawMenuCarView(void) {
     Matrix mtxB;
     Vec4 out;
     Vec4 vec;
-    s32 s1, s2, s3;
+    s32 carIndex;
+    s32 viewOffsetStep;
+    s32 displayedAngle;
     s32 x;
     s32 targetAngle;
     s32 offset;
@@ -69,9 +71,9 @@ void DrawMenuCarView(void) {
 
     targetAngle = g_MenuViewAngleTarget;
     x = g_MenuViewAngle;
-    s3 = targetAngle - x;
-    if (s3 != 0) {
-        if (s3 < 0) {
+    displayedAngle = targetAngle - x;
+    if (displayedAngle != 0) {
+        if (displayedAngle < 0) {
             if (x <= 299999) {
                 if (g_CarSwapToIndex >= 0) {
                     if (g_AssetLoadState != 0) {
@@ -81,10 +83,10 @@ void DrawMenuCarView(void) {
                     g_CarSwapFromIndex = g_CarSwapToIndex;
                     g_CarSwapToIndex = -1;
                 } else {
-                    g_MenuViewAngle = (s3 - 24) / 24 + x;
+                    g_MenuViewAngle = (displayedAngle - 24) / 24 + x;
                 }
             } else {
-                g_MenuViewAngle = (s3 - 24) / 24 + x;
+                g_MenuViewAngle = (displayedAngle - 24) / 24 + x;
             }
         } else {
             if (x > 900000 && g_CarSwapToIndex >= 0) {
@@ -95,26 +97,26 @@ void DrawMenuCarView(void) {
                 g_CarSwapFromIndex = g_CarSwapToIndex;
                 g_CarSwapToIndex = -1;
             } else {
-                g_MenuViewAngle = (s3 + 24) / 24 + x;
+                g_MenuViewAngle = (displayedAngle + 24) / 24 + x;
             }
         }
     }
 
-    s3 = ((g_MenuViewAngle + 300000) % 600000 - 300000) / 1000;
-    s1 = g_CarSwapFromIndex;
-    s2 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s2 != 0) {
-        if (s2 > 0) {
-            s2 = (250008 - s2) / 8;
+    displayedAngle = ((g_MenuViewAngle + 300000) % 600000 - 300000) / 1000;
+    carIndex = g_CarSwapFromIndex;
+    viewOffsetStep = g_MenuViewOffsetTarget - g_MenuViewOffset;
+    if (viewOffsetStep != 0) {
+        if (viewOffsetStep > 0) {
+            viewOffsetStep = (250008 - viewOffsetStep) / 8;
         } else {
-            s2 = (s2 - 12) / 12;
+            viewOffsetStep = (viewOffsetStep - 12) / 12;
         }
     }
 
-    g_MenuViewOffset = s2 + g_MenuViewOffset;
-    s2 = g_MenuViewOffset / 1000;
-    g_PlayerCar.runtime.modelIndex = GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
-    g_PlayerTireCompound = g_CarTable[s1].tireCompound;
+    g_MenuViewOffset = viewOffsetStep + g_MenuViewOffset;
+    viewOffsetStep = g_MenuViewOffset / 1000;
+    g_PlayerCar.runtime.modelIndex = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
+    g_PlayerTireCompound = g_CarTable[carIndex].tireCompound;
 
     if (g_GameInput.held & 2) {
         if (g_PlayerSteerAngle < 6144) {
@@ -128,7 +130,7 @@ void DrawMenuCarView(void) {
         }
     }
 
-    g_PlayerTransmission = g_CarTable[s1].transmission;
+    g_PlayerTransmission = g_CarTable[carIndex].transmission;
     g_PlayerCarWheelAngle = (g_PlayerCarWheelAngle + 68) & 0xFFF;
 
     if (g_GameInput.held & 4) {
@@ -157,9 +159,9 @@ void DrawMenuCarView(void) {
     asm volatile("" : "=r"(altLayout), "=r"(outX) : "0"(altLayout), "1"(outX));
     p = &g_PlayerCar.pose.position[0];
     if (altLayout != 0) {
-        offset = s3 - 23;
+        offset = displayedAngle - 23;
     } else {
-        offset = s3 - 52;
+        offset = displayedAngle - 52;
     }
     result = outX - offset;
     modelSlot = g_CarModelSlot;
@@ -167,7 +169,7 @@ void DrawMenuCarView(void) {
     q = &g_PlayerCar.pose.position[1];
     *p = result;
     outZ = out.z;
-    qValue = s2 + 30;
+    qValue = viewOffsetStep + 30;
     *q = qValue;
     g_PlayerCar.pose.position[2] = -outZ;
     g_PlayerRenderRotation = g_PlayerCar.pose.rotation;
@@ -176,9 +178,9 @@ void DrawMenuCarView(void) {
     q--;
     DrawPlayerCarModel((GameRenderObject *)q);
 
-    *q = (g_MenuAltLayout != 0 ? 23 : 52) - s3;
+    *q = (g_MenuAltLayout != 0 ? 23 : 52) - displayedAngle;
     q = &g_PlayerCar.pose.position[1];
-    *q = s2 + 30;
+    *q = viewOffsetStep + 30;
     g_PlayerCar.pose.position[2] = 0;
     SelectModelBank(14);
     /* 0x1f800004 is the scratchpad OT-base slot on PS1.  Keep the retail
@@ -189,11 +191,11 @@ void DrawMenuCarView(void) {
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PlayerCar.pose.position[0], &mtxA);
     RENDER_ENV_MODE4 = 0;
     {
-        s32 a1 = 1;
+        s32 modelIndex = 1;
         if (g_ModelBankCount >= 6) {
-            a1 = 5;
+            modelIndex = 5;
         }
-        SubmitModel(RENDER_WORKSPACE, a1);
+        SubmitModel(RENDER_WORKSPACE, modelIndex);
     }
     RENDER_OT_BASE_AS(OT_TYPE) -= 30;
 }
@@ -202,9 +204,9 @@ void DrawMenuCarView(void) {
 void DrawMenuCourseView(void) {
     Matrix mtxA;
     Matrix mtxB;
-    s32 s1;
-    s32 s0;
-    s32 s2;
+    s32 displayedAngle;
+    s32 viewOffsetStep;
+    s32 courseModelIndex;
     s32 *p;
 
     RENDER_VIEW_Y = -64;
@@ -223,9 +225,9 @@ void DrawMenuCourseView(void) {
         }
     }
 
-    s1 = g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (s1 != 0) {
-        if (s1 > 0) {
+    displayedAngle = g_MenuViewAngleTarget - g_MenuViewAngle;
+    if (displayedAngle != 0) {
+        if (displayedAngle > 0) {
             if (g_MenuViewAngle > 750000 && g_MenuPendingCourseIndex >= 0) {
                 if (g_CourseSwapDelay >= 19) {
                     g_CourseSwapDelay = 0;
@@ -235,7 +237,7 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay = g_CourseSwapDelay + 1;
                 }
             } else {
-                g_MenuViewAngle = (s1 + 18) / 18 + g_MenuViewAngle;
+                g_MenuViewAngle = (displayedAngle + 18) / 18 + g_MenuViewAngle;
             }
         } else {
             if (g_MenuViewAngle <= 249999 && g_MenuPendingCourseIndex >= 0) {
@@ -247,29 +249,29 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay = g_CourseSwapDelay + 1;
                 }
             } else {
-                g_MenuViewAngle = (s1 - 18) / 18 + g_MenuViewAngle;
+                g_MenuViewAngle = (displayedAngle - 18) / 18 + g_MenuViewAngle;
             }
         }
     }
 
-    s1 = ((g_MenuViewAngle + 250000) % 500000 - 250000) / 1000;
+    displayedAngle = ((g_MenuViewAngle + 250000) % 500000 - 250000) / 1000;
 
-    s2 = g_MenuCourseModelIndex;
+    courseModelIndex = g_MenuCourseModelIndex;
 
-    s0 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s0 != 0) {
-        if (s0 > 0) {
-            s0 = (250008 - s0) / 8;
+    viewOffsetStep = g_MenuViewOffsetTarget - g_MenuViewOffset;
+    if (viewOffsetStep != 0) {
+        if (viewOffsetStep > 0) {
+            viewOffsetStep = (250008 - viewOffsetStep) / 8;
         } else {
-            s0 = (s0 - 12) / 12;
+            viewOffsetStep = (viewOffsetStep - 12) / 12;
         }
     }
 
-    g_PlayerCar.courseViewX = 23 - s1;
-    g_MenuViewOffset = s0 + g_MenuViewOffset;
+    g_PlayerCar.courseViewX = 23 - displayedAngle;
+    g_MenuViewOffset = viewOffsetStep + g_MenuViewOffset;
     g_PlayerCar.runtime.z = -20;
-    s0 = g_MenuViewOffset / 1000;
-    g_PlayerCar.runtime.y = s0 + 15;
+    viewOffsetStep = g_MenuViewOffset / 1000;
+    g_PlayerCar.runtime.y = viewOffsetStep + 15;
 
     if (g_GameInput.held & 4) {
         if (g_MenuViewSpin < 64) {
@@ -292,11 +294,11 @@ void DrawMenuCourseView(void) {
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, p - 9, &mtxA);
     RENDER_ENV_MODE4 = 0;
     {
-        s32 a1 = 1;
-        if ((s2 & 3) < g_ModelBankCount) {
-            a1 = s2 & 3;
+        s32 modelIndex = 1;
+        if ((courseModelIndex & 3) < g_ModelBankCount) {
+            modelIndex = courseModelIndex & 3;
         }
-        SubmitModel(RENDER_WORKSPACE, a1);
+        SubmitModel(RENDER_WORKSPACE, modelIndex);
     }
 }
 
@@ -317,9 +319,9 @@ void DrawTeamNameCharModel(void) {
     Matrix mtxB;
     MenuModelTransform transform;
     Vec4 vcopy;
-    s32 s1;
-    s32 s0;
-    s32 s2;
+    s32 viewAngle;
+    s32 viewOffsetStep;
+    s32 baseHeight;
 
     vcopy = g_TeamNameCharScale;
 
@@ -339,53 +341,54 @@ void DrawTeamNameCharModel(void) {
         }
     }
 
-    s1 = g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (s1 != 0) {
-        if (s1 > 0) {
-            s1 = (s1 + 16) / 16;
+    viewAngle = g_MenuViewAngleTarget - g_MenuViewAngle;
+    if (viewAngle != 0) {
+        if (viewAngle > 0) {
+            viewAngle = (viewAngle + 16) / 16;
         } else {
-            s1 = (s1 - 16) / 16;
+            viewAngle = (viewAngle - 16) / 16;
         }
     }
 
     {
-        s32 t = g_MenuViewAngle + s1;
-        g_MenuViewAngle = t;
-        if (t <= 3071999) {
-            s32 a = GameMenuCursorAnim;
-            if (a >= 0) {
-                g_MenuViewAngle = t - 2048000;
-                g_TeamNameCharModel = a;
+        s32 nextAngle = g_MenuViewAngle + viewAngle;
+        g_MenuViewAngle = nextAngle;
+        if (nextAngle <= 3071999) {
+            s32 pendingModel = GameMenuCursorAnim;
+            if (pendingModel >= 0) {
+                g_MenuViewAngle = nextAngle - 2048000;
+                g_TeamNameCharModel = pendingModel;
                 GameMenuCursorAnim = -1;
             }
         }
     }
 
-    s1 = g_MenuViewAngle / 1000;
+    viewAngle = g_MenuViewAngle / 1000;
 
-    s0 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s0 != 0) {
-        if (s0 > 0) {
-            s0 = (250008 - s0) / 8;
+    viewOffsetStep = g_MenuViewOffsetTarget - g_MenuViewOffset;
+    if (viewOffsetStep != 0) {
+        if (viewOffsetStep > 0) {
+            viewOffsetStep = (250008 - viewOffsetStep) / 8;
         } else {
-            s0 = (s0 - 12) / 12;
+            viewOffsetStep = (viewOffsetStep - 12) / 12;
         }
     }
 
-    g_MenuViewOffset = s0 + g_MenuViewOffset;
-    s0 = g_MenuViewOffset / 1000;
+    g_MenuViewOffset = viewOffsetStep + g_MenuViewOffset;
+    viewOffsetStep = g_MenuViewOffset / 1000;
 
-    s2 = 40;
+    baseHeight = 40;
     if (g_MenuAltLayout != 0) {
-        s2 = 64;
+        baseHeight = 64;
     }
 
     transform.positionX = 0;
     transform.positionY =
-        (s0 - s2) + rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
+        (viewOffsetStep - baseHeight) +
+        rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
     transform.positionZ = 0;
     transform.rotationX = 0;
-    transform.rotationY = s1;
+    transform.rotationY = viewAngle;
     transform.rotationZ =
         rsin((g_AnimTimer * 20) & 0xFFC) * 72 / 4096;
 
@@ -397,14 +400,14 @@ void DrawTeamNameCharModel(void) {
 
     if (g_TeamNameCharModel != 10 &&
         (u32)(g_TeamNameCharModel - 42) >= 2U) {
-        s32 a1;
+        s32 modelIndex;
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &transform, &mtxA);
         RENDER_ENV_MODE4 = 0;
-        a1 = 1;
+        modelIndex = 1;
         if (g_TeamNameCharModel < g_CourseModelCount) {
-            a1 = g_TeamNameCharModel;
+            modelIndex = g_TeamNameCharModel;
         }
-        SubmitCourseModel(RENDER_WORKSPACE, a1);
+        SubmitCourseModel(RENDER_WORKSPACE, modelIndex);
     }
 }
 
