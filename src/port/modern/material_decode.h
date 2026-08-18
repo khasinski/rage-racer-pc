@@ -45,4 +45,13 @@ void RageDecodeTexturePage(const uint8_t *vram, int vramPitch,
                            RageTexturePage page, unsigned clut,
                            uint8_t *out);
 
+/* Same decode from two read-back regions instead of a whole VRAM: pixels
+ * points at the page origin, palette at the CLUT origin. A cache reads only
+ * the regions it needs, so this is the form it uses; the whole-VRAM entry
+ * point above is written in terms of this one. palette may be NULL at 16bpp,
+ * which carries colour directly. */
+void RageDecodeTexturePageRegions(const uint8_t *pixels, int pixelsPitch,
+                                  const uint8_t *palette, int mode,
+                                  uint8_t *out);
+
 #endif

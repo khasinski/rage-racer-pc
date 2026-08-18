@@ -46,33 +46,44 @@ void RageClutOrigin(unsigned clut, int *x, int *y) {
     *y = (int)(clut / 64u);
 }
 
-void RageDecodeTexturePage(const uint8_t *vram, int vramPitch,
-                           RageTexturePage page, unsigned clut,
-                           uint8_t *out) {
-    int clutX, clutY;
+void RageDecodeTexturePageRegions(const uint8_t *pixels, int pixelsPitch,
+                                  const uint8_t *palette, int mode,
+                                  uint8_t *out) {
     int tx, ty;
-
-    RageClutOrigin(clut, &clutX, &clutY);
     for (ty = 0; ty < RAGE_PAGE_TEXELS; ty++) {
         for (tx = 0; tx < RAGE_PAGE_TEXELS; tx++) {
             uint8_t *dst = out + ((size_t)ty * RAGE_PAGE_TEXELS + tx) * 4;
-            if (page.mode >= RAGE_TEXTURE_MODE_16BIT) {
-                RageStoreTexel(vram, vramPitch, page.x + tx, page.y + ty, dst);
+            if (mode >= RAGE_TEXTURE_MODE_16BIT) {
+                RageStoreTexel(pixels, pixelsPitch, tx, ty, dst);
                 continue;
             }
             {
                 /* 4bpp packs four indices per word, 8bpp packs two. */
-                int shiftPerTexel = page.mode == RAGE_TEXTURE_MODE_8BIT ? 1 : 2;
-                unsigned subMask = page.mode == RAGE_TEXTURE_MODE_8BIT ? 1u : 3u;
-                unsigned idxShift = page.mode == RAGE_TEXTURE_MODE_8BIT ? 8u : 4u;
-                unsigned idxMask = page.mode == RAGE_TEXTURE_MODE_8BIT ? 0xffu
-                                                                      : 0x0fu;
+                int shiftPerTexel = mode == RAGE_TEXTURE_MODE_8BIT ? 1 : 2;
+                unsigned subMask = mode == RAGE_TEXTURE_MODE_8BIT ? 1u : 3u;
+                unsigned idxShift = mode == RAGE_TEXTURE_MODE_8BIT ? 8u : 4u;
+                unsigned idxMask = mode == RAGE_TEXTURE_MODE_8BIT ? 0xffu
+                                                                  : 0x0fu;
                 unsigned sub = (unsigned)tx & subMask;
-                int wordX = page.x + (tx >> shiftPerTexel);
-                unsigned word = RageWordAt(vram, vramPitch, wordX, page.y + ty);
+                unsigned word =
+                    RageWordAt(pixels, pixelsPitch, tx >> shiftPerTexel, ty);
                 unsigned index = (word >> (sub * idxShift)) & idxMask;
-                RageStoreTexel(vram, vramPitch, clutX + (int)index, clutY, dst);
+                if (palette == NULL) {
+                    dst[0] = dst[1] = dst[2] = dst[3] = 0;
+                    continue;
+                }
+                RageStoreTexel(palette, 0, (int)index, 0, dst);
             }
         }
     }
+}
+
+void RageDecodeTexturePage(const uint8_t *vram, int vramPitch,
+                           RageTexturePage page, unsigned clut,
+                           uint8_t *out) {
+    int clutX, clutY;
+    RageClutOrigin(clut, &clutX, &clutY);
+    RageDecodeTexturePageRegions(
+        vram + (size_t)page.y * vramPitch + (size_t)page.x * 4, vramPitch,
+        vram + (size_t)clutY * vramPitch + (size_t)clutX * 4, page.mode, out);
 }

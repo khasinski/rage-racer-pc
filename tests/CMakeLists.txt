@@ -49,6 +49,18 @@ endif()
 add_test(NAME material_decode COMMAND material_decode_tests)
 set_tests_properties(material_decode PROPERTIES LABELS portable)
 
+add_executable(material_cache_tests
+    material_cache_tests.c
+    ../src/port/modern/material_cache.c
+    ../src/port/modern/material_decode.c)
+target_include_directories(material_cache_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(material_cache_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME material_cache COMMAND material_cache_tests)
+set_tests_properties(material_cache PROPERTIES LABELS portable)
+
 add_executable(native_geometry_interpolation_tests
     native_geometry_interpolation_tests.c
     ../src/port/native_geometry_interpolation.c)
