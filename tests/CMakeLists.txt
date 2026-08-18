@@ -65,6 +65,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME race_pause COMMAND race_pause_tests)
 
+add_executable(race_end_tests race_end_tests.c
+    ../src/main/PAL/main/race/race_end.c)
+target_include_directories(race_end_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_end_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_end_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_end COMMAND race_end_tests)
+
 add_executable(car_physics_tests car_physics_tests.c
     ../src/main/PAL/main/car/car_physics.c)
 target_include_directories(car_physics_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)

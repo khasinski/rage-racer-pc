@@ -9,6 +9,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_pause.h"
+#include "game/race_end.h"
 #include "game/random.h"
 #include "game/records_internal.h"
 #include "game/render.h"
@@ -393,6 +394,8 @@ void UpdateRaceScene(void) {
     s32 next;
     RacePauseState pauseState;
     RacePauseCommands pauseCommands;
+    RaceEndState endState;
+    RaceEndCommands endCommands;
     s32 commandIndex;
 
     value = g_SceneTimer + 1;
@@ -434,34 +437,22 @@ void UpdateRaceScene(void) {
     if (pauseCommands.exitRaceScene >= 0)
         ExitRaceScene(pauseCommands.exitRaceScene);
 
-    if (g_RacePhase == 5) {
-        if (((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining == 0)) ||
-            (g_GrandPrixMode == 0)) {
-            if (g_RaceFadeTimer >= 0x15) {
-                DrawRaceEndBanner((g_RaceFadeTimer - 0x14) * 3);
-                DrawFullscreenFadeTile((g_RaceFadeTimer - 0x14) * 3, 0x49);
-                option = 0xF;
-            }
-            if (g_RaceFadeTimer == 0xA) {
-                RequestCdTrack(0xF);
-                StartCdAudio();
-            }
-            if (g_RaceFadeTimer >= 0x65) {
-                ExitRaceScene(option);
-            }
-        } else if ((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining > 0)) {
-            DrawLostRaceCaption(g_RaceFadeTimer * 2);
-            DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x49);
-            option = 0xD;
-            if (g_RaceFadeTimer >= 0x7E) {
-                ExitRaceScene(0xD);
-            }
-        }
-        g_MirrorViewEnabled = 0;
-        g_RaceFadeTimer++;
-    } else if (g_RacePhase == 7) {
-        ExitRaceScene(6);
-    }
+    endState = (RaceEndState){g_RacePhase, g_GrandPrixMode,
+                              g_RaceFadeTimer,
+                              g_CourseProgress->retriesRemaining};
+    RaceEndStep(&endState, &endCommands);
+    g_RaceFadeTimer = endState.fadeTimer;
+    if (endCommands.drawEndBannerIntensity >= 0)
+        DrawRaceEndBanner(endCommands.drawEndBannerIntensity);
+    if (endCommands.drawLostCaptionIntensity >= 0)
+        DrawLostRaceCaption(endCommands.drawLostCaptionIntensity);
+    if (endCommands.drawFadeIntensity >= 0)
+        DrawFullscreenFadeTile(endCommands.drawFadeIntensity, 0x49);
+    if (endCommands.requestCdTrack >= 0)
+        RequestCdTrack(endCommands.requestCdTrack);
+    if (endCommands.startCd) StartCdAudio();
+    if (endCommands.exitScene >= 0) ExitRaceScene(endCommands.exitScene);
+    if (endCommands.disableMirror) g_MirrorViewEnabled = 0;
 
     if (g_RacePaused != 0) {
         if (pauseCommands.setPauseReverb) SetReverbDepth(0x28, 0x28);
