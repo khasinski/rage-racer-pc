@@ -310,12 +310,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     if ((s16)car->motionTimer > 0) {
-        ApplyCarKnockback(car);
+        ApplyCarKnockback(GetPlayerCarRuntime(car));
     }
 #ifdef __psyz
     RageTraceCarMotion("post-knockback", car);
 #endif
-    skid = UpdateCarTrackState(car, car->trackPointIndex, &limits);
+    skid = UpdateCarTrackState(GetPlayerCarRuntime(car), car->trackPointIndex, &limits);
 #ifdef __psyz
     RageTraceCarMotion("post-track", car);
 #endif
@@ -336,7 +336,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     RageTraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
 #endif
     if (skid != 0 || crash != 0) {
-        StartCarBodyKick(2, car);
+        StartCarBodyKick(2, GetPlayerCarRuntime(car));
     }
 
     {
@@ -380,7 +380,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             car->y = limit + 8;
             car->verticalPitch = 0;
             car->verticalRoll = 0;
-            StartCarBodyKick(1, car);
+            StartCarBodyKick(1, GetPlayerCarRuntime(car));
             g_ShiftSoundLevel = 0;
             if ((s16)car->shiftTick >= 19) {
                 if (g_RacePhase < 3) {
@@ -421,12 +421,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    UpdateCarTiltCounter(car);
-    UpdateCarCrestHop(car);
+    UpdateCarTiltCounter(GetPlayerCarRuntime(car));
+    UpdateCarCrestHop(GetPlayerCarRuntime(car));
 
     if (skid == 0 && crash == 0) {
         car->y += p->standingStartBounceY;
-        UpdateCarBodyKick(car);
+        UpdateCarBodyKick(GetPlayerCarRuntime(car));
     } else {
         slip = GetAngleDistance(0xC00 - g_TrackPoints[car->trackPointIndex].angle,
                              car->headingAngle);

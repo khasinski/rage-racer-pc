@@ -289,7 +289,7 @@ void UpdateCarShopScreen(void) {
             g_UiScriptProgress = 0;
             GameMenuBusy = 0;
             g_CarShopOption = 0;
-            UploadTeamNameTexture(&g_TeamNameChars, g_TeamNameLength);
+            UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
             UploadTeamLogoClut();
         }
     }
@@ -325,7 +325,7 @@ u32 DrawEngineerShopScreen(s32 step) {
         amount = product / 2048;
     }
 
-    DrawCarEngineSpec((s16)amount, (u8)(g_EngineSpecStep >> 2), g_PlayerCarIndex);
+    DrawCarEngineSpec((s16)amount, (u8)(g_EngineSpecStep >> 2));
     return g_EngineSpecStep;
 }
 

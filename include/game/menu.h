@@ -276,15 +276,9 @@ void ShopScreenNoOp(void);
  * draws nothing, positive ramps in, negative ramps out.
  */
 /* The four-bar car performance chart; only visible on CUSTOMIZE. */
-/* menu_mode.c calls it with the step alone, so the parameter list stays
- * empty; the body reads (s32 step, s32 tireGrade). */
-void DrawCarSpecGraph();
+void DrawCarSpecGraph(s32 step, u32 tireGrade);
 /* "MAX POWER <n> ps / <n> rpm" and "MAX TORQUE <n>.<n> kgm / <n> rpm". */
-/* Same story as DrawCarSpecGraph: the body reads (s32 yOffset, s32 brightness)
- * and truncates them itself, while car_select.c, shop_screens.c and
- * design_screens.c all pass a third argument.  The empty list lets each
- * caller keep the argument list it was compiled with. */
-void DrawCarEngineSpec();
+void DrawCarEngineSpec(s32 slide, s32 brightness);
 /* The TEAM NAME 4x11 grid, its highlight and caret, and the typed name. */
 void DrawTeamNameEntry(s32 step, s32 cursorIndex);
 /* The 3D car view behind screens 3, 4, 5, 6, 10, 11, 12: eases
@@ -670,13 +664,13 @@ void DrawMenuLightBurst(s32 arg);
 void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(s32 owned, s32 step);
-void DrawSpriteString();
+void DrawSpriteString(long x, long y, const void *text, long clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
 void RequestCarModel(s32 carIndex);
 void RequestOptionScreenAssets(void);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);
-void UploadTeamNameTexture();
+void UploadTeamNameTexture(u8 *text, s32 length);
 void DrawCarSlotLabel(s32 x, s32 y, s32 label);
 s32 DrawClassChangeCurtain(s32 step);
 void DrawClassRecordDetail(void);

@@ -31,7 +31,7 @@ s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample) {
     s32 curZ;
     s32 angle;
 
-    index = FindTrackSegment(sample, sample->trackPointIndex);
+    index = FindTrackSegment((GameCarRuntime *)(void *)sample, sample->trackPointIndex);
     nextIndex = (index + 1) % g_TrackPointCount;
 
     cur = &g_TrackPoints[index];

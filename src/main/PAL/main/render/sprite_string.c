@@ -9,11 +9,12 @@
 #include "psyq/gpu.h"
 
 
-void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
+void DrawSpriteString(long x, long y, const void *text, long clutIndex) {
+    const u_char *str = text;
     volatile SPRT *packet;
     long idx;
     u_char *next;
-    register u_char *sr;
+    register const u_char *sr;
     register u_char *tableA;
     long ga;
     long gb;

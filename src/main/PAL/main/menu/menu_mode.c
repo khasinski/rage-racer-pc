@@ -410,7 +410,7 @@ void InitMenuMode(void) {
     DrawPaintColorScreen(0);
     DrawCarShopScreen(0);
     DrawEngineerShopScreen(0);
-    DrawCarSpecGraph(0);
+    DrawCarSpecGraph(0, 0);
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);
 }

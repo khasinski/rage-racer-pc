@@ -269,7 +269,7 @@ pop:
     if (0x3D08F < g_MenuViewOffset) {
         g_MenuScreen = 6;
         g_MenuHandlerIndex = 6;
-        UploadTeamNameTexture(&g_TeamNameChars, g_TeamNameLength);
+        UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;
     }
@@ -427,7 +427,6 @@ s32 DrawCarShopScreen(s32 step) {
     s32 limit;
     s32 amount;
     s32 phase;
-    s32 channel;
 
     if (step == 0) {
         g_CarShopScreenProgress = 0;
@@ -459,10 +458,8 @@ s32 DrawCarShopScreen(s32 step) {
 
     amount = value << 16;
     amount >>= 16;
-    limit = g_PlayerCarIndex;
     phase = (u8)(g_CarShopScreenProgress / 4U);
-    channel = limit;
-    DrawCarEngineSpec(amount, phase, channel);
+    DrawCarEngineSpec(amount, phase);
 
     return g_CarShopScreenProgress;
 }

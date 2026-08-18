@@ -648,7 +648,7 @@ s32 DrawCustomizeScreen(s32 step) {
         value = product / 2048;
     }
 
-    DrawCarEngineSpec((s16)value, (g_CustomizeFadeAccum / 4U) & 0xFF, g_PlayerCarIndex);
+    DrawCarEngineSpec((s16)value, (g_CustomizeFadeAccum / 4U) & 0xFF);
     return g_CustomizeFadeAccum;
 }
 

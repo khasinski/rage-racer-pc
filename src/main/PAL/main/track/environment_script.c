@@ -76,7 +76,7 @@ void SeekEnvironmentScript(s32 targetTime) {
         clampedFrame = duration;
     }
     g_EnvLerpFrame = clampedFrame;
-    LoadEnvironmentCue(cue, duration, clampedFrame);
+    LoadEnvironmentCue(cue);
 
     nextId = g_EnvScriptCursor[1].time;
     g_EnvScriptCursor = g_EnvScriptCursor + 1;

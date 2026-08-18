@@ -107,7 +107,8 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion) {
     AccumulateLapProgress(&g_CameraCar);
     markerClamp[0] = 0;
     markerClamp[1] = 0;
-    UpdateCarTrackState(&g_CameraCar, g_CameraCar.trackPointIndex, markerClamp);
+    UpdateCarTrackState(&g_CameraCar, g_CameraCar.trackPointIndex,
+                        (CarTrackLimits *)(void *)markerClamp);
 
     cameraAddress.runtime = &g_CameraCar;
     viewAddress.words = &view[2];

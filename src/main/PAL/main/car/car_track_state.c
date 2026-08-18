@@ -467,7 +467,8 @@ void SampleTrackSurfaceHeight(CarSurfaceSampleView *car) {
     s32 e;
     s32 v8;
 
-    idx = FindTrackSegment(car, car->trackPointIndex);
+    idx = FindTrackSegment((GameCarRuntime *)(void *)car,
+                           car->trackPointIndex);
     p2 = GetTrackPointHalfwordView(
         &g_TrackPoints[(idx + 1) % g_TrackPointCount]);
     p1 = GetTrackPointHalfwordView(&g_TrackPoints[idx]);

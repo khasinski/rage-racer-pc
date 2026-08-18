@@ -2,7 +2,7 @@
 #include "game/memcard.h"
 
 void CardSeekParam(s32 param) {
-    ClearMemoryCardHwEvents(param);
+    ClearMemoryCardHwEvents();
     _card_info((u8)param);
     WaitMemoryCardHwEvent();
 }
