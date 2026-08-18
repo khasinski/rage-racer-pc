@@ -56,6 +56,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME game_input COMMAND game_input_tests)
 
+add_executable(race_pause_tests race_pause_tests.c
+    ../src/main/PAL/main/race/race_pause.c)
+target_include_directories(race_pause_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_pause_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_pause_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_pause COMMAND race_pause_tests)
+
 add_executable(render_scene_tests
     render_scene_tests.c
     ../src/port/render/render_scene.c)

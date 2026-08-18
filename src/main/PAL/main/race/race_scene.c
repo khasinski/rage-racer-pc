@@ -8,6 +8,7 @@
 #include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_pause.h"
 #include "game/random.h"
 #include "game/records_internal.h"
 #include "game/render.h"
@@ -389,11 +390,10 @@ void UpdateRaceScene(void) {
     s32 option;
     s32 value;
     u32 timerValue;
-    s16 selection;
     s32 next;
-    u16 mode;
-    u32 pausePhase;
-    u32 paused;
+    RacePauseState pauseState;
+    RacePauseCommands pauseCommands;
+    s32 commandIndex;
 
     value = g_SceneTimer + 1;
     g_SceneTimer = value;
@@ -404,52 +404,35 @@ void UpdateRaceScene(void) {
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
     }
 
-    if (g_PauseDebounce > 0) {
-        g_PauseDebounce--;
-    }
+    pauseState = (RacePauseState){
+        g_SceneTimer, g_RacePaused, g_PauseDebounce, g_RacePhase,
+        g_RaceOptionCursor, g_GrandPrixMode, g_RaceFadeTimer,
+        g_CourseProgress->retriesRemaining, s_RetireCameraActive};
+    RacePauseStep(&pauseState, g_GameInput.pressed, &pauseCommands);
+    g_SceneTimer = pauseState.sceneTimer;
+    g_RacePaused = pauseState.paused;
+    g_PauseDebounce = pauseState.debounce;
+    g_RacePhase = pauseState.phase;
+    g_RaceOptionCursor = pauseState.optionCursor;
+    g_RaceFadeTimer = pauseState.fadeTimer;
+    s_RetireCameraActive = pauseState.retireCameraActive;
 
-    mode = g_RacePhase;
-    pausePhase = mode - 1;
-    if (pausePhase < 2 && (g_GameInput.pressed & PAD_START) && g_PauseDebounce <= 0) {
-        g_PauseDebounce = 5;
-        paused = g_RacePaused;
-        value = paused < 1;
-        g_RacePaused = value;
-
-        if (value != 0) {
-            PauseCdAudio();
-            ForceAllEffectVoicesEnabled(0);
-            g_RaceOptionCursor = 0;
-            PlaySoundCue(2);
-        } else if (g_RaceOptionCursor == (2 - g_GrandPrixMode)) {
-            g_RaceFadeTimer = 0;
-            if (g_GrandPrixMode == 0 || (s16)mode < 2) {
-                g_RacePhase = 7;
-                if (g_GrandPrixMode == 0) {
-                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
-                        g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
-                }
-            } else {
-                value = g_CourseProgress->retriesRemaining;
-                g_RacePhase = 5;
-                s_RetireCameraActive = 1;
-                if (value != 0) {
-                    PlaySoundCue(0x3D);
-                }
-            }
-            if (!s_RetireCameraActive) SeedFinishCamera(&g_PlayerCar);
-            StartCdVolumeFade(8);
-        } else if (g_RaceOptionCursor == 1 && g_GrandPrixMode == 0) {
-            ExitRaceScene(0xB);
-            g_RacePhase = 8;
-        } else {
-            g_PauseDebounce = 0x1E;
-            ForceAllEffectVoicesEnabled(1);
-            if (g_RacePhase >= 2) {
-                ResumeCdAudio();
-            }
-        }
+    if (pauseCommands.pauseCd) PauseCdAudio();
+    if (pauseCommands.resumeCd) ResumeCdAudio();
+    if (pauseCommands.setEffectVoices)
+        ForceAllEffectVoicesEnabled(pauseCommands.effectVoicesEnabled);
+    for (commandIndex = 0; commandIndex < pauseCommands.soundCueCount;
+         commandIndex++)
+        PlaySoundCue(pauseCommands.soundCues[commandIndex]);
+    if (pauseCommands.updateTimeAttackRecord) {
+        g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
+            g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
     }
+    if (pauseCommands.seedFinishCamera) SeedFinishCamera(&g_PlayerCar);
+    if (pauseCommands.startCdFadeFrames)
+        StartCdVolumeFade(pauseCommands.startCdFadeFrames);
+    if (pauseCommands.exitRaceScene >= 0)
+        ExitRaceScene(pauseCommands.exitRaceScene);
 
     if (g_RacePhase == 5) {
         if (((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining == 0)) ||
@@ -481,20 +464,7 @@ void UpdateRaceScene(void) {
     }
 
     if (g_RacePaused != 0) {
-        SetReverbDepth(0x28, 0x28);
-        if ((g_GameInput.pressed & PAD_UP) && g_RaceOptionCursor > 0) {
-            g_RaceOptionCursor--;
-            PlaySoundCue(1);
-        }
-        if (g_GameInput.pressed & PAD_DOWN) {
-            selection = g_RaceOptionCursor;
-            if (selection < (2 - g_GrandPrixMode)) {
-                g_RaceOptionCursor = selection + 1;
-                PlaySoundCue(1);
-            }
-        }
-
-        g_SceneTimer--;
+        if (pauseCommands.setPauseReverb) SetReverbDepth(0x28, 0x28);
         DrawRaceOptionMenu(g_RaceOptionCursor);
         if (g_GrandPrixMode == 0) {
             DrawSplitTimes();
