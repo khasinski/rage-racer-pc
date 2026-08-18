@@ -11,7 +11,7 @@
 #include <string.h>
 #include "scene_capture.h"
 #include "modern_renderer_diagnostics.h"
-#include "../native_geometry_interpolation.h"
+#include "modern_scene_interpolation.h"
 #include "../runtime_config.h"
 #include "shaders/modern_vert_spv.h"
 #include "shaders/modern_frag_spv.h"
@@ -603,147 +603,16 @@ static uint32_t ModernTwinFromE2(uint32_t word) {
 
 /* ---- snapshot interpolation (arbitrary-FPS presentation) ---- */
 
-static int s_useLerp;
+static ModernSceneInterpolation s_interpolation;
 static int16_t s_drawGroupBias[RAGE_CAPTURE_MAX_DRAWS];
-static RageCaptureGteState s_lerpDrawGte[RAGE_CAPTURE_MAX_DRAWS];
-static RageCaptureTerrainBatch s_lerpTerrain[RAGE_CAPTURE_MAX_TERRAIN];
 static Uint64 s_tickTimeNs;
 static Uint64 s_tickIntervalNs;
 static uint32_t s_tickFrame = 0xFFFFFFFFu;
 
-static void ModernLerpGte(const RageCaptureGteState *a,
-                          const RageCaptureGteState *b, float t,
-                          RageCaptureGteState *out) {
-    int row, column, axis;
-    for (row = 0; row < 3; row++) {
-        for (column = 0; column < 3; column++) {
-            out->rot.m[row][column] =
-                (int16_t)(a->rot.m[row][column] +
-                          (b->rot.m[row][column] - a->rot.m[row][column]) * t);
-            out->light.m[row][column] = b->light.m[row][column];
-            out->color.m[row][column] = b->color.m[row][column];
-        }
-    }
-    /* Component-wise matrix interpolation shrinks rotating axes between
-     * logic frames. It is especially visible on fast-spinning wheels as a
-     * periodic model-size pulse. Re-orthonormalize the interpolated basis,
-     * retaining reflected (rear-view/mirrored-course) handedness. */
-    RageOrthonormalizeMatrix3x3(out->rot.m, b->rot.m);
-    for (axis = 0; axis < 3; axis++) {
-        out->rot.t[axis] =
-            (int32_t)(a->rot.t[axis] +
-                      (b->rot.t[axis] - a->rot.t[axis]) * (double)t);
-        out->light.t[axis] = b->light.t[axis];
-        out->color.t[axis] = b->color.t[axis];
-    }
-    out->ofx = b->ofx;
-    out->ofy = b->ofy;
-    out->h = b->h;
-    out->dqa = b->dqa;
-    out->dqb = b->dqb;
-}
-
-/* Lerp the BASE frame's draws/terrain toward the newer TARGET frame. The
- * rendered face set is the base's: its trailing edge (nearest road, faces
- * the target frame already culled) is clipped naturally by the GPU instead
- * of vanishing for a whole logic tick, and the leading edge only pops far
- * away at the horizon. Camera cuts and scene changes snap instead. */
 static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
                                        const RageSceneSnapshot *target,
                                        float t) {
-    int i;
-    uint8_t matchedTarget[RAGE_CAPTURE_MAX_DRAWS] = {0};
-    int timerDelta = target->sceneTimer - base->sceneTimer;
-    long long cameraDelta = 0;
-    s_useLerp = 0;
-    if (t <= 0.001f) return;
-    if (target->sceneId != base->sceneId) return;
-    if (timerDelta < 0 || timerDelta > 2) return;
-    for (i = 0; i < 3; i++) {
-        long long delta = (long long)target->viewPosition[i] -
-                          base->viewPosition[i];
-        cameraDelta += delta < 0 ? -delta : delta;
-    }
-    if (cameraDelta > 16384) return;
-    for (i = 0; i < base->drawCount; i++) {
-        const RageCaptureModelDraw *draw = &base->draws[i];
-        const RageCaptureModelDraw *match = NULL;
-        long long bestDistance = 0;
-        int j;
-        /* Match by nearest translation among same-key candidates. The four
-         * wheels of one car share a model index, and occurrence-order
-         * pairing slipped by one whenever a wheel was culled for a frame,
-         * lerping each wheel toward another corner (wheels flashing through
-         * the body, mirrored rivals spinning the wrong way). */
-        for (j = 0; j < target->drawCount; j++) {
-            const RageCaptureModelDraw *other = &target->draws[j];
-            long long distance = 0;
-            int axis;
-            if (matchedTarget[j] || other->kind != draw->kind ||
-                other->modelIndex != draw->modelIndex ||
-                other->mirror != draw->mirror ||
-                other->table != draw->table) {
-                continue;
-            }
-            for (axis = 0; axis < 3; axis++) {
-                long long delta = (long long)other->gte.rot.t[axis] -
-                                  draw->gte.rot.t[axis];
-                distance += delta * delta;
-            }
-            if (match == NULL || distance < bestDistance) {
-                match = other;
-                bestDistance = distance;
-            }
-        }
-        /* Snap draws whose orientation changed too much in one tick:
-         * lerping across a large rotation produces inverted-looking spin. */
-        if (match != NULL) {
-            long dot = 0;
-            int axis;
-            for (axis = 0; axis < 3; axis++) {
-                dot += (long)draw->gte.rot.m[0][axis] *
-                       match->gte.rot.m[0][axis];
-                dot += (long)draw->gte.rot.m[2][axis] *
-                       match->gte.rot.m[2][axis];
-            }
-            if (dot < 0) match = NULL;
-        }
-        if (match != NULL) {
-            matchedTarget[match - target->draws] = 1;
-            ModernLerpGte(&draw->gte, &match->gte, t, &s_lerpDrawGte[i]);
-        } else {
-            s_lerpDrawGte[i] = draw->gte;
-        }
-    }
-    for (i = 0; i < base->terrainCount; i++) {
-        const RageCaptureTerrainBatch *batch = &base->terrain[i];
-        const RageCaptureTerrainBatch *match =
-            i < target->terrainCount &&
-                    target->terrain[i].mirror == batch->mirror
-                ? &target->terrain[i]
-                : NULL;
-        int cell;
-        s_lerpTerrain[i] = *batch;
-        if (match == NULL) continue;
-        ModernLerpGte(&batch->gte, &match->gte, t, &s_lerpTerrain[i].gte);
-        for (cell = 0; cell < batch->cellCount; cell++) {
-            int other;
-            for (other = 0; other < match->cellCount; other++) {
-                if (match->cells[other][3] == batch->cells[cell][3]) {
-                    int axis;
-                    for (axis = 0; axis < 3; axis++) {
-                        s_lerpTerrain[i].cells[cell][axis] = (int32_t)(
-                            batch->cells[cell][axis] +
-                            (match->cells[other][axis] -
-                             batch->cells[cell][axis]) *
-                                (double)t);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-    s_useLerp = 1;
+    ModernSceneInterpolationPrepare(&s_interpolation, base, target, t);
 }
 
 /* ---- 3D faces ---- */
@@ -767,9 +636,8 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
     float tx, ty, tz;
     int vertex;
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        const RageCaptureTerrainBatch *batch =
-            s_useLerp ? &s_lerpTerrain[face->drawIndex]
-                      : &snapshot->terrain[face->drawIndex];
+        const RageCaptureTerrainBatch *batch = ModernSceneInterpolationTerrain(
+            &s_interpolation, snapshot, face->drawIndex);
         const int32_t *cell = batch->cells[face->cellSlot];
         gte = &batch->gte;
         *mirror = batch->mirror;
@@ -778,7 +646,8 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
         tz = (float)cell[2];
     } else {
         const RageCaptureModelDraw *draw = &snapshot->draws[face->drawIndex];
-        gte = s_useLerp ? &s_lerpDrawGte[face->drawIndex] : &draw->gte;
+        gte = ModernSceneInterpolationDraw(&s_interpolation, snapshot,
+                                           face->drawIndex);
         *mirror = draw->mirror;
         tx = (float)gte->rot.t[0];
         ty = (float)gte->rot.t[1];
@@ -804,11 +673,11 @@ static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
 static const RageCaptureGteState *ModernFaceGte(
     const RageSceneSnapshot *snapshot, const RageCaptureFace *face) {
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        return s_useLerp ? &s_lerpTerrain[face->drawIndex].gte
-                         : &snapshot->terrain[face->drawIndex].gte;
+        return &ModernSceneInterpolationTerrain(
+                    &s_interpolation, snapshot, face->drawIndex)->gte;
     }
-    return s_useLerp ? &s_lerpDrawGte[face->drawIndex]
-                     : &snapshot->draws[face->drawIndex].gte;
+    return ModernSceneInterpolationDraw(&s_interpolation, snapshot,
+                                         face->drawIndex);
 }
 
 static int s_faceFogSmooth;
@@ -1778,7 +1647,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         };
         SDL_BlitGPUTexture(cmd, &blit);
         s_ringFrame[s_ringNext] = snapshot->frameCounter;
-        s_ringT[s_ringNext] = s_useLerp ? -2.0f : -1.0f;
+        s_ringT[s_ringNext] = s_interpolation.active ? -2.0f : -1.0f;
         if (s_ringScene != NULL) {
             memcpy(&s_ringScene[s_ringNext], snapshot, sizeof(*snapshot));
         }
@@ -1938,7 +1807,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         }
         ModernPrepareInterpolation(snapshot, target, t);
         ModernRender(snapshot);
-        s_useLerp = 0;
+        s_interpolation.active = 0;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         ModernRender(snapshot);
