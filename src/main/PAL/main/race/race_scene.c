@@ -8,6 +8,7 @@
 #include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_clock.h"
 #include "game/race_pause.h"
 #include "game/race_end.h"
 #include "game/race_session.h"
@@ -71,28 +72,22 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 timer;
     PlayerCarRaceState *route;
     SectorTimeTableAddress sectorAddress;
+    RaceLapClock lapClock;
 
     route = GetPlayerCarRaceState(car);
     if (route->timing.fields.lap > 0) {
         if (g_LapCount >= route->timing.fields.lap) {
-            route->timing.fields.lapTimes.table
-                .frameCounts[route->timing.fields.lap - 1] += 1;
-            if (route->timing.fields.lapTimes.table
-                    .frameCounts[route->timing.fields.lap - 1] > 0xFFFF) {
-                route->timing.fields.lapTimes.table
-                    .frameCounts[route->timing.fields.lap - 1] = 0x10000;
-            }
-            route->timing.fields.lapTimes.table
-                .milliseconds[route->timing.fields.lap - 1] = FramesToMilliseconds(
+            lapClock = RaceClockTickLap(
                 route->timing.fields.lapTimes.table
                     .frameCounts[route->timing.fields.lap - 1],
                 Random15() % 40);
-            if (route->timing.fields.lapTimes.table
-                    .milliseconds[route->timing.fields.lap - 1] > 0x927BE) {
-                route->timing.fields.lapTimes.table
-                    .milliseconds[route->timing.fields.lap - 1] = 0x927BF;
-                g_LapTimeSaturated = 1;
-            }
+            route->timing.fields.lapTimes.table
+                .frameCounts[route->timing.fields.lap - 1] =
+                lapClock.frameCount;
+            route->timing.fields.lapTimes.table
+                .milliseconds[route->timing.fields.lap - 1] =
+                lapClock.milliseconds;
+            if (lapClock.saturated) g_LapTimeSaturated = 1;
             g_LapTimeMs = route->timing.fields.lapTimes.table
                               .milliseconds[route->timing.fields.lap - 1];
             goto timing_done;
@@ -171,9 +166,8 @@ timing_done:
                             } while (++result < count);
                         }
                     }
-                if (g_RaceTotalTime > 0x927BE) {
-                    g_RaceTotalTime = 0x927BF;
-                }
+                g_RaceTotalTime =
+                    RaceClockSaturateMilliseconds(g_RaceTotalTime);
                 if (g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] >
                     g_BestLapThisRace) {
                     g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_BestLapThisRace;
@@ -474,7 +468,8 @@ void UpdateRaceScene(void) {
 
         g_AnimTimer++;
         if ((g_RacePhase >= 2) && (g_GrandPrixMode != 0)) {
-            g_RaceTimeRemaining--;
+            g_RaceTimeRemaining = RaceClockTickCountdown(
+                g_RaceTimeRemaining, 1);
         }
 
         frameValue = g_SceneTimer;

@@ -103,6 +103,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME race_standings COMMAND race_standings_tests)
 
+add_executable(race_clock_tests race_clock_tests.c
+    ../src/main/PAL/main/race/race_clock.c)
+target_include_directories(race_clock_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_clock_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_clock_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_clock COMMAND race_clock_tests)
+
 add_executable(rival_update_tests rival_update_tests.c
     ../src/main/PAL/main/car/rival_update_policy.c
     ../src/main/PAL/main/car/rival_speed.c
