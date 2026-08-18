@@ -64,6 +64,7 @@ if(RAGE_BUILD_PORT)
         src/port/render/render_scene.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_gpu_state.c
+        src/port/modern/modern_profiler.c
         src/port/modern/modern_scene_interpolation.c
         src/port/modern/modern_shader_sources.c
         src/port/modern/modern_texture_dump.c

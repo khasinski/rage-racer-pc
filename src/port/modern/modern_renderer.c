@@ -11,6 +11,7 @@
 #include <string.h>
 #include "scene_capture.h"
 #include "modern_gpu_state.h"
+#include "modern_profiler.h"
 #include "modern_renderer_diagnostics.h"
 #include "modern_scene_interpolation.h"
 #include "../runtime_config.h"
@@ -1458,15 +1459,15 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
-    static Uint64 profileBuildNs, profileSubmitNs;
-    static Uint64 profileFaces, profileVertices, profileSpans;
-    static unsigned profileFrames;
+    static ModernProfiler profiler;
     static int profile = -1;
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
     if (vram == NULL) return;
-    if (profile < 0)
+    if (profile < 0) {
         profile = RageRuntimeConfigEnabled("diagnostics.performance", NULL);
+        ModernProfilerInit(&profiler, 120);
+    }
     if (profile) profileStart = SDL_GetTicksNS();
     ModernBuildFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
@@ -1600,25 +1601,17 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_SubmitGPUCommandBuffer(cmd);
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
-        profileBuildNs += profileBuilt - profileStart;
-        profileSubmitNs += finished - profileBuilt;
-        profileFaces += (Uint64)snapshot->faceCount;
-        profileVertices += (Uint64)s_vertexCount;
-        profileSpans += (Uint64)s_spanCount;
-        profileFrames++;
-        if (profileFrames == 120) {
+        const ModernProfileSample sample = {
+            profileBuilt - profileStart, finished - profileBuilt,
+            (uint32_t)snapshot->faceCount, (uint32_t)s_vertexCount,
+            (uint32_t)s_spanCount};
+        ModernProfileReport report;
+        if (ModernProfilerAdd(&profiler, &sample, &report)) {
             fprintf(stderr,
                     "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
                     "faces=%.0f vertices=%.0f spans=%.0f\n",
-                    profileFrames,
-                    (double)profileBuildNs / profileFrames / 1000000.0,
-                    (double)profileSubmitNs / profileFrames / 1000000.0,
-                    (double)profileFaces / profileFrames,
-                    (double)profileVertices / profileFrames,
-                    (double)profileSpans / profileFrames);
-            profileBuildNs = profileSubmitNs = 0;
-            profileFaces = profileVertices = profileSpans = 0;
-            profileFrames = 0;
+                    report.frames, report.buildMs, report.submitMs,
+                    report.faces, report.vertices, report.spans);
         }
     }
     s_haveRenderedFrame = 1;

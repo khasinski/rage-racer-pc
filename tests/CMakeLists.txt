@@ -134,6 +134,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME modern_gpu_state COMMAND modern_gpu_state_tests)
 
+add_executable(modern_profiler_tests modern_profiler_tests.c
+    ../src/port/modern/modern_profiler.c)
+target_include_directories(modern_profiler_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_profiler_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME modern_profiler COMMAND modern_profiler_tests)
+
 add_test(NAME release_package COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_release_package.py ${CMAKE_SOURCE_DIR})
 
@@ -313,6 +321,7 @@ endif()
 set(RAGE_PORTABLE_TESTS
     game_logic game_runtime render_scene music_director gearbox asset_catalog course_index
     native_geometry_interpolation modern_scene_interpolation modern_gpu_state
+    modern_profiler
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
