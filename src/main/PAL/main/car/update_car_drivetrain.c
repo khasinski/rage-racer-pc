@@ -5,6 +5,7 @@
 #include "game/race.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/car_physics.h"
 #include "game/track_internal.h"
 #include "game/render.h"
 
@@ -35,8 +36,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 assistEnabled;
   s16 gear;
   s16 targetGearCheck;
-  s16 leftWheelState;
-  s16 rightWheelState;
   s16 driveCurveMode;
   s16 steerBias;
   s32 camber;
@@ -56,7 +55,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 engineSpeed;
   s32 engineSpeedLoss;
   s32 bandIndex;
-  s32 frontLoad;
   s32 speedForPath;
   s32 centreAngle;
   s32 radialDistance;
@@ -138,50 +136,12 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   {
     gearCurve.valuePointer = base.rowPointer[0].values;
   }
-  leftWheelState = drive->acceleratorLatch;
-  if (leftWheelState == 0)
-  {
-    if (drive->acceleratorInput.value >= 0x85)
-    {
-      drive->acceleratorLatch = 1;
-    }
-  }
-  else
-    if (leftWheelState == 1)
-  {
-    drive->acceleratorLatch = 2;
-  }
-  else
-    if (drive->acceleratorInput.value < 0x7C)
-  {
-    drive->acceleratorLatch = 0;
-  }
-  rightWheelState = drive->brakeLatch;
-  if (rightWheelState == 0)
-  {
-    if (drive->brakeInput >= 0x85)
-    {
-      drive->brakeLatch = 1;
-    }
-  }
-  else
-    if (rightWheelState == 1)
-  {
-    drive->brakeLatch = 2;
-  }
-  else
-    if (drive->brakeInput < 0x7C)
-  {
-    drive->brakeLatch = 0;
-  }
-  frontLoad = drive->acceleratorInput.value * 0x64;
-  frontLoadScaled = frontLoad >> 8;
-  if (frontLoad < 0)
-  {
-    frontLoadScaled = (frontLoad + 0xFF) >> 8;
-  }
-  gripBudget = 0x17C - frontLoadScaled;
-  gripBudget += (drive->brakeInput * 0x64) / 256;
+  drive->acceleratorLatch = CarUpdatePedalLatch(
+      drive->acceleratorLatch, drive->acceleratorInput.value);
+  drive->brakeLatch = CarUpdatePedalLatch(
+      drive->brakeLatch, drive->brakeInput);
+  gripBudget = CarCalculateGripBudget(
+      drive->acceleratorInput.value, drive->brakeInput);
   if (drive->motionState == CAR_MOTION_TAKEOFF)
   {
     driveCurveMode = drive->trackCurveMode;
