@@ -113,6 +113,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
  * split their traffic-avoidance work across alternating frames.
  */
 void UpdateRaceCars(void) {
+    CarSimulation simulation;
     Vec4 vpos;
     /*
      * GCC 2.6.3 keeps these two Matrix-sized source workspaces in the debug
@@ -139,8 +140,9 @@ void UpdateRaceCars(void) {
         i++;
         q++;
     } while ((s16)i < 11);
-    RunRivalPlanningPasses(&kRaceRivalPolicy);
-    IntegrateRivalSpeeds(&kRaceRivalPolicy);
+    simulation = (CarSimulation){g_Cars, 11, g_AnimTimer};
+    RunRivalPlanningPasses(&simulation, &kRaceRivalPolicy);
+    IntegrateRivalSpeeds(&simulation, &kRaceRivalPolicy);
     {
     GameCarRuntime *walk;
     i = 0;
@@ -323,6 +325,7 @@ void UpdateRaceCars(void) {
 
 /* Runs the corresponding all-cars pass for attract and replay scenes. */
 void UpdateAttractCars(void) {
+    CarSimulation simulation;
     Vec4 vTmp;
     /* See UpdateRaceCars: these two Matrix workspaces shape retail's frame. */
     CarTrackLimits limits;
@@ -341,8 +344,9 @@ void UpdateAttractCars(void) {
         c0->progressA = ((c0->progressA) % (g_TrackLength));
         c0++;
     }
-    RunRivalPlanningPasses(&kAttractRivalPolicy);
-    IntegrateRivalSpeeds(&kAttractRivalPolicy);
+    simulation = (CarSimulation){g_Cars, 11, g_AnimTimer};
+    RunRivalPlanningPasses(&simulation, &kAttractRivalPolicy);
+    IntegrateRivalSpeeds(&simulation, &kAttractRivalPolicy);
     {
         register GameCarAiBlock *drive;
         {
