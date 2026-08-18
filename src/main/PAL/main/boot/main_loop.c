@@ -14,6 +14,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/input_internal.h"
+#include "game/game_context.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
@@ -74,6 +75,7 @@ void InitSubsystems(void) {
  * pad.
  */
 void MainLoop(void) {
+    GameContext game;
     s32 frameLimit;
     s32 elapsed;
     s32 ticks;
@@ -90,7 +92,9 @@ void MainLoop(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
     g_SceneTimer = 0;
-    g_SceneId = 1;
+    g_SceneId = SCENE_BOOT_LOGO;
+    GameContextInit(&game, &g_SceneId, &g_SceneTimer, g_SceneHandlers,
+                    SCENE_COUNT);
     RequestBootAssets();
     g_GameClock = 0;
     g_FrameCounter = 0;
@@ -120,7 +124,10 @@ void MainLoop(void) {
 #ifdef __psyz
         RagePortBeforeSceneHandler();
 #endif
-        g_SceneHandlers[g_SceneId]();
+        if (!SceneManagerDispatch(&game.scenes)) {
+            fprintf(stderr, "rage-port: invalid scene id %d\n", g_SceneId);
+            return;
+        }
 #ifdef __psyz
         RagePortAfterSceneHandler();
 #endif

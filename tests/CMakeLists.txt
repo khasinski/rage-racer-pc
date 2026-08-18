@@ -29,6 +29,23 @@ endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
 
+add_executable(game_runtime_tests
+    game_runtime_tests.c
+    ../src/main/PAL/main/boot/game_events.c
+    ../src/main/PAL/main/boot/scene_manager.c
+    ../src/main/PAL/main/boot/game_context.c)
+target_include_directories(game_runtime_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(game_runtime_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(game_runtime_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(game_runtime_tests PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(game_runtime_tests PRIVATE -fsanitize=address,undefined)
+endif()
+add_test(NAME game_runtime COMMAND game_runtime_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -234,7 +251,7 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 set(RAGE_PORTABLE_TESTS
-    game_logic course_index native_geometry_interpolation
+    game_logic game_runtime course_index native_geometry_interpolation
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
