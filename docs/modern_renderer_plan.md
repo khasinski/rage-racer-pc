@@ -545,7 +545,7 @@ with zero architectural work. It stays affine-textured, OT-ordered and
 logic-rate-locked, so it is not the goal of this document, but it is a useful
 interim option and a good stress test of the present path.
 
-## B. Raytracing (design guardrails, not a commitment)
+## B. Raytracing (now scheduled — see §B.1 for the plan of record)
 
 - SDL3 GPU does not expose raytracing; on macOS this means a **native Metal**
   path (`MTLAccelerationStructure`, Metal RT from Metal 3). The modern
@@ -561,3 +561,46 @@ interim option and a good stress test of the present path.
   texture detail) makes full path tracing stylistically questionable anyway.
 - Prerequisite phases: R2 (scene on GPU) and R3 (materials stable). Nothing
   earlier should bend for RT beyond keeping `RageScene` renderer-agnostic.
+
+### B.1 Plan of record
+
+The guardrails above survived contact with the code. What the capture layer
+already records is BLAS/TLAS-shaped, so no phase needs redesigning:
+
+- `RageCaptureFace.pos[4][4]` holds object-space `SVECTOR`s, not clip space.
+  Clip space is produced later, inside the renderer.
+- `RageCaptureModelDraw.bankId` already identifies the active model/course
+  bank — the key a BLAS is built and cached against.
+- `RageCaptureModelDraw.gte.rot` is the composed rotation and translation,
+  which is the instance transform a TLAS wants.
+
+Backend decision: **Metal first**. It is the only raytracing backend that can
+be run and tested on the development machine, and Metal 3 exposes what is
+needed (`MTLAccelerationStructure`, intersection queries from a fragment or
+compute shader). Vulkan RT follows for Windows and Linux; until then those
+platforms keep the SDL3 GPU path with no raytraced effects. The SDL3 GPU
+backend stays — Metal is added beside it, not in place of it.
+
+Note that leaving PsyZ applies to rendering only. The game is PlayStation
+code: its camera comes from the emulated GTE and always will. What the modern
+renderer can stop borrowing is the device, the swapchain, and VRAM.
+
+Steps, each landing on its own:
+
+1. **Material cache.** R2 deviated to sampling PsyZ's live VRAM with CLUT
+   indirection. A ray that hits a triangle cannot do that indirection cheaply,
+   so decoded RGBA materials become a prerequisite rather than an option.
+   This is also the largest single piece of PsyZ coupling the renderer has.
+2. **Geometry banks.** Vertices are streamed per frame today. Keyed by
+   `bankId`, they become persistent buffers built once — the BLAS inputs.
+3. **Metal backend.** Device, buffers, pipelines and passes behind the same
+   small surface the SDL3 GPU backend sits on, plus its own swapchain.
+4. **Acceleration structures.** BLAS per bank, TLAS refit per frame from the
+   captured instance transforms.
+5. **Effects.** Hybrid: raster primary visibility, then rays for shadows,
+   car-paint and wet-track reflections, and AO. Full path tracing stays out of
+   scope — PS1 geometry is low-poly with the detail in textures, so it would
+   spend its budget on the wrong thing.
+
+Steps 1 and 2 are backend-agnostic and improve the SDL3 GPU path on their own,
+so they are worth landing whatever happens to steps 3 onwards.
