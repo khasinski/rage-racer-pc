@@ -121,6 +121,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME lap_tracker COMMAND lap_tracker_tests)
 
+add_executable(race_result_tests race_result_tests.c
+    ../src/main/PAL/main/race/race_result.c)
+target_include_directories(race_result_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_result_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_result_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_result COMMAND race_result_tests)
+
 add_executable(rival_update_tests rival_update_tests.c
     ../src/main/PAL/main/car/rival_update_policy.c
     ../src/main/PAL/main/car/rival_speed.c

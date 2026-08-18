@@ -14,6 +14,7 @@
 #include "game/race_end.h"
 #include "game/race_session.h"
 #include "game/race_session_runtime.h"
+#include "game/race_result.h"
 #include "game/random.h"
 #include "game/records_internal.h"
 #include "game/render.h"
@@ -76,6 +77,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     RaceLapClock lapClock;
     LapTrackerInput lapTrackerInput;
     LapTrackerDecision lapDecision;
+    RaceResult raceResult;
 
     route = GetPlayerCarRaceState(car);
     if (route->timing.fields.lap > 0) {
@@ -145,9 +147,10 @@ timing_done:
         }
 
         count = g_LapCount;
-        step = route->timing.fields.lap;
-        if (step == count + 1) {
-                if (route->drive.racePosition < 4) {
+        raceResult = RaceResultFromFinish(
+            lapDecision.finished, route->drive.racePosition);
+        if (raceResult != RACE_RESULT_IN_PROGRESS) {
+                if (raceResult == RACE_RESULT_WON) {
                     {
                         s32 *cursor;
                         s32 element;
