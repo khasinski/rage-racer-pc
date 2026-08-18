@@ -2,6 +2,7 @@
 #define RAGE_MODERN_GPU_RESOURCES_H
 
 #include <SDL3/SDL_gpu.h>
+#include "../port_config.h"
 
 enum { MODERN_GPU_RING_SIZE = 16 };
 
@@ -36,5 +37,9 @@ typedef struct ModernGpuResources {
 void ModernGpuResourcesInit(ModernGpuResources *resources);
 void ModernGpuResourcesRelease(ModernGpuResources *resources,
                                SDL_GPUDevice *device);
+int ModernGpuResourcesCreate(ModernGpuResources *resources,
+                             SDL_GPUDevice *device, RagePortConfig *config,
+                             float *logicalWidth, float *overscanX,
+                             int ringEnabled);
 
 #endif

@@ -5,7 +5,6 @@
 #include <psyz/video.h>
 
 #include <math.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,13 +13,10 @@
 #include "modern_gpu_resources.h"
 #include "modern_profiler.h"
 #include "modern_postprocess.h"
+#include "modern_frame_types.h"
 #include "modern_renderer_diagnostics.h"
 #include "modern_scene_interpolation.h"
 #include "../runtime_config.h"
-#include "shaders/modern_vert_spv.h"
-#include "shaders/modern_frag_spv.h"
-#include "shaders/post_vert_spv.h"
-#include "shaders/post_frag_spv.h"
 
 /* The modern renderer (plan phase R2). Consumes the RageScene snapshot the
  * capture layer records each logic frame and renders it with float
@@ -61,35 +57,6 @@ static int s_ringEnabled;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
 
-typedef struct ModernVertex {
-    float x, y, z, w; /* clip space */
-    float u, v;       /* texture-page texel coordinates */
-    uint8_t color[4]; /* rgb + semi flag in alpha (0 semi, 255 opaque) */
-    uint32_t attr;    /* tpage | 0x8000 when untextured */
-    uint32_t twin;    /* texture window {andX, andY, orX, orY} bytes */
-    uint32_t clut;
-} ModernVertex;
-
-enum {
-    MODERN_PIPE_3D_OPAQUE,
-    MODERN_PIPE_3D_BLEND,
-    MODERN_PIPE_3D_SUB,
-    MODERN_PIPE_2D,
-    MODERN_PIPE_2D_SUB,
-};
-
-typedef struct ModernSpan {
-    uint8_t pipeline;
-    uint8_t hasScissor;
-    uint8_t pass; /* 0 = main scene, 1 = mirror overlay (depth recleared) */
-    SDL_Rect scissor;
-    int32_t start, count;
-    float depthKey; /* semi-transparent 3D sorting */
-} ModernSpan;
-
-#define MODERN_MAX_VERTICES 400000
-#define MODERN_MAX_SPANS 16384
-
 static ModernVertex *s_vertices;
 static int s_vertexCount;
 static ModernSpan *s_spans;
@@ -109,162 +76,9 @@ static int s_spanCount;
 #define MODERN_DEPTH_MIN (-80000.0f)
 #define MODERN_DEPTH_RANGE (240000.0f)
 
-/* ---- MSL shaders ---- */
-
-#include "modern_shader_sources.h"
 /* ---- resource creation ---- */
 
-static SDL_GPUShader *ModernCreateShader(
-    const unsigned char *spirv, size_t spirvSize,
-    const char *msl, size_t mslSize, SDL_GPUShaderStage stage,
-    const char *mslEntry, int samplers) {
-    SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(s_device);
-    SDL_GPUShaderCreateInfo info = {0};
-    info.stage = stage;
-    info.num_samplers = (Uint32)samplers;
-    if ((formats & SDL_GPU_SHADERFORMAT_SPIRV) && spirv != NULL) {
-        info.code = spirv;
-        info.code_size = spirvSize;
-        info.entrypoint = "main";
-        info.format = SDL_GPU_SHADERFORMAT_SPIRV;
-    } else if ((formats & SDL_GPU_SHADERFORMAT_MSL) && msl != NULL) {
-        info.code = (const Uint8 *)msl;
-        info.code_size = mslSize;
-        info.entrypoint = mslEntry;
-        info.format = SDL_GPU_SHADERFORMAT_MSL;
-    } else {
-        return NULL;
-    }
-    return SDL_CreateGPUShader(s_device, &info);
-}
-
-static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
-    const unsigned char *vsSpirv, size_t vsSpirvSize,
-    const char *vsMsl, size_t vsMslSize, const char *vsMslEntry,
-    const unsigned char *fsSpirv, size_t fsSpirvSize,
-    const char *fsMsl, size_t fsMslSize, const char *fsMslEntry, int samplers) {
-    SDL_GPUShader *vs = ModernCreateShader(
-        vsSpirv, vsSpirvSize, vsMsl, vsMslSize, SDL_GPU_SHADERSTAGE_VERTEX,
-        vsMslEntry, 0);
-    SDL_GPUShader *fs = ModernCreateShader(
-        fsSpirv, fsSpirvSize, fsMsl, fsMslSize, SDL_GPU_SHADERSTAGE_FRAGMENT,
-        fsMslEntry, samplers);
-    SDL_GPUGraphicsPipeline *pipeline = NULL;
-    if (vs && fs) {
-        const SDL_GPUColorTargetDescription target = {
-            .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-        };
-        SDL_GPUGraphicsPipelineCreateInfo info = {0};
-        info.vertex_shader = vs;
-        info.fragment_shader = fs;
-        info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-        info.target_info.color_target_descriptions = &target;
-        info.target_info.num_color_targets = 1;
-        pipeline = SDL_CreateGPUGraphicsPipeline(s_device, &info);
-    }
-    if (vs) SDL_ReleaseGPUShader(s_device, vs);
-    if (fs) SDL_ReleaseGPUShader(s_device, fs);
-    return pipeline;
-}
-
-static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
-    return ModernCreateFullscreenPipeline(
-        post_vert_spv, post_vert_spv_len,
-        MODERN_POST_MSL, MODERN_POST_MSL_SIZE, "vs_post",
-        post_frag_spv, post_frag_spv_len,
-        MODERN_POST_MSL, MODERN_POST_MSL_SIZE, "fs_post", 1);
-}
-
-static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
-    char header[128];
-    size_t headerLen;
-    char *source;
-    size_t sourceSize;
-    SDL_GPUGraphicsPipeline *pipeline;
-    snprintf(header, sizeof(header),
-             "constant float kBloom = %.4f;\nconstant int kGrading = %d;\n",
-             (double)s_config.modernBloom, s_config.modernGrading);
-    headerLen = strlen(header);
-    sourceSize = MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1 + headerLen +
-                 MODERN_COMPOSITE_MSL_SIZE;
-    source = malloc(sourceSize);
-    if (source == NULL) return NULL;
-    memcpy(source, MODERN_COMPOSITE_PROLOGUE_MSL,
-           MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1);
-    memcpy(source + MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1, header,
-           headerLen);
-    memcpy(source + MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1 + headerLen,
-           MODERN_COMPOSITE_MSL, MODERN_COMPOSITE_MSL_SIZE);
-    pipeline = ModernCreateFullscreenPipeline(
-        NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE, "vs_fx",
-        NULL, 0, source, sourceSize, "fs_composite", 2);
-    free(source);
-    return pipeline;
-}
-
-static SDL_GPUGraphicsPipeline *ModernCreatePipeline(
-    SDL_GPUShader *vs, SDL_GPUShader *fs, int depthTest, int depthWrite,
-    int subtract) {
-    const SDL_GPUVertexBufferDescription buffer = {
-        .slot = 0,
-        .pitch = sizeof(ModernVertex),
-        .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-    };
-    const SDL_GPUVertexAttribute attributes[] = {
-        {.location = 0, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-         .offset = offsetof(ModernVertex, x)},
-        {.location = 1, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-         .offset = offsetof(ModernVertex, u)},
-        {.location = 2, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4,
-         .offset = offsetof(ModernVertex, color)},
-        {.location = 3, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
-         .offset = offsetof(ModernVertex, attr)},
-        {.location = 4, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
-         .offset = offsetof(ModernVertex, twin)},
-        {.location = 5, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT,
-         .offset = offsetof(ModernVertex, clut)},
-    };
-    const SDL_GPUBlendOp op = subtract ? SDL_GPU_BLENDOP_REVERSE_SUBTRACT
-                                       : SDL_GPU_BLENDOP_ADD;
-    const SDL_GPUColorTargetDescription target = {
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-        .blend_state = {
-            .src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-            .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-            .color_blend_op = op,
-            .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-            .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-            .alpha_blend_op = op,
-            .enable_blend = true,
-        },
-    };
-    SDL_GPUGraphicsPipelineCreateInfo info = {0};
-    info.vertex_shader = vs;
-    info.fragment_shader = fs;
-    info.vertex_input_state.vertex_buffer_descriptions = &buffer;
-    info.vertex_input_state.num_vertex_buffers = 1;
-    info.vertex_input_state.vertex_attributes = attributes;
-    info.vertex_input_state.num_vertex_attributes =
-        sizeof(attributes) / sizeof(attributes[0]);
-    info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
-    info.depth_stencil_state.compare_op =
-        depthTest ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL
-                  : SDL_GPU_COMPAREOP_ALWAYS;
-    info.depth_stencil_state.enable_depth_test = true;
-    info.depth_stencil_state.enable_depth_write = depthWrite != 0;
-    info.target_info.color_target_descriptions = &target;
-    info.target_info.num_color_targets = 1;
-    info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
-    info.target_info.has_depth_stencil_target = true;
-    return SDL_CreateGPUGraphicsPipeline(s_device, &info);
-}
+/* GPU creation lives in modern_gpu_resources.c. */
 
 static void ModernDestroyResources(void) {
     int hadResources = s_gpu.ready;
@@ -287,176 +101,27 @@ static void ModernDestroyResources(void) {
 }
 
 static int ModernEnsureResources(void) {
-    SDL_GPUShader *vs;
-    SDL_GPUShader *fs;
-    float scale;
     if (s_gpu.ready) return 1;
-    if (s_device == NULL) return 0;
-
-    scale = s_config.modernInternalScale;
-    if (scale < 0.5f) scale = 0.5f;
-    /* 16:9 widens the field of view; the vertical view is unchanged. */
-    s_logicalW = s_config.modernAspect == RAGE_MODERN_ASPECT_16_9
-                     ? 320.0f * (16.0f / 9.0f) / (4.0f / 3.0f)
-                     : 320.0f;
-    s_overscanX = (s_logicalW - 320.0f) * 0.5f;
-    s_gpu.targetW = (int)(s_logicalW * scale + 0.5f) & ~1;
-    s_gpu.targetH = (int)(240.0f * scale + 0.5f) & ~1;
-
     s_ringEnabled = RageRuntimeConfigEnabled(
         "diagnostics.marker_history", NULL);
-    {
-        SDL_GPUTextureCreateInfo info = {0};
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_gpu.targetW;
-        info.height = (Uint32)s_gpu.targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        s_gpu.target = SDL_CreateGPUTexture(s_device, &info);
-        info.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
-        info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
-        s_gpu.depth = SDL_CreateGPUTexture(s_device, &info);
+    if (!ModernGpuResourcesCreate(&s_gpu, s_device, &s_config,
+                                  &s_logicalW, &s_overscanX,
+                                  s_ringEnabled)) {
+        return 0;
     }
-    {
-        SDL_GPUSamplerCreateInfo info = {0};
-        info.min_filter = SDL_GPU_FILTER_NEAREST;
-        info.mag_filter = SDL_GPU_FILTER_NEAREST;
-        s_gpu.sampler = SDL_CreateGPUSampler(s_device, &info);
-    }
-    vs = ModernCreateShader(
-        modern_vert_spv, modern_vert_spv_len,
-        MODERN_SHADER_MSL, MODERN_SHADER_MSL_SIZE,
-        SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
-    fs = ModernCreateShader(
-        modern_frag_spv, modern_frag_spv_len,
-        MODERN_SHADER_MSL, MODERN_SHADER_MSL_SIZE,
-        SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
-    if (vs && fs) {
-        s_gpu.pipe3dOpaque = ModernCreatePipeline(vs, fs, 1, 1, 0);
-        s_gpu.pipe3dBlend = ModernCreatePipeline(vs, fs, 1, 0, 0);
-        s_gpu.pipe3dSub = ModernCreatePipeline(vs, fs, 1, 0, 1);
-        s_gpu.pipe2d = ModernCreatePipeline(vs, fs, 0, 0, 0);
-        s_gpu.pipe2dSub = ModernCreatePipeline(vs, fs, 0, 0, 1);
-    }
-    if (vs) SDL_ReleaseGPUShader(s_device, vs);
-    if (fs) SDL_ReleaseGPUShader(s_device, fs);
-    {
-        SDL_GPUBufferCreateInfo info = {0};
-        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        info.size = MODERN_MAX_VERTICES * sizeof(ModernVertex);
-        s_gpu.vertexBuffer = SDL_CreateGPUBuffer(s_device, &info);
-    }
-    {
-        SDL_GPUTransferBufferCreateInfo info = {0};
-        info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        info.size = MODERN_MAX_VERTICES * sizeof(ModernVertex);
-        s_gpu.vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &info);
-    }
-    s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
-    s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
-
+    s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(*s_vertices));
+    s_spans = malloc(MODERN_MAX_SPANS * sizeof(*s_spans));
     if (s_ringEnabled) {
-        SDL_GPUTextureCreateInfo info = {0};
-        int slot;
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_gpu.targetW;
-        info.height = (Uint32)s_gpu.targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        for (slot = 0; slot < MODERN_GPU_RING_SIZE; slot++) {
-            s_gpu.ring[slot] = SDL_CreateGPUTexture(s_device, &info);
-        }
-        s_ringScene = malloc(MODERN_GPU_RING_SIZE * sizeof(RageSceneSnapshot));
+        s_ringScene = malloc(MODERN_GPU_RING_SIZE * sizeof(*s_ringScene));
     }
-
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE ||
-        s_config.modernBloom > 0.0f || s_config.modernGrading) {
-        SDL_GPUSamplerCreateInfo samplerInfo = {0};
-        samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-        samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-        s_gpu.samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
-    }
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
-        SDL_GPUTextureCreateInfo info = {0};
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_gpu.targetW;
-        info.height = (Uint32)s_gpu.targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        s_gpu.postTarget = SDL_CreateGPUTexture(s_device, &info);
-        s_gpu.pipePost = ModernCreatePostPipeline();
-        if (!s_gpu.postTarget || !s_gpu.pipePost || !s_gpu.samplerLinear) {
-            fprintf(stderr,
-                    "rage-port: post-process setup failed, disabling: %s\n",
-                    SDL_GetError());
-            s_config.modernPost = RAGE_MODERN_POST_NONE;
-        }
-    }
-    if (s_config.modernBloom > 0.0f || s_config.modernGrading) {
-        SDL_GPUTextureCreateInfo info = {0};
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_gpu.targetW;
-        info.height = (Uint32)s_gpu.targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        s_gpu.finalTarget = SDL_CreateGPUTexture(s_device, &info);
-        s_gpu.pipeComposite = ModernCreateCompositePipeline();
-        if (s_config.modernBloom > 0.0f) {
-            s_gpu.bloomW = s_gpu.targetW / 4 > 0 ? s_gpu.targetW / 4 : 1;
-            s_gpu.bloomH = s_gpu.targetH / 4 > 0 ? s_gpu.targetH / 4 : 1;
-            info.width = (Uint32)s_gpu.bloomW;
-            info.height = (Uint32)s_gpu.bloomH;
-            s_gpu.bloomA = SDL_CreateGPUTexture(s_device, &info);
-            s_gpu.bloomB = SDL_CreateGPUTexture(s_device, &info);
-            s_gpu.pipeBright = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_bright", 1);
-            s_gpu.pipeBlurH = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_blur_h", 1);
-            s_gpu.pipeBlurV = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_blur_v", 1);
-        }
-        if (!s_gpu.finalTarget || !s_gpu.pipeComposite || !s_gpu.samplerLinear ||
-            (s_config.modernBloom > 0.0f &&
-             (!s_gpu.bloomA || !s_gpu.bloomB || !s_gpu.pipeBright || !s_gpu.pipeBlurH ||
-              !s_gpu.pipeBlurV))) {
-            fprintf(stderr,
-                    "rage-port: bloom/grading setup failed, disabling: %s\n",
-                    SDL_GetError());
-            s_config.modernBloom = 0.0f;
-            s_config.modernGrading = 0;
-        }
-    }
-
-    if (!s_gpu.target || !s_gpu.depth || !s_gpu.sampler || !s_gpu.pipe3dOpaque ||
-        !s_gpu.pipe3dBlend || !s_gpu.pipe3dSub || !s_gpu.pipe2d || !s_gpu.pipe2dSub ||
-        !s_gpu.vertexBuffer || !s_gpu.vertexTransfer || !s_vertices || !s_spans) {
-        fprintf(stderr, "rage-port: modern renderer resource setup failed: %s\n",
-                SDL_GetError());
+    if (s_vertices == NULL || s_spans == NULL ||
+        (s_ringEnabled && s_ringScene == NULL)) {
+        fprintf(stderr, "rage-port: modern CPU buffer setup failed\n");
         ModernDestroyResources();
         return 0;
     }
-    s_gpu.ready = 1;
-    s_gpu.generation++;
-    fprintf(stderr, "rage-port: modern renderer target %dx%d\n", s_gpu.targetW,
-            s_gpu.targetH);
+    fprintf(stderr, "rage-port: modern renderer target %dx%d\n",
+            s_gpu.targetW, s_gpu.targetH);
     if (RageRuntimeConfigEnabled("diagnostics.renderer_lifecycle", NULL))
         fprintf(stderr,
                 "rage-port: modern resources created generation=%u size=%dx%d\n",
