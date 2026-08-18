@@ -3,7 +3,7 @@
 #define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) return 1; } while (0)
 
 int main(void) {
-    MusicDirectorState state = {7, 9, CD_COMMAND_PAUSE, 3, 5, 0};
+    AudioSession state = {7, 9, CD_COMMAND_PAUSE, 3, 5, 0};
 
     MusicDirectorRequestTrack(&state, 260);
     EXPECT_EQ(4, state.trackPending);

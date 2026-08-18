@@ -7,20 +7,20 @@
 /* Backend-independent CD-DA intent. The recovered globals remain the storage
  * ABI for now; this value object makes transition policy deterministic and
  * independently testable. */
-typedef struct MusicDirectorState {
+typedef struct AudioSession {
     s32 trackPending;
     s32 trackStep;
     CdCommandType commandPending;
     s32 commandStep;
     u8 currentTrack;
     s32 restartOnResume;
-} MusicDirectorState;
+} AudioSession;
 
-void MusicDirectorRequestTrack(MusicDirectorState *state, s32 track);
-void MusicDirectorRequestPlay(MusicDirectorState *state);
-void MusicDirectorRequestPause(MusicDirectorState *state);
-void MusicDirectorRequestResume(MusicDirectorState *state);
-void MusicDirectorReset(MusicDirectorState *state);
-void MusicDirectorLoopCurrent(MusicDirectorState *state);
+void MusicDirectorRequestTrack(AudioSession *state, s32 track);
+void MusicDirectorRequestPlay(AudioSession *state);
+void MusicDirectorRequestPause(AudioSession *state);
+void MusicDirectorRequestResume(AudioSession *state);
+void MusicDirectorReset(AudioSession *state);
+void MusicDirectorLoopCurrent(AudioSession *state);
 
 #endif

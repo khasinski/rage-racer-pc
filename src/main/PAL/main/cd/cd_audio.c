@@ -172,7 +172,7 @@ void TickCdAudio(void) {
             temp = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
             value = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
             if (value < temp) {
-                MusicDirectorState director = MusicDirectorLoadLegacyState();
+                AudioSession director = MusicDirectorLoadLegacyState();
                 MusicDirectorLoopCurrent(&director);
                 MusicDirectorStoreLegacyState(&director);
             }

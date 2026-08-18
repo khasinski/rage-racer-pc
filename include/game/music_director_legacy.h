@@ -3,7 +3,7 @@
 
 #include "game/music_director.h"
 
-MusicDirectorState MusicDirectorLoadLegacyState(void);
-void MusicDirectorStoreLegacyState(const MusicDirectorState *state);
+AudioSession MusicDirectorLoadLegacyState(void);
+void MusicDirectorStoreLegacyState(const AudioSession *state);
 
 #endif
