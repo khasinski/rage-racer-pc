@@ -141,8 +141,6 @@ void LoadSelectBgmAssets(void) {
     u8 *secondBlock;
     s32 thirdOffset;
     s32 relOffset;
-    GameSceneAssetAddress firstBlockAddress;
-    GameSceneAssetOffsetAddress offsetAddress;
 
     switch (g_AssetLoadState) {
     case 1:
@@ -151,20 +149,11 @@ void LoadSelectBgmAssets(void) {
         /* fall through */
     case 2:
         if (LoadAsset(7, g_AssetBase) != 0) {
-            firstBlockAddress.pointer = g_AssetBase;
-            header = firstBlockAddress.header;
-            /* The three volatile reads are load-bearing: without them cse
-             * folds the header pointer and the three offsets into one
-             * addressing pattern and the block costs 19 instructions more. */
-            offsetAddress.pointer = &header->offsets[0];
-            firstOffset = *offsetAddress.volatilePointer;
-            offsetAddress.pointer = &header->offsets[2];
-            thirdOffset = *offsetAddress.volatilePointer;
-            firstBlockAddress.header = header;
-            firstBlockAddress.bytes = GetAssetBytes(header) + firstOffset;
-            g_AssetBlockPtr = firstBlockAddress.pointer;
-            offsetAddress.pointer = &header->offsets[1];
-            relOffset = *offsetAddress.volatilePointer;
+            header = GetSceneAssetHeader(g_AssetBase);
+            firstOffset = header->offsets[0];
+            thirdOffset = header->offsets[2];
+            g_AssetBlockPtr = GetSceneAssetAddress(header, firstOffset);
+            relOffset = header->offsets[1];
             g_AssetLoadState = 0;
             secondBlock = GetSceneAssetAddress(header, relOffset);
             header = (GameSceneAssetHeader *)(GetAssetBytes(header) + thirdOffset);

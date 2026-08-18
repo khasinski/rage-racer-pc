@@ -150,34 +150,21 @@ void LoadRoundAssets(void) {
 }
 
 void RelocateCarModel(void) {
-    AssetAddress address;
     u32 *dst;
     u32 *src;
-    u32 count;
+    u32 byteCount;
+    u32 wordCount;
 
-    address.pointer = GetSerializedCarModelAsset(g_CarModelAsset);
-    if (address.offset != 0) {
-        src = address.pointer;
-    } else {
-        src = address.pointer;
-    }
-    count = src[6];
-    address.pointer = g_AssetBase;
-    if (count != 0) {
-        dst = address.pointer;
-    } else {
-        dst = address.pointer;
-    }
-    count = count + 0x28;
-    address.pointer = dst;
-    address.offset = count + address.offset;
-    count >>= 2;
-    g_AssetLoadCursor = address.pointer;
+    src = (u32 *)GetSerializedCarModelAsset(g_CarModelAsset);
+    dst = (u32 *)g_AssetBase;
+    byteCount = src[6] + 0x28;
+    wordCount = byteCount >> 2;
+    g_AssetLoadCursor = g_AssetBase + byteCount;
 
-    while (count != 0) {
+    while (wordCount != 0) {
         *dst = *src;
         src++;
-        count--;
+        wordCount--;
         dst++;
     }
 
