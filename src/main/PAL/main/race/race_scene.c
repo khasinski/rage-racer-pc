@@ -15,6 +15,7 @@
 #include "game/race_session.h"
 #include "game/race_session_runtime.h"
 #include "game/race_result.h"
+#include "game/race_result_runtime.h"
 #include "game/random.h"
 #include "game/records_internal.h"
 #include "game/render.h"
@@ -64,16 +65,13 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 result;
     s16 recordIndex;
     s32 candidateTime;
-    s32 count;
     u16 returnValue;
     s16 progress;
     s32 step;
-    s32 tableOffset;
     s32 routeProgress;
     s32 oldTimer;
     s32 timer;
     PlayerCarRaceState *route;
-    SectorTimeTableAddress sectorAddress;
     RaceLapClock lapClock;
     LapTrackerInput lapTrackerInput;
     LapTrackerDecision lapDecision;
@@ -112,8 +110,6 @@ timing_done:
         g_PlayerCar.progressB + g_PlayerCar.progressA, g_TrackLength};
     lapDecision = LapTrackerEvaluate(&lapTrackerInput);
     if (lapDecision.crossedLine) {
-        s32 progressLimit;
-
         returnValue = 1;
         route->timing.fields.lap = lapDecision.nextLap;
         g_LapTimeSaturated = 0;
@@ -122,11 +118,9 @@ timing_done:
             g_RaceCueDelay = 2;
         }
         recordIndex = route->timing.fields.lap;
-        progressLimit = g_BestLapThisRace;
         candidateTime = route->timing.fields.lapTimes.table
                             .milliseconds[recordIndex - 2];
-        tableOffset = progressLimit;
-        step = candidateTime < tableOffset;
+        step = candidateTime < g_BestLapThisRace;
         if (step && (recordIndex != 1)) {
             routeProgress = (u16)route->timing.fields.lap;
             route->drive.hudLapHighlightRow = routeProgress - 2;
@@ -146,66 +140,9 @@ timing_done:
             }
         }
 
-        count = g_LapCount;
         raceResult = RaceResultFromFinish(
             lapDecision.finished, route->drive.racePosition);
-        if (raceResult != RACE_RESULT_IN_PROGRESS) {
-                if (raceResult == RACE_RESULT_WON) {
-                    {
-                        s32 *cursor;
-                        s32 element;
-                        s32 accumulated;
-                        PlayerCarRaceStateAddress routeAddress;
-
-                        result = 0;
-                        if (count > 0) {
-                            routeAddress.state = route;
-                            cursor = routeAddress.words;
-                            do {
-                                routeAddress.words = cursor;
-                                element = routeAddress.state->timing.fields
-                                              .lapTimes.table.milliseconds[0];
-                                accumulated = g_RaceTotalTime;
-                                accumulated += element;
-                                g_RaceTotalTime = accumulated;
-                                cursor++;
-                            } while (++result < count);
-                        }
-                    }
-                g_RaceTotalTime =
-                    RaceClockSaturateMilliseconds(g_RaceTotalTime);
-                if (g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] >
-                    g_BestLapThisRace) {
-                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_BestLapThisRace;
-                }
-                if (grandPrixMode == 0) {
-                    tableOffset = (RageSeriesCourseIndex()) * 12 + ReadStableRaceSeries() * 48;
-                    sectorAddress.table = g_BestSectorTimes;
-                    sectorAddress.bytes += tableOffset;
-                    sectorAddress.pointer[0] = g_RefSectorTimes.fields.first;
-                    sectorAddress.pointer = &g_BestSectorTimes[0][0][1];
-                    sectorAddress.bytes += tableOffset;
-                    sectorAddress.pointer[0] = g_RefSectorTime1;
-                    sectorAddress.pointer = &g_BestSectorTimes[0][0][2];
-                    sectorAddress.bytes += tableOffset;
-                    sectorAddress.pointer[0] = g_RefSectorTime2;
-                }
-                g_RacePhase = 4;
-                StartCdVolumeFade(8);
-                PlaySoundCue(0x2B);
-            } else {
-            g_RacePhase = 5;
-            SeedFinishCamera(&g_PlayerCar);
-            StartCdVolumeFade(0x3C);
-            if (g_CourseProgress->retriesRemaining != 0) {
-                PlaySoundCue(0x3D);
-            }
-            }
-            ForceAllEffectVoicesEnabled(0);
-            g_RaceFadeTimer = 0;
-            g_MirrorViewEnabled = 0;
-
-        }
+        ApplyRaceFinishResult(route, g_LapCount, grandPrixMode, raceResult);
     } else {
         returnValue = 0;
     }
