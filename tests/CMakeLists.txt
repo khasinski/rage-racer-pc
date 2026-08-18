@@ -46,6 +46,15 @@ if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME game_runtime COMMAND game_runtime_tests)
 
+add_executable(render_scene_tests
+    render_scene_tests.c
+    ../src/port/render/render_scene.c)
+target_include_directories(render_scene_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(render_scene_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_scene COMMAND render_scene_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -251,7 +260,7 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 set(RAGE_PORTABLE_TESTS
-    game_logic game_runtime course_index native_geometry_interpolation
+    game_logic game_runtime render_scene course_index native_geometry_interpolation
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
