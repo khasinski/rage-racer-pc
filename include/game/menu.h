@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/menu_flow.h"
 #include "game/player_car_aliases.h"
 #include "game/render_workspace.h"
 #include "game/state.h"
@@ -103,27 +104,6 @@ extern s32 g_MenuViewAngle;
 extern s32 g_MenuViewAngleTarget;
 extern s32 g_MenuViewOffset;
 extern s32 g_MenuViewOffsetTarget;
-
-enum MenuScreenId {
-    MENU_SCREEN_LOADING = 0,
-    MENU_SCREEN_COURSE_SELECT = 1,
-    MENU_SCREEN_RANKING,
-    MENU_SCREEN_ENTER_CAR_SELECT,
-    MENU_SCREEN_CAR_SELECT,
-    MENU_SCREEN_CUSTOMIZE,
-    MENU_SCREEN_DESIGN_MODE,
-    MENU_SCREEN_TEAM_LOGO,
-    MENU_SCREEN_LOGO_SAMPLE,
-    MENU_SCREEN_TEAM_NAME,
-    MENU_SCREEN_PAINT_COLOR,
-    MENU_SCREEN_CAR_SHOP,
-    MENU_SCREEN_ENGINEER_SHOP
-};
-
-/* Central transition boundary for the legacy menu screen tables. Screens use
- * these operations instead of coordinating the three dispatcher globals. */
-void MenuFlowOpen(enum MenuScreenId screen);
-void MenuFlowFadeOut(enum MenuScreenId screen);
 
 enum MenuLayout {
     MENU_FADE_MAX = 0x1FC,
