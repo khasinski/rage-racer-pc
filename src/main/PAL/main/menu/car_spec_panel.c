@@ -3,7 +3,7 @@
 #include "game/menu.h"
 #include "game/render.h"
 #include "game/asset_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/vector.h"
 
@@ -21,7 +21,7 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     s32 yLarge;
     s32 ySmall;
 
-    scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
+    scratch = RENDER_OT_BASE_AS(OT_TYPE);
 
     switch ((u8)x) {
     case 4:
@@ -114,7 +114,7 @@ void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
     s16 rightEdge;
     u8 intensity;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     if (step == 0) {
         g_BrowseArrowsFade = 0;
         return;
@@ -251,7 +251,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
         return;
     }
 
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 3;
+    ot = RENDER_OT_BASE_AS(OT_TYPE) + 3;
     sourceColors = &g_CarSpecGraphColors;
     colors = *sourceColors;
     markerClut = 0x26C;

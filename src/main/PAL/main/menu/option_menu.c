@@ -7,7 +7,7 @@
 #include "game/random.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 
 
@@ -16,7 +16,7 @@ void DrawOptionRootMenu(void) {
     s32 h18 = 0x18;
     s32 h48 = 0x48;
     s32 color = 0x7F40;
-    register u8 **scratch asm("$21") = &SCRATCH_PRIM_CURSOR_AS(u8);
+    register u8 **scratch asm("$21") = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *tmp;
     s32 state;
 
@@ -107,7 +107,7 @@ void UpdateOptionRootMenu(void) {
 
 void DrawClassRecordDetail(void) {
     OT_TYPE *base = GamePrimaryOrderingTable(51);
-    u8 *next = SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 idx = g_ScreenOffsetEditY * 6 + g_ScreenOffsetEditX;
     s32 x;
     s32 y = 0x38;
@@ -141,7 +141,7 @@ void DrawClassRecordDetail(void) {
     next = AddTilePrim(base, next, x + 78, y + 47, 0x14, 2, 0xFF, 0xFF, 0xFF);
     next = AddTilePrim(base, next, x, y, 0x7C, 0x1E, 0, 0, 0);
     next = AddTilePrim(base, next, x, y + 32, 0x7C, 0x1E, 0, 0, 0);
-    SCRATCH_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, x - 1, y - 2, 0x7E, 0x42, 0xFF, 0xFF, 0xFF);
+    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, x - 1, y - 2, 0x7E, 0x42, 0xFF, 0xFF, 0xFF);
 }
 
 void DrawClassRecordGrid(void) {
@@ -157,12 +157,12 @@ void DrawClassRecordGrid(void) {
      * in OT 0 made the later trophy draw mode reinterpret TROPHIES/EXIT as
      * trophy pixels. */
     labelBase = GamePrimaryOrderingTable(51);
-    next = SCRATCH_PRIM_CURSOR_AS(u8);
+    next = RENDER_PRIM_CURSOR_AS(u8);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
-    SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(labelBase, next, 0x3F);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(labelBase, next, 0x3F);
     DrawMenuCursorArrow(0x14, (g_ClassRecordMenuCursor * 32) + 56);
-    next = SCRATCH_PRIM_CURSOR_AS(u8);
+    next = RENDER_PRIM_CURSOR_AS(u8);
 
     base = GamePrimaryOrderingTable(0);
 
@@ -193,7 +193,7 @@ void DrawClassRecordGrid(void) {
 
     next = QueueDrawModePrim(base, next, 0x3E);
     next = QueueDrawModePrim(base + 1, next, 0x3C);
-    SCRATCH_PRIM_CURSOR_AS(u8) = next;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
     DrawOptionHintBar(0);
 }
 
@@ -285,7 +285,7 @@ void DrawVolumeBar(s32 level, s32 y) {
     s32 segmentOffset;
     s32 c;
 
-    next = GameQueueSpriteTrans(base, SCRATCH_PRIM_CURSOR_AS(u8), 0x4E, b + 0xA, 0x10, 0xC, 0xB4, 0xC4, 0x7F40);
+    next = GameQueueSpriteTrans(base, RENDER_PRIM_CURSOR_AS(u8), 0x4E, b + 0xA, 0x10, 0xC, 0xB4, 0xC4, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0xE4, b + 0xA, 0x10, 0xC, 0xC4, 0xC4, 0x7F40);
     next = QueueDrawModePrim(base, next, 0x3A);
     c = 0x46;
@@ -299,7 +299,7 @@ void DrawVolumeBar(s32 level, s32 y) {
     }
     next = QueueDrawModePrim(base, next, 0x39);
     next = AddTilePrim(base, next, c | 1, b + 2, 0xB2, 0x1C, 0, 0, 0);
-    SCRATCH_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, c, b, 0xB4, 0x20, 0xFF, 0xFF, 0xFF);
+    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, c, b, 0xB4, 0x20, 0xFF, 0xFF, 0xFF);
 }
 
 void DrawSoundOptionScreen(void) {
@@ -313,7 +313,7 @@ void DrawSoundOptionScreen(void) {
     DrawMenuCursorArrow(0x14, (g_SoundOptionCursor * 32) + 56);
     color = 0x7F;
 
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
     s3 = 0x18;
     s0 = 0x78;
     base = (u8 *)GamePrimaryOrderingTable(0);
@@ -367,7 +367,7 @@ void DrawSoundOptionScreen(void) {
         n = AddTilePrim(base, n, (g_MonoOutput != 0) ? 0xA0 : 0x44, 0x11C, 0x5C, 0x28, 0x89, 0xFF, 0x76);
         break;
     }
-    SCRATCH_PRIM_CURSOR_AS(u8) = n;
+    RENDER_PRIM_CURSOR_AS(u8) = n;
 }
 
 /* g_GameModeHandlers[4]: the four-row sound menu; confirm backs the setting up and enters mode 5. */

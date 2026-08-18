@@ -9,7 +9,7 @@
 #include "game/player_car_aliases.h"
 #include "game/vector.h"
 
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -174,7 +174,7 @@ typedef struct GameRenderAxisMatrix {
 /* One display buffer, which is what InitRenderState sets that rectangle to.
  * See SetupDisplay240 below: the 240 mode is "two 320x240 buffers stacked at
  * y=0 / y=0xF0" and sets the GTE projection with SetGeomScreen(0x140). The
- * 480 mode is the pair treated as one, which is the SCRATCH_CLIP_Y1 = 0x1E0 that
+ * 480 mode is the pair treated as one, which is the RENDER_CLIP_Y1 = 0x1E0 that
  * menu/frontend.c writes. */
 #define SCREEN_WIDTH   0x140
 #define SCREEN_HEIGHT  0xF0
@@ -888,7 +888,7 @@ extern u16 g_EnvironmentClut[16];
  * and the `flags & 2` prop set over `flags & 1`; also forwarded to scratchpad
  * 0x1F800084 by every car/track renderer. */
 extern s32 g_IsEnvironmentMode4;
-/* That forwarding slot is SCRATCH_ENV_MODE4 in game/scratchpad.h. */
+/* That forwarding slot is RENDER_ENV_MODE4 in game/render_workspace.h. */
 
 /*
  * Per-view cell culling, rebuilt every frame by BuildVisibleCells and swapped in

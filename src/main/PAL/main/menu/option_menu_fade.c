@@ -3,7 +3,7 @@
 #include "game/menu.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/game_context.h"
 
@@ -26,7 +26,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
 
     width = 0x140;
     height = 0x1E0;
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
     scratchValue = *scratch;
     next = GameQueueTileTrans(base, scratchValue, 0, 0, width, height, color, color, color);
     *scratch = QueueDrawModePrim(base, next, tpage);

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/render_internal.h"
@@ -41,25 +42,25 @@ void DrawCourseObjects(void) {
         }
 
         BuildRotMatrixY(&mtx, obj->field2);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+        MulMatrix2(RENDER_VIEW_MATRIX_GTE, &mtx);
         {
             s32 transformed;
             s32 camera;
 
             transformed = (u16)obj->x;
-            camera = SCRATCH_VIEW_STATE->position.components.x.half.low;
+            camera = RENDER_VIEW_STATE->position.components.x.half.low;
             transformed -= camera;
             SCRATCH_OBJECT_MATRIX_WORK->relative[0] = transformed;
             transformed = (u16)obj->y;
-            camera = SCRATCH_VIEW_STATE->position.components.y.half.low;
+            camera = RENDER_VIEW_STATE->position.components.y.half.low;
             transformed -= camera;
             SCRATCH_OBJECT_MATRIX_WORK->relative[1] = transformed;
             transformed = (u16)obj->z;
-            camera = SCRATCH_VIEW_STATE->position.components.z.half.low;
+            camera = RENDER_VIEW_STATE->position.components.z.half.low;
             transformed -= camera;
             SCRATCH_OBJECT_MATRIX_WORK->relative[2] = transformed;
 
-            ApplyMatrix(SCRATCH_VIEW_MATRIX_GTE,
+            ApplyMatrix(RENDER_VIEW_MATRIX_GTE,
                         SCRATCH_OBJECT_MATRIX_WORK->relative,
                         &SCRATCH_OBJECT_MATRIX_WORK->view);
             transformed = SCRATCH_OBJECT_MATRIX_WORK->view.x;
@@ -77,17 +78,17 @@ void DrawCourseObjects(void) {
 
         flags = obj->flags;
         if (flags & 8) {
-            SCRATCH_ENV_MODE4 = ((g_AnimTimer & 0x10) == 0) << 16;
+            RENDER_ENV_MODE4 = ((g_AnimTimer & 0x10) == 0) << 16;
         } else if (flags & 4) {
-            SCRATCH_ENV_MODE4 = 0x10000;
+            RENDER_ENV_MODE4 = 0x10000;
         } else {
-            SCRATCH_ENV_MODE4 = 0;
+            RENDER_ENV_MODE4 = 0;
         }
 
         if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags % 2)) {
-            SubmitCourseModel2(SCRATCHPAD, obj->modelId);
+            SubmitCourseModel2(RENDER_WORKSPACE, obj->modelId);
         } else {
-            SubmitCourseModel(SCRATCHPAD, obj->modelId);
+            SubmitCourseModel(RENDER_WORKSPACE, obj->modelId);
         }
 
         }
@@ -111,7 +112,7 @@ u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
-    ScratchViewState *view = SCRATCH_VIEW_STATE;
+    RenderViewState *view = RENDER_VIEW_STATE;
     s32 i;
     s32 j;
     s32 oct;
@@ -172,7 +173,7 @@ void BuildVisibleCells(s32 near, s32 far) {
             dy = g_CellScanOffsetY[k];
             /* The rear-view pass reflects this quadrant.  Applying its signs
              * to the main view drops the left-hand cells ahead of the car. */
-            if (SCRATCH_MIRROR) {
+            if (RENDER_MIRROR) {
                 sx = cx + dx;
                 sy = cy - dy;
             } else {
@@ -195,7 +196,7 @@ void BuildVisibleCells(s32 near, s32 far) {
                 vec[0] = ((sx << 11) - (view->position.components.x.value - center)) * 4;
                 vec[1] = (-view->position.components.y.value) * 4;
                 vec[2] = ((sy << 11) - (view->position.components.z.value - center)) * 4;
-                ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, vec, proj);
+                ApplyMatrixLV(RENDER_VIEW_MATRIX_GTE, vec, proj);
                 if (proj[2] >= near && far >= proj[2]) {
                     out->x = proj[0];
                     out->y = proj[1];

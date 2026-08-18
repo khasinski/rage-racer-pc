@@ -11,7 +11,7 @@
 #include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/random.h"
 #include "game/track_internal.h"
@@ -743,17 +743,17 @@ int RagePortShouldExit(int frame_number) {
                         g_PlayerCar.bodyPitch, g_PlayerCar.bodyRoll,
                         g_PlayerCar.trackLateralOffset,
                         g_PlayerCar.modelYaw, g_MirrorPanelY,
-                        SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
-                        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-                        SCRATCH_VIEW_ANGLE_Z,
-                        SCRATCHPAD->matrix.m[0][0], SCRATCHPAD->matrix.m[0][1],
-                        SCRATCHPAD->matrix.m[0][2], SCRATCHPAD->matrix.m[1][0],
-                        SCRATCHPAD->matrix.m[1][1], SCRATCHPAD->matrix.m[1][2],
-                        SCRATCHPAD->matrix.m[2][0], SCRATCHPAD->matrix.m[2][1],
-                        SCRATCHPAD->matrix.m[2][2],
-                        SCRATCHPAD->x0, SCRATCHPAD->y0,
-                        SCRATCHPAD->x1, SCRATCHPAD->y1,
-                        SCRATCHPAD->orderingFlag & 1,
+                        RENDER_VIEW_X, RENDER_VIEW_Y, RENDER_VIEW_Z,
+                        RENDER_VIEW_ANGLE_X, RENDER_VIEW_ANGLE_Y,
+                        RENDER_VIEW_ANGLE_Z,
+                        RENDER_WORKSPACE->matrix.m[0][0], RENDER_WORKSPACE->matrix.m[0][1],
+                        RENDER_WORKSPACE->matrix.m[0][2], RENDER_WORKSPACE->matrix.m[1][0],
+                        RENDER_WORKSPACE->matrix.m[1][1], RENDER_WORKSPACE->matrix.m[1][2],
+                        RENDER_WORKSPACE->matrix.m[2][0], RENDER_WORKSPACE->matrix.m[2][1],
+                        RENDER_WORKSPACE->matrix.m[2][2],
+                        RENDER_WORKSPACE->x0, RENDER_WORKSPACE->y0,
+                        RENDER_WORKSPACE->x1, RENDER_WORKSPACE->y1,
+                        RENDER_WORKSPACE->orderingFlag & 1,
                         g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
                         g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
                         g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
@@ -764,7 +764,7 @@ int RagePortShouldExit(int frame_number) {
                         RageSmokeHashVisibleList(g_MainVisibleCellList),
                         RageSmokeHashVisibleList(g_MirrorVisibleCellList),
                         g_IsEnvironmentMode4,
-                        SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
+                        RENDER_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
                         g_EngineRpm, g_EngineRpmJitter, g_TachoNeedleFlash,
                         g_PlayerCar.drive.acceleratorInput.value,

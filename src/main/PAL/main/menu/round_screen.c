@@ -9,7 +9,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -179,7 +179,7 @@ void DrawRoundScreen(void) {
 void DrawBgmSelector(void) {
     s32 x;
     char buf[88];
-    u8 **scr = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scr = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *p;
     void *ot = GamePrimaryOrderingTable(1);
 

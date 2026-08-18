@@ -2,7 +2,8 @@
 #include "game/asset.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "game/vector.h"
@@ -19,18 +20,18 @@ void DrawRouteScenery(void) {
     mtx1Ptr = &mtx1;
     BuildRotMatrixX(mtx1Ptr, g_RouteSceneryRotX);
     MulMatrix2(&mtx0, mtx1Ptr);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
+    MulMatrix2(RENDER_VIEW_MATRIX_GTE, mtx1Ptr);
     BuildRotMatrixZ(&mtx0, g_RouteSceneryRotZ);
     MulMatrix2(mtx1Ptr, &mtx0);
     SelectModelBank(1);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_RouteSceneryX, &mtx0);
     frameValue = g_ModelBankCount;
-    SCRATCH_ENV_MODE4 = 0;
+    RENDER_ENV_MODE4 = 0;
     drawId = 1;
     if (frameValue >= 0x26) {
         drawId = 0x25;
     }
-    SubmitModel(SCRATCHPAD, drawId);
+    SubmitModel(RENDER_WORKSPACE, drawId);
 }
 
 void InitShuttleScenery(void) {

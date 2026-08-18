@@ -5,7 +5,7 @@
 #include "game/render.h"
 #include "game/car.h"
 #include "game/menu.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/sound.h"
 #include "game/state.h"
 #include "game/work_buffer.h"

@@ -6,7 +6,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/vector.h"
 #include "game/game_context.h"
@@ -27,7 +27,7 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
     register void *callScratch asm("$4");
     s32 callX;
 
-    scratch = SCRATCH_OT_BASE;
+    scratch = RENDER_OT_BASE;
     step0 = stepA;
     step1 = stepB;
 
@@ -159,7 +159,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     verts[2] = g_CourseCardVerts[2];
     verts[3] = g_CourseCardVerts[3];
 
-    scratch2 = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
+    scratch2 = RENDER_OT_BASE_AS(OT_TYPE) + 1;
 
     n = *p0 - *p1;
     if (n != 0) {
@@ -240,7 +240,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
 }
 
 void DrawTimeAttackPlate(s32 stepArg) {
-    void *scratch = SCRATCH_OT_BASE;
+    void *scratch = RENDER_OT_BASE;
     s32 step = stepArg;
     s32 value;
     s32 renderValue;
@@ -343,14 +343,14 @@ void InitMenuMode(void) {
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
     InitMenuLighting();
 
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    RENDER_VIEW_X = 0;
+    RENDER_VIEW_Y = -64;
+    RENDER_VIEW_Z = -256;
+    RENDER_VIEW_ANGLE_X = 0x100;
+    RENDER_VIEW_ANGLE_Y = 0;
+    RENDER_VIEW_ANGLE_Z = 0;
     SetCameraRotMatrix();
-    ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
+    ScaleMatrix(RENDER_VIEW_MATRIX_GTE, &g_MenuViewScale);
 
     g_CourseSelectModalScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;

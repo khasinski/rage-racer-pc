@@ -4,7 +4,7 @@
 #include "game/menu_internal.h"
 #include "game/render.h"
 #include "game/render_types.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gpu.h"
 
 void DrawTeamLogoCanvasFade(s32 delta) {
@@ -14,7 +14,7 @@ void DrawTeamLogoCanvasFade(s32 delta) {
     s32 limit;
     s32 alpha;
 
-    scratch = SCRATCH_OT_BASE_AS(u8);
+    scratch = RENDER_OT_BASE_AS(u8);
     if (delta > 0) {
         value = g_MenuCurtainFade;
         sum = delta + value;
@@ -68,7 +68,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
   register RenderBufferAddress drawValue asm("$4");
   a0v = panelStep;
   a1v = editorStep;
-  ot.pointer = SCRATCH_OT_BASE_AS(void);
+  ot.pointer = RENDER_OT_BASE_AS(void);
   if (panelStep == 0)
   {
     g_TeamLogoPanelStep = 0;

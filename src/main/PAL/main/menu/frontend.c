@@ -9,7 +9,7 @@
 #include "game/random.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -87,7 +87,7 @@ void UpdateTitleAttract(void) {
     yA0 = 0xA0;
     asm("" : "=r"(x28), "=r"(yA0) : "0"(x28), "1"(yA0)); /* Match note: materialize first-call argument registers before the stack-arg temp. */
     color = 0x7E00;
-    scratch.pointerLink = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch.pointerLink = &RENDER_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
     asm("" : "=r"(scratch.pointer), "=r"(hF0) : "0"(scratch.pointer), "1"(hF0)); /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
     tmp = 0x18;
@@ -319,5 +319,5 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     ResetFrameContext(0);
     ResetFrameContext(1);
 
-    SCRATCH_CLIP_Y1 = 0x1E0;
+    RENDER_CLIP_Y1 = 0x1E0;
 }

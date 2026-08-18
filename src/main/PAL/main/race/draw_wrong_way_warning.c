@@ -6,7 +6,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/track.h"
 #include "psyq/gpu.h"
 
@@ -15,7 +15,7 @@
 
 /* The GPU packet cursor: scratchpad word 0. Every emitter here packs its
  * primitive at this address and bumps it past what it wrote. */
-#define SCRATCH (SCRATCH_PRIM_CURSOR_AS(u8))
+#define SCRATCH (RENDER_PRIM_CURSOR_AS(u8))
 
 typedef union TachometerColorAddress {
     u8 *components;
@@ -35,7 +35,7 @@ void DrawWrongWayWarning(void) {
     u8 *ret;
     RenderBufferAddress nextAddress;
 
-    next = SCRATCH_PRIM_CURSOR_AS(SPRT);
+    next = RENDER_PRIM_CURSOR_AS(SPRT);
     i = 0;
     u = 0x48;
     x = 0x6C;
@@ -85,7 +85,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     s32 angle = b + rpm * (p->angleMax - b) / 10000;
     s32 cos = rsin(angle);
     s32 sin = rcos(angle);
-    POLY_F4 *prim = SCRATCH_PRIM_CURSOR_AS(POLY_F4);
+    POLY_F4 *prim = RENDER_PRIM_CURSOR_AS(POLY_F4);
     s16 *vp;
     s16 *pa;
     s16 *pb;
@@ -196,7 +196,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         /* Not SCRATCH: this read has to stay volatile. Spelling it as the
          * plain macro lets the cursor written above be reused instead of
          * reloaded, which changes the output. */
-        u8 *q = DrawHudDigit(SCRATCH_PRIM_CURSOR_VOLATILE, x, y,
+        u8 *q = DrawHudDigit(RENDER_PRIM_CURSOR_VOLATILE, x, y,
                              g_PlayerCar.drive.gear, g_HudGlyphClut);
         SCRATCH = q;
         DrawSpeedDigits(cx, cy, g_PlayerCar.speed * 160 / 1168);
@@ -228,7 +228,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
 
     {
-        TILE *q = SCRATCH_PRIM_CURSOR_AS(TILE);
+        TILE *q = RENDER_PRIM_CURSOR_AS(TILE);
         OT_TYPE *ot;
         TILE *tile;
         s32 v10;
@@ -265,7 +265,7 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
         color = 0xFF;
     }
 
-    packet = SCRATCH_PRIM_CURSOR_AS(TILE);
+    packet = RENDER_PRIM_CURSOR_AS(TILE);
     SetTile(packet);
     SetSemiTrans(packet, 1);
 

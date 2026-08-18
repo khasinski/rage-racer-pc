@@ -5,7 +5,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/fmv_internal.h"
 #include "game/game_context.h"
@@ -34,7 +34,7 @@ void DrawBootLogo(void) {
     fade = value;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
 
     next = *scratch;
     next = GameQueueShadedSprite(base, next, 0x64, 0xEC, 0x7C, 0x18, 0x80, 0, 0x3F97, fade);
@@ -141,12 +141,12 @@ void EnterAttractScene(void) {
         GameSceneSet(SCENE_OPTIONS);
         g_SceneTimer = 0;
         InstallSceneLighting();
-        SCRATCH_VIEW_X = 0;
-        SCRATCH_VIEW_Y = 0;
-        SCRATCH_VIEW_Z = -3520;
-        SCRATCH_VIEW_ANGLE_X = 0;
-        SCRATCH_VIEW_ANGLE_Y = 0;
-        SCRATCH_VIEW_ANGLE_Z = 0;
+        RENDER_VIEW_X = 0;
+        RENDER_VIEW_Y = 0;
+        RENDER_VIEW_Z = -3520;
+        RENDER_VIEW_ANGLE_X = 0;
+        RENDER_VIEW_ANGLE_Y = 0;
+        RENDER_VIEW_ANGLE_Z = 0;
         SetCameraRotMatrix();
         g_OptionLetterboxHeight = 0xF0;
         g_FadeLevel = 0x100;

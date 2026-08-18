@@ -4,7 +4,8 @@
 #include "game/render.h"
 #include "game/race.h"
 #include "game/car.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/track_internal.h"
 #include "psyq/gpu.h"
 

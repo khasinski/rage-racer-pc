@@ -8,7 +8,7 @@
 #include "game/save_internal.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/game_context.h"
 
@@ -137,7 +137,7 @@ pos:
 }
 
 s32 DrawCarSelectScreen(s32 step) {
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     OrderingTableAddress otAddress;
     s32 p;
     u32 *buf = (u32 *)(ot + 1);
@@ -660,7 +660,7 @@ void UpdateCustomizeScreen(void) {
     u16 *pad;
     s32 sel;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     mode = 2;

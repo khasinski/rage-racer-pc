@@ -43,7 +43,8 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include <psyz/cd.h>
 
 #include "psyq/cd_types.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/scene_manager.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -59,7 +60,7 @@ unsigned char g_AudioRuntimeState[4096];
 int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
 unsigned char g_RageScratchpad[0x400];
-GameScratchpadRenderState g_RageScratchpadState;
+RenderWorkspace g_RenderWorkspace;
 
 void UpdateBootLogoScene(void);
 void EnterFrontend(void);
@@ -247,7 +248,7 @@ s32 (*g_MenuScreenDraw[14])(s32) = {
 
 int RageMapPs1Scratchpad(void) {
     memset(g_RageScratchpad, 0, sizeof(g_RageScratchpad));
-    memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
+    memset(&g_RenderWorkspace, 0, sizeof(g_RenderWorkspace));
     return 1;
 }
 

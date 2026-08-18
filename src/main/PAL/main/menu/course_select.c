@@ -9,7 +9,7 @@
 #include "game/save_internal.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/game_context.h"
 #include "psyq/gpu.h"
@@ -154,7 +154,7 @@ s32 DrawCourseSelectScreen(s32 step)
     u32 fadeValue;
     OrderingTableAddress otAddress;
 
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;
@@ -427,7 +427,7 @@ void UpdateCourseSelectScreen(void) {
     s32 u;
     s32 i;
     GameRaceProgress *p;
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     if (g_GrandPrixMode != 0) {
         FlipCourseCard(&g_CourseCardSpinTarget, &g_CourseCardSpin, &g_CourseCardPendingGrade);

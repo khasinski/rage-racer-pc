@@ -7,7 +7,8 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/state.h"
 #include "game/vector.h"
 #include "game/waypoint.h"
@@ -129,7 +130,7 @@ void UpdateWaypoints(void) {
 }
 
 static inline void ClearScratchRenderMode37AAC(void) {
-    g_ScratchRenderMode = 0;
+    RENDER_ENV_MODE4 = 0;
 }
 
 /*
@@ -156,7 +157,7 @@ void DrawWaypoints(void) {
 
     do {
         BuildRotMatrixY(&mtx0, waypoint->motion.rotationY);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx0);
+        MulMatrix2(RENDER_VIEW_MATRIX_GTE, &mtx0);
         BuildRotMatrixZ(mtx1Ptr, waypoint->motion.rotationZ);
         MulMatrix(&mtx0, mtx1Ptr);
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &waypoint->motion, &mtx0);
@@ -166,7 +167,7 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel(SCRATCHPAD, drawArg);
+        SubmitModel(RENDER_WORKSPACE, drawArg);
 
         BuildRotMatrixY(mtx1Ptr, 0x800);
         MulMatrix2(&mtx0, mtx1Ptr);
@@ -177,7 +178,7 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel(SCRATCHPAD, drawArg);
+        SubmitModel(RENDER_WORKSPACE, drawArg);
 
         i++;
         waypoint++;
@@ -207,7 +208,7 @@ void DrawLapNumber(void) {
     s32 quotient;
     register SPRT *packet asm("$16");
 
-    scratch = SCRATCH_PRIM_CURSOR_AS(SPRT);
+    scratch = RENDER_PRIM_CURSOR_AS(SPRT);
     track = g_PlayerCar.lap;
     divisor = 1;
     digitsDrawn = 0;
@@ -362,7 +363,7 @@ race_intro_update_done:
     RequestTrackTexturePage(*p);
     UpdateEnvironment();
     DrawSkyBackground();
-    SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+    RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCells();
     DrawCourseObjects();
     DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);

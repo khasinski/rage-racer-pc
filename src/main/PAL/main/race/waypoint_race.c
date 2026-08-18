@@ -3,7 +3,7 @@
 #include "game/cd.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/track.h"
@@ -96,7 +96,7 @@ void UpdateWaypointRaceScene(void) {
         GetTrackZoneBlend(g_PlayerCar.trackProgress);
         RequestTrackTexturePage(g_PlayerCar.trackSection);
         DrawSkyBackground();
-        SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+        RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
         DrawTerrainCells();
         DrawCourseObjects();
         DrawFlybyScenery();
@@ -129,7 +129,7 @@ void UpdateWaypointRaceScene(void) {
     RequestTrackTexturePage(g_PlayerCar.trackSection);
     UpdateEnvironment();
     DrawSkyBackground();
-    SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+    RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCells();
     DrawCourseObjects();
     UpdateFlybyScenery();

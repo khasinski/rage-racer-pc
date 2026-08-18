@@ -11,7 +11,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/game_runtime.h"
@@ -54,13 +54,13 @@ void InitSubsystems(void) {
     InitRecordTables();
     InitRenderState(5);
     InitSaveDefaults();
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
+    RENDER_VIEW_Y = -64;
+    RENDER_VIEW_Z = -256;
     g_ExtraGrandPrixUnlocked = 0;
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    RENDER_VIEW_X = 0;
+    RENDER_VIEW_ANGLE_X = 0x100;
+    RENDER_VIEW_ANGLE_Y = 0;
+    RENDER_VIEW_ANGLE_Z = 0;
     SetCameraRotMatrix();
 }
 
@@ -84,8 +84,8 @@ static void PrepareGameFrame(void *user) {
     g_DrawBuffer = frame;
     g_FrameParity = parity;
     frameAddress.bytes = frame;
-    SCRATCH_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
-    SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
+    RENDER_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
+    RENDER_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
     ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
     drawBuffer.bytes = g_DrawBuffer;
     ClearOTagR(drawBuffer.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);

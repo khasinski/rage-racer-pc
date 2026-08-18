@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/asset.h"
 
 #include "modern/scene_capture.h"
@@ -94,7 +94,7 @@ static void RageTraceTerrainDecision(
                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
                 "raw=%d depth=%d result=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                SCRATCH_MIRROR, clut, tpage & 0x9ff,
+                RENDER_MIRROR, clut, tpage & 0x9ff,
                 vertexIndices[0], vertexIndices[1], vertexIndices[2],
                 vertexIndices[3], translation->vx, translation->vy,
                 translation->vz, clip0, clip1,
@@ -102,8 +102,8 @@ static void RageTraceTerrainDecision(
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                 (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RageScratchpadState.x0, g_RageScratchpadState.x1,
-                g_RageScratchpadState.y0, g_RageScratchpadState.y1,
+                g_RenderWorkspace.x0, g_RenderWorkspace.x1,
+                g_RenderWorkspace.y0, g_RenderWorkspace.y1,
                 rawDepth, depth, "submit");
     else
         fprintf(stderr,
@@ -114,7 +114,7 @@ static void RageTraceTerrainDecision(
                 "raw=na depth=na result=reject "
                 "reason=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                SCRATCH_MIRROR, clut, tpage & 0x9ff,
+                RENDER_MIRROR, clut, tpage & 0x9ff,
                 vertexIndices[0], vertexIndices[1], vertexIndices[2],
                 vertexIndices[3], translation->vx, translation->vy,
                 translation->vz, clip0, clip1,
@@ -122,8 +122,8 @@ static void RageTraceTerrainDecision(
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                 (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RageScratchpadState.x0, g_RageScratchpadState.x1,
-                g_RageScratchpadState.y0, g_RageScratchpadState.y1, reason);
+                g_RenderWorkspace.x0, g_RenderWorkspace.x1,
+                g_RenderWorkspace.y0, g_RenderWorkspace.y1, reason);
     g_RageTerrainDecisionTraceCount++;
 }
 
@@ -194,14 +194,14 @@ static int RageProjectQuad(
         /* A widened modern view accepts faces the 4:3 screen rect would
          * cull; the compat image is unchanged because the PS1 drawing area
          * still clips them. Never widen the mirror's deliberate bounds. */
-        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
+        int marginX = RENDER_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             x[i] = (int16_t)(sxy[i] & 0xffff);
             y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
-            allLeft &= x[i] < g_RageScratchpadState.x0 - marginX;
-            allRight &= x[i] > g_RageScratchpadState.x1 + marginX;
-            allAbove &= y[i] < g_RageScratchpadState.y0;
-            allBelow &= y[i] > g_RageScratchpadState.y1;
+            allLeft &= x[i] < g_RenderWorkspace.x0 - marginX;
+            allRight &= x[i] > g_RenderWorkspace.x1 + marginX;
+            allAbove &= y[i] < g_RenderWorkspace.y0;
+            allBelow &= y[i] > g_RenderWorkspace.y1;
         }
         if (allLeft || allRight || allAbove || allBelow) {
             g_RageProjectionReject = 1;
@@ -229,8 +229,8 @@ static int RageProjectQuad(
          * triangle faces the camera.  Applying the model rule to terrain
          * drops whole quads whenever only their first half is degenerate. */
         if (terrainQuad &&
-            ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 < 0) ||
-             (SCRATCH_MIRROR && clip0 >= 0 && clip1 > 0))) {
+            ((!RENDER_MIRROR && clip0 <= 0 && clip1 < 0) ||
+             (RENDER_MIRROR && clip0 >= 0 && clip1 > 0))) {
             if (terrainQuad == 2)
                 g_RageTerrainChildSecondTriangleVisible++;
             else
@@ -243,11 +243,11 @@ static int RageProjectQuad(
          * Do not feed the duplicated clip0 into
          * the terrain two-half expression: that reduces both rejection
          * tests to clip0 == 0 and submits every back-facing model face. */
-        *depth = ((int)otz >> SCRATCH_OT_SHIFT);
-        if ((!terrainQuad && !RageModelFaceVisible(SCRATCH_MIRROR, clip0)) ||
+        *depth = ((int)otz >> RENDER_OT_SHIFT);
+        if ((!terrainQuad && !RageModelFaceVisible(RENDER_MIRROR, clip0)) ||
             (terrainQuad &&
-             ((!SCRATCH_MIRROR && clip0 <= 0 && clip1 >= 0) ||
-              (SCRATCH_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
+             ((!RENDER_MIRROR && clip0 <= 0 && clip1 >= 0) ||
+              (RENDER_MIRROR && clip0 >= 0 && clip1 <= 0)))) {
             g_RageProjectionReject = 2;
             if (!terrainQuad) g_RageModelRejectBackface++;
             if (terrainQuad == 2) g_RageTerrainChildRejectBackface++;
@@ -300,19 +300,19 @@ static int RageProjectCourseFace(
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
     (void)flag;
     g_RageProjectionReject = 0;
-    if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0)) {
+    if ((!RENDER_MIRROR && clip <= 0) || (RENDER_MIRROR && clip >= 0)) {
         g_RageProjectionReject = 2;
         return 0;
     }
     {
-        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
+        int marginX = RENDER_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             int x = (int16_t)sxy[i];
             int y = (int16_t)(sxy[i] >> 16);
-            allLeft &= x < g_RageScratchpadState.x0 - marginX;
-            allRight &= x > g_RageScratchpadState.x1 + marginX;
-            allAbove &= y < g_RageScratchpadState.y0;
-            allBelow &= y > g_RageScratchpadState.y1;
+            allLeft &= x < g_RenderWorkspace.x0 - marginX;
+            allRight &= x > g_RenderWorkspace.x1 + marginX;
+            allAbove &= y < g_RenderWorkspace.y0;
+            allBelow &= y > g_RenderWorkspace.y1;
         }
     }
     if (allLeft || allRight || allAbove || allBelow) {
@@ -338,15 +338,15 @@ static int RageCourseScreenQuadVisible(const int sxy[4]) {
      * winding from v0/v1/v2.  Reject only when both halves are back-facing.
      * The old comparisons did the inverse and discarded every front-facing
      * child as soon as a course quad entered its near subdivision path. */
-    if (!RageCourseQuadVisible(SCRATCH_MIRROR, clip0, clip1))
+    if (!RageCourseQuadVisible(RENDER_MIRROR, clip0, clip1))
         return 0;
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
         int y = (int16_t)(sxy[i] >> 16);
-        allLeft &= x < g_RageScratchpadState.x0;
-        allRight &= x > g_RageScratchpadState.x1;
-        allAbove &= y < g_RageScratchpadState.y0;
-        allBelow &= y > g_RageScratchpadState.y1;
+        allLeft &= x < g_RenderWorkspace.x0;
+        allRight &= x > g_RenderWorkspace.x1;
+        allAbove &= y < g_RenderWorkspace.y0;
+        allBelow &= y > g_RenderWorkspace.y1;
     }
     return !(allLeft || allRight || allAbove || allBelow);
 }
@@ -525,10 +525,10 @@ static void RageSubmitModelFaces(
     int type, int count, const uint8_t *faces, const SVECTOR *vertices,
     const SVECTOR *normals) {
     static const uint8_t strides[4] = {16, 24, 24, 32};
-    uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* Retail seeds t5 with scratch OT + 0x200 bytes before dispatching any
      * model face.  On PS1 that is 128 four-byte OT entries. */
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) + 128;
     int i;
 
     RageGeometryDiagnosticsInit(&s_diagnostics);
@@ -579,7 +579,7 @@ static void RageSubmitModelFaces(
                     "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                     g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
                     (int8_t)faces[strides[type] - 3],
-                    (void *)cursor, (unsigned)g_ScratchRenderMode,
+                    (void *)cursor, (unsigned)RENDER_ENV_MODE4,
                     (const void *)faces, recordBytes,
                     RageReadU16(faces), RageReadU16(faces + 2),
                     RageReadU16(faces + 4), RageReadU16(faces + 6),
@@ -625,7 +625,7 @@ static void RageSubmitModelFaces(
             SetShadeTex(poly, 1);
             poly->r0 = poly->g0 = poly->b0 = 0x80;
             RageCopyFt4UvWithMode(poly, faces + 8,
-                                  (uint32_t)g_ScratchRenderMode);
+                                  (uint32_t)RENDER_ENV_MODE4);
             RageStoreSxy(&poly->x0, &poly->y0, sxy[0]);
             RageStoreSxy(&poly->x1, &poly->y1, sxy[1]);
             RageStoreSxy(&poly->x2, &poly->y2, sxy[2]);
@@ -708,12 +708,12 @@ static void RageSubmitModelFaces(
         } else {
             if (!RagePrimitiveSpaceAvailable(cursor, sizeof(POLY_GT4))) break;
             POLY_GT4 *poly = (POLY_GT4 *)cursor;
-            CVECTOR base = {SCRATCH_GT4_R, SCRATCH_GT4_G, SCRATCH_GT4_B,
-                            SCRATCH_GT4_CODE};
+            CVECTOR base = {RENDER_GT4_R, RENDER_GT4_G, RENDER_GT4_B,
+                            RENDER_GT4_CODE};
             CVECTOR colors[4];
             SetPolyGT4(poly);
             RageCopyGt4UvWithMode(poly, faces + 16,
-                                  (uint32_t)g_ScratchRenderMode);
+                                  (uint32_t)RENDER_ENV_MODE4);
             NormalColor3(
                 (SVECTOR *)&normals[RageReadU16(faces + 8)],
                 (SVECTOR *)&normals[RageReadU16(faces + 10)],
@@ -778,13 +778,13 @@ static void RageSubmitModelFaces(
             }
         }
     }
-    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
 }
 
 void SubmitModel(void *ctx, int index) {
     uint8_t *stream;
     uint32_t opcode;
-    void **models = (void **)SCRATCH_MODEL_MODELS;
+    void **models = (void **)RENDER_MODEL_MODELS;
     (void)ctx;
     if (models == NULL || index < 0 || models[index] == NULL) return;
     stream = (uint8_t *)models[index];
@@ -800,8 +800,8 @@ void SubmitModel(void *ctx, int index) {
         int count = (int)(opcode >> 16);
         stream += 4;
         RageSubmitModelFaces(type, count, stream,
-                             (const SVECTOR *)SCRATCH_MODEL_TABLE1,
-                             (const SVECTOR *)SCRATCH_MODEL_NORMALS);
+                             (const SVECTOR *)RENDER_MODEL_TABLE1,
+                             (const SVECTOR *)RENDER_MODEL_NORMALS);
         if ((unsigned)type >= 4) break;
         stream += count * (const uint8_t[]){16,24,24,32}[type];
     }
@@ -813,11 +813,11 @@ void SubmitModel(void *ctx, int index) {
  * avoids hiding it among generic platform adapters. */
 static void RageSubmitCourseModel(int index, int fogged) {
     static const uint8_t strides[4] = {16, 28, 32, 32};
-    NativeCourseModel *models = (NativeCourseModel *)SCRATCH_COURSE_BANK;
+    NativeCourseModel *models = (NativeCourseModel *)RENDER_COURSE_BANK;
     uint8_t *stream;
-    uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* The course dispatcher applies the same fixed +0x200-byte OT base. */
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) + 128;
     const SVECTOR *vertices;
     uint32_t opcode;
     RageGeometryDiagnosticsInit(&s_diagnostics);
@@ -859,7 +859,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                         g_SceneTimer, index, type, i, fogged, projected,
                         projected ? 0 : g_RageProjectionReject,
-                        SCRATCH_MIRROR, RageReadU16(stream + 0),
+                        RENDER_MIRROR, RageReadU16(stream + 0),
                         RageReadU16(stream + 2), RageReadU16(stream + 4),
                         RageReadU16(stream + 6), RageReadU16(stream + 14),
                         RageReadU16(stream + 18) & 0x9ff,
@@ -913,7 +913,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 capture.colorCount = 1;
                 if (type == 1) {
                     uint32_t uv0 = RageReadU32(stream + 12) +
-                                   (uint32_t)g_ScratchRenderMode;
+                                   (uint32_t)RENDER_ENV_MODE4;
                     uint8_t uv[8] = {
                         (uint8_t)uv0, (uint8_t)(uv0 >> 8),
                         stream[16], stream[17],
@@ -943,7 +943,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     stream[20], stream[21], stream[22], stream[23]
                 };
                 uint32_t uv0 = RageReadU32(stream + 12) +
-                               (uint32_t)g_ScratchRenderMode;
+                               (uint32_t)RENDER_ENV_MODE4;
                 memcpy(&uv[0], &uv0, 2);
                 uint8_t *next = RageEmitCourseFt4(
                     cursor, ot, depth, sxy, uv, (uint16_t)(uv0 >> 16),
@@ -957,15 +957,15 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 uint16_t tpage;
                 uint32_t textureWindow = RageReadU32(stream + 28);
                 int uLevel = stream[26] -
-                    (rawDepth >> SCRATCH_FACE_OT_SHIFT);
+                    (rawDepth >> RENDER_FACE_OT_SHIFT);
                 int vLevel = stream[27] -
-                    (rawDepth >> SCRATCH_FACE_OT_SHIFT);
+                    (rawDepth >> RENDER_FACE_OT_SHIFT);
                 int uSteps, vSteps;
                 int sy, sx;
                 memcpy(uvRecord, stream + 12, sizeof(uvRecord));
                 {
                     uint32_t uv0 = RageReadU32(uvRecord) +
-                                   (uint32_t)g_ScratchRenderMode;
+                                   (uint32_t)RENDER_ENV_MODE4;
                     memcpy(uvRecord, &uv0, sizeof(uv0));
                 }
                 if (type == 3) {
@@ -1059,12 +1059,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
             }
         }
     }
-    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
     RageCaptureSubmitEnd();
     return;
 course_buffer_full:
     fprintf(stderr, "rage course: primitive buffer exhausted\n");
-    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
     RageCaptureSubmitEnd();
 }
 
@@ -1079,11 +1079,11 @@ void SubmitCourseModel2(void *ctx, int index) {
 void SubmitTerrainCells(void *ctx, void *cells, int count) {
     static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
     const int32_t *visible = (const int32_t *)cells;
-    void **cellTable = (void **)SCRATCH_CELL_TABLE;
-    const SVECTOR *vertices = (const SVECTOR *)SCRATCH_CELL_FACES;
-    uint8_t *cursor = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    void **cellTable = (void **)RENDER_CELL_TABLE;
+    const SVECTOR *vertices = (const SVECTOR *)RENDER_CELL_FACES;
+    uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* func_80028E9C seeds its terrain OT register from scratch+4 + 0x200. */
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) + 128;
     int cell;
     int decodedFaces = 0;
     int emittedFaces = 0;
@@ -1099,11 +1099,11 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
      * with only the GTE register updated, DrawCar composed rival cars with
      * the un-reflected matrix and the mirror showed them moving opposite to
      * the track.  EndMirrorPass restores the saved camera matrix. */
-    if (SCRATCH_MIRROR) {
-        SCRATCH_VIEW_MATRIX_GTE->m[0][0] = -SCRATCH_VIEW_MATRIX_GTE->m[0][0];
-        SCRATCH_VIEW_MATRIX_GTE->m[0][1] = -SCRATCH_VIEW_MATRIX_GTE->m[0][1];
-        SCRATCH_VIEW_MATRIX_GTE->m[0][2] = -SCRATCH_VIEW_MATRIX_GTE->m[0][2];
-        SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
+    if (RENDER_MIRROR) {
+        RENDER_VIEW_MATRIX_GTE->m[0][0] = -RENDER_VIEW_MATRIX_GTE->m[0][0];
+        RENDER_VIEW_MATRIX_GTE->m[0][1] = -RENDER_VIEW_MATRIX_GTE->m[0][1];
+        RENDER_VIEW_MATRIX_GTE->m[0][2] = -RENDER_VIEW_MATRIX_GTE->m[0][2];
+        SetRotMatrix(RENDER_VIEW_MATRIX_GTE);
     }
     /* Capture after the mirror matrix install so the batch GTE state is the
      * one the cells are actually projected with. */
@@ -1135,7 +1135,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
             int faceIndex;
             stream += 4;
             if ((unsigned)mode >= 6 || faceCount <= 0) break;
-            dispatch = mode < 2 ? mode * 2 + (g_ScratchEnvMode4 != 0)
+            dispatch = mode < 2 ? mode * 2 + (RENDER_ENV_MODE4 != 0)
                                 : mode - 2;
             stride = dispatchStride[dispatch];
             decodedFaces += faceCount;
@@ -1189,10 +1189,10 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                                 g_SceneTimer, cellIndex, faceIndex, (void *)cursor,
                                 dispatch,
-                                SCRATCH_MIRROR,
+                                RENDER_MIRROR,
                                 projected ? 0 : g_RageProjectionReject, depth,
                                 rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
-                                SCRATCH_FACE_OT_SHIFT,
+                                RENDER_FACE_OT_SHIFT,
                                 color[0], color[1], color[2],
                                 clut, tpage, textureWindow & 0xfffff,
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
@@ -1252,8 +1252,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     }
                 }
                 bias = (int8_t)stream[21];
-                uLevel = stream[22] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);
-                vLevel = stream[23] - (rawDepth >> SCRATCH_FACE_OT_SHIFT);
+                uLevel = stream[22] - (rawDepth >> RENDER_FACE_OT_SHIFT);
+                vLevel = stream[23] - (rawDepth >> RENDER_FACE_OT_SHIFT);
                 if (uLevel < 0) uLevel = 0;
                 if (vLevel < 0) vLevel = 0;
                 if (g_RageTerrainTraceEnabled &&
@@ -1267,8 +1267,8 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                             "terrain-lod timer=%d cell=%d face=%d mirror=%d "
                             "raw=%d shift=%d source=%u,%u level=%d,%d "
                             "steps=%u,%u\n",
-                            g_SceneTimer, cellIndex, faceIndex, SCRATCH_MIRROR,
-                            rawDepth, SCRATCH_FACE_OT_SHIFT, stream[22],
+                            g_SceneTimer, cellIndex, faceIndex, RENDER_MIRROR,
+                            rawDepth, RENDER_FACE_OT_SHIFT, stream[22],
                             stream[23], uLevel, vLevel,
                             uLevel < 31 ? 1u << uLevel : 0,
                             vLevel < 31 ? 1u << vLevel : 0);
@@ -1394,7 +1394,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             "clip=%d,%d visible=%d reject=%d\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps,
-                                            SCRATCH_MIRROR, g_RageTerrainClip0,
+                                            RENDER_MIRROR, g_RageTerrainClip0,
                                             g_RageTerrainClip1, childVisible,
                                             childVisible ? 0 : g_RageProjectionReject);
                                 }
@@ -1451,7 +1451,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps, (void *)cursor, 1,
-                                            SCRATCH_MIRROR, depth, bias,
+                                            RENDER_MIRROR, depth, bias,
                                             subDepth + 128,
                                             color[0], color[1], color[2],
                                             child[0].vx, child[0].vy,
@@ -1487,12 +1487,12 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
             }
         }
     }
-    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
     RageCaptureSubmitEnd();
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",
             decodedFaces, emittedFaces);
-    SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
+    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
     RageCaptureSubmitEnd();
 }

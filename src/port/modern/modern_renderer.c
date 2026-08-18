@@ -285,7 +285,7 @@ static float s_sliverCenterSy;
 static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
                               const RageCaptureFace *face) {
     if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        /* SCRATCH_MIRROR starts at the course-mirror polarity and toggles for
+        /* RENDER_MIRROR starts at the course-mirror polarity and toggles for
          * the rear-view pass. A mirrored course therefore has mirror=1 in
          * the main view and mirror=0 in the rear-view — treating the bit
          * itself as "rear view" hid the entire main 3D scene. */

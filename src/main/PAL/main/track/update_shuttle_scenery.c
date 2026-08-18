@@ -3,7 +3,8 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/track.h"
 #include "psyq/gte.h"
 
@@ -101,17 +102,17 @@ void DrawShuttleScenery(s32 instance) {
         mtx1Ptr = &mtx1;
         BuildRotMatrixZ(mtx1Ptr, state->angleZ);
         MulMatrix2(&mtx0, mtx1Ptr);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
+        MulMatrix2(RENDER_VIEW_MATRIX_GTE, mtx1Ptr);
         if ((RageSeriesCourseIndex()) >= 2) {
             drawArg = 0x3C;
         }
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state->position, mtx1Ptr);
         frameValue = g_CourseModelCount;
-        SCRATCH_ENV_MODE4 = 0;
+        RENDER_ENV_MODE4 = 0;
         drawValue = 1;
         if (drawArg < frameValue) {
             drawValue = drawArg;
         }
-        SubmitCourseModel(SCRATCHPAD, drawValue);
+        SubmitCourseModel(RENDER_WORKSPACE, drawValue);
     }
 }

@@ -2,7 +2,8 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/track.h"
 #include "psyq/gte.h"
 
@@ -17,13 +18,13 @@ void DrawFlybyScenery(void) {
         BuildRotMatrixY(&mtx0, 0x800 - state->rotationY);
         BuildRotMatrixX(&mtx1, state->rotationX);
         MulMatrix2(&mtx0, &mtx1);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx1);
+        MulMatrix2(RENDER_VIEW_MATRIX_GTE, &mtx1);
         BuildRotMatrixZ(&mtx0, state->rotationZ);
         MulMatrix2(&mtx1, &mtx0);
         SelectModelBank(2);
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state->position, &mtx0);
-        SCRATCH_ENV_MODE4 = 0;
-        SubmitModel(SCRATCHPAD, g_ModelBankCount < 1);
+        RENDER_ENV_MODE4 = 0;
+        SubmitModel(RENDER_WORKSPACE, g_ModelBankCount < 1);
     }
 }
 

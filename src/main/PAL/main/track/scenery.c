@@ -6,7 +6,8 @@
 #include "game/random.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/track_internal.h"
@@ -16,7 +17,7 @@
 
 
 static inline void ClearScratchRenderMode3DF68(void) {
-    SCRATCH_ENV_MODE4 = 0;
+    RENDER_ENV_MODE4 = 0;
 }
 
 void DrawStaticScenery(s32 shifted) {
@@ -60,7 +61,7 @@ void DrawStaticScenery(s32 shifted) {
 
     if (visible != 0) {
         BuildRotMatrixY(&mtx, g_StaticSceneryYaw);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+        MulMatrix2(RENDER_VIEW_MATRIX_GTE, &mtx);
 
         if (g_IsEnvironmentMode4 != 0) {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -70,7 +71,7 @@ void DrawStaticScenery(s32 shifted) {
             if (frameValue >= 0x3B) {
                 drawArg = 0x3A;
             }
-            SubmitCourseModel(SCRATCHPAD, drawArg);
+            SubmitCourseModel(RENDER_WORKSPACE, drawArg);
         } else {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
             frameValue = g_CourseModelCount;
@@ -79,7 +80,7 @@ void DrawStaticScenery(s32 shifted) {
             if (frameValue >= 0x3A) {
                 drawArg = 0x39;
             }
-            SubmitCourseModel2(SCRATCHPAD, drawArg);
+            SubmitCourseModel2(RENDER_WORKSPACE, drawArg);
         }
     }
 }
@@ -93,24 +94,24 @@ void DrawHighClassScenery(void) {
     (void)pad;
     state = &g_HighClassSceneryYaw;
     BuildRotMatrixY(&mtx, state[0]);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+    MulMatrix2(RENDER_VIEW_MATRIX_GTE, &mtx);
 
     if (g_IsEnvironmentMode4 != 0) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, state - 3, &mtx);
-        SCRATCH_ENV_MODE4 = 0x10000;
+        RENDER_ENV_MODE4 = 0x10000;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
-        SubmitCourseModel(SCRATCHPAD, drawArg);
+        SubmitCourseModel(RENDER_WORKSPACE, drawArg);
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, state - 3, &mtx);
-        SCRATCH_ENV_MODE4 = 0;
+        RENDER_ENV_MODE4 = 0;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
-        SubmitCourseModel2(SCRATCHPAD, drawArg);
+        SubmitCourseModel2(RENDER_WORKSPACE, drawArg);
     }
 }
 

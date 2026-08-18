@@ -11,7 +11,7 @@
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -155,7 +155,7 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
     u8 **scratch;
 
     if (g_AnimTimer & 8) {
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         *scratch = AddTilePrim(
             GamePrimaryOrderingTable(0),
             *scratch,

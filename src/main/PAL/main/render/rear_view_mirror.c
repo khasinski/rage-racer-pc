@@ -5,7 +5,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -30,7 +30,7 @@ void ResetMirrorState(void) {
  * is active, else 0.
  */
 s32 BeginMirrorPass(void) {
-    GameScratchpadRenderState *scratch;
+    RenderWorkspace *scratch;
     s32 mirrorEnabled;
     register s32 v0reg asm("$2");
     s32 v1reg;
@@ -38,7 +38,7 @@ s32 BeginMirrorPass(void) {
     MirrorPanelPositionAddress panelPosition;
 
     mirrorEnabled = 0;
-    scratch = SCRATCHPAD;
+    scratch = RENDER_WORKSPACE;
 
     if ((g_MirrorUnlocked != 0) &&
         (g_MirrorViewEnabled != 0) &&
@@ -114,11 +114,11 @@ s32 BeginMirrorPass(void) {
  * saved main-view matrix from g_CameraMatrixSaved.
  */
 void EndMirrorPass(void) {
-    GameScratchpadRenderState *scratch;
+    RenderWorkspace *scratch;
     register s32 v0reg asm("$2");
     s32 v1reg;
 
-    scratch = SCRATCHPAD;
+    scratch = RENDER_WORKSPACE;
 
     SetGeomOffset(0xA0, 0x78);
     SetGeomScreen(0x140);
@@ -203,7 +203,7 @@ void DrawRearViewMirror(s32 mode) {
         }
 
         if (BeginMirrorPass() != 0) {
-            scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+            scratch = &RENDER_PRIM_CURSOR_AS(void);
 
             DrawSkyBackground();
             packet = DrawMirrorFrame(*scratch);
@@ -216,9 +216,9 @@ void DrawRearViewMirror(s32 mode) {
                          [GAME_FRAME_OT_LENGTH - 1], prim);
             *scratch = packet;
             BuildVisibleCells(-0x3000, RagePortMirrorFarDepth(0x6000));
-            SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-            SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
-            SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+            SetRotMatrix(RENDER_VIEW_MATRIX_GTE);
+            RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
+            SubmitTerrainCells(RENDER_WORKSPACE, g_VisibleCellList, 0x40);
 
             packet = *scratch;
             SetDrawArea(packet,

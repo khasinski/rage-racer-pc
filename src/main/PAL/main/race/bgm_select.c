@@ -7,7 +7,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "psyq/gpu.h"
@@ -20,7 +20,7 @@ void DrawBgmSelectBar(void) {
     u8 *next;
 
     base = (u8 *)GamePrimaryOrderingTable(1);
-    next = SCRATCH_PRIM_CURSOR_AS(u8);
+    next = RENDER_PRIM_CURSOR_AS(u8);
     temp = (g_BgmSelectCursor == 0) ? 0x3FEC : 0x3FEF;
     tileW = 0x14;
     tileH = 0x10;
@@ -41,7 +41,7 @@ void DrawBgmSelectBar(void) {
     next = GameQueueSprite(base, next, 0x64, 0xC2, 0xBA, 0xC, 0, temp, 0x3FED);
     next = GameQueueSprite(base, next, 0x62, 0xC0, 0xBE, 0x10, 0x3C, 0, 0x3FEE);
     next = GameQueueTileTrans(base, next, 0x14, 0xB8, 0x118, 0x20, 0, 0, 0);
-    SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 0xB);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 0xB);
 }
 
 void AdvanceBgmShuffleBag(u32 track) {
@@ -170,7 +170,7 @@ void UpdateBgmSelect(void) {
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();
-    SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+    RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, 1);

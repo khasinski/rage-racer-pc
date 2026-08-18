@@ -2,7 +2,7 @@
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
 
@@ -14,7 +14,7 @@ void UpdateMenuMode(void) {
 
     c0 = g_AnimTimer;
     c1 = g_SceneTimer;
-    scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
+    scratch = RENDER_OT_BASE_AS(OT_TYPE);
     c0 += 1;
     c1 += 1;
     g_AnimTimer = c0;
@@ -26,9 +26,9 @@ void UpdateMenuMode(void) {
 
     screenRange = g_MenuScreen - 1;
     if (screenRange < 2) {
-        SCRATCH_OT_SHIFT = 1;
+        RENDER_OT_SHIFT = 1;
     } else {
-        SCRATCH_OT_SHIFT = 5;
+        RENDER_OT_SHIFT = 5;
     }
 
     if (g_MenuHandlerIndex > 0) {

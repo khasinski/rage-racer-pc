@@ -1,7 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 
 /*
  * The two-row money panel of the CAR SHOP screen: the player's balance on the
@@ -18,7 +18,7 @@ void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
     u32 rise;
     u32 risePhase;
 
-    ot = SCRATCH_OT_BASE;
+    ot = RENDER_OT_BASE;
 
     if (step == 0) {
         g_CarShopPanelSlide = 0;

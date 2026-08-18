@@ -5,7 +5,7 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "game/terrain_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/track.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
@@ -13,14 +13,14 @@
 
 void DrawTerrainCells(void) {
     BuildVisibleCells(-12288, 0x14000);
-    SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-    SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+    SetRotMatrix(RENDER_VIEW_MATRIX_GTE);
+    SubmitTerrainCells(RENDER_WORKSPACE, g_VisibleCellList, 0x40);
 }
 
 void DrawTerrainCellsWide(void) {
     BuildVisibleCells(0xFFFF6000, 0x14000);
-    SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-    SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+    SetRotMatrix(RENDER_VIEW_MATRIX_GTE);
+    SubmitTerrainCells(RENDER_WORKSPACE, g_VisibleCellList, 0x40);
 }
 
 inline static s32 DivideSigned32(s32 value)
@@ -69,15 +69,15 @@ void DrawSkyBackground(void)
   s32 screenX2;
   s32 screenX3;
   s32 savedCourseX0;
-  scratch->packetCursor = SCRATCH_PRIM_CURSOR_AS(u8);
-  scratch->orderingTable = SCRATCH_OT_BASE_AS(OT_TYPE);
-  scratch->cameraX = SCRATCH_VIEW_X;
-  scratch->cameraY = SCRATCH_VIEW_Y;
-  scratch->cameraZ = SCRATCH_VIEW_Z;
-  scratch->pitch = SCRATCH_VIEW_ANGLE_X;
-  scratch->yaw = SCRATCH_VIEW_ANGLE_Y;
-  scratch->roll = SCRATCH_VIEW_ANGLE_Z;
-  scratch->mirrorFlag = SCRATCH_MIRROR;
+  scratch->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
+  scratch->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
+  scratch->cameraX = RENDER_VIEW_X;
+  scratch->cameraY = RENDER_VIEW_Y;
+  scratch->cameraZ = RENDER_VIEW_Z;
+  scratch->pitch = RENDER_VIEW_ANGLE_X;
+  scratch->yaw = RENDER_VIEW_ANGLE_Y;
+  scratch->roll = RENDER_VIEW_ANGLE_Z;
+  scratch->mirrorFlag = RENDER_MIRROR;
   u8 *packetCursor = scratch->packetCursor;
   s32 savedCourseX1;
   s32 heldBandY;
@@ -201,7 +201,7 @@ void DrawSkyBackground(void)
     }
     leftViewAngle = rotatedBandY >> 0xC;
     coordinateAccumulator = leftViewAngle + 0x7800;
-    if (g_MirrorMode != SCRATCH_MIRROR)
+    if (g_MirrorMode != RENDER_MIRROR)
     {
       panelYFixed = 0x2400;
       panelYFixed = bandRowY + panelYFixed;
@@ -804,7 +804,7 @@ void DrawSkyBackground(void)
           packetCursor = nextPacket;
         }
       }
-      SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
+      RENDER_PRIM_CURSOR_AS(u8) = packetCursor;
     }
   }
   return;

@@ -4,7 +4,8 @@
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/track_internal.h"
@@ -24,19 +25,19 @@ void DrawPathScenery(void) {
     BuildRotMatrixY(&mtx0, 0x800 - g_PathSceneryTransform.rotation.vy);
     BuildRotMatrixX(mtx1Ptr, g_PathSceneryTransform.rotation.vx);
     MulMatrix2(&mtx0, mtx1Ptr);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
+    MulMatrix2(RENDER_VIEW_MATRIX_GTE, mtx1Ptr);
     BuildRotMatrixZ(&mtx0, g_PathSceneryTransform.rotation.vz);
     MulMatrix2(mtx1Ptr, &mtx0);
 
     SelectModelBank(1);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PathSceneryTransform.position, &mtx0);
     frameValue = g_ModelBankCount;
-    SCRATCH_ENV_MODE4 = 0;
+    RENDER_ENV_MODE4 = 0;
     drawId = 1;
     if (frameValue >= 0x24) {
         drawId = 0x23;
     }
-    SubmitModel(SCRATCHPAD, drawId);
+    SubmitModel(RENDER_WORKSPACE, drawId);
 
     {
         s32 base;
@@ -55,12 +56,12 @@ void DrawPathScenery(void) {
     MulMatrix2(&mtx0, mtx1Ptr);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PathSceneryTransform.position, mtx1Ptr);
     frameValue = g_ModelBankCount;
-    g_ScratchRenderMode = 0;
+    RENDER_ENV_MODE4 = 0;
     drawId = 1;
     if (frameValue >= 0x25) {
         drawId = 0x24;
     }
-    SubmitModel(SCRATCHPAD, drawId);
+    SubmitModel(RENDER_WORKSPACE, drawId);
 }
 
 
@@ -117,7 +118,7 @@ void UpdateTrackEventSound(s16 arg) {
 track_event_motion_done:
     if (s0 != 0) {
         s0 = (s0 * g_PlayerCar.speed) / 12775;
-        t = SCRATCH_VIEW_ANGLE_Y - 0xC00;
+        t = RENDER_VIEW_ANGLE_Y - 0xC00;
         s3 = (t + g_TrackPoints[g_PlayerCar.trackPointIndex].angle) & 0xFFF;
         if (s0 < 0 && (data & 2) > 0) {
             val = s0 * rcos(s3);
@@ -242,8 +243,8 @@ track_segment_found:
     v0 = s2 << 16;
     s0v = v0 >> 16;
     if (s0v != 0) {
-        s3 -= SCRATCH_VIEW_X;
-        s4 -= SCRATCH_VIEW_Z;
+        s3 -= RENDER_VIEW_X;
+        s4 -= RENDER_VIEW_Z;
         v0 = SquareRoot12((s3 * s3) / 4 + (s4 * s4) / 4);
         v0 = s2 - (v0 >> 11);
         s1 = v0;
@@ -255,7 +256,7 @@ track_segment_found:
             s1 = 0;
         }
         angle = Atan2(s3, s4);
-        v1 = SCRATCH_VIEW_ANGLE_Y;
+        v1 = RENDER_VIEW_ANGLE_Y;
         v1 -= 0xC00;
         v1 += angle;
         s0v = v1 & 0xFFF;

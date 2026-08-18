@@ -5,7 +5,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/track.h"
 #include "psyq/gpu.h"
 #include "string.h"
@@ -23,23 +23,23 @@ s32 GetCarUnlockLevel(s32 model) {
 }
 
 void InitRenderState(s32 otShift) {
-    SCRATCH_FACE_OT_SHIFT = 0xA;
-    SCRATCH_FT4_B = 0x80;
-    SCRATCH_FT4_G = 0x80;
-    SCRATCH_FT4_R = 0x80;
-    SCRATCH_FT4_CODE = POLY_FT4_CODE;
-    SCRATCH_GT4_B = 0xFF;
-    SCRATCH_GT4_G = 0xFF;
-    SCRATCH_GT4_R = 0xFF;
-    SCRATCH_GT4_CODE = POLY_GT4_CODE;
-    SCRATCH_CLIP_X1 = SCREEN_WIDTH;
-    SCRATCH_CLIP_Y1 = SCREEN_HEIGHT;
+    RENDER_FACE_OT_SHIFT = 0xA;
+    RENDER_FT4_B = 0x80;
+    RENDER_FT4_G = 0x80;
+    RENDER_FT4_R = 0x80;
+    RENDER_FT4_CODE = POLY_FT4_CODE;
+    RENDER_GT4_B = 0xFF;
+    RENDER_GT4_G = 0xFF;
+    RENDER_GT4_R = 0xFF;
+    RENDER_GT4_CODE = POLY_GT4_CODE;
+    RENDER_CLIP_X1 = SCREEN_WIDTH;
+    RENDER_CLIP_Y1 = SCREEN_HEIGHT;
     g_VisibleCellMask = g_MainVisibleCellMask;
-    SCRATCH_OT_SHIFT = otShift;
-    SCRATCH_CLIP_X0 = 0;
-    SCRATCH_CLIP_Y0 = 0;
+    RENDER_OT_SHIFT = otShift;
+    RENDER_CLIP_X0 = 0;
+    RENDER_CLIP_Y0 = 0;
     g_VisibleCellList = g_MainVisibleCellList;
-    SCRATCH_MIRROR = g_MirrorMode;
+    RENDER_MIRROR = g_MirrorMode;
 }
 
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
@@ -76,10 +76,10 @@ void SelectModelBank(s32 index) {
     NativeModelBank *bank;
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
-    SCRATCH_MODEL_TABLE1 = bank->table;
-    SCRATCH_MODEL_NORMALS = bank->normals;
+    RENDER_MODEL_TABLE1 = bank->table;
+    RENDER_MODEL_NORMALS = bank->normals;
     g_ModelBankCount = bank->modelCount;
-    SCRATCH_MODEL_MODELS = bank->models;
+    RENDER_MODEL_MODELS = bank->models;
 }
 
 void RegisterCourseModels(CourseModelAssetHeader *base) {
@@ -97,7 +97,7 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
     (void)&pad;
     entry = base->models;
     count = base->modelCount;
-    SCRATCH_COURSE_BANK = g_NativeCourseModels;
+    RENDER_COURSE_BANK = g_NativeCourseModels;
     if (count > GAME_COURSE_MODEL_LIMIT) count = GAME_COURSE_MODEL_LIMIT;
     g_CourseModelCount = count;
     i = 0;
@@ -129,9 +129,9 @@ void InstallTerrainCellData(void *data) {
     header = address.header;
     count = header->cellCount;
     if (count > GAME_TERRAIN_CELL_LIMIT) count = GAME_TERRAIN_CELL_LIMIT;
-    SCRATCH_CELL_TABLE = g_NativeTerrainCells;
+    RENDER_CELL_TABLE = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    SCRATCH_CELL_FACES = address.bytes + header->facesOffset;
+    RENDER_CELL_FACES = address.bytes + header->facesOffset;
     for (i = 0; i < count; i++) {
         g_NativeTerrainCells[i] = address.bytes + header->cellOffsets[i];
     }

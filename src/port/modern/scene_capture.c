@@ -8,7 +8,7 @@
 
 #include "game/render_internal.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 
 #include "scene_capture.h"
@@ -92,7 +92,7 @@ static GameFrameContext *CaptureFrameContext(void) {
  * +30-entry bias and the mirror pass's OT[1] both come through as data. */
 static void CaptureOtBase(uint8_t *table, int32_t *bias) {
     GameFrameContext *frame = CaptureFrameContext();
-    OT_TYPE *base = SCRATCH_OT_BASE_AS(OT_TYPE);
+    OT_TYPE *base = RENDER_OT_BASE_AS(OT_TYPE);
     int t;
     *table = 0;
     *bias = 0;
@@ -132,7 +132,7 @@ void RageCaptureModelBegin(int kind, int index, int fogged) {
     RageCaptureModelDraw *draw;
     if (!RageCaptureActive()) return;
     snapshot = &s_snapshots[s_current];
-    s_scopeStart = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
     if (snapshot->drawCount >= RAGE_CAPTURE_MAX_DRAWS) {
         snapshot->drawOverflow++;
         return;
@@ -140,14 +140,14 @@ void RageCaptureModelBegin(int kind, int index, int fogged) {
     draw = &snapshot->draws[snapshot->drawCount++];
     memset(draw, 0, sizeof(*draw));
     draw->kind = (uint8_t)kind;
-    draw->mirror = SCRATCH_MIRROR != 0;
+    draw->mirror = RENDER_MIRROR != 0;
     draw->fogged = (uint8_t)fogged;
-    draw->otShift = (uint8_t)SCRATCH_OT_SHIFT;
+    draw->otShift = (uint8_t)RENDER_OT_SHIFT;
     draw->modelIndex = index;
-    draw->renderMode = (uint32_t)g_ScratchRenderMode;
+    draw->renderMode = (uint32_t)RENDER_ENV_MODE4;
     draw->bankId = (uint64_t)(uintptr_t)(kind == RAGE_CAPTURE_KIND_MODEL
-                                             ? SCRATCH_MODEL_MODELS
-                                             : SCRATCH_COURSE_BANK);
+                                             ? RENDER_MODEL_MODELS
+                                             : RENDER_COURSE_BANK);
     CaptureOtBase(&draw->table, &draw->otBaseBias);
     CaptureGte(&draw->gte);
 }
@@ -159,13 +159,13 @@ void RageCaptureTerrainBegin(const void *cells, int count) {
     int i;
     if (!RageCaptureActive()) return;
     snapshot = &s_snapshots[s_current];
-    s_scopeStart = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
     if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN) return;
     batch = &snapshot->terrain[snapshot->terrainCount++];
     memset(batch, 0, sizeof(*batch));
-    batch->mirror = SCRATCH_MIRROR != 0;
-    batch->envMode4 = g_ScratchEnvMode4 != 0;
-    batch->otShift = (uint8_t)SCRATCH_OT_SHIFT;
+    batch->mirror = RENDER_MIRROR != 0;
+    batch->envMode4 = RENDER_ENV_MODE4 != 0;
+    batch->otShift = (uint8_t)RENDER_OT_SHIFT;
     if (count > RAGE_CAPTURE_MAX_CELLS) count = RAGE_CAPTURE_MAX_CELLS;
     batch->cellCount = (int16_t)count;
     for (i = 0; i < count * 4; i++) {
@@ -232,7 +232,7 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input) {
 void RageCaptureSubmitEnd(void) {
     const uint8_t *end;
     if (!RageCaptureActive() || s_scopeStart == NULL) return;
-    end = SCRATCH_PRIM_CURSOR_AS(uint8_t);
+    end = RENDER_PRIM_CURSOR_AS(uint8_t);
     if (end > s_scopeStart) {
         if (s_rangeCount < RAGE_CAPTURE_MAX_RANGES) {
             s_ranges[s_rangeCount].begin = s_scopeStart;
@@ -380,14 +380,14 @@ void RageCaptureFrameEnd(void) {
     snapshot->sceneId = g_SceneId;
     snapshot->courseMirror = g_MirrorMode != 0;
     snapshot->sceneTimer = g_SceneTimer;
-    view = SCRATCH_VIEW_MATRIX_GTE;
+    view = RENDER_VIEW_MATRIX_GTE;
     memcpy(snapshot->viewMatrix.m, view->m, sizeof(snapshot->viewMatrix.m));
     snapshot->viewMatrix.t[0] = view->t[0];
     snapshot->viewMatrix.t[1] = view->t[1];
     snapshot->viewMatrix.t[2] = view->t[2];
-    snapshot->viewPosition[0] = SCRATCH_VIEW_X;
-    snapshot->viewPosition[1] = SCRATCH_VIEW_Y;
-    snapshot->viewPosition[2] = SCRATCH_VIEW_Z;
+    snapshot->viewPosition[0] = RENDER_VIEW_X;
+    snapshot->viewPosition[1] = RENDER_VIEW_Y;
+    snapshot->viewPosition[2] = RENDER_VIEW_Z;
     frame = CaptureFrameContext();
     if (frame != NULL) {
         snapshot->displayHeight = frame->layout.environment.draw.clip.h;

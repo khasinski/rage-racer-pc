@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "game/camera_types.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/vector.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
@@ -109,7 +109,6 @@ typedef union ScreenOffset {
 
 extern Matrix g_MirrorViewMatrix;
 extern Matrix g_SceneLightMatrix;
-#define g_ScratchRenderMode SCRATCH_ENV_MODE4
 extern TrackRenderTable *g_TrackRenderTable;
 extern FontGlyph g_SmallFontGlyphs[];
 extern FontGlyph g_LargeFontGlyphs[];

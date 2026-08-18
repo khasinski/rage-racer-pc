@@ -13,7 +13,7 @@
 #include "game/menu.h"
 #include "game/save_internal.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
 
@@ -26,7 +26,7 @@ void UpdateTeamLogoScreen(void)
   s32 edge;
   s32 cnt;
   int buttonHeight;
-  ot = SCRATCH_OT_BASE;
+  ot = RENDER_OT_BASE;
   g_MenuAltLayout = 0;
   state = GameMenuBusy;
   if (state == 0)

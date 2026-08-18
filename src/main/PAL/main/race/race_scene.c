@@ -13,7 +13,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/race_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -534,7 +534,7 @@ void UpdateRaceScene(void) {
             DrawWrongWayWarning();
         }
         DrawSkyBackground();
-        SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+        RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
         DrawTerrainCells();
         DrawCourseObjects();
         if (g_GrandPrixMode != 0) {
@@ -677,7 +677,7 @@ update_race:
             g_WrongWayTimer = 0;
         }
 
-        SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+        RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
         DrawTerrainCells();
         DrawCourseObjects();
         if (g_GrandPrixMode != 0) {

@@ -5,7 +5,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_types.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
@@ -785,7 +785,7 @@ void DrawMenuLightBurst(s32 arg) {
     void *s3;
     MenuLightBurstBand l1;
     MenuLightBurstBand l2;
-    s3 = &SCRATCH_OT_BASE_AS(OT_TYPE)[0x2BF];
+    s3 = &RENDER_OT_BASE_AS(OT_TYPE)[0x2BF];
     l1 = g_MenuLightBurstBandX;
     l2 = g_MenuLightBurstBandY;
 
@@ -838,7 +838,7 @@ void DrawMenuLightBurst(s32 arg) {
             s0++;
         } while (s0 < 0x21);
 
-        prim = SCRATCH_PRIM_CURSOR_AS(u8);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
         SetPolyG4(prim);
         SetSemiTrans(prim, 0);
         {
@@ -876,7 +876,7 @@ void DrawMenuLightBurst(s32 arg) {
             prim += sizeof(POLY_G4);
             AddPrim(s3, oldPrim);
         }
-        SCRATCH_PRIM_CURSOR_AS(u8) = prim;
+        RENDER_PRIM_CURSOR_AS(u8) = prim;
         SetDrawClipRect(s3, 0x48, 0, 0x140, 0x1E0);
     }
     if (arg > 0) {
@@ -918,7 +918,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     s32 badgeXWord;
     s16 rectLeft;
 
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     if (step == 0) {
         *progress = 0;
         /* Initialization-only call; its caller ignores the return value. */

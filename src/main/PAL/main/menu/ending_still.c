@@ -3,7 +3,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/game_context.h"
 #include "psyq/gpu.h"
@@ -46,7 +46,7 @@ void DrawEndingStill(void) {
     base = (u8 *)GamePrimaryOrderingTable(0);
     height = 0xF0;
     clut = 0x3FDB;
-    scratch = SCRATCH_PRIM_CURSOR_SLOT;
+    scratch = RENDER_PRIM_CURSOR_SLOT;
 
     next = *scratch;
     next = GameQueueSprite(base, next, 0, 0, 0x100, height, 0, 0, clut);

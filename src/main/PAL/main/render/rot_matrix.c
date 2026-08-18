@@ -1,6 +1,6 @@
 #include "common.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gte.h"
 
 
@@ -60,12 +60,12 @@ void BuildRotMatrixX(Matrix *mtx, s32 angle) {
 
 void SetCameraRotMatrix(void) {
     Matrix mtx;
-    Matrix *scratch = SCRATCH_VIEW_MATRIX_GTE;
+    Matrix *scratch = RENDER_VIEW_MATRIX_GTE;
 
-    BuildRotMatrixY(scratch, SCRATCH_VIEW_ANGLE_Y);
-    BuildRotMatrixX(&mtx, SCRATCH_VIEW_ANGLE_X);
+    BuildRotMatrixY(scratch, RENDER_VIEW_ANGLE_Y);
+    BuildRotMatrixX(&mtx, RENDER_VIEW_ANGLE_X);
     MulMatrix2(&mtx, scratch);
-    BuildRotMatrixZ(&mtx, SCRATCH_VIEW_ANGLE_Z);
+    BuildRotMatrixZ(&mtx, RENDER_VIEW_ANGLE_Z);
     MulMatrix2(&mtx, scratch);
     BuildRotMatrixY(&mtx, 0x800);
     MulMatrix0(&mtx, scratch, &g_MirrorViewMatrix);

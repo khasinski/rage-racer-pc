@@ -1,7 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 
 s32 DrawClassChangeCurtain(s32 step) {
     void *scratch;
@@ -18,7 +18,7 @@ s32 DrawClassChangeCurtain(s32 step) {
     s32 yArg;
     u32 curtainPhase;
 
-    scratch = SCRATCH_OT_BASE;
+    scratch = RENDER_OT_BASE;
     delta = step;
 
     if (delta == 0) {

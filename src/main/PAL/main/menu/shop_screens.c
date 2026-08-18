@@ -6,7 +6,7 @@
 #include "game/menu.h"
 #include "game/menu_scripts_internal.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 
 
@@ -19,7 +19,7 @@ void UpdateCarShopScreen(void) {
     s32 u;
     u32 modalState;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuAltPanel(g_MenuAltPanelStep, g_MenuAltPanelStep2);
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
@@ -335,7 +335,7 @@ void UpdateEngineerShopScreen(void) {
     s32 res;
     s32 sel;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();

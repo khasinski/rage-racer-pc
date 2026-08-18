@@ -1,7 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 
 typedef union FadingMenuTableAddress {
@@ -29,7 +29,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
 
     /* Match note: materialize motionReg in $t2 before the first load. */
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     packed = motionReg->packedVelocity;
     shapeReg = shape;
     if (limit < elapsed) {
@@ -127,7 +127,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
 
     /* Match note: materialize motionReg in $t0 before the first load. */
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     xPacked = motionReg->packedVelocity0;
     yPacked = motionReg->packedVelocity1;
     shapeReg = shape;
@@ -246,7 +246,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     /* The barrier is load-bearing: without it the scheduler sinks the
      * scratchpad load past the second record load. */
     limit = record->limit;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     asm volatile("");
     packedSpeed = record->packedVelocity;
     if (limit < time) {
@@ -362,7 +362,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     s32 flags;
 
     duration = ctx->limit;
-    table = (u8 *)SCRATCH_OT_BASE_AS(OT_TYPE);
+    table = (u8 *)RENDER_OT_BASE_AS(OT_TYPE);
     velocity0 = ctx->packedVelocity;
     velocity1 = ctx->packedSizeVelocity;
     entry = desc;
@@ -579,7 +579,7 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     shapePtr = g_MenuRowScript[0].shape.spriteShape;
     elapsed = progress - g_MenuRowScript[0].time;
     motionPtr = g_MenuRowScript[0].motion.spriteMotion;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     countReg = count;
     packed = motionPtr->packedVelocity;
     i = 0;
@@ -677,7 +677,7 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
                    s32 flags, s32 textX, s32 textY, u8 *caption) {
     register s32 f asm("$16") = flags;
     register s32 p0 asm("$18") = x0;
-    register void *ot = SCRATCH_OT_BASE_AS(void);
+    register void *ot = RENDER_OT_BASE_AS(void);
     register s32 p1 asm("$20") = y0;
     s32 p2 = x1;
     s32 p3 = y1;
@@ -710,7 +710,7 @@ void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 useFlash) {
     s32 white;
     s32 counter;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     savedX0 = x0;
     savedY0 = y0;
     savedX1 = x1;

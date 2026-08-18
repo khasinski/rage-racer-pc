@@ -13,7 +13,7 @@
 #include "game/render_internal.h"
 #include "game/fmv_internal.h"
 #include "game/save_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -78,7 +78,7 @@ void DrawTitleFadeOverlay(s32 brightness) {
 
     color = (u8)brightness;
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
     current = *scratch;
     next = GameQueueTileTrans(base, current, 0, 0x18, 0x140, 0xC0, color, color, color);
     *scratch = QueueDrawModePrim(base, next, 0x29);
@@ -100,7 +100,7 @@ void DrawPressStartPrompt(void) {
     sinValue = rsin(((g_AnimTimer * 3) << 5) & 0xFE0);
     frame = (sinValue / 64) + 0x80;
 
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
     base = (u8 *)GamePrimaryOrderingTable(0);
     next = *scratch;
     next = GameQueueShadedSprite(base, next, 0x68, 0xC8, 0x70, 0x10, 0x70, 0xA0, 0x7E84, frame);
@@ -133,7 +133,7 @@ void DrawMainMenuRows(void) {
     s32 y;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = RENDER_PRIM_CURSOR_AS(void);
     row = 0;
     i = 0;
     one = 1;
@@ -179,7 +179,7 @@ void DrawMainMenuRows(void) {
         row++;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(void) = scratch;
+    RENDER_PRIM_CURSOR_AS(void) = scratch;
 }
 
 void UpdateMainMenuOpen(void) {

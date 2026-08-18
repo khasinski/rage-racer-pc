@@ -8,7 +8,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/game_context.h"
@@ -42,7 +42,7 @@ void DrawSeriesClearedWash(s32 x, s32 y) {
     s32 height;
 
     ot = (u8 *)GamePrimaryOrderingTable(0);
-    prim = SCRATCH_PRIM_CURSOR_AS(void);
+    prim = RENDER_PRIM_CURSOR_AS(void);
 
     redStack = y;
     green = x / 8 + redStack;
@@ -80,7 +80,7 @@ void DrawSeriesClearedWash(s32 x, s32 y) {
     width = 0x140;
     height = 0xF0;
     prim = GameQueueTileTrans(ot, prim, 0, 0, width, height, redStack, green, temp);
-    SCRATCH_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot, prim, 0x49);
+    RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot, prim, 0x49);
 }
 
 void UpdateReplayScene(void) {
@@ -169,7 +169,7 @@ void UpdateReplayScene(void) {
     }
     UpdateReplayCars();
     UpdateCamera(CAMERA_VIEW_TRACK, (GameRenderObject *)&g_PlayerCar);
-    SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+    RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     if (g_GrandPrixMode != 0) {
         DrawPlayerCarOnly();
@@ -204,7 +204,7 @@ void DrawResultScreen(void) {
 
     width = 0x140;
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
 
     next = *scratch;
     next = AddTilePrim(base, next, 0, 0, width, 0x30, 0x85, 0x15, 0xE);
@@ -221,7 +221,7 @@ void DrawGrandprixIntro(void) {
         s32 height;
         s32 color;
 
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         base = (u8 *)GamePrimaryOrderingTable(0);
         height = 8;
         color = 0x78CB;
@@ -282,7 +282,7 @@ void DrawGrandprixIntro(void) {
         u8 *next;
         s32 selectionIndex;
 
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         DrawResultScreen();
 
         base = (u8 *)GamePrimaryOrderingTable(0);

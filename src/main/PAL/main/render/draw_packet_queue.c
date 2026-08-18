@@ -3,7 +3,7 @@
 #include "game/render_internal.h"
 #include "game/prim.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/vector.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
@@ -159,8 +159,8 @@ void SetDrawModePacket(u8 *prim, s32 tpage) {
 /* World position in full-precision components; the camera keeps one of these
  * in the scratchpad at 0x1F800008. */
 /* The per-frame scratchpad block: camera position at +8, view matrix at +0x28. */
-#define SCRATCH_CAMERA_POS (&SCRATCH_VIEW_STATE->position.vector)
-#define SCRATCH_VIEW_MATRIX (SCRATCH_VIEW_MATRIX_GTE)
+#define SCRATCH_CAMERA_POS (&RENDER_VIEW_STATE->position.vector)
+#define OBJECT_VIEW_MATRIX (RENDER_VIEW_MATRIX_GTE)
 
 /*
  * Per-object GTE setup: takes the object's offset from the camera through the
@@ -172,7 +172,7 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     w->relative[0] = pos->x - SCRATCH_CAMERA_POS->x;
     w->relative[1] = pos->y - SCRATCH_CAMERA_POS->y;
     w->relative[2] = pos->z - SCRATCH_CAMERA_POS->z;
-    ApplyMatrix(SCRATCH_VIEW_MATRIX, w->relative, &w->view);
+    ApplyMatrix(OBJECT_VIEW_MATRIX, w->relative, &w->view);
     w->mtx.t[0] = w->view.x * 4;
     w->mtx.t[1] = w->view.y * 4;
     w->mtx.t[2] = w->view.z * 4;
@@ -180,7 +180,7 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     SetTransMatrix(&w->mtx);
 #ifdef __psyz
     if (RageDiagnosticsEnabled("render.car_draw_trace") &&
-        g_RageScratchpadState.mode == 9) {
+        g_RenderWorkspace.mode == 9) {
         const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
             printf("object-matrix timer=%d position=%d,%d,%d relative=%d,%d,%d "

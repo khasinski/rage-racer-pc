@@ -2,11 +2,11 @@
 #include "game/asset.h"
 #include "game/render_types.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gpu.h"
 
 void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
     packet.bytes = *scratch;
@@ -59,7 +59,7 @@ void GameDrawText8x8Shaded(
     const u8 *str,
     s32 clutIndex,
     u8 intensity) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
     u8 *prim;
     RenderBufferAddress primAddress;
@@ -117,7 +117,7 @@ void GameDrawText8x8Shaded(
 }
 
 void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
     packet.bytes = *scratch;
@@ -200,7 +200,7 @@ typedef union TextRenderWork {
         s32 clut;
     } home;
 
-    packet.bytes = SCRATCH_PRIM_CURSOR_AS(u8);
+    packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
     home.y = y;
     home.clut = clutIndex;
     first = *text;
@@ -352,7 +352,7 @@ typedef union TextRenderWork {
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    SCRATCH_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
+    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
 #undef OPAQUE_VALUE
 }
 

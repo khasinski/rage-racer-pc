@@ -5,7 +5,7 @@
 
 #include "game/menu_types.h"
 #include "game/player_car_aliases.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/vector.h"
 #include "psyq/gte.h"

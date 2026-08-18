@@ -4,7 +4,7 @@
 #include "game/menu.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 
@@ -44,7 +44,7 @@ void DrawControllerConfigScreen(void) {
         }
     } else {
         ot = (u8 *)GameSecondaryOrderingTable(51);
-        prim = SCRATCH_PRIM_CURSOR_AS(u8);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
         prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, leftLit);
         prim = DrawRightArrow(ot, prim, 0x108, 0xE0, rightLit);
         if (g_PadType == 0x23) {
@@ -57,7 +57,7 @@ void DrawControllerConfigScreen(void) {
             prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, g_PadMappingIndex);
             prim = DrawPadConfigDiagram(ot, prim);
         }
-        SCRATCH_PRIM_CURSOR_AS(u8) = prim;
+        RENDER_PRIM_CURSOR_AS(u8) = prim;
     }
 }
 
@@ -132,7 +132,7 @@ void UpdateControllerConfigScreen(void) {
  * inside a white border, both drawn into the 0xD0 sub-buffer of the current
  * draw buffer from the shared scratchpad packet cursor. */
 void DrawNegconNeutralScreen(void) {
-    u8 **cursor = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **cursor = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *ot;
     u8 *prim;
 

@@ -4,7 +4,7 @@
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "psyq/gpu.h"
 
 
@@ -29,7 +29,7 @@ void DrawRaceHudLabels(s32 mode) {
         } while (i < count);
     }
 
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
     *scratch = QueueDrawModePrim(ot, *scratch, 9);
 }
 

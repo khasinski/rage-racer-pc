@@ -2,7 +2,7 @@
 #include "game/menu_internal.h"
 #include "game/menu_types.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/vector.h"
 
 
@@ -30,7 +30,7 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     PaintColorTable *srcTable;
     Rgb *color;
 
-    ot = SCRATCH_OT_BASE;
+    ot = RENDER_OT_BASE;
     srcTable = &g_PaintColorTable;
     tableSource = srcTable;
     localTable = *tableSource;
@@ -116,7 +116,7 @@ void DrawOwnedCarCounter(s32 owned, s32 step) {
     s16 y;
 
     ownedCount = owned;
-    ot = SCRATCH_OT_BASE;
+    ot = RENDER_OT_BASE;
     a1v = step;
 
     if (ownedCount == 0) {

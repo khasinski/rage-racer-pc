@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
+#include "game/scratchpad_legacy.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "game/player_car_internal.h"

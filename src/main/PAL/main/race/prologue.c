@@ -9,7 +9,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/race_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/game_context.h"
@@ -168,7 +168,7 @@ void DrawPrologueText(void) {
         s32 tmp;
 
         fadeLevel = g_FadeLevel;
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         tmp = fadeLevel * 7;
         greenScale = tmp * 32;
         prim = *scratch;
@@ -244,7 +244,7 @@ void UpdatePrologue(void) {
 
     DrawCars();
     DrawSkyBackground();
-    SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+    RENDER_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, active);

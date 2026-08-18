@@ -23,7 +23,7 @@
 #include "game/audio.h"
 #include "game/asset.h"
 #include "game/car_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_workspace.h"
 #include "game/render_internal.h"
 #include "game/sound.h"
 
@@ -295,9 +295,9 @@ int main(int argc, char **argv) {
         }
         printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
                "sky_row=%d key=%p",
-               SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
-               SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-               SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR, g_SkyRowBase,
+               RENDER_VIEW_X, RENDER_VIEW_Y, RENDER_VIEW_Z,
+               RENDER_VIEW_ANGLE_X, RENDER_VIEW_ANGLE_Y,
+               RENDER_VIEW_ANGLE_Z, RENDER_MIRROR, g_SkyRowBase,
                (void *)g_RaceIntroCameraCursor);
         printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
                g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
