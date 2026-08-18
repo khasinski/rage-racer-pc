@@ -13,6 +13,7 @@
 #include "modern_gpu_state.h"
 #include "modern_gpu_resources.h"
 #include "modern_profiler.h"
+#include "modern_postprocess.h"
 #include "modern_renderer_diagnostics.h"
 #include "modern_scene_interpolation.h"
 #include "../runtime_config.h"
@@ -1368,37 +1369,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
 /* The texture the frame chain ends in: composite > fxaa > raw target. */
 static SDL_GPUTexture *ModernPresentTexture(void) {
-    if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
-        s_gpu.finalTarget != NULL && s_gpu.pipeComposite != NULL) {
-        return s_gpu.finalTarget;
-    }
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE && s_gpu.postTarget != NULL) {
-        return s_gpu.postTarget;
-    }
-    return s_gpu.target;
-}
-
-static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
-                                 SDL_GPUGraphicsPipeline *pipeline,
-                                 SDL_GPUTexture *target,
-                                 SDL_GPUTexture *sources[], int sourceCount) {
-    const SDL_GPUColorTargetInfo color = {
-        .texture = target,
-        .load_op = SDL_GPU_LOADOP_DONT_CARE,
-        .store_op = SDL_GPU_STOREOP_STORE,
-    };
-    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, NULL);
-    SDL_GPUTextureSamplerBinding bindings[2];
-    int i;
-    if (pass == NULL) return;
-    for (i = 0; i < sourceCount && i < 2; i++) {
-        bindings[i].texture = sources[i];
-        bindings[i].sampler = s_gpu.samplerLinear;
-    }
-    SDL_BindGPUGraphicsPipeline(pass, pipeline);
-    SDL_BindGPUFragmentSamplers(pass, 0, bindings, (Uint32)sourceCount);
-    SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
-    SDL_EndGPURenderPass(pass);
+    return ModernPostProcessOutput(&s_gpu, &s_config);
 }
 
 static void ModernRender(const RageSceneSnapshot *snapshot) {
@@ -1496,34 +1467,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPURenderPass(pass);
         }
     }
-    {
-        SDL_GPUTexture *chain = s_gpu.target;
-        if (s_config.modernPost != RAGE_MODERN_POST_NONE &&
-            s_gpu.pipePost != NULL && s_gpu.postTarget != NULL) {
-            SDL_GPUTexture *sources[1];
-            sources[0] = chain;
-            ModernFullscreenPass(cmd, s_gpu.pipePost, s_gpu.postTarget, sources, 1);
-            chain = s_gpu.postTarget;
-        }
-        if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
-            s_gpu.pipeComposite != NULL && s_gpu.finalTarget != NULL) {
-            SDL_GPUTexture *sources[2];
-            if (s_config.modernBloom > 0.0f && s_gpu.pipeBright != NULL) {
-                sources[0] = chain;
-                ModernFullscreenPass(cmd, s_gpu.pipeBright, s_gpu.bloomA, sources, 1);
-                sources[0] = s_gpu.bloomA;
-                ModernFullscreenPass(cmd, s_gpu.pipeBlurH, s_gpu.bloomB, sources, 1);
-                sources[0] = s_gpu.bloomB;
-                ModernFullscreenPass(cmd, s_gpu.pipeBlurV, s_gpu.bloomA, sources, 1);
-            }
-            sources[0] = chain;
-            /* With bloom off the composite's kBloom constant is 0 and the
-             * second texture is never sampled; any resident texture works. */
-            sources[1] = s_gpu.bloomA != NULL ? s_gpu.bloomA : chain;
-            ModernFullscreenPass(cmd, s_gpu.pipeComposite, s_gpu.finalTarget, sources,
-                                 2);
-        }
-    }
+    ModernPostProcessRun(cmd, &s_gpu, &s_config);
     if (s_ringEnabled && s_gpu.ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
             .source = {.texture = ModernPresentTexture(),
