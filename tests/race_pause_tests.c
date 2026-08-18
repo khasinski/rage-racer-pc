@@ -1,5 +1,5 @@
 #include "game/race_pause.h"
-#include "game/state.h"
+#include "game/pad.h"
 
 static int failures;
 #define EXPECT_EQ(expected, actual) do {                                      \

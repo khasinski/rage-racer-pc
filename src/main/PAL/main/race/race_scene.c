@@ -10,6 +10,7 @@
 #include "game/race.h"
 #include "game/race_pause.h"
 #include "game/race_end.h"
+#include "game/race_session.h"
 #include "game/random.h"
 #include "game/records_internal.h"
 #include "game/render.h"
@@ -392,10 +393,10 @@ void UpdateRaceScene(void) {
     s32 value;
     u32 timerValue;
     s32 next;
-    RacePauseState pauseState;
-    RacePauseCommands pauseCommands;
-    RaceEndState endState;
-    RaceEndCommands endCommands;
+    RaceSession session;
+    RaceSessionCommands sessionCommands;
+    RacePauseCommands *pauseCommands;
+    RaceEndCommands *endCommands;
     s32 commandIndex;
 
     value = g_SceneTimer + 1;
@@ -407,55 +408,54 @@ void UpdateRaceScene(void) {
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
     }
 
-    pauseState = (RacePauseState){
-        g_SceneTimer, g_RacePaused, g_PauseDebounce, g_RacePhase,
-        g_RaceOptionCursor, g_GrandPrixMode, g_RaceFadeTimer,
-        g_CourseProgress->retriesRemaining, s_RetireCameraActive};
-    RacePauseStep(&pauseState, g_GameInput.pressed, &pauseCommands);
-    g_SceneTimer = pauseState.sceneTimer;
-    g_RacePaused = pauseState.paused;
-    g_PauseDebounce = pauseState.debounce;
-    g_RacePhase = pauseState.phase;
-    g_RaceOptionCursor = pauseState.optionCursor;
-    g_RaceFadeTimer = pauseState.fadeTimer;
-    s_RetireCameraActive = pauseState.retireCameraActive;
+    session = (RaceSession){
+        {g_SceneTimer, g_RacePaused, g_PauseDebounce, g_RacePhase,
+         g_RaceOptionCursor, g_GrandPrixMode, g_RaceFadeTimer,
+         g_CourseProgress->retriesRemaining, s_RetireCameraActive},
+        {g_RacePhase, g_GrandPrixMode, g_RaceFadeTimer,
+         g_CourseProgress->retriesRemaining}};
+    RaceSessionStep(&session, g_GameInput.pressed, &sessionCommands);
+    pauseCommands = &sessionCommands.pause;
+    endCommands = &sessionCommands.end;
+    g_SceneTimer = session.pause.sceneTimer;
+    g_RacePaused = session.pause.paused;
+    g_PauseDebounce = session.pause.debounce;
+    g_RacePhase = session.pause.phase;
+    g_RaceOptionCursor = session.pause.optionCursor;
+    g_RaceFadeTimer = session.pause.fadeTimer;
+    s_RetireCameraActive = session.pause.retireCameraActive;
 
-    if (pauseCommands.pauseCd) PauseCdAudio();
-    if (pauseCommands.resumeCd) ResumeCdAudio();
-    if (pauseCommands.setEffectVoices)
-        ForceAllEffectVoicesEnabled(pauseCommands.effectVoicesEnabled);
-    for (commandIndex = 0; commandIndex < pauseCommands.soundCueCount;
+    if (pauseCommands->pauseCd) PauseCdAudio();
+    if (pauseCommands->resumeCd) ResumeCdAudio();
+    if (pauseCommands->setEffectVoices)
+        ForceAllEffectVoicesEnabled(pauseCommands->effectVoicesEnabled);
+    for (commandIndex = 0; commandIndex < pauseCommands->soundCueCount;
          commandIndex++)
-        PlaySoundCue(pauseCommands.soundCues[commandIndex]);
-    if (pauseCommands.updateTimeAttackRecord) {
+        PlaySoundCue(pauseCommands->soundCues[commandIndex]);
+    if (pauseCommands->updateTimeAttackRecord) {
         g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
             g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
     }
-    if (pauseCommands.seedFinishCamera) SeedFinishCamera(&g_PlayerCar);
-    if (pauseCommands.startCdFadeFrames)
-        StartCdVolumeFade(pauseCommands.startCdFadeFrames);
-    if (pauseCommands.exitRaceScene >= 0)
-        ExitRaceScene(pauseCommands.exitRaceScene);
+    if (pauseCommands->seedFinishCamera) SeedFinishCamera(&g_PlayerCar);
+    if (pauseCommands->startCdFadeFrames)
+        StartCdVolumeFade(pauseCommands->startCdFadeFrames);
+    if (pauseCommands->exitRaceScene >= 0)
+        ExitRaceScene(pauseCommands->exitRaceScene);
 
-    endState = (RaceEndState){g_RacePhase, g_GrandPrixMode,
-                              g_RaceFadeTimer,
-                              g_CourseProgress->retriesRemaining};
-    RaceEndStep(&endState, &endCommands);
-    g_RaceFadeTimer = endState.fadeTimer;
-    if (endCommands.drawEndBannerIntensity >= 0)
-        DrawRaceEndBanner(endCommands.drawEndBannerIntensity);
-    if (endCommands.drawLostCaptionIntensity >= 0)
-        DrawLostRaceCaption(endCommands.drawLostCaptionIntensity);
-    if (endCommands.drawFadeIntensity >= 0)
-        DrawFullscreenFadeTile(endCommands.drawFadeIntensity, 0x49);
-    if (endCommands.requestCdTrack >= 0)
-        RequestCdTrack(endCommands.requestCdTrack);
-    if (endCommands.startCd) StartCdAudio();
-    if (endCommands.exitScene >= 0) ExitRaceScene(endCommands.exitScene);
-    if (endCommands.disableMirror) g_MirrorViewEnabled = 0;
+    if (endCommands->drawEndBannerIntensity >= 0)
+        DrawRaceEndBanner(endCommands->drawEndBannerIntensity);
+    if (endCommands->drawLostCaptionIntensity >= 0)
+        DrawLostRaceCaption(endCommands->drawLostCaptionIntensity);
+    if (endCommands->drawFadeIntensity >= 0)
+        DrawFullscreenFadeTile(endCommands->drawFadeIntensity, 0x49);
+    if (endCommands->requestCdTrack >= 0)
+        RequestCdTrack(endCommands->requestCdTrack);
+    if (endCommands->startCd) StartCdAudio();
+    if (endCommands->exitScene >= 0) ExitRaceScene(endCommands->exitScene);
+    if (endCommands->disableMirror) g_MirrorViewEnabled = 0;
 
     if (g_RacePaused != 0) {
-        if (pauseCommands.setPauseReverb) SetReverbDepth(0x28, 0x28);
+        if (pauseCommands->setPauseReverb) SetReverbDepth(0x28, 0x28);
         DrawRaceOptionMenu(g_RaceOptionCursor);
         if (g_GrandPrixMode == 0) {
             DrawSplitTimes();

@@ -1,5 +1,5 @@
 #include "game/race_pause.h"
-#include "game/state.h"
+#include "game/pad.h"
 
 static void RacePauseQueueSound(RacePauseCommands *commands, s32 cue) {
     if (commands->soundCueCount < 2) {
