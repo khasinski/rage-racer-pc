@@ -2,6 +2,7 @@
 #define GAME_MENU_CONTROLLER_H
 
 #include "common.h"
+#include "game/pad.h"
 
 typedef enum MenuAction {
     MENU_ACTION_NONE,
@@ -14,9 +15,22 @@ typedef struct MenuCursorResult {
     u8 moved;
 } MenuCursorResult;
 
+typedef struct MenuSession {
+    s32 selection;
+    s32 itemCount;
+    u32 enabledMask;
+} MenuSession;
+
+typedef struct MenuSessionCommands {
+    MenuAction action;
+    u8 moved;
+} MenuSessionCommands;
+
 /* enabledMask uses one bit per row.  Passing 0 enables every row. */
 MenuCursorResult MenuCursorMove(s32 selection, s32 itemCount,
                                 s32 direction, u32 enabledMask);
 MenuAction MenuResolveAction(u16 pressed, u16 confirmMask, u16 cancelMask);
+MenuSessionCommands MenuSessionStep(MenuSession *session, s32 direction,
+                                    u16 pressed);
 
 #endif

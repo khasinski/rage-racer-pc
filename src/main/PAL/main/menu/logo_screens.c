@@ -25,11 +25,11 @@ void UpdateTeamLogoScreen(void)
   void *ot;
   s32 state;
   s32 sel;
-  s32 edge;
   s32 cnt;
   s32 direction;
   int buttonHeight;
-  MenuCursorResult navigation;
+  MenuSession menu;
+  MenuSessionCommands commands;
   ot = RENDER_OT_BASE;
   g_MenuAltLayout = 0;
   state = GameMenuBusy;
@@ -48,11 +48,11 @@ void UpdateTeamLogoScreen(void)
       g_MenuOverlayPattern = -1;
       direction = ((g_GameInput.pressed & PAD_UP) != 0) -
                   ((g_GameInput.pressed & PAD_DOWN) != 0);
-      navigation = MenuCursorMove(g_TeamLogoOption, 3, -direction, 0);
-      g_TeamLogoOption = navigation.selection;
-      if (navigation.moved) PlaySoundCue(1);
-      edge = g_GameInput.pressed;
-      if (edge & PAD_CONFIRM)
+      menu = (MenuSession){g_TeamLogoOption, 3, 0};
+      commands = MenuSessionStep(&menu, -direction, g_GameInput.pressed);
+      g_TeamLogoOption = menu.selection;
+      if (commands.moved) PlaySoundCue(1);
+      if (commands.action == MENU_ACTION_CONFIRM)
       {
         sel = g_TeamLogoOption;
         if (sel == 0)
@@ -82,7 +82,7 @@ void UpdateTeamLogoScreen(void)
         }
       }
       else
-        if (edge & PAD_CANCEL)
+        if (commands.action == MENU_ACTION_CANCEL)
       {
         PlaySoundCue(3);
         GameMenuBusy = 2;

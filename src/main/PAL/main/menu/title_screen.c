@@ -233,7 +233,8 @@ void UpdateMainMenuInput(void) {
     s32 idx;
     s32 direction;
     u16 flags;
-    MenuCursorResult navigation;
+    MenuSession menu;
+    MenuSessionCommands commands;
 
     if (*flagp != 0) {
         g_FrontendIdleTimer = 0;
@@ -242,12 +243,13 @@ void UpdateMainMenuInput(void) {
     idx = g_TitleMenuSelection;
 
     direction = (flags & PAD_UP) ? -1 : ((flags & PAD_DOWN) ? 1 : 0);
-    navigation = MenuCursorMove(
-        idx, 5, direction, g_ExtraGrandPrixUnlocked ? 0x1Fu : 0x1Du);
-    g_TitleMenuSelection = navigation.selection;
-    if (navigation.moved) PlaySoundCue(1);
+    menu = (MenuSession){
+        idx, 5, g_ExtraGrandPrixUnlocked ? 0x1Fu : 0x1Du};
+    commands = MenuSessionStep(&menu, direction, flags);
+    g_TitleMenuSelection = menu.selection;
+    if (commands.moved) PlaySoundCue(1);
 
-    if (g_GameInput.pressed & PAD_CONFIRM) {
+    if (commands.action == MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
         if (g_AssetLoadState != 0) {
             ResetAssetLoader();

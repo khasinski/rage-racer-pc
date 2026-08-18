@@ -33,3 +33,15 @@ MenuAction MenuResolveAction(u16 pressed, u16 confirmMask, u16 cancelMask) {
     if ((pressed & cancelMask) != 0) return MENU_ACTION_CANCEL;
     return MENU_ACTION_NONE;
 }
+
+MenuSessionCommands MenuSessionStep(MenuSession *session, s32 direction,
+                                    u16 pressed) {
+    MenuCursorResult cursor = MenuCursorMove(
+        session->selection, session->itemCount, direction,
+        session->enabledMask);
+    MenuSessionCommands commands;
+    session->selection = cursor.selection;
+    commands.moved = cursor.moved;
+    commands.action = MenuResolveAction(pressed, PAD_CONFIRM, PAD_CANCEL);
+    return commands;
+}

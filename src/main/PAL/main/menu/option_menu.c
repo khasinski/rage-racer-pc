@@ -40,20 +40,20 @@ void DrawOptionRootMenu(void) {
 /* g_GameModeHandlers[1]: the six-row root menu and where each row goes. */
 void UpdateOptionRootMenu(void) {
     s32 value;
-    s32 buttons;
     s32 direction;
-    MenuCursorResult navigation;
+    MenuSession menu;
+    MenuSessionCommands commands;
 
     DrawOptionRootMenu();
 
     direction = (g_GameInput.pressed & PAD_UP) ? -1 :
                 ((g_GameInput.pressed & PAD_DOWN) ? 1 : 0);
-    navigation = MenuCursorMove(g_OptionMenuCursor, 6, direction, 0);
-    g_OptionMenuCursor = navigation.selection;
-    if (navigation.moved) PlaySoundCue(1);
+    menu = (MenuSession){g_OptionMenuCursor, 6, 0};
+    commands = MenuSessionStep(&menu, direction, g_GameInput.pressed);
+    g_OptionMenuCursor = menu.selection;
+    if (commands.moved) PlaySoundCue(1);
 
-    buttons = g_GameInput.pressed;
-    if (buttons & 0x860) {
+    if (commands.action == MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
         switch (g_OptionMenuCursor) {
         case 0:
@@ -94,7 +94,7 @@ void UpdateOptionRootMenu(void) {
     } else {
         s32 masked;
 
-        masked = buttons & 0x90;
+        masked = commands.action == MENU_ACTION_CANCEL;
         if (masked) {
             PlaySoundCue(3);
             StartOptionMenuExit(2);
@@ -198,23 +198,25 @@ void DrawClassRecordGrid(void) {
 void UpdateClassRecordMenu(void) {
     u16 buttons;
     s32 direction;
-    MenuCursorResult navigation;
+    MenuSession menu;
+    MenuSessionCommands commands;
 
     DrawClassRecordGrid();
 
     buttons = g_GameInput.pressed;
     direction = ((buttons & PAD_UP) != 0) - ((buttons & PAD_DOWN) != 0);
-    navigation = MenuCursorMove(g_ClassRecordMenuCursor, 2, -direction, 0);
-    g_ClassRecordMenuCursor = navigation.selection;
-    if (navigation.moved) PlaySoundCue(1);
-    if (buttons & 0x860) {
+    menu = (MenuSession){g_ClassRecordMenuCursor, 2, 0};
+    commands = MenuSessionStep(&menu, -direction, buttons);
+    g_ClassRecordMenuCursor = menu.selection;
+    if (commands.moved) PlaySoundCue(1);
+    if (commands.action == MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
         if (g_ClassRecordMenuCursor != 0) {
             g_GameMode = 1;
         } else {
             g_GameMode = 3;
         }
-    } else if (buttons & 0x90) {
+    } else if (commands.action == MENU_ACTION_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
     }
@@ -360,15 +362,17 @@ void DrawSoundOptionScreen(void) {
 void UpdateSoundOptionMenu(void) {
     u16 buttons;
     s32 direction;
-    MenuCursorResult navigation;
+    MenuSession menu;
+    MenuSessionCommands commands;
 
     DrawSoundOptionScreen();
     buttons = g_GameInput.pressed;
     direction = ((buttons & PAD_UP) != 0) - ((buttons & PAD_DOWN) != 0);
-    navigation = MenuCursorMove(g_SoundOptionCursor, 4, -direction, 0);
-    g_SoundOptionCursor = navigation.selection;
-    if (navigation.moved) PlaySoundCue(1);
-    if (buttons & 0x860) {
+    menu = (MenuSession){g_SoundOptionCursor, 4, 0};
+    commands = MenuSessionStep(&menu, -direction, buttons);
+    g_SoundOptionCursor = menu.selection;
+    if (commands.moved) PlaySoundCue(1);
+    if (commands.action == MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 5;
         switch (g_SoundOptionCursor) {
@@ -385,7 +389,7 @@ void UpdateSoundOptionMenu(void) {
             g_GameMode = 1;
             break;
         }
-    } else if (buttons & 0x90) {
+    } else if (commands.action == MENU_ACTION_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
     }

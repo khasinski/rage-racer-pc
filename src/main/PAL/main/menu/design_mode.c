@@ -87,7 +87,8 @@ void UpdateDesignModeScreen(void) {
     s32 sel;
     s32 direction;
     u16 edge;
-    MenuCursorResult navigation;
+    MenuSession menu;
+    MenuSessionCommands commands;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
@@ -100,10 +101,12 @@ void UpdateDesignModeScreen(void) {
             g_MenuOverlayPattern = -1;
             direction = ((g_GameInput.pressed & PAD_UP) != 0) -
                         ((g_GameInput.pressed & PAD_DOWN) != 0);
-            navigation = MenuCursorMove(g_DesignModeOption, 4, -direction, 0);
-            g_DesignModeOption = navigation.selection;
-            if (navigation.moved) PlaySoundCue(1);
-            if (g_GameInput.pressed & PAD_CONFIRM) {
+            menu = (MenuSession){g_DesignModeOption, 4, 0};
+            commands = MenuSessionStep(
+                &menu, -direction, g_GameInput.pressed);
+            g_DesignModeOption = menu.selection;
+            if (commands.moved) PlaySoundCue(1);
+            if (commands.action == MENU_ACTION_CONFIRM) {
                 sel = g_DesignModeOption;
                 if (sel == 0) {
                     PlaySoundCue(2);
@@ -129,7 +132,7 @@ void UpdateDesignModeScreen(void) {
                     GameMenuBusy = 4;
                     g_MenuOverlayPattern = 2;
                 }
-            } else if (g_GameInput.pressed & PAD_CANCEL) {
+            } else if (commands.action == MENU_ACTION_CANCEL) {
                 PlaySoundCue(3);
                 GameMenuBusy = 4;
                 g_MenuOverlayPattern = 2;

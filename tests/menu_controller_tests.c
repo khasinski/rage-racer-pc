@@ -5,6 +5,8 @@
 
 int main(void) {
     MenuCursorResult result;
+    MenuSession session;
+    MenuSessionCommands commands;
 
     result = MenuCursorMove(0, 6, -1, 0);
     EXPECT_EQ(5, result.selection);
@@ -32,5 +34,13 @@ int main(void) {
               MenuResolveAction(PAD_CANCEL, PAD_CONFIRM, PAD_CANCEL));
     EXPECT_EQ(MENU_ACTION_NONE,
               MenuResolveAction(PAD_LEFT, PAD_CONFIRM, PAD_CANCEL));
+
+    session = (MenuSession){0, 5, 0x1Du};
+    commands = MenuSessionStep(&session, 1, PAD_DOWN);
+    EXPECT_EQ(2, session.selection);
+    EXPECT_EQ(1, commands.moved);
+    EXPECT_EQ(MENU_ACTION_NONE, commands.action);
+    commands = MenuSessionStep(&session, 0, PAD_CONFIRM | PAD_CANCEL);
+    EXPECT_EQ(MENU_ACTION_CONFIRM, commands.action);
     return 0;
 }
