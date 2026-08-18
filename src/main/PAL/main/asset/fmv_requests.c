@@ -13,8 +13,8 @@ void LoadTrackDataAssets(void) {
     switch (g_AssetLoadState) {
     case 1:
         dst = g_AssetLoadCursor;
-        offset = g_CourseIndex * 2;
-        if (LoadAsset((g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE, dst) != 0) {
+        offset = AssetTrackPackId(g_GrandPrixClass, g_CourseIndex, 1);
+        if (LoadAsset(offset, dst) != 0) {
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];
             g_AssetBlockPtr = GetSceneAssetAddress(header, offset);

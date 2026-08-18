@@ -120,8 +120,7 @@ void LoadRoundAssets(void) {
     case 1:
         kind = ASSET_TIME_ATTACK_ROUND_SCREEN;
         if (g_GrandPrixMode != 0) {
-            kind = ASSET_ROUND_SCREEN_BASE + g_GrandPrixSeries * 6 +
-                   g_GrandPrixClass;
+            kind = AssetRoundScreenId(g_GrandPrixSeries, g_GrandPrixClass);
         }
 
         result = LoadAsset(kind, g_ImageBlockBuffer);

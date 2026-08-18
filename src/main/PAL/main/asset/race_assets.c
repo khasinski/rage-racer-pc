@@ -93,12 +93,10 @@ void LoadRaceAssets(void) {
         break;
     case 5: {
         u8 *dst;
-        s32 courseOffset;
-        s32 classBase;
+        AssetId trackPack;
         dst = g_AssetLoadCursor;
-        courseOffset = g_CourseIndex * 2;
-        classBase = (g_GrandPrixClass * 8) + ASSET_TRACK_1ST_BASE;
-        if (LoadAsset(courseOffset + classBase, dst) != 0) {
+        trackPack = AssetTrackPackId(g_GrandPrixClass, g_CourseIndex, 0);
+        if (LoadAsset(trackPack, dst) != 0) {
             GameSceneAssetHeader *pack;
             s32 offset;
             u8 *base;
@@ -132,12 +130,11 @@ void LoadRaceAssets(void) {
     }
     case 6: {
         u8 *dst;
-        s32 courseOffset;
+        AssetId trackPack;
         s32 offset;
         dst = g_AssetLoadCursor;
-        courseOffset = g_CourseIndex * 2;
-        offset = (g_GrandPrixClass * 8) + courseOffset;
-        if (LoadAsset(offset + ASSET_TRACK_2ND_BASE, dst) != 0) {
+        trackPack = AssetTrackPackId(g_GrandPrixClass, g_CourseIndex, 1);
+        if (LoadAsset(trackPack, dst) != 0) {
             GameSceneAssetHeader *header;
 
             header = GetSceneAssetHeader(g_AssetLoadCursor);
@@ -227,14 +224,12 @@ s32 RequestRaceStart(void) {
 }
 
 void LoadGrandPrixScreen(void) {
-    s32 base;
-    s32 offset;
+    AssetId screenAsset;
     s32 loaded;
 
     if (g_AssetLoadState == 1) {
-        offset = g_GrandPrixSeries * 6;
-        base = g_GrandPrixClass + ASSET_ROUND_SCREEN_BASE;
-        loaded = LoadAsset(offset + base, g_ImageBlockBuffer);
+        screenAsset = AssetRoundScreenId(g_GrandPrixSeries, g_GrandPrixClass);
+        loaded = LoadAsset(screenAsset, g_ImageBlockBuffer);
         if (loaded != 0) {
             g_AssetLoadState = 0;
         }
@@ -260,10 +255,9 @@ void LoadCourseAssets(void) {
     s32 loaded;
 
     if (g_AssetLoadState == 1) {
-        s32 courseOffset = g_CourseIndex * 2;
-        s32 classBase = (g_GrandPrixClass * 8) + ASSET_TRACK_1ST_BASE;
+        AssetId trackPack = AssetTrackPackId(g_GrandPrixClass, g_CourseIndex, 0);
 
-        loaded = LoadAsset(courseOffset + classBase, g_AssetBase);
+        loaded = LoadAsset(trackPack, g_AssetBase);
         if (loaded != 0) {
             g_AssetLoadState = 0;
             g_ImageBlockBuffer = g_AssetBase + loaded;

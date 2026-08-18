@@ -21,9 +21,15 @@ s32 EnableCdAudioMode(void) {
     return 1;
 }
 
-s32 LoadAsset(s32 assetIndex, void *dst) {
-    s32 loaded = RageModAssetLoad((int)assetIndex, dst,
-                                  g_AssetCdEntries[assetIndex].size);
+s32 LoadAsset(AssetId assetIndex, void *dst) {
+    s32 loaded;
+
+    if (!AssetIdIsValid(assetIndex) || dst == NULL) {
+        return 0;
+    }
+
+    loaded = RageModAssetLoad((int)assetIndex, dst,
+                              g_AssetCdEntries[assetIndex].size);
     if (loaded == 0)
         loaded = RageHostLoadAsset(g_AssetCdEntries[assetIndex].position.sectorOffset,
                                    g_AssetCdEntries[assetIndex].size, dst);
@@ -33,12 +39,12 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
     return loaded;
 }
 
-void LoadAssetBlocking(s32 assetIndex, void *dst) {
+void LoadAssetBlocking(AssetId assetIndex, void *dst) {
     LoadAsset(assetIndex, dst);
 }
 
 void LoadDiscArchiveIndex(void) {
-    if (!RageHostLoadArchiveIndex(g_AssetCdEntries, 135)) {
+    if (!RageHostLoadArchiveIndex(g_AssetCdEntries, ASSET_ID_COUNT)) {
         printf("Unable to load assets/PAL/RAGE.BIN\n");
     }
 }
@@ -47,8 +53,8 @@ void InitAssetSystem(void) {
     void *ptr;
 
     LoadDiscArchiveIndex();
-    ptr = &g_LoadBuffer;
-    LoadAssetBlocking(0, ptr);
+    ptr = g_LoadBuffer;
+    LoadAssetBlocking(ASSET_ID_BOOT, ptr);
     UploadImageAsset(ptr);
 }
 

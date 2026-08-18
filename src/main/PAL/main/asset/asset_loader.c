@@ -39,7 +39,7 @@ s32 EnableCdAudioMode(void) {
     return CdControl(0xE, &value, 0);
 }
 
-s32 LoadAsset(s32 assetIndex, void *dst) {
+s32 LoadAsset(AssetId assetIndex, void *dst) {
     s32 result;
     s32 size;
 
@@ -94,7 +94,7 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
     return 0;
 }
 
-void LoadAssetBlocking(s32 assetIndex, void *dst) {
+void LoadAssetBlocking(AssetId assetIndex, void *dst) {
     while (LoadAsset(assetIndex, dst) == 0) {
     }
 }
@@ -155,7 +155,7 @@ void InitAssetSystem(void) {
 
     LoadDiscArchiveIndex();
     ptr = &g_LoadBuffer;
-    LoadAssetBlocking(0, ptr);
+    LoadAssetBlocking(ASSET_ID_BOOT, ptr);
     UploadImageAsset(ptr);
 }
 

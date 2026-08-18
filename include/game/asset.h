@@ -2,6 +2,7 @@
 #define GAME_ASSET_H
 
 #include "common.h"
+#include "game/asset_catalog.h"
 #include "game/visibility.h"
 #include "psyq/cd_location.h"
 #include "psyq/gpu.h"
@@ -72,14 +73,8 @@ extern char *g_AssetPaths[];
  * both are indexed base + class * 8 + course * 2. Six classes fill [0x57..0x86],
  * which is exactly the end of the table.
  */
-#define ASSET_ROUND_SCREEN_BASE 0x4A
-#define ASSET_TIME_ATTACK_ROUND_SCREEN 0x55
-#define ASSET_VOICE_BANK        0x56
-#define ASSET_TRACK_1ST_BASE    0x57
-#define ASSET_TRACK_2ND_BASE    0x58
-
 /* Load asset assetIndex into dst; returns loaded size/status. */
-s32 LoadAsset(s32 assetIndex, void *dst);
+s32 LoadAsset(AssetId assetIndex, void *dst);
 
 /* Phase of LoadAsset's own CD state machine, 0..6 (seek, SetLoc, CdRead,
  * wait, success, failure). Sequences one transfer, unlike g_AssetLoadState. */
@@ -323,7 +318,7 @@ void ServiceAssetLoad(void);
  * state words (g_CdLoadPhase / g_AssetLoadState / g_AssetRequestType). */
 void ResetAssetLoader(void);
 /* Spin on LoadAsset until the transfer completes. */
-void LoadAssetBlocking(s32 assetIndex, void *dst);
+void LoadAssetBlocking(AssetId assetIndex, void *dst);
 /* Boot: read the "\RAGE.BIN;1" first sector into g_AssetCdEntries (135 entries)
  * and rebase the 11 "\RAGE.STR;1" stream entries. Prints "Now Searching [%s]". */
 void LoadDiscArchiveIndex(void);

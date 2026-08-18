@@ -74,6 +74,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME gearbox COMMAND gearbox_tests)
 
+add_executable(asset_catalog_tests asset_catalog_tests.c
+    ../src/main/PAL/main/asset/asset_catalog.c)
+target_include_directories(asset_catalog_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(asset_catalog_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(asset_catalog_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME asset_catalog COMMAND asset_catalog_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -293,7 +302,7 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 set(RAGE_PORTABLE_TESTS
-    game_logic game_runtime render_scene music_director gearbox course_index
+    game_logic game_runtime render_scene music_director gearbox asset_catalog course_index
     native_geometry_interpolation modern_scene_interpolation
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
