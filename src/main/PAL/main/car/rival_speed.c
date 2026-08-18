@@ -1,30 +1,27 @@
 #include "game/rival_update.h"
-#include "game/angle.h"
+#include "game/rival_motion.h"
 
 void IntegrateRivalSpeed(GameCarRuntime *car,
                          const RivalUpdatePolicy *policy) {
     GameCarAiBlock *ai = GetCarAiBlock(car);
+    RivalMotionState motion = {
+        car->speed,
+        car->acceleration,
+        car->accelerationStep,
+        car->accelerationLimit,
+        car->boostTimer,
+        car->boostAccelerationThreshold,
+        ai->boostAcceleration,
+        ai->accelerationLimit,
+        car->bodyYaw,
+        ai->targetYaw
+    };
 
-    if (policy->enableRaceBoost && car->boostTimer > 0) {
-        if (car->boostAccelerationThreshold < car->boostTimer &&
-            car->speed >= 0x321) {
-            car->acceleration = 0;
-        } else if (ai->accelerationLimit >= car->acceleration) {
-            car->acceleration += ai->boostAcceleration;
-        } else {
-            car->acceleration = ai->accelerationLimit;
-        }
-        ai->boostTimer--;
-    } else if ((policy->enableRaceBoost &&
-                car->acceleration <= car->accelerationLimit) ||
-               (!policy->enableRaceBoost &&
-                car->acceleration < car->accelerationLimit)) {
-        car->acceleration += car->accelerationStep;
-    } else {
-        car->acceleration = car->accelerationLimit;
-    }
-    car->speed = car->speed * 94 / 100 + car->acceleration;
-    car->bodyYaw += GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5;
+    RivalMotionStep(&motion, policy->enableRaceBoost);
+    car->speed = motion.speed;
+    car->acceleration = motion.acceleration;
+    ai->boostTimer = motion.boostTimer;
+    car->bodyYaw = motion.bodyYaw;
 }
 
 void IntegrateRivalSpeeds(CarSimulation *simulation,

@@ -1,4 +1,5 @@
 #include "game/rival_update.h"
+#include "game/rival_motion.h"
 
 #define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) return __LINE__; } while (0)
 
@@ -7,11 +8,17 @@ int main(void) {
     RivalUpdatePolicy attract = {0, 0, 1, 0};
     GameCarRuntime car = {0};
     GameCarAiBlock *ai = GetCarAiBlock(&car);
+    RivalMotionState motion = {1000, 10, 3, 12, 0, 0, 0, 0, 0, 100};
     EXPECT_EQ(1, RivalShouldUpdateTraffic(0, 0, &race));
     EXPECT_EQ(1, RivalShouldUpdateTraffic(4, 0, &race));
     EXPECT_EQ(0, RivalShouldUpdateTraffic(5, 0, &race));
     EXPECT_EQ(1, RivalShouldUpdateTraffic(5, 1, &race));
     EXPECT_EQ(1, RivalShouldUpdateTraffic(10, 1, &attract));
+
+    RivalMotionStep(&motion, 1);
+    EXPECT_EQ(13, motion.acceleration);
+    EXPECT_EQ(953, motion.speed);
+    EXPECT_EQ(20, motion.bodyYaw);
 
     car.activeFlag = 1;
     car.speed = 1000;
