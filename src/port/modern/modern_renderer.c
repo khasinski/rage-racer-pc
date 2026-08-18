@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "scene_capture.h"
+#include "modern_gpu_state.h"
 #include "modern_renderer_diagnostics.h"
 #include "modern_scene_interpolation.h"
 #include "../runtime_config.h"
@@ -518,16 +519,6 @@ static int ModernEnsureResources(void) {
 
 /* ---- frame building ---- */
 
-typedef struct Modern2DState {
-    uint32_t tpage;    /* from GP0(E1) for sprites */
-    uint32_t twin;     /* current texture window bytes */
-    SDL_Rect scissor;  /* current draw area, overlay pixels */
-    int areaTopVram;   /* raw GP0(E3) row, VRAM-absolute */
-    int hasScissor;
-    int areaEmpty;
-    int offsetX, offsetY; /* GP0(E5) relative offset */
-} Modern2DState;
-
 /* GPU state at the end of the main ordering table, inherited by the mirror
  * table exactly like the real GPU carries it across DrawOTag calls. */
 static Modern2DState s_mainEnd2D;
@@ -556,7 +547,12 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
     span->pipeline = (uint8_t)pipeline;
     span->pass = s_currentPass;
     span->hasScissor = state != NULL && state->hasScissor;
-    if (span->hasScissor) span->scissor = state->scissor;
+    if (span->hasScissor) {
+        span->scissor.x = state->scissor.x;
+        span->scissor.y = state->scissor.y;
+        span->scissor.w = state->scissor.w;
+        span->scissor.h = state->scissor.h;
+    }
     span->start = s_vertexCount;
     span->count = 0;
     span->depthKey = depthKey;
@@ -589,16 +585,6 @@ static void ModernEmitQuad(ModernSpan *span, const ModernVertex corners[4]) {
 static void ModernEmitTriangle(ModernSpan *span,
                                const ModernVertex corners[3]) {
     ModernPushVertices(span, corners, 3);
-}
-
-static uint32_t ModernTwinFromE2(uint32_t word) {
-    uint32_t maskX = word & 0x1Fu;
-    uint32_t maskY = (word >> 5) & 0x1Fu;
-    uint32_t offX = (word >> 10) & 0x1Fu;
-    uint32_t offY = (word >> 15) & 0x1Fu;
-    if (maskX == 0 && maskY == 0) return 0x0000FFFFu;
-    return ((~(maskX * 8) & 0xFFu)) | ((~(maskY * 8) & 0xFFu) << 8) |
-           (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
 }
 
 /* ---- snapshot interpolation (arbitrary-FPS presentation) ---- */
@@ -940,7 +926,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
             out->attr |= 0x8000u;
         }
         out->twin = face->textureWindow != 0
-                        ? ModernTwinFromE2(face->textureWindow)
+                        ? ModernTextureWindowFromGp0(face->textureWindow)
                         : 0x0000FFFFu;
         out->clut = face->clut;
     }
@@ -969,7 +955,7 @@ static void ModernOrtho(ModernVertex *out, float px, float py) {
     out->w = 1.0f;
 }
 
-static void ModernScissorToPixels(SDL_Rect *rect) {
+static void ModernScissorToPixels(ModernDrawRect *rect) {
     float scale = (float)s_targetW / s_logicalW;
     rect->x = (int)(((float)rect->x + s_overscanX) * scale);
     rect->y = rect->y * s_targetH / 240;
@@ -987,46 +973,6 @@ static void ModernScissorToPixels(SDL_Rect *rect) {
  * y=0,h=241). */
 static int s_areaPageY;
 
-static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
-    switch (word >> 24) {
-    case 0xE1:
-        state->tpage = word & 0x1FFu;
-        break;
-    case 0xE2:
-        state->twin = ModernTwinFromE2(word);
-        break;
-    case 0xE3: {
-        int x = (int)(word & 0x3FFu);
-        int y = (int)((word >> 10) & 0x1FFu);
-        state->scissor.x = x;
-        state->areaTopVram = y;
-        state->hasScissor = 1;
-        break;
-    }
-    case 0xE4: {
-        int x = (int)(word & 0x3FFu);
-        int y = (int)((word >> 10) & 0x1FFu);
-        int top = state->areaTopVram > s_areaPageY ? state->areaTopVram
-                                                   : s_areaPageY;
-        int bottom = y < s_areaPageY + 239 ? y : s_areaPageY + 239;
-        state->scissor.w = x - state->scissor.x + 1;
-        state->scissor.y = top - s_areaPageY;
-        state->scissor.h = bottom - top + 1;
-        state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
-        break;
-    }
-    case 0xE5: {
-        int x = (int)(word & 0x7FFu);
-        int y = (int)((word >> 11) & 0x7FFu);
-        state->offsetX = (x ^ 1024) - 1024;
-        state->offsetY = (y ^ 1024) - 1024;
-        break;
-    }
-    default:
-        break;
-    }
-}
-
 static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                  Modern2DState *state, int pipelineBase) {
     const uint32_t *words = packet->words;
@@ -1036,7 +982,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
          * E-command per word; apply them all. */
         int word;
         for (word = 0; word < packet->size; word++) {
-            ModernApply2DStateWord(words[word], state);
+            Modern2DStateApplyGp0(state, words[word], s_areaPageY);
         }
         return;
     }
@@ -1290,8 +1236,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
     }
 
-    memset(&state2d, 0, sizeof(state2d));
-    state2d.twin = 0x0000FFFFu;
+    Modern2DStateInit(&state2d);
 
     /* Background 2D: sky layers at the far ordering-table buckets,
      * stretched across the widened view so the panorama reaches the
@@ -1362,8 +1307,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     }
 
     /* Foreground 2D of the main ordering table, in compat draw order. */
-    memset(&state2d, 0, sizeof(state2d));
-    state2d.twin = 0x0000FFFFu;
+    Modern2DStateInit(&state2d);
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
@@ -1393,7 +1337,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
          * chain's final area wrongly blanked the mirror whenever the pause
          * menu left its dim-box area installed there). The inherited state
          * only seeds streams that never install their own pair. */
-        SDL_Rect area;
+        ModernDrawRect area;
         int haveArea = 0;
         Modern2DState scan = s_mainEnd2D;
         for (i = 0; i < snapshot->packetCount; i++) {
@@ -1402,7 +1346,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             if (packet->table != 1) continue;
             if ((packet->words[0] >> 24) < 0xE0u) continue;
             for (word = 0; word < packet->size; word++) {
-                ModernApply2DStateWord(packet->words[word], &scan);
+                Modern2DStateApplyGp0(&scan, packet->words[word], s_areaPageY);
             }
             if (scan.hasScissor && scan.scissor.w != 0) {
                 break;
