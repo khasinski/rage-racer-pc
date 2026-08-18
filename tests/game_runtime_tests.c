@@ -22,7 +22,7 @@ static void test_transition_and_dispatch(void) {
 
     EXPECT_EQ(1, SceneManagerDispatch(&game.scenes));
     EXPECT_EQ(1, calls);
-    EXPECT_EQ(1, SceneManagerTransition(&game.scenes, SCENE_RACE));
+    EXPECT_EQ(1, SceneManagerEnter(&game.scenes, SCENE_RACE, 0));
     EXPECT_EQ(SCENE_RACE, scene);
     EXPECT_EQ(0, timer);
     EXPECT_EQ(1, GameEventQueuePop(&game.events, &event));
@@ -59,12 +59,29 @@ static void test_invalid_scenes_are_rejected(void) {
 
     handlers[SCENE_BOOT_LOGO] = CountCall;
     GameContextInit(&game, &scene, &timer, handlers, SCENE_COUNT);
-    EXPECT_EQ(0, SceneManagerTransition(&game.scenes, SCENE_NONE));
-    EXPECT_EQ(0, SceneManagerTransition(&game.scenes, SCENE_COUNT));
+    EXPECT_EQ(0, SceneManagerSet(&game.scenes, SCENE_NONE));
+    EXPECT_EQ(0, SceneManagerSet(&game.scenes, SCENE_COUNT));
     EXPECT_EQ(SCENE_BOOT_LOGO, scene);
     EXPECT_EQ(5, timer);
     scene = SCENE_NONE;
     EXPECT_EQ(0, SceneManagerDispatch(&game.scenes));
+}
+
+static void test_legacy_bridge_preserves_or_sets_timer(void) {
+    SceneHandler handlers[SCENE_COUNT] = {0};
+    GameContext game;
+    s32 scene = SCENE_BOOT_LOGO;
+    s32 timer = 41;
+
+    handlers[SCENE_BOOT_LOGO] = CountCall;
+    handlers[SCENE_RACE] = CountCall;
+    handlers[SCENE_REPLAY] = CountCall;
+    GameContextInit(&game, &scene, &timer, handlers, SCENE_COUNT);
+    GameContextSetActive(&game);
+    EXPECT_EQ(1, GameSceneSet(SCENE_RACE));
+    EXPECT_EQ(41, timer);
+    EXPECT_EQ(1, GameSceneEnter(SCENE_REPLAY, -1));
+    EXPECT_EQ(-1, timer);
 }
 
 static void test_event_queue_overflow_is_explicit(void) {
@@ -87,6 +104,7 @@ int main(void) {
     test_transition_and_dispatch();
     test_legacy_transition_is_observed();
     test_invalid_scenes_are_rejected();
+    test_legacy_bridge_preserves_or_sets_timer();
     test_event_queue_overflow_is_explicit();
     if (failures != 0) return 1;
     return 0;

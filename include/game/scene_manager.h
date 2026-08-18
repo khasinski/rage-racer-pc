@@ -57,7 +57,8 @@ typedef struct SceneManager {
 void SceneManagerInit(SceneManager *manager, s32 *sceneId, s32 *sceneTimer,
                       SceneHandler *handlers, u32 handlerCount,
                       GameEventQueue *events);
-s32 SceneManagerTransition(SceneManager *manager, SceneId next);
+s32 SceneManagerSet(SceneManager *manager, SceneId next);
+s32 SceneManagerEnter(SceneManager *manager, SceneId next, s32 initialTimer);
 s32 SceneManagerObserveTransition(SceneManager *manager);
 s32 SceneManagerDispatch(SceneManager *manager);
 s32 SceneManagerIsValid(const SceneManager *manager, s32 sceneId);

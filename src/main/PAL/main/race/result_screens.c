@@ -11,6 +11,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "game/replay_internal.h"
 #include "game/save_internal.h"
 #include "game/race_internal.h"
@@ -137,7 +138,7 @@ void UpdateReplayScene(void) {
             if (g_FadeLevel >= 257) {
                 s32 v = g_GrandPrixMode;
                 g_MirrorMode = 0;
-                g_SceneId = v == 0 ? 0x14 : 0x12;
+                GameSceneSet(v == 0 ? SCENE_RECORD_ENTER : SCENE_PRIZE_ENTER);
             }
         }
 

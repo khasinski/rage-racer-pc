@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "game/race.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "game/track.h"
 #include "game/car.h"
 #include "game/audio.h"
@@ -151,10 +152,10 @@ done:
 }
 
 void ExitRaceScene(s32 sceneId) {
-    g_SceneId = sceneId;
+    GameSceneSet((SceneId)sceneId);
     ForceAllEffectVoicesEnabled(0);
     SetReverbDepth(0, 0);
-    if (g_SceneId == 6) {
+    if (g_SceneId == SCENE_MENU_ENTER) {
         RequestSelectBgmAssets();
     }
     printf("%s", &g_MsgGameExit);

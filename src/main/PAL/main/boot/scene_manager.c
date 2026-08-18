@@ -27,15 +27,20 @@ s32 SceneManagerIsValid(const SceneManager *manager, s32 sceneId) {
            manager->handlers[sceneId] != 0;
 }
 
-s32 SceneManagerTransition(SceneManager *manager, SceneId next) {
+s32 SceneManagerSet(SceneManager *manager, SceneId next) {
     s32 previous;
 
     if (!SceneManagerIsValid(manager, next)) return 0;
     previous = *manager->sceneId;
     *manager->sceneId = next;
-    *manager->sceneTimer = 0;
     manager->observedSceneId = next;
     SceneManagerEmitTransition(manager, previous, next);
+    return 1;
+}
+
+s32 SceneManagerEnter(SceneManager *manager, SceneId next, s32 initialTimer) {
+    if (!SceneManagerSet(manager, next)) return 0;
+    *manager->sceneTimer = initialTimer;
     return 1;
 }
 

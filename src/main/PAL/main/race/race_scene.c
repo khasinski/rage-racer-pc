@@ -16,6 +16,7 @@
 #include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "game/game_context.h"
 #include "game/track.h"
 #include "psyq/gte.h"
 
@@ -375,7 +376,7 @@ void EnterRaceScene(void) {
     D_801E4CF8 = (g_PlayerAutoSteer = (g_RaceCueDelay = 0));
     do {
     } while (0);
-    g_SceneId = 12;
+    GameSceneSet(SCENE_RACE);
     g_FrameSyncThreshold = 0x180;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);

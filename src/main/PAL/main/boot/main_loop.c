@@ -95,6 +95,7 @@ void MainLoop(void) {
     g_SceneId = SCENE_BOOT_LOGO;
     GameContextInit(&game, &g_SceneId, &g_SceneTimer, g_SceneHandlers,
                     SCENE_COUNT);
+    GameContextSetActive(&game);
     RequestBootAssets();
     g_GameClock = 0;
     g_FrameCounter = 0;
