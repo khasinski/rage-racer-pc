@@ -55,6 +55,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_scene COMMAND render_scene_tests)
 
+add_executable(music_director_tests
+    music_director_tests.c
+    ../src/main/PAL/main/cd/music_director.c)
+target_include_directories(music_director_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(music_director_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(music_director_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME music_director COMMAND music_director_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -260,7 +270,8 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 set(RAGE_PORTABLE_TESTS
-    game_logic game_runtime render_scene course_index native_geometry_interpolation
+    game_logic game_runtime render_scene music_director course_index
+    native_geometry_interpolation
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout

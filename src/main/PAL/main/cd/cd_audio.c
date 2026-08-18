@@ -6,6 +6,7 @@
 #include "game/track_internal.h"
 #include "game/race.h"
 #include "game/menu.h"
+#include "game/music_director_legacy.h"
 #include "psyq/snd.h"
 
 long RageHostCdAudioEnded(void);
@@ -170,10 +171,9 @@ void TickCdAudio(void) {
             temp = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
             value = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
             if (value < temp) {
-                g_CdTrackStep = status;
-                g_CdCommandPending = CD_COMMAND_PLAY;
-                g_CdCommandStep = 0;
-                g_CdTrackPending = g_CdCurrentTrack;
+                MusicDirectorState director = MusicDirectorLoadLegacyState();
+                MusicDirectorLoopCurrent(&director);
+                MusicDirectorStoreLegacyState(&director);
             }
         }
     }

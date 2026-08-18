@@ -1,42 +1,33 @@
 #include "common.h"
 #include "game/cd.h"
+#include "game/music_director_legacy.h"
+
 void RequestCdTrack(s32 track) {
-    g_CdTrackPending = (u8)track;
-    g_CdTrackStep = 0;
-    g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdCommandStep = 0;
+    MusicDirectorState state = MusicDirectorLoadLegacyState();
+    MusicDirectorRequestTrack(&state, track);
+    MusicDirectorStoreLegacyState(&state);
 }
 
 void StartCdAudio(void) {
-    g_CdCommandPending = CD_COMMAND_PLAY;
-    g_CdCommandStep = 0;
+    MusicDirectorState state = MusicDirectorLoadLegacyState();
+    MusicDirectorRequestPlay(&state);
+    MusicDirectorStoreLegacyState(&state);
 }
 
 void PauseCdAudio(void) {
-    g_CdCommandPending = CD_COMMAND_PAUSE;
-    g_CdCommandStep = 0;
+    MusicDirectorState state = MusicDirectorLoadLegacyState();
+    MusicDirectorRequestPause(&state);
+    MusicDirectorStoreLegacyState(&state);
 }
 
 void ResumeCdAudio(void) {
-    if (g_CdRestartOnResume != 0) {
-        u8 value;
-
-        value = g_CdCurrentTrack;
-        g_CdTrackStep = 4;
-        g_CdRestartOnResume = 0;
-        g_CdCommandPending = CD_COMMAND_PLAY;
-        g_CdCommandStep = 0;
-        g_CdTrackPending = value;
-    } else {
-        g_CdCommandPending = CD_COMMAND_RESUME;
-        g_CdCommandStep = 0;
-    }
+    MusicDirectorState state = MusicDirectorLoadLegacyState();
+    MusicDirectorRequestResume(&state);
+    MusicDirectorStoreLegacyState(&state);
 }
 
 void ResetCdAudioState(void) {
-    g_CdTrackPending = -1;
-    g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdTrackStep = 0;
-    g_CdCommandStep = 0;
-    g_CdCurrentTrack = 2;
+    MusicDirectorState state = MusicDirectorLoadLegacyState();
+    MusicDirectorReset(&state);
+    MusicDirectorStoreLegacyState(&state);
 }
