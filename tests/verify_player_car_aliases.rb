@@ -3,7 +3,7 @@
 
 root = ARGV.fetch(0)
 aliases = File.read(File.join(root, "include/game/player_car_aliases.h"))
-car_header = File.read(File.join(root, "include/game/car.h"))
+car_types = File.read(File.join(root, "include/game/car_types.h"))
 host_state = File.read(File.join(root, "src/port/host_state.c"))
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
 symbol_map = File.read(File.join(root, "configs/PAL/sym.bss.main.txt"))
@@ -45,7 +45,7 @@ end
 abort "player alias storage accessor is missing" unless
   native_state.match?(/void \*GetPlayerCarStorage\(void\).*?return &g_PlayerCar;/m)
 abort "player layout assertions are missing" unless
-  car_header.scan(/must retain its retail alias offset/).length == 12
+  car_types.scan(/must retain its retail alias offset/).length == 12
 
 player_update = File.read(File.join(root, "src/main/PAL/main/car/update_player_car.c"))
 abort "throttle must be read from the drivetrain field" unless

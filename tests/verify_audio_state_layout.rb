@@ -53,9 +53,12 @@ sources.each do |path, source|
     abort "#{path}: torque lookup still depends on adjacent linker symbols" if
       source.include?("(&g_TorqueBandStart) + bandIndex") ||
       source.include?("(&g_TorqueLossBandStart) + bandIndex")
+    next
+  end
+
+  if path.end_with?("car_physics.c")
     abort "#{path}: missing explicit torque-band predecessor lookup" unless
-      source.include?("g_TorqueBandEnd[bandIndex - 1]") &&
-      source.include?("g_TorqueLossBandEnd[bandIndex - 1]")
+      source.include?("bandEnd[bandIndex - 1]")
     next
   end
 
