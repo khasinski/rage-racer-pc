@@ -387,6 +387,12 @@ static void RageScenarioDirectBoot(void) {
         break;
     case RAGE_DIRECT_CAR_ASSETS:
         if (RequestCarSelectAssets() == 0) {
+            /* EnterCarSelectScreen's one piece of non-UI work. The load above
+             * leaves the player's model in slot 0 but its texture still out of
+             * VRAM; RelocateCarModel below moves the model without uploading
+             * that image, and the race draws the player's own car from bank 0
+             * only in the outside views. Skipping this loses the car there. */
+            InstallCarModelSlot();
             s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
         }
         break;
