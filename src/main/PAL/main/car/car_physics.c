@@ -49,3 +49,73 @@ s32 CarIntegrateEngineRpm(s32 engineRpm, s32 throttleAcceleration,
     if (engineRpm >= 0x3A99) return 0x3A98;
     return engineRpm;
 }
+
+static s32 CurveBandStart(const s16 *bandEnd, s32 bandIndex) {
+    s32 start;
+    if (bandIndex == 0) return 0;
+    start = bandEnd[bandIndex - 1];
+    return start == 0 ? 0 : start - 1;
+}
+
+CarTorqueSample CarSampleTorqueCurves(
+    s32 engineRpm, s32 revLimit, s32 redline, s32 gear,
+    s32 fallbackTorque, const s32 *gearCurve,
+    const s32 *torqueBandRpm, const s16 *torqueBandEnd,
+    const s32 *lossRpm, const s32 *lossValue,
+    const s16 *lossBandEnd) {
+    CarTorqueSample sample;
+    s32 bandIndex;
+    s32 slot;
+    s32 end;
+
+    if (engineRpm >= revLimit) {
+        sample.torque = ((revLimit - engineRpm) * 4) / 5;
+        sample.lossPercent = 0;
+        return sample;
+    }
+
+    bandIndex = engineRpm / 1000;
+    sample.torque = fallbackTorque;
+    slot = CurveBandStart(torqueBandEnd, bandIndex);
+    end = torqueBandEnd[bandIndex];
+    while (slot < end) {
+        s32 lowerRpm = torqueBandRpm[slot];
+        s32 upperRpm = torqueBandRpm[slot + 1];
+        if (engineRpm >= lowerRpm && upperRpm >= engineRpm) {
+            s32 span = upperRpm - lowerRpm;
+            s32 weighted;
+            if (span <= 0) span = 1;
+            weighted = (engineRpm - lowerRpm) * gearCurve[slot + 1];
+            weighted += (upperRpm - engineRpm) * gearCurve[slot];
+            sample.torque = weighted / (span * 10);
+            break;
+        }
+        slot++;
+    }
+    if (sample.torque < 0) sample.torque = 0;
+
+    sample.lossPercent = 0;
+    slot = CurveBandStart(lossBandEnd, bandIndex);
+    end = lossBandEnd[bandIndex];
+    while (slot < end) {
+        s32 lowerRpm = lossRpm[slot];
+        if (engineRpm >= lowerRpm) {
+            s32 upperRpm = lossRpm[slot + 1];
+            slot++;
+            if (upperRpm >= engineRpm) {
+                s32 span = upperRpm - lowerRpm;
+                if (span <= 0) span = 1;
+                sample.lossPercent =
+                    ((engineRpm - lowerRpm) * lossValue[slot] +
+                     (upperRpm - engineRpm) * lossValue[slot - 1]) / span;
+                break;
+            }
+        } else {
+            slot++;
+        }
+    }
+    if (sample.lossPercent >= 100) sample.lossPercent = 100;
+    else if (sample.lossPercent <= 0) sample.lossPercent = 0;
+    if (gear == 1 && engineRpm < redline) sample.lossPercent *= 2;
+    return sample;
+}

@@ -3,6 +3,13 @@
 #define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) return __LINE__; } while (0)
 
 int main(void) {
+    const s32 torqueRpm[] = {0, 1000, 2000, 3000};
+    const s32 gearCurve[] = {100, 200, 300, 400};
+    const s16 torqueEnds[] = {2, 3, 4, 4};
+    const s32 lossRpm[] = {0, 1000, 2000, 3000};
+    const s32 lossValue[] = {0, 20, 80, 100};
+    const s16 lossEnds[] = {2, 3, 4, 4};
+    CarTorqueSample sample;
     EXPECT_EQ(0, CarUpdatePedalLatch(0, 0x84));
     EXPECT_EQ(1, CarUpdatePedalLatch(0, 0x85));
     EXPECT_EQ(2, CarUpdatePedalLatch(1, 0));
@@ -29,5 +36,21 @@ int main(void) {
     EXPECT_EQ(0, CarIntegrateEngineRpm(10, 0, 20, 0, 0, 0));
     EXPECT_EQ(0x3A98,
               CarIntegrateEngineRpm(0x3A98, 1, 0, 0, 0, 0));
+
+    sample = CarSampleTorqueCurves(
+        500, 4000, 3500, 2, 77, gearCurve, torqueRpm, torqueEnds,
+        lossRpm, lossValue, lossEnds);
+    EXPECT_EQ(15, sample.torque);
+    EXPECT_EQ(10, sample.lossPercent);
+    sample = CarSampleTorqueCurves(
+        1500, 4000, 3500, 1, 77, gearCurve, torqueRpm, torqueEnds,
+        lossRpm, lossValue, lossEnds);
+    EXPECT_EQ(25, sample.torque);
+    EXPECT_EQ(100, sample.lossPercent);
+    sample = CarSampleTorqueCurves(
+        4500, 4000, 3500, 2, 77, gearCurve, torqueRpm, torqueEnds,
+        lossRpm, lossValue, lossEnds);
+    EXPECT_EQ(-400, sample.torque);
+    EXPECT_EQ(0, sample.lossPercent);
     return 0;
 }

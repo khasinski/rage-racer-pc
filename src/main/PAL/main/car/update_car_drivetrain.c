@@ -21,12 +21,10 @@ typedef union DrivetrainWheelSpeed {
  */
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GearCurveAddress gearCurve;
+  CarTorqueSample torqueSample;
   s16 curveModeNow;
   s16 revLimit;
   s16 targetGear;
-  s32 bandEnd;
-  s16 bandStart;
-  s16 lossStart;
   s16 targetGearAgain;
   int assistArmed;
   int steeringNonnegative;
@@ -39,9 +37,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s16 driveCurveMode;
   s16 steerBias;
   s32 camber;
-  s32 bandTorque;
-  s32 lossTorque;
   s32 shiftRemaining;
+  s32 shiftRpmOffset;
   s32 trackHeadingError;
   s32 pointIndex;
   s32 wheelSpeed;
@@ -53,8 +50,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 cosCentreAngle;
   s32 toCentreZ;
   s32 engineSpeed;
-  s32 engineSpeedLoss;
-  s32 bandIndex;
   s32 centreAngle;
   s32 radialDistance;
   s32 shiftTargetRpm;
@@ -76,11 +71,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 downforceScale;
   s32 downforce;
   s32 gripBudget;
-  s32 bandSlot;
-  s32 bandCurve;
-  s32 assistStep;
+  s32 steeringAssistScale;
   int shiftTimerActive;
-  s32 lossCurve;
   s32 dragTerm;
   s32 slipAngle;
   s32 accel;
@@ -94,10 +86,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 lateralSum;
   s32 dragBase;
   s32 camberLean;
-  s32 lossBelowLimit;
+  s32 shiftInterpolation;
   s32 shiftedSpeed;
-  s32 bandBase;
-  s32 lossBase;
   s32 speedScaled;
   s32 torqueLate;
   s32 coefficientBase;
@@ -109,7 +99,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GameCarDrive *drive;
   GameTrackArcCenter *arcCentre;
   GameTrackPoint *trackPoint;
-  GearCurveAddress curveSlot;
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;
@@ -212,141 +201,13 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   driveMode = drive->motionState;
   accel = CarCalculateLoadResistance(driveMode, gearTorque, loadTorque);
   revLimit = config.pointer->revLimit;
-  if (drive->engineRpm >= revLimit)
-  {
-    bandScale = 0;
-    netTorque = ((revLimit - drive->engineRpm) * 4) / 5;
-  }
-  else
-  {
-    bandIndex = drive->engineRpm / 1000;
-    if (bandIndex == 0)
-    {
-      bandBase = 0;
-    }
-    else
-    {
-      /* Retail's start symbol is the halfword immediately before the end
-       * table: start[b] aliases b == 0 to the standalone halfword and b > 0
-       * to end[b - 1]. Independently linked host globals are not adjacent. */
-      bandStart = g_TorqueBandEnd[bandIndex - 1];
-      if (bandStart == 0)
-      {
-        bandBase = 0;
-      }
-      else
-      {
-        bandBase = bandStart - 1;
-      }
-    }
-    bandEnd = g_TorqueBandEnd[bandIndex];
-    bandSlot = bandBase;
-    if (bandSlot < bandEnd)
-    {
-      engineSpeed = drive->engineRpm;
-      loop_68:
-      bandTorque = config.pointer->torqueBand.values[bandSlot];
-
-      if ((engineSpeed >= bandTorque) &&
-          (config.pointer->torqueBand.values[bandSlot + 1] >= engineSpeed))
-      {
-        s32 *curveValues = &gearCurve.valuePointer[bandSlot];
-        s32 bandNext = config.pointer->torqueBand.values[bandSlot + 1];
-        bandCurve = bandNext - bandTorque;
-        if (bandCurve <= 0)
-        {
-          bandCurve = 1;
-        }
-        frontLoadScaled = (engineSpeed - bandTorque) * curveValues[1];
-        frontLoadScaled += (bandNext - engineSpeed) * curveValues[0];
-        netTorque = frontLoadScaled / (bandCurve * 0xA);
-      }
-      else
-      {
-        bandSlot += 1;
-        if (bandSlot < bandEnd)
-        {
-          goto loop_68;
-        }
-      }
-    }
-    if (netTorque < 0)
-    {
-      netTorque = 0;
-    }
-    if (bandIndex == 0)
-    {
-      lossBase = 0;
-    }
-    else
-    {
-      /* Same split-symbol layout as the torque-band table above. */
-      lossStart = g_TorqueLossBandEnd[bandIndex - 1];
-      lossBase = 0;
-      if (lossStart != 0)
-      {
-        lossBase = lossStart - 1;
-      }
-    }
-    bandEnd = g_TorqueLossBandEnd[bandIndex];
-    assistStep = lossBase;
-    bandScale = 0;
-    if (assistStep < bandEnd)
-    {
-      engineSpeedLoss = drive->engineRpm;
-      loop_83:
-      lossTorque = config.pointer->torqueLossRpm[assistStep];
-
-      if (engineSpeedLoss >= lossTorque)
-      {
-        curveSlot.value = config.pointer->torqueLossRpm[assistStep + 1];
-        assistStep += 1;
-        if (curveSlot.value >= engineSpeedLoss)
-        {
-          lossCurve = curveSlot.value - lossTorque;
-          if (lossCurve <= 0)
-          {
-            lossCurve = 1;
-          }
-          bandScale = (((engineSpeedLoss - lossTorque) * config.pointer->torqueLossValue[assistStep]) + ((curveSlot.value - engineSpeedLoss) * config.pointer->torqueLossValue[assistStep - 1])) / lossCurve;
-          lossBelowLimit = bandScale < 0x64;
-        }
-        else
-        {
-          goto block_89;
-        }
-      }
-      else
-      {
-        assistStep = assistStep + 1;
-        block_89:
-        if (assistStep >= bandEnd)
-        {
-          goto block_90;
-        }
-        goto loop_83;
-      }
-    }
-    else
-    {
-      block_90:
-      lossBelowLimit = bandScale < 0x64;
-
-    }
-    if (lossBelowLimit == 0)
-    {
-      bandScale = 0x64;
-    }
-    else
-      if (bandScale <= 0)
-    {
-      bandScale = 0;
-    }
-    if ((drive->gear == 1) && (drive->engineRpm < g_CarSpec->redline))
-    {
-      bandScale *= 2;
-    }
-  }
+  torqueSample = CarSampleTorqueCurves(
+      drive->engineRpm, revLimit, config.pointer->redline, drive->gear,
+      netTorque, gearCurve.valuePointer, config.pointer->torqueBand.values,
+      g_TorqueBandEnd, config.pointer->torqueLossRpm,
+      config.pointer->torqueLossValue, g_TorqueLossBandEnd);
+  netTorque = torqueSample.torque;
+  bandScale = torqueSample.lossPercent;
   shiftMode = drive->motionState;
   if ((shiftMode == 1) || (shiftMode == 3))
   {
@@ -378,8 +239,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
           g_ShiftTargetRpm = shiftTargetRpm;
           drive->shiftRpmDelta = (s16)((u16)g_ShiftTargetRpm - currentSpeed);
         }
-        bandEnd = drive->shiftRpmDelta * drive->jumpTimer / 20;
-        shiftedSpeed = bandEnd;
+        shiftRpmOffset = drive->shiftRpmDelta * drive->jumpTimer / 20;
+        shiftedSpeed = shiftRpmOffset;
         shiftedSpeed = shiftedSpeed + g_ShiftTargetRpm;
         goto block_129;
       }
@@ -468,8 +329,8 @@ grade_adjust_done:
       else
       {
         shiftRemaining = drive->shiftSpeedDelta * (s16)countdown;
-        lossBase = shiftRemaining / 10;
-        drive->engineRpm = g_ShiftTargetSpeed - lossBase;
+        shiftInterpolation = shiftRemaining / 10;
+        drive->engineRpm = g_ShiftTargetSpeed - shiftInterpolation;
         goto shift_interpolation_done;
         block_129:
         drive->engineRpm = shiftedSpeed;
@@ -514,20 +375,20 @@ shift_interpolation_done:
   steerLoad += drive->steeringLoadAngle / 256;
   if ((drive->motionState != CAR_MOTION_TAKEOFF) && (g_GameInput.controllerType == 0x41))
   {
-    assistStep = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
-    if (assistStep <= 0)
+    steeringAssistScale = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
+    if (steeringAssistScale <= 0)
     {
-      assistStep = 1;
+      steeringAssistScale = 1;
     }
     shiftRemaining = drive->steerPos;
     assistArmed = shiftRemaining >= 0;
     if (assistArmed)
     {
-      steerLoad += ((shiftRemaining * 5) / 6) / assistStep;
+      steerLoad += ((shiftRemaining * 5) / 6) / steeringAssistScale;
     }
     else
     {
-      steerLoad -= ((shiftRemaining * 5) / 6) / assistStep;
+      steerLoad -= ((shiftRemaining * 5) / 6) / steeringAssistScale;
     }
   }
   trackHeadingError = GetAngleDistance(car->headingAngle,
