@@ -11,6 +11,7 @@
 #include "game/render.h"
 #include "game/audio.h"
 #include "game/random.h"
+#include "game/gearbox.h"
 
 #ifdef __psyz
 #include <stdio.h>
@@ -100,72 +101,20 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     mode23 = g_PadType == 0x23;
     car->facingBackwards = IsCarFacingBackwards(car);
 
-    if (car->drive.manual != 0) {
-        if (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) {
-            s32 g = car->drive.gear;
-
-            if (g < g_CarSpec->topGear && car->drive.clutch == 0) {
-                car->drive.gear = car->drive.gear + 1;
-                g_SteerHoldFrames = 0;
-            }
-        }
-        if (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) {
-            s32 g = p->gear;
-
-            if (g >= 2) {
-                p->gear = p->gear - 1;
-                g_SteerHoldFrames = 0;
-            }
-        }
-    } else {
-        if (car->shiftState == 0) {
-            s32 g;
-            s32 idx;
-            s32 tableValue;
-
-            g = car->drive.gear;
-            idx = g - 1;
-            tableValue = g_CarSpec->shiftPoints[idx].downshiftSpeed;
-            if (car->speed < tableValue &&
-                g_AutoShiftCooldown <= 0 && car->drive.clutch == 0) {
-                if (g >= 2) {
-                    car->drive.gear = car->drive.gear - 1;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            } else {
-                GameCarSpec *config;
-                GameCarSpecShiftPoint *entry;
-                s32 nextGear;
-                s32 speed;
-
-                nextGear = p->gear;
-                config = g_CarSpec;
-                speed = car->speed;
-                idx = nextGear - 1;
-                entry = config->shiftPoints;
-                entry += idx;
-                if (entry->upshiftSpeed < speed &&
-                    g_AutoShiftCooldown <= 0 && p->clutch == 0 &&
-                    nextGear < config->topGear) {
-                    p->gear = p->gear + 1;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            }
-        }
-        if (g_AutoShiftCooldown > 0) {
-            if (p->brakeInput >= 129) {
-                g_AutoShiftCooldown = g_AutoShiftCooldown - 2;
-            } else {
-                g_AutoShiftCooldown = g_AutoShiftCooldown - 1;
-            }
-        }
-        if (car->speed == 0 && p->gear >= 2 && p->motionState != CAR_MOTION_STANDING_START) {
-            p->gear = 1;
-            p->clutch = 0;
-            g_AutoShiftCooldown = 0;
-        }
+    {
+        GearboxState gearbox = {
+            p->gear, p->clutch, p->manual, p->brakeInput, p->motionState,
+            g_AutoShiftCooldown, g_SteerHoldFrames};
+        GearboxInput input = {
+            car->speed, car->shiftState,
+            (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) != 0,
+            (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) != 0,
+            g_CarSpec->topGear, g_CarSpec->shiftPoints};
+        GearboxUpdate(&gearbox, &input);
+        p->gear = gearbox.gear;
+        p->clutch = gearbox.clutch;
+        g_AutoShiftCooldown = gearbox.autoShiftCooldown;
+        g_SteerHoldFrames = gearbox.steerHoldFrames;
     }
 
     UpdateCarBodyRoll(car);
