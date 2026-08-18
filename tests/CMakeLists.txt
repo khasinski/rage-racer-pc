@@ -94,6 +94,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME memory_card_controller COMMAND memory_card_controller_tests)
 
+add_executable(menu_controller_tests menu_controller_tests.c
+    ../src/main/PAL/main/menu/menu_controller.c)
+target_include_directories(menu_controller_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(menu_controller_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(menu_controller_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME menu_controller COMMAND menu_controller_tests)
+
 add_executable(render_scene_tests
     render_scene_tests.c
     ../src/port/render/render_scene.c)

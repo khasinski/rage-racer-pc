@@ -12,6 +12,7 @@
  * searches for a cleaner shape.
  */
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_workspace.h"
@@ -26,7 +27,9 @@ void UpdateTeamLogoScreen(void)
   s32 sel;
   s32 edge;
   s32 cnt;
+  s32 direction;
   int buttonHeight;
+  MenuCursorResult navigation;
   ot = RENDER_OT_BASE;
   g_MenuAltLayout = 0;
   state = GameMenuBusy;
@@ -43,16 +46,11 @@ void UpdateTeamLogoScreen(void)
     {
       g_MenuHintButtonsVisible = 1;
       g_MenuOverlayPattern = -1;
-      if (g_GameInput.pressed & PAD_UP)
-      {
-        PlaySoundCue(1);
-        g_TeamLogoOption = (g_TeamLogoOption > 0) ? (g_TeamLogoOption - 1) : (2);
-      }
-      if (g_GameInput.pressed & PAD_DOWN)
-      {
-        PlaySoundCue(1);
-        g_TeamLogoOption = (g_TeamLogoOption < 2) ? (g_TeamLogoOption + 1) : (0);
-      }
+      direction = ((g_GameInput.pressed & PAD_UP) != 0) -
+                  ((g_GameInput.pressed & PAD_DOWN) != 0);
+      navigation = MenuCursorMove(g_TeamLogoOption, 3, -direction, 0);
+      g_TeamLogoOption = navigation.selection;
+      if (navigation.moved) PlaySoundCue(1);
       edge = g_GameInput.pressed;
       if (edge & PAD_CONFIRM)
       {

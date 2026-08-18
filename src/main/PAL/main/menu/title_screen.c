@@ -8,6 +8,7 @@
 #include "game/car.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
@@ -230,7 +231,9 @@ void ShuffleBgmOrder(void) {
 void UpdateMainMenuInput(void) {
     volatile u16 *flagp = &g_GameInput.pressed;
     s32 idx;
+    s32 direction;
     u16 flags;
+    MenuCursorResult navigation;
 
     if (*flagp != 0) {
         g_FrontendIdleTimer = 0;
@@ -238,28 +241,11 @@ void UpdateMainMenuInput(void) {
     flags = *flagp;
     idx = g_TitleMenuSelection;
 
-    if (flags & 0x1000) {
-        s32 n = idx - 1;
-        g_TitleMenuSelection = n;
-        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
-            g_TitleMenuSelection = idx - 2;
-        }
-    } else if (flags & 0x4000) {
-        s32 n = idx + 1;
-        g_TitleMenuSelection = n;
-        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
-            g_TitleMenuSelection = idx + 2;
-        }
-    }
-
-    {
-        s32 m = g_TitleMenuSelection + 5;
-        m = m % 5;
-        g_TitleMenuSelection = m;
-        if (idx != m) {
-            PlaySoundCue(1);
-        }
-    }
+    direction = (flags & PAD_UP) ? -1 : ((flags & PAD_DOWN) ? 1 : 0);
+    navigation = MenuCursorMove(
+        idx, 5, direction, g_ExtraGrandPrixUnlocked ? 0x1Fu : 0x1Du);
+    g_TitleMenuSelection = navigation.selection;
+    if (navigation.moved) PlaySoundCue(1);
 
     if (g_GameInput.pressed & PAD_CONFIRM) {
         PlaySoundCue(2);

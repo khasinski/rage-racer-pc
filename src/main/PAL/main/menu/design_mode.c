@@ -3,6 +3,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
 #include "game/state.h"
@@ -84,7 +85,9 @@ s32 DrawDesignModeScreen(s32 step) {
 
 void UpdateDesignModeScreen(void) {
     s32 sel;
+    s32 direction;
     u16 edge;
+    MenuCursorResult navigation;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
@@ -95,14 +98,11 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
         if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
             g_MenuOverlayPattern = -1;
-            if (g_GameInput.pressed & PAD_UP) {
-                PlaySoundCue(1);
-                g_DesignModeOption = (g_DesignModeOption > 0) ? g_DesignModeOption - 1 : 3;
-            }
-            if (g_GameInput.pressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_DesignModeOption = (g_DesignModeOption < 3) ? g_DesignModeOption + 1 : 0;
-            }
+            direction = ((g_GameInput.pressed & PAD_UP) != 0) -
+                        ((g_GameInput.pressed & PAD_DOWN) != 0);
+            navigation = MenuCursorMove(g_DesignModeOption, 4, -direction, 0);
+            g_DesignModeOption = navigation.selection;
+            if (navigation.moved) PlaySoundCue(1);
             if (g_GameInput.pressed & PAD_CONFIRM) {
                 sel = g_DesignModeOption;
                 if (sel == 0) {

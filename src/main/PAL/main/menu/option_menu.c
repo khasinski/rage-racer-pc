@@ -3,6 +3,7 @@
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/random.h"
@@ -38,23 +39,18 @@ void DrawOptionRootMenu(void) {
 
 /* g_GameModeHandlers[1]: the six-row root menu and where each row goes. */
 void UpdateOptionRootMenu(void) {
-    s32 old;
     s32 value;
     s32 buttons;
+    s32 direction;
+    MenuCursorResult navigation;
 
     DrawOptionRootMenu();
 
-    old = g_OptionMenuCursor;
-    if (g_GameInput.pressed & PAD_UP) {
-        g_OptionMenuCursor = old - 1;
-    } else if (g_GameInput.pressed & PAD_DOWN) {
-        g_OptionMenuCursor = old + 1;
-    }
-
-    g_OptionMenuCursor = (g_OptionMenuCursor + 6) % 6;
-    if (old != g_OptionMenuCursor) {
-        PlaySoundCue(1);
-    }
+    direction = (g_GameInput.pressed & PAD_UP) ? -1 :
+                ((g_GameInput.pressed & PAD_DOWN) ? 1 : 0);
+    navigation = MenuCursorMove(g_OptionMenuCursor, 6, direction, 0);
+    g_OptionMenuCursor = navigation.selection;
+    if (navigation.moved) PlaySoundCue(1);
 
     buttons = g_GameInput.pressed;
     if (buttons & 0x860) {
@@ -200,28 +196,17 @@ void DrawClassRecordGrid(void) {
 
 /* g_GameModeHandlers[2]: two-row menu into the class-record grid. */
 void UpdateClassRecordMenu(void) {
-    u16 *buttonPtr;
-    s32 oldCursor;
     u16 buttons;
+    s32 direction;
+    MenuCursorResult navigation;
 
     DrawClassRecordGrid();
 
-    buttonPtr = &g_GameInput.pressed;
-    oldCursor = g_ClassRecordMenuCursor;
-    buttons = *buttonPtr;
-    if (buttons & 0x1000) {
-        g_ClassRecordMenuCursor = oldCursor - 1;
-    }
-    if (buttons & 0x4000) {
-        g_ClassRecordMenuCursor = g_ClassRecordMenuCursor + 1;
-    }
-
-    g_ClassRecordMenuCursor = (g_ClassRecordMenuCursor + 2) % 2;
-    if (oldCursor != g_ClassRecordMenuCursor) {
-        PlaySoundCue(1);
-    }
-
-    buttons = *buttonPtr;
+    buttons = g_GameInput.pressed;
+    direction = ((buttons & PAD_UP) != 0) - ((buttons & PAD_DOWN) != 0);
+    navigation = MenuCursorMove(g_ClassRecordMenuCursor, 2, -direction, 0);
+    g_ClassRecordMenuCursor = navigation.selection;
+    if (navigation.moved) PlaySoundCue(1);
     if (buttons & 0x860) {
         PlaySoundCue(2);
         if (g_ClassRecordMenuCursor != 0) {
@@ -373,29 +358,16 @@ void DrawSoundOptionScreen(void) {
 
 /* g_GameModeHandlers[4]: the four-row sound menu; confirm backs the setting up and enters mode 5. */
 void UpdateSoundOptionMenu(void) {
-    u16 *buttonsPtr;
     u16 buttons;
-    s32 old;
-    s32 index;
+    s32 direction;
+    MenuCursorResult navigation;
 
     DrawSoundOptionScreen();
-    buttonsPtr = &g_GameInput.pressed;
-    buttons = *buttonsPtr;
-    old = g_SoundOptionCursor;
-    if (buttons & 0x1000) {
-        g_SoundOptionCursor = old - 1;
-    }
-    if (buttons & 0x4000) {
-        g_SoundOptionCursor++;
-    }
-
-    index = (g_SoundOptionCursor + 4) % 4;
-    g_SoundOptionCursor = index;
-    if (old != index) {
-        PlaySoundCue(1);
-    }
-
-    buttons = *buttonsPtr;
+    buttons = g_GameInput.pressed;
+    direction = ((buttons & PAD_UP) != 0) - ((buttons & PAD_DOWN) != 0);
+    navigation = MenuCursorMove(g_SoundOptionCursor, 4, -direction, 0);
+    g_SoundOptionCursor = navigation.selection;
+    if (navigation.moved) PlaySoundCue(1);
     if (buttons & 0x860) {
         PlaySoundCue(2);
         g_GameMode = 5;
