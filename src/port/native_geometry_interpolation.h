@@ -15,5 +15,7 @@ uint8_t RageBilerpByte(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3,
 int RageClampSubdivisionLevel(int level);
 int RageModelFaceVisible(int mirror, int clip);
 int RageCourseQuadVisible(int mirror, int clip0, int clip1);
+int RageOrthonormalizeMatrix3x3(void *matrixStorage,
+                                const void *fallbackStorage);
 
 #endif

@@ -162,11 +162,18 @@ static void test_port_config(void) {
         unlink(path);
     }
     {
+        RagePortConfig zeroDistance;
+        char *zeroArguments[] = {
+            "rage-test", "--set", "video.draw_distance=0"};
         char *booleanArguments[] = {
             "rage-test", "--set", "feature.enabled=False"};
         char *invalidSet[] = {"rage-test", "--set", "broken"};
         char *missingConfig[] = {
             "rage-test", "--config", "/path/which/does/not/exist"};
+        RagePortConfigDefaults(&zeroDistance);
+        EXPECT_EQ(1, RageRuntimeConfigInit(3, zeroArguments));
+        EXPECT_EQ(1, RagePortConfigApplyRuntime(&zeroDistance));
+        EXPECT_EQ(0, (s32)(zeroDistance.modernDrawDistance * 10.0f));
         EXPECT_EQ(1, RageRuntimeConfigInit(3, booleanArguments));
         EXPECT_EQ(0, RageRuntimeConfigEnabled("feature.enabled", NULL));
         EXPECT_EQ(0, RageRuntimeConfigInit(3, invalidSet));

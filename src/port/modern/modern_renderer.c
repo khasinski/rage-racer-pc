@@ -11,6 +11,7 @@
 #include <string.h>
 #include "scene_capture.h"
 #include "modern_renderer_diagnostics.h"
+#include "../native_geometry_interpolation.h"
 #include "../runtime_config.h"
 #include "shaders/modern_vert_spv.h"
 #include "shaders/modern_frag_spv.h"
@@ -67,6 +68,7 @@ static uint32_t s_ringFrame[MODERN_RING];
 static float s_ringT[MODERN_RING];
 static int s_ringNext;
 static RageSceneSnapshot *s_ringScene; /* MODERN_RING copies */
+static int s_ringEnabled;
 static int s_resourcesReady;
 static unsigned int s_resourceGeneration;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
@@ -353,6 +355,8 @@ static int ModernEnsureResources(void) {
     s_targetW = (int)(s_logicalW * scale + 0.5f) & ~1;
     s_targetH = (int)(240.0f * scale + 0.5f) & ~1;
 
+    s_ringEnabled = RageRuntimeConfigEnabled(
+        "diagnostics.marker_history", NULL);
     {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -406,7 +410,7 @@ static int ModernEnsureResources(void) {
     s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
     s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
 
-    {
+    if (s_ringEnabled) {
         SDL_GPUTextureCreateInfo info = {0};
         int slot;
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -620,6 +624,11 @@ static void ModernLerpGte(const RageCaptureGteState *a,
             out->color.m[row][column] = b->color.m[row][column];
         }
     }
+    /* Component-wise matrix interpolation shrinks rotating axes between
+     * logic frames. It is especially visible on fast-spinning wheels as a
+     * periodic model-size pulse. Re-orthonormalize the interpolated basis,
+     * retaining reflected (rear-view/mirrored-course) handedness. */
+    RageOrthonormalizeMatrix3x3(out->rot.m, b->rot.m);
     for (axis = 0; axis < 3; axis++) {
         out->rot.t[axis] =
             (int32_t)(a->rot.t[axis] +
@@ -643,6 +652,7 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
                                        const RageSceneSnapshot *target,
                                        float t) {
     int i;
+    uint8_t matchedTarget[RAGE_CAPTURE_MAX_DRAWS] = {0};
     int timerDelta = target->sceneTimer - base->sceneTimer;
     long long cameraDelta = 0;
     s_useLerp = 0;
@@ -669,7 +679,7 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
             const RageCaptureModelDraw *other = &target->draws[j];
             long long distance = 0;
             int axis;
-            if (other->kind != draw->kind ||
+            if (matchedTarget[j] || other->kind != draw->kind ||
                 other->modelIndex != draw->modelIndex ||
                 other->mirror != draw->mirror ||
                 other->table != draw->table) {
@@ -699,6 +709,7 @@ static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
             if (dot < 0) match = NULL;
         }
         if (match != NULL) {
+            matchedTarget[match - target->draws] = 1;
             ModernLerpGte(&draw->gte, &match->gte, t, &s_lerpDrawGte[i]);
         } else {
             s_lerpDrawGte[i] = draw->gte;
@@ -1634,9 +1645,18 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
+    static Uint64 profileBuildNs, profileSubmitNs;
+    static Uint64 profileFaces, profileVertices, profileSpans;
+    static unsigned profileFrames;
+    static int profile = -1;
+    Uint64 profileStart = 0, profileBuilt = 0;
     int i;
     if (vram == NULL) return;
+    if (profile < 0)
+        profile = RageRuntimeConfigEnabled("diagnostics.performance", NULL);
+    if (profile) profileStart = SDL_GetTicksNS();
     ModernBuildFrame(snapshot);
+    if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return;
     if (s_vertexCount > 0) {
@@ -1745,7 +1765,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                                  2);
         }
     }
-    if (s_ring[s_ringNext] != NULL) {
+    if (s_ringEnabled && s_ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
             .source = {.texture = ModernPresentTexture(),
                        .w = (Uint32)s_targetW,
@@ -1765,6 +1785,29 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         s_ringNext = (s_ringNext + 1) % MODERN_RING;
     }
     SDL_SubmitGPUCommandBuffer(cmd);
+    if (profile) {
+        Uint64 finished = SDL_GetTicksNS();
+        profileBuildNs += profileBuilt - profileStart;
+        profileSubmitNs += finished - profileBuilt;
+        profileFaces += (Uint64)snapshot->faceCount;
+        profileVertices += (Uint64)s_vertexCount;
+        profileSpans += (Uint64)s_spanCount;
+        profileFrames++;
+        if (profileFrames == 120) {
+            fprintf(stderr,
+                    "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
+                    "faces=%.0f vertices=%.0f spans=%.0f\n",
+                    profileFrames,
+                    (double)profileBuildNs / profileFrames / 1000000.0,
+                    (double)profileSubmitNs / profileFrames / 1000000.0,
+                    (double)profileFaces / profileFrames,
+                    (double)profileVertices / profileFrames,
+                    (double)profileSpans / profileFrames);
+            profileBuildNs = profileSubmitNs = 0;
+            profileFaces = profileVertices = profileSpans = 0;
+            profileFrames = 0;
+        }
+    }
     s_haveRenderedFrame = 1;
     if (RageRuntimeConfigEnabled("diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE")) {
         int counts[5] = {0};
@@ -1794,7 +1837,7 @@ static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
         .ringFrames = s_ringFrame,
         .ringInterpolation = s_ringT,
         .ringScenes = s_ringScene,
-        .ringCount = MODERN_RING,
+        .ringCount = s_ringEnabled ? MODERN_RING : 0,
         .ringNext = s_ringNext,
     };
     return frame;
@@ -2021,6 +2064,12 @@ int RageModernCullMarginX(void) {
     return 54;
 }
 
-int RageModernExtendedDepth(void) {
-    return s_enabled;
+int RageModernDepthLimit(void) {
+    float multiplier;
+    if (!s_enabled) return 0;
+    multiplier = s_config.modernDrawDistance;
+    if (multiplier <= 1.0f) return 0;
+    if (multiplier > (float)MODERN_FAR / 448.0f)
+        multiplier = (float)MODERN_FAR / 448.0f;
+    return (int)(448.0f * multiplier);
 }

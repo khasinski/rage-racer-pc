@@ -86,7 +86,7 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         return 1;
     }
     if (strcmp(name, "modern.draw_distance") == 0) {
-        return ParseFloat(value, &config->modernDrawDistance, 0.5f, 16.0f);
+        return ParseFloat(value, &config->modernDrawDistance, 0.0f, 16.0f);
     }
     if (strcmp(name, "modern.post") == 0) {
         if (strcmp(value, "none") == 0) {

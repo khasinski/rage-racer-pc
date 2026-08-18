@@ -19,6 +19,19 @@ void StepCdTrackRequest(void) {
         if (CdSync(1, 0) == 0) {
             break;
         }
+        /* Selecting a new track must silence the currently streaming one
+         * before CdlSetloc. PsyQ's CD drive did that as part of the seek;
+         * host backends otherwise keep the old CD-DA stream alive and the
+         * volume reset below makes it audible again just before replay. */
+        if (CdControl(9, 0, 0) == 0) {
+            break;
+        }
+        g_CdTrackStep = 8;
+        break;
+    case 8:
+        if (CdSync(1, 0) == 0) {
+            break;
+        }
         g_CdFadeFrames = 0;
         g_CdTrackStep = 1;
         /* fall through */

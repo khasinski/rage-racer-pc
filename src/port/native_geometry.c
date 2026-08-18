@@ -877,7 +877,8 @@ static void RageSubmitCourseModel(int index, int fogged) {
             if (!projected) {
                 /* Beyond-cutoff faces feed only the modern far view. */
                 if (g_RageProjectionReject == 3 &&
-                    RageModernExtendedDepth() && depth > 0 && depth < 896) {
+                    RageModernDepthLimit() > 0 && depth > 0 &&
+                    depth < RageModernDepthLimit()) {
                     extendedDepth = 1;
                 } else {
                     continue;
@@ -1075,54 +1076,6 @@ void SubmitCourseModel2(void *ctx, int index) {
     (void)ctx;
     RageSubmitCourseModel(index, 1);
 }
-void SubmitTerrainCells(void *ctx, void *cells, int count);
-
-/* Capture-only extension of the visible-cell list. Retail's authored scan
- * pattern and region PVS reach ~42k units; everything farther simply never
- * enters g_VisibleCellList, which is what left holes in the modern far
- * road. Scan the whole 32x32 grid with the same view transform retail
- * uses, keep cells the compat list does not draw, and run them through the
- * normal dispatcher with the capture-only flag: faces are recorded for the
- * modern renderer, nothing is emitted to the compat stream. */
-static int g_RageCaptureOnlyCells;
-extern u16 *g_TerrainCellGrid;
-void *ApplyMatrixLV();
-
-static void RageCaptureExtendedCells(void *ctx) {
-    ScratchViewState *view = SCRATCH_VIEW_STATE;
-    int32_t extras[64][4];
-    int count = 0;
-    int sx, sy;
-    if (g_TerrainCellGrid == NULL || g_VisibleCellMask == NULL) return;
-    for (sy = 0; sy < 32 && count < 64; sy++) {
-        for (sx = 0; sx < 32 && count < 64; sx++) {
-            int cellIndex = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;
-            int inCompatList = (g_VisibleCellMask[sy] >> sx) & 1;
-            s32 vec[3];
-            s32 proj[3];
-            if (cellIndex == 0x3FF) continue;
-            vec[0] = ((sx << 11) -
-                      (view->position.components.x.value - 1024)) * 4;
-            vec[1] = (-view->position.components.y.value) * 4;
-            vec[2] = ((sy << 11) -
-                      (view->position.components.z.value - 1024)) * 4;
-            ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, vec, proj);
-            if (proj[2] < 0x800 || proj[2] > 0x1C000) continue;
-            /* Cells the compat list already drew stay compat's. */
-            if (inCompatList && proj[2] <= 0x14000) continue;
-            extras[count][0] = proj[0];
-            extras[count][1] = proj[1];
-            extras[count][2] = proj[2];
-            extras[count][3] = cellIndex;
-            count++;
-        }
-    }
-    if (count == 0) return;
-    g_RageCaptureOnlyCells = 1;
-    SubmitTerrainCells(ctx, extras, count);
-    g_RageCaptureOnlyCells = 0;
-}
-
 void SubmitTerrainCells(void *ctx, void *cells, int count) {
     static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
     const int32_t *visible = (const int32_t *)cells;
@@ -1208,12 +1161,12 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                     RageReadU16(stream + 4), RageReadU16(stream + 6)
                 };
                 int bias;
-                int extendedDepth = g_RageCaptureOnlyCells;
+                int extendedDepth = 0;
                 if (farCell && (stream[20] & 2) != 0) {
                     /* Retail's far-cell path skips these records entirely;
                      * capture them for the modern renderer's continuous far
                      * road without emitting to the compat stream. */
-                    if (!RageModernExtendedDepth()) continue;
+                    if (RageModernDepthLimit() <= 0) continue;
                     extendedDepth = 1;
                 }
                 {
@@ -1267,10 +1220,9 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                          * sky holes across the road where a whole stretch
                          * of strips was NCLIP-rejected in one frame. */
                         int reject = g_RageProjectionReject;
-                        if ((reject == 3 || (reject == 2 && depth >= 96) ||
-                             g_RageCaptureOnlyCells) &&
-                            RageModernExtendedDepth() && depth > 0 &&
-                            depth < 1024) {
+                        if ((reject == 3 || (reject == 2 && depth >= 96)) &&
+                            RageModernDepthLimit() > 0 && depth > 0 &&
+                            depth < RageModernDepthLimit()) {
                             extendedDepth = 1;
                         } else {
                             continue;
@@ -1537,10 +1489,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     }
     SCRATCH_PRIM_CURSOR_AS(uint8_t) = cursor;
     RageCaptureSubmitEnd();
-    if (!g_RageCaptureOnlyCells && !SCRATCH_MIRROR &&
-        RageModernExtendedDepth()) {
-        RageCaptureExtendedCells(ctx);
-    }
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",

@@ -27,6 +27,9 @@ void TickSequenceAudio(void) {
         if (g_SeqVolumeFadeStep != 0) {
             UpdateSequenceFadeOut();
         }
+        /* libsnd batches voice register writes. On PS1 its sound interrupt
+         * flushed the final key-off; the host drives this service directly. */
+        SpuVmDamperStep();
     }
 }
 

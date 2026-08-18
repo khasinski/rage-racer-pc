@@ -14,8 +14,8 @@ CASES = {
     "enhanced": ("16:9", "linear", "fxaa", "0.6", "vibrant", (426, 240)),
 }
 MODERN_GOLDENS = {
-    "baseline": "6bf528fab7fa1f60b51ffc6d6ac418e319f2a63e703e0248620824dc1a5b58ff",
-    "enhanced": "5717ab047316e81714873c57984e8135798bb1846808b03d3cc1f828b4547213",
+    "baseline": "bb6c04d335585d8cbfeb2954a1d25c16910315b6e69afd472c8611f4bbb5249a",
+    "enhanced": "06ce68e6a2117c01c05fbd49112c289a003d35fa662dcb32e6247dcfbc96efcd",
 }
 
 
@@ -34,6 +34,7 @@ def read_ppm(path: Path) -> tuple[tuple[int, int], bytes]:
 def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     digests = {}
+    mismatches = {}
     with tempfile.TemporaryDirectory(prefix="rage modern ąę ") as directory:
         root = Path(directory)
         for name, (aspect, filtering, post, bloom, grading, dimensions) in CASES.items():
@@ -89,11 +90,11 @@ timer = 120
                 raise AssertionError(f"modern {name} frame is effectively empty")
             digests[name] = hashlib.sha256(capture.read_bytes()).hexdigest()
             if digests[name] != MODERN_GOLDENS[name]:
-                raise AssertionError(
-                    f"modern {name} reference changed: {digests[name]}"
-                )
+                mismatches[name] = digests[name]
     if digests["baseline"] == digests["enhanced"]:
         raise AssertionError("modern enhancement pipeline did not affect output")
+    if mismatches:
+        raise AssertionError(f"modern references changed: {mismatches}")
     return 0
 
 

@@ -16,6 +16,10 @@ int main(void) {
     SVECTOR d = {100, 100, 100, 0};
     SVECTOR midpoint;
     int packed;
+    int16_t rotating[3][3] = {
+        {2048, 0, 2048}, {0, 4096, 0}, {-2048, 0, 2048}};
+    int16_t fallback[3][3] = {
+        {0, 0, 4096}, {0, 4096, 0}, {-4096, 0, 0}};
 
     CHECK(RageFloorShift12(4095) == 0);
     CHECK(RageFloorShift12(4096) == 1);
@@ -47,5 +51,11 @@ int main(void) {
     CHECK(!RageCourseQuadVisible(1, 1, -1));
     CHECK(!RageCourseQuadVisible(0, 0, 0));
     CHECK(!RageCourseQuadVisible(1, 0, 0));
+    CHECK(RageOrthonormalizeMatrix3x3(rotating, fallback));
+    CHECK(rotating[0][0] > 2890 && rotating[0][0] < 2905);
+    CHECK(rotating[0][2] == rotating[0][0]);
+    CHECK(rotating[1][1] == 4096);
+    CHECK(rotating[2][0] == -rotating[0][0]);
+    CHECK(rotating[2][2] == rotating[0][0]);
     return 0;
 }
