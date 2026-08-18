@@ -49,3 +49,99 @@ void MemoryCardControllerResolveDetection(MemoryCardControllerState *state) {
     }
     if (state->menuState != 3) state->errorTicks = 0;
 }
+
+static void ResolveCardError(MemoryCardControllerState *state) {
+    state->errorPending = 1;
+    if (state->cardStatus == -3) {
+        state->errorCountdown--;
+        if (state->errorCountdown == 0) state->menuState = -3;
+    }
+}
+
+static void ClearPendingError(MemoryCardControllerState *state) {
+    if (state->errorPending != 0) {
+        state->errorPending = 0;
+        state->errorCountdown = 3;
+    }
+}
+
+void MemoryCardControllerResolveTransition(MemoryCardControllerState *state) {
+    s32 current = state->menuState;
+
+    if (state->selection == 3) {
+        state->lastMenuState = current;
+        state->menuState = 3;
+        return;
+    }
+
+    switch (current) {
+    case 1:
+        switch (state->selection) {
+        case -2:
+        case -1:
+        case 2:
+            state->menuState = state->selection;
+            break;
+        case 1:
+            ClearPendingError(state);
+            break;
+        default:
+            ResolveCardError(state);
+            break;
+        }
+        break;
+    case 2:
+        switch (state->selection) {
+        case -2:
+        case -1:
+            state->menuState = state->selection;
+            break;
+        case 2:
+            ClearPendingError(state);
+            break;
+        case 1:
+            break;
+        default:
+            ResolveCardError(state);
+            break;
+        }
+        break;
+    case -1:
+        switch (state->selection) {
+        case 1:
+        case 2:
+            state->menuState = 2;
+            ClearPendingError(state);
+            break;
+        case -1:
+            ClearPendingError(state);
+            break;
+        case -2:
+            state->menuState = -2;
+            break;
+        case 3:
+            break;
+        default:
+            ResolveCardError(state);
+            break;
+        }
+        break;
+    case -2:
+        switch (state->selection) {
+        case 1:
+        case 2:
+            state->menuState = 2;
+            break;
+        case -1:
+            state->menuState = -1;
+            break;
+        case -2:
+            ClearPendingError(state);
+            break;
+        default:
+            ResolveCardError(state);
+            break;
+        }
+        break;
+    }
+}

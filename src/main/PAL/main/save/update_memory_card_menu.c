@@ -67,20 +67,35 @@ static s32 AdvanceMemoryCardMenuStartup(void) {
     return 0;
 }
 
+static void ResolveMemoryCardMenuTransition(
+    MemoryCardControllerState *controller) {
+    controller->menuState = g_McMenuState;
+    controller->selection = g_McMenuSelection;
+    controller->cardStatus = g_McCardStatus;
+    controller->lastMenuState = g_McLastMenuState;
+    controller->errorPending = g_McErrorPending;
+    controller->errorCountdown = g_McErrorCountdown;
+    MemoryCardControllerResolveTransition(controller);
+    g_McMenuState = controller->menuState;
+    g_McLastMenuState = controller->lastMenuState;
+    g_McErrorPending = controller->errorPending;
+    g_McErrorCountdown = controller->errorCountdown;
+}
+
 void UpdateMemoryCardMenu(void) {
     s32 fadeBusy;
     s32 tmp;
     u16 pad;
     s32 wtmp;
     s32 mst;
-    s32 mslot;
     MemoryCardControllerState controller;
 
     fadeBusy = UpdateMemoryCardFade();
     if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
     controller = (MemoryCardControllerState){
         g_McMenuState, g_McMenuSelection, g_McMenuSubState, g_McCardStatus,
-        g_McNoCardTicks, g_McErrorTicks, g_McLastMenuState};
+        g_McNoCardTicks, g_McErrorTicks, g_McLastMenuState,
+        g_McErrorPending, g_McErrorCountdown};
     if (MemoryCardControllerShouldPoll(g_McActionBusy, g_McErrorPending))
         MemoryCardControllerApplyStatus(
             &controller, PollMemoryCardStatus(0, 0));
@@ -509,35 +524,7 @@ slot_prompt_done:
             g_McMenuRowCursor = cm1;
         }
     }
-    switch (g_McMenuSelection) {
-    case 3:
-        g_McLastMenuState = g_McMenuState;
-        /* fallthrough */
-    case -2:
-    case -1:
-    case 2:
-        g_McMenuState = g_McMenuSelection;
-        break;
-    case 1:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
-        break;
-    case -3:
-    default:
-        {
-            s32 sd = g_McCardStatus;
-            g_McErrorPending = 1;
-            if (sd == -3) {
-                s32 r = g_McErrorCountdown - 1;
-                g_McErrorCountdown = r;
-                if (r == 0) {
-                    g_McMenuState = sd;
-                }
-            }
-        }
-    }
+    ResolveMemoryCardMenuTransition(&controller);
     if (!(g_McMenuState == 1)) {
     g_McActionState = 0;
     g_McActionResult = 0;
@@ -647,37 +634,7 @@ slot_prompt_done:
     default:
     }
 
-    switch (g_McMenuSelection) {
-    case 3:
-        g_McLastMenuState = g_McMenuState;
-        /* fallthrough */
-    case -2:
-    case -1:
-        g_McMenuState = g_McMenuSelection;
-        break;
-    case 2:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
-        break;
-    case 1:
-        break;
-    case -3:
-    case 0:
-    default:
-    {
-        s32 cardStatus = g_McCardStatus;
-        g_McErrorPending = 1;
-        if (cardStatus == -3) {
-            s32 t = g_McErrorCountdown;
-            g_McErrorCountdown = t - 1;
-            if (g_McErrorCountdown == 0) {
-                g_McMenuState = cardStatus;
-            }
-        }
-    }
-    }
+    ResolveMemoryCardMenuTransition(&controller);
 
     if (g_McMenuState == 2) break;
     g_McMenuSubState = 1;
@@ -756,32 +713,7 @@ L_b1280:
     default:
     break;
     }
-    switch (g_McMenuSelection) {
-    case 1:
-    case 2:
-        g_McMenuState = 2;
-        /* fall through */
-    case -1:
-        if (g_McErrorPending == 0) break;
-        g_McErrorPending = 0;
-        g_McErrorCountdown = 3;
-        break;
-    case -2:
-        g_McMenuState = -2;
-        break;
-    default:
-    case -3:
-    case 0:
-        mslot = g_McCardStatus;
-        g_McErrorPending = 1;
-        if (mslot != -3) break;
-        g_McErrorCountdown -= 1;
-        if (g_McErrorCountdown != 0) break;
-        g_McMenuState = mslot;
-        /* fall through */
-    case 3:
-        ;
-    }
+    ResolveMemoryCardMenuTransition(&controller);
 
     if (!(g_McMenuState == -1)) {
     g_McActionState = 0;
@@ -911,38 +843,7 @@ L_b1280:
     default:
     break;
     }
-    switch (g_McMenuSelection) {
-    case 1:
-    case 2:
-        g_McMenuState = 2;
-        break;
-    case 3:
-        g_McLastMenuState = g_McMenuState;
-        g_McMenuState = 3;
-        break;
-    case -1:
-        g_McMenuState = -1;
-        break;
-    case -2:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
-        break;
-    case -3:
-    default:
-        {
-            s32 sd = g_McCardStatus;
-            g_McErrorPending = 1;
-            if (sd == -3) {
-                s32 r = g_McErrorCountdown - 1;
-                g_McErrorCountdown = r;
-                if (r == 0) {
-                    g_McMenuState = sd;
-                }
-            }
-        }
-    }
+    ResolveMemoryCardMenuTransition(&controller);
 
     if (!(g_McMenuState == -2)) {
     g_McActionState = 0;
