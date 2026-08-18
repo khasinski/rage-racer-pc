@@ -33,7 +33,8 @@ add_executable(game_runtime_tests
     game_runtime_tests.c
     ../src/main/PAL/main/boot/game_events.c
     ../src/main/PAL/main/boot/scene_manager.c
-    ../src/main/PAL/main/boot/game_context.c)
+    ../src/main/PAL/main/boot/game_context.c
+    ../src/main/PAL/main/boot/game_runtime.c)
 target_include_directories(game_runtime_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(game_runtime_tests PRIVATE __psyz=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

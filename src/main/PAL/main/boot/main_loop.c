@@ -14,7 +14,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/input_internal.h"
-#include "game/game_context.h"
+#include "game/game_runtime.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
@@ -74,11 +74,87 @@ void InitSubsystems(void) {
  * handler, waits for the frame deadline, swaps the display and refreshes the
  * pad.
  */
-void MainLoop(void) {
-    GameContext game;
+static void PrepareGameFrame(void *user) {
+    s32 parity = g_FrameCounter & 1;
+    u8 *frame = g_FrameContexts[parity].bytes;
+    GameFrameContextAddress frameAddress;
+    GameFrameContextAddress drawBuffer;
+    (void)user;
+
+    g_DrawBuffer = frame;
+    g_FrameParity = parity;
+    frameAddress.bytes = frame;
+    SCRATCH_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
+    SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
+    ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
+    drawBuffer.bytes = g_DrawBuffer;
+    ClearOTagR(drawBuffer.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
+}
+
+static void ServiceGameSystems(void *user) {
+    (void)user;
+    TickCdAudio();
+    TickSequenceAudio();
+    ServiceAssetLoad();
+    AdvanceSaveHeaderCounter();
+}
+
+static void BeforeGameScene(void *user) {
+    (void)user;
+#ifdef __psyz
+    RagePortBeforeSceneHandler();
+#endif
+}
+
+static void AfterGameScene(void *user) {
+    (void)user;
+#ifdef __psyz
+    RagePortAfterSceneHandler();
+#endif
+}
+
+static void PresentGameFrame(void *user) {
     s32 frameLimit;
     s32 elapsed;
     s32 ticks;
+    GameFrameContextAddress drawBuffer;
+    (void)user;
+
+    DrawSync(0);
+    StepTrackTextureSwap();
+    frameLimit = g_FrameSyncThreshold;
+    while (VSync(1) < frameLimit) {
+#ifdef __psyz
+        RagePortDuringFrameWait(frameLimit);
+#endif
+    }
+    elapsed = VSync(1);
+    ticks = g_GameClock + 1;
+    g_GameClock = ticks + elapsed / 256;
+    VSync(0);
+#ifdef __psyz
+    Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
+#endif
+    drawBuffer.bytes = g_DrawBuffer;
+    PutDrawEnv(&drawBuffer.context->environment.draw);
+    PutDispEnv(&drawBuffer.context->environment.display);
+    DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
+    DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
+    RagePortSampleAnalogPad();
+    UpdatePadState();
+    g_FrameCounter = g_FrameCounter + 1;
+}
+
+static s32 ShouldExitGame(void *user) {
+    (void)user;
+    return RagePortShouldExit(g_FrameCounter);
+}
+
+void MainLoop(void) {
+    GameRuntime runtime;
+    const GameRuntimeServices services = {
+        0, PrepareGameFrame, ServiceGameSystems, BeforeGameScene,
+        AfterGameScene, PresentGameFrame, ShouldExitGame};
 
     __main();
     KernelCallbackSlot3();
@@ -93,81 +169,17 @@ void MainLoop(void) {
     SetupDisplay240(0, 0, 0);
     g_SceneTimer = 0;
     g_SceneId = SCENE_BOOT_LOGO;
-    GameContextInit(&game, &g_SceneId, &g_SceneTimer, g_SceneHandlers,
-                    SCENE_COUNT);
-    GameContextSetActive(&game);
+    GameRuntimeInit(&runtime, &g_SceneId, &g_SceneTimer, g_SceneHandlers,
+                    SCENE_COUNT, &services);
     RequestBootAssets();
     g_GameClock = 0;
     g_FrameCounter = 0;
     for (;;) {
-        s32 parity = g_FrameCounter & 1;
-        u8 *frame = g_FrameContexts[parity].bytes;
-
-        g_DrawBuffer = frame;
-        g_FrameParity = parity;
-        {
-            GameFrameContextAddress frameAddress;
-            frameAddress.bytes = frame;
-            SCRATCH_OT_BASE_AS(OT_TYPE) =
-                frameAddress.context->layout.orderingTables[0];
-            SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
-            ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            ClearOTagR(drawBuffer.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
-        }
-        TickCdAudio();
-        TickSequenceAudio();
-        ServiceAssetLoad();
-        AdvanceSaveHeaderCounter();
-#ifdef __psyz
-        RagePortBeforeSceneHandler();
-#endif
-        if (!SceneManagerDispatch(&game.scenes)) {
+        GameRuntimeStepResult result = GameRuntimeStep(&runtime);
+        if (result == GAME_RUNTIME_INVALID_SCENE) {
             fprintf(stderr, "rage-port: invalid scene id %d\n", g_SceneId);
             return;
         }
-#ifdef __psyz
-        RagePortAfterSceneHandler();
-#endif
-        DrawSync(0);
-        StepTrackTextureSwap();
-        frameLimit = g_FrameSyncThreshold;
-        while (VSync(1) < frameLimit) {
-#ifdef __psyz
-            RagePortDuringFrameWait(frameLimit);
-#endif
-        }
-        elapsed = VSync(1);
-        ticks = g_GameClock + 1;
-        g_GameClock = ticks + elapsed / 256;
-        VSync(0);
-#ifdef __psyz
-        Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
-#endif
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            PutDrawEnv(&drawBuffer.context->environment.draw);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            PutDispEnv(&drawBuffer.context->environment.display);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
-            DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
-        }
-        RagePortSampleAnalogPad();
-        UpdatePadState();
-        g_FrameCounter = g_FrameCounter + 1;
-        if (RagePortShouldExit(g_FrameCounter)) {
-            return;
-        }
+        if (result == GAME_RUNTIME_EXIT) return;
     }
 }

@@ -1,13 +1,73 @@
 #include "game/game_context.h"
+#include "game/game_runtime.h"
 
 static int failures;
 static int calls;
+static char phaseTrace[16];
+static int phaseCount;
 
 #define EXPECT_EQ(expected, actual) do {                                      \
     if ((int)(expected) != (int)(actual)) failures++;                         \
 } while (0)
 
 static void CountCall(void) { calls++; }
+
+static void Trace(char phase) { phaseTrace[phaseCount++] = phase; }
+static void ExpectTrace(const char *expected, int count) {
+    int index;
+    EXPECT_EQ(count, phaseCount);
+    for (index = 0; index < count; index++)
+        EXPECT_EQ(expected[index], phaseTrace[index]);
+}
+static void TracePrepare(void *user) { (void)user; Trace('P'); }
+static void TraceService(void *user) { (void)user; Trace('S'); }
+static void TraceBefore(void *user) { (void)user; Trace('B'); }
+static void TraceAfter(void *user) { (void)user; Trace('A'); }
+static void TracePresent(void *user) { (void)user; Trace('R'); }
+static s32 TraceContinue(void *user) { (void)user; Trace('X'); return 0; }
+static s32 TraceExit(void *user) { (void)user; Trace('X'); return 1; }
+static void TraceHandler(void) { Trace('H'); }
+
+static GameRuntimeServices TraceServices(GameRuntimeExitCheck exitCheck) {
+    GameRuntimeServices services = {
+        0, TracePrepare, TraceService, TraceBefore, TraceAfter,
+        TracePresent, exitCheck};
+    return services;
+}
+
+static void test_runtime_step_order_and_exit(void) {
+    SceneHandler handlers[SCENE_COUNT] = {0};
+    GameRuntime runtime;
+    GameRuntimeServices services = TraceServices(TraceContinue);
+    s32 scene = SCENE_BOOT_LOGO;
+    s32 timer = 0;
+
+    handlers[SCENE_BOOT_LOGO] = TraceHandler;
+    phaseCount = 0;
+    GameRuntimeInit(&runtime, &scene, &timer, handlers, SCENE_COUNT, &services);
+    EXPECT_EQ(GAME_RUNTIME_CONTINUE, GameRuntimeStep(&runtime));
+    ExpectTrace("PSBHARX", 7);
+
+    services = TraceServices(TraceExit);
+    runtime.services = services;
+    phaseCount = 0;
+    EXPECT_EQ(GAME_RUNTIME_EXIT, GameRuntimeStep(&runtime));
+    ExpectTrace("PSBHARX", 7);
+}
+
+static void test_runtime_stops_at_invalid_scene(void) {
+    SceneHandler handlers[SCENE_COUNT] = {0};
+    GameRuntime runtime;
+    GameRuntimeServices services = TraceServices(TraceContinue);
+    s32 scene = SCENE_NONE;
+    s32 timer = 0;
+
+    handlers[SCENE_BOOT_LOGO] = TraceHandler;
+    phaseCount = 0;
+    GameRuntimeInit(&runtime, &scene, &timer, handlers, SCENE_COUNT, &services);
+    EXPECT_EQ(GAME_RUNTIME_INVALID_SCENE, GameRuntimeStep(&runtime));
+    ExpectTrace("PSB", 3);
+}
 
 static void test_transition_and_dispatch(void) {
     SceneHandler handlers[SCENE_COUNT] = {0};
@@ -101,6 +161,8 @@ static void test_event_queue_overflow_is_explicit(void) {
 }
 
 int main(void) {
+    test_runtime_step_order_and_exit();
+    test_runtime_stops_at_invalid_scene();
     test_transition_and_dispatch();
     test_legacy_transition_is_observed();
     test_invalid_scenes_are_rejected();
