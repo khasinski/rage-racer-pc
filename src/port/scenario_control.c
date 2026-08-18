@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "game/car.h"
 #include "game/input_internal.h"
@@ -233,6 +234,46 @@ static void RageScenarioConfirm(void) {
             g_SceneId, g_FrontendState, g_MenuScreen);
 }
 
+/* Seconds since the first traced frame. The automation is judged by how long
+ * it takes to reach a race, so the trace carries wall time rather than frames:
+ * scene handlers tick at different rates. */
+static double RageScenarioElapsed(void) {
+    struct timespec now;
+    static struct timespec start;
+    static int started;
+    if (timespec_get(&now, TIME_UTC) != TIME_UTC) return 0.0;
+    if (!started) {
+        started = 1;
+        start = now;
+    }
+    return (double)(now.tv_sec - start.tv_sec) +
+           (double)(now.tv_nsec - start.tv_nsec) / 1e9;
+}
+
+/* One line per state change, plus one when a screen the automation is still
+ * navigating outlasts every timeout the confirm ladder uses. A scenario that
+ * never reaches a race then names the screen it died on instead of just going
+ * quiet. Scene 11 and up hold their state for as long as the race and the
+ * result screens last, so they are never reported. */
+static void RageScenarioTrace(void) {
+    static int lastScene = -1, lastFrontend = -1, lastScreen = -1;
+    static int held;
+    if (g_SceneId != lastScene || g_FrontendState != lastFrontend ||
+        g_MenuScreen != lastScreen) {
+        lastScene = g_SceneId;
+        lastFrontend = g_FrontendState;
+        lastScreen = g_MenuScreen;
+        held = 0;
+        fprintf(stderr,
+                "rage-port: scenario state t=%.1fs scene=%d phase=%d screen=%d\n",
+                RageScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
+    } else if (++held == 600 && g_SceneId < 11) {
+        fprintf(stderr,
+                "rage-port: scenario stalled t=%.1fs scene=%d phase=%d screen=%d\n",
+                RageScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
+    }
+}
+
 void RagePortScenarioBeforeSceneHandler(void) {
     int changed, index;
     if (!s_scenario.initialized) RageScenarioInitialize();
@@ -287,6 +328,26 @@ void RagePortScenarioBeforeSceneHandler(void) {
     } else {
         s_scenario.stableFrames++;
         s_scenario.retryFrames++;
+    }
+
+    RageScenarioTrace();
+
+    /* Two non-interactive sequences sit between the boot logo and the first
+     * race: the ~30 s intro movie (5) and the ~51 s prologue cutscene (32),
+     * which UpdateMainMenuExit enters whenever the save is fresh. Both are
+     * skippable by the player, so the automation skips them too; PAD_CONFIRM
+     * carries PAD_START, which is what the movie player watches for. The
+     * prologue ignores the button until its own timer passes 0x79, so holding
+     * it costs nothing and takes effect at the first frame that accepts it. */
+    if (g_SceneId == 5 || g_SceneId == 32) {
+        g_PadType = 0x41;
+        g_PadPressed |= PAD_CONFIRM;
+    } else if (g_SceneId == 1) {
+        /* The boot logo drops its remaining hold as soon as a button is down
+         * and the assets behind it have finished loading. What is left after
+         * that is the load itself, which nothing can skip. */
+        g_PadType = 0x41;
+        g_PadHeld |= PAD_CONFIRM;
     }
 
     if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&
