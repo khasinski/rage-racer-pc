@@ -6,11 +6,15 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/render_workspace.h"
+#include "game/rival_update.h"
 #include "game/scratchpad_legacy.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+
+static const RivalUpdatePolicy kRaceRivalPolicy = {1, 1, 0, 1};
+static const RivalUpdatePolicy kAttractRivalPolicy = {0, 0, 1, 0};
 
 
 /*
@@ -135,75 +139,8 @@ void UpdateRaceCars(void) {
         i++;
         q++;
     } while ((s16)i < 11);
-    RankContenders();
-    for (i = 0; i < 11; i++) {
-        s32 j = (s16)i;
-        if (j >= 4 && (i & 1) != (g_AnimTimer & 1)) {
-            continue;
-        }
-        if (g_Cars[j].activeFlag != -1) {
-            UpdateCarTrafficAvoidance(&g_Cars[j], j);
-        }
-    }
-    i = 0;
-    base = g_Cars;
-    do {
-        CollideRivalCars(base, (s16)i);
-        i++;
-        base++;
-    } while ((s16)i < 10);
-    i = 0;
-    base = g_Cars;
-    do {
-        s32 j = (s16)i;
-        UpdateCarAiTargetSpeed(base, j);
-        ApplyCarRacingLineHint(base, j);
-        ClampCarLateralOffset(base, j);
-        SteerCarAlongRoute(base);
-        i++;
-        base++;
-    } while ((s16)i < 11);
-    UpdateRivalRubberBand();
-    i = (s16)g_ClosestRivalRank;
-    if (i > 0) {
-        do {
-            s32 j = (s16)i;
-            SlowRivalAhead(g_RankedCars[j], j);
-            i--;
-        } while ((s16)i > 0);
-    }
-    {
-    GameCarRuntime *walk;
-    i = 0;
-    base = g_Cars;
-    walk = g_Cars;
-    do {
-        if (walk->activeFlag != -1) {
-            drive = GetCarAiBlock(base);
-            if (walk->boostTimer > 0) {
-                if (walk->boostAccelerationThreshold < walk->boostTimer && walk->speed >= 0x321) {
-                    walk->acceleration = 0;
-                } else if (drive->accelerationLimit >= walk->acceleration) {
-                    walk->acceleration = drive->boostAcceleration + walk->acceleration;
-                } else {
-                    walk->acceleration = drive->accelerationLimit;
-                }
-                drive->boostTimer = drive->boostTimer - 1;
-            } else if (walk->accelerationLimit >= walk->acceleration) {
-                walk->acceleration = walk->accelerationStep + walk->acceleration;
-            } else {
-                walk->acceleration = walk->accelerationLimit;
-            }
-            walk->speed = walk->speed * 0x5E / 100;
-            walk->speed = walk->speed + walk->acceleration;
-            walk->bodyYaw =
-                GetAngleDelta(walk->bodyYaw, drive->targetYaw) / 5 + walk->bodyYaw;
-        }
-        i++;
-        walk++;
-        base++;
-    } while ((s16)i < 11);
-    }
+    RunRivalPlanningPasses(&kRaceRivalPolicy);
+    IntegrateRivalSpeeds(&kRaceRivalPolicy);
     {
     GameCarRuntime *walk;
     i = 0;
@@ -394,7 +331,6 @@ void UpdateAttractCars(void) {
     SVec sv1;
     /* These pins reproduce the retail induction registers. */
     register GameCarRuntime *car;
-    GameCarRuntime *sub;
     s16 i;
     GameCarRuntime *c0;
     c0 = g_Cars;
@@ -405,51 +341,10 @@ void UpdateAttractCars(void) {
         c0->progressA = ((c0->progressA) % (g_TrackLength));
         c0++;
     }
-    for (i = 0; i < 11; i++) {
-        if (((g_Cars[(s16)i]).activeFlag != -1)) {
-            UpdateCarTrafficAvoidance(&g_Cars[(s16)i], (s16)i);
-        }
-    }
-    i = 0;
-    car = g_Cars;
-    do {
-        CollideRivalCars(car, (s16)i);
-        i++;
-        car++;
-    } while (i < 10);
-    i = 0;
-    car = g_Cars;
-    do {
-        UpdateCarAiTargetSpeed(car, (s16)i);
-        ApplyCarRacingLineHint(car, (s16)i);
-        ClampCarLateralOffset(car, (s16)i);
-        SteerCarAlongRoute(car);
-        i++;
-        car++;
-    } while (i < 11);
+    RunRivalPlanningPasses(&kAttractRivalPolicy);
+    IntegrateRivalSpeeds(&kAttractRivalPolicy);
     {
         register GameCarAiBlock *drive;
-        i = 0;
-        car = g_Cars;
-        sub = g_Cars;
-        do {
-        if (sub->activeFlag != -1) {
-            drive = GetCarAiBlock(car);
-
-            if (sub->acceleration < sub->accelerationLimit) {
-                sub->acceleration = sub->accelerationStep + sub->acceleration;
-            } else {
-                sub->acceleration = sub->accelerationLimit;
-            }
-            sub->speed = sub->speed * 94 / 100;
-            sub->speed = sub->speed + sub->acceleration;
-            sub->bodyYaw =
-                GetAngleDelta(sub->bodyYaw, drive->targetYaw) / 5 + sub->bodyYaw;
-        }
-        i++;
-        sub++;
-        car++;
-        } while (i < 11);
         {
         GameCarRuntime *base;
         i = 0;

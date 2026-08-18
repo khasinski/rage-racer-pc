@@ -74,6 +74,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME car_physics COMMAND car_physics_tests)
 
+add_executable(rival_update_tests rival_update_tests.c
+    ../src/main/PAL/main/car/rival_update_policy.c)
+target_include_directories(rival_update_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(rival_update_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rival_update_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME rival_update COMMAND rival_update_tests)
+
 add_executable(render_scene_tests
     render_scene_tests.c
     ../src/port/render/render_scene.c)
