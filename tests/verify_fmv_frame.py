@@ -53,6 +53,16 @@ def main() -> int:
             raise AssertionError("320x192 FMV is not vertically centered")
         if sum(value != 0 for value in picture) < 10_000:
             raise AssertionError("FMV picture region is empty")
+        colors = zip(picture[0::3], picture[1::3], picture[2::3])
+        green_corruption = sum(
+            green > 60 and green > red + 40 and green > blue + 30
+            for red, green, blue in colors
+        )
+        if green_corruption > 2_000:
+            raise AssertionError(
+                "FMV has macroblock/Huffman colour corruption: "
+                f"green_pixels={green_corruption}"
+            )
     print("FMV layout and measured intro cadence are stable")
     return 0
 
