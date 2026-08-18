@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/render.h"
@@ -54,7 +55,7 @@ void UpdateMenuMode(void) {
     }
 
     if (g_MenuHintButtonsVisible != 0) {
-        if (g_PadType == 0x23) {
+        if (g_GameInput.controllerType == 0x23) {
             scratch++;
             DrawSprite(scratch, 0xC0, 0x1A1, 0x20, 0xC, 0x94, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);
             DrawSprite(scratch, 0xF0, 0x1A1, 0x2C, 0xC, 0xB4, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);

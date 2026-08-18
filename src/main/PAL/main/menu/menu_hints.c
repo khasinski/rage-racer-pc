@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/menu.h"
 #include "game/render.h"
@@ -55,7 +56,7 @@ void DrawOptionHintBar(s32 variant) {
     RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, prim, 0x3F);
 }
 
-/* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
+/* Two glyphs plus a label naming the connected pad; caches the last valid g_GameInput.controllerType. */
 void DrawPadTypeHint(void) {
     s32 clutIndex;
     s32 v;
@@ -69,14 +70,14 @@ void DrawPadTypeHint(void) {
     u8 *prim;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
-    rawPadType = g_PadType;
+    rawPadType = g_GameInput.controllerType;
     scratch = RENDER_PRIM_CURSOR_AS(u8);
     prim = scratch;
 
     if (rawPadType != 0x41 && rawPadType != 0x23) {
         padType = g_LastValidPadType;
     } else {
-        rawPadType = g_PadType;
+        rawPadType = g_GameInput.controllerType;
         padType = (u8)rawPadType;
         g_LastValidPadType = rawPadType;
     }

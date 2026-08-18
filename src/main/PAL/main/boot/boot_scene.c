@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/menu.h"
@@ -65,7 +66,7 @@ void UpdateBootLogoScene(void) {
 
     if (g_BootLogoHoldTimer != 0) {
         g_BootLogoHoldTimer--;
-        if ((g_AssetLoadState == 0) && (g_PadHeld != 0)) {
+        if ((g_AssetLoadState == 0) && (g_GameInput.held != 0)) {
             g_BootLogoHoldTimer = 0;
         }
     }

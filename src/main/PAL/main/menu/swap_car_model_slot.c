@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/showroom_internal.h"
@@ -115,12 +116,12 @@ void DrawMenuCarView(void) {
     g_PlayerCar.runtime.modelIndex = GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
     g_PlayerTireCompound = g_CarTable[s1].tireCompound;
 
-    if (g_PadHeld & 2) {
+    if (g_GameInput.held & 2) {
         if (g_PlayerSteerAngle < 6144) {
             g_PlayerSteerAngle = g_PlayerSteerAngle + 192;
         }
     }
-    if (g_PadHeld % 2) {
+    if (g_GameInput.held % 2) {
         s32 *w = &g_PlayerSteerAngle;
         if (*w >= -6143) {
             *w = *w - 192;
@@ -130,12 +131,12 @@ void DrawMenuCarView(void) {
     g_PlayerTransmission = g_CarTable[s1].transmission;
     g_PlayerCarWheelAngle = (g_PlayerCarWheelAngle + 68) & 0xFFF;
 
-    if (g_PadHeld & 4) {
+    if (g_GameInput.held & 4) {
         if (g_MenuViewSpin < 64) {
             g_MenuViewSpin = g_MenuViewSpin + 1;
         }
     }
-    if (g_PadHeld & 8) {
+    if (g_GameInput.held & 8) {
         if (g_MenuViewSpin >= -63) {
             g_MenuViewSpin = g_MenuViewSpin - 1;
         }
@@ -270,12 +271,12 @@ void DrawMenuCourseView(void) {
     s0 = g_MenuViewOffset / 1000;
     g_PlayerCar.runtime.y = s0 + 15;
 
-    if (g_PadHeld & 4) {
+    if (g_GameInput.held & 4) {
         if (g_MenuViewSpin < 64) {
             g_MenuViewSpin = g_MenuViewSpin + 1;
         }
     }
-    if (g_PadHeld & 8) {
+    if (g_GameInput.held & 8) {
         if (g_MenuViewSpin >= -63) {
             g_MenuViewSpin = g_MenuViewSpin - 1;
         }

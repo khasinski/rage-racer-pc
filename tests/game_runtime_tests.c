@@ -22,6 +22,7 @@ static void ExpectTrace(const char *expected, int count) {
 static void TracePrepare(void *user) { (void)user; Trace('P'); }
 static void TraceService(void *user) { (void)user; Trace('S'); }
 static void TraceBefore(void *user) { (void)user; Trace('B'); }
+static void TraceInput(void *user) { (void)user; Trace('I'); }
 static void TraceAfter(void *user) { (void)user; Trace('A'); }
 static void TracePresent(void *user) { (void)user; Trace('R'); }
 static s32 TraceContinue(void *user) { (void)user; Trace('X'); return 0; }
@@ -30,7 +31,7 @@ static void TraceHandler(void) { Trace('H'); }
 
 static GameRuntimeServices TraceServices(GameRuntimeExitCheck exitCheck) {
     GameRuntimeServices services = {
-        0, TracePrepare, TraceService, TraceBefore, TraceAfter,
+        0, TracePrepare, TraceService, TraceBefore, TraceInput, TraceAfter,
         TracePresent, exitCheck};
     return services;
 }
@@ -46,13 +47,13 @@ static void test_runtime_step_order_and_exit(void) {
     phaseCount = 0;
     GameRuntimeInit(&runtime, &scene, &timer, handlers, SCENE_COUNT, &services);
     EXPECT_EQ(GAME_RUNTIME_CONTINUE, GameRuntimeStep(&runtime));
-    ExpectTrace("PSBHARX", 7);
+    ExpectTrace("PSBIHARX", 8);
 
     services = TraceServices(TraceExit);
     runtime.services = services;
     phaseCount = 0;
     EXPECT_EQ(GAME_RUNTIME_EXIT, GameRuntimeStep(&runtime));
-    ExpectTrace("PSBHARX", 7);
+    ExpectTrace("PSBIHARX", 8);
 }
 
 static void test_runtime_stops_at_invalid_scene(void) {
@@ -66,7 +67,7 @@ static void test_runtime_stops_at_invalid_scene(void) {
     phaseCount = 0;
     GameRuntimeInit(&runtime, &scene, &timer, handlers, SCENE_COUNT, &services);
     EXPECT_EQ(GAME_RUNTIME_INVALID_SCENE, GameRuntimeStep(&runtime));
-    ExpectTrace("PSB", 3);
+    ExpectTrace("PSBI", 4);
 }
 
 static void test_transition_and_dispatch(void) {

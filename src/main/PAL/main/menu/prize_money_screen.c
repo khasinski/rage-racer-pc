@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/state.h"
 #include "game/menu.h"
 #include "game/race.h"
@@ -21,7 +22,7 @@ void UpdatePrizeMoneyScreen(void) {
     PrizeScreenState st;
     PrizeScreenWork t;
 
-    if (g_PadHeld & PAD_CONFIRM) {
+    if (g_GameInput.held & PAD_CONFIRM) {
         lim1 <<= 2;
         lim0 <<= 2;
     }
@@ -36,7 +37,7 @@ void UpdatePrizeMoneyScreen(void) {
         return;
     case PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM:
         DrawRaceTimePanel(0);
-        if (g_PadPressed & PAD_CONFIRM) {
+        if (g_GameInput.pressed & PAD_CONFIRM) {
             g_PrizeScreenState = PRIZE_SCREEN_STATE_HIDE_RACE_TIME;
             g_SceneTimer = 0;
         }
@@ -64,7 +65,7 @@ void UpdatePrizeMoneyScreen(void) {
         st = PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM;
         goto Lstore;
         }
-        PlaySoundCue((g_PadHeld & PAD_CONFIRM) ? 0x10 : 0xf);
+        PlaySoundCue((g_GameInput.held & PAD_CONFIRM) ? 0x10 : 0xf);
         t.value = g_PrizeAmount;
         if (t.value >= lim1) {
             g_PrizeAmount = t.value - lim1;
@@ -82,7 +83,7 @@ void UpdatePrizeMoneyScreen(void) {
         goto Lstore;
     case PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM:
         PlaySoundCue(0x11);
-        if (!(g_PadPressed & PAD_CONFIRM)) break;
+        if (!(g_GameInput.pressed & PAD_CONFIRM)) break;
         st = PRIZE_SCREEN_STATE_COUNT_BONUS;
     Lstore:
         g_PrizeScreenState = st;
@@ -90,7 +91,7 @@ void UpdatePrizeMoneyScreen(void) {
     case PRIZE_SCREEN_STATE_COUNT_BONUS:
         TickClassClearFanfare();
         if (g_PromotionBonus == 0) { st = PRIZE_SCREEN_STATE_WAIT_TO_FINISH; goto Lstore; }
-        PlaySoundCue((g_PadHeld & PAD_CONFIRM) ? 0x10 : 0xf);
+        PlaySoundCue((g_GameInput.held & PAD_CONFIRM) ? 0x10 : 0xf);
         t.value = g_PromotionBonus;
         if (t.value >= lim0) {
             g_PromotionBonus = t.value - lim0;
@@ -107,7 +108,7 @@ void UpdatePrizeMoneyScreen(void) {
     case PRIZE_SCREEN_STATE_WAIT_TO_FINISH:
         TickClassClearFanfare();
         PlaySoundCue(0x11);
-        if (!(g_PadPressed & PAD_CONFIRM)) break;
+        if (!(g_GameInput.pressed & PAD_CONFIRM)) break;
         if (g_ClassClearFanfareTimer != 0) break;
         if (g_ClassCompleted == 0) { RequestSelectBgmAssets(); }
         st = PRIZE_SCREEN_STATE_FADE_OUT;

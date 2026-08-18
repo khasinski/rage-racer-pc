@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
@@ -376,7 +377,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       s32 clutArg;
 
       x1 = x0 + vs6;
-      if (g_PadType == 0x23)
+      if (g_GameInput.controllerType == 0x23)
       {
         gx = vs7;
         gy = 0;

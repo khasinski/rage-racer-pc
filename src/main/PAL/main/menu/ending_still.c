@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/race.h"
 #include "game/render.h"
@@ -25,7 +26,7 @@ void UpdateEndingStill(void) {
             g_FadeStep = 0;
         }
     } else if (v1 == 0) {
-        if (g_SceneTimer == 0x12C || (g_PadPressed & PAD_CONFIRM)) {
+        if (g_SceneTimer == 0x12C || (g_GameInput.pressed & PAD_CONFIRM)) {
             g_FadeLevel = 0x100;
             g_FadeStep = -4;
         }

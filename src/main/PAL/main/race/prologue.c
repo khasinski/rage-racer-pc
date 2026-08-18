@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/asset_internal.h"
@@ -19,7 +20,7 @@ void UpdateAttractDemoScene(void) {
     g_AttractDemoSteps[g_AttractDemoStep]();
 
     if ((g_SceneId == SCENE_ATTRACT_DEMO) &&
-        ((g_PadPressed & PAD_CONFIRM) != 0)) {
+        ((g_GameInput.pressed & PAD_CONFIRM) != 0)) {
         if (g_AssetLoadState != 0) {
             ResetAssetLoader();
             GameSceneSet(SCENE_TITLE_ENTER);
@@ -199,7 +200,7 @@ void UpdatePrologue(void) {
 
     {
         u32 sceneFrame = g_SceneTimer;
-        if (sceneFrame >= 0x79 && (g_PadPressed & PAD_CONFIRM)) {
+        if (sceneFrame >= 0x79 && (g_GameInput.pressed & PAD_CONFIRM)) {
             ExitPrologue();
         }
     }

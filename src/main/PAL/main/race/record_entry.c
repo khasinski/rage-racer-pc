@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/audio.h"
@@ -389,9 +390,9 @@ void UpdateRecordEntry(void) {
         u16 buttons;
 
         previous = g_NameEntryChar;
-        if (g_PadPressedRepeat & PAD_LEFT) {
+        if (g_GameInput.pressedRepeat & PAD_LEFT) {
             g_NameEntryChar = previous - 1;
-        } else if (g_PadPressedRepeat & PAD_RIGHT) {
+        } else if (g_GameInput.pressedRepeat & PAD_RIGHT) {
             g_NameEntryChar = previous + 1;
         }
         g_NameEntryChar = (g_NameEntryChar + 42) % 42;
@@ -400,7 +401,7 @@ void UpdateRecordEntry(void) {
         }
 
         g_RankingNameCodes[g_NameEntryCursor] = g_NameEntryChar;
-        buttons = g_PadPressed;
+        buttons = g_GameInput.pressed;
         name = g_RankingNameCodes;
         if (buttons & 0x860) {
             PlaySoundCue(2);
@@ -447,7 +448,7 @@ void UpdateRecordEntry(void) {
     }
 
     case RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME:
-        if (g_PadPressed & PAD_CONFIRM) {
+        if (g_GameInput.pressed & PAD_CONFIRM) {
             g_RecordEntryState = RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD;
             g_RecordPanelSlide = 0;
         }
@@ -474,9 +475,9 @@ void UpdateRecordEntry(void) {
         u16 buttons;
 
         previous = g_NameEntryChar;
-        if (g_PadPressedRepeat & PAD_LEFT) {
+        if (g_GameInput.pressedRepeat & PAD_LEFT) {
             g_NameEntryChar = previous - 1;
-        } else if (g_PadPressedRepeat & PAD_RIGHT) {
+        } else if (g_GameInput.pressedRepeat & PAD_RIGHT) {
             g_NameEntryChar = previous + 1;
         }
         g_NameEntryChar = (g_NameEntryChar + 42) % 42;
@@ -485,7 +486,7 @@ void UpdateRecordEntry(void) {
         }
 
         g_TimeRecordNameCodes[g_NameEntryCursor] = g_NameEntryChar;
-        buttons = g_PadPressed;
+        buttons = g_GameInput.pressed;
         name = g_TimeRecordNameCodes;
         if (buttons & 0x860) {
             PlaySoundCue(2);
@@ -515,7 +516,7 @@ void UpdateRecordEntry(void) {
     }
 
     case RECORD_ENTRY_STATE_WAIT_TO_FINISH:
-        if (g_PadPressed & PAD_CONFIRM) {
+        if (g_GameInput.pressed & PAD_CONFIRM) {
             if (g_RankingInsertRow < 5 || g_TimeRecordInsertRow < 5) {
                 StartCdVolumeFade(0x78);
                 StartCdAudio();

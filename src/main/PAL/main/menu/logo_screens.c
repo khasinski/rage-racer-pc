@@ -1,8 +1,9 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/audio.h"
 /*
  * UpdateTeamLogoScreen: sound/menu state machine. The redundant
- * `if (g_PadPressed) { ... } else { ... }` around the state>0 block is a
+ * `if (g_GameInput.pressed) { ... } else { ... }` around the state>0 block is a
  * deliberate no-op guard (both arms identical): its presence forces GCC 2.6.3
  * to rematerialize the literal 2 at both the direction ternary and the switch
  * case instead of CSE-ing it into a saved register, reproducing retail codegen.
@@ -42,17 +43,17 @@ void UpdateTeamLogoScreen(void)
     {
       g_MenuHintButtonsVisible = 1;
       g_MenuOverlayPattern = -1;
-      if (g_PadPressed & PAD_UP)
+      if (g_GameInput.pressed & PAD_UP)
       {
         PlaySoundCue(1);
         g_TeamLogoOption = (g_TeamLogoOption > 0) ? (g_TeamLogoOption - 1) : (2);
       }
-      if (g_PadPressed & PAD_DOWN)
+      if (g_GameInput.pressed & PAD_DOWN)
       {
         PlaySoundCue(1);
         g_TeamLogoOption = (g_TeamLogoOption < 2) ? (g_TeamLogoOption + 1) : (0);
       }
-      edge = g_PadPressed;
+      edge = g_GameInput.pressed;
       if (edge & PAD_CONFIRM)
       {
         sel = g_TeamLogoOption;
@@ -101,7 +102,7 @@ void UpdateTeamLogoScreen(void)
       RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
       if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) != 0)
       {
-        if (g_PadPressed & PAD_CONFIRM)
+        if (g_GameInput.pressed & PAD_CONFIRM)
         {
           if (g_MenuSubCursor != 0)
           {
@@ -115,7 +116,7 @@ void UpdateTeamLogoScreen(void)
             GameMenuBusy = 0;
           }
         }
-        pad = &g_PadPressed;
+        pad = &g_GameInput.pressed;
         if ((*pad) & PAD_CANCEL)
         {
           PlaySoundCue(3);
@@ -129,7 +130,7 @@ void UpdateTeamLogoScreen(void)
             g_MenuSubCursor = 1;
           }
         }
-        if (g_PadPressed & PAD_RIGHT)
+        if (g_GameInput.pressed & PAD_RIGHT)
         {
           if (g_MenuSubCursor != 0)
           {
@@ -181,7 +182,7 @@ void UpdateTeamLogoScreen(void)
       RampTeamLogoCanvas(9, 0x15);
       if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) != 0)
       {
-        if (g_PadPressed & PAD_START)
+        if (g_GameInput.pressed & PAD_START)
         {
           PlaySoundCue(3);
           ApplyCurrentSequenceAudio();
@@ -215,7 +216,7 @@ void UpdateTeamLogoScreen(void)
   }
   else
   {
-    if (g_PadPressed)
+    if (g_GameInput.pressed)
     {
       g_MenuHandlerIndex = -1;
       g_MenuHandlerIndex2 = 7;

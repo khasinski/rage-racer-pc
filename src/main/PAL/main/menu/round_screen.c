@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/asset.h"
@@ -251,7 +252,7 @@ void UpdateRoundScreen(void) {
         }
     }
     if (g_SceneId == SCENE_ROUND) {
-        u16 flags = g_PadPressed;
+        u16 flags = g_GameInput.pressed;
         if (flags & 0x8000) {
             g_BgmSelection = g_BgmSelection - 1;
         } else if (flags & 0x2000) {

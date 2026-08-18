@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include <stdio.h>
 #include "game/fmv.h"
 #include "game/asset.h"
@@ -38,7 +39,7 @@ void DecodeFmvFrame(void) {
     if (g_FmvStreamEnded == 1) {
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
-    if (g_PadPressed & PAD_START) {
+    if (g_GameInput.pressed & PAD_START) {
         StartCdVolumeFade(1);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }

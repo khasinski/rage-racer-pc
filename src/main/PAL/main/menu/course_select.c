@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
@@ -451,15 +452,15 @@ void UpdateCourseSelectScreen(void) {
         DrawMenuLightBurst(7);
         if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
             g_MenuOverlayPattern = -1;
-            if (g_PadPressed & PAD_UP) {
+            if (g_GameInput.pressed & PAD_UP) {
                 PlaySoundCue(1);
                 g_CourseSelectOption = (g_CourseSelectOption > 0) ? g_CourseSelectOption - 1 : 2;
             }
-            if (g_PadPressed & PAD_DOWN) {
+            if (g_GameInput.pressed & PAD_DOWN) {
                 PlaySoundCue(1);
                 g_CourseSelectOption = (g_CourseSelectOption < 2) ? g_CourseSelectOption + 1 : 0;
             }
-            if ((g_PadHeld & PAD_LEFT) && (CanSelectPrevCourse() != 0)) {
+            if ((g_GameInput.held & PAD_LEFT) && (CanSelectPrevCourse() != 0)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
                 if (t < u ? (u - t <= 0x3D08F) : (t - u <= 0x3D08F)) {
@@ -488,7 +489,7 @@ void UpdateCourseSelectScreen(void) {
                     }
                 }
             }
-            if ((g_PadHeld & PAD_RIGHT) && (CanSelectNextCourse() != 0)) {
+            if ((g_GameInput.held & PAD_RIGHT) && (CanSelectNextCourse() != 0)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
                 if (t < u ? (u - t <= 0x3D08F) : (t - u <= 0x3D08F)) {
@@ -521,7 +522,7 @@ void UpdateCourseSelectScreen(void) {
                     }
                 }
             }
-            if (g_PadPressed & PAD_CONFIRM) {
+            if (g_GameInput.pressed & PAD_CONFIRM) {
                 sel = g_CourseSelectOption;
                 if (sel == 0) {
                     PlaySoundCue(2);
@@ -576,12 +577,12 @@ void UpdateCourseSelectScreen(void) {
             RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
             RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
             if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1) != 0) {
-                if (g_PadPressed & PAD_CONFIRM) {
+                if (g_GameInput.pressed & PAD_CONFIRM) {
                     PlaySoundCue((g_MenuSubCursor != 0) ? 2 : 3);
                     GameMenuBusy = -3;
                     g_MenuConfirmTimer = 0x23;
                 }
-                pad = &g_PadPressed;
+                pad = &g_GameInput.pressed;
                 if (*pad & 0x90) {
                     PlaySoundCue(3);
                     GameMenuBusy = -4;
@@ -603,7 +604,7 @@ void UpdateCourseSelectScreen(void) {
         } else if (state == -2) {
             u16 *pad;
             if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1) != 0) {
-                if (g_PadPressed & PAD_CONFIRM) {
+                if (g_GameInput.pressed & PAD_CONFIRM) {
                     PlaySoundCue(2);
                     if (g_MenuSubCursor == g_GrandPrixClass) {
                         GameMenuBusy = 0;
@@ -614,7 +615,7 @@ void UpdateCourseSelectScreen(void) {
                         DrawClassChangeCurtain(0);
                     }
                 }
-                pad = &g_PadPressed;
+                pad = &g_GameInput.pressed;
                 if (*pad & 0x90) {
                     PlaySoundCue(3);
                     GameMenuBusy = 0;
@@ -623,7 +624,7 @@ void UpdateCourseSelectScreen(void) {
                     PlaySoundCue(1);
                     g_MenuSubCursor = (g_MenuSubCursor != 0) ? g_MenuSubCursor - 1 : g_RaceProgress->maxClassReached;
                 }
-                if (g_PadPressed & PAD_DOWN) {
+                if (g_GameInput.pressed & PAD_DOWN) {
                     PlaySoundCue(1);
                     g_MenuSubCursor = (g_MenuSubCursor < g_RaceProgress->maxClassReached) ? g_MenuSubCursor + 1 : 0;
                 }

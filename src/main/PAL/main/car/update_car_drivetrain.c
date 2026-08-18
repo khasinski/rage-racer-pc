@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/race.h"
@@ -597,7 +598,7 @@ shift_interpolation_done:
     drive->steeringLoadAngle = 0x800 - headingError;
   }
   steerLoad += drive->steeringLoadAngle / 256;
-  if ((drive->motionState != CAR_MOTION_TAKEOFF) && (g_PadType == 0x41))
+  if ((drive->motionState != CAR_MOTION_TAKEOFF) && (g_GameInput.controllerType == 0x41))
   {
     assistStep = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
     if (assistStep <= 0)

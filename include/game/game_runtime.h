@@ -11,6 +11,7 @@ typedef struct GameRuntimeServices {
     GameRuntimePhase prepareFrame;
     GameRuntimePhase serviceSystems;
     GameRuntimePhase beforeScene;
+    GameRuntimePhase captureInput;
     GameRuntimePhase afterScene;
     GameRuntimePhase presentFrame;
     GameRuntimeExitCheck shouldExit;

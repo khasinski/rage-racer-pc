@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/memcard.h"
 #include "game/audio.h"
 #include "game/menu.h"
@@ -79,7 +80,7 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
 }
 
 void AdjustMenuSelectionHorizontal(s32 *value, s32 min, s32 max) {
-    u16 input = g_PadPressedRepeat;
+    u16 input = g_GameInput.pressedRepeat;
     s32 next;
 
     if (input & 0x4000) {
@@ -104,7 +105,7 @@ void AdjustMenuSelectionHorizontal(s32 *value, s32 min, s32 max) {
 }
 
 void SetMenuBinaryChoiceVertical(s32 *value) {
-    u16 input = g_PadPressedRepeat;
+    u16 input = g_GameInput.pressedRepeat;
 
     if (input & 0x8000) {
         if (*value == 0) {
@@ -122,7 +123,7 @@ void SetMenuBinaryChoiceVertical(s32 *value) {
 }
 
 u16 PollMenuConfirmInput(void) {
-    u16 *state = &g_PadPressed;
+    u16 *state = &g_GameInput.pressed;
     u16 value;
 
     value = *state & 0x860;
@@ -134,7 +135,7 @@ u16 PollMenuConfirmInput(void) {
 }
 
 u16 PollMenuBackInput(void) {
-    u16 *state = &g_PadPressed;
+    u16 *state = &g_GameInput.pressed;
     u16 value;
 
     value = *state & 0x90;

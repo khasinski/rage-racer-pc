@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
@@ -44,9 +45,9 @@ void UpdateOptionRootMenu(void) {
     DrawOptionRootMenu();
 
     old = g_OptionMenuCursor;
-    if (g_PadPressed & PAD_UP) {
+    if (g_GameInput.pressed & PAD_UP) {
         g_OptionMenuCursor = old - 1;
-    } else if (g_PadPressed & PAD_DOWN) {
+    } else if (g_GameInput.pressed & PAD_DOWN) {
         g_OptionMenuCursor = old + 1;
     }
 
@@ -55,7 +56,7 @@ void UpdateOptionRootMenu(void) {
         PlaySoundCue(1);
     }
 
-    buttons = g_PadPressed;
+    buttons = g_GameInput.pressed;
     if (buttons & 0x860) {
         PlaySoundCue(2);
         switch (g_OptionMenuCursor) {
@@ -205,7 +206,7 @@ void UpdateClassRecordMenu(void) {
 
     DrawClassRecordGrid();
 
-    buttonPtr = &g_PadPressed;
+    buttonPtr = &g_GameInput.pressed;
     oldCursor = g_ClassRecordMenuCursor;
     buttons = *buttonPtr;
     if (buttons & 0x1000) {
@@ -244,13 +245,13 @@ void UpdateClassRecordBrowse(void) {
     DrawClassRecordGrid();
     oldCursor = g_ScreenOffsetEditX;
     oldFlag = g_ScreenOffsetEditY;
-    if ((g_PadPressed & PAD_UP) && oldFlag == 1) {
+    if ((g_GameInput.pressed & PAD_UP) && oldFlag == 1) {
         g_ScreenOffsetEditY = 0;
     }
-    if ((g_PadPressed & PAD_DOWN) && g_ScreenOffsetEditY == 0) {
+    if ((g_GameInput.pressed & PAD_DOWN) && g_ScreenOffsetEditY == 0) {
         g_ScreenOffsetEditY = 1;
     }
-    b = g_PadPressed;
+    b = g_GameInput.pressed;
     if (b & 0x8000) {
         g_ScreenOffsetEditX = g_ScreenOffsetEditX - 1;
     }
@@ -270,7 +271,7 @@ void UpdateClassRecordBrowse(void) {
             PlaySoundCue(1);
         }
     }
-    if (g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE)) {
+    if (g_GameInput.pressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE)) {
         PlaySoundCue(2);
         g_GameMode = 2;
     }
@@ -378,7 +379,7 @@ void UpdateSoundOptionMenu(void) {
     s32 index;
 
     DrawSoundOptionScreen();
-    buttonsPtr = &g_PadPressed;
+    buttonsPtr = &g_GameInput.pressed;
     buttons = *buttonsPtr;
     old = g_SoundOptionCursor;
     if (buttons & 0x1000) {

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/audio.h"
@@ -124,7 +125,7 @@ void UpdateReplayScene(void) {
         }
 
         if (g_FadeStep == 0) {
-            if ((g_PadPressed & PAD_CONFIRM) != 0) {
+            if ((g_GameInput.pressed & PAD_CONFIRM) != 0) {
                 g_FadeStep = 4;
                 StartCdVolumeFade(0x3C);
             } else if (g_SceneTimer == g_ReplayFrameCount - 68) {

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/menu_internal.h"
 #include "game/audio.h"
 #include "game/menu_types.h"
@@ -355,7 +356,7 @@ void UpdateTeamLogoCanvas(void) {
         s32 input;
         s32 held;
         s32 repeat;
-        volatile u16 *state = &g_PadHeld;
+        volatile u16 *state = &g_GameInput.held;
 
         input = (*state & 5) ? 0 : 3;
         if (*state & g_TeamLogoDpadRepeatMask) {
@@ -370,7 +371,7 @@ void UpdateTeamLogoCanvas(void) {
         }
     }
     {
-        u16 held = g_PadHeld;
+        u16 held = g_GameInput.held;
 
         g_TeamLogoDpadRepeatMask = held & 0xF000;
         if (!(held & 0x20)) {
@@ -378,7 +379,7 @@ void UpdateTeamLogoCanvas(void) {
         }
     }
     if (g_TeamLogoExpertMode != 0) {
-        if (g_PadPressed & PAD_SELECT) {
+        if (g_GameInput.pressed & PAD_SELECT) {
             g_TeamLogoGuideModePrev = g_TeamLogoGuideMode;
             nextTool = 0;
             if (g_TeamLogoGuideMode < 2) {
@@ -390,7 +391,7 @@ void UpdateTeamLogoCanvas(void) {
         g_TeamLogoGuideMode = 1;
     }
     if (g_TeamLogoPaletteMode == 1) {
-        u16 *input = &g_PadPressed;
+        u16 *input = &g_GameInput.pressed;
 
         if (*input & 0x60) {
             PlaySoundCue(2);
@@ -401,13 +402,13 @@ void UpdateTeamLogoCanvas(void) {
             s32 mask = 0xF;
 
             if ((*input & 0x100) &&
-                ((g_PadHeld & mask) == mask)) {
+                ((g_GameInput.held & mask) == mask)) {
                 g_TeamLogoExpertMode = g_TeamLogoExpertMode == 0;
                 g_TeamLogoGuideMode = g_TeamLogoGuideModePrev;
             }
         }
         if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
-            if (g_PadHeld & PAD_LEFT) {
+            if (g_GameInput.held & PAD_LEFT) {
                 TeamLogoColorSlot output;
                 s32 selected;
 
@@ -420,7 +421,7 @@ void UpdateTeamLogoCanvas(void) {
                 output.value = prevSlot;
                 g_TeamLogoPenColor = output.value;
             }
-            if (g_PadHeld & PAD_RIGHT) {
+            if (g_GameInput.held & PAD_RIGHT) {
                 TeamLogoColorSlot output;
                 s32 selected;
 
@@ -435,8 +436,8 @@ void UpdateTeamLogoCanvas(void) {
             }
         }
         if (g_TeamLogoExpertMode != 0) {
-            if (g_PadHeld & (PAD_R1 | PAD_R2)) {
-                if (g_PadPressedRepeat & PAD_UP) {
+            if (g_GameInput.held & (PAD_R1 | PAD_R2)) {
+                if (g_GameInput.pressedRepeat & PAD_UP) {
                     PlaySoundCue(4);
                     slotValue = g_TeamLogoPenColor;
                     clutEntry = g_TeamLogoClut + slotValue;
@@ -481,7 +482,7 @@ void UpdateTeamLogoCanvas(void) {
                         break;
                     }
                 }
-                if (g_PadPressedRepeat & PAD_DOWN) {
+                if (g_GameInput.pressedRepeat & PAD_DOWN) {
                     PlaySoundCue(4);
                     slotValue = g_TeamLogoPenColor;
                     clutEntry = g_TeamLogoClut + slotValue;
@@ -527,7 +528,7 @@ void UpdateTeamLogoCanvas(void) {
                     }
                 }
             } else {
-                if (g_PadPressed & PAD_UP) {
+                if (g_GameInput.pressed & PAD_UP) {
                     PlaySoundCue(1);
                     prevChannel = 2;
                     if (g_TeamLogoColorChannel > 0) {
@@ -535,7 +536,7 @@ void UpdateTeamLogoCanvas(void) {
                     }
                     g_TeamLogoColorChannel = prevChannel;
                 }
-                if (g_PadPressed & PAD_DOWN) {
+                if (g_GameInput.pressed & PAD_DOWN) {
                     PlaySoundCue(1);
                     nextChannel = 0;
                     if (g_TeamLogoColorChannel < 2) {
@@ -546,8 +547,8 @@ void UpdateTeamLogoCanvas(void) {
             }
         }
     } else {
-        if ((g_PadHeld & PAD_CIRCLE) && (g_TeamLogoPaintArmed != 0)) {
-            if (g_PadPressed & PAD_CIRCLE) {
+        if ((g_GameInput.held & PAD_CIRCLE) && (g_TeamLogoPaintArmed != 0)) {
+            if (g_GameInput.pressed & PAD_CIRCLE) {
                 PlaySoundCue(4);
             }
             for (plotRow = 0; plotRow < g_TeamLogoBrushSize; plotRow++) {
@@ -590,8 +591,8 @@ void UpdateTeamLogoCanvas(void) {
                     }
             }
         }
-        if (g_PadHeld & PAD_SQUARE) {
-            if (g_PadPressed & PAD_SQUARE) {
+        if (g_GameInput.held & PAD_SQUARE) {
+            if (g_GameInput.pressed & PAD_SQUARE) {
                 PlaySoundCue(4);
             }
             for (eraseRow = 0; eraseRow < g_TeamLogoBrushSize; eraseRow++) {
@@ -633,7 +634,7 @@ void UpdateTeamLogoCanvas(void) {
             }
         }
         {
-            u16 *input = &g_PadPressed;
+            u16 *input = &g_GameInput.pressed;
 
         if (*input & 0x40) {
             PlaySoundCue(2);
@@ -661,21 +662,21 @@ void UpdateTeamLogoCanvas(void) {
         }
         }
         {
-            volatile u16 *held = &g_PadHeld;
+            volatile u16 *held = &g_GameInput.held;
             u16 heldValue = *held;
 
         if ((heldValue & 8) && (g_TeamLogoExpertMode != 0)) {
             if (heldValue & 4) {
-                if (g_PadPressed & PAD_UP) {
+                if (g_GameInput.pressed & PAD_UP) {
                     RotateTeamLogoCw();
                 }
-                if (g_PadPressed & PAD_DOWN) {
+                if (g_GameInput.pressed & PAD_DOWN) {
                     FlipTeamLogoVertical();
                 }
-                if (g_PadPressed & PAD_LEFT) {
+                if (g_GameInput.pressed & PAD_LEFT) {
                     RotateTeamLogoCcw();
                 }
-                if (g_PadPressed & PAD_RIGHT) {
+                if (g_GameInput.pressed & PAD_RIGHT) {
                     FlipTeamLogoHorizontal();
                 }
             } else if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
@@ -694,9 +695,9 @@ void UpdateTeamLogoCanvas(void) {
             }
         } else {
             eraseStamp = 0;
-            if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1) || (g_PadHeld & 5)) {
+            if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1) || (g_GameInput.held & 5)) {
                 plotStamp = 0;
-                if (g_PadHeld & PAD_UP) {
+                if (g_GameInput.held & PAD_UP) {
                     if (g_TeamLogoCursorY > 0) {
                         g_TeamLogoCursorY -= 1;
                         plotStamp = 1;
@@ -705,7 +706,7 @@ void UpdateTeamLogoCanvas(void) {
                         plotStamp = 1;
                     }
                 }
-                if (g_PadHeld & PAD_DOWN) {
+                if (g_GameInput.held & PAD_DOWN) {
                     if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) < 0x20) {
                         g_TeamLogoCursorY += 1;
                         plotStamp = 1;
@@ -714,7 +715,7 @@ void UpdateTeamLogoCanvas(void) {
                         plotStamp = 1;
                     }
                 }
-                if (g_PadHeld & PAD_LEFT) {
+                if (g_GameInput.held & PAD_LEFT) {
                     if (g_TeamLogoCursorX > 0) {
                         g_TeamLogoCursorX -= 1;
                         eraseStamp = 1;
@@ -723,7 +724,7 @@ void UpdateTeamLogoCanvas(void) {
                         eraseStamp = 1;
                     }
                 }
-                if (g_PadHeld & PAD_RIGHT) {
+                if (g_GameInput.held & PAD_RIGHT) {
                     if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) < 0x20) {
                         g_TeamLogoCursorX += 1;
                         eraseStamp = 1;
@@ -732,13 +733,13 @@ void UpdateTeamLogoCanvas(void) {
                         eraseStamp = 1;
                     }
                 }
-                if ((g_PadHeld & (PAD_SQUARE | PAD_CIRCLE)) && ((eraseStamp != 0) || (plotStamp != 0))) {
+                if ((g_GameInput.held & (PAD_SQUARE | PAD_CIRCLE)) && ((eraseStamp != 0) || (plotStamp != 0))) {
                     PlaySoundCue(4);
                 }
             }
         }
         }
-        if ((g_PadPressed & 2) && (g_TeamLogoExpertMode != 0)) {
+        if ((g_GameInput.pressed & 2) && (g_TeamLogoExpertMode != 0)) {
             PlaySoundCue(4);
             canvasWord = g_TeamLogoCanvas.pixels;
             cursorX = g_TeamLogoViewX + g_TeamLogoCursorX;

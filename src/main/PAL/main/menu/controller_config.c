@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
@@ -9,7 +10,7 @@
 #include "game/input_internal.h"
 
 
-/* The two 0..7 selections; g_PadType picks which one the screen edits. */
+/* The two 0..7 selections; g_GameInput.controllerType picks which one the screen edits. */
 
 
 /*
@@ -25,7 +26,7 @@ void DrawControllerConfigScreen(void) {
     u8 *ot;
     u8 *prim;
 
-    if (g_PadType == 0x23) {
+    if (g_GameInput.controllerType == 0x23) {
         selection = g_NegconMappingIndex;
     } else {
         selection = g_PadMappingIndex;
@@ -47,7 +48,7 @@ void DrawControllerConfigScreen(void) {
         prim = RENDER_PRIM_CURSOR_AS(u8);
         prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, leftLit);
         prim = DrawRightArrow(ot, prim, 0x108, 0xE0, rightLit);
-        if (g_PadType == 0x23) {
+        if (g_GameInput.controllerType == 0x23) {
             prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, g_NegconMappingIndex);
             prim = DrawNegconConfigDiagram(ot, prim);
             prim = GameQueueSpriteTrans(
@@ -76,14 +77,14 @@ void UpdateControllerConfigScreen(void) {
     if (pad->buttons & 0x860) {
         PlaySoundCue(2);
         LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
-        if (g_PadType == 0x23) {
+        if (g_GameInput.controllerType == 0x23) {
             g_GameMode = (pad->buttons & 0x800) ? 8 : 1;
         } else {
             g_GameMode = 1;
         }
     }
-    if (g_PadPressed & PAD_LEFT) {
-        if (g_PadType == 0x23) {
+    if (g_GameInput.pressed & PAD_LEFT) {
+        if (g_GameInput.controllerType == 0x23) {
             if (g_NegconMappingIndex > 0) {
                 PlaySoundCue(8);
                 g_PadConfigFlipTimer = 30;
@@ -99,8 +100,8 @@ void UpdateControllerConfigScreen(void) {
             g_ControllerSceneAngleY += 2048;
         }
     }
-    if (g_PadPressed & PAD_RIGHT) {
-        if (g_PadType == 0x23) {
+    if (g_GameInput.pressed & PAD_RIGHT) {
+        if (g_GameInput.controllerType == 0x23) {
             if (g_NegconMappingIndex < 7) {
                 PlaySoundCue(8);
                 g_PadConfigFlipDirection = 1;
@@ -205,7 +206,7 @@ void RestoreNegconCalibrationSettings(void) {
  */
 void UpdateNegconNeutralScreen(void) {
     g_AnimTimer++;
-    if (g_PadPressed & PAD_START) {
+    if (g_GameInput.pressed & PAD_START) {
         PlaySoundCue(2);
         g_GameMode = 10;
         g_NegconSteerNeutral = g_NegconAxisSteer - 128;
@@ -213,7 +214,7 @@ void UpdateNegconNeutralScreen(void) {
         g_NegconNeutralII = g_NegconAxisII;
         g_NegconNeutralL = g_NegconAxisL;
     }
-    if (g_PadType != 0x23) {
+    if (g_GameInput.controllerType != 0x23) {
         RestoreNegconCalibrationSettings();
         g_GameMode = 1;
     }

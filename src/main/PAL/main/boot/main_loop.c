@@ -15,6 +15,7 @@
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/game_runtime.h"
+#include "game/game_input.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
@@ -106,6 +107,11 @@ static void BeforeGameScene(void *user) {
 #endif
 }
 
+static void CaptureGameInput(void *user) {
+    (void)user;
+    GameInputCaptureLegacy();
+}
+
 static void AfterGameScene(void *user) {
     (void)user;
 #ifdef __psyz
@@ -154,7 +160,7 @@ void MainLoop(void) {
     GameRuntime runtime;
     const GameRuntimeServices services = {
         0, PrepareGameFrame, ServiceGameSystems, BeforeGameScene,
-        AfterGameScene, PresentGameFrame, ShouldExitGame};
+        CaptureGameInput, AfterGameScene, PresentGameFrame, ShouldExitGame};
 
     __main();
     KernelCallbackSlot3();

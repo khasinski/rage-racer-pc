@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
@@ -94,15 +95,15 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
         if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
             g_MenuOverlayPattern = -1;
-            if (g_PadPressed & PAD_UP) {
+            if (g_GameInput.pressed & PAD_UP) {
                 PlaySoundCue(1);
                 g_DesignModeOption = (g_DesignModeOption > 0) ? g_DesignModeOption - 1 : 3;
             }
-            if (g_PadPressed & PAD_DOWN) {
+            if (g_GameInput.pressed & PAD_DOWN) {
                 PlaySoundCue(1);
                 g_DesignModeOption = (g_DesignModeOption < 3) ? g_DesignModeOption + 1 : 0;
             }
-            if (g_PadPressed & PAD_CONFIRM) {
+            if (g_GameInput.pressed & PAD_CONFIRM) {
                 sel = g_DesignModeOption;
                 if (sel == 0) {
                     PlaySoundCue(2);
@@ -128,7 +129,7 @@ void UpdateDesignModeScreen(void) {
                     GameMenuBusy = 4;
                     g_MenuOverlayPattern = 2;
                 }
-            } else if (g_PadPressed & PAD_CANCEL) {
+            } else if (g_GameInput.pressed & PAD_CANCEL) {
                 PlaySoundCue(3);
                 GameMenuBusy = 4;
                 g_MenuOverlayPattern = 2;
@@ -137,7 +138,7 @@ void UpdateDesignModeScreen(void) {
     } else if (GameMenuBusy < 0) {
         RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            edge = g_PadPressed;
+            edge = g_GameInput.pressed;
             if (edge & PAD_CONFIRM) GameMenuBusy = 0;
             if (edge & PAD_CANCEL) GameMenuBusy = 0;
         }

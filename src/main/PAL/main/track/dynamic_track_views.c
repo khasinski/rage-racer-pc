@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
@@ -17,7 +18,7 @@
  * Fuller sibling of UpdateFinishCamera: camera track-follower with bob/shake. Aims
  * the eye object g_CameraCar at a look-ahead centre-line point, and when
  * updateMotion is set, ramps the follow distance and applies the shake
- * offsets g_FreeCameraAngleOffset[] driven by the input bits in g_PadHeld. Builds and
+ * offsets g_FreeCameraAngleOffset[] driven by the input bits in g_GameInput.held. Builds and
  * transposes the view rotation matrices, projects the eye-forward point, and
  * writes the scratchpad view state (view[2..4]=eye XYZ, view[6]=pitch,
  * view[7]=yaw, view[8]=roll). markerClamp is the zeroed clamp record for the

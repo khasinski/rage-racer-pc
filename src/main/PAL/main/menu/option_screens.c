@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/asset_internal.h"
@@ -39,10 +40,10 @@ void UpdateSoundSettingAdjust(void) {
 
     if (setting != NULL) {
         old = *setting;
-        if ((g_PadPressed & PAD_LEFT) && *setting > 0) (*setting)--;
-        if ((g_PadPressed & PAD_RIGHT) && *setting < maximum) (*setting)++;
+        if ((g_GameInput.pressed & PAD_LEFT) && *setting > 0) (*setting)--;
+        if ((g_GameInput.pressed & PAD_RIGHT) && *setting < maximum) (*setting)++;
         if (old != *setting) PlaySoundCue(1);
-        pad = g_PadPressed;
+        pad = g_GameInput.pressed;
         if (pad & 0x860) {
             g_GameMode = 4;
         } else if (pad & 0x90) {
@@ -51,7 +52,7 @@ void UpdateSoundSettingAdjust(void) {
         }
     }
     ApplyAudioSettings();
-    pad = g_PadPressed;
+    pad = g_GameInput.pressed;
     if (pad & 0x860) {
         PlaySoundCue(2);
     } else if (pad & 0x90) {
@@ -87,7 +88,7 @@ void UpdateScreenAdjustScreen(void) {
 
     DrawScreenAdjustScreen();
 
-    input = g_PadPressedRepeat;
+    input = g_GameInput.pressedRepeat;
     oldX = g_ScreenOffsetEditX;
     oldY = g_ScreenOffsetEditY;
 
@@ -95,21 +96,21 @@ void UpdateScreenAdjustScreen(void) {
         g_ScreenOffsetEditY = oldY - 1;
     }
 
-    if (g_PadPressedRepeat & PAD_DOWN) {
+    if (g_GameInput.pressedRepeat & PAD_DOWN) {
         value = g_ScreenOffsetEditY;
         if (value < 23) {
             g_ScreenOffsetEditY = value + 1;
         }
     }
 
-    if (g_PadPressedRepeat & PAD_LEFT) {
+    if (g_GameInput.pressedRepeat & PAD_LEFT) {
         value = g_ScreenOffsetEditX;
         if (value >= -10) {
             g_ScreenOffsetEditX = value - 1;
         }
     }
 
-    if (g_PadPressedRepeat & PAD_RIGHT) {
+    if (g_GameInput.pressedRepeat & PAD_RIGHT) {
         value = g_ScreenOffsetEditX;
         if (value < 32) {
             g_ScreenOffsetEditX = value + 1;
@@ -120,7 +121,7 @@ void UpdateScreenAdjustScreen(void) {
         PlaySoundCue(1);
     }
 
-    confirm = g_PadPressed;
+    confirm = g_GameInput.pressed;
     if (confirm & 0x860) {
         PlaySoundCue(2);
         g_GameMode = 1;

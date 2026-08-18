@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/diagnostics.h"
 #include "game/state.h"
 #include <stdio.h>
@@ -298,7 +299,7 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
         p->steerPos = 0;
         ctx->steeringAngle = 0;
     } else if ((mode < 4) && (g_PlayerAutoSteer == 0)) {
-    if (g_PadType == 0x41) {
+    if (g_GameInput.controllerType == 0x41) {
 
     v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
     a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
@@ -333,8 +334,8 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     if (ctx->bodyRollVelocity != 0) {
         ctx->bodyRollVelocity = (ctx->bodyRollVelocity * 7) / 8;
     }
-    } else if (g_PadType == 0x23) {
-    a1 = ((g_NegconSteer * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
+    } else if (g_GameInput.controllerType == 0x23) {
+    a1 = ((g_GameInput.steering * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
     if (!(a1 >= 0)) {
 
     a0v = 2;

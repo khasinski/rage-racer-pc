@@ -18,6 +18,7 @@ GameRuntimeStepResult GameRuntimeStep(GameRuntime *runtime) {
     GameRuntimeCall(services->prepareFrame, services->user);
     GameRuntimeCall(services->serviceSystems, services->user);
     GameRuntimeCall(services->beforeScene, services->user);
+    GameRuntimeCall(services->captureInput, services->user);
     if (!SceneManagerDispatch(&runtime->game.scenes)) {
         return GAME_RUNTIME_INVALID_SCENE;
     }

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
@@ -65,27 +66,27 @@ void DrawNegconSteerPlayScreen(void) {
 void UpdateNegconSteerPlayScreen(void) {
     g_AnimTimer++;
     g_SetupArrowPulse += 96;
-    if (g_PadPressed & PAD_CANCEL) {
+    if (g_GameInput.pressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
         RestoreNegconCalibrationSettings();
-    } else if (g_PadPressed & PAD_CONFIRM) {
+    } else if (g_GameInput.pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 11;
     }
-    if (g_PadPressed & PAD_LEFT) {
+    if (g_GameInput.pressed & PAD_LEFT) {
         if (g_NegconSteerPlay > 0) {
             PlaySoundCue(8);
             g_NegconSteerPlay = g_NegconSteerPlay - 1;
         }
     }
-    if (g_PadPressed & PAD_RIGHT) {
+    if (g_GameInput.pressed & PAD_RIGHT) {
         if (g_NegconSteerPlay < 3) {
             PlaySoundCue(8);
             g_NegconSteerPlay = g_NegconSteerPlay + 1;
         }
     }
-    if (g_PadType != 0x23) {
+    if (g_GameInput.controllerType != 0x23) {
         g_GameMode = 1;
         RestoreNegconCalibrationSettings();
     }
@@ -137,27 +138,27 @@ void DrawNegconMaxTwistScreen(void) {
  */
 void UpdateNegconMaxTwistScreen(void) {
     g_AnimTimer++;
-    if (g_PadPressed & PAD_CANCEL) {
+    if (g_GameInput.pressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
         RestoreNegconCalibrationSettings();
-    } else if (g_PadPressed & PAD_CONFIRM) {
+    } else if (g_GameInput.pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 1;
     }
-    if (g_PadPressed & PAD_LEFT) {
+    if (g_GameInput.pressed & PAD_LEFT) {
         if (g_NegconMaxTwist > 0) {
             PlaySoundCue(8);
             g_NegconMaxTwist = g_NegconMaxTwist - 1;
         }
     }
-    if (g_PadPressed & PAD_RIGHT) {
+    if (g_GameInput.pressed & PAD_RIGHT) {
         if (g_NegconMaxTwist < 3) {
             PlaySoundCue(8);
             g_NegconMaxTwist = g_NegconMaxTwist + 1;
         }
     }
-    if (g_PadType != 0x23) {
+    if (g_GameInput.controllerType != 0x23) {
         g_GameMode = 1;
         RestoreNegconCalibrationSettings();
     }

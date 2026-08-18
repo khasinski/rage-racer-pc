@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/audio.h"
 #include "game/cd.h"
 #include "game/race.h"
@@ -42,7 +43,7 @@ void UpdateWaypointRaceScene(void) {
     }
 
     pausePhase = (u16)g_RacePhase - 1;
-    if (pausePhase < 2 && (g_PadPressed & PAD_START) && g_PauseDebounce <= 0) {
+    if (pausePhase < 2 && (g_GameInput.pressed & PAD_START) && g_PauseDebounce <= 0) {
         g_PauseDebounce = 0;
         paused = g_RacePaused;
         g_RacePaused = paused < 1;
@@ -80,12 +81,12 @@ void UpdateWaypointRaceScene(void) {
     }
 
     if (g_RacePaused != 0) {
-        if ((g_PadPressed & PAD_UP) && g_RaceOptionCursor > 0) {
+        if ((g_GameInput.pressed & PAD_UP) && g_RaceOptionCursor > 0) {
             g_RaceOptionCursor--;
             PlaySoundCue(1);
         }
 
-        if ((g_PadPressed & PAD_DOWN) && g_RaceOptionCursor < (2 - g_GrandPrixMode)) {
+        if ((g_GameInput.pressed & PAD_DOWN) && g_RaceOptionCursor < (2 - g_GrandPrixMode)) {
             g_RaceOptionCursor++;
             PlaySoundCue(1);
         }

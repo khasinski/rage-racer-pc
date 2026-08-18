@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
@@ -25,7 +26,7 @@ void UpdateLogoSampleScreen(void) {
         if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) == 0) return;
         if (g_UiScriptProgress2 > 0) return;
         g_MenuOverlayPattern = -1;
-        if (g_PadPressed & PAD_UP) {
+        if (g_GameInput.pressed & PAD_UP) {
             s32 n, c;
             PlaySoundCue(1);
             c = g_LogoSampleCursor;
@@ -33,7 +34,7 @@ void UpdateLogoSampleScreen(void) {
             if (c > 0) n = c - 1;
             g_LogoSampleCursor = n;
         }
-        if (g_PadPressed & PAD_DOWN) {
+        if (g_GameInput.pressed & PAD_DOWN) {
             s32 n, c;
             PlaySoundCue(1);
             c = g_LogoSampleCursor;
@@ -41,7 +42,7 @@ void UpdateLogoSampleScreen(void) {
             if (c < 2) n = c + 1;
             g_LogoSampleCursor = n;
         }
-        if (g_PadPressed & PAD_CONFIRM) {
+        if (g_GameInput.pressed & PAD_CONFIRM) {
             pl = g_LogoSampleCursor;
             if (pl == 0) {
                 PlaySoundCue(2);
@@ -60,7 +61,7 @@ void UpdateLogoSampleScreen(void) {
                 GameMenuBusy = 1;
                 g_MenuOverlayPattern = 2;
             }
-        } else if (g_PadPressed & PAD_CANCEL) {
+        } else if (g_GameInput.pressed & PAD_CANCEL) {
             PlaySoundCue(3);
             GameMenuBusy = 1;
             g_MenuOverlayPattern = 2;
@@ -72,7 +73,7 @@ void UpdateLogoSampleScreen(void) {
         RampTeamLogoCanvas(10, 0);
         if (GameMenuBusy == -1) {
             if (RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, 1) != 0) {
-                u16 *p = &g_PadPressed;
+                u16 *p = &g_GameInput.pressed;
                 if (*p & 0x860) {
                     PlaySoundCue(2);
                     GameMenuBusy = 0;
@@ -91,7 +92,7 @@ void UpdateLogoSampleScreen(void) {
                     if (c > 0) n = c - 1;
                     g_LogoSampleCharIndex = n;
                 }
-                if (g_PadPressed & PAD_RIGHT) {
+                if (g_GameInput.pressed & PAD_RIGHT) {
                     s32 n, c;
                     PlaySoundCue(1);
                     c = g_LogoSampleCharIndex;
@@ -103,7 +104,7 @@ void UpdateLogoSampleScreen(void) {
             t = g_LogoSampleCharIndex;
         } else {
             if (RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, 1) != 0) {
-                u16 *p = &g_PadPressed;
+                u16 *p = &g_GameInput.pressed;
                 if (*p & 0x860) {
                     PlaySoundCue(2);
                     GameMenuBusy = 0;
@@ -122,7 +123,7 @@ void UpdateLogoSampleScreen(void) {
                     if (c > 0) n = c - 1;
                     g_LogoSampleBackIndex = n;
                 }
-                if (g_PadPressed & PAD_RIGHT) {
+                if (g_GameInput.pressed & PAD_RIGHT) {
                     s32 n, c;
                     PlaySoundCue(1);
                     c = g_LogoSampleBackIndex;
@@ -194,11 +195,11 @@ void UpdateTeamNameScreen(void) {
     g_MenuOverlayPattern = -1;
 
     if (g_TeamNameLength < 6) {
-        if ((g_PadPressedRepeat & PAD_DPAD) && GameMenuCursorAnim < 0) {
-            if (g_PadPressedRepeat & PAD_UP) { s32 u = GameMenuCursor; GameMenuCursor = (u < 0xB) ? u + 0x21 : u - 0xB; }
-            if (g_PadPressedRepeat & PAD_DOWN) { s32 d = GameMenuCursor; GameMenuCursor = (d < 0x21) ? d + 0xB : d - 0x21; }
-            if (g_PadPressedRepeat & PAD_LEFT) { s32 l = GameMenuCursor; GameMenuCursor = (l % 11 != 0) ? l - 1 : l + 0xA; }
-            if (g_PadPressedRepeat & PAD_RIGHT) {
+        if ((g_GameInput.pressedRepeat & PAD_DPAD) && GameMenuCursorAnim < 0) {
+            if (g_GameInput.pressedRepeat & PAD_UP) { s32 u = GameMenuCursor; GameMenuCursor = (u < 0xB) ? u + 0x21 : u - 0xB; }
+            if (g_GameInput.pressedRepeat & PAD_DOWN) { s32 d = GameMenuCursor; GameMenuCursor = (d < 0x21) ? d + 0xB : d - 0x21; }
+            if (g_GameInput.pressedRepeat & PAD_LEFT) { s32 l = GameMenuCursor; GameMenuCursor = (l % 11 != 0) ? l - 1 : l + 0xA; }
+            if (g_GameInput.pressedRepeat & PAD_RIGHT) {
                 s32 r;
                 s32 rn;
                 r = GameMenuCursor;
@@ -213,7 +214,7 @@ void UpdateTeamNameScreen(void) {
 
         }
     } else {
-        if ((g_PadPressedRepeat & (PAD_LEFT | PAD_RIGHT)) && GameMenuCursorAnim < 0) {
+        if ((g_GameInput.pressedRepeat & (PAD_LEFT | PAD_RIGHT)) && GameMenuCursorAnim < 0) {
             s32 nc = (GameMenuCursor == 0x2A) ? 0x2B : 0x2A;
             GameMenuCursor = nc;
             g_MenuViewAngleTarget = 0;
@@ -222,7 +223,7 @@ void UpdateTeamNameScreen(void) {
             PlaySoundCue(1);
         }
     }
-    pad = g_PadPressed;
+    pad = g_GameInput.pressed;
     if (pad & 0x860) {
     {
         s32 c = GameMenuCursor;
@@ -316,16 +317,16 @@ void UpdatePaintColorScreen(void) {
             return;
         }
         g_MenuOverlayPattern = -1;
-        if (g_PadPressed & PAD_UP) {
+        if (g_GameInput.pressed & PAD_UP) {
             PlaySoundCue(1);
             g_PaintColorCursor = g_PaintColorCursor > 0 ? g_PaintColorCursor - 1 : 2;
         }
-        if (g_PadPressed & PAD_DOWN) {
+        if (g_GameInput.pressed & PAD_DOWN) {
             PlaySoundCue(1);
             g_PaintColorCursor = g_PaintColorCursor < 2 ? g_PaintColorCursor + 1 : 0;
         }
         {
-            u16 f = g_PadPressed;
+            u16 f = g_GameInput.pressed;
             if (f & 0x860) {
                 s32 sel = g_PaintColorCursor;
                 s32 val;
@@ -359,16 +360,16 @@ void UpdatePaintColorScreen(void) {
 
     if (GameMenuBusy < 0) {
         if (DrawPaintColorPalette(&g_UiScriptProgress2, 1, g_PaintColorIndex) != 0) {
-            if (g_PadPressedRepeat & PAD_LEFT) {
+            if (g_GameInput.pressedRepeat & PAD_LEFT) {
                 PlaySoundCue(1);
                 g_PaintColorIndex = g_PaintColorIndex > 0 ? g_PaintColorIndex - 1 : 0x11;
             }
-            if (g_PadPressedRepeat & PAD_RIGHT) {
+            if (g_GameInput.pressedRepeat & PAD_RIGHT) {
                 PlaySoundCue(1);
                 g_PaintColorIndex = g_PaintColorIndex < 17 ? g_PaintColorIndex + 1 : 0;
             }
             if (GameMenuBusy == -1) {
-                u16 *btn = &g_PadPressed;
+                u16 *btn = &g_GameInput.pressed;
                 if (*btn & 0x860) {
                     PlaySoundCue(2);
                     g_CarTable[g_PlayerCarIndex].paintColor1 = g_PaintColorIndex;
@@ -383,7 +384,7 @@ void UpdatePaintColorScreen(void) {
                 }
                 SetBodyColor1(g_PaintColorIndex);
             } else {
-                u16 *btn = &g_PadPressed;
+                u16 *btn = &g_GameInput.pressed;
                 if (*btn & 0x860) {
                     PlaySoundCue(2);
                     g_CarTable[g_PlayerCarIndex].paintColor2 = g_PaintColorIndex;

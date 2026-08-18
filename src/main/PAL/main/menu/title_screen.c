@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
@@ -109,7 +110,7 @@ void DrawPressStartPrompt(void) {
 
 
 void UpdateTitleScreen(void) {
-    if (g_PadPressed & PAD_START) {
+    if (g_GameInput.pressed & PAD_START) {
         PlaySoundCue(2);
         g_FrontendState = FRONTEND_STATE_MENU_OPENING;
         g_FrontendIdleTimer = 0;
@@ -227,7 +228,7 @@ void ShuffleBgmOrder(void) {
 
 
 void UpdateMainMenuInput(void) {
-    volatile u16 *flagp = &g_PadPressed;
+    volatile u16 *flagp = &g_GameInput.pressed;
     s32 idx;
     u16 flags;
 
@@ -260,7 +261,7 @@ void UpdateMainMenuInput(void) {
         }
     }
 
-    if (g_PadPressed & PAD_CONFIRM) {
+    if (g_GameInput.pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         if (g_AssetLoadState != 0) {
             ResetAssetLoader();

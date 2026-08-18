@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/diagnostics.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
@@ -98,7 +99,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     RageTraceCarStates();
 #endif
 
-    mode23 = g_PadType == 0x23;
+    mode23 = g_GameInput.controllerType == 0x23;
     car->facingBackwards = IsCarFacingBackwards(car);
 
     {
@@ -107,8 +108,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             g_AutoShiftCooldown, g_SteerHoldFrames};
         GearboxInput input = {
             car->speed, car->shiftState,
-            (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) != 0,
-            (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) != 0,
+            (g_GameInput.pressed & g_PadButtonMapping[4 + mode23 * 8]) != 0,
+            (g_GameInput.pressed & g_PadButtonMapping[5 + mode23 * 8]) != 0,
             g_CarSpec->topGear, g_CarSpec->shiftPoints};
         GearboxUpdate(&gearbox, &input);
         p->gear = gearbox.gear;
@@ -132,14 +133,14 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     if (g_RacePhase < 4) {
-        if (g_PadType == 0x41) {
+        if (g_GameInput.controllerType == 0x41) {
             p->acceleratorInput.sampled =
-                ((g_PadHeld & g_PadButtonMapping[2]) != 0) << 8;
-            p->brakeInput = ((g_PadHeld & g_PadButtonMapping[3]) != 0) << 8;
-        } else if (g_PadType == 0x23) {
+                ((g_GameInput.held & g_PadButtonMapping[2]) != 0) << 8;
+            p->brakeInput = ((g_GameInput.held & g_PadButtonMapping[3]) != 0) << 8;
+        } else if (g_GameInput.controllerType == 0x23) {
             p->acceleratorInput.sampled =
-                ((g_PadHeld & g_PadButtonMapping[10]) != 0) << 8;
-            p->brakeInput = ((g_PadHeld & g_PadButtonMapping[11]) != 0) << 8;
+                ((g_GameInput.held & g_PadButtonMapping[10]) != 0) << 8;
+            p->brakeInput = ((g_GameInput.held & g_PadButtonMapping[11]) != 0) << 8;
             switch (g_NegconMappingIndex) {
             case 0:
             case 5:
@@ -147,8 +148,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 CarInputAddress acceleratorInput;
 
                 acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogI << 8) / 106;
-                p->brakeInput = (g_NegconAnalogII << 8) / 106;
+                *acceleratorInput.sampled = (g_GameInput.analogI << 8) / 106;
+                p->brakeInput = (g_GameInput.analogII << 8) / 106;
                 break;
             }
             case 1:
@@ -157,20 +158,20 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 CarInputAddress acceleratorInput;
 
                 acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogII << 8) / 106;
-                p->brakeInput = (g_NegconAnalogI << 8) / 106;
+                *acceleratorInput.sampled = (g_GameInput.analogII << 8) / 106;
+                p->brakeInput = (g_GameInput.analogI << 8) / 106;
                 break;
             }
             case 2:
-                p->brakeInput = (g_NegconAnalogL << 8) / 106;
+                p->brakeInput = (g_GameInput.analogL << 8) / 106;
                 break;
             case 3:
             {
                 CarInputAddress acceleratorInput;
 
                 acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogII << 8) / 106;
-                p->brakeInput = (g_NegconAnalogL << 8) / 106;
+                *acceleratorInput.sampled = (g_GameInput.analogII << 8) / 106;
+                p->brakeInput = (g_GameInput.analogL << 8) / 106;
                 break;
             }
             case 4:
@@ -202,7 +203,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_PadType == 0x23) {
+    if (g_GameInput.controllerType == 0x23) {
         if (car->steeringAngle >= 4096) {
             car->steeringAngle = 4096;
             if (p->steerPos < -4096) {

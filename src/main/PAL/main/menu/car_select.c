@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
@@ -31,16 +32,16 @@ void UpdateRankingScreen(void) {
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1) != 0) {
                 g_MenuOverlayPattern = -1;
-                if (g_PadPressed & PAD_UP) {
+                if (g_GameInput.pressed & PAD_UP) {
                     PlaySoundCue(1);
                     g_RankingCursor = (g_RankingCursor > 0) ? g_RankingCursor - 1 : 2;
                 }
-                if (g_PadPressed & PAD_DOWN) {
+                if (g_GameInput.pressed & PAD_DOWN) {
                     PlaySoundCue(1);
                     g_RankingCursor = (g_RankingCursor < 2) ? g_RankingCursor + 1 : 0;
                 }
                 {
-                    s32 flags = g_PadPressed;
+                    s32 flags = g_GameInput.pressed;
                     if (flags & 0x860) {
                         s32 x = g_RankingCursor;
                         if (x == 0) {
@@ -76,7 +77,7 @@ void UpdateRankingScreen(void) {
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 0) == 0) {
                 break;
             }
-            if (!(g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
+            if (!(g_GameInput.pressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
                 break;
             }
             PlaySoundCue(3);
@@ -93,7 +94,7 @@ void UpdateRankingScreen(void) {
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 1) == 0) {
                 break;
             }
-            if (!(g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
+            if (!(g_GameInput.pressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
                 break;
             }
             PlaySoundCue(3);
@@ -338,12 +339,12 @@ void UpdateCarSelectScreen(void) {
                  0) &&
                 (g_UiScriptProgress2 <= 0)) {
                 g_MenuOverlayPattern = initial;
-                if (g_PadPressed & PAD_UP) {
+                if (g_GameInput.pressed & PAD_UP) {
                     PlaySoundCue(1);
                     g_CarSelectCursor =
                         (g_CarSelectCursor > 0) ? g_CarSelectCursor - 1 : lowMode;
                 }
-                if (g_PadPressed & PAD_DOWN) {
+                if (g_GameInput.pressed & PAD_DOWN) {
                     PlaySoundCue(1);
                     g_CarSelectCursor =
                         (g_CarSelectCursor < mode) ? g_CarSelectCursor + 1 : 0;
@@ -351,7 +352,7 @@ void UpdateCarSelectScreen(void) {
                 UpdateOwnedCarNeighbours();
                 RefreshCarUnlockState();
                 sel = g_PlayerCarIndex;
-                if ((g_PadHeld & PAD_LEFT) && (g_PrevOwnedCarIndex != -1)) {
+                if ((g_GameInput.held & PAD_LEFT) && (g_PrevOwnedCarIndex != -1)) {
                     t = g_MenuViewAngleTarget;
                     u = g_MenuViewAngle;
                     if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
@@ -371,7 +372,7 @@ void UpdateCarSelectScreen(void) {
                         }
                     }
                 }
-                if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1)) {
+                if ((g_GameInput.held & PAD_RIGHT) && (g_NextOwnedCarIndex != -1)) {
                     t = g_MenuViewAngleTarget;
                     u = g_MenuViewAngle;
                     if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
@@ -397,7 +398,7 @@ void UpdateCarSelectScreen(void) {
                 u = g_MenuViewAngle;
                 if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
                     if (g_CarSwapToIndex < 0) {
-                        if (g_PadPressed & PAD_CONFIRM) {
+                        if (g_GameInput.pressed & PAD_CONFIRM) {
                             s32 choice;
 
                             choice = g_CarSelectCursor;
@@ -488,7 +489,7 @@ void UpdateCarSelectScreen(void) {
                                 g_UiScriptProgress2 = 0;
                                 return;
                             }
-                        } else if ((g_PadPressed & PAD_CANCEL) &&
+                        } else if ((g_GameInput.pressed & PAD_CANCEL) &&
                                    ((u32)(g_MenuViewAngle - 0x2710) >
                                     0x120160U)) {
                             PlaySoundCue(3);
@@ -508,10 +509,10 @@ void UpdateCarSelectScreen(void) {
     if (GameMenuBusy < 0) {
         RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            if (g_PadPressed & PAD_CONFIRM) {
+            if (g_GameInput.pressed & PAD_CONFIRM) {
                 GameMenuBusy = 0;
             }
-            if (g_PadPressed & PAD_CANCEL) {
+            if (g_GameInput.pressed & PAD_CANCEL) {
                 GameMenuBusy = 0;
             }
         }
@@ -681,15 +682,15 @@ void UpdateCustomizeScreen(void) {
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
         if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
             g_MenuOverlayPattern = -1;
-            if (g_PadPressed & PAD_UP) {
+            if (g_GameInput.pressed & PAD_UP) {
                 PlaySoundCue(1);
                 g_RankingOption = (g_RankingOption > 0) ? g_RankingOption - 1 : lowMode;
             }
-            if (g_PadPressed & PAD_DOWN) {
+            if (g_GameInput.pressed & PAD_DOWN) {
                 PlaySoundCue(1);
                 g_RankingOption = (g_RankingOption < mode) ? g_RankingOption + 1 : 0;
             }
-            if (g_PadPressed & PAD_CONFIRM) {
+            if (g_GameInput.pressed & PAD_CONFIRM) {
                 u8 carByte;
 
                 sel = g_RankingOption;
@@ -731,7 +732,7 @@ void UpdateCustomizeScreen(void) {
                     g_CarSpecGraphStep = -3;
                     g_MenuViewOffsetTarget = 0x3D090;
                 }
-            } else if (g_PadPressed & PAD_CANCEL) {
+            } else if (g_GameInput.pressed & PAD_CANCEL) {
                 PlaySoundCue(3);
                 GameMenuBusy = 2;
                 g_MenuOverlayPattern = 2;
@@ -743,7 +744,7 @@ void UpdateCustomizeScreen(void) {
     if (GameMenuBusy < 0) {
         if (GameMenuBusy == -1) {
             if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) != 0) {
-                pad = &g_PadPressed;
+                pad = &g_GameInput.pressed;
                 if (*pad & 0x860) {
                     PlaySoundCue(2);
                     GameMenuBusy = -5;
@@ -757,7 +758,7 @@ void UpdateCustomizeScreen(void) {
                     PlaySoundCue(1);
                     g_MenuSubCursor++;
                 }
-                if (g_PadPressed & PAD_RIGHT) {
+                if (g_GameInput.pressed & PAD_RIGHT) {
                     if (g_MenuSubCursor != 0) {
                         PlaySoundCue(1);
                         g_MenuSubCursor--;
@@ -767,7 +768,7 @@ void UpdateCustomizeScreen(void) {
             }
         } else if (GameMenuBusy == -2) {
             if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) != 0) {
-                pad = &g_PadPressed;
+                pad = &g_GameInput.pressed;
                 if (*pad & 0x860) {
                     PlaySoundCue(2);
                     GameMenuBusy = -6;
@@ -783,7 +784,7 @@ void UpdateCustomizeScreen(void) {
                     PlaySoundCue(1);
                     g_MenuSubCursor = 0;
                 }
-                if (g_PadPressed & PAD_RIGHT) {
+                if (g_GameInput.pressed & PAD_RIGHT) {
                     if (g_MenuSubCursor == 0) {
                         PlaySoundCue(1);
                         g_MenuSubCursor = 1;
@@ -798,10 +799,10 @@ void UpdateCustomizeScreen(void) {
         } else if (GameMenuBusy == -3) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 0);
             if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                if (g_PadPressed & PAD_CONFIRM) {
+                if (g_GameInput.pressed & PAD_CONFIRM) {
                     GameMenuBusy = -4;
                 }
-                if (g_PadPressed & PAD_CANCEL) {
+                if (g_GameInput.pressed & PAD_CANCEL) {
                     GameMenuBusy = -4;
                 }
             }

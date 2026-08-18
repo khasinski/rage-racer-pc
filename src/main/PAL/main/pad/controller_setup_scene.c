@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/game_input.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/prim.h"
@@ -62,7 +63,7 @@ void DrawControllerSetupScene(s32 variant) {
     }
     SetCameraRotMatrix();
 
-    if (g_PadType == 0x41) {
+    if (g_GameInput.controllerType == 0x41) {
         BuildRotMatrixX(&xRot, -0xD0);
         BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
         MulMatrix2(&yRot, &xRot);
@@ -80,7 +81,7 @@ void DrawControllerSetupScene(s32 variant) {
         return;
     }
 
-    if (g_PadType != 0x23) {
+    if (g_GameInput.controllerType != 0x23) {
         return;
     }
     if (g_GameMode == 11) {
@@ -90,7 +91,7 @@ void DrawControllerSetupScene(s32 variant) {
         steer = ((rsin(g_AnimTimer * 16) * 16) *
                  g_NegconPlayScale[g_NegconSteerPlay]) / 4096;
     } else {
-        steer = g_NegconSteer * 8;
+        steer = g_GameInput.steering * 8;
     }
 
     {
