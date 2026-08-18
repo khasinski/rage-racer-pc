@@ -581,9 +581,16 @@ compute shader). Vulkan RT follows for Windows and Linux; until then those
 platforms keep the SDL3 GPU path with no raytraced effects. The SDL3 GPU
 backend stays — Metal is added beside it, not in place of it.
 
-Note that leaving PsyZ applies to rendering only. The game is PlayStation
-code: its camera comes from the emulated GTE and always will. What the modern
-renderer can stop borrowing is the device, the swapchain, and VRAM.
+PsyZ is a staging dependency, not a fixture. The contact surface shrinks over
+time and rendering is simply the first area to leave it; game logic follows
+later. Treat every PsyZ call as a seam with a replacement due, not as a
+boundary the port is built against.
+
+Rendering starts from a good position here. `RageCaptureGteState` is plain
+numbers, so the renderer already consumes camera and lighting state without
+touching PsyZ — only the producer in `scene_capture.c` calls
+`Psyz_GteCtrlRead`. That leaves the device, the swapchain and VRAM as the
+renderer's remaining borrowings, and each has a step below that removes it.
 
 Steps, each landing on its own:
 
