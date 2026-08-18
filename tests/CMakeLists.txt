@@ -38,6 +38,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME course_index COMMAND course_index_tests)
 
+add_executable(material_decode_tests
+    material_decode_tests.c
+    ../src/port/modern/material_decode.c)
+target_include_directories(material_decode_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(material_decode_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME material_decode COMMAND material_decode_tests)
+set_tests_properties(material_decode PROPERTIES LABELS portable)
+
 add_executable(native_geometry_interpolation_tests
     native_geometry_interpolation_tests.c
     ../src/port/native_geometry_interpolation.c)
