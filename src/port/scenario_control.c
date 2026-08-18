@@ -29,7 +29,7 @@ typedef struct RageScenarioState {
     int grid[11], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
-    int directBoot, directStep;
+    int directBoot, directStep, skipSequences;
     int lastScene, lastFrontend, lastMenuScreen, stableFrames, retryFrames;
 } RageScenarioState;
 
@@ -237,6 +237,9 @@ static void RageScenarioInitialize(void) {
         "race.grid", "RAGE_PORT_SCENARIO_GRID"));
     RageScenarioParseTrackStarts();
     s_scenario.freezeStarts = RageRuntimeConfigEnabled("start.freeze", NULL);
+    s_scenario.skipSequences = RageRuntimeConfigGet("boot.skip_sequences") == NULL
+                                   ? 1
+                                   : RageRuntimeConfigEnabled("boot.skip_sequences", NULL);
     s_scenario.directBoot = RageRuntimeConfigGet("boot.direct") == NULL
                                 ? 1
                                 : RageRuntimeConfigEnabled("boot.direct", NULL);
@@ -252,8 +255,9 @@ static void RageScenarioInitialize(void) {
             s_scenario.customGrid ? "custom" : "default",
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
-    fprintf(stderr, "rage-port: scenario boot=%s\n",
-            s_scenario.directBoot ? "direct" : "menus");
+    fprintf(stderr, "rage-port: scenario boot=%s skip=%s\n",
+            s_scenario.directBoot ? "direct" : "menus",
+            s_scenario.skipSequences ? "on" : "off");
 }
 
 static void RageScenarioConfirm(void) {
@@ -462,9 +466,8 @@ void RagePortScenarioBeforeSceneHandler(void) {
      * and load assets from them: the Grand Prix prologue runs at its own class
      * and course, and the result flow reports the race just finished. Holding
      * the scenario's class across those made them fetch another class's
-     * assets, which is what left the prologue and the prize screen garbled.
-     * The title screen's hand-off phase is excluded for the same reason - it
-     * is where UpdateMainMenuExit picks the prologue's class. */
+     * assets. The title screen's hand-off phase is excluded for the same
+     * reason - it is where UpdateMainMenuExit picks the prologue's class. */
     if (g_SceneId >= 2 && g_SceneId <= 12 &&
         !(g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
         g_GrandPrixMode = (s16)s_scenario.mode;
@@ -473,21 +476,20 @@ void RagePortScenarioBeforeSceneHandler(void) {
         g_GrandPrixClass = s_scenario.classIndex;
         g_PlayerCarIndex = (s16)s_scenario.car;
         if (g_SceneId < 11) {
-            /* The menus index course progress with the series in bit 2, and the
-             * retail car-select confirm masks it back to the physical course
-             * before the race loads (car_select.c). Asset slots run class * 8 +
-             * course * 2 with four courses to a class, so an unmasked index reads
-             * the next class's data. Extra GP raced course 4 that way and got a
-             * block with no rival start table: every rival landed on the origin,
-             * FindTrackSegment refused it, and AccumulateLapProgress deactivated
-             * them, which DrawCars then skips. Direct boot shows none of those
-             * menus, so it uses the physical course throughout. */
+            /* The menus index course progress with the series in bit 2, and
+             * the retail car-select confirm masks it back to the physical
+             * course before the race loads (car_select.c). Asset slots run
+             * class * 8 + course * 2 with four courses to a class, so an
+             * unmasked index reads the next class's data: that is where the
+             * reverse grid went, leaving every rival at the origin with no
+             * track segment, which deactivates them. Direct boot shows none
+             * of those menus, so it uses the physical course throughout. */
             int menuIndexed = !s_scenario.directBoot && g_SceneId <= 8;
             g_CourseIndex =
                 s_scenario.course + (menuIndexed ? s_scenario.series * 4 : 0);
         }
-        if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
     }
+    if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
 
     changed = g_SceneId != s_scenario.lastScene ||
               (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
@@ -515,7 +517,10 @@ void RagePortScenarioBeforeSceneHandler(void) {
      * carries PAD_START, which is what the movie player watches for. The
      * prologue ignores the button until its own timer passes 0x79, so holding
      * it costs nothing and takes effect at the first frame that accepts it. */
-    if (g_SceneId == 5 || g_SceneId == 32) {
+    if (!s_scenario.skipSequences) {
+        /* Leave the boot logo, the intro movie and the prologue to run at
+         * their retail length. */
+    } else if (g_SceneId == 5 || g_SceneId == 32) {
         g_PadType = 0x41;
         g_PadPressed |= PAD_CONFIRM;
     } else if (g_SceneId == 1) {
