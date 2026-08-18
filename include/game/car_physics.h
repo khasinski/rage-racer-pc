@@ -8,6 +8,29 @@ typedef struct CarTorqueSample {
     s32 lossPercent;
 } CarTorqueSample;
 
+typedef struct CarTransmissionState {
+    s16 motionState;
+    s16 gear;
+    s16 displayedGear;
+    s16 jumpTimer;
+    s16 clutch;
+    s16 manual;
+    s16 drivetrainCoupled;
+    s16 shiftRpmDelta;
+    s16 shiftSpeedDelta;
+    s32 engineRpm;
+    s32 engineLoad;
+    s32 targetRpm;
+    s32 targetSpeed;
+} CarTransmissionState;
+
+typedef struct CarTransmissionInput {
+    s32 speed;
+    s32 acceleration;
+    s32 roadGrade;
+    const s32 *gearRatios;
+} CarTransmissionInput;
+
 s16 CarUpdatePedalLatch(s16 latch, s32 input);
 s32 CarCalculateGripBudget(s32 acceleratorInput, s32 brakeInput);
 s32 CarCalculateLoadResistance(s32 motionState, s32 gearTorque,
@@ -23,5 +46,7 @@ CarTorqueSample CarSampleTorqueCurves(
     const s32 *torqueBandRpm, const s16 *torqueBandEnd,
     const s32 *lossRpm, const s32 *lossValue,
     const s16 *lossBandEnd);
+s32 CarUpdateTransmission(CarTransmissionState *state,
+                          const CarTransmissionInput *input);
 
 #endif

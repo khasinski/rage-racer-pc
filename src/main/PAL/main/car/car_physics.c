@@ -119,3 +119,78 @@ CarTorqueSample CarSampleTorqueCurves(
     if (gear == 1 && engineRpm < redline) sample.lossPercent *= 2;
     return sample;
 }
+
+static s32 ManualUpshiftGradeScale(s32 gear, s32 roadGrade) {
+    s32 penalty;
+    if (gear < 4 || roadGrade >= 0) return 100;
+    if (gear == 4) penalty = (-roadGrade) / 120;
+    else if (gear == 5) penalty = (-roadGrade) / 48;
+    else penalty = (roadGrade * -7) / 240;
+    return 100 - penalty;
+}
+
+s32 CarUpdateTransmission(CarTransmissionState *state,
+                          const CarTransmissionInput *input) {
+    s32 suppressResistance = 0;
+
+    if (state->motionState == 1 || state->motionState == 3) {
+        state->jumpTimer = 0;
+        state->clutch = 0;
+        return 0;
+    }
+
+    if (state->motionState == 2 && state->jumpTimer >= 0) {
+        state->jumpTimer--;
+        suppressResistance = 1;
+        if (state->jumpTimer < 0) state->jumpTimer = 0;
+        if (state->displayedGear != state->gear) {
+            state->targetRpm =
+                (((input->speed * 160) / 1168) * 10000) /
+                input->gearRatios[state->gear];
+            state->shiftRpmDelta =
+                (s16)((u16)state->targetRpm - (u16)state->engineRpm);
+        }
+        state->engineRpm = state->targetRpm +
+                           state->shiftRpmDelta * state->jumpTimer / 20;
+        return suppressResistance;
+    }
+
+    if (state->displayedGear != state->gear) {
+        s32 targetSpeed = (input->speed * 10000) /
+                          (input->gearRatios[state->gear] * 1168 / 160);
+        u32 wheelSpeed = (u16)input->acceleration;
+
+        state->engineLoad = (s32)wheelSpeed;
+        state->targetSpeed = targetSpeed;
+        if (state->manual != 0 && state->displayedGear < state->gear &&
+            input->roadGrade < 0 && state->gear >= 4) {
+            s32 gradeScale = ManualUpshiftGradeScale(
+                state->gear, input->roadGrade);
+            s32 signedWheelSpeed = (s16)wheelSpeed;
+            state->engineLoad =
+                (u16)((signedWheelSpeed * gradeScale) / 100);
+            state->targetSpeed = (gradeScale * targetSpeed) / 100;
+        }
+        suppressResistance = 1;
+        if (state->displayedGear > state->gear) state->targetSpeed += 500;
+        state->clutch = 10;
+        state->drivetrainCoupled = 0;
+        state->shiftSpeedDelta =
+            (s16)((u16)state->targetSpeed - (u16)state->engineRpm);
+        return suppressResistance;
+    }
+
+    state->clutch--;
+    if (state->clutch <= 0) {
+        state->drivetrainCoupled = 1;
+        state->engineLoad = 0;
+        state->clutch = 0;
+    } else if (state->manual != 0) {
+        state->engineRpm = state->targetSpeed -
+            state->shiftSpeedDelta * state->clutch / 15;
+    } else {
+        state->engineRpm = state->targetSpeed -
+            state->shiftSpeedDelta * state->clutch / 10;
+    }
+    return suppressResistance;
+}

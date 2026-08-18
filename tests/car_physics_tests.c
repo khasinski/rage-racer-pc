@@ -10,6 +10,9 @@ int main(void) {
     const s32 lossValue[] = {0, 20, 80, 100};
     const s16 lossEnds[] = {2, 3, 4, 4};
     CarTorqueSample sample;
+    const s32 gearRatios[] = {1000, 2000, 3000, 4000, 5000, 6000, 7000};
+    CarTransmissionInput transmissionInput = {1168, -1, -240, gearRatios};
+    CarTransmissionState transmission;
     EXPECT_EQ(0, CarUpdatePedalLatch(0, 0x84));
     EXPECT_EQ(1, CarUpdatePedalLatch(0, 0x85));
     EXPECT_EQ(2, CarUpdatePedalLatch(1, 0));
@@ -52,5 +55,27 @@ int main(void) {
         lossRpm, lossValue, lossEnds);
     EXPECT_EQ(-400, sample.torque);
     EXPECT_EQ(0, sample.lossPercent);
+
+    transmission = (CarTransmissionState){1, 2, 2, 5, 7, 0, 1,
+                                           0, 0, 1000, 0, 0, 0};
+    EXPECT_EQ(0, CarUpdateTransmission(&transmission, &transmissionInput));
+    EXPECT_EQ(0, transmission.jumpTimer);
+    EXPECT_EQ(0, transmission.clutch);
+
+    transmission = (CarTransmissionState){0, 4, 3, 0, 0, 1, 1,
+                                           0, 0, 1000, 0, 0, 0};
+    EXPECT_EQ(1, CarUpdateTransmission(&transmission, &transmissionInput));
+    EXPECT_EQ(10, transmission.clutch);
+    EXPECT_EQ(0, transmission.drivetrainCoupled);
+    EXPECT_EQ(313, transmission.targetSpeed);
+    EXPECT_EQ(0, transmission.engineLoad);
+
+    transmission.displayedGear = transmission.gear;
+    transmission.clutch = 10;
+    transmission.shiftSpeedDelta = 150;
+    transmission.targetSpeed = 1000;
+    CarUpdateTransmission(&transmission, &transmissionInput);
+    EXPECT_EQ(9, transmission.clutch);
+    EXPECT_EQ(910, transmission.engineRpm);
     return 0;
 }
