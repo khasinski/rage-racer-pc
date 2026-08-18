@@ -7,20 +7,9 @@
 #include "game/vector.h"
 #include "game/player_car_aliases.h"
 #include "game/replay.h"
+#include "game/race_types.h"
 #include "game/render_types.h"
 
-struct PlayerCarRuntime;
-struct GameCarRuntime;
-struct GameRenderSourcePoint;
-struct CarEntry;
-
-typedef union ReplayCarAddress {
-    struct PlayerCarRuntime *player;
-    struct GameCarRuntime *rivals;
-    ReplayCarState *state;
-    struct GameRenderSourcePoint *source;
-    void *runtime;
-} ReplayCarAddress;
 
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
  * tier: course asset index = 0x57 + (course << 1) + (class << 3). OVAL is
@@ -42,10 +31,6 @@ extern char *g_GrandPrixNames[];
 /* Race position, 1 = leading; recomputed each frame from how many cars are
  * further along. At the finish it indexes g_PrizeMoney. */
 
-/* Prize money per [course][class][place], place 0 = 1st. */
-typedef struct GrandPrixPrizeTable {
-    s32 values[4][6][3];
-} GrandPrixPrizeTable;
 
 extern struct RagePrizeMoneyStorage {
     unsigned char prefix[8];
@@ -64,17 +49,6 @@ extern s16 g_GrandPrixMode;
 /* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
  * index of the per-series tables and, because the Extra GP runs the
  * courses backwards, also the lap-direction flag. */
-typedef union RaceSeriesValue {
-    s32 series;
-    u16 trackDirection;
-} RaceSeriesValue;
-
-typedef union RaceSeriesAddress {
-    volatile s32 *series;
-    const s32 *stableSeries;
-    RaceSeriesValue *value;
-} RaceSeriesAddress;
-
 extern volatile s32 g_RaceSeries;
 
 static inline u16 ReadRaceTrackDirection(void) {
@@ -110,33 +84,6 @@ extern s32 g_MaxClassReached[2];
 /* Mirror mode, armed by holding the 0x80C pad combination as the race starts:
  * swaps left/right in steering, body roll, stereo pan and the sound cue. */
 extern s32 g_MirrorMode;
-
-/* One save slot's Grand Prix / Time Attack progress; InitMenuMode copies it
- * straight into the live globals and UpdateCourseSelectScreen writes it back. */
-typedef union RaceProgressMoney {
-    s32 value;
-    u16 half[2];
-} RaceProgressMoney;
-
-typedef struct GameRaceProgress {
-    s32 course;
-    s32 carIndex;
-    s32 classIndex;
-    s32 maxClassReached; /* highest class unlocked in this slot */
-    RaceProgressMoney money; /* GP and Extra GP: prize money, capped at 999999999,
-                       confirmed against US and JP saves advertising that cap.
-                       The Time Attack slot reuses the word for
-                       g_GrandPrixSeries, read back as u16. */
-} GameRaceProgress;
-
-#ifdef __psyz
-_Static_assert(sizeof(GameRaceProgress) == 0x14,
-               "race progress must retain its retail size");
-_Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
-               "race progress max class must retain its retail offset");
-_Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
-               "race progress money/series must retain its retail offset");
-#endif
 
 /* The save slot the front end is editing; repointed at one of the three below,
  * matching the title-menu row that g_CarTable was repointed for. Declared s32
@@ -253,11 +200,6 @@ void DrawWrongWayWarning(void);
  * header carried them. */
 
 extern s16 g_PlayerAutoSteer;
-typedef enum AttractDemoStep {
-    ATTRACT_DEMO_STEP_INVALID = -1,
-    ATTRACT_DEMO_STEP_LOAD,
-    ATTRACT_DEMO_STEP_RACE
-} AttractDemoStep;
 
 extern AttractDemoStep g_AttractDemoStep;
 extern s32 g_BestLapThisRace;
@@ -269,18 +211,6 @@ extern s32 g_ClassResultPlace;
 extern s32 g_LapCount;
 extern s16 g_PauseDebounce;
 extern s32 g_PrizeAmount;
-typedef enum PrizeScreenState {
-    PRIZE_SCREEN_STATE_INVALID = -1,
-    PRIZE_SCREEN_STATE_INTRO_FADE_IN,
-    PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM,
-    PRIZE_SCREEN_STATE_HIDE_RACE_TIME,
-    PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL,
-    PRIZE_SCREEN_STATE_COUNT_PRIZE,
-    PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM,
-    PRIZE_SCREEN_STATE_COUNT_BONUS,
-    PRIZE_SCREEN_STATE_WAIT_TO_FINISH,
-    PRIZE_SCREEN_STATE_FADE_OUT
-} PrizeScreenState;
 
 extern PrizeScreenState g_PrizeScreenState;
 extern s32 g_PromotionBonus;
@@ -394,11 +324,6 @@ extern u8 *g_PlaceSuffixNames[];
 #endif
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
-typedef struct PrologueLine {
-    s16 x;
-    s16 y;
-    const u8 *text;
-} PrologueLine;
 
 extern PrologueLine g_PrologueLines[14];
 extern s32 g_PromotionBonusTable[];
@@ -408,16 +333,6 @@ extern s16 g_RaceOptionScroll0;
 extern s16 g_RaceOptionScroll1;
 extern s32 g_RankingInsertRow;
 extern u8 g_RankingNameCodes[];
-typedef enum RecordEntryState {
-    RECORD_ENTRY_STATE_INVALID = -1,
-    RECORD_ENTRY_STATE_FADE_IN,
-    RECORD_ENTRY_STATE_EDIT_LAP_NAME,
-    RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME,
-    RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD,
-    RECORD_ENTRY_STATE_EDIT_RACE_NAME,
-    RECORD_ENTRY_STATE_WAIT_TO_FINISH,
-    RECORD_ENTRY_STATE_FADE_OUT
-} RecordEntryState;
 
 extern RecordEntryState g_RecordEntryState;
 extern s32 g_RecordPanelSlide;
@@ -425,10 +340,6 @@ extern s32 g_RefSectorTime1;
 extern s32 g_RefSectorTime2;
 extern u16 g_ResultPanelCluts[];
 extern u16 g_ResultPlaceCluts[];
-typedef struct ReverbZone {
-    s32 start;
-    s32 end;
-} ReverbZone;
 
 extern ReverbZone g_ReverbZones[2][2];
 extern s16 g_RivalCueCooldown0;

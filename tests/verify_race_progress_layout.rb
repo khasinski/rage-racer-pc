@@ -3,6 +3,7 @@
 
 root = ARGV.fetch(0)
 race_header = File.read(File.join(root, "include/game/race.h"))
+race_types = File.read(File.join(root, "include/game/race_types.h"))
 host_state = File.read(File.join(root, "src/port/host_state.c"))
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
 menu_mode = File.read(File.join(root, "src/main/PAL/main/menu/menu_mode.c"))
@@ -17,9 +18,9 @@ progress_names.each do |name|
 end
 
 abort "race progress size is not pinned to 20 bytes" unless
-  race_header.include?("sizeof(GameRaceProgress) == 0x14")
+  race_types.include?("sizeof(GameRaceProgress) == 0x14")
 abort "race progress series word is not pinned to +0x10" unless
-  race_header.include?("__builtin_offsetof(GameRaceProgress, money) == 0x10")
+  race_types.include?("__builtin_offsetof(GameRaceProgress, money) == 0x10")
 abort "Extra GP max class is still detached from its progress object" unless
   race_header.include?("#define g_ExtraGrandPrixSaveMaxClass (g_ExtraGrandPrixSave.maxClassReached)")
 
