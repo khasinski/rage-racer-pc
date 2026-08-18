@@ -4,11 +4,18 @@
 #include <string.h>
 #include <time.h>
 
+#include "game/asset.h"
+#include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/car.h"
+#include "game/course_index.h"
+#include "game/frontend_internal.h"
 #include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/player_car_internal.h"
+#include "game/save_internal.h"
+#include "game/sound.h"
 #include "game/track.h"
 #include "runtime_config.h"
 #include "scenario_control.h"
@@ -22,8 +29,21 @@ typedef struct RageScenarioState {
     int grid[11], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
+    int directBoot, directStep;
     int lastScene, lastFrontend, lastMenuScreen, stableFrames, retryFrames;
 } RageScenarioState;
+
+/* Steps of the direct-boot loader, in the order the frontend would trigger
+ * their asset requests. */
+enum {
+    RAGE_DIRECT_PENDING,
+    RAGE_DIRECT_BGM_ASSETS,
+    RAGE_DIRECT_CAR_ASSETS,
+    RAGE_DIRECT_ROUND_REQUEST,
+    RAGE_DIRECT_ROUND_WAIT,
+    RAGE_DIRECT_RACE_ASSETS,
+    RAGE_DIRECT_DONE
+};
 
 enum {
     RAGE_SCENARIO_AFTER_MENU,
@@ -217,6 +237,14 @@ static void RageScenarioInitialize(void) {
         "race.grid", "RAGE_PORT_SCENARIO_GRID"));
     RageScenarioParseTrackStarts();
     s_scenario.freezeStarts = RageRuntimeConfigEnabled("start.freeze", NULL);
+    s_scenario.directBoot = RageRuntimeConfigGet("boot.direct") == NULL
+                                ? 1
+                                : RageRuntimeConfigEnabled("boot.direct", NULL);
+    if (s_scenario.directBoot && !s_scenario.mode) {
+        fprintf(stderr,
+                "rage-port: direct boot covers Grand Prix only; time attack uses the menus\n");
+        s_scenario.directBoot = 0;
+    }
     fprintf(stderr, "rage-port: scenario mode=%s series=%s class=%d course=%d car=%d grid=%s after_finish=%s\n",
             s_scenario.mode ? "grand-prix" : "time-attack",
             s_scenario.series ? "extra-gp" : "grand-prix",
@@ -224,6 +252,8 @@ static void RageScenarioInitialize(void) {
             s_scenario.customGrid ? "custom" : "default",
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
+    fprintf(stderr, "rage-port: scenario boot=%s\n",
+            s_scenario.directBoot ? "direct" : "menus");
 }
 
 static void RageScenarioConfirm(void) {
@@ -271,6 +301,121 @@ static void RageScenarioTrace(void) {
         fprintf(stderr,
                 "rage-port: scenario stalled t=%.1fs scene=%d phase=%d screen=%d\n",
                 RageScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
+    }
+}
+
+/* Every title-screen series confirm repoints the same three tables
+ * (title_screen.c cases 0 and 1), and everything downstream reads the race
+ * through them. Direct boot never shows that screen, so it repoints them
+ * itself. Time attack is not covered: its confirm leaves g_CourseProgress
+ * pointing wherever a previous Grand Prix selection left it, which is nothing
+ * at all on a cold boot. */
+static void RageScenarioSelectSeries(void) {
+    if (s_scenario.series) {
+        g_CarTable = g_ExtraGrandPrixCars;
+        g_RaceProgress = &g_ExtraGrandPrixSave;
+        g_CourseProgress = &g_ExtraGrandPrixCourseProgress;
+    } else {
+        g_CarTable = g_GrandPrixCars;
+        g_RaceProgress = &g_GrandPrixSave;
+        g_CourseProgress = &g_GrandPrixCourseProgress;
+    }
+}
+
+/* EnterRoundScreen counts the rounds already placed in this class, then adds
+ * the one about to be run. */
+static void RageScenarioCountRounds(void) {
+    int rounds = (g_GrandPrixClass < 2) ? 3 : 4;
+    int index;
+    g_GrandPrixRound = 0;
+    for (index = 0; index < rounds; index++) {
+        if (g_CourseProgress->bestPlace[index] != 0) g_GrandPrixRound++;
+    }
+    if (g_CourseProgress->bestPlace[RageSeriesCourseIndex()] == 0) {
+        g_GrandPrixRound++;
+    }
+}
+
+/* UpdateRoundScreen draws from the shuffle bag as it hands off to scene 11. */
+static void RageScenarioSelectBgm(void) {
+    if (g_BgmSelection == 0) {
+        g_BgmTrack = g_BgmShuffleOrder[g_BgmShuffleIndex++];
+        if (g_BgmShuffleIndex == g_BgmTrackCount) g_BgmShuffleIndex = 0;
+    } else {
+        g_BgmTrack = (s16)(g_BgmSelection - 1);
+    }
+    if (g_BgmTrack == 9) g_BgmTrack = 0xE;
+}
+
+/* Load a race without the frontend. Of the retail route to scene 11, the
+ * screens are what costs the time and the asset requests behind them are what
+ * a race actually needs, so issue those in the order the menus do and skip
+ * the rest. Car-select assets carry the player's car model, the round-screen
+ * request leaves behind the block pointers LoadRaceAssets reads out of, and
+ * the race request loads the course, the track data and the car audio.
+ *
+ * The two request styles differ and cannot be polled the same way.
+ * RequestCarSelectAssets and RequestRaceAssets return 1 while busy and 0 once,
+ * on the call after the load lands. RequestRoundAssets has no busy guard: it
+ * resets the loader whenever it is called mid-load, so it is issued once and
+ * waited on through g_AssetLoadState. */
+static void RageScenarioDirectBoot(void) {
+    static const char *const stepNames[] = {
+        "setup", "bgm-assets", "car-assets", "round-request", "round-wait",
+        "race-assets", "done"
+    };
+    {
+        static int lastStep = -1;
+        if (s_scenario.directStep != lastStep) {
+            lastStep = s_scenario.directStep;
+            fprintf(stderr, "rage-port: direct boot %s t=%.1fs\n",
+                    stepNames[s_scenario.directStep], RageScenarioElapsed());
+        }
+    }
+    switch (s_scenario.directStep) {
+    case RAGE_DIRECT_PENDING:
+        RageScenarioSelectSeries();
+        ShuffleBgmOrder();
+        s_scenario.directStep = RAGE_DIRECT_BGM_ASSETS;
+        break;
+    case RAGE_DIRECT_BGM_ASSETS:
+        /* Asset 7 carries the sequence bank, and leaves behind the three block
+         * pointers LoadCarSelectAssets opens its own first state with. */
+        if (RequestSelectBgmAssets() == 0) {
+            s_scenario.directStep = RAGE_DIRECT_CAR_ASSETS;
+        }
+        break;
+    case RAGE_DIRECT_CAR_ASSETS:
+        if (RequestCarSelectAssets() == 0) {
+            s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
+        }
+        break;
+    case RAGE_DIRECT_ROUND_REQUEST:
+        RequestRoundAssets();
+        s_scenario.directStep = RAGE_DIRECT_ROUND_WAIT;
+        break;
+    case RAGE_DIRECT_ROUND_WAIT:
+        if (g_AssetLoadState == 0) {
+            /* EnterRoundScreen's own work, minus the screen it draws. */
+            CloseLoadedAudioSlots();
+            UploadImageAsset(g_ImageBlockBuffer);
+            RelocateCarModel();
+            RageScenarioCountRounds();
+            s_scenario.directStep = RAGE_DIRECT_RACE_ASSETS;
+        }
+        break;
+    case RAGE_DIRECT_RACE_ASSETS:
+        if (RequestRaceAssets() == 0) {
+            RageScenarioSelectBgm();
+            g_MirrorMode = 0;
+            g_FrameSyncThreshold = 0x180;
+            g_SceneTimer = 0;
+            g_SceneId = 11;
+            s_scenario.directStep = RAGE_DIRECT_DONE;
+            fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
+                    RageScenarioElapsed());
+        }
+        break;
     }
 }
 
@@ -348,6 +493,24 @@ void RagePortScenarioBeforeSceneHandler(void) {
          * that is the load itself, which nothing can skip. */
         g_PadType = 0x41;
         g_PadHeld |= PAD_CONFIRM;
+    }
+
+    /* Direct boot takes over the moment the title screen appears, which is the
+     * first point where the boot assets are in and the game is otherwise idle.
+     * The scene stays on 4 so its handler keeps drawing a still title, but its
+     * timers are held short of the two attract triggers: UpdateFrontend starts
+     * loading an attract demo at g_SceneTimer 0x1cc and cuts to one at
+     * g_FrontendIdleTimer 900, and both would fight the loader for the asset
+     * pipeline. They are clamped rather than pinned because the title screen
+     * turns the display on at its own g_SceneTimer 0xf, and a timer held at
+     * zero never gets there - which leaves the race that follows drawing into
+     * a masked display. */
+    if (s_scenario.directBoot && g_SceneId == 4 &&
+        s_scenario.directStep != RAGE_DIRECT_DONE) {
+        if (g_SceneTimer > 0x1C0) g_SceneTimer = 0x1C0;
+        if (g_FrontendIdleTimer > 800) g_FrontendIdleTimer = 800;
+        RageScenarioDirectBoot();
+        return;
     }
 
     if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&
