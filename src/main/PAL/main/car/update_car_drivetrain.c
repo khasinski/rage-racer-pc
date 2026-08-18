@@ -14,11 +14,12 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   CarTorqueSample torqueSample;
   CarTransmissionState transmission;
   CarTransmissionInput transmissionInput;
+  CarGroundSpeedInput groundSpeedInput;
+  CarGroundSpeedOutput groundSpeedOutput;
   s16 curveModeNow;
   s16 revLimit;
   int assistArmed;
   int steeringNonnegative;
-  int secondNonnegative;
   s16 gear;
   s16 driveCurveMode;
   s16 steerBias;
@@ -33,7 +34,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 gearTorqueLate;
   s32 cosCentreAngle;
   s32 toCentreZ;
-  s32 engineSpeed;
   s32 centreAngle;
   s32 radialDistance;
   s32 pointCurveMode;
@@ -41,9 +41,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 sideForce;
   s32 roadSpeed;
   s32 arcPointIndex;
-  s32 speedA;
-  s32 torqueShifted;
-  s32 speedB;
   s32 driveModeLate;
   s32 loadTorque;
   s32 driveMode;
@@ -60,11 +57,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 throttleAccel;
   s32 gearRatio;
   s32 netTorque;
-  s32 lateralSum;
   s32 dragBase;
   s32 camberLean;
-  s32 speedScaled;
-  s32 torqueLate;
   s32 coefficientBase;
   s32 coefficient;
   u16 arcFlags;
@@ -254,16 +248,11 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   frontLoadScaled = trackHeadingError;
   pointIndex = car->trackPointIndex;
   lateralOffset = car->segmentFraction;
-  engineSpeed = g_TrackPoints[pointIndex].surfacePitch * (0x400 - lateralOffset);
   pointIndex += 1;
-  lateralSum = engineSpeed +
-               g_TrackPoints[pointIndex % g_TrackPointCount].surfacePitch * lateralOffset;
-  secondNonnegative = lateralSum >= 0;
-  if (!secondNonnegative)
-  {
-    lateralSum += 0x3FF;
-  }
-  slipAngle = lateralSum >> 0xA;
+  slipAngle = CarInterpolateSurfacePitch(
+      g_TrackPoints[car->trackPointIndex].surfacePitch,
+      g_TrackPoints[pointIndex % g_TrackPointCount].surfacePitch,
+      lateralOffset);
   dragProduct = slipAngle * rcos(frontLoadScaled);
   slipAngle = dragProduct >> 0xC;
   if (dragProduct < 0)
@@ -381,47 +370,14 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   else
   {
-    if (car->shiftState != 0)
-    {
-      speedA = car->speed;
-      car->acceleration = 0;
-      speedScaled = (speedA * 0x3E7) / 1000;
-    }
-    else
-    {
-      if (drive->clutch > 0)
-      {
-        car->acceleration = drive->engineLoad;
-      }
-      else
-      {
-        torqueLate = gearTorqueLate;
-        if (drive->jumpTimer > 0)
-        {
-          car->acceleration = drive->engineLoad;
-        }
-        else
-        {
-          if (torqueLate < 0)
-          {
-            torqueLate += 0x1FFFF;
-          }
-          torqueShifted = torqueLate >> 0x11;
-          car->acceleration = torqueShifted;
-          if (drive->manual == 0)
-          {
-            car->acceleration = g_CarSpec->automaticAccelerationScale * torqueShifted / 1000;
-          }
-        }
-      }
-      if (g_GripLossTimer > 0)
-      {
-        car->acceleration /= 2;
-      }
-      speedB = car->speed;
-      speedScaled = (speedB * 0x5E) / 100;
-    }
-    car->speed = speedScaled;
+    groundSpeedInput = (CarGroundSpeedInput){
+        car->speed, gearTorqueLate, drive->engineLoad,
+        g_CarSpec->automaticAccelerationScale, car->shiftState,
+        drive->clutch, drive->jumpTimer, drive->manual,
+        g_GripLossTimer > 0};
+    groundSpeedOutput = CarCalculateGroundSpeed(&groundSpeedInput);
+    car->speed = groundSpeedOutput.speed;
+    car->acceleration = groundSpeedOutput.acceleration;
   }
   if (car->speed < 8)
   {

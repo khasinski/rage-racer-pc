@@ -18,6 +18,40 @@ s32 CarCalculateGripBudget(s32 acceleratorInput, s32 brakeInput) {
     return 0x17C - frontLoadScaled + (brakeInput * 0x64) / 256;
 }
 
+s32 CarInterpolateSurfacePitch(s32 currentPitch, s32 nextPitch,
+                               s32 segmentFraction) {
+    s32 weighted = currentPitch * (0x400 - segmentFraction) +
+                   nextPitch * segmentFraction;
+    if (weighted < 0) weighted += 0x3FF;
+    return weighted >> 10;
+}
+
+CarGroundSpeedOutput CarCalculateGroundSpeed(
+    const CarGroundSpeedInput *input) {
+    CarGroundSpeedOutput output;
+
+    if (input->shiftState != 0) {
+        output.acceleration = 0;
+        output.speed = (input->speed * 0x3E7) / 1000;
+        return output;
+    }
+
+    if (input->clutch > 0 || input->jumpTimer > 0) {
+        output.acceleration = input->engineLoad;
+    } else {
+        s32 torque = input->drivetrainTorque;
+        if (torque < 0) torque += 0x1FFFF;
+        output.acceleration = torque >> 17;
+        if (input->manual == 0) {
+            output.acceleration = input->automaticAccelerationScale *
+                                  output.acceleration / 1000;
+        }
+    }
+    if (input->gripLossActive) output.acceleration /= 2;
+    output.speed = (input->speed * 0x5E) / 100;
+    return output;
+}
+
 s32 CarCalculateLoadResistance(s32 motionState, s32 gearTorque,
                                s32 drivetrainTorque) {
     s32 netTorque = gearTorque - drivetrainTorque;

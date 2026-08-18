@@ -13,6 +13,8 @@ int main(void) {
     const s32 gearRatios[] = {1000, 2000, 3000, 4000, 5000, 6000, 7000};
     CarTransmissionInput transmissionInput = {1168, -1, -240, gearRatios};
     CarTransmissionState transmission;
+    CarGroundSpeedInput groundInput;
+    CarGroundSpeedOutput groundOutput;
     EXPECT_EQ(0, CarUpdatePedalLatch(0, 0x84));
     EXPECT_EQ(1, CarUpdatePedalLatch(0, 0x85));
     EXPECT_EQ(2, CarUpdatePedalLatch(1, 0));
@@ -22,6 +24,27 @@ int main(void) {
     EXPECT_EQ(380, CarCalculateGripBudget(0, 0));
     EXPECT_EQ(380, CarCalculateGripBudget(256, 256));
     EXPECT_EQ(380, CarCalculateGripBudget(-1, 0));
+    EXPECT_EQ(10, CarInterpolateSurfacePitch(10, 20, 0));
+    EXPECT_EQ(15, CarInterpolateSurfacePitch(10, 20, 512));
+    EXPECT_EQ(-15, CarInterpolateSurfacePitch(-10, -20, 512));
+
+    groundInput = (CarGroundSpeedInput){1000, 0x40000, 7, 800,
+                                        0, 0, 0, 1, 0};
+    groundOutput = CarCalculateGroundSpeed(&groundInput);
+    EXPECT_EQ(940, groundOutput.speed);
+    EXPECT_EQ(2, groundOutput.acceleration);
+    groundInput.manual = 0;
+    groundOutput = CarCalculateGroundSpeed(&groundInput);
+    EXPECT_EQ(1, groundOutput.acceleration);
+    groundInput.clutch = 1;
+    groundInput.engineLoad = 9;
+    groundInput.gripLossActive = 1;
+    groundOutput = CarCalculateGroundSpeed(&groundInput);
+    EXPECT_EQ(4, groundOutput.acceleration);
+    groundInput.shiftState = 1;
+    groundOutput = CarCalculateGroundSpeed(&groundInput);
+    EXPECT_EQ(999, groundOutput.speed);
+    EXPECT_EQ(0, groundOutput.acceleration);
 
     EXPECT_EQ(2, CarCalculateLoadResistance(1, 0x2000, 0));
     EXPECT_EQ(-2, CarCalculateLoadResistance(1, -0x2000, 0));
