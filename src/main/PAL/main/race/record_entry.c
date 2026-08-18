@@ -110,45 +110,45 @@ void DrawRankingPanel(s32 slideX) {
     } while (countOrIndex < 5);
 }
 
-void DrawTimeRecordPanel(s32 s5) {
+void DrawTimeRecordPanel(s32 panelX) {
     char text[48];
-    s32 s4, s3;
-    s32 s2, color, idx;
+    s32 carNameY, recordY;
+    s32 row, color, carIndex;
 
-    DrawProportionalText(s5 + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
+    DrawProportionalText(panelX + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
 
     text[0] = 0x54;
     text[1] = 0x2F;
     FormatLapTime(&text[2], g_RaceTotalTime);
-    DrawText8x8(s5 + 0x14, 0x58, text, 0x78CC);
+    DrawText8x8(panelX + 0x14, 0x58, text, 0x78CC);
 
-    DrawProportionalText(s5 + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
+    DrawProportionalText(panelX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
 
-    s2 = 0;
-    s4 = 0x82;
-    s3 = 0x78;
-    for (; s2 < 5; s2++) {
-        text[0] = g_PlaceSuffixNames[s2][0];
-        text[1] = g_PlaceSuffixNames[s2][1];
-        text[2] = g_PlaceSuffixNames[s2][2];
+    row = 0;
+    carNameY = 0x82;
+    recordY = 0x78;
+    for (; row < 5; row++) {
+        text[0] = g_PlaceSuffixNames[row][0];
+        text[1] = g_PlaceSuffixNames[row][1];
+        text[2] = g_PlaceSuffixNames[row][2];
         text[3] = 0x2F;
-        FormatLapTime(&text[4], g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2].raceTime);
+        FormatLapTime(&text[4], g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][row].raceTime);
 
-        idx = g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2].carIndex;
+        carIndex = g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][row].carIndex;
         sprintf(&text[0xC], g_FmtRecordName,
-                      &g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][s2], g_CarClassNames[idx]);
+                      &g_TimeRecords[g_GrandPrixSeries][RageSeriesCourseIndex()][row], g_CarClassNames[carIndex]);
 
         color = 0x78CC;
-        if (g_TimeRecordInsertRow == s2) {
+        if (g_TimeRecordInsertRow == row) {
             color = 0x780F;
         }
-        DrawText8x8(s5 + 0x14, s3, text, color);
+        DrawText8x8(panelX + 0x14, recordY, text, color);
 
-        sprintf(text, g_FmtCarName, g_CarNames[idx]);
+        sprintf(text, g_FmtCarName, g_CarNames[carIndex]);
 
-        DrawText8x8(s5 + 0x2C, s4, text, color);
-        s3 += 0x14;
-        s4 += 0x14;
+        DrawText8x8(panelX + 0x2C, carNameY, text, color);
+        recordY += 0x14;
+        carNameY += 0x14;
     }
 }
 

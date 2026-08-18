@@ -575,8 +575,6 @@ void UpdateCarSelectScreen(void) {
             s32 offset;
             s32 largeValue;
             s32 course;
-            s32 one;
-            s32 minusOne;
 
             if (g_MenuViewOffset <= 0x3D08F) {
                 return;
@@ -585,13 +583,11 @@ void UpdateCarSelectScreen(void) {
             offset = 0x3D090;
             largeValue = 0x1F4000;
             course = g_CourseIndex;
-            one = 1;
-            minusOne = -1;
             g_MenuViewAngle = angle;
             g_MenuViewAngleTarget = angle;
-            MenuFlowOpen((enum MenuScreenId)one);
+            MenuFlowOpen(MENU_SCREEN_COURSE_SELECT);
             g_CarSelectCursor = 0;
-            g_MenuPendingCourseIndex = minusOne;
+            g_MenuPendingCourseIndex = -1;
             g_MenuViewOffset = offset;
             g_MenuViewOffsetTarget = 0;
             g_CourseCardSpin = largeValue;
@@ -599,9 +595,9 @@ void UpdateCarSelectScreen(void) {
             g_CourseCardPendingGrade = g_CourseProgress->bestPlace[course & 3];
             DrawTimeAttackPlate(0);
             if (g_CourseIndex >= 4) {
-                g_TimeAttackPlateStep = one;
+                g_TimeAttackPlateStep = 1;
             } else {
-                g_TimeAttackPlateStep = minusOne;
+                g_TimeAttackPlateStep = -1;
             }
             break;
         }
