@@ -1,5 +1,4 @@
 #include "game/game_input.h"
-#include "game/state.h"
 
 void GameInputBuild(GameInputFrame *frame, const GameInputRawState *raw,
                     const u16 buttonMapping[16]) {

@@ -2,6 +2,7 @@
 #define GAME_GAME_INPUT_H
 
 #include "common.h"
+#include "game/pad.h"
 
 /* Immutable input snapshot consumed by one game-frame dispatch.  The raw
  * masks remain available while gameplay is migrated to semantic actions. */

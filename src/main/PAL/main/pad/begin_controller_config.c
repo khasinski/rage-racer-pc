@@ -1,5 +1,5 @@
 #include "common.h"
-#include "game/state.h"
+#include "game/pad.h"
 #include "game/input_internal.h"
 
 /* The two live 0..7 selections: standard pad and NeGcon. */

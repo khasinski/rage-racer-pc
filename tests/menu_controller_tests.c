@@ -1,5 +1,5 @@
 #include "game/menu_controller.h"
-#include "game/state.h"
+#include "game/pad.h"
 
 #define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) return __LINE__; } while (0)
 

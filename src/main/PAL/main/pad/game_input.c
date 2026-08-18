@@ -1,5 +1,4 @@
 #include "game/game_input.h"
-#include "game/state.h"
 #include "game/car.h"
 #include "game/input_internal.h"
 
