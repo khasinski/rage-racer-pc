@@ -89,6 +89,8 @@ enum {
     MODERN_PIPE_2D_SUB,
 };
 
+static void ModernMaterialCacheTouch(unsigned tpage, unsigned clut);
+
 typedef struct ModernSpan {
     uint8_t pipeline;
     uint8_t hasScissor;
@@ -123,6 +125,7 @@ static int s_spanCount;
 /* ---- MSL shaders ---- */
 
 #include "modern_shader_sources.h"
+#include "material_cache.h"
 static SDL_GPUTexture *s_finalTarget;
 static SDL_GPUTexture *s_bloomA;
 static SDL_GPUTexture *s_bloomB;
@@ -1063,6 +1066,7 @@ static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
                         ? ModernTwinFromE2(face->textureWindow)
                         : 0x0000FFFFu;
         out->clut = face->clut;
+        if (textured) ModernMaterialCacheTouch(face->tpage, face->clut);
     }
     *averageZ = zSum * 0.25f;
 }
@@ -1959,7 +1963,41 @@ void RageModernFrameWaitTick(int frameLimit) {
     Psyz_VideoPresentIntermediate();
 }
 
+
+/* Material cache wiring. The lookup reads VRAM back, which stalls the GPU,
+ * so this stays behind a flag until the shader actually samples the decoded
+ * pages: for now it exists to measure hit rate on real scenes. */
+static int s_materialCacheOn;
+
+static int ModernReadVram(int x, int y, int w, int h, void *out) {
+    return Psyz_VideoDownloadVramRegion_SDL3GPU(x, y, w, h, out) ? 1 : 0;
+}
+
+static void ModernMaterialCacheStart(void) {
+    s_materialCacheOn = RageRuntimeConfigEnabled("modern.material_cache",
+                                                 "RAGE_PORT_MODERN_MATERIAL_CACHE");
+    if (!s_materialCacheOn) return;
+    RageMaterialCacheInit(ModernReadVram);
+    Psyz_VideoObserveVramWrites_SDL3GPU(RageMaterialCacheInvalidate);
+    fprintf(stderr, "rage-port: material cache on\n");
+}
+
+static void ModernMaterialCacheTouch(unsigned tpage, unsigned clut) {
+    static unsigned counter;
+    if (!s_materialCacheOn) return;
+    RageMaterialCacheLookup(tpage, clut);
+    if ((++counter % 20000u) == 0u) {
+        RageMaterialCacheStats st = RageMaterialCacheGetStats();
+        fprintf(stderr,
+                "rage-port: materials hits=%u misses=%u decodes=%u "
+                "evictions=%u invalidations=%u live=%u\n",
+                st.hits, st.misses, st.decodes, st.evictions,
+                st.invalidations, st.live);
+    }
+}
+
 int RageModernInit(const RagePortConfig *config) {
+    ModernMaterialCacheStart();
     const char *toggleKey;
     if (s_initialized) {
         return 1;

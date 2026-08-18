@@ -141,11 +141,13 @@ static void test_eviction_keeps_the_cache_bounded(void) {
     int i;
     RageMaterialCacheInit(ReadVram);
 
-    /* More distinct palettes than slots. */
-    for (i = 0; i < 80; i++) RageMaterialCacheLookup(0, (unsigned)i);
+    /* More distinct palettes than slots: the cache must stay bounded and
+     * start evicting rather than grow. */
+    for (i = 0; i < RAGE_MATERIAL_CACHE_SLOTS + 16; i++)
+        RageMaterialCacheLookup(0, (unsigned)i);
 
     stats = RageMaterialCacheGetStats();
-    EXPECT_EQ(64, stats.live);
+    EXPECT_EQ(RAGE_MATERIAL_CACHE_SLOTS, stats.live);
     EXPECT_EQ(16, stats.evictions);
     RageMaterialCacheShutdown();
 }

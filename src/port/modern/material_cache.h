@@ -12,6 +12,12 @@
  * they came from. A revision counter would throw everything away several
  * times a frame and never pay for itself. */
 
+/* Entries the cache holds. A race was measured to keep 271 page/palette
+ * pairs in play at once; at 64 the cache thrashed, decoding 45k times in a
+ * minute where 2k suffices. Each entry is a 256x256 RGBA page, so this
+ * bounds the cache at 128 MB and in practice sits near 70. */
+#define RAGE_MATERIAL_CACHE_SLOTS 512
+
 /* Reads a VRAM region as RGBA8888, w*h*4 bytes into out. Returns non-zero on
  * success. Injected so the cache can be exercised without a GPU. */
 typedef int (*RageVramReader)(int x, int y, int w, int h, void *out);
