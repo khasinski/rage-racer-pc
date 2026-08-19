@@ -20,5 +20,6 @@ int RagePortShouldExit(int frame_number);
 void RagePortBeforeSceneHandler(void);
 void RagePortAfterSceneHandler(void);
 void RagePortDuringFrameWait(int frameLimit);
+int RagePortMirrorFarDepth(int retailFar);
 
 #endif

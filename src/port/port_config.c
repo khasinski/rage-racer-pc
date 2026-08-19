@@ -168,3 +168,33 @@ void RagePortConfigSetActive(const RagePortConfig *config) {
 const RagePortConfig *RagePortActiveConfig(void) {
     return &active_config;
 }
+
+/* The rear-view mirror scans a third of the main view's depth: retail passes
+ * 0x6000 to BuildVisibleCells where the road ahead gets 0x14000, which is why
+ * traffic drops out of the mirror while it is still plainly behind the car.
+ * Scale that reach without touching the retail default. */
+int RagePortMirrorFarDepth(int retailFar) {
+    static float multiplier = -1.0f;
+    long scaled;
+    if (multiplier < 0.0f) {
+        const char *text = RageRuntimeConfigGetLegacy("modern.mirror_distance",
+                                                      "RAGE_PORT_MIRROR_DISTANCE");
+        multiplier = 1.0f;
+        if (text != NULL && text[0] != '\0') {
+            float parsed = 1.0f;
+            if (ParseFloat(text, &parsed, 0.25f, 8.0f)) {
+                multiplier = parsed;
+            } else {
+                fprintf(stderr,
+                        "rage-port: ignoring invalid modern.mirror_distance=%s (expected 0.25..8)\n",
+                        text);
+            }
+        }
+        if (multiplier != 1.0f)
+            fprintf(stderr, "rage-port: mirror draw distance x%.2f\n", multiplier);
+    }
+    scaled = (long)((float)retailFar * multiplier);
+    if (scaled < 0x1000) scaled = 0x1000;
+    if (scaled > 0x14000) scaled = 0x14000;
+    return (int)scaled;
+}
