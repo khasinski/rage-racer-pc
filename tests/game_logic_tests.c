@@ -163,21 +163,29 @@ static void test_port_config(void) {
     }
     {
         RagePortConfig zeroDistance;
+        /* Without an explicit --config, Init falls back to whatever
+         * rage-port.ini it can find near the binary, and the one shipped in
+         * the repository sets every video key. Point these cases at an empty
+         * file so they measure their own --set rather than the environment. */
+        char emptyPath[] = "/tmp/rage-empty-XXXXXX";
+        int emptyFd = mkstemp(emptyPath);
         char *zeroArguments[] = {
-            "rage-test", "--set", "video.draw_distance=0"};
+            "rage-test", "--config", emptyPath, "--set", "video.draw_distance=0"};
         char *booleanArguments[] = {
             "rage-test", "--set", "feature.enabled=False"};
         char *invalidSet[] = {"rage-test", "--set", "broken"};
         char *missingConfig[] = {
             "rage-test", "--config", "/path/which/does/not/exist"};
         RagePortConfigDefaults(&zeroDistance);
-        EXPECT_EQ(1, RageRuntimeConfigInit(3, zeroArguments));
+        if (emptyFd >= 0) close(emptyFd);
+        EXPECT_EQ(1, RageRuntimeConfigInit(5, zeroArguments));
         EXPECT_EQ(1, RagePortConfigApplyRuntime(&zeroDistance));
         EXPECT_EQ(0, (s32)(zeroDistance.modernDrawDistance * 10.0f));
         EXPECT_EQ(1, RageRuntimeConfigInit(3, booleanArguments));
         EXPECT_EQ(0, RageRuntimeConfigEnabled("feature.enabled", NULL));
         EXPECT_EQ(0, RageRuntimeConfigInit(3, invalidSet));
         EXPECT_EQ(0, RageRuntimeConfigInit(3, missingConfig));
+        unlink(emptyPath);
     }
 }
 
