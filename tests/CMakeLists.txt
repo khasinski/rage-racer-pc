@@ -231,6 +231,30 @@ endif()
 add_test(NAME axis_curve COMMAND axis_curve_tests)
 set_tests_properties(axis_curve PROPERTIES LABELS portable)
 
+# The port's half of the NeGcon (RageNegconTwist) against the game's half
+# (UpdatePadState), which is the only place a calibration fault shows.
+if(TARGET rage-host-state)
+    add_executable(negcon_calibration_tests
+        negcon_calibration_tests.c
+        ../src/port/axis_curve.c
+        ../src/main/PAL/main/pad/init_pad.c
+        $<TARGET_OBJECTS:rage-host-state>
+    )
+    target_compile_definitions(negcon_calibration_tests PRIVATE RAGE_HOST_PORT=1)
+    target_include_directories(negcon_calibration_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src/port
+        ${CMAKE_SOURCE_DIR}/src/port/include)
+    if(NOT WIN32)
+        target_compile_options(negcon_calibration_tests PRIVATE
+            "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+            "-iquote${CMAKE_SOURCE_DIR}/include")
+    endif()
+    target_link_libraries(negcon_calibration_tests PRIVATE psyz)
+    add_test(NAME negcon_calibration COMMAND negcon_calibration_tests)
+    set_tests_properties(negcon_calibration PROPERTIES LABELS portable)
+endif()
+
 if(TARGET rage-extract AND TARGET rage-pack)
     add_test(
         NAME mod_tools
