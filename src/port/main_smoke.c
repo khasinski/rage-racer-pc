@@ -184,6 +184,7 @@ int main(int argc, char **argv) {
     }
     RageInputConfigDefaults(&inputConfig);
     RageInputConfigLoad(&inputConfig, "rage-input.cfg");
+    RageInputConfigApplyRuntime(&inputConfig);
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }

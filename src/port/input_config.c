@@ -1,6 +1,7 @@
 #include "input_config.h"
 
 #include <ctype.h>
+#include "runtime_config.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -61,4 +62,26 @@ int RageInputConfigLoad(RageInputConfig *config, const char *path) {
     }
     fclose(file);
     return loaded;
+}
+
+/* Key bindings live in the [input] section of the runtime configuration, one
+ * entry per PlayStation button under its lower-case name. Applied over
+ * whatever came before, so the runtime configuration is the last word. */
+int RageInputConfigApplyRuntime(RageInputConfig *config) {
+    char key[32];
+    int index, applied = 0;
+    for (index = 0; index < RAGE_INPUT_BUTTON_COUNT; index++) {
+        const char *value;
+        size_t at;
+        snprintf(key, sizeof(key), "input.%s", button_names[index]);
+        for (at = 6; key[at] != '\0'; at++)
+            key[at] = (char)tolower((unsigned char)key[at]);
+        value = RageRuntimeConfigGet(key);
+        if (value == NULL || *value == '\0' ||
+            strlen(value) > RAGE_INPUT_KEY_NAME_MAX)
+            continue;
+        snprintf(config->keys[index], sizeof(config->keys[index]), "%s", value);
+        applied++;
+    }
+    return applied;
 }

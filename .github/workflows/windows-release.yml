@@ -37,7 +37,7 @@ jobs:
           New-Item -ItemType Directory -Force $root | Out-Null
           New-Item -ItemType Directory -Force "$root/tools" | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
-          Copy-Item README.md, LICENSE.md, rage-port.ini, rage-input.cfg, race-scenario.ini $root
+          Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini $root
           Copy-Item tools/rage-launcher.py "$root/tools/rage-launcher.py"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or

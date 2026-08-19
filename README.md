@@ -104,7 +104,7 @@ Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
 `[video] toggle_renderer_key`.
 
-Input defaults are loaded from `rage-input.cfg` when present.  The port keeps
+The port keeps
 game saves and the selected disc location in the user's local application data.
 Each normal launch appends diagnostics to `rage-racer.log` in the platform's
 application-state directory. Configure `[diagnostics] log` to choose another
@@ -153,33 +153,34 @@ The default bindings emulate the original PlayStation pad:
 | Select / back | Backspace |
 | L3 / R3 | `1` / `2` |
 
-Put `rage-input.cfg` in the user configuration directory to override any of
-these bindings. This is `~/Library/Application Support/Rage Racer/` on macOS,
-`${XDG_CONFIG_HOME:-$HOME/.config}/rage-racer/` on Linux, and
-`%APPDATA%\Rage Racer\` on Windows. A bundled file beside the executable is
-used when no user override exists.
-Button names are PlayStation pad names, key names are SDL key names, and lines
-beginning with `#` or `;` are comments.  For example:
+Rebind any of these under `[input]` in `rage-port.ini`, one entry per
+PlayStation button. Key names are SDL key names:
 
 ```ini
-# rage-input.cfg
-L2=W
-R2=E
-L1=Q
-R1=R
-TRIANGLE=S
-CIRCLE=D
-CROSS=X
-SQUARE=Z
-SELECT=Backspace
-L3=1
-R3=2
-START=Return
-UP=Up
-RIGHT=Right
-DOWN=Down
-LEFT=Left
+[input]
+cross = X
+square = Z
+triangle = S
+circle = D
+up = Up
+right = Right
+down = Down
+left = Left
+l1 = Q
+r1 = R
+l2 = W
+r2 = E
+select = Backspace
+start = Return
+l3 = 1
+r3 = 2
 ```
+
+A copy of `rage-port.ini` in the user configuration directory takes precedence
+over the one beside the executable. That directory is
+`~/Library/Application Support/Rage Racer/` on macOS,
+`${XDG_CONFIG_HOME:-$HOME/.config}/rage-racer/` on Linux, and
+`%APPDATA%\Rage Racer\` on Windows.
 
 ## Known limitations
 

@@ -31,7 +31,7 @@ jobs:
         run: |
           resources="build/release/Rage Racer.app/Contents/Resources"
           mkdir -p "$resources" dist
-          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "$resources/"
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini "$resources/"
       - name: Sign and notarize
         env:
           CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
@@ -92,7 +92,7 @@ jobs:
           # app, the way the Linux archive does.
           mkdir -p "dist/${package}"
           ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
-          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini \
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini \
             "dist/${package}/"
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/${package}" "dist/${package}.zip"

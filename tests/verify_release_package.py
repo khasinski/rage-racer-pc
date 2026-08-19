@@ -9,7 +9,7 @@ from pathlib import Path
 def main() -> int:
     root = Path(sys.argv[1])
     required = ("README.md", "LICENSE.md", "rage-port.ini",
-                "rage-input.cfg", "race-scenario.ini")
+                "race-scenario.ini")
     cmake = (root / "CMakeLists.txt").read_text(encoding="utf-8")
     if 'RAGE_RACER_RELEASE_VERSION "0.4-alpha"' not in cmake:
         raise AssertionError("CMake release version is not 0.4-alpha")

@@ -43,7 +43,7 @@ jobs:
           package="Rage-Racer-${VERSION}-linux-x86_64"
           mkdir -p "dist/${package}/tools"
           cp build/release/rage-racer "dist/${package}/rage-racer"
-          cp README.md LICENSE.md rage-port.ini rage-input.cfg race-scenario.ini "dist/${package}/"
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini "dist/${package}/"
           cp tools/rage-launcher.py "dist/${package}/tools/"
           (cd dist && zip -qr "${package}.zip" "${package}")
           test -x "dist/${package}/rage-racer"

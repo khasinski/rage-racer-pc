@@ -11,6 +11,7 @@ typedef struct RageInputConfig {
 
 void RageInputConfigDefaults(RageInputConfig *config);
 int RageInputConfigLoad(RageInputConfig *config, const char *path);
+int RageInputConfigApplyRuntime(RageInputConfig *config);
 int RageInputButtonIndex(const char *name);
 
 #endif
