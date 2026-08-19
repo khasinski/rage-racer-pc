@@ -21,5 +21,6 @@ void RagePortBeforeSceneHandler(void);
 void RagePortAfterSceneHandler(void);
 void RagePortDuringFrameWait(int frameLimit);
 int RagePortMirrorFarDepth(int retailFar);
+void RagePortSampleAnalogPad(void);
 
 #endif

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "rage/compat.h"
 #ifdef __psyz
 #include <psyz/gpu.h>
 #endif
@@ -154,6 +155,7 @@ void MainLoop(void) {
             DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
             DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
         }
+        RagePortSampleAnalogPad();
         UpdatePadState();
         g_FrameCounter = g_FrameCounter + 1;
         if (RagePortShouldExit(g_FrameCounter)) {
