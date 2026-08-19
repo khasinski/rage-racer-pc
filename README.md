@@ -182,6 +182,23 @@ over the one beside the executable. That directory is
 `${XDG_CONFIG_HOME:-$HOME/.config}/rage-racer/` on Linux, and
 `%APPDATA%\Rage Racer\` on Windows.
 
+## Modding
+
+`rage-extract` unpacks the game archive into a directory you can edit. It needs
+the archive as a plain file, which the port writes out of a mounted disc:
+
+```sh
+"Rage Racer" --set tools.dump_archive=RAGE.BIN
+rage-extract RAGE.BIN mymod/
+```
+
+The result holds every archive entry under `raw/`, a `manifest.json` describing
+them, and every image the entries carry decoded to PNG under `textures/`. Each
+PNG sits next to a JSON sidecar recording the VRAM rectangle, the colour depth
+and the palette it came from, which is what putting an edited image back needs.
+
+Extracted files are game data. Share the changes you made, not the extract.
+
 ## Known limitations
 
 - Controller configuration currently retains the original preset-oriented

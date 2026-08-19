@@ -24,6 +24,7 @@ void MainLoop(void);
 int RageMapPs1Scratchpad(void);
 int RageInitNativeGameData(void);
 int RageHostInitDisc(void);
+int RageHostDumpArchive(const char *path);
 
 static void RageLoadInputConfig(RageInputConfig *config, const char *argv0) {
     char path[PATH_MAX];
@@ -64,6 +65,18 @@ int main(int argc, char **argv) {
     RageInputConfigApplyRuntime(&inputConfig);
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
+    }
+    {
+        const char *dump = RageRuntimeConfigGet("tools.dump_archive");
+        if (dump != NULL && dump[0] != '\0') {
+            if (!RageHostInitDisc()) return EXIT_FAILURE;
+            if (!RageHostDumpArchive(dump)) {
+                fprintf(stderr, "rage-port: cannot write %s\n", dump);
+                return EXIT_FAILURE;
+            }
+            fprintf(stderr, "rage-port: archive written to %s\n", dump);
+            return EXIT_SUCCESS;
+        }
     }
     if (!RageHostInitDisc()) {
         fprintf(stderr, "failed to initialize disc cue sheet\n");

@@ -631,6 +631,32 @@ typedef struct RageHostCdEntry {
     uint32_t size;
 } RageHostCdEntry;
 
+/* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can
+ * work on a plain file instead of reimplementing ISO and CUE parsing. */
+int RageHostDumpArchive(const char *path) {
+    unsigned char *buffer;
+    FILE *output;
+    long size = g_RageHostDisc.archive_size;
+    int ok;
+
+    if (size <= 0) return 0;
+    buffer = malloc((size_t)size);
+    if (buffer == NULL) return 0;
+    if (!RageHostReadArchive(0, buffer, (unsigned int)size)) {
+        free(buffer);
+        return 0;
+    }
+    output = fopen(path, "wb");
+    if (output == NULL) {
+        free(buffer);
+        return 0;
+    }
+    ok = fwrite(buffer, 1, (size_t)size, output) == (size_t)size;
+    fclose(output);
+    free(buffer);
+    return ok;
+}
+
 int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
