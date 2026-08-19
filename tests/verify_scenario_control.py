@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Verify scenario validation and scene-relative menu automation."""
+"""Verify scenario validation, and both ways a scenario reaches a race.
+
+A scenario boots straight into its race by default, which is the fast path and
+never touches the frontend. Driving the retail menus is still supported and is
+what boot.direct=false asks for, so both are exercised here: the menu route for
+its scene-relative confirms, and the default for reaching the race at all.
+"""
 
 import os
 import subprocess
@@ -24,8 +30,10 @@ def main() -> int:
         RAGE_PORT_SMOKE_STOP_SCENE="12",
         RAGE_PORT_SMOKE_STOP_SCENE_TIMER="1",
     )
+    menus = dict(environment)
+    menus["RAGE_PORT_MODS_DIRECTORY"] = ""
     result = subprocess.run(
-        [executable], cwd=source, env=environment,
+        [executable, "--set", "boot.direct=false"], cwd=source, env=menus,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         timeout=45,
     )
@@ -42,6 +50,20 @@ def main() -> int:
     missing = [text for text in required if text not in result.stdout]
     if missing:
         raise AssertionError(f"scenario control missed: {missing}\n{result.stdout}")
+
+    # The default route skips the frontend entirely and still reaches the race.
+    direct = subprocess.run(
+        [executable], cwd=source, env=environment,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        timeout=45,
+    )
+    if direct.returncode != 0:
+        print(direct.stdout, file=sys.stderr)
+        return direct.returncode or 1
+    for text in ("scenario direct boot entered the race", "smoke synchronized stop"):
+        if text not in direct.stdout:
+            raise AssertionError(
+                f"direct boot missed {text!r}\n{direct.stdout}")
     return 0
 
 

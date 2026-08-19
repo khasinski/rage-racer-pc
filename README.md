@@ -268,6 +268,13 @@ place the runtime tests reach a race and check what they were written to check;
 without it they stop at the title screen, because every asset read returns
 nothing.
 
+The movies and the CD-DA music are not in that archive, they are on the disc,
+so the tests covering them also want a cue:
+
+```sh
+RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
+```
+
 ## Known limitations
 
 - Controller configuration currently retains the original preset-oriented

@@ -20,6 +20,9 @@ def main() -> int:
         [
             executable,
             "--scenario", source / "race-scenario.ini",
+            # The markers record the frontend state, which only the menu route
+            # sets; booting straight into the race never enters the frontend.
+            "--set", "boot.direct=false",
             "--set", "race.after_finish=menu",
         ],
         cwd=source,
