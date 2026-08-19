@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "game/input_internal.h"
+#include "game/render.h"
 #include "game/state.h"
 #include "runtime_config.h"
 
@@ -61,7 +62,7 @@ void RagePortSampleAnalogPad(void) {
     unsigned int released;
     unsigned int held;
     int analogI, analogII, analogL;
-    int twist;
+    int twist, deflection, range;
     int lx;
 
     if (enabled < 0) {
@@ -80,13 +81,27 @@ void RagePortSampleAnalogPad(void) {
                 SDL_GetGamepadName(pad));
     }
 
-    lx = SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
-    twist = NEGCON_TWIST_CENTRE + (int)(((long)lx * 127L) / 32767L);
-    if (twist < 0) twist = 0;
-    if (twist > 0xFF) twist = 0xFF;
+    /* Scale by the game's own twist range rather than the full byte, so the
+     * OPTIONS "max twist" setting means the same thing for the stick as it
+     * does for a real NeGcon. */
+    range = g_NegconSteerRange[g_NegconMaxTwist];
+    if (range <= 0) range = 127;
 
+    lx = SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
+    deflection = (int)(((long)lx * range) / 32767L);
+
+    /* The NeGcon steering branch of UpdateCarBodyRoll reads only the twist, so
+     * a d-pad press would otherwise stop steering the moment a stick is
+     * present. Fold the d-pad in at full deflection and keep whichever input
+     * is pushed further, so either one steers and neither cancels the other. */
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
+    if ((held & PAD_LEFT) && deflection > -range) deflection = -range;
+    if ((held & PAD_RIGHT) && deflection < range) deflection = range;
+
+    twist = NEGCON_TWIST_CENTRE + deflection;
+    if (twist < 0) twist = 0;
+    if (twist > 0xFF) twist = 0xFF;
 
     /* Those four are not ordinary buttons on a NeGcon: UpdatePadState
      * regenerates cross, square and L1 from the analog values, and the pad has
