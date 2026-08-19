@@ -16,6 +16,32 @@ void RageTimingSetStandard(RageTimingStandard standard) {
             RageTimingBaseHz());
 }
 
+/* The platform layer initialises its own timing when the video device is
+ * created, which is after main() has chosen the standard, and it starts at the
+ * NTSC frame time. Re-applying once the device exists is what makes a PAL game
+ * run at fifty rather than sixty: without it every scene, and with them the
+ * replay and the attract demo, ran a fifth too fast. */
+void RageTimingApply(void) {
+    /* The platform layer resets its frame time to NTSC whenever it initialises
+     * its video device, which the game triggers again on display mode changes,
+     * long after main() chose the standard. Left alone, a PAL game paced itself
+     * at sixty rather than fifty and ran a fifth too fast: unmistakable in the
+     * replay and the attract demo, where nothing the player does hides it.
+     * Restore the standard whenever it has drifted rather than once at boot. */
+    PsyzVideoStats stats;
+    if (Psyz_VideoStats(&stats) != 0) return;
+    if (RageTimingNeedsRestore(stats.target_frame_time_us, RageTimingBaseHz())) {
+        static int announced;
+        Psyz_VideoSetTargetFramerate((double)RageTimingBaseHz());
+        if (!announced) {
+            announced = 1;
+            fprintf(stderr,
+                    "rage-port: frame pacing held at %d Hz; the platform keeps resetting it\n",
+                    RageTimingBaseHz());
+        }
+    }
+}
+
 void RageTimingInit(void) {
     const char *value = RageRuntimeConfigGet("timing.standard");
     RageTimingSetStandard(value != NULL && strcmp(value, "ntsc") == 0

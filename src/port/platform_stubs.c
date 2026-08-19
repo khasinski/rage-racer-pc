@@ -11,6 +11,10 @@ void RageCaptureFrameEnd(void);
 void RageModernFrameWaitTick(int frameLimit);
 
 void RagePortBeforeSceneHandler(void) {
+    {
+        extern void RageTimingApply(void);
+        RageTimingApply();
+    }
 #ifdef RAGE_SMOKE_TARGET
     RagePortSmokeBeforeSceneHandler();
     /* Scenario input is synthesized after physical/test input sampling so it

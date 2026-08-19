@@ -1,0 +1,39 @@
+#include <stdio.h>
+
+#include "../src/port/include/timing_control.h"
+
+static int failures;
+
+static void Expect(const char *what, int got, int want) {
+    if (got != want) {
+        printf("%s: expected %d, got %d\n", what, want, got);
+        failures++;
+    }
+}
+
+int main(void) {
+    /* PAL wants 20000us a frame, NTSC 16683. The platform resets itself to the
+     * NTSC figure when it creates its video device, which is what has to be
+     * noticed and put back. */
+    Expect("PAL left at NTSC", RageTimingNeedsRestore(16683.0, 50), 1);
+    Expect("PAL already right", RageTimingNeedsRestore(20000.0, 50), 0);
+    Expect("NTSC already right", RageTimingNeedsRestore(16666.7, 60), 0);
+    Expect("NTSC left at PAL", RageTimingNeedsRestore(20000.0, 60), 1);
+
+    /* Nothing measured yet is not drift. */
+    Expect("no measurement", RageTimingNeedsRestore(0.0, 50), 0);
+    Expect("negative measurement", RageTimingNeedsRestore(-5.0, 50), 0);
+
+    /* Rounding in the platform's own bookkeeping must not cause a restore
+     * every frame, which would keep resetting its drift compensation. */
+    Expect("PAL within a microsecond", RageTimingNeedsRestore(20000.4, 50), 0);
+    Expect("PAL a microsecond under", RageTimingNeedsRestore(19999.5, 50), 0);
+    Expect("PAL two microseconds out", RageTimingNeedsRestore(20002.0, 50), 1);
+
+    if (failures) {
+        printf("%d timing restore assertion(s) failed\n", failures);
+        return 1;
+    }
+    printf("timing restore notices the platform's NTSC reset and nothing else\n");
+    return 0;
+}
