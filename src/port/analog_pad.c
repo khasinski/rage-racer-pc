@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <stdio.h>
 
 #include "game/input_internal.h"
 #include "game/state.h"
