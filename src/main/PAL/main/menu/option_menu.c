@@ -5,6 +5,8 @@
 #include "game/menu.h"
 #include "game/menu_controller.h"
 #include "game/menu_internal.h"
+#include "game/menu_runtime.h"
+#include "game/option_controller.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
@@ -226,40 +228,18 @@ void UpdateClassRecordMenu(void) {
 
 /* g_GameModeHandlers[3]: moves the cursor over the eleven class cells. */
 void UpdateClassRecordBrowse(void) {
-    s32 oldCursor;
-    s32 oldFlag;
-    u16 b;
+    ClassRecordBrowseState state;
+    ClassRecordBrowseResult result;
+
     DrawClassRecordGrid();
-    oldCursor = g_ScreenOffsetEditX;
-    oldFlag = g_ScreenOffsetEditY;
-    if ((g_GameInput.pressed & PAD_UP) && oldFlag == 1) {
-        g_ScreenOffsetEditY = 0;
-    }
-    if ((g_GameInput.pressed & PAD_DOWN) && g_ScreenOffsetEditY == 0) {
-        g_ScreenOffsetEditY = 1;
-    }
-    b = g_GameInput.pressed;
-    if (b & 0x8000) {
-        g_ScreenOffsetEditX = g_ScreenOffsetEditX - 1;
-    }
-    if (b & 0x2000) {
-        g_ScreenOffsetEditX = g_ScreenOffsetEditX + 1;
-    }
-    {
-        s32 c;
-        c = g_ScreenOffsetEditX;
-        c += 6;
-        c = c % 6;
-        g_ScreenOffsetEditX = c;
-        if (c == 5) {
-            g_ScreenOffsetEditY = 0;
-        }
-        if (oldCursor != c || oldFlag != g_ScreenOffsetEditY) {
-            PlaySoundCue(1);
-        }
-    }
-    if (g_GameInput.pressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE)) {
-        PlaySoundCue(2);
+    state = (ClassRecordBrowseState){
+        g_ScreenOffsetEditX, g_ScreenOffsetEditY};
+    result = ClassRecordBrowseReduce(&state, g_GameInput.pressed);
+    g_ScreenOffsetEditX = state.column;
+    g_ScreenOffsetEditY = state.row;
+    if (result.moved) MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_MOVE);
+    if (result.close) {
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
         g_GameMode = 2;
     }
     DrawClassRecordDetail();

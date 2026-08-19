@@ -1,21 +1,45 @@
 #include "common.h"
 #include "game/game_input.h"
-#include "game/audio.h"
 #include "game/car.h"
+#include "game/design_controller.h"
 #include "game/menu.h"
 #include "game/menu_controller.h"
 #include "game/menu_internal.h"
+#include "game/menu_runtime.h"
 #include "game/render.h"
 #include "game/state.h"
 
-typedef enum DesignModeState {
-    DESIGN_MODE_PAINT_DENIED = -1,
-    DESIGN_MODE_ACTIVE = 0,
-    DESIGN_MODE_TO_TEAM_LOGO = 1,
-    DESIGN_MODE_TO_TEAM_NAME = 2,
-    DESIGN_MODE_TO_PAINT = 3,
-    DESIGN_MODE_BACK = 4
-} DesignModeState;
+static void ApplyDesignModeEffect(DesignModeEffect effect) {
+    switch (effect) {
+    case DESIGN_MODE_EFFECT_MOVE:
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_MOVE);
+        break;
+    case DESIGN_MODE_EFFECT_OPEN_TEAM_LOGO:
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
+        RampTeamLogoCanvas(-256, -256);
+        g_MenuOverlayPattern = 1;
+        break;
+    case DESIGN_MODE_EFFECT_OPEN_TEAM_NAME:
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
+        g_MenuOverlayPattern = 1;
+        break;
+    case DESIGN_MODE_EFFECT_OPEN_PAINT:
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
+        g_MenuOverlayPattern = 1;
+        break;
+    case DESIGN_MODE_EFFECT_PAINT_DENIED:
+        g_UiScriptProgress2 = 0;
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_INVALID);
+        break;
+    case DESIGN_MODE_EFFECT_BACK:
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_BACK);
+        g_MenuOverlayPattern = 2;
+        break;
+    case DESIGN_MODE_EFFECT_NONE:
+    case DESIGN_MODE_EFFECT_DISMISS_DENIED:
+        break;
+    }
+}
 
 s32 DrawDesignModeScreen(s32 step) {
     DesignModeCellMask mask;
@@ -92,11 +116,9 @@ s32 DrawDesignModeScreen(s32 step) {
 
 
 void UpdateDesignModeScreen(void) {
-    s32 sel;
-    s32 direction;
-    u16 edge;
-    MenuSession menu;
-    MenuSessionCommands commands;
+    DesignModeState state;
+    DesignModeInput input;
+    DesignModeResult result;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
@@ -107,51 +129,24 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
         if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
             g_MenuOverlayPattern = -1;
-            direction = ((g_GameInput.pressed & PAD_UP) != 0) -
-                        ((g_GameInput.pressed & PAD_DOWN) != 0);
-            menu = (MenuSession){g_DesignModeOption, 4, 0};
-            commands = MenuSessionStep(
-                &menu, -direction, g_GameInput.pressed);
-            g_DesignModeOption = menu.selection;
-            if (commands.moved) PlaySoundCue(1);
-            if (commands.action == MENU_ACTION_CONFIRM) {
-                sel = g_DesignModeOption;
-                if (sel == 0) {
-                    PlaySoundCue(2);
-                    RampTeamLogoCanvas(-256, -256);
-                    GameMenuBusy = DESIGN_MODE_TO_TEAM_LOGO;
-                    g_MenuOverlayPattern = 1;
-                } else if (sel == 1) {
-                    PlaySoundCue(2);
-                    GameMenuBusy = DESIGN_MODE_TO_TEAM_NAME;
-                    g_MenuOverlayPattern = sel;
-                } else if (sel == 2) {
-                    if (g_PlayerCarIndex < 10) {
-                        GameMenuBusy = DESIGN_MODE_TO_PAINT;
-                        g_MenuOverlayPattern = 1;
-                        PlaySoundCue(2);
-                    } else {
-                        GameMenuBusy = DESIGN_MODE_PAINT_DENIED;
-                        g_UiScriptProgress2 = 0;
-                        PlaySoundCue(5);
-                    }
-                } else if (sel == 3) {
-                    PlaySoundCue(3);
-                    GameMenuBusy = DESIGN_MODE_BACK;
-                    g_MenuOverlayPattern = 2;
-                }
-            } else if (commands.action == MENU_ACTION_CANCEL) {
-                PlaySoundCue(3);
-                GameMenuBusy = DESIGN_MODE_BACK;
-                g_MenuOverlayPattern = 2;
-            }
+            state = (DesignModeState){
+                (DesignModePhase)GameMenuBusy, g_DesignModeOption};
+            input = (DesignModeInput){
+                g_GameInput.pressed, g_PlayerCarIndex < 10};
+            result = DesignModeReduce(&state, &input);
+            GameMenuBusy = state.phase;
+            g_DesignModeOption = state.selection;
+            ApplyDesignModeEffect(result.effect);
         }
     } else if (GameMenuBusy < 0) {
         RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            edge = g_GameInput.pressed;
-            if (edge & PAD_CONFIRM) GameMenuBusy = DESIGN_MODE_ACTIVE;
-            if (edge & PAD_CANCEL) GameMenuBusy = DESIGN_MODE_ACTIVE;
+            state = (DesignModeState){
+                (DesignModePhase)GameMenuBusy, g_DesignModeOption};
+            input = (DesignModeInput){g_GameInput.pressed, 0};
+            result = DesignModeReduce(&state, &input);
+            GameMenuBusy = state.phase;
+            ApplyDesignModeEffect(result.effect);
         }
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);

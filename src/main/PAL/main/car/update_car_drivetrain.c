@@ -8,9 +8,11 @@
 #include "game/car_physics.h"
 #include "game/track_internal.h"
 #include "game/render.h"
+#include "game/player_car_simulation.h"
 
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
-                         const CarControlCommand *command) {
+                         const CarControlCommand *command,
+                         const PlayerCarSimulationContext *simulation) {
   GearCurveAddress gearCurve;
   CarTorqueSample torqueSample;
   CarTransmissionState transmission;
@@ -71,13 +73,13 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   GameCarSpecAddress config;
   GearCurveAddress base;
   car = carArg;
-  base.rowPointer = g_GearTorqueCurve;
-  config.pointer = g_CarSpec;
+  base.rowPointer = (GearCurveRow *)simulation->gearTorqueCurves;
+  config.pointer = (GameCarSpec *)simulation->carSpec;
   gear = car->drive.gear;
   gearCurve.valuePointer = base.rowPointer[gear].values;
   gearRatio = config.pointer->gearLoad[gear];
   drive = &car->drive;
-  if (g_RacePhase < 2)
+  if (simulation->racePhase < 2)
   {
     car->drive.gearDisp = gear;
     gearRatio = config.pointer->gearLoad[1];
@@ -97,7 +99,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   if (drive->motionState == CAR_MOTION_TAKEOFF)
   {
     driveCurveMode = drive->trackCurveMode;
-    pointCurveMode = g_TrackPoints[car->trackPointIndex].arcRef & 3;
+    pointCurveMode = simulation->trackPoints[car->trackPointIndex].arcRef & 3;
     if (driveCurveMode != pointCurveMode)
     {
       if (driveCurveMode != 0)
@@ -131,12 +133,12 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
     {
       drive->trackCurveBias = -0x1E;
     }
-    gripBudget += g_CarSpec->baseSteeringGrip - drive->trackCurveBias * 0xA;
+    gripBudget += simulation->carSpec->baseSteeringGrip - drive->trackCurveBias * 0xA;
     drive->steeringGrip = (s16)gripBudget;
   }
   else
   {
-    trackPoint = &g_TrackPoints[car->trackPointIndex];
+    trackPoint = (GameTrackPoint *)&simulation->trackPoints[car->trackPointIndex];
     curveModeNow = drive->trackCurveMode;
     if ((curveModeNow != (trackPoint->arcRef & 3)) && (curveModeNow != 0))
     {
@@ -150,7 +152,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
       {
         camber = 0x32;
       }
-      if ((g_TrackPoints[car->trackPointIndex].arcRef & 3) == 1)
+      if ((simulation->trackPoints[car->trackPointIndex].arcRef & 3) == 1)
       {
         camberLean = (-(camber * 0x3C)) / 20;
       }
@@ -172,17 +174,19 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   torqueSample = CarSampleTorqueCurves(
       drive->engineRpm, revLimit, config.pointer->redline, drive->gear,
       netTorque, gearCurve.valuePointer, config.pointer->torqueBand.values,
-      g_TorqueBandEnd, config.pointer->torqueLossRpm,
-      config.pointer->torqueLossValue, g_TorqueLossBandEnd);
+      simulation->torqueBandEnd, config.pointer->torqueLossRpm,
+      config.pointer->torqueLossValue, simulation->torqueLossBandEnd);
   netTorque = torqueSample.torque;
   bandScale = torqueSample.lossPercent;
   transmission = (CarTransmissionState){
       drive->motionState, drive->gear, drive->gearDisp, drive->jumpTimer,
       drive->clutch, drive->manual, drive->drivetrainCoupled,
       drive->shiftRpmDelta, drive->shiftSpeedDelta, drive->engineRpm,
-      drive->engineLoad, g_ShiftTargetRpm, g_ShiftTargetSpeed};
+      drive->engineLoad, *simulation->shiftTargetRpm,
+      *simulation->shiftTargetSpeed};
   transmissionInput = (CarTransmissionInput){
-      car->speed, car->acceleration, g_RoadGrade, config.pointer->gearRatio};
+      car->speed, car->acceleration, *simulation->roadGrade,
+      config.pointer->gearRatio};
   if (CarUpdateTransmission(&transmission, &transmissionInput)) accel = 0;
   drive->jumpTimer = transmission.jumpTimer;
   drive->clutch = transmission.clutch;
@@ -191,17 +195,17 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   drive->shiftSpeedDelta = transmission.shiftSpeedDelta;
   drive->engineRpm = transmission.engineRpm;
   drive->engineLoad = transmission.engineLoad;
-  g_ShiftTargetRpm = transmission.targetRpm;
-  g_ShiftTargetSpeed = transmission.targetSpeed;
+  *simulation->shiftTargetRpm = transmission.targetRpm;
+  *simulation->shiftTargetSpeed = transmission.targetSpeed;
   throttleAccel = CarCalculateThrottleAcceleration(
       netTorque, drive->acceleratorInput.value, drive->drivetrainCoupled);
-  if (g_GripLossTimer > 0)
+  if (*simulation->gripLossTimer > 0)
   {
-    g_GripLossTimer -= 1;
+    *simulation->gripLossTimer -= 1;
   }
   else
   {
-    g_GripLossTimer = 0;
+    *simulation->gripLossTimer = 0;
   }
   if (car->shiftState == 0)
   {
@@ -228,7 +232,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   steerLoad += drive->steeringLoadAngle / 256;
   if ((drive->motionState != CAR_MOTION_TAKEOFF) && command->digitalController)
   {
-    steeringAssistScale = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
+    steeringAssistScale = simulation->carSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
     if (steeringAssistScale <= 0)
     {
       steeringAssistScale = 1;
@@ -245,14 +249,14 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
     }
   }
   trackHeadingError = GetAngleDistance(car->headingAngle,
-                                       0xC00 - g_TrackPoints[car->trackPointIndex].angle);
+                                       0xC00 - simulation->trackPoints[car->trackPointIndex].angle);
   frontLoadScaled = trackHeadingError;
   pointIndex = car->trackPointIndex;
   lateralOffset = car->segmentFraction;
   pointIndex += 1;
   slipAngle = CarInterpolateSurfacePitch(
-      g_TrackPoints[car->trackPointIndex].surfacePitch,
-      g_TrackPoints[pointIndex % g_TrackPointCount].surfacePitch,
+      simulation->trackPoints[car->trackPointIndex].surfacePitch,
+      simulation->trackPoints[pointIndex % simulation->trackPointCount].surfacePitch,
       lateralOffset);
   dragProduct = slipAngle * rcos(frontLoadScaled);
   slipAngle = dragProduct >> 0xC;
@@ -270,7 +274,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
     slipAngle = 0xEE;
   }
   sideForce = (-rsin(slipAngle)) * 0x708;
-  g_RoadGrade = slipAngle;
+  *simulation->roadGrade = slipAngle;
   frontLoadScaled = sideForce / 0xA000;
   steeringNonnegative = slipAngle >= 0;
   if (!steeringNonnegative)
@@ -281,17 +285,17 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   {
     steerLoad += frontLoadScaled / 10;
   }
-  if ((g_RacePhase == 2) && (drive->motionState == CAR_MOTION_STANDING_START))
+  if ((simulation->racePhase == 2) && (drive->motionState == CAR_MOTION_STANDING_START))
   {
-    steerLoad += (g_StandingStartSpin & 0x1F) * 5;
+    steerLoad += (simulation->standingStartSpin & 0x1F) * 5;
   }
   {
-    s32 counter = g_DriveBoostTimer;
+    s32 counter = *simulation->driveBoostTimer;
     if (counter > 0)
     {
       s32 baseValue = steerLoad + 0xC8;
       steerLoad = baseValue + (counter * 0x14);
-      g_DriveBoostTimer = counter - 1;
+      *simulation->driveBoostTimer = counter - 1;
     }
   }
   if (drive->motionState == CAR_MOTION_TAKEOFF)
@@ -299,14 +303,14 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
     throttleAccel = (throttleAccel * 4) / 5;
   }
   roadSpeed = car->speed * 0xA0 / 1168;
-  dragBase = g_CarSpec->speedDragDivisor * 0x3E8;
-  dragTerm = dragBase / ((s16) g_DragScale);
+  dragBase = simulation->carSpec->speedDragDivisor * 0x3E8;
+  dragTerm = dragBase / *simulation->dragScale;
   if (dragTerm <= 0)
   {
     dragTerm = 1;
   }
   steerLoad += (roadSpeed * roadSpeed) / dragTerm;
-  g_DragScale = 0x3E8;
+  *simulation->dragScale = 0x3E8;
   if (car->shiftState == 0)
   {
     steerLoad = (steerLoad * (0x64 - bandScale)) / 100;
@@ -324,11 +328,11 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   if (drive->motionState == CAR_MOTION_TAKEOFF)
   {
     arcPointIndex = car->trackPointIndex;
-    arcFlags = g_TrackPoints[arcPointIndex].arcRef;
+    arcFlags = simulation->trackPoints[arcPointIndex].arcRef;
     dragBase = arcFlags % 4;
     if (dragBase > 0)
     {
-      arcCentre = &g_TrackArcCenters[(s16)arcFlags >> 4];
+      arcCentre = (GameTrackArcCenter *)&simulation->trackArcCenters[(s16)arcFlags >> 4];
       toCentreX = car->x - arcCentre->x;
       toCentreZ = car->z - arcCentre->z;
       centreAngle = Atan2(toCentreX, toCentreZ);
@@ -342,13 +346,13 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
     }
     else
     {
-      frontLoadScaled = (g_CarSpec->referenceTurnRadius) * 0x64;
+      frontLoadScaled = simulation->carSpec->referenceTurnRadius * 0x64;
     }
-    if ((frontLoadScaled <= 0) || ((downforceScale = (g_CarSpec->referenceTurnRadius) * 0x64, downforceScale <= 0)))
+    if ((frontLoadScaled <= 0) || ((downforceScale = simulation->carSpec->referenceTurnRadius * 0x64, downforceScale <= 0)))
     {
-      downforceScale = (g_CarSpec->referenceTurnRadius) * 0x64;
+      downforceScale = simulation->carSpec->referenceTurnRadius * 0x64;
     }
-    downforce = (g_CarSpec->referenceTurnRadius * 0x64) / downforceScale;
+    downforce = (simulation->carSpec->referenceTurnRadius * 0x64) / downforceScale;
     if (downforce <= 0)
     {
       downforce = 1;
@@ -373,9 +377,9 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   {
     groundSpeedInput = (CarGroundSpeedInput){
         car->speed, gearTorqueLate, drive->engineLoad,
-        g_CarSpec->automaticAccelerationScale, car->shiftState,
+        simulation->carSpec->automaticAccelerationScale, car->shiftState,
         drive->clutch, drive->jumpTimer, drive->manual,
-        g_GripLossTimer > 0};
+        *simulation->gripLossTimer > 0};
     groundSpeedOutput = CarCalculateGroundSpeed(&groundSpeedInput);
     car->speed = groundSpeedOutput.speed;
     car->acceleration = groundSpeedOutput.acceleration;
@@ -384,7 +388,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
   {
     car->headingAngle = car->bodyYaw;
   }
-  if (g_RacePhase >= 2)
+  if (simulation->racePhase >= 2)
   {
     driveModeLate = drive->motionState;
     switch (driveModeLate)

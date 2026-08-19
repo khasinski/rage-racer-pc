@@ -40,6 +40,46 @@ typedef enum MemoryCardFormatState {
     MC_FORMAT_ERROR = 0xA
 } MemoryCardFormatState;
 
+typedef struct MemoryCardFormatSession {
+    MemoryCardFormatState state;
+    s32 timer;
+    s32 confirmChoice;
+    s32 busy;
+    s32 menuPage;
+    s32 menuSubState;
+    s32 prompt;
+    s32 menuRowCursor;
+    s32 saveMode;
+} MemoryCardFormatSession;
+
+typedef enum MemoryCardFormatEventType {
+    MC_FORMAT_EVENT_TICK,
+    MC_FORMAT_EVENT_IO_RESULT
+} MemoryCardFormatEventType;
+
+typedef struct MemoryCardFormatEvent {
+    MemoryCardFormatEventType type;
+    s32 ioResult;
+    s32 menuRowCount;
+    u16 pressed;
+    u16 pressedRepeat;
+    u8 fadeBusy;
+} MemoryCardFormatEvent;
+
+enum MemoryCardFormatEffect {
+    MC_FORMAT_EFFECT_NONE = 0,
+    MC_FORMAT_EFFECT_ACCEPT = 1 << 0,
+    MC_FORMAT_EFFECT_BACK = 1 << 1,
+    MC_FORMAT_EFFECT_INVALID = 1 << 2,
+    MC_FORMAT_EFFECT_FORMAT = 1 << 3,
+    MC_FORMAT_EFFECT_EXIT = 1 << 4,
+    MC_FORMAT_EFFECT_MOVE = 1 << 5
+};
+
+typedef struct MemoryCardFormatResult {
+    u32 effects;
+} MemoryCardFormatResult;
+
 typedef enum MemoryCardReadState {
     MC_READ_WAIT_SCENE = 0,
     MC_READ_WAIT_CARD = 1,
@@ -57,6 +97,70 @@ typedef enum MemoryCardNoCardState {
     MC_NO_CARD_DELAY = 1,
     MC_NO_CARD_INPUT = 3
 } MemoryCardNoCardState;
+
+typedef struct MemoryCardNoCardSession {
+    MemoryCardNoCardState state;
+    s32 timer;
+    s32 menuPage;
+    s32 menuRowCursor;
+    s32 slotUsedMask;
+    s32 lastSlot;
+} MemoryCardNoCardSession;
+
+typedef struct MemoryCardNoCardInput {
+    u16 pressed;
+    u16 pressedRepeat;
+    s32 menuRowCount;
+    u8 fadeBusy;
+} MemoryCardNoCardInput;
+
+enum MemoryCardNoCardEffect {
+    MC_NO_CARD_EFFECT_NONE = 0,
+    MC_NO_CARD_EFFECT_MOVE = 1 << 0,
+    MC_NO_CARD_EFFECT_ACCEPT = 1 << 1,
+    MC_NO_CARD_EFFECT_BACK = 1 << 2,
+    MC_NO_CARD_EFFECT_INVALID = 1 << 3,
+    MC_NO_CARD_EFFECT_CLEAR_SLOTS = 1 << 4,
+    MC_NO_CARD_EFFECT_EXIT = 1 << 5
+};
+
+typedef struct MemoryCardNoCardResult {
+    u32 effects;
+} MemoryCardNoCardResult;
+
+typedef struct MemoryCardReadSession {
+    MemoryCardReadState state;
+    s32 timer;
+    s32 cardOkFrames;
+    s32 elapsed;
+    s32 busy;
+    s32 menuSubState;
+} MemoryCardReadSession;
+
+typedef enum MemoryCardReadEventType {
+    MC_READ_EVENT_TICK,
+    MC_READ_EVENT_REFRESH_RESULT
+} MemoryCardReadEventType;
+
+typedef struct MemoryCardReadEvent {
+    MemoryCardReadEventType type;
+    s32 sceneTimer;
+    s32 cardStatus;
+    s32 refreshResult;
+    u16 pressed;
+    u8 fadeBusy;
+} MemoryCardReadEvent;
+
+typedef enum MemoryCardReadEffect {
+    MC_READ_EFFECT_NONE,
+    MC_READ_EFFECT_EXIT,
+    MC_READ_EFFECT_REFRESH_SLOTS
+} MemoryCardReadEffect;
+
+typedef struct MemoryCardReadResult {
+    MemoryCardReadEffect effect;
+    u8 complete;
+} MemoryCardReadResult;
 
 typedef enum MemoryCardActionState {
     MC_ACTION_IDLE = 0x00,
@@ -95,6 +199,40 @@ typedef struct MemoryCardActionSession {
     s32 prompt;
 } MemoryCardActionSession;
 
+typedef struct MemoryCardReadySession {
+    MemoryCardPage page;
+    MemoryCardActionState actionState;
+    s32 menuRowCursor;
+    s32 slotCursor;
+    s32 saveMode;
+    s32 confirmChoice;
+    s32 timer;
+    s32 prompt;
+} MemoryCardReadySession;
+
+typedef struct MemoryCardReadyInput {
+    u16 pressed;
+    u16 pressedRepeat;
+    s32 menuRowCount;
+    s32 slotUsedMask;
+    s32 freeBlocks;
+    s32 lastSlot;
+    u8 fadeBusy;
+} MemoryCardReadyInput;
+
+enum MemoryCardReadyEffect {
+    MC_READY_EFFECT_NONE = 0,
+    MC_READY_EFFECT_MOVE = 1 << 0,
+    MC_READY_EFFECT_ACCEPT = 1 << 1,
+    MC_READY_EFFECT_BACK = 1 << 2,
+    MC_READY_EFFECT_INVALID = 1 << 3,
+    MC_READY_EFFECT_EXIT = 1 << 4
+};
+
+typedef struct MemoryCardReadyResult {
+    u32 effects;
+} MemoryCardReadyResult;
+
 typedef enum MemoryCardActionEffect {
     MC_ACTION_EFFECT_NONE,
     MC_ACTION_EFFECT_WRITE_SLOT,
@@ -102,6 +240,25 @@ typedef enum MemoryCardActionEffect {
     MC_ACTION_EFFECT_LOAD_SLOT,
     MC_ACTION_EFFECT_POLL_CARD
 } MemoryCardActionEffect;
+
+typedef enum MemoryCardActionEventType {
+    MC_ACTION_EVENT_TICK,
+    MC_ACTION_EVENT_CARD_STATUS,
+    MC_ACTION_EVENT_IO_RESULT,
+    MC_ACTION_EVENT_EFFECT_COMPLETE
+} MemoryCardActionEventType;
+
+typedef struct MemoryCardActionEvent {
+    MemoryCardActionEventType type;
+    s32 value;
+    s32 saveOperation;
+    s32 finalRowCursor;
+} MemoryCardActionEvent;
+
+typedef struct MemoryCardActionResult {
+    MemoryCardActionEffect effect;
+    u8 stateChanged;
+} MemoryCardActionResult;
 
 typedef enum MemoryCardResultPrompt {
     MC_RESULT_PROMPT_CARD_ERROR = 0x10,
@@ -119,12 +276,16 @@ void MemoryCardControllerApplyStatus(SaveSession *state,
                                      s32 cardStatus);
 void MemoryCardControllerResolveDetection(SaveSession *state);
 void MemoryCardControllerResolveTransition(SaveSession *state);
-void MemoryCardActionTick(MemoryCardActionSession *state,
-                          s32 finalRowCursor);
-void MemoryCardActionObserveCard(MemoryCardActionSession *state,
-                                 s32 cardStatus);
-void MemoryCardActionShowResult(MemoryCardActionSession *state,
-                                s32 saveOperation, s32 succeeded);
+MemoryCardActionResult MemoryCardActionReduce(
+    MemoryCardActionSession *state, const MemoryCardActionEvent *event);
+MemoryCardReadResult MemoryCardReadReduce(
+    MemoryCardReadSession *state, const MemoryCardReadEvent *event);
+MemoryCardFormatResult MemoryCardFormatReduce(
+    MemoryCardFormatSession *state, const MemoryCardFormatEvent *event);
+MemoryCardNoCardResult MemoryCardNoCardReduce(
+    MemoryCardNoCardSession *state, const MemoryCardNoCardInput *input);
+MemoryCardReadyResult MemoryCardReadyReduce(
+    MemoryCardReadySession *state, const MemoryCardReadyInput *input);
 MemoryCardActionEffect MemoryCardActionRequestedEffect(
     const MemoryCardActionSession *state);
 MemoryCardCursorResult MemoryCardMoveMenuRow(

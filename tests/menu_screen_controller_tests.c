@@ -1,5 +1,6 @@
 #include "game/design_controller.h"
 #include "game/menu_dialog_controller.h"
+#include "game/option_controller.h"
 #include "game/shop_controller.h"
 #include "game/team_name_controller.h"
 #include "game/team_logo_editor_controller.h"
@@ -15,6 +16,43 @@ int main(void) {
     DesignMenuInputResult design;
     TeamNameInputResult name;
     MenuDialogInputResult dialog;
+    ScreenAdjustState adjust;
+    ScreenAdjustResult adjustResult;
+    ClassRecordBrowseState browse;
+    ClassRecordBrowseResult browseResult;
+    NegconCalibrationState calibration;
+    NegconCalibrationInput calibrationInput;
+    NegconCalibrationResult calibrationResult;
+    static const struct {
+        DesignModeState initial;
+        DesignModeInput input;
+        DesignModeState expected;
+        DesignModeEffect effect;
+    } designModeCases[] = {
+        {{DESIGN_MODE_ACTIVE, 0}, {PAD_UP, 1},
+         {DESIGN_MODE_ACTIVE, 3}, DESIGN_MODE_EFFECT_MOVE},
+        {{DESIGN_MODE_ACTIVE, 3}, {PAD_DOWN, 1},
+         {DESIGN_MODE_ACTIVE, 0}, DESIGN_MODE_EFFECT_MOVE},
+        {{DESIGN_MODE_ACTIVE, 2}, {PAD_UP | PAD_DOWN, 1},
+         {DESIGN_MODE_ACTIVE, 2}, DESIGN_MODE_EFFECT_NONE},
+        {{DESIGN_MODE_ACTIVE, 0}, {PAD_CONFIRM, 1},
+         {DESIGN_MODE_TO_TEAM_LOGO, 0},
+         DESIGN_MODE_EFFECT_OPEN_TEAM_LOGO},
+        {{DESIGN_MODE_ACTIVE, 1}, {PAD_CONFIRM, 1},
+         {DESIGN_MODE_TO_TEAM_NAME, 1},
+         DESIGN_MODE_EFFECT_OPEN_TEAM_NAME},
+        {{DESIGN_MODE_ACTIVE, 2}, {PAD_CONFIRM, 1},
+         {DESIGN_MODE_TO_PAINT, 2}, DESIGN_MODE_EFFECT_OPEN_PAINT},
+        {{DESIGN_MODE_ACTIVE, 2}, {PAD_CONFIRM, 0},
+         {DESIGN_MODE_PAINT_DENIED, 2}, DESIGN_MODE_EFFECT_PAINT_DENIED},
+        {{DESIGN_MODE_PAINT_DENIED, 2}, {PAD_CANCEL, 0},
+         {DESIGN_MODE_ACTIVE, 2}, DESIGN_MODE_EFFECT_DISMISS_DENIED},
+        {{DESIGN_MODE_ACTIVE, 3}, {PAD_CONFIRM, 1},
+         {DESIGN_MODE_BACK, 3}, DESIGN_MODE_EFFECT_BACK},
+        {{DESIGN_MODE_ACTIVE, 1}, {PAD_CANCEL, 1},
+         {DESIGN_MODE_BACK, 1}, DESIGN_MODE_EFFECT_BACK},
+    };
+    u32 caseIndex;
 
     shop = ShopHandleInput(0, 1, 0, PAD_CONFIRM);
     EXPECT_EQ(SHOP_COMMAND_OPEN_PURCHASE, shop.command);
@@ -54,6 +92,19 @@ int main(void) {
     design = DesignMenuHandleInput(1, PAD_CANCEL);
     EXPECT_EQ(DESIGN_MENU_CANCEL, design.command);
 
+    for (caseIndex = 0;
+         caseIndex < sizeof(designModeCases) / sizeof(designModeCases[0]);
+         caseIndex++) {
+        DesignModeState state = designModeCases[caseIndex].initial;
+        DesignModeResult result =
+            DesignModeReduce(&state, &designModeCases[caseIndex].input);
+
+        EXPECT_EQ(designModeCases[caseIndex].expected.phase, state.phase);
+        EXPECT_EQ(designModeCases[caseIndex].expected.selection,
+                  state.selection);
+        EXPECT_EQ(designModeCases[caseIndex].effect, result.effect);
+    }
+
     name = TeamNameHandleInput(0, 0, -1, PAD_UP, 0);
     EXPECT_EQ(33, name.cursor);
     name = TeamNameHandleInput(0, 0, -1, PAD_LEFT, 0);
@@ -78,5 +129,42 @@ int main(void) {
     EXPECT_EQ(1, TeamLogoMovePaletteSlot(15, 1));
     EXPECT_EQ(2, TeamLogoMoveColorChannel(0, -1));
     EXPECT_EQ(0, TeamLogoMoveColorChannel(2, 1));
+
+    adjust = (ScreenAdjustState){-10, -31};
+    adjustResult = ScreenAdjustReduce(
+        &adjust, 0, PAD_LEFT | PAD_UP);
+    EXPECT_EQ(-11, adjust.x);
+    EXPECT_EQ(-32, adjust.y);
+    EXPECT_EQ(1, adjustResult.moved);
+    adjustResult = ScreenAdjustReduce(&adjust, PAD_CONFIRM, PAD_LEFT | PAD_UP);
+    EXPECT_EQ(-11, adjust.x);
+    EXPECT_EQ(-32, adjust.y);
+    EXPECT_EQ(OPTION_DECISION_ACCEPT, adjustResult.decision);
+
+    browse = (ClassRecordBrowseState){0, 1};
+    browseResult = ClassRecordBrowseReduce(&browse, PAD_LEFT);
+    EXPECT_EQ(5, browse.column);
+    EXPECT_EQ(0, browse.row);
+    EXPECT_EQ(1, browseResult.moved);
+    browseResult = ClassRecordBrowseReduce(&browse, PAD_CANCEL);
+    EXPECT_EQ(1, browseResult.close);
+
+    calibration = (NegconCalibrationState){1, 10, 0};
+    calibrationInput = (NegconCalibrationInput){PAD_RIGHT, 1, 11};
+    calibrationResult =
+        NegconCalibrationReduce(&calibration, &calibrationInput);
+    EXPECT_EQ(2, calibration.value);
+    EXPECT_EQ(1, calibrationResult.moved);
+    calibrationInput = (NegconCalibrationInput){PAD_CANCEL, 1, 11};
+    calibrationResult =
+        NegconCalibrationReduce(&calibration, &calibrationInput);
+    EXPECT_EQ(1, calibration.nextMode);
+    EXPECT_EQ(1, calibration.restoreSettings);
+    EXPECT_EQ(OPTION_DECISION_CANCEL, calibrationResult.decision);
+    calibration = (NegconCalibrationState){2, 10, 0};
+    calibrationInput = (NegconCalibrationInput){0, 0, 11};
+    NegconCalibrationReduce(&calibration, &calibrationInput);
+    EXPECT_EQ(1, calibration.nextMode);
+    EXPECT_EQ(1, calibration.restoreSettings);
     return 0;
 }

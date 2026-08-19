@@ -4,6 +4,8 @@
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
+#include "game/menu_runtime.h"
+#include "game/option_controller.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/render_workspace.h"
@@ -63,33 +65,28 @@ void DrawNegconSteerPlayScreen(void) {
  * circle/square. Cancelling - and unplugging the NeGcon - restores the
  * backed-up setting on the way back to mode 1.
  */
+static void UpdateNegconCalibrationValue(s16 *value, s32 confirmMode) {
+    NegconCalibrationState state = {*value, g_GameMode, 0};
+    NegconCalibrationInput input = {
+        g_GameInput.pressed, g_GameInput.controllerType == 0x23,
+        confirmMode};
+    NegconCalibrationResult result =
+        NegconCalibrationReduce(&state, &input);
+
+    *value = state.value;
+    g_GameMode = state.nextMode;
+    if (result.moved) PlaySoundCue(8);
+    if (result.decision == OPTION_DECISION_ACCEPT)
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
+    else if (result.decision == OPTION_DECISION_CANCEL)
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_BACK);
+    if (state.restoreSettings) RestoreNegconCalibrationSettings();
+}
+
 void UpdateNegconSteerPlayScreen(void) {
     g_AnimTimer++;
     g_SetupArrowPulse += 96;
-    if (g_GameInput.pressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        g_GameMode = 1;
-        RestoreNegconCalibrationSettings();
-    } else if (g_GameInput.pressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        g_GameMode = 11;
-    }
-    if (g_GameInput.pressed & PAD_LEFT) {
-        if (g_NegconSteerPlay > 0) {
-            PlaySoundCue(8);
-            g_NegconSteerPlay = g_NegconSteerPlay - 1;
-        }
-    }
-    if (g_GameInput.pressed & PAD_RIGHT) {
-        if (g_NegconSteerPlay < 3) {
-            PlaySoundCue(8);
-            g_NegconSteerPlay = g_NegconSteerPlay + 1;
-        }
-    }
-    if (g_GameInput.controllerType != 0x23) {
-        g_GameMode = 1;
-        RestoreNegconCalibrationSettings();
-    }
+    UpdateNegconCalibrationValue(&g_NegconSteerPlay, 11);
     g_ControllerSceneAngleX = -896;
     DrawNegconSteerPlayScreen();
     DrawOptionHintBar(4);
@@ -138,30 +135,7 @@ void DrawNegconMaxTwistScreen(void) {
  */
 void UpdateNegconMaxTwistScreen(void) {
     g_AnimTimer++;
-    if (g_GameInput.pressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        g_GameMode = 1;
-        RestoreNegconCalibrationSettings();
-    } else if (g_GameInput.pressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        g_GameMode = 1;
-    }
-    if (g_GameInput.pressed & PAD_LEFT) {
-        if (g_NegconMaxTwist > 0) {
-            PlaySoundCue(8);
-            g_NegconMaxTwist = g_NegconMaxTwist - 1;
-        }
-    }
-    if (g_GameInput.pressed & PAD_RIGHT) {
-        if (g_NegconMaxTwist < 3) {
-            PlaySoundCue(8);
-            g_NegconMaxTwist = g_NegconMaxTwist + 1;
-        }
-    }
-    if (g_GameInput.controllerType != 0x23) {
-        g_GameMode = 1;
-        RestoreNegconCalibrationSettings();
-    }
+    UpdateNegconCalibrationValue(&g_NegconMaxTwist, 1);
     g_ControllerSceneAngleX = -896;
     DrawNegconMaxTwistScreen();
     DrawOptionHintBar(4);

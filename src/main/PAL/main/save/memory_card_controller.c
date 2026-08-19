@@ -1,4 +1,5 @@
 #include "game/memory_card_controller.h"
+#include "game/memory_card_types.h"
 #include "game/pad.h"
 
 s32 MemoryCardControllerShouldPoll(s32 actionBusy, s32 errorPending) {
@@ -149,42 +150,497 @@ void MemoryCardControllerResolveTransition(SaveSession *state) {
     }
 }
 
-void MemoryCardActionTick(MemoryCardActionSession *state,
-                          s32 finalRowCursor) {
-    if (state->timer > 0) state->timer--;
-    if (state->timer != 0) return;
+MemoryCardReadResult MemoryCardReadReduce(
+    MemoryCardReadSession *state, const MemoryCardReadEvent *event) {
+    MemoryCardReadResult result = {MC_READ_EFFECT_NONE, 0};
+
+    if (event->type == MC_READ_EVENT_REFRESH_RESULT) {
+        s32 slots = event->refreshResult;
+
+        state->menuSubState = slots == 0 ? 0xC
+            : (slots & 7) != 0 ? 2 : 0xE;
+        state->state = MC_READ_POST_REFRESH;
+        return result;
+    }
 
     switch (state->state) {
+    case MC_READ_WAIT_SCENE:
+        if ((u32)event->sceneTimer >= 0x1F) {
+            state->cardOkFrames = 0;
+            state->elapsed = 0;
+            state->state = MC_READ_WAIT_CARD;
+        }
+        break;
+    case MC_READ_WAIT_CARD:
+        state->busy = 0;
+        state->elapsed++;
+        if ((event->pressed & PAD_CANCEL) != 0 && state->elapsed >= 0x79) {
+            state->cardOkFrames = 0;
+            state->elapsed = 0;
+            if (!event->fadeBusy) result.effect = MC_READ_EFFECT_EXIT;
+        }
+        if (event->cardStatus == 1) {
+            state->cardOkFrames++;
+            if (state->cardOkFrames >= 2) {
+                state->cardOkFrames = 0;
+                state->elapsed = 0;
+                state->state = MC_READ_PREPARE;
+            }
+        }
+        break;
+    case MC_READ_PREPARE:
+        state->busy = 1;
+        state->timer = 5;
+        state->state = MC_READ_DELAY;
+        break;
+    case MC_READ_DELAY:
+        if (--state->timer == 0) state->state = MC_READ_REFRESH;
+        break;
+    case MC_READ_REFRESH:
+        result.effect = MC_READ_EFFECT_REFRESH_SLOTS;
+        break;
+    case MC_READ_POST_REFRESH:
+        state->timer = 5;
+        state->state = MC_READ_SETTLE_PREPARE;
+        break;
+    case MC_READ_SETTLE_PREPARE:
+        if (--state->timer == 0) {
+            state->timer = 5;
+            state->busy = 0;
+            state->state = MC_READ_SETTLE_DELAY;
+        }
+        break;
+    case MC_READ_SETTLE_DELAY:
+        if (--state->timer == 0) state->state = MC_READ_COMPLETE;
+        break;
+    case MC_READ_COMPLETE:
+        result.complete = event->cardStatus == 1;
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
+MemoryCardFormatResult MemoryCardFormatReduce(
+    MemoryCardFormatSession *state, const MemoryCardFormatEvent *event) {
+    MemoryCardFormatResult result = {MC_FORMAT_EFFECT_NONE};
+    const u8 confirm = (event->pressed & PAD_CONFIRM) != 0;
+    const u8 cancel = (event->pressed & PAD_CANCEL) != 0;
+
+    if (event->type == MC_FORMAT_EVENT_IO_RESULT) {
+        if (event->ioResult == 1) {
+            state->state = MC_FORMAT_SUCCESS_DELAY;
+            state->timer = 0x3C;
+        } else {
+            state->state = MC_FORMAT_ERROR;
+        }
+        return result;
+    }
+
+    if (state->menuPage == MC_PAGE_MODE_SELECT) {
+        MemoryCardCursorResult cursor = MemoryCardMoveMenuRow(
+            state->menuRowCursor, 0, event->menuRowCount - 1,
+            event->pressedRepeat);
+        state->menuSubState = 0xB;
+        state->prompt = MC_PROMPT_NONE;
+        state->menuRowCursor = cursor.value;
+        if (cursor.moved) result.effects |= MC_FORMAT_EFFECT_MOVE;
+        if (confirm) {
+            if (state->menuRowCursor == event->menuRowCount - 1) {
+                if (!event->fadeBusy)
+                    result.effects |=
+                        MC_FORMAT_EFFECT_ACCEPT | MC_FORMAT_EFFECT_EXIT;
+            } else {
+                state->menuPage = MC_PAGE_SLOT_ACTION;
+                state->confirmChoice = 0;
+                state->saveMode = state->menuRowCursor;
+                result.effects |= state->menuRowCursor == 0
+                    ? MC_FORMAT_EFFECT_ACCEPT : MC_FORMAT_EFFECT_INVALID;
+            }
+        } else if (cancel && !event->fadeBusy) {
+            result.effects |=
+                MC_FORMAT_EFFECT_BACK | MC_FORMAT_EFFECT_EXIT;
+        }
+        return result;
+    }
+
+    switch (state->state) {
+    case MC_FORMAT_IDLE:
+        if (state->saveMode != 0) {
+            state->prompt = MC_PROMPT_NO_DATA;
+            if (confirm || cancel) {
+                state->menuPage = MC_PAGE_MODE_SELECT;
+                result.effects = confirm
+                    ? MC_FORMAT_EFFECT_ACCEPT : MC_FORMAT_EFFECT_BACK;
+            }
+        } else {
+            state->prompt = MC_PROMPT_NEW_CARD;
+            if (confirm) {
+                state->state = MC_FORMAT_CONFIRM;
+                result.effects = MC_FORMAT_EFFECT_ACCEPT;
+            } else if (cancel) {
+                state->menuPage = MC_PAGE_MODE_SELECT;
+                result.effects = MC_FORMAT_EFFECT_BACK;
+            }
+        }
+        break;
+    case MC_FORMAT_CONFIRM: {
+        MemoryCardCursorResult choice =
+            MemoryCardSetBinaryChoice(state->confirmChoice,
+                                      event->pressedRepeat);
+        state->confirmChoice = choice.value;
+        state->prompt = state->confirmChoice + 7;
+        if (choice.moved) result.effects |= MC_FORMAT_EFFECT_MOVE;
+        if (confirm) {
+            result.effects |= MC_FORMAT_EFFECT_ACCEPT;
+            if (state->confirmChoice != 0)
+                state->state = MC_FORMAT_PREPARE;
+            else {
+                state->state = MC_FORMAT_IDLE;
+                state->menuPage = MC_PAGE_MODE_SELECT;
+            }
+        } else if (cancel) {
+            state->state = MC_FORMAT_IDLE;
+            state->menuPage = MC_PAGE_MODE_SELECT;
+            result.effects |= MC_FORMAT_EFFECT_BACK;
+        }
+        break;
+    }
+    case MC_FORMAT_PREPARE:
+        state->busy = 1;
+        state->timer = 0x14;
+        state->state = MC_FORMAT_DELAY;
+        break;
+    case MC_FORMAT_DELAY:
+        if (--state->timer == 0) state->state = MC_FORMAT_EXECUTE;
+        break;
+    case MC_FORMAT_EXECUTE:
+        result.effects = MC_FORMAT_EFFECT_FORMAT;
+        break;
+    case MC_FORMAT_SUCCESS_DELAY:
+        state->prompt = MC_PROMPT_FORMAT_OK;
+        if (--state->timer == 0) {
+            state->busy = 0;
+            state->state = MC_FORMAT_SUCCESS;
+        }
+        break;
+    case MC_FORMAT_SUCCESS:
+        state->prompt = MC_PROMPT_FORMAT_OK;
+        if (cancel) {
+            state->busy = 0;
+            state->state = MC_FORMAT_IDLE;
+            state->confirmChoice = 0;
+            state->timer = 0;
+            if (!event->fadeBusy)
+                result.effects =
+                    MC_FORMAT_EFFECT_BACK | MC_FORMAT_EFFECT_EXIT;
+        }
+        break;
+    case MC_FORMAT_ERROR:
+        state->menuSubState = 0x12;
+        state->prompt = MC_PROMPT_CARD_ERROR;
+        state->busy = 0;
+        if (confirm || cancel) {
+            state->state = MC_FORMAT_IDLE;
+            result.effects = confirm
+                ? MC_FORMAT_EFFECT_ACCEPT : MC_FORMAT_EFFECT_BACK;
+        }
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
+MemoryCardNoCardResult MemoryCardNoCardReduce(
+    MemoryCardNoCardSession *state, const MemoryCardNoCardInput *input) {
+    MemoryCardNoCardResult result = {MC_NO_CARD_EFFECT_NONE};
+
+    switch (state->state) {
+    case MC_NO_CARD_PREPARE:
+        state->timer = 5;
+        state->slotUsedMask = 0;
+        state->lastSlot = 0;
+        state->state = MC_NO_CARD_DELAY;
+        result.effects = MC_NO_CARD_EFFECT_CLEAR_SLOTS;
+        break;
+    case MC_NO_CARD_DELAY:
+        if (--state->timer == 0) state->state = MC_NO_CARD_INPUT;
+        break;
+    case MC_NO_CARD_INPUT:
+        if (state->menuPage == MC_PAGE_MODE_SELECT) {
+            MemoryCardCursorResult cursor = MemoryCardMoveMenuRow(
+                state->menuRowCursor, 0, input->menuRowCount - 1,
+                input->pressedRepeat);
+            state->menuRowCursor = cursor.value;
+            if (cursor.moved) result.effects |= MC_NO_CARD_EFFECT_MOVE;
+            if ((input->pressed & PAD_CONFIRM) != 0) {
+                if (state->menuRowCursor == input->menuRowCount - 1) {
+                    if (!input->fadeBusy) {
+                        state->state = MC_NO_CARD_PREPARE;
+                        result.effects |= MC_NO_CARD_EFFECT_ACCEPT |
+                            MC_NO_CARD_EFFECT_EXIT;
+                    }
+                } else {
+                    result.effects |= MC_NO_CARD_EFFECT_INVALID;
+                }
+            } else if ((input->pressed & PAD_CANCEL) != 0 &&
+                       !input->fadeBusy) {
+                state->state = MC_NO_CARD_PREPARE;
+                result.effects |=
+                    MC_NO_CARD_EFFECT_BACK | MC_NO_CARD_EFFECT_EXIT;
+            }
+        } else if (state->menuPage == MC_PAGE_SLOT_ACTION &&
+                   (input->pressed & PAD_CANCEL) != 0 &&
+                   !input->fadeBusy) {
+            result.effects =
+                MC_NO_CARD_EFFECT_BACK | MC_NO_CARD_EFFECT_EXIT;
+        }
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
+static void MemoryCardReadyReturnToMode(MemoryCardReadySession *state) {
+    state->page = MC_PAGE_MODE_SELECT;
+    state->actionState = MC_ACTION_IDLE;
+}
+
+static void MemoryCardReadyReduceMode(
+    MemoryCardReadySession *state, const MemoryCardReadyInput *input,
+    MemoryCardReadyResult *result) {
+    MemoryCardCursorResult cursor = MemoryCardMoveMenuRow(
+        state->menuRowCursor, 0, input->menuRowCount - 1,
+        input->pressedRepeat);
+    state->prompt = MC_PROMPT_NONE;
+    state->menuRowCursor = cursor.value;
+    if (cursor.moved) result->effects |= MC_READY_EFFECT_MOVE;
+
+    if ((input->pressed & PAD_CONFIRM) != 0) {
+        if (state->menuRowCursor < input->menuRowCount - 1) {
+            state->page = MC_PAGE_SLOT_ACTION;
+            state->actionState = MC_ACTION_IDLE;
+            state->slotCursor = input->lastSlot;
+            state->saveMode = state->menuRowCursor;
+            result->effects |= MC_READY_EFFECT_ACCEPT;
+        } else if (!input->fadeBusy) {
+            result->effects |=
+                MC_READY_EFFECT_ACCEPT | MC_READY_EFFECT_EXIT;
+        }
+    } else if ((input->pressed & PAD_CANCEL) != 0 && !input->fadeBusy) {
+        result->effects |= MC_READY_EFFECT_BACK | MC_READY_EFFECT_EXIT;
+    }
+}
+
+static void MemoryCardReadyReduceSlotIdle(
+    MemoryCardReadySession *state, const MemoryCardReadyInput *input,
+    MemoryCardReadyResult *result) {
+    MemoryCardCursorResult cursor = MemoryCardMoveMenuRow(
+        state->slotCursor, 0, 2, input->pressedRepeat);
+    const s32 hasAnySave = (input->slotUsedMask & 7) != 0;
+    const s32 slotUsed =
+        (input->slotUsedMask >> state->slotCursor) & 1;
+    const u8 confirm = (input->pressed & PAD_CONFIRM) != 0;
+    const u8 cancel = (input->pressed & PAD_CANCEL) != 0;
+
+    state->slotCursor = cursor.value;
+    if (cursor.moved) result->effects |= MC_READY_EFFECT_MOVE;
+
+    if (state->saveMode != 0) {
+        state->prompt = hasAnySave
+            ? MC_PROMPT_SELECT_LOAD : MC_PROMPT_NO_DATA;
+        if (confirm) {
+            if (!hasAnySave) {
+                MemoryCardReadyReturnToMode(state);
+                result->effects |= MC_READY_EFFECT_INVALID;
+            } else if (slotUsed) {
+                state->confirmChoice = 0;
+                state->actionState = MC_ACTION_LOAD_PREPARE;
+                result->effects |= MC_READY_EFFECT_ACCEPT;
+            } else {
+                state->actionState = MC_ACTION_NO_FILE;
+                result->effects |= MC_READY_EFFECT_INVALID;
+            }
+        }
+    } else if (input->freeBlocks != 0) {
+        state->prompt = MC_PROMPT_SELECT_SAVE;
+        if (confirm) {
+            state->confirmChoice = 0;
+            if (slotUsed) {
+                state->actionState = MC_ACTION_CONFIRM_OVERWRITE;
+            } else {
+                state->timer = 0x1E;
+                state->actionState = MC_ACTION_SAVE_PREPARE;
+            }
+            result->effects |= MC_READY_EFFECT_ACCEPT;
+        }
+    } else if (hasAnySave) {
+        state->prompt = MC_PROMPT_SELECT_SAVE;
+        if (confirm) {
+            state->confirmChoice = 0;
+            state->actionState = slotUsed
+                ? MC_ACTION_CONFIRM_OVERWRITE : MC_ACTION_CARD_FULL;
+            result->effects |= MC_READY_EFFECT_ACCEPT;
+        }
+    } else {
+        state->prompt = MC_PROMPT_CARD_FULL;
+        if (confirm) {
+            MemoryCardReadyReturnToMode(state);
+            result->effects |= MC_READY_EFFECT_INVALID;
+        }
+    }
+
+    if (cancel) {
+        state->page = MC_PAGE_MODE_SELECT;
+        result->effects |= MC_READY_EFFECT_BACK;
+    }
+}
+
+MemoryCardReadyResult MemoryCardReadyReduce(
+    MemoryCardReadySession *state, const MemoryCardReadyInput *input) {
+    MemoryCardReadyResult result = {MC_READY_EFFECT_NONE};
+    const u8 confirm = (input->pressed & PAD_CONFIRM) != 0;
+    const u8 cancel = (input->pressed & PAD_CANCEL) != 0;
+
+    if (state->page == MC_PAGE_MODE_SELECT) {
+        MemoryCardReadyReduceMode(state, input, &result);
+        return result;
+    }
+
+    switch (state->actionState) {
+    case MC_ACTION_IDLE:
+        MemoryCardReadyReduceSlotIdle(state, input, &result);
+        break;
+    case MC_ACTION_CONFIRM_OVERWRITE: {
+        MemoryCardCursorResult choice = MemoryCardSetBinaryChoice(
+            state->confirmChoice, input->pressedRepeat);
+        state->confirmChoice = choice.value;
+        state->prompt = state->slotCursor * 2 + state->confirmChoice + 9;
+        if (choice.moved) result.effects |= MC_READY_EFFECT_MOVE;
+        if (confirm) {
+            state->actionState = state->confirmChoice != 0
+                ? MC_ACTION_SAVE_PREPARE : MC_ACTION_IDLE;
+            result.effects |= MC_READY_EFFECT_ACCEPT;
+        } else if (cancel) {
+            state->actionState = MC_ACTION_IDLE;
+            result.effects |= MC_READY_EFFECT_BACK;
+        }
+        break;
+    }
+    case MC_ACTION_CARD_FULL:
+        state->prompt = MC_PROMPT_CARD_FULL;
+        if (confirm || cancel) {
+            MemoryCardReadyReturnToMode(state);
+            result.effects |= confirm
+                ? MC_READY_EFFECT_ACCEPT : MC_READY_EFFECT_BACK;
+        }
+        break;
+    case MC_ACTION_NO_FILE:
+        state->prompt = MC_PROMPT_NO_FILE;
+        if (confirm || cancel) {
+            MemoryCardReadyReturnToMode(state);
+            result.effects |= confirm
+                ? MC_READY_EFFECT_ACCEPT : MC_READY_EFFECT_BACK;
+        }
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
+static void MemoryCardActionTick(MemoryCardActionSession *state,
+                                 s32 finalRowCursor) {
+    switch (state->state) {
+    case MC_ACTION_SAVE_PREPARE:
+        state->prompt = MC_PROMPT_ACCESSING;
+        state->timer = 0xA;
+        state->state = MC_ACTION_SAVE_DELAY;
+        break;
     case MC_ACTION_SAVE_DELAY:
-        state->state = MC_ACTION_SAVE_WRITE;
+        state->busy = 1;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0) state->state = MC_ACTION_SAVE_WRITE;
+        break;
+    case MC_ACTION_SAVE_POST_WRITE:
+        state->state = MC_ACTION_SAVE_REFRESH;
+        break;
+    case MC_ACTION_SAVE_SETTLE_PREPARE:
+        state->timer = 5;
+        state->state = MC_ACTION_SAVE_SETTLE_DELAY;
         break;
     case MC_ACTION_SAVE_SETTLE_DELAY:
-        state->settleTicks = 0;
-        state->state = MC_ACTION_SAVE_WAIT_CARD;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0) {
+            state->settleTicks = 0;
+            state->state = MC_ACTION_SAVE_WAIT_CARD;
+        }
         break;
     case MC_ACTION_SAVE_RESULT_DELAY:
     case MC_ACTION_LOAD_RESULT_DELAY:
-        state->menuPage = 0;
-        state->menuRowCursor = finalRowCursor;
-        state->state = MC_ACTION_IDLE;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0) {
+            state->menuPage = 0;
+            state->menuRowCursor = finalRowCursor;
+            state->state = MC_ACTION_IDLE;
+        }
         break;
     case MC_ACTION_LOAD_INITIAL_DELAY:
-        state->state = MC_ACTION_LOAD_ACCESS_PREPARE;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0)
+            state->state = MC_ACTION_LOAD_ACCESS_PREPARE;
+        break;
+    case MC_ACTION_LOAD_PREPARE:
+        state->timer = 5;
+        state->state = MC_ACTION_LOAD_INITIAL_DELAY;
+        break;
+    case MC_ACTION_LOAD_ACCESS_PREPARE:
+        state->prompt = MC_PROMPT_ACCESSING;
+        state->timer = 0xF;
+        state->busy = 1;
+        state->state = MC_ACTION_LOAD_ACCESS_DELAY;
         break;
     case MC_ACTION_LOAD_ACCESS_DELAY:
-        state->state = MC_ACTION_LOAD_READ;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0) state->state = MC_ACTION_LOAD_READ;
         break;
     case MC_ACTION_LOAD_SETTLE_DELAY:
-        state->settleTicks = 0;
-        state->state = MC_ACTION_LOAD_WAIT_CARD;
+        if (state->timer > 0) state->timer--;
+        if (state->timer == 0) {
+            state->settleTicks = 0;
+            state->state = MC_ACTION_LOAD_WAIT_CARD;
+        }
+        break;
+    case MC_ACTION_LOAD_SETTLE_PREPARE:
+        state->timer = 5;
+        state->state = MC_ACTION_LOAD_SETTLE_DELAY;
         break;
     default:
         break;
     }
 }
 
-void MemoryCardActionObserveCard(MemoryCardActionSession *state,
-                                 s32 cardStatus) {
+static void MemoryCardActionCompleteEffect(MemoryCardActionSession *state) {
+    switch (state->state) {
+    case MC_ACTION_SAVE_WRITE:
+        state->state = MC_ACTION_SAVE_POST_WRITE;
+        break;
+    case MC_ACTION_SAVE_REFRESH:
+        state->state = MC_ACTION_SAVE_SETTLE_PREPARE;
+        break;
+    case MC_ACTION_LOAD_READ:
+        state->state = MC_ACTION_LOAD_SETTLE_PREPARE;
+        break;
+    default:
+        break;
+    }
+}
+
+static void MemoryCardActionObserveCard(MemoryCardActionSession *state,
+                                        s32 cardStatus) {
     if (state->state != MC_ACTION_SAVE_WAIT_CARD &&
         state->state != MC_ACTION_LOAD_WAIT_CARD) {
         return;
@@ -197,8 +653,8 @@ void MemoryCardActionObserveCard(MemoryCardActionSession *state,
         : MC_ACTION_LOAD_SHOW_RESULT;
 }
 
-void MemoryCardActionShowResult(MemoryCardActionSession *state,
-                                s32 saveOperation, s32 succeeded) {
+static void MemoryCardActionShowResult(MemoryCardActionSession *state,
+                                       s32 saveOperation, s32 succeeded) {
     state->prompt = succeeded != 0
         ? (saveOperation != 0
             ? MC_RESULT_PROMPT_SAVE_OK
@@ -209,6 +665,32 @@ void MemoryCardActionShowResult(MemoryCardActionSession *state,
     state->state = saveOperation != 0
         ? MC_ACTION_SAVE_RESULT_DELAY
         : MC_ACTION_LOAD_RESULT_DELAY;
+}
+
+MemoryCardActionResult MemoryCardActionReduce(
+    MemoryCardActionSession *state, const MemoryCardActionEvent *event) {
+    MemoryCardActionResult result;
+    MemoryCardActionState previous = state->state;
+
+    result.effect = MemoryCardActionRequestedEffect(state);
+
+    switch (event->type) {
+    case MC_ACTION_EVENT_TICK:
+        MemoryCardActionTick(state, event->finalRowCursor);
+        break;
+    case MC_ACTION_EVENT_CARD_STATUS:
+        MemoryCardActionObserveCard(state, event->value);
+        break;
+    case MC_ACTION_EVENT_IO_RESULT:
+        MemoryCardActionShowResult(
+            state, event->saveOperation, event->value);
+        break;
+    case MC_ACTION_EVENT_EFFECT_COMPLETE:
+        MemoryCardActionCompleteEffect(state);
+        break;
+    }
+    result.stateChanged = state->state != previous;
+    return result;
 }
 
 MemoryCardActionEffect MemoryCardActionRequestedEffect(

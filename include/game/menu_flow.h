@@ -2,6 +2,7 @@
 #define GAME_MENU_FLOW_H
 
 typedef enum MenuScreenId {
+    MENU_SCREEN_NONE = -1,
     MENU_SCREEN_LOADING = 0,
     MENU_SCREEN_COURSE_SELECT = 1,
     MENU_SCREEN_RANKING,
@@ -19,5 +20,8 @@ typedef enum MenuScreenId {
 
 void MenuFlowOpen(MenuScreenId screen);
 void MenuFlowFadeOut(MenuScreenId screen);
+void MenuFlowRoute(MenuScreenId updateScreen, MenuScreenId drawScreen);
+void MenuFlowReset(void);
+void MenuFlowApplyEffects(unsigned int effects);
 
 #endif

@@ -7,7 +7,9 @@
 #include "game/race.h"
 #include "game/car.h"
 #include "game/car_control_command.h"
+#include "game/car_internal.h"
 #include "game/input_internal.h"
+#include "game/player_car_simulation.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "game/render.h"
@@ -66,6 +68,25 @@ static void RageTraceCarStates(void) {
 }
 #endif
 
+static void UpdatePlayerGearbox(
+    PlayerCarRuntime *car, const CarControlCommand *command,
+    const PlayerCarSimulationContext *simulation) {
+    GameCarDrive *drive = &car->drive;
+    GearboxState gearbox = {
+        drive->gear, drive->clutch, drive->manual, drive->brakeInput,
+        drive->motionState, *simulation->autoShiftCooldown,
+        *simulation->steerHoldFrames};
+    GearboxInput input = {
+        car->speed, car->shiftState, command->shiftUp, command->shiftDown,
+        simulation->carSpec->topGear, simulation->carSpec->shiftPoints};
+
+    GearboxUpdate(&gearbox, &input);
+    drive->gear = gearbox.gear;
+    drive->clutch = gearbox.clutch;
+    *simulation->autoShiftCooldown = gearbox.autoShiftCooldown;
+    *simulation->steerHoldFrames = gearbox.steerHoldFrames;
+}
+
 /*
  * Per-car physics / gear-shift driver (matched sibling of the ASM
  * UpdateAttractCars). Samples input, builds the car's orientation matrices, runs
@@ -87,6 +108,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
     CarControlCommand command;
+    PlayerCarSimulationContext simulation;
     s32 limit;
     s32 slip;
     s32 skid;
@@ -102,24 +124,19 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     command = CarControlCommandBuildPlayer(
         &g_GameInput, g_NegconMappingIndex, g_RacePhase < 4);
+    simulation = (PlayerCarSimulationContext){
+        g_CarSpec, g_GearTorqueCurve, g_TorqueBandEnd, g_TorqueLossBandEnd,
+        g_TrackPoints, g_TrackArcCenters, g_NegconSteerRange,
+        g_TrackPointCount, g_RacePhase, g_PlayerAutoSteer,
+        g_NegconMaxTwist, g_StandingStartSpin, &g_RoadGrade,
+        &g_ShiftTargetRpm, &g_ShiftTargetSpeed, &g_GripLossTimer,
+        &g_DriveBoostTimer, &g_AutoShiftCooldown, &g_SteerHoldFrames,
+        &g_DragScale};
     car->facingBackwards = IsCarFacingBackwards(car);
 
-    {
-        GearboxState gearbox = {
-            p->gear, p->clutch, p->manual, p->brakeInput, p->motionState,
-            g_AutoShiftCooldown, g_SteerHoldFrames};
-        GearboxInput input = {
-            car->speed, car->shiftState,
-            command.shiftUp, command.shiftDown,
-            g_CarSpec->topGear, g_CarSpec->shiftPoints};
-        GearboxUpdate(&gearbox, &input);
-        p->gear = gearbox.gear;
-        p->clutch = gearbox.clutch;
-        g_AutoShiftCooldown = gearbox.autoShiftCooldown;
-        g_SteerHoldFrames = gearbox.steerHoldFrames;
-    }
+    UpdatePlayerGearbox(car, &command, &simulation);
 
-    UpdateCarBodyRoll(car, &command);
+    UpdateCarBodyRoll(car, &command, &simulation);
 
     if (car->shiftState == 0) {
         s32 spd = car->speed;
@@ -136,7 +153,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     p->acceleratorInput.value = (s16)command.accelerator;
     p->brakeInput = (s16)command.brake;
 
-    UpdateCarDrivetrain(car, &command);
+    UpdateCarDrivetrain(car, &command, &simulation);
 
     {
         s32 step = car->speed * 3;
@@ -156,25 +173,25 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         if (car->steeringAngle >= 4096) {
             car->steeringAngle = 4096;
             if (p->steerPos < -4096) {
-                g_SteerHoldFrames++;
+                (*simulation.steerHoldFrames)++;
             }
         } else if (car->steeringAngle < -4095) {
             car->steeringAngle = -4096;
             if (p->steerPos > 4096) {
-                g_SteerHoldFrames++;
+                (*simulation.steerHoldFrames)++;
             }
         } else {
-            g_SteerHoldFrames = -10;
+            *simulation.steerHoldFrames = -10;
         }
     } else {
         if (car->steeringAngle >= 4096) {
             car->steeringAngle = 4096;
-            g_SteerHoldFrames++;
+            (*simulation.steerHoldFrames)++;
         } else if (car->steeringAngle < -4095) {
             car->steeringAngle = -4096;
-            g_SteerHoldFrames++;
+            (*simulation.steerHoldFrames)++;
         } else {
-            g_SteerHoldFrames = 0;
+            *simulation.steerHoldFrames = 0;
         }
     }
 
@@ -274,7 +291,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     if (p->shiftRpmDelta != 0) {
-        s32 d = (g_CarSpec->revLimit + g_CarSpec->redline) / 2 - g_ShiftTargetRpm;
+        s32 d = (simulation.carSpec->revLimit +
+                 simulation.carSpec->redline) / 2 -
+                *simulation.shiftTargetRpm;
         if (d > 0) {
             car->bodyPitch += (d * Random15()) / 3276700;
         }
@@ -348,7 +367,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 p->launchHeading = car->headingAngle;
                 p->launchSpeed = car->speed / 0x100000;
                 p->spinRate = 0;
-                props = g_CarSpec;
+                props = (GameCarSpec *)simulation.carSpec;
                 {
                     s32 *ratios = props->gearRatio;
 
@@ -356,8 +375,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 }
                 p->jumpTimer = 0x14;
                 p->motionState = CAR_MOTION_AIRBORNE;
-                g_ShiftTargetRpm = rpm;
-                p->shiftRpmDelta = (u16)g_ShiftTargetRpm - (u16)p->engineRpm;
+                *simulation.shiftTargetRpm = rpm;
+                p->shiftRpmDelta =
+                    (u16)*simulation.shiftTargetRpm - (u16)p->engineRpm;
                 {
                     s32 *loadRow = props->gearLoad;
 
@@ -385,14 +405,17 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 p->drivetrainTorque = p->drivetrainTorque * 98 / 100;
                 car->speed = car->speed * 97 / 100;
                 p->engineLoad = p->engineLoad * 95 / 100;
-                g_ShiftTargetRpm = g_ShiftTargetRpm * 95 / 100;
+                *simulation.shiftTargetRpm =
+                    *simulation.shiftTargetRpm * 95 / 100;
             }
         } else {
             p->launchEnergy -= 5000;
             p->drivetrainTorque = (85 - rsin(slip) * 20 / 4096) * p->drivetrainTorque / 100;
             car->speed = (87 - rsin(slip) * 40 / 4096) * car->speed / 100;
             p->engineLoad = p->engineLoad * (85 - rsin(slip) * 20 / 4096) / 100;
-            g_ShiftTargetRpm = (85 - rsin(slip) * 20 / 4096) * g_ShiftTargetRpm / 100;
+            *simulation.shiftTargetRpm =
+                (85 - rsin(slip) * 20 / 4096) *
+                *simulation.shiftTargetRpm / 100;
             if (g_RacePhase < 3) {
                 switch (skid) {
                 case 1:
@@ -448,7 +471,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         } else {
             sum = d / 4 + cab;
         }
-        rpmLimit = g_CarSpec->revLimit;
+        rpmLimit = simulation.carSpec->revLimit;
         g_EngineRpm = sum;
         if (sum >= rpmLimit) {
             g_EngineRpm = rpmLimit;
@@ -457,7 +480,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
+    if (g_EngineRpm >= simulation.carSpec->revLimit - 100 &&
         p->acceleratorInput.value >= 129) {
         s32 r = Random15();
 
@@ -482,9 +505,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     if (p->engineRpm != 0) {
         if (p->gear != 1) {
             revFlag = 0;
-            if (g_EngineRpm >= g_CarSpec->redline - 2000) {
+            if (g_EngineRpm >= simulation.carSpec->redline - 2000) {
                 revFlag = 1;
-                if (g_EngineRpm < g_CarSpec->redline) {
+                if (g_EngineRpm < simulation.carSpec->redline) {
                     revFlag = Random15() & 1;
                 }
             }

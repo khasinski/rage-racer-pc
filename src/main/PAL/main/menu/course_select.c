@@ -43,8 +43,7 @@ void EnterCourseSelectScreen(void) {
 
     one = 1;
     PlaySequence();
-    g_MenuHandlerIndex = one;
-    g_MenuScreen = one;
+    MenuFlowOpen(MENU_SCREEN_COURSE_SELECT);
     DrawBrowseArrows(0, 0, 0, 0);
 
     initValue = 0x7A120;
@@ -749,8 +748,9 @@ void UpdateCourseSelectScreen(void) {
             switch (GameMenuBusy) {
             case COURSE_SELECT_TO_CAR_SELECT:
                 if (g_MenuViewOffset > 0x3D08F) {
-                    g_MenuScreen = 3;
-                    g_MenuHandlerIndex = 4;
+                    MenuFlowRoute(
+                        MENU_SCREEN_ENTER_CAR_SELECT,
+                        MENU_SCREEN_CAR_SELECT);
                     DrawOwnedCarCounter(0, 0);
                     DrawBrowseArrows(0, 0, 0, 0);
                     g_CarSwapToIndex = -1;

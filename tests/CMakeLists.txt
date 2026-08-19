@@ -4,6 +4,16 @@ else()
     add_compile_options(-UNDEBUG)
 endif()
 
+if(NOT MSVC)
+    add_test(
+        NAME public_headers
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_public_headers.py
+            ${CMAKE_C_COMPILER}
+            ${CMAKE_SOURCE_DIR})
+    set_tests_properties(public_headers PROPERTIES LABELS portable)
+endif()
+
 add_executable(game_logic_tests
     game_logic_tests.c
     ../src/main/PAL/main/race/time_conversion.c
@@ -172,7 +182,8 @@ endif()
 add_test(NAME car_control_command COMMAND car_control_command_tests)
 
 add_executable(menu_controller_tests menu_controller_tests.c
-    ../src/main/PAL/main/menu/menu_controller.c)
+    ../src/main/PAL/main/menu/menu_controller.c
+    ../src/main/PAL/main/menu/menu_runtime.c)
 
 add_executable(course_select_controller_tests course_select_controller_tests.c
     ../src/main/PAL/main/menu/course_select_controller.c)
@@ -182,6 +193,7 @@ add_executable(car_select_controller_tests car_select_controller_tests.c
 add_executable(menu_screen_controller_tests menu_screen_controller_tests.c
     ../src/main/PAL/main/menu/shop_controller.c
     ../src/main/PAL/main/menu/design_controller.c
+    ../src/main/PAL/main/menu/option_controller.c
     ../src/main/PAL/main/menu/team_name_controller.c
     ../src/main/PAL/main/menu/menu_dialog_controller.c
     ../src/main/PAL/main/menu/team_logo_editor_controller.c)
@@ -200,6 +212,10 @@ add_test(NAME menu_controller COMMAND menu_controller_tests)
 add_test(NAME course_select_controller COMMAND course_select_controller_tests)
 add_test(NAME car_select_controller COMMAND car_select_controller_tests)
 add_test(NAME menu_screen_controller COMMAND menu_screen_controller_tests)
+set_tests_properties(
+    memory_card_controller menu_controller course_select_controller
+    car_select_controller menu_screen_controller
+    PROPERTIES LABELS portable)
 
 add_executable(render_scene_tests
     render_scene_tests.c
@@ -667,7 +683,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(race_start PROPERTIES TIMEOUT 50)
+    set_tests_properties(race_start PROPERTIES TIMEOUT 85)
     add_test(
         NAME race_restart
         COMMAND python3

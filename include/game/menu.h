@@ -150,13 +150,6 @@ extern s32 g_EngineerShopPanelSlide;
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price);
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price);
 
-void AdjustMenuSelectionHorizontal(
-    s32 *value,
-    s32 min,
-    s32 max);
-void SetMenuBinaryChoiceVertical(s32 *value);
-u16 PollMenuConfirmInput(void);
-u16 PollMenuBackInput(void);
 void DrawMenuFadeOverlay(s32 brightness);
 void StartMenuExitFade(void);
 

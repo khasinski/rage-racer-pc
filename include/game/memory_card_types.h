@@ -1,0 +1,26 @@
+#ifndef GAME_MEMORY_CARD_TYPES_H
+#define GAME_MEMORY_CARD_TYPES_H
+
+/* Prompt identifiers are part of the save-menu protocol. Keeping them in a
+ * lightweight header lets decision code remain independent of drawing and
+ * the legacy PSYQ GPU declarations pulled in by memcard.h. */
+typedef enum MemoryCardPrompt {
+    MC_PROMPT_INVALID = -1,
+    MC_PROMPT_NONE = 0x00,
+    MC_PROMPT_SELECT_SAVE = 0x01,
+    MC_PROMPT_SELECT_LOAD = 0x02,
+    MC_PROMPT_NO_CARD = 0x03,
+    MC_PROMPT_CARD_FULL = 0x04,
+    MC_PROMPT_NO_DATA = 0x05,
+    MC_PROMPT_NEW_CARD = 0x06,
+    MC_PROMPT_FORMAT_ASK = 0x07,
+    MC_PROMPT_OVERWRITE_ASK = 0x09,
+    MC_PROMPT_ACCESSING = 0x0F,
+    MC_PROMPT_CARD_ERROR = 0x10,
+    MC_PROMPT_LOAD_OK = 0x11,
+    MC_PROMPT_SAVE_OK = 0x12,
+    MC_PROMPT_FORMAT_OK = 0x13,
+    MC_PROMPT_NO_FILE = 0x14
+} MemoryCardPrompt;
+
+#endif

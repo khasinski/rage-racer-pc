@@ -7,7 +7,6 @@
 #include "game/asset_internal.h"
 #include "game/menu.h"
 #include "game/menu_controller.h"
-#include "game/menu_controller.h"
 #include "game/menu_dialog_controller.h"
 #include "game/menu_scripts_internal.h"
 #include "game/save_internal.h"
@@ -298,7 +297,7 @@ do {
 void EnterCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     InstallCarModelSlot();
-    g_MenuScreen = 4;
+    MenuFlowRoute(MENU_SCREEN_CAR_SELECT, MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
     UpdateOwnedCarNeighbours();
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);

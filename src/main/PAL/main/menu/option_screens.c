@@ -8,6 +8,8 @@
 #include "game/menu.h"
 #include "game/menu_controller.h"
 #include "game/menu_dialog_controller.h"
+#include "game/menu_runtime.h"
+#include "game/option_controller.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -82,56 +84,24 @@ void DrawScreenAdjustScreen(void) {
 
 /* g_GameModeHandlers[6]: moves the screen offset and commits it to g_ScreenOffsetX/Y. */
 void UpdateScreenAdjustScreen(void) {
-    s32 oldX;
-    s32 oldY;
-    u16 input;
-    MenuAction action;
-    s32 value;
+    ScreenAdjustState state;
+    ScreenAdjustResult result;
 
     DrawScreenAdjustScreen();
 
-    input = g_GameInput.pressedRepeat;
-    oldX = g_ScreenOffsetEditX;
-    oldY = g_ScreenOffsetEditY;
-
-    if ((input & PAD_UP) && (oldY >= -31)) {
-        g_ScreenOffsetEditY = oldY - 1;
-    }
-
-    if (g_GameInput.pressedRepeat & PAD_DOWN) {
-        value = g_ScreenOffsetEditY;
-        if (value < 23) {
-            g_ScreenOffsetEditY = value + 1;
-        }
-    }
-
-    if (g_GameInput.pressedRepeat & PAD_LEFT) {
-        value = g_ScreenOffsetEditX;
-        if (value >= -10) {
-            g_ScreenOffsetEditX = value - 1;
-        }
-    }
-
-    if (g_GameInput.pressedRepeat & PAD_RIGHT) {
-        value = g_ScreenOffsetEditX;
-        if (value < 32) {
-            g_ScreenOffsetEditX = value + 1;
-        }
-    }
-
-    if ((oldX != g_ScreenOffsetEditX) || (oldY != g_ScreenOffsetEditY)) {
-        PlaySoundCue(1);
-    }
-
-    action = MenuResolveAction(
-        g_GameInput.pressed, PAD_CONFIRM, PAD_CANCEL);
-    if (action == MENU_ACTION_CONFIRM) {
-        PlaySoundCue(2);
+    state = (ScreenAdjustState){g_ScreenOffsetEditX, g_ScreenOffsetEditY};
+    result = ScreenAdjustReduce(
+        &state, g_GameInput.pressed, g_GameInput.pressedRepeat);
+    g_ScreenOffsetEditX = state.x;
+    g_ScreenOffsetEditY = state.y;
+    if (result.moved) MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_MOVE);
+    if (result.decision == OPTION_DECISION_ACCEPT) {
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_ACCEPT);
         g_GameMode = 1;
         g_ScreenOffsetX.value = g_ScreenOffsetEditX;
         g_ScreenOffsetY.value = g_ScreenOffsetEditY;
-    } else if (action == MENU_ACTION_CANCEL) {
-        PlaySoundCue(3);
+    } else if (result.decision == OPTION_DECISION_CANCEL) {
+        MenuFlowApplyEffects(MENU_RUNTIME_EFFECT_BACK);
         g_GameMode = 1;
         g_ScreenOffsetEditX = g_ScreenOffsetX.value;
         g_ScreenOffsetEditY = g_ScreenOffsetY.value;

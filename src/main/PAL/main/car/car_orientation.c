@@ -8,6 +8,7 @@
 #include "game/car_control_command.h"
 #include "game/car_internal.h"
 #include "game/input_internal.h"
+#include "game/player_car_simulation.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "game/render.h"
@@ -292,16 +293,17 @@ s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
  * on the control mode g_RacePhase (0x41 = player, 0x23 = demo).
  */
 void UpdateCarBodyRoll(PlayerCarRuntime *ctx,
-                       const CarControlCommand *command) {
+                       const CarControlCommand *command,
+                       const PlayerCarSimulationContext *simulation) {
     GameCarDrive *p = &ctx->drive;
-    s16 mode = g_RacePhase;
+    s16 mode = (s16)simulation->racePhase;
     s32 v1, a1;
     s32 a0v, r, s2v;
 
     if (mode < 2) {
         p->steerPos = 0;
         ctx->steeringAngle = 0;
-    } else if ((mode < 4) && (g_PlayerAutoSteer == 0)) {
+    } else if ((mode < 4) && (simulation->playerAutoSteer == 0)) {
     if (command->digitalController) {
 
     v1 = command->steerLeft;
@@ -338,7 +340,8 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx,
         ctx->bodyRollVelocity = (ctx->bodyRollVelocity * 7) / 8;
     }
     } else if (command->analogController) {
-    a1 = ((command->steering * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
+    a1 = ((command->steering * 13) << 9) /
+         simulation->negconSteerRange[simulation->negconMaxTwist];
     if (!(a1 >= 0)) {
 
     a0v = 2;

@@ -1,9 +1,15 @@
 #include "game/menu_controller.h"
+#include "game/menu_runtime.h"
 #include "game/pad.h"
 
 #define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) return __LINE__; } while (0)
 
 int main(void) {
+    MenuRuntime runtime = {
+        MENU_SCREEN_COURSE_SELECT, MENU_SCREEN_COURSE_SELECT,
+        MENU_SCREEN_COURSE_SELECT,
+        MENU_RUNTIME_ACTIVE};
+    MenuRuntimeEvent runtimeEvent;
     MenuCursorResult result;
     MenuSession session;
     MenuSessionCommands commands;
@@ -54,6 +60,31 @@ int main(void) {
     EXPECT_EQ(1, MenuExitIsReady(0, 101, 100));
     EXPECT_EQ(0, MenuExitIsReady(1, 101, 100));
     EXPECT_EQ(0, MenuExitIsReady(0, 100, 100));
+
+    runtimeEvent = (MenuRuntimeEvent){
+        MENU_RUNTIME_EVENT_FADE_OUT, MENU_SCREEN_COURSE_SELECT,
+        MENU_SCREEN_NONE};
+    EXPECT_EQ(1, MenuRuntimeReduce(&runtime, &runtimeEvent).changed);
+    EXPECT_EQ(MENU_RUNTIME_FADING_OUT, runtime.phase);
+    EXPECT_EQ(MENU_SCREEN_COURSE_SELECT, runtime.outgoingScreen);
+    runtimeEvent = (MenuRuntimeEvent){
+        MENU_RUNTIME_EVENT_OPEN, MENU_SCREEN_CAR_SELECT, MENU_SCREEN_NONE};
+    EXPECT_EQ(1, MenuRuntimeReduce(&runtime, &runtimeEvent).changed);
+    EXPECT_EQ(MENU_RUNTIME_ACTIVE, runtime.phase);
+    EXPECT_EQ(MENU_SCREEN_CAR_SELECT, runtime.activeScreen);
+    EXPECT_EQ(MENU_SCREEN_CAR_SELECT, runtime.incomingScreen);
+    runtimeEvent = (MenuRuntimeEvent){
+        MENU_RUNTIME_EVENT_ROUTE, MENU_SCREEN_ENTER_CAR_SELECT,
+        MENU_SCREEN_CAR_SELECT};
+    EXPECT_EQ(1, MenuRuntimeReduce(&runtime, &runtimeEvent).changed);
+    EXPECT_EQ(MENU_SCREEN_ENTER_CAR_SELECT, runtime.activeScreen);
+    EXPECT_EQ(MENU_SCREEN_CAR_SELECT, runtime.incomingScreen);
+    runtimeEvent = (MenuRuntimeEvent){
+        MENU_RUNTIME_EVENT_RESET, MENU_SCREEN_LOADING, MENU_SCREEN_NONE};
+    MenuRuntimeReduce(&runtime, &runtimeEvent);
+    EXPECT_EQ(MENU_SCREEN_LOADING, runtime.activeScreen);
+    EXPECT_EQ(MENU_SCREEN_NONE, runtime.incomingScreen);
+    EXPECT_EQ(MENU_SCREEN_NONE, runtime.outgoingScreen);
 
     return 0;
 }

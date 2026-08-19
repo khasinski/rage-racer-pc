@@ -386,11 +386,9 @@ void InitMenuMode(void) {
     g_MenuAltPanelStep2 = 0;
     g_TimeAttackPlateStep = 0;
     g_MenuHintButtonsVisible = 1;
-    g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = -1;
+    MenuFlowReset();
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
-    g_MenuScreen = 0;
     g_CourseSelectOption = 0;
     g_CarSelectCursor = 0;
     g_RankingOption = 0;

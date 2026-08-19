@@ -1,7 +1,5 @@
 #include "common.h"
-#include "game/game_input.h"
 #include "game/memcard.h"
-#include "game/audio.h"
 #include "game/menu.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
@@ -79,45 +77,6 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
         end.pointer = rows + 3;
     } while (row.value < end.value);
 }
-
-void AdjustMenuSelectionHorizontal(s32 *value, s32 min, s32 max) {
-    MemoryCardCursorResult result = MemoryCardMoveMenuRow(
-        *value, min, max, g_GameInput.pressedRepeat);
-    *value = result.value;
-    if (result.moved) PlaySoundCue(1);
-}
-
-void SetMenuBinaryChoiceVertical(s32 *value) {
-    MemoryCardCursorResult result = MemoryCardSetBinaryChoice(
-        *value, g_GameInput.pressedRepeat);
-    *value = result.value;
-    if (result.moved) PlaySoundCue(1);
-}
-
-u16 PollMenuConfirmInput(void) {
-    u16 *state = &g_GameInput.pressed;
-    u16 value;
-
-    value = *state & 0x860;
-    if (value != 0) {
-        PlaySoundCue(2);
-    }
-
-    return *state & 0x860;
-}
-
-u16 PollMenuBackInput(void) {
-    u16 *state = &g_GameInput.pressed;
-    u16 value;
-
-    value = *state & 0x90;
-    if (value != 0) {
-        PlaySoundCue(3);
-    }
-
-    return *state & 0x90;
-}
-
 
 void DrawMenuFadeOverlay(s32 level) {
     DrawFullscreenFadeTile480(level, 0x40);
