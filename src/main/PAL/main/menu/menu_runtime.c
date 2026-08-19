@@ -2,7 +2,10 @@
 
 MenuRuntimeResult MenuRuntimeReduce(
     MenuRuntime *runtime, const MenuRuntimeEvent *event) {
-    MenuRuntime previous = *runtime;
+    MenuScreenId previousActive = runtime->activeScreen;
+    MenuScreenId previousIncoming = runtime->incomingScreen;
+    MenuScreenId previousOutgoing = runtime->outgoingScreen;
+    MenuRuntimePhase previousPhase = runtime->phase;
     MenuRuntimeResult result;
 
     switch (event->type) {
@@ -30,9 +33,9 @@ MenuRuntimeResult MenuRuntimeReduce(
         break;
     }
     result.changed =
-        runtime->activeScreen != previous.activeScreen ||
-        runtime->incomingScreen != previous.incomingScreen ||
-        runtime->outgoingScreen != previous.outgoingScreen ||
-        runtime->phase != previous.phase;
+        runtime->activeScreen != previousActive ||
+        runtime->incomingScreen != previousIncoming ||
+        runtime->outgoingScreen != previousOutgoing ||
+        runtime->phase != previousPhase;
     return result;
 }

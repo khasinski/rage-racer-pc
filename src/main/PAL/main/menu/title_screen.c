@@ -8,6 +8,7 @@
 #include "game/car.h"
 #include "game/frontend_internal.h"
 #include "game/frontend_state.h"
+#include "game/frontend_state_legacy.h"
 #include "game/menu.h"
 #include "game/menu_controller.h"
 #include "game/race.h"
@@ -22,19 +23,6 @@
 #include "game/game_context.h"
 #include "psyq/gpu.h"
 
-static void ApplyFrontendState(const FrontendRuntimeState *state) {
-    g_FrameSyncThreshold = state->frameSyncThreshold;
-    g_SceneTimer = state->sceneTimer;
-    g_FrontendIdleTimer = state->idleTimer;
-    g_TitleFadeLevel = state->titleFadeLevel;
-    g_MainMenuSlide = state->mainMenuSlide;
-    g_TitlePulse = state->titlePulse;
-    g_FrontendState = state->frontendState;
-    g_TitleExitTimer = state->titleExitTimer;
-    g_TitleAttractTimer = state->titleAttractTimer;
-}
-
-
 /* Scene 2: the menu-side entry to the front end. Clears the title/menu
  * state words and hands over to scene 4, UpdateFrontend. */
 void EnterFrontend(void) {
@@ -46,7 +34,7 @@ void EnterFrontend(void) {
     UploadLoadBufferImage();
 
     FrontendStateResetForEntry(&state);
-    ApplyFrontendState(&state);
+    FrontendStateApplyLegacy(&state);
     GameSceneSet(SCENE_FRONTEND);
 
     UpdateBgmTrackCount();
@@ -63,7 +51,7 @@ void EnterTitleScreen(void) {
         UploadLoadBufferImage();
     }
     FrontendStateResetForTitle(&state, g_StreamReturnScene != 0);
-    ApplyFrontendState(&state);
+    FrontendStateApplyLegacy(&state);
     GameSceneSet(SCENE_FRONTEND);
     UpdateBgmTrackCount();
     SetDefaultReverbDepth();

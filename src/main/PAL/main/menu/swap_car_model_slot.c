@@ -14,6 +14,7 @@
 #include "game/track.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+#include "game/menu_context.h"
 
 
 /* Flips the double-buffered showroom slot and re-registers it. */

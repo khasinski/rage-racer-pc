@@ -8,6 +8,7 @@
 #include "game/menu_runtime.h"
 #include "game/render.h"
 #include "game/state.h"
+#include "game/menu_context.h"
 
 static void ApplyDesignModeEffect(DesignModeEffect effect) {
     switch (effect) {

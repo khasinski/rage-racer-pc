@@ -14,6 +14,7 @@
 #include "game/race_end.h"
 #include "game/race_session.h"
 #include "game/race_session_state.h"
+#include "game/race_session_legacy.h"
 #include "game/race_session_runtime.h"
 #include "game/race_result.h"
 #include "game/race_result_runtime.h"
@@ -33,42 +34,6 @@
 /* A retirement is not a finish-line event. Keep following the player's car
  * instead of advancing the autonomous finish camera down the track. */
 static s32 s_RetireCameraActive;
-
-static void ApplyRaceTimingState(const RaceSessionState *state) {
-    g_LapCount = state->lapCount;
-    g_LapTimeMs = state->lapTimeMs;
-    g_LapTimeSaturated = state->lapTimeSaturated;
-    g_SectorEndDistance[0] = state->sectorEndDistance[0];
-    g_SectorEndDistance[1] = state->sectorEndDistance[1];
-    g_SectorEndDistance[2] = state->sectorEndDistance[2];
-    g_SectorIndex = state->sectorIndex;
-    g_RaceTimeRemaining = state->raceTimeRemaining;
-}
-
-static void ApplyRaceRuntimeState(const RaceSessionState *state) {
-    g_AnimTimer = state->animTimer;
-    g_SceneTimer = state->sceneTimer;
-    g_CameraViewMode = state->cameraViewMode;
-    g_RacePhase = state->racePhase;
-    g_RaceCueFlags = state->raceCueFlags;
-    g_RivalCueFlags = state->rivalCueFlags;
-    g_RivalCueCooldown0 = state->rivalCueCooldown[0];
-    g_RivalCueCooldown1 = state->rivalCueCooldown[1];
-    g_RivalCueCooldown2 = state->rivalCueCooldown[2];
-    g_RivalCueCooldown3 = state->rivalCueCooldown[3];
-}
-
-static void ApplyRacePostSetupState(const RaceSessionState *state) {
-    g_PauseDebounce = state->pauseDebounce;
-    g_RaceFadeTimer = state->raceFadeTimer;
-}
-
-static void ApplyRaceControlState(const RaceSessionState *state) {
-    g_RivalCueEnabled = state->rivalCueEnabled;
-    g_PlayerAutoSteer = state->playerAutoSteer;
-    g_RaceCueDelay = state->raceCueDelay;
-    s_RetireCameraActive = state->retireCameraActive;
-}
 
 int RageRetireCameraActive(void) { return s_RetireCameraActive; }
 
@@ -275,7 +240,9 @@ void EnterRaceScene(void) {
     InitTrackLighting();
     g_TrackWalkStart = g_TrackEventData->trackWalkStart;
     RaceSessionStateReset(&sessionState, g_CourseIndex, g_TrackLength);
-    g_LapCount = sessionState.lapCount;
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_PLAYER_PREREQUISITES,
+        &s_RetireCameraActive);
     player = &g_PlayerCar;
     InitPlayerCar(player);
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
@@ -283,7 +250,8 @@ void EnterRaceScene(void) {
     count = g_CourseIndex;
     mode = count & 3;
     scene = ReadStableRaceSeries();
-    ApplyRaceTimingState(&sessionState);
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_TIMING, &s_RetireCameraActive);
     tableOffset = (mode * 12) + (scene * 48);
     sectorAddress.table = g_BestSectorTimes;
     sectorAddress.bytes += tableOffset;
@@ -313,25 +281,30 @@ void EnterRaceScene(void) {
             first++;
         } while (i < count);
     }
-    g_RaceTotalTime = sessionState.raceTotalTime;
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_LAP_STORAGE, &s_RetireCameraActive);
     ResetMirrorState();
     SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
     BuildTileStrips();
     BuildRaceHudPrims(g_GrandPrixMode);
-    ApplyRaceRuntimeState(&sessionState);
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_PRESENTATION, &s_RetireCameraActive);
     ResetFreeLookCamera();
     InitShuttleScenery();
     SeedFlybyScenery();
     SeedRouteScenery();
     InitPathScenery();
     RequestCdTrack(g_BgmTrack + 3);
-    ApplyRacePostSetupState(&sessionState);
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_POST_SCENERY, &s_RetireCameraActive);
     InitEffectVoiceRuntime();
-    ApplyRaceControlState(&sessionState);
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_CONTROLS, &s_RetireCameraActive);
     do {
     } while (0);
     GameSceneSet(SCENE_RACE);
-    g_FrameSyncThreshold = sessionState.frameSyncThreshold;
+    RaceSessionStateApplyLegacyStage(
+        &sessionState, RACE_BOOTSTRAP_ACTIVATE, &s_RetireCameraActive);
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
 

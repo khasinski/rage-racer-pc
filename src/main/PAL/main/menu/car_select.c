@@ -15,6 +15,7 @@
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/game_context.h"
+#include "game/menu_context.h"
 
 typedef enum RankingScreenState {
     RANKING_CLOSE_COURSE_TABLE = -6,

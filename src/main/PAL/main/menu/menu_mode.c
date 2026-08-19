@@ -1,6 +1,5 @@
 #include "common.h"
 #include "game/car.h"
-#include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/menu_state.h"
@@ -14,73 +13,7 @@
 #include "game/game_context.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
-
-static void ApplyMenuVisualState(const MenuVisualState *state) {
-    g_CourseSelectScrollValue = state->courseSelect;
-    g_RankingScrollState = state->ranking;
-    g_CarSelectFadeAccum = state->carSelect;
-    g_CustomizeFadeAccum = state->customize;
-    g_DesignModeScreenFade = state->designMode;
-    g_TeamLogoScreenFade = state->teamLogo;
-    g_LogoSampleScreenFade = state->logoSample;
-    g_TeamNameScreenProgress = state->teamName;
-    g_PaintColorScreenProgress = state->paintColor;
-    g_CarShopScreenProgress = state->carShop;
-    g_EngineSpecStep = state->engineerShop;
-    g_CarSpecGraphProgress = state->carSpecGraph;
-    g_MenuLightBurstLevel = state->lightBurst;
-    g_TimeAttackPlateProgress = state->timeAttackPlate;
-}
-
-void ResetMenuVisualState(void) {
-    MenuVisualState state;
-    MenuVisualStateReset(&state);
-    ApplyMenuVisualState(&state);
-}
-
-static void ApplyMenuState(const MenuState *state) {
-    g_CourseSelectModalScript = state->emptyScript;
-    g_CarSelectPopupScript = state->emptyScript;
-    g_CustomizePopupScript = state->emptyScript;
-    g_TeamLogoSubPanelScript = state->emptyScript;
-    g_LogoSampleSubPanelScript = state->emptyScript;
-    g_CarShopModalScript = state->emptyScript;
-    g_EngineerShopModalScript = state->emptyScript;
-    g_MenuViewAngle = state->viewAngle;
-    g_MenuViewAngleTarget = state->viewAngleTarget;
-    g_UiScriptProgress = state->uiScriptProgress;
-    g_UiScriptProgress2 = state->uiScriptProgress2;
-    g_MenuHintBarProgress = state->hintBarProgress;
-    g_MenuConfirmTimer = state->confirmTimer;
-    GameMenuBusy = state->busy;
-    g_MenuHintBarStep = state->hintBarStep;
-    g_ClassChangeApplied = state->classChangeApplied;
-    g_CourseSwapDelay = state->courseSwapDelay;
-    g_MenuViewOffset = state->viewOffset;
-    g_MenuViewOffsetTarget = state->viewOffsetTarget;
-    g_CourseCardSpin = state->courseCardSpin;
-    g_CourseCardSpinTarget = state->courseCardSpinTarget;
-    g_CourseCardPendingGrade = state->courseCardPendingGrade;
-    g_MenuPendingCourseIndex = state->pendingCourseIndex;
-    g_CarSwapFromIndex = state->carSwapFromIndex;
-    g_CarSwapToIndex = state->carSwapToIndex;
-    g_MenuOverlayPattern = state->overlayPattern;
-    g_CarNamePlateStep = state->carNamePlateStep;
-    g_MenuPlateCarIndex = state->plateCarIndex;
-    g_CarSpecGraphStep = state->carSpecGraphStep;
-    g_MenuCourseModelIndex = state->courseModelIndex;
-    g_MenuAltPanelStep = state->altPanelStep;
-    g_MenuAltPanelStep2 = state->altPanelStep2;
-    g_TimeAttackPlateStep = state->timeAttackPlateStep;
-    g_MenuHintButtonsVisible = state->hintButtonsVisible;
-    g_MenuAltLayoutSetting = state->altLayoutSetting;
-    g_CarShopUnlockAll = state->carShopUnlockAll;
-    g_CourseSelectOption = state->courseSelectOption;
-    g_CarSelectCursor = state->carSelectCursor;
-    g_RankingOption = state->rankingOption;
-    g_DesignModeOption = state->designModeOption;
-}
-
+#include "game/menu_context.h"
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {
     s32 step0;
@@ -384,6 +317,7 @@ void InitMenuLighting(void) {
 void InitMenuMode(void) {
     GameRaceProgress *p;
     MenuState menuState;
+    MenuVisualState visualState;
 
     SetDispMask(0);
     g_MirrorMode = 0;
@@ -422,9 +356,9 @@ void InitMenuMode(void) {
     ScaleMatrix(RENDER_VIEW_MATRIX_GTE, &g_MenuViewScale);
 
     MenuStateReset(&menuState, g_CourseIndex, g_UiEmptyScript);
-    ApplyMenuState(&menuState);
+    MenuVisualStateReset(&visualState);
+    MenuFlowInitializeState(&menuState, &visualState);
     MenuFlowReset();
-    ResetMenuVisualState();
 }
 
 /* Counts the enabled entries of g_CarTable. */

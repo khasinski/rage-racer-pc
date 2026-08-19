@@ -68,7 +68,7 @@ add_executable(state_initializers_tests
     ../src/main/PAL/main/menu/menu_state.c
     ../src/main/PAL/main/menu/frontend_state.c
     ../src/main/PAL/main/race/race_session_state.c
-    ../src/main/PAL/main/boot/persistent_settings.c)
+    ../src/main/PAL/main/boot/boot_defaults.c)
 target_include_directories(state_initializers_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(state_initializers_tests PRIVATE __psyz=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -76,6 +76,25 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME state_initializers COMMAND state_initializers_tests)
 set_tests_properties(state_initializers PROPERTIES LABELS portable)
+
+add_executable(legacy_state_bridge_tests
+    legacy_state_bridge_tests.c
+    ../src/main/PAL/main/menu/menu_state.c
+    ../src/main/PAL/main/menu/menu_state_legacy.c
+    ../src/main/PAL/main/menu/frontend_state.c
+    ../src/main/PAL/main/menu/frontend_state_legacy.c
+    ../src/main/PAL/main/menu/menu_runtime.c
+    ../src/main/PAL/main/menu/menu_flow.c
+    ../src/main/PAL/main/boot/boot_defaults.c
+    ../src/main/PAL/main/boot/boot_defaults_legacy.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(legacy_state_bridge_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(legacy_state_bridge_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(legacy_state_bridge_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME legacy_state_bridge COMMAND legacy_state_bridge_tests)
+set_tests_properties(legacy_state_bridge PROPERTIES LABELS portable)
 
 add_executable(game_input_tests game_input_tests.c
     ../src/main/PAL/main/pad/game_input_frame.c)

@@ -14,7 +14,7 @@
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/input_internal.h"
-#include "game/persistent_settings.h"
+#include "game/boot_defaults_legacy.h"
 #include "game/game_runtime.h"
 #include "game/game_input.h"
 #include "psyq/cd.h"
@@ -22,28 +22,10 @@
 #include "psyq/kernel.h"
 #include "psyq/snd.h"
 
-static void ApplyPersistentSettings(const PersistentSettings *settings) {
-    g_ScreenOffsetX.value = settings->screenOffsetX;
-    g_ScreenOffsetY.value = settings->screenOffsetY;
-    g_NegconSteerPlay = settings->negconSteerPlay;
-    g_PadMappingIndex = settings->padMappingIndex;
-    g_NegconMappingIndex = settings->negconMappingIndex;
-    g_NegconSteerNeutral = settings->negconSteerNeutral;
-    g_NegconNeutralI = settings->negconNeutralI;
-    g_NegconNeutralII = settings->negconNeutralII;
-    g_NegconNeutralL = settings->negconNeutralL;
-    g_NegconMaxTwist = settings->negconMaxTwist;
-    g_PadErrorState = settings->padErrorState;
-    g_PadValidateCountdown = settings->padValidateCountdown;
-    g_PadErrorHoldBits = settings->padErrorHoldBits;
-    g_MirrorMode = settings->mirrorMode;
-    g_ExtraGrandPrixUnlocked = settings->extraGrandPrixUnlocked;
-}
-
-static void ResetPersistentGameSettings(void) {
-    PersistentSettings settings;
-    PersistentSettingsReset(&settings);
-    ApplyPersistentSettings(&settings);
+static void ApplyGameBootDefaults(void) {
+    GameBootDefaults defaults;
+    GameBootDefaultsReset(&defaults);
+    GameBootDefaultsApplyLegacy(&defaults);
 }
 /*
  * One-shot boot chain called from MainLoop: sequencer, sound runtime, GPU
@@ -61,7 +43,7 @@ void InitSubsystems(void) {
     InitGeom();
     GameInitPad();
     RestartMemoryCard();
-    ResetPersistentGameSettings();
+    ApplyGameBootDefaults();
     ResetReplayFrameCounts();
     ApplyPadButtonMapping();
     InitRecordTables();

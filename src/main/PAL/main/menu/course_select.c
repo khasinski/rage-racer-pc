@@ -16,6 +16,7 @@
 #include "game/state.h"
 #include "game/game_context.h"
 #include "psyq/gpu.h"
+#include "game/menu_context.h"
 
 const u8 g_NowLoadingText[] = "NOW LOADING";
 

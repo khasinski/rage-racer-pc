@@ -2,7 +2,10 @@
 #include "game/frontend_types.h"
 
 enum {
-    FRONTEND_DEFAULT_FRAME_SYNC = 0x80
+    FRONTEND_DEFAULT_FRAME_SYNC = 0x80,
+    FRONTEND_TITLE_FADE_OPAQUE = 0xFF,
+    FRONTEND_TITLE_ATTRACT_DELAY = 0x190,
+    FRONTEND_TITLE_ENTRANCE_DELAY = 0x1E
 };
 
 FrontendRuntimeState FrontendStateForEntry(void) {
@@ -17,9 +20,12 @@ FrontendRuntimeState FrontendStateForTitle(s32 returningFromStream) {
     FrontendRuntimeState state = {0};
     state.frameSyncThreshold = FRONTEND_DEFAULT_FRAME_SYNC;
     state.frontendState = FRONTEND_STATE_TITLE;
-    state.titleFadeLevel = returningFromStream ? 0xFF : 0;
-    state.titleAttractTimer = returningFromStream ? 0x190 : 0;
-    state.titleExitTimer = returningFromStream ? 0 : 0x1E;
+    state.titleFadeLevel = returningFromStream
+        ? FRONTEND_TITLE_FADE_OPAQUE : 0;
+    state.titleAttractTimer = returningFromStream
+        ? FRONTEND_TITLE_ATTRACT_DELAY : 0;
+    state.titleExitTimer = returningFromStream
+        ? 0 : FRONTEND_TITLE_ENTRANCE_DELAY;
     return state;
 }
 

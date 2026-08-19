@@ -11,6 +11,7 @@
 #include "game/render.h"
 #include "game/render_workspace.h"
 #include "game/state.h"
+#include "game/menu_context.h"
 
 typedef enum CarShopState {
     CAR_SHOP_PURCHASING = -3,

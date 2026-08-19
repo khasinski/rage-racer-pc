@@ -2,6 +2,7 @@
 #define GAME_RACE_SESSION_STATE_H
 
 #include "common.h"
+#include "game/camera_types.h"
 
 typedef struct RaceSessionState {
     s32 lapCount;
@@ -13,7 +14,7 @@ typedef struct RaceSessionState {
     s32 raceTotalTime;
     s32 animTimer;
     s32 sceneTimer;
-    s32 cameraViewMode;
+    CameraViewMode cameraViewMode;
     s32 racePhase;
     s32 raceCueFlags;
     s32 rivalCueFlags;

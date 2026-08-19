@@ -6,6 +6,7 @@
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/vector.h"
+#include "game/menu_context.h"
 
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */

@@ -19,6 +19,7 @@
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
+#include "game/menu_context.h"
 
 typedef enum TeamLogoState {
   TEAM_LOGO_CLOSE_PAINT = -4,

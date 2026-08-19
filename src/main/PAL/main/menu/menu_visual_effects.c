@@ -11,6 +11,7 @@
 #include "game/screens.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
+#include "game/menu_context.h"
 
 typedef s32 TeamLogoRotationOffset;
 

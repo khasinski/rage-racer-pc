@@ -9,6 +9,7 @@
 #include "game/render.h"
 #include "game/state.h"
 #include "game/team_name_controller.h"
+#include "game/menu_context.h"
 
 typedef enum LogoSampleState {
     LOGO_SAMPLE_EDIT_BACKGROUND = -2,

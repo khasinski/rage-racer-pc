@@ -2,7 +2,8 @@
 #define GAME_MENU_RUNTIME_H
 
 #include "common.h"
-#include "game/menu_flow.h"
+#include "game/menu_types.h"
+#include "game/menu_state.h"
 
 typedef enum MenuRuntimePhase {
     MENU_RUNTIME_ACTIVE,
@@ -14,6 +15,8 @@ typedef struct MenuRuntime {
     MenuScreenId incomingScreen;
     MenuScreenId outgoingScreen;
     MenuRuntimePhase phase;
+    MenuState state;
+    MenuVisualState visual;
 } MenuRuntime;
 
 typedef enum MenuRuntimeEventType {

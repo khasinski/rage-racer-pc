@@ -6,9 +6,10 @@
 
 int main(void) {
     MenuRuntime runtime = {
-        MENU_SCREEN_COURSE_SELECT, MENU_SCREEN_COURSE_SELECT,
-        MENU_SCREEN_COURSE_SELECT,
-        MENU_RUNTIME_ACTIVE};
+        .activeScreen = MENU_SCREEN_COURSE_SELECT,
+        .incomingScreen = MENU_SCREEN_COURSE_SELECT,
+        .outgoingScreen = MENU_SCREEN_COURSE_SELECT,
+        .phase = MENU_RUNTIME_ACTIVE};
     MenuRuntimeEvent runtimeEvent;
     MenuCursorResult result;
     MenuSession session;

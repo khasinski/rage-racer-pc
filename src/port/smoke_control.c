@@ -19,6 +19,7 @@
 #include "runtime_config.h"
 #include "scenario_control.h"
 #include "modern/modern_renderer.h"
+#include "game/menu_context.h"
 
 typedef struct RageSmokeInput {
     long firstFrame;
@@ -556,9 +557,12 @@ int RagePortShouldExit(int frame_number) {
         int screen = 1 + (g_SceneTimer - 200) / 100;
         if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
             lastSweepScreen != screen) {
-            g_MenuScreen = screen;
-            g_MenuHandlerIndex = screen;
-            g_MenuHandlerIndex2 = -1;
+            MenuRuntime runtime = {
+                .activeScreen = (MenuScreenId)screen,
+                .incomingScreen = (MenuScreenId)screen,
+                .outgoingScreen = MENU_SCREEN_NONE,
+                .phase = MENU_RUNTIME_ACTIVE};
+            MenuFlowSetNavigation(&runtime);
             GameMenuBusy = 0;
             g_UiScriptProgress = 0;
             g_UiScriptProgress2 = 0;

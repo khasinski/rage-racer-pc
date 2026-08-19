@@ -2,6 +2,7 @@
 #define GAME_FRONTEND_STATE_H
 
 #include "common.h"
+#include "game/frontend_types.h"
 
 typedef struct FrontendRuntimeState {
     s32 frameSyncThreshold;
@@ -10,7 +11,7 @@ typedef struct FrontendRuntimeState {
     s32 titleFadeLevel;
     s32 mainMenuSlide;
     s32 titlePulse;
-    s32 frontendState;
+    FrontendState frontendState;
     s32 titleExitTimer;
     s32 titleAttractTimer;
 } FrontendRuntimeState;
