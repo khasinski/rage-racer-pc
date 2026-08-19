@@ -13,6 +13,7 @@
 #include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/render_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
 #include "game/sound.h"
@@ -29,6 +30,7 @@ typedef struct RageScenarioState {
     int grid[11], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
+    int exactX, exactZ, exactHeading, hasExact;
     int directBoot, directStep, skipSequences;
     int lastScene, lastFrontend, lastMenuScreen, stableFrames, retryFrames;
 } RageScenarioState;
@@ -116,6 +118,8 @@ static int RageScenarioPlaceCar(GameCarRuntime *car, int point) {
     return 1;
 }
 
+static void RageScenarioPlaceExact(void);
+
 static void RageScenarioApplyTrackStarts(void) {
     int index;
     if (s_scenario.playerTrackPoint >= 0 &&
@@ -142,6 +146,11 @@ static void RageScenarioApplyTrackStarts(void) {
                     g_Cars[index].trackProgress, g_Cars[index].trackSection);
         }
     }
+    if (s_scenario.hasExact) RageScenarioPlaceExact();
+    {
+        const char *view = RageRuntimeConfigGet("start.camera");
+        if (view != NULL) g_CameraViewMode = (s16)strtol(view, NULL, 0);
+    }
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     s_scenario.startApplied = 1;
     fprintf(stderr,
@@ -150,8 +159,28 @@ static void RageScenarioApplyTrackStarts(void) {
             g_TrackPointCount);
 }
 
+/* Put the car exactly where a mark said it was, keeping the track state the
+ * placement computed so the camera and collision follow. */
+static void RageScenarioPlaceExact(void) {
+    CarTrackLimits limits = {0, 0, 0, 0};
+    PlayerCarRuntime *car = &g_PlayerCar;
+    car->x = s_scenario.exactX;
+    car->z = s_scenario.exactZ;
+    if (s_scenario.exactHeading >= 0) {
+        car->bodyYaw = (s16)(s_scenario.exactHeading & 0xFFF);
+        car->headingAngle = car->bodyYaw;
+    }
+    car->trackPointIndex = FindTrackSegment((GameCarRuntime *)(void *)car,
+                                            car->trackPointIndex);
+    UpdateCarTrackState((GameCarRuntime *)(void *)car, car->trackPointIndex,
+                        &limits);
+    CopyCarBodyRotationToModel((GameCarRuntime *)(void *)car);
+    car->modelY = car->y;
+}
+
 static void RageScenarioHoldTrackStarts(void) {
     int index;
+    if (s_scenario.hasExact) { RageScenarioPlaceExact(); return; }
     if (s_scenario.playerTrackPoint >= 0)
         RageScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
                              s_scenario.playerTrackPoint);
@@ -237,6 +266,25 @@ static void RageScenarioInitialize(void) {
         "race.grid", "RAGE_PORT_SCENARIO_GRID"));
     RageScenarioParseTrackStarts();
     s_scenario.freezeStarts = RageRuntimeConfigEnabled("start.freeze", NULL);
+    {
+        /* A mark taken while driving records where the car actually was, which
+         * a track point alone cannot express: the car is rarely on the centre
+         * line and its heading is its own. These place it exactly, so a
+         * reported frame can be reproduced. */
+        const char *x = RageRuntimeConfigGet("start.player_x");
+        const char *z = RageRuntimeConfigGet("start.player_z");
+        const char *heading = RageRuntimeConfigGet("start.player_heading");
+        if (x != NULL && z != NULL) {
+            s_scenario.exactX = (int)strtol(x, NULL, 0);
+            s_scenario.exactZ = (int)strtol(z, NULL, 0);
+            s_scenario.exactHeading =
+                heading != NULL ? (int)strtol(heading, NULL, 0) : -1;
+            s_scenario.hasExact = 1;
+            s_scenario.customStart = 1;
+            fprintf(stderr, "rage-port: exact start %d,%d heading=%d\n",
+                    s_scenario.exactX, s_scenario.exactZ, s_scenario.exactHeading);
+        }
+    }
     s_scenario.skipSequences = RageRuntimeConfigGet("boot.skip_sequences") == NULL
                                    ? 1
                                    : RageRuntimeConfigEnabled("boot.skip_sequences", NULL);

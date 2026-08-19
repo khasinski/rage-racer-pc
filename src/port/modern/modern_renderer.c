@@ -10,6 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "scene_capture.h"
+#include "modern_texture_dump.h"
+#include "../platform_paths.h"
+#include "game/scratchpad.h"
+#include "game/car.h"
+#include "game/player_car_internal.h"
+#include "game/race.h"
+#include "game/render_internal.h"
 #include "modern_renderer_diagnostics.h"
 #include "../native_geometry_interpolation.h"
 #include "../runtime_config.h"
@@ -1886,6 +1893,33 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     toggleDown = keys != NULL && keys[s_toggleScancode];
     if (toggleDown && !s_toggleWasDown) RageModernToggle();
     s_toggleWasDown = toggleDown;
+    {
+        /* M writes what the modern renderer is showing, with the state that
+         * produced it, so a player who can see something wrong can hand over
+         * the picture and the place it happened. */
+        extern int g_SceneId;
+        extern s32 g_SceneTimer;
+        static int markWasDown, marks;
+        int markDown = keys != NULL && keys[SDL_SCANCODE_M];
+        if (markDown && !markWasDown) {
+            char directory[1024], path[1200];
+            if (!RagePlatformUserConfigDirectory(directory, sizeof(directory)))
+                snprintf(directory, sizeof(directory), ".");
+            snprintf(path, sizeof(path), "%s/mark-%02d.ppm", directory, ++marks);
+            fprintf(stderr,
+                    "rage-port: mark %d scene=%d timer=%d course=%d mirror=%d "
+                    "point=%d pos=%d,%d heading=%d camera=%d,%d,%d angle=%d view=%d\n",
+                    marks, g_SceneId, g_SceneTimer, g_CourseIndex, g_MirrorMode,
+                    g_PlayerCar.trackPointIndex, g_PlayerCar.x, g_PlayerCar.z,
+                    g_PlayerCar.headingAngle, SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
+                    SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_Y, g_CameraViewMode);
+            if (RageModernCaptureFrame(path))
+                fprintf(stderr, "rage-port: mark %d written to %s\n", marks, path);
+            else
+                fprintf(stderr, "rage-port: mark %d could not be written\n", marks);
+        }
+        markWasDown = markDown;
+    }
     if (!s_enabled || s_device == NULL) return;
     fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
     /* Both modes render the PREVIOUS logic frame - the one compat is
@@ -2053,6 +2087,18 @@ void RageModernToggle(void) {
     s_lastRenderedFrame = 0xFFFFFFFFu;
     fprintf(stderr, "rage-port: renderer switched to %s\n",
             s_enabled ? "modern" : "classic");
+}
+
+/* Read back what the modern renderer is presenting. The frame capture the
+ * smoke executable uses reads PS1 video memory, which the modern renderer
+ * never writes to: it presents a texture of its own. Without this its output
+ * cannot be looked at, which is the only way to tell whether the geometry it
+ * draws is right. */
+int RageModernCaptureFrame(const char *path) {
+    if (!s_enabled || s_device == NULL || path == NULL || path[0] == '\0')
+        return 0;
+    return RageModernWriteTexturePpm(s_device, ModernPresentTexture(),
+                                     s_targetW, s_targetH, path);
 }
 
 int RageModernCullMarginX(void) {

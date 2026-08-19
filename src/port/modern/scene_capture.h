@@ -123,6 +123,9 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input);
  * Implemented by the modern renderer; 0 whenever it is off or 4:3. */
 int RageModernCullMarginX(void);
 
+/* Write what the modern renderer is presenting to a PPM. */
+int RageModernCaptureFrame(const char *path);
+
 /* Modern 3D depth cutoff in retail OT buckets. A non-positive result means
  * the authored/compat cutoff should be used without capture-only faces. */
 int RageModernDepthLimit(void);

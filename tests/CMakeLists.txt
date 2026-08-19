@@ -63,6 +63,9 @@ add_test(NAME release_package COMMAND python3
 add_test(NAME host_state_abi COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_host_state_abi.py ${CMAKE_SOURCE_DIR})
 
+add_test(NAME shipped_config COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})
+
 add_test(NAME car_prices COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
 
@@ -235,7 +238,7 @@ endif()
 
 set(RAGE_PORTABLE_TESTS
     game_logic course_index native_geometry_interpolation
-    release_package host_state_abi player_car_interior_aliases car_prices
+    release_package host_state_abi player_car_interior_aliases car_prices shipped_config
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
     mod_tools axis_curve
