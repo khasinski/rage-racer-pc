@@ -12,4 +12,12 @@
 float RageAxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling);
 
+
+/* Combine a shaped stick reading with the d-pad into the twist byte a NeGcon
+ * reports. The stick spans the whole byte, as the hardware does whatever the
+ * calibration says, while a d-pad press reproduces retail's own synthetic
+ * twist, which is exactly the configured range. Whichever is pushed further
+ * wins, so either input steers and neither cancels the other. */
+int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range);
+
 #endif

@@ -47,6 +47,28 @@ int main(void) {
     Expect("scaled", RageAxisCurve(0.5f, 0.0f, 1.0f, 0.0f, 1.5f), 0.75f);
     Expect("scaling clamps", RageAxisCurve(0.9f, 0.0f, 1.0f, 0.0f, 4.0f), 1.0f);
 
+    /* Twist reporting: the stick spans the byte whatever the calibration says,
+     * so the smallest twist range still reaches full lock once the game
+     * subtracts its play. Scaling here as well was what broke calibrating. */
+    Expect("stick centred", (float)RageNegconTwist(0.0f, 0, 0, 25), 128.0f);
+    Expect("stick full right, small range",
+           (float)RageNegconTwist(1.0f, 0, 0, 25), 255.0f);
+    Expect("stick full left, small range",
+           (float)RageNegconTwist(-1.0f, 0, 0, 25), 1.0f);
+    Expect("stick full right, large range",
+           (float)RageNegconTwist(1.0f, 0, 0, 113), 255.0f);
+
+    /* A d-pad press reproduces retail's synthetic twist, which is the range. */
+    Expect("d-pad right at range 25", (float)RageNegconTwist(0.0f, 0, 1, 25), 153.0f);
+    Expect("d-pad left at range 113", (float)RageNegconTwist(0.0f, 1, 0, 113), 15.0f);
+
+    /* Whichever input is pushed further wins, in both directions. */
+    Expect("stick beats d-pad", (float)RageNegconTwist(1.0f, 0, 1, 25), 255.0f);
+    Expect("d-pad beats a nudged stick",
+           (float)RageNegconTwist(0.05f, 0, 1, 25), 153.0f);
+    Expect("opposing d-pad still steers from a centred stick",
+           (float)RageNegconTwist(0.0f, 1, 0, 25), 103.0f);
+
     if (failures) {
         printf("%d axis curve assertion(s) failed\n", failures);
         return 1;

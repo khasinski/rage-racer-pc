@@ -27,6 +27,7 @@
 
 #define NEGCON_ANALOG_MAX 0x6A
 #define NEGCON_TWIST_CENTRE 0x80
+#define NEGCON_TWIST_MAX 0x7F
 
 /* A NeGcon has no L2, R2 or select cluster. Reporting them released keeps the
  * packet inside the shape UpdatePadState validates for type 0x23. */
@@ -107,7 +108,7 @@ void RagePortSampleAnalogPad(void) {
     unsigned int released;
     unsigned int held;
     int analogI, analogII, analogL;
-    int twist, deflection, range;
+    int twist, range;
     int lx;
 
     if (enabled < 0) {
@@ -129,27 +130,19 @@ void RagePortSampleAnalogPad(void) {
                 SDL_GetGamepadName(pad));
     }
 
-    /* Scale by the game's own twist range rather than the full byte, so the
-     * OPTIONS "max twist" setting means the same thing for the stick as it
-     * does for a real NeGcon. */
-    range = g_NegconSteerRange[g_NegconMaxTwist];
-    if (range <= 0) range = 127;
-
+    /* A real NeGcon twists across the whole byte whatever the calibration says;
+     * OPTIONS then maps that through its twist range and play. Scaling here as
+     * well applied the calibration twice, and since UpdatePadState subtracts
+     * the play from the result, the smallest range with the largest play left
+     * 11 of a possible 113 units of lock. The stick therefore reports full
+     * deflection and lets the game's own calibration do its job. */
     lx = SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
-    deflection = (int)(RageAxisShaped(lx, &steering) * (float)range);
-
-    /* The NeGcon steering branch of UpdateCarBodyRoll reads only the twist, so
-     * a d-pad press would otherwise stop steering the moment a stick is
-     * present. Fold the d-pad in at full deflection and keep whichever input
-     * is pushed further, so either one steers and neither cancels the other. */
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
-    if ((held & PAD_LEFT) && deflection > -range) deflection = -range;
-    if ((held & PAD_RIGHT) && deflection < range) deflection = range;
-
-    twist = NEGCON_TWIST_CENTRE + deflection;
-    if (twist < 0) twist = 0;
-    if (twist > 0xFF) twist = 0xFF;
+    range = g_NegconSteerRange[g_NegconMaxTwist];
+    twist = RageNegconTwist(RageAxisShaped(lx, &steering),
+                            (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
+                            range);
 
     /* Those four are not ordinary buttons on a NeGcon: UpdatePadState
      * regenerates cross, square and L1 from the analog values, and the pad has

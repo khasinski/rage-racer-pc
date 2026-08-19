@@ -16,3 +16,18 @@ float RageAxisCurve(float value, float deadzone, float saturation,
     if (value > 1.0f) value = 1.0f;
     return value;
 }
+
+#define NEGCON_TWIST_CENTRE 0x80
+#define NEGCON_TWIST_MAX 0x7F
+
+int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
+    int deflection = (int)(shapedStick * (float)NEGCON_TWIST_MAX);
+    int twist;
+    if (range <= 0) range = NEGCON_TWIST_MAX;
+    if (dpadLeft && deflection > -range) deflection = -range;
+    if (dpadRight && deflection < range) deflection = range;
+    twist = NEGCON_TWIST_CENTRE + deflection;
+    if (twist < 0) twist = 0;
+    if (twist > 0xFF) twist = 0xFF;
+    return twist;
+}
