@@ -1,9 +1,11 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "game/input_internal.h"
 #include "game/render.h"
 #include "game/state.h"
+#include "axis_curve.h"
 #include "runtime_config.h"
 
 /*
@@ -30,12 +32,54 @@
  * packet inside the shape UpdatePadState validates for type 0x23. */
 #define NEGCON_ABSENT_BUTTONS 0x1C4
 
-static int RageAnalogScale(int axis, int range) {
-    long scaled;
-    if (axis < 0) axis = 0;
-    scaled = ((long)axis * range) / 32767L;
-    if (scaled > range) scaled = range;
-    return (int)scaled;
+/* One axis worth of response shaping, named and ranged as DuckStation has it so
+ * a tester can copy values across. */
+typedef struct AxisSetup {
+    float deadzone, saturation, linearity, scaling;
+} AxisSetup;
+
+static float RageAxisSetting(const char *key, float fallback, float low,
+                             float high) {
+    const char *text = RageRuntimeConfigGet(key);
+    char *end;
+    float value;
+    if (text == NULL || text[0] == '\0') return fallback;
+    value = strtof(text, &end);
+    if (*end != '\0' || value < low || value > high) {
+        fprintf(stderr,
+                "rage-port: ignoring %s=%s (expected %.2f..%.2f); using %.2f\n",
+                key, text, low, high, fallback);
+        return fallback;
+    }
+    return value;
+}
+
+static void RageAxisSetupLoad(AxisSetup *setup, const char *axis) {
+    char key[64];
+    snprintf(key, sizeof(key), "input.%s_deadzone", axis);
+    setup->deadzone = RageAxisSetting(key, 0.0f, 0.0f, 0.99f);
+    snprintf(key, sizeof(key), "input.%s_saturation", axis);
+    setup->saturation = RageAxisSetting(key, 1.0f, 0.01f, 1.0f);
+    snprintf(key, sizeof(key), "input.%s_linearity", axis);
+    setup->linearity = RageAxisSetting(key, 0.0f, -2.0f, 2.0f);
+    snprintf(key, sizeof(key), "input.%s_scaling", axis);
+    setup->scaling = RageAxisSetting(key, 1.0f, 0.01f, 10.0f);
+    if (setup->deadzone != 0.0f || setup->saturation != 1.0f ||
+        setup->linearity != 0.0f || setup->scaling != 1.0f)
+        fprintf(stderr,
+                "rage-port: %s response deadzone=%.2f saturation=%.2f linearity=%.2f scaling=%.2f\n",
+                axis, setup->deadzone, setup->saturation, setup->linearity,
+                setup->scaling);
+}
+
+/* Shape a raw SDL axis, keeping its sign. */
+static float RageAxisShaped(int axis, const AxisSetup *setup) {
+    float magnitude = (float)(axis < 0 ? -axis : axis) / 32767.0f;
+    float shaped;
+    if (magnitude > 1.0f) magnitude = 1.0f;
+    shaped = RageAxisCurve(magnitude, setup->deadzone, setup->saturation,
+                           setup->linearity, setup->scaling);
+    return axis < 0 ? -shaped : shaped;
 }
 
 static SDL_Gamepad *RageAnalogFindGamepad(void) {
@@ -58,6 +102,7 @@ static SDL_Gamepad *RageAnalogFindGamepad(void) {
 void RagePortSampleAnalogPad(void) {
     static int enabled = -1;
     static int announced;
+    static AxisSetup steering, throttle, brake;
     SDL_Gamepad *pad;
     unsigned int released;
     unsigned int held;
@@ -69,6 +114,9 @@ void RagePortSampleAnalogPad(void) {
         enabled = RageRuntimeConfigGet("input.analog") == NULL
                       ? 1
                       : RageRuntimeConfigEnabled("input.analog", NULL);
+        RageAxisSetupLoad(&steering, "steering");
+        RageAxisSetupLoad(&throttle, "throttle");
+        RageAxisSetupLoad(&brake, "brake");
     }
     if (!enabled) return;
 
@@ -88,7 +136,7 @@ void RagePortSampleAnalogPad(void) {
     if (range <= 0) range = 127;
 
     lx = SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
-    deflection = (int)(((long)lx * range) / 32767L);
+    deflection = (int)(RageAxisShaped(lx, &steering) * (float)range);
 
     /* The NeGcon steering branch of UpdateCarBodyRoll reads only the twist, so
      * a d-pad press would otherwise stop steering the moment a stick is
@@ -110,12 +158,12 @@ void RagePortSampleAnalogPad(void) {
      * press only survives if it is folded into the analog value it stands for.
      * Take whichever is further pressed, so the triggers meter the throttle
      * while the face buttons still work as full on. */
-    analogI = RageAnalogScale(
-        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
-        NEGCON_ANALOG_MAX);
-    analogII = RageAnalogScale(
-        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
-        NEGCON_ANALOG_MAX);
+    analogI = (int)(RageAxisShaped(
+        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), &throttle) *
+        (float)NEGCON_ANALOG_MAX);
+    analogII = (int)(RageAxisShaped(
+        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &brake) *
+        (float)NEGCON_ANALOG_MAX);
     analogL = 0;
     if (held & PAD_CROSS) analogI = NEGCON_ANALOG_MAX;
     if (held & PAD_SQUARE) analogII = NEGCON_ANALOG_MAX;

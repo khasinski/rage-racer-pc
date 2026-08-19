@@ -134,6 +134,25 @@ the game's own NeGcon settings, adjustable in the OPTIONS menu as "play" and
 "max twist". Set `[input] analog = false` to keep a pad on the digital
 mapping instead.
 
+The response of each axis can be shaped, using the same four settings and the
+same ranges DuckStation gives a NeGcon, so values can be copied between them.
+The axes are `steering`, `throttle` and `brake`, which are the twist and the I
+and II buttons of a real NeGcon:
+
+```ini
+[input]
+steering_deadzone = 0.1
+steering_linearity = 0.5
+```
+
+`deadzone` runs 0 to 0.99 and `saturation` 0.01 to 1, both as fractions of the
+travel. `scaling` runs 0.01 to 10. `linearity` runs -2 to 2 and is an exponent
+rather than a fraction: 0 is a straight line, above it softens the middle of
+the throw, below it sharpens it. A value out of range is reported and ignored.
+
+These sit in front of the game's own NeGcon dead zone and twist range, which
+stay where they always were, in the OPTIONS menu.
+
 ### Keyboard
 
 The default bindings emulate the original PlayStation pad:
