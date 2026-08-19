@@ -1,11 +1,11 @@
 #include "common.h"
-#include "game/game_input.h"
 #include "game/diagnostics.h"
 #include "game/state.h"
 #include <stdio.h>
 #include "game/vector.h"
 #include "game/track.h"
 #include "game/car.h"
+#include "game/car_control_command.h"
 #include "game/car_internal.h"
 #include "game/input_internal.h"
 #include "game/race.h"
@@ -291,7 +291,8 @@ s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
  * steering lean and body roll from the drive-block steering input, branching
  * on the control mode g_RacePhase (0x41 = player, 0x23 = demo).
  */
-void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
+void UpdateCarBodyRoll(PlayerCarRuntime *ctx,
+                       const CarControlCommand *command) {
     GameCarDrive *p = &ctx->drive;
     s16 mode = g_RacePhase;
     s32 v1, a1;
@@ -301,10 +302,10 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
         p->steerPos = 0;
         ctx->steeringAngle = 0;
     } else if ((mode < 4) && (g_PlayerAutoSteer == 0)) {
-    if (g_GameInput.controllerType == 0x41) {
+    if (command->digitalController) {
 
-    v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
-    a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
+    v1 = command->steerLeft;
+    a1 = command->steerRight;
 
     if (v1 != 0) {
     a0v = 2;
@@ -336,8 +337,8 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     if (ctx->bodyRollVelocity != 0) {
         ctx->bodyRollVelocity = (ctx->bodyRollVelocity * 7) / 8;
     }
-    } else if (g_GameInput.controllerType == 0x23) {
-    a1 = ((g_GameInput.steering * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
+    } else if (command->analogController) {
+    a1 = ((command->steering * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
     if (!(a1 >= 0)) {
 
     a0v = 2;

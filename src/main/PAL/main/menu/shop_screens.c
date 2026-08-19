@@ -5,11 +5,114 @@
 #include "game/car.h"
 #include "game/asset_internal.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/menu_scripts_internal.h"
+#include "game/shop_controller.h"
 #include "game/render.h"
 #include "game/render_workspace.h"
 #include "game/state.h"
 
+typedef enum CarShopState {
+    CAR_SHOP_PURCHASING = -3,
+    CAR_SHOP_NO_FUNDS = -2,
+    CAR_SHOP_PURCHASE_PROMPT = -1,
+    CAR_SHOP_ACTIVE = 0,
+    CAR_SHOP_BACK = 1,
+    CAR_SHOP_PURCHASED = 2
+} CarShopState;
+
+static ShopScreenPhase CarShopPhaseFromLegacy(s32 phase) {
+    switch (phase) {
+    case CAR_SHOP_PURCHASING: return SHOP_PHASE_COMMITTING;
+    case CAR_SHOP_NO_FUNDS: return SHOP_PHASE_NO_FUNDS;
+    case CAR_SHOP_PURCHASE_PROMPT: return SHOP_PHASE_PURCHASE_PROMPT;
+    case CAR_SHOP_BACK: return SHOP_PHASE_LEAVING;
+    case CAR_SHOP_PURCHASED: return SHOP_PHASE_COMPLETED;
+    default: return SHOP_PHASE_ACTIVE;
+    }
+}
+
+static s32 CarShopPhaseToLegacy(ShopScreenPhase phase) {
+    switch (phase) {
+    case SHOP_PHASE_COMMITTING: return CAR_SHOP_PURCHASING;
+    case SHOP_PHASE_NO_FUNDS: return CAR_SHOP_NO_FUNDS;
+    case SHOP_PHASE_PURCHASE_PROMPT: return CAR_SHOP_PURCHASE_PROMPT;
+    case SHOP_PHASE_LEAVING: return CAR_SHOP_BACK;
+    case SHOP_PHASE_COMPLETED: return CAR_SHOP_PURCHASED;
+    default: return CAR_SHOP_ACTIVE;
+    }
+}
+
+static ShopScreenState CurrentCarShopState(void) {
+    ShopScreenState state;
+    state.phase = CarShopPhaseFromLegacy(GameMenuBusy);
+    state.selection = g_CarShopOption;
+    state.modalCursor = g_MenuSubCursor;
+    state.confirmTimer = g_MenuConfirmTimer;
+    return state;
+}
+
+static void ApplyCarShopState(const ShopScreenState *state) {
+    GameMenuBusy = CarShopPhaseToLegacy(state->phase);
+    g_CarShopOption = state->selection;
+    g_MenuSubCursor = state->modalCursor;
+    g_MenuConfirmTimer = state->confirmTimer;
+}
+
+static void RestoreSelectedCarModel(void) {
+    if (g_PlayerCarIndex != g_CarListCursor) {
+        s32 previousAngle = g_MenuViewAngleTarget;
+
+        RequestCarModel(g_PlayerCarIndex);
+        g_MenuViewAngleTarget = 0;
+        g_CarSwapFromIndex = g_CarListCursor;
+        g_CarSwapToIndex = g_PlayerCarIndex;
+        g_MenuViewAngle = (g_MenuViewAngle - previousAngle) + 0x927C0;
+    }
+}
+
+static void OpenCarPurchasePrompt(void) {
+    PlaySoundCue(2);
+    GameMenuBusy = CAR_SHOP_PURCHASE_PROMPT;
+    g_UiScriptProgress2 = 0;
+    g_MenuSubCursor = 0;
+    switch (g_CarListCursor) {
+    case 0:
+    case 1:
+    case 2:
+    case 10:
+        g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript1;
+        break;
+    case 3:
+        g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript2;
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 11:
+        g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript3;
+        break;
+    case 7:
+    case 8:
+    case 9:
+    case 12:
+        g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript4;
+        break;
+    }
+}
+
+static void ApplyCarShopCommand(ShopCommand command) {
+    if (command == SHOP_COMMAND_OPEN_PURCHASE) {
+        OpenCarPurchasePrompt();
+    } else if (command == SHOP_COMMAND_BACK) {
+        RestoreSelectedCarModel();
+        PlaySoundCue(3);
+        g_MenuOverlayPattern = 2;
+        GameMenuBusy = CAR_SHOP_BACK;
+        g_MenuAltPanelStep = -1;
+        g_MenuAltPanelStep2 = -1;
+    }
+}
 
 void UpdateCarShopScreen(void) {
     void *ot;
@@ -26,7 +129,7 @@ void UpdateCarShopScreen(void) {
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();
     value = g_CarPriceTable[GetOwnedCarAssetIndex(g_CarListCursor)];
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == CAR_SHOP_ACTIVE) {
         g_MenuPlateCarIndex = g_CarListCursor;
         RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
@@ -40,21 +143,29 @@ void UpdateCarShopScreen(void) {
         initial = -1;
         res = RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
         if ((res != 0) && (g_UiScriptProgress2 <= 0)) {
+            ShopScreenState shopState;
+            ShopScreenInput shopInput;
+            ShopScreenResult input;
+            s32 soundIndex;
+
             g_MenuOverlayPattern = initial;
-            if (g_GameInput.pressed & PAD_UP) {
+            shopState = CurrentCarShopState();
+            shopInput.pressed = g_GameInput.pressed;
+            shopInput.canOpenPurchase =
+                g_CarTable[g_CarListCursor].enabled == 0;
+            shopInput.showNoFundsWhenBlocked = 0;
+            shopInput.hasFunds = g_PlayerMoney >= value;
+            input = ShopReduceInput(&shopState, &shopInput);
+            ApplyCarShopState(&input.state);
+            for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
                 PlaySoundCue(1);
-                g_CarShopOption = (g_CarShopOption > 0) ? g_CarShopOption - 1 : 1;
-            }
-            if (g_GameInput.pressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_CarShopOption = (g_CarShopOption <= 0) ? g_CarShopOption + 1 : 0;
             }
             UpdateCarListCursor();
             sel = g_CarListCursor;
             if ((g_GameInput.held & PAD_LEFT) && (g_PrevOwnedCarIndex != -1)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
-                if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+                if (MenuViewIsSettled(u, t, 0x493DF)) {
                     if (g_CarSwapToIndex < 0) {
                         s32 lprev;
 
@@ -73,7 +184,7 @@ void UpdateCarShopScreen(void) {
             if ((g_GameInput.held & PAD_RIGHT) && (g_NextOwnedCarIndex != -1)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
-                if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+                if (MenuViewIsSettled(u, t, 0x493DF)) {
                     if (g_CarSwapToIndex < 0) {
                         s32 base;
                         s32 lprev;
@@ -98,94 +209,10 @@ void UpdateCarShopScreen(void) {
             }
             t = g_MenuViewAngleTarget;
             u = g_MenuViewAngle;
-            if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+            if (MenuViewIsSettled(u, t, 0x493DF)) {
                 if (g_CarSwapToIndex < 0) {
-                    if (g_GameInput.pressed & PAD_CONFIRM) {
-                        sel = g_CarShopOption;
-                        if (sel == 1) {
-                            if (g_PlayerCarIndex != g_CarListCursor) {
-                                s32 base;
-                                s32 current;
-                                s32 selected;
-                                s32 lu;
-                                s32 lprev;
-
-                                RequestCarModel(g_PlayerCarIndex);
-                                base = 0x927C0;
-                                current = g_CarListCursor;
-                                selected = g_PlayerCarIndex;
-                                lu = g_MenuViewAngle;
-                                lprev = g_MenuViewAngleTarget;
-                                g_MenuViewAngleTarget = 0;
-                                g_CarSwapFromIndex = current;
-                                g_CarSwapToIndex = selected;
-                                g_MenuViewAngle = (lu - lprev) + base;
-                            }
-                            PlaySoundCue(3);
-                            g_MenuOverlayPattern = 2;
-                            GameMenuBusy = sel;
-                        g_MenuAltPanelStep = -1;
-                        g_MenuAltPanelStep2 = -1;
-                                                return;
-                        }
-                        if (sel != 0) {
-                            return;
-                        }
-                        if (g_CarTable[g_CarListCursor].enabled == 0) {
-                            PlaySoundCue(2);
-                            GameMenuBusy = -1;
-                            g_UiScriptProgress2 = 0;
-                            g_MenuSubCursor = 0;
-                            switch (g_CarListCursor) {
-                            case 0:
-                            case 1:
-                            case 2:
-                            case 10:
-                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript1;
-                                return;
-                            case 3:
-                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript2;
-                                return;
-                            case 4:
-                            case 5:
-                            case 6:
-                            case 11:
-                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript3;
-                                return;
-                            case 7:
-                            case 8:
-                            case 9:
-                            case 12:
-                                g_CarShopModalScript = (u8 *)&g_CarShopBuyPromptScript4;
-                                return;
-                            }
-                        }
-                        return;
-                    } else if (g_GameInput.pressed & PAD_CANCEL) {
-                        if (g_PlayerCarIndex != g_CarListCursor) {
-                            s32 base;
-                            s32 current;
-                            s32 selected;
-                            s32 lu;
-                            s32 lprev;
-
-                            RequestCarModel(g_PlayerCarIndex);
-                            base = 0x927C0;
-                            current = g_CarListCursor;
-                            selected = g_PlayerCarIndex;
-                            lu = g_MenuViewAngle;
-                            lprev = g_MenuViewAngleTarget;
-                            g_MenuViewAngleTarget = 0;
-                            g_CarSwapFromIndex = current;
-                            g_CarSwapToIndex = selected;
-                            g_MenuViewAngle = (lu - lprev) + base;
-                        }
-                        PlaySoundCue(3);
-                        GameMenuBusy = 1;
-                        g_MenuOverlayPattern = 2;
-                        g_MenuAltPanelStep = -1;
-                        g_MenuAltPanelStep2 = -1;
-                    }
+                    ApplyCarShopCommand(input.command);
+                    if (input.command != SHOP_COMMAND_NONE) return;
                 }
             }
         }
@@ -194,49 +221,46 @@ void UpdateCarShopScreen(void) {
         if (GameMenuBusy < 0) {
             modalState = GameMenuBusy + 2;
             if (modalState < 2U) {
-                u16 *pad;
-
                 RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
                 if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                    if (GameMenuBusy == -1) {
-                        if (g_GameInput.pressed & PAD_CONFIRM) {
-                            if (g_MenuSubCursor != 0) {
-                                if (g_PlayerMoney >= value) {
-                                    PlaySoundCue(2);
-                                    GameMenuBusy = -3;
-                                    g_MenuConfirmTimer = 0x23;
-                                } else {
-                                    PlaySoundCue(5);
-                                    g_CarShopModalScript = (u8 *)&g_CarShopNoFundsScript;
-                                    GameMenuBusy = -2;
-                                }
-                            } else {
-                                PlaySoundCue(3);
-                                GameMenuBusy = 0;
-                            }
+                    if (GameMenuBusy == CAR_SHOP_PURCHASE_PROMPT) {
+                        ShopScreenState shopState = CurrentCarShopState();
+                        ShopScreenInput shopInput;
+                        ShopScreenResult dialog;
+                        s32 soundIndex;
+
+                        shopInput.pressed = g_GameInput.pressed;
+                        shopInput.canOpenPurchase = 1;
+                        shopInput.showNoFundsWhenBlocked = 0;
+                        shopInput.hasFunds = g_PlayerMoney >= value;
+                        dialog = ShopReduceInput(&shopState, &shopInput);
+                        if ((dialog.effects & SHOP_EFFECT_ACCEPT) != 0) {
+                            PlaySoundCue(2);
                         }
-                        pad = &g_GameInput.pressed;
-                        if (*pad & 0x90) {
+                        if ((dialog.effects & SHOP_EFFECT_CANCEL) != 0) {
                             PlaySoundCue(3);
-                            GameMenuBusy = 0;
                         }
-                        if ((*pad & 0x8000) && (g_MenuSubCursor == 0)) {
+                        if (dialog.state.phase == SHOP_PHASE_NO_FUNDS &&
+                            shopState.phase != SHOP_PHASE_NO_FUNDS) {
+                            PlaySoundCue(5);
+                            g_CarShopModalScript =
+                                (u8 *)&g_CarShopNoFundsScript;
+                        }
+                        ApplyCarShopState(&dialog.state);
+                        for (soundIndex = 0;
+                             soundIndex < dialog.moveCount; soundIndex++) {
                             PlaySoundCue(1);
-                            g_MenuSubCursor = 1;
-                        }
-                        if (g_GameInput.pressed & PAD_RIGHT) {
-                            if (g_MenuSubCursor != 0) {
-                                PlaySoundCue(1);
-                                g_MenuSubCursor = 0;
-                            }
                         }
                     } else {
-                        if (g_GameInput.pressed & PAD_CONFIRM) {
-                            GameMenuBusy = 0;
-                        }
-                        if (g_GameInput.pressed & PAD_CANCEL) {
-                            GameMenuBusy = 0;
-                        }
+                        ShopScreenState shopState = CurrentCarShopState();
+                        ShopScreenInput shopInput;
+                        ShopScreenResult dialog;
+                        shopInput.pressed = g_GameInput.pressed;
+                        shopInput.canOpenPurchase = 0;
+                        shopInput.showNoFundsWhenBlocked = 0;
+                        shopInput.hasFunds = 0;
+                        dialog = ShopReduceInput(&shopState, &shopInput);
+                        ApplyCarShopState(&dialog.state);
                     }
                     DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20, 0);
                     DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -244,19 +268,23 @@ void UpdateCarShopScreen(void) {
                     GameDrawMenuButton(0xB8, 0x44, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                     GameDrawMenuButton(0xDA, 0x44, 0x20, 0x20, 0x1E, 0x8E, 0x95, 0, 0, 0, &g_MenuBlankCaption);
                 }
-            } else if (GameMenuBusy == -3) {
+            } else if (GameMenuBusy == CAR_SHOP_PURCHASING) {
                 if (g_MenuConfirmTimer <= 0) {
                     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
                     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
                     if (g_UiScriptProgress2 <= 0) {
+                        ShopScreenState shopState = CurrentCarShopState();
                         g_CarTable[g_CarListCursor].enabled = 1;
                         g_TimeAttackCarEnabled[g_CarListCursor * 8] = 1;
-                        GameMenuBusy = 2;
+                        shopState = ShopFinishCommit(&shopState);
+                        ApplyCarShopState(&shopState);
                         g_MenuAltPanelStep = -1;
                         g_PlayerCarIndex = g_CarListCursor;
                     }
                 } else {
-                    g_MenuConfirmTimer -= 1;
+                    ShopScreenState shopState = CurrentCarShopState();
+                    shopState = ShopTickConfirmTimer(&shopState);
+                    ApplyCarShopState(&shopState);
                     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
                     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1);
                     DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20, 1);
@@ -280,12 +308,12 @@ void UpdateCarShopScreen(void) {
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 1, g_CarShopOption);
         if (g_UiScriptProgress <= 0) {
-            if (GameMenuBusy == 2) {
+            if (GameMenuBusy == CAR_SHOP_PURCHASED) {
                 g_PlayerMoney -= value;
             }
             MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_UiScriptProgress = 0;
-            GameMenuBusy = 0;
+            GameMenuBusy = CAR_SHOP_ACTIVE;
             g_CarShopOption = 0;
             UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
             UploadTeamLogoClut();
@@ -328,11 +356,57 @@ u32 DrawEngineerShopScreen(s32 step) {
 }
 
 
+typedef enum EngineerShopState {
+    ENGINEER_SHOP_UPGRADING = -2,
+    ENGINEER_SHOP_UPGRADE_PROMPT = -1,
+    ENGINEER_SHOP_ACTIVE = 0,
+    ENGINEER_SHOP_BACK = 1,
+    ENGINEER_SHOP_UPGRADED = 2,
+    ENGINEER_SHOP_NO_FUNDS = -3
+} EngineerShopState;
+
+static ShopScreenPhase EngineerShopPhaseFromLegacy(s32 phase) {
+    switch (phase) {
+    case ENGINEER_SHOP_UPGRADING: return SHOP_PHASE_COMMITTING;
+    case ENGINEER_SHOP_UPGRADE_PROMPT: return SHOP_PHASE_PURCHASE_PROMPT;
+    case ENGINEER_SHOP_NO_FUNDS: return SHOP_PHASE_NO_FUNDS;
+    case ENGINEER_SHOP_BACK: return SHOP_PHASE_LEAVING;
+    case ENGINEER_SHOP_UPGRADED: return SHOP_PHASE_COMPLETED;
+    default: return SHOP_PHASE_ACTIVE;
+    }
+}
+
+static s32 EngineerShopPhaseToLegacy(ShopScreenPhase phase) {
+    switch (phase) {
+    case SHOP_PHASE_COMMITTING: return ENGINEER_SHOP_UPGRADING;
+    case SHOP_PHASE_PURCHASE_PROMPT: return ENGINEER_SHOP_UPGRADE_PROMPT;
+    case SHOP_PHASE_NO_FUNDS: return ENGINEER_SHOP_NO_FUNDS;
+    case SHOP_PHASE_LEAVING: return ENGINEER_SHOP_BACK;
+    case SHOP_PHASE_COMPLETED: return ENGINEER_SHOP_UPGRADED;
+    default: return ENGINEER_SHOP_ACTIVE;
+    }
+}
+
+static ShopScreenState CurrentEngineerShopState(void) {
+    ShopScreenState state;
+    state.phase = EngineerShopPhaseFromLegacy(GameMenuBusy);
+    state.selection = g_EngineerShopOption;
+    state.modalCursor = g_MenuSubCursor;
+    state.confirmTimer = g_MenuConfirmTimer;
+    return state;
+}
+
+static void ApplyEngineerShopState(const ShopScreenState *state) {
+    GameMenuBusy = EngineerShopPhaseToLegacy(state->phase);
+    g_EngineerShopOption = state->selection;
+    g_MenuSubCursor = state->modalCursor;
+    g_MenuConfirmTimer = state->confirmTimer;
+}
+
 void UpdateEngineerShopScreen(void) {
     void *ot;
     s32 value;
     s32 res;
-    s32 sel;
 
     ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
@@ -340,7 +414,7 @@ void UpdateEngineerShopScreen(void) {
     DrawMenuCarView();
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     value = g_CarTuneUpPriceTable[GetOwnedCarAssetIndex(g_PlayerCarIndex)];
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == ENGINEER_SHOP_ACTIVE) {
         RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
         DrawEngineerShopPricePanel(1, g_PlayerMoney, value);
@@ -348,73 +422,67 @@ void UpdateEngineerShopScreen(void) {
         RunTimedDrawScript(&g_EngineerShopScreenScript, &g_UiScriptProgress, 0);
         res = RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
         if ((res != 0) && (g_UiScriptProgress2 <= 0)) {
+            ShopScreenState shopState = CurrentEngineerShopState();
+            ShopScreenInput shopInput;
+            ShopScreenResult input;
+            s32 soundIndex;
+
             g_MenuOverlayPattern = -1;
-            if (g_GameInput.pressed & PAD_UP) {
+            shopInput.pressed = g_GameInput.pressed;
+            shopInput.canOpenPurchase = g_PlayerMoney >= value;
+            shopInput.showNoFundsWhenBlocked = 1;
+            shopInput.hasFunds = g_PlayerMoney >= value;
+            input = ShopReduceInput(&shopState, &shopInput);
+            ApplyEngineerShopState(&input.state);
+            for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
                 PlaySoundCue(1);
-                g_EngineerShopOption = (g_EngineerShopOption > 0) ? g_EngineerShopOption - 1 : 1;
             }
-            if (g_GameInput.pressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_EngineerShopOption = (g_EngineerShopOption <= 0) ? g_EngineerShopOption + 1 : 0;
-            }
-            if (g_GameInput.pressed & PAD_CONFIRM) {
-                sel = g_EngineerShopOption;
-                if (sel == 0) {
-                    if (g_PlayerMoney >= value) {
-                        PlaySoundCue(2);
-                        g_EngineerShopModalScript = (u8 *)&g_EngineerShopTuneUpPromptScript;
-                        GameMenuBusy = -1;
-                        g_UiScriptProgress2 = 0;
-                        g_MenuSubCursor = 0;
-                    } else {
-                        PlaySoundCue(5);
-                        g_EngineerShopModalScript = (u8 *)&g_EngineerShopNoFundsScript;
-                        GameMenuBusy = -3;
-                        g_UiScriptProgress2 = 0;
-                    }
-                } else if (sel == 1) {
-                    PlaySoundCue(3);
-                    GameMenuBusy = sel;
-                    g_MenuOverlayPattern = 2;
-                }
-            } else if (g_GameInput.pressed & PAD_CANCEL) {
+            if (input.command == SHOP_COMMAND_OPEN_PURCHASE) {
+                PlaySoundCue(2);
+                g_EngineerShopModalScript =
+                    (u8 *)&g_EngineerShopTuneUpPromptScript;
+                GameMenuBusy = ENGINEER_SHOP_UPGRADE_PROMPT;
+                g_UiScriptProgress2 = 0;
+                g_MenuSubCursor = 0;
+            } else if (input.command == SHOP_COMMAND_NO_FUNDS) {
+                PlaySoundCue(5);
+                g_EngineerShopModalScript = (u8 *)&g_EngineerShopNoFundsScript;
+                GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
+                g_UiScriptProgress2 = 0;
+            } else if (input.command == SHOP_COMMAND_BACK) {
                 PlaySoundCue(3);
-                GameMenuBusy = 1;
+                GameMenuBusy = ENGINEER_SHOP_BACK;
                 g_MenuOverlayPattern = 2;
             }
         }
     } else {
         if (GameMenuBusy < 0) {
-            if (GameMenuBusy == -1) {
-                u16 *pad;
-
+            if (GameMenuBusy == ENGINEER_SHOP_UPGRADE_PROMPT) {
                 RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
                 if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                    if (g_GameInput.pressed & PAD_CONFIRM) {
-                        if (g_MenuSubCursor != 0) {
-                            PlaySoundCue(2);
-                            GameMenuBusy = -2;
-                            g_MenuConfirmTimer = 0x23;
-                            RequestUpgradedCarModel(g_PlayerCarIndex);
-                        } else {
-                            PlaySoundCue(3);
-                            GameMenuBusy = 0;
-                        }
+                    ShopScreenState shopState = CurrentEngineerShopState();
+                    ShopScreenInput shopInput;
+                    ShopScreenResult dialog;
+                    s32 soundIndex;
+
+                    shopInput.pressed = g_GameInput.pressed;
+                    shopInput.canOpenPurchase = 1;
+                    shopInput.showNoFundsWhenBlocked = 0;
+                    shopInput.hasFunds = 1;
+                    dialog = ShopReduceInput(&shopState, &shopInput);
+                    if ((dialog.effects & SHOP_EFFECT_ACCEPT) != 0) {
+                        PlaySoundCue(2);
                     }
-                    pad = &g_GameInput.pressed;
-                    if (*pad & 0x90) {
+                    if ((dialog.effects & SHOP_EFFECT_CANCEL) != 0) {
                         PlaySoundCue(3);
-                        GameMenuBusy = 0;
                     }
-                    if ((*pad & 0x8000) && (g_MenuSubCursor == 0)) {
+                    if ((dialog.effects & SHOP_EFFECT_BEGIN_COMMIT) != 0) {
+                        RequestUpgradedCarModel(g_PlayerCarIndex);
+                    }
+                    ApplyEngineerShopState(&dialog.state);
+                    for (soundIndex = 0;
+                         soundIndex < dialog.moveCount; soundIndex++) {
                         PlaySoundCue(1);
-                        g_MenuSubCursor = 1;
-                    }
-                    if (g_GameInput.pressed & PAD_RIGHT) {
-                        if (g_MenuSubCursor != 0) {
-                            PlaySoundCue(1);
-                            g_MenuSubCursor = 0;
-                        }
                     }
                     DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20, 0);
                     DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -422,20 +490,24 @@ void UpdateEngineerShopScreen(void) {
                     GameDrawMenuButton(0xB8, 0x44, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                     GameDrawMenuButton(0xDA, 0x44, 0x20, 0x20, 0x1E, 0x8E, 0x95, 0, 0, 0, &g_MenuBlankCaption);
                 }
-            } else if (GameMenuBusy == -2) {
+            } else if (GameMenuBusy == ENGINEER_SHOP_UPGRADING) {
                 if (g_MenuConfirmTimer <= 0) {
                     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
                     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
                     if (g_UiScriptProgress2 <= 0) {
+                        ShopScreenState shopState = CurrentEngineerShopState();
                         g_MenuViewAngle = 0x927C0;
                         g_MenuViewAngleTarget = 0;
-                        GameMenuBusy = 2;
+                        shopState = ShopFinishCommit(&shopState);
+                        ApplyEngineerShopState(&shopState);
                         g_MenuOverlayPattern = 2;
                         g_CarSwapFromIndex = g_PlayerCarIndex;
                         g_CarSwapToIndex = g_PlayerCarIndex;
                     }
                 } else {
-                    g_MenuConfirmTimer -= 1;
+                    ShopScreenState shopState = CurrentEngineerShopState();
+                    shopState = ShopTickConfirmTimer(&shopState);
+                    ApplyEngineerShopState(&shopState);
                     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
                     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1);
                     DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20, 1);
@@ -447,12 +519,15 @@ void UpdateEngineerShopScreen(void) {
             } else {
                 RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
                 if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                    if (g_GameInput.pressed & PAD_CONFIRM) {
-                        GameMenuBusy = 0;
-                    }
-                    if (g_GameInput.pressed & PAD_CANCEL) {
-                        GameMenuBusy = 0;
-                    }
+                    ShopScreenState shopState = CurrentEngineerShopState();
+                    ShopScreenInput shopInput;
+                    ShopScreenResult dialog;
+                    shopInput.pressed = g_GameInput.pressed;
+                    shopInput.canOpenPurchase = 0;
+                    shopInput.showNoFundsWhenBlocked = 0;
+                    shopInput.hasFunds = 0;
+                    dialog = ShopReduceInput(&shopState, &shopInput);
+                    ApplyEngineerShopState(&dialog.state);
                 }
             }
             DrawEngineerShopPricePanel(1, g_PlayerMoney, value);
@@ -467,7 +542,7 @@ void UpdateEngineerShopScreen(void) {
         RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 1, g_EngineerShopOption);
         if (g_UiScriptProgress <= 0) {
-            if (GameMenuBusy == 2) {
+            if (GameMenuBusy == ENGINEER_SHOP_UPGRADED) {
                 g_CarTable[g_PlayerCarIndex].modelVariant++;
                 if (g_CarTable[g_PlayerCarIndex].modelVariant > g_TimeAttackCars[g_PlayerCarIndex].modelVariant) {
                     g_TimeAttackCars[g_PlayerCarIndex].modelVariant = g_CarTable[g_PlayerCarIndex].modelVariant;
@@ -476,7 +551,7 @@ void UpdateEngineerShopScreen(void) {
             }
             MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_UiScriptProgress = 0;
-            GameMenuBusy = 0;
+            GameMenuBusy = ENGINEER_SHOP_ACTIVE;
             g_EngineerShopOption = 0;
         }
     }

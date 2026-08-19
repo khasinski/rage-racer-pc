@@ -6,6 +6,8 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
+#include "game/menu_dialog_controller.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -19,9 +21,8 @@
 /* g_GameModeHandlers[5]: left/right edits the selected audio setting, cancel restores it. */
 void UpdateSoundSettingAdjust(void) {
     s32 *setting = NULL;
-    s32 old;
     s32 maximum = 15;
-    u16 pad;
+    MenuDialogInputResult input;
 
     DrawSoundOptionScreen();
 
@@ -39,23 +40,25 @@ void UpdateSoundSettingAdjust(void) {
     }
 
     if (setting != NULL) {
-        old = *setting;
-        if ((g_GameInput.pressed & PAD_LEFT) && *setting > 0) (*setting)--;
-        if ((g_GameInput.pressed & PAD_RIGHT) && *setting < maximum) (*setting)++;
-        if (old != *setting) PlaySoundCue(1);
-        pad = g_GameInput.pressed;
-        if (pad & 0x860) {
+        input = MenuDialogHandleRange(
+            *setting, 0, maximum, -1, 0,
+            g_GameInput.pressed, g_GameInput.pressed);
+        *setting = input.value;
+        if (input.moveCount != 0) PlaySoundCue(1);
+        if (input.confirmed) {
             g_GameMode = 4;
-        } else if (pad & 0x90) {
+        } else if (input.cancelled) {
             g_GameMode = 4;
             *setting = g_ScreenOffsetEditX;
         }
     }
     ApplyAudioSettings();
-    pad = g_GameInput.pressed;
-    if (pad & 0x860) {
+    if (MenuResolveAction(g_GameInput.pressed, PAD_CONFIRM, PAD_CANCEL) ==
+        MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
-    } else if (pad & 0x90) {
+    } else if (MenuResolveAction(
+                   g_GameInput.pressed, PAD_CONFIRM, PAD_CANCEL) ==
+               MENU_ACTION_CANCEL) {
         PlaySoundCue(3);
     }
 }
@@ -82,8 +85,7 @@ void UpdateScreenAdjustScreen(void) {
     s32 oldX;
     s32 oldY;
     u16 input;
-    u16 confirm;
-    u32 confirmMask;
+    MenuAction action;
     s32 value;
 
     DrawScreenAdjustScreen();
@@ -92,7 +94,7 @@ void UpdateScreenAdjustScreen(void) {
     oldX = g_ScreenOffsetEditX;
     oldY = g_ScreenOffsetEditY;
 
-    if ((input & 0x1000) && (oldY >= -31)) {
+    if ((input & PAD_UP) && (oldY >= -31)) {
         g_ScreenOffsetEditY = oldY - 1;
     }
 
@@ -121,20 +123,18 @@ void UpdateScreenAdjustScreen(void) {
         PlaySoundCue(1);
     }
 
-    confirm = g_GameInput.pressed;
-    if (confirm & 0x860) {
+    action = MenuResolveAction(
+        g_GameInput.pressed, PAD_CONFIRM, PAD_CANCEL);
+    if (action == MENU_ACTION_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 1;
         g_ScreenOffsetX.value = g_ScreenOffsetEditX;
         g_ScreenOffsetY.value = g_ScreenOffsetEditY;
-    } else {
-        confirmMask = confirm & 0x90;
-        if (confirmMask != 0) {
-            PlaySoundCue(3);
-            g_GameMode = 1;
-            g_ScreenOffsetEditX = g_ScreenOffsetX.value;
-            g_ScreenOffsetEditY = g_ScreenOffsetY.value;
-        }
+    } else if (action == MENU_ACTION_CANCEL) {
+        PlaySoundCue(3);
+        g_GameMode = 1;
+        g_ScreenOffsetEditX = g_ScreenOffsetX.value;
+        g_ScreenOffsetEditY = g_ScreenOffsetY.value;
     }
 
     g_DispEnv0ScreenX = g_ScreenOffsetEditX;

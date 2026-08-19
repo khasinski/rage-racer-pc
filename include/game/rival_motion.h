@@ -2,6 +2,7 @@
 #define GAME_RIVAL_MOTION_H
 
 #include "common.h"
+#include "game/car_control_command.h"
 
 typedef struct RivalMotionState {
     s32 speed;
@@ -13,9 +14,9 @@ typedef struct RivalMotionState {
     s32 boostAcceleration;
     s32 boostAccelerationLimit;
     s32 bodyYaw;
-    s32 targetYaw;
 } RivalMotionState;
 
-void RivalMotionStep(RivalMotionState *state, s32 enableRaceBoost);
+void RivalMotionStep(RivalMotionState *state,
+                     const CarControlCommand *command);
 
 #endif

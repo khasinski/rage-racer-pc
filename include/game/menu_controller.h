@@ -24,6 +24,7 @@ typedef struct MenuSession {
 typedef struct MenuSessionCommands {
     MenuAction action;
     u8 moved;
+    u8 moveCount;
 } MenuSessionCommands;
 
 /* enabledMask uses one bit per row.  Passing 0 enables every row. */
@@ -32,5 +33,10 @@ MenuCursorResult MenuCursorMove(s32 selection, s32 itemCount,
 MenuAction MenuResolveAction(u16 pressed, u16 confirmMask, u16 cancelMask);
 MenuSessionCommands MenuSessionStep(MenuSession *session, s32 direction,
                                     u16 pressed);
+MenuSessionCommands MenuSessionStepVertical(MenuSession *session,
+                                            u16 pressed);
+s32 MenuViewIsSettled(s32 current, s32 target, s32 tolerance);
+s32 MenuExitIsReady(s32 outgoingProgress, s32 viewOffset,
+                    s32 minimumViewOffset);
 
 #endif

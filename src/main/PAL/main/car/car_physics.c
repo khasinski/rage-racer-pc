@@ -154,7 +154,14 @@ CarTorqueSample CarSampleTorqueCurves(
     return sample;
 }
 
-static s32 ManualUpshiftGradeScale(s32 gear, s32 roadGrade) {
+s32 CarCaptureShiftEngineLoad(s32 acceleration) {
+    /* Retail stores the signed acceleration through an unsigned halfword.
+     * Negative collision acceleration therefore becomes a large positive
+     * clutch load; manual shifts can use it to recover momentum rapidly. */
+    return (u16)acceleration;
+}
+
+s32 CarManualUpshiftGradeScale(s32 gear, s32 roadGrade) {
     s32 penalty;
     if (gear < 4 || roadGrade >= 0) return 100;
     if (gear == 4) penalty = (-roadGrade) / 120;
@@ -192,13 +199,13 @@ s32 CarUpdateTransmission(CarTransmissionState *state,
     if (state->displayedGear != state->gear) {
         s32 targetSpeed = (input->speed * 10000) /
                           (input->gearRatios[state->gear] * 1168 / 160);
-        u32 wheelSpeed = (u16)input->acceleration;
+        u32 wheelSpeed = (u32)CarCaptureShiftEngineLoad(input->acceleration);
 
         state->engineLoad = (s32)wheelSpeed;
         state->targetSpeed = targetSpeed;
         if (state->manual != 0 && state->displayedGear < state->gear &&
             input->roadGrade < 0 && state->gear >= 4) {
-            s32 gradeScale = ManualUpshiftGradeScale(
+            s32 gradeScale = CarManualUpshiftGradeScale(
                 state->gear, input->roadGrade);
             s32 signedWheelSpeed = (s16)wheelSpeed;
             state->engineLoad =

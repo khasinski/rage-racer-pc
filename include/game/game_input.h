@@ -20,6 +20,8 @@ typedef struct GameInputFrame {
     u8 pause;
     u8 shiftUp;
     u8 shiftDown;
+    u8 steerLeft;
+    u8 steerRight;
     u8 accelerateHeld;
     u8 brakeHeld;
 } GameInputFrame;

@@ -1,15 +1,16 @@
 #include "common.h"
-#include "game/game_input.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "game/race.h"
 #include "game/car.h"
+#include "game/car_control_command.h"
 #include "game/car_internal.h"
 #include "game/car_physics.h"
 #include "game/track_internal.h"
 #include "game/render.h"
 
-void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
+void UpdateCarDrivetrain(PlayerCarRuntime *carArg,
+                         const CarControlCommand *command) {
   GearCurveAddress gearCurve;
   CarTorqueSample torqueSample;
   CarTransmissionState transmission;
@@ -225,7 +226,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     drive->steeringLoadAngle = 0x800 - headingError;
   }
   steerLoad += drive->steeringLoadAngle / 256;
-  if ((drive->motionState != CAR_MOTION_TAKEOFF) && (g_GameInput.controllerType == 0x41))
+  if ((drive->motionState != CAR_MOTION_TAKEOFF) && command->digitalController)
   {
     steeringAssistScale = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
     if (steeringAssistScale <= 0)

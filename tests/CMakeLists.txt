@@ -1,6 +1,13 @@
+if(MSVC)
+    add_compile_options(/UNDEBUG)
+else()
+    add_compile_options(-UNDEBUG)
+endif()
+
 add_executable(game_logic_tests
     game_logic_tests.c
     ../src/main/PAL/main/race/time_conversion.c
+    ../src/main/PAL/main/race/race_clock.c
     ../src/main/PAL/main/random/random15.c
     ../src/main/PAL/main/car/angle_math.c
     ../src/main/PAL/main/track/blend_angle.c
@@ -17,7 +24,6 @@ target_include_directories(game_logic_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port
 )
-
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(game_logic_tests PRIVATE -Wall -Wextra -Werror)
 endif()
@@ -131,6 +137,7 @@ endif()
 add_test(NAME race_result COMMAND race_result_tests)
 
 add_executable(rival_update_tests rival_update_tests.c
+    ../src/main/PAL/main/car/car_control_command.c
     ../src/main/PAL/main/car/rival_update_policy.c
     ../src/main/PAL/main/car/rival_speed.c
     ../src/main/PAL/main/car/rival_motion.c
@@ -153,16 +160,46 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME memory_card_controller COMMAND memory_card_controller_tests)
 
-add_executable(menu_controller_tests menu_controller_tests.c
-    ../src/main/PAL/main/menu/menu_controller.c)
-target_include_directories(menu_controller_tests PRIVATE
+add_executable(car_control_command_tests car_control_command_tests.c
+    ../src/main/PAL/main/car/car_control_command.c)
+target_include_directories(car_control_command_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(menu_controller_tests PRIVATE __psyz=1)
+target_compile_definitions(car_control_command_tests PRIVATE __psyz=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(menu_controller_tests PRIVATE
+    target_compile_options(car_control_command_tests PRIVATE
         -Wall -Wextra -Werror)
 endif()
+add_test(NAME car_control_command COMMAND car_control_command_tests)
+
+add_executable(menu_controller_tests menu_controller_tests.c
+    ../src/main/PAL/main/menu/menu_controller.c)
+
+add_executable(course_select_controller_tests course_select_controller_tests.c
+    ../src/main/PAL/main/menu/course_select_controller.c)
+add_executable(car_select_controller_tests car_select_controller_tests.c
+    ../src/main/PAL/main/menu/car_select_controller.c
+    ../src/main/PAL/main/menu/menu_dialog_controller.c)
+add_executable(menu_screen_controller_tests menu_screen_controller_tests.c
+    ../src/main/PAL/main/menu/shop_controller.c
+    ../src/main/PAL/main/menu/design_controller.c
+    ../src/main/PAL/main/menu/team_name_controller.c
+    ../src/main/PAL/main/menu/menu_dialog_controller.c
+    ../src/main/PAL/main/menu/team_logo_editor_controller.c)
+
+foreach(MENU_TEST_TARGET menu_controller_tests course_select_controller_tests
+                         car_select_controller_tests menu_screen_controller_tests)
+    target_include_directories(${MENU_TEST_TARGET} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include)
+    target_compile_definitions(${MENU_TEST_TARGET} PRIVATE __psyz=1)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(${MENU_TEST_TARGET} PRIVATE
+            -Wall -Wextra -Werror)
+    endif()
+endforeach()
 add_test(NAME menu_controller COMMAND menu_controller_tests)
+add_test(NAME course_select_controller COMMAND course_select_controller_tests)
+add_test(NAME car_select_controller COMMAND car_select_controller_tests)
+add_test(NAME menu_screen_controller COMMAND menu_screen_controller_tests)
 
 add_executable(render_scene_tests
     render_scene_tests.c
@@ -419,6 +456,9 @@ endif()
 # the real PAL data in local/pre-release validation instead.
 add_executable(axis_curve_tests axis_curve_tests.c ../src/port/axis_curve.c)
 target_include_directories(axis_curve_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(axis_curve_tests PRIVATE m)
+endif()
 if(NOT MSVC)
     target_compile_options(axis_curve_tests PRIVATE -Wall -Wextra)
 endif()
@@ -437,7 +477,8 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 set(RAGE_PORTABLE_TESTS
-    game_logic game_runtime render_scene music_director gearbox asset_catalog course_index
+    game_logic game_runtime render_scene music_director gearbox asset_catalog
+    car_control_command course_index
     native_geometry_interpolation modern_scene_interpolation modern_gpu_state
     modern_profiler
     release_package host_state_abi player_car_interior_aliases car_prices

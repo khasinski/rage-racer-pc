@@ -52,11 +52,11 @@ static s32 AdvanceMemoryCardMenuStartup(void) {
     if (next == 3) {
         g_McSlotUsedMask = 0;
         ClearSaveHeaderRows(g_McSaveHeaders);
-        g_McLastMenuState = -1;
+        g_McLastMenuState = MC_MENU_NO_CARD;
         g_McMenuPhase = MC_PROMPT_NONE;
         g_McMenuSelection = next;
-        g_McMenuState = next;
-        g_McActionState = 0;
+        g_McMenuState = MC_MENU_DETECTING_CARD;
+        g_McActionState = MC_ACTION_IDLE;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
         g_McStateChangeCount = 0;
@@ -80,6 +80,79 @@ static void ResolveMemoryCardMenuTransition(
     g_McLastMenuState = session->lastMenuState;
     g_McErrorPending = session->errorPending;
     g_McErrorCountdown = session->errorCountdown;
+}
+
+static MemoryCardActionSession CurrentMemoryCardAction(void) {
+    MemoryCardActionSession action;
+    action.state = (MemoryCardActionState)g_McActionState;
+    action.timer = g_McActionTimer;
+    action.settleTicks = g_McSettleTicks;
+    action.busy = g_McActionBusy;
+    action.menuPage = g_McMenuPage;
+    action.menuRowCursor = g_McMenuRowCursor;
+    action.prompt = g_McMenuPhase;
+    return action;
+}
+
+static void ApplyMemoryCardAction(const MemoryCardActionSession *action) {
+    g_McActionState = action->state;
+    g_McActionTimer = action->timer;
+    g_McSettleTicks = action->settleTicks;
+    g_McActionBusy = action->busy;
+    g_McMenuPage = action->menuPage;
+    g_McMenuRowCursor = action->menuRowCursor;
+    g_McMenuPhase = (MemoryCardPrompt)action->prompt;
+}
+
+static void PerformMemoryCardSaveWrite(void) {
+    s32 slot = g_McSlotCursor;
+    s32 result;
+
+    g_McMenuSubState = 5;
+    result = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    g_McActionResult = result;
+    if (result != 0) {
+        g_McActionOk = 1;
+        g_McMenuSubState = 6;
+    } else {
+        g_McActionOk = 0;
+        g_McMenuSubState = 0x10;
+    }
+    g_McActionState = MC_ACTION_SAVE_POST_WRITE;
+    g_McSavedLoadPhase = GameMenuLoadPhase;
+}
+
+static void PerformMemoryCardSaveRefresh(void) {
+    if (g_McActionResult != 0) {
+        s32 result = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
+        g_McSlotUsedMask = result;
+        if (result != 0) {
+            if ((result & 0xFFFF) == 0) g_McMenuSubState = 0xE;
+        } else {
+            g_McMenuSubState = 0xC;
+        }
+        g_McSavedLoadPhase = GameMenuLoadPhase;
+    }
+    g_McActionState = MC_ACTION_SAVE_SETTLE_PREPARE;
+}
+
+static void PerformMemoryCardLoadRead(void) {
+    s32 slot = g_McSlotCursor;
+
+    g_McActionResult = LoadMemoryCardSaveSlot(
+        slot, &g_McSaveHeaders[slot]);
+    /* Retail reports the load sequence as completed in either branch; the
+     * sub-state carries the actual success/error presentation. */
+    g_McActionOk = 1;
+    if (g_McActionResult != 0) {
+        g_McMenuSubState = 8;
+        g_McLastSlot = slot;
+    } else {
+        g_McMenuSubState = 0xF;
+    }
+    g_McActionTimer = 0x3C;
+    g_McActionState = MC_ACTION_LOAD_SETTLE_PREPARE;
+    g_McSavedLoadPhase = GameMenuLoadPhase;
 }
 
 void UpdateMemoryCardMenu(void) {
@@ -106,7 +179,7 @@ void UpdateMemoryCardMenu(void) {
 
     switch (g_McMenuState) {
 
-    case 3:
+    case MC_MENU_DETECTING_CARD:
     {
     u16 lpad = g_GameInput.pressed;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
@@ -125,9 +198,9 @@ void UpdateMemoryCardMenu(void) {
     g_McErrorTicks = session.errorTicks;
     break;
 
-    case 1:
+    case MC_MENU_READY:
     switch (g_McMenuPage) {
-    case 0:
+    case MC_PAGE_MODE_SELECT:
     {
         s32 *p = &g_McMenuRowCursor;
         g_McMenuPhase = MC_PROMPT_NONE;
@@ -136,8 +209,8 @@ void UpdateMemoryCardMenu(void) {
         if (!((pad & 0x860) == 0)) {
         if (*p < g_McMenuRowCount - 1) {
             PlaySoundCue(2);
-            g_McMenuPage = 1;
-            g_McActionState = 0;
+            g_McMenuPage = MC_PAGE_SLOT_ACTION;
+            g_McActionState = MC_ACTION_IDLE;
             g_McActionResult = 0;
             g_McSlotCursor = g_McLastSlot;
             g_McSaveMode = *p;
@@ -154,9 +227,9 @@ void UpdateMemoryCardMenu(void) {
     }
     break;
 
-    case 1:
+    case MC_PAGE_SLOT_ACTION:
     switch (g_McActionState) {
-    case 0x00: {
+    case MC_ACTION_IDLE: {
         s32 *s0 = &g_McSlotCursor;
         s32 a0;
         s32 nv;
@@ -169,10 +242,10 @@ void UpdateMemoryCardMenu(void) {
         if (!(((a0 >> *s0) & 1) == 0)) {
         PlaySoundCue(2);
         g_McConfirmChoice = 0;
-        nv = 0x1E;
+        nv = MC_ACTION_LOAD_PREPARE;
         } else {
         PlaySoundCue(5);
-        nv = 0x28;
+        nv = MC_ACTION_NO_FILE;
         }
         goto L_b475;
         }
@@ -187,10 +260,10 @@ void UpdateMemoryCardMenu(void) {
         if (!(((a0 >> *s0) & 1) == 0)) {
         PlaySoundCue(2);
         g_McConfirmChoice = 0;
-        nv = 0xA;
+        nv = MC_ACTION_CONFIRM_OVERWRITE;
         } else {
         PlaySoundCue(2);
-        nv = 0x19;
+        nv = MC_ACTION_CARD_FULL;
         }
         goto L_b475;
         }
@@ -198,11 +271,11 @@ void UpdateMemoryCardMenu(void) {
         if ((g_GameInput.pressed & PAD_CONFIRM) == 0) goto L_b439;
         }
         PlaySoundCue(5);
-        g_McMenuPage = 0;
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
         goto slot_prompt_done;
     L_b439:
         if (!((PollMenuBackInput() & 0xFFFF) == 0)) {
-        g_McMenuPage = 0;
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
         goto slot_prompt_done;
     L_b448:
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
@@ -210,11 +283,11 @@ void UpdateMemoryCardMenu(void) {
         if (!(((g_McSlotUsedMask >> *s0) & 1) == 0)) {
         PlaySoundCue(2);
         g_McConfirmChoice_v = 0;
-        nv = 0xA;
+        nv = MC_ACTION_CONFIRM_OVERWRITE;
         } else {
         PlaySoundCue(2);
         g_McActionTimer = 0x1E;
-        nv = 0xB;
+        nv = MC_ACTION_SAVE_PREPARE;
         }
     L_b475:
         g_McActionState = nv;
@@ -222,11 +295,11 @@ void UpdateMemoryCardMenu(void) {
         }
 slot_prompt_done:
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        g_McMenuPage = 0;
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
         break;
     }
 
-    case 0x0A: {
+    case MC_ACTION_CONFIRM_OVERWRITE: {
         s32 *p = &g_McConfirmChoice;
         s32 hi = g_McSlotCursor * 2;
         s32 lo = g_McConfirmChoice + 9;
@@ -234,276 +307,174 @@ slot_prompt_done:
         SetMenuBinaryChoiceVertical(p);
         if (!(g_McConfirmChoice == 0)) {
         if (!((PollMenuConfirmInput() & 0xFFFF) == 0)) {
-        g_McActionState = 0xB;
+            g_McActionState = MC_ACTION_SAVE_PREPARE;
         break;
         }
         if (g_McConfirmChoice != 0) {
             if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-            g_McActionState = 0;
+            g_McActionState = MC_ACTION_IDLE;
             break;
         }
         }
         if ((PollMenuConfirmInput() & 0xFFFF) != 0) {
-            g_McActionState = 0;
+            g_McActionState = MC_ACTION_IDLE;
             break;
         }
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        g_McActionState = 0;
+        g_McActionState = MC_ACTION_IDLE;
         break;
     }
 
-    case 0x0B:
+    case MC_ACTION_SAVE_PREPARE:
         g_McMenuPhase = MC_PROMPT_ACCESSING;
         g_McActionTimer = 0xA;
-        g_McActionState = 0xC;
+        g_McActionState = MC_ACTION_SAVE_DELAY;
         break;
 
-    case 0x0C: {
-        s32 t = g_McActionTimer;
+    case MC_ACTION_SAVE_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
         g_McActionBusy = 1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        g_McActionState = 0xD;
+        action.busy = 1;
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x0D: {
-        s32 a0 = g_McSlotCursor;
-        s32 x;
-        s32 dp;
-        g_McMenuSubState = 5;
-        x = WriteMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
-        g_McActionResult = x;
-        if (!(x == 0)) {
-        g_McActionOk = 1;
-        x = 6;
-        } else {
-        x = 0x10;
-        g_McActionOk = 0;
-        }
-        g_McMenuSubState = x;
-        dp = GameMenuLoadPhase;
-        g_McActionState = 0xF;
-        g_McSavedLoadPhase = dp;
+    case MC_ACTION_SAVE_WRITE: {
+        PerformMemoryCardSaveWrite();
         break;
     }
 
-    case 0x0F:
-        g_McActionState = 0x10;
+    case MC_ACTION_SAVE_POST_WRITE:
+        g_McActionState = MC_ACTION_SAVE_REFRESH;
         break;
 
-    case 0x10: {
-        s32 nv;
-        if (g_McActionResult != 0) {
-        {
-            s32 r = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
-            g_McSlotUsedMask = r;
-            if (!(r == 0)) {
-                if ((r & 0xFFFF) == 0) {
-                    nv = 0xE;
-                    g_McMenuSubState = nv;
-                }
-            } else {
-                nv = 0xC;
-                g_McMenuSubState = nv;
-            }
-        }
-        g_McSavedLoadPhase = GameMenuLoadPhase;
-        }
-        nv = 0x11;
-        g_McActionState = nv;
+    case MC_ACTION_SAVE_REFRESH: {
+        PerformMemoryCardSaveRefresh();
         break;
     }
 
-    case 0x11:
+    case MC_ACTION_SAVE_SETTLE_PREPARE:
         g_McActionTimer = 5;
-        g_McActionState = 0x12;
+        g_McActionState = MC_ACTION_SAVE_SETTLE_DELAY;
         break;
 
-    case 0x12: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        g_McSettleTicks = 0;
-        g_McActionState = 0x13;
+    case MC_ACTION_SAVE_SETTLE_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x13: {
-        s32 t;
-        if (PollMemoryCardStatus(0, 0) != 1) break;
-        t = g_McSettleTicks + 1;
-        g_McSettleTicks = t;
-        if (t < 4) break;
-        g_McActionState = 0x14;
+    case MC_ACTION_SAVE_WAIT_CARD: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionObserveCard(&action, PollMemoryCardStatus(0, 0));
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x14: {
-        s32 x = g_McActionOk;
-        if (x != 0) {
-            x = 0x12;
-        } else {
-            x = 0x10;
-        }
-        g_McMenuPhase = x;
-        g_McActionTimer = 0x3C;
-        g_McActionBusy = 0;
-        g_McActionState = 0x15;
+    case MC_ACTION_SAVE_SHOW_RESULT: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionShowResult(&action, 1, g_McActionOk);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x15: {
-        s32 t = g_McActionTimer;
-        s32 cm1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        cm1 = g_McMenuRowCount;
-        g_McMenuPage = 0;
-        g_McActionState = 0;
-        cm1 = cm1 - 1;
-        g_McMenuRowCursor = cm1;
+    case MC_ACTION_SAVE_RESULT_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x19:
+    case MC_ACTION_CARD_FULL:
         g_McMenuPhase = MC_PROMPT_CARD_FULL;
         if (!((PollMenuConfirmInput() & 0xFFFF) != 0)) {
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
         }
-        g_McMenuPage = 0;
-        g_McActionState = 0;
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
+        g_McActionState = MC_ACTION_IDLE;
         break;
 
-    case 0x1E:
+    case MC_ACTION_LOAD_PREPARE:
         g_McMenuSubState = 7;
         g_McActionTimer = 5;
-        g_McActionState = 0x1F;
+        g_McActionState = MC_ACTION_LOAD_INITIAL_DELAY;
         break;
 
-    case 0x1F: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        g_McActionState = 0x20;
+    case MC_ACTION_LOAD_INITIAL_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
     {
         register s32 stateValue asm("$3");
 
-    case 0x20: {
+    case MC_ACTION_LOAD_ACCESS_PREPARE: {
         tmp = 0xF;
         stateValue = 1;
         g_McMenuPhase = tmp;
         g_McActionTimer = tmp;
         g_McActionBusy = stateValue;
-        g_McActionState = 0x21;
+        g_McActionState = MC_ACTION_LOAD_ACCESS_DELAY;
         break;
     }
 
-    case 0x21: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        g_McActionState = 0x22;
+    case MC_ACTION_LOAD_ACCESS_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x22: {
-        s32 *s0 = &g_McSlotCursor;
-        s32 a0 = *s0;
-        s32 dp;
-        g_McActionResult = LoadMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
-        if (!(g_McActionResult == 0)) {
-        stateValue = *s0;
-        g_McActionOk = 1;
-        g_McMenuSubState = 8;
-        g_McLastSlot = stateValue;
-        } else {
-        g_McActionOk = 1;
-        g_McMenuSubState = 0xF;
-        }
-        dp = GameMenuLoadPhase;
-        g_McActionTimer = 0x3C;
-        g_McActionState = 0x23;
-        g_McSavedLoadPhase = dp;
+    case MC_ACTION_LOAD_READ: {
+        PerformMemoryCardLoadRead();
         break;
     }
     }
 
-    case 0x23:
+    case MC_ACTION_LOAD_SETTLE_PREPARE:
         g_McActionTimer = 5;
-        g_McActionState = 0x24;
+        g_McActionState = MC_ACTION_LOAD_SETTLE_DELAY;
         break;
 
-    case 0x24: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        g_McSettleTicks = 0;
-        g_McActionState = 0x25;
+    case MC_ACTION_LOAD_SETTLE_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x25: {
-        s32 t;
-        if (PollMemoryCardStatus(0, 0) != 1) break;
-        t = g_McSettleTicks + 1;
-        g_McSettleTicks = t;
-        if (t < 4) break;
-        g_McActionState = 0x26;
+    case MC_ACTION_LOAD_WAIT_CARD: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionObserveCard(&action, PollMemoryCardStatus(0, 0));
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x26: {
-        s32 x = g_McActionOk;
-        if (x != 0) {
-            x = 0x11;
-        } else {
-            x = 0x10;
-        }
-        g_McMenuPhase = x;
-        g_McActionTimer = 0x3C;
-        g_McActionBusy = 0;
-        g_McActionState = 0x27;
+    case MC_ACTION_LOAD_SHOW_RESULT: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionShowResult(&action, 0, g_McActionOk);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x27: {
-        s32 t = g_McActionTimer;
-        s32 cm1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        cm1 = g_McMenuRowCount;
-        g_McMenuPage = 0;
-        g_McActionState = 0;
-        cm1 = cm1 - 1;
-        g_McMenuRowCursor = cm1;
+    case MC_ACTION_LOAD_RESULT_DELAY: {
+        MemoryCardActionSession action = CurrentMemoryCardAction();
+        MemoryCardActionTick(&action, g_McMenuRowCount - 1);
+        ApplyMemoryCardAction(&action);
         break;
     }
 
-    case 0x28:
+    case MC_ACTION_NO_FILE:
         g_McMenuPhase = MC_PROMPT_NO_FILE;
         if (!((PollMenuConfirmInput() & 0xFFFF) != 0)) {
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
         }
-        g_McMenuPage = 0;
-        g_McActionState = 0;
-        break;
-
-        {
-            s32 cm1 = g_McMenuRowCount;
-            g_McMenuPage = 0;
-            g_McSlotCursor = 0;
-            g_McActionState = 0;
-            g_McActionBusy = 0;
-            g_McActionResult = 0;
-            g_McConfirmChoice = 0;
-            g_McActionTimer = 0;
-            cm1 = cm1 - 1;
-            g_McMenuRowCursor = cm1;
-        }
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
+        g_McActionState = MC_ACTION_IDLE;
         break;
 
     default:
@@ -513,9 +484,9 @@ slot_prompt_done:
     default:
         {
             s32 cm1 = g_McMenuRowCount;
-            g_McMenuPage = 0;
+            g_McMenuPage = MC_PAGE_MODE_SELECT;
             g_McSlotCursor = 0;
-            g_McActionState = 0;
+            g_McActionState = MC_ACTION_IDLE;
             g_McActionBusy = 0;
             g_McActionResult = 0;
             g_McConfirmChoice = 0;
@@ -526,28 +497,28 @@ slot_prompt_done:
     }
     ResolveMemoryCardMenuTransition(&session);
     if (!(g_McMenuState == 1)) {
-    g_McActionState = 0;
+    g_McActionState = MC_ACTION_IDLE;
     g_McActionResult = 0;
     g_McConfirmChoice = 0;
     g_McActionBusy = 0;
     }
     break;
 
-    case 2:
+    case MC_MENU_READING_CARD:
     g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (g_McActionState) {
-    case 0:
+    case MC_READ_WAIT_SCENE:
         {
             u32 sceneFrame = g_SceneTimer;
             if (sceneFrame < 0x1F) break;
-            wtmp = 1;
+            wtmp = MC_READ_WAIT_CARD;
             g_McCardOkFrames = 0;
             g_McActionElapsed = 0;
             g_McActionState = wtmp;
         }
         break;
-    case 1:
+    case MC_READ_WAIT_CARD:
         g_McActionBusy = 0;
         {
             s32 t = g_McActionElapsed + 1;
@@ -566,25 +537,25 @@ slot_prompt_done:
         if (g_McCardStatus != 1) break;
         g_McCardOkFrames += 1;
         if (g_McCardOkFrames < 2) break;
-        wtmp = 2;
+        wtmp = MC_READ_PREPARE;
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
         g_McActionState = wtmp;
         break;
-    case 2:
+    case MC_READ_PREPARE:
         g_McActionBusy = 1;
         g_McActionTimer = 5;
-        g_McActionState = 3;
+        g_McActionState = MC_READ_DELAY;
         break;
-    case 3:
+    case MC_READ_DELAY:
         {
             s32 t = g_McActionTimer;
             g_McActionTimer = t - 1;
             if (g_McActionTimer != 0) break;
         }
-        g_McActionState = 5;
+        g_McActionState = MC_READ_REFRESH;
         break;
-    case 5:
+    case MC_READ_REFRESH:
         {
             s32 x = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
             s32 w;
@@ -601,15 +572,15 @@ slot_prompt_done:
             }
             g_McMenuSubState = x;
             w = GameMenuLoadPhase;
-            g_McActionState = 6;
+            g_McActionState = MC_READ_POST_REFRESH;
             g_McSavedLoadPhase = w;
         }
         break;
-    case 6:
+    case MC_READ_POST_REFRESH:
         g_McActionTimer = 5;
-        g_McActionState = 7;
+        g_McActionState = MC_READ_SETTLE_PREPARE;
         break;
-    case 7:
+    case MC_READ_SETTLE_PREPARE:
         {
             s32 t = g_McActionTimer;
             g_McActionTimer = t - 1;
@@ -617,17 +588,17 @@ slot_prompt_done:
         }
         g_McActionTimer = 5;
         g_McActionBusy = 0;
-        g_McActionState = 8;
+        g_McActionState = MC_READ_SETTLE_DELAY;
         break;
-    case 8:
+    case MC_READ_SETTLE_DELAY:
         {
             s32 t = g_McActionTimer;
             g_McActionTimer = t - 1;
             if (g_McActionTimer != 0) break;
         }
-        g_McActionState = 9;
+        g_McActionState = MC_READ_COMPLETE;
         break;
-    case 9:
+    case MC_READ_COMPLETE:
         if (g_McMenuSelection != 1) break;
         g_McMenuState = g_McMenuSelection;
         break;
@@ -639,36 +610,36 @@ slot_prompt_done:
     if (g_McMenuState == 2) break;
     g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
-    g_McActionState = 0;
+    g_McActionState = MC_READ_WAIT_SCENE;
     g_McActionResult = 0;
     g_McConfirmChoice = 0;
     break;
-    case -1:
+    case MC_MENU_NO_CARD:
     g_McMenuSubState = 0xA;
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
     mst = g_McActionState;
     switch (mst) {
-    case 0:
+    case MC_NO_CARD_PREPARE:
     g_McActionTimer = 5;
     g_McSlotUsedMask = 0;
     ClearSaveHeaderRows(g_McSaveHeaders);
     g_McLastSlot = 0;
-    g_McActionState = 1;
+    g_McActionState = MC_NO_CARD_DELAY;
     break;
 
-    case 1:
+    case MC_NO_CARD_DELAY:
     g_McActionTimer -= 1;
     if (!(g_McActionTimer != 0)) {
-    g_McActionState = 3;
+    g_McActionState = MC_NO_CARD_INPUT;
     }
     break;
 
-    case 3:
+    case MC_NO_CARD_INPUT:
     {
         s32 mph = g_McMenuPage;
-        if (!(mph == 0)) {
-        if (mph == 1) goto L_b1280;
+        if (!(mph == MC_PAGE_MODE_SELECT)) {
+        if (mph == MC_PAGE_SLOT_ACTION) goto L_b1280;
         break;
         }
     }
@@ -679,7 +650,7 @@ slot_prompt_done:
         if (!(PollMenuConfirmInput() == 0)) {
         if (!(*mp != g_McMenuRowCount - 1)) {
     if (fadeBusy != 0) break;
-    g_McActionState = 0;
+    g_McActionState = MC_NO_CARD_PREPARE;
     PlaySoundCue(2);
     StartMenuExitFade();
     break;
@@ -692,7 +663,7 @@ slot_prompt_done:
 
     if (!((g_GameInput.pressed & PAD_CANCEL) == 0)) {
     if (!(fadeBusy != 0)) {
-    g_McActionState = 0;
+    g_McActionState = MC_NO_CARD_PREPARE;
     PlaySoundCue(3);
     StartMenuExitFade();
     break;
@@ -716,12 +687,12 @@ L_b1280:
     ResolveMemoryCardMenuTransition(&session);
 
     if (!(g_McMenuState == -1)) {
-    g_McActionState = 0;
+    g_McActionState = MC_NO_CARD_PREPARE;
     }
     break;
-    case -2:
+    case MC_MENU_NEW_CARD:
     switch (g_McMenuPage) {
-    case 0:
+    case MC_PAGE_MODE_SELECT:
     {
         s32 *p = &g_McMenuRowCursor;
         g_McMenuSubState = 0xB;
@@ -731,7 +702,7 @@ L_b1280:
         if (!((pad & 0x860) == 0)) {
         if (!(*p != 0)) {
         PlaySoundCue(2);
-        g_McMenuPage = 1;
+        g_McMenuPage = MC_PAGE_SLOT_ACTION;
         g_McConfirmChoice = 0;
         g_McSaveMode = *p;
         break;
@@ -744,7 +715,7 @@ L_b1280:
     break;
         }
         PlaySoundCue(5);
-        g_McMenuPage = 1;
+        g_McMenuPage = MC_PAGE_SLOT_ACTION;
         g_McSaveMode = *p;
         break;
         }
@@ -756,9 +727,9 @@ L_b1280:
     StartMenuExitFade();
     break;
 
-    case 1:
+    case MC_PAGE_SLOT_ACTION:
     switch (g_McActionState) {
-    case 0:
+    case MC_FORMAT_IDLE:
         if (!(g_McSaveMode == 0)) {
         g_McMenuPhase = MC_PROMPT_NO_DATA;
     L1447:
@@ -766,61 +737,61 @@ L_b1280:
     L_b1452:
         { u16 q = PollMenuBackInput(); if (q == 0) break; }
         } }
-        g_McMenuPage = 0;
-        g_McActionState = 0;
+        g_McMenuPage = MC_PAGE_MODE_SELECT;
+        g_McActionState = MC_FORMAT_IDLE;
         break;
         }
         g_McMenuPhase = MC_PROMPT_NEW_CARD;
         { u16 p = PollMenuConfirmInput(); if (p == 0) goto L_b1452; }
-        g_McActionState = 1;
+        g_McActionState = MC_FORMAT_CONFIRM;
         break;
-    case 1:
+    case MC_FORMAT_CONFIRM:
         g_McMenuPhase = g_McConfirmChoice + 7;
         SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
         if (g_McConfirmChoice == 0) goto L1447;
         { u16 p = PollMenuConfirmInput();
         if (p != 0) {
-        g_McActionState = 2;
+        g_McActionState = MC_FORMAT_PREPARE;
         break;
         } }
         if (g_McConfirmChoice == 0) goto L1447;
         goto L_b1452;
-    case 2:
+    case MC_FORMAT_PREPARE:
         g_McActionBusy = 1;
         g_McActionTimer = 0x14;
-        g_McActionState = 3;
+        g_McActionState = MC_FORMAT_DELAY;
         break;
-    case 3:
+    case MC_FORMAT_DELAY:
         g_McActionTimer -= 1;
         if (g_McActionTimer == 0) {
-            g_McActionState = 5;
+            g_McActionState = MC_FORMAT_EXECUTE;
         }
         break;
-    case 5:
+    case MC_FORMAT_EXECUTE:
         g_McActionResult = FormatMemoryCard(0, 0);
         if (g_McActionResult == 1) {
-            g_McActionState = 7;
+            g_McActionState = MC_FORMAT_SUCCESS_DELAY;
             g_McActionTimer = 0x3C;
         } else {
-            g_McActionState = 0xA;
+            g_McActionState = MC_FORMAT_ERROR;
         }
         break;
-    case 7:
+    case MC_FORMAT_SUCCESS_DELAY:
         g_McMenuPhase = MC_PROMPT_FORMAT_OK;
         g_McActionTimer -= 1;
         if (g_McActionTimer == 0) {
             g_McActionBusy = 0;
-            g_McActionState = 8;
+            g_McActionState = MC_FORMAT_SUCCESS;
         }
         break;
-    case 8:
+    case MC_FORMAT_SUCCESS:
         {
         u16 lpad = g_GameInput.pressed;
         g_McMenuPhase = MC_PROMPT_FORMAT_OK;
         if ((lpad & 0x90) == 0) break;
         }
         g_McActionBusy = 0;
-        g_McActionState = 0;
+        g_McActionState = MC_FORMAT_IDLE;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
         g_McActionTimer = 0;
@@ -828,14 +799,14 @@ L_b1280:
         PlaySoundCue(3);
         StartMenuExitFade();
         break;
-    case 0xA:
+    case MC_FORMAT_ERROR:
         g_McMenuSubState = 0x12;
         g_McMenuPhase = MC_PROMPT_CARD_ERROR;
         g_McActionBusy = 0;
         { u16 p = PollMenuConfirmInput(); if (!(p)) {
         { u16 q = PollMenuBackInput(); if (q == 0) break; }
         } }
-        g_McActionState = 0;
+        g_McActionState = MC_FORMAT_IDLE;
     default:
     }
     break;
@@ -846,12 +817,12 @@ L_b1280:
     ResolveMemoryCardMenuTransition(&session);
 
     if (!(g_McMenuState == -2)) {
-    g_McActionState = 0;
+    g_McActionState = MC_FORMAT_IDLE;
     g_McActionBusy = 0;
     g_McActionResult = 0;
     g_McConfirmChoice = 0;
     break;
-    case -3:
+    case MC_MENU_CARD_ERROR:
     default:
     g_McMenuSubState = 0x11;
     {

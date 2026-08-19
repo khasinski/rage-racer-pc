@@ -8,6 +8,14 @@
 #include "game/render.h"
 #include "game/state.h"
 
+typedef enum DesignModeState {
+    DESIGN_MODE_PAINT_DENIED = -1,
+    DESIGN_MODE_ACTIVE = 0,
+    DESIGN_MODE_TO_TEAM_LOGO = 1,
+    DESIGN_MODE_TO_TEAM_NAME = 2,
+    DESIGN_MODE_TO_PAINT = 3,
+    DESIGN_MODE_BACK = 4
+} DesignModeState;
 
 s32 DrawDesignModeScreen(s32 step) {
     DesignModeCellMask mask;
@@ -92,7 +100,7 @@ void UpdateDesignModeScreen(void) {
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == DESIGN_MODE_ACTIVE) {
         RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
@@ -111,30 +119,30 @@ void UpdateDesignModeScreen(void) {
                 if (sel == 0) {
                     PlaySoundCue(2);
                     RampTeamLogoCanvas(-256, -256);
-                    GameMenuBusy = 1;
+                    GameMenuBusy = DESIGN_MODE_TO_TEAM_LOGO;
                     g_MenuOverlayPattern = 1;
                 } else if (sel == 1) {
                     PlaySoundCue(2);
-                    GameMenuBusy = 2;
+                    GameMenuBusy = DESIGN_MODE_TO_TEAM_NAME;
                     g_MenuOverlayPattern = sel;
                 } else if (sel == 2) {
                     if (g_PlayerCarIndex < 10) {
-                        GameMenuBusy = 3;
+                        GameMenuBusy = DESIGN_MODE_TO_PAINT;
                         g_MenuOverlayPattern = 1;
                         PlaySoundCue(2);
                     } else {
-                        GameMenuBusy = -1;
+                        GameMenuBusy = DESIGN_MODE_PAINT_DENIED;
                         g_UiScriptProgress2 = 0;
                         PlaySoundCue(5);
                     }
                 } else if (sel == 3) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 4;
+                    GameMenuBusy = DESIGN_MODE_BACK;
                     g_MenuOverlayPattern = 2;
                 }
             } else if (commands.action == MENU_ACTION_CANCEL) {
                 PlaySoundCue(3);
-                GameMenuBusy = 4;
+                GameMenuBusy = DESIGN_MODE_BACK;
                 g_MenuOverlayPattern = 2;
             }
         }
@@ -142,8 +150,8 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
             edge = g_GameInput.pressed;
-            if (edge & PAD_CONFIRM) GameMenuBusy = 0;
-            if (edge & PAD_CANCEL) GameMenuBusy = 0;
+            if (edge & PAD_CONFIRM) GameMenuBusy = DESIGN_MODE_ACTIVE;
+            if (edge & PAD_CANCEL) GameMenuBusy = DESIGN_MODE_ACTIVE;
         }
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
@@ -155,11 +163,11 @@ void UpdateDesignModeScreen(void) {
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         if (g_UiScriptProgress <= 0) {
             switch (GameMenuBusy) {
-            case 1:
+            case DESIGN_MODE_TO_TEAM_LOGO:
                 MenuFlowOpen(MENU_SCREEN_TEAM_LOGO);
                 DrawTeamLogoCanvas(0, 0);
                 break;
-            case 2:
+            case DESIGN_MODE_TO_TEAM_NAME:
                 MenuFlowOpen(MENU_SCREEN_TEAM_NAME);
                 DrawTeamNameEntry(0, 0);
                 g_MenuViewOffset = 0x3D090;
@@ -169,13 +177,13 @@ void UpdateDesignModeScreen(void) {
                 GameMenuCursor = (g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH) ? 0x2B : 0;
                 g_TeamNameCharModel = GameMenuCursor;
                 break;
-            case 3:
+            case DESIGN_MODE_TO_PAINT:
                 MenuFlowOpen(MENU_SCREEN_PAINT_COLOR);
                 g_UiScriptProgress2 = 0;
                 g_MenuViewOffset = 0x3D090;
                 g_MenuViewOffsetTarget = 0;
                 break;
-            case 4:
+            case DESIGN_MODE_BACK:
                 MenuFlowOpen(MENU_SCREEN_CUSTOMIZE);
                 g_DesignModeOption = 0;
                 g_MenuViewOffset = 0x3D090;
@@ -183,7 +191,7 @@ void UpdateDesignModeScreen(void) {
                 break;
             }
             g_UiScriptProgress = 0;
-            GameMenuBusy = 0;
+            GameMenuBusy = DESIGN_MODE_ACTIVE;
         }
     }
 }

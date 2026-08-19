@@ -2,22 +2,30 @@
 #include "game/game_input.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/design_controller.h"
 #include "game/menu.h"
+#include "game/menu_dialog_controller.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
+#include "game/team_name_controller.h"
 
+typedef enum LogoSampleState {
+    LOGO_SAMPLE_EDIT_BACKGROUND = -2,
+    LOGO_SAMPLE_EDIT_CHARACTER = -1,
+    LOGO_SAMPLE_ACTIVE = 0,
+    LOGO_SAMPLE_BACK = 1
+} LogoSampleState;
 
 void UpdateLogoSampleScreen(void) {
     s32 v0;
     s32 t;
-    s32 pl;
 
     g_MenuAltLayout = 0;
     ComposeSampleTeamLogo(g_LogoSampleCharIndex, g_LogoSampleBackIndex);
     DrawTeamLogoCanvas(1, 0);
     v0 = GameMenuBusy;
-    if (v0 == 0) {
+    if (v0 == LOGO_SAMPLE_ACTIVE) {
         RampTeamLogoCanvas(-10, 0);
         DrawLogoSamplePanel(-1, g_LogoSampleSavedIndex + 1);
         RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, -1);
@@ -25,111 +33,90 @@ void UpdateLogoSampleScreen(void) {
         RunTimedDrawScript(&g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
         if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) == 0) return;
         if (g_UiScriptProgress2 > 0) return;
-        g_MenuOverlayPattern = -1;
-        if (g_GameInput.pressed & PAD_UP) {
-            s32 n, c;
-            PlaySoundCue(1);
-            c = g_LogoSampleCursor;
-            n = 2;
-            if (c > 0) n = c - 1;
-            g_LogoSampleCursor = n;
-        }
-        if (g_GameInput.pressed & PAD_DOWN) {
-            s32 n, c;
-            PlaySoundCue(1);
-            c = g_LogoSampleCursor;
-            n = 0;
-            if (c < 2) n = c + 1;
-            g_LogoSampleCursor = n;
-        }
-        if (g_GameInput.pressed & PAD_CONFIRM) {
-            pl = g_LogoSampleCursor;
-            if (pl == 0) {
+        {
+            DesignMenuInputResult input = DesignMenuHandleInput(
+                g_LogoSampleCursor, g_GameInput.pressed);
+            s32 soundIndex;
+
+            g_MenuOverlayPattern = -1;
+            g_LogoSampleCursor = input.selection;
+            for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
+                PlaySoundCue(1);
+            }
+            if (input.command == DESIGN_MENU_PRIMARY) {
                 PlaySoundCue(2);
-                GameMenuBusy = -1;
+                GameMenuBusy = LOGO_SAMPLE_EDIT_CHARACTER;
                 g_UiScriptProgress2 = 0;
                 g_LogoSampleSubPanelScript = &g_MenuRow0MarkerScript;
                 g_LogoSampleSavedIndex = g_LogoSampleCharIndex;
-            } else if (pl == 1) {
+            } else if (input.command == DESIGN_MENU_SECONDARY) {
                 PlaySoundCue(2);
-                GameMenuBusy = -2;
+                GameMenuBusy = LOGO_SAMPLE_EDIT_BACKGROUND;
                 g_UiScriptProgress2 = 0;
                 g_LogoSampleSubPanelScript = &g_MenuRow1MarkerScript;
                 g_LogoSampleSavedIndex = g_LogoSampleBackIndex;
-            } else if (pl == 2) {
+            } else if (input.command == DESIGN_MENU_BACK ||
+                       input.command == DESIGN_MENU_CANCEL) {
                 PlaySoundCue(3);
-                GameMenuBusy = 1;
+                GameMenuBusy = LOGO_SAMPLE_BACK;
                 g_MenuOverlayPattern = 2;
             }
-        } else if (g_GameInput.pressed & PAD_CANCEL) {
-            PlaySoundCue(3);
-            GameMenuBusy = 1;
-            g_MenuOverlayPattern = 2;
         }
         return;
     }
 
     if (v0 < 0) {
+        MenuDialogInputResult dialog;
+        s32 soundIndex;
+
         RampTeamLogoCanvas(10, 0);
-        if (GameMenuBusy == -1) {
+        if (GameMenuBusy == LOGO_SAMPLE_EDIT_CHARACTER) {
             if (RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, 1) != 0) {
-                u16 *p = &g_GameInput.pressed;
-                if (*p & 0x860) {
+                dialog = MenuDialogHandleRange(
+                    g_LogoSampleCharIndex, 0, 19, -1, 1,
+                    0, g_GameInput.pressed);
+                if (dialog.confirmed) {
                     PlaySoundCue(2);
-                    GameMenuBusy = 0;
+                    GameMenuBusy = LOGO_SAMPLE_ACTIVE;
                     g_LogoSampleSavedIndex = g_LogoSampleCharIndex;
                 }
-                if (*p & 0x90) {
+                if (dialog.cancelled) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 0;
+                    GameMenuBusy = LOGO_SAMPLE_ACTIVE;
                     g_LogoSampleCharIndex = g_LogoSampleSavedIndex;
                 }
-                if (*p & 0x8000) {
-                    s32 n, c;
+                dialog = MenuDialogHandleRange(
+                    g_LogoSampleCharIndex, 0, 19, -1, 1,
+                    g_GameInput.pressed, 0);
+                g_LogoSampleCharIndex = dialog.value;
+                for (soundIndex = 0;
+                     soundIndex < dialog.moveCount; soundIndex++) {
                     PlaySoundCue(1);
-                    c = g_LogoSampleCharIndex;
-                    n = 0x13;
-                    if (c > 0) n = c - 1;
-                    g_LogoSampleCharIndex = n;
-                }
-                if (g_GameInput.pressed & PAD_RIGHT) {
-                    s32 n, c;
-                    PlaySoundCue(1);
-                    c = g_LogoSampleCharIndex;
-                    n = 0;
-                    if (c < 19) n = c + 1;
-                    g_LogoSampleCharIndex = n;
                 }
             }
             t = g_LogoSampleCharIndex;
         } else {
             if (RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, 1) != 0) {
-                u16 *p = &g_GameInput.pressed;
-                if (*p & 0x860) {
+                dialog = MenuDialogHandleRange(
+                    g_LogoSampleBackIndex, 0, 19, -1, 1,
+                    0, g_GameInput.pressed);
+                if (dialog.confirmed) {
                     PlaySoundCue(2);
-                    GameMenuBusy = 0;
+                    GameMenuBusy = LOGO_SAMPLE_ACTIVE;
                     g_LogoSampleSavedIndex = g_LogoSampleBackIndex;
                 }
-                if (*p & 0x90) {
+                if (dialog.cancelled) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 0;
+                    GameMenuBusy = LOGO_SAMPLE_ACTIVE;
                     g_LogoSampleBackIndex = g_LogoSampleSavedIndex;
                 }
-                if (*p & 0x8000) {
-                    s32 n, c;
+                dialog = MenuDialogHandleRange(
+                    g_LogoSampleBackIndex, 0, 19, -1, 1,
+                    g_GameInput.pressed, 0);
+                g_LogoSampleBackIndex = dialog.value;
+                for (soundIndex = 0;
+                     soundIndex < dialog.moveCount; soundIndex++) {
                     PlaySoundCue(1);
-                    c = g_LogoSampleBackIndex;
-                    n = 0x13;
-                    if (c > 0) n = c - 1;
-                    g_LogoSampleBackIndex = n;
-                }
-                if (g_GameInput.pressed & PAD_RIGHT) {
-                    s32 n, c;
-                    PlaySoundCue(1);
-                    c = g_LogoSampleBackIndex;
-                    n = 0;
-                    if (c < 19) n = c + 1;
-                    g_LogoSampleBackIndex = n;
                 }
             }
             t = g_LogoSampleBackIndex;
@@ -150,7 +137,7 @@ void UpdateLogoSampleScreen(void) {
         MenuFlowOpen(MENU_SCREEN_TEAM_LOGO);
         g_LogoSampleCursor = 0;
         g_UiScriptProgress = 0;
-        GameMenuBusy = 0;
+        GameMenuBusy = LOGO_SAMPLE_ACTIVE;
     }
 }
 
@@ -180,82 +167,50 @@ s32 DrawTeamNameScreen(s32 step) {
 }
 
 
+typedef enum TeamNameScreenState {
+    TEAM_NAME_ACTIVE = 0,
+    TEAM_NAME_BACK = 1
+} TeamNameScreenState;
+
 void UpdateTeamNameScreen(void) {
-    u16 pad;
-    register s32 newdepth asm("$2");
+    TeamNameInputResult input;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
-    if (!(GameMenuBusy != 0)) {
+    if (GameMenuBusy == TEAM_NAME_ACTIVE) {
 
     DrawTeamNameEntry(1, GameMenuCursor);
     if (RunTimedDrawScript(&g_TeamNameScreenScript, &g_UiScriptProgress, 1) == 0) return;
     g_MenuOverlayPattern = -1;
 
-    if (g_TeamNameLength < 6) {
-        if ((g_GameInput.pressedRepeat & PAD_DPAD) && GameMenuCursorAnim < 0) {
-            if (g_GameInput.pressedRepeat & PAD_UP) { s32 u = GameMenuCursor; GameMenuCursor = (u < 0xB) ? u + 0x21 : u - 0xB; }
-            if (g_GameInput.pressedRepeat & PAD_DOWN) { s32 d = GameMenuCursor; GameMenuCursor = (d < 0x21) ? d + 0xB : d - 0x21; }
-            if (g_GameInput.pressedRepeat & PAD_LEFT) { s32 l = GameMenuCursor; GameMenuCursor = (l % 11 != 0) ? l - 1 : l + 0xA; }
-            if (g_GameInput.pressedRepeat & PAD_RIGHT) {
-                s32 r;
-                s32 rn;
-                r = GameMenuCursor;
-                rn = r + 1;
-                if (rn % 11 == 0) newdepth = r - 0xA; else newdepth = rn;
-                GameMenuCursor = newdepth;
-            }
-            g_MenuViewAngleTarget = 0;
-            g_MenuViewAngle = 0x3E8000;
-            GameMenuCursorAnim = GameMenuCursor;
-            PlaySoundCue(1);
-
-        }
-    } else {
-        if ((g_GameInput.pressedRepeat & (PAD_LEFT | PAD_RIGHT)) && GameMenuCursorAnim < 0) {
-            s32 nc = (GameMenuCursor == 0x2A) ? 0x2B : 0x2A;
-            GameMenuCursor = nc;
-            g_MenuViewAngleTarget = 0;
-            g_MenuViewAngle = 0x3E8000;
-            GameMenuCursorAnim = nc;
-            PlaySoundCue(1);
-        }
+    input = TeamNameHandleInput(
+        GameMenuCursor, g_TeamNameLength, GameMenuCursorAnim,
+        g_GameInput.pressedRepeat, g_GameInput.pressed);
+    GameMenuCursor = input.cursor;
+    if (input.moved) {
+        g_MenuViewAngleTarget = 0;
+        g_MenuViewAngle = 0x3E8000;
+        GameMenuCursorAnim = GameMenuCursor;
+        PlaySoundCue(1);
     }
-    pad = g_GameInput.pressed;
-    if (pad & 0x860) {
-    {
-        s32 c = GameMenuCursor;
-        if (c == 0x2A) goto pop;
-        if (!(c != 0x2B)) {
-    PlaySoundCue(3);
-    GameMenuBusy = 1;
-    g_MenuOverlayPattern = 2;
-    g_MenuViewOffsetTarget = 0x3D090;
-    return;
+    if (input.command == TEAM_NAME_COMMAND_BACK) {
+        PlaySoundCue(3);
+        GameMenuBusy = TEAM_NAME_BACK;
+        g_MenuOverlayPattern = 2;
+        g_MenuViewOffsetTarget = 0x3D090;
+        return;
     }
-    }
-
-    {
-        u32 d;
+    if (input.command == TEAM_NAME_COMMAND_APPEND) {
         PlaySoundCue(2);
         g_TeamNameChars[g_TeamNameLength] = (u8)GameMenuCursor;
-        d = g_TeamNameLength;
-        if (d >= 5) GameMenuCursor = 0x2B;
-        if (d >= 7) newdepth = d; else newdepth = d + 1;
+        if (g_TeamNameLength >= 5) GameMenuCursor = 0x2B;
+        if (g_TeamNameLength < 7) g_TeamNameLength++;
+    } else if (input.command == TEAM_NAME_COMMAND_DELETE) {
+        if (g_TeamNameLength == 0) return;
+        PlaySoundCue(4);
+        g_TeamNameChars[g_TeamNameLength] = 0xA;
+        g_TeamNameLength--;
     }
-    } else {
-
-    if (!(pad & 0x90)) return;
-pop:
-    if (g_TeamNameLength == 0) return;
-    PlaySoundCue(4);
-    {
-        newdepth = 0xA;
-        g_TeamNameChars[g_TeamNameLength] = newdepth;
-    }
-    newdepth = g_TeamNameLength - 1;
-    }
-    g_TeamNameLength = newdepth;
     return;
     }
 
@@ -267,7 +222,7 @@ pop:
         MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
         UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
         g_UiScriptProgress = 0;
-        GameMenuBusy = 0;
+        GameMenuBusy = TEAM_NAME_ACTIVE;
     }
 }
 
@@ -297,11 +252,19 @@ s32 DrawPaintColorScreen(s32 step) {
 }
 
 
+typedef enum PaintColorState {
+    PAINT_COLOR_SECONDARY = -2,
+    PAINT_COLOR_PRIMARY = -1,
+    PAINT_COLOR_ACTIVE = 0,
+    PAINT_COLOR_BACK = 1,
+    PAINT_COLOR_CANCEL = 3
+} PaintColorState;
+
 void UpdatePaintColorScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
 
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == PAINT_COLOR_ACTIVE) {
         DrawPaintColorPalette(&g_UiScriptProgress2, -1, g_PaintColorIndex);
         DrawBrowseArrows(-1, 0, 1, 1);
         DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
@@ -312,41 +275,33 @@ void UpdatePaintColorScreen(void) {
         if (g_UiScriptProgress2 > 0) {
             return;
         }
-        g_MenuOverlayPattern = -1;
-        if (g_GameInput.pressed & PAD_UP) {
-            PlaySoundCue(1);
-            g_PaintColorCursor = g_PaintColorCursor > 0 ? g_PaintColorCursor - 1 : 2;
-        }
-        if (g_GameInput.pressed & PAD_DOWN) {
-            PlaySoundCue(1);
-            g_PaintColorCursor = g_PaintColorCursor < 2 ? g_PaintColorCursor + 1 : 0;
-        }
         {
-            u16 f = g_GameInput.pressed;
-            if (f & 0x860) {
-                s32 sel = g_PaintColorCursor;
-                s32 val;
-                if (sel == 0) {
-                    PlaySoundCue(2);
-                    val = g_CarTable[g_PlayerCarIndex].paintColor1;
-                    GameMenuBusy = -1;
-                    g_UiScriptProgress2 = 0;
-                    g_PaintColorIndex = val;
-                } else if (sel == 1) {
-                    PlaySoundCue(2);
-                    val = g_CarTable[g_PlayerCarIndex].paintColor2;
-                    GameMenuBusy = -2;
-                    g_UiScriptProgress2 = 0;
-                    g_PaintColorIndex = val;
-                } else if (sel == 2) {
-                    PlaySoundCue(3);
-                    GameMenuBusy = 1;
-                    g_MenuOverlayPattern = 2;
-                    g_MenuViewOffsetTarget = 0x3D090;
-                }
-            } else if (f & 0x90) {
+            DesignMenuInputResult input = DesignMenuHandleInput(
+                g_PaintColorCursor, g_GameInput.pressed);
+            s32 soundIndex;
+
+            g_MenuOverlayPattern = -1;
+            g_PaintColorCursor = input.selection;
+            for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
+                PlaySoundCue(1);
+            }
+            if (input.command == DESIGN_MENU_PRIMARY) {
+                PlaySoundCue(2);
+                GameMenuBusy = PAINT_COLOR_PRIMARY;
+                g_UiScriptProgress2 = 0;
+                g_PaintColorIndex =
+                    g_CarTable[g_PlayerCarIndex].paintColor1;
+            } else if (input.command == DESIGN_MENU_SECONDARY) {
+                PlaySoundCue(2);
+                GameMenuBusy = PAINT_COLOR_SECONDARY;
+                g_UiScriptProgress2 = 0;
+                g_PaintColorIndex =
+                    g_CarTable[g_PlayerCarIndex].paintColor2;
+            } else if (input.command == DESIGN_MENU_BACK ||
+                       input.command == DESIGN_MENU_CANCEL) {
                 PlaySoundCue(3);
-                GameMenuBusy = 3;
+                GameMenuBusy = input.command == DESIGN_MENU_BACK
+                    ? PAINT_COLOR_BACK : PAINT_COLOR_CANCEL;
                 g_MenuOverlayPattern = 2;
                 g_MenuViewOffsetTarget = 0x3D090;
             }
@@ -356,42 +311,42 @@ void UpdatePaintColorScreen(void) {
 
     if (GameMenuBusy < 0) {
         if (DrawPaintColorPalette(&g_UiScriptProgress2, 1, g_PaintColorIndex) != 0) {
-            if (g_GameInput.pressedRepeat & PAD_LEFT) {
+            MenuDialogInputResult dialog = MenuDialogHandleRange(
+                g_PaintColorIndex, 0, 17, -1, 1,
+                g_GameInput.pressedRepeat, g_GameInput.pressed);
+            s32 soundIndex;
+
+            g_PaintColorIndex = dialog.value;
+            for (soundIndex = 0;
+                 soundIndex < dialog.moveCount; soundIndex++) {
                 PlaySoundCue(1);
-                g_PaintColorIndex = g_PaintColorIndex > 0 ? g_PaintColorIndex - 1 : 0x11;
             }
-            if (g_GameInput.pressedRepeat & PAD_RIGHT) {
-                PlaySoundCue(1);
-                g_PaintColorIndex = g_PaintColorIndex < 17 ? g_PaintColorIndex + 1 : 0;
-            }
-            if (GameMenuBusy == -1) {
-                u16 *btn = &g_GameInput.pressed;
-                if (*btn & 0x860) {
+            if (GameMenuBusy == PAINT_COLOR_PRIMARY) {
+                if (dialog.confirmed) {
                     PlaySoundCue(2);
                     g_CarTable[g_PlayerCarIndex].paintColor1 = g_PaintColorIndex;
                     g_TimeAttackCars[g_PlayerCarIndex].paintColor1 = g_PaintColorIndex;
                     g_TimeAttackCars[g_PlayerCarIndex].paintColor2 = g_CarTable[g_PlayerCarIndex].paintColor2;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = PAINT_COLOR_ACTIVE;
                 }
-                if (*btn & 0x90) {
+                if (dialog.cancelled) {
                     PlaySoundCue(3);
                     g_PaintColorIndex = g_CarTable[g_PlayerCarIndex].paintColor1;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = PAINT_COLOR_ACTIVE;
                 }
                 SetBodyColor1(g_PaintColorIndex);
             } else {
-                u16 *btn = &g_GameInput.pressed;
-                if (*btn & 0x860) {
+                if (dialog.confirmed) {
                     PlaySoundCue(2);
                     g_CarTable[g_PlayerCarIndex].paintColor2 = g_PaintColorIndex;
                     g_TimeAttackCars[g_PlayerCarIndex].paintColor1 = g_CarTable[g_PlayerCarIndex].paintColor1;
                     g_TimeAttackCars[g_PlayerCarIndex].paintColor2 = g_PaintColorIndex;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = PAINT_COLOR_ACTIVE;
                 }
-                if (*btn & 0x90) {
+                if (dialog.cancelled) {
                     PlaySoundCue(3);
                     g_PaintColorIndex = g_CarTable[g_PlayerCarIndex].paintColor2;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = PAINT_COLOR_ACTIVE;
                 }
                 SetBodyColor2(g_PaintColorIndex);
             }
@@ -412,7 +367,7 @@ void UpdatePaintColorScreen(void) {
         MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
         g_PaintColorCursor = 0;
         g_UiScriptProgress = 0;
-        GameMenuBusy = 0;
+        GameMenuBusy = PAINT_COLOR_ACTIVE;
     }
 }
 

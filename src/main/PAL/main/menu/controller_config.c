@@ -68,17 +68,17 @@ void UpdateControllerConfigScreen(void) {
 
     g_AnimTimer++;
     g_SetupArrowPulse += 96;
-    if (pad->buttons & 0x90) {
+    if (pad->buttons & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
         g_PadMappingIndex = g_PadMappingIndexSaved;
         g_NegconMappingIndex = g_NegconMappingIndexSaved;
     }
-    if (pad->buttons & 0x860) {
+    if (pad->buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
         LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
         if (g_GameInput.controllerType == 0x23) {
-            g_GameMode = (pad->buttons & 0x800) ? 8 : 1;
+            g_GameMode = (pad->buttons & PAD_START) ? 8 : 1;
         } else {
             g_GameMode = 1;
         }

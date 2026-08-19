@@ -5,6 +5,8 @@
 #include "game/vector.h"
 #include "game/car_types.h"
 
+typedef struct CarControlCommand CarControlCommand;
+
 extern CarHullPoint g_PlayerHullPoints[6];
 extern CarHullPoint g_OpponentHullCorners[4];
 extern CarHullPoint g_CarCornerOffsets[4];
@@ -201,7 +203,8 @@ void SteerCarToTrackLine(PlayerCarRuntime *car);
 void SteerCarAlongRoute(GameCarRuntime *car);
 void TransformCollisionVector(const s16 *input, s32 *output);
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear);
-void UpdateCarDrivetrain(PlayerCarRuntime *car);
+void UpdateCarDrivetrain(PlayerCarRuntime *car,
+                         const CarControlCommand *command);
 void UpdateCarDriving(PlayerCarRuntime *car);
 void UpdateCarStandingStart(PlayerCarRuntime *car);
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
@@ -217,7 +220,8 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);
 void StartCarBodyKick(s32 strength, GameCarRuntime *car);
 void UpdateCarAirborne(PlayerCarRuntime *car);
 void UpdateCarBodyKick(GameCarRuntime *car);
-void UpdateCarBodyRoll(PlayerCarRuntime *car);
+void UpdateCarBodyRoll(PlayerCarRuntime *car,
+                       const CarControlCommand *command);
 void UpdateCarCrestHop(GameCarRuntime *car);
 void UpdateCarTiltCounter(GameCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,

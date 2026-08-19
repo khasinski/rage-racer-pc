@@ -13,12 +13,22 @@
  */
 #include "game/menu.h"
 #include "game/menu_controller.h"
+#include "game/menu_dialog_controller.h"
 #include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
 
+typedef enum TeamLogoState {
+  TEAM_LOGO_CLOSE_PAINT = -4,
+  TEAM_LOGO_PAINT = -3,
+  TEAM_LOGO_CONFIRM_SAMPLE = -2,
+  TEAM_LOGO_SAMPLE_PROMPT = -1,
+  TEAM_LOGO_ACTIVE = 0,
+  TEAM_LOGO_TO_SAMPLES = 1,
+  TEAM_LOGO_BACK = 2
+} TeamLogoState;
 
 void UpdateTeamLogoScreen(void)
 {
@@ -26,14 +36,13 @@ void UpdateTeamLogoScreen(void)
   s32 state;
   s32 sel;
   s32 cnt;
-  s32 direction;
   int buttonHeight;
   MenuSession menu;
   MenuSessionCommands commands;
   ot = RENDER_OT_BASE;
   g_MenuAltLayout = 0;
   state = GameMenuBusy;
-  if (state == 0)
+  if (state == TEAM_LOGO_ACTIVE)
   {
     RampTeamLogoCanvas(-13, -21);
     RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
@@ -46,19 +55,17 @@ void UpdateTeamLogoScreen(void)
     {
       g_MenuHintButtonsVisible = 1;
       g_MenuOverlayPattern = -1;
-      direction = ((g_GameInput.pressed & PAD_UP) != 0) -
-                  ((g_GameInput.pressed & PAD_DOWN) != 0);
       menu = (MenuSession){g_TeamLogoOption, 3, 0};
-      commands = MenuSessionStep(&menu, -direction, g_GameInput.pressed);
+      commands = MenuSessionStepVertical(&menu, g_GameInput.pressed);
       g_TeamLogoOption = menu.selection;
-      if (commands.moved) PlaySoundCue(1);
+      for (cnt = 0; cnt < commands.moveCount; cnt++) PlaySoundCue(1);
       if (commands.action == MENU_ACTION_CONFIRM)
       {
         sel = g_TeamLogoOption;
         if (sel == 0)
         {
           PlaySoundCue(2);
-          GameMenuBusy = -1;
+          GameMenuBusy = TEAM_LOGO_SAMPLE_PROMPT;
           g_MenuSubCursor = 0;
           g_UiScriptProgress2 = 0;
           g_TeamLogoSubPanelScript = &g_MenuDialogPanelUpperScript;
@@ -68,7 +75,7 @@ void UpdateTeamLogoScreen(void)
         {
           PlaySoundCue(2);
           ApplyDuckedSequenceAudio();
-          GameMenuBusy = -3;
+          GameMenuBusy = TEAM_LOGO_PAINT;
           g_TeamLogoPaintArmed = 0;
           g_UiScriptProgress2 = 0;
           g_TeamLogoSubPanelScript = &g_MenuRow1MarkerScript;
@@ -77,7 +84,7 @@ void UpdateTeamLogoScreen(void)
           if (sel == 2)
         {
           PlaySoundCue(3);
-          GameMenuBusy = sel;
+          GameMenuBusy = TEAM_LOGO_BACK;
           g_MenuOverlayPattern = sel;
         }
       }
@@ -85,7 +92,7 @@ void UpdateTeamLogoScreen(void)
         if (commands.action == MENU_ACTION_CANCEL)
       {
         PlaySoundCue(3);
-        GameMenuBusy = 2;
+        GameMenuBusy = TEAM_LOGO_BACK;
         g_MenuOverlayPattern = 2;
       }
     }
@@ -93,49 +100,38 @@ void UpdateTeamLogoScreen(void)
   else
     if (state < 0)
   {
-    if (state == (-1))
+    if (state == TEAM_LOGO_SAMPLE_PROMPT)
     {
-      u16 *pad;
       RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
       RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
       if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) != 0)
       {
-        if (g_GameInput.pressed & PAD_CONFIRM)
+        MenuDialogInputResult dialog = MenuDialogHandleBinary(
+            g_MenuSubCursor, 1, 0, g_GameInput.pressed);
+        s32 soundIndex;
+
+        if (dialog.confirmed)
         {
           if (g_MenuSubCursor != 0)
           {
             PlaySoundCue(2);
-            GameMenuBusy = -2;
+            GameMenuBusy = TEAM_LOGO_CONFIRM_SAMPLE;
             g_MenuConfirmTimer = 0x23;
           }
           else
           {
             PlaySoundCue(3);
-            GameMenuBusy = 0;
+            GameMenuBusy = TEAM_LOGO_ACTIVE;
           }
         }
-        pad = &g_GameInput.pressed;
-        if ((*pad) & PAD_CANCEL)
+        if (dialog.cancelled)
         {
           PlaySoundCue(3);
-          GameMenuBusy = 0;
+          GameMenuBusy = TEAM_LOGO_ACTIVE;
         }
-        if ((*pad) & PAD_LEFT)
-        {
-          if (g_MenuSubCursor == 0)
-          {
-            PlaySoundCue(1);
-            g_MenuSubCursor = 1;
-          }
-        }
-        if (g_GameInput.pressed & PAD_RIGHT)
-        {
-          if (g_MenuSubCursor != 0)
-          {
-            PlaySoundCue(1);
-            g_MenuSubCursor = 0;
-          }
-        }
+        g_MenuSubCursor = dialog.value;
+        for (soundIndex = 0; soundIndex < dialog.moveCount; soundIndex++)
+          PlaySoundCue(1);
         DrawMenuCursorBox((g_MenuSubCursor != 0) ? (0xB8) : (0xDA), 0x44, 0x20, 0x20, 0);
         DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
         DrawSprite(ot, 0xE3, 0x4C, 0x10, 0x10, 0xAD, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -146,7 +142,7 @@ void UpdateTeamLogoScreen(void)
       DrawTeamLogoCanvas(1, 0);
     }
     else
-      if (state == (-2))
+      if (state == TEAM_LOGO_CONFIRM_SAMPLE)
     {
       cnt = g_MenuConfirmTimer;
       if (cnt <= 0)
@@ -156,7 +152,7 @@ void UpdateTeamLogoScreen(void)
         RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
         if (g_UiScriptProgress2 <= 0)
         {
-          GameMenuBusy = 1;
+          GameMenuBusy = TEAM_LOGO_TO_SAMPLES;
           g_MenuOverlayPattern = 1;
         }
       }
@@ -175,7 +171,7 @@ void UpdateTeamLogoScreen(void)
       DrawTeamLogoCanvas(1, 0);
     }
     else
-      if (state == (-3))
+      if (state == TEAM_LOGO_PAINT)
     {
       RampTeamLogoCanvas(9, 0x15);
       if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) != 0)
@@ -184,7 +180,7 @@ void UpdateTeamLogoScreen(void)
         {
           PlaySoundCue(3);
           ApplyCurrentSequenceAudio();
-          GameMenuBusy = -4;
+          GameMenuBusy = TEAM_LOGO_CLOSE_PAINT;
         }
         UpdateTeamLogoCanvas();
       }
@@ -205,7 +201,7 @@ void UpdateTeamLogoScreen(void)
       }
       if (g_UiScriptProgress2 <= 0)
       {
-        GameMenuBusy = 0;
+        GameMenuBusy = TEAM_LOGO_ACTIVE;
       }
     }
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
@@ -217,7 +213,7 @@ void UpdateTeamLogoScreen(void)
     if (g_GameInput.pressed)
     {
       MenuFlowFadeOut(MENU_SCREEN_TEAM_LOGO);
-      DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
+      DrawTeamLogoCanvas((state == TEAM_LOGO_BACK) ? (-1) : (1), 0);
       RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
       RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
       DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
@@ -225,7 +221,7 @@ void UpdateTeamLogoScreen(void)
     else
     {
       MenuFlowFadeOut(MENU_SCREEN_TEAM_LOGO);
-      DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
+      DrawTeamLogoCanvas((state == TEAM_LOGO_BACK) ? (-1) : (1), 0);
       RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
       RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
       DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
@@ -234,12 +230,12 @@ void UpdateTeamLogoScreen(void)
     {
       switch (GameMenuBusy)
       {
-        case 1:
+        case TEAM_LOGO_TO_SAMPLES:
           MenuFlowOpen(MENU_SCREEN_LOGO_SAMPLE);
           DrawLogoSamplePanel(0, 0);
           break;
 
-        case 2:
+        case TEAM_LOGO_BACK:
           MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
           g_TeamLogoOption = 0;
           g_TeamLogoClut[0] = 0;
@@ -252,7 +248,7 @@ void UpdateTeamLogoScreen(void)
       }
 
       g_UiScriptProgress = 0;
-      GameMenuBusy = 0;
+      GameMenuBusy = TEAM_LOGO_ACTIVE;
     }
   }
 }

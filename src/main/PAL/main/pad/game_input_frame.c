@@ -19,6 +19,10 @@ void GameInputBuild(GameInputFrame *frame, const GameInputRawState *raw,
         (raw->pressed & buttonMapping[mappingOffset + 4]) != 0;
     frame->shiftDown =
         (raw->pressed & buttonMapping[mappingOffset + 5]) != 0;
+    frame->steerLeft =
+        (raw->held & buttonMapping[mappingOffset]) != 0;
+    frame->steerRight =
+        (raw->held & buttonMapping[mappingOffset + 1]) != 0;
     frame->accelerateHeld =
         (raw->held & buttonMapping[mappingOffset + 2]) != 0;
     frame->brakeHeld =

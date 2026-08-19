@@ -42,6 +42,43 @@ MenuSessionCommands MenuSessionStep(MenuSession *session, s32 direction,
     MenuSessionCommands commands;
     session->selection = cursor.selection;
     commands.moved = cursor.moved;
+    commands.moveCount = cursor.moved;
     commands.action = MenuResolveAction(pressed, PAD_CONFIRM, PAD_CANCEL);
     return commands;
+}
+
+MenuSessionCommands MenuSessionStepVertical(MenuSession *session,
+                                            u16 pressed) {
+    MenuSessionCommands commands;
+    MenuCursorResult cursor;
+
+    commands.moveCount = 0;
+    if ((pressed & PAD_UP) != 0) {
+        cursor = MenuCursorMove(session->selection, session->itemCount, -1,
+                                session->enabledMask);
+        session->selection = cursor.selection;
+        commands.moveCount += cursor.moved;
+    }
+    if ((pressed & PAD_DOWN) != 0) {
+        cursor = MenuCursorMove(session->selection, session->itemCount, 1,
+                                session->enabledMask);
+        session->selection = cursor.selection;
+        commands.moveCount += cursor.moved;
+    }
+    commands.moved = commands.moveCount != 0;
+    commands.action = MenuResolveAction(pressed, PAD_CONFIRM, PAD_CANCEL);
+    return commands;
+}
+
+s32 MenuViewIsSettled(s32 current, s32 target, s32 tolerance) {
+    s32 distance;
+
+    if (tolerance < 0) return 0;
+    distance = current >= target ? current - target : target - current;
+    return distance <= tolerance;
+}
+
+s32 MenuExitIsReady(s32 outgoingProgress, s32 viewOffset,
+                    s32 minimumViewOffset) {
+    return outgoingProgress <= 0 && viewOffset > minimumViewOffset;
 }

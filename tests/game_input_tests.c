@@ -13,6 +13,8 @@ static void test_digital_mapping(void) {
     GameInputRawState raw = {
         PAD_CROSS | PAD_SQUARE, PAD_START | PAD_TRIANGLE, PAD_RIGHT,
         0x41, -12, 40, 50, 60};
+    mapping[0] = PAD_SQUARE;
+    mapping[1] = PAD_CIRCLE;
     mapping[2] = PAD_CROSS;
     mapping[3] = PAD_CIRCLE;
     mapping[4] = PAD_TRIANGLE;
@@ -24,6 +26,8 @@ static void test_digital_mapping(void) {
     EXPECT_EQ(1, frame.pause);
     EXPECT_EQ(1, frame.shiftUp);
     EXPECT_EQ(0, frame.shiftDown);
+    EXPECT_EQ(1, frame.steerLeft);
+    EXPECT_EQ(0, frame.steerRight);
     EXPECT_EQ(1, frame.accelerateHeld);
     EXPECT_EQ(0, frame.brakeHeld);
     EXPECT_EQ(-12, frame.steering);

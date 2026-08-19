@@ -6,6 +6,7 @@
 #include "game/state.h"
 #include "game/race.h"
 #include "game/car.h"
+#include "game/car_control_command.h"
 #include "game/input_internal.h"
 #include "game/track.h"
 #include "game/track_internal.h"
@@ -85,7 +86,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     Vec4 vout;
     CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
-    s32 mode23;
+    CarControlCommand command;
     s32 limit;
     s32 slip;
     s32 skid;
@@ -99,7 +100,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     RageTraceCarStates();
 #endif
 
-    mode23 = g_GameInput.controllerType == 0x23;
+    command = CarControlCommandBuildPlayer(
+        &g_GameInput, g_NegconMappingIndex, g_RacePhase < 4);
     car->facingBackwards = IsCarFacingBackwards(car);
 
     {
@@ -108,8 +110,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             g_AutoShiftCooldown, g_SteerHoldFrames};
         GearboxInput input = {
             car->speed, car->shiftState,
-            (g_GameInput.pressed & g_PadButtonMapping[4 + mode23 * 8]) != 0,
-            (g_GameInput.pressed & g_PadButtonMapping[5 + mode23 * 8]) != 0,
+            command.shiftUp, command.shiftDown,
             g_CarSpec->topGear, g_CarSpec->shiftPoints};
         GearboxUpdate(&gearbox, &input);
         p->gear = gearbox.gear;
@@ -118,7 +119,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         g_SteerHoldFrames = gearbox.steerHoldFrames;
     }
 
-    UpdateCarBodyRoll(car);
+    UpdateCarBodyRoll(car, &command);
 
     if (car->shiftState == 0) {
         s32 spd = car->speed;
@@ -132,62 +133,10 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_RacePhase < 4) {
-        if (g_GameInput.controllerType == 0x41) {
-            p->acceleratorInput.sampled =
-                ((g_GameInput.held & g_PadButtonMapping[2]) != 0) << 8;
-            p->brakeInput = ((g_GameInput.held & g_PadButtonMapping[3]) != 0) << 8;
-        } else if (g_GameInput.controllerType == 0x23) {
-            p->acceleratorInput.sampled =
-                ((g_GameInput.held & g_PadButtonMapping[10]) != 0) << 8;
-            p->brakeInput = ((g_GameInput.held & g_PadButtonMapping[11]) != 0) << 8;
-            switch (g_NegconMappingIndex) {
-            case 0:
-            case 5:
-            {
-                CarInputAddress acceleratorInput;
+    p->acceleratorInput.value = (s16)command.accelerator;
+    p->brakeInput = (s16)command.brake;
 
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_GameInput.analogI << 8) / 106;
-                p->brakeInput = (g_GameInput.analogII << 8) / 106;
-                break;
-            }
-            case 1:
-            case 6:
-            {
-                CarInputAddress acceleratorInput;
-
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_GameInput.analogII << 8) / 106;
-                p->brakeInput = (g_GameInput.analogI << 8) / 106;
-                break;
-            }
-            case 2:
-                p->brakeInput = (g_GameInput.analogL << 8) / 106;
-                break;
-            case 3:
-            {
-                CarInputAddress acceleratorInput;
-
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_GameInput.analogII << 8) / 106;
-                p->brakeInput = (g_GameInput.analogL << 8) / 106;
-                break;
-            }
-            case 4:
-            case 7:
-                break;
-            }
-        } else {
-            p->brakeInput = 0;
-            p->acceleratorInput.value = 0;
-        }
-    } else {
-        p->acceleratorInput.value = 0;
-        p->brakeInput = 0;
-    }
-
-    UpdateCarDrivetrain(car);
+    UpdateCarDrivetrain(car, &command);
 
     {
         s32 step = car->speed * 3;
@@ -203,7 +152,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_GameInput.controllerType == 0x23) {
+    if (command.analogController) {
         if (car->steeringAngle >= 4096) {
             car->steeringAngle = 4096;
             if (p->steerPos < -4096) {

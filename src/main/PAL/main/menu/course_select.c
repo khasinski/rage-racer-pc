@@ -3,8 +3,10 @@
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/course_select_controller.h"
 #include "game/course_select_internal.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
 #include "game/menu_scripts_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
@@ -16,6 +18,7 @@
 #include "psyq/gpu.h"
 
 const u8 g_NowLoadingText[] = "NOW LOADING";
+
 /* Blinks the "NOW LOADING" string at g_NowLoadingText. */
 void DrawNowLoadingText(void) {
     if (g_SceneTimer & 8) {
@@ -390,31 +393,110 @@ s32 DrawCourseSelectScreen(s32 step)
     return g_CourseSelectScrollValue;
 }
 
-/* The mirror of CanSelectNextCourse. */
+static CourseSelectRules CurrentCourseSelectRules(void) {
+    CourseSelectRules rules;
+
+    rules.grandPrixMode = g_GrandPrixMode;
+    rules.seriesSelection = g_SeriesSelection;
+    rules.grandPrixClass = g_GrandPrixClass;
+    rules.extraGrandPrixUnlocked = g_ExtraGrandPrixUnlocked;
+    rules.normalMaxClassReached = g_MaxClassReached[0];
+    rules.extraMaxClassReached = g_MaxClassReached[1];
+    return rules;
+}
+
 s32 CanSelectPrevCourse(void) {
-    s32 v1 = 0;
-    if (g_GrandPrixMode != 0) {
-        v1 = (g_SeriesSelection != 0) << 2;
-    }
-    return v1 < g_CourseIndex;
+    CourseSelectRules rules = CurrentCourseSelectRules();
+    return CourseSelectCanMove(&rules, g_CourseIndex, -1);
 }
 
 s32 CanSelectNextCourse(void) {
-    s32 limit;
+    CourseSelectRules rules = CurrentCourseSelectRules();
+    return CourseSelectCanMove(&rules, g_CourseIndex, 1);
+}
 
-    if (g_GrandPrixMode != 0) {
-        if (g_SeriesSelection != 0) {
-            limit = (g_GrandPrixClass < 2) ? 6 : 7;
-        } else {
-            limit = (g_GrandPrixClass < 2) ? 2 : 3;
-        }
-    } else if (g_ExtraGrandPrixUnlocked != 0) {
-        limit = (g_MaxClassReached[1] < 2) ? 6 : 7;
-    } else {
-        limit = (g_MaxClassReached[0] < 2) ? 2 : 3;
+static void ApplyCourseSelectCommand(CourseSelectCommand command) {
+    switch (command) {
+    case COURSE_SELECT_COMMAND_OPEN_CAR_SELECT:
+        PlaySoundCue(2);
+        GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
+        g_MenuOverlayPattern = 1;
+        g_TimeAttackPlateStep = -1;
+        g_MenuViewOffsetTarget = 0x3D090;
+        g_CourseCardPendingGrade = 0;
+        g_CourseCardSpin =
+            (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
+        break;
+    case COURSE_SELECT_COMMAND_OPEN_SAVE_PROMPT: {
+        u16 series = 0;
+
+        PlaySoundCue(2);
+        if (g_GrandPrixClass < 5) series = (u16)g_GrandPrixSeries;
+        g_CourseSelectModalScript = (u8 *)&g_CourseSelectSavePromptScript;
+        GameMenuBusy = COURSE_SELECT_SAVE_PROMPT;
+        g_GrandPrixSeries = series;
+        g_UiScriptProgress2 = 0;
+        g_MenuSubCursor = 1;
+        break;
     }
+    case COURSE_SELECT_COMMAND_START_RACE:
+        PlaySoundCue(3);
+        StartSequenceFadeOut();
+        g_MenuHintBarStep = -1;
+        g_TimeAttackPlateStep = -1;
+        g_MenuViewOffsetTarget = 0x3D090;
+        GameMenuBusy = COURSE_SELECT_START_RACE;
+        g_CourseCardPendingGrade = 0;
+        g_GrandPrixSeries = g_CourseIndex >> 2;
+        g_CourseCardSpin =
+            (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
+        break;
+    case COURSE_SELECT_COMMAND_OPEN_CLASS_SELECT:
+        PlaySoundCue(2);
+        g_CourseSelectModalScript = (u8 *)&g_MenuDialogPanelLowerScript;
+        GameMenuBusy = COURSE_SELECT_CLASS_PROMPT;
+        g_UiScriptProgress2 = 0;
+        g_MenuSubCursor = g_GrandPrixClass;
+        break;
+    case COURSE_SELECT_COMMAND_OPEN_RANKING:
+        PlaySoundCue(2);
+        GameMenuBusy = COURSE_SELECT_TO_RANKING;
+        g_MenuOverlayPattern = 1;
+        g_TimeAttackPlateStep = -1;
+        break;
+    case COURSE_SELECT_COMMAND_NONE:
+        break;
+    }
+}
 
-    return g_CourseIndex < limit;
+static CourseSelectScreenState CurrentCourseSelectScreenState(void) {
+    CourseSelectScreenState state;
+
+    state.phase = (CourseSelectState)GameMenuBusy;
+    state.option = g_CourseSelectOption;
+    state.modalCursor = g_MenuSubCursor;
+    state.confirmTimer = g_MenuConfirmTimer;
+    state.classChangeApplied = (u8)(g_ClassChangeApplied != 0);
+    return state;
+}
+
+static void ApplyCourseSelectScreenState(const CourseSelectScreenState *state) {
+    GameMenuBusy = state->phase;
+    g_CourseSelectOption = state->option;
+    g_MenuSubCursor = state->modalCursor;
+    g_MenuConfirmTimer = state->confirmTimer;
+    g_ClassChangeApplied = state->classChangeApplied;
+}
+
+static CourseSelectScreenResult ReduceCurrentCourseSelectInput(void) {
+    CourseSelectScreenState state = CurrentCourseSelectScreenState();
+    CourseSelectScreenInput input;
+
+    input.pressed = g_GameInput.pressed;
+    input.grandPrixMode = g_GrandPrixMode;
+    input.currentClass = g_GrandPrixClass;
+    input.maxClass = g_RaceProgress->maxClassReached;
+    return CourseSelectReduceInput(&state, &input);
 }
 
 void UpdateCourseSelectScreen(void) {
@@ -422,7 +504,6 @@ void UpdateCourseSelectScreen(void) {
     u8 *hdr;
     s32 state;
     s32 res;
-    s32 sel;
     s32 cnt;
     s32 t;
     s32 u;
@@ -442,7 +523,7 @@ void UpdateCourseSelectScreen(void) {
         hdr = (u8 *)&g_CourseSelectGpScript;
     }
     state = GameMenuBusy;
-    if (state == 0) {
+    if (state == COURSE_SELECT_ACTIVE) {
         g_MenuHintBarStep = 1;
         RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, -1);
         res = CanSelectPrevCourse();
@@ -451,19 +532,16 @@ void UpdateCourseSelectScreen(void) {
         RunTimedDrawScript(hdr, &g_UiScriptProgress, 0);
         DrawMenuLightBurst(7);
         if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
+            CourseSelectScreenResult input;
+
             g_MenuOverlayPattern = -1;
-            if (g_GameInput.pressed & PAD_UP) {
-                PlaySoundCue(1);
-                g_CourseSelectOption = (g_CourseSelectOption > 0) ? g_CourseSelectOption - 1 : 2;
-            }
-            if (g_GameInput.pressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_CourseSelectOption = (g_CourseSelectOption < 2) ? g_CourseSelectOption + 1 : 0;
-            }
+            input = ReduceCurrentCourseSelectInput();
+            ApplyCourseSelectScreenState(&input.state);
+            for (i = 0; i < input.moveCount; i++) PlaySoundCue(1);
             if ((g_GameInput.held & PAD_LEFT) && (CanSelectPrevCourse() != 0)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
-                if (t < u ? (u - t <= 0x3D08F) : (t - u <= 0x3D08F)) {
+                if (MenuViewIsSettled(u, t, 0x3D08F)) {
                     if (g_MenuPendingCourseIndex < 0) {
 {
                         s32 llap;
@@ -492,7 +570,7 @@ void UpdateCourseSelectScreen(void) {
             if ((g_GameInput.held & PAD_RIGHT) && (CanSelectNextCourse() != 0)) {
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
-                if (t < u ? (u - t <= 0x3D08F) : (t - u <= 0x3D08F)) {
+                if (MenuViewIsSettled(u, t, 0x3D08F)) {
                     if (g_MenuPendingCourseIndex < 0) {
 {
                             s32 llap;
@@ -522,112 +600,45 @@ void UpdateCourseSelectScreen(void) {
                     }
                 }
             }
-            if (g_GameInput.pressed & PAD_CONFIRM) {
-                sel = g_CourseSelectOption;
-                if (sel == 0) {
-                    PlaySoundCue(2);
-                    GameMenuBusy = 1;
-                    g_MenuOverlayPattern = 1;
-                    g_TimeAttackPlateStep = -1;
-                    g_MenuViewOffsetTarget = 0x3D090;
-                    g_CourseCardPendingGrade = 0;
-                    g_CourseCardSpin = (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
-                } else if (sel == 2) {
-                    if (g_GrandPrixMode != 0) {
-                        u16 hv;
-                        PlaySoundCue(2);
-                        hv = 0;
-                        if (g_GrandPrixClass < 5) {
-                            hv = (u16)g_GrandPrixSeries;
-                        }
-                        g_CourseSelectModalScript = (u8 *)&g_CourseSelectSavePromptScript;
-                        GameMenuBusy = -1;
-                        g_GrandPrixSeries = hv;
-                        g_UiScriptProgress2 = 0;
-                        g_MenuSubCursor = 1;
-                    } else {
-                        PlaySoundCue(3);
-                        StartSequenceFadeOut();
-                        g_MenuHintBarStep = -1;
-                        g_TimeAttackPlateStep = -1;
-                        g_MenuViewOffsetTarget = 0x3D090;
-                        GameMenuBusy = sel;
-                        g_CourseCardPendingGrade = 0;
-                        g_GrandPrixSeries = g_CourseIndex >> 2;
-                        g_CourseCardSpin = (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
-                    }
-                } else {
-                    PlaySoundCue(2);
-                    if (g_GrandPrixMode != 0) {
-                        g_CourseSelectModalScript = (u8 *)&g_MenuDialogPanelLowerScript;
-                        GameMenuBusy = -2;
-                        g_UiScriptProgress2 = 0;
-                        g_MenuSubCursor = g_GrandPrixClass;
-                    } else {
-                        GameMenuBusy = 3;
-                        g_MenuOverlayPattern = 1;
-                        g_TimeAttackPlateStep = -1;
-                    }
-                }
-            }
+            ApplyCourseSelectCommand(input.command);
         }
     } else if (state < 0) {
-        if (state == -1) {
-            u16 *pad;
+        if (state == COURSE_SELECT_SAVE_PROMPT) {
             RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
             RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
             if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1) != 0) {
-                if (g_GameInput.pressed & PAD_CONFIRM) {
-                    PlaySoundCue((g_MenuSubCursor != 0) ? 2 : 3);
-                    GameMenuBusy = -3;
-                    g_MenuConfirmTimer = 0x23;
+                s32 previousCursor = g_MenuSubCursor;
+                CourseSelectScreenResult modal = ReduceCurrentCourseSelectInput();
+
+                if ((modal.effects & COURSE_SELECT_EFFECT_ACCEPT) != 0) {
+                    PlaySoundCue((previousCursor != 0) ? 2 : 3);
                 }
-                pad = &g_GameInput.pressed;
-                if (*pad & 0x90) {
+                if ((modal.effects & COURSE_SELECT_EFFECT_CANCEL) != 0) {
                     PlaySoundCue(3);
-                    GameMenuBusy = -4;
                 }
-                if (*pad & 0x8000) {
-                    PlaySoundCue(1);
-                    g_MenuSubCursor = 1;
-                }
-                if (*pad & 0x2000) {
-                    PlaySoundCue(1);
-                    g_MenuSubCursor = 0;
-                }
+                ApplyCourseSelectScreenState(&modal.state);
+                for (i = 0; i < modal.moveCount; i++) PlaySoundCue(1);
                 DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x8C, 0x20, 0x20, 0);
                 DrawSprite(ot, 0xC0, 0x94, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
                 DrawSprite(ot, 0xE3, 0x94, 0x10, 0x10, 0xAD, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
                 GameDrawMenuButton(0xB8, 0x8C, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                 GameDrawMenuButton(0xDA, 0x8C, 0x20, 0x20, 0x1E, 0x4E, 0x95, 0, 0, 0, &g_MenuBlankCaption);
             }
-        } else if (state == -2) {
-            u16 *pad;
+        } else if (state == COURSE_SELECT_CLASS_PROMPT) {
             if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1) != 0) {
-                if (g_GameInput.pressed & PAD_CONFIRM) {
+                CourseSelectScreenResult modal = ReduceCurrentCourseSelectInput();
+
+                if ((modal.effects & COURSE_SELECT_EFFECT_ACCEPT) != 0) {
                     PlaySoundCue(2);
-                    if (g_MenuSubCursor == g_GrandPrixClass) {
-                        GameMenuBusy = 0;
-                    } else {
-                        GameMenuBusy = -5;
-                        g_ClassChangeApplied = 0;
-                        g_MenuConfirmTimer = 0x23;
-                        DrawClassChangeCurtain(0);
-                    }
                 }
-                pad = &g_GameInput.pressed;
-                if (*pad & 0x90) {
+                if ((modal.effects & COURSE_SELECT_EFFECT_CANCEL) != 0) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 0;
                 }
-                if (*pad & 0x1000) {
-                    PlaySoundCue(1);
-                    g_MenuSubCursor = (g_MenuSubCursor != 0) ? g_MenuSubCursor - 1 : g_RaceProgress->maxClassReached;
+                ApplyCourseSelectScreenState(&modal.state);
+                if ((modal.effects & COURSE_SELECT_EFFECT_BEGIN_CLASS_CHANGE) != 0) {
+                    DrawClassChangeCurtain(0);
                 }
-                if (g_GameInput.pressed & PAD_DOWN) {
-                    PlaySoundCue(1);
-                    g_MenuSubCursor = (g_MenuSubCursor < g_RaceProgress->maxClassReached) ? g_MenuSubCursor + 1 : 0;
-                }
+                for (i = 0; i < modal.moveCount; i++) PlaySoundCue(1);
                 DrawMenuCursorBox(0xB8, g_MenuSubCursor * 0x1E + 0x6C, 0x38, 0x20, 0);
                 for (i = 0; i < g_RaceProgress->maxClassReached + 1; i++) {
                     DrawSprite(ot, 0xC0, i * 0x1E + 0x74, 0x1A, 0x10, 0x60, 0xCC, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -635,22 +646,28 @@ void UpdateCourseSelectScreen(void) {
                     GameDrawMenuButton(0xB8, i * 0x1E + 0x6C, 0x38, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                 }
             }
-        } else if (state == -3) {
+        } else if (state == COURSE_SELECT_CONFIRM_SAVE) {
             cnt = g_MenuConfirmTimer;
             if (cnt <= 0) {
                 RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, -1);
                 RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
                 RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
                 if (g_UiScriptProgress2 <= 0) {
+                    CourseSelectScreenState current = CurrentCourseSelectScreenState();
+                    CourseSelectScreenState next = CourseSelectFinishModalClose(
+                        &current);
                     StartSequenceFadeOut();
-                    GameMenuBusy = (g_MenuSubCursor != 0) ? 4 : 2;
+                    ApplyCourseSelectScreenState(&next);
                     g_MenuHintBarStep = -1;
                     g_MenuViewOffsetTarget = 0x3D090;
                     g_CourseCardPendingGrade = 0;
                     g_CourseCardSpin = (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
                 }
             } else {
-                g_MenuConfirmTimer = cnt - 1;
+                CourseSelectScreenState current = CurrentCourseSelectScreenState();
+                CourseSelectScreenState next = CourseSelectTickConfirmTimer(
+                    &current);
+                ApplyCourseSelectScreenState(&next);
                 RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
                 RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
                 RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
@@ -660,19 +677,22 @@ void UpdateCourseSelectScreen(void) {
                 GameDrawMenuButton(0xB8, 0x8C, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                 GameDrawMenuButton(0xDA, 0x8C, 0x20, 0x20, 0x1E, 0x4E, 0x95, 0, 0, 0, &g_MenuBlankCaption);
             }
-        } else if (state == -4) {
+        } else if (state == COURSE_SELECT_CLOSE_SAVE_PROMPT) {
             RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, -1);
             RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
             RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
             if (g_UiScriptProgress2 <= 0) {
-                GameMenuBusy = 0;
+                CourseSelectScreenState current = CurrentCourseSelectScreenState();
+                CourseSelectScreenState next = CourseSelectFinishModalClose(
+                    &current);
+                ApplyCourseSelectScreenState(&next);
             }
-        } else if (state == -5) {
+        } else if (state == COURSE_SELECT_CLASS_CHANGE) {
             cnt = g_MenuConfirmTimer;
             if (cnt <= 0) {
                 if (g_ClassChangeApplied != 0) {
                     if (DrawClassChangeCurtain(-1) == 0) {
-                        GameMenuBusy = 0;
+                        GameMenuBusy = COURSE_SELECT_ACTIVE;
                         g_UiScriptProgress2 = 0;
                     }
                 } else {
@@ -698,7 +718,10 @@ void UpdateCourseSelectScreen(void) {
                     }
                 }
             } else {
-                g_MenuConfirmTimer = cnt - 1;
+                CourseSelectScreenState current = CurrentCourseSelectScreenState();
+                CourseSelectScreenState next = CourseSelectTickConfirmTimer(
+                    &current);
+                ApplyCourseSelectScreenState(&next);
                 RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
                 DrawMenuCursorBox(0xB8, g_MenuSubCursor * 0x1E + 0x6C, 0x38, 0x20, 1);
                 for (i = 0; i < g_RaceProgress->maxClassReached + 1; i++) {
@@ -724,7 +747,7 @@ void UpdateCourseSelectScreen(void) {
         DrawMenuLightBurst(-9);
         if (g_UiScriptProgress <= 0) {
             switch (GameMenuBusy) {
-            case 1:
+            case COURSE_SELECT_TO_CAR_SELECT:
                 if (g_MenuViewOffset > 0x3D08F) {
                     g_MenuScreen = 3;
                     g_MenuHandlerIndex = 4;
@@ -739,8 +762,9 @@ void UpdateCourseSelectScreen(void) {
                     goto clear;
                 }
                 break;
-            case 2:
-                if ((g_MenuOutgoingScreenProgress <= 0) && (g_MenuViewOffset > 0x3D08F)) {
+            case COURSE_SELECT_START_RACE:
+                if (MenuExitIsReady(g_MenuOutgoingScreenProgress,
+                                    g_MenuViewOffset, 0x3D08F)) {
                     s32 raw;
                     s32 d;
                     s32 lapc;
@@ -762,16 +786,17 @@ void UpdateCourseSelectScreen(void) {
                         p->money.value = g_GrandPrixSeries;
                     }
                     g_UiScriptProgress = 0;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = COURSE_SELECT_ACTIVE;
                 }
                 break;
-            case 3:
+            case COURSE_SELECT_TO_RANKING:
                 MenuFlowOpen(MENU_SCREEN_RANKING);
                 g_UiScriptProgress = 0;
-                GameMenuBusy = 0;
+                GameMenuBusy = COURSE_SELECT_ACTIVE;
                 break;
-            case 4:
-                if ((g_MenuOutgoingScreenProgress <= 0) && (g_MenuViewOffset > 0x3D08F)) {
+            case COURSE_SELECT_TO_MEMORY_CARD:
+                if (MenuExitIsReady(g_MenuOutgoingScreenProgress,
+                                    g_MenuViewOffset, 0x3D08F)) {
                     s32 raw;
                     s32 d;
                     s32 lapc;
@@ -792,12 +817,12 @@ void UpdateCourseSelectScreen(void) {
                     }
                 clear:
                     g_UiScriptProgress = 0;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = COURSE_SELECT_ACTIVE;
                 }
                 break;
             default:
                     g_UiScriptProgress = 0;
-                    GameMenuBusy = 0;
+                    GameMenuBusy = COURSE_SELECT_ACTIVE;
                             }
         }
     }

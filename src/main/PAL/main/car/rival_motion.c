@@ -1,8 +1,9 @@
 #include "game/angle.h"
 #include "game/rival_motion.h"
 
-void RivalMotionStep(RivalMotionState *state, s32 enableRaceBoost) {
-    if (enableRaceBoost && state->boostTimer > 0) {
+void RivalMotionStep(RivalMotionState *state,
+                     const CarControlCommand *command) {
+    if (command->boostEnabled && state->boostTimer > 0) {
         if (state->boostAccelerationThreshold < state->boostTimer &&
             state->speed >= 0x321) {
             state->acceleration = 0;
@@ -12,14 +13,14 @@ void RivalMotionStep(RivalMotionState *state, s32 enableRaceBoost) {
             state->acceleration = state->boostAccelerationLimit;
         }
         state->boostTimer--;
-    } else if ((enableRaceBoost &&
+    } else if ((command->boostEnabled &&
                 state->acceleration <= state->accelerationLimit) ||
-               (!enableRaceBoost &&
+               (!command->boostEnabled &&
                 state->acceleration < state->accelerationLimit)) {
         state->acceleration += state->accelerationStep;
     } else {
         state->acceleration = state->accelerationLimit;
     }
     state->speed = state->speed * 94 / 100 + state->acceleration;
-    state->bodyYaw += GetAngleDelta(state->bodyYaw, state->targetYaw) / 5;
+    state->bodyYaw += GetAngleDelta(state->bodyYaw, command->targetYaw) / 5;
 }

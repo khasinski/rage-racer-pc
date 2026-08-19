@@ -57,6 +57,21 @@ int main(void) {
     EXPECT_EQ(-100, CarCalculateThrottleAcceleration(-200, 128, 1));
     EXPECT_EQ(0, CarCalculateThrottleAcceleration(200, 128, 0));
 
+    /* Characterize the retail wall-momentum quirk: a shift captures negative
+     * collision acceleration through u16 and feeds it back while clutching. */
+    EXPECT_EQ(65535, CarCaptureShiftEngineLoad(-1));
+    groundInput = (CarGroundSpeedInput){1000, 0, 65535, 800,
+                                        0, 1, 0, 1, 0};
+    groundOutput = CarCalculateGroundSpeed(&groundInput);
+    EXPECT_EQ(65535, groundOutput.acceleration);
+
+    /* Manual alternating shifts retain progressively more speed uphill using
+     * the gear-specific retail grade scales. */
+    EXPECT_EQ(100, CarManualUpshiftGradeScale(3, -240));
+    EXPECT_EQ(98, CarManualUpshiftGradeScale(4, -240));
+    EXPECT_EQ(95, CarManualUpshiftGradeScale(5, -240));
+    EXPECT_EQ(93, CarManualUpshiftGradeScale(6, -240));
+
     EXPECT_EQ(1100, CarIntegrateEngineRpm(1000, 200, 50, 50, 0, 0));
     EXPECT_EQ(1000, CarIntegrateEngineRpm(1000, 200, 50, 50, 1, 0));
     EXPECT_EQ(0, CarIntegrateEngineRpm(10, 0, 20, 0, 0, 0));

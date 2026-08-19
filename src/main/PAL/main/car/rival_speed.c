@@ -4,6 +4,8 @@
 void IntegrateRivalSpeed(GameCarRuntime *car,
                          const RivalUpdatePolicy *policy) {
     GameCarAiBlock *ai = GetCarAiBlock(car);
+    CarControlCommand command = CarControlCommandBuildRival(
+        ai->targetYaw, policy->enableRaceBoost);
     RivalMotionState motion = {
         car->speed,
         car->acceleration,
@@ -13,11 +15,10 @@ void IntegrateRivalSpeed(GameCarRuntime *car,
         car->boostAccelerationThreshold,
         ai->boostAcceleration,
         ai->accelerationLimit,
-        car->bodyYaw,
-        ai->targetYaw
+        car->bodyYaw
     };
 
-    RivalMotionStep(&motion, policy->enableRaceBoost);
+    RivalMotionStep(&motion, &command);
     car->speed = motion.speed;
     car->acceleration = motion.acceleration;
     ai->boostTimer = motion.boostTimer;

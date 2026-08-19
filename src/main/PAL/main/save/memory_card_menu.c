@@ -7,6 +7,7 @@
 #include "psyq/gpu.h"
 #include "game/render.h"
 #include "game/game_context.h"
+#include "game/memory_card_controller.h"
 
 
 void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
@@ -80,46 +81,17 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
 }
 
 void AdjustMenuSelectionHorizontal(s32 *value, s32 min, s32 max) {
-    u16 input = g_GameInput.pressedRepeat;
-    s32 next;
-
-    if (input & 0x4000) {
-        next = *value + 1;
-        *value = next;
-        if (max < next) {
-            *value = max;
-            return;
-        }
-    } else if (input & 0x1000) {
-        next = *value - 1;
-        *value = next;
-        if (next < min) {
-            *value = min;
-            return;
-        }
-    } else {
-        return;
-    }
-
-    PlaySoundCue(1);
+    MemoryCardCursorResult result = MemoryCardMoveMenuRow(
+        *value, min, max, g_GameInput.pressedRepeat);
+    *value = result.value;
+    if (result.moved) PlaySoundCue(1);
 }
 
 void SetMenuBinaryChoiceVertical(s32 *value) {
-    u16 input = g_GameInput.pressedRepeat;
-
-    if (input & 0x8000) {
-        if (*value == 0) {
-            PlaySoundCue(1);
-            *value = 1;
-        } else {
-            *value = 1;
-        }
-    } else if (input & 0x2000) {
-        if (*value == 1) {
-            PlaySoundCue(1);
-        }
-        *value = 0;
-    }
+    MemoryCardCursorResult result = MemoryCardSetBinaryChoice(
+        *value, g_GameInput.pressedRepeat);
+    *value = result.value;
+    if (result.moved) PlaySoundCue(1);
 }
 
 u16 PollMenuConfirmInput(void) {
@@ -160,7 +132,7 @@ void EnterMemoryCardMenu(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
     g_McMenuRowCount = 2;
-    g_McMenuState = -1;
+    g_McMenuState = MC_MENU_NO_CARD;
     g_SceneTimer = 0;
     g_McMenuPage = 0;
     g_McMenuRowCursor = 0;

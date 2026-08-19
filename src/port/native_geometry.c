@@ -1120,7 +1120,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         /* The rear-view dispatcher reflects both RT1 and the already
          * transformed cell-center X.  Reflecting only the rotation row moves
          * otherwise correct terrain quads tens of pixels to the right. */
-        translation.vx = SCRATCH_MIRROR ? -visible[0] : visible[0];
+        translation.vx = RENDER_MIRROR ? -visible[0] : visible[0];
         translation.vy = visible[1];
         translation.vz = visible[2];
         translation.pad = 0;

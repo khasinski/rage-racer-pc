@@ -3,6 +3,7 @@
 #include "game/menu_internal.h"
 #include "game/audio.h"
 #include "game/menu_types.h"
+#include "game/team_logo_editor_controller.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_types.h"
@@ -328,7 +329,6 @@ void UpdateTeamLogoCanvas(void) {
     s32 blueUp;
     s32 wordColumn;
     s32 nibbleShift;
-    s32 nextTool;
     s32 darker;
     s32 brighter;
     s32 plotStamp;
@@ -337,11 +337,7 @@ void UpdateTeamLogoCanvas(void) {
     s32 eraseColumn;
     s32 plotRow;
     s32 eraseRow;
-    s32 prevChannel;
-    s32 prevSlot;
-    s32 nextSlot;
     s32 rowWords;
-    s32 nextChannel;
     u16 *clutEntry;
     u16 opaqueColour;
     u16 colour;
@@ -381,11 +377,8 @@ void UpdateTeamLogoCanvas(void) {
     if (g_TeamLogoExpertMode != 0) {
         if (g_GameInput.pressed & PAD_SELECT) {
             g_TeamLogoGuideModePrev = g_TeamLogoGuideMode;
-            nextTool = 0;
-            if (g_TeamLogoGuideMode < 2) {
-                nextTool = g_TeamLogoGuideMode + 1;
-            }
-            g_TeamLogoGuideMode = nextTool;
+            g_TeamLogoGuideMode =
+                TeamLogoCycleGuideMode(g_TeamLogoGuideMode);
         }
     } else {
         g_TeamLogoGuideMode = 1;
@@ -410,28 +403,18 @@ void UpdateTeamLogoCanvas(void) {
         if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
             if (g_GameInput.held & PAD_LEFT) {
                 TeamLogoColorSlot output;
-                s32 selected;
 
                 PlaySoundCue(1);
-                selected = g_TeamLogoPenColor;
-                prevSlot = 0xF;
-                if (selected >= 2) {
-                    prevSlot = selected - 1;
-                }
-                output.value = prevSlot;
+                output.value = TeamLogoMovePaletteSlot(
+                    g_TeamLogoPenColor, -1);
                 g_TeamLogoPenColor = output.value;
             }
             if (g_GameInput.held & PAD_RIGHT) {
                 TeamLogoColorSlot output;
-                s32 selected;
 
                 PlaySoundCue(1);
-                selected = g_TeamLogoPenColor;
-                nextSlot = 1;
-                if (selected < 0xF) {
-                    nextSlot = selected + 1;
-                }
-                output.value = nextSlot;
+                output.value = TeamLogoMovePaletteSlot(
+                    g_TeamLogoPenColor, 1);
                 g_TeamLogoPenColor = output.value;
             }
         }
@@ -530,19 +513,13 @@ void UpdateTeamLogoCanvas(void) {
             } else {
                 if (g_GameInput.pressed & PAD_UP) {
                     PlaySoundCue(1);
-                    prevChannel = 2;
-                    if (g_TeamLogoColorChannel > 0) {
-                        prevChannel = g_TeamLogoColorChannel - 1;
-                    }
-                    g_TeamLogoColorChannel = prevChannel;
+                    g_TeamLogoColorChannel = TeamLogoMoveColorChannel(
+                        g_TeamLogoColorChannel, -1);
                 }
                 if (g_GameInput.pressed & PAD_DOWN) {
                     PlaySoundCue(1);
-                    nextChannel = 0;
-                    if (g_TeamLogoColorChannel < 2) {
-                        nextChannel = g_TeamLogoColorChannel + 1;
-                    }
-                    g_TeamLogoColorChannel = nextChannel;
+                    g_TeamLogoColorChannel = TeamLogoMoveColorChannel(
+                        g_TeamLogoColorChannel, 1);
                 }
             }
         }

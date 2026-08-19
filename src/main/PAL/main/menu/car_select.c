@@ -3,8 +3,12 @@
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/car_select_controller.h"
 #include "game/asset_internal.h"
 #include "game/menu.h"
+#include "game/menu_controller.h"
+#include "game/menu_controller.h"
+#include "game/menu_dialog_controller.h"
 #include "game/menu_scripts_internal.h"
 #include "game/save_internal.h"
 #include "game/race.h"
@@ -13,6 +17,16 @@
 #include "game/state.h"
 #include "game/game_context.h"
 
+typedef enum RankingScreenState {
+    RANKING_CLOSE_COURSE_TABLE = -6,
+    RANKING_COURSE_TABLE = -5,
+    RANKING_CLOSE_LAP_TABLE = -4,
+    RANKING_LAP_TABLE = -3,
+    RANKING_CLOSE_MENU = -2,
+    RANKING_MENU = -1,
+    RANKING_ENTER = 0,
+    RANKING_BACK = 1
+} RankingScreenState;
 
 void UpdateRankingScreen(void) {
     s32 state;
@@ -21,51 +35,50 @@ void UpdateRankingScreen(void) {
     DrawMenuCourseView();
     DrawMenuLightBurst(-9);
     state = GameMenuBusy;
-    if (state == 0) {
+    if (state == RANKING_ENTER) {
         g_UiScriptProgress2 = 0;
-        GameMenuBusy = -1;
+        GameMenuBusy = RANKING_MENU;
         DrawFadingMenuSprites(0, 2, g_RankingCursor);
         RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1);
     } else if (state < 0) {
         switch (state) {
-        case -1:
+        case RANKING_MENU:
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1) != 0) {
+                MenuSession menu = {g_RankingCursor, 3, 0};
+                MenuSessionCommands commands = MenuSessionStepVertical(
+                    &menu, g_GameInput.pressed);
+                s32 soundIndex;
+
                 g_MenuOverlayPattern = -1;
-                if (g_GameInput.pressed & PAD_UP) {
+                g_RankingCursor = menu.selection;
+                for (soundIndex = 0; soundIndex < commands.moveCount;
+                     soundIndex++) {
                     PlaySoundCue(1);
-                    g_RankingCursor = (g_RankingCursor > 0) ? g_RankingCursor - 1 : 2;
                 }
-                if (g_GameInput.pressed & PAD_DOWN) {
-                    PlaySoundCue(1);
-                    g_RankingCursor = (g_RankingCursor < 2) ? g_RankingCursor + 1 : 0;
-                }
-                {
-                    s32 flags = g_GameInput.pressed;
-                    if (flags & 0x860) {
+                if (commands.action == MENU_ACTION_CONFIRM) {
                         s32 x = g_RankingCursor;
                         if (x == 0) {
                             PlaySoundCue(2);
-                            GameMenuBusy = -2;
-                            g_RankingPendingState = -3;
+                            GameMenuBusy = RANKING_CLOSE_MENU;
+                            g_RankingPendingState = RANKING_LAP_TABLE;
                         } else if (x == 1) {
                             PlaySoundCue(2);
-                            GameMenuBusy = -2;
-                            g_RankingPendingState = -5;
+                            GameMenuBusy = RANKING_CLOSE_MENU;
+                            g_RankingPendingState = RANKING_COURSE_TABLE;
                         } else if (x == 2) {
                             PlaySoundCue(3);
-                            GameMenuBusy = 1;
+                            GameMenuBusy = RANKING_BACK;
                             g_MenuOverlayPattern = x;
                         }
-                    } else if (flags & 0x90) {
-                        PlaySoundCue(3);
-                        GameMenuBusy = 1;
-                        g_MenuOverlayPattern = 2;
-                    }
+                } else if (commands.action == MENU_ACTION_CANCEL) {
+                    PlaySoundCue(3);
+                    GameMenuBusy = RANKING_BACK;
+                    g_MenuOverlayPattern = 2;
                 }
             }
             break;
-        case -2:
+        case RANKING_CLOSE_MENU:
             RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, -1);
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (g_UiScriptProgress2 > 0) {
@@ -73,7 +86,7 @@ void UpdateRankingScreen(void) {
             }
             GameMenuBusy = g_RankingPendingState;
             break;
-        case -3:
+        case RANKING_LAP_TABLE:
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 0) == 0) {
                 break;
             }
@@ -81,16 +94,16 @@ void UpdateRankingScreen(void) {
                 break;
             }
             PlaySoundCue(3);
-            GameMenuBusy = -4;
+            GameMenuBusy = RANKING_CLOSE_LAP_TABLE;
             break;
-        case -4:
+        case RANKING_CLOSE_LAP_TABLE:
             DrawRankingTable(&g_UiScriptProgress2, -1, 0);
             if (g_UiScriptProgress2 > 0) {
                 break;
             }
-            GameMenuBusy = -1;
+            GameMenuBusy = RANKING_MENU;
             break;
-        case -5:
+        case RANKING_COURSE_TABLE:
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 1) == 0) {
                 break;
             }
@@ -98,14 +111,14 @@ void UpdateRankingScreen(void) {
                 break;
             }
             PlaySoundCue(3);
-            GameMenuBusy = -6;
+            GameMenuBusy = RANKING_CLOSE_COURSE_TABLE;
             break;
-        case -6:
+        case RANKING_CLOSE_COURSE_TABLE:
             DrawRankingTable(&g_UiScriptProgress2, -1, 1);
             if (g_UiScriptProgress2 > 0) {
                 break;
             }
-            GameMenuBusy = -1;
+            GameMenuBusy = RANKING_MENU;
             break;
         }
     } else {
@@ -126,7 +139,7 @@ pos:
     MenuFlowOpen(MENU_SCREEN_COURSE_SELECT);
     g_RankingCursor = 0;
     g_UiScriptProgress = 0;
-    GameMenuBusy = 0;
+    GameMenuBusy = RANKING_ENTER;
     DrawTimeAttackPlate(0);
     if (g_CourseIndex >= 4) {
         g_TimeAttackPlateStep = 1;
@@ -294,11 +307,104 @@ void EnterCarSelectScreen(void) {
 }
 
 
+static void ApplyCarSelectCommand(CarSelectCommand command) {
+    switch (command) {
+    case CAR_SELECT_COMMAND_START_RACE: {
+        u16 series;
+
+        PlaySoundCue(2);
+        StartSequenceFadeOut();
+        if (g_GrandPrixMode != 0) {
+            series = 0;
+            if (g_GrandPrixClass < 5) series = (u16)g_GrandPrixSeries;
+            g_GrandPrixSeries = series;
+        } else {
+            g_GrandPrixSeries = g_CourseIndex >> 2;
+        }
+        RequestRoundAssets();
+        GameMenuBusy = CAR_SELECT_START_RACE;
+        g_MenuHintBarStep = -1;
+        g_CarNamePlateStep = -10;
+        g_MenuOverlayPattern = 0;
+        g_CarSpecGraphStep = -3;
+        g_MenuViewOffsetTarget = 0x3D090;
+        break;
+    }
+    case CAR_SELECT_COMMAND_CUSTOMIZE:
+        PlaySoundCue(2);
+        GameMenuBusy = CAR_SELECT_TO_CUSTOMIZE;
+        g_MenuOverlayPattern = 1;
+        g_CarNamePlateStep = -10;
+        break;
+    case CAR_SELECT_COMMAND_CAR_SHOP: {
+        s32 previousAngle = g_MenuViewAngleTarget;
+
+        PlaySoundCue(2);
+        g_CarListCursor = g_ShopCarIndex;
+        RequestCarModel(g_CarListCursor);
+        g_MenuViewAngleTarget = 0x124F80;
+        GameMenuBusy = CAR_SELECT_TO_CAR_SHOP;
+        g_MenuOverlayPattern = 1;
+        g_CarSwapFromIndex = g_PlayerCarIndex;
+        g_CarSwapToIndex = g_CarListCursor;
+        g_MenuViewAngle = 0x927C0 - (previousAngle - g_MenuViewAngle);
+        break;
+    }
+    case CAR_SELECT_COMMAND_CAR_SHOP_UNAVAILABLE:
+        PlaySoundCue(5);
+        g_CarSelectPopupScript = (u8 *)&g_CarShopUnavailableScript;
+        GameMenuBusy = CAR_SELECT_SHOP_UNAVAILABLE;
+        g_UiScriptProgress2 = 0;
+        break;
+    case CAR_SELECT_COMMAND_ENGINEER_SHOP:
+        GameMenuBusy = CAR_SELECT_TO_ENGINEER_SHOP;
+        g_MenuOverlayPattern = 1;
+        PlaySoundCue(2);
+        break;
+    case CAR_SELECT_COMMAND_ENGINEER_SHOP_UNAVAILABLE:
+        PlaySoundCue(5);
+        g_CarSelectPopupScript = (u8 *)&g_EngineerShopUnavailableScript;
+        GameMenuBusy = CAR_SELECT_ENGINEER_UNAVAILABLE;
+        g_UiScriptProgress2 = 0;
+        break;
+    case CAR_SELECT_COMMAND_BACK:
+        PlaySoundCue(3);
+        GameMenuBusy = CAR_SELECT_BACK;
+        g_MenuOverlayPattern = 2;
+        g_CarNamePlateStep = -10;
+        g_CarSpecGraphStep = -3;
+        g_MenuViewOffsetTarget = 0x3D090;
+        break;
+    case CAR_SELECT_COMMAND_NONE:
+        break;
+    }
+}
+
+static CarSelectScreenResult ReduceCurrentCarSelectInput(
+    u16 pressed, s32 requiredClass) {
+    CarSelectScreenState state;
+    CarSelectScreenInput input;
+
+    state.phase = (CarSelectState)GameMenuBusy;
+    state.selection = g_CarSelectCursor;
+    input.pressed = pressed;
+    input.grandPrixMode = g_GrandPrixMode;
+    input.shopCarIndex = g_ShopCarIndex;
+    input.upgradesAvailable = g_CarModelAsset->upgradesAvailable;
+    input.maxClassReached = g_RaceProgress->maxClassReached;
+    input.requiredClass = requiredClass;
+    return CarSelectReduceInput(&state, &input);
+}
+
+static void ApplyCarSelectScreenState(const CarSelectScreenState *state) {
+    GameMenuBusy = state->phase;
+    g_CarSelectCursor = state->selection;
+}
+
 void UpdateCarSelectScreen(void) {
     s32 mode;
     u8 *cmdList;
     s32 lowMode;
-    s32 sel;
     s32 t;
     s32 u;
 
@@ -315,7 +421,7 @@ void UpdateCarSelectScreen(void) {
         cmdList = (u8 *)&g_CarSelectMenuScriptGp;
     }
 
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == CAR_SELECT_ACTIVE) {
         g_CarNamePlateStep = 0x14;
         g_CarSpecGraphStep = 3;
         g_MenuPlateCarIndex = g_PlayerCarIndex;
@@ -336,24 +442,32 @@ void UpdateCarSelectScreen(void) {
             if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) !=
                  0) &&
                 (g_UiScriptProgress2 <= 0)) {
+                CarSelectScreenResult input;
+                s32 requiredClass = 0;
+                s32 selectedCar;
+                s32 soundIndex;
+                u16 commandButtons = g_GameInput.pressed;
+
                 g_MenuOverlayPattern = initial;
-                if (g_GameInput.pressed & PAD_UP) {
-                    PlaySoundCue(1);
-                    g_CarSelectCursor =
-                        (g_CarSelectCursor > 0) ? g_CarSelectCursor - 1 : lowMode;
-                }
-                if (g_GameInput.pressed & PAD_DOWN) {
-                    PlaySoundCue(1);
-                    g_CarSelectCursor =
-                        (g_CarSelectCursor < mode) ? g_CarSelectCursor + 1 : 0;
-                }
                 UpdateOwnedCarNeighbours();
                 RefreshCarUnlockState();
-                sel = g_PlayerCarIndex;
+                if (g_CarModelAsset->upgradesAvailable != 0) {
+                    requiredClass = GetCarUnlockLevel(g_PlayerCarIndex);
+                }
+                if ((u32)(g_MenuViewAngle - 0x2710) <= 0x120160U) {
+                    commandButtons &= (u16)~PAD_CANCEL;
+                }
+                input = ReduceCurrentCarSelectInput(
+                    commandButtons, requiredClass);
+                ApplyCarSelectScreenState(&input.state);
+                for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
+                    PlaySoundCue(1);
+                }
+                selectedCar = g_PlayerCarIndex;
                 if ((g_GameInput.held & PAD_LEFT) && (g_PrevOwnedCarIndex != -1)) {
                     t = g_MenuViewAngleTarget;
                     u = g_MenuViewAngle;
-                    if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+                    if (MenuViewIsSettled(u, t, 0x493DF)) {
                         if (g_CarSwapToIndex < 0) {
                             s32 prev;
 
@@ -361,7 +475,7 @@ void UpdateCarSelectScreen(void) {
                             g_PlayerCarIndex = g_PrevOwnedCarIndex;
                             RequestCarModel(g_PrevOwnedCarIndex);
                             prev = g_MenuViewAngleTarget;
-                            g_CarSwapFromIndex = sel;
+                            g_CarSwapFromIndex = selectedCar;
                             g_MenuViewAngleTarget = 0;
                             g_MenuAltPanelStep2 = -1;
                             g_CarSwapToIndex = g_PlayerCarIndex;
@@ -373,7 +487,7 @@ void UpdateCarSelectScreen(void) {
                 if ((g_GameInput.held & PAD_RIGHT) && (g_NextOwnedCarIndex != -1)) {
                     t = g_MenuViewAngleTarget;
                     u = g_MenuViewAngle;
-                    if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+                    if (MenuViewIsSettled(u, t, 0x493DF)) {
                         if (g_CarSwapToIndex < 0) {
                             s32 base;
                             s32 prev;
@@ -384,7 +498,7 @@ void UpdateCarSelectScreen(void) {
                             base = 0x927C0;
                             prev = g_MenuViewAngleTarget;
                             g_MenuViewAngleTarget = 0x124F80;
-                            g_CarSwapFromIndex = sel;
+                            g_CarSwapFromIndex = selectedCar;
                             g_MenuAltPanelStep2 = -1;
                             g_CarSwapToIndex = g_PlayerCarIndex;
                             g_MenuViewAngle =
@@ -394,109 +508,10 @@ void UpdateCarSelectScreen(void) {
                 }
                 t = g_MenuViewAngleTarget;
                 u = g_MenuViewAngle;
-                if (t < u ? (u - t <= 0x493DF) : (t - u <= 0x493DF)) {
+                if (MenuViewIsSettled(u, t, 0x493DF)) {
                     if (g_CarSwapToIndex < 0) {
-                        if (g_GameInput.pressed & PAD_CONFIRM) {
-                            s32 choice;
-
-                            choice = g_CarSelectCursor;
-                            if (choice == 0) {
-                                u16 series;
-
-                                PlaySoundCue(2);
-                                StartSequenceFadeOut();
-                                if (g_GrandPrixMode != 0) {
-                                    series = 0;
-                                    if (g_GrandPrixClass < 5) {
-                                        series = (u16)g_GrandPrixSeries;
-                                    }
-                                    g_GrandPrixSeries = series;
-                                } else {
-                                    g_GrandPrixSeries = g_CourseIndex >> 2;
-                                }
-                                RequestRoundAssets();
-                                GameMenuBusy = 1;
-                                g_MenuHintBarStep = -1;
-                                g_CarNamePlateStep = -10;
-                                g_MenuOverlayPattern = 0;
-                                g_CarSpecGraphStep = -3;
-                                g_MenuViewOffsetTarget = 0x3D090;
-                                return;
-                            }
-                            if (choice == 1) {
-                                PlaySoundCue(2);
-                                GameMenuBusy = 2;
-                                g_MenuOverlayPattern = 1;
-                                g_CarNamePlateStep = -10;
-                                return;
-                            }
-                            if (choice == mode) {
-                                PlaySoundCue(3);
-                                GameMenuBusy = 5;
-                                g_MenuOverlayPattern = 2;
-                                g_CarNamePlateStep = -10;
-                                g_CarSpecGraphStep = -3;
-                                g_MenuViewOffsetTarget = 0x3D090;
-                                return;
-                            }
-                            if (choice == 2) {
-                                s32 car;
-
-                                car = g_ShopCarIndex;
-                                if (car != -1) {
-                                    s32 base;
-                                    s32 prev;
-
-                                    PlaySoundCue(2);
-                                    g_CarListCursor = g_ShopCarIndex;
-                                    RequestCarModel(g_CarListCursor);
-                                    base = 0x927C0;
-                                    prev = g_MenuViewAngleTarget;
-                                    g_MenuViewAngleTarget = 0x124F80;
-                                    GameMenuBusy = 3;
-                                    g_MenuOverlayPattern = 1;
-                                    g_CarSwapFromIndex = g_PlayerCarIndex;
-                                    g_CarSwapToIndex = g_CarListCursor;
-                                    g_MenuViewAngle =
-                                        base - (prev - g_MenuViewAngle);
-                                    return;
-                                }
-                                PlaySoundCue(5);
-                                g_CarSelectPopupScript = (u8 *)&g_CarShopUnavailableScript;
-                                GameMenuBusy = car;
-                                g_UiScriptProgress2 = 0;
-                                return;
-                            }
-                            if (choice == 3) {
-                                s32 unlockLevel;
-
-                                if (g_CarModelAsset->upgradesAvailable != 0) {
-                                    unlockLevel =
-                                        GetCarUnlockLevel(g_PlayerCarIndex);
-                                    if (g_RaceProgress->maxClassReached >=
-                                        unlockLevel) {
-                                        GameMenuBusy = 4;
-                                        g_MenuOverlayPattern = 1;
-                                        PlaySoundCue(2);
-                                        return;
-                                    }
-                                }
-                                PlaySoundCue(5);
-                                g_CarSelectPopupScript = (u8 *)&g_EngineerShopUnavailableScript;
-                                GameMenuBusy = -2;
-                                g_UiScriptProgress2 = 0;
-                                return;
-                            }
-                        } else if ((g_GameInput.pressed & PAD_CANCEL) &&
-                                   ((u32)(g_MenuViewAngle - 0x2710) >
-                                    0x120160U)) {
-                            PlaySoundCue(3);
-                            GameMenuBusy = 5;
-                            g_MenuOverlayPattern = 2;
-                            g_CarNamePlateStep = -10;
-                            g_CarSpecGraphStep = -3;
-                            g_MenuViewOffsetTarget = 0x3D090;
-                        }
+                        ApplyCarSelectCommand(input.command);
+                        if (input.command != CAR_SELECT_COMMAND_NONE) return;
                     }
                 }
             }
@@ -507,12 +522,9 @@ void UpdateCarSelectScreen(void) {
     if (GameMenuBusy < 0) {
         RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            if (g_GameInput.pressed & PAD_CONFIRM) {
-                GameMenuBusy = 0;
-            }
-            if (g_GameInput.pressed & PAD_CANCEL) {
-                GameMenuBusy = 0;
-            }
+            CarSelectScreenResult result = ReduceCurrentCarSelectInput(
+                g_GameInput.pressed, 0);
+            ApplyCarSelectScreenState(&result.state);
         }
         DrawBrowseArrows(
             1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
@@ -536,7 +548,7 @@ void UpdateCarSelectScreen(void) {
     DrawFadingMenuSprites(g_UiScriptProgress, mode, g_CarSelectCursor);
     if (g_UiScriptProgress <= 0) {
         switch (GameMenuBusy) {
-        case 1:
+        case CAR_SELECT_START_RACE:
             if ((g_MenuOutgoingScreenProgress > 0) &&
                 (g_MenuViewOffset <= 0x3D08F)) {
                 return;
@@ -552,10 +564,10 @@ void UpdateCarSelectScreen(void) {
                 g_RaceProgress->money.value = g_GrandPrixSeries;
             }
             break;
-        case 2:
+        case CAR_SELECT_TO_CUSTOMIZE:
             MenuFlowOpen(MENU_SCREEN_CUSTOMIZE);
             break;
-        case 3:
+        case CAR_SELECT_TO_CAR_SHOP:
             MenuFlowOpen(MENU_SCREEN_CAR_SHOP);
             DrawCarShopPricePanel(0, 0, 0);
             DrawBrowseArrows(0, 0, 0, 0);
@@ -565,11 +577,11 @@ void UpdateCarSelectScreen(void) {
             ClearTeamNameTexture();
             RestoreTeamLogoClut();
             break;
-        case 4:
+        case CAR_SELECT_TO_ENGINEER_SHOP:
             MenuFlowOpen(MENU_SCREEN_ENGINEER_SHOP);
             DrawEngineerShopPricePanel(0, 0, 0);
             break;
-        case 5:
+        case CAR_SELECT_BACK:
         {
             s32 angle;
             s32 offset;
@@ -603,7 +615,7 @@ void UpdateCarSelectScreen(void) {
         }
         }
         g_UiScriptProgress = 0;
-        GameMenuBusy = 0;
+        GameMenuBusy = CAR_SELECT_ACTIVE;
     }
 }
 
@@ -642,13 +654,77 @@ s32 DrawCustomizeScreen(s32 step) {
 }
 
 
+static void ApplyCustomizeCommand(CustomizeCommand command) {
+    switch (command) {
+    case CUSTOMIZE_COMMAND_TIRES:
+        PlaySoundCue(2);
+        g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelUpperScript;
+        GameMenuBusy = CUSTOMIZE_TIRE_PROMPT;
+        g_UiScriptProgress2 = 0;
+        g_MenuSubCursor = g_CarTable[g_PlayerCarIndex].tireCompound;
+        break;
+    case CUSTOMIZE_COMMAND_TRANSMISSION:
+        PlaySoundCue(2);
+        g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelLowerScript;
+        GameMenuBusy = CUSTOMIZE_TRANSMISSION_PROMPT;
+        g_UiScriptProgress2 = 0;
+        g_MenuSubCursor = g_CarTable[g_PlayerCarIndex].transmission;
+        break;
+    case CUSTOMIZE_COMMAND_TRANSMISSION_UNAVAILABLE:
+        PlaySoundCue(5);
+        g_CustomizePopupScript = (u8 *)&g_TransmissionUnavailableScript;
+        GameMenuBusy = CUSTOMIZE_TRANSMISSION_UNAVAILABLE;
+        g_UiScriptProgress2 = 0;
+        break;
+    case CUSTOMIZE_COMMAND_DESIGN:
+        PlaySoundCue(2);
+        GameMenuBusy = CUSTOMIZE_TO_DESIGN;
+        g_MenuOverlayPattern = 1;
+        g_CarSpecGraphStep = -3;
+        g_MenuViewOffsetTarget = 0x3D090;
+        break;
+    case CUSTOMIZE_COMMAND_BACK:
+        PlaySoundCue(3);
+        GameMenuBusy = CUSTOMIZE_TO_CAR_SELECT;
+        g_MenuOverlayPattern = 2;
+        break;
+    case CUSTOMIZE_COMMAND_NONE:
+        break;
+    }
+}
+
+static CustomizeScreenState CurrentCustomizeScreenState(void) {
+    CustomizeScreenState state;
+
+    state.phase = (CustomizeState)GameMenuBusy;
+    state.selection = g_RankingOption;
+    state.modalCursor = g_MenuSubCursor;
+    state.confirmTimer = g_MenuConfirmTimer;
+    return state;
+}
+
+static void ApplyCustomizeScreenState(const CustomizeScreenState *state) {
+    GameMenuBusy = state->phase;
+    g_RankingOption = state->selection;
+    g_MenuSubCursor = state->modalCursor;
+    g_MenuConfirmTimer = state->confirmTimer;
+}
+
+static CustomizeScreenResult ReduceCurrentCustomizeInput(void) {
+    CustomizeScreenState state = CurrentCustomizeScreenState();
+    CustomizeScreenInput input;
+
+    input.pressed = g_GameInput.pressed;
+    input.grandPrixMode = g_GrandPrixMode;
+    input.transmissionAvailable = g_CarModelAsset->transmissionAvailable;
+    return CustomizeReduceInput(&state, &input);
+}
+
 void UpdateCustomizeScreen(void) {
     void *ot;
     s32 mode;
     s32 lowMode;
     u8 *cmdList;
-    u16 *pad;
-    s32 sel;
 
     ot = RENDER_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
@@ -663,121 +739,67 @@ void UpdateCustomizeScreen(void) {
         cmdList = (u8 *)&g_CustomizeMenuScriptGp;
     }
 
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == CUSTOMIZE_ACTIVE) {
         g_CarSpecGraphStep = 3;
         RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
         lowMode = mode & 0xFF;
         DrawFadingMenuSprites(g_UiScriptProgress, lowMode, g_RankingOption);
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
         if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
-            g_MenuOverlayPattern = -1;
-            if (g_GameInput.pressed & PAD_UP) {
-                PlaySoundCue(1);
-                g_RankingOption = (g_RankingOption > 0) ? g_RankingOption - 1 : lowMode;
-            }
-            if (g_GameInput.pressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_RankingOption = (g_RankingOption < mode) ? g_RankingOption + 1 : 0;
-            }
-            if (g_GameInput.pressed & PAD_CONFIRM) {
-                u8 carByte;
+            CustomizeScreenResult input;
+            s32 soundIndex;
 
-                sel = g_RankingOption;
-                if (sel == 0) {
-                    PlaySoundCue(2);
-                    carByte = g_CarTable[g_PlayerCarIndex].tireCompound;
-                    g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelUpperScript;
-                    GameMenuBusy = -1;
-                        g_UiScriptProgress2 = 0;
-                        g_MenuSubCursor = carByte;
-                        return;
-                }
-                if (sel == 1) {
-                    if (g_CarModelAsset->transmissionAvailable != 0) {
-                        PlaySoundCue(2);
-                        carByte = g_CarTable[g_PlayerCarIndex].transmission;
-                        g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelLowerScript;
-                        GameMenuBusy = -2;
-                        g_UiScriptProgress2 = 0;
-                        g_MenuSubCursor = carByte;
-                        return;
-                    }
-                    PlaySoundCue(5);
-                    g_CustomizePopupScript = (u8 *)&g_TransmissionUnavailableScript;
-                    GameMenuBusy = -3;
-                    g_UiScriptProgress2 = 0;
-                    return;
-                }
-                if (sel == mode) {
-                PlaySoundCue(3);
-                GameMenuBusy = 2;
-                g_MenuOverlayPattern = 2;
-                                return;
-                }
-                if (sel == 2) {
-                    PlaySoundCue(2);
-                    GameMenuBusy = 1;
-                    g_MenuOverlayPattern = 1;
-                    g_CarSpecGraphStep = -3;
-                    g_MenuViewOffsetTarget = 0x3D090;
-                }
-            } else if (g_GameInput.pressed & PAD_CANCEL) {
-                PlaySoundCue(3);
-                GameMenuBusy = 2;
-                g_MenuOverlayPattern = 2;
+            g_MenuOverlayPattern = -1;
+            input = ReduceCurrentCustomizeInput();
+            ApplyCustomizeScreenState(&input.state);
+            for (soundIndex = 0; soundIndex < input.moveCount; soundIndex++) {
+                PlaySoundCue(1);
             }
+            ApplyCustomizeCommand(input.command);
+            if (input.command != CUSTOMIZE_COMMAND_NONE) return;
         }
         return;
     }
 
     if (GameMenuBusy < 0) {
-        if (GameMenuBusy == -1) {
+        if (GameMenuBusy == CUSTOMIZE_TIRE_PROMPT) {
             if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) != 0) {
-                pad = &g_GameInput.pressed;
-                if (*pad & 0x860) {
+                CustomizeScreenResult dialog = ReduceCurrentCustomizeInput();
+                s32 soundIndex;
+
+                if ((dialog.effects & CUSTOMIZE_EFFECT_ACCEPT) != 0) {
                     PlaySoundCue(2);
-                    GameMenuBusy = -5;
-                    g_MenuConfirmTimer = 0x23;
                 }
-                if (*pad & 0x90) {
+                if ((dialog.effects & CUSTOMIZE_EFFECT_CANCEL) != 0) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 0;
                 }
-                if ((*pad & 0x8000) && (g_MenuSubCursor < 4)) {
+                ApplyCustomizeScreenState(&dialog.state);
+                for (soundIndex = 0;
+                     soundIndex < dialog.moveCount; soundIndex++) {
                     PlaySoundCue(1);
-                    g_MenuSubCursor++;
-                }
-                if (g_GameInput.pressed & PAD_RIGHT) {
-                    if (g_MenuSubCursor != 0) {
-                        PlaySoundCue(1);
-                        g_MenuSubCursor--;
-                    }
                 }
                 DrawTireCompoundSlider(g_MenuSubCursor, 0);
             }
-        } else if (GameMenuBusy == -2) {
+        } else if (GameMenuBusy == CUSTOMIZE_TRANSMISSION_PROMPT) {
             if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) != 0) {
-                pad = &g_GameInput.pressed;
-                if (*pad & 0x860) {
+                s32 previousCursor = g_MenuSubCursor;
+                CustomizeScreenResult dialog = ReduceCurrentCustomizeInput();
+                s32 soundIndex;
+
+                if ((dialog.effects & CUSTOMIZE_EFFECT_ACCEPT) != 0) {
                     PlaySoundCue(2);
-                    GameMenuBusy = -6;
-                    g_MenuConfirmTimer = 0x23;
-                    g_CarTable[g_PlayerCarIndex].transmission = g_MenuSubCursor;
-                    g_TimeAttackCarTransmissions[g_PlayerCarIndex * 8] = g_MenuSubCursor;
                 }
-                if (*pad & 0x90) {
+                if ((dialog.effects & CUSTOMIZE_EFFECT_CANCEL) != 0) {
                     PlaySoundCue(3);
-                    GameMenuBusy = 0;
                 }
-                if ((*pad & 0x8000) && (g_MenuSubCursor != 0)) {
+                if ((dialog.effects & CUSTOMIZE_EFFECT_APPLY_TRANSMISSION) != 0) {
+                    g_CarTable[g_PlayerCarIndex].transmission = previousCursor;
+                    g_TimeAttackCarTransmissions[g_PlayerCarIndex * 8] = previousCursor;
+                }
+                ApplyCustomizeScreenState(&dialog.state);
+                for (soundIndex = 0;
+                     soundIndex < dialog.moveCount; soundIndex++) {
                     PlaySoundCue(1);
-                    g_MenuSubCursor = 0;
-                }
-                if (g_GameInput.pressed & PAD_RIGHT) {
-                    if (g_MenuSubCursor == 0) {
-                        PlaySoundCue(1);
-                        g_MenuSubCursor = 1;
-                    }
                 }
                 DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xDA : 0xB8, 0x68, 0x20, 0x20, 0);
                 DrawSprite(ot, 0xC2, 0x70, 0xC, 0x10, 0x60, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -785,43 +807,49 @@ void UpdateCustomizeScreen(void) {
                 GameDrawMenuButton(0xB8, 0x68, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0, &g_MenuBlankCaption);
                 GameDrawMenuButton(0xDA, 0x68, 0x20, 0x20, 0x1E, 0x8E, 0x95, 0, 0, 0, &g_MenuBlankCaption);
             }
-        } else if (GameMenuBusy == -3) {
+        } else if (GameMenuBusy == CUSTOMIZE_TRANSMISSION_UNAVAILABLE) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 0);
             if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                if (g_GameInput.pressed & PAD_CONFIRM) {
-                    GameMenuBusy = -4;
-                }
-                if (g_GameInput.pressed & PAD_CANCEL) {
-                    GameMenuBusy = -4;
-                }
+                CustomizeScreenResult result = ReduceCurrentCustomizeInput();
+                ApplyCustomizeScreenState(&result.state);
             }
-        } else if (GameMenuBusy == -4) {
+        } else if (GameMenuBusy == CUSTOMIZE_CLOSE_UNAVAILABLE) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
             RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
             if (g_UiScriptProgress2 <= 0) {
-                GameMenuBusy = 0;
+                CustomizeScreenState current = CurrentCustomizeScreenState();
+                CustomizeScreenState next = CustomizeFinishPopup(&current);
+                ApplyCustomizeScreenState(&next);
             }
-        } else if (GameMenuBusy == -5) {
+        } else if (GameMenuBusy == CUSTOMIZE_CONFIRM_TIRES) {
             if (g_MenuConfirmTimer <= 0) {
                 RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
                 if (g_UiScriptProgress2 <= 0) {
-                    GameMenuBusy = 0;
+                    CustomizeScreenState current = CurrentCustomizeScreenState();
+                    CustomizeScreenState next = CustomizeFinishPopup(&current);
+                    ApplyCustomizeScreenState(&next);
                     g_CarTable[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
                     g_TimeAttackCarTires[g_PlayerCarIndex * 8] = g_MenuSubCursor;
                 }
             } else {
-                g_MenuConfirmTimer -= 1;
+                CustomizeScreenState current = CurrentCustomizeScreenState();
+                CustomizeScreenState next = CustomizeTickConfirmTimer(&current);
+                ApplyCustomizeScreenState(&next);
                 RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
                 DrawTireCompoundSlider(g_MenuSubCursor, 1);
             }
-        } else if (GameMenuBusy == -6) {
+        } else if (GameMenuBusy == CUSTOMIZE_CONFIRM_TRANSMISSION) {
             if (g_MenuConfirmTimer <= 0) {
                 RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
                 if (g_UiScriptProgress2 <= 0) {
-                    GameMenuBusy = 0;
+                    CustomizeScreenState current = CurrentCustomizeScreenState();
+                    CustomizeScreenState next = CustomizeFinishPopup(&current);
+                    ApplyCustomizeScreenState(&next);
                 }
             } else {
-                g_MenuConfirmTimer -= 1;
+                CustomizeScreenState current = CurrentCustomizeScreenState();
+                CustomizeScreenState next = CustomizeTickConfirmTimer(&current);
+                ApplyCustomizeScreenState(&next);
                 RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
                 DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xDA : 0xB8, 0x68, 0x20, 0x20, 1);
                 DrawSprite(ot, 0xC2, 0x70, 0xC, 0x10, 0x60, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -842,18 +870,18 @@ void UpdateCustomizeScreen(void) {
     DrawFadingMenuSprites(g_UiScriptProgress, mode, g_RankingOption);
     if (g_UiScriptProgress <= 0) {
         switch (GameMenuBusy) {
-        case 1:
+        case CUSTOMIZE_TO_DESIGN:
             if (g_MenuViewOffset <= 0x3D08F) {
                 return;
             }
             MenuFlowOpen(MENU_SCREEN_DESIGN_MODE);
             break;
-        case 2:
+        case CUSTOMIZE_TO_CAR_SELECT:
             MenuFlowOpen(MENU_SCREEN_CAR_SELECT);
             g_RankingOption = 0;
             break;
         }
         g_UiScriptProgress = 0;
-        GameMenuBusy = 0;
+        GameMenuBusy = CUSTOMIZE_ACTIVE;
     }
 }

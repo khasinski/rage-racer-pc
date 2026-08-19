@@ -42,5 +42,18 @@ int main(void) {
     EXPECT_EQ(MENU_ACTION_NONE, commands.action);
     commands = MenuSessionStep(&session, 0, PAD_CONFIRM | PAD_CANCEL);
     EXPECT_EQ(MENU_ACTION_CONFIRM, commands.action);
+    session = (MenuSession){0, 3, 0};
+    commands = MenuSessionStepVertical(&session, PAD_UP | PAD_DOWN);
+    EXPECT_EQ(0, session.selection);
+    EXPECT_EQ(2, commands.moveCount);
+
+    EXPECT_EQ(1, MenuViewIsSettled(100, 110, 10));
+    EXPECT_EQ(0, MenuViewIsSettled(100, 111, 10));
+    EXPECT_EQ(1, MenuViewIsSettled(110, 100, 10));
+    EXPECT_EQ(0, MenuViewIsSettled(100, 100, -1));
+    EXPECT_EQ(1, MenuExitIsReady(0, 101, 100));
+    EXPECT_EQ(0, MenuExitIsReady(1, 101, 100));
+    EXPECT_EQ(0, MenuExitIsReady(0, 100, 100));
+
     return 0;
 }
