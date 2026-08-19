@@ -214,13 +214,6 @@ endif()
 # These tests need neither a staged disc image nor a windowing session and are
 # therefore safe in every release-packaging job. Runtime tests below exercise
 # the real PAL data in local/pre-release validation instead.
-add_executable(mirror_pass_tests mirror_pass_tests.c ../src/port/mirror_pass.c)
-if(NOT MSVC)
-    target_compile_options(mirror_pass_tests PRIVATE -Wall -Wextra)
-endif()
-add_test(NAME mirror_pass COMMAND mirror_pass_tests)
-set_tests_properties(mirror_pass PROPERTIES LABELS portable)
-
 add_executable(axis_curve_tests axis_curve_tests.c ../src/port/axis_curve.c)
 target_include_directories(axis_curve_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)
 if(NOT MSVC)
@@ -245,7 +238,7 @@ set(RAGE_PORTABLE_TESTS
     release_package host_state_abi player_car_interior_aliases car_prices
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
-    mod_tools axis_curve mirror_pass
+    mod_tools axis_curve
     visual_run capture_sync visual_budget visual_triage
     gpu_digest_compare gp0_compare gp0_bundle gp0_replay gp0_raster_compare
     vram_delta visible_cells_compare input_replay)

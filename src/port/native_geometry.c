@@ -6,9 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game/race.h"
 #include "game/render_internal.h"
-#include "include/mirror_pass.h"
 #include "game/scratchpad.h"
 #include "game/asset.h"
 
@@ -196,8 +194,7 @@ static int RageProjectQuad(
         /* A widened modern view accepts faces the 4:3 screen rect would
          * cull; the compat image is unchanged because the PS1 drawing area
          * still clips them. Never widen the mirror's deliberate bounds. */
-        int marginX = RageMirrorRearViewPass(SCRATCH_MIRROR, g_MirrorMode)
-                          ? 0 : RageModernCullMarginX();
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             x[i] = (int16_t)(sxy[i] & 0xffff);
             y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
@@ -308,8 +305,7 @@ static int RageProjectCourseFace(
         return 0;
     }
     {
-        int marginX = RageMirrorRearViewPass(SCRATCH_MIRROR, g_MirrorMode)
-                          ? 0 : RageModernCullMarginX();
+        int marginX = SCRATCH_MIRROR ? 0 : RageModernCullMarginX();
         for (i = 0; i < 4; i++) {
             int x = (int16_t)sxy[i];
             int y = (int16_t)(sxy[i] >> 16);
@@ -1089,7 +1085,6 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     /* func_80028E9C seeds its terrain OT register from scratch+4 + 0x200. */
     OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 128;
     int cell;
-    int reflectHere;
     int decodedFaces = 0;
     int emittedFaces = 0;
     (void)ctx;
@@ -1104,8 +1099,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
      * with only the GTE register updated, DrawCar composed rival cars with
      * the un-reflected matrix and the mirror showed them moving opposite to
      * the track.  EndMirrorPass restores the saved camera matrix. */
-    reflectHere = RageMirrorDispatcherReflects(SCRATCH_MIRROR, g_MirrorMode);
-    if (reflectHere) {
+    if (SCRATCH_MIRROR) {
         SCRATCH_VIEW_MATRIX_GTE->m[0][0] = -SCRATCH_VIEW_MATRIX_GTE->m[0][0];
         SCRATCH_VIEW_MATRIX_GTE->m[0][1] = -SCRATCH_VIEW_MATRIX_GTE->m[0][1];
         SCRATCH_VIEW_MATRIX_GTE->m[0][2] = -SCRATCH_VIEW_MATRIX_GTE->m[0][2];
@@ -1126,7 +1120,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
         /* The rear-view dispatcher reflects both RT1 and the already
          * transformed cell-center X.  Reflecting only the rotation row moves
          * otherwise correct terrain quads tens of pixels to the right. */
-        translation.vx = reflectHere ? -visible[0] : visible[0];
+        translation.vx = SCRATCH_MIRROR ? -visible[0] : visible[0];
         translation.vy = visible[1];
         translation.vz = visible[2];
         translation.pad = 0;

@@ -50,7 +50,6 @@ if(RAGE_BUILD_PORT)
         src/port/timing_control.c
         src/port/analog_pad.c
         src/port/axis_curve.c
-        src/port/mirror_pass.c
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/port_config.c

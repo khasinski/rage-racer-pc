@@ -302,19 +302,6 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
 
     v1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[0];
     a1 = ReadStablePadHeld() & (s16)g_PadButtonMapping[1];
-    /* A mirrored course is reflected by negating the first row of the view
-     * matrix, so everything drawn through it, the player's own car included,
-     * appears left-right flipped while the car's world state does not. A left
-     * turn then renders as a right one and the wheel fights the player. Every
-     * other side-dependent system is already swapped for this: scenery sides
-     * and stereo cues in draw_path_scenery.c, the terrain roll sign, and the
-     * collision region parity further down this file. Steering was the one
-     * left out. */
-    if (g_MirrorMode) {
-        s32 swap = v1;
-        v1 = a1;
-        a1 = swap;
-    }
 
     if (v1 != 0) {
     a0v = 2;
@@ -348,8 +335,6 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     }
     } else if (g_PadType == 0x23) {
     a1 = ((g_NegconSteer * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
-    /* The twist axis needs the same reflection as the digital pair above. */
-    if (g_MirrorMode) a1 = -a1;
     if (!(a1 >= 0)) {
 
     a0v = 2;

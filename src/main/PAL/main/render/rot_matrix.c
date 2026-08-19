@@ -1,5 +1,4 @@
 #include "common.h"
-#include "game/race.h"
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "psyq/gte.h"
@@ -70,20 +69,6 @@ void SetCameraRotMatrix(void) {
     MulMatrix2(&mtx, scratch);
     BuildRotMatrixY(&mtx, 0x800);
     MulMatrix0(&mtx, scratch, &g_MirrorViewMatrix);
-    /* A mirrored course reflects the whole main view, so install that here,
-     * where the camera matrix is built, rather than leaving it to whoever draws
-     * first. The race frame draws the rival cars before the terrain, and the
-     * terrain dispatcher used to be what applied it, so the cars were composed
-     * with an unreflected matrix while the winding tests already expected a
-     * reflected one and turned them inside out.
-     *
-     * g_MirrorViewMatrix is built just above and stays unreflected: the
-     * rear-view pass swaps it in whole and the dispatcher reflects that one. */
-    if (g_MirrorMode) {
-        scratch->m[0][0] = -scratch->m[0][0];
-        scratch->m[0][1] = -scratch->m[0][1];
-        scratch->m[0][2] = -scratch->m[0][2];
-    }
     SetRotMatrix(scratch);
 }
 
