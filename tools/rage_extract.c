@@ -27,6 +27,8 @@
 #define VRAM_W 1024u
 #define VRAM_H 512u
 
+static FILE *s_index; /* textures/index.txt: which textures belong to which asset */
+
 typedef struct Entry {
     uint32_t offset, size;
 } Entry;
@@ -269,6 +271,8 @@ static int ExtractImageChain(const uint8_t *data, size_t size, size_t at,
             fprintf(sidecar, "\n}\n");
             fclose(sidecar);
         }
+        if (s_index != NULL)
+            fprintf(s_index, "%d %s_%02d.json\n", assetIndex, stem, written);
         written++;
         at += (size_t)linkSize;
     }
@@ -341,6 +345,14 @@ int main(int argc, char **argv) {
     snprintf(path, sizeof(path), "%s/textures", outPath);
     MakeDirectory(path);
 
+    snprintf(path, sizeof(path), "%s/textures/index.txt", outPath);
+    s_index = fopen(path, "w");
+    if (s_index == NULL) {
+        fprintf(stderr, "rage-extract: cannot write into %s\n", outPath);
+        free(data);
+        return 1;
+    }
+
     snprintf(path, sizeof(path), "%s/manifest.json", outPath);
     manifest = fopen(path, "w");
     if (manifest == NULL) {
@@ -390,6 +402,7 @@ int main(int argc, char **argv) {
 
     fprintf(manifest, "  ]\n}\n");
     fclose(manifest);
+    fclose(s_index);
     free(data);
     printf("rage-extract: %d entries written, %d carrying images\n",
            ARCHIVE_ENTRIES, images);

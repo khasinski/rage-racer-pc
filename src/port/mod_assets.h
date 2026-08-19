@@ -12,4 +12,7 @@ int RageModAssetLoad(int index, void *destination, unsigned int originalSize);
  * pointer is not inside a buffer this port knows the extent of. */
 size_t RagePortAssetRoomAt(const void *at);
 
+/* Apply the override directory's edited PNGs to a loaded asset. */
+void RageModPatchTextures(int index, void *data, size_t size);
+
 #endif

@@ -50,6 +50,7 @@ if(RAGE_BUILD_PORT)
         src/port/timing_control.c
         src/port/analog_pad.c
         src/port/mod_assets.c
+        src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
         src/port/platform_stubs.c
@@ -82,7 +83,8 @@ if(RAGE_BUILD_PORT)
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-extract tools/rage_extract.c)
-    add_executable(rage-pack tools/rage_pack.c)
+    add_executable(rage-pack tools/rage_pack.c src/port/texture_patch.c)
+    target_include_directories(rage-pack PRIVATE src/port)
     add_executable(rage-save-generator tools/rage_save_generator.c)
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
     target_compile_options(rage-save-generator PRIVATE

@@ -22,11 +22,15 @@ s32 EnableCdAudioMode(void) {
 }
 
 s32 LoadAsset(s32 assetIndex, void *dst) {
-    s32 overridden = RageModAssetLoad((int)assetIndex, dst,
-                                      g_AssetCdEntries[assetIndex].size);
-    if (overridden != 0) return overridden;
-    return RageHostLoadAsset(g_AssetCdEntries[assetIndex].position.sectorOffset,
-                             g_AssetCdEntries[assetIndex].size, dst);
+    s32 loaded = RageModAssetLoad((int)assetIndex, dst,
+                                  g_AssetCdEntries[assetIndex].size);
+    if (loaded == 0)
+        loaded = RageHostLoadAsset(g_AssetCdEntries[assetIndex].position.sectorOffset,
+                                   g_AssetCdEntries[assetIndex].size, dst);
+    /* Edited images are applied to the asset in memory, so a mod can carry
+     * PNGs alone and the directory it lives in is never written to. */
+    if (loaded != 0) RageModPatchTextures((int)assetIndex, dst, (size_t)loaded);
+    return loaded;
 }
 
 void LoadAssetBlocking(s32 assetIndex, void *dst) {

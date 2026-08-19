@@ -197,11 +197,16 @@ them, and every image the entries carry decoded to PNG under `textures/`. Each
 PNG sits next to a JSON sidecar recording the VRAM rectangle, the colour depth
 and the palette it came from, which is what putting an edited image back needs.
 
-Edit the PNGs, then write them back into the assets:
+Edit the PNGs and point the game at the directory:
 
 ```sh
-rage-pack mymod/
+"Rage Racer" --set mods.directory=mymod
 ```
+
+Edited images are applied to the assets as they load, so a mod can be nothing
+but PNGs and the directory is never written to. `rage-pack mymod/` does the
+same to the files, for looking at the result or for shipping a mod as packed
+assets rather than as images.
 
 Packing only touches texels an image actually changed, so running it over an
 extract nobody edited rewrites nothing. A PNG has to keep the size it was
@@ -211,12 +216,6 @@ palette usually sits in a strip of video memory that other textures sample
 from, so it is left alone: recolouring one to suit a single image would repaint
 parts of the game that have nothing to do with it. Colours with no match are
 reported and the closest one is used.
-
-Point the game at that directory to play with it:
-
-```sh
-"Rage Racer" --set mods.directory=mymod
-```
 
 Every archive entry present under `raw/` is used in place of the one on the
 disc, and anything missing falls back to the disc, so a mod only has to carry

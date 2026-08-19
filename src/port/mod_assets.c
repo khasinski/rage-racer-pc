@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "mod_assets.h"
+#include "texture_patch.h"
 #include "runtime_config.h"
 
 /*
@@ -103,4 +104,11 @@ int RageModAssetLoad(int index, void *destination, unsigned int originalSize) {
      * archive reader does, because callers add it straight onto word-aligned
      * cursors. */
     return (int)((unsigned long)size & ~3ul);
+}
+
+/* Apply the mod directory's edited images to an asset already in memory. */
+void RageModPatchTextures(int index, void *data, size_t size) {
+    RageModAssetsInit();
+    if (s_directory == NULL) return;
+    RageTexturePatchAsset(s_directory, index, data, size);
 }
