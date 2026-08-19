@@ -40,21 +40,26 @@ extern int g_FrameCounter;
 static unsigned char *s_pixels;
 static int s_width;
 static int s_height;
-static int s_clock;
 static unsigned int s_frame;
 static unsigned int s_sectorSpan;
-static unsigned int s_cadenceNumerator;
-static unsigned int s_cadenceDenominator;
-static Uint64 s_introStartNs;
-static int s_wallClockIntro;
+static unsigned int s_tickSectors;
+static Uint64 s_startNs;
+static int s_wallClock;
 static int s_xaPlaying;
 
-/* RAGE.STR plays at 30 frames per second. The format carries no frame rate,
- * so it has to be derived from the disc: one sector in eight is XA audio, and
- * XA level B stereo consumes 18.75 sectors per second, which pins the stream
- * to 150 sectors per second (double speed). Frames span five sectors, so
- * 150/5 = 30. */
-#define RAGE_FMV_FPS 30
+/*
+ * A movie in RAGE.STR carries no frame rate, and there is no single one to
+ * carry: the opening movie runs at twenty-five frames a second and the other
+ * ten at fifteen. What they share is the disc. At double speed the drive
+ * delivers 150 sectors a second, a frame appears once the sectors carrying it
+ * have been read, and the XA soundtrack is interleaved into those same sectors,
+ * so playing the stream at the rate the drive would deliver it is what keeps
+ * picture and sound together, whatever rate a movie was authored at.
+ *
+ * The port used to pace the opening movie at thirty frames a second, which ran
+ * it a fifth too fast and left its soundtrack twelve seconds behind by the end.
+ */
+#define RAGE_STR_SECTORS_PER_SECOND 150
 
 /* Movie sectors, held as read off the disc, plus the decoder's scratch. */
 #define RAGE_STR_SECTOR_SIZE 2352
@@ -196,6 +201,11 @@ static int RageDecodeFmvFrame(void) {
     return 1;
 }
 
+/* Whether a movie's XA soundtrack is streaming. Asset loads pause CD audio,
+ * because the console's drive cannot read data and play CD-DA at once; the
+ * soundtrack interleaved into a movie is not CD-DA and must survive them. */
+int RageFmvXaStreaming(void) { return s_xaPlaying; }
+
 static void RageStartXaAudio(unsigned int firstSector) {
     unsigned char raw[2352], filter[2] = {0, 0};
     unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
@@ -213,6 +223,11 @@ static void RageStartXaAudio(unsigned int firstSector) {
     absolute = RageHostStreamAbsoluteSector(firstSector);
     if (index == 16 || absolute < 0) return;
     CdIntToPos(absolute, &location);
+    if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+                                 "RAGE_PORT_FMV_TRACE")) {
+        fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
+                filter[0], filter[1]);
+    }
     CdControl(RAGE_CDL_SETFILTER, filter, NULL);
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
     CdControl(RAGE_CDL_SETLOC, (unsigned char *)&location, NULL);
@@ -224,11 +239,12 @@ static int RageHostDecodeFmvFrame(void) {
     s_frame++;
     if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
                                  "RAGE_PORT_FMV_TRACE")) {
-        fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d\n",
-                s_frame - 1, g_FrameCounter, g_SceneTimer);
+        fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d sector=%u\n",
+                s_frame - 1, g_FrameCounter, g_SceneTimer, s_sectorCursor);
     }
-    if (!s_wallClockIntro && g_StreamSectorCount != 0 &&
-        s_frame >= g_StreamSectorCount) {
+    /* Every movie has a few trailing frames the game never shows; the stream
+     * table names the last one it does. */
+    if (g_StreamSectorCount != 0 && s_frame >= g_StreamSectorCount) {
         g_FmvStreamEnded = 1;
     }
     return 1;
@@ -246,18 +262,27 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
 
     (void)buffers;
     if (streamIndex < 0 || streamIndex > 10) streamIndex = 0;
+    {
+        /* Every movie but the opening one sits behind hours of play, so this
+         * puts any of them where the opening one is asked for. */
+        const char *forced = RageRuntimeConfigGet("diagnostics.fmv_stream");
+        if (forced != NULL && forced[0] != '\0') {
+            long chosen = strtol(forced, NULL, 10);
+            if (chosen >= 0 && chosen <= 10) {
+                streamIndex = chosen;
+                g_StreamSectorCount = g_StreamCdEntries[streamIndex].size;
+                fprintf(stderr, "rage-port: FMV stream forced to %ld\n", chosen);
+            } else {
+                fprintf(stderr,
+                        "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
+                        forced);
+            }
+        }
+    }
     s_width = 320;
     s_height = streamIndex == 10 ? 240 : 192;
     s_sectorSpan = s_sectorSpans[streamIndex];
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
-    if (streamIndex == 0) {
-        /* Frames advanced per vblank: 30/50 on PAL, 30/60 on NTSC. */
-        s_cadenceNumerator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 3 : 1;
-        s_cadenceDenominator = RageTimingGetStandard() == RAGE_TIMING_PAL ? 5 : 2;
-    } else {
-        s_cadenceNumerator = 3 * g_StreamSectorCount;
-        s_cadenceDenominator = s_sectorSpan;
-    }
     if (!RageHostExtractFmv(firstSector, s_sectorSpan)) {
         fprintf(stderr, "rage-port: could not extract FMV %ld from RAGE.STR\n",
                 streamIndex);
@@ -270,9 +295,11 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     clearRect.w = s_width * 3 / 2;
     clearRect.h = 480;
     ClearImage(&clearRect, 0, 0, 0);
-    s_clock = streamIndex == 0 ? -10 * (int)s_cadenceNumerator : 0;
+    s_tickSectors = 0;
     s_frame = 0;
-    s_wallClockIntro = streamIndex == 0 && getenv("RAGE_PORT_TEST_MODE") == NULL;
+    /* Tests run the game as fast as the host manages, so there the stream is
+     * paced off the vblank count instead of the clock on the wall. */
+    s_wallClock = getenv("RAGE_PORT_TEST_MODE") == NULL;
     g_SceneTimer = 0;
     g_FmvStreamEnded = 0;
     g_FmvState = FMV_PLAYBACK_DECODE;
@@ -288,7 +315,18 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
-    s_introStartNs = SDL_GetTicksNS();
+    s_startNs = SDL_GetTicksNS();
+}
+
+/* How much of the stream the drive would have delivered by now. */
+static unsigned int RageFmvArrivedSectors(void) {
+    if (s_wallClock) {
+        Uint64 elapsed = SDL_GetTicksNS() - s_startNs;
+        return (unsigned int)((elapsed * RAGE_STR_SECTORS_PER_SECOND) /
+                              1000000000u);
+    }
+    s_tickSectors += RAGE_STR_SECTORS_PER_SECOND;
+    return s_tickSectors / (unsigned int)RageTimingBaseHz();
 }
 
 void DecodeFmvFrame(void) {
@@ -297,12 +335,10 @@ void DecodeFmvFrame(void) {
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
-    if (s_wallClockIntro) {
+    {
+        unsigned int arrived = RageFmvArrivedSectors();
         int decoded = 0;
-        Uint64 elapsed = SDL_GetTicksNS() - s_introStartNs;
-        unsigned int target =
-            1u + (unsigned int)((elapsed * RAGE_FMV_FPS) / 1000000000u);
-        while (s_frame < target) {
+        while (s_sectorCursor < arrived && !g_FmvStreamEnded) {
             if (!RageHostDecodeFmvFrame()) {
                 g_FmvStreamEnded = 1;
                 g_FmvState = FMV_PLAYBACK_FINISH;
@@ -311,20 +347,11 @@ void DecodeFmvFrame(void) {
             decoded = 1;
         }
         /* A slow host can fall several movie frames behind. Decode all of
-         * them to preserve wall-clock cadence, but upload only the newest
-         * image. Reusing one GPU transfer buffer several times in the same
-         * pending command buffer lets later CPU writes overwrite data that
-         * earlier copies have not consumed yet on some Vulkan drivers. */
+         * them to hold the cadence, but upload only the newest image. Reusing
+         * one GPU transfer buffer several times in the same pending command
+         * buffer lets later CPU writes overwrite data that earlier copies have
+         * not consumed yet on some Vulkan drivers. */
         if (decoded && !RageHostUploadFmvFrame()) {
-            g_FmvStreamEnded = 1;
-            g_FmvState = FMV_PLAYBACK_FINISH;
-        }
-        return;
-    }
-    s_clock += (int)s_cadenceNumerator;
-    if (s_clock >= (int)s_cadenceDenominator) {
-        s_clock -= (int)s_cadenceDenominator;
-        if (!RageHostDecodeFmvFrame() || !RageHostUploadFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;
         }

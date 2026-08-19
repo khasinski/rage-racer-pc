@@ -657,13 +657,27 @@ int RageHostDumpArchive(const char *path) {
     return ok;
 }
 
+/*
+ * The PS1 drive cannot stream CD-DA while reading data; pausing here is what
+ * actually stops the prologue music when menu assets load.
+ *
+ * A movie's soundtrack is not CD-DA. It is XA, interleaved into the movie's own
+ * sectors, and the port streams it from a separate handle that reading an asset
+ * does not disturb. Pausing it silenced every movie the game loads behind,
+ * which is all of them but the opening one.
+ */
+int RageFmvXaStreaming(void);
+
+static void RageBeginDataRead(void) {
+    if (RageFmvXaStreaming()) return;
+    Psyz_CdBeginDataRead();
+}
+
 int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
     int index;
-    /* The PS1 drive cannot stream CD-DA while reading data; pausing here is
-     * what actually stops the prologue music when menu assets load. */
-    Psyz_CdBeginDataRead();
+    RageBeginDataRead();
     if (count > 135 || !RageHostReadArchive(0, words, sizeof(words))) return 0;
     for (index = 0; index < count; index++) {
         entries[index].byte_offset = words[index * 2] * 2048u;
@@ -673,7 +687,7 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
 }
 
 int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
-    Psyz_CdBeginDataRead();
+    RageBeginDataRead();
     return RageHostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
 }
 
