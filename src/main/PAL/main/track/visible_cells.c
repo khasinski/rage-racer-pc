@@ -1,4 +1,6 @@
 #include "common.h"
+#include "game/race.h"
+#include "mirror_pass.h"
 #include "game/render.h"
 #include "game/scratchpad.h"
 #include "game/state.h"
@@ -172,7 +174,10 @@ void BuildVisibleCells(s32 near, s32 far) {
             dy = g_CellScanOffsetY[k];
             /* The rear-view pass reflects this quadrant.  Applying its signs
              * to the main view drops the left-hand cells ahead of the car. */
-            if (SCRATCH_MIRROR) {
+            /* Reflecting the view does not change which cells fall inside
+             * the frustum, so a mirrored course scans exactly like a normal
+             * one. Only the rear view needs the reflected quadrant. */
+            if (RageMirrorRearViewPass(SCRATCH_MIRROR, g_MirrorMode)) {
                 sx = cx + dx;
                 sy = cy - dy;
             } else {

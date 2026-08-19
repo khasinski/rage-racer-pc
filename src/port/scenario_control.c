@@ -29,7 +29,7 @@ typedef struct RageScenarioState {
     int grid[11], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
-    int directBoot, directStep, skipSequences;
+    int directBoot, directStep, skipSequences, mirror;
     int lastScene, lastFrontend, lastMenuScreen, stableFrames, retryFrames;
 } RageScenarioState;
 
@@ -237,6 +237,7 @@ static void RageScenarioInitialize(void) {
         "race.grid", "RAGE_PORT_SCENARIO_GRID"));
     RageScenarioParseTrackStarts();
     s_scenario.freezeStarts = RageRuntimeConfigEnabled("start.freeze", NULL);
+    s_scenario.mirror = RageRuntimeConfigEnabled("race.mirror", NULL);
     s_scenario.skipSequences = RageRuntimeConfigGet("boot.skip_sequences") == NULL
                                    ? 1
                                    : RageRuntimeConfigEnabled("boot.skip_sequences", NULL);
@@ -255,9 +256,10 @@ static void RageScenarioInitialize(void) {
             s_scenario.customGrid ? "custom" : "default",
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
-    fprintf(stderr, "rage-port: scenario boot=%s skip=%s\n",
+    fprintf(stderr, "rage-port: scenario boot=%s skip=%s course=%s\n",
             s_scenario.directBoot ? "direct" : "menus",
-            s_scenario.skipSequences ? "on" : "off");
+            s_scenario.skipSequences ? "on" : "off",
+            s_scenario.mirror ? "mirrored" : "normal");
 }
 
 static void RageScenarioConfirm(void) {
@@ -417,7 +419,7 @@ static void RageScenarioDirectBoot(void) {
     case RAGE_DIRECT_RACE_ASSETS:
         if (RequestRaceAssets() == 0) {
             RageScenarioSelectBgm();
-            g_MirrorMode = 0;
+            g_MirrorMode = (s16)s_scenario.mirror;
             g_FrameSyncThreshold = 0x180;
             g_SceneTimer = 0;
             g_SceneId = 11;
@@ -558,6 +560,14 @@ void RagePortScenarioBeforeSceneHandler(void) {
     } else if (g_SceneId == 8 && s_scenario.stableFrames >= 20 &&
                s_scenario.retryFrames >= 60) {
         RageScenarioConfirm();
+    }
+
+    /* Retail arms the mirrored course by holding START+R1+L1 on the round
+     * screen, which UpdateRoundScreen reads once as it hands off. Hold the
+     * resulting flag across the race scenes instead, so a scenario can reach
+     * one deterministically. */
+    if (s_scenario.mirror && g_SceneId >= 10 && g_SceneId <= 12) {
+        g_MirrorMode = 1;
     }
 
     if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
