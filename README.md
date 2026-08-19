@@ -9,49 +9,6 @@ on the complete clean-room decompilation in
 compatibility layer.  The decompilation remains the reference source for the
 original PlayStation release.
 
-## 0.4-alpha
-
-This alpha adds an opt-in modern renderer next to the faithful PS1 one:
-z-buffered rendering at a configurable internal scale, optional 16:9
-presentation, an uncapped interpolated frame rate, an extended draw distance
-and FXAA. Select it in `rage-port.ini` next to the executable:
-
-```ini
-[video]
-renderer = modern
-internal_scale = 4
-aspect = 16:9
-fps = vsync
-post = fxaa
-toggle_renderer_key = F10
-```
-
-The supplied file defaults to the modern renderer preset shown above, and `F10`
-switches between both renderers without restarting the race. The
-release also fixes the rear-view mirror rendering rivals with a mirrored view
-matrix, mirror slide-in flashes, paused-mirror rendering, and depth ordering
-of car models at hill crests.
-
-The release additionally restores race sound effects, engine audio and native
-CD-DA music, fixes sequenced menu music timing, and enables original
-intro/ending FMVs through a software MDEC decoder that needs no external
-tools. It also repairs mirrored-track control and
-geometry, keeps Lakeside Gate's waterfalls visible at close range, and
-corrects Trophy View, controller setup, retire-camera and title-logo sprite
-rendering. Runtime settings now use `rage-port.ini`, normal sessions write
-`rage-racer.log`, and the scenario launcher can start any GP, Extra GP or Time
-Attack race at deterministic track positions.
-
-## 0.2-alpha
-
-This alpha provides unsigned builds for arm64 macOS, x86-64 Linux and x86-64
-Windows. It includes current work on game-state recovery, menu flow, save
-state, input replay, and more accurate PsyZ CD and sound behaviour. It
-contains no game data. On first launch, the app asks the player to locate the
-`.cue` sheet for their legally obtained PAL copy of Rage Racer, then saves that
-local choice for future launches. The game image and its data files are never
-uploaded to this repository or attached to GitHub Releases.
-
 ## Build from source
 
 The project uses CMake and its pinned PSY-Z compatibility layer:
@@ -128,8 +85,24 @@ with `[disc] cue` in `rage-port.ini`.
 
 Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
 an alternative file and `--set section.key=value` for an individual override.
-Press `F10` while playing to switch between classic and modern rendering; the
-key is configurable as `[video] toggle_renderer_key`.
+
+An opt-in modern renderer sits next to the faithful PS1 one, adding z-buffered
+rendering at a configurable internal scale, optional 16:9 presentation, an
+uncapped interpolated frame rate and FXAA. The supplied file defaults to it:
+
+```ini
+[video]
+renderer = modern
+internal_scale = 4
+aspect = 16:9
+fps = vsync
+post = fxaa
+toggle_renderer_key = F10
+```
+
+Press `F10` while playing to switch between classic and modern rendering
+without restarting the race; the key is configurable as
+`[video] toggle_renderer_key`.
 
 Input defaults are loaded from `rage-input.cfg` when present.  The port keeps
 game saves and the selected disc location in the user's local application data.
@@ -144,7 +117,19 @@ and audio Tracks 02–17; a CUE containing only the data track can run the game
 and FMVs but cannot provide the Grand Prix intro or race soundtrack. Keep all
 BIN files referenced by the CUE together and select that full CUE on first run.
 
-## Keyboard controls
+## Controls
+
+### Gamepad
+
+A connected gamepad is driven as a NeGcon, the analog controller the game was
+built around. The left stick steers in proportion to how far it is pushed and
+the triggers meter the throttle and the brake, while the d-pad still steers at
+full lock so either input can be used. Dead zone and steering sensitivity are
+the game's own NeGcon settings, adjustable in the OPTIONS menu as "play" and
+"max twist". Set `[input] analog = false` to keep a pad on the digital
+mapping instead.
+
+### Keyboard
 
 The default bindings emulate the original PlayStation pad:
 
@@ -194,10 +179,7 @@ LEFT=Left
 ## Known limitations
 
 - Controller configuration currently retains the original preset-oriented
-  UI. Full per-action controller remapping is planned after 0.4-alpha.
-- Left-stick-as-D-pad and analog steering are not exposed yet. The eventual
-  analog path will share the existing NeGcon calibration and steering
-  mechanics instead of adding a second physics input model.
+  UI. Full per-action controller remapping is still to come.
 - Release builds are unsigned. Operating systems may require the user to
   explicitly allow the downloaded application.
 - Only the legally obtained PAL/Europe disc (`SCES-006.50`) is supported and
