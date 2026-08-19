@@ -252,6 +252,22 @@ Assets are read once at startup, so changes take effect on the next launch.
 
 Extracted files are game data. Share the changes you made, not the extract.
 
+## Running the runtime tests
+
+`ctest -L portable` needs nothing but a build. The rest of the suite drives the
+game against real PAL data, which is not in the repository, so those tests fail
+until it is staged:
+
+```sh
+"Rage Racer" --set tools.dump_archive=assets/PAL/RAGE.BIN
+ctest --test-dir build
+```
+
+`assets/` is ignored by git, and the archive must not be committed. With it in
+place the runtime tests reach a race and check what they were written to check;
+without it they stop at the title screen, because every asset read returns
+nothing.
+
 ## Known limitations
 
 - Controller configuration currently retains the original preset-oriented
