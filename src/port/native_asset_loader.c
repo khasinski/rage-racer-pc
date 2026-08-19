@@ -1,4 +1,5 @@
 /* Native asset loader for the extracted retail RAGE.BIN archive. */
+#include "mod_assets.h"
 #include "common.h"
 #include <stdio.h>
 #include "game/state.h"
@@ -21,6 +22,9 @@ s32 EnableCdAudioMode(void) {
 }
 
 s32 LoadAsset(s32 assetIndex, void *dst) {
+    s32 overridden = RageModAssetLoad((int)assetIndex, dst,
+                                      g_AssetCdEntries[assetIndex].size);
+    if (overridden != 0) return overridden;
     return RageHostLoadAsset(g_AssetCdEntries[assetIndex].position.sectorOffset,
                              g_AssetCdEntries[assetIndex].size, dst);
 }

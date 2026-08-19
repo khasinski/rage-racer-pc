@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -495,6 +496,21 @@ u8 g_Font8x8Cells[0xC0] = {
 };
 static u8 g_RageAssetMemory[64 * 1024 * 1024];
 u8 *g_AssetBase = g_RageAssetMemory;
+
+/* The console had two megabytes for all of this; the port has sixty-four, which
+ * is the room an oversized asset grows into. Overrides are checked against the
+ * end of whichever buffer they are being read into. */
+size_t RagePortAssetRoomAt(const void *at) {
+    const u8 *p = at;
+    if (p >= g_RageAssetMemory && p < g_RageAssetMemory + sizeof(g_RageAssetMemory))
+        return (size_t)(g_RageAssetMemory + sizeof(g_RageAssetMemory) - p);
+    {
+        extern unsigned long RagePortLoadBufferRoomAt(const void *at);
+        unsigned long room = RagePortLoadBufferRoomAt(at);
+        if (room != 0) return (size_t)room;
+    }
+    return 0;
+}
 BootLogoState g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
 s32 g_BootLogoTimer = 0;
 s32 g_BootLogoHoldTimer = 150;

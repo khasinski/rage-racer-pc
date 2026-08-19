@@ -49,6 +49,7 @@ if(RAGE_BUILD_PORT)
         src/port/runtime_config.c
         src/port/timing_control.c
         src/port/analog_pad.c
+        src/port/mod_assets.c
         src/port/port_config.c
         src/port/scenario_control.c
         src/port/platform_stubs.c

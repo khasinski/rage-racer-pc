@@ -197,6 +197,24 @@ them, and every image the entries carry decoded to PNG under `textures/`. Each
 PNG sits next to a JSON sidecar recording the VRAM rectangle, the colour depth
 and the palette it came from, which is what putting an edited image back needs.
 
+Point the game at that directory to play with it:
+
+```sh
+"Rage Racer" --set mods.directory=mymod
+```
+
+Every archive entry present under `raw/` is used in place of the one on the
+disc, and anything missing falls back to the disc, so a mod only has to carry
+what it changes. Replacements may be larger than the original: cursors in the
+loader advance by the size a load reports, and the asset region has far more
+room than the console gave it. A replacement that would not fit the buffer it
+loads into is refused with a message naming both sizes, and the original is
+used instead.
+
+One case the check cannot see: car models load into a fixed slot of 0x20000
+bytes and the model for the other slot sits directly behind it, so a car pack
+past that size will reach into its neighbour. Retail's largest is 0xD4A0.
+
 Extracted files are game data. Share the changes you made, not the extract.
 
 ## Known limitations

@@ -912,6 +912,13 @@ unsigned char g_NegconNeutralIISaved[8] __attribute__((aligned(16)));
 unsigned char g_NegconNeutralLSaved[8] __attribute__((aligned(16)));
 unsigned char g_LogoSampleSubPanelScript[8] __attribute__((aligned(16)));
 unsigned char g_LoadBuffer[1037896] __attribute__((aligned(16)));
+/* Extent of the boot load buffer, for the override bounds check. */
+unsigned long RagePortLoadBufferRoomAt(const void *at) {
+    const unsigned char *p = at;
+    if (p >= g_LoadBuffer && p < g_LoadBuffer + sizeof(g_LoadBuffer))
+        return (unsigned long)(g_LoadBuffer + sizeof(g_LoadBuffer) - p);
+    return 0;
+}
 unsigned char g_WaypointSpawnCooldown[8] __attribute__((aligned(16)));
 unsigned char g_BgmVolumeSetting[8] __attribute__((aligned(16)));
 unsigned char g_StreamSectorLimit[8] __attribute__((aligned(16)));
