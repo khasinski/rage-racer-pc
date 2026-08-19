@@ -119,8 +119,29 @@ BIN files referenced by the CUE together and select that full CUE on first run.
 
 ## 日本版について
 
-日本版（NTSC-J）のディスクでも動作しますが、ゲーム内の一部のテキストが
-正しく表示されない場合があります。
+日本版（NTSC-J）のディスクでも動作しますが、一部のメッセージは表示されません。
+メモリーカードの確認、車の説明、ネジコンの調整画面の説明などが空欄になります。
+
+このポートは欧州版の実行ファイルを移植したものです。欧州版はアルファベットの
+フォントから一文字ずつ文章を組み立てますが、日本版は同じビデオメモリの位置に、
+文章そのものを描いた画像を置いています。日本版のディスクには欧州版が必要とする
+フォントが存在しないため、これらのメッセージは描画されません。
+
+画面の配置の問題ではなく、二つの版がテキストを別の方法で持っているためです。
+それ以外のメニュー、レース、動画は日本版でも問題なく動作します。
+
+### About the Japanese release
+
+An NTSC-J disc runs, but the messages the game builds from its shared text
+sheet stay blank: the memory card prompts, the car descriptions, and the NeGcon
+calibration instructions.
+
+The port carries the European executable. That one keeps an alphabet at a fixed
+place in video memory and sets a message one letter at a time. The Japanese
+release puts whole pre-drawn Japanese sentences in that same place instead, so
+the alphabet the European code looks for is not on the disc at all and those
+messages draw nothing. It is not a matter of where the text sits on screen; the
+two releases hold text in different ways. Everything else runs.
 
 ## Controls
 
@@ -268,6 +289,11 @@ place the runtime tests reach a race and check what they were written to check;
 without it they stop at the title screen, because every asset read returns
 nothing.
 
+Ten of the eleven movies sit hours into a playthrough. `--set
+diagnostics.fmv_stream=N` puts movie `N` where the opening one is asked for, so
+one can be watched without earning it; `--set diagnostics.fmv_trace=1` reports
+each frame as it is decoded.
+
 The movies and the CD-DA music are not in that archive, they are on the disc,
 so the tests covering them also want a cue:
 
@@ -282,8 +308,8 @@ RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 - Release builds are unsigned. Operating systems may require the user to
   explicitly allow the downloaded application.
 - The legally obtained PAL/Europe disc (`SCES-006.50`) is the reference
-  release. A Japanese (NTSC-J) disc runs, with some in-game text displayed
-  incorrectly. No game data is included in release archives.
+  release. A Japanese (NTSC-J) disc runs, without the messages described above.
+  No game data is included in release archives.
 
 ## Related repositories
 
