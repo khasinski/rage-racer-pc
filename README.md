@@ -102,7 +102,7 @@ toggle_renderer_key = F10
 
 Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
-`[video] toggle_renderer_key`.
+`[video] toggle_renderer_key`. `F4` goes full screen and back.
 
 The port keeps
 game saves and the selected disc location in the user's local application data.
