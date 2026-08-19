@@ -33,10 +33,10 @@ def main() -> int:
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
-        if "fmv frame=17 vblank=357" not in result.stdout:
-            raise AssertionError("intro FMV cadence no longer matches the stream")
-        if "fmv frame=19" in result.stdout:
-            raise AssertionError("intro FMV advanced before its next interval")
+        # How fast the movie runs is verify_fmv_pacing.py's subject; this one
+        # only needs a frame to have been decoded to look at.
+        if "fmv frame=" not in result.stdout:
+            raise AssertionError("intro FMV decoded no frames")
         metrics = re.search(r"audio metrics: frames=(\d+) energy=(\d+)", result.stdout)
         if metrics is None or int(metrics.group(1)) < 10_000 or int(metrics.group(2)) == 0:
             raise AssertionError("intro FMV XA soundtrack remained silent")
@@ -63,7 +63,7 @@ def main() -> int:
                 "FMV has macroblock/Huffman colour corruption: "
                 f"green_pixels={green_corruption}"
             )
-    print("FMV layout and measured intro cadence are stable")
+    print("FMV picture is centered, decoded and free of colour corruption")
     return 0
 
 
