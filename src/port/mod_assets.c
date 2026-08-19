@@ -26,8 +26,25 @@ static void RageModAssetsInit(void) {
     s_directory = RageRuntimeConfigGetLegacy("mods.directory",
                                              "RAGE_PORT_MODS_DIRECTORY");
     if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
-    if (s_directory != NULL)
-        fprintf(stderr, "rage-port: asset overrides from %s\n", s_directory);
+    if (s_directory == NULL) return;
+    {
+        /* Say plainly when the directory is not the shape rage-extract writes,
+         * rather than silently playing the disc and leaving a modder to wonder
+         * why nothing changed. */
+        char probe[1024];
+        FILE *test;
+        snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin", s_directory);
+        test = fopen(probe, "rb");
+        if (test == NULL) {
+            fprintf(stderr,
+                    "rage-port: mods.directory %s has no raw/asset_000.bin; run rage-extract into it. Using the disc.\n",
+                    s_directory);
+            s_directory = NULL;
+            return;
+        }
+        fclose(test);
+    }
+    fprintf(stderr, "rage-port: asset overrides from %s\n", s_directory);
 }
 
 static FILE *RageModOpen(int index, long *size) {

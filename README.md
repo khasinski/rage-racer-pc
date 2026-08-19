@@ -197,6 +197,21 @@ them, and every image the entries carry decoded to PNG under `textures/`. Each
 PNG sits next to a JSON sidecar recording the VRAM rectangle, the colour depth
 and the palette it came from, which is what putting an edited image back needs.
 
+Edit the PNGs, then write them back into the assets:
+
+```sh
+rage-pack mymod/
+```
+
+Packing only touches texels an image actually changed, so running it over an
+extract nobody edited rewrites nothing. A PNG has to keep the size it was
+extracted at, since that size is fixed by where the texture lives in video
+memory, and colours are matched against the palette already in the asset. A
+palette usually sits in a strip of video memory that other textures sample
+from, so it is left alone: recolouring one to suit a single image would repaint
+parts of the game that have nothing to do with it. Colours with no match are
+reported and the closest one is used.
+
 Point the game at that directory to play with it:
 
 ```sh
@@ -214,6 +229,8 @@ used instead.
 One case the check cannot see: car models load into a fixed slot of 0x20000
 bytes and the model for the other slot sits directly behind it, so a car pack
 past that size will reach into its neighbour. Retail's largest is 0xD4A0.
+
+Assets are read once at startup, so changes take effect on the next launch.
 
 Extracted files are game data. Share the changes you made, not the extract.
 

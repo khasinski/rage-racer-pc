@@ -214,7 +214,8 @@ static int DecodeBlocks(const uint8_t *data, size_t size, const Block *clut,
 /* Walk one image chain, writing a PNG and a sidecar per link. Returns how many
  * links were decoded, or -1 when the data is not an image chain at all. */
 static int ExtractImageChain(const uint8_t *data, size_t size, size_t at,
-                             const char *directory, const char *stem) {
+                             const char *directory, const char *stem,
+                             int assetIndex, size_t assetOffset) {
     int written = 0;
     if (at + 4 > size) return -1;
     at += 4; /* the asset opens with a word the uploader steps over */
@@ -251,15 +252,20 @@ static int ExtractImageChain(const uint8_t *data, size_t size, size_t at,
         sidecar = fopen(jsonPath, "w");
         if (sidecar != NULL) {
             fprintf(sidecar,
-                    "{\n  \"vram\": { \"x\": %u, \"y\": %u, \"words\": %u, \"rows\": %u },\n"
+                    "{\n  \"asset\": %d,\n  \"raw\": \"raw/asset_%03d.bin\",\n"
+                    "  \"pixels_offset\": %zu,\n  \"pixel_bytes\": %u,\n"
+                    "  \"vram\": { \"x\": %u, \"y\": %u, \"words\": %u, \"rows\": %u },\n"
                     "  \"depth\": %d,\n  \"width\": %d,\n  \"height\": %u",
+                    assetIndex, assetIndex,
+                    assetOffset + pixels.at, (unsigned)(pixels.w * pixels.h * 2),
                     pixels.x, pixels.y, pixels.w, pixels.h,
                     clutPtr == NULL ? 16 : (clut.w * clut.h == 16 ? 4 : 8),
                     texelW, pixels.h);
             if (clutPtr != NULL)
                 fprintf(sidecar,
-                        ",\n  \"clut\": { \"x\": %u, \"y\": %u, \"colours\": %u }",
-                        clut.x, clut.y, (unsigned)(clut.w * clut.h));
+                        ",\n  \"clut\": { \"x\": %u, \"y\": %u, \"colours\": %u, \"offset\": %zu }",
+                        clut.x, clut.y, (unsigned)(clut.w * clut.h),
+                        assetOffset + clut.at);
             fprintf(sidecar, "\n}\n");
             fclose(sidecar);
         }
@@ -359,7 +365,7 @@ int main(int argc, char **argv) {
         snprintf(path, sizeof(path), "%s/textures", outPath);
         snprintf(stem, sizeof(stem), "asset_%03d", index);
         decoded = ExtractImageChain(data + entries[index].offset,
-                                    entries[index].size, 0, path, stem);
+                                    entries[index].size, 0, path, stem, index, 0);
         /* Packs keep their images behind the eleven scene offsets. */
         if (decoded < 0 && entries[index].size > SCENE_OFFSETS * 4) {
             for (sub = 0; sub < SCENE_OFFSETS; sub++) {
@@ -368,7 +374,8 @@ int main(int argc, char **argv) {
                 if (at == 0 || at >= entries[index].size) continue;
                 snprintf(subStem, sizeof(subStem), "asset_%03d_block_%02d", index, sub);
                 if (ExtractImageChain(data + entries[index].offset,
-                                      entries[index].size, at, path, subStem) > 0)
+                                      entries[index].size, at, path, subStem,
+                                      index, 0) > 0)
                     images++;
             }
         } else if (decoded > 0) {

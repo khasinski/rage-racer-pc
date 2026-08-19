@@ -82,6 +82,7 @@ if(RAGE_BUILD_PORT)
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-extract tools/rage_extract.c)
+    add_executable(rage-pack tools/rage_pack.c)
     add_executable(rage-save-generator tools/rage_save_generator.c)
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
     target_compile_options(rage-save-generator PRIVATE

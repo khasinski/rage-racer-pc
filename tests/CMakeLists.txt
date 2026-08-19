@@ -211,11 +211,23 @@ endif()
 # These tests need neither a staged disc image nor a windowing session and are
 # therefore safe in every release-packaging job. Runtime tests below exercise
 # the real PAL data in local/pre-release validation instead.
+if(TARGET rage-extract AND TARGET rage-pack)
+    add_test(
+        NAME mod_tools
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_mod_tools.py
+            $<TARGET_FILE:rage-extract>
+            $<TARGET_FILE:rage-pack>
+    )
+    set_tests_properties(mod_tools PROPERTIES TIMEOUT 60)
+endif()
+
 set(RAGE_PORTABLE_TESTS
     game_logic course_index native_geometry_interpolation
     release_package host_state_abi player_car_interior_aliases
     race_progress_layout sequence_state_layout native_ui_script_layout
     native_frame_offsets frame_environment_aliases audio_state_layout
+    mod_tools
     visual_run capture_sync visual_budget visual_triage
     gpu_digest_compare gp0_compare gp0_bundle gp0_replay gp0_raster_compare
     vram_delta visible_cells_compare input_replay)
