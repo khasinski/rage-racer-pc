@@ -7,6 +7,7 @@
 #include "game/cd.h"
 #include "game/car.h"
 #include "game/frontend_internal.h"
+#include "game/frontend_state.h"
 #include "game/menu.h"
 #include "game/menu_controller.h"
 #include "game/race.h"
@@ -21,25 +22,32 @@
 #include "game/game_context.h"
 #include "psyq/gpu.h"
 
+static void ApplyFrontendState(const FrontendRuntimeState *state) {
+    g_FrameSyncThreshold = state->frameSyncThreshold;
+    g_SceneTimer = state->sceneTimer;
+    g_FrontendIdleTimer = state->idleTimer;
+    g_TitleFadeLevel = state->titleFadeLevel;
+    g_MainMenuSlide = state->mainMenuSlide;
+    g_TitlePulse = state->titlePulse;
+    g_FrontendState = state->frontendState;
+    g_TitleExitTimer = state->titleExitTimer;
+    g_TitleAttractTimer = state->titleAttractTimer;
+}
+
 
 /* Scene 2: the menu-side entry to the front end. Clears the title/menu
  * state words and hands over to scene 4, UpdateFrontend. */
 void EnterFrontend(void) {
+    FrontendRuntimeState state;
+
     SetDispMask(0);
     CloseLoadedAudioSlots();
     ResetTrackTextureSwap();
     UploadLoadBufferImage();
 
-    g_FrameSyncThreshold = 0x80;
+    FrontendStateResetForEntry(&state);
+    ApplyFrontendState(&state);
     GameSceneSet(SCENE_FRONTEND);
-    g_SceneTimer = 0;
-    g_FrontendIdleTimer = 0;
-    g_TitleFadeLevel = 0;
-    g_MainMenuSlide = 0;
-    g_TitlePulse = 0;
-    g_FrontendState = FRONTEND_STATE_TITLE;
-    g_TitleExitTimer = 0;
-    g_TitleAttractTimer = -1;
 
     UpdateBgmTrackCount();
     SetDefaultReverbDepth();
@@ -47,24 +55,16 @@ void EnterFrontend(void) {
 
 
 void EnterTitleScreen(void) {
+    FrontendRuntimeState state;
+
     SetupDisplay240(0, 0, 0);
-    if (g_StreamReturnScene != 0) {
-        g_TitleFadeLevel = 0xFF;
-        g_TitleAttractTimer = 0x190;
-        g_TitleExitTimer = 0;
-    } else {
+    if (g_StreamReturnScene == 0) {
         SetDispMask(0);
         UploadLoadBufferImage();
-        g_TitleFadeLevel = 0;
-        g_TitleAttractTimer = 0;
-        g_TitleExitTimer = 0x1E;
     }
-    g_FrameSyncThreshold = 0x80;
-    g_SceneTimer = 0;
+    FrontendStateResetForTitle(&state, g_StreamReturnScene != 0);
+    ApplyFrontendState(&state);
     GameSceneSet(SCENE_FRONTEND);
-    g_FrontendIdleTimer = 0;
-    g_MainMenuSlide = 0;
-    g_FrontendState = FRONTEND_STATE_TITLE;
     UpdateBgmTrackCount();
     SetDefaultReverbDepth();
     DrawPressStartPrompt();

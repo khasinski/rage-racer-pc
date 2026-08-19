@@ -14,12 +14,37 @@
 #include "game/render_workspace.h"
 #include "game/state.h"
 #include "game/input_internal.h"
+#include "game/persistent_settings.h"
 #include "game/game_runtime.h"
 #include "game/game_input.h"
 #include "psyq/cd.h"
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
 #include "psyq/snd.h"
+
+static void ApplyPersistentSettings(const PersistentSettings *settings) {
+    g_ScreenOffsetX.value = settings->screenOffsetX;
+    g_ScreenOffsetY.value = settings->screenOffsetY;
+    g_NegconSteerPlay = settings->negconSteerPlay;
+    g_PadMappingIndex = settings->padMappingIndex;
+    g_NegconMappingIndex = settings->negconMappingIndex;
+    g_NegconSteerNeutral = settings->negconSteerNeutral;
+    g_NegconNeutralI = settings->negconNeutralI;
+    g_NegconNeutralII = settings->negconNeutralII;
+    g_NegconNeutralL = settings->negconNeutralL;
+    g_NegconMaxTwist = settings->negconMaxTwist;
+    g_PadErrorState = settings->padErrorState;
+    g_PadValidateCountdown = settings->padValidateCountdown;
+    g_PadErrorHoldBits = settings->padErrorHoldBits;
+    g_MirrorMode = settings->mirrorMode;
+    g_ExtraGrandPrixUnlocked = settings->extraGrandPrixUnlocked;
+}
+
+static void ResetPersistentGameSettings(void) {
+    PersistentSettings settings;
+    PersistentSettingsReset(&settings);
+    ApplyPersistentSettings(&settings);
+}
 /*
  * One-shot boot chain called from MainLoop: sequencer, sound runtime, GPU
  * and DMA, the pad, then the persistent settings block reset to its defaults
@@ -32,24 +57,11 @@ void InitSubsystems(void) {
     ResetGraph(0);
     SetGraphDebug(0);
     SetDispMask(0);
-    g_ScreenOffsetY.value = 0;
-    g_ScreenOffsetX.value = 0;
     SetDMAInterruptState(1);
     InitGeom();
     GameInitPad();
     RestartMemoryCard();
-    g_NegconSteerPlay = 1;
-    g_PadMappingIndex = 0;
-    g_NegconMappingIndex = 0;
-    g_NegconSteerNeutral = 0;
-    g_NegconNeutralI = 0;
-    g_NegconNeutralII = 0;
-    g_NegconNeutralL = 0;
-    g_NegconMaxTwist = 0;
-    g_PadErrorState = PAD_ERROR_STATE_NONE;
-    g_PadValidateCountdown = 0x21;
-    g_PadErrorHoldBits = 0;
-    g_MirrorMode = 0;
+    ResetPersistentGameSettings();
     ResetReplayFrameCounts();
     ApplyPadButtonMapping();
     InitRecordTables();
@@ -57,7 +69,6 @@ void InitSubsystems(void) {
     InitSaveDefaults();
     RENDER_VIEW_Y = -64;
     RENDER_VIEW_Z = -256;
-    g_ExtraGrandPrixUnlocked = 0;
     RENDER_VIEW_X = 0;
     RENDER_VIEW_ANGLE_X = 0x100;
     RENDER_VIEW_ANGLE_Y = 0;

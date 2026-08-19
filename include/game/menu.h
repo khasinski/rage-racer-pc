@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/frontend_types.h"
 #include "game/menu_flow.h"
 #include "game/player_car_aliases.h"
 #include "game/render_workspace.h"
@@ -348,14 +349,6 @@ extern s32 g_CdTrackEnded;
 extern s32 g_CourseSelectOption;
 extern s32 g_CourseSwapDelay;
 extern s32 g_DesignModeOption;
-typedef enum FrontendState {
-    FRONTEND_STATE_INVALID = -1,
-    FRONTEND_STATE_TITLE,
-    FRONTEND_STATE_MENU_OPENING,
-    FRONTEND_STATE_MENU_INPUT,
-    FRONTEND_STATE_MENU_EXIT
-} FrontendState;
-
 extern FrontendState g_FrontendState;
 extern s32 g_MainMenuSlide;
 extern u8 g_MenuBlankCaption;

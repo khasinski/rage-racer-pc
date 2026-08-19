@@ -63,6 +63,20 @@ if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME game_runtime COMMAND game_runtime_tests)
 
+add_executable(state_initializers_tests
+    state_initializers_tests.c
+    ../src/main/PAL/main/menu/menu_state.c
+    ../src/main/PAL/main/menu/frontend_state.c
+    ../src/main/PAL/main/race/race_session_state.c
+    ../src/main/PAL/main/boot/persistent_settings.c)
+target_include_directories(state_initializers_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(state_initializers_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(state_initializers_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME state_initializers COMMAND state_initializers_tests)
+set_tests_properties(state_initializers PROPERTIES LABELS portable)
+
 add_executable(game_input_tests game_input_tests.c
     ../src/main/PAL/main/pad/game_input_frame.c)
 target_include_directories(game_input_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)

@@ -1,7 +1,9 @@
 #include "common.h"
 #include "game/car.h"
+#include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
+#include "game/menu_state.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/render.h"
@@ -12,6 +14,72 @@
 #include "game/game_context.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
+
+static void ApplyMenuVisualState(const MenuVisualState *state) {
+    g_CourseSelectScrollValue = state->courseSelect;
+    g_RankingScrollState = state->ranking;
+    g_CarSelectFadeAccum = state->carSelect;
+    g_CustomizeFadeAccum = state->customize;
+    g_DesignModeScreenFade = state->designMode;
+    g_TeamLogoScreenFade = state->teamLogo;
+    g_LogoSampleScreenFade = state->logoSample;
+    g_TeamNameScreenProgress = state->teamName;
+    g_PaintColorScreenProgress = state->paintColor;
+    g_CarShopScreenProgress = state->carShop;
+    g_EngineSpecStep = state->engineerShop;
+    g_CarSpecGraphProgress = state->carSpecGraph;
+    g_MenuLightBurstLevel = state->lightBurst;
+    g_TimeAttackPlateProgress = state->timeAttackPlate;
+}
+
+void ResetMenuVisualState(void) {
+    MenuVisualState state;
+    MenuVisualStateReset(&state);
+    ApplyMenuVisualState(&state);
+}
+
+static void ApplyMenuState(const MenuState *state) {
+    g_CourseSelectModalScript = state->emptyScript;
+    g_CarSelectPopupScript = state->emptyScript;
+    g_CustomizePopupScript = state->emptyScript;
+    g_TeamLogoSubPanelScript = state->emptyScript;
+    g_LogoSampleSubPanelScript = state->emptyScript;
+    g_CarShopModalScript = state->emptyScript;
+    g_EngineerShopModalScript = state->emptyScript;
+    g_MenuViewAngle = state->viewAngle;
+    g_MenuViewAngleTarget = state->viewAngleTarget;
+    g_UiScriptProgress = state->uiScriptProgress;
+    g_UiScriptProgress2 = state->uiScriptProgress2;
+    g_MenuHintBarProgress = state->hintBarProgress;
+    g_MenuConfirmTimer = state->confirmTimer;
+    GameMenuBusy = state->busy;
+    g_MenuHintBarStep = state->hintBarStep;
+    g_ClassChangeApplied = state->classChangeApplied;
+    g_CourseSwapDelay = state->courseSwapDelay;
+    g_MenuViewOffset = state->viewOffset;
+    g_MenuViewOffsetTarget = state->viewOffsetTarget;
+    g_CourseCardSpin = state->courseCardSpin;
+    g_CourseCardSpinTarget = state->courseCardSpinTarget;
+    g_CourseCardPendingGrade = state->courseCardPendingGrade;
+    g_MenuPendingCourseIndex = state->pendingCourseIndex;
+    g_CarSwapFromIndex = state->carSwapFromIndex;
+    g_CarSwapToIndex = state->carSwapToIndex;
+    g_MenuOverlayPattern = state->overlayPattern;
+    g_CarNamePlateStep = state->carNamePlateStep;
+    g_MenuPlateCarIndex = state->plateCarIndex;
+    g_CarSpecGraphStep = state->carSpecGraphStep;
+    g_MenuCourseModelIndex = state->courseModelIndex;
+    g_MenuAltPanelStep = state->altPanelStep;
+    g_MenuAltPanelStep2 = state->altPanelStep2;
+    g_TimeAttackPlateStep = state->timeAttackPlateStep;
+    g_MenuHintButtonsVisible = state->hintButtonsVisible;
+    g_MenuAltLayoutSetting = state->altLayoutSetting;
+    g_CarShopUnlockAll = state->carShopUnlockAll;
+    g_CourseSelectOption = state->courseSelectOption;
+    g_CarSelectCursor = state->carSelectCursor;
+    g_RankingOption = state->rankingOption;
+    g_DesignModeOption = state->designModeOption;
+}
 
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {
@@ -315,6 +383,7 @@ void InitMenuLighting(void) {
 
 void InitMenuMode(void) {
     GameRaceProgress *p;
+    MenuState menuState;
 
     SetDispMask(0);
     g_MirrorMode = 0;
@@ -352,62 +421,10 @@ void InitMenuMode(void) {
     SetCameraRotMatrix();
     ScaleMatrix(RENDER_VIEW_MATRIX_GTE, &g_MenuViewScale);
 
-    g_CourseSelectModalScript = g_UiEmptyScript;
-    g_CarSelectPopupScript = g_UiEmptyScript;
-    g_CustomizePopupScript = g_UiEmptyScript;
-    g_TeamLogoSubPanelScript = g_UiEmptyScript;
-    g_LogoSampleSubPanelScript = g_UiEmptyScript;
-    g_CarShopModalScript = g_UiEmptyScript;
-    g_EngineerShopModalScript = g_UiEmptyScript;
-    g_MenuViewAngle = 500000;
-    g_MenuViewAngleTarget = 500000;
-    g_UiScriptProgress = 0;
-    g_UiScriptProgress2 = 0;
-    g_MenuHintBarProgress = 0;
-    g_MenuConfirmTimer = 0;
-    GameMenuBusy = 0;
-    g_MenuHintBarStep = 0;
-    g_ClassChangeApplied = 0;
-    g_CourseSwapDelay = 0;
-    g_MenuViewOffset = 0;
-    g_MenuViewOffsetTarget = 0;
-    g_CourseCardSpin = 0;
-    g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = 0;
-    g_MenuPendingCourseIndex = -1;
-    g_CarSwapFromIndex = 0;
-    g_CarSwapToIndex = -1;
-    g_MenuOverlayPattern = 0;
-    g_CarNamePlateStep = 0;
-    g_MenuPlateCarIndex = 0;
-    g_CarSpecGraphStep = 0;
-    g_MenuCourseModelIndex = g_CourseIndex;
-    g_MenuAltPanelStep = 0;
-    g_MenuAltPanelStep2 = 0;
-    g_TimeAttackPlateStep = 0;
-    g_MenuHintButtonsVisible = 1;
+    MenuStateReset(&menuState, g_CourseIndex, g_UiEmptyScript);
+    ApplyMenuState(&menuState);
     MenuFlowReset();
-    g_MenuAltLayoutSetting = 0;
-    g_CarShopUnlockAll = 0;
-    g_CourseSelectOption = 0;
-    g_CarSelectCursor = 0;
-    g_RankingOption = 0;
-    g_DesignModeOption = 0;
-
-    DrawCourseSelectScreen(0);
-    DrawRankingScreen(0);
-    DrawCarSelectScreen(0);
-    DrawCustomizeScreen(0);
-    DrawDesignModeScreen(0);
-    DrawTeamLogoScreen(0);
-    DrawLogoSampleScreen(0);
-    DrawTeamNameScreen(0);
-    DrawPaintColorScreen(0);
-    DrawCarShopScreen(0);
-    DrawEngineerShopScreen(0);
-    DrawCarSpecGraph(0, 0);
-    DrawMenuLightBurst(0);
-    DrawTimeAttackPlate(0);
+    ResetMenuVisualState();
 }
 
 /* Counts the enabled entries of g_CarTable. */

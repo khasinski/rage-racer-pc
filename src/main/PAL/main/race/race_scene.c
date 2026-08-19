@@ -13,6 +13,7 @@
 #include "game/race_pause.h"
 #include "game/race_end.h"
 #include "game/race_session.h"
+#include "game/race_session_state.h"
 #include "game/race_session_runtime.h"
 #include "game/race_result.h"
 #include "game/race_result_runtime.h"
@@ -32,6 +33,42 @@
 /* A retirement is not a finish-line event. Keep following the player's car
  * instead of advancing the autonomous finish camera down the track. */
 static s32 s_RetireCameraActive;
+
+static void ApplyRaceTimingState(const RaceSessionState *state) {
+    g_LapCount = state->lapCount;
+    g_LapTimeMs = state->lapTimeMs;
+    g_LapTimeSaturated = state->lapTimeSaturated;
+    g_SectorEndDistance[0] = state->sectorEndDistance[0];
+    g_SectorEndDistance[1] = state->sectorEndDistance[1];
+    g_SectorEndDistance[2] = state->sectorEndDistance[2];
+    g_SectorIndex = state->sectorIndex;
+    g_RaceTimeRemaining = state->raceTimeRemaining;
+}
+
+static void ApplyRaceRuntimeState(const RaceSessionState *state) {
+    g_AnimTimer = state->animTimer;
+    g_SceneTimer = state->sceneTimer;
+    g_CameraViewMode = state->cameraViewMode;
+    g_RacePhase = state->racePhase;
+    g_RaceCueFlags = state->raceCueFlags;
+    g_RivalCueFlags = state->rivalCueFlags;
+    g_RivalCueCooldown0 = state->rivalCueCooldown[0];
+    g_RivalCueCooldown1 = state->rivalCueCooldown[1];
+    g_RivalCueCooldown2 = state->rivalCueCooldown[2];
+    g_RivalCueCooldown3 = state->rivalCueCooldown[3];
+}
+
+static void ApplyRacePostSetupState(const RaceSessionState *state) {
+    g_PauseDebounce = state->pauseDebounce;
+    g_RaceFadeTimer = state->raceFadeTimer;
+}
+
+static void ApplyRaceControlState(const RaceSessionState *state) {
+    g_RivalCueEnabled = state->rivalCueEnabled;
+    g_PlayerAutoSteer = state->playerAutoSteer;
+    g_RaceCueDelay = state->raceCueDelay;
+    s_RetireCameraActive = state->retireCameraActive;
+}
 
 int RageRetireCameraActive(void) { return s_RetireCameraActive; }
 
@@ -223,13 +260,13 @@ void EnterRaceScene(void) {
     s32 mode;
     s32 scene;
     s32 tableOffset;
-    s32 trackLength;
     s32 count;
     s32 i;
     s32 *first;
     s32 *second;
     SectorTimeTableAddress sectorAddress;
     SectorTimeTableAddress lastSectorAddress;
+    RaceSessionState sessionState;
 
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
@@ -237,24 +274,16 @@ void EnterRaceScene(void) {
     LoadTrackTexturePageRange();
     InitTrackLighting();
     g_TrackWalkStart = g_TrackEventData->trackWalkStart;
-    if (g_CourseIndex == 3) {
-        g_LapCount = 6;
-    } else {
-        g_LapCount = 3;
-    }
+    RaceSessionStateReset(&sessionState, g_CourseIndex, g_TrackLength);
+    g_LapCount = sessionState.lapCount;
     player = &g_PlayerCar;
     InitPlayerCar(player);
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
-    trackLength = g_TrackLength;
     count = g_CourseIndex;
     mode = count & 3;
     scene = ReadStableRaceSeries();
-    g_LapTimeMs = 0;
-    g_LapTimeSaturated = 0;
-    g_SectorEndDistance[2] = trackLength;
-    g_SectorEndDistance[0] = trackLength / 3;
-    g_SectorEndDistance[1] = g_SectorEndDistance[0] * 2;
+    ApplyRaceTimingState(&sessionState);
     tableOffset = (mode * 12) + (scene * 48);
     sectorAddress.table = g_BestSectorTimes;
     sectorAddress.bytes += tableOffset;
@@ -262,7 +291,6 @@ void EnterRaceScene(void) {
     sectorAddress.table = g_BestSectorTimes;
     sectorAddress.bytes += tableOffset;
     g_RefSectorTime1 = sectorAddress.pointer[1];
-    g_SectorIndex = -2;
     lastSectorAddress.table = g_BestSectorTimes;
     lastSectorAddress.bytes += tableOffset;
     g_RefSectorTime2 = lastSectorAddress.pointer[2];
@@ -272,7 +300,6 @@ void EnterRaceScene(void) {
     g_RefLapTime =
         g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][g_GrandPrixMode];
     count = g_LapCount;
-    g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
     if (count > 0) {
         i = 0;
@@ -286,37 +313,25 @@ void EnterRaceScene(void) {
             first++;
         } while (i < count);
     }
-    g_RaceTotalTime = 0;
+    g_RaceTotalTime = sessionState.raceTotalTime;
     ResetMirrorState();
     SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
     BuildTileStrips();
     BuildRaceHudPrims(g_GrandPrixMode);
-    g_AnimTimer = 0;
-    g_SceneTimer = 0;
-    g_CameraViewMode = CAMERA_VIEW_CAR;
-    g_RacePhase = 0;
-    s_RetireCameraActive = 0;
-    g_RaceCueFlags = 0;
-    g_RivalCueFlags = 0x1FE;
-    g_RivalCueCooldown3 = 0;
-    g_RivalCueCooldown2 = 0;
-    g_RivalCueCooldown1 = 0;
-    g_RivalCueCooldown0 = 0;
+    ApplyRaceRuntimeState(&sessionState);
     ResetFreeLookCamera();
     InitShuttleScenery();
     SeedFlybyScenery();
     SeedRouteScenery();
     InitPathScenery();
     RequestCdTrack(g_BgmTrack + 3);
-    g_PauseDebounce = 0;
-    g_RaceFadeTimer = 0;
+    ApplyRacePostSetupState(&sessionState);
     InitEffectVoiceRuntime();
-    g_RivalCueEnabled = 1;
-    g_PlayerAutoSteer = (g_RaceCueDelay = 0);
+    ApplyRaceControlState(&sessionState);
     do {
     } while (0);
     GameSceneSet(SCENE_RACE);
-    g_FrameSyncThreshold = 0x180;
+    g_FrameSyncThreshold = sessionState.frameSyncThreshold;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
 
