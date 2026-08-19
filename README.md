@@ -117,6 +117,11 @@ and audio Tracks 02–17; a CUE containing only the data track can run the game
 and FMVs but cannot provide the Grand Prix intro or race soundtrack. Keep all
 BIN files referenced by the CUE together and select that full CUE on first run.
 
+## 日本版について
+
+日本版（NTSC-J）のディスクでも動作しますが、ゲーム内の一部のテキストが
+正しく表示されない場合があります。
+
 ## Controls
 
 ### Gamepad
@@ -182,8 +187,9 @@ LEFT=Left
   UI. Full per-action controller remapping is still to come.
 - Release builds are unsigned. Operating systems may require the user to
   explicitly allow the downloaded application.
-- Only the legally obtained PAL/Europe disc (`SCES-006.50`) is supported and
-  no game data is included in release archives.
+- The legally obtained PAL/Europe disc (`SCES-006.50`) is the reference
+  release. A Japanese (NTSC-J) disc runs, with some in-game text displayed
+  incorrectly. No game data is included in release archives.
 
 ## Related repositories
 
