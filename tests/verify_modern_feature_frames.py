@@ -10,8 +10,8 @@ from pathlib import Path
 
 
 CASES = {
-    "baseline": ("auto", "nearest", "none", "off", "off", (320, 240)),
-    "enhanced": ("16:9", "linear", "fxaa", "0.6", "vibrant", (426, 240)),
+    "baseline": ("auto", "nearest", "none", "off", (320, 240)),
+    "enhanced": ("16:9", "linear", "fxaa", "vibrant", (426, 240)),
 }
 MODERN_GOLDENS = {
     "baseline": "bb6c04d335585d8cbfeb2954a1d25c16910315b6e69afd472c8611f4bbb5249a",
@@ -37,7 +37,7 @@ def main() -> int:
     mismatches = {}
     with tempfile.TemporaryDirectory(prefix="rage modern ąę ") as directory:
         root = Path(directory)
-        for name, (aspect, filtering, post, bloom, grading, dimensions) in CASES.items():
+        for name, (aspect, filtering, post, grading, dimensions) in CASES.items():
             capture = root / f"{name} żółty.ppm"
             scenario = root / f"{name} ustawienia.ini"
             scenario.write_text(
@@ -47,7 +47,6 @@ internal_scale = 1
 aspect = {aspect}
 texture_filter = {filtering}
 post = {post}
-bloom = {bloom}
 grading = {grading}
 
 [diagnostics]

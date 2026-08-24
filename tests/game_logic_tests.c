@@ -154,7 +154,6 @@ static void test_port_config(void) {
         EXPECT_EQ(120, config.modernFps);
         EXPECT_EQ(1, config.modernTextureFilterLinear);
         EXPECT_EQ(RAGE_MODERN_POST_FXAA, config.modernPost);
-        EXPECT_EQ(6, (s32)(config.modernBloom * 10.0f));
         EXPECT_EQ(1, config.modernGrading);
         EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
         /* invalid value keeps the default */

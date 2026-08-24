@@ -37,7 +37,6 @@ typedef struct RagePortConfig {
     float modernDrawDistance;   /* multiplier, default 1 */
     int modernTextureFilterLinear; /* 0 nearest, 1 linear */
     RageModernPost modernPost;
-    float modernBloom;          /* highlight glow intensity, 0 = off */
     int modernGrading;          /* 0 off, 1 vibrant */
 } RagePortConfig;
 

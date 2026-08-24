@@ -180,11 +180,7 @@ const char MODERN_POST_MSL[] =
     "    return float4(result, center.a);\n"
     "}\n";
 
-/* Highlight glow and colour grading. The bright pass extracts highlights
- * into a quarter-resolution target, two separable Gaussian passes blur
- * them, and the composite pass screen-blends the glow over the frame and
- * optionally applies a vibrance/contrast grade. The composite shader is
- * generated with its config baked in as constants. */
+/* Fullscreen vertex used by the optional colour grading pass. */
 const char MODERN_EFFECTS_MSL[] =
     "#include <metal_stdlib>\n"
     "using namespace metal;\n"
@@ -195,39 +191,9 @@ const char MODERN_EFFECTS_MSL[] =
     "    out.pos = float4(corner * 2.0 - 1.0, 0.0, 1.0);\n"
     "    out.uv = float2(corner.x, 1.0 - corner.y);\n"
     "    return out;\n"
-    "}\n"
-    "fragment float4 fs_bright(PostOut in [[stage_in]],\n"
-    "                          texture2d<float> frame [[texture(0)]],\n"
-    "                          sampler smp [[sampler(0)]]) {\n"
-    "    float3 c = frame.sample(smp, in.uv).rgb;\n"
-    "    float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
-    "    return float4(c * smoothstep(0.55, 0.9, luma), 1.0);\n"
-    "}\n"
-    "static float4 blurPass(PostOut in, texture2d<float> frame, sampler smp,\n"
-    "                       float2 dir) {\n"
-    "    float2 texel = dir / float2(frame.get_width(), frame.get_height());\n"
-    "    const float w[5] = {0.227027, 0.1945946, 0.1216216, 0.054054,\n"
-    "                        0.016216};\n"
-    "    float3 acc = frame.sample(smp, in.uv).rgb * w[0];\n"
-    "    for (int i = 1; i < 5; i++) {\n"
-    "        acc += frame.sample(smp, in.uv + texel * float(i)).rgb * w[i];\n"
-    "        acc += frame.sample(smp, in.uv - texel * float(i)).rgb * w[i];\n"
-    "    }\n"
-    "    return float4(acc, 1.0);\n"
-    "}\n"
-    "fragment float4 fs_blur_h(PostOut in [[stage_in]],\n"
-    "                          texture2d<float> frame [[texture(0)]],\n"
-    "                          sampler smp [[sampler(0)]]) {\n"
-    "    return blurPass(in, frame, smp, float2(1.0, 0.0));\n"
-    "}\n"
-    "fragment float4 fs_blur_v(PostOut in [[stage_in]],\n"
-    "                          texture2d<float> frame [[texture(0)]],\n"
-    "                          sampler smp [[sampler(0)]]) {\n"
-    "    return blurPass(in, frame, smp, float2(0.0, 1.0));\n"
     "}\n";
 
-/* Composite prologue + body; the generated "constant float kBloom = ...;
- * constant int kGrading = ...;" lines are inserted between them. */
+/* Composite prologue + body; kGrading is inserted between them. */
 const char MODERN_COMPOSITE_PROLOGUE_MSL[] =
     "#include <metal_stdlib>\n"
     "using namespace metal;\n";
@@ -235,14 +201,8 @@ const char MODERN_COMPOSITE_MSL[] =
     "struct PostOut { float4 pos [[position]]; float2 uv; };\n"
     "fragment float4 fs_composite(PostOut in [[stage_in]],\n"
     "                             texture2d<float> frame [[texture(0)]],\n"
-    "                             sampler smpFrame [[sampler(0)]],\n"
-    "                             texture2d<float> bloom [[texture(1)]],\n"
-    "                             sampler smpBloom [[sampler(1)]]) {\n"
+    "                             sampler smpFrame [[sampler(0)]]) {\n"
     "    float3 c = frame.sample(smpFrame, in.uv).rgb;\n"
-    "    if (kBloom > 0.0) {\n"
-    "        float3 b = saturate(bloom.sample(smpBloom, in.uv).rgb * kBloom);\n"
-    "        c = 1.0 - (1.0 - saturate(c)) * (1.0 - b);\n"
-    "    }\n"
     "    if (kGrading != 0) {\n"
     "        float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
     "        c = mix(float3(luma), c, 1.16);\n"

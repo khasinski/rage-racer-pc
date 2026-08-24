@@ -23,7 +23,6 @@ void RagePortConfigDefaults(RagePortConfig *config) {
     config->modernDrawDistance = 1.0f;
     config->modernTextureFilterLinear = 0;
     config->modernPost = RAGE_MODERN_POST_NONE;
-    config->modernBloom = 0.0f;
     config->modernGrading = 0;
 }
 
@@ -100,15 +99,10 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         return 0;
     }
     if (strcmp(name, "modern.bloom") == 0) {
-        if (strcmp(value, "off") == 0) {
-            config->modernBloom = 0.0f;
-            return 1;
-        }
-        if (strcmp(value, "on") == 0) {
-            config->modernBloom = 0.6f;
-            return 1;
-        }
-        return ParseFloat(value, &config->modernBloom, 0.0f, 2.0f);
+        /* Accepted as a no-op so old configuration files keep loading. The
+         * effect was removed; a future bloom will have a new implementation. */
+        (void)value;
+        return 1;
     }
     if (strcmp(name, "modern.grading") == 0) {
         if (strcmp(value, "off") == 0) {
@@ -158,7 +152,7 @@ int RagePortConfigApplyRuntime(RagePortConfig *config) {
 static RagePortConfig active_config = {
     RAGE_RENDERER_COMPAT, 2.0f, RAGE_MODERN_ASPECT_AUTO,
     RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE,
-    0.0f, 0
+    0
 };
 
 void RagePortConfigSetActive(const RagePortConfig *config) {

@@ -137,13 +137,7 @@ static int s_spanCount;
 
 #include "modern_shader_sources.h"
 static SDL_GPUTexture *s_finalTarget;
-static SDL_GPUTexture *s_bloomA;
-static SDL_GPUTexture *s_bloomB;
-static SDL_GPUGraphicsPipeline *s_pipeBright;
-static SDL_GPUGraphicsPipeline *s_pipeBlurH;
-static SDL_GPUGraphicsPipeline *s_pipeBlurV;
 static SDL_GPUGraphicsPipeline *s_pipeComposite;
-static int s_bloomW, s_bloomH;
 
 /* ---- resource creation ---- */
 
@@ -215,8 +209,7 @@ static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
     size_t sourceSize;
     SDL_GPUGraphicsPipeline *pipeline;
     snprintf(header, sizeof(header),
-             "constant float kBloom = %.4f;\nconstant int kGrading = %d;\n",
-             (double)s_config.modernBloom, s_config.modernGrading);
+             "constant int kGrading = %d;\n", s_config.modernGrading);
     headerLen = strlen(header);
     sourceSize = MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1 + headerLen +
                  MODERN_COMPOSITE_MSL_SIZE;
@@ -230,7 +223,7 @@ static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
            MODERN_COMPOSITE_MSL, MODERN_COMPOSITE_MSL_SIZE);
     pipeline = ModernCreateFullscreenPipeline(
         NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE, "vs_fx",
-        NULL, 0, source, sourceSize, "fs_composite", 2);
+        NULL, 0, source, sourceSize, "fs_composite", 1);
     free(source);
     return pipeline;
 }
@@ -321,11 +314,6 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(GraphicsPipeline, s_pipePost);
         RAGE_RELEASE(Sampler, s_samplerLinear);
         RAGE_RELEASE(Texture, s_finalTarget);
-        RAGE_RELEASE(Texture, s_bloomA);
-        RAGE_RELEASE(Texture, s_bloomB);
-        RAGE_RELEASE(GraphicsPipeline, s_pipeBright);
-        RAGE_RELEASE(GraphicsPipeline, s_pipeBlurH);
-        RAGE_RELEASE(GraphicsPipeline, s_pipeBlurV);
         RAGE_RELEASE(GraphicsPipeline, s_pipeComposite);
         for (slot = 0; slot < MODERN_RING; slot++)
             RAGE_RELEASE(Texture, s_ring[slot]);
@@ -443,8 +431,7 @@ static int ModernEnsureResources(void) {
         s_ringScene = malloc(MODERN_RING * sizeof(RageSceneSnapshot));
     }
 
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE ||
-        s_config.modernBloom > 0.0f || s_config.modernGrading) {
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE || s_config.modernGrading) {
         SDL_GPUSamplerCreateInfo samplerInfo = {0};
         samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
         samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -469,7 +456,7 @@ static int ModernEnsureResources(void) {
             s_config.modernPost = RAGE_MODERN_POST_NONE;
         }
     }
-    if (s_config.modernBloom > 0.0f || s_config.modernGrading) {
+    if (s_config.modernGrading) {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
         info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
@@ -481,34 +468,10 @@ static int ModernEnsureResources(void) {
         info.num_levels = 1;
         s_finalTarget = SDL_CreateGPUTexture(s_device, &info);
         s_pipeComposite = ModernCreateCompositePipeline();
-        if (s_config.modernBloom > 0.0f) {
-            s_bloomW = s_targetW / 4 > 0 ? s_targetW / 4 : 1;
-            s_bloomH = s_targetH / 4 > 0 ? s_targetH / 4 : 1;
-            info.width = (Uint32)s_bloomW;
-            info.height = (Uint32)s_bloomH;
-            s_bloomA = SDL_CreateGPUTexture(s_device, &info);
-            s_bloomB = SDL_CreateGPUTexture(s_device, &info);
-            s_pipeBright = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_bright", 1);
-            s_pipeBlurH = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_blur_h", 1);
-            s_pipeBlurV = ModernCreateFullscreenPipeline(
-                NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE,
-                "vs_fx", NULL, 0, MODERN_EFFECTS_MSL,
-                MODERN_EFFECTS_MSL_SIZE, "fs_blur_v", 1);
-        }
-        if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear ||
-            (s_config.modernBloom > 0.0f &&
-             (!s_bloomA || !s_bloomB || !s_pipeBright || !s_pipeBlurH ||
-              !s_pipeBlurV))) {
+        if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear) {
             fprintf(stderr,
-                    "rage-port: bloom/grading setup failed, disabling: %s\n",
+                    "rage-port: grading setup failed, disabling: %s\n",
                     SDL_GetError());
-            s_config.modernBloom = 0.0f;
             s_config.modernGrading = 0;
         }
     }
@@ -1644,7 +1607,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
 /* The texture the frame chain ends in: composite > fxaa > raw target. */
 static SDL_GPUTexture *ModernPresentTexture(void) {
-    if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
+    if (s_config.modernGrading &&
         s_finalTarget != NULL && s_pipeComposite != NULL) {
         return s_finalTarget;
     }
@@ -1779,23 +1742,11 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             ModernFullscreenPass(cmd, s_pipePost, s_postTarget, sources, 1);
             chain = s_postTarget;
         }
-        if ((s_config.modernBloom > 0.0f || s_config.modernGrading) &&
+        if (s_config.modernGrading &&
             s_pipeComposite != NULL && s_finalTarget != NULL) {
-            SDL_GPUTexture *sources[2];
-            if (s_config.modernBloom > 0.0f && s_pipeBright != NULL) {
-                sources[0] = chain;
-                ModernFullscreenPass(cmd, s_pipeBright, s_bloomA, sources, 1);
-                sources[0] = s_bloomA;
-                ModernFullscreenPass(cmd, s_pipeBlurH, s_bloomB, sources, 1);
-                sources[0] = s_bloomB;
-                ModernFullscreenPass(cmd, s_pipeBlurV, s_bloomA, sources, 1);
-            }
+            SDL_GPUTexture *sources[1];
             sources[0] = chain;
-            /* With bloom off the composite's kBloom constant is 0 and the
-             * second texture is never sampled; any resident texture works. */
-            sources[1] = s_bloomA != NULL ? s_bloomA : chain;
-            ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources,
-                                 2);
+            ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources, 1);
         }
     }
     if (s_ringEnabled && s_ring[s_ringNext] != NULL) {

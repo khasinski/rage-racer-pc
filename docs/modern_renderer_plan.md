@@ -72,19 +72,16 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
     `RAGE_PORT_MODERN_FLAT_FOG=1` restores per-face fog. Note Rage Racer
     depth-cues only some geometry (spinning scenery, terrain dispatches
     0/2), so many scenes are unchanged.
-  - `modern.bloom=on|off|<0..2>` — highlight glow: bright-pass into a
-    quarter-res target, separable Gaussian blur, screen-blend composite.
+  - `modern.bloom` is accepted only as a compatibility no-op. The original
+    bloom was removed; a future implementation will start from a clean pass.
   - `modern.grading=vibrant|off` — vibrance + gentle contrast in the same
     composite pass (constants baked into the generated MSL).
 
 ### Future effect ideas (not scheduled)
 
-- **Bloom without the HUD** — the current bloom samples the finished frame,
-  and the brightest content is usually the HUD (tachometer, timer text), so
-  the glow lands mostly on the overlay. Running the bright pass on a
-  3D-only intermediate target (before the foreground 2D replay) would
-  restrict the glow to scene highlights; until then the effect defaults
-  off.
+- **Bloom rebuilt on the 3D scene** — if reintroduced, it should sample a
+  scene-only target before the HUD rather than blur the completed PS1-style
+  composition.
 
 - **SSAO** — depth buffer exists; low intensity to avoid noise on low-poly
   geometry.
@@ -433,7 +430,7 @@ modern.fps = logic | vsync | <n>  # 'logic' = no interpolation
 modern.draw_distance = 1.0        # multiplier, phase R4
 modern.texture_filter = nearest | linear
 modern.post = none | fxaa         # edge anti-aliasing pass
-modern.bloom = off | on | <0..2>  # highlight glow ('on' = 0.6)
+modern.bloom = off                 # compatibility no-op; effect removed
 modern.grading = off | vibrant    # vibrance + gentle contrast
 ```
 
