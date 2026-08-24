@@ -89,6 +89,8 @@ timer = 20
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return result.returncode or 1
+        if "native GPU pipeline ready" not in result.stdout:
+            raise AssertionError("native GPU shaders or pipelines were not created")
 
         matches = re.findall(
             r"native world frame=\d+ camera=(\d+) instances=(\d+) "

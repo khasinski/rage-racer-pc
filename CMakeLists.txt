@@ -100,6 +100,7 @@ if(RAGE_BUILD_PORT)
         src/port/fmv_host.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_native_gpu.c
         src/port/modern/modern_shader_sources.c
         src/port/modern/modern_texture_dump.c
         src/port/modern/modern_renderer_diagnostics.c

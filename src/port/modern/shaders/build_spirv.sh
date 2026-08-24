@@ -27,3 +27,6 @@ build_shader modern.vert modern_vert vert
 build_shader modern.frag modern_frag frag
 build_shader post.vert post_vert vert
 build_shader post.frag post_frag frag
+build_shader native.vert native_vert vert
+build_shader native_texture.frag native_texture_frag frag
+build_shader native_color.frag native_color_frag frag
