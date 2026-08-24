@@ -1,0 +1,173 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "render/render_mesh_build.h"
+
+static int failures;
+
+static void write_u32(unsigned char *p, unsigned value) {
+    p[0] = (unsigned char)value;
+    p[1] = (unsigned char)(value >> 8);
+    p[2] = (unsigned char)(value >> 16);
+    p[3] = (unsigned char)(value >> 24);
+}
+
+static const RageRuntimeMesh *test_mesh_lookup(
+    void *context, const RageRenderMeshInstance *instance) {
+    (void)instance;
+    return context;
+}
+
+
+#define EXPECT_EQ(expected, actual) do {                                      \
+    unsigned long long expected_value = (unsigned long long)(expected);       \
+    unsigned long long actual_value = (unsigned long long)(actual);           \
+    if (expected_value != actual_value) {                                     \
+        fprintf(stderr, "%s:%d: expected %llu, got %llu\\n", __FILE__,      \
+                __LINE__, expected_value, actual_value);                      \
+        failures++;                                                            \
+    }                                                                          \
+} while (0)
+
+static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    unsigned i;
+    uint32_t spanCount;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        {
+            float normal[3] = {0.0f, 1.0f, 0.0f};
+            memcpy(bytes + 32 + i * 40 + 12, normal, sizeof(normal));
+        }
+        bytes[32 + i * 40 + 24] = 100;
+        bytes[32 + i * 40 + 25] = 150;
+        bytes[32 + i * 40 + 26] = 200;
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36, 4);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f;
+    world.camera.farPlane = 100.0f;
+    storage[0].mesh = 0;
+    storage[0].assetKey = 10;
+    storage[0].pass = RAGE_RENDER_PASS_MAIN;
+    storage[0].transform.scale.x = 1.0f;
+    storage[0].transform.scale.y = 1.0f;
+    storage[0].transform.scale.z = 1.0f;
+    /* Ordinary Euler transforms remain a supported scene representation;
+     * they must never accidentally consume a stale quaternion basis. */
+    storage[0].transform.rotation.y = 90.0f;
+    world.instanceCount = 1;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(4, spans[0].material);
+    EXPECT_EQ(10, spans[0].assetKey);
+    EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
+    /* Per-instance basis matches the old X/Y/Z rotation order without
+     * recalculating trigonometry for every emitted vertex. */
+    EXPECT_EQ(1000, (int)(vertices[0].position[0] * 100.0f));
+    EXPECT_EQ(99, (int)(vertices[0].position[2] * 100.0f));
+    EXPECT_EQ(200, vertices[0].color[2]);
+    EXPECT_EQ(100, (int)(vertices[0].normal[1] * 100.0f));
+}
+
+static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    /* One corner lies before the near plane. It must reach the GPU so the
+     * rasterizer clips the triangle instead of a CPU projection dropping it. */
+    float positions[3][3] = {{-1.0f, 0.0f, 0.5f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    unsigned i;
+    uint32_t spanCount;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].transform.scale.x = 1.0f;
+    storage[0].transform.scale.y = 1.0f;
+    storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+}
+
+static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f}, {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    uint32_t spanCount;
+    unsigned i;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255; write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].transform.position.x = 100.0f;
+    storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+    EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(0, spanCount);
+}
+
+int main(void) {
+    test_native_draw_builder_uses_render_world_and_imported_mesh();
+    test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
+    test_native_draw_builder_culls_fully_offscreen_instance();
+    if (failures != 0) return EXIT_FAILURE;
+    puts("render mesh build tests passed");
+    return EXIT_SUCCESS;
+}
+
