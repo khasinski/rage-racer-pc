@@ -82,7 +82,9 @@ void ComposeSampleTeamLogo(s32 character, s32 background)
     src = TeamLogoPaletteAddress(g_TeamLogoSampleData, row0, character) + 1;
 
     do {
-        *clutDst0++ = *src++;
+        value = *src++;
+        *clutDst0++ = value;
+        g_TeamLogoClut[index] = value;
         index++;
     } while (index < 12);
 

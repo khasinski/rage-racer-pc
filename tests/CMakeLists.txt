@@ -29,6 +29,26 @@ endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
 
+add_executable(team_logo_tests
+    team_logo_tests.c
+    ../src/main/PAL/main/menu/team_logo.c)
+target_include_directories(team_logo_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(team_logo_tests PRIVATE __psyz=1 RAGE_HOST_PORT=1)
+if(MSVC)
+    target_compile_options(team_logo_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(team_logo_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(team_logo_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+add_test(NAME team_logo COMMAND team_logo_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
