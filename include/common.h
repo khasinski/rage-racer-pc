@@ -15,7 +15,7 @@ typedef float f32;
 /* MIPS register pins and empty compiler barriers are matching-only metadata.
  * The native port deliberately discards them before the host compiler parses
  * register names such as $4 and v0. */
-#ifdef __psyz
+#if defined(__psyz) || defined(RAGE_HOST_PORT)
 #include <stdint.h>
 #define asm(...)
 #endif
@@ -49,7 +49,7 @@ typedef float f32;
  * difference. Two rounds of this tree's results were wrong for that reason.
  */
 
-#ifdef __psyz
+#if defined(__psyz) || defined(RAGE_HOST_PORT)
 #define RAW(x) (*(__typeof__(x) *)(uintptr_t)&(x))
 #else
 #define RAW(x) (*(__typeof__(x) *)((s32)&(x)))

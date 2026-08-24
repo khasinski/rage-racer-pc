@@ -28,6 +28,24 @@ include(CTest)
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)
 option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
 
+# Deterministic gameplay helpers with no renderer, platform or PSY-Z link.
+# Keeping this target usable when RAGE_BUILD_PORT=OFF gives unit tests a real
+# simulation boundary instead of compiling selected game files ad hoc.
+set(RAGE_SIM_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/time_conversion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/random/random15.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/blend_angle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/interpolate_track_angle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/lerp_color_channel.c
+)
+add_library(rage-sim STATIC ${RAGE_SIM_SOURCES})
+target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(rage-sim PRIVATE RAGE_HOST_PORT=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rage-sim PRIVATE -Wall -Wextra -Werror)
+endif()
+
 add_library(rage-rmesh STATIC
     src/render/rmesh.c
     src/render/rmesh_index.c
@@ -68,6 +86,7 @@ if(RAGE_BUILD_PORT)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/asset_loader.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/start_fmv_playback.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_decode.c"
+        ${RAGE_SIM_SOURCES}
     )
 
     add_library(rage-game-full OBJECT ${RAGE_GAME_SOURCES} src/port/native_game_state.c)
@@ -173,7 +192,8 @@ if(RAGE_BUILD_PORT)
                     -Wno-error=deprecated-non-prototype)
             endif()
         endif()
-        target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz rage-render-world)
+        target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
+            rage-sim psyz rage-render-world)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()

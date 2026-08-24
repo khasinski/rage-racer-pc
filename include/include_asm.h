@@ -1,7 +1,8 @@
 #ifndef RAGE_PC_INCLUDE_ASM_H
 #define RAGE_PC_INCLUDE_ASM_H
 
-#if !defined(M2CTX) && !defined(PERMUTER) && !defined(__psyz)
+#if !defined(M2CTX) && !defined(PERMUTER) && !defined(__psyz) && \
+    !defined(RAGE_HOST_PORT)
 
 /* A block the original shipped as assembly, sitting inside a unit that is
    otherwise C: a kernel entry reached by `syscall`, a BIOS call that jumps

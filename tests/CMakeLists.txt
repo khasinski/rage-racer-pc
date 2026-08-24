@@ -1,17 +1,12 @@
 add_executable(game_logic_tests
     game_logic_tests.c
-    ../src/main/PAL/main/race/time_conversion.c
-    ../src/main/PAL/main/random/random15.c
-    ../src/main/PAL/main/car/angle_math.c
-    ../src/main/PAL/main/track/blend_angle.c
-    ../src/main/PAL/main/track/interpolate_track_angle.c
-    ../src/main/PAL/main/track/lerp_color_channel.c
     ../src/port/input_config.c
     ../src/port/port_config.c
     ../src/port/runtime_config.c
     ../src/port/game_diagnostics.c
     ../src/port/platform_paths.c
 )
+target_link_libraries(game_logic_tests PRIVATE rage-sim)
 
 target_include_directories(game_logic_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -28,6 +23,9 @@ if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
+add_test(NAME architecture_boundaries COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundaries.py
+    ${CMAKE_SOURCE_DIR})
 
 add_executable(team_logo_tests
     team_logo_tests.c
