@@ -30,7 +30,8 @@ option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
 
 add_library(rage-rmesh STATIC
     src/render/rmesh.c
-    src/render/rmesh_index.c)
+    src/render/rmesh_index.c
+    src/render/rmesh_cache.c)
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(NOT MSVC)
     target_link_libraries(rage-rmesh PUBLIC m)

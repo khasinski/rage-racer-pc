@@ -63,6 +63,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh_index COMMAND rmesh_index_tests)
 
+add_executable(rmesh_cache_tests rmesh_cache_tests.c)
+target_link_libraries(rmesh_cache_tests PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rmesh_cache_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
+
 add_test(NAME asset_gltf_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
 
