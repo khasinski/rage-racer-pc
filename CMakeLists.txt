@@ -28,6 +28,15 @@ include(CTest)
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)
 option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
 
+add_library(rage-rmesh STATIC src/render/rmesh.c)
+target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if(NOT MSVC)
+    target_link_libraries(rage-rmesh PUBLIC m)
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rage-rmesh PRIVATE -Wall -Wextra -Werror)
+endif()
+
 if(RAGE_BUILD_PORT)
     add_subdirectory(external/psyz/psyz external-psyz)
 

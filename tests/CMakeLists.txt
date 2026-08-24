@@ -49,6 +49,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME team_logo COMMAND team_logo_tests)
 
+add_executable(rmesh_tests rmesh_tests.c)
+target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rmesh_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME rmesh COMMAND rmesh_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
