@@ -56,6 +56,9 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh COMMAND rmesh_tests)
 
+add_test(NAME asset_gltf_export
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
