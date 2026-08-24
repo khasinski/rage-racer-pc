@@ -26,7 +26,9 @@ Flags: `-o/--out`, `--only` (indices or name substrings), `--serve [PORT]`,
 `--exe` (re-derive the asset name table from a real `SCES_006.50`),
 `--no-raw`, `--no-vram`, `--no-audio`, `--no-fmv`.
 
-Output: `manifest.json`, `index.html`, `models/*.json`, `textures/*.png`,
+Output: `manifest.json`, `runtime-index.txt`, `index.html`, `models/*.json`,
+`models/*.gltf`, `models/*.rmesh`, `models/*.rmat`, `textures/*.png`,
+`textures/*.rgba`,
 `images/*_vram.png`, `audio/*.wav`, `fmv/*.mp4`, `raw/*.bin`. A full run takes a
 few minutes and produces roughly 400 MB.
 

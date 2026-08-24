@@ -1,6 +1,7 @@
 import base64
 import struct
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,9 +9,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gltf
 import models
 import rmesh
+import extract
 
 
 class GltfExportTest(unittest.TestCase):
+    def test_runtime_index_maps_archive_asset_and_geometry_kind(self):
+        model = {"runtimeMesh": "models/a.rmesh",
+                 "runtimeMaterials": "models/a.rmat"}
+        records = [
+            {"index": 10, "model": model},
+            {"index": 91, "banks": [
+                {"sub": 5, **model}, {"sub": 7, **model},
+            ]},
+        ]
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            extract.write_runtime_index(root, records)
+            rows = (root / "runtime-index.txt").read_text().splitlines()
+
+        self.assertEqual("10 model models/a.rmesh models/a.rmat", rows[1])
+        self.assertEqual("91 course models/a.rmesh models/a.rmat", rows[2])
+        self.assertEqual("91 terrain models/a.rmesh models/a.rmat", rows[3])
+
     def test_runtime_mesh_is_indexed_and_has_no_ps1_state(self):
         face = models.Face(prim=1, v=(0, 1, 2, 3), rgb=(1, 2, 3),
                            uv=((0, 0), (255, 0), (255, 255), (0, 255)),

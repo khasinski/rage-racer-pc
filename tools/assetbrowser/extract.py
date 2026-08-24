@@ -26,9 +26,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import audio  # noqa: E402
+import gltf  # noqa: E402
 import images  # noqa: E402
 import models  # noqa: E402
 import png  # noqa: E402
+import rmesh  # noqa: E402
 from disc import (Disc, find_file, read_archive_index, read_root_directory,  # noqa: E402
                   read_stream_index, volume_label)
 
@@ -300,11 +302,11 @@ class Extractor:
         mo, io = struct.unpack_from("<II", buf, 0x20)
         bank = models.parse_bank(buf, mo, io)
         rec["carFlags"] = {"automaticGearbox": buf[8] != 0, "gears": buf[9]}
-        rec["model"] = self.emit_bank(bank, stem)
         v, src = self.vram_for(i, "car_model")
         rec["vram"] = self.emit_vram(v, stem)
         rec["vramSources"] = src
         rec["textures"] = self.emit_textures(v, bank, stem)
+        rec["model"] = self.emit_bank(bank, stem, textures=rec["textures"])
         rec["summary"] = (
             f"{bank.count} models, {len(bank.vertices)} verts, "
             f"{sum(len(m.faces) for m in bank.models)} faces, "
@@ -410,19 +412,21 @@ class Extractor:
             except models.ParseError as exc:
                 rec["banks"].append({"sub": k, "error": str(exc)})
                 continue
-            b = self.emit_bank(bank, f"{stem}_b{k}")
+            textures = self.emit_textures(v, bank, f"{stem}_b{k}")
+            b = self.emit_bank(bank, f"{stem}_b{k}", textures=textures)
             b["sub"] = k
-            b["textures"] = self.emit_textures(v, bank, f"{stem}_b{k}")
+            b["textures"] = textures
             rec["banks"].append(b)
             tex[k] = len(b["textures"])
         # Course objects (sub-block 5) and the terrain cells (sub-block 7) are
         # the trackside scenery and the road surface itself.
         try:
             cb = models.parse_course_objects(buf, hdr[5], len(buf))
-            b = self.emit_bank(cb, f"{stem}_course")
+            textures = self.emit_textures(v, cb, f"{stem}_course")
+            b = self.emit_bank(cb, f"{stem}_course", textures=textures)
             b["sub"] = 5
             b["label"] = "course objects"
-            b["textures"] = self.emit_textures(v, cb, f"{stem}_course")
+            b["textures"] = textures
             rec["banks"].append(b)
             rec["courseModelCount"] = cb.count
         except models.ParseError as exc:
@@ -430,10 +434,12 @@ class Extractor:
             rec["banks"].append({"sub": 5, "error": str(exc)})
         try:
             tb, grid = models.parse_terrain(buf, hdr[7], hdr[8] if hdr[8] > hdr[7] else len(buf))
-            b = self.emit_bank(tb, f"{stem}_terrain", grid=grid)
+            textures = self.emit_textures(v, tb, f"{stem}_terrain")
+            b = self.emit_bank(tb, f"{stem}_terrain", grid=grid,
+                               textures=textures)
             b["sub"] = 7
             b["label"] = "terrain cells"
-            b["textures"] = self.emit_textures(v, tb, f"{stem}_terrain")
+            b["textures"] = textures
             rec["banks"].append(b)
             rec["cellCount"] = tb.count
         except (models.ParseError, struct.error) as exc:
@@ -459,23 +465,23 @@ class Extractor:
         rec["imageBlocks"] = image_blocks_json(blks)
         rec["vram"] = self.emit_vram(v, stem)
         bank = models.parse_bank(buf, 0xC, hdr[0])
-        rec["model"] = self.emit_bank(bank, stem)
         rec["textures"] = self.emit_textures(v, bank, stem)
+        rec["model"] = self.emit_bank(bank, stem, textures=rec["textures"])
         rec["summary"] = f"{bank.count} models, {len(blks)} VRAM blocks"
 
     def do_option(self, i, stem, buf, rec):
         imgoff = struct.unpack_from("<i", buf, 0)[0]
         bank = models.parse_bank(buf, 4, imgoff)
-        rec["model"] = self.emit_bank(bank, stem)
         rec["subBlocks"] = [{"n": 0, "role": "model bank (at +4)", "offset": 4},
                             {"n": 1, "role": "free space / image buffer", "offset": imgoff}]
         v = images.Vram()
         rec["textures"] = self.emit_textures(v, bank, stem)
+        rec["model"] = self.emit_bank(bank, stem, textures=rec["textures"])
         rec["summary"] = f"{bank.count} models, {len(bank.vertices)} verts"
 
     # -- emitters --------------------------------------------------------
 
-    def emit_bank(self, bank, stem, grid=None):
+    def emit_bank(self, bank, stem, grid=None, textures=None):
         j = models.bank_to_json(bank)
         if grid is not None:
             # track/visible_cells.c:214-226 is the authority. The grid word at
@@ -505,8 +511,20 @@ class Extractor:
             j["regions"] = [w >> 10 for w in grid]
         p = self.out / "models" / f"{stem}.json"
         p.write_text(json.dumps(j, separators=(",", ":")))
+        gltf_path = self.out / "models" / f"{stem}.gltf"
+        gltf.write_bank(gltf_path, bank, textures)
+        rmesh_path = self.out / "models" / f"{stem}.rmesh"
+        rmesh.write_bank(rmesh_path, bank, textures)
+        materials_path = self.out / "models" / f"{stem}.rmat"
+        materials_path.write_text("".join(
+            f"{index} {texture['tpage']} {texture['clut']} "
+            f"{texture['runtimePixels']}\n"
+            for index, texture in enumerate(textures or [])))
         return {
             "file": f"models/{stem}.json",
+            "gltf": f"models/{stem}.gltf",
+            "runtimeMesh": f"models/{stem}.rmesh",
+            "runtimeMaterials": f"models/{stem}.rmat",
             "modelCount": bank.count,
             "vertexCount": len(bank.vertices),
             "normalCount": len(bank.normals),
@@ -529,14 +547,40 @@ class Extractor:
             rgba = images.decode_texpage(v, tp, cl)
             fn = f"{stem}_t{n}.png"
             png.write_rgba(self.out / "textures" / fn, 256, 256, rgba)
+            raw_fn = f"{stem}_t{n}.rgba"
+            (self.out / "textures" / raw_fn).write_bytes(rgba)
             out.append({
                 "file": f"textures/{fn}",
+                "runtimePixels": f"textures/{raw_fn}",
+                "width": 256, "height": 256,
                 "tpage": tp, "clut": cl,
                 "bpp": {0: 4, 1: 8, 2: 16, 3: 16}[(tp >> 7) & 3],
                 "pageX": (tp & 0xF) * 64, "pageY": ((tp >> 4) & 1) * 256,
                 "clutX": (cl & 0x3F) * 16, "clutY": (cl >> 6) & 0x1FF,
             })
         return out
+
+
+def write_runtime_index(out: Path, records: list[dict]) -> None:
+    """Write the native renderer's compact asset lookup table."""
+    rows = ["# rage-rmesh-index v1\n"]
+
+    def add(asset, asset_set, model):
+        if not isinstance(model, dict) or "runtimeMesh" not in model:
+            return
+        rows.append(f"{asset} {asset_set} {model['runtimeMesh']} "
+                    f"{model.get('runtimeMaterials', '-')}\n")
+
+    for rec in records:
+        if not isinstance(rec.get("index"), int) or rec["index"] >= ASSET_COUNT:
+            continue
+        add(rec["index"], "model", rec.get("model"))
+        for bank in rec.get("banks", []):
+            sub = bank.get("sub") if isinstance(bank, dict) else None
+            asset_set = {3: "model", 6: "model", 5: "course", 7: "terrain"}.get(sub)
+            if asset_set is not None:
+                add(rec["index"], asset_set, bank)
+    (out / "runtime-index.txt").write_text("".join(rows))
 
 
 def have_ffmpeg() -> bool:
@@ -749,6 +793,7 @@ def main(argv=None):
         }
         out = args.out / "manifest.json"
         out.write_text(json.dumps(doc, separators=(",", ":")))
+        write_runtime_index(args.out, manifest)
 
         # The page itself lives in the repo; only its copy sits next to the data.
         page = Path(__file__).resolve().parent / "browser.html"
