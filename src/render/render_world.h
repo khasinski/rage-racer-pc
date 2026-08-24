@@ -92,6 +92,8 @@ int RageRenderWorldSubmitMesh(RageRenderWorld *world,
                               const RageRenderMeshInstance *instance);
 void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform);
+/* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)
+ * scene basis used by imported meshes and Render World positions. */
+void RageRenderConvertPsxMatrix(const float source[3][3], float out[3][3]);
 
 #endif
-

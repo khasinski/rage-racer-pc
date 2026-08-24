@@ -159,7 +159,11 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     instance.transform.position.y = -psPosition.y;
     instance.transform.position.z = -psPosition.z;
     instance.transform.scale.x = instance.transform.scale.y = instance.transform.scale.z = 1.0f;
-    instance.transform.orientation = RageSceneQuaternion(rotation);
+    {
+        RageSceneMat3 converted;
+        RageRenderConvertPsxMatrix(rotation.m, converted.m);
+        instance.transform.orientation = RageSceneQuaternion(converted);
+    }
     instance.transform.hasOrientation = 1;
     if (s_havePreviousCars[entity][part])
         instance.previousTransform = s_previousCars[entity][part];
@@ -211,6 +215,11 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     view = RageSceneMat3Multiply(
         RageSceneMat3Multiply(RageSceneRotationZ(roll), RageSceneRotationX(pitch)),
         RageSceneRotationY(yaw));
+    {
+        RageSceneMat3 converted;
+        RageRenderConvertPsxMatrix(view.m, converted.m);
+        view = converted;
+    }
     camera.transform.orientation = RageSceneQuaternion(RageSceneMat3Transpose(view));
     camera.transform.hasOrientation = 1;
     camera.transform.rotation.x = -RageAngleToDegrees(pitch);

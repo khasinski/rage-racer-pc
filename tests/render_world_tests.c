@@ -138,12 +138,26 @@ static void test_native_camera_projection_has_no_gte_quantization(void) {
     EXPECT_EQ(100, (int)view.z);
 }
 
+static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
+    const float source[3][3] = {
+        {0.0f, 0.0f, 1.0f},
+        {0.0f, 1.0f, 0.0f},
+        {-1.0f, 0.0f, 0.0f},
+    };
+    float converted[3][3];
+    RageRenderConvertPsxMatrix(source, converted);
+    EXPECT_EQ(-1, (int)converted[0][2]);
+    EXPECT_EQ(1, (int)converted[1][1]);
+    EXPECT_EQ(1, (int)converted[2][0]);
+}
+
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_camera_is_scene_data_not_backend_state();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
     test_native_camera_projection_has_no_gte_quantization();
+    test_psx_rotation_uses_the_same_basis_as_imported_positions();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");
     return EXIT_SUCCESS;

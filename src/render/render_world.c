@@ -45,3 +45,12 @@ void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
     transform->scale.z = 1.0f;
 }
 
+void RageRenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {
+    static const float sign[3] = {1.0f, -1.0f, -1.0f};
+    int row, column;
+    for (row = 0; row < 3; row++) {
+        for (column = 0; column < 3; column++) {
+            out[row][column] = source[row][column] * sign[row] * sign[column];
+        }
+    }
+}
