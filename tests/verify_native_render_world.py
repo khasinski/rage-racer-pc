@@ -17,7 +17,7 @@ VERTEX = struct.Struct("<3f3f4B2fI")
 
 
 def write_test_mesh(path: Path) -> None:
-    mesh_count = 6
+    mesh_count = 1024
     vertices = []
     indices = []
     offsets = [0]
@@ -51,10 +51,10 @@ def main() -> int:
         mesh = root / "car.rmesh"
         scenario = root / "scenario.ini"
         write_test_mesh(mesh)
-        (root / "runtime-index.txt").write_text(
-            "".join(f"{key} model car.rmesh -\n" for key in range(10, 75)),
-            encoding="ascii",
-        )
+        index = "".join(
+            f"{key} model car.rmesh -\n" for key in range(10, 75))
+        index += "88 course car.rmesh -\n88 terrain car.rmesh -\n"
+        (root / "runtime-index.txt").write_text(index, encoding="ascii")
         scenario.write_text(
             """[video]
 renderer = modern
@@ -98,6 +98,16 @@ timer = 20
         if not any(all(int(value) > 0 for value in match) for match in matches):
             raise AssertionError(
                 "live race did not produce a native draw stream\n" +
+                result.stdout[-4000:]
+            )
+        draws = re.findall(
+            r"native draws frame=\d+ draws=(\d+) vertices=(\d+)",
+            result.stdout,
+        )
+        if not any(int(count) > 0 and int(vertices) > 0
+                   for count, vertices in draws):
+            raise AssertionError(
+                "complete native world was not submitted to the GPU\n" +
                 result.stdout[-4000:]
             )
     return 0

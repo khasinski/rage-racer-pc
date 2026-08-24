@@ -62,6 +62,7 @@ static uint32_t s_spanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
 static float s_aspect = 4.0f / 3.0f;
+static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 static uint32_t s_textureCount;
 
@@ -257,6 +258,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
 }
 
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
+    uint32_t instance;
     if (s_vertices == NULL || s_spans == NULL || world == NULL ||
         world->frame == s_worldFrame) return;
     ModernAssetsWarmWorld(world);
@@ -267,6 +269,13 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     s_world = world;
     s_worldFrame = world->frame;
     s_aspect = aspect;
+    s_completeWorld = world->instanceCount != 0 && world->overflowCount == 0;
+    for (instance = 0; instance < world->instanceCount; instance++) {
+        if (ModernAssetsFind(&world->instances[instance]) == NULL) {
+            s_completeWorld = 0;
+            break;
+        }
+    }
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
@@ -279,6 +288,10 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
 
 int ModernNativeGpuHasDraws(void) {
     return s_vertexCount != 0 && s_world != NULL && s_world->hasCamera;
+}
+
+int ModernNativeGpuCanReplaceWorld(void) {
+    return ModernNativeGpuHasDraws() && s_completeWorld;
 }
 
 static ModernNativeTexture *ModernNativeFindTexture(
@@ -385,6 +398,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     ModernNativeCameraUniform camera;
     SDL_GPURenderPass *pass;
     uint32_t spanIndex;
+    uint32_t drawCount = 0;
     if (!ModernNativeGpuHasDraws()) return;
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &s_spans[spanIndex]);
@@ -443,9 +457,14 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
             }
             SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                                   span->firstVertex, 0);
+            drawCount++;
         }
     }
     SDL_EndGPURenderPass(pass);
+    if (drawCount != 0 && getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+        fprintf(stderr, "rage-port: native draws frame=%llu draws=%u vertices=%u\n",
+                (unsigned long long)s_worldFrame, drawCount, s_vertexCount);
+    }
 }
 
 void ModernNativeGpuShutdown(void) {
@@ -485,5 +504,6 @@ void ModernNativeGpuShutdown(void) {
     s_worldFrame = UINT64_MAX;
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
+    s_completeWorld = 0;
     s_textureCount = 0;
 }

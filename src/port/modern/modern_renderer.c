@@ -105,6 +105,7 @@ typedef struct ModernSpan {
     uint8_t pipeline;
     uint8_t hasScissor;
     uint8_t pass; /* 0 = main scene, 1 = mirror overlay (depth recleared) */
+    uint8_t layer;
     SDL_Rect scissor;
     int32_t start, count;
     float depthKey; /* semi-transparent 3D sorting */
@@ -548,6 +549,13 @@ typedef struct Modern2DState {
 static Modern2DState s_mainEnd2D;
 
 static uint8_t s_currentPass;
+enum {
+    MODERN_LAYER_BACKGROUND,
+    MODERN_LAYER_WORLD,
+    MODERN_LAYER_HUD,
+    MODERN_LAYER_MIRROR,
+};
+static uint8_t s_currentLayer;
 
 static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
                                    float depthKey) {
@@ -555,7 +563,7 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
     if (s_spanCount > 0) {
         span = &s_spans[s_spanCount - 1];
         if (span->pipeline == pipeline && depthKey == span->depthKey &&
-            span->pass == s_currentPass &&
+            span->pass == s_currentPass && span->layer == s_currentLayer &&
             ((state == NULL && !span->hasScissor) ||
              (state != NULL && state->hasScissor == span->hasScissor &&
               (!state->hasScissor ||
@@ -570,6 +578,7 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
     span = &s_spans[s_spanCount++];
     span->pipeline = (uint8_t)pipeline;
     span->pass = s_currentPass;
+    span->layer = s_currentLayer;
     span->hasScissor = state != NULL && state->hasScissor;
     if (span->hasScissor) span->scissor = state->scissor;
     span->start = s_vertexCount;
@@ -1420,6 +1429,8 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     s_vertexCount = 0;
     s_spanCount = 0;
     s_areaPageY = snapshot->displayPageY;
+    s_currentPass = 0;
+    s_currentLayer = MODERN_LAYER_BACKGROUND;
 
     /* One common model bias for the whole frame, applied at full bucket
      * scale to every model draw uniformly. Retail wins hill crests against
@@ -1463,6 +1474,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
     }
     s_orthoStretch = 0;
+    s_currentLayer = MODERN_LAYER_WORLD;
 
     /* Opaque 3D, z-buffered. Drawn in reverse submission order: within a
      * compat ordering-table bucket AddPrim prepends, so the first-submitted
@@ -1513,6 +1525,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     }
 
     /* Foreground 2D of the main ordering table, in compat draw order. */
+    s_currentLayer = MODERN_LAYER_HUD;
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
     for (i = 0; i < snapshot->packetCount; i++) {
@@ -1536,6 +1549,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
      * scissored to the intersection of the inherited area and the mirror
      * stream's own area. */
     s_currentPass = 1;
+    s_currentLayer = MODERN_LAYER_MIRROR;
     {
         /* The mirror 3D content sits between the mirror stream's own area
          * pair and its restore, so that pair alone is the authoritative
@@ -1623,6 +1637,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
     }
     s_currentPass = 0;
+    s_currentLayer = MODERN_LAYER_HUD;
 }
 
 /* ---- rendering ---- */
@@ -1659,6 +1674,49 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
     SDL_BindGPUGraphicsPipeline(pass, pipeline);
     SDL_BindGPUFragmentSamplers(pass, 0, bindings, (Uint32)sourceCount);
     SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+    SDL_EndGPURenderPass(pass);
+}
+
+static void ModernRenderLegacySelection(SDL_GPUCommandBuffer *cmd,
+                                        SDL_GPUTexture *vram, int passNumber,
+                                        uint32_t layerMask, int clearColor) {
+    SDL_GPUGraphicsPipeline *pipelines[5] = {
+        s_pipe3dOpaque, s_pipe3dBlend, s_pipe3dSub, s_pipe2d, s_pipe2dSub};
+    SDL_GPUColorTargetInfo color = {
+        .texture = s_target,
+        .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+        .load_op = clearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD,
+        .store_op = SDL_GPU_STOREOP_STORE,
+    };
+    SDL_GPUDepthStencilTargetInfo depth = {
+        .texture = s_depth,
+        .clear_depth = 1.0f,
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_DONT_CARE,
+    };
+    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, &depth);
+    SDL_GPUGraphicsPipeline *bound = NULL;
+    SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
+    SDL_GPUTextureSamplerBinding texture = {.texture = vram,
+                                            .sampler = s_sampler};
+    int spanIndex;
+    if (pass == NULL) return;
+    SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
+    SDL_BindGPUFragmentSamplers(pass, 0, &texture, 1);
+    for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
+        const ModernSpan *span = &s_spans[spanIndex];
+        SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
+        if (span->pass != passNumber || span->count == 0 ||
+            (layerMask & (1u << span->layer)) == 0) continue;
+        if (pipelines[span->pipeline] != bound) {
+            bound = pipelines[span->pipeline];
+            SDL_BindGPUGraphicsPipeline(pass, bound);
+        }
+        if (span->hasScissor) scissor = span->scissor;
+        SDL_SetGPUScissor(pass, &scissor);
+        SDL_DrawGPUPrimitives(pass, (Uint32)span->count, 1,
+                              (Uint32)span->start, 0);
+    }
     SDL_EndGPURenderPass(pass);
 }
 
@@ -1700,62 +1758,17 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPUCopyPass(copy);
         }
     }
-    {
-        SDL_GPUGraphicsPipeline *pipelines[5];
-        int spanIndex = 0;
-        int passNumber;
-        pipelines[MODERN_PIPE_3D_OPAQUE] = s_pipe3dOpaque;
-        pipelines[MODERN_PIPE_3D_BLEND] = s_pipe3dBlend;
-        pipelines[MODERN_PIPE_3D_SUB] = s_pipe3dSub;
-        pipelines[MODERN_PIPE_2D] = s_pipe2d;
-        pipelines[MODERN_PIPE_2D_SUB] = s_pipe2dSub;
-        /* Pass 0 clears colour and depth and draws the main scene; pass 1
-         * reclears only depth and draws the mirror overlay over it. */
-        for (passNumber = 0; passNumber < 2; passNumber++) {
-            SDL_GPUColorTargetInfo color = {
-                .texture = s_target,
-                .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
-                .load_op = passNumber == 0 ? SDL_GPU_LOADOP_CLEAR
-                                           : SDL_GPU_LOADOP_LOAD,
-                .store_op = SDL_GPU_STOREOP_STORE,
-            };
-            SDL_GPUDepthStencilTargetInfo depth = {
-                .texture = s_depth,
-                .clear_depth = 1.0f,
-                .load_op = SDL_GPU_LOADOP_CLEAR,
-                .store_op = SDL_GPU_STOREOP_DONT_CARE,
-            };
-            SDL_GPURenderPass *pass;
-            SDL_GPUGraphicsPipeline *bound = NULL;
-            if (passNumber == 1 && spanIndex >= s_spanCount) break;
-            pass = SDL_BeginGPURenderPass(cmd, &color, 1, &depth);
-            if (pass == NULL) break;
-            if (s_vertexCount > 0) {
-                const SDL_GPUBufferBinding binding = {
-                    .buffer = s_vertexBuffer, .offset = 0};
-                const SDL_GPUTextureSamplerBinding sampler = {
-                    .texture = vram, .sampler = s_sampler};
-                SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
-                SDL_BindGPUFragmentSamplers(pass, 0, &sampler, 1);
-                for (; spanIndex < s_spanCount; spanIndex++) {
-                    const ModernSpan *span = &s_spans[spanIndex];
-                    if (span->pass != passNumber) break;
-                    if (span->count == 0) continue;
-                    if (pipelines[span->pipeline] != bound) {
-                        bound = pipelines[span->pipeline];
-                        SDL_BindGPUGraphicsPipeline(pass, bound);
-                    }
-                    {
-                        SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
-                        if (span->hasScissor) scissor = span->scissor;
-                        SDL_SetGPUScissor(pass, &scissor);
-                    }
-                    SDL_DrawGPUPrimitives(pass, (Uint32)span->count, 1,
-                                          (Uint32)span->start, 0);
-                }
-            }
-            SDL_EndGPURenderPass(pass);
-        }
+    if (ModernNativeGpuCanReplaceWorld()) {
+        ModernRenderLegacySelection(cmd, vram, 0,
+                                    1u << MODERN_LAYER_BACKGROUND, 1);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
+        ModernRenderLegacySelection(cmd, vram, 0,
+                                    1u << MODERN_LAYER_HUD, 0);
+        ModernRenderLegacySelection(cmd, vram, 1,
+                                    1u << MODERN_LAYER_MIRROR, 0);
+    } else {
+        ModernRenderLegacySelection(cmd, vram, 0, UINT32_MAX, 1);
+        ModernRenderLegacySelection(cmd, vram, 1, UINT32_MAX, 0);
     }
     {
         SDL_GPUTexture *chain = s_target;

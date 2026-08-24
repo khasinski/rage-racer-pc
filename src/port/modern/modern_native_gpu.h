@@ -9,6 +9,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device);
 void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 int ModernNativeGpuHasDraws(void);
+int ModernNativeGpuCanReplaceWorld(void);
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
