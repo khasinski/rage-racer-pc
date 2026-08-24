@@ -2,6 +2,7 @@
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
 #include "psyq/gte.h"
+#include "rage/render_world_game.h"
 
 
 void BuildRotMatrixZ(Matrix *mtx, s32 angle) {
@@ -62,6 +63,9 @@ void SetCameraRotMatrix(void) {
     Matrix mtx;
     Matrix *scratch = SCRATCH_VIEW_MATRIX_GTE;
 
+    RageGameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
+                                 SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
+                                 SCRATCH_VIEW_ANGLE_Z);
     BuildRotMatrixY(scratch, SCRATCH_VIEW_ANGLE_Y);
     BuildRotMatrixX(&mtx, SCRATCH_VIEW_ANGLE_X);
     MulMatrix2(&mtx, scratch);
