@@ -81,6 +81,7 @@ if(RAGE_BUILD_PORT)
         src/port/diagnostic_log.c
         src/port/game_diagnostics.c
         src/port/rage_trace.c
+        src/port/render_world_game.c
         src/port/runtime_config.c
         src/port/timing_control.c
         src/port/analog_pad.c
@@ -170,7 +171,7 @@ if(RAGE_BUILD_PORT)
                     -Wno-error=deprecated-non-prototype)
             endif()
         endif()
-        target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz)
+        target_link_libraries(${RAGE_PORT_TARGET} PRIVATE psyz rage-render-world)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()
