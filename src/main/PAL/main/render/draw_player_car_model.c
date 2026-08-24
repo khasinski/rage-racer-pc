@@ -9,6 +9,7 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 #include "psyq/gte.h"
+#include "rage/render_world_game.h"
 
 #ifdef __psyz
 #include <stdio.h>
@@ -40,6 +41,8 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     s32 clipHandle = 0;
     s32 otDepth;
     s32 i;
+
+    RageGameRenderWorldSubmitPlayerCar(obj, SCRATCH_MIRROR != 0);
 
     obj->y -= view->horizon;
     obj->modelY -= view->horizon;
@@ -146,6 +149,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
 
 
 void DrawCar(GameRenderObject *obj) {
+    RageGameRenderWorldSubmitCar(obj, SCRATCH_MIRROR != 0);
     Matrix m_10;
     Matrix m_30;
     Matrix m_50;
