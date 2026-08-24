@@ -59,6 +59,13 @@ add_test(NAME rmesh COMMAND rmesh_tests)
 add_test(NAME asset_gltf_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
 
+add_executable(render_world_tests render_world_tests.c)
+target_link_libraries(render_world_tests PRIVATE rage-render-world)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(render_world_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_world COMMAND render_world_tests)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
