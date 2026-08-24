@@ -7,9 +7,28 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gltf
 import models
+import rmesh
 
 
 class GltfExportTest(unittest.TestCase):
+    def test_runtime_mesh_is_indexed_and_has_no_ps1_state(self):
+        face = models.Face(prim=1, v=(0, 1, 2, 3), rgb=(1, 2, 3),
+                           uv=((0, 0), (255, 0), (255, 255), (0, 255)),
+                           tpage=0x42, clut=0x13)
+        bank = models.Bank(count=1, vertex_off=0, normal_off=0, model_offs=[])
+        bank.vertices = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        bank.models = [models.Model(index=0, offset=0, faces=[face])]
+
+        blob = rmesh.bank_to_bytes(bank, [{"tpage": 0x42, "clut": 0x13}])
+
+        magic, version, meshes, vertices, indices = rmesh.HEADER.unpack_from(blob)
+        self.assertEqual(rmesh.MAGIC, magic)
+        self.assertEqual(1, version)
+        self.assertEqual((1, 4, 6), (meshes, vertices, indices))
+        vertex = rmesh.VERTEX.unpack_from(blob, rmesh.HEADER.size + 8)
+        self.assertEqual((1, 2, 3, 255), vertex[6:10])
+        self.assertEqual(0, vertex[-1])
+
     def test_converts_coordinate_system_and_quad_winding(self):
         face = models.Face(prim=0, v=(0, 1, 2, 3), rgb=(64, 128, 255))
         bank = models.Bank(count=1, vertex_off=0, normal_off=0, model_offs=[])
