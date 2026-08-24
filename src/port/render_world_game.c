@@ -8,6 +8,7 @@
 #include "game/asset.h"
 #include "game/render.h"
 #include "game/race.h"
+#include "game/scratchpad.h"
 #include "game/track.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
@@ -225,6 +226,13 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     RageRenderWorldSetCamera(RageGameRenderWorldMutable(), &camera);
 }
 
+void RageGameRenderWorldPublishCurrentCamera(void) {
+    RageGameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
+                                 SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_X,
+                                 SCRATCH_VIEW_ANGLE_Y,
+                                 SCRATCH_VIEW_ANGLE_Z);
+}
+
 void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int32_t x, int32_t y, int32_t z,
                                            int32_t yaw, int transparent,
@@ -392,4 +400,3 @@ const RageRenderWorld *RageGameRenderWorldPrevious(void) {
     if (!s_initialized || !s_haveCompletedFrame) return NULL;
     return &s_worlds[s_currentWorld ^ 1];
 }
-

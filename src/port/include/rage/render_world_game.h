@@ -11,6 +11,7 @@ struct RageRenderWorld;
 void RageGameRenderWorldBeginFrame(uint64_t frame);
 void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll);
+void RageGameRenderWorldPublishCurrentCamera(void);
 void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int32_t x, int32_t y, int32_t z,
                                            int32_t yaw, int transparent,
@@ -29,4 +30,3 @@ const struct RageRenderWorld *RageGameRenderWorldCurrent(void);
 const struct RageRenderWorld *RageGameRenderWorldPrevious(void);
 
 #endif
-

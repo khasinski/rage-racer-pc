@@ -1,5 +1,6 @@
 #include "rage/compat.h"
 #include "rage/render_world_game.h"
+#include "modern/modern_renderer.h"
 #include <libgte.h>
 
 extern int32_t g_FrameCounter;
@@ -32,6 +33,11 @@ void RagePortBeforeSceneHandler(void) {
 }
 
 void RagePortAfterSceneHandler(void) {
+    RageGameRenderWorldPublishCurrentCamera();
+    if (RageModernIsEnabled()) {
+        RageGameRenderWorldPublishCourseObjects();
+        RageGameRenderWorldPublishTerrainGrid();
+    }
     RageCaptureFrameEnd();
 }
 
