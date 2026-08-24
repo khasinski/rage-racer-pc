@@ -12,6 +12,7 @@ void main() {
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, normalize(vec3(-0.4, 0.7, 0.5))), 0.0);
-    vec3 light = vec3(0.28 + 0.72 * diffuse);
-    outColor = vec4(texel.rgb * color.rgb * light, texel.a * color.a);
+    vec3 light = vec3(0.90 + 0.10 * diffuse);
+    vec3 modulation = min(color.rgb * 2.0, vec3(1.0));
+    outColor = vec4(texel.rgb * modulation * light, texel.a * color.a);
 }

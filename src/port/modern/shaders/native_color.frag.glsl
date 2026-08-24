@@ -9,5 +9,5 @@ void main() {
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, normalize(vec3(-0.4, 0.7, 0.5))), 0.0);
-    outColor = vec4(color.rgb * (0.28 + 0.72 * diffuse), color.a);
+    outColor = vec4(color.rgb * (0.90 + 0.10 * diffuse), color.a);
 }
