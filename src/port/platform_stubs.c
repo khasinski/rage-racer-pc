@@ -1,5 +1,8 @@
 #include "rage/compat.h"
+#include "rage/render_world_game.h"
 #include <libgte.h>
+
+extern int32_t g_FrameCounter;
 
 void RagePortSmokeBeforeSceneHandler(void) __attribute__((weak));
 void RagePortSmokeBeforeSceneHandler(void) {}
@@ -24,6 +27,7 @@ void RagePortBeforeSceneHandler(void) {
     RagePortScenarioBeforeSceneHandler();
     RagePortSmokeBeforeSceneHandler();
 #endif
+    RageGameRenderWorldBeginFrame((uint64_t)g_FrameCounter);
     RageCaptureFrameBegin();
 }
 
