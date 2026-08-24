@@ -1,4 +1,5 @@
 #include "modern_renderer.h"
+#include "modern_assets.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
@@ -2047,6 +2048,7 @@ int RageModernInit(const RagePortConfig *config) {
         return 1;
     }
     s_config = *config;
+    ModernAssetsInit();
     toggleKey = RageRuntimeConfigGet("video.toggle_renderer_key");
     if (toggleKey != NULL && toggleKey[0] != '\0') {
         SDL_Scancode parsed = SDL_GetScancodeFromName(toggleKey);
@@ -2071,6 +2073,7 @@ void RageModernShutdown(void) {
     Psyz_PresentSource_SDL3GPU(s_prev_present_source);
     Psyz_OverlayInit_SDL3GPU(s_prev_overlay_init);
     ModernDestroyResources();
+    ModernAssetsShutdown();
     s_prev_present_source = NULL;
     s_prev_overlay_init = NULL;
     s_window = NULL;
