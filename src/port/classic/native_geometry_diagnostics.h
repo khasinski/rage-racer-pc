@@ -1,5 +1,5 @@
-#ifndef RAGE_NATIVE_GEOMETRY_DIAGNOSTICS_H
-#define RAGE_NATIVE_GEOMETRY_DIAGNOSTICS_H
+#ifndef RAGE_CLASSIC_GEOMETRY_DIAGNOSTICS_H
+#define RAGE_CLASSIC_GEOMETRY_DIAGNOSTICS_H
 
 typedef struct RageGeometryDiagnostics {
     int initialized;

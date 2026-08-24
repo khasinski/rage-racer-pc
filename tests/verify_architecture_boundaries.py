@@ -25,6 +25,13 @@ def main() -> int:
             raise AssertionError(f"renderer-neutral code imports PSY-Z: {path}")
     if not roots[0].is_dir():
         raise AssertionError("Render World source directory is missing")
+    classic_geometry = source / "src/port/classic/native_geometry.c"
+    if not classic_geometry.is_file():
+        raise AssertionError("classic GTE geometry is outside its renderer module")
+    modern_sources = (source / "src/port/modern").glob("*.[ch]")
+    if any("classic/" in path.read_text(encoding="utf-8")
+           for path in modern_sources):
+        raise AssertionError("modern renderer imports the classic renderer")
     return 0
 
 

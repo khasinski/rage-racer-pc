@@ -112,8 +112,8 @@ if(RAGE_BUILD_PORT)
         src/port/scenario_control.c
         src/port/platform_stubs.c
         src/port/legacy_platform.c
-        src/port/native_geometry.c
-        src/port/native_geometry_diagnostics.c
+        src/port/classic/native_geometry.c
+        src/port/classic/native_geometry_diagnostics.c
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
         src/port/fmv_host.c

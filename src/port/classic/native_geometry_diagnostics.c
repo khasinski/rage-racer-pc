@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "runtime_config.h"
+#include "../runtime_config.h"
 
 static int ParseValue(const char *value, int fallback, int base) {
     char *end;
