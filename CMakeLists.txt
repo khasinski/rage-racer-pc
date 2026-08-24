@@ -8,6 +8,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+# The recovered game code relies on wrapping signed arithmetic and contains
+# deliberate type punning. Keep optimized host builds from treating either as
+# permission to rewrite game behavior.
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    add_compile_options(-fno-strict-aliasing -fwrapv)
+endif()
+
 # Link the Visual C++ runtime statically. Windows does not ship it, and an
 # archive that expects the player to install a redistributable first fails
 # before main() with STATUS_DLL_NOT_FOUND and no log to explain why.
