@@ -1,5 +1,7 @@
 #include "modern_renderer.h"
 #include "modern_assets.h"
+#include "rage/render_world_game.h"
+#include "render/render_mesh_build.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
@@ -7,6 +9,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +69,16 @@ static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUTexture *s_postTarget;
 static SDL_GPUGraphicsPipeline *s_pipePost;
 static SDL_GPUSampler *s_samplerLinear;
+
+enum {
+    MODERN_MAX_NATIVE_VERTICES = 1000000,
+    MODERN_MAX_NATIVE_SPANS = 32768,
+};
+static RageNativeDrawVertex *s_nativeVertices;
+static RageNativeDrawSpan *s_nativeSpans;
+static uint32_t s_nativeVertexCount;
+static uint32_t s_nativeSpanCount;
+static uint64_t s_nativeWorldFrame = UINT64_MAX;
 
 /* Ring of recent presented frames, copied on the GPU every present so a
  * transient artifact can be dumped AFTER being seen (the synchronous burst
@@ -331,9 +344,16 @@ static void ModernDestroyResources(void) {
     free(s_vertices);
     free(s_spans);
     free(s_ringScene);
+    free(s_nativeVertices);
+    free(s_nativeSpans);
     s_vertices = NULL;
     s_spans = NULL;
     s_ringScene = NULL;
+    s_nativeVertices = NULL;
+    s_nativeSpans = NULL;
+    s_nativeVertexCount = 0;
+    s_nativeSpanCount = 0;
+    s_nativeWorldFrame = UINT64_MAX;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
@@ -417,6 +437,12 @@ static int ModernEnsureResources(void) {
     }
     s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
     s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
+    if (ModernAssetsReady()) {
+        s_nativeVertices = malloc(MODERN_MAX_NATIVE_VERTICES *
+                                  sizeof(*s_nativeVertices));
+        s_nativeSpans = malloc(MODERN_MAX_NATIVE_SPANS *
+                               sizeof(*s_nativeSpans));
+    }
 
     if (s_ringEnabled) {
         SDL_GPUTextureCreateInfo info = {0};
@@ -1957,6 +1983,28 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         return;
     }
     if (!ModernEnsureResources()) return;
+    {
+        const RageRenderWorld *world = RageGameRenderWorldCurrent();
+        if (world != NULL && world->frame != s_nativeWorldFrame &&
+            s_nativeVertices != NULL && s_nativeSpans != NULL) {
+            ModernAssetsWarmWorld(world);
+            s_nativeVertexCount = RageRenderBuildNativeDraws(
+                world, (float)s_targetW / (float)s_targetH,
+                ModernAssetsMeshLookup, NULL, s_nativeVertices,
+                MODERN_MAX_NATIVE_VERTICES, s_nativeSpans,
+                MODERN_MAX_NATIVE_SPANS, &s_nativeSpanCount);
+            s_nativeWorldFrame = world->frame;
+            if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+                fprintf(stderr,
+                        "rage-port: native world frame=%llu camera=%u "
+                        "instances=%u cached=%u vertices=%u spans=%u\n",
+                        (unsigned long long)world->frame,
+                        (unsigned)world->hasCamera, world->instanceCount,
+                        ModernAssetsCachedMeshCount(), s_nativeVertexCount,
+                        s_nativeSpanCount);
+            }
+        }
+    }
     if (fpsMode) {
         const RageSceneSnapshot *target = RageCaptureCurrent();
         Uint64 now = SDL_GetTicksNS();

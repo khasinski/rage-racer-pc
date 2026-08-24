@@ -505,6 +505,15 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 120)
 
     add_test(
+        NAME native_render_world
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(native_render_world PROPERTIES TIMEOUT 40)
+
+    add_test(
         NAME grand_prix_terrain_frame
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_terrain_frame.py
