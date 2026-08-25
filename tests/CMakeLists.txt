@@ -61,6 +61,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh_index COMMAND rmesh_index_tests)
 
+add_executable(asset_id_tests asset_id_tests.c)
+target_link_libraries(asset_id_tests PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(asset_id_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME asset_id COMMAND asset_id_tests)
+
 add_executable(rmesh_cache_tests rmesh_cache_tests.c)
 target_link_libraries(rmesh_cache_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

@@ -47,6 +47,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_library(rage-rmesh STATIC
+    src/render/asset_id.c
     src/render/rmesh.c
     src/render/rmesh_index.c
     src/render/rmesh_cache.c)

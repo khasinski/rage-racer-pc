@@ -1,0 +1,65 @@
+#include "asset_id.h"
+
+#include <stdio.h>
+
+static int RageTrackName(char *out, size_t capacity, uint32_t assetKey) {
+    static const char *const courses[] = {"big", "mid", "hi", "oval"};
+    uint32_t offset, course, classNumber;
+    int written;
+
+    /* Track Render World keys are the .2ND pack for BIG1 through OVAL6. */
+    if (assetKey < 0x58u || assetKey > 0x86u ||
+        ((assetKey - 0x58u) & 1u) != 0) return 0;
+    offset = (assetKey - 0x58u) / 2u;
+    course = offset % 4u;
+    classNumber = offset / 4u + 1u;
+    written = snprintf(out, capacity, "%s%u", courses[course], classNumber);
+    return written >= 0 && (size_t)written < capacity;
+}
+
+static const char *RageAssetSetMaterialName(RageRenderAssetSet assetSet) {
+    switch (assetSet) {
+    case RAGE_RENDER_ASSET_COURSE: return "course";
+    case RAGE_RENDER_ASSET_TERRAIN: return "terrain";
+    case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1: return "model-bank-1";
+    case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2: return "model-bank-2";
+    default: return NULL;
+    }
+}
+
+int RageAssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
+                        RageRenderAssetSet assetSet, uint32_t material) {
+    const char *setName;
+    char track[16];
+    int written;
+
+    if (out == NULL || capacity == 0) return 0;
+    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
+        uint32_t car;
+        if (assetKey < 10u || assetKey > 72u || ((assetKey - 10u) & 1u) != 0)
+            return 0;
+        car = (assetKey - 10u) / 2u;
+        written = snprintf(out, capacity, "car.%u.material.%u", car,
+                           material);
+        return written >= 0 && (size_t)written < capacity;
+    }
+    setName = RageAssetSetMaterialName(assetSet);
+    if (setName == NULL || !RageTrackName(track, sizeof(track), assetKey))
+        return 0;
+    written = snprintf(out, capacity, "track.%s.%s.material.%u", track,
+                       setName, material);
+    return written >= 0 && (size_t)written < capacity;
+}
+
+int RageAssetMaterialVariantId(char *out, size_t capacity,
+                               uint32_t assetKey,
+                               RageRenderAssetSet assetSet,
+                               uint32_t material, uint8_t variant) {
+    char base[128];
+    int written;
+    if (!RageAssetMaterialId(base, sizeof(base), assetKey, assetSet, material))
+        return 0;
+    written = snprintf(out, capacity, "%s.variant.%u", base,
+                       (unsigned)variant);
+    return written >= 0 && (size_t)written < capacity;
+}
