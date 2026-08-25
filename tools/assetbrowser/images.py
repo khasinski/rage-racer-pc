@@ -269,3 +269,40 @@ def decode_texpage(vram: Vram, tpage: int, clut: int) -> bytes:
                             for i in range(0, len(chunk) - 1, 2)])
         out[v * 1024 : v * 1024 + len(row)] = row
     return bytes(out)
+
+
+def decode_texpage_labels(vram: Vram, tpage: int, clut: int,
+                          labels: dict[tuple[int, int], int]) -> bytes:
+    """Decode one semantic byte per palette-sampled texel.
+
+    `labels` names selected palette cells by VRAM coordinate. This stays in the
+    importer; the resulting mask contains no texture-page or CLUT addresses.
+    """
+    px = (tpage & 0x0F) * 64
+    py = ((tpage >> 4) & 1) * 256
+    mode = (tpage >> 7) & 3
+    cx = (clut & 0x3F) * 16
+    cy = (clut >> 6) & 0x1FF
+    if mode not in (0, 1):
+        return bytes(256 * 256)
+    count = 16 if mode == 0 else 256
+    palette = bytes(labels.get((cx + index, cy), 0)
+                    for index in range(count))
+    if mode == 0:
+        table = [bytes((palette[value & 0xF], palette[value >> 4]))
+                 for value in range(256)]
+        row_bytes = 128
+    else:
+        table = [bytes((palette[value],)) for value in range(256)]
+        row_bytes = 256
+    out = bytearray(256 * 256)
+    for row in range(256):
+        y = py + row
+        if y >= VRAM_H:
+            break
+        start = (y * VRAM_W + px) * 2
+        available = min(row_bytes, (VRAM_W - px) * 2)
+        source = vram.buf[start:start + available]
+        decoded = b"".join(table[value] for value in source)
+        out[row * 256:row * 256 + len(decoded)] = decoded
+    return bytes(out)

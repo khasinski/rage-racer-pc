@@ -60,11 +60,53 @@ assert len(ASSET_NAMES) == ASSET_COUNT
 # The car texture page every CAR_xx.1ST uploads: g_CarImageRect at 0x8007C484
 # reads {x 704, y 0, w 64, h 256} - one full 4bpp texture page, 0x8000 bytes.
 CAR_IMAGE_RECT = (704, 0, 64, 256)
+CAR_PAINT_PALETTE_OFFSET = 0x7060
+CAR_PAINT_FIRST = (1, 2, 3, 4, 5, 6, 7)
+CAR_PAINT_SECOND = (8, 9, 10, 11, 12, 13, 14)
+CAR_PAINT_SLOTS_3_A = (1, 0x41, 0xC1, 0x101, 0x181, 0x241, 0x281,
+                       0x301, 0x341)
+CAR_PAINT_SLOTS_3_B = (1, 0x41, 0xC1, 0x181, 0x241, 0x281, 0x301, 0x341)
+CAR_PAINT_SLOTS_4 = (0x141, 0x1C1, 0x201, 0x401)
 
 # Terrain cell pitch in the units the vertex pool is stored in. The grid itself
 # is 2048 world units per cell; BuildVisibleCells shifts the cell translation
 # left by 2 before handing it to the GTE, so a cell step is 2048 << 2 here.
 CELL_PITCH = 2048 << 2
+
+
+def car_paint_vram_labels() -> dict[tuple[int, int], int]:
+    """Map imported palette cells to renderer-neutral paint ramp codes."""
+    entries: dict[int, int] = {}
+
+    def assign(start, codes):
+        entries.update((start + offset, code)
+                       for offset, code in enumerate(codes))
+
+    for start in CAR_PAINT_SLOTS_3_A:
+        assign(start, (CAR_PAINT_FIRST[0], CAR_PAINT_FIRST[3],
+                       CAR_PAINT_FIRST[6]))
+    for start in CAR_PAINT_SLOTS_3_B:
+        assign(start + 3, (CAR_PAINT_SECOND[0], CAR_PAINT_SECOND[3],
+                           CAR_PAINT_SECOND[6]))
+    for start in CAR_PAINT_SLOTS_4:
+        assign(start, (CAR_PAINT_FIRST[0], CAR_PAINT_FIRST[2],
+                       CAR_PAINT_FIRST[4], CAR_PAINT_FIRST[6]))
+        assign(start + 4, (CAR_PAINT_SECOND[0], CAR_PAINT_SECOND[2],
+                           CAR_PAINT_SECOND[4], CAR_PAINT_SECOND[6]))
+    # These final five-entry gradients are written after every slot loop.
+    assign(0x2C1, (CAR_PAINT_FIRST[0], CAR_PAINT_FIRST[1],
+                   CAR_PAINT_FIRST[3], CAR_PAINT_FIRST[5],
+                   CAR_PAINT_FIRST[6]))
+    assign(0x2C6, (CAR_PAINT_SECOND[0], CAR_PAINT_SECOND[1],
+                   CAR_PAINT_SECOND[3], CAR_PAINT_SECOND[5],
+                   CAR_PAINT_SECOND[6]))
+    labels = {}
+    base_word = CAR_PAINT_PALETTE_OFFSET // 2
+    x, y, width, _height = CAR_IMAGE_RECT
+    for entry, code in entries.items():
+        word = base_word + entry
+        labels[(x + word % width, y + word // width)] = code
+    return labels
 
 
 def names_from_exe(exe_path: Path) -> list[str]:
@@ -348,7 +390,8 @@ class Extractor:
         v, src = self.vram_for(i, "car_model")
         rec["vram"] = self.emit_vram(v, stem)
         rec["vramSources"] = src
-        rec["textures"] = self.emit_textures(v, bank, stem)
+        rec["textures"] = self.emit_textures(
+            v, bank, stem, paint_labels=car_paint_vram_labels())
         rec["model"] = self.emit_bank(bank, stem, textures=rec["textures"])
         rec["summary"] = (
             f"{bank.count} models, {len(bank.vertices)} verts, "
@@ -580,13 +623,18 @@ class Extractor:
         rmesh.write_bank(rmesh_path, bank, textures, scrolling_primitives,
                          terrain_primitives=grid is not None)
         materials_path = self.out / "models" / f"{stem}.rmat"
-        material_rows = ["# rage-rmat v4\n"]
+        has_paint = any("runtimePaintMask" in texture
+                        for texture in (textures or []))
+        material_rows = ["# rage-rmat v5\n" if has_paint
+                         else "# rage-rmat v4\n"]
         for index, texture in enumerate(textures or []):
             variants = texture.get("runtimePixelVariants", [
                 texture["runtimePixels"],
                 texture.get("runtimePixelsAlt", texture["runtimePixels"]),
             ])
-            material_rows.append(f"{index} {' '.join(variants)}\n")
+            suffix = (f" | {texture.get('runtimePaintMask', '-')}"
+                      if has_paint else "")
+            material_rows.append(f"{index} {' '.join(variants)}{suffix}\n")
         materials_path.write_text("".join(material_rows))
         return {
             "file": f"models/{stem}.json",
@@ -609,22 +657,23 @@ class Extractor:
         return {"file": f"images/{stem}_vram.png", "rects": v.dirty}
 
     @staticmethod
-    def apply_texture_window(rgba, window):
+    def apply_texture_window(rgba, window, pixel_size=4):
         if window is None:
             return rgba
         width_u, width_v, off_u, off_v = window
         out = bytearray(len(rgba))
         for y in range(256):
             source_y = (y % width_v) + off_v
-            src = (source_y * 256 + off_u) * 4
-            tile = rgba[src:src + width_u * 4]
+            src = (source_y * 256 + off_u) * pixel_size
+            tile = rgba[src:src + width_u * pixel_size]
             row = tile * (256 // width_u)
-            dst = y * 256 * 4
-            out[dst:dst + 256 * 4] = row
+            dst = y * 256 * pixel_size
+            out[dst:dst + 256 * pixel_size] = row
         return bytes(out)
 
     def emit_textures(self, v, bank, stem, alternate_vram=None,
-                      variant_vrams=None, variant_clut_offsets=(0,)):
+                      variant_vrams=None, variant_clut_offsets=(0,),
+                      paint_labels=None):
         pairs = {(f.tpage, f.clut, f.texwin)
                  for m in bank.models for f in m.faces if f.uv}
         pairs = sorted(pairs, key=lambda p: (p[0], p[1], p[2] or (0, 0, 0, 0)))
@@ -646,6 +695,14 @@ class Extractor:
                 "pageX": (tp & 0xF) * 64, "pageY": ((tp >> 4) & 1) * 256,
                 "clutX": (cl & 0x3F) * 16, "clutY": (cl >> 6) & 0x1FF,
             }
+            if paint_labels is not None:
+                paint = self.apply_texture_window(
+                    images.decode_texpage_labels(v, tp, cl, paint_labels),
+                    window, pixel_size=1)
+                if any(paint):
+                    paint_fn = f"{stem}_t{n}.rpaint"
+                    (self.out / "textures" / paint_fn).write_bytes(paint)
+                    item["runtimePaintMask"] = f"textures/{paint_fn}"
             if alternate_vram is not None:
                 alternate = self.apply_texture_window(
                     images.decode_texpage(alternate_vram, tp, cl), window)

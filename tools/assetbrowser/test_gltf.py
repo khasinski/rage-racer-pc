@@ -155,6 +155,42 @@ class GltfExportTest(unittest.TestCase):
             "0 textures/source.rgba textures/source.rgba\n",
             sidecar)
 
+    def test_runtime_material_sidecar_attaches_semantic_paint_mask(self):
+        bank = models.Bank(count=0, vertex_off=0, normal_off=0,
+                           model_offs=[])
+        bank.vertices = []
+        bank.models = []
+        textures = [{
+            "runtimePixels": "textures/car.rgba",
+            "runtimePaintMask": "textures/car.rpaint",
+        }]
+        with tempfile.TemporaryDirectory() as temp:
+            extractor = extract.Extractor.__new__(extract.Extractor)
+            extractor.out = Path(temp)
+            (extractor.out / "models").mkdir()
+            with mock.patch.object(extract.gltf, "write_bank"), \
+                 mock.patch.object(extract.rmesh, "write_bank"):
+                extractor.emit_bank(bank, "car", textures=textures)
+            sidecar = (extractor.out / "models/car.rmat").read_text()
+        self.assertEqual(
+            "# rage-rmat v5\n"
+            "0 textures/car.rgba textures/car.rgba | textures/car.rpaint\n",
+            sidecar)
+
+    def test_car_paint_mask_labels_palette_sampled_texels(self):
+        vram = extract.images.Vram()
+        # 4bpp page 1 begins at x=64. Its first byte contains palette indices
+        # 0 and 1; only the second palette cell has a semantic label.
+        offset = (0 * extract.images.VRAM_W + 64) * 2
+        vram.buf[offset] = 0x10
+        mask = extract.images.decode_texpage_labels(
+            vram, 1, 0, {(1, 0): extract.CAR_PAINT_FIRST[6]})
+        self.assertEqual((0, extract.CAR_PAINT_FIRST[6]),
+                         tuple(mask[:2]))
+        labels = extract.car_paint_vram_labels()
+        self.assertIn(extract.CAR_PAINT_FIRST[0], labels.values())
+        self.assertIn(extract.CAR_PAINT_SECOND[6], labels.values())
+
     def test_terrain_materials_bake_page_and_environment_variants(self):
         face = models.Face(
             prim=0, v=(0, 1, 2, 3),

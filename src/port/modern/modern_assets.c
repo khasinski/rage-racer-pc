@@ -7,6 +7,7 @@
 #include "modern_assets.h"
 #include "port/mod_assets.h"
 #include "render/asset_id.h"
+#include "render/car_paint.h"
 #include "render/mod_manifest.h"
 
 enum { MODERN_ASSET_CACHE_CAPACITY = 4096 };
@@ -24,6 +25,7 @@ static int s_modReady;
 /* Material sidecars are read synchronously on the render thread. Copy the
  * selected relative path out before releasing their transient file buffer. */
 static char s_materialPath[1024];
+static char s_paintPath[1024];
 
 static void ModernAssetsInitModProvider(void) {
     const char *root = RageModAssetsDirectory();
@@ -146,24 +148,37 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant,
                                     const char **pathOut,
-                                    size_t *pathLengthOut) {
-    static const char semanticHeader[] = "# rage-rmat v4\n";
+                                    size_t *pathLengthOut,
+                                    const char **paintPathOut,
+                                    size_t *paintPathLengthOut) {
+    static const char semanticHeaderV4[] = "# rage-rmat v4\n";
+    static const char semanticHeaderV5[] = "# rage-rmat v5\n";
     const RageRuntimeCachedMesh *cached;
     const void *mapBytes;
     size_t mapSize, lineStart = 0;
     const char *path = NULL;
     size_t pathLength = 0, i;
-    int semanticFormat;
+    const char *paintPath = NULL;
+    size_t paintPathLength = 0;
+    int semanticFormat, paintFormat;
     int found = 0;
-    if (pathOut == NULL || pathLengthOut == NULL || instance == NULL) return 0;
+    if (pathOut == NULL || pathLengthOut == NULL || paintPathOut == NULL ||
+        paintPathLengthOut == NULL || instance == NULL) return 0;
+    *paintPathOut = NULL;
+    *paintPathLengthOut = 0;
     cached = ModernAssetsFind(instance);
     if (cached == NULL || cached->location.materialPathLength == 1 ||
         cached->location.materialPath[0] == '-' ||
         !ModernAssetReadFile(NULL, cached->location.materialPath,
                              cached->location.materialPathLength, &mapBytes,
                              &mapSize)) return 0;
-    semanticFormat = mapSize >= sizeof(semanticHeader) - 1 &&
-        memcmp(mapBytes, semanticHeader, sizeof(semanticHeader) - 1) == 0;
+    paintFormat = mapSize >= sizeof(semanticHeaderV5) - 1 &&
+        memcmp(mapBytes, semanticHeaderV5,
+               sizeof(semanticHeaderV5) - 1) == 0;
+    semanticFormat = paintFormat ||
+        (mapSize >= sizeof(semanticHeaderV4) - 1 &&
+         memcmp(mapBytes, semanticHeaderV4,
+                sizeof(semanticHeaderV4) - 1) == 0);
     for (i = 0; i <= mapSize; i++) {
         if (i == mapSize || ((const char *)mapBytes)[i] == '\n') {
             const char *line = (const char *)mapBytes + lineStart;
@@ -181,6 +196,17 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                     while (cursor <= length) {
                         size_t candidateStart = cursor;
                         while (cursor < length && line[cursor] != ' ') cursor++;
+                        if (paintFormat && cursor - candidateStart == 1 &&
+                            line[candidateStart] == '|') {
+                            while (cursor < length && line[cursor] == ' ')
+                                cursor++;
+                            paintPath = line + cursor;
+                            while (cursor < length && line[cursor] != ' ')
+                                cursor++;
+                            paintPathLength = (size_t)(line + cursor -
+                                                       paintPath);
+                            break;
+                        }
                         if (pathIndex == 0 || pathIndex == variant) {
                             selectedStart = candidateStart;
                             selectedLength = cursor - candidateStart;
@@ -267,6 +293,14 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
         memcpy(s_materialPath, path, pathLength);
         s_materialPath[pathLength] = '\0';
         *pathOut = s_materialPath; *pathLengthOut = pathLength;
+        if (paintPath != NULL && paintPathLength != 0 &&
+            !(paintPathLength == 1 && paintPath[0] == '-') &&
+            paintPathLength < sizeof(s_paintPath)) {
+            memcpy(s_paintPath, paintPath, paintPathLength);
+            s_paintPath[paintPathLength] = '\0';
+            *paintPathOut = s_paintPath;
+            *paintPathLengthOut = paintPathLength;
+        }
         if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
             fprintf(stderr,
                     "rage-port: native material asset=%u set=%u material=%u "
@@ -343,22 +377,49 @@ fail:
 int ModernAssetsLoadMaterialImage(const RageRenderMeshInstance *instance,
                                   uint32_t material, uint8_t variant,
                                   ModernAssetImage *image) {
-    const char *path;
-    size_t pathLength;
+    const char *path, *paintPath;
+    const void *pixels = NULL;
+    size_t pathLength, paintPathLength;
     if (image == NULL || instance == NULL) return 0;
     memset(image, 0, sizeof(*image));
     if (ModernAssetsLoadModImage(instance, material, variant, image)) return 1;
     if (!ModernAssetsFindMaterial(instance, material, variant,
-                                  &path, &pathLength) ||
-        !ModernAssetReadFile(NULL, path, pathLength, &image->pixels,
-                            &image->size) ||
+                                  &path, &pathLength, &paintPath,
+                                  &paintPathLength) ||
+        !ModernAssetReadFile(NULL, path, pathLength, &pixels, &image->size) ||
         image->size != 256u * 256u * 4u) {
-        if (image->pixels != NULL) ModernAssetFreeFile(NULL, image->pixels);
+        if (pixels != NULL) ModernAssetFreeFile(NULL, pixels);
         memset(image, 0, sizeof(*image));
         return 0;
     }
+    image->pixels = (void *)pixels;
     image->width = 256;
     image->height = 256;
+    if (instance->hasCarPaint && paintPath != NULL) {
+        const void *mask = NULL;
+        size_t maskSize = 0;
+        if (!ModernAssetReadFile(NULL, paintPath, paintPathLength, &mask,
+                                 &maskSize) || maskSize != 256u * 256u ||
+            !RageCarPaintApply(image->pixels, mask, 256u * 256u,
+                               instance->carPaintColor1,
+                               instance->carPaintColor2)) {
+            if (mask != NULL) ModernAssetFreeFile(NULL, mask);
+            ModernAssetFreeFile(NULL, image->pixels);
+            memset(image, 0, sizeof(*image));
+            fprintf(stderr,
+                    "rage-port: native car paint mask unavailable for %s\n",
+                    path);
+            return 0;
+        }
+        ModernAssetFreeFile(NULL, mask);
+        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL)
+            fprintf(stderr,
+                    "rage-port: native car paint asset=%u material=%u "
+                    "colors=%u,%u mask=%s\n",
+                    instance->assetKey, material,
+                    (unsigned)instance->carPaintColor1,
+                    (unsigned)instance->carPaintColor2, paintPath);
+    }
     return 1;
 }
 

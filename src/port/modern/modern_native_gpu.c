@@ -33,6 +33,9 @@ typedef struct ModernNativeTexture {
     uint32_t assetKey;
     uint32_t material;
     uint8_t materialVariant;
+    uint8_t hasCarPaint;
+    uint8_t carPaintColor1;
+    uint8_t carPaintColor2;
     RageRenderAssetSet assetSet;
     int transparent;
     SDL_GPUTexture *texture;
@@ -389,7 +392,10 @@ static ModernNativeTexture *ModernNativeFindTexture(
         if (entry->assetKey == span->assetKey &&
             entry->assetSet == span->assetSet &&
             entry->material == span->material &&
-            entry->materialVariant == span->materialVariant)
+            entry->materialVariant == span->materialVariant &&
+            entry->hasCarPaint == span->hasCarPaint &&
+            entry->carPaintColor1 == span->carPaintColor1 &&
+            entry->carPaintColor2 == span->carPaintColor2)
             return entry;
     }
     return NULL;
@@ -405,6 +411,9 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) return NULL;
     instance.assetKey = span->assetKey;
     instance.assetSet = span->assetSet;
+    instance.hasCarPaint = span->hasCarPaint;
+    instance.carPaintColor1 = span->carPaintColor1;
+    instance.carPaintColor2 = span->carPaintColor2;
     if (!ModernAssetsLoadMaterialImage(&instance, span->material,
                                        span->materialVariant,
                                        &image)) return NULL;
@@ -457,6 +466,9 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     entry->assetSet = span->assetSet;
     entry->material = span->material;
     entry->materialVariant = span->materialVariant;
+    entry->hasCarPaint = span->hasCarPaint;
+    entry->carPaintColor1 = span->carPaintColor1;
+    entry->carPaintColor2 = span->carPaintColor2;
     s_textureCount++;
     return entry;
 fail:

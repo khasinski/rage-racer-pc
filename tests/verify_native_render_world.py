@@ -69,12 +69,15 @@ def main() -> int:
         mesh = root / "car.rmesh"
         material_map = root / "material.rmat"
         material_pixels = root / "material.rgba"
+        material_paint = root / "material.rpaint"
         mod_root = root / "mod"
         scenario = root / "scenario.ini"
         write_test_mesh(mesh)
         material_map.write_text(
-            "# rage-rmat v4\n0 material.rgba\n", encoding="ascii")
+            "# rage-rmat v5\n"
+            "0 material.rgba | material.rpaint\n", encoding="ascii")
         material_pixels.write_bytes(bytes((255, 255, 255, 255)) * (256 * 256))
+        material_paint.write_bytes(bytes((1,)) * (256 * 256))
         (mod_root / "textures").mkdir(parents=True)
         write_test_png(mod_root / "textures" / "terrain.png", 64, 32)
         (mod_root / "mod.toml").write_text(
@@ -138,6 +141,11 @@ timer = 20
                 "(64x32)" not in result.stdout):
             raise AssertionError(
                 "semantic PNG provider did not override the PS1 cache\n" +
+                result.stdout[-4000:]
+            )
+        if "native car paint asset=" not in result.stdout:
+            raise AssertionError(
+                "semantic player paint was not applied to an imported material\n" +
                 result.stdout[-4000:]
             )
 

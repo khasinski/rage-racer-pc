@@ -5,7 +5,7 @@
 #include "render/rmesh_cache.h"
 
 typedef struct ModernAssetImage {
-    const void *pixels;
+    void *pixels;
     size_t size;
     uint32_t width;
     uint32_t height;
