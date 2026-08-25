@@ -96,6 +96,30 @@ static RageRenderVec3 RageTransformPoint(const RageTransformBasis *basis,
     return RageTransformPosition(basis, &vertex);
 }
 
+static int RageTriangleIsBackFacing(const RageRenderWorld *world,
+                                    const RageNativeDrawVertex triangle[3]) {
+    RageRenderVec3 view[3];
+    float screenX[3], screenY[3];
+    int corner;
+    for (corner = 0; corner < 3; corner++) {
+        RageRenderVec3 position = {triangle[corner].position[0],
+                                   triangle[corner].position[1],
+                                   triangle[corner].position[2]};
+        float depth;
+        RageRenderWorldToView(&world->camera, &position, &view[corner]);
+        depth = -view[corner].z;
+        /* Let homogeneous clipping handle triangles crossing the camera.
+         * Their projected winding is undefined until after the clip. */
+        if (depth <= world->camera.nearPlane) return 0;
+        screenX[corner] = view[corner].x / depth;
+        screenY[corner] = view[corner].y / depth;
+    }
+    /* Runtime indices use clockwise front faces in the renderer's Y-up
+     * projection. This is the same side selected by the game's NCLIP path. */
+    return (screenX[1] - screenX[0]) * (screenY[2] - screenY[0]) -
+           (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) >= 0.0f;
+}
+
 static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
@@ -244,6 +268,8 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[1] ||
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
+            if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
+                RageTriangleIsBackFacing(world, triangle)) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||
                 spans[spansUsed - 1].depthDecal != depthDecals[0] ||

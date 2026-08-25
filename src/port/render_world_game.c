@@ -335,7 +335,8 @@ void RageGameRenderWorldPublishCurrentCamera(void) {
 
 static void RageGameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
-    RageSceneMat3 rotation, int fogged, int mirror_pass) {
+    RageSceneMat3 rotation, int fogged, int mirror_pass,
+    int cullBackfaces) {
     RageRenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -361,6 +362,8 @@ static void RageGameRenderWorldSubmitCourseTransform(
     instance.transform.scale.z = 0.25f;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
     if (fogged) instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
+    if (cullBackfaces)
+        instance.flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
     instance.previousTransform = instance.transform;
     RageRenderWorldSubmitMesh(RageGameRenderWorldMutable(), &instance);
 }
@@ -371,7 +374,7 @@ void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int mirror_pass) {
     RageGameRenderWorldSubmitCourseTransform(
         0x10000u + entity, mesh, x, y, z, RageSceneRotationY(yaw), fogged,
-        mirror_pass);
+        mirror_pass, 0);
 }
 
 void RageGameRenderWorldSubmitDynamicCourseObject(
@@ -398,7 +401,7 @@ void RageGameRenderWorldSubmitDynamicCourseObject(
             matrix.m[row][column] =
                 (float)rotation[row][column] * (1.0f / 4096.0f);
     RageGameRenderWorldSubmitCourseTransform(
-        semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass);
+        semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass, 1);
 }
 
 void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,

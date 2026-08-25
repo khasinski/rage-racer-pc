@@ -168,6 +168,46 @@ static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(vo
     EXPECT_EQ(1, spanCount);
 }
 
+static void test_native_draw_builder_culls_dynamic_course_backfaces(void) {
+    unsigned char bytes[296] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[6];
+    RageNativeDrawSpan spans[1];
+    float positions[6][3] = {
+        {-1.0f, -1.0f, -10.0f}, {0.0f, 1.0f, -10.0f},
+        {1.0f, -1.0f, -10.0f},
+        {-1.0f, -1.0f, -10.0f}, {1.0f, -1.0f, -10.0f},
+        {0.0f, 1.0f, -10.0f},
+    };
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 6); write_u32(bytes + 20, 6);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 6);
+    for (i = 0; i < 6; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 272 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_COURSE;
+    storage[0].flags = RAGE_RENDER_INSTANCE_CULL_BACKFACES;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+}
+
 static void test_native_draw_builder_applies_authored_course_texture_scroll(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -453,6 +493,7 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
 int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
+    test_native_draw_builder_culls_dynamic_course_backfaces();
     test_native_draw_builder_applies_authored_course_texture_scroll();
     test_native_draw_builder_strips_ot_bias_from_material_lookup();
     test_native_draw_builder_preserves_dynamic_terrain_material_flags();

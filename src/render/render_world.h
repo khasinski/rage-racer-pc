@@ -104,6 +104,10 @@ enum {
     RAGE_RENDER_INSTANCE_ENABLE_LIGHTING = 1u << 2,
     /* Terrain modes 0/1 choose the adjacent CLUT in environment mode 4. */
     RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4 = 1u << 3,
+    /* Animated course objects are authored as one-sided PS1 polygons. Their
+     * imported meshes also contain the reverse faces rejected by NCLIP; keep
+     * those from appearing through a rear camera as detached scenery. */
+    RAGE_RENDER_INSTANCE_CULL_BACKFACES = 1u << 4,
 };
 
 typedef struct RageRenderWorld {
