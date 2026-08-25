@@ -395,6 +395,41 @@ static void test_native_draw_builder_keeps_large_instance_crossing_frustum(void)
     EXPECT_EQ(1, spanCount);
 }
 
+static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{10.8f, -0.1f, -10.0f},
+                             {11.0f, -0.1f, -10.0f},
+                             {10.9f, 0.1f, -10.0f}};
+    uint32_t spanCount;
+    unsigned i;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+}
+
 int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
@@ -404,6 +439,7 @@ int main(void) {
     test_native_draw_builder_keeps_terrain_detail_at_long_range();
     test_native_draw_builder_culls_fully_offscreen_instance();
     test_native_draw_builder_keeps_large_instance_crossing_frustum();
+    test_native_draw_builder_keeps_instance_in_frustum_guard_band();
     if (failures != 0) return EXIT_FAILURE;
     puts("render mesh build tests passed");
     return EXIT_SUCCESS;

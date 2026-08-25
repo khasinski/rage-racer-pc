@@ -321,6 +321,7 @@ static void RageGameRenderWorldSubmitCourseTransform(
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
     if (fogged) instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.previousTransform = instance.transform;
     RageRenderWorldSubmitMesh(RageGameRenderWorldMutable(), &instance);
