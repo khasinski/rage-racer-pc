@@ -19,6 +19,7 @@
  */
 
 static const char *s_directory;
+static int s_legacyLayout;
 static int s_initialized;
 
 static void RageModAssetsInit(void) {
@@ -38,20 +39,25 @@ static void RageModAssetsInit(void) {
         test = fopen(probe, "rb");
         if (test == NULL) {
             fprintf(stderr,
-                    "rage-port: mods.directory %s has no raw/asset_000.bin; run rage-extract into it. Using the disc.\n",
+                    "rage-port: mods.directory %s has no raw/asset_000.bin; legacy archive overrides are disabled\n",
                     s_directory);
-            s_directory = NULL;
             return;
         }
         fclose(test);
+        s_legacyLayout = 1;
     }
     fprintf(stderr, "rage-port: asset overrides from %s\n", s_directory);
+}
+
+const char *RageModAssetsDirectory(void) {
+    RageModAssetsInit();
+    return s_directory;
 }
 
 static FILE *RageModOpen(int index, long *size) {
     char path[1024];
     FILE *file;
-    if (s_directory == NULL) return NULL;
+    if (s_directory == NULL || !s_legacyLayout) return NULL;
     snprintf(path, sizeof(path), "%s/raw/asset_%03d.bin", s_directory, index);
     file = fopen(path, "rb");
     if (file == NULL) return NULL;
@@ -109,6 +115,6 @@ int RageModAssetLoad(int index, void *destination, unsigned int originalSize) {
 /* Apply the mod directory's edited images to an asset already in memory. */
 void RageModPatchTextures(int index, void *data, size_t size) {
     RageModAssetsInit();
-    if (s_directory == NULL) return;
+    if (s_directory == NULL || !s_legacyLayout) return;
     RageTexturePatchAsset(s_directory, index, data, size);
 }

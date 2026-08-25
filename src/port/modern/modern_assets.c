@@ -5,6 +5,9 @@
 #include <string.h>
 
 #include "modern_assets.h"
+#include "port/mod_assets.h"
+#include "render/asset_id.h"
+#include "render/mod_manifest.h"
 
 enum { MODERN_ASSET_CACHE_CAPACITY = 4096 };
 
@@ -15,9 +18,41 @@ static RageRuntimeCachedMesh s_entries[MODERN_ASSET_CACHE_CAPACITY];
 static RageRuntimeMeshCache s_cache;
 static int s_initialized;
 static int s_ready;
+static char s_modRoot[1024];
+static RageModManifest s_modManifest;
+static int s_modReady;
 /* Material sidecars are read synchronously on the render thread. Copy the
  * selected relative path out before releasing their transient file buffer. */
 static char s_materialPath[1024];
+
+static void ModernAssetsInitModProvider(void) {
+    const char *root = RageModAssetsDirectory();
+    char path[sizeof(s_modRoot) + 32];
+    void *bytes;
+    size_t size, rootLength;
+    if (root == NULL || root[0] == '\0') return;
+    rootLength = strlen(root);
+    if (rootLength >= sizeof(s_modRoot) ||
+        rootLength + sizeof("/mod.toml") > sizeof(path)) {
+        fprintf(stderr, "rage-port: semantic mod path is too long\n");
+        return;
+    }
+    memcpy(s_modRoot, root, rootLength + 1);
+    snprintf(path, sizeof(path), "%s/mod.toml", s_modRoot);
+    bytes = SDL_LoadFile(path, &size);
+    if (bytes == NULL) return;
+    if (!RageModManifestParse(bytes, size, &s_modManifest)) {
+        fprintf(stderr, "rage-port: invalid semantic mod manifest %s:%zu\n",
+                path, s_modManifest.errorLine);
+        SDL_free(bytes);
+        return;
+    }
+    SDL_free(bytes);
+    s_modReady = 1;
+    fprintf(stderr, "rage-port: semantic texture mod %s from %s\n",
+            s_modManifest.id[0] != '\0' ? s_modManifest.id : "(unnamed)",
+            s_modRoot);
+}
 
 static int ModernAssetReadFile(void *context, const char *path,
                                size_t pathLength, const void **bytes,
@@ -49,6 +84,7 @@ void ModernAssetsInit(void) {
 
     if (s_initialized) return;
     s_initialized = 1;
+    ModernAssetsInitModProvider();
     root = getenv("RAGE_PORT_MODERN_ASSETS");
     if (root == NULL || root[0] == '\0') return;
     rootLength = strlen(root);
@@ -79,6 +115,9 @@ void ModernAssetsShutdown(void) {
     s_ready = 0;
     s_initialized = 0;
     s_root[0] = '\0';
+    s_modRoot[0] = '\0';
+    memset(&s_modManifest, 0, sizeof(s_modManifest));
+    s_modReady = 0;
 }
 
 const RageRuntimeCachedMesh *ModernAssetsFind(
@@ -242,26 +281,91 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
     return found;
 }
 
-int ModernAssetsLoadMaterialPixels(const RageRenderMeshInstance *instance,
-                                   uint32_t material, uint8_t variant,
-                                   const void **bytes,
-                                   size_t *size) {
+static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
+                                    uint32_t material, uint8_t variant,
+                                    ModernAssetImage *image) {
+    char exactId[160], baseId[160], fullPath[sizeof(s_modRoot) + 512];
+    const char *relativePath;
+    SDL_Surface *source = NULL, *converted = NULL;
+    uint8_t *pixels = NULL;
+    size_t rowSize, size;
+    int row;
+    if (!s_modReady ||
+        !RageAssetMaterialVariantId(exactId, sizeof(exactId),
+                                    instance->assetKey, instance->assetSet,
+                                    material, variant) ||
+        !RageAssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
+                             instance->assetSet, material)) return 0;
+    relativePath = RageModManifestFindTexture(&s_modManifest, exactId);
+    if (relativePath == NULL)
+        relativePath = RageModManifestFindTexture(&s_modManifest, baseId);
+    if (relativePath == NULL ||
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot,
+                 relativePath) >= (int)sizeof(fullPath)) return 0;
+    source = SDL_LoadPNG(fullPath);
+    if (source == NULL) {
+        fprintf(stderr, "rage-port: cannot load texture override %s: %s\n",
+                fullPath, SDL_GetError());
+        return 0;
+    }
+    converted = SDL_ConvertSurface(source, SDL_PIXELFORMAT_RGBA32);
+    SDL_DestroySurface(source);
+    if (converted == NULL || converted->w <= 0 || converted->h <= 0 ||
+        converted->w > 16384 || converted->h > 16384) goto fail;
+    rowSize = (size_t)converted->w * 4u;
+    if ((size_t)converted->h > SIZE_MAX / rowSize) goto fail;
+    size = rowSize * (size_t)converted->h;
+    if (size > UINT32_MAX) goto fail;
+    pixels = SDL_malloc(size);
+    if (pixels == NULL) goto fail;
+    for (row = 0; row < converted->h; row++)
+        memcpy(pixels + (size_t)row * rowSize,
+               (const uint8_t *)converted->pixels +
+                   (size_t)row * (size_t)converted->pitch,
+               rowSize);
+    image->pixels = pixels;
+    image->size = size;
+    image->width = (uint32_t)converted->w;
+    image->height = (uint32_t)converted->h;
+    SDL_DestroySurface(converted);
+    fprintf(stderr, "rage-port: native texture override %s <- %s (%ux%u)\n",
+            RageModManifestFindTexture(&s_modManifest, exactId) != NULL
+                ? exactId : baseId,
+            relativePath, image->width, image->height);
+    return 1;
+fail:
+    if (pixels != NULL) SDL_free(pixels);
+    if (converted != NULL) SDL_DestroySurface(converted);
+    fprintf(stderr, "rage-port: invalid texture override %s\n", fullPath);
+    return 0;
+}
+
+int ModernAssetsLoadMaterialImage(const RageRenderMeshInstance *instance,
+                                  uint32_t material, uint8_t variant,
+                                  ModernAssetImage *image) {
     const char *path;
     size_t pathLength;
-    if (bytes == NULL || size == NULL) return 0;
-    *bytes = NULL; *size = 0;
+    if (image == NULL || instance == NULL) return 0;
+    memset(image, 0, sizeof(*image));
+    if (ModernAssetsLoadModImage(instance, material, variant, image)) return 1;
     if (!ModernAssetsFindMaterial(instance, material, variant,
                                   &path, &pathLength) ||
-        !ModernAssetReadFile(NULL, path, pathLength, bytes, size) ||
-        *size != 256u * 256u * 4u) {
-        if (*bytes != NULL) ModernAssetFreeFile(NULL, *bytes);
-        *bytes = NULL; *size = 0; return 0;
+        !ModernAssetReadFile(NULL, path, pathLength, &image->pixels,
+                            &image->size) ||
+        image->size != 256u * 256u * 4u) {
+        if (image->pixels != NULL) ModernAssetFreeFile(NULL, image->pixels);
+        memset(image, 0, sizeof(*image));
+        return 0;
     }
+    image->width = 256;
+    image->height = 256;
     return 1;
 }
 
-void ModernAssetsFreeMaterialPixels(const void *bytes) {
-    if (bytes != NULL) ModernAssetFreeFile(NULL, bytes);
+void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {
+    if (image != NULL && image->pixels != NULL)
+        ModernAssetFreeFile(NULL, image->pixels);
+    if (image != NULL) memset(image, 0, sizeof(*image));
 }
 
 void ModernAssetsWarmWorld(const RageRenderWorld *world) {

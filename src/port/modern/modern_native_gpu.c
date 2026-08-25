@@ -46,8 +46,8 @@ static const char MODERN_NATIVE_MSL[] =
     "struct NativeCamera { float4 position; float4 viewRow0; float4 viewRow1; float4 viewRow2; float4 projection; };\n"
     "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; float4 fog; float lighting; float3 environmentLight; };\n"
     "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; return o; }\n"
-    "static float4 native_texel(texture2d<float> textureImage, uint2 texel) { return textureImage.read(texel&uint2(255)); }\n"
-    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { float2 pixel=in.uv*256.0; uint2 nearest=uint2(clamp(floor(pixel),0.0,255.0)); float4 t=native_texel(textureImage,nearest); if(t.a<=0.001) discard_fragment(); float2 p=pixel-0.5; float2 cell=floor(p); float2 frac=p-cell; float3 filtered=float3(0.0); float weights=0.0; for(int tap=0;tap<4;tap++){float2 off=float2(float(tap&1),float(tap>>1));float2 at=clamp(cell+off,0.0,255.0);float2 axis=abs(off-frac);float weight=(1.0-axis.x)*(1.0-axis.y);float4 sample=native_texel(textureImage,uint2(at));if(sample.a>0.001){filtered+=sample.rgb*weight;weights+=weight;}}if(weights>0.0)t.rgb=filtered/weights; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),in.environmentLight*(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float4 c=float4(t.rgb*modulation*light,t.a*in.color.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
+    "static float4 native_texel(texture2d<float> textureImage, int2 texel) { int2 limit=int2(textureImage.get_width(),textureImage.get_height())-1; return textureImage.read(uint2(clamp(texel,int2(0),limit))); }\n"
+    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { float2 imageSize=float2(textureImage.get_width(),textureImage.get_height()); float2 pixel=in.uv*imageSize; int2 nearest=int2(clamp(floor(pixel),float2(0.0),imageSize-1.0)); float4 t=native_texel(textureImage,nearest); if(t.a<=0.001) discard_fragment(); float2 p=pixel-0.5; float2 cell=floor(p); float2 frac=p-cell; float3 filtered=float3(0.0); float weights=0.0; for(int tap=0;tap<4;tap++){float2 off=float2(float(tap&1),float(tap>>1));float2 at=clamp(cell+off,float2(0.0),imageSize-1.0);float2 axis=abs(off-frac);float weight=(1.0-axis.x)*(1.0-axis.y);float4 sample=native_texel(textureImage,int2(at));if(sample.a>0.001){filtered+=sample.rgb*weight;weights+=weight;}}if(weights>0.0)t.rgb=filtered/weights; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),in.environmentLight*(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float4 c=float4(t.rgb*modulation*light,t.a*in.color.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
     "fragment float4 fs_native_color(NativeOut in [[stage_in]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),in.environmentLight*(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); return float4(fogged*light,in.color.a); }\n";
 
 static SDL_GPUDevice *s_device;
@@ -399,15 +399,15 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     SDL_GPUCommandBuffer *command, const RageNativeDrawSpan *span) {
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
     RageRenderMeshInstance instance = {0};
-    const void *pixels;
-    size_t size, byte;
+    ModernAssetImage image;
+    size_t byte;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) return NULL;
     instance.assetKey = span->assetKey;
     instance.assetSet = span->assetSet;
-    if (!ModernAssetsLoadMaterialPixels(&instance, span->material,
-                                        span->materialVariant,
-                                        &pixels, &size)) return NULL;
+    if (!ModernAssetsLoadMaterialImage(&instance, span->material,
+                                       span->materialVariant,
+                                       &image)) return NULL;
     entry = &s_textures[s_textureCount];
     {
         SDL_GPUTextureCreateInfo texture = {0};
@@ -415,13 +415,13 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         texture.type = SDL_GPU_TEXTURETYPE_2D;
         texture.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
         texture.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        texture.width = 256;
-        texture.height = 256;
+        texture.width = image.width;
+        texture.height = image.height;
         texture.layer_count_or_depth = 1;
         texture.num_levels = 1;
         entry->texture = SDL_CreateGPUTexture(s_device, &texture);
         transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        transfer.size = (Uint32)size;
+        transfer.size = (Uint32)image.size;
         entry->transfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
     }
     if (entry->texture == NULL || entry->transfer == NULL) goto fail;
@@ -429,29 +429,30 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         void *mapped = SDL_MapGPUTransferBuffer(s_device, entry->transfer, false);
         SDL_GPUTextureTransferInfo source = {
             .transfer_buffer = entry->transfer,
-            .pixels_per_row = 256,
-            .rows_per_layer = 256,
+            .pixels_per_row = image.width,
+            .rows_per_layer = image.height,
         };
         SDL_GPUTextureRegion destination = {
-            .texture = entry->texture, .w = 256, .h = 256, .d = 1,
+            .texture = entry->texture, .w = image.width, .h = image.height,
+            .d = 1,
         };
         SDL_GPUCopyPass *copy;
         if (mapped == NULL) goto fail;
-        memcpy(mapped, pixels, size);
+        memcpy(mapped, image.pixels, image.size);
         SDL_UnmapGPUTransferBuffer(s_device, entry->transfer);
         copy = SDL_BeginGPUCopyPass(command);
         SDL_UploadToGPUTexture(copy, &source, &destination, false);
         SDL_EndGPUCopyPass(copy);
     }
     entry->transparent = 0;
-    for (byte = 3; byte < size; byte += 4) {
-        uint8_t alpha = ((const uint8_t *)pixels)[byte];
+    for (byte = 3; byte < image.size; byte += 4) {
+        uint8_t alpha = ((const uint8_t *)image.pixels)[byte];
         if (alpha != 0 && alpha != 255) {
             entry->transparent = 1;
             break;
         }
     }
-    ModernAssetsFreeMaterialPixels(pixels);
+    ModernAssetsFreeMaterialImage(&image);
     entry->assetKey = span->assetKey;
     entry->assetSet = span->assetSet;
     entry->material = span->material;
@@ -459,7 +460,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     s_textureCount++;
     return entry;
 fail:
-    ModernAssetsFreeMaterialPixels(pixels);
+    ModernAssetsFreeMaterialImage(&image);
     if (entry->texture != NULL) SDL_ReleaseGPUTexture(s_device, entry->texture);
     if (entry->transfer != NULL)
         SDL_ReleaseGPUTransferBuffer(s_device, entry->transfer);

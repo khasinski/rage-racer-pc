@@ -9,11 +9,29 @@ import struct
 import subprocess
 import sys
 import tempfile
+import zlib
 from pathlib import Path
 
 
 HEADER = struct.Struct("<8sIIII")
 VERTEX = struct.Struct("<3f3f4B2fI")
+
+
+def write_test_png(path: Path, width: int, height: int) -> None:
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        return (struct.pack(">I", len(payload)) + kind + payload +
+                struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF))
+
+    rows = b"".join(
+        b"\0" + bytes((32, 192, 255, 255)) * width
+        for _ in range(height)
+    )
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n" +
+        chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)) +
+        chunk(b"IDAT", zlib.compress(rows)) +
+        chunk(b"IEND", b"")
+    )
 
 
 def write_test_mesh(path: Path) -> None:
@@ -51,11 +69,23 @@ def main() -> int:
         mesh = root / "car.rmesh"
         material_map = root / "material.rmat"
         material_pixels = root / "material.rgba"
+        mod_root = root / "mod"
         scenario = root / "scenario.ini"
         write_test_mesh(mesh)
         material_map.write_text(
             "# rage-rmat v4\n0 material.rgba\n", encoding="ascii")
         material_pixels.write_bytes(bytes((255, 255, 255, 255)) * (256 * 256))
+        (mod_root / "textures").mkdir(parents=True)
+        write_test_png(mod_root / "textures" / "terrain.png", 64, 32)
+        (mod_root / "mod.toml").write_text(
+            """[mod]
+id = "native-world-test"
+
+[textures]
+"track.big1.terrain.material.0" = "textures/terrain.png"
+""",
+            encoding="ascii",
+        )
         index = "".join(
             f"{key} model car.rmesh material.rmat\n" for key in range(10, 75))
         index += (
@@ -90,6 +120,7 @@ timer = 20
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_MODERN_ASSETS=str(root),
             RAGE_PORT_MODERN_ASSET_TRACE="1",
+            RAGE_PORT_MODS_DIRECTORY=str(mod_root),
         )
         result = subprocess.run(
             [executable, "--scenario", scenario], cwd=source, env=environment,
@@ -101,6 +132,14 @@ timer = 20
             return result.returncode or 1
         if "native GPU pipeline ready" not in result.stdout:
             raise AssertionError("native GPU shaders or pipelines were not created")
+        if ("semantic texture mod native-world-test" not in result.stdout or
+                "native texture override "
+                "track.big1.terrain.material.0 <- textures/terrain.png "
+                "(64x32)" not in result.stdout):
+            raise AssertionError(
+                "semantic PNG provider did not override the PS1 cache\n" +
+                result.stdout[-4000:]
+            )
 
         matches = re.findall(
             r"native world frame=\d+ camera=(\d+) instances=(\d+) "

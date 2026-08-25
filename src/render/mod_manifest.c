@@ -116,7 +116,8 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
             if (section == RAGE_MOD_SECTION_MOD) {
                 const char *cursor = line;
                 if (strncmp(cursor, "id", 2) != 0 ||
-                    !isspace((unsigned char)cursor[2])) goto next;
+                    (cursor[2] != '=' &&
+                     !isspace((unsigned char)cursor[2]))) goto next;
                 cursor += 2;
                 while (isspace((unsigned char)*cursor)) cursor++;
                 if (*cursor++ != '=') goto invalid;

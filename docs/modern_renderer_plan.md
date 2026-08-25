@@ -25,13 +25,15 @@ runtime assets                    Texture / Mesh / AudioClip
 renderer and mixer                no knowledge of either source format
 ```
 
-The first implemented slice is the texture boundary: the PS1 importer bakes
-texture pages, palette choices and texture windows into immutable RGBA
-materials. `rage-rmat v4` maps only material IDs to variant files; PS1
-coordinates remain optional extraction diagnostics. Next slices are a provider
-registry with mod-over-disc precedence, PNG decoding, FBX-to-runtime-mesh import
-and WAV-to-runtime-audio import. Importing and cache generation happen outside
-the render/audio hot paths.
+The texture boundary and first layered provider are implemented: the PS1
+importer bakes texture pages, palette choices and texture windows into immutable
+RGBA materials, while `mod.toml` can map the same semantic IDs directly to PNG.
+The mod provider has priority and the imported PS1 cache is the fallback.
+`rage-rmat v4` maps only material IDs to variant files; PS1 coordinates remain
+optional extraction diagnostics. Next slices are a general provider registry,
+FBX-to-runtime-mesh import and WAV-to-runtime-audio import. PNGs are decoded on
+first use and then retained as GPU textures; compiled cache generation belongs
+outside the render/audio hot paths.
 
 ## 0. Implementation history
 
@@ -82,8 +84,9 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
 - **R6** — post-processing pass with one built-in effect
   (`modern.post=fxaa`, edge anti-aliasing); the pass is the extension point
   for further effects. Standalone material files now provide the replacement
-  texture seam; user-facing PNG overrides, modernised lighting and raytracing
-  remain unimplemented (appendix B unchanged).
+  texture seam. User-facing semantic PNG overrides now layer over the imported
+  PS1 cache; modernised lighting and raytracing remain unimplemented (appendix
+  B unchanged).
 - **R7 (effects round 1)** —
   - `modern.texture_filter=linear` selects alpha-aware 4-tap bilinear
     filtering over standalone RGBA materials; transparent taps drop out of

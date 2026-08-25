@@ -14,7 +14,7 @@ int main(void) {
     static const char valid[] =
         "# semantic PNG overrides\n"
         "[mod]\n"
-        "id = \"example-hd\"\n"
+        "id=\"example-hd\"\n"
         "\n"
         "[textures]\n"
         "\"track.big1.terrain.material.3\" = \"textures/tunnel.png\"\n"

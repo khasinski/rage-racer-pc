@@ -9,13 +9,16 @@ layout(location = 5) in vec3 environmentLight;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 
-vec4 materialTexel(uvec2 texel) {
-    return texelFetch(materialTexture, ivec2(texel & uvec2(255u)), 0);
+vec4 materialTexel(ivec2 texel) {
+    ivec2 limit = textureSize(materialTexture, 0) - ivec2(1);
+    return texelFetch(materialTexture, clamp(texel, ivec2(0), limit), 0);
 }
 
 void main() {
-    vec2 pixel = uv * 256.0;
-    uvec2 nearestPosition = uvec2(clamp(floor(pixel), 0.0, 255.0));
+    vec2 imageSize = vec2(textureSize(materialTexture, 0));
+    vec2 pixel = uv * imageSize;
+    ivec2 nearestPosition = ivec2(clamp(floor(pixel), vec2(0.0),
+                                          imageSize - 1.0));
     vec4 texel = materialTexel(nearestPosition);
     if (texel.a <= 0.001) discard;
     vec2 samplePosition = pixel - 0.5;
@@ -25,10 +28,10 @@ void main() {
     float weightSum = 0.0;
     for (int tap = 0; tap < 4; tap++) {
         vec2 offset = vec2(float(tap & 1), float(tap >> 1));
-        vec2 at = clamp(cell + offset, 0.0, 255.0);
+        vec2 at = clamp(cell + offset, vec2(0.0), imageSize - 1.0);
         vec2 axis = abs(offset - fraction);
         float weight = (1.0 - axis.x) * (1.0 - axis.y);
-        vec4 sampleColor = materialTexel(uvec2(at));
+        vec4 sampleColor = materialTexel(ivec2(at));
         if (sampleColor.a > 0.001) {
             filtered += sampleColor.rgb * weight;
             weightSum += weight;

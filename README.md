@@ -254,6 +254,32 @@ but PNGs and the directory is never written to. `rage-pack mymod/` does the
 same to the files, for looking at the result or for shipping a mod as packed
 assets rather than as images.
 
+The modern renderer also supports source-independent texture mods. These do
+not need an extracted `raw/` tree, PS1 palettes, VRAM coordinates or texture
+sidecars. Put a `mod.toml` at the root selected by `mods.directory`:
+
+```toml
+[mod]
+id = "example-hd-textures"
+
+[textures]
+"track.big1.terrain.material.3" = "textures/tunnel-wall.png"
+"track.big1.course.material.7.variant.1" = "textures/sign-night.png"
+```
+
+The first mapping replaces every runtime variant of that material. The second
+is more specific and replaces only variant 1. Exact variant mappings win over
+the base material mapping. PNGs may use any dimensions up to 16384×16384 and
+are decoded directly to RGBA; they are not quantized back to a PS1 palette.
+Paths are relative to the mod root and use `/`, including on Windows.
+
+Material IDs describe game content rather than archive entries. Track IDs use
+`track.<big|mid|hi|oval><1-6>.<course|terrain|model-bank-1|model-bank-2>.material.<n>`;
+player-car materials use `car.<0-31>.material.<n>`. Add
+`.variant.<n>` to target one variant. A mapping not supplied by the mod falls
+through to the immutable RGBA material imported from the original game. The
+older extracted-asset workflow remains supported by the same setting.
+
 Packing only touches texels an image actually changed, so running it over an
 extract nobody edited rewrites nothing. A PNG has to keep the size it was
 extracted at, since that size is fixed by where the texture lives in video

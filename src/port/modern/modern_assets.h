@@ -4,6 +4,13 @@
 #include "render/render_world.h"
 #include "render/rmesh_cache.h"
 
+typedef struct ModernAssetImage {
+    const void *pixels;
+    size_t size;
+    uint32_t width;
+    uint32_t height;
+} ModernAssetImage;
+
 void ModernAssetsInit(void);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
@@ -12,11 +19,10 @@ int ModernAssetsReady(void);
 uint32_t ModernAssetsCachedMeshCount(void);
 const RageRuntimeMesh *ModernAssetsMeshLookup(
     void *context, const RageRenderMeshInstance *instance);
-int ModernAssetsLoadMaterialPixels(const RageRenderMeshInstance *instance,
-                                   uint32_t material, uint8_t variant,
-                                   const void **bytes,
-                                   size_t *size);
-void ModernAssetsFreeMaterialPixels(const void *bytes);
+int ModernAssetsLoadMaterialImage(const RageRenderMeshInstance *instance,
+                                  uint32_t material, uint8_t variant,
+                                  ModernAssetImage *image);
+void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
 void ModernAssetsWarmWorld(const RageRenderWorld *world);
 
 #endif

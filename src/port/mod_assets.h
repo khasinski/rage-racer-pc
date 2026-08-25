@@ -3,6 +3,10 @@
 
 #include <stddef.h>
 
+/* Configured mod root shared by legacy archive overrides and native semantic
+ * providers. It remains available even when the root has no raw/ tree. */
+const char *RageModAssetsDirectory(void);
+
 /* Load archive entry `index` from the override directory into `destination`.
  * Returns the byte count on success, with the low two bits cleared the way a
  * disc load reports one, or 0 when there is no override or it does not fit. */
