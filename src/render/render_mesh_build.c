@@ -129,7 +129,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     RageRenderVec3 worldPosition;
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
-        (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
+        (RAGE_RUNTIME_MATERIAL_TERRAIN_FAR_VISIBLE |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
     worldPosition = RageTransformPosition(basis, &source);
     (void)aspect;
@@ -235,7 +235,7 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                 materialFlags[0] != materialFlags[2] ||
                 (farTerrainCell &&
                  (materialFlags[0] &
-                  RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY) != 0) ||
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_FAR_VISIBLE) == 0) ||
                 vertexCount + 3 > vertexCapacity) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||

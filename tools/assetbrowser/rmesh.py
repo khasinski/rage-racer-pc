@@ -15,7 +15,7 @@ from pathlib import Path
 MAGIC = b"RRMESH1\0"
 VERSION = 1
 MATERIAL_SCROLL_U = 1 << 31
-MATERIAL_TERRAIN_NEAR_ONLY = 1 << 30
+MATERIAL_TERRAIN_FAR_VISIBLE = 1 << 30
 MATERIAL_METADATA = 1 << 29
 MATERIAL_TERRAIN_ENV_CLUT = 1 << 28
 MATERIAL_DEPTH_BIAS_SHIFT = 16
@@ -53,7 +53,7 @@ def bank_to_bytes(bank, textures=None, scrolling_primitives=False,
                             ((face.otbias & 0xFF) <<
                              MATERIAL_DEPTH_BIAS_SHIFT))
                 if terrain_primitives and getattr(face, "flags", 0) & 2:
-                    material |= MATERIAL_TERRAIN_NEAR_ONLY
+                    material |= MATERIAL_TERRAIN_FAR_VISIBLE
                 if terrain_primitives and face.prim < 2:
                     material |= MATERIAL_TERRAIN_ENV_CLUT
             if (scrolling_primitives and face.prim == 3 and
