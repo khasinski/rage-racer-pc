@@ -104,6 +104,12 @@ Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
 `[video] toggle_renderer_key`. `F4` goes full screen and back.
 
+In the modern renderer the rear-view mirror is a native second camera. It
+renders the complete semantic track and traffic scene into its own small color
+and depth target, reflects it left-to-right, and composites it under the
+original HUD frame. It does not reuse the PS1 mirror ordering table, GTE
+matrix, or classic visibility list.
+
 The port keeps
 game saves and the selected disc location in the user's local application data.
 Each normal launch appends diagnostics to `rage-racer.log` in the platform's
