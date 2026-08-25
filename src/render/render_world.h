@@ -81,6 +81,10 @@ typedef struct RageRenderMeshInstance {
     /* Semantic ambient light sampled from the track light volume. The modern
      * backend combines it with its directional vehicle lighting. */
     RageRenderVec3 environmentLight;
+    /* Small post-projection ordering hint for independently submitted parts
+     * of one semantic object. It preserves authored overlap (for example a
+     * car body masking wheels inside its arches) without moving geometry. */
+    float depthBias;
     RageRenderTransform transform;
     RageRenderTransform previousTransform;
     uint32_t flags;

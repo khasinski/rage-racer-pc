@@ -190,6 +190,12 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    /* The PS1 ordering table draws the body after wheels that share its
+     * depth bucket, masking the portion inset behind the wheel arches. A
+     * real Z buffer otherwise exposes that authored overlap when suspension
+     * roll differs from road camber. Four world-depth units retain the
+     * visible wheel while keeping it out of the bonnet and body panels. */
+    if (part == 0) instance.depthBias = -16.0f;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;

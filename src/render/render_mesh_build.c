@@ -173,12 +173,12 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[1] = 1.0f;
         out->environmentLight[2] = 1.0f;
     }
-    out->depthBias = 0.0f;
+    out->depthBias = instance->depthBias;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         /* PS1 OT bias changes packet ordering after projection. It is not a
          * world-space distance. Preserve it as a small clip-space ordering
          * offset so coplanar decals such as road markings do not z-fight. */
-        out->depthBias = (float)(int8_t)(source.material >>
+        out->depthBias += (float)(int8_t)(source.material >>
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
