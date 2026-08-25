@@ -243,6 +243,8 @@ static void test_native_camera_projection_has_no_gte_quantization(void) {
     RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
     RageRenderVec3 view;
     RageRenderVec3 clip;
+    float depthScale;
+    float depthOffset;
 
     camera.verticalFovDegrees = 90.0f;
     camera.nearPlane = 1.0f;
@@ -253,6 +255,15 @@ static void test_native_camera_projection_has_no_gte_quantization(void) {
     EXPECT_EQ(1, RageRenderProject(&camera, &view, 2.0f, &clip));
     EXPECT_EQ(5, (int)(clip.x * 100.0f));
     EXPECT_EQ(5, (int)(clip.y * 100.0f));
+    EXPECT_EQ(1, RageRenderPerspectiveDepthTerms(
+                     &camera, &depthScale, &depthOffset));
+    /* The GPU must receive a projective clip-space Z. A quadratic per-vertex
+     * value makes a near terrain triangle intersect the camera planes at the
+     * wrong place when one of its vertices is behind the cockpit camera. */
+    EXPECT_EQ(0, (int)((camera.nearPlane * depthScale + depthOffset) * 1000.0f));
+    EXPECT_EQ(1000, (int)(((camera.farPlane * depthScale + depthOffset) /
+                           camera.farPlane) * 1000.0f));
+    EXPECT_EQ(1, (-depthScale + depthOffset) < 0.0f);
     camera.transform.rotation.y = -90.0f;
     world.x = 100.0f; world.z = 0.0f;
     RageRenderWorldToView(&camera, &world, &view);

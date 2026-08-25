@@ -66,15 +66,28 @@ void RageRenderWorldToView(const RageRenderCamera *camera,
 
 int RageRenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip) {
-    float verticalScale, depth;
+    float verticalScale, depth, depthScale, depthOffset;
     if (camera == 0 || view == 0 || clip == 0 || aspect <= 0.0f ||
         (depth = -view->z) < camera->nearPlane ||
         depth > camera->farPlane) return 0;
+    if (!RageRenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset))
+        return 0;
     verticalScale = 1.0f / tanf(RageRadians(camera->verticalFovDegrees) * 0.5f);
     clip->x = view->x * verticalScale / (depth * aspect);
     clip->y = view->y * verticalScale / depth;
-    clip->z = (depth - camera->nearPlane) /
-              (camera->farPlane - camera->nearPlane);
+    clip->z = depthScale + depthOffset / depth;
+    return 1;
+}
+
+int RageRenderPerspectiveDepthTerms(const RageRenderCamera *camera,
+                                    float *scale, float *offset) {
+    float range;
+    if (camera == 0 || scale == 0 || offset == 0 ||
+        camera->nearPlane <= 0.0f ||
+        camera->farPlane <= camera->nearPlane) return 0;
+    range = camera->farPlane - camera->nearPlane;
+    *scale = camera->farPlane / range;
+    *offset = -(camera->nearPlane * camera->farPlane) / range;
     return 1;
 }
 

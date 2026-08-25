@@ -11,6 +11,10 @@ void RageRenderWorldToView(const RageRenderCamera *camera,
                            RageRenderVec3 *view);
 int RageRenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip);
+/* Homogeneous depth terms for a 0..1 depth buffer:
+ * clip_z = view_depth * scale + offset, clip_w = view_depth. */
+int RageRenderPerspectiveDepthTerms(const RageRenderCamera *camera,
+                                    float *scale, float *offset);
 /* Perspective-correct fog weight for a world-space point. */
 float RageRenderFogFactor(const RageRenderCamera *camera,
                           const RageRenderVec3 *world);

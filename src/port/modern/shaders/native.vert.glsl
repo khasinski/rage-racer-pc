@@ -30,10 +30,11 @@ void main() {
                      dot(camera.viewRow1.xyz, relative),
                      dot(camera.viewRow2.xyz, relative));
     float viewDepth = -view.z;
-    float depth = (viewDepth - camera.projection.z) * camera.projection.w;
+    float clipDepth = viewDepth * camera.projection.z + camera.projection.w;
+    clipDepth += (inDepthBias / 1048576.0) * viewDepth;
     gl_Position = vec4(view.x * camera.projection.x,
                        view.y * camera.projection.y,
-                       (depth + inDepthBias / 1048576.0) * viewDepth,
+                       clipDepth,
                        viewDepth);
     uv = inUV;
     color = vec4(inColor) / 255.0;
