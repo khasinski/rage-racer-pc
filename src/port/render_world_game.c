@@ -20,6 +20,7 @@
 #include "render/render_world.h"
 #include "render/render_world_frame.h"
 #include "rage/track_asset_identity.h"
+#include "rage/track_lighting.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 
@@ -173,6 +174,7 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
                                              uint8_t paletteOffset,
                                              RageRenderVec3 psPosition,
                                              RageSceneMat3 rotation,
+                                             RageRenderVec3 environmentLight,
                                              int mirror_pass) {
     RageRenderMeshInstance instance;
     if (part >= RAGE_CAR_RENDER_PART_COUNT) return;
@@ -188,6 +190,7 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
     instance.transform.position.z = -psPosition.z;
@@ -414,6 +417,7 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
                                                  s16 horizon, s16 offsetX,
                                                  s16 offsetY, s16 offsetZ,
                                                  s32 steeringAngle,
+                                                 RageRenderVec3 environmentLight,
                                                  int mirror_pass) {
     RageSceneMat3 base, body, model, wheelBase, frontLeft, frontRight;
     RageRenderVec3 origin, modelOrigin, front;
@@ -442,27 +446,45 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
 
     RageGameRenderWorldSubmitCarPart(entity, 0, asset, assetSet, bodyMesh,
                                      bodyPaletteOffset,
-                                     origin, body, mirror_pass);
+                                     origin, body, environmentLight,
+                                     mirror_pass);
     /* The duplicate model-1 submit in retail is an OT artifact, not a second
      * object. A depth-buffered renderer emits it once. */
     RageGameRenderWorldSubmitCarPart(entity, 1, asset, assetSet, bodyMesh + 1,
         0,
-        modelOrigin, model, mirror_pass);
+        modelOrigin, model, environmentLight, mirror_pass);
     RageGameRenderWorldSubmitCarPart(entity, 2, asset, assetSet, rearWheelMesh,
         0,
         origin,
         RageSceneMat3Multiply(wheelBase, RageSceneRotationX(object->wheelRotation)),
-        mirror_pass);
+        environmentLight, mirror_pass);
     front = RageSceneRotatePoint(base, (float)offsetX, (float)offsetY, (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
     RageGameRenderWorldSubmitCarPart(entity, 3, asset, assetSet, frontWheelMesh,
                                      0,
-                                     front, frontLeft, mirror_pass);
+                                     front, frontLeft, environmentLight,
+                                     mirror_pass);
     front = RageSceneRotatePoint(base, -(float)offsetX, (float)offsetY, (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
     RageGameRenderWorldSubmitCarPart(entity, 4, asset, assetSet, frontWheelMesh,
                                      0,
-                                     front, frontRight, mirror_pass);
+                                     front, frontRight, environmentLight,
+                                     mirror_pass);
+}
+
+static RageRenderVec3 RageGameTrackLightForCar(const GameRenderObject *object) {
+    RageRenderVec3 result = {1.0f, 1.0f, 1.0f};
+    float light[3];
+    int blend;
+    /* Scene 12 is the actual race. Presentation scenes, especially the
+     * Grand Prix prologue, keep their already-correct authored appearance. */
+    if (g_SceneId != 12) return result;
+    blend = GetTrackZoneBlend(object->trackProgress);
+    RageTrackZoneLightColor(blend, g_TrackZoneCode, light);
+    result.x = light[0];
+    result.y = light[1];
+    result.z = light[2];
+    return result;
 }
 
 void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
@@ -471,9 +493,11 @@ void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
     uint32_t entity;
     int car;
     const s16 *lod;
+    RageRenderVec3 environmentLight;
 
     if (!s_initialized || object == NULL || g_TrackRenderTable == NULL) return;
     entity = RageCarEntity(object);
+    environmentLight = RageGameTrackLightForCar(object);
     car = g_CarModelByCourse[RageSeriesCourseIndex()][object->modelIndex];
     lod = g_CarModelBankTable[car];
     if (detail == RAGE_GAME_CAR_RENDER_FAR) {
@@ -491,7 +515,7 @@ void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
             entity, 0, RageTrackDataAssetKey(),
             RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
             (uint32_t)lod[0] + 4u, (uint8_t)lod[1], origin, body,
-            mirror_pass);
+            environmentLight, mirror_pass);
         return;
     }
     RageGameRenderWorldSubmitCarAssembly(object, entity, RageTrackDataAssetKey(),
@@ -502,17 +526,19 @@ void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
         g_TrackRenderTable->models[car].axis0,
         (s16)g_TrackRenderTable->models[car].axis1,
         (s16)g_TrackRenderTable->models[car].axis2,
-        object->steeringAngle * 2, mirror_pass);
+        object->steeringAngle * 2, environmentLight, mirror_pass);
 }
 
 void RageGameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
                                         int mirror_pass) {
     uint32_t asset;
     uint32_t wheelBase;
+    RageRenderVec3 environmentLight;
 
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
     asset = (uint32_t)(10 + GetCarAssetIndex(
         g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant) * 2);
+    environmentLight = RageGameTrackLightForCar(object);
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
     if (wheelBase + 3u >= 22u) wheelBase = 0;
@@ -521,7 +547,7 @@ void RageGameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
         0,
         g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
         g_CarModelAsset->modelOffsetY, g_CarModelAsset->modelOffsetZ,
-        object->steeringAngle / 12, mirror_pass);
+        object->steeringAngle / 12, environmentLight, mirror_pass);
 }
 
 const RageRenderWorld *RageGameRenderWorldCurrent(void) {

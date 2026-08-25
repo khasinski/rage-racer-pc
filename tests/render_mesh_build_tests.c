@@ -72,6 +72,9 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     storage[0].assetKey = 10;
     storage[0].pass = RAGE_RENDER_PASS_MAIN;
     storage[0].materialVariant = 1;
+    storage[0].environmentLight.x = 0.25f;
+    storage[0].environmentLight.y = 0.5f;
+    storage[0].environmentLight.z = 0.75f;
     storage[0].transform.scale.x = 1.0f;
     storage[0].transform.scale.y = 1.0f;
     storage[0].transform.scale.z = 1.0f;
@@ -103,6 +106,9 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
                                              &mesh, vertices, 3, spans, 1,
                                              &spanCount));
     EXPECT_EQ(100, (int)(vertices[0].lighting * 100.0f));
+    EXPECT_EQ(25, (int)(vertices[0].environmentLight[0] * 100.0f));
+    EXPECT_EQ(50, (int)(vertices[0].environmentLight[1] * 100.0f));
+    EXPECT_EQ(75, (int)(vertices[0].environmentLight[2] * 100.0f));
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {

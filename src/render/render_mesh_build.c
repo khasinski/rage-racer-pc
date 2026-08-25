@@ -155,6 +155,18 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     out->lighting =
         (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0
         ? 1.0f : 0.0f;
+    out->environmentLight[0] = instance->environmentLight.x;
+    out->environmentLight[1] = instance->environmentLight.y;
+    out->environmentLight[2] = instance->environmentLight.z;
+    if (out->environmentLight[0] == 0.0f &&
+        out->environmentLight[1] == 0.0f &&
+        out->environmentLight[2] == 0.0f) {
+        /* Zero-initialized callers predate environment lighting. Preserve
+         * their neutral light instead of turning them black. */
+        out->environmentLight[0] = 1.0f;
+        out->environmentLight[1] = 1.0f;
+        out->environmentLight[2] = 1.0f;
+    }
     out->depthBias = 0.0f;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         /* PS1 OT bias changes packet ordering after projection. It is not a

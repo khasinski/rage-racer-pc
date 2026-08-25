@@ -89,6 +89,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME track_asset_identity COMMAND track_asset_identity_tests)
 
+add_executable(track_lighting_tests
+    track_lighting_tests.c
+    ../src/port/track_lighting.c)
+target_include_directories(track_lighting_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(track_lighting_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME track_lighting COMMAND track_lighting_tests)
+
 add_executable(course_coordinate_tests course_coordinate_tests.c)
 target_include_directories(course_coordinate_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)

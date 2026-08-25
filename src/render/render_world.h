@@ -78,6 +78,9 @@ typedef struct RageRenderMeshInstance {
      * imported mesh marks only those faces; the instance supplies the current
      * semantic texel offset without exposing a PS1 packet to the renderer. */
     uint8_t textureScrollU;
+    /* Semantic ambient light sampled from the track light volume. The modern
+     * backend combines it with its directional vehicle lighting. */
+    RageRenderVec3 environmentLight;
     RageRenderTransform transform;
     RageRenderTransform previousTransform;
     uint32_t flags;

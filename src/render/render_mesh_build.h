@@ -13,6 +13,7 @@ typedef struct RageNativeDrawVertex {
     /* RGB environment colour plus the per-vertex perspective fog weight. */
     float fog[4];
     float lighting;
+    float environmentLight[3];
     /* Signed authored ordering offset, applied as a tiny clip-space decal
      * bias by the GPU.  It preserves coplanar road markings without moving
      * geometry in world space. */

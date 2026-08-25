@@ -7,6 +7,7 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec4 inFog;
 layout(location = 5) in float inLighting;
 layout(location = 6) in float inDepthBias;
+layout(location = 7) in vec3 inEnvironmentLight;
 
 layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 position;
@@ -21,6 +22,7 @@ layout(location = 1) out vec4 color;
 layout(location = 2) out vec3 normal;
 layout(location = 3) out vec4 fog;
 layout(location = 4) out float lighting;
+layout(location = 5) out vec3 environmentLight;
 
 void main() {
     vec3 relative = inPosition - camera.position.xyz;
@@ -38,4 +40,5 @@ void main() {
     normal = inNormal;
     fog = inFog;
     lighting = inLighting;
+    environmentLight = inEnvironmentLight;
 }
