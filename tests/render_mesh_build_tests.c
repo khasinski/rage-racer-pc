@@ -399,16 +399,16 @@ static void test_native_draw_builder_keeps_large_instance_crossing_frustum(void)
     EXPECT_EQ(1, spanCount);
 }
 
-static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) {
+static void test_native_draw_builder_keeps_instance_in_horizontal_frustum_guard_band(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
     RageRenderMeshInstance storage[1] = {0};
     RageRenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
-    float positions[3][3] = {{10.8f, -0.1f, -10.0f},
-                             {11.0f, -0.1f, -10.0f},
-                             {10.9f, 0.1f, -10.0f}};
+    float positions[3][3] = {{11.8f, -0.1f, -10.0f},
+                             {12.0f, -0.1f, -10.0f},
+                             {11.9f, 0.1f, -10.0f}};
     uint32_t spanCount;
     unsigned i;
     memcpy(bytes, "RRMESH1", 7);
@@ -443,7 +443,7 @@ int main(void) {
     test_native_draw_builder_keeps_terrain_detail_at_long_range();
     test_native_draw_builder_culls_fully_offscreen_instance();
     test_native_draw_builder_keeps_large_instance_crossing_frustum();
-    test_native_draw_builder_keeps_instance_in_frustum_guard_band();
+    test_native_draw_builder_keeps_instance_in_horizontal_frustum_guard_band();
     if (failures != 0) return EXIT_FAILURE;
     puts("render mesh build tests passed");
     return EXIT_SUCCESS;
