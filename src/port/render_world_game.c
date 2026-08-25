@@ -19,6 +19,7 @@
 #include "game/track_internal.h"
 #include "render/render_world.h"
 #include "render/render_world_frame.h"
+#include "render/car_paint.h"
 #include "rage/track_asset_identity.h"
 #include "rage/track_lighting.h"
 
@@ -184,6 +185,17 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     instance.mesh = mesh;
     instance.assetSet = assetSet;
     instance.assetKey = asset;
+    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK && entity == 11 &&
+        g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
+        g_PlayerCarIndex < 10) {
+        const CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
+        if (entry->paintColor1 < RAGE_CAR_PAINT_COLOR_COUNT &&
+            entry->paintColor2 < RAGE_CAR_PAINT_COLOR_COUNT) {
+            instance.hasCarPaint = 1;
+            instance.carPaintColor1 = entry->paintColor1;
+            instance.carPaintColor2 = entry->paintColor2;
+        }
+    }
     if (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)
         instance.materialVariant =
             RageTrackCarMaterialVariant(paletteOffset);

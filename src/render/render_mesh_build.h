@@ -35,6 +35,9 @@ typedef struct RageNativeDrawSpan {
      * the per-vertex bias alone is not stable at grazing camera angles. */
     uint8_t depthDecal;
     uint8_t materialVariant;
+    uint8_t hasCarPaint;
+    uint8_t carPaintColor1;
+    uint8_t carPaintColor2;
     /* Material variants (for example each car's paint palette) are scoped to
      * an entity, not to the shared immutable mesh asset. */
     uint32_t entity;

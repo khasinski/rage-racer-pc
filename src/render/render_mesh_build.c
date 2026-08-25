@@ -292,6 +292,9 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 spans[spansUsed - 1].sourceEntity != instance->entity ||
                 spans[spansUsed - 1].instanceFlags != instance->flags ||
                 spans[spansUsed - 1].materialVariant != instance->materialVariant ||
+                spans[spansUsed - 1].hasCarPaint != instance->hasCarPaint ||
+                spans[spansUsed - 1].carPaintColor1 != instance->carPaintColor1 ||
+                spans[spansUsed - 1].carPaintColor2 != instance->carPaintColor2 ||
                 spans[spansUsed - 1].entity !=
                     (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK
                      ? instance->entity : 0) ||
@@ -308,6 +311,9 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 spans[spansUsed].materialFlags = materialFlags[0];
                 spans[spansUsed].depthDecal = depthDecals[0];
                 spans[spansUsed].materialVariant = instance->materialVariant;
+                spans[spansUsed].hasCarPaint = instance->hasCarPaint;
+                spans[spansUsed].carPaintColor1 = instance->carPaintColor1;
+                spans[spansUsed].carPaintColor2 = instance->carPaintColor2;
                 /* Course and terrain share immutable materials. Only model
                  * banks can carry an entity-specific material variant (car
                  * paint), so do not explode the texture cache per cell. */

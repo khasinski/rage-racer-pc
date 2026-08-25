@@ -73,6 +73,12 @@ typedef struct RageRenderMeshInstance {
      * and terrain use the two track sections; track car models use the
      * selected car asset whose race-load palette is resident. */
     uint8_t materialVariant;
+    /* Player paint choices are semantic material parameters. Import providers
+     * may apply them through a source-specific mask; render backends never
+     * need the original palette or texture-page representation. */
+    uint8_t hasCarPaint;
+    uint8_t carPaintColor1;
+    uint8_t carPaintColor2;
     /* Some authored course faces add the low seven bits of g_AnimTimer to
      * their U coordinates before the PS1 texture window is applied.  The
      * imported mesh marks only those faces; the instance supplies the current
