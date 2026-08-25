@@ -26,11 +26,11 @@ def write_test_mesh(path: Path) -> None:
         x = float(mesh * 4)
         vertices.extend((
             (x - 1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-             255, 255, 255, 255, 0.0, 0.0, 0xFFFFFFFF),
+             255, 255, 255, 255, 0.0, 0.0, 0),
             (x + 1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-             255, 255, 255, 255, 1.0, 0.0, 0xFFFFFFFF),
+             255, 255, 255, 255, 1.0, 0.0, 0),
             (x, 2.0, 0.0, 0.0, 1.0, 0.0,
-             255, 255, 255, 255, 0.5, 1.0, 0xFFFFFFFF),
+             255, 255, 255, 255, 0.5, 1.0, 0),
         ))
         indices.extend((first, first + 1, first + 2))
         offsets.append(len(indices))
@@ -49,15 +49,20 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="rage-native-world-") as directory:
         root = Path(directory)
         mesh = root / "car.rmesh"
+        material_map = root / "material.rmat"
+        material_pixels = root / "material.rgba"
         scenario = root / "scenario.ini"
         write_test_mesh(mesh)
+        material_map.write_text(
+            "# rage-rmat v4\n0 material.rgba\n", encoding="ascii")
+        material_pixels.write_bytes(bytes((255, 255, 255, 255)) * (256 * 256))
         index = "".join(
-            f"{key} model car.rmesh -\n" for key in range(10, 75))
+            f"{key} model car.rmesh material.rmat\n" for key in range(10, 75))
         index += (
-            "88 track-model-1 car.rmesh -\n"
-            "88 track-model-2 car.rmesh -\n"
-            "88 course car.rmesh -\n"
-            "88 terrain car.rmesh -\n"
+            "88 track-model-1 car.rmesh material.rmat\n"
+            "88 track-model-2 car.rmesh material.rmat\n"
+            "88 course car.rmesh material.rmat\n"
+            "88 terrain car.rmesh material.rmat\n"
         )
         (root / "runtime-index.txt").write_text(index, encoding="ascii")
         scenario.write_text(

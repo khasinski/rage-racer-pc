@@ -13,12 +13,10 @@ int ModernNativeGpuCanReplaceWorld(void);
 int ModernNativeGpuHasMirrorDraws(void);
 float ModernNativeGpuMirrorPanelY(void);
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
-                         SDL_GPUTexture *vram,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
                          int clearColor);
 void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
-                               SDL_GPUTexture *vram,
                                SDL_GPUTexture *colorTarget,
                                SDL_GPUTexture *depthTarget);
 

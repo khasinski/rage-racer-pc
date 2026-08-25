@@ -416,7 +416,9 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.assetSet = RAGE_RENDER_ASSET_TERRAIN;
     instance.assetKey = RageTrackDataAssetKey();
     instance.material = 0;
-    instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
+    instance.materialVariant =
+        (uint8_t)(((g_TrackTexturePageWanted != 0) ? 2u : 0u) +
+                  (g_IsEnvironmentMode4 ? 1u : 0u));
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     /* Terrain vertices and their 8192-unit cell pitch are GTE units (four
      * per game-world unit). `grid_z` is the game's sy, even though the source

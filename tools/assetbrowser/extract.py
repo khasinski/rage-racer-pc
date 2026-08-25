@@ -490,7 +490,13 @@ class Extractor:
             rec["banks"].append({"sub": 5, "error": str(exc)})
         try:
             tb, grid = models.parse_terrain(buf, hdr[7], hdr[8] if hdr[8] > hdr[7] else len(buf))
-            textures = self.emit_textures(v, tb, f"{stem}_terrain", alternate)
+            # Terrain modes 0/1 select adjacent palette rows at runtime. Bake
+            # both rows for both section pages so the native renderer consumes
+            # ordinary immutable materials instead of consulting live VRAM.
+            textures = self.emit_textures(
+                v, tb, f"{stem}_terrain",
+                variant_vrams=(v, alternate),
+                variant_clut_offsets=(0, 1))
             b = self.emit_bank(tb, f"{stem}_terrain", grid=grid,
                                textures=textures)
             b["sub"] = 7
@@ -574,11 +580,14 @@ class Extractor:
         rmesh.write_bank(rmesh_path, bank, textures, scrolling_primitives,
                          terrain_primitives=grid is not None)
         materials_path = self.out / "models" / f"{stem}.rmat"
-        materials_path.write_text("".join(
-            f"{index} {texture['tpage']} {texture['clut']} "
-            f"{' '.join(str(value) for value in (texture.get('texwin') or [256, 256, 0, 0]))} "
-            f"{' '.join(texture.get('runtimePixelVariants', [texture['runtimePixels'], texture.get('runtimePixelsAlt', texture['runtimePixels'])]))}\n"
-            for index, texture in enumerate(textures or [])))
+        material_rows = ["# rage-rmat v4\n"]
+        for index, texture in enumerate(textures or []):
+            variants = texture.get("runtimePixelVariants", [
+                texture["runtimePixels"],
+                texture.get("runtimePixelsAlt", texture["runtimePixels"]),
+            ])
+            material_rows.append(f"{index} {' '.join(variants)}\n")
+        materials_path.write_text("".join(material_rows))
         return {
             "file": f"models/{stem}.json",
             "gltf": f"models/{stem}.gltf",

@@ -123,7 +123,7 @@ class GltfExportTest(unittest.TestCase):
         self.assertEqual("91 course models/a.rmesh models/a.rmat", rows[4])
         self.assertEqual("91 terrain models/a.rmesh models/a.rmat", rows[5])
 
-    def test_runtime_material_sidecar_preserves_ps1_texture_source(self):
+    def test_runtime_material_sidecar_is_renderer_neutral(self):
         face = models.Face(
             prim=1, v=(0, 1, 2, 3),
             uv=((0, 0), (1, 0), (1, 1), (0, 1)),
@@ -151,9 +151,40 @@ class GltfExportTest(unittest.TestCase):
             sidecar = (extractor.out / "models/source.rmat").read_text()
 
         self.assertEqual(
-            "0 322 311 64 32 128 64 textures/source.rgba "
-            "textures/source.rgba\n",
+            "# rage-rmat v4\n"
+            "0 textures/source.rgba textures/source.rgba\n",
             sidecar)
+
+    def test_terrain_materials_bake_page_and_environment_variants(self):
+        face = models.Face(
+            prim=0, v=(0, 1, 2, 3),
+            uv=((0, 0), (1, 0), (1, 1), (0, 1)),
+            tpage=0x142, clut=0x137)
+        bank = models.Bank(count=1, vertex_off=0, normal_off=0,
+                           model_offs=[])
+        bank.vertices = [(0, 0, 0)] * 4
+        bank.models = [models.Model(index=0, offset=0, faces=[face])]
+        page_a, page_b = object(), object()
+
+        def pixels(vram, _tpage, clut):
+            value = 1 + (vram is page_b) * 2 + (clut - face.clut)
+            return bytes([value]) * (256 * 256 * 4)
+
+        with tempfile.TemporaryDirectory() as temp:
+            extractor = extract.Extractor.__new__(extract.Extractor)
+            extractor.out = Path(temp)
+            (extractor.out / "textures").mkdir()
+            with mock.patch.object(extract.images, "decode_texpage",
+                                   side_effect=pixels), \
+                 mock.patch.object(extract.png, "write_rgba"):
+                textures = extractor.emit_textures(
+                    page_a, bank, "terrain",
+                    variant_vrams=(page_a, page_b),
+                    variant_clut_offsets=(0, 1))
+
+        variants = textures[0]["runtimePixelVariants"]
+        self.assertEqual(4, len(variants))
+        self.assertEqual(4, len(set(variants)))
 
     def test_runtime_mesh_is_indexed_and_has_no_ps1_state(self):
         face = models.Face(prim=1, v=(0, 1, 2, 3), rgb=(1, 2, 3),

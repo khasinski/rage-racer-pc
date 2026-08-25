@@ -1793,12 +1793,11 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     if (ModernNativeGpuCanReplaceWorld()) {
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_BACKGROUND, 1);
-        ModernNativeGpuDraw(cmd, vram, s_target, s_depth, 0);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_HUD, 0);
         if (ModernNativeGpuHasMirrorDraws()) {
-            ModernNativeGpuDrawMirror(cmd, vram, s_mirrorTarget,
-                                      s_mirrorDepth);
+            ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth);
             ModernCompositeNativeMirror(cmd);
         }
         ModernRenderLegacySelection(cmd, vram, 1,

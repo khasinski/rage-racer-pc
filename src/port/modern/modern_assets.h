@@ -4,15 +4,6 @@
 #include "render/render_world.h"
 #include "render/rmesh_cache.h"
 
-typedef struct ModernAssetMaterialSource {
-    uint32_t tpage;
-    uint32_t clut;
-    uint32_t windowWidthU;
-    uint32_t windowWidthV;
-    uint32_t windowOffsetU;
-    uint32_t windowOffsetV;
-} ModernAssetMaterialSource;
-
 void ModernAssetsInit(void);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
@@ -24,8 +15,7 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 int ModernAssetsLoadMaterialPixels(const RageRenderMeshInstance *instance,
                                    uint32_t material, uint8_t variant,
                                    const void **bytes,
-                                   size_t *size,
-                                   ModernAssetMaterialSource *source);
+                                   size_t *size);
 void ModernAssetsFreeMaterialPixels(const void *bytes);
 void ModernAssetsWarmWorld(const RageRenderWorld *world);
 

@@ -1,12 +1,39 @@
 # Modern Renderer Plan
 
-Status: implemented through phase R6 (2026-08-14). Implements the renderer
-direction recorded in `PORT_BRIEF.md` §1 (decision 2026-08-12): two explicit
-paths, `compat` and `enhanced`. This document names the enhanced path the
-**modern renderer**; §0 records what was built and where it deviates from the
-original plan below.
+Status: active migration (2026-08-25), not a completed renderer rewrite. The
+semantic `RenderWorld`, native camera, depth buffer and mirror are real native
+foundations. The compatibility renderer still supplies the background, HUD,
+menus and FMV presentation, so modern mode is currently a hybrid.
 
-## 0. Implementation status
+The architectural boundary is now explicit: PS1 formats belong in importers,
+never in runtime rendering or audio. Native 3D consumes standalone RGBA
+materials and no longer receives live VRAM, tpage or CLUT state. The remaining
+compatibility layers described below are migration debt, not the target design.
+
+## Target asset architecture
+
+All sources resolve through semantic asset IDs into one runtime contract:
+
+```text
+mod directory (highest priority)  PNG / FBX / WAV
+             |                    source importer + cache
+PS1 disc fallback                 TIM/CLUT / model banks / VAG
+             |                    PS1 importer + cache
+             v
+runtime assets                    Texture / Mesh / AudioClip
+             v
+renderer and mixer                no knowledge of either source format
+```
+
+The first implemented slice is the texture boundary: the PS1 importer bakes
+texture pages, palette choices and texture windows into immutable RGBA
+materials. `rage-rmat v4` maps only material IDs to variant files; PS1
+coordinates remain optional extraction diagnostics. Next slices are a provider
+registry with mod-over-disc precedence, PNG decoding, FBX-to-runtime-mesh import
+and WAV-to-runtime-audio import. Importing and cache generation happen outside
+the render/audio hot paths.
+
+## 0. Implementation history
 
 All phases R0–R5 and the post-processing part of R6 are implemented:
 
@@ -22,15 +49,13 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
   byte ranges. Fields the PS1 GPU ignores are zeroed so captures compare
   equal whenever they render equal. The `scene_capture` test requires
   deterministic traces and populated layers.
-- **R2** — `src/port/modern/modern_renderer.c` renders snapshots on the
+- **R2** — `src/port/modern/modern_renderer.c` originally rendered snapshots on the
   shared SDL3 GPU device: float transforms, depth buffer,
   perspective-correct texturing, PS1 blend semantics (premultiplied
   ONE/ONE_MINUS_SRC_ALPHA with a reverse-subtract pipeline for ABR 2).
-  **Deviation:** instead of a decoded-texture cache with VRAM-write
-  invalidation, the fragment shader samples PsyZ's live VRAM texture with
-  CLUT indirection, like the compat rasterizer — no cache or invalidation
-  needed (the cache design in §3.3 becomes relevant only for replacement
-  textures or raytracing).
+  That capture renderer still exists for compatibility layers. The native
+  `RenderWorld` 3D path now loads extracted RGBA materials and its shader has
+  no VRAM, tpage, CLUT, RGB5551 or texture-window decoding.
 - **R3** — depth policy: each vertex's true z is clamped into its face's
   compat ordering-table bucket window (model/terrain buckets are 4<<otShift
   z units, the course dispatcher's are 128; negative buckets from the +128
@@ -45,10 +70,9 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
   image.
 - **R4** — `modern.internal_scale` (free target size),
   `modern.aspect=16:9` (widened 3D FOV, 4:3-centered 2D and mirror),
-  `modern.texture_filter=linear` (presentation blit). **Not done:** extended
-  draw distance — the compat path's culling and the retail 64-entry
-  visible-cell list decide what is captured, so geometry can pop in at the
-  16:9 edges.
+  `modern.texture_filter=linear` (presentation blit). `RenderWorld` publishes
+  the complete terrain grid and course-object list, then native frustum/depth
+  visibility selects draws independently of the retail visible-cell list.
 - **R5** — `modern.fps=vsync|<n>`: the main loop's frame-sync wait presents
   interpolated frames through `Psyz_VideoPresentIntermediate` (present
   without VBlank bookkeeping — presenting via VSync(0) deadlocks the wait).
@@ -57,15 +81,13 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
   hashes are identical with fps mode on.
 - **R6** — post-processing pass with one built-in effect
   (`modern.post=fxaa`, edge anti-aliasing); the pass is the extension point
-  for further effects. **Not implemented:** replacement textures (needs the
-  §3.3 decoded cache), modernised lighting, raytracing (appendix B
-  unchanged).
+  for further effects. Standalone material files now provide the replacement
+  texture seam; user-facing PNG overrides, modernised lighting and raytracing
+  remain unimplemented (appendix B unchanged).
 - **R7 (effects round 1)** —
-  - `modern.texture_filter=linear` now also selects CLUT-aware 4-tap
-    bilinear texel filtering in the 3D fragment shader (per-tap palette
-    lookup, transparency-key taps drop out of the blend, the nearest texel
-    keeps the cutout/semi decision, so silhouettes stay compat-identical);
-    2D/HUD stays nearest.
+  - `modern.texture_filter=linear` selects alpha-aware 4-tap bilinear
+    filtering over standalone RGBA materials; transparent taps drop out of
+    the blend so cutout silhouettes stay sharp. 2D/HUD stays nearest.
   - Per-vertex GTE depth cueing: fogged faces un-bake the captured flat
     IR0 and re-apply `IR0 = (H/z·DQA + DQB) >> 12` toward the far colour at
     each vertex (course walls now carry the FOGGED flag too);
@@ -92,8 +114,8 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
 - **Specular / environment mapping on cars** — normals are not captured
   (lighting is baked by the GTE) but face normals can be recomputed from
   positions; subtle highlights only, easy to overdo.
-- **xBRZ-style texture upscaling** — offline cache keyed by tpage+CLUT;
-  significant engineering around VRAM invalidation.
+- **xBRZ-style texture upscaling** — an offline importer stage keyed by
+  semantic material ID; no renderer or VRAM changes required.
 - **Quality downsample** — verify the internal-scale → window resolve uses
   a proper filter (effectively free SSAA improvement).
 - **Distance haze for the extended draw distance** — geometry past the
@@ -196,10 +218,12 @@ layer.
 
 ## 3. Architecture: capture-alongside, render-instead
 
-The single most important design decision: **the compat submission path always
-runs, in both renderer modes.** The capture layer records the semantic scene
-*while* the compat path executes; the modern renderer only changes what gets
-presented.
+The original migration decision was: **the compat submission path always runs,
+in both renderer modes.** That remains true for the current hybrid while HUD,
+menus and FMV still use compatibility presentation. It is not the endpoint:
+once semantic 2D/UI commands replace GP0 replay, modern mode should stop
+building the compat image and PsyZ should remain only as the explicit classic
+renderer and PS1 import source.
 
 Why this shape:
 
@@ -335,29 +359,19 @@ requires enlarging the `BuildVisibleCells` range and the per-cell far-path
 record skip — that is a game-code change gated behind the modern mode
 (`if (RageModernActive()) …` or a captured-parameters override), phase R4.
 
-### 3.3 Textures: decoding PS1 VRAM
+### 3.3 Textures: imported immutable materials
 
-Modern shaders need RGBA textures, not live CLUT indirection (raytracing
-definitely will). Build a **texture cache** keyed by
-`(tpage, clut, texture-window)`:
+The PS1 importer resolves texture pages, CLUT rows, texture windows, section
+swaps and paint variants before runtime. It emits ordinary RGBA images and a
+renderer-neutral `rage-rmat v4` mapping from semantic material ID to variant
+paths. The renderer caches those paths by `(asset, material, variant)` and
+never observes VRAM coordinates or palette state.
 
-- source of truth remains the emulated VRAM (PsyZ already maintains the
-  1024×512 image and `Psyz_VideoAllocCapturedVram` can read it);
-- on first use of a key, decode the 4/8/16-bpp page region through the CLUT
-  into an RGBA texture (the decode math is identical to PsyZ's fragment
-  shader; do it once on CPU or in a compute pass);
-- **invalidation**: any `LoadImage`/`MoveImage`/`ClearImage`/`StoreImage`
-  whose rect intersects a cached page or CLUT row evicts those entries. Hook
-  point: PsyZ's `Draw_LoadImage`/`Draw_MoveImage`/`Draw_ClearImage` (or a
-  thin notification callback added in §5). This automatically covers the two
-  live texture animations: `StepTrackTextureSwap` (row `{576,0,448,1}`
-  shuffles) and `UploadCarImage` (`{704,0,64,256}`), plus car paint CLUT
-  edits (`ApplyBodyColor1/2`) and the HUD blink CLUT.
-
-Texel `0000` stays the transparency key; modulation (`tex*col/16`, clamp)
-matches the PS1 formula by default so parity comparisons stay meaningful. A
-later "replacement textures" feature slots in here naturally: the cache
-consults an override directory before decoding VRAM.
+Animated/variant choices are semantic state on the scene instance. A mod
+provider can resolve the same IDs to PNG without knowing how the original disc
+encoded them. The PS1 provider remains the fallback that generates equivalent
+RGBA files from the disc. This same provider/compiled-cache boundary applies to
+FBX meshes and WAV audio clips.
 
 ### 3.4 Depth policy: what OT bias means in a z-buffered world
 
@@ -459,9 +473,7 @@ counters, interpolation state).
    generalisation.
 2. **Device/queue accessor** for the modern renderer (the overlay init path
    already exposes `SDL_GPUDevice`; promote it to a supported getter).
-3. **VRAM-write notification callback** for texture-cache invalidation
-   (`Draw_LoadImage`/`Draw_MoveImage`/`Draw_ClearImage`).
-4. Optionally later: let `VSync` presentation be driven externally in modern
+3. Optionally later: let `VSync` presentation be driven externally in modern
    mode (R5) so the frame limiter doesn't double-pace.
 
 All are additive; none change compat behaviour.
@@ -486,7 +498,7 @@ overhead < 1 ms/frame.
 
 **R2 — modern 3D MVP (large).**
 GPU upload of model/terrain/course banks at registration; opaque pass with
-z-buffer and float transforms; texture cache with VRAM invalidation; Gouraud
+z-buffer and float transforms; imported immutable materials; Gouraud
 lighting per captured matrices; per-pixel fog; sky layer; 2D overlay from the
 captured command list; compositor. Renders at logic rate, internal res =
 window res, 4:3. *Verify:* state parity; A/B toggle shows the same scene
@@ -528,7 +540,7 @@ substantial chunks; R0 is days; R3/R4 are iterative tails.
 |---|---|
 | OT-order-dependent visuals (decals, deliberate overlap) fight the z-buffer | §3.4 bias policy + draw-order tiebreaker; A/B toggle and pixel trace make each case diagnosable; budget the R3 tail for this |
 | Interpolation artefacts across camera cuts / respawns | cut detection with snap fallback; per-scene characterization |
-| Texture cache invalidation misses a VRAM write path | invalidate from the PsyZ `Draw_*` choke points (all writes pass through them); a debug mode that flushes the cache every frame isolates staleness bugs |
+| Imported variants miss a dynamic PS1 palette/page choice | characterize the semantic choice in scene data and bake every variant in the PS1 importer; runtime never falls back to live VRAM |
 | Widescreen exposes culling/LOD assumptions beyond `BuildVisibleCells` (sky bands, scripted scenery placement) | R4 gates each extension separately; ship 4:3 modern first |
 | PsyZ upstream drift (fork branch) | keep PsyZ diffs additive and small (§5), upstream where possible |
 | Modern path accidentally feeds state back into logic | capture layer is write-only into the snapshot; state-parity hash tests in CI on every phase |
