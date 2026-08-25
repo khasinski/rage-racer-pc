@@ -12,6 +12,10 @@ void RageRenderWorldInit(RageRenderWorld *world,
 
 void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
     if (world->hasCamera) world->previousCamera = world->camera;
+    if (world->hasMirrorCamera) {
+        world->previousMirrorCamera = world->mirrorCamera;
+        world->previousMirrorPanelY = world->mirrorPanelY;
+    }
     world->frame = frame;
     world->instanceCount = 0;
     world->overflowCount = 0;
@@ -22,6 +26,19 @@ void RageRenderWorldSetCamera(RageRenderWorld *world,
     world->camera = *camera;
     if (!world->hasCamera) world->previousCamera = *camera;
     world->hasCamera = 1;
+}
+
+void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
+                                    const RageRenderCamera *camera,
+                                    int active, float panelY) {
+    world->mirrorCamera = *camera;
+    world->mirrorPanelY = panelY;
+    world->mirrorActive = active != 0;
+    if (!world->hasMirrorCamera) {
+        world->previousMirrorCamera = *camera;
+        world->previousMirrorPanelY = panelY;
+    }
+    world->hasMirrorCamera = 1;
 }
 
 int RageRenderWorldSubmitMesh(RageRenderWorld *world,

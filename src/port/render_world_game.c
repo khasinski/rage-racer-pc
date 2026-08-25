@@ -236,17 +236,24 @@ void RageGameRenderWorldBeginFrame(uint64_t frame) {
             RageGameRenderWorldMutable()->previousCamera = completed->camera;
             RageGameRenderWorldMutable()->hasCamera = 1;
         }
+        if (completed->hasMirrorCamera) {
+            RageGameRenderWorldMutable()->previousMirrorCamera =
+                completed->mirrorCamera;
+            RageGameRenderWorldMutable()->previousMirrorPanelY =
+                completed->mirrorPanelY;
+            RageGameRenderWorldMutable()->hasMirrorCamera = 1;
+        }
         return;
     }
     RageRenderWorldBeginFrame(RageGameRenderWorldMutable(), frame);
 }
 
-void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
-                                  int32_t pitch, int32_t yaw, int32_t roll) {
+static RageRenderCamera RageGameRenderWorldBuildCamera(
+    int32_t x, int32_t y, int32_t z, int32_t pitch, int32_t yaw, int32_t roll,
+    float verticalFovDegrees) {
     RageRenderCamera camera;
     RageSceneMat3 view;
 
-    if (!s_initialized) return;
     memset(&camera, 0, sizeof(camera));
     camera.transform.position.x = (float)x;
     camera.transform.position.y = -(float)y;
@@ -270,8 +277,7 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     camera.transform.scale.x = 1.0f;
     camera.transform.scale.y = 1.0f;
     camera.transform.scale.z = 1.0f;
-    /* PAL's 320x240 active viewport with geom screen 320: 41.112°. */
-    camera.verticalFovDegrees = 41.112f;
+    camera.verticalFovDegrees = verticalFovDegrees;
     camera.nearPlane = 1.0f;
     camera.farPlane = 262144.0f;
     camera.fogColor.x =
@@ -285,14 +291,39 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
      * at five times its authored near distance. */
     camera.fogNear = (float)g_FogNear * 0.25f;
     camera.fogFar = camera.fogNear * 5.0f;
+    return camera;
+}
+
+void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
+                                  int32_t pitch, int32_t yaw, int32_t roll) {
+    RageRenderCamera camera;
+
+    if (!s_initialized) return;
+    /* PAL's 320x240 active viewport with geom screen 320: 41.112°. */
+    camera = RageGameRenderWorldBuildCamera(x, y, z, pitch, yaw, roll, 41.112f);
     RageRenderWorldSetCamera(RageGameRenderWorldMutable(), &camera);
 }
 
 void RageGameRenderWorldPublishCurrentCamera(void) {
+    RageRenderCamera mirrorCamera;
+    int mirrorActive;
+
     RageGameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
                                  SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_X,
                                  SCRATCH_VIEW_ANGLE_Y,
                                  SCRATCH_VIEW_ANGLE_Z);
+    /* A car mirror is a second scene camera, not a recreation of the PS1
+     * mirror pass. A 20 degree vertical FOV on the wide mirror target gives
+     * a useful rearward field of view without the old projection distortion. */
+    mirrorCamera = RageGameRenderWorldBuildCamera(
+        SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
+        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y + 0x800,
+        SCRATCH_VIEW_ANGLE_Z, 20.0f);
+    mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
+                   g_CameraViewMode == CAMERA_VIEW_CAR &&
+                   g_GrandPrixMode != 0 && g_RacePhase == 2;
+    RageRenderWorldSetMirrorCamera(RageGameRenderWorldMutable(), &mirrorCamera,
+                                   mirrorActive, (float)g_MirrorPanelY);
 }
 
 static void RageGameRenderWorldSubmitCourseTransform(
@@ -583,6 +614,14 @@ const RageRenderWorld *RageGameRenderWorldPresentation(float t) {
         RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
     RageRenderInterpolateCamera(&current->previousCamera, &current->camera, t,
                                 &s_presentationWorld.camera);
+    if (current->hasMirrorCamera) {
+        RageRenderInterpolateCamera(&current->previousMirrorCamera,
+                                    &current->mirrorCamera, t,
+                                    &s_presentationWorld.mirrorCamera);
+        s_presentationWorld.mirrorPanelY =
+            current->previousMirrorPanelY +
+            (current->mirrorPanelY - current->previousMirrorPanelY) * t;
+    }
     /* Native preparation caches by frame id. Presentation may change several
      * times inside one logic tick, so it needs a separate revision. */
     s_presentationWorld.frame = ++s_presentationSerial;

@@ -111,6 +111,15 @@ typedef struct RageRenderWorld {
     RageRenderCamera camera;
     RageRenderCamera previousCamera;
     uint8_t hasCamera;
+    /* A rear-view mirror is an ordinary second camera in the native scene.
+     * Keeping it here prevents modern backends from depending on the PS1
+     * mirror ordering table, GTE matrix, or precomputed visibility list. */
+    RageRenderCamera mirrorCamera;
+    RageRenderCamera previousMirrorCamera;
+    float mirrorPanelY;
+    float previousMirrorPanelY;
+    uint8_t hasMirrorCamera;
+    uint8_t mirrorActive;
     RageRenderMeshInstance *instances;
     uint32_t instanceCapacity;
     uint32_t instanceCount;
@@ -123,6 +132,9 @@ void RageRenderWorldInit(RageRenderWorld *world,
 void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame);
 void RageRenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera);
+void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
+                                    const RageRenderCamera *camera,
+                                    int active, float panelY);
 int RageRenderWorldSubmitMesh(RageRenderWorld *world,
                               const RageRenderMeshInstance *instance);
 void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,

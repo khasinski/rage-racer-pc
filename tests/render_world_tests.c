@@ -85,6 +85,33 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(750, (int)camera.fogFar);
 }
 
+static void test_mirror_is_an_independent_scene_camera(void) {
+    RageRenderMeshInstance storage[1];
+    RageRenderWorld world;
+    RageRenderCamera camera = {0};
+
+    RageRenderWorldInit(&world, storage, 1);
+    camera.transform.position.z = 100.0f;
+    camera.transform.rotation.y = 180.0f;
+    camera.verticalFovDegrees = 20.0f;
+    RageRenderWorldSetMirrorCamera(&world, &camera, 1, -12.0f);
+    EXPECT_EQ(1, world.hasMirrorCamera);
+    EXPECT_EQ(1, world.mirrorActive);
+    EXPECT_EQ(180, (int)world.mirrorCamera.transform.rotation.y);
+    EXPECT_EQ(20, (int)world.mirrorCamera.verticalFovDegrees);
+    EXPECT_EQ(-12, (int)world.mirrorPanelY);
+
+    RageRenderWorldBeginFrame(&world, 2);
+    camera.transform.position.z = 140.0f;
+    RageRenderWorldSetMirrorCamera(&world, &camera, 0, 18.0f);
+    RageRenderInterpolateCamera(&world.previousMirrorCamera,
+                                &world.mirrorCamera, 0.5f, &camera);
+    EXPECT_EQ(120, (int)camera.transform.position.z);
+    EXPECT_EQ(0, world.mirrorActive);
+    EXPECT_EQ(-12, (int)world.previousMirrorPanelY);
+    EXPECT_EQ(18, (int)world.mirrorPanelY);
+}
+
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
@@ -248,6 +275,7 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_camera_is_scene_data_not_backend_state();
+    test_mirror_is_an_independent_scene_camera();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
