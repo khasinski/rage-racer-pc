@@ -33,6 +33,7 @@ void RageGameRenderWorldPublishCourseObjects(void);
 /* Publish active race traffic independently of what the classic main camera
  * happened to submit, so secondary native cameras see the complete field. */
 void RageGameRenderWorldPublishRaceCars(void);
+void RageGameRenderWorldDiscardLegacyMirror(void);
 /* LoadRaceAssets owns the palette pack actually resident in VRAM.  Menu state
  * may change while an intro frame is being assembled, so rendering must not
  * infer this identity again from g_PlayerCarIndex. */

@@ -49,6 +49,24 @@ static void test_frame_reset_preserves_storage_and_resets_overflow(void) {
     EXPECT_EQ(20, (int)storage[0].previousTransform.position.x);
 }
 
+static void test_legacy_mirror_instances_can_be_removed_from_scene(void) {
+    RageRenderMeshInstance storage[3] = {0};
+    RageRenderWorld world;
+
+    RageRenderWorldInit(&world, storage, 3);
+    storage[0].entity = 10;
+    storage[0].pass = RAGE_RENDER_PASS_MAIN;
+    storage[1].entity = 20;
+    storage[1].pass = RAGE_RENDER_PASS_MIRROR;
+    storage[2].entity = 30;
+    storage[2].pass = RAGE_RENDER_PASS_MAIN;
+    world.instanceCount = 3;
+    RageRenderWorldDiscardPass(&world, RAGE_RENDER_PASS_MIRROR);
+    EXPECT_EQ(2, world.instanceCount);
+    EXPECT_EQ(10, storage[0].entity);
+    EXPECT_EQ(30, storage[1].entity);
+}
+
 static void test_camera_is_scene_data_not_backend_state(void) {
     RageRenderMeshInstance storage[2];
     RageRenderWorld world;
@@ -238,6 +256,30 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
     EXPECT_EQ(110, (int)presentation[0].transform.position.z);
 }
 
+static void test_synchronized_presentation_moves_dynamic_scenery(void) {
+    RageRenderMeshInstance previousStorage[1] = {0};
+    RageRenderMeshInstance currentStorage[1] = {0};
+    RageRenderMeshInstance presentation[1] = {0};
+    RageRenderWorld previous;
+    RageRenderWorld current;
+
+    RageRenderWorldInit(&previous, previousStorage, 1);
+    RageRenderWorldInit(&current, currentStorage, 1);
+    previousStorage[0].entity = currentStorage[0].entity = 0x30110u;
+    previousStorage[0].assetSet = currentStorage[0].assetSet =
+        RAGE_RENDER_ASSET_COURSE;
+    previousStorage[0].assetKey = currentStorage[0].assetKey = 88;
+    previousStorage[0].mesh = currentStorage[0].mesh = 63;
+    previousStorage[0].transform.position.x = 10.0f;
+    currentStorage[0].transform.position.x = 30.0f;
+    currentStorage[0].previousTransform = currentStorage[0].transform;
+    previous.instanceCount = current.instanceCount = 1;
+
+    EXPECT_EQ(1, RageRenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, presentation, 1));
+    EXPECT_EQ(20, (int)presentation[0].transform.position.x);
+}
+
 static void test_native_camera_projection_has_no_gte_quantization(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
@@ -285,6 +327,7 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
 
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
+    test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
     test_mirror_is_an_independent_scene_camera();
     test_perspective_fog_uses_authored_near_and_far_depths();
@@ -292,6 +335,7 @@ int main(void) {
     test_presentation_interpolates_without_mutating_game_world();
     test_synchronized_presentation_keeps_previous_vehicle_models();
     test_synchronized_presentation_moves_matching_vehicle();
+    test_synchronized_presentation_moves_dynamic_scenery();
     test_native_camera_projection_has_no_gte_quantization();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     if (failures != 0) return EXIT_FAILURE;

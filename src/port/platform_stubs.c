@@ -38,6 +38,7 @@ void RagePortAfterSceneHandler(void) {
         RageGameRenderWorldPublishCourseObjects();
         RageGameRenderWorldPublishTerrainGrid();
         RageGameRenderWorldPublishRaceCars();
+        RageGameRenderWorldDiscardLegacyMirror();
     }
     RageCaptureFrameEnd();
     RageModernLogicFrameReady((uint32_t)g_FrameCounter);

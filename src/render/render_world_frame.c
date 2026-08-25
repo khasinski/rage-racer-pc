@@ -120,6 +120,13 @@ static int RageRenderInstanceIsVehicle(
            instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
 }
 
+static int RageRenderInstanceNeedsSynchronizedMatch(
+    const RageRenderMeshInstance *instance) {
+    return RageRenderInstanceIsVehicle(instance) ||
+           (instance->assetSet == RAGE_RENDER_ASSET_COURSE &&
+            instance->entity >= 0x30000u && instance->entity < 0x40000u);
+}
+
 static int RageRenderVehicleIdentityMatches(
     const RageRenderMeshInstance *left,
     const RageRenderMeshInstance *right) {
@@ -157,7 +164,7 @@ uint32_t RageRenderWorldBuildSynchronizedPresentation(
          currentIndex++) {
         const RageRenderMeshInstance *instance =
             &current->instances[currentIndex];
-        if (RageRenderInstanceIsVehicle(instance)) continue;
+        if (RageRenderInstanceNeedsSynchronizedMatch(instance)) continue;
         out[outputCount] = *instance;
         RageRenderInterpolateTransform(&instance->previousTransform,
                                        &instance->transform, t,
@@ -178,7 +185,7 @@ uint32_t RageRenderWorldBuildSynchronizedPresentation(
         uint32_t targetIndex = 0;
         float bestDistance = 0.0f;
 
-        if (!RageRenderInstanceIsVehicle(base)) continue;
+        if (!RageRenderInstanceNeedsSynchronizedMatch(base)) continue;
         for (currentIndex = 0; currentIndex < current->instanceCount;
              currentIndex++) {
             const RageRenderMeshInstance *candidate =

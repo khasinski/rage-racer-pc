@@ -137,6 +137,7 @@ void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
                                     int active, float panelY);
 int RageRenderWorldSubmitMesh(RageRenderWorld *world,
                               const RageRenderMeshInstance *instance);
+void RageRenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass);
 void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform);
 /* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)

@@ -378,14 +378,27 @@ void RageGameRenderWorldSubmitDynamicCourseObject(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     RageSceneMat3 matrix;
+    RageRenderWorld *world;
+    uint32_t semanticEntity = 0x30000u + entity;
     int row, column;
     if (rotation == NULL) return;
+    world = RageGameRenderWorldMutable();
+    /* Legacy draws visit dynamic scenery once per camera. Render World owns
+     * scene objects rather than camera submissions, so retain the first
+     * world-space record and do not draw two nearly identical copies in the
+     * native main and rear-camera passes. Main is submitted before mirror;
+     * a mirror-only object is still retained when it is behind the car. */
+    for (uint32_t index = 0; index < world->instanceCount; index++) {
+        const RageRenderMeshInstance *existing = &world->instances[index];
+        if (existing->entity == semanticEntity &&
+            existing->assetSet == RAGE_RENDER_ASSET_COURSE) return;
+    }
     for (row = 0; row < 3; row++)
         for (column = 0; column < 3; column++)
             matrix.m[row][column] =
                 (float)rotation[row][column] * (1.0f / 4096.0f);
     RageGameRenderWorldSubmitCourseTransform(
-        0x30000u + entity, mesh, x, y, z, matrix, fogged, mirror_pass);
+        semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass);
 }
 
 void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
@@ -624,6 +637,16 @@ void RageGameRenderWorldPublishRaceCars(void) {
                 RAGE_GAME_CAR_RENDER_CLOSE);
         }
     }
+}
+
+void RageGameRenderWorldDiscardLegacyMirror(void) {
+    if (!s_initialized) return;
+    /* The native rear-view camera renders the ordinary semantic main scene.
+     * PS1 mirror submissions are camera-space implementation records and
+     * must never survive into that scene. The legacy renderer has already
+     * consumed them through its own capture path. */
+    RageRenderWorldDiscardPass(RageGameRenderWorldMutable(),
+                               RAGE_RENDER_PASS_MIRROR);
 }
 
 const RageRenderWorld *RageGameRenderWorldCurrent(void) {

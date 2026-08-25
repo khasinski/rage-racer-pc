@@ -51,6 +51,18 @@ int RageRenderWorldSubmitMesh(RageRenderWorld *world,
     return 1;
 }
 
+void RageRenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
+    uint32_t source, destination = 0;
+    if (world == NULL) return;
+    for (source = 0; source < world->instanceCount; source++) {
+        if (world->instances[source].pass == pass) continue;
+        if (destination != source)
+            world->instances[destination] = world->instances[source];
+        destination++;
+    }
+    world->instanceCount = destination;
+}
+
 void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform) {
     memset(transform, 0, sizeof(*transform));
