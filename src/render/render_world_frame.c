@@ -1,6 +1,9 @@
 #include "render_world_frame.h"
 
 #include <math.h>
+#include <string.h>
+
+enum { RAGE_RENDER_PRESENTATION_MATCH_CAPACITY = 4096 };
 
 static float RageClamp01(float value) {
     if (value < 0.0f) return 0.0f;
@@ -109,4 +112,97 @@ uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
                                        &out[index].transform);
     }
     return count;
+}
+
+static int RageRenderInstanceIsVehicle(
+    const RageRenderMeshInstance *instance) {
+    return instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+           instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+}
+
+static int RageRenderVehicleIdentityMatches(
+    const RageRenderMeshInstance *left,
+    const RageRenderMeshInstance *right) {
+    return left->entity == right->entity &&
+           left->mesh == right->mesh &&
+           left->assetSet == right->assetSet &&
+           left->assetKey == right->assetKey &&
+           left->materialVariant == right->materialVariant &&
+           left->pass == right->pass;
+}
+
+static float RageRenderTransformDistanceSquared(
+    const RageRenderTransform *left, const RageRenderTransform *right) {
+    float x = left->position.x - right->position.x;
+    float y = left->position.y - right->position.y;
+    float z = left->position.z - right->position.z;
+    return x * x + y * y + z * z;
+}
+
+uint32_t RageRenderWorldBuildSynchronizedPresentation(
+    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
+    RageRenderMeshInstance *out, uint32_t capacity) {
+    uint32_t outputCount = 0;
+    uint32_t currentIndex;
+    uint8_t matched[RAGE_RENDER_PRESENTATION_MATCH_CAPACITY];
+
+    if (previous == 0 || current == 0 || out == 0) return 0;
+    memset(matched, 0, sizeof(matched));
+
+    /* Complete course and terrain publication is stable across ticks. Keep
+     * its existing producer-provided history without an expensive global
+     * instance match. */
+    for (currentIndex = 0;
+         currentIndex < current->instanceCount && outputCount < capacity;
+         currentIndex++) {
+        const RageRenderMeshInstance *instance =
+            &current->instances[currentIndex];
+        if (RageRenderInstanceIsVehicle(instance)) continue;
+        out[outputCount] = *instance;
+        RageRenderInterpolateTransform(&instance->previousTransform,
+                                       &instance->transform, t,
+                                       &out[outputCount].transform);
+        outputCount++;
+    }
+
+    /* ModernPresentSource composites against RageCapturePrevious(). Vehicles
+     * must therefore come from the previous world's visibility/model set too.
+     * Using the current list made fast GP-intro camera cuts display a different
+     * rival (or no rival) while the rest of the frame was still one tick back. */
+    for (uint32_t previousIndex = 0;
+         previousIndex < previous->instanceCount && outputCount < capacity;
+         previousIndex++) {
+        const RageRenderMeshInstance *base =
+            &previous->instances[previousIndex];
+        const RageRenderMeshInstance *target = 0;
+        uint32_t targetIndex = 0;
+        float bestDistance = 0.0f;
+
+        if (!RageRenderInstanceIsVehicle(base)) continue;
+        for (currentIndex = 0; currentIndex < current->instanceCount;
+             currentIndex++) {
+            const RageRenderMeshInstance *candidate =
+                &current->instances[currentIndex];
+            float distance;
+            if (currentIndex >= sizeof(matched) || matched[currentIndex] ||
+                !RageRenderVehicleIdentityMatches(base, candidate))
+                continue;
+            distance = RageRenderTransformDistanceSquared(
+                &base->transform, &candidate->transform);
+            if (target == 0 || distance < bestDistance) {
+                target = candidate;
+                targetIndex = currentIndex;
+                bestDistance = distance;
+            }
+        }
+        out[outputCount] = *base;
+        if (target != 0) {
+            matched[targetIndex] = 1;
+            RageRenderInterpolateTransform(&base->transform,
+                                           &target->transform, t,
+                                           &out[outputCount].transform);
+        }
+        outputCount++;
+    }
+    return outputCount;
 }

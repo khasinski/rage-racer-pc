@@ -140,6 +140,77 @@ static void test_presentation_interpolates_without_mutating_game_world(void) {
     EXPECT_EQ(30, (int)storage[0].transform.position.x);
 }
 
+static void test_synchronized_presentation_keeps_previous_vehicle_models(void) {
+    RageRenderMeshInstance previousStorage[3] = {0};
+    RageRenderMeshInstance currentStorage[3] = {0};
+    RageRenderMeshInstance presentation[4] = {0};
+    RageRenderWorld previous;
+    RageRenderWorld current;
+    uint32_t count;
+
+    RageRenderWorldInit(&previous, previousStorage, 3);
+    RageRenderWorldInit(&current, currentStorage, 3);
+    previousStorage[0].entity = 10;
+    previousStorage[0].mesh = 30;
+    previousStorage[0].assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    previousStorage[0].assetKey = 88;
+    previousStorage[0].materialVariant = 29;
+    previousStorage[0].transform.position.x = 10.0f;
+    previous.instanceCount = 1;
+
+    /* The next intro tick sees another rival. It must not replace the model
+     * while presentation is still compositing the previous logic frame. */
+    currentStorage[0].entity = 3;
+    currentStorage[0].mesh = 15;
+    currentStorage[0].assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    currentStorage[0].assetKey = 88;
+    currentStorage[0].materialVariant = 27;
+    currentStorage[0].transform.position.x = 100.0f;
+    currentStorage[1].entity = 0x10000;
+    currentStorage[1].mesh = 4;
+    currentStorage[1].assetSet = RAGE_RENDER_ASSET_COURSE;
+    currentStorage[1].assetKey = 88;
+    currentStorage[1].previousTransform.position.x = 20.0f;
+    currentStorage[1].transform.position.x = 40.0f;
+    current.instanceCount = 2;
+
+    count = RageRenderWorldBuildSynchronizedPresentation(
+        &previous, &current, 0.5f, presentation, 4);
+    EXPECT_EQ(2, count);
+    EXPECT_EQ(RAGE_RENDER_ASSET_COURSE, presentation[0].assetSet);
+    EXPECT_EQ(30, (int)presentation[0].transform.position.x);
+    EXPECT_EQ(RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+              presentation[1].assetSet);
+    EXPECT_EQ(10, presentation[1].entity);
+    EXPECT_EQ(30, presentation[1].mesh);
+    EXPECT_EQ(10, (int)presentation[1].transform.position.x);
+}
+
+static void test_synchronized_presentation_moves_matching_vehicle(void) {
+    RageRenderMeshInstance previousStorage[1] = {0};
+    RageRenderMeshInstance currentStorage[1] = {0};
+    RageRenderMeshInstance presentation[1] = {0};
+    RageRenderWorld previous;
+    RageRenderWorld current;
+
+    RageRenderWorldInit(&previous, previousStorage, 1);
+    RageRenderWorldInit(&current, currentStorage, 1);
+    previousStorage[0].entity = currentStorage[0].entity = 7;
+    previousStorage[0].mesh = currentStorage[0].mesh = 25;
+    previousStorage[0].assetSet = currentStorage[0].assetSet =
+        RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    previousStorage[0].assetKey = currentStorage[0].assetKey = 88;
+    previousStorage[0].materialVariant = currentStorage[0].materialVariant = 28;
+    previousStorage[0].transform.position.z = 100.0f;
+    currentStorage[0].transform.position.z = 140.0f;
+    previous.instanceCount = current.instanceCount = 1;
+
+    EXPECT_EQ(1, RageRenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.25f, presentation, 1));
+    EXPECT_EQ(25, presentation[0].mesh);
+    EXPECT_EQ(110, (int)presentation[0].transform.position.z);
+}
+
 static void test_native_camera_projection_has_no_gte_quantization(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
@@ -180,6 +251,8 @@ int main(void) {
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
+    test_synchronized_presentation_keeps_previous_vehicle_models();
+    test_synchronized_presentation_moves_matching_vehicle();
     test_native_camera_projection_has_no_gte_quantization();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     if (failures != 0) return EXIT_FAILURE;

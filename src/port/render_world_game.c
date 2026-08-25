@@ -533,15 +533,18 @@ const RageRenderWorld *RageGameRenderWorldPrevious(void) {
 
 const RageRenderWorld *RageGameRenderWorldPresentation(float t) {
     RageRenderWorld *current;
+    const RageRenderWorld *previous;
     if (!s_initialized) return NULL;
     current = RageGameRenderWorldMutable();
     if (!s_haveCompletedFrame) return current;
+    previous = &s_worlds[s_currentWorld ^ 1];
     s_presentationWorld = *current;
     s_presentationWorld.instances = s_presentationInstances;
     s_presentationWorld.instanceCapacity =
         RAGE_GAME_RENDER_WORLD_MAX_INSTANCES;
-    s_presentationWorld.instanceCount = RageRenderWorldBuildPresentation(
-        current, t, s_presentationInstances,
+    s_presentationWorld.instanceCount =
+        RageRenderWorldBuildSynchronizedPresentation(
+        previous, current, t, s_presentationInstances,
         RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
     RageRenderInterpolateCamera(&current->previousCamera, &current->camera, t,
                                 &s_presentationWorld.camera);

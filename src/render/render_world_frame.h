@@ -24,5 +24,12 @@ uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
                                           RageRenderMeshInstance *out,
                                           uint32_t capacity);
 
-#endif
+/* Build the frame shown alongside a previous-frame compatibility snapshot.
+ * Static world instances retain the normal producer-supplied interpolation,
+ * while vehicles keep the previous frame's exact model/visibility set and
+ * move toward matching current transforms. */
+uint32_t RageRenderWorldBuildSynchronizedPresentation(
+    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
+    RageRenderMeshInstance *out, uint32_t capacity);
 
+#endif
