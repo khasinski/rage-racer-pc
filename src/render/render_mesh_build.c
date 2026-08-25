@@ -115,11 +115,11 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
         depth - radius > world->camera.farPlane) return 1;
     tanY = tanf(RageRadians(world->camera.verticalFovDegrees) * 0.5f);
     tanX = tanY * aspect;
-    /* Keep a wider horizontal guard band around the visible frustum. In the
-     * low first-person camera the outer road edge can cross several degrees
-     * between logic ticks on a sharp bend; an 8% tangent margin still popped
-     * the right-hand cell before the interpolated camera caught up. */
-    tanX *= 1.20f;
+    /* Keep a small guard band around the visible frustum. In a low cockpit
+     * camera the road can cross the side plane between logic ticks on a
+     * sharp bend; exact-edge culling otherwise exposes a one-cell notch for
+     * a frame before the interpolated camera catches up. */
+    tanX *= 1.08f;
     tanY *= 1.08f;
     /* Test the sphere against the actual side planes. Comparing its
      * axis-aligned radius with the frustum width at the sphere centre is not
