@@ -61,7 +61,8 @@ static uint32_t RageCarEntity(const GameRenderObject *object) {
 
 static uint8_t RageTrackCarMaterialVariant(uint8_t paletteOffset) {
     int variant = s_trackCarAsset;
-    if (variant < 0 || variant >= 32) {
+    if ((variant < 0 || variant >= 32) && g_CarTable != NULL &&
+        g_PlayerCarIndex >= 0 && g_PlayerCarIndex < 32) {
         variant = GetCarAssetIndex(
             g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
     }
