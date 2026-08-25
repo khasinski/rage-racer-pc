@@ -2,16 +2,24 @@
 """Modern mirror preserves complete rival models and their lower bodywork."""
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 
-def run(executable: Path, source: Path, output: Path, renderer: str) -> Path:
+def run(executable: Path, source: Path, output: Path,
+        renderer: str) -> tuple[Path, str]:
     output.mkdir(parents=True)
     environment = os.environ.copy()
     environment["SDL_AUDIODRIVER"] = "dummy"
+    if renderer == "modern":
+        native_assets = executable.parent / "native-assets"
+        if not (native_assets / "runtime-index.txt").exists():
+            raise AssertionError(f"native asset fixture is missing: {native_assets}")
+        environment["RAGE_PORT_MODERN_ASSETS"] = str(native_assets)
+        environment["RAGE_PORT_MODERN_ASSET_TRACE"] = "1"
     command = [
         executable, "--scenario", source / "race-scenario.ini",
         "--set", "run.frames=3000", "--set", "stop.scene=12",
@@ -25,6 +33,14 @@ def run(executable: Path, source: Path, output: Path, renderer: str) -> Path:
         "--set", "capture.timer_max=430", "--set", "capture.timer_stride=1",
         "--set", f"video.renderer={renderer}",
     ]
+    modern_capture = output / "native-mirror.ppm"
+    if renderer == "modern":
+        command.extend([
+            "--set", "video.internal_scale=1",
+            "--set", "video.aspect=4:3",
+            "--set", f"diagnostics.modern_dump={modern_capture}",
+            "--set", "diagnostics.modern_dump_frame=620",
+        ])
     result = subprocess.run(command, cwd=source, env=environment,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             timeout=55)
@@ -33,7 +49,10 @@ def run(executable: Path, source: Path, output: Path, renderer: str) -> Path:
     captures = list(output.glob("timer-00430-s12.ppm"))
     if len(captures) != 1:
         raise AssertionError(f"{renderer} produced {len(captures)} captures")
-    return captures[0]
+    selected_capture = modern_capture if renderer == "modern" else captures[0]
+    if not selected_capture.exists():
+        raise AssertionError(f"{renderer} did not produce its presented frame")
+    return selected_capture, result.stdout.decode(errors="replace")
 
 
 def ppm_pixels(path: Path):
@@ -49,27 +68,44 @@ def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     with tempfile.TemporaryDirectory(prefix="rage-mirror-cars-") as root_text:
         root = Path(root_text)
-        classic = ppm_pixels(run(executable, source, root / "classic", "classic"))
-        modern = ppm_pixels(run(executable, source, root / "modern", "modern"))
-    if classic != modern:
-        width, height, old = classic
-        _, _, new = modern
-        changed = sum(a != b for a, b in zip(old, new))
-        raise AssertionError(
-            f"mirror rival regression: {changed} differing channels at "
-            f"{width}x{height}")
-    width, height, pixels = classic
-    # The controlled placement puts red/orange rival bodywork in the right
-    # half of the mirror. This guards against two equally empty renderers.
+        classic_path, _ = run(executable, source, root / "classic", "classic")
+        modern_path, modern_log = run(
+            executable, source, root / "modern", "modern")
+        classic = ppm_pixels(classic_path)
+        modern = ppm_pixels(modern_path)
+    if classic[:2] != modern[:2]:
+        raise AssertionError("classic and modern mirror captures differ in size")
+    mirror_builds = re.findall(
+        r"mirror_vertices=(\d+) mirror_spans=(\d+) "
+        r"mirror_vehicle_spans=(\d+)", modern_log)
+    if not any(int(vertices) > 0 and int(spans) > 0 and int(vehicles) > 0
+               for vertices, spans, vehicles in mirror_builds):
+        raise AssertionError("rear camera did not build a native scene")
+    mirror_draws = re.findall(
+        r"native draws frame=\d+ draws=(\d+) vertices=(\d+) view=mirror",
+        modern_log)
+    if not any(int(draws) > 0 and int(vertices) > 0
+               for draws, vertices in mirror_draws):
+        raise AssertionError("native rear camera was not submitted to the GPU")
+    width, height, pixels = modern
+    # Inspect the actual modern presentation target, not emulated VRAM. The
+    # semantic span check above proves a rival is inside the rear frustum;
+    # this pixel check proves the offscreen target reached the HUD panel.
+    mirror_scene_pixels = 0
     vivid_car_pixels = 0
     for y in range(18, min(54, height)):
-        for x in range(190, min(235, width)):
+        for x in range(86, min(234, width)):
             offset = (y * width + x) * 3
             red, green, blue = pixels[offset:offset + 3]
+            if max(red, green, blue) > 25:
+                mirror_scene_pixels += 1
             if red > 80 and red > green * 3 // 2 and green > blue:
                 vivid_car_pixels += 1
+    if mirror_scene_pixels < 1200:
+        raise AssertionError(
+            f"native mirror did not reach the HUD panel: {mirror_scene_pixels}")
     if vivid_car_pixels < 8:
-        raise AssertionError("controlled mirror frame contains no rival bodywork")
+        raise AssertionError("controlled native mirror contains no rival bodywork")
     return 0
 
 

@@ -57,6 +57,9 @@ static float s_logicalW = 320.0f; /* 16:9 widens this; 240 rows stay */
 static float s_overscanX;         /* (logicalW - 320) / 2 */
 static SDL_GPUTexture *s_target;
 static SDL_GPUTexture *s_depth;
+static SDL_GPUTexture *s_mirrorTarget;
+static SDL_GPUTexture *s_mirrorDepth;
+static int s_mirrorTargetW, s_mirrorTargetH;
 static SDL_GPUSampler *s_sampler;
 static SDL_GPUGraphicsPipeline *s_pipe3dOpaque;
 static SDL_GPUGraphicsPipeline *s_pipe3dBlend;
@@ -302,6 +305,8 @@ static void ModernDestroyResources(void) {
     } while (0)
         RAGE_RELEASE(Texture, s_target);
         RAGE_RELEASE(Texture, s_depth);
+        RAGE_RELEASE(Texture, s_mirrorTarget);
+        RAGE_RELEASE(Texture, s_mirrorDepth);
         RAGE_RELEASE(Sampler, s_sampler);
         RAGE_RELEASE(GraphicsPipeline, s_pipe3dOpaque);
         RAGE_RELEASE(GraphicsPipeline, s_pipe3dBlend);
@@ -354,6 +359,8 @@ static int ModernEnsureResources(void) {
     s_overscanX = (s_logicalW - 320.0f) * 0.5f;
     s_targetW = (int)(s_logicalW * scale + 0.5f) & ~1;
     s_targetH = (int)(240.0f * scale + 0.5f) & ~1;
+    s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
+    s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
     s_ringEnabled = RageRuntimeConfigEnabled(
         "diagnostics.marker_history", NULL);
@@ -371,6 +378,15 @@ static int ModernEnsureResources(void) {
         info.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
         info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
         s_depth = SDL_CreateGPUTexture(s_device, &info);
+        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = (Uint32)s_mirrorTargetW;
+        info.height = (Uint32)s_mirrorTargetH;
+        s_mirrorTarget = SDL_CreateGPUTexture(s_device, &info);
+        info.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        s_mirrorDepth = SDL_CreateGPUTexture(s_device, &info);
     }
     {
         SDL_GPUSamplerCreateInfo info = {0};
@@ -476,7 +492,8 @@ static int ModernEnsureResources(void) {
         }
     }
 
-    if (!s_target || !s_depth || !s_sampler || !s_pipe3dOpaque ||
+    if (!s_target || !s_depth || !s_mirrorTarget || !s_mirrorDepth ||
+        !s_sampler || !s_pipe3dOpaque ||
         !s_pipe3dBlend || !s_pipe3dSub || !s_pipe2d || !s_pipe2dSub ||
         !s_vertexBuffer || !s_vertexTransfer || !s_vertices || !s_spans) {
         fprintf(stderr, "rage-port: modern renderer resource setup failed: %s\n",
@@ -516,7 +533,9 @@ enum {
     MODERN_LAYER_BACKGROUND,
     MODERN_LAYER_WORLD,
     MODERN_LAYER_HUD,
-    MODERN_LAYER_MIRROR,
+    MODERN_LAYER_MIRROR_BACKGROUND,
+    MODERN_LAYER_MIRROR_WORLD,
+    MODERN_LAYER_MIRROR_FOREGROUND,
 };
 static uint8_t s_currentLayer;
 
@@ -1523,7 +1542,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
      * scissored to the intersection of the inherited area and the mirror
      * stream's own area. */
     s_currentPass = 1;
-    s_currentLayer = MODERN_LAYER_MIRROR;
+    s_currentLayer = MODERN_LAYER_MIRROR_BACKGROUND;
     {
         /* The mirror 3D content sits between the mirror stream's own area
          * pair and its restore, so that pair alone is the authoritative
@@ -1567,6 +1586,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
         if (haveArea) {
             Modern2DState scissorState;
+            s_currentLayer = MODERN_LAYER_MIRROR_WORLD;
             memset(&scissorState, 0, sizeof(scissorState));
             scissorState.hasScissor = 1;
             scissorState.scissor = area;
@@ -1598,6 +1618,7 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
 
     /* Mirror-table foreground 2D (frame border, text), in compat order;
      * starts from the inherited main-table state like the backdrop. */
+    s_currentLayer = MODERN_LAYER_MIRROR_FOREGROUND;
     state2d = s_mainEnd2D;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
@@ -1694,6 +1715,43 @@ static void ModernRenderLegacySelection(SDL_GPUCommandBuffer *cmd,
     SDL_EndGPURenderPass(pass);
 }
 
+static void ModernCompositeNativeMirror(SDL_GPUCommandBuffer *cmd) {
+    float panelY = ModernNativeGpuMirrorPanelY();
+    float visibleTop = panelY < 0.0f ? 0.0f : panelY;
+    float visibleBottom = panelY + 36.0f;
+    float sourceTop;
+    SDL_GPUBlitInfo blit = {0};
+
+    if (!ModernNativeGpuHasMirrorDraws()) return;
+    if (visibleBottom > 240.0f) visibleBottom = 240.0f;
+    if (visibleBottom <= visibleTop) return;
+    sourceTop = visibleTop - panelY;
+    blit.source.texture = s_mirrorTarget;
+    blit.source.y = (Uint32)lroundf(
+        sourceTop * (float)s_mirrorTargetH / 36.0f);
+    blit.source.w = (Uint32)s_mirrorTargetW;
+    blit.source.h = (Uint32)lroundf(
+        (visibleBottom - visibleTop) * (float)s_mirrorTargetH / 36.0f);
+    blit.destination.texture = s_target;
+    blit.destination.x = (Uint32)lroundf(
+        (86.0f + s_overscanX) * (float)s_targetW / s_logicalW);
+    blit.destination.y = (Uint32)lroundf(
+        visibleTop * (float)s_targetH / 240.0f);
+    blit.destination.w = (Uint32)lroundf(
+        148.0f * (float)s_targetW / s_logicalW);
+    blit.destination.h = (Uint32)lroundf(
+        (visibleBottom - visibleTop) * (float)s_targetH / 240.0f);
+    blit.load_op = SDL_GPU_LOADOP_LOAD;
+    /* A physical rear-view mirror swaps left and right. Rendering from a
+     * rear camera supplies the scene; flipping at composition supplies the
+     * reflection instead of a turn-your-head view. */
+    blit.flip_mode = SDL_FLIP_HORIZONTAL;
+    blit.filter = s_config.modernTextureFilterLinear
+                      ? SDL_GPU_FILTER_LINEAR
+                      : SDL_GPU_FILTER_NEAREST;
+    SDL_BlitGPUTexture(cmd, &blit);
+}
+
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
@@ -1738,8 +1796,13 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         ModernNativeGpuDraw(cmd, vram, s_target, s_depth, 0);
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_HUD, 0);
+        if (ModernNativeGpuHasMirrorDraws()) {
+            ModernNativeGpuDrawMirror(cmd, vram, s_mirrorTarget,
+                                      s_mirrorDepth);
+            ModernCompositeNativeMirror(cmd);
+        }
         ModernRenderLegacySelection(cmd, vram, 1,
-                                    1u << MODERN_LAYER_MIRROR, 0);
+                                    1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
     } else {
         ModernRenderLegacySelection(cmd, vram, 0, UINT32_MAX, 1);
         ModernRenderLegacySelection(cmd, vram, 1, UINT32_MAX, 0);

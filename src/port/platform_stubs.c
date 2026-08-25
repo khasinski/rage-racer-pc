@@ -37,6 +37,7 @@ void RagePortAfterSceneHandler(void) {
     if (RageModernIsEnabled()) {
         RageGameRenderWorldPublishCourseObjects();
         RageGameRenderWorldPublishTerrainGrid();
+        RageGameRenderWorldPublishRaceCars();
     }
     RageCaptureFrameEnd();
     RageModernLogicFrameReady((uint32_t)g_FrameCounter);

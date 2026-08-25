@@ -250,7 +250,7 @@ void RageGameRenderWorldBeginFrame(uint64_t frame) {
 
 static RageRenderCamera RageGameRenderWorldBuildCamera(
     int32_t x, int32_t y, int32_t z, int32_t pitch, int32_t yaw, int32_t roll,
-    float verticalFovDegrees) {
+    float verticalFovDegrees, int rearFacing) {
     RageRenderCamera camera;
     RageSceneMat3 view;
 
@@ -264,6 +264,12 @@ static RageRenderCamera RageGameRenderWorldBuildCamera(
     view = RageSceneMat3Multiply(
         RageSceneMat3Multiply(RageSceneRotationZ(roll), RageSceneRotationX(pitch)),
         RageSceneRotationY(yaw));
+    if (rearFacing) {
+        /* A mirror camera turns in its own local space. Adding 180 degrees
+         * to world yaw gives the wrong direction once the car is pitched or
+         * rolled; pre-rotate the view basis like an attached camera rig. */
+        view = RageSceneMat3Multiply(RageSceneRotationY(0x800), view);
+    }
     {
         RageSceneMat3 converted;
         RageRenderConvertPsxMatrix(view.m, converted.m);
@@ -300,7 +306,8 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
 
     if (!s_initialized) return;
     /* PAL's 320x240 active viewport with geom screen 320: 41.112°. */
-    camera = RageGameRenderWorldBuildCamera(x, y, z, pitch, yaw, roll, 41.112f);
+    camera = RageGameRenderWorldBuildCamera(x, y, z, pitch, yaw, roll,
+                                            41.112f, 0);
     RageRenderWorldSetCamera(RageGameRenderWorldMutable(), &camera);
 }
 
@@ -317,8 +324,8 @@ void RageGameRenderWorldPublishCurrentCamera(void) {
      * a useful rearward field of view without the old projection distortion. */
     mirrorCamera = RageGameRenderWorldBuildCamera(
         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
-        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y + 0x800,
-        SCRATCH_VIEW_ANGLE_Z, 20.0f);
+        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
+        SCRATCH_VIEW_ANGLE_Z, 20.0f, 1);
     mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
                    g_CameraViewMode == CAMERA_VIEW_CAR &&
                    g_GrandPrixMode != 0 && g_RacePhase == 2;
@@ -586,6 +593,37 @@ void RageGameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
         g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
         g_CarModelAsset->modelOffsetY, g_CarModelAsset->modelOffsetZ,
         object->steeringAngle / 12, environmentLight, mirror_pass);
+}
+
+void RageGameRenderWorldPublishRaceCars(void) {
+    RageRenderWorld *world;
+    uint32_t source, destination = 0;
+    int car;
+
+    if (!s_initialized || g_SceneId != 12 || g_GrandPrixMode == 0) return;
+    world = RageGameRenderWorldMutable();
+    /* DrawCar historically publishes only rivals accepted by the active GTE
+     * view. Replace those partial main-camera submissions with one complete
+     * semantic traffic list. Keep the separately loaded player model and
+     * deprecated mirror-pass records untouched. */
+    for (source = 0; source < world->instanceCount; source++) {
+        const RageRenderMeshInstance *instance = &world->instances[source];
+        if (instance->pass == RAGE_RENDER_PASS_MAIN &&
+            instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
+            continue;
+        }
+        if (destination != source)
+            world->instances[destination] = world->instances[source];
+        destination++;
+    }
+    world->instanceCount = destination;
+    for (car = 0; car < 11; car++) {
+        if (g_Cars[car].activeFlag != -1 && g_Cars[car].aiEnabled == 1) {
+            RageGameRenderWorldSubmitCar(
+                (const GameRenderObject *)&g_Cars[car], 0,
+                RAGE_GAME_CAR_RENDER_CLOSE);
+        }
+    }
 }
 
 const RageRenderWorld *RageGameRenderWorldCurrent(void) {

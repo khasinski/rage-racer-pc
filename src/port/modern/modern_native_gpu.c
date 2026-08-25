@@ -79,7 +79,7 @@ static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
 static float s_aspect = 4.0f / 3.0f;
-static float s_mirrorAspect = 152.0f / 36.0f;
+static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 static uint32_t s_textureCount;
@@ -343,20 +343,33 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     s_aspect = aspect;
     s_completeWorld = world->instanceCount != 0 && world->overflowCount == 0;
     for (instance = 0; instance < world->instanceCount; instance++) {
+        /* Native rendering consumes the ordinary semantic scene for both
+         * cameras. Missing assets in the deprecated PS1 mirror submission
+         * must not disable replacement of that complete main scene. */
+        if (world->instances[instance].pass != RAGE_RENDER_PASS_MAIN) continue;
         if (ModernAssetsFind(&world->instances[instance]) == NULL) {
             s_completeWorld = 0;
             break;
         }
     }
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+        uint32_t mirrorVehicleSpans = 0;
+        uint32_t span;
+        for (span = 0; span < s_mirrorSpanCount; span++) {
+            if (s_mirrorSpans[span].assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                s_mirrorSpans[span].assetSet ==
+                    RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
+                mirrorVehicleSpans++;
+            }
+        }
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
                 "cached=%u vertices=%u spans=%u mirror_vertices=%u "
-                "mirror_spans=%u\n",
+                "mirror_spans=%u mirror_vehicle_spans=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
                 s_vertexCount, s_spanCount, s_mirrorVertexCount,
-                s_mirrorSpanCount);
+                s_mirrorSpanCount, mirrorVehicleSpans);
     }
 }
 
@@ -372,6 +385,10 @@ int ModernNativeGpuHasMirrorDraws(void) {
     return s_mirrorVertexCount != 0 && s_mirrorSpanCount != 0 &&
            s_world != NULL && s_world->mirrorActive &&
            s_world->hasMirrorCamera;
+}
+
+float ModernNativeGpuMirrorPanelY(void) {
+    return s_world != NULL ? s_world->mirrorPanelY : -36.0f;
 }
 
 static ModernNativeTexture *ModernNativeFindTexture(
@@ -490,10 +507,13 @@ static void ModernNativeGpuDrawSet(
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
     const RageRenderCamera *renderCamera, float aspect,
     const RageNativeDrawSpan *spans, uint32_t spanCount,
-    uint32_t drawVertexCount) {
+    uint32_t drawVertexCount, const char *viewName) {
     SDL_GPUColorTargetInfo color = {
         .texture = colorTarget,
-        .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+        .clear_color = {renderCamera != NULL ? renderCamera->fogColor.x : 0.0f,
+                        renderCamera != NULL ? renderCamera->fogColor.y : 0.0f,
+                        renderCamera != NULL ? renderCamera->fogColor.z : 0.0f,
+                        1.0f},
         .load_op = clearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD,
         .store_op = SDL_GPU_STOREOP_STORE,
     };
@@ -589,8 +609,11 @@ static void ModernNativeGpuDrawSet(
     }
     SDL_EndGPURenderPass(pass);
     if (drawCount != 0 && getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
-        fprintf(stderr, "rage-port: native draws frame=%llu draws=%u vertices=%u\n",
-                (unsigned long long)s_worldFrame, drawCount, drawVertexCount);
+        fprintf(stderr,
+                "rage-port: native draws frame=%llu draws=%u vertices=%u "
+                "view=%s\n",
+                (unsigned long long)s_worldFrame, drawCount, drawVertexCount,
+                viewName);
     }
 }
 
@@ -603,7 +626,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     if (!ModernNativeGpuHasDraws()) return;
     ModernNativeGpuDrawSet(command, vram, colorTarget, depthTarget, clearColor,
                            &s_world->camera, s_aspect, s_spans, s_spanCount,
-                           s_vertexCount);
+                           s_vertexCount, "main");
 }
 
 void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
@@ -614,7 +637,7 @@ void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
     ModernNativeGpuDrawSet(command, vram, colorTarget, depthTarget, 1,
                            &s_world->mirrorCamera, s_mirrorAspect,
                            s_mirrorSpans, s_mirrorSpanCount,
-                           s_mirrorVertexCount);
+                           s_mirrorVertexCount, "mirror");
 }
 
 void ModernNativeGpuShutdown(void) {

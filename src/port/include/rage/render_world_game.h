@@ -30,6 +30,9 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
                                           int32_t mesh, int mirror_pass);
 void RageGameRenderWorldPublishTerrainGrid(void);
 void RageGameRenderWorldPublishCourseObjects(void);
+/* Publish active race traffic independently of what the classic main camera
+ * happened to submit, so secondary native cameras see the complete field. */
+void RageGameRenderWorldPublishRaceCars(void);
 /* LoadRaceAssets owns the palette pack actually resident in VRAM.  Menu state
  * may change while an intro frame is being assembled, so rendering must not
  * infer this identity again from g_PlayerCarIndex. */
