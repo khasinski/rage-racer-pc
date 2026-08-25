@@ -32,9 +32,7 @@ enum {
      * builder removes it before material lookup and applies the instance's
      * semantic U offset to that vertex. UINT32_MAX remains untextured. */
     RAGE_RUNTIME_MATERIAL_SCROLL_U = 1u << 31,
-    /* SubmitTerrainCellFacesFar keeps only records whose source flags contain
-     * bit 2. This is authored far-visibility, not near-only geometry. */
-    RAGE_RUNTIME_MATERIAL_TERRAIN_FAR_VISIBLE = 1u << 30,
+    RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY = 1u << 30,
     RAGE_RUNTIME_MATERIAL_METADATA = 1u << 29,
     RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT = 1u << 28,
     RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT = 16,

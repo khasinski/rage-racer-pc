@@ -238,7 +238,7 @@ class GltfExportTest(unittest.TestCase):
             blob, rmesh.HEADER.size + 8)[-1]
         self.assertEqual(
             rmesh.MATERIAL_METADATA |
-            rmesh.MATERIAL_TERRAIN_FAR_VISIBLE |
+            rmesh.MATERIAL_TERRAIN_NEAR_ONLY |
             rmesh.MATERIAL_TERRAIN_ENV_CLUT,
             material)
 
