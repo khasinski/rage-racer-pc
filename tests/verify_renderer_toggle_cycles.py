@@ -32,7 +32,7 @@ scene = 12
 timer = 250
 
 [hooks]
-toggle_renderer_frames = 2250,2300,2350,2400
+toggle_renderer_frames = 300,340,380,420
 
 [diagnostics]
 renderer_lifecycle = true
