@@ -278,7 +278,7 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
     EXPECT_EQ(-4, (int)vertices[0].depthBias);
 }
 
-static void test_native_draw_builder_skips_near_only_faces_in_far_terrain(void) {
+static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
     RageRenderMeshInstance storage[1] = {0};
@@ -313,10 +313,12 @@ static void test_native_draw_builder_skips_near_only_faces_in_far_terrain(void) 
         storage[0].transform.scale.z = 1.0f;
     world.instanceCount = 1;
 
-    EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+    /* The native renderer has a depth buffer and keeps imported detail. The
+     * classic PS1 emitter still owns its far-cell simplification. */
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
                                              &mesh, vertices, 3, spans, 1,
                                              &spanCount));
-    EXPECT_EQ(0, spanCount);
+    EXPECT_EQ(1, spanCount);
 }
 
 static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
@@ -359,7 +361,7 @@ int main(void) {
     test_native_draw_builder_applies_authored_course_texture_scroll();
     test_native_draw_builder_strips_ot_bias_from_material_lookup();
     test_native_draw_builder_preserves_dynamic_terrain_material_flags();
-    test_native_draw_builder_skips_near_only_faces_in_far_terrain();
+    test_native_draw_builder_keeps_terrain_detail_at_long_range();
     test_native_draw_builder_culls_fully_offscreen_instance();
     if (failures != 0) return EXIT_FAILURE;
     puts("render mesh build tests passed");

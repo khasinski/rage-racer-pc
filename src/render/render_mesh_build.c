@@ -198,7 +198,6 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
         uint32_t first, count, offset;
-        int farTerrainCell = 0;
         if (mesh == NULL || !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
@@ -206,15 +205,6 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
             RageInstanceOutsideFrustum(world, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
         basis = RageBuildTransformBasis(&instance->transform);
-        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            RageRenderVec3 view;
-            RageRenderWorldToView(&world->camera,
-                                  &instance->transform.position, &view);
-            /* SubmitTerrainCells switches to the cheaper far-cell packet
-             * path at 0xa000 GTE units. Native world coordinates are quarter
-             * scale, so preserve the same authored primitive selection. */
-            farTerrainCell = -view.z >= 10240.0f;
-        }
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
@@ -233,9 +223,6 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                 materials[0] != materials[1] || materials[0] != materials[2] ||
                 materialFlags[0] != materialFlags[1] ||
                 materialFlags[0] != materialFlags[2] ||
-                (farTerrainCell &&
-                 (materialFlags[0] &
-                  RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY) != 0) ||
                 vertexCount + 3 > vertexCapacity) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||
