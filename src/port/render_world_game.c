@@ -366,14 +366,15 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     /* Terrain vertices and their 8192-unit cell pitch are GTE units (four
      * per game-world unit). `grid_z` is the game's sy, even though the source
      * grid stores it in row 31-sy. Convert it once into the common scene
-     * coordinate system, then let the normal mesh-bound frustum culler select
-     * visible cells instead of submitting all 1024 authored cells. */
+     * coordinate system. Keep all authored cells in the native draw build: the
+     * complete terrain is small enough for GPU clipping, while cell-level
+     * CPU culling can pop the outer road edge in a low first-person camera. */
     instance.transform.position.x = (float)(grid_x * 2048u + 1024u);
     instance.transform.position.z = -(float)(grid_z * 2048u + 1024u);
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
-    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    instance.flags = 0;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
     instance.previousTransform = instance.transform;
