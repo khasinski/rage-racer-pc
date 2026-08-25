@@ -33,7 +33,7 @@ static const RageRuntimeMesh *test_mesh_lookup(
 static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
+    RageRenderMeshInstance storage[2] = {0};
     RageRenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
@@ -61,7 +61,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
         write_u32(bytes + 152 + i * 4, i);
     }
     EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
-    RageRenderWorldInit(&world, storage, 1);
+    RageRenderWorldInit(&world, storage, 2);
     world.camera.verticalFovDegrees = 90.0f;
     world.camera.nearPlane = 1.0f;
     world.camera.farPlane = 100.0f;
@@ -112,6 +112,22 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(50, (int)(vertices[0].environmentLight[1] * 100.0f));
     EXPECT_EQ(75, (int)(vertices[0].environmentLight[2] * 100.0f));
     EXPECT_EQ(-16, (int)vertices[0].depthBias);
+
+    /* A native rear-view camera renders the ordinary main scene again. The
+     * old PS1 mirror submissions must be independently selectable. */
+    storage[1] = storage[0];
+    storage[1].pass = RAGE_RENDER_PASS_MIRROR;
+    world.instanceCount = 2;
+    EXPECT_EQ(3, RageRenderBuildNativePassDraws(
+                     &world, RAGE_RENDER_PASS_MAIN, 1.0f, test_mesh_lookup,
+                     &mesh, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(RAGE_RENDER_PASS_MAIN, spans[0].pass);
+    EXPECT_EQ(3, RageRenderBuildNativePassDraws(
+                     &world, RAGE_RENDER_PASS_MIRROR, 1.0f, test_mesh_lookup,
+                     &mesh, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(RAGE_RENDER_PASS_MIRROR, spans[0].pass);
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {

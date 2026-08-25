@@ -199,13 +199,11 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     return 1;
 }
 
-uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
-                                    RageRenderMeshLookup lookup, void *context,
-                                    RageNativeDrawVertex *vertices,
-                                    uint32_t vertexCapacity,
-                                    RageNativeDrawSpan *spans,
-                                    uint32_t spanCapacity,
-                                    uint32_t *spanCount) {
+static uint32_t RageRenderBuildNativeDrawsFiltered(
+    const RageRenderWorld *world, int passFilter, float aspect,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
@@ -215,6 +213,8 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
         uint32_t first, count, offset;
+        if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
+            continue;
         if (mesh == NULL || !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
@@ -286,4 +286,26 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
 done:
     *spanCount = spansUsed;
     return vertexCount;
+}
+
+uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
+                                    RageRenderMeshLookup lookup, void *context,
+                                    RageNativeDrawVertex *vertices,
+                                    uint32_t vertexCapacity,
+                                    RageNativeDrawSpan *spans,
+                                    uint32_t spanCapacity,
+                                    uint32_t *spanCount) {
+    return RageRenderBuildNativeDrawsFiltered(
+        world, -1, aspect, lookup, context, vertices, vertexCapacity, spans,
+        spanCapacity, spanCount);
+}
+
+uint32_t RageRenderBuildNativePassDraws(
+    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    return RageRenderBuildNativeDrawsFiltered(
+        world, (int)pass, aspect, lookup, context, vertices, vertexCapacity,
+        spans, spanCapacity, spanCount);
 }

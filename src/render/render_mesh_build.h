@@ -53,5 +53,12 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     RageNativeDrawSpan *spans,
                                     uint32_t spanCapacity,
                                     uint32_t *spanCount);
+/* Builds only one semantic pass. Native mirrors deliberately render the main
+ * scene again from another camera instead of consuming PS1 mirror instances. */
+uint32_t RageRenderBuildNativePassDraws(
+    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
 
 #endif
