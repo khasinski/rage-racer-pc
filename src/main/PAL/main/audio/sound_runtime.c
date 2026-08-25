@@ -119,15 +119,14 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     s16 vabId;
 
     SsSetTableSize((char *)GetSndTableArea(), 2, 1);
-    /* The native port advances the sequencer from TickSequenceAudio in the
-     * game loop.  Starting the Psy-Q timer as well dispatches every event
-     * twice, which makes the car/track-selection music run at double speed. */
+    /* The native port owns the sequence clock in TickSequenceAudio; it does
+     * not install a simulated PlayStation counter interrupt. */
 #ifdef __psyz
-    SsSetTickMode(0x1000);
+    SsSetTickMode(SS_NOTICK);
 #else
     SsSetTickMode(1);
-#endif
     SsStartSoundTickMode1();
+#endif
     SsSetVoiceCount(0xA);
     SsUtReverbOff();
     SetReverbPreset(2, 0, 0);
@@ -154,8 +153,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
 
 s32 InitSoundRuntime(void) {
     SsSetTableSize((char *)GetSndTableArea(), 2, 1);
-    SsSetTickMode(0x1000);
-    SsStartSoundTickMode1();
+    SsSetTickMode(SS_NOTICK);
     SsSetVoiceCount(0xA);
     SsUtReverbOff();
     SetReverbPreset(2, 0, 0);

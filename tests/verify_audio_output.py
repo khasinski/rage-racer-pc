@@ -54,8 +54,15 @@ def main() -> int:
     )
     if frames < 10_000 or energy < 1_000_000:
         raise AssertionError(f"SPU output remained silent: frames={frames}, energy={energy}")
-    if seq_notes == 0:
-        raise AssertionError("menu SEQ opened but never dispatched a VAB note")
+    # This scripted route reaches the round screen at a fixed PAL timer. The
+    # menu clock must advance once per 50 Hz game frame: the old half-rate
+    # divider produced only 59 notes and made normally pitched VAG samples
+    # sound detached from a sequence running at half tempo.
+    if not 100 <= seq_notes <= 190:
+        raise AssertionError(
+            "menu SEQ did not advance at the PAL base rate: "
+            f"notes={seq_notes} (expected 100..190)"
+        )
     if seq_voices < seq_notes:
         raise AssertionError(
             "menu SEQ lost VAB tone starts: "

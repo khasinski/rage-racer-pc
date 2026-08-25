@@ -19,6 +19,10 @@ typedef SeqStruct SequenceState;
 #define SS_SEQ_FLAG_TEMPO_DEC 0x40
 #define SS_SEQ_FLAG_TEMPO_INC 0x80
 
+/* Host playback advances SEQ data from the game loop instead of installing a
+ * PlayStation counter interrupt. */
+#define SS_NOTICK 0x1000
+
 void _SsSndStop(int seq, int sep);
 void SsSeqStop(long seq);
 void SsSepStop(long seq, long sep);
