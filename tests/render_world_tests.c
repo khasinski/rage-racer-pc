@@ -59,19 +59,42 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.verticalFovDegrees = 70.0f;
     camera.nearPlane = 0.1f;
     camera.farPlane = 5000.0f;
+    camera.fogColor.x = 0.25f;
+    camera.fogNear = 100.0f;
+    camera.fogFar = 500.0f;
     RageRenderWorldSetCamera(&world, &camera);
     EXPECT_EQ(35, (int)(world.camera.transform.position.y * 10.0f));
     EXPECT_EQ(70, (int)world.camera.verticalFovDegrees);
     EXPECT_EQ(5000, (int)world.camera.farPlane);
+    EXPECT_EQ(25, (int)(world.camera.fogColor.x * 100.0f));
+    EXPECT_EQ(500, (int)world.camera.fogFar);
 
     RageRenderWorldBeginFrame(&world, 2);
     camera.transform.position.y = 13.5f;
     camera.verticalFovDegrees = 80.0f;
+    camera.fogColor.x = 0.75f;
+    camera.fogNear = 200.0f;
+    camera.fogFar = 1000.0f;
     RageRenderWorldSetCamera(&world, &camera);
     RageRenderInterpolateCamera(&world.previousCamera, &world.camera, 0.5f,
                                 &camera);
     EXPECT_EQ(85, (int)(camera.transform.position.y * 10.0f));
     EXPECT_EQ(75, (int)camera.verticalFovDegrees);
+    EXPECT_EQ(50, (int)(camera.fogColor.x * 100.0f));
+    EXPECT_EQ(150, (int)camera.fogNear);
+    EXPECT_EQ(750, (int)camera.fogFar);
+}
+
+static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
+    RageRenderCamera camera = {0};
+    RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
+    camera.fogNear = 10.0f;
+    camera.fogFar = 50.0f;
+    EXPECT_EQ(0, (int)(RageRenderFogFactor(&camera, &point) * 100.0f));
+    point.z = -25.0f;
+    EXPECT_EQ(75, (int)(RageRenderFogFactor(&camera, &point) * 100.0f));
+    point.z = -50.0f;
+    EXPECT_EQ(100, (int)(RageRenderFogFactor(&camera, &point) * 100.0f));
 }
 
 static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
@@ -119,7 +142,7 @@ static void test_presentation_interpolates_without_mutating_game_world(void) {
 
 static void test_native_camera_projection_has_no_gte_quantization(void) {
     RageRenderCamera camera = {0};
-    RageRenderVec3 world = {10.0f, 5.0f, 100.0f};
+    RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
     RageRenderVec3 view;
     RageRenderVec3 clip;
 
@@ -128,14 +151,14 @@ static void test_native_camera_projection_has_no_gte_quantization(void) {
     camera.farPlane = 1000.0f;
     RageRenderWorldToView(&camera, &world, &view);
     EXPECT_EQ(10, (int)view.x);
-    EXPECT_EQ(100, (int)view.z);
+    EXPECT_EQ(-100, (int)view.z);
     EXPECT_EQ(1, RageRenderProject(&camera, &view, 2.0f, &clip));
     EXPECT_EQ(5, (int)(clip.x * 100.0f));
     EXPECT_EQ(5, (int)(clip.y * 100.0f));
-    camera.transform.rotation.y = 90.0f;
+    camera.transform.rotation.y = -90.0f;
     world.x = 100.0f; world.z = 0.0f;
     RageRenderWorldToView(&camera, &world, &view);
-    EXPECT_EQ(100, (int)view.z);
+    EXPECT_EQ(-100, (int)view.z);
 }
 
 static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
@@ -154,6 +177,7 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_camera_is_scene_data_not_backend_state();
+    test_perspective_fog_uses_authored_near_and_far_depths();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
     test_native_camera_projection_has_no_gte_quantization();

@@ -10,6 +10,9 @@
 #include "game/track.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+#ifdef RAGE_HOST_PORT
+#include "rage/render_world_game.h"
+#endif
 
 
 /*
@@ -157,6 +160,9 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion) {
 
 void DrawStartGridScenery(s32 flags) {
     Matrix mtx;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     Vec4 state;
     s32 s1;
     s32 s0;
@@ -167,6 +173,9 @@ void DrawStartGridScenery(s32 flags) {
 
     if (g_RacePhase < 2 && flags >= 0x51) {
         BuildRotMatrixY(&mtx, g_StartGridSceneryAngle[ReadStableRaceSeries()]);
+#ifdef RAGE_HOST_PORT
+        renderWorldMtx = mtx;
+#endif
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
         if (flags - 90 > 0) {
             state = g_StartGridSceneryPos[ReadStableRaceSeries()];
@@ -196,6 +205,10 @@ void DrawStartGridScenery(s32 flags) {
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (value < lim) ? value : 1;
         }
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            2, drawArg, state.x, state.y, state.z, renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
     }
 }
@@ -206,6 +219,9 @@ void ResetFreeLookCamera(void) {
 void DrawAnimatedScenery(s32 timer, s32 instance) {
     Matrix mtx;
     Matrix mtx2;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     Vec4 state;
     s32 wordIndex;
     s32 bitIndex;
@@ -264,6 +280,9 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     BuildRotMatrixY(&mtx, state.w);
     BuildRotMatrixX(&mtx2, g_AnimSceneryPitch[instance]);
     MulMatrix(&mtx, &mtx2);
+#ifdef RAGE_HOST_PORT
+    renderWorldMtx = mtx;
+#endif
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
 
     if (g_GrandPrixMode == 0) {
@@ -278,12 +297,22 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
             num = g_AnimSceneryFrame + 10;
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
+#ifdef RAGE_HOST_PORT
+            RageGameRenderWorldSubmitDynamicCourseObject(
+                0x20 + instance * 2, drawArg, state.x, state.y, state.z,
+                renderWorldMtx.m, 0, 0);
+#endif
             SubmitCourseModel(SCRATCHPAD, drawArg);
         } else {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
             num = g_AnimSceneryRacePosition;
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
+#ifdef RAGE_HOST_PORT
+            RageGameRenderWorldSubmitDynamicCourseObject(
+                0x20 + instance * 2, drawArg, state.x, state.y, state.z,
+                renderWorldMtx.m, 0, 0);
+#endif
             SubmitCourseModel(SCRATCHPAD, drawArg);
         }
 
@@ -293,6 +322,11 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         num = g_AnimSceneryVariant + 4;
         sv = g_CourseModelCount;
         drawArg = (num < sv) ? num : 1;
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x21 + instance * 2, drawArg, state.x, state.y, state.z,
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -300,6 +334,11 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         scr = &SCRATCH_ENV_MODE4;
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x20 + instance * 2, drawArg, state.x, state.y, state.z,
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
 
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -309,6 +348,11 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         num = g_AnimSceneryVariant + 7;
         sv = g_CourseModelCount;
         drawArg = (num < sv) ? num : 1;
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x21 + instance * 2, drawArg, state.x, state.y, state.z,
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
     }
 }
@@ -316,6 +360,9 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
 void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     Matrix mtx;
     Matrix mtx2;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     Vec4 state;
     s32 wordIndex;
     s32 bitIndex;
@@ -373,6 +420,9 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     BuildRotMatrixY(&mtx, state.w);
     BuildRotMatrixX(&mtx2, g_AnimSceneryPitch[instance]);
     MulMatrix(&mtx, &mtx2);
+#ifdef RAGE_HOST_PORT
+    renderWorldMtx = mtx;
+#endif
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
 
     g_AnimScenery2Tint = ((timer >> 3) & 3) << 16;
@@ -383,6 +433,11 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         scr = &SCRATCH_ENV_MODE4;
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x30 + instance * 2, drawArg, state.x, state.y, state.z,
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
 
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -400,6 +455,11 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         scr = &SCRATCH_ENV_MODE4;
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x30 + instance * 2, drawArg, state.x, state.y, state.z,
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
 
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -416,5 +476,10 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     if (num < sv) {
         drawArg = num;
     }
+#ifdef RAGE_HOST_PORT
+    RageGameRenderWorldSubmitDynamicCourseObject(
+        0x31 + instance * 2, drawArg, state.x, state.y, state.z,
+        renderWorldMtx.m, 0, 0);
+#endif
     SubmitCourseModel(SCRATCHPAD, drawArg);
 }

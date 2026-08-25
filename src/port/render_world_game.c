@@ -1,26 +1,37 @@
 #include "rage/render_world_game.h"
 
+#include "course_coordinate.h"
+
 #include <stddef.h>
 #include <math.h>
 #include <string.h>
 
 #include "game/car.h"
 #include "game/asset.h"
+#include "game/course_index.h"
+#include "game/environment.h"
 #include "game/render.h"
 #include "game/race.h"
 #include "game/scratchpad.h"
+#include "game/state.h"
 #include "game/track.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "render/render_world.h"
+#include "render/render_world_frame.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 
 static RageRenderMeshInstance s_instances[2][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RageRenderWorld s_worlds[2];
+static RageRenderMeshInstance
+    s_presentationInstances[RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
+static RageRenderWorld s_presentationWorld;
+static uint64_t s_presentationSerial;
 enum { RAGE_CAR_RENDER_PART_COUNT = 6 };
 static RageRenderTransform s_previousCars[12][RAGE_CAR_RENDER_PART_COUNT];
 static uint8_t s_havePreviousCars[12][RAGE_CAR_RENDER_PART_COUNT];
+static int s_trackCarAsset = -1;
 static int s_initialized;
 static int s_currentWorld;
 static int s_haveCompletedFrame;
@@ -38,17 +49,26 @@ static uint32_t RageTrackDataAssetKey(void) {
                       g_CourseIndex * 2);
 }
 
-static uint32_t RageCarModelAssetKey(const GameRenderObject *object) {
-    int car = g_CarModelByCourse[g_CourseIndex][object->modelIndex];
-    return (uint32_t)(10 + GetCarAssetIndex(car,
-                                              g_CarTable[car].modelVariant) * 2);
-}
-
 static uint32_t RageCarEntity(const GameRenderObject *object) {
     const GameCarRuntime *car = (const GameCarRuntime *)object;
     ptrdiff_t index = car - g_Cars;
     if (index >= 0 && index < 11) return (uint32_t)index;
     return 11; /* Player storage is separate from g_Cars. */
+}
+
+static uint8_t RageTrackCarMaterialVariant(uint8_t paletteOffset) {
+    int variant = s_trackCarAsset;
+    if (variant < 0 || variant >= 32) {
+        variant = GetCarAssetIndex(
+            g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
+    }
+    if (variant < 0 || variant >= 32) variant = 0;
+    if (paletteOffset > 2) paletteOffset = 0;
+    return (uint8_t)(variant * 3 + paletteOffset);
+}
+
+void RageGameRenderWorldSetTrackCarAsset(int asset) {
+    s_trackCarAsset = asset >= 0 && asset < 32 ? asset : -1;
 }
 
 typedef struct RageSceneMat3 {
@@ -82,7 +102,10 @@ static RageSceneMat3 RageSceneRotationX(s32 angle) {
 static RageSceneMat3 RageSceneRotationY(s32 angle) {
     float a = RageAngleToDegrees(angle) * 0.017453292519943295f;
     float c = cosf(a), s = sinf(a);
-    RageSceneMat3 out = {{{c, 0, s}, {0, 1, 0}, {-s, 0, c}}};
+    /* This is the game's BuildRotMatrixY convention, not a generic
+     * right-handed Euler helper.  The PS1->scene basis conversion below
+     * turns it into the renderer's conventional rotation. */
+    RageSceneMat3 out = {{{c, 0, -s}, {0, 1, 0}, {s, 0, c}}};
     return out;
 }
 
@@ -94,16 +117,9 @@ static RageSceneMat3 RageSceneRotationZ(s32 angle) {
 }
 
 static RageRenderQuaternion RageSceneQuaternion(RageSceneMat3 source) {
-    /* Imported meshes convert PS1 coordinates by C=diag(1,-1,-1), so rotate
-     * in that world basis too. This is a semantic game-to-scene conversion,
-     * not a GTE/view matrix carried into the native renderer. */
-    static const float sign[3] = {1.0f, -1.0f, -1.0f};
     RageRenderQuaternion out;
-    float m[3][3], trace, root;
-    int row, column;
-    for (row = 0; row < 3; row++)
-        for (column = 0; column < 3; column++)
-            m[row][column] = sign[row] * source.m[row][column] * sign[column];
+    float (*m)[3] = source.m;
+    float trace, root;
     trace = m[0][0] + m[1][1] + m[2][2];
     if (trace > 0.0f) {
         root = sqrtf(trace + 1.0f) * 2.0f;
@@ -133,6 +149,12 @@ static RageRenderQuaternion RageSceneQuaternion(RageSceneMat3 source) {
     return out;
 }
 
+static RageRenderQuaternion RageSceneQuaternionFromPsx(RageSceneMat3 source) {
+    RageSceneMat3 converted;
+    RageRenderConvertPsxMatrix(source.m, converted.m);
+    return RageSceneQuaternion(converted);
+}
+
 static RageRenderVec3 RageSceneRotatePoint(RageSceneMat3 matrix,
                                             float x, float y, float z) {
     RageRenderVec3 out;
@@ -143,7 +165,10 @@ static RageRenderVec3 RageSceneRotatePoint(RageSceneMat3 matrix,
 }
 
 static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
-                                             uint32_t asset, uint32_t mesh,
+                                             uint32_t asset,
+                                             RageRenderAssetSet assetSet,
+                                             uint32_t mesh,
+                                             uint8_t paletteOffset,
                                              RageRenderVec3 psPosition,
                                              RageSceneMat3 rotation,
                                              int mirror_pass) {
@@ -152,18 +177,24 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     memset(&instance, 0, sizeof(instance));
     instance.entity = entity;
     instance.mesh = mesh;
-    instance.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    instance.assetSet = assetSet;
     instance.assetKey = asset;
+    if (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)
+        instance.materialVariant =
+            RageTrackCarMaterialVariant(paletteOffset);
+    else if (assetSet != RAGE_RENDER_ASSET_MODEL_BANK)
+        instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
     instance.transform.position.z = -psPosition.z;
-    instance.transform.scale.x = instance.transform.scale.y = instance.transform.scale.z = 1.0f;
-    {
-        RageSceneMat3 converted;
-        RageRenderConvertPsxMatrix(rotation.m, converted.m);
-        instance.transform.orientation = RageSceneQuaternion(converted);
-    }
+    /* SetGteObjectMatrix translates game-world offsets by four before adding
+     * model vertices. Imported vertices therefore need the reciprocal scale
+     * when positions remain in semantic game-world units. */
+    instance.transform.scale.x = instance.transform.scale.y =
+        instance.transform.scale.z = 0.25f;
+    instance.transform.orientation = RageSceneQuaternionFromPsx(rotation);
     instance.transform.hasOrientation = 1;
     if (s_havePreviousCars[entity][part])
         instance.previousTransform = s_previousCars[entity][part];
@@ -218,9 +249,9 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     {
         RageSceneMat3 converted;
         RageRenderConvertPsxMatrix(view.m, converted.m);
-        view = converted;
+        camera.transform.orientation = RageSceneQuaternion(
+            RageSceneMat3Transpose(converted));
     }
-    camera.transform.orientation = RageSceneQuaternion(RageSceneMat3Transpose(view));
     camera.transform.hasOrientation = 1;
     camera.transform.rotation.x = -RageAngleToDegrees(pitch);
     camera.transform.rotation.y = -RageAngleToDegrees(yaw);
@@ -232,6 +263,17 @@ void RageGameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     camera.verticalFovDegrees = 41.112f;
     camera.nearPlane = 1.0f;
     camera.farPlane = 262144.0f;
+    camera.fogColor.x =
+        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.r / 255.0f;
+    camera.fogColor.y =
+        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.g / 255.0f;
+    camera.fogColor.z =
+        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.b / 255.0f;
+    /* Course geometry is stored in GTE units while Render World uses the
+     * game's world units (four GTE units each). SetFogNear reaches full fog
+     * at five times its authored near distance. */
+    camera.fogNear = (float)g_FogNear * 0.25f;
+    camera.fogFar = camera.fogNear * 5.0f;
     RageRenderWorldSetCamera(RageGameRenderWorldMutable(), &camera);
 }
 
@@ -242,29 +284,58 @@ void RageGameRenderWorldPublishCurrentCamera(void) {
                                  SCRATCH_VIEW_ANGLE_Z);
 }
 
-void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
-                                           int32_t x, int32_t y, int32_t z,
-                                           int32_t yaw, int transparent,
-                                           int mirror_pass) {
+static void RageGameRenderWorldSubmitCourseTransform(
+    uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
+    RageSceneMat3 rotation, int fogged, int mirror_pass) {
     RageRenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
     memset(&instance, 0, sizeof(instance));
-    instance.entity = 0x10000u + entity;
+    instance.entity = entity;
     instance.mesh = (uint32_t)mesh;
     instance.assetSet = RAGE_RENDER_ASSET_COURSE;
     instance.assetKey = RageTrackDataAssetKey();
-    instance.material = transparent ? 1u : 0u;
+    instance.material = 0;
+    instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
+    instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
-    instance.transform.position.x = (float)x;
-    instance.transform.position.y = -(float)y;
-    instance.transform.position.z = -(float)z;
-    instance.transform.rotation.y = -RageAngleToDegrees(yaw);
-    instance.transform.scale.x = 1.0f;
-    instance.transform.scale.y = 1.0f;
-    instance.transform.scale.z = 1.0f;
+    instance.transform.position.x =
+        (float)RageCourseCoordinateNearReference(x, SCRATCH_VIEW_X);
+    instance.transform.position.y =
+        -(float)RageCourseCoordinateNearReference(y, SCRATCH_VIEW_Y);
+    instance.transform.position.z =
+        -(float)RageCourseCoordinateNearReference(z, SCRATCH_VIEW_Z);
+    instance.transform.orientation = RageSceneQuaternionFromPsx(rotation);
+    instance.transform.hasOrientation = 1;
+    instance.transform.scale.x = 0.25f;
+    instance.transform.scale.y = 0.25f;
+    instance.transform.scale.z = 0.25f;
+    if (fogged) instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.previousTransform = instance.transform;
     RageRenderWorldSubmitMesh(RageGameRenderWorldMutable(), &instance);
+}
+
+void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
+                                           int32_t x, int32_t y, int32_t z,
+                                           int32_t yaw, int fogged,
+                                           int mirror_pass) {
+    RageGameRenderWorldSubmitCourseTransform(
+        0x10000u + entity, mesh, x, y, z, RageSceneRotationY(yaw), fogged,
+        mirror_pass);
+}
+
+void RageGameRenderWorldSubmitDynamicCourseObject(
+    uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
+    const int16_t rotation[3][3], int fogged, int mirror_pass) {
+    RageSceneMat3 matrix;
+    int row, column;
+    if (rotation == NULL) return;
+    for (row = 0; row < 3; row++)
+        for (column = 0; column < 3; column++)
+            matrix.m[row][column] =
+                (float)rotation[row][column] * (1.0f / 4096.0f);
+    RageGameRenderWorldSubmitCourseTransform(
+        0x30000u + entity, mesh, x, y, z, matrix, fogged, mirror_pass);
 }
 
 void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
@@ -278,6 +349,7 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.assetSet = RAGE_RENDER_ASSET_TERRAIN;
     instance.assetKey = RageTrackDataAssetKey();
     instance.material = 0;
+    instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     /* Terrain vertices and their 8192-unit cell pitch are GTE units (four
      * per game-world unit). `grid_z` is the game's sy, even though the source
@@ -290,6 +362,8 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    if (g_IsEnvironmentMode4)
+        instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
     instance.previousTransform = instance.transform;
     RageRenderWorldSubmitMesh(RageGameRenderWorldMutable(), &instance);
 }
@@ -322,12 +396,19 @@ void RageGameRenderWorldPublishCourseObjects(void) {
          * visibility when it builds GPU draws. */
         RageGameRenderWorldSubmitCourseObject((uint32_t)i, object->modelId,
             object->x, object->y, object->z, object->field2,
-            (object->flags & 2) != 0, 0);
+            g_IsEnvironmentMode4 ? (object->flags & 2) != 0
+                                 : (object->flags & 1) != 0,
+            0);
     }
 }
 
 static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
                                                  uint32_t entity, uint32_t asset,
+                                                 RageRenderAssetSet assetSet,
+                                                 uint32_t bodyMesh,
+                                                 uint32_t frontWheelMesh,
+                                                 uint32_t rearWheelMesh,
+                                                 uint8_t bodyPaletteOffset,
                                                  s16 horizon, s16 offsetX,
                                                  s16 offsetY, s16 offsetZ,
                                                  s32 steeringAngle,
@@ -357,30 +438,64 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
         RageSceneRotationX(object->wheelRotation));
     frontRight = RageSceneMat3Multiply(frontLeft, RageSceneRotationY(0x800));
 
-    RageGameRenderWorldSubmitCarPart(entity, 0, asset, 0, origin, body, mirror_pass);
+    RageGameRenderWorldSubmitCarPart(entity, 0, asset, assetSet, bodyMesh,
+                                     bodyPaletteOffset,
+                                     origin, body, mirror_pass);
     /* The duplicate model-1 submit in retail is an OT artifact, not a second
      * object. A depth-buffered renderer emits it once. */
-    RageGameRenderWorldSubmitCarPart(entity, 1, asset, 1, modelOrigin, model, mirror_pass);
-    RageGameRenderWorldSubmitCarPart(entity, 2, asset, 5, origin,
+    RageGameRenderWorldSubmitCarPart(entity, 1, asset, assetSet, bodyMesh + 1,
+        0,
+        modelOrigin, model, mirror_pass);
+    RageGameRenderWorldSubmitCarPart(entity, 2, asset, assetSet, rearWheelMesh,
+        0,
+        origin,
         RageSceneMat3Multiply(wheelBase, RageSceneRotationX(object->wheelRotation)),
         mirror_pass);
     front = RageSceneRotatePoint(base, (float)offsetX, (float)offsetY, (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
-    RageGameRenderWorldSubmitCarPart(entity, 3, asset, 4, front, frontLeft, mirror_pass);
+    RageGameRenderWorldSubmitCarPart(entity, 3, asset, assetSet, frontWheelMesh,
+                                     0,
+                                     front, frontLeft, mirror_pass);
     front = RageSceneRotatePoint(base, -(float)offsetX, (float)offsetY, (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
-    RageGameRenderWorldSubmitCarPart(entity, 4, asset, 4, front, frontRight, mirror_pass);
+    RageGameRenderWorldSubmitCarPart(entity, 4, asset, assetSet, frontWheelMesh,
+                                     0,
+                                     front, frontRight, mirror_pass);
 }
 
 void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
-                                  int mirror_pass) {
+                                  int mirror_pass,
+                                  RageGameCarRenderDetail detail) {
     uint32_t entity;
     int car;
+    const s16 *lod;
 
     if (!s_initialized || object == NULL || g_TrackRenderTable == NULL) return;
     entity = RageCarEntity(object);
-    car = g_CarModelByCourse[g_CourseIndex][object->modelIndex];
-    RageGameRenderWorldSubmitCarAssembly(object, entity, RageCarModelAssetKey(object),
+    car = g_CarModelByCourse[RageSeriesCourseIndex()][object->modelIndex];
+    lod = g_CarModelBankTable[car];
+    if (detail == RAGE_GAME_CAR_RENDER_FAR) {
+        RageSceneMat3 body = RageSceneMat3Multiply(
+            RageSceneMat3Multiply(
+                RageSceneRotationY(0x800 - object->angleY),
+                RageSceneRotationX(object->bodyPitch)),
+            RageSceneRotationZ(object->bodyRoll));
+        RageRenderVec3 origin = {
+            (float)object->x,
+            (float)(object->y - g_TrackRenderTable->models[car].horizon),
+            (float)object->z,
+        };
+        RageGameRenderWorldSubmitCarPart(
+            entity, 0, RageTrackDataAssetKey(),
+            RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+            (uint32_t)lod[0] + 4u, (uint8_t)lod[1], origin, body,
+            mirror_pass);
+        return;
+    }
+    RageGameRenderWorldSubmitCarAssembly(object, entity, RageTrackDataAssetKey(),
+        RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+        (uint32_t)lod[0], (uint32_t)lod[0] + 2u, (uint32_t)lod[0] + 3u,
+        (uint8_t)lod[1],
         g_TrackRenderTable->models[car].horizon,
         g_TrackRenderTable->models[car].axis0,
         (s16)g_TrackRenderTable->models[car].axis1,
@@ -391,11 +506,17 @@ void RageGameRenderWorldSubmitCar(const GameRenderObject *object,
 void RageGameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
                                         int mirror_pass) {
     uint32_t asset;
+    uint32_t wheelBase;
 
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
     asset = (uint32_t)(10 + GetCarAssetIndex(
         g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant) * 2);
+    wheelBase = (uint32_t)object->renderDepth * 2u;
+    if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
+    if (wheelBase + 3u >= 22u) wheelBase = 0;
     RageGameRenderWorldSubmitCarAssembly(object, 11, asset,
+        RAGE_RENDER_ASSET_MODEL_BANK, 0, wheelBase + 2u, wheelBase + 3u,
+        0,
         g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
         g_CarModelAsset->modelOffsetY, g_CarModelAsset->modelOffsetZ,
         object->steeringAngle / 12, mirror_pass);
@@ -408,4 +529,24 @@ const RageRenderWorld *RageGameRenderWorldCurrent(void) {
 const RageRenderWorld *RageGameRenderWorldPrevious(void) {
     if (!s_initialized || !s_haveCompletedFrame) return NULL;
     return &s_worlds[s_currentWorld ^ 1];
+}
+
+const RageRenderWorld *RageGameRenderWorldPresentation(float t) {
+    RageRenderWorld *current;
+    if (!s_initialized) return NULL;
+    current = RageGameRenderWorldMutable();
+    if (!s_haveCompletedFrame) return current;
+    s_presentationWorld = *current;
+    s_presentationWorld.instances = s_presentationInstances;
+    s_presentationWorld.instanceCapacity =
+        RAGE_GAME_RENDER_WORLD_MAX_INSTANCES;
+    s_presentationWorld.instanceCount = RageRenderWorldBuildPresentation(
+        current, t, s_presentationInstances,
+        RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
+    RageRenderInterpolateCamera(&current->previousCamera, &current->camera, t,
+                                &s_presentationWorld.camera);
+    /* Native preparation caches by frame id. Presentation may change several
+     * times inside one logic tick, so it needs a separate revision. */
+    s_presentationWorld.frame = ++s_presentationSerial;
+    return &s_presentationWorld;
 }

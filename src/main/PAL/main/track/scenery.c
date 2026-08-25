@@ -12,6 +12,9 @@
 #include "game/player_car_internal.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+#ifdef RAGE_HOST_PORT
+#include "rage/render_world_game.h"
+#endif
 
 
 static inline void ClearScratchRenderMode3DF68(void) {
@@ -20,6 +23,9 @@ static inline void ClearScratchRenderMode3DF68(void) {
 
 void DrawStaticScenery(s32 shifted) {
     Matrix mtx;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     Vec4 state;
     s32 wordIndex;
     s32 bitIndex;
@@ -59,6 +65,9 @@ void DrawStaticScenery(s32 shifted) {
 
     if (visible != 0) {
         BuildRotMatrixY(&mtx, g_StaticSceneryYaw);
+#ifdef RAGE_HOST_PORT
+        renderWorldMtx = mtx;
+#endif
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
 
         if (g_IsEnvironmentMode4 != 0) {
@@ -69,6 +78,11 @@ void DrawStaticScenery(s32 shifted) {
             if (frameValue >= 0x3B) {
                 drawArg = 0x3A;
             }
+#ifdef RAGE_HOST_PORT
+            RageGameRenderWorldSubmitDynamicCourseObject(
+                0, drawArg, state.x, state.y, state.z,
+                renderWorldMtx.m, 0, 0);
+#endif
             SubmitCourseModel(SCRATCHPAD, drawArg);
         } else {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -78,6 +92,11 @@ void DrawStaticScenery(s32 shifted) {
             if (frameValue >= 0x3A) {
                 drawArg = 0x39;
             }
+#ifdef RAGE_HOST_PORT
+            RageGameRenderWorldSubmitDynamicCourseObject(
+                0, drawArg, state.x, state.y, state.z,
+                renderWorldMtx.m, 1, 0);
+#endif
             SubmitCourseModel2(SCRATCHPAD, drawArg);
         }
     }
@@ -85,6 +104,9 @@ void DrawStaticScenery(s32 shifted) {
 
 void DrawHighClassScenery(void) {
     Matrix mtx;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     s32 pad[4];
     s32 *state;
     s32 drawArg;
@@ -92,6 +114,9 @@ void DrawHighClassScenery(void) {
     (void)pad;
     state = &g_HighClassSceneryYaw;
     BuildRotMatrixY(&mtx, state[0]);
+#ifdef RAGE_HOST_PORT
+    renderWorldMtx = mtx;
+#endif
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
 
     if (g_IsEnvironmentMode4 != 0) {
@@ -101,6 +126,11 @@ void DrawHighClassScenery(void) {
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            1, drawArg, state[-3], state[-2], state[-1],
+            renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, state - 3, &mtx);
@@ -109,6 +139,11 @@ void DrawHighClassScenery(void) {
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            1, drawArg, state[-3], state[-2], state[-1],
+            renderWorldMtx.m, 1, 0);
+#endif
         SubmitCourseModel2(SCRATCHPAD, drawArg);
     }
 }

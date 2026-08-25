@@ -1724,7 +1724,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     if (ModernNativeGpuCanReplaceWorld()) {
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_BACKGROUND, 1);
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
+        ModernNativeGpuDraw(cmd, vram, s_target, s_depth, 0);
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_HUD, 0);
         ModernRenderLegacySelection(cmd, vram, 1,
@@ -1928,10 +1928,6 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         return;
     }
     if (!ModernEnsureResources()) return;
-    {
-        ModernNativeGpuPrepare(RageGameRenderWorldCurrent(),
-                               (float)s_targetW / (float)s_targetH);
-    }
     if (fpsMode) {
         const RageSceneSnapshot *target = RageCaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
@@ -1951,11 +1947,16 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                               (double)s_tickIntervalNs;
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
+        ModernNativeGpuPrepare(RageGameRenderWorldPresentation(t),
+                               (float)s_targetW / (float)s_targetH);
         ModernPrepareInterpolation(snapshot, target, t);
         ModernRender(snapshot);
         s_useLerp = 0;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
+        const RageRenderWorld *world = RageGameRenderWorldPrevious();
+        if (world == NULL) world = RageGameRenderWorldCurrent();
+        ModernNativeGpuPrepare(world, (float)s_targetW / (float)s_targetH);
         ModernRender(snapshot);
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);

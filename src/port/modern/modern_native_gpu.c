@@ -28,11 +28,20 @@ typedef struct ModernNativeCameraUniform {
     float projection[4];
 } ModernNativeCameraUniform;
 
+typedef struct ModernNativeMaterialUniform {
+    uint32_t source[4];
+    uint32_t window[4];
+} ModernNativeMaterialUniform;
+
 typedef struct ModernNativeTexture {
     uint32_t assetKey;
     uint32_t material;
     uint32_t entity;
+    uint32_t materialFlags;
+    uint8_t materialVariant;
+    uint8_t environmentMode4;
     RageRenderAssetSet assetSet;
+    ModernAssetMaterialSource source;
     int transparent;
     SDL_GPUTexture *texture;
     SDL_GPUTransferBuffer *transfer;
@@ -41,12 +50,15 @@ typedef struct ModernNativeTexture {
 static const char MODERN_NATIVE_MSL[] =
     "#include <metal_stdlib>\n"
     "using namespace metal;\n"
-    "struct NativeIn { float3 pos [[attribute(0)]]; float2 uv [[attribute(1)]]; uchar4 color [[attribute(2)]]; float3 normal [[attribute(3)]]; };\n"
+    "struct NativeIn { float3 pos [[attribute(0)]]; float2 uv [[attribute(1)]]; uchar4 color [[attribute(2)]]; float3 normal [[attribute(3)]]; float4 fog [[attribute(4)]]; float lighting [[attribute(5)]]; };\n"
     "struct NativeCamera { float4 position; float4 viewRow0; float4 viewRow1; float4 viewRow2; float4 projection; };\n"
-    "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; };\n"
-    "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float z=(v.z-camera.projection.z)*camera.projection.w; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z*v.z,v.z); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; return o; }\n"
-    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler smp [[sampler(0)]]) { float4 t=tex.sample(smp,in.uv); float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=float3(0.90+0.10*ndl); float3 modulation=min(in.color.rgb*2.0,float3(1.0)); float4 c=float4(t.rgb*modulation*light,t.a*in.color.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
-    "fragment float4 fs_native_color(NativeOut in [[stage_in]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); return float4(in.color.rgb*(0.90+0.10*ndl),in.color.a); }\n";
+    "struct NativeMaterial { uint4 source; uint4 window; };\n"
+    "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; float4 fog; float lighting; };\n"
+    "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=(depth-camera.projection.z)*camera.projection.w; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z*depth,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; return o; }\n"
+    "static uint native_rgb5551(float4 c) { uint4 q=uint4(c*float4(31.0,31.0,31.0,1.0)+0.5); return q.r|(q.g<<5)|(q.b<<10)|(q.a<<15); }\n"
+    "static float4 native_texel(texture2d<float> vram, uint2 texel, constant NativeMaterial &mat) { uint tp=mat.source.x; if(mat.source.z!=0)return vram.read(texel&uint2(255)); uint mode=(tp>>7)&3; uint2 page=uint2((tp&15)*64,((tp>>4)&1)*256); uint2 size=max(mat.window.xy,uint2(1)); texel=(texel%size)+mat.window.zw; if(mode>=2) return vram.read(page+texel); uint shift=mode==1?1:2; uint subMask=mode==1?1:3; uint indexShift=mode==1?8:4; uint indexMask=mode==1?255:15; uint word=native_rgb5551(vram.read(page+uint2(texel.x>>shift,texel.y))); uint index=(word>>((texel.x&subMask)*indexShift))&indexMask; uint2 clut=uint2((mat.source.y&63)*16,mat.source.y>>6); return vram.read(clut+uint2(index,0)); }\n"
+    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> vram [[texture(0)]], sampler smp [[sampler(0)]], constant NativeMaterial &mat [[buffer(0)]]) { float2 pixel=in.uv*256.0; uint2 nearest=uint2(clamp(floor(pixel),0.0,255.0)); float4 t=native_texel(vram,nearest,mat); if(t.a<=0.001) discard_fragment(); float2 p=pixel-0.5; float2 cell=floor(p); float2 frac=p-cell; float3 filtered=float3(0.0); float weights=0.0; for(int tap=0;tap<4;tap++){float2 off=float2(float(tap&1),float(tap>>1));float2 at=clamp(cell+off,0.0,255.0);float2 axis=abs(off-frac);float weight=(1.0-axis.x)*(1.0-axis.y);float4 sample=native_texel(vram,uint2(at),mat);if(sample.a>0.001){filtered+=sample.rgb*weight;weights+=weight;}}if(weights>0.0)t.rgb=filtered/weights; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),float3(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float4 c=float4(t.rgb*modulation*light,t.a*in.color.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
+    "fragment float4 fs_native_color(NativeOut in [[stage_in]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),float3(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); return float4(fogged*light,in.color.a); }\n";
 
 static SDL_GPUDevice *s_device;
 static SDL_GPUGraphicsPipeline *s_texturedOpaque;
@@ -110,6 +122,12 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
         {.location = 3, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
          .offset = offsetof(RageNativeDrawVertex, normal)},
+        {.location = 4, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+         .offset = offsetof(RageNativeDrawVertex, fog)},
+        {.location = 5, .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,
+         .offset = offsetof(RageNativeDrawVertex, lighting)},
     };
     SDL_GPUColorTargetDescription color = {
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
@@ -131,8 +149,11 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     info.vertex_input_state.vertex_buffer_descriptions = &buffer;
     info.vertex_input_state.num_vertex_buffers = 1;
     info.vertex_input_state.vertex_attributes = attributes;
-    info.vertex_input_state.num_vertex_attributes = 4;
+    info.vertex_input_state.num_vertex_attributes = 6;
     info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    /* PS1 assets contain deliberately mixed and double-sided face winding,
+     * including thin sign supports, so native culling would remove geometry
+     * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
@@ -217,7 +238,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
     textureFragment = ModernNativeCreateShader(
         native_texture_frag_spv, native_texture_frag_spv_len, "fs_native",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
     colorFragment = ModernNativeCreateShader(
         native_color_frag_spv, native_color_frag_spv_len, "fs_native_color",
         SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
@@ -241,7 +262,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     s_vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
     sampler.min_filter = SDL_GPU_FILTER_LINEAR;
     sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
-    sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    /* Extracted PS1 pages are atlases. Mipmapping a complete page mixes
+     * unrelated regions and produces the appearance of random textures. */
+    sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
     s_sampler = SDL_CreateGPUSampler(s_device, &sampler);
     s_vertices = malloc(MODERN_NATIVE_MAX_VERTICES * sizeof(*s_vertices));
     s_spans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_spans));
@@ -301,7 +324,13 @@ static ModernNativeTexture *ModernNativeFindTexture(
         ModernNativeTexture *entry = &s_textures[index];
         if (entry->assetKey == span->assetKey &&
             entry->assetSet == span->assetSet &&
-            entry->material == span->material && entry->entity == span->entity)
+            entry->material == span->material &&
+            entry->materialFlags == span->materialFlags &&
+            entry->materialVariant == span->materialVariant &&
+            entry->environmentMode4 ==
+                ((span->instanceFlags &
+                  RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4) != 0) &&
+            entry->entity == span->entity)
             return entry;
     }
     return NULL;
@@ -312,13 +341,15 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
     RageRenderMeshInstance instance = {0};
     const void *pixels;
+    ModernAssetMaterialSource source;
     size_t size, byte;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) return NULL;
     instance.assetKey = span->assetKey;
     instance.assetSet = span->assetSet;
     if (!ModernAssetsLoadMaterialPixels(&instance, span->material,
-                                        &pixels, &size)) return NULL;
+                                        span->materialVariant,
+                                        &pixels, &size, &source)) return NULL;
     entry = &s_textures[s_textureCount];
     {
         SDL_GPUTextureCreateInfo texture = {0};
@@ -329,7 +360,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         texture.width = 256;
         texture.height = 256;
         texture.layer_count_or_depth = 1;
-        texture.num_levels = 9;
+        texture.num_levels = 1;
         entry->texture = SDL_CreateGPUTexture(s_device, &texture);
         transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
         transfer.size = (Uint32)size;
@@ -353,7 +384,6 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         copy = SDL_BeginGPUCopyPass(command);
         SDL_UploadToGPUTexture(copy, &source, &destination, false);
         SDL_EndGPUCopyPass(copy);
-        SDL_GenerateMipmapsForGPUTexture(command, entry->texture);
     }
     entry->transparent = 0;
     for (byte = 3; byte < size; byte += 4) {
@@ -367,7 +397,26 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     entry->assetKey = span->assetKey;
     entry->assetSet = span->assetSet;
     entry->material = span->material;
+    entry->materialFlags = span->materialFlags;
+    entry->materialVariant = span->materialVariant;
+    entry->environmentMode4 =
+        (span->instanceFlags & RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4) != 0;
     entry->entity = span->entity;
+    entry->source = source;
+    if (span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
+        /* The selected car pack replaces the same VRAM range, while each
+         * rival's body colour is selected by one of three adjacent CLUTs.
+         * Static variants encode both choices in their path index. Keep the
+         * source description equivalent for diagnostics and any fallback. */
+        entry->source.clut += span->materialVariant % 3u;
+    }
+    if ((span->materialFlags & RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT) != 0 &&
+        entry->environmentMode4) {
+        /* Terrain modes 0/1 share geometry and select the adjacent palette
+         * row from the live environment mode. Modes 2..5 are resolved by the
+         * extractor because their dispatch is fixed in the face itself. */
+        entry->source.clut++;
+    }
     s_textureCount++;
     return entry;
 fail:
@@ -380,6 +429,7 @@ fail:
 }
 
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
+                         SDL_GPUTexture *vram,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
                          int clearColor) {
@@ -428,7 +478,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     }
     for (int transparent = 0; transparent < 2; transparent++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
-        SDL_GPUTexture *boundTexture = NULL;
+        ModernNativeTexture *boundTexture = NULL;
         for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &s_spans[spanIndex];
             ModernNativeTexture *texture;
@@ -449,11 +499,24 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                 SDL_BindGPUGraphicsPipeline(pass, pipeline);
                 boundPipeline = pipeline;
             }
-            if (texture != NULL && texture->texture != boundTexture) {
+            if (texture != NULL && texture != boundTexture) {
+                int staticCar =
+                    span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
                 SDL_GPUTextureSamplerBinding binding = {
-                    .texture = texture->texture, .sampler = s_sampler};
+                    .texture = staticCar ? texture->texture : vram,
+                    .sampler = s_sampler};
+                ModernNativeMaterialUniform material = {
+                    .source = {texture->source.tpage, texture->source.clut,
+                               (uint32_t)staticCar, 0},
+                    .window = {texture->source.windowWidthU,
+                               texture->source.windowWidthV,
+                               texture->source.windowOffsetU,
+                               texture->source.windowOffsetV},
+                };
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
-                boundTexture = texture->texture;
+                SDL_PushGPUFragmentUniformData(command, 0, &material,
+                                               sizeof(material));
+                boundTexture = texture;
             }
             SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                                   span->firstVertex, 0);

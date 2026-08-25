@@ -34,6 +34,11 @@ typedef struct RageRenderCamera {
     float verticalFovDegrees;
     float nearPlane;
     float farPlane;
+    /* Perspective depth fog is semantic scene data. `fogNear` starts the
+     * blend and `fogFar` reaches the authored environment colour. */
+    RageRenderVec3 fogColor;
+    float fogNear;
+    float fogFar;
 } RageRenderCamera;
 
 typedef enum RageRenderPass {
@@ -48,6 +53,11 @@ typedef enum RageRenderAssetSet {
     RAGE_RENDER_ASSET_MODEL_BANK = 0,
     RAGE_RENDER_ASSET_COURSE = 1,
     RAGE_RENDER_ASSET_TERRAIN = 2,
+    /* Track packs contain two independent ordinary model banks.  They must
+     * not share the generic `model` key: doing so made the runtime index pick
+     * whichever duplicate happened to be listed first. */
+    RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 = 3,
+    RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 = 4,
 } RageRenderAssetSet;
 
 typedef struct RageRenderMeshInstance {
@@ -59,6 +69,15 @@ typedef struct RageRenderMeshInstance {
      * deterministic. */
     uint32_t assetKey;
     uint32_t material;
+    /* Renderer-neutral material variant selected by gameplay state. Course
+     * and terrain use the two track sections; track car models use the
+     * selected car asset whose race-load palette is resident. */
+    uint8_t materialVariant;
+    /* Some authored course faces add the low seven bits of g_AnimTimer to
+     * their U coordinates before the PS1 texture window is applied.  The
+     * imported mesh marks only those faces; the instance supplies the current
+     * semantic texel offset without exposing a PS1 packet to the renderer. */
+    uint8_t textureScrollU;
     RageRenderTransform transform;
     RageRenderTransform previousTransform;
     uint32_t flags;
@@ -69,6 +88,15 @@ enum {
     /* Bounds are optional imported metadata. Do not cull an instance until
      * its producer has opted into the coordinate convention explicitly. */
     RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL = 1u << 0,
+    /* The original course data chooses fogged and un-fogged model dispatches
+     * per object. Keep that authored choice in the scene, not the backend. */
+    RAGE_RENDER_INSTANCE_ENABLE_FOG = 1u << 1,
+    /* Native lighting is currently authored for vehicle normals. Course and
+     * terrain retain their source texture brightness until their original
+     * environment light matrices are represented in Render World. */
+    RAGE_RENDER_INSTANCE_ENABLE_LIGHTING = 1u << 2,
+    /* Terrain modes 0/1 choose the adjacent CLUT in environment mode 4. */
+    RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4 = 1u << 3,
 };
 
 typedef struct RageRenderWorld {

@@ -6,6 +6,9 @@
 #include "game/scratchpad.h"
 #include "game/track.h"
 #include "psyq/gte.h"
+#ifdef RAGE_HOST_PORT
+#include "rage/render_world_game.h"
+#endif
 
 void UpdateShuttleScenery(s32 instance) {
     GameShuttleScenery *entry;
@@ -60,6 +63,9 @@ void DrawShuttleScenery(s32 instance) {
     s32 drawArg;
     Matrix mtx0;
     Matrix mtx1;
+#ifdef RAGE_HOST_PORT
+    Matrix renderWorldMtx;
+#endif
     GameShuttleScenery *state;
     Matrix *mtx1Ptr;
     s32 drawValue;
@@ -101,6 +107,9 @@ void DrawShuttleScenery(s32 instance) {
         mtx1Ptr = &mtx1;
         BuildRotMatrixZ(mtx1Ptr, state->angleZ);
         MulMatrix2(&mtx0, mtx1Ptr);
+#ifdef RAGE_HOST_PORT
+        renderWorldMtx = *mtx1Ptr;
+#endif
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
         if ((RageSeriesCourseIndex()) >= 2) {
             drawArg = 0x3C;
@@ -112,6 +121,11 @@ void DrawShuttleScenery(s32 instance) {
         if (drawArg < frameValue) {
             drawValue = drawArg;
         }
+#ifdef RAGE_HOST_PORT
+        RageGameRenderWorldSubmitDynamicCourseObject(
+            0x110 + instance, drawValue, state->position.x,
+            state->position.y, state->position.z, renderWorldMtx.m, 0, 0);
+#endif
         SubmitCourseModel(SCRATCHPAD, drawValue);
     }
 }

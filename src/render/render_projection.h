@@ -11,6 +11,8 @@ void RageRenderWorldToView(const RageRenderCamera *camera,
                            RageRenderVec3 *view);
 int RageRenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip);
+/* Perspective-correct fog weight for a world-space point. */
+float RageRenderFogFactor(const RageRenderCamera *camera,
+                          const RageRenderVec3 *world);
 
 #endif
-

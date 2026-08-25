@@ -81,6 +81,16 @@ void RageRenderInterpolateCamera(const RageRenderCamera *previous,
         (current->nearPlane - previous->nearPlane) * t;
     out->farPlane = previous->farPlane +
         (current->farPlane - previous->farPlane) * t;
+    out->fogColor.x = previous->fogColor.x +
+        (current->fogColor.x - previous->fogColor.x) * t;
+    out->fogColor.y = previous->fogColor.y +
+        (current->fogColor.y - previous->fogColor.y) * t;
+    out->fogColor.z = previous->fogColor.z +
+        (current->fogColor.z - previous->fogColor.z) * t;
+    out->fogNear = previous->fogNear +
+        (current->fogNear - previous->fogNear) * t;
+    out->fogFar = previous->fogFar +
+        (current->fogFar - previous->fogFar) * t;
 }
 
 uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
@@ -100,4 +110,3 @@ uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
     }
     return count;
 }
-

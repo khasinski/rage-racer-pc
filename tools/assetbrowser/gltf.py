@@ -65,15 +65,11 @@ def _model_geometry(bank, model, material_for_face):
                                     color[2] / 255.0, 1.0))
             if face.uv:
                 u, v = face.uv[corner]
-                if face.texwin is not None:
-                    width_u, width_v, off_u, off_v = face.texwin
-                    u = (u % width_u) + off_u
-                    v = (v % width_v) + off_v
                 # Rage stores texel addresses (0..255); glTF stores
-                # normalized coordinates.  The decoded PNG is the original
-                # 256x256 texture page, so no PS1 texture state reaches the
-                # runtime renderer.
-                group["uvs"].append((u / 256.0, v / 256.0))
+                # normalized coordinates. Texture-window wrapping is already
+                # expanded into this material's ordinary 256x256 image.
+                group["uvs"].append(((u + 0.5) / 256.0,
+                                     (v + 0.5) / 256.0))
             else:
                 group["uvs"].append((0.0, 0.0))
         # The handedness conversion reverses winding.
@@ -87,14 +83,15 @@ def bank_to_gltf(bank, textures=None) -> dict:
     doc = {"asset": {"version": "2.0", "generator": "rage-assetbrowser"},
            "buffers": [], "bufferViews": [], "accessors": [], "meshes": [],
            "nodes": [], "scenes": [{"nodes": []}], "scene": 0}
-    texture_by_key = {(item["tpage"], item["clut"]): item
+    texture_by_key = {(item["tpage"], item["clut"],
+                       tuple(item["texwin"]) if item.get("texwin") else None): item
                       for item in (textures or [])}
     material_by_key = {}
 
     def material_for_face(face):
         if not face.uv:
             return None
-        key = (face.tpage, face.clut)
+        key = (face.tpage, face.clut, face.texwin)
         if key in material_by_key:
             return material_by_key[key]
         texture = texture_by_key.get(key)
@@ -106,7 +103,8 @@ def bank_to_gltf(bank, textures=None) -> dict:
         doc["textures"].append({"source": image})
         material = len(doc.setdefault("materials", []))
         doc["materials"].append({
-            "name": "tpage-%04x-clut-%04x" % key,
+            "name": "tpage-%04x-clut-%04x-window-%s" %
+                    (face.tpage, face.clut, face.texwin or "full"),
             "pbrMetallicRoughness": {
                 "baseColorTexture": {"index": texture_index},
                 "metallicFactor": 0.0,
@@ -153,4 +151,3 @@ def bank_to_gltf(bank, textures=None) -> dict:
 
 def write_bank(path: Path, bank, textures=None) -> None:
     path.write_text(json.dumps(bank_to_gltf(bank, textures), separators=(",", ":")))
-

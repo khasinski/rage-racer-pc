@@ -65,9 +65,13 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     world.camera.verticalFovDegrees = 90.0f;
     world.camera.nearPlane = 1.0f;
     world.camera.farPlane = 100.0f;
+    world.camera.fogColor.x = 0.25f;
+    world.camera.fogColor.y = 0.5f;
+    world.camera.fogColor.z = 0.75f;
     storage[0].mesh = 0;
     storage[0].assetKey = 10;
     storage[0].pass = RAGE_RENDER_PASS_MAIN;
+    storage[0].materialVariant = 1;
     storage[0].transform.scale.x = 1.0f;
     storage[0].transform.scale.y = 1.0f;
     storage[0].transform.scale.z = 1.0f;
@@ -82,12 +86,23 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(10, spans[0].assetKey);
     EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
+    EXPECT_EQ(1, spans[0].materialVariant);
     /* Per-instance basis matches the old X/Y/Z rotation order without
      * recalculating trigonometry for every emitted vertex. */
     EXPECT_EQ(1000, (int)(vertices[0].position[0] * 100.0f));
     EXPECT_EQ(99, (int)(vertices[0].position[2] * 100.0f));
     EXPECT_EQ(200, vertices[0].color[2]);
     EXPECT_EQ(100, (int)(vertices[0].normal[1] * 100.0f));
+    EXPECT_EQ(25, (int)(vertices[0].fog[0] * 100.0f));
+    EXPECT_EQ(50, (int)(vertices[0].fog[1] * 100.0f));
+    EXPECT_EQ(75, (int)(vertices[0].fog[2] * 100.0f));
+    EXPECT_EQ(0, (int)(vertices[0].fog[3] * 100.0f));
+    EXPECT_EQ(0, (int)(vertices[0].lighting * 100.0f));
+    storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(100, (int)(vertices[0].lighting * 100.0f));
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
@@ -128,6 +143,174 @@ static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(vo
     EXPECT_EQ(1, spanCount);
 }
 
+static void test_native_draw_builder_applies_authored_course_texture_scroll(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    float uv[2] = {0.25f, 0.5f};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        memcpy(bytes + 32 + i * 40 + 28, uv, sizeof(uv));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36,
+                  RAGE_RUNTIME_MATERIAL_SCROLL_U | 4u);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].textureScrollU = 64;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(4, spans[0].material);
+    EXPECT_EQ(50, (int)(vertices[0].uv[0] * 100.0f));
+    EXPECT_EQ(50, (int)(vertices[0].uv[1] * 100.0f));
+}
+
+static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36,
+                  RAGE_RUNTIME_MATERIAL_METADATA | (0xFCu <<
+                      RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) | 4u);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(4, spans[0].material);
+}
+
+static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36,
+                  RAGE_RUNTIME_MATERIAL_METADATA |
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT | 4u);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 20000.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(4, spans[0].material);
+    EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
+              spans[0].materialFlags);
+}
+
+static void test_native_draw_builder_skips_near_only_faces_in_far_terrain(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 0.0f},
+                             {1.0f, 0.0f, 0.0f},
+                             {0.0f, 1.0f, 0.0f}};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36,
+                  RAGE_RUNTIME_MATERIAL_METADATA |
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY | 4u);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 20000.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.position.z = -11000.0f;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(0, spanCount);
+}
+
 static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -165,9 +348,12 @@ static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
 int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
+    test_native_draw_builder_applies_authored_course_texture_scroll();
+    test_native_draw_builder_strips_ot_bias_from_material_lookup();
+    test_native_draw_builder_preserves_dynamic_terrain_material_flags();
+    test_native_draw_builder_skips_near_only_faces_in_far_terrain();
     test_native_draw_builder_culls_fully_offscreen_instance();
     if (failures != 0) return EXIT_FAILURE;
     puts("render mesh build tests passed");
     return EXIT_SUCCESS;
 }
-

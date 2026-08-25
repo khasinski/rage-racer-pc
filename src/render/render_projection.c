@@ -66,14 +66,34 @@ void RageRenderWorldToView(const RageRenderCamera *camera,
 
 int RageRenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip) {
-    float verticalScale;
+    float verticalScale, depth;
     if (camera == 0 || view == 0 || clip == 0 || aspect <= 0.0f ||
-        view->z < camera->nearPlane || view->z > camera->farPlane) return 0;
+        (depth = -view->z) < camera->nearPlane ||
+        depth > camera->farPlane) return 0;
     verticalScale = 1.0f / tanf(RageRadians(camera->verticalFovDegrees) * 0.5f);
-    clip->x = view->x * verticalScale / (view->z * aspect);
-    clip->y = view->y * verticalScale / view->z;
-    clip->z = (view->z - camera->nearPlane) /
+    clip->x = view->x * verticalScale / (depth * aspect);
+    clip->y = view->y * verticalScale / depth;
+    clip->z = (depth - camera->nearPlane) /
               (camera->farPlane - camera->nearPlane);
     return 1;
 }
 
+float RageRenderFogFactor(const RageRenderCamera *camera,
+                          const RageRenderVec3 *world) {
+    RageRenderVec3 view;
+    float depth, inverseNear, inverseFar, factor;
+    if (camera == 0 || world == 0 || camera->fogNear <= 0.0f ||
+        camera->fogFar <= camera->fogNear) return 0.0f;
+    RageRenderWorldToView(camera, world, &view);
+    depth = -view.z;
+    if (depth <= camera->fogNear) return 0.0f;
+    if (depth >= camera->fogFar) return 1.0f;
+    /* Perspective fog interpolates in reciprocal depth. This retains the
+     * authored look while remaining ordinary renderer-neutral scene math. */
+    inverseNear = 1.0f / camera->fogNear;
+    inverseFar = 1.0f / camera->fogFar;
+    factor = (inverseNear - 1.0f / depth) / (inverseNear - inverseFar);
+    if (factor < 0.0f) return 0.0f;
+    if (factor > 1.0f) return 1.0f;
+    return factor;
+}

@@ -138,8 +138,11 @@ class Extractor:
         """Rebuild the VRAM a model would be textured from.
 
         Cars: CAR.TMS (the shared showroom/HUD upload) plus the car's own
-        0x8000-byte page. Tracks: the four image chains and the one bare block
-        of the matching .1ST pack, exactly the order LoadRaceAssets step 5 uses.
+        0x8000-byte page. Tracks: CAR.TMS followed by the four image chains and
+        the one bare block of the matching .1ST pack. CAR.TMS is loaded during
+        boot and remains resident when LoadRaceAssets performs its step-5
+        uploads; track model bank 1 deliberately reuses its shared car palettes
+        and wheel texture.
         """
         v = images.Vram()
         src = []
@@ -159,22 +162,8 @@ class Extractor:
                     v.load(buf, blk)
                 src.append(f"{self.names[index]}[4]")
         elif kind == "track_data":
-            # LoadRaceAssets step 5 uploads the five sub-blocks strictly in
-            # order, and sub-block 2 goes through UploadImageBlock (one chunk)
-            # rather than UploadImageAsset (a chain). Order matters because 3
-            # and 4 are two alternative fills of the same VRAM rectangle,
-            # (576,256)-(1023,511): 3 is stored off to the side by
-            # StoreTeamLogoImage and 4 is what stays resident, which is the
-            # state a static browser should show.
-            first = index - 1
-            buf = self.data(first)
-            hdr = struct.unpack_from("<5i", buf, 0)
-            for k in range(5):
-                blocks = (images._parse_chunk(buf, hdr[k], len(buf)) if k == 2
-                          else images.parse_image_asset(buf, hdr[k]))
-                for blk in blocks:
-                    v.load(buf, blk)
-            src.append(self.names[first])
+            v, _alternate, src = self.track_vrams(index)
+            return v, src
         elif kind in ("select_pack", "option_pack"):
             buf = self.data(index)
             off = struct.unpack_from("<i", buf, 8 if kind == "select_pack" else 0)[0]
@@ -183,6 +172,60 @@ class Extractor:
                     v.load(buf, blk)
             src.append(self.names[index])
         return v, src
+
+    def track_vrams(self, index: int, car_pack_index: int | None = None
+                    ) -> tuple[images.Vram, images.Vram, list[str]]:
+        """Return the two semantic track texture pages used by a race.
+
+        The PS1 swaps the pages a row at a time to fit both in VRAM. Native
+        renderers get two ordinary immutable material sets and select one from
+        the current track section instead.
+        """
+        v = images.Vram()
+        src = []
+        # LoadBootAssets uploads CAR.TMS before the race load. It supplies
+        # the shared opponent-car palettes and wheels referenced by model bank
+        # 1, so starting from an empty VRAM makes only those materials decode
+        # as transparent while track-owned materials still look correct.
+        shared = self.data(5)
+        for blk in images.parse_image_asset(shared, 0):
+            v.load(shared, blk)
+        src.append("CAR.TMS")
+
+        # LoadRaceAssets step 3 uploads sub-block 4 of the selected car's
+        # .2ND pack before loading the track. Besides cockpit/HUD artwork it
+        # replaces the six palettes used by track model bank 1, so omitting it
+        # gives every rival the colours left behind by CAR.TMS. There are 32
+        # selectable car assets; callers exporting bank 1 provide each one as
+        # an ordinary material variant.
+        if car_pack_index is not None:
+            car_pack = self.data(car_pack_index)
+            car_header = struct.unpack_from("<5i", car_pack, 0)
+            for blk in images.parse_image_asset(car_pack, car_header[4]):
+                v.load(car_pack, blk)
+            src.append(self.names[car_pack_index])
+
+        # LoadRaceAssets step 5 then uploads the five track sub-blocks strictly
+        # in order, and sub-block 2 goes through UploadImageBlock (one chunk)
+        # rather than UploadImageAsset (a chain). Order matters because 3 and
+        # 4 are two alternative fills of the same VRAM rectangle:
+        # (576,256)-(1023,511).
+        first = index - 1
+        buf = self.data(first)
+        hdr = struct.unpack_from("<5i", buf, 0)
+        alternate = None
+        for k in range(5):
+            blocks = (images._parse_chunk(buf, hdr[k], len(buf)) if k == 2
+                      else images.parse_image_asset(buf, hdr[k]))
+            for blk in blocks:
+                v.load(buf, blk)
+            if k == 3:
+                # StoreTeamLogoImage snapshots this state as page 1 before
+                # sub-block 4 overwrites the resident rectangle with page 0.
+                alternate = v.clone()
+        src.append(self.names[first])
+        assert alternate is not None
+        return v, alternate, src
 
     # -- per-asset ------------------------------------------------------
 
@@ -400,7 +443,7 @@ class Extractor:
                  "model bank 2", "terrain cell data", "course objects",
                  "track events", "camera table (selected)"]
         rec["subBlocks"] = [{"n": k, "role": roles[k], "offset": o} for k, o in enumerate(hdr)]
-        v, src = self.vram_for(i, "track_data")
+        v, alternate, src = self.track_vrams(i)
         rec["vram"] = self.emit_vram(v, stem)
         rec["vramSources"] = src
 
@@ -412,7 +455,19 @@ class Extractor:
             except models.ParseError as exc:
                 rec["banks"].append({"sub": k, "error": str(exc)})
                 continue
-            textures = self.emit_textures(v, bank, f"{stem}_b{k}")
+            if k == 3:
+                # GetCarAssetIndex returns 0..31 and LoadRaceAssets turns that
+                # into archive index 11 + value * 2. Track model bank 1 samples
+                # palettes installed by that pack, while the remaining track
+                # banks only need the two section-page variants.
+                car_vrams = [self.track_vrams(i, 11 + variant * 2)[0]
+                             for variant in range(32)]
+                textures = self.emit_textures(
+                    car_vrams[0], bank, f"{stem}_b{k}",
+                    variant_vrams=car_vrams,
+                    variant_clut_offsets=(0, 1, 2))
+            else:
+                textures = self.emit_textures(v, bank, f"{stem}_b{k}", alternate)
             b = self.emit_bank(bank, f"{stem}_b{k}", textures=textures)
             b["sub"] = k
             b["textures"] = textures
@@ -422,8 +477,9 @@ class Extractor:
         # the trackside scenery and the road surface itself.
         try:
             cb = models.parse_course_objects(buf, hdr[5], len(buf))
-            textures = self.emit_textures(v, cb, f"{stem}_course")
-            b = self.emit_bank(cb, f"{stem}_course", textures=textures)
+            textures = self.emit_textures(v, cb, f"{stem}_course", alternate)
+            b = self.emit_bank(cb, f"{stem}_course", textures=textures,
+                               scrolling_primitives=True)
             b["sub"] = 5
             b["label"] = "course objects"
             b["textures"] = textures
@@ -434,7 +490,7 @@ class Extractor:
             rec["banks"].append({"sub": 5, "error": str(exc)})
         try:
             tb, grid = models.parse_terrain(buf, hdr[7], hdr[8] if hdr[8] > hdr[7] else len(buf))
-            textures = self.emit_textures(v, tb, f"{stem}_terrain")
+            textures = self.emit_textures(v, tb, f"{stem}_terrain", alternate)
             b = self.emit_bank(tb, f"{stem}_terrain", grid=grid,
                                textures=textures)
             b["sub"] = 7
@@ -481,7 +537,8 @@ class Extractor:
 
     # -- emitters --------------------------------------------------------
 
-    def emit_bank(self, bank, stem, grid=None, textures=None):
+    def emit_bank(self, bank, stem, grid=None, textures=None,
+                  scrolling_primitives=False):
         j = models.bank_to_json(bank)
         if grid is not None:
             # track/visible_cells.c:214-226 is the authority. The grid word at
@@ -514,11 +571,13 @@ class Extractor:
         gltf_path = self.out / "models" / f"{stem}.gltf"
         gltf.write_bank(gltf_path, bank, textures)
         rmesh_path = self.out / "models" / f"{stem}.rmesh"
-        rmesh.write_bank(rmesh_path, bank, textures)
+        rmesh.write_bank(rmesh_path, bank, textures, scrolling_primitives,
+                         terrain_primitives=grid is not None)
         materials_path = self.out / "models" / f"{stem}.rmat"
         materials_path.write_text("".join(
             f"{index} {texture['tpage']} {texture['clut']} "
-            f"{texture['runtimePixels']}\n"
+            f"{' '.join(str(value) for value in (texture.get('texwin') or [256, 256, 0, 0]))} "
+            f"{' '.join(texture.get('runtimePixelVariants', [texture['runtimePixels'], texture.get('runtimePixelsAlt', texture['runtimePixels'])]))}\n"
             for index, texture in enumerate(textures or [])))
         return {
             "file": f"models/{stem}.json",
@@ -540,24 +599,69 @@ class Extractor:
         png.write_rgba(p, images.VRAM_W, images.VRAM_H, rgba)
         return {"file": f"images/{stem}_vram.png", "rects": v.dirty}
 
-    def emit_textures(self, v, bank, stem):
-        pairs = sorted({(f.tpage, f.clut) for m in bank.models for f in m.faces if f.uv})
+    @staticmethod
+    def apply_texture_window(rgba, window):
+        if window is None:
+            return rgba
+        width_u, width_v, off_u, off_v = window
+        out = bytearray(len(rgba))
+        for y in range(256):
+            source_y = (y % width_v) + off_v
+            src = (source_y * 256 + off_u) * 4
+            tile = rgba[src:src + width_u * 4]
+            row = tile * (256 // width_u)
+            dst = y * 256 * 4
+            out[dst:dst + 256 * 4] = row
+        return bytes(out)
+
+    def emit_textures(self, v, bank, stem, alternate_vram=None,
+                      variant_vrams=None, variant_clut_offsets=(0,)):
+        pairs = {(f.tpage, f.clut, f.texwin)
+                 for m in bank.models for f in m.faces if f.uv}
+        pairs = sorted(pairs, key=lambda p: (p[0], p[1], p[2] or (0, 0, 0, 0)))
         out = []
-        for n, (tp, cl) in enumerate(pairs):
-            rgba = images.decode_texpage(v, tp, cl)
+        for n, (tp, cl, window) in enumerate(pairs):
+            rgba = self.apply_texture_window(images.decode_texpage(v, tp, cl),
+                                             window)
             fn = f"{stem}_t{n}.png"
             png.write_rgba(self.out / "textures" / fn, 256, 256, rgba)
             raw_fn = f"{stem}_t{n}.rgba"
             (self.out / "textures" / raw_fn).write_bytes(rgba)
-            out.append({
+            item = {
                 "file": f"textures/{fn}",
                 "runtimePixels": f"textures/{raw_fn}",
                 "width": 256, "height": 256,
                 "tpage": tp, "clut": cl,
+                "texwin": list(window) if window is not None else None,
                 "bpp": {0: 4, 1: 8, 2: 16, 3: 16}[(tp >> 7) & 3],
                 "pageX": (tp & 0xF) * 64, "pageY": ((tp >> 4) & 1) * 256,
                 "clutX": (cl & 0x3F) * 16, "clutY": (cl >> 6) & 0x1FF,
-            })
+            }
+            if alternate_vram is not None:
+                alternate = self.apply_texture_window(
+                    images.decode_texpage(alternate_vram, tp, cl), window)
+                alt_fn = f"{stem}_t{n}_alt.rgba"
+                (self.out / "textures" / alt_fn).write_bytes(alternate)
+                item["runtimePixelsAlt"] = f"textures/{alt_fn}"
+            if variant_vrams is not None:
+                variants = []
+                unique = {rgba: item["runtimePixels"]}
+                for variant, variant_vram in enumerate(variant_vrams):
+                    for clut_offset in variant_clut_offsets:
+                        pixels = self.apply_texture_window(
+                            images.decode_texpage(
+                                variant_vram, tp, cl + clut_offset), window)
+                        path = unique.get(pixels)
+                        if path is None:
+                            variant_fn = (
+                                f"{stem}_t{n}_v{variant}_c{clut_offset}.rgba")
+                            (self.out / "textures" / variant_fn).write_bytes(
+                                pixels)
+                            path = f"textures/{variant_fn}"
+                            unique[pixels] = path
+                        variants.append(path)
+                item["runtimePixelVariants"] = variants
+            out.append(item)
         return out
 
 
@@ -577,7 +681,8 @@ def write_runtime_index(out: Path, records: list[dict]) -> None:
         add(rec["index"], "model", rec.get("model"))
         for bank in rec.get("banks", []):
             sub = bank.get("sub") if isinstance(bank, dict) else None
-            asset_set = {3: "model", 6: "model", 5: "course", 7: "terrain"}.get(sub)
+            asset_set = {3: "track-model-1", 6: "track-model-2",
+                         5: "course", 7: "terrain"}.get(sub)
             if asset_set is not None:
                 add(rec["index"], asset_set, bank)
     (out / "runtime-index.txt").write_text("".join(rows))

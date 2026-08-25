@@ -27,6 +27,18 @@ typedef struct RageRuntimeVertex {
     uint32_t material;
 } RageRuntimeVertex;
 
+enum {
+    /* Stored in the otherwise-small material index by rmesh.py. The draw
+     * builder removes it before material lookup and applies the instance's
+     * semantic U offset to that vertex. UINT32_MAX remains untextured. */
+    RAGE_RUNTIME_MATERIAL_SCROLL_U = 1u << 31,
+    RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY = 1u << 30,
+    RAGE_RUNTIME_MATERIAL_METADATA = 1u << 29,
+    RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT = 1u << 28,
+    RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT = 16,
+    RAGE_RUNTIME_MATERIAL_INDEX_MASK = 0xFFFFu,
+};
+
 int RageRuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size);
 int RageRuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                          uint32_t *firstIndex, uint32_t *indexCount);
@@ -41,4 +53,3 @@ int RageRuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                           float center[3], float *radius);
 
 #endif
-

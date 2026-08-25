@@ -168,6 +168,12 @@ class Vram:
         self.buf = bytearray(VRAM_W * VRAM_H * 2)
         self.dirty: list[tuple] = []
 
+    def clone(self):
+        copy = Vram()
+        copy.buf[:] = self.buf
+        copy.dirty = list(self.dirty)
+        return copy
+
     def load(self, buf: bytes, blk: ImageBlock) -> bool:
         if blk.w == 0 or blk.h == 0:
             return False

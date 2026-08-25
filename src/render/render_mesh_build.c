@@ -100,18 +100,19 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex, float aspect) {
-    float center[3], radius, maxScale, halfY, halfX;
+    float center[3], radius, maxScale, halfY, halfX, depth;
     RageRenderVec3 worldCenter, view;
     RageTransformBasis basis = RageBuildTransformBasis(transform);
     if (!RageRuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
     worldCenter = RageTransformPoint(&basis, center);
     RageRenderWorldToView(&world->camera, &worldCenter, &view);
+    depth = -view.z;
     maxScale = fmaxf(fabsf(transform->scale.x),
                      fmaxf(fabsf(transform->scale.y), fabsf(transform->scale.z)));
     radius *= maxScale;
-    if (view.z + radius < world->camera.nearPlane ||
-        view.z - radius > world->camera.farPlane) return 1;
-    halfY = fmaxf(view.z, world->camera.nearPlane) *
+    if (depth + radius < world->camera.nearPlane ||
+        depth - radius > world->camera.farPlane) return 1;
+    halfY = fmaxf(depth, world->camera.nearPlane) *
         tanf(RageRadians(world->camera.verticalFovDegrees) * 0.5f);
     halfX = halfY * aspect;
     return view.x + radius < -halfX || view.x - radius > halfX ||
@@ -119,22 +120,47 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
 }
 
 static int RageBuildVertex(const RageTransformBasis *basis,
+                           const RageRenderWorld *world, int fogged,
+                           const RageRenderMeshInstance *instance,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            float aspect, RageNativeDrawVertex *out,
-                           uint32_t *material) {
+                           uint32_t *material, uint32_t *materialFlags) {
     RageRuntimeVertex source;
-    RageRenderVec3 world;
+    RageRenderVec3 worldPosition;
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
-    world = RageTransformPosition(basis, &source);
+    *materialFlags = source.material &
+        (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
+         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
+    worldPosition = RageTransformPosition(basis, &source);
     (void)aspect;
-    out->position[0] = world.x; out->position[1] = world.y;
-    out->position[2] = world.z;
+    out->position[0] = worldPosition.x; out->position[1] = worldPosition.y;
+    out->position[2] = worldPosition.z;
     out->uv[0] = source.uv[0]; out->uv[1] = source.uv[1];
+    if (source.material != UINT32_MAX &&
+        (source.material & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0) {
+        out->uv[0] += (float)instance->textureScrollU * (1.0f / 256.0f);
+        source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
+    }
     memcpy(out->color, source.color, sizeof(out->color));
     {
         RageRenderVec3 normal = RageTransformNormal(basis, &source);
         out->normal[0] = normal.x; out->normal[1] = normal.y;
         out->normal[2] = normal.z;
+    }
+    out->fog[0] = world->camera.fogColor.x;
+    out->fog[1] = world->camera.fogColor.y;
+    out->fog[2] = world->camera.fogColor.z;
+    out->fog[3] = fogged
+        ? RageRenderFogFactor(&world->camera, &worldPosition) : 0.0f;
+    out->lighting =
+        (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0
+        ? 1.0f : 0.0f;
+    if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
+        /* PS1 OT bias changes packet ordering after projection. It is not a
+         * world-space distance and must not move geometry in a z-buffer. */
+        source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+        if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
+            source.material = UINT32_MAX;
     }
     *material = source.material;
     return 1;
@@ -156,6 +182,7 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
         uint32_t first, count, offset;
+        int farTerrainCell = 0;
         if (mesh == NULL || !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
@@ -163,24 +190,45 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
             RageInstanceOutsideFrustum(world, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
         basis = RageBuildTransformBasis(&instance->transform);
+        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
+            RageRenderVec3 view;
+            RageRenderWorldToView(&world->camera,
+                                  &instance->transform.position, &view);
+            /* SubmitTerrainCells switches to the cheaper far-cell packet
+             * path at 0xa000 GTE units. Native world coordinates are quarter
+             * scale, so preserve the same authored primitive selection. */
+            farTerrainCell = -view.z >= 10240.0f;
+        }
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
-            uint32_t materials[3], indices[3];
+            uint32_t materials[3], materialFlags[3], indices[3];
             uint32_t corner;
             int valid = 1;
             for (corner = 0; corner < 3; corner++) {
                 valid = valid && RageRuntimeMeshIndex(mesh, first + offset + corner,
                                                       &indices[corner]);
-                if (valid) valid = RageBuildVertex(&basis,
-                    mesh, indices[corner], aspect,
-                    &triangle[corner], &materials[corner]);
+                if (valid) valid = RageBuildVertex(&basis, world,
+                    (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
+                    instance, mesh, indices[corner], aspect,
+                    &triangle[corner], &materials[corner],
+                    &materialFlags[corner]);
             }
             if (!valid ||
                 materials[0] != materials[1] || materials[0] != materials[2] ||
+                materialFlags[0] != materialFlags[1] ||
+                materialFlags[0] != materialFlags[2] ||
+                (farTerrainCell &&
+                 (materialFlags[0] &
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY) != 0) ||
                 vertexCount + 3 > vertexCapacity) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
+                spans[spansUsed - 1].materialFlags != materialFlags[0] ||
                 spans[spansUsed - 1].assetKey != instance->assetKey ||
                 spans[spansUsed - 1].assetSet != instance->assetSet ||
+                spans[spansUsed - 1].mesh != instance->mesh ||
+                spans[spansUsed - 1].sourceEntity != instance->entity ||
+                spans[spansUsed - 1].instanceFlags != instance->flags ||
+                spans[spansUsed - 1].materialVariant != instance->materialVariant ||
                 spans[spansUsed - 1].entity !=
                     (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK
                      ? instance->entity : 0) ||
@@ -190,7 +238,12 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                 spans[spansUsed].vertexCount = 0;
                 spans[spansUsed].assetKey = instance->assetKey;
                 spans[spansUsed].assetSet = instance->assetSet;
+                spans[spansUsed].mesh = instance->mesh;
+                spans[spansUsed].sourceEntity = instance->entity;
+                spans[spansUsed].instanceFlags = instance->flags;
                 spans[spansUsed].material = materials[0];
+                spans[spansUsed].materialFlags = materialFlags[0];
+                spans[spansUsed].materialVariant = instance->materialVariant;
                 /* Course and terrain share immutable materials. Only model
                  * banks can carry an entity-specific material variant (car
                  * paint), so do not explode the texture cache per cell. */
@@ -209,4 +262,3 @@ done:
     *spanCount = spansUsed;
     return vertexCount;
 }
-

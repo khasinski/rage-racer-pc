@@ -53,7 +53,12 @@ def main() -> int:
         write_test_mesh(mesh)
         index = "".join(
             f"{key} model car.rmesh -\n" for key in range(10, 75))
-        index += "88 course car.rmesh -\n88 terrain car.rmesh -\n"
+        index += (
+            "88 track-model-1 car.rmesh -\n"
+            "88 track-model-2 car.rmesh -\n"
+            "88 course car.rmesh -\n"
+            "88 terrain car.rmesh -\n"
+        )
         (root / "runtime-index.txt").write_text(index, encoding="ascii")
         scenario.write_text(
             """[video]

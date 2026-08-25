@@ -34,6 +34,10 @@ static int RageAssetSetName(RageRenderAssetSet set, const char **name,
     case RAGE_RENDER_ASSET_MODEL_BANK: *name = "model"; *length = 5; return 1;
     case RAGE_RENDER_ASSET_COURSE: *name = "course"; *length = 6; return 1;
     case RAGE_RENDER_ASSET_TERRAIN: *name = "terrain"; *length = 7; return 1;
+    case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1:
+        *name = "track-model-1"; *length = 13; return 1;
+    case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2:
+        *name = "track-model-2"; *length = 13; return 1;
     default: return 0;
     }
 }
@@ -76,4 +80,3 @@ int RageRuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
     }
     return 0;
 }
-

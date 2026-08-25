@@ -105,15 +105,18 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 }
 
 static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
-                                    uint32_t material, const char **pathOut,
-                                    size_t *pathLengthOut, uint32_t *tpageOut,
-                                    uint32_t *clutOut) {
+                                    uint32_t material, uint8_t variant,
+                                    const char **pathOut,
+                                    size_t *pathLengthOut,
+                                    ModernAssetMaterialSource *sourceOut) {
     const RageRuntimeCachedMesh *cached;
     const void *mapBytes;
     size_t mapSize, lineStart = 0;
     const char *path = NULL;
     size_t pathLength = 0, i;
     uint32_t tpage = 0, clut = 0;
+    uint32_t windowWidthU = 256, windowWidthV = 256;
+    uint32_t windowOffsetU = 0, windowOffsetV = 0;
     int found = 0;
     if (pathOut == NULL || pathLengthOut == NULL || instance == NULL) return 0;
     cached = ModernAssetsFind(instance);
@@ -145,8 +148,57 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                         sourceClut = sourceClut * 10u + (uint32_t)(line[cursor++] - '0');
                     }
                     if (cursor > clutStart && cursor < length && line[cursor] == ' ') {
+                        size_t primaryStart, primaryLength;
+                        size_t selectedStart = 0, selectedLength = 0;
+                        uint32_t pathIndex = 0;
                         cursor++;
-                        path = line + cursor; pathLength = length - cursor;
+                        /* v3 sidecar appends the decoded PS1 texture window
+                         * before the paths. Older sidecars begin with a path
+                         * and therefore retain the full-page defaults. */
+                        if (cursor < length && line[cursor] >= '0' &&
+                            line[cursor] <= '9') {
+                            uint32_t *windowValues[4] = {
+                                &windowWidthU, &windowWidthV,
+                                &windowOffsetU, &windowOffsetV};
+                            uint32_t windowIndex;
+                            for (windowIndex = 0; windowIndex < 4;
+                                 windowIndex++) {
+                                uint32_t parsed = 0;
+                                size_t valueStart = cursor;
+                                while (cursor < length &&
+                                       line[cursor] >= '0' &&
+                                       line[cursor] <= '9') {
+                                    parsed = parsed * 10u +
+                                        (uint32_t)(line[cursor++] - '0');
+                                }
+                                if (cursor == valueStart || cursor >= length ||
+                                    line[cursor] != ' ') break;
+                                *windowValues[windowIndex] = parsed;
+                                cursor++;
+                            }
+                            if (windowIndex != 4) break;
+                        }
+                        primaryStart = cursor;
+                        while (cursor < length && line[cursor] != ' ') cursor++;
+                        primaryLength = cursor - primaryStart;
+                        selectedStart = primaryStart;
+                        selectedLength = primaryLength;
+                        while (cursor < length) {
+                            size_t candidateStart, candidateLength;
+                            while (cursor < length && line[cursor] == ' ')
+                                cursor++;
+                            candidateStart = cursor;
+                            while (cursor < length && line[cursor] != ' ')
+                                cursor++;
+                            candidateLength = cursor - candidateStart;
+                            pathIndex++;
+                            if (pathIndex == variant && candidateLength != 0) {
+                                selectedStart = candidateStart;
+                                selectedLength = candidateLength;
+                            }
+                        }
+                        path = line + selectedStart;
+                        pathLength = selectedLength;
                         tpage = sourceTpage; clut = sourceClut; found = 1;
                     }
                 } else {
@@ -163,8 +215,21 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
         memcpy(s_materialPath, path, pathLength);
         s_materialPath[pathLength] = '\0';
         *pathOut = s_materialPath; *pathLengthOut = pathLength;
-        if (tpageOut != NULL) *tpageOut = tpage;
-        if (clutOut != NULL) *clutOut = clut;
+        if (sourceOut != NULL) {
+            sourceOut->tpage = tpage;
+            sourceOut->clut = clut;
+            sourceOut->windowWidthU = windowWidthU;
+            sourceOut->windowWidthV = windowWidthV;
+            sourceOut->windowOffsetU = windowOffsetU;
+            sourceOut->windowOffsetV = windowOffsetV;
+        }
+        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+            fprintf(stderr,
+                    "rage-port: native material asset=%u set=%u material=%u "
+                    "variant=%u path=%s\n",
+                    instance->assetKey, (unsigned)instance->assetSet, material,
+                    variant, s_materialPath);
+        }
     } else {
         found = 0;
     }
@@ -173,14 +238,17 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
 }
 
 int ModernAssetsLoadMaterialPixels(const RageRenderMeshInstance *instance,
-                                   uint32_t material, const void **bytes,
-                                   size_t *size) {
+                                   uint32_t material, uint8_t variant,
+                                   const void **bytes,
+                                   size_t *size,
+                                   ModernAssetMaterialSource *source) {
     const char *path;
     size_t pathLength;
     if (bytes == NULL || size == NULL) return 0;
     *bytes = NULL; *size = 0;
-    if (!ModernAssetsFindMaterial(instance, material, &path, &pathLength,
-                                  NULL, NULL) ||
+    if (!ModernAssetsFindMaterial(instance, material, variant,
+                                  &path, &pathLength,
+                                  source) ||
         !ModernAssetReadFile(NULL, path, pathLength, bytes, size) ||
         *size != 256u * 256u * 4u) {
         if (*bytes != NULL) ModernAssetFreeFile(NULL, *bytes);
@@ -200,4 +268,3 @@ void ModernAssetsWarmWorld(const RageRenderWorld *world) {
         (void)ModernAssetsFind(&world->instances[i]);
     }
 }
-

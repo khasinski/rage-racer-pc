@@ -149,7 +149,6 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
 
 
 void DrawCar(GameRenderObject *obj) {
-    RageGameRenderWorldSubmitCar(obj, SCRATCH_MIRROR != 0);
     Matrix m_10;
     Matrix m_30;
     Matrix m_50;
@@ -170,31 +169,11 @@ void DrawCar(GameRenderObject *obj) {
 
     model = g_CarModelByCourse[RageSeriesCourseIndex()][obj->modelIndex];
     lod = g_CarModelBankTable[model];
-    obj->y -= g_TrackRenderTable->models[model].horizon;
-    obj->modelY -= g_TrackRenderTable->models[model].horizon;
 
     v_128[0] = obj->x - SCRATCH_VIEW_X;
     v_128[1] = 0;
     v_128[2] = obj->z - SCRATCH_VIEW_Z;
     ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, v_128, v_148);
-#ifdef __psyz
-    if (RageDiagnosticsEnabled("render.car_draw_trace") &&
-        g_RageScratchpadState.mode == 9) {
-        const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
-        if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
-            printf("car-draw timer=%d mirror=1 index=%ld "
-                   "matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                   "input=%d,%d,%d output=%d,%d,%d\n", g_SceneTimer,
-                   (long)(((GameCarRuntime *)(void *)obj - g_Cars)),
-                   SCRATCH_VIEW_MATRIX_GTE->m[0][0], SCRATCH_VIEW_MATRIX_GTE->m[0][1],
-                   SCRATCH_VIEW_MATRIX_GTE->m[0][2], SCRATCH_VIEW_MATRIX_GTE->m[1][0],
-                   SCRATCH_VIEW_MATRIX_GTE->m[1][1], SCRATCH_VIEW_MATRIX_GTE->m[1][2],
-                   SCRATCH_VIEW_MATRIX_GTE->m[2][0], SCRATCH_VIEW_MATRIX_GTE->m[2][1],
-                   SCRATCH_VIEW_MATRIX_GTE->m[2][2], v_128[0], v_128[1], v_128[2],
-                   v_148[0], v_148[1], v_148[2]);
-        }
-    }
-#endif
     if (v_128[0] < 0) {
         v_128[0] = -v_128[0];
     }
@@ -202,6 +181,34 @@ void DrawCar(GameRenderObject *obj) {
         v_128[2] = -v_128[2];
     }
     otDepth = v_128[0] + v_128[2];
+#ifdef __psyz
+    if (RageDiagnosticsEnabled("render.car_draw_trace")) {
+        const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
+        if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+            const char *detail = v_148[2] < 0 ? "behind" :
+                                 otDepth < 0xD00 ? "close" :
+                                 otDepth < 0x2500 ? "far" : "culled";
+            printf("car-draw timer=%d mirror=%d index=%ld source=%d "
+                   "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
+                   "player=%d grade=%d asset=%d\n",
+                   g_SceneTimer, SCRATCH_MIRROR != 0,
+                   (long)(((GameCarRuntime *)(void *)obj - g_Cars)),
+                   obj->modelIndex, model, lod[0], lod[1], otDepth,
+                   v_148[2], detail, g_PlayerCarIndex,
+                   g_CarTable[g_PlayerCarIndex].modelVariant,
+                   GetCarAssetIndex(g_PlayerCarIndex,
+                       g_CarTable[g_PlayerCarIndex].modelVariant));
+        }
+    }
+#endif
+    if (v_148[2] >= 0 && otDepth < 0x2500) {
+        RageGameRenderWorldSubmitCar(
+            obj, SCRATCH_MIRROR != 0,
+            otDepth < 0xD00 ? RAGE_GAME_CAR_RENDER_CLOSE
+                            : RAGE_GAME_CAR_RENDER_FAR);
+    }
+    obj->y -= g_TrackRenderTable->models[model].horizon;
+    obj->modelY -= g_TrackRenderTable->models[model].horizon;
     if (v_148[2] >= 0) {
         if (otDepth < 0xD00) {
             BuildRotMatrixY(&m_10, 0x800 - obj->angleY);

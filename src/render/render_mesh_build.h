@@ -10,6 +10,9 @@ typedef struct RageNativeDrawVertex {
     float uv[2];
     uint8_t color[4];
     float normal[3];
+    /* RGB environment colour plus the per-vertex perspective fog weight. */
+    float fog[4];
+    float lighting;
 } RageNativeDrawVertex;
 
 typedef struct RageNativeDrawSpan {
@@ -17,7 +20,12 @@ typedef struct RageNativeDrawSpan {
     uint32_t vertexCount;
     uint32_t assetKey;
     RageRenderAssetSet assetSet;
+    uint32_t mesh;
+    uint32_t sourceEntity;
+    uint32_t instanceFlags;
     uint32_t material;
+    uint32_t materialFlags;
+    uint8_t materialVariant;
     /* Material variants (for example each car's paint palette) are scoped to
      * an entity, not to the shared immutable mesh asset. */
     uint32_t entity;
@@ -38,4 +46,3 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     uint32_t *spanCount);
 
 #endif
-

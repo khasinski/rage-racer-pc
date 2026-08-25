@@ -43,6 +43,11 @@ def prim_name(p):
     return PRIM_NAME.get(p, f"type{p}")
 
 
+def terrain_fixed_clut_offset(primitive_mode: int) -> int:
+    """Return the palette-row offset encoded by fixed terrain modes 2..5."""
+    return (primitive_mode - 2) & 1 if primitive_mode >= 2 else 0
+
+
 @dataclass
 class Face:
     prim: int                    # 0..3
@@ -354,6 +359,10 @@ def parse_terrain(buf: bytes, base: int, limit: int | None = None):
         f = _uvface(p, r, 0x08, 0x1C, 0x15,
                     0x20 if TERRAIN_STRIDE[p] == 0x24 else None)
         f.flags = r[0x14]
+        # SubmitTerrainCellFaces maps stored modes 2..5 to dispatches 0..3;
+        # odd dispatches select the adjacent CLUT row. Modes 0/1 depend on
+        # the live environment-mode bit and remain dynamic runtime metadata.
+        f.clut += terrain_fixed_clut_offset(p)
         return f
 
     # Each cell must consume exactly the bytes up to the next cell's offset.

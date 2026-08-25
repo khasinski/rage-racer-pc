@@ -78,6 +78,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_world COMMAND render_world_tests)
 
+add_executable(course_coordinate_tests course_coordinate_tests.c)
+target_include_directories(course_coordinate_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(course_coordinate_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_coordinate COMMAND course_coordinate_tests)
+
 add_executable(render_mesh_build_tests render_mesh_build_tests.c)
 target_link_libraries(render_mesh_build_tests PRIVATE rage-render-world)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
