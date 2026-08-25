@@ -41,11 +41,19 @@ vec4 liveTexel(uvec2 texel) {
     return texelFetch(vram, ivec2(clut + uvec2(index, 0u)), 0);
 }
 
+bool liveTexelVisible(vec4 value) {
+    /* Extracted RGBA assets use ordinary alpha. The live PS1 VRAM texture
+     * keeps bit 15 in alpha instead: a texel with STP clear is still opaque,
+     * and only the complete 0x0000 word is transparent. */
+    return material.source.z != 0u
+        ? value.a > 0.001 : any(notEqual(value, vec4(0.0)));
+}
+
 void main() {
     vec2 pixel = uv * 256.0;
     uvec2 nearestPosition = uvec2(clamp(floor(pixel), 0.0, 255.0));
     vec4 texel = liveTexel(nearestPosition);
-    if (texel.a <= 0.001) discard;
+    if (!liveTexelVisible(texel)) discard;
     vec2 samplePosition = pixel - 0.5;
     vec2 cell = floor(samplePosition);
     vec2 fraction = samplePosition - cell;
@@ -57,7 +65,7 @@ void main() {
         vec2 axis = abs(offset - fraction);
         float weight = (1.0 - axis.x) * (1.0 - axis.y);
         vec4 sampleColor = liveTexel(uvec2(at));
-        if (sampleColor.a > 0.001) {
+        if (liveTexelVisible(sampleColor)) {
             filtered += sampleColor.rgb * weight;
             weightSum += weight;
         }
@@ -70,5 +78,6 @@ void main() {
         environmentLight * (0.35 + 0.65 * diffuse), lighting);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
-    outColor = vec4(texel.rgb * modulation * light, texel.a * color.a);
+    float texelAlpha = material.source.z != 0u ? texel.a : 1.0;
+    outColor = vec4(texel.rgb * modulation * light, texelAlpha * color.a);
 }
