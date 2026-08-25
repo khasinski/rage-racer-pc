@@ -155,7 +155,8 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     info.vertex_input_state.vertex_buffer_descriptions = &buffer;
     info.vertex_input_state.num_vertex_buffers = 1;
     info.vertex_input_state.vertex_attributes = attributes;
-    info.vertex_input_state.num_vertex_attributes = 7;
+    info.vertex_input_state.num_vertex_attributes =
+        sizeof(attributes) / sizeof(attributes[0]);
     info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     /* PS1 assets contain deliberately mixed and double-sided face winding,
      * including thin sign supports, so native culling would remove geometry
