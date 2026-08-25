@@ -63,6 +63,8 @@ static const char MODERN_NATIVE_MSL[] =
 static SDL_GPUDevice *s_device;
 static SDL_GPUGraphicsPipeline *s_texturedOpaque;
 static SDL_GPUGraphicsPipeline *s_texturedTransparent;
+static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
+static SDL_GPUGraphicsPipeline *s_texturedTransparentDecal;
 static SDL_GPUGraphicsPipeline *s_colorOpaque;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
@@ -103,7 +105,8 @@ static SDL_GPUShader *ModernNativeCreateShader(
 }
 
 static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
-    SDL_GPUShader *vertex, SDL_GPUShader *fragment, int transparent) {
+    SDL_GPUShader *vertex, SDL_GPUShader *fragment, int transparent,
+    int depthDecal) {
     const SDL_GPUVertexBufferDescription buffer = {
         .slot = 0,
         .pitch = sizeof(RageNativeDrawVertex),
@@ -162,6 +165,15 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * including thin sign supports, so native culling would remove geometry
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+    if (depthDecal) {
+        /* PS1 ordering-table bias keeps coplanar road markings in front of
+         * asphalt. A constant clip-space offset still z-fights at grazing
+         * angles, so let the rasterizer scale the offset with polygon slope. */
+        info.rasterizer_state.depth_bias_constant_factor = -128.0f;
+        info.rasterizer_state.depth_bias_slope_factor = -128.0f;
+        info.rasterizer_state.depth_bias_clamp = -0.0002f;
+        info.rasterizer_state.enable_depth_bias = true;
+    }
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
     info.depth_stencil_state.enable_depth_write = !transparent;
@@ -250,12 +262,17 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         native_color_frag_spv, native_color_frag_spv_len, "fs_native_color",
         SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
     if (vertex != NULL && textureFragment != NULL) {
-        s_texturedOpaque = ModernNativeCreatePipeline(vertex, textureFragment, 0);
+        s_texturedOpaque = ModernNativeCreatePipeline(
+            vertex, textureFragment, 0, 0);
         s_texturedTransparent = ModernNativeCreatePipeline(
-            vertex, textureFragment, 1);
+            vertex, textureFragment, 1, 0);
+        s_texturedOpaqueDecal = ModernNativeCreatePipeline(
+            vertex, textureFragment, 0, 1);
+        s_texturedTransparentDecal = ModernNativeCreatePipeline(
+            vertex, textureFragment, 1, 1);
     }
     if (vertex != NULL && colorFragment != NULL)
-        s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0);
+        s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
     if (vertex != NULL) SDL_ReleaseGPUShader(s_device, vertex);
     if (textureFragment != NULL)
         SDL_ReleaseGPUShader(s_device, textureFragment);
@@ -276,6 +293,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     s_vertices = malloc(MODERN_NATIVE_MAX_VERTICES * sizeof(*s_vertices));
     s_spans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_spans));
     if (s_texturedOpaque == NULL || s_texturedTransparent == NULL ||
+        s_texturedOpaqueDecal == NULL ||
+        s_texturedTransparentDecal == NULL ||
         s_colorOpaque == NULL || s_vertexBuffer == NULL ||
         s_vertexTransfer == NULL || s_sampler == NULL || s_vertices == NULL ||
         s_spans == NULL) {
@@ -500,7 +519,13 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                 texture = ModernNativeFindTexture(span);
                 if (texture == NULL || texture->transparent != transparent)
                     continue;
-                pipeline = transparent ? s_texturedTransparent : s_texturedOpaque;
+                if (span->depthDecal) {
+                    pipeline = transparent ? s_texturedTransparentDecal
+                                           : s_texturedOpaqueDecal;
+                } else {
+                    pipeline = transparent ? s_texturedTransparent
+                                           : s_texturedOpaque;
+                }
             }
             if (pipeline != boundPipeline) {
                 SDL_BindGPUGraphicsPipeline(pass, pipeline);
@@ -550,6 +575,11 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_texturedOpaque);
         if (s_texturedTransparent != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_texturedTransparent);
+        if (s_texturedOpaqueDecal != NULL)
+            SDL_ReleaseGPUGraphicsPipeline(s_device, s_texturedOpaqueDecal);
+        if (s_texturedTransparentDecal != NULL)
+            SDL_ReleaseGPUGraphicsPipeline(s_device,
+                                           s_texturedTransparentDecal);
         if (s_colorOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaque);
         if (s_vertexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_vertexBuffer);
@@ -563,6 +593,8 @@ void ModernNativeGpuShutdown(void) {
     s_device = NULL;
     s_texturedOpaque = NULL;
     s_texturedTransparent = NULL;
+    s_texturedOpaqueDecal = NULL;
+    s_texturedTransparentDecal = NULL;
     s_colorOpaque = NULL;
     s_vertexBuffer = NULL;
     s_vertexTransfer = NULL;

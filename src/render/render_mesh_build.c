@@ -136,7 +136,8 @@ static int RageBuildVertex(const RageTransformBasis *basis,
                            const RageRenderMeshInstance *instance,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            float aspect, RageNativeDrawVertex *out,
-                           uint32_t *material, uint32_t *materialFlags) {
+                           uint32_t *material, uint32_t *materialFlags,
+                           uint8_t *depthDecal) {
     RageRuntimeVertex source;
     RageRenderVec3 worldPosition;
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
@@ -180,12 +181,16 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[2] = 1.0f;
     }
     out->depthBias = instance->depthBias;
+    *depthDecal = 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
+        int8_t authoredDepthBias = (int8_t)(source.material >>
+            RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
         /* PS1 OT bias changes packet ordering after projection. It is not a
          * world-space distance. Preserve it as a small clip-space ordering
          * offset so coplanar decals such as road markings do not z-fight. */
-        out->depthBias += (float)(int8_t)(source.material >>
-            RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
+        out->depthBias += (float)authoredDepthBias;
+        *depthDecal = instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                      authoredDepthBias < 0;
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
@@ -220,6 +225,7 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
+            uint8_t depthDecals[3];
             uint32_t corner;
             int valid = 1;
             for (corner = 0; corner < 3; corner++) {
@@ -229,15 +235,18 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                     (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
                     instance, mesh, indices[corner], aspect,
                     &triangle[corner], &materials[corner],
-                    &materialFlags[corner]);
+                    &materialFlags[corner], &depthDecals[corner]);
             }
             if (!valid ||
                 materials[0] != materials[1] || materials[0] != materials[2] ||
                 materialFlags[0] != materialFlags[1] ||
                 materialFlags[0] != materialFlags[2] ||
+                depthDecals[0] != depthDecals[1] ||
+                depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||
+                spans[spansUsed - 1].depthDecal != depthDecals[0] ||
                 spans[spansUsed - 1].assetKey != instance->assetKey ||
                 spans[spansUsed - 1].assetSet != instance->assetSet ||
                 spans[spansUsed - 1].mesh != instance->mesh ||
@@ -258,6 +267,7 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                 spans[spansUsed].instanceFlags = instance->flags;
                 spans[spansUsed].material = materials[0];
                 spans[spansUsed].materialFlags = materialFlags[0];
+                spans[spansUsed].depthDecal = depthDecals[0];
                 spans[spansUsed].materialVariant = instance->materialVariant;
                 /* Course and terrain share immutable materials. Only model
                  * banks can carry an entity-specific material variant (car

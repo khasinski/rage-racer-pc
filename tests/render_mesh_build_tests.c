@@ -90,6 +90,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(10, spans[0].assetKey);
     EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
+    EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(1, spans[0].materialVariant);
     /* Per-instance basis matches the old X/Y/Z rotation order without
      * recalculating trigonometry for every emitted vertex. */
@@ -191,6 +192,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
                                              &spanCount));
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(4, spans[0].material);
+    EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(50, (int)(vertices[0].uv[0] * 100.0f));
     EXPECT_EQ(50, (int)(vertices[0].uv[1] * 100.0f));
 }
@@ -233,6 +235,7 @@ static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
                                              &mesh, vertices, 3, spans, 1,
                                              &spanCount));
     EXPECT_EQ(4, spans[0].material);
+    EXPECT_EQ(1, spans[0].depthDecal);
 }
 
 static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
@@ -277,6 +280,7 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
               spans[0].materialFlags);
+    EXPECT_EQ(1, spans[0].depthDecal);
     EXPECT_EQ(-4, (int)vertices[0].depthBias);
 }
 

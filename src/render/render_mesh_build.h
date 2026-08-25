@@ -30,6 +30,10 @@ typedef struct RageNativeDrawSpan {
     uint32_t instanceFlags;
     uint32_t material;
     uint32_t materialFlags;
+    /* Authored negative terrain OT bias denotes a coplanar overlay such as a
+     * road marking. The GPU uses a slope-scaled raster bias for these spans;
+     * the per-vertex bias alone is not stable at grazing camera angles. */
+    uint8_t depthDecal;
     uint8_t materialVariant;
     /* Material variants (for example each car's paint palette) are scoped to
      * an entity, not to the shared immutable mesh asset. */
