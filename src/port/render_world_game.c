@@ -19,6 +19,7 @@
 #include "game/track_internal.h"
 #include "render/render_world.h"
 #include "render/render_world_frame.h"
+#include "rage/track_asset_identity.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 
@@ -45,8 +46,9 @@ static float RageAngleToDegrees(s32 angle) {
 }
 
 static uint32_t RageTrackDataAssetKey(void) {
-    return (uint32_t)(ASSET_TRACK_2ND_BASE + g_GrandPrixClass * 8 +
-                      g_CourseIndex * 2);
+    uint32_t current = (uint32_t)(ASSET_TRACK_2ND_BASE +
+                                  g_GrandPrixClass * 8 + g_CourseIndex * 2);
+    return RageTrackAssetIdentityResolve(current);
 }
 
 static uint32_t RageCarEntity(const GameRenderObject *object) {

@@ -3,6 +3,9 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
+#ifdef __psyz
+#include "rage/track_asset_identity.h"
+#endif
 
 
 void LoadTrackDataAssets(void) {
@@ -11,10 +14,15 @@ void LoadTrackDataAssets(void) {
     s32 offset;
 
     switch (g_AssetLoadState) {
-    case 1:
+    case 1: {
+        s32 assetIndex;
         dst = g_AssetLoadCursor;
         offset = g_CourseIndex * 2;
-        if (LoadAsset((g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE, dst) != 0) {
+        assetIndex = (g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE;
+        if (LoadAsset(assetIndex, dst) != 0) {
+#ifdef __psyz
+            RageTrackAssetIdentitySet(assetIndex);
+#endif
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];
             g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
@@ -73,6 +81,7 @@ void LoadTrackDataAssets(void) {
             g_AssetLoadState = 2;
         }
         break;
+    }
     case 2:
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;

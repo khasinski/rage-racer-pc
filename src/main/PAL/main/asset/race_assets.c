@@ -8,6 +8,7 @@
 #include "game/menu.h"
 #ifdef __psyz
 #include "rage/render_world_game.h"
+#include "rage/track_asset_identity.h"
 #endif
 
 /*
@@ -138,13 +139,19 @@ void LoadRaceAssets(void) {
     }
     case 6: {
         u8 *dst;
+        s32 assetIndex;
         s32 courseOffset;
         s32 offset;
         dst = g_AssetLoadCursor;
         courseOffset = g_CourseIndex * 2;
         offset = (g_GrandPrixClass * 8) + courseOffset;
-        if (LoadAsset(offset + ASSET_TRACK_2ND_BASE, dst) != 0) {
+        assetIndex = offset + ASSET_TRACK_2ND_BASE;
+        if (LoadAsset(assetIndex, dst) != 0) {
             GameSceneAssetHeader *header;
+
+#ifdef __psyz
+            RageTrackAssetIdentitySet(assetIndex);
+#endif
 
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];
