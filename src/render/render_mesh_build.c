@@ -100,7 +100,8 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex, float aspect) {
-    float center[3], radius, maxScale, halfY, halfX, depth;
+    float center[3], radius, maxScale, tanY, tanX, depth;
+    float horizontalRadius, verticalRadius;
     RageRenderVec3 worldCenter, view;
     RageTransformBasis basis = RageBuildTransformBasis(transform);
     if (!RageRuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
@@ -112,11 +113,16 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
     radius *= maxScale;
     if (depth + radius < world->camera.nearPlane ||
         depth - radius > world->camera.farPlane) return 1;
-    halfY = fmaxf(depth, world->camera.nearPlane) *
-        tanf(RageRadians(world->camera.verticalFovDegrees) * 0.5f);
-    halfX = halfY * aspect;
-    return view.x + radius < -halfX || view.x - radius > halfX ||
-           view.y + radius < -halfY || view.y - radius > halfY;
+    tanY = tanf(RageRadians(world->camera.verticalFovDegrees) * 0.5f);
+    tanX = tanY * aspect;
+    /* Test the sphere against the actual side planes. Comparing its
+     * axis-aligned radius with the frustum width at the sphere centre is not
+     * conservative: a large nearby terrain cell can cross a side plane even
+     * when its centre is well outside it. */
+    horizontalRadius = radius * sqrtf(1.0f + tanX * tanX);
+    verticalRadius = radius * sqrtf(1.0f + tanY * tanY);
+    return fabsf(view.x) > depth * tanX + horizontalRadius ||
+           fabsf(view.y) > depth * tanY + verticalRadius;
 }
 
 static int RageBuildVertex(const RageTransformBasis *basis,
