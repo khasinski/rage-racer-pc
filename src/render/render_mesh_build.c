@@ -83,6 +83,15 @@ static RageRenderVec3 RageTransformPosition(const RageTransformBasis *basis,
     return out;
 }
 
+static float RageSnapTerrainCellBoundary(float value) {
+    const float cellSize = 2048.0f;
+    float boundary = roundf(value / cellSize) * cellSize;
+    /* Adjacent PS1 terrain cells occasionally disagree by one source GTE
+     * unit (0.25 native world units). The original low-resolution rasterizer
+     * hid that quantization gap; weld only vertices already on a cell edge. */
+    return fabsf(value - boundary) <= 0.5f ? boundary : value;
+}
+
 static RageRenderVec3 RageTransformNormal(const RageTransformBasis *basis,
                                           const RageRuntimeVertex *vertex) {
     RageRenderVec3 out = {vertex->normal[0], vertex->normal[1], vertex->normal[2]};
@@ -169,6 +178,10 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
     worldPosition = RageTransformPosition(basis, &source);
+    if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
+        worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
+        worldPosition.z = RageSnapTerrainCellBoundary(worldPosition.z);
+    }
     (void)aspect;
     out->position[0] = worldPosition.x; out->position[1] = worldPosition.y;
     out->position[2] = worldPosition.z;
