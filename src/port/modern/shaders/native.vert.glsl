@@ -6,6 +6,7 @@ layout(location = 2) in uvec4 inColor;
 layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec4 inFog;
 layout(location = 5) in float inLighting;
+layout(location = 6) in float inDepthBias;
 
 layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 position;
@@ -30,7 +31,8 @@ void main() {
     float depth = (viewDepth - camera.projection.z) * camera.projection.w;
     gl_Position = vec4(view.x * camera.projection.x,
                        view.y * camera.projection.y,
-                       depth * viewDepth, viewDepth);
+                       (depth + inDepthBias / 1048576.0) * viewDepth,
+                       viewDepth);
     uv = inUV;
     color = vec4(inColor) / 255.0;
     normal = inNormal;
