@@ -597,6 +597,17 @@ static RageCaptureTerrainBatch s_lerpTerrain[RAGE_CAPTURE_MAX_TERRAIN];
 static Uint64 s_tickTimeNs;
 static Uint64 s_tickIntervalNs;
 static uint32_t s_tickFrame = 0xFFFFFFFFu;
+static Uint64 s_lastPresentationNs;
+
+void RageModernLogicFrameReady(uint32_t frame) {
+    Uint64 now = SDL_GetTicksNS();
+    if (s_tickTimeNs != 0) {
+        Uint64 delta = now - s_tickTimeNs;
+        if (delta > 1000000 && delta < 200000000) s_tickIntervalNs = delta;
+    }
+    s_tickFrame = frame;
+    s_tickTimeNs = now;
+}
 
 static void ModernLerpGte(const RageCaptureGteState *a,
                           const RageCaptureGteState *b, float t,
@@ -1932,6 +1943,9 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         const RageSceneSnapshot *target = RageCaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
         float t = 1.0f;
+        /* RagePortAfterSceneHandler timestamps the completed logic frame.
+         * Starting interpolation when it is first presented instead made
+         * the first repeated frame consume part of the next tick. */
         if (target->frameCounter != s_tickFrame) {
             if (s_tickTimeNs != 0) {
                 Uint64 delta = now - s_tickTimeNs;
@@ -1951,6 +1965,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                                (float)s_targetW / (float)s_targetH);
         ModernPrepareInterpolation(snapshot, target, t);
         ModernRender(snapshot);
+        s_lastPresentationNs = now;
         s_useLerp = 0;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
@@ -1992,7 +2007,6 @@ void RageModernFrameWaitTick(int frameLimit) {
          * the game's own VSync(0) present then has to wait out, which
          * stretches the race tick (observed as cars at half speed while
          * the VBlank-derived clock stayed correct). */
-        static Uint64 lastPresentNs;
         static Uint64 displayIntervalNs;
         Uint64 now = SDL_GetTicksNS();
         Uint64 interval;
@@ -2012,8 +2026,11 @@ void RageModernFrameWaitTick(int frameLimit) {
             }
             interval = displayIntervalNs;
         }
-        if (now - lastPresentNs < interval) return;
-        lastPresentNs = now;
+        /* Include the normal end-of-tick present in pacing. Tracking only
+         * intermediate presents emitted one immediately after the next
+         * logic update, producing an 8/30 ms cadence that still looked like
+         * the original 25-30 FPS despite interpolation. */
+        if (now - s_lastPresentationNs < interval) return;
     }
     Psyz_VideoPresentIntermediate();
 }
@@ -2035,6 +2052,8 @@ int RageModernInit(const RagePortConfig *config) {
     s_prev_overlay_init = Psyz_OverlayInit_SDL3GPU(ModernOverlayInit);
     s_prev_present_source = Psyz_PresentSource_SDL3GPU(ModernPresentSource);
     s_initialized = 1;
+    s_tickTimeNs = s_tickIntervalNs = s_lastPresentationNs = 0;
+    s_tickFrame = 0xFFFFFFFFu;
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
             SDL_GetScancodeName(s_toggleScancode),

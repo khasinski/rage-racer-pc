@@ -39,6 +39,7 @@ void RagePortAfterSceneHandler(void) {
         RageGameRenderWorldPublishTerrainGrid();
     }
     RageCaptureFrameEnd();
+    RageModernLogicFrameReady((uint32_t)g_FrameCounter);
 }
 
 void RagePortDuringFrameWait(int frameLimit) {

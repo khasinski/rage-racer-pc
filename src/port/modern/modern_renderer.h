@@ -1,6 +1,8 @@
 #ifndef RAGE_MODERN_RENDERER_H
 #define RAGE_MODERN_RENDERER_H
 
+#include <stdint.h>
+
 /* The modern (enhanced) renderer. The compat path always runs and remains
  * the behavioural oracle; this module only changes what is presented.
  * See docs/modern_renderer_plan.md. */
@@ -26,5 +28,6 @@ void RageModernToggle(void);
 /* Frame-sync wait hook: presents interpolated frames between logic ticks
  * when an FPS mode is configured. No-op otherwise. */
 void RageModernFrameWaitTick(int frameLimit);
+void RageModernLogicFrameReady(uint32_t frame);
 
 #endif
