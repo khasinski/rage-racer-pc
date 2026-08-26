@@ -26,6 +26,10 @@ void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
 void RageGameRenderWorldSubmitDynamicCourseObject(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass);
+/* Animated signs are layered directly onto an authored screen surface. */
+void RageGameRenderWorldSubmitDynamicCourseOverlay(
+    uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
+    const int16_t rotation[3][3], int fogged, int mirror_pass);
 void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
                                           int32_t mesh, int mirror_pass);
 void RageGameRenderWorldPublishTerrainGrid(void);
