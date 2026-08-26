@@ -17,6 +17,10 @@ typedef struct RageRenderShadowMap {
     float texelWorldSize;
 } RageRenderShadowMap;
 
+/* A high, slightly offset sun keeps vehicle contact shadows close to their
+ * casters while retaining a readable direction. */
+extern const RageRenderVec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+
 /* Builds a texel-snapped orthographic camera looking from the light toward
  * `center`. `lightDirection` points from a surface toward the light. */
 int RageRenderBuildDirectionalShadowMap(

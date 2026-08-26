@@ -386,7 +386,7 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
 }
 
 static void test_directional_shadow_map_is_texel_stable(void) {
-    RageRenderVec3 light = {-0.4f, 0.7f, 0.5f};
+    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     RageRenderVec3 center = {1000.0f, 200.0f, -500.0f};
     RageRenderVec3 moved = center;
     RageRenderVec3 projected;
@@ -414,6 +414,15 @@ static void test_directional_shadow_map_is_texel_stable(void) {
     EXPECT_EQ(50, (int)(projected.z * 100.0f));
 }
 
+static void test_default_shadow_light_stays_near_overhead(void) {
+    const RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    float horizontalSquared = light.x * light.x + light.z * light.z;
+    /* Less than 14 degrees from vertical keeps a 100-unit-high caster's
+     * shadow within 25 world units of its contact point. */
+    EXPECT_EQ(1, light.y > 0.0f);
+    EXPECT_EQ(1, horizontalSquared * 16.0f < light.y * light.y);
+}
+
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_legacy_mirror_instances_can_be_removed_from_scene();
@@ -428,6 +437,7 @@ int main(void) {
     test_synchronized_presentation_matches_animated_wheel_mesh();
     test_synchronized_presentation_moves_dynamic_scenery();
     test_native_camera_projection_has_no_gte_quantization();
+    test_default_shadow_light_stays_near_overhead();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     test_directional_shadow_map_is_texel_stable();
     if (failures != 0) return EXIT_FAILURE;

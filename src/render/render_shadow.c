@@ -3,6 +3,9 @@
 #include <math.h>
 #include <string.h>
 
+const RageRenderVec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION =
+    {-0.1f, 1.0f, 0.12f};
+
 static float RageRenderShadowDot(RageRenderVec3 left, RageRenderVec3 right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
 }
