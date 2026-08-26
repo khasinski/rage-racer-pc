@@ -45,23 +45,8 @@ void main() {
                                           imageSize - 1.0));
     vec4 texel = materialTexel(nearestPosition);
     if (texel.a <= 0.001) discard;
-    vec2 samplePosition = pixel - 0.5;
-    vec2 cell = floor(samplePosition);
-    vec2 fraction = samplePosition - cell;
-    vec3 filtered = vec3(0.0);
-    float weightSum = 0.0;
-    for (int tap = 0; tap < 4; tap++) {
-        vec2 offset = vec2(float(tap & 1), float(tap >> 1));
-        vec2 at = clamp(cell + offset, vec2(0.0), imageSize - 1.0);
-        vec2 axis = abs(offset - fraction);
-        float weight = (1.0 - axis.x) * (1.0 - axis.y);
-        vec4 sampleColor = materialTexel(ivec2(at));
-        if (sampleColor.a > 0.001) {
-            filtered += sampleColor.rgb * weight;
-            weightSum += weight;
-        }
-    }
-    if (weightSum > 0.0) texel.rgb = filtered / weightSum;
+    vec4 filtered = texture(materialTexture, uv);
+    if (filtered.a > 0.001) texel.rgb = filtered.rgb / filtered.a;
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, LIGHT_DIRECTION), 0.0);
