@@ -351,22 +351,38 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     }
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
         uint32_t mirrorVehicleSpans = 0;
+        uint32_t shadowSpans = 0;
+        uint32_t playerShadowSpans = 0;
+        uint32_t mirrorShadowSpans = 0;
         uint32_t span;
+        for (span = 0; span < s_spanCount; span++) {
+            if ((s_spans[span].instanceFlags &
+                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0) {
+                shadowSpans++;
+                if (s_spans[span].sourceEntity == 11)
+                    playerShadowSpans++;
+            }
+        }
         for (span = 0; span < s_mirrorSpanCount; span++) {
             if (s_mirrorSpans[span].assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                 s_mirrorSpans[span].assetSet ==
                     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
                 mirrorVehicleSpans++;
             }
+            if ((s_mirrorSpans[span].instanceFlags &
+                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0)
+                mirrorShadowSpans++;
         }
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
                 "cached=%u vertices=%u spans=%u mirror_vertices=%u "
-                "mirror_spans=%u mirror_vehicle_spans=%u\n",
+                "shadow_spans=%u player_shadow_spans=%u mirror_spans=%u "
+                "mirror_vehicle_spans=%u mirror_shadow_spans=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
-                s_vertexCount, s_spanCount, s_mirrorVertexCount,
-                s_mirrorSpanCount, mirrorVehicleSpans);
+                s_vertexCount, s_spanCount, s_mirrorVertexCount, shadowSpans,
+                playerShadowSpans, s_mirrorSpanCount, mirrorVehicleSpans,
+                mirrorShadowSpans);
     }
 }
 
