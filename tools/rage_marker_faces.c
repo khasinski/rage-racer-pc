@@ -334,6 +334,10 @@ int main(int argc, char **argv) {
             if (pointInTri(probeX, probeY, sx[0], sy[0], sx[1], sy[1], sx[2],
                            sy[2]) ||
                 pointInTri(probeX, probeY, sx[1], sy[1], sx[3], sy[3], sx[2],
+                           sy[2]) ||
+                pointInTri(probeX, probeY, sx[0], sy[0], sx[1], sy[1], sx[3],
+                           sy[3]) ||
+                pointInTri(probeX, probeY, sx[0], sy[0], sx[3], sy[3], sx[2],
                            sy[2])) {
                 printf("cover kind=%d klass=%d flags=%02x ot=%d bias=%d "
                        "cell=%d draw=%d mirror=%d "
