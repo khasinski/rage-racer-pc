@@ -40,13 +40,18 @@ static int s_initialized;
 static int s_currentWorld;
 static int s_haveCompletedFrame;
 
+static int RageGameSceneUsesRaceWorld(void) {
+    return g_SceneId == 12 || g_SceneId == 0x1E;
+}
+
 static int RageGameTrackSurfaceQuery(void *context, uint32_t entity,
                                      float worldX, float worldZ,
                                      float *worldY) {
     const GameRenderObject *object;
     CarSurfaceSampleView sample;
     (void)context;
-    if (worldY == NULL || g_SceneId != 12 || g_TrackPoints == NULL ||
+    if (worldY == NULL || !RageGameSceneUsesRaceWorld() ||
+        g_TrackPoints == NULL ||
         g_TrackPointCount <= 0 || entity > 11) return 0;
     object = entity < 11
         ? (const GameRenderObject *)&g_Cars[entity]
@@ -586,9 +591,9 @@ static RageRenderVec3 RageGameTrackLightForCar(const GameRenderObject *object) {
     RageRenderVec3 result = {1.0f, 1.0f, 1.0f};
     float light[3];
     int blend;
-    /* Scene 12 is the actual race. Presentation scenes, especially the
-     * Grand Prix prologue, keep their already-correct authored appearance. */
-    if (g_SceneId != 12) return result;
+    /* Live race and attract playback share one native scene treatment.
+     * Scripted presentation scenes keep their authored neutral appearance. */
+    if (!RageGameSceneUsesRaceWorld()) return result;
     blend = GetTrackZoneBlend(object->trackProgress);
     RageTrackZoneLightColor(blend, g_TrackZoneCode, light);
     result.x = light[0];
@@ -665,7 +670,8 @@ void RageGameRenderWorldPublishRaceCars(void) {
     uint32_t source, destination = 0;
     int car;
 
-    if (!s_initialized || g_SceneId != 12 || g_GrandPrixMode == 0) return;
+    if (!s_initialized || !RageGameSceneUsesRaceWorld() ||
+        (g_SceneId == 12 && g_GrandPrixMode == 0)) return;
     world = RageGameRenderWorldMutable();
     /* DrawCar historically publishes only rivals accepted by the active GTE
      * view. Replace those partial main-camera submissions with one complete

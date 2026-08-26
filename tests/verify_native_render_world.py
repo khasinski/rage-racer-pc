@@ -92,12 +92,13 @@ id = "native-world-test"
         )
         index = "# rage-rmesh-index v2\n" + "".join(
             f"{key} model car.rmesh material.rmat\n" for key in range(10, 75))
-        index += (
-            "88 track-model-1 car.rmesh material.rmat\n"
-            "88 track-model-2 car.rmesh material.rmat\n"
-            "88 course car.rmesh material.rmat\n"
-            "88 terrain car.rmesh material.rmat\n"
-        )
+        for key in range(88, 136, 2):
+            index += (
+                f"{key} track-model-1 car.rmesh material.rmat\n"
+                f"{key} track-model-2 car.rmesh material.rmat\n"
+                f"{key} course car.rmesh material.rmat\n"
+                f"{key} terrain car.rmesh material.rmat\n"
+            )
         (root / "runtime-index.txt").write_text(index, encoding="ascii")
         scenario.write_text(
             """[video]
@@ -167,6 +168,33 @@ timer = 20
             raise AssertionError(
                 "complete native world was not submitted to the GPU\n" +
                 result.stdout[-4000:]
+            )
+
+        attract = subprocess.run(
+            [executable,
+             "--set", "video.renderer=modern",
+             "--set", "race.enabled=false",
+             "--set", "boot.direct=false",
+             "--set", "run.frames=2500",
+             "--set", "stop.scene=30",
+             "--set", "stop.timer=200"],
+            cwd=source, env=environment,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            timeout=35,
+        )
+        if attract.returncode != 0:
+            print(attract.stdout, file=sys.stderr)
+            return attract.returncode or 1
+        if "scene=30 timer=200" not in attract.stdout:
+            raise AssertionError(
+                "smoke run did not reach attract driving mode\n" +
+                attract.stdout[-4000:]
+            )
+        shadows = re.findall(r"shadow_spans=(\d+)", attract.stdout)
+        if not shadows or max(map(int, shadows)) != 11:
+            raise AssertionError(
+                "attract mode did not publish the complete projected car "
+                "shadow set\n" + attract.stdout[-4000:]
             )
     return 0
 
