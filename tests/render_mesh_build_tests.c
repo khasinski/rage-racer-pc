@@ -33,10 +33,9 @@ static const RageRuntimeMesh *test_mesh_lookup(
 static int test_shadow_surface_query(void *context, uint32_t entity,
                                      float worldX, float worldZ,
                                      float *worldY) {
-    (void)context;
     shadow_surface_query_calls++;
     EXPECT_EQ(11, entity);
-    *worldY = worldX + worldZ;
+    *worldY = context != NULL ? *(const float *)context : worldX + worldZ;
     return 1;
 }
 
@@ -219,6 +218,7 @@ static void test_native_shadow_uses_rendered_terrain_surface(void) {
         {-2.0f, 10.0f, -2.0f}, {2.0f, 10.0f, -2.0f},
         {0.0f, 14.0f, 2.0f}};
     uint32_t spanCount;
+    float roadY = 12.0f;
     unsigned i;
 
     memcpy(bytes, "RRMESH1", 7);
@@ -236,6 +236,7 @@ static void test_native_shadow_uses_rendered_terrain_surface(void) {
     world.camera.verticalFovDegrees = 90.0f;
     world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
     world.surfaceQuery = test_shadow_surface_query;
+    world.surfaceQueryContext = &roadY;
     storage[0].entity = 11;
     storage[0].flags = RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
     storage[0].transform.scale.x = storage[0].transform.scale.y =
@@ -254,7 +255,121 @@ static void test_native_shadow_uses_rendered_terrain_surface(void) {
     EXPECT_EQ(125, (int)(vertices[0].position[1] * 10.0f));
     EXPECT_EQ(125, (int)(vertices[1].position[1] * 10.0f));
     EXPECT_EQ(135, (int)(vertices[2].position[1] * 10.0f));
-    EXPECT_EQ(0, shadow_surface_query_calls);
+    EXPECT_EQ(3, shadow_surface_query_calls);
+}
+
+static void test_native_shadow_ignores_terrain_depth_decals(void) {
+    unsigned char bytes[440] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[3] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[9];
+    RageNativeDrawSpan spans[3];
+    float positions[9][3] = {
+        {-1.0f, 5.0f, 0.0f}, {1.0f, 5.0f, 0.0f}, {0.0f, 5.0f, 1.0f},
+        {-2.0f, 10.0f, -2.0f}, {2.0f, 10.0f, -2.0f},
+        {0.0f, 10.0f, 2.0f},
+        {-2.0f, 10.25f, -2.0f}, {2.0f, 10.25f, -2.0f},
+        {0.0f, 10.25f, 2.0f}};
+    float roadY = 10.25f;
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 3);
+    write_u32(bytes + 16, 9); write_u32(bytes + 20, 9);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    write_u32(bytes + 32, 6); write_u32(bytes + 36, 9);
+    for (i = 0; i < 9; i++) {
+        uint32_t material = 4;
+        memcpy(bytes + 40 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[40 + i * 40 + 27] = 255;
+        if (i >= 6) {
+            material = RAGE_RUNTIME_MATERIAL_METADATA |
+                (0xFCu << RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) | 4u;
+        }
+        write_u32(bytes + 40 + i * 40 + 36, material);
+        write_u32(bytes + 400 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 3);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    world.surfaceQuery = test_shadow_surface_query;
+    world.surfaceQueryContext = &roadY;
+    storage[0].entity = 11;
+    storage[0].flags = RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
+    storage[1].mesh = 1;
+    storage[1].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[2].mesh = 2;
+    storage[2].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    for (i = 0; i < 3; i++) {
+        storage[i].transform.scale.x = storage[i].transform.scale.y =
+            storage[i].transform.scale.z = 1.0f;
+    }
+    world.instanceCount = 3;
+    shadow_surface_query_calls = 0;
+
+    EXPECT_EQ(9, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 9, spans, 3,
+                                             &spanCount));
+    EXPECT_EQ(3, spanCount);
+    EXPECT_EQ(1050, (int)(vertices[0].position[1] * 100.0f));
+    EXPECT_EQ(1050, (int)(vertices[1].position[1] * 100.0f));
+    EXPECT_EQ(1050, (int)(vertices[2].position[1] * 100.0f));
+    EXPECT_EQ(3, shadow_surface_query_calls);
+}
+
+static void test_native_shadow_rejects_distant_overhead_surface(void) {
+    unsigned char bytes[300] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[2] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[6];
+    RageNativeDrawSpan spans[2];
+    float positions[6][3] = {
+        {-1.0f, 5.0f, 0.0f}, {1.0f, 5.0f, 0.0f}, {0.0f, 5.0f, 1.0f},
+        {-2.0f, 100.0f, -2.0f}, {2.0f, 100.0f, -2.0f},
+        {0.0f, 100.0f, 2.0f}};
+    float roadY = 10.0f;
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 2);
+    write_u32(bytes + 16, 6); write_u32(bytes + 20, 6);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    write_u32(bytes + 32, 6);
+    for (i = 0; i < 6; i++) {
+        memcpy(bytes + 36 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[36 + i * 40 + 27] = 255;
+        write_u32(bytes + 276 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 2);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 200.0f;
+    world.surfaceQuery = test_shadow_surface_query;
+    world.surfaceQueryContext = &roadY;
+    storage[0].entity = 11;
+    storage[0].flags = RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
+    storage[1].mesh = 1;
+    storage[1].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    for (i = 0; i < 2; i++) {
+        storage[i].transform.scale.x = storage[i].transform.scale.y =
+            storage[i].transform.scale.z = 1.0f;
+    }
+    world.instanceCount = 2;
+    shadow_surface_query_calls = 0;
+
+    EXPECT_EQ(6, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 2,
+                                             &spanCount));
+    EXPECT_EQ(2, spanCount);
+    EXPECT_EQ(105, (int)(vertices[0].position[1] * 10.0f));
+    EXPECT_EQ(105, (int)(vertices[1].position[1] * 10.0f));
+    EXPECT_EQ(105, (int)(vertices[2].position[1] * 10.0f));
+    EXPECT_EQ(3, shadow_surface_query_calls);
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
@@ -664,6 +779,8 @@ int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_emits_semantic_shadow_footprint();
     test_native_shadow_uses_rendered_terrain_surface();
+    test_native_shadow_ignores_terrain_depth_decals();
+    test_native_shadow_rejects_distant_overhead_surface();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
     test_native_draw_builder_culls_dynamic_course_backfaces();
     test_native_draw_builder_welds_terrain_cell_boundaries();

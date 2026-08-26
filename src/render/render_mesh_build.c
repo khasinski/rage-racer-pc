@@ -17,11 +17,13 @@ typedef struct RageTransformBasis {
 
 typedef struct RageShadowSurfaceCacheEntry {
     uint32_t entity;
-    float x, z, referenceY, surfaceY;
+    float x, z, surfaceY;
     int found;
 } RageShadowSurfaceCacheEntry;
 
 enum { RAGE_SHADOW_SURFACE_CACHE_CAPACITY = 1024 };
+static const float RAGE_SHADOW_RECEIVER_OFFSET = 0.5f;
+static const float RAGE_SHADOW_MAX_RECEIVER_DELTA = 32.0f;
 
 static RageTransformBasis RageBuildTransformBasis(const RageRenderTransform *transform) {
     RageTransformBasis basis = {0};
@@ -150,6 +152,7 @@ static int RageRenderedTerrainSurfaceY(
         uint32_t first, count, offset;
         if (instance->assetSet != RAGE_RENDER_ASSET_TERRAIN ||
             instance->pass != pass ||
+            (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0 ||
             fabsf(x - instance->transform.position.x) > 1025.0f ||
             fabsf(z - instance->transform.position.z) > 1025.0f)
             continue;
@@ -162,6 +165,7 @@ static int RageRenderedTerrainSurfaceY(
             RageRenderVec3 triangle[3];
             uint32_t corner;
             int valid = 1;
+            int receiver = 1;
             for (corner = 0; corner < 3; corner++) {
                 RageRuntimeVertex vertex;
                 uint32_t index;
@@ -169,6 +173,11 @@ static int RageRenderedTerrainSurfaceY(
                     mesh, first + offset + corner, &index);
                 valid = valid && RageRuntimeMeshVertex(mesh, index, &vertex);
                 if (valid) {
+                    if ((vertex.material & RAGE_RUNTIME_MATERIAL_METADATA) !=
+                            0 &&
+                        (int8_t)(vertex.material >>
+                            RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) < 0)
+                        receiver = 0;
                     triangle[corner] = RageTransformPosition(&basis, &vertex);
                     triangle[corner].x =
                         RageSnapTerrainCellBoundary(triangle[corner].x);
@@ -176,14 +185,14 @@ static int RageRenderedTerrainSurfaceY(
                         RageSnapTerrainCellBoundary(triangle[corner].z);
                 }
             }
-            if (valid) {
+            if (valid && receiver) {
                 float candidateY;
                 if (RageTriangleSurfaceY(triangle, x, z, &candidateY)) {
                     float distance = fabsf(candidateY - referenceY);
                     if (!found || distance < bestDistance) {
                         found = 1;
                         bestDistance = distance;
-                        *surfaceY = candidateY + 0.5f;
+                        *surfaceY = candidateY;
                     }
                 }
             }
@@ -201,25 +210,41 @@ static int RageShadowSurfaceY(
     for (index = 0; index < *cacheCount; index++) {
         const RageShadowSurfaceCacheEntry *entry = &cache[index];
         if (entry->entity == instance->entity && entry->x == x &&
-            entry->z == z && entry->referenceY == referenceY) {
+            entry->z == z) {
             if (entry->found) *surfaceY = entry->surfaceY;
             return entry->found;
         }
     }
     {
-        int found = RageRenderedTerrainSurfaceY(
-            world, instance->pass, lookup, context, x, z, referenceY,
-            surfaceY);
-        if (!found && world->surfaceQuery != NULL) {
-            found = world->surfaceQuery(
-                world->surfaceQueryContext, instance->entity, x, z, surfaceY);
+        float roadY = referenceY;
+        float renderedY;
+        int haveRoad = 0;
+        int found;
+        if (world->surfaceQuery != NULL) {
+            haveRoad = world->surfaceQuery(
+                world->surfaceQueryContext, instance->entity, x, z, &roadY);
+        }
+        /* The semantic road sample identifies the intended receiver even
+         * when several pieces of rendered terrain overlap in X/Z. The car's
+         * own footprint height is unsuitable here: collisions lift it and
+         * can make a bridge, sign, or other upper surface look closer. */
+        found = RageRenderedTerrainSurfaceY(
+            world, instance->pass, lookup, context, x, z,
+            haveRoad ? roadY : referenceY, &renderedY);
+        if (found && haveRoad &&
+            fabsf(renderedY - roadY) > RAGE_SHADOW_MAX_RECEIVER_DELTA)
+            found = 0;
+        if (found) {
+            *surfaceY = renderedY + RAGE_SHADOW_RECEIVER_OFFSET;
+        } else if (haveRoad) {
+            *surfaceY = roadY + RAGE_SHADOW_RECEIVER_OFFSET;
+            found = 1;
         }
         if (*cacheCount < RAGE_SHADOW_SURFACE_CACHE_CAPACITY) {
             RageShadowSurfaceCacheEntry *entry = &cache[(*cacheCount)++];
             entry->entity = instance->entity;
             entry->x = x;
             entry->z = z;
-            entry->referenceY = referenceY;
             entry->surfaceY = found ? *surfaceY : referenceY;
             entry->found = found;
         }

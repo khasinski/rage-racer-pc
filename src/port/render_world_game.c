@@ -60,9 +60,10 @@ static int RageGameTrackSurfaceQuery(void *context, uint32_t entity,
     sample.x = (u16)lroundf(worldX);
     sample.z = (u16)lroundf(-worldZ);
     sample.trackPointIndex = object->trackPointIndex;
-    /* Scene Y is the inverse of game Y. Keep the translucent projection a
-     * fraction above the receiver; ordinary scene depth still occludes it. */
-    *worldY = -(float)GetTrackSurfaceHeight(&sample) + 0.5f;
+    /* Scene Y is the inverse of game Y. Return the actual semantic receiver;
+     * the renderer applies one consistent separation after resolving it
+     * against visible terrain. */
+    *worldY = -(float)GetTrackSurfaceHeight(&sample);
     return 1;
 }
 
