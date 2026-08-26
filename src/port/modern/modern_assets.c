@@ -6,6 +6,8 @@
 
 #include "modern_assets.h"
 #include "port/mod_assets.h"
+#include "port/platform_paths.h"
+#include "port/runtime_config.h"
 #include "render/asset_id.h"
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
@@ -79,29 +81,20 @@ static void ModernAssetFreeFile(void *context, const void *bytes) {
     SDL_free((void *)bytes);
 }
 
-void ModernAssetsInit(void) {
-    const char *root;
+static int ModernAssetsTryRoot(const char *root) {
     char indexPath[sizeof(s_root) + 32];
     size_t rootLength;
-
-    if (s_initialized) return;
-    s_initialized = 1;
-    ModernAssetsInitModProvider();
-    root = getenv("RAGE_PORT_MODERN_ASSETS");
-    if (root == NULL || root[0] == '\0') return;
+    if (root == NULL || root[0] == '\0') return 0;
     rootLength = strlen(root);
     if (rootLength == 0 || rootLength >= sizeof(s_root) ||
         rootLength + sizeof("/runtime-index.txt") > sizeof(indexPath)) {
         fprintf(stderr, "rage-port: native asset path is too long\n");
-        return;
+        return 0;
     }
     memcpy(s_root, root, rootLength + 1);
     snprintf(indexPath, sizeof(indexPath), "%s/runtime-index.txt", s_root);
     s_indexBytes = SDL_LoadFile(indexPath, &s_indexSize);
-    if (s_indexBytes == NULL) {
-        fprintf(stderr, "rage-port: native asset index unavailable: %s\n", indexPath);
-        return;
-    }
+    if (s_indexBytes == NULL) return 0;
     if (RageRuntimeIndexVersion(s_indexBytes, s_indexSize) !=
         RAGE_RUNTIME_INDEX_VERSION) {
         fprintf(stderr,
@@ -110,13 +103,48 @@ void ModernAssetsInit(void) {
         SDL_free(s_indexBytes);
         s_indexBytes = NULL;
         s_indexSize = 0;
-        return;
+        return 0;
     }
     RageRuntimeMeshCacheInit(&s_cache, s_indexBytes, s_indexSize,
                              ModernAssetReadFile, ModernAssetFreeFile, NULL,
                              s_entries, MODERN_ASSET_CACHE_CAPACITY);
     s_ready = 1;
     fprintf(stderr, "rage-port: native asset cache %s\n", s_root);
+    return 1;
+}
+
+int ModernAssetsInit(void) {
+    const char *configured;
+    char directory[1024];
+    char candidate[1024];
+    if (s_initialized) return s_ready;
+    s_initialized = 1;
+    ModernAssetsInitModProvider();
+    configured = RageRuntimeConfigGetOverride(
+        "modern.assets", "RAGE_PORT_MODERN_ASSETS");
+    if (configured != NULL && configured[0] != '\0') {
+        if (ModernAssetsTryRoot(configured)) return 1;
+        fprintf(stderr, "rage-port: native asset cache unavailable: %s\n",
+                configured);
+        return 0;
+    }
+    if (RagePlatformExecutableDirectory(NULL, directory, sizeof(directory))) {
+        int written = snprintf(candidate, sizeof(candidate), "%s/native-assets",
+                               directory);
+        if (written > 0 && (size_t)written < sizeof(candidate) &&
+            ModernAssetsTryRoot(candidate)) return 1;
+#ifdef __APPLE__
+        written = snprintf(candidate, sizeof(candidate),
+                           "%s/../../../native-assets", directory);
+        if (written > 0 && (size_t)written < sizeof(candidate) &&
+            ModernAssetsTryRoot(candidate)) return 1;
+#endif
+    }
+    fprintf(stderr,
+            "rage-port: modern renderer requires a native asset cache; "
+            "place it beside the executable as native-assets or set "
+            "modern.assets\n");
+    return 0;
 }
 
 void ModernAssetsShutdown(void) {

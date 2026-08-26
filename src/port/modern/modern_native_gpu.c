@@ -314,7 +314,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     SDL_GPUBufferCreateInfo buffer = {0};
     SDL_GPUTransferBufferCreateInfo transfer = {0};
     SDL_GPUSamplerCreateInfo sampler = {0};
-    if (!ModernAssetsReady()) return 1;
+    if (!ModernAssetsReady()) return 0;
     s_device = device;
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len, "vs_native",
@@ -488,9 +488,7 @@ int ModernNativeGpuHasDraws(void) {
     return s_vertexCount != 0 && s_world != NULL && s_world->hasCamera;
 }
 
-int ModernNativeGpuCanReplaceWorld(void) {
-    return ModernNativeGpuHasDraws() && s_completeWorld;
-}
+int ModernNativeGpuWorldComplete(void) { return s_completeWorld; }
 
 int ModernNativeGpuHasMirrorDraws(void) {
     return s_mirrorVertexCount != 0 && s_mirrorSpanCount != 0 &&

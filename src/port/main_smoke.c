@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
         portConfig.renderer = RAGE_RENDERER_MODERN;
     RagePortConfigSetActive(&portConfig);
     RageTimingInit();
-    RageModernInit(&portConfig);
+    if (!RageModernInit(&portConfig)) return EXIT_FAILURE;
     MainLoop();
     if (RageRuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM") != NULL) {
         FILE *output = fopen(RageRuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM"), "wb");

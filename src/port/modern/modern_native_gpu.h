@@ -9,7 +9,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device);
 void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 int ModernNativeGpuHasDraws(void);
-int ModernNativeGpuCanReplaceWorld(void);
+int ModernNativeGpuWorldComplete(void);
 int ModernNativeGpuHasMirrorDraws(void);
 float ModernNativeGpuMirrorPanelY(void);
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,

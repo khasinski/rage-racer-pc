@@ -32,6 +32,14 @@ def main() -> int:
     if any("classic/" in path.read_text(encoding="utf-8")
            for path in modern_sources):
         raise AssertionError("modern renderer imports the classic renderer")
+    modern = (source / "src/port/modern/modern_renderer.c").read_text(
+        encoding="utf-8")
+    if "ModernNativeGpuCanReplaceWorld" in modern:
+        raise AssertionError("modern renderer still conditionally falls back")
+    if "ModernRenderLegacySelection(cmd, vram, 0, UINT32_MAX" in modern:
+        raise AssertionError("modern renderer can still draw the legacy 3D world")
+    if "legacy 3D fallback is disabled" not in modern:
+        raise AssertionError("incomplete native worlds are not diagnosed")
     return 0
 
 

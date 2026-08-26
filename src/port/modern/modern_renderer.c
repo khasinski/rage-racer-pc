@@ -1790,10 +1790,21 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_EndGPUCopyPass(copy);
         }
     }
-    if (ModernNativeGpuCanReplaceWorld()) {
+    {
+        static uint64_t reportedIncompleteFrame = UINT64_MAX;
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_BACKGROUND, 1);
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
+        if (ModernNativeGpuHasDraws()) {
+            ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
+        }
+        if (!ModernNativeGpuWorldComplete() &&
+            reportedIncompleteFrame != snapshot->frameCounter) {
+            reportedIncompleteFrame = snapshot->frameCounter;
+            fprintf(stderr,
+                    "rage-port: incomplete native world at frame %u; "
+                    "legacy 3D fallback is disabled\n",
+                    snapshot->frameCounter);
+        }
         ModernRenderLegacySelection(cmd, vram, 0,
                                     1u << MODERN_LAYER_HUD, 0);
         if (ModernNativeGpuHasMirrorDraws()) {
@@ -1802,9 +1813,6 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
         ModernRenderLegacySelection(cmd, vram, 1,
                                     1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
-    } else {
-        ModernRenderLegacySelection(cmd, vram, 0, UINT32_MAX, 1);
-        ModernRenderLegacySelection(cmd, vram, 1, UINT32_MAX, 0);
     }
     {
         SDL_GPUTexture *chain = s_target;
@@ -2103,7 +2111,12 @@ int RageModernInit(const RagePortConfig *config) {
         return 1;
     }
     s_config = *config;
-    ModernAssetsInit();
+    if (config->renderer == RAGE_RENDERER_MODERN && !ModernAssetsInit()) {
+        fprintf(stderr,
+                "rage-port: refusing to start modern renderer without "
+                "native assets\n");
+        return 0;
+    }
     toggleKey = RageRuntimeConfigGet("video.toggle_renderer_key");
     if (toggleKey != NULL && toggleKey[0] != '\0') {
         SDL_Scancode parsed = SDL_GetScancodeFromName(toggleKey);
@@ -2145,6 +2158,12 @@ int RageModernIsEnabled(void) {
 
 void RageModernToggle(void) {
     if (!s_initialized) return;
+    if (!s_enabled && !ModernAssetsReady() && !ModernAssetsInit()) {
+        fprintf(stderr,
+                "rage-port: renderer switch to modern refused: native "
+                "assets are unavailable\n");
+        return;
+    }
     s_enabled = !s_enabled;
     if (!s_enabled) {
         ModernDestroyResources();

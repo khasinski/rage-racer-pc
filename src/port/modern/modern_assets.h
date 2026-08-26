@@ -11,7 +11,7 @@ typedef struct ModernAssetImage {
     uint32_t height;
 } ModernAssetImage;
 
-void ModernAssetsInit(void);
+int ModernAssetsInit(void);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RageRenderMeshInstance *instance);

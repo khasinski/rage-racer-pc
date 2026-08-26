@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
             portConfig.modernInternalScale, portConfig.modernAspect,
             portConfig.modernFps, portConfig.modernDrawDistance,
             portConfig.modernPost);
-    RageModernInit(&portConfig);
+    if (!RageModernInit(&portConfig)) return EXIT_FAILURE;
     /* Initialize SDL input before configurable names are resolved to
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);
