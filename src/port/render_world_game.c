@@ -370,7 +370,7 @@ void RageGameRenderWorldPublishCurrentCamera(void) {
 static void RageGameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     RageSceneMat3 rotation, int fogged, int mirror_pass,
-    int cullBackfaces, int depthOverlay) {
+    int cullBackfaces, int depthOverlay, uint8_t paletteOffset) {
     RageRenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -380,7 +380,9 @@ static void RageGameRenderWorldSubmitCourseTransform(
     instance.assetSet = RAGE_RENDER_ASSET_COURSE;
     instance.assetKey = RageTrackDataAssetKey();
     instance.material = 0;
-    instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
+    instance.materialVariant =
+        (uint8_t)(((g_TrackTexturePageWanted != 0) ? 4u : 0u) +
+                  (paletteOffset & 3u));
     instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.transform.position.x =
@@ -410,7 +412,7 @@ void RageGameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int mirror_pass) {
     RageGameRenderWorldSubmitCourseTransform(
         0x10000u + entity, mesh, x, y, z, RageSceneRotationY(yaw), fogged,
-        mirror_pass, 0, 0);
+        mirror_pass, 0, 0, 0);
 }
 
 static void RageGameRenderWorldSubmitDynamicCourseObjectInternal(
@@ -439,7 +441,7 @@ static void RageGameRenderWorldSubmitDynamicCourseObjectInternal(
                 (float)rotation[row][column] * (1.0f / 4096.0f);
     RageGameRenderWorldSubmitCourseTransform(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass, 1,
-        depthOverlay);
+        depthOverlay, (uint8_t)((SCRATCH_ENV_MODE4 >> 16) & 3));
 }
 
 void RageGameRenderWorldSubmitDynamicCourseObject(

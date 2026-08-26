@@ -520,7 +520,13 @@ class Extractor:
         # the trackside scenery and the road surface itself.
         try:
             cb = models.parse_course_objects(buf, hdr[5], len(buf))
-            textures = self.emit_textures(v, cb, f"{stem}_course", alternate)
+            # Animated course screens select one of four adjacent CLUT rows
+            # through SCRATCH_ENV_MODE4. Bake that semantic palette choice for
+            # both section pages; native rendering must not sample live VRAM.
+            textures = self.emit_textures(
+                v, cb, f"{stem}_course",
+                variant_vrams=(v, alternate),
+                variant_clut_offsets=(0, 1, 2, 3))
             b = self.emit_bank(cb, f"{stem}_course", textures=textures,
                                scrolling_primitives=True)
             b["sub"] = 5
