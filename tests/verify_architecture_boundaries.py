@@ -38,7 +38,7 @@ def main() -> int:
         encoding="utf-8")
     if renderer_config.count("RAGE_RENDERER_") != 2:
         raise AssertionError("the public runtime must expose exactly two renderers")
-    if ("RAGE_RENDERER_COMPAT = 0" not in renderer_config or
+    if ("RAGE_RENDERER_CLASSIC = 0" not in renderer_config or
             "RAGE_RENDERER_MODERN = 1" not in renderer_config):
         raise AssertionError("classic/modern renderer identities changed")
     forbidden_modern_3d = (

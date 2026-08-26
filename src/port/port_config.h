@@ -7,7 +7,7 @@
  * back to captured PS1 3D. These settings affect presentation only. */
 
 typedef enum RageRendererKind {
-    RAGE_RENDERER_COMPAT = 0,
+    RAGE_RENDERER_CLASSIC = 0,
     RAGE_RENDERER_MODERN = 1
 } RageRendererKind;
 

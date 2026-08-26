@@ -16,7 +16,7 @@ static char *Trim(char *text) {
 }
 
 void RagePortConfigDefaults(RagePortConfig *config) {
-    config->renderer = RAGE_RENDERER_COMPAT;
+    config->renderer = RAGE_RENDERER_CLASSIC;
     config->modernInternalScale = 2.0f;
     config->modernAspect = RAGE_MODERN_ASPECT_AUTO;
     config->modernFps = RAGE_MODERN_FPS_LOGIC;
@@ -39,7 +39,7 @@ static int ApplySetting(RagePortConfig *config, const char *name,
                         const char *value) {
     if (strcmp(name, "renderer") == 0) {
         if (strcmp(value, "compat") == 0 || strcmp(value, "classic") == 0) {
-            config->renderer = RAGE_RENDERER_COMPAT;
+            config->renderer = RAGE_RENDERER_CLASSIC;
             return 1;
         }
         if (strcmp(value, "modern") == 0) {
@@ -150,7 +150,7 @@ int RagePortConfigApplyRuntime(RagePortConfig *config) {
 }
 
 static RagePortConfig active_config = {
-    RAGE_RENDERER_COMPAT, 2.0f, RAGE_MODERN_ASPECT_AUTO,
+    RAGE_RENDERER_CLASSIC, 2.0f, RAGE_MODERN_ASPECT_AUTO,
     RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE,
     0
 };

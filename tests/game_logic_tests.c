@@ -139,7 +139,7 @@ static void test_port_config(void) {
     int fd;
 
     RagePortConfigDefaults(&config);
-    EXPECT_EQ(RAGE_RENDERER_COMPAT, config.renderer);
+    EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
