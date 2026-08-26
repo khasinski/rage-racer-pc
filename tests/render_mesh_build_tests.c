@@ -79,6 +79,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     storage[0].environmentLight.y = 0.5f;
     storage[0].environmentLight.z = 0.75f;
     storage[0].depthBias = -16.0f;
+    storage[0].flags = RAGE_RENDER_INSTANCE_DEPTH_DECAL;
     storage[0].transform.scale.x = 1.0f;
     storage[0].transform.scale.y = 1.0f;
     storage[0].transform.scale.z = 1.0f;
@@ -93,7 +94,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(10, spans[0].assetKey);
     EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
-    EXPECT_EQ(0, spans[0].depthDecal);
+    EXPECT_EQ(1, spans[0].depthDecal);
     EXPECT_EQ(1, spans[0].materialVariant);
     EXPECT_EQ(1, spans[0].hasCarPaint);
     EXPECT_EQ(3, spans[0].carPaintColor1);

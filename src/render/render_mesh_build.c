@@ -218,7 +218,8 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[2] = 1.0f;
     }
     out->depthBias = instance->depthBias;
-    *depthDecal = 0;
+    *depthDecal =
+        (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         int8_t authoredDepthBias = (int8_t)(source.material >>
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
@@ -226,8 +227,8 @@ static int RageBuildVertex(const RageTransformBasis *basis,
          * world-space distance. Preserve it as a small clip-space ordering
          * offset so coplanar decals such as road markings do not z-fight. */
         out->depthBias += (float)authoredDepthBias;
-        *depthDecal = instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-                      authoredDepthBias < 0;
+        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+            authoredDepthBias < 0) *depthDecal = 1;
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;

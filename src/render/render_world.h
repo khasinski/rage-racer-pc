@@ -114,6 +114,10 @@ enum {
      * imported meshes also contain the reverse faces rejected by NCLIP; keep
      * those from appearing through a rear camera as detached scenery. */
     RAGE_RENDER_INSTANCE_CULL_BACKFACES = 1u << 4,
+    /* A semantic surface laid directly over other world geometry. The native
+     * backend applies a slope-aware depth offset instead of letting the two
+     * surfaces z-fight. Player and rival shadow plates use this contract. */
+    RAGE_RENDER_INSTANCE_DEPTH_DECAL = 1u << 5,
 };
 
 typedef struct RageRenderWorld {
