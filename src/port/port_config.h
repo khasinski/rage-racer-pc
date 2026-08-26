@@ -1,11 +1,10 @@
 #ifndef RAGE_PORT_CONFIG_H
 #define RAGE_PORT_CONFIG_H
 
-/* Host-side presentation configuration. rage-port.ini is authoritative;
- * the old flat rage-port.cfg remains a temporary compatibility input.
- * Selects the presented renderer and the modern renderer's options.
- * The compat renderer always runs; these settings never affect game
- * behaviour, only presentation. */
+/* Host-side presentation configuration. There are exactly two renderers:
+ * classic presents the PS1-compatible output, while modern presents native
+ * RenderWorld 3D with the remaining captured 2D overlays. Modern never falls
+ * back to captured PS1 3D. These settings affect presentation only. */
 
 typedef enum RageRendererKind {
     RAGE_RENDERER_COMPAT = 0,

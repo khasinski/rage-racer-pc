@@ -7,13 +7,19 @@ import sys
 import tempfile
 from pathlib import Path
 
+from native_asset_fixture import create_native_asset_fixture
+
 
 def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     with tempfile.TemporaryDirectory(prefix="rage-runtime-config-") as directory:
-        scenario = Path(directory) / "scenario.ini"
+        root = Path(directory)
+        native_assets = root / "native-assets"
+        native_assets.mkdir()
+        create_native_asset_fixture(native_assets)
+        scenario = root / "scenario.ini"
         scenario.write_text(
-            """[race]
+            f"""[race]
 mode = grand-prix
 series = extra-gp
 class = 2
@@ -24,6 +30,9 @@ car = 4
 renderer = classic
 toggle_renderer_key = F9
 
+[modern]
+assets = {native_assets}
+
 [run]
 frames = 2700
 
@@ -32,7 +41,7 @@ scene = 12
 timer = 100
 
 [hooks]
-toggle_renderer_frame = 2300
+toggle_renderer_frame = 230
 """,
             encoding="utf-8",
         )

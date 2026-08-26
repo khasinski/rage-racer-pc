@@ -86,9 +86,11 @@ with `[disc] cue` in `rage-port.ini`.
 Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
 an alternative file and `--set section.key=value` for an individual override.
 
-An opt-in modern renderer sits next to the faithful PS1 one, adding z-buffered
-rendering at a configurable internal scale, optional 16:9 presentation, an
-uncapped interpolated frame rate and FXAA. The supplied file defaults to it:
+There are exactly two renderer modes. `classic` presents the faithful
+PS1-compatible output. `modern` presents native `RenderWorld` geometry with a
+normal depth buffer, configurable internal scale, optional 16:9 presentation,
+an interpolated frame rate and FXAA. It never falls back to captured PS1 3D.
+The supplied file defaults to `modern`:
 
 ```ini
 [video]
@@ -99,6 +101,20 @@ fps = vsync
 post = fxaa
 toggle_renderer_key = F10
 ```
+
+Modern mode requires an imported native-asset cache. Generate it from Track 01
+of your legally obtained disc and put it beside the executable:
+
+```sh
+python3 tools/assetbrowser/extract.py \
+  "/path/to/Rage Racer (Europe) (Track 01).bin" \
+  --out build/release/native-assets \
+  --no-raw --no-audio --no-vram --no-fmv
+```
+
+For a cache stored elsewhere, set `[modern] assets = /path/to/native-assets`.
+An absent or incompatible cache is an error in modern mode; the game will not
+silently launch a different 3D renderer.
 
 Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as

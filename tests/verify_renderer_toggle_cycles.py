@@ -7,13 +7,19 @@ import sys
 import tempfile
 from pathlib import Path
 
+from native_asset_fixture import create_native_asset_fixture
+
 
 def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     with tempfile.TemporaryDirectory(prefix="rage przełączanie ") as directory:
-        scenario = Path(directory) / "renderer żółty.ini"
+        root = Path(directory)
+        native_assets = root / "native assets"
+        native_assets.mkdir()
+        create_native_asset_fixture(native_assets)
+        scenario = root / "renderer żółty.ini"
         scenario.write_text(
-            """[race]
+            f"""[race]
 enabled = true
 mode = grand-prix
 series = gp
@@ -23,6 +29,9 @@ car = 3
 
 [video]
 renderer = classic
+
+[modern]
+assets = {native_assets}
 
 [run]
 frames = 2450
