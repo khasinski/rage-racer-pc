@@ -10,6 +10,7 @@
 #include "game/asset.h"
 #include "game/course_index.h"
 #include "game/environment.h"
+#include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/race.h"
 #include "game/scratchpad.h"
@@ -38,6 +39,27 @@ static int s_trackCarAsset = -1;
 static int s_initialized;
 static int s_currentWorld;
 static int s_haveCompletedFrame;
+
+static int RageGameTrackSurfaceQuery(void *context, uint32_t entity,
+                                     float worldX, float worldZ,
+                                     float *worldY) {
+    const GameRenderObject *object;
+    CarSurfaceSampleView sample;
+    (void)context;
+    if (worldY == NULL || g_SceneId != 12 || g_TrackPoints == NULL ||
+        g_TrackPointCount <= 0 || entity > 11) return 0;
+    object = entity < 11
+        ? (const GameRenderObject *)&g_Cars[entity]
+        : (const GameRenderObject *)&g_PlayerCar;
+    memset(&sample, 0, sizeof(sample));
+    sample.x = (u16)lroundf(worldX);
+    sample.z = (u16)lroundf(-worldZ);
+    sample.trackPointIndex = object->trackPointIndex;
+    /* Scene Y is the inverse of game Y. Keep the translucent projection a
+     * fraction above the receiver; ordinary scene depth still occludes it. */
+    *worldY = -(float)GetTrackSurfaceHeight(&sample) + 0.5f;
+    return 1;
+}
 
 static RageRenderWorld *RageGameRenderWorldMutable(void) {
     return &s_worlds[s_currentWorld];
@@ -212,7 +234,7 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
      * projection a small, stable clip-depth offset so it cannot alternate
      * with the road as its slope changes. The shadow pipeline still tests
      * scene depth and does not write it. */
-    if (part == 1) instance.depthBias = -64.0f;
+    if (part == 1) instance.depthBias = -8.0f;
     /* The PS1 ordering table draws the body after wheels that share its
      * depth bucket, masking the portion inset behind the wheel arches. A
      * real Z buffer otherwise exposes that authored overlap when suspension
@@ -246,6 +268,8 @@ void RageGameRenderWorldBeginFrame(uint64_t frame) {
                             RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
         RageRenderWorldInit(&s_worlds[1], s_instances[1],
                             RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
+        s_worlds[0].surfaceQuery = RageGameTrackSurfaceQuery;
+        s_worlds[1].surfaceQuery = RageGameTrackSurfaceQuery;
         s_initialized = 1;
     } else {
         const RageRenderWorld *completed = RageGameRenderWorldMutable();

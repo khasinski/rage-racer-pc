@@ -178,6 +178,13 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
     worldPosition = RageTransformPosition(basis, &source);
+    if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0 &&
+        world->surfaceQuery != NULL) {
+        float surfaceY;
+        if (world->surfaceQuery(world->surfaceQueryContext, instance->entity,
+                                worldPosition.x, worldPosition.z, &surfaceY))
+            worldPosition.y = surfaceY;
+    }
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
         worldPosition.z = RageSnapTerrainCellBoundary(worldPosition.z);

@@ -60,6 +60,13 @@ typedef enum RageRenderAssetSet {
     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 = 4,
 } RageRenderAssetSet;
 
+/* Optional semantic receiver query for projected effects. It keeps imported
+ * footprint meshes independent of the original track format: a game, mod or
+ * another scene provider can supply the surface under a world-space point. */
+typedef int (*RageRenderSurfaceQuery)(void *context, uint32_t entity,
+                                     float worldX, float worldZ,
+                                     float *worldY);
+
 typedef struct RageRenderMeshInstance {
     uint32_t entity;
     uint32_t mesh;
@@ -138,6 +145,8 @@ typedef struct RageRenderWorld {
     float previousMirrorPanelY;
     uint8_t hasMirrorCamera;
     uint8_t mirrorActive;
+    RageRenderSurfaceQuery surfaceQuery;
+    void *surfaceQueryContext;
     RageRenderMeshInstance *instances;
     uint32_t instanceCapacity;
     uint32_t instanceCount;
