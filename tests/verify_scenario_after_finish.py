@@ -39,6 +39,8 @@ def main() -> int:
     required = (
         "scenario mode=grand-prix",
         "sound cue=0x2a",
+        "finish follow-up queued cue=0x2b",
+        "finish follow-up released cue=0x2b",
         "scenario race finished after_finish=menu",
         "scenario automation stopped after finish",
         "scene=17 frontend=3",
@@ -46,6 +48,12 @@ def main() -> int:
     missing = [text for text in required if text not in result.stdout]
     if missing:
         raise AssertionError(f"after-finish flow missed {missing}\n{result.stdout}")
+    finished = result.stdout.index("sound cue=0x2a")
+    queued = result.stdout.index("finish follow-up queued cue=0x2b", finished)
+    released = result.stdout.index("finish follow-up released cue=0x2b", queued)
+    followup = result.stdout.index("sound cue=0x2b", released)
+    if not finished < queued < released < followup:
+        raise AssertionError("FINISHED was not protected from its follow-up cue")
     stopped = result.stdout.index("scenario automation stopped after finish")
     if "scenario confirm" in result.stdout[stopped:]:
         raise AssertionError("scenario continued automatic menu input after finish")

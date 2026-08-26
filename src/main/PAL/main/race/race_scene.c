@@ -18,10 +18,42 @@
 #include "game/state.h"
 #include "game/track.h"
 #include "psyq/gte.h"
+#ifdef __psyz
+#include <stdlib.h>
+#include "psyq/snd.h"
+#endif
 
 /* A retirement is not a finish-line event. Keep following the player's car
  * instead of advancing the autonomous finish camera down the track. */
 static s32 s_RetireCameraActive;
+
+#ifdef __psyz
+/* Retail normally announces FINISHED from the authored finish-line zone and
+ * plays cue 0x2B later, when UpdateLapAndFinish advances the race. A fast host
+ * frame can cross both conditions together. Starting both special cues on
+ * voices 22/23 in one frame makes 0x2B replace FINISHED before it is audible,
+ * so retain the retail ordering by waiting for those voices to become idle. */
+static s32 s_FinishFollowupCue = -1;
+
+static void RageQueueFinishFollowupCue(s32 cue) {
+    s_FinishFollowupCue = cue;
+    if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
+        fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
+                (unsigned)cue);
+}
+
+static void RageUpdateFinishFollowupCue(void) {
+    s32 cue;
+    if (s_FinishFollowupCue < 0 ||
+        SpuGetKeyStatus(g_SpecialVoiceBits[4]) != 0) return;
+    cue = s_FinishFollowupCue;
+    s_FinishFollowupCue = -1;
+    if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
+        fprintf(stderr, "rage-port: finish follow-up released cue=0x%02x\n",
+                (unsigned)cue);
+    PlaySoundCue(cue);
+}
+#endif
 
 int RageRetireCameraActive(void) { return s_RetireCameraActive; }
 
@@ -193,8 +225,10 @@ timing_done:
                  * remaining in one authored finish-line track section. */
                 g_RaceCueFlags |= 8;
                 PlaySoundCue(0x2A);
-#endif
+                RageQueueFinishFollowupCue(0x2B);
+#else
                 PlaySoundCue(0x2B);
+#endif
             } else {
             g_RacePhase = 5;
             SeedFinishCamera(&g_PlayerCar);
@@ -364,6 +398,9 @@ void EnterRaceScene(void) {
     g_CameraViewMode = CAMERA_VIEW_CAR;
     g_RacePhase = 0;
     s_RetireCameraActive = 0;
+#ifdef __psyz
+    s_FinishFollowupCue = -1;
+#endif
     g_RaceCueFlags = 0;
     g_RivalCueFlags = 0x1FE;
     g_RivalCueCooldown3 = 0;
@@ -403,6 +440,9 @@ void UpdateRaceScene(void) {
 
     value = g_SceneTimer + 1;
     g_SceneTimer = value;
+#ifdef __psyz
+    RageUpdateFinishFollowupCue();
+#endif
     option = 0;
     timerValue = value;
     if (timerValue < 0x3D) {
