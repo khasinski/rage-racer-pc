@@ -12,6 +12,11 @@ int RagePlatformFindConfigFile(const char *argv0, const char *name,
  * install keeps the disc image alongside the game. */
 int RagePlatformExecutableDirectory(const char *argv0, char *path,
                                     size_t pathSize);
+/* Returns the portable state root only when it already contains `bu00`.
+ * This preserves saves from older unpacked releases without creating new
+ * files beside the executable for ordinary installs. */
+int RagePlatformExistingPortableStateDirectory(
+    const char *executableDirectory, char *path, size_t pathSize);
 int RagePlatformUserConfigDirectory(char *path, size_t pathSize);
 int RagePlatformUserStateDirectory(char *path, size_t pathSize);
 int RagePlatformUserConfigPath(const char *name, char *path, size_t pathSize);

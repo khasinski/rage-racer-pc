@@ -103,11 +103,18 @@ static int RageHostAdjustStoragePath(char *dst, const char *src, int maxlen) {
 
 int RageHostInitStorage(void) {
     char cardDirectory[PATH_MAX];
+    char executableDirectory[PATH_MAX];
     int card;
 
-    if (!RagePlatformUserStateDirectory(s_RageMemoryCardDirectory,
-                                        sizeof(s_RageMemoryCardDirectory)) ||
-        !RagePlatformEnsureDirectory(s_RageMemoryCardDirectory))
+    if (!(RagePlatformExecutableDirectory(
+              NULL, executableDirectory, sizeof(executableDirectory)) &&
+          RagePlatformExistingPortableStateDirectory(
+              executableDirectory, s_RageMemoryCardDirectory,
+              sizeof(s_RageMemoryCardDirectory))) &&
+        !RagePlatformUserStateDirectory(s_RageMemoryCardDirectory,
+                                        sizeof(s_RageMemoryCardDirectory)))
+        return 0;
+    if (!RagePlatformEnsureDirectory(s_RageMemoryCardDirectory))
         return 0;
 
     for (card = 0; card < 2; card++) {

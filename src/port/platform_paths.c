@@ -27,6 +27,17 @@ static int RagePathExists(const char *path) {
     return 1;
 }
 
+static int RageDirectoryExists(const char *path) {
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES &&
+           (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+#else
+    struct stat status;
+    return stat(path, &status) == 0 && S_ISDIR(status.st_mode);
+#endif
+}
+
 static int RageJoinPath(char *out, size_t outSize, const char *directory,
                         const char *name) {
 #ifdef _WIN32
@@ -87,6 +98,48 @@ static int RageExecutableDirectory(const char *argv0, char *out,
 int RagePlatformExecutableDirectory(const char *argv0, char *out,
                                     size_t outSize) {
     return RageExecutableDirectory(argv0, out, outSize);
+}
+
+int RagePlatformExistingPortableStateDirectory(
+    const char *executableDirectory, char *out, size_t outSize) {
+    char candidate[4096];
+    char card[4096];
+    size_t length;
+    const char bundleSuffix[] = "/Contents/MacOS";
+
+    if (executableDirectory == NULL || executableDirectory[0] == '\0')
+        return 0;
+    length = strlen(executableDirectory);
+    if (length >= sizeof(candidate)) return 0;
+    memcpy(candidate, executableDirectory, length + 1);
+
+    /* A macOS archive keeps bu00 beside Rage Racer.app, not inside its
+     * signed Contents directory. Recognize the bundle shape by path rather
+     * than by host so this helper remains straightforward to test. */
+    if (length > sizeof(bundleSuffix) - 1 &&
+        strcmp(candidate + length - (sizeof(bundleSuffix) - 1),
+               bundleSuffix) == 0) {
+        char *app = candidate + length - (sizeof(bundleSuffix) - 1);
+        char *parent;
+        *app = '\0';
+        parent = strrchr(candidate, '/');
+        if (parent != NULL) {
+            *parent = '\0';
+            if (RageJoinPath(card, sizeof(card), candidate, "bu00") &&
+                RageDirectoryExists(card)) {
+                if (strlen(candidate) + 1 > outSize) return 0;
+                strcpy(out, candidate);
+                return 1;
+            }
+        }
+        memcpy(candidate, executableDirectory, length + 1);
+    }
+
+    if (!RageJoinPath(card, sizeof(card), candidate, "bu00") ||
+        !RageDirectoryExists(card) || strlen(candidate) + 1 > outSize)
+        return 0;
+    strcpy(out, candidate);
+    return 1;
 }
 
 int RagePlatformUserConfigDirectory(char *out, size_t outSize) {

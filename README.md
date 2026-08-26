@@ -128,7 +128,10 @@ matrix, or classic visibility list.
 
 The port keeps
 game saves and the selected disc location in the user's local application data.
-Memory-card saves are regular files in the `bu00` subdirectory: under
+For compatibility with older portable releases, an existing `bu00` directory
+beside the executable takes priority (beside the `.app` bundle on macOS). The
+game does not create a portable directory automatically. Otherwise memory-card
+saves are regular files in the `bu00` subdirectory: under
 `~/Library/Application Support/Rage Racer/` on macOS,
 `${XDG_STATE_HOME:-$HOME/.local/state}/rage-racer/` on Linux, and
 `%APPDATA%\Rage Racer\` on Windows. They no longer depend on the directory

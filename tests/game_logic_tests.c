@@ -250,6 +250,37 @@ static void test_platform_config_path(void) {
     rmdir(root);
 }
 
+static void test_portable_state_path(void) {
+    char root[] = "/tmp/rage-portable-state-test-XXXXXX";
+    char executable[320], bundleExecutable[320], card[320], found[320];
+
+    if (mkdtemp(root) == NULL) {
+        failures++;
+        return;
+    }
+    snprintf(executable, sizeof(executable), "%s/game", root);
+    mkdir(executable, 0700);
+    EXPECT_EQ(0, RagePlatformExistingPortableStateDirectory(
+                     executable, found, sizeof(found)));
+    snprintf(card, sizeof(card), "%s/bu00", executable);
+    mkdir(card, 0700);
+    EXPECT_EQ(1, RagePlatformExistingPortableStateDirectory(
+                     executable, found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(executable, found));
+    rmdir(card);
+
+    snprintf(bundleExecutable, sizeof(bundleExecutable),
+             "%s/Rage Racer.app/Contents/MacOS", root);
+    snprintf(card, sizeof(card), "%s/bu00", root);
+    mkdir(card, 0700);
+    EXPECT_EQ(1, RagePlatformExistingPortableStateDirectory(
+                     bundleExecutable, found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(root, found));
+    rmdir(card);
+    rmdir(executable);
+    rmdir(root);
+}
+
 static void test_color_interpolation(void) {
     EXPECT_EQ(10, LerpColorChannel(10, 250, 0));
     EXPECT_EQ(250, LerpColorChannel(10, 250, 0x1000));
@@ -266,6 +297,7 @@ int main(void) {
     test_input_config();
     test_port_config();
     test_platform_config_path();
+    test_portable_state_path();
     test_color_interpolation();
 
     if (failures != 0) {
