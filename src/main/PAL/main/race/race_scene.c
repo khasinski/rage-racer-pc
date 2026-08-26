@@ -186,6 +186,14 @@ timing_done:
                 }
                 g_RacePhase = 4;
                 StartCdVolumeFade(8);
+#ifdef __psyz
+                /* TriggerRaceCues runs later in the frame, but phase 4 skips
+                 * that whole block. Guarantee the spoken FINISHED cue at the
+                 * state transition itself instead of depending on the car
+                 * remaining in one authored finish-line track section. */
+                g_RaceCueFlags |= 8;
+                PlaySoundCue(0x2A);
+#endif
                 PlaySoundCue(0x2B);
             } else {
             g_RacePhase = 5;

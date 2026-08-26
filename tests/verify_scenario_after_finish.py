@@ -15,6 +15,7 @@ def main() -> int:
         RAGE_PORT_SMOKE_FRAMES="3500",
         RAGE_PORT_SMOKE_FINISH_FRAME="2000",
         RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME="3000",
+        RAGE_PORT_SOUND_CUE_TRACE="1",
     )
     result = subprocess.run(
         [
@@ -37,6 +38,7 @@ def main() -> int:
         return result.returncode or 1
     required = (
         "scenario mode=grand-prix",
+        "sound cue=0x2a",
         "scenario race finished after_finish=menu",
         "scenario automation stopped after finish",
         "scene=17 frontend=3",
