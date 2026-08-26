@@ -13,8 +13,10 @@ void RagePortScenarioBeforeSceneHandler(void) {}
 void RageCaptureFrameBegin(void);
 void RageCaptureFrameEnd(void);
 void RageModernFrameWaitTick(int frameLimit);
+void RageHostFmvAudioTick(void);
 
 void RagePortBeforeSceneHandler(void) {
+    RageHostFmvAudioTick();
     {
         extern void RageTimingApply(void);
         RageTimingApply();

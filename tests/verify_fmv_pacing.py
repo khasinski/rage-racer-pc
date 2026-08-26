@@ -33,7 +33,9 @@ def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
     environment = os.environ.copy()
     environment.update(
         SDL_AUDIODRIVER="dummy",
-        RAGE_PORT_SMOKE_FRAMES=str(frames * 8),
+        # Boot/prologue takes about 300 ticks. Three ticks per shown movie
+        # frame covers the slower 15 fps streams and leaves transition room.
+        RAGE_PORT_SMOKE_FRAMES=str(frames * 3 + 500),
         RAGE_PORT_FMV_TRACE="1",
         RAGE_PORT_SMOKE_AUDIO_METRICS="1",
     )
@@ -96,12 +98,19 @@ def check_soundtrack(output: str, stream: int) -> None:
             "an asset load is probably pausing it")
 
 
+def check_soundtrack_tail(output: str, stream: int) -> None:
+    if "fmv video end: xa tail continues" not in output:
+        raise AssertionError(
+            f"stream {stream} cut XA audio at its last displayed frame")
+
+
 def main() -> int:
     executable, source_dir = sys.argv[1], sys.argv[2]
     for stream, shown in CASES:
         output = play(executable, source_dir, stream, shown)
         check_cadence(output, stream, shown)
         check_soundtrack(output, stream)
+        check_soundtrack_tail(output, stream)
     print("every movie plays at its own rate and keeps its soundtrack")
     return 0
 

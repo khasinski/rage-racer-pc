@@ -1,4 +1,5 @@
 #include <psyz/video.h>
+#include <psyz/cd.h>
 #include <libgpu.h>
 
 #include <stdio.h>
@@ -25,6 +26,7 @@
 #endif
 
 #include "game/asset.h"
+#include "game/cd.h"
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 #include "game/render.h"
@@ -46,6 +48,7 @@ static unsigned int s_tickSectors;
 static Uint64 s_startNs;
 static int s_wallClock;
 static int s_xaPlaying;
+static int s_xaTailAllowed;
 
 /*
  * A movie in RAGE.STR carries no frame rate, and there is no single one to
@@ -204,16 +207,43 @@ static int RageDecodeFmvFrame(void) {
 /* Whether a movie's XA soundtrack is streaming. Asset loads pause CD audio,
  * because the console's drive cannot read data and play CD-DA at once; the
  * soundtrack interleaved into a movie is not CD-DA and must survive them. */
-int RageFmvXaStreaming(void) { return s_xaPlaying; }
+static void RageFinishXaAudio(void) {
+    unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
+    Psyz_CdSetXaEndSector(-1);
+    CdControl(RAGE_CDL_SETMODE, &mode, NULL);
+    s_xaPlaying = 0;
+    s_xaTailAllowed = 0;
+}
 
-static void RageStartXaAudio(unsigned int firstSector) {
+static void RageStopXaAudio(void) {
+    if (s_xaPlaying) CdControl(RAGE_CDL_PAUSE, NULL, NULL);
+    RageFinishXaAudio();
+}
+
+void RageHostFmvAudioTick(void) {
+    if (s_xaPlaying && !Psyz_CdAudioPlaying()) {
+        if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+                                     "RAGE_PORT_FMV_TRACE")) {
+            fprintf(stderr, "fmv xa end\n");
+        }
+        RageFinishXaAudio();
+    }
+}
+
+int RageFmvXaStreaming(void) {
+    RageHostFmvAudioTick();
+    return s_xaPlaying;
+}
+
+static int RageStartXaAudio(unsigned int firstSector,
+                            unsigned int sectorCount) {
     unsigned char raw[2352], filter[2] = {0, 0};
     unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
     CdlLOC location;
     int absolute;
     unsigned int index;
     for (index = 0; index < 16; index++) {
-        if (!RageHostReadStreamSector(firstSector + index, raw)) return;
+        if (!RageHostReadStreamSector(firstSector + index, raw)) return 0;
         if ((raw[0x12] & 0x0e) == 0x04) {
             filter[0] = raw[0x10];
             filter[1] = raw[0x11];
@@ -221,7 +251,7 @@ static void RageStartXaAudio(unsigned int firstSector) {
         }
     }
     absolute = RageHostStreamAbsoluteSector(firstSector);
-    if (index == 16 || absolute < 0) return;
+    if (index == 16 || absolute < 0) return 0;
     CdIntToPos(absolute, &location);
     if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
                                  "RAGE_PORT_FMV_TRACE")) {
@@ -231,7 +261,9 @@ static void RageStartXaAudio(unsigned int firstSector) {
     CdControl(RAGE_CDL_SETFILTER, filter, NULL);
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
     CdControl(RAGE_CDL_SETLOC, (unsigned char *)&location, NULL);
+    Psyz_CdSetXaEndSector(absolute + (int)sectorCount);
     CdControl(RAGE_CDL_READN, NULL, NULL);
+    return Psyz_CdAudioPlaying();
 }
 
 static int RageHostDecodeFmvFrame(void) {
@@ -246,6 +278,7 @@ static int RageHostDecodeFmvFrame(void) {
      * table names the last one it does. */
     if (g_StreamSectorCount != 0 && s_frame >= g_StreamSectorCount) {
         g_FmvStreamEnded = 1;
+        s_xaTailAllowed = 1;
     }
     return 1;
 }
@@ -309,8 +342,8 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     /* Every movie in RAGE.STR, including the opening movie, carries its own
      * interleaved XA stream.  The prologue CD-DA cue ends before playback and
      * must not be mistaken for the opening movie's soundtrack. */
-    s_xaPlaying = 1;
-    RageStartXaAudio(firstSector);
+    s_xaTailAllowed = 0;
+    s_xaPlaying = RageStartXaAudio(firstSector, s_sectorSpan);
     if (!RageHostDecodeFmvFrame() || !RageHostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
@@ -332,6 +365,7 @@ static unsigned int RageFmvArrivedSectors(void) {
 void DecodeFmvFrame(void) {
     g_SceneTimer++;
     if (g_FmvStreamEnded || (g_PadPressed & PAD_START)) {
+        if (g_PadPressed & PAD_START) StartCdVolumeFade(1);
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
@@ -359,13 +393,12 @@ void DecodeFmvFrame(void) {
 }
 
 void EndFmv(void) {
-    if (s_xaPlaying) {
-        unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
-        CdControl(RAGE_CDL_PAUSE, NULL, NULL);
-        /* XA playback temporarily changes the drive mode.  CD music requests
-         * use CdPlay and rely on the normal CD-DA mode being restored. */
-        CdControl(RAGE_CDL_SETMODE, &mode, NULL);
-        s_xaPlaying = 0;
+    if (s_xaPlaying && !s_xaTailAllowed) {
+        RageStopXaAudio();
+    } else if (s_xaPlaying &&
+               RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+                                        "RAGE_PORT_FMV_TRACE")) {
+        fprintf(stderr, "fmv video end: xa tail continues\n");
     }
     RageReleaseFmvBuffers();
     free(s_pixels);
