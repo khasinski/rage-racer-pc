@@ -205,9 +205,9 @@ int main(int argc, char **argv) {
                 if (minX > bandX + 0.5f || maxX < bandX - 0.5f) continue;
                 if (minY > bandY1 || maxY < bandY0) continue;
                 printf("band face=%d kind=%d cell=%d draw=%d ot=%d "
-                       "clut=%04x tpage=%04x\n",
+                       "bias=%d flags=%02x clut=%04x tpage=%04x\n",
                        i, f->kind, f->cellSlot, f->drawIndex, f->otDepth,
-                       f->clut, f->tpage);
+                       f->bias, f->flags, f->clut, f->tpage);
                 for (vertex = 0; vertex < 4; vertex++) {
                     printf("  v%d local=%d,%d,%d view=%.2f,%.2f,%.2f "
                            "s=%.3f,%.3f\n",
