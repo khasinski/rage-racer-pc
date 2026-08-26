@@ -183,17 +183,19 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     if (depthDecal) {
-        /* Resolve only the coplanar tie between road markings and asphalt.
-         * A larger offset spans meaningful world distance in the far field
-         * and makes markings or the road win depth tests against cars. */
-        info.rasterizer_state.depth_bias_constant_factor = -4.0f;
-        info.rasterizer_state.depth_bias_slope_factor = -4.0f;
-        info.rasterizer_state.depth_bias_clamp = -0.0000005f;
+        /* A constant number of depth-buffer units resolves the coplanar tie
+         * without making adjacent marking triangles depend on their slope.
+         * Slope-scaled bias made stripe ends shorten and fray on bends. */
+        info.rasterizer_state.depth_bias_constant_factor = -8.0f;
         info.rasterizer_state.enable_depth_bias = true;
     }
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
-    info.depth_stencil_state.enable_depth_write = !transparent;
+    /* Decals are composited after ordinary opaque geometry. Keeping the road
+     * depth lets cars remain in front while equal-depth markings use painter
+     * order among themselves. */
+    info.depth_stencil_state.enable_depth_write =
+        !transparent && !depthDecal;
     info.target_info.color_target_descriptions = &color;
     info.target_info.num_color_targets = 1;
     info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -779,9 +781,10 @@ static void ModernNativeGpuDrawSet(
         SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
         SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     }
-    /* Opaque world first, then ordinary transparent materials. Dynamic
-     * shadows are sampled by both phases and never add coplanar geometry. */
-    for (int phase = 0; phase < 2; phase++) {
+    /* Opaque world first, coplanar opaque details second, then transparent
+     * materials. This gives road markings a stable base depth independent of
+     * the order in which terrain faces were imported. */
+    for (int phase = 0; phase < 3; phase++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
@@ -795,9 +798,14 @@ static void ModernNativeGpuDrawSet(
                 texture = NULL;
             } else {
                 texture = ModernNativeFindTexture(span);
-                if (texture == NULL ||
-                    (texture->transparent ? phase != 1 : phase != 0))
+                if (texture == NULL) continue;
+                if (texture->transparent) {
+                    if (phase != 2) continue;
+                } else if (span->depthDecal) {
+                    if (phase != 1) continue;
+                } else if (phase != 0) {
                     continue;
+                }
                 if (span->depthDecal) {
                     pipeline = texture->transparent
                         ? s_texturedTransparentDecal
