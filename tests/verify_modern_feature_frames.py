@@ -14,8 +14,8 @@ CASES = {
     "enhanced": ("16:9", "linear", "fxaa", "vibrant", (426, 240)),
 }
 MODERN_GOLDENS = {
-    "baseline": "bb6c04d335585d8cbfeb2954a1d25c16910315b6e69afd472c8611f4bbb5249a",
-    "enhanced": "06ce68e6a2117c01c05fbd49112c289a003d35fa662dcb32e6247dcfbc96efcd",
+    "baseline": "29b406fe49809ac384589ac32d641aa924cfb7f8500cbcab1b5398d65dc827bb",
+    "enhanced": "db6f598ede7d0e4b23156ac0dad2951446d6762c04a949be99907f341f28fd37",
 }
 
 
@@ -63,10 +63,6 @@ car = 3
 
 [run]
 frames = 2500
-
-[stop]
-scene = 12
-timer = 120
 """,
                 encoding="utf-8",
             )

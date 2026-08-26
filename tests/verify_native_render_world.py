@@ -84,7 +84,9 @@ timer = 20
 
         matches = re.findall(
             r"native world frame=\d+ camera=(\d+) instances=(\d+) "
-            r"cached=(\d+) vertices=(\d+) spans=(\d+)", result.stdout)
+            r"cached=(\d+) textures=\d+ vertices=(\d+) spans=(\d+)",
+            result.stdout,
+        )
         if not any(all(int(value) > 0 for value in match) for match in matches):
             raise AssertionError(
                 "live race did not produce a native draw stream\n" +
