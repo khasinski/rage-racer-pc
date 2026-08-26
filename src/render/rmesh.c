@@ -19,10 +19,23 @@ static int RageRange(size_t offset, size_t length, size_t size) {
     return offset <= size && length <= size - offset;
 }
 
+static int RageSizeAdd(size_t left, size_t right, size_t *result) {
+    if (right > SIZE_MAX - left) return 0;
+    *result = left + right;
+    return 1;
+}
+
+static int RageSizeMultiply(size_t left, size_t right, size_t *result) {
+    if (right != 0 && left > SIZE_MAX / right) return 0;
+    *result = left * right;
+    return 1;
+}
+
 int RageRuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     const uint8_t *p = bytes;
     uint32_t version, meshCount, vertexCount, indexCount;
-    size_t offsetsBytes, verticesBytes, indicesBytes, verticesOffset, indicesOffset;
+    size_t offsetCount, offsetsBytes, verticesBytes, indicesBytes;
+    size_t verticesOffset, indicesOffset;
     uint32_t previous;
     uint32_t i;
 
@@ -32,14 +45,14 @@ int RageRuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     meshCount = RageReadU32(p + 12);
     vertexCount = RageReadU32(p + 16);
     indexCount = RageReadU32(p + 20);
-    if (version != 1 || (size_t)meshCount > (SIZE_MAX / 4) - 1 ||
-        (size_t)vertexCount > SIZE_MAX / RAGE_RMESH_VERTEX_SIZE ||
-        (size_t)indexCount > SIZE_MAX / 4) return 0;
-    offsetsBytes = ((size_t)meshCount + 1) * 4;
-    verticesBytes = (size_t)vertexCount * RAGE_RMESH_VERTEX_SIZE;
-    indicesBytes = (size_t)indexCount * 4;
-    verticesOffset = RAGE_RMESH_HEADER_SIZE + offsetsBytes;
-    indicesOffset = verticesOffset + verticesBytes;
+    if (version != 1 ||
+        !RageSizeAdd((size_t)meshCount, 1, &offsetCount) ||
+        !RageSizeMultiply(offsetCount, 4, &offsetsBytes) ||
+        !RageSizeMultiply((size_t)vertexCount, RAGE_RMESH_VERTEX_SIZE,
+                          &verticesBytes) ||
+        !RageSizeMultiply((size_t)indexCount, 4, &indicesBytes) ||
+        !RageSizeAdd(RAGE_RMESH_HEADER_SIZE, offsetsBytes, &verticesOffset) ||
+        !RageSizeAdd(verticesOffset, verticesBytes, &indicesOffset)) return 0;
     if (!RageRange(RAGE_RMESH_HEADER_SIZE, offsetsBytes, size) ||
         !RageRange(verticesOffset, verticesBytes, size) ||
         !RageRange(indicesOffset, indicesBytes, size)) return 0;
@@ -129,4 +142,3 @@ int RageRuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                     (max[2] - center[2]) * (max[2] - center[2]));
     return 1;
 }
-
