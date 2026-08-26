@@ -15,30 +15,22 @@
 #include "scene_capture.h"
 #include "modern_texture_dump.h"
 #include "../platform_paths.h"
-#include "game/scratchpad.h"
-#include "game/car.h"
+#include "game/course_index.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/scratchpad.h"
 #include "modern_renderer_diagnostics.h"
-#include "../native_geometry_interpolation.h"
 #include "../runtime_config.h"
 #include "shaders/modern_vert_spv.h"
 #include "shaders/modern_frag_spv.h"
 #include "shaders/post_vert_spv.h"
 #include "shaders/post_frag_spv.h"
 
-/* The modern renderer (plan phase R2). Consumes the RageScene snapshot the
- * capture layer records each logic frame and renders it with float
- * transforms, a real depth buffer and perspective-correct texturing into an
- * offscreen target, which the PsyZ present-source hook then presents in
- * place of the PS1 VRAM image. Scenes that submit no 3D pass through to the
- * compat image untouched (menus, FMV, 480-line screens).
- *
- * Textures are sampled live from PsyZ's emulated VRAM with CLUT
- * indirection, exactly like the compat rasterizer, so no texture cache or
- * invalidation is needed; VRAM content lags one presented frame, which only
- * affects textures drawn by GP0 rendering, not asset uploads. */
+/* The modern presentation path combines the native RenderWorld renderer
+ * with the captured PS1 2D layers that still own the sky, HUD and mirror
+ * frame. Captured PS1 3D faces are never rendered here. Menus, FMV and
+ * 480-line screens continue to present the compat image directly. */
 
 static int s_enabled;
 static int s_initialized;
@@ -61,9 +53,6 @@ static SDL_GPUTexture *s_mirrorTarget;
 static SDL_GPUTexture *s_mirrorDepth;
 static int s_mirrorTargetW, s_mirrorTargetH;
 static SDL_GPUSampler *s_sampler;
-static SDL_GPUGraphicsPipeline *s_pipe3dOpaque;
-static SDL_GPUGraphicsPipeline *s_pipe3dBlend;
-static SDL_GPUGraphicsPipeline *s_pipe3dSub;
 static SDL_GPUGraphicsPipeline *s_pipe2d;
 static SDL_GPUGraphicsPipeline *s_pipe2dSub;
 static SDL_GPUBuffer *s_vertexBuffer;
@@ -97,9 +86,6 @@ typedef struct ModernVertex {
 } ModernVertex;
 
 enum {
-    MODERN_PIPE_3D_OPAQUE,
-    MODERN_PIPE_3D_BLEND,
-    MODERN_PIPE_3D_SUB,
     MODERN_PIPE_2D,
     MODERN_PIPE_2D_SUB,
 };
@@ -231,9 +217,8 @@ static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
     return pipeline;
 }
 
-static SDL_GPUGraphicsPipeline *ModernCreatePipeline(
-    SDL_GPUShader *vs, SDL_GPUShader *fs, int depthTest, int depthWrite,
-    int subtract) {
+static SDL_GPUGraphicsPipeline *ModernCreateOverlayPipeline(
+    SDL_GPUShader *vs, SDL_GPUShader *fs, int subtract) {
     const SDL_GPUVertexBufferDescription buffer = {
         .slot = 0,
         .pitch = sizeof(ModernVertex),
@@ -283,11 +268,9 @@ static SDL_GPUGraphicsPipeline *ModernCreatePipeline(
         sizeof(attributes) / sizeof(attributes[0]);
     info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
-    info.depth_stencil_state.compare_op =
-        depthTest ? SDL_GPU_COMPAREOP_LESS_OR_EQUAL
-                  : SDL_GPU_COMPAREOP_ALWAYS;
+    info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_ALWAYS;
     info.depth_stencil_state.enable_depth_test = true;
-    info.depth_stencil_state.enable_depth_write = depthWrite != 0;
+    info.depth_stencil_state.enable_depth_write = false;
     info.target_info.color_target_descriptions = &target;
     info.target_info.num_color_targets = 1;
     info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -308,9 +291,6 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(Texture, s_mirrorTarget);
         RAGE_RELEASE(Texture, s_mirrorDepth);
         RAGE_RELEASE(Sampler, s_sampler);
-        RAGE_RELEASE(GraphicsPipeline, s_pipe3dOpaque);
-        RAGE_RELEASE(GraphicsPipeline, s_pipe3dBlend);
-        RAGE_RELEASE(GraphicsPipeline, s_pipe3dSub);
         RAGE_RELEASE(GraphicsPipeline, s_pipe2d);
         RAGE_RELEASE(GraphicsPipeline, s_pipe2dSub);
         RAGE_RELEASE(Buffer, s_vertexBuffer);
@@ -403,11 +383,8 @@ static int ModernEnsureResources(void) {
         MODERN_SHADER_MSL, MODERN_SHADER_MSL_SIZE,
         SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
     if (vs && fs) {
-        s_pipe3dOpaque = ModernCreatePipeline(vs, fs, 1, 1, 0);
-        s_pipe3dBlend = ModernCreatePipeline(vs, fs, 1, 0, 0);
-        s_pipe3dSub = ModernCreatePipeline(vs, fs, 1, 0, 1);
-        s_pipe2d = ModernCreatePipeline(vs, fs, 0, 0, 0);
-        s_pipe2dSub = ModernCreatePipeline(vs, fs, 0, 0, 1);
+        s_pipe2d = ModernCreateOverlayPipeline(vs, fs, 0);
+        s_pipe2dSub = ModernCreateOverlayPipeline(vs, fs, 1);
     }
     if (vs) SDL_ReleaseGPUShader(s_device, vs);
     if (fs) SDL_ReleaseGPUShader(s_device, fs);
@@ -493,8 +470,7 @@ static int ModernEnsureResources(void) {
     }
 
     if (!s_target || !s_depth || !s_mirrorTarget || !s_mirrorDepth ||
-        !s_sampler || !s_pipe3dOpaque ||
-        !s_pipe3dBlend || !s_pipe3dSub || !s_pipe2d || !s_pipe2dSub ||
+        !s_sampler || !s_pipe2d || !s_pipe2dSub ||
         !s_vertexBuffer || !s_vertexTransfer || !s_vertices || !s_spans) {
         fprintf(stderr, "rage-port: modern renderer resource setup failed: %s\n",
                 SDL_GetError());
@@ -524,17 +500,10 @@ typedef struct Modern2DState {
     int offsetX, offsetY; /* GP0(E5) relative offset */
 } Modern2DState;
 
-/* GPU state at the end of the main ordering table, inherited by the mirror
- * table exactly like the real GPU carries it across DrawOTag calls. */
-static Modern2DState s_mainEnd2D;
-
 static uint8_t s_currentPass;
 enum {
     MODERN_LAYER_BACKGROUND,
-    MODERN_LAYER_WORLD,
     MODERN_LAYER_HUD,
-    MODERN_LAYER_MIRROR_BACKGROUND,
-    MODERN_LAYER_MIRROR_WORLD,
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
 static uint8_t s_currentLayer;
@@ -607,12 +576,8 @@ static uint32_t ModernTwinFromE2(uint32_t word) {
            (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
 }
 
-/* ---- snapshot interpolation (arbitrary-FPS presentation) ---- */
+/* ---- arbitrary-FPS presentation timing ---- */
 
-static int s_useLerp;
-static int16_t s_drawGroupBias[RAGE_CAPTURE_MAX_DRAWS];
-static RageCaptureGteState s_lerpDrawGte[RAGE_CAPTURE_MAX_DRAWS];
-static RageCaptureTerrainBatch s_lerpTerrain[RAGE_CAPTURE_MAX_TERRAIN];
 static Uint64 s_tickTimeNs;
 static Uint64 s_tickIntervalNs;
 static uint32_t s_tickFrame = 0xFFFFFFFFu;
@@ -626,478 +591,6 @@ void RageModernLogicFrameReady(uint32_t frame) {
     }
     s_tickFrame = frame;
     s_tickTimeNs = now;
-}
-
-static void ModernLerpGte(const RageCaptureGteState *a,
-                          const RageCaptureGteState *b, float t,
-                          RageCaptureGteState *out) {
-    int row, column, axis;
-    for (row = 0; row < 3; row++) {
-        for (column = 0; column < 3; column++) {
-            out->rot.m[row][column] =
-                (int16_t)(a->rot.m[row][column] +
-                          (b->rot.m[row][column] - a->rot.m[row][column]) * t);
-            out->light.m[row][column] = b->light.m[row][column];
-            out->color.m[row][column] = b->color.m[row][column];
-        }
-    }
-    /* Component-wise matrix interpolation shrinks rotating axes between
-     * logic frames. It is especially visible on fast-spinning wheels as a
-     * periodic model-size pulse. Re-orthonormalize the interpolated basis,
-     * retaining reflected (rear-view/mirrored-course) handedness. */
-    RageOrthonormalizeMatrix3x3(out->rot.m, b->rot.m);
-    for (axis = 0; axis < 3; axis++) {
-        out->rot.t[axis] =
-            (int32_t)(a->rot.t[axis] +
-                      (b->rot.t[axis] - a->rot.t[axis]) * (double)t);
-        out->light.t[axis] = b->light.t[axis];
-        out->color.t[axis] = b->color.t[axis];
-    }
-    out->ofx = b->ofx;
-    out->ofy = b->ofy;
-    out->h = b->h;
-    out->dqa = b->dqa;
-    out->dqb = b->dqb;
-}
-
-/* Lerp the BASE frame's draws/terrain toward the newer TARGET frame. The
- * rendered face set is the base's: its trailing edge (nearest road, faces
- * the target frame already culled) is clipped naturally by the GPU instead
- * of vanishing for a whole logic tick, and the leading edge only pops far
- * away at the horizon. Camera cuts and scene changes snap instead. */
-static void ModernPrepareInterpolation(const RageSceneSnapshot *base,
-                                       const RageSceneSnapshot *target,
-                                       float t) {
-    int i;
-    uint8_t matchedTarget[RAGE_CAPTURE_MAX_DRAWS] = {0};
-    int timerDelta = target->sceneTimer - base->sceneTimer;
-    long long cameraDelta = 0;
-    s_useLerp = 0;
-    if (t <= 0.001f) return;
-    if (target->sceneId != base->sceneId) return;
-    if (timerDelta < 0 || timerDelta > 2) return;
-    for (i = 0; i < 3; i++) {
-        long long delta = (long long)target->viewPosition[i] -
-                          base->viewPosition[i];
-        cameraDelta += delta < 0 ? -delta : delta;
-    }
-    if (cameraDelta > 16384) return;
-    for (i = 0; i < base->drawCount; i++) {
-        const RageCaptureModelDraw *draw = &base->draws[i];
-        const RageCaptureModelDraw *match = NULL;
-        long long bestDistance = 0;
-        int j;
-        /* Match by nearest translation among same-key candidates. The four
-         * wheels of one car share a model index, and occurrence-order
-         * pairing slipped by one whenever a wheel was culled for a frame,
-         * lerping each wheel toward another corner (wheels flashing through
-         * the body, mirrored rivals spinning the wrong way). */
-        for (j = 0; j < target->drawCount; j++) {
-            const RageCaptureModelDraw *other = &target->draws[j];
-            long long distance = 0;
-            int axis;
-            if (matchedTarget[j] || other->kind != draw->kind ||
-                other->modelIndex != draw->modelIndex ||
-                other->mirror != draw->mirror ||
-                other->table != draw->table) {
-                continue;
-            }
-            for (axis = 0; axis < 3; axis++) {
-                long long delta = (long long)other->gte.rot.t[axis] -
-                                  draw->gte.rot.t[axis];
-                distance += delta * delta;
-            }
-            if (match == NULL || distance < bestDistance) {
-                match = other;
-                bestDistance = distance;
-            }
-        }
-        /* Snap draws whose orientation changed too much in one tick:
-         * lerping across a large rotation produces inverted-looking spin. */
-        if (match != NULL) {
-            long dot = 0;
-            int axis;
-            for (axis = 0; axis < 3; axis++) {
-                dot += (long)draw->gte.rot.m[0][axis] *
-                       match->gte.rot.m[0][axis];
-                dot += (long)draw->gte.rot.m[2][axis] *
-                       match->gte.rot.m[2][axis];
-            }
-            if (dot < 0) match = NULL;
-        }
-        if (match != NULL) {
-            matchedTarget[match - target->draws] = 1;
-            ModernLerpGte(&draw->gte, &match->gte, t, &s_lerpDrawGte[i]);
-        } else {
-            s_lerpDrawGte[i] = draw->gte;
-        }
-    }
-    for (i = 0; i < base->terrainCount; i++) {
-        const RageCaptureTerrainBatch *batch = &base->terrain[i];
-        const RageCaptureTerrainBatch *match =
-            i < target->terrainCount &&
-                    target->terrain[i].mirror == batch->mirror
-                ? &target->terrain[i]
-                : NULL;
-        int cell;
-        s_lerpTerrain[i] = *batch;
-        if (match == NULL) continue;
-        ModernLerpGte(&batch->gte, &match->gte, t, &s_lerpTerrain[i].gte);
-        for (cell = 0; cell < batch->cellCount; cell++) {
-            int other;
-            for (other = 0; other < match->cellCount; other++) {
-                if (match->cells[other][3] == batch->cells[cell][3]) {
-                    int axis;
-                    for (axis = 0; axis < 3; axis++) {
-                        s_lerpTerrain[i].cells[cell][axis] = (int32_t)(
-                            batch->cells[cell][axis] +
-                            (match->cells[other][axis] -
-                             batch->cells[cell][axis]) *
-                                (double)t);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-    s_useLerp = 1;
-}
-
-/* ---- 3D faces ---- */
-
-typedef struct ModernFaceOrder {
-    int32_t index;
-    float depth;
-} ModernFaceOrder;
-
-static int ModernCompareFaceOrder(const void *a, const void *b) {
-    const ModernFaceOrder *fa = a, *fb = b;
-    if (fa->depth > fb->depth) return -1;
-    if (fa->depth < fb->depth) return 1;
-    return fa->index < fb->index ? -1 : 1;
-}
-
-static void ModernFaceViewPositions(const RageSceneSnapshot *snapshot,
-                                    const RageCaptureFace *face,
-                                    float out[4][3], int *mirror) {
-    const RageCaptureGteState *gte;
-    float tx, ty, tz;
-    int vertex;
-    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        const RageCaptureTerrainBatch *batch =
-            s_useLerp ? &s_lerpTerrain[face->drawIndex]
-                      : &snapshot->terrain[face->drawIndex];
-        const int32_t *cell = batch->cells[face->cellSlot];
-        gte = &batch->gte;
-        *mirror = batch->mirror;
-        tx = (float)(batch->mirror ? -cell[0] : cell[0]);
-        ty = (float)cell[1];
-        tz = (float)cell[2];
-    } else {
-        const RageCaptureModelDraw *draw = &snapshot->draws[face->drawIndex];
-        gte = s_useLerp ? &s_lerpDrawGte[face->drawIndex] : &draw->gte;
-        *mirror = draw->mirror;
-        tx = (float)gte->rot.t[0];
-        ty = (float)gte->rot.t[1];
-        tz = (float)gte->rot.t[2];
-    }
-    for (vertex = 0; vertex < 4; vertex++) {
-        float vx = face->pos[vertex][0];
-        float vy = face->pos[vertex][1];
-        float vz = face->pos[vertex][2];
-        int row;
-        for (row = 0; row < 3; row++) {
-            float sum = (gte->rot.m[row][0] * vx + gte->rot.m[row][1] * vy +
-                         gte->rot.m[row][2] * vz) *
-                        (1.0f / 4096.0f);
-            out[vertex][row] = sum;
-        }
-        out[vertex][0] += tx;
-        out[vertex][1] += ty;
-        out[vertex][2] += tz;
-    }
-}
-
-static const RageCaptureGteState *ModernFaceGte(
-    const RageSceneSnapshot *snapshot, const RageCaptureFace *face) {
-    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        return s_useLerp ? &s_lerpTerrain[face->drawIndex].gte
-                         : &snapshot->terrain[face->drawIndex].gte;
-    }
-    return s_useLerp ? &s_lerpDrawGte[face->drawIndex]
-                     : &snapshot->draws[face->drawIndex].gte;
-}
-
-static int s_faceFogSmooth;
-static int s_terrainSnapOff;
-static float s_sliverCenterSy;
-
-static int ModernFaceIsMirror(const RageSceneSnapshot *snapshot,
-                              const RageCaptureFace *face) {
-    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-        /* SCRATCH_MIRROR starts at the course-mirror polarity and toggles for
-         * the rear-view pass. A mirrored course therefore has mirror=1 in
-         * the main view and mirror=0 in the rear-view — treating the bit
-         * itself as "rear view" hid the entire main 3D scene. */
-        return snapshot->terrain[face->drawIndex].mirror !=
-               snapshot->courseMirror;
-    }
-    return snapshot->draws[face->drawIndex].mirror != snapshot->courseMirror ||
-           snapshot->draws[face->drawIndex].table != 0;
-}
-
-static void ModernBuildFaceVertices(const RageSceneSnapshot *snapshot,
-                                    const RageCaptureFace *face,
-                                    ModernVertex corners[4],
-                                    float *averageZ) {
-    const RageCaptureGteState *gte = ModernFaceGte(snapshot, face);
-    float view[4][3];
-    int mirror = 0;
-    int vertex;
-    float zSum = 0.0f;
-    float windowMin, windowMax;
-    float zBias = 0.0f;
-    int snapSliver;
-    int textured = face->klass == 1 || face->klass == 3;
-    /* Depth policy: the compat renderer orders faces by ordering-table
-     * bucket (average z quantized by 4<<otShift, plus the per-face bias and
-     * the scratch OT base shift). Clamp each vertex's true z into its
-     * face's compat bucket window: ordering between faces in different
-     * buckets reproduces the oracle exactly (including deliberate biases),
-     * while faces meeting inside one bucket still intersect with real
-     * per-pixel depth. */
-    {
-        int bucket = face->otDepth;
-        float unit;
-        if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) {
-            unit = (float)(4 << snapshot->terrain[face->drawIndex].otShift);
-            windowMin = (float)bucket * unit;
-            windowMax = windowMin + unit;
-        } else if (face->kind == RAGE_CAPTURE_KIND_COURSE) {
-            /* The course dispatcher quantizes ((z0>>3)+(z3>>3))>>3 on
-             * OTZ-scale (z/4) vertex depths: one bucket is 128 z units,
-             * independent of the scratch OT shift. */
-            unit = 128.0f;
-            bucket += snapshot->draws[face->drawIndex].otBaseBias;
-            windowMin = (float)bucket * unit;
-            windowMax = windowMin + unit;
-        } else {
-            /* Model faces use true per-pixel depth. Retail wins hill
-             * crests against the road by linking whole cars ~14..20
-             * buckets nearer through the per-face bias, so the DRAW's
-             * common bias applies at full bucket scale, moving the model
-             * as one rigid group (nothing can punch through its own
-             * body); the residual per-face bias differences are decal
-             * overlay order and shrink to an epsilon. */
-            const RageCaptureModelDraw *draw =
-                &snapshot->draws[face->drawIndex];
-            float groupBias = (float)s_drawGroupBias[face->drawIndex];
-            float residualScale = 16.0f;
-            unit = (float)(4 << draw->otShift);
-            /* 16 z units per residual bias bucket: enough for the bias
-             * order to hide wheels inset behind body panels (retail's
-             * bucket painter did), small enough not to punch through the
-             * width of a car. The flat near-black untextured quads are the
-             * exception: they are the car's shadow and underbody plates,
-             * pure painter decals the artists push several buckets back,
-             * and geometrically they extend TOWARD a low camera - seen
-             * front-on in the mirror they are truly nearer than the
-             * bodywork and 16 z per bucket cannot hide them (the lower
-             * half of the car went black). Honour their full bucket
-             * distance; the frame-wide model shift keeps them above the
-             * road they are cast on. */
-            /* Semi faces are excluded: the spin-blur wheel variant the game
-             * swaps in on alternating rotation phases is a dark untextured
-             * SEMI cone, and pushing it back like a shadow plate made the
-             * rivals' wheels vanish on exactly those frames. The plates are
-             * opaque. */
-            if (!textured && !(face->flags & RAGE_CAPTURE_FACE_SEMI)) {
-                int channel, corner, brightest = 0;
-                for (corner = 0; corner < 4; corner++) {
-                    for (channel = 0; channel < 3; channel++) {
-                        if (face->color[corner][channel] > brightest) {
-                            brightest = face->color[corner][channel];
-                        }
-                    }
-                }
-                if (brightest <= 32) residualScale = unit;
-            }
-            zBias = unit * (groupBias + (float)draw->otBaseBias) +
-                    residualScale * ((float)face->bias - groupBias);
-            windowMin = -1.0e9f;
-            windowMax = 1.0e9f;
-            /* The rear-view pass is a tiny, painter-ordered viewport. Its
-             * road and cars deliberately share OT buckets; using true model
-             * Z here lets a geometrically nearer road strip depth-test over
-             * cars that retail linked in front of it. Keep the modern main
-             * view's rigid per-model depth policy, but reproduce the mirror
-             * table's captured bucket for model-versus-road ordering. */
-            if (ModernFaceIsMirror(snapshot, face)) {
-                bucket += draw->otBaseBias;
-                windowMin = (float)bucket * unit;
-                windowMax = windowMin + unit;
-                zBias = 0.0f;
-            }
-            (void)bucket;
-        }
-    }
-    /* Per-vertex depth cueing: the compat emitter bakes ONE GTE fog factor
-     * into the whole face's colour, which bands on large or oblique faces.
-     * Un-bake that flat factor and re-apply the same GTE curve
-     * (IR0 = (H/z * DQA + DQB) >> 12, interpolating toward the far colour)
-     * at each vertex's true depth; Gouraud interpolation then shades the
-     * face's interior smoothly. RAGE_PORT_MODERN_FLAT_FOG restores the
-     * captured per-face colours. */
-    {
-        static int flatFog = -1;
-        if (flatFog < 0) {
-            flatFog = RageRuntimeConfigEnabled("modern.flat_fog", "RAGE_PORT_MODERN_FLAT_FOG");
-            s_terrainSnapOff = RageRuntimeConfigEnabled("modern.no_terrain_snap", "RAGE_PORT_MODERN_NO_TERRAIN_SNAP");
-        }
-        s_faceFogSmooth = !flatFog &&
-                          (face->flags & RAGE_CAPTURE_FACE_FOGGED) != 0 &&
-                          face->fog >= 0;
-    }
-    ModernFaceViewPositions(snapshot, face, view, &mirror);
-    /* The road's distance LOD is authored as sparse strips about one
-     * 320x240 pixel tall, with real holes between consecutive strips.
-     * Retail's GTE truncates vertex coordinates to integer pixels, which
-     * tiles the strips seamlessly; sub-pixel float projection exposes the
-     * holes as background-coloured lines across the road. Detect the
-     * strips by their projected shape (a short screen sliver, everything
-     * comfortably in front of the camera) and reproduce the GTE
-     * truncation for them - adjacent strips are slivers too, so their
-     * snapped edges land on the same row and tile again, while ordinary
-     * terrain keeps sub-pixel precision. */
-    snapSliver = 0;
-    if (face->kind == RAGE_CAPTURE_KIND_TERRAIN && !s_terrainSnapOff) {
-        float minSy = 1.0e9f, maxSy = -1.0e9f;
-        int usable = 1;
-        for (vertex = 0; vertex < 4; vertex++) {
-            float z = view[vertex][2];
-            float sy;
-            if (z < 500.0f) {
-                usable = 0;
-                break;
-            }
-            sy = (float)gte->ofy + view[vertex][1] * (float)gte->h / z;
-            if (sy < minSy) minSy = sy;
-            if (sy > maxSy) maxSy = sy;
-        }
-        snapSliver = usable && maxSy - minSy < 2.5f;
-        s_sliverCenterSy = (minSy + maxSy) * 0.5f;
-    }
-    if (RageRuntimeConfigEnabled("diagnostics.modern_face_trace", "RAGE_PORT_MODERN_FACE_TRACE")) {
-        float h = (float)gte->h;
-        fprintf(stderr,
-                "modern-face kind=%d klass=%d ot=%d bias=%d window=%.0f..%.0f "
-                "z=%.0f,%.0f,%.0f,%.0f clut=%04x tpage=%04x "
-                "sxy=%.0f,%.0f/%.0f,%.0f/%.0f,%.0f/%.0f,%.0f\n",
-                face->kind, face->klass, face->otDepth, face->bias, windowMin,
-                windowMax, view[0][2], view[1][2], view[2][2], view[3][2],
-                face->clut, face->tpage,
-                gte->ofx + view[0][0] * h / (view[0][2] < 1 ? 1 : view[0][2]),
-                gte->ofy + view[0][1] * h / (view[0][2] < 1 ? 1 : view[0][2]),
-                gte->ofx + view[1][0] * h / (view[1][2] < 1 ? 1 : view[1][2]),
-                gte->ofy + view[1][1] * h / (view[1][2] < 1 ? 1 : view[1][2]),
-                gte->ofx + view[2][0] * h / (view[2][2] < 1 ? 1 : view[2][2]),
-                gte->ofy + view[2][1] * h / (view[2][2] < 1 ? 1 : view[2][2]),
-                gte->ofx + view[3][0] * h / (view[3][2] < 1 ? 1 : view[3][2]),
-                gte->ofy + view[3][1] * h / (view[3][2] < 1 ? 1 : view[3][2]));
-        fprintf(stderr,
-                "modern-face-tex window=%05x uv=%02x,%02x/%02x,%02x/"
-                "%02x,%02x/%02x,%02x\n",
-                face->textureWindow, face->uv[0][0], face->uv[0][1],
-                face->uv[1][0], face->uv[1][1], face->uv[2][0],
-                face->uv[2][1], face->uv[3][0], face->uv[3][1]);
-    }
-    for (vertex = 0; vertex < 4; vertex++) {
-        ModernVertex *out = &corners[vertex];
-        float x = view[vertex][0];
-        float y = view[vertex][1];
-        float z = view[vertex][2];
-        float depthZ;
-        float h = (float)gte->h;
-        /* w is the true view z, negative behind the camera: the GPU's
-         * homogeneous clipping then performs the near clip the compat path
-         * approximates with GTE saturation. */
-        depthZ = z + zBias;
-        if (depthZ < windowMin) depthZ = windowMin;
-        if (depthZ > windowMax) depthZ = windowMax;
-        zSum += z < 1.0f ? 1.0f : z;
-        {
-            float halfW = s_logicalW * 0.5f;
-            out->x = (z * ((float)gte->ofx - 160.0f) + x * h) / halfW;
-            if (snapSliver) {
-                /* Far (upper) edges truncate like the GTE, so the road's
-                 * horizon silhouette matches retail; near (lower) edges
-                 * round UP instead - a strip may slightly overlap its
-                 * nearer neighbour (invisible: same road, nearer depth
-                 * wins) but can never retreat from an edge it shares with
-                 * unsnapped geometry, which a plain floor did at the LOD
-                 * hand-off, opening a brand-new seam there. */
-                float sy = (float)gte->ofy + y * h / z;
-                sy = sy <= s_sliverCenterSy ? floorf(sy) : ceilf(sy);
-                out->y = -(sy - 120.0f) * z / 120.0f;
-            } else {
-                out->y = -(z * ((float)gte->ofy / 120.0f - 1.0f) +
-                           y * h / 120.0f);
-            }
-        }
-        out->z = ((depthZ - MODERN_DEPTH_MIN) / MODERN_DEPTH_RANGE) * z;
-        out->w = z;
-        out->u = (float)face->uv[vertex][0];
-        out->v = (float)face->uv[vertex][1];
-        if (s_faceFogSmooth) {
-            /* The GTE computes IR0 from the perspective-divide result
-             * (H*65536/SZ3, saturated to 0x1FFFF), scaled by DQA plus DQB.
-             * The far colour registers hold colour*16. */
-            float div = h * 65536.0f / (z < 1.0f ? 1.0f : z);
-            float fogFace = (float)face->fog * (1.0f / 4096.0f);
-            float fogHere;
-            int channel;
-            if (div > 131071.0f) div = 131071.0f;
-            fogHere = (div * (float)gte->dqa + (float)gte->dqb) *
-                      (1.0f / (4096.0f * 4096.0f));
-            if (fogHere < 0.0f) fogHere = 0.0f;
-            if (fogHere > 1.0f) fogHere = 1.0f;
-            for (channel = 0; channel < 3; channel++) {
-                float far = (float)gte->color.t[channel] * (1.0f / 16.0f);
-                float baked = (float)face->color[vertex][channel];
-                float base;
-                float shaded;
-                if (fogFace > 0.999f) {
-                    base = baked; /* fully fogged: the base is gone, ~far */
-                } else {
-                    base = (baked - fogFace * far) / (1.0f - fogFace);
-                }
-                if (base < 0.0f) base = 0.0f;
-                if (base > 255.0f) base = 255.0f;
-                shaded = base + fogHere * (far - base);
-                if (shaded < 0.0f) shaded = 0.0f;
-                if (shaded > 255.0f) shaded = 255.0f;
-                out->color[channel] = (uint8_t)(shaded + 0.5f);
-            }
-        } else {
-            out->color[0] = face->color[vertex][0];
-            out->color[1] = face->color[vertex][1];
-            out->color[2] = face->color[vertex][2];
-        }
-        out->color[3] =
-            (uint8_t)((face->flags & RAGE_CAPTURE_FACE_SEMI) ? 0 : 255);
-        out->attr = textured ? face->tpage : (face->tpage | 0x8000u);
-        if (textured && s_config.modernTextureFilterLinear) {
-            out->attr |= 0x10000u; /* CLUT-aware 4-tap filtering, 3D only */
-        }
-        if (RageRuntimeConfigEnabled("modern.solid", "RAGE_PORT_MODERN_SOLID")) {
-            out->attr |= 0x8000u;
-        }
-        out->twin = face->textureWindow != 0
-                        ? ModernTwinFromE2(face->textureWindow)
-                        : 0x0000FFFFu;
-        out->clut = face->clut;
-    }
-    *averageZ = zSum * 0.25f;
 }
 
 /* ---- 2D packet replay ---- */
@@ -1411,13 +904,11 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
     }
 }
 
-/* ---- snapshot -> vertex/span lists ---- */
+/* ---- captured PS1 2D -> overlay vertex/span lists ---- */
 
-static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
+static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     Modern2DState state2d;
     int i;
-    static ModernFaceOrder semiOrder[RAGE_CAPTURE_MAX_FACES];
-    int semiCount = 0;
 
     s_vertexCount = 0;
     s_spanCount = 0;
@@ -1425,32 +916,12 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
     s_currentPass = 0;
     s_currentLayer = MODERN_LAYER_BACKGROUND;
 
-    /* One common model bias for the whole frame, applied at full bucket
-     * scale to every model draw uniformly. Retail wins hill crests against
-     * the road by linking cars ~14..20 buckets nearer via the per-face
-     * bias; a uniform shift keeps that without ever moving the separately
-     * drawn parts of one car (body and spinning wheels are distinct draws)
-     * relative to each other. */
-    {
-        int16_t globalBias = 0;
-        for (i = 0; i < snapshot->faceCount; i++) {
-            const RageCaptureFace *face = &snapshot->faces[i];
-            if (face->kind == RAGE_CAPTURE_KIND_TERRAIN) continue;
-            if (face->kind == RAGE_CAPTURE_KIND_COURSE) continue;
-            if (face->bias < globalBias) globalBias = face->bias;
-        }
-        if (globalBias < -32) globalBias = -32;
-        for (i = 0; i < snapshot->drawCount; i++) {
-            s_drawGroupBias[i] = globalBias;
-        }
-    }
-
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
 
-    /* Background 2D: sky layers at the far ordering-table buckets,
-     * stretched across the widened view so the panorama reaches the
-     * corners 16:9 exposes. */
+    /* The native world does not yet own the sky or the in-game UI. Replay
+     * only those captured 2D layers around it; captured PS1 3D faces are
+     * deliberately never consumed by the modern renderer. */
     s_orthoStretch = 1;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
@@ -1459,65 +930,13 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
             (packet->words[0] >> 24) < 0xE0u) {
             continue;
         }
-        /* State packets always replay so tpage/window state stays right for
-         * the foreground pass below; draw packets only in far buckets. */
         if (packet->bucket >= MODERN_BACKGROUND_BUCKET ||
             (packet->words[0] >> 24) >= 0xE0u) {
             ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
         }
     }
     s_orthoStretch = 0;
-    s_currentLayer = MODERN_LAYER_WORLD;
 
-    /* Opaque 3D, z-buffered. Drawn in reverse submission order: within a
-     * compat ordering-table bucket AddPrim prepends, so the first-submitted
-     * face is drawn last and wins; LESS_OR_EQUAL plus reverse order keeps
-     * that rule for equal-depth (coplanar) faces. */
-    for (i = snapshot->faceCount - 1; i >= 0; i--) {
-        const RageCaptureFace *face = &snapshot->faces[i];
-        ModernVertex corners[4];
-        float averageZ;
-        if (ModernFaceIsMirror(snapshot, face)) continue;
-        if (face->flags & RAGE_CAPTURE_FACE_SEMI) continue;
-        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
-        ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_OPAQUE, NULL, 0.0f),
-                       corners);
-    }
-    for (i = 0; i < snapshot->faceCount; i++) {
-        const RageCaptureFace *face = &snapshot->faces[i];
-        if (ModernFaceIsMirror(snapshot, face)) continue;
-        if (!(face->flags & RAGE_CAPTURE_FACE_SEMI)) continue;
-        if (semiCount < RAGE_CAPTURE_MAX_FACES) {
-            semiOrder[semiCount].index = i;
-            semiOrder[semiCount].depth = 0.0f;
-            semiCount++;
-        }
-    }
-
-    /* Semi-transparent 3D, back to front. */
-    for (i = 0; i < semiCount; i++) {
-        const RageCaptureFace *face = &snapshot->faces[semiOrder[i].index];
-        ModernVertex corners[4];
-        float averageZ;
-        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
-        semiOrder[i].depth = averageZ;
-    }
-    if (semiCount > 1) {
-        qsort(semiOrder, semiCount, sizeof(semiOrder[0]),
-              ModernCompareFaceOrder);
-    }
-    for (i = 0; i < semiCount; i++) {
-        const RageCaptureFace *face = &snapshot->faces[semiOrder[i].index];
-        ModernVertex corners[4];
-        float averageZ;
-        uint32_t abr = (face->tpage >> 5) & 3u;
-        int pipeline =
-            abr == 2u ? MODERN_PIPE_3D_SUB : MODERN_PIPE_3D_BLEND;
-        ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
-        ModernEmitQuad(ModernBeginSpan(pipeline, NULL, (float)i), corners);
-    }
-
-    /* Foreground 2D of the main ordering table, in compat draw order. */
     s_currentLayer = MODERN_LAYER_HUD;
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
@@ -1530,96 +949,12 @@ static void ModernBuildFrame(const RageSceneSnapshot *snapshot) {
         }
         ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
     }
-    /* The mirror table inherits the drawing-area state the main chain left
-     * behind; keep it for the mirror sections below. */
-    s_mainEnd2D = state2d;
 
-    /* Mirror overlay: the second ordering table draws after the main scene
-     * and INHERITS the GPU drawing-area state the main table's chain left
-     * behind - that inherited area is how retail suppresses the mirror
-     * content while the panel slides in (DrawMirrorFrame's partial or
-     * zero-height area sits at the end of the main chain). The mirror 3D is
-     * scissored to the intersection of the inherited area and the mirror
-     * stream's own area. */
+    /* The native mirror supplies its own world and backdrop. Retain only
+     * captured 2D framing/text, seeded with the main table's final GPU state
+     * so the original slide-in clipping still applies. */
     s_currentPass = 1;
-    s_currentLayer = MODERN_LAYER_MIRROR_BACKGROUND;
-    {
-        /* The mirror 3D content sits between the mirror stream's own area
-         * pair and its restore, so that pair alone is the authoritative
-         * scissor (with VRAM-page intersection the slide-in phases produce
-         * genuinely empty pairs by themselves; intersecting with the main
-         * chain's final area wrongly blanked the mirror whenever the pause
-         * menu left its dim-box area installed there). The inherited state
-         * only seeds streams that never install their own pair. */
-        SDL_Rect area;
-        int haveArea = 0;
-        Modern2DState scan = s_mainEnd2D;
-        for (i = 0; i < snapshot->packetCount; i++) {
-            const RageCapturePacket *packet = &snapshot->packets[i];
-            int word;
-            if (packet->table != 1) continue;
-            if ((packet->words[0] >> 24) < 0xE0u) continue;
-            for (word = 0; word < packet->size; word++) {
-                ModernApply2DStateWord(packet->words[word], &scan);
-            }
-            if (scan.hasScissor && scan.scissor.w != 0) {
-                break;
-            }
-        }
-        haveArea = scan.hasScissor && !scan.areaEmpty && scan.scissor.w > 0 &&
-                   scan.scissor.h > 0;
-        area = scan.scissor;
-        /* Mirror backdrop 2D (sky bands at far buckets) before the 3D,
-         * starting from the inherited main-table state so slide-in frames
-         * clip exactly like retail. */
-        state2d = s_mainEnd2D;
-        for (i = 0; i < snapshot->packetCount; i++) {
-            const RageCapturePacket *packet = &snapshot->packets[i];
-            uint32_t command = packet->words[0] >> 24;
-            if (packet->table != 1) continue;
-            if (command < 0xE0u &&
-                (!state2d.hasScissor ||
-                 packet->bucket < MODERN_BACKGROUND_BUCKET)) {
-                continue;
-            }
-            ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
-        }
-        if (haveArea) {
-            Modern2DState scissorState;
-            s_currentLayer = MODERN_LAYER_MIRROR_WORLD;
-            memset(&scissorState, 0, sizeof(scissorState));
-            scissorState.hasScissor = 1;
-            scissorState.scissor = area;
-            ModernScissorToPixels(&scissorState.scissor);
-            for (i = snapshot->faceCount - 1; i >= 0; i--) {
-                const RageCaptureFace *face = &snapshot->faces[i];
-                ModernVertex corners[4];
-                float averageZ;
-                if (!ModernFaceIsMirror(snapshot, face)) continue;
-                if (face->flags & RAGE_CAPTURE_FACE_SEMI) continue;
-                ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
-                ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_OPAQUE,
-                                               &scissorState, 0.0f),
-                               corners);
-            }
-            for (i = 0; i < snapshot->faceCount; i++) {
-                const RageCaptureFace *face = &snapshot->faces[i];
-                ModernVertex corners[4];
-                float averageZ;
-                if (!ModernFaceIsMirror(snapshot, face)) continue;
-                if (!(face->flags & RAGE_CAPTURE_FACE_SEMI)) continue;
-                ModernBuildFaceVertices(snapshot, face, corners, &averageZ);
-                ModernEmitQuad(ModernBeginSpan(MODERN_PIPE_3D_BLEND,
-                                               &scissorState, 0.0f),
-                               corners);
-            }
-        }
-    }
-
-    /* Mirror-table foreground 2D (frame border, text), in compat order;
-     * starts from the inherited main-table state like the backdrop. */
     s_currentLayer = MODERN_LAYER_MIRROR_FOREGROUND;
-    state2d = s_mainEnd2D;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
@@ -1672,11 +1007,10 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
     SDL_EndGPURenderPass(pass);
 }
 
-static void ModernRenderLegacySelection(SDL_GPUCommandBuffer *cmd,
-                                        SDL_GPUTexture *vram, int passNumber,
-                                        uint32_t layerMask, int clearColor) {
-    SDL_GPUGraphicsPipeline *pipelines[5] = {
-        s_pipe3dOpaque, s_pipe3dBlend, s_pipe3dSub, s_pipe2d, s_pipe2dSub};
+static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
+                                         SDL_GPUTexture *vram, int passNumber,
+                                         uint32_t layerMask, int clearColor) {
+    SDL_GPUGraphicsPipeline *pipelines[2] = {s_pipe2d, s_pipe2dSub};
     SDL_GPUColorTargetInfo color = {
         .texture = s_target,
         .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
@@ -1765,7 +1099,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     if (profile < 0)
         profile = RageRuntimeConfigEnabled("diagnostics.performance", NULL);
     if (profile) profileStart = SDL_GetTicksNS();
-    ModernBuildFrame(snapshot);
+    ModernBuildOverlayFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return;
@@ -1792,8 +1126,8 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
     {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernRenderLegacySelection(cmd, vram, 0,
-                                    1u << MODERN_LAYER_BACKGROUND, 1);
+        ModernRenderOverlaySelection(cmd, vram, 0,
+                                     1u << MODERN_LAYER_BACKGROUND, 1);
         if (ModernNativeGpuHasDraws()) {
             ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
         }
@@ -1805,14 +1139,14 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                     "legacy 3D fallback is disabled\n",
                     snapshot->frameCounter);
         }
-        ModernRenderLegacySelection(cmd, vram, 0,
-                                    1u << MODERN_LAYER_HUD, 0);
+        ModernRenderOverlaySelection(cmd, vram, 0,
+                                     1u << MODERN_LAYER_HUD, 0);
         if (ModernNativeGpuHasMirrorDraws()) {
             ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth);
             ModernCompositeNativeMirror(cmd);
         }
-        ModernRenderLegacySelection(cmd, vram, 1,
-                                    1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
+        ModernRenderOverlaySelection(cmd, vram, 1,
+                                     1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
     }
     {
         SDL_GPUTexture *chain = s_target;
@@ -1843,7 +1177,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         };
         SDL_BlitGPUTexture(cmd, &blit);
         s_ringFrame[s_ringNext] = snapshot->frameCounter;
-        s_ringT[s_ringNext] = s_useLerp ? -2.0f : -1.0f;
+        s_ringT[s_ringNext] = -1.0f;
         if (s_ringScene != NULL) {
             memcpy(&s_ringScene[s_ringNext], snapshot, sizeof(*snapshot));
         }
@@ -2033,10 +1367,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         }
         ModernNativeGpuPrepare(RageGameRenderWorldPresentation(t),
                                (float)s_targetW / (float)s_targetH);
-        ModernPrepareInterpolation(snapshot, target, t);
         ModernRender(snapshot);
         s_lastPresentationNs = now;
-        s_useLerp = 0;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         const RageRenderWorld *world = RageGameRenderWorldPrevious();

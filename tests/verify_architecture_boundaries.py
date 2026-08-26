@@ -34,10 +34,19 @@ def main() -> int:
         raise AssertionError("modern renderer imports the classic renderer")
     modern = (source / "src/port/modern/modern_renderer.c").read_text(
         encoding="utf-8")
-    if "ModernNativeGpuCanReplaceWorld" in modern:
-        raise AssertionError("modern renderer still conditionally falls back")
-    if "ModernRenderLegacySelection(cmd, vram, 0, UINT32_MAX" in modern:
-        raise AssertionError("modern renderer can still draw the legacy 3D world")
+    forbidden_modern_3d = (
+        "ModernNativeGpuCanReplaceWorld",
+        "ModernRenderLegacySelection",
+        "MODERN_PIPE_3D",
+        "ModernBuildFaceVertices",
+        "RageCaptureFace",
+    )
+    for token in forbidden_modern_3d:
+        if token in modern:
+            raise AssertionError(
+                f"modern renderer still contains captured PS1 3D path: {token}")
+    if "ModernBuildOverlayFrame" not in modern:
+        raise AssertionError("modern renderer has no explicit 2D overlay boundary")
     if "legacy 3D fallback is disabled" not in modern:
         raise AssertionError("incomplete native worlds are not diagnosed")
     return 0
