@@ -14,8 +14,8 @@ CASES = {
     "enhanced": ("16:9", "linear", "fxaa", "vibrant", (426, 240)),
 }
 MODERN_GOLDENS = {
-    "baseline": "29b406fe49809ac384589ac32d641aa924cfb7f8500cbcab1b5398d65dc827bb",
-    "enhanced": "db6f598ede7d0e4b23156ac0dad2951446d6762c04a949be99907f341f28fd37",
+    "baseline": "0b55e3dda0ba48f2a53809b3f051476ca20d570a65f912e37049fe7134d7249c",
+    "enhanced": "45d03b86d3cdb0682d940acb3bfbaf7820c41b42d35613633dc4149490c6c777",
 }
 
 
@@ -51,7 +51,8 @@ grading = {grading}
 
 [diagnostics]
 modern_dump = {capture}
-modern_dump_frame = 2300
+modern_dump_scene_id = 12
+modern_dump_timer = 120
 
 [race]
 enabled = true
@@ -63,6 +64,10 @@ car = 3
 
 [run]
 frames = 2500
+
+[stop]
+scene = 12
+timer = 130
 """,
                 encoding="utf-8",
             )

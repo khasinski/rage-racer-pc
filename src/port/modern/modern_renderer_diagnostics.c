@@ -21,6 +21,8 @@ void RageModernDiagnosticsMaybeDump(
     static int initialized;
     static const char *path;
     static long frame = -1;
+    static long scene = -1;
+    static long timer = -1;
     static long every;
     static long lastDumped = -1;
     static int done;
@@ -29,14 +31,22 @@ void RageModernDiagnosticsMaybeDump(
             "diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME");
         const char *everyText = RageRuntimeConfigGetLegacy(
             "diagnostics.modern_dump_every", "RAGE_PORT_MODERN_DUMP_EVERY");
+        const char *sceneText = RageRuntimeConfigGet(
+            "diagnostics.modern_dump_scene_id");
+        const char *timerText = RageRuntimeConfigGet(
+            "diagnostics.modern_dump_timer");
         path = RageRuntimeConfigGetLegacy(
             "diagnostics.modern_dump", "RAGE_PORT_MODERN_DUMP");
         if (frameText != NULL) frame = strtol(frameText, NULL, 0);
         if (everyText != NULL) every = strtol(everyText, NULL, 0);
+        if (sceneText != NULL) scene = strtol(sceneText, NULL, 0);
+        if (timerText != NULL) timer = strtol(timerText, NULL, 0);
         initialized = 1;
     }
     if (path == NULL || done ||
-        (frame >= 0 && (long)snapshot->frameCounter < frame)) return;
+        (frame >= 0 && (long)snapshot->frameCounter < frame) ||
+        (scene >= 0 && snapshot->sceneId != scene) ||
+        (timer >= 0 && (long)snapshot->sceneTimer < timer)) return;
     if (every > 0) {
         char numbered[512];
         if (lastDumped >= 0 &&
