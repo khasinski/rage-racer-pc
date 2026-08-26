@@ -203,10 +203,11 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
-    /* Every car bank's model immediately after the body is a flat authored
-     * shadow plate. It follows the semantic car transform but lies on the
-     * road, so identify it explicitly instead of relying on PS1 OT bias. */
-    if (part == 1) instance.flags |= RAGE_RENDER_INSTANCE_DEPTH_DECAL;
+    /* Every player and track car bank stores a flat authored footprint in
+     * the model immediately after its body. Publish the source meaning; the
+     * native backend owns how a projected shadow is rendered. */
+    if (part == 1)
+        instance.flags |= RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
     /* The PS1 ordering table draws the body after wheels that share its
      * depth bucket, masking the portion inset behind the wheel arches. A
      * real Z buffer otherwise exposes that authored overlap when suspension

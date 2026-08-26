@@ -116,8 +116,12 @@ enum {
     RAGE_RENDER_INSTANCE_CULL_BACKFACES = 1u << 4,
     /* A semantic surface laid directly over other world geometry. The native
      * backend applies a slope-aware depth offset instead of letting the two
-     * surfaces z-fight. Player and rival shadow plates use this contract. */
+     * surfaces z-fight. */
     RAGE_RENDER_INSTANCE_DEPTH_DECAL = 1u << 5,
+    /* Imported car banks carry a flat near-black submesh after every body.
+     * It is a footprint for a projected native shadow, not ordinary opaque
+     * model geometry. This applies equally to player and rival cars. */
+    RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT = 1u << 6,
 };
 
 typedef struct RageRenderWorld {
