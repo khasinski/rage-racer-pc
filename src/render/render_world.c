@@ -1,6 +1,48 @@
 #include "render_world.h"
 
+#include <math.h>
 #include <string.h>
+
+static float RageRenderWrappedAngleDelta(float from, float to) {
+    float delta = to - from;
+    while (delta > 180.0f) delta -= 360.0f;
+    while (delta < -180.0f) delta += 360.0f;
+    return fabsf(delta);
+}
+
+static int RageRenderCameraIsCut(const RageRenderCamera *previous,
+                                 const RageRenderCamera *current) {
+    float dx = current->transform.position.x - previous->transform.position.x;
+    float dy = current->transform.position.y - previous->transform.position.y;
+    float dz = current->transform.position.z - previous->transform.position.z;
+    if (dx * dx + dy * dy + dz * dz > 1024.0f * 1024.0f) return 1;
+    if (previous->transform.hasOrientation &&
+        current->transform.hasOrientation) {
+        float dot = previous->transform.orientation.x *
+                        current->transform.orientation.x +
+                    previous->transform.orientation.y *
+                        current->transform.orientation.y +
+                    previous->transform.orientation.z *
+                        current->transform.orientation.z +
+                    previous->transform.orientation.w *
+                        current->transform.orientation.w;
+        /* Quaternion dot is cos(half the angular distance). A change above
+         * 45 degrees in one logic tick is a shot cut, not camera motion. */
+        if (fabsf(dot) < 0.9238795f) return 1;
+    } else if (RageRenderWrappedAngleDelta(
+                   previous->transform.rotation.x,
+                   current->transform.rotation.x) > 45.0f ||
+               RageRenderWrappedAngleDelta(
+                   previous->transform.rotation.y,
+                   current->transform.rotation.y) > 45.0f ||
+               RageRenderWrappedAngleDelta(
+                   previous->transform.rotation.z,
+                   current->transform.rotation.z) > 45.0f) {
+        return 1;
+    }
+    return fabsf(current->verticalFovDegrees -
+                  previous->verticalFovDegrees) > 10.0f;
+}
 
 void RageRenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
@@ -23,6 +65,9 @@ void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
 
 void RageRenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera) {
+    if (world->hasCamera &&
+        RageRenderCameraIsCut(&world->previousCamera, camera))
+        world->previousCamera = *camera;
     world->camera = *camera;
     if (!world->hasCamera) world->previousCamera = *camera;
     world->hasCamera = 1;
@@ -31,6 +76,11 @@ void RageRenderWorldSetCamera(RageRenderWorld *world,
 void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
                                     const RageRenderCamera *camera,
                                     int active, float panelY) {
+    if (world->hasMirrorCamera &&
+        RageRenderCameraIsCut(&world->previousMirrorCamera, camera)) {
+        world->previousMirrorCamera = *camera;
+        world->previousMirrorPanelY = panelY;
+    }
     world->mirrorCamera = *camera;
     world->mirrorPanelY = panelY;
     world->mirrorActive = active != 0;

@@ -135,6 +135,28 @@ static void test_mirror_is_an_independent_scene_camera(void) {
     EXPECT_EQ(18, (int)world.mirrorPanelY);
 }
 
+static void test_camera_cuts_are_not_interpolated_as_motion(void) {
+    RageRenderMeshInstance storage[1];
+    RageRenderWorld world;
+    RageRenderCamera camera = {0};
+    RageRenderCamera presentation;
+
+    RageRenderWorldInit(&world, storage, 1);
+    camera.transform.hasOrientation = 1;
+    camera.transform.orientation.w = 1.0f;
+    camera.verticalFovDegrees = 45.0f;
+    RageRenderWorldSetCamera(&world, &camera);
+    RageRenderWorldBeginFrame(&world, 2);
+    camera.transform.position.x = 4096.0f;
+    camera.transform.orientation.y = 0.7071068f;
+    camera.transform.orientation.w = 0.7071068f;
+    RageRenderWorldSetCamera(&world, &camera);
+    RageRenderInterpolateCamera(&world.previousCamera, &world.camera, 0.1f,
+                                &presentation);
+    EXPECT_EQ(4096, (int)presentation.transform.position.x);
+    EXPECT_EQ(70, (int)(presentation.transform.orientation.y * 100.0f));
+}
+
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
@@ -443,6 +465,7 @@ int main(void) {
     test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
     test_mirror_is_an_independent_scene_camera();
+    test_camera_cuts_are_not_interpolated_as_motion();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
