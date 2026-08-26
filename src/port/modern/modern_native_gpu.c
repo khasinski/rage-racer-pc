@@ -4,6 +4,7 @@
 #include "render/render_mesh_build.h"
 #include "render/render_projection.h"
 #include "render/render_shadow.h"
+#include "rage/track_asset_identity.h"
 
 #include "shaders/native_color_frag_spv.h"
 #include "shaders/native_texture_frag_spv.h"
@@ -89,6 +90,7 @@ static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 static uint32_t s_textureCount;
+static uint64_t s_trackAssetRevision = UINT64_MAX;
 static RageRenderShadowMap s_shadowMap;
 static int s_haveShadowMap;
 
@@ -425,12 +427,41 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     return 1;
 }
 
+static void ModernNativeGpuClearTextures(void) {
+    uint32_t index;
+    if (s_device != NULL) {
+        for (index = 0; index < s_textureCount; index++) {
+            if (s_textures[index].texture != NULL)
+                SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
+            if (s_textures[index].transfer != NULL)
+                SDL_ReleaseGPUTransferBuffer(s_device,
+                                             s_textures[index].transfer);
+        }
+    }
+    memset(s_textures, 0, sizeof(s_textures));
+    s_textureCount = 0;
+}
+
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint32_t instance;
     uint32_t mirrorFirstVertex;
     RageRenderVec3 shadowCenter;
+    uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL ||
         world->frame == s_worldFrame) return;
+    trackAssetRevision = RageTrackAssetIdentityRevision();
+    if (trackAssetRevision != s_trackAssetRevision) {
+        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL &&
+            s_trackAssetRevision != UINT64_MAX) {
+            fprintf(stderr,
+                    "rage-port: native texture cache reset old=%llu new=%llu "
+                    "textures=%u\n",
+                    (unsigned long long)s_trackAssetRevision,
+                    (unsigned long long)trackAssetRevision, s_textureCount);
+        }
+        ModernNativeGpuClearTextures();
+        s_trackAssetRevision = trackAssetRevision;
+    }
     ModernAssetsWarmWorld(world);
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
@@ -494,10 +525,11 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         }
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
-                "cached=%u vertices=%u spans=%u mirror_vertices=%u "
+                "cached=%u textures=%u vertices=%u spans=%u mirror_vertices=%u "
                 "mirror_spans=%u mirror_vehicle_spans=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
+                s_textureCount,
                 s_vertexCount, s_spanCount, s_mirrorVertexCount,
                 s_mirrorSpanCount, mirrorVehicleSpans);
     }
@@ -836,14 +868,8 @@ void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
 }
 
 void ModernNativeGpuShutdown(void) {
-    uint32_t index;
+    ModernNativeGpuClearTextures();
     if (s_device != NULL) {
-        for (index = 0; index < s_textureCount; index++) {
-            if (s_textures[index].texture != NULL)
-                SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
-            if (s_textures[index].transfer != NULL)
-                SDL_ReleaseGPUTransferBuffer(s_device, s_textures[index].transfer);
-        }
         if (s_texturedOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_texturedOpaque);
         if (s_texturedTransparent != NULL)
@@ -871,7 +897,6 @@ void ModernNativeGpuShutdown(void) {
     free(s_vertices);
     free(s_spans);
     free(s_mirrorSpans);
-    memset(s_textures, 0, sizeof(s_textures));
     s_device = NULL;
     s_texturedOpaque = NULL;
     s_texturedTransparent = NULL;
@@ -897,5 +922,6 @@ void ModernNativeGpuShutdown(void) {
     s_aspect = 4.0f / 3.0f;
     s_completeWorld = 0;
     s_textureCount = 0;
+    s_trackAssetRevision = UINT64_MAX;
     s_haveShadowMap = 0;
 }

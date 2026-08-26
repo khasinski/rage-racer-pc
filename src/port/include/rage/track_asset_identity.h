@@ -8,5 +8,6 @@
  * their assets. */
 void RageTrackAssetIdentitySet(int asset);
 uint32_t RageTrackAssetIdentityResolve(uint32_t fallback);
+uint64_t RageTrackAssetIdentityRevision(void);
 
 #endif
