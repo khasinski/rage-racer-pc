@@ -359,6 +359,11 @@ if(TARGET rage-host-state)
             "-iquote${CMAKE_SOURCE_DIR}/include")
     endif()
     target_link_libraries(negcon_calibration_tests PRIVATE psyz)
+    if(RAGE_ENABLE_SANITIZERS AND
+       CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+        target_link_options(negcon_calibration_tests PRIVATE
+            -fsanitize=address,undefined)
+    endif()
     add_test(NAME negcon_calibration COMMAND negcon_calibration_tests)
     set_tests_properties(negcon_calibration PROPERTIES LABELS portable)
 endif()
