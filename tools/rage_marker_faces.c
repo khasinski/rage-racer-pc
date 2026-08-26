@@ -359,7 +359,7 @@ int main(int argc, char **argv) {
                         int a = tris[t][0], b = tris[t][1], c = tris[t][2];
                         float d = (sy[b] - sy[c]) * (sx[a] - sx[c]) +
                                   (sx[c] - sx[b]) * (sy[a] - sy[c]);
-                        float w0, w1, w2, iz, u, v;
+                        float w0, w1, w2, iz, u, v, affineU, affineV;
                         if (d == 0.0f) continue;
                         w0 = ((sy[b] - sy[c]) * (probeX - sx[c]) +
                               (sx[c] - sx[b]) * (probeY - sy[c])) / d;
@@ -376,9 +376,15 @@ int main(int argc, char **argv) {
                         v = (w0 * f->uv[a][1] / view[a][2] +
                              w1 * f->uv[b][1] / view[b][2] +
                              w2 * f->uv[c][1] / view[c][2]) / iz;
-                        printf("  tri%d uv=%.3f,%.3f corners=%u,%u/%u,%u/"
+                        affineU = w0 * f->uv[a][0] + w1 * f->uv[b][0] +
+                                  w2 * f->uv[c][0];
+                        affineV = w0 * f->uv[a][1] + w1 * f->uv[b][1] +
+                                  w2 * f->uv[c][1];
+                        printf("  tri%d uv=%.3f,%.3f affine=%.3f,%.3f "
+                               "corners=%u,%u/%u,%u/"
                                "%u,%u/%u,%u twin=%05x\n",
-                               t, u, v, f->uv[0][0], f->uv[0][1],
+                               t, u, v, affineU, affineV,
+                               f->uv[0][0], f->uv[0][1],
                                f->uv[1][0], f->uv[1][1], f->uv[2][0],
                                f->uv[2][1], f->uv[3][0], f->uv[3][1],
                                f->textureWindow);
