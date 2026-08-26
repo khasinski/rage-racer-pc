@@ -168,6 +168,7 @@ static void test_native_draw_builder_emits_semantic_shadow_footprint(void) {
     world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
     storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                        RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
+    storage[0].depthBias = -64.0f;
     storage[0].transform.scale.x = storage[0].transform.scale.y =
         storage[0].transform.scale.z = 1.0f;
     world.instanceCount = 1;
@@ -186,6 +187,7 @@ static void test_native_draw_builder_emits_semantic_shadow_footprint(void) {
     EXPECT_EQ(0, vertices[0].color[2]);
     EXPECT_EQ(96, vertices[0].color[3]);
     EXPECT_EQ(0, (int)vertices[0].lighting);
+    EXPECT_EQ(-64, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {

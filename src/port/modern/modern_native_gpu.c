@@ -271,7 +271,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     }
     if (vertex != NULL && colorFragment != NULL) {
         s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
-        s_colorShadow = ModernNativeCreatePipeline(vertex, colorFragment, 1, 1);
+        /* Footprints carry their own fixed clip-depth offset. A slope-scaled
+         * raster bias makes a whole coplanar plate alternate at bends and
+         * crests, which presents as full-shadow flicker. */
+        s_colorShadow = ModernNativeCreatePipeline(vertex, colorFragment, 1, 0);
     }
     if (vertex != NULL) SDL_ReleaseGPUShader(s_device, vertex);
     if (textureFragment != NULL)

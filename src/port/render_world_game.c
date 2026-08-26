@@ -208,6 +208,11 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
      * native backend owns how a projected shadow is rendered. */
     if (part == 1)
         instance.flags |= RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
+    /* The authored footprint lies on the road-contact plane. Give the whole
+     * projection a small, stable clip-depth offset so it cannot alternate
+     * with the road as its slope changes. The shadow pipeline still tests
+     * scene depth and does not write it. */
+    if (part == 1) instance.depthBias = -64.0f;
     /* The PS1 ordering table draws the body after wheels that share its
      * depth bucket, masking the portion inset behind the wheel arches. A
      * real Z buffer otherwise exposes that authored overlap when suspension

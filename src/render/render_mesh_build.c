@@ -243,6 +243,11 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
     }
+    /* A projected footprint is one depth-coherent surface. Ignore any PS1
+     * ordering metadata left on individual source faces so the entire shadow
+     * receives the same native depth offset. */
+    if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0)
+        out->depthBias = instance->depthBias;
     *material = source.material;
     return 1;
 }
