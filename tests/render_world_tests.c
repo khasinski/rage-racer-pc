@@ -4,6 +4,7 @@
 #include "render/render_world.h"
 #include "render/render_world_frame.h"
 #include "render/render_projection.h"
+#include "render/render_shadow.h"
 
 static int failures;
 
@@ -384,6 +385,35 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
     EXPECT_EQ(1, (int)converted[2][0]);
 }
 
+static void test_directional_shadow_map_is_texel_stable(void) {
+    RageRenderVec3 light = {-0.4f, 0.7f, 0.5f};
+    RageRenderVec3 center = {1000.0f, 200.0f, -500.0f};
+    RageRenderVec3 moved = center;
+    RageRenderVec3 projected;
+    RageRenderShadowMap first;
+    RageRenderShadowMap second;
+    float firstRight;
+    float secondRight;
+
+    EXPECT_EQ(1, RageRenderBuildDirectionalShadowMap(
+                     &center, &light, 4096.0f, 2048, &first));
+    moved.x += first.texelWorldSize * 0.1f;
+    EXPECT_EQ(1, RageRenderBuildDirectionalShadowMap(
+                     &moved, &light, 4096.0f, 2048, &second));
+    firstRight = first.position.x * first.row0.x +
+                 first.position.y * first.row0.y +
+                 first.position.z * first.row0.z;
+    secondRight = second.position.x * second.row0.x +
+                  second.position.y * second.row0.y +
+                  second.position.z * second.row0.z;
+    EXPECT_EQ(1, firstRight - secondRight < 0.01f &&
+                 firstRight - secondRight > -0.01f);
+    RageRenderProjectShadowPoint(&first, &center, &projected);
+    EXPECT_EQ(0, (int)(projected.x * 100.0f));
+    EXPECT_EQ(0, (int)(projected.y * 100.0f));
+    EXPECT_EQ(50, (int)(projected.z * 100.0f));
+}
+
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_legacy_mirror_instances_can_be_removed_from_scene();
@@ -399,6 +429,7 @@ int main(void) {
     test_synchronized_presentation_moves_dynamic_scenery();
     test_native_camera_projection_has_no_gte_quantization();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
+    test_directional_shadow_map_is_texel_stable();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");
     return EXIT_SUCCESS;

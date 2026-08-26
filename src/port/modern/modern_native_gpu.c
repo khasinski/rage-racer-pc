@@ -3,10 +3,13 @@
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
 #include "render/render_projection.h"
+#include "render/render_shadow.h"
 
 #include "shaders/native_color_frag_spv.h"
 #include "shaders/native_texture_frag_spv.h"
 #include "shaders/native_vert_spv.h"
+#include "shaders/native_shadow_frag_spv.h"
+#include "shaders/native_shadow_vert_spv.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -19,7 +22,12 @@ enum {
     MODERN_NATIVE_MAX_VERTICES = 1000000,
     MODERN_NATIVE_MAX_SPANS = 32768,
     MODERN_NATIVE_MAX_TEXTURES = 2048,
+    MODERN_NATIVE_SHADOW_SIZE = 2048,
 };
+
+static const float MODERN_NATIVE_SHADOW_EXTENT = 4096.0f;
+static const RageRenderVec3 MODERN_NATIVE_LIGHT_DIRECTION =
+    {-0.4f, 0.7f, 0.5f};
 
 typedef struct ModernNativeCameraUniform {
     float position[4];
@@ -49,6 +57,8 @@ static const char MODERN_NATIVE_MSL[] =
     "struct NativeCamera { float4 position; float4 viewRow0; float4 viewRow1; float4 viewRow2; float4 projection; };\n"
     "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; float4 fog; float lighting; float3 environmentLight; };\n"
     "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; return o; }\n"
+    "vertex float4 vs_shadow(NativeIn in [[stage_in]], constant NativeCamera &shadow [[buffer(0)]]) { float3 p=in.pos-shadow.position.xyz; float depth=-dot(shadow.viewRow2.xyz,p); return float4(dot(shadow.viewRow0.xyz,p)*shadow.projection.x,dot(shadow.viewRow1.xyz,p)*shadow.projection.y,depth*shadow.projection.z+shadow.projection.w,1.0); }\n"
+    "fragment void fs_shadow() {}\n"
     "static float4 native_texel(texture2d<float> textureImage, int2 texel) { int2 limit=int2(textureImage.get_width(),textureImage.get_height())-1; return textureImage.read(uint2(clamp(texel,int2(0),limit))); }\n"
     "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { float2 imageSize=float2(textureImage.get_width(),textureImage.get_height()); float2 pixel=in.uv*imageSize; int2 nearest=int2(clamp(floor(pixel),float2(0.0),imageSize-1.0)); float4 t=native_texel(textureImage,nearest); if(t.a<=0.001) discard_fragment(); float2 p=pixel-0.5; float2 cell=floor(p); float2 frac=p-cell; float3 filtered=float3(0.0); float weights=0.0; for(int tap=0;tap<4;tap++){float2 off=float2(float(tap&1),float(tap>>1));float2 at=clamp(cell+off,float2(0.0),imageSize-1.0);float2 axis=abs(off-frac);float weight=(1.0-axis.x)*(1.0-axis.y);float4 sample=native_texel(textureImage,int2(at));if(sample.a>0.001){filtered+=sample.rgb*weight;weights+=weight;}}if(weights>0.0)t.rgb=filtered/weights; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),in.environmentLight*(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float4 c=float4(t.rgb*modulation*light,t.a*in.color.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
     "fragment float4 fs_native_color(NativeOut in [[stage_in]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(float3(-0.4,0.7,0.5))),0.0); float3 light=mix(float3(1.0),in.environmentLight*(0.35+0.65*ndl),in.lighting); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); return float4(fogged*light,in.color.a); }\n";
@@ -60,9 +70,12 @@ static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_texturedTransparentDecal;
 static SDL_GPUGraphicsPipeline *s_colorOpaque;
 static SDL_GPUGraphicsPipeline *s_colorShadow;
+static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUSampler *s_sampler;
+static SDL_GPUTexture *s_shadowTexture;
+static SDL_GPUSampler *s_shadowSampler;
 static RageNativeDrawVertex *s_vertices;
 static RageNativeDrawSpan *s_spans;
 static RageNativeDrawSpan *s_mirrorSpans;
@@ -77,6 +90,8 @@ static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 static uint32_t s_textureCount;
+static RageRenderShadowMap s_shadowMap;
+static int s_haveShadowMap;
 
 static SDL_GPUShader *ModernNativeCreateShader(
     const unsigned char *spirv, size_t spirvSize, const char *entry,
@@ -182,6 +197,36 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     return SDL_CreateGPUGraphicsPipeline(s_device, &info);
 }
 
+static SDL_GPUGraphicsPipeline *ModernNativeCreateShadowPipeline(
+    SDL_GPUShader *vertex, SDL_GPUShader *fragment) {
+    const SDL_GPUVertexBufferDescription buffer = {
+        .slot = 0,
+        .pitch = sizeof(RageNativeDrawVertex),
+        .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+    };
+    const SDL_GPUVertexAttribute position = {
+        .location = 0,
+        .buffer_slot = 0,
+        .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+        .offset = offsetof(RageNativeDrawVertex, position),
+    };
+    SDL_GPUGraphicsPipelineCreateInfo info = {0};
+    info.vertex_shader = vertex;
+    info.fragment_shader = fragment;
+    info.vertex_input_state.vertex_buffer_descriptions = &buffer;
+    info.vertex_input_state.num_vertex_buffers = 1;
+    info.vertex_input_state.vertex_attributes = &position;
+    info.vertex_input_state.num_vertex_attributes = 1;
+    info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+    info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+    info.depth_stencil_state.enable_depth_test = true;
+    info.depth_stencil_state.enable_depth_write = true;
+    info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    info.target_info.has_depth_stencil_target = true;
+    return SDL_CreateGPUGraphicsPipeline(s_device, &info);
+}
+
 static void ModernNativeRotate(float out[3], const float in[3],
                                const RageRenderCamera *camera) {
     float x = in[0], y = in[1], z = in[2];
@@ -243,8 +288,31 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
                                     &out->projection[3]);
 }
 
+static void ModernNativeBuildShadowCamera(
+    const RageRenderShadowMap *shadow, ModernNativeCameraUniform *out) {
+    memset(out, 0, sizeof(*out));
+    out->position[0] = shadow->position.x;
+    out->position[1] = shadow->position.y;
+    out->position[2] = shadow->position.z;
+    out->viewRow0[0] = shadow->row0.x;
+    out->viewRow0[1] = shadow->row0.y;
+    out->viewRow0[2] = shadow->row0.z;
+    out->viewRow1[0] = shadow->row1.x;
+    out->viewRow1[1] = shadow->row1.y;
+    out->viewRow1[2] = shadow->row1.z;
+    out->viewRow2[0] = shadow->row2.x;
+    out->viewRow2[1] = shadow->row2.y;
+    out->viewRow2[2] = shadow->row2.z;
+    out->projection[0] = shadow->scaleX;
+    out->projection[1] = shadow->scaleY;
+    out->projection[2] = shadow->depthScale;
+    out->projection[3] = shadow->depthOffset;
+}
+
 int ModernNativeGpuInit(SDL_GPUDevice *device) {
-    SDL_GPUShader *vertex = NULL, *textureFragment = NULL, *colorFragment = NULL;
+    SDL_GPUShader *vertex = NULL, *shadowVertex = NULL;
+    SDL_GPUShader *shadowFragment = NULL;
+    SDL_GPUShader *textureFragment = NULL, *colorFragment = NULL;
     SDL_GPUBufferCreateInfo buffer = {0};
     SDL_GPUTransferBufferCreateInfo transfer = {0};
     SDL_GPUSamplerCreateInfo sampler = {0};
@@ -253,6 +321,12 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len, "vs_native",
         SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
+    shadowVertex = ModernNativeCreateShader(
+        native_shadow_vert_spv, native_shadow_vert_spv_len, "vs_shadow",
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
+    shadowFragment = ModernNativeCreateShader(
+        native_shadow_frag_spv, native_shadow_frag_spv_len, "fs_shadow",
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
     textureFragment = ModernNativeCreateShader(
         native_texture_frag_spv, native_texture_frag_spv_len, "fs_native",
         SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
@@ -276,7 +350,13 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
          * crests, which presents as full-shadow flicker. */
         s_colorShadow = ModernNativeCreatePipeline(vertex, colorFragment, 1, 0);
     }
+    if (shadowVertex != NULL && shadowFragment != NULL)
+        s_shadowDepth = ModernNativeCreateShadowPipeline(
+            shadowVertex, shadowFragment);
     if (vertex != NULL) SDL_ReleaseGPUShader(s_device, vertex);
+    if (shadowVertex != NULL) SDL_ReleaseGPUShader(s_device, shadowVertex);
+    if (shadowFragment != NULL)
+        SDL_ReleaseGPUShader(s_device, shadowFragment);
     if (textureFragment != NULL)
         SDL_ReleaseGPUShader(s_device, textureFragment);
     if (colorFragment != NULL) SDL_ReleaseGPUShader(s_device, colorFragment);
@@ -293,6 +373,26 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
      * unrelated regions and produces the appearance of random textures. */
     sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
     s_sampler = SDL_CreateGPUSampler(s_device, &sampler);
+    {
+        SDL_GPUTextureCreateInfo texture = {0};
+        SDL_GPUSamplerCreateInfo shadowSampler = {0};
+        texture.type = SDL_GPU_TEXTURETYPE_2D;
+        texture.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        texture.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
+                        SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        texture.width = MODERN_NATIVE_SHADOW_SIZE;
+        texture.height = MODERN_NATIVE_SHADOW_SIZE;
+        texture.layer_count_or_depth = 1;
+        texture.num_levels = 1;
+        s_shadowTexture = SDL_CreateGPUTexture(s_device, &texture);
+        shadowSampler.min_filter = SDL_GPU_FILTER_NEAREST;
+        shadowSampler.mag_filter = SDL_GPU_FILTER_NEAREST;
+        shadowSampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
+        shadowSampler.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        shadowSampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        shadowSampler.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        s_shadowSampler = SDL_CreateGPUSampler(s_device, &shadowSampler);
+    }
     s_vertices = malloc(MODERN_NATIVE_MAX_VERTICES * sizeof(*s_vertices));
     s_spans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_spans));
     s_mirrorSpans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_mirrorSpans));
@@ -300,6 +400,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         s_texturedOpaqueDecal == NULL ||
         s_texturedTransparentDecal == NULL ||
         s_colorOpaque == NULL || s_colorShadow == NULL ||
+        s_shadowDepth == NULL || s_shadowTexture == NULL ||
+        s_shadowSampler == NULL ||
         s_vertexBuffer == NULL ||
         s_vertexTransfer == NULL || s_sampler == NULL || s_vertices == NULL ||
         s_spans == NULL || s_mirrorSpans == NULL) {
@@ -314,9 +416,24 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint32_t instance;
     uint32_t mirrorFirstVertex;
+    RageRenderVec3 shadowCenter;
     if (s_vertices == NULL || s_spans == NULL || world == NULL ||
         world->frame == s_worldFrame) return;
     ModernAssetsWarmWorld(world);
+    shadowCenter = world->camera.transform.position;
+    for (instance = 0; instance < world->instanceCount; instance++) {
+        const RageRenderMeshInstance *candidate = &world->instances[instance];
+        if (candidate->pass == RAGE_RENDER_PASS_MAIN &&
+            candidate->entity == 11 && candidate->component == 0 &&
+            candidate->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
+            shadowCenter = candidate->transform.position;
+            break;
+        }
+    }
+    s_haveShadowMap = RageRenderBuildDirectionalShadowMap(
+        &shadowCenter, &MODERN_NATIVE_LIGHT_DIRECTION,
+        MODERN_NATIVE_SHADOW_EXTENT, MODERN_NATIVE_SHADOW_SIZE,
+        &s_shadowMap);
     s_vertexCount = RageRenderBuildNativePassDraws(
         world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsMeshLookup, NULL,
         s_vertices,
@@ -503,6 +620,68 @@ fail:
     return NULL;
 }
 
+static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
+    void *mapped;
+    SDL_GPUCopyPass *copy;
+    SDL_GPUTransferBufferLocation source = {
+        .transfer_buffer = s_vertexTransfer, .offset = 0};
+    SDL_GPUBufferRegion destination = {
+        .buffer = s_vertexBuffer, .offset = 0,
+        .size = (s_vertexCount + s_mirrorVertexCount) * sizeof(*s_vertices)};
+    if (destination.size == 0) return 0;
+    mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
+    if (mapped == NULL) return 0;
+    memcpy(mapped, s_vertices, destination.size);
+    SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+    copy = SDL_BeginGPUCopyPass(command);
+    if (copy == NULL) return 0;
+    SDL_UploadToGPUBuffer(copy, &source, &destination, true);
+    SDL_EndGPUCopyPass(copy);
+    return 1;
+}
+
+static int ModernNativeSpanCastsShadow(const RageNativeDrawSpan *span) {
+    int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                  span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    return vehicle &&
+        (span->instanceFlags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) == 0;
+}
+
+static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
+    SDL_GPUDepthStencilTargetInfo depth = {
+        .texture = s_shadowTexture,
+        .clear_depth = 1.0f,
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+    };
+    ModernNativeCameraUniform camera;
+    SDL_GPURenderPass *pass;
+    SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
+    uint32_t spanIndex;
+    uint32_t drawCount = 0;
+    if (!s_haveShadowMap) return;
+    pass = SDL_BeginGPURenderPass(command, NULL, 0, &depth);
+    if (pass == NULL) return;
+    ModernNativeBuildShadowCamera(&s_shadowMap, &camera);
+    SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
+    SDL_BindGPUGraphicsPipeline(pass, s_shadowDepth);
+    SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
+    for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
+        const RageNativeDrawSpan *span = &s_spans[spanIndex];
+        if (span->vertexCount == 0 || !ModernNativeSpanCastsShadow(span))
+            continue;
+        SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
+                              span->firstVertex, 0);
+        drawCount++;
+    }
+    SDL_EndGPURenderPass(pass);
+    if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+        fprintf(stderr,
+                "rage-port: native shadow map frame=%llu draws=%u\n",
+                (unsigned long long)s_worldFrame, drawCount);
+    }
+}
+
 static void ModernNativeGpuDrawSet(
     SDL_GPUCommandBuffer *command,
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
@@ -531,22 +710,6 @@ static void ModernNativeGpuDrawSet(
     if (drawVertexCount == 0 || spanCount == 0 || renderCamera == NULL) return;
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
-    {
-        void *mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
-        SDL_GPUCopyPass *copy;
-        SDL_GPUTransferBufferLocation source = {
-            .transfer_buffer = s_vertexTransfer, .offset = 0};
-        SDL_GPUBufferRegion destination = {
-            .buffer = s_vertexBuffer, .offset = 0,
-            .size = (s_vertexCount + s_mirrorVertexCount) *
-                    sizeof(*s_vertices)};
-        if (mapped == NULL) return;
-        memcpy(mapped, s_vertices, destination.size);
-        SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
-        copy = SDL_BeginGPUCopyPass(command);
-        SDL_UploadToGPUBuffer(copy, &source, &destination, true);
-        SDL_EndGPUCopyPass(copy);
-    }
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;
     ModernNativeBuildCamera(renderCamera, &camera);
@@ -625,6 +788,8 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *depthTarget,
                          int clearColor) {
     if (!ModernNativeGpuHasDraws()) return;
+    if (!ModernNativeUploadVertices(command)) return;
+    ModernNativeDrawShadowMap(command);
     ModernNativeGpuDrawSet(command, colorTarget, depthTarget, clearColor,
                            &s_world->camera, s_aspect, s_spans, s_spanCount,
                            s_vertexCount, "main");
@@ -662,10 +827,16 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaque);
         if (s_colorShadow != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorShadow);
+        if (s_shadowDepth != NULL)
+            SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowDepth);
         if (s_vertexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_vertexBuffer);
         if (s_vertexTransfer != NULL)
             SDL_ReleaseGPUTransferBuffer(s_device, s_vertexTransfer);
         if (s_sampler != NULL) SDL_ReleaseGPUSampler(s_device, s_sampler);
+        if (s_shadowTexture != NULL)
+            SDL_ReleaseGPUTexture(s_device, s_shadowTexture);
+        if (s_shadowSampler != NULL)
+            SDL_ReleaseGPUSampler(s_device, s_shadowSampler);
     }
     free(s_vertices);
     free(s_spans);
@@ -678,9 +849,12 @@ void ModernNativeGpuShutdown(void) {
     s_texturedTransparentDecal = NULL;
     s_colorOpaque = NULL;
     s_colorShadow = NULL;
+    s_shadowDepth = NULL;
     s_vertexBuffer = NULL;
     s_vertexTransfer = NULL;
     s_sampler = NULL;
+    s_shadowTexture = NULL;
+    s_shadowSampler = NULL;
     s_vertices = NULL;
     s_spans = NULL;
     s_mirrorSpans = NULL;
@@ -693,4 +867,5 @@ void ModernNativeGpuShutdown(void) {
     s_aspect = 4.0f / 3.0f;
     s_completeWorld = 0;
     s_textureCount = 0;
+    s_haveShadowMap = 0;
 }
