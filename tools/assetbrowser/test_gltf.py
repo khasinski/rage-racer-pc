@@ -117,6 +117,7 @@ class GltfExportTest(unittest.TestCase):
             extract.write_runtime_index(root, records)
             rows = (root / "runtime-index.txt").read_text().splitlines()
 
+        self.assertEqual("# rage-rmesh-index v2", rows[0])
         self.assertEqual("10 model models/a.rmesh models/a.rmat", rows[1])
         self.assertEqual("91 track-model-1 models/a.rmesh models/a.rmat", rows[2])
         self.assertEqual("91 track-model-2 models/a.rmesh models/a.rmat", rows[3])

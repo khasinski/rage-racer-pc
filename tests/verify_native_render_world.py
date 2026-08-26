@@ -89,7 +89,7 @@ id = "native-world-test"
 """,
             encoding="ascii",
         )
-        index = "".join(
+        index = "# rage-rmesh-index v2\n" + "".join(
             f"{key} model car.rmesh material.rmat\n" for key in range(10, 75))
         index += (
             "88 track-model-1 car.rmesh material.rmat\n"

@@ -2,6 +2,24 @@
 
 #include <string.h>
 
+uint32_t RageRuntimeIndexVersion(const char *text, size_t size) {
+    static const char prefix[] = "# rage-rmesh-index v";
+    size_t cursor = sizeof(prefix) - 1;
+    uint32_t version = 0;
+    int digits = 0;
+    if (text == NULL || size <= cursor ||
+        memcmp(text, prefix, sizeof(prefix) - 1) != 0) return 0;
+    while (cursor < size && text[cursor] >= '0' && text[cursor] <= '9') {
+        uint32_t digit = (uint32_t)(text[cursor++] - '0');
+        if (version > (UINT32_MAX - digit) / 10u) return 0;
+        version = version * 10u + digit;
+        digits = 1;
+    }
+    if (!digits || cursor >= size ||
+        (text[cursor] != '\n' && text[cursor] != '\r')) return 0;
+    return version;
+}
+
 static int RageToken(const char **cursor, const char *end,
                      const char **start, size_t *length) {
     const char *p = *cursor;

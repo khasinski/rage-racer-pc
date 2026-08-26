@@ -733,7 +733,7 @@ class Extractor:
 
 def write_runtime_index(out: Path, records: list[dict]) -> None:
     """Write the native renderer's compact asset lookup table."""
-    rows = ["# rage-rmesh-index v1\n"]
+    rows = ["# rage-rmesh-index v2\n"]
 
     def add(asset, asset_set, model):
         if not isinstance(model, dict) or "runtimeMesh" not in model:

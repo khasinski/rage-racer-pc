@@ -102,6 +102,16 @@ void ModernAssetsInit(void) {
         fprintf(stderr, "rage-port: native asset index unavailable: %s\n", indexPath);
         return;
     }
+    if (RageRuntimeIndexVersion(s_indexBytes, s_indexSize) !=
+        RAGE_RUNTIME_INDEX_VERSION) {
+        fprintf(stderr,
+                "rage-port: native asset cache %s uses an incompatible "
+                "material contract; regenerate it with this build\n", s_root);
+        SDL_free(s_indexBytes);
+        s_indexBytes = NULL;
+        s_indexSize = 0;
+        return;
+    }
     RageRuntimeMeshCacheInit(&s_cache, s_indexBytes, s_indexSize,
                              ModernAssetReadFile, ModernAssetFreeFile, NULL,
                              s_entries, MODERN_ASSET_CACHE_CAPACITY);

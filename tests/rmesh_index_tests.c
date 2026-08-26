@@ -11,7 +11,7 @@ static int failures;
 
 int main(void) {
     static const char index[] =
-        "# rage-rmesh-index v1\n"
+        "# rage-rmesh-index v2\n"
         "10 model models/car.rmesh models/car.rmat\n"
         "91 track-model-1 models/track-bank-1.rmesh models/track-bank-1.rmat\n"
         "91 track-model-2 models/track-bank-2.rmesh models/track-bank-2.rmat\n"
@@ -19,6 +19,10 @@ int main(void) {
         "91 terrain models/track-terrain.rmesh models/track-terrain.rmat\n";
     RageRuntimeAssetLocation asset;
 
+    EXPECT(RageRuntimeIndexVersion(index, sizeof(index) - 1) == 2);
+    EXPECT(RageRuntimeIndexVersion("# rage-rmesh-index v1\n", 22) == 1);
+    EXPECT(RageRuntimeIndexVersion("10 model x y\n", 13) == 0);
+    EXPECT(RageRuntimeIndexVersion("# rage-rmesh-index vx\n", 22) == 0);
     EXPECT(RageRuntimeIndexFind(index, sizeof(index) - 1, 91,
                                 RAGE_RENDER_ASSET_TERRAIN, &asset));
     EXPECT(asset.meshPathLength == strlen("models/track-terrain.rmesh"));
