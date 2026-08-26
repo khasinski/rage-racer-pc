@@ -70,7 +70,6 @@ static SDL_GPUGraphicsPipeline *s_texturedTransparent;
 static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_texturedTransparentDecal;
 static SDL_GPUGraphicsPipeline *s_colorOpaque;
-static SDL_GPUGraphicsPipeline *s_colorShadow;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
@@ -346,10 +345,6 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     }
     if (vertex != NULL && colorFragment != NULL) {
         s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
-        /* Footprints carry their own fixed clip-depth offset. A slope-scaled
-         * raster bias makes a whole coplanar plate alternate at bends and
-         * crests, which presents as full-shadow flicker. */
-        s_colorShadow = ModernNativeCreatePipeline(vertex, colorFragment, 1, 0);
     }
     if (shadowVertex != NULL && shadowFragment != NULL)
         s_shadowDepth = ModernNativeCreateShadowPipeline(
@@ -400,7 +395,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     if (s_texturedOpaque == NULL || s_texturedTransparent == NULL ||
         s_texturedOpaqueDecal == NULL ||
         s_texturedTransparentDecal == NULL ||
-        s_colorOpaque == NULL || s_colorShadow == NULL ||
+        s_colorOpaque == NULL ||
         s_shadowDepth == NULL || s_shadowTexture == NULL ||
         s_shadowSampler == NULL ||
         s_vertexBuffer == NULL ||
@@ -472,38 +467,22 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     }
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
         uint32_t mirrorVehicleSpans = 0;
-        uint32_t shadowSpans = 0;
-        uint32_t playerShadowSpans = 0;
-        uint32_t mirrorShadowSpans = 0;
         uint32_t span;
-        for (span = 0; span < s_spanCount; span++) {
-            if ((s_spans[span].instanceFlags &
-                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0) {
-                shadowSpans++;
-                if (s_spans[span].sourceEntity == 11)
-                    playerShadowSpans++;
-            }
-        }
         for (span = 0; span < s_mirrorSpanCount; span++) {
             if (s_mirrorSpans[span].assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                 s_mirrorSpans[span].assetSet ==
                     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
                 mirrorVehicleSpans++;
             }
-            if ((s_mirrorSpans[span].instanceFlags &
-                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0)
-                mirrorShadowSpans++;
         }
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
                 "cached=%u vertices=%u spans=%u mirror_vertices=%u "
-                "shadow_spans=%u player_shadow_spans=%u mirror_spans=%u "
-                "mirror_vehicle_spans=%u mirror_shadow_spans=%u\n",
+                "mirror_spans=%u mirror_vehicle_spans=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
-                s_vertexCount, s_spanCount, s_mirrorVertexCount, shadowSpans,
-                playerShadowSpans, s_mirrorSpanCount, mirrorVehicleSpans,
-                mirrorShadowSpans);
+                s_vertexCount, s_spanCount, s_mirrorVertexCount,
+                s_mirrorSpanCount, mirrorVehicleSpans);
     }
 }
 
@@ -642,10 +621,8 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
 }
 
 static int ModernNativeSpanCastsShadow(const RageNativeDrawSpan *span) {
-    int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
-                  span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
-    return vehicle &&
-        (span->instanceFlags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) == 0;
+    return span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+           span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
 }
 
 static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
@@ -724,33 +701,24 @@ static void ModernNativeGpuDrawSet(
         SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
         SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     }
-    /* Opaque world first, then projected footprints over its depth, then
-     * ordinary transparent materials. Shadows test the road depth but never
-     * write it, so neither the road nor later cars can flicker against them. */
-    for (int phase = 0; phase < 3; phase++) {
+    /* Opaque world first, then ordinary transparent materials. Dynamic
+     * shadows are sampled by both phases and never add coplanar geometry. */
+    for (int phase = 0; phase < 2; phase++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
             ModernNativeTexture *texture;
             SDL_GPUGraphicsPipeline *pipeline;
-            int shadow =
-                (span->instanceFlags &
-                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0;
             if (span->vertexCount == 0) continue;
-            if (shadow) {
-                /* The authored plate remains in imported assets only as a
-                 * compatibility marker. Native cars now cast geometry into
-                 * a directional shadow map. */
-                continue;
-            } else if (span->material == UINT32_MAX) {
+            if (span->material == UINT32_MAX) {
                 if (phase != 0) continue;
                 pipeline = s_colorOpaque;
                 texture = NULL;
             } else {
                 texture = ModernNativeFindTexture(span);
                 if (texture == NULL ||
-                    (texture->transparent ? phase != 2 : phase != 0))
+                    (texture->transparent ? phase != 1 : phase != 0))
                     continue;
                 if (span->depthDecal) {
                     pipeline = texture->transparent
@@ -841,8 +809,6 @@ void ModernNativeGpuShutdown(void) {
                                            s_texturedTransparentDecal);
         if (s_colorOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaque);
-        if (s_colorShadow != NULL)
-            SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorShadow);
         if (s_shadowDepth != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowDepth);
         if (s_vertexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_vertexBuffer);
@@ -864,7 +830,6 @@ void ModernNativeGpuShutdown(void) {
     s_texturedOpaqueDecal = NULL;
     s_texturedTransparentDecal = NULL;
     s_colorOpaque = NULL;
-    s_colorShadow = NULL;
     s_shadowDepth = NULL;
     s_vertexBuffer = NULL;
     s_vertexTransfer = NULL;

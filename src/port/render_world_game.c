@@ -44,29 +44,6 @@ static int RageGameSceneUsesRaceWorld(void) {
     return g_SceneId == 12 || g_SceneId == 0x1E;
 }
 
-static int RageGameTrackSurfaceQuery(void *context, uint32_t entity,
-                                     float worldX, float worldZ,
-                                     float *worldY) {
-    const GameRenderObject *object;
-    CarSurfaceSampleView sample;
-    (void)context;
-    if (worldY == NULL || !RageGameSceneUsesRaceWorld() ||
-        g_TrackPoints == NULL ||
-        g_TrackPointCount <= 0 || entity > 11) return 0;
-    object = entity < 11
-        ? (const GameRenderObject *)&g_Cars[entity]
-        : (const GameRenderObject *)&g_PlayerCar;
-    memset(&sample, 0, sizeof(sample));
-    sample.x = (u16)lroundf(worldX);
-    sample.z = (u16)lroundf(-worldZ);
-    sample.trackPointIndex = object->trackPointIndex;
-    /* Scene Y is the inverse of game Y. Return the actual semantic receiver;
-     * the renderer applies one consistent separation after resolving it
-     * against visible terrain. */
-    *worldY = -(float)GetTrackSurfaceHeight(&sample);
-    return 1;
-}
-
 static RageRenderWorld *RageGameRenderWorldMutable(void) {
     return &s_worlds[s_currentWorld];
 }
@@ -232,16 +209,6 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
-    /* Every player and track car bank stores a flat authored footprint in
-     * the model immediately after its body. Publish the source meaning; the
-     * native backend owns how a projected shadow is rendered. */
-    if (part == 1)
-        instance.flags |= RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
-    /* The authored footprint lies on the road-contact plane. Give the whole
-     * projection a small, stable clip-depth offset so it cannot alternate
-     * with the road as its slope changes. The shadow pipeline still tests
-     * scene depth and does not write it. */
-    if (part == 1) instance.depthBias = -8.0f;
     /* The PS1 ordering table draws the body after wheels that share its
      * depth bucket, masking the portion inset behind the wheel arches. A
      * real Z buffer otherwise exposes that authored overlap when suspension
@@ -275,8 +242,6 @@ void RageGameRenderWorldBeginFrame(uint64_t frame) {
                             RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
         RageRenderWorldInit(&s_worlds[1], s_instances[1],
                             RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
-        s_worlds[0].surfaceQuery = RageGameTrackSurfaceQuery;
-        s_worlds[1].surfaceQuery = RageGameTrackSurfaceQuery;
         s_initialized = 1;
     } else {
         const RageRenderWorld *completed = RageGameRenderWorldMutable();
@@ -536,24 +501,17 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
                                                  s32 steeringAngle,
                                                  RageRenderVec3 environmentLight,
                                                  int mirror_pass) {
-    RageSceneMat3 base, body, model, wheelBase, frontLeft, frontRight;
-    RageRenderVec3 origin, modelOrigin, front;
+    RageSceneMat3 base, body, wheelBase, frontLeft, frontRight;
+    RageRenderVec3 origin, front;
 
     origin.x = (float)object->x;
     origin.y = (float)(object->y - horizon);
     origin.z = (float)object->z;
-    modelOrigin.x = origin.x;
-    modelOrigin.y = (float)(object->modelY - horizon);
-    modelOrigin.z = origin.z;
     /* Scene-space counterpart of DrawCar/DrawPlayerCarModel. The view matrix
      * is intentionally absent: the camera owns it at presentation time. */
     base = RageSceneMat3Multiply(RageSceneRotationY(0x800 - object->angleY),
                                  RageSceneRotationX(object->bodyPitch));
     body = RageSceneMat3Multiply(base, RageSceneRotationZ(object->bodyRoll));
-    model = RageSceneMat3Multiply(
-        RageSceneMat3Multiply(RageSceneRotationY(0x800 - object->modelYaw),
-                              RageSceneRotationX(object->modelPitch)),
-        RageSceneRotationZ(object->modelRoll));
     wheelBase = RageSceneMat3Multiply(
         base, RageSceneRotationZ(object->bodyRoll - object->bodyRollVelocity));
     frontLeft = RageSceneMat3Multiply(
@@ -565,11 +523,9 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
                                      bodyPaletteOffset,
                                      origin, body, environmentLight,
                                      mirror_pass);
-    /* The duplicate model-1 submit in retail is an OT artifact, not a second
-     * object. A depth-buffered renderer emits it once. */
-    RageGameRenderWorldSubmitCarPart(entity, 1, asset, assetSet, bodyMesh + 1,
-        0,
-        modelOrigin, model, environmentLight, mirror_pass);
+    /* bodyMesh + 1 is the old flat PS1 shadow plate. Dynamic shadows are
+     * generated from the actual body and wheel geometry, so the compatibility
+     * submesh never enters Render World. */
     RageGameRenderWorldSubmitCarPart(entity, 2, asset, assetSet, rearWheelMesh,
         0,
         origin,

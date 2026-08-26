@@ -15,16 +15,6 @@ typedef struct RageTransformBasis {
     int useMatrix;
 } RageTransformBasis;
 
-typedef struct RageShadowSurfaceCacheEntry {
-    uint32_t entity;
-    float x, z, surfaceY;
-    int found;
-} RageShadowSurfaceCacheEntry;
-
-enum { RAGE_SHADOW_SURFACE_CACHE_CAPACITY = 1024 };
-static const float RAGE_SHADOW_RECEIVER_OFFSET = 0.5f;
-static const float RAGE_SHADOW_MAX_RECEIVER_DELTA = 32.0f;
-
 static RageTransformBasis RageBuildTransformBasis(const RageRenderTransform *transform) {
     RageTransformBasis basis = {0};
     float x = RageRadians(transform->rotation.x);
@@ -113,143 +103,6 @@ static RageRenderVec3 RageTransformPoint(const RageTransformBasis *basis,
     RageRuntimeVertex vertex = {0};
     memcpy(vertex.position, position, sizeof(vertex.position));
     return RageTransformPosition(basis, &vertex);
-}
-
-static int RageTriangleSurfaceY(const RageRenderVec3 triangle[3], float x,
-                                float z, float *surfaceY) {
-    float denominator =
-        (triangle[1].z - triangle[2].z) *
-            (triangle[0].x - triangle[2].x) +
-        (triangle[2].x - triangle[1].x) *
-            (triangle[0].z - triangle[2].z);
-    float a, b, c;
-    if (fabsf(denominator) < 0.000001f) return 0;
-    a = ((triangle[1].z - triangle[2].z) * (x - triangle[2].x) +
-         (triangle[2].x - triangle[1].x) * (z - triangle[2].z)) /
-        denominator;
-    b = ((triangle[2].z - triangle[0].z) * (x - triangle[2].x) +
-         (triangle[0].x - triangle[2].x) * (z - triangle[2].z)) /
-        denominator;
-    c = 1.0f - a - b;
-    if (a < -0.001f || b < -0.001f || c < -0.001f) return 0;
-    *surfaceY = a * triangle[0].y + b * triangle[1].y + c * triangle[2].y;
-    return 1;
-}
-
-static int RageRenderedTerrainSurfaceY(
-    const RageRenderWorld *world, RageRenderPass pass,
-    RageRenderMeshLookup lookup, void *context, float x, float z,
-    float referenceY, float *surfaceY) {
-    float bestDistance = 0.0f;
-    uint32_t instanceIndex;
-    int found = 0;
-    for (instanceIndex = 0; instanceIndex < world->instanceCount;
-         instanceIndex++) {
-        const RageRenderMeshInstance *instance =
-            &world->instances[instanceIndex];
-        const RageRuntimeMesh *mesh;
-        RageTransformBasis basis;
-        uint32_t first, count, offset;
-        if (instance->assetSet != RAGE_RENDER_ASSET_TERRAIN ||
-            instance->pass != pass ||
-            (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0 ||
-            fabsf(x - instance->transform.position.x) > 1025.0f ||
-            fabsf(z - instance->transform.position.z) > 1025.0f)
-            continue;
-        mesh = lookup(context, instance);
-        if (mesh == NULL ||
-            !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count))
-            continue;
-        basis = RageBuildTransformBasis(&instance->transform);
-        for (offset = 0; offset + 2 < count; offset += 3) {
-            RageRenderVec3 triangle[3];
-            uint32_t corner;
-            int valid = 1;
-            int receiver = 1;
-            for (corner = 0; corner < 3; corner++) {
-                RageRuntimeVertex vertex;
-                uint32_t index;
-                valid = valid && RageRuntimeMeshIndex(
-                    mesh, first + offset + corner, &index);
-                valid = valid && RageRuntimeMeshVertex(mesh, index, &vertex);
-                if (valid) {
-                    if ((vertex.material & RAGE_RUNTIME_MATERIAL_METADATA) !=
-                            0 &&
-                        (int8_t)(vertex.material >>
-                            RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) < 0)
-                        receiver = 0;
-                    triangle[corner] = RageTransformPosition(&basis, &vertex);
-                    triangle[corner].x =
-                        RageSnapTerrainCellBoundary(triangle[corner].x);
-                    triangle[corner].z =
-                        RageSnapTerrainCellBoundary(triangle[corner].z);
-                }
-            }
-            if (valid && receiver) {
-                float candidateY;
-                if (RageTriangleSurfaceY(triangle, x, z, &candidateY)) {
-                    float distance = fabsf(candidateY - referenceY);
-                    if (!found || distance < bestDistance) {
-                        found = 1;
-                        bestDistance = distance;
-                        *surfaceY = candidateY;
-                    }
-                }
-            }
-        }
-    }
-    return found;
-}
-
-static int RageShadowSurfaceY(
-    const RageRenderWorld *world, const RageRenderMeshInstance *instance,
-    RageRenderMeshLookup lookup, void *context, float x, float z,
-    float referenceY, RageShadowSurfaceCacheEntry *cache,
-    uint32_t *cacheCount, float *surfaceY) {
-    uint32_t index;
-    for (index = 0; index < *cacheCount; index++) {
-        const RageShadowSurfaceCacheEntry *entry = &cache[index];
-        if (entry->entity == instance->entity && entry->x == x &&
-            entry->z == z) {
-            if (entry->found) *surfaceY = entry->surfaceY;
-            return entry->found;
-        }
-    }
-    {
-        float roadY = referenceY;
-        float renderedY;
-        int haveRoad = 0;
-        int found;
-        if (world->surfaceQuery != NULL) {
-            haveRoad = world->surfaceQuery(
-                world->surfaceQueryContext, instance->entity, x, z, &roadY);
-        }
-        /* The semantic road sample identifies the intended receiver even
-         * when several pieces of rendered terrain overlap in X/Z. The car's
-         * own footprint height is unsuitable here: collisions lift it and
-         * can make a bridge, sign, or other upper surface look closer. */
-        found = RageRenderedTerrainSurfaceY(
-            world, instance->pass, lookup, context, x, z,
-            haveRoad ? roadY : referenceY, &renderedY);
-        if (found && haveRoad &&
-            fabsf(renderedY - roadY) > RAGE_SHADOW_MAX_RECEIVER_DELTA)
-            found = 0;
-        if (found) {
-            *surfaceY = renderedY + RAGE_SHADOW_RECEIVER_OFFSET;
-        } else if (haveRoad) {
-            *surfaceY = roadY + RAGE_SHADOW_RECEIVER_OFFSET;
-            found = 1;
-        }
-        if (*cacheCount < RAGE_SHADOW_SURFACE_CACHE_CAPACITY) {
-            RageShadowSurfaceCacheEntry *entry = &cache[(*cacheCount)++];
-            entry->entity = instance->entity;
-            entry->x = x;
-            entry->z = z;
-            entry->surfaceY = found ? *surfaceY : referenceY;
-            entry->found = found;
-        }
-        return found;
-    }
 }
 
 static int RageTriangleIsBackFacing(const RageRenderWorld *world,
@@ -352,16 +205,6 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     out->lighting =
         (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0
         ? 1.0f : 0.0f;
-    if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0) {
-        /* The imported plate only supplies the per-car silhouette. Native
-         * shadows use a translucent neutral value and never inherit vehicle
-         * lighting or the source model's opaque black PS1 colour. */
-        out->color[0] = 0;
-        out->color[1] = 0;
-        out->color[2] = 0;
-        out->color[3] = 96;
-        out->lighting = 0.0f;
-    }
     out->environmentLight[0] = instance->environmentLight.x;
     out->environmentLight[1] = instance->environmentLight.y;
     out->environmentLight[2] = instance->environmentLight.z;
@@ -390,11 +233,6 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
     }
-    /* A projected footprint is one depth-coherent surface. Ignore any PS1
-     * ordering metadata left on individual source faces so the entire shadow
-     * receives the same native depth offset. */
-    if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0)
-        out->depthBias = instance->depthBias;
     *material = source.material;
     return 1;
 }
@@ -404,9 +242,6 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
-    RageShadowSurfaceCacheEntry
-        shadowSurfaceCache[RAGE_SHADOW_SURFACE_CACHE_CAPACITY];
-    uint32_t shadowSurfaceCacheCount = 0;
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
@@ -439,18 +274,6 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                     instance, mesh, indices[corner], aspect,
                     &triangle[corner], &materials[corner],
                     &materialFlags[corner], &depthDecals[corner]);
-                if (valid &&
-                    (instance->flags &
-                     RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0) {
-                    float surfaceY;
-                    if (RageShadowSurfaceY(
-                            world, instance, lookup, context,
-                            triangle[corner].position[0],
-                            triangle[corner].position[2],
-                            triangle[corner].position[1], shadowSurfaceCache,
-                            &shadowSurfaceCacheCount, &surfaceY))
-                        triangle[corner].position[1] = surfaceY;
-                }
             }
             if (!valid ||
                 materials[0] != materials[1] || materials[0] != materials[2] ||

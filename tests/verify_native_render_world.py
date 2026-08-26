@@ -190,11 +190,14 @@ timer = 20
                 "smoke run did not reach attract driving mode\n" +
                 attract.stdout[-4000:]
             )
-        shadows = re.findall(r"shadow_spans=(\d+)", attract.stdout)
-        if not shadows or max(map(int, shadows)) != 11:
+        shadows = re.findall(
+            r"native shadow map frame=\d+ draws=(\d+)",
+            attract.stdout,
+        )
+        if not shadows or max(map(int, shadows)) <= 0:
             raise AssertionError(
-                "attract mode did not publish the complete projected car "
-                "shadow set\n" + attract.stdout[-4000:]
+                "attract mode did not render dynamic car geometry into the "
+                "shadow map\n" + attract.stdout[-4000:]
             )
     return 0
 
