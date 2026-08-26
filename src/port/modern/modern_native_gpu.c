@@ -183,10 +183,11 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     if (depthDecal) {
-        /* A constant number of depth-buffer units resolves the coplanar tie
-         * without making adjacent marking triangles depend on their slope.
-         * Slope-scaled bias made stripe ends shorten and fray on bends. */
-        info.rasterizer_state.depth_bias_constant_factor = -8.0f;
+        /* Imported surface overlays can sit a few hundred source units behind
+         * the road or sign frame they visually decorate. Draw vehicles in a
+         * later phase, then use a constant offset large enough to keep these
+         * thin surfaces intact without slope-dependent stripe shortening. */
+        info.rasterizer_state.depth_bias_constant_factor = -512.0f;
         info.rasterizer_state.enable_depth_bias = true;
     }
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
@@ -786,29 +787,33 @@ static void ModernNativeGpuDrawSet(
         SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
         SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     }
-    /* Opaque world first, coplanar opaque details second, then transparent
-     * materials. This gives road markings a stable base depth independent of
-     * the order in which terrain faces were imported. */
-    for (int phase = 0; phase < 3; phase++) {
+    /* Opaque scenery first, its surface overlays second, opaque vehicles
+     * third, then transparent materials. Vehicles therefore remain in front
+     * even when a road marking or animated sign needs a meaningful offset
+     * from its imported support surface. */
+    for (int phase = 0; phase < 4; phase++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
             ModernNativeTexture *texture;
             SDL_GPUGraphicsPipeline *pipeline;
+            int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                          span->assetSet ==
+                              RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
             if (span->vertexCount == 0) continue;
             if (span->material == UINT32_MAX) {
-                if (phase != 0) continue;
+                if (phase != (vehicle ? 2 : 0)) continue;
                 pipeline = s_colorOpaque;
                 texture = NULL;
             } else {
                 texture = ModernNativeFindTexture(span);
                 if (texture == NULL) continue;
                 if (texture->transparent) {
-                    if (phase != 2) continue;
+                    if (phase != 3) continue;
                 } else if (span->depthDecal) {
                     if (phase != 1) continue;
-                } else if (phase != 0) {
+                } else if (phase != (vehicle ? 2 : 0)) {
                     continue;
                 }
                 if (span->depthDecal) {
