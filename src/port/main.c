@@ -8,6 +8,7 @@
 
 #include "input_config.h"
 #include "diagnostic_log.h"
+#include "host_storage.h"
 #include "port_config.h"
 #include "runtime_config.h"
 #include "timing_control.h"
@@ -45,6 +46,10 @@ int main(int argc, char **argv) {
     }
 
     Psyz_SetTitle("Rage Racer");
+    if (!RageHostInitStorage()) {
+        fprintf(stderr, "failed to initialize user save storage\n");
+        return EXIT_FAILURE;
+    }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     RagePortConfigDefaults(&portConfig);
     RagePortConfigApplyRuntime(&portConfig);

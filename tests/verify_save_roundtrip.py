@@ -10,6 +10,14 @@ import tempfile
 from pathlib import Path
 
 
+def card_path(root: Path) -> Path:
+    if sys.platform == "darwin":
+        return root / "Library" / "Application Support" / "Rage Racer" / "bu00"
+    if os.name == "nt":
+        return root / "Rage Racer" / "bu00"
+    return root / "rage-racer" / "bu00"
+
+
 def main() -> int:
     executable = Path(sys.argv[1]).resolve()
     source_dir = Path(sys.argv[2]).resolve()
@@ -18,6 +26,9 @@ def main() -> int:
         work = Path(directory)
         (work / "assets").symlink_to(source_dir / "assets", target_is_directory=True)
         environment = os.environ.copy()
+        environment["HOME"] = str(work)
+        environment["XDG_STATE_HOME"] = str(work)
+        environment["APPDATA"] = str(work)
         environment.update(
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="700",
@@ -34,13 +45,17 @@ def main() -> int:
             return result.returncode or 1
         if "save roundtrip ok: money=123456789" not in result.stdout:
             raise AssertionError("saved progress was not restored")
-        files = list((work / "bu00").iterdir())
+        card = card_path(work)
+        files = list(card.iterdir())
         if len(files) != 1 or files[0].stat().st_size != 0x1300:
             raise AssertionError("host memory card did not contain one retail-size save")
         if files[0].name != "BESCES-00650 RAGE000":
             raise AssertionError(f"memory-card filename was truncated: {files[0].name!r}")
 
         menu_environment = os.environ.copy()
+        menu_environment["HOME"] = str(work)
+        menu_environment["XDG_STATE_HOME"] = str(work)
+        menu_environment["APPDATA"] = str(work)
         menu_environment.update(
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="900",
@@ -67,13 +82,17 @@ def main() -> int:
             (load_work / "assets").symlink_to(
                 source_dir / "assets", target_is_directory=True
             )
-            (load_work / "bu00").mkdir()
+            load_environment = os.environ.copy()
+            load_environment["HOME"] = str(load_work)
+            load_environment["XDG_STATE_HOME"] = str(load_work)
+            load_environment["APPDATA"] = str(load_work)
+            load_card = card_path(load_work)
+            load_card.mkdir(parents=True)
             if with_save:
                 source_save = files[0]
-                (load_work / "bu00" / source_save.name).write_bytes(
+                (load_card / source_save.name).write_bytes(
                     source_save.read_bytes()
                 )
-            load_environment = os.environ.copy()
             load_environment.update(
                 SDL_AUDIODRIVER="dummy",
                 RAGE_PORT_SMOKE_FRAMES="1150",
@@ -102,8 +121,10 @@ def main() -> int:
         (complete_work / "assets").symlink_to(
             source_dir / "assets", target_is_directory=True
         )
+        complete_card = card_path(complete_work)
+        complete_card.parent.mkdir(parents=True)
         generated = subprocess.run(
-            [generator, "--name", "UNLOCK"], cwd=complete_work,
+            [generator, "--name", "UNLOCK"], cwd=complete_card.parent,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=5,
         )
@@ -111,6 +132,9 @@ def main() -> int:
             print(generated.stdout, file=sys.stderr)
             raise AssertionError("complete save generator failed")
         complete_environment = os.environ.copy()
+        complete_environment["HOME"] = str(complete_work)
+        complete_environment["XDG_STATE_HOME"] = str(complete_work)
+        complete_environment["APPDATA"] = str(complete_work)
         complete_environment.update(
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_SMOKE_FRAMES="700",

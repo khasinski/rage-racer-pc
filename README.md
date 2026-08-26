@@ -128,6 +128,11 @@ matrix, or classic visibility list.
 
 The port keeps
 game saves and the selected disc location in the user's local application data.
+Memory-card saves are regular files in the `bu00` subdirectory: under
+`~/Library/Application Support/Rage Racer/` on macOS,
+`${XDG_STATE_HOME:-$HOME/.local/state}/rage-racer/` on Linux, and
+`%APPDATA%\Rage Racer\` on Windows. They no longer depend on the directory
+from which the executable was launched.
 Each normal launch appends diagnostics to `rage-racer.log` in the platform's
 application-state directory. Configure `[diagnostics] log` to choose another
 file. The disc can likewise be pinned with `[disc] cue`; the legacy

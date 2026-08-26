@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "host_storage.h"
+
 #include "input_config.h"
 #include "diagnostic_log.h"
 #include "port_config.h"
@@ -175,6 +177,7 @@ int main(int argc, char **argv) {
         !RageDiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
 
     Psyz_SetTitle("Rage Racer smoke");
+    if (!RageHostInitStorage()) return EXIT_FAILURE;
     setenv("RAGE_PORT_TEST_MODE", "1", 0);
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);

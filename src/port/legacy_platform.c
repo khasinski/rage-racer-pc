@@ -46,6 +46,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/scratchpad.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
+#include "host_storage.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -59,6 +60,71 @@ int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
 unsigned char g_RageScratchpad[0x400];
 GameScratchpadRenderState g_RageScratchpadState;
+
+static char s_RageMemoryCardDirectory[PATH_MAX];
+
+static int RageHostAdjustStoragePath(char *dst, const char *src, int maxlen) {
+    const char *name;
+    char card[5];
+    int written;
+
+    if (dst == NULL || src == NULL || maxlen <= 0 ||
+        strlen(src) < 5 || src[0] != 'b' || src[1] != 'u' ||
+        src[4] != ':' ||
+        !((src[2] == '0' || src[2] == '1') && src[3] == '0'))
+        return -1;
+
+    memcpy(card, src, 4);
+    card[4] = '\0';
+    name = src + 5;
+    if (name[0] == '\0' || name[0] == '*') {
+        written = snprintf(dst, (size_t)maxlen, "%s%c%s%c",
+                           s_RageMemoryCardDirectory,
+#ifdef _WIN32
+                           '\\', card, '\\');
+#else
+                           '/', card, '/');
+#endif
+    } else {
+        written = snprintf(dst, (size_t)maxlen, "%s%c%s%c%s",
+                           s_RageMemoryCardDirectory,
+#ifdef _WIN32
+                           '\\', card, '\\', name);
+#else
+                           '/', card, '/', name);
+#endif
+    }
+    if (written < 0 || written >= maxlen) {
+        dst[0] = '\0';
+        return -1;
+    }
+    return written;
+}
+
+int RageHostInitStorage(void) {
+    char cardDirectory[PATH_MAX];
+    int card;
+
+    if (!RagePlatformUserStateDirectory(s_RageMemoryCardDirectory,
+                                        sizeof(s_RageMemoryCardDirectory)) ||
+        !RagePlatformEnsureDirectory(s_RageMemoryCardDirectory))
+        return 0;
+
+    for (card = 0; card < 2; card++) {
+        int written = snprintf(cardDirectory, sizeof(cardDirectory), "%s%cbu%d0",
+                               s_RageMemoryCardDirectory,
+#ifdef _WIN32
+                               '\\', card);
+#else
+                               '/', card);
+#endif
+        if (written < 0 || (size_t)written >= sizeof(cardDirectory) ||
+            !RagePlatformEnsureDirectory(cardDirectory))
+            return 0;
+    }
+    Psyz_AdjustPathCB(RageHostAdjustStoragePath);
+    return 1;
+}
 
 void UpdateBootLogoScene(void);
 void EnterFrontend(void);
