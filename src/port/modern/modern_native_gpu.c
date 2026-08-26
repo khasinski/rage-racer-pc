@@ -177,12 +177,12 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     if (depthDecal) {
-        /* PS1 ordering-table bias keeps coplanar road markings in front of
-         * asphalt. A constant clip-space offset still z-fights at grazing
-         * angles, so let the rasterizer scale the offset with polygon slope. */
-        info.rasterizer_state.depth_bias_constant_factor = -128.0f;
-        info.rasterizer_state.depth_bias_slope_factor = -128.0f;
-        info.rasterizer_state.depth_bias_clamp = -0.0002f;
+        /* Resolve only the coplanar tie between road markings and asphalt.
+         * A larger offset spans meaningful world distance in the far field
+         * and makes markings or the road win depth tests against cars. */
+        info.rasterizer_state.depth_bias_constant_factor = -4.0f;
+        info.rasterizer_state.depth_bias_slope_factor = -4.0f;
+        info.rasterizer_state.depth_bias_clamp = -0.0000005f;
         info.rasterizer_state.enable_depth_bias = true;
     }
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;

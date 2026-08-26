@@ -223,12 +223,16 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         int8_t authoredDepthBias = (int8_t)(source.material >>
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
-        /* PS1 OT bias changes packet ordering after projection. It is not a
-         * world-space distance. Preserve it as a small clip-space ordering
-         * offset so coplanar decals such as road markings do not z-fight. */
-        out->depthBias += (float)authoredDepthBias;
-        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-            authoredDepthBias < 0) *depthDecal = 1;
+        /* Terrain OT bias only identifies coplanar details such as road
+         * markings. Carrying its numeric value into a Z buffer lets distant
+         * markings jump in front of cars, so the decal pipeline owns their
+         * tiny depth tie-break instead. Non-terrain assets still use the bias
+         * for authored overlaps such as car body and wheel geometry. */
+        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
+            if (authoredDepthBias < 0) *depthDecal = 1;
+        } else {
+            out->depthBias += (float)authoredDepthBias;
+        }
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
