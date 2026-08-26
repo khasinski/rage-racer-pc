@@ -4,6 +4,7 @@
 #include <psyz/video.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "game/render.h"
 #include "modern_texture_dump.h"
 #include "../runtime_config.h"
 #include "../platform_paths.h"
@@ -97,6 +98,7 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
             "modernImage=%d target=%dx%d logicalW=%.1f fps=%d\n"
             "camera pos=%d,%d,%d\n"
             "view=[%d %d %d / %d %d %d / %d %d %d] t=%d,%d,%d\n"
+            "trackTextures wanted=%d cursor=%d target=%d envMode4=%d\n"
             "draws=%d terrain=%d faces=%d packets=%d\n",
             snapshot->frameCounter, snapshot->sceneId, snapshot->sceneTimer,
             snapshot->displayHeight, haveModernImage, output->width,
@@ -108,7 +110,9 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
             snapshot->viewMatrix.m[1][2], snapshot->viewMatrix.m[2][0],
             snapshot->viewMatrix.m[2][1], snapshot->viewMatrix.m[2][2],
             snapshot->viewMatrix.t[0], snapshot->viewMatrix.t[1],
-            snapshot->viewMatrix.t[2], snapshot->drawCount,
+            snapshot->viewMatrix.t[2], g_TrackTexturePageWanted,
+            g_TrackTextureCursorRow, g_TrackTextureTargetRow,
+            g_IsEnvironmentMode4, snapshot->drawCount,
             snapshot->terrainCount, snapshot->faceCount,
             snapshot->packetCount);
     for (index = 0; index < snapshot->drawCount && index < 64; index++) {
