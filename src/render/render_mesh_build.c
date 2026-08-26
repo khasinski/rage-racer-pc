@@ -205,6 +205,16 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     out->lighting =
         (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0
         ? 1.0f : 0.0f;
+    if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0) {
+        /* The imported plate only supplies the per-car silhouette. Native
+         * shadows use a translucent neutral value and never inherit vehicle
+         * lighting or the source model's opaque black PS1 colour. */
+        out->color[0] = 0;
+        out->color[1] = 0;
+        out->color[2] = 0;
+        out->color[3] = 96;
+        out->lighting = 0.0f;
+    }
     out->environmentLight[0] = instance->environmentLight.x;
     out->environmentLight[1] = instance->environmentLight.y;
     out->environmentLight[2] = instance->environmentLight.z;

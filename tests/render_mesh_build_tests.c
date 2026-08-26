@@ -79,7 +79,6 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     storage[0].environmentLight.y = 0.5f;
     storage[0].environmentLight.z = 0.75f;
     storage[0].depthBias = -16.0f;
-    storage[0].flags = RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
     storage[0].transform.scale.x = 1.0f;
     storage[0].transform.scale.y = 1.0f;
     storage[0].transform.scale.z = 1.0f;
@@ -95,9 +94,6 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(10, spans[0].assetKey);
     EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT,
-              spans[0].instanceFlags &
-                  RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT);
     EXPECT_EQ(1, spans[0].materialVariant);
     EXPECT_EQ(1, spans[0].hasCarPaint);
     EXPECT_EQ(3, spans[0].carPaintColor1);
@@ -138,6 +134,58 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
                      &mesh, vertices, 3, spans, 1, &spanCount));
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(RAGE_RENDER_PASS_MIRROR, spans[0].pass);
+}
+
+static void test_native_draw_builder_emits_semantic_shadow_footprint(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
+                             {1.0f, 0.0f, 10.0f},
+                             {0.0f, 0.0f, 12.0f}};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 24] = 255;
+        bytes[32 + i * 40 + 25] = 255;
+        bytes[32 + i * 40 + 26] = 255;
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36, UINT32_MAX);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
+                       RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(UINT32_MAX, spans[0].material);
+    EXPECT_EQ(RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT,
+              spans[0].instanceFlags &
+                  RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT);
+    EXPECT_EQ(0, spans[0].depthDecal);
+    EXPECT_EQ(0, vertices[0].color[0]);
+    EXPECT_EQ(0, vertices[0].color[1]);
+    EXPECT_EQ(0, vertices[0].color[2]);
+    EXPECT_EQ(96, vertices[0].color[3]);
+    EXPECT_EQ(0, (int)vertices[0].lighting);
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
@@ -545,6 +593,7 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
 
 int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
+    test_native_draw_builder_emits_semantic_shadow_footprint();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
     test_native_draw_builder_culls_dynamic_course_backfaces();
     test_native_draw_builder_welds_terrain_cell_boundaries();

@@ -59,6 +59,7 @@ static SDL_GPUGraphicsPipeline *s_texturedTransparent;
 static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_texturedTransparentDecal;
 static SDL_GPUGraphicsPipeline *s_colorOpaque;
+static SDL_GPUGraphicsPipeline *s_colorShadow;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUSampler *s_sampler;
@@ -268,8 +269,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         s_texturedTransparentDecal = ModernNativeCreatePipeline(
             vertex, textureFragment, 1, 1);
     }
-    if (vertex != NULL && colorFragment != NULL)
+    if (vertex != NULL && colorFragment != NULL) {
         s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
+        s_colorShadow = ModernNativeCreatePipeline(vertex, colorFragment, 1, 1);
+    }
     if (vertex != NULL) SDL_ReleaseGPUShader(s_device, vertex);
     if (textureFragment != NULL)
         SDL_ReleaseGPUShader(s_device, textureFragment);
@@ -293,7 +296,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     if (s_texturedOpaque == NULL || s_texturedTransparent == NULL ||
         s_texturedOpaqueDecal == NULL ||
         s_texturedTransparentDecal == NULL ||
-        s_colorOpaque == NULL || s_vertexBuffer == NULL ||
+        s_colorOpaque == NULL || s_colorShadow == NULL ||
+        s_vertexBuffer == NULL ||
         s_vertexTransfer == NULL || s_sampler == NULL || s_vertices == NULL ||
         s_spans == NULL || s_mirrorSpans == NULL) {
         fprintf(stderr, "rage-port: native GPU setup failed: %s\n", SDL_GetError());
@@ -533,28 +537,41 @@ static void ModernNativeGpuDrawSet(
         SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
         SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     }
-    for (int transparent = 0; transparent < 2; transparent++) {
+    /* Opaque world first, then projected footprints over its depth, then
+     * ordinary transparent materials. Shadows test the road depth but never
+     * write it, so neither the road nor later cars can flicker against them. */
+    for (int phase = 0; phase < 3; phase++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
             ModernNativeTexture *texture;
             SDL_GPUGraphicsPipeline *pipeline;
+            int shadow =
+                (span->instanceFlags &
+                 RAGE_RENDER_INSTANCE_SHADOW_FOOTPRINT) != 0;
             if (span->vertexCount == 0) continue;
-            if (span->material == UINT32_MAX) {
-                if (transparent) continue;
+            if (shadow) {
+                if (phase != 1) continue;
+                pipeline = s_colorShadow;
+                texture = NULL;
+            } else if (span->material == UINT32_MAX) {
+                if (phase != 0) continue;
                 pipeline = s_colorOpaque;
                 texture = NULL;
             } else {
                 texture = ModernNativeFindTexture(span);
-                if (texture == NULL || texture->transparent != transparent)
+                if (texture == NULL ||
+                    (texture->transparent ? phase != 2 : phase != 0))
                     continue;
                 if (span->depthDecal) {
-                    pipeline = transparent ? s_texturedTransparentDecal
-                                           : s_texturedOpaqueDecal;
+                    pipeline = texture->transparent
+                        ? s_texturedTransparentDecal
+                        : s_texturedOpaqueDecal;
                 } else {
-                    pipeline = transparent ? s_texturedTransparent
-                                           : s_texturedOpaque;
+                    pipeline = texture->transparent
+                        ? s_texturedTransparent
+                        : s_texturedOpaque;
                 }
             }
             if (pipeline != boundPipeline) {
@@ -624,6 +641,8 @@ void ModernNativeGpuShutdown(void) {
                                            s_texturedTransparentDecal);
         if (s_colorOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaque);
+        if (s_colorShadow != NULL)
+            SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorShadow);
         if (s_vertexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_vertexBuffer);
         if (s_vertexTransfer != NULL)
             SDL_ReleaseGPUTransferBuffer(s_device, s_vertexTransfer);
@@ -639,6 +658,7 @@ void ModernNativeGpuShutdown(void) {
     s_texturedOpaqueDecal = NULL;
     s_texturedTransparentDecal = NULL;
     s_colorOpaque = NULL;
+    s_colorShadow = NULL;
     s_vertexBuffer = NULL;
     s_vertexTransfer = NULL;
     s_sampler = NULL;
