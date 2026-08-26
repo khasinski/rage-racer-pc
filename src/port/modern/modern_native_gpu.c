@@ -191,11 +191,11 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     }
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
-    /* Decals are composited after ordinary opaque geometry. Keeping the road
-     * depth lets cars remain in front while equal-depth markings use painter
-     * order among themselves. */
-    info.depth_stencil_state.enable_depth_write =
-        !transparent && !depthDecal;
+    /* Every opaque surface must participate in the Z buffer, including the
+     * later coplanar-detail phase. Imported terrain OT bias is not a semantic
+     * decal marker: tunnel and road faces can carry it too. Leaving that
+     * phase read-only lets a later, farther face overwrite nearer geometry. */
+    info.depth_stencil_state.enable_depth_write = !transparent;
     info.target_info.color_target_descriptions = &color;
     info.target_info.num_color_targets = 1;
     info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
