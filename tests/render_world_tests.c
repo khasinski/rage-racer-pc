@@ -418,6 +418,17 @@ static void test_directional_shadow_map_is_texel_stable(void) {
     EXPECT_EQ(50, (int)(projected.z * 100.0f));
 }
 
+static void test_high_resolution_vehicle_shadow_density(void) {
+    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    RageRenderVec3 center = {0.0f, 0.0f, 0.0f};
+    RageRenderShadowMap shadow;
+
+    EXPECT_EQ(1, RageRenderBuildDirectionalShadowMap(
+                     &center, &light, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
+                     RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION, &shadow));
+    EXPECT_EQ(200, (int)(shadow.texelWorldSize * 100.0f));
+}
+
 static void test_default_shadow_light_stays_near_overhead(void) {
     const RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     float horizontalSquared = light.x * light.x + light.z * light.z;
@@ -444,6 +455,7 @@ int main(void) {
     test_default_shadow_light_stays_near_overhead();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     test_directional_shadow_map_is_texel_stable();
+    test_high_resolution_vehicle_shadow_density();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");
     return EXIT_SUCCESS;

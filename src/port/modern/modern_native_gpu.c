@@ -23,10 +23,7 @@ enum {
     MODERN_NATIVE_MAX_VERTICES = 1000000,
     MODERN_NATIVE_MAX_SPANS = 32768,
     MODERN_NATIVE_MAX_TEXTURES = 2048,
-    MODERN_NATIVE_SHADOW_SIZE = 2048,
 };
-
-static const float MODERN_NATIVE_SHADOW_EXTENT = 4096.0f;
 
 typedef struct ModernNativeCameraUniform {
     float position[4];
@@ -391,8 +388,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         texture.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
         texture.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
                         SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        texture.width = MODERN_NATIVE_SHADOW_SIZE;
-        texture.height = MODERN_NATIVE_SHADOW_SIZE;
+        texture.width = RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION;
+        texture.height = RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION;
         texture.layer_count_or_depth = 1;
         texture.num_levels = 1;
         s_shadowTexture = SDL_CreateGPUTexture(s_device, &texture);
@@ -444,7 +441,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     }
     s_haveShadowMap = RageRenderBuildDirectionalShadowMap(
         &shadowCenter, &RAGE_RENDER_DEFAULT_LIGHT_DIRECTION,
-        MODERN_NATIVE_SHADOW_EXTENT, MODERN_NATIVE_SHADOW_SIZE,
+        RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
+        RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
     s_vertexCount = RageRenderBuildNativePassDraws(
         world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsMeshLookup, NULL,

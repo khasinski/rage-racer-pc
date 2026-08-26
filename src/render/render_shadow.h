@@ -17,6 +17,12 @@ typedef struct RageRenderShadowMap {
     float texelWorldSize;
 } RageRenderShadowMap;
 
+/* One stable map follows the player and covers two terrain cells in every
+ * direction. At 4096 samples this keeps vehicle silhouettes at two world
+ * units per texel without introducing cascades or camera-relative shimmer. */
+enum { RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION = 4096 };
+static const float RAGE_RENDER_VEHICLE_SHADOW_EXTENT = 4096.0f;
+
 /* A high, slightly offset sun keeps vehicle contact shadows close to their
  * casters while retaining a readable direction. */
 extern const RageRenderVec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
