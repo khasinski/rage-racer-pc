@@ -311,6 +311,15 @@ static RageRenderCamera RageGameRenderWorldBuildCamera(
         (float)g_EnvironmentColors.fields.slots[0].cur.bytes.g / 255.0f;
     camera.fogColor.z =
         (float)g_EnvironmentColors.fields.slots[0].cur.bytes.b / 255.0f;
+    /* Slot 2 is the central authored sky band. It is scene data rather than
+     * a captured PS1 draw packet, so native secondary cameras can provide a
+     * coherent environment even before a textured sky importer is added. */
+    camera.skyColor.x =
+        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.r / 255.0f;
+    camera.skyColor.y =
+        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.g / 255.0f;
+    camera.skyColor.z =
+        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.b / 255.0f;
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */
@@ -345,6 +354,12 @@ void RageGameRenderWorldPublishCurrentCamera(void) {
         SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
         SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
         SCRATCH_VIEW_ANGLE_Z, 20.0f, 1);
+    /* The tiny, wide mirror loses useful silhouettes when it reaches the
+     * main view's full fog distance. It already consumes the complete native
+     * scene, so extend only its semantic fog range rather than reviving the
+     * PS1 mirror visibility list. */
+    mirrorCamera.fogNear *= 2.0f;
+    mirrorCamera.fogFar *= 2.0f;
     mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
                    g_CameraViewMode == CAMERA_VIEW_CAR &&
                    g_GrandPrixMode != 0 && g_RacePhase == 2;

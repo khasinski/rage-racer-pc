@@ -37,6 +37,9 @@ typedef struct RageRenderCamera {
     /* Perspective depth fog is semantic scene data. `fogNear` starts the
      * blend and `fogFar` reaches the authored environment colour. */
     RageRenderVec3 fogColor;
+    /* Renderer-neutral environment backdrop. Native secondary cameras use
+     * it instead of replaying a PS1 sky ordering table. */
+    RageRenderVec3 skyColor;
     float fogNear;
     float fogFar;
 } RageRenderCamera;

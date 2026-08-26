@@ -666,9 +666,9 @@ static void ModernNativeGpuDrawSet(
     uint32_t drawVertexCount, const char *viewName) {
     SDL_GPUColorTargetInfo color = {
         .texture = colorTarget,
-        .clear_color = {renderCamera != NULL ? renderCamera->fogColor.x : 0.0f,
-                        renderCamera != NULL ? renderCamera->fogColor.y : 0.0f,
-                        renderCamera != NULL ? renderCamera->fogColor.z : 0.0f,
+        .clear_color = {renderCamera != NULL ? renderCamera->skyColor.x : 0.0f,
+                        renderCamera != NULL ? renderCamera->skyColor.y : 0.0f,
+                        renderCamera != NULL ? renderCamera->skyColor.z : 0.0f,
                         1.0f},
         .load_op = clearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD,
         .store_op = SDL_GPU_STOREOP_STORE,

@@ -90,6 +90,12 @@ void RageRenderInterpolateCamera(const RageRenderCamera *previous,
         (current->fogColor.y - previous->fogColor.y) * t;
     out->fogColor.z = previous->fogColor.z +
         (current->fogColor.z - previous->fogColor.z) * t;
+    out->skyColor.x = previous->skyColor.x +
+        (current->skyColor.x - previous->skyColor.x) * t;
+    out->skyColor.y = previous->skyColor.y +
+        (current->skyColor.y - previous->skyColor.y) * t;
+    out->skyColor.z = previous->skyColor.z +
+        (current->skyColor.z - previous->skyColor.z) * t;
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;
     out->fogFar = previous->fogFar +

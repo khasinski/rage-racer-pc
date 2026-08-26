@@ -79,6 +79,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.nearPlane = 0.1f;
     camera.farPlane = 5000.0f;
     camera.fogColor.x = 0.25f;
+    camera.skyColor.x = 0.20f;
     camera.fogNear = 100.0f;
     camera.fogFar = 500.0f;
     RageRenderWorldSetCamera(&world, &camera);
@@ -86,12 +87,14 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(70, (int)world.camera.verticalFovDegrees);
     EXPECT_EQ(5000, (int)world.camera.farPlane);
     EXPECT_EQ(25, (int)(world.camera.fogColor.x * 100.0f));
+    EXPECT_EQ(20, (int)(world.camera.skyColor.x * 100.0f));
     EXPECT_EQ(500, (int)world.camera.fogFar);
 
     RageRenderWorldBeginFrame(&world, 2);
     camera.transform.position.y = 13.5f;
     camera.verticalFovDegrees = 80.0f;
     camera.fogColor.x = 0.75f;
+    camera.skyColor.x = 0.80f;
     camera.fogNear = 200.0f;
     camera.fogFar = 1000.0f;
     RageRenderWorldSetCamera(&world, &camera);
@@ -100,6 +103,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(85, (int)(camera.transform.position.y * 10.0f));
     EXPECT_EQ(75, (int)camera.verticalFovDegrees);
     EXPECT_EQ(50, (int)(camera.fogColor.x * 100.0f));
+    EXPECT_EQ(50, (int)(camera.skyColor.x * 100.0f));
     EXPECT_EQ(150, (int)camera.fogNear);
     EXPECT_EQ(750, (int)camera.fogFar);
 }
