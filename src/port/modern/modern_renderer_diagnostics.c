@@ -4,10 +4,14 @@
 #include <psyz/video.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "game/render.h"
 #include "modern_texture_dump.h"
 #include "../runtime_config.h"
 #include "../platform_paths.h"
+
+extern int32_t g_TrackTexturePageWanted;
+extern int32_t g_TrackTextureCursorRow;
+extern int32_t g_TrackTextureTargetRow;
+extern int32_t g_IsEnvironmentMode4;
 
 static int WriteModern(const RageModernDiagnosticFrame *frame,
                        const char *path) {
