@@ -122,13 +122,14 @@ timer = 20
                 attract.stdout[-4000:]
             )
         shadows = re.findall(
-            r"native shadow map frame=\d+ draws=(\d+)",
+            r"native shadow map frame=\d+ draws=(\d+) masked=(\d+)",
             attract.stdout,
         )
-        if not shadows or max(map(int, shadows)) <= 0:
+        if not shadows or not any(int(draws) > 0 and int(masked) > 0
+                                  for draws, masked in shadows):
             raise AssertionError(
-                "attract mode did not render dynamic car geometry into the "
-                "shadow map\n" + attract.stdout[-4000:]
+                "attract mode did not render alpha-masked car geometry into "
+                "the shadow map\n" + attract.stdout[-4000:]
             )
     return 0
 

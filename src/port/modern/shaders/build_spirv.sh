@@ -30,5 +30,6 @@ build_shader post.frag post_frag frag
 build_shader native.vert native_vert vert
 build_shader native_shadow.vert native_shadow_vert vert
 build_shader native_shadow.frag native_shadow_frag frag
+build_shader native_shadow_masked.frag native_shadow_masked_frag frag
 build_shader native_texture.frag native_texture_frag frag
 build_shader native_color.frag native_color_frag frag

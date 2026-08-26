@@ -1,6 +1,9 @@
 #version 450
 
 layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec2 inUV;
+
+layout(location = 0) out vec2 uv;
 
 layout(set = 1, binding = 0, std140) uniform NativeShadowCamera {
     vec4 position;
@@ -18,4 +21,5 @@ void main() {
         dot(shadow.viewRow1.xyz, relative) * shadow.projection.y,
         depth * shadow.projection.z + shadow.projection.w,
         1.0);
+    uv = inUV;
 }
