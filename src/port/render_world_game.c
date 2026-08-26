@@ -210,6 +210,7 @@ static void RageGameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     if (part >= RAGE_CAR_RENDER_PART_COUNT) return;
     memset(&instance, 0, sizeof(instance));
     instance.entity = entity;
+    instance.component = (uint8_t)part;
     instance.mesh = mesh;
     instance.assetSet = assetSet;
     instance.assetKey = asset;

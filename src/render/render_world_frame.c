@@ -130,12 +130,16 @@ static int RageRenderInstanceNeedsSynchronizedMatch(
 static int RageRenderVehicleIdentityMatches(
     const RageRenderMeshInstance *left,
     const RageRenderMeshInstance *right) {
-    return left->entity == right->entity &&
-           left->mesh == right->mesh &&
-           left->assetSet == right->assetSet &&
-           left->assetKey == right->assetKey &&
-           left->materialVariant == right->materialVariant &&
-           left->pass == right->pass;
+    if (left->entity != right->entity ||
+        left->assetSet != right->assetSet ||
+        left->assetKey != right->assetKey ||
+        left->materialVariant != right->materialVariant ||
+        left->pass != right->pass)
+        return 0;
+    if (RageRenderInstanceIsVehicle(left) &&
+        RageRenderInstanceIsVehicle(right))
+        return left->component == right->component;
+    return left->mesh == right->mesh;
 }
 
 static float RageRenderTransformDistanceSquared(

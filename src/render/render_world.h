@@ -76,6 +76,10 @@ typedef struct RageRenderMeshInstance {
      * deterministic. */
     uint32_t assetKey;
     uint32_t material;
+    /* Stable semantic slot inside a multipart entity. Vehicle wheel meshes
+     * can be identical on both sides or switch animation variants, so mesh
+     * identity alone cannot keep their presentation transforms paired. */
+    uint8_t component;
     /* Renderer-neutral material variant selected by gameplay state. Course
      * and terrain use the two track sections; track car models use the
      * selected car asset whose race-load palette is resident. */

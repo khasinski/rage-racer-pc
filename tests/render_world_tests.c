@@ -256,6 +256,65 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
     EXPECT_EQ(110, (int)presentation[0].transform.position.z);
 }
 
+static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {
+    RageRenderMeshInstance previousStorage[2] = {0};
+    RageRenderMeshInstance currentStorage[2] = {0};
+    RageRenderMeshInstance presentation[2] = {0};
+    RageRenderWorld previous;
+    RageRenderWorld current;
+    unsigned i;
+
+    RageRenderWorldInit(&previous, previousStorage, 2);
+    RageRenderWorldInit(&current, currentStorage, 2);
+    for (i = 0; i < 2; i++) {
+        previousStorage[i].entity = currentStorage[i].entity = 11;
+        previousStorage[i].mesh = currentStorage[i].mesh = 14;
+        previousStorage[i].assetSet = currentStorage[i].assetSet =
+            RAGE_RENDER_ASSET_MODEL_BANK;
+        previousStorage[i].assetKey = currentStorage[i].assetKey = 20;
+        previousStorage[i].component = currentStorage[i].component =
+            (uint8_t)(3 + i);
+    }
+    previousStorage[0].transform.position.x = -10.0f;
+    previousStorage[1].transform.position.x = 10.0f;
+    currentStorage[0].transform.position.x = 12.0f;
+    currentStorage[1].transform.position.x = -12.0f;
+    previous.instanceCount = current.instanceCount = 2;
+
+    EXPECT_EQ(2, RageRenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, presentation, 2));
+    EXPECT_EQ(3, presentation[0].component);
+    EXPECT_EQ(1, (int)presentation[0].transform.position.x);
+    EXPECT_EQ(4, presentation[1].component);
+    EXPECT_EQ(-1, (int)presentation[1].transform.position.x);
+}
+
+static void test_synchronized_presentation_matches_animated_wheel_mesh(void) {
+    RageRenderMeshInstance previousStorage[1] = {0};
+    RageRenderMeshInstance currentStorage[1] = {0};
+    RageRenderMeshInstance presentation[1] = {0};
+    RageRenderWorld previous;
+    RageRenderWorld current;
+
+    RageRenderWorldInit(&previous, previousStorage, 1);
+    RageRenderWorldInit(&current, currentStorage, 1);
+    previousStorage[0].entity = currentStorage[0].entity = 11;
+    previousStorage[0].component = currentStorage[0].component = 2;
+    previousStorage[0].mesh = 3;
+    currentStorage[0].mesh = 13;
+    previousStorage[0].assetSet = currentStorage[0].assetSet =
+        RAGE_RENDER_ASSET_MODEL_BANK;
+    previousStorage[0].assetKey = currentStorage[0].assetKey = 20;
+    previousStorage[0].transform.position.z = 100.0f;
+    currentStorage[0].transform.position.z = 140.0f;
+    previous.instanceCount = current.instanceCount = 1;
+
+    EXPECT_EQ(1, RageRenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.25f, presentation, 1));
+    EXPECT_EQ(3, presentation[0].mesh);
+    EXPECT_EQ(110, (int)presentation[0].transform.position.z);
+}
+
 static void test_synchronized_presentation_moves_dynamic_scenery(void) {
     RageRenderMeshInstance previousStorage[1] = {0};
     RageRenderMeshInstance currentStorage[1] = {0};
@@ -335,6 +394,8 @@ int main(void) {
     test_presentation_interpolates_without_mutating_game_world();
     test_synchronized_presentation_keeps_previous_vehicle_models();
     test_synchronized_presentation_moves_matching_vehicle();
+    test_synchronized_presentation_keeps_wheel_sides_paired();
+    test_synchronized_presentation_matches_animated_wheel_mesh();
     test_synchronized_presentation_moves_dynamic_scenery();
     test_native_camera_projection_has_no_gte_quantization();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
