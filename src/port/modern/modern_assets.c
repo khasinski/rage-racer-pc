@@ -203,6 +203,7 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                 if (semanticFormat) {
                     size_t selectedStart = cursor, selectedLength = 0;
                     uint32_t pathIndex = 0;
+                    int selected = 0;
                     while (cursor <= length) {
                         size_t candidateStart = cursor;
                         while (cursor < length && line[cursor] != ' ') cursor++;
@@ -217,9 +218,10 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                                                        paintPath);
                             break;
                         }
-                        if (pathIndex == 0 || pathIndex == variant) {
+                        if (pathIndex == variant) {
                             selectedStart = candidateStart;
                             selectedLength = cursor - candidateStart;
+                            selected = 1;
                         }
                         if (cursor == length) break;
                         while (cursor < length && line[cursor] == ' ') cursor++;
@@ -227,7 +229,11 @@ static int ModernAssetsFindMaterial(const RageRenderMeshInstance *instance,
                     }
                     path = line + selectedStart;
                     pathLength = selectedLength;
-                    found = pathLength != 0;
+                    /* A semantic cache lists every gameplay-selectable
+                     * variant, including duplicate paths. Falling back to
+                     * variant zero here rendered a valid but unrelated
+                     * texture whenever an old/truncated cache was used. */
+                    found = selected && pathLength != 0;
                     break;
                 }
                 start = cursor;

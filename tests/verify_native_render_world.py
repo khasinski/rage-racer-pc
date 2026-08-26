@@ -74,8 +74,9 @@ def main() -> int:
         scenario = root / "scenario.ini"
         write_test_mesh(mesh)
         material_map.write_text(
-            "# rage-rmat v5\n"
-            "0 material.rgba | material.rpaint\n", encoding="ascii")
+            "# rage-rmat v5\n0 " +
+            " ".join(["material.rgba"] * 96) +
+            " | material.rpaint\n", encoding="ascii")
         material_pixels.write_bytes(bytes((255, 255, 255, 255)) * (256 * 256))
         material_paint.write_bytes(bytes((1,)) * (256 * 256))
         (mod_root / "textures").mkdir(parents=True)
