@@ -531,13 +531,19 @@ static void RageGameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
         origin,
         RageSceneMat3Multiply(wheelBase, RageSceneRotationX(object->wheelRotation)),
         environmentLight, mirror_pass);
-    front = RageSceneRotatePoint(base, (float)offsetX, (float)offsetY, (float)offsetZ);
+    /* Place each front wheel in the road-aligned suspension plane as well as
+     * rotating it there. Using `base` left both wheel centres at the same
+     * height on banked road while the body rolled between them, making one
+     * wheel intersect the body and the opposite wheel detach. */
+    front = RageSceneRotatePoint(wheelBase, (float)offsetX, (float)offsetY,
+                                 (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
     RageGameRenderWorldSubmitCarPart(entity, 3, asset, assetSet, frontWheelMesh,
                                      0,
                                      front, frontLeft, environmentLight,
                                      mirror_pass);
-    front = RageSceneRotatePoint(base, -(float)offsetX, (float)offsetY, (float)offsetZ);
+    front = RageSceneRotatePoint(wheelBase, -(float)offsetX, (float)offsetY,
+                                 (float)offsetZ);
     front.x += origin.x; front.y += origin.y; front.z += origin.z;
     RageGameRenderWorldSubmitCarPart(entity, 4, asset, assetSet, frontWheelMesh,
                                      0,
