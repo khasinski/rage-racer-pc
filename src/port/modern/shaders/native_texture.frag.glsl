@@ -7,6 +7,7 @@ layout(location = 3) in vec4 fog;
 layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
 layout(location = 6) in vec3 shadowCoord;
+layout(location = 7) in float shadowReception;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
@@ -66,7 +67,8 @@ void main() {
     float diffuse = max(dot(n, LIGHT_DIRECTION), 0.0);
     vec3 light = mix(vec3(1.0),
         environmentLight * (0.35 + 0.65 * diffuse), lighting);
-    float shadow = mix(0.62, 1.0, shadowVisibility(n));
+    float visibility = shadowReception > 0.5 ? shadowVisibility(n) : 1.0;
+    float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));

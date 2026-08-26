@@ -18,6 +18,10 @@ typedef struct RageNativeDrawVertex {
      * bias by the GPU.  It preserves coplanar road markings without moving
      * geometry in world space. */
     float depthBias;
+    /* Dynamic vehicle geometry casts onto the world but does not sample the
+     * same map back onto itself. Its low-poly surface otherwise exposes
+     * shadow-map acne along every source triangle. */
+    float shadowReception;
 } RageNativeDrawVertex;
 
 typedef struct RageNativeDrawSpan {

@@ -8,6 +8,7 @@ layout(location = 4) in vec4 inFog;
 layout(location = 5) in float inLighting;
 layout(location = 6) in float inDepthBias;
 layout(location = 7) in vec3 inEnvironmentLight;
+layout(location = 8) in float inShadowReception;
 
 layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 position;
@@ -32,6 +33,7 @@ layout(location = 3) out vec4 fog;
 layout(location = 4) out float lighting;
 layout(location = 5) out vec3 environmentLight;
 layout(location = 6) out vec3 shadowCoord;
+layout(location = 7) out float shadowReception;
 
 void main() {
     vec3 relative = inPosition - camera.position.xyz;
@@ -61,4 +63,5 @@ void main() {
                        shadowY * 0.5 + 0.5,
                        shadowDepth * shadow.projection.z +
                            shadow.projection.w);
+    shadowReception = inShadowReception;
 }

@@ -218,6 +218,10 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[2] = 1.0f;
     }
     out->depthBias = instance->depthBias;
+    out->shadowReception =
+        instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+        instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
+        ? 0.0f : 1.0f;
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
