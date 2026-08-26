@@ -17,12 +17,21 @@ layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 projection;
 } camera;
 
+layout(set = 1, binding = 1, std140) uniform NativeShadowCamera {
+    vec4 position;
+    vec4 viewRow0;
+    vec4 viewRow1;
+    vec4 viewRow2;
+    vec4 projection;
+} shadow;
+
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec4 color;
 layout(location = 2) out vec3 normal;
 layout(location = 3) out vec4 fog;
 layout(location = 4) out float lighting;
 layout(location = 5) out vec3 environmentLight;
+layout(location = 6) out vec3 shadowCoord;
 
 void main() {
     vec3 relative = inPosition - camera.position.xyz;
@@ -42,4 +51,14 @@ void main() {
     fog = inFog;
     lighting = inLighting;
     environmentLight = inEnvironmentLight;
+    vec3 shadowRelative = inPosition - shadow.position.xyz;
+    float shadowX = dot(shadow.viewRow0.xyz, shadowRelative) *
+                    shadow.projection.x;
+    float shadowY = dot(shadow.viewRow1.xyz, shadowRelative) *
+                    shadow.projection.y;
+    float shadowDepth = -dot(shadow.viewRow2.xyz, shadowRelative);
+    shadowCoord = vec3(shadowX * 0.5 + 0.5,
+                       shadowY * 0.5 + 0.5,
+                       shadowDepth * shadow.projection.z +
+                           shadow.projection.w);
 }
