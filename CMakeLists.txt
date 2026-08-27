@@ -152,6 +152,24 @@ if(RAGE_BUILD_PORT)
     add_executable(rage-pack tools/rage_pack.c src/port/texture_patch.c)
     target_include_directories(rage-pack PRIVATE src/port)
     add_executable(rage-save-generator tools/rage_save_generator.c)
+    add_executable(rage-frame-replay
+        tools/rage_frame_replay.c
+        src/port/platform_paths.c
+        src/port/runtime_config.c
+        src/port/mod_assets.c
+        src/port/texture_patch.c
+        src/port/track_asset_identity.c
+        src/port/modern/modern_assets.c
+        src/port/modern/modern_native_gpu.c
+        src/port/modern/modern_texture_dump.c)
+    target_include_directories(rage-frame-replay PRIVATE
+        src src/port src/port/include)
+    target_link_libraries(rage-frame-replay PRIVATE
+        rage-render-world SDL3::SDL3)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(rage-frame-replay PRIVATE
+            -Wall -Wextra -Werror)
+    endif()
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
     target_compile_options(rage-save-generator PRIVATE
         "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"

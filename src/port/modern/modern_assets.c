@@ -147,6 +147,16 @@ int ModernAssetsInit(void) {
     return 0;
 }
 
+int ModernAssetsInitRoot(const char *root) {
+    if (s_initialized) return s_ready;
+    s_initialized = 1;
+    ModernAssetsInitModProvider();
+    if (ModernAssetsTryRoot(root)) return 1;
+    fprintf(stderr, "rage-port: native asset cache unavailable: %s\n",
+            root != NULL ? root : "(null)");
+    return 0;
+}
+
 void ModernAssetsShutdown(void) {
     RageRuntimeMeshCacheRelease(&s_cache);
     if (s_indexBytes != NULL) SDL_free(s_indexBytes);
