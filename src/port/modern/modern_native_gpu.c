@@ -547,6 +547,58 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     }
 }
 
+const RageRenderWorld *ModernNativeGpuPreparedWorld(void) {
+    return s_world;
+}
+
+int ModernNativeGpuWriteDrawDump(FILE *file) {
+    uint32_t spanIndex;
+    if (file == NULL || s_world == NULL) return 0;
+    fprintf(file,
+            "world_frame=%llu aspect=%.9g vertices=%u spans=%u "
+            "mirror_vertices=%u mirror_spans=%u complete=%d\n",
+            (unsigned long long)s_worldFrame, s_aspect, s_vertexCount,
+            s_spanCount, s_mirrorVertexCount, s_mirrorSpanCount,
+            s_completeWorld);
+    fprintf(file,
+            "span first count asset_set asset_key mesh source_entity entity "
+            "material material_flags instance_flags pass decal variant "
+            "paint paint1 paint2\n");
+    for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
+        const RageNativeDrawSpan *span = &s_spans[spanIndex];
+        uint32_t vertexIndex;
+        fprintf(file,
+                "s %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u\n",
+                span->firstVertex, span->vertexCount,
+                (unsigned)span->assetSet, span->assetKey, span->mesh,
+                span->sourceEntity, span->entity, span->material,
+                span->materialFlags, span->instanceFlags,
+                (unsigned)span->pass, (unsigned)span->depthDecal,
+                (unsigned)span->materialVariant,
+                (unsigned)span->hasCarPaint,
+                (unsigned)span->carPaintColor1,
+                (unsigned)span->carPaintColor2);
+        for (vertexIndex = span->firstVertex;
+             vertexIndex < span->firstVertex + span->vertexCount &&
+             vertexIndex < s_vertexCount;
+             vertexIndex++) {
+            const RageNativeDrawVertex *vertex = &s_vertices[vertexIndex];
+            fprintf(file,
+                    "v %u %.9g %.9g %.9g %.9g %.9g %u %u %u %u "
+                    "%.9g %.9g %.9g %.9g %.9g\n",
+                    vertexIndex, vertex->position[0], vertex->position[1],
+                    vertex->position[2], vertex->uv[0], vertex->uv[1],
+                    (unsigned)vertex->color[0],
+                    (unsigned)vertex->color[1],
+                    (unsigned)vertex->color[2],
+                    (unsigned)vertex->color[3], vertex->depthBias,
+                    vertex->normal[0], vertex->normal[1], vertex->normal[2],
+                    vertex->shadowReception);
+        }
+    }
+    return ferror(file) == 0;
+}
+
 int ModernNativeGpuHasDraws(void) {
     return s_vertexCount != 0 && s_world != NULL && s_world->hasCamera;
 }

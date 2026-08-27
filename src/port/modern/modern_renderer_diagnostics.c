@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "modern_texture_dump.h"
+#include "modern_native_gpu.h"
 #include "../runtime_config.h"
 #include "../platform_paths.h"
 #include "../include/rage/render_world_game.h"
 #include "render/render_world.h"
+#include "render/render_world_snapshot.h"
 
 extern int32_t g_TrackTexturePageWanted;
 extern int32_t g_TrackTextureCursorRow;
@@ -235,6 +237,24 @@ void RageModernDiagnosticsCheckMarker(
     if (file != NULL) {
         fwrite(snapshot, sizeof(*snapshot), 1, file);
         fclose(file);
+    }
+    {
+        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+        if (world != NULL) {
+            snprintf(path, sizeof(path), "markers/marker-%d-world.bin", index);
+            if (!RageRenderWorldSnapshotWrite(path, world))
+                fprintf(stderr,
+                        "rage-port: marker %d render-world save failed\n",
+                        index);
+            snprintf(path, sizeof(path), "markers/marker-%d-draws.txt", index);
+            file = fopen(path, "w");
+            if (file != NULL) {
+                if (!ModernNativeGpuWriteDrawDump(file))
+                    fprintf(stderr,
+                            "rage-port: marker %d draw dump failed\n", index);
+                fclose(file);
+            }
+        }
     }
     snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
     file = fopen(path, "w");
