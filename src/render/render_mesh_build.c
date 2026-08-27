@@ -220,6 +220,61 @@ static int RageTriangleIsBackFacing(const RageRenderWorld *world,
            (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) >= 0.0f;
 }
 
+static uint32_t RageClipViewTriangleNear(
+    const RageRenderVec3 input[3], RageRenderVec3 output[4], float nearPlane) {
+    RageRenderVec3 previous = input[2];
+    int previousInside = -previous.z >= nearPlane;
+    uint32_t inputIndex, count = 0;
+    for (inputIndex = 0; inputIndex < 3; inputIndex++) {
+        RageRenderVec3 current = input[inputIndex];
+        int currentInside = -current.z >= nearPlane;
+        if (currentInside != previousInside) {
+            float boundaryZ = -nearPlane;
+            float t = (boundaryZ - previous.z) / (current.z - previous.z);
+            RageRenderVec3 clipped = {
+                previous.x + (current.x - previous.x) * t,
+                previous.y + (current.y - previous.y) * t,
+                boundaryZ,
+            };
+            output[count++] = clipped;
+        }
+        if (currentInside) output[count++] = current;
+        previous = current;
+        previousInside = currentInside;
+    }
+    return count;
+}
+
+static int RageTerrainTriangleFacesCamera(
+    const RageRenderWorld *world, const RageNativeDrawVertex triangle[3]) {
+    RageRenderVec3 input[3], clipped[4];
+    uint32_t corner, count, piece;
+    for (corner = 0; corner < 3; corner++) {
+        RageRenderVec3 position = {triangle[corner].position[0],
+                                   triangle[corner].position[1],
+                                   triangle[corner].position[2]};
+        RageRenderWorldToView(&world->camera, &position, &input[corner]);
+    }
+    count = RageClipViewTriangleNear(
+        input, clipped, world->camera.nearPlane);
+    for (piece = 1; piece + 1 < count; piece++) {
+        RageRenderVec3 view[3] = {clipped[0], clipped[piece],
+                                  clipped[piece + 1]};
+        float screenX[3], screenY[3], area;
+        for (corner = 0; corner < 3; corner++) {
+            float depth = -view[corner].z;
+            screenX[corner] = view[corner].x / depth;
+            screenY[corner] = view[corner].y / depth;
+        }
+        area = (screenX[1] - screenX[0]) *
+                   (screenY[2] - screenY[0]) -
+               (screenY[1] - screenY[0]) *
+                   (screenX[2] - screenX[0]);
+        if (area > 0.0f) return 1;
+    }
+    return 0;
+}
+
 static int RageTerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
     const RageRuntimeMesh *mesh, uint32_t first) {
@@ -242,13 +297,6 @@ static int RageTerrainQuadIsHidden(
         position = RageTransformPosition(basis, &source);
         position.x = RageSnapTerrainCellBoundary(position.x);
         position.z = RageSnapTerrainCellBoundary(position.z);
-        {
-            RageRenderVec3 view;
-            RageRenderWorldToView(&world->camera, &position, &view);
-            /* Winding is undefined until the GPU clips a face crossing the
-             * near plane. Keep it and let homogeneous clipping decide. */
-            if (-view.z <= world->camera.nearPlane) return 0;
-        }
         if (corner < 3) {
             triangles[0][corner].position[0] = position.x;
             triangles[0][corner].position[1] = position.y;
@@ -266,9 +314,11 @@ static int RageTerrainQuadIsHidden(
      * geometry when culled per triangle, while drawing both sides exposes
      * hidden wall backs as large dark polygons. */
     /* Terrain source quads use the opposite winding from course objects
-     * after their independent PS1-to-scene import conversion. */
-    return !RageTriangleIsBackFacing(world, triangles[0]) &&
-           !RageTriangleIsBackFacing(world, triangles[1]);
+     * after their independent source-to-scene import conversion. Evaluate
+     * that winding after clipping so a hidden wall crossing the camera does
+     * not expand into a screen-sized polygon. */
+    return !RageTerrainTriangleFacesCamera(world, triangles[0]) &&
+           !RageTerrainTriangleFacesCamera(world, triangles[1]);
 }
 
 static int RageInstanceOutsideFrustum(const RageRenderWorld *world,

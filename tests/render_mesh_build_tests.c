@@ -283,6 +283,19 @@ static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
                                              &mesh, vertices, 6, spans, 1,
                                              &spanCount));
     EXPECT_EQ(1, spanCount);
+
+    /* Clipping does not turn the hidden side of a wall into a giant polygon
+     * when one of its corners passes behind the camera. */
+    for (i = 0; i < 4; i++)
+        memcpy(bytes + 32 + i * 40, hidden[i], sizeof(hidden[i]));
+    {
+        float crossing[3] = {-1.0f, -1.0f, -0.5f};
+        memcpy(bytes + 32, crossing, sizeof(crossing));
+    }
+    EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(0, spanCount);
 }
 
 static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
