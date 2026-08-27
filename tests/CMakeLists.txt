@@ -100,6 +100,8 @@ add_test(NAME asset_gltf_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
 add_test(NAME asset_sky_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_sky.py)
+add_test(NAME native_sky_projection
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_sky_projection.py)
 
 add_executable(render_world_tests render_world_tests.c)
 target_link_libraries(render_world_tests PRIVATE rage-render-world)

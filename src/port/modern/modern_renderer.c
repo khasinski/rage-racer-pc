@@ -20,6 +20,7 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
+#include "game/track_internal.h"
 #include "modern_renderer_diagnostics.h"
 #include "../runtime_config.h"
 #include "shaders/modern_vert_spv.h"
@@ -1267,8 +1268,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
             snprintf(path, sizeof(path), "%s/mark-%02d.ppm", directory, ++marks);
             fprintf(stderr,
                     "rage-port: mark %d scene=%d timer=%d course=%d mirror=%d "
+                    "sky_row=%d "
                     "point=%d pos=%d,%d heading=%d camera=%d,%d,%d angle=%d view=%d\n",
                     marks, g_SceneId, g_SceneTimer, g_CourseIndex, g_MirrorMode,
+                    g_SkyRowBase,
                     g_PlayerCar.trackPointIndex, g_PlayerCar.x, g_PlayerCar.z,
                     g_PlayerCar.headingAngle, SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
                     SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_Y, g_CameraViewMode);

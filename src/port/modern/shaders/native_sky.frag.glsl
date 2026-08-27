@@ -14,6 +14,8 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
 void main() {
     vec3 direction = normalize(worldDirection);
     float height = direction.y;
+    float horizontalLength = max(length(direction.xz), 0.001);
+    float verticalSlope = height / horizontalLength;
     vec3 color;
     if (height >= 0.0) {
         color = mix(sky.middle.rgb, sky.top.rgb,
@@ -25,10 +27,22 @@ void main() {
         color = mix(sky.horizon.rgb, sky.bottom.rgb,
                     smoothstep(0.18, 0.65, -height));
     }
+    /* The authored image is one 90-degree cylinder band. The original asset
+     * alternated it with a half-turn offset in successive vertical bands.
+     * Keep that semantic layout, but evaluate it from a world-space ray so
+     * replay and mirror cameras can turn freely without exposing a clamped
+     * texture edge. */
+    float bandCoordinate = 1.0 - verticalSlope * 2.5;
+    float band = floor(bandCoordinate);
+    float bandOffset = mod(band, 2.0) * 0.5;
     vec2 panoramaUV = vec2(
-        fract(atan(direction.z, direction.x) * 0.6366197724 + 0.25),
-        clamp(1.0 - height * 2.2, 0.0, 1.0));
+        fract(atan(direction.z, direction.x) * 0.6366197724 + 0.25 +
+              bandOffset),
+        fract(bandCoordinate));
     vec4 authored = texture(panorama, panoramaUV);
-    color = mix(color, authored.rgb, authored.a * sky.bottom.a);
+    float cylinderCoverage =
+        1.0 - smoothstep(0.9, 1.25, abs(verticalSlope));
+    color = mix(color, authored.rgb,
+                authored.a * sky.bottom.a * cylinderCoverage);
     outColor = vec4(color, 1.0);
 }
