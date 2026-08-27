@@ -60,9 +60,9 @@ def create_native_asset_fixture(root: Path) -> None:
     """Create the minimum versioned cache accepted by every native scene."""
     _write_test_mesh(root / "car.rmesh")
     (root / "material.rmat").write_text(
-        "# rage-rmat v5\n0 " +
+        "# rage-rmat v6\n0 " +
         " ".join(["material.rgba"] * 96) +
-        " | material.rpaint\n",
+        " | material.rpaint | inherit auto 1 0 1 1 1 1 0 0 0\n",
         encoding="ascii",
     )
     (root / "material.rgba").write_bytes(
