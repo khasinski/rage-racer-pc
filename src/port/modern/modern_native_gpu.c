@@ -954,6 +954,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     SDL_GPUCommandBuffer *command, const RageNativeDrawSpan *span) {
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
     RageRenderMeshInstance instance = {0};
+    RageRenderMaterial materialDefinition;
     ModernAssetImage image;
     uint8_t *mipChain = NULL;
     size_t mipSize;
@@ -966,9 +967,9 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     instance.hasCarPaint = span->hasCarPaint;
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
-    if (!ModernAssetsLoadMaterialImage(&instance, span->material,
-                                       span->materialVariant,
-                                       &image)) return NULL;
+    if (!ModernAssetsLoadMaterial(&instance, span->material,
+                                  span->materialVariant,
+                                  &materialDefinition, &image)) return NULL;
     mipLevels = RageTextureMipLevelCount(
         image.width, image.height, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
     mipSize = RageTextureMipChainSizeRGBA8(

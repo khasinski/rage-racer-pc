@@ -671,18 +671,16 @@ class Extractor:
         rmesh.write_bank(rmesh_path, bank, textures, scrolling_primitives,
                          terrain_primitives=grid is not None)
         materials_path = self.out / "models" / f"{stem}.rmat"
-        has_paint = any("runtimePaintMask" in texture
-                        for texture in (textures or []))
-        material_rows = ["# rage-rmat v5\n" if has_paint
-                         else "# rage-rmat v4\n"]
+        material_rows = ["# rage-rmat v6\n"]
         for index, texture in enumerate(textures or []):
             variants = texture.get("runtimePixelVariants", [
                 texture["runtimePixels"],
                 texture.get("runtimePixelsAlt", texture["runtimePixels"]),
             ])
-            suffix = (f" | {texture.get('runtimePaintMask', '-')}"
-                      if has_paint else "")
-            material_rows.append(f"{index} {' '.join(variants)}{suffix}\n")
+            paint = texture.get("runtimePaintMask", "-")
+            properties = "inherit auto 1 0 1 1 1 1 0 0 0"
+            material_rows.append(
+                f"{index} {' '.join(variants)} | {paint} | {properties}\n")
         materials_path.write_text("".join(material_rows))
         return {
             "file": f"models/{stem}.json",

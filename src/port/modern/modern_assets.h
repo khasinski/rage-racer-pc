@@ -2,6 +2,7 @@
 #define RAGE_MODERN_ASSETS_H
 
 #include "render/render_world.h"
+#include "render/render_material.h"
 #include "render/rmesh_cache.h"
 
 typedef struct ModernAssetImage {
@@ -20,9 +21,10 @@ int ModernAssetsReady(void);
 uint32_t ModernAssetsCachedMeshCount(void);
 const RageRuntimeMesh *ModernAssetsMeshLookup(
     void *context, const RageRenderMeshInstance *instance);
-int ModernAssetsLoadMaterialImage(const RageRenderMeshInstance *instance,
-                                  uint32_t material, uint8_t variant,
-                                  ModernAssetImage *image);
+int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+                             uint32_t material, uint8_t variant,
+                             RageRenderMaterial *definition,
+                             ModernAssetImage *image);
 int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image);
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
 void ModernAssetsWarmWorld(const RageRenderWorld *world);

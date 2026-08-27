@@ -152,8 +152,9 @@ class GltfExportTest(unittest.TestCase):
             sidecar = (extractor.out / "models/source.rmat").read_text()
 
         self.assertEqual(
-            "# rage-rmat v4\n"
-            "0 textures/source.rgba textures/source.rgba\n",
+            "# rage-rmat v6\n"
+            "0 textures/source.rgba textures/source.rgba | - | "
+            "inherit auto 1 0 1 1 1 1 0 0 0\n",
             sidecar)
 
     def test_runtime_material_sidecar_attaches_semantic_paint_mask(self):
@@ -174,8 +175,9 @@ class GltfExportTest(unittest.TestCase):
                 extractor.emit_bank(bank, "car", textures=textures)
             sidecar = (extractor.out / "models/car.rmat").read_text()
         self.assertEqual(
-            "# rage-rmat v5\n"
-            "0 textures/car.rgba textures/car.rgba | textures/car.rpaint\n",
+            "# rage-rmat v6\n"
+            "0 textures/car.rgba textures/car.rgba | textures/car.rpaint | "
+            "inherit auto 1 0 1 1 1 1 0 0 0\n",
             sidecar)
 
     def test_car_paint_mask_labels_palette_sampled_texels(self):
