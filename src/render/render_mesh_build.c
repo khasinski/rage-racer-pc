@@ -105,6 +105,97 @@ static RageRenderVec3 RageTransformPoint(const RageTransformBasis *basis,
     return RageTransformPosition(basis, &vertex);
 }
 
+static float RageVec3Length(float x, float y, float z) {
+    return sqrtf(x * x + y * y + z * z);
+}
+
+/* Road paint is ordinary native geometry: a long, narrow strip following the
+ * road surface. Identify that semantic shape without consulting PS1 primitive
+ * modes or ordering-table hints. */
+static int RageTriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
+    float edge[3], ax, ay, az, bx, by, bz, nx, ny, nz, normalLength;
+    float shortest, longest;
+    int corner;
+    for (corner = 0; corner < 3; corner++) {
+        int next = (corner + 1) % 3;
+        float x = triangle[next].position[0] - triangle[corner].position[0];
+        float y = triangle[next].position[1] - triangle[corner].position[1];
+        float z = triangle[next].position[2] - triangle[corner].position[2];
+        edge[corner] = RageVec3Length(x, y, z);
+    }
+    shortest = fminf(edge[0], fminf(edge[1], edge[2]));
+    longest = fmaxf(edge[0], fmaxf(edge[1], edge[2]));
+    if (shortest > 16.0f || longest < 64.0f || longest < shortest * 8.0f)
+        return 0;
+    ax = triangle[1].position[0] - triangle[0].position[0];
+    ay = triangle[1].position[1] - triangle[0].position[1];
+    az = triangle[1].position[2] - triangle[0].position[2];
+    bx = triangle[2].position[0] - triangle[0].position[0];
+    by = triangle[2].position[1] - triangle[0].position[1];
+    bz = triangle[2].position[2] - triangle[0].position[2];
+    nx = ay * bz - az * by;
+    ny = az * bx - ax * bz;
+    nz = ax * by - ay * bx;
+    normalLength = RageVec3Length(nx, ny, nz);
+    return normalLength > 0.0f && fabsf(ny) >= normalLength * 0.85f;
+}
+
+static void RageLiftRoadDecal(RageNativeDrawVertex triangle[3]) {
+    float ax = triangle[1].position[0] - triangle[0].position[0];
+    float ay = triangle[1].position[1] - triangle[0].position[1];
+    float az = triangle[1].position[2] - triangle[0].position[2];
+    float bx = triangle[2].position[0] - triangle[0].position[0];
+    float by = triangle[2].position[1] - triangle[0].position[1];
+    float bz = triangle[2].position[2] - triangle[0].position[2];
+    float nx = ay * bz - az * by;
+    float ny = az * bx - ax * bz;
+    float nz = ax * by - ay * bx;
+    float length = RageVec3Length(nx, ny, nz);
+    int corner;
+    if (length <= 0.0f) return;
+    if (ny < 0.0f) length = -length;
+    nx /= length; ny /= length; nz /= length;
+    for (corner = 0; corner < 3; corner++) {
+        triangle[corner].position[0] += nx * 2.0f;
+        triangle[corner].position[1] += ny * 2.0f;
+        triangle[corner].position[2] += nz * 2.0f;
+    }
+}
+
+static void RageLiftOverlayTowardCamera(
+    RageNativeDrawVertex triangle[3], RageRenderVec3 camera) {
+    float ax = triangle[1].position[0] - triangle[0].position[0];
+    float ay = triangle[1].position[1] - triangle[0].position[1];
+    float az = triangle[1].position[2] - triangle[0].position[2];
+    float bx = triangle[2].position[0] - triangle[0].position[0];
+    float by = triangle[2].position[1] - triangle[0].position[1];
+    float bz = triangle[2].position[2] - triangle[0].position[2];
+    float nx = ay * bz - az * by;
+    float ny = az * bx - ax * bz;
+    float nz = ax * by - ay * bx;
+    float cx = (triangle[0].position[0] + triangle[1].position[0] +
+                triangle[2].position[0]) / 3.0f;
+    float cy = (triangle[0].position[1] + triangle[1].position[1] +
+                triangle[2].position[1]) / 3.0f;
+    float cz = (triangle[0].position[2] + triangle[1].position[2] +
+                triangle[2].position[2]) / 3.0f;
+    float length = RageVec3Length(nx, ny, nz);
+    float facing;
+    int corner;
+    if (length <= 0.0f) return;
+    nx /= length; ny /= length; nz /= length;
+    facing = nx * (camera.x - cx) + ny * (camera.y - cy) +
+             nz * (camera.z - cz);
+    if (facing < 0.0f) {
+        nx = -nx; ny = -ny; nz = -nz;
+    }
+    for (corner = 0; corner < 3; corner++) {
+        triangle[corner].position[0] += nx * 2.0f;
+        triangle[corner].position[1] += ny * 2.0f;
+        triangle[corner].position[2] += nz * 2.0f;
+    }
+}
+
 static int RageTriangleIsBackFacing(const RageRenderWorld *world,
                                     const RageNativeDrawVertex triangle[3]) {
     RageRenderVec3 view[3];
@@ -217,7 +308,9 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[1] = 1.0f;
         out->environmentLight[2] = 1.0f;
     }
-    out->depthBias = instance->depthBias;
+    /* Native scene depth comes only from geometry. PS1 ordering-table hints
+     * and old per-instance overlap nudges must never alter the Z buffer. */
+    out->depthBias = 0.0f;
     out->shadowReception =
         instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
         instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
@@ -225,27 +318,8 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
-        int8_t authoredDepthBias = (int8_t)(source.material >>
-            RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
-        /* OT bias only controlled packet order on PS1. It is not a semantic
-         * decal marker: full road and tunnel quads carry negative values too.
-         * Keep every terrain face in the ordinary Z-buffered phase and use a
-         * small constant clip-space tie-break. This avoids both coplanar
-         * flicker and entire face classes jumping in front of scenery. */
-        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            /* Near-only negative-bias faces are the close road details whose
-             * source vertices can cross the underlying strip on hills. Keep
-             * ordinary terrain at the small compatibility tie-break: a large
-             * bias on distant scenery visibly separates its triangles. */
-            float scale = authoredDepthBias < 0 &&
-                          (source.material &
-                           RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY) != 0
-                              ? 128.0f
-                              : 8.0f;
-            out->depthBias += (float)authoredDepthBias * scale;
-        } else {
-            out->depthBias += (float)authoredDepthBias;
-        }
+        /* The packed byte is a PS1 ordering-table hint, not native material
+         * semantics. Strip it with the rest of the import metadata. */
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
@@ -299,6 +373,18 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[1] ||
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
+            if (depthDecals[0]) {
+                /* Explicit screen/art layers are semantic overlays. Give them
+                 * real separation from their backing mesh instead of changing
+                 * their depth value in the rasterizer. */
+                RageLiftOverlayTowardCamera(
+                    triangle, world->camera.transform.position);
+            } else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                materials[0] != UINT32_MAX &&
+                RageTriangleIsRoadDecal(triangle)) {
+                RageLiftRoadDecal(triangle);
+                depthDecals[0] = depthDecals[1] = depthDecals[2] = 1;
+            }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
                 RageTriangleIsBackFacing(world, triangle)) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||

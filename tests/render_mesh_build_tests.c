@@ -116,7 +116,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(25, (int)(vertices[0].environmentLight[0] * 100.0f));
     EXPECT_EQ(50, (int)(vertices[0].environmentLight[1] * 100.0f));
     EXPECT_EQ(75, (int)(vertices[0].environmentLight[2] * 100.0f));
-    EXPECT_EQ(-16, (int)vertices[0].depthBias);
+    EXPECT_EQ(0, (int)vertices[0].depthBias);
     EXPECT_EQ(0, (int)vertices[0].shadowReception);
 
     storage[0].assetSet = RAGE_RENDER_ASSET_COURSE;
@@ -348,7 +348,7 @@ static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
                                              &spanCount));
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(-32, (int)vertices[0].depthBias);
+    EXPECT_EQ(0, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
@@ -396,7 +396,49 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
                   RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
               spans[0].materialFlags);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(-512, (int)vertices[0].depthBias);
+    EXPECT_EQ(0, (int)vertices[0].depthBias);
+}
+
+static void test_native_draw_builder_makes_road_paint_real_geometry(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {
+        {0.0f, 0.0f, 10.0f}, {100.0f, 0.0f, 10.0f},
+        {0.0f, 0.0f, 14.0f},
+    };
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+        write_u32(bytes + 32 + i * 40 + 36, 4);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 200.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(1, spans[0].depthDecal);
+    EXPECT_EQ(200, (int)(vertices[0].position[1] * 100.0f));
+    EXPECT_EQ(0, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {
@@ -557,6 +599,7 @@ int main(void) {
     test_native_draw_builder_applies_authored_course_texture_scroll();
     test_native_draw_builder_strips_ot_bias_from_material_lookup();
     test_native_draw_builder_preserves_dynamic_terrain_material_flags();
+    test_native_draw_builder_makes_road_paint_real_geometry();
     test_native_draw_builder_keeps_terrain_detail_at_long_range();
     test_native_draw_builder_culls_fully_offscreen_instance();
     test_native_draw_builder_keeps_large_instance_crossing_frustum();

@@ -183,14 +183,9 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * including thin sign supports, so native culling would remove geometry
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
-    if (depthDecal) {
-        /* Imported surface overlays can sit a few hundred source units behind
-         * the road or sign frame they visually decorate. Draw vehicles in a
-         * later phase, then use a constant offset large enough to keep these
-         * thin surfaces intact without slope-dependent stripe shortening. */
-        info.rasterizer_state.depth_bias_constant_factor = -512.0f;
-        info.rasterizer_state.enable_depth_bias = true;
-    }
+    /* Semantic decals are already real, slightly lifted world geometry. They
+     * use the same depth test as every other opaque surface. */
+    (void)depthDecal;
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
     /* Every opaque surface must participate in the Z buffer, including the
