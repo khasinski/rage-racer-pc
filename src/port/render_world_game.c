@@ -332,11 +332,7 @@ static RageRenderCamera RageGameRenderWorldBuildCamera(
         (float)g_EnvironmentColors.fields.slots[4].cur.bytes.g / 255.0f;
     camera.skyBottomColor.z =
         (float)g_EnvironmentColors.fields.slots[4].cur.bytes.b / 255.0f;
-    /* A zero sky row selects the authored gradient-only backdrop. Loading the
-     * course panorama anyway exposes cloud pixels that DrawSkyBackground did
-     * not use for this environment. */
-    camera.skyAssetKey =
-        g_SkyRowBase != 0 ? RageTrackDataAssetKey() : UINT32_MAX;
+    camera.skyAssetKey = RageTrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */
