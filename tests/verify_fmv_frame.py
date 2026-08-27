@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the original 320x192 FMV is centered in a 4:3 320x240 output."""
+"""Verify the opening movie picture and its real 44.1 kHz stereo XA output."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ def main() -> int:
     source_dir = Path(sys.argv[2])
     with tempfile.TemporaryDirectory(prefix="rage-fmv-test-") as directory:
         capture = Path(directory) / "fmv.ppm"
+        pcm = Path(directory) / "fmv-s16le-stereo.pcm"
         environment = os.environ.copy()
         environment.update(
             SDL_AUDIODRIVER="dummy",
@@ -23,9 +24,16 @@ def main() -> int:
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_FMV_TRACE="1",
             RAGE_PORT_SMOKE_AUDIO_METRICS="1",
+            PSYZ_AUDIO_PCM_DUMP=str(pcm),
         )
         result = subprocess.run(
-            [executable, "--set", "timing.standard=ntsc"], cwd=source_dir,
+            [
+                executable,
+                "--set",
+                "timing.standard=ntsc",
+                "--set",
+                "video.renderer=classic",
+            ], cwd=source_dir,
             env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=20,
@@ -37,9 +45,29 @@ def main() -> int:
         # only needs a frame to have been decoded to look at.
         if "fmv frame=" not in result.stdout:
             raise AssertionError("intro FMV decoded no frames")
-        metrics = re.search(r"audio metrics: frames=(\d+) energy=(\d+)", result.stdout)
-        if metrics is None or int(metrics.group(1)) < 10_000 or int(metrics.group(2)) == 0:
+        metrics = re.search(
+            r"audio metrics: frames=(\d+) energy=(\d+).*"
+            r"cdda_mix_energy=(\d+)",
+            result.stdout,
+        )
+        if metrics is None:
+            raise AssertionError("intro FMV did not report audio metrics")
+        frames, energy, xa_energy = map(int, metrics.groups())
+        if frames < 10_000 or energy == 0:
             raise AssertionError("intro FMV XA soundtrack remained silent")
+        if xa_energy < 1_000_000:
+            raise AssertionError(
+                f"intro FMV XA mix remained silent: energy={xa_energy}"
+            )
+        pcm_data = pcm.read_bytes()
+        expected_size = frames * 2 * 2  # stereo, signed 16-bit PCM
+        if len(pcm_data) != expected_size:
+            raise AssertionError(
+                "audio backend did not emit 44.1 kHz stereo S16 frames: "
+                f"bytes={len(pcm_data)}, frames={frames}, expected={expected_size}"
+            )
+        if not any(pcm_data):
+            raise AssertionError("captured FMV PCM is entirely silent")
 
         data = capture.read_bytes()
         header, pixels = data.split(b"\n255\n", 1)

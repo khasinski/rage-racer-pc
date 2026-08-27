@@ -181,6 +181,14 @@ add_test(NAME host_state_abi COMMAND python3
 add_test(NAME shipped_config COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})
 
+if(APPLE AND TARGET rage-racer)
+    add_test(NAME macos_build_launcher COMMAND python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_build_launcher.py
+        ${CMAKE_BINARY_DIR}/rage-racer
+        $<TARGET_FILE:rage-racer>)
+    set_tests_properties(macos_build_launcher PROPERTIES LABELS portable)
+endif()
+
 add_test(NAME car_prices COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
 

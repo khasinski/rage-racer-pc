@@ -40,7 +40,13 @@ def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
         RAGE_PORT_SMOKE_AUDIO_METRICS="1",
     )
     result = subprocess.run(
-        [executable, "--set", f"diagnostics.fmv_stream={stream}"],
+        [
+            executable,
+            "--set",
+            f"diagnostics.fmv_stream={stream}",
+            "--set",
+            "video.renderer=classic",
+        ],
         cwd=source_dir, env=environment, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, text=True, timeout=180,
     )

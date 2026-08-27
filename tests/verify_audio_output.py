@@ -32,7 +32,8 @@ def main() -> int:
             RAGE_PORT_DUMP_SPU_RAM=str(spu_ram),
         )
         result = subprocess.run(
-            [executable], cwd=source_dir, env=environment,
+            [executable, "--set", "video.renderer=classic"],
+            cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=30,
         )

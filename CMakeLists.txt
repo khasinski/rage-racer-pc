@@ -268,6 +268,21 @@ if(RAGE_BUILD_PORT)
             MACOSX_BUNDLE_SHORT_VERSION_STRING "${RAGE_RACER_RELEASE_VERSION}"
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in"
         )
+
+        # Older build trees contain a standalone `rage-racer` left behind
+        # from before this target became a macOS application bundle.  That
+        # executable is not updated by the bundle target and can silently run
+        # stale game, renderer and audio code.  Keep the familiar developer
+        # path, but make it resolve to the executable CMake actually builds.
+        set(RAGE_MACOS_BUILD_LAUNCHER
+            "${CMAKE_CURRENT_BINARY_DIR}/rage-racer")
+        file(REMOVE "${RAGE_MACOS_BUILD_LAUNCHER}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}" -E create_symlink
+                "Rage Racer.app/Contents/MacOS/Rage Racer"
+                "${RAGE_MACOS_BUILD_LAUNCHER}"
+            COMMAND_ERROR_IS_FATAL ANY
+        )
     endif()
     if(BUILD_TESTING)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)
