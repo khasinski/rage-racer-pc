@@ -7,6 +7,8 @@
 #include "modern_texture_dump.h"
 #include "../runtime_config.h"
 #include "../platform_paths.h"
+#include "../include/rage/render_world_game.h"
+#include "render/render_world.h"
 
 extern int32_t g_TrackTexturePageWanted;
 extern int32_t g_TrackTextureCursorRow;
@@ -136,6 +138,34 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
                 index, batch->mirror, batch->cellCount, batch->otShift,
                 batch->cells[0][0], batch->cells[0][1], batch->cells[0][2],
                 batch->cells[0][3]);
+    }
+    {
+        const RageRenderWorld *world = RageGameRenderWorldCurrent();
+        uint32_t dynamicCount = 0;
+        if (world != NULL) {
+            for (uint32_t worldIndex = 0;
+                 worldIndex < world->instanceCount; worldIndex++) {
+                const RageRenderMeshInstance *instance =
+                    &world->instances[worldIndex];
+                if (instance->assetSet != RAGE_RENDER_ASSET_COURSE ||
+                    instance->entity < 0x30000u ||
+                    instance->entity >= 0x40000u) continue;
+                dynamicCount++;
+                fprintf(file,
+                        "nativeDynamic[%u] entity=%x mesh=%u variant=%u "
+                        "pass=%d flags=%x pos=%.1f,%.1f,%.1f\n",
+                        dynamicCount - 1, instance->entity, instance->mesh,
+                        instance->materialVariant, instance->pass,
+                        instance->flags, instance->transform.position.x,
+                        instance->transform.position.y,
+                        instance->transform.position.z);
+            }
+            fprintf(file, "nativeWorld frame=%llu instances=%u dynamic=%u\n",
+                    (unsigned long long)world->frame, world->instanceCount,
+                    dynamicCount);
+        } else {
+            fprintf(file, "nativeWorld unavailable\n");
+        }
     }
 }
 
