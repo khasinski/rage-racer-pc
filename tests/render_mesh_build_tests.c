@@ -374,6 +374,7 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
         write_u32(bytes + 32 + i * 40 + 36,
                   RAGE_RUNTIME_MATERIAL_METADATA |
                   (0xFCu << RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) |
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
                   RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT | 4u);
         write_u32(bytes + 152 + i * 4, i);
     }
@@ -391,11 +392,11 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
                                              &spanCount));
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(4, spans[0].material);
-    EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
-              spans[0].materialFlags &
-                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
+    EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
+              spans[0].materialFlags);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(-32, (int)vertices[0].depthBias);
+    EXPECT_EQ(-512, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {

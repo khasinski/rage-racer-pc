@@ -233,7 +233,16 @@ static int RageBuildVertex(const RageTransformBasis *basis,
          * small constant clip-space tie-break. This avoids both coplanar
          * flicker and entire face classes jumping in front of scenery. */
         if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            out->depthBias += (float)authoredDepthBias * 8.0f;
+            /* Near-only negative-bias faces are the close road details whose
+             * source vertices can cross the underlying strip on hills. Keep
+             * ordinary terrain at the small compatibility tie-break: a large
+             * bias on distant scenery visibly separates its triangles. */
+            float scale = authoredDepthBias < 0 &&
+                          (source.material &
+                           RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY) != 0
+                              ? 128.0f
+                              : 8.0f;
+            out->depthBias += (float)authoredDepthBias * scale;
         } else {
             out->depthBias += (float)authoredDepthBias;
         }
