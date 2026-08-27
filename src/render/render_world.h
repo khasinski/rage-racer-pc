@@ -37,9 +37,17 @@ typedef struct RageRenderCamera {
     /* Perspective depth fog is semantic scene data. `fogNear` starts the
      * blend and `fogFar` reaches the authored environment colour. */
     RageRenderVec3 fogColor;
-    /* Renderer-neutral environment backdrop. Native secondary cameras use
-     * it instead of replaying a PS1 sky ordering table. */
+    /* Renderer-neutral sky bands. Backends evaluate them against a world
+     * view ray, so the horizon follows camera pitch and roll without any
+     * screen-space PS1 sky geometry. `skyColor` is the central band retained
+     * for compatibility with version-1 frame snapshots. */
+    RageRenderVec3 skyTopColor;
     RageRenderVec3 skyColor;
+    RageRenderVec3 skyHorizonColor;
+    RageRenderVec3 skyBottomColor;
+    /* Stable environment asset identity. Import providers may resolve it to
+     * the extracted panorama above the gradient or to a mod-supplied image. */
+    uint32_t skyAssetKey;
     float fogNear;
     float fogFar;
 } RageRenderCamera;

@@ -17,6 +17,8 @@ enum { MODERN_ASSET_CACHE_CAPACITY = 4096 };
 static char s_root[1024];
 static void *s_indexBytes;
 static size_t s_indexSize;
+static void *s_environmentIndexBytes;
+static size_t s_environmentIndexSize;
 static RageRuntimeCachedMesh s_entries[MODERN_ASSET_CACHE_CAPACITY];
 static RageRuntimeMeshCache s_cache;
 static int s_initialized;
@@ -83,6 +85,7 @@ static void ModernAssetFreeFile(void *context, const void *bytes) {
 
 static int ModernAssetsTryRoot(const char *root) {
     char indexPath[sizeof(s_root) + 32];
+    char environmentIndexPath[sizeof(s_root) + 32];
     size_t rootLength;
     if (root == NULL || root[0] == '\0') return 0;
     rootLength = strlen(root);
@@ -108,6 +111,10 @@ static int ModernAssetsTryRoot(const char *root) {
     RageRuntimeMeshCacheInit(&s_cache, s_indexBytes, s_indexSize,
                              ModernAssetReadFile, ModernAssetFreeFile, NULL,
                              s_entries, MODERN_ASSET_CACHE_CAPACITY);
+    snprintf(environmentIndexPath, sizeof(environmentIndexPath),
+             "%s/environment-index.txt", s_root);
+    s_environmentIndexBytes = SDL_LoadFile(
+        environmentIndexPath, &s_environmentIndexSize);
     s_ready = 1;
     fprintf(stderr, "rage-port: native asset cache %s\n", s_root);
     return 1;
@@ -160,8 +167,11 @@ int ModernAssetsInitRoot(const char *root) {
 void ModernAssetsShutdown(void) {
     RageRuntimeMeshCacheRelease(&s_cache);
     if (s_indexBytes != NULL) SDL_free(s_indexBytes);
+    if (s_environmentIndexBytes != NULL) SDL_free(s_environmentIndexBytes);
     s_indexBytes = NULL;
     s_indexSize = 0;
+    s_environmentIndexBytes = NULL;
+    s_environmentIndexSize = 0;
     s_ready = 0;
     s_initialized = 0;
     s_root[0] = '\0';
@@ -179,6 +189,44 @@ const RageRuntimeCachedMesh *ModernAssetsFind(
 
 int ModernAssetsReady(void) {
     return s_ready;
+}
+
+int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image) {
+    const char *bytes = (const char *)s_environmentIndexBytes;
+    size_t lineStart = 0, cursor;
+    char line[1200];
+    unsigned key, width, height;
+    char path[1024];
+    const void *pixels;
+    size_t size;
+    if (image == NULL) return 0;
+    memset(image, 0, sizeof(*image));
+    if (!s_ready || bytes == NULL) return 0;
+    for (cursor = 0; cursor <= s_environmentIndexSize; cursor++) {
+        if (cursor != s_environmentIndexSize && bytes[cursor] != '\n')
+            continue;
+        if (cursor > lineStart && bytes[lineStart] != '#') {
+            size_t length = cursor - lineStart;
+            if (length < sizeof(line)) {
+                memcpy(line, bytes + lineStart, length);
+                line[length] = '\0';
+                if (sscanf(line, "%u %u %u %1023s", &key, &width, &height,
+                           path) == 4 && key == assetKey && width != 0 &&
+                    height != 0 &&
+                    ModernAssetReadFile(NULL, path, strlen(path), &pixels,
+                                        &size) &&
+                    size == (size_t)width * height * 4u) {
+                    image->pixels = (void *)pixels;
+                    image->size = size;
+                    image->width = width;
+                    image->height = height;
+                    return 1;
+                }
+            }
+        }
+        lineStart = cursor + 1;
+    }
+    return 0;
 }
 
 uint32_t ModernAssetsCachedMeshCount(void) {

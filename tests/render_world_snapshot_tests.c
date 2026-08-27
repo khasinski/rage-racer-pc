@@ -28,9 +28,15 @@ static void FillCamera(RageRenderCamera *camera, float base) {
     camera->nearPlane = base + 21;
     camera->farPlane = base + 22;
     camera->fogColor = (RageRenderVec3){base + 23, base + 24, base + 25};
-    camera->skyColor = (RageRenderVec3){base + 26, base + 27, base + 28};
-    camera->fogNear = base + 29;
-    camera->fogFar = base + 30;
+    camera->skyTopColor = (RageRenderVec3){base + 26, base + 27, base + 28};
+    camera->skyColor = (RageRenderVec3){base + 29, base + 30, base + 31};
+    camera->skyHorizonColor =
+        (RageRenderVec3){base + 32, base + 33, base + 34};
+    camera->skyBottomColor =
+        (RageRenderVec3){base + 35, base + 36, base + 37};
+    camera->skyAssetKey = (uint32_t)(base + 38);
+    camera->fogNear = base + 39;
+    camera->fogFar = base + 40;
 }
 
 static int SameTransform(const RageRenderTransform *a,
@@ -48,7 +54,14 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
            a->verticalFovDegrees == b->verticalFovDegrees &&
            a->nearPlane == b->nearPlane && a->farPlane == b->farPlane &&
            memcmp(&a->fogColor, &b->fogColor, sizeof(a->fogColor)) == 0 &&
+           memcmp(&a->skyTopColor, &b->skyTopColor,
+                  sizeof(a->skyTopColor)) == 0 &&
            memcmp(&a->skyColor, &b->skyColor, sizeof(a->skyColor)) == 0 &&
+           memcmp(&a->skyHorizonColor, &b->skyHorizonColor,
+                  sizeof(a->skyHorizonColor)) == 0 &&
+           memcmp(&a->skyBottomColor, &b->skyBottomColor,
+                  sizeof(a->skyBottomColor)) == 0 &&
+           a->skyAssetKey == b->skyAssetKey &&
            a->fogNear == b->fogNear && a->fogFar == b->fogFar;
 }
 

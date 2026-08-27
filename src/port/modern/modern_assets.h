@@ -23,6 +23,7 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 int ModernAssetsLoadMaterialImage(const RageRenderMeshInstance *instance,
                                   uint32_t material, uint8_t variant,
                                   ModernAssetImage *image);
+int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image);
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
 void ModernAssetsWarmWorld(const RageRenderWorld *world);
 

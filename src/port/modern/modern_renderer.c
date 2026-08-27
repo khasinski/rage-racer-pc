@@ -27,10 +27,10 @@
 #include "shaders/post_vert_spv.h"
 #include "shaders/post_frag_spv.h"
 
-/* The modern presentation path combines the native RenderWorld renderer
- * with the captured PS1 2D layers that still own the sky, HUD and mirror
- * frame. Captured PS1 3D faces are never rendered here. Menus, FMV and
- * 480-line screens continue to present the compat image directly. */
+/* The modern presentation path combines the native RenderWorld renderer,
+ * including its sky, with captured PS1 2D layers that still own the HUD and
+ * mirror frame. Captured PS1 3D faces and sky packets are never rendered
+ * here. Menus, FMV and 480-line screens present the compat image directly. */
 
 static int s_enabled;
 static int s_initialized;
@@ -502,7 +502,6 @@ typedef struct Modern2DState {
 
 static uint8_t s_currentPass;
 enum {
-    MODERN_LAYER_BACKGROUND,
     MODERN_LAYER_HUD,
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
@@ -595,21 +594,12 @@ void RageModernLogicFrameReady(uint32_t frame) {
 
 /* ---- 2D packet replay ---- */
 
-/* When set (during the sky background pass), the 2D layer stretches across
- * the full widened width instead of staying 4:3-centered: the sky panorama
- * must cover the corners a wide view exposes. */
-static int s_orthoStretch;
-
 static void ModernOrtho(ModernVertex *out, float px, float py) {
     /* The 2D layer stays 4:3, centered inside a widened target. Edge
      * mapping, not the compat rasterizer's half-pixel centres: at scale
      * factors above 1 the +0.5 convention shifts the whole layer by half a
      * logical pixel, leaving one-line gaps around full-screen masks. */
-    if (s_orthoStretch) {
-        out->x = px / 160.0f - 1.0f;
-    } else {
-        out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
-    }
+    out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
     out->y = -(py / 120.0f - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
@@ -914,32 +904,13 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     s_spanCount = 0;
     s_areaPageY = snapshot->displayPageY;
     s_currentPass = 0;
-    s_currentLayer = MODERN_LAYER_BACKGROUND;
-
-    memset(&state2d, 0, sizeof(state2d));
-    state2d.twin = 0x0000FFFFu;
-
-    /* The native world does not yet own the sky or the in-game UI. Replay
-     * only those captured 2D layers around it; captured PS1 3D faces are
-     * deliberately never consumed by the modern renderer. */
-    s_orthoStretch = 1;
-    for (i = 0; i < snapshot->packetCount; i++) {
-        const RageCapturePacket *packet = &snapshot->packets[i];
-        if (packet->table != 0) continue;
-        if (packet->bucket < MODERN_BACKGROUND_BUCKET &&
-            (packet->words[0] >> 24) < 0xE0u) {
-            continue;
-        }
-        if (packet->bucket >= MODERN_BACKGROUND_BUCKET ||
-            (packet->words[0] >> 24) >= 0xE0u) {
-            ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
-        }
-    }
-    s_orthoStretch = 0;
-
     s_currentLayer = MODERN_LAYER_HUD;
+
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
+
+    /* Native rendering owns the complete sky and all 3D. Retain only the
+     * captured foreground UI while continuing to consume GPU state words. */
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
@@ -1126,11 +1097,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
     {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernRenderOverlaySelection(cmd, vram, 0,
-                                     1u << MODERN_LAYER_BACKGROUND, 1);
-        if (ModernNativeGpuHasDraws()) {
-            ModernNativeGpuDraw(cmd, s_target, s_depth, 0);
-        }
+        ModernNativeGpuDraw(cmd, s_target, s_depth, 1);
         if (!ModernNativeGpuWorldComplete() &&
             reportedIncompleteFrame != snapshot->frameCounter) {
             reportedIncompleteFrame = snapshot->frameCounter;

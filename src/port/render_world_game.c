@@ -305,15 +305,34 @@ static RageRenderCamera RageGameRenderWorldBuildCamera(
         (float)g_EnvironmentColors.fields.slots[0].cur.bytes.g / 255.0f;
     camera.fogColor.z =
         (float)g_EnvironmentColors.fields.slots[0].cur.bytes.b / 255.0f;
-    /* Slot 2 is the central authored sky band. It is scene data rather than
-     * a captured PS1 draw packet, so native secondary cameras can provide a
-     * coherent environment even before a textured sky importer is added. */
+    /* Convert the authored environment palette into semantic sky bands. The
+     * native backend owns their projection; it never replays DrawSkyBackground
+     * packets or depends on an ordering-table bucket. */
+    camera.skyTopColor.x =
+        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.r / 255.0f;
+    camera.skyTopColor.y =
+        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.g / 255.0f;
+    camera.skyTopColor.z =
+        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.b / 255.0f;
     camera.skyColor.x =
         (float)g_EnvironmentColors.fields.slots[2].cur.bytes.r / 255.0f;
     camera.skyColor.y =
         (float)g_EnvironmentColors.fields.slots[2].cur.bytes.g / 255.0f;
     camera.skyColor.z =
         (float)g_EnvironmentColors.fields.slots[2].cur.bytes.b / 255.0f;
+    camera.skyHorizonColor.x =
+        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.r / 255.0f;
+    camera.skyHorizonColor.y =
+        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.g / 255.0f;
+    camera.skyHorizonColor.z =
+        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.b / 255.0f;
+    camera.skyBottomColor.x =
+        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.r / 255.0f;
+    camera.skyBottomColor.y =
+        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.g / 255.0f;
+    camera.skyBottomColor.z =
+        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.b / 255.0f;
+    camera.skyAssetKey = RageTrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */

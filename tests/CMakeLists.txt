@@ -98,6 +98,8 @@ add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
 
 add_test(NAME asset_gltf_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
+add_test(NAME asset_sky_export
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_sky.py)
 
 add_executable(render_world_tests render_world_tests.c)
 target_link_libraries(render_world_tests PRIVATE rage-render-world)

@@ -28,6 +28,8 @@ build_shader modern.frag modern_frag frag
 build_shader post.vert post_vert vert
 build_shader post.frag post_frag frag
 build_shader native.vert native_vert vert
+build_shader native_sky.vert native_sky_vert vert
+build_shader native_sky.frag native_sky_frag frag
 build_shader native_shadow.vert native_shadow_vert vert
 build_shader native_shadow.frag native_shadow_frag frag
 build_shader native_shadow_masked.frag native_shadow_masked_frag frag

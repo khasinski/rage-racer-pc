@@ -90,12 +90,31 @@ void RageRenderInterpolateCamera(const RageRenderCamera *previous,
         (current->fogColor.y - previous->fogColor.y) * t;
     out->fogColor.z = previous->fogColor.z +
         (current->fogColor.z - previous->fogColor.z) * t;
+    out->skyTopColor.x = previous->skyTopColor.x +
+        (current->skyTopColor.x - previous->skyTopColor.x) * t;
+    out->skyTopColor.y = previous->skyTopColor.y +
+        (current->skyTopColor.y - previous->skyTopColor.y) * t;
+    out->skyTopColor.z = previous->skyTopColor.z +
+        (current->skyTopColor.z - previous->skyTopColor.z) * t;
     out->skyColor.x = previous->skyColor.x +
         (current->skyColor.x - previous->skyColor.x) * t;
     out->skyColor.y = previous->skyColor.y +
         (current->skyColor.y - previous->skyColor.y) * t;
     out->skyColor.z = previous->skyColor.z +
         (current->skyColor.z - previous->skyColor.z) * t;
+    out->skyHorizonColor.x = previous->skyHorizonColor.x +
+        (current->skyHorizonColor.x - previous->skyHorizonColor.x) * t;
+    out->skyHorizonColor.y = previous->skyHorizonColor.y +
+        (current->skyHorizonColor.y - previous->skyHorizonColor.y) * t;
+    out->skyHorizonColor.z = previous->skyHorizonColor.z +
+        (current->skyHorizonColor.z - previous->skyHorizonColor.z) * t;
+    out->skyBottomColor.x = previous->skyBottomColor.x +
+        (current->skyBottomColor.x - previous->skyBottomColor.x) * t;
+    out->skyBottomColor.y = previous->skyBottomColor.y +
+        (current->skyBottomColor.y - previous->skyBottomColor.y) * t;
+    out->skyBottomColor.z = previous->skyBottomColor.z +
+        (current->skyBottomColor.z - previous->skyBottomColor.z) * t;
+    out->skyAssetKey = current->skyAssetKey;
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;
     out->fogFar = previous->fogFar +

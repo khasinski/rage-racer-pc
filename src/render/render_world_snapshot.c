@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 1,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 2,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -112,19 +112,38 @@ static int WriteCamera(FILE *file, const RageRenderCamera *value) {
            WriteFloat(file, value->nearPlane) &&
            WriteFloat(file, value->farPlane) &&
            WriteVec3(file, &value->fogColor) &&
+           WriteVec3(file, &value->skyTopColor) &&
            WriteVec3(file, &value->skyColor) &&
+           WriteVec3(file, &value->skyHorizonColor) &&
+           WriteVec3(file, &value->skyBottomColor) &&
+           WriteU32(file, value->skyAssetKey) &&
            WriteFloat(file, value->fogNear) &&
            WriteFloat(file, value->fogFar);
 }
 
-static int ReadCamera(FILE *file, RageRenderCamera *value) {
-    return ReadTransform(file, &value->transform) &&
-           ReadFloat(file, &value->verticalFovDegrees) &&
-           ReadFloat(file, &value->nearPlane) &&
-           ReadFloat(file, &value->farPlane) &&
-           ReadVec3(file, &value->fogColor) &&
-           ReadVec3(file, &value->skyColor) &&
-           ReadFloat(file, &value->fogNear) &&
+static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
+    if (!ReadTransform(file, &value->transform) ||
+        !ReadFloat(file, &value->verticalFovDegrees) ||
+        !ReadFloat(file, &value->nearPlane) ||
+        !ReadFloat(file, &value->farPlane) ||
+        !ReadVec3(file, &value->fogColor)) return 0;
+    if (version >= 2) {
+        return ReadVec3(file, &value->skyTopColor) &&
+               ReadVec3(file, &value->skyColor) &&
+               ReadVec3(file, &value->skyHorizonColor) &&
+               ReadVec3(file, &value->skyBottomColor) &&
+               ReadU32(file, &value->skyAssetKey) &&
+               ReadFloat(file, &value->fogNear) &&
+               ReadFloat(file, &value->fogFar);
+    }
+    if (!ReadVec3(file, &value->skyColor)) return 0;
+    /* Version 1 recorded one flat backdrop colour. Preserve that exact
+     * appearance when old deterministic captures are replayed. */
+    value->skyTopColor = value->skyColor;
+    value->skyHorizonColor = value->skyColor;
+    value->skyBottomColor = value->skyColor;
+    value->skyAssetKey = UINT32_MAX;
+    return ReadFloat(file, &value->fogNear) &&
            ReadFloat(file, &value->fogFar);
 }
 
@@ -219,13 +238,13 @@ int RageRenderWorldSnapshotRead(const char *path,
     ok = ReadBytes(file, magic, sizeof(magic)) &&
          memcmp(magic, RAGE_RENDER_WORLD_SNAPSHOT_MAGIC, sizeof(magic)) == 0 &&
          ReadU32(file, &version) &&
-         version == RAGE_RENDER_WORLD_SNAPSHOT_VERSION &&
+         (version == 1 || version == RAGE_RENDER_WORLD_SNAPSHOT_VERSION) &&
          ReadU64(file, &snapshot->world.frame) &&
-         ReadCamera(file, &snapshot->world.camera) &&
-         ReadCamera(file, &snapshot->world.previousCamera) &&
+         ReadCamera(file, &snapshot->world.camera, version) &&
+         ReadCamera(file, &snapshot->world.previousCamera, version) &&
          ReadU8(file, &snapshot->world.hasCamera) &&
-         ReadCamera(file, &snapshot->world.mirrorCamera) &&
-         ReadCamera(file, &snapshot->world.previousMirrorCamera) &&
+         ReadCamera(file, &snapshot->world.mirrorCamera, version) &&
+         ReadCamera(file, &snapshot->world.previousMirrorCamera, version) &&
          ReadFloat(file, &snapshot->world.mirrorPanelY) &&
          ReadFloat(file, &snapshot->world.previousMirrorPanelY) &&
          ReadU8(file, &snapshot->world.hasMirrorCamera) &&

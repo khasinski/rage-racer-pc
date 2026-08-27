@@ -79,7 +79,11 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.nearPlane = 0.1f;
     camera.farPlane = 5000.0f;
     camera.fogColor.x = 0.25f;
+    camera.skyTopColor.x = 0.10f;
     camera.skyColor.x = 0.20f;
+    camera.skyHorizonColor.x = 0.30f;
+    camera.skyBottomColor.x = 0.40f;
+    camera.skyAssetKey = 88;
     camera.fogNear = 100.0f;
     camera.fogFar = 500.0f;
     RageRenderWorldSetCamera(&world, &camera);
@@ -87,14 +91,22 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(70, (int)world.camera.verticalFovDegrees);
     EXPECT_EQ(5000, (int)world.camera.farPlane);
     EXPECT_EQ(25, (int)(world.camera.fogColor.x * 100.0f));
+    EXPECT_EQ(10, (int)(world.camera.skyTopColor.x * 100.0f));
     EXPECT_EQ(20, (int)(world.camera.skyColor.x * 100.0f));
+    EXPECT_EQ(30, (int)(world.camera.skyHorizonColor.x * 100.0f));
+    EXPECT_EQ(40, (int)(world.camera.skyBottomColor.x * 100.0f));
+    EXPECT_EQ(88, world.camera.skyAssetKey);
     EXPECT_EQ(500, (int)world.camera.fogFar);
 
     RageRenderWorldBeginFrame(&world, 2);
     camera.transform.position.y = 13.5f;
     camera.verticalFovDegrees = 80.0f;
     camera.fogColor.x = 0.75f;
+    camera.skyTopColor.x = 0.70f;
     camera.skyColor.x = 0.80f;
+    camera.skyHorizonColor.x = 0.90f;
+    camera.skyBottomColor.x = 1.00f;
+    camera.skyAssetKey = 90;
     camera.fogNear = 200.0f;
     camera.fogFar = 1000.0f;
     RageRenderWorldSetCamera(&world, &camera);
@@ -103,7 +115,11 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(85, (int)(camera.transform.position.y * 10.0f));
     EXPECT_EQ(75, (int)camera.verticalFovDegrees);
     EXPECT_EQ(50, (int)(camera.fogColor.x * 100.0f));
+    EXPECT_EQ(39, (int)(camera.skyTopColor.x * 100.0f));
     EXPECT_EQ(50, (int)(camera.skyColor.x * 100.0f));
+    EXPECT_EQ(60, (int)(camera.skyHorizonColor.x * 100.0f));
+    EXPECT_EQ(70, (int)(camera.skyBottomColor.x * 100.0f));
+    EXPECT_EQ(90, camera.skyAssetKey);
     EXPECT_EQ(150, (int)camera.fogNear);
     EXPECT_EQ(750, (int)camera.fogFar);
 }

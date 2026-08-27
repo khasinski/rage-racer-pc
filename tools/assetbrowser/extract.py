@@ -74,6 +74,33 @@ CAR_PAINT_SLOTS_4 = (0x141, 0x1C1, 0x201, 0x401)
 CELL_PITCH = 2048 << 2
 
 
+def build_sky_panorama(page: bytes) -> bytes:
+    """Unpack the PS1 sky tile page into a renderer-neutral cloud panorama."""
+    if len(page) != 256 * 256 * 4:
+        raise ValueError("sky texture page must be 256x256 RGBA")
+    sky_width, sky_height = 512, 128
+    sky = bytearray(sky_width * sky_height * 4)
+    for tile in range(8):
+        source_x = (tile % 4) * 64
+        source_y = (tile // 4) * 128
+        destination_x = tile * 64
+        for row in range(128):
+            source = ((source_y + row) * 256 + source_x) * 4
+            destination = (row * sky_width + destination_x) * 4
+            sky[destination:destination + 64 * 4] = \
+                page[source:source + 64 * 4]
+    # The resident PS1 CLUT changes independently of the environment script
+    # and is not a stable material definition. Preserve the cloud mask and its
+    # authored brightness; the native gradient supplies environmental colour.
+    for pixel in range(0, len(sky), 4):
+        if sky[pixel + 3] != 0:
+            brightness = max(sky[pixel], sky[pixel + 1], sky[pixel + 2])
+            sky[pixel:pixel + 3] = bytes((brightness,) * 3)
+        else:
+            sky[pixel:pixel + 3] = b"\0\0\0"
+    return bytes(sky)
+
+
 def car_paint_vram_labels() -> dict[tuple[int, int], int]:
     """Map imported palette cells to renderer-neutral paint ramp codes."""
     entries: dict[int, int] = {}
@@ -276,6 +303,7 @@ class Extractor:
         (self.out / "models").mkdir(parents=True, exist_ok=True)
         (self.out / "textures").mkdir(parents=True, exist_ok=True)
         (self.out / "images").mkdir(parents=True, exist_ok=True)
+        (self.out / "environment").mkdir(parents=True, exist_ok=True)
 
         manifest = []
         for i in range(ASSET_COUNT):
@@ -489,6 +517,20 @@ class Extractor:
         v, alternate, src = self.track_vrams(i)
         rec["vram"] = self.emit_vram(v, stem)
         rec["vramSources"] = src
+        # DrawSkyBackground treats texture page 0x18 as eight 64x128 tiles:
+        # four packed across each of two rows, then presented as one 512x128
+        # panorama. Export that authored image as an ordinary environment
+        # asset so native renderers never need a VRAM page, CLUT or tile map.
+        sky_page = images.decode_texpage(v, 0x18, 0x798E)
+        sky_width, sky_height = 512, 128
+        sky = build_sky_panorama(sky_page)
+        sky_stem = f"{stem}_sky"
+        sky_png = f"environment/{sky_stem}.png"
+        sky_rgba = f"environment/{sky_stem}.rgba"
+        png.write_rgba(self.out / sky_png, sky_width, sky_height, sky)
+        (self.out / sky_rgba).write_bytes(sky)
+        rec["sky"] = {"file": sky_png, "runtimePixels": sky_rgba,
+                      "width": sky_width, "height": sky_height}
 
         rec["banks"] = []
         tex = {}
@@ -758,6 +800,14 @@ def write_runtime_index(out: Path, records: list[dict]) -> None:
             if asset_set is not None:
                 add(rec["index"], asset_set, bank)
     (out / "runtime-index.txt").write_text("".join(rows))
+    environment_rows = ["# rage-environment-index v1\n"]
+    for rec in records:
+        sky = rec.get("sky")
+        if isinstance(rec.get("index"), int) and isinstance(sky, dict):
+            environment_rows.append(
+                f"{rec['index']} {sky['width']} {sky['height']} "
+                f"{sky['runtimePixels']}\n")
+    (out / "environment-index.txt").write_text("".join(environment_rows))
 
 
 def have_ffmpeg() -> bool:
@@ -927,6 +977,7 @@ def main(argv=None):
                 (args.out / "models").mkdir(parents=True, exist_ok=True)
                 (args.out / "textures").mkdir(parents=True, exist_ok=True)
                 (args.out / "images").mkdir(parents=True, exist_ok=True)
+                (args.out / "environment").mkdir(parents=True, exist_ok=True)
                 r = ex.one(i)
                 manifest.append(r)
                 print(f"[{i:3d}] {r['name']:<16} {r['kind']:<13} {r['size']:>9}  "
