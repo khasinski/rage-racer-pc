@@ -220,6 +220,57 @@ static int RageTriangleIsBackFacing(const RageRenderWorld *world,
            (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) >= 0.0f;
 }
 
+static int RageTerrainQuadIsHidden(
+    const RageRenderWorld *world, const RageTransformBasis *basis,
+    const RageRuntimeMesh *mesh, uint32_t first) {
+    RageNativeDrawVertex triangles[2][3] = {0};
+    uint32_t indices[6];
+    static const uint8_t uniqueCorners[4] = {0, 1, 2, 5};
+    uint32_t corner;
+    for (corner = 0; corner < 6; corner++)
+        if (!RageRuntimeMeshIndex(mesh, first + corner, &indices[corner]))
+            return 0;
+    /* rmesh terrain faces are authored quads expanded as ABC/CBD. Do not
+     * infer quad culling for an independent triangle pair from a mod. */
+    if (indices[3] != indices[2] || indices[4] != indices[1]) return 0;
+    for (corner = 0; corner < 4; corner++) {
+        RageRuntimeVertex source;
+        RageRenderVec3 position;
+        uint32_t target = uniqueCorners[corner];
+        if (!RageRuntimeMeshVertex(mesh, indices[target], &source))
+            return 0;
+        position = RageTransformPosition(basis, &source);
+        position.x = RageSnapTerrainCellBoundary(position.x);
+        position.z = RageSnapTerrainCellBoundary(position.z);
+        {
+            RageRenderVec3 view;
+            RageRenderWorldToView(&world->camera, &position, &view);
+            /* Winding is undefined until the GPU clips a face crossing the
+             * near plane. Keep it and let homogeneous clipping decide. */
+            if (-view.z <= world->camera.nearPlane) return 0;
+        }
+        if (corner < 3) {
+            triangles[0][corner].position[0] = position.x;
+            triangles[0][corner].position[1] = position.y;
+            triangles[0][corner].position[2] = position.z;
+        } else {
+            triangles[1][2].position[0] = position.x;
+            triangles[1][2].position[1] = position.y;
+            triangles[1][2].position[2] = position.z;
+        }
+    }
+    triangles[1][0] = triangles[0][2];
+    triangles[1][1] = triangles[0][1];
+    /* A terrain face is one authored quad. Reject it only when neither half
+     * faces the camera. Slightly twisted quads otherwise lose valid road
+     * geometry when culled per triangle, while drawing both sides exposes
+     * hidden wall backs as large dark polygons. */
+    /* Terrain source quads use the opposite winding from course objects
+     * after their independent PS1-to-scene import conversion. */
+    return !RageTriangleIsBackFacing(world, triangles[0]) &&
+           !RageTriangleIsBackFacing(world, triangles[1]);
+}
+
 static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
@@ -342,6 +393,7 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
         uint32_t first, count, offset;
+        int terrainQuadHidden = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
             continue;
         if (mesh == NULL || !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
@@ -357,6 +409,12 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
             uint8_t depthDecals[3];
             uint32_t corner;
             int valid = 1;
+            if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
+                if ((offset % 6u) == 0)
+                    terrainQuadHidden = RageTerrainQuadIsHidden(
+                        world, &basis, mesh, first + offset);
+                if (terrainQuadHidden) continue;
+            }
             for (corner = 0; corner < 3; corner++) {
                 valid = valid && RageRuntimeMeshIndex(mesh, first + offset + corner,
                                                       &indices[corner]);

@@ -221,6 +221,70 @@ static void test_native_draw_builder_culls_dynamic_course_backfaces(void) {
     EXPECT_EQ(1, spanCount);
 }
 
+static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
+    unsigned char bytes[216] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[6];
+    RageNativeDrawSpan spans[1];
+    const float visible[4][3] = {
+        {1.0f, -1.0f, -10.0f}, {-1.0f, -1.0f, -10.0f},
+        {1.0f, 1.0f, -10.0f}, {-1.0f, 1.0f, -10.0f},
+    };
+    const float hidden[4][3] = {
+        {-1.0f, -1.0f, -10.0f}, {1.0f, -1.0f, -10.0f},
+        {-1.0f, 1.0f, -10.0f}, {1.0f, 1.0f, -10.0f},
+    };
+    const uint32_t indices[6] = {0, 2, 1, 1, 2, 3};
+    uint32_t spanCount;
+    unsigned i;
+
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 4); write_u32(bytes + 20, 6);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 6);
+    for (i = 0; i < 4; i++) {
+        memcpy(bytes + 32 + i * 40, visible[i], sizeof(visible[i]));
+        bytes[32 + i * 40 + 27] = 255;
+    }
+    for (i = 0; i < 6; i++) write_u32(bytes + 192 + i * 4, indices[i]);
+    EXPECT_EQ(1, RageRuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RageRenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1.0f;
+    world.instanceCount = 1;
+
+    /* Terrain uses the opposite imported winding from course objects. Both
+     * triangles of its source quad remain visible together. */
+    EXPECT_EQ(6, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+    for (i = 0; i < 4; i++)
+        memcpy(bytes + 32 + i * 40, hidden[i], sizeof(hidden[i]));
+    EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(0, spanCount);
+
+    /* A quad crossing the near plane reaches the GPU instead of being
+     * rejected using pre-clip winding. */
+    for (i = 0; i < 4; i++)
+        memcpy(bytes + 32 + i * 40, visible[i], sizeof(visible[i]));
+    {
+        float crossing[3] = {1.0f, -1.0f, -0.5f};
+        memcpy(bytes + 32, crossing, sizeof(crossing));
+    }
+    EXPECT_EQ(6, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 6, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(1, spanCount);
+}
+
 static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -595,6 +659,7 @@ int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
     test_native_draw_builder_culls_dynamic_course_backfaces();
+    test_native_draw_builder_culls_terrain_per_authored_quad();
     test_native_draw_builder_welds_terrain_cell_boundaries();
     test_native_draw_builder_applies_authored_course_texture_scroll();
     test_native_draw_builder_strips_ot_bias_from_material_lookup();
