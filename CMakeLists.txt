@@ -50,6 +50,7 @@ add_library(rage-rmesh STATIC
     src/render/asset_id.c
     src/render/car_paint.c
     src/render/mod_manifest.c
+    src/render/texture_mipmap.c
     src/render/rmesh.c
     src/render/rmesh_index.c
     src/render/rmesh_cache.c)

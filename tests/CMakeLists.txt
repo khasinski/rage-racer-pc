@@ -75,6 +75,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME car_paint COMMAND car_paint_tests)
 
+add_executable(texture_mipmap_tests texture_mipmap_tests.c)
+target_link_libraries(texture_mipmap_tests PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(texture_mipmap_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME texture_mipmap COMMAND texture_mipmap_tests)
+
 add_executable(mod_manifest_tests mod_manifest_tests.c)
 target_link_libraries(mod_manifest_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

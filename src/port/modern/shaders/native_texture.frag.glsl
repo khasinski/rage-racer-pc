@@ -33,20 +33,12 @@ float shadowVisibility(vec3 n) {
     return visible * 0.25;
 }
 
-vec4 materialTexel(ivec2 texel) {
-    ivec2 limit = textureSize(materialTexture, 0) - ivec2(1);
-    return texelFetch(materialTexture, clamp(texel, ivec2(0), limit), 0);
-}
-
 void main() {
-    vec2 imageSize = vec2(textureSize(materialTexture, 0));
-    vec2 pixel = uv * imageSize;
-    ivec2 nearestPosition = ivec2(clamp(floor(pixel), vec2(0.0),
-                                          imageSize - 1.0));
-    vec4 texel = materialTexel(nearestPosition);
+    /* Material mips are stored premultiplied so transparent atlas texels do
+     * not contribute a black fringe. Convert back after filtered sampling. */
+    vec4 texel = texture(materialTexture, uv);
     if (texel.a <= 0.001) discard;
-    vec4 filtered = texture(materialTexture, uv);
-    if (filtered.a > 0.001) texel.rgb = filtered.rgb / filtered.a;
+    texel.rgb /= texel.a;
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, LIGHT_DIRECTION), 0.0);
