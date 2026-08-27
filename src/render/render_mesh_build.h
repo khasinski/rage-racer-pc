@@ -42,6 +42,10 @@ typedef struct RageNativeDrawSpan {
     uint8_t hasCarPaint;
     uint8_t carPaintColor1;
     uint8_t carPaintColor2;
+    /* Semantic multipart slot from RageRenderMeshInstance. Vehicle body is
+     * component 0; wheels retain their own slots so materials do not mistake
+     * rubber and rims for clear-coated bodywork. */
+    uint8_t component;
     /* Material variants (for example each car's paint palette) are scoped to
      * an entity, not to the shared immutable mesh asset. */
     uint32_t entity;

@@ -92,7 +92,7 @@ static const char MODERN_NATIVE_MSL[] =
     "fragment void fs_shadow_masked(ShadowOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { if(textureImage.sample(smp,in.uv).a<=0.5) discard_fragment(); }\n"
     "static float native_shadow(NativeOut in, float3 n, depth2d<float> shadowMap, sampler shadowSampler, constant NativeSceneLight &sceneLight) { if(in.shadowCoord.x<=0.0||in.shadowCoord.x>=1.0||in.shadowCoord.y<=0.0||in.shadowCoord.y>=1.0||in.shadowCoord.z<=0.0||in.shadowCoord.z>=1.0)return 1.0; float facing=max(dot(n,normalize(sceneLight.direction.xyz)),0.0); float bias=mix(0.00025,0.00008,facing); float2 texel=1.0/float2(shadowMap.get_width(),shadowMap.get_height()); float visible=0.0; for(int y=0;y<2;y++){for(int x=0;x<2;x++){float stored=shadowMap.sample(shadowSampler,in.shadowCoord.xy+(float2(x,y)-0.5)*texel);visible+=in.shadowCoord.z-bias<=stored?1.0:0.0;}}return visible*0.25; }\n"
     "static float3 reflected_sky(float3 d, constant NativeSceneLight &sceneLight) { if(d.y>=0.0)return mix(sceneLight.skyHorizon.rgb,sceneLight.skyTop.rgb,smoothstep(0.0,0.8,d.y)); return mix(sceneLight.skyHorizon.rgb,sceneLight.skyBottom.rgb,smoothstep(0.0,0.55,-d.y)); }\n"
-    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]], depth2d<float> shadowMap [[texture(1)]], sampler shadowSampler [[sampler(1)]], constant NativeSceneLight &sceneLight [[buffer(0)]], constant NativeMaterial &material [[buffer(1)]]) { float4 t=textureImage.sample(smp,in.uv); if((material.surface.z>1.5&&material.surface.z<2.5&&t.a<0.5)||t.a<=0.001) discard_fragment(); t.rgb/=t.a; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float3 v=normalize(in.viewDirection); float3 ld=normalize(sceneLight.direction.xyz); float ndl=max(dot(n,ld),0.0); float materialLighting=in.lighting; if(material.emissiveAndShading.w>=0.0)materialLighting=material.emissiveAndShading.w; float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),materialLighting); float visibility=materialLighting>0.001&&in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float3 base=t.rgb*modulation*light*material.baseColor.rgb; float roughness=clamp(material.surface.x,0.0,1.0); float metallic=clamp(material.surface.y,0.0,1.0); float gloss=1.0-roughness; float coat=smoothstep(0.18,0.55,gloss); float3 h=normalize(ld+v); float ndv=max(dot(n,v),0.001); float ndh=max(dot(n,h),0.0); float vdh=max(dot(v,h),0.0); float3 materialColor=t.rgb*material.baseColor.rgb; float3 f0=mix(float3(0.06),materialColor,metallic); float3 fresnel=f0+(float3(1.0)-f0)*pow(1.0-vdh,5.0); float alpha=max(roughness*roughness,0.025); float alpha2=alpha*alpha; float dd=ndh*ndh*(alpha2-1.0)+1.0; float distribution=alpha2/max(3.14159265*dd*dd,0.0001); float k=(roughness+1.0)*(roughness+1.0)*0.125; float gv=ndv/(ndv*(1.0-k)+k); float gl=ndl/(ndl*(1.0-k)+k); float3 directSpecular=sceneLight.diffuse.rgb*fresnel*distribution*gv*gl*ndl/max(4.0*ndv*ndl,0.001); float rim=pow(1.0-ndv,5.0); float reflectionStrength=coat*mix(0.10,0.55,rim)*mix(0.85,1.15,metallic); float3 environmentSpecular=reflected_sky(reflect(-v,n),sceneLight)*reflectionStrength; directSpecular*=coat; float3 specular=(environmentSpecular+directSpecular)*step(0.001,materialLighting); float3 emissive=t.rgb*material.emissiveAndShading.rgb; float4 c=float4(base+specular+emissive,t.a*in.color.a*material.baseColor.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
+    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]], depth2d<float> shadowMap [[texture(1)]], sampler shadowSampler [[sampler(1)]], constant NativeSceneLight &sceneLight [[buffer(0)]], constant NativeMaterial &material [[buffer(1)]]) { float4 t=textureImage.sample(smp,in.uv); if((material.surface.z>1.5&&material.surface.z<2.5&&t.a<0.5)||t.a<=0.001) discard_fragment(); t.rgb/=t.a; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float3 v=normalize(in.viewDirection); float3 ld=normalize(sceneLight.direction.xyz); float ndl=max(dot(n,ld),0.0); float materialLighting=in.lighting; if(material.emissiveAndShading.w>=0.0)materialLighting=material.emissiveAndShading.w; float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),materialLighting); float visibility=materialLighting>0.001&&in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float3 base=t.rgb*modulation*light*material.baseColor.rgb; float roughness=clamp(material.surface.x,0.0,1.0); float metallic=clamp(material.surface.y,0.0,1.0); float gloss=1.0-roughness; float coat=smoothstep(0.18,0.55,gloss)*material.surface.w; float3 h=normalize(ld+v); float ndv=max(dot(n,v),0.001); float ndh=max(dot(n,h),0.0); float vdh=max(dot(v,h),0.0); float3 materialColor=t.rgb*material.baseColor.rgb; float3 f0=mix(float3(0.06),materialColor,metallic); float3 fresnel=f0+(float3(1.0)-f0)*pow(1.0-vdh,5.0); float alpha=max(roughness*roughness,0.025); float alpha2=alpha*alpha; float dd=ndh*ndh*(alpha2-1.0)+1.0; float distribution=alpha2/max(3.14159265*dd*dd,0.0001); float k=(roughness+1.0)*(roughness+1.0)*0.125; float gv=ndv/(ndv*(1.0-k)+k); float gl=ndl/(ndl*(1.0-k)+k); float3 directSpecular=sceneLight.diffuse.rgb*fresnel*distribution*gv*gl*ndl/max(4.0*ndv*ndl,0.001); float rim=pow(1.0-ndv,5.0); float zoneReflection=smoothstep(0.30,0.85,min(in.environmentLight.r,min(in.environmentLight.g,in.environmentLight.b))); float reflectionStrength=coat*zoneReflection*mix(0.10,0.55,rim)*mix(0.85,1.15,metallic); float3 reflected=reflected_sky(reflect(-v,n),sceneLight); float reflectedLuminance=dot(reflected,float3(0.2126,0.7152,0.0722)); reflected=mix(float3(reflectedLuminance),reflected,0.65); float3 environmentSpecular=reflected*reflectionStrength; directSpecular*=coat*zoneReflection; float3 specular=(environmentSpecular+directSpecular)*step(0.001,materialLighting); float3 emissive=t.rgb*material.emissiveAndShading.rgb; float4 c=float4(base+specular+emissive,t.a*in.color.a*material.baseColor.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
     "fragment float4 fs_native_color(NativeOut in [[stage_in]], depth2d<float> shadowMap [[texture(0)]], sampler shadowSampler [[sampler(0)]], constant NativeSceneLight &sceneLight [[buffer(0)]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(sceneLight.direction.xyz)),0.0); float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),in.lighting); float visibility=in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); return float4(fogged*light,in.color.a); }\n";
 
 static SDL_GPUDevice *s_device;
@@ -399,6 +399,7 @@ static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
 }
 
 static void ModernNativeBuildMaterial(const RageRenderMaterial *material,
+                                      int allowClearcoat,
                                       ModernNativeMaterialUniform *out) {
     memset(out, 0, sizeof(*out));
     memcpy(out->baseColor, material->baseColorFactor,
@@ -413,6 +414,7 @@ static void ModernNativeBuildMaterial(const RageRenderMaterial *material,
     out->surface[0] = material->roughness;
     out->surface[1] = material->metallic;
     out->surface[2] = (float)material->alphaMode;
+    out->surface[3] = allowClearcoat ? 1.0f : 0.0f;
 }
 
 static void ModernNativeBuildShadowCamera(
@@ -808,17 +810,21 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
     fprintf(file,
             "span first count asset_set asset_key mesh source_entity entity "
             "material material_flags instance_flags pass decal variant "
-            "paint paint1 paint2 roughness metallic shading\n");
+            "paint paint1 paint2 component roughness metallic shading "
+            "environment_r environment_g environment_b\n");
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
         const RageNativeDrawSpan *span = &s_spans[spanIndex];
         const ModernNativeTexture *texture = ModernNativeFindTexture(span);
         float roughness = texture != NULL ? texture->definition.roughness : 1.0f;
         float metallic = texture != NULL ? texture->definition.metallic : 0.0f;
         int shading = texture != NULL ? (int)texture->definition.shading : 0;
+        const RageNativeDrawVertex *firstVertex =
+            span->firstVertex < s_vertexCount
+                ? &s_vertices[span->firstVertex] : NULL;
         uint32_t vertexIndex;
         fprintf(file,
-                "s %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u "
-                "%.9g %.9g %d\n",
+                "s %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u "
+                "%.9g %.9g %d %.9g %.9g %.9g\n",
                 span->firstVertex, span->vertexCount,
                 (unsigned)span->assetSet, span->assetKey, span->mesh,
                 span->sourceEntity, span->entity, span->material,
@@ -828,7 +834,11 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
                 (unsigned)span->hasCarPaint,
                 (unsigned)span->carPaintColor1,
                 (unsigned)span->carPaintColor2,
-                roughness, metallic, shading);
+                (unsigned)span->component,
+                roughness, metallic, shading,
+                firstVertex != NULL ? firstVertex->environmentLight[0] : 1.0f,
+                firstVertex != NULL ? firstVertex->environmentLight[1] : 1.0f,
+                firstVertex != NULL ? firstVertex->environmentLight[2] : 1.0f);
         for (vertexIndex = span->firstVertex;
              vertexIndex < span->firstVertex + span->vertexCount &&
              vertexIndex < s_vertexCount;
@@ -1277,6 +1287,7 @@ static void ModernNativeGpuDrawSet(
     for (int phase = 0; phase < 4; phase++) {
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
+        int boundAllowClearcoat = -1;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
             ModernNativeTexture *texture;
@@ -1284,6 +1295,7 @@ static void ModernNativeGpuDrawSet(
             int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                           span->assetSet ==
                               RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+            int allowClearcoat = !vehicle || span->component == 0;
             if (span->vertexCount == 0) continue;
             if (span->material == UINT32_MAX) {
                 if (phase != (span->depthDecal ? 1 : (vehicle ? 2 : 0)))
@@ -1324,17 +1336,22 @@ static void ModernNativeGpuDrawSet(
                     pass, textured ? 1 : 0, &shadowBinding, 1);
                 boundPipeline = pipeline;
                 boundTexture = NULL;
+                boundAllowClearcoat = -1;
             }
-            if (texture != NULL && texture != boundTexture) {
+            if (texture != NULL &&
+                (texture != boundTexture ||
+                 allowClearcoat != boundAllowClearcoat)) {
                 SDL_GPUTextureSamplerBinding binding = {
                     .texture = texture->texture,
                     .sampler = s_sampler};
                 ModernNativeMaterialUniform material;
-                ModernNativeBuildMaterial(&texture->definition, &material);
+                ModernNativeBuildMaterial(
+                    &texture->definition, allowClearcoat, &material);
                 SDL_PushGPUFragmentUniformData(
                     command, 1, &material, sizeof(material));
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
                 boundTexture = texture;
+                boundAllowClearcoat = allowClearcoat;
             }
             SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                                   span->firstVertex, 0);

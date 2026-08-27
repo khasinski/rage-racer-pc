@@ -74,6 +74,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     storage[0].hasCarPaint = 1;
     storage[0].carPaintColor1 = 3;
     storage[0].carPaintColor2 = 12;
+    storage[0].component = 3;
     storage[0].environmentLight.x = 0.25f;
     storage[0].environmentLight.y = 0.5f;
     storage[0].environmentLight.z = 0.75f;
@@ -97,6 +98,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(1, spans[0].hasCarPaint);
     EXPECT_EQ(3, spans[0].carPaintColor1);
     EXPECT_EQ(12, spans[0].carPaintColor2);
+    EXPECT_EQ(3, spans[0].component);
     /* Per-instance basis matches the old X/Y/Z rotation order without
      * recalculating trigonometry for every emitted vertex. */
     EXPECT_EQ(1000, (int)(vertices[0].position[0] * 100.0f));
