@@ -70,6 +70,31 @@ freeze = true
 The engine recalculates world position, height, heading, track section and lap
 progress from these indices. A `-` entry keeps that rival's retail grid pose.
 
+## Native frame replay
+
+Renderer bugs can be reproduced without navigating the game again. Press `M`
+in modern mode to write `markers/marker-N-world.bin`, the displayed images,
+the legacy scene record and a text dump of the native draw spans. The world
+file contains the exact renderer-neutral cameras, transforms, materials and
+mesh instances used for that frame; it contains no disc assets.
+
+Build and replay it offscreen with:
+
+```sh
+cmake --build build/release --target rage-frame-replay
+build/release/rage-frame-replay markers/marker-0-world.bin \
+  --assets build/release/native-assets \
+  --output marker-0-replay.ppm \
+  --draws marker-0-replay.txt
+```
+
+Use `--width` and `--height` to match the captured target. A legacy marker's
+exact camera can be applied to another compatible world snapshot with
+`--camera-scene markers/marker-0-scene.bin`. `--probe X,Y` lists every clipped
+native triangle covering a pixel, including its depth, material, source mesh
+and authored bias. Automated `diagnostics.modern_dump_scene = true` captures
+the same `.world.bin` and `.draws.txt` sidecars next to a modern frame dump.
+
 ## Runtime requirements
 
 - macOS on Apple Silicon (arm64), a glibc-based x86-64 Linux distribution, or
