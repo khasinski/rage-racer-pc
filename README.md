@@ -127,6 +127,24 @@ post = fxaa
 toggle_renderer_key = F10
 ```
 
+The accepted video values are:
+
+| Setting | Values |
+|---|---|
+| `renderer` | `classic`, `modern` |
+| `internal_scale` | `0.5` to `16` |
+| `aspect` | `auto`, `4:3`, `16:9` |
+| `fps` | `logic`, `vsync`, or an integer from `1` to `1000` |
+| `draw_distance` | `0` to `16` |
+| `texture_filter` | `nearest`, `linear` |
+| `post` | `none`, `fxaa` |
+| `grading` | `off`, `vibrant` |
+| `toggle_renderer_key` | an SDL key name, such as `F10` |
+
+`nearest` retains the hard texel edges of the source artwork. `linear` smooths
+texture sampling in the modern 3D scene and in the final 2D presentation. The
+checked-in `rage-port.ini` documents the remaining sections and their ranges.
+
 Modern mode requires an imported native-asset cache. Generate it from Track 01
 of your legally obtained disc and put it beside the executable:
 
