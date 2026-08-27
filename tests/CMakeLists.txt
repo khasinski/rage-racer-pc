@@ -99,6 +99,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_world COMMAND render_world_tests)
 
+add_executable(render_world_snapshot_tests render_world_snapshot_tests.c)
+target_link_libraries(render_world_snapshot_tests PRIVATE rage-render-world)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(render_world_snapshot_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_world_snapshot COMMAND render_world_snapshot_tests)
+
 add_executable(track_asset_identity_tests
     track_asset_identity_tests.c
     ../src/port/track_asset_identity.c)
