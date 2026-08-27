@@ -310,6 +310,28 @@ class GltfExportTest(unittest.TestCase):
             rmesh.MATERIAL_TERRAIN_ENV_CLUT,
             material)
 
+    def test_runtime_mesh_imports_authored_terrain_lines_as_decals(self):
+        face = models.Face(
+            prim=0, v=(0, 1, 2, 3), rgb=(64, 64, 64),
+            line_rgb=(180, 200, 220), line_lod=(2, 3))
+        bank = models.Bank(count=1, vertex_off=0, normal_off=0,
+                           model_offs=[])
+        bank.vertices = [(0, 0, 0), (100, 0, 0),
+                         (0, 0, 100), (100, 0, 100)]
+        bank.models = [models.Model(index=0, offset=0, faces=[face])]
+
+        blob = rmesh.bank_to_bytes(bank, terrain_primitives=True)
+        _magic, _version, _meshes, vertex_count, index_count = (
+            rmesh.HEADER.unpack_from(blob))
+        self.assertEqual((20, 30), (vertex_count, index_count))
+        line_vertex = rmesh.VERTEX.unpack_from(
+            blob, rmesh.HEADER.size + 8 + 4 * rmesh.VERTEX.size)
+        self.assertEqual((180, 200, 220, 255), line_vertex[6:10])
+        self.assertEqual(
+            3 | rmesh.MATERIAL_TERRAIN_LINE | rmesh.MATERIAL_METADATA |
+            (0xFC << rmesh.MATERIAL_DEPTH_BIAS_SHIFT),
+            line_vertex[-1])
+
     def test_converts_coordinate_system_and_quad_winding(self):
         face = models.Face(prim=0, v=(0, 1, 2, 3), rgb=(64, 128, 255))
         bank = models.Bank(count=1, vertex_off=0, normal_off=0, model_offs=[])

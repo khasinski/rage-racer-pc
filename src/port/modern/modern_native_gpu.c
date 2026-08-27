@@ -69,6 +69,7 @@ static SDL_GPUGraphicsPipeline *s_texturedTransparent;
 static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_texturedTransparentDecal;
 static SDL_GPUGraphicsPipeline *s_colorOpaque;
+static SDL_GPUGraphicsPipeline *s_colorOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUGraphicsPipeline *s_shadowMasked;
 static SDL_GPUBuffer *s_vertexBuffer;
@@ -360,6 +361,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     }
     if (vertex != NULL && colorFragment != NULL) {
         s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
+        s_colorOpaqueDecal = ModernNativeCreatePipeline(
+            vertex, colorFragment, 0, 1);
     }
     if (shadowVertex != NULL && shadowFragment != NULL)
         s_shadowDepth = ModernNativeCreateShadowPipeline(
@@ -421,6 +424,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         s_texturedOpaqueDecal == NULL ||
         s_texturedTransparentDecal == NULL ||
         s_colorOpaque == NULL ||
+        s_colorOpaqueDecal == NULL ||
         s_shadowDepth == NULL || s_shadowMasked == NULL ||
         s_shadowTexture == NULL ||
         s_shadowSampler == NULL ||
@@ -803,8 +807,10 @@ static void ModernNativeGpuDrawSet(
                               RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
             if (span->vertexCount == 0) continue;
             if (span->material == UINT32_MAX) {
-                if (phase != (vehicle ? 2 : 0)) continue;
-                pipeline = s_colorOpaque;
+                if (phase != (span->depthDecal ? 1 : (vehicle ? 2 : 0)))
+                    continue;
+                pipeline = span->depthDecal
+                    ? s_colorOpaqueDecal : s_colorOpaque;
                 texture = NULL;
             } else {
                 texture = ModernNativeFindTexture(span);
@@ -899,6 +905,8 @@ void ModernNativeGpuShutdown(void) {
                                            s_texturedTransparentDecal);
         if (s_colorOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaque);
+        if (s_colorOpaqueDecal != NULL)
+            SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaqueDecal);
         if (s_shadowDepth != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowDepth);
         if (s_shadowMasked != NULL)
@@ -921,6 +929,7 @@ void ModernNativeGpuShutdown(void) {
     s_texturedOpaqueDecal = NULL;
     s_texturedTransparentDecal = NULL;
     s_colorOpaque = NULL;
+    s_colorOpaqueDecal = NULL;
     s_shadowDepth = NULL;
     s_shadowMasked = NULL;
     s_vertexBuffer = NULL;

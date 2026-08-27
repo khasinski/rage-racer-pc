@@ -61,6 +61,10 @@ class Face:
     # (widthU, widthV, offU, offV) of the GP0 0xE2 texture window, or None for
     # the whole 256x256 page. See texture_window() for where it comes from.
     texwin: tuple | None = None
+    # Terrain records may carry a LINE_F3 colour command at +0x18. Retail
+    # traces the four parent-quad edges with it when the surface subdivides.
+    line_rgb: tuple | None = None
+    line_lod: tuple | None = None
 
 
 def texture_window(word: int) -> tuple | None:
@@ -359,6 +363,13 @@ def parse_terrain(buf: bytes, base: int, limit: int | None = None):
         f = _uvface(p, r, 0x08, 0x1C, 0x15,
                     0x20 if TERRAIN_STRIDE[p] == 0x24 else None)
         f.flags = r[0x14]
+        line_command = struct.unpack_from("<I", r, 0x18)[0]
+        # Only GP0 polyline opcodes describe visible authored edges. Zero and
+        # other non-command words still pass retail's sign-bit branch, but the
+        # PS1 GPU treats them as NOPs.
+        if ((line_command >> 24) & 0xFC) == 0x48:
+            f.line_rgb = (r[0x18], r[0x19], r[0x1A])
+            f.line_lod = (r[0x16], r[0x17])
         # SubmitTerrainCellFaces maps stored modes 2..5 to dispatches 0..3;
         # odd dispatches select the adjacent CLUT row. Modes 0/1 depend on
         # the live environment-mode bit and remain dynamic runtime metadata.
@@ -410,6 +421,8 @@ def bank_to_json(bank: Bank) -> dict:
                             else {}
                         ),
                         **({"tw": list(f.texwin)} if f.texwin else {}),
+                        **({"line": list(f.line_rgb)} if f.line_rgb else {}),
+                        **({"lineLod": list(f.line_lod)} if f.line_lod else {}),
                     }
                     for f in m.faces
                 ],
