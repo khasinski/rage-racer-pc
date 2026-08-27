@@ -44,12 +44,20 @@ static int RageRenderCameraIsCut(const RageRenderCamera *previous,
                   previous->verticalFovDegrees) > 10.0f;
 }
 
+void RageRenderDirectionalLightDefault(RageRenderDirectionalLight *light) {
+    if (light == NULL) return;
+    light->direction = (RageRenderVec3){-0.1f, 1.0f, 0.12f};
+    light->ambientColor = (RageRenderVec3){0.35f, 0.35f, 0.35f};
+    light->diffuseColor = (RageRenderVec3){0.65f, 0.65f, 0.65f};
+}
+
 void RageRenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
                          uint32_t capacity) {
     memset(world, 0, sizeof(*world));
     world->instances = instances;
     world->instanceCapacity = capacity;
+    RageRenderDirectionalLightDefault(&world->light);
 }
 
 void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
@@ -61,6 +69,12 @@ void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
     world->frame = frame;
     world->instanceCount = 0;
     world->overflowCount = 0;
+}
+
+void RageRenderWorldSetDirectionalLight(
+    RageRenderWorld *world, const RageRenderDirectionalLight *light) {
+    if (world == NULL || light == NULL) return;
+    world->light = *light;
 }
 
 void RageRenderWorldSetCamera(RageRenderWorld *world,

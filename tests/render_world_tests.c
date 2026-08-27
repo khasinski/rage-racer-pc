@@ -124,6 +124,23 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(750, (int)camera.fogFar);
 }
 
+static void test_directional_light_is_scene_data(void) {
+    RageRenderMeshInstance storage[1];
+    RageRenderWorld world;
+    RageRenderDirectionalLight light;
+
+    RageRenderWorldInit(&world, storage, 1);
+    EXPECT_EQ(35, (int)(world.light.ambientColor.x * 100.0f));
+    EXPECT_EQ(65, (int)(world.light.diffuseColor.x * 100.0f));
+    light.direction = (RageRenderVec3){1.0f, 2.0f, 3.0f};
+    light.ambientColor = (RageRenderVec3){0.2f, 0.3f, 0.4f};
+    light.diffuseColor = (RageRenderVec3){0.8f, 0.7f, 0.6f};
+    RageRenderWorldSetDirectionalLight(&world, &light);
+    EXPECT_EQ(2, (int)world.light.direction.y);
+    EXPECT_EQ(30, (int)(world.light.ambientColor.y * 100.0f));
+    EXPECT_EQ(60, (int)(world.light.diffuseColor.z * 100.0f));
+}
+
 static void test_mirror_is_an_independent_scene_camera(void) {
     RageRenderMeshInstance storage[1];
     RageRenderWorld world;
@@ -480,6 +497,7 @@ int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
+    test_directional_light_is_scene_data();
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_perspective_fog_uses_authored_near_and_far_depths();

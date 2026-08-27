@@ -11,14 +11,17 @@ layout(location = 7) in float shadowReception;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
-
-const vec3 LIGHT_DIRECTION = normalize(vec3(-0.1, 1.0, 0.12));
+layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
+    vec4 direction;
+    vec4 ambient;
+    vec4 diffuse;
+} sceneLight;
 
 float shadowVisibility(vec3 n) {
     if (shadowCoord.x <= 0.0 || shadowCoord.x >= 1.0 ||
         shadowCoord.y <= 0.0 || shadowCoord.y >= 1.0 ||
         shadowCoord.z <= 0.0 || shadowCoord.z >= 1.0) return 1.0;
-    float facing = max(dot(n, LIGHT_DIRECTION), 0.0);
+    float facing = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
     float bias = mix(0.00025, 0.00008, facing);
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
     float visible = 0.0;
@@ -41,9 +44,11 @@ void main() {
     texel.rgb /= texel.a;
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
-    float diffuse = max(dot(n, LIGHT_DIRECTION), 0.0);
+    float diffuse = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
     vec3 light = mix(vec3(1.0),
-        environmentLight * (0.35 + 0.65 * diffuse), lighting);
+        environmentLight *
+            (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
+        lighting);
     float visibility = shadowReception > 0.5 ? shadowVisibility(n) : 1.0;
     float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);

@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 2,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 3,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -82,6 +82,18 @@ static int WriteVec3(FILE *file, const RageRenderVec3 *value) {
 static int ReadVec3(FILE *file, RageRenderVec3 *value) {
     return ReadFloat(file, &value->x) && ReadFloat(file, &value->y) &&
            ReadFloat(file, &value->z);
+}
+
+static int WriteLight(FILE *file, const RageRenderDirectionalLight *value) {
+    return WriteVec3(file, &value->direction) &&
+           WriteVec3(file, &value->ambientColor) &&
+           WriteVec3(file, &value->diffuseColor);
+}
+
+static int ReadLight(FILE *file, RageRenderDirectionalLight *value) {
+    return ReadVec3(file, &value->direction) &&
+           ReadVec3(file, &value->ambientColor) &&
+           ReadVec3(file, &value->diffuseColor);
 }
 
 static int WriteTransform(FILE *file, const RageRenderTransform *value) {
@@ -207,6 +219,7 @@ int RageRenderWorldSnapshotWrite(const char *path,
                     sizeof(RAGE_RENDER_WORLD_SNAPSHOT_MAGIC)) &&
          WriteU32(file, RAGE_RENDER_WORLD_SNAPSHOT_VERSION) &&
          WriteU64(file, world->frame) &&
+         WriteLight(file, &world->light) &&
          WriteCamera(file, &world->camera) &&
          WriteCamera(file, &world->previousCamera) &&
          WriteU8(file, world->hasCamera) &&
@@ -238,8 +251,13 @@ int RageRenderWorldSnapshotRead(const char *path,
     ok = ReadBytes(file, magic, sizeof(magic)) &&
          memcmp(magic, RAGE_RENDER_WORLD_SNAPSHOT_MAGIC, sizeof(magic)) == 0 &&
          ReadU32(file, &version) &&
-         (version == 1 || version == RAGE_RENDER_WORLD_SNAPSHOT_VERSION) &&
-         ReadU64(file, &snapshot->world.frame) &&
+         (version >= 1 && version <= RAGE_RENDER_WORLD_SNAPSHOT_VERSION) &&
+         ReadU64(file, &snapshot->world.frame);
+    if (ok && version >= 3)
+        ok = ReadLight(file, &snapshot->world.light);
+    else if (ok)
+        RageRenderDirectionalLightDefault(&snapshot->world.light);
+    ok = ok &&
          ReadCamera(file, &snapshot->world.camera, version) &&
          ReadCamera(file, &snapshot->world.previousCamera, version) &&
          ReadU8(file, &snapshot->world.hasCamera) &&

@@ -52,6 +52,15 @@ typedef struct RageRenderCamera {
     float fogFar;
 } RageRenderCamera;
 
+/* One renderer-neutral sun and ambient environment. Both direct shading and
+ * shadow cameras consume this value, so a backend cannot silently use a
+ * different hard-coded light direction. Colours already include intensity. */
+typedef struct RageRenderDirectionalLight {
+    RageRenderVec3 direction;
+    RageRenderVec3 ambientColor;
+    RageRenderVec3 diffuseColor;
+} RageRenderDirectionalLight;
+
 typedef enum RageRenderPass {
     RAGE_RENDER_PASS_MAIN = 0,
     RAGE_RENDER_PASS_MIRROR = 1,
@@ -137,6 +146,7 @@ enum {
 
 typedef struct RageRenderWorld {
     uint64_t frame;
+    RageRenderDirectionalLight light;
     RageRenderCamera camera;
     RageRenderCamera previousCamera;
     uint8_t hasCamera;
@@ -159,6 +169,9 @@ void RageRenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
                          uint32_t capacity);
 void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame);
+void RageRenderWorldSetDirectionalLight(
+    RageRenderWorld *world, const RageRenderDirectionalLight *light);
+void RageRenderDirectionalLightDefault(RageRenderDirectionalLight *light);
 void RageRenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera);
 void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,

@@ -65,12 +65,20 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
            a->fogNear == b->fogNear && a->fogFar == b->fogFar;
 }
 
+static int SameLight(const RageRenderDirectionalLight *a,
+                     const RageRenderDirectionalLight *b) {
+    return memcmp(a, b, sizeof(*a)) == 0;
+}
+
 static void TestRoundTrip(void) {
     const char *path = "render-world-snapshot-test.bin";
     RageRenderMeshInstance instances[2] = {0};
     RageRenderWorld world = {0};
     RageRenderWorldSnapshot loaded;
     world.frame = UINT64_C(0x123456789abcdef0);
+    world.light.direction = (RageRenderVec3){.1f, .2f, .3f};
+    world.light.ambientColor = (RageRenderVec3){.4f, .5f, .6f};
+    world.light.diffuseColor = (RageRenderVec3){.7f, .8f, .9f};
     FillCamera(&world.camera, 1);
     FillCamera(&world.previousCamera, 40);
     FillCamera(&world.mirrorCamera, 80);
@@ -110,6 +118,7 @@ static void TestRoundTrip(void) {
     CHECK(RageRenderWorldSnapshotWrite(path, &world));
     CHECK(RageRenderWorldSnapshotRead(path, &loaded));
     CHECK(loaded.world.frame == world.frame);
+    CHECK(SameLight(&loaded.world.light, &world.light));
     CHECK(SameCamera(&loaded.world.camera, &world.camera));
     CHECK(SameCamera(&loaded.world.previousCamera, &world.previousCamera));
     CHECK(SameCamera(&loaded.world.mirrorCamera, &world.mirrorCamera));
