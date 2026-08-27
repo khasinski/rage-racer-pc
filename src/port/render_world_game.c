@@ -439,8 +439,13 @@ static void RageGameRenderWorldSubmitDynamicCourseObjectInternal(
         for (column = 0; column < 3; column++)
             matrix.m[row][column] =
                 (float)rotation[row][column] * (1.0f / 4096.0f);
+    /* Animated screen layers are authored as flat quads and are visible from
+     * both replay directions. The native GPU already handles their support
+     * surface with a depth buffer; applying the course-object winding test
+     * removes the entire image while leaving the black screen frame. */
     RageGameRenderWorldSubmitCourseTransform(
-        semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass, 1,
+        semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
+        depthOverlay ? 0 : 1,
         depthOverlay, (uint8_t)((SCRATCH_ENV_MODE4 >> 16) & 3));
 }
 
