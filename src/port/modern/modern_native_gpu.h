@@ -11,6 +11,8 @@ void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void);
 int ModernNativeGpuWriteDrawDump(FILE *file);
+int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
+                              int width, int height);
 int ModernNativeGpuHasDraws(void);
 int ModernNativeGpuWorldComplete(void);
 int ModernNativeGpuHasMirrorDraws(void);

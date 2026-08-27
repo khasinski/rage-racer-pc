@@ -42,6 +42,7 @@ static void Usage(const char *program) {
             "usage: %s FRAME.world.bin --assets NATIVE_ASSETS "
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
             "[--camera-scene MARKER.scene.bin] "
+            "[--probe X,Y] "
             "[--width 1280] [--height 960]\n",
             program);
 }
@@ -194,6 +195,22 @@ int main(int argc, char **argv) {
     if (!ModernNativeGpuHasDraws()) {
         fprintf(stderr, "rage-frame-replay: snapshot produced no draws\n");
         goto release_renderer;
+    }
+    {
+        const char *probe = OptionValue(argc, argv, "--probe");
+        if (probe != NULL) {
+            char *end;
+            long probeX = strtol(probe, &end, 10);
+            long probeY = *end == ',' ? strtol(end + 1, &end, 10) : -1;
+            if (*end != '\0' || probeX < 0 || probeY < 0 ||
+                probeX >= width || probeY >= height ||
+                !ModernNativeGpuWriteProbe(stdout, (int)probeX, (int)probeY,
+                                           width, height)) {
+                fprintf(stderr,
+                        "rage-frame-replay: --probe expects in-bounds X,Y\n");
+                goto release_renderer;
+            }
+        }
     }
     command = SDL_AcquireGPUCommandBuffer(device);
     if (command == NULL) {

@@ -611,6 +611,133 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
     return ferror(file) == 0;
 }
 
+typedef struct ModernNativeProbeVertex {
+    RageRenderVec3 view;
+    float depthBias;
+} ModernNativeProbeVertex;
+
+static uint32_t ModernNativeClipNear(
+    const ModernNativeProbeVertex input[3], ModernNativeProbeVertex output[4],
+    float nearPlane) {
+    uint32_t inputIndex, count = 0;
+    ModernNativeProbeVertex previous = input[2];
+    int previousInside = -previous.view.z >= nearPlane;
+    for (inputIndex = 0; inputIndex < 3; inputIndex++) {
+        ModernNativeProbeVertex current = input[inputIndex];
+        int currentInside = -current.view.z >= nearPlane;
+        if (currentInside != previousInside) {
+            float boundaryZ = -nearPlane;
+            float t = (boundaryZ - previous.view.z) /
+                      (current.view.z - previous.view.z);
+            ModernNativeProbeVertex clipped;
+            clipped.view.x = previous.view.x +
+                             (current.view.x - previous.view.x) * t;
+            clipped.view.y = previous.view.y +
+                             (current.view.y - previous.view.y) * t;
+            clipped.view.z = boundaryZ;
+            clipped.depthBias = previous.depthBias +
+                                (current.depthBias - previous.depthBias) * t;
+            output[count++] = clipped;
+        }
+        if (currentInside) output[count++] = current;
+        previous = current;
+        previousInside = currentInside;
+    }
+    return count;
+}
+
+static int ModernNativeProbeTriangle(
+    const ModernNativeProbeVertex triangle[3], float probeX, float probeY,
+    int width, int height, float aspect, float fovScale,
+    float depthScale, float depthOffset, float *depthOut) {
+    float screenX[3], screenY[3], screenDepth[3];
+    float denominator, a, b, c;
+    int corner;
+    for (corner = 0; corner < 3; corner++) {
+        float depth = -triangle[corner].view.z;
+        float ndcX = triangle[corner].view.x * fovScale / (depth * aspect);
+        float ndcY = triangle[corner].view.y * fovScale / depth;
+        screenX[corner] = (ndcX + 1.0f) * 0.5f * (float)width;
+        screenY[corner] = (1.0f - ndcY) * 0.5f * (float)height;
+        screenDepth[corner] = depthScale + depthOffset / depth +
+                              triangle[corner].depthBias / 1048576.0f;
+    }
+    denominator = (screenY[1] - screenY[2]) *
+                      (screenX[0] - screenX[2]) +
+                  (screenX[2] - screenX[1]) *
+                      (screenY[0] - screenY[2]);
+    if (fabsf(denominator) < 0.000001f) return 0;
+    a = ((screenY[1] - screenY[2]) * (probeX - screenX[2]) +
+         (screenX[2] - screenX[1]) * (probeY - screenY[2])) / denominator;
+    b = ((screenY[2] - screenY[0]) * (probeX - screenX[2]) +
+         (screenX[0] - screenX[2]) * (probeY - screenY[2])) / denominator;
+    c = 1.0f - a - b;
+    if (a < -0.00001f || b < -0.00001f || c < -0.00001f) return 0;
+    *depthOut = a * screenDepth[0] + b * screenDepth[1] +
+                c * screenDepth[2];
+    return 1;
+}
+
+int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
+                              int width, int height) {
+    float aspect, fovScale, depthScale, depthOffset;
+    uint32_t spanIndex;
+    int hits = 0;
+    if (file == NULL || s_world == NULL || width <= 0 || height <= 0 ||
+        x < 0 || x >= width || y < 0 || y >= height) return 0;
+    aspect = (float)width / (float)height;
+    fovScale = 1.0f / tanf(s_world->camera.verticalFovDegrees *
+                           0.008726646259971648f);
+    if (!RageRenderPerspectiveDepthTerms(&s_world->camera, &depthScale,
+                                         &depthOffset)) return 0;
+    fprintf(file, "probe %d %d target %d %d\n", x, y, width, height);
+    for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
+        const RageNativeDrawSpan *span = &s_spans[spanIndex];
+        uint32_t first;
+        for (first = span->firstVertex;
+             first + 2 < span->firstVertex + span->vertexCount &&
+             first + 2 < s_vertexCount;
+             first += 3) {
+            ModernNativeProbeVertex input[3], clipped[4];
+            uint32_t corner, clippedCount, piece;
+            for (corner = 0; corner < 3; corner++) {
+                const RageNativeDrawVertex *vertex = &s_vertices[first + corner];
+                RageRenderVec3 position = {
+                    vertex->position[0], vertex->position[1],
+                    vertex->position[2]};
+                RageRenderWorldToView(&s_world->camera, &position,
+                                      &input[corner].view);
+                input[corner].depthBias = vertex->depthBias;
+            }
+            clippedCount = ModernNativeClipNear(
+                input, clipped, s_world->camera.nearPlane);
+            for (piece = 1; piece + 1 < clippedCount; piece++) {
+                ModernNativeProbeVertex triangle[3] = {
+                    clipped[0], clipped[piece], clipped[piece + 1]};
+                float depth;
+                if (!ModernNativeProbeTriangle(
+                        triangle, (float)x + 0.5f, (float)y + 0.5f,
+                        width, height, aspect, fovScale,
+                        depthScale, depthOffset, &depth)) continue;
+                fprintf(file,
+                        "hit=%d span=%u triangle=%u piece=%u depth=%.9g "
+                        "view_depth=%.9g,%.9g,%.9g asset_set=%u "
+                        "asset_key=%u mesh=%u source_entity=%u entity=%u "
+                        "material=%u flags=%u decal=%u bias=%.9g\n",
+                        hits++, spanIndex, (first - span->firstVertex) / 3,
+                        piece - 1, depth, -input[0].view.z,
+                        -input[1].view.z, -input[2].view.z,
+                        (unsigned)span->assetSet, span->assetKey, span->mesh,
+                        span->sourceEntity, span->entity, span->material,
+                        span->instanceFlags, (unsigned)span->depthDecal,
+                        s_vertices[first].depthBias);
+            }
+        }
+    }
+    fprintf(file, "hits=%d\n", hits);
+    return ferror(file) == 0;
+}
+
 int ModernNativeGpuHasDraws(void) {
     return s_vertexCount != 0 && s_world != NULL && s_world->hasCamera;
 }
