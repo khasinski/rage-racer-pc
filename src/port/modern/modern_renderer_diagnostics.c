@@ -72,12 +72,28 @@ void RageModernDiagnosticsMaybeDump(
     if (RageRuntimeConfigEnabled("diagnostics.modern_dump_scene",
                                  "RAGE_PORT_MODERN_DUMP_SCENE")) {
         char scenePath[512];
+        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
         FILE *file;
         snprintf(scenePath, sizeof(scenePath), "%s.scene.bin", path);
         file = fopen(scenePath, "wb");
         if (file != NULL) {
             fwrite(snapshot, sizeof(*snapshot), 1, file);
             fclose(file);
+        }
+        if (world != NULL) {
+            snprintf(scenePath, sizeof(scenePath), "%s.world.bin", path);
+            if (!RageRenderWorldSnapshotWrite(scenePath, world))
+                fprintf(stderr,
+                        "rage-port: render-world dump failed: %s\n",
+                        scenePath);
+            snprintf(scenePath, sizeof(scenePath), "%s.draws.txt", path);
+            file = fopen(scenePath, "w");
+            if (file != NULL) {
+                if (!ModernNativeGpuWriteDrawDump(file))
+                    fprintf(stderr, "rage-port: draw dump failed: %s\n",
+                            scenePath);
+                fclose(file);
+            }
         }
     }
     done = 1;
