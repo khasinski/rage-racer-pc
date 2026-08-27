@@ -176,7 +176,8 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
+         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
+         RAGE_RUNTIME_MATERIAL_TERRAIN_SURFACE_OVERLAY);
     worldPosition = RageTransformPosition(basis, &source);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
@@ -227,16 +228,14 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         int8_t authoredDepthBias = (int8_t)(source.material >>
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
-        /* Terrain OT bias identifies thin overlays such as the authored road
-         * markings. Metal's rasterizer bias is slope dependent in practice,
-         * which lets half of a marking lose the depth tie on a hill. Give
-         * those vertices a small, constant clip-space tie-break as well. It
-         * is deliberately unrelated to the much larger authored OT number;
-         * vehicles render afterwards and still use the real depth buffer. */
+        /* OT bias only controlled packet order on PS1. It is not a semantic
+         * decal marker: full road and tunnel quads carry negative values too.
+         * The importer explicitly labels the genuinely thin surface strips
+         * that need a native decal pass. */
         if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            if (authoredDepthBias < 0) {
+            if ((source.material &
+                 RAGE_RUNTIME_MATERIAL_TERRAIN_SURFACE_OVERLAY) != 0) {
                 *depthDecal = 1;
-                out->depthBias -= 64.0f;
             }
         } else {
             out->depthBias += (float)authoredDepthBias;
