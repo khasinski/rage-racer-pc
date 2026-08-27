@@ -103,6 +103,7 @@ static void TestRoundTrip(void) {
     instances[0].carPaintColor1 = 17;
     instances[0].carPaintColor2 = 18;
     instances[0].textureScrollU = 19;
+    instances[0].lightInfluence = 0.4f;
     instances[0].environmentLight = (RageRenderVec3){.1f, .2f, .3f};
     instances[0].depthBias = -2.5f;
     FillTransform(&instances[0].transform, 160);
@@ -131,6 +132,7 @@ static void TestRoundTrip(void) {
     CHECK(loaded.instances[0].entity == 11);
     CHECK(loaded.instances[0].assetSet == RAGE_RENDER_ASSET_TERRAIN);
     CHECK(loaded.instances[0].material == 14);
+    CHECK(loaded.instances[0].lightInfluence == 0.4f);
     CHECK(loaded.instances[0].depthBias == -2.5f);
     CHECK(SameTransform(&loaded.instances[0].transform,
                         &instances[0].transform));

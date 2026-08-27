@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 3,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 4,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -172,6 +172,7 @@ static int WriteInstance(FILE *file,
            WriteU8(file, value->carPaintColor1) &&
            WriteU8(file, value->carPaintColor2) &&
            WriteU8(file, value->textureScrollU) &&
+           WriteFloat(file, value->lightInfluence) &&
            WriteVec3(file, &value->environmentLight) &&
            WriteFloat(file, value->depthBias) &&
            WriteTransform(file, &value->transform) &&
@@ -180,7 +181,8 @@ static int WriteInstance(FILE *file,
            WriteU32(file, (uint32_t)value->pass);
 }
 
-static int ReadInstance(FILE *file, RageRenderMeshInstance *value) {
+static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
+                        uint32_t version) {
     uint32_t assetSet, pass;
     if (!ReadU32(file, &value->entity) ||
         !ReadU32(file, &value->mesh) ||
@@ -192,8 +194,11 @@ static int ReadInstance(FILE *file, RageRenderMeshInstance *value) {
         !ReadU8(file, &value->hasCarPaint) ||
         !ReadU8(file, &value->carPaintColor1) ||
         !ReadU8(file, &value->carPaintColor2) ||
-        !ReadU8(file, &value->textureScrollU) ||
-        !ReadVec3(file, &value->environmentLight) ||
+        !ReadU8(file, &value->textureScrollU)) return 0;
+    if (version >= 4) {
+        if (!ReadFloat(file, &value->lightInfluence)) return 0;
+    }
+    if (!ReadVec3(file, &value->environmentLight) ||
         !ReadFloat(file, &value->depthBias) ||
         !ReadTransform(file, &value->transform) ||
         !ReadTransform(file, &value->previousTransform) ||
@@ -275,7 +280,7 @@ int RageRenderWorldSnapshotRead(const char *path,
         ok = snapshot->instances != NULL;
     }
     for (instance = 0; ok && instance < count; instance++)
-        ok = ReadInstance(file, &snapshot->instances[instance]);
+        ok = ReadInstance(file, &snapshot->instances[instance], version);
     if (ok) {
         unsigned char trailing;
         ok = fread(&trailing, 1, 1, file) == 0 && feof(file);

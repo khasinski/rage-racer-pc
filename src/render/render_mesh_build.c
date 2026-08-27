@@ -417,9 +417,12 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     out->fog[2] = world->camera.fogColor.z;
     out->fog[3] = fogged
         ? RageRenderFogFactor(&world->camera, &worldPosition) : 0.0f;
-    out->lighting =
-        (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0
-        ? 1.0f : 0.0f;
+    out->lighting = 0.0f;
+    if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
+        out->lighting = instance->lightInfluence;
+        if (out->lighting <= 0.0f) out->lighting = 1.0f;
+        if (out->lighting > 1.0f) out->lighting = 1.0f;
+    }
     out->environmentLight[0] = instance->environmentLight.x;
     out->environmentLight[1] = instance->environmentLight.y;
     out->environmentLight[2] = instance->environmentLight.z;

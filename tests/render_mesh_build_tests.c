@@ -119,6 +119,12 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(0, (int)vertices[0].depthBias);
     EXPECT_EQ(0, (int)vertices[0].shadowReception);
 
+    storage[0].lightInfluence = 0.4f;
+    EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_EQ(40, (int)(vertices[0].lighting * 100.0f));
+
     storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                        RAGE_RENDER_INSTANCE_FLAT_SHADED;
     EXPECT_EQ(3, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
