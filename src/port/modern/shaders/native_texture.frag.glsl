@@ -8,6 +8,7 @@ layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
 layout(location = 6) in vec3 shadowCoord;
 layout(location = 7) in float shadowReception;
+layout(location = 8) in vec3 viewDirection;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
@@ -15,6 +16,9 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 direction;
     vec4 ambient;
     vec4 diffuse;
+    vec4 skyTop;
+    vec4 skyHorizon;
+    vec4 skyBottom;
 } sceneLight;
 layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 baseColor;
@@ -41,6 +45,14 @@ float shadowVisibility(vec3 n) {
     return visible * 0.25;
 }
 
+vec3 reflectedSky(vec3 direction) {
+    if (direction.y >= 0.0)
+        return mix(sceneLight.skyHorizon.rgb, sceneLight.skyTop.rgb,
+                   smoothstep(0.0, 0.8, direction.y));
+    return mix(sceneLight.skyHorizon.rgb, sceneLight.skyBottom.rgb,
+               smoothstep(0.0, 0.55, -direction.y));
+}
+
 void main() {
     /* Material mips are stored premultiplied so transparent atlas texels do
      * not contribute a black fringe. Convert back after filtered sampling. */
@@ -51,6 +63,7 @@ void main() {
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
+    vec3 view = normalize(viewDirection);
     float materialLighting = lighting;
     if (material.emissiveAndShading.w >= 0.0)
         materialLighting = material.emissiveAndShading.w;
@@ -65,7 +78,25 @@ void main() {
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;
+    float roughness = clamp(material.surface.x, 0.0, 1.0);
+    float metallic = clamp(material.surface.y, 0.0, 1.0);
+    float gloss = 1.0 - roughness;
+    vec3 lightDirection = normalize(sceneLight.direction.xyz);
+    vec3 halfDirection = normalize(lightDirection + view);
+    float exponent = mix(8.0, 192.0, gloss * gloss);
+    float specularLobe = pow(max(dot(n, halfDirection), 0.0), exponent) *
+                         gloss;
+    vec3 materialColor = texel.rgb * material.baseColor.rgb;
+    vec3 f0 = mix(vec3(0.04), materialColor, metallic);
+    vec3 fresnel = f0 + (vec3(1.0) - f0) *
+        pow(1.0 - max(dot(n, view), 0.0), 5.0);
+    vec3 environmentSpecular = reflectedSky(reflect(-view, n)) * fresnel *
+        gloss * gloss * mix(0.12, 0.42, metallic);
+    vec3 directSpecular = sceneLight.diffuse.rgb * fresnel * specularLobe *
+        mix(0.2, 0.75, metallic);
+    vec3 specular = (environmentSpecular + directSpecular) *
+        step(0.001, materialLighting);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
-    outColor = vec4(base + emissive,
+    outColor = vec4(base + specular + emissive,
                     texel.a * color.a * material.baseColor.a);
 }

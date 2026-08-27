@@ -34,6 +34,7 @@ layout(location = 4) out float lighting;
 layout(location = 5) out vec3 environmentLight;
 layout(location = 6) out vec3 shadowCoord;
 layout(location = 7) out float shadowReception;
+layout(location = 8) out vec3 viewDirection;
 
 void main() {
     vec3 relative = inPosition - camera.position.xyz;
@@ -64,4 +65,5 @@ void main() {
                        shadowDepth * shadow.projection.z +
                            shadow.projection.w);
     shadowReception = inShadowReception;
+    viewDirection = camera.position.xyz - inPosition;
 }

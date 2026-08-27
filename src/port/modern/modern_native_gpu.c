@@ -48,6 +48,9 @@ typedef struct ModernNativeLightUniform {
     float direction[4];
     float ambient[4];
     float diffuse[4];
+    float skyTop[4];
+    float skyHorizon[4];
+    float skyBottom[4];
 } ModernNativeLightUniform;
 
 typedef struct ModernNativeMaterialUniform {
@@ -75,20 +78,21 @@ static const char MODERN_NATIVE_MSL[] =
     "using namespace metal;\n"
     "struct NativeIn { float3 pos [[attribute(0)]]; float2 uv [[attribute(1)]]; uchar4 color [[attribute(2)]]; float3 normal [[attribute(3)]]; float4 fog [[attribute(4)]]; float lighting [[attribute(5)]]; float depthBias [[attribute(6)]]; float3 environmentLight [[attribute(7)]]; float shadowReception [[attribute(8)]]; };\n"
     "struct NativeCamera { float4 position; float4 viewRow0; float4 viewRow1; float4 viewRow2; float4 projection; };\n"
-    "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; float4 fog; float lighting; float3 environmentLight; float3 shadowCoord; float shadowReception; };\n"
+    "struct NativeOut { float4 pos [[position]]; float2 uv; float4 color; float3 normal; float4 fog; float lighting; float3 environmentLight; float3 shadowCoord; float shadowReception; float3 viewDirection; };\n"
     "struct NativeSkyOut { float4 pos [[position]]; float3 direction; };\n"
     "struct NativeSkyColors { float4 top; float4 middle; float4 horizon; float4 bottom; };\n"
-    "struct NativeSceneLight { float4 direction; float4 ambient; float4 diffuse; };\n"
+    "struct NativeSceneLight { float4 direction; float4 ambient; float4 diffuse; float4 skyTop; float4 skyHorizon; float4 skyBottom; };\n"
     "struct NativeMaterial { float4 baseColor; float4 emissiveAndShading; float4 surface; };\n"
     "struct ShadowOut { float4 pos [[position]]; float2 uv; };\n"
-    "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]], constant NativeCamera &shadow [[buffer(1)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; o.shadowReception=in.shadowReception; float3 sp=in.pos-shadow.position.xyz; float sx=dot(shadow.viewRow0.xyz,sp)*shadow.projection.x; float sy=dot(shadow.viewRow1.xyz,sp)*shadow.projection.y; float sd=-dot(shadow.viewRow2.xyz,sp); o.shadowCoord=float3(sx*0.5+0.5,0.5-sy*0.5,sd*shadow.projection.z+shadow.projection.w); return o; }\n"
+    "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]], constant NativeCamera &shadow [[buffer(1)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; o.shadowReception=in.shadowReception; o.viewDirection=camera.position.xyz-in.pos; float3 sp=in.pos-shadow.position.xyz; float sx=dot(shadow.viewRow0.xyz,sp)*shadow.projection.x; float sy=dot(shadow.viewRow1.xyz,sp)*shadow.projection.y; float sd=-dot(shadow.viewRow2.xyz,sp); o.shadowCoord=float3(sx*0.5+0.5,0.5-sy*0.5,sd*shadow.projection.z+shadow.projection.w); return o; }\n"
     "vertex NativeSkyOut vs_native_sky(uint vertexID [[vertex_id]], constant NativeCamera &camera [[buffer(0)]]) { NativeSkyOut o; float2 corner=float2((vertexID<<1)&2,vertexID&2); float2 clip=corner*2.0-1.0; float3 v=float3(clip.x/camera.projection.x,clip.y/camera.projection.y,-1.0); o.direction=camera.viewRow0.xyz*v.x+camera.viewRow1.xyz*v.y+camera.viewRow2.xyz*v.z; o.pos=float4(clip,1.0,1.0); return o; }\n"
     "fragment float4 fs_native_sky(NativeSkyOut in [[stage_in]], texture2d<float> panorama [[texture(0)]], sampler skySampler [[sampler(0)]], constant NativeSkyColors &sky [[buffer(0)]]) { float3 d=normalize(in.direction); float h=d.y; float horizontalLength=max(length(d.xz),0.001); float verticalSlope=h/horizontalLength; float3 c; if(h>=0.0)c=mix(sky.middle.rgb,sky.top.rgb,smoothstep(0.0,0.65,h)); else if(h>=-0.18)c=mix(sky.middle.rgb,sky.horizon.rgb,smoothstep(0.0,0.18,-h)); else c=mix(sky.horizon.rgb,sky.bottom.rgb,smoothstep(0.18,0.65,-h)); float bandCoordinate=1.0-verticalSlope*2.5; float band=floor(bandCoordinate); float bandOffset=fmod(band,2.0); if(bandOffset<0.0)bandOffset+=2.0; bandOffset*=0.5; float2 uv=float2(fract(atan2(d.z,d.x)*0.6366197724+0.25+bandOffset),fract(bandCoordinate)); float4 authored=panorama.sample(skySampler,uv); float cylinderCoverage=1.0-smoothstep(0.9,1.25,abs(verticalSlope)); c=mix(c,authored.rgb,authored.a*sky.bottom.a*cylinderCoverage); return float4(c,1.0); }\n"
     "vertex ShadowOut vs_shadow(NativeIn in [[stage_in]], constant NativeCamera &shadow [[buffer(0)]]) { ShadowOut o; float3 p=in.pos-shadow.position.xyz; float depth=-dot(shadow.viewRow2.xyz,p); o.pos=float4(dot(shadow.viewRow0.xyz,p)*shadow.projection.x,dot(shadow.viewRow1.xyz,p)*shadow.projection.y,depth*shadow.projection.z+shadow.projection.w,1.0); o.uv=in.uv; return o; }\n"
     "fragment void fs_shadow() {}\n"
     "fragment void fs_shadow_masked(ShadowOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { if(textureImage.sample(smp,in.uv).a<=0.5) discard_fragment(); }\n"
     "static float native_shadow(NativeOut in, float3 n, depth2d<float> shadowMap, sampler shadowSampler, constant NativeSceneLight &sceneLight) { if(in.shadowCoord.x<=0.0||in.shadowCoord.x>=1.0||in.shadowCoord.y<=0.0||in.shadowCoord.y>=1.0||in.shadowCoord.z<=0.0||in.shadowCoord.z>=1.0)return 1.0; float facing=max(dot(n,normalize(sceneLight.direction.xyz)),0.0); float bias=mix(0.00025,0.00008,facing); float2 texel=1.0/float2(shadowMap.get_width(),shadowMap.get_height()); float visible=0.0; for(int y=0;y<2;y++){for(int x=0;x<2;x++){float stored=shadowMap.sample(shadowSampler,in.shadowCoord.xy+(float2(x,y)-0.5)*texel);visible+=in.shadowCoord.z-bias<=stored?1.0:0.0;}}return visible*0.25; }\n"
-    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]], depth2d<float> shadowMap [[texture(1)]], sampler shadowSampler [[sampler(1)]], constant NativeSceneLight &sceneLight [[buffer(0)]], constant NativeMaterial &material [[buffer(1)]]) { float4 t=textureImage.sample(smp,in.uv); if((material.surface.z>1.5&&material.surface.z<2.5&&t.a<0.5)||t.a<=0.001) discard_fragment(); t.rgb/=t.a; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(sceneLight.direction.xyz)),0.0); float materialLighting=in.lighting; if(material.emissiveAndShading.w>=0.0)materialLighting=material.emissiveAndShading.w; float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),materialLighting); float visibility=materialLighting>0.001&&in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float3 base=t.rgb*modulation*light*material.baseColor.rgb; float3 emissive=t.rgb*material.emissiveAndShading.rgb; float4 c=float4(base+emissive,t.a*in.color.a*material.baseColor.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
+    "static float3 reflected_sky(float3 d, constant NativeSceneLight &sceneLight) { if(d.y>=0.0)return mix(sceneLight.skyHorizon.rgb,sceneLight.skyTop.rgb,smoothstep(0.0,0.8,d.y)); return mix(sceneLight.skyHorizon.rgb,sceneLight.skyBottom.rgb,smoothstep(0.0,0.55,-d.y)); }\n"
+    "fragment float4 fs_native(NativeOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]], depth2d<float> shadowMap [[texture(1)]], sampler shadowSampler [[sampler(1)]], constant NativeSceneLight &sceneLight [[buffer(0)]], constant NativeMaterial &material [[buffer(1)]]) { float4 t=textureImage.sample(smp,in.uv); if((material.surface.z>1.5&&material.surface.z<2.5&&t.a<0.5)||t.a<=0.001) discard_fragment(); t.rgb/=t.a; float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float3 v=normalize(in.viewDirection); float3 ld=normalize(sceneLight.direction.xyz); float ndl=max(dot(n,ld),0.0); float materialLighting=in.lighting; if(material.emissiveAndShading.w>=0.0)materialLighting=material.emissiveAndShading.w; float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),materialLighting); float visibility=materialLighting>0.001&&in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); float3 modulation=min(fogged*2.0,float3(1.0)); float3 base=t.rgb*modulation*light*material.baseColor.rgb; float roughness=clamp(material.surface.x,0.0,1.0); float metallic=clamp(material.surface.y,0.0,1.0); float gloss=1.0-roughness; float3 halfDirection=normalize(ld+v); float exponent=mix(8.0,192.0,gloss*gloss); float lobe=pow(max(dot(n,halfDirection),0.0),exponent)*gloss; float3 materialColor=t.rgb*material.baseColor.rgb; float3 f0=mix(float3(0.04),materialColor,metallic); float3 fresnel=f0+(float3(1.0)-f0)*pow(1.0-max(dot(n,v),0.0),5.0); float3 environmentSpecular=reflected_sky(reflect(-v,n),sceneLight)*fresnel*gloss*gloss*mix(0.12,0.42,metallic); float3 directSpecular=sceneLight.diffuse.rgb*fresnel*lobe*mix(0.2,0.75,metallic); float3 specular=(environmentSpecular+directSpecular)*step(0.001,materialLighting); float3 emissive=t.rgb*material.emissiveAndShading.rgb; float4 c=float4(base+specular+emissive,t.a*in.color.a*material.baseColor.a); if(c.a<=0.001) discard_fragment(); return c; }\n"
     "fragment float4 fs_native_color(NativeOut in [[stage_in]], depth2d<float> shadowMap [[texture(0)]], sampler shadowSampler [[sampler(0)]], constant NativeSceneLight &sceneLight [[buffer(0)]]) { float n2=dot(in.normal,in.normal); float3 n=n2>0.000001 ? in.normal*rsqrt(n2) : float3(0.0,1.0,0.0); float ndl=max(dot(n,normalize(sceneLight.direction.xyz)),0.0); float3 light=mix(float3(1.0),in.environmentLight*(sceneLight.ambient.rgb+sceneLight.diffuse.rgb*ndl),in.lighting); float visibility=in.shadowReception>0.5?native_shadow(in,n,shadowMap,shadowSampler,sceneLight):1.0; float shade=mix(0.62,1.0,visibility); light*=mix(shade,1.0,in.fog.a); float3 fogged=mix(in.color.rgb,in.fog.rgb,in.fog.a); return float4(fogged*light,in.color.a); }\n";
 
 static SDL_GPUDevice *s_device;
@@ -371,6 +375,7 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
 }
 
 static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
+                                   const RageRenderCamera *camera,
                                    ModernNativeLightUniform *out) {
     memset(out, 0, sizeof(*out));
     out->direction[0] = light->direction.x;
@@ -382,6 +387,15 @@ static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
     out->diffuse[0] = light->diffuseColor.x;
     out->diffuse[1] = light->diffuseColor.y;
     out->diffuse[2] = light->diffuseColor.z;
+    out->skyTop[0] = camera->skyTopColor.x;
+    out->skyTop[1] = camera->skyTopColor.y;
+    out->skyTop[2] = camera->skyTopColor.z;
+    out->skyHorizon[0] = camera->skyHorizonColor.x;
+    out->skyHorizon[1] = camera->skyHorizonColor.y;
+    out->skyHorizon[2] = camera->skyHorizonColor.z;
+    out->skyBottom[0] = camera->skyBottomColor.x;
+    out->skyBottom[1] = camera->skyBottomColor.y;
+    out->skyBottom[2] = camera->skyBottomColor.z;
 }
 
 static void ModernNativeBuildMaterial(const RageRenderMaterial *material,
@@ -1226,7 +1240,7 @@ static void ModernNativeGpuDrawSet(
         SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
     }
     SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
-    ModernNativeBuildLight(&s_world->light, &light);
+    ModernNativeBuildLight(&s_world->light, renderCamera, &light);
     SDL_PushGPUFragmentUniformData(command, 0, &light, sizeof(light));
     ModernNativeBuildShadowCamera(&s_shadowMap, &shadowCamera);
     SDL_PushGPUVertexUniformData(
