@@ -89,6 +89,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME mod_manifest COMMAND mod_manifest_tests)
 
+add_executable(render_material_tests render_material_tests.c)
+target_link_libraries(render_material_tests PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(render_material_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_material COMMAND render_material_tests)
+
 add_executable(rmesh_cache_tests rmesh_cache_tests.c)
 target_link_libraries(rmesh_cache_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
