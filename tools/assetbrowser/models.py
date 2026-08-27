@@ -62,7 +62,9 @@ class Face:
     # the whole 256x256 page. See texture_window() for where it comes from.
     texwin: tuple | None = None
     # Terrain records may carry a LINE_F3 colour command at +0x18. Retail
-    # traces the four parent-quad edges with it when the surface subdivides.
+    # traces the four parent-quad edges behind the subdivided surface as a
+    # one-pixel crack underlay. It is diagnostic metadata, not native mesh
+    # geometry or a road-marking material.
     line_rgb: tuple | None = None
     line_lod: tuple | None = None
 

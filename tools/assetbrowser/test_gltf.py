@@ -310,7 +310,7 @@ class GltfExportTest(unittest.TestCase):
             rmesh.MATERIAL_TERRAIN_ENV_CLUT,
             material)
 
-    def test_runtime_mesh_imports_authored_terrain_lines_as_decals(self):
+    def test_runtime_mesh_does_not_turn_ps1_crack_lines_into_geometry(self):
         face = models.Face(
             prim=0, v=(0, 1, 2, 3), rgb=(64, 64, 64),
             line_rgb=(180, 200, 220), line_lod=(2, 3))
@@ -323,14 +323,7 @@ class GltfExportTest(unittest.TestCase):
         blob = rmesh.bank_to_bytes(bank, terrain_primitives=True)
         _magic, _version, _meshes, vertex_count, index_count = (
             rmesh.HEADER.unpack_from(blob))
-        self.assertEqual((20, 30), (vertex_count, index_count))
-        line_vertex = rmesh.VERTEX.unpack_from(
-            blob, rmesh.HEADER.size + 8 + 4 * rmesh.VERTEX.size)
-        self.assertEqual((180, 200, 220, 255), line_vertex[6:10])
-        self.assertEqual(
-            3 | rmesh.MATERIAL_TERRAIN_LINE | rmesh.MATERIAL_METADATA |
-            (0xFC << rmesh.MATERIAL_DEPTH_BIAS_SHIFT),
-            line_vertex[-1])
+        self.assertEqual((4, 6), (vertex_count, index_count))
 
     def test_converts_coordinate_system_and_quad_winding(self):
         face = models.Face(prim=0, v=(0, 1, 2, 3), rgb=(64, 128, 255))

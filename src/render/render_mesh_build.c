@@ -176,10 +176,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_LINE);
-    if ((source.material & RAGE_RUNTIME_MATERIAL_TERRAIN_LINE) != 0)
-        *materialFlags |= source.material & 0xFFu;
+         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
     worldPosition = RageTransformPosition(basis, &source);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
@@ -241,8 +238,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
             out->depthBias += (float)authoredDepthBias;
         }
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
-        if ((*materialFlags & RAGE_RUNTIME_MATERIAL_TERRAIN_LINE) != 0 ||
-            source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
+        if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
     }
     *material = source.material;
@@ -294,28 +290,6 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[1] ||
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
-            if ((materialFlags[0] &
-                 RAGE_RUNTIME_MATERIAL_TERRAIN_LINE) != 0) {
-                RageRenderVec3 view;
-                RageRenderVec3 midpoint = {
-                    (triangle[0].position[0] + triangle[1].position[0] +
-                     triangle[2].position[0]) / 3.0f,
-                    (triangle[0].position[1] + triangle[1].position[1] +
-                     triangle[2].position[1]) / 3.0f,
-                    (triangle[0].position[2] + triangle[1].position[2] +
-                     triangle[2].position[2]) / 3.0f,
-                };
-                float authoredLevel = (float)(materialFlags[0] & 0xFFu);
-                RageRenderWorldToView(&world->camera, &midpoint, &view);
-                /* Retail emits these LINE_F3 edges only while their parent
-                 * terrain face is subdividing: level - (OTZ >> shift) > 0.
-                 * Native world units match that AVSZ4 OTZ. Terrain setup
-                 * authors a shift of ten, so retain the authored near range
-                 * without inheriting the screen-space PS1 line primitive. */
-                if (authoredLevel <= 0.0f ||
-                    -view.z >= authoredLevel * 1024.0f)
-                    continue;
-            }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
                 RageTriangleIsBackFacing(world, triangle)) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
