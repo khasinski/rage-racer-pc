@@ -15,7 +15,7 @@ CASES = {
 }
 MODERN_GOLDENS = {
     "baseline": "a3c6f80bb1c7185106aeb75ae60a7dbe19431f5e2f8de6624d55aab4dc370831",
-    "enhanced": "a46adb1456d29b81e3b082afa11adf5f88fe5ddee2ed6064da69aaa5dfe79ad7",
+    "enhanced": "f8e021996e29698c1cc1a09b1745b8b979c5538c1e26f01bbd744bcfcdf3b6a6",
 }
 
 

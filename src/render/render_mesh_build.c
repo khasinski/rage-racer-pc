@@ -221,6 +221,16 @@ static int RageBuildVertex(const RageTransformBasis *basis,
         out->environmentLight[2] = 1.0f;
     }
     out->depthBias = instance->depthBias;
+    if ((*materialFlags & RAGE_RUNTIME_MATERIAL_TERRAIN_LINE) != 0) {
+        /* Authored LINE_F3 edges are expanded into ordinary triangles by the
+         * importer. They still lie exactly on their parent road face, so a
+         * deterministic clip-space tie-break is required in addition to the
+         * backend's rasterizer bias. Without it, Metal resolves alternating
+         * pixels to the asphalt at grazing angles and the stripe appears to
+         * shorten or disappear. Vehicles are rendered after this phase and
+         * remain protected by the real depth buffer. */
+        out->depthBias -= 256.0f;
+    }
     out->shadowReception =
         instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
         instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
