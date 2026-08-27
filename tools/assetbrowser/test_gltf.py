@@ -177,7 +177,35 @@ class GltfExportTest(unittest.TestCase):
         self.assertEqual(
             "# rage-rmat v6\n"
             "0 textures/car.rgba textures/car.rgba | textures/car.rpaint | "
-            "inherit auto 1 0 1 1 1 1 0 0 0\n",
+            "inherit auto 0.22 0.18 1 1 1 1 0 0 0\n",
+            sidecar)
+
+    def test_scrolling_course_material_is_emissive_and_unlit(self):
+        face = models.Face(
+            prim=3, v=(0, 1, 2, 3),
+            uv=((0, 0), (1, 0), (1, 1), (0, 1)),
+            tpage=1, clut=2)
+        bank = models.Bank(count=1, vertex_off=0, normal_off=0,
+                           model_offs=[])
+        bank.vertices = [(0, 0, 0)] * 4
+        bank.models = [models.Model(index=0, offset=0, faces=[face])]
+        textures = [{"runtimePixels": "screen.rgba",
+                     "tpage": 1, "clut": 2}]
+        with tempfile.TemporaryDirectory() as temp:
+            extractor = extract.Extractor.__new__(extract.Extractor)
+            extractor.out = Path(temp)
+            (extractor.out / "models").mkdir()
+            with mock.patch.object(extract.gltf, "write_bank"), \
+                 mock.patch.object(extract.rmesh, "write_bank"):
+                extractor.emit_bank(
+                    bank, "088_BIG1_2ND_course", textures=textures,
+                    scrolling_primitives=True)
+            sidecar = (extractor.out /
+                       "models/088_BIG1_2ND_course.rmat").read_text()
+        self.assertEqual(
+            "# rage-rmat v6\n"
+            "0 screen.rgba screen.rgba | - | "
+            "unlit auto 0.82 0 1 1 1 1 0.35 0.28 0.16\n",
             sidecar)
 
     def test_car_paint_mask_labels_palette_sampled_texels(self):

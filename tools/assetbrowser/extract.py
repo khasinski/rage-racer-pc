@@ -74,6 +74,41 @@ CAR_PAINT_SLOTS_4 = (0x141, 0x1C1, 0x201, 0x401)
 CELL_PITCH = 2048 << 2
 
 
+def runtime_material_properties(stem, texture, emissive=False):
+    """Choose source-independent defaults for an imported surface."""
+    lower = stem.lower()
+    shading = "unlit" if emissive else "inherit"
+    roughness, metallic = 1.0, 0.0
+    emission = (0.35, 0.28, 0.16) if emissive else (0, 0, 0)
+    if "runtimePaintMask" in texture:
+        roughness, metallic = 0.22, 0.18
+    elif "_car_" in lower and lower.endswith("_1st"):
+        roughness, metallic = 0.42, 0.05
+    elif lower.endswith(("_b3", "_b6")):
+        roughness, metallic = 0.35, 0.08
+    elif lower.endswith("_course"):
+        roughness = 0.82
+    elif lower.endswith("_terrain"):
+        roughness = 0.96
+    values = (roughness, metallic, 1, 1, 1, 1, *emission)
+    return f"{shading} auto " + " ".join(format(value, "g")
+                                           for value in values)
+
+
+def scrolling_material_indices(bank, textures):
+    keys = {(item["tpage"], item["clut"],
+             tuple(item["texwin"]) if item.get("texwin") else None): index
+            for index, item in enumerate(textures or [])}
+    result = set()
+    for model in bank.models:
+        for face in model.faces:
+            if face.prim == 3:
+                index = keys.get((face.tpage, face.clut, face.texwin))
+                if index is not None:
+                    result.add(index)
+    return result
+
+
 def build_sky_panorama(page: bytes) -> bytes:
     """Unpack the PS1 sky tile page into a renderer-neutral cloud panorama."""
     if len(page) != 256 * 256 * 4:
@@ -672,13 +707,16 @@ class Extractor:
                          terrain_primitives=grid is not None)
         materials_path = self.out / "models" / f"{stem}.rmat"
         material_rows = ["# rage-rmat v6\n"]
+        emissive_materials = (scrolling_material_indices(bank, textures)
+                              if scrolling_primitives else set())
         for index, texture in enumerate(textures or []):
             variants = texture.get("runtimePixelVariants", [
                 texture["runtimePixels"],
                 texture.get("runtimePixelsAlt", texture["runtimePixels"]),
             ])
             paint = texture.get("runtimePaintMask", "-")
-            properties = "inherit auto 1 0 1 1 1 1 0 0 0"
+            properties = runtime_material_properties(
+                stem, texture, index in emissive_materials)
             material_rows.append(
                 f"{index} {' '.join(variants)} | {paint} | {properties}\n")
         materials_path.write_text("".join(material_rows))
