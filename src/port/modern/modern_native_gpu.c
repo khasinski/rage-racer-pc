@@ -561,6 +561,18 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
             s_spanCount, s_mirrorVertexCount, s_mirrorSpanCount,
             s_completeWorld);
     fprintf(file,
+            "camera %.9g %.9g %.9g orientation %.9g %.9g %.9g %.9g "
+            "fov %.9g near %.9g far %.9g\n",
+            s_world->camera.transform.position.x,
+            s_world->camera.transform.position.y,
+            s_world->camera.transform.position.z,
+            s_world->camera.transform.orientation.x,
+            s_world->camera.transform.orientation.y,
+            s_world->camera.transform.orientation.z,
+            s_world->camera.transform.orientation.w,
+            s_world->camera.verticalFovDegrees,
+            s_world->camera.nearPlane, s_world->camera.farPlane);
+    fprintf(file,
             "span first count asset_set asset_key mesh source_entity entity "
             "material material_flags instance_flags pass decal variant "
             "paint paint1 paint2\n");

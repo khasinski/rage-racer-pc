@@ -1,9 +1,11 @@
 #include <SDL3/SDL.h>
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "port/modern/scene_capture.h"
 #include "port/modern/modern_assets.h"
 #include "port/modern/modern_native_gpu.h"
 #include "port/modern/modern_texture_dump.h"
@@ -39,8 +41,83 @@ static void Usage(const char *program) {
     fprintf(stderr,
             "usage: %s FRAME.world.bin --assets NATIVE_ASSETS "
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
+            "[--camera-scene MARKER.scene.bin] "
             "[--width 1280] [--height 960]\n",
             program);
+}
+
+static RageRenderQuaternion QuaternionFromMatrix(float matrix[3][3]) {
+    RageRenderQuaternion out;
+    float trace = matrix[0][0] + matrix[1][1] + matrix[2][2];
+    float root;
+    if (trace > 0.0f) {
+        root = sqrtf(trace + 1.0f) * 2.0f;
+        out.w = 0.25f * root;
+        out.x = (matrix[2][1] - matrix[1][2]) / root;
+        out.y = (matrix[0][2] - matrix[2][0]) / root;
+        out.z = (matrix[1][0] - matrix[0][1]) / root;
+    } else if (matrix[0][0] > matrix[1][1] &&
+               matrix[0][0] > matrix[2][2]) {
+        root = sqrtf(1.0f + matrix[0][0] - matrix[1][1] - matrix[2][2]) * 2.0f;
+        out.w = (matrix[2][1] - matrix[1][2]) / root;
+        out.x = 0.25f * root;
+        out.y = (matrix[0][1] + matrix[1][0]) / root;
+        out.z = (matrix[0][2] + matrix[2][0]) / root;
+    } else if (matrix[1][1] > matrix[2][2]) {
+        root = sqrtf(1.0f + matrix[1][1] - matrix[0][0] - matrix[2][2]) * 2.0f;
+        out.w = (matrix[0][2] - matrix[2][0]) / root;
+        out.x = (matrix[0][1] + matrix[1][0]) / root;
+        out.y = 0.25f * root;
+        out.z = (matrix[1][2] + matrix[2][1]) / root;
+    } else {
+        root = sqrtf(1.0f + matrix[2][2] - matrix[0][0] - matrix[1][1]) * 2.0f;
+        out.w = (matrix[1][0] - matrix[0][1]) / root;
+        out.x = (matrix[0][2] + matrix[2][0]) / root;
+        out.y = (matrix[1][2] + matrix[2][1]) / root;
+        out.z = 0.25f * root;
+    }
+    return out;
+}
+
+static int ApplyCapturedCamera(const char *path, RageRenderWorld *world) {
+    RageSceneSnapshot *scene;
+    FILE *file;
+    float source[3][3], converted[3][3], pose[3][3];
+    int row, column;
+    int ok;
+    if (path == NULL) return 1;
+    scene = malloc(sizeof(*scene));
+    if (scene == NULL) return 0;
+    file = fopen(path, "rb");
+    ok = file != NULL && fread(scene, sizeof(*scene), 1, file) == 1;
+    if (file != NULL) fclose(file);
+    if (!ok) {
+        fprintf(stderr, "rage-frame-replay: cannot read camera scene %s\n",
+                path);
+        free(scene);
+        return 0;
+    }
+    for (row = 0; row < 3; row++)
+        for (column = 0; column < 3; column++)
+            source[row][column] =
+                (float)scene->viewMatrix.m[row][column] / 4096.0f;
+    RageRenderConvertPsxMatrix(source, converted);
+    for (row = 0; row < 3; row++)
+        for (column = 0; column < 3; column++)
+            pose[row][column] = converted[column][row];
+    world->camera.transform.position.x = (float)scene->viewPosition[0];
+    world->camera.transform.position.y = -(float)scene->viewPosition[1];
+    world->camera.transform.position.z = -(float)scene->viewPosition[2];
+    world->camera.transform.orientation = QuaternionFromMatrix(pose);
+    world->camera.transform.hasOrientation = 1;
+    world->previousCamera = world->camera;
+    world->hasCamera = 1;
+    fprintf(stderr,
+            "rage-frame-replay: camera scene frame=%u pos=%d,%d,%d\n",
+            scene->frameCounter, scene->viewPosition[0],
+            scene->viewPosition[1], scene->viewPosition[2]);
+    free(scene);
+    return 1;
 }
 
 int main(int argc, char **argv) {
@@ -77,6 +154,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-frame-replay: cannot read %s\n", snapshotPath);
         goto cleanup;
     }
+    if (!ApplyCapturedCamera(OptionValue(argc, argv, "--camera-scene"),
+                             &snapshot.world))
+        goto release_snapshot;
     /* The ordinary runtime override keeps asset selection identical between
      * the game and the harness without adding a second asset-loader path. */
     if (!SDL_Init(SDL_INIT_VIDEO)) {
