@@ -5,6 +5,35 @@
 #include "game/save_internal.h"
 #include "game/records_internal.h"
 
+static const RaceRecord s_DefaultRecords[5] = {
+    {{'R', 'A', 'G', 'E', ' ', ' ', '\0', '\0'}, 0, 0, 0},
+    {{'R', 'A', 'C', 'E', 'R', ' ', '\0', '\0'}, 0, 3, 0},
+    {{'N', 'A', 'M', 'C', 'O', ' ', '\0', '\0'}, 0, 4, 0},
+    {{'R', 'I', 'D', 'G', 'E', ' ', '\0', '\0'}, 0, 7, 0},
+    {{'R', 'A', 'C', 'E', 'R', ' ', '\0', '\0'}, 0, 3, 0},
+};
+
+s32 InsertRaceRecord(RaceRecord records[5], s32 raceTime, s16 carIndex,
+                     u8 nameCodes[6]) {
+    s32 row;
+    s32 shift;
+    s32 character;
+
+    for (row = 0; row < 5; row++) {
+        if (raceTime >= records[row].raceTime) continue;
+        for (shift = 4; shift > row; shift--) {
+            records[shift] = records[shift - 1];
+        }
+        records[row] = (RaceRecord){{0}, raceTime, carIndex, 0};
+        for (character = 0; character < 6; character++) {
+            records[row].driverName[character] = 'A';
+            nameCodes[character] = 0xB;
+        }
+        return row;
+    }
+    return 5;
+}
+
 void InitRecordTables(void) {
     s32 series;
     s32 course;
@@ -25,8 +54,13 @@ void InitRecordTables(void) {
                     defaultLapTimes[series * 4 + course];
             }
             for (slot = 0; slot < 5; slot++) {
-                g_RankingRecords[series][course][slot] = (RaceRecord){0};
-                g_TimeRecords[series][course][slot] = (RaceRecord){0};
+                g_RankingRecords[series][course][slot] =
+                    s_DefaultRecords[slot];
+                g_RankingRecords[series][course][slot].raceTime =
+                    defaultLapTimes[series * 4 + course] + slot * 2000;
+                g_TimeRecords[series][course][slot] = s_DefaultRecords[slot];
+                g_TimeRecords[series][course][slot].raceTime =
+                    defaultTotalTimes[series * 4 + course] + slot * 10000;
             }
         }
     }

@@ -172,23 +172,9 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
 void InsertRaceRecords(void) {
     s32 count;
     s32 i;
-    s32 row_offset;
     s32 best;
-    s32 j;
     s32 *score_ptr;
-    register RaceRecordAddress entryAddress asm("$5");
-    register s32 score_offset asm("$3");
-    s32 score_value;
-    s32 mode;
-    RaceRecordAddress baseAddress;
-    s32 letter;
-    s32 code;
-    s32 letter2;
-    s32 code2;
-    RaceRecordAddress recordAddress;
-    RaceRecordAddress rankingBaseAddress;
-    RaceRecordAddress timeBaseAddress;
-    s32 fill_offset;
+    s32 course;
 
     count = 3;
     if (g_CourseIndex == 3) {
@@ -209,139 +195,13 @@ void InsertRaceRecords(void) {
         }
     }
 
-    i = 0;
-    rankingBaseAddress.pointer = &g_RankingRecords[0][0][0];
-    letter = 0x41;
-    code = 0xB;
-    row_offset = 0;
-    while (i < 5) {
-        score_offset = row_offset + (g_CourseIndex * 0x50);
-        score_offset += g_GrandPrixSeries * 0x140;
-        recordAddress.pointer = &g_RankingRecords[0][0][0];
-        recordAddress.bytePointer += score_offset;
-        if (best < recordAddress.pointer->raceTime) {
-            if (i < 4) {
-                j = 4;
-                do {
-                    entryAddress.recordOffset = j * sizeof(RaceRecord);
-                    j--;
-                    mode = g_CourseIndex;
-                    score_offset =
-                        (g_GrandPrixSeries * 0x140) + rankingBaseAddress.value;
-                    baseAddress.value = (mode * 0x50) + score_offset;
-                    entryAddress.value = entryAddress.recordOffset + baseAddress.value;
-                    entryAddress.pointer--;
-                    entryAddress.pointer[1] = entryAddress.pointer[0];
-                } while (i < j);
-            }
-            score_offset = row_offset + (g_CourseIndex * 0x50);
-            score_offset += g_GrandPrixSeries * 0x140;
-            {
-                RaceRecordAddress rankingTimeAddress;
-
-                rankingTimeAddress.pointer = &g_RankingRecords[0][0][0];
-                rankingTimeAddress.bytePointer += score_offset;
-                rankingTimeAddress.pointer->raceTime = best;
-            }
-            j = 0;
-            fill_offset = row_offset;
-            for (; j < 6; j++) {
-                RaceRecordAddress nameAddress;
-
-                score_offset = fill_offset + (g_CourseIndex * 0x50);
-                score_offset += g_GrandPrixSeries * 0x140;
-                nameAddress.bytePointer = rankingBaseAddress.bytePointer;
-                nameAddress.value = score_offset + nameAddress.value;
-                nameAddress.bytePointer += j;
-                *nameAddress.volatileBytePointer = letter;
-                g_RankingNameCodes[j] = code;
-            }
-
-            score_offset = row_offset + (g_CourseIndex * 0x50);
-            score_offset += g_GrandPrixSeries * 0x140;
-            {
-                RaceRecordAddress rankingCarAddress;
-
-                rankingCarAddress.pointer = &g_RankingRecords[0][0][0];
-                rankingCarAddress.bytePointer += score_offset;
-                rankingCarAddress.pointer->carIndex = g_PlayerCarIndex;
-            }
-            break;
-        }
-        i++;
-        row_offset += 0x10;
-    }
-
-    g_RankingInsertRow = i;
-    i = 0;
-    timeBaseAddress.pointer = &g_TimeRecords[0][0][0];
-    letter2 = 0x41;
-    code2 = 0xB;
-    row_offset = 0;
-    while (i < 5) {
-        score_offset = row_offset + (g_CourseIndex * 0x50);
-        score_offset += g_GrandPrixSeries * 0x140;
-        {
-            RaceRecordAddress timeValueAddress;
-
-            timeValueAddress.pointer = &g_TimeRecords[0][0][0];
-            timeValueAddress.bytePointer += score_offset;
-            score_value = timeValueAddress.pointer->raceTime;
-        }
-        if (g_RaceTotalTime < score_value) {
-            if (i < 4) {
-                j = 4;
-                do {
-                    entryAddress.recordOffset = j * sizeof(RaceRecord);
-                    j--;
-                    mode = g_CourseIndex;
-                    score_offset =
-                        (g_GrandPrixSeries * 0x140) + timeBaseAddress.value;
-                    baseAddress.value = (mode * 0x50) + score_offset;
-                    entryAddress.value = entryAddress.recordOffset + baseAddress.value;
-                    entryAddress.pointer--;
-                    entryAddress.pointer[1] = entryAddress.pointer[0];
-                } while (i < j);
-            }
-            score_offset = row_offset + (g_CourseIndex * 0x50);
-            score_offset += g_GrandPrixSeries * 0x140;
-            {
-                RaceRecordAddress timeRecordAddress;
-
-                timeRecordAddress.pointer = &g_TimeRecords[0][0][0];
-                timeRecordAddress.bytePointer += score_offset;
-                timeRecordAddress.pointer->raceTime = g_RaceTotalTime;
-            }
-            j = 0;
-            fill_offset = row_offset;
-            for (; j < 6; j++) {
-                RaceRecordAddress nameAddress;
-
-                score_offset = fill_offset + (g_CourseIndex * 0x50);
-                score_offset += g_GrandPrixSeries * 0x140;
-                nameAddress.bytePointer = timeBaseAddress.bytePointer;
-                nameAddress.value = score_offset + nameAddress.value;
-                nameAddress.bytePointer += j;
-                *nameAddress.volatileBytePointer = letter2;
-                g_TimeRecordNameCodes[j] = code2;
-            }
-
-            score_offset = row_offset + (g_CourseIndex * 0x50);
-            score_offset += g_GrandPrixSeries * 0x140;
-            {
-                RaceRecordAddress timeCarAddress;
-
-                timeCarAddress.pointer = &g_TimeRecords[0][0][0];
-                timeCarAddress.bytePointer += score_offset;
-                timeCarAddress.pointer->carIndex = g_PlayerCarIndex;
-            }
-            break;
-        }
-        i++;
-        row_offset += 0x10;
-    }
-
-    g_TimeRecordInsertRow = i;
+    course = RageSeriesCourseIndex();
+    g_RankingInsertRow = InsertRaceRecord(
+        g_RankingRecords[g_GrandPrixSeries][course], best, g_PlayerCarIndex,
+        g_RankingNameCodes);
+    g_TimeRecordInsertRow = InsertRaceRecord(
+        g_TimeRecords[g_GrandPrixSeries][course], g_RaceTotalTime,
+        g_PlayerCarIndex, g_TimeRecordNameCodes);
 }
 
 void EnterRecordEntry(void) {

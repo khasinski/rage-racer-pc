@@ -47,6 +47,28 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME team_logo COMMAND team_logo_tests)
 
+add_executable(record_defaults_tests
+    record_defaults_tests.c
+    ../src/main/PAL/main/race/records.c)
+target_include_directories(record_defaults_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(record_defaults_tests PRIVATE
+    __psyz=1 RAGE_HOST_PORT=1)
+if(MSVC)
+    target_compile_options(record_defaults_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(record_defaults_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(record_defaults_tests PRIVATE
+        -Wall -Wextra -Wno-deprecated-non-prototype -Werror)
+endif()
+add_test(NAME record_defaults COMMAND record_defaults_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
