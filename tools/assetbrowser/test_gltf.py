@@ -310,38 +310,6 @@ class GltfExportTest(unittest.TestCase):
             rmesh.MATERIAL_TERRAIN_ENV_CLUT,
             material)
 
-    def test_runtime_mesh_only_marks_thin_terrain_strips_as_overlays(self):
-        marking = models.Face(
-            prim=2, v=(0, 1, 2, 3), otbias=-1,
-            uv=((208, 0), (215, 0), (208, 63), (215, 63)),
-            tpage=5, clut=0x7940)
-        road = models.Face(
-            prim=4, v=(4, 5, 6, 7), otbias=-7,
-            uv=((254, 0), (254, 126), (0, 0), (0, 126)),
-            tpage=5, clut=0x7943)
-        bank = models.Bank(count=1, vertex_off=0, normal_off=0,
-                           model_offs=[])
-        bank.vertices = [(0, 0, 0), (22, 0, 0),
-                         (0, 0, 1300), (22, 0, 1300),
-                         (0, 0, 0), (2800, 0, 0),
-                         (0, 0, 1400), (2800, 0, 1400)]
-        bank.models = [models.Model(index=0, offset=0,
-                                    faces=[marking, road])]
-        textures = [{"tpage": 5, "clut": 0x7940},
-                    {"tpage": 5, "clut": 0x7943}]
-
-        blob = rmesh.bank_to_bytes(
-            bank, textures, terrain_primitives=True)
-        vertex_offset = rmesh.HEADER.size + 8
-        marking_material = rmesh.VERTEX.unpack_from(
-            blob, vertex_offset)[-1]
-        road_material = rmesh.VERTEX.unpack_from(
-            blob, vertex_offset + 4 * rmesh.VERTEX.size)[-1]
-        self.assertNotEqual(
-            0, marking_material & rmesh.MATERIAL_TERRAIN_SURFACE_OVERLAY)
-        self.assertEqual(
-            0, road_material & rmesh.MATERIAL_TERRAIN_SURFACE_OVERLAY)
-
     def test_runtime_mesh_does_not_turn_ps1_crack_lines_into_geometry(self):
         face = models.Face(
             prim=0, v=(0, 1, 2, 3), rgb=(64, 64, 64),

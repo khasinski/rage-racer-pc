@@ -176,8 +176,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_SURFACE_OVERLAY);
+         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
     worldPosition = RageTransformPosition(basis, &source);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
@@ -230,13 +229,11 @@ static int RageBuildVertex(const RageTransformBasis *basis,
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
         /* OT bias only controlled packet order on PS1. It is not a semantic
          * decal marker: full road and tunnel quads carry negative values too.
-         * The importer explicitly labels the genuinely thin surface strips
-         * that need a native decal pass. */
+         * Keep every terrain face in the ordinary Z-buffered phase and use a
+         * small constant clip-space tie-break. This avoids both coplanar
+         * flicker and entire face classes jumping in front of scenery. */
         if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            if ((source.material &
-                 RAGE_RUNTIME_MATERIAL_TERRAIN_SURFACE_OVERLAY) != 0) {
-                *depthDecal = 1;
-            }
+            out->depthBias += (float)authoredDepthBias * 8.0f;
         } else {
             out->depthBias += (float)authoredDepthBias;
         }

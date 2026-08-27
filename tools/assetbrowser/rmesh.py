@@ -18,7 +18,6 @@ MATERIAL_SCROLL_U = 1 << 31
 MATERIAL_TERRAIN_NEAR_ONLY = 1 << 30
 MATERIAL_METADATA = 1 << 29
 MATERIAL_TERRAIN_ENV_CLUT = 1 << 28
-MATERIAL_TERRAIN_SURFACE_OVERLAY = 1 << 27
 MATERIAL_DEPTH_BIAS_SHIFT = 16
 HEADER = struct.Struct("<8sIIII")
 VERTEX = struct.Struct("<3f3f4B2fI")
@@ -31,28 +30,6 @@ def _uv(face, corner):
     # Integer PS1 UVs address texel centres. Mapping them to texel edges made
     # linear sampling blend every lookup with an unrelated neighbour.
     return (u + 0.5) / 256.0, (v + 0.5) / 256.0
-
-
-def _terrain_surface_overlay(bank, face):
-    """Identify the thin authored strips that really need decal ordering.
-
-    A negative PS1 OT bias is not itself a decal marker: ordinary road and
-    tunnel quads use it too. Genuine lane markings are long, roughly
-    coplanar strips only about 22 source units wide. Keep the rule geometric
-    so it remains independent of a particular track's palette or texture.
-    """
-    if face.otbias >= 0:
-        return False
-    points = [bank.vertices[index] for index in face.v]
-    lengths_squared = []
-    for first, second in ((0, 1), (0, 2), (1, 3), (2, 3)):
-        lengths_squared.append(sum(
-            (points[first][axis] - points[second][axis]) ** 2
-            for axis in range(3)))
-    shortest = min(lengths_squared)
-    longest = max(lengths_squared)
-    return (shortest > 0 and shortest <= 48 * 48 and
-            longest >= shortest * 8 * 8)
 
 
 def bank_to_bytes(bank, textures=None, scrolling_primitives=False,
@@ -79,9 +56,6 @@ def bank_to_bytes(bank, textures=None, scrolling_primitives=False,
                     material |= MATERIAL_TERRAIN_NEAR_ONLY
                 if terrain_primitives and face.prim < 2:
                     material |= MATERIAL_TERRAIN_ENV_CLUT
-                if (terrain_primitives and
-                        _terrain_surface_overlay(bank, face)):
-                    material |= MATERIAL_TERRAIN_SURFACE_OVERLAY
             if (scrolling_primitives and face.prim == 3 and
                     (material & 0xFFFF) != 0xFFFF):
                 material |= MATERIAL_SCROLL_U
