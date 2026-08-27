@@ -5,9 +5,11 @@
 
 enum {
     RAGE_MOD_MANIFEST_MAX_TEXTURES = 512,
+    RAGE_MOD_MANIFEST_MAX_MATERIALS = 512,
     RAGE_MOD_MANIFEST_ID_CAPACITY = 96,
     RAGE_MOD_MANIFEST_KEY_CAPACITY = 160,
     RAGE_MOD_MANIFEST_PATH_CAPACITY = 512,
+    RAGE_MOD_MANIFEST_PROPERTIES_CAPACITY = 256,
 };
 
 typedef struct RageModTextureOverride {
@@ -15,10 +17,17 @@ typedef struct RageModTextureOverride {
     char path[RAGE_MOD_MANIFEST_PATH_CAPACITY];
 } RageModTextureOverride;
 
+typedef struct RageModMaterialOverride {
+    char key[RAGE_MOD_MANIFEST_KEY_CAPACITY];
+    char properties[RAGE_MOD_MANIFEST_PROPERTIES_CAPACITY];
+} RageModMaterialOverride;
+
 typedef struct RageModManifest {
     char id[RAGE_MOD_MANIFEST_ID_CAPACITY];
     RageModTextureOverride textures[RAGE_MOD_MANIFEST_MAX_TEXTURES];
     size_t textureCount;
+    RageModMaterialOverride materials[RAGE_MOD_MANIFEST_MAX_MATERIALS];
+    size_t materialCount;
     size_t errorLine;
 } RageModManifest;
 
@@ -27,5 +36,7 @@ typedef struct RageModManifest {
 int RageModManifestParse(const char *text, size_t size, RageModManifest *out);
 const char *RageModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId);
+const char *RageModManifestFindMaterialProperties(
+    const RageModManifest *manifest, const char *semanticId);
 
 #endif

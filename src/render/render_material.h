@@ -36,6 +36,8 @@ typedef struct RageRenderMaterial {
 } RageRenderMaterial;
 
 void RageRenderMaterialDefault(RageRenderMaterial *material);
+int RageRenderMaterialParseProperties(const char *text, size_t size,
+                                      RageRenderMaterial *material);
 
 /* Resolve one material and gameplay texture variant from a rage-rmat v4-v6
  * sidecar. v4/v5 acquire neutral properties, keeping old caches usable. */

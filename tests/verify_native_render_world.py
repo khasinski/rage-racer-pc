@@ -68,7 +68,7 @@ timer = 20
             return result.returncode or 1
         if "native GPU pipeline ready" not in result.stdout:
             raise AssertionError("native GPU shaders or pipelines were not created")
-        if ("semantic texture mod native-world-test" not in result.stdout or
+        if ("semantic asset mod native-world-test" not in result.stdout or
                 "native texture override "
                 "track.big1.terrain.material.0 <- textures/terrain.png "
                 "(64x32)" not in result.stdout):

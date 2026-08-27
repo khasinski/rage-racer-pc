@@ -56,7 +56,7 @@ static void ModernAssetsInitModProvider(void) {
     }
     SDL_free(bytes);
     s_modReady = 1;
-    fprintf(stderr, "rage-port: semantic texture mod %s from %s\n",
+    fprintf(stderr, "rage-port: semantic asset mod %s from %s\n",
             s_modManifest.id[0] != '\0' ? s_modManifest.id : "(unnamed)",
             s_modRoot);
 }
@@ -447,6 +447,22 @@ static int ModernAssetsFindMaterial(
     definition->baseColorTexture.length = pathLength;
     definition->paintMask.text = paintPath;
     definition->paintMask.length = paintPathLength;
+    if (s_modReady) {
+        char exactId[160], baseId[160];
+        const char *properties = NULL;
+        if (RageAssetMaterialVariantId(
+                exactId, sizeof(exactId), instance->assetKey,
+                instance->assetSet, material, variant))
+            properties = RageModManifestFindMaterialProperties(
+                &s_modManifest, exactId);
+        if (properties == NULL && RageAssetMaterialId(
+                baseId, sizeof(baseId), instance->assetKey,
+                instance->assetSet, material))
+            properties = RageModManifestFindMaterialProperties(
+                &s_modManifest, baseId);
+        if (properties != NULL && !RageRenderMaterialParseProperties(
+                properties, strlen(properties), definition)) return 0;
+    }
     return 1;
 }
 

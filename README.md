@@ -314,6 +314,10 @@ id = "example-hd-textures"
 [textures]
 "track.big1.terrain.material.3" = "textures/tunnel-wall.png"
 "track.big1.course.material.7.variant.1" = "textures/sign-night.png"
+
+[materials]
+# shading alpha roughness metallic base RGBA emissive RGB
+"track.big1.course.material.7.variant.1" = "unlit blend 0.2 0 1 1 1 1 0.8 0.6 0.2"
 ```
 
 The first mapping replaces every runtime variant of that material. The second
@@ -321,6 +325,12 @@ is more specific and replaces only variant 1. Exact variant mappings win over
 the base material mapping. PNGs may use any dimensions up to 16384×16384 and
 are decoded directly to RGBA; they are not quantized back to a PS1 palette.
 Paths are relative to the mod root and use `/`, including on Windows.
+
+Material overrides use the same base or exact-variant IDs. `shading` is
+`inherit`, `lit` or `unlit`; alpha is `auto`, `opaque`, `mask` or `blend`.
+Roughness, metallic, base-colour RGBA and emissive RGB are conventional values
+from 0 to 1. This metadata remains independent from where the base-colour PNG
+came from, so a mod can replace pixels, surface properties or both.
 
 Material IDs describe game content rather than archive entries. Track IDs use
 `track.<big|mid|hi|oval><1-6>.<course|terrain|model-bank-1|model-bank-2>.material.<n>`;

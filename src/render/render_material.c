@@ -73,9 +73,16 @@ static int RageMaterialProperties(const char *line, size_t length,
             !RageMaterialFloat(token, values[value])) return 0;
     }
     while (cursor < length && line[cursor] == ' ') cursor++;
-    return cursor == length && material->roughness >= 0.0f &&
-           material->roughness <= 1.0f && material->metallic >= 0.0f &&
-           material->metallic <= 1.0f;
+    if (cursor != length) return 0;
+    for (value = 0; value < sizeof(values) / sizeof(values[0]); value++)
+        if (*values[value] < 0.0f || *values[value] > 1.0f) return 0;
+    return 1;
+}
+
+int RageRenderMaterialParseProperties(const char *text, size_t size,
+                                      RageRenderMaterial *material) {
+    if (text == NULL || material == NULL) return 0;
+    return RageMaterialProperties(text, size, 0, material);
 }
 
 void RageRenderMaterialDefault(RageRenderMaterial *material) {

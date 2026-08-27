@@ -25,15 +25,16 @@ runtime assets                    Texture / Mesh / AudioClip
 renderer and mixer                no knowledge of either source format
 ```
 
-The texture boundary and first layered provider are implemented: the PS1
-importer bakes texture pages, palette choices and texture windows into immutable
-RGBA materials, while `mod.toml` can map the same semantic IDs directly to PNG.
-The mod provider has priority and the imported PS1 cache is the fallback.
-`rage-rmat v4` maps only material IDs to variant files; PS1 coordinates remain
-optional extraction diagnostics. Next slices are a general provider registry,
-FBX-to-runtime-mesh import and WAV-to-runtime-audio import. PNGs are decoded on
-first use and then retained as GPU textures; compiled cache generation belongs
-outside the render/audio hot paths.
+The texture and material boundary and first layered provider are implemented:
+the PS1 importer bakes texture pages, palette choices and texture windows into
+immutable RGBA materials, while `mod.toml` can map the same semantic IDs to PNG
+and override surface properties. The mod provider has priority and the imported
+PS1 cache is the fallback. `rage-rmat v6` carries variant paths, base colour,
+emissive colour, lighting and alpha modes, roughness and metallic values; PS1
+coordinates remain optional extraction diagnostics. Next slices are a general
+provider registry, FBX-to-runtime-mesh import and WAV-to-runtime-audio import.
+PNGs are decoded on first use and then retained as GPU textures; compiled cache
+generation belongs outside the render/audio hot paths.
 
 ## 0. Implementation history
 
@@ -366,9 +367,10 @@ record skip — that is a game-code change gated behind the modern mode
 
 The PS1 importer resolves texture pages, CLUT rows, texture windows, section
 swaps and paint variants before runtime. It emits ordinary RGBA images and a
-renderer-neutral `rage-rmat v4` mapping from semantic material ID to variant
-paths. The renderer caches those paths by `(asset, material, variant)` and
-never observes VRAM coordinates or palette state.
+renderer-neutral `rage-rmat v6` mapping from semantic material ID to variant
+paths plus conventional surface properties. The renderer caches those
+materials by `(asset, material, variant)` and never observes VRAM coordinates
+or palette state.
 
 Animated/variant choices are semantic state on the scene instance. A mod
 provider can resolve the same IDs to PNG without knowing how the original disc

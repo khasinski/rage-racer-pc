@@ -3,10 +3,13 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "render_material.h"
+
 typedef enum RageModSection {
     RAGE_MOD_SECTION_NONE,
     RAGE_MOD_SECTION_MOD,
     RAGE_MOD_SECTION_TEXTURES,
+    RAGE_MOD_SECTION_MATERIALS,
 } RageModSection;
 
 static char *RageManifestTrim(char *text) {
@@ -109,6 +112,10 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 section = RAGE_MOD_SECTION_TEXTURES;
                 goto next;
             }
+            if (strcmp(line, "[materials]") == 0) {
+                section = RAGE_MOD_SECTION_MATERIALS;
+                goto next;
+            }
             if (*line == '[') {
                 section = RAGE_MOD_SECTION_NONE;
                 goto next;
@@ -135,6 +142,21 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
                     !RageManifestSemanticId(entry->key) ||
                     !RageManifestRelativePath(entry->path)) goto invalid;
                 out->textureCount++;
+            } else if (section == RAGE_MOD_SECTION_MATERIALS) {
+                RageModMaterialOverride *entry;
+                RageRenderMaterial material;
+                if (out->materialCount == RAGE_MOD_MANIFEST_MAX_MATERIALS)
+                    goto invalid;
+                entry = &out->materials[out->materialCount];
+                if (!RageManifestAssignment(
+                        line, entry->key, sizeof(entry->key),
+                        entry->properties, sizeof(entry->properties)) ||
+                    !RageManifestSemanticId(entry->key)) goto invalid;
+                RageRenderMaterialDefault(&material);
+                if (!RageRenderMaterialParseProperties(
+                        entry->properties, strlen(entry->properties),
+                        &material)) goto invalid;
+                out->materialCount++;
             }
 next:
             start = i + 1;
@@ -144,6 +166,16 @@ next:
 invalid:
     out->errorLine = lineNumber;
     return 0;
+}
+
+const char *RageModManifestFindMaterialProperties(
+    const RageModManifest *manifest, const char *semanticId) {
+    size_t index;
+    if (manifest == NULL || semanticId == NULL) return NULL;
+    for (index = manifest->materialCount; index > 0; index--)
+        if (strcmp(manifest->materials[index - 1].key, semanticId) == 0)
+            return manifest->materials[index - 1].properties;
+    return NULL;
 }
 
 const char *RageModManifestFindTexture(const RageModManifest *manifest,
