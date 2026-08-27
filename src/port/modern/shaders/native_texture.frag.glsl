@@ -81,19 +81,33 @@ void main() {
     float roughness = clamp(material.surface.x, 0.0, 1.0);
     float metallic = clamp(material.surface.y, 0.0, 1.0);
     float gloss = 1.0 - roughness;
+    float coat = smoothstep(0.18, 0.55, gloss);
     vec3 lightDirection = normalize(sceneLight.direction.xyz);
     vec3 halfDirection = normalize(lightDirection + view);
-    float exponent = mix(8.0, 192.0, gloss * gloss);
-    float specularLobe = pow(max(dot(n, halfDirection), 0.0), exponent) *
-                         gloss;
+    float ndl = max(dot(n, lightDirection), 0.0);
+    float ndv = max(dot(n, view), 0.001);
+    float ndh = max(dot(n, halfDirection), 0.0);
+    float vdh = max(dot(view, halfDirection), 0.0);
     vec3 materialColor = texel.rgb * material.baseColor.rgb;
-    vec3 f0 = mix(vec3(0.04), materialColor, metallic);
-    vec3 fresnel = f0 + (vec3(1.0) - f0) *
-        pow(1.0 - max(dot(n, view), 0.0), 5.0);
-    vec3 environmentSpecular = reflectedSky(reflect(-view, n)) * fresnel *
-        gloss * gloss * mix(0.12, 0.42, metallic);
-    vec3 directSpecular = sceneLight.diffuse.rgb * fresnel * specularLobe *
-        mix(0.2, 0.75, metallic);
+    vec3 f0 = mix(vec3(0.06), materialColor, metallic);
+    vec3 fresnel = f0 + (vec3(1.0) - f0) * pow(1.0 - vdh, 5.0);
+    float alpha = max(roughness * roughness, 0.025);
+    float alpha2 = alpha * alpha;
+    float distributionDenominator = ndh * ndh * (alpha2 - 1.0) + 1.0;
+    float distribution = alpha2 /
+        max(3.14159265 * distributionDenominator *
+            distributionDenominator, 0.0001);
+    float geometryK = (roughness + 1.0) * (roughness + 1.0) * 0.125;
+    float geometryView = ndv / (ndv * (1.0 - geometryK) + geometryK);
+    float geometryLight = ndl / (ndl * (1.0 - geometryK) + geometryK);
+    vec3 directSpecular = sceneLight.diffuse.rgb * fresnel * distribution *
+        geometryView * geometryLight * ndl / max(4.0 * ndv * ndl, 0.001);
+    float rim = pow(1.0 - ndv, 5.0);
+    float reflectionStrength = coat * mix(0.10, 0.55, rim) *
+        mix(0.85, 1.15, metallic);
+    vec3 environmentSpecular = reflectedSky(reflect(-view, n)) *
+        reflectionStrength;
+    directSpecular *= coat;
     vec3 specular = (environmentSpecular + directSpecular) *
         step(0.001, materialLighting);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
