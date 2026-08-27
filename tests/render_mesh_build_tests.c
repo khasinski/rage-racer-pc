@@ -348,6 +348,7 @@ static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
                                              &spanCount));
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(1, spans[0].depthDecal);
+    EXPECT_EQ(-64, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
@@ -393,7 +394,7 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
     EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
               spans[0].materialFlags);
     EXPECT_EQ(1, spans[0].depthDecal);
-    EXPECT_EQ(0, (int)vertices[0].depthBias);
+    EXPECT_EQ(-64, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {

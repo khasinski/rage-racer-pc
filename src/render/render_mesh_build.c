@@ -227,13 +227,17 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
         int8_t authoredDepthBias = (int8_t)(source.material >>
             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
-        /* Terrain OT bias only identifies coplanar details such as road
-         * markings. Carrying its numeric value into a Z buffer lets distant
-         * markings jump in front of cars, so the decal pipeline owns their
-         * tiny depth tie-break instead. Non-terrain assets still use the bias
-         * for authored overlaps such as car body and wheel geometry. */
+        /* Terrain OT bias identifies thin overlays such as the authored road
+         * markings. Metal's rasterizer bias is slope dependent in practice,
+         * which lets half of a marking lose the depth tie on a hill. Give
+         * those vertices a small, constant clip-space tie-break as well. It
+         * is deliberately unrelated to the much larger authored OT number;
+         * vehicles render afterwards and still use the real depth buffer. */
         if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-            if (authoredDepthBias < 0) *depthDecal = 1;
+            if (authoredDepthBias < 0) {
+                *depthDecal = 1;
+                out->depthBias -= 64.0f;
+            }
         } else {
             out->depthBias += (float)authoredDepthBias;
         }
