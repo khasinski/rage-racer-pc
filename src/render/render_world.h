@@ -128,9 +128,7 @@ enum {
     /* The original course data chooses fogged and un-fogged model dispatches
      * per object. Keep that authored choice in the scene, not the backend. */
     RAGE_RENDER_INSTANCE_ENABLE_FOG = 1u << 1,
-    /* Native lighting is currently authored for vehicle normals. Course and
-     * terrain retain their source texture brightness until their original
-     * environment light matrices are represented in Render World. */
+    /* Apply the scene's renderer-neutral directional and ambient light. */
     RAGE_RENDER_INSTANCE_ENABLE_LIGHTING = 1u << 2,
     /* Terrain modes 0/1 choose the adjacent CLUT in environment mode 4. */
     RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4 = 1u << 3,
@@ -142,6 +140,10 @@ enum {
      * backend applies a slope-aware depth offset instead of letting the two
      * surfaces z-fight. */
     RAGE_RENDER_INSTANCE_DEPTH_DECAL = 1u << 5,
+    /* Use geometry normals for deliberately flat-shaded imported meshes.
+     * This is ordinary material geometry semantics, not a source-format
+     * workaround: importers for richer formats can keep authored normals. */
+    RAGE_RENDER_INSTANCE_FLAT_SHADED = 1u << 6,
 };
 
 typedef struct RageRenderWorld {

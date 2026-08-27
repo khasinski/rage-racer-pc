@@ -109,6 +109,29 @@ static float RageVec3Length(float x, float y, float z) {
     return sqrtf(x * x + y * y + z * z);
 }
 
+static void RageApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
+    float ax = triangle[1].position[0] - triangle[0].position[0];
+    float ay = triangle[1].position[1] - triangle[0].position[1];
+    float az = triangle[1].position[2] - triangle[0].position[2];
+    float bx = triangle[2].position[0] - triangle[0].position[0];
+    float by = triangle[2].position[1] - triangle[0].position[1];
+    float bz = triangle[2].position[2] - triangle[0].position[2];
+    float nx = ay * bz - az * by;
+    float ny = az * bx - ax * bz;
+    float nz = ax * by - ay * bx;
+    float length = RageVec3Length(nx, ny, nz);
+    uint32_t corner;
+    if (length <= 0.000001f) return;
+    nx /= length;
+    ny /= length;
+    nz /= length;
+    for (corner = 0; corner < 3; corner++) {
+        triangle[corner].normal[0] = nx;
+        triangle[corner].normal[1] = ny;
+        triangle[corner].normal[2] = nz;
+    }
+}
+
 /* Road paint is ordinary native geometry: a long, narrow strip following the
  * road surface. Identify that semantic shape without consulting PS1 primitive
  * modes or ordering-table hints. */
@@ -481,6 +504,8 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[1] ||
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
+            if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
+                RageApplyFlatTriangleNormal(triangle);
             if (depthDecals[0]) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing

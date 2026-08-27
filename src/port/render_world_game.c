@@ -409,7 +409,12 @@ static void RageGameRenderWorldSubmitCourseTransform(
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
-    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL |
+                     RAGE_RENDER_INSTANCE_FLAT_SHADED;
+    /* Animated screen art is emissive/unlit. Its structural backing and
+     * ordinary course scenery participate in native scene lighting. */
+    if (!depthOverlay)
+        instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
     if (fogged) instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
     if (cullBackfaces)
         instance.flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
@@ -501,7 +506,9 @@ void RageGameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
-    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL |
+                     RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
+                     RAGE_RENDER_INSTANCE_FLAT_SHADED;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
     instance.previousTransform = instance.transform;
