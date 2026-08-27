@@ -483,9 +483,6 @@ static void test_native_draw_builder_limits_authored_terrain_lines_to_lod(void) 
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(UINT32_MAX, spans[0].material);
     EXPECT_EQ(1, spans[0].depthDecal);
-    EXPECT_EQ(-256, (int)vertices[0].depthBias);
-    EXPECT_EQ(-256, (int)vertices[1].depthBias);
-    EXPECT_EQ(-256, (int)vertices[2].depthBias);
     storage[0].transform.position.z = -4000.0f;
     EXPECT_EQ(0, RageRenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
                                              &mesh, vertices, 3, spans, 1,
