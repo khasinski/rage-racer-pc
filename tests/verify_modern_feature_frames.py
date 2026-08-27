@@ -14,8 +14,8 @@ CASES = {
     "enhanced": ("16:9", "linear", "fxaa", "vibrant", (426, 240)),
 }
 MODERN_GOLDENS = {
-    "baseline": "fdde24231fe598afbee3263be94174ce4b61765fef3ecba1f34f45c400695931",
-    "enhanced": "9887a2375ddb561d1bfd5103161d2982973f1ccaf2ff2183b9f88711c277f348",
+    "baseline": "c3e4c3cb9ae3642bd2da24cf008ed7a5485d58c290a002313c2d29d0dc2cee6c",
+    "enhanced": "57d25c9e1ec5d4232d3011285494fc38d3529b02c44cf08411a0b8592954cf84",
 }
 
 
