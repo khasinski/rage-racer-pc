@@ -47,23 +47,25 @@ void UploadImageBlock(GameImageAssetHeaderWord *asset) {
  * duplicate_loop_exit_test copy the test above the loop, which costs 12
  * instructions retail does not have.
  */
+/*
+ * An image asset is a chain of [size][payload] links, ending at a size of
+ * zero or less. The size word is read first and skipped past, so a block
+ * starts at the word after its own header.
+ */
 void UploadImageAsset(void *asset) {
-    GameImageAssetHeaderWord *ptr;
-    s32 size;
+    GameImageAssetHeaderWord *ptr = asset;
 
-    ptr = asset;
     ptr++;
-    goto test;
+    for (;;) {
+        s32 size = ptr->size;
+        GameImageAssetHeaderWord *next;
 
-    do {
-        u32 blockSize = size;
-        GameImageAssetHeaderWord *next = ptr + (blockSize >> 2);
+        ptr++;
+        if (size <= 0) return;
+        next = ptr + ((u32)size >> 2);
         UploadImageBlock(ptr);
         ptr = next;
-    test:
-        size = ptr->size;
-        ptr++;
-    } while (size > 0);
+    }
 }
 
 void StoreTeamLogoImage(void *dst) {

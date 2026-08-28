@@ -275,18 +275,11 @@ split_update_done:
         }
         threshold = 0x927BE;
         value = g_LastSectorTime;
-    } else {
-        goto replay_split_current_done;
+
+        tile = value <= threshold ? 0x78CC : 0x7890;
+        DrawTimeValue(0x12, 0x2A, value, tile, 0x3E8);
     }
 
-    if (value <= threshold) {
-        tile = 0x78CC;
-    } else {
-        tile = 0x7890;
-    }
-    DrawTimeValue(0x12, 0x2A, value, tile, 0x3E8);
-
-replay_split_current_done:
     timeout = 0x3E8;
     DrawTimeValue(0x12, 0x20, g_SplitTargetTime, 0x78CC, timeout);
     DrawSplitDelta(g_SplitSector, g_SplitSign);

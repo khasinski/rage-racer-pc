@@ -587,23 +587,20 @@ void UpdateRaceScene(void) {
             g_RaceTimeRemaining--;
         }
 
+        /* Before the flag the intro camera runs, then phase 1 arms the grid;
+         * from phase 1 on, the standing start fires on its own frame. */
         frameValue = g_SceneTimer;
-        if (frameValue >= 0x5A) {
-            if (g_RacePhase == 0) {
+        if (g_RacePhase == 0) {
+            if (frameValue >= 0x5A) {
                 g_RacePhase = 1;
             } else {
-                goto update_race;
+                RunRaceIntroCamera(&g_PlayerCar, frameValue);
             }
-        } else if (g_RacePhase == 0) {
-            RunRaceIntroCamera(&g_PlayerCar, frameValue);
-        } else {
-update_race:
-            if ((g_RacePhase == 1) && (g_SceneTimer >= 0xD3)) {
-                BeginCarStandingStart(&g_PlayerCar, frameValue);
-                StartCdAudio();
-                g_RacePhase = 2;
-                g_PauseDebounce = 0x1E;
-            }
+        } else if ((g_RacePhase == 1) && (g_SceneTimer >= 0xD3)) {
+            BeginCarStandingStart(&g_PlayerCar, frameValue);
+            StartCdAudio();
+            g_RacePhase = 2;
+            g_PauseDebounce = 0x1E;
         }
 
         if (g_RacePhase < 4) {

@@ -33,18 +33,11 @@ void DrawSplitTimes(void) {
         }
         threshold = 0x927BE;
         value = g_LastSectorTime;
-    } else {
-        goto split_current_done;
+
+        tile = value <= threshold ? 0x78CC : 0x7890;
+        DrawTimeValue(HudLeftX(0x12), 0x2A, value, tile, 0x3E8);
     }
 
-    if (value <= threshold) {
-        tile = 0x78CC;
-    } else {
-        tile = 0x7890;
-    }
-    DrawTimeValue(HudLeftX(0x12), 0x2A, value, tile, 0x3E8);
-
-split_current_done:
     timeout = 0x3E8;
     DrawTimeValue(HudLeftX(0x12), 0x20, g_SplitTargetTime,
                   0x78CC, timeout);
