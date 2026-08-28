@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -38,6 +39,23 @@ def main() -> int:
     ):
         if transition not in result.stdout:
             raise AssertionError(f"Grand Prix missed result transition {transition}")
+    replay = result.stdout.index("scene=17 frontend=3")
+    opened = [
+        (match.start(), int(file_track or virtual_track))
+        for match in re.finditer(
+            r"opened track .*\(Track (\d+)\)\.bin|opened virtual track (\d+)",
+            result.stdout,
+        )
+        for file_track, virtual_track in [match.groups()]
+    ]
+    before_replay = [track for position, track in opened if position < replay]
+    in_replay = [track for position, track in opened if position > replay]
+    if (not before_replay or before_replay[-1] <= 2 or
+            not in_replay or in_replay[0] != 12):
+        raise AssertionError(
+            "race CD-DA leaked across its fade instead of switching to the "
+            f"replay track: before={before_replay}, replay={in_replay}"
+        )
     final_line = next(
         (line for line in result.stdout.splitlines()
          if "stopped at frame 3500" in line), ""

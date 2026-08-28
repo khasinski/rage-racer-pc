@@ -169,6 +169,19 @@ def main() -> int:
     )
     if audio_state is None or int(audio_state.group(5)) == 0:
         raise AssertionError("race effects never exercised live voice pitch updates")
+    sequence_state = re.search(
+        r"loaded=([0-9a-f]+).*scale=\d+ seq_fade=(-?\d+) "
+        r"seq_volume=(-?\d+)",
+        result.stdout,
+    )
+    if sequence_state is None:
+        raise AssertionError("race did not report the menu sequence shutdown state")
+    loaded, fade, volume = sequence_state.groups()
+    if int(loaded, 16) & (1 << 6) or int(fade) != 0 or int(volume) != 0:
+        raise AssertionError(
+            "menu sequence leaked into the race: "
+            f"loaded={loaded}, fade={fade}, volume={volume}"
+        )
     # These four zero-volume voices are armed by InitEffectVoiceRuntime and
     # become the continuously updated engine layers.  The race uses
     # SpuVmDamperStep rather than the menu sequencer to flush their KON bits.

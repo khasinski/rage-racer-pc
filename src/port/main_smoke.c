@@ -22,6 +22,7 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 #include "game/race.h"
+#include "game/cd.h"
 #include "game/memcard.h"
 #include "game/audio.h"
 #include "game/asset.h"
@@ -262,7 +263,9 @@ int main(int argc, char **argv) {
                "reverb_in=%llu reverb_out=%llu "
                "reverb_tail=%llu "
                "loaded=%x cue_bank=%d "
-               "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d\n",
+               "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d "
+               "seq_fade=%d seq_volume=%d cd_track=%u cd_pending=%d "
+               "cd_fade=%d\n",
                Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
                Psyz_SeqNoteOnCount(),
                Psyz_SeqVoiceStartCount(),
@@ -282,7 +285,9 @@ int main(int argc, char **argv) {
                g_EngineSoundState.slotActive[2],
                g_EngineSoundState.slotActive[3],
                g_EngineSoundState.slotActive[4],
-               g_EngineSoundState.slotActive[5], g_SoundScale.scale);
+               g_EngineSoundState.slotActive[5], g_SoundScale.scale,
+               g_SeqVolumeFadeStep, g_SeqVolume, g_CdCurrentTrack,
+               g_CdTrackPending, g_CdFadeFrames);
         Psyz_AudioUnlock();
     }
     if (RageRuntimeConfigEnabled("report.camera_state", "RAGE_PORT_SMOKE_CAMERA_STATE")) {
