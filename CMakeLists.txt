@@ -115,6 +115,7 @@ if(RAGE_BUILD_PORT)
         src/port/analog_pad.c
         src/port/axis_curve.c
         src/port/timing_restore.c
+        src/port/automatic_transmission.c
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/port_config.c

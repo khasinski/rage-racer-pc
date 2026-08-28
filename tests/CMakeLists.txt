@@ -72,6 +72,28 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME record_defaults COMMAND record_defaults_tests)
 
+add_executable(automatic_transmission_tests
+    automatic_transmission_tests.c
+    ../src/port/automatic_transmission.c)
+target_include_directories(automatic_transmission_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(automatic_transmission_tests PRIVATE
+    __psyz=1 RAGE_HOST_PORT=1)
+if(MSVC)
+    target_compile_options(automatic_transmission_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(automatic_transmission_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(automatic_transmission_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME automatic_transmission COMMAND automatic_transmission_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

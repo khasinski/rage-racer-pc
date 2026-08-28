@@ -25,7 +25,7 @@ extern int g_SceneId;
 
 typedef struct RageScenarioState {
     int initialized, enabled;
-    int mode, series, classIndex, course, car;
+    int mode, series, classIndex, course, car, transmission;
     int afterFinish, raceFinished, resultSeen, exitRequested;
     int grid[11], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
@@ -230,7 +230,7 @@ invalid:
 }
 
 static void RageScenarioInitialize(void) {
-    const char *mode, *series, *afterFinish;
+    const char *mode, *series, *transmission, *afterFinish;
     s_scenario.initialized = 1;
     s_scenario.playerTrackPoint = -1;
     s_scenario.lastScene = s_scenario.lastFrontend = s_scenario.lastMenuScreen = -1;
@@ -248,6 +248,18 @@ static void RageScenarioInitialize(void) {
         "race.course", "RAGE_PORT_SCENARIO_COURSE", 0, 0, 3);
     s_scenario.car = RageScenarioInt(
         "race.car", "RAGE_PORT_SCENARIO_CAR", 3, 0, 12);
+    s_scenario.transmission = -1;
+    transmission = RageRuntimeConfigGet("race.transmission");
+    if (transmission != NULL) {
+        if (!strcmp(transmission, "automatic") || !strcmp(transmission, "auto"))
+            s_scenario.transmission = 0;
+        else if (!strcmp(transmission, "manual"))
+            s_scenario.transmission = 1;
+        else if (strcmp(transmission, "default"))
+            fprintf(stderr,
+                    "rage-port: invalid race.transmission=%s (expected default, automatic, or manual)\n",
+                    transmission);
+    }
     afterFinish = RageRuntimeConfigGet("race.after_finish");
     s_scenario.afterFinish = RAGE_SCENARIO_AFTER_MENU;
     if (afterFinish != NULL && !strcmp(afterFinish, "repeat"))
@@ -372,6 +384,9 @@ static void RageScenarioSelectSeries(void) {
         g_RaceProgress = &g_GrandPrixSave;
         g_CourseProgress = &g_GrandPrixCourseProgress;
     }
+    if (s_scenario.transmission >= 0)
+        g_CarTable[s_scenario.car].transmission =
+            (u8)s_scenario.transmission;
 }
 
 /* EnterRoundScreen counts the rounds already placed in this class, then adds
@@ -523,6 +538,9 @@ void RagePortScenarioBeforeSceneHandler(void) {
         g_GrandPrixSeries = (s16)s_scenario.series;
         g_GrandPrixClass = s_scenario.classIndex;
         g_PlayerCarIndex = (s16)s_scenario.car;
+        if (g_CarTable != NULL && s_scenario.transmission >= 0)
+            g_CarTable[s_scenario.car].transmission =
+                (u8)s_scenario.transmission;
         if (g_SceneId < 11) {
             /* The menus index course progress with the series in bit 2, and
              * the retail car-select confirm masks it back to the physical

@@ -9,6 +9,10 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 
+#ifdef __psyz
+#include "rage/automatic_transmission.h"
+#endif
+
 
 void UpdateCarShopScreen(void) {
     void *ot;
@@ -90,7 +94,11 @@ void UpdateCarShopScreen(void) {
                     }
                 }
             }
+#ifdef __psyz
+            if (!RageAutomaticTransmissionSelectable(g_CarModelAsset)) {
+#else
             if (g_CarModelAsset->transmissionAvailable == 0) {
+#endif
                 g_MenuAltPanelStep = 1;
             } else {
                 g_MenuAltPanelStep = -1;

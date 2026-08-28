@@ -448,7 +448,8 @@ int main(int argc, char **argv) {
     printf("Rage Racer smoke stopped at frame %d, scene %d, frontend %d, "
            "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
            "pad_type=%02x race_phase=%d progress=%d lap=%d gp_class=%d "
-           "gp_round=%d class_done=%d series_done=%d rpm=%d jitter=%d "
+           "gp_round=%d class_done=%d series_done=%d gear=%d manual=%d "
+           "rpm=%d jitter=%d "
            "terrain_second=%llu terrain_child_reject=%llu "
            "terrain_child_second=%llu model_backface=%llu mirror_y=%d "
            "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d\n",
@@ -458,6 +459,7 @@ int main(int argc, char **argv) {
            g_PadButtonMapping[2], g_PadType, g_RacePhase,
            g_PlayerCar.trackProgress, g_PlayerCar.lap, g_GrandPrixClass,
            g_GrandPrixRound, g_ClassCompleted, g_SeriesCleared,
+           g_PlayerCar.drive.gear, g_PlayerCar.drive.manual,
            g_EngineRpm, g_EngineRpmJitter,
            g_RageTerrainSecondTriangleVisible,
            g_RageTerrainChildRejectBackface,
