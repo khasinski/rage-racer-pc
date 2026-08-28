@@ -41,8 +41,8 @@ def main() -> int:
         print(result.stdout, file=sys.stderr)
         return result.returncode or 1
     required = (
-        "ignoring invalid RAGE_PORT_SCENARIO_MODE=99",
-        "ignoring invalid RAGE_PORT_SCENARIO_GRID",
+        "ignoring invalid race.mode=99",
+        "ignoring invalid race.grid",
         "scenario confirm scene=4 phase=0",
         "scenario confirm scene=8",
         "smoke synchronized stop",

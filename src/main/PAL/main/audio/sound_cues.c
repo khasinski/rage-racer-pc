@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/audio.h"
 #include "psyq/snd.h"
 #include "game/sound.h"
@@ -520,7 +521,7 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
 void PlaySoundCue(s32 cue) {
     u32 specialCueRange;
 
-    if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
+    if (DiagnosticsEnabled("sound_cue_trace"))
         fprintf(stderr, "rage-port: sound cue=0x%02x\n", (unsigned)cue);
 
     if (g_SoundCueBank == 1) {

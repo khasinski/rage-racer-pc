@@ -225,7 +225,7 @@ static void ScenarioParseGrid(const char *text) {
     s_scenario.customGrid = 1;
     return;
 invalid:
-    fprintf(stderr, "rage-port: ignoring invalid RAGE_PORT_SCENARIO_GRID\n");
+    fprintf(stderr, "rage-port: ignoring invalid race.grid\n");
 }
 
 static void ScenarioInitialize(void) {
@@ -235,12 +235,21 @@ static void ScenarioInitialize(void) {
     s_scenario.lastScene = s_scenario.lastFrontend = s_scenario.lastMenuScreen = -1;
     if (!RuntimeConfigEnabled("race.enabled")) return;
     s_scenario.enabled = 1;
+    /* Both settings are written either as a word or as the retail index.
+     * A word that is neither of the two falls through to the numeric path,
+     * which is the one that reports what it could not use. */
     mode = RuntimeConfigGet("race.mode");
     series = RuntimeConfigGet("race.series");
-    s_scenario.mode = mode ? strcmp(mode, "time-attack") != 0 :
-        ScenarioInt("race.mode", 1, 0, 1);
-    s_scenario.series = series ? strcmp(series, "extra-gp") == 0 :
-        ScenarioInt("race.series", 0, 0, 1);
+    if (mode != NULL &&
+        (!strcmp(mode, "grand-prix") || !strcmp(mode, "time-attack")))
+        s_scenario.mode = strcmp(mode, "time-attack") != 0;
+    else
+        s_scenario.mode = ScenarioInt("race.mode", 1, 0, 1);
+    if (series != NULL &&
+        (!strcmp(series, "grand-prix") || !strcmp(series, "extra-gp")))
+        s_scenario.series = strcmp(series, "extra-gp") == 0;
+    else
+        s_scenario.series = ScenarioInt("race.series", 0, 0, 1);
     s_scenario.classIndex = ScenarioInt("race.class", 0, 0, 5);
     s_scenario.course = ScenarioInt("race.course", 0, 0, 3);
     s_scenario.car = ScenarioInt("race.car", 3, 0, 12);

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include <stdio.h>
 #include "game/audio.h"
 #include "game/car.h"
@@ -34,7 +35,7 @@ static s32 s_FinishFollowupCue = -1;
 
 static void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
-    if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
+    if (DiagnosticsEnabled("sound_cue_trace"))
         fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
                 (unsigned)cue);
 }
@@ -45,7 +46,7 @@ static void UpdateFinishFollowupCue(void) {
         SpuGetKeyStatus(g_SpecialVoiceBits[4]) != 0) return;
     cue = s_FinishFollowupCue;
     s_FinishFollowupCue = -1;
-    if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
+    if (DiagnosticsEnabled("sound_cue_trace"))
         fprintf(stderr, "rage-port: finish follow-up released cue=0x%02x\n",
                 (unsigned)cue);
     PlaySoundCue(cue);
