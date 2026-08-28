@@ -42,7 +42,7 @@ extern s32 g_MenuScreen;
  * overlays (selected by g_MenuHandlerIndex / g_MenuHandlerIndex2). See the
  * screen-table block at the bottom of this header for the entries.
  */
-extern void (*g_MenuScreenUpdate[])(void);
+extern void (*g_MenuScreenUpdate[14])(void);
 extern s32 (*g_MenuScreenDraw[])(s32 step);
 
 /*
@@ -708,6 +708,6 @@ extern Vec4 g_MenuViewScale;
 extern Matrix g_SceneColorMatrix;
 
 void DrawPrizeMoneyPanel(s32 y);
-extern void (*g_FrontendDrawHandlers[])(void);
+extern void (*g_FrontendDrawHandlers[4])(void);
 
 #endif

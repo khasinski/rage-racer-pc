@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/diagnostics.h"
 #include "rage/compat.h"
 #include <psyz/gpu.h>
 #include <stdio.h>
@@ -116,7 +117,17 @@ void MainLoop(void) {
         ServiceAssetLoad();
         AdvanceSaveHeaderCounter();
         PortBeforeSceneHandler();
-        g_SceneHandlers[g_SceneId]();
+        /* The scene id is written from several dozen places, including the
+         * host's own scenario control, and six of the forty slots are empty.
+         * An id that lands on one of those used to be an indirect call
+         * through a null pointer, which says nothing about who set it. */
+        if ((unsigned)g_SceneId >=
+                sizeof(g_SceneHandlers) / sizeof(g_SceneHandlers[0]) ||
+            g_SceneHandlers[g_SceneId] == NULL) {
+            Trace("scene-unhandled", "id=%d timer=%d", g_SceneId, g_SceneTimer);
+        } else {
+            g_SceneHandlers[g_SceneId]();
+        }
         PortAfterSceneHandler();
         DrawSync(0);
         StepTrackTextureSwap();

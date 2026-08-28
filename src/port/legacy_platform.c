@@ -213,7 +213,7 @@ void UpdatePrologueLoadStep0(void);
 void UpdatePrologueLoadStep1(void);
 void UpdatePrologueLoadStep2(void);
 void UpdatePrologue(void);
-void (*g_PrologueSteps[])(void) = {
+void (*g_PrologueSteps[4])(void) = {
     UpdatePrologueLoadStep0,
     UpdatePrologueLoadStep1,
     UpdatePrologueLoadStep2,
