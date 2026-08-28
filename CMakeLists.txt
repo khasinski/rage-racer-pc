@@ -121,6 +121,7 @@ if(RAGE_BUILD_PORT)
         src/port/timing_restore.c
         src/port/automatic_transmission.c
         src/port/chase_camera.c
+        src/port/content_options.c
         src/port/chd_disc.c
         src/port/hud_config.c
         src/port/mod_assets.c

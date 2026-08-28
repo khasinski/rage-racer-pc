@@ -159,6 +159,10 @@ The third-person chase camera can look into a turn as the car steers. Adjust
 `[camera] chase_turn_lookahead` from `0` (retail camera) to `1` (up to roughly
 30 degrees at full steering lock); the default is `0.5`.
 
+Set `[content] car_names = japanese` to use the Japanese-release model names:
+Alouette, Instinct, Victoire, Tempest and Dragone. This changes labels only;
+the cars, save data and handling remain identical.
+
 Modern mode requires an imported native-asset cache. Generate it from Track 01
 of your legally obtained disc and put it beside the executable:
 

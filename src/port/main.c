@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "input_config.h"
+#include "content_options.h"
 #include "diagnostic_log.h"
 #include "host_storage.h"
 #include "port_config.h"
@@ -91,6 +92,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to initialize retail game data\n");
         return EXIT_FAILURE;
     }
+    RageContentOptionsApply();
     if (!RageMapPs1Scratchpad()) {
         fprintf(stderr, "failed to initialize renderer scratchpad\n");
         return EXIT_FAILURE;

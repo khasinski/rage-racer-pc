@@ -116,6 +116,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 
+add_executable(content_options_tests
+    content_options_tests.c
+    ../src/port/content_options.c)
+target_include_directories(content_options_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(content_options_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME content_options COMMAND content_options_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

@@ -11,6 +11,7 @@
 #include "host_storage.h"
 
 #include "input_config.h"
+#include "content_options.h"
 #include "diagnostic_log.h"
 #include "port_config.h"
 #include "runtime_config.h"
@@ -199,6 +200,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     if (!RageInitNativeGameData()) return EXIT_FAILURE;
+    RageContentOptionsApply();
     if (!RageMapPs1Scratchpad()) return EXIT_FAILURE;
     RagePortConfigDefaults(&portConfig);
     if (RageRuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
