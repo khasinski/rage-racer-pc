@@ -163,6 +163,11 @@ Set `[content] car_names = japanese` to use the Japanese-release model names:
 Alouette, Instinct, Victoire, Tempest and Dragone. This changes labels only;
 the cars, save data and handling remain identical.
 
+Set `[content] prologue = japanese` for the longer Japanese-release Grand Prix
+prologue text. The English narration is recorded into Track 02 of the Japanese
+disc, not the executable, so it plays when a legally obtained NTSC-J CUE/CHD is
+selected. With a PAL disc the extended text uses the PAL instrumental track.
+
 Modern mode requires an imported native-asset cache. Generate it from Track 01
 of your legally obtained disc and put it beside the executable:
 

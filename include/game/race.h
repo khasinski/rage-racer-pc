@@ -400,7 +400,8 @@ typedef struct PrologueLine {
     const u8 *text;
 } PrologueLine;
 
-extern PrologueLine g_PrologueLines[14];
+extern PrologueLine g_PrologueLines[17];
+extern s32 g_PrologueLineCount;
 extern s32 g_PromotionBonusTable[];
 extern char g_RaceOptionMarquee[4][40];
 extern s32 g_RaceOptionPulseAngle;

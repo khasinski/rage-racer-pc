@@ -13,6 +13,7 @@ from pathlib import Path
 def main() -> int:
     executable = Path(sys.argv[1])
     source_dir = Path(sys.argv[2])
+    style = sys.argv[3] if len(sys.argv) > 3 else "international"
     with tempfile.TemporaryDirectory(prefix="rage-prologue-test-") as directory:
         capture = Path(directory) / "prologue.ppm"
         environment = os.environ.copy()
@@ -24,8 +25,11 @@ def main() -> int:
             RAGE_PORT_RAW_INPUT_SCRIPT="400:START,500:START,650:CROSS",
             RAGE_PORT_CAPTURE_PATH=str(capture),
         )
+        arguments = [executable]
+        if style == "japanese":
+            arguments.extend(("--set", "content.prologue=japanese"))
         result = subprocess.run(
-            [executable], cwd=source_dir, env=environment,
+            arguments, cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=25,
         )
@@ -34,6 +38,9 @@ def main() -> int:
             return result.returncode or 1
         if "primitive buffer exhausted" in result.stdout:
             raise AssertionError("prologue geometry exhausted the primitive buffer")
+        if style == "japanese" and \
+                "using the extended Japanese-release prologue text" not in result.stdout:
+            raise AssertionError("Japanese prologue option was not applied")
 
         header, pixels = capture.read_bytes().split(b"\n255\n", 1)
         if header.splitlines() != [b"P6", b"320 240"]:
@@ -54,7 +61,7 @@ def main() -> int:
                 f"colored_geometry={colored_geometry}, "
                 f"lower_geometry={lower_geometry}"
             )
-    print("prologue text and world geometry rendered through the native path")
+    print(f"{style} prologue text and world geometry rendered through the native path")
     return 0
 
 

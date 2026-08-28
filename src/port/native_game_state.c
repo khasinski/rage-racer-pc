@@ -452,7 +452,7 @@ static const u8 g_RagePrologueText10[] = "FOR THESE ELITE FEW, THE WHOLE";
 static const u8 g_RagePrologueText11[] = "WORLD IS THEIR SPEEDWAY; BUT THERE";
 static const u8 g_RagePrologueText12[] = "CAN ONLY BE ONE ULTIMATE...";
 static const u8 g_RagePrologueText13[] = "RAGE RACER!";
-PrologueLine g_PrologueLines[14] = {
+PrologueLine g_PrologueLines[17] = {
     {36, 6, g_RagePrologueText0}, {36, 23, g_RagePrologueText1},
     {100, 40, g_RagePrologueText2}, {24, 66, g_RagePrologueText3},
     {28, 83, g_RagePrologueText4}, {12, 100, g_RagePrologueText5},
@@ -461,6 +461,7 @@ PrologueLine g_PrologueLines[14] = {
     {40, 193, g_RagePrologueText10}, {24, 210, g_RagePrologueText11},
     {52, 226, g_RagePrologueText12}, {116, 253, g_RagePrologueText13},
 };
+s32 g_PrologueLineCount = 14;
 PrologueCameraCut g_PrologueCameraCuts[11] = {
     {155, 4}, {228, 5}, {299, 6}, {391, 7}, {516, 8}, {609, 0},
     {650, 1}, {800, 9}, {891, 10}, {931, 2}, {0, 0},

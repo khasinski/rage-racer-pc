@@ -654,6 +654,15 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(prologue_frame PROPERTIES TIMEOUT 30)
+    add_test(
+        NAME japanese_prologue_frame
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+            japanese
+    )
+    set_tests_properties(japanese_prologue_frame PROPERTIES TIMEOUT 30)
 
     add_test(
         NAME scene_capture

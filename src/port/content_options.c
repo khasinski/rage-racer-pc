@@ -7,6 +7,15 @@
 
 extern char *g_NativeCarNames[13];
 
+typedef struct PrologueLine {
+    short x;
+    short y;
+    unsigned char *text;
+} PrologueLine;
+
+extern PrologueLine g_PrologueLines[17];
+extern int g_PrologueLineCount;
+
 typedef struct RageRegionalCarName {
     int modelIndex;
     const char *japaneseName;
@@ -18,6 +27,31 @@ static const RageRegionalCarName kRegionalCarNames[] = {
     {10, "VICTOIRE"},
     {11, "TEMPEST"},
     {12, "DRAGONE"},
+};
+
+static const char *kJapanesePrologueLines[17] = {
+    "RAGE RACER....",
+    "THE DEEP PRIMITIVE ROARING",
+    "EXHAUST NOTES TITILLATE THE",
+    "BASE INSTINCTS OF THOSE WHO",
+    "BECOME KNOWN AS RAGE RACERS.",
+    "NO-ONE KNOWS HOW THE RACE",
+    "STARTED OR HOW THE CONTESTANTS",
+    "BECOME KNOWN AS RAGE RACERS.",
+    "CONTESTANTS DANGEROUSLY LIVING",
+    "ON THE EDGE, THOSE WHO LIVE FOR",
+    "THE MOMENT AND LOVE THE HEADY",
+    "PERFUME OF NITRO,SMOKED RUBBER",
+    "AND HOT ASPHALT. MEETING",
+    "TOGETHER FOR ONE PURPOSE TO BE",
+    "THE BEST THERE IS....",
+    "THE ULTIMATE....",
+    "THE #1 RAGE RACER.",
+};
+
+static const short kJapanesePrologueY[17] = {
+    6, 32, 49, 66, 83, 109, 126, 143, 169,
+    186, 203, 220, 237, 254, 271, 288, 314,
 };
 
 const char *RageContentCarNameForStyle(int modelIndex,
@@ -35,18 +69,38 @@ const char *RageContentCarNameForStyle(int modelIndex,
 }
 
 void RageContentOptionsApply(void) {
-    const char *style = RageRuntimeConfigGet("content.car_names");
+    const char *nameStyle = RageRuntimeConfigGet("content.car_names");
+    const char *prologueStyle = RageRuntimeConfigGet("content.prologue");
     int modelIndex;
-    if (style == NULL || style[0] == '\0' ||
-        strcmp(style, "international") == 0) return;
-    if (strcmp(style, "japanese") != 0) {
+    int lineIndex;
+    if (nameStyle != NULL && nameStyle[0] != '\0' &&
+        strcmp(nameStyle, "international") != 0 &&
+        strcmp(nameStyle, "japanese") != 0) {
         fprintf(stderr,
                 "rage-port: content.car_names must be international or japanese; using international\n");
+    } else if (nameStyle != NULL && strcmp(nameStyle, "japanese") == 0) {
+        for (modelIndex = 0; modelIndex < 13; modelIndex++) {
+            g_NativeCarNames[modelIndex] = (char *)RageContentCarNameForStyle(
+                modelIndex, g_NativeCarNames[modelIndex], nameStyle);
+        }
+        fprintf(stderr, "rage-port: using Japanese-release car names\n");
+    }
+
+    if (prologueStyle == NULL || prologueStyle[0] == '\0' ||
+        strcmp(prologueStyle, "international") == 0) return;
+    if (strcmp(prologueStyle, "japanese") != 0) {
+        fprintf(stderr,
+                "rage-port: content.prologue must be international or japanese; using international\n");
         return;
     }
-    for (modelIndex = 0; modelIndex < 13; modelIndex++) {
-        g_NativeCarNames[modelIndex] = (char *)RageContentCarNameForStyle(
-            modelIndex, g_NativeCarNames[modelIndex], style);
+    for (lineIndex = 0; lineIndex < 17; lineIndex++) {
+        size_t length = strlen(kJapanesePrologueLines[lineIndex]);
+        g_PrologueLines[lineIndex].x = (short)((320 - length * 8) / 2);
+        g_PrologueLines[lineIndex].y = kJapanesePrologueY[lineIndex];
+        g_PrologueLines[lineIndex].text =
+            (unsigned char *)kJapanesePrologueLines[lineIndex];
     }
-    fprintf(stderr, "rage-port: using Japanese-release car names\n");
+    g_PrologueLineCount = 17;
+    fprintf(stderr,
+            "rage-port: using the extended Japanese-release prologue text\n");
 }

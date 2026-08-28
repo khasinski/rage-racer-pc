@@ -123,7 +123,7 @@ void DrawPrologueText(void) {
     s32 blueScale;
     s32 blue;
 
-    for (i = 0; i < 14; i++) {
+    for (i = 0; i < g_PrologueLineCount; i++) {
         s32 tableY;
 
         timer = g_SceneTimer;
