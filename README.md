@@ -149,6 +149,10 @@ In modern 16:9, `[hud] anchor = edges` moves the corner HUD into the added
 widescreen area; use `center` for the retail 4:3 positions. Set
 `show_lap_times` or `show_time_limit` to `false` to hide those race displays.
 
+The third-person chase camera can look into a turn as the car steers. Adjust
+`[camera] chase_turn_lookahead` from `0` (retail camera) to `1` (up to roughly
+30 degrees at full steering lock); the default is `0.5`.
+
 Modern mode requires an imported native-asset cache. Generate it from Track 01
 of your legally obtained disc and put it beside the executable:
 

@@ -1,0 +1,27 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "rage/chase_camera.h"
+
+static int failures;
+
+#define EXPECT_EQ(expected, actual) do { if ((expected) != (actual)) {      \
+    fprintf(stderr, "%s:%d: expected %d, got %d\n", __FILE__, __LINE__, \
+            (expected), (actual)); failures++;                              \
+} } while (0)
+
+const char *RageRuntimeConfigGet(const char *key) {
+    if (!strcmp(key, "camera.chase_turn_lookahead")) return "0.5";
+    return NULL;
+}
+
+int main(void) {
+    EXPECT_EQ(0, RageChaseCameraYawOffset(0));
+    EXPECT_EQ(170, RageChaseCameraYawOffset(4096));
+    EXPECT_EQ(-170, RageChaseCameraYawOffset(-4096));
+    EXPECT_EQ(170, RageChaseCameraYawOffset(8192));
+    EXPECT_EQ(-170, RageChaseCameraYawOffset(-8192));
+    EXPECT_EQ(85, RageChaseCameraYawOffset(2048));
+    return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}

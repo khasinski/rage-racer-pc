@@ -6,6 +6,9 @@
 #include "game/player_car_internal.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
+#ifdef __psyz
+#include "rage/chase_camera.h"
+#endif
 
 /* Mode-3 camera path: the eye is eased from one track-camera node to the next
  * over `node->duration` frames. Each of offset (a local xyz applied through the
@@ -341,6 +344,9 @@ block_52:
         sp38[3] = chaseDistance;
         scratch[6] = 0x400 - (Atan2(sp38[1] + 0x28, chaseDistance) & 0xFFF);
         scratch[7] = 0x400 - (Atan2(sp38[0], sp38[2]) & 0xFFF);
+#ifdef __psyz
+        scratch[7] += RageChaseCameraYawOffset(car->steeringAngle);
+#endif
         scratch[8] = car->bodyRoll - car->bodyRollVelocity;
         if (g_ChaseCameraPreset == 0) {
             negatedAccel = scratch[6] - 0x90;

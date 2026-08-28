@@ -105,6 +105,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME hud_config COMMAND hud_config_tests)
 
+add_executable(chase_camera_tests
+    chase_camera_tests.c
+    ../src/port/chase_camera.c)
+target_include_directories(chase_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(chase_camera_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME chase_camera COMMAND chase_camera_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
