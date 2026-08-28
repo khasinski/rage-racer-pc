@@ -151,6 +151,7 @@ if(RAGE_BUILD_PORT)
         src/port/classic/native_geometry_diagnostics.c
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
+        src/port/native_asset_importer.c
         src/port/fmv_host.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_assets.c
@@ -187,6 +188,7 @@ if(RAGE_BUILD_PORT)
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/track_asset_identity.c
+        src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)

@@ -349,8 +349,14 @@ static int RageHostPathEndsWithChd(const char *path) {
     return length > 4 && strcasecmp(path + length - 4, ".chd") == 0;
 }
 
+static int RageHostPathEndsWithBin(const char *path) {
+    size_t length = strlen(path);
+    return length > 4 && strcasecmp(path + length - 4, ".bin") == 0;
+}
+
 static int RageHostPathEndsWithDisc(const char *path) {
-    return RageHostPathEndsWithCue(path) || RageHostPathEndsWithChd(path);
+    return RageHostPathEndsWithCue(path) || RageHostPathEndsWithBin(path) ||
+           RageHostPathEndsWithChd(path);
 }
 
 static int RageHostReadTextFile(const char *path, char *value, size_t size) {
@@ -433,7 +439,7 @@ static void RageHostSaveDiscCue(const char *cue) {
 static int RageHostChooseDisc(char *cue, size_t size) {
 #ifdef __APPLE__
     static const char command[] =
-        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer disc image\" of type {\"cue\", \"chd\"})'";
+        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer disc image\" of type {\"cue\", \"bin\", \"chd\"})'";
     FILE *pipe = popen(command, "r");
     if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
         if (pipe != NULL) pclose(pipe);
@@ -444,8 +450,8 @@ static int RageHostChooseDisc(char *cue, size_t size) {
     return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
 #elif defined(__linux__)
     static const char *const commands[] = {
-        "zenity --file-selection --title='Select your Rage Racer disc image' --file-filter='Disc images | *.cue *.chd'",
-        "kdialog --getopenfilename . '*.cue *.chd|Disc images'",
+        "zenity --file-selection --title='Select your Rage Racer disc image' --file-filter='Disc images | *.cue *.bin *.chd'",
+        "kdialog --getopenfilename . '*.cue *.bin *.chd|Disc images'",
     };
     size_t index;
     for (index = 0; index < sizeof(commands) / sizeof(commands[0]); index++) {
@@ -458,14 +464,14 @@ static int RageHostChooseDisc(char *cue, size_t size) {
         cue[strcspn(cue, "\r\n")] = '\0';
         if (RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0) return 1;
     }
-    fprintf(stderr, "Enter the path to your Rage Racer .cue or .chd: ");
+    fprintf(stderr, "Enter the path to your Rage Racer .cue, .bin or .chd: ");
     if (fgets(cue, (int)size, stdin) == NULL) return 0;
     cue[strcspn(cue, "\r\n")] = '\0';
     return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
 #elif defined(_WIN32)
     OPENFILENAMEA dialog = {0};
     static const char filter[] =
-        "Disc images (*.cue;*.chd)\0*.cue;*.chd\0All files\0*.*\0\0";
+        "Disc images (*.cue;*.bin;*.chd)\0*.cue;*.bin;*.chd\0All files\0*.*\0\0";
 
     dialog.lStructSize = sizeof(dialog);
     dialog.lpstrFilter = filter;
@@ -661,6 +667,18 @@ static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
         if (!RageHostFindArchive()) {
             RageChdClose();
             g_RageHostDisc.chd = 0;
+            return 0;
+        }
+        return 1;
+    }
+    if (RageHostPathEndsWithBin(cue)) {
+        if (snprintf(image, image_size, "%s", cue) >= (int)image_size)
+            return 0;
+        g_RageHostDisc.track_offset = 0;
+        g_RageHostDisc.file = fopen(image, "rb");
+        if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
+            if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+            g_RageHostDisc.file = NULL;
             return 0;
         }
         return 1;

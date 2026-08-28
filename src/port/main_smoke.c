@@ -17,6 +17,7 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "native_asset_importer.h"
 #include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
@@ -194,6 +195,7 @@ int main(int argc, char **argv) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     if (!RageHostInitDisc()) return EXIT_FAILURE;
+    if (!RageNativeAssetImporterInit()) return EXIT_FAILURE;
     if (RageRuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE") != NULL &&
         Psyz_SpuSetKeyOnTracePath(RageRuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE")) != 0) {
         fprintf(stderr, "unable to open SPU trace: %s\n",

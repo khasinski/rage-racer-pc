@@ -14,6 +14,7 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "native_asset_importer.h"
 #include "platform_paths.h"
 
 #ifdef _WIN32
@@ -62,7 +63,6 @@ int main(int argc, char **argv) {
             portConfig.modernInternalScale, portConfig.modernAspect,
             portConfig.modernFps, portConfig.modernDrawDistance,
             portConfig.modernPost);
-    if (!RageModernInit(&portConfig)) return EXIT_FAILURE;
     /* Initialize SDL input before configurable names are resolved to
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);
@@ -88,6 +88,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
     }
+    if (!RageNativeAssetImporterInit() || !RageModernInit(&portConfig))
+        return EXIT_FAILURE;
     if (!RageInitNativeGameData()) {
         fprintf(stderr, "failed to initialize retail game data\n");
         return EXIT_FAILURE;
