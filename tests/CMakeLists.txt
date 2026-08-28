@@ -94,6 +94,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME automatic_transmission COMMAND automatic_transmission_tests)
 
+add_executable(hud_config_tests
+    hud_config_tests.c
+    ../src/port/hud_config.c)
+target_include_directories(hud_config_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(hud_config_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME hud_config COMMAND hud_config_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

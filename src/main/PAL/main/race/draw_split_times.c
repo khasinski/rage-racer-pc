@@ -4,6 +4,10 @@
 #include "game/render.h"
 #include "game/player_car_internal.h"
 
+#ifdef __psyz
+#include "rage/hud_config.h"
+#endif
+
 
 void DrawSplitTimes(void) {
     s32 value;
@@ -11,6 +15,10 @@ void DrawSplitTimes(void) {
     s32 timeout;
     s32 threshold;
     s32 finalValue;
+
+#ifdef __psyz
+    if (!RageHudShowLapTimes()) return;
+#endif
 
     if (g_SplitTimer >= 0x3C) {
         threshold = 0x927BE;
@@ -39,11 +47,20 @@ void DrawSplitTimes(void) {
     } else {
         tile = 0x7890;
     }
+#ifdef __psyz
+    DrawTimeValue(RageHudLeftX(0x12), 0x2A, value, tile, 0x3E8);
+#else
     DrawTimeValue(0x12, 0x2A, value, tile, 0x3E8);
+#endif
 
 split_current_done:
     timeout = 0x3E8;
+#ifdef __psyz
+    DrawTimeValue(RageHudLeftX(0x12), 0x20, g_SplitTargetTime,
+                  0x78CC, timeout);
+#else
     DrawTimeValue(0x12, 0x20, g_SplitTargetTime, 0x78CC, timeout);
+#endif
     DrawSplitDelta(g_SplitSector, g_SplitSign);
 
     {
@@ -52,6 +69,9 @@ split_current_done:
         s32 finalA3 = 0x78CC;
 
         finalValue = g_BestTotalTimes[g_RaceSeries][RageSeriesCourseIndex()][0];
+#ifdef __psyz
+        finalA0 = RageHudRightX(finalA0);
+#endif
         DrawTimeValue(finalA0, finalA1, finalValue, finalA3, timeout);
     }
 }

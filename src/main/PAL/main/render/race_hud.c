@@ -7,10 +7,17 @@
 #include "game/scratchpad.h"
 #include "psyq/gpu.h"
 
+#ifdef __psyz
+#include "rage/hud_config.h"
+#endif
+
 
 void DrawRaceHudLabels(s32 mode) {
     s32 count;
     s32 i;
+#ifdef __psyz
+    GameSpriteDesc *descs;
+#endif
     void **scratch;
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
@@ -19,12 +26,31 @@ void DrawRaceHudLabels(s32 mode) {
     if (mode != 0) {
         count = 0xC;
     }
+#ifdef __psyz
+    descs = mode != 0 ? g_RaceHudSpriteDescsGp
+                      : g_RaceHudSpriteDescsTimeTrial;
+#endif
 
     i = 6;
     if (i < count) {
         do {
             SPRT *prim = &frame->layout.raceHud.labels[i - 6];
+#ifdef __psyz
+            int label = i - 6;
+            int visible = 1;
+            prim->x0 = descs[i].x < 160 ? RageHudLeftX(descs[i].x)
+                                        : RageHudRightX(descs[i].x);
+            if (mode != 0) {
+                if (label == 1 && !RageHudShowLapTimes()) visible = 0;
+                if (label == 2 && !RageHudShowTimeLimit()) visible = 0;
+            } else if (!RageHudShowLapTimes()) {
+                visible = 0;
+            }
+#endif
             i++;
+#ifdef __psyz
+            if (!visible) continue;
+#endif
             AddPrim(ot, prim);
         } while (i < count);
     }
@@ -85,6 +111,10 @@ void DrawLapTimes(void) {
     OT_TYPE *ot;
     s32 value;
 
+#ifdef __psyz
+    if (!RageHudShowLapTimes()) return;
+#endif
+
     visibleCount = g_PlayerCar.lap;
     if (visibleCount > g_LapCount) {
         visibleCount = g_LapCount;
@@ -115,7 +145,15 @@ void DrawLapTimes(void) {
                 value = -1;
             }
 
+#ifdef __psyz
+            DrawTimeValue(RageHudRightX(0xFA), y, value, tile, 0x3E8);
+            frame->layout.raceHud.lapTimes[i].x0 =
+                RageHudRightX((g_GrandPrixMode != 0
+                    ? g_RaceHudSpriteDescsGp
+                    : g_RaceHudSpriteDescsTimeTrial)[i].x);
+#else
             DrawTimeValue(0xFA, y, value, tile, 0x3E8);
+#endif
             y += 0xA;
             valuePtr++;
             frame->layout.raceHud.lapTimes[i].clut = tile;
@@ -124,17 +162,30 @@ void DrawLapTimes(void) {
         } while (i < g_LapCount);
     }
 
+#ifdef __psyz
+    DrawTimeValue(RageHudRightX(0xFA), 0x20, g_BestLapThisRace,
+                  0x78CC, 0x3E8);
+#else
     DrawTimeValue(0xFA, 0x20, g_BestLapThisRace, 0x78CC, 0x3E8);
+#endif
 }
 
 void DrawTimeRemaining(s32 time) {
     s32 clutIndex = 0x78CC;
 
+#ifdef __psyz
+    if (!RageHudShowTimeLimit()) return;
+#endif
+
     if (time < 0x5DC) {
         clutIndex = 0x7811;
     }
 
+#ifdef __psyz
+    DrawMinuteSecondTime(RageHudLeftX(0xE), 0xD2, time, clutIndex);
+#else
     DrawMinuteSecondTime(0xE, 0xD2, time, clutIndex);
+#endif
 }
 
 /* The two race-position digits, from g_RacePosition; the tens digit is

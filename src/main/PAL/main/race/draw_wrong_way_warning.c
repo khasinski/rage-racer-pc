@@ -13,6 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __psyz
+#include "rage/hud_config.h"
+#endif
+
 /* The GPU packet cursor: scratchpad word 0. Every emitter here packs its
  * primitive at this address and bumps it past what it wrote. */
 #define SCRATCH (SCRATCH_PRIM_CURSOR_AS(u8))
@@ -91,6 +95,10 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     s16 *pb;
     s32 i;
     u8 code7;
+
+#ifdef __psyz
+    cx = RageHudRightX(cx);
+#endif
 
     SetPolyF4(prim);
 
@@ -221,6 +229,11 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     {
         GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
         OT_TYPE *ot = GamePrimaryOrderingTable(0);
+
+#ifdef __psyz
+        frame->layout.raceHud.tachometerFace.x0 =
+            RageHudRightX(g_TachoNeedleSprite.x);
+#endif
 
         AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);
         AddPrim(ot, &frame->layout.raceHud.tachometerFace);

@@ -145,6 +145,10 @@ The accepted video values are:
 texture sampling in the modern 3D scene and in the final 2D presentation. The
 checked-in `rage-port.ini` documents the remaining sections and their ranges.
 
+In modern 16:9, `[hud] anchor = edges` moves the corner HUD into the added
+widescreen area; use `center` for the retail 4:3 positions. Set
+`show_lap_times` or `show_time_limit` to `false` to hide those race displays.
+
 Modern mode requires an imported native-asset cache. Generate it from Track 01
 of your legally obtained disc and put it beside the executable:
 
