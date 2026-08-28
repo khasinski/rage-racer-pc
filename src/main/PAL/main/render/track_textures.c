@@ -4,24 +4,18 @@
 #include "game/asset.h"
 #include "game/render.h"
 
+/*
+ * Each course draws one stretch of itself from a second page of track
+ * textures. Says whether `section` is inside that stretch, both by the flag
+ * the uploader watches and by the texture-page bit the caller ORs into its
+ * primitives.
+ */
 s32 SelectTrackTexturePage(s32 section) {
-    s32 ret;
-    s32 one;
+    s32 secondPage = section >= g_TrackTextureSectionLo &&
+                     section < g_TrackTextureSectionHi;
 
-    ret = 0;
-    if (section >= g_TrackTextureSectionLo) {
-        ret = 0x100;
-        if (section >= g_TrackTextureSectionHi) {
-            ret = 0;
-        } else {
-            one = 1;
-            g_TrackTexturePageWanted = one;
-            goto texture_page_selected;
-        }
-    }
-    g_TrackTexturePageWanted = 0;
-texture_page_selected:
-    return ret;
+    g_TrackTexturePageWanted = secondPage;
+    return secondPage ? 0x100 : 0;
 }
 
 void SwapTrackTexturePageNow(void) {

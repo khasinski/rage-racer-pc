@@ -95,7 +95,6 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 distProduct;
     s32 pitchDelta;
     s32 chaseYaw;
-    s32 screenWidth;
     s32 negatedAccel;
     s32 wrappedLag;
     u8 nextPrevMode;
@@ -313,20 +312,19 @@ block_36:
         scratch[2] += sp28[0];
         scratch[3] += sp28[1];
         scratch[4] += sp28[2];
+        /* No default: an unknown preset leaves the offset set above. */
         switch (g_ChaseCameraPreset) {
         case 0:
             sp18[1] = 0x3A;
-            screenWidth = 0x118;
-            goto block_52;
+            sp18[2] = 0x118;
+            break;
         case 1:
             sp18[1] = 0x59;
-            screenWidth = 0x140;
-            goto block_52;
+            sp18[2] = 0x140;
+            break;
         case 2:
             sp18[1] = 0x97;
-            screenWidth = 0x190;
-block_52:
-            sp18[2] = screenWidth;
+            sp18[2] = 0x190;
             break;
         }
         ApplyMatrixLV(matrixWork.halfwords, &sp18[0], &sp38[0]);
