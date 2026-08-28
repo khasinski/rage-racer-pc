@@ -18,8 +18,13 @@ if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
     add_compile_options(
         /clang:-fno-strict-aliasing
         /clang:-fwrapv)
+    set(RAGE_STRICT_WARNING_OPTIONS
+        /clang:-Wall
+        /clang:-Wextra
+        /clang:-Werror)
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(-fno-strict-aliasing -fwrapv)
+    set(RAGE_STRICT_WARNING_OPTIONS -Wall -Wextra -Werror)
 endif()
 
 # Link the Visual C++ runtime statically. Windows does not ship it, and an
@@ -50,7 +55,7 @@ add_library(rage-sim STATIC ${RAGE_SIM_SOURCES})
 target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(rage-sim PRIVATE RAGE_HOST_PORT=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(rage-sim PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
 add_library(rage-rmesh STATIC
@@ -67,7 +72,7 @@ if(NOT MSVC)
     target_link_libraries(rage-rmesh PUBLIC m)
 endif()
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(rage-rmesh PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(rage-rmesh PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
 add_library(rage-render-world STATIC
@@ -84,7 +89,8 @@ if(NOT MSVC)
 endif()
 target_link_libraries(rage-render-world PUBLIC rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(rage-render-world PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(rage-render-world PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
 if(RAGE_BUILD_PORT)
@@ -187,7 +193,7 @@ if(RAGE_BUILD_PORT)
         rage-render-world SDL3::SDL3)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-frame-replay PRIVATE
-            -Wall -Wextra -Werror)
+            ${RAGE_STRICT_WARNING_OPTIONS})
     endif()
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
     target_compile_options(rage-save-generator PRIVATE
