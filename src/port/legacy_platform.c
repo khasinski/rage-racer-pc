@@ -47,6 +47,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "platform_paths.h"
 #include "runtime_config.h"
 #include "host_storage.h"
+#include "chd_disc.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -327,6 +328,7 @@ enum { RAGE_CD_SECTOR_SIZE = 2352, RAGE_ISO_SECTOR_SIZE = 2048 };
 
 typedef struct RageHostDisc {
     FILE *file;
+    int chd;
     long track_offset;
     long archive_sector;
     long archive_size;
@@ -340,6 +342,15 @@ static RageHostDisc g_RageHostDisc;
 static int RageHostPathEndsWithCue(const char *path) {
     size_t length = strlen(path);
     return length > 4 && strcasecmp(path + length - 4, ".cue") == 0;
+}
+
+static int RageHostPathEndsWithChd(const char *path) {
+    size_t length = strlen(path);
+    return length > 4 && strcasecmp(path + length - 4, ".chd") == 0;
+}
+
+static int RageHostPathEndsWithDisc(const char *path) {
+    return RageHostPathEndsWithCue(path) || RageHostPathEndsWithChd(path);
 }
 
 static int RageHostReadTextFile(const char *path, char *value, size_t size) {
@@ -364,12 +375,13 @@ static int RageHostFindAdjacentCue(char *cue, size_t size) {
         char pattern[PATH_MAX];
         WIN32_FIND_DATAA entry;
         HANDLE search;
-        if (snprintf(pattern, sizeof(pattern), "%s\\*.cue", directory) >=
+        if (snprintf(pattern, sizeof(pattern), "%s\\*.*", directory) >=
             (int)sizeof(pattern)) return 0;
         search = FindFirstFileA(pattern, &entry);
         if (search == INVALID_HANDLE_VALUE) return 0;
         do {
             if (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            if (!RageHostPathEndsWithDisc(entry.cFileName)) continue;
             if (snprintf(cue, size, "%s\\%s", directory, entry.cFileName) <
                     (int)size && access(cue, R_OK) == 0) {
                 FindClose(search);
@@ -384,7 +396,7 @@ static int RageHostFindAdjacentCue(char *cue, size_t size) {
         struct dirent *entry;
         if (handle == NULL) return 0;
         while ((entry = readdir(handle)) != NULL) {
-            if (!RageHostPathEndsWithCue(entry->d_name)) continue;
+            if (!RageHostPathEndsWithDisc(entry->d_name)) continue;
             if (snprintf(cue, size, "%s/%s", directory, entry->d_name) <
                     (int)size && access(cue, R_OK) == 0) {
                 closedir(handle);
@@ -418,10 +430,10 @@ static void RageHostSaveDiscCue(const char *cue) {
     fclose(file);
 }
 
-static int RageHostChooseDiscCue(char *cue, size_t size) {
+static int RageHostChooseDisc(char *cue, size_t size) {
 #ifdef __APPLE__
     static const char command[] =
-        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer PAL .cue file\" of type {\"cue\"})'";
+        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer disc image\" of type {\"cue\", \"chd\"})'";
     FILE *pipe = popen(command, "r");
     if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
         if (pipe != NULL) pclose(pipe);
@@ -429,11 +441,11 @@ static int RageHostChooseDiscCue(char *cue, size_t size) {
     }
     pclose(pipe);
     cue[strcspn(cue, "\r\n")] = '\0';
-    return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+    return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
 #elif defined(__linux__)
     static const char *const commands[] = {
-        "zenity --file-selection --title='Select your Rage Racer PAL .cue file' --file-filter='CUE files | *.cue'",
-        "kdialog --getopenfilename . '*.cue|CUE files'",
+        "zenity --file-selection --title='Select your Rage Racer disc image' --file-filter='Disc images | *.cue *.chd'",
+        "kdialog --getopenfilename . '*.cue *.chd|Disc images'",
     };
     size_t index;
     for (index = 0; index < sizeof(commands) / sizeof(commands[0]); index++) {
@@ -444,15 +456,16 @@ static int RageHostChooseDiscCue(char *cue, size_t size) {
         }
         pclose(pipe);
         cue[strcspn(cue, "\r\n")] = '\0';
-        if (RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0) return 1;
+        if (RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0) return 1;
     }
-    fprintf(stderr, "Enter the path to your Rage Racer PAL .cue file: ");
+    fprintf(stderr, "Enter the path to your Rage Racer .cue or .chd: ");
     if (fgets(cue, (int)size, stdin) == NULL) return 0;
     cue[strcspn(cue, "\r\n")] = '\0';
-    return RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+    return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
 #elif defined(_WIN32)
     OPENFILENAMEA dialog = {0};
-    static const char filter[] = "Cue sheets (*.cue)\0*.cue\0All files\0*.*\0\0";
+    static const char filter[] =
+        "Disc images (*.cue;*.chd)\0*.cue;*.chd\0All files\0*.*\0\0";
 
     dialog.lStructSize = sizeof(dialog);
     dialog.lpstrFilter = filter;
@@ -461,7 +474,7 @@ static int RageHostChooseDiscCue(char *cue, size_t size) {
     dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
     cue[0] = '\0';
     return GetOpenFileNameA(&dialog) != 0 &&
-           RageHostPathEndsWithCue(cue) && access(cue, R_OK) == 0;
+           RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
 #else
     (void)cue;
     (void)size;
@@ -531,6 +544,13 @@ static int RageHostParseCue(const char *cue, char *image, size_t image_size,
 }
 
 static int RageHostReadSector(long sector, unsigned char *buffer) {
+    if (g_RageHostDisc.chd) {
+        unsigned char raw[RAGE_CD_SECTOR_SIZE];
+        if (!RageChdReadRawSector((unsigned int)sector, raw)) return 0;
+        memcpy(buffer, raw + g_RageHostDisc.user_offset,
+               RAGE_ISO_SECTOR_SIZE);
+        return 1;
+    }
     if (g_RageHostDisc.file == NULL
         || fseek(g_RageHostDisc.file, g_RageHostDisc.track_offset
                  + sector * RAGE_CD_SECTOR_SIZE + g_RageHostDisc.user_offset, SEEK_SET) != 0)
@@ -581,10 +601,13 @@ static int RageHostFindArchive(void) {
 
 int RageHostReadStreamSector(unsigned int sector, unsigned char *raw) {
     long offset;
-    if (raw == NULL || g_RageHostDisc.file == NULL ||
+    if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
         sector >= (unsigned long)((g_RageHostDisc.stream_size + 2047) / 2048)) {
         return 0;
     }
+    if (g_RageHostDisc.chd)
+        return RageChdReadRawSector(
+            (unsigned int)(g_RageHostDisc.stream_sector + (long)sector), raw);
     offset = g_RageHostDisc.track_offset +
              (g_RageHostDisc.stream_sector + (long)sector) * RAGE_CD_SECTOR_SIZE;
     if (fseek(g_RageHostDisc.file, offset, SEEK_SET) != 0) return 0;
@@ -602,7 +625,7 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
     unsigned char *output = destination;
     FILE *test_archive;
 
-    if (g_RageHostDisc.file == NULL &&
+    if (g_RageHostDisc.file == NULL && !g_RageHostDisc.chd &&
         RageRuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
         size_t loaded;
         test_archive = fopen("assets/PAL/RAGE.BIN", "rb");
@@ -631,6 +654,17 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
 /* Resolves a cue all the way to a readable archive, so a path that no longer
  * works is reported as such instead of failing later on. */
 static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
+    if (RageHostPathEndsWithChd(cue)) {
+        if (!RageChdOpen(cue)) return 0;
+        g_RageHostDisc.chd = 1;
+        g_RageHostDisc.track_offset = 0;
+        if (!RageHostFindArchive()) {
+            RageChdClose();
+            g_RageHostDisc.chd = 0;
+            return 0;
+        }
+        return 1;
+    }
     if (!RageHostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
         !RageHostParseCue(cue, image, image_size,
                           &g_RageHostDisc.track_offset)) return 0;
@@ -644,13 +678,17 @@ static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
 }
 
 int RageHostInitDisc(void) {
-    const char *environment_cue = RageRuntimeConfigGetOverride(
-        "disc.cue", "RAGE_PORT_DISC_CUE");
+    const char *environment_cue = RageRuntimeConfigGet("disc.image");
     char cue[PATH_MAX];
     char image[PATH_MAX];
     char config_path[PATH_MAX];
     int choose;
 
+    if (environment_cue == NULL || environment_cue[0] == '\0')
+        environment_cue = RageRuntimeConfigGetOverride(
+            "disc.cue", "RAGE_PORT_DISC_CUE");
+
+    RageChdClose();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
      * bundling retail data.  The release executable never sets this flag.
@@ -660,18 +698,8 @@ int RageHostInitDisc(void) {
         const char *test_cue = environment_cue;
         if (test_cue == NULL || test_cue[0] == '\0')
             test_cue = "disc/PAL/Rage Racer (Europe).cue";
-        if (access(test_cue, R_OK) == 0) {
-            Psyz_CdSetDiskPath(test_cue);
-            if (RageHostParseCue(test_cue, image, sizeof(image),
-                                 &g_RageHostDisc.track_offset)) {
-                g_RageHostDisc.file = fopen(image, "rb");
-                if (g_RageHostDisc.file != NULL && RageHostFindArchive()) {
-                    return 1;
-                }
-                if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
-                g_RageHostDisc.file = NULL;
-            }
-        }
+        if (access(test_cue, R_OK) == 0 &&
+            RageHostOpenDisc(test_cue, image, sizeof(image))) return 1;
         return 1;
     }
     if (environment_cue != NULL && environment_cue[0] != '\0') {
@@ -693,7 +721,7 @@ int RageHostInitDisc(void) {
         RageHostSaveDiscCue(cue);
         return 1;
     }
-    if (!RageHostChooseDiscCue(cue, sizeof(cue)) ||
+    if (!RageHostChooseDisc(cue, sizeof(cue)) ||
         !RageHostOpenDisc(cue, image, sizeof(image))) return 0;
     RageHostSaveDiscCue(cue);
     return 1;

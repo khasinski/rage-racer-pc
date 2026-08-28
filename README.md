@@ -99,14 +99,14 @@ the same `.world.bin` and `.draws.txt` sidecars next to a modern frame dump.
 
 - macOS on Apple Silicon (arm64), a glibc-based x86-64 Linux distribution, or
   64-bit Windows 10/11
-- A legally obtained PAL Rage Racer disc image, with its `.cue` sheet and
-  referenced track files kept together
+- A legally obtained PAL Rage Racer disc image: either CHD, or a `.cue` sheet
+  with all referenced track files kept together
 Movies are decoded in process, so no external tools are needed.
 
-On first launch the port looks for a `.cue` sheet next to the executable and
-uses it when one is there. Otherwise it asks, and remembers the answer. To pick
-a different disc later, start the game with `--set disc.choose=1`, or pin one
-with `[disc] cue` in `rage-port.ini`.
+On first launch the port looks for a `.cue` or `.chd` image next to the
+executable and uses it when one is there. Otherwise it asks, and remembers the
+answer. To pick a different disc later, start the game with
+`--set disc.choose=1`, or pin one with `[disc] image` in `rage-port.ini`.
 
 Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
 an alternative file and `--set section.key=value` for an individual override.
@@ -195,14 +195,15 @@ saves are regular files in the `bu00` subdirectory: under
 from which the executable was launched.
 Each normal launch appends diagnostics to `rage-racer.log` in the platform's
 application-state directory. Configure `[diagnostics] log` to choose another
-file. The disc can likewise be pinned with `[disc] cue`; the legacy
+file. The disc can likewise be pinned with `[disc] image`; the older `cue` key,
 `RAGE_PORT_LOG_PATH` and `RAGE_PORT_DISC_CUE` overrides remain available for
 automation.
 
-Rage Racer uses mixed-mode CD audio. The selected CUE must describe Track 01
-and audio Tracks 02–17; a CUE containing only the data track can run the game
-and FMVs but cannot provide the Grand Prix intro or race soundtrack. Keep all
-BIN files referenced by the CUE together and select that full CUE on first run.
+Rage Racer uses mixed-mode CD audio. The selected CUE or CHD must describe
+Track 01 and audio Tracks 02–17; a CUE containing only the data track can run
+the game and FMVs but cannot provide the Grand Prix intro or race soundtrack.
+Keep all BIN files referenced by the CUE together and select that full CUE on
+first run.
 
 ## 日本版について
 

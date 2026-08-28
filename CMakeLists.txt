@@ -81,6 +81,10 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 if(RAGE_BUILD_PORT)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(CHDR_WANT_TESTS OFF CACHE BOOL "" FORCE)
+    set(CHDR_WANT_SUBCODE OFF CACHE BOOL "" FORCE)
+    add_subdirectory(external/libchdr external-libchdr)
     add_subdirectory(external/psyz/psyz external-psyz)
 
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
@@ -117,6 +121,7 @@ if(RAGE_BUILD_PORT)
         src/port/timing_restore.c
         src/port/automatic_transmission.c
         src/port/chase_camera.c
+        src/port/chd_disc.c
         src/port/hud_config.c
         src/port/mod_assets.c
         src/port/texture_patch.c
@@ -223,7 +228,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world)
+            rage-sim psyz rage-render-world chdr-static)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()

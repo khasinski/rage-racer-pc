@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!RageHostInitDisc()) {
-        fprintf(stderr, "failed to initialize disc cue sheet\n");
+        fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
     }
     if (!RageInitNativeGameData()) {

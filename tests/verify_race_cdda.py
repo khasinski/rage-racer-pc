@@ -58,8 +58,11 @@ def main() -> int:
     ):
         raise AssertionError("Grand Prix prologue CD-DA produced no mixed sound")
     tracks = [
-        int(value)
-        for value in re.findall(r"opened track .*\(Track (\d+)\)\.bin", result.stdout)
+        int(file_track or virtual_track)
+        for file_track, virtual_track in re.findall(
+            r"opened track .*\(Track (\d+)\)\.bin|opened virtual track (\d+)",
+            result.stdout,
+        )
     ]
     # Track 1 is the data track containing the opening movie's XA stream.
     # The final opened track must still be the requested race CD-DA music.
