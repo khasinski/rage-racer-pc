@@ -693,6 +693,15 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 120)
 
     add_test(
+        NAME pegase_cabin
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_pegase_cabin.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 60)
+
+    add_test(
         NAME native_render_world
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.py
