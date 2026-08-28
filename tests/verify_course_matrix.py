@@ -9,14 +9,14 @@ import tempfile
 from pathlib import Path
 
 CLASSIC_GOLDENS = {
-    ("gp", 0): "2d8878fa87fb454a2813330a95141cb6e6274deed331bf6bbd6af5c24f30dfa5",
-    ("gp", 1): "dd477bc2e237178e5b026c05270f023ee50cf3c3652f866f61bf2ed32fcbd54a",
-    ("gp", 2): "6ad14caf8d2f30aa68a37c56c243e12fcf52ead984343a8af91c0550e6008e22",
-    ("gp", 3): "bf02b16a1a2679c97199244a2f1b7381851fbf7d757ef90cabfddd15119b9a00",
-    ("extra-gp", 0): "f17206b6bb5636e0aaeb38d7b9a7d16ffdb0cf47972029cc4e194f9b358d9f90",
-    ("extra-gp", 1): "0c047943a70dad84d152a6563f41d33232f45a32c0ebc1355aa4fc320fd12078",
-    ("extra-gp", 2): "47d626a98dda4abe7439ae732acc0b6f40b30e826ed58c17e60990de1aeab034",
-    ("extra-gp", 3): "e7cc913cd5e6088f6bfc452af9aab8691f65a7d9bd7bc37194cb8c21b8f8f374",
+    ("gp", 0): "fd981cf3534baf2726b0eefc7c449ba0f7223561570cb021ea6d205211608b18",
+    ("gp", 1): "2e6798174e3491fc42bd70fef7ed998b84d889007a70c30a03a9e06ef9f2f908",
+    ("gp", 2): "e9a56ce0fe4858caa3fafefc4086396d48e53f3422d251ce9ebfb04977e9f8d9",
+    ("gp", 3): "e307b3aa715efd2dffb63900ac5ba002d7fd8351ad61256224e557d726801e0b",
+    ("extra-gp", 0): "12fc4eb0cce7c3326c78e5f33934f4101813ad9d3229d2741333c88bf1455a01",
+    ("extra-gp", 1): "b2867d97c2452c1bb03304cdea195526e8a926f2f810f3cd03f22cba11e53412",
+    ("extra-gp", 2): "d6981dad92bff6c8bf2f3b4c7f6e1c835af1f4950b1a3525a62cb91c22c0a0a2",
+    ("extra-gp", 3): "2a20df63be79cf36c0ee8ebc711ad69b3a617c874bad4ef550dcc4416922cd43",
 }
 
 
@@ -24,6 +24,7 @@ def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
     environment = os.environ.copy()
     environment["SDL_AUDIODRIVER"] = "dummy"
+    mismatches = {}
     with tempfile.TemporaryDirectory(prefix="rage trasy ąę ") as directory:
         root = Path(directory)
         for series in ("gp", "extra-gp"):
@@ -47,7 +48,7 @@ frames = 2500
 
 [stop]
 scene = 12
-timer = 1
+timer = 56
 
 [capture]
 path = {capture}
@@ -65,10 +66,18 @@ path = {capture}
                     print(result.stdout, file=sys.stderr)
                     raise AssertionError(f"course matrix failed for {series}/{course}")
                 digest = hashlib.sha256(capture.read_bytes()).hexdigest()
-                if digest != CLASSIC_GOLDENS[(series, course)]:
+                if capture.read_bytes().count(b"\0") > 320 * 240 * 2:
                     raise AssertionError(
-                        f"classic pixels changed for {series}/{course}: {digest}"
+                        f"classic capture is effectively blank for {series}/{course}"
                     )
+                if digest != CLASSIC_GOLDENS[(series, course)]:
+                    mismatches[(series, course)] = digest
+    if mismatches:
+        details = ", ".join(
+            f"{series}/{course}={digest}"
+            for (series, course), digest in mismatches.items()
+        )
+        raise AssertionError(f"classic pixels changed: {details}")
     return 0
 
 

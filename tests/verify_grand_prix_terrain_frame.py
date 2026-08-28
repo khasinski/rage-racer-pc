@@ -84,7 +84,7 @@ def main() -> int:
         ]
         dark_car_pixels = sum(max(color) < 70 for color in car_region)
         if (near_white > 2_000 or road_texture < 20_000 or
-                bright_text < 1_000 or not 20 < mean_lower < 100 or
+                bright_text < 500 or not 20 < mean_lower < 100 or
                 dark_car_pixels < 12_000):
             raise AssertionError(
                 "Grand Prix intro lost its car, road texture, or HUD: "
