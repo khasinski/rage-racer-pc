@@ -57,7 +57,7 @@ void UpdateZoneAmbience(s32 zone) {
         if (start == sentinel) {
             break;
         }
-        if (!(position < start) && !(end < position)) {
+        if (position >= start && end >= position) {
             s32 flags;
             s32 delta;
             s32 product;

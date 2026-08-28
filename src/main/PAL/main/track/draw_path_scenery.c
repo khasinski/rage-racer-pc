@@ -83,8 +83,7 @@ void UpdateTrackEventSound(s16 arg) {
     cur = p;
     do {
         lo = cur->start;
-        if (arg < lo) {
-        } else {
+        if (arg >= lo) {
         if (cur->end >= arg) {
             data = p->flags;
             break;
@@ -99,9 +98,9 @@ void UpdateTrackEventSound(s16 arg) {
         endAddress.pointer = end;
     } while (cursorAddress.value < endAddress.value);
 
-    if (!(data == 0)) {
+    if (data != 0) {
     s0 = g_PlayerField3C;
-    if (!(s0 >= 0)) {
+    if (s0 < 0) {
     s0 += 0x100;
     if (s0 <= 0) {
         goto track_event_motion_done;
@@ -109,8 +108,7 @@ void UpdateTrackEventSound(s16 arg) {
     s0 = 0;
     } else {
     s0 -= 0x100;
-    if (s0 >= 0) {
-    } else {
+    if (s0 < 0) {
     s0 = 0;
     }
     }
@@ -203,11 +201,11 @@ void UpdatePointAmbience(s32 arg) {
 loop:
     v1 = seg->start;
     t0 = seg->end;
-    if (!(v1 == sentinel)) {
+    if (v1 != sentinel) {
     a1raw = seg->fadeInDistance;
     t1raw = seg->fadeOutDistance;
-    if (!(arg < v1)) {
-    if (!(t0 < arg)) {
+    if (arg >= v1) {
+    if (t0 >= arg) {
     v0 = a1raw << 16;
     a1s = v0 >> 16;
     if (arg < v1 + a1s) {

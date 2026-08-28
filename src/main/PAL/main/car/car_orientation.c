@@ -333,7 +333,7 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
     }
     } else if (g_PadType == 0x23) {
     a1 = ((g_NegconSteer * 13) << 9) / g_NegconSteerRange[g_NegconMaxTwist];
-    if (!(a1 >= 0)) {
+    if (a1 < 0) {
 
     a0v = 2;
     if (ctx->facingBackwards != 0) a0v = 1;
@@ -352,7 +352,7 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
         p->steerPos = v1 / 3;
     }
     ctx->bodyRollVelocity = ctx->bodyRollVelocity - 6;
-    } else if (!(a1 <= 0)) {
+    } else if (a1 > 0) {
     a0v = 1;
     if (ctx->facingBackwards != 0) a0v = 2;
     v1 = p->steerPos;

@@ -187,7 +187,7 @@ void UpdateTeamNameScreen(void) {
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
-    if (!(GameMenuBusy != 0)) {
+    if (GameMenuBusy == 0) {
 
     DrawTeamNameEntry(1, GameMenuCursor);
     if (RunTimedDrawScript(&g_TeamNameScreenScript, &g_UiScriptProgress, 1) == 0) return;
@@ -227,7 +227,7 @@ void UpdateTeamNameScreen(void) {
     {
         s32 c = GameMenuCursor;
         if (c == 0x2A) goto pop;
-        if (!(c != 0x2B)) {
+        if (c == 0x2B) {
     PlaySoundCue(3);
     GameMenuBusy = 1;
     g_MenuOverlayPattern = 2;

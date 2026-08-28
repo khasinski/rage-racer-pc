@@ -74,7 +74,7 @@ void UpdateMemoryCardMenu(void) {
 
     fadeBusy = UpdateMemoryCardFade();
     if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
-    if (!(g_McActionBusy == 0)) {
+    if (g_McActionBusy != 0) {
     if (g_McErrorPending == 0) goto L_sw2;
 
     }
@@ -193,7 +193,7 @@ L_sw2:
         s32 a0;
         s32 nv;
         AdjustMenuSelectionHorizontal(s0, 0, 2);
-        if (!(g_McSaveMode == 0)) {
+        if (g_McSaveMode != 0) {
         a0 = g_McSlotUsedMask;
         if (!((a0 % 8) == 0)) {
         g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
@@ -264,7 +264,7 @@ slot_prompt_done:
         s32 lo = g_McConfirmChoice + 9;
         g_McMenuPhase = hi + lo;
         SetMenuBinaryChoiceVertical(p);
-        if (!(g_McConfirmChoice == 0)) {
+        if (g_McConfirmChoice != 0) {
         if (!((PollMenuConfirmInput() & 0xFFFF) == 0)) {
         g_McActionState = 0xB;
         break;
@@ -306,7 +306,7 @@ slot_prompt_done:
         g_McMenuSubState = 5;
         x = WriteMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
         g_McActionResult = x;
-        if (!(x == 0)) {
+        if (x != 0) {
         g_McActionOk = 1;
         x = 6;
         } else {
@@ -330,7 +330,7 @@ slot_prompt_done:
         {
             s32 r = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
             g_McSlotUsedMask = r;
-            if (!(r == 0)) {
+            if (r != 0) {
                 if ((r & 0xFFFF) == 0) {
                     nv = 0xE;
                     g_McMenuSubState = nv;
@@ -447,7 +447,7 @@ slot_prompt_done:
         s32 a0 = *s0;
         s32 dp;
         g_McActionResult = LoadMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
-        if (!(g_McActionResult == 0)) {
+        if (g_McActionResult != 0) {
         stateValue = *s0;
         g_McActionOk = 1;
         g_McMenuSubState = 8;
@@ -539,6 +539,7 @@ slot_prompt_done:
         break;
 
     default:
+        break;
     }
     break;
 
@@ -585,7 +586,7 @@ slot_prompt_done:
             }
         }
     }
-    if (!(g_McMenuState == 1)) {
+    if (g_McMenuState != 1) {
     g_McActionState = 0;
     g_McActionResult = 0;
     g_McConfirmChoice = 0;
@@ -613,10 +614,10 @@ slot_prompt_done:
             s32 t = g_McActionElapsed + 1;
             g_McActionElapsed = t;
             if (!((g_PadPressed & PAD_CANCEL) == 0)) {
-            if (!(t < 0x79)) {
+            if (t >= 0x79) {
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
-        if (!(fadeBusy != 0)) {
+        if (fadeBusy == 0) {
         PlaySoundCue(3);
         StartMenuExitFade();
         }
@@ -649,7 +650,7 @@ slot_prompt_done:
             s32 x = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
             s32 w;
             g_McSlotUsedMask = x;
-            if (!(x == 0)) {
+            if (x != 0) {
                 x = x & 7;
                 if (x != 0) {
                     x = 2;
@@ -692,6 +693,7 @@ slot_prompt_done:
         g_McMenuState = g_McMenuSelection;
         break;
     default:
+        break;
     }
 
     switch (g_McMenuSelection) {
@@ -749,7 +751,7 @@ slot_prompt_done:
 
     case 1:
     g_McActionTimer -= 1;
-    if (!(g_McActionTimer != 0)) {
+    if (g_McActionTimer == 0) {
     g_McActionState = 3;
     }
     break;
@@ -757,7 +759,7 @@ slot_prompt_done:
     case 3:
     {
         s32 mph = g_McMenuPage;
-        if (!(mph == 0)) {
+        if (mph != 0) {
         if (mph == 1) goto L_b1280;
         break;
         }
@@ -781,7 +783,7 @@ slot_prompt_done:
     }
 
     if (!((g_PadPressed & PAD_CANCEL) == 0)) {
-    if (!(fadeBusy != 0)) {
+    if (fadeBusy == 0) {
     g_McActionState = 0;
     PlaySoundCue(3);
     StartMenuExitFade();
@@ -789,7 +791,7 @@ slot_prompt_done:
 
 L_b1280:
     if (!((g_PadPressed & PAD_CANCEL) == 0)) {
-    if (!(fadeBusy != 0)) {
+    if (fadeBusy == 0) {
     PlaySoundCue(3);
     StartMenuExitFade();
     /* fall through */
@@ -827,9 +829,10 @@ L_b1280:
         g_McMenuState = mslot;
         /* fall through */
     case 3:
+        break;
     }
 
-    if (!(g_McMenuState == -1)) {
+    if (g_McMenuState != -1) {
     g_McActionState = 0;
     }
     break;
@@ -873,7 +876,7 @@ L_b1280:
     case 1:
     switch (g_McActionState) {
     case 0:
-        if (!(g_McSaveMode == 0)) {
+        if (g_McSaveMode != 0) {
         g_McMenuPhase = MC_PROMPT_NO_DATA;
     L1447:
         { u16 p = PollMenuConfirmInput(); if (!(p)) {
@@ -951,6 +954,7 @@ L_b1280:
         } }
         g_McActionState = 0;
     default:
+        break;
     }
     break;
 
@@ -990,7 +994,7 @@ L_b1280:
         }
     }
 
-    if (!(g_McMenuState == -2)) {
+    if (g_McMenuState != -2) {
     g_McActionState = 0;
     g_McActionBusy = 0;
     g_McActionResult = 0;

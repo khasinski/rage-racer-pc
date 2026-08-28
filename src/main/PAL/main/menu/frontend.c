@@ -133,7 +133,7 @@ void UpdateFrontend(void) {
     if (state < 0x1cc) {
         g_SceneTimer = state + 1;
     } else {
-        if (!(g_FrontendState == FRONTEND_STATE_MENU_EXIT) &&
+        if (g_FrontendState != FRONTEND_STATE_MENU_EXIT &&
             !(g_AttractCycleCount % 2)) {
         if (state == 0x1cc) {
             g_GrandPrixSeries = 0;

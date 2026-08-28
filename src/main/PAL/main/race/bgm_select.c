@@ -62,8 +62,9 @@ void UpdateBgmSelect(void) {
     if (g_BgmChangeDelay > 0) {
         t = g_BgmChangeDelay - 1;
         g_BgmChangeDelay = t;
-        if (t == 4) {
-        } else if (t == 0) {
+        /* The empty t == 4 arm guarded nothing: the two values exclude each
+         * other, so reaching the second test already means t is not 4. */
+        if (t == 0) {
             if (g_BgmSelectCdTrack == 12) g_BgmSelectCdTrack = 17;
             RequestCdTrack(g_BgmSelectCdTrack);
             StartCdAudio();

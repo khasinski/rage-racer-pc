@@ -163,7 +163,7 @@ timing_done:
                 g_RefSectorTime1 = g_SectorTimes[1];
             }
 
-            if (!(g_LapCount < route->timing.fields.lap)) {
+            if (g_LapCount >= route->timing.fields.lap) {
                 PlaySoundCue(0x26);
                 g_RaceCueDelay = 0x96;
             }

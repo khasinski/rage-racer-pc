@@ -136,7 +136,7 @@ for (;;) {
     threshold = cursor.pointer->crestEvents[0][0].progress;
     cmp = temp < threshold;
     offset += sizeof(TrackCrestEvent);
-    if (!(cmp != 0)) {
+    if (cmp == 0) {
     cmp = pos1 < threshold;
     if (cmp != 0) {
         goto crossed_label;
@@ -245,7 +245,7 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex) {
 
     ai = GetCarAiBlock(obj);
     if (obj->slideInput.value == 0) {
-        if (!(obj->yawRate != 0)) {
+        if (obj->yawRate == 0) {
         if (carIndex != 0) {
             value = obj->speed;
             if (value < 0x3C1) {
@@ -338,8 +338,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *obj, s32 carIndex) {
         state = GetCarAiBlock(objReg);
     }
 
-    if (target < entry->start) {
-    } else {
+    if (target >= entry->start) {
     if (entry->end < target) {
         goto advance;
     }
@@ -359,9 +358,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *obj, s32 carIndex) {
     return;
 
     }
-    if (!(entry->end < target)) {
-
-    } else {
+    if (entry->end < target) {
 advance:
     {
         raw = state->routeIndex;
@@ -457,9 +454,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
   }
   pitch = 0;
   lo_R7 = lim[0];
-  if (rpm < lo_R7)
-  {
-  } else {
+  if (rpm >= lo_R7) {
   hi = lim[1];
   one = hi;
   if (one < rpm)
@@ -468,7 +463,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
   }
   range = hi - lo_R7;
   pitch = p[0]->pitch;
-  if (!(range > 0))
+  if (range <= 0)
   {
     range = 1;
   }

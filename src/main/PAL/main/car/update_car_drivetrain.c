@@ -555,6 +555,7 @@ grade_adjust_done:
         block_129:
         drive->engineRpm = shiftedSpeed;
 shift_interpolation_done:
+    ;
 
       }
       }

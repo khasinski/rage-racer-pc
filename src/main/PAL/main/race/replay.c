@@ -192,7 +192,7 @@ void BeginReplay(void) {
         g_ReplayFrameCount = g_ReplayWriteCursor - 2;
     }
 
-    if (!(g_ReplayReadCursor < g_ReplayFrameCount)) {
+    if (g_ReplayReadCursor >= g_ReplayFrameCount) {
         g_ReplayReadCursor = 0;
     }
 

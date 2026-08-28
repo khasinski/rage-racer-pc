@@ -95,9 +95,8 @@ s32 GetTrackZoneBlend(s32 position) {
         rawCode = zone.pointer->code;
         RAW(g_TrackZoneCode) = rawCode;
         code = (s16)rawCode;
-        if (!(code == 0)) {
-        if (code > 0) {
-        } else {
+        if (code != 0) {
+        if (code <= 0) {
         if (code == -3) {
             goto code_minus_three;
         }
@@ -257,6 +256,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         g_SplitTargetTime = g_RefSectorTimes.values[0];
     }
 split_update_done:
+    ;
 
 }
     if (g_SplitTimer >= 0x3C) {

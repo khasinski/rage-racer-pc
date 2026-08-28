@@ -299,7 +299,7 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         }
         goto after_match;
 compare_mode_match:
-        if (!(currentB != matchValue)) {
+        if (currentB == matchValue) {
 found_match:
         right = 1;
         }

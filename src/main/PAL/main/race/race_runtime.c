@@ -541,7 +541,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
   idx_R8 = slots[pos2_R10].value;
   base_R9.pointer = g_TrackEventData;
   ent2_R7 = ent;
-  if (!(idx_R8 < 12))
+  if (idx_R8 >= 12)
   {
     idx_R8 = 0;
   }
@@ -574,7 +574,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
     ent2_R7->boostAccelerationThreshold = 0;
   }
   else
-    if (!(c < 11))
+    if (c >= 11)
   {
     ent2_R7->boostAccelerationThreshold = 10;
   }
@@ -588,7 +588,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
     sub_R6->boostAcceleration = 0;
   }
   else
-    if (!(c < 16))
+    if (c >= 16)
   {
     sub_R6->boostAcceleration = 15;
   }

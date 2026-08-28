@@ -32,8 +32,7 @@ void DrawCourseObjects(void) {
     }
 
     do {
-        if (obj->modelId == -1) {
-        } else {
+        if (obj->modelId != -1) {
         visShift = obj->x / 2048;  /* per-sector visibility bit index */
         vis = g_VisibleCellMask[obj->z / 2048] & (1 << visShift);
         if (vis == 0) {

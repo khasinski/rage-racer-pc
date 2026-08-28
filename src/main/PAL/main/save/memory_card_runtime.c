@@ -31,7 +31,7 @@ s32 PollMemoryCardStatus(s32 port, s32 slot) {
         }
 
         two = 2;
-        if (!(status == two)) {
+        if (status != two) {
         if (status < 3) {
             if (status == 1) {
                 goto case1_ready;
@@ -42,9 +42,8 @@ s32 PollMemoryCardStatus(s32 port, s32 slot) {
         g_McLastCardStatus = 0;
         break;
         }
-        if (!(status == 3)) {
-        if (status == 4) {
-        } else {
+        if (status != 3) {
+        if (status != 4) {
         state = -3;
         goto fail_case1;
 
@@ -97,7 +96,7 @@ fail_case1:
         }
 
         g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        if (!(status == 2)) {
+        if (status != 2) {
         if (status < 3) {
             if (status == 1) {
                 goto case3_ready;
@@ -107,9 +106,8 @@ fail_case1:
         g_McLastCardStatus = 0;
         break;
         }
-        if (!(status == 3)) {
-        if (status == 4) {
-        } else {
+        if (status != 3) {
+        if (status != 4) {
         state = -3;
         g_McPollStatus = state;
         g_McLastCardStatus = 0;

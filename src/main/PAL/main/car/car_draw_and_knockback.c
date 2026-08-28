@@ -389,8 +389,7 @@ void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
     obj = car;
     value = 1;
     obj->motionMode = strength;
-    if (strength == value) {
-    } else {
+    if (strength != value) {
 
     value = 2;
     if (strength == value) {

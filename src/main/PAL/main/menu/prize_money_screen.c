@@ -57,7 +57,7 @@ void UpdatePrizeMoneyScreen(void) {
     case PRIZE_SCREEN_STATE_COUNT_PRIZE:
         g_SceneTimer += 1;
         t.value = g_SceneTimer;
-        if (!(t.unsignedValue < 121)) {
+        if (t.unsignedValue >= 121) {
         if (g_PrizeAmount == 0) {
         g_SceneTimer = 0;
         if (g_PromotionBonus == 0) goto Lstore7;
