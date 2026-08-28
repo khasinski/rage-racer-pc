@@ -147,7 +147,7 @@ void UpdateFreeLookCamera(void *car, s32 updateMotion) {
     delta[2] = coords[2] - view[4];
     c400 = 0x400;
     view[7] = c400 - Atan2(delta[0], delta[2]);
-    value = SquareRoot12(delta[0] * delta[0] + delta[2] * delta[2]);
+    value = DistanceXZ(delta[0], delta[2]);
     view[6] = c400 - Atan2(delta[1], value >> 6);
 
     g_PlayerCar.trackSection = g_CameraCar.trackSection;

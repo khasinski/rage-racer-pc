@@ -9,6 +9,6 @@
 s32 GetReverseTrackAngle(s32 pointIndex) {
     s32 next = (pointIndex + 1) % g_TrackPointCount;
 
-    return 0x800 - BlendAngle(g_TrackPoints[pointIndex].angle, g_TrackPoints[next].angle, g_PlayerSegmentWeight);
+    return 0x800 - BlendAngle(TrackPoint(pointIndex)->angle, TrackPoint(next)->angle, g_PlayerSegmentWeight);
 }
 

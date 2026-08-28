@@ -248,6 +248,24 @@ extern GameTrackPoint *g_TrackPoints;
 extern s32 g_TrackPointCount;
 
 /*
+ * Reach a centreline point. The track is a closed ring, so every index into it
+ * wraps; this is the one place that does it.
+ *
+ * The rule used to be written in the comment above and applied by hand at each
+ * call site, which meant it was applied at most of them. UpdateFinishCamera
+ * wrapped the index it passed to InterpolateTrackPoint and, two lines later,
+ * handed a raw one to UpdateCarTrackState, which read past the array and took
+ * the process down with it.
+ */
+static inline GameTrackPoint *TrackPoint(s32 index) {
+    s32 count = g_TrackPointCount;
+    if (count <= 0) return g_TrackPoints;
+    index %= count;
+    if (index < 0) index += count;
+    return &g_TrackPoints[index];
+}
+
+/*
  * Animated course scenery (func_8003Dxxx / func_8003Fxxx). All four courses
  * share one coordinate space, so prop positions are one static table at
  * 0x8007E2C0 and each prop culls itself against the visible-terrain bitmask

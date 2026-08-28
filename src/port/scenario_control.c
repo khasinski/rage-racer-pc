@@ -102,12 +102,12 @@ static int ScenarioPlaceCar(GameCarRuntime *car, int point) {
     if (point < 0) return 1;
     if (point >= g_TrackPointCount) return 0;
     car->trackPointIndex = point;
-    car->x = g_TrackPoints[point].x;
-    car->z = g_TrackPoints[point].z;
+    car->x = TrackPoint(point)->x;
+    car->z = TrackPoint(point)->z;
     car->y = 0;
     car->bodyPitch = car->bodyRoll = 0;
     car->bodyYaw = (0xC00 - (g_RaceSeries << 11) -
-                    g_TrackPoints[point].angle) & 0xFFF;
+                    TrackPoint(point)->angle) & 0xFFF;
     car->headingAngle = car->bodyYaw;
     car->trackPointIndex = FindTrackSegment(car, point);
     SeedCarLapProgress(car, 0);

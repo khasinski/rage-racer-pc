@@ -28,6 +28,12 @@ int DiagnosticLogOpen(char *path, size_t pathSize) {
 #endif
                      ) >= (int)pathSize) return 0;
     }
+    /* Say where the diagnostics went while stderr still reaches the terminal.
+     * This call takes stderr away, so without the notice here the only record
+     * of the path lands in the file nobody has found yet, and redirecting the
+     * command's stderr captures an empty stream. */
+    fprintf(stderr, "rage-port: diagnostics go to %s\n", path);
+    fflush(stderr);
     file = freopen(path, "a", stderr);
     if (file == NULL) return 0;
     /* Microsoft's CRT accepts _IOLBF but buffers a whole block anyway, so a

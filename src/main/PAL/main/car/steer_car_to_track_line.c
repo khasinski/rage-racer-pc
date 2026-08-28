@@ -479,8 +479,8 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx) {
 
     do {
         nxt = (i + 1) % g_TrackPointCount;
-        pa = &g_TrackPoints[i];
-        pb = &g_TrackPoints[nxt];
+        pa = TrackPoint(i);
+        pb = TrackPoint(nxt);
 
         pax = pa->x;
         paz = pa->z;
@@ -529,8 +529,8 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx) {
         i = ni;
     } while (i != idx);
 
-    car->x = g_TrackPoints[i].x;
-    car->z = g_TrackPoints[i].z;
+    car->x = TrackPoint(i)->x;
+    car->z = TrackPoint(i)->z;
     i = -1;
     asm volatile("" : "=r"(i) : "0"(i));
     return i;

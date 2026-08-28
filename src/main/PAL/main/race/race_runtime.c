@@ -451,7 +451,7 @@ void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
         idx = ent->trackPointIndex;
         acc = 0xC00;
         levShift = lev << 11;
-        angle = g_TrackPoints[idx].angle;
+        angle = TrackPoint(idx)->angle;
         acc -= levShift;
         ent->bodyYaw = (acc - angle) & 0xFFF;
 

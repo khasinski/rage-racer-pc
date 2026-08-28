@@ -184,7 +184,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   if (drive->motionState == CAR_MOTION_TAKEOFF)
   {
     driveCurveMode = drive->trackCurveMode;
-    pointCurveMode = g_TrackPoints[car->trackPointIndex].arcRef & 3;
+    pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
     if (driveCurveMode != pointCurveMode)
     {
       if (driveCurveMode != 0)
@@ -223,7 +223,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   else
   {
-    trackPoint = &g_TrackPoints[car->trackPointIndex];
+    trackPoint = TrackPoint(car->trackPointIndex);
     curveModeNow = drive->trackCurveMode;
     if ((curveModeNow != (trackPoint->arcRef & 3)) && (curveModeNow != 0))
     {
@@ -237,7 +237,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
       {
         camber = 0x32;
       }
-      if ((g_TrackPoints[car->trackPointIndex].arcRef & 3) == 1)
+      if ((TrackPoint(car->trackPointIndex)->arcRef & 3) == 1)
       {
         camberLean = (-(camber * 0x3C)) / 20;
       }
@@ -616,14 +616,14 @@ shift_interpolation_done:
     }
   }
   trackHeadingError = GetAngleDistance(car->headingAngle,
-                                       0xC00 - g_TrackPoints[car->trackPointIndex].angle);
+                                       0xC00 - TrackPoint(car->trackPointIndex)->angle);
   frontLoadScaled = trackHeadingError;
   pointIndex = car->trackPointIndex;
   lateralOffset = car->segmentFraction;
-  engineSpeed = g_TrackPoints[pointIndex].surfacePitch * (0x400 - lateralOffset);
+  engineSpeed = TrackPoint(pointIndex)->surfacePitch * (0x400 - lateralOffset);
   pointIndex += 1;
   lateralSum = engineSpeed +
-               g_TrackPoints[pointIndex % g_TrackPointCount].surfacePitch * lateralOffset;
+               TrackPoint(pointIndex % g_TrackPointCount)->surfacePitch * lateralOffset;
   secondNonnegative = lateralSum >= 0;
   if (!secondNonnegative)
   {
@@ -711,7 +711,7 @@ shift_interpolation_done:
   if (drive->motionState == CAR_MOTION_TAKEOFF)
   {
     arcPointIndex = car->trackPointIndex;
-    arcFlags = g_TrackPoints[arcPointIndex].arcRef;
+    arcFlags = TrackPoint(arcPointIndex)->arcRef;
     dragBase = arcFlags % 4;
     if (dragBase > 0)
     {

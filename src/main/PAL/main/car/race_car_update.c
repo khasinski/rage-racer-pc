@@ -52,7 +52,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     }
     index = rem % g_TrackPointCount;
 
-    point = &g_TrackPoints[index];
+    point = TrackPoint(index);
     if (point->rightHalfWidth < lateral) {
         value = point->rightHalfWidth * car->normalizedLateralOffset;
         if (value < 0) {
@@ -684,7 +684,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             delta[2] = rcos(car->bodyYaw) / 128 + car->z - spad[4];
             s0v = 0x400;
             spad[7] = s0v - Atan2(delta[0], delta[2]);
-            s0v = s0v - Atan2(delta[1], SquareRoot12(delta[0] * delta[0] + delta[2] * delta[2]) >> 6);
+            s0v = s0v - Atan2(delta[1], DistanceXZ(delta[0], delta[2]) >> 6);
             spad[6] = s0v;
             spad[8] = 0;
             StoreScratchLegacyView(&legacyView);

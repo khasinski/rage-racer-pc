@@ -9,8 +9,8 @@
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     s32 next = (pointIndex + 1) % g_TrackPointCount;
     s32 inv = 0x400 - weight;
-    GameTrackPoint *cur = &g_TrackPoints[pointIndex];
-    GameTrackPoint *nxt = &g_TrackPoints[next];
+    GameTrackPoint *cur = TrackPoint(pointIndex);
+    GameTrackPoint *nxt = TrackPoint(next);
     s32 sum;
 
     sum = (cur->x * inv) + (nxt->x * weight);

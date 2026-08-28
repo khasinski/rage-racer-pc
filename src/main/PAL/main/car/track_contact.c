@@ -33,7 +33,7 @@ s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample) {
     index = FindTrackSegment(sample, sample->trackPointIndex);
     nextIndex = (index + 1) % g_TrackPointCount;
 
-    cur = &g_TrackPoints[index];
+    cur = TrackPoint(index);
 
     argX = sample->x;
     curX = (u16)cur->x;
@@ -46,7 +46,7 @@ s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample) {
     vec[2] = argZ - curZ;
 
     angle = cur->angle;
-    next = &g_TrackPoints[nextIndex];
+    next = TrackPoint(nextIndex);
     BuildRotMatrixY(&mtx, (0x1000 - angle) & 0xFFF);
 
     ApplyMatrix(&mtx, vec, out);
@@ -123,10 +123,10 @@ void ResetCarTrackState(GameCarRuntime *car) {
     spad->knockbackMode = 0;
     trackPointIndex = car->trackPointIndex;
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
-    point = &g_TrackPoints[trackPointIndex];
+    point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;
     spad->segmentLength = segmentLength;
-    nextPoint = &g_TrackPoints[nextPointIndex];
+    nextPoint = TrackPoint(nextPointIndex);
     if ((s16)segmentLength <= 0) {
         spad->segmentLength = 1U;
     }

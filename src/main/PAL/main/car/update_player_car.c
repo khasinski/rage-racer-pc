@@ -276,7 +276,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     {
         s32 base = car->bodyYaw - 0xC00;
 
-        slip = (base + g_TrackPoints[car->trackPointIndex].angle) & 0xFFF;
+        slip = (base + TrackPoint(car->trackPointIndex)->angle) & 0xFFF;
     }
     sv2.vx = 0;
     sv2.vz = 0;
@@ -433,7 +433,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         car->y += p->standingStartBounceY;
         UpdateCarBodyKick(car);
     } else {
-        slip = GetAngleDistance(0xC00 - g_TrackPoints[car->trackPointIndex].angle,
+        slip = GetAngleDistance(0xC00 - TrackPoint(car->trackPointIndex)->angle,
                              car->headingAngle);
         if (crash != 0) {
             p->launchEnergy -= 1000;

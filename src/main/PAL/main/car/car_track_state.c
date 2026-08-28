@@ -120,10 +120,10 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
     spad = CAR_TRACK_SCRATCH;
     spad->knockbackMode = 0;
-    point = &g_TrackPoints[trackPointIndex];
+    point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;
     spad->segmentLength = segmentLength;
-    nextPoint = &g_TrackPoints[nextPointIndex];
+    nextPoint = TrackPoint(nextPointIndex);
     if ((s16)segmentLength <= 0)
     {
         spad->segmentLength = 1U;
@@ -468,8 +468,8 @@ void SampleTrackSurfaceHeight(CarSurfaceSampleView *car) {
 
     idx = FindTrackSegment(car, car->trackPointIndex);
     p2 = GetTrackPointHalfwordView(
-        &g_TrackPoints[(idx + 1) % g_TrackPointCount]);
-    p1 = GetTrackPointHalfwordView(&g_TrackPoints[idx]);
+        TrackPoint((idx + 1) % g_TrackPointCount));
+    p1 = GetTrackPointHalfwordView(TrackPoint(idx));
 
     seg = p1->segmentLength;
     v.vx = car->x - p1->x;

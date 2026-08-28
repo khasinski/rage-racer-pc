@@ -81,7 +81,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   player->trackPointIndex = FindTrackSegment(car, player->trackPointIndex);
   player->bodyPitch = 0;
   headingBase = 0xC00 - (ReadStableRaceSeries() << 11);
-  player->bodyYaw = (headingBase - g_TrackPoints[player->trackPointIndex].angle) & 0xFFF;
+  player->bodyYaw = (headingBase - TrackPoint(player->trackPointIndex)->angle) & 0xFFF;
   player->bodyRoll = 0;
   player->bodyRollVelocity = 0;
   player->previousTrackPointIndex = player->trackPointIndex;
@@ -273,7 +273,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
  */
 s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
     s32 index = car->trackPointIndex;
-    s32 complement = 0xC00 - g_TrackPoints[index].angle;
+    s32 complement = 0xC00 - TrackPoint(index)->angle;
     s32 diff = (car->headingAngle - complement) & 0xFFF;
     u32 backwardRange = diff - 0x401;
     return backwardRange < 0x7FFU;

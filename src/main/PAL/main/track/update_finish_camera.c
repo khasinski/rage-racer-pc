@@ -82,7 +82,7 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     delta[2] = obj->z - view[4];
 
     view[7] = 0x400 - Atan2(delta[0], delta[2]);
-    value = SquareRoot12(delta[0] * delta[0] + delta[2] * delta[2]);
+    value = DistanceXZ(delta[0], delta[2]);
     view[6] = 0x400 - Atan2(delta[1], value >> 6);
     view[8] = 0;
 
