@@ -11,11 +11,6 @@
 #include "game/scratchpad.h"
 #include "game/state.h"
 
-#ifdef __psyz
-#include "rage/automatic_transmission.h"
-#endif
-
-
 void UpdateRankingScreen(void) {
     s32 state;
 
@@ -706,11 +701,7 @@ void UpdateCustomizeScreen(void) {
                         return;
                 }
                 if (sel == 1) {
-#ifdef __psyz
-                    if (RageAutomaticTransmissionSelectable(g_CarModelAsset)) {
-#else
                     if (g_CarModelAsset->transmissionAvailable != 0) {
-#endif
                         PlaySoundCue(2);
                         carByte = g_CarTable[g_PlayerCarIndex].transmission;
                         g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelLowerScript;

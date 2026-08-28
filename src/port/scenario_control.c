@@ -389,6 +389,19 @@ static void RageScenarioSelectSeries(void) {
             (u8)s_scenario.transmission;
 }
 
+/* DrawMenuCarView normally copies the selected setup into the player object.
+ * Direct boot deliberately skips that screen, so do the same non-UI work
+ * immediately before the race initializes the car. */
+static void RageScenarioApplyCarSetup(void) {
+    CarEntry *entry = &g_CarTable[s_scenario.car];
+    g_PlayerTireCompound = entry->tireCompound;
+    g_PlayerTransmission = entry->transmission;
+    fprintf(stderr,
+            "rage-port: direct boot car setup tires=%d transmission=%s\n",
+            entry->tireCompound,
+            entry->transmission != 0 ? "manual" : "automatic");
+}
+
 /* EnterRoundScreen counts the rounds already placed in this class, then adds
  * the one about to be run. */
 static void RageScenarioCountRounds(void) {
@@ -480,6 +493,7 @@ static void RageScenarioDirectBoot(void) {
     case RAGE_DIRECT_RACE_ASSETS:
         if (RequestRaceAssets() == 0) {
             RageScenarioSelectBgm();
+            RageScenarioApplyCarSetup();
             g_MirrorMode = 0;
             g_FrameSyncThreshold = 0x180;
             g_SceneTimer = 0;

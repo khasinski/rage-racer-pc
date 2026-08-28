@@ -72,28 +72,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME record_defaults COMMAND record_defaults_tests)
 
-add_executable(automatic_transmission_tests
-    automatic_transmission_tests.c
-    ../src/port/automatic_transmission.c)
-target_include_directories(automatic_transmission_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port/include
-    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
-    ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(automatic_transmission_tests PRIVATE
-    __psyz=1 RAGE_HOST_PORT=1)
-if(MSVC)
-    target_compile_options(automatic_transmission_tests PRIVATE
-        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-else()
-    target_compile_options(automatic_transmission_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-endif()
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(automatic_transmission_tests PRIVATE
-        -Wall -Wextra -Werror)
-endif()
-add_test(NAME automatic_transmission COMMAND automatic_transmission_tests)
-
 add_executable(hud_config_tests
     hud_config_tests.c
     ../src/port/hud_config.c)
@@ -542,6 +520,14 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
     )
     set_tests_properties(scenario_control PROPERTIES TIMEOUT 50)
+    add_test(
+        NAME direct_boot_car_setup
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_direct_boot_car_setup.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(direct_boot_car_setup PROPERTIES TIMEOUT 35)
     add_test(
         NAME scenario_after_finish
         COMMAND python3

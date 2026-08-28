@@ -6,23 +6,11 @@
 #include "game/car.h"
 #include "game/race.h"
 
-#ifdef __psyz
-#include "rage/automatic_transmission.h"
-#endif
-
-
 void InstallResourceData(void *data) {
     (void)data;
     printf("%s", g_MsgResOk);
 }
 void SetCarSpec(GameCarSpec *spec) {
-#ifdef __psyz
-    int automaticSelected = g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
-        g_PlayerCarIndex < 13 &&
-        g_CarTable[g_PlayerCarIndex].transmission == 0;
-    spec = RageAutomaticTransmissionSpec(spec, automaticSelected,
-                                         g_CarModelAsset);
-#endif
     g_CarSpec = spec;
 }
 

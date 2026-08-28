@@ -137,7 +137,6 @@ if(RAGE_BUILD_PORT)
         src/port/analog_pad.c
         src/port/axis_curve.c
         src/port/timing_restore.c
-        src/port/automatic_transmission.c
         src/port/chase_camera.c
         src/port/content_options.c
         src/port/chd_disc.c
