@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "game/input_internal.h"
 #include "game/render.h"
@@ -65,12 +66,14 @@ static float RageAxisSetting(const char *key, float fallback, float low,
 
 static void RageAxisSetupLoad(AxisSetup *setup, const char *axis) {
     char key[64];
+    float defaultLinearity = !strcmp(axis, "steering") ? 0.5f : 0.0f;
     snprintf(key, sizeof(key), "input.%s_deadzone", axis);
     setup->deadzone = RageAxisSetting(key, 0.0f, 0.0f, 0.99f);
     snprintf(key, sizeof(key), "input.%s_saturation", axis);
     setup->saturation = RageAxisSetting(key, 1.0f, 0.01f, 1.0f);
     snprintf(key, sizeof(key), "input.%s_linearity", axis);
-    setup->linearity = RageAxisSetting(key, 0.0f, -2.0f, 2.0f);
+    setup->linearity = RageAxisSetting(
+        key, defaultLinearity, -2.0f, 2.0f);
     snprintf(key, sizeof(key), "input.%s_scaling", axis);
     setup->scaling = RageAxisSetting(key, 1.0f, 0.01f, 10.0f);
     if (setup->deadzone != 0.0f || setup->saturation != 1.0f ||

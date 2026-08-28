@@ -33,7 +33,14 @@ def main() -> int:
         raise AssertionError(
             "rage-port.ini changes the retail third-person camera by default: "
             f"chase_turn_lookahead={lookahead}")
-    print(f"shipped draw_distance is {value}; chase lookahead is disabled")
+    linearity = re.search(
+        r"^\s*steering_linearity\s*=\s*([-0-9.]+)", text, re.MULTILINE)
+    if linearity is None or float(linearity.group(1)) != 0.5:
+        raise AssertionError(
+            "rage-port.ini must ship steering_linearity=0.5")
+    print(
+        f"shipped draw_distance is {value}; chase lookahead is disabled; "
+        "steering linearity is 0.5")
     return 0
 
 

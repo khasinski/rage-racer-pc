@@ -267,7 +267,8 @@ steering_linearity = 0.5
 `deadzone` runs 0 to 0.99 and `saturation` 0.01 to 1, both as fractions of the
 travel. `scaling` runs 0.01 to 10. `linearity` runs -2 to 2 and is an exponent
 rather than a fraction: 0 is a straight line, above it softens the middle of
-the throw, below it sharpens it. A value out of range is reported and ignored.
+the throw, below it sharpens it. Steering defaults to `0.5`; throttle and brake
+remain linear at `0`. A value out of range is reported and ignored.
 
 These sit in front of the game's own NeGcon dead zone and twist range, which
 stay where they always were, in the OPTIONS menu.
