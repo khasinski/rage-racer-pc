@@ -167,14 +167,11 @@ crest_scan_done:
 void UpdateCarCrestHop(GameCarRuntime *car) {
     GameCarRuntime *obj;
     s32 value;
-    /* These pins are load-bearing: removing either one changes .text. */
     s32 temp;
     s32 result;
     s32 one;
-    volatile s32 stack[2];
 
     obj = car;
-    (void)stack;
 
     if (obj->verticalMotionState != 0) {
         result = obj->verticalMotionTimer;
@@ -185,9 +182,9 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         value = value / 6;
         /* These barriers are load-bearing: without them the copy to `result`
          * is scheduled ahead of the divide and the load delay needs a nop. */
-        asm volatile("" : "=r"(value) : "0"(value));
+        
         result = temp;
-        asm volatile("" : "=r"(temp) : "0"(temp));
+        
         if (temp >= 0x12C) {
             value >>= 8;
         }
@@ -325,10 +322,9 @@ void ApplyCarRacingLineHint(GameCarRuntime *obj, s32 carIndex) {
     s32 value;
     s32 valueRaw;
     s32 raw;
-    s32 stack[2];
 
     raw = objReg->trackProgress;
-    asm volatile("" : : "r"(stack));
+    
     scene = g_RaceSeries;
     target = raw >> 4;
     index = objReg->routeIndex;
@@ -351,7 +347,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *obj, s32 carIndex) {
         valueRaw = objReg->aiLateralOffset;
         if (entry->minHeight < valueRaw) {
             value = valueRaw;
-            asm volatile("" : "=r"(valueRaw) : "0"(valueRaw));
+            
             raw = entry->maxHeight;
             raw = valueRaw < raw;
             if (raw != 0) {

@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+/* Host storage; see the note on g_CourseSelectScrollValue. */
 extern volatile s32 g_McConfirmChoice_v;
 
 extern s32 g_FrameSyncThreshold;

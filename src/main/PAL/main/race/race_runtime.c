@@ -565,7 +565,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
     ent2_R7->boostAcceleration =
         p1_R4.pointer->rivalAiConfigs[0][0].boostAcceleration;
   }
-  __asm__ volatile("");
+  
   c = ent2_R7->boostAccelerationThreshold;
   sub_R6 = GetCarAiBlock(ent2_R7);
   ent2_R7->boostTimer = 0;
@@ -607,7 +607,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
       sub_R6->minimumSpeed = 0x3C;
     }
     lev2_R2 = g_RaceSeries;
-    __asm__("" : "=r"(idxoff2_R4) : "0"(idxoff2_R4));
+    
     p2_R3 = base_R9;
     p2_R3.bytePointer += idxoff2_R4 + lev2_R2 * 192;
     w = p2_R3.pointer->rivalAiConfigs[0][0].initialEngineRpm;

@@ -67,7 +67,7 @@ s32 BeginMirrorPass(void) {
         panelPosition.position = &g_MirrorPanelY;
         y0 = *panelPosition.screenY;
         scratch->x1 = 0xEA;
-        __asm__("");
+        
         v1reg = g_MirrorPanelY;
         scratch->primData =
             &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][0];

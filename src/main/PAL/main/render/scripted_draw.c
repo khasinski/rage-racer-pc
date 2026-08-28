@@ -45,7 +45,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     interpProduct = elapsed * temp;
     interp = interpProduct / 32;
 
-    asm volatile("");
+    
     y = motionReg->y;
     x += interp;
     if (packed < 0) {
@@ -159,7 +159,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     interp = interpProduct / 32;
     y1 += interp;
 
-    asm volatile("");
+    
     x1Base = motionReg->x1;
     if (yPacked & 0x8000) {
         y0Call = y1;
@@ -171,7 +171,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     interpProduct = elapsed * temp;
     interp = interpProduct / 32;
 
-    asm volatile("");
+    
     y1 = motionReg->y1;
     x1 = x1Base + interp;
     if (yPacked < 0) {
@@ -247,7 +247,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
      * scratchpad load past the second record load. */
     limit = record->limit;
     ot = SCRATCH_OT_BASE_AS(OT_TYPE);
-    asm volatile("");
+    
     packedSpeed = record->packedVelocity;
     if (limit < time) {
         time = limit;
@@ -696,7 +696,7 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
     DrawSolidRect(ot, (s16)p0, (s16)p1, (s16)p2, (s16)p3,
                   r, g, b, (f & 2) ? (f & 0x60) : 0xff);
     /* The second p3 use keeps it ahead of ot in global-alloc priority. */
-    __asm__("" : : "r"(p0), "r"(p1), "r"(p2), "r"(p3), "r"(p3), "r"(f), "r"(ot));
+    
 }
 
 

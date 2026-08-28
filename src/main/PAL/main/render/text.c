@@ -336,7 +336,7 @@ typedef union TextRenderWork {
                     sprt->y0 = t0.value;
                     t0.value = (u16)home.clut;
                     sprt->clut = t0.value;
-                    asm volatile("" ::);
+                    
                     sprt++;
                     AddPrim(GamePrimaryOrderingTable(0), prim);
                 }

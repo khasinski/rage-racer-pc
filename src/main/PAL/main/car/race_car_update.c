@@ -625,13 +625,14 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     PlayerCarPositionView target;
     ScratchLegacyViewWords legacyView;
     s32 *spad;
-    s32 s0v;
+    /* The barrier this replaced carried the value in its operand. */
+    s32 s0v = 28;
     s32 delta[3];
 
     LoadScratchLegacyView(&legacyView);
     spad = legacyView.words;
     target.car = car;
-    __asm__("" : "=r"(s0v) : "0"(28), "r"(spad));
+    
     if (mode < 90) {
         if (mode < 2) {
             RaceIntroCameraScript *script = g_RaceIntroCameraScript;
@@ -703,7 +704,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                 spad[4] = c2;
                 spad[5] = c3;
             }
-            __asm__ volatile("");
+            
             spad[3] -= s0v;
             {
                 s32 c0 = car->bodyPitch;
@@ -715,7 +716,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                 spad[8] = c2;
                 spad[9] = c3;
             }
-            __asm__ volatile("");
+            
             StoreScratchLegacyView(&legacyView);
             SetCameraRotMatrix();
         }

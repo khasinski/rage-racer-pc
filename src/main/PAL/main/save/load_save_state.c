@@ -12,7 +12,7 @@
 s32 LoadSaveStateBlock(GameSaveBlock *block) {
     GameSaveBlock *base = block;
     s32 i;
-    __asm__("" : "=r"(base) : "0"(base));
+    
     {
         u32 sum;
         u32 checksumIndex;
@@ -20,7 +20,7 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
         u16 *p;
 
         i = 0;
-        __asm__("" : "=r"(i) : "0"(i));
+        
         sum = i;
         checksumAddress.pointer = base;
         p = checksumAddress.halfwordPointer;

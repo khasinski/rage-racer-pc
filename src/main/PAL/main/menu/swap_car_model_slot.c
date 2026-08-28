@@ -152,7 +152,7 @@ void DrawMenuCarView(void) {
 
     altLayout = g_MenuAltLayout;
     outX = out.x;
-    asm volatile("" : "=r"(altLayout), "=r"(outX) : "0"(altLayout), "1"(outX));
+    
     p = &ShowroomPlayerCar()->pose.position[0];
     if (altLayout != 0) {
         offset = s3 - 23;
@@ -161,7 +161,7 @@ void DrawMenuCarView(void) {
     }
     result = outX - offset;
     modelSlot = g_CarModelSlot;
-    asm volatile("" : "=r"(result), "=r"(modelSlot) : "0"(result), "1"(modelSlot));
+    
     q = &ShowroomPlayerCar()->pose.position[1];
     *p = result;
     outZ = out.z;

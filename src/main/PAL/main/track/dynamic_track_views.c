@@ -183,7 +183,7 @@ void DrawStartGridScenery(s32 flags) {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
             rem = s1 - s0 * 15;
             lim = g_CourseModelCount;
-            __asm__ __volatile__("");
+            
             value = rem + 0x28;
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (value < lim) ? value : 1;
@@ -194,7 +194,7 @@ void DrawStartGridScenery(s32 flags) {
             }
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
             lim = g_CourseModelCount;
-            __asm__ __volatile__("");
+            
             value = 0x28;
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (value < lim) ? value : 1;
@@ -419,7 +419,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         *scr = sv;
         sv = g_CourseModelCount;
         num = g_AnimScenery2Variant;
-        __asm__("" : "=r"(num) : "0"(num), "r"(sv));
+        
         num = num + 4;
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -439,7 +439,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         *scr = sv;
         sv = g_CourseModelCount;
         num = g_AnimScenery2Variant;
-        __asm__("" : "=r"(num) : "0"(num), "r"(sv));
+        
         num = num + 7;
     }
 

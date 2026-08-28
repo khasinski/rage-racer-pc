@@ -175,7 +175,6 @@ void ForcePanVoiceEnabled(s32 enabled) {
     s32 left;
     s32 right;
     s32 zeroArg;
-    s32 unused;
 
     i = 0;
     dst = values;
@@ -198,8 +197,7 @@ void ForcePanVoiceEnabled(s32 enabled) {
         if (left < 0) {
             left += 0x7F;
         }
-        unused = 0;
-        asm volatile("" : : "r"(unused));
+        
         raw *= scale;
         left >>= 7;
         if (raw < 0) {
@@ -226,7 +224,7 @@ void ForcePanVoiceEnabled(s32 enabled) {
         SsUtSetVVol(0x15, left, right);
         voice = 0x15;
         right = 0xF;
-        asm volatile("" : : "r"(voice), "r"(right));
+        
         raw = 0x3C;
         left = g_SoundScale.vabIds[0];
         zeroArg = 0;

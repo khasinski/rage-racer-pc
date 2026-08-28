@@ -562,7 +562,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
 
                 g_RaceOptionPulseAngle &= 0xFFF;
                 sample = rcos(g_RaceOptionPulseAngle);
-                asm volatile("" ::);
+                
                 rightTrig = sample * 0x2C;
                 quad = quadBase + 1;
                 if (rightTrig < 0) {

@@ -138,7 +138,7 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
         value = g_MenuAltPanelProgressB + step1;
         g_MenuAltPanelProgressB = value;
         if (value >= 0x11) {
-            __asm__ volatile("" ::);
+            
             g_MenuAltPanelProgressB = 0x10;
         }
     }
@@ -295,7 +295,7 @@ void DrawTimeAttackPlate(s32 stepArg) {
         value = g_TimeAttackPlateProgress + step;
         g_TimeAttackPlateProgress = value;
         if (value >= 0xD) {
-            __asm__ volatile("" ::);
+            
             g_TimeAttackPlateProgress = 0xC;
         }
     }

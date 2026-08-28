@@ -20,26 +20,6 @@ typedef float f32;
  * access is just a load or store at a computed address, and the ordering is
  * restored without a memory clobber. Same address, same width, no barrier.
  */
-/*
- * Register pins -- `register T x asm("$N")` and `asm("" : "=r"(x) : "0"(x))` --
- * and bare `asm("" ::: "memory")` barriers in this tree are load-bearing:
- * removing one changes .text. They are not annotated individually; assume any
- * of them matters and verify with `make check` before deleting.
- *
- * This has been measured exhaustively: every pure barrier and every pin was
- * removed in turn and the object compared against a baseline. Only a handful
- * turned out to be removable, and none hold each other - no function is free
- * when all its pins go at once, and no intra-function pair is removable
- * together.
- * Combinations across functions cannot matter, since register allocation is
- * per function.
- *
- * If you repeat that sweep, compare the *instruction stream*, not whole .o
- * files and not raw objdump text: -g -gcoff embeds line numbers and <LMnnn>
- * annotations, so any edit that changes the line count reports a false
- * difference. Two rounds of this tree's results were wrong for that reason.
- */
-
 #define RAW(x) (*(__typeof__(x) *)(uintptr_t)&(x))
 
 #endif

@@ -49,7 +49,7 @@ void DrawWrongWayWarning(void) {
 
         temp = 0x78;
         packet->y0 = temp;
-        __asm__ volatile("" : :);
+        
         uvOffset = (((i & 2) << 3) - (i & 2)) << 2;
         temp = -0x10 - uvOffset;
         uvOffset += 0x10;

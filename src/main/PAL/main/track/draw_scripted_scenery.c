@@ -398,7 +398,7 @@ void UpdatePathScenerySound(void) {
     frames.clock = &g_PathSceneryClock;
     posFrame = frames.halfwords[0];
     rotFrame = frames.halfwords[1];
-    __asm__ volatile("" : "=r"(rotFrame) : "0"(rotFrame));
+    
     dx = g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
     posFrame = posFrame + 1;
     frames.halfwords[0] = posFrame;

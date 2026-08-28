@@ -94,7 +94,7 @@ void ApplyPanVoiceVolume(void) {
         if (g_PanVoiceActive == 0) {
             right = 0xF;
             voice = 0x15;
-            asm volatile("" : : "r"(voice));
+            
             raw = 0x3C;
             left = g_SoundScale.vabIds[0];
             zeroArg = 0;
@@ -207,7 +207,7 @@ void UpdateIndexedEffectVoice(void) {
         SsUtSetVVol(0x14, left, right);
         voice = 0x14;
         left = 0;
-        asm volatile("" : : "r"(voice), "r"(left));
+        
         right = (s16)base;
         raw = (s16)center;
         SsUtChangePitch(voice, left, right, 0x3C, 0, raw, fine);
@@ -397,7 +397,7 @@ after_match:
             CHANNEL(cue).volLeft.updated = currentB;
             SetMusicChannelWordUpdated(CHANNEL(cue).volRight, currentB);
             /* Load-bearing: removal changes eight linked scheduler words. */
-            asm volatile("");
+            
             entryAddress.pointer = entry;
             entryAddress.bytes += sizeof(SoundModeSlot);
             entry = entryAddress.pointer;

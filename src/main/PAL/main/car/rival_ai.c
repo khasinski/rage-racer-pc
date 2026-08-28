@@ -89,7 +89,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         angleDiff = otherLateralOffset - carLateralOffset;
         diff = (a2 - carProgress) % track;
         angleSaved = angleDiff;
-        __asm__("" : "=r"(angleSaved) : "0"(angleSaved));
+        
         otherA4 -= carA4low;
 
         if (diff > 0 && diff < t6) {

@@ -604,8 +604,8 @@ void DrawSkyBackground(void)
         s32 x3Raw;
         s32 doubleStepX;
         RenderBufferAddress cursor;
-        asm volatile("" : : "r"(xWork));
-        asm volatile("" : "=r"(screenX0) : "0"(screenX2));
+        
+        
         doubleStepX = rowStepX * 2;
         screenX1 = screenX3;
         leftXWorkFixed = doubleStepX + rowStepX;

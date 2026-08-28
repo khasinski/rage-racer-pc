@@ -7,7 +7,6 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
     s32 voicePacked;
     s32 voice;
     s32 i;
-    s32 unused;
     s32 raw;
     s32 scale;
     s32 left;
@@ -15,7 +14,6 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
     s32 voiceArg;
     s32 zeroArg;
 
-    unused = 0;
     i = 0;
     voicePacked = 0x80000;
     voice = 8;
@@ -27,7 +25,7 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
             right = g_MusicChannels[i].left.half[0];
             zeroArg = 0;
             SsUtKeyOnV(voiceArg, left, right, zeroArg, raw, 0, 0, 0);
-            asm volatile("" : : "r"(unused));
+            
 
             raw = g_MusicChannels[i].volLeft.value;
             scale = g_SoundScale.scale;
@@ -133,7 +131,7 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
         SsUtSetVVol(0x14, left, right);
         voice = 0x14;
         left = 0;
-        asm volatile("" : : "r"(voice), "r"(left));
+        
         right = (s16)base;
         raw = (s16)center;
         SsUtChangePitch(voice, left, right, 0x3C, 0, raw, fine);
@@ -172,7 +170,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
             SsUtKeyOnV(voiceArg, left, right, keyTone, raw, 0, 0, 0);
 
             scale = GetEffectVoiceAtByteOffset(offset)->volume;
-            asm volatile("" : : "r"(scale));
+            
             raw = g_SoundScale.scale;
             raw = scale * raw;
             voiceArg = voice;

@@ -202,9 +202,7 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     u16 *src0;
     u16 *src1;
     s32 i;
-    s32 offset;
     s32 one;
-    s32 stride;
     u16 value;
     u16 value2;
 
@@ -240,16 +238,13 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     one = 1;
     src0 = &g_ScreenOffsetX.displayValue;
     src1 = &g_ScreenOffsetY.displayValue;
-    offset = 0;
     do {
-        stride = 0x20000;
         g_FrameContexts[i].environment.draw.dtd = one;
         g_FrameContexts[i].environment.draw.isbg = one;
         g_FrameContexts[i].environment.draw.r0 = r;
         g_FrameContexts[i].environment.draw.g0 = g;
         g_FrameContexts[i].environment.draw.b0 = b;
         value = *src0;
-        stride |= 0x37E8;
         g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
         g_FrameContexts[i].environment.mirrorDraw.dtd = one;
@@ -259,7 +254,6 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
         g_FrameContexts[i].environment.mirrorDraw.b0 = b;
         g_FrameContexts[i].environment.display.screen.y = value2 + 0x1D;
         i++;
-        offset += stride;
     } while (i < 2);
 
     ResetFrameContext(0);
@@ -273,9 +267,7 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     u16 *src0;
     u16 *src1;
     s32 i;
-    s32 offset;
     s32 one;
-    s32 stride;
     u16 value;
     u16 value2;
 
@@ -293,16 +285,13 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     one = 1;
     src0 = &g_ScreenOffsetX.displayValue;
     src1 = &g_ScreenOffsetY.displayValue;
-    offset = 0;
     do {
-        stride = 0x20000;
         g_FrameContexts[i].environment.draw.dtd = one;
         g_FrameContexts[i].environment.draw.isbg = one;
         g_FrameContexts[i].environment.draw.r0 = mode;
         g_FrameContexts[i].environment.draw.g0 = x;
         g_FrameContexts[i].environment.draw.b0 = y;
         value = *src0;
-        stride |= 0x37E8;
         g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
         g_FrameContexts[i].environment.mirrorDraw.dtd = one;
@@ -312,7 +301,6 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
         g_FrameContexts[i].environment.mirrorDraw.b0 = y;
         g_FrameContexts[i].environment.display.screen.y = value2 + 0x1D;
         i++;
-        offset += stride;
     } while (i < 2);
 
     ResetFrameContext(0);

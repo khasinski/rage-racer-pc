@@ -41,7 +41,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
     timer = spec->steerResponse;
     directionFlag = car->drive.launchDirection;
 
-    asm volatile("" : "=r"(timer) : "0"(timer));
+    
     baseIndex = car->trackPointIndex;
     index = baseIndex + 2;
     if (directionFlag == 0) {
@@ -244,11 +244,11 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
             {
                 EngineRpmAddress shiftTarget;
 
-                asm volatile("" : : : "memory");
+                
                 offset = drive->gear;
                 firstHeading = (u16)drive->engineRpm;
                 offset <<= 2;
-                asm volatile("" : :);
+                
                 RAW(drive->jumpTimer) = 0x14;
                 RAW(drive->motionState) = CAR_MOTION_AIRBORNE;
                 g_ShiftTargetRpm = lo;
@@ -532,6 +532,6 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx) {
     car->x = TrackPoint(i)->x;
     car->z = TrackPoint(i)->z;
     i = -1;
-    asm volatile("" : "=r"(i) : "0"(i));
+    
     return i;
 }
