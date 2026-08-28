@@ -27,6 +27,7 @@ enum {
     MODERN_NATIVE_MAX_VERTICES = 1000000,
     MODERN_NATIVE_MAX_SPANS = 32768,
     MODERN_NATIVE_MAX_TEXTURES = 2048,
+    MODERN_NATIVE_TEXTURE_HASH_SIZE = 4096,
 };
 
 typedef struct ModernNativeCameraUniform {
@@ -126,6 +127,7 @@ static float s_aspect = 4.0f / 3.0f;
 static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
+static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
 static uint32_t s_textureCount;
 static uint64_t s_trackAssetRevision = UINT64_MAX;
 static RageRenderShadowMap s_shadowMap;
@@ -580,6 +582,7 @@ static void ModernNativeGpuClearTextures(void) {
         }
     }
     memset(s_textures, 0, sizeof(s_textures));
+    memset(s_textureHash, 0, sizeof(s_textureHash));
     s_textureCount = 0;
 }
 
@@ -1005,9 +1008,22 @@ float ModernNativeGpuMirrorPanelY(void) {
 
 static ModernNativeTexture *ModernNativeFindTexture(
     const RageNativeDrawSpan *span) {
-    uint32_t index;
-    for (index = 0; index < s_textureCount; index++) {
-        ModernNativeTexture *entry = &s_textures[index];
+    uint32_t hash = span->assetKey * 0x9E3779B1u;
+    uint32_t probe;
+    hash ^= (uint32_t)span->assetSet * 0x85EBCA77u;
+    hash ^= span->material * 0xC2B2AE3Du;
+    hash ^= (uint32_t)span->materialVariant << 24;
+    hash ^= (uint32_t)span->hasCarPaint << 23;
+    hash ^= (uint32_t)span->carPaintColor1 << 8;
+    hash ^= (uint32_t)span->carPaintColor2 << 16;
+    hash ^= hash >> 16;
+    for (probe = 0; probe < MODERN_NATIVE_TEXTURE_HASH_SIZE; probe++) {
+        uint16_t stored =
+            s_textureHash[(hash + probe) &
+                          (MODERN_NATIVE_TEXTURE_HASH_SIZE - 1u)];
+        ModernNativeTexture *entry;
+        if (stored == 0) return NULL;
+        entry = &s_textures[stored - 1u];
         if (entry->assetKey == span->assetKey &&
             entry->assetSet == span->assetSet &&
             entry->material == span->material &&
@@ -1018,6 +1034,27 @@ static ModernNativeTexture *ModernNativeFindTexture(
             return entry;
     }
     return NULL;
+}
+
+static void ModernNativeIndexTexture(uint32_t index) {
+    const ModernNativeTexture *entry = &s_textures[index];
+    uint32_t hash = entry->assetKey * 0x9E3779B1u;
+    uint32_t probe;
+    hash ^= (uint32_t)entry->assetSet * 0x85EBCA77u;
+    hash ^= entry->material * 0xC2B2AE3Du;
+    hash ^= (uint32_t)entry->materialVariant << 24;
+    hash ^= (uint32_t)entry->hasCarPaint << 23;
+    hash ^= (uint32_t)entry->carPaintColor1 << 8;
+    hash ^= (uint32_t)entry->carPaintColor2 << 16;
+    hash ^= hash >> 16;
+    for (probe = 0; probe < MODERN_NATIVE_TEXTURE_HASH_SIZE; probe++) {
+        uint32_t slot =
+            (hash + probe) & (MODERN_NATIVE_TEXTURE_HASH_SIZE - 1u);
+        if (s_textureHash[slot] == 0) {
+            s_textureHash[slot] = (uint16_t)(index + 1u);
+            return;
+        }
+    }
 }
 
 static ModernNativeTexture *ModernNativeLoadTexture(
@@ -1123,6 +1160,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     materialDefinition.baseColorTexture = (RageRenderMaterialPath){0};
     materialDefinition.paintMask = (RageRenderMaterialPath){0};
     entry->definition = materialDefinition;
+    ModernNativeIndexTexture(s_textureCount);
     s_textureCount++;
     return entry;
 fail:
