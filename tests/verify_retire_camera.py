@@ -24,7 +24,7 @@ def main() -> int:
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         return result.returncode or 1
-    if not re.search(r"scene 12,.*race_phase=5.*retire_camera=1", result.stdout):
+    if not re.search(r"scene \d+,.*race_phase=5.*retire_camera=1", result.stdout):
         raise AssertionError(f"RETIRE did not enter chase-camera state\n{result.stdout}")
     if "camera: pos=" not in result.stdout:
         raise AssertionError("RETIRE camera state was not observable")

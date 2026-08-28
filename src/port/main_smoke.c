@@ -251,6 +251,11 @@ int main(int argc, char **argv) {
         printf("window size: %dx%d\n", size.w, size.h);
     }
     if (RageRuntimeConfigEnabled("report.audio_metrics", "RAGE_PORT_SMOKE_AUDIO_METRICS")) {
+        /* The SDL callback updates both the metrics and an optional PCM dump.
+         * Stop it before sampling either so a final callback cannot make the
+         * two observations disagree by one buffer. */
+        Psyz_AudioPause();
+        Psyz_AudioLock();
         printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
                "pitch_updates=%llu cdda=%d cdda_frames=%llu cdda_energy=%llu "
                "cdda_mix_energy=%llu "
@@ -278,6 +283,7 @@ int main(int argc, char **argv) {
                g_EngineSoundState.slotActive[3],
                g_EngineSoundState.slotActive[4],
                g_EngineSoundState.slotActive[5], g_SoundScale.scale);
+        Psyz_AudioUnlock();
     }
     if (RageRuntimeConfigEnabled("report.camera_state", "RAGE_PORT_SMOKE_CAMERA_STATE")) {
         {
