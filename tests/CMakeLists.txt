@@ -259,7 +259,11 @@ add_test(NAME native_geometry_interpolation
          COMMAND native_geometry_interpolation_tests)
 
 add_executable(release_package_tests release_package_tests.c)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(release_package_tests PRIVATE
+        /clang:-Wall /clang:-Wextra /clang:-Werror
+        /clang:-Wno-unsafe-buffer-usage)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(release_package_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME release_package COMMAND release_package_tests ${CMAKE_SOURCE_DIR})
