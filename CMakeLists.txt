@@ -33,6 +33,10 @@ endif()
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY
         "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # The port intentionally uses the ISO C file APIs shared by every host.
+    # Microsoft's CRT deprecates those names unless the application explicitly
+    # opts into the portable interface.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
 include(CTest)
