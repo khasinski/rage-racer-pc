@@ -79,7 +79,7 @@ void DrawStaticScenery(s32 shifted) {
                 drawArg = 0x3A;
             }
 #ifdef RAGE_HOST_PORT
-            RageGameRenderWorldSubmitDynamicCourseObject(
+            GameRenderWorldSubmitDynamicCourseObject(
                 0, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
 #endif
@@ -93,7 +93,7 @@ void DrawStaticScenery(s32 shifted) {
                 drawArg = 0x39;
             }
 #ifdef RAGE_HOST_PORT
-            RageGameRenderWorldSubmitDynamicCourseObject(
+            GameRenderWorldSubmitDynamicCourseObject(
                 0, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 1, 0);
 #endif
@@ -127,7 +127,7 @@ void DrawHighClassScenery(void) {
             drawArg = 0x3F;
         }
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseObject(
+        GameRenderWorldSubmitDynamicCourseObject(
             1, drawArg, state[-3], state[-2], state[-1],
             renderWorldMtx.m, 0, 0);
 #endif
@@ -140,7 +140,7 @@ void DrawHighClassScenery(void) {
             drawArg = 0x3F;
         }
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseObject(
+        GameRenderWorldSubmitDynamicCourseObject(
             1, drawArg, state[-3], state[-2], state[-1],
             renderWorldMtx.m, 1, 0);
 #endif
@@ -206,7 +206,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
 
     DrawAnimatedScenery2(value, 0, g_SceneId == 0x11, flag);
 
-    mode = RageSeriesCourseIndex();
+    mode = SeriesCourseIndex();
     switch (mode) {
     case 0:
         DrawSpinningScenery(value, flag);
@@ -405,7 +405,7 @@ void UpdateFlybyScenery(void) {
         vol = 0;
     }
 
-    switch (RageSeriesCourseIndex()) {
+    switch (SeriesCourseIndex()) {
     default:
         cue = 1;
         pitch = 0;

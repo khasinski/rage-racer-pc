@@ -38,12 +38,12 @@ void DrawRaceHudLabels(s32 mode) {
 #ifdef __psyz
             int label = i - 6;
             int visible = 1;
-            prim->x0 = descs[i].x < 160 ? RageHudLeftX(descs[i].x)
-                                        : RageHudRightX(descs[i].x);
+            prim->x0 = descs[i].x < 160 ? HudLeftX(descs[i].x)
+                                        : HudRightX(descs[i].x);
             if (mode != 0) {
-                if (label == 1 && !RageHudShowLapTimes()) visible = 0;
-                if (label == 2 && !RageHudShowTimeLimit()) visible = 0;
-            } else if (!RageHudShowLapTimes()) {
+                if (label == 1 && !HudShowLapTimes()) visible = 0;
+                if (label == 2 && !HudShowTimeLimit()) visible = 0;
+            } else if (!HudShowLapTimes()) {
                 visible = 0;
             }
 #endif
@@ -112,7 +112,7 @@ void DrawLapTimes(void) {
     s32 value;
 
 #ifdef __psyz
-    if (!RageHudShowLapTimes()) return;
+    if (!HudShowLapTimes()) return;
 #endif
 
     visibleCount = g_PlayerCar.lap;
@@ -146,9 +146,9 @@ void DrawLapTimes(void) {
             }
 
 #ifdef __psyz
-            DrawTimeValue(RageHudRightX(0xFA), y, value, tile, 0x3E8);
+            DrawTimeValue(HudRightX(0xFA), y, value, tile, 0x3E8);
             frame->layout.raceHud.lapTimes[i].x0 =
-                RageHudRightX((g_GrandPrixMode != 0
+                HudRightX((g_GrandPrixMode != 0
                     ? g_RaceHudSpriteDescsGp
                     : g_RaceHudSpriteDescsTimeTrial)[i].x);
 #else
@@ -163,7 +163,7 @@ void DrawLapTimes(void) {
     }
 
 #ifdef __psyz
-    DrawTimeValue(RageHudRightX(0xFA), 0x20, g_BestLapThisRace,
+    DrawTimeValue(HudRightX(0xFA), 0x20, g_BestLapThisRace,
                   0x78CC, 0x3E8);
 #else
     DrawTimeValue(0xFA, 0x20, g_BestLapThisRace, 0x78CC, 0x3E8);
@@ -174,7 +174,7 @@ void DrawTimeRemaining(s32 time) {
     s32 clutIndex = 0x78CC;
 
 #ifdef __psyz
-    if (!RageHudShowTimeLimit()) return;
+    if (!HudShowTimeLimit()) return;
 #endif
 
     if (time < 0x5DC) {
@@ -182,7 +182,7 @@ void DrawTimeRemaining(s32 time) {
     }
 
 #ifdef __psyz
-    DrawMinuteSecondTime(RageHudLeftX(0xE), 0xD2, time, clutIndex);
+    DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, time, clutIndex);
 #else
     DrawMinuteSecondTime(0xE, 0xD2, time, clutIndex);
 #endif

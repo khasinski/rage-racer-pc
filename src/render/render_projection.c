@@ -2,29 +2,29 @@
 
 #include <math.h>
 
-static float RageRadians(float degrees) {
+static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-static void RageRotateX(RageRenderVec3 *v, float radians) {
+static void RotateX(RageRenderVec3 *v, float radians) {
     float y = v->y * cosf(radians) - v->z * sinf(radians);
     float z = v->y * sinf(radians) + v->z * cosf(radians);
     v->y = y; v->z = z;
 }
 
-static void RageRotateY(RageRenderVec3 *v, float radians) {
+static void RotateY(RageRenderVec3 *v, float radians) {
     float x = v->x * cosf(radians) + v->z * sinf(radians);
     float z = -v->x * sinf(radians) + v->z * cosf(radians);
     v->x = x; v->z = z;
 }
 
-static void RageRotateZ(RageRenderVec3 *v, float radians) {
+static void RotateZ(RageRenderVec3 *v, float radians) {
     float x = v->x * cosf(radians) - v->y * sinf(radians);
     float y = v->x * sinf(radians) + v->y * cosf(radians);
     v->x = x; v->y = y;
 }
 
-static void RageRotateByCameraOrientation(RageRenderVec3 *v,
+static void RotateByCameraOrientation(RageRenderVec3 *v,
                                           const RageRenderQuaternion *orientation) {
     float length = sqrtf(orientation->x * orientation->x +
                          orientation->y * orientation->y +
@@ -47,7 +47,7 @@ static void RageRotateByCameraOrientation(RageRenderVec3 *v,
            (1.0f - 2.0f * (xx + yy)) * z;
 }
 
-void RageRenderWorldToView(const RageRenderCamera *camera,
+void RenderWorldToView(const RageRenderCamera *camera,
                            const RageRenderVec3 *world,
                            RageRenderVec3 *view) {
     *view = *world;
@@ -55,31 +55,31 @@ void RageRenderWorldToView(const RageRenderCamera *camera,
     view->y -= camera->transform.position.y;
     view->z -= camera->transform.position.z;
     if (camera->transform.hasOrientation) {
-        RageRotateByCameraOrientation(view, &camera->transform.orientation);
+        RotateByCameraOrientation(view, &camera->transform.orientation);
     } else {
         /* Inverse of the game's X/Y/Z camera orientation. */
-        RageRotateZ(view, -RageRadians(camera->transform.rotation.z));
-        RageRotateY(view, -RageRadians(camera->transform.rotation.y));
-        RageRotateX(view, -RageRadians(camera->transform.rotation.x));
+        RotateZ(view, -Radians(camera->transform.rotation.z));
+        RotateY(view, -Radians(camera->transform.rotation.y));
+        RotateX(view, -Radians(camera->transform.rotation.x));
     }
 }
 
-int RageRenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
+int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip) {
     float verticalScale, depth, depthScale, depthOffset;
     if (camera == 0 || view == 0 || clip == 0 || aspect <= 0.0f ||
         (depth = -view->z) < camera->nearPlane ||
         depth > camera->farPlane) return 0;
-    if (!RageRenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset))
+    if (!RenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset))
         return 0;
-    verticalScale = 1.0f / tanf(RageRadians(camera->verticalFovDegrees) * 0.5f);
+    verticalScale = 1.0f / tanf(Radians(camera->verticalFovDegrees) * 0.5f);
     clip->x = view->x * verticalScale / (depth * aspect);
     clip->y = view->y * verticalScale / depth;
     clip->z = depthScale + depthOffset / depth;
     return 1;
 }
 
-int RageRenderPerspectiveDepthTerms(const RageRenderCamera *camera,
+int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
                                     float *scale, float *offset) {
     float range;
     if (camera == 0 || scale == 0 || offset == 0 ||
@@ -91,13 +91,13 @@ int RageRenderPerspectiveDepthTerms(const RageRenderCamera *camera,
     return 1;
 }
 
-float RageRenderFogFactor(const RageRenderCamera *camera,
+float RenderFogFactor(const RageRenderCamera *camera,
                           const RageRenderVec3 *world) {
     RageRenderVec3 view;
     float depth, inverseNear, inverseFar, factor;
     if (camera == 0 || world == 0 || camera->fogNear <= 0.0f ||
         camera->fogFar <= camera->fogNear) return 0.0f;
-    RageRenderWorldToView(camera, world, &view);
+    RenderWorldToView(camera, world, &view);
     depth = -view.z;
     if (depth <= camera->fogNear) return 0.0f;
     if (depth >= camera->fogFar) return 1.0f;

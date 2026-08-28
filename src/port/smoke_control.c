@@ -26,7 +26,7 @@ typedef struct RageSmokeInput {
     int held;
 } RageSmokeInput;
 
-static int RageSmokeFrameListContains(const char *list, int frame) {
+static int SmokeFrameListContains(const char *list, int frame) {
     const char *cursor = list;
 
     while (cursor != NULL && *cursor != '\0') {
@@ -41,7 +41,7 @@ static int RageSmokeFrameListContains(const char *list, int frame) {
     return 0;
 }
 
-static uint32_t RageSmokeHashWords(const u32 *words, size_t count) {
+static uint32_t SmokeHashWords(const u32 *words, size_t count) {
     uint32_t hash = 2166136261u;
     size_t index;
     for (index = 0; index < count; index++) {
@@ -55,7 +55,7 @@ static uint32_t RageSmokeHashWords(const u32 *words, size_t count) {
     return hash;
 }
 
-static uint32_t RageSmokeHashBytes(const void *data, size_t size) {
+static uint32_t SmokeHashBytes(const void *data, size_t size) {
     const unsigned char *bytes = data;
     uint32_t hash = 2166136261u;
     size_t index;
@@ -66,7 +66,7 @@ static uint32_t RageSmokeHashBytes(const void *data, size_t size) {
     return hash;
 }
 
-static uint32_t RageSmokeHashCarRenderState(const GameCarRuntime *cars,
+static uint32_t SmokeHashCarRenderState(const GameCarRuntime *cars,
                                             size_t count) {
     uint32_t hash = 2166136261u;
     size_t carIndex;
@@ -96,7 +96,7 @@ static uint32_t RageSmokeHashCarRenderState(const GameCarRuntime *cars,
     return hash;
 }
 
-static uint32_t RageSmokeHashOneCarRenderState(const GameCarRuntime *car) {
+static uint32_t SmokeHashOneCarRenderState(const GameCarRuntime *car) {
     const u32 values[] = {
         (u32)car->x, (u32)car->y, (u32)car->z,
         (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
@@ -121,7 +121,7 @@ static uint32_t RageSmokeHashOneCarRenderState(const GameCarRuntime *car) {
     return hash;
 }
 
-static uint32_t RageSmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
+static uint32_t SmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
     const GameRenderObject *renderObject =
         (const GameRenderObject *)(const void *)car;
     const u32 values[] = {
@@ -147,7 +147,7 @@ static uint32_t RageSmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
     return hash;
 }
 
-static int RageSmokeCountDrawableCars(const GameCarRuntime *cars,
+static int SmokeCountDrawableCars(const GameCarRuntime *cars,
                                       size_t count) {
     int drawable = 0;
     size_t index;
@@ -159,7 +159,7 @@ static int RageSmokeCountDrawableCars(const GameCarRuntime *cars,
     return drawable;
 }
 
-static uint32_t RageSmokeHashVisibleList(const Vec4 *entries) {
+static uint32_t SmokeHashVisibleList(const Vec4 *entries) {
     uint32_t hash = 2166136261u;
     size_t entryIndex;
     for (entryIndex = 0; entryIndex < 64; entryIndex++) {
@@ -205,12 +205,12 @@ static long g_SmokeCaptureScene;
 static const char *g_SmokeCaptureDirectory;
 static FILE *g_SmokeCaptureManifest;
 
-static void RageSmokeWriteVisibleCells(const char *captureDirectory,
+static void SmokeWriteVisibleCells(const char *captureDirectory,
                                        int frameNumber) {
     char path[1024];
     FILE *file;
     int index;
-    if (!RageRuntimeConfigEnabled("capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS")) return;
+    if (!RuntimeConfigEnabled("capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS")) return;
     if (snprintf(path, sizeof(path), "%s/visible-cells.log", captureDirectory) >=
         (int)sizeof(path)) return;
     file = fopen(path, "a");
@@ -252,12 +252,12 @@ static long g_SmokeRandomSyncVariant;
 static long g_SmokeRandomSyncVariant2;
 static int g_SmokeRandomSyncHasVariants;
 static int g_SmokeRandomSyncEachFrame;
-static void RageSmokeInitialize(void);
+static void SmokeInitialize(void);
 
-void RagePortSmokeBeforeSceneHandler(void) {
+void PortSmokeBeforeSceneHandler(void) {
     if (!g_SmokeInitialized) {
         g_SmokeInitialized = 1;
-        RageSmokeInitialize();
+        SmokeInitialize();
     }
     if (!g_SmokeRandomSyncEnabled ||
         (g_SmokeRandomSyncFired && !g_SmokeRandomSyncEachFrame)) return;
@@ -290,10 +290,10 @@ extern int g_IsEnvironmentMode4;
 extern unsigned int g_RandomSeed;
 extern int g_AnimTimer;
 extern s32 g_MirrorPanelY;
-int RageWriteCapturedFrame(const char *path);
+int WriteCapturedFrame(const char *path);
 void UpdatePadState(void);
 
-static unsigned short RageSmokeButton(const char *name) {
+static unsigned short SmokeButton(const char *name) {
     if (strcmp(name, "L2") == 0) return 0x1;
     if (strcmp(name, "R2") == 0) return 0x2;
     if (strcmp(name, "L1") == 0) return 0x4;
@@ -313,21 +313,21 @@ static unsigned short RageSmokeButton(const char *name) {
     return 0;
 }
 
-static void RageSmokeInitialize(void) {
-    const char *limit = RageRuntimeConfigGetLegacy("run.frames", "RAGE_PORT_SMOKE_FRAMES");
-    const char *script = RageRuntimeConfigGetLegacy("input.raw_script", "RAGE_PORT_RAW_INPUT_SCRIPT");
-    const char *finish = RageRuntimeConfigGetLegacy("hooks.finish_frame", "RAGE_PORT_SMOKE_FINISH_FRAME");
-    const char *autoConfirm = RageRuntimeConfigGetLegacy("hooks.auto_confirm_frame", "RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME");
-    const char *stopScene = RageRuntimeConfigGetLegacy("stop.scene", "RAGE_PORT_SMOKE_STOP_SCENE");
-    const char *stopTimer = RageRuntimeConfigGetLegacy("stop.timer", "RAGE_PORT_SMOKE_STOP_SCENE_TIMER");
-    const char *captureDirectory = RageRuntimeConfigGetLegacy("capture.directory", "RAGE_PORT_SMOKE_CAPTURE_DIR");
+static void SmokeInitialize(void) {
+    const char *limit = RuntimeConfigGetLegacy("run.frames", "RAGE_PORT_SMOKE_FRAMES");
+    const char *script = RuntimeConfigGetLegacy("input.raw_script", "RAGE_PORT_RAW_INPUT_SCRIPT");
+    const char *finish = RuntimeConfigGetLegacy("hooks.finish_frame", "RAGE_PORT_SMOKE_FINISH_FRAME");
+    const char *autoConfirm = RuntimeConfigGetLegacy("hooks.auto_confirm_frame", "RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME");
+    const char *stopScene = RuntimeConfigGetLegacy("stop.scene", "RAGE_PORT_SMOKE_STOP_SCENE");
+    const char *stopTimer = RuntimeConfigGetLegacy("stop.timer", "RAGE_PORT_SMOKE_STOP_SCENE_TIMER");
+    const char *captureDirectory = RuntimeConfigGetLegacy("capture.directory", "RAGE_PORT_SMOKE_CAPTURE_DIR");
     const char *captureStride =
-        RageRuntimeConfigGetLegacy("capture.timer_stride", "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
-    const char *captureMin = RageRuntimeConfigGetLegacy("capture.timer_min", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN");
-    const char *captureMax = RageRuntimeConfigGetLegacy("capture.timer_max", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
-    const char *captureScene = RageRuntimeConfigGetLegacy("capture.scene", "RAGE_PORT_SMOKE_CAPTURE_SCENE");
-    const char *stateScript = RageRuntimeConfigGetLegacy("input.state_script", "RAGE_PORT_STATE_INPUT_SCRIPT");
-    const char *randomSync = RageRuntimeConfigGetLegacy("sync.random", "RAGE_PORT_SYNC_RANDOM");
+        RuntimeConfigGetLegacy("capture.timer_stride", "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
+    const char *captureMin = RuntimeConfigGetLegacy("capture.timer_min", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN");
+    const char *captureMax = RuntimeConfigGetLegacy("capture.timer_max", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
+    const char *captureScene = RuntimeConfigGetLegacy("capture.scene", "RAGE_PORT_SMOKE_CAPTURE_SCENE");
+    const char *stateScript = RuntimeConfigGetLegacy("input.state_script", "RAGE_PORT_STATE_INPUT_SCRIPT");
+    const char *randomSync = RuntimeConfigGetLegacy("sync.random", "RAGE_PORT_SYNC_RANDOM");
     char *copy;
     char *token;
 
@@ -347,9 +347,9 @@ static void RageSmokeInitialize(void) {
     g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
     g_SmokeHasCaptureScene = captureScene != NULL;
     g_SmokeCaptureScene = captureScene ? strtol(captureScene, NULL, 10) : 0;
-    g_SmokeCaptureAllPhases = RageRuntimeConfigEnabled(
+    g_SmokeCaptureAllPhases = RuntimeConfigEnabled(
         "capture.all_phases", "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
-    g_SmokeRandomSyncEachFrame = RageRuntimeConfigEnabled(
+    g_SmokeRandomSyncEachFrame = RuntimeConfigEnabled(
         "sync.random_each_frame", "RAGE_PORT_SYNC_RANDOM_EACH_FRAME");
     if (randomSync != NULL && randomSync[0] != '\0') {
         char *end;
@@ -431,7 +431,7 @@ static void RageSmokeInitialize(void) {
     if (script != NULL && script[0] != '\0') {
         g_SmokeRawPadPath = 1;
     } else {
-        script = RageRuntimeConfigGetLegacy("input.script", "RAGE_PORT_INPUT_SCRIPT");
+        script = RuntimeConfigGetLegacy("input.script", "RAGE_PORT_INPUT_SCRIPT");
     }
     copy = script != NULL && script[0] != '\0' ? strdup(script) : NULL;
     for (token = copy != NULL ? strtok(copy, ",") : NULL;
@@ -452,7 +452,7 @@ static void RageSmokeInitialize(void) {
             if (next != NULL) *next = '\0';
             end = name + strlen(name);
             while (end > name && isspace((unsigned char)end[-1])) *--end = '\0';
-            buttons |= RageSmokeButton(name);
+            buttons |= SmokeButton(name);
             if (next == NULL) break;
             name = next + 1;
             while (isspace((unsigned char)*name)) name++;
@@ -489,7 +489,7 @@ static void RageSmokeInitialize(void) {
         *colon = '\0';
         phaseAt = strchr(at + 1, '@');
         if (phaseAt != NULL) *phaseAt = '\0';
-        buttons = RageSmokeButton(colon + 1);
+        buttons = SmokeButton(colon + 1);
         if (buttons == 0) continue;
         g_SmokeStateInputs[g_SmokeStateInputCount].scene =
             strtol(token, NULL, 0);
@@ -506,7 +506,7 @@ static void RageSmokeInitialize(void) {
     free(copy);
 }
 
-int RagePortShouldExit(int frame_number) {
+int PortShouldExit(int frame_number) {
     static int lastScene = -1;
     static int lastFrontend = -1;
     static int lastMenuScreen = -1;
@@ -523,33 +523,33 @@ int RagePortShouldExit(int frame_number) {
     const char *menuSweep;
     if (!g_SmokeInitialized) {
         g_SmokeInitialized = 1;
-        RageSmokeInitialize();
+        SmokeInitialize();
     }
-    toggleRendererFrame = RageRuntimeConfigGet("hooks.toggle_renderer_frames");
+    toggleRendererFrame = RuntimeConfigGet("hooks.toggle_renderer_frames");
     if (toggleRendererFrame == NULL)
-        toggleRendererFrame = RageRuntimeConfigGet("hooks.toggle_renderer_frame");
-    if (RageSmokeFrameListContains(toggleRendererFrame, frame_number)) {
-        RageModernToggle();
+        toggleRendererFrame = RuntimeConfigGet("hooks.toggle_renderer_frame");
+    if (SmokeFrameListContains(toggleRendererFrame, frame_number)) {
+        ModernToggle();
     }
-    restartRaceFrames = RageRuntimeConfigGet("hooks.restart_race_frames");
+    restartRaceFrames = RuntimeConfigGet("hooks.restart_race_frames");
     if (g_SceneId == 12 &&
-        RageSmokeFrameListContains(restartRaceFrames, frame_number)) {
+        SmokeFrameListContains(restartRaceFrames, frame_number)) {
         fprintf(stderr, "smoke race restart frame=%d timer=%d\n",
                 frame_number, g_SceneTimer);
         ExitRaceScene(11);
     }
-    if (RageRuntimeConfigEnabled("hooks.mirror_track", "RAGE_PORT_SMOKE_MIRROR_TRACK") && g_SceneId >= 10 &&
+    if (RuntimeConfigEnabled("hooks.mirror_track", "RAGE_PORT_SMOKE_MIRROR_TRACK") && g_SceneId >= 10 &&
         g_SceneId <= 12) {
         g_MirrorMode = 1;
     }
     /* Most scenario tests target post-intro state and historically ran
      * without extracted movies. Native STR playback makes the real intro
      * available, so skip it unless this is explicitly an FMV test. */
-    if (g_SceneId == 5 && !RageRuntimeConfigEnabled("trace.fmv", "RAGE_PORT_FMV_TRACE") &&
-        !RageRuntimeConfigEnabled("hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV")) {
+    if (g_SceneId == 5 && !RuntimeConfigEnabled("trace.fmv", "RAGE_PORT_FMV_TRACE") &&
+        !RuntimeConfigEnabled("hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV")) {
         g_PadPressed |= PAD_START;
     }
-    menuSweep = RageRuntimeConfigGetLegacy("hooks.menu_sweep", "RAGE_PORT_SMOKE_MENU_SWEEP");
+    menuSweep = RuntimeConfigGetLegacy("hooks.menu_sweep", "RAGE_PORT_SMOKE_MENU_SWEEP");
     if (menuSweep != NULL && g_SceneId == 8 && g_SceneTimer >= 200) {
         int screen = 1 + (g_SceneTimer - 200) / 100;
         if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
@@ -566,7 +566,7 @@ int RagePortShouldExit(int frame_number) {
             lastSweepScreen = screen;
         }
     }
-    if (RageRuntimeConfigEnabled("hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP") &&
+    if (RuntimeConfigEnabled("hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP") &&
         g_SceneId == 23 && g_SceneTimer >= 200) {
         int mode = 1 + (g_SceneTimer - 200) / 100;
         if (mode >= 8 && mode <= 11) {
@@ -643,7 +643,7 @@ int RagePortShouldExit(int frame_number) {
         if ((frame_number - g_SmokeAutoConfirmFrame) % 60 == 0)
             g_PadPressed |= 0x40;
     }
-    if (RageRuntimeConfigEnabled("hooks.retire", "RAGE_PORT_SMOKE_RETIRE") && g_SceneId == 12) {
+    if (RuntimeConfigEnabled("hooks.retire", "RAGE_PORT_SMOKE_RETIRE") && g_SceneId == 12) {
         if (retireStep == 0 && g_RacePhase == 2 && g_PauseDebounce <= 0) {
             g_PadPressed |= PAD_START;
             retireStep = 1;
@@ -700,7 +700,7 @@ int RagePortShouldExit(int frame_number) {
                               g_SceneId);
         }
         if (length <= 0 || (size_t)length >= sizeof(path) ||
-            !RageWriteCapturedFrame(path)) {
+            !WriteCapturedFrame(path)) {
             fprintf(stderr, "failed synchronized series capture: %s\n",
                     length > 0 && (size_t)length < sizeof(path) ? path :
                     "path too long");
@@ -708,7 +708,7 @@ int RagePortShouldExit(int frame_number) {
             fprintf(stderr,
                     "smoke capture=%s frame=%d scene=%d timer=%d\n",
                     path, frame_number, g_SceneId, g_SceneTimer);
-            RageSmokeWriteVisibleCells(g_SmokeCaptureDirectory, frame_number);
+            SmokeWriteVisibleCells(g_SmokeCaptureDirectory, frame_number);
             if (g_SmokeCaptureManifest != NULL) {
                 const char *filename = strrchr(path, '/');
                 filename = filename != NULL ? filename + 1 : path;
@@ -731,7 +731,7 @@ int RagePortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%u",
                         filename,
-                        RageRuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE") ?
+                        RuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE") ?
                             "draw" : "display",
                         frame_number, g_SceneId, g_SceneTimer,
                         g_PlayerCar.x, g_PlayerCar.z,
@@ -756,10 +756,10 @@ int RagePortShouldExit(int frame_number) {
                         g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
                         g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
                         g_MirrorViewMatrix.m[2][2],
-                        RageSmokeHashWords(g_MainVisibleCellMask, 32),
-                        RageSmokeHashWords(g_MirrorVisibleCellMask, 32),
-                        RageSmokeHashVisibleList(g_MainVisibleCellList),
-                        RageSmokeHashVisibleList(g_MirrorVisibleCellList),
+                        SmokeHashWords(g_MainVisibleCellMask, 32),
+                        SmokeHashWords(g_MirrorVisibleCellMask, 32),
+                        SmokeHashVisibleList(g_MainVisibleCellList),
+                        SmokeHashVisibleList(g_MirrorVisibleCellList),
                         g_IsEnvironmentMode4,
                         SCRATCH_ENV_MODE4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
@@ -774,13 +774,13 @@ int RagePortShouldExit(int frame_number) {
                         g_PlayerCarIndex, g_TrackTexturePageWanted,
                         g_TrackTextureCursorRow, g_TrackTextureTargetRow,
                         g_CourseObjectCount,
-                        RageSmokeHashBytes(g_CourseObjects,
+                        SmokeHashBytes(g_CourseObjects,
                             (size_t)g_CourseObjectCount * sizeof(CourseObject)),
                         g_AnimSceneryVariant, g_AnimScenery2Variant,
                         g_SpinningSceneryAngle[0], g_SpinningSceneryAngle[1],
                         g_SpinningSceneryAngle[2], g_SpinningSceneryAngle[3],
-                        RageSmokeHashCarRenderState(g_Cars, 11),
-                        RageSmokeCountDrawableCars(g_Cars, 11),
+                        SmokeHashCarRenderState(g_Cars, 11),
+                        SmokeCountDrawableCars(g_Cars, 11),
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,
                         g_Cars[2].x, g_Cars[2].z,
@@ -797,7 +797,7 @@ int RagePortShouldExit(int frame_number) {
                         g_Cars[3].speed, g_Cars[3].trackProgress,
                         g_Cars[3].bodyYaw, g_Cars[3].trackLateralOffset,
                         g_Cars[3].collisionFlag, g_Cars[3].activeFlag,
-                        RageSmokeHashPlayerRenderState(&g_PlayerCar));
+                        SmokeHashPlayerRenderState(&g_PlayerCar));
                 {
                     int rivalIndex;
                     const unsigned char *playerBytes =
@@ -823,7 +823,7 @@ int RagePortShouldExit(int frame_number) {
                     }
                     for (rivalIndex = 0; rivalIndex < 11; rivalIndex++) {
                         fprintf(g_SmokeCaptureManifest, ",%u",
-                                RageSmokeHashOneCarRenderState(
+                                SmokeHashOneCarRenderState(
                                     &g_Cars[rivalIndex]));
                     }
                     fputc('\n', g_SmokeCaptureManifest);
@@ -834,7 +834,7 @@ int RagePortShouldExit(int frame_number) {
         lastCapturedScene = g_SceneId;
         lastCapturedTimer = g_SceneTimer;
     }
-    if (RagePortScenarioShouldExit()) return 1;
+    if (PortScenarioShouldExit()) return 1;
     if (g_SmokeHasStopScene && g_SmokeHasStopSceneTimer &&
         g_SceneId == g_SmokeStopScene &&
         g_SceneTimer >= g_SmokeStopSceneTimer) {

@@ -2,7 +2,7 @@
 
 #include "axis_curve.h"
 
-float RageAxisCurve(float value, float deadzone, float saturation,
+float AxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling) {
     if (saturation <= deadzone) saturation = deadzone + 0.0001f;
     value = (value - deadzone) / (saturation - deadzone);
@@ -20,7 +20,7 @@ float RageAxisCurve(float value, float deadzone, float saturation,
 #define NEGCON_TWIST_CENTRE 0x80
 #define NEGCON_TWIST_MAX 0x7F
 
-int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
+int NegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
     int deflection = (int)(shapedStick * (float)NEGCON_TWIST_MAX);
     int twist;
     if (range <= 0) range = NEGCON_TWIST_MAX;
@@ -32,7 +32,7 @@ int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
     return twist;
 }
 
-float RageJoystickPedalAxis(int value, int inverted) {
+float JoystickPedalAxis(int value, int inverted) {
     float result;
     if (value < -32768) value = -32768;
     if (value > 32767) value = 32767;

@@ -348,7 +348,7 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
     }
     out->projection[0] = fovScale;
     out->projection[1] = fovScale;
-    RageRenderPerspectiveDepthTerms(camera, &out->projection[2],
+    RenderPerspectiveDepthTerms(camera, &out->projection[2],
                                     &out->projection[3]);
 }
 
@@ -696,7 +696,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL ||
         world->frame == s_worldFrame) return;
-    trackAssetRevision = RageTrackAssetIdentityRevision();
+    trackAssetRevision = TrackAssetIdentityRevision();
     if (trackAssetRevision != s_trackAssetRevision) {
         if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL &&
             s_trackAssetRevision != UINT64_MAX) {
@@ -720,12 +720,12 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
             break;
         }
     }
-    s_haveShadowMap = RageRenderBuildDirectionalShadowMap(
+    s_haveShadowMap = RenderBuildDirectionalShadowMap(
         &shadowCenter, &world->light.direction,
         RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
-    s_vertexCount = RageRenderBuildNativePassDraws(
+    s_vertexCount = RenderBuildNativePassDraws(
         world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES, s_spans, MODERN_NATIVE_MAX_SPANS,
@@ -738,7 +738,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
-        s_mirrorVertexCount = RageRenderBuildNativePassDraws(
+        s_mirrorVertexCount = RenderBuildNativePassDraws(
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect,
             ModernAssetsMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES - mirrorFirstVertex, s_mirrorSpans,
@@ -952,7 +952,7 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
     aspect = (float)width / (float)height;
     fovScale = 1.0f / tanf(s_world->camera.verticalFovDegrees *
                            0.008726646259971648f);
-    if (!RageRenderPerspectiveDepthTerms(&s_world->camera, &depthScale,
+    if (!RenderPerspectiveDepthTerms(&s_world->camera, &depthScale,
                                          &depthOffset)) return 0;
     fprintf(file, "probe %d %d target %d %d\n", x, y, width, height);
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
@@ -969,7 +969,7 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                 RageRenderVec3 position = {
                     vertex->position[0], vertex->position[1],
                     vertex->position[2]};
-                RageRenderWorldToView(&s_world->camera, &position,
+                RenderWorldToView(&s_world->camera, &position,
                                       &input[corner].view);
                 input[corner].depthBias = vertex->depthBias;
             }
@@ -1090,13 +1090,13 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     if (!ModernAssetsLoadMaterial(&instance, span->material,
                                   span->materialVariant,
                                   &materialDefinition, &image)) return NULL;
-    mipLevels = RageTextureMipLevelCount(
+    mipLevels = TextureMipLevelCount(
         image.width, image.height, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
-    mipSize = RageTextureMipChainSizeRGBA8(
+    mipSize = TextureMipChainSizeRGBA8(
         image.width, image.height, mipLevels);
     mipChain = malloc(mipSize);
     if (mipChain == NULL ||
-        !RageTextureBuildMipChainRGBA8(
+        !TextureBuildMipChainRGBA8(
             image.pixels, image.width, image.height, mipLevels,
             mipChain, mipSize)) goto fail;
     entry = &s_textures[s_textureCount];
@@ -1130,7 +1130,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
             uint32_t height = image.height >> level;
             SDL_GPUTextureTransferInfo source = {
                 .transfer_buffer = upload,
-                .offset = (Uint32)RageTextureMipLevelOffsetRGBA8(
+                .offset = (Uint32)TextureMipLevelOffsetRGBA8(
                     image.width, image.height, level),
                 .pixels_per_row = width != 0 ? width : 1,
                 .rows_per_layer = height != 0 ? height : 1,

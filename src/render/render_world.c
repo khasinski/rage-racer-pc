@@ -3,14 +3,14 @@
 #include <math.h>
 #include <string.h>
 
-static float RageRenderWrappedAngleDelta(float from, float to) {
+static float RenderWrappedAngleDelta(float from, float to) {
     float delta = to - from;
     while (delta > 180.0f) delta -= 360.0f;
     while (delta < -180.0f) delta += 360.0f;
     return fabsf(delta);
 }
 
-static int RageRenderCameraIsCut(const RageRenderCamera *previous,
+static int RenderCameraIsCut(const RageRenderCamera *previous,
                                  const RageRenderCamera *current) {
     float dx = current->transform.position.x - previous->transform.position.x;
     float dy = current->transform.position.y - previous->transform.position.y;
@@ -29,13 +29,13 @@ static int RageRenderCameraIsCut(const RageRenderCamera *previous,
         /* Quaternion dot is cos(half the angular distance). A change above
          * 45 degrees in one logic tick is a shot cut, not camera motion. */
         if (fabsf(dot) < 0.9238795f) return 1;
-    } else if (RageRenderWrappedAngleDelta(
+    } else if (RenderWrappedAngleDelta(
                    previous->transform.rotation.x,
                    current->transform.rotation.x) > 45.0f ||
-               RageRenderWrappedAngleDelta(
+               RenderWrappedAngleDelta(
                    previous->transform.rotation.y,
                    current->transform.rotation.y) > 45.0f ||
-               RageRenderWrappedAngleDelta(
+               RenderWrappedAngleDelta(
                    previous->transform.rotation.z,
                    current->transform.rotation.z) > 45.0f) {
         return 1;
@@ -44,23 +44,23 @@ static int RageRenderCameraIsCut(const RageRenderCamera *previous,
                   previous->verticalFovDegrees) > 10.0f;
 }
 
-void RageRenderDirectionalLightDefault(RageRenderDirectionalLight *light) {
+void RenderDirectionalLightDefault(RageRenderDirectionalLight *light) {
     if (light == NULL) return;
     light->direction = (RageRenderVec3){-0.1f, 1.0f, 0.12f};
     light->ambientColor = (RageRenderVec3){0.35f, 0.35f, 0.35f};
     light->diffuseColor = (RageRenderVec3){0.65f, 0.65f, 0.65f};
 }
 
-void RageRenderWorldInit(RageRenderWorld *world,
+void RenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
                          uint32_t capacity) {
     memset(world, 0, sizeof(*world));
     world->instances = instances;
     world->instanceCapacity = capacity;
-    RageRenderDirectionalLightDefault(&world->light);
+    RenderDirectionalLightDefault(&world->light);
 }
 
-void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
+void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
     if (world->hasCamera) world->previousCamera = world->camera;
     if (world->hasMirrorCamera) {
         world->previousMirrorCamera = world->mirrorCamera;
@@ -71,27 +71,27 @@ void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
     world->overflowCount = 0;
 }
 
-void RageRenderWorldSetDirectionalLight(
+void RenderWorldSetDirectionalLight(
     RageRenderWorld *world, const RageRenderDirectionalLight *light) {
     if (world == NULL || light == NULL) return;
     world->light = *light;
 }
 
-void RageRenderWorldSetCamera(RageRenderWorld *world,
+void RenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera) {
     if (world->hasCamera &&
-        RageRenderCameraIsCut(&world->previousCamera, camera))
+        RenderCameraIsCut(&world->previousCamera, camera))
         world->previousCamera = *camera;
     world->camera = *camera;
     if (!world->hasCamera) world->previousCamera = *camera;
     world->hasCamera = 1;
 }
 
-void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
+void RenderWorldSetMirrorCamera(RageRenderWorld *world,
                                     const RageRenderCamera *camera,
                                     int active, float panelY) {
     if (world->hasMirrorCamera &&
-        RageRenderCameraIsCut(&world->previousMirrorCamera, camera)) {
+        RenderCameraIsCut(&world->previousMirrorCamera, camera)) {
         world->previousMirrorCamera = *camera;
         world->previousMirrorPanelY = panelY;
     }
@@ -105,7 +105,7 @@ void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
     world->hasMirrorCamera = 1;
 }
 
-int RageRenderWorldSubmitMesh(RageRenderWorld *world,
+int RenderWorldSubmitMesh(RageRenderWorld *world,
                               const RageRenderMeshInstance *instance) {
     if (world->instanceCount == world->instanceCapacity) {
         world->overflowCount++;
@@ -115,7 +115,7 @@ int RageRenderWorldSubmitMesh(RageRenderWorld *world,
     return 1;
 }
 
-void RageRenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
+void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
     uint32_t source, destination = 0;
     if (world == NULL) return;
     for (source = 0; source < world->instanceCount; source++) {
@@ -127,7 +127,7 @@ void RageRenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
     world->instanceCount = destination;
 }
 
-void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
+void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform) {
     memset(transform, 0, sizeof(*transform));
     /* Original cells are in an inverted 32x32 grid and use 8192 mesh units. */
@@ -138,7 +138,7 @@ void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
     transform->scale.z = 1.0f;
 }
 
-void RageRenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {
+void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {
     static const float sign[3] = {1.0f, -1.0f, -1.0f};
     int row, column;
     for (row = 0; row < 3; row++) {

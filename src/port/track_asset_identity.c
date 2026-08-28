@@ -3,15 +3,15 @@
 static int s_trackAsset = -1;
 static uint64_t s_trackAssetRevision;
 
-void RageTrackAssetIdentitySet(int asset) {
+void TrackAssetIdentitySet(int asset) {
     s_trackAsset = asset;
     s_trackAssetRevision++;
 }
 
-uint32_t RageTrackAssetIdentityResolve(uint32_t fallback) {
+uint32_t TrackAssetIdentityResolve(uint32_t fallback) {
     return s_trackAsset >= 0 ? (uint32_t)s_trackAsset : fallback;
 }
 
-uint64_t RageTrackAssetIdentityRevision(void) {
+uint64_t TrackAssetIdentityRevision(void) {
     return s_trackAssetRevision;
 }

@@ -345,7 +345,7 @@ block_52:
         scratch[6] = 0x400 - (Atan2(sp38[1] + 0x28, chaseDistance) & 0xFFF);
         scratch[7] = 0x400 - (Atan2(sp38[0], sp38[2]) & 0xFFF);
 #ifdef __psyz
-        scratch[7] += RageChaseCameraYawOffset(car->steeringAngle);
+        scratch[7] += ChaseCameraYawOffset(car->steeringAngle);
 #endif
         scratch[8] = car->bodyRoll - car->bodyRollVelocity;
         if (g_ChaseCameraPreset == 0) {

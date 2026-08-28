@@ -35,13 +35,13 @@ typedef struct RageRenderMaterial {
     RageRenderMaterialAlphaMode alphaMode;
 } RageRenderMaterial;
 
-void RageRenderMaterialDefault(RageRenderMaterial *material);
-int RageRenderMaterialParseProperties(const char *text, size_t size,
+void RenderMaterialDefault(RageRenderMaterial *material);
+int RenderMaterialParseProperties(const char *text, size_t size,
                                       RageRenderMaterial *material);
 
 /* Resolve one material and gameplay texture variant from a rage-rmat v4-v6
  * sidecar. v4/v5 acquire neutral properties, keeping old caches usable. */
-int RageRenderMaterialParse(const void *bytes, size_t size,
+int RenderMaterialParse(const void *bytes, size_t size,
                             uint32_t materialIndex, uint32_t variant,
                             RageRenderMaterial *material);
 

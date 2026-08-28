@@ -8,13 +8,13 @@
 #include "game/state.h"
 #include "rage/trace.h"
 
-void RageTraceCarMotion(const char *phase, PlayerCarRuntime *car) {
+void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
     static int enabled = -1;
     static int timer = -1;
 
     if (enabled < 0) {
-        const char *text = RageDiagnosticsValue("car.motion_trace_timer");
-        enabled = RageDiagnosticsEnabled("car.motion_trace");
+        const char *text = DiagnosticsValue("car.motion_trace_timer");
+        enabled = DiagnosticsEnabled("car.motion_trace");
         timer = text != NULL ? (int)strtol(text, NULL, 0) : -1;
     }
     if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
@@ -31,16 +31,16 @@ void RageTraceCarMotion(const char *phase, PlayerCarRuntime *car) {
            car->speed);
 }
 
-void RageTraceCarStates(void) {
+void TraceCarStates(void) {
     static int enabled = -1;
     static int timerMin = -1;
     static int timerMax = -1;
     int index;
 
     if (enabled < 0) {
-        const char *minText = RageDiagnosticsValue("car.state_trace_timer_min");
-        const char *maxText = RageDiagnosticsValue("car.state_trace_timer_max");
-        enabled = RageDiagnosticsEnabled("car.state_trace");
+        const char *minText = DiagnosticsValue("car.state_trace_timer_min");
+        const char *maxText = DiagnosticsValue("car.state_trace_timer_max");
+        enabled = DiagnosticsEnabled("car.state_trace");
         timerMin = minText != NULL ? (int)strtol(minText, NULL, 0) : -1;
         timerMax = maxText != NULL ? (int)strtol(maxText, NULL, 0) : -1;
     }

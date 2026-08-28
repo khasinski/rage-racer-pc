@@ -19,12 +19,12 @@ int main(void) {
         RAGE_CAR_PAINT_FIRST_HALF,
         RAGE_CAR_PAINT_SECOND_SECONDARY,
     };
-    EXPECT_EQ(1, RageCarPaintApply(pixels, mask, 4, 3, 12));
+    EXPECT_EQ(1, CarPaintApply(pixels, mask, 4, 3, 12));
     EXPECT_EQ(1, pixels[0]);
     EXPECT_EQ(148, pixels[4]);
     EXPECT_EQ(107, pixels[8]);
     EXPECT_EQ(8, pixels[12]);
     EXPECT_EQ(255, pixels[15]);
-    EXPECT_EQ(0, RageCarPaintApply(pixels, mask, 4, 18, 0));
+    EXPECT_EQ(0, CarPaintApply(pixels, mask, 4, 18, 0));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

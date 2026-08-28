@@ -318,7 +318,7 @@ static void ModernDestroyResources(void) {
     s_lastRenderedFrame = 0xFFFFFFFFu;
     s_vertexCount = s_spanCount = 0;
     s_ringNext = 0;
-    if (hadResources && RageRuntimeConfigEnabled(
+    if (hadResources && RuntimeConfigEnabled(
             "diagnostics.renderer_lifecycle", NULL)) {
         fprintf(stderr, "rage-port: modern resources destroyed generation=%u\n",
                 s_resourceGeneration);
@@ -344,7 +344,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = s_markerCaptureEnabled && RageRuntimeConfigEnabled(
+    s_ringEnabled = s_markerCaptureEnabled && RuntimeConfigEnabled(
         "diagnostics.marker_history", NULL);
     {
         SDL_GPUTextureCreateInfo info = {0};
@@ -483,7 +483,7 @@ static int ModernEnsureResources(void) {
     s_resourceGeneration++;
     fprintf(stderr, "rage-port: modern renderer target %dx%d\n", s_targetW,
             s_targetH);
-    if (RageRuntimeConfigEnabled("diagnostics.renderer_lifecycle", NULL))
+    if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle", NULL))
         fprintf(stderr,
                 "rage-port: modern resources created generation=%u size=%dx%d\n",
                 s_resourceGeneration, s_targetW, s_targetH);
@@ -584,7 +584,7 @@ static Uint64 s_tickIntervalNs;
 static uint32_t s_tickFrame = 0xFFFFFFFFu;
 static Uint64 s_lastPresentationNs;
 
-void RageModernLogicFrameReady(uint32_t frame) {
+void ModernLogicFrameReady(uint32_t frame) {
     Uint64 now = SDL_GetTicksNS();
     if (s_tickTimeNs != 0) {
         Uint64 delta = now - s_tickTimeNs;
@@ -1070,7 +1070,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     int i;
     if (vram == NULL) return;
     if (profile < 0)
-        profile = RageRuntimeConfigEnabled("diagnostics.performance", NULL);
+        profile = RuntimeConfigEnabled("diagnostics.performance", NULL);
     if (profile) profileStart = SDL_GetTicksNS();
     ModernBuildOverlayFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
@@ -1177,7 +1177,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
     }
     s_haveRenderedFrame = 1;
-    if (RageRuntimeConfigEnabled("diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE")) {
+    if (RuntimeConfigEnabled("diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE")) {
         int counts[5] = {0};
         int verts[5] = {0};
         for (i = 0; i < s_spanCount; i++) {
@@ -1216,7 +1216,7 @@ static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
  * set) matches the captured frame counter. */
 static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
     RageModernDiagnosticFrame frame = ModernDiagnosticFrame();
-    RageModernDiagnosticsMaybeDump(snapshot, &frame);
+    ModernDiagnosticsMaybeDump(snapshot, &frame);
 }
 
 /* Debug marker: pressing M writes markers/marker-N-{modern,compat}.ppm,
@@ -1226,7 +1226,7 @@ static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
 static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
                               int haveModernImage) {
     RageModernDiagnosticFrame frame = ModernDiagnosticFrame();
-    RageModernDiagnosticsCheckMarker(snapshot, &frame, haveModernImage);
+    ModernDiagnosticsCheckMarker(snapshot, &frame, haveModernImage);
 }
 
 /* ---- hooks ---- */
@@ -1252,7 +1252,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     }
     keys = SDL_GetKeyboardState(NULL);
     toggleDown = keys != NULL && keys[s_toggleScancode];
-    if (toggleDown && !s_toggleWasDown) RageModernToggle();
+    if (toggleDown && !s_toggleWasDown) ModernToggle();
     s_toggleWasDown = toggleDown;
     if (s_markerCaptureEnabled) {
         /* M writes what the modern renderer is showing, with the state that
@@ -1264,7 +1264,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         int markDown = keys != NULL && keys[SDL_SCANCODE_M];
         if (markDown && !markWasDown) {
             char directory[1024], path[1200];
-            if (!RagePlatformUserConfigDirectory(directory, sizeof(directory)))
+            if (!PlatformUserConfigDirectory(directory, sizeof(directory)))
                 snprintf(directory, sizeof(directory), ".");
             snprintf(path, sizeof(path), "%s/mark-%02d.ppm", directory, ++marks);
             fprintf(stderr,
@@ -1276,7 +1276,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                     g_PlayerCar.trackPointIndex, g_PlayerCar.x, g_PlayerCar.z,
                     g_PlayerCar.headingAngle, SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
                     SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_Y, g_CameraViewMode);
-            if (RageModernCaptureFrame(path))
+            if (ModernCaptureFrame(path))
                 fprintf(stderr, "rage-port: mark %d written to %s\n", marks, path);
             else
                 fprintf(stderr, "rage-port: mark %d could not be written\n", marks);
@@ -1288,7 +1288,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     /* Both modes render the PREVIOUS logic frame - the one compat is
      * presenting during this tick; fps mode moves its transforms toward
      * the newest frame by the wall-clock fraction of the tick. */
-    snapshot = RageCapturePrevious();
+    snapshot = CapturePrevious();
     {
         int passthrough =
             snapshot->faceCount == 0 ||
@@ -1316,10 +1316,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     }
     if (!ModernEnsureResources()) return;
     if (fpsMode) {
-        const RageSceneSnapshot *target = RageCaptureCurrent();
+        const RageSceneSnapshot *target = CaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
         float t = 1.0f;
-        /* RagePortAfterSceneHandler timestamps the completed logic frame.
+        /* PortAfterSceneHandler timestamps the completed logic frame.
          * Starting interpolation when it is first presented instead made
          * the first repeated frame consume part of the next tick. */
         if (target->frameCounter != s_tickFrame) {
@@ -1337,14 +1337,14 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                               (double)s_tickIntervalNs;
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
-        ModernNativeGpuPrepare(RageGameRenderWorldPresentation(t),
+        ModernNativeGpuPrepare(GameRenderWorldPresentation(t),
                                (float)s_targetW / (float)s_targetH);
         ModernRender(snapshot);
         s_lastPresentationNs = now;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
-        const RageRenderWorld *world = RageGameRenderWorldPrevious();
-        if (world == NULL) world = RageGameRenderWorldCurrent();
+        const RageRenderWorld *world = GameRenderWorldPrevious();
+        if (world == NULL) world = GameRenderWorldCurrent();
         ModernNativeGpuPrepare(world, (float)s_targetW / (float)s_targetH);
         ModernRender(snapshot);
         s_lastRenderedFrame = snapshot->frameCounter;
@@ -1365,11 +1365,11 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
  * one tick per two VBlanks) waits out its interval; menu-rate scenes already
  * present every VBlank. Calling the platform present directly skips the
  * BIOS pad refresh, so input edge semantics are untouched. */
-void RageModernFrameWaitTick(int frameLimit) {
+void ModernFrameWaitTick(int frameLimit) {
     if (!s_enabled || s_device == NULL) return;
     if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
     if (frameLimit < 0x180) return;
-    if (RageCaptureCurrent()->faceCount == 0) return;
+    if (CaptureCurrent()->faceCount == 0) return;
     /* Stop presenting when less than a whole VBlank remains: an
      * intermediate present here consumes the swapchain image the game's
      * own VSync(0) present is about to wait for, stretching the logic
@@ -1409,7 +1409,7 @@ void RageModernFrameWaitTick(int frameLimit) {
     Psyz_VideoPresentIntermediate();
 }
 
-int RageModernInit(const RagePortConfig *config) {
+int ModernInit(const RagePortConfig *config) {
     const char *toggleKey;
     if (s_initialized) {
         return 1;
@@ -1421,7 +1421,7 @@ int RageModernInit(const RagePortConfig *config) {
                 "native assets\n");
         return 0;
     }
-    toggleKey = RageRuntimeConfigGet("video.toggle_renderer_key");
+    toggleKey = RuntimeConfigGet("video.toggle_renderer_key");
     if (toggleKey != NULL && toggleKey[0] != '\0') {
         SDL_Scancode parsed = SDL_GetScancodeFromName(toggleKey);
         if (parsed != SDL_SCANCODE_UNKNOWN) s_toggleScancode = parsed;
@@ -1433,7 +1433,7 @@ int RageModernInit(const RagePortConfig *config) {
     s_initialized = 1;
     s_tickTimeNs = s_tickIntervalNs = s_lastPresentationNs = 0;
     s_tickFrame = 0xFFFFFFFFu;
-    s_markerCaptureEnabled = RageRuntimeConfigEnabled(
+    s_markerCaptureEnabled = RuntimeConfigEnabled(
         "diagnostics.marker_capture", NULL);
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
@@ -1442,7 +1442,7 @@ int RageModernInit(const RagePortConfig *config) {
     return 1;
 }
 
-void RageModernShutdown(void) {
+void ModernShutdown(void) {
     if (!s_initialized) {
         return;
     }
@@ -1459,11 +1459,11 @@ void RageModernShutdown(void) {
     s_initialized = 0;
 }
 
-int RageModernIsEnabled(void) {
+int ModernIsEnabled(void) {
     return s_enabled;
 }
 
-void RageModernToggle(void) {
+void ModernToggle(void) {
     if (!s_initialized) return;
     if (!s_enabled && !ModernAssetsReady() && !ModernAssetsInit()) {
         fprintf(stderr,
@@ -1489,14 +1489,14 @@ void RageModernToggle(void) {
  * never writes to: it presents a texture of its own. Without this its output
  * cannot be looked at, which is the only way to tell whether the geometry it
  * draws is right. */
-int RageModernCaptureFrame(const char *path) {
+int ModernCaptureFrame(const char *path) {
     if (!s_enabled || s_device == NULL || path == NULL || path[0] == '\0')
         return 0;
-    return RageModernWriteTexturePpm(s_device, ModernPresentTexture(),
+    return ModernWriteTexturePpm(s_device, ModernPresentTexture(),
                                      s_targetW, s_targetH, path);
 }
 
-int RageModernCullMarginX(void) {
+int ModernCullMarginX(void) {
     if (!s_enabled || s_config.modernAspect != RAGE_MODERN_ASPECT_16_9) {
         return 0;
     }
@@ -1505,7 +1505,7 @@ int RageModernCullMarginX(void) {
     return 54;
 }
 
-int RageModernDepthLimit(void) {
+int ModernDepthLimit(void) {
     float multiplier;
     if (!s_enabled) return 0;
     multiplier = s_config.modernDrawDistance;

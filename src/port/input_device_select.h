@@ -8,7 +8,7 @@ typedef struct RageInputDeviceActivity {
     int activity;
 } RageInputDeviceActivity;
 
-unsigned int RageSelectActiveInputDevice(
+unsigned int SelectActiveInputDevice(
     const RageInputDeviceActivity *devices, size_t count,
     unsigned int currentId, int activationThreshold);
 

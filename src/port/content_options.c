@@ -54,7 +54,7 @@ static const short kJapanesePrologueY[17] = {
     186, 203, 220, 237, 254, 271, 288, 314,
 };
 
-const char *RageContentCarNameForStyle(int modelIndex,
+const char *ContentCarNameForStyle(int modelIndex,
                                        const char *internationalName,
                                        const char *style) {
     size_t index;
@@ -68,9 +68,9 @@ const char *RageContentCarNameForStyle(int modelIndex,
     return internationalName;
 }
 
-void RageContentOptionsApply(void) {
-    const char *nameStyle = RageRuntimeConfigGet("content.car_names");
-    const char *prologueStyle = RageRuntimeConfigGet("content.prologue");
+void ContentOptionsApply(void) {
+    const char *nameStyle = RuntimeConfigGet("content.car_names");
+    const char *prologueStyle = RuntimeConfigGet("content.prologue");
     int modelIndex;
     int lineIndex;
     if (nameStyle != NULL && nameStyle[0] != '\0' &&
@@ -80,7 +80,7 @@ void RageContentOptionsApply(void) {
                 "rage-port: content.car_names must be international or japanese; using international\n");
     } else if (nameStyle != NULL && strcmp(nameStyle, "japanese") == 0) {
         for (modelIndex = 0; modelIndex < 13; modelIndex++) {
-            g_NativeCarNames[modelIndex] = (char *)RageContentCarNameForStyle(
+            g_NativeCarNames[modelIndex] = (char *)ContentCarNameForStyle(
                 modelIndex, g_NativeCarNames[modelIndex], nameStyle);
         }
         fprintf(stderr, "rage-port: using Japanese-release car names\n");

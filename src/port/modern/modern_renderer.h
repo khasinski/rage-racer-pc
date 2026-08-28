@@ -12,22 +12,22 @@
 /* Registers the PsyZ device/present hooks when the configuration selects
  * the modern renderer. Safe to call before platform initialization.
  * Returns 1 on success (including when the modern renderer is disabled). */
-int RageModernInit(const RagePortConfig *config);
+int ModernInit(const RagePortConfig *config);
 
-void RageModernShutdown(void);
+void ModernShutdown(void);
 
 /* 1 when the modern renderer is initialized and selected for presentation.
  * Game logic must never branch on this; it gates presentation-side work
  * only. */
-int RageModernIsEnabled(void);
+int ModernIsEnabled(void);
 
 /* Switches presentation without restarting or changing game state. The
  * compatibility framebuffer keeps rendering in both modes. */
-void RageModernToggle(void);
+void ModernToggle(void);
 
 /* Frame-sync wait hook: presents interpolated frames between logic ticks
  * when an FPS mode is configured. No-op otherwise. */
-void RageModernFrameWaitTick(int frameLimit);
-void RageModernLogicFrameReady(uint32_t frame);
+void ModernFrameWaitTick(int frameLimit);
+void ModernLogicFrameReady(uint32_t frame);
 
 #endif

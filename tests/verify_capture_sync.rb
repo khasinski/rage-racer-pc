@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 source = File.read(ARGV.fetch(0))
-function = source[/int RageWriteCapturedFrame\(const char \*path\) \{.*?^\}/m]
-abort "RageWriteCapturedFrame is missing" unless function
+function = source[/int WriteCapturedFrame\(const char \*path\) \{.*?^\}/m]
+abort "WriteCapturedFrame is missing" unless function
 
 sync = function.index("DrawSync(0);")
 draw_page = function.index("Psyz_VideoAllocCapturedDrawPage")

@@ -49,7 +49,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     u32 skidRange;
 
 #ifdef __psyz
-    RageTraceCarStates();
+    TraceCarStates();
 #endif
 
     mode23 = g_PadType == 0x23;
@@ -235,7 +235,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
 #ifdef __psyz
-    RageTraceCarMotion("pre-integrate", car);
+    TraceCarMotion("pre-integrate", car);
 #endif
     car->x -= car->motionX;
     car->z -= car->motionZ;
@@ -266,11 +266,11 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     tmp.z = (p->brakePos * 6) / 1280 + car->z + car->motionZ;
     SetPlayerPosition(car, &tmp);
 #ifdef __psyz
-    RageTraceCarMotion("post-position", car);
+    TraceCarMotion("post-position", car);
 #endif
     AccumulateLapProgress(GetPlayerCarRuntime(car));
 #ifdef __psyz
-    RageTraceCarMotion("post-progress", car);
+    TraceCarMotion("post-progress", car);
 #endif
 
     {
@@ -293,8 +293,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         sv2.vy = 0;
         ApplyMatrix(&mA, &sv2, &vout);
 #ifdef __psyz
-        if (RageDiagnosticsEnabled("car.track_trace")) {
-            const char *timerText = RageDiagnosticsValue("car.track_trace_timer");
+        if (DiagnosticsEnabled("car.track_trace")) {
+            const char *timerText = DiagnosticsValue("car.track_trace_timer");
             if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
                 printf("car-limit timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
                        "vector=%d,%d,%d output=%d,%d,%d\n", g_SceneTimer,
@@ -318,11 +318,11 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         ApplyCarKnockback(car);
     }
 #ifdef __psyz
-    RageTraceCarMotion("post-knockback", car);
+    TraceCarMotion("post-knockback", car);
 #endif
     skid = UpdateCarTrackState(car, car->trackPointIndex, &limits);
 #ifdef __psyz
-    RageTraceCarMotion("post-track", car);
+    TraceCarMotion("post-track", car);
 #endif
     skidRange = skid - 2;
     if (skidRange < 2U && car->speed < 64) {
@@ -338,7 +338,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     crash = CollidePlayerWithCars(car);
 #ifdef __psyz
-    RageTraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
+    TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
 #endif
     if (skid != 0 || crash != 0) {
         StartCarBodyKick(2, car);
@@ -569,7 +569,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     p->gearDisp = p->gear;
 #ifdef __psyz
-    RageTraceCarMotion("post-update", car);
+    TraceCarMotion("post-update", car);
 #endif
 }
 

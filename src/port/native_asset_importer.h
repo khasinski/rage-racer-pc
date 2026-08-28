@@ -10,15 +10,15 @@
  * the game's currently loaded model/image data and exposes conventional
  * renderer-native meshes and RGBA images. The modern renderer never needs to
  * understand model banks, VRAM pages, CLUTs or texture windows. */
-int RageNativeAssetImporterInit(void);
-void RageNativeAssetImporterShutdown(void);
-int RageNativeAssetImporterReady(void);
-const RageRuntimeCachedMesh *RageNativeAssetImporterFind(
+int NativeAssetImporterInit(void);
+void NativeAssetImporterShutdown(void);
+int NativeAssetImporterReady(void);
+const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance);
-uint32_t RageNativeAssetImporterMeshCount(void);
-int RageNativeAssetImporterLoadMaterial(
+uint32_t NativeAssetImporterMeshCount(void);
+int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);
-int RageNativeAssetImporterLoadSky(uint32_t assetKey, ModernAssetImage *image);
+int NativeAssetImporterLoadSky(uint32_t assetKey, ModernAssetImage *image);
 
 #endif

@@ -8,10 +8,10 @@ int main(void) {
     s32 physical;
     for (physical = 0; physical < 8; physical++) {
         g_CourseIndex = physical;
-        assert(RagePhysicalCourseIndex() == physical);
-        assert(RageSeriesCourseIndex() == physical % 4);
-        assert(RageCourseSlot(physical) == physical % 4);
-        assert(RageCourseSeries(physical) == physical / 4);
+        assert(PhysicalCourseIndex() == physical);
+        assert(SeriesCourseIndex() == physical % 4);
+        assert(CourseSlot(physical) == physical % 4);
+        assert(CourseSeries(physical) == physical / 4);
     }
     return 0;
 }

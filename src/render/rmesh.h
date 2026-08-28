@@ -39,17 +39,17 @@ enum {
     RAGE_RUNTIME_MATERIAL_INDEX_MASK = 0xFFFFu,
 };
 
-int RageRuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size);
-int RageRuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,
+int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size);
+int RuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                          uint32_t *firstIndex, uint32_t *indexCount);
-int RageRuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
+int RuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
                           RageRuntimeVertex *out);
-int RageRuntimeMeshIndex(const RageRuntimeMesh *mesh, uint32_t indexIndex,
+int RuntimeMeshIndex(const RageRuntimeMesh *mesh, uint32_t indexIndex,
                          uint32_t *out);
 /* Conservative local-space sphere of a submesh, calculated from indexed
  * vertices. It is renderer-neutral and lets native backends cull before
  * expanding a mesh into draw vertices. */
-int RageRuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
+int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                           float center[3], float *radius);
 
 #endif

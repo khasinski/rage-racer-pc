@@ -32,23 +32,23 @@ int main(void) {
     RageModManifest manifest;
     const char *path;
 
-    EXPECT(RageModManifestParse(valid, sizeof(valid) - 1, &manifest));
+    EXPECT(ModManifestParse(valid, sizeof(valid) - 1, &manifest));
     EXPECT(strcmp(manifest.id, "example-hd") == 0);
     EXPECT(manifest.textureCount == 2);
-    path = RageModManifestFindTexture(
+    path = ModManifestFindTexture(
         &manifest, "track.big1.terrain.material.3.variant.1");
     EXPECT(path != NULL && strcmp(path, "hd/tunnel.png") == 0);
-    EXPECT(RageModManifestFindTexture(&manifest, "missing") == NULL);
+    EXPECT(ModManifestFindTexture(&manifest, "missing") == NULL);
     EXPECT(manifest.materialCount == 1);
-    EXPECT(strcmp(RageModManifestFindMaterialProperties(
+    EXPECT(strcmp(ModManifestFindMaterialProperties(
                       &manifest, "track.big1.terrain.material.3"),
                   "unlit blend 0.2 0 1 1 1 1 0.4 0.3 0.2") == 0);
-    EXPECT(!RageModManifestParse(traversal, sizeof(traversal) - 1,
+    EXPECT(!ModManifestParse(traversal, sizeof(traversal) - 1,
                                  &manifest));
     EXPECT(manifest.errorLine == 2);
-    EXPECT(!RageModManifestParse(invalidKey, sizeof(invalidKey) - 1,
+    EXPECT(!ModManifestParse(invalidKey, sizeof(invalidKey) - 1,
                                  &manifest));
-    EXPECT(!RageModManifestParse(invalidMaterial,
+    EXPECT(!ModManifestParse(invalidMaterial,
                                  sizeof(invalidMaterial) - 1, &manifest));
 
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

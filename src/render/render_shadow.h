@@ -29,11 +29,11 @@ extern const RageRenderVec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
 
 /* Builds a texel-snapped orthographic camera looking from the light toward
  * `center`. `lightDirection` points from a surface toward the light. */
-int RageRenderBuildDirectionalShadowMap(
+int RenderBuildDirectionalShadowMap(
     const RageRenderVec3 *center, const RageRenderVec3 *lightDirection,
     float extent, uint32_t resolution, RageRenderShadowMap *out);
 
-void RageRenderProjectShadowPoint(const RageRenderShadowMap *shadow,
+void RenderProjectShadowPoint(const RageRenderShadowMap *shadow,
                                   const RageRenderVec3 *point,
                                   RageRenderVec3 *out);
 

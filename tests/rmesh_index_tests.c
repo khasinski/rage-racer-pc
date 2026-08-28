@@ -19,26 +19,26 @@ int main(void) {
         "91 terrain models/track-terrain.rmesh models/track-terrain.rmat\n";
     RageRuntimeAssetLocation asset;
 
-    EXPECT(RageRuntimeIndexVersion(index, sizeof(index) - 1) == 2);
-    EXPECT(RageRuntimeIndexVersion("# rage-rmesh-index v1\n", 22) == 1);
-    EXPECT(RageRuntimeIndexVersion("10 model x y\n", 13) == 0);
-    EXPECT(RageRuntimeIndexVersion("# rage-rmesh-index vx\n", 22) == 0);
-    EXPECT(RageRuntimeIndexFind(index, sizeof(index) - 1, 91,
+    EXPECT(RuntimeIndexVersion(index, sizeof(index) - 1) == 2);
+    EXPECT(RuntimeIndexVersion("# rage-rmesh-index v1\n", 22) == 1);
+    EXPECT(RuntimeIndexVersion("10 model x y\n", 13) == 0);
+    EXPECT(RuntimeIndexVersion("# rage-rmesh-index vx\n", 22) == 0);
+    EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 91,
                                 RAGE_RENDER_ASSET_TERRAIN, &asset));
     EXPECT(asset.meshPathLength == strlen("models/track-terrain.rmesh"));
     EXPECT(memcmp(asset.meshPath, "models/track-terrain.rmesh",
                   asset.meshPathLength) == 0);
-    EXPECT(RageRuntimeIndexFind(index, sizeof(index) - 1, 10,
+    EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 10,
                                 RAGE_RENDER_ASSET_MODEL_BANK, &asset));
-    EXPECT(!RageRuntimeIndexFind(index, sizeof(index) - 1, 10,
+    EXPECT(!RuntimeIndexFind(index, sizeof(index) - 1, 10,
                                  RAGE_RENDER_ASSET_COURSE, &asset));
-    EXPECT(RageRuntimeIndexFind(index, sizeof(index) - 1, 91,
+    EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 91,
                                 RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, &asset));
     EXPECT(asset.meshPathLength == strlen("models/track-bank-1.rmesh"));
-    EXPECT(RageRuntimeIndexFind(index, sizeof(index) - 1, 91,
+    EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 91,
                                 RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2, &asset));
     EXPECT(asset.meshPathLength == strlen("models/track-bank-2.rmesh"));
-    EXPECT(!RageRuntimeIndexFind("999999999999 model x y\n", 24, 1,
+    EXPECT(!RuntimeIndexFind("999999999999 model x y\n", 24, 1,
                                  RAGE_RENDER_ASSET_MODEL_BANK, &asset));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

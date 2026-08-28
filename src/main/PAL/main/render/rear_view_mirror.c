@@ -215,7 +215,7 @@ void DrawRearViewMirror(s32 mode) {
             AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1]
                          [GAME_FRAME_OT_LENGTH - 1], prim);
             *scratch = packet;
-            BuildVisibleCells(-0x3000, RagePortMirrorFarDepth(0x6000));
+            BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
             SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
             SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
             SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);

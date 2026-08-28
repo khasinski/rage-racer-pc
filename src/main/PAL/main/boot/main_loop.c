@@ -118,18 +118,18 @@ void MainLoop(void) {
         ServiceAssetLoad();
         AdvanceSaveHeaderCounter();
 #ifdef __psyz
-        RagePortBeforeSceneHandler();
+        PortBeforeSceneHandler();
 #endif
         g_SceneHandlers[g_SceneId]();
 #ifdef __psyz
-        RagePortAfterSceneHandler();
+        PortAfterSceneHandler();
 #endif
         DrawSync(0);
         StepTrackTextureSwap();
         frameLimit = g_FrameSyncThreshold;
         while (VSync(1) < frameLimit) {
 #ifdef __psyz
-            RagePortDuringFrameWait(frameLimit);
+            PortDuringFrameWait(frameLimit);
 #endif
         }
         elapsed = VSync(1);
@@ -155,10 +155,10 @@ void MainLoop(void) {
             DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
             DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
         }
-        RagePortSampleAnalogPad();
+        PortSampleAnalogPad();
         UpdatePadState();
         g_FrameCounter = g_FrameCounter + 1;
-        if (RagePortShouldExit(g_FrameCounter)) {
+        if (PortShouldExit(g_FrameCounter)) {
             return;
         }
     }

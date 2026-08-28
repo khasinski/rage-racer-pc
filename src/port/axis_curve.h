@@ -9,7 +9,7 @@
  * DuckStation spells as e^linearity, and scaling multiplies the result.
  * Deadzone 0, saturation 1, linearity 0 and scaling 1 leave the axis alone.
  */
-float RageAxisCurve(float value, float deadzone, float saturation,
+float AxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling);
 
 
@@ -18,10 +18,10 @@ float RageAxisCurve(float value, float deadzone, float saturation,
  * calibration says, while a d-pad press reproduces retail's own synthetic
  * twist, which is exactly the configured range. Whichever is pushed further
  * wins, so either input steers and neither cancels the other. */
-int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range);
+int NegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range);
 
 /* Normalize a raw SDL-style pedal axis. Many wheels report +32767 at rest and
  * -32768 when fully pressed, while others use the opposite orientation. */
-float RageJoystickPedalAxis(int value, int inverted);
+float JoystickPedalAxis(int value, int inverted);
 
 #endif

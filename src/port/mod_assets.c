@@ -22,10 +22,10 @@ static const char *s_directory;
 static int s_legacyLayout;
 static int s_initialized;
 
-static void RageModAssetsInit(void) {
+static void ModAssetsInit(void) {
     if (s_initialized) return;
     s_initialized = 1;
-    s_directory = RageRuntimeConfigGetLegacy("mods.directory",
+    s_directory = RuntimeConfigGetLegacy("mods.directory",
                                              "RAGE_PORT_MODS_DIRECTORY");
     if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
     if (s_directory == NULL) return;
@@ -49,12 +49,12 @@ static void RageModAssetsInit(void) {
     fprintf(stderr, "rage-port: asset overrides from %s\n", s_directory);
 }
 
-const char *RageModAssetsDirectory(void) {
-    RageModAssetsInit();
+const char *ModAssetsDirectory(void) {
+    ModAssetsInit();
     return s_directory;
 }
 
-static FILE *RageModOpen(int index, long *size) {
+static FILE *ModOpen(int index, long *size) {
     char path[1024];
     FILE *file;
     if (s_directory == NULL || !s_legacyLayout) return NULL;
@@ -73,17 +73,17 @@ static FILE *RageModOpen(int index, long *size) {
     return file;
 }
 
-int RageModAssetLoad(int index, void *destination, unsigned int originalSize) {
+int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     long size;
     FILE *file;
     size_t room;
     size_t loaded;
 
-    RageModAssetsInit();
-    file = RageModOpen(index, &size);
+    ModAssetsInit();
+    file = ModOpen(index, &size);
     if (file == NULL) return 0;
 
-    room = RagePortAssetRoomAt(destination);
+    room = PortAssetRoomAt(destination);
     if (room != 0 && (size_t)size > room) {
         fclose(file);
         fprintf(stderr,
@@ -113,8 +113,8 @@ int RageModAssetLoad(int index, void *destination, unsigned int originalSize) {
 }
 
 /* Apply the mod directory's edited images to an asset already in memory. */
-void RageModPatchTextures(int index, void *data, size_t size) {
-    RageModAssetsInit();
+void ModPatchTextures(int index, void *data, size_t size) {
+    ModAssetsInit();
     if (s_directory == NULL || !s_legacyLayout) return;
-    RageTexturePatchAsset(s_directory, index, data, size);
+    TexturePatchAsset(s_directory, index, data, size);
 }

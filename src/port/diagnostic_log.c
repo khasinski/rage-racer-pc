@@ -7,8 +7,8 @@
 #include "runtime_config.h"
 #include "platform_paths.h"
 
-int RageDiagnosticLogOpen(char *path, size_t pathSize) {
-    const char *override = RageRuntimeConfigGetOverride(
+int DiagnosticLogOpen(char *path, size_t pathSize) {
+    const char *override = RuntimeConfigGetOverride(
         "diagnostics.log", "RAGE_PORT_LOG_PATH");
     char directory[1024];
     FILE *file;
@@ -18,8 +18,8 @@ int RageDiagnosticLogOpen(char *path, size_t pathSize) {
     if (override != NULL && override[0] != '\0' && strcmp(override, "auto") != 0) {
         if (snprintf(path, pathSize, "%s", override) >= (int)pathSize) return 0;
     } else {
-        if (!RagePlatformUserStateDirectory(directory, sizeof(directory)) ||
-            !RagePlatformEnsureDirectory(directory)) return 0;
+        if (!PlatformUserStateDirectory(directory, sizeof(directory)) ||
+            !PlatformEnsureDirectory(directory)) return 0;
         if (snprintf(path, pathSize, "%s%srage-racer.log", directory,
 #ifdef _WIN32
                      "\\"

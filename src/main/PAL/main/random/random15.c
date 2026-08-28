@@ -19,7 +19,7 @@ s32 Random15(void) {
     value += 0x3039;
     g_RandomSeed = value;
 #ifdef __psyz
-    if (traceEnabled < 0) traceEnabled = RageDiagnosticsEnabled("random.trace");
+    if (traceEnabled < 0) traceEnabled = DiagnosticsEnabled("random.trace");
     if (traceEnabled) {
         printf("random index=%llu frame=%d scene=%d timer=%d "
                "caller_delta=%td seed=%08x value=%04x\n",

@@ -1,6 +1,6 @@
 #include "rage/track_lighting.h"
 
-void RageTrackZoneLightColor(int blend, int zoneCode, float out[3]) {
+void TrackZoneLightColor(int blend, int zoneCode, float out[3]) {
     float amount;
     if (out == 0) return;
     if (blend < 0) blend = 0;

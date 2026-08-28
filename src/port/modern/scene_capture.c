@@ -33,9 +33,9 @@ static int s_rangeCount;
 static int s_rangeOverflow;
 static const uint8_t *s_scopeStart;
 
-int RageCaptureActive(void) {
+int CaptureActive(void) {
     if (!s_traceInitialized) {
-        const char *trace = RageRuntimeConfigGetLegacy(
+        const char *trace = RuntimeConfigGetLegacy(
             "diagnostics.scene_trace", "RAGE_PORT_SCENE_TRACE");
         s_traceInitialized = 1;
         if (trace != NULL && *trace != '\0' && strcmp(trace, "1") != 0) {
@@ -48,7 +48,7 @@ int RageCaptureActive(void) {
             s_trace = stderr;
         }
     }
-    return RageModernIsEnabled() || s_trace != NULL;
+    return ModernIsEnabled() || s_trace != NULL;
 }
 
 static void CaptureMatrixFromRegs(RageCaptureMatrix *out, unsigned base) {
@@ -108,9 +108,9 @@ static void CaptureOtBase(uint8_t *table, int32_t *bias) {
     }
 }
 
-void RageCaptureFrameBegin(void) {
+void CaptureFrameBegin(void) {
     RageSceneSnapshot *snapshot;
-    if (!RageCaptureActive()) return;
+    if (!CaptureActive()) return;
     s_current ^= 1;
     snapshot = &s_snapshots[s_current];
     snapshot->drawCount = 0;
@@ -127,10 +127,10 @@ void RageCaptureFrameBegin(void) {
     s_scopeStart = NULL;
 }
 
-void RageCaptureModelBegin(int kind, int index, int fogged) {
+void CaptureModelBegin(int kind, int index, int fogged) {
     RageSceneSnapshot *snapshot;
     RageCaptureModelDraw *draw;
-    if (!RageCaptureActive()) return;
+    if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     s_scopeStart = SCRATCH_PRIM_CURSOR_AS(uint8_t);
     if (snapshot->drawCount >= RAGE_CAPTURE_MAX_DRAWS) {
@@ -152,12 +152,12 @@ void RageCaptureModelBegin(int kind, int index, int fogged) {
     CaptureGte(&draw->gte);
 }
 
-void RageCaptureTerrainBegin(const void *cells, int count) {
+void CaptureTerrainBegin(const void *cells, int count) {
     RageSceneSnapshot *snapshot;
     RageCaptureTerrainBatch *batch;
     const int32_t *records = (const int32_t *)cells;
     int i;
-    if (!RageCaptureActive()) return;
+    if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     s_scopeStart = SCRATCH_PRIM_CURSOR_AS(uint8_t);
     if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN) return;
@@ -174,11 +174,11 @@ void RageCaptureTerrainBegin(const void *cells, int count) {
     CaptureGte(&batch->gte);
 }
 
-void RageCaptureFace3D(const RageCaptureFaceInput *input) {
+void CaptureFace3D(const RageCaptureFaceInput *input) {
     RageSceneSnapshot *snapshot;
     RageCaptureFace *face;
     int vertex;
-    if (!RageCaptureActive()) return;
+    if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     if (snapshot->faceCount >= RAGE_CAPTURE_MAX_FACES) {
         snapshot->faceOverflow++;
@@ -229,9 +229,9 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input) {
     }
 }
 
-void RageCaptureSubmitEnd(void) {
+void CaptureSubmitEnd(void) {
     const uint8_t *end;
-    if (!RageCaptureActive() || s_scopeStart == NULL) return;
+    if (!CaptureActive() || s_scopeStart == NULL) return;
     end = SCRATCH_PRIM_CURSOR_AS(uint8_t);
     if (end > s_scopeStart) {
         if (s_rangeCount < RAGE_CAPTURE_MAX_RANGES) {
@@ -370,11 +370,11 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
     }
 }
 
-void RageCaptureFrameEnd(void) {
+void CaptureFrameEnd(void) {
     RageSceneSnapshot *snapshot;
     GameFrameContext *frame;
     const Matrix *view;
-    if (!RageCaptureActive()) return;
+    if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     snapshot->frameCounter = (uint32_t)g_FrameCounter;
     snapshot->sceneId = g_SceneId;
@@ -412,8 +412,8 @@ void RageCaptureFrameEnd(void) {
                 snapshot->drawOverflow, snapshot->packetOverflow,
                 snapshot->oversizedPackets, snapshot->faceOverflow,
                 s_rangeOverflow,
-                (unsigned long long)RageCaptureSnapshotHash(snapshot));
-        if (RageRuntimeConfigEnabled("diagnostics.scene_trace_verbose",
+                (unsigned long long)CaptureSnapshotHash(snapshot));
+        if (RuntimeConfigEnabled("diagnostics.scene_trace_verbose",
                                      "RAGE_PORT_SCENE_TRACE_VERBOSE")) {
             for (i = 0; i < snapshot->packetCount; i++) {
                 const RageCapturePacket *packet = &snapshot->packets[i];
@@ -432,11 +432,11 @@ void RageCaptureFrameEnd(void) {
     }
 }
 
-const RageSceneSnapshot *RageCaptureCurrent(void) {
+const RageSceneSnapshot *CaptureCurrent(void) {
     return &s_snapshots[s_current];
 }
 
-const RageSceneSnapshot *RageCapturePrevious(void) {
+const RageSceneSnapshot *CapturePrevious(void) {
     return &s_snapshots[s_current ^ 1];
 }
 
@@ -450,7 +450,7 @@ static uint64_t HashBytes(uint64_t hash, const void *data, size_t size) {
     return hash;
 }
 
-uint64_t RageCaptureSnapshotHash(const RageSceneSnapshot *snapshot) {
+uint64_t CaptureSnapshotHash(const RageSceneSnapshot *snapshot) {
     uint64_t hash = 0xCBF29CE484222325ull;
     int i;
     hash = HashBytes(hash, &snapshot->sceneId, sizeof(snapshot->sceneId));

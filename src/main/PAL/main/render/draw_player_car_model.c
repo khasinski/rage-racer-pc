@@ -42,7 +42,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     s32 otDepth;
     s32 i;
 
-    RageGameRenderWorldSubmitPlayerCar(obj, SCRATCH_MIRROR != 0);
+    GameRenderWorldSubmitPlayerCar(obj, SCRATCH_MIRROR != 0);
 
     obj->y -= view->horizon;
     obj->modelY -= view->horizon;
@@ -167,7 +167,7 @@ void DrawCar(GameRenderObject *obj) {
     s32 model;
     s16 *lod;
 
-    model = g_CarModelByCourse[RageSeriesCourseIndex()][obj->modelIndex];
+    model = g_CarModelByCourse[SeriesCourseIndex()][obj->modelIndex];
     lod = g_CarModelBankTable[model];
 
     v_128[0] = obj->x - SCRATCH_VIEW_X;
@@ -182,8 +182,8 @@ void DrawCar(GameRenderObject *obj) {
     }
     otDepth = v_128[0] + v_128[2];
 #ifdef __psyz
-    if (RageDiagnosticsEnabled("render.car_draw_trace")) {
-        const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
+    if (DiagnosticsEnabled("render.car_draw_trace")) {
+        const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
             const char *detail = v_148[2] < 0 ? "behind" :
                                  otDepth < 0xD00 ? "close" :
@@ -202,7 +202,7 @@ void DrawCar(GameRenderObject *obj) {
     }
 #endif
     if (v_148[2] >= 0 && otDepth < 0x2500) {
-        RageGameRenderWorldSubmitCar(
+        GameRenderWorldSubmitCar(
             obj, SCRATCH_MIRROR != 0,
             otDepth < 0xD00 ? RAGE_GAME_CAR_RENDER_CLOSE
                             : RAGE_GAME_CAR_RENDER_FAR);

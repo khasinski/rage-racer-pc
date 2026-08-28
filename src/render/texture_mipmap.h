@@ -9,17 +9,17 @@
  * would inevitably combine unrelated atlas entries. */
 enum { RAGE_TEXTURE_ATLAS_MIP_LEVELS = 4 };
 
-uint32_t RageTextureMipLevelCount(uint32_t width, uint32_t height,
+uint32_t TextureMipLevelCount(uint32_t width, uint32_t height,
                                   uint32_t maximumLevels);
-size_t RageTextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
+size_t TextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
                                       uint32_t level);
-size_t RageTextureMipChainSizeRGBA8(uint32_t width, uint32_t height,
+size_t TextureMipChainSizeRGBA8(uint32_t width, uint32_t height,
                                     uint32_t levels);
 
 /* Builds a tightly packed, premultiplied-alpha RGBA8 mip chain. Premultiplying
  * before filtering prevents transparent atlas texels from adding dark or
  * incorrectly coloured fringes. */
-int RageTextureBuildMipChainRGBA8(const uint8_t *source,
+int TextureBuildMipChainRGBA8(const uint8_t *source,
                                   uint32_t width, uint32_t height,
                                   uint32_t levels,
                                   uint8_t *destination,

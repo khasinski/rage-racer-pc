@@ -20,11 +20,11 @@ extern int32_t g_IsEnvironmentMode4;
 static int WriteModern(const RageModernDiagnosticFrame *frame,
                        const char *path) {
     return frame->texture != NULL &&
-           RageModernWriteTexturePpm(frame->device, frame->texture,
+           ModernWriteTexturePpm(frame->device, frame->texture,
                                      frame->width, frame->height, path);
 }
 
-void RageModernDiagnosticsMaybeDump(
+void ModernDiagnosticsMaybeDump(
     const RageSceneSnapshot *snapshot,
     const RageModernDiagnosticFrame *output) {
     static int initialized;
@@ -36,15 +36,15 @@ void RageModernDiagnosticsMaybeDump(
     static long lastDumped = -1;
     static int done;
     if (!initialized) {
-        const char *frameText = RageRuntimeConfigGetLegacy(
+        const char *frameText = RuntimeConfigGetLegacy(
             "diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME");
-        const char *everyText = RageRuntimeConfigGetLegacy(
+        const char *everyText = RuntimeConfigGetLegacy(
             "diagnostics.modern_dump_every", "RAGE_PORT_MODERN_DUMP_EVERY");
-        const char *sceneText = RageRuntimeConfigGet(
+        const char *sceneText = RuntimeConfigGet(
             "diagnostics.modern_dump_scene_id");
-        const char *timerText = RageRuntimeConfigGet(
+        const char *timerText = RuntimeConfigGet(
             "diagnostics.modern_dump_timer");
-        path = RageRuntimeConfigGetLegacy(
+        path = RuntimeConfigGetLegacy(
             "diagnostics.modern_dump", "RAGE_PORT_MODERN_DUMP");
         if (frameText != NULL) frame = strtol(frameText, NULL, 0);
         if (everyText != NULL) every = strtol(everyText, NULL, 0);
@@ -69,7 +69,7 @@ void RageModernDiagnosticsMaybeDump(
     if (WriteModern(output, path))
         fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
                 snapshot->frameCounter, path);
-    if (RageRuntimeConfigEnabled("diagnostics.modern_dump_scene",
+    if (RuntimeConfigEnabled("diagnostics.modern_dump_scene",
                                  "RAGE_PORT_MODERN_DUMP_SCENE")) {
         char scenePath[512];
         const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
@@ -82,7 +82,7 @@ void RageModernDiagnosticsMaybeDump(
         }
         if (world != NULL) {
             snprintf(scenePath, sizeof(scenePath), "%s.world.bin", path);
-            if (!RageRenderWorldSnapshotWrite(scenePath, world))
+            if (!RenderWorldSnapshotWrite(scenePath, world))
                 fprintf(stderr,
                         "rage-port: render-world dump failed: %s\n",
                         scenePath);
@@ -158,7 +158,7 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
                 batch->cells[0][3]);
     }
     {
-        const RageRenderWorld *world = RageGameRenderWorldCurrent();
+        const RageRenderWorld *world = GameRenderWorldCurrent();
         uint32_t dynamicCount = 0;
         if (world != NULL) {
             for (uint32_t worldIndex = 0;
@@ -187,7 +187,7 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
     }
 }
 
-void RageModernDiagnosticsCheckMarker(
+void ModernDiagnosticsCheckMarker(
     const RageSceneSnapshot *snapshot,
     const RageModernDiagnosticFrame *output,
     int haveModernImage) {
@@ -203,14 +203,14 @@ void RageModernDiagnosticsCheckMarker(
     wasDown = down;
     if (pressed) burstLeft = 4;
     if (pressed && output->ringTextures != NULL) {
-        RagePlatformEnsureDirectory("markers");
+        PlatformEnsureDirectory("markers");
         for (index = 0; index < output->ringCount; index++) {
             int slot = (output->ringNext + index) % output->ringCount;
             if (output->ringFrames[slot] == 0) continue;
             snprintf(path, sizeof(path), "markers/ring-%02d-f%u-%s.ppm",
                      index, output->ringFrames[slot],
                      output->ringInterpolation[slot] < -1.5f ? "lerp" : "snap");
-            RageModernWriteTexturePpm(output->device,
+            ModernWriteTexturePpm(output->device,
                                       output->ringTextures[slot], output->width,
                                       output->height, path);
             if (output->ringScenes != NULL) {
@@ -229,7 +229,7 @@ void RageModernDiagnosticsCheckMarker(
     }
     if (burstLeft <= 0) return;
     burstLeft--;
-    RagePlatformEnsureDirectory("markers");
+    PlatformEnsureDirectory("markers");
     if (markerIndex < 0) {
         markerIndex = 0;
         for (index = 0; index < 1000; index++) {
@@ -258,7 +258,7 @@ void RageModernDiagnosticsCheckMarker(
         const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
         if (world != NULL) {
             snprintf(path, sizeof(path), "markers/marker-%d-world.bin", index);
-            if (!RageRenderWorldSnapshotWrite(path, world))
+            if (!RenderWorldSnapshotWrite(path, world))
                 fprintf(stderr,
                         "rage-port: marker %d render-world save failed\n",
                         index);

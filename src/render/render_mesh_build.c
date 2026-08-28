@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-static float RageRadians(float degrees) {
+static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
@@ -15,11 +15,11 @@ typedef struct RageTransformBasis {
     int useMatrix;
 } RageTransformBasis;
 
-static RageTransformBasis RageBuildTransformBasis(const RageRenderTransform *transform) {
+static RageTransformBasis BuildTransformBasis(const RageRenderTransform *transform) {
     RageTransformBasis basis = {0};
-    float x = RageRadians(transform->rotation.x);
-    float y = RageRadians(transform->rotation.y);
-    float z = RageRadians(transform->rotation.z);
+    float x = Radians(transform->rotation.x);
+    float y = Radians(transform->rotation.y);
+    float z = Radians(transform->rotation.z);
     basis.position = transform->position;
     basis.scale = transform->scale;
     basis.cx = cosf(x); basis.sx = sinf(x);
@@ -46,7 +46,7 @@ static RageTransformBasis RageBuildTransformBasis(const RageRenderTransform *tra
     return basis;
 }
 
-static RageRenderVec3 RageTransformBasisVector(const RageTransformBasis *basis,
+static RageRenderVec3 TransformBasisVector(const RageTransformBasis *basis,
                                                 RageRenderVec3 out) {
     float x;
     if (basis->useMatrix) {
@@ -71,19 +71,19 @@ static RageRenderVec3 RageTransformBasisVector(const RageTransformBasis *basis,
     return out;
 }
 
-static RageRenderVec3 RageTransformPosition(const RageTransformBasis *basis,
+static RageRenderVec3 TransformPosition(const RageTransformBasis *basis,
                                              const RageRuntimeVertex *vertex) {
     RageRenderVec3 out = {vertex->position[0] * basis->scale.x,
                           vertex->position[1] * basis->scale.y,
                           vertex->position[2] * basis->scale.z};
-    out = RageTransformBasisVector(basis, out);
+    out = TransformBasisVector(basis, out);
     out.x += basis->position.x;
     out.y += basis->position.y;
     out.z += basis->position.z;
     return out;
 }
 
-static float RageSnapTerrainCellBoundary(float value) {
+static float SnapTerrainCellBoundary(float value) {
     const float cellSize = 2048.0f;
     float boundary = roundf(value / cellSize) * cellSize;
     /* Adjacent PS1 terrain cells occasionally disagree by one source GTE
@@ -92,24 +92,24 @@ static float RageSnapTerrainCellBoundary(float value) {
     return fabsf(value - boundary) <= 0.5f ? boundary : value;
 }
 
-static RageRenderVec3 RageTransformNormal(const RageTransformBasis *basis,
+static RageRenderVec3 TransformNormal(const RageTransformBasis *basis,
                                           const RageRuntimeVertex *vertex) {
     RageRenderVec3 out = {vertex->normal[0], vertex->normal[1], vertex->normal[2]};
-    return RageTransformBasisVector(basis, out);
+    return TransformBasisVector(basis, out);
 }
 
-static RageRenderVec3 RageTransformPoint(const RageTransformBasis *basis,
+static RageRenderVec3 TransformPoint(const RageTransformBasis *basis,
                                          const float position[3]) {
     RageRuntimeVertex vertex = {0};
     memcpy(vertex.position, position, sizeof(vertex.position));
-    return RageTransformPosition(basis, &vertex);
+    return TransformPosition(basis, &vertex);
 }
 
-static float RageVec3Length(float x, float y, float z) {
+static float Vec3Length(float x, float y, float z) {
     return sqrtf(x * x + y * y + z * z);
 }
 
-static void RageApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
+static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
     float ax = triangle[1].position[0] - triangle[0].position[0];
     float ay = triangle[1].position[1] - triangle[0].position[1];
     float az = triangle[1].position[2] - triangle[0].position[2];
@@ -119,7 +119,7 @@ static void RageApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
     float nx = ay * bz - az * by;
     float ny = az * bx - ax * bz;
     float nz = ax * by - ay * bx;
-    float length = RageVec3Length(nx, ny, nz);
+    float length = Vec3Length(nx, ny, nz);
     uint32_t corner;
     if (length <= 0.000001f) return;
     nx /= length;
@@ -135,7 +135,7 @@ static void RageApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
 /* Road paint is ordinary native geometry: a long, narrow strip following the
  * road surface. Identify that semantic shape without consulting PS1 primitive
  * modes or ordering-table hints. */
-static int RageTriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
+static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
     float edge[3], ax, ay, az, bx, by, bz, nx, ny, nz, normalLength;
     float shortest, longest;
     int corner;
@@ -144,7 +144,7 @@ static int RageTriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
         float x = triangle[next].position[0] - triangle[corner].position[0];
         float y = triangle[next].position[1] - triangle[corner].position[1];
         float z = triangle[next].position[2] - triangle[corner].position[2];
-        edge[corner] = RageVec3Length(x, y, z);
+        edge[corner] = Vec3Length(x, y, z);
     }
     shortest = fminf(edge[0], fminf(edge[1], edge[2]));
     longest = fmaxf(edge[0], fmaxf(edge[1], edge[2]));
@@ -159,11 +159,11 @@ static int RageTriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
     nx = ay * bz - az * by;
     ny = az * bx - ax * bz;
     nz = ax * by - ay * bx;
-    normalLength = RageVec3Length(nx, ny, nz);
+    normalLength = Vec3Length(nx, ny, nz);
     return normalLength > 0.0f && fabsf(ny) >= normalLength * 0.85f;
 }
 
-static void RageLiftRoadDecal(RageNativeDrawVertex triangle[3]) {
+static void LiftRoadDecal(RageNativeDrawVertex triangle[3]) {
     float ax = triangle[1].position[0] - triangle[0].position[0];
     float ay = triangle[1].position[1] - triangle[0].position[1];
     float az = triangle[1].position[2] - triangle[0].position[2];
@@ -173,7 +173,7 @@ static void RageLiftRoadDecal(RageNativeDrawVertex triangle[3]) {
     float nx = ay * bz - az * by;
     float ny = az * bx - ax * bz;
     float nz = ax * by - ay * bx;
-    float length = RageVec3Length(nx, ny, nz);
+    float length = Vec3Length(nx, ny, nz);
     int corner;
     if (length <= 0.0f) return;
     if (ny < 0.0f) length = -length;
@@ -185,7 +185,7 @@ static void RageLiftRoadDecal(RageNativeDrawVertex triangle[3]) {
     }
 }
 
-static void RageLiftOverlayTowardCamera(
+static void LiftOverlayTowardCamera(
     RageNativeDrawVertex triangle[3], RageRenderVec3 camera) {
     float ax = triangle[1].position[0] - triangle[0].position[0];
     float ay = triangle[1].position[1] - triangle[0].position[1];
@@ -202,7 +202,7 @@ static void RageLiftOverlayTowardCamera(
                 triangle[2].position[1]) / 3.0f;
     float cz = (triangle[0].position[2] + triangle[1].position[2] +
                 triangle[2].position[2]) / 3.0f;
-    float length = RageVec3Length(nx, ny, nz);
+    float length = Vec3Length(nx, ny, nz);
     float facing;
     int corner;
     if (length <= 0.0f) return;
@@ -219,7 +219,7 @@ static void RageLiftOverlayTowardCamera(
     }
 }
 
-static int RageTriangleIsBackFacing(const RageRenderWorld *world,
+static int TriangleIsBackFacing(const RageRenderWorld *world,
                                     const RageNativeDrawVertex triangle[3]) {
     RageRenderVec3 view[3];
     float screenX[3], screenY[3];
@@ -229,7 +229,7 @@ static int RageTriangleIsBackFacing(const RageRenderWorld *world,
                                    triangle[corner].position[1],
                                    triangle[corner].position[2]};
         float depth;
-        RageRenderWorldToView(&world->camera, &position, &view[corner]);
+        RenderWorldToView(&world->camera, &position, &view[corner]);
         depth = -view[corner].z;
         /* Let homogeneous clipping handle triangles crossing the camera.
          * Their projected winding is undefined until after the clip. */
@@ -243,7 +243,7 @@ static int RageTriangleIsBackFacing(const RageRenderWorld *world,
            (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) >= 0.0f;
 }
 
-static uint32_t RageClipViewTriangleNear(
+static uint32_t ClipViewTriangleNear(
     const RageRenderVec3 input[3], RageRenderVec3 output[4], float nearPlane) {
     RageRenderVec3 previous = input[2];
     int previousInside = -previous.z >= nearPlane;
@@ -268,7 +268,7 @@ static uint32_t RageClipViewTriangleNear(
     return count;
 }
 
-static int RageTerrainTriangleFacesCamera(
+static int TerrainTriangleFacesCamera(
     const RageRenderWorld *world, const RageNativeDrawVertex triangle[3]) {
     RageRenderVec3 input[3], clipped[4];
     uint32_t corner, count, piece;
@@ -276,9 +276,9 @@ static int RageTerrainTriangleFacesCamera(
         RageRenderVec3 position = {triangle[corner].position[0],
                                    triangle[corner].position[1],
                                    triangle[corner].position[2]};
-        RageRenderWorldToView(&world->camera, &position, &input[corner]);
+        RenderWorldToView(&world->camera, &position, &input[corner]);
     }
-    count = RageClipViewTriangleNear(
+    count = ClipViewTriangleNear(
         input, clipped, world->camera.nearPlane);
     for (piece = 1; piece + 1 < count; piece++) {
         RageRenderVec3 view[3] = {clipped[0], clipped[piece],
@@ -298,7 +298,7 @@ static int RageTerrainTriangleFacesCamera(
     return 0;
 }
 
-static int RageTerrainQuadIsHidden(
+static int TerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
     const RageRuntimeMesh *mesh, uint32_t first) {
     RageNativeDrawVertex triangles[2][3] = {0};
@@ -306,7 +306,7 @@ static int RageTerrainQuadIsHidden(
     static const uint8_t uniqueCorners[4] = {0, 1, 2, 5};
     uint32_t corner;
     for (corner = 0; corner < 6; corner++)
-        if (!RageRuntimeMeshIndex(mesh, first + corner, &indices[corner]))
+        if (!RuntimeMeshIndex(mesh, first + corner, &indices[corner]))
             return 0;
     /* rmesh terrain faces are authored quads expanded as ABC/CBD. Do not
      * infer quad culling for an independent triangle pair from a mod. */
@@ -315,11 +315,11 @@ static int RageTerrainQuadIsHidden(
         RageRuntimeVertex source;
         RageRenderVec3 position;
         uint32_t target = uniqueCorners[corner];
-        if (!RageRuntimeMeshVertex(mesh, indices[target], &source))
+        if (!RuntimeMeshVertex(mesh, indices[target], &source))
             return 0;
-        position = RageTransformPosition(basis, &source);
-        position.x = RageSnapTerrainCellBoundary(position.x);
-        position.z = RageSnapTerrainCellBoundary(position.z);
+        position = TransformPosition(basis, &source);
+        position.x = SnapTerrainCellBoundary(position.x);
+        position.z = SnapTerrainCellBoundary(position.z);
         if (corner < 3) {
             triangles[0][corner].position[0] = position.x;
             triangles[0][corner].position[1] = position.y;
@@ -340,28 +340,28 @@ static int RageTerrainQuadIsHidden(
      * after their independent source-to-scene import conversion. Evaluate
      * that winding after clipping so a hidden wall crossing the camera does
      * not expand into a screen-sized polygon. */
-    return !RageTerrainTriangleFacesCamera(world, triangles[0]) &&
-           !RageTerrainTriangleFacesCamera(world, triangles[1]);
+    return !TerrainTriangleFacesCamera(world, triangles[0]) &&
+           !TerrainTriangleFacesCamera(world, triangles[1]);
 }
 
-static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
+static int InstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex, float aspect) {
     float center[3], radius, maxScale, tanY, tanX, depth;
     float horizontalRadius, verticalRadius;
     RageRenderVec3 worldCenter, view;
-    RageTransformBasis basis = RageBuildTransformBasis(transform);
-    if (!RageRuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
-    worldCenter = RageTransformPoint(&basis, center);
-    RageRenderWorldToView(&world->camera, &worldCenter, &view);
+    RageTransformBasis basis = BuildTransformBasis(transform);
+    if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
+    worldCenter = TransformPoint(&basis, center);
+    RenderWorldToView(&world->camera, &worldCenter, &view);
     depth = -view.z;
     maxScale = fmaxf(fabsf(transform->scale.x),
                      fmaxf(fabsf(transform->scale.y), fabsf(transform->scale.z)));
     radius *= maxScale;
     if (depth + radius < world->camera.nearPlane ||
         depth - radius > world->camera.farPlane) return 1;
-    tanY = tanf(RageRadians(world->camera.verticalFovDegrees) * 0.5f);
+    tanY = tanf(Radians(world->camera.verticalFovDegrees) * 0.5f);
     tanX = tanY * aspect;
     /* Keep a small guard band around the visible frustum. In a low cockpit
      * camera the road can cross the side plane between logic ticks on a
@@ -379,7 +379,7 @@ static int RageInstanceOutsideFrustum(const RageRenderWorld *world,
            fabsf(view.y) > depth * tanY + verticalRadius;
 }
 
-static int RageBuildVertex(const RageTransformBasis *basis,
+static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderWorld *world, int fogged,
                            const RageRenderMeshInstance *instance,
                            const RageRuntimeMesh *mesh, uint32_t index,
@@ -388,14 +388,14 @@ static int RageBuildVertex(const RageTransformBasis *basis,
                            uint8_t *depthDecal) {
     RageRuntimeVertex source;
     RageRenderVec3 worldPosition;
-    if (!RageRuntimeMeshVertex(mesh, index, &source)) return 0;
+    if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
-    worldPosition = RageTransformPosition(basis, &source);
+    worldPosition = TransformPosition(basis, &source);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-        worldPosition.x = RageSnapTerrainCellBoundary(worldPosition.x);
-        worldPosition.z = RageSnapTerrainCellBoundary(worldPosition.z);
+        worldPosition.x = SnapTerrainCellBoundary(worldPosition.x);
+        worldPosition.z = SnapTerrainCellBoundary(worldPosition.z);
     }
     (void)aspect;
     out->position[0] = worldPosition.x; out->position[1] = worldPosition.y;
@@ -408,7 +408,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     }
     memcpy(out->color, source.color, sizeof(out->color));
     {
-        RageRenderVec3 normal = RageTransformNormal(basis, &source);
+        RageRenderVec3 normal = TransformNormal(basis, &source);
         out->normal[0] = normal.x; out->normal[1] = normal.y;
         out->normal[2] = normal.z;
     }
@@ -416,7 +416,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     out->fog[1] = world->camera.fogColor.y;
     out->fog[2] = world->camera.fogColor.z;
     out->fog[3] = fogged
-        ? RageRenderFogFactor(&world->camera, &worldPosition) : 0.0f;
+        ? RenderFogFactor(&world->camera, &worldPosition) : 0.0f;
     out->lighting = 0.0f;
     if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
         out->lighting = instance->lightInfluence;
@@ -455,7 +455,7 @@ static int RageBuildVertex(const RageTransformBasis *basis,
     return 1;
 }
 
-static uint32_t RageRenderBuildNativeDrawsFiltered(
+static uint32_t RenderBuildNativeDrawsFiltered(
     const RageRenderWorld *world, int passFilter, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
@@ -472,13 +472,13 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
         int terrainQuadHidden = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
             continue;
-        if (mesh == NULL || !RageRuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
+        if (mesh == NULL || !RuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
         if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
-            RageInstanceOutsideFrustum(world, &instance->transform, mesh,
+            InstanceOutsideFrustum(world, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
-        basis = RageBuildTransformBasis(&instance->transform);
+        basis = BuildTransformBasis(&instance->transform);
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
@@ -487,14 +487,14 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
             int valid = 1;
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
                 if ((offset % 6u) == 0)
-                    terrainQuadHidden = RageTerrainQuadIsHidden(
+                    terrainQuadHidden = TerrainQuadIsHidden(
                         world, &basis, mesh, first + offset);
                 if (terrainQuadHidden) continue;
             }
             for (corner = 0; corner < 3; corner++) {
-                valid = valid && RageRuntimeMeshIndex(mesh, first + offset + corner,
+                valid = valid && RuntimeMeshIndex(mesh, first + offset + corner,
                                                       &indices[corner]);
-                if (valid) valid = RageBuildVertex(&basis, world,
+                if (valid) valid = BuildVertex(&basis, world,
                     (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
                     instance, mesh, indices[corner], aspect,
                     &triangle[corner], &materials[corner],
@@ -508,21 +508,21 @@ static uint32_t RageRenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount + 3 > vertexCapacity) continue;
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
-                RageApplyFlatTriangleNormal(triangle);
+                ApplyFlatTriangleNormal(triangle);
             if (depthDecals[0]) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
                  * their depth value in the rasterizer. */
-                RageLiftOverlayTowardCamera(
+                LiftOverlayTowardCamera(
                     triangle, world->camera.transform.position);
             } else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
                 materials[0] != UINT32_MAX &&
-                RageTriangleIsRoadDecal(triangle)) {
-                RageLiftRoadDecal(triangle);
+                TriangleIsRoadDecal(triangle)) {
+                LiftRoadDecal(triangle);
                 depthDecals[0] = depthDecals[1] = depthDecals[2] = 1;
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
-                RageTriangleIsBackFacing(world, triangle)) continue;
+                TriangleIsBackFacing(world, triangle)) continue;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||
                 spans[spansUsed - 1].depthDecal != depthDecals[0] ||
@@ -575,24 +575,24 @@ done:
     return vertexCount;
 }
 
-uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
+uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     RageRenderMeshLookup lookup, void *context,
                                     RageNativeDrawVertex *vertices,
                                     uint32_t vertexCapacity,
                                     RageNativeDrawSpan *spans,
                                     uint32_t spanCapacity,
                                     uint32_t *spanCount) {
-    return RageRenderBuildNativeDrawsFiltered(
+    return RenderBuildNativeDrawsFiltered(
         world, -1, aspect, lookup, context, vertices, vertexCapacity, spans,
         spanCapacity, spanCount);
 }
 
-uint32_t RageRenderBuildNativePassDraws(
+uint32_t RenderBuildNativePassDraws(
     const RageRenderWorld *world, RageRenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
-    return RageRenderBuildNativeDrawsFiltered(
+    return RenderBuildNativeDrawsFiltered(
         world, (int)pass, aspect, lookup, context, vertices, vertexCapacity,
         spans, spanCapacity, spanCount);
 }

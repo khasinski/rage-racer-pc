@@ -11,17 +11,17 @@ static int failures;
             (expected), (actual)); failures++;                              \
 } } while (0)
 
-const char *RageRuntimeConfigGet(const char *key) {
+const char *RuntimeConfigGet(const char *key) {
     if (!strcmp(key, "camera.chase_turn_lookahead")) return "0.5";
     return NULL;
 }
 
 int main(void) {
-    EXPECT_EQ(0, RageChaseCameraYawOffset(0));
-    EXPECT_EQ(170, RageChaseCameraYawOffset(4096));
-    EXPECT_EQ(-170, RageChaseCameraYawOffset(-4096));
-    EXPECT_EQ(170, RageChaseCameraYawOffset(8192));
-    EXPECT_EQ(-170, RageChaseCameraYawOffset(-8192));
-    EXPECT_EQ(85, RageChaseCameraYawOffset(2048));
+    EXPECT_EQ(0, ChaseCameraYawOffset(0));
+    EXPECT_EQ(170, ChaseCameraYawOffset(4096));
+    EXPECT_EQ(-170, ChaseCameraYawOffset(-4096));
+    EXPECT_EQ(170, ChaseCameraYawOffset(8192));
+    EXPECT_EQ(-170, ChaseCameraYawOffset(-8192));
+    EXPECT_EQ(85, ChaseCameraYawOffset(2048));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

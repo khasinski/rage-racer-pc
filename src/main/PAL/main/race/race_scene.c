@@ -35,14 +35,14 @@ static s32 s_RetireCameraActive;
  * so retain the retail ordering by waiting for those voices to become idle. */
 static s32 s_FinishFollowupCue = -1;
 
-static void RageQueueFinishFollowupCue(s32 cue) {
+static void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
     if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
         fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
                 (unsigned)cue);
 }
 
-static void RageUpdateFinishFollowupCue(void) {
+static void UpdateFinishFollowupCue(void) {
     s32 cue;
     if (s_FinishFollowupCue < 0 ||
         SpuGetKeyStatus(g_SpecialVoiceBits[4]) != 0) return;
@@ -55,7 +55,7 @@ static void RageUpdateFinishFollowupCue(void) {
 }
 #endif
 
-int RageRetireCameraActive(void) { return s_RetireCameraActive; }
+int RetireCameraActive(void) { return s_RetireCameraActive; }
 
 /* The first union field and the two trailing split symbols keep separate
  * %hi/%lo accesses. Indexing the union here makes GCC 2.6.3 CSE its base and
@@ -126,8 +126,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     }
     if (g_LapCount < route->timing.fields.lap) {
         if (g_RaceTotalTime <
-            g_BestTotalTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode]) {
-            g_BestTotalTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_RaceTotalTime;
+            g_BestTotalTimes[ReadStableRaceSeries()][SeriesCourseIndex()][grandPrixMode]) {
+            g_BestTotalTimes[ReadStableRaceSeries()][SeriesCourseIndex()][grandPrixMode] = g_RaceTotalTime;
         }
     }
 
@@ -200,12 +200,12 @@ timing_done:
                 if (g_RaceTotalTime > 0x927BE) {
                     g_RaceTotalTime = 0x927BF;
                 }
-                if (g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] >
+                if (g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][grandPrixMode] >
                     g_BestLapThisRace) {
-                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][grandPrixMode] = g_BestLapThisRace;
+                    g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][grandPrixMode] = g_BestLapThisRace;
                 }
                 if (grandPrixMode == 0) {
-                    tableOffset = (RageSeriesCourseIndex()) * 12 + ReadStableRaceSeries() * 48;
+                    tableOffset = (SeriesCourseIndex()) * 12 + ReadStableRaceSeries() * 48;
                     sectorAddress.table = g_BestSectorTimes;
                     sectorAddress.bytes += tableOffset;
                     sectorAddress.pointer[0] = g_RefSectorTimes.fields.first;
@@ -225,7 +225,7 @@ timing_done:
                  * remaining in one authored finish-line track section. */
                 g_RaceCueFlags |= 8;
                 PlaySoundCue(0x2A);
-                RageQueueFinishFollowupCue(0x2B);
+                QueueFinishFollowupCue(0x2B);
 #else
                 PlaySoundCue(0x2B);
 #endif
@@ -282,8 +282,8 @@ timing_done:
                (((car->progressB + car->progressA) <= -g_TrackLength) ||
                 ((g_PlayerCar.lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
         g_RacePhase = 5;
-        g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
-            g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
+        g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][0] =
+            g_RankingRecords[ReadStableRaceSeries()][SeriesCourseIndex()][0].raceTime;
         StartCdVolumeFade(8);
         ForceAllEffectVoicesEnabled(0);
         g_RaceFadeTimer = 0;
@@ -372,7 +372,7 @@ void EnterRaceScene(void) {
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
     g_RefLapTime =
-        g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][g_GrandPrixMode];
+        g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][g_GrandPrixMode];
     count = g_LapCount;
     g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
@@ -441,7 +441,7 @@ void UpdateRaceScene(void) {
     value = g_SceneTimer + 1;
     g_SceneTimer = value;
 #ifdef __psyz
-    RageUpdateFinishFollowupCue();
+    UpdateFinishFollowupCue();
 #endif
     option = 0;
     timerValue = value;
@@ -472,8 +472,8 @@ void UpdateRaceScene(void) {
             if (g_GrandPrixMode == 0 || (s16)mode < 2) {
                 g_RacePhase = 7;
                 if (g_GrandPrixMode == 0) {
-                    g_BestLapTimes[ReadStableRaceSeries()][RageSeriesCourseIndex()][0] =
-                        g_RankingRecords[ReadStableRaceSeries()][RageSeriesCourseIndex()][0].raceTime;
+                    g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][0] =
+                        g_RankingRecords[ReadStableRaceSeries()][SeriesCourseIndex()][0].raceTime;
                 }
             } else {
                 value = g_CourseProgress->retriesRemaining;
@@ -592,9 +592,9 @@ void UpdateRaceScene(void) {
             DrawScriptedScenery(0);
             DrawRearViewMirror(g_SceneTimer);
         }
-        DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
         if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
+            DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
             EndMirrorPass();
         }
     } else {
@@ -735,9 +735,9 @@ update_race:
             DrawScriptedScenery(1);
             DrawRearViewMirror(g_SceneTimer);
         }
-        DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
         if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
+            DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
             EndMirrorPass();
         }
 

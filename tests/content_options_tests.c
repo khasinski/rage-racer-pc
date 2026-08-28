@@ -22,7 +22,7 @@ static int failures;
     }                                                                         \
 } while (0)
 
-const char *RageRuntimeConfigGet(const char *key) {
+const char *RuntimeConfigGet(const char *key) {
     return strcmp(key, "content.car_names") == 0 ||
         strcmp(key, "content.prologue") == 0 ? "japanese" : NULL;
 }
@@ -40,14 +40,14 @@ int main(void) {
     };
     int index;
 
-    EXPECT_NAME("ERRISO", RageContentCarNameForStyle(0, "ERRISO", NULL));
-    EXPECT_NAME("ERRISO", RageContentCarNameForStyle(
+    EXPECT_NAME("ERRISO", ContentCarNameForStyle(0, "ERRISO", NULL));
+    EXPECT_NAME("ERRISO", ContentCarNameForStyle(
         0, "ERRISO", "international"));
-    EXPECT_NAME("ERRISO", RageContentCarNameForStyle(
+    EXPECT_NAME("ERRISO", ContentCarNameForStyle(
         0, "ERRISO", "unknown"));
     for (index = 0; index < 13; index++)
         g_NativeCarNames[index] = (char *)international[index];
-    RageContentOptionsApply();
+    ContentOptionsApply();
     for (index = 0; index < 13; index++)
         EXPECT_NAME(japanese[index], g_NativeCarNames[index]);
     if (g_PrologueLineCount != 17) {

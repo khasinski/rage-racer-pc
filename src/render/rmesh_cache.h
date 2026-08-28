@@ -31,15 +31,15 @@ typedef struct RageRuntimeMeshCache {
     uint32_t count;
 } RageRuntimeMeshCache;
 
-void RageRuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
+void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
                               const char *indexText, size_t indexSize,
                               RageRuntimeReadFile readFile,
                               RageRuntimeFreeFile freeFile, void *context,
                               RageRuntimeCachedMesh *entries,
                               uint32_t capacity);
-const RageRuntimeCachedMesh *RageRuntimeMeshCacheFind(
+const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet);
-void RageRuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);
+void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);
 
 #endif
 

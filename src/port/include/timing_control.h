@@ -6,15 +6,15 @@ typedef enum RageTimingStandard {
     RAGE_TIMING_NTSC = 1
 } RageTimingStandard;
 
-void RageTimingInit(void);
+void TimingInit(void);
 
 /* Re-apply the standard after the platform has created its video device. */
-void RageTimingApply(void);
+void TimingApply(void);
 
 /* Whether a measured frame time has drifted off the standard enough to restore.
  * A frame time of zero means nothing has been measured yet. */
-int RageTimingNeedsRestore(double currentFrameTimeUs, int baseHz);
-void RageTimingSetStandard(RageTimingStandard standard);
-int RageTimingBaseHz(void);
+int TimingNeedsRestore(double currentFrameTimeUs, int baseHz);
+void TimingSetStandard(RageTimingStandard standard);
+int TimingBaseHz(void);
 
 #endif

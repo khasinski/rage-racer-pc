@@ -64,7 +64,7 @@ GameScratchpadRenderState g_RageScratchpadState;
 
 static char s_RageMemoryCardDirectory[PATH_MAX];
 
-static int RageHostAdjustStoragePath(char *dst, const char *src, int maxlen) {
+static int HostAdjustStoragePath(char *dst, const char *src, int maxlen) {
     const char *name;
     char card[5];
     int written;
@@ -102,20 +102,20 @@ static int RageHostAdjustStoragePath(char *dst, const char *src, int maxlen) {
     return written;
 }
 
-int RageHostInitStorage(void) {
+int HostInitStorage(void) {
     char cardDirectory[PATH_MAX];
     char executableDirectory[PATH_MAX];
     int card;
 
-    if (!(RagePlatformExecutableDirectory(
+    if (!(PlatformExecutableDirectory(
               NULL, executableDirectory, sizeof(executableDirectory)) &&
-          RagePlatformExistingPortableStateDirectory(
+          PlatformExistingPortableStateDirectory(
               executableDirectory, s_RageMemoryCardDirectory,
               sizeof(s_RageMemoryCardDirectory))) &&
-        !RagePlatformUserStateDirectory(s_RageMemoryCardDirectory,
+        !PlatformUserStateDirectory(s_RageMemoryCardDirectory,
                                         sizeof(s_RageMemoryCardDirectory)))
         return 0;
-    if (!RagePlatformEnsureDirectory(s_RageMemoryCardDirectory))
+    if (!PlatformEnsureDirectory(s_RageMemoryCardDirectory))
         return 0;
 
     for (card = 0; card < 2; card++) {
@@ -127,10 +127,10 @@ int RageHostInitStorage(void) {
                                '/', card);
 #endif
         if (written < 0 || (size_t)written >= sizeof(cardDirectory) ||
-            !RagePlatformEnsureDirectory(cardDirectory))
+            !PlatformEnsureDirectory(cardDirectory))
             return 0;
     }
-    Psyz_AdjustPathCB(RageHostAdjustStoragePath);
+    Psyz_AdjustPathCB(HostAdjustStoragePath);
     return 1;
 }
 
@@ -277,7 +277,7 @@ void (*g_FrontendDrawHandlers[4])(void) = {
     UpdateMainMenuExit,
 };
 
-static s32 RageDrawShopScreenNoOp(s32 step) {
+static s32 DrawShopScreenNoOp(s32 step) {
     (void)step;
     ShopScreenNoOp();
     return 0;
@@ -302,10 +302,10 @@ void (*g_MenuScreenUpdate[14])(void) = {
     ShopScreenNoOp,
 };
 s32 (*g_MenuScreenDraw[14])(s32) = {
-    RageDrawShopScreenNoOp,
+    DrawShopScreenNoOp,
     DrawCourseSelectScreen,
     DrawRankingScreen,
-    RageDrawShopScreenNoOp,
+    DrawShopScreenNoOp,
     DrawCarSelectScreen,
     DrawCustomizeScreen,
     DrawDesignModeScreen,
@@ -315,10 +315,10 @@ s32 (*g_MenuScreenDraw[14])(s32) = {
     DrawPaintColorScreen,
     DrawCarShopScreen,
     (s32 (*)(s32))DrawEngineerShopScreen,
-    RageDrawShopScreenNoOp,
+    DrawShopScreenNoOp,
 };
 
-int RageMapPs1Scratchpad(void) {
+int MapPs1Scratchpad(void) {
     memset(g_RageScratchpad, 0, sizeof(g_RageScratchpad));
     memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
     return 1;
@@ -339,27 +339,27 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
-static int RageHostPathEndsWithCue(const char *path) {
+static int HostPathEndsWithCue(const char *path) {
     size_t length = strlen(path);
     return length > 4 && strcasecmp(path + length - 4, ".cue") == 0;
 }
 
-static int RageHostPathEndsWithChd(const char *path) {
+static int HostPathEndsWithChd(const char *path) {
     size_t length = strlen(path);
     return length > 4 && strcasecmp(path + length - 4, ".chd") == 0;
 }
 
-static int RageHostPathEndsWithBin(const char *path) {
+static int HostPathEndsWithBin(const char *path) {
     size_t length = strlen(path);
     return length > 4 && strcasecmp(path + length - 4, ".bin") == 0;
 }
 
-static int RageHostPathEndsWithDisc(const char *path) {
-    return RageHostPathEndsWithCue(path) || RageHostPathEndsWithBin(path) ||
-           RageHostPathEndsWithChd(path);
+static int HostPathEndsWithDisc(const char *path) {
+    return HostPathEndsWithCue(path) || HostPathEndsWithBin(path) ||
+           HostPathEndsWithChd(path);
 }
 
-static int RageHostReadTextFile(const char *path, char *value, size_t size) {
+static int HostReadTextFile(const char *path, char *value, size_t size) {
     FILE *file = fopen(path, "r");
     if (file == NULL || fgets(value, (int)size, file) == NULL) {
         if (file != NULL) fclose(file);
@@ -372,9 +372,9 @@ static int RageHostReadTextFile(const char *path, char *value, size_t size) {
 
 /* A disc image dropped next to the executable is the layout the release
  * archives invite, and the one players reach for first. */
-static int RageHostFindAdjacentCue(char *cue, size_t size) {
+static int HostFindAdjacentCue(char *cue, size_t size) {
     char directory[PATH_MAX];
-    if (!RagePlatformExecutableDirectory(NULL, directory, sizeof(directory)))
+    if (!PlatformExecutableDirectory(NULL, directory, sizeof(directory)))
         return 0;
 #ifdef _WIN32
     {
@@ -387,7 +387,7 @@ static int RageHostFindAdjacentCue(char *cue, size_t size) {
         if (search == INVALID_HANDLE_VALUE) return 0;
         do {
             if (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-            if (!RageHostPathEndsWithDisc(entry.cFileName)) continue;
+            if (!HostPathEndsWithDisc(entry.cFileName)) continue;
             if (snprintf(cue, size, "%s\\%s", directory, entry.cFileName) <
                     (int)size && access(cue, R_OK) == 0) {
                 FindClose(search);
@@ -402,7 +402,7 @@ static int RageHostFindAdjacentCue(char *cue, size_t size) {
         struct dirent *entry;
         if (handle == NULL) return 0;
         while ((entry = readdir(handle)) != NULL) {
-            if (!RageHostPathEndsWithDisc(entry->d_name)) continue;
+            if (!HostPathEndsWithDisc(entry->d_name)) continue;
             if (snprintf(cue, size, "%s/%s", directory, entry->d_name) <
                     (int)size && access(cue, R_OK) == 0) {
                 closedir(handle);
@@ -416,19 +416,19 @@ static int RageHostFindAdjacentCue(char *cue, size_t size) {
     return 0;
 }
 
-static void RageHostMakeDiscConfigPath(char *path, size_t size) {
-    if (!RagePlatformUserConfigPath("disc-cue-path", path, size))
+static void HostMakeDiscConfigPath(char *path, size_t size) {
+    if (!PlatformUserConfigPath("disc-cue-path", path, size))
         snprintf(path, size, "%s", "disc-cue-path");
 }
 
-static void RageHostSaveDiscCue(const char *cue) {
+static void HostSaveDiscCue(const char *cue) {
     char directory[PATH_MAX];
     char path[PATH_MAX];
     FILE *file;
 
-    if (!RagePlatformUserConfigDirectory(directory, sizeof(directory)) ||
-        !RagePlatformEnsureDirectory(directory)) return;
-    RageHostMakeDiscConfigPath(path, sizeof(path));
+    if (!PlatformUserConfigDirectory(directory, sizeof(directory)) ||
+        !PlatformEnsureDirectory(directory)) return;
+    HostMakeDiscConfigPath(path, sizeof(path));
     file = fopen(path, "w");
     if (file == NULL) return;
     fputs(cue, file);
@@ -443,7 +443,7 @@ typedef struct RageHostDiscDialog {
     int accepted;
 } RageHostDiscDialog;
 
-static void SDLCALL RageHostDiscDialogComplete(
+static void SDLCALL HostDiscDialogComplete(
     void *userdata, const char *const *files, int filter) {
     RageHostDiscDialog *dialog = userdata;
     (void)filter;
@@ -454,7 +454,7 @@ static void SDLCALL RageHostDiscDialogComplete(
     SDL_SetAtomicInt(&dialog->completed, 1);
 }
 
-static int RageHostChooseDisc(char *cue, size_t size) {
+static int HostChooseDisc(char *cue, size_t size) {
     static const SDL_DialogFileFilter filters[] = {
         {"Rage Racer disc images", "cue;bin;chd"},
         {"All files", "*"},
@@ -469,7 +469,7 @@ static int RageHostChooseDisc(char *cue, size_t size) {
                 SDL_GetError());
         return 0;
     }
-    SDL_ShowOpenFileDialog(RageHostDiscDialogComplete, &dialog, NULL, filters,
+    SDL_ShowOpenFileDialog(HostDiscDialogComplete, &dialog, NULL, filters,
                            (int)(sizeof(filters) / sizeof(filters[0])), NULL,
                            false);
     while (!SDL_GetAtomicInt(&dialog.completed)) {
@@ -478,16 +478,16 @@ static int RageHostChooseDisc(char *cue, size_t size) {
     }
     if (!dialog.accepted && SDL_GetError()[0] != '\0')
         fprintf(stderr, "rage-port: disc picker failed: %s\n", SDL_GetError());
-    return dialog.accepted && RageHostPathEndsWithDisc(cue) &&
+    return dialog.accepted && HostPathEndsWithDisc(cue) &&
            access(cue, R_OK) == 0;
 }
 
-static unsigned int RageHostLe32(const unsigned char *value) {
+static unsigned int HostLe32(const unsigned char *value) {
     return (unsigned int)value[0] | ((unsigned int)value[1] << 8)
          | ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
 }
 
-static int RageHostParseCue(const char *cue, char *image, size_t image_size,
+static int HostParseCue(const char *cue, char *image, size_t image_size,
                             long *track_offset) {
     FILE *file = fopen(cue, "r");
     char line[PATH_MAX + 64];
@@ -543,10 +543,10 @@ static int RageHostParseCue(const char *cue, char *image, size_t image_size,
     return access(image, R_OK) == 0;
 }
 
-static int RageHostReadSector(long sector, unsigned char *buffer) {
+static int HostReadSector(long sector, unsigned char *buffer) {
     if (g_RageHostDisc.chd) {
         unsigned char raw[RAGE_CD_SECTOR_SIZE];
-        if (!RageChdReadRawSector((unsigned int)sector, raw)) return 0;
+        if (!ChdReadRawSector((unsigned int)sector, raw)) return 0;
         memcpy(buffer, raw + g_RageHostDisc.user_offset,
                RAGE_ISO_SECTOR_SIZE);
         return 1;
@@ -558,7 +558,7 @@ static int RageHostReadSector(long sector, unsigned char *buffer) {
     return fread(buffer, 1, RAGE_ISO_SECTOR_SIZE, g_RageHostDisc.file) == RAGE_ISO_SECTOR_SIZE;
 }
 
-static int RageHostFindArchive(void) {
+static int HostFindArchive(void) {
     unsigned char sector[RAGE_ISO_SECTOR_SIZE];
     unsigned int root_sector;
     unsigned int root_size;
@@ -567,14 +567,14 @@ static int RageHostFindArchive(void) {
 
     for (user_offset = 16; user_offset <= 24; user_offset += 8) {
         g_RageHostDisc.user_offset = user_offset;
-        if (RageHostReadSector(16, sector) && memcmp(&sector[1], "CD001", 5) == 0) break;
+        if (HostReadSector(16, sector) && memcmp(&sector[1], "CD001", 5) == 0) break;
     }
     if (user_offset > 24 || sector[156] < 34) return 0;
-    root_sector = RageHostLe32(&sector[158]);
-    root_size = RageHostLe32(&sector[166]);
+    root_sector = HostLe32(&sector[158]);
+    root_size = HostLe32(&sector[166]);
     for (offset = 0; offset < root_size; offset += RAGE_ISO_SECTOR_SIZE) {
         unsigned int cursor = 0;
-        if (!RageHostReadSector(root_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        if (!HostReadSector(root_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
         while (cursor < RAGE_ISO_SECTOR_SIZE) {
             unsigned int length = sector[cursor];
             unsigned int name_length;
@@ -585,13 +585,13 @@ static int RageHostFindArchive(void) {
             name_length = record[32];
             if (name_length >= 8 && strncasecmp((const char *)&record[33], "RAGE.BIN", 8) == 0
                 && (name_length == 8 || record[41] == ';')) {
-                g_RageHostDisc.archive_sector = RageHostLe32(&record[2]);
-                g_RageHostDisc.archive_size = RageHostLe32(&record[10]);
+                g_RageHostDisc.archive_sector = HostLe32(&record[2]);
+                g_RageHostDisc.archive_size = HostLe32(&record[10]);
             } else if (name_length >= 8 &&
                        strncasecmp((const char *)&record[33], "RAGE.STR", 8) == 0 &&
                        (name_length == 8 || record[41] == ';')) {
-                g_RageHostDisc.stream_sector = RageHostLe32(&record[2]);
-                g_RageHostDisc.stream_size = RageHostLe32(&record[10]);
+                g_RageHostDisc.stream_sector = HostLe32(&record[2]);
+                g_RageHostDisc.stream_size = HostLe32(&record[10]);
             }
             cursor += length;
         }
@@ -599,14 +599,14 @@ static int RageHostFindArchive(void) {
     return g_RageHostDisc.archive_size > 0 && g_RageHostDisc.stream_size > 0;
 }
 
-int RageHostReadStreamSector(unsigned int sector, unsigned char *raw) {
+int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     long offset;
     if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
         sector >= (unsigned long)((g_RageHostDisc.stream_size + 2047) / 2048)) {
         return 0;
     }
     if (g_RageHostDisc.chd)
-        return RageChdReadRawSector(
+        return ChdReadRawSector(
             (unsigned int)(g_RageHostDisc.stream_sector + (long)sector), raw);
     offset = g_RageHostDisc.track_offset +
              (g_RageHostDisc.stream_sector + (long)sector) * RAGE_CD_SECTOR_SIZE;
@@ -615,18 +615,18 @@ int RageHostReadStreamSector(unsigned int sector, unsigned char *raw) {
            RAGE_CD_SECTOR_SIZE;
 }
 
-int RageHostStreamAbsoluteSector(unsigned int sector) {
+int HostStreamAbsoluteSector(unsigned int sector) {
     if (g_RageHostDisc.stream_size <= 0) return -1;
     return (int)(g_RageHostDisc.stream_sector + sector);
 }
 
-static int RageHostReadArchive(unsigned int offset, void *destination, unsigned int size) {
+static int HostReadArchive(unsigned int offset, void *destination, unsigned int size) {
     unsigned char sector[RAGE_ISO_SECTOR_SIZE];
     unsigned char *output = destination;
     FILE *test_archive;
 
     if (g_RageHostDisc.file == NULL && !g_RageHostDisc.chd &&
-        RageRuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
+        RuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
         size_t loaded;
         test_archive = fopen("assets/PAL/RAGE.BIN", "rb");
         if (test_archive == NULL || fseek(test_archive, (long)offset, SEEK_SET) != 0) {
@@ -642,7 +642,7 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
         unsigned int sector_offset = offset % RAGE_ISO_SECTOR_SIZE;
         unsigned int chunk = RAGE_ISO_SECTOR_SIZE - sector_offset;
         if (chunk > size) chunk = size;
-        if (!RageHostReadSector(g_RageHostDisc.archive_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        if (!HostReadSector(g_RageHostDisc.archive_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
         memcpy(output, sector + sector_offset, chunk);
         output += chunk;
         offset += chunk;
@@ -653,35 +653,35 @@ static int RageHostReadArchive(unsigned int offset, void *destination, unsigned 
 
 /* Resolves a cue all the way to a readable archive, so a path that no longer
  * works is reported as such instead of failing later on. */
-static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
-    if (RageHostPathEndsWithChd(cue)) {
-        if (!RageChdOpen(cue)) return 0;
+static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
+    if (HostPathEndsWithChd(cue)) {
+        if (!ChdOpen(cue)) return 0;
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
-        if (!RageHostFindArchive()) {
-            RageChdClose();
+        if (!HostFindArchive()) {
+            ChdClose();
             g_RageHostDisc.chd = 0;
             return 0;
         }
         return 1;
     }
-    if (RageHostPathEndsWithBin(cue)) {
+    if (HostPathEndsWithBin(cue)) {
         if (snprintf(image, image_size, "%s", cue) >= (int)image_size)
             return 0;
         g_RageHostDisc.track_offset = 0;
         g_RageHostDisc.file = fopen(image, "rb");
-        if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
+        if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
             if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
             g_RageHostDisc.file = NULL;
             return 0;
         }
         return 1;
     }
-    if (!RageHostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
-        !RageHostParseCue(cue, image, image_size,
+    if (!HostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
+        !HostParseCue(cue, image, image_size,
                           &g_RageHostDisc.track_offset)) return 0;
     g_RageHostDisc.file = fopen(image, "rb");
-    if (g_RageHostDisc.file == NULL || !RageHostFindArchive()) {
+    if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
         if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
         g_RageHostDisc.file = NULL;
         return 0;
@@ -689,53 +689,53 @@ static int RageHostOpenDisc(const char *cue, char *image, size_t image_size) {
     return 1;
 }
 
-int RageHostInitDisc(void) {
-    const char *environment_cue = RageRuntimeConfigGet("disc.image");
+int HostInitDisc(void) {
+    const char *environment_cue = RuntimeConfigGet("disc.image");
     char cue[PATH_MAX];
     char image[PATH_MAX];
     char config_path[PATH_MAX];
     int choose;
 
     if (environment_cue == NULL || environment_cue[0] == '\0')
-        environment_cue = RageRuntimeConfigGetOverride(
+        environment_cue = RuntimeConfigGetOverride(
             "disc.cue", "RAGE_PORT_DISC_CUE");
 
-    RageChdClose();
+    ChdClose();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
      * bundling retail data.  The release executable never sets this flag.
      * A checked-out disc image still has to reach PsyZ, or CD-DA plays
      * nothing during the smoke runs. */
-    if (RageRuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
+    if (RuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
         const char *test_cue = environment_cue;
         if (test_cue == NULL || test_cue[0] == '\0')
             test_cue = "disc/PAL/Rage Racer (Europe).cue";
         if (access(test_cue, R_OK) == 0 &&
-            RageHostOpenDisc(test_cue, image, sizeof(image))) return 1;
+            HostOpenDisc(test_cue, image, sizeof(image))) return 1;
         return 1;
     }
     if (environment_cue != NULL && environment_cue[0] != '\0') {
         snprintf(cue, sizeof(cue), "%s", environment_cue);
-        return RageHostOpenDisc(cue, image, sizeof(image));
+        return HostOpenDisc(cue, image, sizeof(image));
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
-    choose = RageRuntimeConfigEnabled("disc.choose", "RAGE_PORT_CHOOSE_DISC");
-    RageHostMakeDiscConfigPath(config_path, sizeof(config_path));
+    choose = RuntimeConfigEnabled("disc.choose", "RAGE_PORT_CHOOSE_DISC");
+    HostMakeDiscConfigPath(config_path, sizeof(config_path));
     /* Opening the disc is the test, not whether the cue is still there: its
      * track files move or get deleted on their own, and a cue that no longer
      * resolves has to send the player back to the picker rather than end the
      * session. */
-    if (!choose && RageHostReadTextFile(config_path, cue, sizeof(cue)) &&
-        RageHostOpenDisc(cue, image, sizeof(image))) return 1;
-    if (!choose && RageHostFindAdjacentCue(cue, sizeof(cue)) &&
-        RageHostOpenDisc(cue, image, sizeof(image))) {
-        RageHostSaveDiscCue(cue);
+    if (!choose && HostReadTextFile(config_path, cue, sizeof(cue)) &&
+        HostOpenDisc(cue, image, sizeof(image))) return 1;
+    if (!choose && HostFindAdjacentCue(cue, sizeof(cue)) &&
+        HostOpenDisc(cue, image, sizeof(image))) {
+        HostSaveDiscCue(cue);
         return 1;
     }
-    if (!RageHostChooseDisc(cue, sizeof(cue)) ||
-        !RageHostOpenDisc(cue, image, sizeof(image))) return 0;
-    RageHostSaveDiscCue(cue);
+    if (!HostChooseDisc(cue, sizeof(cue)) ||
+        !HostOpenDisc(cue, image, sizeof(image))) return 0;
+    HostSaveDiscCue(cue);
     return 1;
 }
 
@@ -746,7 +746,7 @@ typedef struct RageHostCdEntry {
 
 /* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can
  * work on a plain file instead of reimplementing ISO and CUE parsing. */
-int RageHostDumpArchive(const char *path) {
+int HostDumpArchive(const char *path) {
     unsigned char *buffer;
     FILE *output;
     long size = g_RageHostDisc.archive_size;
@@ -755,7 +755,7 @@ int RageHostDumpArchive(const char *path) {
     if (size <= 0) return 0;
     buffer = malloc((size_t)size);
     if (buffer == NULL) return 0;
-    if (!RageHostReadArchive(0, buffer, (unsigned int)size)) {
+    if (!HostReadArchive(0, buffer, (unsigned int)size)) {
         free(buffer);
         return 0;
     }
@@ -779,19 +779,19 @@ int RageHostDumpArchive(const char *path) {
  * does not disturb. Pausing it silenced every movie the game loads behind,
  * which is all of them but the opening one.
  */
-int RageFmvXaStreaming(void);
+int FmvXaStreaming(void);
 
-static void RageBeginDataRead(void) {
-    if (RageFmvXaStreaming()) return;
+static void BeginDataRead(void) {
+    if (FmvXaStreaming()) return;
     Psyz_CdBeginDataRead();
 }
 
-int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
+int HostLoadArchiveIndex(void *entries_ptr, int count) {
     RageHostCdEntry *entries = entries_ptr;
     uint32_t words[270];
     int index;
-    RageBeginDataRead();
-    if (count > 135 || !RageHostReadArchive(0, words, sizeof(words))) return 0;
+    BeginDataRead();
+    if (count > 135 || !HostReadArchive(0, words, sizeof(words))) return 0;
     for (index = 0; index < count; index++) {
         entries[index].byte_offset = words[index * 2] * 2048u;
         entries[index].size = words[index * 2 + 1];
@@ -799,9 +799,9 @@ int RageHostLoadArchiveIndex(void *entries_ptr, int count) {
     return 1;
 }
 
-int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
-    RageBeginDataRead();
-    return RageHostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
+int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
+    BeginDataRead();
+    return HostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
 }
 
 void ApplyMatrixLV(void *matrix, const int32_t *input, int32_t *output) {
@@ -909,7 +909,7 @@ void *BiosNextFile(void *entry) { return nextfile(entry); }
 long BiosFormatDevice(void *device) { return format(device); }
 ZERO_ADAPTER(CdPosToInt_Local)
 ZERO_ADAPTER(CdReadBreak)
-long RageHostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
+long HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }

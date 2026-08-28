@@ -101,18 +101,18 @@ static void test_input_config(void) {
     const char contents[] = "# custom controls\nUP = I\nCROSS=Space\nUNKNOWN=K\nLEFT=\n";
     int fd;
 
-    RageInputConfigDefaults(&config);
-    EXPECT_EQ(12, RageInputButtonIndex("UP"));
-    EXPECT_EQ(-1, RageInputButtonIndex("up"));
+    InputConfigDefaults(&config);
+    EXPECT_EQ(12, InputButtonIndex("UP"));
+    EXPECT_EQ(-1, InputButtonIndex("up"));
     EXPECT_EQ(0, strcmp(config.keys[12], "Up"));
-    EXPECT_EQ(0, RageInputConfigLoad(&config, "/path/which/does/not/exist"));
+    EXPECT_EQ(0, InputConfigLoad(&config, "/path/which/does/not/exist"));
 
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
     } else {
         close(fd);
-        EXPECT_EQ(2, RageInputConfigLoad(&config, path));
+        EXPECT_EQ(2, InputConfigLoad(&config, path));
         EXPECT_EQ(0, strcmp(config.keys[12], "I"));
         EXPECT_EQ(0, strcmp(config.keys[6], "Space"));
         EXPECT_EQ(0, strcmp(config.keys[15], "Left"));
@@ -138,7 +138,7 @@ static void test_port_config(void) {
         "unknown.key = 1\n";
     int fd;
 
-    RagePortConfigDefaults(&config);
+    PortConfigDefaults(&config);
     EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
     fd = mkstemp(path);
@@ -147,8 +147,8 @@ static void test_port_config(void) {
     } else {
         char *arguments[] = {"rage-test", "--config", path};
         close(fd);
-        EXPECT_EQ(1, RageRuntimeConfigInit(3, arguments));
-        EXPECT_EQ(8, RagePortConfigApplyRuntime(&config));
+        EXPECT_EQ(1, RuntimeConfigInit(3, arguments));
+        EXPECT_EQ(8, PortConfigApplyRuntime(&config));
         EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
         EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
         EXPECT_EQ(120, config.modernFps);
@@ -175,15 +175,15 @@ static void test_port_config(void) {
         char *invalidSet[] = {"rage-test", "--set", "broken"};
         char *missingConfig[] = {
             "rage-test", "--config", "/path/which/does/not/exist"};
-        RagePortConfigDefaults(&zeroDistance);
+        PortConfigDefaults(&zeroDistance);
         if (emptyFd >= 0) close(emptyFd);
-        EXPECT_EQ(1, RageRuntimeConfigInit(5, zeroArguments));
-        EXPECT_EQ(1, RagePortConfigApplyRuntime(&zeroDistance));
+        EXPECT_EQ(1, RuntimeConfigInit(5, zeroArguments));
+        EXPECT_EQ(1, PortConfigApplyRuntime(&zeroDistance));
         EXPECT_EQ(0, (s32)(zeroDistance.modernDrawDistance * 10.0f));
-        EXPECT_EQ(1, RageRuntimeConfigInit(3, booleanArguments));
-        EXPECT_EQ(0, RageRuntimeConfigEnabled("feature.enabled", NULL));
-        EXPECT_EQ(0, RageRuntimeConfigInit(3, invalidSet));
-        EXPECT_EQ(0, RageRuntimeConfigInit(3, missingConfig));
+        EXPECT_EQ(1, RuntimeConfigInit(3, booleanArguments));
+        EXPECT_EQ(0, RuntimeConfigEnabled("feature.enabled", NULL));
+        EXPECT_EQ(0, RuntimeConfigInit(3, invalidSet));
+        EXPECT_EQ(0, RuntimeConfigInit(3, missingConfig));
         unlink(emptyPath);
     }
 }
@@ -220,7 +220,7 @@ static void test_platform_config_path(void) {
         failures++;
     } else {
         fclose(file);
-        EXPECT_EQ(1, RagePlatformFindConfigFile(NULL, "rage-port.ini", found,
+        EXPECT_EQ(1, PlatformFindConfigFile(NULL, "rage-port.ini", found,
                                                 sizeof(found)));
         EXPECT_EQ(0, strcmp(filePath, found));
     }
@@ -260,11 +260,11 @@ static void test_portable_state_path(void) {
     }
     snprintf(executable, sizeof(executable), "%s/game", root);
     mkdir(executable, 0700);
-    EXPECT_EQ(0, RagePlatformExistingPortableStateDirectory(
+    EXPECT_EQ(0, PlatformExistingPortableStateDirectory(
                      executable, found, sizeof(found)));
     snprintf(card, sizeof(card), "%s/bu00", executable);
     mkdir(card, 0700);
-    EXPECT_EQ(1, RagePlatformExistingPortableStateDirectory(
+    EXPECT_EQ(1, PlatformExistingPortableStateDirectory(
                      executable, found, sizeof(found)));
     EXPECT_EQ(0, strcmp(executable, found));
     rmdir(card);
@@ -273,7 +273,7 @@ static void test_portable_state_path(void) {
              "%s/Rage Racer.app/Contents/MacOS", root);
     snprintf(card, sizeof(card), "%s/bu00", root);
     mkdir(card, 0700);
-    EXPECT_EQ(1, RagePlatformExistingPortableStateDirectory(
+    EXPECT_EQ(1, PlatformExistingPortableStateDirectory(
                      bundleExecutable, found, sizeof(found)));
     EXPECT_EQ(0, strcmp(root, found));
     rmdir(card);

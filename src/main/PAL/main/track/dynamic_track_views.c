@@ -183,7 +183,7 @@ void DrawStartGridScenery(s32 flags) {
             state.x +=
                 g_StartGridSceneryStep[ReadStableRaceSeries()].x * (s0 = s1 / 15);
             state.z += g_StartGridSceneryStep[ReadStableRaceSeries()].y * s0;
-            if (RageSeriesCourseIndex() == 3) {
+            if (SeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -195,7 +195,7 @@ void DrawStartGridScenery(s32 flags) {
             drawArg = (value < lim) ? value : 1;
         } else {
             state = g_StartGridSceneryPos[ReadStableRaceSeries()];
-            if (RageSeriesCourseIndex() == 3) {
+            if (SeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
@@ -206,7 +206,7 @@ void DrawStartGridScenery(s32 flags) {
             drawArg = (value < lim) ? value : 1;
         }
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseObject(
+        GameRenderWorldSubmitDynamicCourseObject(
             2, drawArg, state.x, state.y, state.z, renderWorldMtx.m, 0, 0);
 #endif
         SubmitCourseModel(SCRATCHPAD, drawArg);
@@ -238,7 +238,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
 
     state = g_AnimSceneryPos[instance];
 
-    if ((RageSeriesCourseIndex()) == 3) {
+    if ((SeriesCourseIndex()) == 3) {
         state.z += 0x5000;
     }
     if (g_GrandPrixClass == 5) {
@@ -298,7 +298,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
 #ifdef RAGE_HOST_PORT
-            RageGameRenderWorldSubmitDynamicCourseOverlay(
+            GameRenderWorldSubmitDynamicCourseOverlay(
                 0x20 + instance * 2, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
 #endif
@@ -309,7 +309,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
             SCRATCH_ENV_MODE4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
 #ifdef RAGE_HOST_PORT
-            RageGameRenderWorldSubmitDynamicCourseOverlay(
+            GameRenderWorldSubmitDynamicCourseOverlay(
                 0x20 + instance * 2, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
 #endif
@@ -323,7 +323,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         sv = g_CourseModelCount;
         drawArg = (num < sv) ? num : 1;
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseOverlay(
+        GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
 #endif
@@ -335,7 +335,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseOverlay(
+        GameRenderWorldSubmitDynamicCourseOverlay(
             0x20 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
 #endif
@@ -349,7 +349,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         sv = g_CourseModelCount;
         drawArg = (num < sv) ? num : 1;
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseOverlay(
+        GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
 #endif
@@ -385,7 +385,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     }
 
     state = g_AnimSceneryPos[instance];
-    if ((RageSeriesCourseIndex()) == 3) {
+    if ((SeriesCourseIndex()) == 3) {
         state.z += 0x5000;
     }
 
@@ -434,7 +434,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseOverlay(
+        GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
 #endif
@@ -456,7 +456,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         *scr = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseOverlay(
+        GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
 #endif
@@ -477,7 +477,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         drawArg = num;
     }
 #ifdef RAGE_HOST_PORT
-    RageGameRenderWorldSubmitDynamicCourseOverlay(
+    GameRenderWorldSubmitDynamicCourseOverlay(
         0x31 + instance * 2, drawArg, state.x, state.y, state.z,
         renderWorldMtx.m, 0, 0);
 #endif

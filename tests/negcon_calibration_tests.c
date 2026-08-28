@@ -8,7 +8,7 @@
  * smallest range with the largest play left a fraction of the lock it should
  * have had.
  *
- * The port's half is RageNegconTwist and the game's half is UpdatePadState, and
+ * The port's half is NegconTwist and the game's half is UpdatePadState, and
  * a fault in either only shows in the two together, so this drives the real
  * UpdatePadState with the real twist byte the port produces. It asks for the
  * one thing a calibration must never take away: pushing the stick all the way
@@ -33,7 +33,7 @@ void UpdatePadState(void);
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)buf0; (void)len0; (void)buf1; (void)len1;
 }
-int RageDiagnosticsEnabled(int channel) { (void)channel; return 0; }
+int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
 
 /*
  * The pad's own live state. It is plain storage that the game fills in every
@@ -102,17 +102,17 @@ int main(void) {
             g_NegconSteerNeutral = 0;
 
             /* At rest the car must go straight, whatever the play is. */
-            Report(RageNegconTwist(0.0f, 0, 0, range));
+            Report(NegconTwist(0.0f, 0, 0, range));
             Check(g_PadState.steer == 0, "resting steer", maxTwist, play,
                   g_PadState.steer, 0);
 
             /* Pushed all the way, either way, the lock is the range. */
-            twist = RageNegconTwist(1.0f, 0, 0, range);
+            twist = NegconTwist(1.0f, 0, 0, range);
             Report(twist);
             Check(g_PadState.steer == range, "stick right", maxTwist, play,
                   g_PadState.steer, range);
 
-            twist = RageNegconTwist(-1.0f, 0, 0, range);
+            twist = NegconTwist(-1.0f, 0, 0, range);
             Report(twist);
             Check(g_PadState.steer == -range, "stick left", maxTwist, play,
                   g_PadState.steer, -range);
@@ -121,7 +121,7 @@ int main(void) {
              * exactly, so the play still eats into it the way it always did.
              * Digital steering is not what calibration broke and must not
              * change. */
-            twist = RageNegconTwist(0.0f, 0, 1, range);
+            twist = NegconTwist(0.0f, 0, 1, range);
             Report(twist);
             Check(g_PadState.steer == range - deadZone, "d-pad right", maxTwist,
                   play, g_PadState.steer, range - deadZone);
@@ -129,7 +129,7 @@ int main(void) {
             /* Half a push is half the byte, and the game takes the play off it,
              * so a calibration with more play reaches less. That is the
              * setting doing its job rather than the port double-counting it. */
-            twist = RageNegconTwist(0.5f, 0, 0, range);
+            twist = NegconTwist(0.5f, 0, 0, range);
             Report(twist);
             {
                 int wanted = 0x7F / 2 - deadZone;

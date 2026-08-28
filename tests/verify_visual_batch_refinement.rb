@@ -930,9 +930,9 @@ end
 
 source = File.read(File.expand_path("../src/port/smoke_control.c", __dir__))
 abort "player render hash omits model-selection renderDepth" unless
-  source.match?(/RageSmokeHashPlayerRenderState.*?renderObject->renderDepth/m)
+  source.match?(/SmokeHashPlayerRenderState.*?renderObject->renderDepth/m)
 abort "player render hash omits wheel phase" unless
-  source.match?(/RageSmokeHashPlayerRenderState.*?car->wheelRotation/m)
+  source.match?(/SmokeHashPlayerRenderState.*?car->wheelRotation/m)
 menu_header = File.read(File.expand_path("../include/game/menu.h", __dir__))
 host_state = File.read(File.expand_path("../src/port/host_state.c", __dir__))
 abort "split player tire/render-depth global was reintroduced" unless

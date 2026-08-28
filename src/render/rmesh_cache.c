@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-void RageRuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
+void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
                               const char *indexText, size_t indexSize,
                               RageRuntimeReadFile readFile,
                               RageRuntimeFreeFile freeFile, void *context,
@@ -18,7 +18,7 @@ void RageRuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
     cache->capacity = capacity;
 }
 
-const RageRuntimeCachedMesh *RageRuntimeMeshCacheFind(
+const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet) {
     RageRuntimeAssetLocation location;
     const void *bytes;
@@ -33,13 +33,13 @@ const RageRuntimeCachedMesh *RageRuntimeMeshCacheFind(
         }
     }
     if (cache->count == cache->capacity || cache->readFile == 0 ||
-        !RageRuntimeIndexFind(cache->indexText, cache->indexSize, assetKey,
+        !RuntimeIndexFind(cache->indexText, cache->indexSize, assetKey,
                               assetSet, &location) ||
         !cache->readFile(cache->context, location.meshPath,
                          location.meshPathLength, &bytes, &size)) {
         return 0;
     }
-    if (!RageRuntimeMeshOpen(&cache->entries[cache->count].mesh, bytes, size)) {
+    if (!RuntimeMeshOpen(&cache->entries[cache->count].mesh, bytes, size)) {
         if (cache->freeFile != 0) cache->freeFile(cache->context, bytes);
         return 0;
     }
@@ -50,7 +50,7 @@ const RageRuntimeCachedMesh *RageRuntimeMeshCacheFind(
     return &cache->entries[cache->count++];
 }
 
-void RageRuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {
+void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {
     uint32_t i;
     if (cache == 0) return;
     if (cache->freeFile != 0) {

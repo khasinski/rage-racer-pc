@@ -102,7 +102,7 @@ void UpdateWaypointRaceScene(void) {
         DrawFlybyScenery();
         DrawRouteScenery();
         DrawPathScenery();
-        DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 0);
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
         return;
     }
 
@@ -138,7 +138,7 @@ void UpdateWaypointRaceScene(void) {
     DrawRouteScenery();
     UpdatePathScenerySound();
     DrawPathScenery();
-    DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);
+    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
     GetTrackZoneBlend(g_PlayerCar.trackProgress);
     SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
     UpdateZoneAmbience(g_PlayerCar.trackProgress);

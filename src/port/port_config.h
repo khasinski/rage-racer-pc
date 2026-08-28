@@ -39,12 +39,12 @@ typedef struct RagePortConfig {
     int modernGrading;          /* 0 off, 1 vibrant */
 } RagePortConfig;
 
-void RagePortConfigDefaults(RagePortConfig *config);
+void PortConfigDefaults(RagePortConfig *config);
 /* Applies [video] values loaded by runtime_config. */
-int RagePortConfigApplyRuntime(RagePortConfig *config);
+int PortConfigApplyRuntime(RagePortConfig *config);
 
 /* Publish/read the process-wide active configuration. */
-void RagePortConfigSetActive(const RagePortConfig *config);
-const RagePortConfig *RagePortActiveConfig(void);
+void PortConfigSetActive(const RagePortConfig *config);
+const RagePortConfig *PortActiveConfig(void);
 
 #endif

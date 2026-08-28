@@ -14,13 +14,13 @@ void SetReverbPreset(int type, int left, int right);
 struct CdlLOC;
 long StGetBackloc(struct CdlLOC *location);
 void StUnSetRing(void);
-int RageHostLoadArchiveIndex(void *entries, int count);
-int RageHostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination);
-int RagePortShouldExit(int frame_number);
-void RagePortBeforeSceneHandler(void);
-void RagePortAfterSceneHandler(void);
-void RagePortDuringFrameWait(int frameLimit);
-int RagePortMirrorFarDepth(int retailFar);
-void RagePortSampleAnalogPad(void);
+int HostLoadArchiveIndex(void *entries, int count);
+int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination);
+int PortShouldExit(int frame_number);
+void PortBeforeSceneHandler(void);
+void PortAfterSceneHandler(void);
+void PortDuringFrameWait(int frameLimit);
+int PortMirrorFarDepth(int retailFar);
+void PortSampleAnalogPad(void);
 
 #endif

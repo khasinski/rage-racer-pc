@@ -365,10 +365,10 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     carReg->velocityZ = hitZ;
 #ifdef __psyz
     if (traceEnabled < 0) {
-        const char *timerText = RageDiagnosticsValue("car.knockback_trace_timer");
-        const char *timerMinText = RageDiagnosticsValue("car.knockback_trace_timer_min");
-        const char *timerMaxText = RageDiagnosticsValue("car.knockback_trace_timer_max");
-        traceEnabled = RageDiagnosticsEnabled("car.knockback_trace");
+        const char *timerText = DiagnosticsValue("car.knockback_trace_timer");
+        const char *timerMinText = DiagnosticsValue("car.knockback_trace_timer_min");
+        const char *timerMaxText = DiagnosticsValue("car.knockback_trace_timer_max");
+        traceEnabled = DiagnosticsEnabled("car.knockback_trace");
         traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
         traceTimerMin = timerMinText != NULL ? (int)strtol(timerMinText, NULL, 0) : -1;
         traceTimerMax = timerMaxText != NULL ? (int)strtol(timerMaxText, NULL, 0) : -1;

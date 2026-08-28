@@ -501,7 +501,7 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     return edited > 0;
 }
 
-int RageTexturePatchAsset(const char *directory, int assetIndex,
+int TexturePatchAsset(const char *directory, int assetIndex,
                           unsigned char *data, size_t size) {
     char indexPath[1024], line[512];
     FILE *index;

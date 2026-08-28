@@ -81,7 +81,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
                 limit = 0x3E;
             }
 #ifdef RAGE_HOST_PORT
-            RageGameRenderWorldSubmitDynamicCourseObject(
+            GameRenderWorldSubmitDynamicCourseObject(
                 0x100 + loopIndex, limit, dataAddress.positionPointer->x,
                 dataAddress.positionPointer->y,
                 dataAddress.positionPointer->z, renderWorldMtx.m, 1, 0);

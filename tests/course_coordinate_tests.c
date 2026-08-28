@@ -17,9 +17,9 @@ static int failures;
 
 int main(void) {
     /* -64725 is the wrapped height used by the Lakeside Gate waterfall. */
-    EXPECT_EQ(811, RageCourseCoordinateNearReference(-64725, 600));
-    EXPECT_EQ(65546, RageCourseCoordinateNearReference(10, 65500));
-    EXPECT_EQ(-36, RageCourseCoordinateNearReference(65500, 10));
+    EXPECT_EQ(811, CourseCoordinateNearReference(-64725, 600));
+    EXPECT_EQ(65546, CourseCoordinateNearReference(10, 65500));
+    EXPECT_EQ(-36, CourseCoordinateNearReference(65500, 10));
     if (failures != 0) return EXIT_FAILURE;
     puts("course coordinate tests passed");
     return EXIT_SUCCESS;

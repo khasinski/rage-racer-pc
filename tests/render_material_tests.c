@@ -28,17 +28,17 @@ int main(void) {
         "8 sign.rgba | - | glow mask 0.25 0.5 1 1 1 1 0 0 0\n";
     RageRenderMaterial material;
 
-    EXPECT(RageRenderMaterialParse(v4, sizeof(v4) - 1, 0, 1, &material));
+    EXPECT(RenderMaterialParse(v4, sizeof(v4) - 1, 0, 1, &material));
     EXPECT(PathEquals(material.baseColorTexture, "blue.rgba"));
     EXPECT(material.shading == RAGE_RENDER_MATERIAL_SHADING_INHERIT);
     EXPECT(material.roughness == 1.0f && material.metallic == 0.0f);
 
-    EXPECT(RageRenderMaterialParse(v5, sizeof(v5) - 1, 3, 0, &material));
+    EXPECT(RenderMaterialParse(v5, sizeof(v5) - 1, 3, 0, &material));
     EXPECT(PathEquals(material.baseColorTexture, "car.rgba"));
     EXPECT(PathEquals(material.paintMask, "paint.rpaint"));
-    EXPECT(!RageRenderMaterialParse(v5, sizeof(v5) - 1, 3, 2, &material));
+    EXPECT(!RenderMaterialParse(v5, sizeof(v5) - 1, 3, 2, &material));
 
-    EXPECT(RageRenderMaterialParse(v6, sizeof(v6) - 1, 8, 0, &material));
+    EXPECT(RenderMaterialParse(v6, sizeof(v6) - 1, 8, 0, &material));
     EXPECT(PathEquals(material.baseColorTexture, "sign.rgba"));
     EXPECT(material.paintMask.length == 0);
     EXPECT(material.shading == RAGE_RENDER_MATERIAL_SHADING_UNLIT);
@@ -47,7 +47,7 @@ int main(void) {
     EXPECT(material.baseColorFactor[0] == 0.8f);
     EXPECT(material.baseColorFactor[3] == 0.5f);
     EXPECT(material.emissiveFactor[0] == 1.0f);
-    EXPECT(!RageRenderMaterialParse(invalid, sizeof(invalid) - 1,
+    EXPECT(!RenderMaterialParse(invalid, sizeof(invalid) - 1,
                                     8, 0, &material));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

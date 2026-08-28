@@ -21,7 +21,7 @@ void LoadTrackDataAssets(void) {
         assetIndex = (g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE;
         if (LoadAsset(assetIndex, dst) != 0) {
 #ifdef __psyz
-            RageTrackAssetIdentitySet(assetIndex);
+            TrackAssetIdentitySet(assetIndex);
 #endif
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];

@@ -25,12 +25,12 @@ static int s_cachedHunk = -1;
 static RageChdTrack s_tracks[RAGE_CHD_MAX_TRACKS];
 static int s_trackCount;
 
-static int RageChdReadCallback(unsigned int sector, void *buffer, void *user) {
+static int ChdReadCallback(unsigned int sector, void *buffer, void *user) {
     (void)user;
-    return RageChdReadRawSector(sector, buffer) ? RAGE_CHD_RAW_SECTOR : -1;
+    return ChdReadRawSector(sector, buffer) ? RAGE_CHD_RAW_SECTOR : -1;
 }
 
-void RageChdClose(void) {
+void ChdClose(void) {
     free(s_hunk);
     s_hunk = NULL;
     if (s_chd != NULL) chd_close(s_chd);
@@ -42,7 +42,7 @@ void RageChdClose(void) {
     memset(s_tracks, 0, sizeof(s_tracks));
 }
 
-static int RageChdLoadToc(PsyzCdTrackInfo *psyzTracks, int *leadOut) {
+static int ChdLoadToc(PsyzCdTrackInfo *psyzTracks, int *leadOut) {
     int plba = -150;
     uint32_t frameOffset = 0;
     int index;
@@ -114,13 +114,13 @@ static int RageChdLoadToc(PsyzCdTrackInfo *psyzTracks, int *leadOut) {
     return 1;
 }
 
-int RageChdOpen(const char *path) {
+int ChdOpen(const char *path) {
     const chd_header *header;
     PsyzCdTrackInfo tracks[RAGE_CHD_MAX_TRACKS];
     int leadOut;
     chd_error error;
 
-    RageChdClose();
+    ChdClose();
     error = chd_open(path, CHD_OPEN_READ, NULL, &s_chd);
     if (error != CHDERR_NONE) {
         fprintf(stderr, "rage-port: cannot open CHD %s: %s\n", path,
@@ -132,24 +132,24 @@ int RageChdOpen(const char *path) {
         header->hunkbytes < header->unitbytes ||
         header->hunkbytes % header->unitbytes != 0) {
         fprintf(stderr, "rage-port: unsupported CHD sector layout\n");
-        RageChdClose();
+        ChdClose();
         return 0;
     }
     s_hunkBytes = header->hunkbytes;
     s_unitBytes = header->unitbytes;
     s_hunk = malloc(s_hunkBytes);
-    if (s_hunk == NULL || !RageChdLoadToc(tracks, &leadOut) ||
+    if (s_hunk == NULL || !ChdLoadToc(tracks, &leadOut) ||
         Psyz_CdSetSectorBackend(tracks, s_trackCount, leadOut,
-                                RageChdReadCallback, NULL) != 0) {
+                                ChdReadCallback, NULL) != 0) {
         fprintf(stderr, "rage-port: invalid or unsupported CD CHD metadata\n");
-        RageChdClose();
+        ChdClose();
         return 0;
     }
     fprintf(stderr, "rage-port: CHD disc opened (%d tracks)\n", s_trackCount);
     return 1;
 }
 
-int RageChdReadRawSector(unsigned int sector, unsigned char *raw) {
+int ChdReadRawSector(unsigned int sector, unsigned char *raw) {
     const RageChdTrack *track = NULL;
     uint32_t storedFrame;
     uint32_t framesPerHunk;

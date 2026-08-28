@@ -236,7 +236,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     if (g_SectorIndex == -2 && lapEvent != 0) {
         g_SectorIndex = 0;
         g_SplitSign = 0;
-        g_SplitTargetTime = g_BestSectorTimes[g_RaceSeries][RageSeriesCourseIndex()][0];
+        g_SplitTargetTime = g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
         g_SplitTimer = 0x3C;
         g_SplitSector = (u16)g_SectorIndex;
     } else {
@@ -296,7 +296,7 @@ replay_split_current_done:
     DrawTimeValue(
         0xFA,
         0x7C,
-        g_BestTotalTimes[g_RaceSeries][RageSeriesCourseIndex()][grandPrixMode],
+        g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][grandPrixMode],
         0x78CC,
         timeout);
 }

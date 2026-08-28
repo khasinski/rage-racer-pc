@@ -24,16 +24,16 @@
 #endif
 
 void MainLoop(void);
-int RageMapPs1Scratchpad(void);
-int RageInitNativeGameData(void);
-int RageHostInitDisc(void);
-int RageHostDumpArchive(const char *path);
+int MapPs1Scratchpad(void);
+int InitNativeGameData(void);
+int HostInitDisc(void);
+int HostDumpArchive(const char *path);
 
-static void RageLoadInputConfig(RageInputConfig *config, const char *argv0) {
+static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
     char path[PATH_MAX];
-    if (RagePlatformFindConfigFile(argv0, "rage-input.cfg", path,
+    if (PlatformFindConfigFile(argv0, "rage-input.cfg", path,
                                    sizeof(path)))
-        RageInputConfigLoad(config, path);
+        InputConfigLoad(config, path);
 }
 
 int main(int argc, char **argv) {
@@ -42,21 +42,21 @@ int main(int argc, char **argv) {
     int inputIndex;
     char logPath[PATH_MAX];
 
-    if (!RageRuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
-    if (!RageDiagnosticLogOpen(logPath, sizeof(logPath))) {
+    if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
         fprintf(stderr, "rage-port: could not open diagnostic log\n");
     }
 
     Psyz_SetTitle("Rage Racer");
-    if (!RageHostInitStorage()) {
+    if (!HostInitStorage()) {
         fprintf(stderr, "failed to initialize user save storage\n");
         return EXIT_FAILURE;
     }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
-    RagePortConfigDefaults(&portConfig);
-    RagePortConfigApplyRuntime(&portConfig);
-    RagePortConfigSetActive(&portConfig);
-    RageTimingInit();
+    PortConfigDefaults(&portConfig);
+    PortConfigApplyRuntime(&portConfig);
+    PortConfigSetActive(&portConfig);
+    TimingInit();
     fprintf(stderr,
             "rage-port: renderer=%s scale=%.2f aspect=%d fps=%d draw_distance=%.2f post=%d\n",
             portConfig.renderer == RAGE_RENDERER_MODERN ? "modern" : "classic",
@@ -66,17 +66,17 @@ int main(int argc, char **argv) {
     /* Initialize SDL input before configurable names are resolved to
      * scancodes. GameInitPad later attaches the game's BIOS buffers. */
     PadInit(0);
-    RageInputConfigDefaults(&inputConfig);
-    RageLoadInputConfig(&inputConfig, argc > 0 ? argv[0] : NULL);
-    RageInputConfigApplyRuntime(&inputConfig);
+    InputConfigDefaults(&inputConfig);
+    LoadInputConfig(&inputConfig, argc > 0 ? argv[0] : NULL);
+    InputConfigApplyRuntime(&inputConfig);
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     {
-        const char *dump = RageRuntimeConfigGet("tools.dump_archive");
+        const char *dump = RuntimeConfigGet("tools.dump_archive");
         if (dump != NULL && dump[0] != '\0') {
-            if (!RageHostInitDisc()) return EXIT_FAILURE;
-            if (!RageHostDumpArchive(dump)) {
+            if (!HostInitDisc()) return EXIT_FAILURE;
+            if (!HostDumpArchive(dump)) {
                 fprintf(stderr, "rage-port: cannot write %s\n", dump);
                 return EXIT_FAILURE;
             }
@@ -84,18 +84,18 @@ int main(int argc, char **argv) {
             return EXIT_SUCCESS;
         }
     }
-    if (!RageHostInitDisc()) {
+    if (!HostInitDisc()) {
         fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
     }
-    if (!RageNativeAssetImporterInit() || !RageModernInit(&portConfig))
+    if (!NativeAssetImporterInit() || !ModernInit(&portConfig))
         return EXIT_FAILURE;
-    if (!RageInitNativeGameData()) {
+    if (!InitNativeGameData()) {
         fprintf(stderr, "failed to initialize retail game data\n");
         return EXIT_FAILURE;
     }
-    RageContentOptionsApply();
-    if (!RageMapPs1Scratchpad()) {
+    ContentOptionsApply();
+    if (!MapPs1Scratchpad()) {
         fprintf(stderr, "failed to initialize renderer scratchpad\n");
         return EXIT_FAILURE;
     }

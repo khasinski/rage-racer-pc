@@ -41,16 +41,16 @@ int main(void) {
     RageRuntimeMeshCache cache;
     const RageRuntimeCachedMesh *first;
 
-    RageRuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
                              free_file, 0, entries, 1);
-    first = RageRuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK);
+    first = RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK);
     EXPECT(first != 0 && first->mesh.meshCount == 1);
-    EXPECT(RageRuntimeMeshCacheFind(&cache, 10,
+    EXPECT(RuntimeMeshCacheFind(&cache, 10,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == first);
     EXPECT(reads == 1);
-    EXPECT(RageRuntimeMeshCacheFind(&cache, 11,
+    EXPECT(RuntimeMeshCacheFind(&cache, 11,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == 0);
-    RageRuntimeMeshCacheRelease(&cache);
+    RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1 && cache.count == 0);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

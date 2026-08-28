@@ -17,11 +17,11 @@ static const RagePaintEndpoints s_colors[RAGE_CAR_PAINT_COLOR_COUNT] = {
     {{12, 16, 18}, {3, 6, 8}}, {{11, 13, 9}, {4, 5, 3}},
 };
 
-static uint8_t RagePaintExpand(uint8_t value) {
+static uint8_t PaintExpand(uint8_t value) {
     return (uint8_t)((value << 3) | (value >> 2));
 }
 
-static uint8_t RagePaintShade(uint8_t primary, uint8_t secondary,
+static uint8_t PaintShade(uint8_t primary, uint8_t secondary,
                               uint8_t shade) {
     uint8_t primaryHalf = primary / 2u;
     uint8_t secondaryHalf = secondary / 2u;
@@ -37,7 +37,7 @@ static uint8_t RagePaintShade(uint8_t primary, uint8_t secondary,
     }
 }
 
-int RageCarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
+int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor) {
     size_t pixel;
     if (rgba == NULL || mask == NULL ||
@@ -57,7 +57,7 @@ int RageCarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
             shade = (uint8_t)(code - RAGE_CAR_PAINT_FIRST_PRIMARY);
         }
         for (channel = 0; channel < 3; channel++)
-            rgba[pixel * 4u + channel] = RagePaintExpand(RagePaintShade(
+            rgba[pixel * 4u + channel] = PaintExpand(PaintShade(
                 paint->primary[channel], paint->secondary[channel], shade));
     }
     return 1;

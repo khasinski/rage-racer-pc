@@ -24,14 +24,14 @@ static char *Trim(char *text) {
     return text;
 }
 
-void RageInputConfigDefaults(RageInputConfig *config) {
+void InputConfigDefaults(RageInputConfig *config) {
     int i;
     for (i = 0; i < RAGE_INPUT_BUTTON_COUNT; i++) {
         snprintf(config->keys[i], sizeof(config->keys[i]), "%s", default_keys[i]);
     }
 }
 
-int RageInputButtonIndex(const char *name) {
+int InputButtonIndex(const char *name) {
     int i;
     for (i = 0; i < RAGE_INPUT_BUTTON_COUNT; i++) {
         if (strcmp(name, button_names[i]) == 0) return i;
@@ -39,7 +39,7 @@ int RageInputButtonIndex(const char *name) {
     return -1;
 }
 
-int RageInputConfigLoad(RageInputConfig *config, const char *path) {
+int InputConfigLoad(RageInputConfig *config, const char *path) {
     FILE *file = fopen(path, "r");
     char line[256];
     int loaded = 0;
@@ -55,7 +55,7 @@ int RageInputConfigLoad(RageInputConfig *config, const char *path) {
         *equals = '\0';
         key = Trim(equals + 1);
         name = Trim(name);
-        index = RageInputButtonIndex(name);
+        index = InputButtonIndex(name);
         if (index < 0 || *key == '\0' || strlen(key) > RAGE_INPUT_KEY_NAME_MAX) continue;
         snprintf(config->keys[index], sizeof(config->keys[index]), "%s", key);
         loaded++;
@@ -67,7 +67,7 @@ int RageInputConfigLoad(RageInputConfig *config, const char *path) {
 /* Key bindings live in the [input] section of the runtime configuration, one
  * entry per PlayStation button under its lower-case name. Applied over
  * whatever came before, so the runtime configuration is the last word. */
-int RageInputConfigApplyRuntime(RageInputConfig *config) {
+int InputConfigApplyRuntime(RageInputConfig *config) {
     char key[32];
     int index, applied = 0;
     for (index = 0; index < RAGE_INPUT_BUTTON_COUNT; index++) {
@@ -76,7 +76,7 @@ int RageInputConfigApplyRuntime(RageInputConfig *config) {
         snprintf(key, sizeof(key), "input.%s", button_names[index]);
         for (at = 6; key[at] != '\0'; at++)
             key[at] = (char)tolower((unsigned char)key[at]);
-        value = RageRuntimeConfigGet(key);
+        value = RuntimeConfigGet(key);
         if (value == NULL || *value == '\0' ||
             strlen(value) > RAGE_INPUT_KEY_NAME_MAX)
             continue;

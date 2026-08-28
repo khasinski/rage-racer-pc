@@ -2,12 +2,12 @@
 
 #include <limits.h>
 
-static uint32_t RageMipDimension(uint32_t value, uint32_t level) {
+static uint32_t MipDimension(uint32_t value, uint32_t level) {
     while (level-- != 0 && value > 1) value >>= 1;
     return value != 0 ? value : 1;
 }
 
-uint32_t RageTextureMipLevelCount(uint32_t width, uint32_t height,
+uint32_t TextureMipLevelCount(uint32_t width, uint32_t height,
                                   uint32_t maximumLevels) {
     uint32_t levels = 0;
     if (width == 0 || height == 0 || maximumLevels == 0) return 0;
@@ -20,7 +20,7 @@ uint32_t RageTextureMipLevelCount(uint32_t width, uint32_t height,
     return levels;
 }
 
-size_t RageTextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
+size_t TextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
                                       uint32_t level) {
     size_t offset = 0;
     uint32_t index;
@@ -35,21 +35,21 @@ size_t RageTextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
     return offset;
 }
 
-size_t RageTextureMipChainSizeRGBA8(uint32_t width, uint32_t height,
+size_t TextureMipChainSizeRGBA8(uint32_t width, uint32_t height,
                                     uint32_t levels) {
     size_t offset, pixels;
     uint32_t lastWidth, lastHeight;
     if (levels == 0) return 0;
-    offset = RageTextureMipLevelOffsetRGBA8(width, height, levels - 1);
+    offset = TextureMipLevelOffsetRGBA8(width, height, levels - 1);
     if (offset == SIZE_MAX) return 0;
-    lastWidth = RageMipDimension(width, levels - 1);
-    lastHeight = RageMipDimension(height, levels - 1);
+    lastWidth = MipDimension(width, levels - 1);
+    lastHeight = MipDimension(height, levels - 1);
     pixels = (size_t)lastWidth * (size_t)lastHeight;
     if (pixels > (SIZE_MAX - offset) / 4u) return 0;
     return offset + pixels * 4u;
 }
 
-int RageTextureBuildMipChainRGBA8(const uint8_t *source,
+int TextureBuildMipChainRGBA8(const uint8_t *source,
                                   uint32_t width, uint32_t height,
                                   uint32_t levels,
                                   uint8_t *destination,
@@ -57,9 +57,9 @@ int RageTextureBuildMipChainRGBA8(const uint8_t *source,
     size_t needed;
     uint32_t x, y, channel, level;
     if (source == NULL || destination == NULL || width == 0 || height == 0 ||
-        levels == 0 || levels > RageTextureMipLevelCount(width, height, levels))
+        levels == 0 || levels > TextureMipLevelCount(width, height, levels))
         return 0;
-    needed = RageTextureMipChainSizeRGBA8(width, height, levels);
+    needed = TextureMipChainSizeRGBA8(width, height, levels);
     if (needed == 0 || destinationSize < needed) return 0;
 
     for (y = 0; y < height; y++) {
@@ -77,13 +77,13 @@ int RageTextureBuildMipChainRGBA8(const uint8_t *source,
     }
 
     for (level = 1; level < levels; level++) {
-        uint32_t sourceWidth = RageMipDimension(width, level - 1);
-        uint32_t sourceHeight = RageMipDimension(height, level - 1);
-        uint32_t targetWidth = RageMipDimension(width, level);
-        uint32_t targetHeight = RageMipDimension(height, level);
-        size_t sourceOffset = RageTextureMipLevelOffsetRGBA8(
+        uint32_t sourceWidth = MipDimension(width, level - 1);
+        uint32_t sourceHeight = MipDimension(height, level - 1);
+        uint32_t targetWidth = MipDimension(width, level);
+        uint32_t targetHeight = MipDimension(height, level);
+        size_t sourceOffset = TextureMipLevelOffsetRGBA8(
             width, height, level - 1);
-        size_t targetOffset = RageTextureMipLevelOffsetRGBA8(
+        size_t targetOffset = TextureMipLevelOffsetRGBA8(
             width, height, level);
         for (y = 0; y < targetHeight; y++) {
             for (x = 0; x < targetWidth; x++) {

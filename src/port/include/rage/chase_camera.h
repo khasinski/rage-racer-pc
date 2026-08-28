@@ -3,6 +3,6 @@
 
 /* Return the host-only yaw offset, in the game's 12-bit angle units, used to
  * point the chase camera into a turn. */
-int RageChaseCameraYawOffset(int steeringAngle);
+int ChaseCameraYawOffset(int steeringAngle);
 
 #endif

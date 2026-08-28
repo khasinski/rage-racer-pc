@@ -6,7 +6,7 @@
  * changes, so this is asked every frame. The one microsecond of slack keeps
  * the platform's own rounding from triggering a restore, which would reset its
  * drift compensation continuously. */
-int RageTimingNeedsRestore(double currentFrameTimeUs, int baseHz) {
+int TimingNeedsRestore(double currentFrameTimeUs, int baseHz) {
     double wanted = 1000000.0 / (double)baseHz;
     if (currentFrameTimeUs <= 0.0) return 0; /* nothing measured yet */
     return currentFrameTimeUs > wanted + 1.0 || currentFrameTimeUs < wanted - 1.0;

@@ -37,7 +37,7 @@ void CommitClassProgress(void) {
     s32 value;
     GameRaceProgress *state;
 
-    slots = &g_CourseProgress->bestPlace[RageSeriesCourseIndex()];
+    slots = &g_CourseProgress->bestPlace[SeriesCourseIndex()];
     g_ClassClearFanfareTimer = 0;
 
     if (*slots == 0 || g_RacePosition < *slots) {

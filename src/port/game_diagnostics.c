@@ -33,7 +33,7 @@ static const RageDiagnosticKey s_keys[] = {
     {"random.trace", "RAGE_PORT_RANDOM_TRACE"},
 };
 
-static const RageDiagnosticKey *RageFindDiagnostic(const char *key) {
+static const RageDiagnosticKey *FindDiagnostic(const char *key) {
     size_t index;
     for (index = 0; index < sizeof(s_keys) / sizeof(s_keys[0]); index++) {
         if (strcmp(s_keys[index].key, key) == 0) return &s_keys[index];
@@ -41,22 +41,22 @@ static const RageDiagnosticKey *RageFindDiagnostic(const char *key) {
     return NULL;
 }
 
-const char *RageDiagnosticsValue(const char *key) {
-    const RageDiagnosticKey *entry = RageFindDiagnostic(key);
+const char *DiagnosticsValue(const char *key) {
+    const RageDiagnosticKey *entry = FindDiagnostic(key);
     char fullKey[128];
     if (entry == NULL ||
         snprintf(fullKey, sizeof(fullKey), "diagnostics.%s", key) >=
             (int)sizeof(fullKey))
         return NULL;
-    return RageRuntimeConfigGetLegacy(fullKey, entry->legacyEnvironment);
+    return RuntimeConfigGetLegacy(fullKey, entry->legacyEnvironment);
 }
 
-int RageDiagnosticsEnabled(const char *key) {
-    const RageDiagnosticKey *entry = RageFindDiagnostic(key);
+int DiagnosticsEnabled(const char *key) {
+    const RageDiagnosticKey *entry = FindDiagnostic(key);
     char fullKey[128];
     if (entry == NULL ||
         snprintf(fullKey, sizeof(fullKey), "diagnostics.%s", key) >=
             (int)sizeof(fullKey))
         return 0;
-    return RageRuntimeConfigEnabled(fullKey, entry->legacyEnvironment);
+    return RuntimeConfigEnabled(fullKey, entry->legacyEnvironment);
 }

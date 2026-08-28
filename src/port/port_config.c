@@ -15,7 +15,7 @@ static char *Trim(char *text) {
     return text;
 }
 
-void RagePortConfigDefaults(RagePortConfig *config) {
+void PortConfigDefaults(RagePortConfig *config) {
     config->renderer = RAGE_RENDERER_CLASSIC;
     config->modernInternalScale = 2.0f;
     config->modernAspect = RAGE_MODERN_ASPECT_AUTO;
@@ -129,7 +129,7 @@ static int ApplySetting(RagePortConfig *config, const char *name,
     return 0;
 }
 
-int RagePortConfigApplyRuntime(RagePortConfig *config) {
+int PortConfigApplyRuntime(RagePortConfig *config) {
     static const struct { const char *runtimeKey, *legacyKey; } keys[] = {
         {"video.renderer", "renderer"},
         {"video.internal_scale", "modern.internal_scale"},
@@ -143,7 +143,7 @@ int RagePortConfigApplyRuntime(RagePortConfig *config) {
     };
     int index, applied = 0;
     for (index = 0; index < (int)(sizeof(keys) / sizeof(keys[0])); index++) {
-        const char *value = RageRuntimeConfigGet(keys[index].runtimeKey);
+        const char *value = RuntimeConfigGet(keys[index].runtimeKey);
         if (value) applied += ApplySetting(config, keys[index].legacyKey, value);
     }
     return applied;
@@ -155,11 +155,11 @@ static RagePortConfig active_config = {
     0
 };
 
-void RagePortConfigSetActive(const RagePortConfig *config) {
+void PortConfigSetActive(const RagePortConfig *config) {
     active_config = *config;
 }
 
-const RagePortConfig *RagePortActiveConfig(void) {
+const RagePortConfig *PortActiveConfig(void) {
     return &active_config;
 }
 
@@ -167,11 +167,11 @@ const RagePortConfig *RagePortActiveConfig(void) {
  * 0x6000 to BuildVisibleCells where the road ahead gets 0x14000, which is why
  * traffic drops out of the mirror while it is still plainly behind the car.
  * Scale that reach without touching the retail default. */
-int RagePortMirrorFarDepth(int retailFar) {
+int PortMirrorFarDepth(int retailFar) {
     static float multiplier = -1.0f;
     long scaled;
     if (multiplier < 0.0f) {
-        const char *text = RageRuntimeConfigGetLegacy("modern.mirror_distance",
+        const char *text = RuntimeConfigGetLegacy("modern.mirror_distance",
                                                       "RAGE_PORT_MIRROR_DISTANCE");
         multiplier = 1.0f;
         if (text != NULL && text[0] != '\0') {

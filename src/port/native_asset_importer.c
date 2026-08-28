@@ -86,18 +86,18 @@ static RageImportedMeshEntry s_entries[RAGE_IMPORT_ENTRY_LIMIT];
 static uint32_t s_entryCount;
 static int s_ready;
 
-static uint16_t RageImportRead16(const void *pointer) {
+static uint16_t ImportRead16(const void *pointer) {
     const uint8_t *p = pointer;
     return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
 }
 
-static uint32_t RageImportRead32(const void *pointer) {
+static uint32_t ImportRead32(const void *pointer) {
     const uint8_t *p = pointer;
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
-static void RageImportWrite32(void *pointer, uint32_t value) {
+static void ImportWrite32(void *pointer, uint32_t value) {
     uint8_t *p = pointer;
     p[0] = (uint8_t)value;
     p[1] = (uint8_t)(value >> 8);
@@ -105,19 +105,19 @@ static void RageImportWrite32(void *pointer, uint32_t value) {
     p[3] = (uint8_t)(value >> 24);
 }
 
-static int RageImportSizeAdd(size_t left, size_t right, size_t *result) {
+static int ImportSizeAdd(size_t left, size_t right, size_t *result) {
     if (right > SIZE_MAX - left) return 0;
     *result = left + right;
     return 1;
 }
 
-static int RageImportSizeMultiply(size_t left, size_t right, size_t *result) {
+static int ImportSizeMultiply(size_t left, size_t right, size_t *result) {
     if (right != 0 && left > SIZE_MAX / right) return 0;
     *result = left * right;
     return 1;
 }
 
-static int RageImportTextureEqual(const RageImportedTextureKey *left,
+static int ImportTextureEqual(const RageImportedTextureKey *left,
                                   const RageImportedTextureKey *right) {
     return left->tpage == right->tpage && left->clut == right->clut &&
            left->hasWindow == right->hasWindow &&
@@ -128,7 +128,7 @@ static int RageImportTextureEqual(const RageImportedTextureKey *left,
              left->windowOffsetV == right->windowOffsetV));
 }
 
-static void RageImportTextureWindow(uint32_t word,
+static void ImportTextureWindow(uint32_t word,
                                     RageImportedTextureKey *texture) {
     uint32_t value, maskU, maskV, offsetU, offsetV;
     if ((word >> 24) != 0xE2) return;
@@ -145,14 +145,14 @@ static void RageImportTextureWindow(uint32_t word,
     texture->windowOffsetV = (uint16_t)((offsetV & maskV) * 8u);
 }
 
-static int RageImportVisitModelStream(
+static int ImportVisitModelStream(
     uint32_t mesh, const uint8_t *stream, const SVec *vertices,
     const SVec *normals, RageImportedFaceVisitor visitor, void *context) {
     static const uint8_t strides[] = {0x10, 0x18, 0x18, 0x20};
     uint32_t batches = 0;
     while (batches++ < RAGE_IMPORT_BATCH_GUARD) {
-        uint16_t prim = RageImportRead16(stream);
-        uint16_t count = RageImportRead16(stream + 2);
+        uint16_t prim = ImportRead16(stream);
+        uint16_t count = ImportRead16(stream + 2);
         uint16_t face;
         stream += 4;
         if (count == 0) return 1;
@@ -167,7 +167,7 @@ static int RageImportVisitModelStream(
             value.depthBias = (int8_t)stream[strides[prim] - 3];
             value.color[0] = value.color[1] = value.color[2] = 255;
             for (corner = 0; corner < 4; corner++)
-                value.vertex[corner] = RageImportRead16(stream + corner * 2);
+                value.vertex[corner] = ImportRead16(stream + corner * 2);
             if (prim == 0) {
                 memcpy(value.color, stream + 8, 3);
             } else if (prim == 1) {
@@ -177,13 +177,13 @@ static int RageImportVisitModelStream(
                     value.uv[corner][0] = stream[offsets[corner]];
                     value.uv[corner][1] = stream[offsets[corner] + 1];
                 }
-                value.texture.clut = RageImportRead16(stream + 0x0A);
-                value.texture.tpage = RageImportRead16(stream + 0x0E);
+                value.texture.clut = ImportRead16(stream + 0x0A);
+                value.texture.tpage = ImportRead16(stream + 0x0E);
             } else if (prim == 2) {
                 value.hasNormals = 1;
                 for (corner = 0; corner < 4; corner++)
                     value.normal[corner] =
-                        RageImportRead16(stream + 8 + corner * 2);
+                        ImportRead16(stream + 8 + corner * 2);
                 memcpy(value.color, stream + 0x10, 3);
             } else {
                 static const uint8_t offsets[] = {0x10, 0x14, 0x18, 0x1A};
@@ -191,12 +191,12 @@ static int RageImportVisitModelStream(
                 value.hasNormals = 1;
                 for (corner = 0; corner < 4; corner++) {
                     value.normal[corner] =
-                        RageImportRead16(stream + 8 + corner * 2);
+                        ImportRead16(stream + 8 + corner * 2);
                     value.uv[corner][0] = stream[offsets[corner]];
                     value.uv[corner][1] = stream[offsets[corner] + 1];
                 }
-                value.texture.clut = RageImportRead16(stream + 0x12);
-                value.texture.tpage = RageImportRead16(stream + 0x16);
+                value.texture.clut = ImportRead16(stream + 0x12);
+                value.texture.tpage = ImportRead16(stream + 0x16);
             }
             if (!visitor(mesh, &value, context)) return 0;
         }
@@ -204,7 +204,7 @@ static int RageImportVisitModelStream(
     return 0;
 }
 
-static int RageImportVisitModelBank(const NativeModelBank *bank,
+static int ImportVisitModelBank(const NativeModelBank *bank,
                                     RageImportedFaceVisitor visitor,
                                     void *context, uint32_t *meshCount) {
     uint32_t mesh;
@@ -212,22 +212,22 @@ static int RageImportVisitModelBank(const NativeModelBank *bank,
     *meshCount = (uint32_t)bank->modelCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         if (bank->models[mesh] == NULL ||
-            !RageImportVisitModelStream(mesh, bank->models[mesh], bank->table,
+            !ImportVisitModelStream(mesh, bank->models[mesh], bank->table,
                                         bank->normals, visitor, context))
             return 0;
     }
     return 1;
 }
 
-static int RageImportVisitCourseStream(
+static int ImportVisitCourseStream(
     uint32_t mesh, const uint8_t *stream, const SVec *vertices,
     RageImportedFaceVisitor visitor, void *context) {
     static const uint8_t strides[] = {0x10, 0x1C, 0x20, 0x20};
     static const uint8_t biasOffsets[] = {0x0D, 0x19, 0x19, 0x19};
     uint32_t batches = 0;
     while (batches++ < RAGE_IMPORT_BATCH_GUARD) {
-        uint16_t prim = RageImportRead16(stream);
-        uint16_t count = RageImportRead16(stream + 2);
+        uint16_t prim = ImportRead16(stream);
+        uint16_t count = ImportRead16(stream + 2);
         uint16_t face;
         stream += 4;
         if (count == 0) return 1;
@@ -242,17 +242,17 @@ static int RageImportVisitCourseStream(
             value.depthBias = (int8_t)stream[biasOffsets[prim]];
             memcpy(value.color, stream + 8, 3);
             for (corner = 0; corner < 4; corner++)
-                value.vertex[corner] = RageImportRead16(stream + corner * 2);
+                value.vertex[corner] = ImportRead16(stream + corner * 2);
             if (prim != 0) {
                 value.textured = 1;
                 for (corner = 0; corner < 4; corner++) {
                     value.uv[corner][0] = stream[offsets[corner]];
                     value.uv[corner][1] = stream[offsets[corner] + 1];
                 }
-                value.texture.clut = RageImportRead16(stream + 0x0E);
-                value.texture.tpage = RageImportRead16(stream + 0x12);
+                value.texture.clut = ImportRead16(stream + 0x0E);
+                value.texture.tpage = ImportRead16(stream + 0x12);
                 if (prim >= 2)
-                    RageImportTextureWindow(RageImportRead32(stream + 0x1C),
+                    ImportTextureWindow(ImportRead32(stream + 0x1C),
                                             &value.texture);
                 value.texture.emissive = prim == 3;
             }
@@ -262,7 +262,7 @@ static int RageImportVisitCourseStream(
     return 0;
 }
 
-static int RageImportVisitCourseBank(RageImportedFaceVisitor visitor,
+static int ImportVisitCourseBank(RageImportedFaceVisitor visitor,
                                      void *context, uint32_t *meshCount) {
     uint32_t mesh;
     if (g_CourseModelCount <= 0 || SCRATCH_COURSE_BANK == NULL) return 0;
@@ -270,20 +270,20 @@ static int RageImportVisitCourseBank(RageImportedFaceVisitor visitor,
     for (mesh = 0; mesh < *meshCount; mesh++) {
         const NativeCourseModel *model = &g_NativeCourseModels[mesh];
         if (model->geometry == NULL || model->model == NULL ||
-            !RageImportVisitCourseStream(mesh, model->model, model->geometry,
+            !ImportVisitCourseStream(mesh, model->model, model->geometry,
                                          visitor, context)) return 0;
     }
     return 1;
 }
 
-static int RageImportVisitTerrainStream(
+static int ImportVisitTerrainStream(
     uint32_t mesh, const uint8_t *stream, const SVec *vertices,
     RageImportedFaceVisitor visitor, void *context) {
     static const uint8_t strides[] = {0x20, 0x24, 0x20, 0x20, 0x24, 0x24};
     uint32_t batches = 0;
     while (batches++ < RAGE_IMPORT_BATCH_GUARD) {
-        uint16_t prim = RageImportRead16(stream);
-        uint16_t count = RageImportRead16(stream + 2);
+        uint16_t prim = ImportRead16(stream);
+        uint16_t count = ImportRead16(stream + 2);
         uint16_t face;
         stream += 4;
         if (count == 0) return 1;
@@ -300,17 +300,17 @@ static int RageImportVisitTerrainStream(
             value.flags = stream[0x14];
             memcpy(value.color, stream + 0x1C, 3);
             for (corner = 0; corner < 4; corner++) {
-                value.vertex[corner] = RageImportRead16(stream + corner * 2);
+                value.vertex[corner] = ImportRead16(stream + corner * 2);
                 value.uv[corner][0] = stream[offsets[corner]];
                 value.uv[corner][1] = stream[offsets[corner] + 1];
             }
-            value.texture.clut = RageImportRead16(stream + 0x0A);
+            value.texture.clut = ImportRead16(stream + 0x0A);
             if (prim >= 2)
                 value.texture.clut = (uint16_t)(value.texture.clut +
                                                  ((prim - 2) & 1));
-            value.texture.tpage = RageImportRead16(stream + 0x0E);
+            value.texture.tpage = ImportRead16(stream + 0x0E);
             if (strides[prim] == 0x24)
-                RageImportTextureWindow(RageImportRead32(stream + 0x20),
+                ImportTextureWindow(ImportRead32(stream + 0x20),
                                         &value.texture);
             if (!visitor(mesh, &value, context)) return 0;
         }
@@ -318,7 +318,7 @@ static int RageImportVisitTerrainStream(
     return 0;
 }
 
-static int RageImportVisitTerrainBank(RageImportedFaceVisitor visitor,
+static int ImportVisitTerrainBank(RageImportedFaceVisitor visitor,
                                       void *context, uint32_t *meshCount) {
     const SVec *vertices = SCRATCH_CELL_FACES;
     uint32_t mesh;
@@ -327,36 +327,36 @@ static int RageImportVisitTerrainBank(RageImportedFaceVisitor visitor,
     *meshCount = (uint32_t)g_TerrainCellCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         if (g_NativeTerrainCells[mesh] == NULL ||
-            !RageImportVisitTerrainStream(mesh, g_NativeTerrainCells[mesh],
+            !ImportVisitTerrainStream(mesh, g_NativeTerrainCells[mesh],
                                           vertices, visitor, context))
             return 0;
     }
     return 1;
 }
 
-static int RageImportVisit(const RageRenderMeshInstance *instance,
+static int ImportVisit(const RageRenderMeshInstance *instance,
                            RageImportedFaceVisitor visitor, void *context,
                            uint32_t *meshCount) {
     if (instance == NULL || visitor == NULL || meshCount == NULL) return 0;
     switch (instance->assetSet) {
     case RAGE_RENDER_ASSET_MODEL_BANK:
-        return RageImportVisitModelBank(&g_ModelBanks[0], visitor, context,
+        return ImportVisitModelBank(&g_ModelBanks[0], visitor, context,
                                         meshCount);
     case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1:
-        return RageImportVisitModelBank(&g_ModelBanks[1], visitor, context,
+        return ImportVisitModelBank(&g_ModelBanks[1], visitor, context,
                                         meshCount);
     case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2:
-        return RageImportVisitModelBank(&g_ModelBanks[2], visitor, context,
+        return ImportVisitModelBank(&g_ModelBanks[2], visitor, context,
                                         meshCount);
     case RAGE_RENDER_ASSET_COURSE:
-        return RageImportVisitCourseBank(visitor, context, meshCount);
+        return ImportVisitCourseBank(visitor, context, meshCount);
     case RAGE_RENDER_ASSET_TERRAIN:
-        return RageImportVisitTerrainBank(visitor, context, meshCount);
+        return ImportVisitTerrainBank(visitor, context, meshCount);
     }
     return 0;
 }
 
-static int RageImportScanFace(uint32_t mesh, const RageImportedFace *face,
+static int ImportScanFace(uint32_t mesh, const RageImportedFace *face,
                               void *context) {
     RageImportedScan *scan = context;
     uint32_t material;
@@ -365,7 +365,7 @@ static int RageImportScanFace(uint32_t mesh, const RageImportedFace *face,
     scan->faceCount++;
     if (!face->textured) return 1;
     for (material = 0; material < scan->materialCount; material++) {
-        if (RageImportTextureEqual(&scan->materials[material],
+        if (ImportTextureEqual(&scan->materials[material],
                                    &face->texture)) {
             if (face->texture.emissive)
                 scan->materials[material].emissive = 1;
@@ -377,24 +377,24 @@ static int RageImportScanFace(uint32_t mesh, const RageImportedFace *face,
     return 1;
 }
 
-static uint32_t RageImportMaterialIndex(const RageImportedMeshEntry *entry,
+static uint32_t ImportMaterialIndex(const RageImportedMeshEntry *entry,
                                         const RageImportedFace *face) {
     uint32_t material;
     if (!face->textured) return UINT32_MAX;
     for (material = 0; material < entry->materialCount; material++)
-        if (RageImportTextureEqual(&entry->materials[material],
+        if (ImportTextureEqual(&entry->materials[material],
                                    &face->texture)) return material;
     return UINT32_MAX;
 }
 
-static void RageImportWriteFloat(uint8_t *pointer, float value) {
+static void ImportWriteFloat(uint8_t *pointer, float value) {
     memcpy(pointer, &value, sizeof(value));
 }
 
-static int RageImportWriteFace(uint32_t mesh, const RageImportedFace *face,
+static int ImportWriteFace(uint32_t mesh, const RageImportedFace *face,
                                void *context) {
     RageImportedWrite *write = context;
-    uint32_t material = RageImportMaterialIndex(write->entry, face);
+    uint32_t material = ImportMaterialIndex(write->entry, face);
     uint32_t encodedMaterial = material;
     uint32_t corner;
     static const uint32_t order[] = {0, 2, 1, 1, 2, 3};
@@ -422,30 +422,30 @@ static int RageImportWriteFace(uint32_t mesh, const RageImportedFace *face,
         const SVec *normal = face->hasNormals
             ? &face->normals[face->normal[corner]] : NULL;
         uint8_t *vertex = write->vertexCursor;
-        RageImportWriteFloat(vertex + 0, (float)position->vx);
-        RageImportWriteFloat(vertex + 4, (float)-position->vy);
-        RageImportWriteFloat(vertex + 8, (float)-position->vz);
-        RageImportWriteFloat(vertex + 12,
+        ImportWriteFloat(vertex + 0, (float)position->vx);
+        ImportWriteFloat(vertex + 4, (float)-position->vy);
+        ImportWriteFloat(vertex + 8, (float)-position->vz);
+        ImportWriteFloat(vertex + 12,
                              normal != NULL ? (float)normal->vx : 0.0f);
-        RageImportWriteFloat(vertex + 16,
+        ImportWriteFloat(vertex + 16,
                              normal != NULL ? (float)-normal->vy : 1.0f);
-        RageImportWriteFloat(vertex + 20,
+        ImportWriteFloat(vertex + 20,
                              normal != NULL ? (float)-normal->vz : 0.0f);
         vertex[24] = face->color[0];
         vertex[25] = face->color[1];
         vertex[26] = face->color[2];
         vertex[27] = 255;
-        RageImportWriteFloat(vertex + 28,
+        ImportWriteFloat(vertex + 28,
             face->textured ? ((float)face->uv[corner][0] + 0.5f) / 256.0f
                            : 0.0f);
-        RageImportWriteFloat(vertex + 32,
+        ImportWriteFloat(vertex + 32,
             face->textured ? ((float)face->uv[corner][1] + 0.5f) / 256.0f
                            : 0.0f);
-        RageImportWrite32(vertex + 36, encodedMaterial);
+        ImportWrite32(vertex + 36, encodedMaterial);
         write->vertexCursor += RAGE_IMPORT_VERTEX_SIZE;
     }
     for (corner = 0; corner < 6; corner++)
-        RageImportWrite32(write->indexCursor + corner * 4,
+        ImportWrite32(write->indexCursor + corner * 4,
                           write->vertexCount + order[corner]);
     write->indexCursor += 6 * 4;
     write->vertexCount += 4;
@@ -453,7 +453,7 @@ static int RageImportWriteFace(uint32_t mesh, const RageImportedFace *face,
     return 1;
 }
 
-static RageImportedMeshEntry *RageImportFindEntry(
+static RageImportedMeshEntry *ImportFindEntry(
     uint32_t assetKey, RageRenderAssetSet assetSet) {
     uint32_t index;
     for (index = 0; index < s_entryCount; index++)
@@ -463,7 +463,7 @@ static RageImportedMeshEntry *RageImportFindEntry(
     return NULL;
 }
 
-static RageImportedMeshEntry *RageImportBuildMesh(
+static RageImportedMeshEntry *ImportBuildMesh(
     const RageRenderMeshInstance *instance) {
     RageImportedTextureKey *materials;
     RageImportedScan scan;
@@ -477,16 +477,16 @@ static RageImportedMeshEntry *RageImportBuildMesh(
     if (materials == NULL) return NULL;
     memset(&scan, 0, sizeof(scan));
     scan.materials = materials;
-    if (!RageImportVisit(instance, RageImportScanFace, &scan, &meshCount) ||
+    if (!ImportVisit(instance, ImportScanFace, &scan, &meshCount) ||
         scan.faceCount == 0 || scan.faceCount > UINT32_MAX / 6u ||
-        !RageImportSizeMultiply((size_t)meshCount + 1u, 4u, &offsetsSize) ||
-        !RageImportSizeMultiply((size_t)scan.faceCount * 4u,
+        !ImportSizeMultiply((size_t)meshCount + 1u, 4u, &offsetsSize) ||
+        !ImportSizeMultiply((size_t)scan.faceCount * 4u,
                                 RAGE_IMPORT_VERTEX_SIZE, &verticesSize) ||
-        !RageImportSizeMultiply((size_t)scan.faceCount * 6u, 4u,
+        !ImportSizeMultiply((size_t)scan.faceCount * 6u, 4u,
                                 &indicesSize) ||
-        !RageImportSizeAdd(RAGE_IMPORT_HEADER_SIZE, offsetsSize, &cursor) ||
-        !RageImportSizeAdd(cursor, verticesSize, &cursor) ||
-        !RageImportSizeAdd(cursor, indicesSize, &total)) {
+        !ImportSizeAdd(RAGE_IMPORT_HEADER_SIZE, offsetsSize, &cursor) ||
+        !ImportSizeAdd(cursor, verticesSize, &cursor) ||
+        !ImportSizeAdd(cursor, indicesSize, &total)) {
         free(materials);
         return NULL;
     }
@@ -496,10 +496,10 @@ static RageImportedMeshEntry *RageImportBuildMesh(
         return NULL;
     }
     memcpy(bytes, "RRMESH1\0", 8);
-    RageImportWrite32(bytes + 8, 1);
-    RageImportWrite32(bytes + 12, meshCount);
-    RageImportWrite32(bytes + 16, (uint32_t)scan.faceCount * 4u);
-    RageImportWrite32(bytes + 20, (uint32_t)scan.faceCount * 6u);
+    ImportWrite32(bytes + 8, 1);
+    ImportWrite32(bytes + 12, meshCount);
+    ImportWrite32(bytes + 16, (uint32_t)scan.faceCount * 4u);
+    ImportWrite32(bytes + 20, (uint32_t)scan.faceCount * 6u);
     entry = &s_entries[s_entryCount];
     memset(entry, 0, sizeof(*entry));
     entry->cached.assetKey = instance->assetKey;
@@ -512,7 +512,7 @@ static RageImportedMeshEntry *RageImportBuildMesh(
     write.entry = entry;
     write.vertexCursor = bytes + RAGE_IMPORT_HEADER_SIZE + offsetsSize;
     write.indexCursor = write.vertexCursor + verticesSize;
-    if (!RageImportVisit(instance, RageImportWriteFace, &write, &meshCount) ||
+    if (!ImportVisit(instance, ImportWriteFace, &write, &meshCount) ||
         write.vertexCount != (uint32_t)scan.faceCount * 4u ||
         write.indexCount != (uint32_t)scan.faceCount * 6u) {
         free(entry->bytes);
@@ -522,14 +522,14 @@ static RageImportedMeshEntry *RageImportBuildMesh(
     }
     /* Fill mesh offsets with a third bounded pass. */
     for (mesh = 0; mesh <= meshCount; mesh++)
-        RageImportWrite32(bytes + RAGE_IMPORT_HEADER_SIZE + mesh * 4, 0);
+        ImportWrite32(bytes + RAGE_IMPORT_HEADER_SIZE + mesh * 4, 0);
     /* A separate visitor below overwrites these values before the mesh is
      * exposed to the renderer. */
     return entry;
 }
 
 /* This first implementation section builds conventional vertices. Mesh range
- * offsets are finalized by RageImportFinalizeOffsets, kept separate so the
+ * offsets are finalized by ImportFinalizeOffsets, kept separate so the
  * face visitors stay identical for scanning and writing. */
 typedef struct RageImportedOffsetWrite {
     uint8_t *offsets;
@@ -537,38 +537,38 @@ typedef struct RageImportedOffsetWrite {
     uint32_t indices;
 } RageImportedOffsetWrite;
 
-static int RageImportOffsetFace(uint32_t mesh, const RageImportedFace *face,
+static int ImportOffsetFace(uint32_t mesh, const RageImportedFace *face,
                                 void *context) {
     RageImportedOffsetWrite *write = context;
     (void)face;
     while (write->currentMesh < mesh) {
         write->currentMesh++;
-        RageImportWrite32(write->offsets + write->currentMesh * 4,
+        ImportWrite32(write->offsets + write->currentMesh * 4,
                           write->indices);
     }
     write->indices += 6;
     return 1;
 }
 
-static int RageImportFinalizeOffsets(RageImportedMeshEntry *entry,
+static int ImportFinalizeOffsets(RageImportedMeshEntry *entry,
                                      const RageRenderMeshInstance *instance,
                                      size_t size) {
     RageImportedOffsetWrite write;
     uint32_t meshCount;
     memset(&write, 0, sizeof(write));
     write.offsets = (uint8_t *)entry->bytes + RAGE_IMPORT_HEADER_SIZE;
-    RageImportWrite32(write.offsets, 0);
-    if (!RageImportVisit(instance, RageImportOffsetFace, &write, &meshCount))
+    ImportWrite32(write.offsets, 0);
+    if (!ImportVisit(instance, ImportOffsetFace, &write, &meshCount))
         return 0;
     while (write.currentMesh < meshCount) {
         write.currentMesh++;
-        RageImportWrite32(write.offsets + write.currentMesh * 4,
+        ImportWrite32(write.offsets + write.currentMesh * 4,
                           write.indices);
     }
-    return RageRuntimeMeshOpen(&entry->cached.mesh, entry->bytes, size);
+    return RuntimeMeshOpen(&entry->cached.mesh, entry->bytes, size);
 }
 
-static int RageImportCaptureVram(uint16_t *vram) {
+static int ImportCaptureVram(uint16_t *vram) {
     RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
     if (vram == NULL) return 0;
     DrawSync(0);
@@ -577,7 +577,7 @@ static int RageImportCaptureVram(uint16_t *vram) {
     return 1;
 }
 
-static void RageImportColor(uint16_t word, uint8_t rgba[4]) {
+static void ImportColor(uint16_t word, uint8_t rgba[4]) {
     uint8_t r = (uint8_t)((word & 0x1Fu) << 3);
     uint8_t g = (uint8_t)(((word >> 5) & 0x1Fu) << 3);
     uint8_t b = (uint8_t)(((word >> 10) & 0x1Fu) << 3);
@@ -587,7 +587,7 @@ static void RageImportColor(uint16_t word, uint8_t rgba[4]) {
     rgba[3] = word == 0 ? 0 : 255;
 }
 
-static uint8_t RageImportPaletteIndex(const uint16_t *vram, uint16_t tpage,
+static uint8_t ImportPaletteIndex(const uint16_t *vram, uint16_t tpage,
                                       uint32_t u, uint32_t v) {
     uint32_t pageX = (tpage & 0xFu) * 64u;
     uint32_t pageY = ((tpage >> 4) & 1u) * 256u;
@@ -607,7 +607,7 @@ static uint8_t RageImportPaletteIndex(const uint16_t *vram, uint16_t tpage,
     return 0;
 }
 
-static uint16_t RageImportTextureWord(const uint16_t *vram, uint16_t tpage,
+static uint16_t ImportTextureWord(const uint16_t *vram, uint16_t tpage,
                                       uint16_t clut, uint32_t u,
                                       uint32_t v) {
     uint32_t pageX = (tpage & 0xFu) * 64u;
@@ -618,7 +618,7 @@ static uint16_t RageImportTextureWord(const uint16_t *vram, uint16_t tpage,
     uint32_t index;
     if (pageY + v >= RAGE_IMPORT_VRAM_HEIGHT) return 0;
     if (mode <= 1) {
-        index = RageImportPaletteIndex(vram, tpage, u, v);
+        index = ImportPaletteIndex(vram, tpage, u, v);
         if (clutX + index >= RAGE_IMPORT_VRAM_WIDTH ||
             clutY >= RAGE_IMPORT_VRAM_HEIGHT) return 0;
         return vram[clutY * RAGE_IMPORT_VRAM_WIDTH + clutX + index];
@@ -627,7 +627,7 @@ static uint16_t RageImportTextureWord(const uint16_t *vram, uint16_t tpage,
     return vram[(pageY + v) * RAGE_IMPORT_VRAM_WIDTH + pageX + u];
 }
 
-static uint8_t RageImportCarPaintCode(uint32_t x, uint32_t y) {
+static uint8_t ImportCarPaintCode(uint32_t x, uint32_t y) {
     static const uint16_t slots3A[] =
         {1, 0x41, 0xC1, 0x101, 0x181, 0x241, 0x281, 0x301, 0x341};
     static const uint16_t slots3B[] =
@@ -668,7 +668,7 @@ static uint8_t RageImportCarPaintCode(uint32_t x, uint32_t y) {
     return 0;
 }
 
-static int RageImportDecodeTexture(
+static int ImportDecodeTexture(
     const RageImportedTextureKey *texture, uint16_t clut,
     const uint16_t *vram, uint8_t **pixelsOut, uint8_t **paintOut) {
     uint8_t *pixels = SDL_malloc(256u * 256u * 4u);
@@ -686,16 +686,16 @@ static int RageImportDecodeTexture(
             uint32_t sourceU = texture->hasWindow
                 ? x % texture->windowWidthU + texture->windowOffsetU : x;
             uint8_t *rgba = pixels + (y * 256u + x) * 4u;
-            RageImportColor(RageImportTextureWord(
+            ImportColor(ImportTextureWord(
                                 vram, texture->tpage, clut, sourceU, sourceV),
                             rgba);
             if (paint != NULL && ((texture->tpage >> 7) & 3u) <= 1) {
                 uint32_t clutX = (clut & 0x3Fu) * 16u;
                 uint32_t clutY = (clut >> 6) & 0x1FFu;
-                uint8_t palette = RageImportPaletteIndex(
+                uint8_t palette = ImportPaletteIndex(
                     vram, texture->tpage, sourceU, sourceV);
                 paint[y * 256u + x] =
-                    RageImportCarPaintCode(clutX + palette, clutY);
+                    ImportCarPaintCode(clutX + palette, clutY);
             }
         }
     }
@@ -704,13 +704,13 @@ static int RageImportDecodeTexture(
     return 1;
 }
 
-int RageNativeAssetImporterInit(void) {
+int NativeAssetImporterInit(void) {
     s_ready = 1;
     fprintf(stderr, "rage-port: native asset source=live C importer\n");
     return 1;
 }
 
-void RageNativeAssetImporterShutdown(void) {
+void NativeAssetImporterShutdown(void) {
     uint32_t index;
     for (index = 0; index < s_entryCount; index++) {
         free(s_entries[index].bytes);
@@ -721,23 +721,23 @@ void RageNativeAssetImporterShutdown(void) {
     s_ready = 0;
 }
 
-int RageNativeAssetImporterReady(void) { return s_ready; }
+int NativeAssetImporterReady(void) { return s_ready; }
 
-const RageRuntimeCachedMesh *RageNativeAssetImporterFind(
+const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance) {
     RageImportedMeshEntry *entry;
     size_t offsets, vertices, indices, size;
     if (!s_ready || instance == NULL) return NULL;
-    entry = RageImportFindEntry(instance->assetKey, instance->assetSet);
+    entry = ImportFindEntry(instance->assetKey, instance->assetSet);
     if (entry != NULL) return &entry->cached;
-    entry = RageImportBuildMesh(instance);
+    entry = ImportBuildMesh(instance);
     if (entry == NULL) return NULL;
-    offsets = ((size_t)RageImportRead32((uint8_t *)entry->bytes + 12) + 1u) * 4u;
-    vertices = (size_t)RageImportRead32((uint8_t *)entry->bytes + 16) *
+    offsets = ((size_t)ImportRead32((uint8_t *)entry->bytes + 12) + 1u) * 4u;
+    vertices = (size_t)ImportRead32((uint8_t *)entry->bytes + 16) *
                RAGE_IMPORT_VERTEX_SIZE;
-    indices = (size_t)RageImportRead32((uint8_t *)entry->bytes + 20) * 4u;
+    indices = (size_t)ImportRead32((uint8_t *)entry->bytes + 20) * 4u;
     size = RAGE_IMPORT_HEADER_SIZE + offsets + vertices + indices;
-    if (!RageImportFinalizeOffsets(entry, instance, size)) {
+    if (!ImportFinalizeOffsets(entry, instance, size)) {
         free(entry->bytes);
         free(entry->materials);
         memset(entry, 0, sizeof(*entry));
@@ -752,9 +752,9 @@ const RageRuntimeCachedMesh *RageNativeAssetImporterFind(
     return &entry->cached;
 }
 
-uint32_t RageNativeAssetImporterMeshCount(void) { return s_entryCount; }
+uint32_t NativeAssetImporterMeshCount(void) { return s_entryCount; }
 
-int RageNativeAssetImporterLoadMaterial(
+int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
     RageImportedMeshEntry *entry;
@@ -766,10 +766,10 @@ int RageNativeAssetImporterLoadMaterial(
     if (!s_ready || instance == NULL || definition == NULL || image == NULL)
         return 0;
     memset(image, 0, sizeof(*image));
-    entry = RageImportFindEntry(instance->assetKey, instance->assetSet);
+    entry = ImportFindEntry(instance->assetKey, instance->assetSet);
     if (entry == NULL) {
-        if (RageNativeAssetImporterFind(instance) == NULL) return 0;
-        entry = RageImportFindEntry(instance->assetKey, instance->assetSet);
+        if (NativeAssetImporterFind(instance) == NULL) return 0;
+        entry = ImportFindEntry(instance->assetKey, instance->assetSet);
     }
     if (entry == NULL || material >= entry->materialCount) return 0;
     texture = &entry->materials[material];
@@ -782,8 +782,8 @@ int RageNativeAssetImporterLoadMaterial(
     clut = (uint16_t)(texture->clut + clutOffset);
     vram = malloc(RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT *
                   sizeof(*vram));
-    if (vram == NULL || !RageImportCaptureVram(vram) ||
-        !RageImportDecodeTexture(texture, clut, vram, &pixels,
+    if (vram == NULL || !ImportCaptureVram(vram) ||
+        !ImportDecodeTexture(texture, clut, vram, &pixels,
                                  instance->hasCarPaint ? &paint : NULL)) {
         free(vram);
         SDL_free(pixels);
@@ -791,7 +791,7 @@ int RageNativeAssetImporterLoadMaterial(
         return 0;
     }
     free(vram);
-    RageRenderMaterialDefault(definition);
+    RenderMaterialDefault(definition);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         definition->roughness = 0.96f;
     } else if (instance->assetSet == RAGE_RENDER_ASSET_COURSE) {
@@ -810,7 +810,7 @@ int RageNativeAssetImporterLoadMaterial(
         definition->metallic = 0.08f;
     }
     if (paint != NULL &&
-        !RageCarPaintApply(pixels, paint, 256u * 256u,
+        !CarPaintApply(pixels, paint, 256u * 256u,
                            instance->carPaintColor1,
                            instance->carPaintColor2)) {
         SDL_free(pixels);
@@ -825,7 +825,7 @@ int RageNativeAssetImporterLoadMaterial(
     return 1;
 }
 
-int RageNativeAssetImporterLoadSky(uint32_t assetKey,
+int NativeAssetImporterLoadSky(uint32_t assetKey,
                                    ModernAssetImage *image) {
     RageImportedTextureKey texture;
     uint16_t *vram;
@@ -841,8 +841,8 @@ int RageNativeAssetImporterLoadSky(uint32_t assetKey,
     texture.clut = 0x798E;
     vram = malloc(RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT *
                   sizeof(*vram));
-    if (vram == NULL || !RageImportCaptureVram(vram) ||
-        !RageImportDecodeTexture(&texture, texture.clut, vram, &page, NULL)) {
+    if (vram == NULL || !ImportCaptureVram(vram) ||
+        !ImportDecodeTexture(&texture, texture.clut, vram, &page, NULL)) {
         free(vram);
         SDL_free(page);
         return 0;

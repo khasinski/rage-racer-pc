@@ -29,12 +29,12 @@ static void test_mip_chain_keeps_atlas_tiles_separate(void) {
             source[pixel + 3] = 255;
         }
     }
-    EXPECT_EQ(4, RageTextureMipLevelCount(16, 8,
+    EXPECT_EQ(4, TextureMipLevelCount(16, 8,
                                           RAGE_TEXTURE_ATLAS_MIP_LEVELS));
-    EXPECT_EQ(sizeof(chain), RageTextureMipChainSizeRGBA8(16, 8, 4));
-    EXPECT_EQ(1, RageTextureBuildMipChainRGBA8(
+    EXPECT_EQ(sizeof(chain), TextureMipChainSizeRGBA8(16, 8, 4));
+    EXPECT_EQ(1, TextureBuildMipChainRGBA8(
                      source, 16, 8, 4, chain, sizeof(chain)));
-    last = RageTextureMipLevelOffsetRGBA8(16, 8, 3);
+    last = TextureMipLevelOffsetRGBA8(16, 8, 3);
     EXPECT_EQ(255, chain[last + 0]);
     EXPECT_EQ(0, chain[last + 2]);
     EXPECT_EQ(0, chain[last + 4]);
@@ -47,7 +47,7 @@ static void test_mip_chain_filters_in_premultiplied_alpha(void) {
         0, 0, 255, 0,   0, 0, 255, 0,
     };
     uint8_t chain[20];
-    EXPECT_EQ(1, RageTextureBuildMipChainRGBA8(
+    EXPECT_EQ(1, TextureBuildMipChainRGBA8(
                      source, 2, 2, 2, chain, sizeof(chain)));
     EXPECT_EQ(128, chain[16 + 0]);
     EXPECT_EQ(0, chain[16 + 1]);
@@ -58,7 +58,7 @@ static void test_mip_chain_filters_in_premultiplied_alpha(void) {
 static void test_mip_chain_premultiplies_png_base_level(void) {
     const uint8_t source[4] = {200, 100, 50, 128};
     uint8_t chain[4];
-    EXPECT_EQ(1, RageTextureBuildMipChainRGBA8(
+    EXPECT_EQ(1, TextureBuildMipChainRGBA8(
                      source, 1, 1, 1, chain, sizeof(chain)));
     EXPECT_EQ(100, chain[0]);
     EXPECT_EQ(50, chain[1]);

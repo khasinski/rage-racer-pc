@@ -63,7 +63,7 @@ void SetCameraRotMatrix(void) {
     Matrix mtx;
     Matrix *scratch = SCRATCH_VIEW_MATRIX_GTE;
 
-    RageGameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
+    GameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
                                  SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
                                  SCRATCH_VIEW_ANGLE_Z);
     BuildRotMatrixY(scratch, SCRATCH_VIEW_ANGLE_Y);

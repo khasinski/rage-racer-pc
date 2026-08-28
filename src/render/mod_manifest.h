@@ -33,10 +33,10 @@ typedef struct RageModManifest {
 
 /* Parse the deliberately small TOML surface used by mods: [mod] id and a
  * [textures] table of quoted semantic ids to quoted relative PNG paths. */
-int RageModManifestParse(const char *text, size_t size, RageModManifest *out);
-const char *RageModManifestFindTexture(const RageModManifest *manifest,
+int ModManifestParse(const char *text, size_t size, RageModManifest *out);
+const char *ModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId);
-const char *RageModManifestFindMaterialProperties(
+const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId);
 
 #endif

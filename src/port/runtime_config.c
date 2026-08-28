@@ -94,7 +94,7 @@ static int LoadIni(const char *path) {
     return applied;
 }
 
-int RageRuntimeConfigInit(int argc, char **argv) {
+int RuntimeConfigInit(int argc, char **argv) {
     int index, valid = 1;
     const char *configPath = NULL, *scenarioPath = NULL;
     char defaultPath[RAGE_RUNTIME_VALUE_MAX + 1];
@@ -115,7 +115,7 @@ int RageRuntimeConfigInit(int argc, char **argv) {
     if (configPath && *configPath) {
         if (LoadIni(configPath) < 0) valid = 0;
     }
-    else if (RagePlatformFindConfigFile(argc > 0 ? argv[0] : NULL,
+    else if (PlatformFindConfigFile(argc > 0 ? argv[0] : NULL,
                                         "rage-port.ini", defaultPath,
                                         sizeof(defaultPath)))
         LoadIni(defaultPath);
@@ -143,26 +143,26 @@ int RageRuntimeConfigInit(int argc, char **argv) {
     return valid;
 }
 
-const char *RageRuntimeConfigGet(const char *key) {
+const char *RuntimeConfigGet(const char *key) {
     int index;
     for (index = s_valueCount - 1; index >= 0; index--)
         if (!strcmp(s_values[index].key, key)) return s_values[index].value;
     return NULL;
 }
 
-const char *RageRuntimeConfigGetLegacy(const char *key, const char *legacyEnv) {
-    const char *value = RageRuntimeConfigGet(key);
+const char *RuntimeConfigGetLegacy(const char *key, const char *legacyEnv) {
+    const char *value = RuntimeConfigGet(key);
     return value ? value : (legacyEnv ? getenv(legacyEnv) : NULL);
 }
 
-const char *RageRuntimeConfigGetOverride(const char *key,
+const char *RuntimeConfigGetOverride(const char *key,
                                          const char *overrideEnv) {
     const char *value = overrideEnv ? getenv(overrideEnv) : NULL;
-    return value ? value : RageRuntimeConfigGet(key);
+    return value ? value : RuntimeConfigGet(key);
 }
 
-int RageRuntimeConfigEnabled(const char *key, const char *legacyEnv) {
-    const char *value = RageRuntimeConfigGetLegacy(key, legacyEnv);
+int RuntimeConfigEnabled(const char *key, const char *legacyEnv) {
+    const char *value = RuntimeConfigGetLegacy(key, legacyEnv);
     if (!value) return 0;
     char normalized[16];
     size_t index, length = strlen(value);

@@ -97,7 +97,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     u8 code7;
 
 #ifdef __psyz
-    cx = RageHudRightX(cx);
+    cx = HudRightX(cx);
 #endif
 
     SetPolyF4(prim);
@@ -178,7 +178,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
 
     prim->code = code7;
-    if (RageDiagnosticsEnabled("render.tachometer_trace")) {
+    if (DiagnosticsEnabled("render.tachometer_trace")) {
         printf("tacho rpm=%d angle=%d color=%02x%02x%02x "
                "quad=%d,%d/%d,%d/%d,%d/%d,%d "
                "v=%d,%d/%d,%d/%d,%d/%d,%d\n",
@@ -232,7 +232,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
 
 #ifdef __psyz
         frame->layout.raceHud.tachometerFace.x0 =
-            RageHudRightX(g_TachoNeedleSprite.x);
+            HudRightX(g_TachoNeedleSprite.x);
 #endif
 
         AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);

@@ -116,8 +116,8 @@ static void TestRoundTrip(void) {
     instances[1].assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2;
     instances[1].pass = RAGE_RENDER_PASS_MAIN;
 
-    CHECK(RageRenderWorldSnapshotWrite(path, &world));
-    CHECK(RageRenderWorldSnapshotRead(path, &loaded));
+    CHECK(RenderWorldSnapshotWrite(path, &world));
+    CHECK(RenderWorldSnapshotRead(path, &loaded));
     CHECK(loaded.world.frame == world.frame);
     CHECK(SameLight(&loaded.world.light, &world.light));
     CHECK(SameCamera(&loaded.world.camera, &world.camera));
@@ -143,7 +143,7 @@ static void TestRoundTrip(void) {
     CHECK(loaded.instances[1].entity == 21);
     CHECK(loaded.instances[1].assetSet ==
           RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2);
-    RageRenderWorldSnapshotRelease(&loaded);
+    RenderWorldSnapshotRelease(&loaded);
     remove(path);
 }
 
@@ -156,7 +156,7 @@ static void TestRejectsInvalidFile(void) {
         fwrite("not a frame", 1, 11, file);
         fclose(file);
     }
-    CHECK(!RageRenderWorldSnapshotRead(path, &loaded));
+    CHECK(!RenderWorldSnapshotRead(path, &loaded));
     remove(path);
 }
 

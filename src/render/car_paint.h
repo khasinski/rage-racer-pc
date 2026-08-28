@@ -26,7 +26,7 @@ enum {
 /* Recolour an imported RGBA material using a one-byte semantic body-paint
  * mask. The colour catalogue is game content expressed as RGB channels; no
  * texture page, CLUT or VRAM data reaches this layer. */
-int RageCarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
+int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor);
 
 #endif

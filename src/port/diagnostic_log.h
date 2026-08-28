@@ -3,6 +3,6 @@
 
 #include <stddef.h>
 
-int RageDiagnosticLogOpen(char *path, size_t pathSize);
+int DiagnosticLogOpen(char *path, size_t pathSize);
 
 #endif

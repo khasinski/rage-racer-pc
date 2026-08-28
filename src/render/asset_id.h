@@ -8,11 +8,11 @@
 
 /* Build the stable, source-independent name exposed to mod manifests. The
  * returned name describes game content, never a RAGE.BIN archive entry. */
-int RageAssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
+int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
                         RageRenderAssetSet assetSet, uint32_t material);
 
 /* Append an exact runtime material variant to a base material id. */
-int RageAssetMaterialVariantId(char *out, size_t capacity,
+int AssetMaterialVariantId(char *out, size_t capacity,
                                uint32_t assetKey,
                                RageRenderAssetSet assetSet,
                                uint32_t material, uint8_t variant);

@@ -55,7 +55,7 @@ enum {
 
 static RageScenarioState s_scenario;
 
-static int RageScenarioParseTrackPoint(const char *text, int *result) {
+static int ScenarioParseTrackPoint(const char *text, int *result) {
     char *end;
     long value;
     if (text == NULL || text[0] == '\0') return 0;
@@ -65,13 +65,13 @@ static int RageScenarioParseTrackPoint(const char *text, int *result) {
     return 1;
 }
 
-static void RageScenarioParseTrackStarts(void) {
-    const char *player = RageRuntimeConfigGet("start.player_track_point");
-    const char *rivals = RageRuntimeConfigGet("start.rival_track_points");
+static void ScenarioParseTrackStarts(void) {
+    const char *player = RuntimeConfigGet("start.player_track_point");
+    const char *rivals = RuntimeConfigGet("start.rival_track_points");
     char buffer[512], *token;
     int value;
     if (player != NULL) {
-        if (!RageScenarioParseTrackPoint(player, &value))
+        if (!ScenarioParseTrackPoint(player, &value))
             fprintf(stderr, "rage-port: invalid start.player_track_point=%s\n", player);
         else {
             s_scenario.playerTrackPoint = value;
@@ -85,7 +85,7 @@ static void RageScenarioParseTrackStarts(void) {
     while (token != NULL && s_scenario.rivalTrackPointCount < 11) {
         while (*token == ' ' || *token == '\t') token++;
         if (!strcmp(token, "-") || !strcmp(token, "default")) value = -1;
-        else if (!RageScenarioParseTrackPoint(token, &value)) goto invalid;
+        else if (!ScenarioParseTrackPoint(token, &value)) goto invalid;
         s_scenario.rivalTrackPoints[s_scenario.rivalTrackPointCount++] = value;
         token = strtok(NULL, ",");
     }
@@ -97,7 +97,7 @@ invalid:
     fprintf(stderr, "rage-port: invalid start.rival_track_points\n");
 }
 
-static int RageScenarioPlaceCar(GameCarRuntime *car, int point) {
+static int ScenarioPlaceCar(GameCarRuntime *car, int point) {
     CarTrackLimits limits = {0, 0, 0, 0};
     if (point < 0) return 1;
     if (point >= g_TrackPointCount) return 0;
@@ -118,12 +118,12 @@ static int RageScenarioPlaceCar(GameCarRuntime *car, int point) {
     return 1;
 }
 
-static void RageScenarioPlaceExact(void);
+static void ScenarioPlaceExact(void);
 
-static void RageScenarioApplyTrackStarts(void) {
+static void ScenarioApplyTrackStarts(void) {
     int index;
     if (s_scenario.playerTrackPoint >= 0 &&
-        !RageScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
+        !ScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
                               s_scenario.playerTrackPoint)) {
         fprintf(stderr, "rage-port: player track point %d outside 0..%d\n",
                 s_scenario.playerTrackPoint, g_TrackPointCount - 1);
@@ -136,7 +136,7 @@ static void RageScenarioApplyTrackStarts(void) {
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
         if (point >= 0 && g_Cars[index].activeFlag &&
-            !RageScenarioPlaceCar(&g_Cars[index], point)) {
+            !ScenarioPlaceCar(&g_Cars[index], point)) {
             fprintf(stderr, "rage-port: rival %d track point %d outside 0..%d\n",
                     index, point, g_TrackPointCount - 1);
         } else if (point >= 0 && g_Cars[index].activeFlag) {
@@ -146,9 +146,9 @@ static void RageScenarioApplyTrackStarts(void) {
                     g_Cars[index].trackProgress, g_Cars[index].trackSection);
         }
     }
-    if (s_scenario.hasExact) RageScenarioPlaceExact();
+    if (s_scenario.hasExact) ScenarioPlaceExact();
     {
-        const char *view = RageRuntimeConfigGet("start.camera");
+        const char *view = RuntimeConfigGet("start.camera");
         if (view != NULL) g_CameraViewMode = (s16)strtol(view, NULL, 0);
     }
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
@@ -161,7 +161,7 @@ static void RageScenarioApplyTrackStarts(void) {
 
 /* Put the car exactly where a mark said it was, keeping the track state the
  * placement computed so the camera and collision follow. */
-static void RageScenarioPlaceExact(void) {
+static void ScenarioPlaceExact(void) {
     CarTrackLimits limits = {0, 0, 0, 0};
     PlayerCarRuntime *car = &g_PlayerCar;
     car->x = s_scenario.exactX;
@@ -178,35 +178,35 @@ static void RageScenarioPlaceExact(void) {
     car->modelY = car->y;
 }
 
-static void RageScenarioHoldTrackStarts(void) {
+static void ScenarioHoldTrackStarts(void) {
     int index;
-    if (s_scenario.hasExact) { RageScenarioPlaceExact(); return; }
+    if (s_scenario.hasExact) { ScenarioPlaceExact(); return; }
     if (s_scenario.playerTrackPoint >= 0)
-        RageScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
+        ScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
                              s_scenario.playerTrackPoint);
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
         if (point >= 0 && g_Cars[index].activeFlag)
-            RageScenarioPlaceCar(&g_Cars[index], point);
+            ScenarioPlaceCar(&g_Cars[index], point);
     }
 }
 
-static int RageScenarioInt(const char *key, const char *legacyName,
+static int ScenarioInt(const char *key, const char *legacyName,
                            int fallback, int low, int high) {
-    const char *text = RageRuntimeConfigGetLegacy(key, legacyName);
+    const char *text = RuntimeConfigGetLegacy(key, legacyName);
     char *end = NULL;
     long value;
     if (text == NULL || text[0] == '\0') return fallback;
     value = strtol(text, &end, 10);
     if (*end != '\0' || value < low || value > high || value > INT_MAX) {
         fprintf(stderr, "rage-port: ignoring invalid %s=%s (expected %d..%d)\n",
-                RageRuntimeConfigGet(key) ? key : legacyName, text, low, high);
+                RuntimeConfigGet(key) ? key : legacyName, text, low, high);
         return fallback;
     }
     return (int)value;
 }
 
-static void RageScenarioParseGrid(const char *text) {
+static void ScenarioParseGrid(const char *text) {
     char buffer[256], *token;
     int parsed[11], count = 0;
     if (text == NULL || text[0] == '\0') return;
@@ -229,27 +229,27 @@ invalid:
     fprintf(stderr, "rage-port: ignoring invalid RAGE_PORT_SCENARIO_GRID\n");
 }
 
-static void RageScenarioInitialize(void) {
+static void ScenarioInitialize(void) {
     const char *mode, *series, *transmission, *afterFinish;
     s_scenario.initialized = 1;
     s_scenario.playerTrackPoint = -1;
     s_scenario.lastScene = s_scenario.lastFrontend = s_scenario.lastMenuScreen = -1;
-    if (!RageRuntimeConfigEnabled("race.enabled", "RAGE_PORT_SCENARIO")) return;
+    if (!RuntimeConfigEnabled("race.enabled", "RAGE_PORT_SCENARIO")) return;
     s_scenario.enabled = 1;
-    mode = RageRuntimeConfigGet("race.mode");
-    series = RageRuntimeConfigGet("race.series");
+    mode = RuntimeConfigGet("race.mode");
+    series = RuntimeConfigGet("race.series");
     s_scenario.mode = mode ? strcmp(mode, "time-attack") != 0 :
-        RageScenarioInt("race.mode", "RAGE_PORT_SCENARIO_MODE", 1, 0, 1);
+        ScenarioInt("race.mode", "RAGE_PORT_SCENARIO_MODE", 1, 0, 1);
     s_scenario.series = series ? strcmp(series, "extra-gp") == 0 :
-        RageScenarioInt("race.series", "RAGE_PORT_SCENARIO_SERIES", 0, 0, 1);
-    s_scenario.classIndex = RageScenarioInt(
+        ScenarioInt("race.series", "RAGE_PORT_SCENARIO_SERIES", 0, 0, 1);
+    s_scenario.classIndex = ScenarioInt(
         "race.class", "RAGE_PORT_SCENARIO_CLASS", 0, 0, 5);
-    s_scenario.course = RageScenarioInt(
+    s_scenario.course = ScenarioInt(
         "race.course", "RAGE_PORT_SCENARIO_COURSE", 0, 0, 3);
-    s_scenario.car = RageScenarioInt(
+    s_scenario.car = ScenarioInt(
         "race.car", "RAGE_PORT_SCENARIO_CAR", 3, 0, 12);
     s_scenario.transmission = -1;
-    transmission = RageRuntimeConfigGet("race.transmission");
+    transmission = RuntimeConfigGet("race.transmission");
     if (transmission != NULL) {
         if (!strcmp(transmission, "automatic") || !strcmp(transmission, "auto"))
             s_scenario.transmission = 0;
@@ -260,7 +260,7 @@ static void RageScenarioInitialize(void) {
                     "rage-port: invalid race.transmission=%s (expected default, automatic, or manual)\n",
                     transmission);
     }
-    afterFinish = RageRuntimeConfigGet("race.after_finish");
+    afterFinish = RuntimeConfigGet("race.after_finish");
     s_scenario.afterFinish = RAGE_SCENARIO_AFTER_MENU;
     if (afterFinish != NULL && !strcmp(afterFinish, "repeat"))
         s_scenario.afterFinish = RAGE_SCENARIO_AFTER_REPEAT;
@@ -274,18 +274,18 @@ static void RageScenarioInitialize(void) {
         fprintf(stderr, "rage-port: Extra GP is unavailable in time attack; using Grand Prix\n");
         s_scenario.series = 0;
     }
-    RageScenarioParseGrid(RageRuntimeConfigGetLegacy(
+    ScenarioParseGrid(RuntimeConfigGetLegacy(
         "race.grid", "RAGE_PORT_SCENARIO_GRID"));
-    RageScenarioParseTrackStarts();
-    s_scenario.freezeStarts = RageRuntimeConfigEnabled("start.freeze", NULL);
+    ScenarioParseTrackStarts();
+    s_scenario.freezeStarts = RuntimeConfigEnabled("start.freeze", NULL);
     {
         /* A mark taken while driving records where the car actually was, which
          * a track point alone cannot express: the car is rarely on the centre
          * line and its heading is its own. These place it exactly, so a
          * reported frame can be reproduced. */
-        const char *x = RageRuntimeConfigGet("start.player_x");
-        const char *z = RageRuntimeConfigGet("start.player_z");
-        const char *heading = RageRuntimeConfigGet("start.player_heading");
+        const char *x = RuntimeConfigGet("start.player_x");
+        const char *z = RuntimeConfigGet("start.player_z");
+        const char *heading = RuntimeConfigGet("start.player_heading");
         if (x != NULL && z != NULL) {
             s_scenario.exactX = (int)strtol(x, NULL, 0);
             s_scenario.exactZ = (int)strtol(z, NULL, 0);
@@ -297,12 +297,12 @@ static void RageScenarioInitialize(void) {
                     s_scenario.exactX, s_scenario.exactZ, s_scenario.exactHeading);
         }
     }
-    s_scenario.skipSequences = RageRuntimeConfigGet("boot.skip_sequences") == NULL
+    s_scenario.skipSequences = RuntimeConfigGet("boot.skip_sequences") == NULL
                                    ? 1
-                                   : RageRuntimeConfigEnabled("boot.skip_sequences", NULL);
-    s_scenario.directBoot = RageRuntimeConfigGet("boot.direct") == NULL
+                                   : RuntimeConfigEnabled("boot.skip_sequences", NULL);
+    s_scenario.directBoot = RuntimeConfigGet("boot.direct") == NULL
                                 ? 1
-                                : RageRuntimeConfigEnabled("boot.direct", NULL);
+                                : RuntimeConfigEnabled("boot.direct", NULL);
     if (s_scenario.directBoot && !s_scenario.mode) {
         fprintf(stderr,
                 "rage-port: direct boot covers Grand Prix only; time attack uses the menus\n");
@@ -320,7 +320,7 @@ static void RageScenarioInitialize(void) {
             s_scenario.skipSequences ? "on" : "off");
 }
 
-static void RageScenarioConfirm(void) {
+static void ScenarioConfirm(void) {
     g_PadType = 0x41;
     g_PadPressed |= PAD_CONFIRM;
     s_scenario.retryFrames = 0;
@@ -331,7 +331,7 @@ static void RageScenarioConfirm(void) {
 /* Seconds since the first traced frame. The automation is judged by how long
  * it takes to reach a race, so the trace carries wall time rather than frames:
  * scene handlers tick at different rates. */
-static double RageScenarioElapsed(void) {
+static double ScenarioElapsed(void) {
     struct timespec now;
     static struct timespec start;
     static int started;
@@ -349,7 +349,7 @@ static double RageScenarioElapsed(void) {
  * never reaches a race then names the screen it died on instead of just going
  * quiet. Scene 11 and up hold their state for as long as the race and the
  * result screens last, so they are never reported. */
-static void RageScenarioTrace(void) {
+static void ScenarioTrace(void) {
     static int lastScene = -1, lastFrontend = -1, lastScreen = -1;
     static int held;
     if (g_SceneId != lastScene || g_FrontendState != lastFrontend ||
@@ -360,11 +360,11 @@ static void RageScenarioTrace(void) {
         held = 0;
         fprintf(stderr,
                 "rage-port: scenario state t=%.1fs scene=%d phase=%d screen=%d\n",
-                RageScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
+                ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
     } else if (++held == 600 && g_SceneId < 11) {
         fprintf(stderr,
                 "rage-port: scenario stalled t=%.1fs scene=%d phase=%d screen=%d\n",
-                RageScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
+                ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
     }
 }
 
@@ -374,7 +374,7 @@ static void RageScenarioTrace(void) {
  * itself. Time attack is not covered: its confirm leaves g_CourseProgress
  * pointing wherever a previous Grand Prix selection left it, which is nothing
  * at all on a cold boot. */
-static void RageScenarioSelectSeries(void) {
+static void ScenarioSelectSeries(void) {
     if (s_scenario.series) {
         g_CarTable = g_ExtraGrandPrixCars;
         g_RaceProgress = &g_ExtraGrandPrixSave;
@@ -392,7 +392,7 @@ static void RageScenarioSelectSeries(void) {
 /* DrawMenuCarView normally copies the selected setup into the player object.
  * Direct boot deliberately skips that screen, so do the same non-UI work
  * immediately before the race initializes the car. */
-static void RageScenarioApplyCarSetup(void) {
+static void ScenarioApplyCarSetup(void) {
     CarEntry *entry = &g_CarTable[s_scenario.car];
     if (entry->transmission == 0 && g_CarModelAsset != NULL &&
         g_CarModelAsset->transmissionAvailable == 0) {
@@ -412,20 +412,20 @@ static void RageScenarioApplyCarSetup(void) {
 
 /* EnterRoundScreen counts the rounds already placed in this class, then adds
  * the one about to be run. */
-static void RageScenarioCountRounds(void) {
+static void ScenarioCountRounds(void) {
     int rounds = (g_GrandPrixClass < 2) ? 3 : 4;
     int index;
     g_GrandPrixRound = 0;
     for (index = 0; index < rounds; index++) {
         if (g_CourseProgress->bestPlace[index] != 0) g_GrandPrixRound++;
     }
-    if (g_CourseProgress->bestPlace[RageSeriesCourseIndex()] == 0) {
+    if (g_CourseProgress->bestPlace[SeriesCourseIndex()] == 0) {
         g_GrandPrixRound++;
     }
 }
 
 /* UpdateRoundScreen draws from the shuffle bag as it hands off to scene 11. */
-static void RageScenarioSelectBgm(void) {
+static void ScenarioSelectBgm(void) {
     if (g_BgmSelection == 0) {
         g_BgmTrack = g_BgmShuffleOrder[g_BgmShuffleIndex++];
         if (g_BgmShuffleIndex == g_BgmTrackCount) g_BgmShuffleIndex = 0;
@@ -447,7 +447,7 @@ static void RageScenarioSelectBgm(void) {
  * on the call after the load lands. RequestRoundAssets has no busy guard: it
  * resets the loader whenever it is called mid-load, so it is issued once and
  * waited on through g_AssetLoadState. */
-static void RageScenarioDirectBoot(void) {
+static void ScenarioDirectBoot(void) {
     static const char *const stepNames[] = {
         "setup", "bgm-assets", "car-assets", "round-request", "round-wait",
         "race-assets", "done"
@@ -457,12 +457,12 @@ static void RageScenarioDirectBoot(void) {
         if (s_scenario.directStep != lastStep) {
             lastStep = s_scenario.directStep;
             fprintf(stderr, "rage-port: direct boot %s t=%.1fs\n",
-                    stepNames[s_scenario.directStep], RageScenarioElapsed());
+                    stepNames[s_scenario.directStep], ScenarioElapsed());
         }
     }
     switch (s_scenario.directStep) {
     case RAGE_DIRECT_PENDING:
-        RageScenarioSelectSeries();
+        ScenarioSelectSeries();
         ShuffleBgmOrder();
         s_scenario.directStep = RAGE_DIRECT_BGM_ASSETS;
         break;
@@ -494,29 +494,29 @@ static void RageScenarioDirectBoot(void) {
             CloseLoadedAudioSlots();
             UploadImageAsset(g_ImageBlockBuffer);
             RelocateCarModel();
-            RageScenarioCountRounds();
+            ScenarioCountRounds();
             s_scenario.directStep = RAGE_DIRECT_RACE_ASSETS;
         }
         break;
     case RAGE_DIRECT_RACE_ASSETS:
         if (RequestRaceAssets() == 0) {
-            RageScenarioSelectBgm();
-            RageScenarioApplyCarSetup();
+            ScenarioSelectBgm();
+            ScenarioApplyCarSetup();
             g_MirrorMode = 0;
             g_FrameSyncThreshold = 0x180;
             g_SceneTimer = 0;
             g_SceneId = 11;
             s_scenario.directStep = RAGE_DIRECT_DONE;
             fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
-                    RageScenarioElapsed());
+                    ScenarioElapsed());
         }
         break;
     }
 }
 
-void RagePortScenarioBeforeSceneHandler(void) {
+void PortScenarioBeforeSceneHandler(void) {
     int changed, index;
-    if (!s_scenario.initialized) RageScenarioInitialize();
+    if (!s_scenario.initialized) ScenarioInitialize();
     if (!s_scenario.enabled) return;
 
     /* A completed circuit race always hands off from the live race (12) to
@@ -596,7 +596,7 @@ void RagePortScenarioBeforeSceneHandler(void) {
         s_scenario.retryFrames++;
     }
 
-    RageScenarioTrace();
+    ScenarioTrace();
 
     /* Two non-interactive sequences sit between the boot logo and the first
      * race: the ~30 s intro movie (5) and the ~51 s prologue cutscene (32),
@@ -633,19 +633,19 @@ void RagePortScenarioBeforeSceneHandler(void) {
         s_scenario.directStep != RAGE_DIRECT_DONE) {
         if (g_SceneTimer > 0x1C0) g_SceneTimer = 0x1C0;
         if (g_FrontendIdleTimer > 800) g_FrontendIdleTimer = 800;
-        RageScenarioDirectBoot();
+        ScenarioDirectBoot();
         return;
     }
 
     if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&
         s_scenario.stableFrames >= 20 && s_scenario.retryFrames >= 60) {
-        RageScenarioConfirm();
+        ScenarioConfirm();
     } else if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
                s_scenario.stableFrames >= 10 && s_scenario.retryFrames >= 30) {
-        RageScenarioConfirm();
+        ScenarioConfirm();
     } else if (g_SceneId == 8 && s_scenario.stableFrames >= 20 &&
                s_scenario.retryFrames >= 60) {
-        RageScenarioConfirm();
+        ScenarioConfirm();
     }
 
     if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
@@ -655,13 +655,13 @@ void RagePortScenarioBeforeSceneHandler(void) {
     }
     if (g_SceneId == 12 && s_scenario.customStart &&
         !s_scenario.startApplied && g_TrackPointCount > 0) {
-        RageScenarioApplyTrackStarts();
+        ScenarioApplyTrackStarts();
     } else if (g_SceneId == 12 && s_scenario.startApplied &&
                s_scenario.freezeStarts && g_TrackPointCount > 0) {
-        RageScenarioHoldTrackStarts();
+        ScenarioHoldTrackStarts();
     }
 }
 
-int RagePortScenarioShouldExit(void) {
+int PortScenarioShouldExit(void) {
     return s_scenario.exitRequested;
 }

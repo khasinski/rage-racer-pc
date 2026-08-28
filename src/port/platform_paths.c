@@ -8,26 +8,26 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <direct.h>
-#define RageMkdir(path) _mkdir(path)
+#define Mkdir(path) _mkdir(path)
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#define RageMkdir(path) mkdir(path, 0755)
+#define Mkdir(path) mkdir(path, 0755)
 #else
 #include <unistd.h>
 #include <sys/stat.h>
-#define RageMkdir(path) mkdir(path, 0755)
+#define Mkdir(path) mkdir(path, 0755)
 #endif
 
-static int RagePathExists(const char *path) {
+static int PathExists(const char *path) {
     FILE *file = fopen(path, "rb");
     if (file == NULL) return 0;
     fclose(file);
     return 1;
 }
 
-static int RageDirectoryExists(const char *path) {
+static int DirectoryExists(const char *path) {
 #ifdef _WIN32
     DWORD attributes = GetFileAttributesA(path);
     return attributes != INVALID_FILE_ATTRIBUTES &&
@@ -38,7 +38,7 @@ static int RageDirectoryExists(const char *path) {
 #endif
 }
 
-static int RageJoinPath(char *out, size_t outSize, const char *directory,
+static int JoinPath(char *out, size_t outSize, const char *directory,
                         const char *name) {
 #ifdef _WIN32
     const char separator = '\\';
@@ -55,7 +55,7 @@ static int RageJoinPath(char *out, size_t outSize, const char *directory,
     return written >= 0 && (size_t)written < outSize;
 }
 
-static int RageExecutableDirectory(const char *argv0, char *out,
+static int ExecutableDirectory(const char *argv0, char *out,
                                    size_t outSize) {
     char executable[4096];
     size_t length = 0;
@@ -95,12 +95,12 @@ static int RageExecutableDirectory(const char *argv0, char *out,
     return 1;
 }
 
-int RagePlatformExecutableDirectory(const char *argv0, char *out,
+int PlatformExecutableDirectory(const char *argv0, char *out,
                                     size_t outSize) {
-    return RageExecutableDirectory(argv0, out, outSize);
+    return ExecutableDirectory(argv0, out, outSize);
 }
 
-int RagePlatformExistingPortableStateDirectory(
+int PlatformExistingPortableStateDirectory(
     const char *executableDirectory, char *out, size_t outSize) {
     char candidate[4096];
     char card[4096];
@@ -125,8 +125,8 @@ int RagePlatformExistingPortableStateDirectory(
         parent = strrchr(candidate, '/');
         if (parent != NULL) {
             *parent = '\0';
-            if (RageJoinPath(card, sizeof(card), candidate, "bu00") &&
-                RageDirectoryExists(card)) {
+            if (JoinPath(card, sizeof(card), candidate, "bu00") &&
+                DirectoryExists(card)) {
                 if (strlen(candidate) + 1 > outSize) return 0;
                 strcpy(out, candidate);
                 return 1;
@@ -135,14 +135,14 @@ int RagePlatformExistingPortableStateDirectory(
         memcpy(candidate, executableDirectory, length + 1);
     }
 
-    if (!RageJoinPath(card, sizeof(card), candidate, "bu00") ||
-        !RageDirectoryExists(card) || strlen(candidate) + 1 > outSize)
+    if (!JoinPath(card, sizeof(card), candidate, "bu00") ||
+        !DirectoryExists(card) || strlen(candidate) + 1 > outSize)
         return 0;
     strcpy(out, candidate);
     return 1;
 }
 
-int RagePlatformUserConfigDirectory(char *out, size_t outSize) {
+int PlatformUserConfigDirectory(char *out, size_t outSize) {
     const char *base;
     int written;
 #ifdef _WIN32
@@ -167,11 +167,11 @@ int RagePlatformUserConfigDirectory(char *out, size_t outSize) {
     return written >= 0 && (size_t)written < outSize;
 }
 
-int RagePlatformUserStateDirectory(char *out, size_t outSize) {
+int PlatformUserStateDirectory(char *out, size_t outSize) {
 #ifdef _WIN32
-    return RagePlatformUserConfigDirectory(out, outSize);
+    return PlatformUserConfigDirectory(out, outSize);
 #elif defined(__APPLE__)
-    return RagePlatformUserConfigDirectory(out, outSize);
+    return PlatformUserConfigDirectory(out, outSize);
 #else
     const char *base;
     int written;
@@ -187,13 +187,13 @@ int RagePlatformUserStateDirectory(char *out, size_t outSize) {
 #endif
 }
 
-int RagePlatformUserConfigPath(const char *name, char *out, size_t outSize) {
+int PlatformUserConfigPath(const char *name, char *out, size_t outSize) {
     char directory[4096];
-    return RagePlatformUserConfigDirectory(directory, sizeof(directory)) &&
-           RageJoinPath(out, outSize, directory, name);
+    return PlatformUserConfigDirectory(directory, sizeof(directory)) &&
+           JoinPath(out, outSize, directory, name);
 }
 
-int RagePlatformEnsureDirectory(const char *path) {
+int PlatformEnsureDirectory(const char *path) {
     char buffer[4096];
     char *cursor;
     size_t length = strlen(path);
@@ -207,43 +207,43 @@ int RagePlatformEnsureDirectory(const char *path) {
         {
             char separator = *cursor;
             *cursor = '\0';
-            if (RageMkdir(buffer) != 0 && errno != EEXIST) return 0;
+            if (Mkdir(buffer) != 0 && errno != EEXIST) return 0;
             *cursor = separator;
         }
     }
-    return RageMkdir(buffer) == 0 || errno == EEXIST;
+    return Mkdir(buffer) == 0 || errno == EEXIST;
 }
 
-int RagePlatformFindConfigFile(const char *argv0, const char *name,
+int PlatformFindConfigFile(const char *argv0, const char *name,
                                char *path, size_t pathSize) {
     char directory[4096];
-    if (RagePlatformUserConfigDirectory(directory, sizeof(directory)) &&
-        RageJoinPath(path, pathSize, directory, name) && RagePathExists(path))
+    if (PlatformUserConfigDirectory(directory, sizeof(directory)) &&
+        JoinPath(path, pathSize, directory, name) && PathExists(path))
         return 1;
-    if (RageExecutableDirectory(argv0, directory, sizeof(directory))) {
-        if (RageJoinPath(path, pathSize, directory, name) &&
-            RagePathExists(path)) return 1;
+    if (ExecutableDirectory(argv0, directory, sizeof(directory))) {
+        if (JoinPath(path, pathSize, directory, name) &&
+            PathExists(path)) return 1;
 #ifdef __APPLE__
         {
             char beside[4096];
             /* Beside the .app, where the archive keeps the editable copies.
              * Anything inside Contents/Resources is sealed by the code
              * signature, so editing it there stops the app from launching. */
-            if (RageJoinPath(beside, sizeof(beside), directory, "../../..") &&
-                RageJoinPath(path, pathSize, beside, name) &&
-                RagePathExists(path)) return 1;
+            if (JoinPath(beside, sizeof(beside), directory, "../../..") &&
+                JoinPath(path, pathSize, beside, name) &&
+                PathExists(path)) return 1;
         }
         {
             char resources[4096];
-            if (RageJoinPath(resources, sizeof(resources), directory,
+            if (JoinPath(resources, sizeof(resources), directory,
                              "../Resources") &&
-                RageJoinPath(path, pathSize, resources, name) &&
-                RagePathExists(path)) return 1;
+                JoinPath(path, pathSize, resources, name) &&
+                PathExists(path)) return 1;
         }
 #endif
     }
     if (snprintf(path, pathSize, "%s", name) < (int)pathSize &&
-        RagePathExists(path)) return 1;
+        PathExists(path)) return 1;
     path[0] = '\0';
     return 0;
 }

@@ -4,28 +4,28 @@
 
 /* Offline render tools consume an already-generated native asset cache and do
  * not link the game state needed by the live retail-disc importer. */
-int RageNativeAssetImporterInit(void) {
+int NativeAssetImporterInit(void) {
     return 0;
 }
 
-void RageNativeAssetImporterShutdown(void) {
+void NativeAssetImporterShutdown(void) {
 }
 
-int RageNativeAssetImporterReady(void) {
+int NativeAssetImporterReady(void) {
     return 0;
 }
 
-const RageRuntimeCachedMesh *RageNativeAssetImporterFind(
+const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance) {
     (void)instance;
     return NULL;
 }
 
-uint32_t RageNativeAssetImporterMeshCount(void) {
+uint32_t NativeAssetImporterMeshCount(void) {
     return 0;
 }
 
-int RageNativeAssetImporterLoadMaterial(
+int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
     (void)instance;
@@ -36,7 +36,7 @@ int RageNativeAssetImporterLoadMaterial(
     return 0;
 }
 
-int RageNativeAssetImporterLoadSky(uint32_t assetKey,
+int NativeAssetImporterLoadSky(uint32_t assetKey,
                                    ModernAssetImage *image) {
     (void)assetKey;
     (void)image;

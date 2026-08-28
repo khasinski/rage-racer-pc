@@ -308,7 +308,7 @@ s32 DrawCourseSelectScreen(s32 step)
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    switch (RageSeriesCourseIndex()) {
+    switch (SeriesCourseIndex()) {
     case 0:
         coordinateY = GameDrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 8, 0x18,
@@ -375,7 +375,7 @@ s32 DrawCourseSelectScreen(s32 step)
             coordinateY = row * 0x10 - prizeOffset;
             digitCount = GameDrawNumber(
                 0x65, coordinateY, 9,
-                prizeTable->values[RageSeriesCourseIndex()][g_GrandPrixClass][row],
+                prizeTable->values[SeriesCourseIndex()][g_GrandPrixClass][row],
                 prizeFade, prizeFade, prizeFade, prizeClut, 0x20);
             row++;
             DrawSprite(
@@ -777,7 +777,7 @@ void UpdateCourseSelectScreen(void) {
                     s32 lapc;
                     s32 half;
                     g_SceneId = 0x18;
-                    raw = RageSeriesCourseIndex();
+                    raw = SeriesCourseIndex();
                     g_RaceProgress->course = (g_CourseIndex = raw);
                     d = g_PlayerCarIndex;
                     lapc = g_GrandPrixClass;

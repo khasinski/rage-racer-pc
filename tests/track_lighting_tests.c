@@ -18,7 +18,7 @@ static int failures;
 static void expect_light(int blend, int code, float red, float green,
                          float blue) {
     float light[3];
-    RageTrackZoneLightColor(blend, code, light);
+    TrackZoneLightColor(blend, code, light);
     EXPECT_NEAR(red, light[0]);
     EXPECT_NEAR(green, light[1]);
     EXPECT_NEAR(blue, light[2]);

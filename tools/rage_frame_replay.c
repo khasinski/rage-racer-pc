@@ -15,7 +15,7 @@
 /* The legacy archive override provider shares one translation unit with the
  * semantic mod root queried by ModernAssets. Frame replay never loads the
  * retail archive, so it has no PS1 asset arena to measure. */
-size_t RagePortAssetRoomAt(const void *at) {
+size_t PortAssetRoomAt(const void *at) {
     (void)at;
     return 0;
 }
@@ -102,7 +102,7 @@ static int ApplyCapturedCamera(const char *path, RageRenderWorld *world) {
         for (column = 0; column < 3; column++)
             source[row][column] =
                 (float)scene->viewMatrix.m[row][column] / 4096.0f;
-    RageRenderConvertPsxMatrix(source, converted);
+    RenderConvertPsxMatrix(source, converted);
     for (row = 0; row < 3; row++)
         for (column = 0; column < 3; column++)
             pose[row][column] = converted[column][row];
@@ -150,8 +150,8 @@ int main(int argc, char **argv) {
     }
     if (outputPath == NULL) outputPath = "frame-replay.ppm";
 
-    if (!RageRuntimeConfigInit(argc, argv)) goto cleanup;
-    if (!RageRenderWorldSnapshotRead(snapshotPath, &snapshot)) {
+    if (!RuntimeConfigInit(argc, argv)) goto cleanup;
+    if (!RenderWorldSnapshotRead(snapshotPath, &snapshot)) {
         fprintf(stderr, "rage-frame-replay: cannot read %s\n", snapshotPath);
         goto cleanup;
     }
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-frame-replay: submit: %s\n", SDL_GetError());
         goto release_renderer;
     }
-    if (!RageModernWriteTexturePpm(device, color, width, height, outputPath)) {
+    if (!ModernWriteTexturePpm(device, color, width, height, outputPath)) {
         fprintf(stderr, "rage-frame-replay: cannot write %s\n", outputPath);
         goto release_renderer;
     }
@@ -251,7 +251,7 @@ release_gpu:
     SDL_DestroyGPUDevice(device);
 release_snapshot:
     SDL_Quit();
-    RageRenderWorldSnapshotRelease(&snapshot);
+    RenderWorldSnapshotRelease(&snapshot);
 cleanup:
     return result;
 }

@@ -179,9 +179,9 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     SetRotMatrix(rot);
     SetTransMatrix(&w->mtx);
 #ifdef __psyz
-    if (RageDiagnosticsEnabled("render.car_draw_trace") &&
+    if (DiagnosticsEnabled("render.car_draw_trace") &&
         g_RageScratchpadState.mode == 9) {
-        const char *timerText = RageDiagnosticsValue("render.car_draw_trace_timer");
+        const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
             printf("object-matrix timer=%d position=%d,%d,%d relative=%d,%d,%d "
                    "view=%d,%d,%d rotation=%d,%d,%d,%d,%d,%d,%d,%d,%d "

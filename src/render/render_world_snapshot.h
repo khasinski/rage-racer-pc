@@ -10,10 +10,10 @@ typedef struct RageRenderWorldSnapshot {
 
 /* A versioned, little-endian copy of the complete renderer-neutral input.
  * The file deliberately contains no pointers and no PS1 ordering-table data. */
-int RageRenderWorldSnapshotWrite(const char *path,
+int RenderWorldSnapshotWrite(const char *path,
                                  const RageRenderWorld *world);
-int RageRenderWorldSnapshotRead(const char *path,
+int RenderWorldSnapshotRead(const char *path,
                                 RageRenderWorldSnapshot *snapshot);
-void RageRenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot);
+void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot);
 
 #endif

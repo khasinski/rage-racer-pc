@@ -12,7 +12,7 @@ typedef enum RageModSection {
     RAGE_MOD_SECTION_MATERIALS,
 } RageModSection;
 
-static char *RageManifestTrim(char *text) {
+static char *ManifestTrim(char *text) {
     char *end;
     while (isspace((unsigned char)*text)) text++;
     end = text + strlen(text);
@@ -21,7 +21,7 @@ static char *RageManifestTrim(char *text) {
     return text;
 }
 
-static int RageManifestString(const char **cursor, char *out,
+static int ManifestString(const char **cursor, char *out,
                               size_t capacity) {
     const char *at = *cursor;
     size_t used = 0;
@@ -42,12 +42,12 @@ static int RageManifestString(const char **cursor, char *out,
     return used != 0;
 }
 
-static int RageManifestLineEnd(const char *cursor) {
+static int ManifestLineEnd(const char *cursor) {
     while (isspace((unsigned char)*cursor)) cursor++;
     return *cursor == '\0' || *cursor == '#';
 }
 
-static int RageManifestRelativePath(const char *path) {
+static int ManifestRelativePath(const char *path) {
     const char *component = path;
     if (*path == '\0' || *path == '/' || *path == '\\' ||
         strchr(path, ':') != NULL || strchr(path, '\\') != NULL) return 0;
@@ -64,7 +64,7 @@ static int RageManifestRelativePath(const char *path) {
     return 1;
 }
 
-static int RageManifestSemanticId(const char *key) {
+static int ManifestSemanticId(const char *key) {
     const unsigned char *at = (const unsigned char *)key;
     if (*at == '\0') return 0;
     while (*at != '\0') {
@@ -75,18 +75,18 @@ static int RageManifestSemanticId(const char *key) {
     return 1;
 }
 
-static int RageManifestAssignment(char *line, char *key, size_t keyCapacity,
+static int ManifestAssignment(char *line, char *key, size_t keyCapacity,
                                   char *value, size_t valueCapacity) {
-    const char *cursor = RageManifestTrim(line);
-    if (!RageManifestString(&cursor, key, keyCapacity)) return 0;
+    const char *cursor = ManifestTrim(line);
+    if (!ManifestString(&cursor, key, keyCapacity)) return 0;
     while (isspace((unsigned char)*cursor)) cursor++;
     if (*cursor++ != '=') return 0;
     while (isspace((unsigned char)*cursor)) cursor++;
-    if (!RageManifestString(&cursor, value, valueCapacity)) return 0;
-    return RageManifestLineEnd(cursor);
+    if (!ManifestString(&cursor, value, valueCapacity)) return 0;
+    return ManifestLineEnd(cursor);
 }
 
-int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
+int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
     RageModSection section = RAGE_MOD_SECTION_NONE;
     size_t start = 0, lineNumber = 0, i;
     if (text == NULL || out == NULL) return 0;
@@ -102,7 +102,7 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
             if (length >= sizeof(buffer)) goto invalid;
             memcpy(buffer, text + start, length);
             buffer[length] = '\0';
-            line = RageManifestTrim(buffer);
+            line = ManifestTrim(buffer);
             if (*line == '\0' || *line == '#') goto next;
             if (strcmp(line, "[mod]") == 0) {
                 section = RAGE_MOD_SECTION_MOD;
@@ -129,18 +129,18 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 while (isspace((unsigned char)*cursor)) cursor++;
                 if (*cursor++ != '=') goto invalid;
                 while (isspace((unsigned char)*cursor)) cursor++;
-                if (!RageManifestString(&cursor, out->id, sizeof(out->id)) ||
-                    !RageManifestLineEnd(cursor)) goto invalid;
+                if (!ManifestString(&cursor, out->id, sizeof(out->id)) ||
+                    !ManifestLineEnd(cursor)) goto invalid;
             } else if (section == RAGE_MOD_SECTION_TEXTURES) {
                 RageModTextureOverride *entry;
                 if (out->textureCount == RAGE_MOD_MANIFEST_MAX_TEXTURES)
                     goto invalid;
                 entry = &out->textures[out->textureCount];
-                if (!RageManifestAssignment(line, entry->key,
+                if (!ManifestAssignment(line, entry->key,
                                             sizeof(entry->key), entry->path,
                                             sizeof(entry->path)) ||
-                    !RageManifestSemanticId(entry->key) ||
-                    !RageManifestRelativePath(entry->path)) goto invalid;
+                    !ManifestSemanticId(entry->key) ||
+                    !ManifestRelativePath(entry->path)) goto invalid;
                 out->textureCount++;
             } else if (section == RAGE_MOD_SECTION_MATERIALS) {
                 RageModMaterialOverride *entry;
@@ -148,12 +148,12 @@ int RageModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 if (out->materialCount == RAGE_MOD_MANIFEST_MAX_MATERIALS)
                     goto invalid;
                 entry = &out->materials[out->materialCount];
-                if (!RageManifestAssignment(
+                if (!ManifestAssignment(
                         line, entry->key, sizeof(entry->key),
                         entry->properties, sizeof(entry->properties)) ||
-                    !RageManifestSemanticId(entry->key)) goto invalid;
-                RageRenderMaterialDefault(&material);
-                if (!RageRenderMaterialParseProperties(
+                    !ManifestSemanticId(entry->key)) goto invalid;
+                RenderMaterialDefault(&material);
+                if (!RenderMaterialParseProperties(
                         entry->properties, strlen(entry->properties),
                         &material)) goto invalid;
                 out->materialCount++;
@@ -168,7 +168,7 @@ invalid:
     return 0;
 }
 
-const char *RageModManifestFindMaterialProperties(
+const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId) {
     size_t index;
     if (manifest == NULL || semanticId == NULL) return NULL;
@@ -178,7 +178,7 @@ const char *RageModManifestFindMaterialProperties(
     return NULL;
 }
 
-const char *RageModManifestFindTexture(const RageModManifest *manifest,
+const char *ModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId) {
     size_t index;
     if (manifest == NULL || semanticId == NULL) return NULL;

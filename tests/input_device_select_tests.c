@@ -19,14 +19,14 @@ int main(void) {
         {11, 0}, {22, 0}, {33, 0},
     };
 
-    EXPECT_EQ(11, RageSelectActiveInputDevice(devices, 3, 0, 4096));
-    EXPECT_EQ(22, RageSelectActiveInputDevice(devices, 3, 22, 4096));
+    EXPECT_EQ(11, SelectActiveInputDevice(devices, 3, 0, 4096));
+    EXPECT_EQ(22, SelectActiveInputDevice(devices, 3, 22, 4096));
     devices[2].activity = 30000;
-    EXPECT_EQ(33, RageSelectActiveInputDevice(devices, 3, 22, 4096));
+    EXPECT_EQ(33, SelectActiveInputDevice(devices, 3, 22, 4096));
     devices[2].activity = 0;
     devices[0].activity = 4096;
-    EXPECT_EQ(33, RageSelectActiveInputDevice(devices, 3, 33, 4096));
-    EXPECT_EQ(11, RageSelectActiveInputDevice(devices, 2, 33, 4096));
-    EXPECT_EQ(0, RageSelectActiveInputDevice(NULL, 0, 33, 4096));
+    EXPECT_EQ(33, SelectActiveInputDevice(devices, 3, 33, 4096));
+    EXPECT_EQ(11, SelectActiveInputDevice(devices, 2, 33, 4096));
+    EXPECT_EQ(0, SelectActiveInputDevice(NULL, 0, 33, 4096));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

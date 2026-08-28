@@ -111,7 +111,7 @@ void DrawShuttleScenery(s32 instance) {
         renderWorldMtx = *mtx1Ptr;
 #endif
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
-        if ((RageSeriesCourseIndex()) >= 2) {
+        if ((SeriesCourseIndex()) >= 2) {
             drawArg = 0x3C;
         }
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state->position, mtx1Ptr);
@@ -122,7 +122,7 @@ void DrawShuttleScenery(s32 instance) {
             drawValue = drawArg;
         }
 #ifdef RAGE_HOST_PORT
-        RageGameRenderWorldSubmitDynamicCourseObject(
+        GameRenderWorldSubmitDynamicCourseObject(
             0x110 + instance, drawValue, state->position.x,
             state->position.y, state->position.z, renderWorldMtx.m, 0, 0);
 #endif

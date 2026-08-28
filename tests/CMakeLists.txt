@@ -464,7 +464,7 @@ endif()
 add_test(NAME axis_curve COMMAND axis_curve_tests)
 set_tests_properties(axis_curve PROPERTIES LABELS portable)
 
-# The port's half of the NeGcon (RageNegconTwist) against the game's half
+# The port's half of the NeGcon (NegconTwist) against the game's half
 # (UpdatePadState), which is the only place a calibration fault shows.
 if(TARGET rage-host-state)
     add_executable(negcon_calibration_tests

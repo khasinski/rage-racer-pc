@@ -19,10 +19,10 @@ typedef struct RageModernDiagnosticFrame {
     int ringNext;
 } RageModernDiagnosticFrame;
 
-void RageModernDiagnosticsMaybeDump(
+void ModernDiagnosticsMaybeDump(
     const RageSceneSnapshot *snapshot,
     const RageModernDiagnosticFrame *frame);
-void RageModernDiagnosticsCheckMarker(
+void ModernDiagnosticsCheckMarker(
     const RageSceneSnapshot *snapshot,
     const RageModernDiagnosticFrame *frame,
     int haveModernImage);

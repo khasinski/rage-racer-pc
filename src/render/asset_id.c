@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-static int RageTrackName(char *out, size_t capacity, uint32_t assetKey) {
+static int TrackName(char *out, size_t capacity, uint32_t assetKey) {
     static const char *const courses[] = {"big", "mid", "hi", "oval"};
     uint32_t offset, course, classNumber;
     int written;
@@ -17,7 +17,7 @@ static int RageTrackName(char *out, size_t capacity, uint32_t assetKey) {
     return written >= 0 && (size_t)written < capacity;
 }
 
-static const char *RageAssetSetMaterialName(RageRenderAssetSet assetSet) {
+static const char *AssetSetMaterialName(RageRenderAssetSet assetSet) {
     switch (assetSet) {
     case RAGE_RENDER_ASSET_COURSE: return "course";
     case RAGE_RENDER_ASSET_TERRAIN: return "terrain";
@@ -27,7 +27,7 @@ static const char *RageAssetSetMaterialName(RageRenderAssetSet assetSet) {
     }
 }
 
-int RageAssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
+int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
                         RageRenderAssetSet assetSet, uint32_t material) {
     const char *setName;
     char track[16];
@@ -43,21 +43,21 @@ int RageAssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
                            material);
         return written >= 0 && (size_t)written < capacity;
     }
-    setName = RageAssetSetMaterialName(assetSet);
-    if (setName == NULL || !RageTrackName(track, sizeof(track), assetKey))
+    setName = AssetSetMaterialName(assetSet);
+    if (setName == NULL || !TrackName(track, sizeof(track), assetKey))
         return 0;
     written = snprintf(out, capacity, "track.%s.%s.material.%u", track,
                        setName, material);
     return written >= 0 && (size_t)written < capacity;
 }
 
-int RageAssetMaterialVariantId(char *out, size_t capacity,
+int AssetMaterialVariantId(char *out, size_t capacity,
                                uint32_t assetKey,
                                RageRenderAssetSet assetSet,
                                uint32_t material, uint8_t variant) {
     char base[128];
     int written;
-    if (!RageAssetMaterialId(base, sizeof(base), assetKey, assetSet, material))
+    if (!AssetMaterialId(base, sizeof(base), assetKey, assetSet, material))
         return 0;
     written = snprintf(out, capacity, "%s.variant.%u", base,
                        (unsigned)variant);

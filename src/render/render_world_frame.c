@@ -5,37 +5,37 @@
 
 enum { RAGE_RENDER_PRESENTATION_MATCH_CAPACITY = 4096 };
 
-static float RageClamp01(float value) {
+static float Clamp01(float value) {
     if (value < 0.0f) return 0.0f;
     if (value > 1.0f) return 1.0f;
     return value;
 }
 
-float RageRenderLerpAngleDegrees(float from, float to, float t) {
+float RenderLerpAngleDegrees(float from, float to, float t) {
     float delta;
-    t = RageClamp01(t);
+    t = Clamp01(t);
     delta = to - from;
     while (delta > 180.0f) delta -= 360.0f;
     while (delta < -180.0f) delta += 360.0f;
     return from + delta * t;
 }
 
-void RageRenderInterpolateTransform(const RageRenderTransform *previous,
+void RenderInterpolateTransform(const RageRenderTransform *previous,
                                     const RageRenderTransform *current,
                                     float t,
                                     RageRenderTransform *out) {
-    t = RageClamp01(t);
+    t = Clamp01(t);
     out->position.x = previous->position.x +
                       (current->position.x - previous->position.x) * t;
     out->position.y = previous->position.y +
                       (current->position.y - previous->position.y) * t;
     out->position.z = previous->position.z +
                       (current->position.z - previous->position.z) * t;
-    out->rotation.x = RageRenderLerpAngleDegrees(previous->rotation.x,
+    out->rotation.x = RenderLerpAngleDegrees(previous->rotation.x,
                                                   current->rotation.x, t);
-    out->rotation.y = RageRenderLerpAngleDegrees(previous->rotation.y,
+    out->rotation.y = RenderLerpAngleDegrees(previous->rotation.y,
                                                   current->rotation.y, t);
-    out->rotation.z = RageRenderLerpAngleDegrees(previous->rotation.z,
+    out->rotation.z = RenderLerpAngleDegrees(previous->rotation.z,
                                                   current->rotation.z, t);
     out->hasOrientation = previous->hasOrientation && current->hasOrientation;
     if (out->hasOrientation) {
@@ -72,12 +72,12 @@ void RageRenderInterpolateTransform(const RageRenderTransform *previous,
                    (current->scale.z - previous->scale.z) * t;
 }
 
-void RageRenderInterpolateCamera(const RageRenderCamera *previous,
+void RenderInterpolateCamera(const RageRenderCamera *previous,
                                  const RageRenderCamera *current, float t,
                                  RageRenderCamera *out) {
-    RageRenderInterpolateTransform(&previous->transform, &current->transform,
+    RenderInterpolateTransform(&previous->transform, &current->transform,
                                    t, &out->transform);
-    t = RageClamp01(t);
+    t = Clamp01(t);
     out->verticalFovDegrees = previous->verticalFovDegrees +
         (current->verticalFovDegrees - previous->verticalFovDegrees) * t;
     out->nearPlane = previous->nearPlane +
@@ -121,7 +121,7 @@ void RageRenderInterpolateCamera(const RageRenderCamera *previous,
         (current->fogFar - previous->fogFar) * t;
 }
 
-uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
+uint32_t RenderWorldBuildPresentation(const RageRenderWorld *world,
                                           float t,
                                           RageRenderMeshInstance *out,
                                           uint32_t capacity) {
@@ -132,27 +132,27 @@ uint32_t RageRenderWorldBuildPresentation(const RageRenderWorld *world,
     count = world->instanceCount < capacity ? world->instanceCount : capacity;
     for (index = 0; index < count; index++) {
         out[index] = world->instances[index];
-        RageRenderInterpolateTransform(&world->instances[index].previousTransform,
+        RenderInterpolateTransform(&world->instances[index].previousTransform,
                                        &world->instances[index].transform, t,
                                        &out[index].transform);
     }
     return count;
 }
 
-static int RageRenderInstanceIsVehicle(
+static int RenderInstanceIsVehicle(
     const RageRenderMeshInstance *instance) {
     return instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
            instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
 }
 
-static int RageRenderInstanceNeedsSynchronizedMatch(
+static int RenderInstanceNeedsSynchronizedMatch(
     const RageRenderMeshInstance *instance) {
-    return RageRenderInstanceIsVehicle(instance) ||
+    return RenderInstanceIsVehicle(instance) ||
            (instance->assetSet == RAGE_RENDER_ASSET_COURSE &&
             instance->entity >= 0x30000u && instance->entity < 0x40000u);
 }
 
-static int RageRenderVehicleIdentityMatches(
+static int RenderVehicleIdentityMatches(
     const RageRenderMeshInstance *left,
     const RageRenderMeshInstance *right) {
     if (left->entity != right->entity ||
@@ -161,13 +161,13 @@ static int RageRenderVehicleIdentityMatches(
         left->materialVariant != right->materialVariant ||
         left->pass != right->pass)
         return 0;
-    if (RageRenderInstanceIsVehicle(left) &&
-        RageRenderInstanceIsVehicle(right))
+    if (RenderInstanceIsVehicle(left) &&
+        RenderInstanceIsVehicle(right))
         return left->component == right->component;
     return left->mesh == right->mesh;
 }
 
-static float RageRenderTransformDistanceSquared(
+static float RenderTransformDistanceSquared(
     const RageRenderTransform *left, const RageRenderTransform *right) {
     float x = left->position.x - right->position.x;
     float y = left->position.y - right->position.y;
@@ -175,7 +175,7 @@ static float RageRenderTransformDistanceSquared(
     return x * x + y * y + z * z;
 }
 
-uint32_t RageRenderWorldBuildSynchronizedPresentation(
+uint32_t RenderWorldBuildSynchronizedPresentation(
     const RageRenderWorld *previous, const RageRenderWorld *current, float t,
     RageRenderMeshInstance *out, uint32_t capacity) {
     uint32_t outputCount = 0;
@@ -193,15 +193,15 @@ uint32_t RageRenderWorldBuildSynchronizedPresentation(
          currentIndex++) {
         const RageRenderMeshInstance *instance =
             &current->instances[currentIndex];
-        if (RageRenderInstanceNeedsSynchronizedMatch(instance)) continue;
+        if (RenderInstanceNeedsSynchronizedMatch(instance)) continue;
         out[outputCount] = *instance;
-        RageRenderInterpolateTransform(&instance->previousTransform,
+        RenderInterpolateTransform(&instance->previousTransform,
                                        &instance->transform, t,
                                        &out[outputCount].transform);
         outputCount++;
     }
 
-    /* ModernPresentSource composites against RageCapturePrevious(). Vehicles
+    /* ModernPresentSource composites against CapturePrevious(). Vehicles
      * must therefore come from the previous world's visibility/model set too.
      * Using the current list made fast GP-intro camera cuts display a different
      * rival (or no rival) while the rest of the frame was still one tick back. */
@@ -214,16 +214,16 @@ uint32_t RageRenderWorldBuildSynchronizedPresentation(
         uint32_t targetIndex = 0;
         float bestDistance = 0.0f;
 
-        if (!RageRenderInstanceNeedsSynchronizedMatch(base)) continue;
+        if (!RenderInstanceNeedsSynchronizedMatch(base)) continue;
         for (currentIndex = 0; currentIndex < current->instanceCount;
              currentIndex++) {
             const RageRenderMeshInstance *candidate =
                 &current->instances[currentIndex];
             float distance;
             if (currentIndex >= sizeof(matched) || matched[currentIndex] ||
-                !RageRenderVehicleIdentityMatches(base, candidate))
+                !RenderVehicleIdentityMatches(base, candidate))
                 continue;
-            distance = RageRenderTransformDistanceSquared(
+            distance = RenderTransformDistanceSquared(
                 &base->transform, &candidate->transform);
             if (target == 0 || distance < bestDistance) {
                 target = candidate;
@@ -234,7 +234,7 @@ uint32_t RageRenderWorldBuildSynchronizedPresentation(
         out[outputCount] = *base;
         if (target != 0) {
             matched[targetIndex] = 1;
-            RageRenderInterpolateTransform(&base->transform,
+            RenderInterpolateTransform(&base->transform,
                                            &target->transform, t,
                                            &out[outputCount].transform);
         }

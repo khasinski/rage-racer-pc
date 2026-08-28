@@ -263,7 +263,7 @@ void UpdateRivalRubberBand(void) {
     s32 s0;
 
     s6 = g_PlayerCar.progressA + g_PlayerCar.progressB;
-    if ((RageSeriesCourseIndex()) == 3) {
+    if ((SeriesCourseIndex()) == 3) {
         s5 = 0xC00;
         s4 = 0x1400;
     } else {

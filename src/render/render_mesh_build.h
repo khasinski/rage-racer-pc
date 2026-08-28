@@ -57,7 +57,7 @@ typedef const RageRuntimeMesh *(*RageRenderMeshLookup)(
 
 /* Expands imported indexed meshes into GPU-ready triangles. Fully outside
  * triangles are skipped; near-plane clipping itself belongs to the GPU. */
-uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
+uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     RageRenderMeshLookup lookup, void *context,
                                     RageNativeDrawVertex *vertices,
                                     uint32_t vertexCapacity,
@@ -66,7 +66,7 @@ uint32_t RageRenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     uint32_t *spanCount);
 /* Builds only one semantic pass. Native mirrors deliberately render the main
  * scene again from another camera instead of consuming PS1 mirror instances. */
-uint32_t RageRenderBuildNativePassDraws(
+uint32_t RenderBuildNativePassDraws(
     const RageRenderWorld *world, RageRenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,

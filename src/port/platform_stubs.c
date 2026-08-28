@@ -5,49 +5,49 @@
 
 extern int32_t g_FrameCounter;
 
-void RagePortSmokeBeforeSceneHandler(void) __attribute__((weak));
-void RagePortSmokeBeforeSceneHandler(void) {}
-void RagePortScenarioBeforeSceneHandler(void) __attribute__((weak));
-void RagePortScenarioBeforeSceneHandler(void) {}
+void PortSmokeBeforeSceneHandler(void) __attribute__((weak));
+void PortSmokeBeforeSceneHandler(void) {}
+void PortScenarioBeforeSceneHandler(void) __attribute__((weak));
+void PortScenarioBeforeSceneHandler(void) {}
 
-void RageCaptureFrameBegin(void);
-void RageCaptureFrameEnd(void);
-void RageModernFrameWaitTick(int frameLimit);
-void RageHostFmvAudioTick(void);
+void CaptureFrameBegin(void);
+void CaptureFrameEnd(void);
+void ModernFrameWaitTick(int frameLimit);
+void HostFmvAudioTick(void);
 
-void RagePortBeforeSceneHandler(void) {
-    RageHostFmvAudioTick();
+void PortBeforeSceneHandler(void) {
+    HostFmvAudioTick();
     {
-        extern void RageTimingApply(void);
-        RageTimingApply();
+        extern void TimingApply(void);
+        TimingApply();
     }
 #ifdef RAGE_SMOKE_TARGET
-    RagePortSmokeBeforeSceneHandler();
+    PortSmokeBeforeSceneHandler();
     /* Scenario input is synthesized after physical/test input sampling so it
      * cannot be cleared by the pad edge update in the same frame. */
-    RagePortScenarioBeforeSceneHandler();
+    PortScenarioBeforeSceneHandler();
 #else
-    RagePortScenarioBeforeSceneHandler();
-    RagePortSmokeBeforeSceneHandler();
+    PortScenarioBeforeSceneHandler();
+    PortSmokeBeforeSceneHandler();
 #endif
-    RageGameRenderWorldBeginFrame((uint64_t)g_FrameCounter);
-    RageCaptureFrameBegin();
+    GameRenderWorldBeginFrame((uint64_t)g_FrameCounter);
+    CaptureFrameBegin();
 }
 
-void RagePortAfterSceneHandler(void) {
-    RageGameRenderWorldPublishCurrentCamera();
-    if (RageModernIsEnabled()) {
-        RageGameRenderWorldPublishCourseObjects();
-        RageGameRenderWorldPublishTerrainGrid();
-        RageGameRenderWorldPublishRaceCars();
-        RageGameRenderWorldDiscardLegacyMirror();
+void PortAfterSceneHandler(void) {
+    GameRenderWorldPublishCurrentCamera();
+    if (ModernIsEnabled()) {
+        GameRenderWorldPublishCourseObjects();
+        GameRenderWorldPublishTerrainGrid();
+        GameRenderWorldPublishRaceCars();
+        GameRenderWorldDiscardLegacyMirror();
     }
-    RageCaptureFrameEnd();
-    RageModernLogicFrameReady((uint32_t)g_FrameCounter);
+    CaptureFrameEnd();
+    ModernLogicFrameReady((uint32_t)g_FrameCounter);
 }
 
-void RagePortDuringFrameWait(int frameLimit) {
-    RageModernFrameWaitTick(frameLimit);
+void PortDuringFrameWait(int frameLimit) {
+    ModernFrameWaitTick(frameLimit);
 }
 
 long SpuTransferStatus(void *address, long mode) {

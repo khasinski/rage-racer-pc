@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-uint32_t RageRuntimeIndexVersion(const char *text, size_t size) {
+uint32_t RuntimeIndexVersion(const char *text, size_t size) {
     static const char prefix[] = "# rage-rmesh-index v";
     size_t cursor = sizeof(prefix) - 1;
     uint32_t version = 0;
@@ -20,7 +20,7 @@ uint32_t RageRuntimeIndexVersion(const char *text, size_t size) {
     return version;
 }
 
-static int RageToken(const char **cursor, const char *end,
+static int Token(const char **cursor, const char *end,
                      const char **start, size_t *length) {
     const char *p = *cursor;
     while (p < end && (*p == ' ' || *p == '\t')) p++;
@@ -31,7 +31,7 @@ static int RageToken(const char **cursor, const char *end,
     return *length != 0;
 }
 
-static int RageParseU32(const char *text, size_t length, uint32_t *out) {
+static int ParseU32(const char *text, size_t length, uint32_t *out) {
     uint32_t value = 0;
     size_t i;
     if (length == 0) return 0;
@@ -46,7 +46,7 @@ static int RageParseU32(const char *text, size_t length, uint32_t *out) {
     return 1;
 }
 
-static int RageAssetSetName(RageRenderAssetSet set, const char **name,
+static int AssetSetName(RageRenderAssetSet set, const char **name,
                             size_t *length) {
     switch (set) {
     case RAGE_RENDER_ASSET_MODEL_BANK: *name = "model"; *length = 5; return 1;
@@ -60,7 +60,7 @@ static int RageAssetSetName(RageRenderAssetSet set, const char **name,
     }
 }
 
-int RageRuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
+int RuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
                          RageRenderAssetSet assetSet,
                          RageRuntimeAssetLocation *out) {
     const char *setName;
@@ -68,7 +68,7 @@ int RageRuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
     const char *line = text;
     const char *end;
 
-    if (text == 0 || out == 0 || !RageAssetSetName(assetSet, &setName, &setLength)) {
+    if (text == 0 || out == 0 || !AssetSetName(assetSet, &setName, &setLength)) {
         return 0;
     }
     end = text + size;
@@ -81,11 +81,11 @@ int RageRuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
         while (lineEnd < end && *lineEnd != '\n' && *lineEnd != '\r') lineEnd++;
         cursor = line;
         if (cursor < lineEnd && *cursor != '#' &&
-            RageToken(&cursor, lineEnd, &key, &keyLength) &&
-            RageToken(&cursor, lineEnd, &set, &setTokenLength) &&
-            RageToken(&cursor, lineEnd, &mesh, &meshLength) &&
-            RageToken(&cursor, lineEnd, &material, &materialLength) &&
-            RageParseU32(key, keyLength, &keyValue) && keyValue == assetKey &&
+            Token(&cursor, lineEnd, &key, &keyLength) &&
+            Token(&cursor, lineEnd, &set, &setTokenLength) &&
+            Token(&cursor, lineEnd, &mesh, &meshLength) &&
+            Token(&cursor, lineEnd, &material, &materialLength) &&
+            ParseU32(key, keyLength, &keyValue) && keyValue == assetKey &&
             setTokenLength == setLength && memcmp(set, setName, setLength) == 0) {
             out->meshPath = mesh;
             out->meshPathLength = meshLength;

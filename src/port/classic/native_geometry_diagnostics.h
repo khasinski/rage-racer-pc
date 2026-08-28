@@ -19,6 +19,6 @@ typedef struct RageGeometryDiagnostics {
     int modelTraceTimer;
 } RageGeometryDiagnostics;
 
-void RageGeometryDiagnosticsInit(RageGeometryDiagnostics *diagnostics);
+void GeometryDiagnosticsInit(RageGeometryDiagnostics *diagnostics);
 
 #endif

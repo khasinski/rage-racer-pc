@@ -14,17 +14,17 @@ static int failures;
             #value);                                                           \
 } } while (0)
 
-const char *RageRuntimeConfigGetLegacy(const char *key, const char *legacyEnv) {
+const char *RuntimeConfigGetLegacy(const char *key, const char *legacyEnv) {
     (void)key;
     return getenv(legacyEnv);
 }
 
-size_t RagePortAssetRoomAt(const void *at) {
+size_t PortAssetRoomAt(const void *at) {
     (void)at;
     return s_room;
 }
 
-int RageTexturePatchAsset(const char *directory, int assetIndex,
+int TexturePatchAsset(const char *directory, int assetIndex,
                           unsigned char *data, size_t size) {
     (void)directory;
     (void)assetIndex;
@@ -61,15 +61,15 @@ int main(void) {
 
     memset(destination, 0xA5, sizeof(destination));
     s_room = sizeof(destination);
-    EXPECT(RageModAssetLoad(0, destination, 2) == 4);
+    EXPECT(ModAssetLoad(0, destination, 2) == 4);
     EXPECT(memcmp(destination, valid, sizeof(valid)) == 0);
 
     memset(destination, 0xA5, sizeof(destination));
     s_room = 8;
-    EXPECT(RageModAssetLoad(1, destination, 2) == 0);
+    EXPECT(ModAssetLoad(1, destination, 2) == 0);
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
-    EXPECT(RageModAssetLoad(2, destination, 2) == 0);
+    EXPECT(ModAssetLoad(2, destination, 2) == 0);
     unlink(asset0);
     unlink(asset1);
     rmdir(raw);

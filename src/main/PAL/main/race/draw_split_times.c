@@ -17,7 +17,7 @@ void DrawSplitTimes(void) {
     s32 finalValue;
 
 #ifdef __psyz
-    if (!RageHudShowLapTimes()) return;
+    if (!HudShowLapTimes()) return;
 #endif
 
     if (g_SplitTimer >= 0x3C) {
@@ -48,7 +48,7 @@ void DrawSplitTimes(void) {
         tile = 0x7890;
     }
 #ifdef __psyz
-    DrawTimeValue(RageHudLeftX(0x12), 0x2A, value, tile, 0x3E8);
+    DrawTimeValue(HudLeftX(0x12), 0x2A, value, tile, 0x3E8);
 #else
     DrawTimeValue(0x12, 0x2A, value, tile, 0x3E8);
 #endif
@@ -56,7 +56,7 @@ void DrawSplitTimes(void) {
 split_current_done:
     timeout = 0x3E8;
 #ifdef __psyz
-    DrawTimeValue(RageHudLeftX(0x12), 0x20, g_SplitTargetTime,
+    DrawTimeValue(HudLeftX(0x12), 0x20, g_SplitTargetTime,
                   0x78CC, timeout);
 #else
     DrawTimeValue(0x12, 0x20, g_SplitTargetTime, 0x78CC, timeout);
@@ -68,9 +68,9 @@ split_current_done:
         s32 finalA1 = 0x7C;
         s32 finalA3 = 0x78CC;
 
-        finalValue = g_BestTotalTimes[g_RaceSeries][RageSeriesCourseIndex()][0];
+        finalValue = g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][0];
 #ifdef __psyz
-        finalA0 = RageHudRightX(finalA0);
+        finalA0 = HudRightX(finalA0);
 #endif
         DrawTimeValue(finalA0, finalA1, finalValue, finalA3, timeout);
     }

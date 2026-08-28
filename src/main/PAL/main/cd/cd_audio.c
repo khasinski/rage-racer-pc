@@ -8,7 +8,7 @@
 #include "game/menu.h"
 #include "psyq/snd.h"
 
-long RageHostCdAudioEnded(void);
+long HostCdAudioEnded(void);
 
 
 void StepCdPauseRequest(void) {
@@ -162,7 +162,7 @@ void TickCdAudio(void) {
         StepCdTrackRequest();
     }
 
-    status = RageHostCdAudioEnded() ? 4 : 2;
+    status = HostCdAudioEnded() ? 4 : 2;
     if (status == 4) {
         if (g_SceneId == 0x1C) {
             g_CdTrackEnded = 1;

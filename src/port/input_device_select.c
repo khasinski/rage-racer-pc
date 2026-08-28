@@ -1,6 +1,6 @@
 #include "input_device_select.h"
 
-unsigned int RageSelectActiveInputDevice(
+unsigned int SelectActiveInputDevice(
     const RageInputDeviceActivity *devices, size_t count,
     unsigned int currentId, int activationThreshold) {
     unsigned int selected = 0;

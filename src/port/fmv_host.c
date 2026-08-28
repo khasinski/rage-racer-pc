@@ -85,8 +85,8 @@ enum {
     RAGE_CDL_MODE_DA = 0x01, RAGE_CDL_MODE_RT = 0x40
 };
 
-int RageHostReadStreamSector(unsigned int sector, unsigned char *raw);
-int RageHostStreamAbsoluteSector(unsigned int sector);
+int HostReadStreamSector(unsigned int sector, unsigned char *raw);
+int HostStreamAbsoluteSector(unsigned int sector);
 
 /* The rest of the MDEC front end comes from game/render.h and psyq/cd.h;
  * only the VLC stage has no declaration there. */
@@ -99,7 +99,7 @@ static const unsigned int s_sectorSpans[11] = {
     0x3B40,
 };
 
-static void RageReleaseFmvBuffers(void) {
+static void ReleaseFmvBuffers(void) {
     free(s_sectors);
     s_sectors = NULL;
     free(s_bitstream);
@@ -110,22 +110,22 @@ static void RageReleaseFmvBuffers(void) {
     s_sectorCursor = 0;
 }
 
-static int RageHostExtractFmv(unsigned int first, unsigned int count) {
+static int HostExtractFmv(unsigned int first, unsigned int count) {
     unsigned int index;
-    RageReleaseFmvBuffers();
+    ReleaseFmvBuffers();
     if (count == 0) return 0;
     s_sectors = malloc((size_t)count * RAGE_STR_SECTOR_SIZE);
     s_bitstream = malloc(RAGE_BS_MAX);
     s_codes = malloc((size_t)RAGE_CODES_MAX * 2 + 64);
     if (s_sectors == NULL || s_bitstream == NULL || s_codes == NULL) {
-        RageReleaseFmvBuffers();
+        ReleaseFmvBuffers();
         return 0;
     }
     for (index = 0; index < count; index++) {
-        if (!RageHostReadStreamSector(
+        if (!HostReadStreamSector(
                 first + index,
                 s_sectors + (size_t)index * RAGE_STR_SECTOR_SIZE)) {
-            RageReleaseFmvBuffers();
+            ReleaseFmvBuffers();
             return 0;
         }
     }
@@ -134,12 +134,12 @@ static int RageHostExtractFmv(unsigned int first, unsigned int count) {
     return 1;
 }
 
-static unsigned int RageReadLe16(const unsigned char *data) {
+static unsigned int ReadLe16(const unsigned char *data) {
     return (unsigned int)data[0] | ((unsigned int)data[1] << 8);
 }
 
-static unsigned int RageReadLe32(const unsigned char *data) {
-    return RageReadLe16(data) | (RageReadLe16(data + 2) << 16);
+static unsigned int ReadLe32(const unsigned char *data) {
+    return ReadLe16(data) | (ReadLe16(data + 2) << 16);
 }
 
 /* Reassembles the next frame from its STR chunks and decodes it with the
@@ -158,15 +158,15 @@ static int RageDecodeFmvFrame(void) {
             s_sectors + (size_t)s_sectorCursor * RAGE_STR_SECTOR_SIZE + 24;
         unsigned int chunk;
         s_sectorCursor++;
-        if (RageReadLe32(body) != RAGE_STR_MAGIC) continue;
-        chunk = RageReadLe16(body + 4);
+        if (ReadLe32(body) != RAGE_STR_MAGIC) continue;
+        chunk = ReadLe16(body + 4);
         if (size == 0 && chunk != 0) continue; /* resynchronise on a frame */
         if (chunk == 0) {
             size = 0;
             seen = 0;
-            chunks = RageReadLe16(body + 6);
-            width = (int)RageReadLe16(body + 16);
-            height = (int)RageReadLe16(body + 18);
+            chunks = ReadLe16(body + 6);
+            width = (int)ReadLe16(body + 16);
+            height = (int)ReadLe16(body + 18);
         }
         if (size + RAGE_STR_PAYLOAD_SIZE > RAGE_BS_MAX) return 0;
         memcpy(s_bitstream + size, body + RAGE_STR_PAYLOAD_OFFSET,
@@ -207,7 +207,7 @@ static int RageDecodeFmvFrame(void) {
 /* Whether a movie's XA soundtrack is streaming. Asset loads pause CD audio,
  * because the console's drive cannot read data and play CD-DA at once; the
  * soundtrack interleaved into a movie is not CD-DA and must survive them. */
-static void RageFinishXaAudio(void) {
+static void FinishXaAudio(void) {
     unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
     Psyz_CdSetXaEndSector(-1);
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
@@ -215,27 +215,27 @@ static void RageFinishXaAudio(void) {
     s_xaTailAllowed = 0;
 }
 
-static void RageStopXaAudio(void) {
+static void StopXaAudio(void) {
     if (s_xaPlaying) CdControl(RAGE_CDL_PAUSE, NULL, NULL);
-    RageFinishXaAudio();
+    FinishXaAudio();
 }
 
-void RageHostFmvAudioTick(void) {
+void HostFmvAudioTick(void) {
     if (s_xaPlaying && !Psyz_CdAudioPlaying()) {
-        if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+        if (RuntimeConfigEnabled("diagnostics.fmv_trace",
                                      "RAGE_PORT_FMV_TRACE")) {
             fprintf(stderr, "fmv xa end\n");
         }
-        RageFinishXaAudio();
+        FinishXaAudio();
     }
 }
 
-int RageFmvXaStreaming(void) {
-    RageHostFmvAudioTick();
+int FmvXaStreaming(void) {
+    HostFmvAudioTick();
     return s_xaPlaying;
 }
 
-static int RageStartXaAudio(unsigned int firstSector,
+static int StartXaAudio(unsigned int firstSector,
                             unsigned int sectorCount) {
     unsigned char raw[2352], filter[2] = {0, 0};
     unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
@@ -243,17 +243,17 @@ static int RageStartXaAudio(unsigned int firstSector,
     int absolute;
     unsigned int index;
     for (index = 0; index < 16; index++) {
-        if (!RageHostReadStreamSector(firstSector + index, raw)) return 0;
+        if (!HostReadStreamSector(firstSector + index, raw)) return 0;
         if ((raw[0x12] & 0x0e) == 0x04) {
             filter[0] = raw[0x10];
             filter[1] = raw[0x11];
             break;
         }
     }
-    absolute = RageHostStreamAbsoluteSector(firstSector);
+    absolute = HostStreamAbsoluteSector(firstSector);
     if (index == 16 || absolute < 0) return 0;
     CdIntToPos(absolute, &location);
-    if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+    if (RuntimeConfigEnabled("diagnostics.fmv_trace",
                                  "RAGE_PORT_FMV_TRACE")) {
         fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
                 filter[0], filter[1]);
@@ -266,10 +266,10 @@ static int RageStartXaAudio(unsigned int firstSector,
     return Psyz_CdAudioPlaying();
 }
 
-static int RageHostDecodeFmvFrame(void) {
+static int HostDecodeFmvFrame(void) {
     if (s_pixels == NULL || !RageDecodeFmvFrame()) return 0;
     s_frame++;
-    if (RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+    if (RuntimeConfigEnabled("diagnostics.fmv_trace",
                                  "RAGE_PORT_FMV_TRACE")) {
         fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d sector=%u\n",
                 s_frame - 1, g_FrameCounter, g_SceneTimer, s_sectorCursor);
@@ -283,7 +283,7 @@ static int RageHostDecodeFmvFrame(void) {
     return 1;
 }
 
-static int RageHostUploadFmvFrame(void) {
+static int HostUploadFmvFrame(void) {
     return s_pixels != NULL &&
            Psyz_VideoUploadRgb24Frame(s_pixels, s_width, s_height);
 }
@@ -298,7 +298,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     {
         /* Every movie but the opening one sits behind hours of play, so this
          * puts any of them where the opening one is asked for. */
-        const char *forced = RageRuntimeConfigGet("diagnostics.fmv_stream");
+        const char *forced = RuntimeConfigGet("diagnostics.fmv_stream");
         if (forced != NULL && forced[0] != '\0') {
             long chosen = strtol(forced, NULL, 10);
             if (chosen >= 0 && chosen <= 10) {
@@ -316,7 +316,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     s_height = streamIndex == 10 ? 240 : 192;
     s_sectorSpan = s_sectorSpans[streamIndex];
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
-    if (!RageHostExtractFmv(firstSector, s_sectorSpan)) {
+    if (!HostExtractFmv(firstSector, s_sectorSpan)) {
         fprintf(stderr, "rage-port: could not extract FMV %ld from RAGE.STR\n",
                 streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
@@ -343,8 +343,8 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
      * interleaved XA stream.  The prologue CD-DA cue ends before playback and
      * must not be mistaken for the opening movie's soundtrack. */
     s_xaTailAllowed = 0;
-    s_xaPlaying = RageStartXaAudio(firstSector, s_sectorSpan);
-    if (!RageHostDecodeFmvFrame() || !RageHostUploadFmvFrame()) {
+    s_xaPlaying = StartXaAudio(firstSector, s_sectorSpan);
+    if (!HostDecodeFmvFrame() || !HostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
@@ -352,14 +352,14 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
 }
 
 /* How much of the stream the drive would have delivered by now. */
-static unsigned int RageFmvArrivedSectors(void) {
+static unsigned int FmvArrivedSectors(void) {
     if (s_wallClock) {
         Uint64 elapsed = SDL_GetTicksNS() - s_startNs;
         return (unsigned int)((elapsed * RAGE_STR_SECTORS_PER_SECOND) /
                               1000000000u);
     }
     s_tickSectors += RAGE_STR_SECTORS_PER_SECOND;
-    return s_tickSectors / (unsigned int)RageTimingBaseHz();
+    return s_tickSectors / (unsigned int)TimingBaseHz();
 }
 
 void DecodeFmvFrame(void) {
@@ -370,10 +370,10 @@ void DecodeFmvFrame(void) {
         return;
     }
     {
-        unsigned int arrived = RageFmvArrivedSectors();
+        unsigned int arrived = FmvArrivedSectors();
         int decoded = 0;
         while (s_sectorCursor < arrived && !g_FmvStreamEnded) {
-            if (!RageHostDecodeFmvFrame()) {
+            if (!HostDecodeFmvFrame()) {
                 g_FmvStreamEnded = 1;
                 g_FmvState = FMV_PLAYBACK_FINISH;
                 break;
@@ -385,7 +385,7 @@ void DecodeFmvFrame(void) {
          * one GPU transfer buffer several times in the same pending command
          * buffer lets later CPU writes overwrite data that earlier copies have
          * not consumed yet on some Vulkan drivers. */
-        if (decoded && !RageHostUploadFmvFrame()) {
+        if (decoded && !HostUploadFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;
         }
@@ -394,13 +394,13 @@ void DecodeFmvFrame(void) {
 
 void EndFmv(void) {
     if (s_xaPlaying && !s_xaTailAllowed) {
-        RageStopXaAudio();
+        StopXaAudio();
     } else if (s_xaPlaying &&
-               RageRuntimeConfigEnabled("diagnostics.fmv_trace",
+               RuntimeConfigEnabled("diagnostics.fmv_trace",
                                         "RAGE_PORT_FMV_TRACE")) {
         fprintf(stderr, "fmv video end: xa tail continues\n");
     }
-    RageReleaseFmvBuffers();
+    ReleaseFmvBuffers();
     free(s_pixels);
     s_pixels = NULL;
     g_SceneId = g_StreamReturnScene;

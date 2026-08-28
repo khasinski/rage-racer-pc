@@ -5,15 +5,15 @@
 
 extern s32 g_CourseIndex;
 
-static inline s32 RageCourseSlot(s32 physicalCourse) {
+static inline s32 CourseSlot(s32 physicalCourse) {
     return physicalCourse & 3;
 }
-static inline s32 RageCourseSeries(s32 physicalCourse) {
+static inline s32 CourseSeries(s32 physicalCourse) {
     return (physicalCourse >> 2) & 1;
 }
-static inline s32 RagePhysicalCourseIndex(void) { return g_CourseIndex; }
-static inline s32 RageSeriesCourseIndex(void) {
-    return RageCourseSlot(g_CourseIndex);
+static inline s32 PhysicalCourseIndex(void) { return g_CourseIndex; }
+static inline s32 SeriesCourseIndex(void) {
+    return CourseSlot(g_CourseIndex);
 }
 
 #endif

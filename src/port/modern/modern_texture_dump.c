@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-int RageModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
+int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
                               int width, int height, const char *path) {
     SDL_GPUTransferBufferCreateInfo info = {0};
     SDL_GPUTransferBuffer *transfer;

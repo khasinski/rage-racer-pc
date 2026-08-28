@@ -111,7 +111,7 @@ typedef struct RageCaptureFaceInput {
     int colorCount;         /* 1 = flat, 4 = per-vertex */
 } RageCaptureFaceInput;
 
-void RageCaptureFace3D(const RageCaptureFaceInput *input);
+void CaptureFace3D(const RageCaptureFaceInput *input);
 
 #define RAGE_CAPTURE_MAX_DRAWS 2048
 #define RAGE_CAPTURE_MAX_TERRAIN 16
@@ -121,14 +121,14 @@ void RageCaptureFace3D(const RageCaptureFaceInput *input);
 /* Extra horizontal screen-rect margin (pixels) the compat cull should
  * accept when the modern renderer presents a widened field of view.
  * Implemented by the modern renderer; 0 whenever it is off or 4:3. */
-int RageModernCullMarginX(void);
+int ModernCullMarginX(void);
 
 /* Write what the modern renderer is presenting to a PPM. */
-int RageModernCaptureFrame(const char *path);
+int ModernCaptureFrame(const char *path);
 
 /* Modern 3D depth cutoff in retail OT buckets. A non-positive result means
  * the authored/compat cutoff should be used without capture-only faces. */
-int RageModernDepthLimit(void);
+int ModernDepthLimit(void);
 
 typedef struct RageSceneSnapshot {
     uint32_t frameCounter;
@@ -150,21 +150,21 @@ typedef struct RageSceneSnapshot {
 
 /* Capture follows the renderer dynamically, so classic -> modern switching
  * starts recording on the same frame. A scene trace keeps capture active. */
-int RageCaptureActive(void);
+int CaptureActive(void);
 
 /* Frame hooks, called from the port scene-handler hooks in the main loop. */
-void RageCaptureFrameBegin(void);
-void RageCaptureFrameEnd(void);
+void CaptureFrameBegin(void);
+void CaptureFrameEnd(void);
 
 /* Submission hooks, called by native_geometry around each 3D submission. */
-void RageCaptureModelBegin(int kind, int index, int fogged);
-void RageCaptureTerrainBegin(const void *cells, int count);
-void RageCaptureSubmitEnd(void);
+void CaptureModelBegin(int kind, int index, int fogged);
+void CaptureTerrainBegin(const void *cells, int count);
+void CaptureSubmitEnd(void);
 
 /* The snapshot of the frame captured last / the one before it. */
-const RageSceneSnapshot *RageCaptureCurrent(void);
-const RageSceneSnapshot *RageCapturePrevious(void);
+const RageSceneSnapshot *CaptureCurrent(void);
+const RageSceneSnapshot *CapturePrevious(void);
 
-uint64_t RageCaptureSnapshotHash(const RageSceneSnapshot *snapshot);
+uint64_t CaptureSnapshotHash(const RageSceneSnapshot *snapshot);
 
 #endif

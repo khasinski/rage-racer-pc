@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
         fclose(raw);
         assets++;
 
-        patched = RageTexturePatchAsset(directory, i, data, (size_t)size);
+        patched = TexturePatchAsset(directory, i, data, (size_t)size);
         if (patched > 0) {
             raw = fopen(rawPath, "wb");
             if (raw == NULL) {

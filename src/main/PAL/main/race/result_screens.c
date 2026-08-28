@@ -340,7 +340,7 @@ void DrawRaceTimePanel(s32 slideY) {
     FormatLapTime(&text[2], g_RaceTotalTime);
 
     color = 0x7812;
-    if (g_BestTotalTimes[g_GrandPrixSeries][RageSeriesCourseIndex()][g_GrandPrixMode] == g_RaceTotalTime) {
+    if (g_BestTotalTimes[g_GrandPrixSeries][SeriesCourseIndex()][g_GrandPrixMode] == g_RaceTotalTime) {
         color = 0x784C;
     }
     drawColor = color;

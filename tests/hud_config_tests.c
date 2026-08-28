@@ -14,35 +14,35 @@ static int failures;
             (expected), (actual)); failures++;                                 \
 } } while (0)
 
-const RagePortConfig *RagePortActiveConfig(void) { return &config; }
-int RageModernIsEnabled(void) { return modernEnabled; }
+const RagePortConfig *PortActiveConfig(void) { return &config; }
+int ModernIsEnabled(void) { return modernEnabled; }
 
-const char *RageRuntimeConfigGet(const char *key) {
+const char *RuntimeConfigGet(const char *key) {
     if (!strcmp(key, "hud.anchor")) return "edges";
     if (!strcmp(key, "hud.show_lap_times")) return "false";
     if (!strcmp(key, "hud.show_time_limit")) return "true";
     return NULL;
 }
 
-int RageRuntimeConfigEnabled(const char *key, const char *legacyEnv) {
-    const char *value = RageRuntimeConfigGet(key);
+int RuntimeConfigEnabled(const char *key, const char *legacyEnv) {
+    const char *value = RuntimeConfigGet(key);
     (void)legacyEnv;
     return value != NULL && strcmp(value, "false") != 0;
 }
 
 int main(void) {
     config.modernAspect = RAGE_MODERN_ASPECT_16_9;
-    EXPECT_EQ(-45, RageHudLeftX(8));
-    EXPECT_EQ(303, RageHudRightX(250));
-    EXPECT_EQ(0, RageHudShowLapTimes());
-    EXPECT_EQ(1, RageHudShowTimeLimit());
+    EXPECT_EQ(-45, HudLeftX(8));
+    EXPECT_EQ(303, HudRightX(250));
+    EXPECT_EQ(0, HudShowLapTimes());
+    EXPECT_EQ(1, HudShowTimeLimit());
 
     modernEnabled = 0;
-    EXPECT_EQ(8, RageHudLeftX(8));
-    EXPECT_EQ(250, RageHudRightX(250));
+    EXPECT_EQ(8, HudLeftX(8));
+    EXPECT_EQ(250, HudRightX(250));
     modernEnabled = 1;
     config.modernAspect = RAGE_MODERN_ASPECT_4_3;
-    EXPECT_EQ(8, RageHudLeftX(8));
-    EXPECT_EQ(250, RageHudRightX(250));
+    EXPECT_EQ(8, HudLeftX(8));
+    EXPECT_EQ(250, HudRightX(250));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

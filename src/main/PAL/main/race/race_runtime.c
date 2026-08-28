@@ -365,7 +365,7 @@ race_intro_update_done:
     SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
     DrawTerrainCells();
     DrawCourseObjects();
-    DrawCourseScenery(RageSeriesCourseIndex(), g_SceneTimer, 1);
+    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
     GetTrackZoneBlend(g_PlayerCar.trackProgress);
     SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
     DrawPlayerTachometer();

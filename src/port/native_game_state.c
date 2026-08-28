@@ -367,7 +367,7 @@ enum {
 };
 extern const unsigned char g_UiScriptData[RAGE_UI_SCRIPT_DATA_SIZE];
 
-static void *RageResolveUiDataAddress(u32 address) {
+static void *ResolveUiDataAddress(u32 address) {
     size_t offset;
     if (address < RAGE_UI_SCRIPT_DATA_ADDRESS) return NULL;
     offset = (size_t)(address - RAGE_UI_SCRIPT_DATA_ADDRESS);
@@ -375,10 +375,10 @@ static void *RageResolveUiDataAddress(u32 address) {
     return (void *)(g_UiScriptData + offset);
 }
 
-static int RageLoadTimedDrawScript(
+static int LoadTimedDrawScript(
     TimedDrawCommand *destination, size_t count, u32 retailAddress) {
     const RageSerializedTimedDrawCommand *source =
-        RageResolveUiDataAddress(retailAddress);
+        ResolveUiDataAddress(retailAddress);
     size_t i;
     if (source == NULL) return 0;
     for (i = 0; i < count; i++) {
@@ -389,54 +389,54 @@ static int RageLoadTimedDrawScript(
             destination[i].motion.value = (s32)source[i].motionAddress;
         } else {
             destination[i].shape.pointer =
-                RageResolveUiDataAddress(source[i].shapeAddress);
+                ResolveUiDataAddress(source[i].shapeAddress);
             destination[i].motion.pointer =
-                RageResolveUiDataAddress(source[i].motionAddress);
+                ResolveUiDataAddress(source[i].motionAddress);
         }
     }
     return 1;
 }
 
-int RageInitNativeGameData(void) {
+int InitNativeGameData(void) {
     g_HostSndSpuRegs = (SpuCommonRegs *)Psyz_SpuRegisterBase();
-    return RageLoadTimedDrawScript(g_CourseSelectGpScript, 10, 0x800817a0u) &&
-        RageLoadTimedDrawScript(g_CourseSelectTimeAttackScript, 10, 0x80081818u) &&
-        RageLoadTimedDrawScript(g_UiChromeScript, 16, 0x80082460u) &&
-        RageLoadTimedDrawScript(g_MenuRowScript, 6, 0x80082520u) &&
-        RageLoadTimedDrawScript(g_UiEmptyScript, 1, 0x80082568u) &&
-        RageLoadTimedDrawScript(g_MenuHintBarScript, 61, 0x80082a90u) &&
-        RageLoadTimedDrawScript(g_CarSelectMenuScriptGp, 18, 0x800818ccu) &&
-        RageLoadTimedDrawScript(g_CarSelectMenuScriptTimeAttack, 12, 0x800819a4u) &&
-        RageLoadTimedDrawScript(g_UiChromeScript2, 9, 0x80082790u) &&
-        RageLoadTimedDrawScript(g_NativeRankingPanelScript, 5, 0x80081890u) &&
-        RageLoadTimedDrawScript(g_NativeCustomizeMenuScriptGp, 13, 0x80081a34u) &&
-        RageLoadTimedDrawScript(g_NativeCustomizeMenuScriptTimeAttack, 11, 0x80081ad0u) &&
-        RageLoadTimedDrawScript(g_NativeDesignModeScript, 16, 0x80081b54u) &&
-        RageLoadTimedDrawScript(g_NativeTeamLogoScreenScript, 12, 0x80081c14u) &&
-        RageLoadTimedDrawScript(g_NativeLogoSampleScreenScript, 12, 0x80081ca4u) &&
-        RageLoadTimedDrawScript(g_NativeTeamNameScreenScript, 61, 0x80081d34u) &&
-        RageLoadTimedDrawScript(g_NativePaintColorScreenScript, 15, 0x80082010u) &&
-        RageLoadTimedDrawScript(g_NativeCarShopScreenScript, 9, 0x800820c4u) &&
-        RageLoadTimedDrawScript(g_NativeEngineerShopScreenScript, 68, 0x80082130u) &&
-        RageLoadTimedDrawScript(g_NativeMenuDialogPanelUpperScript, 4, 0x80082574u) &&
-        RageLoadTimedDrawScript(g_NativeMenuDialogPanelLowerScript, 8, 0x800825a4u) &&
-        RageLoadTimedDrawScript(g_NativeCourseSelectSavePromptScript, 4, 0x80082604u) &&
-        RageLoadTimedDrawScript(g_NativeCourseSelectSavePromptBanner, 2, 0x800827fcu) &&
-        RageLoadTimedDrawScript(g_NativeMenuRow0MarkerScript, 4, 0x80082634u) &&
-        RageLoadTimedDrawScript(g_NativeMenuRow1MarkerScript, 16, 0x80082664u) &&
-        RageLoadTimedDrawScript(g_NativeRankingMenuScript, 9, 0x80082724u) &&
-        RageLoadTimedDrawScript(g_NativeTransmissionUnavailableScript, 4, 0x80082814u) &&
-        RageLoadTimedDrawScript(g_NativeTeamLogoScreenScript2, 2, 0x80082844u) &&
-        RageLoadTimedDrawScript(g_NativeCarShopUnavailableScript, 2, 0x8008285cu) &&
-        RageLoadTimedDrawScript(g_NativeEngineerShopUnavailableScript, 3, 0x80082874u) &&
-        RageLoadTimedDrawScript(g_NativeEngineerShopNoFundsScript, 2, 0x80082898u) &&
-        RageLoadTimedDrawScript(g_NativeCarShopNoFundsScript, 5, 0x800828b0u) &&
-        RageLoadTimedDrawScript(g_NativeDesignModeDeniedScript, 2, 0x800828ecu) &&
-        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript2, 7, 0x80082904u) &&
-        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript1, 7, 0x80082958u) &&
-        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript3, 7, 0x800829acu) &&
-        RageLoadTimedDrawScript(g_NativeCarShopBuyPromptScript4, 7, 0x80082a00u) &&
-        RageLoadTimedDrawScript(g_NativeEngineerShopTuneUpPromptScript, 5, 0x80082a54u);
+    return LoadTimedDrawScript(g_CourseSelectGpScript, 10, 0x800817a0u) &&
+        LoadTimedDrawScript(g_CourseSelectTimeAttackScript, 10, 0x80081818u) &&
+        LoadTimedDrawScript(g_UiChromeScript, 16, 0x80082460u) &&
+        LoadTimedDrawScript(g_MenuRowScript, 6, 0x80082520u) &&
+        LoadTimedDrawScript(g_UiEmptyScript, 1, 0x80082568u) &&
+        LoadTimedDrawScript(g_MenuHintBarScript, 61, 0x80082a90u) &&
+        LoadTimedDrawScript(g_CarSelectMenuScriptGp, 18, 0x800818ccu) &&
+        LoadTimedDrawScript(g_CarSelectMenuScriptTimeAttack, 12, 0x800819a4u) &&
+        LoadTimedDrawScript(g_UiChromeScript2, 9, 0x80082790u) &&
+        LoadTimedDrawScript(g_NativeRankingPanelScript, 5, 0x80081890u) &&
+        LoadTimedDrawScript(g_NativeCustomizeMenuScriptGp, 13, 0x80081a34u) &&
+        LoadTimedDrawScript(g_NativeCustomizeMenuScriptTimeAttack, 11, 0x80081ad0u) &&
+        LoadTimedDrawScript(g_NativeDesignModeScript, 16, 0x80081b54u) &&
+        LoadTimedDrawScript(g_NativeTeamLogoScreenScript, 12, 0x80081c14u) &&
+        LoadTimedDrawScript(g_NativeLogoSampleScreenScript, 12, 0x80081ca4u) &&
+        LoadTimedDrawScript(g_NativeTeamNameScreenScript, 61, 0x80081d34u) &&
+        LoadTimedDrawScript(g_NativePaintColorScreenScript, 15, 0x80082010u) &&
+        LoadTimedDrawScript(g_NativeCarShopScreenScript, 9, 0x800820c4u) &&
+        LoadTimedDrawScript(g_NativeEngineerShopScreenScript, 68, 0x80082130u) &&
+        LoadTimedDrawScript(g_NativeMenuDialogPanelUpperScript, 4, 0x80082574u) &&
+        LoadTimedDrawScript(g_NativeMenuDialogPanelLowerScript, 8, 0x800825a4u) &&
+        LoadTimedDrawScript(g_NativeCourseSelectSavePromptScript, 4, 0x80082604u) &&
+        LoadTimedDrawScript(g_NativeCourseSelectSavePromptBanner, 2, 0x800827fcu) &&
+        LoadTimedDrawScript(g_NativeMenuRow0MarkerScript, 4, 0x80082634u) &&
+        LoadTimedDrawScript(g_NativeMenuRow1MarkerScript, 16, 0x80082664u) &&
+        LoadTimedDrawScript(g_NativeRankingMenuScript, 9, 0x80082724u) &&
+        LoadTimedDrawScript(g_NativeTransmissionUnavailableScript, 4, 0x80082814u) &&
+        LoadTimedDrawScript(g_NativeTeamLogoScreenScript2, 2, 0x80082844u) &&
+        LoadTimedDrawScript(g_NativeCarShopUnavailableScript, 2, 0x8008285cu) &&
+        LoadTimedDrawScript(g_NativeEngineerShopUnavailableScript, 3, 0x80082874u) &&
+        LoadTimedDrawScript(g_NativeEngineerShopNoFundsScript, 2, 0x80082898u) &&
+        LoadTimedDrawScript(g_NativeCarShopNoFundsScript, 5, 0x800828b0u) &&
+        LoadTimedDrawScript(g_NativeDesignModeDeniedScript, 2, 0x800828ecu) &&
+        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript2, 7, 0x80082904u) &&
+        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript1, 7, 0x80082958u) &&
+        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript3, 7, 0x800829acu) &&
+        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript4, 7, 0x80082a00u) &&
+        LoadTimedDrawScript(g_NativeEngineerShopTuneUpPromptScript, 5, 0x80082a54u);
 }
 static const u8 g_RagePrologueText0[] = "NO ONE KNOWS HOW THE RACE BEGAN";
 static const u8 g_RagePrologueText1[] = "OR HOW ITS DRIVERS BECAME KNOWN";
@@ -506,13 +506,13 @@ u8 *g_AssetBase = g_RageAssetMemory;
 /* The console had two megabytes for all of this; the port has sixty-four, which
  * is the room an oversized asset grows into. Overrides are checked against the
  * end of whichever buffer they are being read into. */
-size_t RagePortAssetRoomAt(const void *at) {
+size_t PortAssetRoomAt(const void *at) {
     const u8 *p = at;
     if (p >= g_RageAssetMemory && p < g_RageAssetMemory + sizeof(g_RageAssetMemory))
         return (size_t)(g_RageAssetMemory + sizeof(g_RageAssetMemory) - p);
     {
-        extern unsigned long RagePortLoadBufferRoomAt(const void *at);
-        unsigned long room = RagePortLoadBufferRoomAt(at);
+        extern unsigned long PortLoadBufferRoomAt(const void *at);
+        unsigned long room = PortLoadBufferRoomAt(at);
         if (room != 0) return (size_t)room;
     }
     return 0;

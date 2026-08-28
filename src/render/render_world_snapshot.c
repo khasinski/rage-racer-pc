@@ -211,7 +211,7 @@ static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
     return 1;
 }
 
-int RageRenderWorldSnapshotWrite(const char *path,
+int RenderWorldSnapshotWrite(const char *path,
                                  const RageRenderWorld *world) {
     FILE *file;
     uint32_t instance;
@@ -243,7 +243,7 @@ int RageRenderWorldSnapshotWrite(const char *path,
     return ok;
 }
 
-int RageRenderWorldSnapshotRead(const char *path,
+int RenderWorldSnapshotRead(const char *path,
                                 RageRenderWorldSnapshot *snapshot) {
     unsigned char magic[sizeof(RAGE_RENDER_WORLD_SNAPSHOT_MAGIC)];
     uint32_t version, instance, count;
@@ -261,7 +261,7 @@ int RageRenderWorldSnapshotRead(const char *path,
     if (ok && version >= 3)
         ok = ReadLight(file, &snapshot->world.light);
     else if (ok)
-        RageRenderDirectionalLightDefault(&snapshot->world.light);
+        RenderDirectionalLightDefault(&snapshot->world.light);
     ok = ok &&
          ReadCamera(file, &snapshot->world.camera, version) &&
          ReadCamera(file, &snapshot->world.previousCamera, version) &&
@@ -287,7 +287,7 @@ int RageRenderWorldSnapshotRead(const char *path,
     }
     fclose(file);
     if (!ok) {
-        RageRenderWorldSnapshotRelease(snapshot);
+        RenderWorldSnapshotRelease(snapshot);
         return 0;
     }
     snapshot->world.instances = snapshot->instances;
@@ -296,7 +296,7 @@ int RageRenderWorldSnapshotRead(const char *path,
     return 1;
 }
 
-void RageRenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot) {
+void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot) {
     if (snapshot == NULL) return;
     free(snapshot->instances);
     memset(snapshot, 0, sizeof(*snapshot));

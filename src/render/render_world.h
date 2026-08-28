@@ -171,25 +171,25 @@ typedef struct RageRenderWorld {
     uint32_t overflowCount;
 } RageRenderWorld;
 
-void RageRenderWorldInit(RageRenderWorld *world,
+void RenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
                          uint32_t capacity);
-void RageRenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame);
-void RageRenderWorldSetDirectionalLight(
+void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame);
+void RenderWorldSetDirectionalLight(
     RageRenderWorld *world, const RageRenderDirectionalLight *light);
-void RageRenderDirectionalLightDefault(RageRenderDirectionalLight *light);
-void RageRenderWorldSetCamera(RageRenderWorld *world,
+void RenderDirectionalLightDefault(RageRenderDirectionalLight *light);
+void RenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera);
-void RageRenderWorldSetMirrorCamera(RageRenderWorld *world,
+void RenderWorldSetMirrorCamera(RageRenderWorld *world,
                                     const RageRenderCamera *camera,
                                     int active, float panelY);
-int RageRenderWorldSubmitMesh(RageRenderWorld *world,
+int RenderWorldSubmitMesh(RageRenderWorld *world,
                               const RageRenderMeshInstance *instance);
-void RageRenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass);
-void RageRenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
+void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass);
+void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform);
 /* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)
  * scene basis used by imported meshes and Render World positions. */
-void RageRenderConvertPsxMatrix(const float source[3][3], float out[3][3]);
+void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]);
 
 #endif

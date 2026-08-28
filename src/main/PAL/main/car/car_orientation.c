@@ -657,9 +657,9 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
   }
   collision_found:
 #ifdef __psyz
-  if (RageDiagnosticsEnabled("car.collision_trace"))
+  if (DiagnosticsEnabled("car.collision_trace"))
   {
-    const char *timerText = RageDiagnosticsValue("car.collision_trace_timer");
+    const char *timerText = DiagnosticsValue("car.collision_trace_timer");
     if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0))
     {
       printf("car-collision timer=%d opponent=%d region=%d sample=%d quad=%d "
