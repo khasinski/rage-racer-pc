@@ -11,7 +11,14 @@ set(CMAKE_C_EXTENSIONS ON)
 # The recovered game code relies on wrapping signed arithmetic and contains
 # deliberate type punning. Keep optimized host builds from treating either as
 # permission to rewrite game behavior.
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    # clang-cl accepts GNU driver flags only through its /clang: escape hatch.
+    # Passing them directly produces -Wunknown-argument and breaks the Windows
+    # release build once the port targets enable -Werror.
+    add_compile_options(
+        /clang:-fno-strict-aliasing
+        /clang:-fwrapv)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(-fno-strict-aliasing -fwrapv)
 endif()
 
