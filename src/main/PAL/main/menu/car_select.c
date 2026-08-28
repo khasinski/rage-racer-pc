@@ -99,13 +99,10 @@ void UpdateRankingScreen(void) {
             GameMenuBusy = -1;
             break;
         }
-    } else {
-        goto pos;
+        RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        return;
     }
-    RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, 0);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
-    return;
-pos:
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 2;
     RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, -1);
