@@ -86,7 +86,7 @@ typedef struct CourseSelectSpriteBounds {
  * Y. GCC 2.6.3 integrates this explicit inline at -O2; its optional bounds
  * result also preserves the retail caller frame before null outputs fold away.
  */
-static __inline__ s32 GameDrawSlidingSprite(
+static s32 GameDrawSlidingSprite(
     void *ot,
     s32 x,
     s32 baseY,

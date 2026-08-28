@@ -198,13 +198,6 @@ void DrawRacePosition(void) {
     }
 }
 
-void SetHudBlinkColor(s32 phase) {
-    GameFrameContextAddress drawBuffer;
-
-    drawBuffer.bytes = g_DrawBuffer;
-    drawBuffer.context->layout.raceHud.labels[2].clut = phase ? 0x7811 : 0x7800;
-}
-
 void DrawSplitDelta(s32 delta, s32 y) {
     GameFrameContextAddress drawBuffer;
     SPRT *firstPrim;

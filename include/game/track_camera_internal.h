@@ -46,7 +46,7 @@ typedef union GameTrackCameraNodeAddress {
     TrackCameraTable *table;
 } GameTrackCameraNodeAddress;
 
-static __inline__ GameTrackCameraNode *ResolveTrackCameraOffset(
+static inline GameTrackCameraNode *ResolveTrackCameraOffset(
     TrackCameraTable *table, s32 offset) {
     GameTrackCameraNodeAddress address;
 

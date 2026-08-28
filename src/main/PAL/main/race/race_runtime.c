@@ -177,20 +177,6 @@ void DrawWaypoints(void) {
     } while (i < 6);
 }
 
-s32 CountActiveWaypoints(void) {
-    TrackWaypointRuntime *ptr = g_Waypoints;
-    s32 count = 0;
-    s32 i = 5;
-
-    do {
-        i--;
-        count += ptr->active != 0;
-        ptr++;
-    } while (i >= 0);
-
-    return count;
-}
-
 void DrawLapNumber(void) {
     SPRT *scratch;
     s32 track;
@@ -367,34 +353,6 @@ race_intro_update_done:
         UpdateWaypoints();
         DrawWaypoints();
     }
-}
-
-void ApplyTrackReverbZone(s32 position) {
-    s32 result;
-    s32 i;
-    s32 zone;
-    s32 depth;
-    s32 scene;
-
-    result = 0;
-    if (position < 0) {
-        position += g_TrackLength;
-    }
-
-    scene = g_RaceSeries;
-    zone = 0;
-    for (i = 0; i < 2; i++) {
-        if (g_ReverbZones[scene][zone].start < position) {
-            if (position < g_ReverbZones[scene][zone].end) {
-                result = 0x46;
-                break;
-            }
-        }
-        zone++;
-    }
-
-    depth = result;
-    SetReverbDepth(depth, depth);
 }
 
 void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {

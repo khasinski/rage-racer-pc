@@ -93,14 +93,14 @@ typedef union EffectVoiceAddress {
     EffectVoice *pointer;
 } EffectVoiceAddress;
 
-static __inline__ EffectVoicePitch *GetEffectVoicePitchFromState(s32 *state) {
+static inline EffectVoicePitch *GetEffectVoicePitchFromState(s32 *state) {
     EffectVoiceAddress address;
 
     address.wordPointer = state + 1;
     return address.pitchPointer;
 }
 
-static __inline__ s16 *GetEffectVoiceHalfwordsFromState(s32 *state) {
+static inline s16 *GetEffectVoiceHalfwordsFromState(s32 *state) {
     EffectVoiceAddress address;
 
     address.wordPointer = state;
@@ -109,7 +109,7 @@ static __inline__ s16 *GetEffectVoiceHalfwordsFromState(s32 *state) {
 
 extern EffectVoice g_EffectVoices[];
 
-static __inline__ EffectVoice *GetEffectVoiceAtByteOffset(s32 byteOffset) {
+static inline EffectVoice *GetEffectVoiceAtByteOffset(s32 byteOffset) {
     EffectVoiceAddress address;
 
     address.pointer = g_EffectVoices;
@@ -183,7 +183,7 @@ typedef union SoundModeEntryAddress {
 
 extern SoundModeEntry g_SoundModes[];
 
-static __inline__ SoundModeEntry *GetSoundModeAtByteOffset(s32 byteOffset) {
+static inline SoundModeEntry *GetSoundModeAtByteOffset(s32 byteOffset) {
     SoundModeEntryAddress address;
 
     address.pointer = g_SoundModes;

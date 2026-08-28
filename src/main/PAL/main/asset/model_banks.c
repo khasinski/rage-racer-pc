@@ -170,6 +170,3 @@ CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
 void SelectCarModelSlot(s32 index) {
     g_CarModelAsset = g_CarModelSlots[index];
 }
-
-void ModelBankNoOp(void) {
-}

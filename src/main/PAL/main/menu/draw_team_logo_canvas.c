@@ -2,38 +2,6 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-void DrawTeamLogoCanvasFade(s32 delta) {
-    u8 *scratch;
-    s32 value;
-    s32 sum;
-    s32 limit;
-    s32 alpha;
-
-    scratch = SCRATCH_OT_BASE_AS(u8);
-    if (delta > 0) {
-        value = g_MenuCurtainFade;
-        sum = delta + value;
-        value = sum;
-        g_MenuCurtainFade = value;
-        if (0xFFFF < value) {
-            g_MenuCurtainFade = 0xFFFF;
-        }
-    } else {
-        value = g_MenuCurtainFade;
-        sum = delta + value;
-        value = sum;
-        g_MenuCurtainFade = value;
-        if (value < 0) {
-            g_MenuCurtainFade = 0;
-        }
-    }
-
-    limit = 0x1E0;
-    g_MenuCurtainShade = g_MenuCurtainFade >> 8;
-    alpha = g_MenuCurtainShade;
-    DrawSolidRect(scratch + 0x18, 0x48, 0, 0xF8, limit, alpha, alpha, alpha, 0x40);
-}
-
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
 {
   s32 kreg;

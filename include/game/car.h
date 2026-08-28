@@ -193,7 +193,7 @@ typedef union GameCarRuntimeAddress {
     Vec4 *vector4;
 } GameCarRuntimeAddress;
 
-static __inline__ GameCarRuntime *GetPlayerCarRuntime(
+static inline GameCarRuntime *GetPlayerCarRuntime(
     struct PlayerCarRuntime *car) {
     GameCarRuntimeAddress address;
 
@@ -201,7 +201,7 @@ static __inline__ GameCarRuntime *GetPlayerCarRuntime(
     return address.runtime;
 }
 
-static __inline__ struct GameRenderObject *GetCarRenderObject(
+static inline struct GameRenderObject *GetCarRenderObject(
     GameCarRuntime *car) {
     GameCarRuntimeAddress address;
 
@@ -209,7 +209,7 @@ static __inline__ struct GameRenderObject *GetCarRenderObject(
     return address.renderObject;
 }
 
-static __inline__ Vec4 *GetCarVector4(GameCarRuntime *car) {
+static inline Vec4 *GetCarVector4(GameCarRuntime *car) {
     GameCarRuntimeAddress address;
 
     address.runtime = car;
@@ -233,7 +233,7 @@ typedef union CarProgressWindowAddress {
     CarProgressWindow *window;
 } CarProgressWindowAddress;
 
-static __inline__ CarProgressWindow *GetCarProgressWindow(
+static inline CarProgressWindow *GetCarProgressWindow(
     GameCarRuntime *car) {
     CarProgressWindowAddress address;
 
@@ -241,7 +241,7 @@ static __inline__ CarProgressWindow *GetCarProgressWindow(
     return address.window;
 }
 
-static __inline__ s32 GetCarProgressWindowProgressA(
+static inline s32 GetCarProgressWindowProgressA(
     CarProgressWindow *window) {
     CarProgressWindowAddress address;
 
@@ -419,7 +419,7 @@ typedef union GameCarSpecAddress {
     GameCarSpec *pointer;
 } GameCarSpecAddress;
 
-static __inline__ GameCarSpec *GetGameCarSpec(void *data) {
+static inline GameCarSpec *GetGameCarSpec(void *data) {
     GameCarSpecAddress address;
 
     address.data = data;

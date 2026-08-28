@@ -56,7 +56,7 @@ int RetireCameraActive(void) { return s_RetireCameraActive; }
  * format disables it; otherwise the six named values are the complete
  * printf argument list.
  */
-static __inline__ void GameDebugLapResult(
+static void GameDebugLapResult(
     char *format,
     s32 result,
     s32 progress,

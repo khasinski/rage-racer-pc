@@ -20,23 +20,6 @@ void TickSequenceAudio(void) {
     }
 }
 
-
-s32 IsSpuTransferDone(void) {
-    SpuTransferSampleBuffer *buffer;
-    s32 value0;
-    s32 value1;
-
-    buffer = &g_ReplayFrameBuffer.spuTransfer;
-    value1 = SpuTransferStatus(buffer, 0);
-    value0 = buffer->channelA[value1][0];
-    value1 = buffer->channelB[value1][0];
-
-    value0 = value0 < 0 ? -value0 : value0;
-    value1 = value1 < 0 ? -value1 : value1;
-
-    return (value0 << 16) | (s16)value1;
-}
-
 /* Reads one tone out of the 6x2 g_SoundSlotTone grid, and writes it too when
  * `tone` is not negative. Returns what was there before. */
 s32 SetSoundToneTableEntry(s32 slot, s32 vabSlot, s32 tone) {

@@ -531,12 +531,12 @@ typedef union PathSceneryKeyAddress {
     PathSceneryRotationKey *rotationPointer;
 } PathSceneryKeyAddress;
 
-static __inline__ PathSceneryPositionKey *GetPathSceneryPositionKey(
+static inline PathSceneryPositionKey *GetPathSceneryPositionKey(
     PathSceneryPositionData *data, s32 index) {
     return &data->keys[index];
 }
 
-static __inline__ PathSceneryRotationKey *GetPathSceneryRotationKey(
+static inline PathSceneryRotationKey *GetPathSceneryRotationKey(
     PathSceneryRotationData *data, s32 index) {
     return &data->keys[index];
 }

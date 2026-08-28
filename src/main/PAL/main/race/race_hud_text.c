@@ -10,7 +10,7 @@ typedef union CountdownPhase {
     u32 unsignedValue;
 } CountdownPhase;
 
-static __inline__ TILE *GetTileAtByteOffset(u8 *base, s32 byteOffset) {
+static TILE *GetTileAtByteOffset(u8 *base, s32 byteOffset) {
     return (TILE *)(base + (byteOffset / 0x10) * sizeof(TILE));
 }
 

@@ -746,7 +746,7 @@ typedef enum GameTexturePacketKind {
     GAME_TEXTURE_PACKET_FT4
 } GameTexturePacketKind;
 
-static __inline__ u8 *GameQueueTexturePacketWide(
+static inline u8 *GameQueueTexturePacketWide(
     void *ot,
     u8 *prim,
     s32 x,

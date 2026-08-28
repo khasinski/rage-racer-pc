@@ -129,35 +129,35 @@ typedef union AssetAddress {
     TrackTextureShadowRow *trackTextureRows;
 } AssetAddress;
 
-static __inline__ s32 *GetAssetWords(void *data) {
+static inline s32 *GetAssetWords(void *data) {
     AssetAddress address;
 
     address.pointer = data;
     return address.words;
 }
 
-static __inline__ u8 *GetAssetBytes(void *data) {
+static inline u8 *GetAssetBytes(void *data) {
     AssetAddress address;
 
     address.pointer = data;
     return address.bytes;
 }
 
-static __inline__ TrackTextureShadowRow *GetTrackTextureShadowRows(void *data) {
+static inline TrackTextureShadowRow *GetTrackTextureShadowRows(void *data) {
     AssetAddress address;
 
     address.pointer = data;
     return address.trackTextureRows;
 }
 
-static __inline__ u16 *GetAssetHalfwords(void *data) {
+static inline u16 *GetAssetHalfwords(void *data) {
     AssetAddress address;
 
     address.pointer = data;
     return address.halfwords;
 }
 
-static __inline__ struct CourseModelAssetHeader *GetCourseModelAssetHeader(
+static inline struct CourseModelAssetHeader *GetCourseModelAssetHeader(
     void *data) {
     AssetAddress address;
 
@@ -165,14 +165,14 @@ static __inline__ struct CourseModelAssetHeader *GetCourseModelAssetHeader(
     return address.courseModels;
 }
 
-static __inline__ struct ModelBankHeader *GetModelBankHeader(void *data) {
+static inline struct ModelBankHeader *GetModelBankHeader(void *data) {
     AssetAddress address;
 
     address.pointer = data;
     return address.modelBank;
 }
 
-static __inline__ void *ResolveAssetAddress(void *base, s32 offset) {
+static inline void *ResolveAssetAddress(void *base, s32 offset) {
     AssetAddress address;
 
     address.pointer = base;
@@ -200,7 +200,7 @@ typedef struct CarModelAsset {
     AssetAddress imageData;
 } CarModelAsset;
 
-static __inline__ CarModelAsset *GetCarModelAsset(void *data) {
+static inline CarModelAsset *GetCarModelAsset(void *data) {
     AssetAddress address;
 
     address.pointer = data;
@@ -231,7 +231,7 @@ typedef union GameImageAssetAddress {
     GameImageBlock *block;
 } GameImageAssetAddress;
 
-static __inline__ GameImageAssetHeaderWord *GetImageAssetHeaderWords(
+static inline GameImageAssetHeaderWord *GetImageAssetHeaderWords(
     void *data) {
     GameImageAssetAddress address;
 
@@ -257,14 +257,14 @@ typedef union GameSceneAssetAddress {
     GameSceneAssetHeader *header;
 } GameSceneAssetAddress;
 
-static __inline__ GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
+static inline GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
     GameSceneAssetAddress address;
 
     address.pointer = data;
     return address.header;
 }
 
-static __inline__ void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offset) {
+static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offset) {
     GameSceneAssetAddress address;
 
     address.header = header;
@@ -386,7 +386,7 @@ typedef struct OptionScreenAsset {
     ModelBankHeader modelBank;
 } OptionScreenAsset;
 
-static __inline__ OptionScreenAsset *GetOptionScreenAsset(void *data) {
+static inline OptionScreenAsset *GetOptionScreenAsset(void *data) {
     AssetAddress address;
 
     address.pointer = data;

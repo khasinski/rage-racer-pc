@@ -11,16 +11,6 @@ void SwapCarModelSlot(void) {
     InstallCarModelSlot();
 }
 
-
-void DrawCarSlotHighlight(s32 slot) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    u8 *value = *scratch;
-
-    *scratch = GameQueueTileTrans(
-        GamePrimaryOrderingTable(0), value, 0x24, (slot * 16) + 0x24,
-        0x50, 0x10, 0, 0, 0xFF);
-}
-
 void DrawMenuCarView(void) {
     Matrix mtxA;
     Matrix mtxB;

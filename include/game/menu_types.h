@@ -28,7 +28,7 @@ typedef union RaceRecordAddress {
     volatile u8 *volatileBytePointer;
 } RaceRecordAddress;
 
-static __inline__ s32 *GetRaceRecordWords(RaceRecord *record) {
+static inline s32 *GetRaceRecordWords(RaceRecord *record) {
     RaceRecordAddress address;
 
     address.pointer = record;
@@ -50,7 +50,7 @@ typedef union TeamLogoSampleAddress {
     u16 *halfwordPointer;
 } TeamLogoSampleAddress;
 
-static __inline__ TeamLogoSample *GetTeamLogoSample(void *data) {
+static inline TeamLogoSample *GetTeamLogoSample(void *data) {
     TeamLogoSampleAddress address;
 
     address.data = data;
@@ -75,7 +75,7 @@ typedef union TeamLogoCanvasAddress {
     u32 *wordPointer;
 } TeamLogoCanvasAddress;
 
-static __inline__ u8 *GetTeamLogoCanvasBytes(u32 *words) {
+static inline u8 *GetTeamLogoCanvasBytes(u32 *words) {
     TeamLogoCanvasAddress address;
 
     address.wordPointer = words;
