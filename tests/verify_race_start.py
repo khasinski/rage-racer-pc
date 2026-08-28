@@ -32,8 +32,13 @@ def main() -> int:
             RAGE_PORT_SMOKE_AUDIO_METRICS="1",
             RAGE_PORT_SPU_TRACE=str(spu_trace),
         )
+        # This test probes retail 320x240 HUD coordinates in the compatibility
+        # framebuffer. Keep it independent from the shipped widescreen HUD
+        # anchor, which deliberately moves those packets outside that page for
+        # the modern final presentation.
         result = subprocess.run(
-            [executable], cwd=source_dir, env=environment,
+            [executable, "--set", "video.renderer=classic"],
+            cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=45,
         )
