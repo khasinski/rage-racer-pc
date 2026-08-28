@@ -19,7 +19,10 @@
 #include "render/rmesh.h"
 
 enum {
-    RAGE_IMPORT_ENTRY_LIMIT = 128,
+    /* The retail archive exposes 130 renderer asset/set pairs. Keep room for
+     * regional or modded discs without evicting a mesh still referenced by a
+     * captured frame. */
+    RAGE_IMPORT_ENTRY_LIMIT = 256,
     RAGE_IMPORT_MATERIAL_LIMIT = 2048,
     RAGE_IMPORT_BATCH_GUARD = 65536,
     RAGE_IMPORT_HEADER_SIZE = 24,
