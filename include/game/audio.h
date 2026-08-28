@@ -9,11 +9,9 @@ typedef struct EffectCueProgram {
 } EffectCueProgram;
 
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot);
-#ifdef __psyz
 void SsSeqPlay(short sequence, char playMode, short loopCount);
 void SsSeqStop(short sequence);
 void SsSeqSetVol(short sequence, short left, short right);
-#endif
 
 typedef struct EffectCueBankHeader {
     s32 voiceCount;

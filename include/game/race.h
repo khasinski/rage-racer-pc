@@ -129,14 +129,12 @@ typedef struct GameRaceProgress {
                        g_GrandPrixSeries, read back as u16. */
 } GameRaceProgress;
 
-#ifdef __psyz
 _Static_assert(sizeof(GameRaceProgress) == 0x14,
                "race progress must retain its retail size");
 _Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
                "race progress max class must retain its retail offset");
 _Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
                "race progress money/series must retain its retail offset");
-#endif
 
 /* The save slot the front end is editing; repointed at one of the three below,
  * matching the title-menu row that g_CarTable was repointed for. Declared s32
@@ -342,15 +340,10 @@ extern char g_CaptionRanking2[];
 extern char g_CaptionTotalMoney[];
 extern char g_CaptionTotalTime[];
 extern char g_CaptionTotalTime2[];
-#ifdef __psyz
 extern char *g_NativeCarClassNames[];
 extern char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames
 #define g_CarNames g_NativeCarNames
-#else
-extern s32 g_CarClassNames[];
-extern s32 g_CarNames[];
-#endif
 extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern u8 g_ClockTextCells[8];
@@ -386,12 +379,8 @@ extern s32 g_NameEntryChar;
 extern u8 g_NameEntryCharset[];
 extern s32 g_NameEntryCursor;
 extern s16 g_PadMirrorMasks[];
-#ifdef __psyz
 extern u8 *g_NativePlaceSuffixNames[];
 #define g_PlaceSuffixNames g_NativePlaceSuffixNames
-#else
-extern u8 *g_PlaceSuffixNames[];
-#endif
 #define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
@@ -511,15 +500,10 @@ void AdvanceBgmShuffleBag(u32 track);
 void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj);
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj);
-#ifdef __psyz
 extern void (*g_NativeAttractDemoSteps[])(void);
 extern void (*g_NativeBgmSelectSteps[])(void);
 #define g_AttractDemoSteps g_NativeAttractDemoSteps
 #define g_BgmSelectSteps g_NativeBgmSelectSteps
-#else
-extern void (*g_AttractDemoSteps[])(void);
-extern void (*g_BgmSelectSteps[])(void);
-#endif
 void UpdateBgmSelectLoad(void);
 void UpdateBgmSelectFadeIn(void);
 void UpdateBgmSelect(void);

@@ -23,11 +23,7 @@ typedef union GameSaveHeaderRow {
 } GameSaveHeaderRow;
 
 typedef union GameSaveHeaderRowAddress {
-#ifdef __psyz
     uintptr_t value;
-#else
-    s32 value;
-#endif
     GameSaveHeaderRow *pointer;
 } GameSaveHeaderRowAddress;
 

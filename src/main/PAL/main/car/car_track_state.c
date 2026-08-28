@@ -11,10 +11,8 @@
 #include "game/track_internal.h"
 #include "game/vector.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 
 typedef union TrackCarAddress {
     PlayerCarRuntime *player;
@@ -88,7 +86,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     GameTrackArcCenter *arcCenter;
     CarTrackScratch *spad;
     TrackCarAddress playerAddress;
-#ifdef __psyz
     static int traceEnabled = -1;
     static int traceTimer = -1;
     static int traceTimerMin = -1;
@@ -115,7 +112,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
                limits->leftInset, limits->rightInset,
                limits->leftKnockbackMode, limits->rightKnockbackMode);
     }
-#endif
 
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
     spad = CAR_TRACK_SCRATCH;
@@ -427,7 +423,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
             obj->trackSection = (s16)(finalAngle >> 8);
         }
     }
-#ifdef __psyz
     if (traceThisCall) {
         Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
                "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
@@ -439,7 +434,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
                spad->knockbackMode, obj->motionActive, obj->motionTimer,
                obj->velocityX, obj->velocityZ);
     }
-#endif
     return spad->knockbackMode;
 }
 

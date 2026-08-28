@@ -10,9 +10,7 @@ typedef struct Matrix {
     s32 t[3];
 } Matrix;
 
-#ifdef __psyz
 _Static_assert(sizeof(Matrix) == 32, "PSY-Q Matrix must retain its 32-bit ABI");
-#endif
 
 /*
  * libgte leaf routines. These load GTE (COP2) control/data registers or run a

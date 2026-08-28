@@ -443,9 +443,6 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     }
 
     {
-#ifndef RAGE_HOST_PORT
-        register RenderBufferAddress scratchPacket;
-#endif
         register s32 fontU;
         register s16 scroll0;
         register char *marqueeBase asm("$16");
@@ -458,16 +455,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
             asm(
                 "" : "=r"(textY), "=r"(textColor) :
                 "0"(textY), "1"(textColor));
-#ifdef RAGE_HOST_PORT
             SCRATCH_PRIM_CURSOR_AS(u8) = firstNext;
-#else
-            scratchPacket.bytes = SCRATCHPAD_BYTES;
-#endif
             scroll0 = g_RaceOptionScroll0;
             marqueeBase = &g_RaceOptionMarquee[0][0];
-#ifndef RAGE_HOST_PORT
-            *scratchPacket.packetLink = firstNext;
-#endif
             marquee = (g_SceneTimer & 3) * 40;
             DrawText8x8(
                 (scroll0 >> 2) + 0xA0,
@@ -489,15 +479,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 0x7811);
         }
 
-#ifdef RAGE_HOST_PORT
         firstNext = SCRATCH_PRIM_CURSOR_AS(u8);
         drawPrim = QueueDrawAreaPrim(ot, (DrawPacket *)firstNext,
                                      0x72, 0x8A, 0x5C, 0xC);
-#else
-        scratchPacket.bytes = *scratchPacket.packetLink;
-        drawPrim = QueueDrawAreaPrim(
-            ot, scratchPacket.drawPacket, 0x72, 0x8A, 0x5C, 0xC);
-#endif
         fontU = 0xD0;
         prim.bytes = GameQueueSprite(
             ot, drawPrim, 0x88, 0x6A, 0x30, 8, fontU, 0x10, 0x7893);

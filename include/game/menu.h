@@ -9,9 +9,7 @@
 #include "game/state.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
-#ifdef __psyz
 #include "game/render.h"
-#endif
 
 /*
  * Menu / UI state block at 0x8009B200 (~0x550 bytes). Retail addresses it field
@@ -508,19 +506,11 @@ extern u8 g_CarShopBuyPromptScript3;
 extern u8 g_CarShopBuyPromptScript4;
 extern u8 g_EngineerShopTuneUpPromptScript;
 extern s32 g_CarTuneUpPriceTable[];
-#ifdef __psyz
 extern char *g_NativeCarManufacturerNames[];
 #define g_CarManufacturerNames g_NativeCarManufacturerNames
-#else
-extern s32 g_CarManufacturerNames[];
-#endif
 /* The eight PS / rpm / kgm captions DrawEngineSpecLabel picks between. */
-#ifdef __psyz
 extern char *g_NativeEngineSpecLabels[];
 #define g_EngineSpecLabels g_NativeEngineSpecLabels
-#else
-extern s32 g_EngineSpecLabels[];
-#endif
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
@@ -583,7 +573,6 @@ extern u8 g_MenuHintBarScript;
  * 32-bit PSX addresses. Native pointers widen those records, so the host must
  * use decoded TimedDrawCommand arrays instead of walking the serialized data
  * in host_state.c directly. */
-#ifdef __psyz
 #define RAGE_NATIVE_UI_SCRIPT(name, count) \
     extern TimedDrawCommand g_Native##name[count]
 RAGE_NATIVE_UI_SCRIPT(RankingPanelScript, 5);
@@ -646,7 +635,6 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #define g_CarShopBuyPromptScript3 g_NativeCarShopBuyPromptScript3
 #define g_CarShopBuyPromptScript4 g_NativeCarShopBuyPromptScript4
 #define g_EngineerShopTuneUpPromptScript g_NativeEngineerShopTuneUpPromptScript
-#endif
 extern u8 g_NegconAxisI;
 extern u8 g_NegconAxisII;
 extern u8 g_NegconAxisL;

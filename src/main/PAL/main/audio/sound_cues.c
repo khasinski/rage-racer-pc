@@ -3,10 +3,8 @@
 #include "psyq/snd.h"
 #include "game/sound.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 
 void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
     s32 count;
@@ -522,10 +520,8 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
 void PlaySoundCue(s32 cue) {
     u32 specialCueRange;
 
-#ifdef __psyz
     if (getenv("RAGE_PORT_SOUND_CUE_TRACE") != NULL)
         fprintf(stderr, "rage-port: sound cue=0x%02x\n", (unsigned)cue);
-#endif
 
     if (g_SoundCueBank == 1) {
         if (cue >= 0) {

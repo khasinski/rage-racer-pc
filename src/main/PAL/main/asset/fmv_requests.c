@@ -3,9 +3,7 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
-#ifdef __psyz
 #include "rage/track_asset_identity.h"
-#endif
 
 
 void LoadTrackDataAssets(void) {
@@ -20,9 +18,7 @@ void LoadTrackDataAssets(void) {
         offset = g_CourseIndex * 2;
         assetIndex = (g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE;
         if (LoadAsset(assetIndex, dst) != 0) {
-#ifdef __psyz
             TrackAssetIdentitySet(assetIndex);
-#endif
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];
             g_AssetBlockPtr = GetSceneAssetAddress(header, offset);

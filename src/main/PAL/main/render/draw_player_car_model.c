@@ -11,10 +11,8 @@
 #include "psyq/gte.h"
 #include "rage/render_world_game.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 
 
 /*
@@ -181,7 +179,6 @@ void DrawCar(GameRenderObject *obj) {
         v_128[2] = -v_128[2];
     }
     otDepth = v_128[0] + v_128[2];
-#ifdef __psyz
     if (DiagnosticsEnabled("render.car_draw_trace")) {
         const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
@@ -200,7 +197,6 @@ void DrawCar(GameRenderObject *obj) {
                        g_CarTable[g_PlayerCarIndex].modelVariant));
         }
     }
-#endif
     if (v_148[2] >= 0 && otDepth < 0x2500) {
         GameRenderWorldSubmitCar(
             obj, SCRATCH_MIRROR != 0,

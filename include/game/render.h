@@ -934,9 +934,6 @@ s32 rsinCore(s32 angle);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
 void *ApplyMatrixLV();
-#ifndef __psyz
-s32 SquareRoot0(s32 square);
-#endif
 void SubmitTerrainCells(void *ctx, void *cells, s32 count);
 s32 SetLookAtMatrix(const CameraLookAt *camera);
 void SetTrackTexturePageNow(s32 trackSection);

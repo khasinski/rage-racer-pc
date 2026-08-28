@@ -37,7 +37,7 @@ target_include_directories(team_logo_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(team_logo_tests PRIVATE __psyz=1 RAGE_HOST_PORT=1)
+target_compile_definitions(team_logo_tests PRIVATE __psyz=1)
 if(MSVC)
     target_compile_options(team_logo_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
@@ -57,8 +57,7 @@ target_include_directories(record_defaults_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(record_defaults_tests PRIVATE
-    __psyz=1 RAGE_HOST_PORT=1)
+target_compile_definitions(record_defaults_tests PRIVATE __psyz=1)
 if(MSVC)
     target_compile_options(record_defaults_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
@@ -473,7 +472,6 @@ if(TARGET rage-host-state)
         ../src/main/PAL/main/pad/init_pad.c
         $<TARGET_OBJECTS:rage-host-state>
     )
-    target_compile_definitions(negcon_calibration_tests PRIVATE RAGE_HOST_PORT=1)
     target_include_directories(negcon_calibration_tests PRIVATE
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src/port

@@ -5,16 +5,12 @@
 #include "game/scratchpad.h"
 #include "game/track.h"
 #include "psyq/gte.h"
-#ifdef RAGE_HOST_PORT
 #include "rage/render_world_game.h"
-#endif
 
 void DrawSpinningScenery(s32 timer, s32 animate) {
     s16 yawMatrix[16];
     s16 objectMatrix[16];
-#ifdef RAGE_HOST_PORT
     Matrix renderWorldMtx;
-#endif
     s32 frame = timer;
     s32 update = animate;
     s16 *dst;
@@ -64,10 +60,8 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
             dataAddress.orientationPointer = g_SpinningSceneryYaw;
             dataAddress.bytes += offset;
             BuildRotMatrixY(yawMatrix, dataAddress.orientationPointer->yaw);
-#ifdef RAGE_HOST_PORT
             BuildRotMatrixZ(&renderWorldMtx, *dst);
             MulMatrix2((Matrix *)yawMatrix, &renderWorldMtx);
-#endif
             MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, yawMatrix);
             BuildRotMatrixZ(work, *dst);
             MulMatrix2(yawMatrix, work);
@@ -80,12 +74,10 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
             if (g_CourseModelCount >= 0x3F) {
                 limit = 0x3E;
             }
-#ifdef RAGE_HOST_PORT
             GameRenderWorldSubmitDynamicCourseObject(
                 0x100 + loopIndex, limit, dataAddress.positionPointer->x,
                 dataAddress.positionPointer->y,
                 dataAddress.positionPointer->z, renderWorldMtx.m, 1, 0);
-#endif
             SubmitCourseModel2(SCRATCHPAD, limit);
 
             dst++;

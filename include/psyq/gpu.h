@@ -80,14 +80,9 @@ typedef struct QEntry {
 } QEntry;
 
 typedef struct P_TAG {
-#ifdef __psyz
     /* PSY-Z keeps full native links so ordering tables work on 64-bit hosts. */
     u_long addr;
     u_long len;
-#else
-    unsigned addr : 24;
-    unsigned len : 8;
-#endif
     u_char r0;
     u_char g0;
     u_char b0;
@@ -232,16 +227,9 @@ typedef struct LINE_G2 {
 } LINE_G2;
 
 typedef struct DrawPacket {
-#ifdef __psyz
     u_long tag;
     u_long len;
     u_long code[2];
-#else
-    u_char pad0[3];
-    u_char code;
-    u_long x0y0;
-    u_long x1y1;
-#endif
 } DrawPacket;
 
 /*

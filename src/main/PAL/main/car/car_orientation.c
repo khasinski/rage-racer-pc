@@ -12,9 +12,7 @@
 #include "game/render.h"
 #include "psyq/gte.h"
 #include "game/audio.h"
-#ifdef __psyz
 #include <stdlib.h>
-#endif
 
 void InitPlayerCar(PlayerCarRuntime *car)
 {
@@ -656,7 +654,6 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
     return collisionRegion;
   }
   collision_found:
-#ifdef __psyz
   if (DiagnosticsEnabled("car.collision_trace"))
   {
     const char *timerText = DiagnosticsValue("car.collision_trace_timer");
@@ -670,7 +667,6 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
              opponent->trackLateralOffset, progressDelta, trackDelta);
     }
   }
-#endif
   if (((s16)car->motionTimer < 0xB) && (g_RacePhase < 3))
   {
     s32 sid;

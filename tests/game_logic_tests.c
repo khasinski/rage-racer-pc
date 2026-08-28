@@ -11,6 +11,12 @@
 #include "../src/port/runtime_config.h"
 #include "../src/port/platform_paths.h"
 
+/* Random15 stamps its trace with where the game had got to. The pure logic
+ * library carries no scene state of its own, so the test supplies it. */
+int g_FrameCounter;
+int g_SceneId;
+int g_SceneTimer;
+
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 Random15(void);
 s32 GetAngleDistance(s32 from, s32 to);

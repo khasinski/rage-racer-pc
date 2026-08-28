@@ -7,10 +7,8 @@
 #include "game/render.h"
 #include "game/random.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 
 typedef union CarSpeedAddress {
     s32 *value;
@@ -246,12 +244,10 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     s32 trig;
     s32 product;
     u32 hitSign;
-#ifdef __psyz
     static int traceEnabled = -1;
     static int traceTimer = -1;
     static int traceTimerMin = -1;
     static int traceTimerMax = -1;
-#endif
 
     carReg = car;
     asm("" : : "r"(carReg));
@@ -363,7 +359,6 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     carReg->motionTimer = tmp;
     carReg->velocityX = hitX;
     carReg->velocityZ = hitZ;
-#ifdef __psyz
     if (traceEnabled < 0) {
         const char *timerText = DiagnosticsValue("car.knockback_trace_timer");
         const char *timerMinText = DiagnosticsValue("car.knockback_trace_timer_min");
@@ -383,7 +378,6 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
                carReg->velocityX, carReg->velocityZ, carReg->motionTimer,
                carReg->trackHeading.half.low, carReg->trackLateralOffset);
     }
-#endif
 }
 
 void StartCarBodyKick(s32 strength, GameCarRuntime *car) {

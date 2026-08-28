@@ -1,7 +1,5 @@
 #include "common.h"
-#ifdef __psyz
 #include <libsnd.h>
-#endif
 #include "game/audio.h"
 #include "game/sound.h"
 

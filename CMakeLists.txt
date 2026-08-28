@@ -81,7 +81,6 @@ set(RAGE_SIM_SOURCES
 )
 add_library(rage-sim STATIC ${RAGE_SIM_SOURCES})
 target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_definitions(rage-sim PRIVATE RAGE_HOST_PORT=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
@@ -187,7 +186,6 @@ if(RAGE_BUILD_PORT)
     add_library(rage-port-legacy OBJECT ${RAGE_PORT_LEGACY_SOURCES})
     target_include_directories(rage-port-legacy PRIVATE src/port/include include)
     target_link_libraries(rage-port-legacy PRIVATE psyz)
-    target_compile_definitions(rage-port-legacy PRIVATE RAGE_HOST_PORT=1)
     target_compile_options(rage-port-legacy PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     add_executable(rage-racer
         MACOSX_BUNDLE
@@ -240,7 +238,6 @@ if(RAGE_BUILD_PORT)
         include
     )
     target_link_libraries(rage-game-full PUBLIC psyz)
-    target_compile_definitions(rage-game-full PRIVATE RAGE_HOST_PORT=1)
     # The recovered game sources retain PS1-era tentative globals.  Host
     # initialized state deliberately provides their concrete definitions; GCC
     # otherwise treats the tentative copies as duplicate ELF definitions.
@@ -261,7 +258,6 @@ if(RAGE_BUILD_PORT)
             src/port/include
             include
         )
-        target_compile_definitions(${RAGE_PORT_TARGET} PRIVATE RAGE_HOST_PORT=1)
         if(NOT WIN32)
             target_compile_options(${RAGE_PORT_TARGET} PRIVATE
                 "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"

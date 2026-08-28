@@ -6,10 +6,8 @@
 #include "game/race.h"
 #include "game/cd.h"
 #include "game/menu.h"
-#ifdef __psyz
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
-#endif
 
 /*
  * Sub-block k of the loaded asset pack, from its GameSceneAssetHeader offset
@@ -63,9 +61,7 @@ void LoadRaceAssets(void) {
     case 3: {
         s32 carIndex = g_PlayerCarIndex;
         s32 carAsset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
-#ifdef __psyz
         GameRenderWorldSetTrackCarAsset(carAsset);
-#endif
         if (LoadAsset((carAsset * 2) + 11, g_AssetLoadCursor) != 0) {
             GameSceneAssetHeader *pack;
             s32 offset;
@@ -149,9 +145,7 @@ void LoadRaceAssets(void) {
         if (LoadAsset(assetIndex, dst) != 0) {
             GameSceneAssetHeader *header;
 
-#ifdef __psyz
             TrackAssetIdentitySet(assetIndex);
-#endif
 
             header = GetSceneAssetHeader(g_AssetLoadCursor);
             offset = header->offsets[0];

@@ -8,11 +8,9 @@
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
 #include "game/state.h"
-#endif
 
 
 /* DR_MODE, 12 bytes: sets the texture page (and the blend mode packed into it)
@@ -178,7 +176,6 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     w->mtx.t[2] = w->view.z * 4;
     SetRotMatrix(rot);
     SetTransMatrix(&w->mtx);
-#ifdef __psyz
     if (DiagnosticsEnabled("render.car_draw_trace") &&
         g_RageScratchpadState.mode == 9) {
         const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
@@ -194,5 +191,4 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
                    w->mtx.t[0], w->mtx.t[1], w->mtx.t[2]);
         }
     }
-#endif
 }

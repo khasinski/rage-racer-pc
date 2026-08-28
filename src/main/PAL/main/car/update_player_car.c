@@ -12,11 +12,9 @@
 #include "game/audio.h"
 #include "game/random.h"
 
-#ifdef __psyz
 #include <stdio.h>
 #include <stdlib.h>
 #include "rage/trace.h"
-#endif
 
 /*
  * Per-car physics / gear-shift driver (matched sibling of the ASM
@@ -48,9 +46,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 cornerIndex;
     u32 skidRange;
 
-#ifdef __psyz
     TraceCarStates();
-#endif
 
     mode23 = g_PadType == 0x23;
     car->facingBackwards = IsCarFacingBackwards(car);
@@ -234,9 +230,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-#ifdef __psyz
     TraceCarMotion("pre-integrate", car);
-#endif
     car->x -= car->motionX;
     car->z -= car->motionZ;
     BuildRotMatrixY(&m1, car->bodyYaw);
@@ -265,13 +259,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     tmp.x = (p->accelPos * 6) / 1280 + car->x + car->motionX;
     tmp.z = (p->brakePos * 6) / 1280 + car->z + car->motionZ;
     SetPlayerPosition(car, &tmp);
-#ifdef __psyz
     TraceCarMotion("post-position", car);
-#endif
     AccumulateLapProgress(GetPlayerCarRuntime(car));
-#ifdef __psyz
     TraceCarMotion("post-progress", car);
-#endif
 
     {
         s32 base = car->bodyYaw - 0xC00;
@@ -292,7 +282,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         sv2.vz = g_CarCornerOffsets[cornerIndex].z * 4;
         sv2.vy = 0;
         ApplyMatrix(&mA, &sv2, &vout);
-#ifdef __psyz
         if (DiagnosticsEnabled("car.track_trace")) {
             const char *timerText = DiagnosticsValue("car.track_trace_timer");
             if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
@@ -304,7 +293,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                        sv2.vx, sv2.vy, sv2.vz, vout.x, vout.y, vout.z);
             }
         }
-#endif
         if (limits.rightInset < vout.x) {
             limits.rightKnockbackMode = i;
             limits.rightInset = vout.x;
@@ -317,13 +305,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     if ((s16)car->motionTimer > 0) {
         ApplyCarKnockback(car);
     }
-#ifdef __psyz
     TraceCarMotion("post-knockback", car);
-#endif
     skid = UpdateCarTrackState(car, car->trackPointIndex, &limits);
-#ifdef __psyz
     TraceCarMotion("post-track", car);
-#endif
     skidRange = skid - 2;
     if (skidRange < 2U && car->speed < 64) {
         skid = 0;
@@ -337,9 +321,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     crash = CollidePlayerWithCars(car);
-#ifdef __psyz
     TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
-#endif
     if (skid != 0 || crash != 0) {
         StartCarBodyKick(2, car);
     }
@@ -568,9 +550,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     p->gearDisp = p->gear;
-#ifdef __psyz
     TraceCarMotion("post-update", car);
-#endif
 }
 
 void DrawPlayerTachometer(void) {

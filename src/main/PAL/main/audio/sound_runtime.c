@@ -121,12 +121,7 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     SsSetTableSize((char *)GetSndTableArea(), 2, 1);
     /* The native port owns the sequence clock in TickSequenceAudio; it does
      * not install a simulated PlayStation counter interrupt. */
-#ifdef __psyz
     SsSetTickMode(SS_NOTICK);
-#else
-    SsSetTickMode(1);
-    SsStartSoundTickMode1();
-#endif
     SsSetVoiceCount(0xA);
     SsUtReverbOff();
     SetReverbPreset(2, 0, 0);

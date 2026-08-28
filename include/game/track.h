@@ -319,10 +319,8 @@ typedef struct GameShuttleScenery {
     u8 pad2C[8];
 } GameShuttleScenery;
 
-#ifdef __psyz
 _Static_assert(sizeof(GameShuttleScenery) == 0x34,
                "GameShuttleScenery must match the retail layout");
-#endif
 
 /* The two shuttle instances. Instance 1 used to carry eight split symbols of
  * its own, g_Shuttle1DwellCounter..g_Shuttle1AngleZ; they were this array's

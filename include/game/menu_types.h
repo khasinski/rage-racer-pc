@@ -20,11 +20,7 @@ typedef s32 RaceRecordOffset;
 
 typedef union RaceRecordAddress {
     RaceRecordOffset recordOffset;
-#ifdef __psyz
     uintptr_t value;
-#else
-    s32 value;
-#endif
     RaceRecord *pointer;
     s32 *wordPointer;
     u16 *halfwordPointer;
@@ -48,11 +44,7 @@ typedef s32 TeamLogoSampleOffset;
 
 typedef union TeamLogoSampleAddress {
     TeamLogoSampleOffset offset;
-#ifdef __psyz
     uintptr_t value;
-#else
-    s32 value;
-#endif
     void *data;
     TeamLogoSample *samplePointer;
     u16 *halfwordPointer;
@@ -78,11 +70,7 @@ typedef union TeamLogoCanvas {
 } TeamLogoCanvas;
 
 typedef union TeamLogoCanvasAddress {
-#ifdef __psyz
     uintptr_t value;
-#else
-    s32 value;
-#endif
     u8 *bytePointer;
     u32 *wordPointer;
 } TeamLogoCanvasAddress;
@@ -99,11 +87,7 @@ typedef struct PaintColorTable {
 } PaintColorTable;
 
 typedef union PaintColorAddress {
-#ifdef __psyz
     uintptr_t value;
-#else
-    s32 value;
-#endif
     u8 *bytes;
     Rgb *pointer;
 } PaintColorAddress;

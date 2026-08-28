@@ -67,9 +67,7 @@ enum PadButton {
 /* Current top-level game mode; indexes g_GameModeHandlers, dispatched each
  * frame by UpdateOptionScene. */
 extern s32 g_GameMode;
-#ifdef __psyz
 #define g_GameModeHandlers g_NativeGameModeHandlers
-#endif
 extern void (*g_GameModeHandlers[])(void);
 
 /* MainLoop is the PS-EXE `main` and never returns: init chain, then an
@@ -276,11 +274,7 @@ void InitGeom(void);
 void InitPad(void *buf0, s32 len0, void *buf1, s32 len1);
 void InitRecordTables(void);
 void InstallSceneLighting(void);
-#ifdef __psyz
 s32 ResetGraph(s32 mode);
-#else
-void ResetGraph(s32 mode);
-#endif
 void ResetReplayFrameCounts(void);
 void StartPad(void);
 void StepTrackTextureSwap(void);
