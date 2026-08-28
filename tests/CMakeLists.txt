@@ -126,6 +126,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
+add_executable(input_device_select_tests
+    input_device_select_tests.c
+    ../src/port/input_device_select.c)
+target_include_directories(input_device_select_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(input_device_select_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME input_device_select COMMAND input_device_select_tests)
+
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

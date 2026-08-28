@@ -107,6 +107,7 @@ if(RAGE_BUILD_PORT)
     )
     set(RAGE_PORT_COMMON_SOURCES
         src/port/input_config.c
+        src/port/input_device_select.c
         src/port/platform_paths.c
         src/port/diagnostic_log.c
         src/port/game_diagnostics.c

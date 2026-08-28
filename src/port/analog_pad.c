@@ -6,6 +6,7 @@
 #include "game/render.h"
 #include "game/state.h"
 #include "axis_curve.h"
+#include "input_device_select.h"
 #include "runtime_config.h"
 
 /*
@@ -135,20 +136,76 @@ static float RageAxisShaped(int axis, const AxisSetup *setup) {
 }
 
 static SDL_Gamepad *RageAnalogFindGamepad(void) {
+    static SDL_JoystickID activeId;
     SDL_JoystickID *ids;
     SDL_Gamepad *pad = NULL;
+    RageInputDeviceActivity activity[16];
     int count = 0;
     int index;
+    int activityCount = 0;
 
     ids = SDL_GetGamepads(&count);
     if (ids == NULL) return NULL;
-    /* The platform layer opens every gamepad it sees, so look the handle up
-     * rather than opening a second one. */
-    for (index = 0; index < count && pad == NULL; index++) {
-        pad = SDL_GetGamepadFromID(ids[index]);
+    if (count > (int)(sizeof(activity) / sizeof(activity[0])))
+        count = (int)(sizeof(activity) / sizeof(activity[0]));
+    /* The platform layer opens every gamepad it sees, so look the handles up
+     * rather than opening them a second time. Activity, not enumeration order,
+     * decides which one controls player one: on a docked Steam Deck the idle
+     * built-in controls otherwise always hide a wireless pad. */
+    for (index = 0; index < count; index++) {
+        SDL_Gamepad *candidate = SDL_GetGamepadFromID(ids[index]);
+        int value = 0;
+        int axis;
+        int button;
+        if (candidate == NULL) continue;
+        for (axis = 0; axis < SDL_GAMEPAD_AXIS_COUNT; axis++) {
+            int sample = SDL_GetGamepadAxis(
+                candidate, (SDL_GamepadAxis)axis);
+            if (sample < 0) sample = -sample;
+            if (sample > value) value = sample;
+        }
+        for (button = 0; button < SDL_GAMEPAD_BUTTON_COUNT; button++) {
+            if (SDL_GetGamepadButton(candidate, (SDL_GamepadButton)button)) {
+                value = 32767;
+                break;
+            }
+        }
+        activity[activityCount].id = (unsigned int)ids[index];
+        activity[activityCount].activity = value;
+        activityCount++;
     }
+    activeId = (SDL_JoystickID)RageSelectActiveInputDevice(
+        activity, (size_t)activityCount, (unsigned int)activeId, 4096);
+    if (activeId != 0) pad = SDL_GetGamepadFromID(activeId);
     SDL_free(ids);
     return pad;
+}
+
+static unsigned int RageGamepadButtons(SDL_Gamepad *pad) {
+    unsigned int held = 0;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_UP))
+        held |= PAD_UP;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
+        held |= PAD_RIGHT;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_DOWN))
+        held |= PAD_DOWN;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_LEFT))
+        held |= PAD_LEFT;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_SOUTH))
+        held |= PAD_CROSS;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_WEST))
+        held |= PAD_SQUARE;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_EAST))
+        held |= PAD_CIRCLE;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_NORTH))
+        held |= PAD_TRIANGLE;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER))
+        held |= PAD_L1;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER))
+        held |= PAD_R1;
+    if (SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_START))
+        held |= PAD_START;
+    return held;
 }
 
 static SDL_Joystick *RageAnalogFindWheel(void) {
@@ -208,7 +265,8 @@ static float RageWheelPedal(SDL_Joystick *wheel, int axis, int inverted) {
 
 void RagePortSampleAnalogPad(void) {
     static int enabled = -1;
-    static int announced;
+    static int wheelAnnounced;
+    static SDL_JoystickID announcedPadId;
     static AxisSetup steering, throttle, brake;
     static WheelSetup wheelSetup;
     SDL_Gamepad *pad;
@@ -237,12 +295,17 @@ void RagePortSampleAnalogPad(void) {
     pad = wheel == NULL ? RageAnalogFindGamepad() : NULL;
     if (pad == NULL && wheel == NULL) return;
 
-    if (!announced) {
-        announced = 1;
-        fprintf(stderr, "rage-port: %s active as negcon (%s)\n",
-                wheel != NULL ? "racing wheel" : "analog pad",
-                wheel != NULL ? SDL_GetJoystickName(wheel)
-                              : SDL_GetGamepadName(pad));
+    if (wheel != NULL && !wheelAnnounced) {
+        wheelAnnounced = 1;
+        announcedPadId = 0;
+        fprintf(stderr, "rage-port: racing wheel active as negcon (%s)\n",
+                SDL_GetJoystickName(wheel));
+    } else if (pad != NULL &&
+               SDL_GetGamepadID(pad) != announcedPadId) {
+        wheelAnnounced = 0;
+        announcedPadId = SDL_GetGamepadID(pad);
+        fprintf(stderr, "rage-port: analog pad active as negcon (%s)\n",
+                SDL_GetGamepadName(pad));
     }
 
     /* A real NeGcon twists across the whole byte whatever the calibration says;
@@ -257,6 +320,7 @@ void RagePortSampleAnalogPad(void) {
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
     if (wheel != NULL) held |= RageWheelButtons(wheel, &wheelSetup);
+    if (pad != NULL) held |= RageGamepadButtons(pad);
     range = g_NegconSteerRange[g_NegconMaxTwist];
     twist = RageNegconTwist(RageAxisShaped(lx, &steering),
                             (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
