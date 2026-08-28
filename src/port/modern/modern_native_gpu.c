@@ -70,7 +70,6 @@ typedef struct ModernNativeTexture {
     RageRenderMaterial definition;
     int transparent;
     SDL_GPUTexture *texture;
-    SDL_GPUTransferBuffer *transfer;
 } ModernNativeTexture;
 
 static const char MODERN_NATIVE_MSL[] =
@@ -104,7 +103,6 @@ static SDL_GPUGraphicsPipeline *s_colorOpaque;
 static SDL_GPUGraphicsPipeline *s_colorOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_sky;
 static SDL_GPUTexture *s_skyTexture;
-static SDL_GPUTransferBuffer *s_skyTransfer;
 static SDL_GPUSampler *s_skySampler;
 static uint32_t s_skyAssetKey = UINT32_MAX;
 static int s_skyHasPanorama;
@@ -579,9 +577,6 @@ static void ModernNativeGpuClearTextures(void) {
         for (index = 0; index < s_textureCount; index++) {
             if (s_textures[index].texture != NULL)
                 SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
-            if (s_textures[index].transfer != NULL)
-                SDL_ReleaseGPUTransferBuffer(s_device,
-                                             s_textures[index].transfer);
         }
     }
     memset(s_textures, 0, sizeof(s_textures));
@@ -592,11 +587,8 @@ static void ModernNativeReleaseSkyTexture(void) {
     if (s_device != NULL) {
         if (s_skyTexture != NULL)
             SDL_ReleaseGPUTexture(s_device, s_skyTexture);
-        if (s_skyTransfer != NULL)
-            SDL_ReleaseGPUTransferBuffer(s_device, s_skyTransfer);
     }
     s_skyTexture = NULL;
-    s_skyTransfer = NULL;
     s_skyAssetKey = UINT32_MAX;
     s_skyHasPanorama = 0;
 }
@@ -610,6 +602,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     SDL_GPUTextureTransferInfo source = {0};
     SDL_GPUTextureRegion destination = {0};
     SDL_GPUCopyPass *copy;
+    SDL_GPUTransferBuffer *upload = NULL;
     const void *pixels = transparent;
     size_t size = sizeof(transparent);
     uint32_t width = 1, height = 1;
@@ -634,21 +627,23 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     s_skyTexture = SDL_CreateGPUTexture(s_device, &texture);
     transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     transfer.size = (Uint32)size;
-    s_skyTransfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
-    if (s_skyTexture == NULL || s_skyTransfer == NULL) {
+    upload = SDL_CreateGPUTransferBuffer(s_device, &transfer);
+    if (s_skyTexture == NULL || upload == NULL) {
         ModernAssetsFreeMaterialImage(&image);
+        if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         return 0;
     }
-    mapped = SDL_MapGPUTransferBuffer(s_device, s_skyTransfer, true);
+    mapped = SDL_MapGPUTransferBuffer(s_device, upload, true);
     if (mapped == NULL) {
         ModernAssetsFreeMaterialImage(&image);
+        SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         return 0;
     }
     memcpy(mapped, pixels, size);
-    SDL_UnmapGPUTransferBuffer(s_device, s_skyTransfer);
-    source.transfer_buffer = s_skyTransfer;
+    SDL_UnmapGPUTransferBuffer(s_device, upload);
+    source.transfer_buffer = upload;
     source.pixels_per_row = width;
     source.rows_per_layer = height;
     destination.texture = s_skyTexture;
@@ -658,11 +653,16 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     copy = SDL_BeginGPUCopyPass(command);
     if (copy == NULL) {
         ModernAssetsFreeMaterialImage(&image);
+        SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         return 0;
     }
     SDL_UploadToGPUTexture(copy, &source, &destination, false);
     SDL_EndGPUCopyPass(copy);
+    /* SDL retains resources referenced by an encoded command until the GPU
+     * has finished with them. The upload staging copy is never used again,
+     * so keeping one beside every resident texture only doubles memory use. */
+    SDL_ReleaseGPUTransferBuffer(s_device, upload);
     s_skyAssetKey = assetKey;
     s_skyHasPanorama = loaded;
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
@@ -1030,6 +1030,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     size_t mipSize;
     size_t byte;
     uint32_t mipLevels;
+    SDL_GPUTransferBuffer *upload = NULL;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) return NULL;
     instance.assetKey = span->assetKey;
@@ -1063,23 +1064,23 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         entry->texture = SDL_CreateGPUTexture(s_device, &texture);
         transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
         transfer.size = (Uint32)mipSize;
-        entry->transfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
+        upload = SDL_CreateGPUTransferBuffer(s_device, &transfer);
     }
-    if (entry->texture == NULL || entry->transfer == NULL) goto fail;
+    if (entry->texture == NULL || upload == NULL) goto fail;
     {
-        void *mapped = SDL_MapGPUTransferBuffer(s_device, entry->transfer, false);
+        void *mapped = SDL_MapGPUTransferBuffer(s_device, upload, false);
         SDL_GPUCopyPass *copy;
         uint32_t level;
         if (mapped == NULL) goto fail;
         memcpy(mapped, mipChain, mipSize);
-        SDL_UnmapGPUTransferBuffer(s_device, entry->transfer);
+        SDL_UnmapGPUTransferBuffer(s_device, upload);
         copy = SDL_BeginGPUCopyPass(command);
         if (copy == NULL) goto fail;
         for (level = 0; level < mipLevels; level++) {
             uint32_t width = image.width >> level;
             uint32_t height = image.height >> level;
             SDL_GPUTextureTransferInfo source = {
-                .transfer_buffer = entry->transfer,
+                .transfer_buffer = upload,
                 .offset = (Uint32)RageTextureMipLevelOffsetRGBA8(
                     image.width, image.height, level),
                 .pixels_per_row = width != 0 ? width : 1,
@@ -1096,6 +1097,8 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         }
         SDL_EndGPUCopyPass(copy);
     }
+    SDL_ReleaseGPUTransferBuffer(s_device, upload);
+    upload = NULL;
     entry->transparent = 0;
     for (byte = 3; byte < image.size; byte += 4) {
         uint8_t alpha = ((const uint8_t *)image.pixels)[byte];
@@ -1126,8 +1129,7 @@ fail:
     free(mipChain);
     ModernAssetsFreeMaterialImage(&image);
     if (entry->texture != NULL) SDL_ReleaseGPUTexture(s_device, entry->texture);
-    if (entry->transfer != NULL)
-        SDL_ReleaseGPUTransferBuffer(s_device, entry->transfer);
+    if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
     memset(entry, 0, sizeof(*entry));
     return NULL;
 }
