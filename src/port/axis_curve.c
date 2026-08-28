@@ -31,3 +31,11 @@ int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
     if (twist > 0xFF) twist = 0xFF;
     return twist;
 }
+
+float RageJoystickPedalAxis(int value, int inverted) {
+    float result;
+    if (value < -32768) value = -32768;
+    if (value > 32767) value = 32767;
+    result = ((float)value + 32768.0f) / 65535.0f;
+    return inverted ? 1.0f - result : result;
+}

@@ -20,4 +20,8 @@ float RageAxisCurve(float value, float deadzone, float saturation,
  * wins, so either input steers and neither cancels the other. */
 int RageNegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range);
 
+/* Normalize a raw SDL-style pedal axis. Many wheels report +32767 at rest and
+ * -32768 when fully pressed, while others use the opposite orientation. */
+float RageJoystickPedalAxis(int value, int inverted);
+
 #endif

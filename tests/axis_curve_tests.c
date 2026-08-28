@@ -69,6 +69,12 @@ int main(void) {
     Expect("opposing d-pad still steers from a centred stick",
            (float)RageNegconTwist(0.0f, 1, 0, 25), 103.0f);
 
+    Expect("inverted pedal idle", RageJoystickPedalAxis(32767, 1), 0.0f);
+    Expect("inverted pedal half", RageJoystickPedalAxis(0, 1), 0.5f);
+    Expect("inverted pedal pressed", RageJoystickPedalAxis(-32768, 1), 1.0f);
+    Expect("normal pedal idle", RageJoystickPedalAxis(-32768, 0), 0.0f);
+    Expect("normal pedal pressed", RageJoystickPedalAxis(32767, 0), 1.0f);
+
     if (failures) {
         printf("%d axis curve assertion(s) failed\n", failures);
         return 1;

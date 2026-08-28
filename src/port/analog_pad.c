@@ -39,6 +39,13 @@ typedef struct AxisSetup {
     float deadzone, saturation, linearity, scaling;
 } AxisSetup;
 
+typedef struct WheelSetup {
+    int steeringAxis, throttleAxis, brakeAxis;
+    int steeringInverted, pedalsInverted;
+    int crossButton, squareButton, circleButton, triangleButton;
+    int l1Button, r1Button, startButton;
+} WheelSetup;
+
 static float RageAxisSetting(const char *key, float fallback, float low,
                              float high) {
     const char *text = RageRuntimeConfigGet(key);
@@ -73,6 +80,50 @@ static void RageAxisSetupLoad(AxisSetup *setup, const char *axis) {
                 setup->scaling);
 }
 
+static int RageIntegerSetting(const char *key, int fallback, int low,
+                              int high) {
+    const char *text = RageRuntimeConfigGet(key);
+    char *end;
+    long value;
+    if (text == NULL || text[0] == '\0') return fallback;
+    value = strtol(text, &end, 10);
+    if (*end != '\0' || value < low || value > high) {
+        fprintf(stderr,
+                "rage-port: ignoring %s=%s (expected %d..%d); using %d\n",
+                key, text, low, high, fallback);
+        return fallback;
+    }
+    return (int)value;
+}
+
+static void RageWheelSetupLoad(WheelSetup *setup) {
+    setup->steeringAxis = RageIntegerSetting(
+        "input.wheel_steering_axis", 0, 0, 31);
+    setup->throttleAxis = RageIntegerSetting(
+        "input.wheel_throttle_axis", 2, 0, 31);
+    setup->brakeAxis = RageIntegerSetting(
+        "input.wheel_brake_axis", 3, 0, 31);
+    setup->steeringInverted =
+        RageRuntimeConfigEnabled("input.wheel_steering_inverted", NULL);
+    setup->pedalsInverted =
+        RageRuntimeConfigGet("input.wheel_pedals_inverted") == NULL ||
+        RageRuntimeConfigEnabled("input.wheel_pedals_inverted", NULL);
+    setup->crossButton = RageIntegerSetting(
+        "input.wheel_cross_button", 0, -1, 63);
+    setup->squareButton = RageIntegerSetting(
+        "input.wheel_square_button", 1, -1, 63);
+    setup->circleButton = RageIntegerSetting(
+        "input.wheel_circle_button", 2, -1, 63);
+    setup->triangleButton = RageIntegerSetting(
+        "input.wheel_triangle_button", 3, -1, 63);
+    setup->l1Button = RageIntegerSetting(
+        "input.wheel_l1_button", 4, -1, 63);
+    setup->r1Button = RageIntegerSetting(
+        "input.wheel_r1_button", 5, -1, 63);
+    setup->startButton = RageIntegerSetting(
+        "input.wheel_start_button", 9, -1, 63);
+}
+
 /* Shape a raw SDL axis, keeping its sign. */
 static float RageAxisShaped(int axis, const AxisSetup *setup) {
     float magnitude = (float)(axis < 0 ? -axis : axis) / 32767.0f;
@@ -100,11 +151,68 @@ static SDL_Gamepad *RageAnalogFindGamepad(void) {
     return pad;
 }
 
+static SDL_Joystick *RageAnalogFindWheel(void) {
+    static SDL_Joystick *wheel;
+    SDL_JoystickID *ids;
+    int count = 0;
+    int index;
+
+    if (wheel != NULL && SDL_JoystickConnected(wheel)) return wheel;
+    if (wheel != NULL) {
+        SDL_CloseJoystick(wheel);
+        wheel = NULL;
+    }
+    ids = SDL_GetJoysticks(&count);
+    if (ids == NULL) return NULL;
+    for (index = 0; index < count && wheel == NULL; index++) {
+        if (!SDL_IsGamepad(ids[index])) wheel = SDL_OpenJoystick(ids[index]);
+    }
+    SDL_free(ids);
+    return wheel;
+}
+
+static int RageWheelButton(SDL_Joystick *wheel, int button) {
+    return button >= 0 && button < SDL_GetNumJoystickButtons(wheel) &&
+           SDL_GetJoystickButton(wheel, button);
+}
+
+static unsigned int RageWheelButtons(SDL_Joystick *wheel,
+                                     const WheelSetup *setup) {
+    unsigned int held = 0;
+    Uint8 hat = SDL_GetNumJoystickHats(wheel) > 0
+                    ? SDL_GetJoystickHat(wheel, 0)
+                    : SDL_HAT_CENTERED;
+    if (hat & SDL_HAT_UP) held |= PAD_UP;
+    if (hat & SDL_HAT_RIGHT) held |= PAD_RIGHT;
+    if (hat & SDL_HAT_DOWN) held |= PAD_DOWN;
+    if (hat & SDL_HAT_LEFT) held |= PAD_LEFT;
+    if (RageWheelButton(wheel, setup->crossButton)) held |= PAD_CROSS;
+    if (RageWheelButton(wheel, setup->squareButton)) held |= PAD_SQUARE;
+    if (RageWheelButton(wheel, setup->circleButton)) held |= PAD_CIRCLE;
+    if (RageWheelButton(wheel, setup->triangleButton)) held |= PAD_TRIANGLE;
+    if (RageWheelButton(wheel, setup->l1Button)) held |= PAD_L1;
+    if (RageWheelButton(wheel, setup->r1Button)) held |= PAD_R1;
+    if (RageWheelButton(wheel, setup->startButton)) held |= PAD_START;
+    return held;
+}
+
+static int RageWheelAxis(SDL_Joystick *wheel, int axis) {
+    if (axis < 0 || axis >= SDL_GetNumJoystickAxes(wheel)) return 0;
+    return SDL_GetJoystickAxis(wheel, axis);
+}
+
+static float RageWheelPedal(SDL_Joystick *wheel, int axis, int inverted) {
+    if (axis < 0 || axis >= SDL_GetNumJoystickAxes(wheel)) return 0.0f;
+    return RageJoystickPedalAxis(SDL_GetJoystickAxis(wheel, axis), inverted);
+}
+
 void RagePortSampleAnalogPad(void) {
     static int enabled = -1;
     static int announced;
     static AxisSetup steering, throttle, brake;
+    static WheelSetup wheelSetup;
     SDL_Gamepad *pad;
+    SDL_Joystick *wheel;
     unsigned int released;
     unsigned int held;
     int analogI, analogII, analogL;
@@ -118,16 +226,23 @@ void RagePortSampleAnalogPad(void) {
         RageAxisSetupLoad(&steering, "steering");
         RageAxisSetupLoad(&throttle, "throttle");
         RageAxisSetupLoad(&brake, "brake");
+        RageWheelSetupLoad(&wheelSetup);
     }
     if (!enabled) return;
 
-    pad = RageAnalogFindGamepad();
-    if (pad == NULL) return;
+    wheel = RageRuntimeConfigGet("input.wheel") == NULL ||
+                    RageRuntimeConfigEnabled("input.wheel", NULL)
+                ? RageAnalogFindWheel()
+                : NULL;
+    pad = wheel == NULL ? RageAnalogFindGamepad() : NULL;
+    if (pad == NULL && wheel == NULL) return;
 
     if (!announced) {
         announced = 1;
-        fprintf(stderr, "rage-port: analog pad active as negcon (%s)\n",
-                SDL_GetGamepadName(pad));
+        fprintf(stderr, "rage-port: %s active as negcon (%s)\n",
+                wheel != NULL ? "racing wheel" : "analog pad",
+                wheel != NULL ? SDL_GetJoystickName(wheel)
+                              : SDL_GetGamepadName(pad));
     }
 
     /* A real NeGcon twists across the whole byte whatever the calibration says;
@@ -136,9 +251,12 @@ void RagePortSampleAnalogPad(void) {
      * the play from the result, the smallest range with the largest play left
      * 11 of a possible 113 units of lock. The stick therefore reports full
      * deflection and lets the game's own calibration do its job. */
-    lx = SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
+    lx = wheel != NULL ? RageWheelAxis(wheel, wheelSetup.steeringAxis)
+                       : SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
+    if (wheel != NULL && wheelSetup.steeringInverted) lx = -lx;
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
+    if (wheel != NULL) held |= RageWheelButtons(wheel, &wheelSetup);
     range = g_NegconSteerRange[g_NegconMaxTwist];
     twist = RageNegconTwist(RageAxisShaped(lx, &steering),
                             (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
@@ -151,17 +269,31 @@ void RagePortSampleAnalogPad(void) {
      * press only survives if it is folded into the analog value it stands for.
      * Take whichever is further pressed, so the triggers meter the throttle
      * while the face buttons still work as full on. */
-    analogI = (int)(RageAxisShaped(
-        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), &throttle) *
-        (float)NEGCON_ANALOG_MAX);
-    analogII = (int)(RageAxisShaped(
-        SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &brake) *
-        (float)NEGCON_ANALOG_MAX);
+    if (wheel != NULL) {
+        analogI = (int)(RageAxisCurve(
+            RageWheelPedal(wheel, wheelSetup.throttleAxis,
+                           wheelSetup.pedalsInverted),
+            throttle.deadzone, throttle.saturation, throttle.linearity,
+            throttle.scaling) * (float)NEGCON_ANALOG_MAX);
+        analogII = (int)(RageAxisCurve(
+            RageWheelPedal(wheel, wheelSetup.brakeAxis,
+                           wheelSetup.pedalsInverted),
+            brake.deadzone, brake.saturation, brake.linearity, brake.scaling) *
+            (float)NEGCON_ANALOG_MAX);
+    } else {
+        analogI = (int)(RageAxisShaped(
+            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), &throttle) *
+            (float)NEGCON_ANALOG_MAX);
+        analogII = (int)(RageAxisShaped(
+            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &brake) *
+            (float)NEGCON_ANALOG_MAX);
+    }
     analogL = 0;
     if (held & PAD_CROSS) analogI = NEGCON_ANALOG_MAX;
     if (held & PAD_SQUARE) analogII = NEGCON_ANALOG_MAX;
     if (held & PAD_L1) analogL = NEGCON_ANALOG_MAX;
 
+    released = ~held & 0xFFFFU;
     released |= NEGCON_ABSENT_BUTTONS;
 
     g_PadBuffers[0] = 0;
