@@ -16,7 +16,7 @@ void DrawOptionRootMenu(void) {
     s32 h18 = 0x18;
     s32 h48 = 0x48;
     s32 color = 0x7F40;
-    register u8 **scratch asm("$21") = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     u8 *tmp;
     s32 state;
 

@@ -183,7 +183,7 @@ s32 DrawTeamNameScreen(s32 step) {
 
 void UpdateTeamNameScreen(void) {
     u16 pad;
-    register s32 newdepth asm("$2");
+    s32 newdepth;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();

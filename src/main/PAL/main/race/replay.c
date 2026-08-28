@@ -108,12 +108,12 @@ void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *r
 
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj) {
-    register s32 index asm("s0");
+    s32 index;
     ReplayCarState *primary;
     ReplayCarState *secondary;
-    register s32 next asm("a0");
-    register s32 offset asm("v0");
-    register ReplayFrameAddress base asm("v1");
+    s32 next;
+    s32 offset;
+    ReplayFrameAddress base;
 
     index = subframe;
     primary = playerObj;

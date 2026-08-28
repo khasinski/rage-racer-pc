@@ -79,7 +79,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
     s32 row;
     s32 temp;
     s32 crossed;
-    register s32 i asm("a2");
+    s32 i;
     s32 offset;
     s32 sentinel;
     TrackEventDataAddress cursor;
@@ -87,7 +87,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
     s32 cmp;
     s32 threshold;
     s32 resultOffset;
-    register TrackEventDataAddress resultCursor asm("v0");
+    TrackEventDataAddress resultCursor;
 
     base = g_TrackEventData;
     if (car->speed < 0x320) {
@@ -168,7 +168,7 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     GameCarRuntime *obj;
     s32 value;
     /* These pins are load-bearing: removing either one changes .text. */
-    register s32 temp asm("$3");
+    s32 temp;
     s32 result;
     s32 one;
     volatile s32 stack[2];
@@ -416,7 +416,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
     TrackAiSpeedKey *p[2];
   s16 lim[4];
   s16 val[2];
-  register GameCarAiBlock *sub_R9 asm("$9");
+  GameCarAiBlock *sub_R9;
   s32 rpm;
   s32 g0;
   s32 raw;
@@ -425,7 +425,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
   s32 lo_R7;
   s32 hi;
   s32 range;
-  register s32 d_R3 asm("$3");
+  s32 d_R3;
   s32 pitch;
   s32 q;
   s32 cnt;

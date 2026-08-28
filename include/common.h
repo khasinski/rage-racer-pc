@@ -9,11 +9,7 @@ typedef signed int s32;
 typedef unsigned int u32;
 typedef float f32;
 
-/* MIPS register pins and empty compiler barriers are matching-only metadata.
- * The native port deliberately discards them before the host compiler parses
- * register names such as $4 and v0. */
 #include <stdint.h>
-#define asm(...)
 
 /*
  * Reads or writes a struct member without the compiler's "this lives inside a

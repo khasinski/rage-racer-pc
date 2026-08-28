@@ -138,7 +138,7 @@ void AccumulateLapProgress(GameCarRuntime *car) {
     s32 j;
     s32 fwd;
     s32 back;
-    register s32 bv asm("$2");
+    s32 bv;
     s32 count;
     GameTrackPoint *array;
 
@@ -200,7 +200,7 @@ void AccumulateLapProgress(GameCarRuntime *car) {
                     break;
                 }
                 if (r == bv) {
-                    register s32 ir asm("$3");
+                    s32 ir;
                     for (i = 1; i <= n; i++) {
                         j = car->trackPointIndex - i;
                         ir = j;

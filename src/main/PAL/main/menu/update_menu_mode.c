@@ -42,7 +42,7 @@ void UpdateMenuMode(void) {
     DrawCarSpecGraph(g_CarSpecGraphStep, g_CarTable[(g_MenuScreen == MENU_SCREEN_CAR_SHOP) ? g_CarListCursor : g_PlayerCarIndex].tireCompound);
 
     {
-        register s32 flag asm("$6");
+        s32 flag;
         flag = g_MenuHintBarStep;
         if (flag == 0) {
             return;

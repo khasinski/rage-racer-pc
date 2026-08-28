@@ -20,10 +20,10 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
     s32 value;
     s32 offset;
     s32 x0;
-    register s32 y0 asm("$6");
+    s32 y0;
     s32 render1;
     s16 y1;
-    register void *callScratch asm("$4");
+    void *callScratch;
     s32 callX;
 
     scratch = SCRATCH_OT_BASE;

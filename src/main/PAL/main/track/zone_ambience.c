@@ -7,13 +7,13 @@
 void UpdateZoneAmbience(s32 zone) {
     s32 position;
     s32 base;
-    register s32 mode asm("$4");
+    s32 mode;
     s32 value;
     s32 finalValue;
     s32 i;
     s32 sentinel;
     TrackAmbienceZone *entryBase;
-    register TrackAmbienceZone *entry asm("$3");
+    TrackAmbienceZone *entry;
     s32 selector;
 
     position = zone;
@@ -92,10 +92,10 @@ void TriggerRaceCues(void) {
     s32 i;
     s32 mask;
     PlayerRaceCueState *state;
-    register s32 temp asm("v0");
-    register TrackRaceCueAddress entry asm("v1");
-    register s32 loopFlags asm("t0");
-    register s32 current asm("a0");
+    s32 temp;
+    TrackRaceCueAddress entry;
+    s32 loopFlags;
+    s32 current;
     s32 product;
     TrackRaceCueAddress finishAddress;
 

@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-extern volatile s32 g_McConfirmChoice_v asm("g_McConfirmChoice");
+extern volatile s32 g_McConfirmChoice_v;
 
 extern s32 g_FrameSyncThreshold;
 extern volatile s32 g_McMenuSubState;

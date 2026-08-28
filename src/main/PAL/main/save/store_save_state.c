@@ -7,7 +7,7 @@
 #include "game/save_internal.h"
 
 void StoreSaveStateBlock(GameSaveBlock *block) {
-    register GameSaveBlockAddress saveAddress asm("$4");
+    GameSaveBlockAddress saveAddress;
     {
         GameSaveBlockAddress padMappingAddress;
         GameSaveBlockAddress negconMappingAddress;
@@ -131,8 +131,8 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
 
     {
         /* These two accumulator hints are load-bearing. */
-        register u32 count asm("$13") = 0;
-        register u32 checksum asm("$6") = 0;
+        u32 count = 0;
+        u32 checksum = 0;
         s32 bgmVolume = g_BgmVolumeSetting;
         s32 sfxVolume = g_SfxVolumeSetting;
         s32 monoOutput = g_MonoOutput;

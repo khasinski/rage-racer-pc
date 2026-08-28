@@ -13,8 +13,8 @@ void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
     volatile SPRT *packet;
     long idx;
     u_char *next;
-    register u_char *sr;
-    register u_char *tableA;
+    u_char *sr;
+    u_char *tableA;
     long ga;
     long gb;
     long w;

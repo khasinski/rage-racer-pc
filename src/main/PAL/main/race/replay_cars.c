@@ -54,7 +54,7 @@ s32 GetTrackZoneBlend(s32 position) {
     TrackEventData *data;
     s32 scene;
     TrackZoneAddress first;
-    register TrackZoneAddress zone asm("$6");
+    TrackZoneAddress zone;
     s32 status;
     s32 two;
     s32 start;

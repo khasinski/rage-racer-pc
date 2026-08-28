@@ -40,8 +40,8 @@ void ApplyPanVoiceVolume(void) {
     s32 loopValue;
     s32 scale;
     s32 left;
-    register s32 right asm("$6");
-    register s32 voice asm("$4");
+    s32 right;
+    s32 voice;
     s32 zeroArg;
 
     changed = 0;
@@ -144,12 +144,12 @@ void UpdateIndexedEffectVoice(void) {
     s32 center;
     s32 fine;
     s32 index;
-    register s32 raw asm("$2");
+    s32 raw;
     s32 product;
     s32 scale;
-    register s32 left asm("$5");
-    register s32 right asm("$6");
-    register s32 voice asm("$4");
+    s32 left;
+    s32 right;
+    s32 voice;
 
     raw = g_IndexedEffectIndexPrev;
     if (raw < 0) {
@@ -226,7 +226,7 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     s32 loopTableOffset;
     s32 average;
     /* Load-bearing: removing this $v0 pin changes four linked words. */
-    register s32 scaledLeft asm("$2");
+    s32 scaledLeft;
     s32 scaledRight;
     s32 entryOffset;
     s32 currentA;
@@ -354,7 +354,7 @@ after_match:
     average = (left + right) / 2;
     count = cue;
     /* Load-bearing: removal changes five linked preheader words. */
-    asm("" : "=r"(count) : "0"(count));
+    
     base = g_SoundModes;
     entryOffset = loopTableOffset;
     entryAddress.pointer = base;
@@ -450,7 +450,7 @@ after_match:
     scale = g_SoundScale.scale;                                                \
     left = raw * scale;                                                \
     raw = i + 8;                                                       \
-    asm("" : "=r"(raw) : "0"(raw));                                    \
+                                        \
     voice = raw;                                                       \
     startRightAddress.wordPointer = &g_MusicChannels[0].volRight.value; \
     startRightAddress.bytes += offset;                                \

@@ -11,13 +11,13 @@ typedef union FadingMenuTableAddress {
 
 
 void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteMotion *motion, s32 type) {
-    register ScriptedSpriteMotion *motionReg asm("$10") = motion;
-    register ScriptedSpriteShape *shapeReg asm("$9");
+    ScriptedSpriteMotion *motionReg = motion;
+    ScriptedSpriteShape *shapeReg;
     s32 flags8;
     OT_TYPE *otBase;
     s32 mode;
     s32 flags4;
-    register s32 limit asm("$8");
+    s32 limit;
     s32 packed;
     s32 x;
     s32 y;
@@ -50,7 +50,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     x += interp;
     if (packed < 0) {
         s32 hi;
-        register s32 mask asm("$3");
+        s32 mask;
 
         hi = packed >> 16;
         mask = 0xFFFF0000;
@@ -61,7 +61,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     interpProduct = elapsed * temp;
     interp = interpProduct / 32;
     y += interp;
-    asm("" : "=r"(y) : "0"(y));
+    
 
     switch (shapeReg->flags & 3) {
     case 0:
@@ -83,7 +83,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     flags4 = flagByte & 4;
     if (type != 0) {
         temp = shapeReg->alpha & 0x7F;
-        asm("" : "=r"(temp) : "0"(temp));
+        
         alpha = (u8)temp;
     } else {
         alpha = 0x80;
@@ -107,11 +107,11 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
 }
 
 void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion *motion) {
-    register ScriptedLineMotion *motionReg asm("$8") = motion;
+    ScriptedLineMotion *motionReg = motion;
     ScriptedLineShape *shapeReg;
     OT_TYPE *otBase;
     s32 mode;
-    register s32 y1Reg asm("$2");
+    s32 y1Reg;
     s32 x0;
     s32 y0Call;
     s32 x1Base;
@@ -184,7 +184,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     interpProduct = elapsed * temp;
     interp = interpProduct / 32;
     y1 += interp;
-    asm("" : "=r"(y1) : "0"(y1));
+    
 
     switch (shapeReg->flags & 3) {
     case 0:
@@ -212,7 +212,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     x0 = (s16)x0;
     y1 = (s16)y0Call;
     x1 = (s16)x1;
-    asm("" : "=r"(x0) : "0"(x0));
+    
     DrawLine(
         &otBase[mode],
         x0,
@@ -230,7 +230,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     ScriptedTriangleMotion *record;
     OT_TYPE *ot;
     s32 limit;
-    register s32 packedSpeed asm("$3");
+    s32 packedSpeed;
     s32 product;
     s32 x;
     s32 y0;
@@ -263,7 +263,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     product = productResult / 32;
     productResult = limit + product;
     product = productResult;
-    asm("" : "=r"(product), "=r"(record) : "0"(product), "1"(record));
+    
 
     y = record->y;
     x = product;
@@ -277,7 +277,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     }
     productResult = time * product;
     product = productResult;
-    asm("" : "=r"(product), "=r"(style) : "0"(product), "1"(style));
+    
     productResult = product;
     product = productResult / 32;
     y += product;
@@ -290,7 +290,7 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     packedSpeed = style->x2;
     productResult = x + product;
     product = productResult;
-    asm("" : "=r"(product) : "0"(product));
+    
     limit = product;
     packedSpeed = x + packedSpeed;
 
@@ -316,14 +316,14 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
         semiTrans = alpha & 4;
         if (semiTrans != 0) {
             alpha &= 0x60;
-            asm("" : "=r"(alpha) : "0"(alpha));
+            
             flags = (u8)alpha;
         } else {
             flags = 0x80;
         }
     }
 
-    asm("" : : "r"(packedSpeed));
+    
     DrawFlatTriangle(
         ot + mode,
         (s16)x,
@@ -349,16 +349,16 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     s32 y;
     s32 dx;
     s32 dy;
-    register s32 index asm("$10");
+    s32 index;
     s32 posX;
     s32 posY;
     s32 posX2;
-    register s32 posY2 asm("$6");
+    s32 posY2;
     u32 velocityX;
     u32 velocityY;
     u32 velocityX2;
     u32 velocityY2;
-    register s32 value asm("$2");
+    s32 value;
     s32 flags;
 
     duration = ctx->limit;
@@ -377,7 +377,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
         velocityX = velocity0 & 0x7FFF;
     }
     posX += (time * velocityX) >> 5;
-    asm("" : "=r"(posX) : "0"(posX));
+    
     x = posX;
 
     posY = ctx->y;
@@ -390,7 +390,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     }
     value = posY + ((time * velocityY) >> 5);
     y = value;
-    asm("" : "=r"(value), "=r"(y) : "0"(value), "1"(y) : "memory");
+    
 
     posX2 = ctx->width;
     if (velocity1 & 0x8000) {
@@ -399,7 +399,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
         velocityX2 = velocity1 & 0x7FFF;
     }
     value = posX2 + ((time * velocityX2) >> 5);
-    asm("" : "=r"(value) : "0"(value) : "memory");
+    
     dx = value;
 
     posY2 = ctx->height;
@@ -411,7 +411,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
         velocityY2 = value & 0x7FFF;
     }
     posY2 += (time * velocityY2) >> 5;
-    asm("" : "=r"(posY2) : "0"(posY2));
+    
     dy = posY2;
 
     switch (entry->flags & 3) {
@@ -440,18 +440,18 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
 
 s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
     TimedDrawCommand *base = commands;
-    register s32 *progressPtr asm("$18") = progress;
-    register s32 stepReg asm("$19") = step;
+    s32 *progressPtr = progress;
+    s32 stepReg = step;
     TimedDrawCommand *cmd;
     TimedDrawCommandAddress commandAddress;
     s32 index = 0;
     s32 remaining;
     u32 type;
     s32 nextProgress;
-    register s32 updatedProgress asm("$6");
+    s32 updatedProgress;
     s32 limit;
 
-    asm("" : "=r"(base), "=r"(progressPtr), "=r"(stepReg) : "0"(base), "1"(progressPtr), "2"(stepReg));
+    
     if (stepReg < 0) {
         nextProgress = *progressPtr + stepReg;
         if (nextProgress > 0) {
@@ -553,16 +553,16 @@ timed_commands_done:
 
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     ScriptedSpriteShape *shapePtr;
-    register ScriptedSpriteMotion *motionPtr asm("$9");
+    ScriptedSpriteMotion *motionPtr;
     OT_TYPE *ot;
-    register s32 countReg asm("$21");
-    register s32 i asm("$18");
+    s32 countReg;
+    s32 i;
     TimedDrawCommand *cmd;
     s32 *timer;
     s32 xOffset;
     s32 yOffset;
     s32 nextTimer;
-    register s32 value asm("$2");
+    s32 value;
     s32 temporary;
     FadingMenuTableAddress tableAddress;
     s32 done;
@@ -675,10 +675,10 @@ loop:
 void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
                    u8 r, u8 g, u8 b,
                    s32 flags, s32 textX, s32 textY, u8 *caption) {
-    register s32 f asm("$16") = flags;
-    register s32 p0 asm("$18") = x0;
-    register void *ot = SCRATCH_OT_BASE_AS(void);
-    register s32 p1 asm("$20") = y0;
+    s32 f = flags;
+    s32 p0 = x0;
+    void *ot = SCRATCH_OT_BASE_AS(void);
+    s32 p1 = y0;
     s32 p2 = x1;
     s32 p3 = y1;
 

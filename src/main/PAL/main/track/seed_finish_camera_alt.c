@@ -8,7 +8,7 @@
 #include "game/render_internal.h"
 
 void SeedFinishCameraAlt(void *car) {
-    register u32 word0 asm("$2");
+    u32 word0;
     u32 word1;
     u32 word2;
     Block16 *src;
@@ -20,7 +20,7 @@ void SeedFinishCameraAlt(void *car) {
     TrackPointTableAddress pointAddress;
     TrackPointTableAddress trackAddress;
     GameTrackPoint *point;
-    register s32 index asm("$3");
+    s32 index;
     s32 lastIndex;
 
     /* car is a car runtime block: the copy below moves 0x19C bytes of it into
@@ -29,7 +29,7 @@ void SeedFinishCameraAlt(void *car) {
      * the source view is what lets the index reads below stay plain: both sides
      * carry the aggregate mark now, so 44a's exemption never fires. */
     source.runtime = car;
-    asm("" : "=r"(source.words) : "0"(source.words));
+    
     destination.runtime = &g_CameraCar;
     dst = destination.blocks;
     src = source.blocks;

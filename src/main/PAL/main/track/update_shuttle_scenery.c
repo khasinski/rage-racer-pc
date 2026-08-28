@@ -20,7 +20,7 @@ void UpdateShuttleScenery(s32 instance) {
     const Vec4 *altPoint;
 
     entry = &g_ShuttleScenery[instance];
-    asm("" : "=r"(entry) : "0"(entry));
+    
     limitPtr = g_ShuttlePathTravelMax;
     side = entry->startEndpoint;
     phase = entry->pathIndex;

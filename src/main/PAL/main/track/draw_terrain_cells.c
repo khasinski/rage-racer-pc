@@ -526,7 +526,7 @@ void DrawSkyBackground(void)
         firstG4->b2 = color;
         {
           packetCursor = nextPacket;
-          asm("" : : "r"(packetCursor));
+          
           AddPrim(&scratch->orderingTable[SKY_OT_NEAR], firstG4);
         }
       }
@@ -546,7 +546,7 @@ void DrawSkyBackground(void)
         screenX2 = adjW >> 8;
         upperBandXFixed = bandRightX - rowStepX;
         screenX3 = upperBandXFixed / 256;
-        asm("" : : "r"(bandRightX) : "memory");
+        
         upperBandYFixed = panelYFixed - rowStepY;
         adjW = upperBandYFixed;
         if (upperBandYFixed < 0)
@@ -595,7 +595,7 @@ void DrawSkyBackground(void)
         AddPrim(&orderingTableBase[SKY_OT_NEAR], g4Cursor++);
         cursor.polyG4 = g4Cursor;
         nextPacket = cursor.bytes;
-        asm("" : : "r"(upperBandXFixed));
+        
       }
       {
         u8 packetColor;
@@ -620,10 +620,9 @@ void DrawSkyBackground(void)
         {
           x3Raw += 0xFF;
         }
-        asm("" : : "r"(upperBandYFixed));
-        screenX3 = x3Raw >> 8;
-        asm("");
-        asm("" : : "r"(savedCourseY1));
+        
+        screenX3 = x3Raw >> 8;;
+        
         screenY0 = screenY2;
         rotatedBandY = rowStepY * 3;
         screenY1 = screenY3;

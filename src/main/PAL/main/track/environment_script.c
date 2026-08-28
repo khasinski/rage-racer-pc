@@ -70,7 +70,7 @@ void SeekEnvironmentScript(s32 targetTime) {
     g_EnvLerpFrame = frame;
     clampedFrame = frame;
     /* Keep the unclamped store and the call-value copy as distinct lifetimes. */
-    asm("" : "=r"(clampedFrame) : "0"(clampedFrame));
+    
     signedFrame = (s16)frame;
     if ((s16)duration < signedFrame) {
         clampedFrame = duration;

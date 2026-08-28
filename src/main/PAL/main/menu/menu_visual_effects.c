@@ -130,11 +130,11 @@ void RotateTeamLogoCcw(void) {
     s32 limit;
     u32 *base;
     u32 *srcStart;
-    register u32 *src asm("$6");
-    register u32 *stackBase asm("$11");
-    register u32 *dst asm("$4");
+    u32 *src;
+    u32 *stackBase;
+    u32 *dst;
     s32 shift;
-    register u32 value1 asm("$3");
+    u32 value1;
     u32 value2;
     u32 saved[512];
     TeamLogoCanvasAddress sourceAddress;
@@ -227,12 +227,12 @@ void RotateTeamLogoCw(void) {
     u32 *rowBase;
     u32 *base;
     u32 *srcStart;
-    register u32 *src asm("$6");
-    register u32 *stackBase asm("$11");
-    register u32 *dst asm("$4");
+    u32 *src;
+    u32 *stackBase;
+    u32 *dst;
     s32 shift;
-    register u32 value1 asm("$3");
-    register u32 value2 asm("$2");
+    u32 value1;
+    u32 value2;
     u32 saved[512];
     TeamLogoRotationBufferAddress copyAddress;
     TeamLogoRotationBufferAddress indexAddress;
@@ -805,7 +805,7 @@ void DrawMenuLightBurst(s32 arg) {
         s32 s2;
         u8 *prim;
         s32 value;
-        register u32 scaled asm("$8");
+        u32 scaled;
 
         SetDrawClipRect(s3, 0, 0, 0x140, 0x1E0);
 
@@ -844,7 +844,7 @@ void DrawMenuLightBurst(s32 arg) {
         {
             RenderBufferAddress primAddress;
             POLY_G4 *quad;
-            register s32 x asm("$3") = g_MenuLightBurstLevel;
+            s32 x = g_MenuLightBurstLevel;
 
             primAddress.bytes = prim;
             quad = primAddress.polyG4;
@@ -1026,7 +1026,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         spriteOne = 1;
         badgeX.value = 0;
         /* Keeps GCC 2.6.3's packed-coordinate allocation deterministic. */
-        asm("" : "=r"(badgeX.value) : "0"(badgeX.value));
+        
         badgeMask = -65536;
         badgeX.value &= badgeMask;
         row = 0;
@@ -1213,14 +1213,14 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         } while (row < 5);
 
         {
-            register s32 suffixX asm("$20");
+            s32 suffixX;
             s32 textShade;
             s32 textClut;
             s32 textFlags;
             const char *lastSuffix;
 
             suffixX = 0x1E;
-            asm("" : "=r"(suffixX) : "0"(suffixX));
+            
             textShade = 0x7F;
             textClut = 0x244;
             textFlags = 0x20;

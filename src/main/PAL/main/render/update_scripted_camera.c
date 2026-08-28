@@ -24,8 +24,8 @@ void UpdateScriptedCamera(void) {
     s32 current;
     s32 tick;
     s32 currentOffset;
-    register s32 nextOffset asm("$5");
-    register s32 currentValue asm("$7");
+    s32 nextOffset;
+    s32 currentValue;
     s32 blend;
     s32 scaledTick;
     CameraLookAt camera;

@@ -59,7 +59,7 @@ void UpdateSequenceFadeOut(void) {
 
 void ApplyDuckedSequenceAudio(void) {
     s32 value;
-    register s32 scaled asm("$2");
+    s32 scaled;
     s32 seq;
     s32 volume;
 

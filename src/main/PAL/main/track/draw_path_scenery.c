@@ -168,7 +168,7 @@ void UpdatePointAmbience(s32 arg) {
     TrackEventData *base;
     TrackPointAmbienceZone *startp;
     TrackPointAmbienceZone *seg;
-    register s32 v1 asm("v1");
+    s32 v1;
     s32 t0;
     u16 a1raw;
     u16 t1raw;

@@ -25,7 +25,7 @@ typedef union TachometerColorAddress {
 } TachometerColorAddress;
 
 void DrawWrongWayWarning(void) {
-    register SPRT *packet;
+    SPRT *packet;
     SPRT *next;
     s32 i;
     s32 x;
@@ -297,15 +297,15 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
 
 u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut) {
     RenderBufferAddress cursor;
-    register SPRT_8 *out asm("$16");
+    SPRT_8 *out;
     s32 xReg = x;
     s32 yReg = y;
-    register s32 codeReg asm("$17");
-    register s32 clutReg asm("$20");
+    s32 codeReg;
+    s32 clutReg;
 
     cursor.bytes = prim;
     out = cursor.sprite8;
-    asm("" : "=r"(xReg), "=r"(yReg) : "0"(xReg), "1"(yReg) : "$17");
+    
     codeReg = digit;
     clutReg = clut;
     SetSprt8(out);
@@ -317,7 +317,7 @@ u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut) {
 
     {
         OT_TYPE *ot = GamePrimaryOrderingTable(0);
-        register SPRT_8 *oldPrim asm("$5") = out;
+        SPRT_8 *oldPrim = out;
 
         out->x0 = xReg;
         out->y0 = yReg;

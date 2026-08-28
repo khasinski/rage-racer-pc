@@ -90,7 +90,7 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
     s32 u0Reg;
     s32 v0Reg;
     s32 rReg;
-    register s32 clutReg asm("$16");
+    s32 clutReg;
     u8 *oldPrim;
     s16 x0Local;
     s16 y0Local;
@@ -103,7 +103,7 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
     prim = SCRATCH_PRIM_CURSOR_AS(SPRT);
     shadeReg = shadeTex;
     semiReg = semiTrans;
-    asm("" : : "r"(prim), "r"(shadeReg), "r"(semiReg));
+    
     y1Reg = y1;
     u0Reg = u0;
     v0Reg = v0;
@@ -113,7 +113,7 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
     x1Local = x1;
     bLocal = b;
     /* Match note: keep stack color load after callee-save argument setup. */
-    asm("" : : "r"(flags), "r"(y1Reg), "r"(u0Reg), "r"(v0Reg), "r"(rReg));
+    
     gLocal = g;
     SetSprt(prim);
 
@@ -168,8 +168,8 @@ void DrawFlatTriangle(ot, x0, y0, x1, y1, x2, y2, r, g, b, semiTrans, flags)
     u32 flags;
 {
     RenderBufferAddress cursor;
-    register s32 semiReg asm("$17");
-    register u32 flagsReg asm("$16");
+    s32 semiReg;
+    u32 flagsReg;
     s32 y1Reg;
     s32 x2Reg;
     s32 y2Reg;
@@ -188,7 +188,7 @@ void DrawFlatTriangle(ot, x0, y0, x1, y1, x2, y2, r, g, b, semiTrans, flags)
     rReg = r;
     gReg = g;
     bReg = b;
-    asm("" : : "r"(prim), "r"(semiReg), "r"(flagsReg), "r"(y1Reg), "r"(x2Reg), "r"(y2Reg), "r"(rReg), "r"(gReg), "r"(bReg) : "$4", "$5", "$6", "$7", "$31");
+    
 
     SetPolyF3(prim);
     SetSemiTrans(prim, semiReg);
@@ -238,8 +238,8 @@ void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
 {
     RenderBufferAddress cursor;
     POLY_F4 *prim;
-    register s32 semiReg asm("$17");
-    register u32 flagsReg asm("$16");
+    s32 semiReg;
+    u32 flagsReg;
     s32 y1Reg;
     s32 x2Reg;
     s32 y2Reg;
@@ -267,7 +267,7 @@ void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
     x1Local = x1;
     bLocal = b;
     /* Match note: keep stack color load after callee-save argument setup. */
-    asm("" : : "r"(prim), "r"(semiReg), "r"(flagsReg), "r"(y1Reg), "r"(x2Reg), "r"(y2Reg), "r"(x3Reg), "r"(y3Reg), "r"(rReg) : "$4", "$5", "$6", "$7", "$31");
+    
     gLocal = g;
 
     SetPolyF4(prim);
@@ -398,12 +398,11 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
     rReg = (u8)r;
     gReg = (u8)g;
     bReg = (u8)b;
-    alphaValue = (u8)alpha;
-    asm("");
+    alphaValue = (u8)alpha;;
     x0Reg = x0;
     y0Reg = y0;
     x1Reg = x1;
-    asm("" : : "r"(x0Reg), "r"(y0Reg), "r"(x1Reg));
+    
 
     SetTile(prim);
     cursor.tile = prim;
@@ -451,12 +450,11 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
     rReg = (u8)r;
     gReg = (u8)g;
     bReg = (u8)b;
-    alphaValue = (u8)alpha;
-    asm("");
+    alphaValue = (u8)alpha;;
     x0Reg = x0;
     y0Reg = y0;
     x1Reg = x1;
-    asm("" : : "r"(x0Reg), "r"(y0Reg), "r"(x1Reg));
+    
 
     SetLineF2(prim);
     cursor.lineF2 = prim;
@@ -553,7 +551,7 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8
     r0Reg = r0;
     g0Reg = g0;
     b0Reg = b0;
-    asm("" : : "r"(y1Reg), "r"(r0Reg), "r"(g0Reg), "r"(b0Reg));
+    
     r1Local = r1;
     alphaReg = alpha;
     x0Reg = x0;

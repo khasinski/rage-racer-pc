@@ -63,9 +63,9 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
   s16 yA8;
   s16 yB8;
   s16 yC8;
-  register s32 phaseValue asm("$2");
-  register s32 secondaryValue asm("$3");
-  register RenderBufferAddress drawValue asm("$4");
+  s32 phaseValue;
+  s32 secondaryValue;
+  RenderBufferAddress drawValue;
   a0v = panelStep;
   a1v = editorStep;
   ot.pointer = SCRATCH_OT_BASE_AS(void);
@@ -145,8 +145,8 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
   {
     s32 sy2;
     s32 sy;
-    register s32 drawX asm("$5");
-    register s32 sy2Arg;
+    s32 drawX;
+    s32 sy2Arg;
     u8 ff;
     s32 sx;
     s32 x88;
@@ -162,7 +162,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     }
     x0 = 0x87;
     drawX = 0x87;
-    asm("" : : "r"(drawX));
+    
     slidePhase = d;
     sy = ((slidePhase * 0x460) >> 5) + 0xFEC9;
     ff = 0xFF;
@@ -173,8 +173,8 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       if (g_TeamLogoPaletteMode == 0)
       {
         s32 syOffset;
-        register s32 angleSource;
-        register s32 angleValue;
+        s32 angleSource;
+        s32 angleValue;
         angleSource = g_TeamLogoColorCycleAngle;
         secondaryValue = g_TeamLogoCursorX;
         angleValue = angleSource * 2;
@@ -183,7 +183,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
         sy2 = secondaryValue + 0x88;
         sy2Arg = sy2;
         syOffset = (g_TeamLogoCursorY * 8) + 2;
-        asm("" : "=r"(sy) : "0"(sy));
+        
         sy += syOffset;
         if (angleValue < 0)
         {
@@ -215,7 +215,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     phaseValue = gyTemp;
     gy = phaseValue;
     gx2 = drawValue.value + (g_TeamLogoZoomSpan / 8);
-    asm("" : : "r"(scaleDelta));
+    
     gy2 = phaseValue + (g_TeamLogoZoomSpan / 8);
     clut = (g_TeamLogoRect.coordinate.y.value >> 4) & 0x10;
     clut |= (g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6;
@@ -230,7 +230,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
   d = g_TeamLogoPanelStep - 0xE;
   if (d >= 0)
   {
-    register s32 sy asm("$16");
+    s32 sy;
     u32 su;
     s32 ff;
     s16 w1;
@@ -305,7 +305,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     w1 = kreg + 0x83;
     xb = x0 + 0x41;
     SetDrawClipRect(ot.pointer, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
-    asm("" : "=r"(gx2) : "0"(gx2));
+    
     GameDrawTexturedQuad(ot.pointer, (s16)x0, (s16)kreg, (s16)xb, (s16)kreg,
                          (s16)x0, (s16)w1, (s16)xb, (s16)w1,
                          (u8)gx, (u8)gy, (u8)gx2, (u8)gy,
@@ -318,8 +318,8 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
   if (d >= 0)
   {
     s32 j;
-    register s32 vs7 asm("$23");
-    register s32 vs6 asm("$22");
+    s32 vs7;
+    s32 vs6;
     u32 panelY;
     u32 slidePhase;
     if (d >= 6)
@@ -363,14 +363,14 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       y1 = kreg + 0x1C;
     i = 0;
     yA0 = (kreg + 0x22) << 16;
-    asm("" : : "r"(yA0));
+    
     kreg = 0x60;
     vs7 = -0x30;
     vs6 = -0xF;
     for (; i < 4; i++)
     {
-      register s32 shade asm("$21");
-      register s32 swatchWidth asm("$7");
+      s32 shade;
+      s32 swatchWidth;
       s32 gxArg;
       s32 gyArg;
       s32 clutArg;
@@ -392,19 +392,19 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       }
       gxArg = (u8) gx;
       gyArg = (u8) gy;
-      asm("" : : "r"(gxArg), "r"(gyArg));
-      asm("" : : "r"(pal));
+      
+      
       swatchWidth = 0xC;
-      asm("" : : "r"(swatchWidth));
+      
       shade = (u8) (i * 0x24);
-      asm("" : : "r"(shade));
+      
       drawValue.pointer = ot.pointer;
-      asm("" : : "r"(drawValue.pointer));
-      asm("" : : "r"(x1));
+      
+      
       clutArg = clut;
       DrawSprite(drawValue.pointer, (s16)(x1 + 0x13), (s16)(yA0 >> 16), (s16)swatchWidth, (s16)0x18,
                             gxArg, gyArg, 0, 0, 0, (u16) pal, 1, 0, clutArg);
-      asm("" : "=r"(shade) : "0"(shade));
+      
       secondaryValue = (u8) shade;
       DrawSprite(ot.pointer, (s16)x1, (s16)y1, (s16)0x22, (s16)0x32, secondaryValue, (u8)0xC0,
                     0, 0, 0, 0x1F5, 1, 0, 0x1D);
@@ -437,7 +437,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     s16 xc;
     s32 x0Calc;
     s32 syBase;
-    register s32 tileSize;
+    s32 tileSize;
     u32 slidePhase;
     kreg = 0xC8;
     if (d >= 6)
@@ -446,7 +446,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     }
     slidePhase = d;
     x0Calc = ((slidePhase * -0x140) >> 5) + 0x140;
-    asm("" : : "r"(x0Calc));
+    
     syBase = g_TeamLogoColorChannel;
     x0 = (u16) x0Calc;
     sy = (syBase * 0x30) + 0xD9;
@@ -626,7 +626,7 @@ void ScrollTeamLogoLeft(void) {
     s32 row;
     u32 *savePtr;
     u32 *savePtr2;
-    register u32 *rowBase asm("$8");
+    u32 *rowBase;
     s32 offset;
     s32 col;
     u32 *base;
@@ -634,8 +634,8 @@ void ScrollTeamLogoLeft(void) {
     u32 *addr;
     u32 *cursor;
     u32 saved[64];
-    register u32 value asm("$2");
-    register u32 next asm("$3");
+    u32 value;
+    u32 next;
 
     PlaySoundCue(1);
 

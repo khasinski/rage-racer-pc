@@ -422,7 +422,7 @@ slot_prompt_done:
     }
 
     {
-        register s32 stateValue asm("$3");
+        s32 stateValue;
 
     case 0x20: {
         tmp = 0xF;
@@ -827,7 +827,6 @@ L_b1280:
         g_McMenuState = mslot;
         /* fall through */
     case 3:
-        ;
     }
 
     if (!(g_McMenuState == -1)) {

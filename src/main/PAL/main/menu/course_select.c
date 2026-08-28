@@ -25,8 +25,8 @@ void DrawNowLoadingText(void) {
 /* g_MenuScreenUpdate[0]: waits for the car-select assets, then opens screen 1. */
 void EnterCourseSelectScreen(void) {
     s32 one;
-    register s32 initValue;
-    register s32 mode asm("$4");
+    s32 initValue;
+    s32 mode;
     s32 largeValue;
     u8 *table;
     s32 eight;
@@ -136,7 +136,7 @@ s32 DrawCourseSelectScreen(s32 step)
     s16 headerWidth = 0;
     u32 deltaY;
     /* Load-bearing in the prize loop: without this pin the function is 848 words. */
-    register s32 coordinateY asm("$16");
+    s32 coordinateY;
     s32 lineColor;
     s32 row;
     s32 digitCount;

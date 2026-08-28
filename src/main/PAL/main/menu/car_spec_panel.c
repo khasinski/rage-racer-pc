@@ -216,7 +216,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     s32 revealBase;
     s32 floorProgress;
     s16 lineX;
-    register s32 lineNearX;
+    s32 lineNearX;
     s32 lineStep;
     s16 lineFarX;
     u8 lineColor;
@@ -410,8 +410,8 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
         i = 0;
         lightAdjustment = 0x40;
         darkAdjustment = 0x40;
-        asm("" : "=r"(lightAdjustment) : "0"(0x40));
-        asm("" : "=r"(darkAdjustment) : "0"(lightAdjustment));
+        
+        
         baseY = 0x144;
         baseX = 0x66;
         offset = 0;

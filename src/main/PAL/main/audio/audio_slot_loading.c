@@ -37,8 +37,8 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
 
 s32 PollAudioSlotLoad(void) {
     s32 completed;
-    register s32 *flagsPtr asm("$4");
-    register s32 slot asm("$5");
+    s32 *flagsPtr;
+    s32 slot;
     s32 one;
     s32 value;
     s32 bit;
@@ -116,7 +116,7 @@ s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
        sequence, and every shape tried (pointer vs array vs global, local copies
        of every parameter, declaration order, the check reading the pointer or
        the global or a second local) leaves 23 against 24 unchanged. */
-    register s16 *vabIdPtr asm("$18") = &g_SoundScale.vabIds[3];
+    s16 *vabIdPtr = &g_SoundScale.vabIds[3];
     s16 vabId;
 
     g_AudioLoadSlot = 3;
@@ -144,7 +144,7 @@ s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
 
 s32 LoadExtraVabSlotWithTable(u8 *header, u8 *body, u16 *table) {
     /* Same allocation tie as StartVabTransferWithTable: see the note there. */
-    register s16 *vabIdPtr asm("$18") = &g_SoundScale.vabIds[3];
+    s16 *vabIdPtr = &g_SoundScale.vabIds[3];
     s16 vabId;
     s32 flags;
 

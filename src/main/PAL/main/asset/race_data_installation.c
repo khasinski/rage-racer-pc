@@ -15,7 +15,7 @@ void SetCarSpec(GameCarSpec *spec) {
 }
 
 void InstallTrackEventData(void *resourceData) {
-    register AssetAddress cursor asm("$2");
+    AssetAddress cursor;
     s32 offset1;
     u8 *callArg;
     TrackEventOffsetBase base;

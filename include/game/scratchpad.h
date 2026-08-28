@@ -15,7 +15,7 @@
  * these words by offset, so each macro name is what the engine does with the
  * word, cited from the disassembly.
  *
- * The slots are macros, not the `extern T x asm("0x1F8000NN")` spelling used
+ * The slots are macros, not the `extern T x` spelling used
  * in render/set_gte_light_matrix.c: that spelling is a const-CSE lever and
  * moves the emitted code, a macro cannot.
  */

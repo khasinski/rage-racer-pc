@@ -32,7 +32,7 @@ void ResetMirrorState(void) {
 s32 BeginMirrorPass(void) {
     GameScratchpadRenderState *scratch;
     s32 mirrorEnabled;
-    register s32 v0reg asm("$2");
+    s32 v0reg;
     s32 v1reg;
     s32 y0;
     MirrorPanelPositionAddress panelPosition;
@@ -115,7 +115,7 @@ s32 BeginMirrorPass(void) {
  */
 void EndMirrorPass(void) {
     GameScratchpadRenderState *scratch;
-    register s32 v0reg asm("$2");
+    s32 v0reg;
     s32 v1reg;
 
     scratch = SCRATCHPAD;

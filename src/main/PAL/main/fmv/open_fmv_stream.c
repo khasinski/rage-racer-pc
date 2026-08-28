@@ -18,7 +18,7 @@ void OpenFmvStream(s32 callback) {
 
 void UploadFmvSlice(void) {
     Rect rect;
-    register FmvStripCursorAddress bufferCursor asm("$6");
+    FmvStripCursorAddress bufferCursor;
     FmvStripCursorAddress bufferAddress;
     FmvWorkBufferAddress uploadAddress;
     s32 oldBuffer;
@@ -28,9 +28,9 @@ void UploadFmvSlice(void) {
     s32 pixelCount;
     s32 next;
     s32 index;
-    register u16 x asm("$2");
-    register u16 step asm("$7");
-    register s32 signedStep asm("$2");
+    u16 x;
+    u16 step;
+    s32 signedStep;
 
     if (g_StInterruptPending != 0) {
         StCdInterrupt();
@@ -59,7 +59,7 @@ void UploadFmvSlice(void) {
         pixelCount = signedStep * g_FmvStripHeight;
         bufferIndex = g_FmvStripIndex;
         bufferAddr = bufferIndex << 2;
-        asm("" : "=r"(bufferCursor) : "0"(bufferCursor));
+        
         {
             s32 relativeAddress = bufferAddr;
             bufferAddr = bufferCursor.byteAddress + relativeAddress;

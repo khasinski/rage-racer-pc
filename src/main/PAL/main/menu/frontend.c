@@ -59,7 +59,7 @@ void UpdateTitleAttract(void) {
     void *base;
     s32 color;
     s32 h88;
-    register RenderBufferAddress scratch asm("$22");
+    RenderBufferAddress scratch;
     s32 hF0;
     s32 clut0;
     void *next;
@@ -84,11 +84,11 @@ void UpdateTitleAttract(void) {
 
     x28 = 0x28;
     yA0 = 0xA0;
-    asm("" : "=r"(x28), "=r"(yA0) : "0"(x28), "1"(yA0)); /* Match note: materialize first-call argument registers before the stack-arg temp. */
+     /* Match note: materialize first-call argument registers before the stack-arg temp. */
     color = 0x7E00;
     scratch.pointerLink = &SCRATCH_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
-    asm("" : "=r"(scratch.pointer), "=r"(hF0) : "0"(scratch.pointer), "1"(hF0)); /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
+     /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
     tmp = 0x18;
     next = *scratch.pointerLink;
     h88 = 0x88;
@@ -220,10 +220,10 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 
     {
-        register DrawEnv *ptr;
-        register s32 g;
-        register s32 b;
-        register s32 smallWidth;
+        DrawEnv *ptr;
+        s32 g;
+        s32 b;
+        s32 smallWidth;
         s32 small_height;
 
         ptr = &context->environment.mirrorDraw;

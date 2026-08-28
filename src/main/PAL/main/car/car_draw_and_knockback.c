@@ -32,9 +32,9 @@ typedef union CarSpeedAddress {
 
 void BuildStartingGrid(void) {
     GameCarRuntime *entryBase;
-    register RaceGridSlot *table asm("s3");
+    RaceGridSlot *table;
     s32 i;
-    register s16 *flagPtr asm("s1");
+    s16 *flagPtr;
     s32 one;
     RaceGridSlot *cursor;
     s32 state;
@@ -149,7 +149,7 @@ void UpdateCarTiltCounter(GameCarRuntime *car) {
     GameCarRuntime *obj;
     GameCarAiBlock *state;
     s32 value;
-    register s32 limit asm("$3");
+    s32 limit;
 
     obj = car;
 
@@ -161,7 +161,7 @@ void UpdateCarTiltCounter(GameCarRuntime *car) {
         if (obj->engineRpm >= g_CarSpec->redline &&
             obj->acceleratorInput >= 0x81 &&
             obj->slideInput.halves.low == 0) {
-            register s32 tilt asm("$4");
+            s32 tilt;
 
             tilt = (u16)obj->tiltCounter;
             value = obj->currentGear;
@@ -232,11 +232,11 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     GameCarRuntime *carReg;
     s32 hitX;
     s32 angle;
-    register s32 savedAngle asm("$19");
+    s32 savedAngle;
     s32 hitZ = z;
-    register s32 adjustedReg asm("$2");
+    s32 adjustedReg;
     s32 raw;
-    register s32 rawArg asm("$4");
+    s32 rawArg;
     s32 adjusted;
     s32 fieldA4;
     s32 tmp;
@@ -250,7 +250,7 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     static int traceTimerMax = -1;
 
     carReg = car;
-    asm("" : : "r"(carReg));
+    
     hitX = x;
     carReg->motionActive = 1;
     if (mode < 2) {
@@ -268,7 +268,7 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
         adjusted = raw + 0x400;
     }
     adjustedReg = adjusted & 0xFFF;
-    asm("" : "=r"(adjustedReg) : "0"(adjustedReg));
+    
     fieldA4 = carReg->speed;
     angle = adjustedReg;
     if (fieldA4 >= 0x321) {

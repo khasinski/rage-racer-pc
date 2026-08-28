@@ -162,7 +162,7 @@ void DrawStartGridScenery(s32 flags) {
     Vec4 state;
     s32 s1;
     s32 s0;
-    register s32 value asm("$2");
+    s32 value;
     s32 drawArg;
     s32 rem;
     s32 lim;
@@ -223,8 +223,8 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     s32 visible;
     s32 num;
     s32 drawArg;
-    register s32 sv asm("$2");
-    register s32 *scr asm("$8");
+    s32 sv;
+    s32 *scr;
 
     state = g_AnimSceneryPos[instance];
 
@@ -351,7 +351,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     s32 num;
     s32 drawArg;
     s32 sv;
-    register s32 *scr asm("$8");
+    s32 *scr;
 
     if (g_GrandPrixMode == 0) {
         return;

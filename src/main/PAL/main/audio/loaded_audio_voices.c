@@ -171,11 +171,11 @@ void ForcePanVoiceEnabled(s32 enabled) {
     s32 *dst;
     s32 scale;
     s32 raw;
-    register s32 voice asm("$4");
+    s32 voice;
     s32 left;
-    register s32 right asm("$6");
+    s32 right;
     s32 zeroArg;
-    register s32 unused asm("$16");
+    s32 unused;
 
     i = 0;
     dst = values;

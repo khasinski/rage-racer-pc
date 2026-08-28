@@ -32,13 +32,13 @@ void *GetFmvFrame(FmvDecodeContext *ctx) {
     s32 h;
     s32 h32;
     s32 w32;
-    register u16 hgt16 asm("$4");
+    u16 hgt16;
     u16 wid16;
     u16 wdraw;
     s32 half;
     s32 c067e;
     s32 frameStatus;
-    register void *ret asm("$2");
+    void *ret;
 
     count = 0x800000;
     do {

@@ -10,7 +10,7 @@
 #include "game/save_internal.h"
 
 s32 LoadSaveStateBlock(GameSaveBlock *block) {
-    register GameSaveBlock *base asm("$17") = block;
+    GameSaveBlock *base = block;
     s32 i;
     __asm__("" : "=r"(base) : "0"(base));
     {

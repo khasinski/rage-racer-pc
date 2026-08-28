@@ -8,6 +8,6 @@ typedef union CourseSelectScrollState {
 } CourseSelectScrollState;
 
 extern CourseSelectScrollState g_CourseSelectScrollState;
-extern s32 g_CourseSelectScrollValue asm("g_CourseSelectScrollState");
+extern s32 g_CourseSelectScrollValue;
 
 #endif

@@ -205,7 +205,7 @@ void DrawLapNumber(void) {
     s32 digitsDrawn;
     s32 xOffset;
     s32 quotient;
-    register SPRT *packet asm("$16");
+    SPRT *packet;
 
     scratch = SCRATCH_PRIM_CURSOR_AS(SPRT);
     track = g_PlayerCar.lap;
@@ -379,9 +379,9 @@ race_intro_update_done:
 void ApplyTrackReverbZone(s32 position) {
     s32 result;
     s32 i;
-    register s32 zone;
+    s32 zone;
     s32 depth;
-    register s32 scene;
+    s32 scene;
 
     result = 0;
     if (position < 0) {
@@ -532,8 +532,8 @@ void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
 void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
   s32 pos2_R10;
   s32 idx_R8;
-  register TrackEventDataAddress base_R9;
-  register GameCarRuntime *ent2_R7;
+  TrackEventDataAddress base_R9;
+  GameCarRuntime *ent2_R7;
   GameCarAiBlock *sub_R6;
   s32 c;
   u16 w;
@@ -548,7 +548,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
   {
     s32 lev1_R3;
     unsigned int idxoff1_R4;
-    register TrackEventDataAddress p1_R4;
+    TrackEventDataAddress p1_R4;
     lev1_R3 = g_RaceSeries;
     idxoff1_R4 = idx_R8;
     idxoff1_R4 = idxoff1_R4 * 16;
@@ -595,7 +595,7 @@ void InitRivalCarAi(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
   {
     s32 lev2_R2;
     s32 idxoff2_R4;
-    register TrackEventDataAddress p2_R3 asm("$3");
+    TrackEventDataAddress p2_R3;
     lev2_R2 = g_RaceSeries;
     idxoff2_R4 = idx_R8 * 16;
     p2_R3 = base_R9;

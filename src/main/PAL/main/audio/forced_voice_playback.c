@@ -12,7 +12,7 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
     s32 scale;
     s32 left;
     s32 right;
-    register s32 voiceArg asm("$4");
+    s32 voiceArg;
     s32 zeroArg;
 
     unused = 0;
@@ -73,15 +73,15 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
 
 void ForceIndexedEffectVoiceEnabled(s32 enabled) {
     s32 base;
-    register s32 center;
+    s32 center;
     s32 fine;
     s32 index;
-    register s32 raw asm("$2");
+    s32 raw;
     s32 product;
     s32 scale;
-    register s32 left asm("$5");
-    register s32 right asm("$6");
-    register s32 voice asm("$4");
+    s32 left;
+    s32 right;
+    s32 voice;
 
     if (enabled != 0) {
         index = g_IndexedEffectIndexPrev;
@@ -149,11 +149,11 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
     EffectVoiceNote *noteCursor;
     s32 offset;
     s32 state;
-    register s32 raw asm("$2");
+    s32 raw;
     s32 scale;
     s32 left;
-    register s32 right asm("$6");
-    register s32 voiceArg asm("$4");
+    s32 right;
+    s32 voiceArg;
     s32 keyTone;
 
     state = enabled;
@@ -223,7 +223,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
 void ForceSoundSlotVoicePlayback(s32 enabled) {
     s32 saved = enabled;
     s32 i;
-    register s32 *base asm("$18");
+    s32 *base;
     s32 *active;
     s32 odd;
     s32 first;

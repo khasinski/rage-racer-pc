@@ -118,7 +118,7 @@ void DrawSmallText(x0, y, str0, color, g, b, clut, flags)
         {
             s32 nx;
             nx = x + w;
-            asm("" : "=r"(nx) : "0"(nx));
+            
             x = nx;
         }
     }
@@ -231,7 +231,7 @@ void DrawLargeText(x0, y, str0, color, g, b, clut, flags)
         {
             s32 nx;
             nx = x + w;
-            asm("" : "=r"(nx) : "0"(nx));
+            
             x = nx;
         }
     }

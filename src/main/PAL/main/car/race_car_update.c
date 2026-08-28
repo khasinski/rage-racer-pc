@@ -30,10 +30,10 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     s32 rem;
     s32 coords[3];
     s32 angle;
-    register s32 value asm("$2");
+    s32 value;
     s32 zValue;
     s32 lowerLimit;
-    register s32 callArg asm("$4");
+    s32 callArg;
 
     lateral = car->aiLateralOffset;
     offset = car->trackPointIndex;
@@ -118,10 +118,10 @@ void UpdateRaceCars(void) {
     Matrix m2;
     SVec sv;
     /* These pins reproduce the retail induction and matrix registers. */
-    register GameCarRuntime *base asm("$18");
-    register GameCarAiBlock *drive;
-    register Matrix *pm1;
-    register Matrix *pm2;
+    GameCarRuntime *base;
+    GameCarAiBlock *drive;
+    Matrix *pm1;
+    Matrix *pm2;
     s16 i;
     GameCarRuntime *q;
     s32 t;
@@ -314,8 +314,8 @@ void UpdateRaceCars(void) {
         lastBase = g_Cars;
         do {
         if (lastBase->activeFlag != -1) {
-            register s16 step asm("$17");
-            register s32 spin asm("$2");
+            s16 step;
+            s32 spin;
             s32 scaled;
             s32 limit;
             scaled = lastBase->speed * 3;
@@ -392,7 +392,7 @@ void UpdateAttractCars(void) {
     Matrix m2;
     SVec sv1;
     /* These pins reproduce the retail induction registers. */
-    register GameCarRuntime *car;
+    GameCarRuntime *car;
     GameCarRuntime *sub;
     s16 i;
     GameCarRuntime *c0;
@@ -427,7 +427,7 @@ void UpdateAttractCars(void) {
         car++;
     } while (i < 11);
     {
-        register GameCarAiBlock *drive;
+        GameCarAiBlock *drive;
         i = 0;
         car = g_Cars;
         sub = g_Cars;
@@ -553,8 +553,8 @@ void UpdateAttractCars(void) {
     base = g_Cars;
     do {
         if (base->activeFlag != -1) {
-            register s16 step asm("$17");
-            register s32 spin asm("$2");
+            s16 step;
+            s32 spin;
             s32 scaled;
             s32 limit;
             scaled = base->speed * 3;
@@ -625,7 +625,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     PlayerCarPositionView target;
     ScratchLegacyViewWords legacyView;
     s32 *spad;
-    register s32 s0v asm("$16");
+    s32 s0v;
     s32 delta[3];
 
     LoadScratchLegacyView(&legacyView);
@@ -725,7 +725,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
 }
 
 void SeedFinishCamera(PlayerCarRuntime *car) {
-    register u32 word0;
+    u32 word0;
     Block16 *src;
     Block16 *dst;
     Block16 *end;
@@ -733,7 +733,7 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     GameTrackPoint *track;
     GameCarRuntimeAddress destinationAddress;
     GameTrackPoint *point;
-    register s32 index asm("$3");
+    s32 index;
     s32 lastIndex;
 
     sourceAddress.player = car;

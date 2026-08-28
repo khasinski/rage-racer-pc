@@ -23,8 +23,8 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
     GameCarSpec *spec;
     s32 timer;
     s32 index;
-    register s32 lateral asm("$18");
-    register s32 baseIndex asm("$4");
+    s32 lateral;
+    s32 baseIndex;
     s32 finalAngle;
     s32 coords[3];
     s32 angle;
@@ -94,13 +94,13 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
 
 
 void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
-    register PlayerCarRuntime *car = carArg;
-    register GameCarDrive *drive;
-    register s32 s4val;
+    PlayerCarRuntime *car = carArg;
+    GameCarDrive *drive;
+    s32 s4val;
     s32 res;
-    register s32 v0 asm("$2");
-    register s32 first24 asm("$4");
-    register s32 firstHeading asm("$5");
+    s32 v0;
+    s32 first24;
+    s32 firstHeading;
     u32 shiftRpmRange;
 
     (void)unused;
@@ -128,10 +128,10 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
         near = res < 513;
         if (near) {
             volume = res / 8 + 0x40;
-            asm("" : "=r"(res) : "0"(res));
+            
             near = res < 513;
         }
-        asm("" : "=r"(near) : "0"(near));
+        
         if (near) {
             phase = res * 3 + 0x1800;
         } else {
@@ -217,8 +217,8 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
             car->headingAngle = car->bodyYaw;
 
             {
-                register s32 t;
-                register s32 sq asm("$3");
+                s32 t;
+                s32 sq;
 
                 t = drive->yawOffset;
                 sq = t;

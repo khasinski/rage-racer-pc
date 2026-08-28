@@ -167,13 +167,13 @@ void UpdatePathScenerySound(void) {
     s32 dz;
     s32 vol;
     s32 pitch;
-    register s32 slew;
-    register PathSceneryClockAddress frames asm("$5");
-    register u16 posFrame;
-    register u16 rotFrame;
+    s32 slew;
+    PathSceneryClockAddress frames;
+    u16 posFrame;
+    u16 rotFrame;
     PathSceneryPositionKey *sinRec;
     s32 product;
-    register s32 oldVolume;
+    s32 oldVolume;
     PathSceneryKeyAddress positionStepAddress;
     PathSceneryKeyAddress rotationStepAddress;
 

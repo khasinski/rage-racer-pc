@@ -22,9 +22,9 @@ static __inline__ TILE *GetTileAtByteOffset(u8 *base, s32 byteOffset) {
 
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     s32 savedX;
-    register s32 savedY asm("$10");
+    s32 savedY;
     s32 savedColor;
-    register s32 localDivisor asm("$4");
+    s32 localDivisor;
     s32 whole;
     s32 fraction;
     s32 minutes;
@@ -136,7 +136,7 @@ void BuildTileStrips(void) {
     u8 *firstBuffer;
     u8 *addPrimBase;
     s32 prevOffset;
-    register u8 *storeBaseV1 asm("$3");
+    u8 *storeBaseV1;
     u8 *storeBaseV0;
 
     initBuffers = g_TileStripBuffers;
@@ -394,16 +394,16 @@ void DrawStartCountdown(s32 sceneTimer) {
 
 
 void DrawRaceOptionMenu(s32 cursorRow) {
-    register s32 selectedRow = cursorRow;
+    s32 selectedRow = cursorRow;
     u8 *ot;
     u8 *firstNext;
-    register s32 brightness;
+    s32 brightness;
     s32 marquee;
-    register RenderBufferAddress prim asm("$18");
+    RenderBufferAddress prim;
 
     ot = (u8 *)GamePrimaryOrderingTable(0);
     {
-        register void *drawPrim;
+        void *drawPrim;
 
         prim.bytes = SCRATCH_PRIM_CURSOR_AS(u8);
         SetSprt(prim.sprite);
@@ -416,7 +416,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         prim.sprite->v0 = 0x38;
         prim.sprite->clut = 0x7893;
         if (g_RaceOptionScroll0 & 0x10) {
-            asm("" : : "r"(prim.bytes));
+            
             brightness = 0x80;
         } else {
             brightness = 0x40;
@@ -424,7 +424,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         prim.sprite->r0 = brightness;
         prim.sprite->g0 = brightness;
         prim.sprite->b0 = brightness;
-        asm("" ::: "memory");
+        
         drawPrim = prim.pointer;
         prim.bytes += sizeof(SPRT);
         AddPrim(ot, drawPrim);
@@ -443,18 +443,16 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     }
 
     {
-        register s32 fontU;
-        register s16 scroll0;
-        register char *marqueeBase asm("$16");
+        s32 fontU;
+        s16 scroll0;
+        char *marqueeBase;
         u8 *drawPrim;
 
         {
-            register s32 textY = 0x8A;
-            register s32 textColor = 0x7811;
+            s32 textY = 0x8A;
+            s32 textColor = 0x7811;
 
-            asm(
-                "" : "=r"(textY), "=r"(textColor) :
-                "0"(textY), "1"(textColor));
+            
             SCRATCH_PRIM_CURSOR_AS(u8) = firstNext;
             scroll0 = g_RaceOptionScroll0;
             marqueeBase = &g_RaceOptionMarquee[0][0];
@@ -466,11 +464,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 textColor);
         }
         {
-            register s32 secondTextY = 0x8A;
+            s32 secondTextY = 0x8A;
 
-            asm(
-                "" : "=r"(secondTextY) :
-                "0"(secondTextY));
+            
             marqueeBase += 20;
             DrawText8x8(
                 (g_RaceOptionScroll1 >> 2) + 0xA0,
@@ -530,14 +526,14 @@ void DrawRaceOptionMenu(s32 cursorRow) {
 
         {
             POLY_FT4 *quadBase;
-            register POLY_FT4 *quad asm("$17");
+            POLY_FT4 *quad;
             RenderBufferAddress quadAddress;
 
             quadAddress.bytes = GameQueueTileTrans(
                 ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
             quadBase = quadAddress.polyFT4;
             {
-                register s32 leftTrig;
+                s32 leftTrig;
                 s16 left;
 
                 quad = quadBase;
@@ -558,9 +554,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 quad->y0 = 0x58;
             }
             {
-                register POLY_FT4 *drawPrim;
+                POLY_FT4 *drawPrim;
                 s32 rightTrig;
-                register s32 sample;
+                s32 sample;
                 s16 right;
                 RenderBufferAddress cursor;
 

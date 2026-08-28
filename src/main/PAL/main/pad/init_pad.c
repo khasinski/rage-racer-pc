@@ -113,8 +113,7 @@ void UpdatePadState(void) {
     } else if (raw[1] == 0x23) {
         pad->prevHeld = pad->held;
         pad->held = ~((raw[2] << 8) | raw[3]);
-        pad->twist = raw[4];
-        asm("");
+        pad->twist = raw[4];;
         pad->buttonI = raw[5] - g_NegconNeutralI;
         pad->buttonII = raw[6] - g_NegconNeutralII;
         pad->buttonL = raw[7] - g_NegconNeutralL;

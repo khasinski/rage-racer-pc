@@ -16,12 +16,12 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     GameCarAiBlock *state = GetCarAiBlock(car);
     s32 acc8 = 0;
     s32 acc9 = 0;
-    register s32 i asm("$10") = 0;
+    s32 i = 0;
     s32 k11 = 0xB;
     s32 carProgress;
     s32 carLateralOffset;
     s32 carA4low;
-    register s32 track asm("$12");
+    s32 track;
     s32 t6;
     s32 lateralMin;
     s32 lateralMax;
@@ -51,7 +51,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         s32 otherLateralOffset;
         s32 otherA4;
         s32 a2;
-        register s32 t1 asm("$9");
+        s32 t1;
         s32 diff;
         s32 angleDiff;
         s32 angleSaved;

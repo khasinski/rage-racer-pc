@@ -65,7 +65,7 @@ void InitShuttleScenery(void) {
     angleAddress.pointer = g_ShuttlePathAngles;
     angleAddress.bytes += value;
     v1 = angleAddress.shortVector->vx;
-    asm("" ::: "memory");
+    
     value = state->pathIndex;
     value <<= 3;
     state->angleX = v1;

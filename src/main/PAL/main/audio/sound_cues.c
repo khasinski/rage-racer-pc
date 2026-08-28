@@ -12,8 +12,8 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
     s32 loopCount;
     s32 i;
     /* Load-bearing GCC 2.6.3 register roles for the table loops. */
-    register s32 tblOff asm("$3");
-    register s32 loopTblOff asm("$8");
+    s32 tblOff;
+    s32 loopTblOff;
     s32 scaled;
     s32 scaleValue;
     s32 cueValue;
@@ -24,7 +24,7 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
     s32 active;
     s32 inactive;
     s32 defaultPitch;
-    register const EffectCueBankEntry *cueCursor asm("$7");
+    const EffectCueBankEntry *cueCursor;
     const EffectCueBank *tableBase;
     s32 *stateBase;
 
@@ -248,7 +248,7 @@ void UpdateEffectVoiceStates(void) {
     s32 voiceCopy;
     s32 neg;
     s32 svArg;
-    register s32 left asm("$5");
+    s32 left;
     s32 right;
     s32 prod;
     s32 voice;
@@ -576,7 +576,7 @@ void PlaySoundCue(s32 cue) {
  * g_SoundSlotTone[slot][toneIndex]. */
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot) {
     s32 voice;
-    register s32 left asm("$5");
+    s32 left;
     s32 right;
     s32 prod;
     s32 vab;

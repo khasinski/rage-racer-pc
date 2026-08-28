@@ -160,8 +160,8 @@ void DrawNegconNeutralScreen(void) {
  * ordinary C.
  */
 void BeginNegconCalibration(void) {
-    register u16 twist asm("$3");
-    register u16 mode asm("$4");
+    u16 twist;
+    u16 mode;
     NegconCalibrationValue *neutral = &g_NegconNeutralI;
     u16 steer = g_NegconSteerNeutral;
     u16 neutral0 = *neutral;
@@ -169,8 +169,7 @@ void BeginNegconCalibration(void) {
     u16 neutral2 = g_NegconNeutralL;
 
     twist = g_NegconSteerPlay;
-    mode = g_NegconMaxTwist;
-    asm("");
+    mode = g_NegconMaxTwist;;
 
     *neutral = 0;
     g_ControllerSceneAngleY = 0;

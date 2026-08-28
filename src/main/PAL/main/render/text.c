@@ -99,8 +99,7 @@ void GameDrawText8x8Shaded(
                 sprt->v0 = v;
                 sprt->r0 = intensity;
                 sprt->g0 = intensity;
-                sprt->b0 = intensity;
-                asm("");
+                sprt->b0 = intensity;;
                 primAddress.volatileSprite8 = sprt;
                 prim = primAddress.bytes;
                 sprt->clut = clutIndex;
@@ -188,8 +187,8 @@ typedef union TextRenderWork {
     s32 xPos = x;
     RenderBufferAddress packet;
     const u8 *text = (const u8 *)str;
-    register s32 shade asm("$23");
-    register TextRenderWork t0 asm("$8");
+    s32 shade;
+    TextRenderWork t0;
     s32 s1;
     u32 first;
     s32 v;
@@ -208,7 +207,7 @@ typedef union TextRenderWork {
 
     if (first != 0) {
         s32 height = 12;
-        register SPRT *sprt asm("$16") = packet.sprite;
+        SPRT *sprt = packet.sprite;
 
         do {
             s32 advance;
@@ -221,9 +220,7 @@ typedef union TextRenderWork {
                 SPRT *prim;
                 s16 yOffset;
 
-                asm(
-                    "" : "=r"(offset), "=r"(index), "=r"(v) :
-                    "0"(offset), "1"(index));
+                
                 text++;
                 u = g_HighFontU[index];
                 v = g_HighFontV[index];
@@ -240,9 +237,7 @@ typedef union TextRenderWork {
                 }
                 yOffset = g_HighFontYOffset[index];
                 t0.value = home.y;
-                asm(
-                    "" : "=r"(yOffset), "=r"(t0.value) :
-                    "0"(yOffset), "1"(t0.value));
+                
                 packet.bytes += sizeof(SPRT);
                 sprt->y0 = yOffset + t0.value;
                 width = g_HighFontWidth[index];
@@ -303,7 +298,7 @@ typedef union TextRenderWork {
             {
                 s1 = ch - 0x20;
 
-                asm("" : "=r"(s1), "=r"(v) : "0"(s1));
+                
                 text++;
                 if (s1 != 0) {
                     s32 index = s1 * 2;
@@ -315,7 +310,7 @@ typedef union TextRenderWork {
                     uCell = index + t0.bytes;
                     t0.bytes = g_PropFontV;
                     vCell = index + t0.bytes;
-                    asm("" : "=r"(vCell) : "0"(vCell), "r"(uCell));
+                    
                     u = *uCell;
                     v = *vCell;
                     SetSprt(packet.bytes);
@@ -330,9 +325,9 @@ typedef union TextRenderWork {
                         sprt->x0 = xPos;
                     }
                     t0.value = (u16)home.y;
-                    asm("" : "=r"(t0.value) : "0"(t0.value));
+                    
                     prim = sprt;
-                    asm("" : "=r"(prim) : "0"(prim));
+                    
                     sprt->u0 = u;
                     sprt->v0 = v;
                     packet.bytes += sizeof(SPRT);
@@ -347,7 +342,6 @@ typedef union TextRenderWork {
                 }
                 xPos += 12;
             }
-            ;
         } while (*text != 0);
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
