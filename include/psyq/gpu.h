@@ -245,8 +245,8 @@ typedef struct DrawPacket {
 } DrawPacket;
 
 /*
- * The libgpu driver table at 0x800941A0 (g_GpuFuncs points at it), dumped in
- * asm/PAL/main/data/main/6BE64.data.s. Slots holding a `u_long` are worker
+ * The libgpu driver table at 0x800941A0 (g_GpuFuncs points at it). Slots
+ * holding a `u_long` are worker
  * function addresses passed to `send` rather than called directly:
  *   +0x04 _addque        +0x08 Gpu_AddQueue      +0x0C Gpu_ClearImage
  *   +0x10 Gpu_WriteGp1   +0x14 Gpu_WriteGp0Words +0x18 Gpu_StartDmaTransfer

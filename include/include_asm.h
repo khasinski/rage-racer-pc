@@ -11,8 +11,8 @@
    it lands at the right offset within the unit.
 
    A unit that is assembly end to end needs none of this. It is a .s in its own
-   right, declared `hasm` in the split config and assembled directly - see the
-   Makefile. This macro exists only for the mixed case, where the assembly has
+   right and assembled directly by CMake. This macro exists only for the mixed
+   case, where the assembly has
    to be interleaved with compiled C.
 
    The block is wrapped in a throwaway function because the compiler will not

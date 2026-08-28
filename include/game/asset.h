@@ -60,8 +60,7 @@ extern char *g_AssetPaths[];
 
 /*
  * Index of the first entry of each variable-size family in that table. Read off
- * g_AssetPaths itself (asm/PAL/main/data/main/6BE64.data.s, resolved against the
- * string blob at g_MsgNegconMaxTwist) and cross-checked against the 135-entry RAGE.BIN
+ * g_AssetPaths itself and cross-checked against the 135-entry RAGE.BIN
  * index on the retail PAL disc.
  *
  * ROUND_SCREEN: [0x4A] = "\DATA\GP0.TMS". Six screens per series, the sixth
@@ -277,7 +276,7 @@ static __inline__ void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 o
  * Asset-region pointers. All three address the load region in bytes: they are
  * advanced by byte counts (a load's returned size, TRACK_TEXTURE_SHADOW_SIZE,
  * g_SharedAssetWord0) and by offsets read out of the pack that happens to sit
- * there, so u8 * is the type, not the decompiler's default. A pack header is a
+ * there, so u8 * is the correct type. A pack header is a
  * view taken of the bytes at the pointer, spelled `(GameSceneAssetHeader *)cursor`
  * where a file wants one; that is a pointer-value cast and costs nothing.
  */
@@ -286,8 +285,8 @@ static __inline__ void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 o
  * Byte size of the track-texture shadow copy StoreTeamLogoImage leaves at the
  * cursor, and hence what the cursor must skip before the .2ND pack is loaded
  * behind the .1ST. It is g_TrackTextureRect measured out: that rect is
- * {x 0x240, y 0x100, w 0x1C0, h 0x100} (asm/PAL/main/data/main/6BE64.data.s
- * 8007C710), and 0x1C0 * 0x100 16-bit pixels * 2 bytes = 0x38000 exactly.
+ * {x 0x240, y 0x100, w 0x1C0, h 0x100}, and 0x1C0 * 0x100 16-bit pixels * 2
+ * bytes = 0x38000 exactly.
  * Not a pack size - the largest .1ST on the disc is 0xB5830.
  */
 #define TRACK_TEXTURE_SHADOW_SIZE 0x38000

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""The car price table is the head of the tune-up table, as the original has it.
+"""The car price table is the head of the tune-up table in retail layout.
 
-configs/PAL/sym.main.txt in the decompilation places g_CarPriceTable at
-0x80082D7C and g_CarTuneUpPriceTable four bytes later, so the game reads one
-run of prices: a car costs table[i] and its tune-up costs table[i+1]. Held as
-two separately aligned arrays the port padded them apart, and every car past
-the first showed a price from the wrong place.
+The game reads one contiguous run of prices: a car costs table[i] and its
+tune-up costs table[i+1]. Keeping separate, independently aligned arrays
+would insert padding and give every car after the first a wrong tune-up cost.
 """
 
 from __future__ import annotations

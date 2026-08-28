@@ -18,13 +18,8 @@
  * macros. Same family as the already-HANDWRITTEN siblings MulMatrix0/CA4/
  * D88/E70/F80. Byte-exact via register-pinned COP2 asm.
  *
- * The func_80068A2C TU begins with 12 bytes (three 0x00000000 words) of
- * inter-object alignment padding that splat over-split into three bogus
- * single-`nop` "functions" (func_80068A2C/A30/A34).  The previous TU
- * (SquareRoot0, [0x591A8,0x5922C)) ends cleanly at 0x5922C with
- * `jr ra; li v0,0`, so these three words are leading pad, not its tail.
- * They are emitted here the same way every other pure-padding TU in this
- * binary is (compare func_80069CBC: `u32 x[3] __attribute__((section(".text")))`).
+ * The original object begins with 12 bytes of alignment padding before the
+ * matrix routines. It is data, not executable behavior.
  */
 u32 func_80068A2C[3] __attribute__((section(".text"))) = { 0, 0, 0 };
 

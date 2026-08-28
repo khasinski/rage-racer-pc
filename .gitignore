@@ -31,20 +31,6 @@ bu10/
 # Generated split output.
 asm/**
 !asm/
-!asm/.gitkeep
-!asm/PAL/
-!asm/PAL/.gitkeep
-!asm/PAL/main/
-!asm/PAL/main/.gitkeep
-!asm/USA/
-!asm/USA/.gitkeep
-!asm/USA/main/
-!asm/USA/main/.gitkeep
-linkers/**/*.ld
-linkers/**/undefined_*.txt
-linkers/**/addr_halves.*.txt
-!linkers/**/undefined_syms_manual.txt
-
 # Local reverse-engineering scratch/output.
 scratch/
 proposals/
@@ -103,11 +89,8 @@ debug_source.c
 *.d
 -.*
 
-# Scratch work from decompilation sessions.
-tools/decomp-wip/
-
 # Local emulator/native visual checkpoints and replay artifacts. Durable
-# conclusions and reproduction commands belong in PORT_BRIEF.md.
+# conclusions and reproduction commands belong in issue or pull-request notes.
 .visual-cache/
 rage-port.cfg
 markers/

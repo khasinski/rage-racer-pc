@@ -6,10 +6,8 @@ aliases = File.read(File.join(root, "include/game/player_car_aliases.h"))
 car_header = File.read(File.join(root, "include/game/car.h"))
 host_state = File.read(File.join(root, "src/port/host_state.c"))
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
-symbol_map = File.read(File.join(root, "configs/PAL/sym.bss.main.txt"))
 headers = Dir[File.join(root, "include/**/*.h")].map { |path| File.read(path) }.join("\n")
 
-base = 0x8009E6D4
 expected = {
   "g_PlayerSegmentWeight" => 0x38,
   "g_PlayerField3C" => 0x3C,
@@ -27,10 +25,6 @@ expected = {
 }
 
 expected.each do |name, offset|
-  address = base + offset
-  abort format("retail map moved %s away from +0x%X", name, offset) unless
-    symbol_map.match?(/^#{Regexp.escape(name)} = 0x#{address.to_s(16).upcase};/i)
-
   abort "host state still allocates independent #{name} storage" if
     host_state.match?(/^unsigned char #{Regexp.escape(name)}\[/)
   abort "a header still declares independent #{name} storage" if

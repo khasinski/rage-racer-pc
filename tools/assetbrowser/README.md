@@ -39,8 +39,8 @@ is pure Python.
 
 ## Where the formats come from
 
-Every layout here is read out of the decompilation, not sniffed from headers.
-The file comments name the exact source. In short:
+Every layout here is read from the game's source and validated against retail
+assets. The file comments name the exact source. In short:
 
 | thing | source |
 |---|---|

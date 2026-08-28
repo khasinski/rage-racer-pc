@@ -219,8 +219,7 @@ extern VabSlotVoice g_VabSlotVoices[10];
 extern s32 g_VabSpuAddress[];
 extern s32 g_VabTransferDone;
 
-/* The BIOS exit() stub (linkers/PAL/undefined_syms_manual.txt binds it to
- * g_BiosCallStubs): it never comes back. Telling gcc so is not a hint for the
+/* The BIOS exit() stub never comes back. Telling gcc so is not a hint for the
  * allocator's sake, it is the truth, and it is what ends the live range of a
  * value the failure path does not use. Without it gcc thinks control returns
  * from BiosExit into the code after the check, so every value still needed

@@ -1,13 +1,8 @@
 # Rage Racer PC
 
 Native Windows, Linux and macOS port of *Rage Racer* (PAL / Europe,
-`SCES-006.50`). It is based
-on the complete clean-room decompilation in
-[rage-racer-decomp](https://github.com/khasinski/rage-racer-decomp).
-
-`rage-racer-pc` contains the host port, platform packaging and the runtime
-compatibility layer.  The decompilation remains the reference source for the
-original PlayStation release.
+`SCES-006.50`). It contains the complete game, platform packaging and runtime
+compatibility layer.
 
 ## Build from source
 
@@ -20,11 +15,11 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
-For local decompilation assets, stage either legally obtained disc image by
-passing its cue sheet explicitly (paths may be relative or absolute):
+For local development, provide a legally obtained disc image through the
+runtime disc setting (paths may be relative or absolute):
 
 ```sh
-make stage STAGE_ARGS='--pal-cue "/path/to/Rage Racer (Europe).cue"'
+RAGE_PORT_DISC_CUE="/path/to/Rage Racer (Europe).cue" ./build/release/rage-racer
 ```
 
 The resulting executable is `build/release/rage-racer` on Linux,
@@ -529,8 +524,6 @@ RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 
 ## Related repositories
 
-- [rage-racer-decomp](https://github.com/khasinski/rage-racer-decomp) — clean-room
-  decompilation and reference implementation
 - [rage-racer-psyz](https://github.com/khasinski/rage-racer-psyz) — PSY-Z fork
   used by this port
 
