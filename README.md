@@ -126,6 +126,8 @@ the same `.world.bin` and `.draws.txt` sidecars next to a modern frame dump.
   64-bit Windows 10/11
 - A legally obtained PAL Rage Racer disc image: either CHD, or a `.cue` sheet
   with all referenced track files kept together
+- Python 3 to generate the modern renderer's native-asset cache; it is not
+  needed again after the cache has been created
 Movies are decoded in process, so no external tools are needed.
 
 On first launch the port looks for a `.cue` or `.chd` image next to the

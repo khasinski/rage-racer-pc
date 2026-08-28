@@ -90,14 +90,19 @@ jobs:
           # The copies inside the bundle are sealed by the signature and cannot
           # be edited without breaking it, so lay the editable ones beside the
           # app, the way the Linux archive does.
-          mkdir -p "dist/${package}"
+          mkdir -p "dist/${package}/tools/assetbrowser"
           ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
           cp README.md LICENSE.md rage-port.ini race-scenario.ini \
             "dist/${package}/"
+          cp tools/rage-launcher.py "dist/${package}/tools/"
+          cp tools/assetbrowser/{audio,disc,extract,gltf,images,models,png,rmesh}.py \
+            "dist/${package}/tools/assetbrowser/"
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/${package}" "dist/${package}.zip"
           unzip -l "dist/${package}.zip" | grep -q "${package}/rage-port.ini$"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
+          unzip -l "dist/${package}.zip" | grep -q "/tools/rage-launcher.py$"
+          unzip -l "dist/${package}.zip" | grep -q "/tools/assetbrowser/extract.py$"
           # The archived copy must still validate, ditto included.
           rm -rf "$RUNNER_TEMP/verify" && mkdir -p "$RUNNER_TEMP/verify"
           ditto -x -k "dist/${package}.zip" "$RUNNER_TEMP/verify"

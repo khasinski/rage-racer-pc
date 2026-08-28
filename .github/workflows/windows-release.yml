@@ -36,12 +36,19 @@ jobs:
           $root = "dist/$package"
           New-Item -ItemType Directory -Force $root | Out-Null
           New-Item -ItemType Directory -Force "$root/tools" | Out-Null
+          New-Item -ItemType Directory -Force "$root/tools/assetbrowser" | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
           Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini $root
           Copy-Item tools/rage-launcher.py "$root/tools/rage-launcher.py"
+          Copy-Item tools/assetbrowser/audio.py, tools/assetbrowser/disc.py, `
+            tools/assetbrowser/extract.py, tools/assetbrowser/gltf.py, `
+            tools/assetbrowser/images.py, tools/assetbrowser/models.py, `
+            tools/assetbrowser/png.py, tools/assetbrowser/rmesh.py `
+            "$root/tools/assetbrowser/"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or
               !(Test-Path "$root/tools/rage-launcher.py") -or
+              !(Test-Path "$root/tools/assetbrowser/extract.py") -or
               !(Test-Path "$root/rage-port.ini")) {
             throw "release package is incomplete"
           }

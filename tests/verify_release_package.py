@@ -23,10 +23,13 @@ def main() -> int:
         if not re.search(r"default:\s*0\.6-alpha", workflow):
             raise AssertionError(f"{workflow_name} still defaults to an old version")
         if "tools/rage-launcher.py" not in workflow:
-            if workflow_name != "macos-release.yml":
-                raise AssertionError(
-                    f"{workflow_name} does not package the scenario launcher"
-                )
+            raise AssertionError(
+                f"{workflow_name} does not package the scenario launcher"
+            )
+        if "tools/assetbrowser/" not in workflow or "extract" not in workflow:
+            raise AssertionError(
+                f"{workflow_name} does not package the native asset extractor"
+            )
         if "*.zip" not in workflow:
             raise AssertionError(f"{workflow_name} does not upload a ZIP archive")
     for filename in required:
