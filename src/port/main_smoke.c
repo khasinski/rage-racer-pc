@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "host_storage.h"
+#include "game/diagnostics.h"
 
 #include "input_config.h"
 #include "content_options.h"
@@ -391,15 +392,15 @@ int main(int argc, char **argv) {
         for (cell = 0; cell < 64; cell++) {
             const Vec4 *mainEntry = &g_VisibleCellList[cell];
             const Vec4 *entry = &g_MirrorVisibleCellList[cell];
-            printf("visible-cell %d=%d,%d,%d,%d\n", cell, mainEntry->x,
+            Trace("visible-cell", "%d=%d,%d,%d,%d", cell, mainEntry->x,
                    mainEntry->y, mainEntry->z, mainEntry->w);
-            printf("mirror-cell %d=%d,%d,%d,%d\n", cell, entry->x,
+            Trace("mirror-cell", "%d=%d,%d,%d,%d", cell, entry->x,
                    entry->y, entry->z, entry->w);
         }
         for (cell = 0; cell < 32; cell++) {
-            printf("visible-mask %d=%08x\n", cell,
+            Trace("visible-mask", "%d=%08x", cell,
                    (unsigned)g_MainVisibleCellMask[cell]);
-            printf("mirror-mask %d=%08x\n", cell,
+            Trace("mirror-mask", "%d=%08x", cell,
                    (unsigned)g_MirrorVisibleCellMask[cell]);
         }
     }

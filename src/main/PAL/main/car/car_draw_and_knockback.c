@@ -377,8 +377,8 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
         (traceTimer < 0 || g_SceneTimer == traceTimer) &&
         (traceTimerMin < 0 || g_SceneTimer >= traceTimerMin) &&
         (traceTimerMax < 0 || g_SceneTimer <= traceTimerMax)) {
-        printf("car-knockback timer=%d player=%d input=%d,%d mode=%d "
-               "output=%d,%d duration=%d heading=%d lateral=%d\n", g_SceneTimer,
+        Trace("car-knockback", "timer=%d player=%d input=%d,%d mode=%d "
+               "output=%d,%d duration=%d heading=%d lateral=%d", g_SceneTimer,
                carReg == (GameCarRuntime *)&g_PlayerCar, x, z, mode,
                carReg->velocityX, carReg->velocityZ, carReg->motionTimer,
                carReg->trackHeading.half.low, carReg->trackLateralOffset);

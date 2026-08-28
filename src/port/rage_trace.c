@@ -19,9 +19,9 @@ void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
     }
     if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
 
-    printf("car-motion phase=%s timer=%d x=%d z=%d rotation=%d,%d,%d "
+    Trace("car-motion", "phase=%s timer=%d x=%d z=%d rotation=%d,%d,%d "
            "roll_velocity=%d kick=%d,%d,%d,%d motion=%d,%d "
-           "knockback=%d,%d,%d,%d point=%d progress=%d lateral=%d speed=%d\n",
+           "knockback=%d,%d,%d,%d point=%d progress=%d lateral=%d speed=%d",
            phase, g_SceneTimer, car->x, car->z, car->bodyYaw, car->bodyPitch,
            car->bodyRoll, car->bodyRollVelocity, car->motionMode,
            car->motionModeTimer, car->motionValue.value, car->bodyKickOffset,
@@ -49,8 +49,8 @@ void TraceCarStates(void) {
 
     for (index = 0; index < 11; index++) {
         GameCarRuntime *opponent = &g_Cars[index];
-        printf("car-state timer=%d index=%d x=%d z=%d progress=%d lateral=%d "
-               "speed=%d point=%d yaw=%d active=%d collision=%d\n",
+        Trace("car-state", "timer=%d index=%d x=%d z=%d progress=%d lateral=%d "
+               "speed=%d point=%d yaw=%d active=%d collision=%d",
                g_SceneTimer, index, opponent->x, opponent->z,
                opponent->trackProgress, opponent->trackLateralOffset,
                opponent->speed, opponent->trackPointIndex, opponent->bodyYaw,

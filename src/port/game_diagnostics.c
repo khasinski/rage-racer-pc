@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -27,4 +28,14 @@ const char *DiagnosticsValue(const char *key) {
 int DiagnosticsEnabled(const char *key) {
     char full[128];
     return FullKey(key, full, sizeof(full)) ? RuntimeConfigEnabled(full) : 0;
+}
+
+void Trace(const char *topic, const char *format, ...) {
+    va_list arguments;
+    fputs(topic, stderr);
+    fputc(' ', stderr);
+    va_start(arguments, format);
+    vfprintf(stderr, format, arguments);
+    va_end(arguments);
+    fputc('\n', stderr);
 }

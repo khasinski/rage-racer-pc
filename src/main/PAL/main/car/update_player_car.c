@@ -296,8 +296,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         if (DiagnosticsEnabled("car.track_trace")) {
             const char *timerText = DiagnosticsValue("car.track_trace_timer");
             if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
-                printf("car-limit timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                       "vector=%d,%d,%d output=%d,%d,%d\n", g_SceneTimer,
+                Trace("car-limit", "timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
+                       "vector=%d,%d,%d output=%d,%d,%d", g_SceneTimer,
                        mA.m[0][0], mA.m[0][1], mA.m[0][2],
                        mA.m[1][0], mA.m[1][1], mA.m[1][2],
                        mA.m[2][0], mA.m[2][1], mA.m[2][2],

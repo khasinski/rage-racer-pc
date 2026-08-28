@@ -108,8 +108,8 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
         (traceTimerMin < 0 || g_SceneTimer >= traceTimerMin) &&
         (traceTimerMax < 0 || g_SceneTimer <= traceTimerMax);
     if (traceThisCall) {
-        printf("car-track-enter timer=%d point=%d x=%d z=%d speed=%d "
-               "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d\n",
+        Trace("car-track-enter", "timer=%d point=%d x=%d z=%d speed=%d "
+               "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d",
                g_SceneTimer, trackPointIndex, obj->x, obj->z, obj->speed,
                obj->trackProgress, obj->trackLateralOffset, obj->bodyYaw,
                limits->leftInset, limits->rightInset,
@@ -429,9 +429,9 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     }
 #ifdef __psyz
     if (traceThisCall) {
-        printf("car-track-exit timer=%d point=%d x=%d z=%d progress=%d "
+        Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
                "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
-               "correction=%d,%d knockback=%d motion=%d,%d,%d,%d\n",
+               "correction=%d,%d knockback=%d motion=%d,%d,%d,%d",
                g_SceneTimer, trackPointIndex, obj->x, obj->z,
                obj->trackProgress, obj->trackLateralOffset, alongSegment,
                spad->heading, spad->curveMode, spad->leftHalfWidth,

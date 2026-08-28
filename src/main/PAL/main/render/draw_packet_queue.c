@@ -183,9 +183,9 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
         g_RageScratchpadState.mode == 9) {
         const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
-            printf("object-matrix timer=%d position=%d,%d,%d relative=%d,%d,%d "
+            Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "
                    "view=%d,%d,%d rotation=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                   "translation=%d,%d,%d\n", g_SceneTimer,
+                   "translation=%d,%d,%d", g_SceneTimer,
                    pos->x, pos->y, pos->z, w->relative[0], w->relative[1],
                    w->relative[2], w->view.x, w->view.y, w->view.z,
                    rot->m[0][0], rot->m[0][1], rot->m[0][2],

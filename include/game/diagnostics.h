@@ -6,4 +6,16 @@
 int DiagnosticsEnabled(const char *key);
 const char *DiagnosticsValue(const char *key);
 
+/*
+ * Write one trace line: the topic, then `key=value` fields, then a newline.
+ *
+ * Traces used to be printf in the recovered game code and fprintf(stderr) in
+ * the host. Those are two different destinations once the diagnostic log takes
+ * stderr over, so answering one question meant collecting output from two
+ * places and hoping the orderings lined up. This puts every line in the log,
+ * with the topic separated from the payload so a grep for a topic cannot also
+ * match a value that happens to contain it.
+ */
+void Trace(const char *topic, const char *format, ...);
+
 #endif

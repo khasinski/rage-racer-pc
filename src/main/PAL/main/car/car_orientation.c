@@ -662,8 +662,8 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
     const char *timerText = DiagnosticsValue("car.collision_trace_timer");
     if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0))
     {
-      printf("car-collision timer=%d opponent=%d region=%d sample=%d quad=%d "
-             "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d\n",
+      Trace("car-collision", "timer=%d opponent=%d region=%d sample=%d quad=%d "
+             "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d",
              g_SceneTimer, index, collisionRegion, sampleIndex, quadIndex,
              car->x, car->z, car->trackProgress, car->trackLateralOffset,
              opponent->x, opponent->z, opponent->trackProgress,

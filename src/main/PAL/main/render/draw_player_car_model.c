@@ -188,9 +188,9 @@ void DrawCar(GameRenderObject *obj) {
             const char *detail = v_148[2] < 0 ? "behind" :
                                  otDepth < 0xD00 ? "close" :
                                  otDepth < 0x2500 ? "far" : "culled";
-            printf("car-draw timer=%d mirror=%d index=%ld source=%d "
+            Trace("car-draw", "timer=%d mirror=%d index=%ld source=%d "
                    "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
-                   "player=%d grade=%d asset=%d\n",
+                   "player=%d grade=%d asset=%d",
                    g_SceneTimer, SCRATCH_MIRROR != 0,
                    (long)(((GameCarRuntime *)(void *)obj - g_Cars)),
                    obj->modelIndex, model, lod[0], lod[1], otDepth,
