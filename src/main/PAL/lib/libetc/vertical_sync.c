@@ -71,8 +71,6 @@ void waitVSync(long target, long timeoutFrames) {
     }
 }
 
-HANDWRITTEN_ASM("src/main/PAL/lib/libetc", vertical_sync);
-
 void KernelCallbackSlot3(void) {
     ((CallbackTable *)g_IntrRpNode)->callback();
 }

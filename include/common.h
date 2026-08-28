@@ -1,9 +1,6 @@
 #ifndef RAGE_PC_COMMON_H
 #define RAGE_PC_COMMON_H
 
-#include "include_asm.h"
-#include "asm_macros.h"
-
 typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;

@@ -8,8 +8,22 @@
     "g_BestSectorTimes": 96,
     "g_BestLapTimes": 64,
     "g_BestTotalTimes": 68,
+    "g_SaveDefaults": 104,
+    "g_SaveFilePath": 80,
+    "g_AssetPaths": 540,
+    "g_AssetRequestType": 8,
+    "g_CarPriceTable": 128,
+    "g_CarTuneUpPriceTable": 124,
+    "g_RaceGridSlots": 48,
+    "g_TrackTextureRect": 8,
+    "g_RaceHudSpriteDescsGp": 240,
+    "g_RaceHudSpriteDescsTimeTrial": 220,
     "g_PaintBlendShades": 6,
     "g_ShuttlePathPoints": 96
+  },
+  "minimum_symbols": {
+    "src/port/host_state.c": 1265,
+    "src/port/native_initialized_state.c": 49
   },
   "forbidden_detached_aliases": [
     "g_FlybySceneryArmed",

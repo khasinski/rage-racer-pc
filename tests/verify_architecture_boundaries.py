@@ -12,6 +12,24 @@ def main() -> int:
     if "psyz" in sim_block.lower():
         raise AssertionError("rage-sim directly names PSY-Z")
 
+    # Legacy PS1 assumptions are deliberately local to the retail game, its
+    # state mirror, and the small platform adapter.  A global relaxation would
+    # silently weaken new renderer and mod code as it is added.
+    if "add_compile_options(-fno-strict-aliasing -fwrapv)" in cmake:
+        raise AssertionError("legacy compatibility flags are global")
+    required_compat_targets = (
+        "rage-game-full",
+        "rage-host-state",
+        "rage-port-legacy",
+    )
+    for target in required_compat_targets:
+        needle = (
+            f"target_compile_options({target} PRIVATE "
+            "${RAGE_COMPAT_COMPILE_OPTIONS})"
+        )
+        if needle not in cmake:
+            raise AssertionError(f"legacy compatibility flags missing from {target}")
+
     forbidden = ("<psyz/", '"psyz/', "<psyq/", '"psyq/')
     roots = [source / "src/render"]
     files = list((source / "src/render").glob("*.[ch]"))

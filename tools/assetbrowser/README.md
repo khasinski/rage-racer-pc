@@ -4,8 +4,8 @@ Extracts every asset out of a Rage Racer disc and serves a web page that lists,
 previews and 3D-renders them.
 
 **Game data must never enter this repository.** The extractor writes to
-`tools/decomp-wip/assets/` by default, which `.gitignore` already covers as a
-whole (`tools/decomp-wip/`). The HTML page ships as source only; it loads a
+`build/extracted-assets/` by default, which `.gitignore` excludes. The HTML
+page ships as source only; it loads a
 manifest you generate locally.
 
 ## Usage

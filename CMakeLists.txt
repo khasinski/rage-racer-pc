@@ -15,7 +15,7 @@ if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
     # clang-cl accepts GNU driver flags only through its /clang: escape hatch.
     # Passing them directly produces -Wunknown-argument and breaks the Windows
     # release build once the port targets enable -Werror.
-    add_compile_options(
+    set(RAGE_COMPAT_COMPILE_OPTIONS
         /clang:-fno-strict-aliasing
         /clang:-fwrapv)
     set(RAGE_STRICT_WARNING_OPTIONS
@@ -23,7 +23,7 @@ if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
         /clang:-Wextra
         /clang:-Werror)
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    add_compile_options(-fno-strict-aliasing -fwrapv)
+    set(RAGE_COMPAT_COMPILE_OPTIONS -fno-strict-aliasing -fwrapv)
     set(RAGE_STRICT_WARNING_OPTIONS -Wall -Wextra -Werror)
 endif()
 
@@ -116,6 +116,11 @@ if(RAGE_BUILD_PORT)
         src/port/host_state.c
         src/port/native_initialized_state.c
     )
+    # The retail game and its host-state bridge intentionally preserve signed
+    # wrapping and type-punned PS1 storage. New renderer and mod code must not
+    # inherit those relaxed assumptions.
+    target_compile_options(rage-game-full PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
+    target_compile_options(rage-host-state PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     set(RAGE_PORT_COMMON_SOURCES
         src/port/input_config.c
         src/port/input_device_select.c
@@ -139,14 +144,8 @@ if(RAGE_BUILD_PORT)
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
-        src/port/platform_stubs.c
-        src/port/legacy_platform.c
-        src/port/classic/native_geometry.c
         src/port/classic/native_geometry_diagnostics.c
-        src/port/native_geometry_interpolation.c
-        src/port/native_asset_loader.c
         src/port/native_asset_importer.c
-        src/port/fmv_host.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_assets.c
         src/port/modern/modern_native_gpu.c
@@ -155,11 +154,25 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_renderer_diagnostics.c
         src/port/modern/scene_capture.c
     )
+    set(RAGE_PORT_LEGACY_SOURCES
+        src/port/platform_stubs.c
+        src/port/legacy_platform.c
+        src/port/classic/native_geometry.c
+        src/port/native_geometry_interpolation.c
+        src/port/native_asset_loader.c
+        src/port/fmv_host.c
+    )
+    add_library(rage-port-legacy OBJECT ${RAGE_PORT_LEGACY_SOURCES})
+    target_include_directories(rage-port-legacy PRIVATE src/port/include include)
+    target_link_libraries(rage-port-legacy PRIVATE psyz)
+    target_compile_definitions(rage-port-legacy PRIVATE RAGE_HOST_PORT=1)
+    target_compile_options(rage-port-legacy PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     add_executable(rage-racer
         MACOSX_BUNDLE
         src/port/main.c
         src/port/runtime_control.c
         ${RAGE_PORT_COMMON_SOURCES}
+        $<TARGET_OBJECTS:rage-port-legacy>
         $<TARGET_OBJECTS:rage-game-full>
         $<TARGET_OBJECTS:rage-host-state>
     )
@@ -167,6 +180,7 @@ if(RAGE_BUILD_PORT)
         src/port/main_smoke.c
         src/port/smoke_control.c
         ${RAGE_PORT_COMMON_SOURCES}
+        $<TARGET_OBJECTS:rage-port-legacy>
         $<TARGET_OBJECTS:rage-game-full>
         $<TARGET_OBJECTS:rage-host-state>
     )
@@ -249,7 +263,7 @@ if(RAGE_BUILD_PORT)
     endforeach()
     if(RAGE_ENABLE_SANITIZERS AND
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
-        foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state
+        foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
                                       rage-racer rage-racer-smoke)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -277,7 +291,7 @@ if(RAGE_BUILD_PORT)
         set_property(TARGET psyz PROPERTY C_STANDARD 11)
         set_property(TARGET psyz PROPERTY C_STANDARD_REQUIRED ON)
         target_compile_options(psyz PRIVATE "$<$<COMPILE_LANGUAGE:C>:/std:c11>")
-        foreach(RAGE_MSVC_TARGET rage-game-full rage-host-state)
+        foreach(RAGE_MSVC_TARGET rage-game-full rage-host-state rage-port-legacy)
             target_compile_options(${RAGE_MSVC_TARGET} PRIVATE
                 "/FI${CMAKE_CURRENT_SOURCE_DIR}/src/port/include/rage/msvc_compat.h"
             )

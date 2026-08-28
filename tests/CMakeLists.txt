@@ -157,6 +157,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME mod_manifest COMMAND mod_manifest_tests)
 
+add_executable(mod_asset_fallback_tests
+    mod_asset_fallback_tests.c
+    ../src/port/mod_assets.c)
+target_include_directories(mod_asset_fallback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(mod_asset_fallback_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME mod_asset_fallback COMMAND mod_asset_fallback_tests)
+
 add_executable(render_material_tests render_material_tests.c)
 target_link_libraries(render_material_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -287,11 +297,16 @@ add_test(NAME car_prices COMMAND python3
 
 add_test(
     NAME player_car_interior_aliases
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_car_aliases.rb
+    COMMAND python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_car_aliases.py
         ${CMAKE_SOURCE_DIR}
 )
 
+# Visual-comparison helpers remain optional developer tools. Do not register
+# them as failing tests on hosts that intentionally ship only the C/Python
+# toolchain used by the port and release jobs.
+find_program(RAGE_RUBY_EXECUTABLE ruby)
+if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME race_progress_layout
     COMMAND ruby
@@ -424,6 +439,7 @@ add_test(
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_input_replay.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_input_replay.rb
 )
+endif()
 
 if(TARGET rage-gte-replay)
     add_test(NAME gte_replay_usage COMMAND rage-gte-replay)
@@ -491,12 +507,8 @@ endif()
 set(RAGE_PORTABLE_TESTS
     game_logic course_index native_geometry_interpolation
     release_package host_state_abi player_car_interior_aliases car_prices shipped_config
-    race_progress_layout sequence_state_layout native_ui_script_layout
-    native_frame_offsets frame_environment_aliases audio_state_layout
     mod_tools axis_curve timing_restore
-    visual_run capture_sync visual_budget visual_triage
-    gpu_digest_compare gp0_compare gp0_bundle gp0_replay gp0_raster_compare
-    vram_delta visible_cells_compare input_replay)
+)
 if(TARGET rage-gte-replay)
     list(APPEND RAGE_PORTABLE_TESTS gte_replay_usage)
 endif()

@@ -107,7 +107,3 @@ long MDEC_timeout(u_char *name) {
 
     return ret;
 }
-
-/* The VLC decoder and the buffer-size word the original placed inside
- * .text. See src/main/PAL/lib/libpress/mdec_runtime.s. */
-HANDWRITTEN_ASM("src/main/PAL/lib/libpress", mdec_runtime);

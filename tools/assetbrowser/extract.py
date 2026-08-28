@@ -12,7 +12,7 @@ Formats are decoded from the game's own code (see disc.py / models.py /
 images.py for the source references), not from header sniffing.
 
 Game data must never enter the repository. The default output directory is
-tools/decomp-wip/assets/, which .gitignore already covers.
+build/extracted-assets/, which .gitignore excludes.
 """
 
 from __future__ import annotations
@@ -959,7 +959,7 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("image", type=Path, help="Track 01 .bin of the disc (MODE2/2352) or a .iso")
     ap.add_argument("-o", "--out", type=Path, default=None,
-                    help="output directory (default tools/decomp-wip/assets)")
+                    help="output directory (default build/extracted-assets)")
     ap.add_argument("--exe", type=Path, default=None,
                     help="SCES_006.50 / SLUS executable, to re-derive the name table")
     ap.add_argument("--no-raw", dest="raw", action="store_false",
@@ -978,7 +978,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     if args.out is None:
-        args.out = Path(__file__).resolve().parents[2] / "tools" / "decomp-wip" / "assets"
+        args.out = Path(__file__).resolve().parents[2] / "build" / "extracted-assets"
     args.out.mkdir(parents=True, exist_ok=True)
 
     with Disc(args.image) as disc:

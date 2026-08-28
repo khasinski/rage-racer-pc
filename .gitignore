@@ -34,6 +34,7 @@ asm/**
 # Local reverse-engineering scratch/output.
 scratch/
 proposals/
+build/extracted-assets/
 prompts/
 tmp/
 nonmatchings/
