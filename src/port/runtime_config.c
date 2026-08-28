@@ -16,7 +16,6 @@ typedef struct RageRuntimeValue {
 
 static RageRuntimeValue s_values[RAGE_RUNTIME_MAX_VALUES];
 static int s_valueCount;
-static char s_scenarioPath[RAGE_RUNTIME_VALUE_MAX + 1];
 
 static char *Trim(char *text) {
     char *end;
@@ -100,7 +99,6 @@ int RageRuntimeConfigInit(int argc, char **argv) {
     const char *configPath = NULL, *scenarioPath = NULL;
     char defaultPath[RAGE_RUNTIME_VALUE_MAX + 1];
     s_valueCount = 0;
-    s_scenarioPath[0] = '\0';
     for (index = 1; index < argc; index++) {
         if (!strcmp(argv[index], "--config") ||
             !strcmp(argv[index], "--scenario")) {
@@ -123,7 +121,6 @@ int RageRuntimeConfigInit(int argc, char **argv) {
         LoadIni(defaultPath);
     if (scenarioPath && *scenarioPath) {
         if (LoadIni(scenarioPath) < 0) valid = 0;
-        snprintf(s_scenarioPath, sizeof(s_scenarioPath), "%s", scenarioPath);
         Store("race.enabled", "true");
     }
     for (index = 1; index < argc; index++) {
@@ -175,5 +172,3 @@ int RageRuntimeConfigEnabled(const char *key, const char *legacyEnv) {
     return strcmp(normalized, "0") && strcmp(normalized, "false") &&
            strcmp(normalized, "off") && strcmp(normalized, "no");
 }
-
-const char *RageRuntimeScenarioPath(void) { return s_scenarioPath; }

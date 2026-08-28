@@ -9,6 +9,5 @@ const char *RageRuntimeConfigGet(const char *key);
 const char *RageRuntimeConfigGetLegacy(const char *key, const char *legacyEnv);
 const char *RageRuntimeConfigGetOverride(const char *key, const char *overrideEnv);
 int RageRuntimeConfigEnabled(const char *key, const char *legacyEnv);
-const char *RageRuntimeScenarioPath(void);
 
 #endif

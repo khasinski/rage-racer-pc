@@ -62,7 +62,6 @@ segments:
     bss_size: 0x157A10
     subsegments:
       - [0x800, rodata, main/000800_main]
-      - [0x131C, .rodata, PAL/main/asset/asset_loader]
       - [0x1338, rodata, main/001338_main]
       - [0x139C, .rodata, PAL/main/asset/asset_requests]
       - [0x13B4, .rodata, PAL/main/asset/race_assets]
@@ -128,7 +127,6 @@ segments:
       - [0x6F54, c, PAL/main/render/text]
       - [0x7B90, c, PAL/main/render/draw_packet_queue]
       - [0x8048, c, PAL/main/asset/model_banks]
-      - [0x83D4, c, PAL/main/asset/asset_loader]
       - [0x88CC, c, PAL/main/asset/asset_requests]
       - [0x8D30, c, PAL/main/asset/car_assets]
       - [0x9270, c, PAL/main/asset/menu_car_assets]
@@ -148,8 +146,6 @@ segments:
       - [0xDDC8, c, PAL/main/car/paint_color]
       - [0xE2B0, c, PAL/main/render/draw_player_car_model]
       - [0xEEB4, c, PAL/main/fmv/fmv_scene]
-      - [0xEF9C, c, PAL/main/fmv/start_fmv_playback]
-      - [0xF0A4, c, PAL/main/fmv/fmv_decode]
       - [0xF314, c, PAL/main/fmv/setup_fmv_buffers]
       - [0xF35C, c, PAL/main/fmv/open_fmv_stream]
       - [0xF53C, c, PAL/main/fmv/stream_playback]
@@ -332,7 +328,6 @@ segments:
       - [0x58480, c, PAL/lib/libgpu/gpu_reset]
       - [0x585BC, c, PAL/lib/libgpu/gpu_sync]
       - [0x58738, c, PAL/lib/libgpu/gpu_timeout]
-      - [0x589F0, c, PAL/main/render/matrix_apply]
       - [0x58D68, c, PAL/lib/libgte/geo_00]
       - [0x58ED4, c, PAL/lib/libgte/fog_geometry]
       - [0x5922C, c, PAL/lib/libgte/matrix_stack]

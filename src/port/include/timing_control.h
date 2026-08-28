@@ -14,7 +14,6 @@ void RageTimingApply(void);
 /* Whether a measured frame time has drifted off the standard enough to restore.
  * A frame time of zero means nothing has been measured yet. */
 int RageTimingNeedsRestore(double currentFrameTimeUs, int baseHz);
-RageTimingStandard RageTimingGetStandard(void);
 void RageTimingSetStandard(RageTimingStandard standard);
 int RageTimingBaseHz(void);
 

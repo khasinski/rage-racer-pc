@@ -20,7 +20,6 @@ int RagePlatformExistingPortableStateDirectory(
 int RagePlatformUserConfigDirectory(char *path, size_t pathSize);
 int RagePlatformUserStateDirectory(char *path, size_t pathSize);
 int RagePlatformUserConfigPath(const char *name, char *path, size_t pathSize);
-int RagePlatformTemporaryDirectory(char *path, size_t pathSize);
 int RagePlatformEnsureDirectory(const char *path);
 
 #endif

@@ -57,7 +57,6 @@ extern int _snd_ev_flag;
 extern void _SsVmFlush(void);
 
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
-unsigned char g_AudioRuntimeState[4096];
 int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
 unsigned char g_RageScratchpad[0x400];

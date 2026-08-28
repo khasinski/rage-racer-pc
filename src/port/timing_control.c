@@ -43,5 +43,4 @@ void RageTimingInit(void) {
                               : RAGE_TIMING_PAL);
 }
 
-RageTimingStandard RageTimingGetStandard(void) { return s_standard; }
 int RageTimingBaseHz(void) { return s_standard == RAGE_TIMING_NTSC ? 60 : 50; }

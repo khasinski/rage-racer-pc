@@ -58,30 +58,6 @@ typedef union MusicChannelAddress {
 
 extern MusicChannel g_MusicChannels[];
 
-/* Typed overlay used where retail addresses the contiguous sound state as one
- * object. Its linker symbol aliases the first scalar without allocating BSS. */
-typedef struct AudioRuntimeState {
-    s32 loadedSlotMask;                 /* +0x00 */
-    s32 cueBank;                        /* +0x04 */
-    SoundScale soundScale;              /* +0x08 */
-    s32 engineSoundPosition;            /* +0x1C */
-    s32 engineSoundBank;                /* +0x20 */
-    s32 extraVabLoaded;                 /* +0x24 */
-    s32 engineSoundMaxRpm;              /* +0x28 */
-    s32 soundSlotActive[6];             /* +0x2C */
-    s32 soundSlotVolumeScale;           /* +0x44 */
-    s32 panVoiceVolumeLeft;             /* +0x48 */
-    s32 panVoiceVolumeRight;            /* +0x4C */
-    s32 panVoiceActive;                 /* +0x50 */
-    s32 indexedEffectIndex;             /* +0x54 */
-    s32 indexedEffectPreviousIndex;     /* +0x58 */
-    s32 indexedEffectPitch;             /* +0x5C */
-    s32 indexedEffectVolume;            /* +0x60 */
-    MusicChannel musicChannels[2];      /* +0x64 */
-} AudioRuntimeState;
-
-extern AudioRuntimeState g_AudioRuntimeState;
-
 /* Effect voice, 4 elements for hardware voices 10..13. SetPitchedSoundCue walks it
  * with a pointer to `.state`. */
 typedef union EffectVoicePitch {

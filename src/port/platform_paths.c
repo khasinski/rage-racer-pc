@@ -193,19 +193,6 @@ int RagePlatformUserConfigPath(const char *name, char *out, size_t outSize) {
            RageJoinPath(out, outSize, directory, name);
 }
 
-int RagePlatformTemporaryDirectory(char *out, size_t outSize) {
-#ifdef _WIN32
-    DWORD length = GetTempPathA((DWORD)outSize, out);
-    return length > 0 && length < outSize;
-#else
-    const char *temporary = getenv("TMPDIR");
-    int written;
-    if (temporary == NULL || temporary[0] == '\0') temporary = "/tmp";
-    written = snprintf(out, outSize, "%s", temporary);
-    return written >= 0 && (size_t)written < outSize;
-#endif
-}
-
 int RagePlatformEnsureDirectory(const char *path) {
     char buffer[4096];
     char *cursor;
