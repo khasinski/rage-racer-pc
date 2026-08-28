@@ -127,14 +127,9 @@ Re-runnable numbers, game code only (`src/main/PAL/main`):
 Whole-tree totals including `lib/`: 306 pins, 196 barriers. Those in `lib/`
 disappear with `lib/`.
 
-**The 3 game units with real assembly:**
-- `main/boot/_start.c` — boot entry. PSY-Z supplies `main()`; this goes away.
-- `main/render/matrix_apply.c`
-- `main/render/terrain_submission.c`
-
-Only the last two need real reimplementation in C, and they are GTE matrix and
-model-face submission code — mechanical to write once you accept you do not
-need a byte match for the host target.
+The host port uses its own platform, matrix, FMV, and terrain-rendering
+implementations. The remaining PS1 assembly files are archival inputs, not
+part of the shipped build.
 
 **Scratchpad.** Two symbols live in PS1 scratchpad RAM and are assigned by the
 linker script, outside any segment (`linkers/PAL/undefined_syms_manual.txt`):

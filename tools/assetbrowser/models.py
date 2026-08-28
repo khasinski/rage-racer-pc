@@ -4,7 +4,7 @@ Layout established from the game's own code, not guessed:
 
   src/main/PAL/main/asset/model_banks.c   RegisterModelBank / SelectModelBank
   asm/.../gte/submit_terrain_cells/SubmitModel.s      the batch walker
-  src/main/PAL/main/render/terrain_submission.c:145+   SubmitModelFaces
+  src/port/classic/native_geometry.c                  SubmitModelFaces host path
   asm/.../submit_terrain_cells/EmitPoly{F4,FT4Raw,G4,GT4}.s   the four emitters
   jtbl_8007DA14 (asm/PAL/main/data/main/6BE64.data.s) type -> {emitter, stride}
 

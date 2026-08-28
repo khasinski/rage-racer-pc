@@ -15,7 +15,7 @@ import re
 import sys
 from pathlib import Path
 
-ENTRY_SYM = "D_800630B4"  # the .text array holding the entry stub, see boot/_start.c
+ENTRY_SYM = "D_800630B4"  # the .text array holding the entry stub, see boot/_start.s
 
 REPLACEMENTS = [
     # (literal as splat writes it, expression, what it is)

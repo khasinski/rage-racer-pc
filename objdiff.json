@@ -53,18 +53,6 @@
       }
     },
     {
-      "name": "PAL/main/asset/asset_loader",
-      "target_path": "expected/PAL/build/src/main/PAL/main/asset/asset_loader.c.o",
-      "base_path": "build/PAL/src/main/PAL/main/asset/asset_loader.c.o",
-      "metadata": {
-        "complete": true,
-        "source_path": "src/main/PAL/main/asset/asset_loader.c",
-        "progress_categories": [
-          "game"
-        ]
-      }
-    },
-    {
       "name": "PAL/main/data/main/001338_main.rodata",
       "target_path": "expected/PAL/build/asm/PAL/main/data/main/001338_main.rodata.s.o",
       "base_path": "build/PAL/asm/PAL/main/data/main/001338_main.rodata.s.o",
@@ -1007,30 +995,6 @@
       "metadata": {
         "complete": true,
         "source_path": "src/main/PAL/main/fmv/fmv_scene.c",
-        "progress_categories": [
-          "game"
-        ]
-      }
-    },
-    {
-      "name": "PAL/main/fmv/start_fmv_playback",
-      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/start_fmv_playback.c.o",
-      "base_path": "build/PAL/src/main/PAL/main/fmv/start_fmv_playback.c.o",
-      "metadata": {
-        "complete": true,
-        "source_path": "src/main/PAL/main/fmv/start_fmv_playback.c",
-        "progress_categories": [
-          "game"
-        ]
-      }
-    },
-    {
-      "name": "PAL/main/fmv/fmv_decode",
-      "target_path": "expected/PAL/build/src/main/PAL/main/fmv/fmv_decode.c.o",
-      "base_path": "build/PAL/src/main/PAL/main/fmv/fmv_decode.c.o",
-      "metadata": {
-        "complete": true,
-        "source_path": "src/main/PAL/main/fmv/fmv_decode.c",
         "progress_categories": [
           "game"
         ]
@@ -2941,18 +2905,6 @@
         "source_path": "src/main/PAL/lib/libgpu/gpu_timeout.c",
         "progress_categories": [
           "psyq"
-        ]
-      }
-    },
-    {
-      "name": "PAL/main/render/matrix_apply",
-      "target_path": "expected/PAL/build/src/main/PAL/main/render/matrix_apply.c.o",
-      "base_path": "build/PAL/src/main/PAL/main/render/matrix_apply.c.o",
-      "metadata": {
-        "complete": true,
-        "source_path": "src/main/PAL/main/render/matrix_apply.c",
-        "progress_categories": [
-          "game"
         ]
       }
     },

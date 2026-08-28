@@ -109,15 +109,7 @@ if(RAGE_BUILD_PORT)
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/*.c"
     )
-    list(REMOVE_ITEM RAGE_GAME_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/boot/_start.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/render/matrix_apply.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/render/terrain_submission.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/asset_loader.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/start_fmv_playback.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_decode.c"
-        ${RAGE_SIM_SOURCES}
-    )
+    list(REMOVE_ITEM RAGE_GAME_SOURCES ${RAGE_SIM_SOURCES})
 
     add_library(rage-game-full OBJECT ${RAGE_GAME_SOURCES} src/port/native_game_state.c)
     add_library(rage-host-state OBJECT
