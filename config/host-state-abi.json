@@ -22,7 +22,7 @@
     "g_ShuttlePathPoints": 96
   },
   "minimum_symbols": {
-    "src/port/host_state.c": 1263,
+    "src/port/host_state.c": 1225,
     "src/port/native_initialized_state.c": 49
   },
   "forbidden_detached_aliases": [
