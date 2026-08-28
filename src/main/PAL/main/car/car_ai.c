@@ -479,14 +479,14 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
     q = d_R3;
     g0 = q;
     sub_R9->markerDirection = g0;
-    cnt = cnt + 1;
+    cnt++;
   }
   else
   {
     cnt = sub_R9->markerCounter;
     one = 1;
     sub_R9->markerDirection = one;
-    cnt = cnt - 1;
+    cnt--;
   }
 
   sub_R9->markerCounter = cnt;

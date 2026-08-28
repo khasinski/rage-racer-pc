@@ -71,13 +71,13 @@ void UpdateNegconSteerPlayScreen(void) {
     if (g_PadPressed & PAD_LEFT) {
         if (g_NegconSteerPlay > 0) {
             PlaySoundCue(8);
-            g_NegconSteerPlay = g_NegconSteerPlay - 1;
+            g_NegconSteerPlay--;
         }
     }
     if (g_PadPressed & PAD_RIGHT) {
         if (g_NegconSteerPlay < 3) {
             PlaySoundCue(8);
-            g_NegconSteerPlay = g_NegconSteerPlay + 1;
+            g_NegconSteerPlay++;
         }
     }
     if (g_PadType != 0x23) {
@@ -143,13 +143,13 @@ void UpdateNegconMaxTwistScreen(void) {
     if (g_PadPressed & PAD_LEFT) {
         if (g_NegconMaxTwist > 0) {
             PlaySoundCue(8);
-            g_NegconMaxTwist = g_NegconMaxTwist - 1;
+            g_NegconMaxTwist--;
         }
     }
     if (g_PadPressed & PAD_RIGHT) {
         if (g_NegconMaxTwist < 3) {
             PlaySoundCue(8);
-            g_NegconMaxTwist = g_NegconMaxTwist + 1;
+            g_NegconMaxTwist++;
         }
     }
     if (g_PadType != 0x23) {

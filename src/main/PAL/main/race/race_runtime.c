@@ -249,7 +249,7 @@ void DrawEndingScreen(void) {
     u32 sceneTimer;
     s32 x = 0;
 
-    g_SceneTimer = g_SceneTimer + 1;
+    g_SceneTimer++;
     {
         u32 openingFrame = g_SceneTimer;
         if (openingFrame < 61) {
@@ -265,7 +265,7 @@ void DrawEndingScreen(void) {
 
     if (g_PlayerCar.progressB + g_PlayerCar.progressA >= g_PlayerCar.lap * g_TrackLength) {
         if (g_PlayerCar.lap < 257) {
-            g_PlayerCar.lap = g_PlayerCar.lap + 1;
+            g_PlayerCar.lap++;
             SeedWaypoints();
         }
     }
@@ -285,20 +285,20 @@ void DrawEndingScreen(void) {
         if (g_RaceFadeTimer >= 101) {
             ExitRaceScene(x);
         }
-        g_RaceFadeTimer = g_RaceFadeTimer + 1;
+        g_RaceFadeTimer++;
     } else if (g_RacePhase == 4) {
         DrawText8x8(0x5c, 0x78, &g_TextCongratulations, 0x7811);
         DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x29);
-        g_RaceFadeTimer = g_RaceFadeTimer + 1;
+        g_RaceFadeTimer++;
         if (g_RaceFadeTimer < 201) {
-            g_RaceFadeTimer = g_RaceFadeTimer + 1;
+            g_RaceFadeTimer++;
         } else {
             ExitRaceScene(6);
         }
     }
 
     sceneTimer = g_SceneTimer;
-    g_AnimTimer = g_AnimTimer + 1;
+    g_AnimTimer++;
     if (sceneTimer >= 90) {
         if (g_RacePhase == 0) {
             g_RacePhase = 1;

@@ -307,14 +307,14 @@ void UpdateFlybyScenery(void) {
     }
 
     if (state->timer > 0) {
-        state->timer = state->timer + 1;
-        state->keyframeTime = state->keyframeTime + 1;
+        state->timer++;
+        state->keyframeTime++;
         if (state->timer >= 0x1C3) {
             state->timer = 0;
         }
         if (g_FlybySceneryKeyframe[state->keyframeIndex].duration ==
             state->keyframeTime) {
-            state->keyframeIndex = state->keyframeIndex + 1;
+            state->keyframeIndex++;
             state->keyframeTime = 0;
         }
         if (g_FlybySceneryKeyframe[state->keyframeIndex].duration == -1) {

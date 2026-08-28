@@ -100,7 +100,7 @@ void WaitFmvDecode(FmvDecodeContext *state, s32 mode) {
     if (state->decodeComplete == 0) {
         one = 1;
         do {
-            timeout = timeout - 1;
+            timeout--;
             if (timeout == 0) {
                 printf("%s", g_MsgFmvDecodeTimeout);
                 state->decodeComplete = one;

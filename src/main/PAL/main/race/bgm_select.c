@@ -72,7 +72,7 @@ void UpdateBgmSelect(void) {
                 g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
                 AdvanceBgmShuffleBag(g_BgmSelectTrack);
             } else {
-                g_BgmSelectTrack = g_BgmSelectTrack + 1;
+                g_BgmSelectTrack++;
                 g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
             }
             g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
@@ -111,7 +111,7 @@ void UpdateBgmSelect(void) {
             switch (g_BgmSelectCursor) {
             case 0:
                 if (g_BgmRandomPlay == 0) {
-                    g_BgmSelectTrack = g_BgmSelectTrack - 1;
+                    g_BgmSelectTrack--;
                     g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
                 }
                 if (g_BgmChangeDelay == 0) {
@@ -125,7 +125,7 @@ void UpdateBgmSelect(void) {
                     g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
                     AdvanceBgmShuffleBag(g_BgmSelectTrack);
                 } else {
-                    g_BgmSelectTrack = g_BgmSelectTrack + 1;
+                    g_BgmSelectTrack++;
                     g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
                 }
                 if (g_BgmChangeDelay == 0) {
@@ -158,7 +158,7 @@ void UpdateBgmSelect(void) {
     }
 
     if (g_BgmSelectShowUi != 0) DrawBgmSelectBar();
-    g_AnimTimer = g_AnimTimer + 1;
+    g_AnimTimer++;
     g_CameraCarIndex = CycleBgmSelectCameraCar(0xff, g_CameraCarIndex);
     UpdateAttractCars();
     RequestTrackTexturePage(g_Cars[g_CameraCarIndex].trackSection);

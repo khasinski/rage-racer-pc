@@ -181,7 +181,7 @@ void UpdateRaceCars(void) {
                 } else {
                     walk->acceleration = drive->accelerationLimit;
                 }
-                drive->boostTimer = drive->boostTimer - 1;
+                drive->boostTimer--;
             } else if (walk->accelerationLimit >= walk->acceleration) {
                 walk->acceleration = walk->accelerationStep + walk->acceleration;
             } else {
@@ -661,7 +661,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             }
         }
 
-        g_RaceIntroCameraTimer = g_RaceIntroCameraTimer - 1;
+        g_RaceIntroCameraTimer--;
         if (g_RaceIntroCameraTimer <= 0) {
             g_RaceIntroCameraTimer = 0;
         }

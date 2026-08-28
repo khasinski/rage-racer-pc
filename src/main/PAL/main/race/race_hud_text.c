@@ -181,7 +181,7 @@ void BuildTileStrips(void) {
             y += 2;
         } while (row < 0x10);
 
-        bufferIndex = bufferIndex + 1;
+        bufferIndex++;
         buffers++;
     } while (bufferIndex < 2);
 }

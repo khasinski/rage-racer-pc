@@ -18,7 +18,7 @@ void UpdateBgmTrackCount(void) {
         current = g_ClassRecords[index].place;
         index++;
         if (current == one) {
-            g_ClassWinCount = g_ClassWinCount + 1;
+            g_ClassWinCount++;
         }
     } while (index < 11);
 

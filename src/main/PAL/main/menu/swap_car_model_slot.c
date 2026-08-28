@@ -112,12 +112,12 @@ void DrawMenuCarView(void) {
 
     if (g_PadHeld & 4) {
         if (g_MenuViewSpin < 64) {
-            g_MenuViewSpin = g_MenuViewSpin + 1;
+            g_MenuViewSpin++;
         }
     }
     if (g_PadHeld & 8) {
         if (g_MenuViewSpin >= -63) {
-            g_MenuViewSpin = g_MenuViewSpin - 1;
+            g_MenuViewSpin--;
         }
     }
 
@@ -211,7 +211,7 @@ void DrawMenuCourseView(void) {
                     g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
                     g_MenuPendingCourseIndex = -1;
                 } else {
-                    g_CourseSwapDelay = g_CourseSwapDelay + 1;
+                    g_CourseSwapDelay++;
                 }
             } else {
                 g_MenuViewAngle = (s1 + 18) / 18 + g_MenuViewAngle;
@@ -223,7 +223,7 @@ void DrawMenuCourseView(void) {
                     g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
                     g_MenuPendingCourseIndex = -1;
                 } else {
-                    g_CourseSwapDelay = g_CourseSwapDelay + 1;
+                    g_CourseSwapDelay++;
                 }
             } else {
                 g_MenuViewAngle = (s1 - 18) / 18 + g_MenuViewAngle;
@@ -252,12 +252,12 @@ void DrawMenuCourseView(void) {
 
     if (g_PadHeld & 4) {
         if (g_MenuViewSpin < 64) {
-            g_MenuViewSpin = g_MenuViewSpin + 1;
+            g_MenuViewSpin++;
         }
     }
     if (g_PadHeld & 8) {
         if (g_MenuViewSpin >= -63) {
-            g_MenuViewSpin = g_MenuViewSpin - 1;
+            g_MenuViewSpin--;
         }
     }
 

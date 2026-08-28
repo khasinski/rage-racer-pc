@@ -470,7 +470,7 @@ void UpdateCourseSelectScreen(void) {
                         g_MenuViewAngleTarget = 0;
                         g_CourseSwapDelay = 0;
                         g_MenuCourseModelIndex = llap;
-                        llap = llap - 1;
+                        llap--;
                         g_MenuViewAngle = (lu - lprev) + 0x7A120;
                         g_CourseCardSpin = (g_CourseCardSpin - lt) + 0x1F4000;
                         g_CourseIndex = llap;
@@ -501,7 +501,7 @@ void UpdateCourseSelectScreen(void) {
                             g_MenuViewAngleTarget = 0xF4240;
                             g_CourseSwapDelay = 0;
                             g_MenuCourseModelIndex = llap;
-                            llap = llap + 1;
+                            llap++;
                             lprev = lprev - lt;
                             lu = lu - lprev;
                             g_CourseCardSpin = (g_CourseCardSpin - lbase) + 0x1F4000;

@@ -78,7 +78,7 @@ void UpdatePadState(void) {
         g_PadErrorHoldBits |= 0x10;
     } else {
         if (g_PadValidateCountdown != 0) {
-            g_PadValidateCountdown = g_PadValidateCountdown - 1;
+            g_PadValidateCountdown--;
             if (g_PadBufferType == 0x23) {
                 mask = ~(g_PadBufferButtonsLow | (g_PadBufferButtonsHigh << 8));
                 if (!(((mask & 0x5000) != 0x5000) && ((mask & 0xA000) != 0xA000) &&

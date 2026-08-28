@@ -201,7 +201,7 @@ void UpdateRoundScreen(void) {
         u32 sceneTime = g_SceneTimer;
 
         if (sceneTime < 10000) {
-            g_SceneTimer = g_SceneTimer + 1;
+            g_SceneTimer++;
         }
     }
     if (g_SceneTimer == 0xf) {
@@ -246,9 +246,9 @@ void UpdateRoundScreen(void) {
     if (g_SceneId == 0xa) {
         u16 flags = g_PadPressed;
         if (flags & 0x8000) {
-            g_BgmSelection = g_BgmSelection - 1;
+            g_BgmSelection--;
         } else if (flags & 0x2000) {
-            g_BgmSelection = g_BgmSelection + 1;
+            g_BgmSelection++;
         }
         g_BgmSelection = (g_BgmSelection + g_BgmTrackCount + 1) % (g_BgmTrackCount + 1);
         DrawBgmSelector();

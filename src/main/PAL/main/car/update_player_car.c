@@ -52,7 +52,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             s32 g = car->drive.gear;
 
             if (g < g_CarSpec->topGear && car->drive.clutch == 0) {
-                car->drive.gear = car->drive.gear + 1;
+                car->drive.gear++;
                 g_SteerHoldFrames = 0;
             }
         }
@@ -60,7 +60,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             s32 g = p->gear;
 
             if (g >= 2) {
-                p->gear = p->gear - 1;
+                p->gear--;
                 g_SteerHoldFrames = 0;
             }
         }
@@ -76,7 +76,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             if (car->speed < tableValue &&
                 g_AutoShiftCooldown <= 0 && car->drive.clutch == 0) {
                 if (g >= 2) {
-                    car->drive.gear = car->drive.gear - 1;
+                    car->drive.gear--;
                     g_AutoShiftCooldown = 25;
                     g_SteerHoldFrames = 0;
                 }
@@ -95,7 +95,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
                 if (entry->upshiftSpeed < speed &&
                     g_AutoShiftCooldown <= 0 && p->clutch == 0 &&
                     nextGear < config->topGear) {
-                    p->gear = p->gear + 1;
+                    p->gear++;
                     g_AutoShiftCooldown = 25;
                     g_SteerHoldFrames = 0;
                 }
@@ -105,7 +105,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             if (p->brakeInput >= 129) {
                 g_AutoShiftCooldown = g_AutoShiftCooldown - 2;
             } else {
-                g_AutoShiftCooldown = g_AutoShiftCooldown - 1;
+                g_AutoShiftCooldown--;
             }
         }
         if (car->speed == 0 && p->gear >= 2 && p->motionState != CAR_MOTION_STANDING_START) {

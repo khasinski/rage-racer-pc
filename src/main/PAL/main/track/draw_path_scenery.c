@@ -95,20 +95,19 @@ void UpdateTrackEventSound(s16 arg) {
     } while (cursorAddress.value < endAddress.value);
 
     if (data != 0) {
+    /* Decay the stored lean toward zero by one step, never past it. */
     s0 = g_PlayerField3C;
     if (s0 < 0) {
-    s0 += 0x100;
-    if (s0 <= 0) {
-        goto track_event_motion_done;
-    }
-    s0 = 0;
+        s0 += 0x100;
+        if (s0 > 0) {
+            s0 = 0;
+        }
     } else {
-    s0 -= 0x100;
-    if (s0 < 0) {
-    s0 = 0;
+        s0 -= 0x100;
+        if (s0 < 0) {
+            s0 = 0;
+        }
     }
-    }
-track_event_motion_done:
     if (s0 != 0) {
         s0 = (s0 * g_PlayerCar.speed) / 12775;
         t = SCRATCH_VIEW_ANGLE_Y - 0xC00;

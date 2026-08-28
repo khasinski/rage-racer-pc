@@ -208,7 +208,7 @@ void UpdateClassRecordMenu(void) {
         g_ClassRecordMenuCursor = oldCursor - 1;
     }
     if (buttons & 0x4000) {
-        g_ClassRecordMenuCursor = g_ClassRecordMenuCursor + 1;
+        g_ClassRecordMenuCursor++;
     }
 
     g_ClassRecordMenuCursor = (g_ClassRecordMenuCursor + 2) % 2;
@@ -248,10 +248,10 @@ void UpdateClassRecordBrowse(void) {
     }
     b = g_PadPressed;
     if (b & 0x8000) {
-        g_ScreenOffsetEditX = g_ScreenOffsetEditX - 1;
+        g_ScreenOffsetEditX--;
     }
     if (b & 0x2000) {
-        g_ScreenOffsetEditX = g_ScreenOffsetEditX + 1;
+        g_ScreenOffsetEditX++;
     }
     {
         s32 c;

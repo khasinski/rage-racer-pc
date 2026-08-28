@@ -179,7 +179,7 @@ void UpdatePathScenerySound(void) {
         idx = (u16)g_PathSceneryCursors.posIndex;
         positionKeys = g_PathSceneryPosKeys;
         g_PathSceneryCursors.posPhase.value = 0;
-        idx = idx + 1;
+        idx++;
         g_PathSceneryCursors.posIndex = idx;
         positionStepAddress.positionPointer = positionKeys;
         positionStepAddress.value =
@@ -216,7 +216,7 @@ void UpdatePathScenerySound(void) {
         g_PathSceneryHalfDelta[2] =
             (rec[1].fields.z - rec[0].fields.z) / 2;
     } else {
-        g_PathSceneryCursors.posPhase.value = g_PathSceneryCursors.posPhase.value + 1;
+        g_PathSceneryCursors.posPhase.value++;
     }
 
     if (g_PathSceneryCursors.posPhase.signedValue <= g_PathSceneryCursors.posRate.signedValue) {
@@ -290,7 +290,7 @@ void UpdatePathScenerySound(void) {
         idx = (u16)g_PathSceneryCursors.rotIndex;
         rotationKeys = g_PathSceneryRotKeys;
         g_PathSceneryCursors.rotPhase.value = 0;
-        idx = idx + 1;
+        idx++;
         g_PathSceneryCursors.rotIndex = idx;
         rotationStepAddress.rotationPointer = rotationKeys;
         rotationStepAddress.value =
@@ -329,7 +329,7 @@ void UpdatePathScenerySound(void) {
         g_PathSceneryRotHalfDelta[2] =
             (rec[1].fields.z - rec[0].fields.z) / 2;
     } else {
-        g_PathSceneryCursors.rotPhase.value = g_PathSceneryCursors.rotPhase.value + 1;
+        g_PathSceneryCursors.rotPhase.value++;
     }
 
     if (g_PathSceneryCursors.rotPhase.signedValue <= g_PathSceneryCursors.rotRate.signedValue) {
@@ -396,7 +396,7 @@ void UpdatePathScenerySound(void) {
     rotFrame = frames.halfwords[1];
     
     dx = g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
-    posFrame = posFrame + 1;
+    posFrame++;
     frames.halfwords[0] = posFrame;
     frames.halfwords[1] = rotFrame + 1;
     dy = g_PlayerCar.y - g_PathSceneryTransform.position.w[1];

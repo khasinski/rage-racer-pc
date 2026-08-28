@@ -27,7 +27,7 @@ void UpdateRouteScenery(void) {
     counter = g_RouteSceneryFrame;
     i = g_RouteSceneryKeyIndex;
     kp = g_RouteSceneryKeyframe;
-    counter = counter + 1;
+    counter++;
     {
         g_RouteSceneryFrame = counter;
         if (RAW(kp[i].duration) == counter) {

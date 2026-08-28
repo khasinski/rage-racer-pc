@@ -54,7 +54,7 @@ void SeekEnvironmentScript(s32 targetTime) {
 
     g_EnvironmentMode = g_EnvScriptCursor->mode;
     nextId = RAW(g_EnvScriptCursor[1].time);
-    g_EnvScriptCursor = g_EnvScriptCursor + 1;
+    g_EnvScriptCursor++;
     if (nextId < 0) {
         g_EnvScriptCursor = g_EnvScriptCues;
     }
@@ -75,7 +75,7 @@ void SeekEnvironmentScript(s32 targetTime) {
     LoadEnvironmentCue(cue, duration, clampedFrame);
 
     nextId = g_EnvScriptCursor[1].time;
-    g_EnvScriptCursor = g_EnvScriptCursor + 1;
+    g_EnvScriptCursor++;
     if (nextId < 0) {
         g_EnvScriptCursor = g_EnvScriptCues;
     }
@@ -139,7 +139,7 @@ void UpdateEnvironment(void) {
 
     if (g_EnvScriptEnabled != 0) {
         if (g_EnvLerpFrame < g_EnvLerpDuration) {
-            g_EnvLerpFrame = g_EnvLerpFrame + 1;
+            g_EnvLerpFrame++;
         }
     }
 

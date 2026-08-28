@@ -153,7 +153,7 @@ void MainLoop(void) {
         }
         PortSampleAnalogPad();
         UpdatePadState();
-        g_FrameCounter = g_FrameCounter + 1;
+        g_FrameCounter++;
         if (PortShouldExit(g_FrameCounter)) {
             return;
         }

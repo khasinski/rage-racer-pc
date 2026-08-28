@@ -96,7 +96,7 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
                     route->launchDirection = car->facingBackwards;
                 }
             } else {
-                route->groundedFrames = route->groundedFrames + 1;
+                route->groundedFrames++;
                 route->launchEnergy = 0;
             }
         } else {

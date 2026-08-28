@@ -45,11 +45,11 @@ void UpdateShuttleScenery(s32 instance) {
 
     tailLimitPtr = &g_ShuttlePathDwellMax[phase];
     if (entry->dwellCounter >= *tailLimitPtr) {
-        entry->travelStep = entry->travelStep + 1;
+        entry->travelStep++;
         entry->dwellCounter = *tailLimitPtr;
         return;
     }
-    entry->dwellCounter = entry->dwellCounter + 1;
+    entry->dwellCounter++;
 }
 
 

@@ -185,8 +185,8 @@ void DrawOptionSceneOverlay(void) {
 void UpdateOptionScene(void) {
     SCRATCH_PRIM_CURSOR_AS(u8) = AddTilePrim(
         GamePrimaryOrderingTable(0), SCRATCH_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 2, 0, 0, 0);
-    g_AnimTimer = g_AnimTimer + 1;
-    g_SceneTimer = g_SceneTimer + 1;
+    g_AnimTimer++;
+    g_SceneTimer++;
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }

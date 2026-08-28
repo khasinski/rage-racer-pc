@@ -397,7 +397,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
       }
       else
       {
-        assistStep = assistStep + 1;
+        assistStep++;
         block_89:
         if (assistStep >= bandEnd)
         {

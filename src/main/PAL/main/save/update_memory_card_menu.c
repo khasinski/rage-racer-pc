@@ -390,7 +390,7 @@ slot_prompt_done:
         cm1 = g_McMenuRowCount;
         g_McMenuPage = 0;
         g_McActionState = 0;
-        cm1 = cm1 - 1;
+        cm1--;
         g_McMenuRowCursor = cm1;
         break;
     }
@@ -507,7 +507,7 @@ slot_prompt_done:
         cm1 = g_McMenuRowCount;
         g_McMenuPage = 0;
         g_McActionState = 0;
-        cm1 = cm1 - 1;
+        cm1--;
         g_McMenuRowCursor = cm1;
         break;
     }
@@ -530,7 +530,7 @@ slot_prompt_done:
             g_McActionResult = 0;
             g_McConfirmChoice = 0;
             g_McActionTimer = 0;
-            cm1 = cm1 - 1;
+            cm1--;
             g_McMenuRowCursor = cm1;
         }
         break;
@@ -550,7 +550,7 @@ slot_prompt_done:
             g_McActionResult = 0;
             g_McConfirmChoice = 0;
             g_McActionTimer = 0;
-            cm1 = cm1 - 1;
+            cm1--;
             g_McMenuRowCursor = cm1;
         }
     }
