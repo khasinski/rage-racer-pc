@@ -43,6 +43,8 @@ include(CTest)
 
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)
 option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
+set(RAGE_RUNTIME_DISC "" CACHE FILEPATH
+    "Retail CUE/BIN/CHD used by optional native runtime tests")
 
 # Deterministic gameplay helpers with no renderer, platform or PSY-Z link.
 # Keeping this target usable when RAGE_BUILD_PORT=OFF gives unit tests a real
@@ -332,6 +334,23 @@ if(RAGE_BUILD_PORT)
         add_test(NAME save_generator
             COMMAND rage-save-generator --self-test)
         set_tests_properties(save_generator PROPERTIES LABELS portable)
+        if(RAGE_RUNTIME_DISC)
+            add_test(NAME attract_runtime
+                COMMAND "${CMAKE_COMMAND}" -E env
+                    "SDL_AUDIODRIVER=dummy"
+                    "RAGE_PORT_DISC_CUE=${RAGE_RUNTIME_DISC}"
+                    $<TARGET_FILE:rage-racer-smoke>
+                    --set video.renderer=modern
+                    --set race.enabled=false
+                    --set boot.direct=false
+                    --set run.frames=3500
+                    --set stop.scene=30
+                    --set stop.timer=400
+                    --set diagnostics.log=stderr)
+            set_tests_properties(attract_runtime PROPERTIES
+                LABELS "retail;runtime"
+                TIMEOUT 180)
+        endif()
     endif()
 endif()
 
