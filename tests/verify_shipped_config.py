@@ -38,9 +38,14 @@ def main() -> int:
     if linearity is None or float(linearity.group(1)) != 0.5:
         raise AssertionError(
             "rage-port.ini must ship steering_linearity=0.5")
+    marker = re.search(
+        r"^\s*marker_capture\s*=\s*(\S+)", text, re.MULTILINE)
+    if marker is None or marker.group(1).lower() not in ("false", "off", "no", "0"):
+        raise AssertionError(
+            "rage-port.ini must disable M-key marker capture by default")
     print(
         f"shipped draw_distance is {value}; chase lookahead is disabled; "
-        "steering linearity is 0.5")
+        "steering linearity is 0.5; M-key diagnostics are disabled")
     return 0
 
 

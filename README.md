@@ -56,6 +56,28 @@ control to the player. Use `repeat` to launch the configured race again or
 `exit` to close the port after leaving the result screens. The same setting is
 available as `--after-finish menu|repeat|exit`.
 
+The scenario file accepts every launch setting below. Numeric class, course and
+car values are the retail zero-based indices.
+
+| Section | Setting | Values / meaning |
+|---|---|---|
+| `race` | `mode` | `grand-prix`, `time-attack` |
+| `race` | `series` | `grand-prix`, `extra-gp`; time attack always uses Grand Prix |
+| `race` | `class` | `0` to `5` |
+| `race` | `course` | `0` to `3` |
+| `race` | `car` | `0` to `12` |
+| `race` | `transmission` | `default`, `automatic`, `manual`; original per-car restrictions still apply |
+| `race` | `after_finish` | `menu`, `repeat`, `exit` |
+| `race` | `grid` | `default`, or exactly 11 comma-separated car IDs; `-1` leaves a slot empty |
+| `boot` | `direct` | `true` skips race-selection menus; `false` drives the normal menus |
+| `boot` | `skip_sequences` | Skip the opening FMV and Grand Prix prologue when `true` |
+| `start` | `player_track_point` | Player track-point index |
+| `start` | `rival_track_points` | Up to 11 comma-separated point indices; `-` keeps the retail pose |
+| `start` | `player_x`, `player_z` | Exact world coordinates; both must be present |
+| `start` | `player_heading` | Optional exact heading used with `player_x` / `player_z` |
+| `start` | `camera` | Initial retail camera-view index |
+| `start` | `freeze` | Reapply the configured diagnostic placement every frame |
+
 For renderer and rear-view debugging, scenarios may start cars at exact points
 of the loaded track:
 
@@ -72,11 +94,14 @@ progress from these indices. A `-` entry keeps that rival's retail grid pose.
 
 ## Native frame replay
 
-Renderer bugs can be reproduced without navigating the game again. Press `M`
-in modern mode to write `markers/marker-N-world.bin`, the displayed images,
-the legacy scene record and a text dump of the native draw spans. The world
-file contains the exact renderer-neutral cameras, transforms, materials and
-mesh instances used for that frame; it contains no disc assets.
+Renderer bugs can be reproduced without navigating the game again. This debug
+function is disabled in the shipped configuration. Set
+`[diagnostics] marker_capture = true`, then press `M` in modern mode to write
+`markers/marker-N-world.bin`, the displayed images, the legacy scene record and
+a text dump of the native draw spans. The world file contains the exact
+renderer-neutral cameras, transforms, materials and mesh instances used for
+that frame; it contains no disc assets. With the default
+`marker_capture = false`, pressing `M` has no diagnostic side effects.
 
 Build and replay it offscreen with:
 
@@ -127,7 +152,10 @@ post = fxaa
 toggle_renderer_key = F10
 ```
 
-The accepted video values are:
+The complete normal runtime configuration is listed below. Every option can be
+placed in `rage-port.ini` or supplied as `--set section.key=value`.
+
+Video settings:
 
 | Setting | Values |
 |---|---|
@@ -140,6 +168,63 @@ The accepted video values are:
 | `post` | `none`, `fxaa` |
 | `grading` | `off`, `vibrant` |
 | `toggle_renderer_key` | an SDL key name, such as `F10` |
+
+Display, content and storage settings:
+
+| Section | Setting | Values / meaning | Shipped value |
+|---|---|---|---|
+| `hud` | `anchor` | `center`, `edges` | `edges` |
+| `hud` | `show_lap_times` | `true`, `false` | `true` |
+| `hud` | `show_time_limit` | `true`, `false` | `true` |
+| `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
+| `modern` | `assets` | Native-asset cache directory; omitted means `native-assets` beside the executable | omitted |
+| `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
+| `timing` | `standard` | `pal`, `ntsc` | `pal` |
+| `content` | `car_names` | `international`, `japanese` | `international` |
+| `content` | `prologue` | `international`, `japanese` | `international` |
+| `disc` | `image` | Path to a CUE or CHD | remembered picker choice |
+| `disc` | `choose` | `true` opens the picker again | `false` |
+| `mods` | `directory` | Extracted-asset or semantic mod directory | omitted |
+
+Diagnostic settings:
+
+| Setting | Values / meaning | Shipped value |
+|---|---|---|
+| `log` | `auto`, or an explicit log path | `auto` |
+| `marker_capture` | Enables the `M`-key frame/world debug bundle | `false` |
+| `marker_history` | Retains 16 preceding frames when marker capture is enabled | `false` |
+| `performance` | Logs average modern renderer costs every 120 frames | `false` |
+
+Input-device settings:
+
+| Setting | Values / meaning | Shipped value |
+|---|---|---|
+| `analog` | Enable analog gamepads as NeGcon devices | `true` |
+| `wheel` | Enable raw SDL racing wheels | `true` |
+| `wheel_steering_axis` | SDL axis index `0` to `31` | `0` |
+| `wheel_steering_inverted` | `true`, `false` | `false` |
+| `wheel_throttle_axis` | SDL axis index `0` to `31` | `2` |
+| `wheel_brake_axis` | SDL axis index `0` to `31` | `3` |
+| `wheel_pedals_inverted` | `true`, `false` | `true` |
+| `wheel_cross_button` | SDL button index `0` to `63`, or `-1` | `0` |
+| `wheel_square_button` | SDL button index `0` to `63`, or `-1` | `1` |
+| `wheel_circle_button` | SDL button index `0` to `63`, or `-1` | `2` |
+| `wheel_triangle_button` | SDL button index `0` to `63`, or `-1` | `3` |
+| `wheel_l1_button` | SDL button index `0` to `63`, or `-1` | `4` |
+| `wheel_r1_button` | SDL button index `0` to `63`, or `-1` | `5` |
+| `wheel_start_button` | SDL button index `0` to `63`, or `-1` | `9` |
+
+Each of the `steering`, `throttle` and `brake` axes accepts `_deadzone`
+(`0..0.99`), `_saturation` (`0.01..1`), `_linearity` (`-2..2`) and `_scaling`
+(`0.01..10`). Defaults are `0`, `1`, `0`, `1`, except
+`steering_linearity = 0.5`. The 16 keyboard keys `up`, `right`, `down`, `left`,
+`cross`, `circle`, `square`, `triangle`, `l1`, `r1`, `l2`, `r2`, `select`,
+`start`, `l3` and `r3` accept SDL key names and are listed with their defaults
+under Controls.
+
+The legacy `disc.cue` name, `video.bloom` no-op and documented
+`RAGE_PORT_*` automation environment variables remain accepted for old test
+setups, but new configuration should use the keys above.
 
 `nearest` retains the hard texel edges of the source artwork. `linear` smooths
 texture sampling in the modern 3D scene and in the final 2D presentation. The
@@ -440,8 +525,9 @@ RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 
 - Controller configuration currently retains the original preset-oriented
   UI. Full per-action controller remapping is still to come.
-- Release builds are unsigned. Operating systems may require the user to
-  explicitly allow the downloaded application.
+- Release builds are unsigned; macOS archives may carry only an ad-hoc
+  signature. Operating systems may require the user to explicitly allow the
+  downloaded application.
 - The legally obtained PAL/Europe disc (`SCES-006.50`) is the reference
   release. A Japanese (NTSC-J) disc runs, without the messages described above.
   No game data is included in release archives.

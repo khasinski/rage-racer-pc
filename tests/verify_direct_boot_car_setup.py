@@ -29,7 +29,7 @@ def main() -> int:
         [
             executable,
             "--set", "video.renderer=classic",
-            "--set", "race.transmission=manual",
+            "--set", "race.transmission=automatic",
             "--set", "start.freeze=false",
         ],
         cwd=source,
@@ -42,6 +42,8 @@ def main() -> int:
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         return result.returncode or 1
+    if "car 12 does not offer automatic transmission; using manual" not in result.stdout:
+        raise AssertionError(f"manual-only restriction was not applied\n{result.stdout}")
     if "direct boot car setup tires=3 transmission=manual" not in result.stdout:
         raise AssertionError(f"manual setup was not applied\n{result.stdout}")
     final = re.search(

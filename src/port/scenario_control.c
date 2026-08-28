@@ -394,6 +394,14 @@ static void RageScenarioSelectSeries(void) {
  * immediately before the race initializes the car. */
 static void RageScenarioApplyCarSetup(void) {
     CarEntry *entry = &g_CarTable[s_scenario.car];
+    if (entry->transmission == 0 && g_CarModelAsset != NULL &&
+        g_CarModelAsset->transmissionAvailable == 0) {
+        fprintf(stderr,
+                "rage-port: car %d does not offer automatic transmission; "
+                "using manual\n",
+                s_scenario.car);
+        entry->transmission = 1;
+    }
     g_PlayerTireCompound = entry->tireCompound;
     g_PlayerTransmission = entry->transmission;
     fprintf(stderr,

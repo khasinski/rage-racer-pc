@@ -37,6 +37,7 @@ static int s_enabled;
 static int s_initialized;
 static SDL_Scancode s_toggleScancode = SDL_SCANCODE_F10;
 static int s_toggleWasDown;
+static int s_markerCaptureEnabled;
 static SDL_Window *s_window;
 static SDL_GPUDevice *s_device;
 static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
@@ -343,7 +344,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = RageRuntimeConfigEnabled(
+    s_ringEnabled = s_markerCaptureEnabled && RageRuntimeConfigEnabled(
         "diagnostics.marker_history", NULL);
     {
         SDL_GPUTextureCreateInfo info = {0};
@@ -1253,7 +1254,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     toggleDown = keys != NULL && keys[s_toggleScancode];
     if (toggleDown && !s_toggleWasDown) RageModernToggle();
     s_toggleWasDown = toggleDown;
-    {
+    if (s_markerCaptureEnabled) {
         /* M writes what the modern renderer is showing, with the state that
          * produced it, so a player who can see something wrong can hand over
          * the picture and the place it happened. */
@@ -1292,8 +1293,9 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         int passthrough =
             snapshot->faceCount == 0 ||
             (snapshot->displayHeight != 0 && snapshot->displayHeight != 240);
-        ModernMarkerCheck(snapshot, !passthrough && s_resourcesReady &&
-                                        s_haveRenderedFrame);
+        if (s_markerCaptureEnabled)
+            ModernMarkerCheck(snapshot, !passthrough && s_resourcesReady &&
+                                            s_haveRenderedFrame);
     }
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
@@ -1431,6 +1433,8 @@ int RageModernInit(const RagePortConfig *config) {
     s_initialized = 1;
     s_tickTimeNs = s_tickIntervalNs = s_lastPresentationNs = 0;
     s_tickFrame = 0xFFFFFFFFu;
+    s_markerCaptureEnabled = RageRuntimeConfigEnabled(
+        "diagnostics.marker_capture", NULL);
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
             SDL_GetScancodeName(s_toggleScancode),
@@ -1451,6 +1455,7 @@ void RageModernShutdown(void) {
     s_window = NULL;
     s_device = NULL;
     s_enabled = 0;
+    s_markerCaptureEnabled = 0;
     s_initialized = 0;
 }
 
