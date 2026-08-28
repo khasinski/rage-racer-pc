@@ -832,6 +832,7 @@ int RageNativeAssetImporterLoadSky(uint32_t assetKey,
     uint8_t *page = NULL;
     uint8_t *sky;
     uint32_t tile, row, pixel;
+    uint32_t opaquePixels = 0;
     (void)assetKey;
     if (!s_ready || image == NULL) return 0;
     memset(image, 0, sizeof(*image));
@@ -866,8 +867,19 @@ int RageNativeAssetImporterLoadSky(uint32_t assetKey,
         uint8_t brightness = rgba[0];
         if (rgba[1] > brightness) brightness = rgba[1];
         if (rgba[2] > brightness) brightness = rgba[2];
-        if (rgba[3] != 0) rgba[0] = rgba[1] = rgba[2] = brightness;
-        else rgba[0] = rgba[1] = rgba[2] = 0;
+        if (rgba[3] != 0) {
+            rgba[0] = rgba[1] = rgba[2] = brightness;
+            opaquePixels++;
+        } else {
+            rgba[0] = rgba[1] = rgba[2] = 0;
+        }
+    }
+    /* A blank capture happens transiently on some Vulkan/Linux drivers when
+     * the course's LoadImage sequence is still in flight. Tell the caller to
+     * use its gradient fallback so it can retry rather than cache darkness. */
+    if (opaquePixels == 0) {
+        SDL_free(sky);
+        return 0;
     }
     image->pixels = sky;
     image->size = 512u * 128u * 4u;

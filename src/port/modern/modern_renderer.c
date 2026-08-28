@@ -1473,6 +1473,10 @@ void RageModernToggle(void) {
     }
     s_enabled = !s_enabled;
     if (!s_enabled) {
+        /* The outgoing texture may still be queued for presentation.  Vulkan
+         * drivers are less forgiving than the software backends about
+         * releasing it here, which showed up as a corrupted transition frame. */
+        if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
         ModernDestroyResources();
     }
     s_lastRenderedFrame = 0xFFFFFFFFu;

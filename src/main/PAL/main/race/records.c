@@ -66,6 +66,37 @@ void InitRecordTables(void) {
     }
 }
 
+void RepairRecordTimes(void) {
+    s32 series;
+    s32 course;
+    s32 slot;
+    const s32 *defaultLapTimes = g_DefaultLapTimes;
+    const s32 *defaultTotalTimes = g_DefaultTotalTimes;
+
+    for (series = 0; series < 2; series++) {
+        for (course = 0; course < 4; course++) {
+            s32 index = series * 4 + course;
+
+            for (slot = 0; slot < 2; slot++) {
+                if (g_BestLapTimes[series][course][slot] <= 0) {
+                    g_BestLapTimes[series][course][slot] =
+                        defaultLapTimes[index];
+                }
+                if (g_BestTotalTimes[series][course][slot] <= 0) {
+                    g_BestTotalTimes[series][course][slot] =
+                        defaultTotalTimes[index];
+                }
+            }
+            for (slot = 0; slot < 3; slot++) {
+                if (g_BestSectorTimes[series][course][slot] <= 0) {
+                    g_BestSectorTimes[series][course][slot] =
+                        defaultLapTimes[index];
+                }
+            }
+        }
+    }
+}
+
 void *FormatLapTime(void *dst, s32 value) {
     s32 minutes = value / 60000;
     s32 ticks = value / 1000;

@@ -4,6 +4,7 @@
 #include "game/memcard.h"
 #include "game/race.h"
 #include "game/menu.h"
+#include "game/records_internal.h"
 #include "psyq/gpu.h"
 #include "game/input_internal.h"
 #include "game/save_internal.h"
@@ -160,6 +161,7 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
     memcpy(g_TimeRecords, base->timeRecords, sizeof(base->timeRecords));
     memcpy(g_BestSectorTimes, base->bestSectorTimes,
            sizeof(g_BestSectorTimes));
+    RepairRecordTimes();
 
     /* g_BgmVolumeSetting / g_SfxVolumeSetting / g_MonoOutput clamps */
     {

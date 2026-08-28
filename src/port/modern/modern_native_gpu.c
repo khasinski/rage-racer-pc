@@ -107,6 +107,7 @@ static SDL_GPUTexture *s_skyTexture;
 static SDL_GPUSampler *s_skySampler;
 static uint32_t s_skyAssetKey = UINT32_MAX;
 static int s_skyHasPanorama;
+static uint32_t s_skyRetryFrames;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUGraphicsPipeline *s_shadowMasked;
 static SDL_GPUBuffer *s_vertexBuffer;
@@ -594,6 +595,7 @@ static void ModernNativeReleaseSkyTexture(void) {
     s_skyTexture = NULL;
     s_skyAssetKey = UINT32_MAX;
     s_skyHasPanorama = 0;
+    s_skyRetryFrames = 0;
 }
 
 static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
@@ -611,7 +613,16 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     uint32_t width = 1, height = 1;
     void *mapped;
     int loaded;
-    if (s_skyTexture != NULL && s_skyAssetKey == assetKey) return 1;
+    if (s_skyTexture != NULL && s_skyAssetKey == assetKey) {
+        /* The first native present can occur while the game's sky atlas is
+         * still being uploaded to VRAM. Do not retain that blank import for
+         * the rest of the course: keep the gradient briefly, then retry. */
+        if (s_skyHasPanorama) return 1;
+        if (s_skyRetryFrames != 0) {
+            s_skyRetryFrames--;
+            return 1;
+        }
+    }
     ModernNativeReleaseSkyTexture();
     loaded = ModernAssetsLoadSkyImage(assetKey, &image);
     if (loaded) {
@@ -668,6 +679,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     SDL_ReleaseGPUTransferBuffer(s_device, upload);
     s_skyAssetKey = assetKey;
     s_skyHasPanorama = loaded;
+    s_skyRetryFrames = loaded ? 0 : 30;
     if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
         fprintf(stderr,
                 "rage-port: native sky asset=%u panorama=%s %ux%u\n",
