@@ -252,7 +252,7 @@ static void test_platform_config_path(void) {
 
 static void test_portable_state_path(void) {
     char root[] = "/tmp/rage-portable-state-test-XXXXXX";
-    char executable[320], bundleExecutable[320], card[320], found[320];
+    char executable[320], bundleExecutable[320], card[326], found[320];
 
     if (mkdtemp(root) == NULL) {
         failures++;
