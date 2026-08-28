@@ -111,7 +111,7 @@ void DrawMenuCarView(void) {
 
     g_MenuViewOffset = s2 + g_MenuViewOffset;
     s2 = g_MenuViewOffset / 1000;
-    g_PlayerCar.runtime.modelIndex = GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
+    ShowroomPlayerCar()->runtime.modelIndex = GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
     g_PlayerTireCompound = g_CarTable[s1].tireCompound;
 
     if (g_PadHeld & 2) {
@@ -140,20 +140,20 @@ void DrawMenuCarView(void) {
         }
     }
 
-    p = &g_PlayerCar.pose.rotation.y;
+    p = &ShowroomPlayerCar()->pose.rotation.y;
     *p = *p + g_MenuViewSpin;
     BuildRotMatrixY(&mtxA, *p);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
     ApplyMatrixLV(&mtxA, &vec, &out);
     BuildRotMatrixY(&mtxB, 0x800 - *p);
-    BuildRotMatrixX(&mtxA, g_PlayerCar.pose.rotation.x);
+    BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
 
     altLayout = g_MenuAltLayout;
     outX = out.x;
     asm volatile("" : "=r"(altLayout), "=r"(outX) : "0"(altLayout), "1"(outX));
-    p = &g_PlayerCar.pose.position[0];
+    p = &ShowroomPlayerCar()->pose.position[0];
     if (altLayout != 0) {
         offset = s3 - 23;
     } else {
@@ -162,29 +162,29 @@ void DrawMenuCarView(void) {
     result = outX - offset;
     modelSlot = g_CarModelSlot;
     asm volatile("" : "=r"(result), "=r"(modelSlot) : "0"(result), "1"(modelSlot));
-    q = &g_PlayerCar.pose.position[1];
+    q = &ShowroomPlayerCar()->pose.position[1];
     *p = result;
     outZ = out.z;
     qValue = s2 + 30;
     *q = qValue;
-    g_PlayerCar.pose.position[2] = -outZ;
-    g_PlayerRenderRotation = g_PlayerCar.pose.rotation;
+    ShowroomPlayerCar()->pose.position[2] = -outZ;
+    g_PlayerRenderRotation = ShowroomPlayerCar()->pose.rotation;
     g_PlayerRenderY = *q;
     SelectModelBank(modelSlot);
     q--;
     DrawPlayerCarModel((GameRenderObject *)q);
 
     *q = (g_MenuAltLayout != 0 ? 23 : 52) - s3;
-    q = &g_PlayerCar.pose.position[1];
+    q = &ShowroomPlayerCar()->pose.position[1];
     *q = s2 + 30;
-    g_PlayerCar.pose.position[2] = 0;
+    ShowroomPlayerCar()->pose.position[2] = 0;
     SelectModelBank(14);
     /* 0x1f800004 is the scratchpad OT-base slot on PS1.  Keep the retail
      * 120-byte (30-entry) showroom-depth bias, but express it through the
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
     SCRATCH_OT_BASE_AS(OT_TYPE) += 30;
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PlayerCar.pose.position[0], &mtxA);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &ShowroomPlayerCar()->pose.position[0], &mtxA);
     SCRATCH_ENV_MODE4 = 0;
     {
         s32 a1 = 1;
@@ -263,11 +263,11 @@ void DrawMenuCourseView(void) {
         }
     }
 
-    g_PlayerCar.courseViewX = 23 - s1;
+    ShowroomPlayerCar()->courseViewX = 23 - s1;
     g_MenuViewOffset = s0 + g_MenuViewOffset;
-    g_PlayerCar.runtime.z = -20;
+    ShowroomPlayerCar()->runtime.z = -20;
     s0 = g_MenuViewOffset / 1000;
-    g_PlayerCar.runtime.y = s0 + 15;
+    ShowroomPlayerCar()->runtime.y = s0 + 15;
 
     if (g_PadHeld & 4) {
         if (g_MenuViewSpin < 64) {
@@ -280,10 +280,10 @@ void DrawMenuCourseView(void) {
         }
     }
 
-    p = &g_PlayerCar.runtime.bodyYaw;
+    p = &ShowroomPlayerCar()->runtime.bodyYaw;
     *p = *p + g_MenuViewSpin;
     BuildRotMatrixY(&mtxB, 0x800 - *p);
-    BuildRotMatrixX(&mtxA, g_PlayerCar.runtime.bodyPitch);
+    BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
     SelectModelBank(14);

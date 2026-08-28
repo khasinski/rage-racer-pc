@@ -17,6 +17,19 @@ typedef union ShowroomPlayerCarState {
     PlayerCarRuntime runtime;
 } ShowroomPlayerCarState;
 
-extern ShowroomPlayerCarState g_PlayerCar;
+/*
+ * The showroom reads the player car's storage as a pose rather than as a car.
+ *
+ * This header used to say `extern ShowroomPlayerCarState g_PlayerCar;` while
+ * player_car_internal.h said `extern PlayerCarRuntime g_PlayerCar;`. One symbol
+ * with two types is undefined, and in practice it meant the two headers could
+ * not be included in the same translation unit at all. The union already ends
+ * in a PlayerCarRuntime, so this is the same storage seen a second way.
+ */
+#include "game/player_car_internal.h"
+
+static inline ShowroomPlayerCarState *ShowroomPlayerCar(void) {
+    return (ShowroomPlayerCarState *)&g_PlayerCar;
+}
 
 #endif
