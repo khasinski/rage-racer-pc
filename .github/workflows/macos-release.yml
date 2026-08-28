@@ -26,7 +26,9 @@ jobs:
       - name: Build
         run: cmake --build build/release --parallel
       - name: Verify portable tests
-        run: ctest --test-dir build/release --output-on-failure -R '^(game_logic|release_package|native_ui_script_layout|native_frame_offsets|frame_environment_aliases|audio_state_layout)$'
+        run: >-
+          ctest --test-dir build/release --output-on-failure
+          -R '^(game_logic|rmesh|rmesh_index|asset_id|car_paint|texture_mipmap|mod_manifest|render_material|rmesh_cache|render_world|render_world_snapshot|track_asset_identity|track_lighting|render_mesh_build|release_package|timing_restore|axis_curve)$'
       - name: Stage bundle resources
         run: |
           resources="build/release/Rage Racer.app/Contents/Resources"
@@ -90,19 +92,18 @@ jobs:
           # The copies inside the bundle are sealed by the signature and cannot
           # be edited without breaking it, so lay the editable ones beside the
           # app, the way the Linux archive does.
-          mkdir -p "dist/${package}/tools/assetbrowser"
+          mkdir -p "dist/${package}"
           ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
           cp README.md LICENSE.md rage-port.ini race-scenario.ini \
             "dist/${package}/"
-          cp tools/rage-launcher.py "dist/${package}/tools/"
-          cp tools/assetbrowser/{audio,disc,extract,gltf,images,models,png,rmesh}.py \
-            "dist/${package}/tools/assetbrowser/"
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/${package}" "dist/${package}.zip"
           unzip -l "dist/${package}.zip" | grep -q "${package}/rage-port.ini$"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
-          unzip -l "dist/${package}.zip" | grep -q "/tools/rage-launcher.py$"
-          unzip -l "dist/${package}.zip" | grep -q "/tools/assetbrowser/extract.py$"
+          if unzip -l "dist/${package}.zip" | grep -E '\.py$'; then
+            echo "Python file found in release archive" >&2
+            exit 1
+          fi
           # The archived copy must still validate, ditto included.
           rm -rf "$RUNNER_TEMP/verify" && mkdir -p "$RUNNER_TEMP/verify"
           ditto -x -k "dist/${package}.zip" "$RUNNER_TEMP/verify"

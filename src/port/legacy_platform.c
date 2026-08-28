@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL3/SDL.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -436,56 +437,50 @@ static void RageHostSaveDiscCue(const char *cue) {
     fclose(file);
 }
 
+typedef struct RageHostDiscDialog {
+    SDL_AtomicInt completed;
+    char *path;
+    size_t pathSize;
+    int accepted;
+} RageHostDiscDialog;
+
+static void SDLCALL RageHostDiscDialogComplete(
+    void *userdata, const char *const *files, int filter) {
+    RageHostDiscDialog *dialog = userdata;
+    (void)filter;
+    if (files != NULL && files[0] != NULL &&
+        snprintf(dialog->path, dialog->pathSize, "%s", files[0]) <
+            (int)dialog->pathSize)
+        dialog->accepted = 1;
+    SDL_SetAtomicInt(&dialog->completed, 1);
+}
+
 static int RageHostChooseDisc(char *cue, size_t size) {
-#ifdef __APPLE__
-    static const char command[] =
-        "/usr/bin/osascript -e 'POSIX path of (choose file with prompt \"Select your Rage Racer disc image\" of type {\"cue\", \"bin\", \"chd\"})'";
-    FILE *pipe = popen(command, "r");
-    if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
-        if (pipe != NULL) pclose(pipe);
+    static const SDL_DialogFileFilter filters[] = {
+        {"Rage Racer disc images", "cue;bin;chd"},
+        {"All files", "*"},
+    };
+    RageHostDiscDialog dialog;
+    memset(&dialog, 0, sizeof(dialog));
+    dialog.path = cue;
+    dialog.pathSize = size;
+    cue[0] = '\0';
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        fprintf(stderr, "rage-port: cannot initialize disc picker: %s\n",
+                SDL_GetError());
         return 0;
     }
-    pclose(pipe);
-    cue[strcspn(cue, "\r\n")] = '\0';
-    return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
-#elif defined(__linux__)
-    static const char *const commands[] = {
-        "zenity --file-selection --title='Select your Rage Racer disc image' --file-filter='Disc images | *.cue *.bin *.chd'",
-        "kdialog --getopenfilename . '*.cue *.bin *.chd|Disc images'",
-    };
-    size_t index;
-    for (index = 0; index < sizeof(commands) / sizeof(commands[0]); index++) {
-        FILE *pipe = popen(commands[index], "r");
-        if (pipe == NULL || fgets(cue, (int)size, pipe) == NULL) {
-            if (pipe != NULL) pclose(pipe);
-            continue;
-        }
-        pclose(pipe);
-        cue[strcspn(cue, "\r\n")] = '\0';
-        if (RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0) return 1;
+    SDL_ShowOpenFileDialog(RageHostDiscDialogComplete, &dialog, NULL, filters,
+                           (int)(sizeof(filters) / sizeof(filters[0])), NULL,
+                           false);
+    while (!SDL_GetAtomicInt(&dialog.completed)) {
+        SDL_PumpEvents();
+        SDL_Delay(10);
     }
-    fprintf(stderr, "Enter the path to your Rage Racer .cue, .bin or .chd: ");
-    if (fgets(cue, (int)size, stdin) == NULL) return 0;
-    cue[strcspn(cue, "\r\n")] = '\0';
-    return RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
-#elif defined(_WIN32)
-    OPENFILENAMEA dialog = {0};
-    static const char filter[] =
-        "Disc images (*.cue;*.bin;*.chd)\0*.cue;*.bin;*.chd\0All files\0*.*\0\0";
-
-    dialog.lStructSize = sizeof(dialog);
-    dialog.lpstrFilter = filter;
-    dialog.lpstrFile = cue;
-    dialog.nMaxFile = (DWORD)size;
-    dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-    cue[0] = '\0';
-    return GetOpenFileNameA(&dialog) != 0 &&
-           RageHostPathEndsWithDisc(cue) && access(cue, R_OK) == 0;
-#else
-    (void)cue;
-    (void)size;
-    return 0;
-#endif
+    if (!dialog.accepted && SDL_GetError()[0] != '\0')
+        fprintf(stderr, "rage-port: disc picker failed: %s\n", SDL_GetError());
+    return dialog.accepted && RageHostPathEndsWithDisc(cue) &&
+           access(cue, R_OK) == 0;
 }
 
 static unsigned int RageHostLe32(const unsigned char *value) {

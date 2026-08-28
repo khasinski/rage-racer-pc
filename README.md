@@ -33,18 +33,18 @@ with the Visual Studio generator on Windows. Release downloads are supplied
 as ZIP archives for macOS arm64, Linux x86-64 and Windows x86-64. Every archive
 contains the documented `rage-port.ini` modern-renderer preset.
 
-## Scenario launcher
+## Scenario files
 
 `race-scenario.ini` can launch a race through the normal asset-loading flow
 without manually navigating the menus:
 
 ```sh
-./tools/rage-launcher.py
-./tools/rage-launcher.py --class 3 --course 2 --car 8
-./tools/rage-launcher.py custom.ini --grid 0,1,2,3,4,5,6,7,8,9,10
+./rage-racer --scenario race-scenario.ini
+./rage-racer --scenario custom.ini --set race.class=3 --set race.course=2
 ```
 
-CLI options override values from the INI file. The optional `grid` contains
+`--set section.key=value` options override values from the INI file. The
+optional `grid` contains
 the eleven rival car IDs in retail start-position order; `-1` leaves a slot
 empty. The player retains the normal starting position.
 The launcher passes this file directly to the game as `--scenario`; it no
@@ -124,15 +124,16 @@ the same `.world.bin` and `.draws.txt` sidecars next to a modern frame dump.
 
 - macOS on Apple Silicon (arm64), a glibc-based x86-64 Linux distribution, or
   64-bit Windows 10/11
-- A legally obtained PAL Rage Racer disc image: either CHD, or a `.cue` sheet
-  with all referenced track files kept together
-- Python 3 to generate the modern renderer's native-asset cache; it is not
-  needed again after the cache has been created
+- A legally obtained Rage Racer disc image: a `.cue` sheet with all referenced
+  track files, a Track 01 `.bin`, or a CHD
 Movies are decoded in process, so no external tools are needed.
 
-On first launch the port looks for a `.cue` or `.chd` image next to the
-executable and uses it when one is there. Otherwise it asks, and remembers the
-answer. To pick a different disc later, start the game with
+On first launch the port looks for a `.cue`, `.bin` or `.chd` image next to the
+executable and uses it when one is there. Otherwise it opens a native file
+picker and remembers the answer. The compiled C importer converts the selected
+disc's models, textures and sky directly into renderer-native data in memory;
+there is no setup command, asset download, Python runtime or classic-renderer
+fallback. To pick a different disc later, start the game with
 `--set disc.choose=1`, or pin one with `[disc] image` in `rage-port.ini`.
 
 Normal runtime settings are read from `rage-port.ini`. Use `--config FILE` for
@@ -179,12 +180,12 @@ Display, content and storage settings:
 | `hud` | `show_lap_times` | `true`, `false` | `true` |
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
-| `modern` | `assets` | Native-asset cache directory; omitted means `native-assets` beside the executable | omitted |
+| `modern` | `assets` | Optional prebuilt native-asset cache for renderer development; omitted imports from the selected disc | omitted |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `pal`, `ntsc` | `pal` |
 | `content` | `car_names` | `international`, `japanese` | `international` |
 | `content` | `prologue` | `international`, `japanese` | `international` |
-| `disc` | `image` | Path to a CUE or CHD | remembered picker choice |
+| `disc` | `image` | Path to a CUE, Track 01 BIN or CHD | remembered picker choice |
 | `disc` | `choose` | `true` opens the picker again | `false` |
 | `mods` | `directory` | Extracted-asset or semantic mod directory | omitted |
 
@@ -256,19 +257,11 @@ prologue text. The English narration is recorded into Track 02 of the Japanese
 disc, not the executable, so it plays when a legally obtained NTSC-J CUE/CHD is
 selected. With a PAL disc the extended text uses the PAL instrumental track.
 
-Modern mode requires an imported native-asset cache. Generate it from Track 01
-of your legally obtained disc and put it beside the executable:
-
-```sh
-python3 tools/assetbrowser/extract.py \
-  "/path/to/Rage Racer (Europe) (Track 01).bin" \
-  --out build/release/native-assets \
-  --no-raw --no-audio --no-vram --no-fmv
-```
-
-For a cache stored elsewhere, set `[modern] assets = /path/to/native-assets`.
-An absent or incompatible cache is an error in modern mode; the game will not
-silently launch a different 3D renderer.
+Modern mode imports its renderer-native assets automatically from the selected
+disc. Developers can still select a prebuilt cache with
+`[modern] assets = /path/to/native-assets`; an explicitly configured missing or
+incompatible cache is an error, so a typo cannot silently change the rendered
+content.
 
 Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
@@ -296,11 +289,11 @@ file. The disc can likewise be pinned with `[disc] image`; the older `cue` key,
 `RAGE_PORT_LOG_PATH` and `RAGE_PORT_DISC_CUE` overrides remain available for
 automation.
 
-Rage Racer uses mixed-mode CD audio. The selected CUE or CHD must describe
-Track 01 and audio Tracks 02–17; a CUE containing only the data track can run
-the game and FMVs but cannot provide the Grand Prix intro or race soundtrack.
-Keep all BIN files referenced by the CUE together and select that full CUE on
-first run.
+Rage Racer uses mixed-mode CD audio. For the complete soundtrack, select a CUE
+or CHD that describes Track 01 and audio Tracks 02–17. Selecting Track 01 BIN
+directly is supported and provides the game, FMVs and all modern-renderer
+assets, but it cannot describe the separate CD-audio tracks. Keep all BIN files
+referenced by the CUE together and prefer that full CUE on first run.
 
 ## 日本版について
 

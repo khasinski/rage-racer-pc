@@ -22,11 +22,11 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DBUILD_TESTING=OFF
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL
       - name: Build
-        run: cmake --build build/release --config Release --target rage-racer --parallel
+        run: cmake --build build/release --config Release --target rage-racer release_package_tests --parallel
       - name: Verify portable tests
-        run: python tests/verify_release_package.py .
+        run: ctest --test-dir build/release -C Release --output-on-failure -R '^release_package$'
       - name: Package
         shell: pwsh
         env:
@@ -35,22 +35,15 @@ jobs:
           $package = "Rage-Racer-$env:VERSION-windows-x86_64"
           $root = "dist/$package"
           New-Item -ItemType Directory -Force $root | Out-Null
-          New-Item -ItemType Directory -Force "$root/tools" | Out-Null
-          New-Item -ItemType Directory -Force "$root/tools/assetbrowser" | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
           Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini $root
-          Copy-Item tools/rage-launcher.py "$root/tools/rage-launcher.py"
-          Copy-Item tools/assetbrowser/audio.py, tools/assetbrowser/disc.py, `
-            tools/assetbrowser/extract.py, tools/assetbrowser/gltf.py, `
-            tools/assetbrowser/images.py, tools/assetbrowser/models.py, `
-            tools/assetbrowser/png.py, tools/assetbrowser/rmesh.py `
-            "$root/tools/assetbrowser/"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or
-              !(Test-Path "$root/tools/rage-launcher.py") -or
-              !(Test-Path "$root/tools/assetbrowser/extract.py") -or
               !(Test-Path "$root/rage-port.ini")) {
             throw "release package is incomplete"
+          }
+          if (Get-ChildItem $root -Recurse -Filter *.py) {
+            throw "Python file found in release archive"
           }
           (Get-FileHash "dist/$package.zip" -Algorithm SHA256).Hash
       - uses: actions/upload-artifact@v4
