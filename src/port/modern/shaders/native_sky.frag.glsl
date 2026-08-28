@@ -40,11 +40,12 @@ void main() {
               bandOffset),
         fract(bandCoordinate));
     vec4 authored = texture(panorama, panoramaUV);
-    /* Rage Racer's world Y axis points down. Negative slope is therefore the
-     * visible upper hemisphere where the authored cloud band belongs. */
-    float upperHemisphereCoverage = smoothstep(0.0, 0.08, -verticalSlope);
+    /* The reconstructed camera basis maps the visible upper half of the view
+     * to positive worldDirection.y. Keep the authored cloud cylinder there;
+     * the lower half must remain the horizon-to-bottom gradient. */
+    float upperHemisphereCoverage = smoothstep(0.0, 0.08, verticalSlope);
     float cylinderCoverage = upperHemisphereCoverage *
-        (1.0 - smoothstep(0.9, 1.25, -verticalSlope));
+        (1.0 - smoothstep(0.9, 1.25, verticalSlope));
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cylinderCoverage);
     outColor = vec4(color, 1.0);

@@ -15,6 +15,8 @@ for source in (glsl, gpu):
     assert "upperHemisphereCoverage" in source
     assert "cylinderCoverage" in source
     assert "abs(verticalSlope)" not in source
+    assert "smoothstep(0.0,0.08,-verticalSlope)" not in source.replace(" ", "")
+    assert "smoothstep(0.0,0.08,verticalSlope)" in source.replace(" ", "")
 
 assert "fract(bandCoordinate)" in glsl
 assert "clamp(1.0 - height * 2.2" not in glsl

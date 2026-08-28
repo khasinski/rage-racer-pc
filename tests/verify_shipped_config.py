@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The shipped configuration does not turn on the extended draw distance.
+"""The shipped configuration does not turn on experimental camera or distance.
 
 Above 1 the modern renderer draws faces the game rejects by depth, and at some
 places on Lakeside Gate one of them covers a quarter of the view in black. The
@@ -24,7 +24,16 @@ def main() -> int:
         raise AssertionError(
             f"rage-port.ini ships draw_distance={value}, which draws geometry "
             "the game rejects and shows a black plane on some corners")
-    print(f"shipped draw_distance is {value}, the original distance")
+    camera = re.search(
+        r"^\s*chase_turn_lookahead\s*=\s*([0-9.]+)", text, re.MULTILINE)
+    if camera is None:
+        raise AssertionError("rage-port.ini no longer sets chase_turn_lookahead")
+    lookahead = float(camera.group(1))
+    if lookahead != 0.0:
+        raise AssertionError(
+            "rage-port.ini changes the retail third-person camera by default: "
+            f"chase_turn_lookahead={lookahead}")
+    print(f"shipped draw_distance is {value}; chase lookahead is disabled")
     return 0
 
 

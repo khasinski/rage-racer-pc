@@ -157,7 +157,8 @@ widescreen area; use `center` for the retail 4:3 positions. Set
 
 The third-person chase camera can look into a turn as the car steers. Adjust
 `[camera] chase_turn_lookahead` from `0` (retail camera) to `1` (up to roughly
-30 degrees at full steering lock); the default is `0.5`.
+30 degrees at full steering lock). It is optional and defaults to the unchanged
+retail camera (`0`).
 
 Set `[content] car_names = japanese` to use the Japanese-release model names:
 Alouette, Instinct, Victoire, Tempest and Dragone. This changes labels only;

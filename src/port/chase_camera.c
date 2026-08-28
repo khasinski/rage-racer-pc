@@ -17,14 +17,14 @@ static void RageChaseCameraInit(void) {
 
     if (s_initialized) return;
     s_initialized = 1;
-    s_lookahead = 0.5f;
+    s_lookahead = 0.0f;
     text = RageRuntimeConfigGet("camera.chase_turn_lookahead");
     if (text == NULL || text[0] == '\0') return;
     value = strtof(text, &end);
     if (*end != '\0' || value < 0.0f || value > 1.0f) {
         fprintf(stderr,
                 "rage-port: ignoring camera.chase_turn_lookahead=%s "
-                "(expected 0..1); using 0.5\n",
+                "(expected 0..1); using 0\n",
                 text);
         return;
     }
