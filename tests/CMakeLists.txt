@@ -26,6 +26,9 @@ add_test(NAME game_logic COMMAND game_logic_tests)
 add_test(NAME architecture_boundaries COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundaries.py
     ${CMAKE_SOURCE_DIR})
+add_test(NAME native_car_names COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_car_names.py
+    ${CMAKE_SOURCE_DIR})
 
 add_executable(team_logo_tests
     team_logo_tests.c

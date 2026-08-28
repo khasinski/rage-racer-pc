@@ -197,23 +197,28 @@ u8 *g_NativePlaceSuffixNames[5] = {
     g_PlaceSuffix1st, g_PlaceSuffix2nd, g_PlaceSuffix3rd,
     g_PlaceSuffix4th, g_PlaceSuffix5th
 };
-static char g_CarName00[] = "SQUALDON";
-static char g_CarName01[] = "BULSHADE";
-static char g_CarName02[] = "VAINQURE";
-static char g_CarName03[] = "GHEPARDO";
-static char g_CarName04[] = "ISTANTE";
-static char g_CarName05[] = "FATALITA";
-static char g_CarName06[] = "HIJACK";
-static char g_CarName07[] = "BAYONET";
-static char g_CarName08[] = "ACCERON";
-static char g_CarName09[] = "ESPERANZA";
-static char g_CarName10[] = "PEGASE";
-static char g_CarName11[] = "ABEILLE";
-static char g_CarName12[] = "ERRISO";
+static char g_CarNameSqualdon[] = "SQUALDON";
+static char g_CarNameBulshade[] = "BULSHADE";
+static char g_CarNameVainqure[] = "VAINQURE";
+static char g_CarNameGhepardo[] = "GHEPARDO";
+static char g_CarNameIstante[] = "ISTANTE";
+static char g_CarNameFatalita[] = "FATALITA";
+static char g_CarNameHijack[] = "HIJACK";
+static char g_CarNameBayonet[] = "BAYONET";
+static char g_CarNameAcceron[] = "ACCERON";
+static char g_CarNameEsperanza[] = "ESPERANZA";
+static char g_CarNamePegase[] = "PEGASE";
+static char g_CarNameAbeille[] = "ABEILLE";
+static char g_CarNameErriso[] = "ERRISO";
+/* Retail g_CarNames stores pointers from the last adjacent string back to the
+ * first. The model index order therefore runs ERRISO..SQUALDON; using the
+ * declaration order made record tables label every car as another model. */
 char *g_NativeCarNames[13] = {
-    g_CarName00, g_CarName01, g_CarName02, g_CarName03, g_CarName04,
-    g_CarName05, g_CarName06, g_CarName07, g_CarName08, g_CarName09,
-    g_CarName10, g_CarName11, g_CarName12
+    g_CarNameErriso, g_CarNameAbeille, g_CarNamePegase,
+    g_CarNameEsperanza, g_CarNameAcceron, g_CarNameBayonet,
+    g_CarNameHijack, g_CarNameFatalita, g_CarNameIstante,
+    g_CarNameGhepardo, g_CarNameVainqure, g_CarNameBulshade,
+    g_CarNameSqualdon
 };
 static char g_CarClassAge[] = "AGE";
 static char g_CarClassGnade[] = "GNADE";
