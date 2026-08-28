@@ -181,7 +181,7 @@ static void test_port_config(void) {
         EXPECT_EQ(1, PortConfigApplyRuntime(&zeroDistance));
         EXPECT_EQ(0, (s32)(zeroDistance.modernDrawDistance * 10.0f));
         EXPECT_EQ(1, RuntimeConfigInit(3, booleanArguments));
-        EXPECT_EQ(0, RuntimeConfigEnabled("feature.enabled", NULL));
+        EXPECT_EQ(0, RuntimeConfigEnabled("feature.enabled"));
         EXPECT_EQ(0, RuntimeConfigInit(3, invalidSet));
         EXPECT_EQ(0, RuntimeConfigInit(3, missingConfig));
         unlink(emptyPath);

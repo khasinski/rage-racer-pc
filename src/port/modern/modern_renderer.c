@@ -318,8 +318,7 @@ static void ModernDestroyResources(void) {
     s_lastRenderedFrame = 0xFFFFFFFFu;
     s_vertexCount = s_spanCount = 0;
     s_ringNext = 0;
-    if (hadResources && RuntimeConfigEnabled(
-            "diagnostics.renderer_lifecycle", NULL)) {
+    if (hadResources && RuntimeConfigEnabled("diagnostics.renderer_lifecycle")) {
         fprintf(stderr, "rage-port: modern resources destroyed generation=%u\n",
                 s_resourceGeneration);
     }
@@ -344,8 +343,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = s_markerCaptureEnabled && RuntimeConfigEnabled(
-        "diagnostics.marker_history", NULL);
+    s_ringEnabled = s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
     {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -483,7 +481,7 @@ static int ModernEnsureResources(void) {
     s_resourceGeneration++;
     fprintf(stderr, "rage-port: modern renderer target %dx%d\n", s_targetW,
             s_targetH);
-    if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle", NULL))
+    if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle"))
         fprintf(stderr,
                 "rage-port: modern resources created generation=%u size=%dx%d\n",
                 s_resourceGeneration, s_targetW, s_targetH);
@@ -1070,7 +1068,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     int i;
     if (vram == NULL) return;
     if (profile < 0)
-        profile = RuntimeConfigEnabled("diagnostics.performance", NULL);
+        profile = RuntimeConfigEnabled("diagnostics.performance");
     if (profile) profileStart = SDL_GetTicksNS();
     ModernBuildOverlayFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
@@ -1177,7 +1175,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
     }
     s_haveRenderedFrame = 1;
-    if (RuntimeConfigEnabled("diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE")) {
+    if (RuntimeConfigEnabled("diagnostics.modern_span_trace")) {
         int counts[5] = {0};
         int verts[5] = {0};
         for (i = 0; i < s_spanCount; i++) {
@@ -1433,8 +1431,7 @@ int ModernInit(const RagePortConfig *config) {
     s_initialized = 1;
     s_tickTimeNs = s_tickIntervalNs = s_lastPresentationNs = 0;
     s_tickFrame = 0xFFFFFFFFu;
-    s_markerCaptureEnabled = RuntimeConfigEnabled(
-        "diagnostics.marker_capture", NULL);
+    s_markerCaptureEnabled = RuntimeConfigEnabled("diagnostics.marker_capture");
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
             SDL_GetScancodeName(s_toggleScancode),

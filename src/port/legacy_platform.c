@@ -626,7 +626,7 @@ static int HostReadArchive(unsigned int offset, void *destination, unsigned int 
     FILE *test_archive;
 
     if (g_RageHostDisc.file == NULL && !g_RageHostDisc.chd &&
-        RuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
+        RuntimeConfigEnabled("runtime.test_mode")) {
         size_t loaded;
         test_archive = fopen("assets/PAL/RAGE.BIN", "rb");
         if (test_archive == NULL || fseek(test_archive, (long)offset, SEEK_SET) != 0) {
@@ -697,8 +697,7 @@ int HostInitDisc(void) {
     int choose;
 
     if (environment_cue == NULL || environment_cue[0] == '\0')
-        environment_cue = RuntimeConfigGetOverride(
-            "disc.cue", "RAGE_PORT_DISC_CUE");
+        environment_cue = RuntimeConfigGetForced("disc.cue");
 
     ChdClose();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
@@ -706,7 +705,7 @@ int HostInitDisc(void) {
      * bundling retail data.  The release executable never sets this flag.
      * A checked-out disc image still has to reach PsyZ, or CD-DA plays
      * nothing during the smoke runs. */
-    if (RuntimeConfigEnabled("runtime.test_mode", "RAGE_PORT_TEST_MODE")) {
+    if (RuntimeConfigEnabled("runtime.test_mode")) {
         const char *test_cue = environment_cue;
         if (test_cue == NULL || test_cue[0] == '\0')
             test_cue = "disc/PAL/Rage Racer (Europe).cue";
@@ -720,7 +719,7 @@ int HostInitDisc(void) {
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
-    choose = RuntimeConfigEnabled("disc.choose", "RAGE_PORT_CHOOSE_DISC");
+    choose = RuntimeConfigEnabled("disc.choose");
     HostMakeDiscConfigPath(config_path, sizeof(config_path));
     /* Opening the disc is the test, not whether the cue is still there: its
      * track files move or get deleted on their own, and a cue that no longer

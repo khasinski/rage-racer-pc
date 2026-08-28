@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -14,9 +15,16 @@ static int failures;
             #value);                                                           \
 } } while (0)
 
-const char *RuntimeConfigGetLegacy(const char *key, const char *legacyEnv) {
-    (void)key;
-    return getenv(legacyEnv);
+/* The real one derives the environment name from the key; mods.directory has
+ * no alias, so RAGE_PORT_MODS_DIRECTORY is what it looks for. */
+const char *RuntimeConfigGet(const char *key) {
+    char name[192];
+    size_t at = sizeof("RAGE_PORT_") - 1;
+    memcpy(name, "RAGE_PORT_", at);
+    for (; *key != '\0' && at + 1 < sizeof(name); key++)
+        name[at++] = *key == '.' ? '_' : (char)toupper((unsigned char)*key);
+    name[at] = '\0';
+    return getenv(name);
 }
 
 size_t PortAssetRoomAt(const void *at) {

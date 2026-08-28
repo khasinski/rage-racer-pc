@@ -84,20 +84,20 @@ int WriteCapturedFrame(const char *path) {
      * the manifest describes the current game state. */
     DrawSync(0);
     /* Prime the reusable GPU download buffer before the asserted capture. */
-    if (RuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE")) {
+    if (RuntimeConfigEnabled("capture.draw_page")) {
         pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
     } else {
         pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
     }
     if (pixels == NULL) return 0;
     free(pixels);
-    if (RuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE")) {
+    if (RuntimeConfigEnabled("capture.draw_page")) {
         pixels = Psyz_VideoAllocCapturedDrawPage(&width, &height);
     } else {
         pixels = Psyz_VideoAllocCapturedFrame(&width, &height);
     }
     if (pixels == NULL) return 0;
-    if (RuntimeConfigEnabled("capture.vram_sidecar", "RAGE_PORT_CAPTURE_VRAM_SIDECAR")) {
+    if (RuntimeConfigEnabled("capture.vram_sidecar")) {
         size_t pathLength = strlen(path);
         char *vramPath;
         FILE *vramOutput;
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
     char logPath[1024];
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
-    if (RuntimeConfigEnabled("diagnostics.test_log", "RAGE_PORT_TEST_LOG") &&
+    if (RuntimeConfigEnabled("diagnostics.test_log") &&
         !DiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
 
     Psyz_SetTitle("Rage Racer smoke");
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);
-    if (RuntimeConfigEnabled("input.disable_host", "RAGE_PORT_DISABLE_HOST_INPUT")) {
+    if (RuntimeConfigEnabled("input.disable_host")) {
         Psyz_SetHostInputEnabled(0);
     }
     InputConfigDefaults(&inputConfig);
@@ -196,34 +196,34 @@ int main(int argc, char **argv) {
     }
     if (!HostInitDisc()) return EXIT_FAILURE;
     if (!NativeAssetImporterInit()) return EXIT_FAILURE;
-    if (RuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE") != NULL &&
-        Psyz_SpuSetKeyOnTracePath(RuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE")) != 0) {
+    if (RuntimeConfigGet("trace.spu") != NULL &&
+        Psyz_SpuSetKeyOnTracePath(RuntimeConfigGet("trace.spu")) != 0) {
         fprintf(stderr, "unable to open SPU trace: %s\n",
-                RuntimeConfigGetLegacy("trace.spu", "RAGE_PORT_SPU_TRACE"));
+                RuntimeConfigGet("trace.spu"));
         return EXIT_FAILURE;
     }
     if (!InitNativeGameData()) return EXIT_FAILURE;
     ContentOptionsApply();
     if (!MapPs1Scratchpad()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
-    if (RuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
+    if (RuntimeConfigEnabled("video.modern"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
     PortConfigApplyRuntime(&portConfig);
-    if (RuntimeConfigEnabled("video.modern", "RAGE_PORT_MODERN"))
+    if (RuntimeConfigEnabled("video.modern"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
     PortConfigSetActive(&portConfig);
     TimingInit();
     if (!ModernInit(&portConfig)) return EXIT_FAILURE;
     MainLoop();
-    if (RuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM") != NULL) {
-        FILE *output = fopen(RuntimeConfigGetLegacy("dump.spu_ram", "RAGE_PORT_DUMP_SPU_RAM"), "wb");
+    if (RuntimeConfigGet("dump.spu_ram") != NULL) {
+        FILE *output = fopen(RuntimeConfigGet("dump.spu_ram"), "wb");
         if (output != NULL) {
             fwrite(Psyz_SpuGetRam(), 1, 512 * 1024, output);
             fclose(output);
         }
     }
-    if (RuntimeConfigGetLegacy("dump.vram", "RAGE_PORT_DUMP_VRAM") != NULL) {
-        const char *path = RuntimeConfigGetLegacy("dump.vram", "RAGE_PORT_DUMP_VRAM");
+    if (RuntimeConfigGet("dump.vram") != NULL) {
+        const char *path = RuntimeConfigGet("dump.vram");
         RECT rect = {0, 0, 1024, 512};
         u16 *vram = malloc(1024u * 512u * sizeof(*vram));
         FILE *output;
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
         fclose(output);
         free(vram);
     }
-    if (RuntimeConfigEnabled("report.initial_state", "RAGE_PORT_SMOKE_INITIAL_STATE")) {
+    if (RuntimeConfigEnabled("report.initial_state")) {
         int enabled = 0;
         int car;
         for (car = 0; car < 13; car++)
@@ -249,11 +249,11 @@ int main(int argc, char **argv) {
         printf("initial state: time_attack_enabled=%d selected_car=%d\n",
                enabled, g_TimeAttackSave.carIndex);
     }
-    if (RuntimeConfigEnabled("report.window_size", "RAGE_PORT_SMOKE_WINDOW_SIZE")) {
+    if (RuntimeConfigEnabled("report.window_size")) {
         PsyzSize size = Psyz_VideoGetDisplaySize();
         printf("window size: %dx%d\n", size.w, size.h);
     }
-    if (RuntimeConfigEnabled("report.audio_metrics", "RAGE_PORT_SMOKE_AUDIO_METRICS")) {
+    if (RuntimeConfigEnabled("report.audio_metrics")) {
         /* The SDL callback updates both the metrics and an optional PCM dump.
          * Stop it before sampling either so a final callback cannot make the
          * two observations disagree by one buffer. */
@@ -292,7 +292,7 @@ int main(int argc, char **argv) {
                g_CdTrackPending, g_CdFadeFrames);
         Psyz_AudioUnlock();
     }
-    if (RuntimeConfigEnabled("report.camera_state", "RAGE_PORT_SMOKE_CAMERA_STATE")) {
+    if (RuntimeConfigEnabled("report.camera_state")) {
         {
             RECT paletteRect = {752, 224, 16, 1};
             RECT textureRect = {704, 120, 16, 1};
@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
                g_RageGt4RejectBackface, g_RageGt4RejectDepth);
         putchar('\n');
     }
-    if (RuntimeConfigEnabled("capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS")) {
+    if (RuntimeConfigEnabled("capture.visible_cells")) {
         int cell;
         for (cell = 0; cell < 64; cell++) {
             const Vec4 *mainEntry = &g_VisibleCellList[cell];
@@ -403,7 +403,7 @@ int main(int argc, char **argv) {
                    (unsigned)g_MirrorVisibleCellMask[cell]);
         }
     }
-    if (RuntimeConfigEnabled("checks.save_roundtrip", "RAGE_PORT_SMOKE_SAVE_ROUNDTRIP")) {
+    if (RuntimeConfigEnabled("checks.save_roundtrip")) {
         GameSaveHeaderRow header = {0};
         const int marker = 123456789;
 
@@ -426,7 +426,7 @@ int main(int argc, char **argv) {
         }
         printf("save roundtrip ok: money=%d\n", g_RaceProgress->money.value);
     }
-    if (RuntimeConfigEnabled("checks.complete_save_load", "RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD")) {
+    if (RuntimeConfigEnabled("checks.complete_save_load")) {
         GameSaveHeaderRow header = {0};
         int table;
         int car;
@@ -456,7 +456,7 @@ int main(int argc, char **argv) {
         printf("complete generated save loaded: classes=4/5 cars=13/13/13\n");
     }
     if (!WriteCapturedFrame(
-            RuntimeConfigGetLegacy("capture.path", "RAGE_PORT_CAPTURE_PATH"))) {
+            RuntimeConfigGet("capture.path"))) {
         fprintf(stderr, "failed to capture smoke frame\n");
         return EXIT_FAILURE;
     }

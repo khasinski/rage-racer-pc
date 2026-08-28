@@ -171,8 +171,7 @@ int PortMirrorFarDepth(int retailFar) {
     static float multiplier = -1.0f;
     long scaled;
     if (multiplier < 0.0f) {
-        const char *text = RuntimeConfigGetLegacy("modern.mirror_distance",
-                                                      "RAGE_PORT_MIRROR_DISTANCE");
+        const char *text = RuntimeConfigGet("modern.mirror_distance");
         multiplier = 1.0f;
         if (text != NULL && text[0] != '\0') {
             float parsed = 1.0f;

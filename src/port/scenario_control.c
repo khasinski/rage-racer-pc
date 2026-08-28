@@ -191,16 +191,15 @@ static void ScenarioHoldTrackStarts(void) {
     }
 }
 
-static int ScenarioInt(const char *key, const char *legacyName,
-                           int fallback, int low, int high) {
-    const char *text = RuntimeConfigGetLegacy(key, legacyName);
+static int ScenarioInt(const char *key, int fallback, int low, int high) {
+    const char *text = RuntimeConfigGet(key);
     char *end = NULL;
     long value;
     if (text == NULL || text[0] == '\0') return fallback;
     value = strtol(text, &end, 10);
     if (*end != '\0' || value < low || value > high || value > INT_MAX) {
         fprintf(stderr, "rage-port: ignoring invalid %s=%s (expected %d..%d)\n",
-                RuntimeConfigGet(key) ? key : legacyName, text, low, high);
+                key, text, low, high);
         return fallback;
     }
     return (int)value;
@@ -234,20 +233,17 @@ static void ScenarioInitialize(void) {
     s_scenario.initialized = 1;
     s_scenario.playerTrackPoint = -1;
     s_scenario.lastScene = s_scenario.lastFrontend = s_scenario.lastMenuScreen = -1;
-    if (!RuntimeConfigEnabled("race.enabled", "RAGE_PORT_SCENARIO")) return;
+    if (!RuntimeConfigEnabled("race.enabled")) return;
     s_scenario.enabled = 1;
     mode = RuntimeConfigGet("race.mode");
     series = RuntimeConfigGet("race.series");
     s_scenario.mode = mode ? strcmp(mode, "time-attack") != 0 :
-        ScenarioInt("race.mode", "RAGE_PORT_SCENARIO_MODE", 1, 0, 1);
+        ScenarioInt("race.mode", 1, 0, 1);
     s_scenario.series = series ? strcmp(series, "extra-gp") == 0 :
-        ScenarioInt("race.series", "RAGE_PORT_SCENARIO_SERIES", 0, 0, 1);
-    s_scenario.classIndex = ScenarioInt(
-        "race.class", "RAGE_PORT_SCENARIO_CLASS", 0, 0, 5);
-    s_scenario.course = ScenarioInt(
-        "race.course", "RAGE_PORT_SCENARIO_COURSE", 0, 0, 3);
-    s_scenario.car = ScenarioInt(
-        "race.car", "RAGE_PORT_SCENARIO_CAR", 3, 0, 12);
+        ScenarioInt("race.series", 0, 0, 1);
+    s_scenario.classIndex = ScenarioInt("race.class", 0, 0, 5);
+    s_scenario.course = ScenarioInt("race.course", 0, 0, 3);
+    s_scenario.car = ScenarioInt("race.car", 3, 0, 12);
     s_scenario.transmission = -1;
     transmission = RuntimeConfigGet("race.transmission");
     if (transmission != NULL) {
@@ -274,10 +270,9 @@ static void ScenarioInitialize(void) {
         fprintf(stderr, "rage-port: Extra GP is unavailable in time attack; using Grand Prix\n");
         s_scenario.series = 0;
     }
-    ScenarioParseGrid(RuntimeConfigGetLegacy(
-        "race.grid", "RAGE_PORT_SCENARIO_GRID"));
+    ScenarioParseGrid(RuntimeConfigGet("race.grid"));
     ScenarioParseTrackStarts();
-    s_scenario.freezeStarts = RuntimeConfigEnabled("start.freeze", NULL);
+    s_scenario.freezeStarts = RuntimeConfigEnabled("start.freeze");
     {
         /* A mark taken while driving records where the car actually was, which
          * a track point alone cannot express: the car is rarely on the centre
@@ -299,10 +294,10 @@ static void ScenarioInitialize(void) {
     }
     s_scenario.skipSequences = RuntimeConfigGet("boot.skip_sequences") == NULL
                                    ? 1
-                                   : RuntimeConfigEnabled("boot.skip_sequences", NULL);
+                                   : RuntimeConfigEnabled("boot.skip_sequences");
     s_scenario.directBoot = RuntimeConfigGet("boot.direct") == NULL
                                 ? 1
-                                : RuntimeConfigEnabled("boot.direct", NULL);
+                                : RuntimeConfigEnabled("boot.direct");
     if (s_scenario.directBoot && !s_scenario.mode) {
         fprintf(stderr,
                 "rage-port: direct boot covers Grand Prix only; time attack uses the menus\n");

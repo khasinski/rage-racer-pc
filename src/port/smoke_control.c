@@ -210,7 +210,7 @@ static void SmokeWriteVisibleCells(const char *captureDirectory,
     char path[1024];
     FILE *file;
     int index;
-    if (!RuntimeConfigEnabled("capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS")) return;
+    if (!RuntimeConfigEnabled("capture.visible_cells")) return;
     if (snprintf(path, sizeof(path), "%s/visible-cells.log", captureDirectory) >=
         (int)sizeof(path)) return;
     file = fopen(path, "a");
@@ -314,20 +314,20 @@ static unsigned short SmokeButton(const char *name) {
 }
 
 static void SmokeInitialize(void) {
-    const char *limit = RuntimeConfigGetLegacy("run.frames", "RAGE_PORT_SMOKE_FRAMES");
-    const char *script = RuntimeConfigGetLegacy("input.raw_script", "RAGE_PORT_RAW_INPUT_SCRIPT");
-    const char *finish = RuntimeConfigGetLegacy("hooks.finish_frame", "RAGE_PORT_SMOKE_FINISH_FRAME");
-    const char *autoConfirm = RuntimeConfigGetLegacy("hooks.auto_confirm_frame", "RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME");
-    const char *stopScene = RuntimeConfigGetLegacy("stop.scene", "RAGE_PORT_SMOKE_STOP_SCENE");
-    const char *stopTimer = RuntimeConfigGetLegacy("stop.timer", "RAGE_PORT_SMOKE_STOP_SCENE_TIMER");
-    const char *captureDirectory = RuntimeConfigGetLegacy("capture.directory", "RAGE_PORT_SMOKE_CAPTURE_DIR");
+    const char *limit = RuntimeConfigGet("run.frames");
+    const char *script = RuntimeConfigGet("input.raw_script");
+    const char *finish = RuntimeConfigGet("hooks.finish_frame");
+    const char *autoConfirm = RuntimeConfigGet("hooks.auto_confirm_frame");
+    const char *stopScene = RuntimeConfigGet("stop.scene");
+    const char *stopTimer = RuntimeConfigGet("stop.timer");
+    const char *captureDirectory = RuntimeConfigGet("capture.directory");
     const char *captureStride =
-        RuntimeConfigGetLegacy("capture.timer_stride", "RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE");
-    const char *captureMin = RuntimeConfigGetLegacy("capture.timer_min", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN");
-    const char *captureMax = RuntimeConfigGetLegacy("capture.timer_max", "RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX");
-    const char *captureScene = RuntimeConfigGetLegacy("capture.scene", "RAGE_PORT_SMOKE_CAPTURE_SCENE");
-    const char *stateScript = RuntimeConfigGetLegacy("input.state_script", "RAGE_PORT_STATE_INPUT_SCRIPT");
-    const char *randomSync = RuntimeConfigGetLegacy("sync.random", "RAGE_PORT_SYNC_RANDOM");
+        RuntimeConfigGet("capture.timer_stride");
+    const char *captureMin = RuntimeConfigGet("capture.timer_min");
+    const char *captureMax = RuntimeConfigGet("capture.timer_max");
+    const char *captureScene = RuntimeConfigGet("capture.scene");
+    const char *stateScript = RuntimeConfigGet("input.state_script");
+    const char *randomSync = RuntimeConfigGet("sync.random");
     char *copy;
     char *token;
 
@@ -347,10 +347,8 @@ static void SmokeInitialize(void) {
     g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
     g_SmokeHasCaptureScene = captureScene != NULL;
     g_SmokeCaptureScene = captureScene ? strtol(captureScene, NULL, 10) : 0;
-    g_SmokeCaptureAllPhases = RuntimeConfigEnabled(
-        "capture.all_phases", "RAGE_PORT_SMOKE_CAPTURE_ALL_PHASES");
-    g_SmokeRandomSyncEachFrame = RuntimeConfigEnabled(
-        "sync.random_each_frame", "RAGE_PORT_SYNC_RANDOM_EACH_FRAME");
+    g_SmokeCaptureAllPhases = RuntimeConfigEnabled("capture.all_phases");
+    g_SmokeRandomSyncEachFrame = RuntimeConfigEnabled("sync.random_each_frame");
     if (randomSync != NULL && randomSync[0] != '\0') {
         char *end;
         g_SmokeRandomSyncScene = strtol(randomSync, &end, 0);
@@ -431,7 +429,7 @@ static void SmokeInitialize(void) {
     if (script != NULL && script[0] != '\0') {
         g_SmokeRawPadPath = 1;
     } else {
-        script = RuntimeConfigGetLegacy("input.script", "RAGE_PORT_INPUT_SCRIPT");
+        script = RuntimeConfigGet("input.script");
     }
     copy = script != NULL && script[0] != '\0' ? strdup(script) : NULL;
     for (token = copy != NULL ? strtok(copy, ",") : NULL;
@@ -538,18 +536,18 @@ int PortShouldExit(int frame_number) {
                 frame_number, g_SceneTimer);
         ExitRaceScene(11);
     }
-    if (RuntimeConfigEnabled("hooks.mirror_track", "RAGE_PORT_SMOKE_MIRROR_TRACK") && g_SceneId >= 10 &&
+    if (RuntimeConfigEnabled("hooks.mirror_track") && g_SceneId >= 10 &&
         g_SceneId <= 12) {
         g_MirrorMode = 1;
     }
     /* Most scenario tests target post-intro state and historically ran
      * without extracted movies. Native STR playback makes the real intro
      * available, so skip it unless this is explicitly an FMV test. */
-    if (g_SceneId == 5 && !RuntimeConfigEnabled("trace.fmv", "RAGE_PORT_FMV_TRACE") &&
-        !RuntimeConfigEnabled("hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV")) {
+    if (g_SceneId == 5 && !RuntimeConfigEnabled("diagnostics.fmv_trace") &&
+        !RuntimeConfigEnabled("hooks.play_fmv")) {
         g_PadPressed |= PAD_START;
     }
-    menuSweep = RuntimeConfigGetLegacy("hooks.menu_sweep", "RAGE_PORT_SMOKE_MENU_SWEEP");
+    menuSweep = RuntimeConfigGet("hooks.menu_sweep");
     if (menuSweep != NULL && g_SceneId == 8 && g_SceneTimer >= 200) {
         int screen = 1 + (g_SceneTimer - 200) / 100;
         if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
@@ -566,7 +564,7 @@ int PortShouldExit(int frame_number) {
             lastSweepScreen = screen;
         }
     }
-    if (RuntimeConfigEnabled("hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP") &&
+    if (RuntimeConfigEnabled("hooks.option_sweep") &&
         g_SceneId == 23 && g_SceneTimer >= 200) {
         int mode = 1 + (g_SceneTimer - 200) / 100;
         if (mode >= 8 && mode <= 11) {
@@ -643,7 +641,7 @@ int PortShouldExit(int frame_number) {
         if ((frame_number - g_SmokeAutoConfirmFrame) % 60 == 0)
             g_PadPressed |= 0x40;
     }
-    if (RuntimeConfigEnabled("hooks.retire", "RAGE_PORT_SMOKE_RETIRE") && g_SceneId == 12) {
+    if (RuntimeConfigEnabled("hooks.retire") && g_SceneId == 12) {
         if (retireStep == 0 && g_RacePhase == 2 && g_PauseDebounce <= 0) {
             g_PadPressed |= PAD_START;
             retireStep = 1;
@@ -731,7 +729,7 @@ int PortShouldExit(int frame_number) {
                         "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," \
                         "%d,%d,%d,%d,%u",
                         filename,
-                        RuntimeConfigEnabled("capture.draw_page", "RAGE_PORT_CAPTURE_DRAW_PAGE") ?
+                        RuntimeConfigEnabled("capture.draw_page") ?
                             "draw" : "display",
                         frame_number, g_SceneId, g_SceneTimer,
                         g_PlayerCar.x, g_PlayerCar.z,

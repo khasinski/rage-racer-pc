@@ -23,8 +23,7 @@ int PortShouldExit(int frame_number) {
         const char *scene = RuntimeConfigGet("stop.scene");
         const char *timer = RuntimeConfigGet("stop.timer");
         resolved = 1;
-        capturePath = RuntimeConfigGetLegacy("capture.path",
-                                                 "RAGE_PORT_CAPTURE_PATH");
+        capturePath = RuntimeConfigGet("capture.path");
         if (scene != NULL) stopScene = strtol(scene, NULL, 10);
         if (timer != NULL) stopTimer = strtol(timer, NULL, 10);
     }

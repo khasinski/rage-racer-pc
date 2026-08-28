@@ -24,10 +24,9 @@ const char *RuntimeConfigGet(const char *key) {
     return NULL;
 }
 
-int RuntimeConfigEnabled(const char *key, const char *legacyEnv) {
+int RuntimeConfigEnabled(const char *key) {
     const char *value = RuntimeConfigGet(key);
-    (void)legacyEnv;
-    return value != NULL && strcmp(value, "false") != 0;
+        return value != NULL && strcmp(value, "false") != 0;
 }
 
 int main(void) {

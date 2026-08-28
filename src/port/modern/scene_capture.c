@@ -35,8 +35,7 @@ static const uint8_t *s_scopeStart;
 
 int CaptureActive(void) {
     if (!s_traceInitialized) {
-        const char *trace = RuntimeConfigGetLegacy(
-            "diagnostics.scene_trace", "RAGE_PORT_SCENE_TRACE");
+        const char *trace = RuntimeConfigGet("diagnostics.scene_trace");
         s_traceInitialized = 1;
         if (trace != NULL && *trace != '\0' && strcmp(trace, "1") != 0) {
             s_trace = fopen(trace, "w");
@@ -413,8 +412,7 @@ void CaptureFrameEnd(void) {
                 snapshot->oversizedPackets, snapshot->faceOverflow,
                 s_rangeOverflow,
                 (unsigned long long)CaptureSnapshotHash(snapshot));
-        if (RuntimeConfigEnabled("diagnostics.scene_trace_verbose",
-                                     "RAGE_PORT_SCENE_TRACE_VERBOSE")) {
+        if (RuntimeConfigEnabled("diagnostics.scene_trace_verbose")) {
             for (i = 0; i < snapshot->packetCount; i++) {
                 const RageCapturePacket *packet = &snapshot->packets[i];
                 int word;

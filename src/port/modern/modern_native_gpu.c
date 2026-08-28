@@ -1,4 +1,5 @@
 #include "modern_native_gpu.h"
+#include "../runtime_config.h"
 
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
@@ -680,7 +681,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     s_skyAssetKey = assetKey;
     s_skyHasPanorama = loaded;
     s_skyRetryFrames = loaded ? 0 : 30;
-    if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+    if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native sky asset=%u panorama=%s %ux%u\n",
                 assetKey, loaded ? "loaded" : "gradient", width, height);
@@ -698,7 +699,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         world->frame == s_worldFrame) return;
     trackAssetRevision = TrackAssetIdentityRevision();
     if (trackAssetRevision != s_trackAssetRevision) {
-        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL &&
+        if (RuntimeConfigEnabled("diagnostics.modern_asset_trace") &&
             s_trackAssetRevision != UINT64_MAX) {
             fprintf(stderr,
                     "rage-port: native texture cache reset old=%llu new=%llu "
@@ -760,7 +761,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
             break;
         }
     }
-    if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+    if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         uint32_t mirrorVehicleSpans = 0;
         uint32_t span;
         for (span = 0; span < s_mirrorSpanCount; span++) {
@@ -1268,7 +1269,7 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
         drawCount++;
     }
     SDL_EndGPURenderPass(pass);
-    if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+    if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native shadow map frame=%llu draws=%u masked=%u\n",
                 (unsigned long long)s_worldFrame, drawCount, maskedDrawCount);
@@ -1411,7 +1412,7 @@ static void ModernNativeGpuDrawSet(
         }
     }
     SDL_EndGPURenderPass(pass);
-    if (drawCount != 0 && getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+    if (drawCount != 0 && RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native draws frame=%llu draws=%u vertices=%u "
                 "view=%s\n",

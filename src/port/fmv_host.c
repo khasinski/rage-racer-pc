@@ -222,8 +222,7 @@ static void StopXaAudio(void) {
 
 void HostFmvAudioTick(void) {
     if (s_xaPlaying && !Psyz_CdAudioPlaying()) {
-        if (RuntimeConfigEnabled("diagnostics.fmv_trace",
-                                     "RAGE_PORT_FMV_TRACE")) {
+        if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
             fprintf(stderr, "fmv xa end\n");
         }
         FinishXaAudio();
@@ -253,8 +252,7 @@ static int StartXaAudio(unsigned int firstSector,
     absolute = HostStreamAbsoluteSector(firstSector);
     if (index == 16 || absolute < 0) return 0;
     CdIntToPos(absolute, &location);
-    if (RuntimeConfigEnabled("diagnostics.fmv_trace",
-                                 "RAGE_PORT_FMV_TRACE")) {
+    if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
         fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
                 filter[0], filter[1]);
     }
@@ -269,8 +267,7 @@ static int StartXaAudio(unsigned int firstSector,
 static int HostDecodeFmvFrame(void) {
     if (s_pixels == NULL || !RageDecodeFmvFrame()) return 0;
     s_frame++;
-    if (RuntimeConfigEnabled("diagnostics.fmv_trace",
-                                 "RAGE_PORT_FMV_TRACE")) {
+    if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
         fprintf(stderr, "fmv frame=%u vblank=%d scene_timer=%d sector=%u\n",
                 s_frame - 1, g_FrameCounter, g_SceneTimer, s_sectorCursor);
     }
@@ -396,8 +393,7 @@ void EndFmv(void) {
     if (s_xaPlaying && !s_xaTailAllowed) {
         StopXaAudio();
     } else if (s_xaPlaying &&
-               RuntimeConfigEnabled("diagnostics.fmv_trace",
-                                        "RAGE_PORT_FMV_TRACE")) {
+               RuntimeConfigEnabled("diagnostics.fmv_trace")) {
         fprintf(stderr, "fmv video end: xa tail continues\n");
     }
     ReleaseFmvBuffers();

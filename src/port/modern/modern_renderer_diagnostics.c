@@ -36,16 +36,13 @@ void ModernDiagnosticsMaybeDump(
     static long lastDumped = -1;
     static int done;
     if (!initialized) {
-        const char *frameText = RuntimeConfigGetLegacy(
-            "diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME");
-        const char *everyText = RuntimeConfigGetLegacy(
-            "diagnostics.modern_dump_every", "RAGE_PORT_MODERN_DUMP_EVERY");
+        const char *frameText = RuntimeConfigGet("diagnostics.modern_dump_frame");
+        const char *everyText = RuntimeConfigGet("diagnostics.modern_dump_every");
         const char *sceneText = RuntimeConfigGet(
             "diagnostics.modern_dump_scene_id");
         const char *timerText = RuntimeConfigGet(
             "diagnostics.modern_dump_timer");
-        path = RuntimeConfigGetLegacy(
-            "diagnostics.modern_dump", "RAGE_PORT_MODERN_DUMP");
+        path = RuntimeConfigGet("diagnostics.modern_dump");
         if (frameText != NULL) frame = strtol(frameText, NULL, 0);
         if (everyText != NULL) every = strtol(everyText, NULL, 0);
         if (sceneText != NULL) scene = strtol(sceneText, NULL, 0);
@@ -69,8 +66,7 @@ void ModernDiagnosticsMaybeDump(
     if (WriteModern(output, path))
         fprintf(stderr, "rage-port: modern dump frame=%u -> %s\n",
                 snapshot->frameCounter, path);
-    if (RuntimeConfigEnabled("diagnostics.modern_dump_scene",
-                                 "RAGE_PORT_MODERN_DUMP_SCENE")) {
+    if (RuntimeConfigEnabled("diagnostics.modern_dump_scene")) {
         char scenePath[512];
         const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
         FILE *file;

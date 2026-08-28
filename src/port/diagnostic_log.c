@@ -8,8 +8,7 @@
 #include "platform_paths.h"
 
 int DiagnosticLogOpen(char *path, size_t pathSize) {
-    const char *override = RuntimeConfigGetOverride(
-        "diagnostics.log", "RAGE_PORT_LOG_PATH");
+    const char *override = RuntimeConfigGetForced("diagnostics.log");
     char directory[1024];
     FILE *file;
     time_t now;

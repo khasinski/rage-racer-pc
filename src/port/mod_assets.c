@@ -25,8 +25,7 @@ static int s_initialized;
 static void ModAssetsInit(void) {
     if (s_initialized) return;
     s_initialized = 1;
-    s_directory = RuntimeConfigGetLegacy("mods.directory",
-                                             "RAGE_PORT_MODS_DIRECTORY");
+    s_directory = RuntimeConfigGet("mods.directory");
     if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
     if (s_directory == NULL) return;
     {

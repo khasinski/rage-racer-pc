@@ -108,10 +108,10 @@ static void WheelSetupLoad(WheelSetup *setup) {
     setup->brakeAxis = IntegerSetting(
         "input.wheel_brake_axis", 3, 0, 31);
     setup->steeringInverted =
-        RuntimeConfigEnabled("input.wheel_steering_inverted", NULL);
+        RuntimeConfigEnabled("input.wheel_steering_inverted");
     setup->pedalsInverted =
         RuntimeConfigGet("input.wheel_pedals_inverted") == NULL ||
-        RuntimeConfigEnabled("input.wheel_pedals_inverted", NULL);
+        RuntimeConfigEnabled("input.wheel_pedals_inverted");
     setup->crossButton = IntegerSetting(
         "input.wheel_cross_button", 0, -1, 63);
     setup->squareButton = IntegerSetting(
@@ -283,7 +283,7 @@ void PortSampleAnalogPad(void) {
     if (enabled < 0) {
         enabled = RuntimeConfigGet("input.analog") == NULL
                       ? 1
-                      : RuntimeConfigEnabled("input.analog", NULL);
+                      : RuntimeConfigEnabled("input.analog");
         AxisSetupLoad(&steering, "steering");
         AxisSetupLoad(&throttle, "throttle");
         AxisSetupLoad(&brake, "brake");
@@ -292,7 +292,7 @@ void PortSampleAnalogPad(void) {
     if (!enabled) return;
 
     wheel = RuntimeConfigGet("input.wheel") == NULL ||
-                    RuntimeConfigEnabled("input.wheel", NULL)
+                    RuntimeConfigEnabled("input.wheel")
                 ? AnalogFindWheel()
                 : NULL;
     pad = wheel == NULL ? AnalogFindGamepad() : NULL;

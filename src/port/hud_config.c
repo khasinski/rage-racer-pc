@@ -19,9 +19,9 @@ static void HudConfigInit(void) {
     anchor = RuntimeConfigGet("hud.anchor");
     s_anchorEdges = anchor == NULL || strcmp(anchor, "center") != 0;
     s_showLapTimes = RuntimeConfigGet("hud.show_lap_times") == NULL ||
-        RuntimeConfigEnabled("hud.show_lap_times", NULL);
+        RuntimeConfigEnabled("hud.show_lap_times");
     s_showTimeLimit = RuntimeConfigGet("hud.show_time_limit") == NULL ||
-        RuntimeConfigEnabled("hud.show_time_limit", NULL);
+        RuntimeConfigEnabled("hud.show_time_limit");
     s_initialized = 1;
 }
 

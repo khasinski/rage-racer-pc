@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "modern_assets.h"
+#include "../runtime_config.h"
 #include "port/native_asset_importer.h"
 #include "port/mod_assets.h"
 #include "port/platform_paths.h"
@@ -130,8 +131,7 @@ int ModernAssetsInit(void) {
     if (s_initialized) return s_ready;
     s_initialized = 1;
     ModernAssetsInitModProvider();
-    configured = RuntimeConfigGetOverride(
-        "modern.assets", "RAGE_PORT_MODERN_ASSETS");
+    configured = RuntimeConfigGetForced("modern.assets");
     if (configured != NULL && configured[0] != '\0') {
         if (ModernAssetsTryRoot(configured)) return 1;
         fprintf(stderr, "rage-port: native asset cache unavailable: %s\n",
@@ -422,7 +422,7 @@ static int ModernAssetsFindMaterialPaths(
             *paintPathOut = s_paintPath;
             *paintPathLengthOut = paintPathLength;
         }
-        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL) {
+        if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
             fprintf(stderr,
                     "rage-port: native material asset=%u set=%u material=%u "
                     "variant=%u path=%s\n",
@@ -620,7 +620,7 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
             return 0;
         }
         ModernAssetFreeFile(NULL, mask);
-        if (getenv("RAGE_PORT_MODERN_ASSET_TRACE") != NULL)
+        if (RuntimeConfigEnabled("diagnostics.modern_asset_trace"))
             fprintf(stderr,
                     "rage-port: native car paint asset=%u material=%u "
                     "colors=%u,%u mask=%s\n",
