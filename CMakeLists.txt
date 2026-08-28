@@ -43,8 +43,30 @@ include(CTest)
 
 option(RAGE_BUILD_PORT "Build the native Rage Racer port" ON)
 option(RAGE_ENABLE_SANITIZERS "Build host targets with ASan and UBSan" OFF)
+option(RAGE_ENABLE_LINT "Expose the host-code lint target" ON)
 set(RAGE_RUNTIME_DISC "" CACHE FILEPATH
     "Retail CUE/BIN/CHD used by optional native runtime tests")
+
+# clang-tidy needs the exact per-file compile commands.  The setting is a
+# no-op for generators that do not support a compilation database.
+if(RAGE_ENABLE_LINT)
+    if(CMAKE_GENERATOR MATCHES "Ninja|Makefiles")
+        set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+        find_package(Python3 COMPONENTS Interpreter QUIET)
+        if(Python3_Interpreter_FOUND)
+            add_custom_target(lint
+                COMMAND ${Python3_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_lint.py
+                    --build-dir ${CMAKE_BINARY_DIR}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                COMMENT "Linting native port and renderer code")
+        else()
+            message(STATUS "Lint target disabled: Python 3 interpreter not found")
+        endif()
+    else()
+        message(STATUS "Lint target disabled: generator has no compilation database")
+    endif()
+endif()
 
 # Deterministic gameplay helpers with no renderer, platform or PSY-Z link.
 # Keeping this target usable when RAGE_BUILD_PORT=OFF gives unit tests a real

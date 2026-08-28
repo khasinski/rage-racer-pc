@@ -12,6 +12,10 @@ def main() -> int:
     if "psyz" in sim_block.lower():
         raise AssertionError("rage-sim directly names PSY-Z")
 
+    legacy_library = source / "src/main/PAL/lib"
+    if legacy_library.exists():
+        raise AssertionError("uncompiled PS1 library sources returned to the host tree")
+
     # Legacy PS1 assumptions are deliberately local to the retail game, its
     # state mirror, and the small platform adapter.  A global relaxation would
     # silently weaken new renderer and mod code as it is added.
