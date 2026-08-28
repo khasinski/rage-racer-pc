@@ -21,7 +21,7 @@ typedef union MenuOrderingTableAddress {
     void *pointer;
 } MenuOrderingTableAddress;
 
-static inline TeamLogoColorSlot *GetTeamLogoPenSlot(void) {
+static TeamLogoColorSlot *GetTeamLogoPenSlot(void) {
     TeamLogoColorAddress address;
 
     address.index = &g_TeamLogoPenColor;

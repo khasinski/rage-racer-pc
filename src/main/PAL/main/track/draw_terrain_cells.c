@@ -17,7 +17,7 @@ void DrawTerrainCellsWide(void) {
     SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
 }
 
-inline static s32 DivideSigned32(s32 value)
+static s32 DivideSigned32(s32 value)
 {
   s32 adjustedValue = value;
   s32 divisionInput = value;
@@ -26,12 +26,12 @@ inline static s32 DivideSigned32(s32 value)
   return adjustedValue >> 5;
 }
 
-inline static s32 GameRoundTerrainCoordinate(s32 value)
+static s32 GameRoundTerrainCoordinate(s32 value)
 {
   return value / 256;
 }
 
-inline static s32 GameRoundTerrainCoordinate11(s32 value)
+static s32 GameRoundTerrainCoordinate11(s32 value)
 {
   return value / 2048;
 }

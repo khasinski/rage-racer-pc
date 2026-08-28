@@ -9,7 +9,7 @@
 #include "rage/render_world_game.h"
 
 
-static inline void ClearScratchRenderMode3DF68(void) {
+static void ClearScratchRenderMode3DF68(void) {
     SCRATCH_ENV_MODE4 = 0;
 }
 

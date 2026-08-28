@@ -1,22 +1,22 @@
 #include "game/menu.h"
 #include "game/asset_internal.h"
 
-static inline s32 TeamLogoParity(s32 value)
+static s32 TeamLogoParity(s32 value)
 {
     return value & 1;
 }
 
-static inline s32 TeamLogoRowByteOffset(s32 row)
+static s32 TeamLogoRowByteOffset(s32 row)
 {
     return (row * 33) << 6;
 }
 
-static inline s32 TeamLogoParityByteOffset(s32 parity)
+static s32 TeamLogoParityByteOffset(s32 parity)
 {
     return parity * 32;
 }
 
-static inline u16 *TeamLogoPaletteAddress(
+static u16 *TeamLogoPaletteAddress(
     TeamLogoSample *samples, s32 row, s32 parity)
 {
     TeamLogoSampleAddress baseAddress;
@@ -33,7 +33,7 @@ static inline u16 *TeamLogoPaletteAddress(
     return parityAddress.halfwordPointer;
 }
 
-static inline u16 *TeamLogoClutAddress(
+static u16 *TeamLogoClutAddress(
     TeamLogoSample *samples, s32 row, s32 parity, s32 index)
 {
     TeamLogoSampleAddress baseAddress;

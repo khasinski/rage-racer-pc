@@ -121,7 +121,7 @@ void UpdateWaypoints(void) {
     } while (i < 6);
 }
 
-static inline void ClearScratchRenderMode37AAC(void) {
+static void ClearScratchRenderMode37AAC(void) {
     g_ScratchRenderMode = 0;
 }
 
