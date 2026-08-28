@@ -44,10 +44,13 @@ jobs:
           mkdir -p "dist/${package}/tools"
           cp build/release/rage-racer "dist/${package}/rage-racer"
           cp README.md LICENSE.md rage-port.ini race-scenario.ini "dist/${package}/"
+          cp packaging/linux/rage-racer.desktop "dist/${package}/"
+          cp packaging/icon/rage-racer.png "dist/${package}/"
           cp tools/rage-launcher.py "dist/${package}/tools/"
           (cd dist && zip -qr "${package}.zip" "${package}")
           test -x "dist/${package}/rage-racer"
           unzip -l "dist/${package}.zip" | grep -q "/rage-port.ini$"
+          unzip -l "dist/${package}.zip" | grep -q "/rage-racer.png$"
           unzip -l "dist/${package}.zip" | grep -q "/tools/rage-launcher.py$"
           sha256sum "dist/${package}.zip"
       - uses: actions/upload-artifact@v4

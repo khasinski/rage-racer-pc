@@ -271,12 +271,18 @@ if(RAGE_BUILD_PORT)
         endforeach()
     endif()
     if(APPLE)
+        set(RAGE_MACOS_ICON
+            "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/RageRacer.icns")
+        set_source_files_properties("${RAGE_MACOS_ICON}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources)
+        target_sources(rage-racer PRIVATE "${RAGE_MACOS_ICON}")
         set_target_properties(rage-racer PROPERTIES
             OUTPUT_NAME "Rage Racer"
             MACOSX_BUNDLE_BUNDLE_NAME "Rage Racer"
             MACOSX_BUNDLE_GUI_IDENTIFIER "com.khasinski.rage-racer"
             MACOSX_BUNDLE_BUNDLE_VERSION "${RAGE_RACER_RELEASE_VERSION}"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "${RAGE_RACER_RELEASE_VERSION}"
+            MACOSX_BUNDLE_ICON_FILE "RageRacer.icns"
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in"
         )
 
@@ -294,6 +300,10 @@ if(RAGE_BUILD_PORT)
                 "${RAGE_MACOS_BUILD_LAUNCHER}"
             COMMAND_ERROR_IS_FATAL ANY
         )
+    endif()
+    if(WIN32)
+        target_sources(rage-racer PRIVATE
+            packaging/windows/rage-racer.rc)
     endif()
     if(BUILD_TESTING)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)

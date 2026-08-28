@@ -446,6 +446,11 @@ RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 - [rage-racer-psyz](https://github.com/khasinski/rage-racer-psyz) — PSY-Z fork
   used by this port
 
+The launcher artwork was contributed by
+[POOTERMAN](https://www.deviantart.com/pooterman) in
+[issue #15](https://github.com/khasinski/rage-racer-pc/issues/15) for use with
+the port.
+
 ## License
 
 See [LICENSE.md](LICENSE.md).  Game code and data remain the property of their

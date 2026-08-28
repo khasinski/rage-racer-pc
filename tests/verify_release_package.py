@@ -32,6 +32,23 @@ def main() -> int:
     for filename in required:
         if not (root / filename).is_file():
             raise AssertionError(f"missing packaged source file {filename}")
+    icon_files = (
+        "packaging/icon/rage-racer.png",
+        "packaging/macos/RageRacer.icns",
+        "packaging/windows/RageRacer.ico",
+        "packaging/windows/rage-racer.rc",
+        "packaging/linux/rage-racer.desktop",
+    )
+    for filename in icon_files:
+        if not (root / filename).is_file():
+            raise AssertionError(f"missing launcher artwork file {filename}")
+    if "RageRacer.icns" not in cmake or "rage-racer.rc" not in cmake:
+        raise AssertionError("platform executables do not embed their launcher icon")
+    linux_workflow = (root / ".github/workflows/linux-release.yml").read_text(
+        encoding="utf-8")
+    if "rage-racer.desktop" not in linux_workflow or \
+            "rage-racer.png" not in linux_workflow:
+        raise AssertionError("Linux release does not package its launcher artwork")
     return 0
 
 

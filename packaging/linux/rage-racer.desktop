@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Rage Racer
+Comment=Native PC port of Namco's Rage Racer
+Exec=rage-racer
+Icon=rage-racer
+Terminal=false
+Categories=Game;ArcadeGame;
