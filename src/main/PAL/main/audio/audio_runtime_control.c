@@ -1,14 +1,7 @@
-#include "common.h"
 #include "game/audio.h"
-#include "game/audio_internal.h"
-#include "game/render.h"
-#include "game/car.h"
-#include "game/menu.h"
-#include "game/scratchpad.h"
 #include "game/sound.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
-#include "psyq/gpu.h"
 #include "psyq/snd.h"
 
 void TickSequenceAudio(void) {

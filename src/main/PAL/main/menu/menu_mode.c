@@ -1,16 +1,8 @@
-#include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
-#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "game/vector.h"
-#include "psyq/gpu.h"
-#include "psyq/gte.h"
 
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {

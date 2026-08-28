@@ -1,9 +1,7 @@
-#include "rage/hud_config.h"
 
 #include <string.h>
 
 #include "modern/modern_renderer.h"
-#include "port_config.h"
 #include "runtime_config.h"
 
 enum { RAGE_HUD_WIDESCREEN_MARGIN = 53 };

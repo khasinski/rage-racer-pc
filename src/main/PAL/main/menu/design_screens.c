@@ -1,10 +1,7 @@
-#include "common.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/render.h"
-#include "game/state.h"
 
 
 void UpdateLogoSampleScreen(void) {

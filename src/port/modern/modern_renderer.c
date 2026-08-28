@@ -12,14 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "scene_capture.h"
 #include "modern_texture_dump.h"
 #include "../platform_paths.h"
-#include "game/course_index.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/track_internal.h"
 #include "modern_renderer_diagnostics.h"
 #include "../runtime_config.h"

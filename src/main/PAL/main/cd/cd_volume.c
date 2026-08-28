@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/cd.h"
 #include "game/cd_internal.h"
 

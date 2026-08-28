@@ -1,12 +1,6 @@
-#include "common.h"
 #include "game/diagnostics.h"
 #include "game/render_internal.h"
-#include "game/prim.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/vector.h"
-#include "psyq/gpu.h"
-#include "psyq/gte.h"
 
 #include <stdio.h>
 #include <stdlib.h>

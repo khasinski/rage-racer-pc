@@ -1,12 +1,7 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/track.h"
 #include "game/track_internal.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 
 void DrawRouteScenery(void) {
     Matrix mtx0;

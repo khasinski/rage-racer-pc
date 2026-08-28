@@ -1,7 +1,4 @@
-#include "common.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "psyq/gte.h"
 #include "rage/render_world_game.h"
 
 

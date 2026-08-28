@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 

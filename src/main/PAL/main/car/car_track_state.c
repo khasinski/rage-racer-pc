@@ -1,15 +1,9 @@
-#include "common.h"
 #include "game/diagnostics.h"
-#include "game/car.h"
 #include "game/player_car_internal.h"
-#include "game/track.h"
-#include "psyq/gte.h"
 #include "game/render.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track_internal.h"
-#include "game/vector.h"
 
 #include <stdio.h>
 #include <stdlib.h>

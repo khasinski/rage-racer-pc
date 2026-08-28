@@ -47,7 +47,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/scratchpad.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
-#include "host_storage.h"
 #include "chd_disc.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);

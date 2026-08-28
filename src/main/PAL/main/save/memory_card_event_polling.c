@@ -1,5 +1,3 @@
-#include "common.h"
-#include "psyq/kernel.h"
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 

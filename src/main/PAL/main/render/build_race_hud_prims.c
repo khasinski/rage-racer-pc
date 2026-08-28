@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"

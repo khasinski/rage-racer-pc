@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "game/diagnostics.h"
 #include "runtime_config.h"
 
 /*

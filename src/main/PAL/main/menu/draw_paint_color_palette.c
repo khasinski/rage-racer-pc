@@ -1,9 +1,5 @@
-#include "common.h"
 #include "game/menu_internal.h"
-#include "game/menu_types.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/vector.h"
 
 
 /* The 18-swatch PAINT COLOR strip with its selection frame and enlarged preview. */

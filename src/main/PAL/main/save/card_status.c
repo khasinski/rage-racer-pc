@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/memcard.h"
 
 void CardSeekParam(s32 param) {

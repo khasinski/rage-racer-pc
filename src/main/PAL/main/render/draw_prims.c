@@ -1,8 +1,6 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/render_types.h"
 #include "game/scratchpad.h"
-#include "psyq/gpu.h"
 
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     void *otReg;

@@ -1,8 +1,4 @@
-#include "common.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 #include "game/render.h"
-#include "game/track.h"
 #include "game/race.h"
 
 #include "game/track_internal.h"

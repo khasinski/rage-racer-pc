@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/audio.h"
 /*
  * UpdateTeamLogoScreen: sound/menu state machine. The redundant
@@ -12,10 +11,6 @@
  */
 #include "game/menu.h"
 #include "game/save_internal.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
 
 
 void UpdateTeamLogoScreen(void)

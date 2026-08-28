@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/asset_internal.h"
@@ -9,10 +8,8 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/race_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
-#include "psyq/gpu.h"
 
 void UpdateAttractDemoScene(void) {
     g_AttractDemoSteps[g_AttractDemoStep]();

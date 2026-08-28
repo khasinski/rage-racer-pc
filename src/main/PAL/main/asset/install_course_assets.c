@@ -1,5 +1,3 @@
-#include "common.h"
-#include "game/state.h"
 #include "game/asset.h"
 
 

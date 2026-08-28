@@ -1,6 +1,3 @@
-#include "common.h"
-#include "game/car.h"
-#include "game/car_internal.h"
 #include "game/player_car_internal.h"
 #include "game/state.h"
 #include "game/track.h"

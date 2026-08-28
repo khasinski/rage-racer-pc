@@ -1,8 +1,6 @@
-#include "common.h"
 #include "psyq/cd.h"
 #include "game/fmv.h"
 #include "game/asset.h"
-#include "game/render.h"
 #include "game/state.h"
 #include "game/fmv_internal.h"
 #include "game/cd.h"

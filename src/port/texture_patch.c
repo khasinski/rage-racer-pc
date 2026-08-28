@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "texture_patch.h"
 
 /*
  * Putting an edited PNG back into an asset. The game does this in memory as it

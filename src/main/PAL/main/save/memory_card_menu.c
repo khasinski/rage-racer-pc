@@ -1,10 +1,6 @@
-#include "common.h"
 #include "game/memcard.h"
 #include "game/audio.h"
 #include "game/menu.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
-#include "game/render.h"
 
 
 void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {

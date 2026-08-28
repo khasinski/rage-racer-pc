@@ -1,7 +1,5 @@
-#include "common.h"
 #include "game/car.h"
 #include "game/asset.h"
-#include "game/asset_internal.h"
 
 /*
  * Body paint is 15-bit RGB with the semi-transparency bit on top. HALVED_MASK

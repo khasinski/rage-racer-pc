@@ -1,7 +1,5 @@
-#include "common.h"
 #include "game/audio.h"
 #include "game/sound.h"
-#include "psyq/snd.h"
 
 void SetVabSlotVoiceEnabled(s32 voice, s32 enabled, s32 vabSlot) {
     s32 *state;

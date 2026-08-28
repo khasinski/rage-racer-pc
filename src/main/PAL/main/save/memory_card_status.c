@@ -1,7 +1,5 @@
-#include "common.h"
 #include "game/memcard.h"
 #include "game/menu.h"
-#include "game/render.h"
 
 s32 CalculateMemoryCardFreeBlocks(s32 port) {
     s32 i;

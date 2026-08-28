@@ -1,7 +1,5 @@
-#include "common.h"
 #include <stdio.h>
 #include "game/asset.h"
-#include "game/track.h"
 #include "game/track_internal.h"
 #include "game/car.h"
 #include "game/race.h"

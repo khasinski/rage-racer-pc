@@ -1,9 +1,6 @@
-#include "common.h"
 #include "game/car.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/track.h"
-#include "psyq/gpu.h"
 
 void BuildTachoNeedleQuad(void) {
     CarTachometerSpec *spec = &g_CarSpec->tachometer;

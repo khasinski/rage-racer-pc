@@ -1,8 +1,4 @@
-#include "common.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 
 typedef union FadingMenuTableAddress {
     TimedDrawCommand *commands;

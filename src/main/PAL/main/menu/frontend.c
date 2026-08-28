@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
@@ -7,13 +6,9 @@
 #include "game/frontend_internal.h"
 #include "game/race.h"
 #include "game/random.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/screens.h"
-#include "game/state.h"
 #include "psyq/cd.h"
-#include "psyq/gpu.h"
 
 void UpdateMainMenuExit(void) {
     s32 value;

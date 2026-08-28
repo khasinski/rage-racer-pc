@@ -1,14 +1,10 @@
-#include "common.h"
 #include "game/audio.h"
 #include "game/race.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "game/track.h"
 #include "game/track_internal.h"
-#include "psyq/gte.h"
 
 /* The looping prop's live orientation: three 12-bit angles copied wholesale out
  * of the current rotation keyframe by InitPathScenery, which sees the same

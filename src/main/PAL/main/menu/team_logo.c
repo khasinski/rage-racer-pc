@@ -1,7 +1,5 @@
-#include "common.h"
 #include "game/menu.h"
 #include "game/asset_internal.h"
-#include "game/save_internal.h"
 
 static inline s32 TeamLogoParity(s32 value)
 {

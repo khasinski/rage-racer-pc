@@ -2,7 +2,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "psyq/snd_types.h"
 #include "psyq/snd_internal.h"
 #include <psyz/audio.h>
 
@@ -12,13 +11,10 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/race_internal.h"
-#include "game/menu_types.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "game/sound.h"
 #include "game/audio.h"
-#include "game/audio_state_internal.h"
-#include "game/cd_internal.h"
 #include "game/memcard.h"
 
 GameFrameContext g_FrameContexts[2];

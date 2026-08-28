@@ -1,10 +1,7 @@
-#include "common.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
 #include "game/track.h"
-#include "psyq/gte.h"
 #include "rage/render_world_game.h"
 
 void DrawSpinningScenery(s32 timer, s32 animate) {

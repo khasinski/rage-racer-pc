@@ -1,7 +1,4 @@
-#include "common.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
 
 /*
  * The two-row money panel of the CAR SHOP screen: the player's balance on the

@@ -1,4 +1,3 @@
-#include "rage/chase_camera.h"
 
 #include <stdio.h>
 #include <stdlib.h>

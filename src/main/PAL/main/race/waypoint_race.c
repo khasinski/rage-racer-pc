@@ -1,13 +1,10 @@
-#include "common.h"
 #include "game/audio.h"
 #include "game/cd.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "game/track.h"
-#include "game/waypoint.h"
 #include "game/player_car_internal.h"
 
 

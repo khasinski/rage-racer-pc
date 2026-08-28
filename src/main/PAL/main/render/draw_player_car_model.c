@@ -1,14 +1,10 @@
-#include "common.h"
 #include "game/diagnostics.h"
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/asset_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "psyq/gte.h"
 #include "rage/render_world_game.h"
 
 #include <stdio.h>

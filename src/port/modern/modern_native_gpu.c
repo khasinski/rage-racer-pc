@@ -3,7 +3,6 @@
 
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
-#include "render/render_projection.h"
 #include "render/render_shadow.h"
 #include "render/texture_mipmap.h"
 #include "rage/track_asset_identity.h"

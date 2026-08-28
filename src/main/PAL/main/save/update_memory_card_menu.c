@@ -1,9 +1,6 @@
-#include "common.h"
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
-#include "game/state.h"
 #include "game/menu.h"
-#include "psyq/gpu.h"
 #include "game/audio.h"
 
 static s32 UpdateMemoryCardFade(void) {

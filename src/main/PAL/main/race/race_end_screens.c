@@ -1,8 +1,4 @@
-#include "common.h"
-#include "game/screens.h"
 #include "game/race.h"
-#include "game/state.h"
-#include "game/render.h"
 #include "game/render_internal.h"
 #include "game/cd.h"
 #include "game/audio.h"

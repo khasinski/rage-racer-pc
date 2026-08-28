@@ -1,12 +1,7 @@
-#include "common.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "game/track.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 
 /*
  * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For

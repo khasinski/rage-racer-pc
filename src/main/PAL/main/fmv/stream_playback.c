@@ -1,12 +1,7 @@
-#include "common.h"
 #include <stdio.h>
 #include "game/render.h"
 #include "game/fmv.h"
 #include "psyq/cd.h"
-#include "game/race.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
-#include "psyq/kernel.h"
 #include "game/fmv_internal.h"
 
 s32 PresentFmvFrame(FmvDecodeContext *ctx) {

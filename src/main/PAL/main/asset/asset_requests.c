@@ -1,9 +1,5 @@
-#include "common.h"
-#include "game/menu.h"
 #include "game/menu_internal.h"
-#include "game/state.h"
 #include "game/asset.h"
-#include "psyq/gpu.h"
 #include "game/cd.h"
 #include "game/audio.h"
 

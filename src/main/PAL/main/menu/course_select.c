@@ -1,17 +1,11 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/audio.h"
-#include "game/car.h"
 #include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_scripts_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
 #include "game/race.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
 
 const u8 g_NowLoadingText[] = "NOW LOADING";
 /* Blinks the "NOW LOADING" string at g_NowLoadingText. */

@@ -1,12 +1,8 @@
 #include <sys/types.h>
 
-#include "common.h"
 #include "game/prim.h"
-#include "game/render.h"
 #include "game/render_internal.h"
 #include "game/render_types.h"
-#include "game/scratchpad.h"
-#include "psyq/gpu.h"
 
 
 void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {

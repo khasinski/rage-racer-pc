@@ -1,14 +1,10 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/random.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 
 
 void DrawOptionRootMenu(void) {

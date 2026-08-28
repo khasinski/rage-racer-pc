@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/save_internal.h"
 
 

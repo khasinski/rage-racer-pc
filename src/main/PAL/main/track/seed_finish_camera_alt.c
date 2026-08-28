@@ -1,11 +1,6 @@
-#include "common.h"
-#include "game/asset.h"
-#include "game/vector.h"
 #include "game/track.h"
 #include "game/race.h"
 #include "game/car.h"
-#include "game/render.h"
-#include "game/render_internal.h"
 
 void SeedFinishCameraAlt(void *car) {
     u32 word0;

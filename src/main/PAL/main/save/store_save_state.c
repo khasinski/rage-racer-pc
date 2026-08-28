@@ -1,7 +1,4 @@
-#include "common.h"
-#include "game/car.h"
 #include "game/race.h"
-#include "game/memcard.h"
 #include "game/menu.h"
 #include "game/input_internal.h"
 #include "game/save_internal.h"

@@ -1,15 +1,10 @@
-#include "common.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/player_car_internal.h"
 #include "game/track_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "game/track.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 #include "rage/render_world_game.h"
 
 

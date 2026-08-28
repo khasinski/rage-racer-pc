@@ -7,19 +7,14 @@
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
-#include "game/car.h"
-#include "game/course_index.h"
 #include "game/frontend_internal.h"
-#include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
-#include "game/sound.h"
 #include "game/track.h"
 #include "runtime_config.h"
-#include "scenario_control.h"
 
 extern int g_SceneId;
 

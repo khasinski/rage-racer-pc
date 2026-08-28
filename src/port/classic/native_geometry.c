@@ -7,13 +7,11 @@
 #include <string.h>
 
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/asset.h"
 
 #include "../modern/scene_capture.h"
 #include "native_geometry_diagnostics.h"
 #include "../native_geometry_interpolation.h"
-#include "../runtime_config.h"
 
 extern int g_CourseModelCount;
 extern int g_AnimTimer;

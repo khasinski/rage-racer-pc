@@ -1,10 +1,6 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/menu.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 
 /* The 0x140x0x1E0 twin of DrawFullscreenFadeTile, for the 480-line setup scene. */
 

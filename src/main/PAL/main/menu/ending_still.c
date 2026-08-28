@@ -1,11 +1,8 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "psyq/gpu.h"
 
 
 /* Scene 34: the still shown after the ending FMV. Fades in, waits 300

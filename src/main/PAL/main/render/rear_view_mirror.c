@@ -1,13 +1,8 @@
-#include "common.h"
-#include "rage/compat.h"
 #include "game/prim.h"
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "psyq/gpu.h"
-#include "psyq/gte.h"
 
 typedef union MirrorPanelPositionAddress {
     s32 *position;

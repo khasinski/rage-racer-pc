@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/asset_internal.h"
 #include "game/render.h"

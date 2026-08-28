@@ -1,9 +1,6 @@
-#include "common.h"
 #include "game/audio.h"
-#include "game/car.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/state.h"
 #include "game/save_internal.h"
 
 void ResetProgressSlot(CarEntry *slot, GameRaceProgress *progress) {

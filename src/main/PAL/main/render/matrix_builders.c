@@ -1,6 +1,4 @@
-#include "common.h"
 #include "game/render.h"
-#include "psyq/gte.h"
 
 void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm, s32 axisMode) {
     s32 one;

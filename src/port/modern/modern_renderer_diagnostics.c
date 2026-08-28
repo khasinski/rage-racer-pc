@@ -9,7 +9,6 @@
 #include "../runtime_config.h"
 #include "../platform_paths.h"
 #include "../include/rage/render_world_game.h"
-#include "render/render_world.h"
 #include "render/render_world_snapshot.h"
 
 extern int32_t g_TrackTexturePageWanted;

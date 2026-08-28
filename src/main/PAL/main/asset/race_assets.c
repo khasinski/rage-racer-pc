@@ -1,11 +1,8 @@
-#include "common.h"
-#include "game/state.h"
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/race.h"
 #include "game/cd.h"
-#include "game/menu.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
 

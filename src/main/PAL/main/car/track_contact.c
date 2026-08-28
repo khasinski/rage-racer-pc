@@ -1,12 +1,7 @@
-#include "common.h"
-#include "game/track.h"
-#include "psyq/gte.h"
 #include "game/render.h"
 #include "game/race.h"
 #include "game/car.h"
-#include "game/scratchpad.h"
 #include "game/track_internal.h"
-#include "psyq/gpu.h"
 
 s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample) {
     s32 index;

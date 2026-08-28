@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "modern_assets.h"
-#include "../runtime_config.h"
 #include "port/native_asset_importer.h"
 #include "port/mod_assets.h"
 #include "port/platform_paths.h"
@@ -13,7 +11,6 @@
 #include "render/asset_id.h"
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
-#include "render/render_material.h"
 
 enum { MODERN_ASSET_CACHE_CAPACITY = 4096 };
 

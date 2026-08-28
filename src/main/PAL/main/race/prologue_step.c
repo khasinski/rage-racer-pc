@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/state.h"
 #include "game/race_internal.h"
 

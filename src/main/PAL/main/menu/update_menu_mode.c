@@ -1,10 +1,5 @@
-#include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
 
 void UpdateMenuMode(void) {
     OT_TYPE *scratch;

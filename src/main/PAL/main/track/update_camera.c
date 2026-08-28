@@ -1,11 +1,6 @@
-#include "common.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/track.h"
 #include "game/track_internal.h"
 #include "game/player_car_internal.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 #include "rage/chase_camera.h"
 
 /* Mode-3 camera path: the eye is eased from one track-camera node to the next

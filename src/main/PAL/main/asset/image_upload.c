@@ -1,6 +1,4 @@
-#include "common.h"
 #include "game/menu.h"
-#include "psyq/gpu.h"
 #include "game/race.h"
 #include "game/asset.h"
 

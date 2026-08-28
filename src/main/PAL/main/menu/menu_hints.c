@@ -1,9 +1,6 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/menu.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */

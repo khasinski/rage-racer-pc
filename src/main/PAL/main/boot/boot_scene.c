@@ -1,15 +1,8 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "game/fmv_internal.h"
-#include "psyq/gpu.h"
-#include "psyq/gte.h"
 
 
 void DrawBootLogo(void) {

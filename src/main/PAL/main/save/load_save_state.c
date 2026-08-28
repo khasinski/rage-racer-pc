@@ -1,11 +1,7 @@
-#include "common.h"
 #include "game/audio.h"
-#include "game/car.h"
-#include "game/memcard.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "game/records_internal.h"
-#include "psyq/gpu.h"
 #include "game/input_internal.h"
 #include "game/save_internal.h"
 

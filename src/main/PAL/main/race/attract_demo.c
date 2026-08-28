@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/audio_internal.h"
 #include "game/fmv_internal.h"
@@ -6,12 +5,8 @@
 #include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 #include "game/track.h"
-#include "psyq/gpu.h"
 
 
 void UpdateBgmSelectScene(void) {

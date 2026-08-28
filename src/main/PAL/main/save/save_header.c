@@ -1,6 +1,4 @@
-#include "common.h"
 #include "game/memcard.h"
-#include "psyq/gpu.h"
 #include "game/menu.h"
 
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {

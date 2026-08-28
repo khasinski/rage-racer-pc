@@ -1,15 +1,9 @@
-#include "common.h"
-#include "game/asset.h"
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/track.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 
 
 /*

@@ -1,6 +1,5 @@
 #include <math.h>
 
-#include "axis_curve.h"
 
 float AxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling) {

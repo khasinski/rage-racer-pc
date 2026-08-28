@@ -1,7 +1,4 @@
-#include "common.h"
-#include "game/track.h"
 #include "game/track_internal.h"
-#include "game/track_camera_internal.h"
 
 /*
  * Installs the track-point table from a loaded blob: word 0 is the point count,

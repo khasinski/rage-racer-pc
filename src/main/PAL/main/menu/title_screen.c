@@ -1,22 +1,16 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/cd.h"
-#include "game/car.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/random.h"
-#include "game/render.h"
 #include "game/render_internal.h"
 #include "game/fmv_internal.h"
 #include "game/save_internal.h"
-#include "game/scratchpad.h"
 #include "game/screens.h"
-#include "game/state.h"
-#include "psyq/gpu.h"
 
 
 /* Scene 2: the menu-side entry to the front end. Clears the title/menu

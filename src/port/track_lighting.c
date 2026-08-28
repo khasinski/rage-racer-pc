@@ -1,4 +1,3 @@
-#include "rage/track_lighting.h"
 
 void TrackZoneLightColor(int blend, int zoneCode, float out[3]) {
     float amount;

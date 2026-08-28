@@ -1,4 +1,3 @@
-#include "psyq/gpu.h"
 #include "game/menu.h"
 
 void ClearTeamNameTexture(void) {

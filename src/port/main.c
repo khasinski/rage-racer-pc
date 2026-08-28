@@ -10,7 +10,6 @@
 #include "content_options.h"
 #include "diagnostic_log.h"
 #include "host_storage.h"
-#include "port_config.h"
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"

@@ -1,6 +1,4 @@
-#include "common.h"
 #include "game/diagnostics.h"
-#include "rage/compat.h"
 #include <psyz/gpu.h>
 #include <stdio.h>
 #include "game/asset.h"
@@ -10,12 +8,9 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "psyq/cd.h"
-#include "psyq/gpu.h"
-#include "psyq/kernel.h"
 #include "psyq/snd.h"
 /*
  * One-shot boot chain called from MainLoop: sequencer, sound runtime, GPU

@@ -1,4 +1,3 @@
-#include "rage/compat.h"
 #include "rage/render_world_game.h"
 #include "modern/modern_renderer.h"
 #include <libgte.h>

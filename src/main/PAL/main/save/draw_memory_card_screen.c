@@ -1,11 +1,7 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
 #include "game/memcard.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 
 void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
 {

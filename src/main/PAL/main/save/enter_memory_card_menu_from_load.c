@@ -1,9 +1,5 @@
-#include "common.h"
 #include "game/asset.h"
-#include "game/state.h"
 #include "game/menu.h"
-#include "psyq/gpu.h"
-#include "game/render.h"
 #include "game/memcard.h"
 void EnterMemoryCardMenuFromLoad(void) {
     SetDispMask(0);

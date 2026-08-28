@@ -1,17 +1,11 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/asset_internal.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
-#include "game/race.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 #include "game/track.h"
-#include "psyq/gpu.h"
 
 
 /* g_GameModeHandlers[5]: left/right edits the selected audio setting, cancel restores it. */

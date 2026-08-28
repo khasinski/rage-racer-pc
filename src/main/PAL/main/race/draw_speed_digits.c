@@ -1,10 +1,7 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/car.h"
 #include "game/race.h"
-#include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 
 
 void DrawSpeedDigits(s32 x, s32 y, s32 value) {

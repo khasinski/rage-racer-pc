@@ -1,11 +1,8 @@
-#include "common.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "game/prim.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "psyq/gte.h"
 
 /* Loads the GTE light matrix with g_SceneLightMatrix * `view`, working on a
  * local copy so the caller's view matrix is left alone. */

@@ -1,7 +1,4 @@
-#include "common.h"
 #include <stdio.h>
-#include "game/track.h"
-#include "game/car.h"
 #include "game/race.h"
 
 void InitSoundSystem(void) {

@@ -1,8 +1,6 @@
-#include "common.h"
 #include <stdio.h>
 #include "game/audio.h"
 #include "game/sound.h"
-#include "psyq/kernel.h"
 #include "psyq/snd.h"
 
 

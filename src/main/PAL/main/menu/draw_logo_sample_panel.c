@@ -1,7 +1,4 @@
-#include "common.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
 void DrawLogoSamplePanel(s32 step, s32 sample) {
     void *ot = SCRATCH_OT_BASE_AS(void);
     s32 idx;

@@ -1,11 +1,5 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/asset_internal.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
-#include "game/vector.h"
 
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */

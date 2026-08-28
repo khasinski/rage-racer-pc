@@ -1,11 +1,8 @@
-#include "common.h"
 #include <stdio.h>
 #include "game/audio.h"
 #include "game/audio_state_internal.h"
 #include "game/sound.h"
 #include "psyq/snd.h"
-#include "psyq/kernel.h"
-#include "game/cd.h"
 
 void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
     s32 *entry;

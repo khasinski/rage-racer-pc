@@ -14,7 +14,6 @@
 #include "input_config.h"
 #include "content_options.h"
 #include "diagnostic_log.h"
-#include "port_config.h"
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
@@ -29,7 +28,6 @@
 #include "game/audio.h"
 #include "game/asset.h"
 #include "game/car_internal.h"
-#include "game/scratchpad.h"
 #include "game/render_internal.h"
 #include "game/sound.h"
 

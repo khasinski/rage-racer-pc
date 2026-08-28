@@ -1,7 +1,4 @@
-#include "common.h"
 #include "game/menu.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
 
 /*
  * The ENGINEER SHOP twin of DrawCarShopPricePanel: same slide geometry, its

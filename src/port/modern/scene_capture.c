@@ -8,7 +8,6 @@
 
 #include "game/render_internal.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
 
 #include "scene_capture.h"

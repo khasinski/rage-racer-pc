@@ -6,19 +6,13 @@
 #include <math.h>
 #include <string.h>
 
-#include "game/car.h"
 #include "game/asset.h"
-#include "game/course_index.h"
-#include "game/environment.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "game/track.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
-#include "render/render_world.h"
 #include "render/render_world_frame.h"
 #include "render/car_paint.h"
 #include "rage/track_asset_identity.h"

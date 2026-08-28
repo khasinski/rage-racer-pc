@@ -1,4 +1,3 @@
-#include "platform_paths.h"
 
 #include <stdio.h>
 #include <errno.h>

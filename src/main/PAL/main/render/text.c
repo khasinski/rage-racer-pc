@@ -1,9 +1,5 @@
-#include "common.h"
-#include "game/asset.h"
 #include "game/render_types.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "psyq/gpu.h"
 
 void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);

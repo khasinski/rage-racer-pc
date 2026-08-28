@@ -1,11 +1,6 @@
-#include "common.h"
 #include "game/car.h"
 #include "game/render.h"
-#include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/track.h"
-#include "game/vector.h"
-#include "psyq/gte.h"
 
 
 /*

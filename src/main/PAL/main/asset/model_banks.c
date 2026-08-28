@@ -1,13 +1,9 @@
-#include "common.h"
 #include "game/asset.h"
-#include "game/asset_internal.h"
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/track.h"
-#include "psyq/gpu.h"
 #include "string.h"
 
 /* Kept local: this unit only stores an address into them, while track/ and

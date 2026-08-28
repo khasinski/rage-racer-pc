@@ -1,4 +1,3 @@
-#include "runtime_config.h"
 
 #include <ctype.h>
 #include <stdio.h>

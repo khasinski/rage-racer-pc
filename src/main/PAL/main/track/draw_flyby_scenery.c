@@ -1,10 +1,6 @@
-#include "common.h"
 #include "game/render.h"
 #include "game/track_internal.h"
 #include "game/race.h"
-#include "game/scratchpad.h"
-#include "game/track.h"
-#include "psyq/gte.h"
 
 
 void DrawFlybyScenery(void) {

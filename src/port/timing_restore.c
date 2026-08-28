@@ -1,4 +1,3 @@
-#include "include/timing_control.h"
 
 /* Whether the platform's frame time has drifted off the standard the game was
  * started in. It resets itself to the NTSC figure when it creates its video

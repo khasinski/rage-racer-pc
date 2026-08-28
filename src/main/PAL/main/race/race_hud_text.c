@@ -1,15 +1,9 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/race.h"
 #include "game/save_internal.h"
-#include "game/fmv_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "game/screens.h"
 #include "game/state.h"
-#include "game/vector.h"
-#include "psyq/gpu.h"
 
 typedef union CountdownPhase {
     s32 value;

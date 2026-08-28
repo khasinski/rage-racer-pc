@@ -1,11 +1,8 @@
-#include "common.h"
 #include "game/prim.h"
 #include "game/race.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
-#include "psyq/gpu.h"
 
 #include "rage/hud_config.h"
 

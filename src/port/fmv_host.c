@@ -34,7 +34,6 @@
 #include "game/state.h"
 #include "psyq/cd.h"
 #include "runtime_config.h"
-#include "platform_paths.h"
 #include "timing_control.h"
 
 extern int g_FrameCounter;

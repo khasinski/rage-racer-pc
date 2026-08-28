@@ -1,11 +1,8 @@
-#include "common.h"
 #include "game/car.h"
-#include "psyq/gpu.h"
 #include "game/state.h"
 #include "game/random.h"
 #include "game/asset.h"
 #include "game/render.h"
-#include "psyq/kernel.h"
 
 s32 SelectTrackTexturePage(s32 section) {
     s32 ret;

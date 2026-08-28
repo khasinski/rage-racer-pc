@@ -1,18 +1,11 @@
-#include "common.h"
 #include "game/track_internal.h"
 #include "game/prim.h"
 #include "game/audio.h"
-#include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/state.h"
-#include "game/vector.h"
-#include "game/waypoint.h"
-#include "psyq/gpu.h"
-#include "psyq/gte.h"
 
 typedef struct CarTrackLimitWork {
     s32 reserved[4];

@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/cd.h"
 void RequestCdTrack(s32 track) {
     g_CdTrackPending = (u8)track;

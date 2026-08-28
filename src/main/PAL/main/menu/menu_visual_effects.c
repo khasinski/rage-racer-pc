@@ -1,14 +1,9 @@
-#include "common.h"
 #include "game/menu_internal.h"
 #include "game/audio.h"
-#include "game/menu_types.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/render_types.h"
-#include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
-#include "psyq/gpu.h"
 
 typedef s32 TeamLogoRotationOffset;
 

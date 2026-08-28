@@ -1,21 +1,16 @@
-#include "common.h"
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/audio.h"
-#include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/cd.h"
-#include "game/menu.h"
 #include "game/race.h"
 #include "game/records_internal.h"
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
 #include "game/screens.h"
 #include "game/state.h"
 #include "psyq/cd.h"
-#include "psyq/gpu.h"
 
 typedef union SignedDivisionWork {
     s32 value;

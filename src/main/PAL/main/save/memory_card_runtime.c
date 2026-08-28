@@ -1,8 +1,5 @@
-#include "common.h"
 #include "game/memcard.h"
 #include <stdio.h>
-#include "game/car.h"
-#include "psyq/kernel.h"
 
 /* The poller's own working status word. Distinct from menu.h's
  * g_McPollStatus (g_McCardStatus), which is the code the menu reads. */

@@ -8,15 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
 #include "game/asset.h"
 #include "game/scratchpad.h"
 #include "game/track.h"
-#include "game/vector.h"
-#include "psyq/gpu.h"
 #include "render/car_paint.h"
-#include "render/render_material.h"
-#include "render/rmesh.h"
 
 enum {
     /* The retail archive exposes 130 renderer asset/set pairs. Keep room for

@@ -1,8 +1,6 @@
 /* Native asset loader for the extracted retail RAGE.BIN archive. */
 #include "mod_assets.h"
-#include "common.h"
 #include <stdio.h>
-#include "game/state.h"
 #include "game/asset.h"
 #include "game/render_internal.h"
 #include "rage/compat.h"

@@ -1,6 +1,4 @@
-#include "common.h"
 #include "game/memcard.h"
-#include "psyq/kernel.h"
 #include "game/menu.h"
 
 s32 WriteMemoryCardSaveFile(

@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
 #include "game/car.h"
 #include "game/diagnostics.h"
-#include "game/race.h"
 #include "game/state.h"
-#include "rage/trace.h"
 
 void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
     static int enabled = -1;

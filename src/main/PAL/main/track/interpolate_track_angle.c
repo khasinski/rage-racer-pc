@@ -1,4 +1,3 @@
-#include "common.h"
 #include "game/track.h"
 
 /* Interpolates the track angle between point `pointIndex` and its successor by `weight`. */

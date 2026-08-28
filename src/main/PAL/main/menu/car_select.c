@@ -1,15 +1,9 @@
-#include "common.h"
 #include "game/asset.h"
 #include "game/audio.h"
-#include "game/car.h"
-#include "game/asset_internal.h"
 #include "game/menu.h"
 #include "game/menu_scripts_internal.h"
 #include "game/save_internal.h"
 #include "game/race.h"
-#include "game/render.h"
-#include "game/scratchpad.h"
-#include "game/state.h"
 
 void UpdateRankingScreen(void) {
     s32 state;
