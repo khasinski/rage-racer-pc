@@ -61,7 +61,7 @@ void main() {
                     shadow.projection.y;
     float shadowDepth = -dot(shadow.viewRow2.xyz, shadowRelative);
     shadowCoord = vec3(shadowX * 0.5 + 0.5,
-                       shadowY * 0.5 + 0.5,
+                       0.5 - shadowY * 0.5,
                        shadowDepth * shadow.projection.z +
                            shadow.projection.w);
     shadowReception = inShadowReception;
