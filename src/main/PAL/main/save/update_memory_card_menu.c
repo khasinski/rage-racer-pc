@@ -132,12 +132,12 @@ static void RunCardBusyState(s32 fadeBusy) {
  * A card the game can use. This is the save and load menu itself, and
  * every prompt that hangs off picking a slot.
  */
-static void RunCardReadyState(s32 fadeBusy) {
-    s32 tmp;
+/*
+ * The list of things the player can do with a readable card. The last row
+ * is the way out.
+ */
+static void RunCardMenuRows(s32 fadeBusy) {
     u16 pad;
-
-    switch (g_McMenuPage) {
-    case 0:
     {
         s32 *p = &g_McMenuRowCursor;
         g_McMenuPhase = MC_PROMPT_NONE;
@@ -151,20 +151,25 @@ static void RunCardReadyState(s32 fadeBusy) {
             g_McActionResult = 0;
             g_McSlotCursor = g_McLastSlot;
             g_McSaveMode = *p;
-            break;
+            return;
         }
-        if (fadeBusy) break;
+        if (fadeBusy) return;
         PlaySoundCue(2);
         } else {
-        if ((pad & 0x90) == 0 || fadeBusy) break;
+        if ((pad & 0x90) == 0 || fadeBusy) return;
         PlaySoundCue(3);
         }
         g_McActionBusy = 0;
         StartMenuExitFade();
     }
-    break;
+}
 
-    case 1:
+/*
+ * Picking a slot, and every step that follows from it: the prompt, the
+ * confirmation, the read or write itself, and how it reports what happened.
+ */
+static void RunCardSlotActions(s32 fadeBusy) {
+    s32 tmp;
     switch (g_McActionState) {
     case 0x00: {
         s32 *s0 = &g_McSlotCursor;
@@ -519,21 +524,28 @@ static void RunCardReadyState(s32 fadeBusy) {
     default:
         break;
     }
-    break;
+}
 
-    default:
-        {
-            s32 cm1 = g_McMenuRowCount;
-            g_McMenuPage = 0;
-            g_McSlotCursor = 0;
-            g_McActionState = 0;
-            g_McActionBusy = 0;
-            g_McActionResult = 0;
-            g_McConfirmChoice = 0;
-            g_McActionTimer = 0;
-            cm1--;
-            g_McMenuRowCursor = cm1;
-        }
+static void RunCardReadyState(s32 fadeBusy) {
+    /* Page 0 is the list of things to do with the card, page 1 is picking a
+     * slot; any other page is not one this screen has, so it goes back. */
+    if (g_McMenuPage == 0) {
+        RunCardMenuRows(fadeBusy);
+    } else if (g_McMenuPage == 1) {
+        RunCardSlotActions(fadeBusy);
+    } else {
+            {
+                s32 cm1 = g_McMenuRowCount;
+                g_McMenuPage = 0;
+                g_McSlotCursor = 0;
+                g_McActionState = 0;
+                g_McActionBusy = 0;
+                g_McActionResult = 0;
+                g_McConfirmChoice = 0;
+                g_McActionTimer = 0;
+                cm1--;
+                g_McMenuRowCursor = cm1;
+            }
     }
     switch (g_McMenuSelection) {
     case 3:
