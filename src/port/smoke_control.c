@@ -527,6 +527,29 @@ int PortShouldExit(int frame_number) {
         ModernToggle();
     }
     restartRaceFrames = RuntimeConfigGet("hooks.restart_race_frames");
+    /* A raw script drives the pad by writing its buffer and letting the game
+     * map it, which rebuilds g_PadPressed from scratch. That has to happen
+     * before anything below presses a button of its own, or it erases them:
+     * the intro skip pressed START, this ran afterwards, and every test with
+     * a raw script sat through the whole opening movie. */
+    if (g_SmokeRawPadPath) {
+        u16 buttons = 0;
+        for (index = 0; index < g_SmokeInputCount; index++) {
+            if ((g_SmokeInputs[index].held &&
+                 frame_number >= g_SmokeInputs[index].firstFrame &&
+                 frame_number <= g_SmokeInputs[index].lastFrame) ||
+                (!g_SmokeInputs[index].held &&
+                 frame_number == g_SmokeInputs[index].firstFrame)) {
+                buttons |= g_SmokeInputs[index].buttons;
+            }
+        }
+        g_PadBuffers[0] = 0;
+        g_PadBuffers[1] = 0x41;
+        g_PadBuffers[2] = (u8)~(buttons >> 8);
+        g_PadBuffers[3] = (u8)~buttons;
+        UpdatePadState();
+    }
+
     if (g_SceneId == 12 &&
         SmokeFrameListContains(restartRaceFrames, frame_number)) {
         fprintf(stderr, "smoke race restart frame=%d timer=%d\n",
@@ -573,23 +596,6 @@ int PortShouldExit(int frame_number) {
             fprintf(stderr, "smoke option sweep frame=%d timer=%d mode=%d\n",
                     frame_number, g_SceneTimer, mode);
         }
-    }
-    if (g_SmokeRawPadPath) {
-        u16 buttons = 0;
-        for (index = 0; index < g_SmokeInputCount; index++) {
-            if ((g_SmokeInputs[index].held &&
-                 frame_number >= g_SmokeInputs[index].firstFrame &&
-                 frame_number <= g_SmokeInputs[index].lastFrame) ||
-                (!g_SmokeInputs[index].held &&
-                 frame_number == g_SmokeInputs[index].firstFrame)) {
-                buttons |= g_SmokeInputs[index].buttons;
-            }
-        }
-        g_PadBuffers[0] = 0;
-        g_PadBuffers[1] = 0x41;
-        g_PadBuffers[2] = (u8)~(buttons >> 8);
-        g_PadBuffers[3] = (u8)~buttons;
-        UpdatePadState();
     }
     for (index = 0; index < g_SmokeInputCount; index++) {
         if (!g_SmokeRawPadPath &&
