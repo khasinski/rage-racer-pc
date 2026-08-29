@@ -15,14 +15,184 @@ typedef union DrivetrainWheelSpeed {
  * out as the per-gear torque curve pointer and is later reused to carry the
  * shift target speed. Splitting it changes the register assignment.
  */
+/*
+ * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
+ * confirms it, and it only clears once the pedal is back under 0x7C. The gap
+ * between the two thresholds is what stops a pedal resting on the edge from
+ * rattling the latch every frame.
+ */
+static void LatchPedal(s16 *latch, s32 input) {
+  if (*latch == 0) {
+    if (input >= 0x85) {
+      *latch = 1;
+    }
+  } else if (*latch == 1) {
+    *latch = 2;
+  } else if (input < 0x7C) {
+    *latch = 0;
+  }
+}
+
+/*
+ * How much torque the engine makes right now, and how much of it engine
+ * braking takes back.
+ *
+ * Past the rev limiter the torque goes negative in proportion to how far over
+ * it is. Below it, two walks over the car's own curves: this gear's torque
+ * band for the drive, and the loss curve for the braking, each interpolated
+ * between the pair of points the engine speed falls between. First gear below
+ * the redline gets twice the braking, which is what makes a car settle onto
+ * the line instead of running wide.
+ */
+static void ReadEngineTorque(GameCarDrive *drive, GameCarSpecAddress config,
+                             GearCurveAddress gearCurve, s32 gear,
+                             s32 *netTorque, s32 *bandScale) {
+  s32 assistStep;
+  s32 bandBase;
+  s32 bandCurve;
+  s32 bandEnd;
+  s32 bandIndex;
+  s32 bandSlot;
+  s16 bandStart;
+  s32 bandTorque;
+  s32 engineSpeed;
+  s32 engineSpeedLoss;
+  s32 frontLoadScaled;
+  s32 lossBase;
+  s32 lossBelowLimit;
+  s32 lossCurve;
+  s16 lossStart;
+  s32 lossTorque;
+  s16 revLimit;
+
+  revLimit = config.pointer->revLimit;
+  if (drive->engineRpm >= revLimit)
+  {
+    *bandScale = 0;
+    *netTorque = ((revLimit - drive->engineRpm) * 4) / 5;
+  }
+  else
+  {
+    bandIndex = drive->engineRpm / 1000;
+    if (bandIndex == 0)
+    {
+      bandBase = 0;
+    }
+    else
+    {
+      /* Retail's start symbol is the halfword immediately before the end
+       * table: start[b] aliases b == 0 to the standalone halfword and b > 0
+       * to end[b - 1]. Independently linked host globals are not adjacent. */
+      bandStart = g_TorqueBandEnd[bandIndex - 1];
+      if (bandStart == 0)
+      {
+        bandBase = 0;
+      }
+      else
+      {
+        bandBase = bandStart - 1;
+      }
+    }
+    bandEnd = g_TorqueBandEnd[bandIndex];
+    /* Walk this gear's torque band to the pair of points the engine speed
+     * falls between, and read the torque off the line joining them. Falling
+     * off the end leaves the torque as it was. */
+    engineSpeed = drive->engineRpm;
+    for (bandSlot = bandBase; bandSlot < bandEnd; bandSlot++)
+    {
+      s32 *curveValues = &gearCurve.valuePointer[bandSlot];
+      s32 bandNext;
+
+      bandTorque = config.pointer->torqueBand.values[bandSlot];
+      bandNext = config.pointer->torqueBand.values[bandSlot + 1];
+      if (engineSpeed < bandTorque || bandNext < engineSpeed)
+      {
+        continue;
+      }
+      bandCurve = bandNext - bandTorque;
+      if (bandCurve <= 0)
+      {
+        bandCurve = 1;
+      }
+      frontLoadScaled = (engineSpeed - bandTorque) * curveValues[1];
+      frontLoadScaled += (bandNext - engineSpeed) * curveValues[0];
+      *netTorque = frontLoadScaled / (bandCurve * 0xA);
+      break;
+    }
+    if (*netTorque < 0)
+    {
+      *netTorque = 0;
+    }
+    if (bandIndex == 0)
+    {
+      lossBase = 0;
+    }
+    else
+    {
+      /* Same split-symbol layout as the torque-band table above. */
+      lossStart = g_TorqueLossBandEnd[bandIndex - 1];
+      lossBase = 0;
+      if (lossStart != 0)
+      {
+        lossBase = lossStart - 1;
+      }
+    }
+    bandEnd = g_TorqueLossBandEnd[bandIndex];
+    /* The same walk again over the engine-braking curve. Note that this one
+     * steps past the segment it read before it interpolates, so the two
+     * values it mixes are at [step] and [step - 1]. */
+    assistStep = lossBase;
+    *bandScale = 0;
+    engineSpeedLoss = drive->engineRpm;
+    while (assistStep < bandEnd)
+    {
+      s32 segmentEnd;
+
+      lossTorque = config.pointer->torqueLossRpm[assistStep];
+      if (engineSpeedLoss < lossTorque)
+      {
+        assistStep++;
+        continue;
+      }
+      segmentEnd = config.pointer->torqueLossRpm[assistStep + 1];
+      assistStep++;
+      if (segmentEnd < engineSpeedLoss)
+      {
+        continue;
+      }
+      lossCurve = segmentEnd - lossTorque;
+      if (lossCurve <= 0)
+      {
+        lossCurve = 1;
+      }
+      *bandScale = (((engineSpeedLoss - lossTorque) *
+                    config.pointer->torqueLossValue[assistStep]) +
+                   ((segmentEnd - engineSpeedLoss) *
+                    config.pointer->torqueLossValue[assistStep - 1])) /
+                  lossCurve;
+      break;
+    }
+    lossBelowLimit = *bandScale < 0x64;
+    if (lossBelowLimit == 0)
+    {
+      *bandScale = 0x64;
+    }
+    else
+      if (*bandScale <= 0)
+    {
+      *bandScale = 0;
+    }
+    if ((drive->gear == 1) && (drive->engineRpm < g_CarSpec->redline))
+    {
+      *bandScale *= 2;
+    }
+  }
+}
+
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GearCurveAddress gearCurve;
   s16 curveModeNow;
-  s16 revLimit;
   s16 targetGear;
-  s32 bandEnd;
-  s16 bandStart;
-  s16 lossStart;
   s16 targetGearAgain;
   int assistArmed;
   int steeringNonnegative;
@@ -31,13 +201,9 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 assistEnabled;
   s16 gear;
   s16 targetGearCheck;
-  s16 leftWheelState;
-  s16 rightWheelState;
   s16 driveCurveMode;
   s16 steerBias;
   s32 camber;
-  s32 bandTorque;
-  s32 lossTorque;
   s32 shiftRemaining;
   s32 trackHeadingError;
   s32 pointIndex;
@@ -50,8 +216,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 cosCentreAngle;
   s32 toCentreZ;
   s32 engineSpeed;
-  s32 engineSpeedLoss;
-  s32 bandIndex;
   s32 frontLoad;
   s32 speedForPath;
   s32 centreAngle;
@@ -75,10 +239,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 downforceScale;
   s32 downforce;
   s32 gripBudget;
-  s32 bandSlot;
-  s32 bandCurve;
   s32 assistStep;
-  s32 lossCurve;
   s32 dragTerm;
   s32 slipAngle;
   s32 accel;
@@ -94,9 +255,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 camberLean;
   s32 netTorqueRoundedA;
   s32 netTorqueRoundedC;
-  s32 lossBelowLimit;
   s32 netTorqueRoundedB;
-  s32 bandBase;
   s32 lossBase;
   s32 throttleTorque;
   s32 speedScaled;
@@ -131,42 +290,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   {
     gearCurve.valuePointer = base.rowPointer[0].values;
   }
-  leftWheelState = drive->acceleratorLatch;
-  if (leftWheelState == 0)
-  {
-    if (drive->acceleratorInput.value >= 0x85)
-    {
-      drive->acceleratorLatch = 1;
-    }
-  }
-  else
-    if (leftWheelState == 1)
-  {
-    drive->acceleratorLatch = 2;
-  }
-  else
-    if (drive->acceleratorInput.value < 0x7C)
-  {
-    drive->acceleratorLatch = 0;
-  }
-  rightWheelState = drive->brakeLatch;
-  if (rightWheelState == 0)
-  {
-    if (drive->brakeInput >= 0x85)
-    {
-      drive->brakeLatch = 1;
-    }
-  }
-  else
-    if (rightWheelState == 1)
-  {
-    drive->brakeLatch = 2;
-  }
-  else
-    if (drive->brakeInput < 0x7C)
-  {
-    drive->brakeLatch = 0;
-  }
+  LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
+  LatchPedal(&drive->brakeLatch, drive->brakeInput);
   frontLoad = drive->acceleratorInput.value * 0x64;
   frontLoadScaled = frontLoad >> 8;
   if (frontLoad < 0)
@@ -278,128 +403,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     }
     accel = netTorqueRoundedC >> 0xB;
   }
-  revLimit = config.pointer->revLimit;
-  if (drive->engineRpm >= revLimit)
-  {
-    bandScale = 0;
-    netTorque = ((revLimit - drive->engineRpm) * 4) / 5;
-  }
-  else
-  {
-    bandIndex = drive->engineRpm / 1000;
-    if (bandIndex == 0)
-    {
-      bandBase = 0;
-    }
-    else
-    {
-      /* Retail's start symbol is the halfword immediately before the end
-       * table: start[b] aliases b == 0 to the standalone halfword and b > 0
-       * to end[b - 1]. Independently linked host globals are not adjacent. */
-      bandStart = g_TorqueBandEnd[bandIndex - 1];
-      if (bandStart == 0)
-      {
-        bandBase = 0;
-      }
-      else
-      {
-        bandBase = bandStart - 1;
-      }
-    }
-    bandEnd = g_TorqueBandEnd[bandIndex];
-    /* Walk this gear's torque band to the pair of points the engine speed
-     * falls between, and read the torque off the line joining them. Falling
-     * off the end leaves the torque as it was. */
-    engineSpeed = drive->engineRpm;
-    for (bandSlot = bandBase; bandSlot < bandEnd; bandSlot++)
-    {
-      s32 *curveValues = &gearCurve.valuePointer[bandSlot];
-      s32 bandNext;
-
-      bandTorque = config.pointer->torqueBand.values[bandSlot];
-      bandNext = config.pointer->torqueBand.values[bandSlot + 1];
-      if (engineSpeed < bandTorque || bandNext < engineSpeed)
-      {
-        continue;
-      }
-      bandCurve = bandNext - bandTorque;
-      if (bandCurve <= 0)
-      {
-        bandCurve = 1;
-      }
-      frontLoadScaled = (engineSpeed - bandTorque) * curveValues[1];
-      frontLoadScaled += (bandNext - engineSpeed) * curveValues[0];
-      netTorque = frontLoadScaled / (bandCurve * 0xA);
-      break;
-    }
-    if (netTorque < 0)
-    {
-      netTorque = 0;
-    }
-    if (bandIndex == 0)
-    {
-      lossBase = 0;
-    }
-    else
-    {
-      /* Same split-symbol layout as the torque-band table above. */
-      lossStart = g_TorqueLossBandEnd[bandIndex - 1];
-      lossBase = 0;
-      if (lossStart != 0)
-      {
-        lossBase = lossStart - 1;
-      }
-    }
-    bandEnd = g_TorqueLossBandEnd[bandIndex];
-    /* The same walk again over the engine-braking curve. Note that this one
-     * steps past the segment it read before it interpolates, so the two
-     * values it mixes are at [step] and [step - 1]. */
-    assistStep = lossBase;
-    bandScale = 0;
-    engineSpeedLoss = drive->engineRpm;
-    while (assistStep < bandEnd)
-    {
-      s32 segmentEnd;
-
-      lossTorque = config.pointer->torqueLossRpm[assistStep];
-      if (engineSpeedLoss < lossTorque)
-      {
-        assistStep++;
-        continue;
-      }
-      segmentEnd = config.pointer->torqueLossRpm[assistStep + 1];
-      assistStep++;
-      if (segmentEnd < engineSpeedLoss)
-      {
-        continue;
-      }
-      lossCurve = segmentEnd - lossTorque;
-      if (lossCurve <= 0)
-      {
-        lossCurve = 1;
-      }
-      bandScale = (((engineSpeedLoss - lossTorque) *
-                    config.pointer->torqueLossValue[assistStep]) +
-                   ((segmentEnd - engineSpeedLoss) *
-                    config.pointer->torqueLossValue[assistStep - 1])) /
-                  lossCurve;
-      break;
-    }
-    lossBelowLimit = bandScale < 0x64;
-    if (lossBelowLimit == 0)
-    {
-      bandScale = 0x64;
-    }
-    else
-      if (bandScale <= 0)
-    {
-      bandScale = 0;
-    }
-    if ((drive->gear == 1) && (drive->engineRpm < g_CarSpec->redline))
-    {
-      bandScale *= 2;
-    }
-  }
+  ReadEngineTorque(drive, config, gearCurve, gear, &netTorque, &bandScale);
   shiftMode = drive->motionState;
   if ((shiftMode == 1) || (shiftMode == 3))
   {

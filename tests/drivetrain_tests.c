@@ -104,7 +104,7 @@ static void BuildSpec(void) {
     s_spec.automaticAccelerationScale = 1000;
     s_spec.referenceTurnRadius = 100;
     for (i = 0; i < 6; i++) {
-        s_spec.gearLoad[i] = 100;
+        s_spec.gearLoad[i] = 100 + i * 20;
     }
     for (i = 0; i < 7; i++) {
         s_spec.gearRatio[i] = 1000;
@@ -135,7 +135,9 @@ static void BuildSpec(void) {
     for (i = 0; i < 8; i++) {
         int slot;
         for (slot = 0; slot < 16; slot++) {
-            g_GearTorqueCurve[i].values[slot] = slot * 1000;
+            /* Each gear pulls differently, so reading the wrong gear's
+             * curve is visible. */
+            g_GearTorqueCurve[i].values[slot] = slot * 1000 * (i + 1);
         }
     }
     g_CarSpec = &s_spec;
@@ -408,6 +410,33 @@ static void TorqueBandTests(void) {
                "rpm: %d\n", slow);
         s_failures++;
     }
+
+    /*
+     * The torque a given engine speed produces, pinned. The walk is two
+     * interpolations and a scaling, and each gear has its own curve, so a
+     * change to any of those moves these numbers.
+     */
+    {
+        static const struct {
+            s32 rpm;
+            s32 wanted;
+        } cases[] = {{5000, 4}, {5500, 13}, {6000, 13}};
+        size_t i;
+
+        for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+            char what[64];
+
+            PlaceCar();
+            s_car.speed = 8000;
+            s_car.drive.drivetrainTorque = -200000;
+            s_car.drive.engineRpm = cases[i].rpm;
+            UpdateCarDrivetrain(&s_car);
+            sprintf(what, "torque at %d rpm", cases[i].rpm);
+            Check(s_car.acceleration == cases[i].wanted, what,
+                  s_car.acceleration, cases[i].wanted);
+        }
+    }
+
 }
 
 int main(void) {
