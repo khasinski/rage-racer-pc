@@ -27,37 +27,6 @@ static void *CarSelectMenuScript(void) {
     return (u8 *)&g_CarSelectMenuScriptTimeAttack;
 }
 
-/*
- * The showroom turntable only accepts a swap once it has come to rest near its
- * target, within a fifth of a turn either side.
- */
-static int CarViewSettled(void) {
-    s32 target = g_MenuViewAngleTarget;
-    s32 angle = g_MenuViewAngle;
-
-    return target < angle ? (angle - target <= 0x493DF)
-                          : (target - angle <= 0x493DF);
-}
-
-/*
- * Spins the turntable round to another car. Both directions run the same
- * arithmetic on the view angle and differ only in where the turntable is
- * asked to stop.
- */
-static void BrowseToOwnedCar(s32 fromIndex, s32 toIndex, s32 newTarget) {
-    s32 previousTarget;
-
-    PlaySoundCue(8);
-    g_PlayerCarIndex = toIndex;
-    RequestCarModel(toIndex);
-    previousTarget = g_MenuViewAngleTarget;
-    g_CarSwapFromIndex = fromIndex;
-    g_MenuViewAngleTarget = newTarget;
-    g_MenuAltPanelStep2 = -1;
-    g_CarSwapToIndex = g_PlayerCarIndex;
-    g_MenuViewAngle = (g_MenuViewAngle - previousTarget) + 0x927C0;
-}
-
 /* Leaving the screen upwards, back to the course: the same wind-down whether
  * the player chose the last row or pressed cancel. */
 static void LeaveCarSelectScreen(void) {
@@ -166,15 +135,16 @@ static void UpdateCarSelectInput(void) {
 
     carBeforeSwap = g_PlayerCarIndex;
     if ((g_PadHeld & PAD_LEFT) && (g_PrevOwnedCarIndex != -1) &&
-        CarViewSettled() && (g_CarSwapToIndex < 0)) {
-        BrowseToOwnedCar(carBeforeSwap, g_PrevOwnedCarIndex, 0);
+        MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
+        MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, g_PrevOwnedCarIndex, 0);
     }
     if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1) &&
-        CarViewSettled() && (g_CarSwapToIndex < 0)) {
-        BrowseToOwnedCar(carBeforeSwap, g_NextOwnedCarIndex, 0x124F80);
+        MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
+        MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, g_NextOwnedCarIndex,
+                      0x124F80);
     }
 
-    if (!CarViewSettled() || (g_CarSwapToIndex >= 0)) {
+    if (!MenuCarViewSettled() || (g_CarSwapToIndex >= 0)) {
         return;
     }
     if (g_PadPressed & PAD_CONFIRM) {

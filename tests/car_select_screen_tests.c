@@ -82,22 +82,36 @@ static int s_calls;
  * so the sweep sets it rather than the stub deciding. */
 static s32 s_scriptResult;
 
+static void Fold(unsigned char byte) {
+    s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
+}
+
+/*
+ * The digest folds the raw values rather than their text, because the sweep
+ * runs millions of times and formatting them costs more than the code under
+ * test. The readable form is only produced when a file was asked for.
+ */
 static void Record(const char *name, const s32 *values, int count) {
-    char line[512];
     const char *p;
-    int used = snprintf(line, sizeof(line), "%s", name);
     int i;
 
-    for (i = 0; i < count && used < (int)sizeof(line) - 16; i++) {
-        used += snprintf(line + used, sizeof(line) - used, " %d", values[i]);
+    for (p = name; *p != '\0'; p++) {
+        Fold((unsigned char)*p);
     }
-    used += snprintf(line + used, sizeof(line) - used, "\n");
-    for (p = line; *p != '\0'; p++) {
-        s_digest = (s_digest ^ (unsigned char)*p) * 16777619UL;
-        s_digest &= 0xFFFFFFFFUL;
+    for (i = 0; i < count; i++) {
+        u32 value = (u32)values[i];
+
+        Fold((unsigned char)value);
+        Fold((unsigned char)(value >> 8));
+        Fold((unsigned char)(value >> 16));
+        Fold((unsigned char)(value >> 24));
     }
     if (s_out != NULL) {
-        fputs(line, s_out);
+        fputs(name, s_out);
+        for (i = 0; i < count; i++) {
+            fprintf(s_out, " %d", values[i]);
+        }
+        fputc('\n', s_out);
     }
     s_calls++;
 }
@@ -168,10 +182,13 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 548057645UL;
+    static const unsigned long expected = 1048880757UL;
     static const s32 busyStates[] = {0, -1, 1, 2, 3, 4, 5};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL};
-    static const u16 held[] = {0, PAD_LEFT, PAD_RIGHT};
+    /* Both directions at once is unreachable on a d-pad but not in the
+     * code, and it is the one case where the two swaps interact. */
+    static const u16 held[] = {0, PAD_LEFT, PAD_RIGHT,
+                               PAD_LEFT | PAD_RIGHT};
     static const s32 cursors[] = {0, 1, 2, 3, 4};
     static const s32 owned[] = {-1, 5};
     static const s32 offsets[] = {0x3D08F, 0x3D090};
@@ -197,7 +214,7 @@ int main(int argc, char **argv) {
     for (gp = 0; gp < 2; gp++)
     for (ci = 0; ci < 5; ci++)
     for (pb = 0; pb < 5; pb++)
-    for (hb = 0; hb < 3; hb++)
+    for (hb = 0; hb < 4; hb++)
     for (settled = 0; settled < 4; settled++)
     for (swap = 0; swap < 2; swap++)
     for (oi = 0; oi < 2; oi++)

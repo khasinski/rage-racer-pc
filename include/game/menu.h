@@ -228,6 +228,13 @@ s32 DrawRankingTable(s32 *accumulator, s32 step, s32 table);
 void EnterCarSelectScreen(void);
 
 /* id 4 -- "CAR SELECT"; the hub that starts a race or opens the shops. */
+/* The showroom turntable both the car select screen and the car shop stand
+ * their car on. Settled means the swing has finished and another car may be
+ * put on; MenuSpinToCar takes the index the caller shows its car through. */
+int MenuCarViewSettled(void);
+void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget);
+void MenuSpinBackToPlayerCar(void);
+
 /* Rescans the owned-car list either side of the current one, and rechecks
  * what the shop and the engineer will accept. Both live in car_select.c. */
 void UpdateOwnedCarNeighbours(void);
