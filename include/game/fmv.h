@@ -65,13 +65,5 @@ extern volatile u32 *g_FmvRingBuffer;
 extern FmvPlaybackState g_FmvState;
 
 void StartFmvPlayback(FmvWorkBuffers *buffers);
-void SetupFmvBuffers(FmvWorkBuffers *buffers);
-void InitFmvContext(volatile FmvDecodeContext *ctx, s32 width, s32 height,
-                    s32 displayX, s32 displayWidth);
-void OpenFmvStream();
-s32 PresentFmvFrame(FmvDecodeContext *ctx);
-void *GetFmvFrame(FmvDecodeContext *ctx);
-void StartStreamRead(void *loc);
-void WaitFmvDecode(FmvDecodeContext *ctx, s32 mode);
 
 #endif
