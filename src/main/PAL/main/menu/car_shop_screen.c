@@ -38,20 +38,6 @@ static void *CarShopBuyPrompt(s32 car) {
     return NULL;
 }
 
-/* The prompt's two buttons, and the box round whichever one is picked. */
-static void DrawBuyPromptButtons(void *ot, s32 flash) {
-    DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
-                      flash);
-    DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
-               0x3B);
-    DrawSprite(ot, 0xE3, 0x4C, 0x10, 0x10, 0xAD, 0x7C, 0, 0, 0, 0x244, 1, 1,
-               0x3B);
-    GameDrawMenuButton(0xB8, 0x44, 0x20, 0x20, 0x95, 0x25, 0x1E, 0, 0, 0,
-                       &g_MenuBlankCaption);
-    GameDrawMenuButton(0xDA, 0x44, 0x20, 0x20, 0x1E, 0x8E, 0x95, 0, 0, 0,
-                       &g_MenuBlankCaption);
-}
-
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawCarShopChrome(s32 price, s32 chromeStep) {
     DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
@@ -186,7 +172,7 @@ static void UpdateBuyPrompt(void *ot, s32 price) {
     } else if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
         GameMenuBusy = 0;
     }
-    DrawBuyPromptButtons(ot, 0);
+    DrawShopPromptButtons(ot, 0);
 }
 
 /* The sale going through: the prompt flashes for a while, then the car is
@@ -196,7 +182,7 @@ static void UpdateSaleCountdown(void *ot) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1);
-        DrawBuyPromptButtons(ot, 1);
+        DrawShopPromptButtons(ot, 1);
         return;
     }
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
