@@ -70,94 +70,59 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     }
 }
 
+/*
+ * The crest the car drove over this frame, if any: the number the track's own
+ * table gives that crest, or 0. Each row of the table is up to eight crests
+ * for one direction of travel, ordered along the track and ended by a -1.
+ */
 s32 GetCarCrestTrigger(GameCarRuntime *car) {
     TrackEventData *base;
-    s32 pos0;
-    s32 pos1;
+    s32 low;
+    s32 high;
     s32 row;
-    s32 temp;
-    s32 crossed;
     s32 i;
     s32 offset;
-    s32 sentinel;
     TrackEventDataAddress cursor;
-    s32 diff;
-    s32 cmp;
-    s32 threshold;
-    s32 resultOffset;
-    TrackEventDataAddress resultCursor;
 
     base = g_TrackEventData;
     if (car->speed < 0x320) {
         return 0;
     }
 
-    pos0 = car->trackProgress;
-    pos1 = car->previousTrackProgress;
+    high = car->trackProgress;
+    low = car->previousTrackProgress;
     row = car->facingBackwards;
 
     if (g_RaceSeries != 0) {
-        pos0 = g_TrackLength - pos0;
-        pos1 = g_TrackLength - pos1;
+        high = g_TrackLength - high;
+        low = g_TrackLength - low;
     }
 
-    if (pos1 < pos0) {
-        temp = pos0;
-        diff = temp - pos1;
-    } else {
-    goto not_crossed;
-
-crossed_label:
-    crossed = 1;
-    goto crest_scan_done;
-
-not_crossed:
-    temp = pos1;
-    pos1 = pos0;
-    diff = temp - pos1;
-
+    /* The stretch covered this frame, low end first. */
+    if (low >= high) {
+        s32 swap = low;
+        low = high;
+        high = swap;
     }
-    if (diff >= 0x1000) {
-        temp = 0;
-        pos1 = 0;
+    /* A gap that big is the lap wrapping round, not a stretch of track. */
+    if (high - low >= 0x1000) {
+        low = 0;
+        high = 0;
     }
 
-    crossed = 0;
-    i = 0;
-    sentinel = -1;
     offset = row * sizeof(TrackCrestEvent[8]);
-    cursor.pointer = base;
-    cursor.bytePointer += offset;
+    for (i = 0; i < 8; i++, offset += sizeof(TrackCrestEvent)) {
+        s32 progress;
 
-for (;;) {
-    if (!(cursor.pointer->crestEvents[0][0].motionValue == sentinel)) {
-    threshold = cursor.pointer->crestEvents[0][0].progress;
-    cmp = temp < threshold;
-    offset += sizeof(TrackCrestEvent);
-    if (cmp == 0) {
-    cmp = pos1 < threshold;
-    if (cmp != 0) {
-        goto crossed_label;
-    }
-
-    }
-    i++;
-    if (i < 8) {
         cursor.pointer = base;
         cursor.bytePointer += offset;
-        continue;
-    }
-
-    }
-break;
-}
-crest_scan_done:
-    if (crossed != 0) {
-        resultOffset = i * sizeof(TrackCrestEvent);
-        resultOffset += row * sizeof(TrackCrestEvent[8]);
-        resultCursor.pointer = base;
-        resultCursor.bytePointer += resultOffset;
-        return resultCursor.pointer->crestEvents[0][0].motionValue;
+        if (cursor.pointer->crestEvents[0][0].motionValue == -1) {
+            return 0;
+        }
+        progress = cursor.pointer->crestEvents[0][0].progress;
+        if (low < progress && progress <= high) {
+            return cursor.pointer->crestEvents[0][0].motionValue;
+        }
     }
     return 0;
 }
@@ -231,273 +196,219 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     obj->verticalTargetY = value;
 }
 
+/* Ease a slide back towards straight: 15/16 of the yaw rate each frame,
+ * rounding towards zero, and drop the marker once it reaches nothing. */
+static void SettleSlide(GameCarAiBlock *ai) {
+    s32 rate = ai->yawRate;
+
+    if (rate == 0) {
+        return;
+    }
+    rate = rate * 15 * 2;
+    if (rate < 0) {
+        rate += 0x1F;
+    }
+    rate >>= 5;
+    ai->yawRate = rate;
+    if (rate == 0) {
+        ai->markerDirection = 0;
+    }
+}
+
+/*
+ * The AI cars' slide: a rival that is not sliding and not turning gets nudged
+ * into one in proportion to its speed and its place in the field, and a car
+ * that is sliding turns that input into yaw rate, capped either way.
+ */
 void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex) {
     GameCarRuntime *obj = car;
     GameCarAiBlock *ai;
-    s32 temp;
-    s32 value;
-    s32 scene;
-    u32 slideSign;
+    s32 adjusted;
+    s32 input;
+    s32 rate;
 
     ai = GetCarAiBlock(obj);
     if (obj->slideInput.value == 0) {
-        if (obj->yawRate == 0) {
-        if (carIndex != 0) {
-            value = obj->speed;
-            if (value < 0x3C1) {
+        if (obj->yawRate == 0 && carIndex != 0) {
+            /* Start a slide, away from the racing line in reverse races. */
+            if (obj->speed < 0x3C1) {
                 return;
             }
-            scene = g_RaceSeries;
-            carIndex *= value;
-            value = carIndex;
-            temp = value / 0x320;
-            obj->slideInput.value = temp;
-            if (scene != 0) {
-                temp = -temp;
-                obj->slideInput.value = temp;
-            }
+            input = (carIndex * obj->speed) / 0x320;
+            obj->slideInput.value = g_RaceSeries != 0 ? -input : input;
             obj->yawRate = 0;
             return;
         }
-        }
-        temp = ai->slideInput.value;
-        if (temp == 0) {
-            goto slide_input_done;
+        if (ai->slideInput.value == 0) {
+            SettleSlide(ai);
+            return;
         }
     }
 
-    value = ai->slideInput.value;
-    value = value * 31;
-    if (value < 0) {
-        value += 0x1F;
+    /* Decay the input by 31/32, rounding towards zero, and take half of what
+     * is left off the yaw rate. The half carries a rounding bit of its own:
+     * the sign of the product before the shift, which is set only while that
+     * product is still negative after the correction. */
+    adjusted = ai->slideInput.value * 31;
+    if (adjusted < 0) {
+        adjusted += 0x1F;
     }
-    temp = value >> 5;
-    slideSign = value;
-    value = slideSign >> 31;
-    ai->slideInput.value = temp;
-    temp += value;
-    value = ai->yawRate;
-    temp >>= 1;
-    value -= temp;
-    ai->yawRate = value;
-    if (value >= 0x2BC) {
+    input = adjusted >> 5;
+    ai->slideInput.value = input;
+    rate = ai->yawRate - ((input + (s32)((u32)adjusted >> 31)) >> 1);
+    ai->yawRate = rate;
+    if (rate >= 0x2BC) {
         ai->yawRate = 0x2BC;
-        return;
-    }
-    temp = value < -0x2BB;
-    if (temp != 0) {
-        temp = -0x2BC;
-        ai->yawRate = temp;
-        return;
-    }
-    return;
-
-slide_input_done:
-    value = ai->yawRate;
-    if (value != 0) {
-        temp = value * 15;
-        temp <<= 1;
-        if (temp < 0) {
-            temp += 0x1F;
-        }
-        temp >>= 5;
-        ai->yawRate = temp;
-        if (temp == 0) {
-            ai->markerDirection = 0;
-        }
+    } else if (rate < -0x2BB) {
+        ai->yawRate = -0x2BC;
     }
 }
 
-void ApplyCarRacingLineHint(GameCarRuntime *obj, s32 carIndex) {
-    GameCarRuntime *objReg = obj;
-    s32 target;
-    GameCarAiBlock *state;
-    s32 index;
-    s32 scene;
-    TrackRacingLineHint *entry;
-    s32 value;
-    s32 valueRaw;
-    s32 raw;
-
-    raw = objReg->trackProgress;
-    
-    scene = g_RaceSeries;
-    target = raw >> 4;
-    index = objReg->routeIndex;
-    entry = &g_TrackEventData->racingLineHints[scene][index];
-
-    if (target < 0x20) {
-        state = GetCarAiBlock(objReg);
-        objReg->routeIndex = 0;
-        target = 0;
-    } else {
-        state = GetCarAiBlock(objReg);
-    }
-
-    if (target >= entry->start) {
-    if (entry->end < target) {
-        goto advance;
-    }
-    if (carIndex < 4 && objReg->nearbyCarCount == 0) {
-        valueRaw = objReg->aiLateralOffset;
-        if (entry->minHeight < valueRaw) {
-            value = valueRaw;
-            
-            raw = entry->maxHeight;
-            raw = valueRaw < raw;
-            if (raw != 0) {
-                raw = value + entry->heightAdjustment;
-                objReg->aiLateralOffset = raw;
-            }
-        }
-    }
-    return;
-
-    }
-    if (entry->end < target) {
-advance:
-    {
-        raw = state->routeIndex;
-        scene = g_RaceSeries;
-        raw++;
-        state->routeIndex = raw;
-    }
-    if (g_TrackEventData->racingLineHints[scene][raw].start == -1) {
-        state->routeIndex = 0;
-    }
-    state->racingLineHintState = 0;
-    return;
-
-    }
-    objReg->racingLineHintState = 0;
-}
-
+/*
+ * Put every car on the speed key it has already reached, at the start of a
+ * race. The list is ordered along the track and ends with a -1.
+ */
 void SeedCarRouteMarkers(void) {
-    s32 one = 1;
+    s32 series = g_RaceSeries;
     s32 carIndex;
-    s32 scene;
-    s32 index;
-    s32 target;
-    s32 value;
 
-    scene = g_RaceSeries;
     for (carIndex = 0; carIndex < 11; carIndex++) {
-        index = 0;
-        target = g_Cars[carIndex].trackProgress >> 4;
-        g_Cars[carIndex].routeMarkerActive = one;
+        s32 position = g_Cars[carIndex].trackProgress >> 4;
+        s32 index;
 
-        while (index < 0x30) {
-            value = g_TrackEventData->aiSpeedKeys[scene][index].progress;
-            if (target >= value) {
+        g_Cars[carIndex].routeMarkerActive = 1;
+        for (index = 0; index < 0x30; index++) {
+            s32 progress =
+                g_TrackEventData->aiSpeedKeys[series][index].progress;
+
+            if (position >= progress) {
                 g_Cars[carIndex].routeMarkerIndex = index;
                 break;
             }
-            if (value == -1) {
+            if (progress == -1) {
                 g_Cars[carIndex].routeMarkerIndex = 0;
                 break;
             }
-            index++;
         }
     }
 }
 
+/*
+ * The racing line the AI is following: a list of stretches of track, each
+ * saying how far off the centre line a car may drift there. A car past the end
+ * of its current stretch takes the next one, wrapping at the list's -1.
+ *
+ * The nudge only applies to the front four and only when nobody is alongside,
+ * so cars in traffic keep whatever line the collision code left them on.
+ */
+void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
+    GameCarAiBlock *ai = GetCarAiBlock(car);
+    s32 series = g_RaceSeries;
+    s32 position = car->trackProgress >> 4;
+    TrackRacingLineHint *hint;
+
+    hint = &g_TrackEventData->racingLineHints[series][car->routeIndex];
+    /* Before the first stretch of the lap, the list starts over. */
+    if (position < 0x20) {
+        car->routeIndex = 0;
+        position = 0;
+    }
+
+    if (hint->end < position) {
+        ai->routeIndex++;
+        if (g_TrackEventData->racingLineHints[series][ai->routeIndex].start ==
+            -1) {
+            ai->routeIndex = 0;
+        }
+        ai->racingLineHintState = 0;
+        return;
+    }
+    if (position < hint->start) {
+        car->racingLineHintState = 0;
+        return;
+    }
+    if (carIndex < 4 && car->nearbyCarCount == 0) {
+        s32 offset = car->aiLateralOffset;
+
+        if (hint->minHeight < offset && offset < hint->maxHeight) {
+            car->aiLateralOffset = offset + hint->heightAdjustment;
+        }
+    }
+}
+
+/*
+ * How hard an AI car is allowed to accelerate right now.
+ *
+ * The track carries a list of keys, each a position along the track and a
+ * target speed per gear. A car sitting between two keys gets its limit
+ * interpolated between them; a car that has run off either end of its current
+ * pair steps its marker towards where it actually is and gets nothing this
+ * frame. Above fourth the target is fourth's, scaled down as the gear climbs.
+ */
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
-    TrackAiSpeedKey *p[2];
-  s16 lim[4];
-  s16 val[2];
-  GameCarAiBlock *sub_R9;
-  s32 rpm;
-  s32 g0;
-  s32 raw;
-  TrackAiSpeedKey *tbl;
-  s32 f;
-  s32 lo_R7;
-  s32 hi;
-  s32 range;
-  s32 d_R3;
-  s32 pitch;
-  s32 q;
-  s32 cnt;
-  s32 one;
-  int lowValue;
-  raw = car->trackProgress;
-  rpm = raw >> 4;
-  g0 = car->routeMarkerIndex;
-  sub_R9 = GetCarAiBlock(car);
-  if (rpm < 0x20)
-  {
-    car->routeMarkerIndex = 0;
-  }
-  if (g0 < 0)
-  {
-    car->routeMarkerIndex = 0;
-  }
-  tbl = g_TrackEventData->aiSpeedKeys[g_RaceSeries];
-  p[0] = &tbl[g0];
-  p[1] = &tbl[g0 + 1];
-  lim[0] = p[0]->progress;
-  lim[1] = p[1]->progress;
-  if (gear < 4)
-  {
-    val[0] = p[0]->targetSpeeds[gear];
-    val[1] = p[1]->targetSpeeds[gear];
-  }
-  else
-  {
-    f = 0x55 - gear;
-    val[0] = (p[0]->targetSpeeds[3] * f) / 100;
-    val[1] = (p[1]->targetSpeeds[3] * f) / 100;
-  }
-  pitch = 0;
-  lo_R7 = lim[0];
-  if (rpm >= lo_R7) {
-  hi = lim[1];
-  one = hi;
-  if (one < rpm)
-  {
-    goto L2_inc;
-  }
-  range = hi - lo_R7;
-  pitch = p[0]->pitch;
-  if (range <= 0)
-  {
-    range = 1;
-  }
-  d_R3 = rpm - lo_R7;
-  lowValue = val[0];
-  q = ((val[1] - lowValue) * d_R3) / range;
-  sub_R9->accelerationLimit = ((((lowValue + q) * 1168) / 160) * 6) / 100;
-  goto target_speed_done;
-  }
-  if (lim[1] < rpm)
-  {
-    L2_inc:
-    cnt = sub_R9->markerCounter;
-    d_R3 = 1;
-    q = d_R3;
-    g0 = q;
-    sub_R9->markerDirection = g0;
-    cnt++;
-  }
-  else
-  {
-    cnt = sub_R9->markerCounter;
-    one = 1;
-    sub_R9->markerDirection = one;
-    cnt--;
-  }
+    TrackAiSpeedKey *keys[2];
+    TrackAiSpeedKey *table;
+    GameCarAiBlock *ai;
+    s32 position;
+    s32 marker;
+    s32 lowProgress;
+    s32 highProgress;
+    s32 lowSpeed;
+    s32 highSpeed;
+    s32 pitch;
 
-  sub_R9->markerCounter = cnt;
-  if (rpm < 0x20)
-  {
-    sub_R9->markerCounter = 0;
-  }
-target_speed_done:
-  if (sub_R9->markerDirection != 0)
-  {
-    UpdateCarSlideAngle(car, (s16) pitch);
-  }
+    position = car->trackProgress >> 4;
+    /*
+     * Read before the resets below: retail still indexes with the old marker
+     * for this frame, and only the next frame sees the zero.
+     *
+     * routeMarkerIndex and the AI view's markerCounter are the same halfword,
+     * signed here and unsigned there. The signed read is what makes the `< 0`
+     * test below mean anything, so both spellings have to stay.
+     */
+    marker = car->routeMarkerIndex;
+    ai = GetCarAiBlock(car);
+    if (position < 0x20 || marker < 0) {
+        car->routeMarkerIndex = 0;
+    }
 
+    table = g_TrackEventData->aiSpeedKeys[g_RaceSeries];
+    keys[0] = &table[marker];
+    keys[1] = &table[marker + 1];
+    lowProgress = keys[0]->progress;
+    highProgress = keys[1]->progress;
+    if (gear < 4) {
+        lowSpeed = keys[0]->targetSpeeds[gear];
+        highSpeed = keys[1]->targetSpeeds[gear];
+    } else {
+        s32 taper = 0x55 - gear;
+        lowSpeed = (keys[0]->targetSpeeds[3] * taper) / 100;
+        highSpeed = (keys[1]->targetSpeeds[3] * taper) / 100;
+    }
+
+    pitch = 0;
+    if (position >= lowProgress && position <= highProgress) {
+        s32 range = highProgress - lowProgress;
+        s32 blended;
+
+        pitch = keys[0]->pitch;
+        if (range <= 0) {
+            range = 1;
+        }
+        blended = lowSpeed +
+                  (((highSpeed - lowSpeed) * (position - lowProgress)) / range);
+        ai->accelerationLimit = (((blended * 1168) / 160) * 6) / 100;
+    } else {
+        ai->markerDirection = 1;
+        ai->markerCounter += (highProgress < position) ? 1 : -1;
+        if (position < 0x20) {
+            ai->markerCounter = 0;
+        }
+    }
+
+    if (ai->markerDirection != 0) {
+        UpdateCarSlideAngle(car, (s16)pitch);
+    }
 }
 
 s32 CollideRivalCars(GameCarRuntime *car, s32 index) {

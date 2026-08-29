@@ -506,6 +506,27 @@ if(NOT MSVC)
 endif()
 add_test(NAME track_camera COMMAND track_camera_tests)
 set_tests_properties(track_camera PROPERTIES LABELS portable)
+
+# The three AI walks over the course's own crest, speed and racing-line tables.
+add_executable(car_ai_tests
+    car_ai_tests.c
+    ../src/main/PAL/main/car/car_ai.c)
+target_include_directories(car_ai_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_ai_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_ai_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_ai_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(car_ai_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_ai_tests PRIVATE psyz)
+add_test(NAME car_ai COMMAND car_ai_tests)
+set_tests_properties(car_ai PROPERTIES LABELS portable)
 endif()
 
 set_tests_properties(track_math PROPERTIES LABELS portable)
