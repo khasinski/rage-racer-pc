@@ -52,7 +52,9 @@ static void SettleChaseYaw(s32 limit, s32 accel, s32 factor, int negative) {
 }
 
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
-    s16 sp10[4];
+    /* The camera sits this far above the car, in the car's own frame. */
+    s16 cameraLift[4];
+    s32 cameraLiftWorld[4];
     s32 sp18[3];
     s32 sp28[3];
     s32 sp38[4];
@@ -151,9 +153,9 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
         BuildRotMatrixZ(matrixWork.halfwords, scratch[8]);
         MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        sp10[0] = 0;
-        sp10[1] = -0x1C0;
-        sp10[2] = 0;
+        cameraLift[0] = 0;
+        cameraLift[1] = -0x1C0;
+        cameraLift[2] = 0;
         matrixWork.halfwords[0] = objectRotation.halfwords[0];
         matrixWork.halfwords[1] = objectRotation.halfwords[3];
         matrixWork.halfwords[2] = objectRotation.halfwords[6];
@@ -163,10 +165,10 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         matrixWork.halfwords[6] = objectRotation.halfwords[2];
         matrixWork.halfwords[7] = objectRotation.halfwords[5];
         matrixWork.halfwords[8] = objectRotation.halfwords[8];
-        ApplyMatrix(matrixWork.halfwords, &sp10[0], &sp38[0]);
-        scratch[2] += sp38[0] >> 4;
-        scratch[3] += sp38[1] >> 4;
-        scratch[4] += sp38[2] >> 4;
+        ApplyMatrix(matrixWork.halfwords, &cameraLift[0], &cameraLiftWorld[0]);
+        scratch[2] += cameraLiftWorld[0] >> 4;
+        scratch[3] += cameraLiftWorld[1] >> 4;
+        scratch[4] += cameraLiftWorld[2] >> 4;
         scratch[6] += car->tiltCounter;
         g_CameraModePrev = 0;
         break;
@@ -467,19 +469,16 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         }
         pathPitch = (pitchProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_PITCH];
         yawProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_YAW];
-        sp38[0] = pathPitch;
         if (yawProduct < 0) {
             yawProduct += 0x1FFF;
         }
         pathYaw = (yawProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_YAW];
         rollProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_ROLL];
-        sp38[1] = pathYaw;
         if (rollProduct < 0) {
             rollProduct += 0x1FFF;
         }
         pathRoll = (rollProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_ROLL];
         distProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_DIST];
-        sp38[2] = pathRoll;
         if (distProduct < 0) {
             distProduct += 0x1FFF;
         }
@@ -490,14 +489,12 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         g_CamPathOffset[1] = pathOffsetY;
         g_CamPathOffset[2] = pathOffsetZ;
         camPathAngle = (distProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_DIST];
-        sp38[3] = camPathAngle;
         g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
         pathYawRelative = pathYaw - car->angleY;
-        sp38[1] = pathYawRelative;
         BuildRotMatrixY(cameraRotation.halfwords, pathYawRelative);
-        BuildRotMatrixX(matrixWork.halfwords, sp38[0]);
+        BuildRotMatrixX(matrixWork.halfwords, pathPitch);
         MulMatrix2(matrixWork.halfwords, cameraRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, sp38[2]);
+        BuildRotMatrixZ(matrixWork.halfwords, pathRoll);
         MulMatrix2(matrixWork.halfwords, cameraRotation.halfwords);
         BuildRotMatrixY(objectRotation.halfwords, car->angleY);
         BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
