@@ -436,36 +436,6 @@ s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
     return ret;
 }
 
-/*
- * Which of the player's four collision quads the first of `points` falls
- * inside, 1..4, or 0 when none of them does. `sample` and `quad` report where
- * it stopped, which is what the collision trace prints.
- */
-static s32 FirstQuadHit(CarCollisionPoint playerGrid[4][4],
-                        const CarCollisionPoint *points, s32 count,
-                        s32 *sample, s32 *quad) {
-    s32 sampleIndex;
-    s32 quadIndex;
-
-    for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
-        for (quadIndex = 0; quadIndex < 4; quadIndex++) {
-            if (IsPointInQuad(
-                    GetCarCollisionPointPacked(&playerGrid[quadIndex][2]),
-                    GetCarCollisionPointPacked(&playerGrid[quadIndex][3]),
-                    GetCarCollisionPointPacked(&playerGrid[quadIndex][0]),
-                    GetCarCollisionPointPacked(&playerGrid[quadIndex][1]),
-                    GetCarCollisionPointPacked(&points[sampleIndex])) > 0) {
-                *sample = sampleIndex;
-                *quad = quadIndex;
-                return quadIndex + 1;
-            }
-        }
-    }
-    *sample = sampleIndex;
-    *quad = quadIndex;
-    return 0;
-}
-
 s32 CollidePlayerWithCars(PlayerCarRuntime *car)
 {
   SVec rotation;
