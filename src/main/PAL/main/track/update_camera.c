@@ -214,21 +214,23 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
                 g_ChaseYawRampNeg += 8;
                 g_ChaseYawStep = turnAccel;
                 SettleChaseYaw(turnLimit, turnAccel, turnFactor, 1);
+            } else {
+                yawStepAhead =
+                    (((g_ChaseTargetYaw - g_ChaseYawPrev) / 17) * 2) & 0xFFF;
+                g_ChaseYawStepLimit = yawStepAhead;
+                if (yawStepAhead >= 0x41) {
+                    g_ChaseYawStepLimit = 0x40;
+                }
+                turnFactor = g_ChaseYawDamping;
+                turnAccel = ((g_ChaseYawRampPos + 8) * (g_ChaseYawRampPos + 8)) /
+                            turnFactor;
+                turnLimit = g_ChaseYawStepLimit;
+                g_ChaseYawRampNeg = 0;
+                g_ChaseYawRampPos += 8;
+                g_ChaseYawStep = turnAccel;
+                SettleChaseYaw(turnLimit, turnAccel, turnFactor, 0);
             }
-            yawStepAhead = (((g_ChaseTargetYaw - g_ChaseYawPrev) / 17) * 2) & 0xFFF;
-            g_ChaseYawStepLimit = yawStepAhead;
-            if (yawStepAhead >= 0x41) {
-                g_ChaseYawStepLimit = 0x40;
-            }
-            turnFactor = g_ChaseYawDamping;
-            turnAccel = ((g_ChaseYawRampPos + 8) * (g_ChaseYawRampPos + 8)) / turnFactor;
-            turnLimit = g_ChaseYawStepLimit;
-            g_ChaseYawRampNeg = 0;
-            g_ChaseYawRampPos += 8;
-            g_ChaseYawStep = turnAccel;
-            SettleChaseYaw(turnLimit, turnAccel, turnFactor, 0);
-        }
-        if (yawError < -4) {
+        } else if (yawError < -4) {
             if (yawError < -0x7FF) {
                 yawStepWrapped = (((0x1000 - (g_ChaseYawPrev - g_ChaseTargetYaw)) / 17) * 2) & 0xFFF;
                 g_ChaseYawStepLimit = yawStepWrapped;
