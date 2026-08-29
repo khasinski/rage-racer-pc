@@ -645,6 +645,28 @@ endif()
 target_link_libraries(gear_shift_tests PRIVATE psyz)
 add_test(NAME gear_shift COMMAND gear_shift_tests)
 set_tests_properties(gear_shift PROPERTIES LABELS portable)
+
+# The logo editor's two halves, swept across the buttons that act on them.
+add_executable(team_logo_editor_tests
+    team_logo_editor_tests.c
+    ../src/main/PAL/main/menu/team_logo_editor.c)
+target_include_directories(team_logo_editor_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(team_logo_editor_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(team_logo_editor_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(team_logo_editor_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(team_logo_editor_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(team_logo_editor_tests PRIVATE psyz)
+add_test(NAME team_logo_editor COMMAND team_logo_editor_tests)
+set_tests_properties(team_logo_editor PROPERTIES LABELS portable)
 endif()
 endif()
 
