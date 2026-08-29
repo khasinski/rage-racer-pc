@@ -403,7 +403,10 @@ void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
         return;
 
 angled_body_kick:
-    value = InterpolateTrackAngle(obj->trackPointIndex);
+    /* The blend weight was missing here, so the angle came out mixed by
+     * whatever happened to sit in the second argument slot. Every other
+     * caller passes the car's own position between the two points. */
+    value = InterpolateTrackAngle(obj->trackPointIndex, obj->segmentFraction);
     temp = GetAngleDistance(value, obj->bodyYaw);
     if (temp >= 0x401) {
         temp = 0x800 - temp;

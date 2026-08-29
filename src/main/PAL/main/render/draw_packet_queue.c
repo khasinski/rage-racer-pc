@@ -22,19 +22,9 @@ u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
     return prim;
 }
 
-u8 *GameQueueShadedTexturedRect(ot, prim, x, y, w, h, u, v, clutIndex, tpage, intensity)
-    void *ot;
-    u8 *prim;
-    s16 x;
-    s16 y;
-    s16 w;
-    s16 h;
-    u8 u;
-    u8 v;
-    u16 clutIndex;
-    u16 tpage;
-    u8 intensity;
-{
+u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w,
+                                s32 h, s32 u, s32 v, s32 clutIndex, s32 tpage,
+                                s32 intensity) {
     POLY_FT4 *packet;
     RenderBufferAddress packetAddress;
     s16 width = w;
@@ -81,20 +71,9 @@ u8 *GameQueueShadedTexturedRect(ot, prim, x, y, w, h, u, v, clutIndex, tpage, in
     return prim;
 }
 
-u8 *GameQueueTexturedRect(ot, prim, x, y, w, h, u, v, uSpan, vSpan, clutIndex, tpage)
-    void *ot;
-    u8 *prim;
-    s16 x;
-    s16 y;
-    s16 w;
-    s16 h;
-    u8 u;
-    u8 v;
-    u8 uSpan;
-    u8 vSpan;
-    u16 clutIndex;
-    u16 tpage;
-{
+u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+                          s32 u, s32 v, s32 uSpan, s32 vSpan, s32 clutIndex,
+                          s32 tpage) {
     POLY_FT4 *packet;
     RenderBufferAddress packetAddress;
     s16 width = w;

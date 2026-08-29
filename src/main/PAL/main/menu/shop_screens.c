@@ -318,7 +318,7 @@ u32 DrawEngineerShopScreen(s32 step) {
         amount = product / 2048;
     }
 
-    DrawCarEngineSpec((s16)amount, (u8)(g_EngineSpecStep >> 2), g_PlayerCarIndex);
+    DrawCarEngineSpec((s16)amount, (u8)(g_EngineSpecStep >> 2));
     return g_EngineSpecStep;
 }
 

@@ -16,7 +16,6 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
     GameCarDrive *route = &car->drive;
     s32 sinA;
     s32 cosA;
-    s32 base;
     s32 r;
     s32 coords[3];
     GameCarSpec *spec1;
@@ -25,9 +24,8 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
     s32 idx;
 
     r = GetAngleDelta(car->bodyYaw, route->targetHeading);
-    base = car->bodyYaw;
-    car->bodyYaw = r / 5 + base;
-    AdvanceCarPosition(car, base);
+    car->bodyYaw += r / 5;
+    AdvanceCarPosition(car);
 
     sinA = rsin(car->bodyYaw);
     cosA = rcos(car->bodyYaw);

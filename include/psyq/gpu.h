@@ -343,9 +343,7 @@ void *ClearOTagR(u_long *ot, long count);
  * Rect * or a GpuRectPacked *, and gcc 2.6.3 will not accept both against one
  * prototype. */
 void ClearImage(void *rect, u_char r, u_char g, u_char b);
-/* K&R: UpdateEnvironment calls this with the rect alone, leaving a1 live from
- * the preceding code.  TUs that want the checked form redeclare it locally. */
-void LoadImage();
+void LoadImage(Rect *rect, void *data);
 void StoreImage(Rect *rect, void *data);
 long MoveImage(GpuRectPacked *rect, u_long x, u_long y);
 /* LibRef47 6-33 returns long (queue length for mode 1); no caller here uses the

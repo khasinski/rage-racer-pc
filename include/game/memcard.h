@@ -81,10 +81,8 @@ void DrawMemoryCardSaveRows(
  * Memory card BIOS front end. These were labelled Cd until the event classes
  * were decoded: every one operates on SwCARD/HwCARD, never on the drive.
  */
-/* Both bodies take no argument, but two callers hand them the card slot;
- * an empty parameter list lets that stand. */
-void ClearMemoryCardHwEvents();
-void ClearMemoryCardSwEvents();
+void ClearMemoryCardHwEvents(void);
+void ClearMemoryCardSwEvents(void);
 typedef enum MemoryCardEvent {
     MC_EVENT_INVALID = -1,
     MC_EVENT_NONE,

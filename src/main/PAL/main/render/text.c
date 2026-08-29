@@ -111,7 +111,10 @@ void GameDrawText8x8Shaded(
     *scratch = packet.bytes + sizeof(DrawPacket);
 }
 
-void DrawText8x8Trans(s32 x, s32 y, u8 *str, s32 clutIndex) {
+/* Callers hold these strings as char *, so take them that way and read the
+ * glyph codes unsigned. */
+void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex) {
+    const u8 *str = (const u8 *)text;
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 

@@ -376,21 +376,9 @@ void UpdateEnvironment(void);
  * y = 0x1E0). Where an `alpha` argument exists, 0xFF means opaque; anything
  * else enables semi-transparency and appends a blend packet via func_80017390.
  */
-void DrawSprite(
-    void *ot,
-    s32 x0,
-    s32 y0,
-    s32 w,
-    s32 h,
-    s32 u0,
-    s32 v0,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clutIndex,
-    s32 shadeTex,
-    s32 semiTrans,
-    u32 flags);
+void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
+                u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
+                u32 flags);
 void GameDrawMenuButton(
     s32 x0,
     s32 y0,
@@ -403,60 +391,16 @@ void GameDrawMenuButton(
     s32 textX,
     s32 textY,
     u8 *caption);
-void DrawFlatTriangle(
-    void *ot,
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    s32 x2,
-    s32 y2,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 semiTrans,
-    u32 flags);
-void DrawFlatQuad(
-    void *ot,
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    s32 x2,
-    s32 y2,
-    s32 x3,
-    s32 y3,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 semiTrans,
-    u32 flags);
+void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+                      u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags);
+void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
+                  u16 x3, u16 y3, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags);
 /* POLY_FT4: four xy/uv pairs, flat rgb, tpage and a CLUT index as depth key. */
-void GameDrawTexturedQuad(
-    void *ot,
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    s32 x2,
-    s32 y2,
-    s32 x3,
-    s32 y3,
-    s32 u0,
-    s32 v0,
-    s32 u1,
-    s32 v1,
-    s32 u2,
-    s32 v2,
-    s32 u3,
-    s32 v3,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clutIndex,
-    s32 shadeTex,
-    s32 semiTrans,
-    s32 tpage);
+void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+                          u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
+                          u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
+                          u16 clutIndex, s32 shadeTex, s32 semiTrans,
+                          u16 tpage);
 /* TILE: solid rectangle at (x, y) sized (w, h). */
 void DrawSolidRect(
     void *ot,
@@ -479,18 +423,8 @@ void DrawLine(
     s32 b,
     s32 alpha);
 /* LINE_F3: flat-shaded 3-point polyline. */
-void DrawPolyLine3(
-    void *ot,
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    s32 x2,
-    s32 y2,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 alpha);
+void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
+                   u8 r, u8 g, u8 b, u8 alpha);
 /* LINE_G2: line interpolating rgb0 -> rgb1. */
 void DrawGradientLine(
     void *ot,
@@ -506,16 +440,8 @@ void DrawGradientLine(
     u8 b1,
     u8 alpha);
 /* Two-pixel-thick rectangle border, built from six DrawLine calls. */
-void DrawRectOutline(
-    void *ot,
-    s32 x,
-    s32 y,
-    s32 w,
-    s32 h,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 alpha);
+void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
+                     u8 b, u8 code);
 /* Clips (x, y, w, h) to the 320x480 frame and queues a SetDrawArea packet. */
 void SetDrawClipRect(
     void *ot,
@@ -530,37 +456,15 @@ void SetDrawClipRect(
  * (g_LargeFontGlyphs). Bit 0x80 of `flags` selects fixed-width cells instead of the
  * per-glyph widths in the table.
  */
-void DrawSmallText(
-    s32 x,
-    s32 y,
-    const char *str,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clutIndex,
-    s32 flags);
-void DrawLargeText(
-    s32 x,
-    s32 y,
-    const char *str,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clutIndex,
-    s32 flags);
+void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
+                   u16 clut, s32 flags);
+void DrawLargeText(s32 x0, s16 y, u8 *str0, u8 color, u8 g, u8 b, u16 clut,
+                   s32 flags);
 /* Right-aligned decimal, up to 10 digits, leading zeros blanked. Returns the
  * number of digit sprites emitted. flags: 1 = large font, 4 = fixed digits at
  * v=0xDC, 8 = draw into the overlay OT layer. */
-s32 GameDrawNumber(
-    s32 x,
-    s32 y,
-    s32 flags,
-    s32 value,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clutIndex,
-    s32 primitiveCount);
+s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
+                   u16 clut, u8 primitiveCount);
 /* Blits an 8x6 bit pattern from g_MenuOverlayPatternTable as 4x8 blocks; negative argument
  * animates through the table. */
 void DrawBitPatternOverlay(s32 pattern);
@@ -631,9 +535,12 @@ void DrawScriptedSprite(
     ScriptedSpriteShape *style,
     ScriptedSpriteMotion *record,
     s32 useAlpha);
-void DrawScriptedLine(s32 elapsed, ScriptedLineShape *style, ScriptedLineMotion *record);
-void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape, ScriptedTriangleMotion *motion);
-void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape, ScriptedQuadMotion *motion);
+void DrawScriptedLine(s32 elapsed, ScriptedLineShape *style,
+                      ScriptedLineMotion *record);
+void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape,
+                          ScriptedTriangleMotion *motion);
+void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape,
+                      ScriptedQuadMotion *motion);
 
 /*
  * Low-level packet builders from the first 0x3900 bytes of .text (the boot /
@@ -648,7 +555,8 @@ void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape, ScriptedQuadMotion 
  * the texture is drawn raw.
  */
 /* SPRT, 20 bytes. */
-u8 *GameQueueShadedSprite();
+u8 *GameQueueShadedSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+                          s32 u, s32 v, s32 clutIndex, s32 intensity);
 u8 *GameQueueShadedSpriteTrans(
     void *ot,
     u8 *prim,
@@ -712,21 +620,8 @@ u8 *GameQueueShadedTexturedRect(
     s32 tpage,
     s32 intensity);
 
-/*
- * Wide forms used by callers whose packet fields are still represented as
- * words at the call boundary.  The dispatcher selects the compact SPRT packet
- * when no four-corner geometry is needed, or POLY_FT4 when texture span and
- * geometry must remain independent.
- *
- * This must remain inline.  GCC 2.6.3 records the widest outgoing argument
- * area before it folds the packet-kind branch; that accounts for the 48-byte
- * argument area in DrawStartCountdown's retail stack frame.
- */
-/* Body: (void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v,
- * s32 clutIndex). The list stays empty because most callers hold the ordering
- * table and the packet cursor in s32 locals, and cc1 2.6.3 dies on the
- * int-to-pointer argument conversion rather than diagnosing it. */
-u8 *GameQueueSprite();
+u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 u,
+                    s32 v, s32 clutIndex);
 u8 *GameQueueTexturedRect(
     void *ot,
     u8 *prim,
@@ -782,16 +677,10 @@ static inline u8 *GameQueueTexturePacketWide(
  * variant closes the run with its own DR_MODE packet (tpage 9 / 0x29 / 0x49)
  * and stores the scratchpad cursor back itself.
  */
-/* Body: (s32 x, s32 y, u8 *str, s32 clutIndex). The list stays empty because
- * record_entry.c hands a packet pointer to x, several callers hand a char or
- * void pointer to str, and swap_car_model_slot.c passes only three arguments;
- * cc1 2.6.3 segfaults on those conversions rather than diagnosing them. */
-void DrawText8x8();
-/* The body reads (s32, s32, u8 *, s32, u8); its callers were compiled
- * against a full word for every argument, so the list stays empty. */
-void GameDrawText8x8Shaded();
-/* The body reads (s32, s32, u8 *, s32); see GameDrawText8x8Shaded above. */
-void DrawText8x8Trans();
+void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex);
+void GameDrawText8x8Shaded(s32 x, s32 y, const u8 *str, s32 clutIndex,
+                           u8 intensity);
+void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex);
 /*
  * The proportional font: 12-pixel-tall SPRT cells. Characters below 'a' use
  * the {u, v} pairs at g_PropFontU with fixed 12x12 cells; 'a'..'u' and 'v'+ use
@@ -811,9 +700,6 @@ void GameDrawProportionalTextShaded(
     const char *str,
     s32 clutIndex,
     s32 intensity);
-/* Body: (s32 x, s32 y, u8 *str, s32 clutIndex). The list stays empty because
- * callers spell x as a packet pointer and str as char * / void *, and cc1
- * 2.6.3 segfaults on both conversions. */
 void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 
 /* Loads the GTE light matrix with g_SceneLightMatrix * `view`. */
@@ -828,7 +714,7 @@ void SetGteLightMatrix(Matrix *view);
 /* Callers spell the third argument Matrix *, void * or Vec4 *; an empty
  * parameter list lets each keep its own.  The body reads
  * (void *work, void *objectPos, Matrix *rot). */
-void SetGteObjectMatrix();
+void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot);
 
 /*
  * The environment colour timeline and the sky it feeds. The state is nine
@@ -931,7 +817,7 @@ void RestoreColorMatrix(void);
 s32 rsinCore(s32 angle);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
-void *ApplyMatrixLV();
+void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output);
 void SubmitTerrainCells(void *ctx, void *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);
 
@@ -1012,7 +898,8 @@ extern u8 g_WordFontCells[40];
 #define g_WordFontWidth (g_WordFontCells + 2)
 #define g_WordFontAdvance (g_WordFontCells + 3)
 
-void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm, s32 axis);
+void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm,
+                        s32 axis);
 s32 CdRead2(s32 mode);
 void DecDCTReset(s32 mode);
 void DecDCTin(volatile u32* bitstream, s32 mode);
@@ -1021,7 +908,8 @@ DrawPacket *DrawMirrorFrame(u8 *packet);
 void GPU_cw(void *packet);
 void Gpu_BuildDrawEnvCmds(void* packet, void* env);
 s32 Gpu_Reset(s32 mode);
-void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX, s32 *outY, s32 *outZ);
+void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX,
+                                 s32 *outY, s32 *outZ);
 void MatrixApplyZRotation(Matrix* mtx, s32 degrees);
 s32 SetGraphReverse(s32 mode);
 void SwapTrackTexturePageNow(void);

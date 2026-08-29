@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/render_types.h"
 #include "game/scratchpad.h"
+#include "game/render.h"
 
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     void *otReg;
@@ -64,22 +65,9 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
 }
 
 
-void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans, flags)
-    void *ot;
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    u16 y1;
-    u16 u0;
-    u16 v0;
-    u8 r;
-    u8 g;
-    u8 b;
-    u16 clutX;
-    s32 shadeTex;
-    s32 semiTrans;
-    u32 flags;
-{
+void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
+                u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
+                u32 flags) {
     RenderBufferAddress cursor;
     SPRT *prim;
     s32 shadeReg;
@@ -110,7 +98,6 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
     y0Local = y0;
     x1Local = x1;
     bLocal = b;
-    /* Match note: keep stack color load after callee-save argument setup. */
     
     gLocal = g;
     SetSprt(prim);
@@ -151,20 +138,8 @@ void DrawSprite(ot, x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex, semiTrans,
 }
 
 
-void DrawFlatTriangle(ot, x0, y0, x1, y1, x2, y2, r, g, b, semiTrans, flags)
-    void *ot;
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    u16 y1;
-    u16 x2;
-    u16 y2;
-    u8 r;
-    u8 g;
-    u8 b;
-    s32 semiTrans;
-    u32 flags;
-{
+void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+                      u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     RenderBufferAddress cursor;
     s32 semiReg;
     u32 flagsReg;
@@ -218,22 +193,8 @@ void DrawFlatTriangle(ot, x0, y0, x1, y1, x2, y2, r, g, b, semiTrans, flags)
 }
 
 
-void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
-    void *ot;
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    u16 y1;
-    u16 x2;
-    u16 y2;
-    u16 x3;
-    u16 y3;
-    u8 r;
-    u8 g;
-    u8 b;
-    s32 semiTrans;
-    u32 flags;
-{
+void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
+                  u16 x3, u16 y3, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     RenderBufferAddress cursor;
     POLY_F4 *prim;
     s32 semiReg;
@@ -264,7 +225,6 @@ void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
     y0Local = y0;
     x1Local = x1;
     bLocal = b;
-    /* Match note: keep stack color load after callee-save argument setup. */
     
     gLocal = g;
 
@@ -304,34 +264,11 @@ void DrawFlatQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3, r, g, b, semiTrans, flags)
  * the ordering table. clutIndex is a linear palette slot turned into VRAM clut
  * coordinates: 20 cluts per row starting at y = 0x1E0.
  */
-void GameDrawTexturedQuad(ot, x0, y0, x1, y1, x2, y2, x3, y3,
-                          u0, v0, u1, v1, u2, v2, u3, v3,
-                          r, g, b, clutIndex, shadeTex, semiTrans, tpage)
-    void *ot;
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    u16 y1;
-    u16 x2;
-    u16 y2;
-    u16 x3;
-    u16 y3;
-    u8 u0;
-    u8 v0;
-    u8 u1;
-    u8 v1;
-    u8 u2;
-    u8 v2;
-    u8 u3;
-    u8 v3;
-    u8 r;
-    u8 g;
-    u8 b;
-    u16 clutIndex;
-    s32 shadeTex;
-    s32 semiTrans;
-    u16 tpage;
-{
+void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+                          u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
+                          u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
+                          u16 clutIndex, s32 shadeTex, s32 semiTrans,
+                          u16 tpage) {
     RenderBufferAddress cursor;
     POLY_FT4 *prim = SCRATCH_PRIM_CURSOR_AS(POLY_FT4);
     u32 d;
@@ -481,19 +418,8 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
 }
 
 
-void DrawPolyLine3(ot, x0, y0, x1, y1, x2, y2, r, g, b, alpha)
-    void *ot;
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    s16 y1;
-    s16 x2;
-    s16 y2;
-    u8 r;
-    u8 g;
-    u8 b;
-    u8 alpha;
-{
+void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
+                   u8 r, u8 g, u8 b, u8 alpha) {
     RenderBufferAddress cursor;
     LINE_F3 *prim;
     u8 *oldPrim;
@@ -587,17 +513,8 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8
     SCRATCH_PRIM_CURSOR_AS(LINE_G2) = prim;
 }
 
-void DrawRectOutline(buf, xa, ya, w, h, r, g, b, code)
-void *buf;
-s32 xa;
-s32 ya;
-s32 w;
-s32 h;
-u8 r;
-u8 g;
-u8 b;
-u8 code;
-{
+void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
+                     u8 b, u8 code) {
   s32 x_R19 = xa;
   s32 y_R18 = ya;
   s16 rowY;

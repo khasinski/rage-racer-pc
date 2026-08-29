@@ -806,8 +806,6 @@ typedef union RaceGridSlot {
  */
 /* Race-entry init for the player object: start pose plus the speed/gear lookup
  * tables g_GearTorqueCurve / g_TorqueBandEnd / g_TorqueLossBandEnd. Logs "init_car" .. "init_ok". */
-/* race_scene.c passes a bare void *; an empty parameter list keeps both
- * units' spellings.  The body reads a GameCarRuntime *. */
 void InitPlayerCar(PlayerCarRuntime *car);
 /* Non-clamping twin of UpdateCarTrackState: recomputes the track-relative placement
  * and writes the reference triple at +0x50, for the init/reset paths only. */
@@ -955,23 +953,24 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car);
 void UpdateCarDriving(PlayerCarRuntime *car, s32 unused);
 void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused);
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
-void AccumulateLapProgress();
-void AdvanceCarPosition();
-void ApplyCarKnockback();
-void ClearCarMotionState();
-s32 FindTrackSegment();
-s32 InterpolateTrackAngle();
+void AccumulateLapProgress(GameCarRuntime *car);
+void AdvanceCarPosition(GameCarRuntime *car);
+void ApplyCarKnockback(GameCarRuntime *car);
+void ClearCarMotionState(GameCarRuntime *car);
+s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
+s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 IsCarFacingBackwards(PlayerCarRuntime *car);
-s32 IsPointInQuad();
+s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
-void SetCarKnockback();
-void StartCarBodyKick();
+void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);
+void StartCarBodyKick(s32 strength, GameCarRuntime *car);
 void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused);
-void UpdateCarBodyKick();
+void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
-void UpdateCarCrestHop();
-void UpdateCarTiltCounter();
-s32 UpdateCarTrackState();
+void UpdateCarCrestHop(GameCarRuntime *car);
+void UpdateCarTiltCounter(GameCarRuntime *car);
+s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
+                        CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
 void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer);

@@ -182,15 +182,13 @@ u8 *DrawRightArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse) {
  * digit cells (the middle one steps 8 texels per configuration), then the
  * white frame drawn as four nested tiles.
  */
-u8 *DrawPadConfigSelector(ot, prim, x, y, selection)
-    void *ot;
-    u8 *prim;
-    s16 x;
-    s16 y;
-    s16 selection;
-{
+u8 *DrawPadConfigSelector(void *ot, u8 *prim, s32 x, s32 y, s32 selection) {
+    /* The shade argument was missing here, so the label took its colour from
+     * whatever sat in the caller's outgoing argument slot. 0x80 is the
+     * neutral value that leaves the texture as it is, which is what the other
+     * plates on this screen come out as. */
     prim = GameQueueShadedSprite(
-        ot, prim, x + 6, y + 8, 0x30, 0xC, 0x78, 0xC0, 0x7F40);
+        ot, prim, x + 6, y + 8, 0x30, 0xC, 0x78, 0xC0, 0x7F40, 0x80);
     prim = QueueDrawModePrim(ot, prim, 0x3A);
     prim = GameQueueSpriteTrans(
         ot, prim, x + 18, y + 32, 8, 0x10, 0x68, 0x28, 0x7F40);

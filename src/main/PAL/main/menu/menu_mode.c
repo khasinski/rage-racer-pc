@@ -401,7 +401,7 @@ void InitMenuMode(void) {
     DrawPaintColorScreen(0);
     DrawCarShopScreen(0);
     DrawEngineerShopScreen(0);
-    DrawCarSpecGraph(0);
+    DrawCarSpecGraph(0, 0); /* step 0 resets and returns before the grade */
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);
 }
