@@ -548,6 +548,27 @@ endif()
 target_link_libraries(prize_screen_tests PRIVATE psyz)
 add_test(NAME prize_screen COMMAND prize_screen_tests)
 set_tests_properties(prize_screen PROPERTIES LABELS portable)
+
+# The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
+add_executable(drivetrain_tests
+    drivetrain_tests.c
+    ../src/main/PAL/main/car/update_car_drivetrain.c)
+target_include_directories(drivetrain_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(drivetrain_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(drivetrain_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(drivetrain_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(drivetrain_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(drivetrain_tests PRIVATE psyz)
+add_test(NAME drivetrain COMMAND drivetrain_tests)
+set_tests_properties(drivetrain PROPERTIES LABELS portable)
 endif()
 
 set_tests_properties(track_math PROPERTIES LABELS portable)

@@ -27,7 +27,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   int assistArmed;
   int steeringNonnegative;
   int secondNonnegative;
-  s16 shiftTimer;
   s16 shiftTimerNext;
   s32 assistEnabled;
   s16 gear;
@@ -79,7 +78,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 bandSlot;
   s32 bandCurve;
   s32 assistStep;
-  int shiftTimerActive;
   s32 lossCurve;
   s32 dragTerm;
   s32 slipAngle;
@@ -97,7 +95,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 netTorqueRoundedA;
   s32 netTorqueRoundedC;
   s32 lossBelowLimit;
-  s32 shiftedSpeed;
   s32 netTorqueRoundedB;
   s32 bandBase;
   s32 lossBase;
@@ -113,7 +110,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GameCarDrive *drive;
   GameTrackArcCenter *arcCentre;
   GameTrackPoint *trackPoint;
-  GearCurveAddress curveSlot;
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;
@@ -183,29 +179,21 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   {
     driveCurveMode = drive->trackCurveMode;
     pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
-    if (driveCurveMode != pointCurveMode)
+    /*
+     * The car carries the curve it thinks it is on; the track point under it
+     * carries the curve it is really on. Agreeing winds the bias up twice as
+     * fast as disagreeing unwinds it. A car on no curve at all leaves the bias
+     * alone either way.
+     *
+     * Retail had a third path here, for the two disagreeing with the car on no
+     * curve and the point on no curve either, which cannot happen: that is the
+     * two agreeing.
+     */
+    if (driveCurveMode != 0)
     {
-      if (driveCurveMode != 0)
-      {
-        steerBiasNext = (u16)drive->trackCurveBias - 1;
-        goto block_29;
-      }
-      if (pointCurveMode == 0)
-      {
-        goto block_27;
-      }
-    }
-    else
-    {
-      block_27:
-      if (drive->trackCurveMode != 0)
-      {
-        steerBiasNext = (u16)drive->trackCurveBias + 2;
-        block_29:
-        drive->trackCurveBias = steerBiasNext;
-
-      }
-
+      steerBiasNext = (u16)drive->trackCurveBias +
+                      (driveCurveMode == pointCurveMode ? 2 : -1);
+      drive->trackCurveBias = steerBiasNext;
     }
     steerBias = drive->trackCurveBias;
     if (steerBias >= 0x1F)
@@ -319,35 +307,30 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
       }
     }
     bandEnd = g_TorqueBandEnd[bandIndex];
-    bandSlot = bandBase;
-    if (bandSlot < bandEnd)
+    /* Walk this gear's torque band to the pair of points the engine speed
+     * falls between, and read the torque off the line joining them. Falling
+     * off the end leaves the torque as it was. */
+    engineSpeed = drive->engineRpm;
+    for (bandSlot = bandBase; bandSlot < bandEnd; bandSlot++)
     {
-      engineSpeed = drive->engineRpm;
-      loop_68:
-      bandTorque = config.pointer->torqueBand.values[bandSlot];
+      s32 *curveValues = &gearCurve.valuePointer[bandSlot];
+      s32 bandNext;
 
-      if ((engineSpeed >= bandTorque) &&
-          (config.pointer->torqueBand.values[bandSlot + 1] >= engineSpeed))
+      bandTorque = config.pointer->torqueBand.values[bandSlot];
+      bandNext = config.pointer->torqueBand.values[bandSlot + 1];
+      if (engineSpeed < bandTorque || bandNext < engineSpeed)
       {
-        s32 *curveValues = &gearCurve.valuePointer[bandSlot];
-        s32 bandNext = config.pointer->torqueBand.values[bandSlot + 1];
-        bandCurve = bandNext - bandTorque;
-        if (bandCurve <= 0)
-        {
-          bandCurve = 1;
-        }
-        frontLoadScaled = (engineSpeed - bandTorque) * curveValues[1];
-        frontLoadScaled += (bandNext - engineSpeed) * curveValues[0];
-        netTorque = frontLoadScaled / (bandCurve * 0xA);
+        continue;
       }
-      else
+      bandCurve = bandNext - bandTorque;
+      if (bandCurve <= 0)
       {
-        bandSlot += 1;
-        if (bandSlot < bandEnd)
-        {
-          goto loop_68;
-        }
+        bandCurve = 1;
       }
+      frontLoadScaled = (engineSpeed - bandTorque) * curveValues[1];
+      frontLoadScaled += (bandNext - engineSpeed) * curveValues[0];
+      netTorque = frontLoadScaled / (bandCurve * 0xA);
+      break;
     }
     if (netTorque < 0)
     {
@@ -368,50 +351,41 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
       }
     }
     bandEnd = g_TorqueLossBandEnd[bandIndex];
+    /* The same walk again over the engine-braking curve. Note that this one
+     * steps past the segment it read before it interpolates, so the two
+     * values it mixes are at [step] and [step - 1]. */
     assistStep = lossBase;
     bandScale = 0;
-    if (assistStep < bandEnd)
+    engineSpeedLoss = drive->engineRpm;
+    while (assistStep < bandEnd)
     {
-      engineSpeedLoss = drive->engineRpm;
-      loop_83:
-      lossTorque = config.pointer->torqueLossRpm[assistStep];
+      s32 segmentEnd;
 
-      if (engineSpeedLoss >= lossTorque)
-      {
-        curveSlot.value = config.pointer->torqueLossRpm[assistStep + 1];
-        assistStep += 1;
-        if (curveSlot.value >= engineSpeedLoss)
-        {
-          lossCurve = curveSlot.value - lossTorque;
-          if (lossCurve <= 0)
-          {
-            lossCurve = 1;
-          }
-          bandScale = (((engineSpeedLoss - lossTorque) * config.pointer->torqueLossValue[assistStep]) + ((curveSlot.value - engineSpeedLoss) * config.pointer->torqueLossValue[assistStep - 1])) / lossCurve;
-          lossBelowLimit = bandScale < 0x64;
-        }
-        else
-        {
-          goto block_89;
-        }
-      }
-      else
+      lossTorque = config.pointer->torqueLossRpm[assistStep];
+      if (engineSpeedLoss < lossTorque)
       {
         assistStep++;
-        block_89:
-        if (assistStep >= bandEnd)
-        {
-          goto block_90;
-        }
-        goto loop_83;
+        continue;
       }
+      segmentEnd = config.pointer->torqueLossRpm[assistStep + 1];
+      assistStep++;
+      if (segmentEnd < engineSpeedLoss)
+      {
+        continue;
+      }
+      lossCurve = segmentEnd - lossTorque;
+      if (lossCurve <= 0)
+      {
+        lossCurve = 1;
+      }
+      bandScale = (((engineSpeedLoss - lossTorque) *
+                    config.pointer->torqueLossValue[assistStep]) +
+                   ((segmentEnd - engineSpeedLoss) *
+                    config.pointer->torqueLossValue[assistStep - 1])) /
+                  lossCurve;
+      break;
     }
-    else
-    {
-      block_90:
-      lossBelowLimit = bandScale < 0x64;
-
-    }
+    lossBelowLimit = bandScale < 0x64;
     if (lossBelowLimit == 0)
     {
       bandScale = 0x64;
@@ -432,37 +406,31 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     drive->jumpTimer = 0;
     drive->clutch = 0;
   }
+  else if (shiftMode == 2 && drive->jumpTimer >= 0)
+  {
+    /*
+     * A shift is in progress: run the timer down and drag the engine speed
+     * towards where the new gear will put it. The target is recomputed only
+     * while the displayed gear still lags the real one.
+     */
+    shiftTimerNext = drive->jumpTimer - 1;
+    drive->jumpTimer = shiftTimerNext < 0 ? 0 : shiftTimerNext;
+    accel = 0;
+    targetGear = drive->gear;
+    if (drive->gearDisp != targetGear)
+    {
+      gearRatios = g_CarSpec->gearRatio;
+      shiftTargetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
+                       gearRatios[targetGear];
+      currentSpeed = (u16)drive->engineRpm;
+      g_ShiftTargetRpm = shiftTargetRpm;
+      drive->shiftRpmDelta = (s16)((u16)g_ShiftTargetRpm - currentSpeed);
+    }
+    drive->engineRpm =
+        (drive->shiftRpmDelta * drive->jumpTimer / 20) + g_ShiftTargetRpm;
+  }
   else
   {
-    if (shiftMode == 2)
-    {
-      shiftTimer = drive->jumpTimer;
-      shiftTimerActive = shiftTimer >= 0;
-      if (shiftTimerActive)
-      {
-        shiftTimerNext = shiftTimer - 1;
-        drive->jumpTimer = shiftTimerNext;
-        accel = 0;
-        if (shiftTimerNext < 0)
-        {
-          drive->jumpTimer = 0;
-        }
-        targetGear = drive->gear;
-        if (drive->gearDisp != targetGear)
-        {
-          gearRatios = g_CarSpec->gearRatio;
-          shiftTargetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
-                           gearRatios[targetGear];
-          currentSpeed = (u16)drive->engineRpm;
-          g_ShiftTargetRpm = shiftTargetRpm;
-          drive->shiftRpmDelta = (s16)((u16)g_ShiftTargetRpm - currentSpeed);
-        }
-        bandEnd = drive->shiftRpmDelta * drive->jumpTimer / 20;
-        shiftedSpeed = bandEnd;
-        shiftedSpeed = shiftedSpeed + g_ShiftTargetRpm;
-        goto block_129;
-      }
-    }
     targetGearAgain = drive->gear;
     if (drive->gearDisp != targetGearAgain)
     {
@@ -477,42 +445,34 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
       if (assistEnabled != 0)
       {
         targetGearCheck = drive->gear;
-        if ((drive->gearDisp < targetGearCheck) && (g_RoadGrade < 0))
+        /*
+         * Climbing while the box is still catching up costs the engine some
+         * of its load, and the taller the gear the more of it. Below fourth
+         * nothing is taken off at all.
+         */
+        if (drive->gearDisp < targetGearCheck && g_RoadGrade < 0 &&
+            targetGearCheck >= 4)
         {
-          if (targetGearCheck < 4)
-          {
-            goto grade_adjust_done;
-          }
           if (targetGearCheck == 4)
           {
             gradePenalty = (-g_RoadGrade) / 120;
-      wheelSpeedScaled.unsignedValue <<= 16;
-            wheelSpeedScaled.value >>= 16;
           }
-          else
-            if (targetGearCheck == 5)
+          else if (targetGearCheck == 5)
           {
             gradePenalty = (-g_RoadGrade) / 48;
-      wheelSpeedScaled.unsignedValue <<= 16;
-            wheelSpeedScaled.value >>= 16;
           }
           else
-            if (targetGearCheck >= 6)
           {
             gradePenalty = (g_RoadGrade * (-7)) / 240;
-        wheelSpeedScaled.unsignedValue <<= 16;
-            wheelSpeedScaled.value >>= 16;
           }
-          else
-          {
-            goto grade_adjust_done;
-          }
+          /* Sign-extend the wheel speed's low halfword. */
+          wheelSpeedScaled.unsignedValue <<= 16;
+          wheelSpeedScaled.value >>= 16;
           gradeScale = 0x64 - gradePenalty;
           drive->engineLoad = (u16)((wheelSpeedScaled.value * gradeScale) / 100);
           g_ShiftTargetSpeed = (gradeScale * gearCurve.value) / 100;
         }
       }
-grade_adjust_done:
       shiftTargetSpeed = g_ShiftTargetSpeed;
 
       accel = 0;
@@ -549,12 +509,6 @@ grade_adjust_done:
         shiftRemaining = drive->shiftSpeedDelta * (s16)countdown;
         lossBase = shiftRemaining / 10;
         drive->engineRpm = g_ShiftTargetSpeed - lossBase;
-        goto shift_interpolation_done;
-        block_129:
-        drive->engineRpm = shiftedSpeed;
-shift_interpolation_done:
-    ;
-
       }
       }
     }
