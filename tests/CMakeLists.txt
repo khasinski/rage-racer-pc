@@ -739,6 +739,7 @@ if(TARGET rage-racer-smoke)
         NAME modern_disc_import_bootstrap
         COMMAND $<TARGET_FILE:rage-racer-smoke>
             --set video.renderer=modern
+            --set modern.assets=disc
             --set run.frames=1
     )
     set_tests_properties(modern_disc_import_bootstrap PROPERTIES

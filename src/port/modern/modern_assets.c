@@ -129,13 +129,19 @@ int ModernAssetsInit(void) {
     s_initialized = 1;
     ModernAssetsInitModProvider();
     configured = RuntimeConfigGetForced("modern.assets");
-    if (configured != NULL && configured[0] != '\0') {
+    /* `disc` asks for the importer by name. Without it the only way to reach
+     * that path is for no prebuilt cache to exist anywhere the search looks,
+     * which makes a test of the importer a test of the tester's directory. */
+    if (configured != NULL && strcmp(configured, "disc") == 0) {
+        configured = NULL;
+    } else if (configured != NULL && configured[0] != '\0') {
         if (ModernAssetsTryRoot(configured)) return 1;
         fprintf(stderr, "rage-port: native asset cache unavailable: %s\n",
                 configured);
         return 0;
     }
-    if (PlatformExecutableDirectory(NULL, directory, sizeof(directory))) {
+    if (RuntimeConfigGetForced("modern.assets") == NULL &&
+        PlatformExecutableDirectory(NULL, directory, sizeof(directory))) {
         int written = snprintf(candidate, sizeof(candidate), "%s/native-assets",
                                directory);
         if (written > 0 && (size_t)written < sizeof(candidate) &&
