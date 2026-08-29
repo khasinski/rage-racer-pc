@@ -436,6 +436,36 @@ s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
     return ret;
 }
 
+/*
+ * Which of the player's four collision quads the first of `points` falls
+ * inside, 1..4, or 0 when none of them does. `sample` and `quad` report where
+ * it stopped, which is what the collision trace prints.
+ */
+static s32 FirstQuadHit(CarCollisionPoint playerGrid[4][4],
+                        const CarCollisionPoint *points, s32 count,
+                        s32 *sample, s32 *quad) {
+    s32 sampleIndex;
+    s32 quadIndex;
+
+    for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
+        for (quadIndex = 0; quadIndex < 4; quadIndex++) {
+            if (IsPointInQuad(
+                    GetCarCollisionPointPacked(&playerGrid[quadIndex][2]),
+                    GetCarCollisionPointPacked(&playerGrid[quadIndex][3]),
+                    GetCarCollisionPointPacked(&playerGrid[quadIndex][0]),
+                    GetCarCollisionPointPacked(&playerGrid[quadIndex][1]),
+                    GetCarCollisionPointPacked(&points[sampleIndex])) > 0) {
+                *sample = sampleIndex;
+                *quad = quadIndex;
+                return quadIndex + 1;
+            }
+        }
+    }
+    *sample = sampleIndex;
+    *quad = quadIndex;
+    return 0;
+}
+
 s32 CollidePlayerWithCars(PlayerCarRuntime *car)
 {
   SVec rotation;
@@ -560,73 +590,25 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
           opponentSamples[8].z = (opponentCorners[2].z + opponentSamples[1].z) / 2;
           opponentSamples[9].x = (opponentCorners[3].x + opponentSamples[2].x) / 2;
           opponentSamples[9].z = (opponentCorners[3].z + opponentSamples[2].z) / 2;
-          for (sampleIndex = 0; sampleIndex < 4; sampleIndex++)
+          collisionRegion = FirstQuadHit(playerGrid, opponentCorners, 4,
+                                         &sampleIndex, &quadIndex);
+          if (collisionRegion > 0)
           {
-            for (quadIndex = 0; quadIndex < 4; quadIndex++)
-            {
-              collisionRegion = IsPointInQuad(
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][2]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][3]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][0]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][1]),
-                GetCarCollisionPointPacked(&opponentCorners[sampleIndex]));
-              if (collisionRegion > 0)
-              {
-                collisionRegion = quadIndex + 1;
-                break;
-              }
-            }
-
-            if (collisionRegion > 0)
-            {
-              goto collision_found;
-            }
+            goto collision_found;
           }
 
-          for (sampleIndex = 0; sampleIndex < 5; sampleIndex++)
+          collisionRegion = FirstQuadHit(playerGrid, opponentSamples, 5,
+                                         &sampleIndex, &quadIndex);
+          if (collisionRegion > 0)
           {
-            for (quadIndex = 0; quadIndex < 4; quadIndex++)
-            {
-              collisionRegion = IsPointInQuad(
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][2]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][3]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][0]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][1]),
-                GetCarCollisionPointPacked(&opponentSamples[sampleIndex]));
-              if (collisionRegion > 0)
-              {
-                collisionRegion = quadIndex + 1;
-                break;
-              }
-            }
-
-            if (collisionRegion > 0)
-            {
-              goto collision_found;
-            }
+            goto collision_found;
           }
 
-          for (sampleIndex = 0; sampleIndex < 4; sampleIndex++)
+          collisionRegion = FirstQuadHit(playerGrid, &opponentSamples[6], 4,
+                                         &sampleIndex, &quadIndex);
+          if (collisionRegion > 0)
           {
-            for (quadIndex = 0; quadIndex < 4; quadIndex++)
-            {
-              collisionRegion = IsPointInQuad(
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][2]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][3]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][0]),
-                GetCarCollisionPointPacked(&playerGrid[quadIndex][1]),
-                GetCarCollisionPointPacked(&opponentSamples[sampleIndex + 6]));
-              if (collisionRegion > 0)
-              {
-                collisionRegion = quadIndex + 1;
-                break;
-              }
-            }
-
-            if (collisionRegion > 0)
-            {
-              goto collision_found;
-            }
+            goto collision_found;
           }
 
         }
