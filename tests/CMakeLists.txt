@@ -527,6 +527,27 @@ endif()
 target_link_libraries(car_ai_tests PRIVATE psyz)
 add_test(NAME car_ai COMMAND car_ai_tests)
 set_tests_properties(car_ai PROPERTIES LABELS portable)
+
+# The prize screen's arithmetic, which is what a race leaves behind.
+add_executable(prize_screen_tests
+    prize_screen_tests.c
+    ../src/main/PAL/main/menu/prize_money_screen.c)
+target_include_directories(prize_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(prize_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(prize_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(prize_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(prize_screen_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(prize_screen_tests PRIVATE psyz)
+add_test(NAME prize_screen COMMAND prize_screen_tests)
+set_tests_properties(prize_screen PROPERTIES LABELS portable)
 endif()
 
 set_tests_properties(track_math PROPERTIES LABELS portable)
