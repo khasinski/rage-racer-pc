@@ -2,110 +2,27 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
+/*
+ * The big canvas: its frame slides down, the brush outline blinks over the
+ * cursor, and the canvas itself goes down as one zoomed textured quad.
+ */
+static void DrawCanvasPanel(RenderBufferAddress ot, s32 slide)
 {
-  s32 kreg;
-  s32 a0v;
-  s32 a1v;
-  RenderBufferAddress ot;
-  s32 i;
-  s32 d;
-  s32 v;
-  s32 ang;
-  s32 gx;
-  s32 gy;
-  s32 gx2;
-  s32 gy2;
-  s32 pal;
-  u8 clut;
-  u16 x0;
-  u16 x1;
-  u16 y1;
-  s32 x2;
-  s32 yA0;
-  s16 yA8;
-  s16 yB8;
-  s16 yC8;
-  s32 phaseValue;
-  s32 secondaryValue;
-  RenderBufferAddress drawValue;
-  a0v = panelStep;
-  a1v = editorStep;
-  ot.pointer = SCRATCH_OT_BASE_AS(void);
-  if (panelStep == 0)
+  if (slide < 0)
   {
-    g_TeamLogoPanelStep = 0;
-    g_TeamLogoEditorStep = 0;
     return;
   }
-  g_TeamLogoClut[0] = 0x8000;
-  g_TeamLogoClut[0] |= ((rsin(g_TeamLogoColorCycleAngle % 0x1000) / 128) + 0x20) >> 3;
-  ang = g_TeamLogoColorCycleAngle + 0x55;
-  g_TeamLogoClut[0] |= (((rsin(ang % 0x1000) / 128) + 0x20) >> 3) << 5;
-  ang = g_TeamLogoColorCycleAngle + 0xAA;
-  d = rsin(ang % 0x1000);
-  i = 0;
-  if (d < 0)
-  {
-    d += 0x7F;
-  }
-  {
-    u16 *dst;
-    s32 mul;
-    u16 k8;
-    k8 = 0x8000;
-    g_TeamLogoClut[0] |= (((d >> 7) + 0x20) >> 3) << 10;
-    g_TeamLogoFadedClut[0] = g_TeamLogoClut[0];
-    dst = g_TeamLogoFadedClut;
-    g_TeamLogoColorCycleAngle += 0x20;
-    mul = g_TeamLogoFadeLevel;
-    loop16:
-    {
-      u16 *src = &g_TeamLogoClut[i];
-      *dst = k8;
-      phaseValue = (((*src) & 0x1F) * mul) / 256;
-      drawValue.value = phaseValue | ((u16) 0x8000);
-      *dst = drawValue.value;
-      drawValue.value |= (((((*src) >> 5) & 0x1F) * mul) / 256) << 5;
-      *dst = drawValue.value;
-      v = (((*src) >> 10) & 0x1F) * mul;
-      if (v < 0)
-      {
-        v += 0xFF;
-      }
-      i++;
-      phaseValue = drawValue.value | ((v >> 8) << 10);
-      *dst = phaseValue;
-      dst++;
-      if (i < 16)
-      {
-        goto loop16;
-      }
-    }
-
-  }
-  LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
-  LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
-  LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
-  if (a0v < 0)
-  {
-    g_TeamLogoPanelStep = a0v + g_TeamLogoPanelStep;
-    if (g_TeamLogoPanelStep < 0)
-    {
-      g_TeamLogoPanelStep = 0;
-    }
-  }
-  if (a1v < 0)
-  {
-    g_TeamLogoEditorStep = a1v + g_TeamLogoEditorStep;
-    if (g_TeamLogoEditorStep < 0)
-    {
-      g_TeamLogoEditorStep = 0;
-    }
-  }
-  d = g_TeamLogoPanelStep - 0xA;
-  if (d >= 0)
-  {
+    u8 clut;
+    RenderBufferAddress drawValue;
+    s32 gx;
+    s32 gx2;
+    s32 gy;
+    s32 gy2;
+    s32 kreg;
+    s32 phaseValue;
+    s32 secondaryValue;
+    u16 x0;
+    s32 x2;
     s32 sy2;
     s32 sy;
     s32 drawX;
@@ -119,14 +36,14 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     s32 texY;
     s32 gyTemp;
     u32 slidePhase;
-    if (d >= 0xC)
+    if (slide >= 0xC)
     {
-      d = 0xB;
+      slide = 0xB;
     }
     x0 = 0x87;
     drawX = 0x87;
     
-    slidePhase = d;
+    slidePhase = slide;
     sy = ((slidePhase * 0x460) >> 5) + 0xFEC9;
     ff = 0xFF;
     DrawRectOutline(ot.pointer, (s16)drawX, (s16)sy, (s16)0x82, 0x104, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)ff);
@@ -189,21 +106,40 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
                          (u8)gx, (u8)gy2, (u8)gx2, (u8)gy2,
                          (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x27F, 1, 0, clut);
     SetDrawClipRect(ot.pointer, (s16)(x0 + 1), (s16)(kreg + 2), (s16)0x80, (s16)0x100);
-  }
-  d = g_TeamLogoPanelStep - 0xE;
-  if (d >= 0)
+  
+}
+
+/*
+ * The small unzoomed preview, with the guide lines that mark the brush and
+ * its row across the whole logo.
+ */
+static void DrawPreviewPanel(RenderBufferAddress ot, s32 slide)
+{
+  if (slide < 0)
   {
+    return;
+  }
+    u8 clut;
+    s32 gx;
+    s32 gx2;
+    s32 gy;
+    s32 gy2;
+    s32 kreg;
+    s32 pal;
+    u16 x0;
+    u16 x1;
+    u16 y1;
     s32 sy;
     u32 su;
     s32 ff;
     s16 w1;
     s16 xb;
     u32 slidePhase;
-    if (d >= 8)
+    if (slide >= 8)
     {
-      d = 7;
+      slide = 7;
     }
-    slidePhase = d;
+    slidePhase = slide;
     su = (slidePhase * -0x460) >> 5;
     sy = su + 0x1FB;
     x0 = 0x2F;
@@ -276,21 +212,42 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
                          (u8)0x7F, (u8)0x7F, (u8)0x7F,
                          pal & 0xFFFF, 1, 0, clut);
     SetDrawClipRect(ot.pointer, (s16)(x0 + 1), (s16)(kreg + 2), (s16)0x40, (s16)0x80);
-  }
-  d = g_TeamLogoEditorStep - 8;
-  if (d >= 0)
+  
+}
+
+/*
+ * The fifteen fixed colours, the pen well showing the mixed colour, and the
+ * four button prompts, whose glyphs differ between pad and NeGcon.
+ */
+static void DrawSwatchStrip(RenderBufferAddress ot, s32 slide)
+{
+  if (slide < 0)
   {
+    return;
+  }
+    u8 clut;
+    RenderBufferAddress drawValue;
+    s32 gx;
+    s32 gy;
+    s32 i;
+    s32 kreg;
+    s32 pal;
+    s32 secondaryValue;
+    u16 x0;
+    u16 x1;
+    u16 y1;
+    s32 yA0;
     s32 j;
     s32 vs7;
     s32 vs6;
     u32 panelY;
     u32 slidePhase;
-    if (d >= 6)
+    if (slide >= 6)
     {
-      d = 5;
+      slide = 5;
     }
     x0 = 0x8A;
-    slidePhase = d;
+    slidePhase = slide;
     panelY = (slidePhase * -0x3C0) >> 5;
     kreg = panelY + 0x1EA;
     y1 = panelY + 0x1E7;
@@ -307,19 +264,13 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       DrawRectOutline(ot.pointer, (s16)x1, (s16)y1, (s16)0xD, 0x1A, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
     }
     DrawSolidRect(ot.pointer, (s16)(x1 + 1), (s16)(y1 + 2), (s16)0xB, (s16)0x16, (u8)((g_TeamLogoClut[g_TeamLogoPenColor] & 0xFF) * 8), (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 2) & 0xF8), (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 7) & 0xF8), (u8)0xFF);
+    /* The fifteen fixed colours, eight pixels apart along the strip. */
+    for (i = 0, j = 1; i < 15; i++, j += 8)
     {
-      s32 fy2 = (kreg + 2) << 16;
-      i = 0;
-      j = 1;
-      loop15:
-      DrawSolidRect(ot.pointer, (s16)(x0 + j), (s16)(fy2 >> 16), (s16)8, (s16)0x10, (u8)((g_TeamLogoSwatches[i] & 0xFF) * 8), (u8)((g_TeamLogoSwatches[i] >> 2) & 0xF8), (u8)((g_TeamLogoSwatches[i] >> 7) & 0xF8), (u8)0xFF);
-
-      i++;
-      j += 8;
-      if (i < 15)
-      {
-        goto loop15;
-      }
+      DrawSolidRect(ot.pointer, (s16)(x0 + j), (s16)(kreg + 2), (s16)8,
+                    (s16)0x10, (u8)((g_TeamLogoSwatches[i] & 0xFF) * 8),
+                    (u8)((g_TeamLogoSwatches[i] >> 2) & 0xF8),
+                    (u8)((g_TeamLogoSwatches[i] >> 7) & 0xF8), (u8)0xFF);
     }
     {
       DrawRectOutline(ot.pointer, (s16)x0, (s16)kreg, (s16)0x7A, 0x14, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
@@ -376,23 +327,46 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
       vs6 += 0x28;
       }
     }
-  }
-  d = g_TeamLogoEditorStep - 7;
-  if (d >= 0)
+  
+}
+
+/*
+ * The caption that slides in from the left edge.
+ */
+static void DrawEditorHint(RenderBufferAddress ot, s32 slide)
+{
+  if (slide < 0)
   {
+    return;
+  }
     u32 slidePhase;
 
-    if (d >= 7)
+    if (slide >= 7)
     {
-      d = 6;
+      slide = 6;
     }
-    slidePhase = d;
+    slidePhase = slide;
     DrawSprite(ot.pointer, (s16)(((slidePhase * 0x250) >> 5) + 0xFFA1), (s16)0xC0, (s16)0x61, (s16)0x32,
                (u8)0x90, (u8)0xC0, 0, 0, 0, 0x1F5, 1, 0, 0x1D);
-  }
-  d = g_TeamLogoEditorStep - 8;
-  if ((d >= 0) && (g_TeamLogoExpertMode != 0))
+  
+}
+
+/*
+ * Expert mode's three colour channels: a numeric readout and a bar for each
+ * of red, green and blue.
+ */
+static void DrawChannelSliders(RenderBufferAddress ot, s32 slide)
+{
+  if (slide < 0)
   {
+    return;
+  }
+    u8 clut;
+    s32 kreg;
+    u16 x0;
+    s16 yA8;
+    s16 yB8;
+    s16 yC8;
     s16 sy;
     s16 sx;
     s16 xa;
@@ -403,11 +377,11 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     s32 tileSize;
     u32 slidePhase;
     kreg = 0xC8;
-    if (d >= 6)
+    if (slide >= 6)
     {
-      d = 5;
+      slide = 5;
     }
-    slidePhase = d;
+    slidePhase = slide;
     x0Calc = ((slidePhase * -0x140) >> 5) + 0x140;
     
     syBase = g_TeamLogoColorChannel;
@@ -460,18 +434,106 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
     DrawSolidRect(ot.pointer, (s16)xa, (s16)yB8, (s16)0x10, (s16)tileSize, 0, 0, 0, (u8)0xFF);
     DrawSolidRect(ot.pointer, (s16)xa, (s16)(kreg + 0x62), (s16)0x10, (s16)tileSize, 0, 0, (u8)0xC0, (u8)0xFF);
     DrawSolidRect(ot.pointer, (s16)xa, (s16)yC8, (s16)0x10, (s16)tileSize, 0, 0, 0, (u8)0xFF);
-  }
-  if (a0v > 0)
+  
+}
+
+/*
+ * Colour zero cycles through the spectrum on its own, and the whole palette is
+ * then dimmed by the fade level into the second CLUT the panels draw with.
+ */
+static void AnimateLogoClut(void)
+{
+  s32 fade;
+  s32 blue;
+  s32 i;
+
+  g_TeamLogoClut[0] = 0x8000;
+  g_TeamLogoClut[0] |=
+      ((rsin(g_TeamLogoColorCycleAngle % 0x1000) / 128) + 0x20) >> 3;
+  g_TeamLogoClut[0] |=
+      (((rsin((g_TeamLogoColorCycleAngle + 0x55) % 0x1000) / 128) + 0x20) >> 3)
+      << 5;
+  blue = rsin((g_TeamLogoColorCycleAngle + 0xAA) % 0x1000);
+  if (blue < 0)
   {
-    g_TeamLogoPanelStep = a0v + g_TeamLogoPanelStep;
+    blue += 0x7F;
+  }
+  g_TeamLogoClut[0] |= (((blue >> 7) + 0x20) >> 3) << 10;
+  g_TeamLogoColorCycleAngle += 0x20;
+
+  fade = g_TeamLogoFadeLevel;
+  for (i = 0; i < 16; i++)
+  {
+    s32 source = g_TeamLogoClut[i];
+
+    blue = ((source >> 10) & 0x1F) * fade;
+    if (blue < 0)
+    {
+      blue += 0xFF;
+    }
+    g_TeamLogoFadedClut[i] =
+        (u16)(0x8000 | (((source & 0x1F) * fade) / 256)
+              | (((((source >> 5) & 0x1F) * fade) / 256) << 5)
+              | ((blue >> 8) << 10));
+  }
+}
+
+void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
+{
+  RenderBufferAddress ot;
+
+  ot.pointer = SCRATCH_OT_BASE_AS(void);
+  if (panelStep == 0)
+  {
+    g_TeamLogoPanelStep = 0;
+    g_TeamLogoEditorStep = 0;
+    return;
+  }
+
+  AnimateLogoClut();
+  LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+  LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
+  LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
+  if (panelStep < 0)
+  {
+    g_TeamLogoPanelStep = panelStep + g_TeamLogoPanelStep;
+    if (g_TeamLogoPanelStep < 0)
+    {
+      g_TeamLogoPanelStep = 0;
+    }
+  }
+  if (editorStep < 0)
+  {
+    g_TeamLogoEditorStep = editorStep + g_TeamLogoEditorStep;
+    if (g_TeamLogoEditorStep < 0)
+    {
+      g_TeamLogoEditorStep = 0;
+    }
+  }
+  DrawCanvasPanel(ot, g_TeamLogoPanelStep - 0xA);
+
+  DrawPreviewPanel(ot, g_TeamLogoPanelStep - 0xE);
+
+  DrawSwatchStrip(ot, g_TeamLogoEditorStep - 8);
+
+  DrawEditorHint(ot, g_TeamLogoEditorStep - 7);
+
+  if (g_TeamLogoExpertMode != 0)
+  {
+    DrawChannelSliders(ot, g_TeamLogoEditorStep - 8);
+  }
+
+  if (panelStep > 0)
+  {
+    g_TeamLogoPanelStep = panelStep + g_TeamLogoPanelStep;
     if (g_TeamLogoPanelStep >= 0x1A)
     {
       g_TeamLogoPanelStep = 0x19;
     }
   }
-  if (a1v > 0)
+  if (editorStep > 0)
   {
-    g_TeamLogoEditorStep = a1v + g_TeamLogoEditorStep;
+    g_TeamLogoEditorStep = editorStep + g_TeamLogoEditorStep;
     if (g_TeamLogoEditorStep >= 0x11)
     {
       g_TeamLogoEditorStep = 0x10;
