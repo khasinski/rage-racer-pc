@@ -7,13 +7,26 @@ import sys
 from pathlib import Path
 
 
+BLOB = re.compile(
+    r"^(?:const )?unsigned char\s+(g_\w+)\[(\d+)\]"
+    r"(?:\s+__attribute__\(\(aligned\(16\)\)\))?",
+    re.MULTILINE,
+)
+
+# State whose header declares a plain scalar is defined as that scalar, so a
+# debugger shows a value rather than eight bytes. Those carry no pinned size;
+# the manifest pins the ones that are still raw storage.
+SCALAR = re.compile(
+    r"^(?:volatile )?(?:s8|u8|s16|u16|s32|u32|f32|int|char|short)\s+(g_\w+)\s*(?:=|;)",
+    re.MULTILINE,
+)
+
+
 def declarations(text: str) -> dict[str, int]:
-    pattern = re.compile(
-        r"^(?:const )?unsigned char\s+(g_\w+)\[(\d+)\]"
-        r"(?:\s+__attribute__\(\(aligned\(16\)\)\))?",
-        re.MULTILINE,
-    )
-    return {name: int(size) for name, size in pattern.findall(text)}
+    found = {name: int(size) for name, size in BLOB.findall(text)}
+    for name in SCALAR.findall(text):
+        found.setdefault(name, 0)
+    return found
 
 
 def main() -> int:

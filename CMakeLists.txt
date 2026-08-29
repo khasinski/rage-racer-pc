@@ -137,6 +137,10 @@ if(RAGE_BUILD_PORT)
         src/port/host_state.c
         src/port/native_initialized_state.c
     )
+    # Retail state is defined with the types its headers declare, so this
+    # needs the s32/u16 family the rest of the tree is written in.
+    target_include_directories(rage-host-state PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include)
     # The retail game and its host-state bridge intentionally preserve signed
     # wrapping and type-punned PS1 storage. New renderer and mod code must not
     # inherit those relaxed assumptions.
