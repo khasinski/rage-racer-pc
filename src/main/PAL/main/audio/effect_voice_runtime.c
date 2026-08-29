@@ -150,20 +150,19 @@ void UpdateIndexedEffectVoice(void) {
     s32 right;
     s32 voice;
 
+    /* Start on the way in, stop on the way out, restart on a change. The
+     * early exit retail had for "nothing playing and nothing asked for" is
+     * the same condition the rest of the function is already guarded by. */
     raw = g_IndexedEffectIndexPrev;
+    index = g_IndexedEffectIndex;
     if (raw < 0) {
-        index = g_IndexedEffectIndex;
-        if (index < 0) {
-            goto indexed_effect_done;
-        }
-            StartIndexedEffectVoice(g_IndexedEffects[index].tone);
-            } else {
-        index = g_IndexedEffectIndex;
-        if (index < 0) {
-            StopIndexedEffectVoice();
-        } else if (index != raw) {
+        if (index >= 0) {
             StartIndexedEffectVoice(g_IndexedEffects[index].tone);
         }
+    } else if (index < 0) {
+        StopIndexedEffectVoice();
+    } else if (index != raw) {
+        StartIndexedEffectVoice(g_IndexedEffects[index].tone);
     }
 
     raw = g_IndexedEffectIndex;
@@ -187,20 +186,13 @@ void UpdateIndexedEffectVoice(void) {
         left >>= 7;
         right = left;
 
-        if (right >= 0) {
-            if (right >= 0x81) {
-                left = 0x80;
-            }
-        } else {
+        /* One clamp, applied to both channels: they hold the same value. */
+        if (right < 0) {
             left = 0;
-        }
-
-        if (right >= 0) {
-            if (right >= 0x81) {
-                right = 0x80;
-            }
-        } else {
             right = 0;
+        } else if (right >= 0x81) {
+            left = 0x80;
+            right = 0x80;
         }
 
         SsUtSetVVol(0x14, left, right);
@@ -212,8 +204,13 @@ void UpdateIndexedEffectVoice(void) {
         SsUtChangePitch(voice, left, right, 0x3C, 0, raw, fine);
     }
 
-indexed_effect_done:
     g_IndexedEffectIndexPrev = g_IndexedEffectIndex;
+}
+
+/* Are the two music channels sitting exactly on this sound mode's pair? */
+static int MusicChannelsOnMode(s32 mode, s32 channelLeft) {
+    return channelLeft == g_SoundModes[mode].slots[0].left &&
+           g_MusicChannels[1].left.value == g_SoundModes[mode].slots[1].left;
 }
 
 /* The retail loop keeps i * sizeof(MusicChannel) in a register. */
@@ -224,13 +221,11 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     s32 i;
     s32 loopTableOffset;
     s32 average;
-    /* Load-bearing: removing this $v0 pin changes four linked words. */
     s32 scaledLeft;
     s32 scaledRight;
     s32 entryOffset;
     s32 currentA;
     s32 currentB;
-    s32 matchValue;
     s32 flag;
     SoundModeEntry *base;
     SoundModeEntry *entry;
@@ -270,63 +265,29 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
             }
         }
 
-        cueIndex = cue;
-        if (cueIndex < 2) {
-            if (left == g_SoundModes[0].slots[0].left) {
-                currentB = g_MusicChannels[1].left.value;
-                if (currentB == g_SoundModes[0].slots[1].left) {
-                    goto found_match;
-                }
-            }
-            if (left == g_SoundModes[1].slots[0].left) {
-                currentB = g_MusicChannels[1].left.value;
-                matchValue = g_SoundModes[1].slots[1].left;
-                goto compare_mode_match;
-            }
-        } else {
-            if (left == g_SoundModes[2].slots[0].left) {
-                currentB = g_MusicChannels[1].left.value;
-                if (currentB == g_SoundModes[2].slots[1].left) {
-                    goto found_match;
-                }
-            }
-            if (left == g_SoundModes[3].slots[0].left) {
-                currentB = g_MusicChannels[1].left.value;
-                matchValue = g_SoundModes[3].slots[1].left;
-                goto compare_mode_match;
-            }
-        }
-        goto after_match;
-compare_mode_match:
-        if (currentB == matchValue) {
-found_match:
-        right = 1;
-        }
-after_match:
+        /*
+         * The two music channels are already sitting on one of this cue's two
+         * sound modes, so the cue is redundant. Cues below 2 use modes 0 and
+         * 1, the rest 2 and 3.
+         */
+        cueIndex = cue < 2 ? 0 : 2;
+        right = MusicChannelsOnMode(cueIndex, left) ||
+                        MusicChannelsOnMode(cueIndex + 1, left)
+                    ? 1
+                    : 0;
 
         if (right != 0) {
-            /* Load-bearing: removing this $v0 pin changes 139 linked words. */
-            s32 resetLoad;
-            s32 resetCount;
-            s32 inactiveValue;
-            s32 activeValue;
+            /* Already on this cue's mode: hand every channel it owns back to
+             * the mode and leave the cue alone. */
+            s32 count = GetSoundModeAtByteOffset((cue * 3) << 3)->count;
 
-            resetLoad = GetSoundModeAtByteOffset((cue * 3) << 3)->count;
-            i = 0;
-            if (resetLoad <= i) {
-                return;
-            }
-            inactiveValue = -1;
-            activeValue = 1;
-            resetCount = resetLoad;
-            do {
-                g_MusicChannels[i].left.value = inactiveValue;
-                g_MusicChannels[i].right.value = inactiveValue;
-                g_MusicChannels[i].mode = activeValue;
+            for (i = 0; i < count; i++) {
+                g_MusicChannels[i].left.value = -1;
+                g_MusicChannels[i].right.value = -1;
+                g_MusicChannels[i].mode = 1;
                 g_MusicChannels[i].volRight.value = 0;
                 g_MusicChannels[i].volLeft.value = 0;
-                i++;
-            } while (i < resetCount);
+            }
         }
         return;
     }
