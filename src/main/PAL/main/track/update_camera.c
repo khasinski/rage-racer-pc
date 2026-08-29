@@ -18,12 +18,6 @@
 #define CAMPATH_ROLL 2
 #define CAMPATH_DIST 3
 
-typedef union CameraMatrixBuffer {
-    Matrix matrix;
-    u16 halfwords[16];
-    s32 words[8];
-} CameraMatrixBuffer;
-
 typedef union CameraCarAddress {
     PlayerCarRuntime *player;
     GameRenderObject *renderObject;
@@ -51,24 +45,49 @@ static void SettleChaseYaw(s32 limit, s32 accel, s32 factor, int negative) {
     }
 }
 
+/*
+ * Point the camera at a place in the world: pitch and yaw from the camera to
+ * the target, in the game's 0x1000-per-turn angle units, with no roll.
+ */
+static void AimCameraAt(s32 *scratch, s32 targetX, s32 targetY, s32 targetZ) {
+    s32 dx = scratch[2] - targetX;
+    s32 dy = scratch[3] - targetY;
+    s32 dz = scratch[4] - targetZ;
+    scratch[6] = 0x400 - (Atan2(0 - dy, SquareRoot0(dx * dx + dz * dz)) & 0xFFF);
+    scratch[7] = 0x400 - (Atan2(0 - dx, 0 - dz) & 0xFFF);
+    scratch[8] = 0;
+}
+
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     /* The camera sits this far above the car, in the car's own frame. */
     s16 cameraLift[4];
     s32 cameraLiftWorld[4];
-    s32 sp18[3];
-    s32 sp28[3];
-    s32 sp38[4];
-    CameraMatrixBuffer objectRotation;
-    CameraMatrixBuffer matrixWork;
-    CameraMatrixBuffer cameraRotation;
-    CameraMatrixBuffer inverseObjectRotation;
+    /* Every branch that aims the camera builds two offsets in the car's own
+     * frame: the point on the car it looks at, and where the eye sits
+     * relative to it. The *World pair is each of those rotated out. */
+    s32 focusOffset[3];
+    s32 focusWorld[3];
+    s32 eyeOffset[3];
+    s32 eyeWorld[3];
+    s32 focusX;
+    s32 focusY;
+    s32 focusZ;
+    /* The track-camera branches take their offset from the node instead. */
+    s32 nodeOffset[3];
+    s32 nodeWorld[3];
+    s32 blend;
+    /* Mode 3 alone reads a roll back out of the finished view. */
+    s32 rollProbe[3];
+    s32 rollWork[3];
+    Matrix objectRotation;
+    Matrix matrixWork;
+    Matrix cameraRotation;
+    Matrix inverseObjectRotation;
     s32 previousMode;
     s32 rawAngle;
-    s32 adjustedY;
     s32 turnLimit;
     s32 turnAccel;
     s32 turnFactor;
-    s32 *angleState;
     s32 *case3Angle;
     s32 *modeAngle;
     ScratchLegacyViewWords legacyView;
@@ -80,21 +99,12 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 pathYawRelative;
     s32 *pitchDeltaPtr;
     s32 speedDamping;
-    s32 toCarX;
     s32 pathYaw;
     s32 pathPitch;
-    s32 squaredX;
-    s32 squaredZ;
     s32 pathOffsetZ;
     s32 pathOffsetY;
     s32 camPathOffset;
     s32 camPathAngle;
-    s32 pathDistance;
-    s32 orbitToCarX;
-    s32 orbitToCarY;
-    s32 orbitToCarZ;
-    s32 orbitDx;
-    s32 orbitDz;
     s32 chaseYawDamping;
     s32 chaseYawStepLimit;
     s32 cameraNodeIndex;
@@ -103,8 +113,6 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 yawStepBehind;
     s32 chaseYawLag;
     s32 chaseDistance;
-    s32 chaseDx;
-    s32 chaseDz;
     s32 pathRoll;
     s32 previousNodeIndex;
     u8 nodeChanged;
@@ -117,15 +125,10 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 rollProduct;
     s32 distProduct;
     s32 pitchDelta;
-    s32 chaseYaw;
     s32 negatedAccel;
-    s32 wrappedLag;
-    u8 nextPrevMode;
     GameTrackCameraNode *pathNode;
     GameTrackCameraNode *orbitNode;
-    GameTrackCameraNode *chaseNodeAgain;
     GameTrackCameraNode *chaseNode;
-    GameTrackCameraNode *chaseNodeOffsets;
     GameTrackCameraNode *prevNode;
     CameraCarAddress playerAddress;
     ScratchBlockAddress scratchAddress;
@@ -148,24 +151,16 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         scratchAddress.blocks[0] = playerAddress.blocks[0];
         scratchAddress.words = &scratch[6];
         scratchAddress.blocks[0] = playerAddress.blocks[2];
-        BuildRotMatrixY(objectRotation.halfwords, scratch[7]);
-        BuildRotMatrixX(matrixWork.halfwords, scratch[6]);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, scratch[8]);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
+        BuildRotMatrixY(&objectRotation, scratch[7]);
+        BuildRotMatrixX(&matrixWork, scratch[6]);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, scratch[8]);
+        MulMatrix2(&matrixWork, &objectRotation);
         cameraLift[0] = 0;
         cameraLift[1] = -0x1C0;
         cameraLift[2] = 0;
-        matrixWork.halfwords[0] = objectRotation.halfwords[0];
-        matrixWork.halfwords[1] = objectRotation.halfwords[3];
-        matrixWork.halfwords[2] = objectRotation.halfwords[6];
-        matrixWork.halfwords[3] = objectRotation.halfwords[1];
-        matrixWork.halfwords[4] = objectRotation.halfwords[4];
-        matrixWork.halfwords[5] = objectRotation.halfwords[7];
-        matrixWork.halfwords[6] = objectRotation.halfwords[2];
-        matrixWork.halfwords[7] = objectRotation.halfwords[5];
-        matrixWork.halfwords[8] = objectRotation.halfwords[8];
-        ApplyMatrix(matrixWork.halfwords, &cameraLift[0], &cameraLiftWorld[0]);
+        TransposeMatrix(&objectRotation, &matrixWork);
+        ApplyMatrix(&matrixWork, &cameraLift[0], &cameraLiftWorld[0]);
         scratch[2] += cameraLiftWorld[0] >> 4;
         scratch[3] += cameraLiftWorld[1] >> 4;
         scratch[4] += cameraLiftWorld[2] >> 4;
@@ -269,73 +264,67 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         rawAngle = g_ChaseTargetYaw;
         chaseCarSpeed = (g_ChaseYawPrev + g_ChaseYawLag) & 0xFFF;
         g_ChaseYaw = chaseCarSpeed;
+        /* How far the chase yaw still has to travel, taken the short way
+         * round the circle. Which way that is depends on which side of the
+         * target it started. */
+        chaseYawLag = rawAngle - chaseCarSpeed;
         if (rawAngle < chaseCarSpeed) {
-            chaseYawLag = rawAngle - chaseCarSpeed;
-            g_ChaseYawLag = chaseYawLag;
-            wrappedLag = chaseYawLag;
-            if (wrappedLag < -0x7FF) {
-                wrappedLag += 0x1000;
+            if (chaseYawLag < -0x7FF) {
+                chaseYawLag += 0x1000;
             }
-            angleState = &g_ChaseYawLag;
-            *angleState = wrappedLag;
-        } else {
-            chaseYawLag = rawAngle - chaseCarSpeed;
-            g_ChaseYawLag = chaseYawLag;
-            wrappedLag = chaseYawLag;
-            if (wrappedLag >= 0x800) {
-                wrappedLag -= 0x1000;
-            }
-            angleState = &g_ChaseYawLag;
-            *angleState = wrappedLag;
+        } else if (chaseYawLag >= 0x800) {
+            chaseYawLag -= 0x1000;
         }
-        angleState = cameraRotation.words;
-        BuildRotMatrixY(angleState, 0 - g_ChaseYawLag);
-        BuildRotMatrixX(matrixWork.halfwords, -0x80);
-        MulMatrix2(matrixWork.halfwords, cameraRotation.halfwords);
-        {
-            volatile s32 *angleY = &car->angleY;
-
-            g_ChaseYawPrev = g_ChaseYaw;
-            BuildRotMatrixY(objectRotation.halfwords, *angleY);
-        }
-        BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, car->bodyRoll);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
-        MulMatrix2(angleState, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &matrixWork.matrix);
-        sp18[1] = -0x3C;
-        sp18[0] = 0;
-        sp18[2] = 0x32;
-        ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp28[0]);
-        sp18[0] = 0;
-        scratch[2] += sp28[0];
-        scratch[3] += sp28[1];
-        scratch[4] += sp28[2];
-        /* No default: an unknown preset leaves the offset set above. */
+        g_ChaseYawLag = chaseYawLag;
+        BuildRotMatrixY(&cameraRotation, 0 - g_ChaseYawLag);
+        BuildRotMatrixX(&matrixWork, -0x80);
+        MulMatrix2(&matrixWork, &cameraRotation);
+        g_ChaseYawPrev = g_ChaseYaw;
+        BuildRotMatrixY(&objectRotation, car->angleY);
+        BuildRotMatrixX(&matrixWork, car->bodyPitch);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, car->bodyRoll);
+        MulMatrix2(&matrixWork, &objectRotation);
+        TransposeMatrix(&objectRotation, &inverseObjectRotation);
+        MulMatrix2(&cameraRotation, &objectRotation);
+        TransposeMatrix(&objectRotation, &matrixWork);
+        focusOffset[0] = 0;
+        focusOffset[1] = -0x3C;
+        focusOffset[2] = 0x32;
+        ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
+                      &focusWorld[0]);
+        scratch[2] += focusWorld[0];
+        scratch[3] += focusWorld[1];
+        scratch[4] += focusWorld[2];
+        /* Retail kept both offsets in the same stack slot, so a preset
+         * outside 0..2 leaves the eye sitting on the look-at offset. The
+         * switch has no default and the eye starts on that offset so it
+         * still behaves that way. */
+        eyeOffset[0] = 0;
+        eyeOffset[1] = focusOffset[1];
+        eyeOffset[2] = focusOffset[2];
         switch (g_ChaseCameraPreset) {
         case 0:
-            sp18[1] = 0x3A;
-            sp18[2] = 0x118;
+            eyeOffset[1] = 0x3A;
+            eyeOffset[2] = 0x118;
             break;
         case 1:
-            sp18[1] = 0x59;
-            sp18[2] = 0x140;
+            eyeOffset[1] = 0x59;
+            eyeOffset[2] = 0x140;
             break;
         case 2:
-            sp18[1] = 0x97;
-            sp18[2] = 0x190;
+            eyeOffset[1] = 0x97;
+            eyeOffset[2] = 0x190;
             break;
         }
-        ApplyMatrixLV(matrixWork.halfwords, &sp18[0], &sp38[0]);
-        scratch[2] -= sp38[0];
-        scratch[3] -= sp38[1];
-        scratch[4] -= sp38[2];
-        chaseDistance = SquareRoot0((sp38[0] * sp38[0]) + (sp38[2] * sp38[2]));
-        sp38[3] = chaseDistance;
-        scratch[6] = 0x400 - (Atan2(sp38[1] + 0x28, chaseDistance) & 0xFFF);
-        scratch[7] = 0x400 - (Atan2(sp38[0], sp38[2]) & 0xFFF);
+        ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
+        scratch[2] -= eyeWorld[0];
+        scratch[3] -= eyeWorld[1];
+        scratch[4] -= eyeWorld[2];
+        chaseDistance = SquareRoot0((eyeWorld[0] * eyeWorld[0]) +
+                                    (eyeWorld[2] * eyeWorld[2]));
+        scratch[6] = 0x400 - (Atan2(eyeWorld[1] + 0x28, chaseDistance) & 0xFFF);
+        scratch[7] = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
         scratch[7] += ChaseCameraYawOffset(car->steeringAngle);
         scratch[8] = car->bodyRoll - car->bodyRollVelocity;
         if (g_ChaseCameraPreset == 0) {
@@ -350,38 +339,30 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         chaseNode = &g_TrackCameras[cameraNodeIndex];
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = chaseNode->data.block;
-        BuildRotMatrixY(objectRotation.halfwords, car->angleY);
-        BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, car->bodyRoll);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
-        chaseNodeOffsets = &g_TrackCameras[cameraNodeIndex];
-        sp18[0] = chaseNodeOffsets->offset[0];
-        sp18[1] = chaseNodeOffsets->offset[1];
-        sp18[2] = chaseNodeOffsets->offset[2] + 0x32;
-        ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp28[0]);
-        toCarX = scratch[2] - (car->x + sp28[0]);
-        sp38[0] = toCarX;
-        sp38[1] = scratch[3] - (car->y + sp28[1]);
-        chaseNodeAgain = &g_TrackCameras[cameraNodeIndex];
-        sp38[2] = scratch[4] - (car->z + sp28[2]);
-        scratch[2] -= (toCarX * chaseNodeAgain->data.world.blend) / 10000;
-        scratch[3] -= (sp38[1] * chaseNodeAgain->data.world.blend) / 10000;
-        scratch[4] -= (sp38[2] * chaseNodeAgain->data.world.blend) / 10000;
-        chaseDx = scratch[2] - (car->x + sp28[0]);
-        squaredX = chaseDx * chaseDx;
-        sp38[0] = chaseDx;
-        sp38[1] = scratch[3] - (car->y + sp28[1]);
-        chaseDz = scratch[4] - (car->z + sp28[2]);
-        sp38[2] = chaseDz;
-        squaredZ = chaseDz * chaseDz;
-        scratch[6] = 0x400 - (Atan2(0 - sp38[1], SquareRoot0(squaredX + squaredZ)) & 0xFFF);
-        chaseYaw = 0x400 - (Atan2(0 - sp38[0], 0 - sp38[2]) & 0xFFF);
-        nextPrevMode = 2;
-        scratch[7] = chaseYaw;
-        scratch[8] = 0;
-        g_CameraModePrev = nextPrevMode;
+        BuildRotMatrixY(&objectRotation, car->angleY);
+        BuildRotMatrixX(&matrixWork, car->bodyPitch);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, car->bodyRoll);
+        MulMatrix2(&matrixWork, &objectRotation);
+        TransposeMatrix(&objectRotation, &inverseObjectRotation);
+        /* The point on the car the node looks at, in the car's frame and
+         * then in the world. */
+        nodeOffset[0] = chaseNode->offset[0];
+        nodeOffset[1] = chaseNode->offset[1];
+        nodeOffset[2] = chaseNode->offset[2] + 0x32;
+        ApplyMatrixLV(&inverseObjectRotation, &nodeOffset[0],
+                      &nodeWorld[0]);
+        focusX = car->x + nodeWorld[0];
+        focusY = car->y + nodeWorld[1];
+        focusZ = car->z + nodeWorld[2];
+        /* Pull the node's camera towards that point by the node's own blend,
+         * then aim from where it ended up. */
+        blend = chaseNode->data.world.blend;
+        scratch[2] -= ((scratch[2] - focusX) * blend) / 10000;
+        scratch[3] -= ((scratch[3] - focusY) * blend) / 10000;
+        scratch[4] -= ((scratch[4] - focusZ) * blend) / 10000;
+        AimCameraAt(scratch, focusX, focusY, focusZ);
+        g_CameraModePrev = 2;
         break;
     case 3:
         playerAddress.renderObject = car;
@@ -451,19 +432,19 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         }
         camPathOffset = (offsetXProduct >> 0xD) + g_CamPathOffsetStart[0];
         offsetYProduct = pathBlend * g_CamPathOffsetDelta[1];
-        sp18[0] = camPathOffset;
+        focusOffset[0] = camPathOffset;
         if (offsetYProduct < 0) {
             offsetYProduct += 0x1FFF;
         }
         pathOffsetY = (offsetYProduct >> 0xD) + g_CamPathOffsetStart[1];
         offsetZProduct = pathBlend * g_CamPathOffsetDelta[2];
-        sp18[1] = pathOffsetY;
+        focusOffset[1] = pathOffsetY;
         if (offsetZProduct < 0) {
             offsetZProduct += 0x1FFF;
         }
         pathOffsetZ = (offsetZProduct >> 0xD) + g_CamPathOffsetStart[2];
         pitchProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_PITCH];
-        sp18[2] = pathOffsetZ;
+        focusOffset[2] = pathOffsetZ;
         if (pitchProduct < 0) {
             pitchProduct += 0x1FFF;
         }
@@ -491,44 +472,45 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         camPathAngle = (distProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_DIST];
         g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
         pathYawRelative = pathYaw - car->angleY;
-        BuildRotMatrixY(cameraRotation.halfwords, pathYawRelative);
-        BuildRotMatrixX(matrixWork.halfwords, pathPitch);
-        MulMatrix2(matrixWork.halfwords, cameraRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, pathRoll);
-        MulMatrix2(matrixWork.halfwords, cameraRotation.halfwords);
-        BuildRotMatrixY(objectRotation.halfwords, car->angleY);
-        BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, car->bodyRoll);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
-        MulMatrix2(cameraRotation.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &matrixWork.matrix);
-        sp18[2] += 0x32;
-        ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp38[0]);
-        sp28[0] = 0;
-        sp28[1] = 0;
-        scratch[2] += sp38[0];
-        scratch[3] += sp38[1];
-        scratch[4] += sp38[2];
-        sp28[2] = g_CamPathAngle[CAMPATH_DIST];
-        ApplyMatrixLV(matrixWork.halfwords, &sp28[0], &sp38[0]);
-        scratch[2] -= sp38[0];
-        scratch[3] -= sp38[1];
-        scratch[4] -= sp38[2];
-        pathDistance = SquareRoot0((sp38[0] * sp38[0]) + (sp38[2] * sp38[2]));
-        sp38[3] = pathDistance;
-        scratch[6] = 0x400 - (Atan2(sp38[1], pathDistance) & 0xFFF);
-        scratch[7] = 0x400 - (Atan2(sp38[0], sp38[2]) & 0xFFF);
-        scratch[8] = 0;
-        sp18[0] = 0x1000;
-        sp18[1] = 0;
-        sp18[2] = 0;
-        BuildRotMatrixY(cameraRotation.halfwords, 0 - scratch[7]);
-        ApplyMatrixLV(cameraRotation.halfwords, &sp18[0], &sp28[0]);
-        TransposeMatrix(&matrixWork.matrix, &cameraRotation.matrix);
-        ApplyMatrixLV(cameraRotation.halfwords, &sp28[0], &sp18[0]);
-        scratch[8] = 0x400 - (Atan2(sp18[1], sp18[0]) & 0xFFF);
+        BuildRotMatrixY(&cameraRotation, pathYawRelative);
+        BuildRotMatrixX(&matrixWork, pathPitch);
+        MulMatrix2(&matrixWork, &cameraRotation);
+        BuildRotMatrixZ(&matrixWork, pathRoll);
+        MulMatrix2(&matrixWork, &cameraRotation);
+        BuildRotMatrixY(&objectRotation, car->angleY);
+        BuildRotMatrixX(&matrixWork, car->bodyPitch);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, car->bodyRoll);
+        MulMatrix2(&matrixWork, &objectRotation);
+        TransposeMatrix(&objectRotation, &inverseObjectRotation);
+        MulMatrix2(&cameraRotation, &objectRotation);
+        TransposeMatrix(&objectRotation, &matrixWork);
+        focusOffset[2] += 0x32;
+        ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
+                      &focusWorld[0]);
+        focusX = scratch[2] + focusWorld[0];
+        focusY = scratch[3] + focusWorld[1];
+        focusZ = scratch[4] + focusWorld[2];
+        /* Sit the path's distance behind the focus point, then look back at
+         * it. */
+        eyeOffset[0] = 0;
+        eyeOffset[1] = 0;
+        eyeOffset[2] = g_CamPathAngle[CAMPATH_DIST];
+        ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
+        scratch[2] = focusX - eyeWorld[0];
+        scratch[3] = focusY - eyeWorld[1];
+        scratch[4] = focusZ - eyeWorld[2];
+        AimCameraAt(scratch, focusX, focusY, focusZ);
+        /* Roll: take the camera's own right-hand axis back through the view
+         * matrix and read how far off level it lands. */
+        rollProbe[0] = 0x1000;
+        rollProbe[1] = 0;
+        rollProbe[2] = 0;
+        BuildRotMatrixY(&cameraRotation, 0 - scratch[7]);
+        ApplyMatrixLV(&cameraRotation, &rollProbe[0], &rollWork[0]);
+        TransposeMatrix(&matrixWork, &cameraRotation);
+        ApplyMatrixLV(&cameraRotation, &rollWork[0], &rollProbe[0]);
+        scratch[8] = 0x400 - (Atan2(rollProbe[1], rollProbe[0]) & 0xFFF);
         g_CameraModePrev = 3;
         break;
     case 4:
@@ -539,72 +521,65 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         } else if (g_CamPathFrame < g_TrackCameras[cameraNodeIndex].duration) {
             g_CamPathFrame += 1;
         }
-        BuildRotMatrixY(objectRotation.halfwords, car->angleY);
-        BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, car->bodyRoll);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
-        sp18[0] = 0;
-        sp18[1] = g_TrackCameras[cameraNodeIndex].data.orientation.distance;
-        sp18[2] = 0x32;
-        ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp28[0]);
+        BuildRotMatrixY(&objectRotation, car->angleY);
+        BuildRotMatrixX(&matrixWork, car->bodyPitch);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, car->bodyRoll);
+        MulMatrix2(&matrixWork, &objectRotation);
+        TransposeMatrix(&objectRotation, &inverseObjectRotation);
         orbitNode = &g_TrackCameras[cameraNodeIndex];
-        orbitToCarX = orbitNode->offset[0] - scratch[2];
-        sp38[0] = orbitToCarX;
-        orbitToCarY = orbitNode->offset[1] - scratch[3];
-        sp38[1] = orbitToCarY;
-        orbitToCarZ = orbitNode->offset[2] - scratch[4];
-        sp38[2] = orbitToCarZ;
-        scratch[2] += (orbitToCarX * g_CamPathFrame) / orbitNode->duration;
-        scratch[3] += (sp38[1] * g_CamPathFrame) / orbitNode->duration;
-        scratch[4] += (sp38[2] * g_CamPathFrame) / orbitNode->duration;
-        orbitDx = scratch[2] - (car->x + sp28[0]);
-        squaredX = orbitDx * orbitDx;
-        sp38[0] = orbitDx;
-        sp38[1] = scratch[3] - (car->y + sp28[1]);
-        orbitDz = scratch[4] - (car->z + sp28[2]);
-        sp38[2] = orbitDz;
-        squaredZ = orbitDz * orbitDz;
-        scratch[6] = 0x400 - (Atan2(0 - sp38[1], SquareRoot0(squaredX + squaredZ)) & 0xFFF);
-        chaseYaw = 0x400 - (Atan2(0 - sp38[0], 0 - sp38[2]) & 0xFFF);
-        nextPrevMode = 4;
-        scratch[7] = chaseYaw;
-        scratch[8] = 0;
-        g_CameraModePrev = nextPrevMode;
+        nodeOffset[0] = 0;
+        nodeOffset[1] = orbitNode->data.orientation.distance;
+        nodeOffset[2] = 0x32;
+        ApplyMatrixLV(&inverseObjectRotation, &nodeOffset[0],
+                      &nodeWorld[0]);
+        /* Slide the camera from where it starts to the node's own position
+         * across the node's duration, then aim back at the car. */
+        scratch[2] += ((orbitNode->offset[0] - scratch[2]) * g_CamPathFrame) /
+                      orbitNode->duration;
+        scratch[3] += ((orbitNode->offset[1] - scratch[3]) * g_CamPathFrame) /
+                      orbitNode->duration;
+        scratch[4] += ((orbitNode->offset[2] - scratch[4]) * g_CamPathFrame) /
+                      orbitNode->duration;
+        AimCameraAt(scratch, car->x + nodeWorld[0], car->y + nodeWorld[1],
+                    car->z + nodeWorld[2]);
+        g_CameraModePrev = 4;
         break;
     case 5:
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = playerAddress.blocks[0];
-        BuildRotMatrixY(cameraRotation.halfwords, 0 - g_OrbitCameraYaw);
-        BuildRotMatrixY(objectRotation.halfwords, car->angleY);
-        BuildRotMatrixX(matrixWork.halfwords, car->bodyPitch);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        BuildRotMatrixZ(matrixWork.halfwords, car->bodyRoll);
-        MulMatrix2(matrixWork.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &inverseObjectRotation.matrix);
-        MulMatrix2(cameraRotation.halfwords, objectRotation.halfwords);
-        TransposeMatrix(&objectRotation.matrix, &matrixWork.matrix);
-        sp18[0] = 0;
-        sp18[1] = 0;
-        sp18[2] = 0x32;
-        ApplyMatrixLV(inverseObjectRotation.halfwords, &sp18[0], &sp28[0]);
-        sp18[0] = 0;
-        sp18[1] = 0;
-        scratch[2] += sp28[0];
-        scratch[3] += sp28[1];
-        scratch[4] += sp28[2];
-        sp18[2] = g_OrbitCameraDistance;
-        ApplyMatrixLV(matrixWork.halfwords, &sp18[0], &sp38[0]);
-        scratch[6] = 0x400 - (Atan2(sp38[1], g_OrbitCameraDistance) & 0xFFF);
-        scratch[7] = 0x400 - (Atan2(sp38[0], sp38[2]) & 0xFFF);
+        BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
+        BuildRotMatrixY(&objectRotation, car->angleY);
+        BuildRotMatrixX(&matrixWork, car->bodyPitch);
+        MulMatrix2(&matrixWork, &objectRotation);
+        BuildRotMatrixZ(&matrixWork, car->bodyRoll);
+        MulMatrix2(&matrixWork, &objectRotation);
+        TransposeMatrix(&objectRotation, &inverseObjectRotation);
+        MulMatrix2(&cameraRotation, &objectRotation);
+        TransposeMatrix(&objectRotation, &matrixWork);
+        focusOffset[0] = 0;
+        focusOffset[1] = 0;
+        focusOffset[2] = 0x32;
+        ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
+                      &focusWorld[0]);
+        scratch[2] += focusWorld[0];
+        scratch[3] += focusWorld[1];
+        scratch[4] += focusWorld[2];
+        eyeOffset[0] = 0;
+        eyeOffset[1] = 0;
+        eyeOffset[2] = g_OrbitCameraDistance;
+        ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
+        /* Pitch uses the orbit distance rather than the flattened eye vector,
+         * so a pitched camera tilts a shade less than a true look-at would.
+         * Retail's, and the view players know. */
+        scratch[6] = 0x400 - (Atan2(eyeWorld[1], g_OrbitCameraDistance) & 0xFFF);
+        scratch[7] = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
         scratch[8] = car->bodyRoll;
         g_CameraModePrev = 5;
-        scratch[2] -= sp38[0];
-        adjustedY = scratch[3] - 0x28;
-        scratch[3] = adjustedY - sp38[1];
-        scratch[4] -= sp38[2];
+        scratch[2] -= eyeWorld[0];
+        scratch[3] = (scratch[3] - 0x28) - eyeWorld[1];
+        scratch[4] -= eyeWorld[2];
         break;
     }
     StoreScratchLegacyView(&legacyView);

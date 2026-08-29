@@ -114,3 +114,19 @@ s32 Atan2(s32 x, s32 y) {
     }
     return g_AtanTable[(y << 10) / x] + 0x800;
 }
+
+/*
+ * Rotate a full-width vector by a matrix. The GTE's own vector op is
+ * 16-bit, so the game keeps this one for the camera, whose offsets and
+ * distances do not fit in a short.
+ */
+void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output) {
+    const s16 *m = matrix;
+    int row;
+    for (row = 0; row < 3; row++) {
+        int64_t value = (int64_t)m[row * 3] * input[0]
+                      + (int64_t)m[row * 3 + 1] * input[1]
+                      + (int64_t)m[row * 3 + 2] * input[2];
+        output[row] = (s32)(value >> 12);
+    }
+}

@@ -480,6 +480,34 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(track_math_tests PRIVATE -Wall -Wextra -Wno-error)
 endif()
 add_test(NAME track_math COMMAND track_math_tests)
+
+if(TARGET rage-host-state)
+add_executable(track_camera_tests
+    track_camera_tests.c
+    ../src/main/PAL/main/track/update_camera.c
+    ../src/main/PAL/main/render/rot_matrix.c
+    ../src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(track_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(track_camera_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(track_camera_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(track_camera_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+target_link_libraries(track_camera_tests PRIVATE psyz)
+if(NOT MSVC)
+    target_compile_options(track_camera_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+add_test(NAME track_camera COMMAND track_camera_tests)
+set_tests_properties(track_camera PROPERTIES LABELS portable)
+endif()
+
 set_tests_properties(track_math PROPERTIES LABELS portable)
 
 add_test(NAME axis_curve COMMAND axis_curve_tests)
