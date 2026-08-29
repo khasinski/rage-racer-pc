@@ -4,13 +4,7 @@
 #include "psyq/snd.h"
 
 void SetLoadedTableVolumeScale(s32 scale) {
-    if (scale >= 0) {
-        if (scale >= 0x81) {
-            scale = 0x80;
-        }
-    } else {
-        scale = 0;
-    }
+    scale = ClampVoiceVolume(scale);
     g_EngineSoundState.volumeScale = scale;
 }
 

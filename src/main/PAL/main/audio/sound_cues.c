@@ -34,13 +34,7 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
     } else {
         bank = 0;
     }
-    if (volume >= 0) {
-        if (volume >= 0x80) {
-            volume = 0x7F;
-        }
-    } else {
-        volume = 0;
-    }
+    volume = ClampCueLevel(volume);
 
     switch (bank) {
     case 0:
@@ -335,19 +329,13 @@ s32 StartSoundCueVoice(s32 cue, s32 note, s32 volL, s32 volR) {
     }
     scale = g_SoundScale.scale;
     scaled = (scaled >> 7) * scale;
-    if (scaled < 0) {
-        scaled += 0x7F;
-    }
-    volL = scaled >> 7;
+    volL = scaled / 128;
     scaled = volR * baseVol;
     if (scaled < 0) {
         scaled += 0x7F;
     }
     scaled = (scaled >> 7) * scale;
-    if (scaled < 0) {
-        scaled += 0x7F;
-    }
-    volR = scaled >> 7;
+    volR = scaled / 128;
 
     if (g_SoundCueBank == 1) {
         i = 0;
@@ -485,10 +473,7 @@ s32 StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
     }
     sx >>= 7;
     volumeRight = (vy >> 7) * scale;
-    if (volumeRight < 0) {
-        volumeRight += 0x7F;
-    }
-    sy = volumeRight >> 7;
+    sy = volumeRight / 128;
 
     if ((SpuGetKeyStatus(g_SpecialVoiceBits[4]) == 0) || (id == 0x3D) || (id == 0x2B)) {
         result = (s16)SsUtKeyOnV(
@@ -598,13 +583,7 @@ void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot
     } else {
         left = 0;
     }
-    if (right >= 0) {
-        if (right >= 0x81) {
-            right = 0x80;
-        }
-    } else {
-        right = 0;
-    }
+    right = ClampVoiceVolume(right);
     SsUtSetVVol((s16)voiceCopy, left, right);
     voice = slot + 0xE;
     SsUtPitchBend((s16)voice, g_SoundScale.vabIds[(s16)vab], g_SoundSlotTone[slot][toneIndex], 0x3C, (s16)bend);

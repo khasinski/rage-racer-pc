@@ -13,6 +13,25 @@ void SsSeqPlay(short sequence, char playMode, short loopCount);
 void SsSeqStop(short sequence);
 void SsSeqSetVol(short sequence, short left, short right);
 
+/*
+ * The SPU takes a voice volume in 0..0x80, and a cue level in 0..0x7F. Both
+ * clamps were written out in full at every call, twice over wherever the two
+ * channels were done one after the other.
+ */
+static inline s32 ClampVoiceVolume(s32 volume) {
+    if (volume < 0) {
+        return 0;
+    }
+    return volume > 0x80 ? 0x80 : volume;
+}
+
+static inline s32 ClampCueLevel(s32 level) {
+    if (level < 0) {
+        return 0;
+    }
+    return level >= 0x80 ? 0x7F : level;
+}
+
 typedef struct EffectCueBankHeader {
     s32 voiceCount;
     s32 volumeScale;
@@ -141,12 +160,6 @@ typedef struct EngineSoundCurveRow {
     s32 positions[9];
     s32 values[9];
 } EngineSoundCurveRow;
-
-typedef union EngineSoundCurveAddress {
-    s32 value;
-    u8 *bytes;
-    s32 *pointer;
-} EngineSoundCurveAddress;
 
 typedef struct EngineSoundState {
     s32 position;

@@ -100,21 +100,8 @@ void LoadAudioParameterTable(u16 *table) {
 }
 
 void SetReverbDepth(s32 left, s32 right) {
-    if (left >= 0) {
-        if (left >= 0x80) {
-            left = 0x7F;
-        }
-    } else {
-        left = 0;
-    }
-
-    if (right >= 0) {
-        if (right >= 0x80) {
-            right = 0x7F;
-        }
-    } else {
-        right = 0;
-    }
+    left = ClampCueLevel(left);
+    right = ClampCueLevel(right);
 
     g_ReverbDepthL = left;
     g_ReverbDepthR = right;

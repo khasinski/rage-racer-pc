@@ -189,10 +189,7 @@ void UpdateCarTiltCounter(GameCarRuntime *car) {
 
     limit = obj->tiltCounter;
     value = limit * 3;
-    if (value < 0) {
-        value += 3;
-    }
-    value >>= 2;
+    value /= 4;
     }
     obj->tiltCounter = value;
 }
@@ -278,10 +275,7 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
         }
         trig = rsin(GetAngleDistance((s16)rawArg, carReg->bodyYaw));
         product = (s16)speed * trig;
-        if (product < 0) {
-            product += 0xFFFF;
-        }
-        tmp = product >> 16;
+        tmp = product / 65536;
     } else {
         trig = rsin(GetAngleDistance((s16)rawArg, carReg->bodyYaw));
         product = trig * 2;
@@ -289,10 +283,7 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
         product <<= 3;
         product += trig;
         adjustedReg = product * 2;
-        if (adjustedReg < 0) {
-            adjustedReg += 0xFFF;
-        }
-        tmp = adjustedReg >> 12;
+        tmp = adjustedReg / 4096;
     }
 
     speed = tmp + 10;
@@ -302,16 +293,10 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     product = speed << 16;
     angle = product >> 16;
     adjustedReg = trig * angle;
-    if (adjustedReg < 0) {
-        adjustedReg += 0xFFF;
-    }
-    hitX = adjustedReg >> 12;
+    hitX = adjustedReg / 4096;
     trig = rcos(savedAngle);
     adjustedReg = trig * angle;
-    if (adjustedReg < 0) {
-        adjustedReg += 0xFFF;
-    }
-    hitZ = adjustedReg >> 12;
+    hitZ = adjustedReg / 4096;
     tmp = 0x1E;
     } else if (mode < 4) {
     adjustedReg = carReg->trackHeading.half.low;
@@ -329,16 +314,10 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     angle = rawArg;
     trig = rsin(rawArg);
     tmp = trig * 20;
-    if (tmp < 0) {
-        tmp += 0xFFF;
-    }
-    hitX = tmp >> 12;
+    hitX = tmp / 4096;
     trig = rcos(angle);
     tmp = trig * 20;
-    if (tmp < 0) {
-        tmp += 0xFFF;
-    }
-    hitZ = tmp >> 12;
+    hitZ = tmp / 4096;
     tmp = 0xF;
     } else {
     hitSign = hitX;
@@ -419,10 +398,7 @@ angled_body_kick:
 
     value = distance - 0x140;
     value *= temp;
-    if (value < 0) {
-        value += 0xFFF;
-    }
-    value >>= 12;
+    value /= 4096;
 
     obj->motionValue.value = value;
 

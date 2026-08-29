@@ -26,13 +26,6 @@ struct RaceIntroCameraScript {
     RaceIntroCameraKey keys[1];
 };
 
-typedef union RaceIntroCameraScriptAddress {
-    s32 value;
-    struct RaceIntroCameraScript *scriptPointer;
-    RaceIntroCameraKey *keyPointer;
-    Vec4 *vectorPointer;
-} RaceIntroCameraScriptAddress;
-
 typedef struct LaunchSpeedThreshold {
     s16 initial;
     s16 sustain;

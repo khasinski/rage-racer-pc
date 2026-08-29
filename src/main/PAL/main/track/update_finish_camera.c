@@ -46,16 +46,10 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     g_CameraCarHeading += GetAngleDelta(g_CameraCarHeading, angle);
 
     value = rsin(g_CameraCarHeading) * g_CameraCarSpeed;
-    if (value < 0) {
-        value += 0xFF;
-    }
-    g_CameraCarStepX = value >> 8;
+    g_CameraCarStepX = value / 256;
 
     zValue = rcos(g_CameraCarHeading) * g_CameraCarSpeed;
-    if (zValue < 0) {
-        zValue += 0xFF;
-    }
-    g_CameraCarStepZ = zValue >> 8;
+    g_CameraCarStepZ = zValue / 256;
 
     g_CameraCar.x = g_CameraCarStepX / 256 + g_CameraCar.x;
     g_CameraCarZ = g_CameraCarStepZ / 256 + g_CameraCarZ;

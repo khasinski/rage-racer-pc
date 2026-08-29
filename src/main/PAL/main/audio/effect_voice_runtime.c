@@ -73,21 +73,8 @@ void ApplyPanVoiceVolume(void) {
         left >>= 7;
         right = raw >> 7;
 
-        if (left >= 0) {
-            if (left >= 0x81) {
-                left = 0x80;
-            }
-        } else {
-            left = 0;
-        }
-
-        if (right >= 0) {
-            if (right >= 0x81) {
-                right = 0x80;
-            }
-        } else {
-            right = 0;
-        }
+        left = ClampVoiceVolume(left);
+        right = ClampVoiceVolume(right);
 
         SsUtSetVVol(0x15, left, right);
         if (g_PanVoiceActive == 0) {
@@ -123,13 +110,7 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
         index = -1;
     }
 
-    if (volume >= 0) {
-        if (volume >= 0x80) {
-            volume = 0x7F;
-        }
-    } else {
-        volume = 0;
-    }
+    volume = ClampCueLevel(volume);
 
     g_IndexedEffectIndex = index;
     if (index >= 0) {
@@ -173,10 +154,7 @@ void UpdateIndexedEffectVoice(void) {
         base = g_IndexedEffects[index].tone;
         center = raw >> 7;
         fine = raw & 0x7F;
-        if (product < 0) {
-            product += 0x7F;
-        }
-        raw = product >> 7;
+        raw = product / 128;
         scale = g_SoundScale.scale;
         raw *= scale;
         left = raw;
@@ -186,14 +164,8 @@ void UpdateIndexedEffectVoice(void) {
         left >>= 7;
         right = left;
 
-        /* One clamp, applied to both channels: they hold the same value. */
-        if (right < 0) {
-            left = 0;
-            right = 0;
-        } else if (right >= 0x81) {
-            left = 0x80;
-            right = 0x80;
-        }
+        left = ClampVoiceVolume(left);
+        right = ClampVoiceVolume(right);
 
         SsUtSetVVol(0x14, left, right);
         voice = 0x14;
@@ -240,21 +212,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         cue = 0;
     }
 
-    if (left >= 0) {
-        if (left >= 0x80) {
-            left = 0x7F;
-        }
-    } else {
-        left = 0;
-    }
-
-    if (right >= 0) {
-        if (right >= 0x80) {
-            right = 0x7F;
-        }
-    } else {
-        right = 0;
-    }
+    left = ClampCueLevel(left);
+    right = ClampCueLevel(right);
 
     if ((left <= 0) && (right <= 0)) {
         left = g_MusicChannels[0].left.value;
@@ -332,19 +291,13 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         if (flag != 0) {
             currentB = GetSoundModeAtByteOffset(entryOffset)->factor;
             scaledLeft = left * currentB;
-            if (scaledLeft < 0) {
-                scaledLeft += 0x7F;
-            }
-            scaledLeft >>= 7;
+            scaledLeft /= 128;
             CHANNEL(cue).volLeft.updated = scaledLeft;
             scaledRight = right * currentB;
             entryAddress.pointer = entry;
             entryAddress.bytes += sizeof(SoundModeSlot);
             entry = entryAddress.pointer;
-            if (scaledRight < 0) {
-                scaledRight += 0x7F;
-            }
-            scaledRight >>= 7;
+            scaledRight /= 128;
             CHANNEL(cue).volRight.updated = scaledRight;
             i++;
         } else {

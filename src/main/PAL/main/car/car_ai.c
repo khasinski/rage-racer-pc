@@ -31,17 +31,11 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
 
         timer = car->motionModeTimer;
         product = timer * car->motionValue.value;
-        if (product < 0) {
-            product += 0x7F;
-        }
-        amplitude = product >> 7;
+        amplitude = product / 128;
 
         wave = rsin(((timer * 3) << 12) / 30) * amplitude;
     }
-    if (wave < 0) {
-        wave += 0x7FF;
-    }
-    value = wave >> 11;
+    value = wave / 2048;
 
     switch (car->motionMode) {
     case 1:
@@ -205,10 +199,7 @@ static void SettleSlide(GameCarAiBlock *ai) {
         return;
     }
     rate = rate * 15 * 2;
-    if (rate < 0) {
-        rate += 0x1F;
-    }
-    rate >>= 5;
+    rate /= 32;
     ai->yawRate = rate;
     if (rate == 0) {
         ai->markerDirection = 0;

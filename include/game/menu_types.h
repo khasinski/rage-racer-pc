@@ -28,13 +28,6 @@ typedef union RaceRecordAddress {
     volatile u8 *volatileBytePointer;
 } RaceRecordAddress;
 
-static inline s32 *GetRaceRecordWords(RaceRecord *record) {
-    RaceRecordAddress address;
-
-    address.pointer = record;
-    return address.wordPointer;
-}
-
 typedef struct TeamLogoSample {
     u16 clut[2][16];
     u16 canvas[64][16];

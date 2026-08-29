@@ -237,10 +237,7 @@ void ResetCarTrackState(GameCarRuntime *car) {
         sinValue = rsin(spad->relativeHeading);
         spad->headingSin = sinValue;
         firstProduct = spad->surfacePitch * spad->headingCos;
-        if (firstProduct < 0) {
-            firstProduct += 0xFFF;
-        }
-        firstProduct >>= 0xC;
+        firstProduct /= 4096;
         secondProduct = spad->camberAngle * sinValue;
         if (secondProduct < 0) {
             secondProduct += 0xFFF;

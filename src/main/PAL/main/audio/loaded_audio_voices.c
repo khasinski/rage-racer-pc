@@ -191,26 +191,10 @@ void ForcePanVoiceEnabled(s32 enabled) {
         
         raw *= scale;
         left >>= 7;
-        if (raw < 0) {
-            raw += 0x7F;
-        }
-        right = raw >> 7;
+        right = raw / 128;
 
-        if (left >= 0) {
-            if (left >= 0x81) {
-                left = 0x80;
-            }
-        } else {
-            left = 0;
-        }
-
-        if (right >= 0) {
-            if (right >= 0x81) {
-                right = 0x80;
-            }
-        } else {
-            right = 0;
-        }
+        left = ClampVoiceVolume(left);
+        right = ClampVoiceVolume(right);
 
         SsUtSetVVol(0x15, left, right);
         voice = 0x15;

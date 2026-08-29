@@ -156,11 +156,6 @@ typedef struct GameSpriteDesc {
     s32 semiTrans;
 } GameSpriteDesc;
 
-typedef union GameSpriteDescAddress {
-    u8 *bytes;
-    GameSpriteDesc *descriptors;
-} GameSpriteDescAddress;
-
 extern GameSpriteDesc g_TachoNeedleSprite;
 void BuildSpriteFromDesc(SPRT *prim, GameSpriteDesc *src);
 extern TimedDrawCommand g_MenuRowScript[];
@@ -750,21 +745,6 @@ typedef struct EnvironmentPalette {
     Rgb colors[16];
 } EnvironmentPalette;
 
-typedef union EnvironmentPaletteAddress {
-    s32 value;
-    EnvironmentPalette *palettePointer;
-    Rgb *colorPointer;
-} EnvironmentPaletteAddress;
-
-typedef s32 EnvironmentClutOffset;
-
-typedef union EnvironmentClutAddress {
-    EnvironmentClutOffset clutOffset;
-    s32 value;
-    u8 *bytes;
-    u16 *pointer;
-    s16 *signedPointer;
-} EnvironmentClutAddress;
 
 extern EnvironmentPalette *g_EnvPaletteTable;
 /* The 16 interpolated BGR555 entries uploaded to VRAM at (0xE0, 0x1E6). */

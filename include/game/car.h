@@ -216,11 +216,6 @@ static inline Vec4 *GetCarVector4(GameCarRuntime *car) {
     return address.vector4;
 }
 
-typedef union CarBodyRotationAddress {
-    s32 *words;
-    Block16 *block;
-} CarBodyRotationAddress;
-
 typedef struct CarProgressWindow {
     s32 progressB;
     u8 reserved[0x3C];

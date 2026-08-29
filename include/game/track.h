@@ -233,14 +233,6 @@ typedef union TrackPointTableAddress {
     GameTrackArcCenter *arcCenterPointer;
 } TrackPointTableAddress;
 
-static inline GameTrackPointHalfwordView *GetTrackPointHalfwordView(
-    GameTrackPoint *point) {
-    TrackPointTableAddress address;
-
-    address.pointPointer = point;
-    return address.halfwordPointer;
-}
-
 typedef struct TrackPointTable {
     s32 count;
     GameTrackPoint points[1];

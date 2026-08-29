@@ -391,11 +391,6 @@ static inline OptionScreenAsset *GetOptionScreenAsset(void *data) {
     return address.optionScreen;
 }
 
-typedef union ModelBankTableAddress {
-    s32 byteAddress;
-    ModelBankHeader **pointer;
-} ModelBankTableAddress;
-
 typedef struct TerrainCellAssetHeader {
     s32 cellCount;
     s32 facesOffset;

@@ -41,21 +41,8 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
             left >>= 7;
             right = raw >> 7;
 
-            if (left >= 0) {
-                if (left >= 0x81) {
-                    left = 0x80;
-                }
-            } else {
-                left = 0;
-            }
-
-            if (right >= 0) {
-                if (right >= 0x81) {
-                    right = 0x80;
-                }
-            } else {
-                right = 0;
-            }
+            left = ClampVoiceVolume(left);
+            right = ClampVoiceVolume(right);
 
             SsUtSetVVol((s16)voiceArg, left, right);
         } else {
@@ -98,10 +85,7 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
         base = g_IndexedEffects[index].tone;
         center = raw >> 7;
         fine = raw & 0x7F;
-        if (product < 0) {
-            product += 0x7F;
-        }
-        raw = product >> 7;
+        raw = product / 128;
         scale = g_SoundScale.scale;
         raw *= scale;
         left = raw;
@@ -119,13 +103,7 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
             left = 0;
         }
 
-        if (right >= 0) {
-            if (right >= 0x81) {
-                right = 0x80;
-            }
-        } else {
-            right = 0;
-        }
+        right = ClampVoiceVolume(right);
 
         SsUtSetVVol(0x14, left, right);
         voice = 0x14;
@@ -188,13 +166,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
                 left = 0;
             }
 
-            if (right >= 0) {
-                if (right >= 0x81) {
-                    right = 0x80;
-                }
-            } else {
-                right = 0;
-            }
+            right = ClampVoiceVolume(right);
 
             SsUtSetVVol((s16)voiceArg, left, right);
 

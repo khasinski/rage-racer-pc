@@ -40,10 +40,7 @@ void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex) {
         }
         scaled = limit * 4;
         scaled += limit;
-        if (scaled < 0) {
-            scaled += 7;
-        }
-        limit = scaled >> 3;
+        limit = scaled / 8;
     } else {
         GameTrackPoint *point;
 

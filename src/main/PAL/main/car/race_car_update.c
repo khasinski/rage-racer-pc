@@ -49,19 +49,13 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     point = TrackPoint(index);
     if (point->rightHalfWidth < lateral) {
         value = point->rightHalfWidth * car->normalizedLateralOffset;
-        if (value < 0) {
-            value += 0x7FF;
-        }
-        lateral = value >> 11;
+        lateral = value / 2048;
     } else {
         value = point->leftHalfWidth;
         lowerLimit = -value;
         if (lateral < lowerLimit) {
             value = lowerLimit * car->normalizedLateralOffset;
-            if (value < 0) {
-                value += 0x7FF;
-            }
-            lateral = value >> 11;
+            lateral = value / 2048;
         }
     }
 
