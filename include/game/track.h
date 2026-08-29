@@ -145,14 +145,20 @@ typedef union TrackEventSoundZoneAddress {
     TrackEventSoundZone *pointer;
 } TrackEventSoundZoneAddress;
 
+/*
+ * A sound that plays from one spot beside the track rather than filling a
+ * stretch of it. It is audible between `start` and `end` along the track,
+ * fading in and out over the two distances, and it is panned by where the
+ * camera stands relative to (sourceX, sourceZ).
+ */
 typedef struct TrackPointAmbienceZone {
     s32 start;
     s32 end;
     u16 fadeInDistance;
     u16 fadeOutDistance;
-    s32 leftVolume;
-    s32 rightVolume;
-    s32 phase;
+    s32 sourceX;
+    s32 sourceZ;
+    s32 cue; /* 1 picks one sound, anything else the other; sign unused */
 } TrackPointAmbienceZone;
 
 typedef struct TrackFinishCue {

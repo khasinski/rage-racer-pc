@@ -590,27 +590,24 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
           opponentSamples[8].z = (opponentCorners[2].z + opponentSamples[1].z) / 2;
           opponentSamples[9].x = (opponentCorners[3].x + opponentSamples[2].x) / 2;
           opponentSamples[9].z = (opponentCorners[3].z + opponentSamples[2].z) / 2;
+          /* Corners first, then the edge and centre points, then the
+             points between: the cheapest test that can hit, first. */
           collisionRegion = FirstQuadHit(playerGrid, opponentCorners, 4,
                                          &sampleIndex, &quadIndex);
+          if (collisionRegion <= 0)
+          {
+            collisionRegion = FirstQuadHit(playerGrid, opponentSamples, 5,
+                                           &sampleIndex, &quadIndex);
+          }
+          if (collisionRegion <= 0)
+          {
+            collisionRegion = FirstQuadHit(playerGrid, &opponentSamples[6], 4,
+                                           &sampleIndex, &quadIndex);
+          }
           if (collisionRegion > 0)
           {
             goto collision_found;
           }
-
-          collisionRegion = FirstQuadHit(playerGrid, opponentSamples, 5,
-                                         &sampleIndex, &quadIndex);
-          if (collisionRegion > 0)
-          {
-            goto collision_found;
-          }
-
-          collisionRegion = FirstQuadHit(playerGrid, &opponentSamples[6], 4,
-                                         &sampleIndex, &quadIndex);
-          if (collisionRegion > 0)
-          {
-            goto collision_found;
-          }
-
         }
         else
           if ((trackDelta < 0x32) && (progressDelta < 0x3E8))

@@ -23,7 +23,6 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     s32 flagByte;
     s32 alpha;
 
-    /* Match note: materialize motionReg in $t2 before the first load. */
     limit = motionReg->limit;
     otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
     packed = motionReg->packedVelocity;
@@ -121,7 +120,6 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     u32 interpProduct;
     s32 alpha;
 
-    /* Match note: materialize motionReg in $t0 before the first load. */
     limit = motionReg->limit;
     otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
     xPacked = motionReg->packedVelocity0;
@@ -460,77 +458,71 @@ s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
     nextProgress = (index * 3) << 2;
     commandAddress.pointer = base;
     commandAddress.value = nextProgress + commandAddress.value;
-    if (commandAddress.pointer->time < 0) {
-        goto timed_commands_done;
-    }
     cmd = commandAddress.pointer;
-loop_body:
-    remaining = *progressPtr - cmd->time;
-    if (remaining >= 0) {
-        type = cmd->type;
-        if (type < 40) {
-            switch (type) {
-            case 9:
-                if (g_MenuAltLayout != 0) {
+    while (cmd->time >= 0) {
+        remaining = *progressPtr - cmd->time;
+        if (remaining >= 0) {
+            type = cmd->type;
+            if (type < 40) {
+                switch (type) {
+                case 9:
+                    if (g_MenuAltLayout != 0) {
+                        break;
+                    }
+                    DrawScriptedSprite(
+                        remaining, cmd->shape.spriteShape,
+                        cmd->motion.spriteMotion, type);
+                    break;
+                case 0:
+                case 1:
+                    DrawScriptedSprite(
+                        remaining, cmd->shape.spriteShape,
+                        cmd->motion.spriteMotion, type);
+                    break;
+                case 19:
+                    if (g_MenuAltLayout != 0) {
+                        break;
+                    }
+                    DrawScriptedLine(
+                        remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
+                    break;
+                case 10:
+                    DrawScriptedLine(
+                        remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
+                    break;
+                case 29:
+                    if (g_MenuAltLayout != 0) {
+                        break;
+                    }
+                    DrawScriptedTriangle(
+                        remaining, cmd->shape.triangleShape,
+                        cmd->motion.triangleMotion);
+                    break;
+                case 20:
+                    DrawScriptedTriangle(
+                        remaining, cmd->shape.triangleShape,
+                        cmd->motion.triangleMotion);
+                    break;
+                case 39:
+                    if (g_MenuAltLayout != 0) {
+                        break;
+                    }
+                    DrawScriptedQuad(
+                        remaining, cmd->shape.quadShape, cmd->motion.quadMotion);
+                    break;
+                case 30:
+                    DrawScriptedQuad(
+                        remaining, cmd->shape.quadShape, cmd->motion.quadMotion);
+                    break;
+                default:
                     break;
                 }
-                DrawScriptedSprite(
-                    remaining, cmd->shape.spriteShape,
-                    cmd->motion.spriteMotion, type);
-                break;
-            case 0:
-            case 1:
-                DrawScriptedSprite(
-                    remaining, cmd->shape.spriteShape,
-                    cmd->motion.spriteMotion, type);
-                break;
-            case 19:
-                if (g_MenuAltLayout != 0) {
-                    break;
-                }
-                DrawScriptedLine(
-                    remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
-                break;
-            case 10:
-                DrawScriptedLine(
-                    remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
-                break;
-            case 29:
-                if (g_MenuAltLayout != 0) {
-                    break;
-                }
-                DrawScriptedTriangle(
-                    remaining, cmd->shape.triangleShape,
-                    cmd->motion.triangleMotion);
-                break;
-            case 20:
-                DrawScriptedTriangle(
-                    remaining, cmd->shape.triangleShape,
-                    cmd->motion.triangleMotion);
-                break;
-            case 39:
-                if (g_MenuAltLayout != 0) {
-                    break;
-                }
-                DrawScriptedQuad(
-                    remaining, cmd->shape.quadShape, cmd->motion.quadMotion);
-                break;
-            case 30:
-                DrawScriptedQuad(
-                    remaining, cmd->shape.quadShape, cmd->motion.quadMotion);
-                break;
-            default:
-                break;
             }
         }
-    }
-    cmd++;
-    index++;
-    if (cmd->time >= 0) {
-        goto loop_body;
-    }
+        cmd++;
+        index++;
+        }
 
-timed_commands_done:
     if (stepReg >= 0) {
         commandAddress.value = *progressPtr;
         updatedProgress = stepReg + commandAddress.value;
@@ -561,7 +553,6 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     s32 value;
     s32 temporary;
     FadingMenuTableAddress tableAddress;
-    s32 done;
     s32 timerValue;
     u32 fade;
     s32 drawX;
@@ -607,9 +598,6 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     } else {
         value = (packed >> 0x10) & 0x7FFF;
     }
-    /* Match note: keep the $s5 save ahead of $s2 in the GCC 2.6.3 prologue. */
-    countReg++;
-    countReg--;
     value = elapsed * value;
     offsetProduct = value;
     yOffset = offsetProduct / 32;
@@ -621,50 +609,45 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     tableAddress.commands = g_MenuRowScript;
     cmd = &tableAddress.commands[i];
 
-loop:
-    tableAddress.timers = g_MenuRowFlashLevels;
-    timer = &tableAddress.timers[i];
+    for (; i <= countReg; i++, cmd++) {
+        shapePtr = cmd->shape.spriteShape;
+        motionPtr = cmd->motion.spriteMotion;
+        tableAddress.timers = g_MenuRowFlashLevels;
+        timer = &tableAddress.timers[i];
 
-    fade = *timer & 0x1FF;
-    *timer = fade;
-    fade >>= 2;
+        fade = *timer & 0x1FF;
+        *timer = fade;
+        fade >>= 2;
 
-    value = shapePtr->height;
-    drawX = (u16)motionPtr->x;
-    drawY = (u16)motionPtr->y;
-    drawW = shapePtr->width;
-    drawX = (s16)(drawX + xOffset);
-    drawY = (s16)(drawY + yOffset);
+        value = shapePtr->height;
+        drawX = (u16)motionPtr->x;
+        drawY = (u16)motionPtr->y;
+        drawW = shapePtr->width;
+        drawX = (s16)(drawX + xOffset);
+        drawY = (s16)(drawY + yOffset);
 
-    DrawSprite(ot + 2,
-                  drawX,
-                  drawY,
-                  drawW,
-                  value,
-                  shapePtr->u,
-                  shapePtr->v,
-                  fade,
-                  fade,
-                  fade,
-                  motionPtr->clut,
-                  0,
-                  1,
-                  shapePtr->alpha);
+        DrawSprite(ot + 2,
+                      drawX,
+                      drawY,
+                      drawW,
+                      value,
+                      shapePtr->u,
+                      shapePtr->v,
+                      fade,
+                      fade,
+                      fade,
+                      motionPtr->clut,
+                      0,
+                      1,
+                      shapePtr->alpha);
 
-    timerValue = *timer;
-    nextTimer = 0;
-    if (timerValue >= 60) {
-        nextTimer = timerValue - 60;
-    }
-    cmd++;
-    i++;
-    done = countReg < i;
-    *timer = nextTimer;
-    shapePtr = cmd->shape.spriteShape;
-    motionPtr = cmd->motion.spriteMotion;
-    if (!done) {
-        goto loop;
-    }
+        timerValue = *timer;
+        nextTimer = 0;
+        if (timerValue >= 60) {
+            nextTimer = timerValue - 60;
+        }
+        *timer = nextTimer;
+        }
 }
 
 

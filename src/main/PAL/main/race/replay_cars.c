@@ -57,7 +57,6 @@ s32 GetTrackZoneBlend(s32 position) {
     s32 start;
     s32 finish;
     s32 code;
-    u16 rawCode;
 
     data = g_TrackEventData;
     scene = g_RaceSeries;
@@ -73,66 +72,52 @@ s32 GetTrackZoneBlend(s32 position) {
     g_TrackZoneDark = 0;
 
     do {
-    start = zone.pointer->start;
-    finish = zone.pointer->end;
-    if (start == -1) {
-        goto done;
-    }
-
-    if ((start < position) && (position < finish)) {
-        if (position < start + 0x100) {
-            status = 1;
-        } else if (finish - 0x100 < position) {
-            status = 2;
-        } else {
-            status = 3;
+        start = zone.pointer->start;
+        finish = zone.pointer->end;
+        if (start == -1) {
+            break;
         }
 
-        rawCode = zone.pointer->code;
-        RAW(g_TrackZoneCode) = rawCode;
-        code = (s16)rawCode;
-        if (code != 0) {
-        if (code <= 0) {
-        if (code == -3) {
-            goto code_minus_three;
-        }
-        goto normalize_code;
+        if ((start < position) && (position < finish)) {
+            /* How far into the zone: just inside either end, or well in. */
+            if (position < start + 0x100) {
+                status = 1;
+            } else if (finish - 0x100 < position) {
+                status = 2;
+            } else {
+                status = 3;
+            }
 
-        }
-        if (code == 2) {
-            goto code_two;
+            code = (s16)zone.pointer->code;
+            g_TrackZoneCode = code;
+            if (code == 0) {
+                /* A zone with no code of its own only darkens the scene. */
+                g_TrackZoneDark = 3;
+            } else if (code == 2 || code == -3) {
+                /* The two codes that stand for zone 1. Code 2 counts as
+                 * being well inside whatever the position said; code -3
+                 * only upgrades the far end. */
+                if (code == 2) {
+                    status = 4;
+                } else if (status == 2) {
+                    status = 3;
+                }
+                g_TrackZoneCode = 1;
+            } else if (code < 0) {
+                /* Any other negative code is the zone number, negated to
+                 * mark the whole zone as well inside. */
+                g_TrackZoneCode = -code;
+                status = 3;
+            }
+            g_ReverbZoneDepth = zone.pointer->value;
         }
 
-        } else {
-        g_TrackZoneDark = 3;
-        goto zone_code_done;
-
-code_two:
-        status = 4;
-code_minus_three:
-        if (status == 2) {
-            status = 3;
+        if (status > 0) {
+            break;
         }
-        g_TrackZoneCode = 1;
-        goto zone_code_done;
-
-        }
-normalize_code:
-        if (g_TrackZoneCode < 0) {
-            g_TrackZoneCode = -g_TrackZoneCode;
-            status = 3;
-        }
-zone_code_done:
-        g_ReverbZoneDepth = zone.pointer->value;
-    }
-
-    if (status > 0) {
-        break;
-    }
-    zone.pointer++;
+        zone.pointer++;
     } while (zone.value < first.value + 0xF0);
 
-done:
     switch (status) {
     case 1:
         return position - start;
@@ -165,6 +150,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 threshold;
     PlayerCarRaceState *raceState;
     SectorTimeTableAddress sectorAddress;
+    s32 sectorClosed;
 
     raceState = GetPlayerCarRaceState(car);
 
@@ -172,6 +158,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         return;
     }
 
+    sectorClosed = 0;
     slot = g_SectorIndex;
     if (slot >= 0) {
         if ((car->lap - 1) * g_TrackLength + g_SectorEndDistance[slot] <=
@@ -224,37 +211,40 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             sectorAddress.pointer = g_SectorTimes;
             sectorAddress.bytes += nextSlot;
             g_LastSectorTime = *sectorAddress.pointer;
-            goto split_update_done;
+            sectorClosed = 1;
         }
     }
 
-    if (g_SectorIndex == -2 && lapEvent != 0) {
-        g_SectorIndex = 0;
-        g_SplitSign = 0;
-        g_SplitTargetTime = g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
-        g_SplitTimer = 0x3C;
-        g_SplitSector = (u16)g_SectorIndex;
-    } else {
-    nextSlot = g_SectorIndex;
-    if (nextSlot >= 0 && g_LapCount >= raceState->timing.fields.lap) {
-        if (g_SplitTimer < 0x3C) {
-            g_SplitTimer++;
-            if (g_SplitTimer == 0x3C) {
-                g_SplitTargetTime = g_RefSectorTimes.values[nextSlot];
-                g_SplitSign = 0;
-                g_SplitSector = (u16)g_SectorIndex;
+    /* Closing a sector has already set the next target, so the rest is only
+     * for a frame that did not close one. */
+    if (!sectorClosed) {
+        if (g_SectorIndex == -2 && lapEvent != 0) {
+            g_SectorIndex = 0;
+            g_SplitSign = 0;
+            g_SplitTargetTime =
+                g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
+            g_SplitTimer = 0x3C;
+            g_SplitSector = (u16)g_SectorIndex;
+        } else if (g_SectorIndex >= 0 &&
+                   g_LapCount >= raceState->timing.fields.lap) {
+            /* Hold the split on screen for a second before showing the next
+             * sector's target. */
+            if (g_SplitTimer < 0x3C) {
+                g_SplitTimer++;
+                if (g_SplitTimer == 0x3C) {
+                    g_SplitTargetTime = g_RefSectorTimes.values[g_SectorIndex];
+                    g_SplitSign = 0;
+                    g_SplitSector = (u16)g_SectorIndex;
+                }
             }
+        } else {
+            g_SplitSector = 0;
+            g_SplitTimer = 0;
+            g_SplitSign = 0;
+            g_SplitTargetTime = g_RefSectorTimes.values[0];
         }
-    } else {
-        g_SplitSector = 0;
-        g_SplitTimer = 0;
-        g_SplitSign = 0;
-        g_SplitTargetTime = g_RefSectorTimes.values[0];
     }
-split_update_done:
-    ;
 
-}
     if (g_SplitTimer >= 0x3C) {
         threshold = 0x927BE;
         value = g_LapTimeMs;

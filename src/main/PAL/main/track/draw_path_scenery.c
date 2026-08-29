@@ -157,126 +157,99 @@ void UpdateTrackEventSound(s16 arg) {
 }
 
 
-void UpdatePointAmbience(s32 arg) {
-    TrackEventData *base;
-    TrackPointAmbienceZone *startp;
-    TrackPointAmbienceZone *seg;
-    s32 v1;
-    s32 t0;
-    u16 a1raw;
-    u16 t1raw;
-    s32 sentinel;
-    s32 s0v;
-    s16 s1;
-    s32 s2;
-    s32 s3;
-    s32 s4;
-    s32 s5;
-    s32 s6;
-    s32 a2v;
-    s32 a1s;
-    s32 v0;
-    s32 angle, sinv;
+/*
+ * Place the one point-source ambience the camera is near: pick the zone the
+ * car has reached, work out how loud it should be from how far into the zone
+ * it is, then pan that between the two channels by where the source sits
+ * relative to where the camera is looking.
+ */
+void UpdatePointAmbience(s32 trackPosition) {
+    TrackEventData *events;
+    TrackPointAmbienceZone *zone;
+    s32 level;
+    s32 sourceX;
+    s32 sourceZ;
+    s32 cue;
+    s32 leftVolume;
+    s32 rightVolume;
+    s32 index;
+    s32 fade;
+    s16 attenuated; /* 16-bit on purpose: see below */
+    s32 bearing;
+    s32 pan;
+    s32 sine;
 
-    base = g_TrackEventData;
-    startp = base->pointAmbienceZones;
+    events = g_TrackEventData;
+    zone = events->pointAmbienceZones;
     if (g_RaceSeries != 0) {
-        arg = g_TrackLength - arg;
+        trackPosition = g_TrackLength - trackPosition;
     }
 
-    s5 = 0;
-    a2v = 0;
-    s2 = 0;
-    s3 = 0;
-    s4 = 0;
-    s6 = 0;
-    s0v = 0;
-    sentinel = -1;
-    seg = startp;
-loop:
-    v1 = seg->start;
-    t0 = seg->end;
-    if (v1 != sentinel) {
-    a1raw = seg->fadeInDistance;
-    t1raw = seg->fadeOutDistance;
-    if (arg >= v1) {
-    if (t0 >= arg) {
-    v0 = a1raw << 16;
-    a1s = v0 >> 16;
-    if (arg < v1 + a1s) {
-        v0 = arg - v1;
-        v1 = (v0 * 48) / a1s;
-        s2 = v1;
+    leftVolume = 0;
+    rightVolume = 0;
+    level = 0;
+    sourceX = 0;
+    sourceZ = 0;
+    cue = 0;
+
+    /* Two zones at most, and a start of -1 ends the list. */
+    for (index = 0; index < 2; index++, zone++) {
+        if (zone->start == -1) {
+            break;
+        }
+        if (trackPosition < zone->start || trackPosition > zone->end) {
+            continue;
+        }
+        /* Full level in the middle, ramped over the two fade distances. */
+        fade = (s16)zone->fadeInDistance;
+        if (trackPosition < zone->start + fade) {
+            level = ((trackPosition - zone->start) * 48) / fade;
+        } else {
+            fade = (s16)zone->fadeOutDistance;
+            if (zone->end - fade < trackPosition) {
+                level = ((zone->end - trackPosition) * 48) / fade;
+            } else {
+                level = 0x30;
+            }
+        }
+        sourceX = zone->sourceX;
+        sourceZ = zone->sourceZ;
+        cue = zone->cue;
+        break;
+    }
+
+    if ((s16)level != 0) {
+        /*
+         * Quieter the further the camera stands from the source. Retail keeps
+         * this in 16 bits, so a source far enough away wraps the subtraction
+         * back to a large positive number; the clamp against the zone's own
+         * level is what catches that, and both have to stay as they are.
+         */
+        sourceX -= SCRATCH_VIEW_X;
+        sourceZ -= SCRATCH_VIEW_Z;
+        attenuated = (s16)(level - (SquareRoot12((sourceX * sourceX) / 4 +
+                                                 (sourceZ * sourceZ) / 4) >> 11));
+        if ((s16)level < attenuated) {
+            attenuated = (s16)level;
+        }
+        if (attenuated < 0) {
+            attenuated = 0;
+        }
+        /* Where the source lies relative to the way the camera faces, turned
+         * into a left/right split around the zone's own level. */
+        bearing = Atan2(sourceX, sourceZ);
+        pan = (SCRATCH_VIEW_ANGLE_Y - 0xC00 + bearing) & 0xFFF;
+        sine = rsin(pan);
+        leftVolume = level + (attenuated * sine) / 4096 + 0x20;
+        rightVolume = level + (-attenuated * sine) / 4096 + 0x20;
+        if (cue < 0) {
+            cue = -cue;
+        }
+    }
+
+    if (g_MirrorMode != 0) {
+        SetStereoSoundCue(cue == 1 ? 2 : 3, (s16)leftVolume, (s16)rightVolume);
     } else {
-        v0 = t1raw << 16;
-        a1s = v0 >> 16;
-        if ((t0 - a1s) < arg) {
-            v0 = t0 - arg;
-            v1 = (v0 * 48) / a1s;
-            s2 = v1;
-        } else {
-            s2 = 0x30;
-        }
-    }
-    s3 = seg->leftVolume;
-    s4 = seg->rightVolume;
-    s6 = seg->phase;
-    goto track_segment_found;
-    }
-    }
-    s0v++;
-    seg++;
-    if (s0v < 2) {
-        goto loop;
-    }
-
-    }
-track_segment_found:
-    v0 = s2 << 16;
-    s0v = v0 >> 16;
-    if (s0v != 0) {
-        s3 -= SCRATCH_VIEW_X;
-        s4 -= SCRATCH_VIEW_Z;
-        v0 = SquareRoot12((s3 * s3) / 4 + (s4 * s4) / 4);
-        v0 = s2 - (v0 >> 11);
-        s1 = v0;
-        v0 = s0v < (s16)v0;
-        if (v0) {
-            s1 = s2;
-        }
-        if ((s16)s1 < 0) {
-            s1 = 0;
-        }
-        angle = Atan2(s3, s4);
-        v1 = SCRATCH_VIEW_ANGLE_Y;
-        v1 -= 0xC00;
-        v1 += angle;
-        s0v = v1 & 0xFFF;
-        sinv = rsin(s0v);
-        v1 = s1 << 16;
-        s1 = v1 >> 16;
-        v0 = s2 + (s1 * sinv) / 4096;
-        s5 = v0 + 0x20;
-        sinv = rsin(s0v);
-        v1 = -s1;
-        v0 = s2 + (v1 * sinv) / 4096;
-        a2v = v0 + 0x20;
-        if (s6 < 0) {
-            s6 = -s6;
-        }
-    }
-
-    if (s6 == 1) {
-        if (g_MirrorMode != 0) {
-            SetStereoSoundCue(2, (s16)s5, (s16)a2v);
-        } else {
-            SetStereoSoundCue(2, (s16)a2v, (s16)s5);
-        }
-    } else {
-        if (g_MirrorMode != 0) {
-            SetStereoSoundCue(3, (s16)s5, (s16)a2v);
-        } else {
-            SetStereoSoundCue(3, (s16)a2v, (s16)s5);
-        }
+        SetStereoSoundCue(cue == 1 ? 2 : 3, (s16)rightVolume, (s16)leftVolume);
     }
 }

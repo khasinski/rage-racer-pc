@@ -79,11 +79,9 @@ void UpdateTitleAttract(void) {
 
     x28 = 0x28;
     yA0 = 0xA0;
-     /* Match note: materialize first-call argument registers before the stack-arg temp. */
     color = 0x7E00;
     scratch.pointerLink = &SCRATCH_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
-     /* Match note: keep scratchpad base and 0xf0 materialized before the first stack-arg temp. */
     tmp = 0x18;
     next = *scratch.pointerLink;
     h88 = 0x88;
