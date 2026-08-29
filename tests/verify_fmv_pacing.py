@@ -89,19 +89,29 @@ def check_cadence(output: str, stream: int, shown: int) -> None:
 
 
 def check_soundtrack(output: str, stream: int) -> None:
+    """The movie asked the drive for its soundtrack and got one.
+
+    This used to compare the mean amplitude of everything the mixer rendered
+    against a threshold, which separated a working soundtrack from one an
+    asset load had paused: 4818 against 1002. It does not separate them any
+    more. These runs are unthrottled, so a movie plays perhaps three times
+    faster than its own soundtrack and the scene ends while the audio is still
+    going; how much of the run is movie therefore depends on how fast the host
+    got through the rest, and the two cases now sit at 2442 and 2106.
+
+    Whether the soundtrack survives is answered by playing a movie at its real
+    rate and looking: on the throttled build a class ending holds its audio for
+    the full 10.5 seconds it lasts. What is left here is the part that stays
+    true regardless of speed.
+    """
+    if f"fmv xa start" not in output:
+        raise AssertionError(f"stream {stream} never started its soundtrack")
     metrics = re.search(r"audio metrics: frames=(\d+) energy=(\d+)", output)
     if metrics is None:
         raise AssertionError(f"stream {stream} reported no audio metrics")
     frames, energy = int(metrics.group(1)), int(metrics.group(2))
-    if frames < 10_000:
-        raise AssertionError(f"stream {stream} rendered almost no audio")
-    # Mean amplitude over the run. An asset load used to pause the movie's XA
-    # a second in, which left this near a thousand instead of near five.
-    level = energy / frames
-    if level < 3000:
-        raise AssertionError(
-            f"stream {stream} soundtrack averaged {level:.0f}, expected 3000 up; "
-            "an asset load is probably pausing it")
+    if frames < 10_000 or energy == 0:
+        raise AssertionError(f"stream {stream} rendered no audio at all")
 
 
 def check_soundtrack_tail(output: str, stream: int) -> None:
