@@ -294,6 +294,12 @@ endif()
 add_test(NAME car_prices COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
 
+# Test timeouts are wall-clock, and most of these run the game at its own pace
+# rather than as fast as the machine can. race_cdda waits out an audio track and
+# needs 66 seconds of real time; its limit was 45, so it failed whenever anything
+# else was running. Every limit here is three times the time its test takes on an
+# idle machine, which is enough that a busy one does not turn a passing test into
+# a failing one. They still catch a hang, which is what they are for.
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3
@@ -683,7 +689,7 @@ if(TARGET rage-extract AND TARGET rage-pack)
             $<TARGET_FILE:rage-extract>
             $<TARGET_FILE:rage-pack>
     )
-    set_tests_properties(mod_tools PROPERTIES TIMEOUT 60)
+    set_tests_properties(mod_tools PROPERTIES TIMEOUT 180)
 endif()
 
 set(RAGE_PORTABLE_TESTS
@@ -704,7 +710,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(boot_frame PROPERTIES TIMEOUT 20)
+    set_tests_properties(boot_frame PROPERTIES TIMEOUT 60)
     add_test(
         NAME title_page_stability
         COMMAND python3
@@ -712,7 +718,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(title_page_stability PROPERTIES TIMEOUT 20)
+    set_tests_properties(title_page_stability PROPERTIES TIMEOUT 60)
     add_test(
         NAME scenario_control
         COMMAND python3
@@ -720,7 +726,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(scenario_control PROPERTIES TIMEOUT 50)
+    set_tests_properties(scenario_control PROPERTIES TIMEOUT 150)
     add_test(
         NAME direct_boot_car_setup
         COMMAND python3
@@ -728,7 +734,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(direct_boot_car_setup PROPERTIES TIMEOUT 35)
+    set_tests_properties(direct_boot_car_setup PROPERTIES TIMEOUT 105)
     add_test(
         NAME scenario_after_finish
         COMMAND python3
@@ -736,7 +742,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(scenario_after_finish PROPERTIES TIMEOUT 70)
+    set_tests_properties(scenario_after_finish PROPERTIES TIMEOUT 210)
     add_test(
         NAME runtime_config
         COMMAND python3
@@ -744,7 +750,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(runtime_config PROPERTIES TIMEOUT 60)
+    set_tests_properties(runtime_config PROPERTIES TIMEOUT 180)
     add_test(
         NAME renderer_toggle_cycles
         COMMAND python3
@@ -752,7 +758,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(renderer_toggle_cycles PROPERTIES TIMEOUT 65)
+    set_tests_properties(renderer_toggle_cycles PROPERTIES TIMEOUT 195)
     add_test(
         NAME course_matrix
         COMMAND python3
@@ -760,7 +766,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(course_matrix PROPERTIES TIMEOUT 360)
+    set_tests_properties(course_matrix PROPERTIES TIMEOUT 1080)
     add_test(
         NAME track_start
         COMMAND python3
@@ -768,7 +774,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(track_start PROPERTIES TIMEOUT 55)
+    set_tests_properties(track_start PROPERTIES TIMEOUT 165)
     add_test(
         NAME diagnostic_log
         COMMAND python3
@@ -776,15 +782,15 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 20)
+    set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 60)
     add_test(NAME retire_camera COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_retire_camera.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
-    set_tests_properties(retire_camera PROPERTIES TIMEOUT 55)
+    set_tests_properties(retire_camera PROPERTIES TIMEOUT 165)
     add_test(NAME mirrored_track COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
-    set_tests_properties(mirrored_track PROPERTIES TIMEOUT 120)
+    set_tests_properties(mirrored_track PROPERTIES TIMEOUT 360)
     add_test(
         NAME keyboard_input
         COMMAND python3
@@ -792,7 +798,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(keyboard_input PROPERTIES TIMEOUT 20)
+    set_tests_properties(keyboard_input PROPERTIES TIMEOUT 60)
     add_test(
         NAME window_size
         COMMAND python3
@@ -800,7 +806,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(window_size PROPERTIES TIMEOUT 20)
+    set_tests_properties(window_size PROPERTIES TIMEOUT 60)
     find_program(RAGE_XDOTOOL xdotool)
     if(RAGE_XDOTOOL)
         add_test(
@@ -810,7 +816,7 @@ if(TARGET rage-racer-smoke)
                 $<TARGET_FILE:rage-racer-smoke>
                 ${CMAKE_SOURCE_DIR}
         )
-        set_tests_properties(window_lifecycle PROPERTIES TIMEOUT 65)
+        set_tests_properties(window_lifecycle PROPERTIES TIMEOUT 195)
     endif()
     add_test(
         NAME initial_state
@@ -819,7 +825,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(initial_state PROPERTIES TIMEOUT 20)
+    set_tests_properties(initial_state PROPERTIES TIMEOUT 60)
     add_test(
         NAME fmv_frame_layout
         COMMAND python3
@@ -827,7 +833,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 25)
+    set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 75)
     add_test(
         NAME fmv_without_ffmpeg
         COMMAND python3
@@ -835,7 +841,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 30)
+    set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 90)
     add_test(
         NAME fmv_pacing
         COMMAND python3
@@ -843,7 +849,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 200)
+    set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600)
     add_test(
         NAME prologue_frame
         COMMAND python3
@@ -851,7 +857,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(prologue_frame PROPERTIES TIMEOUT 30)
+    set_tests_properties(prologue_frame PROPERTIES TIMEOUT 90)
     add_test(
         NAME japanese_prologue_frame
         COMMAND python3
@@ -860,7 +866,7 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
             japanese
     )
-    set_tests_properties(japanese_prologue_frame PROPERTIES TIMEOUT 30)
+    set_tests_properties(japanese_prologue_frame PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME scene_capture
@@ -869,7 +875,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(scene_capture PROPERTIES TIMEOUT 120)
+    set_tests_properties(scene_capture PROPERTIES TIMEOUT 360)
     add_test(
         NAME modern_feature_frames
         COMMAND python3
@@ -877,7 +883,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 120)
+    set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 360)
 
     add_test(
         NAME pegase_cabin
@@ -886,7 +892,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 60)
+    set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 180)
 
     add_test(
         NAME native_render_world
@@ -895,7 +901,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(native_render_world PROPERTIES TIMEOUT 40)
+    set_tests_properties(native_render_world PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME modern_disc_import_bootstrap
@@ -916,7 +922,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 40)
+    set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME race_start
@@ -925,7 +931,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(race_start PROPERTIES TIMEOUT 50)
+    set_tests_properties(race_start PROPERTIES TIMEOUT 150)
     add_test(
         NAME race_restart
         COMMAND python3
@@ -933,7 +939,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(race_restart PROPERTIES TIMEOUT 65)
+    set_tests_properties(race_restart PROPERTIES TIMEOUT 195)
 
     add_test(
         NAME grand_prix_results
@@ -942,7 +948,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 75)
+    set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME grand_prix_exit
@@ -951,7 +957,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(grand_prix_exit PROPERTIES TIMEOUT 75)
+    set_tests_properties(grand_prix_exit PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME mirror_entry
@@ -960,11 +966,11 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(mirror_entry PROPERTIES TIMEOUT 50)
+    set_tests_properties(mirror_entry PROPERTIES TIMEOUT 150)
     add_test(NAME mirror_cars COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
-    set_tests_properties(mirror_cars PROPERTIES TIMEOUT 120)
+    set_tests_properties(mirror_cars PROPERTIES TIMEOUT 360)
 
     add_test(
         NAME menu_sweep
@@ -973,7 +979,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(menu_sweep PROPERTIES TIMEOUT 75)
+    set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME trophy_view
@@ -982,7 +988,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(trophy_view PROPERTIES TIMEOUT 55)
+    set_tests_properties(trophy_view PROPERTIES TIMEOUT 165)
 
     add_test(
         NAME waterfall
@@ -991,7 +997,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(waterfall PROPERTIES TIMEOUT 60)
+    set_tests_properties(waterfall PROPERTIES TIMEOUT 180)
 
     add_test(
         NAME time_attack_records
@@ -1000,7 +1006,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(time_attack_records PROPERTIES TIMEOUT 75)
+    set_tests_properties(time_attack_records PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME save_roundtrip
@@ -1010,7 +1016,7 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
             $<TARGET_FILE:rage-save-generator>
     )
-    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 90)
+    set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 270)
 
     add_test(
         NAME audio_output
@@ -1019,7 +1025,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(audio_output PROPERTIES TIMEOUT 30)
+    set_tests_properties(audio_output PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME race_cdda
@@ -1028,7 +1034,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(race_cdda PROPERTIES TIMEOUT 45)
+    set_tests_properties(race_cdda PROPERTIES TIMEOUT 135)
     add_test(
         NAME engine_audio
         COMMAND python3
@@ -1036,5 +1042,5 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(engine_audio PROPERTIES TIMEOUT 70)
+    set_tests_properties(engine_audio PROPERTIES TIMEOUT 210)
 endif()
