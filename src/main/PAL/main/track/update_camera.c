@@ -49,94 +49,19 @@ static void AimCameraAt(s32 *scratch, s32 targetX, s32 targetY, s32 targetZ) {
     scratch[8] = 0;
 }
 
-void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
-    /* The camera sits this far above the car, in the car's own frame. */
+/*
+ * Mode 0: the camera sits where the car's own block says, lifted a fixed
+ * amount along the car's up axis.
+ */
+static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
+                             s32 cameraNodeIndex, int nodeChanged) {
     s16 cameraLift[4];
     s32 cameraLiftWorld[4];
-    /* Every branch that aims the camera builds two offsets in the car's own
-     * frame: the point on the car it looks at, and where the eye sits
-     * relative to it. The *World pair is each of those rotated out. */
-    s32 focusOffset[3];
-    s32 focusWorld[3];
-    s32 eyeOffset[3];
-    s32 eyeWorld[3];
-    s32 focusX;
-    s32 focusY;
-    s32 focusZ;
-    /* The track-camera branches take their offset from the node instead. */
-    s32 nodeOffset[3];
-    s32 nodeWorld[3];
-    s32 blend;
-    /* Mode 3 alone reads a roll back out of the finished view. */
-    s32 rollProbe[3];
-    s32 rollWork[3];
-    Matrix objectRotation;
     Matrix matrixWork;
-    Matrix cameraRotation;
-    Matrix inverseObjectRotation;
-    s32 previousMode;
-    s32 rawAngle;
-    s32 turnLimit;
-    s32 turnAccel;
-    s32 turnFactor;
-    s32 *case3Angle;
-    s32 *modeAngle;
-    ScratchLegacyViewWords legacyView;
-    s32 *scratch;
-    s32 cameraMode;
-    s32 chaseTargetYaw;
-    s32 yawError;
-    s32 pathBlend;
-    s32 pathYawRelative;
-    s32 *pitchDeltaPtr;
-    s32 speedDamping;
-    s32 pathYaw;
-    s32 pathPitch;
-    s32 pathOffsetZ;
-    s32 pathOffsetY;
-    s32 camPathOffset;
-    s32 camPathAngle;
-    s32 chaseYawDamping;
-    s32 chaseYawStepLimit;
-    s32 cameraNodeIndex;
-    s32 yawStepAhead;
-    s32 yawStepWrapped;
-    s32 yawStepBehind;
-    s32 chaseYawLag;
-    s32 chaseDistance;
-    s32 pathRoll;
-    s32 previousNodeIndex;
-    u8 nodeChanged;
-    s32 chaseCarSpeed;
-    s32 offsetXProduct;
-    s32 offsetYProduct;
-    s32 offsetZProduct;
-    s32 pitchProduct;
-    s32 yawProduct;
-    s32 rollProduct;
-    s32 distProduct;
-    s32 pitchDelta;
-    s32 negatedAccel;
-    GameTrackCameraNode *pathNode;
-    GameTrackCameraNode *orbitNode;
-    GameTrackCameraNode *chaseNode;
-    GameTrackCameraNode *prevNode;
+    Matrix objectRotation;
     CameraCarAddress playerAddress;
     ScratchBlockAddress scratchAddress;
 
-    cameraNodeIndex = FindNearestTrackCamera(car);
-    LoadScratchLegacyView(&legacyView);
-    scratch = legacyView.words;
-    previousNodeIndex = g_CameraNodeIndex;
-    g_CameraNodeIndex = cameraNodeIndex;
-    nodeChanged = cameraNodeIndex != previousNodeIndex;
-    if (cameraModeSel < 2) {
-        cameraMode = cameraModeSel;
-    } else {
-        cameraMode = g_TrackCameras[cameraNodeIndex].mode;
-    }
-    switch (cameraMode) {
-    case 0:
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = playerAddress.blocks[0];
@@ -157,8 +82,44 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         scratch[4] += cameraLiftWorld[2] >> 4;
         scratch[6] += car->tiltCounter;
         g_CameraModePrev = 0;
-        break;
-    case 1:
+}
+
+/*
+ * Mode 1: the chase camera. It trails the car by one of three preset
+ * distances, settling its yaw towards where the car is pointing rather than
+ * snapping to it.
+ */
+static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
+                                s32 cameraNodeIndex, int nodeChanged) {
+    Matrix cameraRotation;
+    s32 chaseCarSpeed;
+    s32 chaseDistance;
+    s32 chaseTargetYaw;
+    s32 chaseYawDamping;
+    s32 chaseYawLag;
+    s32 chaseYawStepLimit;
+    s32 eyeOffset[3];
+    s32 eyeWorld[3];
+    s32 focusOffset[3];
+    s32 focusWorld[3];
+    Matrix inverseObjectRotation;
+    Matrix matrixWork;
+    s32 *modeAngle;
+    s32 negatedAccel;
+    Matrix objectRotation;
+    CameraCarAddress playerAddress;
+    s32 previousMode;
+    s32 rawAngle;
+    ScratchBlockAddress scratchAddress;
+    s32 speedDamping;
+    s32 turnAccel;
+    s32 turnFactor;
+    s32 turnLimit;
+    s32 yawError;
+    s32 yawStepAhead;
+    s32 yawStepBehind;
+    s32 yawStepWrapped;
+
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = playerAddress.blocks[0];
@@ -327,8 +288,26 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         }
         scratch[6] = negatedAccel;
         g_CameraModePrev = 1;
-        break;
-    case 2:
+}
+
+/*
+ * Mode 2: a camera watching the car from a fixed spot beside the track,
+ * dragged towards it by the node's own blend.
+ */
+static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
+                                s32 cameraNodeIndex, int nodeChanged) {
+    s32 blend;
+    GameTrackCameraNode *chaseNode;
+    s32 focusX;
+    s32 focusY;
+    s32 focusZ;
+    Matrix inverseObjectRotation;
+    Matrix matrixWork;
+    s32 nodeOffset[3];
+    s32 nodeWorld[3];
+    Matrix objectRotation;
+    ScratchBlockAddress scratchAddress;
+
         chaseNode = &g_TrackCameras[cameraNodeIndex];
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = chaseNode->data.block;
@@ -356,8 +335,52 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         scratch[4] -= ((scratch[4] - focusZ) * blend) / 10000;
         AimCameraAt(scratch, focusX, focusY, focusZ);
         g_CameraModePrev = 2;
-        break;
-    case 3:
+}
+
+/*
+ * Mode 3: the scripted camera path. Offset and orientation are both eased
+ * from one node to the next across the node's duration, and the roll comes
+ * off the finished view rather than off the car.
+ */
+static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
+                            s32 cameraNodeIndex, int nodeChanged) {
+    s32 camPathAngle;
+    s32 camPathOffset;
+    Matrix cameraRotation;
+    s32 *case3Angle;
+    s32 distProduct;
+    s32 eyeOffset[3];
+    s32 eyeWorld[3];
+    s32 focusOffset[3];
+    s32 focusWorld[3];
+    s32 focusX;
+    s32 focusY;
+    s32 focusZ;
+    Matrix inverseObjectRotation;
+    Matrix matrixWork;
+    Matrix objectRotation;
+    s32 offsetXProduct;
+    s32 offsetYProduct;
+    s32 offsetZProduct;
+    s32 pathBlend;
+    GameTrackCameraNode *pathNode;
+    s32 pathOffsetY;
+    s32 pathOffsetZ;
+    s32 pathPitch;
+    s32 pathRoll;
+    s32 pathYaw;
+    s32 pathYawRelative;
+    s32 pitchDelta;
+    s32 *pitchDeltaPtr;
+    s32 pitchProduct;
+    CameraCarAddress playerAddress;
+    GameTrackCameraNode *prevNode;
+    s32 rollProbe[3];
+    s32 rollProduct;
+    s32 rollWork[3];
+    ScratchBlockAddress scratchAddress;
+    s32 yawProduct;
+
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = playerAddress.blocks[0];
@@ -505,8 +528,22 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         ApplyMatrixLV(&cameraRotation, &rollWork[0], &rollProbe[0]);
         scratch[8] = 0x400 - (Atan2(rollProbe[1], rollProbe[0]) & 0xFFF);
         g_CameraModePrev = 3;
-        break;
-    case 4:
+}
+
+/*
+ * Mode 4: a node that slides to its own position across its duration, then
+ * looks back at the car.
+ */
+static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
+                                s32 cameraNodeIndex, int nodeChanged) {
+    Matrix inverseObjectRotation;
+    Matrix matrixWork;
+    s32 nodeOffset[3];
+    s32 nodeWorld[3];
+    Matrix objectRotation;
+    GameTrackCameraNode *orbitNode;
+    ScratchBlockAddress scratchAddress;
+
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
         if (((u8)nodeChanged) || (g_CameraModePrev != 4)) {
@@ -537,8 +574,24 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         AimCameraAt(scratch, car->x + nodeWorld[0], car->y + nodeWorld[1],
                     car->z + nodeWorld[2]);
         g_CameraModePrev = 4;
-        break;
-    case 5:
+}
+
+/*
+ * Mode 5: orbiting behind the car at a set distance.
+ */
+static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
+                          s32 cameraNodeIndex, int nodeChanged) {
+    Matrix cameraRotation;
+    s32 eyeOffset[3];
+    s32 eyeWorld[3];
+    s32 focusOffset[3];
+    s32 focusWorld[3];
+    Matrix inverseObjectRotation;
+    Matrix matrixWork;
+    Matrix objectRotation;
+    CameraCarAddress playerAddress;
+    ScratchBlockAddress scratchAddress;
+
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = playerAddress.blocks[0];
@@ -573,6 +626,52 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         scratch[2] -= eyeWorld[0];
         scratch[3] = (scratch[3] - 0x28) - eyeWorld[1];
         scratch[4] -= eyeWorld[2];
+}
+
+void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
+    /* The camera sits this far above the car, in the car's own frame. */
+    /* Every branch that aims the camera builds two offsets in the car's own
+     * frame: the point on the car it looks at, and where the eye sits
+     * relative to it. The *World pair is each of those rotated out. */
+    /* The track-camera branches take their offset from the node instead. */
+    /* Mode 3 alone reads a roll back out of the finished view. */
+    ScratchLegacyViewWords legacyView;
+    s32 *scratch;
+    s32 cameraMode;
+    s32 cameraNodeIndex;
+    s32 previousNodeIndex;
+    u8 nodeChanged;
+    CameraCarAddress playerAddress;
+
+    cameraNodeIndex = FindNearestTrackCamera(car);
+    LoadScratchLegacyView(&legacyView);
+    scratch = legacyView.words;
+    previousNodeIndex = g_CameraNodeIndex;
+    g_CameraNodeIndex = cameraNodeIndex;
+    nodeChanged = cameraNodeIndex != previousNodeIndex;
+    if (cameraModeSel < 2) {
+        cameraMode = cameraModeSel;
+    } else {
+        cameraMode = g_TrackCameras[cameraNodeIndex].mode;
+    }
+    switch (cameraMode) {
+    case 0:
+        ViewFromCarBlock(car, scratch, cameraNodeIndex, nodeChanged);
+        break;
+    case 1:
+        ViewFromChaseCamera(car, scratch, cameraNodeIndex, nodeChanged);
+        break;
+    case 2:
+        ViewFromBlendedNode(car, scratch, cameraNodeIndex, nodeChanged);
+        break;
+    case 3:
+        ViewFromCamPath(car, scratch, cameraNodeIndex, nodeChanged);
+        break;
+    case 4:
+        ViewFromSlidingNode(car, scratch, cameraNodeIndex, nodeChanged);
+        break;
+    case 5:
+        ViewFromOrbit(car, scratch, cameraNodeIndex, nodeChanged);
         break;
     }
     StoreScratchLegacyView(&legacyView);
