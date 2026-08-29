@@ -30,6 +30,11 @@ typedef union SectorReferenceTimes {
 
 extern s32 g_RaceTotalTime;
 extern SectorReferenceTimes g_RefSectorTimes;
+
+/* Holds the cue that follows FINISHED until the special voices are free, so a
+ * fast host frame cannot make the second cue replace the first. Lives in the
+ * race scene; the lap update is what asks for it. */
+void QueueFinishFollowupCue(s32 cue);
 extern s32 g_PrologueStep;
 extern PrologueCameraCut g_PrologueCameraCuts[];
 extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];

@@ -755,6 +755,27 @@ endif()
 target_link_libraries(engineer_shop_screen_tests PRIVATE psyz)
 add_test(NAME engineer_shop_screen COMMAND engineer_shop_screen_tests)
 set_tests_properties(engineer_shop_screen PROPERTIES LABELS portable)
+
+add_executable(lap_and_finish_tests
+    lap_and_finish_tests.c
+    ../src/main/PAL/main/race/lap_and_finish.c)
+target_include_directories(lap_and_finish_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(lap_and_finish_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(lap_and_finish_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(lap_and_finish_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(lap_and_finish_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(lap_and_finish_tests PRIVATE psyz)
+add_test(NAME lap_and_finish COMMAND lap_and_finish_tests)
+set_tests_properties(lap_and_finish PROPERTIES LABELS portable)
 endif()
 endif()
 
