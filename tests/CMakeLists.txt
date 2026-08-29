@@ -986,7 +986,10 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 75)
+    # Skips rather than fails when there is no disc to read the movies
+    # or the music from; see tests/disc_image.py.
+    set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 75
+        SKIP_RETURN_CODE 77)
     add_test(
         NAME fmv_without_ffmpeg
         COMMAND python3
@@ -994,7 +997,8 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 90)
+    set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 90
+        SKIP_RETURN_CODE 77)
     add_test(
         NAME fmv_pacing
         COMMAND python3
@@ -1002,7 +1006,8 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600)
+    set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600
+        SKIP_RETURN_CODE 77)
     add_test(
         NAME prologue_frame
         COMMAND python3
@@ -1113,7 +1118,8 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225)
+    set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225
+        SKIP_RETURN_CODE 77)
 
     add_test(
         NAME grand_prix_exit
@@ -1199,7 +1205,8 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
-    set_tests_properties(race_cdda PROPERTIES TIMEOUT 135)
+    set_tests_properties(race_cdda PROPERTIES TIMEOUT 135
+        SKIP_RETURN_CODE 77)
     add_test(
         NAME engine_audio
         COMMAND python3

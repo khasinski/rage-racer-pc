@@ -7,9 +7,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+from disc_image import require_disc
+
 
 def main() -> int:
     executable, source = map(Path, sys.argv[1:3])
+    require_disc(source)
     with tempfile.TemporaryDirectory(prefix="rage fmv ąę ") as directory:
         root = Path(directory)
         empty_path = root / "pusta ścieżka"

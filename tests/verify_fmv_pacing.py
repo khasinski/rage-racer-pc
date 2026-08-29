@@ -20,6 +20,9 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
+
+from disc_image import require_disc
 
 SECTORS_PER_SECOND = 150
 
@@ -122,6 +125,7 @@ def check_soundtrack_tail(output: str, stream: int) -> None:
 
 def main() -> int:
     executable, source_dir = sys.argv[1], sys.argv[2]
+    require_disc(Path(source_dir))
     for stream, shown in CASES:
         output = play(executable, source_dir, stream, shown)
         check_cadence(output, stream, shown)

@@ -9,10 +9,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from disc_image import require_disc
+
 
 def main() -> int:
     executable = Path(sys.argv[1])
     source_dir = Path(sys.argv[2])
+    require_disc(source_dir)
     environment = os.environ.copy()
     environment.update(
         SDL_AUDIODRIVER="dummy",

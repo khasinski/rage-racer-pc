@@ -505,11 +505,25 @@ one can be watched without earning it; `--set diagnostics.fmv_trace=1` reports
 each frame as it is decoded.
 
 The movies and the CD-DA music are not in that archive, they are on the disc,
-so the tests covering them also want a cue:
+so the five tests covering them want one. In test mode the port looks under
+`disc/` in the source tree, so putting the disc there once is enough and no
+variable has to be set:
+
+```sh
+ln -s "/path/to/Rage Racer (Europe)" "disc/PAL"
+ctest --test-dir build
+```
+
+The link points at the directory holding the cue sheet and its track files, so
+that the relative names inside the cue still resolve. `disc/` is ignored by
+git. A cue elsewhere works too:
 
 ```sh
 RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 ```
+
+Without either, those five report themselves skipped rather than failed, and
+say what they wanted. Nothing else in the suite needs the disc.
 
 ## Known limitations
 

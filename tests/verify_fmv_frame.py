@@ -10,10 +10,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+from disc_image import require_disc
+
 
 def main() -> int:
     executable = Path(sys.argv[1])
     source_dir = Path(sys.argv[2])
+    require_disc(source_dir)
     with tempfile.TemporaryDirectory(prefix="rage-fmv-test-") as directory:
         capture = Path(directory) / "fmv.ppm"
         pcm = Path(directory) / "fmv-s16le-stereo.pcm"
