@@ -525,6 +525,28 @@ RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 Without either, those five report themselves skipped rather than failed, and
 say what they wanted. Nothing else in the suite needs the disc.
 
+### Did a change move the game?
+
+The suite pins behaviour against what the tests model. `rage_trace_compare.rb`
+pins it against the game itself: it builds two revisions, drives each through
+four races and both menu sweeps, and compares where every car went, frame by
+frame, and what every menu screen drew.
+
+```sh
+tools/rage_trace_compare.rb --base v0.5-alpha
+tools/rage_trace_compare.rb --base HEAD~5 --head my-branch
+```
+
+It builds the revision under test twice and compares it with itself before
+comparing anything else, and stops if that control fails: an observable that
+cannot tell two builds of the same source apart from nothing says nothing about
+two revisions. The car traces pass that control. Audio call traces do not,
+because voice allocation depends on host timing, which is why they are not
+among the things it looks at.
+
+The worktrees and builds are kept between runs, since they are the expensive
+part; `--clean` removes them.
+
 ## Known limitations
 
 - Controller configuration currently retains the original preset-oriented
