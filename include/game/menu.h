@@ -228,6 +228,10 @@ s32 DrawRankingTable(s32 *accumulator, s32 step, s32 table);
 void EnterCarSelectScreen(void);
 
 /* id 4 -- "CAR SELECT"; the hub that starts a race or opens the shops. */
+/* Rescans the owned-car list either side of the current one, and rechecks
+ * what the shop and the engineer will accept. Both live in car_select.c. */
+void UpdateOwnedCarNeighbours(void);
+void RefreshCarUnlockState(void);
 void UpdateCarSelectScreen(void);
 s32 DrawCarSelectScreen(s32 step);
 

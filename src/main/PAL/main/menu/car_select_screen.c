@@ -1,0 +1,323 @@
+/*
+ * The car select screen: the hub every other menu is reached from. It shows
+ * the car the player owns, lets them browse the rest of their garage, and from
+ * here they start the race, look at the ranking, go to the shop or to the
+ * engineer, or back out to the course.
+ *
+ * The screen has three states, told apart by GameMenuBusy: idle and taking
+ * input, showing a modal that says a shop is closed, or on its way out to
+ * whichever screen was chosen.
+ */
+
+#include "game/asset.h"
+#include "game/audio.h"
+#include "game/menu.h"
+#include "game/menu_scripts_internal.h"
+#include "game/save_internal.h"
+#include "game/race.h"
+
+/* The last row of the menu backs out, so its index is also the count of the
+ * rows above it: two in time attack, four in a Grand Prix. */
+static s32 CarSelectLastRow(void) { return g_GrandPrixMode != 0 ? 4 : 2; }
+
+static void *CarSelectMenuScript(void) {
+    if (g_GrandPrixMode != 0) {
+        return (u8 *)&g_CarSelectMenuScriptGp;
+    }
+    return (u8 *)&g_CarSelectMenuScriptTimeAttack;
+}
+
+/*
+ * The showroom turntable only accepts a swap once it has come to rest near its
+ * target, within a fifth of a turn either side.
+ */
+static int CarViewSettled(void) {
+    s32 target = g_MenuViewAngleTarget;
+    s32 angle = g_MenuViewAngle;
+
+    return target < angle ? (angle - target <= 0x493DF)
+                          : (target - angle <= 0x493DF);
+}
+
+/*
+ * Spins the turntable round to another car. Both directions run the same
+ * arithmetic on the view angle and differ only in where the turntable is
+ * asked to stop.
+ */
+static void BrowseToOwnedCar(s32 fromIndex, s32 toIndex, s32 newTarget) {
+    s32 previousTarget;
+
+    PlaySoundCue(8);
+    g_PlayerCarIndex = toIndex;
+    RequestCarModel(toIndex);
+    previousTarget = g_MenuViewAngleTarget;
+    g_CarSwapFromIndex = fromIndex;
+    g_MenuViewAngleTarget = newTarget;
+    g_MenuAltPanelStep2 = -1;
+    g_CarSwapToIndex = g_PlayerCarIndex;
+    g_MenuViewAngle = (g_MenuViewAngle - previousTarget) + 0x927C0;
+}
+
+/* Leaving the screen upwards, back to the course: the same wind-down whether
+ * the player chose the last row or pressed cancel. */
+static void LeaveCarSelectScreen(void) {
+    PlaySoundCue(3);
+    GameMenuBusy = 5;
+    g_MenuOverlayPattern = 2;
+    g_CarNamePlateStep = -10;
+    g_CarSpecGraphStep = -3;
+    g_MenuViewOffsetTarget = 0x3D090;
+}
+
+/* A shop that will not take the player shows a modal instead of opening. */
+static void RefuseWithModal(void *script, s32 busyState) {
+    PlaySoundCue(5);
+    g_CarSelectPopupScript = (u8 *)script;
+    GameMenuBusy = busyState;
+    g_UiScriptProgress2 = 0;
+}
+
+/*
+ * What the confirm button does depends on the row the cursor is on. The last
+ * row is tested before row two, because in time attack they are the same row.
+ */
+static void ChooseCarSelectRow(s32 row) {
+    if (row == 0) {
+        PlaySoundCue(2);
+        StartSequenceFadeOut();
+        if (g_GrandPrixMode != 0) {
+            /* Class five is the extra series, which has no round of its own. */
+            g_GrandPrixSeries =
+                (g_GrandPrixClass < 5) ? (u16)g_GrandPrixSeries : 0;
+        } else {
+            g_GrandPrixSeries = g_CourseIndex >> 2;
+        }
+        RequestRoundAssets();
+        GameMenuBusy = 1;
+        g_MenuHintBarStep = -1;
+        g_CarNamePlateStep = -10;
+        g_MenuOverlayPattern = 0;
+        g_CarSpecGraphStep = -3;
+        g_MenuViewOffsetTarget = 0x3D090;
+        return;
+    }
+    if (row == 1) {
+        PlaySoundCue(2);
+        GameMenuBusy = 2;
+        g_MenuOverlayPattern = 1;
+        g_CarNamePlateStep = -10;
+        return;
+    }
+    if (row == CarSelectLastRow()) {
+        LeaveCarSelectScreen();
+        return;
+    }
+    if (row == 2) {
+        if (g_ShopCarIndex == -1) {
+            RefuseWithModal(&g_CarShopUnavailableScript, -1);
+            return;
+        }
+        PlaySoundCue(2);
+        g_CarListCursor = g_ShopCarIndex;
+        RequestCarModel(g_CarListCursor);
+        {
+            s32 previousTarget = g_MenuViewAngleTarget;
+
+            g_MenuViewAngleTarget = 0x124F80;
+            GameMenuBusy = 3;
+            g_MenuOverlayPattern = 1;
+            g_CarSwapFromIndex = g_PlayerCarIndex;
+            g_CarSwapToIndex = g_CarListCursor;
+            g_MenuViewAngle = 0x927C0 - (previousTarget - g_MenuViewAngle);
+        }
+        return;
+    }
+    if (row == 3) {
+        if ((g_CarModelAsset->upgradesAvailable != 0) &&
+            (g_RaceProgress->maxClassReached >=
+             GetCarUnlockLevel(g_PlayerCarIndex))) {
+            GameMenuBusy = 4;
+            g_MenuOverlayPattern = 1;
+            PlaySoundCue(2);
+            return;
+        }
+        RefuseWithModal(&g_EngineerShopUnavailableScript, -2);
+    }
+}
+
+/* Idle: the screen is up and the pad drives it. */
+static void UpdateCarSelectInput(void) {
+    s32 lastRow = CarSelectLastRow();
+    s32 carBeforeSwap;
+
+    g_MenuOverlayPattern = -1;
+    if (g_PadPressed & PAD_UP) {
+        PlaySoundCue(1);
+        g_CarSelectCursor =
+            (g_CarSelectCursor > 0) ? g_CarSelectCursor - 1 : lastRow;
+    }
+    if (g_PadPressed & PAD_DOWN) {
+        PlaySoundCue(1);
+        g_CarSelectCursor =
+            (g_CarSelectCursor < lastRow) ? g_CarSelectCursor + 1 : 0;
+    }
+    UpdateOwnedCarNeighbours();
+    RefreshCarUnlockState();
+
+    carBeforeSwap = g_PlayerCarIndex;
+    if ((g_PadHeld & PAD_LEFT) && (g_PrevOwnedCarIndex != -1) &&
+        CarViewSettled() && (g_CarSwapToIndex < 0)) {
+        BrowseToOwnedCar(carBeforeSwap, g_PrevOwnedCarIndex, 0);
+    }
+    if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1) &&
+        CarViewSettled() && (g_CarSwapToIndex < 0)) {
+        BrowseToOwnedCar(carBeforeSwap, g_NextOwnedCarIndex, 0x124F80);
+    }
+
+    if (!CarViewSettled() || (g_CarSwapToIndex >= 0)) {
+        return;
+    }
+    if (g_PadPressed & PAD_CONFIRM) {
+        ChooseCarSelectRow(g_CarSelectCursor);
+    } else if ((g_PadPressed & PAD_CANCEL) &&
+               ((u32)(g_MenuViewAngle - 0x2710) > 0x120160U)) {
+        LeaveCarSelectScreen();
+    }
+}
+
+/* Idle: everything the screen puts on the display, and the input once the
+ * chrome has finished sliding in and no modal is on top of it. */
+static void UpdateCarSelectIdle(void) {
+    g_CarNamePlateStep = 0x14;
+    g_CarSpecGraphStep = 3;
+    g_MenuPlateCarIndex = g_PlayerCarIndex;
+    RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    if (g_GrandPrixMode == 0) {
+        DrawOwnedCarCounter(1, CountOwnedCars());
+    }
+    DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
+                          g_CarSelectCursor);
+    RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
+    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
+        (g_UiScriptProgress2 <= 0)) {
+        UpdateCarSelectInput();
+    }
+}
+
+/* A modal is up over the screen; the only thing it takes is dismissal. */
+static void UpdateCarSelectModal(void) {
+    RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
+    if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
+        if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
+            GameMenuBusy = 0;
+        }
+    }
+    DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    if (g_GrandPrixMode == 0) {
+        DrawOwnedCarCounter(1, CountOwnedCars());
+    }
+    DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
+                          g_CarSelectCursor);
+    RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
+    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+}
+
+/*
+ * On the way out. The chrome slides off, and once it has gone the chosen
+ * screen is handed the controls. Returns without doing so while the view is
+ * still travelling, so the next frame tries again.
+ */
+static void EnterChosenScreen(void) {
+    switch (GameMenuBusy) {
+    case 1:
+        if ((g_MenuOutgoingScreenProgress > 0) &&
+            (g_MenuViewOffset <= 0x3D08F)) {
+            return;
+        }
+        g_SceneId = 9;
+        g_CourseIndex &= 3;
+        g_RaceProgress->course = g_CourseIndex;
+        g_RaceProgress->carIndex = g_PlayerCarIndex;
+        g_RaceProgress->classIndex = g_GrandPrixClass;
+        /* Outside a Grand Prix the slot carries the series instead of a
+         * balance, because there is no money in time attack. */
+        g_RaceProgress->money.value =
+            (g_GrandPrixMode != 0) ? g_PlayerMoney : g_GrandPrixSeries;
+        break;
+    case 2:
+        g_MenuScreen = 5;
+        g_MenuHandlerIndex = 5;
+        break;
+    case 3:
+        g_MenuScreen = 0xB;
+        g_MenuHandlerIndex = 0xB;
+        DrawCarShopPricePanel(0, 0, 0);
+        DrawBrowseArrows(0, 0, 0, 0);
+        DrawMenuAltPanel(0, 0);
+        g_MenuAltPanelStep = 0;
+        g_MenuAltPanelStep2 = 0;
+        ClearTeamNameTexture();
+        RestoreTeamLogoClut();
+        break;
+    case 4:
+        g_MenuScreen = 0xC;
+        g_MenuHandlerIndex = 0xC;
+        DrawEngineerShopPricePanel(0, 0, 0);
+        break;
+    case 5:
+        if (g_MenuViewOffset <= 0x3D08F) {
+            return;
+        }
+        g_MenuViewAngle = 0x7A120;
+        g_MenuViewAngleTarget = 0x7A120;
+        g_MenuScreen = 1;
+        g_MenuHandlerIndex = 1;
+        g_CarSelectCursor = 0;
+        g_MenuPendingCourseIndex = -1;
+        g_MenuViewOffset = 0x3D090;
+        g_MenuViewOffsetTarget = 0;
+        g_CourseCardSpin = 0x1F4000;
+        g_MenuCourseModelIndex = g_CourseIndex;
+        g_CourseCardPendingGrade =
+            g_CourseProgress->bestPlace[g_CourseIndex & 3];
+        DrawTimeAttackPlate(0);
+        g_TimeAttackPlateStep = (g_CourseIndex >= 4) ? 1 : -1;
+        break;
+    }
+    g_UiScriptProgress = 0;
+    GameMenuBusy = 0;
+}
+
+static void UpdateCarSelectOutgoing(void) {
+    g_MenuHandlerIndex = -1;
+    g_MenuHandlerIndex2 = 4;
+    DrawBrowseArrows(-1, 0, ~g_PrevOwnedCarIndex != 0,
+                     ~g_NextOwnedCarIndex != 0);
+    if (g_GrandPrixMode == 0) {
+        DrawOwnedCarCounter(-1, CountOwnedCars());
+    }
+    RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, -1);
+    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
+                          g_CarSelectCursor);
+    if (g_UiScriptProgress <= 0) {
+        EnterChosenScreen();
+    }
+}
+
+void UpdateCarSelectScreen(void) {
+    g_MenuAltLayout = g_MenuAltLayoutSetting;
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawMenuCarView();
+    DrawMenuLightBurst(-9);
+
+    if (GameMenuBusy == 0) {
+        UpdateCarSelectIdle();
+    } else if (GameMenuBusy < 0) {
+        UpdateCarSelectModal();
+    } else {
+        UpdateCarSelectOutgoing();
+    }
+}

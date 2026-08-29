@@ -688,6 +688,27 @@ endif()
 target_link_libraries(draw_team_logo_canvas_tests PRIVATE psyz)
 add_test(NAME draw_team_logo_canvas COMMAND draw_team_logo_canvas_tests)
 set_tests_properties(draw_team_logo_canvas PROPERTIES LABELS portable)
+
+add_executable(car_select_screen_tests
+    car_select_screen_tests.c
+    ../src/main/PAL/main/menu/car_select_screen.c)
+target_include_directories(car_select_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_select_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_select_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_select_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(car_select_screen_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_select_screen_tests PRIVATE psyz)
+add_test(NAME car_select_screen COMMAND car_select_screen_tests)
+set_tests_properties(car_select_screen PROPERTIES LABELS portable)
 endif()
 endif()
 
