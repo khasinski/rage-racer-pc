@@ -14,7 +14,6 @@
  * Returns 1 on success (including when the modern renderer is disabled). */
 int ModernInit(const RagePortConfig *config);
 
-void ModernShutdown(void);
 
 /* 1 when the modern renderer is initialized and selected for presentation.
  * Game logic must never branch on this; it gates presentation-side work

@@ -41,7 +41,6 @@ void SetCdVolume(s32 volume);
 void StartCdVolumeFade(s32 frames);
 void StepCdVolumeFade(void);
 /* Re-push the current g_CdVolume (used after a mode change). */
-void ApplyCdVolume(void);
 /* Map the 0..15 option-screen level onto the 0..0x7F attenuator. */
 void SetCdVolumeSetting(s32 level);
 /* Select which 4-byte row of the g_CdMixPresets mix table SetCdVolume scales. */

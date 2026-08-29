@@ -911,11 +911,6 @@ long HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }
-/* The original was a hand-written VLC inner loop; psyz decodes the same
- * bitstream into the run-level codes DecDCTin() expects. */
-void MdecUnpackStatus(void *ctx, volatile u32 *slot) {
-    DecDCTvlc((u_long *)ctx, (u_long *)slot);
-}
 void SpuVmDamperStep(void) {
     if (_snd_ev_flag != 1) {
         _snd_ev_flag = 1;

@@ -3,66 +3,6 @@
 #include "game/car.h"
 #include "game/track_internal.h"
 
-s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample) {
-    s32 index;
-    s32 nextIndex;
-    GameTrackPoint *cur;
-    GameTrackPoint *next;
-    u32 segmentLengthRaw;
-    Matrix mtx;
-    s16 vec[4];
-    s32 out[3];
-    s32 distance;
-    s32 segmentLength;
-    s32 segmentLengthCompare;
-    s32 invDistance;
-    s32 outZ;
-    s32 fieldE;
-    s32 y;
-    s32 argX;
-    s32 curX;
-    s32 argZ;
-    s32 curZ;
-    s32 angle;
-
-    index = FindTrackSegment(sample, sample->trackPointIndex);
-    nextIndex = (index + 1) % g_TrackPointCount;
-
-    cur = TrackPoint(index);
-
-    argX = sample->x;
-    curX = (u16)cur->x;
-    segmentLengthRaw = cur->segmentLength;
-    vec[0] = argX - curX;
-
-    argZ = sample->z;
-    curZ = (u16)cur->z;
-    vec[1] = 0;
-    vec[2] = argZ - curZ;
-
-    angle = cur->angle;
-    next = TrackPoint(nextIndex);
-    BuildRotMatrixY(&mtx, (0x1000 - angle) & 0xFFF);
-
-    ApplyMatrix(&mtx, vec, out);
-
-    segmentLengthCompare = (s16)segmentLengthRaw;
-    distance = out[0];
-    outZ = out[2];
-    if (segmentLengthCompare < distance) {
-        distance = segmentLengthCompare;
-    } else if (distance < 0) {
-        distance = 0;
-    }
-
-    segmentLength = (s16)segmentLengthRaw;
-    invDistance = segmentLength - distance;
-    fieldE = ((next->crossSlope * distance) + (cur->crossSlope * invDistance)) / segmentLength;
-    y = ((next->y * distance) + (cur->y * invDistance)) / segmentLength;
-
-    return y + (((s16)fieldE * outZ) >> 7);
-}
-
 /*
  * Rebuilds a car's position and orientation relative to its current track
  * segment, including the curved-segment path kept in the PS1 scratchpad.

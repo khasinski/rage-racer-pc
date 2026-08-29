@@ -111,14 +111,6 @@ s32 RequestCarModel(s32 carIndex) {
     return 1;
 }
 
-void LoadCarModelNow(s32 carIndex) {
-    RequestCarModel(carIndex);
-
-    while (g_AssetLoadState != 0) {
-        ServiceAssetLoad();
-    }
-}
-
 void LoadCarModel(s32 carIndex) {
     u8 *ptr;
     CarModelAsset *asset;
@@ -160,12 +152,4 @@ s32 RequestUpgradedCarModel(s32 carIndex) {
     g_PendingCarModelIndex = carIndex;
     g_AssetLoadState = 1;
     return 1;
-}
-
-void LoadUpgradedCarModelNow(s32 carIndex) {
-    RequestUpgradedCarModel(carIndex);
-
-    while (g_AssetLoadState != 0) {
-        ServiceAssetLoad();
-    }
 }

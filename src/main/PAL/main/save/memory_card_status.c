@@ -56,16 +56,3 @@ char *FormatSaveElapsedTime(char *dst, u32 seconds) {
     sprintf(dst, g_FmtPlayTime, hours, totalMinutes - (hours * 60), totalSeconds - (totalMinutes * 60));
     return dst + 2;
 }
-
-void DrawMemoryCardMessageLine(s32 unused, s32 messageIndex) {
-    (void)unused;
-    DrawText8x8(0x28, 0xB8, &g_McMessageText[messageIndex * 30], 0x78CC);
-}
-
-void DrawMemoryCardHelpPrompt(s32 page) {
-    s32 i;
-
-    i = page * 0x3C;
-    DrawText8x8(0x50, 0x28, &g_McHelpText[i], 0x78CC);
-    DrawText8x8(0x50, 0x40, &g_McHelpText[i + 0x1E], 0x78CC);
-}

@@ -943,7 +943,6 @@ void BlendPaintColorThirds(u32 color0, u32 color1);
 void BuildTachoNeedleQuad(void);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex);
 s32 GetCarCrestTrigger(GameCarRuntime* car);
-s32 GetTrackSurfaceHeight(CarSurfaceSampleView *sample);
 void InitRivalCar(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
 void InitRivalCarAi(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
 void RankContenders(void);

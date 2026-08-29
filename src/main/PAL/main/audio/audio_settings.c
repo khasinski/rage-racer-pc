@@ -3,17 +3,6 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
-void SetEffectVolumeScale(s32 scale) {
-    if (scale >= 0) {
-        if (scale >= 0x81) {
-            scale = 0x80;
-        }
-    } else {
-        scale = 0;
-    }
-    g_SoundScale.scale = scale;
-}
-
 void SetLoadedTableVolumeScale(s32 scale) {
     if (scale >= 0) {
         if (scale >= 0x81) {
@@ -64,11 +53,3 @@ void SetEffectVolumeSetting(s32 level) {
 void SetStereoOutput(void) { g_StereoOutput = 1; SetCdMixPreset(0); SsSetStereo(); }
 
 void SetMonoOutput(void) { g_StereoOutput = 0; SetCdMixPreset(1); SsSetMono(); }
-
-u32 GetLoadedAudioStep(void) {
-    return g_EngineSoundState.maxRpm;
-}
-
-s32 GetActiveAudioSlots(void) {
-    return g_AudioLoadedSlotMask;
-}

@@ -139,15 +139,6 @@ u8 *GameQueueTexturedRect(ot, prim, x, y, w, h, u, v, uSpan, vSpan, clutIndex, t
     return prim;
 }
 
-/* Fills a DR_MODE packet in place; unlike QueueDrawModePrim it neither
- * links the packet nor advances the scratchpad cursor. No callers in retail. */
-void SetDrawModePacket(u8 *prim, s32 tpage) {
-    RenderBufferAddress cursor;
-
-    cursor.bytes = prim;
-    SetDrawMode(cursor.drawPacket, 0, 1, tpage, g_DrawModeEnv);
-}
-
 /* World position in full-precision components; the camera keeps one of these
  * in the scratchpad at 0x1F800008. */
 /* The per-frame scratchpad block: camera position at +8, view matrix at +0x28. */

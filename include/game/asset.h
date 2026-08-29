@@ -345,8 +345,6 @@ void LoadCarSelectAssets(void);
 /* Phase 5/6: one car's CAR_xx.1ST pack into the double-buffered showroom slot;
  * the "Upgraded" pair asks for modelVariant + 1, i.e. the next grade's body.
  * The *Now wrappers request and then pump ServiceAssetLoad until idle. */
-void LoadCarModelNow(s32 carIndex);
-void LoadUpgradedCarModelNow(s32 carIndex);
 /* Phase 7: OPTION.BIN. */
 void LoadOptionScreenAssets(void);
 /* Phase 8: the GP*.TMS round screen (series * 6 + class + 0x4A) plus VOICE.BIN.

@@ -14,7 +14,6 @@ void DrawResultScreen(void);         /* "RESULT" */
 void DrawRaceEndPrompt(void);        /* "PRESS START BUTTON" */
 void DrawCourseIntro(void);          /* "COURSE IN" / "TIME ATTACK" */
 void DrawGrandprixIntro(void);       /* "CLASS%d %s GRANDPRIX" */
-void DrawEndingScreen(void);         /* "CONGRATULATIONS!!" */
 /* The in-race option/pause overlay; `cursorRow` is g_RaceOptionCursor. The
  * "RAGE RACER GE" string is one half of a scrolling marquee, not a title -
  * this is not the title screen. */

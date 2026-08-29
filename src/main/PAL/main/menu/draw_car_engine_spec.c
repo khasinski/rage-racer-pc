@@ -2,10 +2,6 @@
 #include "game/asset.h"
 #include "game/menu.h"
 
-void DrawEngineSpecLabel(s32 x, s32 y, s32 label) {
-    DrawText8x8(x, y, g_EngineSpecLabels[label], 0x78CC);
-}
-
 
 void DrawCarEngineSpec(s32 slideRaw, s32 brightness) {
     OT_TYPE *ot;

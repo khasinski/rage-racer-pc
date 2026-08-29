@@ -41,28 +41,6 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
     return result;
 }
 
-MemoryCardEvent PollMemoryCardHwEventLimit(s32 limit) {
-    s32 i;
-    i = 0;
-    while (i < limit) {
-        if (TestEvent(g_McHwEventIoe) == 1) {
-            return MC_EVENT_IO_COMPLETE;
-        }
-        if (TestEvent(g_McHwEventError) == 1) {
-            return MC_EVENT_ERROR;
-        }
-        if (TestEvent(g_McHwEventTimeout) == 1) {
-            return MC_EVENT_TIMEOUT;
-        }
-        if (TestEvent(g_McHwEventNew) == 1) {
-            return MC_EVENT_NEW_CARD;
-        }
-        i++;
-    }
-
-    return MC_EVENT_NONE;
-}
-
 MemoryCardEvent WaitMemoryCardHwEvent(void) {
     while (1) {
         if (TestEvent(g_McHwEventIoe) == 1) {

@@ -36,10 +36,6 @@ void SetCdVolume(s32 volume) {
     StepCdVolumeFade();
 }
 
-void ApplyCdVolume(void) {
-    SetCdVolume(g_CdVolume);
-}
-
 void SetCdVolumeSetting(s32 level) {
     s32 product = (level << 7) - level;
 

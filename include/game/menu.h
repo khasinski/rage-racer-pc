@@ -665,7 +665,6 @@ void RequestOptionScreenAssets(void);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);
 void UploadTeamNameTexture();
-void DrawCarSlotLabel(s32 x, s32 y, s32 label);
 s32 DrawClassChangeCurtain(s32 step);
 void DrawClassRecordDetail(void);
 void DrawClassRecordGrid(void);

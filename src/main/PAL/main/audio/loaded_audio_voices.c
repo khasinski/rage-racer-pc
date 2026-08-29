@@ -156,14 +156,6 @@ void InitEffectVoiceRuntime(void) {
     SetLoadedTableVolumeScale(g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
 }
 
-void RestoreReverbDepth(s32 enabled) {
-    if (enabled != 0) {
-        SetReverbDepth(g_ReverbDepthL, g_ReverbDepthR);
-    } else {
-        SetReverbDepth(0, 0);
-    }
-}
-
 void ForcePanVoiceEnabled(s32 enabled) {
     s32 values[2];
     s32 i;

@@ -73,7 +73,6 @@ void StartSequenceFadeOut(void);
 void UpdateSequenceFadeOut(void);
 void ApplyDuckedSequenceAudio(void);
 void ApplyCurrentSequenceAudio(void);
-void SetMasterVolumeMono(s16 volume);
 void SetReverbDepth(s32 left, s32 right);
 void SetReverbPreset(s32 type, s32 left, s32 right);
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
@@ -86,9 +85,6 @@ int InitSoundWithVab(u8 *header, u8 *body);
 int InitSoundRuntime(void);
 s32 CloseVabOnlyAudioSlot(s32 slot);
 s32 CloseLoadedAudioSlots(void);
-void CloseExtraVabSlot(void);
-void ShutdownSoundSystem(void);
-void SetEffectVolumeScale(s32 scale);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolumeSetting(s32 setting);
 /* The effect-side twin of SetSequenceVolumeSetting: clamps the 0..15
@@ -99,8 +95,6 @@ void SetMonoOutput(void);
 /* Push all three saved audio settings (BGM level, SFX level, mono/stereo) into
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
-u32 GetLoadedAudioStep(void);
-s32 GetActiveAudioSlots(void);
 s32 SetSoundToneTableEntry(s32 row, s32 bank, s32 value);
 void LoadAudioParameterTable(u16 *table);
 s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table);
@@ -136,10 +130,8 @@ void ForceAllEffectVoicesEnabled(s32 enabled);
 s32 OpenVabSequenceSlot(s32 slot, u8 *vabHeader, u8 *vabBody, void *seqData);
 void StartVabSlotVoice(s32 voice, s32 unused, s16 vabSlot);
 void StopDirectVoice(s32 voice);
-void SetVabSlotVoiceEnabled(s32 voice, s32 enabled, s32 vabSlot);
 void SetDefaultReverbDepth(void);
 void InitSequenceAudio(void);
-void RestoreReverbDepth(s32 enabled);
 int CloseAudioSlot(s32 slot);
 
 /* Declared identically by 8 translation units before this

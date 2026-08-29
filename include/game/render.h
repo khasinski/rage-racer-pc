@@ -774,7 +774,6 @@ static inline u8 *GameQueueTexturePacketWide(
  * alpha argument is not 0xFF. SetDrawModePacket only fills the packet in
  * place (no AddPrim, no cursor advance) and has no callers in the retail EXE.
  */
-void SetDrawModePacket(u8 *prim, s32 tpage);
 
 /*
  * A third font, separate from the small (6x12) / large (8x16) pair above:
@@ -926,7 +925,6 @@ extern s32 g_TrackTextureSectionHi;
 extern s32 g_TrackTextureSectionLo;
 
 void ApplyZoneLighting(s32 zone, Matrix *mtx);
-s32 BezierEase(s32 t, s32 control);
 void BuildVisibleCells(s32 near, s32 far);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
@@ -935,7 +933,6 @@ s32 rsin(s32 angle);
 s32 rcos(s32 angle);
 void *ApplyMatrixLV();
 void SubmitTerrainCells(void *ctx, void *cells, s32 count);
-s32 SetLookAtMatrix(const CameraLookAt *camera);
 void SetTrackTexturePageNow(s32 trackSection);
 
 /* Declared identically by 95 translation units before this
@@ -1026,7 +1023,6 @@ void Gpu_BuildDrawEnvCmds(void* packet, void* env);
 s32 Gpu_Reset(s32 mode);
 void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX, s32 *outY, s32 *outZ);
 void MatrixApplyZRotation(Matrix* mtx, s32 degrees);
-void MdecUnpackStatus(void *ctx, volatile u32 *slot);
 s32 SetGraphReverse(s32 mode);
 void SwapTrackTexturePageNow(void);
 void SwapTrackTextureRow(void);

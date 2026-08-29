@@ -1436,23 +1436,6 @@ int ModernInit(const RagePortConfig *config) {
     return 1;
 }
 
-void ModernShutdown(void) {
-    if (!s_initialized) {
-        return;
-    }
-    Psyz_PresentSource_SDL3GPU(s_prev_present_source);
-    Psyz_OverlayInit_SDL3GPU(s_prev_overlay_init);
-    ModernDestroyResources();
-    ModernAssetsShutdown();
-    s_prev_present_source = NULL;
-    s_prev_overlay_init = NULL;
-    s_window = NULL;
-    s_device = NULL;
-    s_enabled = 0;
-    s_markerCaptureEnabled = 0;
-    s_initialized = 0;
-}
-
 int ModernIsEnabled(void) {
     return s_enabled;
 }

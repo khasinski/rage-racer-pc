@@ -595,7 +595,6 @@ void LerpEnvColor(union GameEnvColor *from, union GameEnvColor *to,
                   union GameEnvColor *out, s32 blend);
 void LoadEnvironmentCue();
 void UpdateTrackEventSound(s16 trackSection);
-void UpdateFreeLookCamera(void *car, s32 updateMotion);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */

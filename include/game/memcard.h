@@ -73,8 +73,6 @@ s32 RefreshMemoryCardSaveStatus(
     s32 unused,
     GameSaveHeaderRow *headers);
 char *FormatSaveElapsedTime(char *dst, u32 ticks);
-void DrawMemoryCardMessageLine(s32 unused, s32 messageIndex);
-void DrawMemoryCardHelpPrompt(s32 promptIndex);
 void DrawMemoryCardSaveRows(
     s32 flags,
     GameSaveHeaderRow *rows);
@@ -98,15 +96,11 @@ typedef enum MemoryCardEvent {
 MemoryCardEvent WaitMemoryCardHwEvent(void);
 MemoryCardEvent WaitMemoryCardSwEvent(void);
 MemoryCardEvent PollMemoryCardHwEvent(void);
-MemoryCardEvent PollMemoryCardHwEventLimit(s32 attempts);
 void OpenMemoryCardEvents(void);
 void EnableMemoryCardEvents(void);
 void DisableMemoryCardEvents(void);
 void CloseMemoryCardEvents(void);
 /* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
-void CardReadAndSetMode(s32 param);
-void CardSeekParam(s32 param);
-s32 CardReadStatusPair(s32 high, s32 low);
 s32 FormatMemoryCard(s32 port, s32 slot);
 
 /* Moved here from menu.h and audio.h: these belong to the card, not to

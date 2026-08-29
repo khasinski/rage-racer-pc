@@ -386,5 +386,3 @@ void DrawTeamNameCharModel(void) {
         SubmitCourseModel(SCRATCHPAD, a1);
     }
 }
-
-void DrawCarSlotLabel(s32 x, s32 y, s32 label) { DrawText8x8(x, y, g_CarManufacturerNames[label]); }
