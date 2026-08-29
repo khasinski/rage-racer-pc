@@ -20,47 +20,13 @@
  * and GameCarDrive describe the player layout, whose block at +0xBC is not the
  * rival-car GameCarAiBlock view.
  */
-void UpdatePlayerCar(PlayerCarRuntime *car) {
-    Matrix m1;
-    Matrix m2;
-    SVec sv1;
-    Vec4 tmp;
-    Matrix mA;
-    SVec sv2;
-    Vec4 vout;
-    CarTrackLimits limits;
-    GameCarDrive *p = &car->drive;
-    s32 mode23;
-    s32 limit;
-    s32 slip;
-    s32 skid;
-    s32 crash;
-    s32 revFlag = 0;
-    s32 i;
-    s32 cornerIndex;
-    u32 skidRange;
-
-    TraceCarStates();
-
-    mode23 = g_PadType == 0x23;
-    car->facingBackwards = IsCarFacingBackwards(car);
-
-    ShiftPlayerGears(car, mode23);
-
-    UpdateCarBodyRoll(car);
-
-    if (car->shiftState == 0) {
-        s32 spd = car->speed;
-
-        if (spd < 256 && p->motionState == CAR_MOTION_DRIVING) {
-            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x10000;
-        } else if (spd < 512 && p->motionState == CAR_MOTION_STANDING_START) {
-            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x20000;
-        } else {
-            p->targetHeading += (p->steerPos * 6) / 5 * p->steeringGrip / 0x10000;
-        }
-    }
-
+/*
+ * Read the pedals and the wheel for this frame. Which control does what
+ * depends on the pad: a digital one has the two buttons, a NeGcon twists,
+ * and the analogue pad reads its stick. Once the race is over the car stops
+ * taking input at all.
+ */
+static void SamplePlayerInput(PlayerCarRuntime *car, GameCarDrive *p) {
     if (g_RacePhase < 4) {
         if (g_PadType == 0x41) {
             p->acceleratorInput.sampled =
@@ -116,6 +82,114 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         p->brakeInput = 0;
     }
 
+}
+
+/*
+ * The engine note and the tacho. The needle flickers near the limiter and
+ * the note follows the engine speed the drivetrain settled on.
+ */
+static void UpdatePlayerEngineNote(PlayerCarRuntime *car, GameCarDrive *p,
+                                   s32 revFlag) {
+    if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
+        p->acceleratorInput.value >= 129) {
+        s32 r = Random15();
+
+        g_TachoNeedleFlash = g_AnimTimer & 2;
+        g_EngineRpmJitter = r % 150 / 2;
+    } else {
+        revFlag = 0;
+        if (p->engineRpm == 0 && (g_AnimTimer & 8)) {
+            g_TachoNeedleFlash = 0;
+            g_EngineRpmJitter = rsin(Random15() & 0xFFF) * 150 / 4096;
+            if (g_EngineRpmJitter <= 0) {
+                g_EngineRpmJitter = 0;
+            }
+            revFlag = g_EngineRpmJitter < 37;
+        } else {
+            g_EngineRpmJitter = 0;
+            g_TachoNeedleFlash = 0;
+        }
+    }
+
+    g_EngineRpmSnapshot = g_EngineRpm;
+    if (p->engineRpm != 0) {
+        if (p->gear != 1) {
+            revFlag = 0;
+            if (g_EngineRpm >= g_CarSpec->redline - 2000) {
+                revFlag = 1;
+                if (g_EngineRpm < g_CarSpec->redline) {
+                    revFlag = Random15() & 1;
+                }
+            }
+        } else {
+            revFlag = 1;
+        }
+    }
+
+    if (g_RacePhase >= 4) {
+        SetIndexedEffectVoice(-1, 0, 0);
+    }
+
+    if (p->manual != 0) {
+        UpdateLoadedAudioVoices(g_EngineRpm + g_EngineRpmJitter,
+                      (0 < p->acceleratorInput.value) &
+                      (p->clutch == 0) & revFlag);
+    } else {
+        s32 flag = 0;
+        s32 vol = g_EngineRpm + g_EngineRpmJitter;
+
+        if (p->acceleratorInput.value > 0) {
+            flag = revFlag & 1;
+        }
+        UpdateLoadedAudioVoices(vol, flag);
+    }
+
+    p->gearDisp = p->gear;
+    TraceCarMotion("post-update", car);
+}
+
+void UpdatePlayerCar(PlayerCarRuntime *car) {
+    Matrix m1;
+    Matrix m2;
+    SVec sv1;
+    Vec4 tmp;
+    Matrix mA;
+    SVec sv2;
+    Vec4 vout;
+    CarTrackLimits limits;
+    GameCarDrive *p = &car->drive;
+    s32 mode23;
+    s32 limit;
+    s32 slip;
+    s32 skid;
+    s32 crash;
+    s32 revFlag = 0;
+    s32 i;
+    s32 cornerIndex;
+    u32 skidRange;
+
+    TraceCarStates();
+
+    mode23 = g_PadType == 0x23;
+    car->facingBackwards = IsCarFacingBackwards(car);
+
+    ShiftPlayerGears(car, mode23);
+
+    UpdateCarBodyRoll(car);
+
+    if (car->shiftState == 0) {
+        s32 spd = car->speed;
+
+        if (spd < 256 && p->motionState == CAR_MOTION_DRIVING) {
+            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x10000;
+        } else if (spd < 512 && p->motionState == CAR_MOTION_STANDING_START) {
+            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x20000;
+        } else {
+            p->targetHeading += (p->steerPos * 6) / 5 * p->steeringGrip / 0x10000;
+        }
+    }
+
+    SamplePlayerInput(car, p);
     UpdateCarDrivetrain(car);
 
     {
@@ -423,62 +497,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
-        p->acceleratorInput.value >= 129) {
-        s32 r = Random15();
-
-        g_TachoNeedleFlash = g_AnimTimer & 2;
-        g_EngineRpmJitter = r % 150 / 2;
-    } else {
-        revFlag = 0;
-        if (p->engineRpm == 0 && (g_AnimTimer & 8)) {
-            g_TachoNeedleFlash = 0;
-            g_EngineRpmJitter = rsin(Random15() & 0xFFF) * 150 / 4096;
-            if (g_EngineRpmJitter <= 0) {
-                g_EngineRpmJitter = 0;
-            }
-            revFlag = g_EngineRpmJitter < 37;
-        } else {
-            g_EngineRpmJitter = 0;
-            g_TachoNeedleFlash = 0;
-        }
-    }
-
-    g_EngineRpmSnapshot = g_EngineRpm;
-    if (p->engineRpm != 0) {
-        if (p->gear != 1) {
-            revFlag = 0;
-            if (g_EngineRpm >= g_CarSpec->redline - 2000) {
-                revFlag = 1;
-                if (g_EngineRpm < g_CarSpec->redline) {
-                    revFlag = Random15() & 1;
-                }
-            }
-        } else {
-            revFlag = 1;
-        }
-    }
-
-    if (g_RacePhase >= 4) {
-        SetIndexedEffectVoice(-1, 0, 0);
-    }
-
-    if (p->manual != 0) {
-        UpdateLoadedAudioVoices(g_EngineRpm + g_EngineRpmJitter,
-                      (0 < p->acceleratorInput.value) &
-                      (p->clutch == 0) & revFlag);
-    } else {
-        s32 flag = 0;
-        s32 vol = g_EngineRpm + g_EngineRpmJitter;
-
-        if (p->acceleratorInput.value > 0) {
-            flag = revFlag & 1;
-        }
-        UpdateLoadedAudioVoices(vol, flag);
-    }
-
-    p->gearDisp = p->gear;
-    TraceCarMotion("post-update", car);
+    UpdatePlayerEngineNote(car, p, revFlag);
 }
 
 void DrawPlayerTachometer(void) {
