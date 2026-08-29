@@ -8,105 +8,78 @@
  */
 static void DrawCanvasPanel(RenderBufferAddress ot, s32 slide)
 {
+  s32 panelTop;
+  s32 frameX;
+  s32 quadLeft;
+  s32 quadRight;
+  s32 quadTop;
+  s32 quadBottom;
+  s32 zoomShortfall;
+  s32 texLeft;
+  s32 texTop;
+  s32 texRight;
+  s32 texBottom;
+  u8 shade;
+  u8 tpage;
+
   if (slide < 0)
   {
     return;
   }
-    u8 clut;
-    RenderBufferAddress drawValue;
-    s32 gx;
-    s32 gx2;
-    s32 gy;
-    s32 gy2;
-    s32 kreg;
-    s32 phaseValue;
-    s32 secondaryValue;
-    u16 x0;
-    s32 x2;
-    s32 sy2;
-    s32 sy;
-    s32 drawX;
-    s32 sy2Arg;
-    u8 ff;
-    s32 sx;
-    s32 x88;
-    s32 w1;
-    s32 delta;
-    s32 scaleDelta;
-    s32 texY;
-    s32 gyTemp;
-    u32 slidePhase;
-    if (slide >= 0xC)
-    {
-      slide = 0xB;
-    }
-    x0 = 0x87;
-    drawX = 0x87;
-    
-    slidePhase = slide;
-    sy = ((slidePhase * 0x460) >> 5) + 0xFEC9;
-    ff = 0xFF;
-    DrawRectOutline(ot.pointer, (s16)drawX, (s16)sy, (s16)0x82, 0x104, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)ff);
-    kreg = sy;
-    if (g_TeamLogoZoomLevel >= 0x100)
-    {
-      if (g_TeamLogoPaletteMode == 0)
-      {
-        s32 syOffset;
-        s32 angleSource;
-        s32 angleValue;
-        angleSource = g_TeamLogoColorCycleAngle;
-        secondaryValue = g_TeamLogoCursorX;
-        angleValue = angleSource * 2;
-        drawValue.value = angleValue;
-        secondaryValue *= 4;
-        sy2 = secondaryValue + 0x88;
-        sy2Arg = sy2;
-        syOffset = (g_TeamLogoCursorY * 8) + 2;
-        
-        sy += syOffset;
-        if (angleValue < 0)
-        {
-          drawValue.value = angleValue + 0xFFF;
-        }
-        drawValue.value >>= 12;
-        drawValue.value *= 0x1000;
-        drawValue.value = angleValue - drawValue.value;
-        clut = (rsin(drawValue.value) / 64) - 0x41;
-        DrawRectOutline(ot.pointer, (s16)sy2Arg, (s16)sy, (s16)(g_TeamLogoBrushSize * 4), (s16)(g_TeamLogoBrushSize * 8), 0, (u8)clut, 0, (u8)ff);
-      }
-    }
-    sx = (s16) kreg;
-    x2 = ((s16) x0) - (g_TeamLogoZoomSpan < 0x220);
-    if (g_TeamLogoZoomSpan < 0x220)
-    {
-      sx -= 2;
-    }
-    w1 = sx + 0x110;
-    x88 = x2 + 0x88;
-    delta = 0x220 - g_TeamLogoZoomSpan;
-    scaleDelta = (delta * g_TeamLogoViewX) / 272;
-    phaseValue = (g_TeamLogoRect.coordinate.x.value * 4) - 1;
-    drawValue.value = phaseValue + scaleDelta;
-    gx = drawValue.value;
-    scaleDelta = (delta * g_TeamLogoViewY) / 272;
-    texY = g_TeamLogoRect.coordinate.y.byte.low - 1;
-    gyTemp = texY + scaleDelta;
-    phaseValue = gyTemp;
-    gy = phaseValue;
-    gx2 = drawValue.value + (g_TeamLogoZoomSpan / 8);
-    
-    gy2 = phaseValue + (g_TeamLogoZoomSpan / 8);
-    clut = (g_TeamLogoRect.coordinate.y.value >> 4) & 0x10;
-    clut |= (g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6;
-    SetDrawClipRect(ot.pointer, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
-    GameDrawTexturedQuad(ot.pointer, (s16)x2, (s16)sx, (s16)x88, (s16)sx,
-                         (s16)x2, (s16)w1, (s16)x88, (s16)w1,
-                         (u8)gx, (u8)gy, (u8)gx2, (u8)gy,
-                         (u8)gx, (u8)gy2, (u8)gx2, (u8)gy2,
-                         (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x27F, 1, 0, clut);
-    SetDrawClipRect(ot.pointer, (s16)(x0 + 1), (s16)(kreg + 2), (s16)0x80, (s16)0x100);
-  
+  if (slide >= 0xC)
+  {
+    slide = 0xB;
+  }
+
+  /* The frame slides down from off the top of the screen over twelve steps. */
+  frameX = 0x87;
+  panelTop = (((u32)slide * 0x460) >> 5) + 0xFEC9;
+  DrawRectOutline(ot.pointer, (s16)frameX, (s16)panelTop, (s16)0x82, 0x104,
+                  (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+
+  /* Zoomed in and not mixing a colour, the brush gets a pulsing outline. */
+  if ((g_TeamLogoZoomLevel >= 0x100) && (g_TeamLogoPaletteMode == 0))
+  {
+    shade = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
+    DrawRectOutline(ot.pointer, (s16)((g_TeamLogoCursorX * 4) + 0x88),
+                    (s16)(panelTop + (g_TeamLogoCursorY * 8) + 2),
+                    (s16)(g_TeamLogoBrushSize * 4),
+                    (s16)(g_TeamLogoBrushSize * 8), 0, (u8)shade, 0, (u8)0xFF);
+  }
+
+  /* Zooming in nudges the canvas a pixel left and two up inside its frame. */
+  quadTop = (s16)panelTop;
+  quadLeft = ((s16)frameX) - (g_TeamLogoZoomSpan < 0x220);
+  if (g_TeamLogoZoomSpan < 0x220)
+  {
+    quadTop -= 2;
+  }
+  quadBottom = quadTop + 0x110;
+  quadRight = quadLeft + 0x88;
+
+  /* The view scrolls by taking a smaller window of the texture, panned by how
+   * far the zoom has closed in. */
+  zoomShortfall = 0x220 - g_TeamLogoZoomSpan;
+  texLeft = ((g_TeamLogoRect.coordinate.x.value * 4) - 1)
+            + ((zoomShortfall * g_TeamLogoViewX) / 272);
+  texTop = (g_TeamLogoRect.coordinate.y.byte.low - 1)
+           + ((zoomShortfall * g_TeamLogoViewY) / 272);
+  texRight = texLeft + (g_TeamLogoZoomSpan / 8);
+  texBottom = texTop + (g_TeamLogoZoomSpan / 8);
+
+  tpage = (g_TeamLogoRect.coordinate.y.value >> 4) & 0x10;
+  tpage |= (g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6;
+  SetDrawClipRect(ot.pointer, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
+  GameDrawTexturedQuad(ot.pointer, (s16)quadLeft, (s16)quadTop,
+                       (s16)quadRight, (s16)quadTop,
+                       (s16)quadLeft, (s16)quadBottom,
+                       (s16)quadRight, (s16)quadBottom,
+                       (u8)texLeft, (u8)texTop, (u8)texRight, (u8)texTop,
+                       (u8)texLeft, (u8)texBottom, (u8)texRight,
+                       (u8)texBottom, (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x27F, 1,
+                       0, tpage);
+  SetDrawClipRect(ot.pointer, (s16)(frameX + 1), (s16)(panelTop + 2),
+                  (s16)0x80, (s16)0x100);
 }
 
 /*
@@ -115,104 +88,101 @@ static void DrawCanvasPanel(RenderBufferAddress ot, s32 slide)
  */
 static void DrawPreviewPanel(RenderBufferAddress ot, s32 slide)
 {
+  s32 panelTop;
+  s32 viewLeft;
+  s32 viewTop;
+  s32 texLeft;
+  s32 texTop;
+  u8 shade;
+  u8 tpage;
+  s32 clutIndex;
+
   if (slide < 0)
   {
     return;
   }
-    u8 clut;
-    s32 gx;
-    s32 gx2;
-    s32 gy;
-    s32 gy2;
-    s32 kreg;
-    s32 pal;
-    u16 x0;
-    u16 x1;
-    u16 y1;
-    s32 sy;
-    u32 su;
-    s32 ff;
-    s16 w1;
-    s16 xb;
-    u32 slidePhase;
-    if (slide >= 8)
+  if (slide >= 8)
+  {
+    slide = 7;
+  }
+
+  /* This one slides up from below over eight steps. */
+  panelTop = (s32)(((u32)slide * -0x460) >> 5) + 0x1FB;
+  DrawRectOutline(ot.pointer, (s16)0x2F, (s16)panelTop, (s16)0x42, 0x84,
+                  (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+
+  /* Zoomed in, the preview marks where the big panel is looking. */
+  if ((g_TeamLogoZoomLevel >= 0x100) && (g_TeamLogoGuideMode != 0))
+  {
+    viewLeft = (u16)((u16)g_TeamLogoViewX + 0x30);
+    viewTop = (u16)(panelTop + ((g_TeamLogoViewY * 2) + 2));
+    shade = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
+    if (g_TeamLogoGuideMode == 2)
     {
-      slide = 7;
+      /* Crosshairs: both edges of the brush drawn the full height and the
+       * full width of the preview. Each row of the logo is two pixels here,
+       * so a row needs a pair of lines. */
+      s16 top = (s16)(panelTop + 2);
+      s16 bottom = (s16)(panelTop + 0x82);
+      s16 column = (s16)(viewLeft + (u16)g_TeamLogoCursorX);
+      s32 lastRow = (g_TeamLogoCursorY + g_TeamLogoBrushSize) - 1;
+      s16 row;
+
+      DrawLine(ot.pointer, column, top, column, bottom, (u8)shade, (u8)shade,
+               (u8)shade, (u8)0xFF);
+      column = (s16)((column + ((u16)g_TeamLogoBrushSize)) - 1);
+      DrawLine(ot.pointer, column, top, column, bottom, (u8)shade, (u8)shade,
+               (u8)shade, (u8)0xFF);
+      for (row = (s16)(viewTop + (g_TeamLogoCursorY * 2));
+           row <= (s16)(viewTop + (g_TeamLogoCursorY * 2) + 1); row++)
+      {
+        DrawLine(ot.pointer, (s16)0x30, row, (s16)0x70, row, (u8)shade,
+                 (u8)shade, (u8)shade, (u8)0xFF);
+      }
+      for (row = (s16)(viewTop + (lastRow * 2));
+           row <= (s16)(viewTop + (lastRow * 2) + 1); row++)
+      {
+        DrawLine(ot.pointer, (s16)0x30, row, (s16)0x70, row, (u8)shade,
+                 (u8)shade, (u8)shade, (u8)0xFF);
+      }
     }
-    slidePhase = slide;
-    su = (slidePhase * -0x460) >> 5;
-    sy = su + 0x1FB;
-    x0 = 0x2F;
-    ff = 0xFF;
-    DrawRectOutline(ot.pointer, (s16)0x2F, (s16)sy, (s16)0x42, 0x84, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)ff);
-    kreg = sy;
-    if ((g_TeamLogoZoomLevel >= 0x100) && (g_TeamLogoGuideMode != 0))
+    else if (g_TeamLogoBrushSize == 1)
     {
-      x1 = (u16)g_TeamLogoViewX + 0x30;
-      y1 = sy + ((g_TeamLogoViewY * 2) + 2);
-      clut = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
-      if (g_TeamLogoGuideMode == 2)
-      {
-        s16 ya;
-        s16 yb;
-        s16 xa;
-        ya = su + 0x1FD;
-        yb = su + 0x27D;
-        xa = x1 + (u16)g_TeamLogoCursorX;
-        DrawLine(ot.pointer, (s16)xa, (s16)ya, (s16)xa, (s16)yb, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-        xa = ((x1 + (u16)g_TeamLogoCursorX) + ((u16) g_TeamLogoBrushSize)) - 1;
-        DrawLine(ot.pointer, (s16)xa, (s16)ya, (s16)xa, (s16)yb, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-        xa = y1 + (g_TeamLogoCursorY * 2);
-        DrawLine(ot.pointer, (s16)0x30, (s16)xa, (s16)0x70, (s16)xa, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-        {
-          s32 odd;
-          odd = g_TeamLogoCursorY * 2 + 1;
-          xa = y1 + odd;
-        }
-        DrawLine(ot.pointer, (s16)0x30, (s16)xa, (s16)0x70, (s16)xa, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-        xa = y1 + (((g_TeamLogoCursorY + g_TeamLogoBrushSize) - 1) * 2);
-        DrawLine(ot.pointer, (s16)0x30, (s16)xa, (s16)0x70, (s16)xa, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-        {
-          s32 odd;
-          odd = ((g_TeamLogoCursorY + g_TeamLogoBrushSize) - 1) * 2 + 1;
-          xa = y1 + odd;
-        }
-        DrawLine(ot.pointer, (s16)0x30, (s16)xa, (s16)0x70, (s16)xa, (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-      }
-      else
-        if (g_TeamLogoBrushSize == 1)
-      {
-        s16 xa = x1 + (u16)g_TeamLogoCursorX;
-        s16 ya = y1 + (g_TeamLogoCursorY * 2);
-        DrawLine(ot.pointer, (s16)xa, (s16)ya, (s16)xa, (s16)(ya + 1), (u8)clut, (u8)clut, (u8)clut, (u8)ff);
-      }
-      else
-      {
-        DrawRectOutline(ot.pointer, (s16)(x1 + (u16)g_TeamLogoCursorX), (s16)(y1 + g_TeamLogoCursorY * 2), (s16)g_TeamLogoBrushSize, (s16)(g_TeamLogoBrushSize * 2), (u8)clut, (u8)clut, (u8)clut, (u8)0xFF);
-      }
-      DrawRectOutline(ot.pointer, (s16)x1, (s16)y1, (s16)0x20, 0x40, 0, (u8)clut, 0, (u8)0xFF);
+      /* A single pixel of the logo is a two-pixel line in the preview. */
+      s16 column = (s16)(viewLeft + (u16)g_TeamLogoCursorX);
+      s16 row = (s16)(viewTop + (g_TeamLogoCursorY * 2));
+
+      DrawLine(ot.pointer, column, row, column, (s16)(row + 1), (u8)shade,
+               (u8)shade, (u8)shade, (u8)0xFF);
     }
-    gx = (g_TeamLogoRect.coordinate.x.value * 4) - 1;
-    gy = g_TeamLogoRect.coordinate.y.byte.low - 1;
-    gx2 = gx;
-    gx2 += 0x41;
-    gy2 = gy;
-    gy2 += 0x41;
-    pal = GetClut(g_TeamLogoClutRect.x, g_TeamLogoClutRect.y);
-    clut = (g_TeamLogoRect.coordinate.y.value >> 4) & 0x10;
-    clut |= (g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6;
-    w1 = kreg + 0x83;
-    xb = x0 + 0x41;
-    SetDrawClipRect(ot.pointer, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
-    
-    GameDrawTexturedQuad(ot.pointer, (s16)x0, (s16)kreg, (s16)xb, (s16)kreg,
-                         (s16)x0, (s16)w1, (s16)xb, (s16)w1,
-                         (u8)gx, (u8)gy, (u8)gx2, (u8)gy,
-                         (u8)gx, (u8)gy2, (u8)gx2, (u8)gy2,
-                         (u8)0x7F, (u8)0x7F, (u8)0x7F,
-                         pal & 0xFFFF, 1, 0, clut);
-    SetDrawClipRect(ot.pointer, (s16)(x0 + 1), (s16)(kreg + 2), (s16)0x40, (s16)0x80);
-  
+    else
+    {
+      DrawRectOutline(ot.pointer, (s16)(viewLeft + (u16)g_TeamLogoCursorX),
+                      (s16)(viewTop + g_TeamLogoCursorY * 2),
+                      (s16)g_TeamLogoBrushSize, (s16)(g_TeamLogoBrushSize * 2),
+                      (u8)shade, (u8)shade, (u8)shade, (u8)0xFF);
+    }
+    DrawRectOutline(ot.pointer, (s16)viewLeft, (s16)viewTop, (s16)0x20, 0x40,
+                    0, (u8)shade, 0, (u8)0xFF);
+  }
+
+  /* The logo unzoomed, all 64 by 64 of it. */
+  texLeft = (g_TeamLogoRect.coordinate.x.value * 4) - 1;
+  texTop = g_TeamLogoRect.coordinate.y.byte.low - 1;
+  clutIndex = GetClut(g_TeamLogoClutRect.x, g_TeamLogoClutRect.y);
+  tpage = (g_TeamLogoRect.coordinate.y.value >> 4) & 0x10;
+  tpage |= (g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6;
+  SetDrawClipRect(ot.pointer, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
+  GameDrawTexturedQuad(ot.pointer, (s16)0x2F, (s16)panelTop, (s16)0x70,
+                       (s16)panelTop, (s16)0x2F, (s16)(panelTop + 0x83),
+                       (s16)0x70, (s16)(panelTop + 0x83),
+                       (u8)texLeft, (u8)texTop, (u8)(texLeft + 0x41),
+                       (u8)texTop, (u8)texLeft, (u8)(texTop + 0x41),
+                       (u8)(texLeft + 0x41), (u8)(texTop + 0x41),
+                       (u8)0x7F, (u8)0x7F, (u8)0x7F, clutIndex & 0xFFFF, 1, 0,
+                       tpage);
+  SetDrawClipRect(ot.pointer, (s16)0x30, (s16)(panelTop + 2), (s16)0x40,
+                  (s16)0x80);
 }
 
 /*
@@ -221,113 +191,91 @@ static void DrawPreviewPanel(RenderBufferAddress ot, s32 slide)
  */
 static void DrawSwatchStrip(RenderBufferAddress ot, s32 slide)
 {
+  s32 panelTop;
+  s32 stripX;
+  s32 wellX;
+  s32 wellTop;
+  s32 i;
+  u8 shade;
+
   if (slide < 0)
   {
     return;
   }
-    u8 clut;
-    RenderBufferAddress drawValue;
-    s32 gx;
-    s32 gy;
-    s32 i;
-    s32 kreg;
-    s32 pal;
-    s32 secondaryValue;
-    u16 x0;
-    u16 x1;
-    u16 y1;
-    s32 yA0;
-    s32 j;
-    s32 vs7;
-    s32 vs6;
-    u32 panelY;
-    u32 slidePhase;
-    if (slide >= 6)
+  if (slide >= 6)
+  {
+    slide = 5;
+  }
+
+  stripX = 0x8A;
+  panelTop = (s32)(((u32)slide * -0x3C0) >> 5) + 0x1EA;
+
+  /* The pen well, above the strip, outlined in the pulsing colour while a
+   * colour is being mixed and in grey otherwise. */
+  wellTop = (u16)(panelTop - 3);
+  wellX = (u16)((g_TeamLogoPenColor * 8) + 0x80);
+  if (g_TeamLogoPaletteMode == 1)
+  {
+    shade = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
+    DrawRectOutline(ot.pointer, (s16)wellX, (s16)wellTop, (s16)0xD, 0x1A, 0,
+                    (u8)shade, 0, (u8)0xFF);
+  }
+  else
+  {
+    DrawRectOutline(ot.pointer, (s16)wellX, (s16)wellTop, (s16)0xD, 0x1A,
+                    (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+  }
+  DrawSolidRect(ot.pointer, (s16)(wellX + 1), (s16)(wellTop + 2), (s16)0xB,
+                (s16)0x16,
+                (u8)((g_TeamLogoClut[g_TeamLogoPenColor] & 0xFF) * 8),
+                (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 2) & 0xF8),
+                (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 7) & 0xF8),
+                (u8)0xFF);
+
+  /* The fifteen fixed colours, eight pixels apart along the strip. */
+  for (i = 0; i < 15; i++)
+  {
+    DrawSolidRect(ot.pointer, (s16)(stripX + 1 + i * 8), (s16)(panelTop + 2),
+                  (s16)8, (s16)0x10,
+                  (u8)((g_TeamLogoSwatches[i] & 0xFF) * 8),
+                  (u8)((g_TeamLogoSwatches[i] >> 2) & 0xF8),
+                  (u8)((g_TeamLogoSwatches[i] >> 7) & 0xF8), (u8)0xFF);
+  }
+  DrawRectOutline(ot.pointer, (s16)stripX, (s16)panelTop, (s16)0x7A, 0x14,
+                  (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+
+  /* Four button prompts under the strip: the button's own glyph, and the
+   * caption strip that goes with it. The glyphs sit in different places in
+   * VRAM for a pad and for a NeGcon. */
+  for (i = 0; i < 4; i++)
+  {
+    s32 promptX = stripX + (i * 0x28) - 0xF;
+    s32 glyphU;
+    s32 glyphV;
+    u16 glyphClut;
+    s32 glyphTpage;
+
+    if (g_PadType == 0x23)
     {
-      slide = 5;
-    }
-    x0 = 0x8A;
-    slidePhase = slide;
-    panelY = (slidePhase * -0x3C0) >> 5;
-    kreg = panelY + 0x1EA;
-    y1 = panelY + 0x1E7;
-    x1 = (g_TeamLogoPenColor * 8) + 0x80;
-    if (g_TeamLogoPaletteMode == 1)
-    {
-      s32 panelAng;
-      panelAng = g_TeamLogoColorCycleAngle * 2;
-      clut = (rsin(panelAng % 0x1000) / 64) - 0x41;
-      DrawRectOutline(ot.pointer, (s16)x1, (s16)y1, (s16)0xD, 0x1A, 0, (u8)clut, 0, (u8)0xFF);
+      glyphU = (i * 0xC) - 0x30;
+      glyphV = 0;
+      glyphClut = 0x233;
+      glyphTpage = 0x1E;
     }
     else
     {
-      DrawRectOutline(ot.pointer, (s16)x1, (s16)y1, (s16)0xD, 0x1A, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+      glyphU = (i * 0xC) + 0x60;
+      glyphV = 0x58;
+      glyphClut = 0x1F6;
+      glyphTpage = 0x1C;
     }
-    DrawSolidRect(ot.pointer, (s16)(x1 + 1), (s16)(y1 + 2), (s16)0xB, (s16)0x16, (u8)((g_TeamLogoClut[g_TeamLogoPenColor] & 0xFF) * 8), (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 2) & 0xF8), (u8)((g_TeamLogoClut[g_TeamLogoPenColor] >> 7) & 0xF8), (u8)0xFF);
-    /* The fifteen fixed colours, eight pixels apart along the strip. */
-    for (i = 0, j = 1; i < 15; i++, j += 8)
-    {
-      DrawSolidRect(ot.pointer, (s16)(x0 + j), (s16)(kreg + 2), (s16)8,
-                    (s16)0x10, (u8)((g_TeamLogoSwatches[i] & 0xFF) * 8),
-                    (u8)((g_TeamLogoSwatches[i] >> 2) & 0xF8),
-                    (u8)((g_TeamLogoSwatches[i] >> 7) & 0xF8), (u8)0xFF);
-    }
-    {
-      DrawRectOutline(ot.pointer, (s16)x0, (s16)kreg, (s16)0x7A, 0x14, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-      y1 = kreg + 0x1C;
-    i = 0;
-    yA0 = (kreg + 0x22) << 16;
-    
-    kreg = 0x60;
-    vs7 = -0x30;
-    vs6 = -0xF;
-    for (; i < 4; i++)
-    {
-      s32 shade;
-      s32 swatchWidth;
-      s32 gxArg;
-      s32 gyArg;
-      s32 clutArg;
-
-      x1 = x0 + vs6;
-      if (g_PadType == 0x23)
-      {
-        gx = vs7;
-        gy = 0;
-        pal = 0x233;
-        clut = 0x1E;
-      }
-      else
-      {
-        gx = kreg;
-        gy = 0x58;
-        pal = 0x1F6;
-        clut = 0x1C;
-      }
-      gxArg = (u8) gx;
-      gyArg = (u8) gy;
-      
-      
-      swatchWidth = 0xC;
-      
-      shade = (u8) (i * 0x24);
-      
-      drawValue.pointer = ot.pointer;
-      
-      
-      clutArg = clut;
-      DrawSprite(drawValue.pointer, (s16)(x1 + 0x13), (s16)(yA0 >> 16), (s16)swatchWidth, (s16)0x18,
-                            gxArg, gyArg, 0, 0, 0, (u16) pal, 1, 0, clutArg);
-      
-      secondaryValue = (u8) shade;
-      DrawSprite(ot.pointer, (s16)x1, (s16)y1, (s16)0x22, (s16)0x32, secondaryValue, (u8)0xC0,
-                    0, 0, 0, 0x1F5, 1, 0, 0x1D);
-      kreg += 0xC;
-      vs7 += 0xC;
-      vs6 += 0x28;
-      }
-    }
-  
+    DrawSprite(ot.pointer, (s16)(promptX + 0x13), (s16)(panelTop + 0x22),
+               (s16)0xC, (s16)0x18, (u8)glyphU, (u8)glyphV, 0, 0, 0, glyphClut,
+               1, 0, glyphTpage);
+    DrawSprite(ot.pointer, (s16)promptX, (s16)(panelTop + 0x1C), (s16)0x22,
+               (s16)0x32, (u8)(i * 0x24), (u8)0xC0, 0, 0, 0, 0x1F5, 1, 0,
+               0x1D);
+  }
 }
 
 /*
@@ -339,16 +287,13 @@ static void DrawEditorHint(RenderBufferAddress ot, s32 slide)
   {
     return;
   }
-    u32 slidePhase;
-
-    if (slide >= 7)
-    {
-      slide = 6;
-    }
-    slidePhase = slide;
-    DrawSprite(ot.pointer, (s16)(((slidePhase * 0x250) >> 5) + 0xFFA1), (s16)0xC0, (s16)0x61, (s16)0x32,
-               (u8)0x90, (u8)0xC0, 0, 0, 0, 0x1F5, 1, 0, 0x1D);
-  
+  if (slide >= 7)
+  {
+    slide = 6;
+  }
+  DrawSprite(ot.pointer, (s16)((s32)(((u32)slide * 0x250) >> 5) + 0xFFA1),
+             (s16)0xC0, (s16)0x61, (s16)0x32, (u8)0x90, (u8)0xC0, 0, 0, 0,
+             0x1F5, 1, 0, 0x1D);
 }
 
 /*
@@ -357,84 +302,80 @@ static void DrawEditorHint(RenderBufferAddress ot, s32 slide)
  */
 static void DrawChannelSliders(RenderBufferAddress ot, s32 slide)
 {
+  /* Red, green and blue, one slider each, 0x30 apart down the screen. */
+  static const u8 glyphU[3] = {0xD8, 0x80, 0x58};
+  static const u8 barRed[3] = {0xC0, 0, 0};
+  static const u8 barGreen[3] = {0, 0xC0, 0};
+  static const u8 barBlue[3] = {0, 0, 0xC0};
+  const s32 top = 0xC8;
+  s32 sliderX;
+  s32 i;
+
   if (slide < 0)
   {
     return;
   }
-    u8 clut;
-    s32 kreg;
-    u16 x0;
-    s16 yA8;
-    s16 yB8;
-    s16 yC8;
-    s16 sy;
-    s16 sx;
-    s16 xa;
-    s16 xb;
-    s16 xc;
-    s32 x0Calc;
-    s32 syBase;
-    s32 tileSize;
-    u32 slidePhase;
-    kreg = 0xC8;
-    if (slide >= 6)
-    {
-      slide = 5;
-    }
-    slidePhase = slide;
-    x0Calc = ((slidePhase * -0x140) >> 5) + 0x140;
-    
-    syBase = g_TeamLogoColorChannel;
-    x0 = (u16) x0Calc;
-    sy = (syBase * 0x30) + 0xD9;
-    if (g_TeamLogoPaletteMode == 1)
-    {
-      clut = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
-      DrawRectOutline(ot.pointer, (s16)x0, (s16)sy, (s16)0x12, 0x15, 0, (u8)clut, 0, (u8)0xFF);
-    }
-    yA8 = (s16) (kreg + 0x14);
-    sx = 0x3F;
-    sx = x0 - sx;
-    GameDrawNumber((s16)sx, yA8, (s16)3, g_TeamLogoClut[g_TeamLogoPenColor] & 0x1F,
+  if (slide >= 6)
+  {
+    slide = 5;
+  }
+
+  /* The column slides in from the right edge over six steps. */
+  sliderX = (u16)((s32)(((u32)slide * -0x140) >> 5) + 0x140);
+
+  /* While a colour is being mixed, the channel being edited is ringed. */
+  if (g_TeamLogoPaletteMode == 1)
+  {
+    u8 shade = (rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41;
+
+    DrawRectOutline(ot.pointer, (s16)sliderX,
+                    (s16)((g_TeamLogoColorChannel * 0x30) + 0xD9), (s16)0x12,
+                    0x15, 0, (u8)shade, 0, (u8)0xFF);
+  }
+
+  /* The three readouts, to the left of the column. */
+  for (i = 0; i < 3; i++)
+  {
+    GameDrawNumber((s16)(sliderX - 0x3F), (s16)(top + (i * 0x30) + 0x14),
+                   (s16)3, (g_TeamLogoClut[g_TeamLogoPenColor] >> (i * 5))
+                               & 0x1F,
                    (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x244, 0x20);
-    yB8 = (s16) (kreg + 0x44);
-    GameDrawNumber((s16)sx, yB8, (s16)3,
-                   (g_TeamLogoClut[g_TeamLogoPenColor] >> 5) & 0x1F,
-                   (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x244, 0x20);
-    yC8 = (s16) (kreg + 0x74);
-    GameDrawNumber((s16)sx, yC8, (s16)3,
-                   (g_TeamLogoClut[g_TeamLogoPenColor] >> 10) & 0x1F,
-                   (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x244, 0x20);
-    {
-      s32 alpha;
-      alpha = 0xFF;
-      DrawRectOutline(ot.pointer, (s16)x0, (s16)kreg, (s16)0x12, 0x26, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)alpha);
-      DrawRectOutline(ot.pointer, (s16)x0, (s16)(kreg + 0x30), (s16)0x12, 0x26, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)alpha);
-      DrawRectOutline(ot.pointer, (s16)x0, (s16)(kreg + 0x60), (s16)0x12, 0x26, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)alpha);
-    }
-    xa = x0 + 1;
-    xb = x0 + 0x11;
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x11), (s16)xb, (s16)(kreg + 0x11), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x12), (s16)xb, (s16)(kreg + 0x12), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x41), (s16)xb, (s16)(kreg + 0x41), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x42), (s16)xb, (s16)(kreg + 0x42), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x71), (s16)xb, (s16)(kreg + 0x71), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    DrawLine(ot.pointer, (s16)xa, (s16)(kreg + 0x72), (s16)xb, (s16)(kreg + 0x72), (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
-    xc = x0 + 5;
-    tileSize = 0x10;
-    DrawSprite(ot.pointer, (s16)xc, (s16)(kreg + 2), (s16)8, (s16)tileSize,
-               (u8)0xD8, (u8)0x18, 0, 0, 0, 0x244, 1, 1, 0x5B);
-    DrawSprite(ot.pointer, (s16)xc, (s16)(kreg + 0x32), (s16)8, (s16)tileSize,
-               (u8)0x80, (u8)0x18, 0, 0, 0, 0x244, 1, 1, 0x5B);
-    DrawSprite(ot.pointer, (s16)xc, (s16)(kreg + 0x62), (s16)8, (s16)tileSize,
-               (u8)0x58, (u8)0x18, 0, 0, 0, 0x244, 1, 1, 0x5B);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)(kreg + 2), (s16)0x10, (s16)tileSize, (u8)0xC0, 0, 0, (u8)0xFF);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)yA8, (s16)0x10, (s16)tileSize, 0, 0, 0, (u8)0xFF);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)(kreg + 0x32), (s16)0x10, (s16)tileSize, 0, (u8)0xC0, 0, (u8)0xFF);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)yB8, (s16)0x10, (s16)tileSize, 0, 0, 0, (u8)0xFF);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)(kreg + 0x62), (s16)0x10, (s16)tileSize, 0, 0, (u8)0xC0, (u8)0xFF);
-    DrawSolidRect(ot.pointer, (s16)xa, (s16)yC8, (s16)0x10, (s16)tileSize, 0, 0, 0, (u8)0xFF);
-  
+  }
+
+  /* Then the three wells, their midlines, their letters and their bars, each
+   * kind drawn for all three channels before the next, which is the order the
+   * packets have to reach the ordering table in. */
+  for (i = 0; i < 3; i++)
+  {
+    DrawRectOutline(ot.pointer, (s16)sliderX, (s16)(top + (i * 0x30)),
+                    (s16)0x12, 0x26, (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
+  }
+  for (i = 0; i < 3; i++)
+  {
+    s32 midline = top + (i * 0x30) + 0x11;
+
+    DrawLine(ot.pointer, (s16)(sliderX + 1), (s16)midline,
+             (s16)(sliderX + 0x11), (s16)midline, (u8)0xB4, (u8)0xB4, (u8)0xB4,
+             (u8)0xFF);
+    DrawLine(ot.pointer, (s16)(sliderX + 1), (s16)(midline + 1),
+             (s16)(sliderX + 0x11), (s16)(midline + 1), (u8)0xB4, (u8)0xB4,
+             (u8)0xB4, (u8)0xFF);
+  }
+  for (i = 0; i < 3; i++)
+  {
+    DrawSprite(ot.pointer, (s16)(sliderX + 5), (s16)(top + (i * 0x30) + 2),
+               (s16)8, (s16)0x10, glyphU[i], (u8)0x18, 0, 0, 0, 0x244, 1, 1,
+               0x5B);
+  }
+  for (i = 0; i < 3; i++)
+  {
+    DrawSolidRect(ot.pointer, (s16)(sliderX + 1), (s16)(top + (i * 0x30) + 2),
+                  (s16)0x10, (s16)0x10, barRed[i], barGreen[i], barBlue[i],
+                  (u8)0xFF);
+    DrawSolidRect(ot.pointer, (s16)(sliderX + 1),
+                  (s16)(top + (i * 0x30) + 0x14), (s16)0x10, (s16)0x10, 0, 0,
+                  0, (u8)0xFF);
+  }
 }
 
 /*
