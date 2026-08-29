@@ -460,6 +460,28 @@ if(NOT MSVC)
     target_compile_options(axis_curve_tests PRIVATE -Wall -Wextra)
     target_link_libraries(axis_curve_tests PRIVATE m)
 endif()
+add_executable(track_math_tests
+    track_math_tests.c
+    ../src/main/PAL/main/render/track_textures.c)
+target_include_directories(track_math_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(track_math_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(track_math_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(track_math_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+target_link_libraries(track_math_tests PRIVATE psyz)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(track_math_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+add_test(NAME track_math COMMAND track_math_tests)
+set_tests_properties(track_math PROPERTIES LABELS portable)
+
 add_test(NAME axis_curve COMMAND axis_curve_tests)
 set_tests_properties(axis_curve PROPERTIES LABELS portable)
 
