@@ -418,6 +418,14 @@ extern s16 g_AnimSceneryPitch[];
 extern s16 g_AnimSceneryRacePosition;
 extern s32 g_AnimSceneryTint;
 extern s16 g_AnimSceneryVariant;
+/* The orientation quads, same three-group shape as the offsets: delta at
+ * 0x8009B1E8, start at +0x10, current at +0x20. Elements 0..2 are pitch, yaw
+ * and roll -- 12-bit angles, wrapped to +-0x800 on load and masked with 0xFFF
+ * on store -- and element 3 is the pull-back distance, a plain length. */
+#define CAMPATH_PITCH 0
+#define CAMPATH_YAW 1
+#define CAMPATH_ROLL 2
+#define CAMPATH_DIST 3
 extern s32 g_CamPathAngle[4];
 extern s32 g_CamPathAngleDelta[4];
 #define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]

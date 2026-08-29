@@ -110,6 +110,32 @@ static void Run(CameraViewMode selector, s32 *view) {
     view[5] = g_RageScratchpadState.viewAngleZ;
 }
 
+/*
+ * Drive the chase camera one frame with the yaw already lagging behind the car
+ * by `yawError`, and report how far it advanced. g_CameraModePrev has to say 1
+ * or the branch snaps the yaw to the target instead of chasing it. The lag
+ * itself is no good to read back: the branch overwrites it further down with
+ * the error that is left.
+ */
+static s32 ChaseAdvance(s32 yawError, s32 speed) {
+    GameRenderObject car;
+    s32 startYaw = (0x800 - yawError) & 0xFFF;
+
+    PlaceCar(&car);
+    car.angleY = 0x800;
+    car.speed = speed;
+    memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
+    g_CameraNodeIndex = 0;
+    g_CameraModePrev = 1;
+    g_ChaseYawPrev = startYaw;
+    g_ChaseYawRampPos = 0;
+    g_ChaseYawRampNeg = 0;
+    g_ChaseYawLag = 0;
+    g_ChaseCameraPreset = 0;
+    UpdateCamera(1, &car);
+    return ((g_ChaseYaw - startYaw) + 0x800) % 0x1000 - 0x800;
+}
+
 int main(void) {
     s32 view[6];
 
@@ -216,6 +242,41 @@ int main(void) {
         g_OrbitCameraYaw = 0x100;
         Run(2, view);
         Check("mode 5, orbit behind", view, wanted);
+    }
+
+    /*
+     * The chase camera has to lean into a turn. Four paths settle the yaw: the
+     * error can point either way, and either way can be the short way round or
+     * the long way across the wrap. A refactor that lets one of them fall
+     * through to the "no error" arm throws away the swing it just worked out,
+     * and the camera stops leading the car at all. Each of the four has to
+     * move the yaw, and move it towards the car rather than away.
+     */
+    {
+        static const struct {
+            s32 error;
+            s32 speed;
+            const char *what;
+        } cases[] = {
+            {0x40, 0x400, "behind, short way"},
+            {0x900, 0x400, "behind, across the wrap"},
+            {-0x40, 0x400, "ahead, short way"},
+            {-0x900, 0x400, "ahead, across the wrap"},
+        };
+        size_t i;
+        for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+            s32 advance = ChaseAdvance(cases[i].error, cases[i].speed);
+            /* The camera takes the shorter way round the circle, so past
+             * half a turn it leans the other way. */
+            s32 wanted = cases[i].error;
+            if (wanted > 0x7FF) wanted -= 0x1000;
+            if (wanted < -0x800) wanted += 0x1000;
+            if (advance == 0 || (advance > 0) != (wanted > 0)) {
+                printf("FAIL chase yaw %s: moved %d, wanted a step towards "
+                       "%d\n", cases[i].what, advance, wanted);
+                s_failures++;
+            }
+        }
     }
 
     if (s_failures != 0) {

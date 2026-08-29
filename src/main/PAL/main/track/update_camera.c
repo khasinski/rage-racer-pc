@@ -9,15 +9,6 @@
  * a delta to the destination and the current interpolated value. Mode-3 nodes
  * therefore store angles in the first four words where modes 2/4 store a world
  * position -- the record is a union keyed on `node->mode`. */
-/* The orientation quads, same three-group shape as the offsets: delta at
- * 0x8009B1E8, start at +0x10, current at +0x20. Elements 0..2 are pitch, yaw
- * and roll -- 12-bit angles, wrapped to +-0x800 on load and masked with 0xFFF
- * on store -- and element 3 is the pull-back distance, a plain length. */
-#define CAMPATH_PITCH 0
-#define CAMPATH_YAW 1
-#define CAMPATH_ROLL 2
-#define CAMPATH_DIST 3
-
 typedef union CameraCarAddress {
     PlayerCarRuntime *player;
     GameRenderObject *renderObject;
