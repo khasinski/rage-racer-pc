@@ -618,6 +618,27 @@ endif()
 target_link_libraries(car_track_state_tests PRIVATE psyz)
 add_test(NAME car_track_state COMMAND car_track_state_tests)
 set_tests_properties(car_track_state PROPERTIES LABELS portable)
+
+# The gearbox, on its own rather than through a whole race.
+add_executable(gear_shift_tests
+    gear_shift_tests.c
+    ../src/main/PAL/main/car/gear_shift.c)
+target_include_directories(gear_shift_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(gear_shift_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(gear_shift_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(gear_shift_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(gear_shift_tests PRIVATE -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(gear_shift_tests PRIVATE psyz)
+add_test(NAME gear_shift COMMAND gear_shift_tests)
+set_tests_properties(gear_shift PROPERTIES LABELS portable)
 endif()
 endif()
 

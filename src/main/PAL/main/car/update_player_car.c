@@ -13,14 +13,12 @@
 #include "rage/trace.h"
 
 /*
- * Per-car physics / gear-shift driver (matched sibling of the ASM
- * UpdateAttractCars). Samples input, builds the car's orientation matrices, runs
- * the manual/auto gear-shift state machine (using the per-car spec block
- * g_CarSpec for top-gear/upshift/downshift-speed tables and the shift
- * cooldown timers g_SteerHoldFrames/g_AutoShiftCooldown), dispatches the engine audio and the
- * boost/launch handlers, and resolves track-boundary skid via UpdateCarTrackState.
- * PlayerCarRuntime and GameCarDrive describe the player layout, whose block at
- * +0xBC is not the rival-car GameCarAiBlock view.
+ * Per-car physics driver (matched sibling of the ASM UpdateAttractCars).
+ * Samples input, builds the car's orientation matrices, picks the gear through
+ * ShiftPlayerGears, dispatches the engine audio and the boost/launch handlers,
+ * and resolves track-boundary skid via UpdateCarTrackState. PlayerCarRuntime
+ * and GameCarDrive describe the player layout, whose block at +0xBC is not the
+ * rival-car GameCarAiBlock view.
  */
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
@@ -47,73 +45,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     mode23 = g_PadType == 0x23;
     car->facingBackwards = IsCarFacingBackwards(car);
 
-    if (car->drive.manual != 0) {
-        if (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) {
-            s32 g = car->drive.gear;
-
-            if (g < g_CarSpec->topGear && car->drive.clutch == 0) {
-                car->drive.gear++;
-                g_SteerHoldFrames = 0;
-            }
-        }
-        if (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) {
-            s32 g = p->gear;
-
-            if (g >= 2) {
-                p->gear--;
-                g_SteerHoldFrames = 0;
-            }
-        }
-    } else {
-        if (car->shiftState == 0) {
-            s32 g;
-            s32 idx;
-            s32 tableValue;
-
-            g = car->drive.gear;
-            idx = g - 1;
-            tableValue = g_CarSpec->shiftPoints[idx].downshiftSpeed;
-            if (car->speed < tableValue &&
-                g_AutoShiftCooldown <= 0 && car->drive.clutch == 0) {
-                if (g >= 2) {
-                    car->drive.gear--;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            } else {
-                GameCarSpec *config;
-                GameCarSpecShiftPoint *entry;
-                s32 nextGear;
-                s32 speed;
-
-                nextGear = p->gear;
-                config = g_CarSpec;
-                speed = car->speed;
-                idx = nextGear - 1;
-                entry = config->shiftPoints;
-                entry += idx;
-                if (entry->upshiftSpeed < speed &&
-                    g_AutoShiftCooldown <= 0 && p->clutch == 0 &&
-                    nextGear < config->topGear) {
-                    p->gear++;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            }
-        }
-        if (g_AutoShiftCooldown > 0) {
-            if (p->brakeInput >= 129) {
-                g_AutoShiftCooldown = g_AutoShiftCooldown - 2;
-            } else {
-                g_AutoShiftCooldown--;
-            }
-        }
-        if (car->speed == 0 && p->gear >= 2 && p->motionState != CAR_MOTION_STANDING_START) {
-            p->gear = 1;
-            p->clutch = 0;
-            g_AutoShiftCooldown = 0;
-        }
-    }
+    ShiftPlayerGears(car, mode23);
 
     UpdateCarBodyRoll(car);
 
