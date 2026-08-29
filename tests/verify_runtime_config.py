@@ -53,7 +53,7 @@ toggle_renderer_frame = 230
         result = subprocess.run(
             [executable, "--scenario", scenario], cwd=source, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=50,
+            timeout=150,
         )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)

@@ -300,6 +300,12 @@ add_test(NAME car_prices COMMAND python3
 # else was running. Every limit here is three times the time its test takes on an
 # idle machine, which is enough that a busy one does not turn a passing test into
 # a failing one. They still catch a hang, which is what they are for.
+#
+# The scripts carry their own subprocess timeouts as well, and those follow the
+# same rule. They were left at one times the idle cost when these were raised,
+# which made them the limit that actually bit: scenario_after_finish had 65
+# seconds inside the script against 210 here, so a parallel run failed it while
+# ctest was still waiting patiently.
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3
@@ -710,6 +716,27 @@ endif()
 target_link_libraries(car_select_screen_tests PRIVATE psyz)
 add_test(NAME car_select_screen COMMAND car_select_screen_tests)
 set_tests_properties(car_select_screen PROPERTIES LABELS portable)
+
+add_executable(course_select_screen_tests
+    course_select_screen_tests.c
+    ../src/main/PAL/main/menu/course_select_screen.c)
+target_include_directories(course_select_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_select_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_select_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_select_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(course_select_screen_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(course_select_screen_tests PRIVATE psyz)
+add_test(NAME course_select_screen COMMAND course_select_screen_tests)
+set_tests_properties(course_select_screen PROPERTIES LABELS portable)
 
 add_executable(car_shop_screen_tests
     car_shop_screen_tests.c

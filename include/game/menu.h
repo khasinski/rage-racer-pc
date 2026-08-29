@@ -214,6 +214,11 @@ void InitMenuMode(void);
 
 /* id 1 -- course + class picker; left/right change course, up/down the rows. */
 void EnterCourseSelectScreen(void);
+/* Whether the course before or after the current one may be picked; both
+ * depend on the class and on whether a series is selected. In course_select.c,
+ * next to the course list they read. */
+s32 CanSelectPrevCourse(void);
+s32 CanSelectNextCourse(void);
 void UpdateCourseSelectScreen(void);
 s32 DrawCourseSelectScreen(s32 step);
 

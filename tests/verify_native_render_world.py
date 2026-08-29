@@ -61,7 +61,7 @@ timer = 20
         result = subprocess.run(
             [executable, "--scenario", scenario], cwd=source, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=35,
+            timeout=105,
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
@@ -113,7 +113,7 @@ timer = 20
              "--set", "stop.timer=200"],
             cwd=source, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=35,
+            timeout=105,
         )
         if attract.returncode != 0:
             print(attract.stdout, file=sys.stderr)

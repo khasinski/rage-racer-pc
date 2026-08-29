@@ -62,7 +62,7 @@ path = {capture}
                 result = subprocess.run(
                     [executable, "--scenario", scenario], cwd=source,
                     env=environment, stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT, text=True, timeout=45,
+                    stderr=subprocess.STDOUT, text=True, timeout=135,
                 )
                 reported_series = "grand-prix" if series == "gp" else series
                 expected = f"series={reported_series} class=0 course={course} car=3"

@@ -21,7 +21,7 @@ def main() -> int:
             RAGE_PORT_SMOKE_FRAMES="2",
         )
         result = subprocess.run([executable], cwd=source, env=environment,
-                                timeout=15)
+                                timeout=45)
         if result.returncode != 0:
             return result.returncode or 1
         text = log.read_text(encoding="utf-8")

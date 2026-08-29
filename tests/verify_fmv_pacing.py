@@ -51,7 +51,7 @@ def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
             "video.renderer=classic",
         ],
         cwd=source_dir, env=environment, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, timeout=180,
+        stderr=subprocess.STDOUT, text=True, timeout=540,
     )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)

@@ -35,7 +35,7 @@ def main() -> int:
     result = subprocess.run(
         [executable, "--set", "boot.direct=false"], cwd=source, env=menus,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        timeout=45,
+        timeout=135,
     )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
@@ -55,7 +55,7 @@ def main() -> int:
     direct = subprocess.run(
         [executable], cwd=source, env=environment,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        timeout=45,
+        timeout=135,
     )
     if direct.returncode != 0:
         print(direct.stdout, file=sys.stderr)

@@ -34,7 +34,7 @@ restart_race_frames = 2300,2400
         result = subprocess.run(
             [executable, "--scenario", scenario], cwd=source, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=60,
+            timeout=180,
         )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)

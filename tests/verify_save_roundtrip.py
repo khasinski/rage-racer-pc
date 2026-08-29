@@ -38,7 +38,7 @@ def main() -> int:
         result = subprocess.run(
             [executable], cwd=work, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=25,
+            timeout=75,
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
@@ -66,7 +66,7 @@ def main() -> int:
         menu = subprocess.run(
             [executable], cwd=work, env=menu_environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=25,
+            timeout=75,
         )
         if menu.returncode != 0:
             print(menu.stdout, file=sys.stderr)
@@ -106,7 +106,7 @@ def main() -> int:
             load = subprocess.run(
                 [executable], cwd=load_work, env=load_environment,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                timeout=25,
+                timeout=75,
             )
             if load.returncode != 0:
                 print(load.stdout, file=sys.stderr)
@@ -126,7 +126,7 @@ def main() -> int:
         generated = subprocess.run(
             [generator, "--name", "UNLOCK"], cwd=complete_card.parent,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=5,
+            timeout=15,
         )
         if generated.returncode != 0:
             print(generated.stdout, file=sys.stderr)
@@ -144,7 +144,7 @@ def main() -> int:
         complete = subprocess.run(
             [executable], cwd=complete_work, env=complete_environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=25,
+            timeout=75,
         )
         if complete.returncode != 0:
             print(complete.stdout, file=sys.stderr)

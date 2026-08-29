@@ -20,7 +20,7 @@ def main() -> int:
     )
     result = subprocess.run([executable], cwd=source, env=environment,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            text=True, timeout=50)
+                            text=True, timeout=150)
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         return result.returncode or 1

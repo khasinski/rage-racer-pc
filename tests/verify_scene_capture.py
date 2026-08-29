@@ -38,7 +38,7 @@ def run_scenario(executable: Path, source_dir: Path, trace: Path) -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        timeout=120,
+        timeout=360,
     )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)

@@ -43,7 +43,7 @@ def run(executable: Path, source: Path, output: Path,
         ])
     result = subprocess.run(command, cwd=source, env=environment,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            timeout=55)
+                            timeout=165)
     if result.returncode != 0:
         raise AssertionError(result.stdout.decode(errors="replace"))
     captures = list(output.glob("timer-00430-s12.ppm"))

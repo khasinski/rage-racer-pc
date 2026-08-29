@@ -22,7 +22,7 @@ def run(executable: Path, source: Path, work: Path, mirrored: bool) -> tuple[int
         environment["RAGE_PORT_SMOKE_MIRROR_TRACK"] = "1"
     result = subprocess.run([executable], cwd=work, env=environment,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            text=True, timeout=55)
+                            text=True, timeout=165)
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         raise RuntimeError(f"mirrored={mirrored} exited {result.returncode}")

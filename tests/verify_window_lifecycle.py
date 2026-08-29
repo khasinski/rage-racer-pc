@@ -12,7 +12,7 @@ from pathlib import Path
 def xdo(*arguments: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["xdotool", *arguments], stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, timeout=5,
+        stderr=subprocess.STDOUT, text=True, timeout=15,
     )
 
 
@@ -72,7 +72,7 @@ timer = 120
             xdo("key", "--window", window, "F4")
             time.sleep(0.2)
         try:
-            output, _ = process.communicate(timeout=55)
+            output, _ = process.communicate(timeout=165)
         except subprocess.TimeoutExpired:
             process.kill()
             output, _ = process.communicate()

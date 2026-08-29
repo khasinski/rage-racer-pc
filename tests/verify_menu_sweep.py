@@ -27,7 +27,7 @@ def run(executable: Path, source_dir: Path, variable: str, expected: set[int]) -
         environment["RAGE_PORT_SCENE_TRACE"] = "1"
     result = subprocess.run(
         [executable], cwd=source_dir, env=environment,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=45,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=135,
     )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)

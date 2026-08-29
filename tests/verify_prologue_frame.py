@@ -31,7 +31,7 @@ def main() -> int:
         result = subprocess.run(
             arguments, cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=25,
+            timeout=75,
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)

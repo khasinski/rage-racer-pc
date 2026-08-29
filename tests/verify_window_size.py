@@ -13,7 +13,7 @@ env.update(
 )
 result = subprocess.run(
     [binary], cwd=root, env=env, stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT, text=True, timeout=20,
+    stderr=subprocess.STDOUT, text=True, timeout=60,
 )
 if result.returncode != 0:
     print(result.stdout, file=sys.stderr)

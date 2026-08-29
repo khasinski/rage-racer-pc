@@ -29,7 +29,7 @@ def main() -> int:
     result = subprocess.run(
         [executable], cwd=source_dir, env=environment,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        timeout=40,
+        timeout=120,
     )
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
@@ -45,7 +45,7 @@ def main() -> int:
     prologue = subprocess.run(
         [executable], cwd=source_dir, env=prologue_environment,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        timeout=40,
+        timeout=120,
     )
     if prologue.returncode != 0:
         print(prologue.stdout, file=sys.stderr)

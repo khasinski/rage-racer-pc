@@ -499,6 +499,9 @@ place the runtime tests reach a race and check what they were written to check;
 without it they stop at the title screen, because every asset read returns
 nothing.
 
+Nothing in the suite shares state between tests, so it parallelises: `ctest -j 6`
+runs it in well under half the time one job takes.
+
 Ten of the eleven movies sit hours into a playthrough. `--set
 diagnostics.fmv_stream=N` puts movie `N` where the opening one is asked for, so
 one can be watched without earning it; `--set diagnostics.fmv_trace=1` reports

@@ -31,7 +31,7 @@ def main() -> int:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            timeout=45,
+            timeout=135,
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)

@@ -40,7 +40,7 @@ def main() -> int:
             [executable, "--set", "video.renderer=classic"],
             cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=45,
+            timeout=135,
         )
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)

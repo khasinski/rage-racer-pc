@@ -35,7 +35,7 @@ def main() -> int:
             [executable, "--set", "video.renderer=classic"],
             cwd=source_dir, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            timeout=30,
+            timeout=90,
         )
         trace_rows = trace.read_text().splitlines()
         spu_data = spu_ram.read_bytes()

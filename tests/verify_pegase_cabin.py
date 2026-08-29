@@ -31,7 +31,7 @@ def main() -> int:
             "--set", f"diagnostics.modern_dump={capture}",
             "--set", "diagnostics.modern_dump_frame=620",
         ], cwd=source, env=environment, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, text=True, timeout=55)
+            stderr=subprocess.STDOUT, text=True, timeout=165)
         if result.returncode != 0 or not capture.exists():
             raise AssertionError("Age Pegase capture failed\n" + result.stdout)
         if "course=0 car=2" not in result.stdout:
