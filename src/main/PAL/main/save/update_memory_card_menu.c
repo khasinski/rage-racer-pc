@@ -61,50 +61,24 @@ static s32 AdvanceMemoryCardMenuStartup(void) {
     return 0;
 }
 
-void UpdateMemoryCardMenu(void) {
-    s32 fadeBusy;
-    s32 tmp;
-    u16 pad;
-    s32 wtmp;
-    s32 mst;
-    s32 mslot;
-
-    fadeBusy = UpdateMemoryCardFade();
-    if (!AdvanceMemoryCardMenuStartup()) goto menu_state_update_done;
-    if (g_McActionBusy != 0) {
-    if (g_McErrorPending == 0) goto L_sw2;
-
+/* The screen itself, drawn whatever the state machine decided this frame. */
+static void DrawMemoryCardMenu(void) {
+    if (g_McDrawEnabled == 0) {
+        return;
     }
-    {
-        s32 st = PollMemoryCardStatus(0, 0);
-        s32 c;
-        s32 sd;
-        g_McCardStatus = st;
-        switch (st) {
-        case 0: {
-            s32 b = g_McNoCardTicks;
-            g_McNoCardTicks = b + 1;
-            if (b >= 6) {
-                g_McMenuSelection = 3;
-            }
-            goto L_sw2;
-        }
-        case 1: sd = g_McCardStatus; c = 2; break;
-        case 2: sd = g_McCardStatus; c = 1; break;
-        case -1: sd = g_McCardStatus; c = 0xA; break;
-        case -2: sd = g_McCardStatus; c = 0xB; break;
-        case -3: sd = g_McCardStatus; c = 0x11; break;
-        default: sd = g_McCardStatus; c = 0x11; break;
-        }
-        g_McNoCardTicks = 0;
-        g_McMenuSubState = c;
-        g_McMenuSelection = sd;
+    DrawMemoryCardScreen(g_McMenuPage, g_McFromLoadMenu, g_McMenuRowCursor,
+                         g_McSlotCursor);
+    if (g_McMenuPhase != 0) {
+        DrawMemoryCardMessage(g_McMenuPhase - 1);
     }
+    DrawMemoryCardSaveRows(g_McSlotUsedMask, g_McSaveHeaders);
+}
 
-L_sw2:
-    switch (g_McMenuState) {
-
-    case 3:
+/*
+ * The card is mid-operation. Nothing to choose here; the cancel button
+ * is the only way out, and only once the fade has finished.
+ */
+static void RunCardBusyState(s32 fadeBusy) {
     {
     u16 lpad = g_PadPressed;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
@@ -152,9 +126,16 @@ L_sw2:
     if (g_McMenuState != 3) {
         g_McErrorTicks = 0;
     }
-    break;
+}
 
-    case 1:
+/*
+ * A card the game can use. This is the save and load menu itself, and
+ * every prompt that hangs off picking a slot.
+ */
+static void RunCardReadyState(s32 fadeBusy) {
+    s32 tmp;
+    u16 pad;
+
     switch (g_McMenuPage) {
     case 0:
     {
@@ -187,69 +168,69 @@ L_sw2:
     switch (g_McActionState) {
     case 0x00: {
         s32 *s0 = &g_McSlotCursor;
-        s32 a0;
-        s32 nv;
+        /*
+         * Picking a slot. Which prompt the player sees, and what confirming
+         * does, depends on whether this is a save or a load, whether the card
+         * has room, and whether the slot under the cursor already holds a
+         * file. Retail asks the back button twice on the card-full path, once
+         * inside the branch and once on the way out, and each ask plays its
+         * own cue, so both stay.
+         */
         AdjustMenuSelectionHorizontal(s0, 0, 2);
         if (g_McSaveMode != 0) {
-        a0 = g_McSlotUsedMask;
-        if (!((a0 % 8) == 0)) {
-        g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
-        if ((g_PadPressed & PAD_CONFIRM) == 0) goto slot_prompt_done;
-        if (!(((a0 >> *s0) & 1) == 0)) {
-        PlaySoundCue(2);
-        g_McConfirmChoice = 0;
-        nv = 0x1E;
+            if ((g_McSlotUsedMask % 8) != 0) {
+                g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
+                if (g_PadPressed & PAD_CONFIRM) {
+                    if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
+                        PlaySoundCue(2);
+                        g_McConfirmChoice = 0;
+                        g_McActionState = 0x1E;
+                    } else {
+                        PlaySoundCue(5);
+                        g_McActionState = 0x28;
+                    }
+                }
+            } else {
+                g_McMenuPhase = MC_PROMPT_NO_DATA;
+                if (g_PadPressed & PAD_CONFIRM) {
+                    PlaySoundCue(5);
+                    g_McMenuPage = 0;
+                }
+            }
+        } else if (g_McFreeBlocks != 0) {
+            g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
+            if (g_PadPressed & PAD_CONFIRM) {
+                if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
+                    PlaySoundCue(2);
+                    g_McConfirmChoice_v = 0;
+                    g_McActionState = 0xA;
+                } else {
+                    PlaySoundCue(2);
+                    g_McActionTimer = 0x1E;
+                    g_McActionState = 0xB;
+                }
+            }
+        } else if ((g_McSlotUsedMask % 8) != 0) {
+            g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
+            if (g_PadPressed & PAD_CONFIRM) {
+                if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
+                    PlaySoundCue(2);
+                    g_McConfirmChoice = 0;
+                    g_McActionState = 0xA;
+                } else {
+                    PlaySoundCue(2);
+                    g_McActionState = 0x19;
+                }
+            }
         } else {
-        PlaySoundCue(5);
-        nv = 0x28;
+            g_McMenuPhase = MC_PROMPT_CARD_FULL;
+            if (g_PadPressed & PAD_CONFIRM) {
+                PlaySoundCue(5);
+                g_McMenuPage = 0;
+            } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
+                g_McMenuPage = 0;
+            }
         }
-        goto L_b475;
-        }
-        g_McMenuPhase = MC_PROMPT_NO_DATA;
-        if ((g_PadPressed & PAD_CONFIRM) == 0) goto slot_prompt_done;
-        } else {
-        if (g_McFreeBlocks != 0) goto L_b448;
-        a0 = g_McSlotUsedMask;
-        if (!((a0 % 8) == 0)) {
-        g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
-        if ((g_PadPressed & PAD_CONFIRM) == 0) goto slot_prompt_done;
-        if (!(((a0 >> *s0) & 1) == 0)) {
-        PlaySoundCue(2);
-        g_McConfirmChoice = 0;
-        nv = 0xA;
-        } else {
-        PlaySoundCue(2);
-        nv = 0x19;
-        }
-        goto L_b475;
-        }
-        g_McMenuPhase = MC_PROMPT_CARD_FULL;
-        if ((g_PadPressed & PAD_CONFIRM) == 0) goto L_b439;
-        }
-        PlaySoundCue(5);
-        g_McMenuPage = 0;
-        goto slot_prompt_done;
-    L_b439:
-        if (!((PollMenuBackInput() & 0xFFFF) == 0)) {
-        g_McMenuPage = 0;
-        goto slot_prompt_done;
-    L_b448:
-        g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
-        if (!((g_PadPressed & PAD_CONFIRM) == 0)) {
-        if (!(((g_McSlotUsedMask >> *s0) & 1) == 0)) {
-        PlaySoundCue(2);
-        g_McConfirmChoice_v = 0;
-        nv = 0xA;
-        } else {
-        PlaySoundCue(2);
-        g_McActionTimer = 0x1E;
-        nv = 0xB;
-        }
-    L_b475:
-        g_McActionState = nv;
-        }
-        }
-slot_prompt_done:
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
         g_McMenuPage = 0;
         break;
@@ -589,9 +570,15 @@ slot_prompt_done:
     g_McConfirmChoice = 0;
     g_McActionBusy = 0;
     }
-    break;
+}
 
-    case 2:
+/*
+ * A format or a save running, stepping through its own stages while the
+ * screen says it is busy.
+ */
+static void RunCardWorkingState(s32 fadeBusy) {
+    s32 wtmp;
+
     g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (g_McActionState) {
@@ -725,14 +712,21 @@ slot_prompt_done:
     }
     }
 
-    if (g_McMenuState == 2) break;
+    if (g_McMenuState == 2) return;
     g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     g_McActionState = 0;
     g_McActionResult = 0;
     g_McConfirmChoice = 0;
-    break;
-    case -1:
+}
+
+/*
+ * Nothing in the slot.
+ */
+static void RunNoCardState(s32 fadeBusy) {
+    s32 mslot;
+    s32 mst;
+
     g_McMenuSubState = 0xA;
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
@@ -754,50 +748,38 @@ slot_prompt_done:
     break;
 
     case 3:
-    {
-        s32 mph = g_McMenuPage;
-        if (mph != 0) {
-        if (mph == 1) goto L_b1280;
+        if (g_McMenuPage == 0) {
+            s32 *cursor = &g_McMenuRowCursor;
+
+            AdjustMenuSelectionHorizontal(cursor, 0, g_McMenuRowCount - 1);
+            if (PollMenuConfirmInput() != 0) {
+                if (*cursor != g_McMenuRowCount - 1) {
+                    PlaySoundCue(5);
+                    break;
+                }
+                if (fadeBusy != 0) {
+                    break;
+                }
+                g_McActionState = 0;
+                PlaySoundCue(2);
+                StartMenuExitFade();
+                break;
+            }
+            if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
+                g_McActionState = 0;
+                PlaySoundCue(3);
+                StartMenuExitFade();
+            }
+        } else if (g_McMenuPage == 1) {
+            /* The second page has no rows to walk, so cancel is the only way
+             * off it, and unlike the first page it leaves the action state
+             * where it was. */
+            if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
+                PlaySoundCue(3);
+                StartMenuExitFade();
+            }
+        }
         break;
-        }
-    }
-
-    {
-        s32 *mp = &g_McMenuRowCursor;
-        AdjustMenuSelectionHorizontal(mp, 0, g_McMenuRowCount - 1);
-        if (!(PollMenuConfirmInput() == 0)) {
-        if (!(*mp != g_McMenuRowCount - 1)) {
-    if (fadeBusy != 0) break;
-    g_McActionState = 0;
-    PlaySoundCue(2);
-    StartMenuExitFade();
-    break;
-        }
-
-    PlaySoundCue(5);
-    break;
-        }
-    }
-
-    if (!((g_PadPressed & PAD_CANCEL) == 0)) {
-    if (fadeBusy == 0) {
-    g_McActionState = 0;
-    PlaySoundCue(3);
-    StartMenuExitFade();
-    break;
-
-L_b1280:
-    if (!((g_PadPressed & PAD_CANCEL) == 0)) {
-    if (fadeBusy == 0) {
-    PlaySoundCue(3);
-    StartMenuExitFade();
-    /* fall through */
-    }
-    }
-    }
-    }
-
-    break;
 
     default:
     break;
@@ -832,8 +814,15 @@ L_b1280:
     if (g_McMenuState != -1) {
     g_McActionState = 0;
     }
-    break;
-    case -2:
+}
+
+/*
+ * A card the game cannot read: offer to format it, then report how that
+ * went.
+ */
+static void RunUnformattedCardState(s32 fadeBusy) {
+    u16 pad;
+
     switch (g_McMenuPage) {
     case 0:
     {
@@ -874,31 +863,45 @@ L_b1280:
     switch (g_McActionState) {
     case 0:
         if (g_McSaveMode != 0) {
-        g_McMenuPhase = MC_PROMPT_NO_DATA;
-    L1447:
-        { u16 p = PollMenuConfirmInput(); if (!(p)) {
-    L_b1452:
-        { u16 q = PollMenuBackInput(); if (q == 0) break; }
-        } }
-        g_McMenuPage = 0;
-        g_McActionState = 0;
-        break;
+            /* Nothing to load: either button closes the prompt. */
+            g_McMenuPhase = MC_PROMPT_NO_DATA;
+            if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
+                g_McMenuPage = 0;
+                g_McActionState = 0;
+            }
+            break;
         }
+        /* An unformatted card: confirming starts the format, backing out
+         * closes the prompt. */
         g_McMenuPhase = MC_PROMPT_NEW_CARD;
-        { u16 p = PollMenuConfirmInput(); if (p == 0) goto L_b1452; }
-        g_McActionState = 1;
+        if (PollMenuConfirmInput() != 0) {
+            g_McActionState = 1;
+        } else if (PollMenuBackInput() != 0) {
+            g_McMenuPage = 0;
+            g_McActionState = 0;
+        }
         break;
     case 1:
         g_McMenuPhase = g_McConfirmChoice + 7;
         SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
-        if (g_McConfirmChoice == 0) goto L1447;
-        { u16 p = PollMenuConfirmInput();
-        if (p != 0) {
-        g_McActionState = 2;
+        if (g_McConfirmChoice == 0) {
+            /* Resting on "no": either button closes the prompt. Retail asked
+             * whether the choice was still zero a second time further down,
+             * which it always was, because nothing between the two changes
+             * it. */
+            if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
+                g_McMenuPage = 0;
+                g_McActionState = 0;
+            }
+            break;
+        }
+        if (PollMenuConfirmInput() != 0) {
+            g_McActionState = 2;
+        } else if (PollMenuBackInput() != 0) {
+            g_McMenuPage = 0;
+            g_McActionState = 0;
+        }
         break;
-        } }
-        if (g_McConfirmChoice == 0) goto L1447;
-        goto L_b1452;
     case 2:
         g_McActionBusy = 1;
         g_McActionTimer = 0x14;
@@ -991,48 +994,133 @@ L_b1280:
         }
     }
 
-    if (g_McMenuState != -2) {
-    g_McActionState = 0;
-    g_McActionBusy = 0;
-    g_McActionResult = 0;
-    g_McConfirmChoice = 0;
-    break;
-    case -3:
-    default:
-    g_McMenuSubState = 0x11;
-    {
-    u16 lpad = g_PadPressed;
-    g_McMenuPhase = MC_PROMPT_CARD_ERROR;
-    if ((lpad & 0x90) && !fadeBusy) {
-        PlaySoundCue(3);
-        g_McActionBusy = 0;
-        StartMenuExitFade();
-    }
-    }
-    {
-        s32 sel = g_McMenuSelection;
-        s32 three = 3;
-        if (sel == -3) break;
-        if (sel == three) {
-            g_McLastMenuState = g_McMenuState;
+        if (g_McMenuState != -2) {
+            g_McActionState = 0;
+            g_McActionBusy = 0;
+            g_McActionResult = 0;
+            g_McConfirmChoice = 0;
         }
-        tmp = g_McStateChangeCount;
-        g_McMenuState = sel;
-        g_McStateChangeCount = tmp + 1;
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = three;
+        return;
+
+    /*
+     * Retail parked these two arms inside the arm above, after its break, so
+     * the only way in was the switch jumping over the `if` they sat in. They
+     * are arms of this switch and now sit where the others do.
+     */
+}
+
+/*
+ * The card answered with something the menu has no name for.
+ */
+static void RunCardErrorState(s32 fadeBusy) {
+    s32 tmp;
+
+        g_McMenuSubState = 0x11;
+        {
+            u16 lpad = g_PadPressed;
+
+            g_McMenuPhase = MC_PROMPT_CARD_ERROR;
+            if ((lpad & 0x90) && !fadeBusy) {
+                PlaySoundCue(3);
+                g_McActionBusy = 0;
+                StartMenuExitFade();
+            }
+        }
+        {
+            s32 sel = g_McMenuSelection;
+
+            if (sel == -3) {
+                return;
+            }
+            if (sel == 3) {
+                g_McLastMenuState = g_McMenuState;
+            }
+            tmp = g_McStateChangeCount;
+            g_McMenuState = sel;
+            g_McStateChangeCount = tmp + 1;
+            if (g_McErrorPending != 0) {
+                g_McErrorPending = 0;
+                g_McErrorCountdown = 3;
+            }
+        }
+}
+
+void UpdateMemoryCardMenu(void) {
+    s32 fadeBusy;
+
+    fadeBusy = UpdateMemoryCardFade();
+    if (!AdvanceMemoryCardMenuStartup()) {
+        DrawMemoryCardMenu();
+        return;
+    }
+    /* An action already under way owns the card, so its status is not asked
+     * again until it reports an error. */
+    if (g_McActionBusy == 0 || g_McErrorPending != 0) {
+        s32 status = PollMemoryCardStatus(0, 0);
+
+        g_McCardStatus = status;
+        if (status == 0) {
+            /* No card. Six frames of that in a row before the screen says so,
+             * so a card being reseated does not flash the message. */
+            s32 ticks = g_McNoCardTicks;
+
+            g_McNoCardTicks = ticks + 1;
+            if (ticks >= 6) {
+                g_McMenuSelection = 3;
+            }
+        } else {
+            s32 substate;
+
+            switch (status) {
+            case 1:
+                substate = 2;
+                break;
+            case 2:
+                substate = 1;
+                break;
+            case -1:
+                substate = 0xA;
+                break;
+            case -2:
+                substate = 0xB;
+                break;
+            case -3:
+                substate = 0x11;
+                break;
+            default:
+                substate = 0x11;
+                break;
+            }
+            g_McNoCardTicks = 0;
+            g_McMenuSubState = substate;
+            g_McMenuSelection = g_McCardStatus;
         }
     }
 
+    /*
+     * What the menu does this frame is decided by what the card is: each of
+     * these owns one state and nothing else.
+     */
+    switch (g_McMenuState) {
+    case 3:
+        RunCardBusyState(fadeBusy);
+        break;
+    case 1:
+        RunCardReadyState(fadeBusy);
+        break;
+    case 2:
+        RunCardWorkingState(fadeBusy);
+        break;
+    case -1:
+        RunNoCardState(fadeBusy);
+        break;
+    case -2:
+        RunUnformattedCardState(fadeBusy);
+        break;
+    case -3:
+    default:
+        RunCardErrorState(fadeBusy);
+        break;
     }
-    }
-menu_state_update_done:
-    if (g_McDrawEnabled != 0) {
-        DrawMemoryCardScreen(g_McMenuPage, g_McFromLoadMenu, g_McMenuRowCursor, g_McSlotCursor);
-        if (g_McMenuPhase != 0) {
-            DrawMemoryCardMessage(g_McMenuPhase - 1);
-        }
-        DrawMemoryCardSaveRows(g_McSlotUsedMask, g_McSaveHeaders);
-    }
+    DrawMemoryCardMenu();
 }

@@ -3,6 +3,11 @@
 #include "game/menu.h"
 #include "game/race.h"
 
+/* The two keys on the name grid that are not characters. */
+#define TEAM_NAME_KEY_RUBOUT 0x2A
+#define TEAM_NAME_KEY_END 0x2B
+
+
 
 void UpdateLogoSampleScreen(void) {
     s32 v0;
@@ -181,6 +186,7 @@ s32 DrawTeamNameScreen(s32 step) {
 void UpdateTeamNameScreen(void) {
     u16 pad;
     s32 newdepth;
+    int rubout;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
@@ -211,7 +217,8 @@ void UpdateTeamNameScreen(void) {
         }
     } else {
         if ((g_PadPressedRepeat & (PAD_LEFT | PAD_RIGHT)) && GameMenuCursorAnim < 0) {
-            s32 nc = (GameMenuCursor == 0x2A) ? 0x2B : 0x2A;
+            s32 nc = GameMenuCursor == TEAM_NAME_KEY_RUBOUT ? TEAM_NAME_KEY_END
+                                                            : TEAM_NAME_KEY_RUBOUT;
             GameMenuCursor = nc;
             g_MenuViewAngleTarget = 0;
             g_MenuViewAngle = 0x3E8000;
@@ -219,42 +226,41 @@ void UpdateTeamNameScreen(void) {
             PlaySoundCue(1);
         }
     }
-    pad = g_PadPressed;
-    if (pad & 0x860) {
-    {
-        s32 c = GameMenuCursor;
-        if (c == 0x2A) goto pop;
-        if (c == 0x2B) {
-    PlaySoundCue(3);
-    GameMenuBusy = 1;
-    g_MenuOverlayPattern = 2;
-    g_MenuViewOffsetTarget = 0x3D090;
-    return;
-    }
-    }
+        pad = g_PadPressed;
+        /* The grid's own rubout key and the cancel button both take the last
+         * character back off; the grid's last key finishes the name. */
+        rubout = (pad & 0x860) ? GameMenuCursor == TEAM_NAME_KEY_RUBOUT
+                               : (pad & 0x90) != 0;
+        if (!rubout && !(pad & 0x860)) {
+            return;
+        }
+        if (rubout) {
+            if (g_TeamNameLength == 0) {
+                return;
+            }
+            PlaySoundCue(4);
+            g_TeamNameChars[g_TeamNameLength] = 0xA;
+            newdepth = g_TeamNameLength - 1;
+        } else if (GameMenuCursor == TEAM_NAME_KEY_END) {
+            PlaySoundCue(3);
+            GameMenuBusy = 1;
+            g_MenuOverlayPattern = 2;
+            g_MenuViewOffsetTarget = 0x3D090;
+            return;
+        } else {
+            u32 length = g_TeamNameLength;
 
-    {
-        u32 d;
-        PlaySoundCue(2);
-        g_TeamNameChars[g_TeamNameLength] = (u8)GameMenuCursor;
-        d = g_TeamNameLength;
-        if (d >= 5) GameMenuCursor = 0x2B;
-        if (d >= 7) newdepth = d; else newdepth = d + 1;
-    }
-    } else {
-
-    if (!(pad & 0x90)) return;
-pop:
-    if (g_TeamNameLength == 0) return;
-    PlaySoundCue(4);
-    {
-        newdepth = 0xA;
-        g_TeamNameChars[g_TeamNameLength] = newdepth;
-    }
-    newdepth = g_TeamNameLength - 1;
-    }
-    g_TeamNameLength = newdepth;
-    return;
+            PlaySoundCue(2);
+            g_TeamNameChars[length] = (u8)GameMenuCursor;
+            /* Past five characters the cursor parks on the end key, and past
+             * seven the name stops growing. */
+            if (length >= 5) {
+                GameMenuCursor = TEAM_NAME_KEY_END;
+            }
+            newdepth = length >= 7 ? length : length + 1;
+        }
+        g_TeamNameLength = newdepth;
+        return;
     }
 
     g_MenuHandlerIndex = -1;
@@ -459,100 +465,52 @@ s32 DrawCarShopScreen(s32 step) {
 
     return g_CarShopScreenProgress;
 }
-void UpdateCarListCursor(void) {
+/*
+ * The nearest car the player does not already own, walking `step` at a time.
+ * -1 when there is none.
+ */
+static s32 FindCarNotOwned(s32 from, s32 step) {
     s32 index;
-    CarEntry *entry;
 
-    if (g_CarShopUnlockAll != 0) {
-        g_PrevOwnedCarIndex = -1;
-        index = g_CarListCursor - 1;
-        if (index >= 0) {
-            entry = &g_CarTable[index];
-            while (index >= 0) {
-                if (entry->enabled == 0) {
-                    g_PrevOwnedCarIndex = index;
-                    break;
-                }
-                index--;
-                entry--;
-            }
-        }
-    } else {
-        g_PrevOwnedCarIndex = -1;
-        index = g_CarListCursor - 1;
-        if (index >= 0) {
-        backward_loop:
-            {
-                s32 value = GetCarUnlockLevel(index);
-                if (g_CarTable[index].enabled == 0) {
-                    s32 progression = g_RaceProgress->maxClassReached;
-                    if (progression < 4) {
-                        if ((progression + 1) < value) {
-                            index--;
-                            goto backward_check;
-                        }
-                        g_PrevOwnedCarIndex = index;
-                        goto previous_car_done;
-                    }
-                    if (progression >= value) {
-                        g_PrevOwnedCarIndex = index;
-                        goto previous_car_done;
-                    }
-                }
-                index--;
-            }
-        backward_check:
-            if (index >= 0) {
-                goto backward_loop;
-            }
+    for (index = from; index >= 0 && index < 13; index += step) {
+        if (g_CarTable[index].enabled == 0) {
+            return index;
         }
     }
-
-previous_car_done:
-    if (g_CarShopUnlockAll != 0) {
-        g_NextOwnedCarIndex = -1;
-        index = g_CarListCursor + 1;
-        if (index < 13) {
-            entry = &g_CarTable[index];
-            while (index < 13) {
-                if (entry->enabled == 0) {
-                    g_NextOwnedCarIndex = index;
-                    break;
-                }
-                index++;
-                entry++;
-            }
-        }
-    } else {
-        g_NextOwnedCarIndex = -1;
-        index = g_CarListCursor + 1;
-        if (index < 13) {
-        forward_loop:
-            {
-                s32 value = GetCarUnlockLevel(index);
-                if (g_CarTable[index].enabled == 0) {
-                    s32 progression = g_RaceProgress->maxClassReached;
-                    if (progression < 4) {
-                        if ((progression + 1) < value) {
-                            index++;
-                            goto forward_check;
-                        }
-                        g_NextOwnedCarIndex = index;
-                        return;
-                    }
-                    if (progression >= value) {
-                        g_NextOwnedCarIndex = index;
-                        return;
-                    }
-                }
-                index++;
-            }
-forward_check:
-            if (index < 13) {
-                goto forward_loop;
-            }
-        }
-    }
-
-    return;
+    return -1;
 }
+
+/*
+ * The same walk, but only over cars the player's progress has reached. Below
+ * the last class the class above counts as reached, so the shop shows what is
+ * coming next; in the last class it does not.
+ */
+static s32 FindCarOnOffer(s32 from, s32 step) {
+    s32 index;
+
+    for (index = from; index >= 0 && index < 13; index += step) {
+        s32 unlockLevel = GetCarUnlockLevel(index);
+        s32 progress;
+
+        if (g_CarTable[index].enabled != 0) {
+            continue;
+        }
+        progress = g_RaceProgress->maxClassReached;
+        if (progress < 4 ? progress + 1 >= unlockLevel
+                         : progress >= unlockLevel) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+void UpdateCarListCursor(void) {
+    if (g_CarShopUnlockAll != 0) {
+        g_PrevOwnedCarIndex = FindCarNotOwned(g_CarListCursor - 1, -1);
+        g_NextOwnedCarIndex = FindCarNotOwned(g_CarListCursor + 1, 1);
+    } else {
+        g_PrevOwnedCarIndex = FindCarOnOffer(g_CarListCursor - 1, -1);
+        g_NextOwnedCarIndex = FindCarOnOffer(g_CarListCursor + 1, 1);
+    }
+}
+

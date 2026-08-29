@@ -569,6 +569,28 @@ endif()
 target_link_libraries(drivetrain_tests PRIVATE psyz)
 add_test(NAME drivetrain COMMAND drivetrain_tests)
 set_tests_properties(drivetrain PROPERTIES LABELS portable)
+
+# The memory card menu, swept across its whole state space.
+add_executable(memory_card_menu_tests
+    memory_card_menu_tests.c
+    ../src/main/PAL/main/save/update_memory_card_menu.c)
+target_include_directories(memory_card_menu_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(memory_card_menu_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(memory_card_menu_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(memory_card_menu_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(memory_card_menu_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(memory_card_menu_tests PRIVATE psyz)
+add_test(NAME memory_card_menu COMMAND memory_card_menu_tests)
+set_tests_properties(memory_card_menu PROPERTIES LABELS portable)
 endif()
 
 set_tests_properties(track_math PROPERTIES LABELS portable)
