@@ -167,7 +167,6 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     s32 value;
     s32 temp;
     s32 result;
-    s32 one;
 
     obj = car;
 
@@ -210,12 +209,11 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         return;
     }
 
-    one = 1;
-    obj->verticalMotionState = one;
+    obj->verticalMotionState = 1;
     if (value > 0) {
         temp = value * obj->speed;
         temp = temp / -4800;
-        obj->verticalMotionState = one;
+        obj->verticalMotionState = 1;
         obj->verticalMotionRate = temp;
     } else {
         result = 2;

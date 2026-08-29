@@ -49,7 +49,6 @@ void DrawMemoryCardMessage(s32 message) {
     s32 x;
     s32 y;
     s16 *table;
-    s32 one;
     u8 code;
     u8 *next;
     OT_TYPE *base;
@@ -62,11 +61,10 @@ void DrawMemoryCardMessage(s32 message) {
     y = 0x40;
     messageRange = index - 0x10;
     if (messageRange >= 2 && index != 0x12) {
-        one = 1;
         table = g_McMessageColumnX;
         code = 1;
         do {
-            if (code != one) {
+            if (code != 1) {
                 x = table[code];
                 y = 0x60;
             }

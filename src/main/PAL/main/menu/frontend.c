@@ -197,7 +197,6 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     u16 *src0;
     u16 *src1;
     s32 i;
-    s32 one;
     u16 value;
     u16 value2;
 
@@ -230,19 +229,18 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     }
 
     i = 0;
-    one = 1;
     src0 = &g_ScreenOffsetX.displayValue;
     src1 = &g_ScreenOffsetY.displayValue;
     do {
-        g_FrameContexts[i].environment.draw.dtd = one;
-        g_FrameContexts[i].environment.draw.isbg = one;
+        g_FrameContexts[i].environment.draw.dtd = 1;
+        g_FrameContexts[i].environment.draw.isbg = 1;
         g_FrameContexts[i].environment.draw.r0 = r;
         g_FrameContexts[i].environment.draw.g0 = g;
         g_FrameContexts[i].environment.draw.b0 = b;
         value = *src0;
         g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
-        g_FrameContexts[i].environment.mirrorDraw.dtd = one;
+        g_FrameContexts[i].environment.mirrorDraw.dtd = 1;
         g_FrameContexts[i].environment.mirrorDraw.isbg = 0;
         g_FrameContexts[i].environment.mirrorDraw.r0 = r;
         g_FrameContexts[i].environment.mirrorDraw.g0 = g;
@@ -262,7 +260,6 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     u16 *src0;
     u16 *src1;
     s32 i;
-    s32 one;
     u16 value;
     u16 value2;
 
@@ -277,19 +274,18 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
     SetDefDispEnv(&g_FrameContexts[1].environment.display, 0, 0, 0x140, height);
 
     i = 0;
-    one = 1;
     src0 = &g_ScreenOffsetX.displayValue;
     src1 = &g_ScreenOffsetY.displayValue;
     do {
-        g_FrameContexts[i].environment.draw.dtd = one;
-        g_FrameContexts[i].environment.draw.isbg = one;
+        g_FrameContexts[i].environment.draw.dtd = 1;
+        g_FrameContexts[i].environment.draw.isbg = 1;
         g_FrameContexts[i].environment.draw.r0 = mode;
         g_FrameContexts[i].environment.draw.g0 = x;
         g_FrameContexts[i].environment.draw.b0 = y;
         value = *src0;
         g_FrameContexts[i].environment.display.screen.x = value;
         value2 = *src1;
-        g_FrameContexts[i].environment.mirrorDraw.dtd = one;
+        g_FrameContexts[i].environment.mirrorDraw.dtd = 1;
         g_FrameContexts[i].environment.mirrorDraw.isbg = 0;
         g_FrameContexts[i].environment.mirrorDraw.r0 = mode;
         g_FrameContexts[i].environment.mirrorDraw.g0 = x;

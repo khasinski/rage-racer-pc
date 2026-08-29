@@ -7,7 +7,6 @@
 
 s32 PollMemoryCardStatus(s32 port, s32 slot) {
     s32 handle;
-    s32 two;
     s32 status;
     s32 state;
 
@@ -27,8 +26,7 @@ s32 PollMemoryCardStatus(s32 port, s32 slot) {
             break;
         }
 
-        two = 2;
-        if (status != two) {
+        if (status != 2) {
         if (status < 3) {
             if (status == 1) {
                 goto case1_ready;
@@ -62,7 +60,7 @@ case1_ready:
         break;
 
         }
-        g_McPollStatus = two;
+        g_McPollStatus = 2;
         ClearMemoryCardSwEvents();
         _card_clear(handle);
         WaitMemoryCardSwEvent();

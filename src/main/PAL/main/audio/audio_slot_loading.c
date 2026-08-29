@@ -38,7 +38,6 @@ s32 PollAudioSlotLoad(void) {
     s32 completed;
     s32 *flagsPtr;
     s32 slot;
-    s32 one;
     s32 value;
     s32 bit;
 
@@ -47,15 +46,14 @@ s32 PollAudioSlotLoad(void) {
 
     if ((s16)completed != 0) {
         flagsPtr = &g_AudioLoadedSlotMask;
-        one = 1;
         slot = g_AudioLoadSlot;
         value = *flagsPtr;
-        bit = (s16)(one << slot);
+        bit = (s16)(1 << slot);
         *flagsPtr = bit | value;
 
         if (slot == 0) {
-            g_SoundCueBank = one;
-        } else if (slot == one) {
+            g_SoundCueBank = 1;
+        } else if (slot == 1) {
             g_SoundCueBank = slot;
         } else {
             value = 2;

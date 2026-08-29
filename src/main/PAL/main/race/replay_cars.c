@@ -54,7 +54,6 @@ s32 GetTrackZoneBlend(s32 position) {
     TrackZoneAddress first;
     TrackZoneAddress zone;
     s32 status;
-    s32 two;
     s32 start;
     s32 finish;
     s32 code;
@@ -68,7 +67,6 @@ s32 GetTrackZoneBlend(s32 position) {
     }
 
     status = 0;
-    two = 2;
     zone.pointer = first.pointer;
     g_TrackZoneCode = 0;
     g_ReverbZoneDepth = 0;
@@ -101,7 +99,7 @@ s32 GetTrackZoneBlend(s32 position) {
         goto normalize_code;
 
         }
-        if (code == two) {
+        if (code == 2) {
             goto code_two;
         }
 
@@ -112,7 +110,7 @@ s32 GetTrackZoneBlend(s32 position) {
 code_two:
         status = 4;
 code_minus_three:
-        if (status == two) {
+        if (status == 2) {
             status = 3;
         }
         g_TrackZoneCode = 1;

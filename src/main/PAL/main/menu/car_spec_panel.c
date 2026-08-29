@@ -10,7 +10,6 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     s32 alpha;
     s32 angle;
     s32 color;
-    s32 zero;
     s32 xTest;
     s32 yLarge;
     s32 ySmall;
@@ -57,27 +56,26 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     DrawSprite(ot, 0xE0, 0x72, 0x14, 0x10, 0x14, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
 
     xTest = (u8)x;
-    zero = 0;
     if (xTest != 0xB8) {
         s32 green = (u8)alpha;
 
-        DrawLine(ot, (s16)((u8)x - 1), 0x4C, (s16)((u8)x - 1), 0x84, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x - 3), 0x60, (s16)((u8)x - 3), 0x68, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x - 5), 0x60, (s16)((u8)x - 5), 0x68, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x - 7), 0x60, (s16)((u8)x - 7), 0x68, zero, green, zero, 0xFF);
+        DrawLine(ot, (s16)((u8)x - 1), 0x4C, (s16)((u8)x - 1), 0x84, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x - 3), 0x60, (s16)((u8)x - 3), 0x68, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x - 5), 0x60, (s16)((u8)x - 5), 0x68, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x - 7), 0x60, (s16)((u8)x - 7), 0x68, 0, green, 0, 0xFF);
         DrawFlatTriangle(ot, (s16)((u8)x - 13), 0x64, (s16)((u8)x - 8), 0x5E, (s16)((u8)x - 8), 0x6A,
-                      zero, green, zero, zero, 0x80);
+                      0, green, 0, 0, 0x80);
     }
 
     if (xTest != 0xF7) {
         s32 green = (u8)alpha;
 
-        DrawLine(ot, (s16)((u8)x + 1), 0x4C, (s16)((u8)x + 1), 0x84, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x + 3), 0x6A, (s16)((u8)x + 3), 0x72, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x + 5), 0x6A, (s16)((u8)x + 5), 0x72, zero, green, zero, 0xFF);
-        DrawLine(ot, (s16)((u8)x + 7), 0x6A, (s16)((u8)x + 7), 0x72, zero, green, zero, 0xFF);
+        DrawLine(ot, (s16)((u8)x + 1), 0x4C, (s16)((u8)x + 1), 0x84, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x + 3), 0x6A, (s16)((u8)x + 3), 0x72, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x + 5), 0x6A, (s16)((u8)x + 5), 0x72, 0, green, 0, 0xFF);
+        DrawLine(ot, (s16)((u8)x + 7), 0x6A, (s16)((u8)x + 7), 0x72, 0, green, 0, 0xFF);
         DrawFlatTriangle(ot, (s16)((u8)x + 14), 0x6E, (s16)((u8)x + 9), 0x69, (s16)((u8)x + 9), 0x73,
-                      zero, green, zero, zero, 0x80);
+                      0, green, 0, 0, 0x80);
     }
 
     DrawRectOutline(ot, 0xB8, 0x48, 0x40, 0x40, gray, gray, gray, 0xFF);
@@ -87,7 +85,7 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     DrawLine(ot, 0xD7, 0x4A, 0xD7, yLarge, gray, gray, gray, ySmall);
     DrawLine(ot, 0xE7, 0x4A, 0xE7, yLarge, gray, gray, gray, ySmall);
 
-    DrawFlatTriangle(ot, 0xB9, 0x87, 0xF7, 0x48, 0xF7, 0x87, 0x1E, 0x8E, 0x95, zero, 0x80);
+    DrawFlatTriangle(ot, 0xB9, 0x87, 0xF7, 0x48, 0xF7, 0x87, 0x1E, 0x8E, 0x95, 0, 0x80);
     DrawSolidRect(ot, 0xB8, 0x48, 0x40, 0x40, 0x95, 0x25, 0x1E, 0xFF);
 
     g_TireSliderPulsePhase += 0x60;

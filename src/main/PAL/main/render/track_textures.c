@@ -81,7 +81,6 @@ void SwapTrackTextureRow(void) {
     s32 buffer[0xE0];
     s16 *rectY;
     s32 value;
-    s32 one;
     s32 *dst;
     s32 *src;
     s32 count;
@@ -92,8 +91,7 @@ void SwapTrackTextureRow(void) {
 
     rectY = &g_TrackTextureRowRect.y;
     *rectY = (u16)g_TrackTextureCursorRow + 0x100;
-    one = 1;
-    value = one - g_TrackTextureShadowPage[g_TrackTextureCursorRow];
+    value = 1 - g_TrackTextureShadowPage[g_TrackTextureCursorRow];
     if (g_TrackTextureShadowPage[g_TrackTextureCursorRow] == g_TrackTexturePageWanted) {
         rect = &g_TrackTextureRowRect;
         StoreImage(rect, buffer);

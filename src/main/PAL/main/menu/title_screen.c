@@ -121,7 +121,6 @@ void DrawMainMenuRows(void) {
     u8 *base;
     s32 row;
     s32 i;
-    s32 one;
     s32 width;
     s32 y;
 
@@ -129,7 +128,6 @@ void DrawMainMenuRows(void) {
     scratch = SCRATCH_PRIM_CURSOR_AS(void);
     row = 0;
     i = 0;
-    one = 1;
     width = 0x70;
     y = 0x64;
 
@@ -140,7 +138,7 @@ void DrawMainMenuRows(void) {
 
         code = 0x7E85;
 
-        if ((g_ExtraGrandPrixUnlocked == 0) && (i == one)) {
+        if ((g_ExtraGrandPrixUnlocked == 0) && (i == 1)) {
             i = 2;
         }
 
@@ -148,7 +146,7 @@ void DrawMainMenuRows(void) {
             code = 0x7E86;
         }
 
-        if (g_FrontendState == one) {
+        if (g_FrontendState == 1) {
             code = 0x7E85;
         }
 

@@ -98,7 +98,6 @@ void BuildStartingGrid(void) {
 void DrawCars(void) {
     GameCarRuntime *base;
     s32 i;
-    s32 one;
     s32 minus_one;
 
     base = g_Cars;
@@ -106,10 +105,9 @@ void DrawCars(void) {
 
     i = 0;
     minus_one = -1;
-    one = 1;
     do {
         if (base->activeFlag != (i++, minus_one)) {
-            if (base->aiEnabled == one) {
+            if (base->aiEnabled == 1) {
                 DrawCar(GetCarRenderObject(base));
             }
         }

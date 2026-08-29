@@ -8,16 +8,14 @@
 void UpdateBgmTrackCount(void) {
     s32 index;
     s32 current;
-    s32 one;
     s32 value;
 
     g_ClassWinCount = 0;
-    one = 1;
     index = 0;
     do {
         current = g_ClassRecords[index].place;
         index++;
-        if (current == one) {
+        if (current == 1) {
             g_ClassWinCount++;
         }
     } while (index < 11);

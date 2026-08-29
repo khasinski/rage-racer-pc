@@ -54,17 +54,15 @@ s32 GetAttractTitleFade(s32 element) {
 void DrawAttractTitle(void) {
     u8 *ptr;
     s32 value;
-    u32 one;
     u32 flags;
 
     ptr = (u8 *)GamePrimaryOrderingTable(0);
     value = GetAttractTitleFade(0);
-    one = 1;
     flags = 0x29;
-    DrawSprite(ptr, 0x74, 0x34, 0x58, 0x38, 0xA8, 0xA8, value, value, value, 0x1F, 0, one, flags);
-    DrawSprite(ptr, 0x44, 0x70, 0xB8, 0x14, 0x48, 0xE8, value, value, value, 0x80, 0, one, flags);
+    DrawSprite(ptr, 0x74, 0x34, 0x58, 0x38, 0xA8, 0xA8, value, value, value, 0x1F, 0, 1, flags);
+    DrawSprite(ptr, 0x44, 0x70, 0xB8, 0x14, 0x48, 0xE8, value, value, value, 0x80, 0, 1, flags);
     value = GetAttractTitleFade(1);
-    DrawSprite(ptr, 0x5E, 0x90, 0x84, 0xC, 0, (g_CourseIndex * 12) + 0x9C, value, value, value, 0x12, 0, one, flags);
+    DrawSprite(ptr, 0x5E, 0x90, 0x84, 0xC, 0, (g_CourseIndex * 12) + 0x9C, value, value, value, 0x12, 0, 1, flags);
 }
 
 void UpdateAttractDemoStart(void) {

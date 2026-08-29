@@ -142,7 +142,6 @@ void DrawOptionSceneOverlay(void) {
     s32 target;
     s32 value;
     s32 w120;
-    s32 two;
     s32 white;
     s32 h1c0;
 
@@ -169,10 +168,9 @@ void DrawOptionSceneOverlay(void) {
 
     if (g_GameMode == 6) {
         w120 = 0x120;
-        two = 2;
         white = 0xFF;
-        pkt = AddTilePrim(base, pkt, 0x10, 0x20, w120, two, white, white, white);
-        pkt = AddTilePrim(base, pkt, 0x10, 0x1C0, w120, two, white, white, white);
+        pkt = AddTilePrim(base, pkt, 0x10, 0x20, w120, 2, white, white, white);
+        pkt = AddTilePrim(base, pkt, 0x10, 0x1C0, w120, 2, white, white, white);
         h1c0 = 0x1C0;
         pkt = GameQueueLine(base, pkt, 0x10, 0x20, 0x10, h1c0, white, white, white);
         pkt = GameQueueLine(base, pkt, 0x130, 0x20, 0x130, h1c0, white, white, white);

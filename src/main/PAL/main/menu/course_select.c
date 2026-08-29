@@ -18,7 +18,6 @@ void DrawNowLoadingText(void) {
 
 /* g_MenuScreenUpdate[0]: waits for the car-select assets, then opens screen 1. */
 void EnterCourseSelectScreen(void) {
-    s32 one;
     s32 initValue;
     s32 mode;
     s32 largeValue;
@@ -30,10 +29,9 @@ void EnterCourseSelectScreen(void) {
         return;
     }
 
-    one = 1;
     PlaySequence();
-    g_MenuHandlerIndex = one;
-    g_MenuScreen = one;
+    g_MenuHandlerIndex = 1;
+    g_MenuScreen = 1;
     DrawBrowseArrows(0, 0, 0, 0);
 
     initValue = 0x7A120;
@@ -63,7 +61,7 @@ void EnterCourseSelectScreen(void) {
     g_CourseCardPendingGrade = table[mode & 3];
 
     if (mode >= 4) {
-        g_TimeAttackPlateStep = one;
+        g_TimeAttackPlateStep = 1;
     } else {
         g_TimeAttackPlateStep = -1;
     }

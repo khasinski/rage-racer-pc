@@ -362,7 +362,6 @@ void DrawBitPatternOverlay(s32 pattern) {
     u8 *candidate;
     s32 y;
     s32 outer;
-    s32 one;
     s32 x;
     s32 bit;
 
@@ -386,7 +385,6 @@ void DrawBitPatternOverlay(s32 pattern) {
 
     y = 0x150;
     outer = 0;
-    one = 1;
     do {
         x = 0x22;
         bit = 0;
@@ -404,8 +402,8 @@ void DrawBitPatternOverlay(s32 pattern) {
                     0,
                     0,
                     0x244,
-                    one,
-                    one,
+                    1,
+                    1,
                     0x80);
             }
             bit++;
