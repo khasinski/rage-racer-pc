@@ -667,6 +667,27 @@ endif()
 target_link_libraries(team_logo_editor_tests PRIVATE psyz)
 add_test(NAME team_logo_editor COMMAND team_logo_editor_tests)
 set_tests_properties(team_logo_editor PROPERTIES LABELS portable)
+
+add_executable(draw_team_logo_canvas_tests
+    draw_team_logo_canvas_tests.c
+    ../src/main/PAL/main/menu/draw_team_logo_canvas.c)
+target_include_directories(draw_team_logo_canvas_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(draw_team_logo_canvas_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(draw_team_logo_canvas_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(draw_team_logo_canvas_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(draw_team_logo_canvas_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(draw_team_logo_canvas_tests PRIVATE psyz)
+add_test(NAME draw_team_logo_canvas COMMAND draw_team_logo_canvas_tests)
+set_tests_properties(draw_team_logo_canvas PROPERTIES LABELS portable)
 endif()
 endif()
 
