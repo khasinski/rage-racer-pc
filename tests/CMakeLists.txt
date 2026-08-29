@@ -591,6 +591,34 @@ endif()
 target_link_libraries(memory_card_menu_tests PRIVATE psyz)
 add_test(NAME memory_card_menu COMMAND memory_card_menu_tests)
 set_tests_properties(memory_card_menu PROPERTIES LABELS portable)
+
+# Where a car lands on the track, swept over a course built for the purpose.
+if(TARGET rage-host-state)
+add_executable(car_track_state_tests
+    car_track_state_tests.c
+    ../src/main/PAL/main/car/car_track_state.c
+    ../src/main/PAL/main/car/angle_math.c
+    ../src/main/PAL/main/render/rot_matrix.c
+    ../src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(car_track_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_track_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_track_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_track_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(car_track_state_tests PRIVATE
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_track_state_tests PRIVATE psyz)
+add_test(NAME car_track_state COMMAND car_track_state_tests)
+set_tests_properties(car_track_state PROPERTIES LABELS portable)
+endif()
 endif()
 
 set_tests_properties(track_math PROPERTIES LABELS portable)
