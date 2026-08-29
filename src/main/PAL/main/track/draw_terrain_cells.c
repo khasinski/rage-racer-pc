@@ -41,6 +41,196 @@ enum SkyOrderingTableIndex
   SKY_OT_FAR = 702,
   SKY_OT_NEAR = 703
 };
+/*
+ * The sky's geometry for this frame: where the bands start on screen, how far
+ * a step along each axis moves, and the roll they were rotated by. The band
+ * setup works it out once and the drawing reads it.
+ */
+typedef struct SkyBandGeometry {
+    s32 panelX;
+    s32 panelY;
+    s32 columnStepX;
+    s32 columnStepY;
+    s32 rowStepX;
+    s32 rowStepY;
+    s32 sinRoll;
+    s32 cosRoll;
+    s32 textureColumn;
+    s32 screenX0;
+    s32 screenX1;
+    s32 screenX2;
+    s32 screenX3;
+    s32 courseX0;
+    s32 courseX1;
+    s32 courseY1;
+    s32 xWorkLate;
+} SkyBandGeometry;
+
+/*
+ * The skirt under the sky: the band of quads that closes the gap between the
+ * horizon and the terrain. Two courses want it drawn differently, which is the
+ * only thing the course index decides here. Returns where it left the packet
+ * cursor.
+ */
+static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
+                           u8 *packetCursor) {
+  s32 leftXWorkFixed;
+  s32 rightXWorkFixed;
+  s32 screenY0;
+  s32 screenY1;
+  s32 screenY2;
+  s32 screenY3;
+  u8 *nextPacket;
+  RenderBufferAddress packetAddress;
+      s32 courseTopY;
+      s32 skirtBottomY;
+      s32 skirtRightX;
+      s32 courseBottomY;
+      s32 skirtStepX;
+      s32 skirtStepY;
+      s32 courseLeftX;
+      band->textureColumn = band->rowStepX * 4;
+      if (g_CourseIndex != 2)
+      {
+        u8 color;
+        POLY_G4 *courseG4;
+        RenderBufferAddress cursor;
+        cursor.bytes = packetCursor;
+        courseG4 = cursor.polyG4;
+        leftXWorkFixed = (band->panelX + band->rowStepX) * 8;
+        courseLeftX = leftXWorkFixed - band->sinRoll;
+        band->screenX0 = courseLeftX / 2048;
+        rightXWorkFixed = ((band->panelX + band->columnStepX) + band->rowStepX) * 8;
+        band->screenX1 = GameRoundTerrainCoordinate11(rightXWorkFixed - band->sinRoll);
+        band->screenX2 = GameRoundTerrainCoordinate11(leftXWorkFixed + band->sinRoll);
+        band->courseX0 = band->screenX2;
+        band->screenX3 = GameRoundTerrainCoordinate11(rightXWorkFixed + band->sinRoll);
+        courseTopY = (band->panelY + band->rowStepY) * 8;
+        band->courseX1 = band->screenX3;
+        screenY0 = GameRoundTerrainCoordinate11(courseTopY - band->cosRoll);
+        courseBottomY = ((band->panelY + band->columnStepY) + band->rowStepY) * 8;
+        screenY1 = GameRoundTerrainCoordinate11(courseBottomY - band->cosRoll);
+        screenY2 = GameRoundTerrainCoordinate11(courseTopY + band->cosRoll);
+        band->xWorkLate = screenY2;
+        screenY3 = GameRoundTerrainCoordinate11(courseBottomY + band->cosRoll);
+        SetPolyG4(courseG4);
+        courseG4->x0 = band->screenX0;
+        courseG4->x1 = band->screenX1;
+        courseG4->x2 = band->screenX2;
+        courseG4->x3 = band->screenX3;
+        courseG4->y0 = screenY0;
+        courseG4->y1 = screenY1;
+        courseG4->y2 = screenY2;
+        courseG4->y3 = screenY3;
+        color = g_EnvironmentColors.fields.slots[7].cur.bytes.r;
+        courseG4->r1 = color;
+        courseG4->r0 = color;
+        color = g_EnvironmentColors.fields.slots[8].cur.bytes.r;
+        courseG4->r3 = color;
+        courseG4->r2 = color;
+        color = g_EnvironmentColors.fields.slots[7].cur.bytes.g;
+        courseG4->g1 = color;
+        courseG4->g0 = color;
+        band->courseY1 = screenY3;
+        color = g_EnvironmentColors.fields.slots[8].cur.bytes.g;
+        courseG4->g3 = color;
+        courseG4->g2 = color;
+        color = g_EnvironmentColors.fields.slots[7].cur.bytes.b;
+        courseG4->b1 = color;
+        courseG4->b0 = color;
+        cursor.polyG4 = courseG4 + 1;
+        nextPacket = cursor.bytes;
+        color = g_EnvironmentColors.fields.slots[8].cur.bytes.b;
+        courseG4->b3 = color;
+        courseG4->b2 = color;
+        AddPrim(&scratch->orderingTable[SKY_OT_FAR], courseG4);
+        packetCursor = nextPacket;
+      }
+      skirtStepX = band->rowStepX * 3;
+      band->screenX2 = GameRoundTerrainCoordinate(band->panelX + skirtStepX);
+      skirtRightX = band->panelX + band->columnStepX;
+      band->screenX3 = GameRoundTerrainCoordinate(skirtRightX + skirtStepX);
+      skirtStepY = band->rowStepY * 3;
+      screenY2 = GameRoundTerrainCoordinate(band->panelY + skirtStepY);
+      skirtBottomY = band->panelY + band->columnStepY;
+      screenY3 = GameRoundTerrainCoordinate(skirtBottomY + skirtStepY);
+      if (g_CourseIndex == 2)
+      {
+        u8 color;
+        POLY_G4 *courseG4;
+        RenderBufferAddress cursor;
+        cursor.bytes = packetCursor;
+        courseG4 = cursor.polyG4;
+        rightXWorkFixed = band->panelX;
+        band->screenX0 = GameRoundTerrainCoordinate(rightXWorkFixed + band->rowStepX);
+        band->screenX1 = GameRoundTerrainCoordinate(skirtRightX + (band->rowStepX + (band->rowStepX - band->rowStepX)));
+        screenY0 = GameRoundTerrainCoordinate(band->panelY + band->rowStepY);
+        screenY1 = GameRoundTerrainCoordinate(skirtBottomY + band->rowStepY);
+        cursor.polyG4 = courseG4 + 1;
+        nextPacket = cursor.bytes;
+        SetPolyG4(courseG4);
+        courseG4->x0 = band->screenX0;
+        courseG4->x1 = band->screenX1;
+        courseG4->x2 = band->screenX2;
+        courseG4->x3 = band->screenX3;
+        courseG4->y0 = screenY0;
+        courseG4->y1 = screenY1;
+        courseG4->y2 = screenY2;
+        courseG4->y3 = screenY3;
+        color = g_EnvironmentColors.fields.slots[5].cur.bytes.r;
+        courseG4->r1 = color;
+        courseG4->r0 = color;
+        color = g_EnvironmentColors.fields.slots[6].cur.bytes.r;
+        courseG4->r3 = color;
+        courseG4->r2 = color;
+        color = g_EnvironmentColors.fields.slots[5].cur.bytes.g;
+        courseG4->g1 = color;
+        courseG4->g0 = color;
+        color = g_EnvironmentColors.fields.slots[6].cur.bytes.g;
+        courseG4->g3 = color;
+        courseG4->g2 = color;
+        color = g_EnvironmentColors.fields.slots[5].cur.bytes.b;
+        courseG4->b1 = color;
+        courseG4->b0 = color;
+        color = g_EnvironmentColors.fields.slots[6].cur.bytes.b;
+        courseG4->b3 = color;
+        courseG4->b2 = color;
+        AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseG4);
+        packetCursor = nextPacket;
+      }
+      else
+      {
+        POLY_F4 *courseF4;
+        packetAddress.bytes = packetCursor;
+        courseF4 = packetAddress.polyF4;
+        band->screenX0 = band->courseX0;
+        band->screenX1 = band->courseX1;
+        screenY0 = band->xWorkLate;
+        screenY1 = band->courseY1;
+        SetPolyF4(courseF4);
+        courseF4->x0 = band->screenX0;
+        courseF4->x1 = band->screenX1;
+        courseF4->x2 = band->screenX2;
+        courseF4->x3 = band->screenX3;
+        courseF4->y0 = screenY0;
+        courseF4->y1 = screenY1;
+        courseF4->y2 = screenY2;
+        courseF4->y3 = screenY3;
+        courseF4->r0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.r;
+        courseF4->g0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.g;
+        {
+          u8 *nextPacket;
+          RenderBufferAddress cursor;
+          cursor.polyF4 = courseF4 + 1;
+          nextPacket = cursor.bytes;
+          courseF4->b0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.b;
+          AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseF4);
+          packetCursor = nextPacket;
+        }
+      }
+  return packetCursor;
+}
+
 void DrawSkyBackground(void)
 {
   SkyRenderScratchpad nativeScratch;
@@ -650,155 +840,29 @@ void DrawSkyBackground(void)
         packetCursor = nextPacket;
       }
     }
-    {
-      s32 courseTopY;
-      s32 skirtBottomY;
-      s32 skirtRightX;
-      s32 courseBottomY;
-      s32 skirtStepX;
-      s32 skirtStepY;
-      s32 courseLeftX;
-      textureColumn = rowStepX * 4;
-      if (g_CourseIndex != 2)
-      {
-        u8 color;
-        POLY_G4 *courseG4;
-        RenderBufferAddress cursor;
-        cursor.bytes = packetCursor;
-        courseG4 = cursor.polyG4;
-        leftXWorkFixed = (panelXFixed + rowStepX) * 8;
-        courseLeftX = leftXWorkFixed - savedSinRoll;
-        screenX0 = courseLeftX / 2048;
-        rightXWorkFixed = ((panelXFixed + columnStepX) + rowStepX) * 8;
-        screenX1 = GameRoundTerrainCoordinate11(rightXWorkFixed - savedSinRoll);
-        screenX2 = GameRoundTerrainCoordinate11(leftXWorkFixed + savedSinRoll);
-        savedCourseX0 = screenX2;
-        screenX3 = GameRoundTerrainCoordinate11(rightXWorkFixed + savedSinRoll);
-        courseTopY = (panelYFixed + rowStepY) * 8;
-        savedCourseX1 = screenX3;
-        screenY0 = GameRoundTerrainCoordinate11(courseTopY - savedCosRoll);
-        courseBottomY = ((panelYFixed + columnStepY) + rowStepY) * 8;
-        screenY1 = GameRoundTerrainCoordinate11(courseBottomY - savedCosRoll);
-        screenY2 = GameRoundTerrainCoordinate11(courseTopY + savedCosRoll);
-        xWork_late = screenY2;
-        screenY3 = GameRoundTerrainCoordinate11(courseBottomY + savedCosRoll);
-        SetPolyG4(courseG4);
-        courseG4->x0 = screenX0;
-        courseG4->x1 = screenX1;
-        courseG4->x2 = screenX2;
-        courseG4->x3 = screenX3;
-        courseG4->y0 = screenY0;
-        courseG4->y1 = screenY1;
-        courseG4->y2 = screenY2;
-        courseG4->y3 = screenY3;
-        color = g_EnvironmentColors.fields.slots[7].cur.bytes.r;
-        courseG4->r1 = color;
-        courseG4->r0 = color;
-        color = g_EnvironmentColors.fields.slots[8].cur.bytes.r;
-        courseG4->r3 = color;
-        courseG4->r2 = color;
-        color = g_EnvironmentColors.fields.slots[7].cur.bytes.g;
-        courseG4->g1 = color;
-        courseG4->g0 = color;
-        courseSaveY1 = screenY3;
-        color = g_EnvironmentColors.fields.slots[8].cur.bytes.g;
-        courseG4->g3 = color;
-        courseG4->g2 = color;
-        color = g_EnvironmentColors.fields.slots[7].cur.bytes.b;
-        courseG4->b1 = color;
-        courseG4->b0 = color;
-        cursor.polyG4 = courseG4 + 1;
-        nextPacket = cursor.bytes;
-        color = g_EnvironmentColors.fields.slots[8].cur.bytes.b;
-        courseG4->b3 = color;
-        courseG4->b2 = color;
-        AddPrim(&scratch->orderingTable[SKY_OT_FAR], courseG4);
-        packetCursor = nextPacket;
-      }
-      skirtStepX = rowStepX * 3;
-      screenX2 = GameRoundTerrainCoordinate(panelXFixed + skirtStepX);
-      skirtRightX = panelXFixed + columnStepX;
-      screenX3 = GameRoundTerrainCoordinate(skirtRightX + skirtStepX);
-      skirtStepY = rowStepY * 3;
-      screenY2 = GameRoundTerrainCoordinate(panelYFixed + skirtStepY);
-      skirtBottomY = panelYFixed + columnStepY;
-      screenY3 = GameRoundTerrainCoordinate(skirtBottomY + skirtStepY);
-      if (g_CourseIndex == 2)
-      {
-        u8 color;
-        POLY_G4 *courseG4;
-        RenderBufferAddress cursor;
-        cursor.bytes = packetCursor;
-        courseG4 = cursor.polyG4;
-        rightXWorkFixed = panelXFixed;
-        screenX0 = GameRoundTerrainCoordinate(rightXWorkFixed + rowStepX);
-        screenX1 = GameRoundTerrainCoordinate(skirtRightX + (rowStepX + (rowStepX - rowStepX)));
-        screenY0 = GameRoundTerrainCoordinate(panelYFixed + rowStepY);
-        screenY1 = GameRoundTerrainCoordinate(skirtBottomY + rowStepY);
-        cursor.polyG4 = courseG4 + 1;
-        nextPacket = cursor.bytes;
-        SetPolyG4(courseG4);
-        courseG4->x0 = screenX0;
-        courseG4->x1 = screenX1;
-        courseG4->x2 = screenX2;
-        courseG4->x3 = screenX3;
-        courseG4->y0 = screenY0;
-        courseG4->y1 = screenY1;
-        courseG4->y2 = screenY2;
-        courseG4->y3 = screenY3;
-        color = g_EnvironmentColors.fields.slots[5].cur.bytes.r;
-        courseG4->r1 = color;
-        courseG4->r0 = color;
-        color = g_EnvironmentColors.fields.slots[6].cur.bytes.r;
-        courseG4->r3 = color;
-        courseG4->r2 = color;
-        color = g_EnvironmentColors.fields.slots[5].cur.bytes.g;
-        courseG4->g1 = color;
-        courseG4->g0 = color;
-        color = g_EnvironmentColors.fields.slots[6].cur.bytes.g;
-        courseG4->g3 = color;
-        courseG4->g2 = color;
-        color = g_EnvironmentColors.fields.slots[5].cur.bytes.b;
-        courseG4->b1 = color;
-        courseG4->b0 = color;
-        color = g_EnvironmentColors.fields.slots[6].cur.bytes.b;
-        courseG4->b3 = color;
-        courseG4->b2 = color;
-        AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseG4);
-        packetCursor = nextPacket;
-      }
-      else
-      {
-        POLY_F4 *courseF4;
-        packetAddress.bytes = packetCursor;
-        courseF4 = packetAddress.polyF4;
-        screenX0 = savedCourseX0;
-        screenX1 = savedCourseX1;
-        screenY0 = xWork_late;
-        screenY1 = courseSaveY1;
-        SetPolyF4(courseF4);
-        courseF4->x0 = screenX0;
-        courseF4->x1 = screenX1;
-        courseF4->x2 = screenX2;
-        courseF4->x3 = screenX3;
-        courseF4->y0 = screenY0;
-        courseF4->y1 = screenY1;
-        courseF4->y2 = screenY2;
-        courseF4->y3 = screenY3;
-        courseF4->r0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.r;
-        courseF4->g0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.g;
-        {
-          u8 *nextPacket;
-          RenderBufferAddress cursor;
-          cursor.polyF4 = courseF4 + 1;
-          nextPacket = cursor.bytes;
-          courseF4->b0 = (u8) g_EnvironmentColors.fields.slots[4].cur.bytes.b;
-          AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseF4);
-          packetCursor = nextPacket;
-        }
-      }
-      SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
-    }
+  {
+    SkyBandGeometry band;
+
+    band.panelX = panelXFixed;
+    band.panelY = panelYFixed;
+    band.columnStepX = columnStepX;
+    band.columnStepY = columnStepY;
+    band.rowStepX = rowStepX;
+    band.rowStepY = rowStepY;
+    band.sinRoll = savedSinRoll;
+    band.cosRoll = savedCosRoll;
+    band.textureColumn = textureColumn;
+    band.screenX0 = screenX0;
+    band.screenX1 = screenX1;
+    band.screenX2 = screenX2;
+    band.screenX3 = screenX3;
+    band.courseX0 = savedCourseX0;
+    band.courseX1 = savedCourseX1;
+    band.courseY1 = courseSaveY1;
+    band.xWorkLate = xWork_late;
+
+    packetCursor = DrawCourseSkirt(scratch, &band, packetCursor);
+    SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
   }
-  return;
+  }
 }

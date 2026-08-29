@@ -894,6 +894,18 @@ if(TARGET rage-racer-smoke)
     )
     set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 180)
 
+    # The sky, which nothing watched: the visual references are captured from
+    # menus and the intro camera, where its horizon band and skirt are not
+    # drawn at all.
+    add_test(
+        NAME sky_frames
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_frames.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+    set_tests_properties(sky_frames PROPERTIES TIMEOUT 600)
+
     add_test(
         NAME native_render_world
         COMMAND python3
