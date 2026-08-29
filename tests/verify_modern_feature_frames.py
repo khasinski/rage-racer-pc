@@ -47,7 +47,13 @@ def main() -> int:
             capture = root / f"{name} żółty.ppm"
             scenario = root / f"{name} ustawienia.ini"
             scenario.write_text(
-                f"""[video]
+                f"""[modern]
+# Lock one asset source. Otherwise these digests depend on whether a
+# native-assets directory happens to sit beside the executable, and the
+# importer and a prebuilt cache do not produce the same pixels.
+assets = disc
+
+[video]
 renderer = modern
 internal_scale = 1
 aspect = {aspect}
