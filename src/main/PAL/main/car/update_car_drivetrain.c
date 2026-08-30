@@ -189,9 +189,67 @@ static void ReadEngineTorque(GameCarDrive *drive, GameCarSpecAddress config,
   }
 }
 
+/*
+ * How much grip the steering has this frame.
+ *
+ * A car still on the ground works it out from the camber under it, and settles
+ * halfway towards the answer rather than jumping to it. A car just off a crest
+ * works it out from the curve instead: it carries the curve it thinks it is
+ * on, the track point under it carries the curve it is really on, and agreeing
+ * winds the bias up twice as fast as disagreeing unwinds it. A car on no curve
+ * at all leaves the bias alone either way.
+ *
+ * Retail had a third path in the airborne case, for the two disagreeing with
+ * the car on no curve and the point on no curve either, which cannot happen:
+ * that is the two agreeing.
+ */
+static void UpdateSteeringGrip(PlayerCarRuntime *car, GameCarDrive *drive,
+                               s32 gripBudget) {
+    if (drive->motionState == CAR_MOTION_TAKEOFF) {
+        s16 driveCurveMode = drive->trackCurveMode;
+        s32 pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
+        s16 steerBias;
+
+        if (driveCurveMode != 0) {
+            drive->trackCurveBias = (u16)drive->trackCurveBias +
+                                    (driveCurveMode == pointCurveMode ? 2 : -1);
+        }
+        steerBias = drive->trackCurveBias;
+        if (steerBias >= 0x1F) {
+            drive->trackCurveBias = 0x1E;
+        } else if (steerBias < -0x1E) {
+            drive->trackCurveBias = -0x1E;
+        }
+        gripBudget += g_CarSpec->baseSteeringGrip - drive->trackCurveBias * 0xA;
+        drive->steeringGrip = (s16)gripBudget;
+        return;
+    }
+    {
+        GameTrackPoint *trackPoint = TrackPoint(car->trackPointIndex);
+        s16 curveModeNow = drive->trackCurveMode;
+
+        if ((curveModeNow != (trackPoint->arcRef & 3)) && (curveModeNow != 0)) {
+            s32 camber = trackPoint->crossSlope;
+            s32 camberLean;
+
+            if (camber < -0x32) {
+                camber = -0x32;
+            } else if (camber >= 0x33) {
+                camber = 0x32;
+            }
+            /* The inside of a left-hander leans the other way. */
+            camberLean = ((trackPoint->arcRef & 3) == 1) ? (-(camber * 0x3C)) / 20
+                                                         : camber * 3;
+            gripBudget += camberLean;
+        }
+    }
+    drive->steeringGrip =
+        (s16)((drive->steeringGrip +
+               (gripBudget * drive->steeringGripResponse) / 1000) / 2);
+}
+
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GearCurveAddress gearCurve;
-  s16 curveModeNow;
   s16 targetGear;
   s16 targetGearAgain;
   int assistArmed;
@@ -201,9 +259,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 assistEnabled;
   s16 gear;
   s16 targetGearCheck;
-  s16 driveCurveMode;
-  s16 steerBias;
-  s32 camber;
   s32 shiftRemaining;
   s32 trackHeadingError;
   s32 pointIndex;
@@ -221,7 +276,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 centreAngle;
   s32 radialDistance;
   s32 shiftTargetRpm;
-  s32 pointCurveMode;
   s32 headingError;
   s32 shiftMode;
   s32 gradeScale;
@@ -252,7 +306,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 gradePenalty;
   s32 lateralSum;
   s32 dragBase;
-  s32 camberLean;
   s32 netTorqueRoundedA;
   s32 netTorqueRoundedC;
   s32 netTorqueRoundedB;
@@ -265,10 +318,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   DrivetrainWheelSpeed wheelSpeedScaled;
   u16 arcFlags;
   u16 currentSpeed;
-  u16 steerBiasNext;
   GameCarDrive *drive;
   GameTrackArcCenter *arcCentre;
-  GameTrackPoint *trackPoint;
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;
@@ -300,66 +351,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   gripBudget = 0x17C - frontLoadScaled;
   gripBudget += (drive->brakeInput * 0x64) / 256;
-  if (drive->motionState == CAR_MOTION_TAKEOFF)
-  {
-    driveCurveMode = drive->trackCurveMode;
-    pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
-    /*
-     * The car carries the curve it thinks it is on; the track point under it
-     * carries the curve it is really on. Agreeing winds the bias up twice as
-     * fast as disagreeing unwinds it. A car on no curve at all leaves the bias
-     * alone either way.
-     *
-     * Retail had a third path here, for the two disagreeing with the car on no
-     * curve and the point on no curve either, which cannot happen: that is the
-     * two agreeing.
-     */
-    if (driveCurveMode != 0)
-    {
-      steerBiasNext = (u16)drive->trackCurveBias +
-                      (driveCurveMode == pointCurveMode ? 2 : -1);
-      drive->trackCurveBias = steerBiasNext;
-    }
-    steerBias = drive->trackCurveBias;
-    if (steerBias >= 0x1F)
-    {
-      drive->trackCurveBias = 0x1E;
-    }
-    else if (steerBias < (-0x1E))
-    {
-      drive->trackCurveBias = -0x1E;
-    }
-    gripBudget += g_CarSpec->baseSteeringGrip - drive->trackCurveBias * 0xA;
-    drive->steeringGrip = (s16)gripBudget;
-  }
-  else
-  {
-    trackPoint = TrackPoint(car->trackPointIndex);
-    curveModeNow = drive->trackCurveMode;
-    if ((curveModeNow != (trackPoint->arcRef & 3)) && (curveModeNow != 0))
-    {
-      camber = trackPoint->crossSlope;
-      if (camber < (-0x32))
-      {
-        camber = -0x32;
-      }
-      else
-        if (camber >= 0x33)
-      {
-        camber = 0x32;
-      }
-      if ((TrackPoint(car->trackPointIndex)->arcRef & 3) == 1)
-      {
-        camberLean = (-(camber * 0x3C)) / 20;
-      }
-      else
-      {
-        camberLean = camber * 3;
-      }
-      gripBudget += camberLean;
-    }
-    drive->steeringGrip = (s16)((drive->steeringGrip + (gripBudget * drive->steeringGripResponse) / 1000) / 2);
-  }
+  UpdateSteeringGrip(car, drive, gripBudget);
   gearTorque = gearRatio * drive->engineRpm;
   steerLoad = 0;
   loadTorque = drive->drivetrainTorque;
