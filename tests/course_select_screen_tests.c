@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 2994127225UL;
+    static const unsigned long expected = 1588266003UL;
     static const s32 busyStates[] = {0, -1, -2, -3, -4, -5, 1, 2, 3, 4};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_LEFT, PAD_RIGHT,
                                   PAD_CONFIRM, PAD_CANCEL};
@@ -303,7 +303,7 @@ int main(int argc, char **argv) {
         UpdateCourseSelectScreen();
 
         {
-            s32 after[22];
+            s32 after[23];
             after[0] = GameMenuBusy;
             after[1] = g_CourseSelectOption;
             after[2] = g_CourseIndex;
@@ -326,7 +326,11 @@ int main(int argc, char **argv) {
             after[19] = g_MenuViewOffsetTarget;
             after[20] = g_MenuPendingCourseIndex;
             after[21] = ScriptId(g_CourseSelectModalScript);
-            Record("state", after, 22);
+            /* The showroom angle the class change swings to. It sits beside
+             * the offset above and was the one thing the class change writes
+             * that nothing here looked at. */
+            after[22] = g_MenuViewAngleTarget;
+            Record("state", after, 23);
             RECORD("saved", s_progress.course, s_progress.carIndex,
                    s_progress.classIndex, s_progress.money.value,
                    g_UiScriptProgress, g_MenuCourseModelIndex,
@@ -407,6 +411,85 @@ int main(int argc, char **argv) {
                    g_MenuViewAngleTarget, g_CourseCardSpin,
                    g_CourseCardPendingGrade, g_TimeAttackPlateStep,
                    g_CourseSwapDelay);
+            steps++;
+        }
+    }
+
+    /*
+     * Handing the screen over. Every chosen destination waits for the
+     * showroom to have swung clear, and the race waits for the outgoing
+     * animation as well. The sweep above drives the offset and that animation
+     * from one index, so its two settings move together and the one
+     * combination that actually hands over, a finished animation with the
+     * showroom clear, never came up. Both are held apart here.
+     */
+    {
+        static const s32 chosen[] = {1, 2, 3, 4};
+        static const s32 offs[] = {0x3D08E, 0x3D08F, 0x3D090};
+        static const s32 courseIn[] = {0, 5};
+        int ch, ofi, prog, cj;
+
+        for (ch = 0; ch < 4; ch++)
+        for (ofi = 0; ofi < 3; ofi++)
+        for (prog = 0; prog < 2; prog++)
+        for (cj = 0; cj < 2; cj++) {
+            char label[160];
+
+            memset(&s_progress, 0, sizeof(s_progress));
+            memset(&s_course, 0, sizeof(s_course));
+            memset(ot, 0, sizeof(ot));
+            SCRATCH_OT_BASE_AS(void) = ot;
+            s_progress.maxClassReached = 2;
+
+            GameMenuBusy = chosen[ch];
+            s_scriptResult = 1;
+            s_curtain = 0;
+            s_canPrev = 1;
+            s_canNext = 1;
+            /* The outgoing animation has run out, which is the only way
+             * EnterChosenScreen is reached at all. */
+            g_UiScriptProgress = 0;
+            g_UiScriptProgress2 = 0;
+            g_GrandPrixMode = 1;
+            g_CourseSelectOption = 0;
+            g_PadPressed = 0;
+            g_PadHeld = 0;
+            g_MenuSubCursor = 0;
+            g_MenuConfirmTimer = 0;
+            g_MenuViewOffset = offs[ofi];
+            g_MenuOutgoingScreenProgress = prog;
+            g_ClassChangeApplied = 0;
+            /* Five is the one of these the handover's mask changes, so the
+             * course it writes is not the course it was given. */
+            g_CourseIndex = courseIn[cj];
+            g_SceneId = -1;
+            g_PlayerCarIndex = 3;
+            g_GrandPrixClass = 1;
+            g_PlayerMoney = 4321;
+            g_GrandPrixSeries = 7;
+            g_MenuAltLayoutSetting = 1;
+            g_CarNamePlateStep = 4;
+            g_MenuPlateCarIndex = 2;
+            g_CarSwapFromIndex = 0;
+            g_CarSwapToIndex = 0;
+            g_CourseCardPendingGrade = 0;
+            g_CourseCardSpin = 0x1000;
+            g_CourseCardSpinTarget = 0x800;
+            g_CourseSelectModalScript = NULL;
+
+            sprintf(label, "== handover busy%d/offset%d/outgoing%d/course%d",
+                    chosen[ch], offs[ofi], prog, courseIn[cj]);
+            Record(label, NULL, 0);
+            UpdateCourseSelectScreen();
+            RECORD("handed", g_MenuScreen, g_MenuHandlerIndex,
+                   g_MenuHandlerIndex2, g_MenuViewOffset, g_MenuViewAngle,
+                   g_CarSwapToIndex, g_CourseIndex, g_UiScriptProgress);
+            /* What the handover itself writes, which is the whole point of
+             * reaching it: the scene it asks for and the record the race
+             * reads. */
+            RECORD("raceplan", g_SceneId, s_progress.course,
+                   s_progress.carIndex, s_progress.classIndex,
+                   s_progress.money.value);
             steps++;
         }
     }
