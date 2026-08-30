@@ -39,6 +39,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "support"))
+
 from disc_image import SKIP_EXIT_CODE, find_disc, require_disc
 
 SECTORS_PER_SECOND = 150

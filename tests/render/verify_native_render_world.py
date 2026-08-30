@@ -10,6 +10,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "support"))
+
 from native_asset_fixture import create_native_asset_fixture, write_test_png
 
 

@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 require "rbconfig"
 
-tool = ARGV.fetch(0, File.expand_path("../tools/rage_geometry_trace_compare.rb", __dir__))
+tool = ARGV.fetch(0, File.expand_path("../../tools/rage_geometry_trace_compare.rb", __dir__))
 line = "terrain-decision timer=1 index=0 mirror=0 clut=7c00 tpage=0015 " \
        "vertices=1,2,3,4 translation=10,20,30 " \
        "clip=12,-4 sxy=1,2/3,4/5,6/7,8 bounds=0,320,0,240 " \

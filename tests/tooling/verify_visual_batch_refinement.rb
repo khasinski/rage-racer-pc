@@ -28,7 +28,7 @@ def write_pixels(path, width, height, pixels)
 end
 
 Dir.mktmpdir("rage-rgb555-normalization-") do |root|
-  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  compare = File.expand_path("../../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")
   native = File.join(root, "native.ppm")
   output = File.join(root, "output")
@@ -45,7 +45,7 @@ Dir.mktmpdir("rage-rgb555-normalization-") do |root|
 end
 
 Dir.mktmpdir("rage-black-area-") do |root|
-  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  compare = File.expand_path("../../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")
   native = File.join(root, "native.ppm")
   output = File.join(root, "output")
@@ -78,7 +78,7 @@ Dir.mktmpdir("rage-black-area-") do |root|
 end
 
 Dir.mktmpdir("rage-surface-area-") do |root|
-  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  compare = File.expand_path("../../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")
   native = File.join(root, "native.ppm")
   output = File.join(root, "output")
@@ -208,7 +208,7 @@ Dir.mktmpdir("rage-visual-spinning-scenery-") do |root|
 end
 
 Dir.mktmpdir("rage-clear-area-") do |root|
-  compare = File.expand_path("../tools/rage_visual_compare.rb", __dir__)
+  compare = File.expand_path("../../tools/rage_visual_compare.rb", __dir__)
   psx = File.join(root, "psx.ppm")
   native = File.join(root, "native.ppm")
   output = File.join(root, "output")
@@ -928,13 +928,13 @@ Dir.mktmpdir("rage-visual-player-render-gate-") do |root|
   abort stdout + stderr unless (stdout + stderr).include?("rival_render_state")
 end
 
-source = File.read(File.expand_path("../src/port/smoke_control.c", __dir__))
+source = File.read(File.expand_path("../../src/port/smoke_control.c", __dir__))
 abort "player render hash omits model-selection renderDepth" unless
   source.match?(/SmokeHashPlayerRenderState.*?renderObject->renderDepth/m)
 abort "player render hash omits wheel phase" unless
   source.match?(/SmokeHashPlayerRenderState.*?car->wheelRotation/m)
-menu_header = File.read(File.expand_path("../include/game/menu.h", __dir__))
-host_state = File.read(File.expand_path("../src/port/host_state.c", __dir__))
+menu_header = File.read(File.expand_path("../../include/game/menu.h", __dir__))
+host_state = File.read(File.expand_path("../../src/port/host_state.c", __dir__))
 abort "split player tire/render-depth global was reintroduced" unless
   menu_header.match?(/#define g_PlayerTireCompound.*?g_PlayerCar.*?renderDepth/m) &&
   !host_state.match?(/^unsigned char g_PlayerTireCompound\b/)

@@ -6,10 +6,10 @@
 
 #include "common.h"
 #include "game/track.h"
-#include "../src/port/input_config.h"
-#include "../src/port/port_config.h"
-#include "../src/port/runtime_config.h"
-#include "../src/port/platform_paths.h"
+#include "input_config.h"
+#include "port_config.h"
+#include "runtime_config.h"
+#include "platform_paths.h"
 
 /* Random15 stamps its trace with where the game had got to. The pure logic
  * library carries no scene state of its own, so the test supplies it. */

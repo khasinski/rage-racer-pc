@@ -4,7 +4,7 @@
 from pathlib import Path
 
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 glsl = (root / "src/port/modern/shaders/native_sky.frag.glsl").read_text()
 gpu = (root / "src/port/modern/modern_native_gpu.c").read_text()
 

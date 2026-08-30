@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "../src/port/axis_curve.h"
+#include "axis_curve.h"
 
 static int failures;
 

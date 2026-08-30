@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "../src/port/include/timing_control.h"
+#include "timing_control.h"
 
 static int failures;
 
