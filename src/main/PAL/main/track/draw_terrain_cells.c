@@ -60,10 +60,6 @@ typedef struct SkyBandGeometry {
     s32 screenX1;
     s32 screenX2;
     s32 screenX3;
-    s32 courseX0;
-    s32 courseX1;
-    s32 courseY1;
-    s32 xWorkLate;
 } SkyBandGeometry;
 
 /*
@@ -74,6 +70,13 @@ typedef struct SkyBandGeometry {
  */
 static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
                            u8 *packetCursor) {
+    /* Carried from the wide half of the skirt to the near half. Both are
+     * drawn on the same condition, for every course but the third, so the
+     * near half never reads what the wide half did not write. */
+    s32 courseX0;
+    s32 courseX1;
+    s32 courseY1;
+    s32 xWorkLate;
   s32 leftXWorkFixed;
   s32 rightXWorkFixed;
   s32 screenY0;
@@ -103,15 +106,15 @@ static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
         rightXWorkFixed = ((band->panelX + band->columnStepX) + band->rowStepX) * 8;
         band->screenX1 = GameRoundTerrainCoordinate11(rightXWorkFixed - band->sinRoll);
         band->screenX2 = GameRoundTerrainCoordinate11(leftXWorkFixed + band->sinRoll);
-        band->courseX0 = band->screenX2;
+        courseX0 = band->screenX2;
         band->screenX3 = GameRoundTerrainCoordinate11(rightXWorkFixed + band->sinRoll);
         courseTopY = (band->panelY + band->rowStepY) * 8;
-        band->courseX1 = band->screenX3;
+        courseX1 = band->screenX3;
         screenY0 = GameRoundTerrainCoordinate11(courseTopY - band->cosRoll);
         courseBottomY = ((band->panelY + band->columnStepY) + band->rowStepY) * 8;
         screenY1 = GameRoundTerrainCoordinate11(courseBottomY - band->cosRoll);
         screenY2 = GameRoundTerrainCoordinate11(courseTopY + band->cosRoll);
-        band->xWorkLate = screenY2;
+        xWorkLate = screenY2;
         screenY3 = GameRoundTerrainCoordinate11(courseBottomY + band->cosRoll);
         SetPolyG4(courseG4);
         courseG4->x0 = band->screenX0;
@@ -131,7 +134,7 @@ static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
         color = g_EnvironmentColors.fields.slots[7].cur.bytes.g;
         courseG4->g1 = color;
         courseG4->g0 = color;
-        band->courseY1 = screenY3;
+        courseY1 = screenY3;
         color = g_EnvironmentColors.fields.slots[8].cur.bytes.g;
         courseG4->g3 = color;
         courseG4->g2 = color;
@@ -203,10 +206,10 @@ static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
         POLY_F4 *courseF4;
         packetAddress.bytes = packetCursor;
         courseF4 = packetAddress.polyF4;
-        band->screenX0 = band->courseX0;
-        band->screenX1 = band->courseX1;
-        screenY0 = band->xWorkLate;
-        screenY1 = band->courseY1;
+        band->screenX0 = courseX0;
+        band->screenX1 = courseX1;
+        screenY0 = xWorkLate;
+        screenY1 = courseY1;
         SetPolyF4(courseF4);
         courseF4->x0 = band->screenX0;
         courseF4->x1 = band->screenX1;
@@ -399,7 +402,6 @@ void DrawSkyBackground(void)
   s32 screenX1;
   s32 screenX2;
   s32 screenX3;
-  s32 savedCourseX0;
   scratch->packetCursor = SCRATCH_PRIM_CURSOR_AS(u8);
   scratch->orderingTable = SCRATCH_OT_BASE_AS(OT_TYPE);
   scratch->cameraX = SCRATCH_VIEW_X;
@@ -410,11 +412,8 @@ void DrawSkyBackground(void)
   scratch->roll = SCRATCH_VIEW_ANGLE_Z;
   scratch->mirrorFlag = SCRATCH_MIRROR;
   u8 *packetCursor = scratch->packetCursor;
-  s32 savedCourseX1;
   s32 heldBandY;
-  s32 xWork_late;
   s32 adjW;
-  s32 courseSaveY1;
   s32 doubleRowStepY;
   s32 nextCellXFixed;
   s32 rowOffsetYFixed;
@@ -899,10 +898,6 @@ void DrawSkyBackground(void)
     band.screenX1 = screenX1;
     band.screenX2 = screenX2;
     band.screenX3 = screenX3;
-    band.courseX0 = savedCourseX0;
-    band.courseX1 = savedCourseX1;
-    band.courseY1 = courseSaveY1;
-    band.xWorkLate = xWork_late;
 
     packetCursor = DrawCourseSkirt(scratch, &band, packetCursor);
     SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
