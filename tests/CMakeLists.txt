@@ -100,6 +100,15 @@ endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 
 set_tests_properties(chase_camera PROPERTIES LABELS functional)
+# Where a stage puts its camera: pure scene composition, no GPU involved.
+add_executable(render_stage_tests render_stage_tests.c)
+target_link_libraries(render_stage_tests PRIVATE rage-render-world)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(render_stage_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_stage COMMAND render_stage_tests)
+set_tests_properties(render_stage PROPERTIES LABELS functional)
+
 add_executable(content_options_tests
     content_options_tests.c
     ../src/port/content_options.c)

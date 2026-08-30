@@ -107,6 +107,7 @@ add_library(rage-render-world STATIC
     src/render/render_world_frame.c
     src/render/render_world_snapshot.c
     src/render/render_projection.c
+    src/render/render_stage.c
     src/render/render_shadow.c
     src/render/render_mesh_build.c)
 target_include_directories(rage-render-world PUBLIC
@@ -224,6 +225,25 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_assets.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
+    add_executable(rage-render-stage
+        tools/rage_render_stage.c
+        src/port/platform_paths.c
+        src/port/runtime_config.c
+        src/port/mod_assets.c
+        src/port/texture_patch.c
+        src/port/track_asset_identity.c
+        src/port/native_asset_importer_stubs.c
+        src/port/modern/modern_assets.c
+        src/port/modern/modern_native_gpu.c
+        src/port/modern/modern_texture_dump.c)
+    target_include_directories(rage-render-stage PRIVATE
+        src src/port src/port/include)
+    target_link_libraries(rage-render-stage PRIVATE
+        rage-render-world SDL3::SDL3)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(rage-render-stage PRIVATE
+            ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
     target_include_directories(rage-frame-replay PRIVATE
         src src/port src/port/include)
     target_link_libraries(rage-frame-replay PRIVATE
