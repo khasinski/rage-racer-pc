@@ -260,7 +260,11 @@ static void WarningTests(void) {
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         long before, after;
         LoadShippedContent();
-        freopen(STDERR_CAPTURE, "w", stderr);
+        if (freopen(STDERR_CAPTURE, "w", stderr) == NULL) {
+            printf("FAIL could not reopen the capture\n");
+            failures++;
+            return;
+        }
         before = CapturedLength();
         s_carNames = cases[i].setting;
         s_prologue = NULL;
@@ -275,7 +279,11 @@ static void WarningTests(void) {
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         long before, after;
         LoadShippedContent();
-        freopen(STDERR_CAPTURE, "w", stderr);
+        if (freopen(STDERR_CAPTURE, "w", stderr) == NULL) {
+            printf("FAIL could not reopen the capture\n");
+            failures++;
+            return;
+        }
         before = CapturedLength();
         s_carNames = NULL;
         s_prologue = cases[i].setting;
