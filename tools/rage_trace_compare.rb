@@ -92,7 +92,15 @@ def race_trace(executable, race)
     "RAGE_PORT_SYNC_RANDOM" => "1",
     "RAGE_PORT_CAR_STATE_TRACE" => "1",
     "RAGE_PORT_CAR_MOTION_TRACE" => "1",
-    "RAGE_PORT_INPUT_SCRIPT" => "200-9000:CROSS",
+    # Holding the throttle down for the whole race drives in a straight line
+    # at full power, which never asks the drivetrain about a slide, a lift or
+    # a downshift. Steering and braking in turn reaches those: it moves forty
+    # thousand of the eighty-four thousand recorded lines.
+    "RAGE_PORT_INPUT_SCRIPT" =>
+      "200-900:CROSS,950-1150:CROSS+LEFT,1200-1400:CROSS+RIGHT," \
+      "1450-1550:SQUARE,1600-2200:CROSS+LEFT,2250-2600:CROSS," \
+      "2650-2900:CROSS+RIGHT,2950-3400:CROSS,3450-3700:SQUARE+LEFT," \
+      "3750-9000:CROSS",
   }
   if race[:finish]
     environment["RAGE_PORT_SMOKE_FINISH_FRAME"] = race[:finish].to_s

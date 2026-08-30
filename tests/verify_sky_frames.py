@@ -26,7 +26,7 @@ from pathlib import Path
 
 # What the sky draws today. Run the test to see the number when it moves, and
 # change it here only when the change to the sky was meant.
-EXPECTED = 0x3FE5A5A9
+EXPECTED = 0xD4489E95
 
 
 def main() -> int:
@@ -42,7 +42,10 @@ def main() -> int:
             RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN="100",
             RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX="1200",
             RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE="50",
-            RAGE_PORT_INPUT_SCRIPT="200-4000:CROSS",
+            RAGE_PORT_INPUT_SCRIPT=(
+                "200-900:CROSS,950-1150:CROSS+LEFT,1200-1400:CROSS+RIGHT,"
+                "1450-1550:SQUARE,1600-2200:CROSS+LEFT,2250-4000:CROSS"
+            ),
         )
         result = subprocess.run(
             [
