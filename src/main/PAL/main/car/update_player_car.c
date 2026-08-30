@@ -148,6 +148,236 @@ static void UpdatePlayerEngineNote(PlayerCarRuntime *car, GameCarDrive *p,
     TraceCarMotion("post-update", car);
 }
 
+/*
+ * How far the steering turns the car this frame. Below walking pace the turn
+ * is scaled by the speed itself, so a stopped car does not pivot on the spot,
+ * and a car pulling away from the grid is given twice the room.
+ */
+static void SteerTowardsTarget(PlayerCarRuntime *car, GameCarDrive *p) {
+    s32 speed = car->speed;
+    s32 turn = (p->steerPos * 6) / 5 * p->steeringGrip;
+
+    if (speed < 256 && p->motionState == CAR_MOTION_DRIVING) {
+        p->targetHeading += (turn / 256) * speed / 0x10000;
+    } else if (speed < 512 && p->motionState == CAR_MOTION_STANDING_START) {
+        p->targetHeading += (turn / 256) * speed / 0x20000;
+    } else {
+        p->targetHeading += turn / 0x10000;
+    }
+}
+
+/*
+ * The wheels turn with the speed until they would blur, then hold a fixed
+ * rate; the top bit asks for the blurred texture.
+ */
+static void SpinWheels(PlayerCarRuntime *car) {
+    s32 step = car->speed * 3;
+    s32 spin;
+
+    if (step > 4096) {
+        step = 0x249;
+    }
+    spin = (step + car->wheelRotation) & 0xFFF;
+    car->wheelRotation = spin;
+    if (car->speed > 800) {
+        car->wheelRotation = spin | 0x1000;
+    }
+}
+
+/*
+ * The steering has a stop, and how long it has been held against it drives
+ * the wheel-scrub sound. A NeGcon only counts the hold while the twist is
+ * still past the stop, and starts its count ten frames in hand; a pad has no
+ * travel left to check.
+ */
+static void ClampSteeringAngle(PlayerCarRuntime *car, GameCarDrive *p) {
+    int negcon = g_PadType == 0x23;
+
+    if (car->steeringAngle >= 4096) {
+        car->steeringAngle = 4096;
+        if (!negcon || p->steerPos < -4096) {
+            g_SteerHoldFrames++;
+        }
+    } else if (car->steeringAngle < -4095) {
+        car->steeringAngle = -4096;
+        if (!negcon || p->steerPos > 4096) {
+            g_SteerHoldFrames++;
+        }
+    } else {
+        g_SteerHoldFrames = negcon ? -10 : 0;
+    }
+}
+
+/*
+ * How far the car reaches across the track, and which corner reaches
+ * furthest each way. The corners are turned into the track's frame first, so
+ * a car at an angle is measured across its diagonal.
+ */
+static void MeasureTrackLimits(Matrix *toTrack, CarTrackLimits *limits) {
+    SVec corner;
+    Vec4 reach;
+    s32 index;
+
+    limits->rightInset = -1;
+    limits->leftInset = -1;
+    for (index = 0; index < 4; index++) {
+        corner.vx = g_CarCornerOffsets[index].x * 4;
+        corner.vz = g_CarCornerOffsets[index].z * 4;
+        corner.vy = 0;
+        ApplyMatrix(toTrack, &corner, &reach);
+        if (DiagnosticsEnabled("car.track_trace")) {
+            const char *timerText = DiagnosticsValue("car.track_trace_timer");
+            if (timerText == NULL ||
+                g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+                Trace("car-limit", "timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
+                       "vector=%d,%d,%d output=%d,%d,%d", g_SceneTimer,
+                       toTrack->m[0][0], toTrack->m[0][1], toTrack->m[0][2],
+                       toTrack->m[1][0], toTrack->m[1][1], toTrack->m[1][2],
+                       toTrack->m[2][0], toTrack->m[2][1], toTrack->m[2][2],
+                       corner.vx, corner.vy, corner.vz, reach.x, reach.y,
+                       reach.z);
+            }
+        }
+        /* The knockback modes are one-based, so that zero means no corner. */
+        if (limits->rightInset < reach.x) {
+            limits->rightKnockbackMode = index + 2;
+            limits->rightInset = reach.x;
+        } else if (reach.x < limits->leftInset) {
+            limits->leftKnockbackMode = index + 1;
+            limits->leftInset = reach.x;
+        }
+    }
+}
+
+/*
+ * What a scrape sounds like. Skids one and three are one side of the track and
+ * two and four the other, which is why the wall cue is the other way round
+ * between the pairs; the first of each pair is a light touch and the second is
+ * the one that costs speed. A car nearly straight on scrapes; one at an angle
+ * hits the wall.
+ */
+static void PlaySkidCue(PlayerCarRuntime *car, s32 skid, s32 slip) {
+    int lightTouch = (skid == 1) || (skid == 2);
+    int nearSide = (skid == 1) || (skid == 3);
+
+    if ((skid < 1) || (skid > 4) || ((s16)car->motionTimer < 15)) {
+        return;
+    }
+    if ((u32)(slip - 768) < 257U) {
+        if (lightTouch) {
+            PlaySoundCue(0xA);
+        } else if (car->speed >= 81) {
+            PlaySoundCue(0xD);
+        }
+        return;
+    }
+    if (nearSide) {
+        PlaySoundCue(g_MirrorMode == 0 ? 0xB : 0xC);
+    } else {
+        PlaySoundCue(g_MirrorMode == 0 ? 0xC : 0xB);
+    }
+}
+
+/*
+ * The needle chases the engine, twice as fast with the clutch out as with it
+ * in, and stops at the limiter and at idle.
+ *
+ * Retail address 0x8009E808 is not independent storage: it is the +0x78
+ * engine-RPM word inside g_PlayerCar.drive. Keeping the symbol as a separate
+ * native global leaves it zero and pins the needle to the 500-rpm clamp.
+ */
+static void SettleEngineRpm(GameCarDrive *p) {
+    s32 shown = g_EngineRpm;
+    s32 gap = p->engineRpm - shown;
+    s32 limit = g_CarSpec->revLimit;
+
+    shown += (p->clutch > 0) ? gap / 2 : gap / 4;
+    if (shown >= limit) {
+        shown = limit;
+    } else if (shown < 500) {
+        shown = 500;
+    }
+    g_EngineRpm = shown;
+}
+
+/*
+ * A jump. The body rises on one arc and falls on another, both drawn against
+ * the tick count since it left the ground, and state two is the pause at the
+ * top for a car that has not travelled far enough to start falling yet.
+ */
+static void UpdateJumpArc(PlayerCarRuntime *car, s32 ground) {
+    s32 tick = car->shiftTick + 1;
+
+    car->shiftTick = tick;
+    if (car->shiftState == 1) {
+        s32 rise = (s16)tick;
+
+        car->y = car->shiftRef * rise + (rise * rise * 72) / 100 + car->y;
+        if (car->y >= ground) {
+            car->shiftState = 0;
+        }
+    } else if (car->shiftState == 2) {
+        if (ground - car->shiftRef <= car->shiftBase) {
+            car->y = car->shiftBase;
+        } else {
+            car->shiftState = 3;
+            car->shiftRef = car->shiftTick;
+            car->y = car->shiftBase;
+        }
+    } else {
+        s32 fall = (s16)tick - car->shiftRef;
+
+        car->y = car->shiftBase + (fall * fall * 216) / 100;
+        if (car->y >= ground) {
+            car->shiftState = 0;
+        }
+    }
+}
+
+/*
+ * Coming down. The drivetrain has to be restated for the gear the car landed
+ * in, because it was turning freely in the air: the torque, the rev target and
+ * the load all follow from the speed and the gear rather than from where they
+ * had drifted to.
+ */
+static void RelaunchDrivetrain(PlayerCarRuntime *car, GameCarDrive *p) {
+    GameCarSpec *spec = g_CarSpec;
+    s32 rpm;
+
+    p->drivetrainTorque = ((100 - (p->gear - 1) * 4) * 10000) * car->speed / 100;
+    g_ShiftSoundLevel = car->shiftTick & 0x3F;
+    p->yawOffset = 0;
+    p->launchHeading = car->headingAngle;
+    p->launchSpeed = car->speed / 0x100000;
+    p->spinRate = 0;
+    rpm = car->speed * 160 / 1168 * 10000 / spec->gearRatio[p->gear];
+    p->jumpTimer = 0x14;
+    p->motionState = CAR_MOTION_AIRBORNE;
+    g_ShiftTargetRpm = rpm;
+    p->shiftRpmDelta = (u16)g_ShiftTargetRpm - (u16)p->engineRpm;
+    p->engineLoad = rpm * spec->gearLoad[p->gear] / 0x20000;
+    /* An automatic box slips a little, so it asks the engine for less. */
+    if (p->manual == 0) {
+        p->engineLoad = p->engineLoad * 985 / 1000;
+    }
+}
+
+/* Back on the ground: the body stops where the wheels are and the suspension
+ * takes the impact. A long enough drop lands audibly. */
+static void LandFromJump(PlayerCarRuntime *car, GameCarDrive *p, s32 ground) {
+    car->y = ground + 8;
+    car->verticalPitch = 0;
+    car->verticalRoll = 0;
+    StartCarBodyKick(1, car);
+    g_ShiftSoundLevel = 0;
+    if (((s16)car->shiftTick >= 19) && (g_RacePhase < 3)) {
+        PlaySoundCue(0xE);
+    }
+    if ((p->motionState == CAR_MOTION_DRIVING) && ((s16)car->shiftTick >= 3)) {
+        RelaunchDrivetrain(car, p);
+    }
+}
+
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
     Matrix m2;
@@ -159,7 +389,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
     s32 mode23;
-    s32 limit;
+    s32 ground;
     s32 slip;
     s32 skid;
     s32 crash;
@@ -178,59 +408,15 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     UpdateCarBodyRoll(car);
 
     if (car->shiftState == 0) {
-        s32 spd = car->speed;
-
-        if (spd < 256 && p->motionState == CAR_MOTION_DRIVING) {
-            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x10000;
-        } else if (spd < 512 && p->motionState == CAR_MOTION_STANDING_START) {
-            p->targetHeading += ((p->steerPos * 6) / 5 * p->steeringGrip / 256) * spd / 0x20000;
-        } else {
-            p->targetHeading += (p->steerPos * 6) / 5 * p->steeringGrip / 0x10000;
-        }
+        SteerTowardsTarget(car, p);
     }
 
     SamplePlayerInput(car, p);
     UpdateCarDrivetrain(car);
 
-    {
-        s32 step = car->speed * 3;
-        s32 spin;
+    SpinWheels(car);
 
-        if (step > 4096) {
-            step = 0x249;
-        }
-        spin = (step + car->wheelRotation) & 0xFFF;
-        car->wheelRotation = spin;
-        if (car->speed > 800) {
-            car->wheelRotation = spin | 0x1000;
-        }
-    }
-
-    if (g_PadType == 0x23) {
-        if (car->steeringAngle >= 4096) {
-            car->steeringAngle = 4096;
-            if (p->steerPos < -4096) {
-                g_SteerHoldFrames++;
-            }
-        } else if (car->steeringAngle < -4095) {
-            car->steeringAngle = -4096;
-            if (p->steerPos > 4096) {
-                g_SteerHoldFrames++;
-            }
-        } else {
-            g_SteerHoldFrames = -10;
-        }
-    } else {
-        if (car->steeringAngle >= 4096) {
-            car->steeringAngle = 4096;
-            g_SteerHoldFrames++;
-        } else if (car->steeringAngle < -4095) {
-            car->steeringAngle = -4096;
-            g_SteerHoldFrames++;
-        } else {
-            g_SteerHoldFrames = 0;
-        }
-    }
+    ClampSteeringAngle(car, p);
 
     TraceCarMotion("pre-integrate", car);
     car->x -= car->motionX;
@@ -275,34 +461,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     sv2.vy = slip;
     RotMatrix(&sv2, &mA);
 
-    limits.rightInset = 0;
-    limits.leftInset = 0;
-    limits.rightInset = -1;
-    limits.leftInset = -1;
-    for (i = 1, cornerIndex = 0; cornerIndex < 4; cornerIndex++, i++) {
-        sv2.vx = g_CarCornerOffsets[cornerIndex].x * 4;
-        sv2.vz = g_CarCornerOffsets[cornerIndex].z * 4;
-        sv2.vy = 0;
-        ApplyMatrix(&mA, &sv2, &vout);
-        if (DiagnosticsEnabled("car.track_trace")) {
-            const char *timerText = DiagnosticsValue("car.track_trace_timer");
-            if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
-                Trace("car-limit", "timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                       "vector=%d,%d,%d output=%d,%d,%d", g_SceneTimer,
-                       mA.m[0][0], mA.m[0][1], mA.m[0][2],
-                       mA.m[1][0], mA.m[1][1], mA.m[1][2],
-                       mA.m[2][0], mA.m[2][1], mA.m[2][2],
-                       sv2.vx, sv2.vy, sv2.vz, vout.x, vout.y, vout.z);
-            }
-        }
-        if (limits.rightInset < vout.x) {
-            limits.rightKnockbackMode = i;
-            limits.rightInset = vout.x;
-        } else if (vout.x < limits.leftInset) {
-            limits.leftKnockbackMode = i;
-            limits.leftInset = vout.x;
-        }
-    }
+    MeasureTrackLimits(&mA, &limits);
 
     if ((s16)car->motionTimer > 0) {
         ApplyCarKnockback(car);
@@ -329,84 +488,19 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     {
-        s32 fuel = car->y;
+        s32 bodyY = car->y;
 
         CopyPlayerBodyRotationToModel(car);
         car->bodyRoll = car->bodyRoll + car->bodyRollVelocity;
         car->modelY = car->y;
-        limit = fuel - 8;
+        /* Where the wheels sit, eight units under the body. */
+        ground = bodyY - 8;
     }
 
     if (car->shiftState != 0) {
-        s32 n = car->shiftTick + 1;
-
-        car->shiftTick = n;
-        if (car->shiftState == 1) {
-            s32 t = (s16)n;
-
-            car->y = car->shiftRef * t + (t * t * 72) / 100 + car->y;
-            if (car->y >= limit) {
-                car->shiftState = 0;
-            }
-        } else if (car->shiftState == 2) {
-            if (limit - car->shiftRef <= car->shiftBase) {
-                car->y = car->shiftBase;
-            } else {
-                car->shiftState = 3;
-                car->shiftRef = car->shiftTick;
-                car->y = car->shiftBase;
-            }
-        } else {
-            n = (s16)n - car->shiftRef;
-
-            car->y = car->shiftBase + (n * n * 216) / 100;
-            if (car->y >= limit) {
-                car->shiftState = 0;
-            }
-        }
-
+        UpdateJumpArc(car, ground);
         if (car->shiftState == 0) {
-            car->y = limit + 8;
-            car->verticalPitch = 0;
-            car->verticalRoll = 0;
-            StartCarBodyKick(1, car);
-            g_ShiftSoundLevel = 0;
-            if ((s16)car->shiftTick >= 19) {
-                if (g_RacePhase < 3) {
-                    PlaySoundCue(0xE);
-                }
-            }
-            if (p->motionState == CAR_MOTION_DRIVING && (s16)car->shiftTick >= 3) {
-                s32 rpm;
-
-                GameCarSpec *props;
-                s32 v = (100 - (p->gear - 1) * 4) * 10000;
-
-                p->drivetrainTorque = v * car->speed / 100;
-                g_ShiftSoundLevel = car->shiftTick & 0x3F;
-                p->yawOffset = 0;
-                p->launchHeading = car->headingAngle;
-                p->launchSpeed = car->speed / 0x100000;
-                p->spinRate = 0;
-                props = g_CarSpec;
-                {
-                    s32 *ratios = props->gearRatio;
-
-                    rpm = car->speed * 160 / 1168 * 10000 / ratios[p->gear];
-                }
-                p->jumpTimer = 0x14;
-                p->motionState = CAR_MOTION_AIRBORNE;
-                g_ShiftTargetRpm = rpm;
-                p->shiftRpmDelta = (u16)g_ShiftTargetRpm - (u16)p->engineRpm;
-                {
-                    s32 *loadRow = props->gearLoad;
-
-                    p->engineLoad = rpm * loadRow[p->gear] / 0x20000;
-                    if (p->manual == 0) {
-                        p->engineLoad = p->engineLoad * 985 / 1000;
-                    }
-                }
-            }
+            LandFromJump(car, p, ground);
         }
     }
 
@@ -434,68 +528,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
             p->engineLoad = p->engineLoad * (85 - rsin(slip) * 20 / 4096) / 100;
             g_ShiftTargetRpm = (85 - rsin(slip) * 20 / 4096) * g_ShiftTargetRpm / 100;
             if (g_RacePhase < 3) {
-                switch (skid) {
-                case 1:
-                case 3:
-                    if ((s16)car->motionTimer >= 15) {
-                        u32 slipRange = slip - 768;
-                        if (slipRange < 257U) {
-                            if (skid == 1) {
-                                PlaySoundCue(0xA);
-                            } else if (car->speed >= 81) {
-                                PlaySoundCue(0xD);
-                            }
-                        } else {
-                            PlaySoundCue(g_MirrorMode == 0 ? 0xB : 0xC);
-                        }
-                    }
-                    break;
-                case 2:
-                case 4:
-                    if ((s16)car->motionTimer >= 15) {
-                        u32 slipRange = slip - 768;
-                        if (slipRange < 257U) {
-                            if (skid == 2) {
-                                PlaySoundCue(0xA);
-                            } else if (car->speed >= 81) {
-                                PlaySoundCue(0xD);
-                            }
-                        } else if (g_MirrorMode == 0) {
-                            PlaySoundCue(0xC);
-                        } else {
-                            PlaySoundCue(0xB);
-                        }
-                    }
-                    break;
-                }
+                PlaySkidCue(car, skid, slip);
             }
         }
     }
 
-    {
-        /* Retail address 0x8009E808 is not independent storage: it is the
-         * +0x78 engine-RPM word inside g_PlayerCar.drive.  Keeping the symbol
-         * as a separate native global leaves it zero and pins the HUD needle
-         * to the 500-rpm clamp. */
-        s32 d = p->engineRpm;
-        s32 cab = g_EngineRpm;
-        s32 sum;
-        s32 rpmLimit;
-
-        d -= cab;
-        if (p->clutch > 0) {
-            sum = d / 2 + cab;
-        } else {
-            sum = d / 4 + cab;
-        }
-        rpmLimit = g_CarSpec->revLimit;
-        g_EngineRpm = sum;
-        if (sum >= rpmLimit) {
-            g_EngineRpm = rpmLimit;
-        } else if (sum < 500) {
-            g_EngineRpm = 500;
-        }
-    }
+    SettleEngineRpm(p);
 
     UpdatePlayerEngineNote(car, p, revFlag);
 }
