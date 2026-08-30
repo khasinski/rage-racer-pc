@@ -41,6 +41,21 @@ endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
 set_tests_properties(content_options PROPERTIES LABELS functional)
+# The bytes themselves, which the manifest above cannot see.
+add_executable(host_state_content_tests
+    host_state_content_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/host_state.c)
+target_include_directories(host_state_content_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(host_state_content_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(host_state_content_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include")
+endif()
+add_test(NAME host_state_content COMMAND host_state_content_tests)
+set_tests_properties(host_state_content PROPERTIES LABELS functional)
+
 add_test(NAME host_state_abi COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_host_state_abi.py ${CMAKE_SOURCE_DIR})
 
