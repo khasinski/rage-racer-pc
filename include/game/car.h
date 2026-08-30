@@ -309,6 +309,24 @@ typedef struct CarImageData {
     CarPaintPalette paintPalette;
 } CarImageData;
 
+/*
+ * The player's car and a rival's share their first 0xBC bytes field for field,
+ * which is what lets the track, the crest hop, the knockback and the body kick
+ * work on either of them. Reading the player's car through a rival's view of
+ * that prefix is legitimate; doing it silently, through a pointer the compiler
+ * has been told not to look at, is not. This is the one place the conversion
+ * is written down, and every call that needs it says so.
+ */
+static inline GameCarRuntime *AsRivalCar(struct PlayerCarRuntime *car) {
+    union {
+        struct PlayerCarRuntime *player;
+        GameCarRuntime *rival;
+    } view;
+
+    view.player = car;
+    return view.rival;
+}
+
 extern CarHullPoint g_PlayerHullPoints[6];
 extern CarHullPoint g_OpponentHullCorners[4];
 extern CarHullPoint g_CarCornerOffsets[4];

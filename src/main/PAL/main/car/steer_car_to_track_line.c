@@ -294,7 +294,7 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
 
     {
         s32 saved = car->headingAngle;
-        AdvanceCarPosition(car);
+        AdvanceCarPosition(AsRivalCar(car));
         car->headingAngle = saved;
     }
 
@@ -332,7 +332,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
     {
         s32 rr = GetAngleDelta(car->bodyYaw, r->targetHeading);
         car->bodyYaw += rr / 5;
-        AdvanceCarPosition(car);
+        AdvanceCarPosition(AsRivalCar(car));
     }
 
     sinF24 = rsin(car->bodyYaw);
@@ -387,7 +387,7 @@ void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
 
     r = GetAngleDelta(car->bodyYaw, route->targetHeading);
     car->bodyYaw += r / 5;
-    AdvanceCarPosition(car);
+    AdvanceCarPosition(AsRivalCar(car));
 
     sinA = rsin(car->bodyYaw);
     cosA = rcos(car->bodyYaw);

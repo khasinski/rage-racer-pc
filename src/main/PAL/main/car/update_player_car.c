@@ -368,7 +368,7 @@ static void LandFromJump(PlayerCarRuntime *car, GameCarDrive *p, s32 ground) {
     car->y = ground + 8;
     car->verticalPitch = 0;
     car->verticalRoll = 0;
-    StartCarBodyKick(1, car);
+    StartCarBodyKick(1, AsRivalCar(car));
     g_ShiftSoundLevel = 0;
     if (((s16)car->verticalMotionTimer >= 19) && (g_RacePhase < 3)) {
         PlaySoundCue(0xE);
@@ -464,10 +464,10 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     MeasureTrackLimits(&mA, &limits);
 
     if ((s16)car->motionTimer > 0) {
-        ApplyCarKnockback(car);
+        ApplyCarKnockback(AsRivalCar(car));
     }
     TraceCarMotion("post-knockback", car);
-    skid = UpdateCarTrackState(car, car->trackPointIndex, &limits);
+    skid = UpdateCarTrackState(AsRivalCar(car), car->trackPointIndex, &limits);
     TraceCarMotion("post-track", car);
     skidRange = skid - 2;
     if (skidRange < 2U && car->speed < 64) {
@@ -484,7 +484,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     crash = CollidePlayerWithCars(car);
     TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
     if (skid != 0 || crash != 0) {
-        StartCarBodyKick(2, car);
+        StartCarBodyKick(2, AsRivalCar(car));
     }
 
     {
@@ -504,12 +504,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    UpdateCarTiltCounter(car);
-    UpdateCarCrestHop(car);
+    UpdateCarTiltCounter(AsRivalCar(car));
+    UpdateCarCrestHop(AsRivalCar(car));
 
     if (skid == 0 && crash == 0) {
         car->y += p->standingStartBounceY;
-        UpdateCarBodyKick(car);
+        UpdateCarBodyKick(AsRivalCar(car));
     } else {
         slip = GetAngleDistance(0xC00 - TrackPoint(car->trackPointIndex)->angle,
                              car->headingAngle);

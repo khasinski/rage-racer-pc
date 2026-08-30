@@ -41,7 +41,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   g_RacePhase = 2;
   g_RaceSeries = value & 1;
   BuildTachoNeedleQuad();
-  ClearCarMotionState(car);
+  ClearCarMotionState(AsRivalCar(car));
   g_AutoShiftCooldown = 0;
   g_TrackZoneDark = 0;
   g_ShiftSoundLevel = 0;
@@ -71,7 +71,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   player->x = eventData->rivalStarts[ReadStableRaceSeries()][0].x;
   player->z = eventData->rivalStarts[ReadStableRaceSeries()][0].z;
   player->y = 0;
-  player->trackPointIndex = FindTrackSegment(car, player->trackPointIndex);
+  player->trackPointIndex = FindTrackSegment(AsRivalCar(car), player->trackPointIndex);
   player->bodyPitch = 0;
   headingBase = 0xC00 - (ReadStableRaceSeries() << 11);
   player->bodyYaw = (headingBase - TrackPoint(player->trackPointIndex)->angle) & 0xFFF;
@@ -83,7 +83,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   SeedCarLapProgress(GetPlayerCarRuntime(car), 0);
   trackState.rightInset = 0;
   trackState.leftInset = 0;
-  UpdateCarTrackState(car, player->trackPointIndex, &trackState);
+  UpdateCarTrackState(AsRivalCar(car), player->trackPointIndex, &trackState);
   player->previousTrackProgress = player->trackProgress;
   CopyPlayerBodyRotationToModel(player);
   player->modelY = player->y;
@@ -668,17 +668,18 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
     if (((car->facingBackwards != ReadStableRaceSeries()) && (car->speed >= 0x51)) && (g_WrongWayTimer >= 0xA))
     {
       SetCarKnockback(opponent, 0, 0, 4);
-      SetCarKnockback(car, 0, 0, 4);
+      SetCarKnockback(AsRivalCar(car), 0, 0, 4);
     }
     else
     {
       if (car->speed >= 0x29)
       {
-        SetCarKnockback(car, 0, 0, 4);
+        SetCarKnockback(AsRivalCar(car), 0, 0, 4);
       }
       else
       {
-        SetCarKnockback(car, -((s16) velocityDelta.x), -((s16) velocityDelta.z), 4);
+        SetCarKnockback(AsRivalCar(car), -((s16) velocityDelta.x),
+                        -((s16) velocityDelta.z), 4);
       }
       SetCarKnockback(opponent, (s16) velocityDelta.x, (s16) velocityDelta.z, 4);
     }
@@ -699,11 +700,12 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
     if (((car->facingBackwards != ReadStableRaceSeries()) && (car->speed >= 0x51)) && (g_WrongWayTimer >= 0xA))
     {
       SetCarKnockback(opponent, 0, 0, 4);
-      SetCarKnockback(car, 0, 0, 4);
+      SetCarKnockback(AsRivalCar(car), 0, 0, 4);
     }
     else
     {
-      SetCarKnockback(car, -((s16) velocityDelta.x), -((s16) velocityDelta.z), 4);
+      SetCarKnockback(AsRivalCar(car), -((s16) velocityDelta.x),
+                        -((s16) velocityDelta.z), 4);
       SetCarKnockback(opponent, 0, 0, 4);
     }
   }
