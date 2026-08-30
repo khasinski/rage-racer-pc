@@ -439,7 +439,7 @@ extern RenderBufferAddress g_TileStripBuffers[2];
 extern u8 g_TileStripStorage[];
 extern s32 g_TimeRecordInsertRow;
 extern u8 g_TimeRecordNameCodes[];
-extern u8 g_TimeTextBuffer[];
+extern char g_TimeTextBuffer[];
 extern s32 g_WaypointsCollected;
 
 s32 BeginMirrorPass(void);

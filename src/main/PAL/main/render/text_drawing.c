@@ -119,9 +119,9 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 }
 
 
-void DrawLargeText(s32 x0, s16 y, u8 *str0, u8 color, u8 g, u8 b, u16 clut,
-                   s32 flags) {
-    u8 *str;
+void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
+                   u16 clut, s32 flags) {
+    const char *str;
     s32 x;
     u8 fl = flags;
     s32 fixed;

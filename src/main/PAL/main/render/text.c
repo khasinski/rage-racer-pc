@@ -1,7 +1,7 @@
 #include "game/render_types.h"
 #include "game/render_internal.h"
 
-void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
+void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
@@ -52,7 +52,7 @@ void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex) {
 void GameDrawText8x8Shaded(
     s32 x,
     s32 y,
-    const u8 *str,
+    const char *str,
     s32 clutIndex,
     u8 intensity) {
     u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);

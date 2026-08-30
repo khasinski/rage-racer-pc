@@ -453,7 +453,8 @@ void SetDrawClipRect(
  */
 void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    u16 clut, s32 flags);
-void DrawLargeText(s32 x0, s16 y, u8 *str0, u8 color, u8 g, u8 b, u16 clut,
+void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
+                   u16 clut,
                    s32 flags);
 /* Right-aligned decimal, up to 10 digits, leading zeros blanked. Returns the
  * number of digit sprites emitted. flags: 1 = large font, 4 = fixed digits at
@@ -672,8 +673,8 @@ static inline u8 *GameQueueTexturePacketWide(
  * variant closes the run with its own DR_MODE packet (tpage 9 / 0x29 / 0x49)
  * and stores the scratchpad cursor back itself.
  */
-void DrawText8x8(s32 x, s32 y, const u8 *str, s32 clutIndex);
-void GameDrawText8x8Shaded(s32 x, s32 y, const u8 *str, s32 clutIndex,
+void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex);
+void GameDrawText8x8Shaded(s32 x, s32 y, const char *str, s32 clutIndex,
                            u8 intensity);
 void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex);
 /*

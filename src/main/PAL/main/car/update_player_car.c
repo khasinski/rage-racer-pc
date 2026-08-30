@@ -385,7 +385,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     Vec4 tmp;
     Matrix mA;
     SVec sv2;
-    Vec4 vout;
     CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
     s32 mode23;
@@ -394,8 +393,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 skid;
     s32 crash;
     s32 revFlag = 0;
-    s32 i;
-    s32 cornerIndex;
     u32 skidRange;
 
     TraceCarStates();

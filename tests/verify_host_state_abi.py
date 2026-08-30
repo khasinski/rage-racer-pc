@@ -22,9 +22,19 @@ SCALAR = re.compile(
 )
 
 
+# An array of a typed element is state like any other. It carries no pinned
+# size here: what BLOB pins is the raw unsigned-char storage that has not been
+# given a type yet, and an array that has one is no longer that.
+TYPED_ARRAY = re.compile(
+    r"^(?:const )?(?:volatile )?(?:s8|u8|s16|u16|s32|u32|f32|int|char|short)"
+    r"\s+(g_\w+)\[",
+    re.MULTILINE,
+)
+
+
 def declarations(text: str) -> dict[str, int]:
     found = {name: int(size) for name, size in BLOB.findall(text)}
-    for name in SCALAR.findall(text):
+    for name in SCALAR.findall(text) + TYPED_ARRAY.findall(text):
         found.setdefault(name, 0)
     return found
 

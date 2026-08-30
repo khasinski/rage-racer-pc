@@ -5,7 +5,7 @@
 #include "game/render_types.h"
 
 
-void DrawSpriteString(long x, long y, u_char *str, long clutIndex) {
+void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     volatile SPRT *packet;
     long idx;
     u_char *next;

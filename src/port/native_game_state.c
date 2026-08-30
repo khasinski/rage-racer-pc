@@ -62,7 +62,7 @@ RenderBufferAddress g_TileStripBuffers[2];
 u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
 u32 g_CountdownDigitPatterns[16];
 CVec g_CountdownCellColors[4];
-u8 g_TimeTextBuffer[12];
+char g_TimeTextBuffer[12];
 GameWorkBuffer g_ReplayFrameBuffer;
 RaceRecord g_RankingRecords[2][4][5];
 RaceRecord g_TimeRecords[2][4][5];
