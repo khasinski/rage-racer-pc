@@ -6,6 +6,30 @@
 #include "game/team_logo.h"
 #include "psyq/gpu.h"
 
+/*
+ * What a prompt makes of a button press: the sound cues it plays, in the
+ * order it plays them, and the state it leaves behind.
+ *
+ * A prompt's screen function draws, reads the pad, plays sounds and moves
+ * state in one body, which means none of it can be exercised without a
+ * renderer and three hundred frames of boot to reach the screen. Deciding is
+ * the part that can be wrong in a way a player notices, and it is a pure
+ * function of the press and the state it acts on, so it is kept separate and
+ * every combination of buttons can be checked directly.
+ */
+typedef struct MenuPromptOutcome {
+    s32 cues[4];
+    s32 cueCount;
+    s32 busy;
+    s32 confirmTimer;
+    s32 subCursor;
+} MenuPromptOutcome;
+
+/* The save prompt offered when a course is chosen: confirm, cancel, and the
+ * two directions that pick between its buttons. */
+MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
+                                   s32 subCursor);
+
 extern PaintColorTable g_PaintColorTable;
 extern s32 g_PaintPalettePulsePhase;
 extern s32 g_MenuAltLayout;

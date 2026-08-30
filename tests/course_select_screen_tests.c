@@ -15,6 +15,7 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
 #include "game/scratchpad.h"
@@ -207,6 +208,7 @@ int main(int argc, char **argv) {
     s32 ot[64];
     int bi, sr, p2, gp, opt, pb, sub, cur, timer, prog, off, ci, applied, kl;
     int steps = 0;
+    int promptFailures = 0;
 
     if (argc > 1) {
         s_out = fopen(argv[1], "w");
@@ -494,8 +496,92 @@ int main(int argc, char **argv) {
         }
     }
 
+    /*
+     * The save prompt's decision, on its own. It is a pure function of the
+     * press and the state it acts on, so every combination is checked here
+     * directly rather than hoped for out of the sweep above: each button that
+     * counts as confirm and as cancel, both directions, and the pairs, which
+     * do two things and play two sounds rather than the first one only.
+     */
+    {
+        static const struct {
+            const char *what;
+            u16 pressed;
+            s32 subCursor;
+            s32 cues[4];
+            s32 cueCount;
+            s32 busy;
+            s32 timer;
+            s32 subAfter;
+        } cases[] = {
+            {"nothing held", 0, 0, {0}, 0, 9, 7, 0},
+            {"start confirms", PAD_START, 0, {3}, 1, -3, 0x23, 0},
+            {"cross confirms", PAD_CROSS, 0, {3}, 1, -3, 0x23, 0},
+            {"circle confirms", PAD_CIRCLE, 0, {3}, 1, -3, 0x23, 0},
+            {"confirming on the far button", PAD_CROSS, 1, {2}, 1, -3, 0x23, 1},
+            {"square cancels", PAD_SQUARE, 0, {3}, 1, -4, 7, 0},
+            {"triangle cancels", PAD_TRIANGLE, 0, {3}, 1, -4, 7, 0},
+            {"cancelling ignores the cursor", PAD_SQUARE, 1, {3}, 1, -4, 7, 1},
+            {"left picks the far button", PAD_LEFT, 0, {1}, 1, 9, 7, 1},
+            {"left again stays there", PAD_LEFT, 1, {1}, 1, 9, 7, 1},
+            {"right picks the near one", PAD_RIGHT, 1, {1}, 1, 9, 7, 0},
+            {"both directions land right", PAD_LEFT | PAD_RIGHT, 0,
+             {1, 1}, 2, 9, 7, 0},
+            /* Confirm reads the cursor before the direction moves it, so this
+             * confirms the near button and then moves to the far one. */
+            {"confirm with left", PAD_CROSS | PAD_LEFT, 0, {3, 1}, 2, -3,
+             0x23, 1},
+            {"confirm with right", PAD_CROSS | PAD_RIGHT, 1, {2, 1}, 2, -3,
+             0x23, 0},
+            /* Cancel is decided after confirm, so holding both cancels. */
+            {"confirm and cancel together", PAD_CROSS | PAD_SQUARE, 0,
+             {3, 3}, 2, -4, 0x23, 0},
+            {"everything at once", PAD_CROSS | PAD_SQUARE | PAD_LEFT |
+             PAD_RIGHT, 0, {3, 3, 1, 1}, 4, -4, 0x23, 0},
+        };
+        size_t ci;
+
+        for (ci = 0; ci < sizeof(cases) / sizeof(cases[0]); ci++) {
+            MenuPromptOutcome got = DecideSavePrompt(
+                cases[ci].pressed, 9, 7, cases[ci].subCursor);
+            int k;
+            if (got.cueCount != cases[ci].cueCount) {
+                printf("FAIL %s: played %d sounds, expected %d\n",
+                       cases[ci].what, got.cueCount, cases[ci].cueCount);
+                promptFailures++;
+                continue;
+            }
+            for (k = 0; k < got.cueCount; k++) {
+                if (got.cues[k] != cases[ci].cues[k]) {
+                    printf("FAIL %s: sound %d was %d, expected %d\n",
+                           cases[ci].what, k, got.cues[k], cases[ci].cues[k]);
+                    promptFailures++;
+                }
+            }
+            if (got.busy != cases[ci].busy) {
+                printf("FAIL %s: left the screen in %d, expected %d\n",
+                       cases[ci].what, got.busy, cases[ci].busy);
+                promptFailures++;
+            }
+            if (got.confirmTimer != cases[ci].timer) {
+                printf("FAIL %s: timer %d, expected %d\n", cases[ci].what,
+                       got.confirmTimer, cases[ci].timer);
+                promptFailures++;
+            }
+            if (got.subCursor != cases[ci].subAfter) {
+                printf("FAIL %s: cursor %d, expected %d\n", cases[ci].what,
+                       got.subCursor, cases[ci].subAfter);
+                promptFailures++;
+            }
+        }
+    }
+
     if (s_out != NULL) {
         fclose(s_out);
+    }
+    if (promptFailures != 0) {
+        printf("%d save prompt assertion(s) failed\n", promptFailures);
+        return 1;
     }
     if (s_digest != expected) {
         printf("FAIL the course select screen behaves differently: %d states "

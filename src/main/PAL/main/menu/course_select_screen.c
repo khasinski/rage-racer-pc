@@ -14,6 +14,7 @@
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
@@ -192,30 +193,56 @@ static void UpdateCourseSelectIdle(void) {
 }
 
 /* "Save the game?" with its own yes/no cursor. */
+/*
+ * Every press is acted on, not just the first, so holding confirm and a
+ * direction together plays two sounds and does two things. Confirm reads the
+ * cursor before either direction can move it, which is why the order the
+ * presses are handled in is part of the answer rather than an accident.
+ */
+MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
+                                   s32 subCursor) {
+    MenuPromptOutcome out;
+    out.cueCount = 0;
+    out.busy = busy;
+    out.confirmTimer = confirmTimer;
+    out.subCursor = subCursor;
+    if (pressed & PAD_CONFIRM) {
+        out.cues[out.cueCount++] = (out.subCursor != 0) ? 2 : 3;
+        out.busy = -3;
+        out.confirmTimer = 0x23;
+    }
+    if (pressed & PAD_CANCEL) {
+        out.cues[out.cueCount++] = 3;
+        out.busy = -4;
+    }
+    if (pressed & PAD_LEFT) {
+        out.cues[out.cueCount++] = 1;
+        out.subCursor = 1;
+    }
+    if (pressed & PAD_RIGHT) {
+        out.cues[out.cueCount++] = 1;
+        out.subCursor = 0;
+    }
+    return out;
+}
+
 static void UpdateSavePrompt(void *ot) {
+    MenuPromptOutcome choice;
+    s32 cue;
     RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
-    if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue((g_MenuSubCursor != 0) ? 2 : 3);
-        GameMenuBusy = -3;
-        g_MenuConfirmTimer = 0x23;
+    choice = DecideSavePrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
+                              g_MenuSubCursor);
+    for (cue = 0; cue < choice.cueCount; cue++) {
+        PlaySoundCue(choice.cues[cue]);
     }
-    if (g_PadPressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        GameMenuBusy = -4;
-    }
-    if (g_PadPressed & PAD_LEFT) {
-        PlaySoundCue(1);
-        g_MenuSubCursor = 1;
-    }
-    if (g_PadPressed & PAD_RIGHT) {
-        PlaySoundCue(1);
-        g_MenuSubCursor = 0;
-    }
+    GameMenuBusy = choice.busy;
+    g_MenuConfirmTimer = choice.confirmTimer;
+    g_MenuSubCursor = (u8)choice.subCursor;
     DrawSavePromptButtons(ot, 0);
 }
 
