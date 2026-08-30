@@ -48,8 +48,8 @@ s16 g_NegconSteer;
  * row each preset lands in and that it takes eight of them, so these carry
  * values a mix-up cannot hide.
  */
-u16 g_PadButtonPresets[64];
-u16 g_NegconButtonPresets[64];
+/* The retail presets come from the port's own state; the mapping test fills
+ * them with values of its own before reading them back. */
 
 static int s_failures;
 

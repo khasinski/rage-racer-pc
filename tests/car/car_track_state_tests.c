@@ -16,6 +16,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/scratchpad.h"
@@ -26,12 +27,9 @@
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         CarTrackLimits *limits);
 
-GameTrackPoint *g_TrackPoints;
-s32 g_TrackPointCount;
-GameTrackArcCenter *g_TrackArcCenters;
-s32 g_TrackLength;
-volatile s32 g_RaceSeries;
-s32 g_SceneTimer;
+/* These six come from the port's own state, which this test links; declaring
+ * them here as well left two definitions of each, which only a linker that
+ * merges tentative definitions would accept. */
 PlayerCarRuntime g_PlayerCar;
 /* The scratchpad the track code hands its intermediate values through. */
 u8 g_RageScratchpad[0x400] __attribute__((aligned(16)));
