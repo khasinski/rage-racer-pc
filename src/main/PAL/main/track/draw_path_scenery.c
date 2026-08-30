@@ -25,7 +25,8 @@ void DrawPathScenery(void) {
     MulMatrix2(mtx1Ptr, &mtx0);
 
     SelectModelBank(1);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PathSceneryTransform.position, &mtx0);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                       AsPositionWords(g_PathSceneryTransform.position.w), &mtx0);
     frameValue = g_ModelBankCount;
     SCRATCH_ENV_MODE4 = 0;
     drawId = 1;
@@ -49,7 +50,8 @@ void DrawPathScenery(void) {
         BuildRotMatrixY(mtx1Ptr, acc & 0xFFF);
     }
     MulMatrix2(&mtx0, mtx1Ptr);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_PathSceneryTransform.position, mtx1Ptr);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                       AsPositionWords(g_PathSceneryTransform.position.w), mtx1Ptr);
     frameValue = g_ModelBankCount;
     g_ScratchRenderMode = 0;
     drawId = 1;

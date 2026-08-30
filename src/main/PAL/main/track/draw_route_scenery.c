@@ -18,7 +18,7 @@ void DrawRouteScenery(void) {
     BuildRotMatrixZ(&mtx0, g_RouteSceneryRotZ);
     MulMatrix2(mtx1Ptr, &mtx0);
     SelectModelBank(1);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &g_RouteSceneryX, &mtx0);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(&g_RouteSceneryX), &mtx0);
     frameValue = g_ModelBankCount;
     SCRATCH_ENV_MODE4 = 0;
     drawId = 1;

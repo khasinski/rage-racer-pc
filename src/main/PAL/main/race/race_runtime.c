@@ -152,7 +152,8 @@ void DrawWaypoints(void) {
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx0);
         BuildRotMatrixZ(mtx1Ptr, waypoint->motion.rotationZ);
         MulMatrix(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &waypoint->motion, &mtx0);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                       AsPositionWords(&waypoint->motion.x), &mtx0);
         frameValue = g_ModelBankCount;
         ClearScratchRenderMode37AAC();
         drawArg = 1;
@@ -163,7 +164,8 @@ void DrawWaypoints(void) {
 
         BuildRotMatrixY(mtx1Ptr, 0x800);
         MulMatrix2(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &waypoint->motion, mtx1Ptr);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                       AsPositionWords(&waypoint->motion.x), mtx1Ptr);
         frameValue = g_ModelBankCount;
         ClearScratchRenderMode37AAC();
         drawArg = 1;

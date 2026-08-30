@@ -271,7 +271,7 @@ void UpdateTeamNameScreen(void) {
     if (0x3D08F < g_MenuViewOffset) {
         g_MenuScreen = 6;
         g_MenuHandlerIndex = 6;
-        UploadTeamNameTexture(&g_TeamNameChars, g_TeamNameLength);
+        UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;
     }

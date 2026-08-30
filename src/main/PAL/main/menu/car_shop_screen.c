@@ -226,7 +226,7 @@ static void UpdateCarShopOutgoing(s32 price) {
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;
     g_CarShopOption = 0;
-    UploadTeamNameTexture(&g_TeamNameChars, g_TeamNameLength);
+    UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
     UploadTeamLogoClut();
 }
 

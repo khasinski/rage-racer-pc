@@ -86,6 +86,37 @@ typedef struct LVec {
  * through a pointer the compiler has been told not to look at, is what was
  * not. Every caller that needs it now says so.
  */
+/*
+ * Three words in a row are a position. Scenery, waypoints and render objects
+ * all begin with one and are handed to routines that want only that, and the
+ * scratch arrays the model code passes are the same three words without a name
+ * on them. Writing the conversion out says which words are meant.
+ */
+/*
+ * The other way round: a routine that takes the words rather than the vector.
+ * ApplyMatrixLV is handed both scratch arrays and named vectors by its
+ * fourteen callers, so the named ones say here that they mean their words.
+ */
+static inline s32 *AsWords(Vec4 *vector) {
+    union {
+        Vec4 *four;
+        s32 *words;
+    } view;
+
+    view.four = vector;
+    return view.words;
+}
+
+static inline LVec *AsPositionWords(s32 *words) {
+    union {
+        s32 *words;
+        LVec *position;
+    } view;
+
+    view.words = words;
+    return view.position;
+}
+
 static inline LVec *AsPosition(Vec4 *vector) {
     union {
         Vec4 *four;

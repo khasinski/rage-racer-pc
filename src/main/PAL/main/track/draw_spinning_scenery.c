@@ -5,15 +5,15 @@
 #include "rage/render_world_game.h"
 
 void DrawSpinningScenery(s32 timer, s32 animate) {
-    s16 yawMatrix[16];
-    s16 objectMatrix[16];
+    Matrix yawMatrix;
+    Matrix objectMatrix;
     Matrix renderWorldMtx;
     s32 frame = timer;
     s32 update = animate;
     s16 *dst;
     u16 *delta;
     u16 *deltaBase;
-    s16 *work = objectMatrix;
+    Matrix *work = &objectMatrix;
     s16 *base;
     s32 offset;
     s32 end;
@@ -43,7 +43,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
     if (loopIndex < end) {
         deltaBase = g_SpinningSceneryRate;
         delta = &deltaBase[active];
-        work = objectMatrix;
+        work = &objectMatrix;
         base = g_SpinningSceneryAngle;
         dst = &base[loopIndex];
         offset = loopIndex * 0x10;
@@ -56,12 +56,12 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
 
             dataAddress.orientationPointer = g_SpinningSceneryYaw;
             dataAddress.bytes += offset;
-            BuildRotMatrixY(yawMatrix, dataAddress.orientationPointer->yaw);
+            BuildRotMatrixY(&yawMatrix, dataAddress.orientationPointer->yaw);
             BuildRotMatrixZ(&renderWorldMtx, *dst);
-            MulMatrix2((Matrix *)yawMatrix, &renderWorldMtx);
-            MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, yawMatrix);
+            MulMatrix2(&yawMatrix, &renderWorldMtx);
+            MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &yawMatrix);
             BuildRotMatrixZ(work, *dst);
-            MulMatrix2(yawMatrix, work);
+            MulMatrix2(&yawMatrix, work);
             dataAddress.positionPointer = g_SpinningSceneryPos;
             dataAddress.bytes += offset;
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(dataAddress.positionPointer), work);

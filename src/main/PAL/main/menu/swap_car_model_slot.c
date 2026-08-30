@@ -125,7 +125,7 @@ void DrawMenuCarView(void) {
     *p = *p + g_MenuViewSpin;
     BuildRotMatrixY(&mtxA, *p);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
-    ApplyMatrixLV(&mtxA, &vec, &out);
+    ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
     BuildRotMatrixY(&mtxB, 0x800 - *p);
     BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
@@ -165,7 +165,8 @@ void DrawMenuCarView(void) {
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
     SCRATCH_OT_BASE_AS(OT_TYPE) += 30;
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &ShowroomPlayerCar()->pose.position[0], &mtxA);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                       AsPositionWords(&ShowroomPlayerCar()->pose.position[0]), &mtxA);
     SCRATCH_ENV_MODE4 = 0;
     {
         s32 a1 = 1;
@@ -268,7 +269,7 @@ void DrawMenuCourseView(void) {
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
     SelectModelBank(14);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, p - 9, &mtxA);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(p - 9), &mtxA);
     SCRATCH_ENV_MODE4 = 0;
     {
         s32 a1 = 1;
@@ -377,7 +378,8 @@ void DrawTeamNameCharModel(void) {
     if (g_TeamNameCharModel != 10 &&
         (u32)(g_TeamNameCharModel - 42) >= 2U) {
         s32 a1;
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &transform, &mtxA);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+                           AsPositionWords(&transform.positionX), &mtxA);
         SCRATCH_ENV_MODE4 = 0;
         a1 = 1;
         if (g_TeamNameCharModel < g_CourseModelCount) {
