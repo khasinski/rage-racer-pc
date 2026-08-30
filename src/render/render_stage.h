@@ -42,6 +42,13 @@ typedef struct RageRenderPose {
     RageRenderVec3 rotationDegrees;
     uint32_t flags;
     float lightInfluence;
+    /* The scene carries a rotation either as the Euler triple above or as a
+     * quaternion, and the renderer builds its transform from one or the
+     * other through separate code. The game poses cars with a quaternion, so
+     * a stage that only ever used the Euler form would be exercising the
+     * branch the cars do not take. Set this to pose through the quaternion
+     * the same angles describe. */
+    uint8_t useQuaternion;
 } RageRenderPose;
 
 /* A stage that frames a car-sized subject, and a pose at the origin. */

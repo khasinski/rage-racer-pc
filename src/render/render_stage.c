@@ -19,6 +19,37 @@ void RenderStageDefaults(RageRenderStage *stage) {
     stage->farPlane = 200000.0f;
 }
 
+static RageRenderQuaternion MultiplyQuaternion(RageRenderQuaternion a,
+                                              RageRenderQuaternion b) {
+    RageRenderQuaternion out;
+    out.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+    out.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
+    out.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
+    out.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w;
+    return out;
+}
+
+static RageRenderQuaternion AxisQuaternion(int axis, float degrees) {
+    float half = Radians(degrees) * 0.5f;
+    float sine = sinf(half);
+    RageRenderQuaternion out;
+    out.x = axis == 0 ? sine : 0.0f;
+    out.y = axis == 1 ? sine : 0.0f;
+    out.z = axis == 2 ? sine : 0.0f;
+    out.w = cosf(half);
+    return out;
+}
+
+/* The same rotation the Euler triple describes, in the form the game uses.
+ * The scene applies its Euler angles X first, then Y, then Z, so the
+ * quaternion composes in the opposite order. */
+static RageRenderQuaternion QuaternionFromEuler(const RageRenderVec3 *degrees) {
+    return MultiplyQuaternion(
+        AxisQuaternion(2, degrees->z),
+        MultiplyQuaternion(AxisQuaternion(1, degrees->y),
+                           AxisQuaternion(0, degrees->x)));
+}
+
 void RenderPoseDefaults(RageRenderPose *pose) {
     if (pose == 0) return;
     memset(pose, 0, sizeof(*pose));
@@ -108,6 +139,11 @@ uint32_t RenderStageCompose(RageRenderWorld *world,
         instance->lightInfluence = pose->lightInfluence;
         instance->transform.position = pose->position;
         instance->transform.rotation = pose->rotationDegrees;
+        if (pose->useQuaternion) {
+            instance->transform.orientation =
+                QuaternionFromEuler(&pose->rotationDegrees);
+            instance->transform.hasOrientation = 1;
+        }
         instance->transform.scale.x = 1.0f;
         instance->transform.scale.y = 1.0f;
         instance->transform.scale.z = 1.0f;

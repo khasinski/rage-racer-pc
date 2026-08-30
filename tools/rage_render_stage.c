@@ -35,7 +35,7 @@ size_t PortAssetRoomAt(const void *at) {
 static void Usage(const char *program) {
     fprintf(stderr,
             "usage: %s --assets NATIVE_ASSETS --pose SET:KEY:MESH\n"
-            "           [--at X,Y,Z] [--rot X,Y,Z] [--variant N]\n"
+            "           [--at X,Y,Z] [--rot X,Y,Z] [--variant N] [--quat]\n"
             "           [--pose ... repeated ...]\n"
             "           [--azimuth D] [--elevation D] [--distance F]\n"
             "           [--fov D] [--target X,Y,Z]\n"
@@ -45,6 +45,8 @@ static void Usage(const char *program) {
 "  --rot is the scene Euler triple in degrees; Y turns the\n"
 "  subject on the spot and X tips it nose over tail.\n"
 "  --elevation is positive above the subject.\n"
+            "  --quat poses through the quaternion the angles describe, which\n"
+            "  is the form the game uses for cars.\n"
             "  --sweep N turns every pose through a full circle in N steps,\n"
             "  writing stage-000.ppm ... alongside --output.\n",
             program);
@@ -196,6 +198,14 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
             }
             poseCount++;
+        } else if (strcmp(option, "--quat") == 0) {
+            if (poseCount == 0) {
+                fprintf(stderr,
+                        "rage-render-stage: --quat needs a --pose first\n");
+                return EXIT_FAILURE;
+            }
+            poses[poseCount - 1].useQuaternion = 1;
+            index--; /* takes no value */
         } else if (strcmp(option, "--at") == 0 ||
                    strcmp(option, "--rot") == 0 ||
                    strcmp(option, "--variant") == 0) {
@@ -333,6 +343,7 @@ int main(int argc, char **argv) {
         char sweepPath[1024];
         const char *framePath = outputPath;
         if (sweep > 0) {
+            RageRenderPose turned[MAX_POSES];
             int pose;
             float turn = (float)step * 360.0f / (float)sweep;
             size_t stem = strlen(outputPath);
@@ -345,9 +356,14 @@ int main(int argc, char **argv) {
                 goto release_renderer;
             }
             framePath = sweepPath;
-            for (pose = 0; pose < poseCount; pose++)
-                instances[pose].transform.rotation.y =
-                    poses[pose].rotationDegrees.y + turn;
+            /* Recompose rather than nudge the instances, so a pose keeps
+             * whichever rotation form it was asked for. */
+            for (pose = 0; pose < poseCount; pose++) {
+                turned[pose] = poses[pose];
+                turned[pose].rotationDegrees.y += turn;
+            }
+            RenderStageCompose(&world, instances, MAX_POSES, &stage, turned,
+                               (uint32_t)poseCount);
             /* The renderer keeps its built geometry until the frame number
              * moves, so each step of the sweep is its own frame. */
             world.frame = (uint64_t)step + 2;

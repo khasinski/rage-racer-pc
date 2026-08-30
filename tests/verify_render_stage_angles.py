@@ -7,6 +7,16 @@ different question, of the renderer alone, with no game and no disc. It stands
 one car on an empty stage and turns it through a full circle, and it asks the
 things that have to be true of any solid object seen from anywhere.
 
+The stage reaches the renderer through the same two calls the game makes,
+ModernNativeGpuPrepare and ModernNativeGpuDraw, so the mesh building,
+transforms, materials, textures and shaders under test are the game's own. It
+poses its cars the way the game poses them, through a quaternion: the
+renderer builds its transform from a quaternion or from Euler angles through
+separate code, and a stage using the friendlier Euler form would be testing
+the branch the cars do not take. What the stage does not exercise is the
+scene being built from live game state, or the 2D layer, mirror and
+post-processing that surround the 3D pass.
+
 None of these are reference images. A sweep's worth of them would be hundreds
 of files that turn red together whenever a shader changes, which is noise, not
 a lock. What survives a legitimate change to the shading and still fails on a
@@ -130,7 +140,7 @@ def sweep_paths(out: Path, steps: int) -> list[Path]:
 def check_one_car(tool: Path, assets: Path, work: Path, key: int) -> bool:
     """A car has to survive being looked at from every side."""
     out = work / f"car{key}.ppm"
-    if render(tool, assets, out, "--pose", f"model:{key}:0",
+    if render(tool, assets, out, "--pose", f"model:{key}:0", "--quat",
               "--elevation", "20", "--sweep", str(STEPS)) is None:
         return False
     paths = sweep_paths(out, STEPS)
@@ -197,6 +207,44 @@ def check_one_car(tool: Path, assets: Path, work: Path, key: int) -> bool:
     return True
 
 
+def check_rotation_forms_agree(tool: Path, assets: Path, work: Path) -> None:
+    """The two ways of carrying a rotation have to mean the same thing.
+
+    The renderer builds its transform from a quaternion or from Euler angles
+    through separate code. The game uses the first and everything else uses
+    the second, so nothing in the game would notice the two drifting apart.
+    """
+    # Two of these turn about more than one axis. With a single axis the two
+    # forms agree whatever order they compose in, so a compound rotation is
+    # what actually pins the order down.
+    rotations = ("0,37,0", "0,123,0", "0,250,0", "20,37,15", "-35,110,25")
+    for angle in rotations:
+        name = angle.replace(",", "_").replace("-", "m")
+        euler = work / f"euler{name}.ppm"
+        quaternion = work / f"quat{name}.ppm"
+        for path, extra in ((euler, []), (quaternion, ["--quat"])):
+            if not render(tool, assets, path, "--pose", "model:10:0",
+                          "--rot", angle, "--elevation", "20", *extra):
+                return
+        left = Silhouette(euler)
+        right = Silhouette(quaternion)
+        if (left.area, left.left, left.right, left.top, left.bottom) != (
+                right.area, right.left, right.right, right.top,
+                right.bottom):
+            fail(f"at {angle} the quaternion and the Euler angles "
+                 f"put the car in different places: {left.area} pixels "
+                 f"against {right.area}")
+            continue
+        # The two arrive by different arithmetic, so a shade of rounding is
+        # expected; anything more is a real disagreement.
+        _, _, a = read_ppm(euler)
+        _, _, b = read_ppm(quaternion)
+        worst = max(abs(a[i] - b[i]) for i in range(len(a)))
+        if worst > 2:
+            fail(f"at {angle} the two rotation forms shade the car "
+                 f"differently, by up to {worst}")
+
+
 def check_full_turn(tool: Path, assets: Path, work: Path) -> None:
     """Turning all the way round has to arrive back where it started."""
     start = work / "turn0.ppm"
@@ -257,6 +305,7 @@ def main() -> int:
             return SKIP_EXIT_CODE
         for key in CAR_KEYS[1:]:
             check_one_car(tool, assets, work, key)
+        check_rotation_forms_agree(tool, assets, work)
         check_full_turn(tool, assets, work)
         check_repeatable(tool, assets, work)
         check_track_pieces(tool, assets, work)
