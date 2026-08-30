@@ -366,7 +366,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   netTorque = gearTorque - loadTorque;
   driveMode = drive->motionState;
   accel = 0;
-  if (driveMode == 1)
+  if (driveMode == CAR_MOTION_TAKEOFF)
   {
     netTorqueRoundedA = netTorque;
     if (netTorque < 0)
@@ -390,7 +390,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     }
   }
   else
-    if (driveMode == 3)
+    if (driveMode == CAR_MOTION_STANDING_START)
   {
     accel = (gearTorque - loadTorque) / 768;
   }
