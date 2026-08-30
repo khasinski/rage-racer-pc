@@ -7,7 +7,7 @@
 #include "game/save_internal.h"
 #include "game/race.h"
 
-const u8 g_NowLoadingText[] = "NOW LOADING";
+const char g_NowLoadingText[] = "NOW LOADING";
 /* Blinks the "NOW LOADING" string at g_NowLoadingText. */
 void DrawNowLoadingText(void) {
     if (g_SceneTimer & 8) {

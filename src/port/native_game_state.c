@@ -276,25 +276,25 @@ char g_FmtSaveRowEmpty[484];
 u8 g_SaveNameCharset[44];
 u8 g_McMessageText[480];
 u8 g_McHelpText[1200];
-static u8 g_McMessage00[] = "Select file to save.";
-static u8 g_McMessage01[] = "Select file to load.";
-static u8 g_McMessage02[] = "No Memory card.";
-static u8 g_McMessage03[] = "Please insert a Memory card.";
-static u8 g_McMessage04[] = "Memory card full.";
-static u8 g_McMessage05[] = "Please delete a file.";
-static u8 g_McMessage06[] = "No data in Memory card.";
-static u8 g_McMessage07[] = "Please insert another card.";
-static u8 g_McMessage08[] = "New Memory card.";
-static u8 g_McMessage09[] = "Format Memory card?";
-static u8 g_McMessage10[] = "                      Yes       No";
-static u8 g_McMessage11[] = "Overwrite old file?";
-static u8 g_McMessage17[] = "Now accessing Memory card.";
-static u8 g_McMessage18[] = "Memory card error.";
-static u8 g_McMessage19[] = "LOAD DATA OK!";
-static u8 g_McMessage20[] = "SAVE DATA OK!";
-static u8 g_McMessage21[] = "FORMAT DATA OK!";
-static u8 g_McMessage22[] = "No file found.";
-static u8 g_McMessage23[] = "Choose another file.";
+static char g_McMessage00[] = "Select file to save.";
+static char g_McMessage01[] = "Select file to load.";
+static char g_McMessage02[] = "No Memory card.";
+static char g_McMessage03[] = "Please insert a Memory card.";
+static char g_McMessage04[] = "Memory card full.";
+static char g_McMessage05[] = "Please delete a file.";
+static char g_McMessage06[] = "No data in Memory card.";
+static char g_McMessage07[] = "Please insert another card.";
+static char g_McMessage08[] = "New Memory card.";
+static char g_McMessage09[] = "Format Memory card?";
+static char g_McMessage10[] = "                      Yes       No";
+static char g_McMessage11[] = "Overwrite old file?";
+static char g_McMessage17[] = "Now accessing Memory card.";
+static char g_McMessage18[] = "Memory card error.";
+static char g_McMessage19[] = "LOAD DATA OK!";
+static char g_McMessage20[] = "SAVE DATA OK!";
+static char g_McMessage21[] = "FORMAT DATA OK!";
+static char g_McMessage22[] = "No file found.";
+static char g_McMessage23[] = "Choose another file.";
 #define MC_MESSAGE_ROW(message_, flags_) \
     {.text = (message_), .column = (flags_), .reserved = {0, 0, 0}}
 static MemoryCardMessageRow g_RageMcMessageRowStorage[24] = {
@@ -434,20 +434,20 @@ int InitNativeGameData(void) {
         LoadTimedDrawScript(g_NativeCarShopBuyPromptScript4, 7, 0x80082a00u) &&
         LoadTimedDrawScript(g_NativeEngineerShopTuneUpPromptScript, 5, 0x80082a54u);
 }
-static const u8 g_RagePrologueText0[] = "NO ONE KNOWS HOW THE RACE BEGAN";
-static const u8 g_RagePrologueText1[] = "OR HOW ITS DRIVERS BECAME KNOWN";
-static const u8 g_RagePrologueText2[] = "AS RAGE RACERS.";
-static const u8 g_RagePrologueText3[] = "THEY LIVE DANGEROUSLY CLOSE TO THE";
-static const u8 g_RagePrologueText4[] = "EDGE; PUSHING BOTH THEIR CARS AND";
-static const u8 g_RagePrologueText5[] = "THEMSELVES TO THE LIMIT. THEY FEED ON";
-static const u8 g_RagePrologueText6[] = "THE BURNING FIRE OF COMPETITION;";
-static const u8 g_RagePrologueText7[] = "ARE FUELED BY THE RUSH OF SPEED;";
-static const u8 g_RagePrologueText8[] = "AND SHARE AN OVERWHELMING DESIRE";
-static const u8 g_RagePrologueText9[] = "FOR VICTORY.";
-static const u8 g_RagePrologueText10[] = "FOR THESE ELITE FEW, THE WHOLE";
-static const u8 g_RagePrologueText11[] = "WORLD IS THEIR SPEEDWAY; BUT THERE";
-static const u8 g_RagePrologueText12[] = "CAN ONLY BE ONE ULTIMATE...";
-static const u8 g_RagePrologueText13[] = "RAGE RACER!";
+static const char g_RagePrologueText0[] = "NO ONE KNOWS HOW THE RACE BEGAN";
+static const char g_RagePrologueText1[] = "OR HOW ITS DRIVERS BECAME KNOWN";
+static const char g_RagePrologueText2[] = "AS RAGE RACERS.";
+static const char g_RagePrologueText3[] = "THEY LIVE DANGEROUSLY CLOSE TO THE";
+static const char g_RagePrologueText4[] = "EDGE; PUSHING BOTH THEIR CARS AND";
+static const char g_RagePrologueText5[] = "THEMSELVES TO THE LIMIT. THEY FEED ON";
+static const char g_RagePrologueText6[] = "THE BURNING FIRE OF COMPETITION;";
+static const char g_RagePrologueText7[] = "ARE FUELED BY THE RUSH OF SPEED;";
+static const char g_RagePrologueText8[] = "AND SHARE AN OVERWHELMING DESIRE";
+static const char g_RagePrologueText9[] = "FOR VICTORY.";
+static const char g_RagePrologueText10[] = "FOR THESE ELITE FEW, THE WHOLE";
+static const char g_RagePrologueText11[] = "WORLD IS THEIR SPEEDWAY; BUT THERE";
+static const char g_RagePrologueText12[] = "CAN ONLY BE ONE ULTIMATE...";
+static const char g_RagePrologueText13[] = "RAGE RACER!";
 PrologueLine g_PrologueLines[17] = {
     {36, 6, g_RagePrologueText0}, {36, 23, g_RagePrologueText1},
     {100, 40, g_RagePrologueText2}, {24, 66, g_RagePrologueText3},

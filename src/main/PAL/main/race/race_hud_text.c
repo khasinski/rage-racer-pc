@@ -68,7 +68,7 @@ void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
     s32 sec;
     s32 tmp;
     s32 min;
-    u8 *p;
+    char *p;
     s32 tens;
     s32 tens2;
 

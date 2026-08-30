@@ -346,7 +346,7 @@ extern char *g_NativeCarNames[];
 #define g_CarNames g_NativeCarNames
 extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
-extern u8 g_ClockTextCells[8];
+extern char g_ClockTextCells[8];
 #define g_ClockTextBuffer (g_ClockTextCells[0])
 #define g_ClockTextMinUnits (g_ClockTextCells + 1)
 #define g_ClockTextSecTens (g_ClockTextCells[3])
@@ -386,7 +386,7 @@ extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
     s16 x;
     s16 y;
-    const u8 *text;
+    const char *text;
 } PrologueLine;
 
 extern PrologueLine g_PrologueLines[17];

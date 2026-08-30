@@ -9,7 +9,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     volatile SPRT *packet;
     long idx;
     u_char *next;
-    u_char *sr;
+    const char *sr;
     u_char *tableA;
     long ga;
     long gb;

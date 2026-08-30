@@ -36,7 +36,7 @@ typedef enum MemoryCardPrompt {
 extern MemoryCardPrompt g_McMenuPhase;
 
 typedef struct MemoryCardMessageRow {
-    u8 *text;
+    char *text;
     u8 column;
     u8 reserved[3];
 } MemoryCardMessageRow;
