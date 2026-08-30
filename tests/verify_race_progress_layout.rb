@@ -6,7 +6,10 @@ race_header = File.read(File.join(root, "include/game/race.h"))
 host_state = File.read(File.join(root, "src/port/host_state.c"))
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
 menu_mode = File.read(File.join(root, "src/main/PAL/main/menu/menu_mode.c"))
-course_select = File.read(File.join(root, "src/main/PAL/main/menu/course_select.c"))
+course_select = File.read(File.join(root,
+                                    "src/main/PAL/main/menu/course_select_screen.c"))
+car_select = File.read(File.join(root,
+                                 "src/main/PAL/main/menu/car_select_screen.c"))
 
 progress_names = %w[g_GrandPrixSave g_ExtraGrandPrixSave g_TimeAttackSave]
 progress_names.each do |name|
@@ -25,7 +28,12 @@ abort "Extra GP max class is still detached from its progress object" unless
 
 abort "Time Attack menu no longer restores its series from progress" unless
   menu_mode.include?("g_GrandPrixSeries = g_RaceProgress->money.half[0]")
-abort "Time Attack exit no longer stores its series in progress" unless
-  course_select.scan(/p->money\.value = g_GrandPrixSeries/).length >= 2
+# Both screens that start a race put the series in the money slot when there
+# is no Grand Prix running. They used to write it twice each, once per exit;
+# each now has one conditional that says which of the two the slot carries.
+[["course select", course_select], ["car select", car_select]].each do |name, source|
+  abort "#{name} no longer stores the Time Attack series in progress" unless
+    source.match?(/money\.value =\s*\n?\s*\(g_GrandPrixMode != 0\) \? g_PlayerMoney : g_GrandPrixSeries/)
+end
 
 puts "Race progress objects retain course, car, class, unlock and series state"
