@@ -59,7 +59,7 @@ void DrawStaticScenery(s32 shifted) {
         MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
 
         if (g_IsEnvironmentMode4 != 0) {
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
+            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
             frameValue = g_CourseModelCount;
             ClearScratchRenderMode3DF68();
             drawArg = 1;
@@ -71,7 +71,7 @@ void DrawStaticScenery(s32 shifted) {
                 renderWorldMtx.m, 0, 0);
             SubmitCourseModel(SCRATCHPAD, drawArg);
         } else {
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &state, &mtx);
+            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
             frameValue = g_CourseModelCount;
             ClearScratchRenderMode3DF68();
             drawArg = 1;

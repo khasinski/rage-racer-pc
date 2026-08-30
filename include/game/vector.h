@@ -80,6 +80,22 @@ typedef struct LVec {
     s32 z;
 } LVec;
 
+/*
+ * A Vec4 is an LVec with a fourth word after it, so anything that wants only a
+ * position can be handed one. The conversion is sound; making it in silence,
+ * through a pointer the compiler has been told not to look at, is what was
+ * not. Every caller that needs it now says so.
+ */
+static inline LVec *AsPosition(Vec4 *vector) {
+    union {
+        Vec4 *four;
+        LVec *three;
+    } view;
+
+    view.four = vector;
+    return view.three;
+}
+
 /* Sixteen bytes moved as a unit; also indexed a word at a time. */
 typedef struct Block16 {
     s32 w[4];
