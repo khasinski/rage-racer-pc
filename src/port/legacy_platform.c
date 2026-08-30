@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SDL3/SDL.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -45,6 +44,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 
 #include "psyq/cd_types.h"
 #include "game/scratchpad.h"
+#include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
 #include "chd_disc.h"
@@ -437,49 +437,10 @@ static void HostSaveDiscCue(const char *cue) {
     fclose(file);
 }
 
-typedef struct RageHostDiscDialog {
-    SDL_AtomicInt completed;
-    char *path;
-    size_t pathSize;
-    int accepted;
-} RageHostDiscDialog;
-
-static void SDLCALL HostDiscDialogComplete(
-    void *userdata, const char *const *files, int filter) {
-    RageHostDiscDialog *dialog = userdata;
-    (void)filter;
-    if (files != NULL && files[0] != NULL &&
-        snprintf(dialog->path, dialog->pathSize, "%s", files[0]) <
-            (int)dialog->pathSize)
-        dialog->accepted = 1;
-    SDL_SetAtomicInt(&dialog->completed, 1);
-}
-
+/* The picker asks the desktop for a path; whether it names a disc this build
+ * can read is decided here. */
 static int HostChooseDisc(char *cue, size_t size) {
-    static const SDL_DialogFileFilter filters[] = {
-        {"Rage Racer disc images", "cue;bin;chd"},
-        {"All files", "*"},
-    };
-    RageHostDiscDialog dialog;
-    memset(&dialog, 0, sizeof(dialog));
-    dialog.path = cue;
-    dialog.pathSize = size;
-    cue[0] = '\0';
-    if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-        fprintf(stderr, "rage-port: cannot initialize disc picker: %s\n",
-                SDL_GetError());
-        return 0;
-    }
-    SDL_ShowOpenFileDialog(HostDiscDialogComplete, &dialog, NULL, filters,
-                           (int)(sizeof(filters) / sizeof(filters[0])), NULL,
-                           false);
-    while (!SDL_GetAtomicInt(&dialog.completed)) {
-        SDL_PumpEvents();
-        SDL_Delay(10);
-    }
-    if (!dialog.accepted && SDL_GetError()[0] != '\0')
-        fprintf(stderr, "rage-port: disc picker failed: %s\n", SDL_GetError());
-    return dialog.accepted && HostPathEndsWithDisc(cue) &&
+    return HostShowDiscPicker(cue, size) && HostPathEndsWithDisc(cue) &&
            access(cue, R_OK) == 0;
 }
 
