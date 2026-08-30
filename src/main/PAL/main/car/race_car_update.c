@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/state.h"
 #include "game/track.h"
+#include "rage/trace.h"
 
 
 /*
@@ -448,9 +449,9 @@ void UpdateRaceCars(void) {
 
 /* Runs the corresponding all-cars pass for attract and replay scenes. */
 void UpdateAttractCars(void) {
+    TraceCarStates();
     Vec4 vTmp;
     /* See UpdateRaceCars: these two Matrix workspaces shape retail's frame. */
-    CarTrackLimits limits;
     Matrix m1;
     Matrix m2;
     SVec sv1;
@@ -472,23 +473,8 @@ void UpdateAttractCars(void) {
             UpdateCarTrafficAvoidance(&g_Cars[(s16)i], (s16)i);
         }
     }
-    i = 0;
-    car = g_Cars;
-    do {
-        CollideRivalCars(car, (s16)i);
-        i++;
-        car++;
-    } while (i < 10);
-    i = 0;
-    car = g_Cars;
-    do {
-        UpdateCarAiTargetSpeed(car, (s16)i);
-        ApplyCarRacingLineHint(car, (s16)i);
-        ClampCarLateralOffset(car, (s16)i);
-        SteerCarAlongRoute(car);
-        i++;
-        car++;
-    } while (i < 11);
+    CollideAllCars();
+    SteerAllCars();
     {
         GameCarAiBlock *drive;
         i = 0;
@@ -591,97 +577,9 @@ void UpdateAttractCars(void) {
         } while (i < 11);
         }
     }
-    limits.rightInset = 0x3C;
-    limits.leftInset = -0x3C;
-    for (i = 0; i < 11; i++) {
-        if (((g_Cars[(s16)i]).activeFlag != -1)) {
-            AccumulateLapProgress(&g_Cars[(s16)i]);
-        }
-    }
-    for (i = 0; i < 11; i++) {
-        if (((g_Cars[(s16)i]).activeFlag != -1)) {
-            if ((s16)g_Cars[(s16)i].motionTimer > 0) {
-                ApplyCarKnockback(&g_Cars[(s16)i]);
-            }
-            UpdateCarTrackState(
-                &g_Cars[(s16)i],
-                g_Cars[(s16)i].trackPointIndex,
-                &limits);
-        }
-    }
-    {
-    GameCarRuntime *base;
-    i = 0;
-    car = g_Cars;
-    base = g_Cars;
-    do {
-        if (base->activeFlag != -1) {
-            s16 step;
-            s32 spin;
-            s32 scaled;
-            s32 limit;
-            scaled = base->speed * 3;
-            step = scaled;
-            if ((s16)scaled >= 0x1001) {
-                step = 0x249;
-            }
-            spin = (step + base->wheelRotation) & 0xFFF;
-            base->wheelRotation = spin;
-            if (base->speed >= 0x321) {
-                base->wheelRotation = spin | 0x1000;
-            }
-            limit = base->y - 8;
-            CopyCarBodyRotationToModel(base);
-            base->bodyRoll = base->bodyRoll + base->bodyRollVelocity;
-            base->modelY = base->y;
-            if (base->verticalMotionState != 0) {
-                s32 tick;
-                s32 state;
-                tick = (u16)base->verticalMotionTimer + 1;
-                base->verticalMotionTimer = tick;
-                state = base->verticalMotionState;
-                if (state == 1) {
-                    s32 t = (s16)tick;
-                    base->y =
-                        base->verticalMotionRate * t + t * t * 72 / 100 + base->y;
-                    if (base->y >= limit) {
-                        base->verticalMotionState = 0;
-                    }
-                } else if (state == 2) {
-                    if (base->verticalTargetY >= limit - base->verticalMotionRate) {
-                        base->y = base->verticalTargetY;
-                    } else {
-                        base->verticalMotionState = 3;
-                        base->verticalMotionRate = base->verticalMotionTimer;
-                        base->y = base->verticalTargetY;
-                    }
-                } else {
-                    s16 n = tick - (u16)base->verticalMotionRate;
-                    base->y = base->verticalTargetY + n * n * 216 / 100;
-                    if (base->y >= limit) {
-                        base->verticalMotionState = 0;
-                    }
-                }
-                if (base->verticalMotionState == 0) {
-                    base->y = limit + 8;
-                    base->verticalPitch = 0;
-                    base->verticalRoll = 0;
-                    base->verticalMotionState = 0;
-                    StartCarBodyKick(1, car);
-                }
-            }
-            if (base->collisionFlag == 0) {
-                UpdateCarBodyKick(car);
-                UpdateCarCrestHop(car);
-            } else {
-                base->speed = base->speed * 97 / 100 * 97 / 100;
-            }
-        }
-        i++;
-        base++;
-        car++;
-    } while (i < 11);
-    }
+    PlaceAllCarsOnTrack();
+    SettleAllCarBodies();
+
 }
 
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
