@@ -7,9 +7,13 @@ the renderer, and the visual reference frames are captured from menus and the
 intro camera, where the sky's horizon band and its skirt are not drawn at all:
 deleting the whole skirt leaves every one of them passing.
 
-So this captures four frames of an actual race and folds them into one number.
+So this captures frames of an actual race and folds them into one number.
 Deleting the skirt moves it, which is the only claim worth making about a
 lock: that it would notice.
+
+Four frames were not enough. The tiled half of the sky only draws once the
+course sets a row base, and a change to the step it advances by left the first
+four frames identical; a wider window over the same race notices it.
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from pathlib import Path
 
 # What the sky draws today. Run the test to see the number when it moves, and
 # change it here only when the change to the sky was meant.
-EXPECTED = 0xF72F3B6D
+EXPECTED = 0x3FE5A5A9
 
 
 def main() -> int:
@@ -36,16 +40,16 @@ def main() -> int:
             RAGE_PORT_SMOKE_CAPTURE_DIR=directory,
             RAGE_PORT_SMOKE_CAPTURE_SCENE="12",
             RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN="100",
-            RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX="400",
-            RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE="100",
-            RAGE_PORT_INPUT_SCRIPT="200-2000:CROSS",
+            RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX="1200",
+            RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE="50",
+            RAGE_PORT_INPUT_SCRIPT="200-4000:CROSS",
         )
         result = subprocess.run(
             [
                 executable, "--scenario", source / "race-scenario.ini",
                 "--set", "race.class=4",
                 "--set", "race.course=0",
-                "--set", "run.frames=1500",
+                "--set", "run.frames=2600",
                 "--set", "video.renderer=classic",
             ], cwd=source, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -56,9 +60,9 @@ def main() -> int:
             return result.returncode or 1
 
         frames = sorted(Path(directory).glob("timer-*.ppm"))
-        if len(frames) < 4:
+        if len(frames) < 23:
             raise AssertionError(
-                f"race captured {len(frames)} frames, expected 4\n{result.stdout}"
+                f"race captured {len(frames)} frames, expected 23\n{result.stdout}"
             )
 
         digest = 2166136261
