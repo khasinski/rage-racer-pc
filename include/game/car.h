@@ -641,7 +641,7 @@ typedef struct PlayerCarRuntime {
     s16 verticalRoll;
     s16 reserved96;
     s16 verticalMotionState;
-    u16 verticalMotionTimer;
+    s16 verticalMotionTimer;
     s16 verticalMotionRate;
     s16 verticalTargetY;
     s32 headingAngle;

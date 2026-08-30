@@ -370,10 +370,10 @@ static void LandFromJump(PlayerCarRuntime *car, GameCarDrive *p, s32 ground) {
     car->verticalRoll = 0;
     StartCarBodyKick(1, AsRivalCar(car));
     g_ShiftSoundLevel = 0;
-    if (((s16)car->verticalMotionTimer >= 19) && (g_RacePhase < 3)) {
+    if ((car->verticalMotionTimer >= 19) && (g_RacePhase < 3)) {
         PlaySoundCue(0xE);
     }
-    if ((p->motionState == CAR_MOTION_DRIVING) && ((s16)car->verticalMotionTimer >= 3)) {
+    if ((p->motionState == CAR_MOTION_DRIVING) && (car->verticalMotionTimer >= 3)) {
         RelaunchDrivetrain(car, p);
     }
 }
