@@ -135,6 +135,17 @@ typedef struct TimedDrawCommand {
     TimedDrawArgument motion;
 } TimedDrawCommand;
 
+/* Where a script's clock stands this frame: the progress its commands are
+ * drawn at, which is before a step is applied, and whether it has run out. */
+typedef struct TimedDrawScriptTick {
+    s32 drawAt;
+    s32 finished;
+} TimedDrawScriptTick;
+
+TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
+                                           s32 step);
+void DrawTimedDrawScript(void *commands, s32 progress);
+
 typedef union TimedDrawCommandAddress {
     s32 value;
     TimedDrawCommand *pointer;

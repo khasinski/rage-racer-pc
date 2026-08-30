@@ -864,6 +864,22 @@ target_link_libraries(car_select_screen_tests PRIVATE psyz)
 add_test(NAME car_select_screen COMMAND car_select_screen_tests)
 set_tests_properties(car_select_screen PROPERTIES LABELS functional)
 
+# The clock every menu animation runs on, before it is taken apart.
+add_executable(timed_draw_script_tests
+    timed_draw_script_tests.c
+    ../src/main/PAL/main/render/scripted_draw.c)
+target_include_directories(timed_draw_script_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(timed_draw_script_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(timed_draw_script_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include")
+endif()
+target_link_libraries(timed_draw_script_tests PRIVATE psyz)
+add_test(NAME timed_draw_script COMMAND timed_draw_script_tests)
+set_tests_properties(timed_draw_script PROPERTIES LABELS functional)
+
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
     ../src/main/PAL/main/menu/course_select_screen.c)

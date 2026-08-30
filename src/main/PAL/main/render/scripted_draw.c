@@ -432,35 +432,67 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
                   flags & 8, flags & 4, entry->alpha);
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+/*
+ * A script is a clock and a picture of where that clock stands, and until now
+ * one function was both. Screens gate their input on the return value, so
+ * stepping a screen meant drawing it, and checking what it draws meant
+ * driving a renderer. The two are separated here; RunTimedDrawScript still
+ * does both, in the order it always did, for the hundred and thirty-six
+ * places that ask for both.
+ */
+static s32 TimedDrawScriptLength(const TimedDrawCommand *base) {
+    s32 index = 0;
+    while (base[index].time >= 0) {
+        index++;
+    }
+    return index;
+}
+
+/*
+ * Move the clock. A negative step rewinds, and never past the start; a
+ * positive one advances, and stops at the end the script records after its
+ * last command, which is when it reports itself finished. Either way the
+ * progress the commands are drawn at is the one before the advance, which is
+ * why it is answered rather than left to the caller to work out.
+ */
+TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
+                                           s32 step) {
     TimedDrawCommand *base = commands;
-    s32 *progressPtr = progress;
-    s32 stepReg = step;
+    TimedDrawScriptTick tick;
+
+    tick.finished = 0;
+    if (step < 0) {
+        s32 rewound = *progress + step;
+        *progress = (rewound > 0) ? rewound : 0;
+    }
+    tick.drawAt = *progress;
+    if (step >= 0) {
+        s32 limit = base[TimedDrawScriptLength(base)].motion.value;
+        s32 advanced = step + *progress;
+        if (advanced < limit) {
+            *progress = advanced;
+        } else {
+            *progress = limit;
+            tick.finished = 1;
+        }
+    }
+    return tick;
+}
+
+/* Draw every command the clock has reached, each with the time that has
+ * passed since it was due. */
+void DrawTimedDrawScript(void *commands, s32 progress) {
+    TimedDrawCommand *base = commands;
     TimedDrawCommand *cmd;
     TimedDrawCommandAddress commandAddress;
     s32 index = 0;
     s32 remaining;
     u32 type;
-    s32 nextProgress;
-    s32 updatedProgress;
-    s32 limit;
 
-    
-    if (stepReg < 0) {
-        nextProgress = *progressPtr + stepReg;
-        if (nextProgress > 0) {
-            *progressPtr = nextProgress;
-        } else {
-            *progressPtr = 0;
-        }
-    }
-
-    nextProgress = (index * 3) << 2;
     commandAddress.pointer = base;
-    commandAddress.value = nextProgress + commandAddress.value;
     cmd = commandAddress.pointer;
     while (cmd->time >= 0) {
-        remaining = *progressPtr - cmd->time;
+        remaining = progress - cmd->time;
         if (remaining >= 0) {
             type = cmd->type;
             if (type < 40) {
@@ -523,19 +555,13 @@ s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
         index++;
         }
 
-    if (stepReg >= 0) {
-        commandAddress.value = *progressPtr;
-        updatedProgress = stepReg + commandAddress.value;
-        limit = base[index].motion.value;
-        if (updatedProgress < limit) {
-            *progressPtr = updatedProgress;
-        } else {
-            *progressPtr = limit;
-            return 1;
-        }
-    }
+}
 
-    return 0;
+s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+    TimedDrawScriptTick tick = AdvanceTimedDrawScript(commands, progress,
+                                                      step);
+    DrawTimedDrawScript(commands, tick.drawAt);
+    return tick.finished;
 }
 
 
