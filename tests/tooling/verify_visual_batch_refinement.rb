@@ -934,7 +934,10 @@ abort "player render hash omits model-selection renderDepth" unless
 abort "player render hash omits wheel phase" unless
   source.match?(/SmokeHashPlayerRenderState.*?car->wheelRotation/m)
 menu_header = File.read(File.expand_path("../../include/game/menu.h", __dir__))
-host_state = File.read(File.expand_path("../../src/port/host_state.c", __dir__))
+# Retail state is one segment split across a file per owning subsystem, so
+# read it back as the one thing it is.
+host_state = Dir[File.expand_path("../../src/port/host_state*.c", __dir__)]
+  .sort.map { |path| File.read(path) }.join("\n")
 abort "split player tire/render-depth global was reintroduced" unless
   menu_header.match?(/#define g_PlayerTireCompound.*?g_PlayerCar.*?renderDepth/m) &&
   !host_state.match?(/^unsigned char g_PlayerTireCompound\b/)

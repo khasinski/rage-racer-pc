@@ -2,6 +2,13 @@
 
 sources = ARGV.map { |path| [path, File.read(path)] }.to_h
 
+# Retail state is split across one file per owning subsystem, and the objects
+# checked below are spread over several of them, so they are folded back into
+# the single segment they were before the split.
+host_state = sources.select { |path, _| File.basename(path).start_with?("host_state") }
+sources = sources.reject { |path, _| host_state.key?(path) }
+sources = { "src/port/host_state.c" => host_state.values.join("\n") }.merge(sources)
+
 sources.each do |path, source|
   if path.end_with?("host_state.c")
     abort "#{path}: CdlGetlocP response must remain one eight-byte backing object" unless

@@ -8,6 +8,25 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+# The retail data segment, split so each subsystem's state sits with the code
+# that reads it. Nothing links one of these without the rest: they were one
+# object file in retail and they still describe one program's state, so every
+# target that needs retail state takes the whole list.
+set(RAGE_HOST_STATE_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_asset.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_audio.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_car.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_cd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_menu.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_pad.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_race.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_render.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_save.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_track.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_unread.c
+)
+
 # The recovered game code relies on wrapping signed arithmetic and contains
 # deliberate type punning. Keep optimized host builds from treating either as
 # permission to rewrite game behavior.
@@ -135,7 +154,7 @@ if(RAGE_BUILD_PORT)
 
     add_library(rage-game-full OBJECT ${RAGE_GAME_SOURCES} src/port/native_game_state.c)
     add_library(rage-host-state OBJECT
-        src/port/host_state.c
+        ${RAGE_HOST_STATE_SOURCES}
         src/port/native_initialized_state.c
     )
     # Retail state is defined with the types its headers declare, so this

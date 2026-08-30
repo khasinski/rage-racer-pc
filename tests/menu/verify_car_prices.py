@@ -24,7 +24,11 @@ def table(source: str, name: str) -> list[int]:
 
 
 def main() -> int:
-    source = (Path(sys.argv[1]) / "src/port/host_state.c").read_text()
+    # Retail state is one segment split across a file per owning
+    # subsystem, so read it back as the one thing it is.
+    root = Path(sys.argv[1]) / "src/port"
+    source = "\n".join(path.read_text()
+                       for path in sorted(root.glob("host_state*.c")))
     prices = table(source, "g_CarPriceTable")
     tuneUp = table(source, "g_CarTuneUpPriceTable")
 

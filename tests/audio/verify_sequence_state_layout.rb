@@ -3,7 +3,10 @@
 
 root = ARGV.fetch(0)
 audio_header = File.read(File.join(root, "include/game/audio_state_internal.h"))
-host_state = File.read(File.join(root, "src/port/host_state.c"))
+# Retail state is one segment split across a file per owning subsystem, so
+# read it back as the one thing it is.
+host_state = Dir[File.join(root, "src/port/host_state*.c")]
+  .sort.map { |path| File.read(path) }.join("\n")
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
 runtime = File.read(File.join(root, "src/main/PAL/main/audio/sound_runtime.c"))
 

@@ -3,8 +3,10 @@
 
 frontend = File.read(ARGV.fetch(0))
 mirror = File.read(ARGV.fetch(1))
-host_state = File.read(ARGV.fetch(2))
-tachometer = File.read(ARGV.fetch(3))
+tachometer = File.read(ARGV.fetch(2))
+# Retail state is split across one file per owning subsystem. An alias could
+# reappear in any of them, so the host is read as the single segment it is.
+host_state = ARGV.drop(3).map { |path| File.read(path) }.join("\n")
 
 abort "second frame draw environment is still initialized through a detached alias" if
   frontend.match?(/\bg_DrawEnv1\b/) || frontend.match?(/\bg_MirrorDrawEnv1\b/)

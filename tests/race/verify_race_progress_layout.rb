@@ -3,7 +3,10 @@
 
 root = ARGV.fetch(0)
 race_header = File.read(File.join(root, "include/game/race.h"))
-host_state = File.read(File.join(root, "src/port/host_state.c"))
+# Retail state is one segment split across a file per owning subsystem, so
+# read it back as the one thing it is.
+host_state = Dir[File.join(root, "src/port/host_state*.c")]
+  .sort.map { |path| File.read(path) }.join("\n")
 native_state = File.read(File.join(root, "src/port/native_game_state.c"))
 menu_mode = File.read(File.join(root, "src/main/PAL/main/menu/menu_mode.c"))
 course_select = File.read(File.join(root,

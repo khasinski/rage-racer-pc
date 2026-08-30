@@ -27,7 +27,11 @@ def main() -> int:
     root = Path(sys.argv[1])
     aliases = (root / "include/game/player_car_aliases.h").read_text()
     car_header = (root / "include/game/car.h").read_text()
-    host_state = (root / "src/port/host_state.c").read_text()
+    # Retail state is one segment split across a file per owning
+    # subsystem, so read it back as the one thing it is.
+    host_state = "\n".join(
+        path.read_text()
+        for path in sorted((root / "src/port").glob("host_state*.c")))
     native_state = (root / "src/port/native_game_state.c").read_text()
     headers = "\n".join(path.read_text() for path in (root / "include").rglob("*.h"))
 

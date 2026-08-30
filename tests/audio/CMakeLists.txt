@@ -16,8 +16,8 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
-        ${CMAKE_SOURCE_DIR}/src/port/host_state.c
         ${CMAKE_SOURCE_DIR}/include/game/track.h
+        ${RAGE_HOST_STATE_SOURCES}
 )
 
 set_tests_properties(audio_state_layout PROPERTIES LABELS functional)

@@ -44,7 +44,7 @@ set_tests_properties(content_options PROPERTIES LABELS functional)
 # The bytes themselves, which the manifest above cannot see.
 add_executable(host_state_content_tests
     host_state_content_tests.c
-    ${CMAKE_SOURCE_DIR}/src/port/host_state.c)
+    ${RAGE_HOST_STATE_SOURCES})
 target_include_directories(host_state_content_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port/include)
 target_compile_definitions(host_state_content_tests PRIVATE __psyz=1)
