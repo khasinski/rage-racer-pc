@@ -355,62 +355,45 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     }
 }
 
+/*
+ * A knock to the body. Strength one is the straight drop a landing gives, and
+ * takes its size from how long the car was in the air. Anything else leans the
+ * body along the track: how far the car is turned away from the road under it,
+ * scaled by how fast it is going, and thrown to one side or the other at
+ * random. Strengths other than one and two do nothing.
+ */
 void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
-    GameCarRuntime *obj;
-    s32 value;
-    s32 temp;
-    s32 distance;
+    s32 lean;
+    s32 speedOverWalking;
 
-    obj = car;
-    value = 1;
-    obj->motionMode = strength;
-    if (strength != value) {
-
-    value = 2;
-    if (strength == value) {
-        goto angled_body_kick;
-    }
-
-    return;
-
-    }
-    value = obj->verticalMotionTimer;
-    temp = 0x1E;
-    obj->motionModeTimer = temp;
-    value <<= 3;
-        obj->motionValue.value = value;
+    car->motionMode = strength;
+    if (strength == 1) {
+        car->motionModeTimer = 0x1E;
+        car->motionValue.value = car->verticalMotionTimer << 3;
         return;
+    }
+    if (strength != 2) {
+        return;
+    }
 
-angled_body_kick:
     /* The blend weight was missing here, so the angle came out mixed by
      * whatever happened to sit in the second argument slot. Every other
      * caller passes the car's own position between the two points. */
-    value = InterpolateTrackAngle(obj->trackPointIndex, obj->segmentFraction);
-    temp = GetAngleDistance(value, obj->bodyYaw);
-    if (temp >= 0x401) {
-        temp = 0x800 - temp;
+    lean = GetAngleDistance(
+        InterpolateTrackAngle(car->trackPointIndex, car->segmentFraction),
+        car->bodyYaw);
+    if (lean >= 0x401) {
+        lean = 0x800 - lean;
     }
 
-    distance = obj->speed;
-    if (distance < 0x140) {
-        obj->motionValue.value = 0;
+    speedOverWalking = car->speed - 0x140;
+    if (speedOverWalking < 0) {
+        car->motionValue.value = 0;
     } else {
-
-    value = distance - 0x140;
-    value *= temp;
-    value /= 4096;
-
-    obj->motionValue.value = value;
-
+        car->motionValue.value = (speedOverWalking * lean) / 4096;
     }
-    value = 0x1E;
-    obj->motionModeTimer = value;
-
-    value = Random15();
-    if (value & 0x80) {
-        value = obj->motionValue.unsignedValue;
-        value = -value;
-
-        obj->motionValue.value = value;
+    car->motionModeTimer = 0x1E;
+    if (Random15() & 0x80) {
+        car->motionValue.value = -car->motionValue.unsignedValue;
     }
 }

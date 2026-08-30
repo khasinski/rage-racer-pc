@@ -576,7 +576,8 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
           }
           if (collisionRegion > 0)
           {
-            goto collision_found;
+            /* The check after the loop sends a hit to the same place. */
+            break;
           }
         }
         else
@@ -597,7 +598,6 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
   {
     return collisionRegion;
   }
-  collision_found:
   if (DiagnosticsEnabled("car.collision_trace"))
   {
     const char *timerText = DiagnosticsValue("car.collision_trace_timer");
