@@ -95,154 +95,296 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
  * Runs the rival-car update passes used by an interactive race. Cars 4..10
  * split their traffic-avoidance work across alternating frames.
  */
-void UpdateRaceCars(void) {
-    Vec4 vpos;
-    /*
-     * GCC 2.6.3 keeps these two Matrix-sized source workspaces in the debug
-     * frame even though their high-level scratch values are optimized away.
-     */
-    CarTrackLimits limits;
-    Matrix m1;
-    Matrix m2;
-    SVec sv;
-    /* These pins reproduce the retail induction and matrix registers. */
-    GameCarRuntime *base;
-    GameCarAiBlock *drive;
-    Matrix *pm1;
-    Matrix *pm2;
-    s16 i;
-    GameCarRuntime *q;
-    s32 t;
-    i = 0;
-    q = g_Cars;
+/* Every car starts the frame from the heading it settled on last frame, and
+ * keeps only the low bit of whatever it was touching. */
+static void StartCarFrames(void) {
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
     do {
-        q->reservedF8 = 0;
-        q->bodyYaw = q->baseBodyYaw;
-        q->collisionFlag = (u16)q->collisionFlag & 1;
-        i++;
-        q++;
-    } while ((s16)i < 11);
-    RankContenders();
-    for (i = 0; i < 11; i++) {
-        s32 j = (s16)i;
-        if (j >= 4 && (i & 1) != (g_AnimTimer & 1)) {
+        car->reservedF8 = 0;
+        car->bodyYaw = car->baseBodyYaw;
+        car->collisionFlag = (u16)car->collisionFlag & 1;
+        index++;
+        car++;
+    } while ((s16)index < 11);
+}
+
+/*
+ * Looking for a way past the car in front. Only the leading four do it every
+ * frame; the rest take turns, odd cars on odd frames, which halves the work
+ * without anyone noticing at the back of the field.
+ */
+static void AvoidTrafficThisFrame(void) {
+    s16 index;
+
+    for (index = 0; index < 11; index++) {
+        s32 slot = (s16)index;
+
+        if (slot >= 4 && (index & 1) != (g_AnimTimer & 1)) {
             continue;
         }
-        if (g_Cars[j].activeFlag != -1) {
-            UpdateCarTrafficAvoidance(&g_Cars[j], j);
+        if (g_Cars[slot].activeFlag != -1) {
+            UpdateCarTrafficAvoidance(&g_Cars[slot], slot);
         }
     }
-    i = 0;
-    base = g_Cars;
+}
+
+/*
+ * How hard each car pulls this frame, and how far it swings towards where it
+ * wants to be pointing. A car on a boost gets the boost's own acceleration
+ * until it is already quick enough, and its own otherwise; the speed keeps a
+ * little under two thirds of itself each frame, so the acceleration is what
+ * holds it up.
+ */
+static void AccelerateAllCars(void) {
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
     do {
-        CollideRivalCars(base, (s16)i);
-        i++;
-        base++;
-    } while ((s16)i < 10);
-    i = 0;
-    base = g_Cars;
-    do {
-        s32 j = (s16)i;
-        UpdateCarAiTargetSpeed(base, j);
-        ApplyCarRacingLineHint(base, j);
-        ClampCarLateralOffset(base, j);
-        SteerCarAlongRoute(base);
-        i++;
-        base++;
-    } while ((s16)i < 11);
-    UpdateRivalRubberBand();
-    i = (s16)g_ClosestRivalRank;
-    if (i > 0) {
-        do {
-            s32 j = (s16)i;
-            SlowRivalAhead(g_RankedCars[j], j);
-            i--;
-        } while ((s16)i > 0);
-    }
-    {
-    GameCarRuntime *walk;
-    i = 0;
-    base = g_Cars;
-    walk = g_Cars;
-    do {
-        if (walk->activeFlag != -1) {
-            drive = GetCarAiBlock(base);
-            if (walk->boostTimer > 0) {
-                if (walk->boostAccelerationThreshold < walk->boostTimer && walk->speed >= 0x321) {
-                    walk->acceleration = 0;
-                } else if (drive->accelerationLimit >= walk->acceleration) {
-                    walk->acceleration = drive->boostAcceleration + walk->acceleration;
+        GameCarAiBlock *ai = GetCarAiBlock(car);
+
+        if (car->activeFlag != -1) {
+            if (car->boostTimer > 0) {
+                if (car->boostAccelerationThreshold < car->boostTimer &&
+                    car->speed >= 0x321) {
+                    car->acceleration = 0;
+                } else if (ai->accelerationLimit >= car->acceleration) {
+                    car->acceleration = ai->boostAcceleration + car->acceleration;
                 } else {
-                    walk->acceleration = drive->accelerationLimit;
+                    car->acceleration = ai->accelerationLimit;
                 }
-                drive->boostTimer--;
-            } else if (walk->accelerationLimit >= walk->acceleration) {
-                walk->acceleration = walk->accelerationStep + walk->acceleration;
+                ai->boostTimer--;
+            } else if (car->accelerationLimit >= car->acceleration) {
+                car->acceleration = car->accelerationStep + car->acceleration;
             } else {
-                walk->acceleration = walk->accelerationLimit;
+                car->acceleration = car->accelerationLimit;
             }
-            walk->speed = walk->speed * 0x5E / 100;
-            walk->speed = walk->speed + walk->acceleration;
-            walk->bodyYaw =
-                GetAngleDelta(walk->bodyYaw, drive->targetYaw) / 5 + walk->bodyYaw;
+            car->speed = car->speed * 0x5E / 100;
+            car->speed = car->speed + car->acceleration;
+            car->bodyYaw =
+                GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5 + car->bodyYaw;
         }
-        i++;
-        walk++;
-        base++;
-    } while ((s16)i < 11);
+        index++;
+        car++;
+    } while ((s16)index < 11);
+}
+
+/*
+ * A rival's wheels, turning with the speed until they would blur, then at a
+ * fixed rate; the top bit asks for the blurred texture. The same rule the
+ * player's car uses.
+ */
+static void SpinCarWheels(GameCarRuntime *car) {
+    s32 scaled = car->speed * 3;
+    s16 step = scaled;
+    s32 spin;
+
+    if ((s16)scaled >= 0x1001) {
+        step = 0x249;
     }
-    {
-    GameCarRuntime *walk;
-    i = 0;
-    base = g_Cars;
-    pm1 = &m1;
-    pm2 = &m2;
-    walk = g_Cars;
+    spin = (step + car->wheelRotation) & 0xFFF;
+    car->wheelRotation = spin;
+    if (car->speed >= 0x321) {
+        car->wheelRotation = spin | 0x1000;
+    }
+}
+
+/*
+ * A rival in the air. It rises on one arc and falls on another, both drawn
+ * against the tick count since it left the ground, and state two is the pause
+ * at the top for a car that has not travelled far enough to fall yet. The
+ * player's car does the same thing under different field names.
+ */
+static void UpdateCarJumpArc(GameCarRuntime *car, s32 ground) {
+    s32 tick = (u16)car->verticalMotionTimer + 1;
+    s32 state;
+
+    car->verticalMotionTimer = tick;
+    state = car->verticalMotionState;
+    if (state == 1) {
+        s32 rise = (s16)tick;
+
+        car->y = car->verticalMotionRate * rise + rise * rise * 72 / 100 + car->y;
+        if (car->y >= ground) {
+            car->verticalMotionState = 0;
+        }
+    } else if (state == 2) {
+        if (car->verticalTargetY >= ground - car->verticalMotionRate) {
+            car->y = car->verticalTargetY;
+        } else {
+            car->verticalMotionState = 3;
+            car->verticalMotionRate = car->verticalMotionTimer;
+            car->y = car->verticalTargetY;
+        }
+    } else {
+        s16 fall = tick - (u16)car->verticalMotionRate;
+
+        car->y = car->verticalTargetY + fall * fall * 216 / 100;
+        if (car->y >= ground) {
+            car->verticalMotionState = 0;
+        }
+    }
+    if (car->verticalMotionState == 0) {
+        car->y = ground + 8;
+        car->verticalPitch = 0;
+        car->verticalRoll = 0;
+        car->verticalMotionState = 0;
+        StartCarBodyKick(1, car);
+    }
+}
+
+/*
+ * What is left of a rival's frame once it has been steered and moved: the
+ * wheels, the body following the chassis, the jump if it is in one, and either
+ * the suspension settling or the speed lost to whatever it just hit.
+ */
+static void SettleAllCarBodies(void) {
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
     do {
-        drive = GetCarAiBlock(base);
-        if (walk->activeFlag != -1) {
-            walk->baseBodyYaw = walk->bodyYaw;
-            t = rsin(walk->headingAngle) * walk->speed;
-            if (t < 0) {
-                t += 0xFF;
+        if (car->activeFlag != -1) {
+            /* Where the wheels sit, eight units under the body. */
+            s32 ground = car->y - 8;
+
+            SpinCarWheels(car);
+            CopyCarBodyRotationToModel(car);
+            car->bodyRoll = car->bodyRoll + car->bodyRollVelocity;
+            car->modelY = car->y;
+            if (car->verticalMotionState != 0) {
+                UpdateCarJumpArc(car, ground);
             }
-            walk->worldVelocityX = t >> 8;
-            t = rcos(walk->headingAngle) * walk->speed;
-            if (t < 0) {
-                t += 0xFF;
+            if (car->collisionFlag == 0) {
+                UpdateCarBodyKick(car);
+                UpdateCarCrestHop(car);
+            } else {
+                car->speed = car->speed * 97 / 100 * 97 / 100;
             }
-            walk->worldVelocityZ = t >> 8;
-            if ((s16)i < 4) {
-                s32 sixth;
-                s32 yawStep;
-                base->x = base->x - walk->motionX;
-                yawStep = walk->yawRate;
-                walk->z = walk->z - walk->motionZ;
-                if (yawStep < 0) {
-                    sixth = -yawStep / 6;
-                } else {
-                    sixth = yawStep / 6;
-                }
-                BuildRotMatrixY(pm1, walk->bodyYaw);
-                BuildRotMatrixX(pm2, walk->bodyPitch);
-                MulMatrix2(pm2, pm1);
-                BuildRotMatrixZ(pm2, walk->bodyRoll);
-                MulMatrix2(pm2, pm1);
-                sv.vx = 0;
-                sv.vy = 0;
-                sv.vz = -sixth - 0x32;
-                m2.m[0][0] = m1.m[0][0];
-                m2.m[0][1] = m1.m[1][0];
-                m2.m[0][2] = m1.m[2][0];
-                m2.m[1][0] = m1.m[0][1];
-                m2.m[1][1] = m1.m[1][1];
-                m2.m[1][2] = m1.m[2][1];
-                m2.m[2][0] = m1.m[0][2];
-                m2.m[2][1] = m1.m[1][2];
-                m2.m[2][2] = m1.m[2][2];
-                ApplyMatrix(pm2, &sv, &base->motionX);
-                base->x = base->x + walk->motionX;
-                walk->z = walk->z + walk->motionZ;
+        }
+        index++;
+        car++;
+    } while (index < 11);
+}
+
+/* Each car against the ones behind it, so every pair is tested once. */
+static void CollideAllCars(void) {
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
+    do {
+        CollideRivalCars(car, (s16)index);
+        index++;
+        car++;
+    } while ((s16)index < 10);
+}
+
+/* Where each car wants to be on the road, and how it gets there. */
+static void SteerAllCars(void) {
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
+    do {
+        s32 slot = (s16)index;
+
+        UpdateCarAiTargetSpeed(car, slot);
+        ApplyCarRacingLineHint(car, slot);
+        ClampCarLateralOffset(car, slot);
+        SteerCarAlongRoute(car);
+        index++;
+        car++;
+    } while ((s16)index < 11);
+}
+
+/*
+ * How far round each car is, and where the track has put it. A rival's hull is
+ * a fixed width here rather than measured from its corners, which is what the
+ * player's car does.
+ */
+static void PlaceAllCarsOnTrack(void) {
+    CarTrackLimits limits;
+    s16 index;
+
+    limits.rightInset = 0x3C;
+    limits.leftInset = -0x3C;
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[(s16)index];
+
+        if (car->activeFlag != -1) {
+            AccumulateLapProgress(car);
+        }
+    }
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[(s16)index];
+
+        if (car->activeFlag != -1) {
+            if ((s16)car->motionTimer > 0) {
+                ApplyCarKnockback(car);
+            }
+            UpdateCarTrackState(car, car->trackPointIndex, &limits);
+        }
+    }
+}
+
+/*
+ * Where every car ends up. The heading gives the world velocity, and the four
+ * cars nearest the camera also get their body lean worked out properly: the
+ * chassis is rotated into place, the lean is taken out along its own axis and
+ * put back, so a car leaning into a corner does not slide sideways doing it.
+ * The rest of the field skips that, because nobody can see it.
+ */
+static void MoveAllCars(void) {
+    Vec4 position;
+    Matrix bodyRotation;
+    Matrix work;
+    SVec lean;
+    GameCarRuntime *car = g_Cars;
+    s16 index = 0;
+
+    do {
+        GameCarAiBlock *ai = GetCarAiBlock(car);
+
+        if (car->activeFlag != -1) {
+            s32 scaled;
+
+            car->baseBodyYaw = car->bodyYaw;
+            scaled = rsin(car->headingAngle) * car->speed;
+            if (scaled < 0) {
+                scaled += 0xFF;
+            }
+            car->worldVelocityX = scaled >> 8;
+            scaled = rcos(car->headingAngle) * car->speed;
+            if (scaled < 0) {
+                scaled += 0xFF;
+            }
+            car->worldVelocityZ = scaled >> 8;
+            if ((s16)index < 4) {
+                s32 yawStep = car->yawRate;
+                s32 sixth = (yawStep < 0) ? -yawStep / 6 : yawStep / 6;
+
+                car->x = car->x - car->motionX;
+                car->z = car->z - car->motionZ;
+                BuildRotMatrixY(&bodyRotation, car->bodyYaw);
+                BuildRotMatrixX(&work, car->bodyPitch);
+                MulMatrix2(&work, &bodyRotation);
+                BuildRotMatrixZ(&work, car->bodyRoll);
+                MulMatrix2(&work, &bodyRotation);
+                lean.vx = 0;
+                lean.vy = 0;
+                lean.vz = -sixth - 0x32;
+                /* The transpose, which turns the rotation back the other way. */
+                work.m[0][0] = bodyRotation.m[0][0];
+                work.m[0][1] = bodyRotation.m[1][0];
+                work.m[0][2] = bodyRotation.m[2][0];
+                work.m[1][0] = bodyRotation.m[0][1];
+                work.m[1][1] = bodyRotation.m[1][1];
+                work.m[1][2] = bodyRotation.m[2][1];
+                work.m[2][0] = bodyRotation.m[0][2];
+                work.m[2][1] = bodyRotation.m[1][2];
+                work.m[2][2] = bodyRotation.m[2][2];
+                ApplyMatrix(&work, &lean, &car->motionX);
+                car->x = car->x + car->motionX;
+                car->z = car->z + car->motionZ;
             }
             /*
              * Retail copied an otherwise uninitialized stack Vec4 after
@@ -252,123 +394,56 @@ void UpdateRaceCars(void) {
              * by camera/render paths, so retaining the undefined copy makes
              * game behaviour depend on the compiler ABI.
              */
-            vpos = *GetCarVector4(base);
-            vpos.x = drive->worldVelocityX * 6 / 1280 + base->x;
-            vpos.z = drive->worldVelocityZ * 6 / 1280 + walk->z;
-            *GetCarVector4(base) = vpos;
-            if (walk->steeringAngle >= 0x41) {
-                walk->bodyRollVelocity = walk->bodyRollVelocity - 6;
-            } else if (walk->steeringAngle < -0x40) {
-                walk->bodyRollVelocity = walk->bodyRollVelocity + 6;
+            position = *GetCarVector4(car);
+            position.x = ai->worldVelocityX * 6 / 1280 + car->x;
+            position.z = ai->worldVelocityZ * 6 / 1280 + car->z;
+            *GetCarVector4(car) = position;
+            /* The body leans away from the steering and rights itself. */
+            if (car->steeringAngle >= 0x41) {
+                car->bodyRollVelocity = car->bodyRollVelocity - 6;
+            } else if (car->steeringAngle < -0x40) {
+                car->bodyRollVelocity = car->bodyRollVelocity + 6;
             }
-            if (walk->bodyRollVelocity != 0) {
-                walk->bodyRollVelocity = walk->bodyRollVelocity * 7 / 8;
+            if (car->bodyRollVelocity != 0) {
+                car->bodyRollVelocity = car->bodyRollVelocity * 7 / 8;
             }
-            walk->steeringAngle = walk->steeringAngle + drive->yawRate;
-            if (walk->steeringAngle >= 0x12C) {
-                walk->steeringAngle = 0x12C;
-            } else if (walk->steeringAngle < -0x12B) {
-                walk->steeringAngle = -0x12C;
+            car->steeringAngle = car->steeringAngle + ai->yawRate;
+            if (car->steeringAngle >= 0x12C) {
+                car->steeringAngle = 0x12C;
+            } else if (car->steeringAngle < -0x12B) {
+                car->steeringAngle = -0x12C;
             }
-            walk->bodyYaw = walk->bodyYaw + drive->yawRate;
+            car->bodyYaw = car->bodyYaw + ai->yawRate;
         }
-        i++;
-        walk++;
-        base++;
-    } while ((s16)i < 11);
+        index++;
+        car++;
+    } while ((s16)index < 11);
+}
+
+/* Everyone ahead of the player is held back a little, nearest one first. */
+static void SlowTheCarsAhead(void) {
+    s16 rank = (s16)g_ClosestRivalRank;
+
+    while ((s16)rank > 0) {
+        s32 slot = (s16)rank;
+
+        SlowRivalAhead(g_RankedCars[slot], slot);
+        rank--;
     }
-    limits.rightInset = 0x3C;
-    limits.leftInset = -0x3C;
-    for (i = 0; i < 11; i++) {
-        if (g_Cars[(s16)i].activeFlag != -1) {
-            AccumulateLapProgress(&g_Cars[(s16)i]);
-        }
-    }
-    for (i = 0; i < 11; i++) {
-        if (g_Cars[(s16)i].activeFlag != -1) {
-            if ((s16)g_Cars[(s16)i].motionTimer > 0) {
-                ApplyCarKnockback(&g_Cars[(s16)i]);
-            }
-            UpdateCarTrackState(
-                &g_Cars[(s16)i],
-                g_Cars[(s16)i].trackPointIndex,
-                &limits);
-        }
-    }
-    {
-        GameCarRuntime *lastBase;
-        i = 0;
-        base = g_Cars;
-        lastBase = g_Cars;
-        do {
-        if (lastBase->activeFlag != -1) {
-            s16 step;
-            s32 spin;
-            s32 scaled;
-            s32 limit;
-            scaled = lastBase->speed * 3;
-            step = scaled;
-            if ((s16)scaled >= 0x1001) {
-                step = 0x249;
-            }
-            spin = (step + lastBase->wheelRotation) & 0xFFF;
-            lastBase->wheelRotation = spin;
-            if (lastBase->speed >= 0x321) {
-                lastBase->wheelRotation = spin | 0x1000;
-            }
-            limit = lastBase->y - 8;
-            CopyCarBodyRotationToModel(lastBase);
-            lastBase->bodyRoll = lastBase->bodyRoll + lastBase->bodyRollVelocity;
-            lastBase->modelY = lastBase->y;
-            if (lastBase->verticalMotionState != 0) {
-                s32 tick;
-                s32 state;
-                tick = (u16)lastBase->verticalMotionTimer + 1;
-                lastBase->verticalMotionTimer = tick;
-                state = lastBase->verticalMotionState;
-                if (state == 1) {
-                    s32 n = (s16)tick;
-                    lastBase->y =
-                        lastBase->verticalMotionRate * n + n * n * 72 / 100
-                        + lastBase->y;
-                    if (lastBase->y >= limit) {
-                        lastBase->verticalMotionState = 0;
-                    }
-                } else if (state == 2) {
-                    if (lastBase->verticalTargetY >= limit - lastBase->verticalMotionRate) {
-                        lastBase->y = lastBase->verticalTargetY;
-                    } else {
-                        lastBase->verticalMotionState = 3;
-                        lastBase->verticalMotionRate = lastBase->verticalMotionTimer;
-                        lastBase->y = lastBase->verticalTargetY;
-                    }
-                } else {
-                    s16 n = tick - (u16)lastBase->verticalMotionRate;
-                    lastBase->y = lastBase->verticalTargetY + n * n * 216 / 100;
-                    if (lastBase->y >= limit) {
-                        lastBase->verticalMotionState = 0;
-                    }
-                }
-                if (lastBase->verticalMotionState == 0) {
-                    lastBase->y = limit + 8;
-                    lastBase->verticalPitch = 0;
-                    lastBase->verticalRoll = 0;
-                    lastBase->verticalMotionState = 0;
-                    StartCarBodyKick(1, base);
-                }
-            }
-            if (lastBase->collisionFlag == 0) {
-                UpdateCarBodyKick(base);
-                UpdateCarCrestHop(base);
-            } else {
-                lastBase->speed = lastBase->speed * 97 / 100 * 97 / 100;
-            }
-        }
-        i++;
-        lastBase++;
-        base++;
-        } while (i < 11);
-    }
+}
+
+void UpdateRaceCars(void) {
+    StartCarFrames();
+    RankContenders();
+    AvoidTrafficThisFrame();
+    CollideAllCars();
+    SteerAllCars();
+    UpdateRivalRubberBand();
+    SlowTheCarsAhead();
+    AccelerateAllCars();
+    MoveAllCars();
+    PlaceAllCarsOnTrack();
+    SettleAllCarBodies();
 }
 
 /* Runs the corresponding all-cars pass for attract and replay scenes. */
