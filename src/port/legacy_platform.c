@@ -48,6 +48,8 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "platform_paths.h"
 #include "runtime_config.h"
 #include "chd_disc.h"
+#include "disc_stream_table.h"
+#include "game/asset.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -598,6 +600,77 @@ static int HostFindArchive(void) {
     return g_RageHostDisc.archive_size > 0 && g_RageHostDisc.stream_size > 0;
 }
 
+/* How many sectors of RAGE.STR each movie occupies.  The retail PAL values
+ * stand until a mounted disc says otherwise, and are what a disc that cannot
+ * be read falls back to. */
+static unsigned int s_StreamSpans[RAGE_DISC_STREAM_COUNT];
+
+unsigned int HostStreamSectorSpan(int stream) {
+    if (stream < 0 || stream >= RAGE_DISC_STREAM_COUNT) return 0;
+    return s_StreamSpans[stream];
+}
+
+/* g_StreamCdEntries holds retail's PAL table until a disc is mounted, so a run
+ * that never gets one behaves as the PAL build always did. */
+static void HostSeedStreamTable(void) {
+    int stream;
+    for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
+        g_StreamCdEntries[stream].position.sectorOffset =
+            g_RetailPalStreamTable.offset[stream];
+        g_StreamCdEntries[stream].size = g_RetailPalStreamTable.frames[stream];
+        s_StreamSpans[stream] = g_RetailPalStreamTable.span[stream];
+    }
+}
+
+static int HostReadRawSector(void *context, unsigned int sector,
+                                 unsigned char *raw) {
+    (void)context;
+    if (g_RageHostDisc.chd) return ChdReadRawSector(sector, raw);
+    if (g_RageHostDisc.file == NULL) return 0;
+    if (fseek(g_RageHostDisc.file,
+              g_RageHostDisc.track_offset + (long)sector * RAGE_CD_SECTOR_SIZE,
+              SEEK_SET) != 0)
+        return 0;
+    return fread(raw, 1, RAGE_CD_SECTOR_SIZE, g_RageHostDisc.file) ==
+           RAGE_CD_SECTOR_SIZE;
+}
+
+/* Where the movies are and how long they run is a property of the disc in the
+ * drive, not of the build.  Read it off the disc that was mounted, and say so
+ * once, because a wrong table shows up as movies that start mid-scene and stop
+ * halfway through rather than as an error. */
+static void HostAdoptDiscStreamTable(void) {
+    DiscIdentity identity;
+    int stream;
+
+    if (!DiscIdentify(HostReadRawSector, NULL, &identity)) {
+        fprintf(stderr, "rage-port: disc region unknown, keeping the "
+                        "built-in PAL FMV table\n");
+        return;
+    }
+    fprintf(stderr, "rage-port: disc %s region=%s\n",
+            identity.boot[0] != '\0' ? identity.boot : "unidentified",
+            identity.region);
+    if (!identity.tableValid) {
+        fprintf(stderr,
+                "rage-port: keeping the built-in PAL FMV table: %s\n",
+                identity.reason != NULL ? identity.reason : "unknown reason");
+        return;
+    }
+    for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
+        g_StreamCdEntries[stream].position.sectorOffset =
+            identity.table.offset[stream];
+        g_StreamCdEntries[stream].size = identity.table.frames[stream];
+        s_StreamSpans[stream] = identity.table.span[stream];
+    }
+    fprintf(stderr, "rage-port: FMV table from %s:", identity.boot);
+    for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
+        fprintf(stderr, " %04X/%u/%u", identity.table.offset[stream],
+                identity.table.frames[stream], identity.table.span[stream]);
+    }
+    fprintf(stderr, "\n");
+}
+
 int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     long offset;
     if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
@@ -652,7 +725,7 @@ static int HostReadArchive(unsigned int offset, void *destination, unsigned int 
 
 /* Resolves a cue all the way to a readable archive, so a path that no longer
  * works is reported as such instead of failing later on. */
-static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
+static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
     if (HostPathEndsWithChd(cue)) {
         if (!ChdOpen(cue)) return 0;
         g_RageHostDisc.chd = 1;
@@ -688,6 +761,12 @@ static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
     return 1;
 }
 
+static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
+    if (!HostOpenDiscImage(cue, image, image_size)) return 0;
+    HostAdoptDiscStreamTable();
+    return 1;
+}
+
 int HostInitDisc(void) {
     const char *environment_cue = RuntimeConfigGet("disc.image");
     char cue[PATH_MAX];
@@ -699,6 +778,7 @@ int HostInitDisc(void) {
         environment_cue = RuntimeConfigGetForced("disc.cue");
 
     ChdClose();
+    HostSeedStreamTable();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
      * bundling retail data.  The release executable never sets this flag.

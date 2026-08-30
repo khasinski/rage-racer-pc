@@ -86,17 +86,14 @@ enum {
 
 int HostReadStreamSector(unsigned int sector, unsigned char *raw);
 int HostStreamAbsoluteSector(unsigned int sector);
+/* How many sectors of RAGE.STR a movie occupies, which is where the next one
+ * begins.  The mounted disc decides it; the movies do not sit in the same
+ * places on a PAL disc and an American one. */
+unsigned int HostStreamSectorSpan(int stream);
 
 /* The rest of the MDEC front end comes from game/render.h and psyq/cd.h;
  * only the VLC stage has no declaration there. */
 int DecDCTvlc(u_long *bs, u_long *buf);
-
-static const unsigned int s_sectorSpans[11] = {
-    0x2F10,
-    0x062D, 0x062D, 0x062D, 0x062D, 0x062D,
-    0x062D, 0x062D, 0x062D, 0x062D,
-    0x3B40,
-};
 
 static void ReleaseFmvBuffers(void) {
     free(s_sectors);
@@ -310,7 +307,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     }
     s_width = 320;
     s_height = streamIndex == 10 ? 240 : 192;
-    s_sectorSpan = s_sectorSpans[streamIndex];
+    s_sectorSpan = HostStreamSectorSpan((int)streamIndex);
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
     if (!HostExtractFmv(firstSector, s_sectorSpan)) {
         fprintf(stderr, "rage-port: could not extract FMV %ld from RAGE.STR\n",

@@ -24,6 +24,34 @@ endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
 set_tests_properties(game_logic PROPERTIES LABELS functional)
+add_executable(disc_stream_table_tests
+    disc_stream_table_tests.c
+    ../src/port/disc_stream_table.c
+)
+target_include_directories(disc_stream_table_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(disc_stream_table_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME disc_stream_table COMMAND disc_stream_table_tests)
+set_tests_properties(disc_stream_table PROPERTIES LABELS functional)
+
+add_executable(stream_table_disc_tests
+    stream_table_disc_tests.c
+    ../src/port/disc_stream_table.c
+)
+target_include_directories(stream_table_disc_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(stream_table_disc_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME stream_table COMMAND stream_table_disc_tests ${CMAKE_SOURCE_DIR})
+# Skips rather than fails when there is no disc to derive the table from.
+set_tests_properties(stream_table PROPERTIES LABELS functional
+    SKIP_RETURN_CODE 77 TIMEOUT 120)
+
 add_test(NAME architecture_boundaries COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundaries.py
     ${CMAKE_SOURCE_DIR})

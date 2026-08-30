@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """A movie plays for as long as its own soundtrack lasts.
 
-RAGE.STR carries no frame rate and the eleven movies do not share one: the
-opening movie runs at twenty-five frames a second and the other ten at fifteen.
-What they do share is the disc. At double speed the drive delivers 150 sectors
+RAGE.STR carries no frame rate and the eleven movies do not share one: on the
+PAL disc the opening movie runs at twenty-five frames a second and the other
+ten at fifteen, and the American pressing encodes most of them at twice that.
+What they all share is the disc. At double speed the drive delivers 150 sectors
 a second, a frame appears once the sectors carrying it have been read, and the
 XA soundtrack is interleaved into those same sectors, so playing the stream at
 the rate the drive would deliver it is what holds picture and sound together.
@@ -41,10 +42,6 @@ from pathlib import Path
 from disc_image import SKIP_EXIT_CODE, find_disc, require_disc
 
 SECTORS_PER_SECOND = 150
-# Every XA sector on this disc is coding info 0x01: stereo, 37800 Hz, 4-bit,
-# which is 2016 stereo frames of sound per sector.
-XA_FRAMES_PER_SECTOR = 2016
-XA_SAMPLE_RATE = 37800
 RAW_SECTOR_SIZE = 2352
 ISO_SECTOR_SIZE = 2048
 # Mode 2 subheader, then the sector's user data.
@@ -52,15 +49,17 @@ SUBHEADER_OFFSET = 16
 USER_DATA_OFFSET = 24
 SUBMODE_AUDIO = 0x04
 STR_MAGIC = 0x80010160
+STREAM_COUNT = 11
+# Every XA sector on this disc is coding info 0x01: stereo, 37800 Hz, 4-bit,
+# which is 2016 stereo frames of sound per sector.
+XA_FRAMES_PER_SECTOR = 2016
+XA_SAMPLE_RATE = 37800
 
-# Where each movie sits inside RAGE.STR, in sectors. The same table the port
-# keeps, and the one the game's stream entries agree with.
-STREAM_SPANS = (0x2F10,) + (0x062D,) * 9 + (0x3B40,)
-
-# Two movies with different rates, and how many frames the game shows of each.
-# The first is one of the nine class endings, played behind an asset load; the
-# second is the opening movie.
-CASES = ((5, 150), (0, 1800))
+# Two movies with different rates. The first is one of the nine class endings,
+# played behind an asset load; the second is the opening movie. How many frames
+# the game shows of each comes off the disc, because the American pressing
+# shows twice as many of both.
+STREAMS = (5, 0)
 
 
 def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
@@ -109,7 +108,14 @@ def cue_track_one(cue: Path) -> tuple[Path, int]:
 
 
 class Disc:
-    """Just enough of the disc to find RAGE.STR and read raw sectors."""
+    """Just enough of the disc to find its movies and read raw sectors.
+
+    Where the eleven movies sit inside RAGE.STR, and how many frames of each
+    the game shows, is a property of the pressing rather than of the port, so
+    this reads both off the disc the same way HostInitDisc does: a movie ends
+    where its frame numbering restarts, and those eleven offsets then appear in
+    the disc's own boot executable with the frame counts beside them.
+    """
 
     def __init__(self, path: Path) -> None:
         if path.suffix.lower() == ".cue":
@@ -122,7 +128,16 @@ class Disc:
             if self.raw(16)[offset + 1:offset + 6] == b"CD001":
                 self.user_offset = offset
                 break
-        self.stream_sector = self.find_stream()
+        self.files = self.read_root()
+        self.stream_sector, stream_size = self.files["RAGE.STR"]
+        self.stream_sectors = (stream_size + ISO_SECTOR_SIZE - 1) // ISO_SECTOR_SIZE
+        self.boot = self.read_boot_name()
+        self.offsets = self.scan_stream_starts()
+        self.frames = self.read_stream_frames()
+        self.spans = tuple(
+            (self.offsets[index + 1] if index + 1 < STREAM_COUNT
+             else self.stream_sectors) - self.offsets[index]
+            for index in range(STREAM_COUNT))
 
     def raw(self, sector: int) -> bytes:
         self.file.seek((self.first_sector + sector) * RAW_SECTOR_SIZE)
@@ -132,10 +147,11 @@ class Disc:
         data = self.raw(sector)
         return data[self.user_offset:self.user_offset + ISO_SECTOR_SIZE]
 
-    def find_stream(self) -> int:
+    def read_root(self) -> dict[str, tuple[int, int]]:
         volume = self.user(16)
         root = struct.unpack("<I", volume[158:162])[0]
         size = struct.unpack("<I", volume[166:170])[0]
+        entries: dict[str, tuple[int, int]] = {}
         for offset in range(0, size, ISO_SECTOR_SIZE):
             directory = self.user(root + offset // ISO_SECTOR_SIZE)
             cursor = 0
@@ -144,16 +160,69 @@ class Disc:
                 if length == 0:
                     break
                 record = directory[cursor:cursor + length]
-                name = bytes(record[33:33 + record[32]])
-                if name.upper().startswith(b"RAGE.STR"):
-                    return struct.unpack("<I", record[2:6])[0]
+                name = bytes(record[33:33 + record[32]]).decode("latin-1")
+                entries.setdefault(
+                    name.split(";")[0].upper(),
+                    (struct.unpack("<I", record[2:6])[0],
+                     struct.unpack("<I", record[10:14])[0]))
                 cursor += length
-        raise AssertionError("no RAGE.STR on the disc")
+        if "RAGE.STR" not in entries:
+            raise AssertionError("no RAGE.STR on the disc")
+        return entries
 
-    def span(self, stream: int) -> bytes:
-        first = self.stream_sector + sum(STREAM_SPANS[:stream])
+    def read_file(self, name: str) -> bytes:
+        lba, size = self.files[name]
+        sectors = (size + ISO_SECTOR_SIZE - 1) // ISO_SECTOR_SIZE
+        return b"".join(self.user(lba + i) for i in range(sectors))[:size]
+
+    def stream_bytes(self, stream: int) -> bytes:
+        """Every raw sector of one movie."""
+        first = self.stream_sector + self.offsets[stream]
         self.file.seek((self.first_sector + first) * RAW_SECTOR_SIZE)
-        return self.file.read(STREAM_SPANS[stream] * RAW_SECTOR_SIZE)
+        return self.file.read(self.spans[stream] * RAW_SECTOR_SIZE)
+
+    def read_boot_name(self) -> str:
+        """SYSTEM.CNF's BOOT line names the executable, which is the serial."""
+        text = self.read_file("SYSTEM.CNF").decode("latin-1")
+        boot = re.search(r"BOOT\s*=\s*(?:cdrom:)?[\\/]*([^;\s]+)", text, re.I)
+        if boot is None:
+            raise AssertionError("SYSTEM.CNF names no boot executable")
+        return boot.group(1).upper()
+
+    def scan_stream_starts(self) -> tuple[int, ...]:
+        """A movie ends where the frame numbering restarts."""
+        starts: list[int] = []
+        previous = None
+        for index in range(self.stream_sectors):
+            sector = self.raw(self.stream_sector + index)
+            if sector[SUBHEADER_OFFSET + 2] & SUBMODE_AUDIO:
+                continue
+            body = sector[USER_DATA_OFFSET:USER_DATA_OFFSET + 16]
+            if struct.unpack("<I", body[0:4])[0] != STR_MAGIC:
+                continue
+            chunk = struct.unpack("<H", body[4:6])[0]
+            frame = struct.unpack("<I", body[8:12])[0]
+            if previous is None or (chunk == 0 and frame < previous):
+                starts.append(index)
+            previous = frame
+        if len(starts) != STREAM_COUNT:
+            raise AssertionError(
+                f"RAGE.STR holds {len(starts)} movies, expected {STREAM_COUNT}")
+        return tuple(starts)
+
+    def read_stream_frames(self) -> tuple[int, ...]:
+        """The game's stream table: eleven sector offsets, each beside the last
+        frame the game shows of that movie."""
+        blob = self.read_file(self.boot)
+        wanted = b"".join(struct.pack("<I", o) for o in self.offsets)
+        for offset in range(0, len(blob) - STREAM_COUNT * 8 + 1, 4):
+            entries = blob[offset:offset + STREAM_COUNT * 8]
+            if b"".join(entries[i * 8:i * 8 + 4]
+                        for i in range(STREAM_COUNT)) != wanted:
+                continue
+            return tuple(struct.unpack_from("<I", entries, i * 8 + 4)[0]
+                         for i in range(STREAM_COUNT))
+        raise AssertionError(f"{self.boot} holds no matching stream table")
 
 
 def read_stream(disc: Disc, stream: int) -> tuple[list[int], list[int]]:
@@ -163,8 +232,8 @@ def read_stream(disc: Disc, stream: int) -> tuple[list[int], list[int]]:
     movie, and a running count of the XA audio sectors passed on the way, so
     the sound carried between any two frames can be read straight off.
     """
-    data = disc.span(stream)
-    count = STREAM_SPANS[stream]
+    data = disc.stream_bytes(stream)
+    count = disc.spans[stream]
     ends: list[int] = []
     audio = [0] * (count + 1)
     chunks = 0
@@ -307,7 +376,11 @@ def main() -> int:
               "Point RAGE_PORT_DISC_CUE at a cue sheet to run it.")
         return SKIP_EXIT_CODE
     disc = Disc(image)
-    for stream, shown in CASES:
+    print(f"disc {disc.boot}: "
+          + " ".join(f"{offset:04X}/{frames}"
+                     for offset, frames in zip(disc.offsets, disc.frames)))
+    for stream in STREAMS:
+        shown = disc.frames[stream]
         output = play(executable, source_dir, stream, shown)
         check_pacing(output, disc, stream, shown)
         check_soundtrack(output, stream)

@@ -462,21 +462,12 @@ PrologueCameraCut g_PrologueCameraCuts[11] = {
     {155, 4}, {228, 5}, {299, 6}, {391, 7}, {516, 8}, {609, 0},
     {650, 1}, {800, 9}, {891, 10}, {931, 2}, {0, 0},
 };
-/* Retail main.exe @ 0x8007C6A8.  The second word is the final STR frame,
- * despite sharing GameCdLoadEntry with the sector-sized RAGE.BIN index. */
-GameCdLoadEntry g_StreamCdEntries[11] = {
-    {{.sectorOffset = 0x0000}, 1800},
-    {{.sectorOffset = 0x2F10}, 150},
-    {{.sectorOffset = 0x353D}, 150},
-    {{.sectorOffset = 0x3B6A}, 150},
-    {{.sectorOffset = 0x4197}, 150},
-    {{.sectorOffset = 0x47C4}, 150},
-    {{.sectorOffset = 0x4DF1}, 150},
-    {{.sectorOffset = 0x541E}, 150},
-    {{.sectorOffset = 0x5A4B}, 150},
-    {{.sectorOffset = 0x6078}, 150},
-    {{.sectorOffset = 0x66A5}, 1500},
-};
+/* Where the eleven movies sit in RAGE.STR and how many frames of each the game
+ * shows.  Retail had one disc and could compile the answer in; the port mounts
+ * whichever disc the player owns and the American pressing puts the movies
+ * elsewhere, so HostInitDisc fills this in: retail's PAL table from
+ * g_RetailPalStreamTable, then the mounted disc's own table over the top. */
+GameCdLoadEntry g_StreamCdEntries[11];
 /* Retail main.exe @ 0x8007C2F8: (u, v) cells for ASCII 0x20..0x7f. */
 u8 g_Font8x8Cells[0xC0] = {
     0x00,0x00,0x05,0x01,0x06,0x01,0x07,0x01,0x08,0x01,0x09,0x01,
