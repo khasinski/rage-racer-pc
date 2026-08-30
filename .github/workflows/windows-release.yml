@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6-alpha
+        default: 0.6.1-alpha
   push:
     tags:
       - "*"

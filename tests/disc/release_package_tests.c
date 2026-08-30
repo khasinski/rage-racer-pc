@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
         ok &= RequireFile(argv[1], required[index]);
     if (!ReadFile(argv[1], "CMakeLists.txt", &cmake)) return 1;
     ok &= RequireText("CMakeLists.txt", cmake,
-                      "RAGE_RACER_RELEASE_VERSION \"0.6-alpha\"");
+                      "RAGE_RACER_RELEASE_VERSION \"0.6.1-alpha\"");
     ok &= RequireText("CMakeLists.txt", cmake, "RageRacer.icns");
     ok &= RequireText("CMakeLists.txt", cmake, "rage-racer.rc");
     free(cmake);
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
             ok = 0;
             continue;
         }
-        ok &= RequireText(workflows[index], workflow, "default: 0.6-alpha");
+        ok &= RequireText(workflows[index], workflow, "default: 0.6.1-alpha");
         ok &= RequireText(workflows[index], workflow, "README.md");
         ok &= RequireText(workflows[index], workflow, "LICENSE.md");
         ok &= RequireText(workflows[index], workflow, "rage-port.ini");
