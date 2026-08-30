@@ -6,7 +6,6 @@
 
 
 void LoadTrackDataAssets(void) {
-    GameSceneAssetHeader *header;
     void *dst;
     s32 offset;
 

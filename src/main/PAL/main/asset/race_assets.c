@@ -140,7 +140,6 @@ void LoadRaceAssets(void) {
         offset = (g_GrandPrixClass * 8) + courseOffset;
         assetIndex = offset + ASSET_TRACK_2ND_BASE;
         if (LoadAsset(assetIndex, dst) != 0) {
-            GameSceneAssetHeader *header;
 
             TrackAssetIdentitySet(assetIndex);
 

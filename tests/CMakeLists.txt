@@ -23,6 +23,15 @@
 # toolchain used by the port and release jobs.
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
+# Several test targets link the object libraries the top level compiles with
+# sanitizers, and an object built with them needs the runtime on its link
+# line. The top level adds that only to the two game binaries, so the tests
+# ask for it here rather than each target remembering.
+if(RAGE_ENABLE_SANITIZERS AND
+   CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+    add_link_options(-fsanitize=address,undefined)
+endif()
+
 add_subdirectory(audio)
 add_subdirectory(car)
 add_subdirectory(disc)
