@@ -670,6 +670,82 @@ int main(int argc, char **argv) {
         }
     }
 
+    /*
+     * The idle screen. The asymmetry worth pinning is that confirm here acts
+     * on the row the directions have just moved to, where the prompts confirm
+     * the one that was showing. The sweep presses one button at a time and so
+     * cannot tell the two apart.
+     */
+    {
+        static const struct {
+            const char *what;
+            u16 pressed;
+            u16 held;
+            s32 option;
+            s32 cueCount;
+            s32 optionAfter;
+            int prev, next, choose;
+        } cases[] = {
+            {"nothing", 0, 0, 1, 0, 1, 0, 0, 0},
+            {"up", PAD_UP, 0, 1, 1, 0, 0, 0, 0},
+            {"up wraps to the last row", PAD_UP, 0, 0, 1, 2, 0, 0, 0},
+            {"down", PAD_DOWN, 0, 1, 1, 2, 0, 0, 0},
+            {"down wraps to the first row", PAD_DOWN, 0, 2, 1, 0, 0, 0, 0},
+            /* Both are acted on, in order, so the second undoes the first. */
+            {"up and down together", PAD_UP | PAD_DOWN, 0, 1, 2, 1, 0, 0, 0},
+            {"holding left asks to browse back", 0, PAD_LEFT, 1, 0, 1,
+             1, 0, 0},
+            {"holding right asks to browse on", 0, PAD_RIGHT, 1, 0, 1,
+             0, 1, 0},
+            {"holding both asks for both", 0, PAD_LEFT | PAD_RIGHT, 1, 0, 1,
+             1, 1, 0},
+            {"a press is not a hold", PAD_LEFT | PAD_RIGHT, 0, 1, 0, 1,
+             0, 0, 0},
+            {"confirm takes the row showing", PAD_CROSS, 0, 1, 0, 1, 0, 0, 1},
+            /* This is the asymmetry: the row confirmed is the row moved to. */
+            {"confirm with up takes the row moved to", PAD_CROSS | PAD_UP, 0,
+             1, 1, 0, 0, 0, 1},
+            {"confirm with down likewise", PAD_CROSS | PAD_DOWN, 0, 1, 1, 2,
+             0, 0, 1},
+            {"confirm after wrapping", PAD_CROSS | PAD_UP, 0, 0, 1, 2,
+             0, 0, 1},
+            {"confirm while browsing", PAD_CROSS, PAD_LEFT, 2, 0, 2, 1, 0, 1},
+        };
+        size_t ci;
+
+        for (ci = 0; ci < sizeof(cases) / sizeof(cases[0]); ci++) {
+            CourseSelectInputOutcome got = DecideCourseSelectInput(
+                cases[ci].pressed, cases[ci].held, cases[ci].option);
+            int k;
+            if (got.cueCount != cases[ci].cueCount) {
+                printf("FAIL %s: played %d sounds, expected %d\n",
+                       cases[ci].what, got.cueCount, cases[ci].cueCount);
+                promptFailures++;
+            }
+            for (k = 0; k < got.cueCount && k < cases[ci].cueCount; k++) {
+                if (got.cues[k] != 1) {
+                    printf("FAIL %s: sound %d was %d, expected 1\n",
+                           cases[ci].what, k, got.cues[k]);
+                    promptFailures++;
+                }
+            }
+            if (got.option != cases[ci].optionAfter) {
+                printf("FAIL %s: row %d, expected %d\n", cases[ci].what,
+                       got.option, cases[ci].optionAfter);
+                promptFailures++;
+            }
+            if (got.wantsPrev != cases[ci].prev ||
+                got.wantsNext != cases[ci].next ||
+                got.choosesRow != cases[ci].choose) {
+                printf("FAIL %s: prev/next/choose %d/%d/%d, expected "
+                       "%d/%d/%d\n", cases[ci].what, got.wantsPrev,
+                       got.wantsNext, got.choosesRow, cases[ci].prev,
+                       cases[ci].next, cases[ci].choose);
+                promptFailures++;
+            }
+        }
+    }
+
     if (promptFailures != 0) {
         printf("%d save prompt assertion(s) failed\n", promptFailures);
         return 1;

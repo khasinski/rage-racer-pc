@@ -154,28 +154,54 @@ static void ChooseCourseSelectRow(s32 row) {
 }
 
 /* Idle: the pad steps through the courses and picks a row. */
+/*
+ * Every press is acted on, and the directions are decided before confirm, so
+ * confirming while holding a direction acts on the row just moved to. The
+ * prompts read their cursor the other way round; both are deliberate and both
+ * are checked.
+ */
+CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
+                                                 s32 option) {
+    CourseSelectInputOutcome out;
+    out.cueCount = 0;
+    out.option = option;
+    if (pressed & PAD_UP) {
+        out.cues[out.cueCount++] = 1;
+        out.option = (out.option > 0) ? out.option - 1 : 2;
+    }
+    if (pressed & PAD_DOWN) {
+        out.cues[out.cueCount++] = 1;
+        out.option = (out.option < 2) ? out.option + 1 : 0;
+    }
+    out.wantsPrev = (held & PAD_LEFT) != 0;
+    out.wantsNext = (held & PAD_RIGHT) != 0;
+    out.choosesRow = (pressed & PAD_CONFIRM) != 0;
+    return out;
+}
+
 static void UpdateCourseSelectInput(void) {
+    CourseSelectInputOutcome choice;
+    s32 i;
     g_MenuOverlayPattern = -1;
-    if (g_PadPressed & PAD_UP) {
-        PlaySoundCue(1);
-        g_CourseSelectOption =
-            (g_CourseSelectOption > 0) ? g_CourseSelectOption - 1 : 2;
+    choice = DecideCourseSelectInput(g_PadPressed, g_PadHeld,
+                                     g_CourseSelectOption);
+    for (i = 0; i < choice.cueCount; i++) {
+        PlaySoundCue(choice.cues[i]);
     }
-    if (g_PadPressed & PAD_DOWN) {
-        PlaySoundCue(1);
-        g_CourseSelectOption =
-            (g_CourseSelectOption < 2) ? g_CourseSelectOption + 1 : 0;
-    }
-    if ((g_PadHeld & PAD_LEFT) && (CanSelectPrevCourse() != 0) &&
+    g_CourseSelectOption = choice.option;
+    /* Asked in this order, and each condition only when the one before it
+     * held, because settling the card is a question the screen answers by
+     * looking rather than by remembering. */
+    if (choice.wantsPrev && (CanSelectPrevCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
         BrowseToCourse(-1, 0);
     }
-    if ((g_PadHeld & PAD_RIGHT) && (CanSelectNextCourse() != 0) &&
+    if (choice.wantsNext && (CanSelectNextCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
         BrowseToCourse(1, 0xF4240);
     }
-    if (g_PadPressed & PAD_CONFIRM) {
-        ChooseCourseSelectRow(g_CourseSelectOption);
+    if (choice.choosesRow) {
+        ChooseCourseSelectRow(choice.option);
     }
 }
 

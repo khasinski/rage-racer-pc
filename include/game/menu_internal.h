@@ -36,9 +36,13 @@ MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
  * sounds rather than before or after both. The order is therefore part of the
  * answer and the outcome carries a list rather than a count of cues.
  */
+/* The things a menu decision can ask for, in the order it asks for them. */
 enum {
-    MENU_PROMPT_CUE = 0,     /* play this sound cue */
-    MENU_PROMPT_CURTAIN = 1  /* start the curtain over the class change */
+    MENU_PROMPT_CUE = 0,      /* play this sound cue */
+    MENU_PROMPT_CURTAIN = 1,  /* start the curtain over the class change */
+    MENU_BROWSE_PREV = 2,     /* step the course card to the previous one */
+    MENU_BROWSE_NEXT = 3,     /* and to the next */
+    MENU_CHOOSE_ROW = 4       /* act on the row the cursor is on */
 };
 
 typedef struct MenuPromptEffect {
@@ -54,6 +58,27 @@ typedef struct MenuClassPromptOutcome {
     s32 subCursor;
     s32 changeApplied;
 } MenuClassPromptOutcome;
+
+/*
+ * The idle screen: moving between its three rows, browsing the courses, and
+ * choosing. Unlike the prompts, confirm here acts on the row the directions
+ * have just moved to rather than the one that was showing, which is a real
+ * difference in feel and is why this is worth stating rather than assuming.
+ */
+typedef struct CourseSelectInputOutcome {
+    s32 cues[2];
+    s32 cueCount;
+    s32 option;
+    /* Whether the player is asking to browse. Whether they may is a question
+     * about live state that the screen answers itself, in the order and only
+     * as often as it always did. */
+    int wantsPrev;
+    int wantsNext;
+    int choosesRow;
+} CourseSelectInputOutcome;
+
+CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
+                                                 s32 option);
 
 /* Choosing the Grand Prix class, which resets the series progress, so picking
  * the class already in use has to close the prompt and change nothing. */
