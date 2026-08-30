@@ -168,85 +168,102 @@ static void RunCardMenuRows(s32 fadeBusy) {
  * Picking a slot, and every step that follows from it: the prompt, the
  * confirmation, the read or write itself, and how it reports what happened.
  */
-static void RunCardSlotActions(s32 fadeBusy) {
-    s32 tmp;
-    switch (g_McActionState) {
-    case 0x00: {
-        s32 *s0 = &g_McSlotCursor;
-        /*
-         * Picking a slot. Which prompt the player sees, and what confirming
-         * does, depends on whether this is a save or a load, whether the card
-         * has room, and whether the slot under the cursor already holds a
-         * file. Retail asks the back button twice on the card-full path, once
-         * inside the branch and once on the way out, and each ask plays its
-         * own cue, so both stay.
-         */
-        AdjustMenuSelectionHorizontal(s0, 0, 2);
-        if (g_McSaveMode != 0) {
-            if ((g_McSlotUsedMask % 8) != 0) {
-                g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
-                if (g_PadPressed & PAD_CONFIRM) {
-                    if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
-                        PlaySoundCue(2);
-                        g_McConfirmChoice = 0;
-                        g_McActionState = 0x1E;
-                    } else {
-                        PlaySoundCue(5);
-                        g_McActionState = 0x28;
-                    }
-                }
-            } else {
-                g_McMenuPhase = MC_PROMPT_NO_DATA;
-                if (g_PadPressed & PAD_CONFIRM) {
-                    PlaySoundCue(5);
-                    g_McMenuPage = 0;
-                }
-            }
-        } else if (g_McFreeBlocks != 0) {
-            g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
+/*
+ * Several of the card actions sit still for a few frames before they act, so
+ * that the message on screen can be read. Answers whether the wait is over.
+ */
+static int CardActionTimerElapsed(void) {
+    g_McActionTimer -= 1;
+    return g_McActionTimer == 0;
+}
+
+/* Whether a slot already holds a save. */
+static int CardSlotIsUsed(s32 slot) {
+    return ((g_McSlotUsedMask >> slot) & 1) != 0;
+}
+
+/*
+ * Picking a slot, which is where the card menu spends most of its time.
+ */
+static void PickCardSlot(void) {
+
+    s32 *slotCursor = &g_McSlotCursor;
+    /*
+     * Picking a slot. Which prompt the player sees, and what confirming
+     * does, depends on whether this is a save or a load, whether the card
+     * has room, and whether the slot under the cursor already holds a
+     * file. Retail asks the back button twice on the card-full path, once
+     * inside the branch and once on the way out, and each ask plays its
+     * own cue, so both stay.
+     */
+    AdjustMenuSelectionHorizontal(slotCursor, 0, 2);
+    if (g_McSaveMode != 0) {
+        if ((g_McSlotUsedMask % 8) != 0) {
+            g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
             if (g_PadPressed & PAD_CONFIRM) {
-                if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
-                    PlaySoundCue(2);
-                    g_McConfirmChoice_v = 0;
-                    g_McActionState = 0xA;
-                } else {
-                    PlaySoundCue(2);
-                    g_McActionTimer = 0x1E;
-                    g_McActionState = 0xB;
-                }
-            }
-        } else if ((g_McSlotUsedMask % 8) != 0) {
-            g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
-            if (g_PadPressed & PAD_CONFIRM) {
-                if (((g_McSlotUsedMask >> *s0) & 1) != 0) {
+                if (CardSlotIsUsed(*slotCursor)) {
                     PlaySoundCue(2);
                     g_McConfirmChoice = 0;
-                    g_McActionState = 0xA;
+                    g_McActionState = 0x1E;
                 } else {
-                    PlaySoundCue(2);
-                    g_McActionState = 0x19;
+                    PlaySoundCue(5);
+                    g_McActionState = 0x28;
                 }
             }
         } else {
-            g_McMenuPhase = MC_PROMPT_CARD_FULL;
+            g_McMenuPhase = MC_PROMPT_NO_DATA;
             if (g_PadPressed & PAD_CONFIRM) {
                 PlaySoundCue(5);
                 g_McMenuPage = 0;
-            } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
-                g_McMenuPage = 0;
             }
         }
-        if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        g_McMenuPage = 0;
-        break;
+    } else if (g_McFreeBlocks != 0) {
+        g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
+        if (g_PadPressed & PAD_CONFIRM) {
+            if (CardSlotIsUsed(*slotCursor)) {
+                PlaySoundCue(2);
+                g_McConfirmChoice_v = 0;
+                g_McActionState = 0xA;
+            } else {
+                PlaySoundCue(2);
+                g_McActionTimer = 0x1E;
+                g_McActionState = 0xB;
+            }
+        }
+    } else if ((g_McSlotUsedMask % 8) != 0) {
+        g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
+        if (g_PadPressed & PAD_CONFIRM) {
+            if (CardSlotIsUsed(*slotCursor)) {
+                PlaySoundCue(2);
+                g_McConfirmChoice = 0;
+                g_McActionState = 0xA;
+            } else {
+                PlaySoundCue(2);
+                g_McActionState = 0x19;
+            }
+        }
+    } else {
+        g_McMenuPhase = MC_PROMPT_CARD_FULL;
+        if (g_PadPressed & PAD_CONFIRM) {
+            PlaySoundCue(5);
+            g_McMenuPage = 0;
+        } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
+            g_McMenuPage = 0;
+        }
     }
+    if ((PollMenuBackInput() & 0xFFFF) == 0) return;
+    g_McMenuPage = 0;
+}
 
+static void RunCardSlotActions(void) {
+    s32 tmp;
+    switch (g_McActionState) {
+    case 0x00:
+        PickCardSlot();
+        break;
     case 0x0A: {
-        s32 *p = &g_McConfirmChoice;
-        s32 hi = g_McSlotCursor * 2;
-        s32 lo = g_McConfirmChoice + 9;
-        g_McMenuPhase = hi + lo;
-        SetMenuBinaryChoiceVertical(p);
+        g_McMenuPhase = (g_McSlotCursor * 2) + g_McConfirmChoice + 9;
+        SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
         if (g_McConfirmChoice != 0) {
         if (!((PollMenuConfirmInput() & 0xFFFF) == 0)) {
         g_McActionState = 0xB;
@@ -274,32 +291,23 @@ static void RunCardSlotActions(s32 fadeBusy) {
         break;
 
     case 0x0C: {
-        s32 t = g_McActionTimer;
         g_McActionBusy = 1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
+        if (!CardActionTimerElapsed()) break;
         g_McActionState = 0xD;
         break;
     }
 
     case 0x0D: {
-        s32 a0 = g_McSlotCursor;
-        s32 x;
-        s32 dp;
+        s32 slot = g_McSlotCursor;
+        s32 written;
+
         g_McMenuSubState = 5;
-        x = WriteMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
-        g_McActionResult = x;
-        if (x != 0) {
-        g_McActionOk = 1;
-        x = 6;
-        } else {
-        x = 0x10;
-        g_McActionOk = 0;
-        }
-        g_McMenuSubState = x;
-        dp = GameMenuLoadPhase;
+        written = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+        g_McActionResult = written;
+        g_McActionOk = written != 0;
+        g_McMenuSubState = written != 0 ? 6 : 0x10;
         g_McActionState = 0xF;
-        g_McSavedLoadPhase = dp;
+        g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     }
 
@@ -307,28 +315,22 @@ static void RunCardSlotActions(s32 fadeBusy) {
         g_McActionState = 0x10;
         break;
 
-    case 0x10: {
-        s32 nv;
+    case 0x10:
         if (g_McActionResult != 0) {
-        {
-            s32 r = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
-            g_McSlotUsedMask = r;
-            if (r != 0) {
-                if ((r & 0xFFFF) == 0) {
-                    nv = 0xE;
-                    g_McMenuSubState = nv;
-                }
-            } else {
-                nv = 0xC;
-                g_McMenuSubState = nv;
+            s32 usedMask = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
+
+            g_McSlotUsedMask = usedMask;
+            /* No files at all, or none in the first sixteen slots, each send
+             * the menu somewhere different. */
+            if (usedMask == 0) {
+                g_McMenuSubState = 0xC;
+            } else if ((usedMask & 0xFFFF) == 0) {
+                g_McMenuSubState = 0xE;
             }
+            g_McSavedLoadPhase = GameMenuLoadPhase;
         }
-        g_McSavedLoadPhase = GameMenuLoadPhase;
-        }
-        nv = 0x11;
-        g_McActionState = nv;
+        g_McActionState = 0x11;
         break;
-    }
 
     case 0x11:
         g_McActionTimer = 5;
@@ -336,9 +338,7 @@ static void RunCardSlotActions(s32 fadeBusy) {
         break;
 
     case 0x12: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
+        if (!CardActionTimerElapsed()) break;
         g_McSettleTicks = 0;
         g_McActionState = 0x13;
         break;
@@ -369,15 +369,14 @@ static void RunCardSlotActions(s32 fadeBusy) {
     }
 
     case 0x15: {
-        s32 t = g_McActionTimer;
-        s32 cm1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        cm1 = g_McMenuRowCount;
+        s32 lastRow;
+
+        if (!CardActionTimerElapsed()) break;
+        lastRow = g_McMenuRowCount;
         g_McMenuPage = 0;
         g_McActionState = 0;
-        cm1--;
-        g_McMenuRowCursor = cm1;
+        lastRow--;
+        g_McMenuRowCursor = lastRow;
         break;
     }
 
@@ -397,9 +396,7 @@ static void RunCardSlotActions(s32 fadeBusy) {
         break;
 
     case 0x1F: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
+        if (!CardActionTimerElapsed()) break;
         g_McActionState = 0x20;
         break;
     }
@@ -418,20 +415,18 @@ static void RunCardSlotActions(s32 fadeBusy) {
     }
 
     case 0x21: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
+        if (!CardActionTimerElapsed()) break;
         g_McActionState = 0x22;
         break;
     }
 
     case 0x22: {
-        s32 *s0 = &g_McSlotCursor;
-        s32 a0 = *s0;
+        s32 *slotCursor = &g_McSlotCursor;
+        s32 slot = *slotCursor;
         s32 dp;
-        g_McActionResult = LoadMemoryCardSaveSlot(a0, &g_McSaveHeaders[a0]);
+        g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         if (g_McActionResult != 0) {
-        stateValue = *s0;
+        stateValue = *slotCursor;
         g_McActionOk = 1;
         g_McMenuSubState = 8;
         g_McLastSlot = stateValue;
@@ -453,9 +448,7 @@ static void RunCardSlotActions(s32 fadeBusy) {
         break;
 
     case 0x24: {
-        s32 t = g_McActionTimer;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
+        if (!CardActionTimerElapsed()) break;
         g_McSettleTicks = 0;
         g_McActionState = 0x25;
         break;
@@ -486,15 +479,14 @@ static void RunCardSlotActions(s32 fadeBusy) {
     }
 
     case 0x27: {
-        s32 t = g_McActionTimer;
-        s32 cm1;
-        g_McActionTimer = t - 1;
-        if (g_McActionTimer != 0) break;
-        cm1 = g_McMenuRowCount;
+        s32 lastRow;
+
+        if (!CardActionTimerElapsed()) break;
+        lastRow = g_McMenuRowCount;
         g_McMenuPage = 0;
         g_McActionState = 0;
-        cm1--;
-        g_McMenuRowCursor = cm1;
+        lastRow--;
+        g_McMenuRowCursor = lastRow;
         break;
     }
 
@@ -508,7 +500,7 @@ static void RunCardSlotActions(s32 fadeBusy) {
         break;
 
         {
-            s32 cm1 = g_McMenuRowCount;
+            s32 lastRow = g_McMenuRowCount;
             g_McMenuPage = 0;
             g_McSlotCursor = 0;
             g_McActionState = 0;
@@ -516,8 +508,8 @@ static void RunCardSlotActions(s32 fadeBusy) {
             g_McActionResult = 0;
             g_McConfirmChoice = 0;
             g_McActionTimer = 0;
-            cm1--;
-            g_McMenuRowCursor = cm1;
+            lastRow--;
+            g_McMenuRowCursor = lastRow;
         }
         break;
 
@@ -532,10 +524,10 @@ static void RunCardReadyState(s32 fadeBusy) {
     if (g_McMenuPage == 0) {
         RunCardMenuRows(fadeBusy);
     } else if (g_McMenuPage == 1) {
-        RunCardSlotActions(fadeBusy);
+        RunCardSlotActions();
     } else {
             {
-                s32 cm1 = g_McMenuRowCount;
+                s32 lastRow = g_McMenuRowCount;
                 g_McMenuPage = 0;
                 g_McSlotCursor = 0;
                 g_McActionState = 0;
@@ -543,8 +535,8 @@ static void RunCardReadyState(s32 fadeBusy) {
                 g_McActionResult = 0;
                 g_McConfirmChoice = 0;
                 g_McActionTimer = 0;
-                cm1--;
-                g_McMenuRowCursor = cm1;
+                lastRow--;
+                g_McMenuRowCursor = lastRow;
             }
     }
     switch (g_McMenuSelection) {
