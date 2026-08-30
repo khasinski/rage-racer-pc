@@ -306,30 +306,30 @@ static void SettleEngineRpm(GameCarDrive *p) {
  * top for a car that has not travelled far enough to start falling yet.
  */
 static void UpdateJumpArc(PlayerCarRuntime *car, s32 ground) {
-    s32 tick = car->shiftTick + 1;
+    s32 tick = car->verticalMotionTimer + 1;
 
-    car->shiftTick = tick;
-    if (car->shiftState == 1) {
+    car->verticalMotionTimer = tick;
+    if (car->verticalMotionState == 1) {
         s32 rise = (s16)tick;
 
-        car->y = car->shiftRef * rise + (rise * rise * 72) / 100 + car->y;
+        car->y = car->verticalMotionRate * rise + (rise * rise * 72) / 100 + car->y;
         if (car->y >= ground) {
-            car->shiftState = 0;
+            car->verticalMotionState = 0;
         }
-    } else if (car->shiftState == 2) {
-        if (ground - car->shiftRef <= car->shiftBase) {
-            car->y = car->shiftBase;
+    } else if (car->verticalMotionState == 2) {
+        if (ground - car->verticalMotionRate <= car->verticalTargetY) {
+            car->y = car->verticalTargetY;
         } else {
-            car->shiftState = 3;
-            car->shiftRef = car->shiftTick;
-            car->y = car->shiftBase;
+            car->verticalMotionState = 3;
+            car->verticalMotionRate = car->verticalMotionTimer;
+            car->y = car->verticalTargetY;
         }
     } else {
-        s32 fall = (s16)tick - car->shiftRef;
+        s32 fall = (s16)tick - car->verticalMotionRate;
 
-        car->y = car->shiftBase + (fall * fall * 216) / 100;
+        car->y = car->verticalTargetY + (fall * fall * 216) / 100;
         if (car->y >= ground) {
-            car->shiftState = 0;
+            car->verticalMotionState = 0;
         }
     }
 }
@@ -345,7 +345,7 @@ static void RelaunchDrivetrain(PlayerCarRuntime *car, GameCarDrive *p) {
     s32 rpm;
 
     p->drivetrainTorque = ((100 - (p->gear - 1) * 4) * 10000) * car->speed / 100;
-    g_ShiftSoundLevel = car->shiftTick & 0x3F;
+    g_ShiftSoundLevel = car->verticalMotionTimer & 0x3F;
     p->yawOffset = 0;
     p->launchHeading = car->headingAngle;
     p->launchSpeed = car->speed / 0x100000;
@@ -370,10 +370,10 @@ static void LandFromJump(PlayerCarRuntime *car, GameCarDrive *p, s32 ground) {
     car->verticalRoll = 0;
     StartCarBodyKick(1, car);
     g_ShiftSoundLevel = 0;
-    if (((s16)car->shiftTick >= 19) && (g_RacePhase < 3)) {
+    if (((s16)car->verticalMotionTimer >= 19) && (g_RacePhase < 3)) {
         PlaySoundCue(0xE);
     }
-    if ((p->motionState == CAR_MOTION_DRIVING) && ((s16)car->shiftTick >= 3)) {
+    if ((p->motionState == CAR_MOTION_DRIVING) && ((s16)car->verticalMotionTimer >= 3)) {
         RelaunchDrivetrain(car, p);
     }
 }
@@ -407,7 +407,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     UpdateCarBodyRoll(car);
 
-    if (car->shiftState == 0) {
+    if (car->verticalMotionState == 0) {
         SteerTowardsTarget(car, p);
     }
 
@@ -497,9 +497,9 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         ground = bodyY - 8;
     }
 
-    if (car->shiftState != 0) {
+    if (car->verticalMotionState != 0) {
         UpdateJumpArc(car, ground);
-        if (car->shiftState == 0) {
+        if (car->verticalMotionState == 0) {
             LandFromJump(car, p, ground);
         }
     }

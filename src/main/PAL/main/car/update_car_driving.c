@@ -50,7 +50,7 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
     if (spec->redline + 1000 < route->engineRpm) {
         s16 v = g_SteerHoldFrames;
         if (v >= 41 && route->gear == spec->topGear &&
-            car->shiftState == 0) {
+            car->verticalMotionState == 0) {
             idx = v + 24;
             if (idx >= 101) {
                 idx = 100;

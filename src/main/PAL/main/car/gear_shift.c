@@ -34,7 +34,7 @@ void ShiftPlayerGears(PlayerCarRuntime *car, int mode23) {
             }
         }
     } else {
-        if (car->shiftState == 0) {
+        if (car->verticalMotionState == 0) {
             s32 g;
 
             g = car->drive.gear;

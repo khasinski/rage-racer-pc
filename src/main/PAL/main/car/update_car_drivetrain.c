@@ -531,7 +531,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   {
     g_GripLossTimer = 0;
   }
-  if (car->shiftState == 0)
+  if (car->verticalMotionState == 0)
   {
     steerLoad += drive->engineRpm / 256;
   }
@@ -640,7 +640,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   steerLoad += (roadSpeed * roadSpeed) / dragTerm;
   g_DragScale = 0x3E8;
-  if (car->shiftState == 0)
+  if (car->verticalMotionState == 0)
   {
     steerLoad = (steerLoad * (0x64 - bandScale)) / 100;
   }
@@ -715,7 +715,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   else
   {
-    if (car->shiftState != 0)
+    if (car->verticalMotionState != 0)
     {
       speedA = car->speed;
       car->acceleration = 0;

@@ -70,7 +70,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
 
     finalAngle = 0x400 - Atan2(coords[0] - car->x, coords[2] - car->z);
 
-    if (car->shiftState == 0) {
+    if (car->verticalMotionState == 0) {
         xValue = timer << 16;
         divisor = xValue >> 16;
         if (divisor <= 0) {
@@ -117,7 +117,7 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
         car->speed = car->speed * 990 / 1000;
     }
 
-    if (car->shiftState == 0) {
+    if (car->verticalMotionState == 0) {
         s32 near;
         s32 phase;
         s32 volume;

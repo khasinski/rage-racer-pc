@@ -563,9 +563,18 @@ typedef union PlayerCarRaceStateAddress {
     s32 *words;
 } PlayerCarRaceStateAddress;
 
-/* The player's 0x19C-byte race object. Its prefix shares the world/track
- * layout used by the rival cars, but +0xBC is the player drivetrain block,
- * not the rival AI view. */
+/*
+ * The player's 0x19C-byte race object. Everything up to +0xBC is laid out
+ * exactly as a rival car's, field for field, which is why the track, crest and
+ * knockback code takes either; from +0xBC on this carries the player
+ * drivetrain block where a rival carries its AI view.
+ *
+ * The four fields at +0x98 were once called verticalMotionState, verticalMotionTimer, verticalMotionRate
+ * and verticalTargetY, which read as gearbox state and are nothing of the kind:
+ * UpdateCarCrestHop writes them for the player as well as for the rivals,
+ * through exactly that shared prefix, and what they hold is the hop over a
+ * crest. They now carry the names the rival side already used.
+ */
 typedef struct PlayerCarRuntime {
     s32 x;
     s32 y;
@@ -613,10 +622,10 @@ typedef struct PlayerCarRuntime {
     s16 bodyKickOffset;
     s16 verticalRoll;
     s16 reserved96;
-    s16 shiftState;
-    u16 shiftTick;
-    s16 shiftRef;
-    s16 shiftBase;
+    s16 verticalMotionState;
+    u16 verticalMotionTimer;
+    s16 verticalMotionRate;
+    s16 verticalTargetY;
     s32 headingAngle;
     s32 speed;
     s32 acceleration;

@@ -63,7 +63,7 @@ static void Place(int manual, s32 gear, s32 speed) {
     s_car.drive.gear = (s16)gear;
     s_car.speed = speed;
     s_car.drive.clutch = 0;
-    s_car.shiftState = 0;
+    s_car.verticalMotionState = 0;
     s_car.drive.motionState = 0;
     g_PadPressed = 0;
     g_AutoShiftCooldown = 0;
@@ -209,7 +209,7 @@ static void AutomaticTests(void) {
     /* A shift already in progress is left alone, but the cooldown still runs
      * and stopping still drops the gear. */
     Place(0, 1, 1500);
-    s_car.shiftState = 1;
+    s_car.verticalMotionState = 1;
     ShiftPlayerGears(&s_car, 0);
     Check(s_car.drive.gear == 1, "no shift while one is in progress",
           s_car.drive.gear, 1);

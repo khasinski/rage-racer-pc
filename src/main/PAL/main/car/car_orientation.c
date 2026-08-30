@@ -233,7 +233,7 @@ void InitPlayerCar(PlayerCarRuntime *car)
   drive->launchEnergyThreshold = g_LaunchEnergyThresholds[drive->launchThresholdIndex % 5] * 0xE;
   drive->steeringGripResponse = g_CarSpec->steeringGripResponse;
   printf("%s", g_MsgInit5);
-  player->shiftState = 0;
+  player->verticalMotionState = 0;
   drive->brakeLatch = 0;
   drive->acceleratorLatch = 0;
   g_EngineRpmJitter = 0;
@@ -516,7 +516,7 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
       {
         aDist = -aDist;
       }
-      if ((opponent->verticalMotionState == car->shiftState) || (aDist < 0x1A))
+      if ((opponent->verticalMotionState == car->verticalMotionState) || (aDist < 0x1A))
       {
         if (((trackDelta < 0x64) && ((progressDelta < 0xC8) || ((g_TrackLength - 0xC8) < progressDelta))) && (aDist < 0x3C))
         {

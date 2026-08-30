@@ -239,10 +239,10 @@ typedef struct GameRenderObject {
     s16 bodyKickOffset;
     s16 verticalRoll;
     s16 reserved96;
-    s16 shiftState;
-    u16 shiftTick;
-    s16 shiftRef;
-    s16 shiftBase;
+    s16 verticalMotionState;
+    u16 verticalMotionTimer;
+    s16 verticalMotionRate;
+    s16 verticalTargetY;
     s32 headingAngle;
     s32 speed;
     s32 speedRamp;
