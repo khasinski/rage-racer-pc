@@ -3,14 +3,31 @@
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "psyq/snd.h"
+#include "timing_control.h"
+
+/* libsnd counts musical time in ticks of a sixtieth of a second, which is what
+ * retail asked for: SsSetTickMode(SS_TICK60) left VBLANK_MINUS at sixty and
+ * drove SsSeqCalledTbyT from a counter interrupt at sixty hertz on a PAL
+ * console as well, so the music kept its tempo while the picture ran at fifty.
+ * The host has no such interrupt and services the sequencer from the game
+ * loop, so it has to pay the same sixty ticks a second out of frames that
+ * arrive at fifty. */
+#define SEQUENCE_TICK_HZ 60
 
 void TickSequenceAudio(void) {
+    /* Ticks the sequencer is owed, in units of one game frame. */
+    static s32 tickCredit;
+
     if (g_SceneId == 0xC) {
         SpuVmDamperStep();
     } else {
-        /* The host owns the sequence clock. Menu frames already run at the
-         * selected PAL/NTSC base rate, so one service call is one audio tick. */
-        SsSeqCalledTbyT();
+        s32 frameHz = TimingBaseHz();
+
+        tickCredit += SEQUENCE_TICK_HZ;
+        while (tickCredit >= frameHz) {
+            tickCredit -= frameHz;
+            SsSeqCalledTbyT();
+        }
         if (g_SeqVolumeFadeStep != 0) {
             UpdateSequenceFadeOut();
         }

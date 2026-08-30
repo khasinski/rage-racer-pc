@@ -56,13 +56,12 @@ def main() -> int:
     if frames < 10_000 or energy < 1_000_000:
         raise AssertionError(f"SPU output remained silent: frames={frames}, energy={energy}")
     # This scripted route reaches the round screen at a fixed PAL timer. The
-    # menu clock must advance once per 50 Hz game frame: the old half-rate
-    # divider produced only 59 notes and made normally pitched VAG samples
-    # sound detached from a sequence running at half tempo.
-    if not 100 <= seq_notes <= 190:
+    # menu clock runs at libsnd's sixty ticks a second, which is a fifth more
+    # than the PAL frame rate; menu_music_tempo is what pins the rate itself.
+    if not 130 <= seq_notes <= 190:
         raise AssertionError(
-            "menu SEQ did not advance at the PAL base rate: "
-            f"notes={seq_notes} (expected 100..190)"
+            "menu SEQ did not advance at the retail tick rate: "
+            f"notes={seq_notes} (expected 130..190)"
         )
     if seq_voices < seq_notes:
         raise AssertionError(

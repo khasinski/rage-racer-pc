@@ -1414,6 +1414,16 @@ set_tests_properties(audio_output PROPERTIES LABELS e2e)
     set_tests_properties(audio_output PROPERTIES TIMEOUT 90)
 
     add_test(
+        NAME menu_music_tempo
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_music_tempo.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+    )
+set_tests_properties(menu_music_tempo PROPERTIES LABELS e2e)
+    set_tests_properties(menu_music_tempo PROPERTIES TIMEOUT 180)
+
+    add_test(
         NAME race_cdda
         COMMAND python3
             ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_cdda.py
