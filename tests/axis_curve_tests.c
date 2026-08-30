@@ -6,7 +6,7 @@
 static int failures;
 
 static void Expect(const char *what, float got, float want) {
-    if (fabsf(got - want) > 0.002f) {
+    if (!(fabsf(got - want) <= 0.002f)) {
         printf("%s: expected %.4f, got %.4f\n", what, want, got);
         failures++;
     }
@@ -68,6 +68,46 @@ int main(void) {
            (float)NegconTwist(0.05f, 0, 1, 25), 153.0f);
     Expect("opposing d-pad still steers from a centred stick",
            (float)NegconTwist(0.0f, 1, 0, 25), 103.0f);
+
+    /* A saturation at or below the deadzone leaves no travel to scale, which
+     * the settings allow: deadzone reaches 0.99 and saturation starts at 0.01.
+     * The guard nudges saturation clear so the division stays finite; without
+     * it the axis divides by zero and reports NaN at exactly the deadzone. */
+    Expect("saturation equal to deadzone, at the deadzone",
+           AxisCurve(0.5f, 0.5f, 0.5f, 0.0f, 1.0f), 0.0f);
+    Expect("saturation equal to deadzone, past it",
+           AxisCurve(0.6f, 0.5f, 0.5f, 0.0f, 1.0f), 1.0f);
+    Expect("saturation below deadzone",
+           AxisCurve(0.9f, 0.9f, 0.3f, 0.0f, 1.0f), 0.0f);
+
+    /* A range of zero would peg the twist at centre however hard the d-pad is
+     * held, so an unset range falls back to full lock. One unit of range is a
+     * real setting and must stay one unit. */
+    Expect("d-pad right at an unset range",
+           (float)NegconTwist(0.0f, 0, 1, 0), 255.0f);
+    Expect("d-pad left at an unset range",
+           (float)NegconTwist(0.0f, 1, 0, 0), 1.0f);
+    Expect("d-pad right at the smallest real range",
+           (float)NegconTwist(0.0f, 0, 1, 1), 129.0f);
+
+    /* The twist is one byte, so a range wider than the centre offset has to
+     * clamp rather than wrap. 128 is the first range that overflows. */
+    Expect("range 128 stops at full right",
+           (float)NegconTwist(0.0f, 0, 1, 128), 255.0f);
+    Expect("range past the byte stops at full right",
+           (float)NegconTwist(0.0f, 0, 1, 200), 255.0f);
+    Expect("range past the byte stops at full left",
+           (float)NegconTwist(0.0f, 1, 0, 200), 0.0f);
+
+    /* The pedal axis takes a raw SDL reading
+     * (one unit of the 16-bit range is 1.5e-5 of the result, so an off-by-one
+     * in the clamps or the divisor sits below the tolerance on purpose: it is
+     * smaller than anything the pad, the game or a player can tell apart) and must survive a
+     * reading wider than the range it expects. */
+    Expect("pedal below the axis range", JoystickPedalAxis(-40000, 0), 0.0f);
+    Expect("pedal above the axis range", JoystickPedalAxis(40000, 0), 1.0f);
+    Expect("inverted pedal below the axis range",
+           JoystickPedalAxis(-40000, 1), 1.0f);
 
     Expect("inverted pedal idle", JoystickPedalAxis(32767, 1), 0.0f);
     Expect("inverted pedal half", JoystickPedalAxis(0, 1), 0.5f);
