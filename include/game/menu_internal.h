@@ -30,6 +30,38 @@ typedef struct MenuPromptOutcome {
 MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
                                    s32 subCursor);
 
+/*
+ * The class prompt does two kinds of thing, not one, and every press is acted
+ * on, so confirming while a direction is held starts the curtain between two
+ * sounds rather than before or after both. The order is therefore part of the
+ * answer and the outcome carries a list rather than a count of cues.
+ */
+enum {
+    MENU_PROMPT_CUE = 0,     /* play this sound cue */
+    MENU_PROMPT_CURTAIN = 1  /* start the curtain over the class change */
+};
+
+typedef struct MenuPromptEffect {
+    s32 kind;
+    s32 value;
+} MenuPromptEffect;
+
+typedef struct MenuClassPromptOutcome {
+    MenuPromptEffect effects[5];
+    s32 effectCount;
+    s32 busy;
+    s32 confirmTimer;
+    s32 subCursor;
+    s32 changeApplied;
+} MenuClassPromptOutcome;
+
+/* Choosing the Grand Prix class, which resets the series progress, so picking
+ * the class already in use has to close the prompt and change nothing. */
+MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
+                                         s32 confirmTimer, s32 subCursor,
+                                         s32 currentClass, s32 maxClass,
+                                         s32 changeApplied);
+
 extern PaintColorTable g_PaintColorTable;
 extern s32 g_PaintPalettePulsePhase;
 extern s32 g_MenuAltLayout;

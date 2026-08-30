@@ -579,6 +579,97 @@ int main(int argc, char **argv) {
     if (s_out != NULL) {
         fclose(s_out);
     }
+    /*
+     * The class prompt, likewise. This one matters more: confirming a class
+     * the player has not got resets their whole series progress, and the
+     * sweep presses one button at a time, so nothing above ever holds confirm
+     * together with a direction. That is the case where the curtain has to
+     * start between the two sounds rather than before or after both.
+     */
+    {
+        enum { CUE = MENU_PROMPT_CUE, CURT = MENU_PROMPT_CURTAIN };
+        static const struct {
+            const char *what;
+            u16 pressed;
+            s32 subCursor;
+            s32 currentClass;
+            s32 kinds[5];
+            s32 values[5];
+            s32 count;
+            s32 busy;
+            s32 timer;
+            s32 applied;
+            s32 subAfter;
+        } cases[] = {
+            {"nothing held", 0, 1, 1, {0}, {0}, 0, 9, 7, 1, 1},
+            /* Choosing the class already in use must cost nothing. */
+            {"confirming the class in use", PAD_CROSS, 2, 2,
+             {CUE}, {2}, 1, 0, 7, 1, 2},
+            {"confirming another class", PAD_CROSS, 1, 2,
+             {CUE, CURT}, {2, 0}, 2, -5, 0x23, 0, 1},
+            {"cancelling", PAD_SQUARE, 1, 2, {CUE}, {3}, 1, 0, 7, 1, 1},
+            {"up", PAD_UP, 2, 2, {CUE}, {1}, 1, 9, 7, 1, 1},
+            {"up wraps to the highest reached", PAD_UP, 0, 0,
+             {CUE}, {1}, 1, 9, 7, 1, 3},
+            {"down", PAD_DOWN, 1, 1, {CUE}, {1}, 1, 9, 7, 1, 2},
+            {"down wraps back to the first", PAD_DOWN, 3, 3,
+             {CUE}, {1}, 1, 9, 7, 1, 0},
+            /* The ordering case: the curtain starts between the two sounds. */
+            {"confirming another class while holding up", PAD_CROSS | PAD_UP,
+             1, 2, {CUE, CURT, CUE}, {2, 0, 1}, 3, -5, 0x23, 0, 0},
+            /* Confirm reads the cursor before up moves it, so this confirms
+             * the class it was on and only then steps away from it. */
+            {"confirming the class in use while holding up",
+             PAD_CROSS | PAD_UP, 2, 2, {CUE, CUE}, {2, 1}, 2, 0, 7, 1, 1},
+            {"confirm and cancel together", PAD_CROSS | PAD_SQUARE, 1, 2,
+             {CUE, CURT, CUE}, {2, 0, 3}, 3, 0, 0x23, 0, 1},
+        };
+        size_t ci;
+
+        for (ci = 0; ci < sizeof(cases) / sizeof(cases[0]); ci++) {
+            MenuClassPromptOutcome got = DecideClassPrompt(
+                cases[ci].pressed, 9, 7, cases[ci].subCursor,
+                cases[ci].currentClass, 3, 1);
+            int k;
+            if (got.effectCount != cases[ci].count) {
+                printf("FAIL %s: did %d things, expected %d\n",
+                       cases[ci].what, got.effectCount, cases[ci].count);
+                promptFailures++;
+                continue;
+            }
+            for (k = 0; k < got.effectCount; k++) {
+                if (got.effects[k].kind != cases[ci].kinds[k] ||
+                    got.effects[k].value != cases[ci].values[k]) {
+                    printf("FAIL %s: thing %d was kind %d value %d, "
+                           "expected kind %d value %d\n", cases[ci].what, k,
+                           got.effects[k].kind, got.effects[k].value,
+                           cases[ci].kinds[k], cases[ci].values[k]);
+                    promptFailures++;
+                }
+            }
+            if (got.busy != cases[ci].busy) {
+                printf("FAIL %s: left the screen in %d, expected %d\n",
+                       cases[ci].what, got.busy, cases[ci].busy);
+                promptFailures++;
+            }
+            if (got.confirmTimer != cases[ci].timer) {
+                printf("FAIL %s: timer %d, expected %d\n", cases[ci].what,
+                       got.confirmTimer, cases[ci].timer);
+                promptFailures++;
+            }
+            if (got.changeApplied != cases[ci].applied) {
+                printf("FAIL %s: applied %d, expected %d\n", cases[ci].what,
+                       got.changeApplied, cases[ci].applied);
+                promptFailures++;
+            }
+            if (got.subCursor != cases[ci].subAfter) {
+                printf("FAIL %s: cursor %d, expected %d\n", cases[ci].what,
+                       got.subCursor, cases[ci].subAfter);
+                promptFailures++;
+            }
+        }
+    }
+
     if (promptFailures != 0) {
         printf("%d save prompt assertion(s) failed\n", promptFailures);
         return 1;

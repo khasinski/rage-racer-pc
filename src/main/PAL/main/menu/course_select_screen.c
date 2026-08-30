@@ -247,38 +247,77 @@ static void UpdateSavePrompt(void *ot) {
 }
 
 /* The class list. Picking the class already in use just closes it. */
+/*
+ * Picking the class already in use just closes the prompt: the change resets
+ * the player's progress through the series, so choosing what they already
+ * have must not cost them it. Up and down wrap through the classes they have
+ * reached, and as on the save prompt confirm reads the cursor before either
+ * direction can move it.
+ */
+static void Cue(MenuClassPromptOutcome *out, s32 cue) {
+    out->effects[out->effectCount].kind = MENU_PROMPT_CUE;
+    out->effects[out->effectCount++].value = cue;
+}
+
+MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
+                                         s32 confirmTimer, s32 subCursor,
+                                         s32 currentClass, s32 maxClass,
+                                         s32 changeApplied) {
+    MenuClassPromptOutcome out;
+    out.effectCount = 0;
+    out.busy = busy;
+    out.confirmTimer = confirmTimer;
+    out.subCursor = subCursor;
+    out.changeApplied = changeApplied;
+    if (pressed & PAD_CONFIRM) {
+        Cue(&out, 2);
+        if (out.subCursor == currentClass) {
+            out.busy = 0;
+        } else {
+            out.busy = -5;
+            out.changeApplied = 0;
+            out.confirmTimer = 0x23;
+            out.effects[out.effectCount].kind = MENU_PROMPT_CURTAIN;
+            out.effects[out.effectCount++].value = 0;
+        }
+    }
+    if (pressed & PAD_CANCEL) {
+        Cue(&out, 3);
+        out.busy = 0;
+    }
+    if (pressed & PAD_UP) {
+        Cue(&out, 1);
+        out.subCursor = (out.subCursor != 0) ? out.subCursor - 1 : maxClass;
+    }
+    if (pressed & PAD_DOWN) {
+        Cue(&out, 1);
+        out.subCursor = (out.subCursor < maxClass) ? out.subCursor + 1 : 0;
+    }
+    return out;
+}
+
 static void UpdateClassPrompt(void *ot) {
+    MenuClassPromptOutcome choice;
+    s32 cue;
     if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
-    if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        if (g_MenuSubCursor == g_GrandPrixClass) {
-            GameMenuBusy = 0;
+    choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
+                               g_MenuSubCursor, g_GrandPrixClass,
+                               g_RaceProgress->maxClassReached,
+                               g_ClassChangeApplied);
+    for (cue = 0; cue < choice.effectCount; cue++) {
+        if (choice.effects[cue].kind == MENU_PROMPT_CURTAIN) {
+            DrawClassChangeCurtain(choice.effects[cue].value);
         } else {
-            GameMenuBusy = -5;
-            g_ClassChangeApplied = 0;
-            g_MenuConfirmTimer = 0x23;
-            DrawClassChangeCurtain(0);
+            PlaySoundCue(choice.effects[cue].value);
         }
     }
-    if (g_PadPressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        GameMenuBusy = 0;
-    }
-    if (g_PadPressed & PAD_UP) {
-        PlaySoundCue(1);
-        g_MenuSubCursor = (g_MenuSubCursor != 0)
-                              ? g_MenuSubCursor - 1
-                              : g_RaceProgress->maxClassReached;
-    }
-    if (g_PadPressed & PAD_DOWN) {
-        PlaySoundCue(1);
-        g_MenuSubCursor = (g_MenuSubCursor < g_RaceProgress->maxClassReached)
-                              ? g_MenuSubCursor + 1
-                              : 0;
-    }
+    GameMenuBusy = choice.busy;
+    g_MenuConfirmTimer = choice.confirmTimer;
+    g_ClassChangeApplied = choice.changeApplied;
+    g_MenuSubCursor = (u8)choice.subCursor;
     DrawClassList(ot, 0);
 }
 
