@@ -279,7 +279,6 @@ void ResetReplayFrameCounts(void);
 void StartPad(void);
 void StepTrackTextureSwap(void);
 void TickSequenceAudio(void);
-void __main(void);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */

@@ -72,7 +72,6 @@ void MainLoop(void) {
     s32 elapsed;
     s32 ticks;
 
-    __main();
     KernelCallbackSlot3();
     BiosSetMemSize(2);
     CdInit();

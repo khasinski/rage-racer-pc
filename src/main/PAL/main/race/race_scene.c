@@ -139,7 +139,6 @@ void EnterRaceScene(void) {
     g_RivalCueCooldown2 = 0;
     g_RivalCueCooldown1 = 0;
     g_RivalCueCooldown0 = 0;
-    ResetFreeLookCamera();
     InitShuttleScenery();
     SeedFlybyScenery();
     SeedRouteScenery();

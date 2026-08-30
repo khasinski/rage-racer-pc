@@ -45,8 +45,8 @@ static void LatchPedal(s16 *latch, s32 input) {
  * the line instead of running wide.
  */
 static void ReadEngineTorque(GameCarDrive *drive, GameCarSpecAddress config,
-                             GearCurveAddress gearCurve, s32 gear,
-                             s32 *netTorque, s32 *bandScale) {
+                             GearCurveAddress gearCurve, s32 *netTorque,
+                             s32 *bandScale) {
   s32 assistStep;
   s32 bandBase;
   s32 bandCurve;
@@ -403,7 +403,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
     }
     accel = netTorqueRoundedC >> 0xB;
   }
-  ReadEngineTorque(drive, config, gearCurve, gear, &netTorque, &bandScale);
+  ReadEngineTorque(drive, config, gearCurve, &netTorque, &bandScale);
   shiftMode = drive->motionState;
   if ((shiftMode == 1) || (shiftMode == 3))
   {

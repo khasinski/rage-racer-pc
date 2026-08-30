@@ -56,8 +56,6 @@ void DrawStartGridScenery(s32 flags) {
     }
 }
 
-void ResetFreeLookCamera(void) {
-}
 
 void DrawAnimatedScenery(s32 timer, s32 instance) {
     Matrix mtx;

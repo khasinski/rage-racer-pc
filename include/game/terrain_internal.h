@@ -47,13 +47,6 @@ typedef struct SkyClipBounds {
     s16 yEdge3;
 } SkyClipBounds;
 
-typedef struct SkyCVec {
-    u8 r;
-    u8 g;
-    u8 b;
-    u8 cd;
-} SkyCVec;
-
 extern SkyTileUV g_SkyTileUV[];
 
 #endif

@@ -26,7 +26,7 @@
  * and the analogue pad reads its stick. Once the race is over the car stops
  * taking input at all.
  */
-static void SamplePlayerInput(PlayerCarRuntime *car, GameCarDrive *p) {
+static void SamplePlayerInput(GameCarDrive *p) {
     if (g_RacePhase < 4) {
         if (g_PadType == 0x41) {
             p->acceleratorInput.sampled =
@@ -411,7 +411,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         SteerTowardsTarget(car, p);
     }
 
-    SamplePlayerInput(car, p);
+    SamplePlayerInput(p);
     UpdateCarDrivetrain(car);
 
     SpinWheels(car);

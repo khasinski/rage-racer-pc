@@ -34,16 +34,16 @@ void DrawControllerSetupScene(s32 variant) {
     s32 scale[3];
     Matrix xRot;
     Matrix yRot;
-    s32 position[3];
+    LVec position;
     s32 steer;
     s32 model;
     u32 setupMode;
 
     g_ScratchViewZVolatile = 0;
     g_ScratchViewZVolatile = -0x1080;
-    position[2] = 0;
-    position[1] = 0;
-    position[0] = 0;
+    position.z = 0;
+    position.y = 0;
+    position.x = 0;
     g_ScratchViewY = 0;
     g_ScratchViewX = 0;
     g_ScratchViewAngleZ = 0;
@@ -69,7 +69,7 @@ void DrawControllerSetupScene(s32 variant) {
         ScaleMatrix(&yRot, scale);
         MulMatrix2(&yRot, &xRot);
         SetGteLightMatrix(&xRot);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, position, &xRot);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
         g_ScratchEnvMode4 = 0;
         model = g_ModelBankCount < 1;
         SubmitControllerModel(model);
@@ -103,11 +103,11 @@ void DrawControllerSetupScene(s32 variant) {
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, position, &xRot);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
     g_ScratchEnvMode4 = 0;
     SubmitControllerModel(1);
     if (variant != 0) {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, position, &xRot);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
         g_ScratchEnvMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 4) {
@@ -130,7 +130,7 @@ void DrawControllerSetupScene(s32 variant) {
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, position, &xRot);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
     g_ScratchEnvMode4 = 0;
     model = 1;
     if (g_ModelBankCount >= 3) {
@@ -138,7 +138,7 @@ void DrawControllerSetupScene(s32 variant) {
     }
     SubmitControllerModel(model);
     if (variant != 0) {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, position, &xRot);
+        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
         g_ScratchEnvMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 5) {

@@ -55,6 +55,10 @@ static void AimCameraAt(s32 *scratch, s32 targetX, s32 targetY, s32 targetZ) {
  */
 static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
                              s32 cameraNodeIndex, int nodeChanged) {
+    /* The six camera modes share one signature so the entry point can
+     * call any of them; not every mode wants every argument. */
+    (void)cameraNodeIndex;
+    (void)nodeChanged;
     s16 cameraLift[4];
     s32 cameraLiftWorld[4];
     Matrix matrixWork;
@@ -91,6 +95,10 @@ static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
  */
 static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
                                 s32 cameraNodeIndex, int nodeChanged) {
+    /* The six camera modes share one signature so the entry point can
+     * call any of them; not every mode wants every argument. */
+    (void)cameraNodeIndex;
+    (void)nodeChanged;
     Matrix cameraRotation;
     s32 chaseCarSpeed;
     s32 chaseDistance;
@@ -296,6 +304,9 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
  */
 static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
                                 s32 cameraNodeIndex, int nodeChanged) {
+    /* The six camera modes share one signature so the entry point can
+     * call any of them; not every mode wants every argument. */
+    (void)nodeChanged;
     s32 blend;
     GameTrackCameraNode *chaseNode;
     s32 focusX;
@@ -581,6 +592,10 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
  */
 static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
                           s32 cameraNodeIndex, int nodeChanged) {
+    /* The six camera modes share one signature so the entry point can
+     * call any of them; not every mode wants every argument. */
+    (void)cameraNodeIndex;
+    (void)nodeChanged;
     Matrix cameraRotation;
     s32 eyeOffset[3];
     s32 eyeWorld[3];

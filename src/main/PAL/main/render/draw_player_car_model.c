@@ -31,7 +31,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     Matrix m_F0;
     s16 v_110[4];
     s32 m_118[8];
-    s32 v_138[3];
+    LVec modelPosition;
     s32 clipHandle = 0;
     s32 otDepth;
     s32 i;
@@ -70,14 +70,14 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     BuildRotMatrixZ(&m_10, obj->modelRoll);
     MulMatrix2(&m_70, &m_10);
 
-    v_138[0] = obj->x;
-    v_138[2] = obj->z;
-    v_138[1] = obj->modelY;
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, v_138, &m_10);
+    modelPosition.x = obj->x;
+    modelPosition.z = obj->z;
+    modelPosition.y = obj->modelY;
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &modelPosition, &m_10);
     g_ScratchRenderMode = 0;
     SubmitModel(SCRATCHPAD, 1);
 
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, v_138, &m_10);
+    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &modelPosition, &m_10);
     g_ScratchRenderMode = 0;
     SubmitModel(SCRATCHPAD, 1);
 

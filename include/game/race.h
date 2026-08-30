@@ -476,7 +476,6 @@ s32 GetAttractTitleFade(s32 element);
 void InitPathScenery(void);
 void InsertRaceRecords(void);
 void RecordReplayFrame(void);
-void ResetFreeLookCamera(void);
 void ResetMirrorState(void);
 void ResetReplayWriteCursor(void);
 void SeedFinishCamera(struct PlayerCarRuntime *car);
