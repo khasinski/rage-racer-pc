@@ -1,6 +1,8 @@
 #include <libetc.h>
 #include <libgte.h>
 #include <libpress.h>
+#include <libapi.h>
+#include <psyz.h>
 
 #include <stdint.h>
 #include <fcntl.h>
@@ -17,9 +19,13 @@
 #include <io.h>
 int _stricmp(const char *lhs, const char *rhs);
 int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
-/* WinAPI's OpenEvent macro collides with PSY-Q's OpenEvent function. */
+/* WinAPI turns several of its own calls into macros that take the names of
+ * PSY-Q functions. OpenEvent and LoadImage are the two this file reaches. */
 #ifdef OpenEvent
 #undef OpenEvent
+#endif
+#ifdef LoadImage
+#undef LoadImage
 #endif
 #define access _access
 #define close _close
@@ -38,8 +44,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include <unistd.h>
 #endif
 
-#include <libapi.h>
-#include <psyz.h>
 #include <psyz/cd.h>
 
 #include "psyq/cd_types.h"
