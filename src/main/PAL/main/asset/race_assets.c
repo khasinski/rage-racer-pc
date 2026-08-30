@@ -144,60 +144,17 @@ void LoadRaceAssets(void) {
 
             TrackAssetIdentitySet(assetIndex);
 
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[0];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            SetTrackCameraTable(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[1];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            SetEnvPaletteTable(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[2];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            SetEnvironmentScript(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[3];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            RegisterModelBank(GetModelBankHeader(g_AssetBlockPtr), 1);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[4];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            InstallTrackPoints(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[5];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[6];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            RegisterModelBank(GetModelBankHeader(g_AssetBlockPtr), 2);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[7];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            InstallTerrainCellData(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[8];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            SetCourseObjects(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[9];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            InstallTrackEventData(g_AssetBlockPtr);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = header->offsets[10];
-            g_AssetBlockPtr = GetSceneAssetAddress(header, offset);
-            SelectTrackCameraTable(g_AssetBlockPtr, 1);
+            SetTrackCameraTable(SceneAssetBlock(0));
+            SetEnvPaletteTable(SceneAssetBlock(1));
+            SetEnvironmentScript(SceneAssetBlock(2));
+            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);
+            InstallTrackPoints(SceneAssetBlock(4));
+            RegisterCourseModels(GetCourseModelAssetHeader(SceneAssetBlock(5)));
+            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(6)), 2);
+            InstallTerrainCellData(SceneAssetBlock(7));
+            SetCourseObjects(SceneAssetBlock(8));
+            InstallTrackEventData(SceneAssetBlock(9));
+            SelectTrackCameraTable(SceneAssetBlock(10), 1);
 
             g_AssetLoadState = 7;
         }

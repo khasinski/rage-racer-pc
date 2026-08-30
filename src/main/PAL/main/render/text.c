@@ -194,7 +194,6 @@ typedef union TextRenderWork {
     s32 u;
     struct {
         s32 y;
-        s32 pad;
         s32 clut;
     } home;
 

@@ -306,6 +306,21 @@ static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offse
 extern u8 *g_AssetBase;
 /* Load destination, advanced past each pack as it is loaded. */
 extern u8 *g_AssetLoadCursor;
+
+/*
+ * One numbered block out of the scene asset the loader has just read.
+ *
+ * Every installer wants the same three steps: find the header, look the
+ * block's offset up in it, turn that into an address. Twenty-nine call sites
+ * wrote all three out, and each also left the address in g_AssetBlockPtr,
+ * which is kept because the loader's own bookkeeping reads it.
+ */
+static inline void *SceneAssetBlock(s32 slot) {
+    GameSceneAssetHeader *header = GetSceneAssetHeader(g_AssetLoadCursor);
+
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[slot]);
+    return g_AssetBlockPtr;
+}
 /* Second sub-block cursor: base + header->offsets[n + 1]. */
 extern u8 *g_AssetSubBlockPtr;
 
