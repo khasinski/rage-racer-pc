@@ -361,7 +361,7 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(rage-gp0-replay PRIVATE psyz)
         add_test(NAME save_generator
             COMMAND rage-save-generator --self-test)
-        set_tests_properties(save_generator PROPERTIES LABELS portable)
+        set_tests_properties(save_generator PROPERTIES LABELS functional)
         if(RAGE_RUNTIME_DISC)
             add_test(NAME attract_runtime
                 COMMAND "${CMAKE_COMMAND}" -E env

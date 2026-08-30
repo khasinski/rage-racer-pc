@@ -23,13 +23,16 @@ if(RAGE_ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_test(NAME game_logic COMMAND game_logic_tests)
+set_tests_properties(game_logic PROPERTIES LABELS functional)
 add_test(NAME architecture_boundaries COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundaries.py
     ${CMAKE_SOURCE_DIR})
+set_tests_properties(architecture_boundaries PROPERTIES LABELS functional)
 add_test(NAME native_car_names COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_car_names.py
     ${CMAKE_SOURCE_DIR})
 
+set_tests_properties(native_car_names PROPERTIES LABELS functional)
 add_executable(team_logo_tests
     team_logo_tests.c
     ../src/main/PAL/main/menu/team_logo.c)
@@ -50,6 +53,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME team_logo COMMAND team_logo_tests)
 
+set_tests_properties(team_logo PROPERTIES LABELS functional)
 add_executable(record_defaults_tests
     record_defaults_tests.c
     ../src/main/PAL/main/race/records.c)
@@ -71,6 +75,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME record_defaults COMMAND record_defaults_tests)
 
+set_tests_properties(record_defaults PROPERTIES LABELS functional)
 add_executable(hud_config_tests
     hud_config_tests.c
     ../src/port/hud_config.c)
@@ -82,6 +87,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME hud_config COMMAND hud_config_tests)
 
+set_tests_properties(hud_config PROPERTIES LABELS functional)
 add_executable(chase_camera_tests
     chase_camera_tests.c
     ../src/port/chase_camera.c)
@@ -93,6 +99,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 
+set_tests_properties(chase_camera PROPERTIES LABELS functional)
 add_executable(content_options_tests
     content_options_tests.c
     ../src/port/content_options.c)
@@ -103,6 +110,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
+set_tests_properties(content_options PROPERTIES LABELS functional)
 add_executable(input_device_select_tests
     input_device_select_tests.c
     ../src/port/input_device_select.c)
@@ -114,6 +122,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME input_device_select COMMAND input_device_select_tests)
 
+set_tests_properties(input_device_select PROPERTIES LABELS functional)
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -121,6 +130,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh COMMAND rmesh_tests)
 
+set_tests_properties(rmesh PROPERTIES LABELS functional)
 add_executable(rmesh_index_tests rmesh_index_tests.c)
 target_link_libraries(rmesh_index_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -128,6 +138,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh_index COMMAND rmesh_index_tests)
 
+set_tests_properties(rmesh_index PROPERTIES LABELS functional)
 add_executable(asset_id_tests asset_id_tests.c)
 target_link_libraries(asset_id_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -135,6 +146,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME asset_id COMMAND asset_id_tests)
 
+set_tests_properties(asset_id PROPERTIES LABELS functional)
 add_executable(car_paint_tests car_paint_tests.c)
 target_link_libraries(car_paint_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -142,6 +154,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME car_paint COMMAND car_paint_tests)
 
+set_tests_properties(car_paint PROPERTIES LABELS functional)
 add_executable(texture_mipmap_tests texture_mipmap_tests.c)
 target_link_libraries(texture_mipmap_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -149,6 +162,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME texture_mipmap COMMAND texture_mipmap_tests)
 
+set_tests_properties(texture_mipmap PROPERTIES LABELS functional)
 add_executable(mod_manifest_tests mod_manifest_tests.c)
 target_link_libraries(mod_manifest_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -156,6 +170,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME mod_manifest COMMAND mod_manifest_tests)
 
+set_tests_properties(mod_manifest PROPERTIES LABELS functional)
 add_executable(mod_asset_fallback_tests
     mod_asset_fallback_tests.c
     ../src/port/mod_assets.c)
@@ -166,6 +181,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME mod_asset_fallback COMMAND mod_asset_fallback_tests)
 
+set_tests_properties(mod_asset_fallback PROPERTIES LABELS functional)
 add_executable(render_material_tests render_material_tests.c)
 target_link_libraries(render_material_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -173,6 +189,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_material COMMAND render_material_tests)
 
+set_tests_properties(render_material PROPERTIES LABELS functional)
 add_executable(rmesh_cache_tests rmesh_cache_tests.c)
 target_link_libraries(rmesh_cache_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -180,13 +197,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
 
+set_tests_properties(rmesh_cache PROPERTIES LABELS functional)
 add_test(NAME asset_gltf_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
+set_tests_properties(asset_gltf_export PROPERTIES LABELS tooling)
 add_test(NAME asset_sky_export
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_sky.py)
+set_tests_properties(asset_sky_export PROPERTIES LABELS tooling)
 add_test(NAME native_sky_projection
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_sky_projection.py)
 
+set_tests_properties(native_sky_projection PROPERTIES LABELS functional)
 add_executable(render_world_tests render_world_tests.c)
 target_link_libraries(render_world_tests PRIVATE rage-render-world)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -194,6 +215,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_world COMMAND render_world_tests)
 
+set_tests_properties(render_world PROPERTIES LABELS functional)
 add_executable(render_world_snapshot_tests render_world_snapshot_tests.c)
 target_link_libraries(render_world_snapshot_tests PRIVATE rage-render-world)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -202,6 +224,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_world_snapshot COMMAND render_world_snapshot_tests)
 
+set_tests_properties(render_world_snapshot PROPERTIES LABELS functional)
 add_executable(track_asset_identity_tests
     track_asset_identity_tests.c
     ../src/port/track_asset_identity.c)
@@ -213,6 +236,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME track_asset_identity COMMAND track_asset_identity_tests)
 
+set_tests_properties(track_asset_identity PROPERTIES LABELS functional)
 add_executable(track_lighting_tests
     track_lighting_tests.c
     ../src/port/track_lighting.c)
@@ -224,6 +248,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME track_lighting COMMAND track_lighting_tests)
 
+set_tests_properties(track_lighting PROPERTIES LABELS functional)
 add_executable(course_coordinate_tests course_coordinate_tests.c)
 target_include_directories(course_coordinate_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)
@@ -232,6 +257,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME course_coordinate COMMAND course_coordinate_tests)
 
+set_tests_properties(course_coordinate PROPERTIES LABELS functional)
 add_executable(render_mesh_build_tests render_mesh_build_tests.c)
 target_link_libraries(render_mesh_build_tests PRIVATE rage-render-world)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -239,6 +265,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME render_mesh_build COMMAND render_mesh_build_tests)
 
+set_tests_properties(render_mesh_build PROPERTIES LABELS functional)
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -248,6 +275,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME course_index COMMAND course_index_tests)
 
+set_tests_properties(course_index PROPERTIES LABELS functional)
 add_executable(native_geometry_interpolation_tests
     native_geometry_interpolation_tests.c
     ../src/port/native_geometry_interpolation.c)
@@ -267,6 +295,7 @@ endif()
 add_test(NAME native_geometry_interpolation
          COMMAND native_geometry_interpolation_tests)
 
+set_tests_properties(native_geometry_interpolation PROPERTIES LABELS functional)
 add_executable(release_package_tests release_package_tests.c)
 if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
     target_compile_options(release_package_tests PRIVATE
@@ -277,23 +306,27 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME release_package COMMAND release_package_tests ${CMAKE_SOURCE_DIR})
 
+set_tests_properties(release_package PROPERTIES LABELS functional)
 add_test(NAME host_state_abi COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_host_state_abi.py ${CMAKE_SOURCE_DIR})
 
+set_tests_properties(host_state_abi PROPERTIES LABELS functional)
 add_test(NAME shipped_config COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})
 
+set_tests_properties(shipped_config PROPERTIES LABELS functional)
 if(APPLE AND TARGET rage-racer)
     add_test(NAME macos_build_launcher COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_build_launcher.py
         ${CMAKE_BINARY_DIR}/rage-racer
         $<TARGET_FILE:rage-racer>)
-    set_tests_properties(macos_build_launcher PROPERTIES LABELS portable)
+    set_tests_properties(macos_build_launcher PROPERTIES LABELS functional)
 endif()
 
 add_test(NAME car_prices COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
 
+set_tests_properties(car_prices PROPERTIES LABELS functional)
 # Test timeouts are wall-clock, and most of these run the game at its own pace
 # rather than as fast as the machine can. race_cdda waits out an audio track and
 # needs 66 seconds of real time; its limit was 45, so it failed whenever anything
@@ -313,6 +346,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}
 )
 
+set_tests_properties(player_car_interior_aliases PROPERTIES LABELS functional)
 # Visual-comparison helpers remain optional developer tools. Do not register
 # them as failing tests on hosts that intentionally ship only the C/Python
 # toolchain used by the port and release jobs.
@@ -325,6 +359,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}
 )
 
+set_tests_properties(race_progress_layout PROPERTIES LABELS functional)
 add_test(
     NAME sequence_state_layout
     COMMAND ruby
@@ -332,6 +367,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}
 )
 
+set_tests_properties(sequence_state_layout PROPERTIES LABELS functional)
 add_test(
     NAME native_ui_script_layout
     COMMAND ruby
@@ -339,6 +375,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}
 )
 
+set_tests_properties(native_ui_script_layout PROPERTIES LABELS functional)
 add_test(
     NAME native_frame_offsets
     COMMAND ruby
@@ -346,6 +383,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}
 )
 
+set_tests_properties(native_frame_offsets PROPERTIES LABELS functional)
 add_test(
     NAME frame_environment_aliases
     COMMAND ruby
@@ -356,6 +394,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
 )
 
+set_tests_properties(frame_environment_aliases PROPERTIES LABELS functional)
 add_test(
     NAME audio_state_layout
     COMMAND ruby
@@ -369,6 +408,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/include/game/track.h
 )
 
+set_tests_properties(audio_state_layout PROPERTIES LABELS functional)
 add_test(
     NAME visual_batch_refinement
     COMMAND ruby
@@ -376,6 +416,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_batch.rb
 )
 
+set_tests_properties(visual_batch_refinement PROPERTIES LABELS tooling)
 add_test(
     NAME visual_run
     COMMAND ruby
@@ -383,6 +424,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_run.rb
 )
 
+set_tests_properties(visual_run PROPERTIES LABELS tooling)
 add_test(
     NAME capture_sync
     COMMAND ruby
@@ -390,6 +432,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/port/main_smoke.c
 )
 
+set_tests_properties(capture_sync PROPERTIES LABELS functional)
 add_test(
     NAME visual_budget
     COMMAND ruby
@@ -397,6 +440,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_budget.rb
 )
 
+set_tests_properties(visual_budget PROPERTIES LABELS tooling)
 add_test(
     NAME visual_triage
     COMMAND ruby
@@ -404,6 +448,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_visual_triage.rb
 )
 
+set_tests_properties(visual_triage PROPERTIES LABELS tooling)
 add_test(
     NAME gpu_digest_compare
     COMMAND ruby
@@ -411,6 +456,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_gpu_digest_compare.rb
 )
 
+set_tests_properties(gpu_digest_compare PROPERTIES LABELS tooling)
 add_test(
     NAME gp0_compare
     COMMAND ruby
@@ -418,42 +464,50 @@ add_test(
         ${CMAKE_SOURCE_DIR}/tools/rage_gp0_compare.rb
 )
 
+set_tests_properties(gp0_compare PROPERTIES LABELS tooling)
 add_test(
     NAME gp0_bundle
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_bundle.rb
         ${CMAKE_SOURCE_DIR}/tools/rage_gp0_bundle.rb
 )
+set_tests_properties(gp0_bundle PROPERTIES LABELS tooling)
 add_test(
     NAME gp0_replay
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_replay.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_gp0_replay.c
 )
+set_tests_properties(gp0_replay PROPERTIES LABELS tooling)
 add_test(
     NAME gp0_raster_compare
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_gp0_raster_compare.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_gp0_raster_compare.rb
 )
+set_tests_properties(gp0_raster_compare PROPERTIES LABELS tooling)
 add_test(
     NAME vram_delta
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_vram_delta.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_vram_delta.rb
 )
+set_tests_properties(vram_delta PROPERTIES LABELS tooling)
 add_test(
     NAME visible_cells_compare
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_visible_cells_compare.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_visible_cells_compare.rb
 )
 
+set_tests_properties(visible_cells_compare PROPERTIES LABELS tooling)
 add_test(
     NAME input_replay
     COMMAND ruby ${CMAKE_CURRENT_SOURCE_DIR}/verify_input_replay.rb
             ${CMAKE_SOURCE_DIR}/tools/rage_input_replay.rb
 )
+set_tests_properties(input_replay PROPERTIES LABELS tooling)
 endif()
 
 if(TARGET rage-gte-replay)
     add_test(NAME gte_replay_usage COMMAND rage-gte-replay)
+set_tests_properties(gte_replay_usage PROPERTIES LABELS functional)
     set_tests_properties(gte_replay_usage PROPERTIES WILL_FAIL TRUE)
 endif()
 
@@ -464,7 +518,7 @@ add_executable(timing_restore_tests timing_restore_tests.c ../src/port/timing_re
 target_include_directories(timing_restore_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/port ${CMAKE_CURRENT_SOURCE_DIR}/../src/port/include)
 add_test(NAME timing_restore COMMAND timing_restore_tests)
-set_tests_properties(timing_restore PROPERTIES LABELS portable)
+set_tests_properties(timing_restore PROPERTIES LABELS functional)
 
 add_executable(axis_curve_tests axis_curve_tests.c ../src/port/axis_curve.c)
 target_include_directories(axis_curve_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/port)
@@ -517,7 +571,7 @@ if(NOT MSVC)
     target_compile_options(track_camera_tests PRIVATE -Wall -Wextra -Wno-error)
 endif()
 add_test(NAME track_camera COMMAND track_camera_tests)
-set_tests_properties(track_camera PROPERTIES LABELS portable)
+set_tests_properties(track_camera PROPERTIES LABELS functional)
 
 # The three AI walks over the course's own crest, speed and racing-line tables.
 add_executable(car_ai_tests
@@ -538,7 +592,7 @@ else()
 endif()
 target_link_libraries(car_ai_tests PRIVATE psyz)
 add_test(NAME car_ai COMMAND car_ai_tests)
-set_tests_properties(car_ai PROPERTIES LABELS portable)
+set_tests_properties(car_ai PROPERTIES LABELS functional)
 
 add_executable(car_motion_tests
     car_motion_tests.c
@@ -558,7 +612,7 @@ else()
 endif()
 target_link_libraries(car_motion_tests PRIVATE psyz)
 add_test(NAME car_motion COMMAND car_motion_tests)
-set_tests_properties(car_motion PROPERTIES LABELS portable)
+set_tests_properties(car_motion PROPERTIES LABELS functional)
 
 # The prize screen's arithmetic, which is what a race leaves behind.
 add_executable(prize_screen_tests
@@ -579,7 +633,7 @@ else()
 endif()
 target_link_libraries(prize_screen_tests PRIVATE psyz)
 add_test(NAME prize_screen COMMAND prize_screen_tests)
-set_tests_properties(prize_screen PROPERTIES LABELS portable)
+set_tests_properties(prize_screen PROPERTIES LABELS functional)
 
 # The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
 add_executable(drivetrain_tests
@@ -600,7 +654,7 @@ else()
 endif()
 target_link_libraries(drivetrain_tests PRIVATE psyz)
 add_test(NAME drivetrain COMMAND drivetrain_tests)
-set_tests_properties(drivetrain PROPERTIES LABELS portable)
+set_tests_properties(drivetrain PROPERTIES LABELS functional)
 
 # The memory card menu, swept across its whole state space.
 add_executable(memory_card_menu_tests
@@ -622,7 +676,7 @@ else()
 endif()
 target_link_libraries(memory_card_menu_tests PRIVATE psyz)
 add_test(NAME memory_card_menu COMMAND memory_card_menu_tests)
-set_tests_properties(memory_card_menu PROPERTIES LABELS portable)
+set_tests_properties(memory_card_menu PROPERTIES LABELS functional)
 
 # Where a car lands on the track, swept over a course built for the purpose.
 if(TARGET rage-host-state)
@@ -649,7 +703,7 @@ else()
 endif()
 target_link_libraries(car_track_state_tests PRIVATE psyz)
 add_test(NAME car_track_state COMMAND car_track_state_tests)
-set_tests_properties(car_track_state PROPERTIES LABELS portable)
+set_tests_properties(car_track_state PROPERTIES LABELS functional)
 
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
@@ -670,7 +724,7 @@ else()
 endif()
 target_link_libraries(gear_shift_tests PRIVATE psyz)
 add_test(NAME gear_shift COMMAND gear_shift_tests)
-set_tests_properties(gear_shift PROPERTIES LABELS portable)
+set_tests_properties(gear_shift PROPERTIES LABELS functional)
 
 # The logo editor's two halves, swept across the buttons that act on them.
 add_executable(team_logo_editor_tests
@@ -692,7 +746,7 @@ else()
 endif()
 target_link_libraries(team_logo_editor_tests PRIVATE psyz)
 add_test(NAME team_logo_editor COMMAND team_logo_editor_tests)
-set_tests_properties(team_logo_editor PROPERTIES LABELS portable)
+set_tests_properties(team_logo_editor PROPERTIES LABELS functional)
 
 add_executable(draw_team_logo_canvas_tests
     draw_team_logo_canvas_tests.c
@@ -713,7 +767,7 @@ else()
 endif()
 target_link_libraries(draw_team_logo_canvas_tests PRIVATE psyz)
 add_test(NAME draw_team_logo_canvas COMMAND draw_team_logo_canvas_tests)
-set_tests_properties(draw_team_logo_canvas PROPERTIES LABELS portable)
+set_tests_properties(draw_team_logo_canvas PROPERTIES LABELS functional)
 
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
@@ -735,7 +789,7 @@ else()
 endif()
 target_link_libraries(car_select_screen_tests PRIVATE psyz)
 add_test(NAME car_select_screen COMMAND car_select_screen_tests)
-set_tests_properties(car_select_screen PROPERTIES LABELS portable)
+set_tests_properties(car_select_screen PROPERTIES LABELS functional)
 
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
@@ -756,7 +810,7 @@ else()
 endif()
 target_link_libraries(course_select_screen_tests PRIVATE psyz)
 add_test(NAME course_select_screen COMMAND course_select_screen_tests)
-set_tests_properties(course_select_screen PROPERTIES LABELS portable)
+set_tests_properties(course_select_screen PROPERTIES LABELS functional)
 
 add_executable(car_shop_screen_tests
     car_shop_screen_tests.c
@@ -779,7 +833,7 @@ else()
 endif()
 target_link_libraries(car_shop_screen_tests PRIVATE psyz)
 add_test(NAME car_shop_screen COMMAND car_shop_screen_tests)
-set_tests_properties(car_shop_screen PROPERTIES LABELS portable)
+set_tests_properties(car_shop_screen PROPERTIES LABELS functional)
 
 add_executable(engineer_shop_screen_tests
     engineer_shop_screen_tests.c
@@ -801,7 +855,7 @@ else()
 endif()
 target_link_libraries(engineer_shop_screen_tests PRIVATE psyz)
 add_test(NAME engineer_shop_screen COMMAND engineer_shop_screen_tests)
-set_tests_properties(engineer_shop_screen PROPERTIES LABELS portable)
+set_tests_properties(engineer_shop_screen PROPERTIES LABELS functional)
 
 add_executable(lap_and_finish_tests
     lap_and_finish_tests.c
@@ -822,7 +876,7 @@ else()
 endif()
 target_link_libraries(lap_and_finish_tests PRIVATE psyz)
 add_test(NAME lap_and_finish COMMAND lap_and_finish_tests)
-set_tests_properties(lap_and_finish PROPERTIES LABELS portable)
+set_tests_properties(lap_and_finish PROPERTIES LABELS functional)
 
 add_executable(rival_collision_tests
     rival_collision_tests.c
@@ -844,14 +898,14 @@ else()
 endif()
 target_link_libraries(rival_collision_tests PRIVATE psyz)
 add_test(NAME rival_collision COMMAND rival_collision_tests)
-set_tests_properties(rival_collision PROPERTIES LABELS portable)
+set_tests_properties(rival_collision PROPERTIES LABELS functional)
 endif()
 endif()
 
-set_tests_properties(track_math PROPERTIES LABELS portable)
+set_tests_properties(track_math PROPERTIES LABELS functional)
 
 add_test(NAME axis_curve COMMAND axis_curve_tests)
-set_tests_properties(axis_curve PROPERTIES LABELS portable)
+set_tests_properties(axis_curve PROPERTIES LABELS functional)
 
 # The port's half of the NeGcon (NegconTwist) against the game's half
 # (UpdatePadState), which is the only place a calibration fault shows.
@@ -878,7 +932,7 @@ if(TARGET rage-host-state)
             -fsanitize=address,undefined)
     endif()
     add_test(NAME negcon_calibration COMMAND negcon_calibration_tests)
-    set_tests_properties(negcon_calibration PROPERTIES LABELS portable)
+    set_tests_properties(negcon_calibration PROPERTIES LABELS functional)
 endif()
 
 if(TARGET rage-extract AND TARGET rage-pack)
@@ -889,6 +943,7 @@ if(TARGET rage-extract AND TARGET rage-pack)
             $<TARGET_FILE:rage-extract>
             $<TARGET_FILE:rage-pack>
     )
+set_tests_properties(mod_tools PROPERTIES LABELS e2e)
     set_tests_properties(mod_tools PROPERTIES TIMEOUT 180)
 endif()
 
@@ -900,7 +955,7 @@ set(RAGE_PORTABLE_TESTS
 if(TARGET rage-gte-replay)
     list(APPEND RAGE_PORTABLE_TESTS gte_replay_usage)
 endif()
-set_tests_properties(${RAGE_PORTABLE_TESTS} PROPERTIES LABELS portable)
+set_tests_properties(${RAGE_PORTABLE_TESTS} PROPERTIES LABELS functional)
 
 if(TARGET rage-racer-smoke)
     add_test(
@@ -910,6 +965,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(boot_frame PROPERTIES LABELS e2e)
     set_tests_properties(boot_frame PROPERTIES TIMEOUT 60)
     add_test(
         NAME title_page_stability
@@ -918,6 +974,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(title_page_stability PROPERTIES LABELS e2e)
     set_tests_properties(title_page_stability PROPERTIES TIMEOUT 60)
     add_test(
         NAME scenario_control
@@ -926,6 +983,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(scenario_control PROPERTIES LABELS e2e)
     set_tests_properties(scenario_control PROPERTIES TIMEOUT 150)
     add_test(
         NAME direct_boot_car_setup
@@ -934,6 +992,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(direct_boot_car_setup PROPERTIES LABELS e2e)
     set_tests_properties(direct_boot_car_setup PROPERTIES TIMEOUT 105)
     add_test(
         NAME scenario_after_finish
@@ -942,6 +1001,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(scenario_after_finish PROPERTIES LABELS e2e)
     set_tests_properties(scenario_after_finish PROPERTIES TIMEOUT 210)
     add_test(
         NAME runtime_config
@@ -950,6 +1010,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(runtime_config PROPERTIES LABELS e2e)
     set_tests_properties(runtime_config PROPERTIES TIMEOUT 180)
     add_test(
         NAME renderer_toggle_cycles
@@ -958,6 +1019,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(renderer_toggle_cycles PROPERTIES LABELS e2e)
     set_tests_properties(renderer_toggle_cycles PROPERTIES TIMEOUT 195)
     add_test(
         NAME course_matrix
@@ -966,6 +1028,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(course_matrix PROPERTIES LABELS e2e)
     set_tests_properties(course_matrix PROPERTIES TIMEOUT 1080)
     add_test(
         NAME track_start
@@ -974,6 +1037,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(track_start PROPERTIES LABELS e2e)
     set_tests_properties(track_start PROPERTIES TIMEOUT 165)
     add_test(
         NAME diagnostic_log
@@ -982,14 +1046,17 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(diagnostic_log PROPERTIES LABELS e2e)
     set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 60)
     add_test(NAME retire_camera COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_retire_camera.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+set_tests_properties(retire_camera PROPERTIES LABELS e2e)
     set_tests_properties(retire_camera PROPERTIES TIMEOUT 165)
     add_test(NAME mirrored_track COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+set_tests_properties(mirrored_track PROPERTIES LABELS e2e)
     set_tests_properties(mirrored_track PROPERTIES TIMEOUT 360)
     add_test(
         NAME keyboard_input
@@ -998,6 +1065,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(keyboard_input PROPERTIES LABELS e2e)
     set_tests_properties(keyboard_input PROPERTIES TIMEOUT 60)
     add_test(
         NAME window_size
@@ -1006,6 +1074,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(window_size PROPERTIES LABELS e2e)
     set_tests_properties(window_size PROPERTIES TIMEOUT 60)
     find_program(RAGE_XDOTOOL xdotool)
     if(RAGE_XDOTOOL)
@@ -1016,6 +1085,7 @@ if(TARGET rage-racer-smoke)
                 $<TARGET_FILE:rage-racer-smoke>
                 ${CMAKE_SOURCE_DIR}
         )
+set_tests_properties(window_lifecycle PROPERTIES LABELS e2e)
         set_tests_properties(window_lifecycle PROPERTIES TIMEOUT 195)
     endif()
     add_test(
@@ -1025,6 +1095,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(initial_state PROPERTIES LABELS e2e)
     set_tests_properties(initial_state PROPERTIES TIMEOUT 60)
     add_test(
         NAME fmv_frame_layout
@@ -1033,6 +1104,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(fmv_frame_layout PROPERTIES LABELS e2e)
     # Skips rather than fails when there is no disc to read the movies
     # or the music from; see tests/disc_image.py.
     set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 75
@@ -1044,6 +1116,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(fmv_without_ffmpeg PROPERTIES LABELS e2e)
     set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 90
         SKIP_RETURN_CODE 77)
     add_test(
@@ -1053,6 +1126,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(fmv_pacing PROPERTIES LABELS e2e)
     set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600
         SKIP_RETURN_CODE 77)
     add_test(
@@ -1062,6 +1136,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(prologue_frame PROPERTIES LABELS e2e)
     set_tests_properties(prologue_frame PROPERTIES TIMEOUT 90)
     add_test(
         NAME japanese_prologue_frame
@@ -1071,6 +1146,7 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
             japanese
     )
+set_tests_properties(japanese_prologue_frame PROPERTIES LABELS e2e)
     set_tests_properties(japanese_prologue_frame PROPERTIES TIMEOUT 90)
 
     add_test(
@@ -1080,6 +1156,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(scene_capture PROPERTIES LABELS e2e)
     set_tests_properties(scene_capture PROPERTIES TIMEOUT 360)
     add_test(
         NAME modern_feature_frames
@@ -1088,6 +1165,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(modern_feature_frames PROPERTIES LABELS e2e)
     set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 360)
 
     add_test(
@@ -1097,6 +1175,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(pegase_cabin PROPERTIES LABELS e2e)
     set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 180)
 
     # The sky, which nothing watched: the visual references are captured from
@@ -1109,6 +1188,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(sky_frames PROPERTIES LABELS e2e)
     set_tests_properties(sky_frames PROPERTIES TIMEOUT 600)
 
     add_test(
@@ -1118,6 +1198,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(native_render_world PROPERTIES LABELS e2e)
     set_tests_properties(native_render_world PROPERTIES TIMEOUT 120)
 
     add_test(
@@ -1127,6 +1208,7 @@ if(TARGET rage-racer-smoke)
             --set modern.assets=disc
             --set run.frames=1
     )
+set_tests_properties(modern_disc_import_bootstrap PROPERTIES LABELS e2e)
     set_tests_properties(modern_disc_import_bootstrap PROPERTIES
         TIMEOUT 20
         ENVIRONMENT "SDL_AUDIODRIVER=dummy"
@@ -1139,6 +1221,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(grand_prix_terrain_frame PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 120)
 
     add_test(
@@ -1148,6 +1231,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(race_start PROPERTIES LABELS e2e)
     set_tests_properties(race_start PROPERTIES TIMEOUT 150)
     add_test(
         NAME race_restart
@@ -1156,6 +1240,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(race_restart PROPERTIES LABELS e2e)
     set_tests_properties(race_restart PROPERTIES TIMEOUT 195)
 
     add_test(
@@ -1165,6 +1250,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(grand_prix_results PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225
         SKIP_RETURN_CODE 77)
 
@@ -1175,6 +1261,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(grand_prix_exit PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_exit PROPERTIES TIMEOUT 225)
 
     add_test(
@@ -1184,10 +1271,12 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(mirror_entry PROPERTIES LABELS e2e)
     set_tests_properties(mirror_entry PROPERTIES TIMEOUT 150)
     add_test(NAME mirror_cars COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+set_tests_properties(mirror_cars PROPERTIES LABELS e2e)
     set_tests_properties(mirror_cars PROPERTIES TIMEOUT 360)
 
     add_test(
@@ -1197,6 +1286,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(menu_sweep PROPERTIES LABELS e2e)
     set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
 
     add_test(
@@ -1206,6 +1296,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(trophy_view PROPERTIES LABELS e2e)
     set_tests_properties(trophy_view PROPERTIES TIMEOUT 165)
 
     add_test(
@@ -1215,6 +1306,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(waterfall PROPERTIES LABELS e2e)
     set_tests_properties(waterfall PROPERTIES TIMEOUT 180)
 
     add_test(
@@ -1224,6 +1316,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(time_attack_records PROPERTIES LABELS e2e)
     set_tests_properties(time_attack_records PROPERTIES TIMEOUT 225)
 
     add_test(
@@ -1234,6 +1327,7 @@ if(TARGET rage-racer-smoke)
             ${CMAKE_SOURCE_DIR}
             $<TARGET_FILE:rage-save-generator>
     )
+set_tests_properties(save_roundtrip PROPERTIES LABELS e2e)
     set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 270)
 
     add_test(
@@ -1243,6 +1337,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(audio_output PROPERTIES LABELS e2e)
     set_tests_properties(audio_output PROPERTIES TIMEOUT 90)
 
     add_test(
@@ -1252,6 +1347,7 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(race_cdda PROPERTIES LABELS e2e)
     set_tests_properties(race_cdda PROPERTIES TIMEOUT 135
         SKIP_RETURN_CODE 77)
     add_test(
@@ -1261,5 +1357,6 @@ if(TARGET rage-racer-smoke)
             $<TARGET_FILE:rage-racer-smoke>
             ${CMAKE_SOURCE_DIR}
     )
+set_tests_properties(engine_audio PROPERTIES LABELS e2e)
     set_tests_properties(engine_audio PROPERTIES TIMEOUT 210)
 endif()

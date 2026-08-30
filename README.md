@@ -485,9 +485,12 @@ Extracted files are game data. Share the changes you made, not the extract.
 
 ## Running the runtime tests
 
-`ctest -L portable` needs nothing but a build. The rest of the suite drives the
-game against real PAL data, which is not in the repository, so those tests fail
-until it is staged:
+The suite is labelled in three parts. `ctest -L functional` is everything that
+answers without starting the game: the unit tests, the sweeps, and the checks
+that read the source for a property the code has to keep. `ctest -L e2e` drives
+the game itself, and wants real PAL data staged, because it is not in the
+repository. `ctest -L tooling` covers the scripts under `tools/` rather than
+the game, and is the slowest of the three by a distance:
 
 ```sh
 "Rage Racer" --set tools.dump_archive=assets/PAL/RAGE.BIN
@@ -501,6 +504,13 @@ nothing.
 
 Nothing in the suite shares state between tests, so it parallelises: `ctest -j 6`
 runs it in well under half the time one job takes.
+
+The two halves are worth knowing apart while working. A change to the code is
+usually answered by the functional half in seconds, and the end-to-end half is
+what to run before calling something finished. Splitting them by whether they
+start the game rather than by how long they take is deliberate: the checks that
+read source text are the ones a refactor breaks most often, they cost a second
+each, and they used to sit outside the fast set entirely.
 
 Ten of the eleven movies sit hours into a playthrough. `--set
 diagnostics.fmv_stream=N` puts movie `N` where the opening one is asked for, so
