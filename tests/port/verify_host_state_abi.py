@@ -25,6 +25,17 @@ SCALAR = re.compile(
 # An array of a typed element is state like any other. It carries no pinned
 # size here: what BLOB pins is the raw unsigned-char storage that has not been
 # given a type yet, and an array that has one is no longer that.
+# State whose header names a struct is defined as that struct, so a reader sees
+# the positions and the vectors rather than the little-endian bytes they were
+# assembled from. Like a typed array it carries no pinned size: the type and
+# the element count say it.
+STRUCT_ARRAY = re.compile(
+    r"^(?:const )?(?:volatile )?(?:Vec4|SVec|DVec|Rect|CarEntry|CarHullPoint"
+    r"|FontGlyph|ShuttlePath|SkyTileUV|StartGridSceneryStep"
+    r"|GameEnvironmentColors)\s+(g_\w+)\[",
+    re.MULTILINE,
+)
+
 TYPED_ARRAY = re.compile(
     r"^(?:const )?(?:volatile )?(?:s8|u8|s16|u16|s32|u32|f32|int|char|short)"
     r"\s+(g_\w+)\[",
@@ -34,7 +45,8 @@ TYPED_ARRAY = re.compile(
 
 def declarations(text: str) -> dict[str, int]:
     found = {name: int(size) for name, size in BLOB.findall(text)}
-    for name in SCALAR.findall(text) + TYPED_ARRAY.findall(text):
+    for name in (SCALAR.findall(text) + TYPED_ARRAY.findall(text)
+                 + STRUCT_ARRAY.findall(text)):
         found.setdefault(name, 0)
     return found
 
