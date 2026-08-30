@@ -100,6 +100,22 @@ endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 
 set_tests_properties(chase_camera PROPERTIES LABELS functional)
+# What the renderer draws for one asset, turned all the way round. Needs a
+# GPU and the imported asset cache, and skips when either is absent; it never
+# needs the game or the disc.
+if(TARGET rage-render-stage)
+    add_test(
+        NAME render_stage_angles
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_render_stage_angles.py
+            $<TARGET_FILE:rage-render-stage>
+            ${CMAKE_SOURCE_DIR})
+    set_tests_properties(render_stage_angles PROPERTIES
+        LABELS functional
+        TIMEOUT 600
+        SKIP_RETURN_CODE 77)
+endif()
+
 # Where a stage puts its camera: pure scene composition, no GPU involved.
 add_executable(render_stage_tests render_stage_tests.c)
 target_link_libraries(render_stage_tests PRIVATE rage-render-world)

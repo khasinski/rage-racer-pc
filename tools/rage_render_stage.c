@@ -44,7 +44,9 @@ static void Usage(const char *program) {
             "  --at, --rot and --variant apply to the preceding --pose.\n"
 "  --rot is the scene Euler triple in degrees; Y turns the\n"
 "  subject on the spot and X tips it nose over tail.\n"
-"  --elevation is positive above the subject.\n",
+"  --elevation is positive above the subject.\n"
+            "  --sweep N turns every pose through a full circle in N steps,\n"
+            "  writing stage-000.ppm ... alongside --output.\n",
             program);
 }
 
@@ -175,6 +177,8 @@ int main(int argc, char **argv) {
     int poseCount = 0;
     int haveTarget = 0;
     int haveDistance = 0;
+    int sweep = 0;
+    int step;
     int width = 640;
     int height = 480;
     int status = EXIT_FAILURE;
@@ -232,6 +236,12 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
             }
             haveTarget = 1;
+        } else if (strcmp(option, "--sweep") == 0) {
+            sweep = atoi(value ? value : "0");
+            if (sweep < 1 || sweep > 360) {
+                fprintf(stderr, "rage-render-stage: --sweep expects 1..360\n");
+                return EXIT_FAILURE;
+            }
         } else if (strcmp(option, "--width") == 0) {
             width = atoi(value ? value : "0");
         } else if (strcmp(option, "--height") == 0) {
@@ -316,20 +326,53 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-render-stage: the stage produced no draws\n");
         goto release_renderer;
     }
-    command = SDL_AcquireGPUCommandBuffer(device);
-    if (command == NULL) {
-        fprintf(stderr, "rage-render-stage: command buffer: %s\n",
-                SDL_GetError());
-        goto release_renderer;
-    }
-    ModernNativeGpuDraw(command, color, depth, 1);
-    if (!SDL_SubmitGPUCommandBuffer(command)) {
-        fprintf(stderr, "rage-render-stage: submit: %s\n", SDL_GetError());
-        goto release_renderer;
-    }
-    if (!ModernWriteTexturePpm(device, color, width, height, outputPath)) {
-        fprintf(stderr, "rage-render-stage: cannot write %s\n", outputPath);
-        goto release_renderer;
+    /* One turn of the subject, or one still. Holding the device open across
+     * the whole sweep is what makes an angle sweep affordable as a test:
+     * standing the GPU up costs far more than any one frame. */
+    for (step = 0; step < (sweep > 0 ? sweep : 1); step++) {
+        char sweepPath[1024];
+        const char *framePath = outputPath;
+        if (sweep > 0) {
+            int pose;
+            float turn = (float)step * 360.0f / (float)sweep;
+            size_t stem = strlen(outputPath);
+            while (stem > 0 && outputPath[stem - 1] != '.') stem--;
+            if (stem == 0) stem = strlen(outputPath) + 1;
+            if (snprintf(sweepPath, sizeof(sweepPath), "%.*s-%03d.ppm",
+                         (int)(stem - 1), outputPath, step) >=
+                (int)sizeof(sweepPath)) {
+                fprintf(stderr, "rage-render-stage: output path too long\n");
+                goto release_renderer;
+            }
+            framePath = sweepPath;
+            for (pose = 0; pose < poseCount; pose++)
+                instances[pose].transform.rotation.y =
+                    poses[pose].rotationDegrees.y + turn;
+            /* The renderer keeps its built geometry until the frame number
+             * moves, so each step of the sweep is its own frame. */
+            world.frame = (uint64_t)step + 2;
+            ModernNativeGpuPrepare(&world, (float)width / (float)height);
+            if (!ModernNativeGpuHasDraws()) {
+                fprintf(stderr,
+                        "rage-render-stage: no draws at %.0f degrees\n", turn);
+                goto release_renderer;
+            }
+        }
+        command = SDL_AcquireGPUCommandBuffer(device);
+        if (command == NULL) {
+            fprintf(stderr, "rage-render-stage: command buffer: %s\n",
+                    SDL_GetError());
+            goto release_renderer;
+        }
+        ModernNativeGpuDraw(command, color, depth, 1);
+        if (!SDL_SubmitGPUCommandBuffer(command)) {
+            fprintf(stderr, "rage-render-stage: submit: %s\n", SDL_GetError());
+            goto release_renderer;
+        }
+        if (!ModernWriteTexturePpm(device, color, width, height, framePath)) {
+            fprintf(stderr, "rage-render-stage: cannot write %s\n", framePath);
+            goto release_renderer;
+        }
     }
     if (drawPath != NULL) {
         FILE *file = fopen(drawPath, "w");
