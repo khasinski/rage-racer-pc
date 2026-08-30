@@ -148,13 +148,11 @@ void UpdatePadState(void) {
         pad->status = 1;
         pad->held = 0;
         pad->pressed = 0;
-        pad->pressedRepeat = 0;
         pad->twist = 0x80;
         pad->buttonI = 0;
         pad->buttonII = 0;
         pad->buttonL = 0;
     }
-    pad->pressedRepeat = 0;
     pad->pressedRepeat = pad->held & ~g_PadPrevHeld;
     if (pad->held != 0 && pad->held == g_PadPrevHeld) {
         if (g_PadRepeatTimer[0] == 0x1E) {
