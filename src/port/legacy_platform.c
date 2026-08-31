@@ -1,8 +1,6 @@
 #include <libetc.h>
 #include <libgte.h>
 #include <libpress.h>
-#include <libapi.h>
-#include <psyz.h>
 
 #include <stdint.h>
 #include <fcntl.h>
@@ -44,6 +42,8 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include <unistd.h>
 #endif
 
+#include <libapi.h>
+#include <psyz.h>
 #include <psyz/cd.h>
 
 #include "psyq/cd_types.h"
@@ -53,7 +53,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "runtime_config.h"
 #include "chd_disc.h"
 #include "disc_stream_table.h"
-#include "game/asset.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -579,10 +578,8 @@ unsigned int HostStreamSectorSpan(int stream) {
  * that never gets one behaves as the PAL build always did. */
 static void HostSeedStreamTable(void) {
     int stream;
+    DiscStreamTablePublish(&g_RetailPalStreamTable);
     for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
-        g_StreamCdEntries[stream].position.sectorOffset =
-            g_RetailPalStreamTable.offset[stream];
-        g_StreamCdEntries[stream].size = g_RetailPalStreamTable.frames[stream];
         s_StreamSpans[stream] = g_RetailPalStreamTable.span[stream];
     }
 }
@@ -622,10 +619,8 @@ static void HostAdoptDiscStreamTable(void) {
                 identity.reason != NULL ? identity.reason : "unknown reason");
         return;
     }
+    DiscStreamTablePublish(&identity.table);
     for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
-        g_StreamCdEntries[stream].position.sectorOffset =
-            identity.table.offset[stream];
-        g_StreamCdEntries[stream].size = identity.table.frames[stream];
         s_StreamSpans[stream] = identity.table.span[stream];
     }
     fprintf(stderr, "rage-port: FMV table from %s:", identity.boot);

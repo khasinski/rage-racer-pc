@@ -46,4 +46,12 @@ int DiscIdentify(DiscRawSectorReader read, void *context,
 /* The region a boot executable name belongs to.  Exposed for the tests. */
 const char *DiscRegionForBootName(const char *boot);
 
+/*
+ * Publish a table into the game's own stream index. The platform layer used
+ * to write it directly, which meant including the game's asset header beside
+ * <windows.h>; those two both define a RECT and the build came apart inside
+ * the headers. Whoever knows the table writes it.
+ */
+void DiscStreamTablePublish(const DiscStreamTable *table);
+
 #endif
