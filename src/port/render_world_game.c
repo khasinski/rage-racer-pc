@@ -46,6 +46,22 @@ static float AngleToDegrees(s32 angle) {
     return (float)(angle & 0xFFF) * (360.0f / 4096.0f);
 }
 
+/*
+ * The environment palette as the frame being marked sees it. These slots
+ * change with the course and with the time of day, so reading them from a
+ * separate run and comparing them with a captured picture compares two
+ * different moments; every sky colour question this port has had was made
+ * harder by that. Write them beside the picture instead.
+ */
+void GameRenderWorldEnvironmentPalette(unsigned char out[9][3]) {
+    int slot;
+    for (slot = 0; slot < 9; slot++) {
+        out[slot][0] = g_EnvironmentColors.fields.slots[slot].cur.bytes.r;
+        out[slot][1] = g_EnvironmentColors.fields.slots[slot].cur.bytes.g;
+        out[slot][2] = g_EnvironmentColors.fields.slots[slot].cur.bytes.b;
+    }
+}
+
 static void GameRenderWorldEnvironmentColor(int slot, RageRenderVec3 *out) {
     out->x =
         (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.r / 255.0f;

@@ -212,14 +212,21 @@ void ModernDiagnosticsCheckMarker(
      * Naming a frame takes the same capture without anyone present. */
     {
         static long atFrame = -2;
+        static long every;
+        static long nextFrame;
         if (atFrame == -2) {
             const char *value = RuntimeConfigGet("diagnostics.marker_frame");
+            const char *repeat = RuntimeConfigGet("diagnostics.marker_every");
             atFrame = value != NULL ? strtol(value, NULL, 0) : -1;
+            every = repeat != NULL ? strtol(repeat, NULL, 0) : 0;
+            nextFrame = atFrame;
         }
-        static int taken;
-        if (atFrame >= 0 && !taken &&
-            (long)snapshot->frameCounter >= atFrame) {
-            taken = 1;
+        if (nextFrame >= 0 && (long)snapshot->frameCounter >= nextFrame) {
+            /* Repeating matters for anything whose correctness depends on the
+             * camera moving: one marker cannot tell a horizon that follows
+             * the pitch from one that follows half of it. */
+            nextFrame = every > 0
+                ? (long)snapshot->frameCounter + every : -1;
             pressed = 1;
         }
     }
@@ -305,6 +312,19 @@ void ModernDiagnosticsCheckMarker(
     if (file != NULL) {
         WriteSceneInfo(file, snapshot, output, haveModernImage);
         fclose(file);
+    }
+    {
+        unsigned char palette[9][3];
+        int slot;
+        snprintf(path, sizeof(path), "markers/marker-%d-palette.txt", index);
+        file = fopen(path, "w");
+        if (file != NULL) {
+            GameRenderWorldEnvironmentPalette(palette);
+            for (slot = 0; slot < 9; slot++)
+                fprintf(file, "slot %d = %d,%d,%d\n", slot, palette[slot][0],
+                        palette[slot][1], palette[slot][2]);
+            fclose(file);
+        }
     }
     fprintf(stderr, "rage-port: marker %d saved (frame=%u scene=%d timer=%d)\n",
             index, snapshot->frameCounter, snapshot->sceneId,

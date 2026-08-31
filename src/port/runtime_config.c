@@ -187,6 +187,8 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"diagnostics.course_trace_tpage", "RAGE_PORT_COURSE_TRACE_TPAGE"},
     {"diagnostics.fmv_trace", "RAGE_PORT_FMV_TRACE"},
     {"diagnostics.marker_capture", "RAGE_PORT_MARKER_CAPTURE"},
+    {"diagnostics.marker_every", "RAGE_PORT_MARKER_EVERY"},
+    {"diagnostics.sky_trace", "RAGE_PORT_SKY_TRACE"},
     {"diagnostics.marker_frame", "RAGE_PORT_MARKER_FRAME"},
     {"diagnostics.modern_asset_trace", "RAGE_PORT_MODERN_ASSET_TRACE"},
     {"diagnostics.input.debug", "RAGE_PORT_INPUT_DEBUG"},

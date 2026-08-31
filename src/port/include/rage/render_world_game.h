@@ -55,4 +55,8 @@ const struct RageRenderWorld *GameRenderWorldPrevious(void);
  * The returned storage is owned by the adapter until the next call. */
 const struct RageRenderWorld *GameRenderWorldPresentation(float t);
 
+/* The nine environment colours of the frame being drawn, for diagnostics
+ * that need the palette and the picture to come from the same moment. */
+void GameRenderWorldEnvironmentPalette(unsigned char out[9][3]);
+
 #endif
