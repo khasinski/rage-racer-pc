@@ -168,6 +168,7 @@ if(RAGE_BUILD_PORT)
     target_compile_options(rage-host-state PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     set(RAGE_PORT_COMMON_SOURCES
         src/port/disc_picker.c
+        src/port/disc_stream_publish.c
         src/port/input_config.c
         src/port/input_device_select.c
         src/port/platform_paths.c

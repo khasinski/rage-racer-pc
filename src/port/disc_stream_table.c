@@ -1,4 +1,3 @@
-#include "game/asset.h"
 #include "disc_stream_table.h"
 
 #include <stdlib.h>
@@ -375,12 +374,4 @@ int DiscIdentify(DiscRawSectorReader read, void *context,
     identity->region = DiscRegionForBootName(identity->boot);
     if (ReadStreamTable(&reader, identity, identity->boot)) identity->reason = NULL;
     return 1;
-}
-
-void DiscStreamTablePublish(const DiscStreamTable *table) {
-    int stream;
-    for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
-        g_StreamCdEntries[stream].position.sectorOffset = table->offset[stream];
-        g_StreamCdEntries[stream].size = table->frames[stream];
-    }
 }
