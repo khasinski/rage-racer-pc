@@ -18,68 +18,67 @@ typedef union EngineRpmAddress {
  * match-load-bearing.
  */
 void SteerCarToTrackLine(PlayerCarRuntime *car) {
-    GameCarSpec *spec;
-    s32 timer;
-    s32 index;
-    s32 lateral;
-    s32 baseIndex;
-    s32 finalAngle;
-    s32 coords[3];
-    s32 angle;
-    s32 value;
-    s32 xValue;
-    s32 headingDelta;
-    s32 rawIndex;
-    s32 trackCount;
-    s32 directionFlag;
-    s32 divisor;
+    const GameCarSpec *spec = g_CarSpec;
+    s32 lateral = car->trackLateralOffset;
+    s32 aheadIndex;
+    s32 target[3];
+    s32 lineAngle;
+    s32 sideways;
+    s32 wantedHeading;
 
-    spec = g_CarSpec;
-    lateral = car->trackLateralOffset;
-    timer = spec->steerResponse;
-    directionFlag = car->drive.launchDirection;
+    /*
+     * Aim two track points along the way the car is going. A car launched
+     * backwards counts them the other way, so the point it steers at is still
+     * ahead of it.
+     */
+    aheadIndex = car->drive.launchDirection != 0 ? car->trackPointIndex + 2
+                                                 : car->trackPointIndex - 2;
+    if (aheadIndex < 0) aheadIndex += g_TrackPointCount;
+    aheadIndex %= g_TrackPointCount;
 
-    
-    baseIndex = car->trackPointIndex;
-    index = baseIndex + 2;
-    if (directionFlag == 0) {
-        index = baseIndex - 2;
-    }
+    InterpolateTrackPoint(aheadIndex, target, car->segmentFraction);
 
-    rawIndex = index;
-    if (index < 0) {
-        rawIndex = index + g_TrackPointCount;
-    }
-    trackCount = g_TrackPointCount;
-    index = rawIndex % trackCount;
+    /*
+     * Push that point sideways by however far off the racing line this car is
+     * meant to run. The line's own angle is negated, which turns the offset
+     * from the line's frame into the world's.
+     */
+    lineAngle = ANGLE_FULL_TURN - SmoothTrackAngle(aheadIndex,
+                                                  car->segmentFraction);
 
-    InterpolateTrackPoint(index, coords, car->segmentFraction);
-    angle = 0x1000 - SmoothTrackAngle(index, car->segmentFraction);
+    /*
+     * Each product is a signed fixed-point value and the shift rounds towards
+     * minus infinity, so a negative one is nudged up first to truncate the way
+     * a division would. Written out because the bias is part of the position.
+     */
+    sideways = rsin(lineAngle) * lateral;
+    if (sideways < 0) sideways += 0xFFF;
+    target[0] += sideways >> 12;
 
-    xValue = rsin(angle) * lateral;
-    if (xValue < 0) {
-        xValue += 0xFFF;
-    }
-    coords[0] += xValue >> 12;
+    sideways = rcos(lineAngle) * lateral;
+    if (sideways < 0) sideways += 0xFFF;
+    target[2] += sideways >> 12;
 
-    value = rcos(angle) * lateral;
-    if (value < 0) {
-        value += 0xFFF;
-    }
-    coords[2] += value >> 12;
+    wantedHeading = ANGLE_QUARTER_TURN - Atan2(target[0] - car->x,
+                                               target[2] - car->z);
 
-    finalAngle = 0x400 - Atan2(coords[0] - car->x, coords[2] - car->z);
-
+    /*
+     * A car in the air is not steering. On the ground it turns a fixed share
+     * of the way towards the point each frame, and the car's own steering
+     * response divides that: a smaller number turns harder.
+     *
+     * The divisor is truncated to sixteen bits, which is how the recovered
+     * code read it, and the response is unsigned, so a value past a signed
+     * turn would come back negative and be clamped to one. No car ships with
+     * one, and the truncation stays because it is what the game does.
+     */
     if (car->verticalMotionState == 0) {
-        xValue = timer << 16;
-        divisor = xValue >> 16;
-        if (divisor <= 0) {
-            divisor = 1;
-        }
+        s32 response = (s16)spec->steerResponse;
+        s32 towards;
 
-        headingDelta = GetAngleDelta(car->headingAngle, finalAngle);
-        headingDelta = ((headingDelta * 5) << 2) / divisor;
-        car->headingAngle += headingDelta;
+        if (response <= 0) response = 1;
+        towards = GetAngleDelta(car->headingAngle, wantedHeading);
+        car->headingAngle += (towards * 20) / response;
     }
 }
 
@@ -91,8 +90,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
  */
 
 
-void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
-    PlayerCarRuntime *car = carArg;
+void UpdateCarLaunch(PlayerCarRuntime *car) {
     GameCarDrive *drive;
     s32 s4val;
     s32 res;
@@ -101,7 +99,6 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
     s32 firstHeading;
     u32 shiftRpmRange;
 
-    (void)unused;
 
     first24 = car->bodyYaw;
     v0 = car->drive.spinRate;
@@ -305,13 +302,12 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
  * spin, advances the car (AdvanceCarPosition), and lands it when it returns to the
  * ground. The drive sub-block is the GameCarDrive view beginning at +0xBC.
  */
-void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
+void UpdateCarAirborne(PlayerCarRuntime *car) {
     GameCarDrive *r = &car->drive;
     s32 sinF24;
     s32 cosF24;
     volatile s32 coords[3];
 
-    (void)unused;
     s32 flag = g_ShiftSoundLevel;
 
     if (flag == 0) {
@@ -374,14 +370,13 @@ void UpdateCarAirborne(PlayerCarRuntime *car, s32 unused) {
     }
 }
 
-void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
+void UpdateCarStandingStart(PlayerCarRuntime *car) {
     GameCarDrive *route = &car->drive;
     s32 sinA;
     s32 cosA;
     s32 r;
     s32 forward;
 
-    (void)unused;
 
     r = GetAngleDelta(car->bodyYaw, route->targetHeading);
     car->bodyYaw += r / 5;

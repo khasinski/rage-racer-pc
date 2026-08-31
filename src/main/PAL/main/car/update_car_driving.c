@@ -11,8 +11,7 @@
  * (AdvanceCarPosition), and detects the jump/launch trigger. The drive sub-block is
  * the GameCarDrive view beginning at offset +0xBC.
  */
-void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
-    (void)unused;
+void UpdateCarDriving(PlayerCarRuntime *car) {
     GameCarDrive *route = &car->drive;
     s32 sinA;
     s32 cosA;
