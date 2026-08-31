@@ -1128,7 +1128,20 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     uint32_t mipLevels;
     SDL_GPUTransferBuffer *upload = NULL;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
-    if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) return NULL;
+    if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {
+        /* Nothing evicts, so this is permanent for the rest of the course:
+         * every material after it draws nothing at all. Say so once, because
+         * the symptom is missing scenery rather than an error. */
+        static int reported;
+        if (!reported) {
+            reported = 1;
+            fprintf(stderr,
+                    "rage-port: native texture cache full at %u; further "
+                    "materials will not be drawn\n",
+                    s_textureCount);
+        }
+        return NULL;
+    }
     instance.assetKey = span->assetKey;
     instance.assetSet = span->assetSet;
     instance.hasCarPaint = span->hasCarPaint;
@@ -1223,11 +1236,18 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     s_textureCount++;
     return entry;
 fail:
+    /* The mip chain is allocated before a cache slot is claimed, so failing
+     * to build it arrives here with no slot to release. Running out of
+     * memory is exactly when this path is taken, which made it a crash in
+     * the one situation it exists to survive. */
     free(mipChain);
     ModernAssetsFreeMaterialImage(&image);
-    if (entry->texture != NULL) SDL_ReleaseGPUTexture(s_device, entry->texture);
     if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
-    memset(entry, 0, sizeof(*entry));
+    if (entry != NULL) {
+        if (entry->texture != NULL)
+            SDL_ReleaseGPUTexture(s_device, entry->texture);
+        memset(entry, 0, sizeof(*entry));
+    }
     return NULL;
 }
 
