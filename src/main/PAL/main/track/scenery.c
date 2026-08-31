@@ -17,13 +17,6 @@ void DrawStaticScenery(s32 shifted) {
     Matrix mtx;
     Matrix renderWorldMtx;
     Vec4 state;
-    s32 wordIndex;
-    s32 bitIndex;
-    s32 value;
-    u32 *visibility;
-    u32 *wordPtr;
-    VisibilityMaskAddress visibilityAddress;
-    s32 bit;
     s32 visible;
     s16 drawArg;
     s32 frameValue;
@@ -34,24 +27,7 @@ void DrawStaticScenery(s32 shifted) {
         state.z += 0x5000;
     }
 
-    wordIndex = state.z + 0x400;
-    if (wordIndex < 0) {
-        wordIndex = state.z + 0xBFF;
-    }
-    wordIndex >>= 11;
-
-    value = state.x;
-    visibility = g_VisibleCellMask;
-    bit = value + 0x400;
-    visibilityAddress.pointer = visibility;
-    visibilityAddress.value = (wordIndex << 2) + visibilityAddress.value;
-    wordPtr = visibilityAddress.pointer;
-    if (bit < 0) {
-        bit = value + 0xBFF;
-    }
-    bitIndex = bit >> 11;
-    visible = 1 << bitIndex;
-    visible &= *wordPtr;
+    visible = TrackCellVisible(state.x, state.z);
 
     if (visible != 0) {
         BuildRotMatrixY(&mtx, g_StaticSceneryYaw);

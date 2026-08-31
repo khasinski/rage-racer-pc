@@ -129,6 +129,22 @@ endif()
 add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
 
 set_tests_properties(rmesh_cache PROPERTIES LABELS functional)
+add_executable(visible_cell_tests
+    visible_cell_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/visible_cell_lookup.c)
+target_include_directories(visible_cell_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(visible_cell_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include")
+endif()
+target_link_libraries(visible_cell_tests PRIVATE psyz)
+add_test(NAME visible_cell COMMAND visible_cell_tests)
+set_tests_properties(visible_cell PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)

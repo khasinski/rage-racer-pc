@@ -146,10 +146,6 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
     s32 delta;
-    s32 value;
-    s32 tile;
-    s32 timeout;
-    s32 threshold;
     PlayerCarRaceState *raceState;
     s32 sectorClosed;
 
@@ -238,44 +234,11 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         }
     }
 
-    if (g_SplitTimer >= 0x3C) {
-        threshold = 0x927BE;
-        value = g_LapTimeMs;
-
-    } else if (g_SectorIndex >= 0) {
-        if (g_SplitSign != 0) {
-            if (g_LapCount >= g_PlayerCar.lap) {
-                value = g_SplitDelta;
-                if (g_SplitSign > 0) {
-                    tile = 0x7810;
-                } else {
-                    tile = 0x780F;
-                }
-                DrawTimeValue(0x80, 0x50, value, tile, 0x3E8);
-            }
-        }
-        threshold = 0x927BE;
-        value = g_LastSectorTime;
-
-        tile = value <= threshold ? 0x78CC : 0x7890;
-        DrawTimeValue(HudLeftX(0x12), 0x2A, value, tile, 0x3E8);
-    }
-
-    timeout = 0x3E8;
-    DrawTimeValue(HudLeftX(0x12), 0x20, g_SplitTargetTime, 0x78CC, timeout);
-    DrawSplitDelta(g_SplitSector, g_SplitSign);
-
     /*
-     * Anchored like the labels beside them. This is a second copy of the
-     * split-time drawing, the one a replaying ghost runs, and it kept the
-     * coordinates a 4:3 screen was authored with: in time attack the times
-     * on the left and the total on the right stayed where they were while
-     * every label around them moved out to the edges.
+     * The same drawing DrawSplitTimes does during a race. Keeping a second
+     * copy here is what let the two drift: this one kept the coordinates a
+     * 4:3 screen was authored with long after the other was anchored, and it
+     * never learned that lap times can be turned off.
      */
-    DrawTimeValue(
-        HudRightX(0xFA),
-        0x7C,
-        g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][grandPrixMode],
-        0x78CC,
-        timeout);
+    DrawSplitTimes();
 }

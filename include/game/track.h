@@ -633,4 +633,9 @@ extern CellVisibilityRow *g_CellVisibilityTable;
 #define TERRAIN_CELL_GRID_SIZE      0x800
 #define CELL_VISIBILITY_TABLE_SIZE  0x1000
 
+/* Whether the visibility mask holds the cell a world point falls in. The mask
+ * is one bit per 2048-unit cell, a word per row of z and a bit per column of
+ * x. */
+int TrackCellVisible(s32 x, s32 z);
+
 #endif
