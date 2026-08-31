@@ -116,70 +116,14 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackScratch *spad,
                           const GameTrackPoint *point,
                           const GameTrackPoint *nextPoint, s32 arcIndex) {
     s32 arcAngle;
-    GameTrackArcCenter *arcCenter;
-    s32 arcCenterX;
-    s32 arcCenterZ;
     s32 arcLateral;
     s16 arcSpan;
-    s32 carRadius;
-    s32 carToCenterX;
-    s32 carToCenterZ;
-    s32 centerX;
-    s32 centerZ;
-    s32 cosCarAngle;
-    s32 cosNextAngle;
-    s32 cosPointAngle;
     s32 headingAngle;
-    s32 nextRadius;
     s32 pointHeading;
-    s32 pointRadius;
-    s32 pointToCenterX;
-    s32 pointToCenterZ;
     s32 swept;
     s32 sweptAngle;
 
-    arcCenter = &g_TrackArcCenters[arcIndex];
-    arcCenterX = arcCenter->x;
-    spad->arcCenterX = arcCenterX;
-    arcCenterZ = arcCenter->z;
-    spad->arcCenterZ = arcCenterZ;
-    carToCenterX = obj->x - arcCenterX;
-    spad->carToCenterX = carToCenterX;
-    carToCenterZ = obj->z - arcCenterZ;
-    spad->carToCenterZ = carToCenterZ;
-    spad->sweptAngle = Atan2(carToCenterX, carToCenterZ) & 0xFFF;
-    pointToCenterX = point->x;
-    centerX = spad->arcCenterX;
-    centerZ = spad->arcCenterZ;
-    pointToCenterX -= centerX;
-    spad->pointToCenterX = pointToCenterX;
-    pointToCenterZ = point->z - centerZ;
-    spad->pointToCenterZ = pointToCenterZ;
-    spad->nextPointToCenterX = nextPoint->x - centerX;
-    spad->nextPointToCenterZ = nextPoint->z - centerZ;
-    spad->pointAngle = Atan2(pointToCenterX, pointToCenterZ) & 0xFFF;
-    spad->nextPointAngle = Atan2(spad->nextPointToCenterX, spad->nextPointToCenterZ) & 0xFFF;
-    cosCarAngle = rcos(spad->sweptAngle);
-    carRadius = cosCarAngle * spad->carToCenterX + rsin(spad->sweptAngle) * spad->carToCenterZ;
-    if (carRadius < 0)
-    {
-        carRadius += 0xFFF;
-    }
-    spad->carRadius.value = carRadius >> 0xC;
-    cosPointAngle = rcos(spad->pointAngle);
-    pointRadius = cosPointAngle * spad->pointToCenterX + rsin(spad->pointAngle) * spad->pointToCenterZ;
-    if (pointRadius < 0)
-    {
-        pointRadius += 0xFFF;
-    }
-    spad->pointRadius.value = pointRadius >> 0xC;
-    cosNextAngle = rcos(spad->nextPointAngle);
-    nextRadius = cosNextAngle * spad->nextPointToCenterX + rsin(spad->nextPointAngle) * spad->nextPointToCenterZ;
-    if (nextRadius < 0)
-    {
-        nextRadius += 0xFFF;
-    }
-    spad->nextPointRadius.value = nextRadius >> 0xC;
+    CarTrackMeasureArc(spad, arcIndex, obj->x, obj->z, point, nextPoint);
     spad->arcSpan = GetAngleDistance(spad->pointAngle, spad->nextPointAngle);
     sweptAngle = GetAngleDistance(spad->pointAngle, spad->sweptAngle);
     arcAngle = spad->arcSpan;

@@ -136,6 +136,7 @@ set_tests_properties(drivetrain_sweep PROPERTIES LABELS functional)
 add_executable(car_track_state_tests
     car_track_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c

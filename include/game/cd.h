@@ -62,9 +62,10 @@ void SetCdMixPreset(s32 preset);
  */
 void TickCdAudio(void);
 void StepCdTrackRequest(void);   /* CdlSeekP 0x16 */
-void StepCdPlayRequest(void);    /* CdlPlay 0x03 */
+/* CdlPlay 0x03, for both a fresh play and a resume: the sequence is the
+ * same, so the dispatch sends both commands here. */
+void StepCdPlayRequest(void);
 void StepCdPauseRequest(void);   /* CdlGetlocP + CdlPause */
-void StepCdResumeRequest(void);  /* CdlPlay 0x03 */
 /* Boot-time setup: SPU CD input on, drive into CD-DA mode, track table built,
  * every pending/step word cleared and the volume set to full. */
 void InitCdAudio(void);

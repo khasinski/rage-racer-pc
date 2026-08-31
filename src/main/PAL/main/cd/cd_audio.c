@@ -84,36 +84,6 @@ void StepCdPauseRequest(void) {
         break;
     }
 }
-void StepCdResumeRequest(void) {
-    s32 status;
-
-    switch (g_CdCommandStep) {
-    case 0:
-        if (CdSync(1, 0) == 0) {
-            break;
-        }
-        g_CdCommandStep = 1;
-        /* fall through */
-    case 1:
-        if (CdControl(3, 0, 0) == 0) {
-            break;
-        }
-        g_CdCommandStep = 2;
-        break;
-    case 2:
-        status = CdSync(1, 0);
-        if (status == 2) {
-            g_CdCommandStep = 3;
-        } else if (status == 5) {
-            g_CdCommandStep = 1;
-        }
-        break;
-    case 3:
-        g_CdCommandPending = CD_COMMAND_NONE;
-        g_CdCommandStep = 0;
-        break;
-    }
-}
 
 void InitCdAudio(void) {
     u8 *status;
@@ -145,14 +115,16 @@ void TickCdAudio(void) {
         switch (g_CdCommandPending) {
         case CD_COMMAND_NONE:
             break;
+        /* Resuming and starting are the same command sequence: both issue
+         * CdlPlay and wait on the same three steps. They were written out
+         * twice, in two files, identical but for whether the status test
+         * used else or a second break. */
         case CD_COMMAND_PLAY:
+        case CD_COMMAND_RESUME:
             StepCdPlayRequest();
             break;
         case CD_COMMAND_PAUSE:
             StepCdPauseRequest();
-            break;
-        case CD_COMMAND_RESUME:
-            StepCdResumeRequest();
             break;
         }
     } else {

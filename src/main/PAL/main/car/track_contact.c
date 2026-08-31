@@ -12,30 +12,19 @@ void ResetCarTrackState(GameCarRuntime *car) {
     s32 secondResult;
     s16 trackWidth;
     s16 trackWidthCopy;
-    s32 carToCenterX;
-    s32 pointToCenterX;
     s16 arcSpan;
     s16 segLenA;
     s16 segLenB;
     s16 segLenC;
     s16 segLenD;
-    s32 carToCenterZ;
-    s32 pointToCenterZ;
     s32 arcAngle;
     s16 segLenE;
-    s32 centerZ;
     s32 nextPointIndex;
     s32 edgeHeight;
-    s32 cosCarAngle;
-    s32 cosPointAngle;
-    s32 cosNextAngle;
     s32 cosHeading;
     s32 nextCamber;
-    s32 arcCenterZ;
     s32 sweptAngle;
     s32 arcIndex;
-    s32 arcCenterX;
-    s32 centerX;
     s32 swept;
     s32 trackPointIndex;
     s32 useProgress;
@@ -43,15 +32,11 @@ void ResetCarTrackState(GameCarRuntime *car) {
     s32 lateralProduct;
     s32 pointHeading;
     s32 alongSegment;
-    s32 carRadius;
-    s32 pointRadius;
-    s32 nextRadius;
     s32 rotated;
     s16 curveMode;
     u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
-    GameTrackArcCenter *arcCenter;
     CarTrackScratch *spad;
 
     spad = CAR_TRACK_SCRATCH;
@@ -71,48 +56,8 @@ void ResetCarTrackState(GameCarRuntime *car) {
     curveMode = point->arcRef & 3;
     spad->curveMode = curveMode;
     if (curveMode != 0) {
-        arcCenter = &g_TrackArcCenters[arcIndex];
-        arcCenterX = arcCenter->x;
-        spad->arcCenterX = arcCenterX;
-        arcCenterZ = arcCenter->z;
-        spad->arcCenterZ = arcCenterZ;
-        carToCenterX = car->x - arcCenterX;
-        spad->carToCenterX = carToCenterX;
-        carToCenterZ = car->z - arcCenterZ;
-        spad->carToCenterZ = carToCenterZ;
-        spad->sweptAngle = Atan2(carToCenterX, carToCenterZ) & 0xFFF;
-        pointToCenterX = point->x;
-        centerX = spad->arcCenterX;
-        centerZ = spad->arcCenterZ;
-        pointToCenterX -= centerX;
-        spad->pointToCenterX = pointToCenterX;
-        pointToCenterZ = point->z - centerZ;
-        spad->pointToCenterZ = pointToCenterZ;
-        spad->nextPointToCenterX = nextPoint->x - centerX;
-        spad->nextPointToCenterZ = nextPoint->z - centerZ;
-        spad->pointAngle = Atan2(pointToCenterX, pointToCenterZ) & 0xFFF;
-        spad->nextPointAngle = Atan2(spad->nextPointToCenterX, spad->nextPointToCenterZ) & 0xFFF;
-        cosCarAngle = rcos(spad->sweptAngle);
-        carRadius = (cosCarAngle * spad->carToCenterX) +
-                 (rsin(spad->sweptAngle) * spad->carToCenterZ);
-        if (carRadius < 0) {
-            carRadius += 0xFFF;
-        }
-        spad->carRadius.value = carRadius >> 0xC;
-        cosPointAngle = rcos(spad->pointAngle);
-        pointRadius = (cosPointAngle * spad->pointToCenterX) +
-                   (rsin(spad->pointAngle) * spad->pointToCenterZ);
-        if (pointRadius < 0) {
-            pointRadius += 0xFFF;
-        }
-        spad->pointRadius.value = pointRadius >> 0xC;
-        cosNextAngle = rcos(spad->nextPointAngle);
-        nextRadius = (cosNextAngle * spad->nextPointToCenterX) +
-                   (rsin(spad->nextPointAngle) * spad->nextPointToCenterZ);
-        if (nextRadius < 0) {
-            nextRadius += 0xFFF;
-        }
-        spad->nextPointRadius.value = nextRadius >> 0xC;
+        CarTrackMeasureArc(spad, arcIndex, car->x, car->z, point,
+                           nextPoint);
         spad->arcSpan = GetAngleDistance(spad->pointAngle, spad->nextPointAngle);
         if (spad->arcSpan <= 0) {
             spad->arcSpan = 1;
