@@ -129,6 +129,10 @@ endif()
 add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
 
 set_tests_properties(rmesh_cache PROPERTIES LABELS functional)
+add_test(NAME hud_anchoring
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
+set_tests_properties(hud_anchoring PROPERTIES LABELS functional)
+
 add_test(NAME native_sky_projection
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_sky_projection.py)
 

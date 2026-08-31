@@ -8,6 +8,8 @@
 #include "game/render.h"
 #include "game/player_car_internal.h"
 
+#include "rage/hud_config.h"
+
 
 void SeedReplayCars(void) {
     ReplayCarAddress primary;
@@ -256,15 +258,22 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         value = g_LastSectorTime;
 
         tile = value <= threshold ? 0x78CC : 0x7890;
-        DrawTimeValue(0x12, 0x2A, value, tile, 0x3E8);
+        DrawTimeValue(HudLeftX(0x12), 0x2A, value, tile, 0x3E8);
     }
 
     timeout = 0x3E8;
-    DrawTimeValue(0x12, 0x20, g_SplitTargetTime, 0x78CC, timeout);
+    DrawTimeValue(HudLeftX(0x12), 0x20, g_SplitTargetTime, 0x78CC, timeout);
     DrawSplitDelta(g_SplitSector, g_SplitSign);
 
+    /*
+     * Anchored like the labels beside them. This is a second copy of the
+     * split-time drawing, the one a replaying ghost runs, and it kept the
+     * coordinates a 4:3 screen was authored with: in time attack the times
+     * on the left and the total on the right stayed where they were while
+     * every label around them moved out to the edges.
+     */
     DrawTimeValue(
-        0xFA,
+        HudRightX(0xFA),
         0x7C,
         g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][grandPrixMode],
         0x78CC,
