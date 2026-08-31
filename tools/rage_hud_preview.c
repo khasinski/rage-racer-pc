@@ -23,6 +23,7 @@
 #include "game/player_car_internal.h"
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/scratchpad.h"
@@ -102,6 +103,9 @@ static void Usage(const char *program) {
         "  [--position N]          race position, grand prix only\n"
         "  [--split MS]            split delta; sign picks the marker\n"
         "  [--time-left TICKS]     time limit remaining\n"
+        "  [--sector-time MS]      last sector time\n"
+        "  [--target-time MS]      the split time being chased\n"
+        "  [--total MS]            best total time\n"
         "  [--background R,G,B]    what to draw the HUD on top of\n",
         program);
 }
@@ -220,7 +224,6 @@ int main(int argc, char **argv) {
     int red = 24, green = 24, blue = 32;
     int index;
     int split;
-    int hasSplit;
 
     if (vramPath == NULL) {
         Usage(argc > 0 ? argv[0] : "rage-hud-preview");
@@ -304,8 +307,22 @@ int main(int argc, char **argv) {
     DrawRaceHudLabels(hudMode);
     if (hudMode != 0) DrawRacePosition();
     split = OptionNumber(argc, argv, "--split", 0);
-    hasSplit = OptionValue(argc, argv, "--split") != NULL;
-    if (hasSplit) DrawSplitDelta(split / 8, split);
+    /* The split times and the total are a separate pass in the race, and
+     * they are half of what the spread layout has to place. */
+    g_SplitTimer = 0;
+    g_SectorIndex = 1;
+    g_SplitSign = (s16)(split > 0 ? 1 : (split < 0 ? -1 : 0));
+    g_SplitDelta = split;
+    g_SplitSector = (s16)(split / 8);
+    g_LapTimeMs = OptionNumber(argc, argv, "--best", 92345);
+    g_LastSectorTime = OptionNumber(argc, argv, "--sector-time", 31450);
+    g_SplitTargetTime = OptionNumber(argc, argv, "--target-time", 91000);
+    g_BestTotalTimes[0][0][0] = OptionNumber(argc, argv, "--total", 278900);
+    g_RaceSeries = 0;
+    /* DrawSplitTimes draws the delta itself. Adding the same primitive to
+     * an ordering table twice links it to itself, and DrawOTag then walks a
+     * loop until the GPU runs out of memory. */
+    DrawSplitTimes();
     DrawTimeRemaining(OptionNumber(argc, argv, "--time-left", 4500));
 
     DrawOTag(ot + GAME_FRAME_OT_LENGTH - 1);

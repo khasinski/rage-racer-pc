@@ -409,6 +409,7 @@ if(RAGE_BUILD_PORT)
             src/main/PAL/main/render/text.c
             src/main/PAL/main/render/draw_packet_queue.c
             src/main/PAL/main/race/race_hud_text.c
+            src/main/PAL/main/race/draw_split_times.c
             src/port/native_game_state.c
             src/port/hud_config.c
             $<TARGET_OBJECTS:rage-host-state>)
