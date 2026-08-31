@@ -37,21 +37,19 @@ void main() {
                     smoothstep(0.0, 0.12, -height));
     }
     /*
-     * The cloud sheet is a flat layer overhead, so project the ray onto it
-     * rather than wrapping the image round the sky: a band expressed in the
-     * ray's height squeezes the whole sheet into a few rows of screen and
-     * draws it as a streak. Distance along the sheet is 1/height, which is
-     * what gives cloud its perspective towards the horizon.
+     * The cloud sheet wraps the horizon as a band, the way the game's tile
+     * grid does: sixteen columns round a full turn, two rows deep. It does
+     * not repeat upwards. Tiling it in both directions instead, as a plane
+     * overhead would, turns the sky into wallpaper, and no amount of scaling
+     * hides that: the eye reads the repetition, not the cloud.
      */
-    float cloudReach = 1.0 / max(height, 0.001);
-    vec2 panoramaUV = vec2(direction.x, direction.z) * cloudReach * 0.80;
+    float cloudBand = clamp((0.535 - height) / 0.43, 0.0, 1.0);
+    vec2 panoramaUV = vec2(
+        fract(atan(direction.z, direction.x) * 0.31830989),
+        cloudBand);
     vec4 authored = texture(panorama, panoramaUV);
-    /* Cloud sits in a layer, so it thins out towards straight overhead as
-     * well as fading into the horizon haze. Without the upper limit the
-     * sheet tiles across the whole sky and covers far more of it than the
-     * game's does. */
-    float cloudCoverage = smoothstep(0.06, 0.16, height) *
-        (1.0 - smoothstep(0.40, 0.70, height));
+    float cloudCoverage = smoothstep(0.09, 0.15, height) *
+        (1.0 - smoothstep(0.475, 0.535, height));
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
