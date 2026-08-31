@@ -23,6 +23,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * The texture cache holds one entry per material and is emptied whole when the
+ * track's assets change, so it does not grow with how long the game has been
+ * running: measured over twenty thousand frames on one course, including race
+ * restarts, it settles within the first laps and stays there. The four grand
+ * prix courses want 300, 435, 371 and 237 of these, so the ceiling is about
+ * five times the worst of them.
+ */
 enum {
     MODERN_NATIVE_MAX_VERTICES = 1000000,
     MODERN_NATIVE_MAX_SPANS = 32768,
@@ -1131,9 +1139,10 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     SDL_GPUTransferBuffer *upload = NULL;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {
-        /* Nothing evicts, so this is permanent for the rest of the course:
-         * every material after it draws nothing at all. Say so once, because
-         * the symptom is missing scenery rather than an error. */
+        /* Only a change of track empties the cache, so this is permanent for
+         * the rest of the course: every material after it draws nothing at
+         * all. Say so once, because the symptom is missing scenery rather
+         * than an error. No shipped course comes close to filling it. */
         static int reported;
         if (!reported) {
             reported = 1;
