@@ -86,7 +86,7 @@ static const char MODERN_NATIVE_MSL[] =
     "struct ShadowOut { float4 pos [[position]]; float2 uv; };\n"
     "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]], constant NativeCamera &shadow [[buffer(1)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; o.shadowReception=in.shadowReception; o.viewDirection=camera.position.xyz-in.pos; float3 sp=in.pos-shadow.position.xyz; float sx=dot(shadow.viewRow0.xyz,sp)*shadow.projection.x; float sy=dot(shadow.viewRow1.xyz,sp)*shadow.projection.y; float sd=-dot(shadow.viewRow2.xyz,sp); o.shadowCoord=float3(sx*0.5+0.5,0.5-sy*0.5,sd*shadow.projection.z+shadow.projection.w); return o; }\n"
     "vertex NativeSkyOut vs_native_sky(uint vertexID [[vertex_id]], constant NativeCamera &camera [[buffer(0)]]) { NativeSkyOut o; float2 corner=float2((vertexID<<1)&2,vertexID&2); float2 clip=corner*2.0-1.0; float3 v=float3(clip.x/camera.projection.x,clip.y/camera.projection.y,-1.0); o.direction=camera.viewRow0.xyz*v.x+camera.viewRow1.xyz*v.y+camera.viewRow2.xyz*v.z; o.pos=float4(clip,1.0,1.0); return o; }\n"
-    "fragment float4 fs_native_sky(NativeSkyOut in [[stage_in]], texture2d<float> panorama [[texture(0)]], sampler skySampler [[sampler(0)]], constant NativeSkyColors &sky [[buffer(0)]]) { float3 d=normalize(in.direction); d.y=-d.y; float h=d.y; float horizontalLength=max(length(d.xz),0.001); float verticalSlope=h/horizontalLength; float3 c; if(h>=0.0)c=mix(sky.middle.rgb,sky.top.rgb,smoothstep(0.143,0.165,h)); else if(h>=-0.18)c=mix(sky.middle.rgb,sky.horizon.rgb,smoothstep(0.0,0.18,-h)); else c=mix(sky.horizon.rgb,sky.bottom.rgb,smoothstep(0.18,0.65,-h)); float bandCoordinate=1.0-verticalSlope*2.5; float band=floor(bandCoordinate); float bandOffset=fmod(band,2.0); if(bandOffset<0.0)bandOffset+=2.0; bandOffset*=0.5; float2 uv=float2(fract(atan2(d.z,d.x)*0.6366197724+0.25+bandOffset),fract(bandCoordinate)); float4 authored=panorama.sample(skySampler,uv); float upperHemisphereCoverage=smoothstep(0.0,0.08,verticalSlope); float cylinderCoverage=upperHemisphereCoverage*(1.0-smoothstep(0.9,1.25,verticalSlope)); c=mix(c,authored.rgb,authored.a*sky.bottom.a*cylinderCoverage); return float4(c,1.0); }\n"
+    "fragment float4 fs_native_sky(NativeSkyOut in [[stage_in]], texture2d<float> panorama [[texture(0)]], sampler skySampler [[sampler(0)]], constant NativeSkyColors &sky [[buffer(0)]]) { float3 d=normalize(in.direction); float h=d.y; float3 c; if(h>=0.0){c=mix(sky.horizon.rgb,sky.middle.rgb,smoothstep(0.0,0.20,h)); c=mix(c,sky.top.rgb,smoothstep(0.20,0.70,h));} else c=mix(sky.horizon.rgb,sky.bottom.rgb,smoothstep(0.0,0.12,-h)); float cloudReach=1.0/max(h,0.001); float2 uv=float2(d.x,d.z)*cloudReach*0.16; float4 authored=panorama.sample(skySampler,uv); float cloudCoverage=smoothstep(0.06,0.16,h); c=mix(c,authored.rgb,authored.a*sky.bottom.a*cloudCoverage); return float4(c,1.0); }\n"
     "vertex ShadowOut vs_shadow(NativeIn in [[stage_in]], constant NativeCamera &shadow [[buffer(0)]]) { ShadowOut o; float3 p=in.pos-shadow.position.xyz; float depth=-dot(shadow.viewRow2.xyz,p); o.pos=float4(dot(shadow.viewRow0.xyz,p)*shadow.projection.x,dot(shadow.viewRow1.xyz,p)*shadow.projection.y,depth*shadow.projection.z+shadow.projection.w,1.0); o.uv=in.uv; return o; }\n"
     "fragment void fs_shadow() {}\n"
     "fragment void fs_shadow_masked(ShadowOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { if(textureImage.sample(smp,in.uv).a<=0.5) discard_fragment(); }\n"
@@ -407,14 +407,9 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
     out->bottom[0] = camera->skyBottomColor.x;
     out->bottom[1] = camera->skyBottomColor.y;
     out->bottom[2] = camera->skyBottomColor.z;
-    /* Alpha is backend metadata here: it enables the optional imported
-     * panorama while RGB remains the authored lower sky band. */
-    /* Alpha enables the imported panorama. Until the flip above, the
-     * coverage term it is multiplied by was always zero, so no panorama has
-     * ever been shown; with the axis right it would appear everywhere above
-     * the horizon, and the game's own sky has no cloud there. Where its band
-     * really belongs is a question for whoever brings it back. */
-    out->bottom[3] = 0.0f;
+    /* Alpha carries the cloud sheet, which the game tiles over the gradient
+     * rather than instead of it. */
+    out->bottom[3] = 1.0f;
 }
 
 static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
@@ -567,8 +562,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     sampler.max_anisotropy = 8.0f;
     sampler.enable_anisotropy = true;
     s_sampler = SDL_CreateGPUSampler(s_device, &sampler);
+    /* The cloud sheet is projected as a plane overhead, so it runs past the
+     * image in both directions and has to tile in both. */
     sampler.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    sampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    sampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);

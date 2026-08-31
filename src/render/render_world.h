@@ -48,6 +48,10 @@ typedef struct RageRenderCamera {
     /* Stable environment asset identity. Import providers may resolve it to
      * the extracted panorama above the gradient or to a mod-supplied image. */
     uint32_t skyAssetKey;
+    /* Which row of the cloud sheet the course asks for. The game reads it
+     * from the course's own camera script, so cloud is a property of the
+     * course rather than of the renderer. */
+    uint32_t skyCloudRow;
     float fogNear;
     float fogFar;
 } RageRenderCamera;

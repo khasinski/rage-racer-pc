@@ -12,47 +12,42 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
 } sky;
 
 void main() {
-    /* The scene's Y grows downward, as the original data does, so looking up
-     * gives a negative y here. Flip it once, at the top, and everything
-     * below reads as it looks: positive is above the horizon. Without this
-     * the whole sky took the below-horizon branch and came out in the light
-     * band meant for under the horizon, whatever the gradient said. */
+    /*
+     * The ray already points the way the picture does: the visible sky sits
+     * at positive height, and flipping it here put the whole of it in the
+     * band meant for below the horizon, whatever the gradient said.
+     */
     vec3 direction = normalize(worldDirection);
-    direction.y = -direction.y;
     float height = direction.y;
-    float horizontalLength = max(length(direction.xz), 0.001);
-    float verticalSlope = height / horizontalLength;
     vec3 color;
+    /*
+     * Above the horizon the gradient runs from the horizon colour up through
+     * the middle to the top. Below it the sky darkens to the bottom colour
+     * quickly: the game's lower band is the dark one, and blending down
+     * there towards the horizon instead left the bottom of the picture the
+     * pale colour that belongs at the skyline.
+     */
     if (height >= 0.0) {
-        color = mix(sky.middle.rgb, sky.top.rgb,
-                    smoothstep(0.143, 0.165, height));
-    } else if (height >= -0.18) {
-        color = mix(sky.middle.rgb, sky.horizon.rgb,
-                    smoothstep(0.0, 0.18, -height));
+        color = mix(sky.horizon.rgb, sky.middle.rgb,
+                    smoothstep(0.0, 0.20, height));
+        color = mix(color, sky.top.rgb,
+                    smoothstep(0.20, 0.70, height));
     } else {
         color = mix(sky.horizon.rgb, sky.bottom.rgb,
-                    smoothstep(0.18, 0.65, -height));
+                    smoothstep(0.0, 0.12, -height));
     }
-    /* The authored image is one 90-degree cylinder band. The original asset
-     * alternated it with a half-turn offset in successive vertical bands.
-     * Keep that semantic layout, but evaluate it from a world-space ray so
-     * replay and mirror cameras can turn freely without exposing a clamped
-     * texture edge. */
-    float bandCoordinate = 1.0 - verticalSlope * 2.5;
-    float band = floor(bandCoordinate);
-    float bandOffset = mod(band, 2.0) * 0.5;
-    vec2 panoramaUV = vec2(
-        fract(atan(direction.z, direction.x) * 0.6366197724 + 0.25 +
-              bandOffset),
-        fract(bandCoordinate));
+    /*
+     * The cloud sheet is a flat layer overhead, so project the ray onto it
+     * rather than wrapping the image round the sky: a band expressed in the
+     * ray's height squeezes the whole sheet into a few rows of screen and
+     * draws it as a streak. Distance along the sheet is 1/height, which is
+     * what gives cloud its perspective towards the horizon.
+     */
+    float cloudReach = 1.0 / max(height, 0.001);
+    vec2 panoramaUV = vec2(direction.x, direction.z) * cloudReach * 0.16;
     vec4 authored = texture(panorama, panoramaUV);
-    /* The reconstructed camera basis maps the visible upper half of the view
-     * to positive worldDirection.y. Keep the authored cloud cylinder there;
-     * the lower half must remain the horizon-to-bottom gradient. */
-    float upperHemisphereCoverage = smoothstep(0.0, 0.08, verticalSlope);
-    float cylinderCoverage = upperHemisphereCoverage *
-        (1.0 - smoothstep(0.9, 1.25, verticalSlope));
+    float cloudCoverage = smoothstep(0.06, 0.16, height);
     color = mix(color, authored.rgb,
-                authored.a * sky.bottom.a * cylinderCoverage);
+                authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
 }

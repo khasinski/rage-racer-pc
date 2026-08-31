@@ -323,15 +323,15 @@ static RageRenderCamera GameRenderWorldBuildCamera(
      * native backend owns their projection; it never replays DrawSkyBackground
      * packets or depends on an ordering-table bucket. */
     /*
-     * Which slot lands where was read off the picture, not off the sky code.
-     * Comparing a frame against the classic renderer pixel by pixel puts
-     * slot 4 across everything but a narrow strip at the very top, and slot 3
-     * in that strip. The shader's gradient runs the other way round the sky
-     * than the names suggest, so slot 4 is the far end and slot 3 the near.
+     * The gradient runs slot 1 overhead, through 2, to slot 3 at the skyline,
+     * and slot 4 is the dark band below it. Read off a marker whose palette
+     * was saved with it: slot 2 is 0,72,136 and slot 3 is 96,136,184, and
+     * the classic renderer's own pixels walk between exactly those two
+     * across the visible sky.
      */
-    GameRenderWorldEnvironmentColor(3, &camera.skyColor);
-    GameRenderWorldEnvironmentColor(4, &camera.skyHorizonColor);
-    GameRenderWorldEnvironmentColor(4, &camera.skyTopColor);
+    GameRenderWorldEnvironmentColor(1, &camera.skyTopColor);
+    GameRenderWorldEnvironmentColor(2, &camera.skyColor);
+    GameRenderWorldEnvironmentColor(3, &camera.skyHorizonColor);
     GameRenderWorldEnvironmentColor(4, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the

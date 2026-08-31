@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 4,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 5,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -129,6 +129,7 @@ static int WriteCamera(FILE *file, const RageRenderCamera *value) {
            WriteVec3(file, &value->skyHorizonColor) &&
            WriteVec3(file, &value->skyBottomColor) &&
            WriteU32(file, value->skyAssetKey) &&
+           WriteU32(file, value->skyCloudRow) &&
            WriteFloat(file, value->fogNear) &&
            WriteFloat(file, value->fogFar);
 }
@@ -145,6 +146,7 @@ static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
                ReadVec3(file, &value->skyHorizonColor) &&
                ReadVec3(file, &value->skyBottomColor) &&
                ReadU32(file, &value->skyAssetKey) &&
+               (version < 5 || ReadU32(file, &value->skyCloudRow)) &&
                ReadFloat(file, &value->fogNear) &&
                ReadFloat(file, &value->fogFar);
     }
@@ -155,6 +157,7 @@ static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
     value->skyHorizonColor = value->skyColor;
     value->skyBottomColor = value->skyColor;
     value->skyAssetKey = UINT32_MAX;
+    value->skyCloudRow = 0;
     return ReadFloat(file, &value->fogNear) &&
            ReadFloat(file, &value->fogFar);
 }
