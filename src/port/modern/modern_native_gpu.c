@@ -1508,6 +1508,10 @@ void ModernNativeGpuShutdown(void) {
     s_aspect = 4.0f / 3.0f;
     s_completeWorld = 0;
     s_textureCount = 0;
+    /* The lookup index has to go with the textures it points into. Leaving it
+     * behind left entries naming slots that the next run filled with
+     * different textures, so a material found one that was never its own. */
+    memset(s_textureHash, 0, sizeof(s_textureHash));
     s_trackAssetRevision = UINT64_MAX;
     s_haveShadowMap = 0;
 }
