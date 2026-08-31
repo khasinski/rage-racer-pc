@@ -43,30 +43,25 @@ u8 g_PadType;
 
 /* Where the drivetrain hands off once it has worked out the forces. What
  * those do with the result is their own business, not this test's. */
-static s32 s_lastDrag;
 static int s_drivingCalls;
 static int s_launchCalls;
 static int s_airborneCalls;
 static int s_standingStartCalls;
 
-void UpdateCarDriving(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarDriving(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_drivingCalls++;
 }
-void UpdateCarLaunch(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarLaunch(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_launchCalls++;
 }
-void UpdateCarAirborne(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarAirborne(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_airborneCalls++;
 }
-void UpdateCarStandingStart(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarStandingStart(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_standingStartCalls++;
 }
 
@@ -204,10 +199,13 @@ static void Record(const char *name, const s32 *values, int count) {
 }
 
 /* Everything the drivetrain can move, plus which of the four motion handlers
- * it decided to hand the car to and with what drag. */
+ * it decided to hand the car to. The drag term the drivetrain works out is no
+ * longer handed to the handlers, which ignored it; it still brakes the car and
+ * loads the steering here, so it is watched through those rather than
+ * directly. */
 static void RecordDrive(const char *label) {
     GameCarDrive *p = &s_car.drive;
-    s32 after[26];
+    s32 after[25];
 
     after[0] = p->gear;
     after[1] = p->gearDisp;
@@ -231,11 +229,10 @@ static void RecordDrive(const char *label) {
     after[19] = s_car.headingAngle;
     after[20] = p->trackCurveBias;
     after[21] = p->trackCurveMode;
-    after[22] = s_lastDrag;
-    after[23] = s_drivingCalls;
-    after[24] = s_launchCalls;
-    after[25] = s_airborneCalls + s_standingStartCalls;
-    Record(label, after, 26);
+    after[22] = s_drivingCalls;
+    after[23] = s_launchCalls;
+    after[24] = s_airborneCalls + s_standingStartCalls;
+    Record(label, after, 25);
 }
 
 /* Four track points in a line with a corner in the middle, so the curve bias
@@ -266,7 +263,7 @@ int main(int argc, char **argv) {
      * What the drivetrain did before it was taken apart. Run the test with a
      * file name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 2620216087UL;
+    static const unsigned long expected = 3242176527UL;
     static const s32 speeds[] = {0, 0x100, 0x800, 0x4000, 0x20000};
     static const s32 gears[] = {1, 2, 5, 6};
     static const s32 pedals[] = {0, 0x7B, 0x85, 0x100};
@@ -331,7 +328,6 @@ int main(int argc, char **argv) {
         g_ShiftTargetSpeed = 3000;
         g_PadType = (u8)(pad ? 0x23 : 0x41);
         g_CarSpec = &s_spec;
-        s_lastDrag = 0;
         s_drivingCalls = 0;
         s_launchCalls = 0;
         s_airborneCalls = 0;
@@ -398,7 +394,6 @@ int main(int argc, char **argv) {
             g_ShiftTargetSpeed = 3000;
             g_PadType = 0x41;
             g_CarSpec = &s_spec;
-            s_lastDrag = 0;
             s_drivingCalls = 0;
             s_launchCalls = 0;
             s_airborneCalls = 0;

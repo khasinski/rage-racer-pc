@@ -43,30 +43,25 @@ u8 g_PadType;
 
 /* Where the drivetrain hands off once it has worked out the forces. What
  * those do with the result is their own business, not this test's. */
-static s32 s_lastDrag;
 static int s_drivingCalls;
 static int s_launchCalls;
 static int s_airborneCalls;
 static int s_standingStartCalls;
 
-void UpdateCarDriving(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarDriving(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_drivingCalls++;
 }
-void UpdateCarLaunch(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarLaunch(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_launchCalls++;
 }
-void UpdateCarAirborne(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarAirborne(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_airborneCalls++;
 }
-void UpdateCarStandingStart(PlayerCarRuntime *car, s32 drag) {
+void UpdateCarStandingStart(PlayerCarRuntime *car) {
     (void)car;
-    s_lastDrag = drag;
     s_standingStartCalls++;
 }
 
@@ -163,7 +158,6 @@ static void PlaceCar(void) {
     g_PadType = 0;
     g_ShiftTargetRpm = 0;
     g_ShiftTargetSpeed = 0;
-    s_lastDrag = 0;
     s_drivingCalls = 0;
     s_launchCalls = 0;
     s_airborneCalls = 0;
