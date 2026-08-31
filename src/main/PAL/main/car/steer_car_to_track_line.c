@@ -438,87 +438,83 @@ void UpdateCarStandingStart(PlayerCarRuntime *car) {
  * containing segment index, or -1 (snapping the car onto the track) if none.
  * pts[0] is the car-relative point; pts[1..4] are the quad corners.
  */
-s32 FindTrackSegment(GameCarRuntime *car, s32 idx) {
-    DVecValue pts[5];
-    s32 i;
-    s32 k;
-    s32 nxt;
-    s32 ni;
-    s32 carx;
-    s32 carz;
-    s32 sx;
-    s32 sz;
-    s32 cos_c;
-    s32 sin_c;
-    s32 cos_n;
-    s32 sin_n;
-    s32 pax;
-    s32 paz;
-    s32 f10a;
-    s32 f12a;
-    s32 f10b;
-    s32 f12b;
-    GameTrackPoint *pa;
-    GameTrackPoint *pb;
-
-    k = 0;
-    carx = car->x;
-    carz = car->z;
-    i = idx;
+s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
+    /*
+     * Corner 0 is the car, measured from the near point. The other four are
+     * the segment's own corners in the same frame: the near point's two
+     * edges, then the far point's, carried along the segment.
+     */
+    DVecValue corners[5];
+    s32 index = startIndex;
+    s32 stride = 0;
 
     do {
-        nxt = (i + 1) % g_TrackPointCount;
-        pa = TrackPoint(i);
-        pb = TrackPoint(nxt);
+        const GameTrackPoint *near = TrackPoint(index);
+        const GameTrackPoint *far = TrackPoint((index + 1) % g_TrackPointCount);
+        s32 segmentX = far->x - near->x;
+        s32 segmentZ = far->z - near->z;
+        /*
+         * The edges run across the centreline, so each point's angle is taken
+         * three quarters of a turn round. Widths are stored as halves and
+         * doubled here, and the doubling is truncated to sixteen bits, which
+         * is how the recovered code read it.
+         */
+        s32 nearCos = rcos(0xC00 - near->angle);
+        s32 nearSin = rsin(0xC00 - near->angle);
+        s32 farCos = rcos(0xC00 - far->angle);
+        s32 farSin = rsin(0xC00 - far->angle);
+        s32 nearLeft = (s16)(near->leftHalfWidth * 2);
+        s32 nearRight = (s16)(near->rightHalfWidth * 2);
+        s32 farLeft = (s16)(far->leftHalfWidth * 2);
+        s32 farRight = (s16)(far->rightHalfWidth * 2);
 
-        pax = pa->x;
-        paz = pa->z;
-        sx = pb->x - pax;
-        sz = pb->z - paz;
-        pts[0].components.vx = carx - pax;
-        pts[0].components.vy = carz - paz;
+        corners[0].components.vx = car->x - near->x;
+        corners[0].components.vy = car->z - near->z;
 
-        cos_c = rcos(0xC00 - pa->angle);
-        sin_c = rsin(0xC00 - pa->angle);
-        cos_n = rcos(0xC00 - pb->angle);
-        sin_n = rsin(0xC00 - pb->angle);
+        corners[1].components.vx = nearLeft * (s16)nearCos / 4096;
+        corners[1].components.vy = -nearLeft * (s16)nearSin / 4096;
+        corners[2].components.vx = -nearRight * (s16)nearCos / 4096;
+        corners[2].components.vy = nearRight * (s16)nearSin / 4096;
+        corners[3].components.vx = segmentX + farLeft * (s16)farCos / 4096;
+        corners[3].components.vy = segmentZ - farLeft * (s16)farSin / 4096;
+        corners[4].components.vx = segmentX - farRight * (s16)farCos / 4096;
+        corners[4].components.vy = segmentZ + farRight * (s16)farSin / 4096;
 
-        f10a = pa->leftHalfWidth;
-        f12a = pa->rightHalfWidth;
-        f12b = pb->rightHalfWidth;
-        f10b = pb->leftHalfWidth;
-
-        pts[1].components.vx =  (s16)(f10a * 2) * (s16)cos_c / 4096;
-        pts[1].components.vy = -(s16)(f10a * 2) * (s16)sin_c / 4096;
-        pts[2].components.vx = -(s16)(f12a * 2) * (s16)cos_c / 4096;
-        pts[2].components.vy =  (s16)(f12a * 2) * (s16)sin_c / 4096;
-        pts[3].components.vx = sx + (s16)(f10b * 2) * (s16)cos_n / 4096;
-        pts[3].components.vy = sz - (s16)(f10b * 2) * (s16)sin_n / 4096;
-        pts[4].components.vx = sx - (s16)(f12b * 2) * (s16)cos_n / 4096;
-        pts[4].components.vy = sz + (s16)(f12b * 2) * (s16)sin_n / 4096;
-
-        if (NormalClip(pts[1].packed, pts[2].packed, pts[0].packed) >= 0 &&
-            NormalClip(pts[2].packed, pts[4].packed, pts[0].packed) >= 0 &&
-            NormalClip(pts[4].packed, pts[3].packed, pts[0].packed) > 0 &&
-            NormalClip(pts[3].packed, pts[1].packed, pts[0].packed) >= 0) {
-            return i;
+        /*
+         * Inside all four edges, walked the same way round, is inside the
+         * quad. One edge is asked strictly so a car exactly on the boundary
+         * between two segments belongs to one of them and not to both.
+         */
+        if (NormalClip(corners[1].packed, corners[2].packed, corners[0].packed) >= 0 &&
+            NormalClip(corners[2].packed, corners[4].packed, corners[0].packed) >= 0 &&
+            NormalClip(corners[4].packed, corners[3].packed, corners[0].packed) > 0 &&
+            NormalClip(corners[3].packed, corners[1].packed, corners[0].packed) >= 0) {
+            return index;
         }
 
-        k++;
-        if (k % 2) {
-            i += k;
-        } else {
-            i -= k;
-        }
-        if (i >= 0) {
-            ni = i % g_TrackPointCount;
-        } else {
-            ni = (i + g_TrackPointCount) % g_TrackPointCount;
-        }
-        i = ni;
-    } while (i != idx);
+        /*
+         * Try the segment after the guess, then the one before, then two
+         * after, and so on, so a car that has moved a little is found in a
+         * step or two whichever way it went. The stride keeps growing until
+         * the walk comes back to where it started, which is how a car that is
+         * on no segment at all falls out of the loop.
+         *
+         * The wrap is written the way it was recovered, and it is only right
+         * for one step off either end: once the stride passes the number of
+         * points, adding the count back is not enough to lift the index above
+         * zero, and a negative one reads off the front of the array. Making it
+         * wrap properly changes which segment an off-track car is given and
+         * stops a race finishing, so the arithmetic stays as it is until
+         * something covers what depends on it.
+         */
+        stride++;
+        index += (stride % 2) != 0 ? stride : -stride;
+        index = index >= 0 ? index % g_TrackPointCount
+                           : (index + g_TrackPointCount) % g_TrackPointCount;
+    } while (index != startIndex);
 
-    car->x = TrackPoint(i)->x;
-    car->z = TrackPoint(i)->z;
+    /* Nowhere on the track: put the car back on the point it started from. */
+    car->x = TrackPoint(index)->x;
+    car->z = TrackPoint(index)->z;
     return -1;
 }

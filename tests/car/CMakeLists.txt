@@ -209,6 +209,32 @@ target_link_libraries(car_motion_handlers_tests PRIVATE psyz)
 add_test(NAME car_motion_handlers COMMAND car_motion_handlers_tests)
 set_tests_properties(car_motion_handlers PROPERTIES LABELS functional)
 
+add_executable(find_track_segment_tests
+    find_track_segment_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(find_track_segment_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(find_track_segment_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(find_track_segment_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(find_track_segment_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(find_track_segment_tests PRIVATE psyz)
+add_test(NAME find_track_segment COMMAND find_track_segment_tests)
+set_tests_properties(find_track_segment PROPERTIES LABELS functional)
+
 add_executable(car_track_state_tests
     car_track_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
