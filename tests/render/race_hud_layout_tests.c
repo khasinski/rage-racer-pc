@@ -64,17 +64,21 @@ static void Expect(const char *what, int row, int got, int want) {
     s_failures++;
 }
 
-/* Descriptions spread either side of the middle, which is the line the
- * builder decides an edge by. */
+/*
+ * Positions covering the three cases the layout has to tell apart: hard
+ * against the left, hard against the right, and out in the middle, which is
+ * where the split time's sign lives at 120 beside a time drawn at 128.
+ */
 static void LayOutDescs(void) {
+    static const u16 xs[12] = {240, 240, 240, 240, 240, 240,
+                               244, 8, 244, 8, 120, 54};
     int i;
     for (i = 0; i < 12; i++) {
-        g_RaceHudSpriteDescsGp[i].x = (u16)(i < 6 ? 8 + i * 4 : 200 + i * 4);
+        g_RaceHudSpriteDescsGp[i].x = xs[i];
         g_RaceHudSpriteDescsGp[i].y = (u16)(16 + i);
     }
     for (i = 0; i < 11; i++) {
-        g_RaceHudSpriteDescsTimeTrial[i].x =
-            (u16)(i < 6 ? 12 + i * 4 : 190 + i * 4);
+        g_RaceHudSpriteDescsTimeTrial[i].x = xs[i];
         g_RaceHudSpriteDescsTimeTrial[i].y = (u16)(24 + i);
     }
 }
@@ -85,7 +89,7 @@ static void CheckMode(const char *what, s32 mode, int rows,
     BuildRaceHudPrims(mode);
     for (row = 0; row < rows; row++) {
         int x = descs[row].x;
-        int want = x < 160 ? HudLeftX(x) : HudRightX(x);
+        int want = HudAnchorX(x);
         SPRT *sprite = row < 6
             ? &g_FrameContexts[0].layout.raceHud.lapTimes[row]
             : &g_FrameContexts[0].layout.raceHud.labels[row - 6];
@@ -106,6 +110,13 @@ int main(void) {
      * ten are the two DrawRaceHud never repositions. */
     CheckMode("time attack, anchored", 0, 11, g_RaceHudSpriteDescsTimeTrial);
     CheckMode("grand prix, anchored", 1, 12, g_RaceHudSpriteDescsGp);
+
+    /* The three cases, spelled out rather than left to the loop above. */
+    Expect("left edge follows the left", 0, HudAnchorX(8), HudLeftX(8));
+    Expect("right edge follows the right", 0, HudAnchorX(244),
+           HudRightX(244));
+    Expect("the middle stays where it is", 0, HudAnchorX(120), 120);
+    Expect("and so does the centre line", 0, HudAnchorX(160), 160);
 
     /* Whether the margin applies at all is hud_config's own test; the
      * configuration is read once and cached, so it cannot be moved here. */

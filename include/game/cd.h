@@ -13,6 +13,13 @@ typedef enum CdCommandType {
     CD_COMMAND_RESUME
 } CdCommandType;
 
+/* An asserted host EOF may be consumed only once the previous request has
+ * finished. The backend keeps EOF asserted until the following Play. */
+static inline int CdAudioRequestsIdle(
+    s32 trackPending, CdCommandType commandPending) {
+    return trackPending < 0 && commandPending == CD_COMMAND_NONE;
+}
+
 extern u8 g_CdVolume;
 /*
  * CD-DA (music) front end. Nothing here talks to the drive directly: each call

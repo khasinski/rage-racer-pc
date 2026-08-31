@@ -23,6 +23,16 @@ add_test(
 set_tests_properties(audio_state_layout PROPERTIES LABELS functional)
 endif()
 
+add_executable(cd_audio_policy_tests cd_audio_policy_tests.c)
+target_include_directories(cd_audio_policy_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(cd_audio_policy_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME cd_audio_policy COMMAND cd_audio_policy_tests)
+set_tests_properties(cd_audio_policy PROPERTIES LABELS functional)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME audio_output

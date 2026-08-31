@@ -26,8 +26,7 @@ void DrawRaceHudLabels(s32 mode) {
             SPRT *prim = &frame->layout.raceHud.labels[i - 6];
             int label = i - 6;
             int visible = 1;
-            prim->x0 = descs[i].x < 160 ? HudLeftX(descs[i].x)
-                                        : HudRightX(descs[i].x);
+            prim->x0 = HudAnchorX(descs[i].x);
             if (mode != 0) {
                 if (label == 1 && !HudShowLapTimes()) visible = 0;
                 if (label == 2 && !HudShowTimeLimit()) visible = 0;
@@ -128,7 +127,7 @@ void DrawLapTimes(void) {
 
             DrawTimeValue(HudRightX(0xFA), y, value, tile, 0x3E8);
             frame->layout.raceHud.lapTimes[i].x0 =
-                HudRightX((g_GrandPrixMode != 0
+                HudAnchorX((g_GrandPrixMode != 0
                     ? g_RaceHudSpriteDescsGp
                     : g_RaceHudSpriteDescsTimeTrial)[i].x);
             y += 0xA;

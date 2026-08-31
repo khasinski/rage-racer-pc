@@ -306,9 +306,16 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     /* Convert the authored environment palette into semantic sky bands. The
      * native backend owns their projection; it never replays DrawSkyBackground
      * packets or depends on an ordering-table bucket. */
-    GameRenderWorldEnvironmentColor(1, &camera.skyTopColor);
-    GameRenderWorldEnvironmentColor(2, &camera.skyColor);
-    GameRenderWorldEnvironmentColor(3, &camera.skyHorizonColor);
+    /*
+     * Which slot lands where was read off the picture, not off the sky code.
+     * Comparing a frame against the classic renderer pixel by pixel puts
+     * slot 4 across everything but a narrow strip at the very top, and slot 3
+     * in that strip. The shader's gradient runs the other way round the sky
+     * than the names suggest, so slot 4 is the far end and slot 3 the near.
+     */
+    GameRenderWorldEnvironmentColor(3, &camera.skyColor);
+    GameRenderWorldEnvironmentColor(4, &camera.skyHorizonColor);
+    GameRenderWorldEnvironmentColor(4, &camera.skyTopColor);
     GameRenderWorldEnvironmentColor(4, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the

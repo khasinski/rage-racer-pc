@@ -12,14 +12,20 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
 } sky;
 
 void main() {
+    /* The scene's Y grows downward, as the original data does, so looking up
+     * gives a negative y here. Flip it once, at the top, and everything
+     * below reads as it looks: positive is above the horizon. Without this
+     * the whole sky took the below-horizon branch and came out in the light
+     * band meant for under the horizon, whatever the gradient said. */
     vec3 direction = normalize(worldDirection);
+    direction.y = -direction.y;
     float height = direction.y;
     float horizontalLength = max(length(direction.xz), 0.001);
     float verticalSlope = height / horizontalLength;
     vec3 color;
     if (height >= 0.0) {
         color = mix(sky.middle.rgb, sky.top.rgb,
-                    smoothstep(0.0, 0.65, height));
+                    smoothstep(0.143, 0.165, height));
     } else if (height >= -0.18) {
         color = mix(sky.middle.rgb, sky.horizon.rgb,
                     smoothstep(0.0, 0.18, -height));

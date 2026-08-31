@@ -159,7 +159,11 @@ void TickCdAudio(void) {
         StepCdTrackRequest();
     }
 
-    if (HostCdAudioEnded()) {
+    /* The host EOF flag stays asserted until CdlPlay opens the track again.
+     * Do not let repeated ticks rewind an in-flight restart back to its first
+     * seek step, or playback can never reach the command that clears EOF. */
+    if (CdAudioRequestsIdle(g_CdTrackPending, g_CdCommandPending) &&
+        HostCdAudioEnded()) {
         if (g_SceneId == 0x1C) {
             g_CdTrackEnded = 1;
         } else {

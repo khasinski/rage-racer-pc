@@ -37,8 +37,7 @@ void BuildRaceHudPrims(s32 mode) {
              * position take the position built here and only change their
              * texture coordinates, so those two would otherwise sit where a
              * 4:3 screen put them. */
-            sprite->x0 = descs[row].x < 160 ? (s16)HudLeftX(descs[row].x)
-                                            : (s16)HudRightX(descs[row].x);
+            sprite->x0 = (s16)HudAnchorX(descs[row].x);
             if (mode != 0 && g_GrandPrixClass == 5 && row == 11)
                 sprite->u0 += 0xE8;
         }

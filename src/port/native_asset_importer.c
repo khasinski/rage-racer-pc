@@ -582,52 +582,84 @@ static int ImportFinalizeOffsets(RageImportedMeshEntry *entry,
  */
 static uint16_t *s_vramSnapshot;
 static uint64_t s_vramSnapshotRevision;
-static s32 s_vramSnapshotPage;
 static int s_haveVramSnapshot;
 
 /*
- * The track's texture pages, assembled rather than waited for.
+ * The track's texture pages, held whole.
  *
- * A page is not swapped into video memory in one go: StepTrackTextureSwap
- * moves one row per frame under a time budget, so for several frames after a
- * section change memory holds half of each page. Reading it then is what put
- * a torn texture in the cache and kept it there, always in the same place,
- * because leaving the first tunnel is a section change.
+ * The console swapped these pages through a megabyte of video memory a row at
+ * a time because it had nowhere else to put them. Nothing here has that
+ * problem: the two pages are 224 KB each. So they are built once and kept,
+ * and the renderer stops caring which one the game currently has installed.
  *
- * Waiting for the swap is not needed, because nothing is ever missing. The
- * swap is an exchange: every row is either in video memory or in the shadow
- * the game keeps in ordinary memory, and g_TrackTextureShadowPage says which.
- * So the page that is wanted can always be put together in full, whatever the
- * cursor has reached. It costs one megabyte held rather than a stall.
+ * Building them needs no particular moment, because the swap is an exchange
+ * and loses nothing: every row is either in video memory or in the shadow the
+ * game keeps in the loaded asset, and g_TrackTextureShadowPage says which. A
+ * single reading of both therefore yields both pages in full, whenever it is
+ * taken.
+ *
+ * This is what used to go wrong. A material was read straight out of video
+ * memory at the moment it was first wanted, so one read while a section
+ * change was still moving rows kept half of each page, for good. Leaving the
+ * first tunnel on Mythical Coast is a section change.
  */
 enum {
     RAGE_IMPORT_TRACK_ROW_X = 576,   /* g_TrackTextureRect x */
     RAGE_IMPORT_TRACK_ROW_Y = 256,   /* and its y */
     RAGE_IMPORT_TRACK_ROW_W = 448,   /* 0xE0 words, one shadow row */
-    RAGE_IMPORT_TRACK_ROWS = 256
+    RAGE_IMPORT_TRACK_ROWS = 256,
+    RAGE_IMPORT_TRACK_PAGES = 2
 };
 
 static uint16_t *s_vramSnapshot;
+static uint16_t *s_trackPage[RAGE_IMPORT_TRACK_PAGES];
 static uint64_t s_vramSnapshotRevision;
-static s32 s_vramSnapshotPage;
+static s32 s_overlaidPage = -1;
 static int s_haveVramSnapshot;
 
-/* Put the rows the shadow is holding back where the page expects them. */
-static void ImportMergeTrackShadow(uint16_t *vram) {
-    s32 row;
-    if (g_TrackTextureShadow == NULL) return;
-    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++) {
-        const uint16_t *shadow;
-        uint16_t *target;
-        /* A row still holding the wanted page in the shadow has not been
-         * exchanged yet, so video memory has the other one. */
-        if (g_TrackTextureShadowPage[row] != g_TrackTexturePageWanted) continue;
-        shadow = (const uint16_t *)g_TrackTextureShadow[row];
-        target = vram + (size_t)(RAGE_IMPORT_TRACK_ROW_Y + row) *
-                            RAGE_IMPORT_VRAM_WIDTH + RAGE_IMPORT_TRACK_ROW_X;
-        memcpy(target, shadow,
-               (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(*target));
+static uint16_t *ImportTrackRow(uint16_t *page, s32 row) {
+    return page + (size_t)row * RAGE_IMPORT_TRACK_ROW_W;
+}
+
+static uint16_t *ImportVramRow(uint16_t *vram, s32 row) {
+    return vram + (size_t)(RAGE_IMPORT_TRACK_ROW_Y + row) *
+                      RAGE_IMPORT_VRAM_WIDTH + RAGE_IMPORT_TRACK_ROW_X;
+}
+
+/* Read both pages out of the two places their rows are living. */
+static int ImportBuildTrackPages(uint16_t *vram) {
+    const size_t rowBytes =
+        (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(uint16_t);
+    s32 page, row;
+    if (g_TrackTextureShadow == NULL) return 0;
+    for (page = 0; page < RAGE_IMPORT_TRACK_PAGES; page++) {
+        if (s_trackPage[page] == NULL) {
+            s_trackPage[page] = malloc(rowBytes * RAGE_IMPORT_TRACK_ROWS);
+            if (s_trackPage[page] == NULL) return 0;
+        }
     }
+    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++) {
+        s32 shadowPage = g_TrackTextureShadowPage[row] != 0 ? 1 : 0;
+        const uint16_t *shadow = (const uint16_t *)g_TrackTextureShadow[row];
+        memcpy(ImportTrackRow(s_trackPage[shadowPage], row), shadow, rowBytes);
+        memcpy(ImportTrackRow(s_trackPage[1 - shadowPage], row),
+               ImportVramRow(vram, row), rowBytes);
+    }
+    return 1;
+}
+
+/* Put the page a material is asking for into the snapshot it decodes from. */
+static void ImportOverlayTrackPage(uint16_t *vram, s32 page) {
+    const size_t rowBytes =
+        (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(uint16_t);
+    s32 row;
+    if (page < 0 || page >= RAGE_IMPORT_TRACK_PAGES ||
+        s_trackPage[page] == NULL || s_overlaidPage == page)
+        return;
+    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++)
+        memcpy(ImportVramRow(vram, row),
+               ImportTrackRow(s_trackPage[page], row), rowBytes);
+    s_overlaidPage = page;
 }
 
 static const uint16_t *ImportVramSnapshot(void) {
@@ -640,16 +672,17 @@ static const uint16_t *ImportVramSnapshot(void) {
         if (s_vramSnapshot == NULL) return NULL;
         s_haveVramSnapshot = 0;
     }
-    if (s_haveVramSnapshot && s_vramSnapshotRevision == revision &&
-        s_vramSnapshotPage == g_TrackTexturePageWanted)
-        return s_vramSnapshot;
-    DrawSync(0);
-    StoreImage(&rect, (u_long *)s_vramSnapshot);
-    DrawSync(0);
-    ImportMergeTrackShadow(s_vramSnapshot);
-    s_vramSnapshotRevision = revision;
-    s_vramSnapshotPage = g_TrackTexturePageWanted;
-    s_haveVramSnapshot = 1;
+    if (!s_haveVramSnapshot || s_vramSnapshotRevision != revision) {
+        DrawSync(0);
+        StoreImage(&rect, (u_long *)s_vramSnapshot);
+        DrawSync(0);
+        s_vramSnapshotRevision = revision;
+        s_haveVramSnapshot = 1;
+        s_overlaidPage = -1;
+        (void)ImportBuildTrackPages(s_vramSnapshot);
+    }
+    ImportOverlayTrackPage(s_vramSnapshot,
+                           g_TrackTexturePageWanted != 0 ? 1 : 0);
     return s_vramSnapshot;
 }
 

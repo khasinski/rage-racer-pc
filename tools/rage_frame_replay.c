@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "port/modern/scene_capture.h"
@@ -43,6 +44,7 @@ static void Usage(const char *program) {
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
             "[--camera-scene MARKER.scene.bin] "
             "[--probe X,Y] "
+            "[--sky top|middle|horizon|bottom=R,G,B] "
             "[--width 1280] [--height 960]\n",
             program);
 }
@@ -121,6 +123,58 @@ static int ApplyCapturedCamera(const char *path, RageRenderWorld *world) {
     return 1;
 }
 
+/*
+ * The snapshot stores the sky as four finished colours, so a change to which
+ * environment slot feeds which band cannot be tried against a recorded frame
+ * without replaying the game. Let the harness substitute them directly: the
+ * mapping is what one iterates on, and it is the one thing the capture bakes.
+ */
+static int ApplySkyOverrides(int argc, char **argv, RageRenderCamera *camera) {
+    static const struct {
+        const char *name;
+        size_t offset;
+    } bands[] = {
+        {"top", offsetof(RageRenderCamera, skyTopColor)},
+        {"middle", offsetof(RageRenderCamera, skyColor)},
+        {"horizon", offsetof(RageRenderCamera, skyHorizonColor)},
+        {"bottom", offsetof(RageRenderCamera, skyBottomColor)},
+    };
+    int index;
+    for (index = 1; index < argc; index++) {
+        const char *value;
+        size_t band;
+        if (strcmp(argv[index], "--sky") != 0) continue;
+        value = index + 1 < argc ? argv[index + 1] : NULL;
+        if (value == NULL) {
+            fprintf(stderr, "rage-frame-replay: --sky needs BAND=R,G,B\n");
+            return 0;
+        }
+        for (band = 0; band < sizeof(bands) / sizeof(bands[0]); band++) {
+            size_t length = strlen(bands[band].name);
+            RageRenderVec3 *target;
+            unsigned red, green, blue;
+            if (strncmp(value, bands[band].name, length) != 0 ||
+                value[length] != '=')
+                continue;
+            if (sscanf(value + length + 1, "%u,%u,%u", &red, &green,
+                       &blue) != 3) {
+                fprintf(stderr, "rage-frame-replay: bad --sky %s\n", value);
+                return 0;
+            }
+            target = (RageRenderVec3 *)((char *)camera + bands[band].offset);
+            target->x = (float)red / 255.0f;
+            target->y = (float)green / 255.0f;
+            target->z = (float)blue / 255.0f;
+            break;
+        }
+        if (band == sizeof(bands) / sizeof(bands[0])) {
+            fprintf(stderr, "rage-frame-replay: unknown sky band %s\n", value);
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     const char *snapshotPath;
     const char *outputPath;
@@ -157,6 +211,8 @@ int main(int argc, char **argv) {
     }
     if (!ApplyCapturedCamera(OptionValue(argc, argv, "--camera-scene"),
                              &snapshot.world))
+        goto release_snapshot;
+    if (!ApplySkyOverrides(argc, argv, &snapshot.world.camera))
         goto release_snapshot;
     /* The ordinary runtime override keeps asset selection identical between
      * the game and the harness without adding a second asset-loader path. */

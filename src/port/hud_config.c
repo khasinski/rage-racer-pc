@@ -34,6 +34,17 @@ static int HudEdgeOffset(void) {
 int HudLeftX(int x) { return x - HudEdgeOffset(); }
 int HudRightX(int x) { return x + HudEdgeOffset(); }
 
+/* A quarter of the canvas at either end counts as an edge. Everything the
+ * retail layout puts there is furniture along a side; everything it puts
+ * between belongs to the middle. */
+enum { RAGE_HUD_EDGE_BAND = 80, RAGE_HUD_CANVAS_WIDTH = 320 };
+
+int HudAnchorX(int x) {
+    if (x < RAGE_HUD_EDGE_BAND) return HudLeftX(x);
+    if (x >= RAGE_HUD_CANVAS_WIDTH - RAGE_HUD_EDGE_BAND) return HudRightX(x);
+    return x;
+}
+
 int HudShowLapTimes(void) {
     HudConfigInit();
     return s_showLapTimes;
