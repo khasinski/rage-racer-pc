@@ -183,6 +183,32 @@ target_link_libraries(steer_to_track_line_tests PRIVATE psyz)
 add_test(NAME steer_to_track_line COMMAND steer_to_track_line_tests)
 set_tests_properties(steer_to_track_line PROPERTIES LABELS functional)
 
+add_executable(car_motion_handlers_tests
+    car_motion_handlers_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(car_motion_handlers_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_motion_handlers_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_motion_handlers_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_motion_handlers_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_motion_handlers_tests PRIVATE psyz)
+add_test(NAME car_motion_handlers COMMAND car_motion_handlers_tests)
+set_tests_properties(car_motion_handlers PROPERTIES LABELS functional)
+
 add_executable(car_track_state_tests
     car_track_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
