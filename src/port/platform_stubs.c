@@ -18,6 +18,13 @@ void PortSmokeBeforeSceneHandler(void) __attribute__((weak));
 void PortSmokeBeforeSceneHandler(void) {}
 void PortScenarioBeforeSceneHandler(void) __attribute__((weak));
 void PortScenarioBeforeSceneHandler(void) {}
+#else
+/* The scenario hook is in every build of the game, so it needs no stand-in
+ * here; the smoke hook is only in the smoke build, so it does, except in the
+ * smoke build itself. */
+#ifndef RAGE_SMOKE_TARGET
+void PortSmokeBeforeSceneHandler(void) {}
+#endif
 #endif
 
 void CaptureFrameBegin(void);
