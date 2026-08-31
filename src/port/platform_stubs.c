@@ -4,10 +4,21 @@
 
 extern int32_t g_FrameCounter;
 
+/*
+ * Fallbacks for the two hooks the smoke and scenario builds provide. They are
+ * weak so a build that carries the real one wins, which every build of the
+ * game does. The Windows linker does not honour weak definitions, and takes
+ * two of the same symbol as an error rather than a preference, so there it
+ * gets the declarations only and the real definitions do the work.
+ */
+void PortSmokeBeforeSceneHandler(void);
+void PortScenarioBeforeSceneHandler(void);
+#ifndef _MSC_VER
 void PortSmokeBeforeSceneHandler(void) __attribute__((weak));
 void PortSmokeBeforeSceneHandler(void) {}
 void PortScenarioBeforeSceneHandler(void) __attribute__((weak));
 void PortScenarioBeforeSceneHandler(void) {}
+#endif
 
 void CaptureFrameBegin(void);
 void CaptureFrameEnd(void);
