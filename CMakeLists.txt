@@ -418,6 +418,16 @@ if(RAGE_BUILD_PORT)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/port
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
         target_link_libraries(rage-hud-preview PRIVATE psyz)
+        # It links the host state, which the sanitizer build instruments, so
+        # it needs the runtime that instrumentation calls into. Only the two
+        # game executables were given it, and this tool then failed to link
+        # in the sanitizer job while every release build passed, because the
+        # tool is only built when testing is enabled.
+        if(RAGE_ENABLE_SANITIZERS AND
+           CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+            target_link_options(rage-hud-preview PRIVATE
+                -fsanitize=address,undefined)
+        endif()
         target_compile_options(rage-hud-preview PRIVATE
             ${RAGE_COMPAT_COMPILE_OPTIONS})
         if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
