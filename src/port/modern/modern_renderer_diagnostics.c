@@ -108,6 +108,21 @@ static void WriteCompat(const char *path) {
     free(pixels);
 }
 
+/* The HUD is built from sprite sheets and fonts that live in VRAM, so a
+ * marker that does not carry VRAM cannot be used to draw one offline. */
+static void WriteVram(const char *path) {
+    int width = 0, height = 0;
+    unsigned short *pixels = Psyz_VideoAllocCapturedVram(&width, &height);
+    FILE *file;
+    if (pixels == NULL) return;
+    file = fopen(path, "wb");
+    if (file != NULL) {
+        fwrite(pixels, sizeof(*pixels), (size_t)width * height, file);
+        fclose(file);
+    }
+    free(pixels);
+}
+
 static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
                            const RageModernDiagnosticFrame *output,
                            int haveModernImage) {
@@ -192,6 +207,22 @@ void ModernDiagnosticsCheckMarker(
     const bool *keys = SDL_GetKeyboardState(NULL);
     int down = keys != NULL && keys[SDL_SCANCODE_M];
     int pressed = down && !wasDown;
+    /* A marker that only a key can take needs somebody at the keyboard, and
+     * the offline tools that read markers then cannot be run from a script.
+     * Naming a frame takes the same capture without anyone present. */
+    {
+        static long atFrame = -2;
+        if (atFrame == -2) {
+            const char *value = RuntimeConfigGet("diagnostics.marker_frame");
+            atFrame = value != NULL ? strtol(value, NULL, 0) : -1;
+        }
+        static int taken;
+        if (atFrame >= 0 && !taken &&
+            (long)snapshot->frameCounter >= atFrame) {
+            taken = 1;
+            pressed = 1;
+        }
+    }
     char path[256];
     FILE *file;
     int index;
@@ -243,6 +274,8 @@ void ModernDiagnosticsCheckMarker(
     }
     snprintf(path, sizeof(path), "markers/marker-%d-compat.ppm", index);
     WriteCompat(path);
+    snprintf(path, sizeof(path), "markers/marker-%d-vram.raw", index);
+    WriteVram(path);
     snprintf(path, sizeof(path), "markers/marker-%d-scene.bin", index);
     file = fopen(path, "wb");
     if (file != NULL) {

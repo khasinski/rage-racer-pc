@@ -402,6 +402,26 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(rage-gte-replay PRIVATE psyz)
         add_executable(rage-gp0-replay tools/rage_gp0_replay.c)
         target_link_libraries(rage-gp0-replay PRIVATE psyz)
+        add_executable(rage-hud-preview
+            tools/rage_hud_preview.c
+            src/main/PAL/main/render/build_race_hud_prims.c
+            src/main/PAL/main/render/race_hud.c
+            src/main/PAL/main/render/text.c
+            src/main/PAL/main/render/draw_packet_queue.c
+            src/main/PAL/main/race/race_hud_text.c
+            src/port/native_game_state.c
+            src/port/hud_config.c
+            $<TARGET_OBJECTS:rage-host-state>)
+        target_include_directories(rage-hud-preview PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/port/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/port
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+        target_link_libraries(rage-hud-preview PRIVATE psyz)
+        target_compile_options(rage-hud-preview PRIVATE
+            ${RAGE_COMPAT_COMPILE_OPTIONS})
+        if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+            target_compile_options(rage-hud-preview PRIVATE -fcommon)
+        endif()
         add_test(NAME save_generator
             COMMAND rage-save-generator --self-test)
         set_tests_properties(save_generator PROPERTIES LABELS functional)
