@@ -52,6 +52,11 @@ typedef struct RageRenderCamera {
      * from the course's own camera script, so cloud is a property of the
      * course rather than of the renderer. */
     uint32_t skyCloudRow;
+    /* The sky's own rotation, which is not the camera's. The game's backdrop
+     * follows half the camera's pitch, biased by how high the camera sits,
+     * so a backend that reused the view rotation moves the horizon at twice
+     * the rate the game moves it and puts it at the wrong height. */
+    RageRenderQuaternion skyOrientation;
     float fogNear;
     float fogFar;
 } RageRenderCamera;

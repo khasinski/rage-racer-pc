@@ -308,6 +308,30 @@ static RageRenderCamera GameRenderWorldBuildCamera(
         camera.transform.orientation = SceneQuaternion(
             SceneMat3Transpose(converted));
     }
+    {
+        /*
+         * The sky is placed by half the camera's pitch, biased by how high
+         * the camera sits: MeasureSkyBand adds (cameraY - 6000) / 32 to the
+         * view angle and then halves the sum before it puts the band down.
+         * A backdrop that followed the whole view angle moves twice as fast
+         * as the game's and settles at the wrong height, which shows as sky
+         * where the water should be.
+         *
+         * Compose it here, from the same angles and in the same order as the
+         * view above. The Euler triple beside this quaternion does not carry
+         * the mirror's pre-rotation, so a backend that rebuilt the basis
+         * from it would leave the sky swimming against the world.
+         */
+        int32_t skyPitch = (pitch + 2 + ((y - 6000) >> 5)) / 2;
+        RageSceneMat3 skyView = SceneMat3Multiply(
+            SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(skyPitch)),
+            SceneRotationY(yaw));
+        RageSceneMat3 converted;
+        if (rearFacing)
+            skyView = SceneMat3Multiply(SceneRotationY(0x800), skyView);
+        RenderConvertPsxMatrix(skyView.m, converted.m);
+        camera.skyOrientation = SceneQuaternion(SceneMat3Transpose(converted));
+    }
     camera.transform.hasOrientation = 1;
     camera.transform.rotation.x = -AngleToDegrees(pitch);
     camera.transform.rotation.y = -AngleToDegrees(yaw);

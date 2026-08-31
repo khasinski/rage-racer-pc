@@ -48,8 +48,11 @@ void main() {
         fract(atan(direction.z, direction.x) * 0.31830989),
         cloudBand);
     vec4 authored = texture(panorama, panoramaUV);
+    /* The band ends where the sheet ends. Fading it out over a stretch of
+     * sky instead makes the cloud look like it is dissolving, and the sheet
+     * is already transparent at its top edge, so there is nothing to hide. */
     float cloudCoverage = smoothstep(0.09, 0.15, height) *
-        (1.0 - smoothstep(0.475, 0.535, height));
+        (1.0 - smoothstep(0.528, 0.535, height));
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
