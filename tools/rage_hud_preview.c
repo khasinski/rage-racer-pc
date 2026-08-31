@@ -311,9 +311,12 @@ int main(int argc, char **argv) {
      * they are half of what the spread layout has to place. */
     g_SplitTimer = 0;
     g_SectorIndex = 1;
+    /* The game keeps the delta as a magnitude and the direction in the
+     * sign, so a negative delta is a state it never produces: feeding one in
+     * makes DrawTimeValue print its unset-value dashes. */
     g_SplitSign = (s16)(split > 0 ? 1 : (split < 0 ? -1 : 0));
-    g_SplitDelta = split;
-    g_SplitSector = (s16)(split / 8);
+    g_SplitDelta = split < 0 ? -split : split;
+    g_SplitSector = (s16)OptionNumber(argc, argv, "--sector", 1);
     g_LapTimeMs = OptionNumber(argc, argv, "--best", 92345);
     g_LastSectorTime = OptionNumber(argc, argv, "--sector-time", 31450);
     g_SplitTargetTime = OptionNumber(argc, argv, "--target-time", 91000);
