@@ -86,7 +86,7 @@ static const char MODERN_NATIVE_MSL[] =
     "struct ShadowOut { float4 pos [[position]]; float2 uv; };\n"
     "vertex NativeOut vs_native(NativeIn in [[stage_in]], constant NativeCamera &camera [[buffer(0)]], constant NativeCamera &shadow [[buffer(1)]]) { NativeOut o; float3 p=in.pos-camera.position.xyz; float3 v=float3(dot(camera.viewRow0.xyz,p),dot(camera.viewRow1.xyz,p),dot(camera.viewRow2.xyz,p)); float depth=-v.z; float z=depth*camera.projection.z+camera.projection.w+(in.depthBias/1048576.0)*depth; o.pos=float4(v.x*camera.projection.x,v.y*camera.projection.y,z,depth); o.uv=in.uv; o.color=float4(in.color)/255.0; o.normal=in.normal; o.fog=in.fog; o.lighting=in.lighting; o.environmentLight=in.environmentLight; o.shadowReception=in.shadowReception; o.viewDirection=camera.position.xyz-in.pos; float3 sp=in.pos-shadow.position.xyz; float sx=dot(shadow.viewRow0.xyz,sp)*shadow.projection.x; float sy=dot(shadow.viewRow1.xyz,sp)*shadow.projection.y; float sd=-dot(shadow.viewRow2.xyz,sp); o.shadowCoord=float3(sx*0.5+0.5,0.5-sy*0.5,sd*shadow.projection.z+shadow.projection.w); return o; }\n"
     "vertex NativeSkyOut vs_native_sky(uint vertexID [[vertex_id]], constant NativeCamera &camera [[buffer(0)]]) { NativeSkyOut o; float2 corner=float2((vertexID<<1)&2,vertexID&2); float2 clip=corner*2.0-1.0; float3 v=float3(clip.x/camera.projection.x,clip.y/camera.projection.y,-1.0); o.direction=camera.viewRow0.xyz*v.x+camera.viewRow1.xyz*v.y+camera.viewRow2.xyz*v.z; o.pos=float4(clip,1.0,1.0); return o; }\n"
-    "fragment float4 fs_native_sky(NativeSkyOut in [[stage_in]], texture2d<float> panorama [[texture(0)]], sampler skySampler [[sampler(0)]], constant NativeSkyColors &sky [[buffer(0)]]) { float3 d=normalize(in.direction); float h=d.y; float3 c; if(h>=0.0){c=mix(sky.horizon.rgb,sky.middle.rgb,smoothstep(0.0,0.20,h)); c=mix(c,sky.top.rgb,smoothstep(0.20,0.70,h));} else c=mix(sky.horizon.rgb,sky.bottom.rgb,smoothstep(0.0,0.12,-h)); float cloudReach=1.0/max(h,0.001); float2 uv=float2(d.x,d.z)*cloudReach*0.16; float4 authored=panorama.sample(skySampler,uv); float cloudCoverage=smoothstep(0.06,0.16,h); c=mix(c,authored.rgb,authored.a*sky.bottom.a*cloudCoverage); return float4(c,1.0); }\n"
+    "fragment float4 fs_native_sky(NativeSkyOut in [[stage_in]], texture2d<float> panorama [[texture(0)]], sampler skySampler [[sampler(0)]], constant NativeSkyColors &sky [[buffer(0)]]) { float3 d=normalize(in.direction); float h=d.y; float3 c; if(h>=0.0){c=mix(sky.horizon.rgb,sky.middle.rgb,smoothstep(0.0,0.20,h)); c=mix(c,sky.top.rgb,smoothstep(0.20,0.70,h));} else c=mix(sky.horizon.rgb,sky.bottom.rgb,smoothstep(0.0,0.12,-h)); float cloudReach=1.0/max(h,0.001); float2 uv=float2(d.x,d.z)*cloudReach*0.80; float4 authored=panorama.sample(skySampler,uv); float cloudCoverage=smoothstep(0.06,0.16,h)*(1.0-smoothstep(0.40,0.70,h)); c=mix(c,authored.rgb,authored.a*sky.bottom.a*cloudCoverage); return float4(c,1.0); }\n"
     "vertex ShadowOut vs_shadow(NativeIn in [[stage_in]], constant NativeCamera &shadow [[buffer(0)]]) { ShadowOut o; float3 p=in.pos-shadow.position.xyz; float depth=-dot(shadow.viewRow2.xyz,p); o.pos=float4(dot(shadow.viewRow0.xyz,p)*shadow.projection.x,dot(shadow.viewRow1.xyz,p)*shadow.projection.y,depth*shadow.projection.z+shadow.projection.w,1.0); o.uv=in.uv; return o; }\n"
     "fragment void fs_shadow() {}\n"
     "fragment void fs_shadow_masked(ShadowOut in [[stage_in]], texture2d<float> textureImage [[texture(0)]], sampler smp [[sampler(0)]]) { if(textureImage.sample(smp,in.uv).a<=0.5) discard_fragment(); }\n"
@@ -563,9 +563,14 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     sampler.enable_anisotropy = true;
     s_sampler = SDL_CreateGPUSampler(s_device, &sampler);
     /* The cloud sheet is projected as a plane overhead, so it runs past the
-     * image in both directions and has to tile in both. */
+     * image in both directions and has to tile in both. Sample it the way
+     * the original does, a texel at a time: smoothing the sheet softens
+     * every cloud edge and reads as a stretched, low-resolution sky. */
     sampler.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     sampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    sampler.min_filter = SDL_GPU_FILTER_NEAREST;
+    sampler.mag_filter = SDL_GPU_FILTER_NEAREST;
+    sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);

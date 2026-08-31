@@ -44,9 +44,14 @@ void main() {
      * what gives cloud its perspective towards the horizon.
      */
     float cloudReach = 1.0 / max(height, 0.001);
-    vec2 panoramaUV = vec2(direction.x, direction.z) * cloudReach * 0.16;
+    vec2 panoramaUV = vec2(direction.x, direction.z) * cloudReach * 0.80;
     vec4 authored = texture(panorama, panoramaUV);
-    float cloudCoverage = smoothstep(0.06, 0.16, height);
+    /* Cloud sits in a layer, so it thins out towards straight overhead as
+     * well as fading into the horizon haze. Without the upper limit the
+     * sheet tiles across the whole sky and covers far more of it than the
+     * game's does. */
+    float cloudCoverage = smoothstep(0.06, 0.16, height) *
+        (1.0 - smoothstep(0.40, 0.70, height));
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
