@@ -51,6 +51,24 @@ static int RequireText(const char *name, const char *bytes,
     return 0;
 }
 
+
+/* The release version as CMakeLists.txt declares it. */
+static int ReadReleaseVersion(const char *cmake, char *out, size_t size) {
+    const char *key = "RAGE_RACER_RELEASE_VERSION \"";
+    const char *start = strstr(cmake, key);
+    const char *end;
+    size_t length;
+    if (start == NULL) return 0;
+    start += strlen(key);
+    end = strchr(start, '"');
+    if (end == NULL) return 0;
+    length = (size_t)(end - start);
+    if (length + 1 > size) return 0;
+    memcpy(out, start, length);
+    out[length] = '\0';
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const char *const required[] = {
         "README.md", "LICENSE.md", "rage-port.ini", "race-scenario.ini",
@@ -65,6 +83,7 @@ int main(int argc, char **argv) {
         ".github/workflows/macos-release.yml",
     };
     char *cmake;
+    char version[64];
     size_t index;
     int ok = 1;
     if (argc != 2) {
@@ -74,8 +93,15 @@ int main(int argc, char **argv) {
     for (index = 0; index < sizeof(required) / sizeof(required[0]); index++)
         ok &= RequireFile(argv[1], required[index]);
     if (!ReadFile(argv[1], "CMakeLists.txt", &cmake)) return 1;
-    ok &= RequireText("CMakeLists.txt", cmake,
-                      "RAGE_RACER_RELEASE_VERSION \"0.6.1-alpha\"");
+    /* Read the version the project declares rather than naming one here:
+     * a release otherwise has to edit this test too, and a test that has to
+     * be edited to keep passing stops saying anything about the release. */
+    if (!ReadReleaseVersion(cmake, version, sizeof(version))) {
+        fprintf(stderr, "CMakeLists.txt declares no RAGE_RACER_RELEASE_VERSION\n");
+        free(cmake);
+        return 1;
+    }
+    printf("release version %s\n", version);
     ok &= RequireText("CMakeLists.txt", cmake, "RageRacer.icns");
     ok &= RequireText("CMakeLists.txt", cmake, "rage-racer.rc");
     free(cmake);
@@ -86,7 +112,11 @@ int main(int argc, char **argv) {
             ok = 0;
             continue;
         }
-        ok &= RequireText(workflows[index], workflow, "default: 0.6.1-alpha");
+        {
+            char expected[128];
+            snprintf(expected, sizeof(expected), "default: %s", version);
+            ok &= RequireText(workflows[index], workflow, expected);
+        }
         ok &= RequireText(workflows[index], workflow, "README.md");
         ok &= RequireText(workflows[index], workflow, "LICENSE.md");
         ok &= RequireText(workflows[index], workflow, "rage-port.ini");
