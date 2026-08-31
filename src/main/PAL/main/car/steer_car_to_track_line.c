@@ -499,13 +499,16 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
          * the walk comes back to where it started, which is how a car that is
          * on no segment at all falls out of the loop.
          *
-         * The wrap is written the way it was recovered, and it is only right
-         * for one step off either end: once the stride passes the number of
-         * points, adding the count back is not enough to lift the index above
-         * zero, and a negative one reads off the front of the array. Making it
-         * wrap properly changes which segment an off-track car is given and
-         * stops a race finishing, so the arithmetic stays as it is until
-         * something covers what depends on it.
+         * The wrap is written the way it was recovered, and it only brings the
+         * index back into range for one step off either end: once the stride
+         * passes the number of points, adding the count back is not enough to
+         * lift it above zero. The reads are safe anyway, because TrackPoint
+         * wraps what it is given, but the loop compares the raw value against
+         * the guess, so a negative one changes both which segments are visited
+         * and when the walk gives up. Wrapping it properly hands an off-track
+         * car a different segment and stops a race finishing, so the
+         * arithmetic stays as it is until something covers what depends on
+         * it.
          */
         stride++;
         index += (stride % 2) != 0 ? stride : -stride;
