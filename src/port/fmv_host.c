@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SDL3/SDL_timer.h>
+#include "host_clock.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -44,7 +44,7 @@ static int s_height;
 static unsigned int s_frame;
 static unsigned int s_sectorSpan;
 static unsigned int s_tickSectors;
-static Uint64 s_startNs;
+static unsigned long long s_startNs;
 static int s_wallClock;
 static int s_xaPlaying;
 static int s_xaTailAllowed;
@@ -341,13 +341,13 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
-    s_startNs = SDL_GetTicksNS();
+    s_startNs = HostNanoseconds();
 }
 
 /* How much of the stream the drive would have delivered by now. */
 static unsigned int FmvArrivedSectors(void) {
     if (s_wallClock) {
-        Uint64 elapsed = SDL_GetTicksNS() - s_startNs;
+        unsigned long long elapsed = HostNanoseconds() - s_startNs;
         return (unsigned int)((elapsed * RAGE_STR_SECTORS_PER_SECOND) /
                               1000000000u);
     }
