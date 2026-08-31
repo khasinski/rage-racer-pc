@@ -7,27 +7,14 @@
 
 void UpdateBgmTrackCount(void) {
     s32 index;
-    s32 current;
-    s32 value;
 
     g_ClassWinCount = 0;
-    index = 0;
-    do {
-        current = g_ClassRecords[index].place;
-        index++;
-        if (current == 1) {
+    for (index = 0; index < 11; index++) {
+        if (g_ClassRecords[index].place == 1) {
             g_ClassWinCount++;
         }
-    } while (index < 11);
-
-    value = g_ClassWinCount;
-    value = value < 5;
-    if (value) {
-        value = 9;
-    } else {
-        value = 10;
     }
-    g_BgmTrackCount = value;
+    g_BgmTrackCount = g_ClassWinCount < 5 ? 9 : 10;
 }
 
 void DrawLostRaceCaption(s32 level) {
@@ -80,9 +67,6 @@ void DrawRaceEndPrompt(void) {
 void UpdateLostRaceScreen(void) {
     s32 timer;
     s32 old;
-    s32 current;
-    CourseProgressState *ptr;
-    u16 value;
 
     timer = g_SceneTimer;
     if (timer == -1) {
@@ -93,8 +77,7 @@ void UpdateLostRaceScreen(void) {
         if ((g_PadPressed & PAD_DOWN) && (g_LostRaceChoice == 0)) {
             g_LostRaceChoice = 1;
         }
-        current = g_LostRaceChoice;
-        if (old != current) {
+        if (old != g_LostRaceChoice) {
             PlaySoundCue(1);
         }
         if (g_PadPressed & PAD_START) {
@@ -102,10 +85,8 @@ void UpdateLostRaceScreen(void) {
             if (g_LostRaceChoice != 0) {
                 RequestSelectBgmAssets();
             }
-            ptr = g_CourseProgress;
-            value = ptr->retriesRemaining;
             g_SceneTimer = 0;
-            ptr->retriesRemaining = value - 1;
+            g_CourseProgress->retriesRemaining--;
         }
     } else {
         timer += 2;

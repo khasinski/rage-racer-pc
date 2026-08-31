@@ -22,12 +22,11 @@ void PlayCountdownCues(s32 timer) {
 
 
 void UpdateRivalCueGate(void) {
-    s32 value;
+    s32 progress = g_PlayerCar.trackProgress;
 
-    value = g_PlayerCar.trackProgress;
-    if (((value < 0x7001) || (value >= g_TrackLength - 0x3000)) && (g_RivalCueEnabled == 1)) {
+    if (((progress < 0x7001) || (progress >= g_TrackLength - 0x3000)) && (g_RivalCueEnabled == 1)) {
         g_RivalCueEnabled = 0;
-    } else if ((value >= 0x7001) && (value < g_TrackLength - 0x3000)) {
+    } else if ((progress >= 0x7001) && (progress < g_TrackLength - 0x3000)) {
         g_RivalCueEnabled = 1;
     }
 
@@ -37,9 +36,6 @@ void UpdateRivalCueGate(void) {
 }
 
 void SetCourseObjects(CourseObjectTable *table) {
-    u32 value;
-
-    value = table->count;
     g_CourseObjects = table->objects;
-    g_CourseObjectCount = value;
+    g_CourseObjectCount = table->count;
 }

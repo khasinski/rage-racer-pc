@@ -10,27 +10,21 @@
 
 
 void UpdateBgmSelectScene(void) {
-    void (*func)(void);
-
-    func = g_BgmSelectSteps[g_BgmSelectStep];
     g_SceneTimer++;
-    func();
+    g_BgmSelectSteps[g_BgmSelectStep]();
 }
 
 void EnterAttractDemo(void) {
-    s32 initialValue;
-
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
 
-    initialValue = 0x80;
-    g_FrameSyncThreshold = initialValue;
+    g_FrameSyncThreshold = 0x80;
     UploadImageAsset(g_ImageBlockBuffer);
     InstallCourseAssets();
     RequestTrackDataAssets();
 
     g_AttractDemoStep = ATTRACT_DEMO_STEP_LOAD;
-    g_FadeLevel = initialValue;
+    g_FadeLevel = 0x80;
     g_SceneTimer = 0;
     g_SceneId = 0x1E;
     g_CameraCarIndex = 0;

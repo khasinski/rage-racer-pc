@@ -104,53 +104,34 @@ void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *r
 
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj) {
-    s32 index;
-    ReplayCarState *primary;
-    ReplayCarState *secondary;
-    s32 next;
-    s32 offset;
-    ReplayFrameAddress base;
+    s32 frameIndex;
 
-    index = subframe;
-    primary = playerObj;
-    secondary = rivalObj;
-
-    ApplyReplayFrame(index, primary, secondary);
+    ApplyReplayFrame(subframe, playerObj, rivalObj);
 
     if (g_GrandPrixMode != 0) {
-        if ((index & 1) == 0) {
-            index >>= 1;
-            offset = index * 3;
+        if ((subframe & 1) == 0) {
+            frameIndex = subframe >> 1;
         } else {
-            index >>= 1;
-            next = index + 1;
-            if (next == 0x2EE) {
-                next = 0;
+            frameIndex = (subframe >> 1) + 1;
+            if (frameIndex == 0x2EE) {
+                frameIndex = 0;
             }
-            offset = next * 3;
         }
-        base.grandPrixPointer = g_ReplayFramesGp;
-        base.value = (offset << 4) + base.value;
-        primary->trackPointIndex = base.grandPrixPointer->trackPointIndex0;
-        secondary->trackPointIndex = base.grandPrixPointer->trackPointIndex1;
+        playerObj->trackPointIndex =
+            g_ReplayFramesGp[frameIndex].trackPointIndex0;
+        rivalObj->trackPointIndex =
+            g_ReplayFramesGp[frameIndex].trackPointIndex1;
     } else {
-        if ((index & 1) == 0) {
-            index >>= 1;
-            offset = index * (sizeof(ReplayTimeAttackFrame) / sizeof(u32));
+        if ((subframe & 1) == 0) {
+            frameIndex = subframe >> 1;
         } else {
-            index >>= 1;
-            next = index + 1;
-            if (next == 0x505) {
-                next = 0;
+            frameIndex = (subframe >> 1) + 1;
+            if (frameIndex == 0x505) {
+                frameIndex = 0;
             }
-            offset = next * (sizeof(ReplayTimeAttackFrame) / sizeof(u32));
         }
-        {
-            ReplayFrameAddress frame;
-            frame.timeAttackPointer = g_ReplayFramesTimeAttack;
-            frame.value = (offset << 2) + frame.value;
-            primary->trackPointIndex = frame.timeAttackPointer->trackPointIndex;
-        }
+        playerObj->trackPointIndex =
+            g_ReplayFramesTimeAttack[frameIndex].trackPointIndex;
     }
 }
 
@@ -175,8 +156,6 @@ void RecordReplayFrame(void) {
 }
 
 void BeginReplay(void) {
-    s32 mode;
-
     g_FadeLevel = 0xFF;
     g_SceneTimer = 0;
     g_FadeStep = -4;
@@ -193,13 +172,11 @@ void BeginReplay(void) {
     }
 
     if (g_GrandPrixMode != 0) {
-        mode = g_GrandPrixClass;
-        if (mode != 5) {
+        if (g_GrandPrixClass != 5) {
             SeekEnvironmentScript(g_EnvScriptClock - 1800);
         }
     } else {
-        mode = g_GrandPrixClass;
-        if (mode != 5) {
+        if (g_GrandPrixClass != 5) {
             SeekEnvironmentScript(g_EnvScriptClock - 3000);
         }
     }

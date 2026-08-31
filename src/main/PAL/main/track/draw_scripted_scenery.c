@@ -52,17 +52,15 @@ void DrawScriptedScenery(s32 flags) {
  * object viewed from offsets zero and two.
  */
 void InitPathScenery(void) {
-    s32 lev;
     PathSceneryPositionData *tblA;
     PathSceneryRotationData *tblB;
     s32 ia;
     s32 ib;
 
-    lev = g_RaceSeries;
     tblA = g_PathSceneryPosData;
     tblB = g_PathSceneryRotData;
-    ia = tblA->firstKey[lev];
-    ib = tblB->firstKey[lev];
+    ia = tblA->firstKey[g_RaceSeries];
+    ib = tblB->firstKey[g_RaceSeries];
     g_PathSceneryClock.rotFrame = 0;
     g_PathSceneryClock.posFrame = 0;
     g_PathSceneryPosKeys = GetPathSceneryPositionKey(tblA, ia);
@@ -70,14 +68,12 @@ void InitPathScenery(void) {
     g_PathSceneryTransform.position = g_PathSceneryPosKeys->position;
 
     {
-        PathSceneryRotationKey *copySrc;
         PathSceneryPositionKey *entryA;
         PathSceneryRotationKey *entryB;
         s16 sv;
 
-        copySrc = g_PathSceneryRotKeys;
         entryA = g_PathSceneryPosKeys;
-        g_PathSceneryTransform.rotation = copySrc->rotation;
+        g_PathSceneryTransform.rotation = g_PathSceneryRotKeys->rotation;
         g_PathSceneryCursors.posPhase.value = 0;
         g_PathSceneryCursors.rotPhase.value = 0;
         g_PathSceneryCursors.posSpan =
@@ -164,14 +160,9 @@ void UpdatePathScenerySound(void) {
     s32 vol;
     s32 pitch;
     s32 slew;
-    PathSceneryClockAddress frames;
-    u16 posFrame;
-    u16 rotFrame;
     PathSceneryPositionKey *sinRec;
     s32 product;
     s32 oldVolume;
-    PathSceneryKeyAddress positionStepAddress;
-    PathSceneryKeyAddress rotationStepAddress;
 
     if (g_PathSceneryClock.posFrame == g_PathSceneryCursors.posSpan) {
         PathSceneryPositionKey *rec;
@@ -181,10 +172,7 @@ void UpdatePathScenerySound(void) {
         g_PathSceneryCursors.posPhase.value = 0;
         idx++;
         g_PathSceneryCursors.posIndex = idx;
-        positionStepAddress.positionPointer = positionKeys;
-        positionStepAddress.value =
-            idx * sizeof(PathSceneryPositionKey) + positionStepAddress.value;
-        stepRec = positionStepAddress.positionPointer;
+        stepRec = &positionKeys[idx];
         if (stepRec->fields.span == -1) {
             idx = stepRec->fields.loopIndex;
             g_PathSceneryClock.posFrame = 0;
@@ -292,10 +280,7 @@ void UpdatePathScenerySound(void) {
         g_PathSceneryCursors.rotPhase.value = 0;
         idx++;
         g_PathSceneryCursors.rotIndex = idx;
-        rotationStepAddress.rotationPointer = rotationKeys;
-        rotationStepAddress.value =
-            idx * sizeof(PathSceneryRotationKey) + rotationStepAddress.value;
-        stepRec = rotationStepAddress.rotationPointer;
+        stepRec = &rotationKeys[idx];
         if (stepRec->fields.span == -1) {
             idx = stepRec->fields.loopIndex;
             g_PathSceneryClock.rotFrame = 0;
@@ -387,18 +372,11 @@ void UpdatePathScenerySound(void) {
             g_PathSceneryRotKeys[g_PathSceneryCursors.rotIndex + 1].rotation;
     }
 
-    /*
-     * These pinned views and empty constraints reproduce the original
-     * instruction schedule without generating code of their own.
-     */
-    frames.clock = &g_PathSceneryClock;
-    posFrame = frames.halfwords[0];
-    rotFrame = frames.halfwords[1];
-    
     dx = g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
-    posFrame++;
-    frames.halfwords[0] = posFrame;
-    frames.halfwords[1] = rotFrame + 1;
+    g_PathSceneryClock.posFrame =
+        (s16)((u16)g_PathSceneryClock.posFrame + 1u);
+    g_PathSceneryClock.rotFrame =
+        (s16)((u16)g_PathSceneryClock.rotFrame + 1u);
     dy = g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
     dz = g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
 

@@ -1,3 +1,23 @@
+# Where the race HUD's sprites are built, as opposed to what the drawing
+# repositions each frame.
+add_executable(race_hud_layout_tests
+    race_hud_layout_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_race_hud_prims.c
+    ${CMAKE_SOURCE_DIR}/src/port/hud_config.c)
+target_include_directories(race_hud_layout_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(race_hud_layout_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_hud_layout_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include")
+endif()
+target_link_libraries(race_hud_layout_tests PRIVATE psyz)
+add_test(NAME race_hud_layout COMMAND race_hud_layout_tests)
+set_tests_properties(race_hud_layout PROPERTIES LABELS functional)
+
 add_executable(hud_config_tests
     hud_config_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/hud_config.c)

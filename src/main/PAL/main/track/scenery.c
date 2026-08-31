@@ -89,11 +89,9 @@ void DrawStaticScenery(s32 shifted) {
 void DrawHighClassScenery(void) {
     Matrix mtx;
     Matrix renderWorldMtx;
-    s32 pad[4];
     s32 *state;
     s32 drawArg;
 
-    (void)pad;
     state = &g_HighClassSceneryYaw;
     BuildRotMatrixY(&mtx, state[0]);
     renderWorldMtx = mtx;
@@ -127,19 +125,17 @@ void DrawHighClassScenery(void) {
 }
 
 void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
-    s32 mode = course;
-    s32 value = timer;
     s32 flag = animate;
 
-    DrawAnimatedScenery(value, 0);
+    DrawAnimatedScenery(timer, 0);
 
     if (g_GrandPrixClass == 5) {
         flag = 0;
     }
 
-    switch (mode) {
+    switch (course) {
     case 0:
-        DrawSpinningScenery(value, flag);
+        DrawSpinningScenery(timer, flag);
         if (g_GrandPrixClass >= 4) {
             DrawHighClassScenery();
         }
@@ -147,7 +143,7 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
         break;
     case 1:
         if (g_GrandPrixClass >= 2) {
-            DrawSpinningScenery(value, flag);
+            DrawSpinningScenery(timer, flag);
         }
         if (flag != 0) {
             UpdateShuttleScenery(0);
@@ -165,7 +161,7 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
         DrawStaticScenery(0);
         break;
     case 3:
-        DrawAnimatedScenery(value, 1);
+        DrawAnimatedScenery(timer, 1);
         DrawStaticScenery(1);
         break;
     default:
@@ -174,7 +170,6 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
 }
 
 void DrawCourseScenery2(s32 timer, s32 animate) {
-    s32 value = timer;
     s32 flag = animate;
     s32 mode;
 
@@ -182,12 +177,12 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
         flag = 0;
     }
 
-    DrawAnimatedScenery2(value, 0, g_SceneId == 0x11, flag);
+    DrawAnimatedScenery2(timer, 0, g_SceneId == 0x11, flag);
 
     mode = SeriesCourseIndex();
     switch (mode) {
     case 0:
-        DrawSpinningScenery(value, flag);
+        DrawSpinningScenery(timer, flag);
         if (g_GrandPrixClass >= 4) {
             DrawHighClassScenery();
         }
@@ -195,7 +190,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
         break;
     case 1:
         if (g_GrandPrixClass >= 2) {
-            DrawSpinningScenery(value, flag);
+            DrawSpinningScenery(timer, flag);
         }
         if (flag != 0) {
             UpdateShuttleScenery(0);
@@ -213,7 +208,7 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
         DrawStaticScenery(0);
         break;
     case 3:
-        DrawAnimatedScenery2(value, 1, g_SceneId == 0x11, flag);
+        DrawAnimatedScenery2(timer, 1, g_SceneId == 0x11, flag);
         DrawStaticScenery(1);
         break;
     default:
@@ -228,9 +223,6 @@ void SeedFlybyScenery(void) {
     s32 count;
     s16 value;
     s32 index;
-    s32 cmp;
-    s32 scene0;
-    s32 scene1;
     s32 recordIndex;
 
     data = g_FlybySceneryData;
@@ -245,19 +237,16 @@ void SeedFlybyScenery(void) {
     if (value <= 0) {
         out->lap = (u16)g_LapCount - 1;
     } else {
-        cmp = count < value;
-        if (cmp != 0) {
+        if (count < value) {
             out->lap = (u16)g_LapCount;
         }
     }
 
-    scene0 = g_RaceSeries;
     out->soundEnabled = 1;
-    scene1 = g_RaceSeries;
     out->timer = 0;
 
-    out->position = (scene0 + data->start)->position;
-    recordIndex = (scene1 + data->firstKeyframe)[0][0];
+    out->position = data->start[g_RaceSeries].position;
+    recordIndex = data->firstKeyframe[g_RaceSeries][0];
     out->volume = 0;
     g_FlybySceneryKeyframe = &data->keyframes[recordIndex];
 }
@@ -278,7 +267,6 @@ void UpdateFlybyScenery(void) {
     s32 series;
     s32 recordIndex;
     SceneryMotionKeyframe *kf;
-    Matrix *mx;
     s32 dt;
     s32 cue;
     s32 pitch;
@@ -323,10 +311,10 @@ void UpdateFlybyScenery(void) {
             state->keyframeIndex = 0;
         }
         kf = g_FlybySceneryKeyframe;
+        dt = kf[state->keyframeIndex].duration - state->keyframeTime;
         state->rotationX =
             (kf[state->keyframeIndex + 1].rotationX * state->keyframeTime +
-             kf[state->keyframeIndex].rotationX *
-                 (dt = kf[state->keyframeIndex].duration - state->keyframeTime)) /
+             kf[state->keyframeIndex].rotationX * dt) /
             kf[state->keyframeIndex].duration;
         state->rotationY =
             (kf[state->keyframeIndex + 1].rotationY * state->keyframeTime +
@@ -340,12 +328,11 @@ void UpdateFlybyScenery(void) {
         dir[1] = 0;
         dir[2] = -kf[state->keyframeIndex].speed * 4;
         BuildRotMatrixY(&mtxY, 0x800 - state->rotationY);
-        mx = &mtxX;
-        BuildRotMatrixX(mx, state->rotationX);
-        MulMatrix2(&mtxY, mx);
+        BuildRotMatrixX(&mtxX, state->rotationX);
+        MulMatrix2(&mtxY, &mtxX);
         BuildRotMatrixZ(&mtxY, state->rotationZ);
-        MulMatrix(mx, &mtxY);
-        ApplyMatrix(mx, dir, step);
+        MulMatrix(&mtxX, &mtxY);
+        ApplyMatrix(&mtxX, dir, step);
         state->position.x = step[0] / 4 + state->position.x;
         state->position.y = step[1] / 4 + state->position.y;
         state->position.z = step[2] / 4 + state->position.z;

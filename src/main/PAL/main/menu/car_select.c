@@ -192,35 +192,20 @@ s32 DrawCarSelectScreen(s32 step) {
 
 void UpdateOwnedCarNeighbours(void) {
     s32 index;
-    CarEntry *ptr;
 
     g_PrevOwnedCarIndex = -1;
-    index = g_PlayerCarIndex - 1;
-    if (index >= 0) {
-        s32 one = 1;
-        ptr = &g_CarTable[index];
-        while (index >= 0) {
-            if (ptr->enabled == one) {
-                g_PrevOwnedCarIndex = index;
-                break;
-            }
-            index--;
-            ptr--;
+    for (index = g_PlayerCarIndex - 1; index >= 0; index--) {
+        if (g_CarTable[index].enabled == 1) {
+            g_PrevOwnedCarIndex = index;
+            break;
         }
     }
 
     g_NextOwnedCarIndex = -1;
-    index = g_PlayerCarIndex + 1;
-    if (index < 13) {
-        s32 one = 1;
-        ptr = &g_CarTable[index];
-        while (index < 13) {
-            if (ptr->enabled == one) {
-                g_NextOwnedCarIndex = index;
-                break;
-            }
-            index++;
-            ptr++;
+    for (index = g_PlayerCarIndex + 1; index < 13; index++) {
+        if (g_CarTable[index].enabled == 1) {
+            g_NextOwnedCarIndex = index;
+            break;
         }
     }
 }
@@ -330,15 +315,11 @@ void UpdateCustomizeScreen(void) {
     ot = SCRATCH_OT_BASE_AS(void);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
-    mode = 2;
     DrawMenuCarView();
-    if (g_GrandPrixMode != 0) {
-        mode = 3;
-    }
-    cmdList = (u8 *)&g_CustomizeMenuScriptTimeAttack;
-    if (g_GrandPrixMode != 0) {
-        cmdList = (u8 *)&g_CustomizeMenuScriptGp;
-    }
+    mode = g_GrandPrixMode != 0 ? 3 : 2;
+    cmdList = g_GrandPrixMode != 0
+                  ? (u8 *)&g_CustomizeMenuScriptGp
+                  : (u8 *)&g_CustomizeMenuScriptTimeAttack;
 
     if (GameMenuBusy == 0) {
         g_CarSpecGraphStep = 3;
@@ -465,10 +446,7 @@ void UpdateCustomizeScreen(void) {
         } else if (GameMenuBusy == -3) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 0);
             if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-                if (g_PadPressed & PAD_CONFIRM) {
-                    GameMenuBusy = -4;
-                }
-                if (g_PadPressed & PAD_CANCEL) {
+                if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
                     GameMenuBusy = -4;
                 }
             }

@@ -237,6 +237,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     s32 quarterHeight;
     s32 shadowX;
     s32 shadowY;
+    s32 target;
 
     if (step == 0) {
         g_CarSpecGraphProgress = 0;
@@ -248,69 +249,24 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     colors = *sourceColors;
     markerClut = 0x26C;
 
-    {
-        s32 *value = &g_CarSpecBars[0];
-        if ((*value < g_CarModelAsset->performanceRatings[0]) && (*value < 0x60)) {
+    for (i = 0; i < 3; i++) {
+        s32 *value = &g_CarSpecBars[i];
+        s32 rating = g_CarModelAsset->performanceRatings[i];
+
+        if (*value < rating && *value < 0x60) {
             (*value)++;
-        } else if ((g_CarModelAsset->performanceRatings[0] < *value) && (*value > 0)) {
+        } else if (rating < *value && *value > 0) {
             (*value)--;
         }
     }
 
-    {
-        s32 *value = &g_CarSpecBars[1];
-        if ((*value < g_CarModelAsset->performanceRatings[1]) && (*value < 0x60)) {
-            (*value)++;
-        } else if ((g_CarModelAsset->performanceRatings[1] < *value) && (*value > 0)) {
-            (*value)--;
-        }
-    }
-
-    {
-        s32 *value = &g_CarSpecBars[2];
-        if ((*value < g_CarModelAsset->performanceRatings[2]) && (*value < 0x60)) {
-            (*value)++;
-        } else if ((g_CarModelAsset->performanceRatings[2] < *value) && (*value > 0)) {
-            (*value)--;
-        }
-    }
-
-    switch (tireGrade) {
-    case 0:
-        if (g_CarSpecBars[3] < 10) {
+    if (tireGrade < 5) {
+        target = 10 + (s32)tireGrade * 20;
+        if (g_CarSpecBars[3] < target) {
             g_CarSpecBars[3]++;
-        } else if (g_CarSpecBars[3] > 10) {
+        } else if (g_CarSpecBars[3] > target) {
             g_CarSpecBars[3]--;
         }
-        break;
-    case 1:
-        if (g_CarSpecBars[3] < 30) {
-            g_CarSpecBars[3]++;
-        } else if (g_CarSpecBars[3] > 30) {
-            g_CarSpecBars[3]--;
-        }
-        break;
-    case 2:
-        if (g_CarSpecBars[3] < 50) {
-            g_CarSpecBars[3]++;
-        } else if (g_CarSpecBars[3] > 50) {
-            g_CarSpecBars[3]--;
-        }
-        break;
-    case 3:
-        if (g_CarSpecBars[3] < 70) {
-            g_CarSpecBars[3]++;
-        } else if (g_CarSpecBars[3] > 70) {
-            g_CarSpecBars[3]--;
-        }
-        break;
-    case 4:
-        if (g_CarSpecBars[3] < 90) {
-            g_CarSpecBars[3]++;
-        } else if (g_CarSpecBars[3] > 90) {
-            g_CarSpecBars[3]--;
-        }
-        break;
     }
 
     if (step > 0) {

@@ -8,28 +8,13 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
     Matrix yawMatrix;
     Matrix objectMatrix;
     Matrix renderWorldMtx;
-    s32 frame = timer;
-    s32 update = animate;
-    s16 *dst;
-    u16 *delta;
-    u16 *deltaBase;
-    Matrix *work = &objectMatrix;
-    s16 *base;
-    s32 offset;
     s32 end;
     s32 start;
     s32 loopIndex;
     s32 limit;
     s32 active;
-    s32 activeValue;
-    s32 frameMask;
-    SpinningSceneryDataAddress dataAddress;
-    SpinningSceneryAngleAddress cursorAddress;
-    SpinningSceneryAngleAddress endAddress;
 
-    activeValue = g_CourseIndex;
-    active = activeValue & 3;
-    active = active != 0;
+    active = (g_CourseIndex & 3) != 0;
     if (active) {
         start = 1;
         end = 4;
@@ -38,55 +23,34 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         end = 1;
     }
 
-    loopIndex = start;
-    
-    if (loopIndex < end) {
-        deltaBase = g_SpinningSceneryRate;
-        delta = &deltaBase[active];
-        work = &objectMatrix;
-        base = g_SpinningSceneryAngle;
-        dst = &base[loopIndex];
-        offset = loopIndex * 0x10;
+    for (loopIndex = start; loopIndex < end; loopIndex++) {
+        if (animate != 0) {
+            g_SpinningSceneryAngle[loopIndex] +=
+                g_SpinningSceneryRate[active];
+        }
+        g_SpinningSceneryAngle[loopIndex] &= 0xFFF;
 
-        do {
-            if (update != 0) {
-                *dst += *delta;
-            }
-            *dst &= 0xFFF;
+        BuildRotMatrixY(&yawMatrix, g_SpinningSceneryYaw[loopIndex].yaw);
+        BuildRotMatrixZ(&renderWorldMtx,
+                        g_SpinningSceneryAngle[loopIndex]);
+        MulMatrix2(&yawMatrix, &renderWorldMtx);
+        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &yawMatrix);
+        BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[loopIndex]);
+        MulMatrix2(&yawMatrix, &objectMatrix);
+        SetGteObjectMatrix(
+            SCRATCH_OBJECT_MATRIX_WORK,
+            AsPosition(&g_SpinningSceneryPos[loopIndex]), &objectMatrix);
 
-            dataAddress.orientationPointer = g_SpinningSceneryYaw;
-            dataAddress.bytes += offset;
-            BuildRotMatrixY(&yawMatrix, dataAddress.orientationPointer->yaw);
-            BuildRotMatrixZ(&renderWorldMtx, *dst);
-            MulMatrix2(&yawMatrix, &renderWorldMtx);
-            MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &yawMatrix);
-            BuildRotMatrixZ(work, *dst);
-            MulMatrix2(&yawMatrix, work);
-            dataAddress.positionPointer = g_SpinningSceneryPos;
-            dataAddress.bytes += offset;
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(dataAddress.positionPointer), work);
-
-            SCRATCH_ENV_MODE4 = 0;
-            limit = 1;
-            if (g_CourseModelCount >= 0x3F) {
-                limit = 0x3E;
-            }
-            GameRenderWorldSubmitDynamicCourseObject(
-                0x100 + loopIndex, limit, dataAddress.positionPointer->x,
-                dataAddress.positionPointer->y,
-                dataAddress.positionPointer->z, renderWorldMtx.m, 1, 0);
-            SubmitCourseModel2(SCRATCHPAD, limit);
-
-            dst++;
-            offset += 0x10;
-            cursorAddress.pointer = dst;
-            endAddress.pointer = base;
-            endAddress.value = (end * 2) + endAddress.value;
-        } while (cursorAddress.value < endAddress.value);
+        SCRATCH_ENV_MODE4 = 0;
+        limit = g_CourseModelCount >= 0x3F ? 0x3E : 1;
+        GameRenderWorldSubmitDynamicCourseObject(
+            0x100 + loopIndex, limit, g_SpinningSceneryPos[loopIndex].x,
+            g_SpinningSceneryPos[loopIndex].y,
+            g_SpinningSceneryPos[loopIndex].z, renderWorldMtx.m, 1, 0);
+        SubmitCourseModel2(SCRATCHPAD, limit);
     }
 
-    frameMask = frame & 0x1FF;
-    if ((frameMask == 0) && (update != 0)) {
+    if ((timer & 0x1FF) == 0 && animate != 0) {
         g_SpinningSceneryRate[0] = Random15() & 0x1F;
         g_SpinningSceneryRate[1] = Random15() & 0x3F;
     }

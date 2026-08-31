@@ -40,17 +40,9 @@ void TickSequenceAudio(void) {
 /* Reads one tone out of the 6x2 g_SoundSlotTone grid, and writes it too when
  * `tone` is not negative. Returns what was there before. */
 s32 SetSoundToneTableEntry(s32 slot, s32 vabSlot, s32 tone) {
-    s16 (*table)[2];
-    s16 *row;
-    s16 *entry;
+    s16 *entry = &g_SoundSlotTone[slot][vabSlot];
     s32 old;
-    SoundToneTableAddress entryAddress;
 
-    table = g_SoundSlotTone;
-    row = table[slot];
-    entryAddress.pointer = row;
-    entryAddress.value = vabSlot * sizeof(*entry) + entryAddress.value;
-    entry = entryAddress.pointer;
     old = *entry;
 
     if (tone >= 0) {
@@ -65,54 +57,30 @@ void LoadAudioParameterTable(u16 *table) {
     s32 row;
     s32 col;
     s32 step;
-    s32 *leftPtr;
     s32 tableValue;
-    u32 adjustedStep;
 
-    bank = 0;
-    do {
-        row = 0;
-        do {
-            col = 0;
-            do {
-                s32 leftValue;
-
-                leftValue = *tableReg++;
-                g_EngineSoundCurves[bank][row].positions[col] = leftValue;
+    for (bank = 0; bank < 2; bank++) {
+        for (row = 0; row < 12; row++) {
+            for (col = 0; col < 9; col++) {
+                g_EngineSoundCurves[bank][row].positions[col] = *tableReg++;
                 g_EngineSoundCurves[bank][row].values[col] = *tableReg++;
-                col++;
-            } while (col < 9);
-            row++;
-        } while (row < 12);
-        bank++;
-    } while (bank < 2);
+            }
+        }
+    }
 
-    tableValue = *tableReg;
-    tableReg++;
-    bank = 0;
+    tableValue = *tableReg++;
     SetLoadedTableVolumeScale(tableValue);
 
-    do {
-        row = 0;
-        do {
-            s32 rowArg;
-
-            tableValue = *tableReg;
-            tableReg++;
-            rowArg = row;
-            row++;
-            SetSoundToneTableEntry(rowArg, bank, tableValue);
-        } while (row < 6);
-        bank++;
-    } while (bank < 2);
+    for (bank = 0; bank < 2; bank++) {
+        for (row = 0; row < 6; row++) {
+            SetSoundToneTableEntry(row, bank, *tableReg++);
+        }
+    }
 
     step = *tableReg;
-    leftPtr = &g_EngineSoundState.maxRpm;
-    *leftPtr = step;
-    step--;
-    adjustedStep = step;
-    if (adjustedStep >= 0x27FF) {
-        *leftPtr = 0x2800;
+    g_EngineSoundState.maxRpm = step;
+    if ((u32)(step - 1) >= 0x27FF) {
+        g_EngineSoundState.maxRpm = 0x2800;
     }
 }
 
@@ -139,7 +107,8 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
         tempLeft = 0;
     }
 
-    if ((left = tempLeft, right) >= 0) {
+    left = tempLeft;
+    if (right >= 0) {
         tempRight = right;
         if (tempRight >= 0x80) {
             tempRight = 0x7F;
@@ -167,15 +136,7 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
 }
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
-    s16 (*table)[2];
-    s16 *row;
-    s16 *entry;
-    SoundToneTableAddress entryAddress;
+    s16 program = g_SoundSlotTone[slot][tone];
 
-    table = g_SoundSlotTone;
-    row = table[slot];
-    entryAddress.pointer = row;
-    entryAddress.value = tone * sizeof(*entry) + entryAddress.value;
-    entry = entryAddress.pointer;
-    SsUtKeyOnV((s16)(slot + 0xE), g_SoundScale.vabIds[(s16)vabSlot], *entry, 0, 0x3C, 0, 0, 0);
+    SsUtKeyOnV((s16)(slot + 0xE), g_SoundScale.vabIds[(s16)vabSlot], program, 0, 0x3C, 0, 0, 0);
 }

@@ -13,67 +13,16 @@ typedef struct CarTrackLimitWork {
 } CarTrackLimitWork;
 
 
-/*
- * Waypoint proximity test: returns 1 if the waypoint's (x,y) lies within a
- * +/-0x40 box around the player car centre, else 0.
- */
-
-/*
- * Per-frame waypoint spawn/update state machine over the 6 slots. An idle slot
- * (active==0) that the car is near (IsCarNearWaypoint) spawns: increments the spawn
- * counter g_WaypointsCollected, plays cue 0xA, marks the slot active and seeds its
- * velocity from g_PlayerVelocity. An active slot integrates position from velocity
- * with 15/16 per-frame damping and grows its Z rotation toward 0x400, retiring to
- * state 2 once motion decays to zero. Register pins and raw tail-relative field
- * offsets are match-load-bearing.
- */
-
-/* Counts how many of the 6 waypoint slots are active (active != 0). */
-
-
-/*
- * The tail's multiply feeds the discarded rounding path below. GCC 2.6.3
- * removes that path and its mflo, but leaves the mult that sets the hard HI/LO
- * registers behind.
- */
-
-
-/*
- * Initializes/spawns a route render object `ent`: reads a start entry from the
- * per-scene table (`arr` indexed by `pos`, g_TrackEventData base), sets the model id
- * (+0xAE / +0x122), start angle (0xC00 - track angle), zeroes the motion state
- * block, resolves the containing track point (FindTrackSegment) and builds the
- * initial marker geometry (UpdateCarTrackState). `ent` is a render/route object
- * accessed by raw byte offset (its first 0xE8 mirror GameRenderObject).
- */
-
 s32 IsCarNearWaypoint(TrackWaypointRuntime *waypoint) {
-    s32 center_x = g_PlayerCar.x;
-    s32 x = waypoint->motion.x;
-    s32 ret = 0;
-
-    if ((center_x - 0x40) < x) {
-        s32 max_x = center_x + 0x40;
-
-        if (x < max_x) {
-            s32 center_y = g_PlayerCar.z;
-            s32 y = waypoint->motion.y;
-
-            if ((center_y - 0x40) < y) {
-                s32 max_y = center_y + 0x40;
-
-                ret = y < max_y;
-            }
-        }
-    }
-
-    return ret;
+    return waypoint->motion.x > g_PlayerCar.x - 0x40 &&
+           waypoint->motion.x < g_PlayerCar.x + 0x40 &&
+           waypoint->motion.y > g_PlayerCar.z - 0x40 &&
+           waypoint->motion.y < g_PlayerCar.z + 0x40;
 }
 
 void UpdateWaypoints(void) {
     TrackWaypointRuntime *waypoint;
     s32 i;
-    s32 activeState;
 
     if (g_WaypointSpawnCooldown != 0) {
         g_WaypointSpawnCooldown--;
@@ -81,14 +30,13 @@ void UpdateWaypoints(void) {
 
     waypoint = g_Waypoints;
     i = 0;
-    activeState = 1;
     do {
         if (waypoint->active == 0) {
             if (IsCarNearWaypoint(waypoint) != 0) {
                 g_WaypointsCollected++;
                 PlaySoundCue(0xA);
 
-                waypoint->active = activeState;
+                waypoint->active = 1;
                 waypoint->motion.velocity.vector = g_PlayerVelocity[0];
 
                 waypoint->motion.velocity.fields.x *= 2;
@@ -97,7 +45,7 @@ void UpdateWaypoints(void) {
                     ((waypoint->motion.velocity.fields.x * waypoint->motion.velocity.fields.x) + (waypoint->motion.velocity.fields.y * waypoint->motion.velocity.fields.y)) /
                     0x2000;
             }
-        } else if (waypoint->active == activeState) {
+        } else if (waypoint->active == 1) {
             waypoint->motion.x += waypoint->motion.velocity.fields.x / 0x100;
             waypoint->motion.y += waypoint->motion.velocity.fields.y / 0x100;
             waypoint->motion.velocity.fields.x = (waypoint->motion.velocity.fields.x * 15) / 16;

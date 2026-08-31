@@ -149,7 +149,6 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 timeout;
     s32 threshold;
     PlayerCarRaceState *raceState;
-    SectorTimeTableAddress sectorAddress;
     s32 sectorClosed;
 
     raceState = GetPlayerCarRaceState(car);
@@ -188,9 +187,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             }
 
             g_SplitTimer = 0;
-            nextSlot = g_SectorIndex;
-            nextSlot++;
-            nextSlot %= 3;
+            nextSlot = (g_SectorIndex + 1) % 3;
             g_SectorIndex = nextSlot;
 
             if (lapEvent != 0) {
@@ -198,19 +195,13 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
                 g_SplitTargetTime = g_RefLapTime;
                 g_RefLapTime = g_BestLapThisRace;
             } else {
-                nextSlot += 2;
-                nextSlot %= 3;
+                nextSlot = (nextSlot + 2) % 3;
                 g_SplitSector = nextSlot;
                 g_SplitTargetTime = g_RefSectorTimes.values[nextSlot];
             }
 
-            nextSlot = g_SectorIndex;
-            nextSlot += 2;
-            nextSlot %= 3;
-            nextSlot <<= 2;
-            sectorAddress.pointer = g_SectorTimes;
-            sectorAddress.bytes += nextSlot;
-            g_LastSectorTime = *sectorAddress.pointer;
+            nextSlot = (g_SectorIndex + 2) % 3;
+            g_LastSectorTime = g_SectorTimes[nextSlot];
             sectorClosed = 1;
         }
     }

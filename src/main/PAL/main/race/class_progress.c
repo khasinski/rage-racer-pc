@@ -58,7 +58,7 @@ void CommitClassProgress(void) {
         }
     }
 
-    done = ((slot_count ^ filled) == 0);
+    done = slot_count == filled;
     g_ClassCompleted = done;
 
     if (done != 0) {
@@ -122,35 +122,24 @@ void AdvanceGrandPrixClass(void) {
 
     if (g_ClassCompleted != 0) {
         if (g_SeriesCleared != 0) {
-            s32 magic;
-            GameRaceProgress *afterPtr;
-
             ptr = g_RaceProgress;
             oldValue = ptr->maxClassReached;
             ResetProgressSlot(g_CarTable, ptr);
-            magic = 0x3B9AC9FF;
-            afterPtr = g_RaceProgress;
-            afterPtr->money.value = magic;
-            afterPtr->maxClassReached = oldValue;
+            g_RaceProgress->money.value = 0x3B9AC9FF;
+            g_RaceProgress->maxClassReached = oldValue;
             ResetCourseProgress(0);
             BeginEndingFmv(0x21);
         } else {
-            s32 current;
             s32 next;
-            GameRaceProgress *menuPtr;
-            s32 enabled;
 
             BeginClassFmv(7);
-            current = g_GrandPrixClass;
-            menuPtr = g_RaceProgress;
-            enabled = g_ClassPromoted;
-            next = current + 1;
+            next = g_GrandPrixClass + 1;
             g_GrandPrixClass = next;
-            menuPtr->classIndex = next;
-            menuPtr->course = 0;
+            g_RaceProgress->classIndex = next;
+            g_RaceProgress->course = 0;
 
-            if (enabled != 0) {
-                menuPtr->maxClassReached = next;
+            if (g_ClassPromoted != 0) {
+                g_RaceProgress->maxClassReached = next;
                 entry = &g_MaxClassReached[g_SeriesSelection];
                 if (*entry < next) {
                     *entry = next;

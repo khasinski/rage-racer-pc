@@ -218,14 +218,12 @@ void ShuffleBgmOrder(void) {
 
 
 void UpdateMainMenuInput(void) {
-    volatile u16 *flagp = &g_PadPressed;
     s32 idx;
-    u16 flags;
+    u16 flags = g_PadPressed;
 
-    if (*flagp != 0) {
+    if (flags != 0) {
         g_FrontendIdleTimer = 0;
     }
-    flags = *flagp;
     idx = g_TitleMenuSelection;
 
     if (flags & 0x1000) {

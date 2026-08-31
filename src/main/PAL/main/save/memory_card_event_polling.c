@@ -32,8 +32,7 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
         result = MC_EVENT_NEW_CARD;
     }
 
-    count = g_McPollTicks;
-    g_McPollTicks = count + 1;
+    count = g_McPollTicks++;
     if (count >= 90) {
         result = MC_EVENT_ERROR;
     }

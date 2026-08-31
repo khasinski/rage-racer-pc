@@ -94,28 +94,7 @@ static uint32_t SmokeHashCarRenderState(const GameCarRuntime *cars,
 }
 
 static uint32_t SmokeHashOneCarRenderState(const GameCarRuntime *car) {
-    const u32 values[] = {
-        (u32)car->x, (u32)car->y, (u32)car->z,
-        (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,
-        (u32)car->steeringAngle, (u32)car->wheelRotation,
-        (u32)car->modelPitch, (u32)car->modelYaw, (u32)car->modelRoll,
-        (u32)car->modelY, (u32)car->bodyRollVelocity,
-        (u32)car->trackProgress, (u32)car->renderDepth,
-        (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex,
-        (u32)car->aiEnabled
-    };
-    uint32_t hash = 2166136261u;
-    size_t valueIndex;
-    for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
-         valueIndex++) {
-        u32 value = values[valueIndex];
-        int byteIndex;
-        for (byteIndex = 0; byteIndex < 4; byteIndex++) {
-            hash ^= (value >> (byteIndex * 8)) & 0xff;
-            hash *= 16777619u;
-        }
-    }
-    return hash;
+    return SmokeHashCarRenderState(car, 1);
 }
 
 static uint32_t SmokeHashPlayerRenderState(const PlayerCarRuntime *car) {

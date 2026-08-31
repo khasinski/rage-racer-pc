@@ -253,8 +253,6 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s16 targetGear;
   s16 targetGearAgain;
   int assistArmed;
-  int steeringNonnegative;
-  int secondNonnegative;
   s16 shiftTimerNext;
   s32 assistEnabled;
   s16 gear;
@@ -573,8 +571,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   pointIndex += 1;
   lateralSum = engineSpeed +
                TrackPoint(pointIndex % g_TrackPointCount)->surfacePitch * lateralOffset;
-  secondNonnegative = lateralSum >= 0;
-  if (!secondNonnegative)
+  if (lateralSum < 0)
   {
     lateralSum += 0x3FF;
   }
@@ -597,8 +594,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   sideForce = (-rsin(slipAngle)) * 0x708;
   g_RoadGrade = slipAngle;
   frontLoadScaled = sideForce / 0xA000;
-  steeringNonnegative = slipAngle >= 0;
-  if (!steeringNonnegative)
+  if (slipAngle < 0)
   {
     steerLoad += frontLoadScaled;
   }
@@ -623,7 +619,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   {
     throttleAccel = (throttleAccel * 4) / 5;
   }
-  shiftTargetSpeed = (roadSpeed = car->speed * 0xA0 / 1168);
+  roadSpeed = car->speed * 0xA0 / 1168;
   dragBase = g_CarSpec->speedDragDivisor * 0x3E8;
   dragTerm = dragBase / ((s16) g_DragScale);
   if (dragTerm <= 0)

@@ -13,26 +13,24 @@
 void LoadUpgradedCarModel(s32 carIndex) {
     u8 *ptr;
     CarModelAsset *asset;
+    s32 targetSlot;
     s32 offset;
     s32 assetId;
-    u32 mode;
 
     if (g_AssetLoadState == 1) {
         offset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant + 1) << 1;
-        mode = g_CarModelSlot;
+        targetSlot = g_CarModelSlot < 1;
         ptr = g_CarModelBuffer;
         assetId = offset + 0xA;
 
-        if (mode == 0) {
-            ptr += 0x20000;
-        }
+        if (g_CarModelSlot == 0) ptr += CAR_MODEL_SLOT_SIZE;
 
         if (LoadAsset(assetId, ptr) != 0) {
             asset = GetCarModelAsset(ptr);
-            SetCarModelSlot(asset, g_CarModelSlot < 1);
-            asset = g_CarModelSlots[g_CarModelSlot < 1];
-            RegisterModelBank(asset->modelData.modelBank, g_CarModelSlot < 1);
-            SetCarImageSlot(asset->imageData.carImage, g_CarModelSlot < 1);
+            SetCarModelSlot(asset, targetSlot);
+            asset = g_CarModelSlots[targetSlot];
+            RegisterModelBank(asset->modelData.modelBank, targetSlot);
+            SetCarImageSlot(asset->imageData.carImage, targetSlot);
 
             if (g_PlayerCarIndex < 10) {
                 ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
@@ -148,40 +146,26 @@ void LoadRoundAssets(void) {
 }
 
 void RelocateCarModel(void) {
-    AssetAddress address;
     u32 *dst;
     u32 *src;
-    u32 count;
+    u32 byteCount;
+    u32 wordCount;
 
-    address.pointer = GetSerializedCarModelAsset(g_CarModelAsset);
-    if (address.offset != 0) {
-        src = address.pointer;
-    } else {
-        src = address.pointer;
-    }
-    count = src[6];
-    address.pointer = g_AssetBase;
-    if (count != 0) {
-        dst = address.pointer;
-    } else {
-        dst = address.pointer;
-    }
-    count = count + 0x28;
-    address.pointer = dst;
-    address.offset = count + address.offset;
-    count >>= 2;
-    g_AssetLoadCursor = address.pointer;
+    src = (u32 *)(void *)GetSerializedCarModelAsset(g_CarModelAsset);
+    dst = (u32 *)(void *)g_AssetBase;
+    byteCount = src[6] + 0x28;
+    wordCount = byteCount >> 2;
+    g_AssetLoadCursor = g_AssetBase + byteCount;
 
-    while (count != 0) {
+    while (wordCount != 0) {
         *dst = *src;
         src++;
-        count--;
+        wordCount--;
         dst++;
     }
 
     SetCarModelSlot(GetCarModelAsset(g_AssetBase), 0);
     SelectCarModelSlot(0);
-    UnrelocateModelBank(GetModelBankHeader(g_AssetBase + 0x28), 0);
     g_CarModelAsset->modelData.pointer = g_AssetBase + 0x28;
     RegisterModelBank(GetModelBankHeader(g_AssetBase + 0x28), 0);
 }

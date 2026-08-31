@@ -72,8 +72,6 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     s32 visible;
     s32 num;
     s32 drawArg;
-    s32 sv;
-    s32 *scr;
 
     state = g_AnimSceneryPos[instance];
 
@@ -150,11 +148,9 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         }
 
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
-        sv = g_AnimSceneryTint;
-        SCRATCH_ENV_MODE4 = sv;
+        SCRATCH_ENV_MODE4 = g_AnimSceneryTint;
         num = g_AnimSceneryVariant + 4;
-        sv = g_CourseModelCount;
-        drawArg = (num < sv) ? num : 1;
+        drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
@@ -162,8 +158,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
         num = g_AnimSceneryFrame + 0x18;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = 0;
+        SCRATCH_ENV_MODE4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x20 + instance * 2, drawArg, state.x, state.y, state.z,
@@ -171,12 +166,9 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         SubmitCourseModel(SCRATCHPAD, drawArg);
 
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
-        sv = g_AnimSceneryTint;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = sv;
+        SCRATCH_ENV_MODE4 = g_AnimSceneryTint;
         num = g_AnimSceneryVariant + 7;
-        sv = g_CourseModelCount;
-        drawArg = (num < sv) ? num : 1;
+        drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
@@ -200,7 +192,6 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     s32 num;
     s32 drawArg;
     s32 sv;
-    s32 *scr;
 
     if (g_GrandPrixMode == 0) {
         return;
@@ -253,8 +244,7 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     if (isReplay != 0) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
         num = g_AnimScenery2Frame + 0xA;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = 0;
+        SCRATCH_ENV_MODE4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
@@ -264,17 +254,13 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
         sv = g_AnimScenery2Tint;
         drawArg = 1;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = sv;
+        SCRATCH_ENV_MODE4 = sv;
         sv = g_CourseModelCount;
-        num = g_AnimScenery2Variant;
-        
-        num = num + 4;
+        num = g_AnimScenery2Variant + 4;
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
         num = g_AnimScenery2Frame + 0x18;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = 0;
+        SCRATCH_ENV_MODE4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
@@ -284,12 +270,9 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
         sv = g_AnimScenery2Tint;
         drawArg = 1;
-        scr = &SCRATCH_ENV_MODE4;
-        *scr = sv;
+        SCRATCH_ENV_MODE4 = sv;
         sv = g_CourseModelCount;
-        num = g_AnimScenery2Variant;
-        
-        num = num + 7;
+        num = g_AnimScenery2Variant + 7;
     }
 
     if (num < sv) {

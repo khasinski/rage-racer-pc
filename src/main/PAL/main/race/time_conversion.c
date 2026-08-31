@@ -1,12 +1,8 @@
 #include "common.h"
 
 s32 FramesToMilliseconds(s32 frames, s32 millis) {
-    s32 seconds;
-    s32 secondsMs;
+    s32 seconds = frames / 25;
 
-    seconds = frames / 25;
-    secondsMs = seconds * 1000;
     frames -= seconds * 25;
-    frames = (frames * 40) + millis;
-    return secondsMs + frames;
+    return seconds * 1000 + frames * 40 + millis;
 }

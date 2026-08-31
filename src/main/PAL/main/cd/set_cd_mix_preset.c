@@ -10,39 +10,30 @@ void SetCdMixPreset(s32 preset) {
 
 
 void BuildCdTrackTable(void) {
-    CdlLOC *toc;
     s32 i;
     CdlLOC *tocDst;
     CdlFILE *file;
     char **fileName;
-    s32 count;
 
-    toc = g_CdTrackLocs;
-    g_CdTocEntryCount = CdGetToc(toc);
+    g_CdTocEntryCount = CdGetToc(g_CdTrackLocs);
     if (g_CdTocEntryCount > 0) {
-        i = 1;
-        toc++;
-        do {
-            CdIntToPos(CdPosToInt_Local(toc) + 0x3C, toc);
-            count = g_CdTocEntryCount;
-            i++;
-        } while ((count >= i) ? (toc++, 1) : (toc++, 0));
+        for (i = 1; i <= g_CdTocEntryCount; i++) {
+            CdlLOC *entry = &g_CdTrackLocs[i];
+
+            CdIntToPos(CdPosToInt_Local(entry) + 0x3C, entry);
+        }
     }
 
-    i = 2;
     file = &g_CdSearchFile;
     tocDst = g_CdBgmTrackLocs;
     fileName = g_CdAudioFileNames;
-    do {
+    for (i = 0; i < 0x10; i++) {
         if (DsSearchFile(file, *fileName) == 0) {
             break;
         }
-        *tocDst = file->pos;
-        tocDst++;
-
-        i++;
+        *tocDst++ = file->pos;
         fileName++;
-    } while (i < 0x12);
+    }
 
     g_CdTocEntryCount = 0x10;
 }

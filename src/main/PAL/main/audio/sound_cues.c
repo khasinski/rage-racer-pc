@@ -148,12 +148,9 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
                 (g_EffectVoices[3].note.value ==
                  g_EffectCueTable[bank].programs[1].note)) {
                 g_EffectVoices[2].state = 2;
-                tblOff = bank * 2;
             } else {
                 g_EffectVoices[2].state = 0;
-                tblOff = bank * 2;
             }
-            tblOff = (tblOff + bank) * 8;
             bankIndex = bank * 3;
             tblOff = bankIndex * 8;
             count = g_EffectCueTable[bank].voiceCount;

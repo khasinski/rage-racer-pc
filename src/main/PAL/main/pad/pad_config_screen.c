@@ -38,8 +38,7 @@ u8 *DrawPadConfigLabels(void *ot, u8 *prim, u8 *labelRow) {
     prim = GameQueueSpriteTrans(
         ot, prim, g_PadLabelSlots[k].vx + 5, g_PadLabelSlots[k].vy + 8, 0x40, 0x10, 0,
         0xBC, 0x7F40);
-    i = 0;
-    do {
+    for (i = 0; i < 5; i++) {
         k = labelRow[i];
         prim = AddTilePrim(
             ot, prim, g_PadLabelSlots[k].vx + 1, g_PadLabelSlots[k].vy + 2, 0x46,
@@ -48,8 +47,7 @@ u8 *DrawPadConfigLabels(void *ot, u8 *prim, u8 *labelRow) {
         prim = AddTilePrim(
             ot, prim, g_PadLabelSlots[k].vx, g_PadLabelSlots[k].vy, 0x48, 0x20,
             0xFF, 0xFF, 0xFF);
-        i++;
-    } while (i < 5);
+    }
     return QueueDrawModePrim(ot, prim, 0x3B);
 }
 
@@ -63,8 +61,7 @@ u8 *DrawPadConfigCallouts(void *ot, u8 *prim, u8 *labelRow, u8 *buttonRow) {
     s32 i;
 
     if (g_ControllerSceneAngleY > -16 && g_ControllerSceneAngleY < 16) {
-        i = 0;
-        do {
+        for (i = 0; i < 5; i++) {
             DVec *lp = &g_PadCalloutLabelPoints[labelRow[i]];
             DVec *bp = &g_PadCalloutButtonPoints[buttonRow[i]];
 
@@ -74,8 +71,7 @@ u8 *DrawPadConfigCallouts(void *ot, u8 *prim, u8 *labelRow, u8 *buttonRow) {
                 ot, prim, lp->vx, bp->vy, bp->vx, bp->vy, 0x20, 0xFF, 0x20);
             prim = GameQueueLine(
                 ot, prim, lp->vx, bp->vy - 1, bp->vx, bp->vy - 1, 0x20, 0xFF, 0x20);
-            i++;
-        } while (i < 5);
+        }
     }
     return prim;
 }

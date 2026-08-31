@@ -439,6 +439,28 @@ static int ModernAssetsFindMaterialPaths(
     return found;
 }
 
+static const char *ModernAssetsFindModMaterialProperties(
+    const RageRenderMeshInstance *instance, uint32_t material,
+    uint8_t variant) {
+    char exactId[160], baseId[160];
+    const char *properties = NULL;
+
+    if (!s_modReady) return NULL;
+    if (AssetMaterialVariantId(
+            exactId, sizeof(exactId), instance->assetKey,
+            instance->assetSet, material, variant)) {
+        properties = ModManifestFindMaterialProperties(&s_modManifest,
+                                                       exactId);
+    }
+    if (properties == NULL &&
+        AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
+                        instance->assetSet, material)) {
+        properties = ModManifestFindMaterialProperties(&s_modManifest,
+                                                       baseId);
+    }
+    return properties;
+}
+
 static int ModernAssetsFindMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition) {
@@ -466,18 +488,8 @@ static int ModernAssetsFindMaterial(
     definition->paintMask.text = paintPath;
     definition->paintMask.length = paintPathLength;
     if (s_modReady) {
-        char exactId[160], baseId[160];
-        const char *properties = NULL;
-        if (AssetMaterialVariantId(
-                exactId, sizeof(exactId), instance->assetKey,
-                instance->assetSet, material, variant))
-            properties = ModManifestFindMaterialProperties(
-                &s_modManifest, exactId);
-        if (properties == NULL && AssetMaterialId(
-                baseId, sizeof(baseId), instance->assetKey,
-                instance->assetSet, material))
-            properties = ModManifestFindMaterialProperties(
-                &s_modManifest, baseId);
+        const char *properties = ModernAssetsFindModMaterialProperties(
+            instance, material, variant);
         if (properties != NULL && !RenderMaterialParseProperties(
                 properties, strlen(properties), definition)) return 0;
     }
@@ -487,19 +499,9 @@ static int ModernAssetsFindMaterial(
 static int ModernAssetsApplyModMaterialProperties(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition) {
-    char exactId[160], baseId[160];
-    const char *properties = NULL;
-    if (!s_modReady) return 1;
-    if (AssetMaterialVariantId(
-            exactId, sizeof(exactId), instance->assetKey,
-            instance->assetSet, material, variant))
-        properties = ModManifestFindMaterialProperties(
-            &s_modManifest, exactId);
-    if (properties == NULL && AssetMaterialId(
-            baseId, sizeof(baseId), instance->assetKey,
-            instance->assetSet, material))
-        properties = ModManifestFindMaterialProperties(
-            &s_modManifest, baseId);
+    const char *properties = ModernAssetsFindModMaterialProperties(
+        instance, material, variant);
+
     return properties == NULL || RenderMaterialParseProperties(
         properties, strlen(properties), definition);
 }

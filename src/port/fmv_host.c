@@ -42,7 +42,6 @@ static unsigned char *s_pixels;
 static int s_width;
 static int s_height;
 static unsigned int s_frame;
-static unsigned int s_sectorSpan;
 static unsigned int s_tickSectors;
 static unsigned long long s_startNs;
 static int s_wallClock;
@@ -285,6 +284,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     RECT clearRect;
     long streamIndex = g_StreamLoc - g_StreamCdEntries;
     unsigned int firstSector;
+    unsigned int sectorSpan;
 
     (void)buffers;
     if (streamIndex < 0 || streamIndex > 10) streamIndex = 0;
@@ -307,9 +307,9 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
     }
     s_width = 320;
     s_height = streamIndex == 10 ? 240 : 192;
-    s_sectorSpan = HostStreamSectorSpan((int)streamIndex);
+    sectorSpan = HostStreamSectorSpan((int)streamIndex);
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
-    if (!HostExtractFmv(firstSector, s_sectorSpan)) {
+    if (!HostExtractFmv(firstSector, sectorSpan)) {
         fprintf(stderr, "rage-port: could not extract FMV %ld from RAGE.STR\n",
                 streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
@@ -336,7 +336,7 @@ void StartFmvPlayback(FmvWorkBuffers *buffers) {
      * interleaved XA stream.  The prologue CD-DA cue ends before playback and
      * must not be mistaken for the opening movie's soundtrack. */
     s_xaTailAllowed = 0;
-    s_xaPlaying = StartXaAudio(firstSector, s_sectorSpan);
+    s_xaPlaying = StartXaAudio(firstSector, sectorSpan);
     if (!HostDecodeFmvFrame() || !HostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;

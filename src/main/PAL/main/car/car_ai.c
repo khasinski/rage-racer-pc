@@ -172,7 +172,6 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     if (value > 0) {
         temp = value * obj->speed;
         temp = temp / -4800;
-        obj->verticalMotionState = 1;
         obj->verticalMotionRate = temp;
     } else {
         result = 2;
@@ -401,4 +400,3 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
         UpdateCarSlideAngle(car, (s16)pitch);
     }
 }
-

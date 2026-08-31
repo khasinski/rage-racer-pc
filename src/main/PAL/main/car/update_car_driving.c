@@ -18,7 +18,6 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
     s32 cosA;
     s32 r;
     s32 coords[3];
-    GameCarSpec *spec1;
     GameCarSpec *spec;
     s32 t;
     s32 idx;
@@ -38,15 +37,14 @@ void UpdateCarDriving(PlayerCarRuntime *car, s32 unused) {
     route->accelPos = sinA * coords[2] / 4096;
     route->brakePos = cosA * coords[2] / 4096;
 
-    spec1 = g_CarSpec;
-    if (spec1->revLimit + 2000 < route->engineRpm && g_RacePhase >= 2) {
+    spec = g_CarSpec;
+    if (spec->revLimit + 2000 < route->engineRpm && g_RacePhase >= 2) {
         SetIndexedEffectVoice(0, 0x1800,
-                      (route->engineRpm - spec1->revLimit) / 100 + 128);
+                      (route->engineRpm - spec->revLimit) / 100 + 128);
     } else {
         SetIndexedEffectVoice(-1, 0, 0);
     }
 
-    spec = g_CarSpec;
     if (spec->redline + 1000 < route->engineRpm) {
         s16 v = g_SteerHoldFrames;
         if (v >= 41 && route->gear == spec->topGear &&

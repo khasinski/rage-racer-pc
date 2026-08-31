@@ -103,12 +103,7 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
             0,
             1,
             0x80);
-        {
-            s32 nx;
-            nx = x + w;
-            
-            x = nx;
-        }
+        x += w;
     }
 
     {
@@ -208,12 +203,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
             0,
             1,
             0x80);
-        {
-            s32 nx;
-            nx = x + w;
-            
-            x = nx;
-        }
+        x += w;
     }
 
     SCRATCH_PRIM_CURSOR_AS(void) =
@@ -237,7 +227,6 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
     s32 newHeight;
     s32 drawV;
     s32 small;
-    s32 nextX;
 
     i = 9;
     if (flags & 8) {
@@ -281,12 +270,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
         while (digits[i] != 0xFF) {
             drawVValue = drawV;
             if (digits[i] == ' ') {
-                nextX = x + width;
-                if (nextX != drawWidth) {
-                    x = nextX;
-                } else {
-                    x = nextX;
-                }
+                x += width;
                 i++;
                 continue;
             }
@@ -309,16 +293,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
             i++;
             digit = width;
             drawn++;
-            /* The identical arms are what keeps nextX alive past the add:
-             * with a plain `x = nextX;` combine folds the pair into
-             * `addu s1,s1,s3` and retail has `addu v0,s1,s3` / `move s1,v0`.
-             * The loop note that used to wrap this bought nothing on top. */
-            nextX = x + digit;
-            if (nextX) {
-                x = nextX;
-            } else {
-                x = nextX;
-            }
+            x += digit;
         }
     }
 

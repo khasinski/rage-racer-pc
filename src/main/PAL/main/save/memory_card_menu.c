@@ -12,27 +12,27 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
     char *text_ptr = text;
     s32 y = 0xD8;
     s32 row_bit = 1;
-    GameSaveHeaderRowAddress row;
-    GameSaveHeaderRowAddress end;
+    s32 rowIndex;
 
-    row.pointer = rows;
-
-    do {
+    for (rowIndex = 0; rowIndex < 3; rowIndex++) {
+        GameSaveHeaderRow *row = &rows[rowIndex];
         if (flags_reg % 2) {
             s32 i;
 
             sprintf(text, g_FmtSaveRow, row_bit);
             DrawLargeText(0x48, y, text, 0x7F, color, color, width, height);
 
-            for (i = 0; i < row.pointer->fields.nameLength; i++) {
-                text_ptr[i] = g_SaveNameCharset[row.pointer->fields.name[i]];
+            for (i = 0; i < row->fields.nameLength; i++) {
+                text_ptr[i] = g_SaveNameCharset[row->fields.name[i]];
             }
             while (i < 7) {
                 text_ptr[i++] = ' ';
             }
             snprintf(text + 6, sizeof(text) - 6, "%s", g_FmtSaveRowTail);
             DrawLargeText(0x68, y, text, 0x7F, color, color, width, height);
-            DrawLargeText(0xB0, y, FormatSaveElapsedTime(text, row.pointer->fields.saveCounter), 0x7F, color, color, width, height);
+            DrawLargeText(0xB0, y,
+                          FormatSaveElapsedTime(text, row->fields.saveCounter),
+                          0x7F, color, color, width, height);
         } else if (flags_reg & 0x10000) {
             sprintf(text, g_FmtSaveRow, row_bit);
             DrawLargeText(0x48, y, text, 0x7F, color, color, width, height);
@@ -66,11 +66,9 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
         }
 
         row_bit++;
-        row.pointer++;
         y += 0x30;
         flags_reg >>= 1;
-        end.pointer = rows + 3;
-    } while (row.value < end.value);
+    }
 }
 
 void AdjustMenuSelectionHorizontal(s32 *value, s32 min, s32 max) {
@@ -117,27 +115,23 @@ void SetMenuBinaryChoiceVertical(s32 *value) {
 }
 
 u16 PollMenuConfirmInput(void) {
-    u16 *state = &g_PadPressed;
-    u16 value;
+    u16 value = g_PadPressed & 0x860;
 
-    value = *state & 0x860;
     if (value != 0) {
         PlaySoundCue(2);
     }
 
-    return *state & 0x860;
+    return value;
 }
 
 u16 PollMenuBackInput(void) {
-    u16 *state = &g_PadPressed;
-    u16 value;
+    u16 value = g_PadPressed & 0x90;
 
-    value = *state & 0x90;
     if (value != 0) {
         PlaySoundCue(3);
     }
 
-    return *state & 0x90;
+    return value;
 }
 
 

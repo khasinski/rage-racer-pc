@@ -190,7 +190,6 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
 }
 
 void ForceSoundSlotVoicePlayback(s32 enabled) {
-    s32 saved = enabled;
     s32 i;
     s32 *base;
     s32 *active;
@@ -206,16 +205,14 @@ void ForceSoundSlotVoicePlayback(s32 enabled) {
     SetSoundSlotVoicesEnabled(enabled);
 
     i = 0;
-    if (saved != 0) {
+    if (enabled != 0) {
         base = g_EngineSoundState.slotActive;
         active = base;
-        saved = 0;
         do {
             if (*base++ != 0 && g_SoundSlotTone[i][0] != g_SoundSlotTone[i][1]) {
                 PlaySoundSlotVoice(i, active[-3], 3);
             }
             i++;
-            saved += 4;
         } while (i < 6);
 
         i = 0;

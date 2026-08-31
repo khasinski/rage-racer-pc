@@ -5,18 +5,14 @@
 #include "psyq/snd.h"
 
 void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
-    s32 *entry;
+    s32 *entry = &g_EngineSoundState.slotActive[slot];
 
     if (enabled != 0) {
-        s32 *base = g_EngineSoundState.slotActive;
-        entry = base + slot;
         if (*entry == 0) {
             PlaySoundSlotVoice(slot, 0, 3);
             *entry = 1;
         }
     } else {
-        s32 *base = g_EngineSoundState.slotActive;
-        entry = base + slot;
         if (*entry != 0) {
             StopSoundSlotVoice(slot);
             *entry = 0;
@@ -27,10 +23,8 @@ void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
 void SetSoundSlotVoicesEnabled(s32 enabled) {
     s32 i;
 
-    for (i = 0; i < 6; i++) {
-        if (i != 5) {
-            SetSoundSlotVoiceEnabled(i, enabled);
-        }
+    for (i = 0; i < 5; i++) {
+        SetSoundSlotVoiceEnabled(i, enabled);
     }
 }
 
@@ -41,14 +35,8 @@ void SetEffectVoicesEnabled(s32 enabled) {
 void ResetSoundState(void) {
     s32 i;
 
-    {
-        s32 *ptr;
-
-        i = 5;
-        ptr = &g_EngineSoundState.slotActive[5];
-        for (; i >= 0; i--) {
-            *ptr-- = 0;
-        }
+    for (i = 0; i < 6; i++) {
+        g_EngineSoundState.slotActive[i] = 0;
     }
 
     {

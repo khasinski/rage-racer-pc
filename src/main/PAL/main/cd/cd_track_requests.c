@@ -112,7 +112,7 @@ void StepCdPlayRequest(void) {
         break;
     case 2:
         status = CdSync(1, 0);
-        if (status == state) {
+        if (status == 2) {
             g_CdCommandStep = 3;
             break;
         }

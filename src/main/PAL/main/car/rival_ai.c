@@ -24,14 +24,13 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 lateralMax;
     s32 trackMinus;
     s32 total;
-    s32 sums[4];
+    s32 sums[3];
 
     carProgress = car->trackProgress;
     carLateralOffset = car->trackLateralOffset;
     carA4low = (u16)car->speed;
     car->avoidanceStep = 0;
     car->nearbyCarCount = 0;
-    sums[3] = 0;
     sums[2] = 0;
     sums[1] = 0;
     sums[0] = 0;
@@ -129,7 +128,6 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     }
 
     total = sums[0] + sums[1] + sums[2];
-    sums[3] = total;
     if (total > 0) {
         if (acc8 == 0 && carLateralOffset >= 0x51) {
             s32 avoidanceStrength = state->avoidanceActive;
@@ -148,7 +146,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             state->avoidanceTargetOffset = 0x50;
             state->avoidanceStep = (avoidanceStrength * 2) + 6;
         }
-        if (sums[3] >= 0x3E9) {
+        if (total >= 0x3E9) {
             s32 fv = state->accelerationLimit;
             s32 d = (fv * 15) << 1;
             state->accelerationLimit = d / 100;

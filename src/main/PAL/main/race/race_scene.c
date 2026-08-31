@@ -47,24 +47,15 @@ static void UpdateFinishFollowupCue(void) {
 
 int RetireCameraActive(void) { return s_RetireCameraActive; }
 
-/* The first union field and the two trailing split symbols keep separate
- * %hi/%lo accesses. Indexing the union here makes GCC 2.6.3 CSE its base and
- * shifts the allocation of the surrounding block. */
-
-
 void EnterRaceScene(void) {
-    s32 pad[2];
     PlayerCarRuntime *player;
     s32 mode;
     s32 scene;
-    s32 tableOffset;
     s32 trackLength;
     s32 count;
     s32 i;
     s32 *first;
     s32 *second;
-    SectorTimeTableAddress sectorAddress;
-    SectorTimeTableAddress lastSectorAddress;
 
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
@@ -91,17 +82,10 @@ void EnterRaceScene(void) {
     g_SectorEndDistance[2] = trackLength;
     g_SectorEndDistance[0] = trackLength / 3;
     g_SectorEndDistance[1] = g_SectorEndDistance[0] * 2;
-    tableOffset = (mode * 12) + (scene * 48);
-    sectorAddress.table = g_BestSectorTimes;
-    sectorAddress.bytes += tableOffset;
-    g_RefSectorTimes.fields.first = sectorAddress.pointer[0];
-    sectorAddress.table = g_BestSectorTimes;
-    sectorAddress.bytes += tableOffset;
-    g_RefSectorTime1 = sectorAddress.pointer[1];
+    g_RefSectorTimes.fields.first = g_BestSectorTimes[scene][mode][0];
+    g_RefSectorTime1 = g_BestSectorTimes[scene][mode][1];
     g_SectorIndex = -2;
-    lastSectorAddress.table = g_BestSectorTimes;
-    lastSectorAddress.bytes += tableOffset;
-    g_RefSectorTime2 = lastSectorAddress.pointer[2];
+    g_RefSectorTime2 = g_BestSectorTimes[scene][mode][2];
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
@@ -149,14 +133,10 @@ void EnterRaceScene(void) {
     InitEffectVoiceRuntime();
     g_RivalCueEnabled = 1;
     D_801E4CF8 = (g_PlayerAutoSteer = (g_RaceCueDelay = 0));
-    do {
-    } while (0);
     g_SceneId = 12;
     g_FrameSyncThreshold = 0x180;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
-
-    (void)pad;
 }
 
 void UpdateRaceScene(void) {
@@ -477,11 +457,8 @@ void UpdateRaceScene(void) {
         }
 
         if (g_RacePhase < 4) {
-            s32 *valuePtr;
-
-            valuePtr = &g_PlayerCar.trackProgress;
-            UpdateZoneAmbience(*valuePtr);
-            UpdatePointAmbience(*valuePtr);
+            UpdateZoneAmbience(g_PlayerCar.trackProgress);
+            UpdatePointAmbience(g_PlayerCar.trackProgress);
             UpdateTrackEventSound(g_PlayerCar.trackSection);
             TriggerRaceCues();
         } else {

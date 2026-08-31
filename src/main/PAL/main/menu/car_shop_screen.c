@@ -40,7 +40,8 @@ static void *CarShopBuyPrompt(s32 car) {
 
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawCarShopChrome(s32 price, s32 chromeStep) {
-    DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+                     g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(1, g_PlayerMoney, price);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, g_CarShopOption);
     RunTimedDrawScript(&g_CarShopScreenScript, &g_UiScriptProgress, 0);
@@ -210,7 +211,8 @@ static void UpdateCarShopModal(void *ot, s32 price) {
 static void UpdateCarShopOutgoing(s32 price) {
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 0xB;
-    DrawBrowseArrows(-1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
+                     g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price);
     RunTimedDrawScript(&g_CarShopScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);

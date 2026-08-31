@@ -5,26 +5,18 @@
 /* The 0x140x0x1E0 twin of DrawFullscreenFadeTile, for the 480-line setup scene. */
 
 void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
-    u8 *base;
-    u8 **scratch;
+    u8 *base = (u8 *)GamePrimaryOrderingTable(0);
     u8 *next;
-    s32 width;
-    s32 height;
-    u8 *scratchValue;
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
     if (color < 0) {
         color = 0;
     } else if (color >= 0x100) {
         color = 0xFF;
     }
 
-    width = 0x140;
-    height = 0x1E0;
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
-    scratchValue = *scratch;
-    next = GameQueueTileTrans(base, scratchValue, 0, 0, width, height, color, color, color);
-    *scratch = QueueDrawModePrim(base, next, tpage);
+    next = GameQueueTileTrans(base, SCRATCH_PRIM_CURSOR_AS(u8), 0, 0,
+                              0x140, 0x1E0, color, color, color);
+    SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, tpage);
 }
 
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */

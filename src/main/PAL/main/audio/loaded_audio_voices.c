@@ -158,8 +158,6 @@ void InitEffectVoiceRuntime(void) {
 
 void ForcePanVoiceEnabled(s32 enabled) {
     s32 values[2];
-    s32 i;
-    s32 *dst;
     s32 scale;
     s32 raw;
     s32 voice;
@@ -167,18 +165,8 @@ void ForcePanVoiceEnabled(s32 enabled) {
     s32 right;
     s32 zeroArg;
 
-    i = 0;
-    dst = values;
-    do {
-        s32 volume = i == 0 ? g_PanVoiceVolumeL : g_PanVoiceVolumeR;
-        if (volume < 2) {
-            *dst = 0;
-        } else {
-            *dst = volume;
-        }
-        dst++;
-        i++;
-    } while (i < 2);
+    values[0] = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
+    values[1] = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
 
     if (enabled != 0) {
         raw = values[0];

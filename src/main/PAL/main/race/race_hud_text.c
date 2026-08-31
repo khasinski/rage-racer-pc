@@ -10,15 +10,7 @@ typedef union CountdownPhase {
     u32 unsignedValue;
 } CountdownPhase;
 
-static TILE *GetTileAtByteOffset(u8 *base, s32 byteOffset) {
-    return (TILE *)(base + (byteOffset / 0x10) * sizeof(TILE));
-}
-
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
-    s32 savedX;
-    s32 savedY;
-    s32 savedColor;
-    s32 localDivisor;
     s32 whole;
     s32 fraction;
     s32 minutes;
@@ -28,16 +20,12 @@ void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     s32 fractionTens;
     s32 remainder;
 
-    savedX = x;
-    savedY = y;
-    localDivisor = divisor;
-    savedColor = color;
     if (value >= 0) {
-        whole = value / localDivisor;
-        remainder = value % localDivisor;
+        whole = value / divisor;
+        remainder = value % divisor;
 
         minutes = whole / 60;
-        fraction = (remainder * 1000) / localDivisor;
+        fraction = (remainder * 1000) / divisor;
         seconds = whole % 60;
         g_TimeTextBuffer[0] = minutes + '0';
 
@@ -60,11 +48,10 @@ void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
         g_TimeTextBuffer[7] = '-';
     }
 
-    DrawText8x8(savedX, savedY, g_TimeTextBuffer, savedColor);
+    DrawText8x8(x, y, g_TimeTextBuffer, color);
 }
 
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
-    s32 savedY;
     s32 sec;
     s32 tmp;
     s32 min;
@@ -72,7 +59,6 @@ void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
     s32 tens;
     s32 tens2;
 
-    savedY = y;
     sec = ticks / 25;
     tmp = sec / 60;
     min = tmp;
@@ -88,7 +74,7 @@ void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
     *p = min - tens * 10 + '0';
     g_ClockTextSecTens = tens2 + '0';
     g_ClockTextSecUnits = tmp - tens2 * 10 + '0';
-    DrawText8x8(x, savedY, p - 1, color);
+    DrawText8x8(x, y, p - 1, color);
 }
 
 /* Which of the two frame buffers is being drawn, 0 or 1; the main loop sets
@@ -115,32 +101,22 @@ u8 *QueueDrawAreaPrim(void *ot, DrawPacket *packet, s16 x, s16 y, s32 w, s32 h) 
 }
 
 void BuildTileStrips(void) {
-    RenderBufferAddress *initBuffers;
     RenderBufferAddress *buffers;
     s32 row;
     s32 col;
-    s32 linear;
-    s32 offset;
     s32 y;
     s32 color;
     s32 xStep;
     s32 yStart;
     s32 bufferIndex;
-    u8 *buffer;
-    u8 *firstBuffer;
-    u8 *addPrimBase;
-    s32 prevOffset;
-    u8 *storeBaseV1;
-    u8 *storeBaseV0;
 
-    initBuffers = g_TileStripBuffers;
-    firstBuffer = g_TileStripStorage;
-    initBuffers[0].bytes = firstBuffer;
-    g_TileStripBuffers[1].bytes = firstBuffer + 512 * sizeof(TILE);
+    g_TileStripBuffers[0].bytes = g_TileStripStorage;
+    g_TileStripBuffers[1].bytes =
+        g_TileStripStorage + 512 * sizeof(TILE);
     DrawSync(0);
 
     color = 0x20;
-    buffers = initBuffers;
+    buffers = g_TileStripBuffers;
     bufferIndex = 0;
     do {
         row = 0;
@@ -150,27 +126,20 @@ void BuildTileStrips(void) {
             yStart = y;
             xStep = 0;
             do {
-                linear = (row * 32) + col;
-                buffer = buffers[0].bytes;
-                offset = linear * 16;
-                SetTile(GetTileAtByteOffset(buffer, offset));
-                storeBaseV1 = buffers[0].bytes;
-                GetTileAtByteOffset(storeBaseV1, offset)->w = 2;
-                storeBaseV1 = buffers[0].bytes;
-                GetTileAtByteOffset(storeBaseV1, offset)->h = 1;
-                storeBaseV1 = buffers[0].bytes;
-                GetTileAtByteOffset(storeBaseV1, offset)->x0 = 0xCD - xStep;
-                storeBaseV0 = buffers[0].bytes;
-                GetTileAtByteOffset(storeBaseV0, offset)->y0 = yStart;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->r0 = color;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->g0 = color;
-                GetTileAtByteOffset(buffers[0].bytes, offset)->b0 = color;
+                s32 linear = row * 32 + col;
+                TILE *tile = &buffers[0].tile[linear];
+
+                SetTile(tile);
+                tile->w = 2;
+                tile->h = 1;
+                tile->x0 = 0xCD - xStep;
+                tile->y0 = yStart;
+                tile->r0 = color;
+                tile->g0 = color;
+                tile->b0 = color;
 
                 if (linear > 0) {
-                    addPrimBase = buffers[0].bytes;
-                    prevOffset = offset - 0x10;
-                    AddPrim(GetTileAtByteOffset(addPrimBase, prevOffset),
-                            GetTileAtByteOffset(addPrimBase, offset));
+                    AddPrim(tile - 1, tile);
                 }
 
                 col++;

@@ -35,61 +35,28 @@ void BuildStartingGrid(void) {
     s16 *flagPtr;
     s32 one;
     RaceGridSlot *cursor;
-    s32 state;
     u16 track;
 
     entryBase = g_Cars;
-    state = g_SceneId;
     g_ClosestRivalRank = 3;
-
-    if (state == 0xB) {
-        table = g_RaceGridSlots;
-        i = 0;
-        one = 1;
-        flagPtr = &entryBase->activeFlag;
-        g_RaceSeries = g_GrandPrixSeries;
-        cursor = table;
-        do {
-            track = ReadRaceTrackDirection();
-            *flagPtr = 0;
-            flagPtr[6] = track;
-            if (cursor->value >= 0) {
-                ClearCarMotionState(entryBase);
-                *flagPtr = one;
-                InitRivalCar(entryBase, i, table);
-                InitRivalCarAi(entryBase, i, table);
-            } else {
-                *flagPtr = 0;
-            }
-            cursor++;
-            i++;
-            flagPtr += sizeof(GameCarRuntime) / sizeof(*flagPtr);
-            entryBase++;
-        } while (i < 0xB);
-    } else {
-        table = g_AttractGridSlots;
-        i = 0;
-        one = 1;
-        flagPtr = &entryBase->activeFlag;
-        g_RaceSeries = g_GrandPrixSeries;
-        cursor = table;
-        do {
-            track = ReadRaceTrackDirection();
-            *flagPtr = 0;
-            flagPtr[6] = track;
-            if (cursor->value >= 0) {
-                ClearCarMotionState(entryBase);
-                *flagPtr = one;
-                InitRivalCar(entryBase, i, table);
-                InitRivalCarAi(entryBase, i, table);
-            } else {
-                *flagPtr = 0;
-            }
-            cursor++;
-            i++;
-            flagPtr += sizeof(GameCarRuntime) / sizeof(*flagPtr);
-            entryBase++;
-        } while (i < 0xB);
+    table = g_SceneId == 0xB ? g_RaceGridSlots : g_AttractGridSlots;
+    one = 1;
+    flagPtr = &entryBase->activeFlag;
+    g_RaceSeries = g_GrandPrixSeries;
+    cursor = table;
+    for (i = 0; i < 0xB; i++) {
+        track = ReadRaceTrackDirection();
+        *flagPtr = 0;
+        flagPtr[6] = track;
+        if (cursor->value >= 0) {
+            ClearCarMotionState(entryBase);
+            *flagPtr = one;
+            InitRivalCar(entryBase, i, table);
+            InitRivalCarAi(entryBase, i, table);
+        }
+        cursor++;
+        flagPtr += sizeof(GameCarRuntime) / sizeof(*flagPtr);
+        entryBase++;
     }
 
     SeedCarRouteMarkers();
@@ -98,21 +65,18 @@ void BuildStartingGrid(void) {
 void DrawCars(void) {
     GameCarRuntime *base;
     s32 i;
-    s32 minus_one;
 
     base = g_Cars;
     SelectModelBank(1);
 
-    i = 0;
-    minus_one = -1;
-    do {
-        if (base->activeFlag != (i++, minus_one)) {
+    for (i = 0; i < 11; i++) {
+        if (base->activeFlag != -1) {
             if (base->aiEnabled == 1) {
                 DrawCar(GetCarRenderObject(base));
             }
         }
         base++;
-    } while (i < 11);
+    }
 }
 
 void DrawPlayerCarOnly(void) {

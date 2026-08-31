@@ -380,7 +380,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     segLenD = (s16)spad->segmentLength;
     surfaceHeight =
         (nextPoint->y * alongSegment + point->y * (segLenD - alongSegment)) / segLenD;
-    obj->y = surfaceHeight;
     obj->y = ((spad->crossSlope * lateralOffset) >> 7) + surfaceHeight;
     {
         s16 angle;

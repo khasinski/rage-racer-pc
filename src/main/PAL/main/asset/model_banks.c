@@ -55,12 +55,6 @@ void RegisterModelBank(ModelBankHeader *base, s32 index) {
     }
 }
 
-void UnrelocateModelBank(ModelBankHeader *base, s32 offset) {
-    /* Serialized model banks now remain offset-based at all times. */
-    (void)base;
-    (void)offset;
-}
-
 /*
  * Point the scratchpad model-bank cursor at one registered bank. The bank
  * pointer is re-read from the table before each store because the stores go
@@ -83,14 +77,7 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
     s32 count;
     s32 i;
     s32 limit;
-    /* The 8-byte frame retail has. Its three sibling loops here get it from
-     * being pre-test loops (gcc 2.6.3 spills a dead ST_REGS pseudo after
-     * duplicate_loop_exit_test); this one cannot, because every pre-test
-     * spelling of a two-pointer loop costs 29 instructions of induction
-     * variables. So the frame is asked for directly. */
-    s32 pad[2];
 
-    (void)&pad;
     entry = base->models;
     count = base->modelCount;
     SCRATCH_COURSE_BANK = g_NativeCourseModels;

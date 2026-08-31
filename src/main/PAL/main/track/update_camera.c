@@ -36,6 +36,14 @@ static void SettleChaseYaw(s32 limit, s32 accel, s32 factor, int negative) {
     }
 }
 
+static s32 ShortestAngleDelta(s32 delta) {
+    if (delta >= 0x800)
+        return delta - 0x1000;
+    if (delta < -0x7FF)
+        return delta + 0x1000;
+    return delta;
+}
+
 /*
  * Point the camera at a place in the world: pitch and yaw from the camera to
  * the target, in the game's 0x1000-per-turn angle units, with no roll.
@@ -44,8 +52,8 @@ static void AimCameraAt(s32 *scratch, s32 targetX, s32 targetY, s32 targetZ) {
     s32 dx = scratch[2] - targetX;
     s32 dy = scratch[3] - targetY;
     s32 dz = scratch[4] - targetZ;
-    scratch[6] = 0x400 - (Atan2(0 - dy, SquareRoot0(dx * dx + dz * dz)) & 0xFFF);
-    scratch[7] = 0x400 - (Atan2(0 - dx, 0 - dz) & 0xFFF);
+    scratch[6] = 0x400 - (Atan2(-dy, SquareRoot0(dx * dx + dz * dz)) & 0xFFF);
+    scratch[7] = 0x400 - (Atan2(-dx, -dz) & 0xFFF);
     scratch[8] = 0;
 }
 
@@ -112,7 +120,6 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
     s32 focusWorld[3];
     Matrix inverseObjectRotation;
     Matrix matrixWork;
-    s32 *modeAngle;
     s32 negatedAccel;
     Matrix objectRotation;
     CameraCarAddress playerAddress;
@@ -138,8 +145,7 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
         previousMode = g_CameraModePrev;
         g_ChaseTargetYaw = chaseTargetYaw;
         if (previousMode == 1) {
-            modeAngle = &g_ChaseYawPrev;
-            *modeAngle &= 0xFFF;
+            g_ChaseYawPrev &= 0xFFF;
             g_ChaseYawRampNeg &= 0xFFF;
             g_ChaseYawRampPos &= 0xFFF;
         } else {
@@ -358,7 +364,6 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
     s32 camPathAngle;
     s32 camPathOffset;
     Matrix cameraRotation;
-    s32 *case3Angle;
     s32 distProduct;
     s32 eyeOffset[3];
     s32 eyeWorld[3];
@@ -382,7 +387,6 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
     s32 pathYaw;
     s32 pathYawRelative;
     s32 pitchDelta;
-    s32 *pitchDeltaPtr;
     s32 pitchProduct;
     CameraCarAddress playerAddress;
     GameTrackCameraNode *prevNode;
@@ -421,34 +425,15 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
             g_CamPathOffsetDelta[1] = pathNode->offset[1] - g_CamPathOffsetStart[1];
             g_CamPathOffsetDelta[2] = pathNode->offset[2] - g_CamPathOffsetStart[2];
             pitchDelta = pathNode->data.orientation.pitch - g_CamPathAngleStart[CAMPATH_PITCH];
-            pitchDeltaPtr = &g_CamPathAngleDelta[CAMPATH_PITCH];
-            *pitchDeltaPtr = pitchDelta;
+            g_CamPathAngleDelta[CAMPATH_PITCH] =
+                ShortestAngleDelta(pitchDelta);
             g_CamPathAngleDelta[CAMPATH_YAW] = pathNode->data.orientation.yaw - g_CamPathAngleStart[CAMPATH_YAW];
             g_CamPathAngleDelta[CAMPATH_ROLL] = pathNode->data.orientation.roll - g_CamPathAngleStart[CAMPATH_ROLL];
             g_CamPathAngleDelta[CAMPATH_DIST] = pathNode->data.orientation.distance - g_CamPathAngleStart[CAMPATH_DIST];
-            if (pitchDelta > 0) {
-                if (pitchDelta >= 0x800) {
-                    *pitchDeltaPtr = pitchDelta - 0x1000;
-                }
-            } else if (pitchDelta < -0x7FF) {
-                *pitchDeltaPtr = pitchDelta + 0x1000;
-            }
-            case3Angle = &g_CamPathAngleDelta[CAMPATH_YAW];
-            if (*case3Angle > 0) {
-                if (*case3Angle >= 0x800) {
-                    *case3Angle -= 0x1000;
-                }
-            } else if (*case3Angle < -0x7FF) {
-                *case3Angle += 0x1000;
-            }
-            case3Angle = &g_CamPathAngleDelta[CAMPATH_ROLL];
-            if (*case3Angle > 0) {
-                if (*case3Angle >= 0x800) {
-                    *case3Angle -= 0x1000;
-                }
-            } else if (*case3Angle < -0x7FF) {
-                *case3Angle += 0x1000;
-            }
+            g_CamPathAngleDelta[CAMPATH_YAW] = ShortestAngleDelta(
+                g_CamPathAngleDelta[CAMPATH_YAW]);
+            g_CamPathAngleDelta[CAMPATH_ROLL] = ShortestAngleDelta(
+                g_CamPathAngleDelta[CAMPATH_ROLL]);
         } else if (g_CamPathFrame < g_TrackCameras[g_CamPathNode].duration) {
             g_CamPathFrame += 1;
         }
@@ -557,7 +542,7 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
 
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
-        if (((u8)nodeChanged) || (g_CameraModePrev != 4)) {
+        if (nodeChanged || g_CameraModePrev != 4) {
             g_CamPathFrame = 0;
         } else if (g_CamPathFrame < g_TrackCameras[cameraNodeIndex].duration) {
             g_CamPathFrame += 1;
@@ -705,15 +690,9 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
 
 void SetEnvironmentScript(u32 *script) {
     GameEnvironmentScriptAddress address;
-    u32 value0;
-    u32 value1;
 
-    value0 = *script;
-    script++;
-    g_SkyRowBase = value0;
-    value1 = *script;
-    script++;
+    g_SkyRowBase = *script++;
+    g_EnvScriptLength = *script++;
     address.words = script;
     g_EnvScriptCues = address.cues;
-    g_EnvScriptLength = value1;
 }

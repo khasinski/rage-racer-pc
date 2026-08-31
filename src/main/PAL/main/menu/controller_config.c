@@ -26,12 +26,9 @@ void DrawControllerConfigScreen(void) {
     } else {
         selection = g_PadMappingIndex;
     }
-    /* The arrows light while the selection can still move that way; the xor
-     * is folded into `selection` because retail lets it clobber the loaded
-     * value rather than allocating a second register. */
+    /* The arrows light while the selection can still move that way. */
     leftLit = selection != 0;
-    selection ^= 7;
-    rightLit = selection != 0;
+    rightLit = selection != 7;
     if (g_PadErrorState != PAD_ERROR_STATE_NONE) {
         if (g_PadErrorState == PAD_ERROR_STATE_DISCONNECTED) {
             DrawProportionalText(0x3A, 0xEA, g_MsgInsertController, 0x7812);
@@ -165,7 +162,7 @@ void BeginNegconCalibration(void) {
     u16 neutral2 = g_NegconNeutralL;
 
     twist = g_NegconSteerPlay;
-    mode = g_NegconMaxTwist;;
+    mode = g_NegconMaxTwist;
 
     *neutral = 0;
     g_ControllerSceneAngleY = 0;

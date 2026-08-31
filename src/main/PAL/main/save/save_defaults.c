@@ -4,18 +4,11 @@
 #include "game/save_internal.h"
 
 void ResetProgressSlot(CarEntry *slot, GameRaceProgress *progress) {
-    CarEntry *dst;
-    CarEntry *src;
     s32 i;
 
-    i = 0;
-    dst = slot;
-    src = g_SaveDefaults;
-    do {
-        *dst = *src;
-        dst++;
-        i++;
-    } while (src++, i < 13);
+    for (i = 0; i < 13; i++) {
+        slot[i] = g_SaveDefaults[i];
+    }
 
     progress->carIndex = 3;
     progress->course = 0;
@@ -41,20 +34,12 @@ void ResetCourseProgress(s32 mode) {
 }
 
 void InitSaveDefaults(void) {
-    CarEntry *src;
-    CarEntry *dst;
     s32 i;
     s32 emptySlot;
 
-    i = 0;
-    dst = g_TimeAttackCars;
-    src = g_SaveDefaults;
-    do {
-        __builtin_memcpy(dst, src, sizeof(*dst));
-        dst++;
-        i++;
-        src++;
-    } while (i < 13);
+    for (i = 0; i < 13; i++) {
+        g_TimeAttackCars[i] = g_SaveDefaults[i];
+    }
 
     g_ClassRecords[0].place = 0;
     g_ClassRecords[0].clears = 0;

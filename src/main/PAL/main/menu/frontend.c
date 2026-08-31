@@ -180,15 +180,6 @@ void UpdateFrontend(void) {
     UpdateTitleAttract();
 }
 
-/*
- * Empty stub; SetupDisplay240 and SetupDisplay480 both call it with one argument,
- * so the parameter is declared and ignored.
- */
-void ResetFrameContext(int buffer) {
-    (void)buffer;
-}
-
-
 void SetupDisplay240(s32 r, s32 g, s32 b) {
     GameFrameContext *context;
     s32 height;
@@ -247,9 +238,6 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
         i++;
     } while (i < 2);
 
-    ResetFrameContext(0);
-    ResetFrameContext(1);
-
 }
 
 void SetupDisplay480(s32 mode, s32 x, s32 y) {
@@ -291,9 +279,6 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
         g_FrameContexts[i].environment.display.screen.y = value2 + 0x1D;
         i++;
     } while (i < 2);
-
-    ResetFrameContext(0);
-    ResetFrameContext(1);
 
     SCRATCH_CLIP_Y1 = 0x1E0;
 }

@@ -22,9 +22,7 @@ void DrawRaceHudLabels(s32 mode) {
     descs = mode != 0 ? g_RaceHudSpriteDescsGp
                       : g_RaceHudSpriteDescsTimeTrial;
 
-    i = 6;
-    if (i < count) {
-        do {
+    for (i = 6; i < count; i++) {
             SPRT *prim = &frame->layout.raceHud.labels[i - 6];
             int label = i - 6;
             int visible = 1;
@@ -36,10 +34,8 @@ void DrawRaceHudLabels(s32 mode) {
             } else if (!HudShowLapTimes()) {
                 visible = 0;
             }
-            i++;
             if (!visible) continue;
             AddPrim(ot, prim);
-        } while (i < count);
     }
 
     scratch = &SCRATCH_PRIM_CURSOR_AS(void);
@@ -115,7 +111,7 @@ void DrawLapTimes(void) {
         y = 0x2E;
         valuePtr = g_PlayerCar.lapTimes.table.milliseconds;
 
-        do {
+        for (i = 0; i < g_LapCount; i++) {
             if (i == activeIndex) {
                 tile = 0x780F;
             } else if (valuePtr[0] > 0x927BE) {
@@ -139,8 +135,7 @@ void DrawLapTimes(void) {
             valuePtr++;
             frame->layout.raceHud.lapTimes[i].clut = tile;
             AddPrim(ot, &frame->layout.raceHud.lapTimes[i]);
-            i++;
-        } while (i < g_LapCount);
+        }
     }
 
     DrawTimeValue(HudRightX(0xFA), 0x20, g_BestLapThisRace,

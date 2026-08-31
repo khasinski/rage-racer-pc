@@ -65,23 +65,24 @@ void LoadBootAssets(void) {
     }
 }
 
-s32 RequestSaveScreenAssets(void) {
-    s32 state;
-
+static s32 RequestAsset(AssetRequestType request, s32 firstLoadState) {
     if (g_AssetLoadState != 0) {
         return 1;
     }
 
-    state = ASSET_REQUEST_SAVE_SCREEN;
-    if (g_AssetRequestType == state) {
+    if (g_AssetRequestType == request) {
         g_AssetRequestType = ASSET_REQUEST_IDLE;
         return 0;
     }
 
     ResetCdAudioState();
-    g_AssetRequestType = state;
-    g_AssetLoadState = 1;
+    g_AssetRequestType = request;
+    g_AssetLoadState = firstLoadState;
     return 1;
+}
+
+s32 RequestSaveScreenAssets(void) {
+    return RequestAsset(ASSET_REQUEST_SAVE_SCREEN, 1);
 }
 
 void LoadSaveScreenAssets(void) {
@@ -94,41 +95,11 @@ void LoadSaveScreenAssets(void) {
 }
 
 s32 RequestSelectBgmAssetsNoReset(void) {
-    s32 loadType;
-
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    loadType = ASSET_REQUEST_SELECT_BGM;
-    if (g_AssetRequestType == loadType) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    ResetCdAudioState();
-    g_AssetRequestType = loadType;
-    g_AssetLoadState = 2;
-    return 1;
+    return RequestAsset(ASSET_REQUEST_SELECT_BGM, 2);
 }
 
 s32 RequestSelectBgmAssets(void) {
-    s32 loadType;
-
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    loadType = ASSET_REQUEST_SELECT_BGM;
-    if (g_AssetRequestType == loadType) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    ResetCdAudioState();
-    g_AssetRequestType = loadType;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestAsset(ASSET_REQUEST_SELECT_BGM, 1);
 }
 
 void LoadSelectBgmAssets(void) {

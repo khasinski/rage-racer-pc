@@ -5,6 +5,11 @@
 #include "game/input_internal.h"
 #include "game/save_internal.h"
 
+static s32 ClampVolumeSetting(s32 value) {
+    if (value < 0) return 0;
+    return value < 0x10 ? value : 0xF;
+}
+
 s32 LoadSaveStateBlock(GameSaveBlock *block) {
     GameSaveBlock *base = block;
     s32 i;
@@ -159,37 +164,9 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
            sizeof(g_BestSectorTimes));
     RepairRecordTimes();
 
-    /* g_BgmVolumeSetting / g_SfxVolumeSetting / g_MonoOutput clamps */
-    {
-        s32 v = base->bgmVolume;
-        s32 c;
-        g_BgmVolumeSetting = v;
-        if (v >= 0) {
-            c = v;
-            if (c >= 0x10) {
-                c = 0xF;
-            }
-        } else {
-            c = 0;
-        }
-        v = base->sfxVolume;
-        g_BgmVolumeSetting = c;
-        g_SfxVolumeSetting = v;
-        if (v >= 0) {
-            c = v;
-            if (c >= 0x10) {
-                c = 0xF;
-            }
-        } else {
-            c = 0;
-        }
-        v = base->monoOutput;
-        g_SfxVolumeSetting = c;
-        g_MonoOutput = v;
-        if (v != 0) {
-            g_MonoOutput = 1;
-        }
-    }
+    g_BgmVolumeSetting = ClampVolumeSetting(base->bgmVolume);
+    g_SfxVolumeSetting = ClampVolumeSetting(base->sfxVolume);
+    g_MonoOutput = base->monoOutput != 0;
 
     /* g_GrandPrixCourseProgress / g_ExtraGrandPrixCourseProgress unaligned copies */
     memcpy(&g_GrandPrixCourseProgress, base->grandPrixCourseProgress, 8);

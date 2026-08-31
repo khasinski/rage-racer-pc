@@ -23,8 +23,7 @@ s32 DrawClassChangeCurtain(s32 step) {
         return g_ClassChangeCurtainSlide;
     } else {
         if (delta < 0) {
-            temp = g_ClassChangeCurtainSlide;
-            { s32 rel = temp; temp = delta + rel; }
+            temp = g_ClassChangeCurtainSlide + delta;
             g_ClassChangeCurtainSlide = temp;
             if (temp < 0) {
                 g_ClassChangeCurtainSlide = 0;
@@ -58,8 +57,7 @@ s32 DrawClassChangeCurtain(s32 step) {
         }
 
         if (delta > 0) {
-            temp = g_ClassChangeCurtainSlide;
-            { s32 rel = temp; temp = delta + rel; }
+            temp = g_ClassChangeCurtainSlide + delta;
             g_ClassChangeCurtainSlide = temp;
             if (temp >= 0x1A) {
                 g_ClassChangeCurtainSlide = 0x19;

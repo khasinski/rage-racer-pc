@@ -7,28 +7,24 @@
  */
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
     s32 center;
-    s32 prev_index;
+    s32 prevIndex;
     s32 prev;
     s32 left;
-    s32 next_index;
+    s32 nextIndex;
     s32 next;
     s32 right;
 
     center = InterpolateTrackAngle(pointIndex, weight);
 
-    prev_index = pointIndex - 2;
-    if (prev_index < 0) {
-        s32 tmp;
-        tmp = g_TrackPointCount;
-        tmp -= 2;
-        prev_index = tmp + pointIndex;
-    }
+    prevIndex = pointIndex - 2;
+    if (prevIndex < 0)
+        prevIndex += g_TrackPointCount;
 
-    prev = InterpolateTrackAngle(prev_index, weight);
+    prev = InterpolateTrackAngle(prevIndex, weight);
     left = BlendAngle(center, prev, 0x200);
 
-    next_index = (pointIndex + 2) % g_TrackPointCount;
-    next = InterpolateTrackAngle(next_index, weight);
+    nextIndex = (pointIndex + 2) % g_TrackPointCount;
+    next = InterpolateTrackAngle(nextIndex, weight);
     right = BlendAngle(center, next, 0x200);
 
     return BlendAngle(left, right, 0x200);

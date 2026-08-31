@@ -11,7 +11,6 @@ void DrawSplitTimes(void) {
     s32 tile;
     s32 timeout;
     s32 threshold;
-    s32 finalValue;
 
     if (!HudShowLapTimes()) return;
 
@@ -43,13 +42,7 @@ void DrawSplitTimes(void) {
                   0x78CC, timeout);
     DrawSplitDelta(g_SplitSector, g_SplitSign);
 
-    {
-        s32 finalA0 = 0xFA;
-        s32 finalA1 = 0x7C;
-        s32 finalA3 = 0x78CC;
-
-        finalValue = g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][0];
-        finalA0 = HudRightX(finalA0);
-        DrawTimeValue(finalA0, finalA1, finalValue, finalA3, timeout);
-    }
+    DrawTimeValue(HudRightX(0xFA), 0x7C,
+                  g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][0],
+                  0x78CC, timeout);
 }

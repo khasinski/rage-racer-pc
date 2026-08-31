@@ -40,19 +40,12 @@ void EnterPrologue(void) {
 }
 
 void UpdatePrologueLoad(void) {
-    s32 delta;
-
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
 
-    delta = g_FadeStep;
-    if (delta < 0) {
-        s32 value;
-
-        value = g_FadeLevel;
-        value = value + delta;
-        g_FadeLevel = value;
+    if (g_FadeStep < 0) {
+        g_FadeLevel += g_FadeStep;
 
         if (g_FadeLevel < 0) {
             g_FadeLevel = 0;
@@ -60,12 +53,8 @@ void UpdatePrologueLoad(void) {
         }
 
         DrawFullscreenFadeTile(g_FadeLevel, 0x49);
-    } else if (delta > 0) {
-        s32 value;
-
-        value = g_FadeLevel;
-        value = value + delta;
-        g_FadeLevel = value;
+    } else if (g_FadeStep > 0) {
+        g_FadeLevel += g_FadeStep;
 
         DrawFullscreenFadeTile(g_FadeLevel, 0x49);
 

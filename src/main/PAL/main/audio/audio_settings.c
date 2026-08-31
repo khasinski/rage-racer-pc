@@ -9,15 +9,7 @@ void SetLoadedTableVolumeScale(s32 scale) {
 }
 
 void SetSequenceVolumeSetting(s32 setting) {
-    u32 adjusted;
-    s32 value;
-
-    value = setting;
-    if (value >= 0) {
-        adjusted = setting;
-        adjusted++;
-        adjusted--;
-        setting = adjusted;
+    if (setting >= 0) {
         if (setting >= 0x10) {
             setting = 0xF;
         }
@@ -25,9 +17,8 @@ void SetSequenceVolumeSetting(s32 setting) {
         setting = 0;
     }
 
-    value = setting;
     SetCdVolumeSetting(setting);
-    SetSequenceVolumeScale(value);
+    SetSequenceVolumeScale(setting);
 }
 
 /* Set the effect master volume scale (g_SoundScale.scale) from a

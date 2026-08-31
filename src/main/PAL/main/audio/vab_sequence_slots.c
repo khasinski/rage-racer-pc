@@ -30,25 +30,18 @@ s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *seq) {
 }
 
 s32 CloseAudioSlot(s32 slot) {
-    s32 *flagsPtr = &g_AudioLoadedSlotMask;
-    s32 bit = 1;
-    s32 flags = *flagsPtr;
-    s32 ret;
-    s16 *ids;
+    s32 bit = 1 << slot;
 
-    bit <<= slot;
-    if ((bit & flags) == 0) {
-        ret = 0;
-    } else {
-        *flagsPtr = bit ^ flags;
-        SsUtSetReverbDepth(0, 0);
-        _SsVmInit(0);
-        SsSeqCloseWrapper(g_SeqHandle.value);
-        ids = g_SoundScale.vabIds;
-        SsVabClose(ids[slot]);
-        ret = 1;
+    if ((bit & g_AudioLoadedSlotMask) == 0) {
+        return 0;
     }
-    return ret;
+
+    g_AudioLoadedSlotMask ^= bit;
+    SsUtSetReverbDepth(0, 0);
+    _SsVmInit(0);
+    SsSeqCloseWrapper(g_SeqHandle.value);
+    SsVabClose(g_SoundScale.vabIds[slot]);
+    return 1;
 }
 
 void StartVabSlotVoice(s32 voice, s32 unused, s16 vabSlot) {

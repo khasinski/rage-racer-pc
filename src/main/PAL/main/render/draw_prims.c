@@ -70,51 +70,27 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u32 flags) {
     RenderBufferAddress cursor;
     SPRT *prim;
-    s32 shadeReg;
-    s32 semiReg;
-    s32 y1Reg;
-    s32 u0Reg;
-    s32 v0Reg;
-    s32 rReg;
     s32 clutReg;
     u8 *oldPrim;
-    s16 x0Local;
-    s16 y0Local;
-    s16 x1Local;
-    u8 gLocal;
-    u8 bLocal;
     s32 div;
     s32 base;
 
     prim = SCRATCH_PRIM_CURSOR_AS(SPRT);
-    shadeReg = shadeTex;
-    semiReg = semiTrans;
-    
-    y1Reg = y1;
-    u0Reg = u0;
-    v0Reg = v0;
-    rReg = r;
-    x0Local = x0;
-    y0Local = y0;
-    x1Local = x1;
-    bLocal = b;
-    
-    gLocal = g;
     SetSprt(prim);
 
     clutReg = clutX;
-    SetShadeTex(prim, shadeReg);
-    SetSemiTrans(prim, semiReg);
+    SetShadeTex(prim, shadeTex);
+    SetSemiTrans(prim, semiTrans);
 
-    prim->x0 = x0Local;
-    prim->y0 = y0Local;
-    prim->w = x1Local;
-    prim->h = y1Reg;
-    prim->u0 = u0Reg;
-    prim->v0 = v0Reg;
-    prim->r0 = rReg;
-    prim->g0 = gLocal;
-    prim->b0 = bLocal;
+    prim->x0 = x0;
+    prim->y0 = y0;
+    prim->w = x1;
+    prim->h = y1;
+    prim->u0 = u0;
+    prim->v0 = v0;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
 
     div = (clutReg & 0xFFFF) / 20U;
     clutReg &= 0xFFFF;
@@ -141,51 +117,31 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
 void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     RenderBufferAddress cursor;
-    s32 semiReg;
-    u32 flagsReg;
-    s32 y1Reg;
-    s32 x2Reg;
-    s32 y2Reg;
-    s32 rReg;
-    s32 gReg;
-    s32 bReg;
     POLY_F3 *prim;
     u8 *oldPrim;
 
     prim = SCRATCH_PRIM_CURSOR_AS(POLY_F3);
-    semiReg = semiTrans;
-    flagsReg = flags;
-    y1Reg = y1;
-    x2Reg = x2;
-    y2Reg = y2;
-    rReg = r;
-    gReg = g;
-    bReg = b;
-    
-
     SetPolyF3(prim);
-    SetSemiTrans(prim, semiReg);
+    SetSemiTrans(prim, semiTrans);
 
     prim->x0 = x0;
     prim->y0 = y0;
     prim->x1 = x1;
-    prim->y1 = y1Reg;
-    prim->x2 = x2Reg;
-    prim->y2 = y2Reg;
-    prim->r0 = rReg;
-    prim->g0 = gReg;
-    prim->b0 = bReg;
+    prim->y1 = y1;
+    prim->x2 = x2;
+    prim->y2 = y2;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
 
     cursor.polyF3 = prim;
     oldPrim = cursor.bytes;
     prim++;
     AddPrim(ot, oldPrim);
 
-    semiReg = flagsReg;
-    flagsReg &= 0x80;
-    if (flagsReg == 0) {
+    if ((flags & 0x80) == 0) {
         cursor.polyF3 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, semiReg & 0xFFFF);
+        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, flags & 0xFFFF);
         prim = cursor.polyF3;
     }
 
@@ -333,7 +289,7 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
     rReg = (u8)r;
     gReg = (u8)g;
     bReg = (u8)b;
-    alphaValue = (u8)alpha;;
+    alphaValue = (u8)alpha;
     x0Reg = x0;
     y0Reg = y0;
     x1Reg = x1;
@@ -385,7 +341,7 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
     rReg = (u8)r;
     gReg = (u8)g;
     bReg = (u8)b;
-    alphaValue = (u8)alpha;;
+    alphaValue = (u8)alpha;
     x0Reg = x0;
     y0Reg = y0;
     x1Reg = x1;
@@ -532,7 +488,7 @@ void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
   lastColumn = w - 1;
   x1 = (s16) (leftX + lastColumn);
   rowY = (s16) y_R18;
-  h = (((((((((h - 1) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu) & 0xFFFFFFFFFFFFFFFFu;
+  h -= 1;
   DrawLine(buf, (s16)x0, (s16)rowY, (s16)x1, (s16)rowY, r, g, b, code);
   DrawLine(buf, (s16)x0, (s16)(y_R18 + 1), (s16)x1, (s16)(y_R18 + 1), r, g, b, code);
   ytop2 = (s16) (y_R18 + 2);

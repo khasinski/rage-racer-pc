@@ -6,17 +6,6 @@
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
 
-/*
- * Sub-block k of the loaded asset pack, from its GameSceneAssetHeader offset
- * table (game/asset.h). Only step 3's three audio sub-blocks use it: they are
- * taken from one pointer that is then overwritten with the third of them, and
- * spelling that out with a header pointer and three explicit offsets costs 42
- * instructions. Everywhere else the header/offset spelling is used directly,
- * which is what fmv_requests.c does for the same 11-entry track pack.
- */
-#define ASSET_SUB(base, k) ((base) + GetSceneAssetHeader(base)->offsets[k])
-
-
 s32 RequestRaceAssets(void) {
     if (g_AssetLoadState != 0) {
         return 1;
@@ -36,14 +25,12 @@ void LoadRaceAssets(void) {
     switch (g_AssetLoadState) {
     case 1: {
         s32 *src = GetAssetWords(g_AssetBlockPtr);
-        s32 size = g_SharedAssetWord0;
         s32 *dst = GetAssetWords(g_AssetLoadCursor);
-        s32 n = size / 4;
-        while (n != 0) {
-            *dst = *src;
-            src++;
-            n--;
-            dst++;
+        s32 wordCount = g_SharedAssetWord0 / sizeof(*src);
+
+        while (wordCount != 0) {
+            *dst++ = *src++;
+            wordCount--;
         }
         StartAudioSlotLoad(2, g_AssetLoadCursor, g_AssetSubBlockPtr, 0);
         g_AssetLoadState = 2;
@@ -61,25 +48,21 @@ void LoadRaceAssets(void) {
         GameRenderWorldSetTrackCarAsset(carAsset);
         if (LoadAsset((carAsset * 2) + 11, g_AssetLoadCursor) != 0) {
             GameSceneAssetHeader *pack;
-            s32 offset;
             u8 *table;
             u8 *header;
             u8 *body;
+
             pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = pack->offsets[0];
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, offset);
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
             SetCarSpec(GetGameCarSpec(g_AssetBlockPtr));
-            table = g_AssetLoadCursor;
-            header = ASSET_SUB(table, 1);
-            body = ASSET_SUB(table, 3);
-            table = ASSET_SUB(table, 2);
+            header = GetSceneAssetAddress(pack, pack->offsets[1]);
+            table = GetSceneAssetAddress(pack, pack->offsets[2]);
+            body = GetSceneAssetAddress(pack, pack->offsets[3]);
             g_AssetBlockPtr = header;
             g_AssetBlockPtr2 = table;
             g_AssetSubBlockPtr = body;
             StartAudioSlotLoad(3, header, body, GetAssetHalfwords(table));
-            pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = pack->offsets[4];
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, offset);
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
             UploadImageAsset(g_AssetBlockPtr);
             g_AssetLoadState = 4;
             g_AssetLoadCursor = g_AssetSubBlockPtr;
@@ -100,26 +83,16 @@ void LoadRaceAssets(void) {
         classBase = (g_GrandPrixClass * 8) + ASSET_TRACK_1ST_BASE;
         if (LoadAsset(courseOffset + classBase, dst) != 0) {
             GameSceneAssetHeader *pack;
-            s32 offset;
-            u8 *base;
-            s32 logoOffset, shadowOffset;
+
             pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = pack->offsets[0];
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, offset);
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
             UploadImageAsset(g_AssetBlockPtr);
-            pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = pack->offsets[1];
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, offset);
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[1]);
             UploadImageAsset(g_AssetBlockPtr);
-            pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            offset = pack->offsets[2];
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, offset);
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[2]);
             UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            base = g_AssetLoadCursor;
-            logoOffset = GetSceneAssetHeader(base)->offsets[3];
-            shadowOffset = GetSceneAssetHeader(base)->offsets[4];
-            g_AssetBlockPtr = base + logoOffset;
-            g_AssetSubBlockPtr = base + shadowOffset;
+            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[3]);
+            g_AssetSubBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
             UploadImageAsset(g_AssetBlockPtr);
             StoreTeamLogoImage(g_AssetLoadCursor);
             g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetLoadCursor);

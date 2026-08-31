@@ -59,18 +59,14 @@ void UpdateZoneAmbience(s32 zone) {
         if (position >= start && end >= position) {
             s32 flags;
             s32 delta;
-            s32 product;
-            s32 flagBit;
 
             flags = entry->flags;
             if (position < start + 0x320 && (flags & 1) > 0) {
                 delta = position - start;
-                product = base * delta;
-                value = product / 800;
-            } else if (end - 0x320 < position && ((flagBit = flags & 2), flagBit > 0)) {
+                value = base * delta / 800;
+            } else if (end - 0x320 < position && (flags & 2)) {
                 delta = end - position;
-                product = base * delta;
-                value = product / 800;
+                value = base * delta / 800;
             } else {
                 value = base;
             }
@@ -80,8 +76,7 @@ void UpdateZoneAmbience(s32 zone) {
         entry++;
     }
 
-    finalValue = value;
-    finalValue = (s16)finalValue;
+    finalValue = (s16)value;
     SetStereoSoundCue(mode, finalValue, finalValue);
 }
 

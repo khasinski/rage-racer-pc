@@ -91,10 +91,7 @@ void UpdateOptionRootMenu(void) {
             break;
         }
     } else {
-        s32 masked;
-
-        masked = buttons & 0x90;
-        if (masked) {
+        if (buttons & 0x90) {
             PlaySoundCue(3);
             StartOptionMenuExit(2);
         }
@@ -195,15 +192,13 @@ void DrawClassRecordGrid(void) {
 
 /* g_GameModeHandlers[2]: two-row menu into the class-record grid. */
 void UpdateClassRecordMenu(void) {
-    u16 *buttonPtr;
     s32 oldCursor;
     u16 buttons;
 
     DrawClassRecordGrid();
 
-    buttonPtr = &g_PadPressed;
     oldCursor = g_ClassRecordMenuCursor;
-    buttons = *buttonPtr;
+    buttons = g_PadPressed;
     if (buttons & 0x1000) {
         g_ClassRecordMenuCursor = oldCursor - 1;
     }
@@ -216,7 +211,7 @@ void UpdateClassRecordMenu(void) {
         PlaySoundCue(1);
     }
 
-    buttons = *buttonPtr;
+    buttons = g_PadPressed;
     if (buttons & 0x860) {
         PlaySoundCue(2);
         if (g_ClassRecordMenuCursor != 0) {
@@ -340,11 +335,8 @@ void DrawSoundOptionScreen(void) {
     n = GameQueueShadedSpriteTrans(base, n, 0xBA, 0x12A, 0x28, 0xC, 0xB4, 0xD0, 0x7F40, color);
     n = AddTilePrim(base, n, 0xA3, 0x122, 0x56, 0x1C, 0x85, 0x15, 0xE);
     n = AddTilePrim(base, n, 0xA2, 0x120, 0x58, 0x20, color * 2, color * 2, color * 2);
-    {
-        s32 a0v = g_BgmVolumeSetting;
-        *scratch = n;
-        DrawVolumeBar(a0v, 0xD0);
-    }
+    *scratch = n;
+    DrawVolumeBar(g_BgmVolumeSetting, 0xD0);
     DrawVolumeBar(g_SfxVolumeSetting, 0xF8);
 
     if (g_GameMode != 5) {
@@ -368,14 +360,12 @@ void DrawSoundOptionScreen(void) {
 
 /* g_GameModeHandlers[4]: the four-row sound menu; confirm backs the setting up and enters mode 5. */
 void UpdateSoundOptionMenu(void) {
-    u16 *buttonsPtr;
     u16 buttons;
     s32 old;
     s32 index;
 
     DrawSoundOptionScreen();
-    buttonsPtr = &g_PadPressed;
-    buttons = *buttonsPtr;
+    buttons = g_PadPressed;
     old = g_SoundOptionCursor;
     if (buttons & 0x1000) {
         g_SoundOptionCursor = old - 1;
@@ -390,7 +380,7 @@ void UpdateSoundOptionMenu(void) {
         PlaySoundCue(1);
     }
 
-    buttons = *buttonsPtr;
+    buttons = g_PadPressed;
     if (buttons & 0x860) {
         PlaySoundCue(2);
         g_GameMode = 5;

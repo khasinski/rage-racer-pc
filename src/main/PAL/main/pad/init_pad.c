@@ -20,29 +20,11 @@ void GameInitPad(void) {
  */
 void LoadPadButtonMapping(s32 mapping0, s32 mapping1) {
     s32 i;
-    u16 *dst0;
-    u16 *dst1;
-    u16 *src0;
-    u16 *src1;
-    u16 *table;
 
-    i = 0;
-    dst0 = g_PadButtonMapping;
-    dst1 = dst0 + 8;
-    table = g_NegconButtonPresets;
-    src1 = table + mapping1 * 8;
-    table = g_PadButtonPresets;
-    src0 = table + mapping0 * 8;
-
-    do {
-        u16 mask;
-
-        *dst0 = *src0++;
-        i++;
-        mask = *src1++;
-        dst0++;
-        *dst1++ = mask;
-    } while (i < 8);
+    for (i = 0; i < 8; i++) {
+        g_PadButtonMapping[i] = g_PadButtonPresets[mapping0 * 8 + i];
+        g_PadButtonMapping[8 + i] = g_NegconButtonPresets[mapping1 * 8 + i];
+    }
 }
 
 
@@ -56,7 +38,6 @@ void UpdatePadState(void) {
     s32 mask;
     s32 v;
     s32 t;
-    s32 n;
     s32 c;
     s16 c1;
     s16 c2;
@@ -84,9 +65,9 @@ void UpdatePadState(void) {
                 if (!(((mask & 0x5000) != 0x5000) && ((mask & 0xA000) != 0xA000) &&
                     ((mask & 0x1C4) == 0))) {
                     v = PAD_ERROR_STATE_INVALID_INPUT;
-        g_PadErrorState = v;
-        g_PadValidateCountdown = 0x22;
-        g_PadErrorHoldBits |= 0x10;
+                    g_PadErrorState = v;
+                    g_PadValidateCountdown = 0x22;
+                    g_PadErrorHoldBits |= 0x10;
                 }
             }
         }
@@ -103,16 +84,15 @@ void UpdatePadState(void) {
         pad->held = ~((raw[2] << 8) | raw[3]);
         pad->pressed = pad->held & ~pad->prevHeld;
         t = (pad->held >> 13) & 1;
-        n = t;
         c = g_NegconSteerRange[g_NegconMaxTwist];
-        pad->twist = ((pad->held & PAD_LEFT) ? ((n - 1) * c) : (n * c)) + 0x80;
+        pad->twist = ((pad->held & PAD_LEFT) ? ((t - 1) * c) : (t * c)) + 0x80;
         pad->buttonI = (pad->held & PAD_CROSS) ? 0x6A : 0;
         pad->buttonII = (pad->held & PAD_SQUARE) ? 0x6A : 0;
         pad->buttonL = (pad->held & PAD_L1) ? 0x6A : 0;
     } else if (raw[1] == 0x23) {
         pad->prevHeld = pad->held;
         pad->held = ~((raw[2] << 8) | raw[3]);
-        pad->twist = raw[4];;
+        pad->twist = raw[4];
         pad->buttonI = raw[5] - g_NegconNeutralI;
         pad->buttonII = raw[6] - g_NegconNeutralII;
         pad->buttonL = raw[7] - g_NegconNeutralL;

@@ -95,7 +95,7 @@ void GameDrawText8x8Shaded(
                 sprt->v0 = v;
                 sprt->r0 = intensity;
                 sprt->g0 = intensity;
-                sprt->b0 = intensity;;
+                sprt->b0 = intensity;
                 primAddress.volatileSprite8 = sprt;
                 prim = primAddress.bytes;
                 sprt->clut = clutIndex;

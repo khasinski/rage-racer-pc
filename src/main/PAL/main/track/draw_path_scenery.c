@@ -14,15 +14,13 @@ void DrawPathScenery(void) {
     Matrix mtx1;
     s32 drawId;
     s32 frameValue;
-    Matrix *mtx1Ptr;
-    mtx1Ptr = &mtx1;
 
     BuildRotMatrixY(&mtx0, 0x800 - g_PathSceneryTransform.rotation.vy);
-    BuildRotMatrixX(mtx1Ptr, g_PathSceneryTransform.rotation.vx);
-    MulMatrix2(&mtx0, mtx1Ptr);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
+    BuildRotMatrixX(&mtx1, g_PathSceneryTransform.rotation.vx);
+    MulMatrix2(&mtx0, &mtx1);
+    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx1);
     BuildRotMatrixZ(&mtx0, g_PathSceneryTransform.rotation.vz);
-    MulMatrix2(mtx1Ptr, &mtx0);
+    MulMatrix2(&mtx1, &mtx0);
 
     SelectModelBank(1);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
@@ -36,22 +34,13 @@ void DrawPathScenery(void) {
     SubmitModel(SCRATCHPAD, drawId);
 
     {
-        s32 base;
-        s32 acc;
-        s32 tmp;
+        s32 angle = (s32)((u32)g_SceneTimer * 331u);
 
-        base = g_SceneTimer;
-        acc = base * 4;
-        acc += base;
-        tmp = acc * 32;
-        acc += tmp;
-        acc <<= 1;
-        acc += base;
-        BuildRotMatrixY(mtx1Ptr, acc & 0xFFF);
+        BuildRotMatrixY(&mtx1, angle & 0xFFF);
     }
-    MulMatrix2(&mtx0, mtx1Ptr);
+    MulMatrix2(&mtx0, &mtx1);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
-                       AsPositionWords(g_PathSceneryTransform.position.w), mtx1Ptr);
+                       AsPositionWords(g_PathSceneryTransform.position.w), &mtx1);
     frameValue = g_ModelBankCount;
     g_ScratchRenderMode = 0;
     drawId = 1;
@@ -63,7 +52,6 @@ void DrawPathScenery(void) {
 
 
 void UpdateTrackEventSound(s16 arg) {
-    TrackEventSoundZone *p;
     TrackEventSoundZone *cur;
     TrackEventSoundZone *end;
     s32 data;
@@ -72,29 +60,21 @@ void UpdateTrackEventSound(s16 arg) {
     s32 val;
     s32 t;
     s32 a0v, a1v;
-    TrackEventSoundZoneAddress cursorAddress;
-    TrackEventSoundZoneAddress endAddress;
 
     data = 0;
-    p = g_TrackEventData->eventSoundZones;
     end = g_TrackEventData->eventSoundZones + 30;
-    cur = p;
-    do {
+    for (cur = g_TrackEventData->eventSoundZones; cur < end; cur++) {
         lo = cur->start;
         if (arg >= lo) {
         if (cur->end >= arg) {
-            data = p->flags;
+            data = cur->flags;
             break;
         }
         }
         if (lo == -1) {
             break;
         }
-        p = cur + 1;
-        cur = p;
-        cursorAddress.pointer = p;
-        endAddress.pointer = end;
-    } while (cursorAddress.value < endAddress.value);
+    }
 
     if (data != 0) {
     /* Decay the stored lean toward zero by one step, never past it. */

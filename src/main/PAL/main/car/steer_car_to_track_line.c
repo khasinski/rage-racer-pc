@@ -126,8 +126,6 @@ void UpdateCarLaunch(PlayerCarRuntime *carArg, s32 unused) {
         near = res < 513;
         if (near) {
             volume = res / 8 + 0x40;
-            
-            near = res < 513;
         }
         
         if (near) {
@@ -381,7 +379,7 @@ void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
     s32 sinA;
     s32 cosA;
     s32 r;
-    s32 coords[3];
+    s32 forward;
 
     (void)unused;
 
@@ -395,10 +393,9 @@ void UpdateCarStandingStart(PlayerCarRuntime *car, s32 unused) {
     route->accelPos = rsin(car->headingAngle) * car->speed / 256;
     route->brakePos = rcos(car->headingAngle) * car->speed / 256;
 
-    coords[0] = (cosA * route->accelPos - sinA * route->brakePos) / 4096;
-    coords[2] = (sinA * route->accelPos + cosA * route->brakePos) / 4096;
-    route->accelPos = sinA * coords[2] / 16384;
-    route->brakePos = cosA * coords[2] / 16384;
+    forward = (sinA * route->accelPos + cosA * route->brakePos) / 4096;
+    route->accelPos = sinA * forward / 16384;
+    route->brakePos = cosA * forward / 16384;
 
     SetIndexedEffectVoice(0, 0x1A80,
                           (0x60 - (g_StandingStartSpin & 0x1F) * 2) *
@@ -526,7 +523,5 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx) {
 
     car->x = TrackPoint(i)->x;
     car->z = TrackPoint(i)->z;
-    i = -1;
-    
-    return i;
+    return -1;
 }

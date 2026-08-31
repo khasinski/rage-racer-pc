@@ -45,13 +45,5 @@ s32 GetAngleDelta(s32 from, s32 to) {
         sign = !sign;
     }
 
-    {
-        s32 ret = diff;
-
-        if (!sign) {
-            ret = -ret;
-        }
-
-        return ret;
-    }
+    return sign ? diff : -diff;
 }

@@ -495,7 +495,6 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     s32 loopClut;
     s32 spriteHeight;
     s32 spriteOne;
-    s32 badgeMask;
     PackedCoordinate badgeX;
     s16 car;
     s32 badgeXWord;
@@ -608,10 +607,6 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         spriteHeight = 0x10;
         spriteOne = 1;
         badgeX.value = 0;
-        /* Keeps GCC 2.6.3's packed-coordinate allocation deterministic. */
-        
-        badgeMask = -65536;
-        badgeX.value &= badgeMask;
         row = 0;
         badgeX.parts.integer = 0xE8;
         rowYStep = 0x82;
@@ -827,22 +822,19 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
 
         {
             u32 *rectOt;
-            u32 *rectCallOt;
             s32 rectX;
             s16 rectY;
             s32 rectHeight;
             s32 rectAlpha;
 
             rectOt = (u32 *)(ot + 1);
-            rectCallOt = rectOt;
             rectX = rectLeft;
             rectY = panelY + 0x7A;
             rectHeight = 0xA0;
             rectAlpha = 0xFF;
-            DrawRectOutline(rectCallOt, rectX, rectY, 0x124,
+            DrawRectOutline(rectOt, rectX, rectY, 0x124,
                                 rectHeight, 0xB4, 0xB4, 0xB4, rectAlpha);
-            rectCallOt = rectOt;
-            DrawSolidRect(rectCallOt, rectX, rectY, 0x124, rectHeight,
+            DrawSolidRect(rectOt, rectX, rectY, 0x124, rectHeight,
                               0, 0, 0, rectAlpha);
         }
     }

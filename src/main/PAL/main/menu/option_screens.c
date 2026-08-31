@@ -75,7 +75,6 @@ void UpdateScreenAdjustScreen(void) {
     s32 oldY;
     u16 input;
     u16 confirm;
-    u32 confirmMask;
     s32 value;
 
     DrawScreenAdjustScreen();
@@ -120,8 +119,7 @@ void UpdateScreenAdjustScreen(void) {
         g_ScreenOffsetX.value = g_ScreenOffsetEditX;
         g_ScreenOffsetY.value = g_ScreenOffsetEditY;
     } else {
-        confirmMask = confirm & 0x90;
-        if (confirmMask != 0) {
+        if (confirm & 0x90) {
             PlaySoundCue(3);
             g_GameMode = 1;
             g_ScreenOffsetEditX = g_ScreenOffsetX.value;
@@ -226,27 +224,19 @@ void EnterBgmSelectScreen(void) {
 }
 
 void UpdateOptionSceneFade(void) {
-    s32 d;
-    s32 v;
     if (g_SceneTimer == 0xF) {
         SetDispMask(1);
     }
-    d = g_FadeStep;
-    if (d < 0) {
-        s32 e = g_FadeLevel;
-        e += d;
-        g_FadeLevel = e;
+    if (g_FadeStep < 0) {
+        g_FadeLevel += g_FadeStep;
         if (g_FadeLevel < 0) {
             g_FadeLevel = 0;
             g_FadeStep = 0;
         }
         DrawFullscreenFadeTile(g_FadeLevel, 0x49);
-    } else if (d > 0) {
-        s32 e = g_FadeLevel;
-        e += d;
-        v = e;
-        g_FadeLevel = v;
-        DrawFullscreenFadeTile(v, 0x49);
+    } else if (g_FadeStep > 0) {
+        g_FadeLevel += g_FadeStep;
+        DrawFullscreenFadeTile(g_FadeLevel, 0x49);
         if (g_FadeLevel >= 257) {
             SetDispMask(0);
             InitTrackScene();

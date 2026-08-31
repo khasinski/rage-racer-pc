@@ -604,18 +604,17 @@ void PortScenarioBeforeSceneHandler(void) {
      * carries PAD_START, which is what the movie player watches for. The
      * prologue ignores the button until its own timer passes 0x79, so holding
      * it costs nothing and takes effect at the first frame that accepts it. */
-    if (!s_scenario.skipSequences) {
-        /* Leave the boot logo, the intro movie and the prologue to run at
-         * their retail length. */
-    } else if (g_SceneId == 5 || g_SceneId == 32) {
-        g_PadType = 0x41;
-        g_PadPressed |= PAD_CONFIRM;
-    } else if (g_SceneId == 1) {
-        /* The boot logo drops its remaining hold as soon as a button is down
-         * and the assets behind it have finished loading. What is left after
-         * that is the load itself, which nothing can skip. */
-        g_PadType = 0x41;
-        g_PadHeld |= PAD_CONFIRM;
+    if (s_scenario.skipSequences) {
+        if (g_SceneId == 5 || g_SceneId == 32) {
+            g_PadType = 0x41;
+            g_PadPressed |= PAD_CONFIRM;
+        } else if (g_SceneId == 1) {
+            /* The boot logo drops its remaining hold as soon as a button is
+             * down and the assets behind it have finished loading. What is
+             * left after that is the load itself, which nothing can skip. */
+            g_PadType = 0x41;
+            g_PadHeld |= PAD_CONFIRM;
+        }
     }
 
     /* Direct boot takes over the moment the title screen appears, which is the

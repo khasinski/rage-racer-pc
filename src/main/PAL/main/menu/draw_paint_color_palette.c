@@ -12,7 +12,6 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     PaintColorTable *tableSource;
     s32 yBase;
     s32 xBase;
-    u8 sineByte;
     u16 xBaseHalf;
     s32 yBorder;
     s32 yTop;
@@ -65,7 +64,7 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         g_PaintPalettePulsePhase += 0x20;
 
         DrawRectOutline(ot, (s16)xFocus, (s16)yTop, 0xD, 0x1A, 0,
-                      sineByte = (u8)sineColor, 0, (u8)0xFF);
+                      (u8)sineColor, 0, (u8)0xFF);
 
         color = &localTable.colors[index];
         DrawSolidRect(ot, (s16)(xFocus + 1), (s16)(yBase + 0x20D), 0xB, 0x16, color->r,

@@ -205,8 +205,6 @@ int main(int argc, char **argv) {
     ContentOptionsApply();
     if (!MapPs1Scratchpad()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
-    if (RuntimeConfigEnabled("video.modern"))
-        portConfig.renderer = RAGE_RENDERER_MODERN;
     PortConfigApplyRuntime(&portConfig);
     if (RuntimeConfigEnabled("video.modern"))
         portConfig.renderer = RAGE_RENDERER_MODERN;

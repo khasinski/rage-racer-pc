@@ -159,8 +159,7 @@ static SDL_GPUShader *ModernNativeCreateShader(
 }
 
 static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
-    SDL_GPUShader *vertex, SDL_GPUShader *fragment, int transparent,
-    int depthDecal) {
+    SDL_GPUShader *vertex, SDL_GPUShader *fragment, int transparent) {
     const SDL_GPUVertexBufferDescription buffer = {
         .slot = 0,
         .pitch = sizeof(RageNativeDrawVertex),
@@ -224,7 +223,6 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     /* Semantic decals are already real, slightly lifted world geometry. They
      * use the same depth test as every other opaque surface. */
-    (void)depthDecal;
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
     info.depth_stencil_state.enable_depth_test = true;
     /* Every opaque surface must participate in the Z buffer, including the
@@ -475,18 +473,18 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
     if (vertex != NULL && textureFragment != NULL) {
         s_texturedOpaque = ModernNativeCreatePipeline(
-            vertex, textureFragment, 0, 0);
+            vertex, textureFragment, 0);
         s_texturedTransparent = ModernNativeCreatePipeline(
-            vertex, textureFragment, 1, 0);
+            vertex, textureFragment, 1);
         s_texturedOpaqueDecal = ModernNativeCreatePipeline(
-            vertex, textureFragment, 0, 1);
+            vertex, textureFragment, 0);
         s_texturedTransparentDecal = ModernNativeCreatePipeline(
-            vertex, textureFragment, 1, 1);
+            vertex, textureFragment, 1);
     }
     if (vertex != NULL && colorFragment != NULL) {
-        s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0, 0);
+        s_colorOpaque = ModernNativeCreatePipeline(vertex, colorFragment, 0);
         s_colorOpaqueDecal = ModernNativeCreatePipeline(
-            vertex, colorFragment, 0, 1);
+            vertex, colorFragment, 0);
     }
     if (skyVertex != NULL && skyFragment != NULL)
         s_sky = ModernNativeCreateSkyPipeline(skyVertex, skyFragment);

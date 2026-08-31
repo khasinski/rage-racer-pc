@@ -8,7 +8,6 @@ void UpdateRouteScenery(void) {
     Matrix mtx1;
     SVec vin;
     LVec vout;
-    volatile s32 *cnt;
     SceneryMotionData *base;
     SceneryMotionKeyframe *kp;
     s32 i;
@@ -16,13 +15,12 @@ void UpdateRouteScenery(void) {
     s32 c;
     s32 r4354;
 
-    cnt = &g_RouteSceneryClock;
-    c = *cnt;
+    c = g_RouteSceneryClock;
     base = g_RouteSceneryData;
     if (c <= 0) {
         return;
     }
-    *cnt = c + 1;
+    g_RouteSceneryClock = c + 1;
 
     counter = g_RouteSceneryFrame;
     i = g_RouteSceneryKeyIndex;
@@ -56,7 +54,7 @@ void UpdateRouteScenery(void) {
             g_RouteSceneryKeyframe = r3;
             g_RouteSceneryRotZ = value;
             SetRouteSceneryPosition(&(idx + base->start)->position);
-            *cnt = 1;
+            g_RouteSceneryClock = 1;
             g_RouteSceneryFrame = 0;
         }
     }

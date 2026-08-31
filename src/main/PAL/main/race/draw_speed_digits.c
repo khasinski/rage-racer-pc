@@ -12,7 +12,7 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     s32 rawX;
     s32 rawY;
     s32 hundreds;
-    s32 tenths;
+    s32 tensAndOnes;
     s32 tens;
     s32 ones;
     u16 color;
@@ -24,11 +24,11 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
     prim = *scratch;
 
-    tenths = value / 10;
+    tensAndOnes = value / 10;
     screenX = (s16)rawX;
     screenY = (s16)rawY;
-    tens = tenths - (hundreds * 10);
-    ones = value - (tenths * 10);
+    tens = tensAndOnes - (hundreds * 10);
+    ones = value - (tensAndOnes * 10);
 
     prim = DrawHudDigit(prim, screenX, screenY, hundreds, color);
     prim = DrawHudDigit(prim, screenX + 8, screenY, tens, color);

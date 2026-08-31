@@ -111,7 +111,6 @@ static GameCarSpec s_spec;
 static GameTrackPoint s_points[4];
 static GameTrackArcCenter s_arcs[4];
 static PlayerCarRuntime s_car;
-static int s_failures;
 
 
 /*

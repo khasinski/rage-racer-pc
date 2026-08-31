@@ -6,17 +6,15 @@
 void DrawRouteScenery(void) {
     Matrix mtx0;
     Matrix mtx1;
-    Matrix *mtx1Ptr;
     s32 frameValue;
     s32 drawId;
 
     BuildRotMatrixY(&mtx0, 0x800 - g_RouteSceneryRotY);
-    mtx1Ptr = &mtx1;
-    BuildRotMatrixX(mtx1Ptr, g_RouteSceneryRotX);
-    MulMatrix2(&mtx0, mtx1Ptr);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, mtx1Ptr);
+    BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
+    MulMatrix2(&mtx0, &mtx1);
+    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx1);
     BuildRotMatrixZ(&mtx0, g_RouteSceneryRotZ);
-    MulMatrix2(mtx1Ptr, &mtx0);
+    MulMatrix2(&mtx1, &mtx0);
     SelectModelBank(1);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(&g_RouteSceneryX), &mtx0);
     frameValue = g_ModelBankCount;
@@ -31,9 +29,6 @@ void DrawRouteScenery(void) {
 void InitShuttleScenery(void) {
     GameShuttleScenery *state;
     s32 index;
-    s32 value;
-    s32 v1;
-    AssetAddress angleAddress;
 
     state = &g_ShuttleScenery[0];
     if ((SeriesCourseIndex()) == 2) {
@@ -43,40 +38,19 @@ void InitShuttleScenery(void) {
         index = g_ShuttleScenery[1].pathIndex;
         g_ShuttleScenery[1].angleX = g_ShuttlePathAngles[index].vx;
         g_ShuttleScenery[1].angleY = g_ShuttlePathAngles[index].vy;
-        value = g_ShuttlePathAngles[index].vz;
         g_ShuttleScenery[1].startEndpoint = 0;
         g_ShuttleScenery[1].travelStep = 0;
-        g_ShuttleScenery[1].angleZ = value;
-        v1 = g_ShuttlePathDwellMax[index];
+        g_ShuttleScenery[1].angleZ = g_ShuttlePathAngles[index].vz;
         state->pathIndex = 1;
-        g_ShuttleScenery[1].dwellCounter = v1;
+        g_ShuttleScenery[1].dwellCounter = g_ShuttlePathDwellMax[index];
     } else {
-
-    state->pathIndex = 0;
+        state->pathIndex = 0;
     }
     state->position = g_ShuttlePathPoints[state->pathIndex].endpoint[0];
-    value = state->pathIndex;
-    value <<= 3;
-    angleAddress.pointer = g_ShuttlePathAngles;
-    angleAddress.bytes += value;
-    v1 = angleAddress.shortVector->vx;
-    
-    value = state->pathIndex;
-    value <<= 3;
-    state->angleX = v1;
-    angleAddress.pointer = g_ShuttlePathAngles;
-    angleAddress.bytes += value;
-    v1 = angleAddress.shortVector->vy;
-    value = state->pathIndex;
-    value <<= 3;
-    state->angleY = v1;
-    angleAddress.pointer = g_ShuttlePathAngles;
-    angleAddress.bytes += value;
-    v1 = angleAddress.shortVector->vz;
-    value = state->pathIndex;
+    state->angleX = g_ShuttlePathAngles[state->pathIndex].vx;
+    state->angleY = g_ShuttlePathAngles[state->pathIndex].vy;
+    state->angleZ = g_ShuttlePathAngles[state->pathIndex].vz;
     state->startEndpoint = 0;
     state->travelStep = 0;
-    state->angleZ = v1;
-    value = g_ShuttlePathDwellMax[value];
-    state->dwellCounter = value;
+    state->dwellCounter = g_ShuttlePathDwellMax[state->pathIndex];
 }

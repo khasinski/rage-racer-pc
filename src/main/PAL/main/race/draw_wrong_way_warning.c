@@ -202,25 +202,12 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
 
     {
-        GameFrameContextAddress frame;
-        frame.bytes = g_DrawBuffer;
-        frame.context->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
-    }
-    {
-        GameFrameContextAddress frame;
-        frame.bytes = g_DrawBuffer;
-        frame.context->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;
-    }
-    {
-        GameFrameContextAddress frame;
-        frame.bytes = g_DrawBuffer;
-        frame.context->layout.raceHud.tachometerFace.b0 = g_TachoFaceB;
-    }
-
-    {
         GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
         OT_TYPE *ot = GamePrimaryOrderingTable(0);
 
+        frame->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
+        frame->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;
+        frame->layout.raceHud.tachometerFace.b0 = g_TachoFaceB;
         frame->layout.raceHud.tachometerFace.x0 =
             HudRightX(g_TachoNeedleSprite.x);
 
@@ -259,7 +246,6 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
     TILE *packet;
     TILE *prim;
-    s32 height;
 
     if (color < 0) {
         color = 0;
@@ -272,10 +258,9 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     SetSemiTrans(packet, 1);
 
     packet->w = 0x140;
-    height = 0xF0;
     packet->x0 = 0;
     packet->y0 = 0;
-    packet->h = height;
+    packet->h = 0xF0;
     packet->r0 = color;
     packet->g0 = color;
     packet->b0 = color;
@@ -293,30 +278,23 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
 u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut) {
     RenderBufferAddress cursor;
     SPRT_8 *out;
-    s32 xReg = x;
-    s32 yReg = y;
-    s32 codeReg;
-    s32 clutReg;
 
     cursor.bytes = prim;
     out = cursor.sprite8;
     
-    codeReg = digit;
-    clutReg = clut;
     SetSprt8(out);
     SetShadeTex(out, 1);
 
-    codeReg <<= 3;
-    out->u0 = codeReg;
+    out->u0 = digit << 3;
     out->v0 = 0x10;
 
     {
         OT_TYPE *ot = GamePrimaryOrderingTable(0);
         SPRT_8 *oldPrim = out;
 
-        out->x0 = xReg;
-        out->y0 = yReg;
-        out->clut = clutReg;
+        out->x0 = x;
+        out->y0 = y;
+        out->clut = clut;
         out++;
         AddPrim(ot, oldPrim);
     }

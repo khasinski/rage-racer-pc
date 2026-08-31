@@ -11,6 +11,14 @@ static float Clamp01(float value) {
     return value;
 }
 
+static void InterpolateVec3(const RageRenderVec3 *previous,
+                            const RageRenderVec3 *current, float t,
+                            RageRenderVec3 *out) {
+    out->x = previous->x + (current->x - previous->x) * t;
+    out->y = previous->y + (current->y - previous->y) * t;
+    out->z = previous->z + (current->z - previous->z) * t;
+}
+
 float RenderLerpAngleDegrees(float from, float to, float t) {
     float delta;
     t = Clamp01(t);
@@ -25,12 +33,8 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
                                     float t,
                                     RageRenderTransform *out) {
     t = Clamp01(t);
-    out->position.x = previous->position.x +
-                      (current->position.x - previous->position.x) * t;
-    out->position.y = previous->position.y +
-                      (current->position.y - previous->position.y) * t;
-    out->position.z = previous->position.z +
-                      (current->position.z - previous->position.z) * t;
+    InterpolateVec3(&previous->position, &current->position, t,
+                    &out->position);
     out->rotation.x = RenderLerpAngleDegrees(previous->rotation.x,
                                                   current->rotation.x, t);
     out->rotation.y = RenderLerpAngleDegrees(previous->rotation.y,
@@ -64,12 +68,7 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
     } else {
         out->orientation = current->orientation;
     }
-    out->scale.x = previous->scale.x +
-                   (current->scale.x - previous->scale.x) * t;
-    out->scale.y = previous->scale.y +
-                   (current->scale.y - previous->scale.y) * t;
-    out->scale.z = previous->scale.z +
-                   (current->scale.z - previous->scale.z) * t;
+    InterpolateVec3(&previous->scale, &current->scale, t, &out->scale);
 }
 
 void RenderInterpolateCamera(const RageRenderCamera *previous,
@@ -84,36 +83,16 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
         (current->nearPlane - previous->nearPlane) * t;
     out->farPlane = previous->farPlane +
         (current->farPlane - previous->farPlane) * t;
-    out->fogColor.x = previous->fogColor.x +
-        (current->fogColor.x - previous->fogColor.x) * t;
-    out->fogColor.y = previous->fogColor.y +
-        (current->fogColor.y - previous->fogColor.y) * t;
-    out->fogColor.z = previous->fogColor.z +
-        (current->fogColor.z - previous->fogColor.z) * t;
-    out->skyTopColor.x = previous->skyTopColor.x +
-        (current->skyTopColor.x - previous->skyTopColor.x) * t;
-    out->skyTopColor.y = previous->skyTopColor.y +
-        (current->skyTopColor.y - previous->skyTopColor.y) * t;
-    out->skyTopColor.z = previous->skyTopColor.z +
-        (current->skyTopColor.z - previous->skyTopColor.z) * t;
-    out->skyColor.x = previous->skyColor.x +
-        (current->skyColor.x - previous->skyColor.x) * t;
-    out->skyColor.y = previous->skyColor.y +
-        (current->skyColor.y - previous->skyColor.y) * t;
-    out->skyColor.z = previous->skyColor.z +
-        (current->skyColor.z - previous->skyColor.z) * t;
-    out->skyHorizonColor.x = previous->skyHorizonColor.x +
-        (current->skyHorizonColor.x - previous->skyHorizonColor.x) * t;
-    out->skyHorizonColor.y = previous->skyHorizonColor.y +
-        (current->skyHorizonColor.y - previous->skyHorizonColor.y) * t;
-    out->skyHorizonColor.z = previous->skyHorizonColor.z +
-        (current->skyHorizonColor.z - previous->skyHorizonColor.z) * t;
-    out->skyBottomColor.x = previous->skyBottomColor.x +
-        (current->skyBottomColor.x - previous->skyBottomColor.x) * t;
-    out->skyBottomColor.y = previous->skyBottomColor.y +
-        (current->skyBottomColor.y - previous->skyBottomColor.y) * t;
-    out->skyBottomColor.z = previous->skyBottomColor.z +
-        (current->skyBottomColor.z - previous->skyBottomColor.z) * t;
+    InterpolateVec3(&previous->fogColor, &current->fogColor, t,
+                    &out->fogColor);
+    InterpolateVec3(&previous->skyTopColor, &current->skyTopColor, t,
+                    &out->skyTopColor);
+    InterpolateVec3(&previous->skyColor, &current->skyColor, t,
+                    &out->skyColor);
+    InterpolateVec3(&previous->skyHorizonColor,
+                    &current->skyHorizonColor, t, &out->skyHorizonColor);
+    InterpolateVec3(&previous->skyBottomColor, &current->skyBottomColor, t,
+                    &out->skyBottomColor);
     out->skyAssetKey = current->skyAssetKey;
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;

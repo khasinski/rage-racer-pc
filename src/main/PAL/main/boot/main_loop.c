@@ -90,22 +90,15 @@ void MainLoop(void) {
     for (;;) {
         s32 parity = g_FrameCounter & 1;
         u8 *frame = g_FrameContexts[parity].bytes;
+        GameFrameContextAddress frameAddress;
 
         g_DrawBuffer = frame;
         g_FrameParity = parity;
-        {
-            GameFrameContextAddress frameAddress;
-            frameAddress.bytes = frame;
-            SCRATCH_OT_BASE_AS(OT_TYPE) =
-                frameAddress.context->layout.orderingTables[0];
-            SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
-            ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            ClearOTagR(drawBuffer.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
-        }
+        frameAddress.bytes = frame;
+        SCRATCH_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
+        SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
+        ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
+        ClearOTagR(frameAddress.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
         TickCdAudio();
         TickSequenceAudio();
         ServiceAssetLoad();
@@ -134,22 +127,10 @@ void MainLoop(void) {
         g_GameClock = ticks + elapsed / 256;
         VSync(0);
         Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            PutDrawEnv(&drawBuffer.context->environment.draw);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            PutDispEnv(&drawBuffer.context->environment.display);
-        }
-        {
-            GameFrameContextAddress drawBuffer;
-            drawBuffer.bytes = g_DrawBuffer;
-            DrawOTag(&drawBuffer.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
-            DrawOTag(&drawBuffer.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
-        }
+        PutDrawEnv(&frameAddress.context->environment.draw);
+        PutDispEnv(&frameAddress.context->environment.display);
+        DrawOTag(&frameAddress.context->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
+        DrawOTag(&frameAddress.context->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
         PortSampleAnalogPad();
         UpdatePadState();
         g_FrameCounter++;

@@ -39,7 +39,6 @@ void DrawControllerSetupScene(s32 variant) {
     s32 model;
     u32 setupMode;
 
-    g_ScratchViewZVolatile = 0;
     g_ScratchViewZVolatile = -0x1080;
     position.z = 0;
     position.y = 0;
@@ -49,7 +48,6 @@ void DrawControllerSetupScene(s32 variant) {
     g_ScratchViewAngleZ = 0;
     g_ScratchViewAngleY = 0;
     g_ScratchViewAngleX = 0;
-    g_ScratchViewY = 0;
     setupMode = g_GameMode - 10;
     if (setupMode < 2) {
         g_ScratchViewZVolatile = -0xC80;

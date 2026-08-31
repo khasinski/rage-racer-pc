@@ -36,30 +36,21 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
 
 s32 PollAudioSlotLoad(void) {
     s32 completed;
-    s32 *flagsPtr;
     s32 slot;
-    s32 value;
-    s32 bit;
 
     completed = SsVabTransCompleted(0);
     g_VabTransferDone = (s16)completed;
 
     if ((s16)completed != 0) {
-        flagsPtr = &g_AudioLoadedSlotMask;
         slot = g_AudioLoadSlot;
-        value = *flagsPtr;
-        bit = (s16)(1 << slot);
-        *flagsPtr = bit | value;
+        g_AudioLoadedSlotMask |= (s16)(1 << slot);
 
         if (slot == 0) {
             g_SoundCueBank = 1;
         } else if (slot == 1) {
             g_SoundCueBank = slot;
-        } else {
-            value = 2;
-            if ((slot == value) || (slot == 3)) {
-                g_SoundCueBank = value;
-            }
+        } else if (slot == 2 || slot == 3) {
+            g_SoundCueBank = 2;
         }
     }
 
@@ -67,26 +58,17 @@ s32 PollAudioSlotLoad(void) {
 }
 
 s32 CloseVabOnlyAudioSlot(s32 slot) {
-    s32 *flagsPtr = &g_AudioLoadedSlotMask;
-    s32 bit = 1;
-    s32 flags = *flagsPtr;
-    s32 zeroArg = 0;
-    s32 ret;
-    s16 *ids;
+    s32 bit = 1 << slot;
 
-    bit <<= slot;
-
-    if (!(bit & flags)) {
-    ret = 0;
-    } else {
-    *flagsPtr = bit ^ flags;
-    SsUtSetReverbDepth(zeroArg, 0);
-    _SsVmInit(0);
-    ids = g_SoundScale.vabIds;
-    SsVabClose(ids[slot]);
-    ret = 1;
+    if ((bit & g_AudioLoadedSlotMask) == 0) {
+        return 0;
     }
-    return ret;
+
+    g_AudioLoadedSlotMask ^= bit;
+    SsUtSetReverbDepth(0, 0);
+    _SsVmInit(0);
+    SsVabClose(g_SoundScale.vabIds[slot]);
+    return 1;
 }
 
 s32 CloseLoadedAudioSlots(void) {

@@ -85,10 +85,9 @@ void BlendPaintColorQuarters(u32 color0, u32 color1) {
     c >>= 1;
     c &= PAINT_HALVED_MASK;
     a += c;
-    /* Preserve the bias while keeping its two GCC live ranges separate. */
-    a -= bias++;
+    a -= bias;
     c += b;
-    c -= --bias;
+    c -= bias;
 
     g_PaintBlendShade1 = high;
     g_PaintBlendShade0 = a;

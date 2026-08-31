@@ -163,7 +163,8 @@ static void UpdateCarSelectIdle(void) {
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+                     g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(1, CountOwnedCars());
     }
@@ -184,7 +185,8 @@ static void UpdateCarSelectModal(void) {
             GameMenuBusy = 0;
         }
     }
-    DrawBrowseArrows(1, 0, ~g_PrevOwnedCarIndex != 0, ~g_NextOwnedCarIndex != 0);
+    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+                     g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(1, CountOwnedCars());
     }
@@ -263,8 +265,8 @@ static void EnterChosenScreen(void) {
 static void UpdateCarSelectOutgoing(void) {
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 4;
-    DrawBrowseArrows(-1, 0, ~g_PrevOwnedCarIndex != 0,
-                     ~g_NextOwnedCarIndex != 0);
+    DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
+                     g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(-1, CountOwnedCars());
     }

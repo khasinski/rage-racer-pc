@@ -12,11 +12,6 @@
 #include "game/state.h"
 #include "psyq/cd.h"
 
-typedef union SignedDivisionWork {
-    s32 value;
-    u32 unsignedValue;
-} SignedDivisionWork;
-
 typedef union RankingTextBuffer {
     char value[56];
     volatile char first;
@@ -24,18 +19,18 @@ typedef union RankingTextBuffer {
 
 void DrawRankingPanel(s32 slideX) {
     s32 panel;
-    SignedDivisionWork iter;
+    s32 iter;
     s32 countOrIndex;
     s32 xOrField;
     s32 destination;
     s32 color;
-    PlayerLapTimeAddress scoreOrX;
+    s32 *lapTime;
+    s32 carNameY;
     RankingTextBuffer text;
     s32 mode;
     s32 row;
     s32 doubledRow;
     s32 value;
-    s32 scoreValue;
     s32 limit;
 
     panel = slideX;
@@ -46,39 +41,33 @@ void DrawRankingPanel(s32 slideX) {
     if (mode != 3) {
         limit = 3;
     }
-    iter.value = 0;
+    iter = 0;
     if (limit > 0) {
-        scoreOrX.timePointer = g_PlayerCar.lapTimes.table.milliseconds;
+        lapTime = g_PlayerCar.lapTimes.table.milliseconds;
         do {
-            /* row = iter / 2 and value = (iter % 2) * 8: two lap times per
-             * table row, the odd one 8 px to the right. This is gcc's own
-             * expansion of the signed divide; writing it back as `iter / 2`
-             * does not re-expand to the same code here, so it stays. */
-            scoreValue = iter.value + (iter.unsignedValue >> 31);
-            row = scoreValue >> 1;
+            row = iter / 2;
             doubledRow = row * 2;
-            value = iter.value - doubledRow;
+            value = iter - doubledRow;
             value <<= 3;
             xOrField = value + 0x58;
-            text.first = iter.value + 0x31;
+            text.first = iter + 0x31;
             doubledRow = (doubledRow + row) << 5;
-            scoreValue = *scoreOrX.timePointer;
-            value = (destination = panel + 0x14);
-            FormatLapTime(&text.value[2], scoreValue);
+            value = panel + 0x14;
+            FormatLapTime(&text.value[2], *lapTime);
             destination = doubledRow;
             destination = destination + value;
             color = 0x78CC;
-            if (g_BestLapIndex == iter.value) {
+            if (g_BestLapIndex == iter) {
                 color = 0x780F;
             }
             DrawText8x8(destination, xOrField, text.value, color);
-            iter.value++;
-            scoreOrX.timePointer++;
-        } while (iter.value < limit);
+            iter++;
+            lapTime++;
+        } while (iter < limit);
     }
     DrawProportionalText(panel + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
     countOrIndex = 0;
-    scoreOrX.value = 0x82;
+    carNameY = 0x82;
     destination = 0x78;
     do {
         text.value[0] = g_PlaceSuffixNames[countOrIndex][0];
@@ -96,9 +85,9 @@ void DrawRankingPanel(s32 slideX) {
         }
         DrawText8x8(panel + 0x14, destination, text.value, color);
         sprintf(text.value, g_FmtCarName, g_CarNames[xOrField]);
-        DrawText8x8(panel + 0x2C, scoreOrX.value, text.value, color);
+        DrawText8x8(panel + 0x2C, carNameY, text.value, color);
         destination += 0x14;
-        scoreOrX.value += 0x14;
+        carNameY += 0x14;
         countOrIndex++;
     } while (countOrIndex < 5);
 }
@@ -237,8 +226,6 @@ void UpdateRecordEntry(void) {
 
     case RECORD_ENTRY_STATE_EDIT_LAP_NAME: {
         u8 *timeName;
-        RaceRecordAddress timeRecordBase;
-        RaceRecordAddress recordAddress;
         s32 previous;
         u16 buttons;
 
@@ -263,18 +250,13 @@ void UpdateRecordEntry(void) {
                 g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
                 i = 0;
                 if (g_TimeRecordInsertRow < 5) {
-                    timeRecordBase.pointer = &g_TimeRecords[0][0][0];
                     timeName = g_TimeRecordNameCodes;
                     do {
                         *timeName = g_RankingNameCodes[i];
-                        recordAddress.value =
-                            (((g_CourseIndex * 5) + g_TimeRecordInsertRow) *
-                            sizeof(RaceRecord)) +
-                            (g_GrandPrixSeries * sizeof(g_TimeRecords[0])) +
-                            timeRecordBase.value;
-                        recordAddress.bytePointer += i;
+                        g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()]
+                                     [g_TimeRecordInsertRow].driverName[i] =
+                            g_NameEntryCharset[*timeName];
                         i++;
-                        *recordAddress.bytePointer = g_NameEntryCharset[*timeName];
                         timeName++;
                     } while (i < 6);
                 }
@@ -289,13 +271,11 @@ void UpdateRecordEntry(void) {
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_LAP_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_RankingInsertRow);
         }
-        i = 0;
-        do {
+        for (i = 0; i < 6; i++) {
             g_RankingRecords[g_GrandPrixSeries][SeriesCourseIndex()]
                             [g_RankingInsertRow].driverName[i] =
                 g_NameEntryCharset[g_RankingNameCodes[i]];
-            i++;
-        } while (i < 6);
+        }
         DrawRankingPanel(0);
         break;
     }
@@ -357,13 +337,11 @@ void UpdateRecordEntry(void) {
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_RACE_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_TimeRecordInsertRow);
         }
-        i = 0;
-        do {
+        for (i = 0; i < 6; i++) {
             g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()]
                          [g_TimeRecordInsertRow].driverName[i] =
                 g_NameEntryCharset[g_TimeRecordNameCodes[i]];
-            i++;
-        } while (i < 6);
+        }
         DrawTimeRecordPanel(0);
         break;
     }

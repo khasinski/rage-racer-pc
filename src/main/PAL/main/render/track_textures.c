@@ -25,8 +25,6 @@ void SwapTrackTexturePageNow(void) {
     Rect *rect = &g_TrackTextureRowRect;
     TrackTextureShadowRow **basePtr = &g_TrackTextureShadow;
     s32 value;
-    s32 *src;
-    s32 *dst;
     s32 count;
 
     do {
@@ -38,13 +36,9 @@ void SwapTrackTexturePageNow(void) {
             LoadImage(rect, (*basePtr)[page]);
             DrawSync(0);
 
-            src = buffer;
-            dst = (*basePtr)[page];
-            count = 0;
-            do {
-                *dst++ = *src++;
-                count++;
-            } while (count < 0xE0);
+            for (count = 0; count < 0xE0; count++) {
+                (*basePtr)[page][count] = buffer[count];
+            }
 
             g_TrackTextureShadowPage[page] = value;
         }
@@ -53,11 +47,8 @@ void SwapTrackTexturePageNow(void) {
 }
 
 void SetTrackTexturePageNow(s32 trackSection) {
-    s32 temp;
-
-    temp = SelectTrackTexturePage(trackSection);
-    g_TrackTextureTargetRow = temp;
-    g_TrackTextureCursorRow = temp;
+    g_TrackTextureTargetRow = SelectTrackTexturePage(trackSection);
+    g_TrackTextureCursorRow = g_TrackTextureTargetRow;
     SwapTrackTexturePageNow();
 }
 
@@ -81,8 +72,6 @@ void SwapTrackTextureRow(void) {
     s32 buffer[0xE0];
     s16 *rectY;
     s32 value;
-    s32 *dst;
-    s32 *src;
     s32 count;
     TrackTextureShadowRow **basePtr;
     Rect *rect;
@@ -103,14 +92,10 @@ void SwapTrackTextureRow(void) {
         LoadImage(rect, (*basePtr)[index]);
         DrawSync(0);
 
-        src = buffer;
         copyIndex = g_TrackTextureCursorRow;
-        count = 0;
-        dst = (*basePtr)[copyIndex];
-        do {
-            *dst++ = *src++;
-            count++;
-        } while (count < 0xE0);
+        for (count = 0; count < 0xE0; count++) {
+            (*basePtr)[copyIndex][count] = buffer[count];
+        }
 
         g_TrackTextureShadowPage[g_TrackTextureCursorRow] = value;
     }
@@ -132,8 +117,7 @@ void StepTrackTextureSwap(void) {
     }
 }
 
-s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
-    s32 random;
+static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
     s32 candidate;
     s32 first;
 
@@ -141,8 +125,7 @@ s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
         return current;
     }
     if ((g_TrackTextureCursorRow == 0) || (g_TrackTextureCursorRow == 0x100)) {
-        random = Random15() & 0x7FFF;
-        candidate = random % 11;
+        candidate = (Random15() & 0x7FFF) % carCount;
 
         first = SelectTrackTexturePage(g_Cars[current].trackSection);
 
@@ -153,23 +136,10 @@ s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
     return current;
 }
 
+s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
+    return CycleCameraCar(mask, current, 11);
+}
+
 s32 CycleAttractCameraCar(s32 mask, s32 current) {
-    s32 random;
-    s32 candidate;
-    s32 first;
-
-    if (mask & g_SceneTimer) {
-        return current;
-    }
-    if ((g_TrackTextureCursorRow == 0) || (g_TrackTextureCursorRow == 0x100)) {
-        random = Random15() & 0x7FFF;
-        candidate = random % 4;
-
-        first = SelectTrackTexturePage(g_Cars[current].trackSection);
-
-        if (first == SelectTrackTexturePage(g_Cars[candidate].trackSection)) {
-            return candidate;
-        }
-    }
-    return current;
+    return CycleCameraCar(mask, current, 4);
 }

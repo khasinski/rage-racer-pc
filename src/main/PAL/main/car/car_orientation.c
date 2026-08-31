@@ -124,27 +124,17 @@ void InitPlayerCar(PlayerCarRuntime *car)
   player->drive.reserved80 = 0;
   player->drive.drivetrainTorque = 0;
   player->drive.reserved7C = 0;
-  player->drive.bodyLiftOffset = 0;
   player->drive.racePosition = 1;
   player->x = player->x + player->motionX;
   player->z = player->z + player->motionZ;
   player->facingBackwards = IsCarFacingBackwards(car);
-  player->drive.jumpTimer = 0;
-  player->drive.clutch = 0;
   player->drive.gearDisp = 1;
   player->drive.shiftRpmDelta = 0;
   g_ShiftTargetRpm = 0;
   drive = &car->drive;
   printf("%s", g_MsgInit0);
   carSpec = g_CarSpec;
-  if (carSpec->topGear < 6)
-  {
-    if (carSpec->topGear <= 0)
-    {
-      carSpec->topGear = 6;
-    }
-  }
-  else
+  if (carSpec->topGear <= 0 || carSpec->topGear >= 6)
   {
     carSpec->topGear = 6;
   }
@@ -421,19 +411,10 @@ void UpdateCarBodyRoll(PlayerCarRuntime *ctx) {
  * p0,p1,p3,p2 (four chained half-plane sign checks via NormalClip), else 0.
  */
 s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
-    s32 result;
-    s32 ret = 0;
-
-    if (NormalClip(p0, p1, pt) >= 0) {
-        if (NormalClip(p1, p3, pt) >= 0) {
-            if (NormalClip(p3, p2, pt) >= 0) {
-                result = NormalClip(p2, p0, pt) >= 0;
-                ret = result;
-            }
-        }
-    }
-
-    return ret;
+    return NormalClip(p0, p1, pt) >= 0 &&
+           NormalClip(p1, p3, pt) >= 0 &&
+           NormalClip(p3, p2, pt) >= 0 &&
+           NormalClip(p2, p0, pt) >= 0;
 }
 
 s32 CollidePlayerWithCars(PlayerCarRuntime *car)

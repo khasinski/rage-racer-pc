@@ -88,8 +88,9 @@ static void SamplePlayerInput(GameCarDrive *p) {
  * The engine note and the tacho. The needle flickers near the limiter and
  * the note follows the engine speed the drivetrain settled on.
  */
-static void UpdatePlayerEngineNote(PlayerCarRuntime *car, GameCarDrive *p,
-                                   s32 revFlag) {
+static void UpdatePlayerEngineNote(PlayerCarRuntime *car, GameCarDrive *p) {
+    s32 revFlag = 0;
+
     if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
         p->acceleratorInput.value >= 129) {
         s32 r = Random15();
@@ -392,7 +393,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 slip;
     s32 skid;
     s32 crash;
-    s32 revFlag = 0;
     u32 skidRange;
 
     TraceCarStates();
@@ -532,7 +532,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     SettleEngineRpm(p);
 
-    UpdatePlayerEngineNote(car, p, revFlag);
+    UpdatePlayerEngineNote(car, p);
 }
 
 void DrawPlayerTachometer(void) {

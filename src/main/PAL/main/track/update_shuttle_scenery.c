@@ -9,44 +9,37 @@ void UpdateShuttleScenery(s32 instance) {
     s32 phase;
     s32 side;
     s32 step;
-    s16 *limitPtr;
-    s16 *tailLimitPtr;
     s16 denom;
     const Vec4 *basePoint;
     const Vec4 *altPoint;
 
     entry = &g_ShuttleScenery[instance];
     
-    limitPtr = g_ShuttlePathTravelMax;
     side = entry->startEndpoint;
     phase = entry->pathIndex;
     step = entry->travelStep;
-    limitPtr = &limitPtr[phase];
-    denom = *limitPtr;
+    denom = g_ShuttlePathTravelMax[phase];
     basePoint = &g_ShuttlePathPoints[phase].endpoint[side];
     altPoint = &g_ShuttlePathPoints[phase].endpoint[1 - side];
     entry->position.x = ((denom - step) * basePoint->x +
                          step * altPoint->x) / denom;
 
-    denom = *limitPtr;
     entry->position.y = ((denom - step) * basePoint->y +
                          step * altPoint->y) / denom;
 
-    denom = *limitPtr;
     entry->position.z = ((denom - step) * basePoint->z +
                          step * altPoint->z) / denom;
 
-    if (entry->travelStep >= *limitPtr) {
+    if (entry->travelStep >= denom) {
         entry->travelStep = 0;
         entry->dwellCounter = 0;
         entry->startEndpoint ^= 1;
         return;
     }
 
-    tailLimitPtr = &g_ShuttlePathDwellMax[phase];
-    if (entry->dwellCounter >= *tailLimitPtr) {
+    if (entry->dwellCounter >= g_ShuttlePathDwellMax[phase]) {
         entry->travelStep++;
-        entry->dwellCounter = *tailLimitPtr;
+        entry->dwellCounter = g_ShuttlePathDwellMax[phase];
         return;
     }
     entry->dwellCounter++;

@@ -15,11 +15,7 @@ void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
     if (variant != 0) {
         next = GameQueueSpriteTrans(base, next, 0x24, 0x58, 0x24, 0x18, 0xCC, 0x90, 0x7F40);
     }
-    if (variant != 0) {
-        y = 0x78;
-    } else {
-        y = 0x58;
-    }
+    y = variant != 0 ? 0x78 : 0x58;
     next = GameQueueSpriteTrans(base, next, 0x24, y, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0x48, 0xB8, 0x10, 0x10, 0, 0xC8, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0x68, 0xB8, 0x34, 0x10, 0x10, 0xC8, 0x7F40);

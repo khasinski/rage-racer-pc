@@ -48,5 +48,3 @@ void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm, s32
         break;
     }
 }
-
-// Fixed-point blend in 0..10000 scale.

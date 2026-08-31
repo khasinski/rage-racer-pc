@@ -96,7 +96,6 @@ typedef struct ModernSpan {
     uint8_t layer;
     SDL_Rect scissor;
     int32_t start, count;
-    float depthKey; /* semi-transparent 3D sorting */
 } ModernSpan;
 
 #define MODERN_MAX_VERTICES 400000
@@ -112,14 +111,7 @@ static int s_spanCount;
  * draws over it. */
 #define MODERN_BACKGROUND_BUCKET 576
 
-#define MODERN_NEAR 16.0f
 #define MODERN_FAR 262144.0f
-
-/* Depth-key range: ordering keys are compat bucket windows in z units and
- * may be negative (the +128 ordering-table base admits ot[-128..-1], which
- * the player car's biased faces use). Mapped linearly into [0,1]. */
-#define MODERN_DEPTH_MIN (-80000.0f)
-#define MODERN_DEPTH_RANGE (240000.0f)
 
 /* ---- MSL shaders ---- */
 
@@ -504,13 +496,12 @@ enum {
 };
 static uint8_t s_currentLayer;
 
-static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
-                                   float depthKey) {
+static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state) {
     ModernSpan *span;
     if (s_spanCount > 0) {
         span = &s_spans[s_spanCount - 1];
-        if (span->pipeline == pipeline && depthKey == span->depthKey &&
-            span->pass == s_currentPass && span->layer == s_currentLayer &&
+        if (span->pipeline == pipeline && span->pass == s_currentPass &&
+            span->layer == s_currentLayer &&
             ((state == NULL && !span->hasScissor) ||
              (state != NULL && state->hasScissor == span->hasScissor &&
               (!state->hasScissor ||
@@ -530,7 +521,6 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state,
     if (span->hasScissor) span->scissor = state->scissor;
     span->start = s_vertexCount;
     span->count = 0;
-    span->depthKey = depthKey;
     return span;
 }
 
@@ -661,7 +651,7 @@ static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
 }
 
 static void ModernReplay2DPacket(const RageCapturePacket *packet,
-                                 Modern2DState *state, int pipelineBase) {
+                                 Modern2DState *state) {
     const uint32_t *words = packet->words;
     uint32_t command = words[0] >> 24;
     if (command >= 0xE0) {
@@ -755,9 +745,9 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             }
             {
                 uint32_t abr = (prim_tpage >> 5) & 3u;
-                int pipeline = (semi && abr == 2u) ? pipelineBase + 1
-                                                   : pipelineBase;
-                ModernSpan *span = ModernBeginSpan(pipeline, &spanState, 0.0f);
+                int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
+                                                   : MODERN_PIPE_2D;
+                ModernSpan *span = ModernBeginSpan(pipeline, &spanState);
                 if (quad) ModernEmitQuad(span, corners);
                 else ModernEmitTriangle(span, corners);
             }
@@ -823,9 +813,9 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             }
             {
                 uint32_t abr = (state->tpage >> 5) & 3u;
-                int pipeline = (semi && abr == 2u) ? pipelineBase + 1
-                                                   : pipelineBase;
-                ModernSpan *span = ModernBeginSpan(pipeline, &spanState, 0.0f);
+                int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
+                                                   : MODERN_PIPE_2D;
+                ModernSpan *span = ModernBeginSpan(pipeline, &spanState);
                 ModernEmitQuad(span, corners);
             }
         } else if (isLine) {
@@ -883,7 +873,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 }
                 {
                     ModernSpan *span =
-                        ModernBeginSpan(pipelineBase, &spanState, 0.0f);
+                        ModernBeginSpan(MODERN_PIPE_2D, &spanState);
                     ModernEmitQuad(span, corners);
                 }
             }
@@ -915,7 +905,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
         if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
             continue;
         }
-        ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+        ModernReplay2DPacket(packet, &state2d);
     }
 
     /* The native mirror supplies its own world and backdrop. Retain only
@@ -932,7 +922,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
              packet->bucket >= MODERN_BACKGROUND_BUCKET)) {
             continue;
         }
-        ModernReplay2DPacket(packet, &state2d, MODERN_PIPE_2D);
+        ModernReplay2DPacket(packet, &state2d);
     }
     s_currentPass = 0;
     s_currentLayer = MODERN_LAYER_HUD;

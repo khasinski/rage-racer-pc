@@ -18,11 +18,7 @@ void DrawNowLoadingText(void) {
 
 /* g_MenuScreenUpdate[0]: waits for the car-select assets, then opens screen 1. */
 void EnterCourseSelectScreen(void) {
-    s32 initValue;
-    s32 mode;
-    s32 largeValue;
-    u8 *table;
-    s32 eight;
+    s32 course;
 
     DrawNowLoadingText();
     if (RequestCarSelectAssets() != 0) {
@@ -34,15 +30,9 @@ void EnterCourseSelectScreen(void) {
     g_MenuScreen = 1;
     DrawBrowseArrows(0, 0, 0, 0);
 
-    initValue = 0x7A120;
-    mode = 0x3D090;
-    largeValue = 0x1F0000;
-    g_MenuViewOffset = mode;
-    mode = g_CourseIndex;
-    eight = 8;
-    g_MenuViewSpin = eight;
-    table = g_CourseProgress->bestPlace;
-    largeValue |= 0x4000;
+    g_MenuViewOffset = 0x3D090;
+    course = g_CourseIndex;
+    g_MenuViewSpin = 8;
     g_UiScriptProgress = 0;
     g_PlayerCar.x = 0;
     g_PlayerCar.y = 0;
@@ -54,13 +44,13 @@ void EnterCourseSelectScreen(void) {
     g_PlayerSteerAngle = 0;
     g_PlayerCarWheelAngle = 0;
     g_MenuViewAngleTarget = 0x7A120;
-    g_MenuViewAngle = initValue;
+    g_MenuViewAngle = 0x7A120;
     g_MenuViewOffsetTarget = 0;
-    g_CourseCardSpin = largeValue;
+    g_CourseCardSpin = 0x1F4000;
     g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = table[mode & 3];
+    g_CourseCardPendingGrade = g_CourseProgress->bestPlace[course & 3];
 
-    if (mode >= 4) {
+    if (course >= 4) {
         g_TimeAttackPlateStep = 1;
     } else {
         g_TimeAttackPlateStep = -1;

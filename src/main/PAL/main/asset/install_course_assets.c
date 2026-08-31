@@ -3,31 +3,30 @@
 
 void InstallCourseAssets(void) {
     u8 *base;
-    s32 offset0;
-    s32 offset1;
-
-    g_AssetBlockPtr = g_AssetBase + GetSceneAssetHeader(g_AssetBase)->offsets[0];
-    UploadImageAsset(g_AssetBlockPtr);
-
-    g_AssetBlockPtr = g_AssetBase + GetSceneAssetHeader(g_AssetBase)->offsets[1];
-    UploadImageAsset(g_AssetBlockPtr);
-
-    g_AssetBlockPtr = g_AssetBase + GetSceneAssetHeader(g_AssetBase)->offsets[2];
-    UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    GameSceneAssetHeader *header;
 
     base = g_AssetBase;
-    offset0 = GetSceneAssetHeader(base)->offsets[3];
-    offset1 = GetSceneAssetHeader(base)->offsets[4];
-    g_AssetBlockPtr = base + offset0;
-    g_AssetSubBlockPtr = base + offset1;
+    header = GetSceneAssetHeader(base);
+
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
     UploadImageAsset(g_AssetBlockPtr);
 
-    StoreTeamLogoImage(g_AssetBase);
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
+    UploadImageAsset(g_AssetBlockPtr);
 
-    g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetBase);
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
+    UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
+
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[3]);
+    g_AssetSubBlockPtr = GetSceneAssetAddress(header, header->offsets[4]);
+    UploadImageAsset(g_AssetBlockPtr);
+
+    StoreTeamLogoImage(base);
+
+    g_TrackTextureShadow = GetTrackTextureShadowRows(base);
     UploadImageAsset(g_AssetSubBlockPtr);
     ResetTrackTextureSwap();
-    g_AssetLoadCursor = g_AssetBase + TRACK_TEXTURE_SHADOW_SIZE;
+    g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
 }
 
 s32 RequestTrackDataAssets(void) {

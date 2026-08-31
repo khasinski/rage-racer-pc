@@ -3,18 +3,12 @@
 
 void UpdateMenuMode(void) {
     OT_TYPE *scratch;
-    s32 c0;
-    s32 c1;
     u32 screenRange;
 
-    c0 = g_AnimTimer;
-    c1 = g_SceneTimer;
     scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
-    c0 += 1;
-    c1 += 1;
-    g_AnimTimer = c0;
-    g_SceneTimer = c1;
-    if (c1 == 2) {
+    g_AnimTimer++;
+    g_SceneTimer++;
+    if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
     DrawSolidRect(scratch, 0, 0, 0x140, 2, 0, 0, 0, 0xFF);
@@ -36,12 +30,8 @@ void UpdateMenuMode(void) {
 
     DrawCarSpecGraph(g_CarSpecGraphStep, g_CarTable[(g_MenuScreen == MENU_SCREEN_CAR_SHOP) ? g_CarListCursor : g_PlayerCarIndex].tireCompound);
 
-    {
-        s32 flag;
-        flag = g_MenuHintBarStep;
-        if (flag == 0) {
-            return;
-        }
+    if (g_MenuHintBarStep == 0) {
+        return;
     }
     if (RunTimedDrawScript(&g_MenuHintBarScript, &g_MenuHintBarProgress,
                            g_MenuHintBarStep) == 0) {

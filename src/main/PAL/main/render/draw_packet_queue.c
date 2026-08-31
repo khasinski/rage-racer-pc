@@ -45,14 +45,14 @@ u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w,
 
     packetAddress.bytes = prim;
     packet = packetAddress.polyFT4;
-    (packet->x0 = x,
-     packet->y0 = y,
-     packet->x1 = x + (width < 0 ? -width : width),
-     packet->y1 = y,
-     packet->x2 = x,
-     packet->y2 = y + (height < 0 ? -height : height),
-     packet->x3 = x + (width < 0 ? -width : width),
-     packet->y3 = y + (height < 0 ? -height : height));
+    packet->x0 = x;
+    packet->y0 = y;
+    packet->x1 = x + (width < 0 ? -width : width);
+    packet->y1 = y;
+    packet->x2 = x;
+    packet->y2 = y + (height < 0 ? -height : height);
+    packet->x3 = x + (width < 0 ? -width : width);
+    packet->y3 = y + (height < 0 ? -height : height);
     packet->u0 = u0;
     packet->v0 = v0;
     packet->u1 = u0 + width;
@@ -95,14 +95,14 @@ u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
 
     packetAddress.bytes = prim;
     packet = packetAddress.polyFT4;
-    (packet->x0 = x,
-     packet->y0 = y,
-     packet->x1 = x + (width < 0 ? -width : width),
-     packet->y1 = y,
-     packet->x2 = x,
-     packet->y2 = y + (height < 0 ? -height : height),
-     packet->x3 = x + (width < 0 ? -width : width),
-     packet->y3 = y + (height < 0 ? -height : height));
+    packet->x0 = x;
+    packet->y0 = y;
+    packet->x1 = x + (width < 0 ? -width : width);
+    packet->y1 = y;
+    packet->x2 = x;
+    packet->y2 = y + (height < 0 ? -height : height);
+    packet->x3 = x + (width < 0 ? -width : width);
+    packet->y3 = y + (height < 0 ? -height : height);
     packet->u0 = u0;
     packet->v0 = v0;
     packet->u1 = u0 + uSpan;

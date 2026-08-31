@@ -46,6 +46,15 @@ static float AngleToDegrees(s32 angle) {
     return (float)(angle & 0xFFF) * (360.0f / 4096.0f);
 }
 
+static void GameRenderWorldEnvironmentColor(int slot, RageRenderVec3 *out) {
+    out->x =
+        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.r / 255.0f;
+    out->y =
+        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.g / 255.0f;
+    out->z =
+        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.b / 255.0f;
+}
+
 static uint32_t TrackDataAssetKey(void) {
     uint32_t current = (uint32_t)(ASSET_TRACK_2ND_BASE +
                                   g_GrandPrixClass * 8 + g_CourseIndex * 2);
@@ -293,39 +302,14 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     camera.verticalFovDegrees = verticalFovDegrees;
     camera.nearPlane = 1.0f;
     camera.farPlane = 262144.0f;
-    camera.fogColor.x =
-        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.r / 255.0f;
-    camera.fogColor.y =
-        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.g / 255.0f;
-    camera.fogColor.z =
-        (float)g_EnvironmentColors.fields.slots[0].cur.bytes.b / 255.0f;
+    GameRenderWorldEnvironmentColor(0, &camera.fogColor);
     /* Convert the authored environment palette into semantic sky bands. The
      * native backend owns their projection; it never replays DrawSkyBackground
      * packets or depends on an ordering-table bucket. */
-    camera.skyTopColor.x =
-        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.r / 255.0f;
-    camera.skyTopColor.y =
-        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.g / 255.0f;
-    camera.skyTopColor.z =
-        (float)g_EnvironmentColors.fields.slots[1].cur.bytes.b / 255.0f;
-    camera.skyColor.x =
-        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.r / 255.0f;
-    camera.skyColor.y =
-        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.g / 255.0f;
-    camera.skyColor.z =
-        (float)g_EnvironmentColors.fields.slots[2].cur.bytes.b / 255.0f;
-    camera.skyHorizonColor.x =
-        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.r / 255.0f;
-    camera.skyHorizonColor.y =
-        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.g / 255.0f;
-    camera.skyHorizonColor.z =
-        (float)g_EnvironmentColors.fields.slots[3].cur.bytes.b / 255.0f;
-    camera.skyBottomColor.x =
-        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.r / 255.0f;
-    camera.skyBottomColor.y =
-        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.g / 255.0f;
-    camera.skyBottomColor.z =
-        (float)g_EnvironmentColors.fields.slots[4].cur.bytes.b / 255.0f;
+    GameRenderWorldEnvironmentColor(1, &camera.skyTopColor);
+    GameRenderWorldEnvironmentColor(2, &camera.skyColor);
+    GameRenderWorldEnvironmentColor(3, &camera.skyHorizonColor);
+    GameRenderWorldEnvironmentColor(4, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog

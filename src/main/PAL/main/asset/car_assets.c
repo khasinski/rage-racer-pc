@@ -48,67 +48,68 @@ void LoadCarSelectAssets(void) {
         }
         return;
     case 3:
-            if (LoadAsset(8, g_AssetLoadCursor) != 0) {
-                RegisterModelBank(GetModelBankHeader(g_AssetLoadCursor + 0xC), 0xE);
+        if (LoadAsset(8, g_AssetLoadCursor) != 0) {
+            RegisterModelBank(GetModelBankHeader(g_AssetLoadCursor + 0xC), 0xE);
 
-                header = GetSceneAssetHeader(g_AssetLoadCursor);
-                blockOffset = header->offsets[1];
-                firstOffset = header->offsets[0];
-                secondBlock = GetSceneAssetAddress(header, blockOffset);
-                header = GetSceneAssetAddress(header, firstOffset);
-                g_TeamLogoSampleData = GetTeamLogoSample(header);
-                g_AssetBlockPtr = secondBlock;
-                RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
+            header = GetSceneAssetHeader(g_AssetLoadCursor);
+            blockOffset = header->offsets[1];
+            firstOffset = header->offsets[0];
+            secondBlock = GetSceneAssetAddress(header, blockOffset);
+            header = GetSceneAssetAddress(header, firstOffset);
+            g_TeamLogoSampleData = GetTeamLogoSample(header);
+            g_AssetBlockPtr = secondBlock;
+            RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
 
-                imageHeader = GetSceneAssetHeader(g_AssetLoadCursor);
-                assetOffset = imageHeader->offsets[2];
-                g_AssetBlockPtr = GetSceneAssetAddress(imageHeader, assetOffset);
-                UploadImageAsset(g_AssetBlockPtr);
+            imageHeader = GetSceneAssetHeader(g_AssetLoadCursor);
+            assetOffset = imageHeader->offsets[2];
+            g_AssetBlockPtr = GetSceneAssetAddress(imageHeader, assetOffset);
+            UploadImageAsset(g_AssetBlockPtr);
 
-                g_AssetLoadState = 4;
-                g_CarModelBuffer = g_AssetBlockPtr;
-                g_ImageBlockBuffer = g_AssetBlockPtr + CAR_MODEL_BUFFER_SIZE;
-            }
+            g_AssetLoadState = 4;
+            g_CarModelBuffer = g_AssetBlockPtr;
+            g_ImageBlockBuffer = g_AssetBlockPtr + CAR_MODEL_BUFFER_SIZE;
+        }
         return;
     case 4:
-            carIndex = g_PlayerCarIndex;
-            assetOffset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant) << 1;
-            carModelBase = g_CarModelBuffer;
+        carIndex = g_PlayerCarIndex;
+        assetOffset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant) << 1;
+        carModelBase = g_CarModelBuffer;
 
-            if (LoadAsset(assetOffset + 0xA, carModelBase) != 0) {
-                SetCarModelSlot(GetCarModelAsset(carModelBase), 0);
-                SelectCarModelSlot(0);
+        if (LoadAsset(assetOffset + 0xA, carModelBase) != 0) {
+            SetCarModelSlot(GetCarModelAsset(carModelBase), 0);
+            SelectCarModelSlot(0);
 
-                model = g_CarModelAsset;
-                RegisterModelBank(model->modelData.modelBank, 0);
+            model = g_CarModelAsset;
+            RegisterModelBank(model->modelData.modelBank, 0);
+            SetCarImageSlot(model->imageData.carImage, 0);
 
-                model = g_CarModelAsset;
-                SetCarImageSlot(model->imageData.carImage, 0);
-
-                carIndex = g_PlayerCarIndex;
-                if (carIndex < 10) {
-                    ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
-                                    g_CarModelAsset->imageData.carImage);
-                    ApplyBodyColor2(g_CarTable[g_PlayerCarIndex].paintColor2,
-                                    g_CarModelAsset->imageData.carImage);
-                }
-
-                g_CarModelSlot = 0;
-                g_AssetLoadState = 0;
+            if (carIndex < 10) {
+                ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
+                                model->imageData.carImage);
+                ApplyBodyColor2(g_CarTable[carIndex].paintColor2,
+                                model->imageData.carImage);
             }
+
+            g_CarModelSlot = 0;
+            g_AssetLoadState = 0;
+        }
     }
     return;
 }
 
-s32 RequestCarModel(s32 carIndex) {
+static s32 RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     if (g_AssetLoadState != 0) {
         return 1;
     }
 
-    g_AssetRequestType = ASSET_REQUEST_CAR_MODEL;
+    g_AssetRequestType = request;
     g_PendingCarModelIndex = carIndex;
     g_AssetLoadState = 1;
     return 1;
+}
+
+s32 RequestCarModel(s32 carIndex) {
+    return RequestPendingCarModel(ASSET_REQUEST_CAR_MODEL, carIndex);
 }
 
 void LoadCarModel(s32 carIndex) {
@@ -144,12 +145,5 @@ void LoadCarModel(s32 carIndex) {
 }
 
 s32 RequestUpgradedCarModel(s32 carIndex) {
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    g_AssetRequestType = ASSET_REQUEST_UPGRADED_CAR_MODEL;
-    g_PendingCarModelIndex = carIndex;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestPendingCarModel(ASSET_REQUEST_UPGRADED_CAR_MODEL, carIndex);
 }

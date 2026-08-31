@@ -1,11 +1,5 @@
 #include "game/menu.h"
 
-typedef union FadingMenuTableAddress {
-    TimedDrawCommand *commands;
-    s32 *timers;
-} FadingMenuTableAddress;
-
-
 void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteMotion *motion, s32 type) {
     ScriptedSpriteMotion *motionReg = motion;
     ScriptedSpriteShape *shapeReg;
@@ -484,13 +478,10 @@ TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
 void DrawTimedDrawScript(void *commands, s32 progress) {
     TimedDrawCommand *base = commands;
     TimedDrawCommand *cmd;
-    TimedDrawCommandAddress commandAddress;
-    s32 index = 0;
     s32 remaining;
     u32 type;
 
-    commandAddress.pointer = base;
-    cmd = commandAddress.pointer;
+    cmd = base;
     while (cmd->time >= 0) {
         remaining = progress - cmd->time;
         if (remaining >= 0) {
@@ -552,8 +543,7 @@ void DrawTimedDrawScript(void *commands, s32 progress) {
             }
         }
         cmd++;
-        index++;
-        }
+    }
 
 }
 
@@ -578,7 +568,6 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     s32 nextTimer;
     s32 value;
     s32 temporary;
-    FadingMenuTableAddress tableAddress;
     s32 timerValue;
     u32 fade;
     s32 drawX;
@@ -632,14 +621,12 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
         return;
     }
 
-    tableAddress.commands = g_MenuRowScript;
-    cmd = &tableAddress.commands[i];
+    cmd = &g_MenuRowScript[i];
 
     for (; i <= countReg; i++, cmd++) {
         shapePtr = cmd->shape.spriteShape;
         motionPtr = cmd->motion.spriteMotion;
-        tableAddress.timers = g_MenuRowFlashLevels;
-        timer = &tableAddress.timers[i];
+        timer = &g_MenuRowFlashLevels[i];
 
         fade = *timer & 0x1FF;
         *timer = fade;
@@ -680,12 +667,7 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
 void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
                    u8 r, u8 g, u8 b,
                    s32 flags, s32 textX, s32 textY, u8 *caption) {
-    s32 f = flags;
-    s32 p0 = x0;
     void *ot = SCRATCH_OT_BASE_AS(void);
-    s32 p1 = y0;
-    s32 p2 = x1;
-    s32 p3 = y1;
 
     if (flags & 0x10) {
         if (flags % 2) {
@@ -696,30 +678,21 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
                           0x7f, 0x7f, 0x7f, 0x244, (flags & 8) ? 0x20 : 0x40);
         }
     }
-    DrawRectOutline(ot, (s16)p0, (s16)p1, (s16)p2, (s16)p3,
-                    0xb4, 0xb4, 0xb4, (f & 4) ? (f & 0x60) : 0xff);
-    DrawSolidRect(ot, (s16)p0, (s16)p1, (s16)p2, (s16)p3,
-                  r, g, b, (f & 2) ? (f & 0x60) : 0xff);
-    /* The second p3 use keeps it ahead of ot in global-alloc priority. */
-    
+    DrawRectOutline(ot, (s16)x0, (s16)y0, (s16)x1, (s16)y1,
+                    0xb4, 0xb4, 0xb4,
+                    (flags & 4) ? (flags & 0x60) : 0xff);
+    DrawSolidRect(ot, (s16)x0, (s16)y0, (s16)x1, (s16)y1,
+                  r, g, b, (flags & 2) ? (flags & 0x60) : 0xff);
 }
 
 
 void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 useFlash) {
     void *ot;
-    s32 savedX0;
-    s32 savedY0;
-    s32 savedX1;
-    s32 savedY1;
     s32 color;
     s32 white;
     s32 counter;
 
     ot = SCRATCH_OT_BASE_AS(void);
-    savedX0 = x0;
-    savedY0 = y0;
-    savedX1 = x1;
-    savedY1 = y1;
     if (useFlash != 0) {
         if (g_AnimTimer & 2) {
             color = 0xFF;
@@ -735,15 +708,16 @@ void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 useFlash) {
     white = 0xFF;
     DrawRectOutline(
         ot,
-        (s16)(savedX0 - 1),
-        (s16)(savedY0 - 2),
-        (s16)(savedX1 + 2),
-        (s16)(savedY1 + 4),
+        (s16)(x0 - 1),
+        (s16)(y0 - 2),
+        (s16)(x1 + 2),
+        (s16)(y1 + 4),
         0,
         (u8)color,
         0,
         white);
     DrawRectOutline(
-        ot, (s16)savedX0, (s16)savedY0, (s16)savedX1, (s16)(savedY1 + 0), 0, (u8)color, 0, white);
+        ot, (s16)x0, (s16)y0, (s16)x1, (s16)y1,
+        0, (u8)color, 0, white);
     g_MenuCursorPulsePhase += 0x60;
 }

@@ -33,30 +33,16 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
 void ApplyPanVoiceVolume(void) {
     s32 values[2];
     s32 changed;
-    s32 i;
-    s32 *dst;
     s32 raw;
-    s32 loopValue;
     s32 scale;
     s32 left;
     s32 right;
     s32 voice;
     s32 zeroArg;
 
-    changed = 0;
-    i = 0;
-    dst = values;
-    do {
-        loopValue = i == 0 ? g_PanVoiceVolumeL : g_PanVoiceVolumeR;
-        if (loopValue < 2) {
-            *dst = 0;
-        } else {
-            *dst = loopValue;
-            changed = 1;
-        }
-        dst++;
-        i++;
-    } while (i < 2);
+    values[0] = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
+    values[1] = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
+    changed = values[0] != 0 || values[1] != 0;
 
     if (changed != 0) {
         raw = values[0];

@@ -9,14 +9,9 @@
  */
 void InstallTrackPoints(TrackPointTable *trackData) {
     s32 count;
-    s32 limit;
     GameTrackPoint *points;
     s32 i;
-    s32 index;
-    GameTrackPoint *point;
     TrackPointTableAddress arcCenterAddress;
-    TrackPointTableAddress pointAddress;
-    s32 total;
 
     count = trackData->count;
     points = trackData->points;
@@ -28,20 +23,8 @@ void InstallTrackPoints(TrackPointTable *trackData) {
         count * sizeof(GameTrackPoint) + arcCenterAddress.value;
     g_TrackArcCenters = arcCenterAddress.arcCenterPointer;
 
-    i = 0;
-    if (count > 0) {
-        limit = count;
-        do {
-            index = i % limit;
-            pointAddress.pointPointer = points;
-            pointAddress.value =
-                index * sizeof(GameTrackPoint) + pointAddress.value;
-            point = pointAddress.pointPointer;
-            g_TrackLength += (s16)point->segmentLength;
-            i++;
-        } while (i < limit);
-    }
+    for (i = 0; i < count; i++)
+        g_TrackLength += (s16)points[i].segmentLength;
 
-    total = g_TrackLength;
-    g_TrackSectionCount = (total >> 8) + 1;
+    g_TrackSectionCount = (g_TrackLength >> 8) + 1;
 }

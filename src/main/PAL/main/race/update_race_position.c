@@ -4,12 +4,12 @@
 /* Counts the cars whose lap progress is ahead of the player and publishes the
  * result as g_RacePosition (1 = leader). Only runs on the final lap. */
 void UpdateRacePosition(void) {
-    s32 active;
+    s32 position;
     s32 i;
     s32 total;
     CarProgressWindow *cars;
 
-    active = 1;
+    position = 1;
     if (g_LapCount >= g_PlayerCar.lap) {
         total = g_PlayerCar.progressA + g_PlayerCar.progressB;
         cars = GetCarProgressWindow(&g_Cars[0]);
@@ -18,11 +18,11 @@ void UpdateRacePosition(void) {
             CarProgressWindow *entry = &cars[i];
             if (entry->activeFlag != -1) {
                 if ((GetCarProgressWindowProgressA(entry) + entry->progressB) - total > 0) {
-                    active++;
+                    position++;
                 }
             }
         }
 
-        g_RacePosition = active;
+        g_RacePosition = position;
     }
 }

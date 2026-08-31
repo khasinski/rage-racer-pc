@@ -343,19 +343,23 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
-static int HostPathEndsWithCue(const char *path) {
+static int HostPathEndsWith(const char *path, const char *suffix) {
     size_t length = strlen(path);
-    return length > 4 && strcasecmp(path + length - 4, ".cue") == 0;
+    size_t suffixLength = strlen(suffix);
+    return length > suffixLength &&
+           strcasecmp(path + length - suffixLength, suffix) == 0;
+}
+
+static int HostPathEndsWithCue(const char *path) {
+    return HostPathEndsWith(path, ".cue");
 }
 
 static int HostPathEndsWithChd(const char *path) {
-    size_t length = strlen(path);
-    return length > 4 && strcasecmp(path + length - 4, ".chd") == 0;
+    return HostPathEndsWith(path, ".chd");
 }
 
 static int HostPathEndsWithBin(const char *path) {
-    size_t length = strlen(path);
-    return length > 4 && strcasecmp(path + length - 4, ".bin") == 0;
+    return HostPathEndsWith(path, ".bin");
 }
 
 static int HostPathEndsWithDisc(const char *path) {
@@ -903,7 +907,6 @@ void TransformCollisionVector(const int16_t *input, int32_t *output) {
  * subsystems are enabled in the native startup path. */
 #define VOID_ADAPTER(name) void name(void) {}
 #define ZERO_ADAPTER(name) long name(void) { return 0; }
-#define FAIL_ADAPTER(name) long name(void) { return -1; }
 
 void BiosBuInit(void) { _bu_init(); }
 VOID_ADAPTER(BiosExit)

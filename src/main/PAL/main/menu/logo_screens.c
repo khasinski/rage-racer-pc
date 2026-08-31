@@ -1,14 +1,4 @@
 #include "game/audio.h"
-/*
- * UpdateTeamLogoScreen: sound/menu state machine. The redundant
- * `if (g_PadPressed) { ... } else { ... }` around the state>0 block is a
- * deliberate no-op guard (both arms identical): its presence forces GCC 2.6.3
- * to rematerialize the literal 2 at both the direction ternary and the switch
- * case instead of CSE-ing it into a saved register, reproducing retail codegen.
- * Verified byte-exact; both arms are semantically identical so behaviour is
- * unchanged. This is the accepted resolution while the legal-only permuter
- * searches for a cleaner shape.
- */
 #include "game/menu.h"
 #include "game/save_internal.h"
 
@@ -210,24 +200,12 @@ void UpdateTeamLogoScreen(void)
   }
   else
   {
-    if (g_PadPressed)
-    {
-      g_MenuHandlerIndex = -1;
-      g_MenuHandlerIndex2 = 7;
-      DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
-      RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
-      RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
-      DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
-    }
-    else
-    {
-      g_MenuHandlerIndex = -1;
-      g_MenuHandlerIndex2 = 7;
-      DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
-      RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
-      RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
-      DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
-    }
+    g_MenuHandlerIndex = -1;
+    g_MenuHandlerIndex2 = 7;
+    DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
+    RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
     if (g_UiScriptProgress <= 0)
     {
       switch (GameMenuBusy)

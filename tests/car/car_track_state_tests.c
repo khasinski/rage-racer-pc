@@ -125,7 +125,7 @@ static void Fold(FILE *out, const char *label, s32 result,
              "section=%d speed=%d vel=(%d,%d) motion=%d/%d "
              "knock=%d/%d/%d/%d\n",
              label, result, car->x, car->y, car->z, car->bodyYaw,
-             car->bodyPitch, car->bodyRoll, car->trackHeading,
+             car->bodyPitch, car->bodyRoll, car->trackHeading.value,
              car->trackLateralOffset, car->normalizedLateralOffset,
              car->trackProgress, g_TrackLength, car->previousTrackProgress,
              car->progressA, car->progressB, car->segmentFraction,

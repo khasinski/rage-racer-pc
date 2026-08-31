@@ -16,7 +16,7 @@ void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex) {
     s32 current;
     s32 magnitude;
     s32 limit;
-    s32 trackIndex;
+    GameTrackPoint *point;
 
     current = carReg->aiLateralOffset;
     state = GetCarAiBlock(carReg);
@@ -25,34 +25,17 @@ void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex) {
         magnitude = -current;
     }
 
+    point = TrackPoint(carReg->trackPointIndex);
+    limit = current < 0 ? point->leftHalfWidth : point->rightHalfWidth;
+
     if (carIndex < 4) {
-        GameTrackPoint *point;
         s32 scaled;
 
-        if (current < 0) {
-            trackIndex = carReg->trackPointIndex;
-            point = TrackPoint(trackIndex);
-            limit = point->leftHalfWidth;
-        } else {
-            trackIndex = carReg->trackPointIndex;
-            point = TrackPoint(trackIndex);
-            limit = point->rightHalfWidth;
-        }
         scaled = limit * 4;
         scaled += limit;
         limit = scaled / 8;
     } else {
-        GameTrackPoint *point;
-
-        if (current < 0) {
-            trackIndex = carReg->trackPointIndex;
-            point = TrackPoint(trackIndex);
-            limit = (point->leftHalfWidth * 4) / 7;
-        } else {
-            trackIndex = carReg->trackPointIndex;
-            point = TrackPoint(trackIndex);
-            limit = (point->rightHalfWidth * 4) / 7;
-        }
+        limit = (limit * 4) / 7;
     }
 
     if (limit < magnitude) {

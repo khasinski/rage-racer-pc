@@ -463,10 +463,12 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     if (sidecar.hasClut) clut = (uint16_t *)(void *)(data + sidecar.clutOffset);
 
     for (y = 0; y < sidecar.height; y++) {
+        size_t rowBytes =
+            (size_t)sidecar.pixelBytes / (size_t)sidecar.height;
+        uint8_t *row = bytes + (size_t)y * rowBytes;
+
         for (x = 0; x < sidecar.width; x++) {
             const uint8_t *pixel = rgba + ((size_t)y * w + x) * 4;
-            size_t rowBytes = (size_t)sidecar.pixelBytes / (size_t)sidecar.height;
-            uint8_t *row = bytes + (size_t)y * rowBytes;
             uint8_t original[4];
             int exact = 1;
             /* Leave a texel exactly as it was unless the image changed it.

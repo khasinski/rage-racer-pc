@@ -139,7 +139,6 @@ void InitCdAudio(void) {
 
 void TickCdAudio(void) {
     s32 temp;
-    s32 status;
     s32 value;
 
     if (g_CdTrackPending < 0) {
@@ -160,15 +159,14 @@ void TickCdAudio(void) {
         StepCdTrackRequest();
     }
 
-    status = HostCdAudioEnded() ? 4 : 2;
-    if (status == 4) {
+    if (HostCdAudioEnded()) {
         if (g_SceneId == 0x1C) {
             g_CdTrackEnded = 1;
         } else {
             temp = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
             value = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
             if (value < temp) {
-                g_CdTrackStep = status;
+                g_CdTrackStep = 4;
                 g_CdCommandPending = CD_COMMAND_PLAY;
                 g_CdCommandStep = 0;
                 g_CdTrackPending = g_CdCurrentTrack;

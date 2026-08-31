@@ -25,11 +25,8 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
         clearAddress.bytes = &rowBytes[8];
         *clearAddress.word = 0;
 
-        j = 0;
         ptr3 = rowsAddress.clearCursors;
-        do {
-            j++;
-        } while ((ptr3->reservedHalfword = 0, j < 0x38));
+        ptr3->reservedHalfword = 0;
 
         clearAddress.bytes = &rowBytes[0x7C];
         *clearAddress.word = 0;
@@ -52,7 +49,6 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
 void BuildSaveIconBlock(u8 *block, char *title, s32 iconTile, s32 imageX, s32 imageY) {
     Rect *iconRect;
     Rect *frameRect;
-    s32 i;
     s32 tileRow;
     s32 tileX;
 
@@ -72,17 +68,13 @@ void BuildSaveIconBlock(u8 *block, char *title, s32 iconTile, s32 imageX, s32 im
     StoreImage(iconRect, block + 0x60);
     DrawSync(0);
 
-    i = 0;
     frameRect = iconRect;
-    do {
-        frameRect->x = imageX + i * 4;
-        frameRect->y = imageY;
-        frameRect->w = 4;
-        frameRect->h = 0x10;
-        StoreImage(frameRect, block + 0x80 + i * 0x80);
-        DrawSync(0);
-        i++;
-    } while (i <= 0);
+    frameRect->x = imageX;
+    frameRect->y = imageY;
+    frameRect->w = 4;
+    frameRect->h = 0x10;
+    StoreImage(frameRect, block + 0x80);
+    DrawSync(0);
 }
 
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) {

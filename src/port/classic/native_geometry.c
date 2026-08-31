@@ -171,6 +171,15 @@ static void StoreSxy(short *x, short *y, int packed) {
     *y = (short)((uint32_t)packed >> 16);
 }
 
+static void StoreBilerpUv(
+    uint8_t out[8], int corner, const uint8_t uv[8],
+    int u, int v, int uSteps, int vSteps) {
+    out[corner * 2] =
+        BilerpByte(uv[0], uv[2], uv[4], uv[6], u, v, uSteps, vSteps);
+    out[corner * 2 + 1] =
+        BilerpByte(uv[1], uv[3], uv[5], uv[7], u, v, uSteps, vSteps);
+}
+
 static int ProjectQuad(
     const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
     const SVECTOR *v3, int sxy[4], int *depth, int *fog, int *rawDepth,
@@ -274,7 +283,6 @@ static int ProjectCourseFace(
     const uint8_t *face, const SVECTOR *vertices, int sxy[4], int *depth,
     int *fog, int *rawDepth) {
     int p = 0;
-    int flag = 0;
     int vertexFlag;
     long vertexDepth[4];
     int vertex;
@@ -282,7 +290,6 @@ static int ProjectCourseFace(
         vertexDepth[vertex] = RotTransPers(
             (SVECTOR *)&vertices[RageReadU16(face + vertex * 2)],
             &sxy[vertex], &p, &vertexFlag);
-        flag |= vertexFlag;
         g_RageCourseVertexDepth[vertex] = vertexDepth[vertex];
     }
     /* The retail course transform first stores each GTE Z in its 16-bit
@@ -296,7 +303,6 @@ static int ProjectCourseFace(
     int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
     int i;
     int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-    (void)flag;
     g_RageProjectionReject = 0;
     if ((!SCRATCH_MIRROR && clip <= 0) || (SCRATCH_MIRROR && clip >= 0)) {
         g_RageProjectionReject = 2;
@@ -1037,15 +1043,14 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         subSxy[1] = BilerpSxy(sxy,sx+1,sy,uSteps,vSteps);
                         subSxy[2] = BilerpSxy(sxy,sx,sy+1,uSteps,vSteps);
                         subSxy[3] = BilerpSxy(sxy,sx+1,sy+1,uSteps,vSteps);
-#define RAGE_COURSE_SUB_UV(out, corner, uu, vv) do { \
-    (out)[(corner)*2] = BilerpByte(uv[0],uv[2],uv[4],uv[6],(uu),(vv),uSteps,vSteps); \
-    (out)[(corner)*2+1] = BilerpByte(uv[1],uv[3],uv[5],uv[7],(uu),(vv),uSteps,vSteps); \
-} while (0)
-                        RAGE_COURSE_SUB_UV(subUv,0,sx,sy);
-                        RAGE_COURSE_SUB_UV(subUv,1,sx+1,sy);
-                        RAGE_COURSE_SUB_UV(subUv,2,sx,sy+1);
-                        RAGE_COURSE_SUB_UV(subUv,3,sx+1,sy+1);
-#undef RAGE_COURSE_SUB_UV
+                        StoreBilerpUv(
+                            subUv, 0, uv, sx, sy, uSteps, vSteps);
+                        StoreBilerpUv(
+                            subUv, 1, uv, sx + 1, sy, uSteps, vSteps);
+                        StoreBilerpUv(
+                            subUv, 2, uv, sx, sy + 1, uSteps, vSteps);
+                        StoreBilerpUv(
+                            subUv, 3, uv, sx + 1, sy + 1, uSteps, vSteps);
                         if (!CourseScreenQuadVisible(subSxy)) continue;
                         next = EmitCourseFt4(
                             cursor, ot, depth, subSxy, subUv, clut, tpage,
@@ -1420,15 +1425,15 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
                                 subdivisionWindow->code[1] = 0;
                                 AddPrim(&ot[subDepth], reset);
                             }
-#define RAGE_SUB_UV(out, corner, uu, vv) do { \
-    (out)[(corner)*2] = BilerpByte(baseUv[0],baseUv[2],baseUv[4],baseUv[6],(uu),(vv),uSteps,vSteps); \
-    (out)[(corner)*2+1] = BilerpByte(baseUv[1],baseUv[3],baseUv[5],baseUv[7],(uu),(vv),uSteps,vSteps); \
-} while (0)
-                            RAGE_SUB_UV(uv,0,sy,sx);
-                            RAGE_SUB_UV(uv,1,sy+1,sx);
-                            RAGE_SUB_UV(uv,2,sy,sx+1);
-                            RAGE_SUB_UV(uv,3,sy+1,sx+1);
-#undef RAGE_SUB_UV
+                            StoreBilerpUv(
+                                uv, 0, baseUv, sy, sx, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 1, baseUv, sy + 1, sx, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 2, baseUv, sy, sx + 1, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 3, baseUv, sy + 1, sx + 1,
+                                uSteps, vSteps);
                             {
                                 if (g_RageTerrainTraceEnabled &&
                                     (g_RageTerrainTraceTimer < 0 ||

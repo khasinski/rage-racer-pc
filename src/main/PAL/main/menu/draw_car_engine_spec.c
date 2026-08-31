@@ -53,11 +53,7 @@ void DrawCarEngineSpec(s32 slideRaw, s32 brightness) {
     DrawSmallText(q, 0xD9 - slide, buf, (u8)brightness, (u8)brightness, (u8)brightness, 0x244,
                   0x20);
     p += 0xD7;
-    /* Written as an operand swap: the target keeps the string length in
-       the higher callee-saved than the running cursor. */
-    q = n;
-    n = p;
-    q = n + (q * 6);
+    q = p + (n * 6);
     DrawSprite(ot, q, 0xDA - slide, 0x10, 0xC, 0x88, 0xF4, (u8)brightness, (u8)brightness,
                (u8)brightness, 0x244, 0, 1, 0x3A);
     DrawSprite(ot, q + 0x11, 0xDA - slide, 6, 0xC, 0xD8, 0, (u8)brightness, (u8)brightness,

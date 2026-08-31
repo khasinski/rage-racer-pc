@@ -183,11 +183,9 @@ void DrawResultScreen(void) {
     u8 *base;
     u8 **scratch;
     s32 width;
-    volatile s32 pad[12];
     s32 y;
     u8 *next;
 
-    (void)pad;
     DrawProportionalText(0xDC, 0x1C, g_TextResult, 0x7812);
 
     if (g_GrandPrixMode != 0) {

@@ -80,7 +80,6 @@ s32 DrawDesignModeScreen(s32 step) {
 
 void UpdateDesignModeScreen(void) {
     s32 sel;
-    u16 edge;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
@@ -134,9 +133,9 @@ void UpdateDesignModeScreen(void) {
     } else if (GameMenuBusy < 0) {
         RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
         if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            edge = g_PadPressed;
-            if (edge & PAD_CONFIRM) GameMenuBusy = 0;
-            if (edge & PAD_CANCEL) GameMenuBusy = 0;
+            if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
+                GameMenuBusy = 0;
+            }
         }
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);

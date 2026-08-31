@@ -6,9 +6,7 @@
 
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {
-    s32 step0;
-    s32 step1;
-    void *scratch;
+    void *scratch = SCRATCH_OT_BASE;
     s32 value;
     s32 offset;
     s32 x0;
@@ -18,26 +16,22 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
     void *callScratch;
     s32 callX;
 
-    scratch = SCRATCH_OT_BASE;
-    step0 = stepA;
-    step1 = stepB;
-
-    if (step0 == 0 && step1 == 0) {
-        g_MenuAltPanelProgressA = step0;
-        g_MenuAltPanelProgressB = step1;
+    if (stepA == 0 && stepB == 0) {
+        g_MenuAltPanelProgressA = 0;
+        g_MenuAltPanelProgressB = 0;
         return;
     }
 
-    if (step0 < 0) {
-        value = g_MenuAltPanelProgressA + step0;
+    if (stepA < 0) {
+        value = g_MenuAltPanelProgressA + stepA;
         g_MenuAltPanelProgressA = value;
         if (value < 0) {
             g_MenuAltPanelProgressA = 0;
         }
     }
 
-    if (step1 < 0) {
-        value = g_MenuAltPanelProgressB + step1;
+    if (stepB < 0) {
+        value = g_MenuAltPanelProgressB + stepB;
         g_MenuAltPanelProgressB = value;
         if (value < 0) {
             g_MenuAltPanelProgressB = 0;
@@ -118,19 +112,18 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
             0x1C);
     }
 
-    if (step0 > 0) {
-        value = g_MenuAltPanelProgressA + step0;
+    if (stepA > 0) {
+        value = g_MenuAltPanelProgressA + stepA;
         g_MenuAltPanelProgressA = value;
         if (value >= 0xF) {
             g_MenuAltPanelProgressA = 0xE;
         }
     }
 
-    if (step1 > 0) {
-        value = g_MenuAltPanelProgressB + step1;
+    if (stepB > 0) {
+        value = g_MenuAltPanelProgressB + stepB;
         g_MenuAltPanelProgressB = value;
         if (value >= 0x11) {
-            
             g_MenuAltPanelProgressB = 0x10;
         }
     }
@@ -232,19 +225,18 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
 
 void DrawTimeAttackPlate(s32 stepArg) {
     void *scratch = SCRATCH_OT_BASE;
-    s32 step = stepArg;
     s32 value;
     s32 renderValue;
     s32 y0;
     s16 y1;
 
-    if (step == 0) {
+    if (stepArg == 0) {
         g_TimeAttackPlateProgress = 0;
         return;
     }
 
-    if (step < 0) {
-        value = g_TimeAttackPlateProgress + step;
+    if (stepArg < 0) {
+        value = g_TimeAttackPlateProgress + stepArg;
         g_TimeAttackPlateProgress = value;
         if (value < 0) {
             g_TimeAttackPlateProgress = 0;
@@ -283,11 +275,10 @@ void DrawTimeAttackPlate(s32 stepArg) {
             0x1C);
     }
 
-    if (step > 0) {
-        value = g_TimeAttackPlateProgress + step;
+    if (stepArg > 0) {
+        value = g_TimeAttackPlateProgress + stepArg;
         g_TimeAttackPlateProgress = value;
         if (value >= 0xD) {
-            
             g_TimeAttackPlateProgress = 0xC;
         }
     }
@@ -305,22 +296,13 @@ void InitMenuLighting(void) {
 }
 
 void InitMenuMode(void) {
-    GameRaceProgress *p;
-
     SetDispMask(0);
     g_MirrorMode = 0;
-    p = g_RaceProgress;
-    {
-        s32 t0 = p->course;
-        s32 t1 = p->carIndex;
-        s32 t2 = p->classIndex;
-        s32 t3 = p->money.value;
-        g_FrameSyncThreshold = 0x80;
-        g_CourseIndex = t0;
-        g_PlayerCarIndex = t1;
-        g_GrandPrixClass = t2;
-        g_PlayerMoney = t3;
-    }
+    g_FrameSyncThreshold = 0x80;
+    g_CourseIndex = g_RaceProgress->course;
+    g_PlayerCarIndex = g_RaceProgress->carIndex;
+    g_GrandPrixClass = g_RaceProgress->classIndex;
+    g_PlayerMoney = g_RaceProgress->money.value;
     InitRenderState(1);
 
     SetupDisplay480(0, 0, 0);
@@ -409,17 +391,13 @@ void InitMenuMode(void) {
 /* Counts the enabled entries of g_CarTable. */
 s32 CountOwnedCars(void) {
     s32 count = 0;
-    s32 i = 0;
-    CarEntry *entries = g_CarTable;
-    s32 flag;
+    s32 i;
 
-    do {
-        flag = entries[i].enabled;
-        if (flag != 0) {
+    for (i = 0; i < 0xD; i++) {
+        if (g_CarTable[i].enabled != 0) {
             count++;
         }
-        i++;
-    } while (i < 0xD);
+    }
 
     return count;
 }

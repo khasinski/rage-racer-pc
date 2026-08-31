@@ -8,7 +8,6 @@
 s32 PollMemoryCardStatus(s32 port, s32 slot) {
     s32 handle;
     s32 status;
-    s32 state;
 
     handle = (port * 16) + slot;
 
@@ -26,55 +25,34 @@ s32 PollMemoryCardStatus(s32 port, s32 slot) {
             break;
         }
 
-        if (status != 2) {
-        if (status < 3) {
-            if (status == 1) {
-                goto case1_ready;
+        switch (status) {
+        case MC_EVENT_IO_COMPLETE:
+            g_McPollStatus = status;
+            if (g_McLastCardStatus == status) {
+                g_McStatusState = MC_STATUS_PUBLISH_RESULT;
+            } else {
+                g_McStatusState = MC_STATUS_REQUEST_LOAD;
             }
-            state = -3;
-        g_McPollStatus = state;
-        g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        g_McLastCardStatus = 0;
-        break;
-        }
-        if (status != 3) {
-        if (status != 4) {
-        state = -3;
-        goto fail_case1;
-
-case1_ready:
-        g_McPollStatus = status;
-        if (g_McLastCardStatus == status) {
+            break;
+        case MC_EVENT_TIMEOUT:
+            g_McPollStatus = -1;
             g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        } else {
+            g_McLastCardStatus = 0;
+            break;
+        case MC_EVENT_NEW_CARD:
+            g_McPollStatus = 2;
+            ClearMemoryCardSwEvents();
+            _card_clear(handle);
+            WaitMemoryCardSwEvent();
             g_McStatusState = MC_STATUS_REQUEST_LOAD;
+            g_McLastCardStatus = 0;
+            break;
+        default:
+            g_McPollStatus = -3;
+            g_McStatusState = MC_STATUS_PUBLISH_RESULT;
+            g_McLastCardStatus = 0;
+            break;
         }
-        break;
-
-        }
-        } else {
-        state = -1;
-        g_McPollStatus = state;
-        g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        g_McLastCardStatus = 0;
-        break;
-
-        }
-        g_McPollStatus = 2;
-        ClearMemoryCardSwEvents();
-        _card_clear(handle);
-        WaitMemoryCardSwEvent();
-        g_McStatusState = MC_STATUS_REQUEST_LOAD;
-        g_McLastCardStatus = 0;
-        break;
-
-        }
-        state = -3;
-
-fail_case1:
-        g_McPollStatus = state;
-        g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        g_McLastCardStatus = 0;
         break;
 
     case MC_STATUS_REQUEST_LOAD:
@@ -91,43 +69,23 @@ fail_case1:
         }
 
         g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        if (status != 2) {
-        if (status < 3) {
-            if (status == 1) {
-                goto case3_ready;
-            }
-            state = -3;
-        g_McPollStatus = state;
-        g_McLastCardStatus = 0;
-        break;
+        switch (status) {
+        case MC_EVENT_IO_COMPLETE:
+            g_McLastCardStatus = status;
+            break;
+        case MC_EVENT_TIMEOUT:
+            g_McPollStatus = -1;
+            g_McLastCardStatus = 0;
+            break;
+        case MC_EVENT_NEW_CARD:
+            g_McPollStatus = -2;
+            g_McLastCardStatus = 0;
+            break;
+        default:
+            g_McPollStatus = -3;
+            g_McLastCardStatus = 0;
+            break;
         }
-        if (status != 3) {
-        if (status != 4) {
-        state = -3;
-        g_McPollStatus = state;
-        g_McLastCardStatus = 0;
-        break;
-
-case3_ready:
-        g_McLastCardStatus = status;
-        break;
-
-        }
-        } else {
-        state = -1;
-        g_McPollStatus = state;
-        g_McLastCardStatus = 0;
-        break;
-
-        }
-        state = -2;
-
-        } else {
-        state = -3;
-
-        }
-        g_McPollStatus = state;
-        g_McLastCardStatus = 0;
         break;
 
     case MC_STATUS_PUBLISH_RESULT:

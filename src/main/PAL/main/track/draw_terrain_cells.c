@@ -19,11 +19,9 @@ void DrawTerrainCellsWide(void) {
 
 static s32 DivideSigned32(s32 value)
 {
-  s32 adjustedValue = value;
-  s32 divisionInput = value;
-  if (divisionInput < 0)
-    adjustedValue += 31;
-  return adjustedValue >> 5;
+  if (value < 0)
+    value += 31;
+  return value >> 5;
 }
 
 static s32 GameRoundTerrainCoordinate(s32 value)
@@ -166,7 +164,8 @@ static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
         courseG4 = cursor.polyG4;
         rightXWorkFixed = band->panelX;
         band->screenX0 = GameRoundTerrainCoordinate(rightXWorkFixed + band->rowStepX);
-        band->screenX1 = GameRoundTerrainCoordinate(skirtRightX + (band->rowStepX + (band->rowStepX - band->rowStepX)));
+        band->screenX1 =
+            GameRoundTerrainCoordinate(skirtRightX + band->rowStepX);
         screenY0 = GameRoundTerrainCoordinate(band->panelY + band->rowStepY);
         screenY1 = GameRoundTerrainCoordinate(skirtBottomY + band->rowStepY);
         cursor.polyG4 = courseG4 + 1;
@@ -847,7 +846,7 @@ void DrawSkyBackground(void)
           x3Raw += 0xFF;
         }
         
-        screenX3 = x3Raw >> 8;;
+        screenX3 = x3Raw >> 8;
         
         screenY0 = screenY2;
         rotatedBandY = rowStepY * 3;

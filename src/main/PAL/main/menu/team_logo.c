@@ -6,53 +6,16 @@ static s32 TeamLogoParity(s32 value)
     return value & 1;
 }
 
-static s32 TeamLogoRowByteOffset(s32 row)
-{
-    return (row * 33) << 6;
-}
-
-static s32 TeamLogoParityByteOffset(s32 parity)
-{
-    return parity * 32;
-}
-
 static u16 *TeamLogoPaletteAddress(
     TeamLogoSample *samples, s32 row, s32 parity)
 {
-    TeamLogoSampleAddress baseAddress;
-    TeamLogoSampleAddress address;
-    TeamLogoSampleAddress parityAddress;
-    s32 parityOffset;
-
-    baseAddress.samplePointer = samples;
-    address.offset = TeamLogoRowByteOffset(row);
-    address.value = address.offset + baseAddress.value;
-    parityOffset = TeamLogoParityByteOffset(parity);
-    parityAddress.offset = parityOffset;
-    parityAddress.value = parityAddress.offset + address.value;
-    return parityAddress.halfwordPointer;
+    return samples[row].clut[parity];
 }
 
 static u16 *TeamLogoClutAddress(
     TeamLogoSample *samples, s32 row, s32 parity, s32 index)
 {
-    TeamLogoSampleAddress baseAddress;
-    TeamLogoSampleAddress address;
-    TeamLogoSampleAddress parityAddress;
-    TeamLogoSampleAddress elementAddress;
-    s32 byteOffset;
-    s32 parityOffset;
-
-    byteOffset = index * 2;
-    baseAddress.samplePointer = samples;
-    address.offset = TeamLogoRowByteOffset(row);
-    address.value = address.offset + baseAddress.value;
-    parityOffset = TeamLogoParityByteOffset(parity);
-    parityAddress.offset = parityOffset;
-    parityAddress.value = parityAddress.offset + address.value;
-    elementAddress.offset = byteOffset;
-    elementAddress.value = elementAddress.offset + parityAddress.value;
-    return elementAddress.halfwordPointer;
+    return &samples[row].clut[parity][index];
 }
 
 /* Builds g_TeamLogoCanvas and its CLUT from one sample character and one sample background. */
