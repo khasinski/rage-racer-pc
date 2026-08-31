@@ -1,3 +1,4 @@
+#include "rage/track_asset_identity.h"
 #include "native_asset_importer.h"
 
 #include <SDL3/SDL.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "game/render.h"
 #include "game/asset.h"
 #include "game/scratchpad.h"
 #include "game/track.h"
@@ -563,14 +565,97 @@ static int ImportFinalizeOffsets(RageImportedMeshEntry *entry,
     return RuntimeMeshOpen(&entry->cached.mesh, entry->bytes, size);
 }
 
-static int ImportCaptureVram(uint16_t *vram) {
-    RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
-    if (vram == NULL) return 0;
-    DrawSync(0);
-    StoreImage(&rect, (u_long *)vram);
-    DrawSync(0);
-    return 1;
+/*
+ * One snapshot of video memory, shared by every material decoded from it.
+ *
+ * Each material used to take its own copy of the whole megabyte, with a
+ * drawing stall either side. Four hundred materials meant four hundred
+ * megabytes moved and eight hundred stalls, all of it reading the same
+ * memory, and each copy landing at whatever moment that material happened to
+ * be asked for. That is what made the result depend on where the course's own
+ * uploads had got to: a texture captured while a section was still arriving
+ * kept whatever was there, for good.
+ *
+ * A megabyte is nothing to hold on to, so it is held. The snapshot is taken
+ * once and retaken when the track's assets change, which is the point at
+ * which new artwork has been put in place.
+ */
+static uint16_t *s_vramSnapshot;
+static uint64_t s_vramSnapshotRevision;
+static s32 s_vramSnapshotPage;
+static int s_haveVramSnapshot;
+
+/*
+ * The track's texture pages, assembled rather than waited for.
+ *
+ * A page is not swapped into video memory in one go: StepTrackTextureSwap
+ * moves one row per frame under a time budget, so for several frames after a
+ * section change memory holds half of each page. Reading it then is what put
+ * a torn texture in the cache and kept it there, always in the same place,
+ * because leaving the first tunnel is a section change.
+ *
+ * Waiting for the swap is not needed, because nothing is ever missing. The
+ * swap is an exchange: every row is either in video memory or in the shadow
+ * the game keeps in ordinary memory, and g_TrackTextureShadowPage says which.
+ * So the page that is wanted can always be put together in full, whatever the
+ * cursor has reached. It costs one megabyte held rather than a stall.
+ */
+enum {
+    RAGE_IMPORT_TRACK_ROW_X = 576,   /* g_TrackTextureRect x */
+    RAGE_IMPORT_TRACK_ROW_Y = 256,   /* and its y */
+    RAGE_IMPORT_TRACK_ROW_W = 448,   /* 0xE0 words, one shadow row */
+    RAGE_IMPORT_TRACK_ROWS = 256
+};
+
+static uint16_t *s_vramSnapshot;
+static uint64_t s_vramSnapshotRevision;
+static s32 s_vramSnapshotPage;
+static int s_haveVramSnapshot;
+
+/* Put the rows the shadow is holding back where the page expects them. */
+static void ImportMergeTrackShadow(uint16_t *vram) {
+    s32 row;
+    if (g_TrackTextureShadow == NULL) return;
+    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++) {
+        const uint16_t *shadow;
+        uint16_t *target;
+        /* A row still holding the wanted page in the shadow has not been
+         * exchanged yet, so video memory has the other one. */
+        if (g_TrackTextureShadowPage[row] != g_TrackTexturePageWanted) continue;
+        shadow = (const uint16_t *)g_TrackTextureShadow[row];
+        target = vram + (size_t)(RAGE_IMPORT_TRACK_ROW_Y + row) *
+                            RAGE_IMPORT_VRAM_WIDTH + RAGE_IMPORT_TRACK_ROW_X;
+        memcpy(target, shadow,
+               (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(*target));
+    }
 }
+
+static const uint16_t *ImportVramSnapshot(void) {
+    RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
+    uint64_t revision = TrackAssetIdentityRevision();
+    if (s_vramSnapshot == NULL) {
+        s_vramSnapshot = malloc((size_t)RAGE_IMPORT_VRAM_WIDTH *
+                                RAGE_IMPORT_VRAM_HEIGHT *
+                                sizeof(*s_vramSnapshot));
+        if (s_vramSnapshot == NULL) return NULL;
+        s_haveVramSnapshot = 0;
+    }
+    if (s_haveVramSnapshot && s_vramSnapshotRevision == revision &&
+        s_vramSnapshotPage == g_TrackTexturePageWanted)
+        return s_vramSnapshot;
+    DrawSync(0);
+    StoreImage(&rect, (u_long *)s_vramSnapshot);
+    DrawSync(0);
+    ImportMergeTrackShadow(s_vramSnapshot);
+    s_vramSnapshotRevision = revision;
+    s_vramSnapshotPage = g_TrackTexturePageWanted;
+    s_haveVramSnapshot = 1;
+    return s_vramSnapshot;
+}
+
+/* Take the next snapshot afresh, for a caller that knows the picture has
+ * moved on. */
+void NativeAssetImporterInvalidateVram(void) { s_haveVramSnapshot = 0; }
 
 static void ImportColor(uint16_t word, uint8_t rgba[4]) {
     uint8_t r = (uint8_t)((word & 0x1Fu) << 3);
@@ -754,7 +839,7 @@ int NativeAssetImporterLoadMaterial(
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
     RageImportedMeshEntry *entry;
     RageImportedTextureKey *texture;
-    uint16_t *vram;
+    const uint16_t *vram;
     uint16_t clut;
     uint8_t *pixels = NULL, *paint = NULL;
     uint32_t clutOffset = 0;
@@ -775,17 +860,14 @@ int NativeAssetImporterLoadMaterial(
     else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN)
         clutOffset = variant % 2u;
     clut = (uint16_t)(texture->clut + clutOffset);
-    vram = malloc(RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT *
-                  sizeof(*vram));
-    if (vram == NULL || !ImportCaptureVram(vram) ||
+    vram = ImportVramSnapshot();
+    if (vram == NULL ||
         !ImportDecodeTexture(texture, clut, vram, &pixels,
                                  instance->hasCarPaint ? &paint : NULL)) {
-        free(vram);
         SDL_free(pixels);
         SDL_free(paint);
         return 0;
     }
-    free(vram);
     RenderMaterialDefault(definition);
     if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         definition->roughness = 0.96f;
@@ -823,7 +905,7 @@ int NativeAssetImporterLoadMaterial(
 int NativeAssetImporterLoadSky(uint32_t assetKey,
                                    ModernAssetImage *image) {
     RageImportedTextureKey texture;
-    uint16_t *vram;
+    const uint16_t *vram;
     uint8_t *page = NULL;
     uint8_t *sky;
     uint32_t tile, row, pixel;
@@ -834,15 +916,12 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     memset(&texture, 0, sizeof(texture));
     texture.tpage = 0x18;
     texture.clut = 0x798E;
-    vram = malloc(RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT *
-                  sizeof(*vram));
-    if (vram == NULL || !ImportCaptureVram(vram) ||
+    vram = ImportVramSnapshot();
+    if (vram == NULL ||
         !ImportDecodeTexture(&texture, texture.clut, vram, &page, NULL)) {
-        free(vram);
         SDL_free(page);
         return 0;
     }
-    free(vram);
     sky = SDL_calloc(512u * 128u, 4u);
     if (sky == NULL) {
         SDL_free(page);

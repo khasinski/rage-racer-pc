@@ -128,6 +128,45 @@ static float s_aspect = 4.0f / 3.0f;
 static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
+
+/*
+ * Transfer buffers a texture upload has been recorded from, but whose command
+ * buffer this module does not submit: the caller does, after it has finished
+ * with the frame. Releasing one before that submission leaves the copy
+ * reading memory that has been handed back, which Metal tolerates and Vulkan
+ * does not, and which shows up as textures that are corrupt from the moment
+ * they are first uploaded. They are released a frame later, by which time the
+ * work that reads them has certainly been submitted.
+ */
+enum { MODERN_NATIVE_MAX_PENDING_UPLOADS = 256 };
+static SDL_GPUTransferBuffer
+    *s_pendingUploads[MODERN_NATIVE_MAX_PENDING_UPLOADS];
+static uint32_t s_pendingUploadCount;
+
+static void ModernNativeReleasePendingUploads(void) {
+    uint32_t index;
+    for (index = 0; index < s_pendingUploadCount; index++) {
+        if (s_device != NULL && s_pendingUploads[index] != NULL)
+            SDL_ReleaseGPUTransferBuffer(s_device, s_pendingUploads[index]);
+        s_pendingUploads[index] = NULL;
+    }
+    s_pendingUploadCount = 0;
+}
+
+/* Hand a transfer buffer over to be released once the frame it belongs to has
+ * been submitted. A full list means this frame uploaded more textures than
+ * the list holds, so the oldest is waited out rather than leaked. */
+static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
+    if (upload == NULL) return;
+    if (s_pendingUploadCount == MODERN_NATIVE_MAX_PENDING_UPLOADS) {
+        if (s_device != NULL) {
+            SDL_WaitForGPUIdle(s_device);
+            ModernNativeReleasePendingUploads();
+        }
+    }
+    if (s_pendingUploadCount < MODERN_NATIVE_MAX_PENDING_UPLOADS)
+        s_pendingUploads[s_pendingUploadCount++] = upload;
+}
 static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
 static uint32_t s_textureCount;
 static uint64_t s_trackAssetRevision = UINT64_MAX;
@@ -580,6 +619,9 @@ static void ModernNativeGpuClearTextures(void) {
                 SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
         }
     }
+    /* The uploads still in flight read these textures. */
+    if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
+    ModernNativeReleasePendingUploads();
     memset(s_textures, 0, sizeof(s_textures));
     memset(s_textureHash, 0, sizeof(s_textureHash));
     s_textureCount = 0;
@@ -694,6 +736,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL ||
         world->frame == s_worldFrame) return;
+    /* The frame these belong to has been submitted by now. */
+    ModernNativeReleasePendingUploads();
     trackAssetRevision = TrackAssetIdentityRevision();
     if (trackAssetRevision != s_trackAssetRevision) {
         if (RuntimeConfigEnabled("diagnostics.modern_asset_trace") &&
@@ -1144,7 +1188,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         }
         SDL_EndGPUCopyPass(copy);
     }
-    SDL_ReleaseGPUTransferBuffer(s_device, upload);
+    ModernNativeRetireUpload(upload);
     upload = NULL;
     entry->transparent = 0;
     for (byte = 3; byte < image.size; byte += 4) {
@@ -1507,6 +1551,7 @@ void ModernNativeGpuShutdown(void) {
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
     s_completeWorld = 0;
+    ModernNativeReleasePendingUploads();
     s_textureCount = 0;
     /* The lookup index has to go with the textures it points into. Leaving it
      * behind left entries naming slots that the next run filled with
