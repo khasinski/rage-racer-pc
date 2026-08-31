@@ -33,8 +33,14 @@ void main() {
         color = mix(color, sky.top.rgb,
                     smoothstep(0.20, 0.70, height));
     } else {
-        color = mix(sky.horizon.rgb, sky.bottom.rgb,
-                    smoothstep(0.0, 0.12, -height));
+        /*
+         * Below the band the game draws a flat quad, not a gradient:
+         * DrawSkyBackground puts down a POLY_F4 in slot 4, so every corner
+         * carries the same colour. Fading from the skyline colour instead
+         * left a pale strip under the horizon, which reads as sky wherever
+         * the ground ends short of the skyline.
+         */
+        color = sky.bottom.rgb;
     }
     /*
      * The cloud sheet wraps the horizon as a band, the way the game's tile
