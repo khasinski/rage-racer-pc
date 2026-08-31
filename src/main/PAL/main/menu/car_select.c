@@ -17,6 +17,16 @@ void UpdateRankingScreen(void) {
         GameMenuBusy = -1;
         DrawFadingMenuSprites(0, 2, g_RankingCursor);
         RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1);
+        /*
+         * Having just arrived, draw the frame and wait for the next one.
+         * Falling through from here reaches the code that leaves the screen,
+         * which ran on the very frame the screen opened and sent the player
+         * straight back to the course select: the ranking could not be
+         * entered at all.
+         */
+        RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        return;
     } else if (state < 0) {
         switch (state) {
         case -1:
