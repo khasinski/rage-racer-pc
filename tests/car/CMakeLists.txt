@@ -133,6 +133,30 @@ add_test(NAME drivetrain_sweep COMMAND drivetrain_sweep_tests)
 set_tests_properties(drivetrain_sweep PROPERTIES LABELS functional)
 
 # Where a car lands on the track, swept over a course built for the purpose.
+add_executable(advance_car_position_tests
+    advance_car_position_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(advance_car_position_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(advance_car_position_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(advance_car_position_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(advance_car_position_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(advance_car_position_tests PRIVATE psyz)
+add_test(NAME advance_car_position COMMAND advance_car_position_tests)
+set_tests_properties(advance_car_position PROPERTIES LABELS functional)
+
 add_executable(car_track_state_tests
     car_track_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
