@@ -88,20 +88,20 @@ static void ResetPoller(void) {
 
 static int TestSuccessfulPoll(void) {
     ResetPoller();
-    CHECK(PollMemoryCardStatus(2, 3) == 0);
+    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
     CHECK(s_infoHandle == 35);
     CHECK(g_McStatusState == MC_STATUS_WAIT_INFO && g_McPollTicks == 0);
 
     s_hwEvent = MC_EVENT_IO_COMPLETE;
-    CHECK(PollMemoryCardStatus(2, 3) == 0);
+    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
     CHECK(g_McStatusState == MC_STATUS_REQUEST_LOAD);
-    CHECK(PollMemoryCardStatus(2, 3) == 0);
+    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
     CHECK(s_loadHandle == 35 && g_McStatusState == MC_STATUS_WAIT_LOAD);
 
     s_hwEvent = MC_EVENT_IO_COMPLETE;
-    CHECK(PollMemoryCardStatus(2, 3) == 0);
+    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
     CHECK(g_McStatusState == MC_STATUS_PUBLISH_RESULT);
-    CHECK(PollMemoryCardStatus(2, 3) == MC_EVENT_IO_COMPLETE);
+    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_READY);
     CHECK(g_McStatusState == MC_STATUS_REQUEST_INFO);
     return 0;
 }
@@ -112,7 +112,7 @@ static int TestInfoTimeout(void) {
     s_hwEvent = MC_EVENT_TIMEOUT;
     PollMemoryCardStatus(0, 0);
     CHECK(g_McStatusState == MC_STATUS_PUBLISH_RESULT);
-    CHECK(PollMemoryCardStatus(0, 0) == -1);
+    CHECK(PollMemoryCardStatus(0, 0) == MC_CARD_RESULT_NO_CARD);
     return 0;
 }
 
@@ -121,24 +121,24 @@ static int TestNewCardLoadFailure(void) {
     PollMemoryCardStatus(0, 1);
     s_hwEvent = MC_EVENT_NEW_CARD;
     PollMemoryCardStatus(0, 1);
-    CHECK(g_McPollStatus == 2 && s_clearHandle == 1);
+    CHECK(g_McPollStatus == MC_CARD_RESULT_NEW_CARD && s_clearHandle == 1);
     CHECK(s_clearSwCalls == 1 && s_waitSwCalls == 1);
 
     PollMemoryCardStatus(0, 1);
     s_hwEvent = MC_EVENT_NEW_CARD;
     PollMemoryCardStatus(0, 1);
-    CHECK(PollMemoryCardStatus(0, 1) == -2);
+    CHECK(PollMemoryCardStatus(0, 1) == MC_CARD_RESULT_UNFORMATTED);
     return 0;
 }
 
 static int TestFormatResults(void) {
     ResetPoller();
     s_swEvent = MC_EVENT_IO_COMPLETE;
-    CHECK(FormatMemoryCard(0, 0) == 1);
+    CHECK(FormatMemoryCard(0, 0) == MC_CARD_RESULT_READY);
     s_swEvent = MC_EVENT_TIMEOUT;
-    CHECK(FormatMemoryCard(0, 0) == -1);
+    CHECK(FormatMemoryCard(0, 0) == MC_CARD_RESULT_NO_CARD);
     s_swEvent = MC_EVENT_ERROR;
-    CHECK(FormatMemoryCard(0, 0) == -3);
+    CHECK(FormatMemoryCard(0, 0) == MC_CARD_RESULT_ERROR);
     return 0;
 }
 

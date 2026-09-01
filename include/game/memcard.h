@@ -91,6 +91,15 @@ typedef enum MemoryCardEvent {
     MC_EVENT_TIMEOUT,
     MC_EVENT_NEW_CARD
 } MemoryCardEvent;
+
+typedef enum MemoryCardResult {
+    MC_CARD_RESULT_ERROR = -3,
+    MC_CARD_RESULT_UNFORMATTED = -2,
+    MC_CARD_RESULT_NO_CARD = -1,
+    MC_CARD_RESULT_PENDING = 0,
+    MC_CARD_RESULT_READY = 1,
+    MC_CARD_RESULT_NEW_CARD = 2,
+} MemoryCardResult;
 MemoryCardEvent WaitMemoryCardHwEvent(void);
 MemoryCardEvent WaitMemoryCardSwEvent(void);
 MemoryCardEvent PollMemoryCardHwEvent(void);
