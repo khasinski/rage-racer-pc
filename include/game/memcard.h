@@ -198,6 +198,7 @@ void BiosBuInit(void);
 void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(s32 a, s32 b);
 void StoreSaveStateBlock(GameSaveBlock *block);
-void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow);
+void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
+                          s32 selectedRow, s32 selectedSlot);
 
 #endif

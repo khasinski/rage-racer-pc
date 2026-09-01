@@ -195,6 +195,25 @@ target_link_libraries(memory_card_menu_tests PRIVATE psyz)
 add_test(NAME memory_card_menu COMMAND memory_card_menu_tests)
 set_tests_properties(memory_card_menu PROPERTIES LABELS functional)
 
+add_executable(memory_card_screen_tests
+    memory_card_screen_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_screen.c)
+target_include_directories(memory_card_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(memory_card_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(memory_card_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(memory_card_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME memory_card_screen COMMAND memory_card_screen_tests)
+set_tests_properties(memory_card_screen PROPERTIES LABELS unit)
+
 # The logo editor's two halves, swept across the buttons that act on them.
 add_executable(team_logo_editor_tests
     team_logo_editor_tests.c
