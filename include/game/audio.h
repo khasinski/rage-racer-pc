@@ -210,11 +210,7 @@ extern VabSlotVoice g_VabSlotVoices[10];
 extern s32 g_VabSpuAddress[];
 extern s32 g_VabTransferDone;
 
-/* The BIOS exit() stub never comes back. Telling gcc so is not a hint for the
- * allocator's sake, it is the truth, and it is what ends the live range of a
- * value the failure path does not use. Without it gcc thinks control returns
- * from BiosExit into the code after the check, so every value still needed
- * there is live across two calls and has to sit in a callee-saved register. */
+/* The BIOS exit service does not return after a fatal asset-loading error. */
 void BiosExit(s32 code) __attribute__((noreturn));
 void UpdateBasicEffectVoices(void);
 void UpdateEffectVoiceStates(void);

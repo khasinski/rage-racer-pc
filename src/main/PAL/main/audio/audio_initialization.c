@@ -3,10 +3,6 @@
 #include "psyq/snd.h"
 #include "game/car.h"
 
-void SetDefaultReverbDepth(void) {
-    SetReverbDepth(0x28, 0x28);
-}
-
 void InitSequenceAudio(void) {
     _SsVmInit(0);
     SsSetVoiceCount(0x12);
@@ -47,21 +43,4 @@ void InitEffectVoiceRuntime(void) {
     SetEffectVoicesEnabled(1);
     SetReverbPreset(2, 0, 0);
     SetLoadedTableVolumeScale(g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
-}
-
-void ForcePanVoiceEnabled(s32 enabled) {
-    s32 left;
-    s32 right;
-
-    if (enabled != 0) {
-        left = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
-        right = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
-        left = ClampVoiceVolume(left * g_SoundScale.scale / 128);
-        right = ClampVoiceVolume(right * g_SoundScale.scale / 128);
-
-        SsUtSetVVol(0x15, left, right);
-        SsUtKeyOnV(0x15, g_SoundScale.vabIds[0], 0xF, 0, 0x3C, 0, 0, 0);
-    } else {
-        SsUtKeyOffV(0x15);
-    }
 }

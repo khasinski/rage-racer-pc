@@ -46,6 +46,10 @@ void SetReverbDepth(s32 left, s32 right) {
     SsUtSetReverbDepth((s16)left, (s16)right);
 }
 
+void SetDefaultReverbDepth(void) {
+    SetReverbDepth(0x28, 0x28);
+}
+
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     s32 tempLeft;
     s32 tempRight;

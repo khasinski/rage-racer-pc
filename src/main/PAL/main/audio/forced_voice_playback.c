@@ -2,6 +2,21 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
+void ForcePanVoiceEnabled(s32 enabled) {
+    if (enabled != 0) {
+        s32 left = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
+        s32 right = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
+
+        left = ClampVoiceVolume(left * g_SoundScale.scale / 128);
+        right = ClampVoiceVolume(right * g_SoundScale.scale / 128);
+        SsUtSetVVol(0x15, left, right);
+        SsUtKeyOnV(0x15, g_SoundScale.vabIds[0], 0xF, 0,
+                   0x3C, 0, 0, 0);
+    } else {
+        SsUtKeyOffV(0x15);
+    }
+}
+
 void ForceBasicEffectVoicesEnabled(s32 enabled) {
     s32 i;
     s32 left;
