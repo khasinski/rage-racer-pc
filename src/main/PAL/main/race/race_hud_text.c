@@ -101,13 +101,8 @@ u8 *QueueDrawAreaPrim(void *ot, DrawPacket *packet, s16 x, s16 y, s32 w, s32 h) 
 }
 
 void BuildTileStrips(void) {
-    RenderBufferAddress *buffers;
     s32 row;
     s32 col;
-    s32 y;
-    s32 color;
-    s32 xStep;
-    s32 yStart;
     s32 bufferIndex;
 
     g_TileStripBuffers[0].bytes = g_TileStripStorage;
@@ -115,44 +110,29 @@ void BuildTileStrips(void) {
         g_TileStripStorage + 512 * sizeof(TILE);
     DrawSync(0);
 
-    color = 0x20;
-    buffers = g_TileStripBuffers;
-    bufferIndex = 0;
-    do {
-        row = 0;
-        y = 0x5A;
-        do {
-            col = 0;
-            yStart = y;
-            xStep = 0;
-            do {
+    for (bufferIndex = 0; bufferIndex < 2; bufferIndex++) {
+        TILE *tiles = g_TileStripBuffers[bufferIndex].tile;
+
+        for (row = 0; row < 16; row++) {
+            for (col = 0; col < 32; col++) {
                 s32 linear = row * 32 + col;
-                TILE *tile = &buffers[0].tile[linear];
+                TILE *tile = &tiles[linear];
 
                 SetTile(tile);
                 tile->w = 2;
                 tile->h = 1;
-                tile->x0 = 0xCD - xStep;
-                tile->y0 = yStart;
-                tile->r0 = color;
-                tile->g0 = color;
-                tile->b0 = color;
+                tile->x0 = 0xCD - col * 3;
+                tile->y0 = 0x5A + row * 2;
+                tile->r0 = 0x20;
+                tile->g0 = 0x20;
+                tile->b0 = 0x20;
 
                 if (linear > 0) {
                     AddPrim(tile - 1, tile);
                 }
-
-                col++;
-                xStep += 3;
-            } while (col < 0x20);
-
-            row++;
-            y += 2;
-        } while (row < 0x10);
-
-        bufferIndex++;
-        buffers++;
-    } while (bufferIndex < 2);
+            }
+        }
+    }
 }
 
 void DrawStartCountdown(s32 sceneTimer) {
