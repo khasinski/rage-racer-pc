@@ -218,35 +218,31 @@ void ShuffleBgmOrder(void) {
 
 
 void UpdateMainMenuInput(void) {
-    s32 idx;
+    s32 oldSelection;
+    s32 newSelection;
     u16 flags = g_PadPressed;
 
     if (flags != 0) {
         g_FrontendIdleTimer = 0;
     }
-    idx = g_TitleMenuSelection;
+    oldSelection = g_TitleMenuSelection;
+    newSelection = oldSelection;
 
-    if (flags & 0x1000) {
-        s32 n = idx - 1;
-        g_TitleMenuSelection = n;
-        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
-            g_TitleMenuSelection = idx - 2;
+    if (flags & PAD_UP) {
+        newSelection--;
+        if (g_ExtraGrandPrixUnlocked == 0 && newSelection == 1) {
+            newSelection--;
         }
-    } else if (flags & 0x4000) {
-        s32 n = idx + 1;
-        g_TitleMenuSelection = n;
-        if (g_ExtraGrandPrixUnlocked == 0 && n == 1) {
-            g_TitleMenuSelection = idx + 2;
+    } else if (flags & PAD_DOWN) {
+        newSelection++;
+        if (g_ExtraGrandPrixUnlocked == 0 && newSelection == 1) {
+            newSelection++;
         }
     }
 
-    {
-        s32 m = g_TitleMenuSelection + 5;
-        m = m % 5;
-        g_TitleMenuSelection = m;
-        if (idx != m) {
-            PlaySoundCue(1);
-        }
+    g_TitleMenuSelection = (newSelection + 5) % 5;
+    if (oldSelection != g_TitleMenuSelection) {
+        PlaySoundCue(1);
     }
 
     if (g_PadPressed & PAD_CONFIRM) {
