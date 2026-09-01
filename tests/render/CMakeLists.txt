@@ -274,6 +274,42 @@ target_link_libraries(shuttle_scenery_init_tests PRIVATE psyz)
 add_test(NAME shuttle_scenery_init COMMAND shuttle_scenery_init_tests)
 set_tests_properties(shuttle_scenery_init PROPERTIES LABELS functional)
 
+add_executable(shuttle_scenery_playback_tests
+    shuttle_scenery_playback_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_shuttle_scenery.c)
+target_include_directories(shuttle_scenery_playback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(shuttle_scenery_playback_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(shuttle_scenery_playback_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(shuttle_scenery_playback_tests PRIVATE psyz)
+add_test(NAME shuttle_scenery_playback COMMAND shuttle_scenery_playback_tests)
+set_tests_properties(shuttle_scenery_playback PROPERTIES LABELS functional)
+
+add_executable(shuttle_scenery_draw_tests
+    shuttle_scenery_draw_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_shuttle_scenery.c)
+target_include_directories(shuttle_scenery_draw_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(shuttle_scenery_draw_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(shuttle_scenery_draw_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(shuttle_scenery_draw_tests PRIVATE psyz)
+add_test(NAME shuttle_scenery_draw COMMAND shuttle_scenery_draw_tests)
+set_tests_properties(shuttle_scenery_draw PROPERTIES LABELS functional)
+
 add_executable(track_event_sound_tests
     track_event_sound_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_track_event_sound.c)
