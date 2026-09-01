@@ -98,72 +98,29 @@ void UpdatePrologueLoadStep2(void) {
 
 void DrawPrologueText(void) {
     s32 i;
-    s32 adjusted;
-    u32 timer;
-    s32 delta;
-    s32 value;
-    s32 clamped;
-    u8 *next;
-    u8 *prim;
+    const s32 scrollY = g_SceneTimer / 3 - 0xD0;
+    OT_TYPE *ot;
     s32 green;
-    s32 blueScale;
     s32 blue;
+    u8 *next;
 
     for (i = 0; i < g_PrologueLineCount; i++) {
-        s32 tableY;
+        const PrologueLine *line = &g_PrologueLines[i];
+        const s32 screenY = line->y - scrollY;
+        const s32 intensity = PrologueLineIntensity(screenY);
 
-        timer = g_SceneTimer;
-        adjusted = (timer / 3) - 0xD0;
-        tableY = g_PrologueLines[i].y;
-        delta = tableY - adjusted;
-
-        if (delta < 0x60) {
-            value = (0x60 - delta) << 1;
-        } else if (delta >= 0x91) {
-            value = (delta - 0x90) << 1;
-        } else {
-            value = 0;
-        }
-
-        if (value >= 0) {
-            clamped = value;
-            if (clamped >= 0x80) {
-                clamped = 0x7F;
-            }
-        } else {
-            clamped = 0;
-        }
-
-        value = 0x7F - clamped;
-        if (value != 0) {
-            GameDrawText8x8Shaded(
-                g_PrologueLines[i].x,
-                delta,
-                g_PrologueLines[i].text,
-                0x78CC,
-                value);
+        if (intensity != 0) {
+            GameDrawText8x8Shaded(line->x, screenY, line->text, 0x78CC,
+                                  intensity);
         }
     }
-    {
-        s32 fadeLevel;
-        u8 **cursorSlot;
-        u8 *ptr;
-        s32 greenScale;
-        s32 tmp;
 
-        fadeLevel = g_FadeLevel;
-        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
-        tmp = fadeLevel * 7;
-        greenScale = tmp * 32;
-        prim = *cursorSlot;
-        ptr = (u8 *)GamePrimaryOrderingTable(1);
-        green = (greenScale / 0x100) + 0x20;
-        blueScale = (fadeLevel * 3) << 6;
-        blue = (blueScale / 0x100) + 0x40;
-
-        next = GameQueueTileTrans(ptr, prim, 0, 0, 0x140, 0xF0, fadeLevel, green, blue);
-        *cursorSlot = QueueDrawModePrim(ptr, next, 0x49);
-    }
+    ot = GamePrimaryOrderingTable(1);
+    green = g_FadeLevel * 7 / 8 + 0x20;
+    blue = g_FadeLevel * 3 / 4 + 0x40;
+    next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140,
+                              0xF0, g_FadeLevel, green, blue);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x49);
 }
 
 void ExitPrologue(void) {
@@ -174,18 +131,15 @@ void ExitPrologue(void) {
 
 void UpdatePrologue(void) {
     s32 timer;
-    u32 active;
+    s32 worldActive;
     s32 eventIndex;
 
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
 
-    {
-        u32 sceneFrame = g_SceneTimer;
-        if (sceneFrame >= 0x79 && (g_PadPressed & PAD_CONFIRM)) {
-            ExitPrologue();
-        }
+    if (g_SceneTimer >= 0x79 && (g_PadPressed & PAD_CONFIRM)) {
+        ExitPrologue();
     }
 
     timer = g_SceneTimer;
@@ -208,9 +162,8 @@ void UpdatePrologue(void) {
 
     DrawPrologueText();
 
-    active = g_SceneTimer - 0x10;
-    active = active < 0x40F;
-    if (active) {
+    worldActive = IsPrologueWorldActive(g_SceneTimer);
+    if (worldActive) {
         eventIndex = g_PrologueCutIndex;
         g_AnimTimer++;
         if (g_PrologueCameraCuts[eventIndex].timer == g_SceneTimer) {
@@ -231,5 +184,5 @@ void UpdatePrologue(void) {
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
-    DrawCourseScenery2(g_AnimTimer, active);
+    DrawCourseScenery2(g_AnimTimer, worldActive);
 }

@@ -37,6 +37,8 @@ extern SectorReferenceTimes g_RefSectorTimes;
 void QueueFinishFollowupCue(s32 cue);
 extern s32 g_PrologueStep;
 extern PrologueCameraCut g_PrologueCameraCuts[];
+s32 PrologueLineIntensity(s32 screenY);
+s32 IsPrologueWorldActive(s32 sceneTimer);
 extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];
 extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 
