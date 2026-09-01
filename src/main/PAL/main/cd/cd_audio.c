@@ -7,34 +7,43 @@
 
 long HostCdAudioEnded(void);
 
+typedef enum CdPauseRequestStep {
+    CD_PAUSE_WAIT_FOR_DRIVE = 0,
+    CD_PAUSE_GET_LOCATION = 1,
+    CD_PAUSE_WAIT_FOR_LOCATION = 2,
+    CD_PAUSE_CAPTURE_LOCATION = 3,
+    CD_PAUSE_SEND_COMMAND = 4,
+    CD_PAUSE_WAIT_FOR_COMMAND = 5,
+    CD_PAUSE_FINISH = 6,
+} CdPauseRequestStep;
 
 void StepCdPauseRequest(void) {
     s32 syncResult;
 
     switch (g_CdCommandStep) {
-    case 0:
+    case CD_PAUSE_WAIT_FOR_DRIVE:
         if (CdSync(1, 0) == 0) {
             break;
         }
-        g_CdCommandStep = 1;
+        g_CdCommandStep = CD_PAUSE_GET_LOCATION;
         /* fallthrough */
 
-    case 1:
+    case CD_PAUSE_GET_LOCATION:
         if (CdControl(CD_DRIVE_GET_LOCATION, 0, g_CdLocResult) != 0) {
-            g_CdCommandStep = 2;
+            g_CdCommandStep = CD_PAUSE_WAIT_FOR_LOCATION;
         }
         break;
 
-    case 2:
+    case CD_PAUSE_WAIT_FOR_LOCATION:
         syncResult = CdSync(1, 0);
-        if (syncResult == 2) {
-            g_CdCommandStep = 3;
-        } else if (syncResult == 5) {
-            g_CdCommandStep = 1;
+        if (syncResult == CD_SYNC_COMPLETE) {
+            g_CdCommandStep = CD_PAUSE_CAPTURE_LOCATION;
+        } else if (syncResult == CD_SYNC_DISK_ERROR) {
+            g_CdCommandStep = CD_PAUSE_GET_LOCATION;
         }
         break;
 
-    case 3:
+    case CD_PAUSE_CAPTURE_LOCATION:
     {
         const s32 loopPoint =
             CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
@@ -49,28 +58,28 @@ void StepCdPauseRequest(void) {
         g_CdRestartOnResume =
             CdPlaybackPassedLoopPoint(firstLoopPoint, loopPoint, elapsed);
 
-        g_CdCommandStep = 4;
+        g_CdCommandStep = CD_PAUSE_SEND_COMMAND;
         /* fallthrough */
     }
 
-    case 4:
+    case CD_PAUSE_SEND_COMMAND:
         if (CdControl(CD_DRIVE_PAUSE, 0, 0) != 0) {
-            g_CdCommandStep = 5;
+            g_CdCommandStep = CD_PAUSE_WAIT_FOR_COMMAND;
         }
         break;
 
-    case 5:
+    case CD_PAUSE_WAIT_FOR_COMMAND:
         syncResult = CdSync(1, 0);
-        if (syncResult == 2) {
-            g_CdCommandStep = 6;
-        } else if (syncResult == 5) {
-            g_CdCommandStep = 4;
+        if (syncResult == CD_SYNC_COMPLETE) {
+            g_CdCommandStep = CD_PAUSE_FINISH;
+        } else if (syncResult == CD_SYNC_DISK_ERROR) {
+            g_CdCommandStep = CD_PAUSE_SEND_COMMAND;
         }
         break;
 
-    case 6:
+    case CD_PAUSE_FINISH:
         g_CdCommandPending = CD_COMMAND_NONE;
-        g_CdCommandStep = 0;
+        g_CdCommandStep = CD_PAUSE_WAIT_FOR_DRIVE;
         break;
     }
 }

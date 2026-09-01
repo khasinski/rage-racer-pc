@@ -77,8 +77,41 @@ static int TestResumeSeek(void) {
            g_CdCurrentTrack == 5;
 }
 
+static int TestSeekRetries(void) {
+    ResetState();
+    g_CdTrackStep = 2;
+    s_syncResult = CD_SYNC_DISK_ERROR;
+    StepCdTrackRequest();
+    if (g_CdTrackStep != 1) return 0;
+
+    g_CdTrackStep = 6;
+    StepCdTrackRequest();
+    return g_CdTrackStep == 5;
+}
+
+static int TestPlayRequest(void) {
+    ResetState();
+    g_CdCommandPending = CD_COMMAND_PLAY;
+    StepCdPlayRequest();
+    if (g_CdCommandStep != 2 || s_lastCommand != CD_DRIVE_PLAY) return 0;
+
+    s_syncResult = CD_SYNC_DISK_ERROR;
+    StepCdPlayRequest();
+    if (g_CdCommandStep != 1) return 0;
+    StepCdPlayRequest();
+    if (g_CdCommandStep != 2) return 0;
+
+    s_syncResult = CD_SYNC_COMPLETE;
+    StepCdPlayRequest();
+    if (g_CdCommandStep != 3) return 0;
+    StepCdPlayRequest();
+    return g_CdCommandStep == 0 &&
+           g_CdCommandPending == CD_COMMAND_NONE;
+}
+
 int main(void) {
-    if (!TestNewTrackRequest() || !TestResumeSeek()) {
+    if (!TestNewTrackRequest() || !TestResumeSeek() || !TestSeekRetries() ||
+        !TestPlayRequest()) {
         puts("CD track request state machine failed");
         return 1;
     }

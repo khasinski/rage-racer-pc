@@ -21,6 +21,11 @@ typedef enum CdDriveCommand {
     CD_DRIVE_SEEK_PLAY = 0x16,
 } CdDriveCommand;
 
+typedef enum CdSyncResult {
+    CD_SYNC_COMPLETE = 2,
+    CD_SYNC_DISK_ERROR = 5,
+} CdSyncResult;
+
 /* An asserted host EOF may be consumed only once the previous request has
  * finished. The backend keeps EOF asserted until the following Play. */
 static inline int CdAudioRequestsIdle(
