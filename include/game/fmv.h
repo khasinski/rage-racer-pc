@@ -36,14 +36,6 @@ typedef struct FmvWorkBuffers {
     u8 ring[1];
 } FmvWorkBuffers;
 
-typedef union FmvWorkBufferAddress {
-    u32 address;
-    void *data;
-    u8 *bytes;
-    volatile u32 *words;
-    FmvWorkBuffers *buffers;
-} FmvWorkBufferAddress;
-
 extern FmvDecodeContext g_FmvDecodeContext;
 extern volatile u32 *g_FmvRingBuffer;
 extern FmvPlaybackState g_FmvState;
