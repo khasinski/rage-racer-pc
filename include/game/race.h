@@ -295,8 +295,6 @@ void UpdateZoneAmbience(s32 zone);
  * header carried them. */
 
 extern s16 g_EndingSceneLatch;
-extern s32 D_801E4248;
-extern s16 D_801E4CF8;
 extern s16 g_AttractTitleDelays[];
 extern s32 g_BestLapIndex;
 extern s32 g_BgmRandomLabelTimer;

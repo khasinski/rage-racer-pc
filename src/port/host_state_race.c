@@ -187,7 +187,6 @@ s32 g_ClassPromoted;
 /* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following
  * retail labels are interior aliases, not the bounds of this object. */
 unsigned char g_BestSectorTimes[96] __attribute__((aligned(16)));
-unsigned char D_801E4248[8] __attribute__((aligned(16)));
 unsigned char g_FadeStep[40] __attribute__((aligned(16)));
 s32 g_FadeLevel;
 s32 g_LapCount;
@@ -203,7 +202,6 @@ s32 g_RacePaused;
 s32 g_ReplayWriteCursor;
 unsigned char g_ReplayRivalModel[8] __attribute__((aligned(16)));
 s32 g_BestLapThisRace;
-unsigned char D_801E4CF8[8] __attribute__((aligned(16)));
 s32 g_ClassClearFanfareTimer;
 s32 g_LapTimeMs;
 unsigned char g_ReplayPlayerModel[8] __attribute__((aligned(16)));

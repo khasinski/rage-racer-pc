@@ -27,7 +27,7 @@ static s32 s_RetireCameraActive;
 static s32 s_FinishFollowupCue = -1;
 
 static u16 CameraButtonMask(void) {
-    s32 mappingBank = g_PadType == 0x23;
+    s32 mappingBank = g_PadType == PAD_TYPE_NEGCON;
 
     return g_PadButtonMapping[6 + mappingBank * 8];
 }
@@ -79,7 +79,6 @@ void EnterRaceScene(void) {
     course = g_CourseIndex & 3;
     series = ReadStableRaceSeries();
     g_LapTimeMs = 0;
-    D_801E4248 = 0;
     g_LapTimeSaturated = 0;
     g_SectorEndDistance[2] = trackLength;
     g_SectorEndDistance[0] = trackLength / 3;
@@ -125,7 +124,8 @@ void EnterRaceScene(void) {
     g_RaceFadeTimer = 0;
     InitEffectVoiceRuntime();
     g_RivalCueEnabled = 1;
-    D_801E4CF8 = (g_PlayerAutoSteer = (g_RaceCueDelay = 0));
+    g_PlayerAutoSteer = 0;
+    g_RaceCueDelay = 0;
     g_SceneId = 12;
     g_FrameSyncThreshold = 0x180;
     DrawRoundScreen();
