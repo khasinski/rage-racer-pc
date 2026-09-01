@@ -1,44 +1,26 @@
 #include "game/cd.h"
 #include "game/cd_internal.h"
 
+static u32 ScaleCdMixLevel(u8 presetLevel, s32 volume) {
+    return (presetLevel * volume / 127) << 12;
+}
 
 void SetCdVolume(s32 volume) {
-    s32 offset;
-    s32 scale;
-    s32 product;
-    s32 value;
+    const s32 presetOffset = g_CdMixPreset * 4;
 
-    offset = g_CdMixPreset;
     g_CdVolume = volume;
-    scale = g_CdVolume;
-    offset <<= 2;
-
-    product = g_CdMixPresets[offset] * scale;
-    value = (product / 127) << 12;
-    g_CdMixFullLL = value;
-    g_CdMixLL = value;
-
-    product = g_CdMixPresets[offset + 1] * scale;
-    value = (product / 127) << 12;
-    g_CdMixFullLR = value;
-    g_CdMixLR = value;
-
-    product = g_CdMixPresets[offset + 2] * scale;
-    value = (product / 127) << 12;
-    g_CdMixFullRR = value;
-    g_CdMixRR = value;
-
-    product = g_CdMixPresets[offset + 3] * scale;
-    value = (product / 127) << 12;
-    g_CdMixFullRL = value;
-    g_CdMixRL = value;
+    g_CdMixLL = g_CdMixFullLL =
+        ScaleCdMixLevel(g_CdMixPresets[presetOffset], volume);
+    g_CdMixLR = g_CdMixFullLR =
+        ScaleCdMixLevel(g_CdMixPresets[presetOffset + 1], volume);
+    g_CdMixRR = g_CdMixFullRR =
+        ScaleCdMixLevel(g_CdMixPresets[presetOffset + 2], volume);
+    g_CdMixRL = g_CdMixFullRL =
+        ScaleCdMixLevel(g_CdMixPresets[presetOffset + 3], volume);
 
     StepCdVolumeFade();
 }
 
 void SetCdVolumeSetting(s32 level) {
-    s32 product = (level << 7) - level;
-
-    g_CdVolume = product / 15;
-    SetCdVolume(g_CdVolume);
+    SetCdVolume(level * 127 / 15);
 }

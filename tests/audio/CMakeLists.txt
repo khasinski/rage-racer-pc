@@ -52,6 +52,25 @@ endif()
 add_test(NAME cd_volume_fade COMMAND cd_volume_fade_tests)
 set_tests_properties(cd_volume_fade PROPERTIES LABELS unit)
 
+add_executable(cd_volume_tests
+    cd_volume_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_volume.c)
+target_include_directories(cd_volume_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(cd_volume_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(cd_volume_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(cd_volume_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME cd_volume COMMAND cd_volume_tests)
+set_tests_properties(cd_volume PROPERTIES LABELS unit)
+
 add_executable(audio_parameter_table_tests
     audio_parameter_table_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_parameter_table.c)
