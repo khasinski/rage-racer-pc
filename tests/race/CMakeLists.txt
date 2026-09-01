@@ -85,6 +85,28 @@ add_test(NAME save_state_roundtrip COMMAND save_state_roundtrip_tests)
 set_tests_properties(save_state_roundtrip PROPERTIES LABELS functional)
 endif()
 
+if(TARGET rage-host-state)
+add_executable(save_defaults_tests
+    save_defaults_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_defaults.c)
+target_include_directories(save_defaults_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(save_defaults_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(save_defaults_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(save_defaults_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(save_defaults_tests PRIVATE rage-host-state psyz)
+add_test(NAME save_defaults COMMAND save_defaults_tests)
+set_tests_properties(save_defaults PROPERTIES LABELS unit)
+endif()
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/tests/support/include
