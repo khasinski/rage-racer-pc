@@ -31,6 +31,13 @@ static s32 s_arrowX;
 static s32 s_arrowY;
 static s32 s_hint;
 static s32 s_padHints;
+static DrawRecord s_messageSprite;
+static s32 s_messageSpriteV;
+static s32 s_messageSpriteCount;
+static DrawRecord s_textRows[4];
+static s32 s_textCount;
+static s32 s_drawMode;
+static s32 s_drawModeCount;
 
 u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
@@ -62,16 +69,21 @@ void DrawPadTypeHint(void) { s_padHints++; }
 /* DrawMemoryCardMessage lives in the same translation unit. */
 u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                     s32 u, s32 v, s32 clut) {
-    (void)ot; (void)x; (void)y; (void)w; (void)h;
-    (void)u; (void)v; (void)clut;
+    (void)w; (void)h; (void)u; (void)clut;
+    s_messageSprite = (DrawRecord){ot, x, y};
+    s_messageSpriteV = v;
+    s_messageSpriteCount++;
     return prim + 1;
 }
 u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
-    (void)ot; (void)tpage;
+    (void)ot;
+    s_drawMode = tpage;
+    s_drawModeCount++;
     return prim + 1;
 }
 void DrawSpriteString(long x, long y, const char *text, long clut) {
-    (void)x; (void)y; (void)text; (void)clut;
+    (void)text; (void)clut;
+    s_textRows[s_textCount++] = (DrawRecord){NULL, (s32)x, (s32)y};
 }
 
 #define CHECK(condition) do {                                                \
@@ -93,9 +105,16 @@ static void Reset(void) {
     s_tileCount = 0;
     s_shadowCount = 0;
     s_padHints = 0;
+    s_messageSpriteCount = 0;
+    s_textCount = 0;
+    s_drawModeCount = 0;
 }
 
 int main(void) {
+    MemoryCardMessageRow textRows[] = {
+        {"FIRST", 2, {0}},
+        {"SECOND", 0, {0}},
+    };
     OT_TYPE *spriteOt;
     OT_TYPE *tileOt;
 
@@ -125,6 +144,41 @@ int main(void) {
     CHECK(s_arrowY == 0x58 && s_hint == 6 && s_padHints == 1);
     CHECK(RENDER_PRIM_CURSOR_AS(u8) == s_packets + 13);
 
-    puts("memory card screen drawing preserved");
+    g_McMessageRows[6] = textRows;
+    g_McMessageColumnX[2] = 42;
+    Reset();
+    DrawMemoryCardMessage(6);
+    CHECK(s_textCount == 2);
+    CHECK(s_textRows[0].x == 0x60 && s_textRows[0].y == 0x40);
+    CHECK(s_textRows[1].x == 42 && s_textRows[1].y == 0x60);
+    CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0xDE);
+    CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
+
+    g_McMessageRows[7] = textRows;
+    Reset();
+    DrawMemoryCardMessage(7);
+    CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0xAC);
+
+    g_McMessageRows[5] = textRows;
+    Reset();
+    g_SceneTimer = 0;
+    DrawMemoryCardMessage(5);
+    CHECK(s_messageSpriteCount == 0);
+    Reset();
+    g_SceneTimer = 0x10;
+    DrawMemoryCardMessage(5);
+    CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0x108);
+
+    for (s32 message = 0x10; message <= 0x12; message++) {
+        g_McMessageRows[message] = textRows;
+        Reset();
+        DrawMemoryCardMessage(message);
+        CHECK(s_textCount == 0);
+        CHECK(s_messageSpriteCount == 1);
+        CHECK(s_messageSpriteV == (message - 0x10) * 0x18);
+        CHECK(s_drawModeCount == 1 && s_drawMode == 0x3F);
+    }
+
+    puts("memory card screen and message drawing preserved");
     return 0;
 }
