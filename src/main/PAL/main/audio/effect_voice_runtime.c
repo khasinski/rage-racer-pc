@@ -230,8 +230,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
                 g_MusicChannels[i].left.value = -1;
                 g_MusicChannels[i].right.value = -1;
                 g_MusicChannels[i].mode = 1;
-                g_MusicChannels[i].volRight.value = 0;
-                g_MusicChannels[i].volLeft.value = 0;
+                g_MusicChannels[i].volRight = 0;
+                g_MusicChannels[i].volLeft = 0;
             }
         }
         return;
@@ -278,13 +278,13 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
             currentB = GetSoundModeAtByteOffset(entryOffset)->factor;
             scaledLeft = left * currentB;
             scaledLeft /= 128;
-            CHANNEL(cue).volLeft.updated = scaledLeft;
+            CHANNEL(cue).volLeft = scaledLeft;
             scaledRight = right * currentB;
             entryAddress.pointer = entry;
             entryAddress.bytes += sizeof(SoundModeSlot);
             entry = entryAddress.pointer;
             scaledRight /= 128;
-            CHANNEL(cue).volRight.updated = scaledRight;
+            CHANNEL(cue).volRight = scaledRight;
             i++;
         } else {
             if ((scaledLeft = average * GetSoundModeAtByteOffset(entryOffset)->factor) < 0) {
@@ -293,8 +293,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
                 currentB = scaledLeft;
             }
             currentB >>= 7;
-            CHANNEL(cue).volLeft.updated = currentB;
-            SetMusicChannelWordUpdated(CHANNEL(cue).volRight, currentB);
+            CHANNEL(cue).volLeft = currentB;
+            CHANNEL(cue).volRight = currentB;
             /* Load-bearing: removal changes eight linked scheduler words. */
             
             entryAddress.pointer = entry;
@@ -306,126 +306,29 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     } while (i < count);
 }
 
-#define UPDATE_BASIC_EFFECT_VOLUME()                                  \
-    updateLeftAddress.wordPointer = &g_MusicChannels[0].volLeft.value; \
-    updateLeftAddress.bytes += offset;                                \
-    raw = *updateLeftAddress.wordPointer;                             \
-    scale = g_SoundScale.scale;                                                \
-    left = raw * scale;                                                \
-    updateRightAddress.wordPointer = &g_MusicChannels[0].volRight.value; \
-    updateRightAddress.bytes += offset;                               \
-    raw = *updateRightAddress.wordPointer;                            \
-    voice = i + 8;                                                     \
-    if (left < 0) {                                                    \
-        left += 0x7F;                                                  \
-    }                                                                 \
-    raw *= scale;                                                      \
-    if (raw < 0) {                                                     \
-        raw += 0x7F;                                                   \
-    }                                                                 \
-    left >>= 7;                                                        \
-    right = raw >> 7;                                                  \
-    if (left >= 0) {                                                   \
-        if (left >= 0x81) {                                            \
-            left = 0x80;                                               \
-        }                                                             \
-    } else {                                                          \
-        left = 0;                                                      \
-    }                                                                 \
-    if (right >= 0) {                                                  \
-        if (right >= 0x81) {                                           \
-            right = 0x80;                                              \
-        }                                                             \
-    } else {                                                          \
-        right = 0;                                                     \
-    }                                                                 \
-    SsUtSetVVol((s16)voice, (s16)left, (s16)right);                   \
-    *state = neg
-
-#define START_BASIC_EFFECT_VOLUME()                                   \
-    startLeftAddress.wordPointer = &g_MusicChannels[0].volLeft.value; \
-    startLeftAddress.bytes += offset;                                 \
-    raw = *startLeftAddress.wordPointer;                              \
-    scale = g_SoundScale.scale;                                                \
-    left = raw * scale;                                                \
-    raw = i + 8;                                                       \
-                                        \
-    voice = raw;                                                       \
-    startRightAddress.wordPointer = &g_MusicChannels[0].volRight.value; \
-    startRightAddress.bytes += offset;                                \
-    raw = *startRightAddress.wordPointer;                             \
-    if (left < 0) {                                                    \
-        left += 0x7F;                                                  \
-    }                                                                 \
-    raw *= scale;                                                      \
-    if (raw < 0) {                                                     \
-        raw += 0x7F;                                                   \
-    }                                                                 \
-    left >>= 7;                                                        \
-    right = raw >> 7;                                                  \
-    if (left >= 0) {                                                   \
-        if (left >= 0x81) {                                            \
-            left = 0x80;                                               \
-        }                                                             \
-    } else {                                                          \
-        left = 0;                                                      \
-    }                                                                 \
-    if (right >= 0) {                                                  \
-        if (right >= 0x81) {                                           \
-            right = 0x80;                                              \
-        }                                                             \
-    } else {                                                          \
-        right = 0;                                                     \
-    }                                                                 \
-    SsUtSetVVol((s16)voice, (s16)left, (s16)right);                   \
-    *state = neg
-
 void UpdateBasicEffectVoices(void) {
-    s32 offset;
-    s32 *state;
     s32 i;
-    s32 voicePacked;
-    s32 neg;
-    s32 raw;
-    s32 scale;
-    s32 voice;
-    s32 left;
-    s32 right;
-    MusicChannelAddress leftToneAddress;
-    MusicChannelAddress rightToneAddress;
-    MusicChannelAddress updateLeftAddress;
-    MusicChannelAddress updateRightAddress;
-    MusicChannelAddress startLeftAddress;
-    MusicChannelAddress startRightAddress;
 
-    i = 0;
-    neg = -1;
-    state = &g_MusicChannels[0].mode;
-    voicePacked = 0x80000;
-    offset = 0;
-    do {
-        switch (*state) {
+    for (i = 0; i < 2; i++) {
+        MusicChannel *channel = &g_MusicChannels[i];
+        s16 voice = (s16)(8 + i);
+
+        switch (channel->mode) {
         case 0:
-            leftToneAddress.halfwordPointer = &g_MusicChannels[0].left.half[0];
-            leftToneAddress.bytes += offset;
-            rightToneAddress.halfwordPointer = &g_MusicChannels[0].right.half[0];
-            rightToneAddress.bytes += offset;
-            SsUtKeyOnV(voicePacked >> 16, g_SoundScale.vabIds[0],
-                          *leftToneAddress.halfwordPointer,
-                          *rightToneAddress.halfwordPointer, 0x3C, 0, 0, 0);
-            START_BASIC_EFFECT_VOLUME();
-            break;
+            SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
+                       channel->right.half[0], 0x3C, 0, 0, 0);
+            /* Fall through: a newly keyed voice needs the same volume update. */
         case 2:
-            UPDATE_BASIC_EFFECT_VOLUME();
+            SsUtSetVVol(
+                voice,
+                ClampVoiceVolume(channel->volLeft * g_SoundScale.scale / 128),
+                ClampVoiceVolume(channel->volRight * g_SoundScale.scale / 128));
+            channel->mode = -1;
             break;
         case 1:
-            SsUtKeyOffV(voicePacked >> 16);
-            *state = neg;
+            SsUtKeyOffV(voice);
+            channel->mode = -1;
             break;
         }
-        state += sizeof(MusicChannel) / sizeof(*state);
-        voicePacked += 0x10000;
-        i++;
-        offset += sizeof(MusicChannel);
-    } while (i < 2);
+    }
 }

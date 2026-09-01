@@ -14,9 +14,9 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
             SsUtKeyOnV((s16)voice, g_SoundScale.vabIds[0],
                        g_MusicChannels[i].left.half[0], 0, 0x3C, 0, 0, 0);
             left = ClampVoiceVolume(
-                g_MusicChannels[i].volLeft.value * g_SoundScale.scale / 128);
+                g_MusicChannels[i].volLeft * g_SoundScale.scale / 128);
             right = ClampVoiceVolume(
-                g_MusicChannels[i].volRight.value * g_SoundScale.scale / 128);
+                g_MusicChannels[i].volRight * g_SoundScale.scale / 128);
             SsUtSetVVol((s16)voice, left, right);
         } else {
             SsUtKeyOffV((s16)voice);

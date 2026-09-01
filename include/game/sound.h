@@ -31,30 +31,14 @@ typedef union MusicChannelValue {
     s16 half[2];
 } MusicChannelValue;
 
-typedef union MusicChannelWordValue {
-    s32 value;
-    volatile s32 updated;
-} MusicChannelWordValue;
-
-#define SetMusicChannelWordUpdated(word, newValue) \
-    (*(volatile s32 *)&(word) = (newValue))
-
 typedef struct MusicChannel {
     MusicChannelValue left; /* +0x00 current left/tone value */
     MusicChannelValue right; /* +0x04 current right value */
     s32 mode;      /* +0x08 state/mode 0/1/2/-1 */
     s32 reserved;  /* +0x0C unused                              */
-    MusicChannelWordValue volLeft;  /* +0x10 scaled left volume */
-    MusicChannelWordValue volRight; /* +0x14 scaled right volume */
+    s32 volLeft;  /* +0x10 scaled left volume */
+    s32 volRight; /* +0x14 scaled right volume */
 } MusicChannel; /* sizeof 0x18 */
-
-typedef union MusicChannelAddress {
-    s32 value;
-    u8 *bytes;
-    s16 *halfwordPointer;
-    s32 *wordPointer;
-    MusicChannel *pointer;
-} MusicChannelAddress;
 
 extern MusicChannel g_MusicChannels[];
 

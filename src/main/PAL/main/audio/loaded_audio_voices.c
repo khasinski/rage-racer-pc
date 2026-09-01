@@ -76,8 +76,8 @@ void InitEffectVoiceRuntime(void) {
         g_MusicChannels[i].mode = -1;
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
-        g_MusicChannels[i].volLeft.value = 0;
-        g_MusicChannels[i].volRight.value = 0;
+        g_MusicChannels[i].volLeft = 0;
+        g_MusicChannels[i].volRight = 0;
     }
 
     for (i = 0; i < 4; i++) {
