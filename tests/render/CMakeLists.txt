@@ -528,6 +528,24 @@ target_link_libraries(cd_track_requests_tests PRIVATE psyz)
 add_test(NAME cd_track_requests COMMAND cd_track_requests_tests)
 set_tests_properties(cd_track_requests PROPERTIES LABELS functional)
 
+add_executable(mirror_pass_tests
+    mirror_pass_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/mirror_pass.c)
+target_include_directories(mirror_pass_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(mirror_pass_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(mirror_pass_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(mirror_pass_tests PRIVATE psyz)
+add_test(NAME mirror_pass COMMAND mirror_pass_tests)
+set_tests_properties(mirror_pass PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)
