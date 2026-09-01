@@ -12,6 +12,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/memcard_types.h"
 #include "game/save_format.h"
 #include "game/save_types.h"
 #include "psyq/gpu_types.h"
@@ -57,7 +58,7 @@ s32 g_McSwEventTimeout;
 s32 g_McSwEventNew;
 Rect g_SaveIconRect;
 s32 g_McSlotUsedMask;
-GameSaveHeaderRow g_McSaveHeaders[3];
+GameSaveHeaderRow g_McSaveHeaders[MEMORY_CARD_SAVE_SLOT_COUNT];
 s32 g_McNoCardTicks;
 s32 g_McErrorTicks;
 s32 g_McLastMenuState;
@@ -74,7 +75,7 @@ s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
 s32 GameMenuLoadPhase;
 s32 g_McMenuRowCount;
-DirEntry g_McDirEntries[15];
+DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
 s32 g_McFadeStep;
 s32 g_McFadeLevel;
 s32 g_McStatusState;

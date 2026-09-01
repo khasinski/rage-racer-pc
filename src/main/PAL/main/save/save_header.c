@@ -17,7 +17,7 @@ static u32 CalculateSaveHeaderChecksum(const GameSaveHeaderRow *row) {
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     s32 row;
 
-    for (row = 0; row < 3; row++) {
+    for (row = 0; row < MEMORY_CARD_SAVE_SLOT_COUNT; row++) {
         memset(rows[row].bytes, 0, 7);
         rows[row].fields.saveCounter = 0;
         rows[row].halfwords[6] = 0;

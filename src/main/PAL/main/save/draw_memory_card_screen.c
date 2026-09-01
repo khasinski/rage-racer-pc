@@ -28,7 +28,7 @@ void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
     base = GamePrimaryOrderingTable(54);
     next = AddTilePrim(base, *cursorSlot, 0x5D, 0x3C, 0xE4, 0x40, 0, 0, 0);
     next = AddTilePrim(base, next, 0x5C, 0x3A, 0xE5, 0x44, 0xFF, 0xFF, 0xFF);
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < MEMORY_CARD_SAVE_SLOT_COUNT; i++) {
         next = DrawShadowedTile(base, next, 0x3E, 0xD0 + i * 0x30);
     }
 

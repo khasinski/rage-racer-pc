@@ -47,7 +47,7 @@ s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;
 s32 g_McMenuState;
 s32 g_McNoCardTicks;
-GameSaveHeaderRow g_McSaveHeaders[3];
+GameSaveHeaderRow g_McSaveHeaders[MEMORY_CARD_SAVE_SLOT_COUNT];
 s32 g_McSaveMode;
 s32 g_McSettleTicks;
 s32 g_McSlotCursor;
@@ -93,8 +93,7 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
     s_calls++;
     return s_writeAnswer;
 }
-s32 RefreshMemoryCardSaveStatus(s32 unused, GameSaveHeaderRow *headers) {
-    (void)unused;
+s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers) {
     (void)headers;
     s_calls++;
     return 0;

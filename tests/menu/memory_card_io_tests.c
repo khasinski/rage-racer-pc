@@ -13,7 +13,7 @@ char g_FmtCardWildcard[] = "bu%d%d:*";
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_SaveElapsedTicks;
-DirEntry g_McDirEntries[12];
+DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
 s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
 char g_FmtPlayTime[] = "%02d:%02d:%02d";
@@ -47,6 +47,7 @@ static void ResetMock(void) {
     memset(s_exists, 0, sizeof(s_exists));
     memset(s_openResults, 0, sizeof(s_openResults));
     memset(g_SaveFilePath, 0, sizeof(g_SaveFilePath));
+    memset(g_McDirEntries, 0, sizeof(g_McDirEntries));
     memset(g_TeamNameChars, 0, sizeof(g_TeamNameChars));
     strcpy(&g_SaveFilePath[0x00], "slot-0");
     strcpy(&g_SaveFilePath[0x1A], "slot-1");
@@ -187,7 +188,7 @@ static int TestVerifiedHeaders(void) {
 }
 
 static int TestHeaderScan(void) {
-    GameSaveHeaderRow headers[3];
+    GameSaveHeaderRow headers[MEMORY_CARD_SAVE_SLOT_COUNT];
 
     ResetMock();
     s_exists[0] = 1;
@@ -259,23 +260,29 @@ static int TestWriteAndDirectoryCount(void) {
     CHECK(CountMemoryCardFiles(0, 0) == 4);
     s_directoryFiles = 0;
     CHECK(CountMemoryCardFiles(0, 0) == 0);
+
+    ResetMock();
+    s_directoryFiles = MEMORY_CARD_MAX_FILES + 5;
+    CHECK(CountMemoryCardFiles(0, 0) == MEMORY_CARD_MAX_FILES);
+    CHECK(s_directoryNextCalls == MEMORY_CARD_MAX_FILES - 1);
     return 0;
 }
 
 static int TestCardStatus(void) {
-    GameSaveHeaderRow headers[3];
+    GameSaveHeaderRow headers[MEMORY_CARD_SAVE_SLOT_COUNT];
 
     ResetMock();
     g_McDirEntries[0].size = 0x2000;
     g_McDirEntries[1].size = 0x1000;
     CHECK(CalculateMemoryCardFreeBlocks(0) == 15);
     CHECK(CalculateMemoryCardFreeBlocks(2) == 14);
+    CHECK(CalculateMemoryCardFreeBlocks(MEMORY_CARD_MAX_FILES + 5) == 14);
 
     s_directoryFiles = 2;
     s_exists[0] = 1;
     PutHeader(0, 0x1280, 31, 1);
     memset(headers, 0xCC, sizeof(headers));
-    CHECK(RefreshMemoryCardSaveStatus(0, headers) == 1);
+    CHECK(RefreshMemoryCardSaveStatus(headers) == 1);
     CHECK(g_McCardFileCount == 2);
     CHECK(g_McFreeBlocks == 14);
     CHECK(headers[0].fields.name[0] == 31);

@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include "game/memcard_types.h"
 #include "game/menu_types.h"
 #include "game/save_format.h"
 
@@ -70,9 +71,7 @@ s32 LoadMemoryCardSaveSlot(
     GameSaveHeaderRow *header);
 s32 CountMemoryCardFiles(s32 device, s32 port);
 s32 CalculateMemoryCardFreeBlocks(s32 fileCount);
-s32 RefreshMemoryCardSaveStatus(
-    s32 unused,
-    GameSaveHeaderRow *headers);
+s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
 char *FormatSaveElapsedTime(char *dst, u32 ticks);
 void DrawMemoryCardSaveRows(
     s32 flags,

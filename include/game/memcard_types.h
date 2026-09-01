@@ -1,0 +1,9 @@
+#ifndef GAME_MEMCARD_TYPES_H
+#define GAME_MEMCARD_TYPES_H
+
+enum {
+    MEMORY_CARD_SAVE_SLOT_COUNT = 3,
+    MEMORY_CARD_MAX_FILES = 15,
+};
+
+#endif

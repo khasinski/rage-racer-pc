@@ -146,7 +146,7 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
 
     mask = 0;
     GameMenuLoadPhase = 0x110;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < MEMORY_CARD_SAVE_SLOT_COUNT; i++) {
         fd = BiosFileOpen(g_SaveFilePath + i * 0x1A, 1);
         if (fd >= 0) {
             if (ReadVerifiedSaveHeader(fd, &headers[i]) == 0) {
@@ -232,6 +232,7 @@ s32 CountMemoryCardFiles(s32 port, s32 slot) {
     if (BiosFirstFile(path, entry) == entry) {
         do {
             count++;
+            if (count >= MEMORY_CARD_MAX_FILES) break;
             entry++;
             ret = BiosNextFile(entry);
         } while (ret == entry);

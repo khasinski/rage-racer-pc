@@ -14,7 +14,7 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
     s32 row_bit = 1;
     s32 rowIndex;
 
-    for (rowIndex = 0; rowIndex < 3; rowIndex++) {
+    for (rowIndex = 0; rowIndex < MEMORY_CARD_SAVE_SLOT_COUNT; rowIndex++) {
         GameSaveHeaderRow *row = &rows[rowIndex];
         if (flags_reg % 2) {
             s32 i;

@@ -187,7 +187,7 @@ void RunCardSlotActions(void) {
 
     case CARD_SLOT_ACTION_REFRESH_AFTER_SAVE:
         if (g_McActionResult != 0) {
-            s32 usedMask = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
+            s32 usedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
 
             g_McSlotUsedMask = usedMask;
         }

@@ -64,7 +64,7 @@ void RunCardWorkingActions(s32 fadeBusy) {
         g_McActionState = CARD_WORK_REFRESH_STATUS;
         break;
     case CARD_WORK_REFRESH_STATUS:
-        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
+        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
         g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
         break;
     case CARD_WORK_BEGIN_SETTLE_DELAY:
