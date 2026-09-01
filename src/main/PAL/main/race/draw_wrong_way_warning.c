@@ -14,56 +14,31 @@
  * primitive at this address and bumps it past what it wrote. */
 
 void DrawWrongWayWarning(void) {
-    SPRT *packet;
-    SPRT *next;
+    SPRT *sprites = RENDER_PRIM_CURSOR_AS(SPRT);
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
     s32 i;
-    s32 x;
-    s32 u;
-    OT_TYPE *ot;
-    SPRT *oldPacket;
-    s32 temp;
-    s32 uvOffset;
     u8 *ret;
 
-    next = RENDER_PRIM_CURSOR_AS(SPRT);
-    i = 0;
-    u = 0x48;
-    x = 0x6C;
-    packet = next;
+    for (i = 0; i < 3; i++) {
+        SPRT *sprite = &sprites[i];
+        s32 uvOffset = (((i & 2) << 3) - (i & 2)) << 2;
 
-    do {
-        SetSprt(next);
-        SetShadeTex(next, 1);
+        SetSprt(sprite);
+        SetShadeTex(sprite, 1);
+        sprite->x0 = 0x6C + i * 0x10;
+        sprite->y0 = 0x78;
+        sprite->u0 = (u8)(-0x10 - uvOffset);
+        sprite->v0 = 0x48 + i * 0x10;
+        sprite->w = uvOffset + 0x10;
+        sprite->h = 0x10;
+        sprite->clut = 0x788C;
+        AddPrim(ot, sprite);
+    }
 
-        temp = 0x78;
-        packet->y0 = temp;
-        
-        uvOffset = (((i & 2) << 3) - (i & 2)) << 2;
-        temp = -0x10 - uvOffset;
-        uvOffset += 0x10;
-        packet->u0 = temp;
-        temp = 0x10;
-        packet->h = temp;
-        temp = 0x788C;
-        oldPacket = packet;
-        packet->x0 = x;
-        packet->v0 = u;
-        packet->w = uvOffset;
-        packet->clut = temp;
-
-        packet++;
-        next++;
-        u += 0x10;
-        x += 0x10;
-        ot = GamePrimaryOrderingTable(0);
-        i++;
-        AddPrim(ot, oldPacket);
-    } while (i < 3);
-
-    ret = GameQueueTileTrans(GamePrimaryOrderingTable(0), (u8 *)next,
+    ret = GameQueueTileTrans(ot, (u8 *)(sprites + 3),
                              0x64, 0x70, 0x78, 0x20, 8, 8, 8);
     RENDER_PRIM_CURSOR_AS(u8) = ret;
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(GamePrimaryOrderingTable(0), ret, 9);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, ret, 9);
 }
 
 
