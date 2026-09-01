@@ -10,167 +10,85 @@ static s32 ClampVolumeSetting(s32 value) {
     return value < 0x10 ? value : 0xF;
 }
 
+static void LoadCarSetup(CarEntry *car, const SavedCarSetup *saved) {
+    car->modelVariant = saved->modelVariant;
+    car->tireCompound = saved->tireCompound;
+    car->transmission = saved->transmission;
+    car->paintColor1 = saved->paintColor1;
+    car->paintColor2 = saved->paintColor2;
+    car->enabled = saved->enabled;
+}
+
 s32 LoadSaveStateBlock(GameSaveBlock *block) {
-    GameSaveBlock *base = block;
+    u32 checksum = CalculateSaveBlockChecksum(block);
     s32 i;
-    
-    {
-        u32 sum;
-        u32 checksumIndex;
-        GameSaveBlockAddress checksumAddress;
-        u16 *p;
 
-        i = 0;
-        
-        sum = i;
-        checksumAddress.pointer = base;
-        p = checksumAddress.halfwordPointer;
-        do {
-            sum += *p++;
-            i++;
-            checksumIndex = i;
-        } while (checksumIndex < 0x7FE);
-        printf("%s", g_MsgSaveChecksumOk);
-        sum = ~sum;
-        printf(g_FmtSaveChecksum, base->checksum, sum);
-        if (base->checksum != sum) {
-            return 0;
-        }
+    printf("%s", g_MsgSaveChecksumOk);
+    printf(g_FmtSaveChecksum, block->checksum, checksum);
+    if (block->checksum != checksum) {
+        return 0;
     }
 
-    {
-        GameSaveBlockAddress padMappingAddress;
-        GameSaveBlockAddress negconMappingAddress;
-        GameSaveBlockAddress steerNeutralAddress;
-        GameSaveBlockAddress steerPlayAddress;
-        GameSaveBlockAddress neutralIIAddress;
-        GameSaveBlockAddress neutralLAddress;
-        u16 padMappingIndex;
-        u16 negconMappingIndex;
-        u16 negconSteerNeutral;
-        u16 negconSteerPlay;
+    g_PadMappingIndex = block->padMappingIndex;
+    g_NegconMappingIndex = block->negconMappingIndex;
+    g_NegconSteerNeutral = block->negconSteerNeutral;
+    g_NegconSteerPlay = block->negconSteerPlay;
+    g_NegconNeutralI = block->negconNeutralI;
+    g_NegconNeutralII = block->negconNeutralII;
+    g_NegconNeutralL = block->negconNeutralL;
+    g_NegconMaxTwist = block->negconMaxTwist;
 
-        padMappingAddress.halfwordPointer = &base->padMappingIndex;
-        padMappingIndex = *padMappingAddress.halfwordPointer;
-        negconMappingAddress.halfwordPointer = &base->negconMappingIndex;
-        negconMappingIndex = *negconMappingAddress.halfwordPointer;
-        steerNeutralAddress.halfwordPointer = &base->negconSteerNeutral;
-        negconSteerNeutral = *steerNeutralAddress.halfwordPointer;
-        steerPlayAddress.halfwordPointer = &base->negconSteerPlay;
-        negconSteerPlay = *steerPlayAddress.halfwordPointer;
-        g_NegconNeutralI = base->negconNeutralI;
-        neutralIIAddress.halfwordPointer = &base->negconNeutralII;
-        g_NegconNeutralII = *neutralIIAddress.halfwordPointer;
-        neutralLAddress.halfwordPointer = &base->negconNeutralL;
-        g_NegconNeutralL = *neutralLAddress.halfwordPointer;
-        {
-            GameSaveBlockAddress maxTwistAddress;
-            u16 hE;
-            s32 extraMaxClass;
+    g_GrandPrixSave.course = block->grandPrixProgress.course;
+    g_GrandPrixSave.carIndex = block->grandPrixProgress.carIndex;
+    g_GrandPrixSave.classIndex = block->grandPrixProgress.classIndex;
+    g_GrandPrixSave.maxClassReached = block->grandPrixProgress.maxClassReached;
+    g_GrandPrixSave.money.value = block->grandPrixProgress.money;
+    g_ExtraGrandPrixSave.course = block->extraGrandPrixProgress.course;
+    g_ExtraGrandPrixSave.carIndex = block->extraGrandPrixProgress.carIndex;
+    g_ExtraGrandPrixSave.classIndex = block->extraGrandPrixProgress.classIndex;
+    g_ExtraGrandPrixSave.maxClassReached = block->extraGrandPrixProgress.maxClassReached;
+    g_ExtraGrandPrixSave.money.value = block->extraGrandPrixProgress.money;
+    g_TimeAttackSave.course = block->timeAttackProgress.course;
+    g_TimeAttackSave.carIndex = block->timeAttackProgress.carIndex;
+    g_TimeAttackSave.classIndex = block->timeAttackProgress.classIndex;
+    g_TimeAttackSave.maxClassReached = block->timeAttackProgress.maxClassReached;
+    g_TimeAttackSave.money.value = block->timeAttackProgress.money;
+    g_BgmSelection = block->bgmSelection;
+    g_ExtraGrandPrixUnlocked = block->extraGrandPrixUnlocked;
+    g_MaxClassReached[0] = block->maxClassReached[0];
+    g_MaxClassReached[1] = block->maxClassReached[1];
 
-            maxTwistAddress.halfwordPointer = &base->negconMaxTwist;
-            hE = *maxTwistAddress.halfwordPointer;
-            g_GrandPrixSave.course = base->grandPrixProgress.course;
-            g_GrandPrixSave.carIndex = base->grandPrixProgress.carIndex;
-            g_GrandPrixSave.classIndex = base->grandPrixProgress.classIndex;
-            g_GrandPrixSave.maxClassReached = base->grandPrixProgress.maxClassReached;
-            g_GrandPrixSave.money.value =
-                base->grandPrixProgress.money;
-            g_ExtraGrandPrixSave.course = base->extraGrandPrixProgress.course;
-            g_ExtraGrandPrixSave.carIndex = base->extraGrandPrixProgress.carIndex;
-            g_ExtraGrandPrixSave.classIndex = base->extraGrandPrixProgress.classIndex;
-            extraMaxClass = base->extraGrandPrixProgress.maxClassReached;
-            g_PadMappingIndex = padMappingIndex;
-            g_NegconMappingIndex = negconMappingIndex;
-            g_NegconSteerNeutral = negconSteerNeutral;
-            g_NegconSteerPlay = negconSteerPlay;
-            g_NegconMaxTwist = hE;
-            g_ExtraGrandPrixSave.maxClassReached = extraMaxClass;
-        }
-        g_ExtraGrandPrixSave.money.value =
-            base->extraGrandPrixProgress.money;
-        g_TimeAttackSave.course = base->timeAttackProgress.course;
-        g_TimeAttackSave.carIndex = base->timeAttackProgress.carIndex;
-        g_TimeAttackSave.classIndex = base->timeAttackProgress.classIndex;
-        g_TimeAttackSave.maxClassReached = base->timeAttackProgress.maxClassReached;
-        g_TimeAttackSave.money.value =
-            base->timeAttackProgress.money;
-        {
-            s32 bgmSelection = base->bgmSelection;
-            u16 extraGrandPrixUnlocked = base->extraGrandPrixUnlocked;
-            s32 maxClassReached1;
-            g_MaxClassReached[0] = base->maxClassReached[0];
-            maxClassReached1 = base->maxClassReached[1];
-            g_BgmSelection = bgmSelection;
-            g_ExtraGrandPrixUnlocked = extraGrandPrixUnlocked;
-            g_MaxClassReached[1] = maxClassReached1;
-        }
+    for (i = 0; i < 13; i++) {
+        LoadCarSetup(&g_GrandPrixCars[i], &block->carSetup[0][i]);
+        LoadCarSetup(&g_ExtraGrandPrixCars[i], &block->carSetup[1][i]);
+        LoadCarSetup(&g_TimeAttackCars[i], &block->carSetup[2][i]);
     }
 
-    {
-        s32 i;
-
-        for (i = 0; i < 13; i++) {
-            SavedCarSetup *grandPrixCar;
-            SavedCarSetup *extraGrandPrixCar;
-            SavedCarSetup *timeAttackCar;
-
-            grandPrixCar = &base->carSetup[0][i];
-            extraGrandPrixCar = &base->carSetup[1][i];
-            timeAttackCar = &base->carSetup[2][i];
-
-            g_GrandPrixCars[i].modelVariant = grandPrixCar->modelVariant;
-            g_GrandPrixCars[i].tireCompound = grandPrixCar->tireCompound;
-            g_GrandPrixCars[i].transmission = grandPrixCar->transmission;
-            g_GrandPrixCars[i].paintColor1 = grandPrixCar->paintColor1;
-            g_GrandPrixCars[i].paintColor2 = grandPrixCar->paintColor2;
-            g_GrandPrixCars[i].enabled = grandPrixCar->enabled;
-            g_ExtraGrandPrixCars[i].modelVariant = extraGrandPrixCar->modelVariant;
-            g_ExtraGrandPrixCars[i].tireCompound = extraGrandPrixCar->tireCompound;
-            g_ExtraGrandPrixCars[i].transmission = extraGrandPrixCar->transmission;
-            g_ExtraGrandPrixCars[i].paintColor1 = extraGrandPrixCar->paintColor1;
-            g_ExtraGrandPrixCars[i].paintColor2 = extraGrandPrixCar->paintColor2;
-            g_ExtraGrandPrixCars[i].enabled = extraGrandPrixCar->enabled;
-            g_TimeAttackCars[i].modelVariant = timeAttackCar->modelVariant;
-            g_TimeAttackCars[i].tireCompound = timeAttackCar->tireCompound;
-            g_TimeAttackCars[i].transmission = timeAttackCar->transmission;
-            g_TimeAttackCars[i].paintColor1 = timeAttackCar->paintColor1;
-            g_TimeAttackCars[i].paintColor2 = timeAttackCar->paintColor2;
-            g_TimeAttackCars[i].enabled = timeAttackCar->enabled;
-        }
+    for (i = 0; i < 11; i++) {
+        g_ClassRecords[i].place = block->classRecords[i].grade;
+        g_ClassRecords[i].clears = block->classRecords[i].clears;
     }
 
-    {
-        s32 index = 0;
-
-        for (; index < 11; index++) {
-            SavedClassRecord *saved = &base->classRecords[index];
-
-            g_ClassRecords[index].place = saved->grade;
-            g_ClassRecords[index].clears = saved->clears;
-        }
-    }
-
-    memcpy(g_TeamLogoClut, base->teamLogoClut, sizeof(base->teamLogoClut));
-    memcpy(g_TeamLogoCanvas.halfwords, base->teamLogoCanvas,
-           sizeof(base->teamLogoCanvas));
-    memcpy(g_BestLapTimes, base->bestLapTimes, sizeof(g_BestLapTimes));
-    memcpy(g_BestTotalTimes, base->bestTotalTimes,
+    memcpy(g_TeamLogoClut, block->teamLogoClut, sizeof(block->teamLogoClut));
+    memcpy(g_TeamLogoCanvas.halfwords, block->teamLogoCanvas,
+           sizeof(block->teamLogoCanvas));
+    memcpy(g_BestLapTimes, block->bestLapTimes, sizeof(g_BestLapTimes));
+    memcpy(g_BestTotalTimes, block->bestTotalTimes,
            sizeof(g_BestTotalTimes));
-    memcpy(g_RankingRecords, base->rankingRecords,
-           sizeof(base->rankingRecords));
-    memcpy(g_TimeRecords, base->timeRecords, sizeof(base->timeRecords));
-    memcpy(g_BestSectorTimes, base->bestSectorTimes,
-           sizeof(g_BestSectorTimes));
+    memcpy(g_RankingRecords, block->rankingRecords,
+           sizeof(block->rankingRecords));
+    memcpy(g_TimeRecords, block->timeRecords, sizeof(block->timeRecords));
+    memcpy(g_BestSectorTimes, block->bestSectorTimes,
+           sizeof(block->bestSectorTimes));
     RepairRecordTimes();
 
-    g_BgmVolumeSetting = ClampVolumeSetting(base->bgmVolume);
-    g_SfxVolumeSetting = ClampVolumeSetting(base->sfxVolume);
-    g_MonoOutput = base->monoOutput != 0;
+    g_BgmVolumeSetting = ClampVolumeSetting(block->bgmVolume);
+    g_SfxVolumeSetting = ClampVolumeSetting(block->sfxVolume);
+    g_MonoOutput = block->monoOutput != 0;
 
-    /* g_GrandPrixCourseProgress / g_ExtraGrandPrixCourseProgress unaligned copies */
-    memcpy(&g_GrandPrixCourseProgress, base->grandPrixCourseProgress, 8);
-    memcpy(&g_ExtraGrandPrixCourseProgress, base->extraGrandPrixCourseProgress, 8);
+    /* These fields are byte arrays in the on-disc format and typed at runtime. */
+    memcpy(&g_GrandPrixCourseProgress, block->grandPrixCourseProgress, 8);
+    memcpy(&g_ExtraGrandPrixCourseProgress, block->extraGrandPrixCourseProgress, 8);
 
     LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
     ApplyAudioSettings();

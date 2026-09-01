@@ -20,6 +20,28 @@ endif()
 add_test(NAME record_defaults COMMAND record_defaults_tests)
 
 set_tests_properties(record_defaults PROPERTIES LABELS functional)
+
+add_executable(save_checksum_tests
+    save_checksum_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_checksum.c)
+target_include_directories(save_checksum_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(save_checksum_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(save_checksum_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(save_checksum_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(save_checksum_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME save_checksum COMMAND save_checksum_tests)
+set_tests_properties(save_checksum PROPERTIES LABELS unit)
+
 add_executable(course_index_tests course_index_tests.c)
 target_include_directories(course_index_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/tests/support/include

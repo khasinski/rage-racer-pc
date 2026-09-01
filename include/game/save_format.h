@@ -84,12 +84,4 @@ typedef struct GameSaveBlock {
     u32 checksum;
 } GameSaveBlock;
 
-typedef union GameSaveBlockAddress {
-    s32 offset;
-    u8 *bytePointer;
-    u16 *halfwordPointer;
-    s32 *wordPointer;
-    GameSaveBlock *pointer;
-} GameSaveBlockAddress;
-
 #endif
