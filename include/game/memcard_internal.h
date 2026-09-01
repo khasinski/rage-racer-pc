@@ -19,5 +19,6 @@ s32 UpdateMemoryCardFade(void);
 s32 AdvanceMemoryCardMenuStartup(void);
 void DrawMemoryCardMenu(void);
 void RunCardSlotActions(void);
+void RunUnformattedCardPage(s32 fadeBusy);
 
 #endif
