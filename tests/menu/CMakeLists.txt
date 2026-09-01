@@ -203,7 +203,8 @@ set_tests_properties(draw_team_logo_canvas PROPERTIES LABELS functional)
 
 add_executable(team_logo_screen_tests
     team_logo_screen_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/logo_screens.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_logo_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/logo_sample_screen.c)
 target_include_directories(team_logo_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -215,7 +216,7 @@ if(MSVC)
 else()
     target_compile_options(team_logo_screen_tests PRIVATE
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        -Wall -Wextra -Werror)
 endif()
 target_link_libraries(team_logo_screen_tests PRIVATE psyz)
 add_test(NAME team_logo_screen COMMAND team_logo_screen_tests)
