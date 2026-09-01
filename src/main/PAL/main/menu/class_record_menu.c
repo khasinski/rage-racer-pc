@@ -1,102 +1,8 @@
-#include "game/prim.h"
 #include "game/audio.h"
+#include "game/prim.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
-#include "game/race.h"
-#include "game/random.h"
 #include "game/render_internal.h"
-
-
-void DrawOptionRootMenu(void) {
-    OT_TYPE *base = GamePrimaryOrderingTable(51);
-    s32 h18 = 0x18;
-    s32 h48 = 0x48;
-    s32 color = 0x7F40;
-    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
-    u8 *tmp;
-    s32 state;
-
-    tmp = GameQueueSpriteTrans(base, *cursorSlot, 0x24, 0x94, 0x3C, h18, 0, h48, color);
-    tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xB4, 0x88, h18, 0x40, h48, color);
-    tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xD4, 0x74, h18, 0, 0x60, color);
-    tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xF4, 0x5C, h18, 0x74, 0x60, color);
-    tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0x114, 0x64, h18, 0, 0x78, color);
-    tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0x134, 0x1C, h18, 0xD0, 0x60, color);
-    tmp = QueueDrawModePrim(base, tmp, 0x3F);
-
-    state = g_GameMode;
-    *cursorSlot = tmp;
-    if (state == 1) {
-        DrawMenuCursorArrow(0x14, (g_OptionMenuCursor * 32) + 0x94);
-    }
-}
-
-/* g_GameModeHandlers[1]: the six-row root menu and where each row goes. */
-void UpdateOptionRootMenu(void) {
-    s32 old;
-    s32 value;
-    s32 buttons;
-
-    DrawOptionRootMenu();
-
-    old = g_OptionMenuCursor;
-    if (g_PadPressed & PAD_UP) {
-        g_OptionMenuCursor = old - 1;
-    } else if (g_PadPressed & PAD_DOWN) {
-        g_OptionMenuCursor = old + 1;
-    }
-
-    g_OptionMenuCursor = (g_OptionMenuCursor + 6) % 6;
-    if (old != g_OptionMenuCursor) {
-        PlaySoundCue(1);
-    }
-
-    buttons = g_PadPressed;
-    if (buttons & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        switch (g_OptionMenuCursor) {
-        case 0:
-            g_GameMode = 2;
-            g_ClassRecordMenuCursor = 0;
-            g_ScreenOffsetEditY = 0;
-            g_ScreenOffsetEditX = 0;
-            break;
-        case 1:
-            BeginControllerConfig();
-            g_GameMode = 7;
-            break;
-        case 2:
-            g_GameMode = 4;
-            g_SoundOptionCursor = 0;
-            break;
-        case 3:
-            g_GrandPrixMode = 0;
-            g_GrandPrixSeries = 0;
-            g_GrandPrixClass = (Random15() & 0xFFF) % 5;
-            value = Random15() & 0xFFF;
-            g_CourseIndex = value % 4;
-            if ((g_GrandPrixClass < 2) && (g_CourseIndex == 3)) {
-                g_CourseIndex = (Random15() & 0xFFF) % 3;
-            }
-            RequestTrackLoad();
-            StartOptionMenuExit(0x1B);
-            break;
-        case 4:
-            g_GameMode = 6;
-            g_ScreenOffsetEditX = g_ScreenOffsetX.value;
-            g_ScreenOffsetEditY = g_ScreenOffsetY.value;
-            break;
-        case 5:
-            StartOptionMenuExit(2);
-            break;
-        }
-    } else {
-        if (buttons & PAD_CANCEL) {
-            PlaySoundCue(3);
-            StartOptionMenuExit(2);
-        }
-    }
-}
 
 void DrawClassRecordDetail(void) {
     OT_TYPE *base = GamePrimaryOrderingTable(51);
@@ -125,7 +31,7 @@ void DrawClassRecordDetail(void) {
                                     g_ClassRecordNameSprites[idx].r, g_ClassRecordNameSprites[idx].g, 0x7F40);
     }
 
-    next = GameQueueSpriteTrans(base, next, x | 8, y + 0x28, 0x44, 0x10, 0x1C, 0x6C, 0x7F40);
+    next = GameQueueSpriteTrans(base, next, x + 8, y + 0x28, 0x44, 0x10, 0x1C, 0x6C, 0x7F40);
     next = GameQueueSpriteTrans(base, next, x + 100, y + 0x28, 8, 0x10,
                                 (s16)((s16)g_ClassRecords[idx].clears / 10) << 3, 0x18, 0x7F40);
     next = GameQueueSpriteTrans(base, next, x + 108, y + 0x28, 8, 0x10,
@@ -199,10 +105,10 @@ void UpdateClassRecordMenu(void) {
 
     oldCursor = g_ClassRecordMenuCursor;
     buttons = g_PadPressed;
-    if (buttons & 0x1000) {
+    if (buttons & PAD_UP) {
         g_ClassRecordMenuCursor = oldCursor - 1;
     }
-    if (buttons & 0x4000) {
+    if (buttons & PAD_DOWN) {
         g_ClassRecordMenuCursor++;
     }
 
@@ -242,10 +148,10 @@ void UpdateClassRecordBrowse(void) {
         g_ScreenOffsetEditY = 1;
     }
     b = g_PadPressed;
-    if (b & 0x8000) {
+    if (b & PAD_LEFT) {
         g_ScreenOffsetEditX--;
     }
-    if (b & 0x2000) {
+    if (b & PAD_RIGHT) {
         g_ScreenOffsetEditX++;
     }
     g_ScreenOffsetEditX = (g_ScreenOffsetEditX + 6) % 6;
@@ -256,7 +162,7 @@ void UpdateClassRecordBrowse(void) {
         oldFlag != g_ScreenOffsetEditY) {
         PlaySoundCue(1);
     }
-    if (g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE)) {
+    if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
         PlaySoundCue(2);
         g_GameMode = 2;
     }
