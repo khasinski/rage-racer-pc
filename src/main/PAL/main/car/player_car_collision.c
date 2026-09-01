@@ -99,200 +99,199 @@ static s32 FindPlayerCollisionRegion(CarCollisionPoint grid[4][4],
   return region;
 }
 
-s32 CollidePlayerWithCars(PlayerCarRuntime *car)
-{
-  s32 opponentX;
-  CarCollisionPoint velocityDelta;
-  CarCollisionPoint playerGrid[4][4];
-  CarCollisionPoint opponentSamples[10];
-  CarCollisionPoint opponentCorners[4];
+typedef struct PlayerCollisionHit {
   GameCarRuntime *opponent;
-  s32 index;
+  s32 opponentIndex;
+  s32 region;
   s32 sampleIndex;
   s32 quadIndex;
-  s32 collisionRegion;
-  s32 progressDelta;
-  s32 playerProgress;
-  s32 playerTrackOffset;
-  s32 playerX;
-  s32 trackDelta;
-  if (g_GrandPrixMode == 0)
-  {
+  s32 progressDistance;
+  s32 lateralDistance;
+} PlayerCollisionHit;
+
+static s32 AbsoluteDifference(s32 a, s32 b) {
+  s32 difference = a - b;
+  return difference < 0 ? -difference : difference;
+}
+
+static PlayerCollisionHit FindPlayerCollision(
+    PlayerCarRuntime *player, CarCollisionPoint playerGrid[4][4]) {
+  PlayerCollisionHit hit = {0};
+  CarCollisionPoint samples[10];
+  CarCollisionPoint corners[4];
+  s32 index;
+
+  for (index = 0; index < 11; index++) {
+    GameCarRuntime *opponent = &g_Cars[index];
+    s32 heightDistance;
+    s32 progressDistance;
+    s32 lateralDistance;
+
+    if (opponent->activeFlag == -1) {
+      continue;
+    }
+    opponent->collisionFlag = 0;
+    progressDistance = (opponent->trackProgress + g_TrackLength -
+                        player->trackProgress) % g_TrackLength;
+    lateralDistance = AbsoluteDifference(opponent->trackLateralOffset,
+                                         player->trackLateralOffset);
+    heightDistance = AbsoluteDifference(opponent->y, player->y);
+    if (opponent->verticalMotionState != player->verticalMotionState &&
+        heightDistance >= 0x1A) {
+      continue;
+    }
+
+    if (lateralDistance < 0x64 &&
+        (progressDistance < 0xC8 ||
+         g_TrackLength - 0xC8 < progressDistance) &&
+        heightDistance < 0x3C) {
+      if (progressDistance < 0xC8 && lateralDistance < 0x32) {
+        g_DragScale = 0x2BC;
+      }
+      BuildOpponentCollisionSamples(player, opponent, corners, samples);
+      hit.region = FindPlayerCollisionRegion(
+          playerGrid, corners, samples, &hit.sampleIndex, &hit.quadIndex);
+      if (hit.region > 0) {
+        hit.opponent = opponent;
+        hit.opponentIndex = index;
+        hit.progressDistance = progressDistance;
+        hit.lateralDistance = lateralDistance;
+        return hit;
+      }
+    } else if (lateralDistance < 0x32 && progressDistance < 0x3E8) {
+      g_DragScale = 0x3E8 - ((0x3E8 - progressDistance) >> 2);
+    }
+  }
+  return hit;
+}
+
+static void TracePlayerCollision(const PlayerCarRuntime *player,
+                                 const PlayerCollisionHit *hit) {
+  const char *timerText;
+
+  if (!DiagnosticsEnabled("car.collision_trace")) {
+    return;
+  }
+  timerText = DiagnosticsValue("car.collision_trace_timer");
+  if (timerText != NULL &&
+      g_SceneTimer != (s32)strtol(timerText, NULL, 0)) {
+    return;
+  }
+  Trace("car-collision", "timer=%d opponent=%d region=%d sample=%d quad=%d "
+        "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d",
+        g_SceneTimer, hit->opponentIndex, hit->region, hit->sampleIndex,
+        hit->quadIndex, player->x, player->z, player->trackProgress,
+        player->trackLateralOffset, hit->opponent->x, hit->opponent->z,
+        hit->opponent->trackProgress, hit->opponent->trackLateralOffset,
+        hit->progressDistance, hit->lateralDistance);
+}
+
+static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
+                                     const PlayerCollisionHit *hit) {
+  s32 soundCue;
+
+  if ((s16)player->motionTimer >= 0xB || g_RacePhase >= 3) {
+    return;
+  }
+  if ((u32)(hit->lateralDistance + 0x1D) < 0x3B) {
+    soundCue = hit->region >= 3 ? 0xD : 0xA;
+  } else {
+    soundCue = (hit->region & 1) != g_MirrorMode ? 0xB : 0xC;
+  }
+  PlaySoundCue(soundCue);
+}
+
+static CarCollisionPoint GetCollisionVelocity(
+    const PlayerCarRuntime *player, const GameCarRuntime *opponent,
+    s32 includeOpponentMotion) {
+  CarCollisionPoint velocity;
+  s32 x = (s16)((u16)opponent->worldVelocityX -
+                (u16)player->drive.accelPos);
+  s32 z = (s16)((u16)opponent->worldVelocityZ -
+                (u16)player->drive.brakePos);
+
+  velocity.x = x / 0x20;
+  velocity.z = z / 0x20;
+  if (includeOpponentMotion) {
+    velocity.x -= (u16)opponent->velocityX;
+    velocity.z -= (u16)opponent->velocityZ;
+  }
+  return velocity;
+}
+
+static s32 IsWrongWayImpact(const PlayerCarRuntime *player) {
+  return player->facingBackwards != ReadStableRaceSeries() &&
+         player->speed >= 0x51 && g_WrongWayTimer >= 0xA;
+}
+
+static void ApplyLowRegionCollision(PlayerCarRuntime *player,
+                                    GameCarRuntime *opponent) {
+  CarCollisionPoint velocity = GetCollisionVelocity(player, opponent, 0);
+
+  if (player->facingBackwards != ReadStableRaceSeries()) {
+    player->drive.drivetrainTorque = 0;
+    player->acceleration = 0;
+  } else {
+    player->acceleration /= 2;
+    player->drive.drivetrainTorque =
+        player->drive.drivetrainTorque * 0x50 / 100;
+  }
+  g_GripLossTimer = player->speed - opponent->speed >= 0x191 ? 0x1E : 0xF;
+
+  if (IsWrongWayImpact(player)) {
+    SetCarKnockback(opponent, 0, 0, 4);
+    SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+    return;
+  }
+  if (player->speed >= 0x29) {
+    SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+  } else {
+    SetCarKnockback(AsRivalCar(player), -(s16)velocity.x,
+                    -(s16)velocity.z, 4);
+  }
+  SetCarKnockback(opponent, (s16)velocity.x, (s16)velocity.z, 4);
+}
+
+static void ApplyHighRegionCollision(PlayerCarRuntime *player,
+                                     GameCarRuntime *opponent) {
+  CarCollisionPoint velocity;
+
+  opponent->speed /= 2;
+  opponent->acceleration /= 2;
+  opponent->boostTimer = opponent->collisionBoostDuration;
+  velocity = GetCollisionVelocity(player, opponent, 1);
+  if (IsWrongWayImpact(player)) {
+    SetCarKnockback(opponent, 0, 0, 4);
+    SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+  } else {
+    SetCarKnockback(AsRivalCar(player), -(s16)velocity.x,
+                    -(s16)velocity.z, 4);
+    SetCarKnockback(opponent, 0, 0, 4);
+  }
+}
+
+s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
+  CarCollisionPoint playerGrid[4][4];
+  PlayerCollisionHit hit;
+
+  if (g_GrandPrixMode == 0) {
     return 0;
   }
-  opponent = g_Cars;
-  collisionRegion = 0;
+
   BuildPlayerCollisionGrid(car, playerGrid);
-  playerProgress = car->trackProgress;
-  index = 0;
-  playerTrackOffset = car->trackLateralOffset;
-  playerX = car->y;
-  for (; index < 11; index++, opponent++)
-  {
-    if (opponent->activeFlag != -1)
-    {
-      s32 aDist;
-      opponent->collisionFlag = 0;
-      progressDelta = (opponent->trackProgress + g_TrackLength - playerProgress) % g_TrackLength;
-      opponentX = opponent->y;
-      trackDelta = opponent->trackLateralOffset - playerTrackOffset;
-      if (trackDelta < 0)
-      {
-        trackDelta = -trackDelta;
-      }
-      aDist = opponentX - playerX;
-      if (aDist < 0)
-      {
-        aDist = -aDist;
-      }
-      if ((opponent->verticalMotionState == car->verticalMotionState) || (aDist < 0x1A))
-      {
-        if (((trackDelta < 0x64) && ((progressDelta < 0xC8) || ((g_TrackLength - 0xC8) < progressDelta))) && (aDist < 0x3C))
-        {
-          if ((progressDelta < 0xC8) && (trackDelta < 0x32))
-          {
-            g_DragScale = 0x2BC;
-          }
-          BuildOpponentCollisionSamples(car, opponent, opponentCorners,
-                                        opponentSamples);
-          collisionRegion = FindPlayerCollisionRegion(
-              playerGrid, opponentCorners, opponentSamples,
-              &sampleIndex, &quadIndex);
-          if (collisionRegion > 0)
-          {
-            /* The check after the loop sends a hit to the same place. */
-            break;
-          }
-        }
-        else
-          if ((trackDelta < 0x32) && (progressDelta < 0x3E8))
-        {
-          s32 v = 0x3E8 - progressDelta;
-          if (v < 0)
-          {
-            v += 3;
-          }
-          g_DragScale = 0x3E8 - (v >> 2);
-        }
-      }
-    }
+  hit = FindPlayerCollision(car, playerGrid);
+  if (hit.region <= 0) {
+    return hit.region;
   }
 
-  if (collisionRegion <= 0)
-  {
-    return collisionRegion;
-  }
-  if (DiagnosticsEnabled("car.collision_trace"))
-  {
-    const char *timerText = DiagnosticsValue("car.collision_trace_timer");
-    if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0))
-    {
-      Trace("car-collision", "timer=%d opponent=%d region=%d sample=%d quad=%d "
-             "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d",
-             g_SceneTimer, index, collisionRegion, sampleIndex, quadIndex,
-             car->x, car->z, car->trackProgress, car->trackLateralOffset,
-             opponent->x, opponent->z, opponent->trackProgress,
-             opponent->trackLateralOffset, progressDelta, trackDelta);
-    }
-  }
-  if (((s16)car->motionTimer < 0xB) && (g_RacePhase < 3))
-  {
-    s32 sid;
-    u32 collisionAngleRange;
-    collisionAngleRange = trackDelta + 0x1D;
-    if (collisionAngleRange < 0x3B)
-    {
-      sid = 0xA;
-      if (collisionRegion >= 3)
-      {
-        sid = 0xD;
-      }
-    }
-    else
-    {
-      sid = 0xC;
-      if ((collisionRegion & 1) != g_MirrorMode)
-      {
-        sid = 0xB;
-      }
-    }
-    PlaySoundCue(sid);
-  }
-
-  trackDelta = car->trackLateralOffset - opponent->trackLateralOffset;
+  TracePlayerCollision(car, &hit);
+  PlayPlayerCollisionSound(car, &hit);
   g_GripLossTimer = 0;
-  if (collisionRegion < 3)
-  {
-    if (car->facingBackwards != ReadStableRaceSeries())
-    {
-      car->drive.drivetrainTorque = 0;
-      car->acceleration = 0;
-    }
-    else
-    {
-      car->acceleration = car->acceleration / 2;
-      car->drive.drivetrainTorque = car->drive.drivetrainTorque * 0x50 / 100;
-    }
-    if ((car->speed - opponent->speed) >= 0x191)
-    {
-      g_GripLossTimer = 0x1E;
-    }
-    else
-    {
-      g_GripLossTimer = 0xF;
-    }
-    {
-      s32 vx;
-      s32 vz;
-      vx = (s16)((u16)opponent->worldVelocityX - (u16)car->drive.accelPos);
-      velocityDelta.x = vx / 0x20;
-      vz = (s16)((u16)opponent->worldVelocityZ - (u16)car->drive.brakePos);
-      velocityDelta.z = vz / 0x20;
-    }
-    if (((car->facingBackwards != ReadStableRaceSeries()) && (car->speed >= 0x51)) && (g_WrongWayTimer >= 0xA))
-    {
-      SetCarKnockback(opponent, 0, 0, 4);
-      SetCarKnockback(AsRivalCar(car), 0, 0, 4);
-    }
-    else
-    {
-      if (car->speed >= 0x29)
-      {
-        SetCarKnockback(AsRivalCar(car), 0, 0, 4);
-      }
-      else
-      {
-        SetCarKnockback(AsRivalCar(car), -((s16) velocityDelta.x),
-                        -((s16) velocityDelta.z), 4);
-      }
-      SetCarKnockback(opponent, (s16) velocityDelta.x, (s16) velocityDelta.z, 4);
-    }
+  if (hit.region < 3) {
+    ApplyLowRegionCollision(car, hit.opponent);
+  } else {
+    ApplyHighRegionCollision(car, hit.opponent);
   }
-  else
-  {
-    s32 vx;
-    s32 vz;
-    opponent->speed = opponent->speed / 2;
-    opponent->acceleration = opponent->acceleration / 2;
-    opponent->boostTimer = opponent->collisionBoostDuration;
-    vx = (s16)((u16)opponent->worldVelocityX - (u16)car->drive.accelPos);
-    velocityDelta.x = vx / 0x20;
-    vz = (s16)((u16)opponent->worldVelocityZ - (u16)car->drive.brakePos);
-    velocityDelta.z = vz / 0x20;
-    velocityDelta.x = velocityDelta.x - (u16)opponent->velocityX;
-    velocityDelta.z = velocityDelta.z - (u16)opponent->velocityZ;
-    if (((car->facingBackwards != ReadStableRaceSeries()) && (car->speed >= 0x51)) && (g_WrongWayTimer >= 0xA))
-    {
-      SetCarKnockback(opponent, 0, 0, 4);
-      SetCarKnockback(AsRivalCar(car), 0, 0, 4);
-    }
-    else
-    {
-      SetCarKnockback(AsRivalCar(car), -((s16) velocityDelta.x),
-                        -((s16) velocityDelta.z), 4);
-      SetCarKnockback(opponent, 0, 0, 4);
-    }
-  }
-  opponent->collisionFlag = 1;
-  return collisionRegion;
+  hit.opponent->collisionFlag = 1;
+  return hit.region;
 }
