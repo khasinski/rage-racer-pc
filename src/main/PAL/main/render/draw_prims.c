@@ -151,68 +151,29 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
 
 void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
                   u16 x3, u16 y3, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
-    RenderBufferAddress cursor;
-    POLY_F4 *prim;
-    s32 semiReg;
-    u32 flagsReg;
-    s32 y1Reg;
-    s32 x2Reg;
-    s32 y2Reg;
-    s32 x3Reg;
-    s32 y3Reg;
-    s32 rReg;
-    u8 *oldPrim;
-    s16 x0Local;
-    s16 y0Local;
-    s16 x1Local;
-    u8 gLocal;
-    u8 bLocal;
-
-    prim = RENDER_PRIM_CURSOR_AS(POLY_F4);
-    semiReg = semiTrans;
-    flagsReg = flags;
-    y1Reg = y1;
-    x2Reg = x2;
-    y2Reg = y2;
-    x3Reg = x3;
-    y3Reg = y3;
-    rReg = r;
-    x0Local = x0;
-    y0Local = y0;
-    x1Local = x1;
-    bLocal = b;
-    
-    gLocal = g;
+    POLY_F4 *prim = RENDER_PRIM_CURSOR_AS(POLY_F4);
+    u8 *next;
 
     SetPolyF4(prim);
-    SetSemiTrans(prim, semiReg);
+    SetSemiTrans(prim, semiTrans);
+    prim->x0 = x0;
+    prim->y0 = y0;
+    prim->x1 = x1;
+    prim->y1 = y1;
+    prim->x2 = x2;
+    prim->y2 = y2;
+    prim->x3 = x3;
+    prim->y3 = y3;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
+    AddPrim(ot, prim);
 
-    prim->x0 = x0Local;
-    prim->y0 = y0Local;
-    prim->x1 = x1Local;
-    prim->y1 = y1Reg;
-    prim->x2 = x2Reg;
-    prim->y2 = y2Reg;
-    prim->x3 = x3Reg;
-    prim->y3 = y3Reg;
-    prim->r0 = rReg;
-    prim->g0 = gLocal;
-    prim->b0 = bLocal;
-
-    cursor.polyF4 = prim;
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
-    semiReg = flagsReg;
-    flagsReg &= 0x80;
-    if (flagsReg == 0) {
-        cursor.polyF4 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, semiReg & 0xFFFF);
-        prim = cursor.polyF4;
+    next = (u8 *)(prim + 1);
+    if ((flags & 0x80) == 0) {
+        next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-
-    RENDER_PRIM_CURSOR_AS(POLY_F4) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 /*
@@ -271,106 +232,50 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
 
 
 void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
-    RenderBufferAddress cursor;
-    s32 x0Reg;
-    s32 y0Reg;
-    s32 x1Reg;
-    s32 y1Reg;
-    s32 rReg;
-    s32 gReg;
-    s32 bReg;
-    u8 alphaValue;
-    u8 *a0Reg;
-    TILE *prim;
-    u8 *oldPrim;
-
-    prim = RENDER_PRIM_CURSOR_AS(TILE);
-    y1Reg = (u16)y1;
-    rReg = (u8)r;
-    gReg = (u8)g;
-    bReg = (u8)b;
-    alphaValue = (u8)alpha;
-    x0Reg = x0;
-    y0Reg = y0;
-    x1Reg = x1;
-    
+    TILE *prim = RENDER_PRIM_CURSOR_AS(TILE);
+    u8 alphaValue = (u8)alpha;
+    u8 *next;
 
     SetTile(prim);
-    cursor.tile = prim;
-    a0Reg = cursor.bytes;
-    SetSemiTrans(a0Reg, alphaValue != 0xFF);
+    SetSemiTrans(prim, alphaValue != 0xFF);
+    prim->x0 = x0;
+    prim->y0 = y0;
+    prim->w = x1;
+    prim->h = y1;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
+    AddPrim(ot, prim);
 
-    prim->x0 = x0Reg;
-    prim->y0 = y0Reg;
-    prim->w = x1Reg;
-    prim->h = y1Reg;
-    prim->r0 = rReg;
-    prim->g0 = gReg;
-    prim->b0 = bReg;
-
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
+    next = (u8 *)(prim + 1);
     if (alphaValue != 0xFF) {
-        cursor.tile = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, alphaValue);
-        prim = cursor.tile;
+        next = QueueDrawModePrim(ot, next, alphaValue);
     }
-
-    RENDER_PRIM_CURSOR_AS(TILE) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 
 void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
-    RenderBufferAddress cursor;
-    s32 x0Reg;
-    s32 y0Reg;
-    s32 x1Reg;
-    s32 y1Reg;
-    s32 rReg;
-    s32 gReg;
-    s32 bReg;
-    u8 alphaValue;
-    u8 *a0Reg;
-    LINE_F2 *prim;
-    u8 *oldPrim;
-
-    prim = RENDER_PRIM_CURSOR_AS(LINE_F2);
-    y1Reg = (u16)y1;
-    rReg = (u8)r;
-    gReg = (u8)g;
-    bReg = (u8)b;
-    alphaValue = (u8)alpha;
-    x0Reg = x0;
-    y0Reg = y0;
-    x1Reg = x1;
-    
+    LINE_F2 *prim = RENDER_PRIM_CURSOR_AS(LINE_F2);
+    u8 alphaValue = (u8)alpha;
+    u8 *next;
 
     SetLineF2(prim);
-    cursor.lineF2 = prim;
-    a0Reg = cursor.bytes;
-    SetSemiTrans(a0Reg, alphaValue != 0xFF);
+    SetSemiTrans(prim, alphaValue != 0xFF);
+    prim->x0 = x0;
+    prim->y0 = y0;
+    prim->x1 = x1;
+    prim->y1 = y1;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
+    AddPrim(ot, prim);
 
-    prim->x0 = x0Reg;
-    prim->y0 = y0Reg;
-    prim->x1 = x1Reg;
-    prim->y1 = y1Reg;
-    prim->r0 = rReg;
-    prim->g0 = gReg;
-    prim->b0 = bReg;
-
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
+    next = (u8 *)(prim + 1);
     if (alphaValue != 0xFF) {
-        cursor.lineF2 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, alphaValue);
-        prim = cursor.lineF2;
+        next = QueueDrawModePrim(ot, next, alphaValue);
     }
-
-    RENDER_PRIM_CURSOR_AS(LINE_F2) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 
@@ -410,92 +315,41 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
 
 
 void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u8 alpha) {
-    RenderBufferAddress cursor;
-    s16 x0Reg;
-    s16 y0Reg;
-    s16 x1Reg;
-    s32 y1Reg;
-    s32 r0Reg;
-    s32 g0Reg;
-    s32 b0Reg;
-    u8 alphaReg;
-    u8 *a0Reg;
-    LINE_G2 *prim;
-    u8 *oldPrim;
-    u8 r1Local;
-    u8 g1Local;
-    u8 b1Local;
-
-    prim = RENDER_PRIM_CURSOR_AS(LINE_G2);
-    y1Reg = y1;
-    r0Reg = r0;
-    g0Reg = g0;
-    b0Reg = b0;
-    
-    r1Local = r1;
-    alphaReg = alpha;
-    x0Reg = x0;
-    y0Reg = y0;
-    x1Reg = x1;
-    g1Local = g1;
-    b1Local = b1;
+    LINE_G2 *prim = RENDER_PRIM_CURSOR_AS(LINE_G2);
+    u8 *next;
 
     SetLineG2(prim);
-    cursor.lineG2 = prim;
-    a0Reg = cursor.bytes;
-    SetSemiTrans(a0Reg, alphaReg != 0xFF);
+    SetSemiTrans(prim, alpha != 0xFF);
+    prim->x0 = x0;
+    prim->y0 = y0;
+    prim->x1 = x1;
+    prim->y1 = y1;
+    prim->r0 = r0;
+    prim->g0 = g0;
+    prim->b0 = b0;
+    prim->r1 = r1;
+    prim->g1 = g1;
+    prim->b1 = b1;
+    AddPrim(ot, prim);
 
-    prim->x0 = x0Reg;
-    prim->y0 = y0Reg;
-    prim->x1 = x1Reg;
-    prim->y1 = y1Reg;
-    prim->r0 = r0Reg;
-    prim->g0 = g0Reg;
-    prim->b0 = b0Reg;
-    prim->r1 = r1Local;
-    prim->g1 = g1Local;
-    prim->b1 = b1Local;
-
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
-    if (alphaReg != 0xFF) {
-        cursor.lineG2 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, alphaReg);
-        prim = cursor.lineG2;
+    next = (u8 *)(prim + 1);
+    if (alpha != 0xFF) {
+        next = QueueDrawModePrim(ot, next, alpha);
     }
-
-    RENDER_PRIM_CURSOR_AS(LINE_G2) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
                      u8 b, u8 code) {
-  s32 x_R19 = xa;
-  s32 y_R18 = ya;
-  s16 rowY;
-  s32 x0;
-  int lastColumn;
-  s32 x1;
-  s32 ytop2;
-  s32 leftX;
-  s32 ybot;
-  s16 startX;
-  s32 ybi;
-  startX = (s16) x_R19;
-  x0 = startX;
-  leftX = x_R19;
-  lastColumn = w - 1;
-  x1 = (s16) (leftX + lastColumn);
-  rowY = (s16) y_R18;
-  h -= 1;
-  DrawLine(buf, (s16)x0, (s16)rowY, (s16)x1, (s16)rowY, r, g, b, code);
-  DrawLine(buf, (s16)x0, (s16)(y_R18 + 1), (s16)x1, (s16)(y_R18 + 1), r, g, b, code);
-  ytop2 = (s16) (y_R18 + 2);
-  ybot = y_R18 + h;
-  ybi = (s16) (ybot - 2);
-  DrawLine(buf, (s16)x0, (s16)ytop2, (s16)x0, (s16)ybi, r, g, b, code);
-  DrawLine(buf, (s16)x1, (s16)ytop2, (s16)x1, (s16)ybi, r, g, b, code);
-  DrawLine(buf, (s16)x0, (s16)ybot, (s16)x1, (s16)ybot, r, g, b, code);
-  DrawLine(buf, (s16)x0, (s16)(ybot - 1), (s16)x1, (s16)(ybot - 1), r, g, b, code);
+    s16 left = xa;
+    s16 right = xa + w - 1;
+    s16 top = ya;
+    s16 bottom = ya + h - 1;
+
+    DrawLine(buf, left, top, right, top, r, g, b, code);
+    DrawLine(buf, left, top + 1, right, top + 1, r, g, b, code);
+    DrawLine(buf, left, top + 2, left, bottom - 2, r, g, b, code);
+    DrawLine(buf, right, top + 2, right, bottom - 2, r, g, b, code);
+    DrawLine(buf, left, bottom, right, bottom, r, g, b, code);
+    DrawLine(buf, left, bottom - 1, right, bottom - 1, r, g, b, code);
 }
