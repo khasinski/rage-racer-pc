@@ -674,14 +674,9 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     }
 }
 
-/* Deliberately raw: the environment script header word 0 is stored here and
- * never read anywhere in the image. */
-
+/* The two-word header is followed immediately by GameEnvironmentCue records. */
 void SetEnvironmentScript(u32 *script) {
-    GameEnvironmentScriptAddress address;
-
     g_SkyRowBase = *script++;
     g_EnvScriptLength = *script++;
-    address.words = script;
-    g_EnvScriptCues = address.cues;
+    g_EnvScriptCues = (GameEnvironmentCue *)(void *)script;
 }

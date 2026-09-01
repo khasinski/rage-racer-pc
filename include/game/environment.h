@@ -40,11 +40,6 @@ struct GameEnvironmentCue {
     u16 spareTarget;
 };
 
-typedef union GameEnvironmentScriptAddress {
-    u32 *words;
-    struct GameEnvironmentCue *cues;
-} GameEnvironmentScriptAddress;
-
 /*
  * The nine colours a course carries for its surroundings, each one held as a
  * current value plus the pair a cue is fading between. They were addressed by
