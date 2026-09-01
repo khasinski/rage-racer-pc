@@ -47,10 +47,6 @@ static void RunCardBusyState(s32 fadeBusy) {
 }
 
 /*
- * A card the game can use. This is the save and load menu itself, and
- * every prompt that hangs off picking a slot.
- */
-/*
  * The list of things the player can do with a readable card. The last row
  * is the way out.
  */
@@ -81,7 +77,6 @@ static void RunCardMenuRows(s32 fadeBusy) {
     StartMenuExitFade();
 }
 
-
 static void ResetCardAction(void) {
     g_McActionState = 0;
     g_McActionResult = 0;
@@ -102,7 +97,6 @@ static void TrackPersistentCardError(void) {
         g_McMenuState = MC_MENU_STATE_ERROR;
     }
 }
-
 
 static void RunCardReadyState(s32 fadeBusy) {
     /* Page 0 is the list of things to do with the card, page 1 is picking a
@@ -152,6 +146,13 @@ typedef enum CardWorkingActionState {
     CARD_WORK_RETURN_READY = 9,
 } CardWorkingActionState;
 
+enum {
+    CARD_WORK_START_FRAME = 31,
+    CARD_WORK_CANCEL_DELAY_FRAMES = 121,
+    CARD_WORK_READY_FRAMES = 2,
+    CARD_WORK_DELAY_FRAMES = 5,
+};
+
 /*
  * A format or a save running, stepping through its own stages while the
  * screen says it is busy.
@@ -160,7 +161,7 @@ static void RunCardWorkingState(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (g_McActionState) {
     case CARD_WORK_WAIT_FOR_SCENE:
-        if ((u32)g_SceneTimer < 0x1F) break;
+        if ((u32)g_SceneTimer < CARD_WORK_START_FRAME) break;
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
         g_McActionState = CARD_WORK_WAIT_FOR_CARD;
@@ -168,7 +169,8 @@ static void RunCardWorkingState(s32 fadeBusy) {
     case CARD_WORK_WAIT_FOR_CARD:
         g_McActionBusy = 0;
         g_McActionElapsed++;
-        if ((g_PadPressed & PAD_CANCEL) && g_McActionElapsed >= 0x79) {
+        if ((g_PadPressed & PAD_CANCEL) &&
+            g_McActionElapsed >= CARD_WORK_CANCEL_DELAY_FRAMES) {
             g_McCardOkFrames = 0;
             g_McActionElapsed = 0;
             if (fadeBusy == 0) {
@@ -178,14 +180,14 @@ static void RunCardWorkingState(s32 fadeBusy) {
         }
         if (g_McCardStatus != MC_MENU_STATE_READY) break;
         g_McCardOkFrames++;
-        if (g_McCardOkFrames < 2) break;
+        if (g_McCardOkFrames < CARD_WORK_READY_FRAMES) break;
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
         g_McActionState = CARD_WORK_BEGIN_STATUS_DELAY;
         break;
     case CARD_WORK_BEGIN_STATUS_DELAY:
         g_McActionBusy = 1;
-        g_McActionTimer = 5;
+        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
         g_McActionState = CARD_WORK_WAIT_STATUS_DELAY;
         break;
     case CARD_WORK_WAIT_STATUS_DELAY:
@@ -197,12 +199,12 @@ static void RunCardWorkingState(s32 fadeBusy) {
         g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
         break;
     case CARD_WORK_BEGIN_SETTLE_DELAY:
-        g_McActionTimer = 5;
+        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
         g_McActionState = CARD_WORK_WAIT_SETTLE_DELAY;
         break;
     case CARD_WORK_WAIT_SETTLE_DELAY:
         if (--g_McActionTimer != 0) break;
-        g_McActionTimer = 5;
+        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
         g_McActionBusy = 0;
         g_McActionState = CARD_WORK_WAIT_FINAL_DELAY;
         break;
@@ -254,12 +256,14 @@ typedef enum NoCardActionState {
     NO_CARD_ACTION_READY = 3,
 } NoCardActionState;
 
+enum { NO_CARD_READY_DELAY_FRAMES = 5 };
+
 static void RunNoCardState(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
     switch (g_McActionState) {
     case NO_CARD_ACTION_INIT:
-        g_McActionTimer = 5;
+        g_McActionTimer = NO_CARD_READY_DELAY_FRAMES;
         g_McSlotUsedMask = 0;
         ClearSaveHeaderRows(g_McSaveHeaders);
         g_McLastSlot = 0;
@@ -332,7 +336,6 @@ static void RunNoCardState(s32 fadeBusy) {
         g_McActionState = NO_CARD_ACTION_INIT;
     }
 }
-
 
 static void RunUnformattedCardState(s32 fadeBusy) {
     RunUnformattedCardPage(fadeBusy);
