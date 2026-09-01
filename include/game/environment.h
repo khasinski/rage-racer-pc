@@ -45,6 +45,30 @@ typedef union GameEnvironmentScriptAddress {
     struct GameEnvironmentCue *cues;
 } GameEnvironmentScriptAddress;
 
+/*
+ * The nine colours a course carries for its surroundings, each one held as a
+ * current value plus the pair a cue is fading between. They were addressed by
+ * number everywhere, which meant finding out what a slot was for by changing
+ * it and looking at the picture.
+ *
+ * The last four are one gradient quad filling the ground under the sky, given
+ * as its top and bottom colour. Which pair a course uses is not a choice about
+ * distance so much as which course it is: course 2 takes the near pair and
+ * draws it in the near depth bucket, every other course takes the far pair.
+ */
+enum {
+    ENV_FOG = 0,
+    ENV_SKY_TOP = 1,
+    ENV_SKY_MIDDLE = 2,
+    ENV_SKY_HORIZON = 3,
+    ENV_SKY_BOTTOM = 4,
+    ENV_GROUND_NEAR_TOP = 5,
+    ENV_GROUND_NEAR_BOTTOM = 6,
+    ENV_GROUND_FAR_TOP = 7,
+    ENV_GROUND_FAR_BOTTOM = 8,
+    ENV_SLOT_COUNT = 9
+};
+
 typedef struct GameEnvColorSlot {
     GameEnvColor cur;
     GameEnvColor from;
@@ -54,7 +78,7 @@ typedef struct GameEnvColorSlot {
 typedef union GameEnvironmentColors {
     struct {
         s16 fogEnabled;
-        GameEnvColorSlot slots[9];
+        GameEnvColorSlot slots[ENV_SLOT_COUNT];
     } fields;
     u32 fogColorWord;
 } GameEnvironmentColors;

@@ -84,13 +84,13 @@ void SeekEnvironmentScript(s32 targetTime) {
         g_EnvScriptEnabled = 0;
     }
     if ((g_EnvironmentColors.fogColorWord & 0xFFFF0000) != 0x80800000 ||
-        g_EnvironmentColors.fields.slots[0].cur.bytes.b != 0x80) {
+        g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.b != 0x80) {
         fog = 1;
     }
     g_EnvironmentColors.fields.fogEnabled = fog;
-    SetFarColor(g_EnvironmentColors.fields.slots[0].cur.bytes.r,
-                g_EnvironmentColors.fields.slots[0].cur.bytes.g,
-                g_EnvironmentColors.fields.slots[0].cur.bytes.b);
+    SetFarColor(g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.r,
+                g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.g,
+                g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.b);
 
     if (g_EnvironmentMode == 2) {
         g_FogNear = 0x7FFF;
@@ -173,17 +173,17 @@ void UpdateEnvironment(void) {
                          &g_EnvironmentColors.fields.slots[i].cur, frac);
     }
 
-    SetFarColor(g_EnvironmentColors.fields.slots[0].cur.bytes.r,
-                g_EnvironmentColors.fields.slots[0].cur.bytes.g,
-                g_EnvironmentColors.fields.slots[0].cur.bytes.b);
+    SetFarColor(g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.r,
+                g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.g,
+                g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.b);
 
     if (g_EnvSpareLerp != 0) {
-        g_EnvironmentColors.fields.slots[0].cur.bytes.unused = (g_EnvSpareFrom * diff + g_EnvSpareTo * g_EnvLerpFrame) / g_EnvLerpDuration;
+        g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused = (g_EnvSpareFrom * diff + g_EnvSpareTo * g_EnvLerpFrame) / g_EnvLerpDuration;
     }
 
     if (g_EnvLerpFrame == g_EnvLerpDuration) {
         if ((g_EnvironmentColors.fogColorWord & 0xFFFF0000) == 0x80800000 &&
-            g_EnvironmentColors.fields.slots[0].cur.bytes.b == 0x80) {
+            g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.b == 0x80) {
             g_EnvironmentColors.fields.fogEnabled = 0;
         }
     }

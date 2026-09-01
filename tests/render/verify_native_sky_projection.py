@@ -54,10 +54,12 @@ require("min_filter = SDL_GPU_FILTER_NEAREST" in sampler,
 
 # The gradient reads the sky's own slots, and the dark band belongs below.
 game = (root / "src/port/render_world_game.c").read_text()
-for slot, band in ((1, "skyTopColor"), (2, "skyColor"),
-                   (3, "skyHorizonColor"), (4, "skyBottomColor")):
+for slot, band in (("ENV_SKY_TOP", "skyTopColor"),
+                   ("ENV_SKY_MIDDLE", "skyColor"),
+                   ("ENV_SKY_HORIZON", "skyHorizonColor"),
+                   ("ENV_SKY_BOTTOM", "skyBottomColor")):
     require(f"GameRenderWorldEnvironmentColor({slot}, &camera.{band})" in game,
-            f"the sky gradient must take {band} from environment slot {slot}")
+            f"the sky gradient must take {band} from {slot}")
 
 # Both formats must be built from this source, and both must be present, or a
 # host quietly loses its sky.

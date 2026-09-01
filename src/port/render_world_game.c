@@ -55,7 +55,7 @@ static float AngleToDegrees(s32 angle) {
  */
 void GameRenderWorldEnvironmentPalette(unsigned char out[9][3]) {
     int slot;
-    for (slot = 0; slot < 9; slot++) {
+    for (slot = 0; slot < ENV_SLOT_COUNT; slot++) {
         out[slot][0] = g_EnvironmentColors.fields.slots[slot].cur.bytes.r;
         out[slot][1] = g_EnvironmentColors.fields.slots[slot].cur.bytes.g;
         out[slot][2] = g_EnvironmentColors.fields.slots[slot].cur.bytes.b;
@@ -318,7 +318,7 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     camera.verticalFovDegrees = verticalFovDegrees;
     camera.nearPlane = 1.0f;
     camera.farPlane = 262144.0f;
-    GameRenderWorldEnvironmentColor(0, &camera.fogColor);
+    GameRenderWorldEnvironmentColor(ENV_FOG, &camera.fogColor);
     /* Convert the authored environment palette into semantic sky bands. The
      * native backend owns their projection; it never replays DrawSkyBackground
      * packets or depends on an ordering-table bucket. */
@@ -329,10 +329,10 @@ static RageRenderCamera GameRenderWorldBuildCamera(
      * the classic renderer's own pixels walk between exactly those two
      * across the visible sky.
      */
-    GameRenderWorldEnvironmentColor(1, &camera.skyTopColor);
-    GameRenderWorldEnvironmentColor(2, &camera.skyColor);
-    GameRenderWorldEnvironmentColor(3, &camera.skyHorizonColor);
-    GameRenderWorldEnvironmentColor(4, &camera.skyBottomColor);
+    GameRenderWorldEnvironmentColor(ENV_SKY_TOP, &camera.skyTopColor);
+    GameRenderWorldEnvironmentColor(ENV_SKY_MIDDLE, &camera.skyColor);
+    GameRenderWorldEnvironmentColor(ENV_SKY_HORIZON, &camera.skyHorizonColor);
+    GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog

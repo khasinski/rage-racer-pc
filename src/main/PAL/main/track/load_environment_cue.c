@@ -22,7 +22,7 @@ void LoadEnvironmentCue(GameEnvironmentCue *cue) {
     g_EnvSpareLerp = ((flag >> 15) ^ 1);
 
     if (g_EnvSpareLerp != 0) {
-        g_EnvSpareFrom = g_EnvironmentColors.fields.slots[0].cur.bytes.unused;
+        g_EnvSpareFrom = g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused;
         g_EnvSpareTo = RAW(cue->spareTarget);
     }
 
