@@ -73,13 +73,23 @@ typedef struct SkyBandGeometry {
     s32 screenX3;
 } SkyBandGeometry;
 
+typedef struct SkyFrame {
+    u8 *packetCursor;
+    OT_TYPE *orderingTable;
+    s32 cameraY;
+    s32 pitch;
+    s32 yaw;
+    s32 roll;
+    s32 mirrorFlag;
+} SkyFrame;
+
 /*
  * The skirt under the sky: the band of quads that closes the gap between the
  * horizon and the terrain. Two courses want it drawn differently, which is the
  * only thing the course index decides here. Returns where it left the packet
  * cursor.
  */
-static u8 *DrawCourseSkirt(SkyRenderWork *work, SkyBandGeometry *band,
+static u8 *DrawCourseSkirt(SkyFrame *work, SkyBandGeometry *band,
                            u8 *packetCursor) {
     /* Carried from the wide half of the skirt to the near half. Both are
      * drawn on the same condition, for every course but the third, so the
@@ -234,7 +244,7 @@ typedef struct SkyBandSetup {
  * and column of it steps across the screen. All of it follows from the
  * camera angles, so none of the drawing below needs them again.
  */
-static void MeasureSkyBand(SkyRenderWork *work,
+static void MeasureSkyBand(SkyFrame *work,
                            SkyBandSetup *band) {
     s32 cameraY;
     s32 bandRowY;
@@ -359,19 +369,17 @@ static void MeasureSkyBand(SkyRenderWork *work,
     band->rowStepY = cosRoll * 8;
 }
 
-static void InitializeSkyRenderWork(SkyRenderWork *work) {
+static void InitializeSkyFrame(SkyFrame *work) {
     work->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
     work->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
-    work->cameraX = g_RenderState.viewX;
     work->cameraY = g_RenderState.viewY;
-    work->cameraZ = g_RenderState.viewZ;
     work->pitch = g_RenderState.viewAngleX;
     work->yaw = g_RenderState.viewAngleY;
     work->roll = g_RenderState.viewAngleZ;
     work->mirrorFlag = g_RenderState.orderingFlag;
 }
 
-static u8 *DrawTexturedSkyGrid(SkyRenderWork *work,
+static u8 *DrawTexturedSkyGrid(SkyFrame *work,
                                const SkyBandSetup *band,
                                s32 screenX[4],
                                u8 *packetCursor) {
@@ -448,7 +456,7 @@ static s32 SkyQuadIntersectsScreen(const s32 screenX[4]) {
     return hasPointAtOrRightOfLeftEdge && hasPointLeftOfRightEdge;
 }
 
-static u8 *DrawHorizonTileStrip(SkyRenderWork *work,
+static u8 *DrawHorizonTileStrip(SkyFrame *work,
                                 const SkyBandSetup *band,
                                 u8 *packetCursor) {
     s32 panelX = band->lowerPanelXFixed;
@@ -505,7 +513,7 @@ static u8 *DrawHorizonTileStrip(SkyRenderWork *work,
     return packetCursor;
 }
 
-static u8 *DrawSkyGradientQuad(SkyRenderWork *work,
+static u8 *DrawSkyGradientQuad(SkyFrame *work,
                                u8 *packetCursor,
                                const s32 screenX[4],
                                const s32 screenY[4],
@@ -527,7 +535,7 @@ static u8 *DrawSkyGradientQuad(SkyRenderWork *work,
     return packetCursor + sizeof(*quad);
 }
 
-static u8 *DrawSkyGradientBands(SkyRenderWork *work,
+static u8 *DrawSkyGradientBands(SkyFrame *work,
                                 const SkyBandSetup *band,
                                 s32 finalScreenX[4],
                                 u8 *packetCursor) {
@@ -583,13 +591,13 @@ static u8 *DrawSkyGradientBands(SkyRenderWork *work,
 }
 
 void DrawSkyBackground(void) {
-    SkyRenderWork work;
+    SkyFrame work;
     SkyBandSetup setup;
     SkyBandGeometry geometry;
     s32 screenX[4];
     u8 *packetCursor;
 
-    InitializeSkyRenderWork(&work);
+    InitializeSkyFrame(&work);
     MeasureSkyBand(&work, &setup);
     packetCursor = work.packetCursor;
 

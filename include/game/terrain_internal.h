@@ -22,20 +22,6 @@ typedef struct SkyTileUV {
     SkyUV corner[4];
 } SkyTileUV;
 
-typedef struct SkyRenderWork {
-    u8 *packetCursor;
-    OT_TYPE *orderingTable;
-    s32 cameraX;
-    s32 cameraY;
-    s32 cameraZ;
-    s32 pad14;
-    s32 pitch;
-    s32 yaw;
-    s32 roll;
-    s32 pad24[17];
-    s32 mirrorFlag;
-} SkyRenderWork;
-
 extern SkyTileUV g_SkyTileUV[];
 
 #endif
