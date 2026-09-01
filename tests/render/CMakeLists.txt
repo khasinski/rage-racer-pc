@@ -274,6 +274,42 @@ target_link_libraries(shuttle_scenery_init_tests PRIVATE psyz)
 add_test(NAME shuttle_scenery_init COMMAND shuttle_scenery_init_tests)
 set_tests_properties(shuttle_scenery_init PROPERTIES LABELS functional)
 
+add_executable(track_event_sound_tests
+    track_event_sound_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_track_event_sound.c)
+target_include_directories(track_event_sound_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(track_event_sound_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(track_event_sound_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(track_event_sound_tests PRIVATE psyz)
+add_test(NAME track_event_sound COMMAND track_event_sound_tests)
+set_tests_properties(track_event_sound PROPERTIES LABELS functional)
+
+add_executable(point_ambience_tests
+    point_ambience_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_point_ambience.c)
+target_include_directories(point_ambience_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(point_ambience_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(point_ambience_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(point_ambience_tests PRIVATE psyz)
+add_test(NAME point_ambience COMMAND point_ambience_tests)
+set_tests_properties(point_ambience PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)
