@@ -60,6 +60,11 @@ static void AdjustTeamLogoColour(s32 step) {
         (u16)((colour & ~mask) | (component << shift));
 }
 
+static s32 TeamLogoDpadRepeatsNow(void) {
+    return g_TeamLogoDpadRepeatTimer == 0x14 ||
+           g_TeamLogoDpadRepeatTimer == 1;
+}
+
 /* Mixing a colour: the cursor walks the editable palette slots and the three
  * five-bit channels of the selected colour. */
 void EditLogoPalette(void) {
@@ -78,8 +83,7 @@ void EditLogoPalette(void) {
         g_TeamLogoGuideMode = g_TeamLogoGuideModePrev;
     }
 
-    if (g_TeamLogoDpadRepeatTimer == 0x14 ||
-        g_TeamLogoDpadRepeatTimer == 1) {
+    if (TeamLogoDpadRepeatsNow()) {
         if (held & PAD_LEFT) {
             PlaySoundCue(1);
             g_TeamLogoPenColor = g_TeamLogoPenColor >= 2
@@ -127,9 +131,9 @@ void EditLogoPalette(void) {
  * is set to. Every plot is a nibble inside a canvas word.
  */
 void EditLogoCanvas(void) {
-    s32 eraseStamp;
-    u32 pixelValue;
-    s32 plotStamp;
+    s32 movedHorizontally;
+    u16 sampledColour;
+    s32 movedVertically;
     u16 pressed = g_PadPressed;
     u16 held = g_PadHeld;
 
@@ -145,11 +149,11 @@ void EditLogoCanvas(void) {
         }
         PaintTeamLogoBrush(0);
     }
-    if (pressed & 0x40) {
+    if (pressed & PAD_CROSS) {
         PlaySoundCue(2);
         g_TeamLogoPaletteMode = 1;
     }
-    if (pressed & 0x10) {
+    if (pressed & PAD_TRIANGLE) {
         PlaySoundCue(2);
         switch (g_TeamLogoBrushSize) {
         case 1:
@@ -169,8 +173,8 @@ void EditLogoCanvas(void) {
             g_TeamLogoCursorY = 0x20 - g_TeamLogoBrushSize;
         }
     }
-    if ((held & 8) && (g_TeamLogoExpertMode != 0)) {
-        if (held & 4) {
+    if ((held & PAD_R1) && (g_TeamLogoExpertMode != 0)) {
+        if (held & PAD_L1) {
             if (pressed & PAD_UP) {
                 RotateTeamLogoCw();
             }
@@ -183,74 +187,75 @@ void EditLogoCanvas(void) {
             if (pressed & PAD_RIGHT) {
                 FlipTeamLogoHorizontal();
             }
-        } else if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
-            if (held & 0x1000) {
+        } else if (TeamLogoDpadRepeatsNow()) {
+            if (held & PAD_UP) {
                 ScrollTeamLogoUp();
             }
-            if (held & 0x4000) {
+            if (held & PAD_DOWN) {
                 ScrollTeamLogoDown();
             }
-            if (held & 0x8000) {
+            if (held & PAD_LEFT) {
                 ScrollTeamLogoLeft();
             }
-            if (held & 0x2000) {
+            if (held & PAD_RIGHT) {
                 ScrollTeamLogoRight();
             }
         }
     } else {
-        eraseStamp = 0;
-        if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1) || (held & 5)) {
-            plotStamp = 0;
+        movedHorizontally = 0;
+        if (TeamLogoDpadRepeatsNow() || (held & (PAD_L2 | PAD_L1))) {
+            movedVertically = 0;
             if (held & PAD_UP) {
                 if (g_TeamLogoCursorY > 0) {
                     g_TeamLogoCursorY -= 1;
-                    plotStamp = 1;
+                    movedVertically = 1;
                 } else if (g_TeamLogoViewY > 0) {
                     g_TeamLogoViewY -= 1;
-                    plotStamp = 1;
+                    movedVertically = 1;
                 }
             }
             if (held & PAD_DOWN) {
                 if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) < 0x20) {
                     g_TeamLogoCursorY += 1;
-                    plotStamp = 1;
+                    movedVertically = 1;
                 } else if (g_TeamLogoViewY < 0x20) {
                     g_TeamLogoViewY += 1;
-                    plotStamp = 1;
+                    movedVertically = 1;
                 }
             }
             if (held & PAD_LEFT) {
                 if (g_TeamLogoCursorX > 0) {
                     g_TeamLogoCursorX -= 1;
-                    eraseStamp = 1;
+                    movedHorizontally = 1;
                 } else if (g_TeamLogoViewX > 0) {
                     g_TeamLogoViewX -= 1;
-                    eraseStamp = 1;
+                    movedHorizontally = 1;
                 }
             }
             if (held & PAD_RIGHT) {
                 if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) < 0x20) {
                     g_TeamLogoCursorX += 1;
-                    eraseStamp = 1;
+                    movedHorizontally = 1;
                 } else if (g_TeamLogoViewX < 0x20) {
                     g_TeamLogoViewX += 1;
-                    eraseStamp = 1;
+                    movedHorizontally = 1;
                 }
             }
-            if ((held & (PAD_SQUARE | PAD_CIRCLE)) && ((eraseStamp != 0) || (plotStamp != 0))) {
+            if ((held & (PAD_SQUARE | PAD_CIRCLE)) &&
+                (movedHorizontally || movedVertically)) {
                 PlaySoundCue(4);
             }
         }
     }
-    if ((pressed & 2) && (g_TeamLogoExpertMode != 0)) {
+    if ((pressed & PAD_R2) && (g_TeamLogoExpertMode != 0)) {
         PlaySoundCue(4);
-        pixelValue = GetTeamLogoCanvasPixel(
+        sampledColour = GetTeamLogoCanvasPixel(
             g_TeamLogoViewX + g_TeamLogoCursorX,
             g_TeamLogoViewY + g_TeamLogoCursorY);
-        if (pixelValue == 0) {
-            pixelValue = g_TeamLogoPenColor;
+        if (sampledColour == 0) {
+            sampledColour = g_TeamLogoPenColor;
         }
-        g_TeamLogoPenColor = pixelValue;
+        g_TeamLogoPenColor = sampledColour;
     }
 }
 
