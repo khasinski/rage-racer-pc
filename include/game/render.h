@@ -385,18 +385,6 @@ void UpdateEnvironment(void);
 void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
                 u32 flags);
-void GameDrawMenuButton(
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    u8 r,
-    u8 g,
-    u8 b,
-    s32 flags,
-    s32 textX,
-    s32 textY,
-    u8 *caption);
 void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags);
 void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,

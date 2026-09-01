@@ -44,8 +44,8 @@ void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
         DrawSprite(ot, 0x18, priceY, 0x18, 0x10, 0x3C, 0x8C, 0, 0, 0, 0x244, 1, 1, 0x3B);
         DrawSprite(ot, 0x89, moneyY, 0xC, 0x10, 0x50, 0xDC, 0, 0, 0, 0x259, 1, 1, 0x3B);
         DrawSprite(ot, 0x89, priceY, 0xC, 0x10, 0x50, 0xDC, 0, 0, 0, 0x259, 1, 1, 0x3B);
-        GameDrawMenuButton(0, (s16)(rise + SHOP_PANEL_MONEY_BOX_Y), 0x99, 0x23, 0, 0, 0, 0, 0, 0, 0);
-        GameDrawMenuButton(0, (s16)(rise + SHOP_PANEL_PRICE_BOX_Y), 0x99, 0x23, 0, 0, 0, 0, 0, 0, 0);
+        GameDrawMenuButton(0, (s16)(rise + SHOP_PANEL_MONEY_BOX_Y), 0x99, 0x23, 0, 0, 0);
+        GameDrawMenuButton(0, (s16)(rise + SHOP_PANEL_PRICE_BOX_Y), 0x99, 0x23, 0, 0, 0);
     }
     if (step > 0) {
         slide = step + g_CarShopPanelSlide;

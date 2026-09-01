@@ -172,21 +172,16 @@ u16 PollMenuBackInput(void);
 void DrawMenuFadeOverlay(s32 brightness);
 void StartMenuExitFade(void);
 
-/* Menu widgets: an outlined filled box with optional caption (flags bit 0x10 =
- * caption, bit 1 = large font), the two-ring selection frame, and the timeline
- * sprites whose brightness decays through g_MenuRowFlashLevels[] (0x1FC, -60/frame). */
+/* Menu widgets: an outlined filled box, the two-ring selection frame, and the
+ * timeline sprites whose brightness decays through g_MenuRowFlashLevels[]. */
 void GameDrawMenuButton(
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
+    s32 x,
+    s32 y,
+    s32 width,
+    s32 height,
     u8 r,
     u8 g,
-    u8 b,
-    s32 flags,
-    s32 textX,
-    s32 textY,
-    u8 *caption);
+    u8 b);
 void DrawMenuCursorBox(
     s32 x0,
     s32 y0,
@@ -687,7 +682,7 @@ s32 DrawClassChangeCurtain(s32 step);
 void DrawClassRecordDetail(void);
 void DrawClassRecordGrid(void);
 void DrawOptionSceneOverlay(void);
-s32 DrawPaintColorPalette(void *, s32, s32);
+s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
 void DrawRaceTimePanel(s32);
 void DrawScreenAdjustScreen(void);
 void DrawTeamNameCharModel(void);

@@ -162,10 +162,8 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0, u8 r,
     RECORD("sprite", x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex,
            semiTrans, (s32)flags);
 }
-void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b,
-                        s32 flags, s32 textX, s32 textY, u8 *caption) {
-    RECORD("button", x0, y0, x1, y1, r, g, b, flags, textX, textY,
-           caption == &g_MenuBlankCaption);
+void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
+    RECORD("button", x0, y0, x1, y1, r, g, b);
 }
 void DrawTimeAttackPlate(s32 stepArg) { RECORD("timeattackplate", stepArg); }
 void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1588266003UL;
+    static const unsigned long expected = 4248666323UL;
     static const s32 busyStates[] = {0, -1, -2, -3, -4, -5, 1, 2, 3, 4};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_LEFT, PAD_RIGHT,
                                   PAD_CONFIRM, PAD_CANCEL};

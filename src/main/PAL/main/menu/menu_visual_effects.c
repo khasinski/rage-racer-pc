@@ -254,7 +254,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             DrawSprite(ot, 0x4A, rowY, 0x2C, 0x10, 0xD4, 0x8C,
                              0, 0, 0, 0x244, 1, 1, 0x3B);
         }
-        GameDrawMenuButton(0, panelY, 0x99, 0x23, 0, 0, 0, 0, 0, 0, 0);
+        GameDrawMenuButton(0, panelY, 0x99, 0x23, 0, 0, 0);
 
         rectLeft = 0;
         loopClut = 0x244;

@@ -1,4 +1,5 @@
 #include "game/menu_internal.h"
+#include "game/menu.h"
 #include "game/render.h"
 
 
@@ -141,7 +142,7 @@ void DrawOwnedCarCounter(s32 owned, s32 step) {
         GameDrawNumber(0x44, y, 7, 0xD, 0x7F, 0x7F, 0x7F, 0x259, 0x20);
         DrawSprite(ot, 0x17, y, 0x34, 0x10, 0x8C, 0x8C, 0, 0, 0, 0x244, 1, 1, 0x3B);
         DrawSprite(ot, 0x7C, y, 0x8, 0x10, 0x8C, 0xDC, 0, 0, 0, 0x259, 1, 1, 0x3B);
-        GameDrawMenuButton(0, (s16)t2, 0x99, 0x23, 0, 0, 0, 0, 0, 0, 0);
+        GameDrawMenuButton(0, (s16)t2, 0x99, 0x23, 0, 0, 0);
     }
     if (ownedCount > 0) {
         v0 = ownedCount + g_OwnedCarCounterSlide;
