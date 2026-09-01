@@ -14,7 +14,6 @@
  * off the centre-line along the inward normal (0x1000 - smoothed track angle),
  * then nudges the car's headingAngle toward that target (GetAngleDelta). Writes
  * the steer value into steeringAngle and the rival AI block at `aiEnabled`.
- * Register-pinned locals are match-load-bearing.
  */
 void SteerCarAlongRoute(GameCarRuntime *car) {
     GameCarAiBlock *ai;
@@ -99,16 +98,15 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
 /* Every car starts the frame from the heading it settled on last frame, and
  * keeps only the low bit of whatever it was touching. */
 static void StartCarFrames(void) {
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[index];
+
         car->reservedF8 = 0;
         car->bodyYaw = car->baseBodyYaw;
         car->collisionFlag = (u16)car->collisionFlag & 1;
-        index++;
-        car++;
-    } while ((s16)index < 11);
+    }
 }
 
 /*
@@ -139,10 +137,10 @@ static void AvoidTrafficThisFrame(void) {
  * holds it up.
  */
 static void AccelerateAllCars(void) {
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[index];
         GameCarAiBlock *ai = GetCarAiBlock(car);
 
         if (car->activeFlag != -1) {
@@ -166,9 +164,7 @@ static void AccelerateAllCars(void) {
             car->bodyYaw =
                 GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5 + car->bodyYaw;
         }
-        index++;
-        car++;
-    } while ((s16)index < 11);
+    }
 }
 
 /*
@@ -240,10 +236,11 @@ static void UpdateCarJumpArc(GameCarRuntime *car, s32 ground) {
  * the suspension settling or the speed lost to whatever it just hit.
  */
 static void SettleAllCarBodies(void) {
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[index];
+
         if (car->activeFlag != -1) {
             /* Where the wheels sit, eight units under the body. */
             s32 ground = car->y - 8;
@@ -262,38 +259,30 @@ static void SettleAllCarBodies(void) {
                 car->speed = car->speed * 97 / 100 * 97 / 100;
             }
         }
-        index++;
-        car++;
-    } while (index < 11);
+    }
 }
 
 /* Each car against the ones behind it, so every pair is tested once. */
 static void CollideAllCars(void) {
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
-        CollideRivalCars(car, (s16)index);
-        index++;
-        car++;
-    } while ((s16)index < 10);
+    for (index = 0; index < 10; index++) {
+        CollideRivalCars(&g_Cars[index], index);
+    }
 }
 
 /* Where each car wants to be on the road, and how it gets there. */
 static void SteerAllCars(void) {
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
-        s32 slot = (s16)index;
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[index];
 
-        UpdateCarAiTargetSpeed(car, slot);
-        ApplyCarRacingLineHint(car, slot);
-        ClampCarLateralOffset(car, slot);
+        UpdateCarAiTargetSpeed(car, index);
+        ApplyCarRacingLineHint(car, index);
+        ClampCarLateralOffset(car, index);
         SteerCarAlongRoute(car);
-        index++;
-        car++;
-    } while ((s16)index < 11);
+    }
 }
 
 /*
@@ -338,10 +327,10 @@ static void MoveAllCars(void) {
     Matrix bodyRotation;
     Matrix work;
     SVec lean;
-    GameCarRuntime *car = g_Cars;
-    s16 index = 0;
+    s32 index;
 
-    do {
+    for (index = 0; index < 11; index++) {
+        GameCarRuntime *car = &g_Cars[index];
         GameCarAiBlock *ai = GetCarAiBlock(car);
 
         if (car->activeFlag != -1) {
@@ -358,7 +347,7 @@ static void MoveAllCars(void) {
                 scaled += 0xFF;
             }
             car->worldVelocityZ = scaled >> 8;
-            if ((s16)index < 4) {
+            if (index < 4) {
                 s32 yawStep = car->yawRate;
                 s32 sixth = (yawStep < 0) ? -yawStep / 6 : yawStep / 6;
 
@@ -415,9 +404,7 @@ static void MoveAllCars(void) {
             }
             car->bodyYaw = car->bodyYaw + ai->yawRate;
         }
-        index++;
-        car++;
-    } while ((s16)index < 11);
+    }
 }
 
 /* Everyone ahead of the player is held back a little, nearest one first. */
@@ -496,7 +483,6 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     PlayerCarPositionView target;
     GameViewWork viewWork;
     GameViewWork *view;
-    /* The barrier this replaced carried the value in its operand. */
     s32 s0v = 28;
     s32 delta[3];
 
