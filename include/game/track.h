@@ -355,7 +355,7 @@ extern s16 g_EnvSpareLerp;
 extern s16 g_EnvSpareTo;
 extern s16 g_RaceCueDelay;
 extern s32 g_RaceCueFlags;
-extern volatile s32 g_RouteSceneryFrame;
+extern s32 g_RouteSceneryFrame;
 extern s32 g_RouteSceneryRotX;
 extern s32 g_RouteSceneryRotZ;
 /*
@@ -395,7 +395,7 @@ void InterpolateTrackPoint(s32 pointIndex, s32* out, s32 weight);
 /* Declared identically by 113 translation units before this
  * header carried them. */
 
-extern volatile s16 g_RouteSceneryArmed;
+extern s16 g_RouteSceneryArmed;
 extern s16 g_AnimScenery2Frame;
 extern s32 g_AnimScenery2Tint;
 extern s16 g_AnimScenery2Variant;

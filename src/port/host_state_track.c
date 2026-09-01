@@ -16,6 +16,10 @@
 
 #include "common.h"
 
+typedef struct SceneryMotionData SceneryMotionData;
+typedef struct PathSceneryRotationData PathSceneryRotationData;
+typedef struct PathSceneryPositionData PathSceneryPositionData;
+
 unsigned char g_StartGridSceneryStep[8] __attribute__((aligned(16))) = {0x48,0x00,0x04,0x00,0xbc,0xff,0xf2,0xff};
 Vec4 g_StartGridSceneryPos[2] __attribute__((aligned(16))) = {
     {46685, 6010, 12495, 0},
@@ -108,10 +112,10 @@ s16 g_EnvSpareTo;
 s32 g_IsEnvironmentMode4;
 s32 g_CourseModelCount;
 unsigned char g_EnvScriptCursor[40] __attribute__((aligned(16)));
-unsigned char g_RouteSceneryData[8] __attribute__((aligned(16)));
+SceneryMotionData *g_RouteSceneryData;
 unsigned char g_EnvPaletteTable[8] __attribute__((aligned(16)));
 s32 g_TerrainCellCount;
-unsigned char g_PathSceneryRotData[8] __attribute__((aligned(16)));
+PathSceneryRotationData *g_PathSceneryRotData;
 unsigned char g_PathSceneryPosKeys[8] __attribute__((aligned(16)));
 unsigned char g_PathSceneryRotKeys[8] __attribute__((aligned(16)));
 unsigned char g_EnvScriptCues[8] __attribute__((aligned(16)));
@@ -119,17 +123,17 @@ unsigned char g_EnvScriptCues[8] __attribute__((aligned(16)));
  * accesses this symbol as FlybySceneryState (52 bytes). */
 unsigned char g_FlybyScenery[52] __attribute__((aligned(16)));
 s32 g_RouteSceneryClock;
-volatile s32 g_RouteSceneryFrame;
-volatile s16 g_RouteSceneryArmed;
+s32 g_RouteSceneryFrame;
+s16 g_RouteSceneryArmed;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
 s32 g_RouteSceneryRotY;
 unsigned char g_RouteSceneryRotZ[12] __attribute__((aligned(16)));
 unsigned char g_FlybySceneryKeyframe[8] __attribute__((aligned(16)));
-unsigned char g_FlybySceneryData[8] __attribute__((aligned(16)));
+SceneryMotionData *g_FlybySceneryData;
 unsigned char g_CourseObjects[8] __attribute__((aligned(16)));
 unsigned char g_CellVisibilityTable[8] __attribute__((aligned(16)));
-unsigned char g_PathSceneryPosData[8] __attribute__((aligned(16)));
+PathSceneryPositionData *g_PathSceneryPosData;
 s32 g_CourseObjectCount;
 unsigned char g_VisibleCellList[8] __attribute__((aligned(16)));
 unsigned char g_PathSceneryClock[8] __attribute__((aligned(16)));

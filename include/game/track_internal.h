@@ -51,10 +51,10 @@ extern PathSceneryTransform g_PathSceneryTransform;
 extern s32 g_TrackLength;
 extern TrackEventData *g_TrackEventData;
 
-extern SceneryMotionData *volatile g_RouteSceneryData;
-extern PathSceneryRotationData *volatile g_PathSceneryRotData;
-extern SceneryMotionData *volatile g_FlybySceneryData;
-extern PathSceneryPositionData *volatile g_PathSceneryPosData;
+extern SceneryMotionData *g_RouteSceneryData;
+extern PathSceneryRotationData *g_PathSceneryRotData;
+extern SceneryMotionData *g_FlybySceneryData;
+extern PathSceneryPositionData *g_PathSceneryPosData;
 
 extern s32 g_RouteSceneryClock;
 extern s16 g_RouteSceneryKeyIndex;
