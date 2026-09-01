@@ -256,6 +256,24 @@ target_link_libraries(course_scenery_dispatch_tests PRIVATE psyz)
 add_test(NAME course_scenery_dispatch COMMAND course_scenery_dispatch_tests)
 set_tests_properties(course_scenery_dispatch PROPERTIES LABELS functional)
 
+add_executable(shuttle_scenery_init_tests
+    shuttle_scenery_init_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/init_shuttle_scenery.c)
+target_include_directories(shuttle_scenery_init_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(shuttle_scenery_init_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(shuttle_scenery_init_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(shuttle_scenery_init_tests PRIVATE psyz)
+add_test(NAME shuttle_scenery_init COMMAND shuttle_scenery_init_tests)
+set_tests_properties(shuttle_scenery_init PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)
