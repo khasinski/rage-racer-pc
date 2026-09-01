@@ -13,6 +13,7 @@ s32 g_CarShopScreenProgress;
 s32 g_CarShopUnlockAll;
 s16 g_NextOwnedCarIndex;
 s16 g_PrevOwnedCarIndex;
+s32 g_ShopCarIndex;
 static GameRaceProgress s_progress;
 GameRaceProgress *g_RaceProgress = &s_progress;
 
@@ -74,6 +75,24 @@ int main(void) {
     UpdateCarListCursor();
     CHECK(g_PrevOwnedCarIndex == -1);
     CHECK(g_NextOwnedCarIndex == -1);
+
+    memset(s_cars, 0, sizeof(s_cars));
+    g_CarShopUnlockAll = 1;
+    RefreshCarUnlockState();
+    CHECK(g_ShopCarIndex == 0);
+    s_cars[0].enabled = 1;
+    RefreshCarUnlockState();
+    CHECK(g_ShopCarIndex == 1);
+
+    g_CarShopUnlockAll = 0;
+    s_progress.maxClassReached = 1;
+    s_cars[1].enabled = 1;
+    RefreshCarUnlockState();
+    CHECK(g_ShopCarIndex == 2);
+
+    memset(s_cars, 1, sizeof(s_cars));
+    RefreshCarUnlockState();
+    CHECK(g_ShopCarIndex == -1);
 
     puts("car shop menu tests passed");
     return 0;

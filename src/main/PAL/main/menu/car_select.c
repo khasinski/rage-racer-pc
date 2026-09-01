@@ -214,53 +214,6 @@ void UpdateOwnedCarNeighbours(void) {
         }
     }
 }
-void RefreshCarUnlockState(void) {
-    s32 index;
-    s32 value;
-    CarEntry *ptr;
-    CarEntry *enabledPtr;
-    s32 byte;
-
-    g_ShopCarIndex = -1;
-
-    if (g_CarShopUnlockAll != 0) {
-        index = 12;
-        enabledPtr = &g_CarTable[12];
-while (1) {
-        byte = enabledPtr->enabled;
-        enabledPtr--;
-        if (byte == 0) {
-            g_ShopCarIndex = index;
-        }
-        index--;
-        if (index < 0) {
-            return;
-        }
-        }
-    }
-
-    index = 12;
-do {
-    {
-        value = GetCarUnlockLevel(index);
-        ptr = &g_CarTable[index];
-        if (ptr->enabled == 0) {
-            if (g_RaceProgress->maxClassReached < 4) {
-                if ((g_RaceProgress->maxClassReached + 1) < value) {
-                    index--;
-                    continue;
-                }
-            } else if (g_RaceProgress->maxClassReached < value) {
-                index--;
-                continue;
-            }
-            g_ShopCarIndex = index;
-        }
-        index--;
-    }
-    } while (index >= 0);
-
-}
 
 void EnterCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
