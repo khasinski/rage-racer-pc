@@ -23,7 +23,22 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
+
+typedef struct SceneryPlacement {
+    struct {
+        int32_t x;
+        int32_t y;
+        int32_t z;
+    } position;
+    int32_t yaw;
+} SceneryPlacement;
+
+typedef struct StaticSceneryState {
+    SceneryPlacement standard;
+    SceneryPlacement highClass;
+} StaticSceneryState;
 
 extern unsigned char g_MsgInsertController[20];
 extern unsigned char g_MsgControllerError[20];
@@ -300,7 +315,7 @@ extern unsigned char g_AnimSceneryPitch[8];
 extern unsigned char g_SpinningSceneryRecords[64];
 extern unsigned char g_SpinningSceneryAngle[8];
 extern unsigned char g_SpinningSceneryRate[8];
-extern unsigned char g_StaticSceneryState[32];
+extern StaticSceneryState g_StaticSceneryState;
 extern unsigned char g_ShuttlePathPoints[96];
 extern unsigned char g_ShuttlePathAngles[24];
 extern unsigned char g_ShuttlePathTravelMax[8];
@@ -815,7 +830,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_SpinningSceneryRecords", g_SpinningSceneryRecords, 64},
     {"g_SpinningSceneryAngle", g_SpinningSceneryAngle, 8},
     {"g_SpinningSceneryRate", g_SpinningSceneryRate, 8},
-    {"g_StaticSceneryState", g_StaticSceneryState, 32},
+    {"g_StaticSceneryState", (const unsigned char *)&g_StaticSceneryState, 32},
     {"g_ShuttlePathPoints", g_ShuttlePathPoints, 96},
     {"g_ShuttlePathAngles", g_ShuttlePathAngles, 24},
     {"g_ShuttlePathTravelMax", g_ShuttlePathTravelMax, 8},

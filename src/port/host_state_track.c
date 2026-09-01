@@ -37,8 +37,20 @@ typedef struct FlybySceneryState {
     s32 reserved2C;
     s32 volume;
 } FlybySceneryState;
+typedef struct SceneryPlacement {
+    LVec position;
+    s32 yaw;
+} SceneryPlacement;
+typedef struct StaticSceneryState {
+    SceneryPlacement standard;
+    SceneryPlacement highClass;
+} StaticSceneryState;
 
 unsigned char g_StartGridSceneryStep[8] __attribute__((aligned(16))) = {0x48,0x00,0x04,0x00,0xbc,0xff,0xf2,0xff};
+StaticSceneryState g_StaticSceneryState = {
+    {{40594, 6002, 11940}, 0x440},
+    {{29266, 6039, 45612}, 0x655},
+};
 Vec4 g_StartGridSceneryPos[2] __attribute__((aligned(16))) = {
     {46685, 6010, 12495, 0},
     {39567, 5782, 11986, 0}

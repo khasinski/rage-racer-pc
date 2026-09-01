@@ -477,8 +477,17 @@ typedef struct FlybySceneryState {
 extern SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 extern s32 g_FogNear;
 extern s16 g_FreeCameraAngleOffset[];
-extern unsigned char g_StaticSceneryState[32];
-#define g_HighClassSceneryYaw (*(s32 *)(void *)(g_StaticSceneryState + 28))
+typedef struct SceneryPlacement {
+    LVec position;
+    s32 yaw;
+} SceneryPlacement;
+
+typedef struct StaticSceneryState {
+    SceneryPlacement standard;
+    SceneryPlacement highClass;
+} StaticSceneryState;
+
+extern StaticSceneryState g_StaticSceneryState;
 extern s32 g_OrbitCameraDistance;
 extern s32 g_OrbitCameraYaw;
 extern s16 g_PathSceneryHalfDelta[3];
@@ -563,7 +572,6 @@ typedef union SpinningSceneryDataAddress {
     void *pointer;
 } SpinningSceneryDataAddress;
 extern s32 g_StartGridSceneryAngle[];
-#define g_StaticSceneryYaw (*(s32 *)(void *)(g_StaticSceneryState + 12))
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 extern s32 FindNearestTrackCamera(struct GameRenderObject *car);
@@ -578,7 +586,6 @@ void UpdateTrackEventSound(s16 trackSection);
 extern Vec4 g_AnimSceneryPos[];
 extern SVec g_ShuttlePathAngles[];
 extern Vec4 g_StartGridSceneryPos[];
-#define g_StaticSceneryPos (*(Vec4 *)(void *)g_StaticSceneryState)
 
 /* The two tables InstallTerrainCellData splits out of sub-block 7: the
  * 32x32 cell grid (clut index in the low 10 bits) and the per-cell

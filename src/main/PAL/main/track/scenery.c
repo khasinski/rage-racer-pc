@@ -7,14 +7,18 @@
 
 
 void DrawStaticScenery(s32 shifted) {
+    SceneryPlacement *placement = &g_StaticSceneryState.standard;
     Matrix mtx;
     Matrix renderWorldMtx;
-    Vec4 state;
+    Vec4 state = {
+        placement->position.x,
+        placement->position.y,
+        placement->position.z,
+        0,
+    };
     s32 visible;
     s16 drawArg;
     s32 frameValue;
-
-    state = g_StaticSceneryPos;
 
     if (shifted != 0) {
         state.z += 0x5000;
@@ -23,7 +27,7 @@ void DrawStaticScenery(s32 shifted) {
     visible = TrackCellVisible(state.x, state.z);
 
     if (visible != 0) {
-        BuildRotMatrixY(&mtx, g_StaticSceneryYaw);
+        BuildRotMatrixY(&mtx, placement->yaw);
         renderWorldMtx = mtx;
         MulMatrix2((&g_RenderState.matrix), &mtx);
 
@@ -56,38 +60,37 @@ void DrawStaticScenery(s32 shifted) {
 }
 
 void DrawHighClassScenery(void) {
+    SceneryPlacement *placement = &g_StaticSceneryState.highClass;
     Matrix mtx;
     Matrix renderWorldMtx;
-    s32 *state;
     s32 drawArg;
 
-    state = &g_HighClassSceneryYaw;
-    BuildRotMatrixY(&mtx, state[0]);
+    BuildRotMatrixY(&mtx, placement->yaw);
     renderWorldMtx = mtx;
     MulMatrix2((&g_RenderState.matrix), &mtx);
 
     if (g_IsEnvironmentMode4 != 0) {
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(state - 3),
-                           &mtx);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &placement->position, &mtx);
         g_RenderState.envMode4 = 0x10000;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
         GameRenderWorldSubmitDynamicCourseObject(
-            1, drawArg, state[-3], state[-2], state[-1],
+            1, drawArg, placement->position.x, placement->position.y,
+            placement->position.z,
             renderWorldMtx.m, 0, 0);
         SubmitCourseModel((&g_RenderState), drawArg);
     } else {
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(state - 3),
-                           &mtx);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &placement->position, &mtx);
         g_RenderState.envMode4 = 0;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
         }
         GameRenderWorldSubmitDynamicCourseObject(
-            1, drawArg, state[-3], state[-2], state[-1],
+            1, drawArg, placement->position.x, placement->position.y,
+            placement->position.z,
             renderWorldMtx.m, 1, 0);
         SubmitCourseModel2((&g_RenderState), drawArg);
     }
