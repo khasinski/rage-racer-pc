@@ -16,7 +16,7 @@ s32 g_SaveElapsedTicks;
 DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
 s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
-char g_FmtPlayTime[] = "%02d:%02d:%02d";
+char g_FmtPlayTime[] = "%5d:%02d:%02d";
 
 static u8 s_files[MOCK_FILE_COUNT][MOCK_FILE_SIZE];
 static long s_positions[MOCK_FILE_COUNT];
@@ -272,13 +272,21 @@ static int TestWriteAndDirectoryCount(void) {
 
 static int TestCardStatus(void) {
     GameSaveHeaderRow headers[MEMORY_CARD_SAVE_SLOT_COUNT];
+    char elapsed[16];
+    char *visibleElapsed;
 
     ResetMock();
     g_McDirEntries[0].size = 0x2000;
     g_McDirEntries[1].size = 0x1000;
     CHECK(CalculateMemoryCardFreeBlocks(0) == 15);
+    CHECK(CalculateMemoryCardFreeBlocks(-1) == 15);
     CHECK(CalculateMemoryCardFreeBlocks(2) == 14);
     CHECK(CalculateMemoryCardFreeBlocks(MEMORY_CARD_MAX_FILES + 5) == 14);
+
+    visibleElapsed = FormatSaveElapsedTime(elapsed, 3723 * 60);
+    CHECK(strcmp(elapsed, "    1:02:03") == 0);
+    CHECK(visibleElapsed == elapsed + 2);
+    CHECK(strcmp(visibleElapsed, "  1:02:03") == 0);
 
     s_directoryFiles = 2;
     s_exists[0] = 1;
