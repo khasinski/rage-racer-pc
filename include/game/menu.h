@@ -661,7 +661,7 @@ void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 x, s32 useFlag);
 void DrawTitleFadeOverlay(s32 brightness);
 void DrawVolumeBar(s32 level, s32 y);
-void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2);
+void UpdateAndDrawCourseCard(void);
 /* All three return 1 while the load is still running, as defined in
  * asset/asset_requests.c and asset/car_assets.c; every caller drops it. */
 s32 RequestUpgradedCarModel(s32 carIndex);

@@ -508,8 +508,7 @@ void UpdateCourseSelectScreen(void) {
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     if (g_GrandPrixMode != 0) {
-        FlipCourseCard(&g_CourseCardSpinTarget, &g_CourseCardSpin,
-                       &g_CourseCardPendingGrade);
+        UpdateAndDrawCourseCard();
     } else {
         DrawTimeAttackPlate(g_TimeAttackPlateStep);
     }

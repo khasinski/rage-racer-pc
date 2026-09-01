@@ -166,8 +166,9 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
     RECORD("button", x0, y0, x1, y1, r, g, b);
 }
 void DrawTimeAttackPlate(s32 stepArg) { RECORD("timeattackplate", stepArg); }
-void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
-    RECORD("flipcard", *p0, *p1, *p2);
+void UpdateAndDrawCourseCard(void) {
+    RECORD("flipcard", g_CourseCardSpinTarget, g_CourseCardSpin,
+           g_CourseCardPendingGrade);
 }
 /* How far the curtain has drawn across is what the class change waits on, so
  * the sweep sets it rather than the stub deciding. */

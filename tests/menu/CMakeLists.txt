@@ -746,6 +746,26 @@ endif()
 target_link_libraries(option_root_menu_tests PRIVATE psyz)
 add_test(NAME option_root_menu COMMAND option_root_menu_tests)
 set_tests_properties(option_root_menu PROPERTIES LABELS functional)
+
+add_executable(course_card_tests
+    course_card_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_card.c)
+target_include_directories(course_card_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_card_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_card_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_card_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(course_card_tests PRIVATE psyz)
+add_test(NAME course_card COMMAND course_card_tests)
+set_tests_properties(course_card PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
