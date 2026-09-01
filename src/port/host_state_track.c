@@ -19,10 +19,24 @@
 typedef struct SceneryMotionData SceneryMotionData;
 typedef struct PathSceneryRotationData PathSceneryRotationData;
 typedef struct PathSceneryPositionData PathSceneryPositionData;
+typedef struct SceneryMotionKeyframe SceneryMotionKeyframe;
 typedef struct PathSceneryClock {
     s16 posFrame;
     s16 rotFrame;
 } PathSceneryClock;
+typedef struct FlybySceneryState {
+    s32 timer;
+    s32 soundEnabled;
+    s32 keyframeTime;
+    s16 lap;
+    s16 keyframeIndex;
+    Vec4 position;
+    s32 rotationX;
+    s32 rotationY;
+    s32 rotationZ;
+    s32 reserved2C;
+    s32 volume;
+} FlybySceneryState;
 
 unsigned char g_StartGridSceneryStep[8] __attribute__((aligned(16))) = {0x48,0x00,0x04,0x00,0xbc,0xff,0xf2,0xff};
 Vec4 g_StartGridSceneryPos[2] __attribute__((aligned(16))) = {
@@ -123,16 +137,14 @@ PathSceneryRotationData *g_PathSceneryRotData;
 unsigned char g_PathSceneryPosKeys[8] __attribute__((aligned(16)));
 unsigned char g_PathSceneryRotKeys[8] __attribute__((aligned(16)));
 unsigned char g_EnvScriptCues[8] __attribute__((aligned(16)));
-/* One host object, not a chain of PS1-address aliases.  The recovered game
- * accesses this symbol as FlybySceneryState (52 bytes). */
-unsigned char g_FlybyScenery[52] __attribute__((aligned(16)));
+FlybySceneryState g_FlybyScenery;
 s32 g_RouteSceneryClock;
 s32 g_RouteSceneryFrame;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
 s32 g_RouteSceneryRotY;
 unsigned char g_RouteSceneryRotZ[12] __attribute__((aligned(16)));
-unsigned char g_FlybySceneryKeyframe[8] __attribute__((aligned(16)));
+SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 SceneryMotionData *g_FlybySceneryData;
 unsigned char g_CourseObjects[8] __attribute__((aligned(16)));
 unsigned char g_CellVisibilityTable[8] __attribute__((aligned(16)));

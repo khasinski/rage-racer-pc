@@ -203,7 +203,7 @@ set_tests_properties(path_scenery_playback PROPERTIES LABELS functional)
 
 add_executable(flyby_scenery_seed_tests
     flyby_scenery_seed_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/flyby_scenery.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/seed_flyby_scenery.c)
 target_include_directories(flyby_scenery_seed_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port
@@ -218,6 +218,25 @@ endif()
 target_link_libraries(flyby_scenery_seed_tests PRIVATE psyz)
 add_test(NAME flyby_scenery_seed COMMAND flyby_scenery_seed_tests)
 set_tests_properties(flyby_scenery_seed PROPERTIES LABELS functional)
+
+add_executable(flyby_scenery_playback_tests
+    flyby_scenery_playback_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/flyby_scenery.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c)
+target_include_directories(flyby_scenery_playback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(flyby_scenery_playback_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(flyby_scenery_playback_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(flyby_scenery_playback_tests PRIVATE psyz)
+add_test(NAME flyby_scenery_playback COMMAND flyby_scenery_playback_tests)
+set_tests_properties(flyby_scenery_playback PROPERTIES LABELS functional)
 
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
