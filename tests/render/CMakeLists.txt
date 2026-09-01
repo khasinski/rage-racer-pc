@@ -97,6 +97,25 @@ endif()
 add_test(NAME asset_id COMMAND asset_id_tests)
 
 set_tests_properties(asset_id PROPERTIES LABELS functional)
+
+add_executable(model_banks_tests
+    model_banks_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/model_banks.c)
+target_include_directories(model_banks_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(model_banks_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(model_banks_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(model_banks_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME model_banks COMMAND model_banks_tests)
+set_tests_properties(model_banks PROPERTIES LABELS unit)
 add_executable(car_paint_tests car_paint_tests.c)
 target_link_libraries(car_paint_tests PRIVATE rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

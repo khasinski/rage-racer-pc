@@ -6,9 +6,11 @@
 #include "game/track.h"
 #include "string.h"
 
-/* Kept local: this unit only stores an address into them, while track/ and
- * render/ read them as u32[] rows, Vec4[] entries and plain s32, four
- * incompatible element types across seven files. */
+static s32 ClampAssetCount(s32 count, s32 limit) {
+    if (count < 0) return 0;
+    if (count > limit) return limit;
+    return count;
+}
 
 s32 GetCarAssetIndex(s32 model, s32 grade) {
     return g_CarModelBaseIndex[model] + grade;
@@ -55,13 +57,6 @@ void RegisterModelBank(ModelBankHeader *base, s32 index) {
     }
 }
 
-/*
- * Point the render state's model-bank cursor at one registered bank. The bank
- * pointer is re-read from the table before each store because the stores go
- * to the render state, which cse has no reason to believe does not alias it.
- * The two-step address (base into a local, then index it) is what gives
- * retail's base-first addu; `&g_ModelBanks[index]` loses it.
- */
 void SelectModelBank(s32 index) {
     NativeModelBank *bank;
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
@@ -73,28 +68,20 @@ void SelectModelBank(s32 index) {
 }
 
 void RegisterCourseModels(CourseModelAssetHeader *base) {
-    CourseModelAssetEntry *entry;
     s32 count;
     s32 i;
-    s32 limit;
 
-    entry = base->models;
-    count = base->modelCount;
+    count = ClampAssetCount(base->modelCount, GAME_COURSE_MODEL_LIMIT);
     g_RenderState.courseBank = g_NativeCourseModels;
-    if (count > GAME_COURSE_MODEL_LIMIT) count = GAME_COURSE_MODEL_LIMIT;
     g_CourseModelCount = count;
-    i = 0;
-    if (count > 0) {
-        limit = count;
-        do {
-            g_NativeCourseModels[i].geometry =
-                ResolveAssetAddress(base, entry->geometryOffset);
-            g_NativeCourseModels[i].vertexCount = entry->vertexCount;
-            g_NativeCourseModels[i].model =
-                ResolveAssetAddress(base, entry->modelOffset);
-            entry++;
-            i++;
-        } while (i < limit);
+    for (i = 0; i < count; i++) {
+        const CourseModelAssetEntry *entry = &base->models[i];
+
+        g_NativeCourseModels[i].geometry =
+            ResolveAssetAddress(base, entry->geometryOffset);
+        g_NativeCourseModels[i].vertexCount = entry->vertexCount;
+        g_NativeCourseModels[i].model =
+            ResolveAssetAddress(base, entry->modelOffset);
     }
 }
 
@@ -110,8 +97,7 @@ void InstallTerrainCellData(void *data) {
     g_CellVisibilityTable = address.visibilityRows;
     address.bytes += CELL_VISIBILITY_TABLE_SIZE;
     header = address.header;
-    count = header->cellCount;
-    if (count > GAME_TERRAIN_CELL_LIMIT) count = GAME_TERRAIN_CELL_LIMIT;
+    count = ClampAssetCount(header->cellCount, GAME_TERRAIN_CELL_LIMIT);
     g_RenderState.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
     g_RenderState.cellFaces = address.bytes + header->facesOffset;
