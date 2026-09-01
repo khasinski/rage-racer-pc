@@ -76,6 +76,15 @@ static s32 ShortestAngleDelta(s32 delta) {
     return delta;
 }
 
+static s32 InterpolateCameraValue(s32 start, s32 delta, s32 blend) {
+    s32 product = blend * delta;
+
+    if (product < 0) {
+        product += 0x1FFF;
+    }
+    return start + (product >> 13);
+}
+
 /*
  * Point the camera at a place in the world: pitch and yaw from the camera to
  * the target, in the game's 0x1000-per-turn angle units, with no roll.
@@ -330,7 +339,6 @@ static void ViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 camPathAngle;
     s32 camPathOffset;
     Matrix cameraRotation;
-    s32 distProduct;
     s32 eyeOffset[3];
     s32 eyeWorld[3];
     s32 focusOffset[3];
@@ -341,9 +349,6 @@ static void ViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     Matrix inverseObjectRotation;
     Matrix matrixWork;
     Matrix objectRotation;
-    s32 offsetXProduct;
-    s32 offsetYProduct;
-    s32 offsetZProduct;
     s32 pathBlend;
     GameTrackCameraNode *pathNode;
     s32 pathOffsetY;
@@ -353,12 +358,9 @@ static void ViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 pathYaw;
     s32 pathYawRelative;
     s32 pitchDelta;
-    s32 pitchProduct;
     GameTrackCameraNode *prevNode;
     s32 rollProbe[3];
-    s32 rollProduct;
     s32 rollWork[3];
-    s32 yawProduct;
 
     LoadViewPositionFromCar(view, car);
     if (((u8)nodeChanged) || (g_CameraModePrev != 3)) {
@@ -400,50 +402,33 @@ static void ViewFromCamPath(GameRenderObject *car, GameViewWork *view,
         g_CamPathFrame += 1;
     }
     pathBlend = 0x1000 - rcos((g_CamPathFrame << 0xB) / g_TrackCameras[g_CamPathNode].duration);
-    offsetXProduct = pathBlend * g_CamPathOffsetDelta[0];
-    if (offsetXProduct < 0) {
-        offsetXProduct += 0x1FFF;
-    }
-    camPathOffset = (offsetXProduct >> 0xD) + g_CamPathOffsetStart[0];
-    offsetYProduct = pathBlend * g_CamPathOffsetDelta[1];
+    camPathOffset = InterpolateCameraValue(
+        g_CamPathOffsetStart[0], g_CamPathOffsetDelta[0], pathBlend);
     focusOffset[0] = camPathOffset;
-    if (offsetYProduct < 0) {
-        offsetYProduct += 0x1FFF;
-    }
-    pathOffsetY = (offsetYProduct >> 0xD) + g_CamPathOffsetStart[1];
-    offsetZProduct = pathBlend * g_CamPathOffsetDelta[2];
+    pathOffsetY = InterpolateCameraValue(
+        g_CamPathOffsetStart[1], g_CamPathOffsetDelta[1], pathBlend);
     focusOffset[1] = pathOffsetY;
-    if (offsetZProduct < 0) {
-        offsetZProduct += 0x1FFF;
-    }
-    pathOffsetZ = (offsetZProduct >> 0xD) + g_CamPathOffsetStart[2];
-    pitchProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_PITCH];
+    pathOffsetZ = InterpolateCameraValue(
+        g_CamPathOffsetStart[2], g_CamPathOffsetDelta[2], pathBlend);
     focusOffset[2] = pathOffsetZ;
-    if (pitchProduct < 0) {
-        pitchProduct += 0x1FFF;
-    }
-    pathPitch = (pitchProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_PITCH];
-    yawProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_YAW];
-    if (yawProduct < 0) {
-        yawProduct += 0x1FFF;
-    }
-    pathYaw = (yawProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_YAW];
-    rollProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_ROLL];
-    if (rollProduct < 0) {
-        rollProduct += 0x1FFF;
-    }
-    pathRoll = (rollProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_ROLL];
-    distProduct = pathBlend * g_CamPathAngleDelta[CAMPATH_DIST];
-    if (distProduct < 0) {
-        distProduct += 0x1FFF;
-    }
+    pathPitch = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_PITCH],
+                                       g_CamPathAngleDelta[CAMPATH_PITCH],
+                                       pathBlend);
+    pathYaw = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_YAW],
+                                     g_CamPathAngleDelta[CAMPATH_YAW],
+                                     pathBlend);
+    pathRoll = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_ROLL],
+                                      g_CamPathAngleDelta[CAMPATH_ROLL],
+                                      pathBlend);
     g_CamPathAngle[CAMPATH_PITCH] = pathPitch & 0xFFF;
     g_CamPathAngle[CAMPATH_YAW] = pathYaw & 0xFFF;
     g_CamPathAngle[CAMPATH_ROLL] = pathRoll & 0xFFF;
     g_CamPathOffset[0] = camPathOffset;
     g_CamPathOffset[1] = pathOffsetY;
     g_CamPathOffset[2] = pathOffsetZ;
-    camPathAngle = (distProduct >> 0xD) + g_CamPathAngleStart[CAMPATH_DIST];
+    camPathAngle = InterpolateCameraValue(
+        g_CamPathAngleStart[CAMPATH_DIST],
+        g_CamPathAngleDelta[CAMPATH_DIST], pathBlend);
     g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
     pathYawRelative = pathYaw - car->angleY;
     BuildRotMatrixY(&cameraRotation, pathYawRelative);
