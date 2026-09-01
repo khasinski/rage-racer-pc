@@ -52,7 +52,7 @@ void UpdateOptionRootMenu(void) {
     }
 
     buttons = g_PadPressed;
-    if (buttons & 0x860) {
+    if (buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
         switch (g_OptionMenuCursor) {
         case 0:
@@ -91,7 +91,7 @@ void UpdateOptionRootMenu(void) {
             break;
         }
     } else {
-        if (buttons & 0x90) {
+        if (buttons & PAD_CANCEL) {
             PlaySoundCue(3);
             StartOptionMenuExit(2);
         }
@@ -212,14 +212,14 @@ void UpdateClassRecordMenu(void) {
     }
 
     buttons = g_PadPressed;
-    if (buttons & 0x860) {
+    if (buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
         if (g_ClassRecordMenuCursor != 0) {
             g_GameMode = 1;
         } else {
             g_GameMode = 3;
         }
-    } else if (buttons & 0x90) {
+    } else if (buttons & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
     }
@@ -248,49 +248,19 @@ void UpdateClassRecordBrowse(void) {
     if (b & 0x2000) {
         g_ScreenOffsetEditX++;
     }
-    {
-        s32 c;
-        c = g_ScreenOffsetEditX;
-        c += 6;
-        c = c % 6;
-        g_ScreenOffsetEditX = c;
-        if (c == 5) {
-            g_ScreenOffsetEditY = 0;
-        }
-        if (oldCursor != c || oldFlag != g_ScreenOffsetEditY) {
-            PlaySoundCue(1);
-        }
+    g_ScreenOffsetEditX = (g_ScreenOffsetEditX + 6) % 6;
+    if (g_ScreenOffsetEditX == 5) {
+        g_ScreenOffsetEditY = 0;
+    }
+    if (oldCursor != g_ScreenOffsetEditX ||
+        oldFlag != g_ScreenOffsetEditY) {
+        PlaySoundCue(1);
     }
     if (g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE)) {
         PlaySoundCue(2);
         g_GameMode = 2;
     }
     DrawClassRecordDetail();
-}
-
-void DrawVolumeBar(s32 level, s32 y) {
-    s32 b = y;
-    u8 *base = (u8 *)GamePrimaryOrderingTable(0);
-    u8 *next;
-    s32 i;
-    s32 segmentOffset;
-    s32 c;
-
-    next = GameQueueSpriteTrans(base, RENDER_PRIM_CURSOR_AS(u8), 0x4E, b + 0xA, 0x10, 0xC, 0xB4, 0xC4, 0x7F40);
-    next = GameQueueSpriteTrans(base, next, 0xE4, b + 0xA, 0x10, 0xC, 0xC4, 0xC4, 0x7F40);
-    next = QueueDrawModePrim(base, next, 0x3A);
-    c = 0x46;
-    i = 0;
-    if (i <= level) {
-        do {
-            segmentOffset = 0x1C + (i * 8);
-            next = GameQueueSprite(base, next, c + segmentOffset, b + 4, 4, 0x18, 0xFC, 0x40, 0x7E82);
-            i++;
-        } while (i <= level);
-    }
-    next = QueueDrawModePrim(base, next, 0x39);
-    next = AddTilePrim(base, next, c | 1, b + 2, 0xB2, 0x1C, 0, 0, 0);
-    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, c, b, 0xB4, 0x20, 0xFF, 0xFF, 0xFF);
 }
 
 void DrawSoundOptionScreen(void) {
@@ -381,7 +351,7 @@ void UpdateSoundOptionMenu(void) {
     }
 
     buttons = g_PadPressed;
-    if (buttons & 0x860) {
+    if (buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = 5;
         switch (g_SoundOptionCursor) {
@@ -398,7 +368,7 @@ void UpdateSoundOptionMenu(void) {
             g_GameMode = 1;
             break;
         }
-    } else if (buttons & 0x90) {
+    } else if (buttons & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = 1;
     }
