@@ -559,6 +559,26 @@ target_link_libraries(class_change_curtain_tests PRIVATE psyz)
 add_test(NAME class_change_curtain COMMAND class_change_curtain_tests)
 set_tests_properties(class_change_curtain PROPERTIES LABELS functional)
 
+add_executable(menu_alt_panel_tests
+    menu_alt_panel_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_menu_alt_panel.c)
+target_include_directories(menu_alt_panel_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(menu_alt_panel_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(menu_alt_panel_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(menu_alt_panel_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(menu_alt_panel_tests PRIVATE psyz)
+add_test(NAME menu_alt_panel COMMAND menu_alt_panel_tests)
+set_tests_properties(menu_alt_panel PROPERTIES LABELS functional)
+
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c)
