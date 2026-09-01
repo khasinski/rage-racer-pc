@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "game/asset.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/track.h"

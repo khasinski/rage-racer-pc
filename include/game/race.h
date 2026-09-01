@@ -308,7 +308,6 @@ void DrawRouteScenery(void);
 void DrawSplitDelta(s32 delta, s32 y);
 void DrawTerrainCells(void);
 void InitTrackScene(void);
-s32 RequestSelectBgmAssets(void);
 void ReturnToTitleScene(void);
 void UpdateBgmTrackCount(void);
 void UpdateFlybyScenery(void);

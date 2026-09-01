@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "game/asset.h"
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/player_car_internal.h"

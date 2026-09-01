@@ -122,3 +122,22 @@ set_tests_properties(window_lifecycle PROPERTIES LABELS e2e)
         set_tests_properties(window_lifecycle PROPERTIES TIMEOUT 195)
     endif()
 endif()
+add_executable(asset_requests_tests
+    asset_requests_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_requests.c)
+target_include_directories(asset_requests_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(asset_requests_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(asset_requests_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(asset_requests_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(asset_requests_tests PRIVATE psyz)
+add_test(NAME asset_requests COMMAND asset_requests_tests)
+set_tests_properties(asset_requests PROPERTIES LABELS unit)

@@ -245,11 +245,6 @@ typedef struct GameSceneAssetHeader {
     s32 offsets[11];
 } GameSceneAssetHeader;
 
-typedef union GameSceneAssetOffsetAddress {
-    s32 *pointer;
-    volatile s32 *volatilePointer;
-} GameSceneAssetOffsetAddress;
-
 typedef union GameSceneAssetAddress {
     s32 value;
     u8 *bytes;
@@ -351,8 +346,11 @@ s32 EnableCdAudioMode(void);
 s32 RequestBootAssets(void);
 void LoadBootAssets(void);
 /* Phase 2: SAVE.TMS (memory-card screen). */
+s32 RequestSaveScreenAssets(void);
 void LoadSaveScreenAssets(void);
 /* Phase 3: SELBGM.BIN, split into its SEQ / VH / VB sub-blocks. */
+s32 RequestSelectBgmAssets(void);
+s32 RequestSelectBgmAssetsNoReset(void);
 void LoadSelectBgmAssets(void);
 /* Phase 4: upload the SELBGM bank, load SELECT.BIN and the player's CAR_xx.1ST. */
 s32 RequestCarSelectAssets(void);

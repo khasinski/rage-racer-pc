@@ -692,8 +692,6 @@ void DrawVolumeBar(s32 level, s32 y);
 void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2);
 /* All three return 1 while the load is still running, as defined in
  * asset/asset_requests.c and asset/car_assets.c; every caller drops it. */
-s32 RequestSaveScreenAssets(void);
-s32 RequestSelectBgmAssetsNoReset(void);
 s32 RequestUpgradedCarModel(s32 carIndex);
 void SetBodyColor1(s32);
 void SetBodyColor2(s32);

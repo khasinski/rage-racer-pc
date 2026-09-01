@@ -1,3 +1,4 @@
+#include "game/asset.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/cd.h"
