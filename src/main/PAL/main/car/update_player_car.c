@@ -28,38 +28,32 @@
  */
 static void SamplePlayerInput(GameCarDrive *p) {
     if (g_RacePhase < 4) {
-        if (g_PadType == 0x41) {
+        if (g_PadType == PAD_TYPE_DIGITAL) {
             p->acceleratorInput.value =
                 ((g_PadHeld & g_PadButtonMapping[2]) != 0) << 8;
             p->brakeInput = ((g_PadHeld & g_PadButtonMapping[3]) != 0) << 8;
-        } else if (g_PadType == 0x23) {
+        } else if (g_PadType == PAD_TYPE_NEGCON) {
             p->acceleratorInput.value =
                 ((g_PadHeld & g_PadButtonMapping[10]) != 0) << 8;
             p->brakeInput = ((g_PadHeld & g_PadButtonMapping[11]) != 0) << 8;
             switch (g_NegconMappingIndex) {
             case 0:
             case 5:
-            {
                 p->acceleratorInput.value = (g_NegconAnalogI << 8) / 106;
                 p->brakeInput = (g_NegconAnalogII << 8) / 106;
                 break;
-            }
             case 1:
             case 6:
-            {
                 p->acceleratorInput.value = (g_NegconAnalogII << 8) / 106;
                 p->brakeInput = (g_NegconAnalogI << 8) / 106;
                 break;
-            }
             case 2:
                 p->brakeInput = (g_NegconAnalogL << 8) / 106;
                 break;
             case 3:
-            {
                 p->acceleratorInput.value = (g_NegconAnalogII << 8) / 106;
                 p->brakeInput = (g_NegconAnalogL << 8) / 106;
                 break;
-            }
             case 4:
             case 7:
                 break;
@@ -379,19 +373,20 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     SVec sv2;
     CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
-    s32 mode23;
+    s32 usesNegconMapping;
     s32 ground;
     s32 slip;
     s32 skid;
     s32 crash;
+    s32 bodyY;
     u32 skidRange;
 
     TraceCarStates();
 
-    mode23 = g_PadType == 0x23;
+    usesNegconMapping = g_PadType == PAD_TYPE_NEGCON;
     car->facingBackwards = IsCarFacingBackwards(car);
 
-    ShiftPlayerGears(car, mode23);
+    ShiftPlayerGears(car, usesNegconMapping);
 
     UpdateCarBodyRoll(car);
 
@@ -439,11 +434,8 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     AccumulateLapProgress(GetPlayerCarRuntime(car));
     TraceCarMotion("post-progress", car);
 
-    {
-        s32 base = car->bodyYaw - 0xC00;
-
-        slip = (base + TrackPoint(car->trackPointIndex)->angle) & 0xFFF;
-    }
+    slip = (car->bodyYaw - 0xC00 +
+            TrackPoint(car->trackPointIndex)->angle) & 0xFFF;
     sv2.vx = 0;
     sv2.vz = 0;
     sv2.vy = slip;
@@ -475,15 +467,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         StartCarBodyKick(2, AsRivalCar(car));
     }
 
-    {
-        s32 bodyY = car->y;
-
-        CopyPlayerBodyRotationToModel(car);
-        car->bodyRoll = car->bodyRoll + car->bodyRollVelocity;
-        car->modelY = car->y;
-        /* Where the wheels sit, eight units under the body. */
-        ground = bodyY - 8;
-    }
+    bodyY = car->y;
+    CopyPlayerBodyRotationToModel(car);
+    car->bodyRoll += car->bodyRollVelocity;
+    car->modelY = car->y;
+    /* Where the wheels sit, eight units under the body. */
+    ground = bodyY - 8;
 
     if (car->verticalMotionState != 0) {
         UpdateJumpArc(car, ground);
