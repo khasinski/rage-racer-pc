@@ -26,6 +26,12 @@ static s32 s_RetireCameraActive;
  * so retain the retail ordering by waiting for those voices to become idle. */
 static s32 s_FinishFollowupCue = -1;
 
+static u16 CameraButtonMask(void) {
+    s32 mappingBank = g_PadType == 0x23;
+
+    return g_PadButtonMapping[6 + mappingBank * 8];
+}
+
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
     if (DiagnosticsEnabled("sound_cue_trace"))
@@ -49,13 +55,10 @@ int RetireCameraActive(void) { return s_RetireCameraActive; }
 
 void EnterRaceScene(void) {
     PlayerCarRuntime *player;
-    s32 mode;
-    s32 scene;
+    s32 course;
+    s32 series;
     s32 trackLength;
-    s32 count;
     s32 i;
-    s32 *first;
-    s32 *second;
 
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
@@ -73,38 +76,28 @@ void EnterRaceScene(void) {
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
     trackLength = g_TrackLength;
-    count = g_CourseIndex;
-    mode = count & 3;
-    scene = ReadStableRaceSeries();
+    course = g_CourseIndex & 3;
+    series = ReadStableRaceSeries();
     g_LapTimeMs = 0;
     D_801E4248 = 0;
     g_LapTimeSaturated = 0;
     g_SectorEndDistance[2] = trackLength;
     g_SectorEndDistance[0] = trackLength / 3;
     g_SectorEndDistance[1] = g_SectorEndDistance[0] * 2;
-    g_RefSectorTimes.fields.first = g_BestSectorTimes[scene][mode][0];
-    g_RefSectorTime1 = g_BestSectorTimes[scene][mode][1];
+    g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
+    g_RefSectorTime1 = g_BestSectorTimes[series][course][1];
     g_SectorIndex = -2;
-    g_RefSectorTime2 = g_BestSectorTimes[scene][mode][2];
+    g_RefSectorTime2 = g_BestSectorTimes[series][course][2];
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
     g_RefLapTime =
         g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][g_GrandPrixMode];
-    count = g_LapCount;
     g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
-    if (count > 0) {
-        i = 0;
-        second = player->lapTimes.table.milliseconds;
-        first = player->lapTimes.table.frameCounts;
-        do {
-            *first = 0;
-            *second = 0;
-            second++;
-            i++;
-            first++;
-        } while (i < count);
+    for (i = 0; i < g_LapCount; i++) {
+        player->lapTimes.table.frameCounts[i] = 0;
+        player->lapTimes.table.milliseconds[i] = 0;
     }
     g_RaceTotalTime = 0;
     ResetMirrorState();
@@ -140,20 +133,18 @@ void EnterRaceScene(void) {
 }
 
 void UpdateRaceScene(void) {
-    s32 option;
-    s32 value;
+    s32 lapUpdateResult;
     u32 timerValue;
     s16 selection;
-    s32 next;
+    s32 textureSection;
     u16 mode;
     u32 pausePhase;
     u32 paused;
 
-    value = g_SceneTimer + 1;
-    g_SceneTimer = value;
+    g_SceneTimer++;
     UpdateFinishFollowupCue();
-    option = 0;
-    timerValue = value;
+    lapUpdateResult = 0;
+    timerValue = g_SceneTimer;
     if (timerValue < 0x3D) {
         DrawRoundScreen();
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
@@ -167,11 +158,10 @@ void UpdateRaceScene(void) {
     pausePhase = mode - 1;
     if (pausePhase < 2 && (g_PadPressed & PAD_START) && g_PauseDebounce <= 0) {
         g_PauseDebounce = 5;
-        paused = g_RacePaused;
-        value = paused < 1;
-        g_RacePaused = value;
+        paused = g_RacePaused < 1;
+        g_RacePaused = paused;
 
-        if (value != 0) {
+        if (paused != 0) {
             PauseCdAudio();
             ForceAllEffectVoicesEnabled(0);
             g_RaceOptionCursor = 0;
@@ -185,10 +175,9 @@ void UpdateRaceScene(void) {
                         g_RankingRecords[ReadStableRaceSeries()][SeriesCourseIndex()][0].raceTime;
                 }
             } else {
-                value = g_CourseProgress->retriesRemaining;
                 g_RacePhase = 5;
                 s_RetireCameraActive = 1;
-                if (value != 0) {
+                if (g_CourseProgress->retriesRemaining != 0) {
                     PlaySoundCue(0x3D);
                 }
             }
@@ -212,19 +201,17 @@ void UpdateRaceScene(void) {
             if (g_RaceFadeTimer >= 0x15) {
                 DrawRaceEndBanner((g_RaceFadeTimer - 0x14) * 3);
                 DrawFullscreenFadeTile((g_RaceFadeTimer - 0x14) * 3, 0x49);
-                option = 0xF;
             }
             if (g_RaceFadeTimer == 0xA) {
                 RequestCdTrack(0xF);
                 StartCdAudio();
             }
             if (g_RaceFadeTimer >= 0x65) {
-                ExitRaceScene(option);
+                ExitRaceScene(0xF);
             }
         } else if ((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining > 0)) {
             DrawLostRaceCaption(g_RaceFadeTimer * 2);
             DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x49);
-            option = 0xD;
             if (g_RaceFadeTimer >= 0x7E) {
                 ExitRaceScene(0xD);
             }
@@ -264,20 +251,12 @@ void UpdateRaceScene(void) {
         GetTrackZoneBlend(g_PlayerCar.trackProgress);
         DrawPlayerTachometer();
 
-        {
-            s32 selectorMask;
-            u16 inputMask;
-
-            selectorMask = g_PadType;
-            inputMask = g_PadHeld;
-            selectorMask = selectorMask == 0x23;
-            if ((inputMask & g_PadButtonMapping[6 + selectorMask * 8]) &&
-                g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
-                if (g_PadPressed & 8) {
-                    g_MirrorViewEnabled = 1;
-                } else if (g_PadPressed & 4) {
-                    g_MirrorViewEnabled = 0;
-                }
+        if ((g_PadHeld & CameraButtonMask()) &&
+            g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
+            if (g_PadPressed & 8) {
+                g_MirrorViewEnabled = 1;
+            } else if (g_PadPressed & 4) {
+                g_MirrorViewEnabled = 0;
             }
         }
 
@@ -336,9 +315,9 @@ void UpdateRaceScene(void) {
         }
 
         if (g_RacePhase < 5) {
-            option = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
-            UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, option);
-            if (option < 2) {
+            lapUpdateResult = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
+            UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
+            if (lapUpdateResult < 2) {
                 DrawLapTimes();
             }
         }
@@ -365,7 +344,7 @@ void UpdateRaceScene(void) {
                 DrawRacePosition();
             }
         }
-        if (option < 2 && g_RacePhase < 5) {
+        if (lapUpdateResult < 2 && g_RacePhase < 5) {
             DrawRaceHudLabels(g_GrandPrixMode);
         }
 
@@ -379,17 +358,9 @@ void UpdateRaceScene(void) {
             UpdateRaceCars();
         }
 
-        {
-            s32 selectorMask;
-            u16 inputMask;
-
-            selectorMask = g_PadType;
-            inputMask = g_PadPressed;
-            selectorMask = selectorMask == 0x23;
-            if ((inputMask & g_PadButtonMapping[6 + selectorMask * 8]) &&
-                (u32)((u16)g_RacePhase - 2) < 2U) {
-                g_CameraViewMode ^= 1;
-            }
+        if ((g_PadPressed & CameraButtonMask()) &&
+            (u32)((u16)g_RacePhase - 2) < 2U) {
+            g_CameraViewMode ^= 1;
         }
 
         if (g_RacePhase == 5 && !s_RetireCameraActive) {
@@ -400,11 +371,11 @@ void UpdateRaceScene(void) {
         }
 
         if (g_RacePhase != 5 || s_RetireCameraActive) {
-            next = g_PlayerCar.trackSection;
+            textureSection = g_PlayerCar.trackSection;
         } else {
-            next = g_CameraCarTrackSection;
+            textureSection = g_CameraCarTrackSection;
         }
-        RequestTrackTexturePage(next);
+        RequestTrackTexturePage(textureSection);
 
         if (g_GrandPrixMode != 0) {
             DrawCars();
@@ -452,7 +423,8 @@ void UpdateRaceScene(void) {
             g_ReverbZoneDepth = 0;
         }
         SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
-        if ((g_RacePhase != 0) && (option < 2) && (g_RacePhase < 5)) {
+        if ((g_RacePhase != 0) && (lapUpdateResult < 2) &&
+            (g_RacePhase < 5)) {
             DrawPlayerTachometer();
         }
 
