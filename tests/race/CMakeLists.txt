@@ -167,6 +167,26 @@ target_link_libraries(bgm_select_transition_tests PRIVATE psyz)
 add_test(NAME bgm_select_transition COMMAND bgm_select_transition_tests)
 set_tests_properties(bgm_select_transition PROPERTIES LABELS functional)
 
+add_executable(series_cleared_wash_tests
+    series_cleared_wash_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/series_cleared_wash.c)
+target_include_directories(series_cleared_wash_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(series_cleared_wash_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(series_cleared_wash_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(series_cleared_wash_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(series_cleared_wash_tests PRIVATE psyz)
+add_test(NAME series_cleared_wash COMMAND series_cleared_wash_tests)
+set_tests_properties(series_cleared_wash PROPERTIES LABELS unit)
+
 add_executable(bgm_select_bar_tests
     bgm_select_bar_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select_bar.c)
