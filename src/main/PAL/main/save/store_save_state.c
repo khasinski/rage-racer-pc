@@ -3,6 +3,8 @@
 #include "game/input_internal.h"
 #include "game/save_internal.h"
 
+#include <string.h>
+
 static void StoreCarSetup(SavedCarSetup *saved, const CarEntry *car) {
     saved->modelVariant = car->modelVariant;
     saved->tireCompound = car->tireCompound;
@@ -14,6 +16,8 @@ static void StoreCarSetup(SavedCarSetup *saved, const CarEntry *car) {
 
 void StoreSaveStateBlock(GameSaveBlock *block) {
     s32 i;
+
+    memset(block, 0, sizeof(*block));
 
     block->padMappingIndex = g_PadMappingIndex;
     block->negconMappingIndex = g_NegconMappingIndex;
