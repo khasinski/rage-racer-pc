@@ -59,7 +59,6 @@ void InitMenuMode(void) {
     g_UiScriptProgress2 = 0;
     g_MenuHintBarProgress = 0;
     g_MenuConfirmTimer = 0;
-    D_8009B304 = 0;
     GameMenuBusy = 0;
     g_MenuHintBarStep = 0;
     g_ClassChangeApplied = 0;
@@ -76,7 +75,6 @@ void InitMenuMode(void) {
     g_CarNamePlateStep = 0;
     g_MenuPlateCarIndex = 0;
     g_CarSpecGraphStep = 0;
-    D_8009B328 = 0;
     g_MenuCourseModelIndex = g_CourseIndex;
     g_MenuAltPanelStep = 0;
     g_MenuAltPanelStep2 = 0;
@@ -91,7 +89,6 @@ void InitMenuMode(void) {
     g_CarSelectCursor = 0;
     g_RankingOption = 0;
     g_DesignModeOption = 0;
-    D_801E4D74 = 0;
 
     DrawCourseSelectScreen(0);
     DrawRankingScreen(0);

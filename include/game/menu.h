@@ -523,8 +523,6 @@ extern s32 g_TeamNameScreenProgress;
 extern s32 g_PaintColorScreenProgress;
 extern s32 g_CarShopScreenProgress;
 extern s32 g_EngineSpecStep;
-extern s32 D_8009B304;
-extern s32 D_8009B328;
 /* Retail address 0x8009E7B8 aliases g_PlayerCar + 0xE4. In the showroom this
  * word is the selected tire compound; DrawPlayerCarModel reads the same word
  * as renderDepth. Keep one storage location on native hosts too. */
@@ -542,7 +540,6 @@ extern s32 g_CarShopOption;
 extern u8 g_TimeAttackCarTires[];
 extern u8 g_TimeAttackCarTransmissions[];
 extern u8 g_TimeAttackCarEnabled[];
-extern s32 D_801E4D74;
 extern s32 g_TitleFadeLevel;
 extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;
