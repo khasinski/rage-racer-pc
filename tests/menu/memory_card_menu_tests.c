@@ -32,7 +32,6 @@ s32 g_McActionTimer;
 s32 g_McCardOkFrames;
 s32 g_McCardStatus;
 s32 g_McConfirmChoice;
-s32 g_McConfirmChoice_v;
 s32 g_McErrorCountdown;
 s32 g_McErrorPending;
 s32 g_McErrorTicks;
@@ -167,14 +166,14 @@ static void Record(FILE *out, const char *label) {
 
     snprintf(line, sizeof(line),
             "%s state=%d action=%d phase=%d page=%d row=%d slot=%d "
-            "sel=%d busy=%d timer=%d elapsed=%d ok=%d result=%d choice=%d/%d "
+            "sel=%d busy=%d timer=%d elapsed=%d ok=%d result=%d choice=%d "
             "err=%d/%d/%d fade=%d/%d last=%d/%d mask=%x free=%d ticks=%d/%d/%d "
             "loadphase=%d scene=%d/%d calls=%d\n",
             label, g_McMenuState, g_McActionState,
             g_McMenuPhase, g_McMenuPage, g_McMenuRowCursor, g_McSlotCursor,
             g_McMenuSelection, g_McActionBusy, g_McActionTimer,
             g_McActionElapsed, g_McActionOk, g_McActionResult,
-            g_McConfirmChoice, g_McConfirmChoice_v, g_McErrorPending,
+            g_McConfirmChoice, g_McErrorPending,
             g_McErrorCountdown, g_McErrorTicks, g_McFadeLevel, g_McFadeStep,
             g_McLastMenuState, g_McLastSlot, g_McSlotUsedMask, g_McFreeBlocks,
             g_McNoCardTicks, g_McCardOkFrames, g_McSettleTicks,
@@ -225,6 +224,34 @@ static int TestFailedLoadReportsError(void) {
     return 1;
 }
 
+static int TestOverwritePromptResetsChoice(void) {
+    g_McMenuState = 1;
+    g_McMenuSelection = 1;
+    g_McCardStatus = 1;
+    g_McMenuPage = 1;
+    g_McMenuRowCount = 4;
+    g_McActionState = 0;
+    g_McActionBusy = 1;
+    g_McConfirmChoice = 1;
+    g_McSlotCursor = 1;
+    g_McSlotUsedMask = 1 << 1;
+    g_McFreeBlocks = 1;
+    g_McSaveMode = 0;
+    g_McFadeLevel = 0;
+    g_McFadeStep = 0;
+    g_McErrorPending = 0;
+    g_SceneTimer = 0x40;
+    g_PadPressed = PAD_CONFIRM;
+
+    UpdateMemoryCardMenu();
+    if (g_McActionState != 0xA || g_McConfirmChoice != 0) {
+        printf("FAIL overwrite prompt starts in action %x with choice %d\n",
+               g_McActionState, g_McConfirmChoice);
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
     static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
@@ -240,14 +267,14 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 2066222317UL;
+    static const unsigned long expected = 3005791259UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
     s32 steps = 0;
     char label[64];
 
-    if (!TestFailedLoadReportsError()) {
+    if (!TestFailedLoadReportsError() || !TestOverwritePromptResetsChoice()) {
         return 1;
     }
 
@@ -287,7 +314,6 @@ int main(int argc, char **argv) {
                                     g_McCardOkFrames = 0;
                                     g_McCardStatus = statuses[ci];
                                     g_McConfirmChoice = 0;
-                                    g_McConfirmChoice_v = 0;
                                     g_McErrorCountdown = 2;
                                     g_McErrorPending = 0;
                                     g_McErrorTicks = 0;

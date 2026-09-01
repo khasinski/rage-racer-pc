@@ -62,7 +62,6 @@ extern void _SsVmFlush(void);
 
 /* Values the game keeps between calls; on the PS1 these lived in fast RAM. */
 int g_CourseSelectScrollValue;
-int g_McConfirmChoice_v;
 GameRenderState g_RenderState;
 ObjectMatrixWork g_ObjectMatrixWork;
 CarTrackWork g_CarTrackWork;

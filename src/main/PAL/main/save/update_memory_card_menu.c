@@ -186,7 +186,7 @@ static void PickCardSlot(void) {
         if (g_PadPressed & PAD_CONFIRM) {
             if (CardSlotIsUsed(g_McSlotCursor)) {
                 PlaySoundCue(2);
-                g_McConfirmChoice_v = 0;
+                g_McConfirmChoice = 0;
                 g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
             } else {
                 PlaySoundCue(2);
