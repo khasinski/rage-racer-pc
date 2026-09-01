@@ -430,6 +430,7 @@ void DrawMenuCourseView(void);
 void DrawOptionRootMenu(void);
 void DrawPadTypeHint(void);
 void DrawSoundOptionScreen(void);
+void UpdateSoundOptionMenu(void);
 void DrawTimeAttackPlate(s32 stepArg);
 void InitTrackLighting(void);
 void InstallCarModelSlot(void);
