@@ -14,6 +14,7 @@
 #include "game/car.h"
 #include "game/save_format.h"
 #include "game/save_types.h"
+#include "psyq/gpu_types.h"
 #include "psyq/kernel.h"
 
 char g_FmtString[8] __attribute__((aligned(16))) = "%s";
@@ -54,7 +55,7 @@ s32 g_McSwEventIoe;
 s32 g_McSwEventError;
 s32 g_McSwEventTimeout;
 s32 g_McSwEventNew;
-unsigned char g_SaveIconRect[8] __attribute__((aligned(16)));
+Rect g_SaveIconRect;
 s32 g_McSlotUsedMask;
 GameSaveHeaderRow g_McSaveHeaders[3];
 s32 g_McNoCardTicks;
