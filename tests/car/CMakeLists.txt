@@ -72,6 +72,26 @@ endif()
 add_test(NAME track_camera COMMAND track_camera_tests)
 set_tests_properties(track_camera PROPERTIES LABELS functional)
 
+add_executable(finish_camera_tests
+    finish_camera_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_finish_camera.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(finish_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(finish_camera_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(finish_camera_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(finish_camera_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME finish_camera COMMAND finish_camera_tests)
+set_tests_properties(finish_camera PROPERTIES LABELS functional)
+
 # The three AI walks over the course's own crest, speed and racing-line tables.
 add_executable(car_ai_tests
     car_ai_tests.c

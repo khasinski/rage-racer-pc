@@ -2,77 +2,57 @@
 #include "game/render.h"
 #include "game/track.h"
 
+static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
+    s32 offset = target->facingBackwards != 0 ? 2 : -2;
+    s32 point = g_CameraCarTrackPoint + offset;
 
-/*
- * Camera track-follower: advances a look-ahead track point, aims the eye object
- * g_CameraCar toward the sampled centre-line point
- * (InterpolateTrackPoint + atan2), nudges its position, then seeds the camera
- * from the eye object, as a position and a pitch, yaw and roll, and submits
- * the render object (DrawPlayerCarModel). markerClamp is
- * the complete zeroed track-limit record passed to UpdateCarTrackState.
- */
-void UpdateFinishCamera(GameRenderObject *obj) {
+    if (point < 0) {
+        point += g_TrackPointCount;
+    }
+    return point % g_TrackPointCount;
+}
+
+/* Follow the centre line while keeping the finished car in view. */
+void UpdateFinishCamera(PlayerCarRuntime *car) {
+    GameRenderObject *obj = (GameRenderObject *)(void *)car;
     GameViewWork viewWork;
-    GameViewWork *view;
     s32 delta[3];
-    s32 coords[3];
-    CarTrackLimits markerClamp;
-    s32 index;
-    s32 rem;
-    s32 offset;
-    s32 angle;
-    s32 value;
-    s32 zValue;
+    s32 target[3];
+    CarTrackLimits trackLimits = {0};
+    s32 targetPoint;
+    s32 targetHeading;
+    s32 distance;
 
     LoadViewWork(&viewWork);
-    view = &viewWork;
-    offset = g_CameraCarTrackPoint;
-    if (obj->facingBackwards != 0) {
-        index = offset + 2;
-    } else {
-        index = offset - 2;
-    }
-    rem = index;
-    if (index < 0) {
-        rem = index + g_TrackPointCount;
-    }
-    index = rem % g_TrackPointCount;
+    targetPoint = FinishCameraTargetPoint(obj);
+    InterpolateTrackPoint(targetPoint, target, g_CameraCar.segmentFraction);
+    targetHeading = 0x400 -
+        Atan2(target[0] - g_CameraCar.x, target[2] - g_CameraCarZ);
+    g_CameraCarHeading +=
+        GetAngleDelta(g_CameraCarHeading, targetHeading);
 
-    InterpolateTrackPoint(index, coords, g_CameraCar.segmentFraction);
-    angle = 0x400 - Atan2(coords[0] - g_CameraCar.x, coords[2] - g_CameraCarZ);
-
-    g_CameraCarHeading += GetAngleDelta(g_CameraCarHeading, angle);
-
-    value = rsin(g_CameraCarHeading) * g_CameraCarSpeed;
-    g_CameraCarStepX = value / 256;
-
-    zValue = rcos(g_CameraCarHeading) * g_CameraCarSpeed;
-    g_CameraCarStepZ = zValue / 256;
-
-    g_CameraCar.x = g_CameraCarStepX / 256 + g_CameraCar.x;
-    g_CameraCarZ = g_CameraCarStepZ / 256 + g_CameraCarZ;
+    g_CameraCarStepX =
+        (rsin(g_CameraCarHeading) * g_CameraCarSpeed) / 256;
+    g_CameraCarStepZ =
+        (rcos(g_CameraCarHeading) * g_CameraCarSpeed) / 256;
+    g_CameraCar.x += g_CameraCarStepX / 256;
+    g_CameraCarZ += g_CameraCarStepZ / 256;
 
     AccumulateLapProgress(&g_CameraCar);
-    markerClamp.rightInset = 0;
-    markerClamp.leftInset = 0;
-    markerClamp.rightKnockbackMode = 0;
-    markerClamp.leftKnockbackMode = 0;
-    UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &markerClamp);
+    UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &trackLimits);
 
-    view->x = g_CameraCar.x;
-    view->y = g_CameraCar.y;
-    view->z = g_CameraCar.z;
-    view->reserved = g_CameraCar.positionW;
-    view->y -= 64;
+    viewWork.x = g_CameraCar.x;
+    viewWork.y = g_CameraCar.y - 64;
+    viewWork.z = g_CameraCar.z;
+    viewWork.reserved = g_CameraCar.positionW;
 
-    delta[0] = obj->x - view->x;
-    delta[1] = obj->y - view->y;
-    delta[2] = obj->z - view->z;
-
-    view->angleY = 0x400 - Atan2(delta[0], delta[2]);
-    value = DistanceXZ(delta[0], delta[2]);
-    view->angleX = 0x400 - Atan2(delta[1], value >> 6);
-    view->angleZ = 0;
+    delta[0] = obj->x - viewWork.x;
+    delta[1] = obj->y - viewWork.y;
+    delta[2] = obj->z - viewWork.z;
+    viewWork.angleY = 0x400 - Atan2(delta[0], delta[2]);
+    distance = DistanceXZ(delta[0], delta[2]);
+    viewWork.angleX = 0x400 - Atan2(delta[1], distance >> 6);
+    viewWork.angleZ = 0;
 
     StoreViewWork(&viewWork);
     SetCameraRotMatrix();
