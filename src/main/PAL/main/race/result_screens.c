@@ -290,21 +290,12 @@ void DrawGrandPrixIntro(void) {
 }
 
 void DrawRaceTimePanel(s32 slideY) {
-    s32 base;
     s32 i;
-    s32 *times;
     s32 count;
-    s32 x;
-    s32 textPos;
-    s32 column;
-    s32 columnBase;
-    s32 drawColor;
-    s32 quotient;
     char text[24];
     s32 color;
 
-    base = slideY;
-    DrawProportionalText(0x10, base + 0x80, g_CaptionTotalTime, 0x7812);
+    DrawProportionalText(0x10, slideY + 0x80, g_CaptionTotalTime, 0x7812);
 
     text[0] = 0x54;
     text[1] = 0x2F;
@@ -314,38 +305,19 @@ void DrawRaceTimePanel(s32 slideY) {
     if (g_BestTotalTimes[g_GrandPrixSeries][SeriesCourseIndex()][g_GrandPrixMode] == g_RaceTotalTime) {
         color = 0x784C;
     }
-    drawColor = color;
-    count = base + 0x90;
-    DrawProportionalText(0x14, count, text, drawColor);
+    DrawProportionalText(0x14, slideY + 0x90, text, color);
 
-    DrawProportionalText(0x10, base + 0xA4, g_CaptionLapTime, 0x7812);
+    DrawProportionalText(0x10, slideY + 0xA4, g_CaptionLapTime, 0x7812);
 
-    count = 6;
-    if (g_CourseIndex != 3) {
-        count = 3;
-    }
+    count = g_CourseIndex == 3 ? 6 : 3;
+    for (i = 0; i < count; i++) {
+        s32 x = i < 3 ? 0x14 : 0xB0;
+        s32 y = slideY + 0xB0 + (i % 3) * 0xC;
 
-    i = 0;
-    if (count != 0) {
-        times = g_PlayerCar.lapTimes.table.milliseconds;
-        do {
-            x = 0xB0;
-            if (i < 3) {
-                x = 0x14;
-            }
-            quotient = i / 3;
-            column = i - quotient * 3;
-            text[0] = i + 0x31;
-            columnBase = 0xB0;
-            textPos = column * 0xC + (base + columnBase);
-            FormatLapTime(&text[2], *times);
-            color = 0x7812;
-            if (g_PlayerCar.drive.hudLapHighlightRow == i) {
-                color = 0x784C;
-            }
-            DrawProportionalText(x, textPos, text, color);
-            i++;
-            times++;
-        } while (i < count);
+        text[0] = i + 0x31;
+        FormatLapTime(&text[2],
+                      g_PlayerCar.lapTimes.table.milliseconds[i]);
+        color = g_PlayerCar.drive.hudLapHighlightRow == i ? 0x784C : 0x7812;
+        DrawProportionalText(x, y, text, color);
     }
 }
