@@ -1,6 +1,37 @@
 #include "game/memcard.h"
 #include "game/menu.h"
 
+static s32 OpenSaveFileForWrite(char *path, s32 attempt) {
+    s32 fd = BiosFileOpen(path, 2);
+
+    if (fd >= 0) {
+        return fd;
+    }
+
+    fd = BiosFileOpen(path, 0x10200);
+    if (fd < 0) {
+        GameMenuLoadPhase = attempt | 0x1520;
+        return -1;
+    }
+
+    BiosFileClose(fd);
+    fd = BiosFileOpen(path, 2);
+    if (fd < 0) {
+        GameMenuLoadPhase = attempt | 0x1510;
+    }
+    return fd;
+}
+
+static s32 SaveHeaderChecksumValid(const GameSaveHeaderRow *header) {
+    s32 sum = 0;
+    u32 i;
+
+    for (i = 0; i < 0x3E; i++) {
+        sum += header->halfwords[i];
+    }
+    return header->fields.checksum == (u32)~sum;
+}
+
 s32 WriteMemoryCardSaveFile(
     char *path,
     char *title,
@@ -8,64 +39,44 @@ s32 WriteMemoryCardSaveFile(
     GameSaveHeaderRow *header,
     void *saveBlock) {
     s32 fd;
-    s32 prevFd;
     s32 written;
     s32 attempt;
-    s32 ok;
 
     GameMenuLoadPhase = 0x1100;
     BuildSaveIconBlock(iconBlock, title, 0x222, 0x3C0, 0x1F0);
     GameMenuLoadPhase = 0x1200;
     WriteSaveHeaderRow(header);
-    attempt = 0;
     GameMenuLoadPhase = 0x1300;
     StoreSaveStateBlock(saveBlock);
     GameMenuLoadPhase = 0x1500;
 
-    do {
-        fd = BiosFileOpen(path, 2);
-        prevFd = fd;
-        if (fd == -1) {
-            fd = BiosFileOpen(path, 0x10200);
-            if (fd == prevFd) {
-                GameMenuLoadPhase = attempt | 0x1520;
-            } else {
-                BiosFileClose(fd);
-                fd = BiosFileOpen(path, 2);
-                if (fd == prevFd) {
-                    GameMenuLoadPhase = attempt | 0x1510;
-                }
-            }
-            ok = 0;
-        } else {
-            ok = 1;
-        }
-
-        if (ok) {
-            break;
-        }
-        attempt++;
-    } while (attempt < 2);
-
-    if (!ok) {
+    for (attempt = 0; attempt < 2; attempt++) {
+        fd = OpenSaveFileForWrite(path, attempt);
+        if (fd >= 0) break;
+    }
+    if (fd < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = attempt | 0x1530;
     if (BiosFileWrite(fd, iconBlock, 0x200) != 0x200) {
+        BiosFileClose(fd);
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1540;
     written = BiosFileWrite(fd, header, 0x80);
     if (written != 0x80) {
+        BiosFileClose(fd);
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1550;
     if (BiosFileWrite(fd, saveBlock, MC_BLOCK_SIZE) != MC_BLOCK_SIZE) {
+        BiosFileClose(fd);
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1560;
     if (BiosFileWrite(fd, header, 0x80) != written) {
+        BiosFileClose(fd);
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1570;
@@ -92,40 +103,20 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
 }
 
 /* The header is stored twice, at 0x1280 and at 0x200; the first copy whose
- * 16-bit sum matches the complement stored in its last word wins.
- *
- * The scan is written as ptr[i] rather than *ptr++ so that gcc derives the
- * walking pointer itself: a strength-reduced giv is initialised after the
- * counter, which is the order retail emits the two moves in. */
+ * 16-bit sum matches the complement stored in its last word wins. */
 s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
-    GameSaveHeaderRow *buffer;
-    s32 sum;
-    u32 i;
-    u16 *ptr;
-
-    buffer = header;
-    sum = 0;
-
     GameMenuLoadPhase = 0x120;
     if (BiosFileSeek(slot, 0x1280, 0) < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x130;
-    if (BiosFileRead(slot, buffer, 0x80) != 0x80) {
+    if (BiosFileRead(slot, header, 0x80) != 0x80) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x140;
-    ptr = buffer->halfwords;
-    for (i = 0; i < 0x3E; i++) {
-        sum += ptr[i];
-    }
-    /* Folding the complement back into sum is what puts it in sum's own
-     * register; a `== ~sum` in the test needs a second one. */
-    sum = ~sum;
-
-    if (buffer->fields.checksum == (u32)sum) {
+    if (SaveHeaderChecksumValid(header)) {
         return 1;
     }
 
@@ -135,21 +126,12 @@ s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
     }
 
     GameMenuLoadPhase = 0x160;
-    if (BiosFileRead(slot, buffer, 0x80) != 0x80) {
+    if (BiosFileRead(slot, header, 0x80) != 0x80) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x170;
-    sum = 0;
-    ptr = buffer->halfwords;
-    for (i = 0; i < 0x3E; i++) {
-        sum += ptr[i];
-    }
-    /* Folding the complement back into sum is what puts it in sum's own
-     * register; a `== ~sum` in the test needs a second one. */
-    sum = ~sum;
-
-    if (buffer->fields.checksum == (u32)sum) {
+    if (SaveHeaderChecksumValid(header)) {
         return 1;
     }
 
@@ -161,19 +143,13 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
     s32 fd;
     s32 i;
     s32 mask;
-    s32 nameOffset;
-    GameSaveHeaderRow *buffer;
 
     mask = 0;
     GameMenuLoadPhase = 0x110;
-    i = 0;
-    buffer = headers;
-    nameOffset = 0;
-
-    do {
-        fd = BiosFileOpen(g_SaveFilePath + nameOffset, 1);
+    for (i = 0; i < 3; i++) {
+        fd = BiosFileOpen(g_SaveFilePath + i * 0x1A, 1);
         if (fd >= 0) {
-            if (ReadVerifiedSaveHeader(fd, buffer) == 0) {
+            if (ReadVerifiedSaveHeader(fd, &headers[i]) == 0) {
                 BiosFileClose(fd);
                 mask |= 0x10000 << i;
             } else {
@@ -181,11 +157,7 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
                 mask |= 1 << i;
             }
         }
-
-        buffer++;
-        i++;
-        nameOffset += 0x1A;
-    } while (i < 3);
+    }
 
     GameMenuLoadPhase = 0x190;
     return mask;
@@ -196,36 +168,14 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     GameSaveHeaderRow *header;
     s32 tries;
     s32 fd;
-    s32 temp;
     s32 i;
 
     header = outHeader;
     GameMenuLoadPhase = 0x3000;
     tries = 0;
-    temp = slot * 2;
-    temp += slot;
-    temp <<= 2;
-    temp += slot;
-
-    /* Written as a goto rather than a do/while on purpose: retail recomputes
-     * g_SaveFilePath + nameOffset on both attempts, and any spelling the front
-     * end marks as a loop lets loop.c hoist that pair of insns into the
-     * preheader.  A backward goto never gets a NOTE_INSN_LOOP_BEG, so there is
-     * nowhere to hoist to and the address is rebuilt each time round. */
-    {
-        s32 nameOffset = temp * 2;
-        char *name;
-
-    retry:
-        name = g_SaveFilePath;
-        name += nameOffset;
-        fd = BiosFileOpen(name, 1);
-        if (fd < 0) {
-            tries++;
-            if (tries < 2) {
-                goto retry;
-            }
-        }
+    for (tries = 0; tries < 2; tries++) {
+        fd = BiosFileOpen(g_SaveFilePath + slot * 0x1A, 1);
+        if (fd >= 0) break;
     }
 
     GameMenuLoadPhase = tries | 0x3100;
@@ -236,16 +186,19 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
 
     GameMenuLoadPhase = 0x3300;
     if (ReadVerifiedSaveHeader(fd, header) == 0) {
+        BiosFileClose(fd);
         return 0;
     }
 
     GameMenuLoadPhase = 0x3500;
     if (BiosFileSeek(fd, 0x280, 0) < 0) {
+        BiosFileClose(fd);
         return 0;
     }
 
     GameMenuLoadPhase = 0x3600;
     if (BiosFileRead(fd, &block, MC_BLOCK_SIZE) != MC_BLOCK_SIZE) {
+        BiosFileClose(fd);
         return 0;
     }
 
@@ -257,23 +210,12 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
 
     GameMenuLoadPhase = 0x3800;
     g_TeamNameLength = header->fields.nameLength;
-    i = 0;
-    do {
+    for (i = 0; i < 7; i++) {
         g_TeamNameChars[i] = header->fields.name[i];
-        i++;
-    } while (i < 7);
-
-    {
-        s32 one = 1;
-        s32 word;
-        s32 status;
-
-        word = header->fields.saveCounter;
-        status = tries | 0x3900;
-        GameMenuLoadPhase = status;
-        g_SaveElapsedTicks = word;
-        return one;
     }
+    GameMenuLoadPhase = tries | 0x3900;
+    g_SaveElapsedTicks = header->fields.saveCounter;
+    return 1;
 }
 
 
