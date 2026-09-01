@@ -151,10 +151,6 @@ static void RunCardMenuRows(s32 fadeBusy) {
 }
 
 /*
- * Picking a slot, and every step that follows from it: the prompt, the
- * confirmation, the read or write itself, and how it reports what happened.
- */
-/*
  * Several of the card actions sit still for a few frames before they act, so
  * that the message on screen can be read. Answers whether the wait is over.
  */
@@ -166,6 +162,11 @@ static int CardActionTimerElapsed(void) {
 /* Whether a slot already holds a save. */
 static int CardSlotIsUsed(s32 slot) {
     return ((g_McSlotUsedMask >> slot) & 1) != 0;
+}
+
+/* Confirm and back dismiss result messages in exactly the same way. */
+static int CardResultPromptDismissed(void) {
+    return PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0;
 }
 
 typedef enum CardSlotActionState {
@@ -258,11 +259,11 @@ static void PickCardSlot(void) {
         if (g_PadPressed & PAD_CONFIRM) {
             PlaySoundCue(5);
             g_McMenuPage = 0;
-        } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
+        } else if (PollMenuBackInput() != 0) {
             g_McMenuPage = 0;
         }
     }
-    if ((PollMenuBackInput() & 0xFFFF) == 0) return;
+    if (PollMenuBackInput() == 0) return;
     g_McMenuPage = 0;
 }
 
@@ -274,11 +275,11 @@ static void RunCardSlotActions(void) {
     case CARD_SLOT_ACTION_CONFIRM_OVERWRITE:
         g_McMenuPhase = (g_McSlotCursor * 2) + g_McConfirmChoice + 9;
         SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
-        if ((PollMenuConfirmInput() & 0xFFFF) != 0) {
+        if (PollMenuConfirmInput() != 0) {
             g_McActionState = g_McConfirmChoice != 0
                                   ? CARD_SLOT_ACTION_BEGIN_SAVE
                                   : CARD_SLOT_ACTION_PICK;
-        } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
+        } else if (PollMenuBackInput() != 0) {
             g_McActionState = CARD_SLOT_ACTION_PICK;
         }
         break;
@@ -368,9 +369,7 @@ static void RunCardSlotActions(void) {
 
     case CARD_SLOT_ACTION_SHOW_CARD_FULL:
         g_McMenuPhase = MC_PROMPT_CARD_FULL;
-        if ((PollMenuConfirmInput() & 0xFFFF) == 0) {
-        if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        }
+        if (!CardResultPromptDismissed()) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
         break;
@@ -402,12 +401,12 @@ static void RunCardSlotActions(void) {
         s32 slot = g_McSlotCursor;
         g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         if (g_McActionResult != 0) {
-        g_McActionOk = 1;
-        g_McMenuSubState = 8;
-        g_McLastSlot = g_McSlotCursor;
+            g_McActionOk = 1;
+            g_McMenuSubState = 8;
+            g_McLastSlot = g_McSlotCursor;
         } else {
-        g_McActionOk = 1;
-        g_McMenuSubState = 0xF;
+            g_McActionOk = 1;
+            g_McMenuSubState = 0xF;
         }
         g_McActionTimer = 0x3C;
         g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
@@ -452,9 +451,7 @@ static void RunCardSlotActions(void) {
 
     case CARD_SLOT_ACTION_SHOW_NO_FILE:
         g_McMenuPhase = MC_PROMPT_NO_FILE;
-        if ((PollMenuConfirmInput() & 0xFFFF) == 0) {
-        if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        }
+        if (!CardResultPromptDismissed()) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
         break;
