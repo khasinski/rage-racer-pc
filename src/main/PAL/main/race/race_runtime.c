@@ -7,60 +7,6 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
-/*
- * Renders the 6 waypoints. For each active-shaped slot it builds a rotation
- * matrix from the waypoint's Y and Z rotations and emits
- * two GTE draw primitives (SubmitModel) into the render state's OT: the second is
- * the same billboard rotated by 0x800 (180 degrees).
- */
-void DrawWaypoints(void) {
-    Matrix mtx0;
-    Matrix mtx1;
-    s32 drawId;
-    s32 i;
-    Matrix *mtx1Ptr;
-    TrackWaypointRuntime *waypoint;
-    s32 frameValue;
-    s32 drawArg;
-
-    drawId = 2;
-    SelectModelBank(0);
-    i = 0;
-    mtx1Ptr = &mtx1;
-    waypoint = g_Waypoints;
-
-    do {
-        BuildRotMatrixY(&mtx0, waypoint->motion.rotationY);
-        MulMatrix2((&g_RenderState.matrix), &mtx0);
-        BuildRotMatrixZ(mtx1Ptr, waypoint->motion.rotationZ);
-        MulMatrix(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix((&g_ObjectMatrixWork),
-                       AsPositionWords(&waypoint->motion.x), &mtx0);
-        frameValue = g_ModelBankCount;
-        g_RenderState.envMode4 = 0;
-        drawArg = 1;
-        if (drawId < frameValue) {
-            drawArg = drawId;
-        }
-        SubmitModel((&g_RenderState), drawArg);
-
-        BuildRotMatrixY(mtx1Ptr, 0x800);
-        MulMatrix2(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix((&g_ObjectMatrixWork),
-                       AsPositionWords(&waypoint->motion.x), mtx1Ptr);
-        frameValue = g_ModelBankCount;
-        g_RenderState.envMode4 = 0;
-        drawArg = 1;
-        if (drawId < frameValue) {
-            drawArg = drawId;
-        }
-        SubmitModel((&g_RenderState), drawArg);
-
-        i++;
-        waypoint++;
-    } while (i < 6);
-}
-
 void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
     const TrackRivalStart *start =
         &g_TrackEventData->rivalStarts[g_RaceSeries][pos + 1];
