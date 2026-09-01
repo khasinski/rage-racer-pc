@@ -36,6 +36,17 @@ static s32 GameRoundTerrainCoordinate11(s32 value)
   return value / 2048;
 }
 
+static void SetSkyGradientColors(POLY_G4 *quad,
+                                 GameEnvColor nearColor,
+                                 GameEnvColor farColor) {
+    quad->r0 = quad->r1 = nearColor.bytes.r;
+    quad->g0 = quad->g1 = nearColor.bytes.g;
+    quad->b0 = quad->b1 = nearColor.bytes.b;
+    quad->r2 = quad->r3 = farColor.bytes.r;
+    quad->g2 = quad->g3 = farColor.bytes.g;
+    quad->b2 = quad->b3 = farColor.bytes.b;
+}
+
 enum SkyOrderingTableIndex
 {
   SKY_OT_FAR = 702,
@@ -635,7 +646,6 @@ void DrawSkyBackground(void)
       lowestY = panelYFixed + columnStepY;
       screenY1 = GameRoundTerrainCoordinate(lowestY);
       {
-        u8 color;
         s32 bandFarY;
         POLY_G4 *firstG4;
         screenY2 = GameRoundTerrainCoordinate(panelYFixed + rowStepY);
@@ -653,34 +663,15 @@ void DrawSkyBackground(void)
         firstG4->y1 = screenY1;
         firstG4->y2 = screenY2;
         firstG4->y3 = screenY3;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.r;
-        firstG4->r1 = color;
-        firstG4->r0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur.bytes.r;
-        firstG4->r3 = color;
-        firstG4->r2 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.g;
-        firstG4->g1 = color;
-        firstG4->g0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur.bytes.g;
-        firstG4->g3 = color;
-        firstG4->g2 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.b;
-        firstG4->b1 = color;
-        firstG4->b0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur.bytes.b;
-        firstG4->b3 = color;
-        firstG4->b2 = color;
-        {
-          packetCursor = nextPacket;
-          
-          AddPrim(&work->orderingTable[SKY_OT_NEAR], firstG4);
-        }
+        SetSkyGradientColors(
+            firstG4,
+            g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur,
+            g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur);
+        packetCursor = nextPacket;
+        AddPrim(&work->orderingTable[SKY_OT_NEAR], firstG4);
       }
       {
-        u8 color;
         POLY_G4 *g4Cursor;
-        OT_TYPE *orderingTableBase;
         RenderBufferAddress cursor;
         cursor.bytes = packetCursor;
         g4Cursor = cursor.polyG4;
@@ -720,32 +711,16 @@ void DrawSkyBackground(void)
         g4Cursor->y1 = screenY1;
         g4Cursor->y2 = screenY2;
         g4Cursor->y3 = screenY3;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.r;
-        g4Cursor->r1 = color;
-        g4Cursor->r0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.r;
-        g4Cursor->r3 = color;
-        g4Cursor->r2 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.g;
-        g4Cursor->g1 = color;
-        g4Cursor->g0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.g;
-        g4Cursor->g3 = color;
-        g4Cursor->g2 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.b;
-        g4Cursor->b1 = color;
-        g4Cursor->b0 = color;
-        color = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.b;
-        g4Cursor->b3 = color;
-        g4Cursor->b2 = color;
-        orderingTableBase = work->orderingTable;
-        AddPrim(&orderingTableBase[SKY_OT_NEAR], g4Cursor++);
-        cursor.polyG4 = g4Cursor;
+        SetSkyGradientColors(
+            g4Cursor,
+            g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur,
+            g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur);
+        AddPrim(&work->orderingTable[SKY_OT_NEAR], g4Cursor);
+        cursor.polyG4 = g4Cursor + 1;
         nextPacket = cursor.bytes;
-        
       }
       {
-        u8 packetColor;
+        GameEnvColor darkSky = {.bytes = {0, 0, 16, 0}};
         POLY_G4 *g4Cursor;
         u16 geomValueX2;
         s32 x3Raw;
@@ -787,19 +762,11 @@ void DrawSkyBackground(void)
         g4Cursor->y1 = screenY1;
         g4Cursor->y2 = screenY2;
         g4Cursor->y3 = screenY3;
-        g4Cursor->r0 = (g4Cursor->r1 = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.r);
-        g4Cursor->r2 = (g4Cursor->r3 = 0);
-        {
-          packetColor = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.g;
-          g4Cursor->g2 = (g4Cursor->g3 = 0);
-          g4Cursor->g0 = (g4Cursor->g1 = packetColor);
-          {
-            u8 packetColor = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.b;
-            g4Cursor->b0 = (g4Cursor->b1 = packetColor);
-            g4Cursor->b2 = (g4Cursor->b3 = 16);
-          }
-          AddPrim(&work->orderingTable[SKY_OT_NEAR], g4Cursor);
-        }
+        SetSkyGradientColors(
+            g4Cursor,
+            g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur,
+            darkSky);
+        AddPrim(&work->orderingTable[SKY_OT_NEAR], g4Cursor);
         packetCursor = nextPacket;
       }
     }
