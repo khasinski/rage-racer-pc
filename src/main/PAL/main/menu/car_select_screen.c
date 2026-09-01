@@ -46,6 +46,20 @@ static void RefuseWithModal(const TimedDrawCommand *script, s32 busyState) {
     g_UiScriptProgress2 = 0;
 }
 
+static void EnterCarShop(void) {
+    s32 previousTarget = g_MenuViewAngleTarget;
+
+    PlaySoundCue(2);
+    g_CarListCursor = g_ShopCarIndex;
+    RequestCarModel(g_CarListCursor);
+    g_MenuViewAngleTarget = 0x124F80;
+    GameMenuBusy = 3;
+    g_MenuOverlayPattern = 1;
+    g_CarSwapFromIndex = g_PlayerCarIndex;
+    g_CarSwapToIndex = g_CarListCursor;
+    g_MenuViewAngle = 0x927C0 - (previousTarget - g_MenuViewAngle);
+}
+
 /*
  * What the confirm button does depends on the row the cursor is on. The last
  * row is tested before row two, because in time attack they are the same row.
@@ -86,19 +100,7 @@ static void ChooseCarSelectRow(s32 row) {
             RefuseWithModal(g_CarShopUnavailableScript, -1);
             return;
         }
-        PlaySoundCue(2);
-        g_CarListCursor = g_ShopCarIndex;
-        RequestCarModel(g_CarListCursor);
-        {
-            s32 previousTarget = g_MenuViewAngleTarget;
-
-            g_MenuViewAngleTarget = 0x124F80;
-            GameMenuBusy = 3;
-            g_MenuOverlayPattern = 1;
-            g_CarSwapFromIndex = g_PlayerCarIndex;
-            g_CarSwapToIndex = g_CarListCursor;
-            g_MenuViewAngle = 0x927C0 - (previousTarget - g_MenuViewAngle);
-        }
+        EnterCarShop();
         return;
     }
     if (row == 3) {

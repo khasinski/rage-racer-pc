@@ -65,6 +65,8 @@ static void LeaveCarShop(s32 busyState) {
 /* Confirm on the car itself: put up the buy prompt, unless it is already
  * owned, in which case there is nothing to buy. */
 static void OfferToBuyCar(void) {
+    const TimedDrawCommand *prompt;
+
     if (g_CarTable[g_CarListCursor].enabled != 0) {
         return;
     }
@@ -72,12 +74,9 @@ static void OfferToBuyCar(void) {
     GameMenuBusy = -1;
     g_UiScriptProgress2 = 0;
     g_MenuSubCursor = 0;
-    {
-        const TimedDrawCommand *prompt = CarShopBuyPrompt(g_CarListCursor);
-
-        if (prompt != NULL) {
-            g_CarShopModalScript = prompt;
-        }
+    prompt = CarShopBuyPrompt(g_CarListCursor);
+    if (prompt != NULL) {
+        g_CarShopModalScript = prompt;
     }
 }
 
