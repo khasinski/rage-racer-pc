@@ -407,6 +407,7 @@ if(RAGE_BUILD_PORT)
             src/main/PAL/main/render/build_race_hud_prims.c
             src/main/PAL/main/render/race_hud.c
             src/main/PAL/main/render/text.c
+            src/main/PAL/main/render/text_8x8.c
             src/main/PAL/main/render/draw_packet_queue.c
             src/main/PAL/main/race/race_hud_text.c
             src/main/PAL/main/race/draw_split_times.c
