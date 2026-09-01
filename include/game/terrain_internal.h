@@ -13,11 +13,6 @@ typedef union SkyUV {
     u16 packed;
 } SkyUV;
 
-typedef union GpuUvAddress {
-    u8 *bytes;
-    u16 *packed;
-} GpuUvAddress;
-
 typedef struct SkyTileUV {
     SkyUV corner[4];
 } SkyTileUV;

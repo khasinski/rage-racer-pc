@@ -266,6 +266,17 @@ static void InitializeSkyFrame(SkyFrame *work) {
     work->mirrorFlag = g_RenderState.orderingFlag;
 }
 
+static void SetSkyQuadUV(POLY_FT4 *quad, const SkyTileUV *tile) {
+    quad->u0 = tile->corner[0].bytes.u;
+    quad->v0 = tile->corner[0].bytes.v;
+    quad->u1 = tile->corner[1].bytes.u;
+    quad->v1 = tile->corner[1].bytes.v;
+    quad->u2 = tile->corner[2].bytes.u;
+    quad->v2 = tile->corner[2].bytes.v;
+    quad->u3 = tile->corner[3].bytes.u;
+    quad->v3 = tile->corner[3].bytes.v;
+}
+
 static u8 *DrawTexturedSkyGrid(SkyFrame *work,
                                const SkyBandSetup *band,
                                u8 *packetCursor) {
@@ -288,19 +299,10 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work,
             s32 rightX = nextCellX - rowShearX;
             s32 topY = cellY - rowShearY;
             s32 bottomY = nextCellY - rowShearY;
-            GpuUvAddress uvAddress;
-
             SetPolyFT4(quad);
             SetShadeTex(quad, 0);
             quad->tpage = 0x18;
-            uvAddress.bytes = &quad->u0;
-            *uvAddress.packed = tileUv->corner[0].packed;
-            uvAddress.bytes = &quad->u1;
-            *uvAddress.packed = tileUv->corner[1].packed;
-            uvAddress.bytes = &quad->u2;
-            *uvAddress.packed = tileUv->corner[2].packed;
-            uvAddress.bytes = &quad->u3;
-            *uvAddress.packed = tileUv->corner[3].packed;
+            SetSkyQuadUV(quad, tileUv);
             screenX[0] = GameRoundTerrainCoordinate(leftX);
             screenX[1] = GameRoundTerrainCoordinate(rightX);
             screenX[2] = GameRoundTerrainCoordinate(leftX + band->rowStepX);
@@ -364,19 +366,10 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work,
             s32 tileIndex = g_SkyTileMap[0]
                                             [(band->textureColumn + column) & 0xF];
             const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
-            GpuUvAddress uvAddress;
-
             SetPolyFT4(quad);
             SetShadeTex(quad, 0);
             quad->tpage = 0x18;
-            uvAddress.bytes = &quad->u0;
-            *uvAddress.packed = tileUv->corner[0].packed;
-            uvAddress.bytes = &quad->u1;
-            *uvAddress.packed = tileUv->corner[1].packed;
-            uvAddress.bytes = &quad->u2;
-            *uvAddress.packed = tileUv->corner[2].packed;
-            uvAddress.bytes = &quad->u3;
-            *uvAddress.packed = tileUv->corner[3].packed;
+            SetSkyQuadUV(quad, tileUv);
             quad->x0 = screenX[0];
             quad->x1 = screenX[1];
             quad->x2 = screenX[2];
