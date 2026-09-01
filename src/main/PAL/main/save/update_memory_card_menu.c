@@ -482,18 +482,14 @@ static void RunCardReadyState(s32 fadeBusy) {
     } else if (g_McMenuPage == 1) {
         RunCardSlotActions();
     } else {
-            {
-                s32 lastRow = g_McMenuRowCount;
-                g_McMenuPage = 0;
-                g_McSlotCursor = 0;
-                g_McActionState = 0;
-                g_McActionBusy = 0;
-                g_McActionResult = 0;
-                g_McConfirmChoice = 0;
-                g_McActionTimer = 0;
-                lastRow--;
-                g_McMenuRowCursor = lastRow;
-            }
+        g_McMenuPage = 0;
+        g_McSlotCursor = 0;
+        g_McActionState = 0;
+        g_McActionBusy = 0;
+        g_McActionResult = 0;
+        g_McConfirmChoice = 0;
+        g_McActionTimer = 0;
+        g_McMenuRowCursor = g_McMenuRowCount - 1;
     }
     switch (g_McMenuSelection) {
     case 3:
@@ -512,17 +508,14 @@ static void RunCardReadyState(s32 fadeBusy) {
         break;
     case -3:
     default:
-        {
-            s32 sd = g_McCardStatus;
-            g_McErrorPending = 1;
-            if (sd == -3) {
-                s32 r = g_McErrorCountdown - 1;
-                g_McErrorCountdown = r;
-                if (r == 0) {
-                    g_McMenuState = sd;
-                }
+        g_McErrorPending = 1;
+        if (g_McCardStatus == -3) {
+            g_McErrorCountdown--;
+            if (g_McErrorCountdown == 0) {
+                g_McMenuState = g_McCardStatus;
             }
         }
+        break;
     }
     if (g_McMenuState != 1) {
     g_McActionState = 0;
@@ -530,6 +523,25 @@ static void RunCardReadyState(s32 fadeBusy) {
     g_McConfirmChoice = 0;
     g_McActionBusy = 0;
     }
+}
+
+typedef enum CardWorkingActionState {
+    CARD_WORK_WAIT_FOR_SCENE = 0,
+    CARD_WORK_WAIT_FOR_CARD = 1,
+    CARD_WORK_BEGIN_STATUS_DELAY = 2,
+    CARD_WORK_WAIT_STATUS_DELAY = 3,
+    CARD_WORK_REFRESH_STATUS = 5,
+    CARD_WORK_BEGIN_SETTLE_DELAY = 6,
+    CARD_WORK_WAIT_SETTLE_DELAY = 7,
+    CARD_WORK_WAIT_FINAL_DELAY = 8,
+    CARD_WORK_RETURN_READY = 9,
+} CardWorkingActionState;
+
+static s32 MenuSubStateForUsedSlots(s32 usedMask) {
+    if (usedMask == 0) {
+        return 0xC;
+    }
+    return (usedMask & 7) != 0 ? 2 : 0xE;
 }
 
 /*
@@ -540,95 +552,60 @@ static void RunCardWorkingState(s32 fadeBusy) {
     g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (g_McActionState) {
-    case 0:
-        {
-            u32 sceneFrame = g_SceneTimer;
-            if (sceneFrame < 0x1F) break;
-            g_McCardOkFrames = 0;
-            g_McActionElapsed = 0;
-            g_McActionState = 1;
-        }
-        break;
-    case 1:
-        g_McActionBusy = 0;
-        {
-            s32 t = g_McActionElapsed + 1;
-            g_McActionElapsed = t;
-            if (g_PadPressed & PAD_CANCEL) {
-            if (t >= 0x79) {
+    case CARD_WORK_WAIT_FOR_SCENE:
+        if ((u32)g_SceneTimer < 0x1F) break;
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
-        if (fadeBusy == 0) {
-        PlaySoundCue(3);
-        StartMenuExitFade();
-        }
-            }
+        g_McActionState = CARD_WORK_WAIT_FOR_CARD;
+        break;
+    case CARD_WORK_WAIT_FOR_CARD:
+        g_McActionBusy = 0;
+        g_McActionElapsed++;
+        if ((g_PadPressed & PAD_CANCEL) && g_McActionElapsed >= 0x79) {
+            g_McCardOkFrames = 0;
+            g_McActionElapsed = 0;
+            if (fadeBusy == 0) {
+                PlaySoundCue(3);
+                StartMenuExitFade();
             }
         }
         if (g_McCardStatus != 1) break;
-        g_McCardOkFrames += 1;
+        g_McCardOkFrames++;
         if (g_McCardOkFrames < 2) break;
         g_McCardOkFrames = 0;
         g_McActionElapsed = 0;
-        g_McActionState = 2;
+        g_McActionState = CARD_WORK_BEGIN_STATUS_DELAY;
         break;
-    case 2:
+    case CARD_WORK_BEGIN_STATUS_DELAY:
         g_McActionBusy = 1;
         g_McActionTimer = 5;
-        g_McActionState = 3;
+        g_McActionState = CARD_WORK_WAIT_STATUS_DELAY;
         break;
-    case 3:
-        {
-            s32 t = g_McActionTimer;
-            g_McActionTimer = t - 1;
-            if (g_McActionTimer != 0) break;
-        }
-        g_McActionState = 5;
+    case CARD_WORK_WAIT_STATUS_DELAY:
+        if (--g_McActionTimer != 0) break;
+        g_McActionState = CARD_WORK_REFRESH_STATUS;
         break;
-    case 5:
-        {
-            s32 x = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
-            s32 w;
-            g_McSlotUsedMask = x;
-            if (x != 0) {
-                x = x & 7;
-                if (x != 0) {
-                    x = 2;
-                } else {
-                    x = 0xE;
-                }
-            } else {
-                x = 0xC;
-            }
-            g_McMenuSubState = x;
-            w = GameMenuLoadPhase;
-            g_McActionState = 6;
-            g_McSavedLoadPhase = w;
-        }
+    case CARD_WORK_REFRESH_STATUS:
+        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
+        g_McMenuSubState = MenuSubStateForUsedSlots(g_McSlotUsedMask);
+        g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
+        g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
-    case 6:
+    case CARD_WORK_BEGIN_SETTLE_DELAY:
         g_McActionTimer = 5;
-        g_McActionState = 7;
+        g_McActionState = CARD_WORK_WAIT_SETTLE_DELAY;
         break;
-    case 7:
-        {
-            s32 t = g_McActionTimer;
-            g_McActionTimer = t - 1;
-            if (g_McActionTimer != 0) break;
-        }
+    case CARD_WORK_WAIT_SETTLE_DELAY:
+        if (--g_McActionTimer != 0) break;
         g_McActionTimer = 5;
         g_McActionBusy = 0;
-        g_McActionState = 8;
+        g_McActionState = CARD_WORK_WAIT_FINAL_DELAY;
         break;
-    case 8:
-        {
-            s32 t = g_McActionTimer;
-            g_McActionTimer = t - 1;
-            if (g_McActionTimer != 0) break;
-        }
-        g_McActionState = 9;
+    case CARD_WORK_WAIT_FINAL_DELAY:
+        if (--g_McActionTimer != 0) break;
+        g_McActionState = CARD_WORK_RETURN_READY;
         break;
-    case 9:
+    case CARD_WORK_RETURN_READY:
         if (g_McMenuSelection != 1) break;
         g_McMenuState = g_McMenuSelection;
         break;
@@ -655,17 +632,14 @@ static void RunCardWorkingState(s32 fadeBusy) {
     case -3:
     case 0:
     default:
-    {
-        s32 cardStatus = g_McCardStatus;
         g_McErrorPending = 1;
-        if (cardStatus == -3) {
-            s32 t = g_McErrorCountdown;
-            g_McErrorCountdown = t - 1;
+        if (g_McCardStatus == -3) {
+            g_McErrorCountdown--;
             if (g_McErrorCountdown == 0) {
-                g_McMenuState = cardStatus;
+                g_McMenuState = g_McCardStatus;
             }
         }
-    }
+        break;
     }
 
     if (g_McMenuState == 2) return;
