@@ -421,6 +421,26 @@ target_link_libraries(tire_compound_slider_tests PRIVATE psyz)
 add_test(NAME tire_compound_slider COMMAND tire_compound_slider_tests)
 set_tests_properties(tire_compound_slider PROPERTIES LABELS unit)
 
+add_executable(browse_arrows_tests
+    browse_arrows_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/browse_arrows.c)
+target_include_directories(browse_arrows_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(browse_arrows_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(browse_arrows_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(browse_arrows_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(browse_arrows_tests PRIVATE psyz)
+add_test(NAME browse_arrows COMMAND browse_arrows_tests)
+set_tests_properties(browse_arrows PROPERTIES LABELS unit)
+
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c
