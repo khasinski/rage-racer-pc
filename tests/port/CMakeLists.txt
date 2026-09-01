@@ -124,7 +124,9 @@ set_tests_properties(window_lifecycle PROPERTIES LABELS e2e)
 endif()
 add_executable(asset_requests_tests
     asset_requests_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_requests.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_requests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/option_screen_assets.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/round_screen_assets.c)
 target_include_directories(asset_requests_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
