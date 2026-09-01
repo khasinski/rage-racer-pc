@@ -6,13 +6,6 @@
 #include "game/screens.h"
 #include "game/state.h"
 
-typedef union MenuOrderingTableAddress {
-    s32 byteOffset;
-    s32 value;
-    u8 *bytes;
-    void *pointer;
-} MenuOrderingTableAddress;
-
 void RestoreTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, &g_TeamLogoBlankClut); }
 
 void UploadTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut); }

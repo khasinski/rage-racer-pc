@@ -9,11 +9,22 @@
  * a delta to the destination and the current interpolated value. Mode-3 nodes
  * therefore store angles in the first four words where modes 2/4 store a world
  * position -- the record is a union keyed on `node->mode`. */
-typedef union CameraCarAddress {
-    PlayerCarRuntime *player;
-    GameRenderObject *renderObject;
-    Block16 *blocks;
-} CameraCarAddress;
+static void LoadViewPositionFromCar(GameViewWork *view,
+                                    const GameRenderObject *car) {
+    view->x = car->x;
+    view->y = car->y;
+    view->z = car->z;
+    view->reserved = car->field_0C;
+}
+
+static void LoadViewPoseFromCar(GameViewWork *view,
+                                const GameRenderObject *car) {
+    LoadViewPositionFromCar(view, car);
+    view->angleX = car->bodyPitch;
+    view->angleY = car->angleY;
+    view->angleZ = car->bodyRoll;
+    view->depth = car->field_2C;
+}
 
 /*
  * Settle the chase yaw for one frame. Four paths reach this: the yaw error
@@ -71,14 +82,7 @@ static void ViewFromCarBlock(GameRenderObject *car, GameViewWork *view,
     s32 cameraLiftWorld[4];
     Matrix matrixWork;
     Matrix objectRotation;
-    CameraCarAddress playerAddress;
-    GameBlockAddress packetAddress;
-
-        playerAddress.renderObject = car;
-        packetAddress.words = &view->x;
-        packetAddress.blocks[0] = playerAddress.blocks[0];
-        packetAddress.words = &view->angleX;
-        packetAddress.blocks[0] = playerAddress.blocks[2];
+    LoadViewPoseFromCar(view, car);
         BuildRotMatrixY(&objectRotation, view->angleY);
         BuildRotMatrixX(&matrixWork, view->angleX);
         MulMatrix2(&matrixWork, &objectRotation);
@@ -122,10 +126,8 @@ static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *view,
     Matrix matrixWork;
     s32 negatedAccel;
     Matrix objectRotation;
-    CameraCarAddress playerAddress;
     s32 previousMode;
     s32 rawAngle;
-    GameBlockAddress packetAddress;
     s32 speedDamping;
     s32 turnAccel;
     s32 turnFactor;
@@ -135,9 +137,7 @@ static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *view,
     s32 yawStepBehind;
     s32 yawStepWrapped;
 
-        playerAddress.renderObject = car;
-        packetAddress.words = &view->x;
-        packetAddress.blocks[0] = playerAddress.blocks[0];
+        LoadViewPositionFromCar(view, car);
         chaseYawDamping = car->angleY;
         chaseTargetYaw = chaseYawDamping & 0xFFF;
         chaseCarSpeed = car->speed;
@@ -388,17 +388,13 @@ static void ViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 pathYawRelative;
     s32 pitchDelta;
     s32 pitchProduct;
-    CameraCarAddress playerAddress;
     GameTrackCameraNode *prevNode;
     s32 rollProbe[3];
     s32 rollProduct;
     s32 rollWork[3];
-    GameBlockAddress packetAddress;
     s32 yawProduct;
 
-        playerAddress.renderObject = car;
-        packetAddress.words = &view->x;
-        packetAddress.blocks[0] = playerAddress.blocks[0];
+        LoadViewPositionFromCar(view, car);
         if (((u8)nodeChanged) || (g_CameraModePrev != 3)) {
             g_CamPathNode = cameraNodeIndex;
             g_CamPathFrame = 0;
@@ -589,12 +585,7 @@ static void ViewFromOrbit(GameRenderObject *car, GameViewWork *view,
     Matrix inverseObjectRotation;
     Matrix matrixWork;
     Matrix objectRotation;
-    CameraCarAddress playerAddress;
-    GameBlockAddress packetAddress;
-
-        playerAddress.renderObject = car;
-        packetAddress.words = &view->x;
-        packetAddress.blocks[0] = playerAddress.blocks[0];
+    LoadViewPositionFromCar(view, car);
         BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
         BuildRotMatrixY(&objectRotation, car->angleY);
         BuildRotMatrixX(&matrixWork, car->bodyPitch);
@@ -641,7 +632,6 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     s32 cameraNodeIndex;
     s32 previousNodeIndex;
     u8 nodeChanged;
-    CameraCarAddress playerAddress;
 
     cameraNodeIndex = FindNearestTrackCamera(car);
     LoadViewWork(&viewWork);
@@ -677,8 +667,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     StoreViewWork(&viewWork);
     SetCameraRotMatrix();
     if (cameraModeSel > 0) {
-        playerAddress.player = &g_PlayerCar;
-        if (car == playerAddress.renderObject) {
+        if (car == (GameRenderObject *)&g_PlayerCar) {
             SelectModelBank(0);
             DrawPlayerCarModel(car);
         }
