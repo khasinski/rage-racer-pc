@@ -137,7 +137,6 @@ int main(int argc, char **argv) {
     static const s32 progressCases[] = {0, 1, 2, 3};
     static const s32 fadeTimers[] = {0, 1, 2, 0x3E, 0x82};
     static const s32 cueDelays[] = {0, 1, 2, 3};
-    PlayerCarRaceState *route;
     int li, lc, pc, gp, pos, phase, ft, cd, best, retries, cleared, gpGlobal,
         wrongWay, saturating;
     int steps = 0;
@@ -151,8 +150,6 @@ int main(int argc, char **argv) {
     }
 
     g_CourseProgress = &s_course;
-    route = GetPlayerCarRaceState(&g_PlayerCar);
-
     for (li = 0; li < 4; li++)
     for (lc = 0; lc < 2; lc++)
     for (pc = 0; pc < 4; pc++)
@@ -200,17 +197,17 @@ int main(int argc, char **argv) {
             }
         }
 
-        route->timing.fields.lap = (s16)laps[li];
+        g_PlayerCar.lap = (s16)laps[li];
         /* A lap either well inside the counters or right on the edge of them:
          * the frame count saturates at 0xFFFF and the millisecond time at
          * 0x927BE, and both limits are only reachable from close by. */
         for (i = 0; i < 6; i++) {
-            route->timing.fields.lapTimes.table.frameCounts[i] =
+            g_PlayerCar.lapTimes.table.frameCounts[i] =
                 saturating ? 0xFFFF : (500 + i * 100);
-            route->timing.fields.lapTimes.table.milliseconds[i] =
+            g_PlayerCar.lapTimes.table.milliseconds[i] =
                 saturating ? (0x927BE - 1 + i) : (60000 + i * 1000);
         }
-        route->drive.racePosition = (s16)(pos ? 5 : 3);
+        g_PlayerCar.drive.racePosition = (s16)(pos ? 5 : 3);
 
         /* The lap ticks over when the distance covered reaches lap * length. */
         wanted = laps[li] * g_TrackLength;
@@ -266,8 +263,8 @@ int main(int argc, char **argv) {
             s32 after[20];
 
             after[0] = result;
-            after[1] = route->timing.fields.lap;
-            after[2] = route->drive.hudLapHighlightRow;
+            after[1] = g_PlayerCar.lap;
+            after[2] = g_PlayerCar.drive.hudLapHighlightRow;
             after[3] = g_RacePhase;
             after[4] = g_RaceFadeTimer;
             after[5] = g_RaceCueDelay;
@@ -286,7 +283,7 @@ int main(int argc, char **argv) {
             after[18] = g_RefSectorTime2;
             after[19] = g_RefSectorTimes.fields.first;
             Record("state", after, 20);
-            Record("laptimes", route->timing.fields.lapTimes.words, 12);
+            Record("laptimes", g_PlayerCar.lapTimes.words, 12);
             Record("bestlap", &g_BestLapTimes[0][0][0], 2 * 4 * 2);
             Record("besttotal", &g_BestTotalTimes[0][0][0], 2 * 4 * 2);
             Record("bestsector", &g_BestSectorTimes[0][0][0], 2 * 4 * 3);
@@ -324,8 +321,8 @@ int main(int argc, char **argv) {
             g_LapTimeMs = 0;
             g_LapTimeSaturated = 0;
             s_jitter = jitters[ji];
-            route->timing.fields.lap = 1;
-            route->timing.fields.lapTimes.table.frameCounts[0] =
+            g_PlayerCar.lap = 1;
+            g_PlayerCar.lapTimes.table.frameCounts[0] =
                 frameCounts[fi];
             /* Short of the next lap, so only the timing half runs. */
             g_PlayerCar.progressA = -1;
@@ -335,8 +332,8 @@ int main(int argc, char **argv) {
             Record(label, NULL, 0);
             UpdateLapAndFinish(&g_PlayerCar, 0);
             RECORD("saturation",
-                   route->timing.fields.lapTimes.table.frameCounts[0],
-                   route->timing.fields.lapTimes.table.milliseconds[0],
+                   g_PlayerCar.lapTimes.table.frameCounts[0],
+                   g_PlayerCar.lapTimes.table.milliseconds[0],
                    g_LapTimeMs, g_LapTimeSaturated);
             steps++;
         }

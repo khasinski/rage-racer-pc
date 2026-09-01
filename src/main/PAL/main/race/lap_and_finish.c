@@ -25,9 +25,9 @@
 
 /* A lap's clock counts frames, and the frame count is converted to a time as
  * it goes. Both saturate: 0x10000 frames and just under ten minutes. */
-static void TickRunningLapTime(PlayerCarRaceState *route) {
-    PlayerLapTimes *times = &route->timing.fields.lapTimes;
-    s32 slot = route->timing.fields.lap - 1;
+static void TickRunningLapTime(PlayerCarRuntime *car) {
+    PlayerLapTimes *times = &car->lapTimes;
+    s32 slot = car->lap - 1;
 
     times->table.frameCounts[slot] += 1;
     if (times->table.frameCounts[slot] > 0xFFFF) {
@@ -46,14 +46,14 @@ static void TickRunningLapTime(PlayerCarRaceState *route) {
  * The lap just completed, if it beats the best of this race, becomes the new
  * best and its sector times become the ones the next lap is measured against.
  */
-static void RecordBestLap(PlayerCarRaceState *route, s32 grandPrixMode) {
-    s32 lap = route->timing.fields.lap;
-    s32 lapTime = route->timing.fields.lapTimes.table.milliseconds[lap - 2];
+static void RecordBestLap(PlayerCarRuntime *car, s32 grandPrixMode) {
+    s32 lap = car->lap;
+    s32 lapTime = car->lapTimes.table.milliseconds[lap - 2];
 
     if ((lapTime >= g_BestLapThisRace) || (lap == 1)) {
         return;
     }
-    route->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
+    car->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
     g_BestLapThisRace = lapTime;
     g_SectorTimes[2] = lapTime;
     if (grandPrixMode == 0) {
@@ -70,14 +70,14 @@ static void RecordBestLap(PlayerCarRaceState *route, s32 grandPrixMode) {
 
 /* The race is over and the player finished it: add up the laps, keep whatever
  * beats the records, and hand over to the finish sequence. */
-static void FinishRace(PlayerCarRaceState *route, s32 grandPrixMode,
+static void FinishRace(PlayerCarRuntime *car, s32 grandPrixMode,
                        s32 lapsRun) {
     s32 series = ReadStableRaceSeries();
     s32 course = SeriesCourseIndex();
     s32 i;
 
     for (i = 0; i < lapsRun; i++) {
-        g_RaceTotalTime += route->timing.fields.lapTimes.table.milliseconds[i];
+        g_RaceTotalTime += car->lapTimes.table.milliseconds[i];
     }
     if (g_RaceTotalTime > 0x927BE) {
         g_RaceTotalTime = 0x927BF;
@@ -113,22 +113,22 @@ static void RetireAtLastLap(void) {
 }
 
 /* The car has covered the distance the current lap needs. */
-static s32 CrossTheLine(PlayerCarRaceState *route, s32 grandPrixMode) {
+static s32 CrossTheLine(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 lapsRun;
 
-    route->timing.fields.lap += 1;
+    car->lap += 1;
     g_LapTimeSaturated = 0;
     g_RaceCueFlags &= 0xF;
     if (g_RaceCueDelay == 0) {
         g_RaceCueDelay = 2;
     }
-    RecordBestLap(route, grandPrixMode);
+    RecordBestLap(car, grandPrixMode);
 
     lapsRun = g_LapCount;
-    if (route->timing.fields.lap == lapsRun + 1) {
+    if (car->lap == lapsRun + 1) {
         /* Anything below fourth is not a finish; the race is retired. */
-        if (route->drive.racePosition < 4) {
-            FinishRace(route, grandPrixMode, lapsRun);
+        if (car->drive.racePosition < 4) {
+            FinishRace(car, grandPrixMode, lapsRun);
         } else {
             RetireAtLastLap();
         }
@@ -180,9 +180,9 @@ static void RetireWrongWay(void) {
 }
 
 /* Two laps out, one lap out and the last lap each get their own call. */
-static void CountDownTheLaps(PlayerCarRaceState *route) {
+static void CountDownTheLaps(PlayerCarRuntime *car) {
     if (g_RaceCueDelay == 2) {
-        switch (g_LapCount - route->timing.fields.lap) {
+        switch (g_LapCount - car->lap) {
         case 2:
             PlaySoundCue(0x27);
             break;
@@ -203,32 +203,30 @@ static void CountDownTheLaps(PlayerCarRaceState *route) {
 }
 
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
-    PlayerCarRaceState *route = GetPlayerCarRaceState(car);
     s32 series = ReadStableRaceSeries();
     s32 course = SeriesCourseIndex();
     s16 lapAtEntry;
     u16 returnValue;
 
-    if ((route->timing.fields.lap > 0) &&
-        (g_LapCount >= route->timing.fields.lap)) {
-        TickRunningLapTime(route);
-    } else if (g_LapCount < route->timing.fields.lap) {
+    if ((car->lap > 0) && (g_LapCount >= car->lap)) {
+        TickRunningLapTime(car);
+    } else if (g_LapCount < car->lap) {
         /* Past the last lap the clock stops and the total is kept instead. */
         if (g_RaceTotalTime < g_BestTotalTimes[series][course][grandPrixMode]) {
             g_BestTotalTimes[series][course][grandPrixMode] = g_RaceTotalTime;
         }
     }
 
-    lapAtEntry = route->timing.fields.lap;
+    lapAtEntry = car->lap;
     if ((lapAtEntry * g_TrackLength <=
          g_PlayerCar.progressB + g_PlayerCar.progressA) &&
         (lapAtEntry <= g_LapCount)) {
-        returnValue = (u16)CrossTheLine(route, grandPrixMode);
+        returnValue = (u16)CrossTheLine(car, grandPrixMode);
     } else {
         returnValue = 0;
     }
 
-    if ((g_LapCount < route->timing.fields.lap) && (g_RacePhase == 4)) {
+    if ((g_LapCount < car->lap) && (g_RacePhase == 4)) {
         returnValue = (u16)AdvanceFinishFade(returnValue);
     } else if ((g_GrandPrixMode == 0) &&
                (((car->progressB + car->progressA) <= -g_TrackLength) ||
@@ -236,7 +234,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
         RetireWrongWay();
     }
 
-    CountDownTheLaps(route);
+    CountDownTheLaps(car);
     UpdateRivalCueGate();
     return returnValue;
 }

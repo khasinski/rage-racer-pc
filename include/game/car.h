@@ -457,30 +457,6 @@ typedef union PlayerLapTimes {
     s32 words[12];
 } PlayerLapTimes;
 
-typedef union PlayerRaceTiming {
-    struct {
-        s32 field_A8;
-        s16 lap;
-        s16 field_AE;
-        PlayerLapTimes lapTimes;
-    } fields;
-    struct {
-        s32 field_A8;
-        s32 words[13];
-    } raw;
-} PlayerRaceTiming;
-
-typedef struct PlayerCarRaceState {
-    GameCarDrive drive;
-    PlayerRaceTiming timing;
-} PlayerCarRaceState;
-
-typedef union PlayerCarRaceStateAddress {
-    PlayerCarRaceState *state;
-    GameCarDrive *drive;
-    s32 *words;
-} PlayerCarRaceStateAddress;
-
 /*
  * The player's 0x19C-byte race object. Everything up to +0xBC is laid out
  * exactly as a rival car's, field for field, which is why the track, crest and
@@ -599,13 +575,6 @@ _Static_assert(
     __builtin_offsetof(PlayerCarRuntime, drive) +
         __builtin_offsetof(GameCarDrive, hudLapHighlightRow) == 0x162,
     "HUD lap highlight must retain its retail alias offset");
-
-static inline PlayerCarRaceState *GetPlayerCarRaceState(PlayerCarRuntime *car) {
-    PlayerCarRaceStateAddress address;
-
-    address.drive = &car->drive;
-    return address.state;
-}
 
 static inline void CopyPlayerBodyRotationToModel(PlayerCarRuntime *car) {
     car->modelPitch = car->bodyPitch;

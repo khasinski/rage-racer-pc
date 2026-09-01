@@ -67,10 +67,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
     s32 delta;
-    PlayerCarRaceState *raceState;
     s32 sectorClosed;
-
-    raceState = GetPlayerCarRaceState(car);
 
     if (lapEvent == 2 || grandPrixMode != 0) {
         return;
@@ -136,7 +133,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             g_SplitTimer = 0x3C;
             g_SplitSector = (u16)g_SectorIndex;
         } else if (g_SectorIndex >= 0 &&
-                   g_LapCount >= raceState->timing.fields.lap) {
+                   g_LapCount >= car->lap) {
             /* Hold the split on screen for a second before showing the next
              * sector's target. */
             if (g_SplitTimer < 0x3C) {
