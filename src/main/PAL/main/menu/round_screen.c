@@ -64,8 +64,7 @@ void RestoreColorMatrix(void) { SetColorMatrix(&g_SceneColorMatrix); }
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
 void EnterRoundScreen(void) {
     s32 count;
-    CourseProgressByteAddress ptr;
-    CourseProgressByteAddress end;
+    s32 i;
 
     SetDispMask(0);
     g_FrameSyncThreshold = 0x80;
@@ -82,15 +81,10 @@ void EnterRoundScreen(void) {
         count = (g_GrandPrixClass < 2) ? 3 : 4;
         g_GrandPrixRound = 0;
 
-        if (count != 0) {
-            ptr.pointer = g_CourseProgress->bestPlace;
-            end.value = count + ptr.value;
-            do {
-                if (*ptr.pointer != 0) {
-                    g_GrandPrixRound++;
-                }
-                ptr.pointer++;
-            } while (ptr.value < end.value);
+        for (i = 0; i < count; i++) {
+            if (g_CourseProgress->bestPlace[i] != 0) {
+                g_GrandPrixRound++;
+            }
         }
 
         if (g_CourseProgress->bestPlace[SeriesCourseIndex()] == 0) {

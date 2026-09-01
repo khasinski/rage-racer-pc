@@ -15,11 +15,6 @@ typedef struct CourseProgressState {
     s16 unlockPending;
     s16 retriesRemaining;
 } CourseProgressState;
-
-typedef union CourseProgressByteAddress {
-    s32 value;
-    u8 *pointer;
-} CourseProgressByteAddress;
 extern s32 g_ClassWinCount;
 extern CourseProgressState g_GrandPrixCourseProgress;
 extern CourseProgressState g_ExtraGrandPrixCourseProgress;

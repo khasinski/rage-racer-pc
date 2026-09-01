@@ -233,22 +233,6 @@ extern u16 g_PadHeld;
 extern u16 g_PadPressedRepeat;
 extern u16 g_PadPressed;
 
-typedef struct PadPressedView {
-    u16 buttons;
-} PadPressedView;
-
-typedef union PadPressedAddress {
-    u16 *buttons;
-    PadPressedView *view;
-} PadPressedAddress;
-
-static inline PadPressedView *GetPadPressedView(void) {
-    PadPressedAddress address;
-
-    address.buttons = &g_PadPressed;
-    return address.view;
-}
-
 extern u8 g_PadRepeatTimer[];
 extern s16 g_NegconAnalogI;
 extern s16 g_NegconAnalogII;
