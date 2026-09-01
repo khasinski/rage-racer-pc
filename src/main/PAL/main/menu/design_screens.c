@@ -49,13 +49,13 @@ void UpdateLogoSampleScreen(void) {
                 PlaySoundCue(2);
                 GameMenuBusy = -1;
                 g_UiScriptProgress2 = 0;
-                g_LogoSampleSubPanelScript = &g_MenuRow0MarkerScript;
+                g_LogoSampleSubPanelScript = g_MenuRow0MarkerScript;
                 g_LogoSampleSavedIndex = g_LogoSampleCharIndex;
             } else if (pl == 1) {
                 PlaySoundCue(2);
                 GameMenuBusy = -2;
                 g_UiScriptProgress2 = 0;
-                g_LogoSampleSubPanelScript = &g_MenuRow1MarkerScript;
+                g_LogoSampleSubPanelScript = g_MenuRow1MarkerScript;
                 g_LogoSampleSavedIndex = g_LogoSampleBackIndex;
             } else if (pl == 2) {
                 PlaySoundCue(3);
@@ -513,4 +513,3 @@ void UpdateCarListCursor(void) {
         g_NextOwnedCarIndex = FindCarOnOffer(g_CarListCursor + 1, 1);
     }
 }
-
