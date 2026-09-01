@@ -190,7 +190,6 @@ extern CarTrackWork g_CarTrackWork;
 #define RENDER_PRIM_CURSOR_AS(type) (*(type **)&g_RenderState.packetCursor)
 #define RENDER_PRIM_CURSOR          RENDER_PRIM_CURSOR_AS(void)
 #define RENDER_PRIM_CURSOR_VOLATILE (*(u8 *volatile *)&g_RenderState.packetCursor)
-#define RENDER_PRIM_CURSOR_SLOT     (&RENDER_PRIM_CURSOR_VOLATILE)
 
 /* Ordering table the emitters link finished packets into. */
 #define RENDER_OT_BASE_AS(type)     (*(type **)&g_RenderState.primData)

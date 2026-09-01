@@ -185,16 +185,14 @@ void BeginReplay(void) {
 }
 
 void DrawReplayBadge(void) {
-    u8 *volatile *cursorSlot;
     u8 *base;
     u8 *next;
-    u8 *value;
 
     if ((g_SceneTimer & 0x10) && (g_SeriesCleared == 0)) {
-        cursorSlot = RENDER_PRIM_CURSOR_SLOT;
-        value = *cursorSlot;
         base = (u8 *)GamePrimaryOrderingTable(0);
-        next = GameQueueSprite(base, value, 0x10, 0x10, 0x48, 0x10, 0, 0x68, 0x780D);
-        *cursorSlot = QueueDrawModePrim(base, next, 9);
+        next = GameQueueSprite(base, RENDER_PRIM_CURSOR_AS(u8),
+                               0x10, 0x10, 0x48, 0x10,
+                               0, 0x68, 0x780D);
+        RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 9);
     }
 }
