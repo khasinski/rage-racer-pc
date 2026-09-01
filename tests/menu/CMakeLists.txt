@@ -281,6 +281,26 @@ target_link_libraries(engineer_shop_menu_tests PRIVATE psyz)
 add_test(NAME engineer_shop_menu COMMAND engineer_shop_menu_tests)
 set_tests_properties(engineer_shop_menu PROPERTIES LABELS functional)
 
+add_executable(shop_price_panel_tests
+    shop_price_panel_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/shop_price_panel.c)
+target_include_directories(shop_price_panel_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(shop_price_panel_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(shop_price_panel_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(shop_price_panel_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(shop_price_panel_tests PRIVATE psyz)
+add_test(NAME shop_price_panel COMMAND shop_price_panel_tests)
+set_tests_properties(shop_price_panel PROPERTIES LABELS unit)
+
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c

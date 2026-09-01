@@ -141,15 +141,13 @@ extern OptionHintCaption g_OptionHintCaptions[];
 /*
  * Slide geometry shared by the CAR SHOP and ENGINEER SHOP money panels. Both
  * count 0..25; the panel appears at 11 and rises 35 lines a frame for the next
- * eleven frames. The rise is carried in 1/32 line units because the retail
- * code multiplies then shifts rather than multiplying by 35.
+ * eleven frames.
  */
 enum ShopPricePanelLayout {
     SHOP_PANEL_SLIDE_MAX = 25,
     SHOP_PANEL_VISIBLE_AT = 11,
     SHOP_PANEL_RISE_FRAMES = 11,
-    SHOP_PANEL_RISE_PER_FRAME = 1120,
-    SHOP_PANEL_RISE_SHIFT = 5,
+    SHOP_PANEL_RISE_PIXELS_PER_FRAME = 35,
     SHOP_PANEL_MONEY_BOX_Y = 492,
     SHOP_PANEL_MONEY_TEXT_Y = 502,
     SHOP_PANEL_PRICE_BOX_Y = 532,
