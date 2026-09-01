@@ -654,29 +654,15 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             DrawPlayerCarModel((GameRenderObject *)car);
         } else {
             DrawFullscreenFadeTile(g_RaceIntroCameraTimer * 26, 0x29);
-            {
-                s32 c0 = car->x;
-                s32 c1 = car->y;
-                s32 c2 = car->z;
-                s32 c3 = car->positionW;
-                view->x = c0;
-                view->y = c1;
-                view->z = c2;
-                view->reserved = c3;
-            }
-            
+            view->x = car->x;
+            view->y = car->y;
+            view->z = car->z;
+            view->reserved = car->positionW;
             view->y -= s0v;
-            {
-                s32 c0 = car->bodyPitch;
-                s32 c1 = car->bodyYaw;
-                s32 c2 = car->bodyRoll;
-                s32 c3 = car->bodyRotationW;
-                view->angleX = c0;
-                view->angleY = c1;
-                view->angleZ = c2;
-                view->depth = c3;
-            }
-            
+            view->angleX = car->bodyPitch;
+            view->angleY = car->bodyYaw;
+            view->angleZ = car->bodyRoll;
+            view->depth = car->bodyRotationW;
             StoreViewWork(&viewWork);
             SetCameraRotMatrix();
         }
