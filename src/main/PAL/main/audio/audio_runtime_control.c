@@ -37,53 +37,6 @@ void TickSequenceAudio(void) {
     }
 }
 
-/* Reads one tone out of the 6x2 g_SoundSlotTone grid, and writes it too when
- * `tone` is not negative. Returns what was there before. */
-s32 SetSoundToneTableEntry(s32 slot, s32 vabSlot, s32 tone) {
-    s16 *entry = &g_SoundSlotTone[slot][vabSlot];
-    s32 old;
-
-    old = *entry;
-
-    if (tone >= 0) {
-        *entry = tone;
-    }
-    return old;
-}
-
-void LoadAudioParameterTable(u16 *table) {
-    u16 *tableReg = table;
-    s32 bank;
-    s32 row;
-    s32 col;
-    s32 step;
-    s32 tableValue;
-
-    for (bank = 0; bank < 2; bank++) {
-        for (row = 0; row < 12; row++) {
-            for (col = 0; col < 9; col++) {
-                g_EngineSoundCurves[bank][row].positions[col] = *tableReg++;
-                g_EngineSoundCurves[bank][row].values[col] = *tableReg++;
-            }
-        }
-    }
-
-    tableValue = *tableReg++;
-    SetLoadedTableVolumeScale(tableValue);
-
-    for (bank = 0; bank < 2; bank++) {
-        for (row = 0; row < 6; row++) {
-            SetSoundToneTableEntry(row, bank, *tableReg++);
-        }
-    }
-
-    step = *tableReg;
-    g_EngineSoundState.maxRpm = step;
-    if ((u32)(step - 1) >= 0x27FF) {
-        g_EngineSoundState.maxRpm = 0x2800;
-    }
-}
-
 void SetReverbDepth(s32 left, s32 right) {
     left = ClampCueLevel(left);
     right = ClampCueLevel(right);
