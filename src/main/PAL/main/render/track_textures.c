@@ -3,6 +3,7 @@
 #include "game/random.h"
 #include "game/asset.h"
 #include "game/render.h"
+#include <string.h>
 
 /*
  * Each course draws one stretch of itself from a second page of track
@@ -18,32 +19,26 @@ s32 SelectTrackTexturePage(s32 section) {
     return secondPage ? 0x100 : 0;
 }
 
-void SwapTrackTexturePageNow(void) {
+static void SwapTrackTextureRowAt(s32 row) {
     s32 buffer[0xE0];
-    s32 page = 0;
-    s16 *rectY = &g_TrackTextureRowRect.y;
-    Rect *rect = &g_TrackTextureRowRect;
-    TrackTextureShadowRow **basePtr = &g_TrackTextureShadow;
-    s32 value;
-    s32 count;
 
-    do {
-        *rectY = page + 0x100;
-        value = 1 - g_TrackTextureShadowPage[page];
-        if (g_TrackTextureShadowPage[page] == g_TrackTexturePageWanted) {
-            StoreImage(rect, buffer);
-            DrawSync(0);
-            LoadImage(rect, (*basePtr)[page]);
-            DrawSync(0);
+    g_TrackTextureRowRect.y = (s16)(row + 0x100);
+    if (g_TrackTextureShadowPage[row] != g_TrackTexturePageWanted) return;
 
-            for (count = 0; count < 0xE0; count++) {
-                (*basePtr)[page][count] = buffer[count];
-            }
+    StoreImage(&g_TrackTextureRowRect, buffer);
+    DrawSync(0);
+    LoadImage(&g_TrackTextureRowRect, g_TrackTextureShadow[row]);
+    DrawSync(0);
+    memcpy(g_TrackTextureShadow[row], buffer, sizeof(buffer));
+    g_TrackTextureShadowPage[row] = 1 - g_TrackTextureShadowPage[row];
+}
 
-            g_TrackTextureShadowPage[page] = value;
-        }
-        page++;
-    } while (page < 0x100);
+void SwapTrackTexturePageNow(void) {
+    s32 row;
+
+    for (row = 0; row < 0x100; row++) {
+        SwapTrackTextureRowAt(row);
+    }
 }
 
 void SetTrackTexturePageNow(s32 trackSection) {
@@ -69,36 +64,7 @@ void RequestTrackTexturePage(s32 trackSection) {
 }
 
 void SwapTrackTextureRow(void) {
-    s32 buffer[0xE0];
-    s16 *rectY;
-    s32 value;
-    s32 count;
-    TrackTextureShadowRow **basePtr;
-    Rect *rect;
-    s32 copyIndex;
-    s32 index;
-
-    rectY = &g_TrackTextureRowRect.y;
-    *rectY = (u16)g_TrackTextureCursorRow + 0x100;
-    value = 1 - g_TrackTextureShadowPage[g_TrackTextureCursorRow];
-    if (g_TrackTextureShadowPage[g_TrackTextureCursorRow] == g_TrackTexturePageWanted) {
-        rect = &g_TrackTextureRowRect;
-        StoreImage(rect, buffer);
-        DrawSync(0);
-
-        index = g_TrackTextureCursorRow;
-        rect = &g_TrackTextureRowRect;
-        basePtr = &g_TrackTextureShadow;
-        LoadImage(rect, (*basePtr)[index]);
-        DrawSync(0);
-
-        copyIndex = g_TrackTextureCursorRow;
-        for (count = 0; count < 0xE0; count++) {
-            (*basePtr)[copyIndex][count] = buffer[count];
-        }
-
-        g_TrackTextureShadowPage[g_TrackTextureCursorRow] = value;
-    }
+    SwapTrackTextureRowAt(g_TrackTextureCursorRow);
 }
 
 void StepTrackTextureSwap(void) {

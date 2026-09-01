@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "game/asset.h"
@@ -118,10 +119,39 @@ static void SecondTexturePageIsOneRange(void) {
           "an empty stretch selects nothing");
 }
 
+static void TextureSwapStateResetsAndSkipsMatchingRows(void) {
+    s32 row;
+
+    memset(g_TrackTextureShadowPage, 0, sizeof(g_TrackTextureShadowPage));
+    g_TrackTexturePageWanted = 1;
+    g_TrackTextureTargetRow = 12;
+    g_TrackTextureCursorRow = 34;
+    ResetTrackTextureSwap();
+    for (row = 0; row < 256; row++) {
+        Check(g_TrackTextureShadowPage[row] == 1,
+              "reset marks every shadow row as page one");
+    }
+    Check(g_TrackTexturePageWanted == 0, "reset wants the first page");
+    Check(g_TrackTextureTargetRow == 0, "reset target row");
+    Check(g_TrackTextureCursorRow == 0, "reset cursor row");
+
+    /* A mismatched state means there is nothing to exchange, so this path is
+     * testable without initialising the GPU. It must still select the row. */
+    g_TrackTextureCursorRow = 7;
+    g_TrackTexturePageWanted = 0;
+    g_TrackTextureShadowPage[7] = 1;
+    g_TrackTextureRowRect.y = 0;
+    SwapTrackTextureRow();
+    Check(g_TrackTextureRowRect.y == 0x107, "swap selects cursor row");
+    Check(g_TrackTextureShadowPage[7] == 1,
+          "nonrequested row is not toggled unnecessarily");
+}
+
 int main(void) {
     TrackPointWraps();
     DistanceSurvivesLargeSeparations();
     SecondTexturePageIsOneRange();
+    TextureSwapStateResetsAndSkipsMatchingRows();
     if (s_failures != 0) {
         printf("%d track maths checks failed\n", s_failures);
         return 1;
