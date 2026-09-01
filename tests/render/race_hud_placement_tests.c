@@ -331,11 +331,66 @@ static void CheckSplitSignStaysWithItsTime(void) {
     }
 }
 
+static void CheckRacePositionDigits(void) {
+    GameFrameContext *frame;
+
+    s_config.modernAspect = RAGE_MODERN_ASPECT_4_3;
+    ResetHud();
+    BuildRaceHudPrims(1);
+    frame = GetGameFrameContext(g_DrawBuffer);
+
+    g_RacePosition = 3;
+    DrawRacePosition();
+    if (frame->layout.raceHud.labels[3].u0 != 0 ||
+        frame->layout.raceHud.labels[4].u0 != 3 * 24 ||
+        frame->layout.raceHud.labels[3].clut != 0x780B ||
+        frame->layout.raceHud.labels[4].clut != 0x780B) {
+        printf("FAIL podium race-position digits or colors\n");
+        s_failures++;
+    }
+
+    g_RacePosition = 12;
+    DrawRacePosition();
+    if (frame->layout.raceHud.labels[3].u0 != 0x18 ||
+        frame->layout.raceHud.labels[4].u0 != 2 * 24 ||
+        frame->layout.raceHud.labels[3].clut != 0x780E ||
+        frame->layout.raceHud.labels[4].clut != 0x780E) {
+        printf("FAIL two-digit race-position digits or colors\n");
+        s_failures++;
+    }
+}
+
+static void CheckSplitDeltaSprites(void) {
+    GameFrameContext *frame;
+
+    ResetHud();
+    BuildRaceHudPrims(0);
+    frame = GetGameFrameContext(g_DrawBuffer);
+
+    DrawSplitDelta(7, 1);
+    if (frame->layout.raceHud.labels[3].u0 != 7 * 8 + 0x50 ||
+        frame->layout.raceHud.labels[4].u0 != 0x88 ||
+        frame->layout.raceHud.labels[4].clut != 0x7810) {
+        printf("FAIL positive split-delta sprites\n");
+        s_failures++;
+    }
+
+    DrawSplitDelta(2, -1);
+    if (frame->layout.raceHud.labels[3].u0 != 2 * 8 + 0x50 ||
+        frame->layout.raceHud.labels[4].u0 != 0x78 ||
+        frame->layout.raceHud.labels[4].clut != 0x780F) {
+        printf("FAIL negative split-delta sprites\n");
+        s_failures++;
+    }
+}
+
 int main(void) {
     CheckMode(0);
     CheckMode(1);
     CheckSplitDeltaIsAMagnitude();
     CheckSplitSignStaysWithItsTime();
+    CheckRacePositionDigits();
+    CheckSplitDeltaSprites();
     if (s_failures != 0) {
         printf("race_hud_placement: %d failures\n", s_failures);
         return 1;

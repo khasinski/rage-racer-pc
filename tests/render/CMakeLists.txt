@@ -21,6 +21,7 @@ set_tests_properties(race_hud_layout PROPERTIES LABELS functional)
 add_executable(race_hud_placement_tests
     race_hud_placement_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_race_hud_prims.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_sprite_from_desc.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/race_hud.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_split_times.c
     ${CMAKE_SOURCE_DIR}/src/port/hud_config.c)
@@ -784,6 +785,26 @@ endif()
 target_link_libraries(draw_prims_tests PRIVATE psyz)
 add_test(NAME draw_prims COMMAND draw_prims_tests)
 set_tests_properties(draw_prims PROPERTIES LABELS functional)
+
+add_executable(add_tile_prim_tests
+    add_tile_prim_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/add_tile_prim.c)
+target_include_directories(add_tile_prim_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(add_tile_prim_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(add_tile_prim_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(add_tile_prim_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(add_tile_prim_tests PRIVATE psyz)
+add_test(NAME add_tile_prim COMMAND add_tile_prim_tests)
+set_tests_properties(add_tile_prim PROPERTIES LABELS unit)
 
 add_executable(basic_text_tests
     basic_text_tests.c

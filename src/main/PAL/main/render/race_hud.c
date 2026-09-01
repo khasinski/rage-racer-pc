@@ -8,133 +8,63 @@
 
 
 void DrawRaceHudLabels(s32 mode) {
-    s32 count;
-    s32 i;
-    GameSpriteDesc *descs;
-    void **cursorSlot;
+    s32 labelCount = mode != 0 ? 6 : 3;
+    GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
+                                      : g_RaceHudSpriteDescsTimeTrial;
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    s32 label;
 
-    count = 9;
-    if (mode != 0) {
-        count = 0xC;
-    }
-    descs = mode != 0 ? g_RaceHudSpriteDescsGp
-                      : g_RaceHudSpriteDescsTimeTrial;
+    for (label = 0; label < labelCount; label++) {
+        SPRT *sprite = &frame->layout.raceHud.labels[label];
+        s32 visible = mode != 0
+                          ? (label != 1 || HudShowLapTimes()) &&
+                                (label != 2 || HudShowTimeLimit())
+                          : HudShowLapTimes();
 
-    for (i = 6; i < count; i++) {
-            SPRT *prim = &frame->layout.raceHud.labels[i - 6];
-            int label = i - 6;
-            int visible = 1;
-            prim->x0 = HudAnchorX(descs[i].x);
-            if (mode != 0) {
-                if (label == 1 && !HudShowLapTimes()) visible = 0;
-                if (label == 2 && !HudShowTimeLimit()) visible = 0;
-            } else if (!HudShowLapTimes()) {
-                visible = 0;
-            }
-            if (!visible) continue;
-            AddPrim(ot, prim);
+        sprite->x0 = HudAnchorX(descs[label + 6].x);
+        if (visible) {
+            AddPrim(ot, sprite);
+        }
     }
 
-    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
-    *cursorSlot = QueueDrawModePrim(ot, *cursorSlot, 9);
-}
-
-u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s32 b) {
-    RenderBufferAddress cursor;
-    TILE *tile;
-    u8 *oldPrim;
-
-    cursor.bytes = prim;
-    tile = cursor.tile;
-    SetTile(tile);
-
-    oldPrim = prim;
-    tile->x0 = x;
-    tile->y0 = y;
-    tile->w = w;
-    tile->h = h;
-    tile->r0 = r;
-    tile->g0 = g;
-    tile->b0 = b;
-
-    prim += sizeof(*tile);
-    AddPrim(ot, oldPrim);
-    return prim;
-}
-
-/* Expands a GameSpriteDesc into an SPRT at the render state's cursor. */
-void BuildSpriteFromDesc(SPRT *prim, GameSpriteDesc *src) {
-    SetSprt(prim);
-
-    prim->x0 = src->x;
-    prim->y0 = src->y;
-    prim->w = src->w;
-    prim->h = src->h;
-    prim->u0 = src->u0;
-    prim->v0 = src->v0;
-    prim->clut = src->clut;
-    SetSemiTrans(prim, src->semiTrans);
-    SetShadeTex(prim, 1);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(
+        ot, RENDER_PRIM_CURSOR_AS(u8), 9);
 }
 
 
 /* The lap-time column: one row per lap from the player timing table at x=0xFA,
  * y stepping 0xA, the current lap highlighted and unset laps drawn as -1. */
 void DrawLapTimes(void) {
-    s32 i;
-    s32 visibleCount;
-    s32 activeIndex;
-    s32 tile;
-    s32 y;
-    s32 *valuePtr;
-    GameFrameContext *frame;
-    OT_TYPE *ot;
-    s32 value;
+    s32 visibleCount = g_PlayerCar.lap;
+    s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
+    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameSpriteDesc *descs = g_GrandPrixMode != 0
+                                ? g_RaceHudSpriteDescsGp
+                                : g_RaceHudSpriteDescsTimeTrial;
+    s32 lap;
 
-    if (!HudShowLapTimes()) return;
+    if (!HudShowLapTimes()) {
+        return;
+    }
 
-    visibleCount = g_PlayerCar.lap;
     if (visibleCount > g_LapCount) {
         visibleCount = g_LapCount;
     }
 
-    i = 0;
-    /* Retail address 0x8009e836 is not an independent global: it is the
-     * hudLapHighlightRow member inside g_PlayerCar.drive. */
-    activeIndex = g_PlayerCar.drive.hudLapHighlightRow;
-    if (g_LapCount > 0) {
-        frame = GetGameFrameContext(g_DrawBuffer);
-        ot = GamePrimaryOrderingTable(0);
-        y = 0x2E;
-        valuePtr = g_PlayerCar.lapTimes.table.milliseconds;
+    for (lap = 0; lap < g_LapCount; lap++) {
+        s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[lap];
+        s32 color = lap == activeLap ? 0x780F
+                    : lapTime > 0x927BE ? 0x7890
+                                        : 0x78CC;
+        SPRT *sprite = &frame->layout.raceHud.lapTimes[lap];
 
-        for (i = 0; i < g_LapCount; i++) {
-            if (i == activeIndex) {
-                tile = 0x780F;
-            } else if (valuePtr[0] > 0x927BE) {
-                tile = 0x7890;
-            } else {
-                tile = 0x78CC;
-            }
-
-            if (i < visibleCount) {
-                value = valuePtr[0];
-            } else {
-                value = -1;
-            }
-
-            DrawTimeValue(HudRightX(0xFA), y, value, tile, 0x3E8);
-            frame->layout.raceHud.lapTimes[i].x0 =
-                HudAnchorX((g_GrandPrixMode != 0
-                    ? g_RaceHudSpriteDescsGp
-                    : g_RaceHudSpriteDescsTimeTrial)[i].x);
-            y += 0xA;
-            valuePtr++;
-            frame->layout.raceHud.lapTimes[i].clut = tile;
-            AddPrim(ot, &frame->layout.raceHud.lapTimes[i]);
-        }
+        DrawTimeValue(HudRightX(0xFA), 0x2E + lap * 0xA,
+                      lap < visibleCount ? lapTime : -1, color, 0x3E8);
+        sprite->x0 = HudAnchorX(descs[lap].x);
+        sprite->clut = color;
+        AddPrim(ot, sprite);
     }
 
     DrawTimeValue(HudRightX(0xFA), 0x20, g_BestLapThisRace,
@@ -157,60 +87,34 @@ void DrawTimeRemaining(s32 time) {
  * blanked below 10 and the colour changes from 4th place down. */
 void DrawRacePosition(void) {
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
-    s32 value;
-    s32 quotient;
-    SPRT *left;
-    SPRT *right;
+    SPRT *tens = &frame->layout.raceHud.labels[3];
+    SPRT *ones = &frame->layout.raceHud.labels[4];
+    u16 color = g_RacePosition < 4 ? 0x780B : 0x780E;
 
-    value = g_RacePosition;
-    left = &frame->layout.raceHud.labels[3];
-    right = &frame->layout.raceHud.labels[4];
-
-    if (value >= 10) {
-        left->u0 = 0x18;
-    } else {
-        left->u0 = 0;
-    }
-
-    quotient = value / 10;
-    right->u0 = (value - quotient * 10) * 24;
-
-    if (value < 4) {
-        left->clut = 0x780B;
-        right->clut = 0x780B;
-    } else {
-        left->clut = 0x780E;
-        right->clut = 0x780E;
-    }
+    tens->u0 = g_RacePosition >= 10 ? 0x18 : 0;
+    ones->u0 = (g_RacePosition % 10) * 24;
+    tens->clut = color;
+    ones->clut = color;
 }
 
-void DrawSplitDelta(s32 delta, s32 y) {
+void DrawSplitDelta(s32 delta, s32 sign) {
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
-    SPRT *firstPrim;
-    SPRT *secondPrim;
-    s32 value;
-    s32 temp;
-    OT_TYPE *ot;
+    SPRT *deltaDigit = &frame->layout.raceHud.labels[3];
+    SPRT *signSprite = &frame->layout.raceHud.labels[4];
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
 
-    value = delta * 8;
-    value += 0x50;
-    firstPrim = &frame->layout.raceHud.labels[3];
-    secondPrim = &frame->layout.raceHud.labels[4];
-    ot = GamePrimaryOrderingTable(0);
+    deltaDigit->u0 = delta * 8 + 0x50;
+    AddPrim(ot, deltaDigit);
 
-    firstPrim->u0 = value;
-    AddPrim(ot, firstPrim);
-
-    if (y > 0) {
-        secondPrim->u0 = 0x88;
-        temp = 0x7810;
-    } else if (y < 0) {
-        secondPrim->u0 = 0x78;
-        temp = 0x780F;
+    if (sign > 0) {
+        signSprite->u0 = 0x88;
+        signSprite->clut = 0x7810;
+    } else if (sign < 0) {
+        signSprite->u0 = 0x78;
+        signSprite->clut = 0x780F;
     } else {
         return;
     }
 
-    secondPrim->clut = temp;
-    AddPrim(ot, secondPrim);
+    AddPrim(ot, signSprite);
 }
