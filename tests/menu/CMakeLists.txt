@@ -119,6 +119,7 @@ set_tests_properties(prize_screen PROPERTIES LABELS functional)
 # The memory card menu, swept across its whole state space.
 add_executable(memory_card_menu_tests
     memory_card_menu_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_menu_frame.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/update_memory_card_menu.c)
 target_include_directories(memory_card_menu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
