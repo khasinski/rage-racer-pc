@@ -361,6 +361,26 @@ target_link_libraries(car_select_menu_tests PRIVATE psyz)
 add_test(NAME car_select_menu COMMAND car_select_menu_tests)
 set_tests_properties(car_select_menu PROPERTIES LABELS unit)
 
+add_executable(ranking_screen_tests
+    ranking_screen_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/ranking_screen.c)
+target_include_directories(ranking_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(ranking_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(ranking_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(ranking_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(ranking_screen_tests PRIVATE psyz)
+add_test(NAME ranking_screen COMMAND ranking_screen_tests)
+set_tests_properties(ranking_screen PROPERTIES LABELS functional)
+
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c
