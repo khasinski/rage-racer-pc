@@ -98,6 +98,13 @@ static int CardResultPromptDismissed(void) {
     return PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0;
 }
 
+static void ResetCardAction(void) {
+    g_McActionState = 0;
+    g_McActionResult = 0;
+    g_McConfirmChoice = 0;
+    g_McActionBusy = 0;
+}
+
 typedef enum CardSlotActionState {
     CARD_SLOT_ACTION_PICK = 0x00,
     CARD_SLOT_ACTION_CONFIRM_OVERWRITE = 0x0A,
@@ -400,10 +407,7 @@ static void RunCardReadyState(s32 fadeBusy) {
     } else {
         g_McMenuPage = 0;
         g_McSlotCursor = 0;
-        g_McActionState = 0;
-        g_McActionBusy = 0;
-        g_McActionResult = 0;
-        g_McConfirmChoice = 0;
+        ResetCardAction();
         g_McActionTimer = 0;
         g_McMenuRowCursor = g_McMenuRowCount - 1;
     }
@@ -434,10 +438,7 @@ static void RunCardReadyState(s32 fadeBusy) {
         break;
     }
     if (g_McMenuState != 1) {
-    g_McActionState = 0;
-    g_McActionResult = 0;
-    g_McConfirmChoice = 0;
-    g_McActionBusy = 0;
+        ResetCardAction();
     }
 }
 
@@ -799,7 +800,6 @@ static void RunFormatCardActions(s32 fadeBusy) {
 }
 
 static void RunUnformattedCardState(s32 fadeBusy) {
-
     switch (g_McMenuPage) {
     case 0:
         RunUnformattedCardRootPage(fadeBusy);
@@ -842,13 +842,9 @@ static void RunUnformattedCardState(s32 fadeBusy) {
         break;
     }
 
-        if (g_McMenuState != -2) {
-            g_McActionState = 0;
-            g_McActionBusy = 0;
-            g_McActionResult = 0;
-            g_McConfirmChoice = 0;
-        }
-    return;
+    if (g_McMenuState != -2) {
+        ResetCardAction();
+    }
 }
 
 /*
