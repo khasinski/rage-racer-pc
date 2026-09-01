@@ -13,18 +13,6 @@
 #include "game/player_car_internal.h"
 #include "game/track.h"
 
-typedef union GrandPrixIntroSelection {
-    s16 palette;
-    s16 layout;
-    s16 width;
-    s16 color;
-} GrandPrixIntroSelection;
-
-typedef union GrandPrixIntroAddress {
-    s16 *value;
-    GrandPrixIntroSelection *selection;
-} GrandPrixIntroAddress;
-
 void DrawSeriesClearedWash(s32 x, s32 y) {
     void *ot;
     void *prim;
@@ -204,7 +192,7 @@ void DrawResultScreen(void) {
     *cursorSlot = AddTilePrim(base, next, 0, 0x30, width, 0x18, 0xF0, 0xF0, 0xF0);
 }
 
-void DrawGrandprixIntro(void) {
+void DrawGrandPrixIntro(void) {
     u8 *base;
     char text[0x30];
     if ((g_ClassResultPlace != 0) &&
@@ -270,17 +258,14 @@ void DrawGrandprixIntro(void) {
 
     {
         u8 **cursorSlot;
-        GrandPrixIntroSelection *selection;
-        GrandPrixIntroAddress selectionAddress;
         u8 *next;
-        s32 selectionIndex;
+        s32 place;
 
         cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
         DrawResultScreen();
 
         base = (u8 *)GamePrimaryOrderingTable(0);
-        selectionAddress.value = &g_RacePosition;
-        selection = selectionAddress.selection;
+        place = g_RacePosition;
         next = GameQueueSprite(
             base,
             *cursorSlot,
@@ -290,20 +275,18 @@ void DrawGrandprixIntro(void) {
             0x38,
             0xA8,
             0xA8,
-            g_ResultPanelCluts[selection->palette]);
+            g_ResultPanelCluts[place]);
 
-        selectionIndex = selection->layout;
-        selectionIndex -= 1;
         next = GameQueueSprite(
             base,
             next,
-            g_ResultPlaceSprites[selectionIndex].x,
+            g_ResultPlaceSprites[place - 1].x,
             0x5C,
-            g_ResultPlaceSprites[selectionIndex].y,
+            g_ResultPlaceSprites[place - 1].y,
             0x1C,
-            g_ResultPlaceSprites[selection->width - 1].width,
+            g_ResultPlaceSprites[place - 1].width,
             0xCC,
-            g_ResultPlaceCluts[selection->color]);
+            g_ResultPlaceCluts[place]);
         *cursorSlot = next;
     }
 

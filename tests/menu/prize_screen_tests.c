@@ -40,7 +40,7 @@ static int s_classAdvanced;
 static int s_fanfareTicks;
 
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
-void DrawGrandprixIntro(void) {}
+void DrawGrandPrixIntro(void) {}
 void DrawPrizeMoneyPanel(s32 step) { (void)step; }
 void DrawRaceTimePanel(s32 step) { (void)step; }
 void PlaySoundCue(s32 cue) { (void)cue; }

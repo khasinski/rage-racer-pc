@@ -42,7 +42,7 @@ void UpdatePrizeMoneyScreen(void) {
             g_PrizeScreenState = PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM;
         }
         DrawRaceTimePanel(0);
-        DrawGrandprixIntro();
+        DrawGrandPrixIntro();
         return;
     case PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM:
         DrawRaceTimePanel(0);
@@ -50,7 +50,7 @@ void UpdatePrizeMoneyScreen(void) {
             g_PrizeScreenState = PRIZE_SCREEN_STATE_HIDE_RACE_TIME;
             g_SceneTimer = 0;
         }
-        DrawGrandprixIntro();
+        DrawGrandPrixIntro();
         return;
     case PRIZE_SCREEN_STATE_HIDE_RACE_TIME:
         g_SceneTimer += 8;
@@ -58,7 +58,7 @@ void UpdatePrizeMoneyScreen(void) {
         if (g_SceneTimer >= 129) {
             g_PrizeScreenState = PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL;
         }
-        DrawGrandprixIntro();
+        DrawGrandPrixIntro();
         return;
     case PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL:
         g_SceneTimer -= 8;
@@ -66,7 +66,7 @@ void UpdatePrizeMoneyScreen(void) {
         if (g_SceneTimer == 0) {
             g_PrizeScreenState = PRIZE_SCREEN_STATE_COUNT_PRIZE;
         }
-        DrawGrandprixIntro();
+        DrawGrandPrixIntro();
         return;
     case PRIZE_SCREEN_STATE_COUNT_PRIZE:
         g_SceneTimer += 1;
@@ -119,9 +119,9 @@ void UpdatePrizeMoneyScreen(void) {
         }
         break;
     default:
-        DrawGrandprixIntro();
+        DrawGrandPrixIntro();
         return;
     }
     DrawPrizeMoneyPanel(0);
-    DrawGrandprixIntro();
+    DrawGrandPrixIntro();
 }
