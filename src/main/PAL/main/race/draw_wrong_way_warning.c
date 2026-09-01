@@ -13,11 +13,6 @@
 /* The GPU packet cursor in the render state. Every emitter here packs its
  * primitive at this address and bumps it past what it wrote. */
 
-typedef union TachometerColorAddress {
-    u8 *components;
-    s32 *packed;
-} TachometerColorAddress;
-
 void DrawWrongWayWarning(void) {
     SPRT *packet;
     SPRT *next;
@@ -29,7 +24,6 @@ void DrawWrongWayWarning(void) {
     s32 temp;
     s32 uvOffset;
     u8 *ret;
-    RenderBufferAddress nextAddress;
 
     next = RENDER_PRIM_CURSOR_AS(SPRT);
     i = 0;
@@ -66,8 +60,8 @@ void DrawWrongWayWarning(void) {
         AddPrim(ot, oldPacket);
     } while (i < 3);
 
-    nextAddress.sprite = next;
-    ret = GameQueueTileTrans(GamePrimaryOrderingTable(0), nextAddress.bytes, 0x64, 0x70, 0x78, 0x20, 8, 8, 8);
+    ret = GameQueueTileTrans(GamePrimaryOrderingTable(0), (u8 *)next,
+                             0x64, 0x70, 0x78, 0x20, 8, 8, 8);
     RENDER_PRIM_CURSOR_AS(u8) = ret;
     RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(GamePrimaryOrderingTable(0), ret, 9);
 }
@@ -86,7 +80,6 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     s16 *pa;
     s16 *pb;
     s32 i;
-    u8 code7;
 
     cx = HudRightX(cx);
 
@@ -103,8 +96,6 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         pa += 2;
     }
 
-    code7 = prim->code;
-
     if (type == 1) {
         if (amt > 96) amt = 96;
         g_TachoFaceB = -128 - amt;
@@ -114,8 +105,6 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         prim->g0 = (amt * 32 + p->needleColor[1] * (96 - amt)) / 96;
         prim->b0 = (amt * 32 + p->needleColor[2] * (96 - amt)) / 96;
     } else if (type == 3) {
-        u16 *clutAddress;
-
         amt -= 32;
         if (amt < 0) amt = 0;
         g_TachoFaceB = amt + 32;
@@ -124,50 +113,28 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         prim->r0 = ((96 - amt) * 32 + p->needleColor[0] * amt) / 96;
         prim->g0 = ((96 - amt) * 32 + p->needleColor[1] * amt) / 96;
         prim->b0 = ((96 - amt) * 32 + p->needleColor[2] * amt) / 96;
-        {
-            GameFrameContextAddress frame;
-            frame.bytes = g_DrawBuffer;
-            clutAddress = &frame.context->layout.raceHud.tachometerFace.clut;
-        }
-        *clutAddress = 0x33A8;
+        GetGameFrameContext(g_DrawBuffer)->layout.raceHud.tachometerFace.clut =
+            0x33A8;
     } else if (type == 2) {
-        TachometerColorAddress packetColor;
-        TachometerColorAddress needleColor;
-        u16 *clutAddress;
-
-        {
-            GameFrameContextAddress frame;
-            frame.bytes = g_DrawBuffer;
-            clutAddress = &frame.context->layout.raceHud.tachometerFace.clut;
-        }
-        *clutAddress = 0x33E8;
+        GetGameFrameContext(g_DrawBuffer)->layout.raceHud.tachometerFace.clut =
+            0x33E8;
         g_TachoFaceB = 0x80;
         g_TachoFaceG = 0x80;
         g_TachoFaceR = 0x80;
-        packetColor.components = &prim->r0;
-        needleColor.components = p->needleColorAlt;
-        *packetColor.packed = *needleColor.packed;
+        prim->r0 = p->needleColorAlt[0];
+        prim->g0 = p->needleColorAlt[1];
+        prim->b0 = p->needleColorAlt[2];
     } else {
-        TachometerColorAddress packetColor;
-        TachometerColorAddress needleColor;
-        u16 *clutAddress;
-        u16 rv = 0x33A8;
-
-        {
-            GameFrameContextAddress frame;
-            frame.bytes = g_DrawBuffer;
-            clutAddress = &frame.context->layout.raceHud.tachometerFace.clut;
-        }
-        *clutAddress = rv;
+        GetGameFrameContext(g_DrawBuffer)->layout.raceHud.tachometerFace.clut =
+            0x33A8;
         g_TachoFaceB = 0x80;
         g_TachoFaceG = 0x80;
         g_TachoFaceR = 0x80;
-        packetColor.components = &prim->r0;
-        needleColor.components = p->needleColor;
-        *packetColor.packed = *needleColor.packed;
+        prim->r0 = p->needleColor[0];
+        prim->g0 = p->needleColor[1];
+        prim->b0 = p->needleColor[2];
     }
 
-    prim->code = code7;
     if (DiagnosticsEnabled("render.tachometer_trace")) {
         printf("tacho rpm=%d angle=%d color=%02x%02x%02x "
                "quad=%d,%d/%d,%d/%d,%d/%d,%d "
@@ -182,11 +149,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     }
     AddPrim(GamePrimaryOrderingTable(0), prim);
     prim++;
-    {
-        RenderBufferAddress cursor;
-        cursor.polyF4 = prim;
-        RENDER_PRIM_CURSOR_AS(u8) = cursor.bytes;
-    }
+    RENDER_PRIM_CURSOR_AS(u8) = (u8 *)prim;
 
     {
         s32 x = cx + p->gearDigitDX;
@@ -233,11 +196,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         q->y0 = v10;
         q++;
         AddPrim(ot, tile);
-        {
-            RenderBufferAddress cursor;
-            cursor.tile = q;
-            RENDER_PRIM_CURSOR_AS(u8) = cursor.bytes;
-        }
+        RENDER_PRIM_CURSOR_AS(u8) = (u8 *)q;
     }
 }
 
@@ -267,19 +226,14 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     prim = packet;
     packet++;
     AddPrim(ot, prim);
-    {
-        RenderBufferAddress cursor;
-        cursor.tile = packet;
-        RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(GamePrimaryOrderingTable(0), cursor.bytes, tpage);
-    }
+    RENDER_PRIM_CURSOR_AS(u8) =
+        QueueDrawModePrim(GamePrimaryOrderingTable(0), (u8 *)packet, tpage);
 }
 
 u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut) {
-    RenderBufferAddress cursor;
     SPRT_8 *out;
 
-    cursor.bytes = prim;
-    out = cursor.sprite8;
+    out = (SPRT_8 *)prim;
     
     SetSprt8(out);
     SetShadeTex(out, 1);
@@ -298,9 +252,5 @@ u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut) {
         AddPrim(ot, oldPrim);
     }
 
-    {
-        RenderBufferAddress cursor;
-        cursor.sprite8 = out;
-        return cursor.bytes;
-    }
+    return (u8 *)out;
 }

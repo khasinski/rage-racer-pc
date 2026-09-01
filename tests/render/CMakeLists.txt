@@ -647,7 +647,7 @@ add_test(
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rear_view_mirror.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/mirror_pass.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
         ${RAGE_HOST_STATE_SOURCES}
 )
