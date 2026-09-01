@@ -249,30 +249,6 @@ void InitPlayerCar(PlayerCarRuntime *car)
   printf("%s", g_MsgInitOk);
 }
 
-/*
- * Wrong-way / spin check: compares the car's headingAngle against the current
- * track point's forward direction (0xC00 - track angle) and returns whether the
- * delta falls inside the 0x401..0x7FF window (i.e. facing roughly backwards).
- */
-s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
-    s32 index = car->trackPointIndex;
-    s32 complement = 0xC00 - TrackPoint(index)->angle;
-    s32 diff = (car->headingAngle - complement) & 0xFFF;
-    u32 backwardRange = diff - 0x401;
-    return backwardRange < 0x7FFU;
-}
-
-/*
- * Point-in-quad test: returns 1 if point `pt` is inside the quad with corners
- * p0,p1,p3,p2 (four chained half-plane sign checks via NormalClip), else 0.
- */
-s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
-    return NormalClip(p0, p1, pt) >= 0 &&
-           NormalClip(p1, p3, pt) >= 0 &&
-           NormalClip(p3, p2, pt) >= 0 &&
-           NormalClip(p2, p0, pt) >= 0;
-}
-
 s32 CollidePlayerWithCars(PlayerCarRuntime *car)
 {
   SVec rotation;
