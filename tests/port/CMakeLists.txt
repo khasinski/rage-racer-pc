@@ -46,7 +46,9 @@ add_executable(host_state_content_tests
     host_state_content_tests.c
     ${RAGE_HOST_STATE_SOURCES})
 target_include_directories(host_state_content_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port/include)
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
 target_compile_definitions(host_state_content_tests PRIVATE __psyz=1)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(host_state_content_tests PRIVATE

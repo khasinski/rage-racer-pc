@@ -40,6 +40,10 @@ s32 g_McLastCardStatus;
 s32 g_McMenuPage;
 s32 g_McMenuRowCursor;
 s32 g_McSlotCursor;
+char g_McModeLabels[32] __attribute__((aligned(16))) =
+    "SAVE\0\0\0\0\0\0"
+    "LOAD\0\0\0\0\0\0"
+    "EXIT";
 s32 g_McActionState;
 s32 g_McActionResult;
 s32 g_McConfirmChoice;

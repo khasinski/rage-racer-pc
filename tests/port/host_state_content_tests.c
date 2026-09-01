@@ -370,7 +370,8 @@ extern unsigned char g_CarTuneUpPriceTable[124];
 extern unsigned char g_CarManufacturerNames[52];
 extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
-extern unsigned char g_McSlotCursor[36];
+extern unsigned char g_McSlotCursor[4];
+extern unsigned char g_McModeLabels[32];
 extern unsigned char g_LibcDefaultFormat[13];
 extern unsigned char g_LibcCtype[131];
 extern unsigned char g_MdecQuantCmd[8];
@@ -885,7 +886,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_CarManufacturerNames", g_CarManufacturerNames, 52},
     {"g_EngineSpecLabels", g_EngineSpecLabels, 52},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
-    {"g_McSlotCursor", g_McSlotCursor, 36},
+    {"g_McSlotCursor", g_McSlotCursor, 4},
+    {"g_McModeLabels", g_McModeLabels, 32},
     {"g_LibcDefaultFormat", g_LibcDefaultFormat, 13},
     {"g_LibcCtype", g_LibcCtype, 131},
     {"g_MdecQuantCmd", g_MdecQuantCmd, 8},
