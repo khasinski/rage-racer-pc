@@ -35,6 +35,7 @@ void DrawControllerSetupScene(s32 variant) {
     Matrix xRot;
     Matrix yRot;
     LVec position;
+    s32 baseAngle;
     s32 steer;
     s32 model;
     u32 setupMode;
@@ -60,14 +61,14 @@ void DrawControllerSetupScene(s32 variant) {
         BuildRotMatrixX(&xRot, -0xD0);
         BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
         MulMatrix2(&yRot, &xRot);
-        MulMatrix2((&g_RenderState.matrix), &xRot);
+        MulMatrix2(&g_RenderState.matrix, &xRot);
         scale[2] = 0x1000;
         scale[0] = 0x1000;
         scale[1] = 0x2000;
         ScaleMatrix(&yRot, scale);
         MulMatrix2(&yRot, &xRot);
         SetGteLightMatrix(&xRot);
-        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &xRot);
         g_RenderState.envMode4 = 0;
         model = g_ModelBankCount < 1;
         SubmitControllerModel(model);
@@ -87,25 +88,22 @@ void DrawControllerSetupScene(s32 variant) {
         steer = g_NegconSteer * 8;
     }
 
-    {
-        s32 angle = g_ControllerSceneAngleX - 0x40;
-
-        BuildRotMatrixX(&xRot, steer + angle);
-    }
+    baseAngle = g_ControllerSceneAngleX - 0x40;
+    BuildRotMatrixX(&xRot, baseAngle + steer);
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2((&g_RenderState.matrix), &xRot);
+    MulMatrix2(&g_RenderState.matrix, &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+    SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &xRot);
     g_RenderState.envMode4 = 0;
     SubmitControllerModel(1);
     if (variant != 0) {
-        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &xRot);
         g_RenderState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 4) {
@@ -114,21 +112,17 @@ void DrawControllerSetupScene(s32 variant) {
         SubmitControllerModel(model);
     }
 
-    {
-        s32 angle = g_ControllerSceneAngleX - 0x40;
-
-        BuildRotMatrixX(&xRot, angle - steer);
-    }
+    BuildRotMatrixX(&xRot, baseAngle - steer);
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2((&g_RenderState.matrix), &xRot);
+    MulMatrix2(&g_RenderState.matrix, &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+    SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &xRot);
     g_RenderState.envMode4 = 0;
     model = 1;
     if (g_ModelBankCount >= 3) {
@@ -136,7 +130,7 @@ void DrawControllerSetupScene(s32 variant) {
     }
     SubmitControllerModel(model);
     if (variant != 0) {
-        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &xRot);
         g_RenderState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 5) {
