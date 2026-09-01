@@ -7,7 +7,7 @@
  * gets shoved: hit in front and the other car is pushed away, hit behind and
  * this one is, the other way.
  *
- * The player's own version of this lives in car_orientation.c and works over a
+ * The player's own version lives in player_car_collision.c and works over a
  * six-point hull; the two share the quadrant search.
  */
 
