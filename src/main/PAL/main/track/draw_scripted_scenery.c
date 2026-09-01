@@ -80,13 +80,11 @@ void UpdatePathScenerySound(void) {
         if (rate < 0) {
             rate = -rate;
             g_PathSceneryCursors.posRate.value = rate;
-            g_PathSceneryClock.posRateNeg = 1;
         } else {
             if (rate == 0) {
                 rate = 1;
             }
             g_PathSceneryCursors.posRate.value = rate;
-            g_PathSceneryClock.posRateNeg = 0;
         }
         rec = &g_PathSceneryPosKeys[g_PathSceneryCursors.posIndex];
         g_PathSceneryCursors.posSpan =
@@ -188,13 +186,11 @@ void UpdatePathScenerySound(void) {
         if (rate < 0) {
             rate = -rate;
             g_PathSceneryCursors.rotRate.value = rate;
-            g_PathSceneryClock.rotRateNeg = 1;
         } else {
             if (rate == 0) {
                 rate = 1;
             }
             g_PathSceneryCursors.rotRate.value = rate;
-            g_PathSceneryClock.rotRateNeg = 0;
         }
         rec = &g_PathSceneryRotKeys[g_PathSceneryCursors.rotIndex];
         g_PathSceneryCursors.rotRate.value =

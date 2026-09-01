@@ -27,8 +27,6 @@ typedef struct StartGridSceneryStep {
 typedef struct PathSceneryClock {
     s16 posFrame;
     s16 rotFrame;
-    s16 posRateNeg;
-    s16 rotRateNeg;
 } PathSceneryClock;
 
 typedef struct PathSceneryTransform {

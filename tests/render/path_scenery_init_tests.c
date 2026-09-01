@@ -30,8 +30,7 @@ typedef struct RotationFixture {
 } RotationFixture;
 
 static int RunCase(s16 positionRate, s16 rotationRate,
-                   s16 expectedPositionRate, s16 expectedRotationRate,
-                   s16 positionNegative, s16 rotationNegative) {
+                   s16 expectedPositionRate, s16 expectedRotationRate) {
     PositionFixture positions;
     RotationFixture rotations;
     static const s16 expectedDelta[3] = {2, -4, 4};
@@ -72,8 +71,6 @@ static int RunCase(s16 positionRate, s16 rotationRate,
         g_PathSceneryRotKeys != &rotations.keys[1] ||
         g_PathSceneryClock.posFrame != 0 ||
         g_PathSceneryClock.rotFrame != 0 ||
-        g_PathSceneryClock.posRateNeg != positionNegative ||
-        g_PathSceneryClock.rotRateNeg != rotationNegative ||
         g_PathSceneryCursors.posPhase.value != 0 ||
         g_PathSceneryCursors.rotPhase.value != 0 ||
         g_PathSceneryCursors.posSpan != 12 ||
@@ -108,9 +105,9 @@ static int RunCase(s16 positionRate, s16 rotationRate,
 }
 
 int main(void) {
-    if (!RunCase(5, 6, 5, 6, 0, 0) ||
-        !RunCase(0, 0, 1, 1, 0, 0) ||
-        !RunCase(-7, -8, 7, 8, 1, 1)) {
+    if (!RunCase(5, 6, 5, 6) ||
+        !RunCase(0, 0, 1, 1) ||
+        !RunCase(-7, -8, 7, 8)) {
         return 1;
     }
     puts("path scenery initialization preserved");

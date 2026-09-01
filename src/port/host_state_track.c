@@ -19,6 +19,10 @@
 typedef struct SceneryMotionData SceneryMotionData;
 typedef struct PathSceneryRotationData PathSceneryRotationData;
 typedef struct PathSceneryPositionData PathSceneryPositionData;
+typedef struct PathSceneryClock {
+    s16 posFrame;
+    s16 rotFrame;
+} PathSceneryClock;
 
 unsigned char g_StartGridSceneryStep[8] __attribute__((aligned(16))) = {0x48,0x00,0x04,0x00,0xbc,0xff,0xf2,0xff};
 Vec4 g_StartGridSceneryPos[2] __attribute__((aligned(16))) = {
@@ -135,7 +139,7 @@ unsigned char g_CellVisibilityTable[8] __attribute__((aligned(16)));
 PathSceneryPositionData *g_PathSceneryPosData;
 s32 g_CourseObjectCount;
 unsigned char g_VisibleCellList[8] __attribute__((aligned(16)));
-unsigned char g_PathSceneryClock[8] __attribute__((aligned(16)));
+PathSceneryClock g_PathSceneryClock;
 unsigned char g_PathSceneryTransform[24] __attribute__((aligned(16)));
 unsigned char g_PathSceneryRotHalfDelta[8] __attribute__((aligned(16)));
 unsigned char g_PathSceneryHalfDelta[8] __attribute__((aligned(16)));
