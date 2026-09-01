@@ -57,7 +57,7 @@ int RuntimeConfigEnabled(const char *key) {
 /* The game's state the HUD reads. */
 GameFrameContext g_FrameContexts[2];
 u8 *g_DrawBuffer;
-volatile s32 g_FrameParity;
+s32 g_FrameParity;
 GameRenderState g_RenderState;
 u8 g_DrawModeEnv[8];
 s32 g_GrandPrixClass;

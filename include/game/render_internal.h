@@ -65,16 +65,8 @@ typedef union GameFrameContext {
     u8 bytes[sizeof(GameFrameLayout)];
 } GameFrameContext;
 
-typedef union GameFrameContextAddress {
-    u8 *bytes;
-    GameFrameContext *context;
-} GameFrameContextAddress;
-
 static inline GameFrameContext *GetGameFrameContext(u8 *bytes) {
-    GameFrameContextAddress address;
-
-    address.bytes = bytes;
-    return address.context;
+    return (GameFrameContext *)(void *)bytes;
 }
 
 typedef union ScreenOffset {

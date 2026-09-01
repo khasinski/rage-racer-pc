@@ -156,17 +156,15 @@ void DrawTimeRemaining(s32 time) {
 /* The two race-position digits, from g_RacePosition; the tens digit is
  * blanked below 10 and the colour changes from 4th place down. */
 void DrawRacePosition(void) {
-    GameFrameContextAddress drawBuffer;
-    u8 *base;
+    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
     s32 value;
+    s32 quotient;
     SPRT *left;
     SPRT *right;
 
-    base = g_DrawBuffer;
-    drawBuffer.bytes = base;
     value = g_RacePosition;
-    left = &drawBuffer.context->layout.raceHud.labels[3];
-    right = &drawBuffer.context->layout.raceHud.labels[4];
+    left = &frame->layout.raceHud.labels[3];
+    right = &frame->layout.raceHud.labels[4];
 
     if (value >= 10) {
         left->u0 = 0x18;
@@ -174,14 +172,8 @@ void DrawRacePosition(void) {
         left->u0 = 0;
     }
 
-    {
-        s32 quotient;
-        s32 digit;
-
-        quotient = value / 10;
-        digit = (value - quotient * 10) * 24;
-        right->u0 = digit;
-    }
+    quotient = value / 10;
+    right->u0 = (value - quotient * 10) * 24;
 
     if (value < 4) {
         left->clut = 0x780B;
@@ -193,7 +185,7 @@ void DrawRacePosition(void) {
 }
 
 void DrawSplitDelta(s32 delta, s32 y) {
-    GameFrameContextAddress drawBuffer;
+    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
     SPRT *firstPrim;
     SPRT *secondPrim;
     s32 value;
@@ -201,10 +193,9 @@ void DrawSplitDelta(s32 delta, s32 y) {
     OT_TYPE *ot;
 
     value = delta * 8;
-    drawBuffer.bytes = g_DrawBuffer;
     value += 0x50;
-    firstPrim = &drawBuffer.context->layout.raceHud.labels[3];
-    secondPrim = &drawBuffer.context->layout.raceHud.labels[4];
+    firstPrim = &frame->layout.raceHud.labels[3];
+    secondPrim = &frame->layout.raceHud.labels[4];
     ot = GamePrimaryOrderingTable(0);
 
     firstPrim->u0 = value;
