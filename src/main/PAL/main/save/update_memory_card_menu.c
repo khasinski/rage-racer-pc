@@ -3,6 +3,12 @@
 #include "game/menu.h"
 #include "game/audio.h"
 
+enum {
+    BUSY_ERROR_DEBOUNCE_FRAMES = 5,
+    CARD_ERROR_COUNTDOWN_FRAMES = 3,
+    NO_CARD_DEBOUNCE_FRAMES = 7,
+};
+
 /*
  * The card is mid-operation. Nothing to choose here; the cancel button
  * is the only way out, and only once the fade has finished.
@@ -34,10 +40,9 @@ static void RunCardBusyState(s32 fadeBusy) {
     case MC_MENU_STATE_ERROR:
     default:
         if (g_McCardStatus == MC_MENU_STATE_ERROR) {
-            if (g_McErrorTicks >= 4) {
+            if (++g_McErrorTicks >= BUSY_ERROR_DEBOUNCE_FRAMES) {
                 g_McMenuState = g_McCardStatus;
             }
-            g_McErrorTicks++;
         }
         break;
     }
@@ -87,7 +92,7 @@ static void ResetCardAction(void) {
 static void ClearPendingCardError(void) {
     if (g_McErrorPending == 0) return;
     g_McErrorPending = 0;
-    g_McErrorCountdown = 3;
+    g_McErrorCountdown = CARD_ERROR_COUNTDOWN_FRAMES;
 }
 
 static void TrackPersistentCardError(void) {
@@ -240,6 +245,25 @@ static void RunCardErrorState(s32 fadeBusy) {
     ClearPendingCardError();
 }
 
+static void PollCardMenuSelection(void) {
+    s32 status;
+
+    if (g_McActionBusy != 0 && g_McErrorPending == 0) return;
+
+    status = PollMemoryCardStatus(0, 0);
+    g_McCardStatus = status;
+    if (status == 0) {
+        /* Debounce a card being reseated before changing the screen. */
+        if (++g_McNoCardTicks >= NO_CARD_DEBOUNCE_FRAMES) {
+            g_McMenuSelection = MC_MENU_STATE_BUSY;
+        }
+        return;
+    }
+
+    g_McNoCardTicks = 0;
+    g_McMenuSelection = status;
+}
+
 void UpdateMemoryCardMenu(void) {
     s32 fadeBusy;
 
@@ -250,24 +274,7 @@ void UpdateMemoryCardMenu(void) {
     }
     /* An action already under way owns the card, so its status is not asked
      * again until it reports an error. */
-    if (g_McActionBusy == 0 || g_McErrorPending != 0) {
-        s32 status = PollMemoryCardStatus(0, 0);
-
-        g_McCardStatus = status;
-        if (status == 0) {
-            /* No card. Six frames of that in a row before the screen says so,
-             * so a card being reseated does not flash the message. */
-            s32 ticks = g_McNoCardTicks;
-
-            g_McNoCardTicks = ticks + 1;
-            if (ticks >= 6) {
-                g_McMenuSelection = MC_MENU_STATE_BUSY;
-            }
-        } else {
-            g_McNoCardTicks = 0;
-            g_McMenuSelection = g_McCardStatus;
-        }
-    }
+    PollCardMenuSelection();
 
     /*
      * What the menu does this frame is decided by what the card is: each of
