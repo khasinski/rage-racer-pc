@@ -39,64 +39,32 @@ void ResetSoundState(void) {
         g_EngineSoundState.slotActive[i] = 0;
     }
 
-    {
-        s32 neg;
-
-        i = 0;
-        neg = -1;
-        for (; i < 2; i++) {
-            g_MusicChannels[i].mode = neg;
-            g_MusicChannels[i].left.value = neg;
-            g_MusicChannels[i].right.value = neg;
-            g_MusicChannels[i].volLeft.value = 0;
-            /* These are fields of the PS1's contiguous audio work area. Do
-             * not reconstruct their addresses from a separately linked host
-             * global: that can overwrite unrelated game state. */
-            g_MusicChannels[i].volRight.value = 0;
-        }
+    for (i = 0; i < 2; i++) {
+        g_MusicChannels[i].mode = -1;
+        g_MusicChannels[i].left.value = -1;
+        g_MusicChannels[i].right.value = -1;
+        g_MusicChannels[i].volLeft.value = 0;
+        g_MusicChannels[i].volRight.value = 0;
     }
 
-    {
-        s32 offset;
-
-        {
-            s32 i;
-            s32 neg;
-            s32 value;
-
-            i = 0;
-            neg = -1;
-            value = 0x1E00;
-            offset = 0;
-            for (; i < 4; i++) {
-                GetEffectVoiceAtByteOffset(offset)->state = neg;
-                GetEffectVoiceAtByteOffset(offset)->note.value = neg;
-                GetEffectVoiceAtByteOffset(offset)->tone = neg;
-                GetEffectVoiceAtByteOffset(offset)->pitch.value = value;
-                GetEffectVoiceAtByteOffset(offset)->volume = 0;
-                offset += sizeof(EffectVoice);
-            }
-        }
-
-        {
-            s32 value;
-
-            offset = 0x80;
-            value = -1;
-            g_EngineSoundState.bank = value;
-            g_PanVoiceVolumeR = value;
-            g_PanVoiceVolumeL = value;
-            g_IndexedEffectIndexPrev = value;
-            g_IndexedEffectIndex = value;
-            value = 0x1E00;
-            g_IndexedEffectPitch = value;
-            value = 1;
-            g_SoundScale.scale = offset;
-            g_PanVoiceActive = 0;
-            g_EngineSoundState.volumeScale = offset;
-            g_AudioLoadedSlotMask = value;
-        }
+    for (i = 0; i < 4; i++) {
+        g_EffectVoices[i].state = -1;
+        g_EffectVoices[i].note.value = -1;
+        g_EffectVoices[i].tone = -1;
+        g_EffectVoices[i].pitch.value = 0x1E00;
+        g_EffectVoices[i].volume = 0;
     }
+
+    g_EngineSoundState.bank = -1;
+    g_PanVoiceVolumeR = -1;
+    g_PanVoiceVolumeL = -1;
+    g_IndexedEffectIndexPrev = -1;
+    g_IndexedEffectIndex = -1;
+    g_IndexedEffectPitch = 0x1E00;
+    g_SoundScale.scale = 0x80;
+    g_PanVoiceActive = 0;
+    g_EngineSoundState.volumeScale = 0x80;
+    g_AudioLoadedSlotMask = 1;
 }
 
 s32 InitSoundWithVab(u8 *header, u8 *body) {
