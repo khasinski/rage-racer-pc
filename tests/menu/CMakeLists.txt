@@ -401,6 +401,26 @@ target_link_libraries(car_select_state_tests PRIVATE psyz)
 add_test(NAME car_select_state COMMAND car_select_state_tests)
 set_tests_properties(car_select_state PROPERTIES LABELS unit)
 
+add_executable(tire_compound_slider_tests
+    tire_compound_slider_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/tire_compound_slider.c)
+target_include_directories(tire_compound_slider_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(tire_compound_slider_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(tire_compound_slider_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(tire_compound_slider_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(tire_compound_slider_tests PRIVATE psyz)
+add_test(NAME tire_compound_slider COMMAND tire_compound_slider_tests)
+set_tests_properties(tire_compound_slider PROPERTIES LABELS unit)
+
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c
