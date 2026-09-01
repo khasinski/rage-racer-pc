@@ -15,6 +15,7 @@ GameRenderState g_RenderState;
 static s32 s_quadCount;
 static s32 s_spriteCount;
 static s32 s_polyLineCount;
+static s16 s_polyLineY[16];
 
 void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
                 u16 textureV, u8 r, u8 g, u8 b, u16 clut, s32 shadeTex,
@@ -40,7 +41,7 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2,
                    s16 y2, u8 r, u8 g, u8 b, u8 alpha) {
     (void)ot;
     (void)x0;
-    (void)y0;
+    s_polyLineY[s_polyLineCount] = y0;
     (void)x1;
     (void)y1;
     (void)x2;
@@ -118,6 +119,9 @@ int main(void) {
     CHECK(g_CarSpecGraphProgress == 96);
     CHECK(s_spriteCount == 8);
     CHECK(s_polyLineCount == 12);
+    CHECK(s_polyLineY[0] == 0x13E && s_polyLineY[1] == 0x13F);
+    CHECK(s_polyLineY[2] == 0x12E && s_polyLineY[3] == 0x12F);
+    CHECK(s_polyLineY[10] == 0xEE && s_polyLineY[11] == 0xEF);
     CHECK(s_quadCount == 16);
 
     puts("car spec graph tests passed");

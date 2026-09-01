@@ -46,26 +46,22 @@ static u8 Darken(u8 value) {
     return value > CAR_SPEC_COLOR_DELTA ? value - CAR_SPEC_COLOR_DELTA : 0;
 }
 
+static void DrawCarSpecFloorLine(void *ot, s32 lineStep) {
+    s32 y = 0x13E - lineStep;
+
+    DrawPolyLine3(ot, 0x52, y, 0x61, y, 0x99, y + 0x38, 0xB4, 0xB4,
+                  0xB4, 0xFF);
+    DrawPolyLine3(ot, 0x52, y + 1, 0x61, y + 1, 0x99, y + 0x39, 0xB4,
+                  0xB4, 0xB4, 0xFF);
+}
+
 static void DrawCarSpecFloor(void *ot, s32 progress) {
     s32 lineStep;
 
     for (lineStep = 0; lineStep < progress; lineStep += 0x10) {
-        s32 y = 0x13E - lineStep;
-
-        DrawPolyLine3(ot, 0x52, y, 0x61, y, 0x99, y + 0x38, 0xB4, 0xB4,
-                      0xB4, 0xFF);
-        DrawPolyLine3(ot, 0x52, y + 1, 0x61, y + 1, 0x99, y + 0x39, 0xB4,
-                      0xB4, 0xB4, 0xFF);
+        DrawCarSpecFloorLine(ot, lineStep);
     }
-
-    {
-        s32 y = 0x13E - progress;
-
-        DrawPolyLine3(ot, 0x52, y, 0x61, y, 0x99, y + 0x38, 0xB4, 0xB4,
-                      0xB4, 0xFF);
-        DrawPolyLine3(ot, 0x52, y + 1, 0x61, y + 1, 0x99, y + 0x39, 0xB4,
-                      0xB4, 0xB4, 0xFF);
-    }
+    DrawCarSpecFloorLine(ot, progress);
 }
 
 static void DrawCarSpecBar(void *ot, s32 index, s32 revealedHeight) {
