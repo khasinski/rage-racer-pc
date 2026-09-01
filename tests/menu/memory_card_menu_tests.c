@@ -52,7 +52,6 @@ s32 g_McMenuState;
 s32 g_McNoCardTicks;
 GameSaveHeaderRow g_McSaveHeaders[4];
 s32 g_McSaveMode;
-s32 g_McSavedLoadPhase;
 s32 g_McSettleTicks;
 s32 g_McSlotCursor;
 s32 g_McSlotUsedMask;
@@ -172,7 +171,7 @@ static void Record(FILE *out, const char *label) {
             "%s state=%d action=%d phase=%d page=%d row=%d slot=%d "
             "sel=%d busy=%d timer=%d elapsed=%d ok=%d result=%d choice=%d/%d "
             "err=%d/%d/%d fade=%d/%d last=%d/%d mask=%x free=%d ticks=%d/%d/%d "
-            "changes=%d draw=%d loadphase=%d/%d scene=%d/%d calls=%d\n",
+            "changes=%d draw=%d loadphase=%d scene=%d/%d calls=%d\n",
             label, g_McMenuState, g_McActionState,
             g_McMenuPhase, g_McMenuPage, g_McMenuRowCursor, g_McSlotCursor,
             g_McMenuSelection, g_McActionBusy, g_McActionTimer,
@@ -182,7 +181,7 @@ static void Record(FILE *out, const char *label) {
             g_McLastMenuState, g_McLastSlot, g_McSlotUsedMask, g_McFreeBlocks,
             g_McNoCardTicks, g_McCardOkFrames, g_McSettleTicks,
             g_McStateChangeCount, g_McDrawEnabled, GameMenuLoadPhase,
-            g_McSavedLoadPhase, g_SceneId, g_SceneTimer, s_calls);
+            g_SceneId, g_SceneTimer, s_calls);
     {
         const char *p;
 
@@ -244,7 +243,7 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 1783909075UL;
+    static const unsigned long expected = 4086189421UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
@@ -305,7 +304,6 @@ int main(int argc, char **argv) {
                                     g_McMenuRowCursor = 1;
                                     g_McMenuSelection = 0;
                                     g_McNoCardTicks = noCardTicks[ti];
-                                    g_McSavedLoadPhase = 0;
                                     g_McSettleTicks = 0;
                                     g_McSlotCursor = 1;
                                     g_McStateChangeCount = 0;

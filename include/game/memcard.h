@@ -161,7 +161,6 @@ extern s32 g_McPollStatus;
 extern s32 g_McPollTicks;
 extern GameSaveHeaderRow g_McSaveHeaders[];
 extern s32 g_McSaveMode;
-extern s32 g_McSavedLoadPhase;
 extern s32 g_McSettleTicks;
 extern s32 g_McSlotCursor;
 extern char g_McSlotLabelError[];

@@ -52,7 +52,6 @@ s32 g_McActionOk;
 s32 g_McSettleTicks;
 s32 g_McCardOkFrames;
 unsigned char g_McActionElapsed[20] __attribute__((aligned(16)));
-s32 g_McSavedLoadPhase;
 s32 g_McMenuState;
 s32 g_McCardStatus;
 s32 g_McMenuSelection;

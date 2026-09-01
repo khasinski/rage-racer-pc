@@ -256,7 +256,6 @@ static void RunCardSlotActions(void) {
         g_McActionResult = written;
         g_McActionOk = written != 0;
         g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
-        g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     }
 
@@ -269,7 +268,6 @@ static void RunCardSlotActions(void) {
             s32 usedMask = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
 
             g_McSlotUsedMask = usedMask;
-            g_McSavedLoadPhase = GameMenuLoadPhase;
         }
         g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE;
         break;
@@ -349,7 +347,6 @@ static void RunCardSlotActions(void) {
         }
         g_McActionTimer = 0x3C;
         g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
-        g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     }
     case CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE:
@@ -491,7 +488,6 @@ static void RunCardWorkingState(s32 fadeBusy) {
     case CARD_WORK_REFRESH_STATUS:
         g_McSlotUsedMask = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
         g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
-        g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     case CARD_WORK_BEGIN_SETTLE_DELAY:
         g_McActionTimer = 5;
