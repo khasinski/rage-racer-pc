@@ -133,14 +133,11 @@ s32 DrawCourseSelectScreen(s32 step)
     s32 gpSlide;
     u32 gpFade;
     u32 fadeValue;
-    OrderingTableAddress otAddress;
-
     otBase = RENDER_OT_BASE_AS(OT_TYPE);
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;
-        otAddress.pointer = otBase;
-        return otAddress.value;
+        return 0;
     }
 
     if (step > 0) {

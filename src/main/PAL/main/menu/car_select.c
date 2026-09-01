@@ -137,8 +137,6 @@ void UpdateRankingScreen(void) {
 
 s32 DrawCarSelectScreen(s32 step) {
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
-    OrderingTableAddress otAddress;
-    s32 p;
     u32 *buf = (u32 *)(ot + 1);
     s32 v;
     s32 col;
@@ -146,12 +144,9 @@ s32 DrawCarSelectScreen(s32 step) {
     s32 mode;
     u8 tex;
 
-    otAddress.pointer = ot;
-    p = otAddress.value;
-
     if (step == 0) {
         g_CarSelectFadeAccum = 0;
-        return p;
+        return 0;
     }
 
     if (step > 0) {

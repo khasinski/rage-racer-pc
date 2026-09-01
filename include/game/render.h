@@ -13,16 +13,6 @@
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
-typedef union OrderingTableAddress {
-    s32 value;
-    void *pointer;
-} OrderingTableAddress;
-
-typedef union VisibilityMaskAddress {
-    s32 value;
-    u32 *pointer;
-} VisibilityMaskAddress;
-
 /*
  * One entry of a timed draw script. `type` picks the primitive and `time` is
  * when it starts; the two pointers split the description in two, which is what
