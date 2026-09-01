@@ -204,14 +204,11 @@ typedef struct SkyBandSetup {
     s32 columnStepY;
     s32 rowStepX;
     s32 rowStepY;
-    s32 savedSinRoll;
-    s32 savedCosRoll;
+    s32 sinRoll;
+    s32 cosRoll;
     s32 textureColumn;
-    s32 bandOriginXFixed;
-    s32 bandOriginYFixed;
     s32 lowerPanelXFixed;
-    s32 cellXFixed;
-    s32 coordinateAccumulator;
+    s32 lowerPanelYFixed;
 } SkyBandSetup;
 
 /*
@@ -219,129 +216,44 @@ typedef struct SkyBandSetup {
  * and column of it steps across the screen. All of it follows from the
  * camera angles, so none of the drawing below needs them again.
  */
-static void MeasureSkyBand(SkyFrame *work,
-                           SkyBandSetup *band) {
-    s32 cameraY;
-    s32 bandRowY;
-    s32 rotatedBandY;
-    s32 sinRoll;
-    s32 nearVerticalFixed;
-    s32 horizontalFixed;
-    s32 farVerticalFixed;
-    s32 negativeSinRoll;
-    s32 cosRoll;
-    s32 angleWork;
-    s32 leftViewAngle;
-    s32 rollAngle;
-    s32 rotatedX;
-    s32 rotatedY;
-    s32 pitchAngle;
-    s32 yawAngle;
-    s32 unroundedX;
-    s32 unroundedY;
-    if (work->mirrorFlag != g_MirrorMode)
-    {
-      pitchAngle = -work->pitch;
-    }
-    else
-    {
-      pitchAngle = work->pitch;
-    }
-    band->coordinateAccumulator = pitchAngle & 0xFFF;
-    leftViewAngle = band->coordinateAccumulator;
-    if (leftViewAngle >= 0x800)
-    {
-      leftViewAngle -= 0x1000;
-    }
-    if (band->coordinateAccumulator >= 0x800)
-    {
-      band->coordinateAccumulator -= 0x1000;
-    }
-    cameraY = work->cameraY;
-    {
-      s32 leftPlusTwo;
-      s32 rightPlusTwo;
-      angleWork = cameraY - 6000;
-      leftPlusTwo = leftViewAngle + 2;
-      band->cellXFixed = DivideSigned32(angleWork);
-      leftViewAngle = leftPlusTwo + band->cellXFixed;
-      rightPlusTwo = band->coordinateAccumulator + 2;
-      band->coordinateAccumulator = rightPlusTwo + band->cellXFixed;
-      yawAngle = work->mirrorFlag;
-    }
-    angleWork = work->yaw;
-    if (yawAngle != 0)
-    {
-      angleWork = -angleWork;
-      yawAngle = angleWork + 0x200;
-    }
-    else
-    {
-      yawAngle = angleWork + 0x200;
-    }
-    angleWork = yawAngle & 0xFFF;
-    leftViewAngle /= 2;
-    band->coordinateAccumulator = (band->coordinateAccumulator / 2) + 0x50;
-    band->textureColumn = angleWork >> 7;
-    horizontalFixed = ((u32)((-0x100) - ((angleWork >> 1) & 0x3F))) << 8;
-    nearVerticalFixed = ((u32)((-0x80) - leftViewAngle)) << 8;
-    rollAngle = work->roll;
-    farVerticalFixed = ((u32)((-0x80) - band->coordinateAccumulator)) << 8;
-    if (g_MirrorMode == 0)
-    {
-      rollAngle = -rollAngle;
-    }
-    sinRoll = rsin(rollAngle);
-    cosRoll = rcos(rollAngle);
-    band->coordinateAccumulator = cosRoll * horizontalFixed;
-    rotatedX = band->coordinateAccumulator + (sinRoll * nearVerticalFixed);
-    unroundedX = rotatedX;
-    if (unroundedX < 0)
-    {
-      rotatedX += 0xFFF;
-    }
-    negativeSinRoll = -sinRoll;
-    rotatedBandY = negativeSinRoll * horizontalFixed;
-    rotatedX >>= 0xC;
-    leftViewAngle = 0xA000;
-    band->panelXFixed = rotatedX + leftViewAngle;
-    rotatedY = rotatedBandY + (cosRoll * nearVerticalFixed);
-    unroundedY = rotatedY;
-    if (unroundedY < 0)
-    {
-      rotatedY += 0xFFF;
-    }
-    bandRowY = rotatedY >> 0xC;
-    band->coordinateAccumulator += sinRoll * farVerticalFixed;
-    band->panelYFixed = bandRowY + 0x7800;
-    if (band->coordinateAccumulator < 0)
-    {
-      band->coordinateAccumulator += 0xFFF;
-    }
-    rotatedY = cosRoll * farVerticalFixed;
-    rotatedBandY += rotatedY;
-    rotatedY = band->coordinateAccumulator >> 0xC;
-    band->lowerPanelXFixed = rotatedY + 0xA000;
-    if (rotatedBandY < 0)
-    {
-      rotatedBandY += 0xFFF;
-    }
-    leftViewAngle = rotatedBandY >> 0xC;
-    band->coordinateAccumulator = leftViewAngle + 0x7800;
-    if (g_MirrorMode != g_RenderState.orderingFlag)
-    {
-      band->panelYFixed = 0x2400;
-      band->panelYFixed = bandRowY + band->panelYFixed;
-      band->coordinateAccumulator = leftViewAngle + 0x2400;
-    }
+static s32 SignedAngle12(s32 angle) {
+    angle &= 0xFFF;
+    return angle >= 0x800 ? angle - 0x1000 : angle;
+}
+
+static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
+    s32 pitch = frame->mirrorFlag != g_MirrorMode
+                    ? -frame->pitch
+                    : frame->pitch;
+    s32 cameraPitch = SignedAngle12(pitch) + 2 +
+                      DivideSigned32(frame->cameraY - 6000);
+    s32 yaw = frame->mirrorFlag != 0 ? -frame->yaw : frame->yaw;
+    s32 yawAngle = (yaw + 0x200) & 0xFFF;
+    s32 nearVerticalFixed = (-0x80 - cameraPitch / 2) * 256;
+    s32 farVerticalFixed = (-0x80 - (cameraPitch / 2 + 0x50)) * 256;
+    s32 horizontalFixed = (-0x100 - ((yawAngle >> 1) & 0x3F)) * 256;
+    s32 rollAngle = g_MirrorMode == 0 ? -frame->roll : frame->roll;
+    s32 sinRoll = rsin(rollAngle);
+    s32 cosRoll = rcos(rollAngle);
+    s32 rotatedHorizontalY = -sinRoll * horizontalFixed;
+    s32 nearX = cosRoll * horizontalFixed + sinRoll * nearVerticalFixed;
+    s32 nearY = rotatedHorizontalY + cosRoll * nearVerticalFixed;
+    s32 farX = cosRoll * horizontalFixed + sinRoll * farVerticalFixed;
+    s32 farY = rotatedHorizontalY + cosRoll * farVerticalFixed;
+    s32 verticalOrigin =
+        g_MirrorMode != g_RenderState.orderingFlag ? 0x2400 : 0x7800;
+
+    band->panelXFixed = nearX / 4096 + 0xA000;
+    band->panelYFixed = nearY / 4096 + verticalOrigin;
+    band->lowerPanelXFixed = farX / 4096 + 0xA000;
+    band->lowerPanelYFixed = farY / 4096 + verticalOrigin;
     band->columnStepX = cosRoll * 4;
-    band->columnStepY = negativeSinRoll * 4;
-    band->savedSinRoll = sinRoll;
-    band->savedCosRoll = cosRoll;
-    band->bandOriginXFixed = band->panelXFixed;
-    band->bandOriginYFixed = band->panelYFixed;
+    band->columnStepY = -sinRoll * 4;
+    band->sinRoll = sinRoll;
+    band->cosRoll = cosRoll;
     band->rowStepX = sinRoll * 8;
     band->rowStepY = cosRoll * 8;
+    band->textureColumn = yawAngle >> 7;
 }
 
 static void InitializeSkyFrame(SkyFrame *work) {
@@ -435,7 +347,7 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work,
                                 const SkyBandSetup *band,
                                 u8 *packetCursor) {
     s32 panelX = band->lowerPanelXFixed;
-    s32 panelY = band->coordinateAccumulator;
+    s32 panelY = band->lowerPanelYFixed;
 
     for (s32 column = 0; column < 8; column++) {
         s32 nextPanelX = panelX + band->columnStepX;
@@ -513,8 +425,8 @@ static u8 *DrawSkyGradientQuad(SkyFrame *work,
 static u8 *DrawSkyGradientBands(SkyFrame *work,
                                 const SkyBandSetup *band,
                                 u8 *packetCursor) {
-    const s32 panelX = band->bandOriginXFixed;
-    const s32 panelY = band->bandOriginYFixed;
+    const s32 panelX = band->panelXFixed;
+    const s32 panelY = band->panelYFixed;
     const s32 columnStepX = band->columnStepX * 8;
     const s32 columnStepY = band->columnStepY * 8;
     const s32 bandRightX = panelX + columnStepX;
@@ -571,14 +483,14 @@ void DrawSkyBackground(void) {
     MeasureSkyBand(&work, &setup);
     packetCursor = work.packetCursor;
 
-    geometry.panelX = setup.bandOriginXFixed;
-    geometry.panelY = setup.bandOriginYFixed;
+    geometry.panelX = setup.panelXFixed;
+    geometry.panelY = setup.panelYFixed;
     geometry.columnStepX = setup.columnStepX * 8;
     geometry.columnStepY = setup.columnStepY * 8;
     geometry.rowStepX = setup.rowStepX;
     geometry.rowStepY = setup.rowStepY;
-    geometry.sinRoll = setup.savedSinRoll;
-    geometry.cosRoll = setup.savedCosRoll;
+    geometry.sinRoll = setup.sinRoll;
+    geometry.cosRoll = setup.cosRoll;
 
     if (g_SkyRowBase != 0) {
         packetCursor = DrawTexturedSkyGrid(&work, &setup, packetCursor);
