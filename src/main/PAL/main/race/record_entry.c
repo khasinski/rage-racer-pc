@@ -301,12 +301,9 @@ void UpdateRecordEntry(void) {
     case RECORD_ENTRY_STATE_FADE_OUT:
         g_SceneTimer += 2;
         DrawFullscreenFadeTile(g_SceneTimer, 0x49);
-        {
-            u32 sceneFrame = g_SceneTimer;
-            if (sceneFrame >= 0x100) {
-                RequestSelectBgmAssets();
-                g_SceneId = 6;
-            }
+        if ((u32)g_SceneTimer >= 0x100) {
+            RequestSelectBgmAssets();
+            g_SceneId = 6;
         }
         DrawTimeRecordPanel(0);
         break;
@@ -315,16 +312,19 @@ void UpdateRecordEntry(void) {
     DrawCourseIntro();
 }
 
-void ReturnFromClassFmv(void) {
+static void StopFmvCdPlayback(void) {
     CdSync(0, 0);
-    CdControl(9, 0, 0);
+    CdControl(CD_DRIVE_PAUSE, 0, 0);
+}
+
+void ReturnFromClassFmv(void) {
+    StopFmvCdPlayback();
     g_SceneId = 6;
     RequestSelectBgmAssets();
 }
 
 void ReturnFromEndingFmv(void) {
-    CdSync(0, 0);
-    CdControl(9, 0, 0);
+    StopFmvCdPlayback();
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
     g_FrameSyncThreshold = 0x80;
