@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/asset.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/track_internal.h"
@@ -23,6 +24,7 @@ s32 g_IsEnvironmentMode4;
 s32 g_GrandPrixClass;
 s32 g_CourseIndex;
 s32 g_FogNear;
+s32 g_SkyRowBase;
 EnvironmentPalette *g_EnvPaletteTable;
 u16 g_EnvironmentClut[16];
 
@@ -79,9 +81,23 @@ static void SeedCue(GameEnvironmentCue *cue, s32 time, u8 color,
 }
 
 int main(void) {
+    struct {
+        u32 skyRowBase;
+        u32 length;
+        GameEnvironmentCue cues[1];
+    } script;
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[5];
     s32 color;
+
+    script.skyRowBase = 7;
+    script.length = 123;
+    SetEnvironmentScript(&script.skyRowBase);
+    if (g_SkyRowBase != 7 || g_EnvScriptLength != 123 ||
+        g_EnvScriptCues != script.cues) {
+        puts("FAIL: environment script header");
+        return 1;
+    }
 
     SeedCue(&cues[0], 0, 4, 10, 0);
     SeedCue(&cues[1], 10, 12, 10, 2);

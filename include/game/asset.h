@@ -470,7 +470,7 @@ void ResetTrackTextureSwap(void);
 void SetTrackCameraTable(void *table);
 void SetCourseObjects(void* table);
 void SetEnvPaletteTable(void* table);
-void SetEnvironmentScript(void* script);
+void SetEnvironmentScript(u32 *script);
 void StoreTeamLogoImage(void* dst);
 void UploadImageAsset(void *asset);
 void UploadImageBlock(GameImageAssetHeaderWord *asset);
