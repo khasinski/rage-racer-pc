@@ -134,6 +134,26 @@ target_link_libraries(car_knockback_tests PRIVATE psyz)
 add_test(NAME car_knockback COMMAND car_knockback_tests)
 set_tests_properties(car_knockback PROPERTIES LABELS functional)
 
+add_executable(car_lateral_offset_tests
+    car_lateral_offset_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/clamp_car_lateral_offset.c)
+target_include_directories(car_lateral_offset_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_lateral_offset_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_lateral_offset_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_lateral_offset_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(car_lateral_offset_tests PRIVATE psyz)
+add_test(NAME car_lateral_offset COMMAND car_lateral_offset_tests)
+set_tests_properties(car_lateral_offset PROPERTIES LABELS unit)
+
 add_executable(car_spatial_queries_tests
     car_spatial_queries_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_spatial_queries.c
