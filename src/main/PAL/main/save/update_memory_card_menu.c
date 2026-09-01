@@ -81,23 +81,16 @@ static void DrawMemoryCardMenu(void) {
 static void RunCardBusyState(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     g_McActionBusy = 0;
-    if ((g_PadPressed & 0x90) && !fadeBusy) {
+    if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
         PlaySoundCue(3);
         StartMenuExitFade();
     }
     switch (g_McMenuSelection) {
     case 1:
-    {
-        s32 cardStatus = g_McCardStatus;
-        if (cardStatus == 1) {
-            if (g_McLastMenuState != 2) {
-                g_McMenuState = 2;
-            } else {
-                g_McMenuState = cardStatus;
-            }
+        if (g_McCardStatus == 1) {
+            g_McMenuState = g_McLastMenuState != 2 ? 2 : g_McCardStatus;
         }
         break;
-    }
     case 2:
         g_McMenuState = 2;
         break;
@@ -109,16 +102,13 @@ static void RunCardBusyState(s32 fadeBusy) {
         break;
     case -3:
     default:
-    {
-        s32 cardStatus = g_McCardStatus;
-        if (cardStatus == -3) {
-            s32 r = g_McErrorTicks;
-            g_McErrorTicks = r + 1;
-            if (r >= 4) {
-                g_McMenuState = cardStatus;
+        if (g_McCardStatus == -3) {
+            if (g_McErrorTicks >= 4) {
+                g_McMenuState = g_McCardStatus;
             }
+            g_McErrorTicks++;
         }
-    }
+        break;
     }
     if (g_McMenuState != 3) {
         g_McErrorTicks = 0;
@@ -140,7 +130,7 @@ static void RunCardMenuRows(s32 fadeBusy) {
     AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
                                   g_McMenuRowCount - 1);
     pad = g_PadPressed;
-    if (pad & 0x860) {
+    if (pad & PAD_CONFIRM) {
         if (g_McMenuRowCursor < g_McMenuRowCount - 1) {
             PlaySoundCue(2);
             g_McMenuPage = 1;
@@ -153,7 +143,7 @@ static void RunCardMenuRows(s32 fadeBusy) {
         if (fadeBusy) return;
         PlaySoundCue(2);
     } else {
-        if ((pad & 0x90) == 0 || fadeBusy) return;
+        if ((pad & PAD_CANCEL) == 0 || fadeBusy) return;
         PlaySoundCue(3);
     }
     g_McActionBusy = 0;
@@ -932,46 +922,33 @@ static void RunUnformattedCardState(s32 fadeBusy) {
             g_McActionResult = 0;
             g_McConfirmChoice = 0;
         }
-        return;
-
-    /*
-     * Retail parked these two arms inside the arm above, after its break, so
-     * the only way in was the switch jumping over the `if` they sat in. They
-     * are arms of this switch and now sit where the others do.
-     */
+    return;
 }
 
 /*
  * The card answered with something the menu has no name for.
  */
 static void RunCardErrorState(s32 fadeBusy) {
-        g_McMenuSubState = 0x11;
-        {
-            u16 lpad = g_PadPressed;
+    g_McMenuSubState = 0x11;
+    g_McMenuPhase = MC_PROMPT_CARD_ERROR;
+    if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
+        PlaySoundCue(3);
+        g_McActionBusy = 0;
+        StartMenuExitFade();
+    }
 
-            g_McMenuPhase = MC_PROMPT_CARD_ERROR;
-            if ((lpad & 0x90) && !fadeBusy) {
-                PlaySoundCue(3);
-                g_McActionBusy = 0;
-                StartMenuExitFade();
-            }
-        }
-        {
-            s32 sel = g_McMenuSelection;
-
-            if (sel == -3) {
-                return;
-            }
-            if (sel == 3) {
-                g_McLastMenuState = g_McMenuState;
-            }
-            g_McMenuState = sel;
-            g_McStateChangeCount++;
-            if (g_McErrorPending != 0) {
-                g_McErrorPending = 0;
-                g_McErrorCountdown = 3;
-            }
-        }
+    if (g_McMenuSelection == -3) {
+        return;
+    }
+    if (g_McMenuSelection == 3) {
+        g_McLastMenuState = g_McMenuState;
+    }
+    g_McMenuState = g_McMenuSelection;
+    g_McStateChangeCount++;
+    if (g_McErrorPending != 0) {
+        g_McErrorPending = 0;
+        g_McErrorCountdown = 3;
+    }
 }
 
 void UpdateMemoryCardMenu(void) {
