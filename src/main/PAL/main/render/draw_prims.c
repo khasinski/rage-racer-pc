@@ -3,6 +3,11 @@
 #include "game/render_state.h"
 #include "game/render.h"
 
+static u16 LinearClutToVram(u16 index) {
+    u16 row = index / 20;
+    return ((row + 0x1E0) << 6) + index % 20;
+}
+
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     void *otReg;
     u8 **cursorSlot;
@@ -68,17 +73,10 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
 void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
                 u32 flags) {
-    RenderBufferAddress cursor;
-    SPRT *prim;
-    s32 clutReg;
-    u8 *oldPrim;
-    s32 div;
-    s32 base;
+    SPRT *prim = RENDER_PRIM_CURSOR_AS(SPRT);
+    u8 *next;
 
-    prim = RENDER_PRIM_CURSOR_AS(SPRT);
     SetSprt(prim);
-
-    clutReg = clutX;
     SetShadeTex(prim, shadeTex);
     SetSemiTrans(prim, semiTrans);
 
@@ -91,36 +89,22 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
     prim->r0 = r;
     prim->g0 = g;
     prim->b0 = b;
+    prim->clut = LinearClutToVram(clutX);
+    AddPrim(ot, prim);
 
-    div = (clutReg & 0xFFFF) / 20U;
-    clutReg &= 0xFFFF;
-    base = (div + 0x1E0) << 6;
-    prim->clut = base + (clutReg - (div * 20));
-
-    cursor.sprite = prim;
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
-    clutReg = flags;
-    flags &= 0x80;
-    if (flags == 0) {
-        cursor.sprite = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, clutReg & 0xFFFF);
-        prim = cursor.sprite;
+    next = (u8 *)(prim + 1);
+    if ((flags & 0x80) == 0) {
+        next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-
-    RENDER_PRIM_CURSOR_AS(SPRT) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 
 void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
-    RenderBufferAddress cursor;
-    POLY_F3 *prim;
-    u8 *oldPrim;
+    POLY_F3 *prim = RENDER_PRIM_CURSOR_AS(POLY_F3);
+    u8 *next;
 
-    prim = RENDER_PRIM_CURSOR_AS(POLY_F3);
     SetPolyF3(prim);
     SetSemiTrans(prim, semiTrans);
 
@@ -133,19 +117,13 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     prim->r0 = r;
     prim->g0 = g;
     prim->b0 = b;
+    AddPrim(ot, prim);
 
-    cursor.polyF3 = prim;
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
+    next = (u8 *)(prim + 1);
     if ((flags & 0x80) == 0) {
-        cursor.polyF3 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, flags & 0xFFFF);
-        prim = cursor.polyF3;
+        next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-
-    RENDER_PRIM_CURSOR_AS(POLY_F3) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 
@@ -186,13 +164,7 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,
                           u16 tpage) {
-    RenderBufferAddress cursor;
     POLY_FT4 *prim = RENDER_PRIM_CURSOR_AS(POLY_FT4);
-    u32 d;
-    u32 clutRow;
-    u32 rem;
-    s32 clut;
-    u8 *oldPrim;
 
     SetPolyFT4(prim);
     SetShadeTex(prim, shadeTex);
@@ -217,17 +189,9 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     prim->g0 = g;
     prim->b0 = b;
     prim->tpage = tpage;
-    d = clutIndex;
-    clutRow = d / 20;
-    clut = (clutRow + 0x1E0) << 6;
-    rem = d - clutRow * 20;
-    clut = clut + rem;
-    prim->clut = clut;
-    cursor.polyFT4 = prim;
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-    RENDER_PRIM_CURSOR_AS(POLY_FT4) = prim;
+    prim->clut = LinearClutToVram(clutIndex);
+    AddPrim(ot, prim);
+    RENDER_PRIM_CURSOR_AS(POLY_FT4) = prim + 1;
 }
 
 
@@ -281,11 +245,9 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
 
 void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
                    u8 r, u8 g, u8 b, u8 alpha) {
-    RenderBufferAddress cursor;
-    LINE_F3 *prim;
-    u8 *oldPrim;
+    LINE_F3 *prim = RENDER_PRIM_CURSOR_AS(LINE_F3);
+    u8 *next;
 
-    prim = RENDER_PRIM_CURSOR_AS(LINE_F3);
     SetLineF3(prim);
     SetSemiTrans(prim, alpha != 0xFF);
 
@@ -298,19 +260,13 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
     prim->r0 = r;
     prim->g0 = g;
     prim->b0 = b;
+    AddPrim(ot, prim);
 
-    cursor.lineF3 = prim;
-    oldPrim = cursor.bytes;
-    prim++;
-    AddPrim(ot, oldPrim);
-
+    next = (u8 *)(prim + 1);
     if (alpha != 0xFF) {
-        cursor.lineF3 = prim;
-        cursor.bytes = QueueDrawModePrim(ot, cursor.bytes, alpha);
-        prim = cursor.lineF3;
+        next = QueueDrawModePrim(ot, next, alpha);
     }
-
-    RENDER_PRIM_CURSOR_AS(LINE_F3) = prim;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 

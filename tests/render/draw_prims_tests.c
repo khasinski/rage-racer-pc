@@ -76,6 +76,56 @@ static void CheckFlatQuad(void) {
              1, "quad cursor without draw mode");
 }
 
+static void CheckSpriteAndPolygons(void) {
+    SPRT *sprite;
+    POLY_F3 *triangle;
+    POLY_FT4 *textured;
+    LINE_F3 *line;
+
+    ResetPackets();
+    DrawSprite(&s_ot, -1, 2, 30, 40, 5, 6, 7, 8, 9,
+               21, 1, 1, 0x34);
+    sprite = (SPRT *)s_packets.bytes;
+    CHECK_EQ(sprite->x0, -1, "sprite x");
+    CHECK_EQ(sprite->w, 30, "sprite width");
+    CHECK_EQ(sprite->u0, 5, "sprite u");
+    CHECK_EQ(sprite->clut, ((0x1E0 + 1) << 6) + 1, "sprite clut");
+    CHECK_EQ((sprite->code & 3), 3, "sprite texture flags");
+    CHECK_EQ(s_queuePages[0], 0x34, "sprite draw mode");
+
+    ResetPackets();
+    DrawFlatTriangle(&s_ot, 1, 2, 3, 4, 5, 6,
+                     7, 8, 9, 1, 0x80);
+    triangle = (POLY_F3 *)s_packets.bytes;
+    CHECK_EQ(triangle->x2, 5, "triangle x2");
+    CHECK_EQ(triangle->b0, 9, "triangle blue");
+    CHECK_EQ((triangle->code & 2) != 0, 1, "triangle semitransparency");
+    CHECK_EQ(s_queueCount, 0, "triangle embedded draw mode");
+
+    ResetPackets();
+    GameDrawTexturedQuad(&s_ot, 1, 2, 3, 4, 5, 6, 7, 8,
+                         9, 10, 11, 12, 13, 14, 15, 16,
+                         17, 18, 19, 39, 1, 0, 0x55);
+    textured = (POLY_FT4 *)s_packets.bytes;
+    CHECK_EQ(textured->x3, 7, "textured quad x3");
+    CHECK_EQ(textured->u3, 15, "textured quad u3");
+    CHECK_EQ(textured->b0, 19, "textured quad blue");
+    CHECK_EQ(textured->clut, ((0x1E0 + 1) << 6) + 19,
+             "textured quad clut");
+    CHECK_EQ(textured->tpage, 0x55, "textured quad page");
+    CHECK_EQ(g_RenderState.packetCursor ==
+                 s_packets.bytes + sizeof(POLY_FT4),
+             1, "textured quad cursor");
+
+    ResetPackets();
+    DrawPolyLine3(&s_ot, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0x22);
+    line = (LINE_F3 *)s_packets.bytes;
+    CHECK_EQ(line->x2, 5, "polyline x2");
+    CHECK_EQ(line->b0, 9, "polyline blue");
+    CHECK_EQ((line->code & 2) != 0, 1, "polyline semitransparency");
+    CHECK_EQ(s_queuePages[0], 0x22, "polyline draw mode");
+}
+
 static void CheckSolidAndLines(void) {
     TILE *tile;
     LINE_G2 *gradient;
@@ -126,6 +176,7 @@ static void CheckRectOutline(void) {
 
 int main(void) {
     CheckFlatQuad();
+    CheckSpriteAndPolygons();
     CheckSolidAndLines();
     CheckRectOutline();
     if (s_failures != 0) return 1;
