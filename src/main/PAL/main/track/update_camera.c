@@ -47,6 +47,27 @@ static void SettleChaseYaw(s32 limit, s32 accel, s32 factor, int negative) {
     }
 }
 
+static void AdvanceChaseYawRamp(s32 stepLimit, int negative) {
+    s32 accel;
+    s32 ramp;
+
+    if (stepLimit > 0x40) {
+        stepLimit = 0x40;
+    }
+    g_ChaseYawStepLimit = stepLimit;
+    ramp = negative ? g_ChaseYawRampNeg : g_ChaseYawRampPos;
+    accel = ((ramp + 8) * (ramp + 8)) / g_ChaseYawDamping;
+    if (negative) {
+        g_ChaseYawRampPos = 0;
+        g_ChaseYawRampNeg += 8;
+    } else {
+        g_ChaseYawRampNeg = 0;
+        g_ChaseYawRampPos += 8;
+    }
+    g_ChaseYawStep = accel;
+    SettleChaseYaw(stepLimit, accel, g_ChaseYawDamping, negative);
+}
+
 static s32 ShortestAngleDelta(s32 delta) {
     if (delta >= 0x800)
         return delta - 0x1000;
@@ -107,7 +128,6 @@ static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     s32 chaseTargetYaw;
     s32 chaseYawDamping;
     s32 chaseYawLag;
-    s32 chaseYawStepLimit;
     s32 eyeOffset[3];
     s32 eyeWorld[3];
     s32 focusOffset[3];
@@ -119,9 +139,6 @@ static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     s32 previousMode;
     s32 rawAngle;
     s32 speedDamping;
-    s32 turnAccel;
-    s32 turnFactor;
-    s32 turnLimit;
     s32 yawError;
     s32 yawStepAhead;
     s32 yawStepBehind;
@@ -161,61 +178,20 @@ static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     yawError = g_ChaseTargetYaw - g_ChaseYawPrev;
     if (yawError >= 5) {
         if (yawError >= 0x800) {
-            chaseYawStepLimit = (((0x1000 - yawError) / 17) * 2) & 0xFFF;
-            g_ChaseYawStepLimit = chaseYawStepLimit;
-            if (chaseYawStepLimit >= 0x41) {
-                g_ChaseYawStepLimit = 0x40;
-            }
-            turnFactor = g_ChaseYawDamping;
-            turnAccel = ((g_ChaseYawRampNeg + 8) * (g_ChaseYawRampNeg + 8)) / turnFactor;
-            turnLimit = g_ChaseYawStepLimit;
-            g_ChaseYawRampPos = 0;
-            g_ChaseYawRampNeg += 8;
-            g_ChaseYawStep = turnAccel;
-            SettleChaseYaw(turnLimit, turnAccel, turnFactor, 1);
+            yawStepWrapped = (((0x1000 - yawError) / 17) * 2) & 0xFFF;
+            AdvanceChaseYawRamp(yawStepWrapped, 1);
         } else {
             yawStepAhead =
                 (((g_ChaseTargetYaw - g_ChaseYawPrev) / 17) * 2) & 0xFFF;
-            g_ChaseYawStepLimit = yawStepAhead;
-            if (yawStepAhead >= 0x41) {
-                g_ChaseYawStepLimit = 0x40;
-            }
-            turnFactor = g_ChaseYawDamping;
-            turnAccel = ((g_ChaseYawRampPos + 8) * (g_ChaseYawRampPos + 8)) /
-                        turnFactor;
-            turnLimit = g_ChaseYawStepLimit;
-            g_ChaseYawRampNeg = 0;
-            g_ChaseYawRampPos += 8;
-            g_ChaseYawStep = turnAccel;
-            SettleChaseYaw(turnLimit, turnAccel, turnFactor, 0);
+            AdvanceChaseYawRamp(yawStepAhead, 0);
         }
     } else if (yawError < -4) {
         if (yawError < -0x7FF) {
             yawStepWrapped = (((0x1000 - (g_ChaseYawPrev - g_ChaseTargetYaw)) / 17) * 2) & 0xFFF;
-            g_ChaseYawStepLimit = yawStepWrapped;
-            if (yawStepWrapped >= 0x41) {
-                g_ChaseYawStepLimit = 0x40;
-            }
-            turnFactor = g_ChaseYawDamping;
-            turnAccel = ((g_ChaseYawRampPos + 8) * (g_ChaseYawRampPos + 8)) / turnFactor;
-            turnLimit = g_ChaseYawStepLimit;
-            g_ChaseYawRampNeg = 0;
-            g_ChaseYawRampPos += 8;
-            g_ChaseYawStep = turnAccel;
-            SettleChaseYaw(turnLimit, turnAccel, turnFactor, 0);
+            AdvanceChaseYawRamp(yawStepWrapped, 0);
         } else {
             yawStepBehind = (((g_ChaseYawPrev - g_ChaseTargetYaw) / 17) * 2) & 0xFFF;
-            g_ChaseYawStepLimit = yawStepBehind;
-            if (yawStepBehind >= 0x41) {
-                g_ChaseYawStepLimit = 0x40;
-            }
-            turnFactor = g_ChaseYawDamping;
-            turnAccel = ((g_ChaseYawRampNeg + 8) * (g_ChaseYawRampNeg + 8)) / turnFactor;
-            turnLimit = g_ChaseYawStepLimit;
-            g_ChaseYawRampPos = 0;
-            g_ChaseYawRampNeg += 8;
-            g_ChaseYawStep = turnAccel;
-            SettleChaseYaw(turnLimit, turnAccel, turnFactor, 1);
+            AdvanceChaseYawRamp(yawStepBehind, 1);
         }
     } else {
         g_ChaseYawLag = 0;
