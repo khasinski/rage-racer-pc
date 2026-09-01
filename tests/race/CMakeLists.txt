@@ -108,6 +108,26 @@ add_test(NAME lap_and_finish COMMAND lap_and_finish_tests)
 set_tests_properties(lap_and_finish PROPERTIES LABELS functional)
 endif()
 
+add_executable(bgm_select_control_tests
+    bgm_select_control_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select_control.c)
+target_include_directories(bgm_select_control_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(bgm_select_control_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(bgm_select_control_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(bgm_select_control_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(bgm_select_control_tests PRIVATE psyz)
+add_test(NAME bgm_select_control COMMAND bgm_select_control_tests)
+set_tests_properties(bgm_select_control PROPERTIES LABELS functional)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME scenario_control

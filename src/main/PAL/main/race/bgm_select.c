@@ -1,7 +1,5 @@
 #include "game/prim.h"
-#include "game/audio_internal.h"
 #include "game/car.h"
-#include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
@@ -39,122 +37,21 @@ void DrawBgmSelectBar(void) {
     RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 0xB);
 }
 
-void AdvanceBgmShuffleBag(u32 track) {
-    g_BgmShuffleIndex++;
-    if (g_BgmShuffleIndex == g_BgmTrackCount) {
-        ShuffleBgmOrder();
-
-        if (track == g_BgmShuffleOrder[0]) {
-            u8 tmp = g_BgmShuffleOrder[g_BgmTrackCount - 1];
-            g_BgmShuffleOrder[0] = tmp;
-            g_BgmShuffleOrder[g_BgmTrackCount - 1] = track;
-        }
-    }
-}
-
 void UpdateBgmSelect(void) {
-    s32 t;
-    if (g_BgmChangeDelay > 0) {
-        t = g_BgmChangeDelay - 1;
-        g_BgmChangeDelay = t;
-        /* The empty t == 4 arm guarded nothing: the two values exclude each
-         * other, so reaching the second test already means t is not 4. */
-        if (t == 0) {
-            if (g_BgmSelectCdTrack == 12) g_BgmSelectCdTrack = 17;
-            RequestCdTrack(g_BgmSelectCdTrack);
-            StartCdAudio();
-            g_CdTrackEnded = 0;
-        }
-    } else {
-        if (g_CdTrackEnded != 0) {
-            g_BgmChangeDelay = 6;
-            if (g_BgmRandomPlay != 0) {
-                g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
-                AdvanceBgmShuffleBag(g_BgmSelectTrack);
-            } else {
-                g_BgmSelectTrack++;
-                g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
-            }
-            g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
-        }
-    }
+    UpdateBgmSelectPlayback();
 
     if (g_SceneTimer == 2) SetDispMask(1);
     if (g_FadeStep == 0) {
-    if (g_PadPressed & PAD_LEFT) {
-        if (g_BgmSelectCursor > 0) g_BgmSelectCursor = g_BgmSelectCursor - 1;
-    }
-    if (g_PadPressed & PAD_RIGHT) {
-        if (g_BgmSelectCursor < 2) g_BgmSelectCursor = g_BgmSelectCursor + 1;
-    }
-    if (g_PadPressed & 1) {
-        s32 p;
-        s32 h0;
-        ShuffleBgmOrder();
-        h0 = g_BgmShuffleOrder[0];
-        p = g_BgmSelectTrack;
-        if (p == h0) {
-            u8 tmp = g_BgmShuffleOrder[g_BgmTrackCount - 1];
-            g_BgmShuffleOrder[0] = tmp;
-            g_BgmShuffleOrder[g_BgmTrackCount - 1] = p;
-        }
-        g_BgmRandomPlay = 1;
-        g_BgmRandomLabelTimer = 60;
-    }
-    {
-        u16 f = g_PadPressed;
-        if (f & 2) {
-            g_BgmRandomPlay = 0;
-            g_BgmRandomLabelTimer = 0;
-        }
-        if (f & 0x860) {
-            switch (g_BgmSelectCursor) {
-            case 0:
-                if (g_BgmRandomPlay == 0) {
-                    g_BgmSelectTrack--;
-                    g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
-                }
-                if (g_BgmChangeDelay == 0) {
-                    StartCdVolumeFade(60);
-                    g_BgmChangeDelay = 0x40;
-                }
-                g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
-                break;
-            case 2:
-                if (g_BgmRandomPlay != 0) {
-                    g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
-                    AdvanceBgmShuffleBag(g_BgmSelectTrack);
-                } else {
-                    g_BgmSelectTrack++;
-                    g_BgmSelectTrack = (g_BgmSelectTrack + g_BgmTrackCount) % g_BgmTrackCount;
-                }
-                if (g_BgmChangeDelay == 0) {
-                    StartCdVolumeFade(60);
-                    g_BgmChangeDelay = 0x40;
-                }
-                g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
-                break;
-            case 1:
-                StartCdVolumeFade(60);
-                g_FadeStep = 4;
-                break;
-            }
-        } else if (f & 0x90) {
-            StartCdVolumeFade(60);
-            g_FadeStep = 4;
-        }
-    }
-    if (g_PadPressed & 4) g_BgmSelectShowUi = 1;
-    if (g_PadPressed & 8) g_BgmSelectShowUi = 0;
+        UpdateBgmSelectInput();
     } else {
-    DrawFullscreenFadeTile(g_FadeLevel, 0x49);
-    g_FadeLevel = g_FadeLevel + g_FadeStep;
-    if (g_FadeLevel >= 256) {
-        RequestOptionScreenAssets();
-        g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
-        g_FadeLevel = 256;
-        g_FadeStep = -4;
-    }
+        DrawFullscreenFadeTile(g_FadeLevel, 0x49);
+        g_FadeLevel += g_FadeStep;
+        if (g_FadeLevel >= 256) {
+            RequestOptionScreenAssets();
+            g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
+            g_FadeLevel = 256;
+            g_FadeStep = -4;
+        }
     }
 
     if (g_BgmSelectShowUi != 0) DrawBgmSelectBar();

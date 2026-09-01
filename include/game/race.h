@@ -468,6 +468,8 @@ void ExitRaceScene(s32 sceneId);
 s32 GetTrackZoneBlend(s32 position);
 void PlayCountdownCues(s32 timer);
 void AdvanceBgmShuffleBag(u32 track);
+void UpdateBgmSelectPlayback(void);
+void UpdateBgmSelectInput(void);
 void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj);
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj);
