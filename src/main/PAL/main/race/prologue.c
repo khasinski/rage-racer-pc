@@ -152,7 +152,7 @@ void DrawPrologueText(void) {
         s32 tmp;
 
         fadeLevel = g_FadeLevel;
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         tmp = fadeLevel * 7;
         greenScale = tmp * 32;
         prim = *scratch;
@@ -228,7 +228,7 @@ void UpdatePrologue(void) {
 
     DrawCars();
     DrawSkyBackground();
-    g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, active);

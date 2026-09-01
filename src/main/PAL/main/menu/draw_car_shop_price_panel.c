@@ -15,7 +15,7 @@ void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
     u32 rise;
     u32 risePhase;
 
-    ot = SCRATCH_OT_BASE;
+    ot = RENDER_OT_BASE;
 
     if (step == 0) {
         g_CarShopPanelSlide = 0;

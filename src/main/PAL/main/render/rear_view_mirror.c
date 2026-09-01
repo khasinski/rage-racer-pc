@@ -17,7 +17,7 @@ void ResetMirrorState(void) {
 
 
 /*
- * Sets up the scratchpad render state (0x1F800000) for the rear-view mirror
+ * Sets up the render state for the rear-view mirror
  * pass: only when all five conditions hold (mirror flag, enabled, etc.) does it
  * save the current matrix into g_CameraMatrixSaved, install the mirror matrix g_MirrorViewMatrix,
  * set mode 9 + a narrow clip rect + prim base, flip the ordering flag, and push
@@ -25,7 +25,7 @@ void ResetMirrorState(void) {
  * is active, else 0.
  */
 s32 BeginMirrorPass(void) {
-    GameScratchpadRenderState *scratch;
+    GameRenderState *scratch;
     s32 mirrorEnabled;
     s32 v0reg;
     s32 v1reg;
@@ -33,7 +33,7 @@ s32 BeginMirrorPass(void) {
     MirrorPanelPositionAddress panelPosition;
 
     mirrorEnabled = 0;
-    scratch = (&g_RageScratchpadState);
+    scratch = (&g_RenderState);
 
     if ((g_MirrorUnlocked != 0) &&
         (g_MirrorViewEnabled != 0) &&
@@ -109,11 +109,11 @@ s32 BeginMirrorPass(void) {
  * saved main-view matrix from g_CameraMatrixSaved.
  */
 void EndMirrorPass(void) {
-    GameScratchpadRenderState *scratch;
+    GameRenderState *scratch;
     s32 v0reg;
     s32 v1reg;
 
-    scratch = (&g_RageScratchpadState);
+    scratch = (&g_RenderState);
 
     SetGeomOffset(0xA0, 0x78);
     SetGeomScreen(0x140);
@@ -198,7 +198,7 @@ void DrawRearViewMirror(s32 mode) {
         }
 
         if (BeginMirrorPass() != 0) {
-            scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+            scratch = &RENDER_PRIM_CURSOR_AS(void);
 
             DrawSkyBackground();
             packet = DrawMirrorFrame(*scratch);
@@ -211,9 +211,9 @@ void DrawRearViewMirror(s32 mode) {
                          [GAME_FRAME_OT_LENGTH - 1], prim);
             *scratch = packet;
             BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
-            SetRotMatrix((&g_RageScratchpadState.matrix));
-            g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
-            SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
+            SetRotMatrix((&g_RenderState.matrix));
+            g_RenderState.envMode4 = g_IsEnvironmentMode4;
+            SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
 
             packet = *scratch;
             SetDrawArea(packet,

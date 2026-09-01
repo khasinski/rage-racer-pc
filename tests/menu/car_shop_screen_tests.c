@@ -16,7 +16,7 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -66,7 +66,7 @@ u8 g_UiChromeScript;
 u8 g_UiChromeScript2;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(g_TimeAttackCarEnabled, 0, sizeof(g_TimeAttackCarEnabled));
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
             s_cars[i].enabled = (u8)(i & 1);
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
@@ -387,7 +387,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }

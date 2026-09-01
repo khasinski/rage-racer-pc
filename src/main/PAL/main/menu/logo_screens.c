@@ -11,7 +11,7 @@ void UpdateTeamLogoScreen(void)
   s32 edge;
   s32 cnt;
   int buttonHeight;
-  ot = SCRATCH_OT_BASE;
+  ot = RENDER_OT_BASE;
   g_MenuAltLayout = 0;
   state = GameMenuBusy;
   if (state == 0)

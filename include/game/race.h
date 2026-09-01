@@ -294,7 +294,7 @@ extern s32 g_WaypointSpawnCooldown;
 
 /*
  * None of the Draw* functions below draw. Each one packs primitives at the
- * scratchpad cursor and links them into an ordering table; the GPU is not
+ * render-state cursor and links them into an ordering table; the GPU is not
  * touched until boot/main_loop.c calls DrawOTag once per frame. That holds
  * for the whole family, render.h's DrawSprite / DrawLine / DrawSolidRect
  * included, which is why they are not spelled Queue* - the queueing is the

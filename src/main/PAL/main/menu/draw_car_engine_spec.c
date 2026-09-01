@@ -13,7 +13,7 @@ void DrawCarEngineSpec(s32 slideRaw, s32 brightness) {
     s32 r;
     s32 torqueEnd;
 
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
     if (g_MenuAltLayout != 0) {
         return;
     }

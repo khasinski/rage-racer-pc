@@ -15,7 +15,7 @@ s32 DrawClassChangeCurtain(s32 step) {
     s32 yArg;
     u32 curtainPhase;
 
-    scratch = SCRATCH_OT_BASE;
+    scratch = RENDER_OT_BASE;
     delta = step;
 
     if (delta == 0) {

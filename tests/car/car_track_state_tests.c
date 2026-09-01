@@ -19,7 +19,7 @@
 #include "game/track_internal.h"
 #include "game/race.h"
 #include "game/state.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -31,10 +31,10 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
  * them here as well left two definitions of each, which only a linker that
  * merges tentative definitions would accept. */
 PlayerCarRuntime g_PlayerCar;
-/* The scratchpad the track code hands its intermediate values through. */
+/* The working set the track code hands its intermediate values through. */
 ObjectMatrixWork g_ObjectMatrixWork;
-CarTrackScratch g_CarTrackScratch;
-GameScratchpadRenderState g_RageScratchpadState;
+CarTrackWork g_CarTrackWork;
+GameRenderState g_RenderState;
 
 /* The boundary response calls out to the knockback code; what that does with
  * the hit is its own business, but that it was called is part of this one's
@@ -205,8 +205,8 @@ int main(int argc, char **argv) {
                             s_lastKnockX = 0;
                             s_lastKnockZ = 0;
                             s_lastKnockMode = 0;
-                            memset(&g_CarTrackScratch, 0,
-                                   sizeof(g_CarTrackScratch));
+                            memset(&g_CarTrackWork, 0,
+                                   sizeof(g_CarTrackWork));
 
                             result = UpdateCarTrackState(&car, point, &limits);
 

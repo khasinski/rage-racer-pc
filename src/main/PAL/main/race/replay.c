@@ -191,7 +191,7 @@ void DrawReplayBadge(void) {
     u8 *value;
 
     if ((g_SceneTimer & 0x10) && (g_SeriesCleared == 0)) {
-        scratch = SCRATCH_PRIM_CURSOR_SLOT;
+        scratch = RENDER_PRIM_CURSOR_SLOT;
         value = *scratch;
         base = (u8 *)GamePrimaryOrderingTable(0);
         next = GameQueueSprite(base, value, 0x10, 0x10, 0x48, 0x10, 0, 0x68, 0x780D);

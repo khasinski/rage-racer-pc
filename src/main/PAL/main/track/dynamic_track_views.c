@@ -21,7 +21,7 @@ void DrawStartGridScenery(s32 flags) {
     if (g_RacePhase < 2 && flags >= 0x51) {
         BuildRotMatrixY(&mtx, g_StartGridSceneryAngle[ReadStableRaceSeries()]);
         renderWorldMtx = mtx;
-        MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
+        MulMatrix2((&g_RenderState.matrix), &mtx);
         if (flags - 90 > 0) {
             state = g_StartGridSceneryPos[ReadStableRaceSeries()];
             s1 = (flags - 90) / 3;
@@ -31,28 +31,28 @@ void DrawStartGridScenery(s32 flags) {
             if (SeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+            SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             rem = s1 - s0 * 15;
             lim = g_CourseModelCount;
             
             value = rem + 0x28;
-            g_RageScratchpadState.envMode4 = 0;
+            g_RenderState.envMode4 = 0;
             drawArg = (value < lim) ? value : 1;
         } else {
             state = g_StartGridSceneryPos[ReadStableRaceSeries()];
             if (SeriesCourseIndex() == 3) {
                 state.z += 0x5000;
             }
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+            SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             lim = g_CourseModelCount;
             
             value = 0x28;
-            g_RageScratchpadState.envMode4 = 0;
+            g_RenderState.envMode4 = 0;
             drawArg = (value < lim) ? value : 1;
         }
         GameRenderWorldSubmitDynamicCourseObject(
             2, drawArg, state.x, state.y, state.z, renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
     }
 }
 
@@ -94,7 +94,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     BuildRotMatrixX(&mtx2, g_AnimSceneryPitch[instance]);
     MulMatrix(&mtx, &mtx2);
     renderWorldMtx = mtx;
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
+    MulMatrix2((&g_RenderState.matrix), &mtx);
 
     if (g_GrandPrixMode == 0) {
         return;
@@ -104,51 +104,51 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
 
     if (g_AnimSceneryRacePosition != 0) {
         if (g_AnimSceneryFrame < 13) {
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+            SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             num = g_AnimSceneryFrame + 10;
-            g_RageScratchpadState.envMode4 = 0;
+            g_RenderState.envMode4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
             GameRenderWorldSubmitDynamicCourseOverlay(
                 0x20 + instance * 2, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
-            SubmitCourseModel((&g_RageScratchpadState), drawArg);
+            SubmitCourseModel((&g_RenderState), drawArg);
         } else {
-            SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+            SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             num = g_AnimSceneryRacePosition;
-            g_RageScratchpadState.envMode4 = 0;
+            g_RenderState.envMode4 = 0;
             drawArg = (num < g_CourseModelCount) ? num : 1;
             GameRenderWorldSubmitDynamicCourseOverlay(
                 0x20 + instance * 2, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
-            SubmitCourseModel((&g_RageScratchpadState), drawArg);
+            SubmitCourseModel((&g_RenderState), drawArg);
         }
 
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
-        g_RageScratchpadState.envMode4 = g_AnimSceneryTint;
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
+        g_RenderState.envMode4 = g_AnimSceneryTint;
         num = g_AnimSceneryVariant + 4;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
     } else {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
         num = g_AnimSceneryFrame + 0x18;
-        g_RageScratchpadState.envMode4 = 0;
+        g_RenderState.envMode4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x20 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
 
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
-        g_RageScratchpadState.envMode4 = g_AnimSceneryTint;
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
+        g_RenderState.envMode4 = g_AnimSceneryTint;
         num = g_AnimSceneryVariant + 7;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x21 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
     }
 }
 
@@ -189,40 +189,40 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     BuildRotMatrixX(&mtx2, g_AnimSceneryPitch[instance]);
     MulMatrix(&mtx, &mtx2);
     renderWorldMtx = mtx;
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
+    MulMatrix2((&g_RenderState.matrix), &mtx);
 
     g_AnimScenery2Tint = ((timer >> 3) & 3) << 16;
 
     if (isReplay != 0) {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
         num = g_AnimScenery2Frame + 0xA;
-        g_RageScratchpadState.envMode4 = 0;
+        g_RenderState.envMode4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
 
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
         sv = g_AnimScenery2Tint;
         drawArg = 1;
-        g_RageScratchpadState.envMode4 = sv;
+        g_RenderState.envMode4 = sv;
         sv = g_CourseModelCount;
         num = g_AnimScenery2Variant + 4;
     } else {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
         num = g_AnimScenery2Frame + 0x18;
-        g_RageScratchpadState.envMode4 = 0;
+        g_RenderState.envMode4 = 0;
         drawArg = (num < g_CourseModelCount) ? num : 1;
         GameRenderWorldSubmitDynamicCourseOverlay(
             0x30 + instance * 2, drawArg, state.x, state.y, state.z,
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawArg);
+        SubmitCourseModel((&g_RenderState), drawArg);
 
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
         sv = g_AnimScenery2Tint;
         drawArg = 1;
-        g_RageScratchpadState.envMode4 = sv;
+        g_RenderState.envMode4 = sv;
         sv = g_CourseModelCount;
         num = g_AnimScenery2Variant + 7;
     }
@@ -233,5 +233,5 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     GameRenderWorldSubmitDynamicCourseOverlay(
         0x31 + instance * 2, drawArg, state.x, state.y, state.z,
         renderWorldMtx.m, 0, 0);
-    SubmitCourseModel((&g_RageScratchpadState), drawArg);
+    SubmitCourseModel((&g_RenderState), drawArg);
 }

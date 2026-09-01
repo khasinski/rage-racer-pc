@@ -5,7 +5,7 @@
  * own counter, and a wider caption sprite on the lower row.
  */
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price) {
-    void *ot = SCRATCH_OT_BASE;
+    void *ot = RENDER_OT_BASE;
     s32 slide;
     s32 risenFrames;
     u32 rise;

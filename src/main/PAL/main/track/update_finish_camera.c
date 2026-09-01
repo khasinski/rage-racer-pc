@@ -6,7 +6,7 @@
 /*
  * Camera track-follower: advances a look-ahead track point, aims the eye object
  * g_CameraCar toward the sampled centre-line point
- * (InterpolateTrackPoint + atan2), nudges its position, then seeds the scratchpad view
+ * (InterpolateTrackPoint + atan2), nudges its position, then seeds the render state's view
  * state (view[2..4]=eye XYZ, view[6]=pitch, view[7]=yaw, view[8]=roll) from the
  * eye object and submits the render object (DrawPlayerCarModel). markerClamp is
  * the complete zeroed track-limit record passed to UpdateCarTrackState.
@@ -24,7 +24,7 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     s32 value;
     s32 zValue;
     GameCarRuntimeAddress cameraAddress;
-    ScratchBlockAddress viewAddress;
+    GameBlockAddress viewAddress;
 
     LoadScratchLegacyView(&legacyView);
     view = legacyView.words;

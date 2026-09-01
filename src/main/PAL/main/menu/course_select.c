@@ -135,7 +135,7 @@ s32 DrawCourseSelectScreen(s32 step)
     u32 fadeValue;
     OrderingTableAddress otAddress;
 
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;

@@ -30,15 +30,15 @@ void DrawMenuCarView(void) {
     s32 *q;
 
     vec = g_MenuCarPivotOffset;
-    g_RageScratchpadState.viewY = -64;
-    g_RageScratchpadState.viewZ = -256;
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewAngleX = 0x100;
-    g_RageScratchpadState.viewAngleY = 0;
-    g_RageScratchpadState.viewAngleZ = 0;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewAngleX = 0x100;
+    g_RenderState.viewAngleY = 0;
+    g_RenderState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
+    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -129,7 +129,7 @@ void DrawMenuCarView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - *p);
     BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
+    MulMatrix2((&g_RenderState.matrix), &mtxA);
 
     altLayout = g_MenuAltLayout;
     outX = out.x;
@@ -160,22 +160,22 @@ void DrawMenuCarView(void) {
     *q = s2 + 30;
     ShowroomPlayerCar()->pose.position[2] = 0;
     SelectModelBank(14);
-    /* 0x1f800004 is the scratchpad OT-base slot on PS1.  Keep the retail
+    /* The render state's ordering-table base. Keep the retail
      * 120-byte (30-entry) showroom-depth bias, but express it through the
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
-    SCRATCH_OT_BASE_AS(OT_TYPE) += 30;
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+    RENDER_OT_BASE_AS(OT_TYPE) += 30;
+    SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&ShowroomPlayerCar()->pose.position[0]), &mtxA);
-    g_RageScratchpadState.envMode4 = 0;
+    g_RenderState.envMode4 = 0;
     {
         s32 a1 = 1;
         if (g_ModelBankCount >= 6) {
             a1 = 5;
         }
-        SubmitModel((&g_RageScratchpadState), a1);
+        SubmitModel((&g_RenderState), a1);
     }
-    SCRATCH_OT_BASE_AS(OT_TYPE) -= 30;
+    RENDER_OT_BASE_AS(OT_TYPE) -= 30;
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
@@ -187,15 +187,15 @@ void DrawMenuCourseView(void) {
     s32 s2;
     s32 *p;
 
-    g_RageScratchpadState.viewY = -64;
-    g_RageScratchpadState.viewZ = -256;
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewAngleX = 0x100;
-    g_RageScratchpadState.viewAngleY = 0;
-    g_RageScratchpadState.viewAngleZ = 0;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewAngleX = 0x100;
+    g_RenderState.viewAngleY = 0;
+    g_RenderState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
+    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -267,16 +267,16 @@ void DrawMenuCourseView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - *p);
     BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
+    MulMatrix2((&g_RenderState.matrix), &mtxA);
     SelectModelBank(14);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(p - 9), &mtxA);
-    g_RageScratchpadState.envMode4 = 0;
+    SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(p - 9), &mtxA);
+    g_RenderState.envMode4 = 0;
     {
         s32 a1 = 1;
         if ((s2 & 3) < g_ModelBankCount) {
             a1 = s2 & 3;
         }
-        SubmitModel((&g_RageScratchpadState), a1);
+        SubmitModel((&g_RenderState), a1);
     }
 }
 
@@ -303,15 +303,15 @@ void DrawTeamNameCharModel(void) {
 
     vcopy = g_TeamNameCharScale;
 
-    g_RageScratchpadState.viewY = -64;
-    g_RageScratchpadState.viewZ = -256;
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewAngleX = 0;
-    g_RageScratchpadState.viewAngleY = -104;
-    g_RageScratchpadState.viewAngleZ = 0;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewAngleX = 0;
+    g_RenderState.viewAngleY = -104;
+    g_RenderState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
+    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -372,19 +372,19 @@ void DrawTeamNameCharModel(void) {
     BuildRotMatrixY(&mtxB, 0x800 - transform.rotationY);
     BuildRotMatrixZ(&mtxA, transform.rotationZ);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
+    MulMatrix2((&g_RenderState.matrix), &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
     if (g_TeamNameCharModel != 10 &&
         (u32)(g_TeamNameCharModel - 42) >= 2U) {
         s32 a1;
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+        SetGteObjectMatrix((&g_ObjectMatrixWork),
                            AsPositionWords(&transform.positionX), &mtxA);
-        g_RageScratchpadState.envMode4 = 0;
+        g_RenderState.envMode4 = 0;
         a1 = 1;
         if (g_TeamNameCharModel < g_CourseModelCount) {
             a1 = g_TeamNameCharModel;
         }
-        SubmitCourseModel((&g_RageScratchpadState), a1);
+        SubmitCourseModel((&g_RenderState), a1);
     }
 }

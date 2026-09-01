@@ -423,7 +423,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep)
 {
   RenderBufferAddress ot;
 
-  ot.pointer = SCRATCH_OT_BASE_AS(void);
+  ot.pointer = RENDER_OT_BASE_AS(void);
   if (panelStep == 0)
   {
     g_TeamLogoPanelStep = 0;

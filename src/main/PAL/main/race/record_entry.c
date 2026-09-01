@@ -138,7 +138,7 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
     u8 **scratch;
 
     if (g_AnimTimer & 8) {
-        scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+        scratch = &RENDER_PRIM_CURSOR_AS(u8);
         *scratch = AddTilePrim(
             GamePrimaryOrderingTable(0),
             *scratch,

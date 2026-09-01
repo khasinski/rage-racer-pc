@@ -58,7 +58,7 @@ void DrawScreenAdjustScreen(void) {
     s32 y48 = 0x48;
     s32 h18 = 0x18;
     s32 w0c = 0xC;
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *next;
 
     next = *scratch;
@@ -159,7 +159,7 @@ void DrawOptionSceneOverlay(void) {
         g_OptionLetterboxHeight = value - 4;
     }
 
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
     /* The OPTION backdrop lives behind the depth-0/51 2D foreground. */
     base = GamePrimaryOrderingTable(54);
     pkt = *scratch;
@@ -179,8 +179,8 @@ void DrawOptionSceneOverlay(void) {
 
 /* Scene 23: the setup / OPTION scene, dispatching g_GameModeHandlers[g_GameMode]. */
 void UpdateOptionScene(void) {
-    SCRATCH_PRIM_CURSOR_AS(u8) = AddTilePrim(
-        GamePrimaryOrderingTable(0), SCRATCH_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 2, 0, 0, 0);
+    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(
+        GamePrimaryOrderingTable(0), RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 2, 0, 0, 0);
     g_AnimTimer++;
     g_SceneTimer++;
     if (g_SceneTimer == 2) {

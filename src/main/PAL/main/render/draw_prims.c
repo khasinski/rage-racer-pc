@@ -1,6 +1,6 @@
 #include "game/prim.h"
 #include "game/render_types.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/render.h"
 
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
@@ -20,7 +20,7 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     xReg = x;
     yReg = y;
     wReg = w;
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
     hReg = h;
     packet = *scratch;
 
@@ -75,7 +75,7 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
     s32 div;
     s32 base;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(SPRT);
+    prim = RENDER_PRIM_CURSOR_AS(SPRT);
     SetSprt(prim);
 
     clutReg = clutX;
@@ -110,7 +110,7 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
         prim = cursor.sprite;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(SPRT) = prim;
+    RENDER_PRIM_CURSOR_AS(SPRT) = prim;
 }
 
 
@@ -120,7 +120,7 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     POLY_F3 *prim;
     u8 *oldPrim;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(POLY_F3);
+    prim = RENDER_PRIM_CURSOR_AS(POLY_F3);
     SetPolyF3(prim);
     SetSemiTrans(prim, semiTrans);
 
@@ -145,7 +145,7 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
         prim = cursor.polyF3;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(POLY_F3) = prim;
+    RENDER_PRIM_CURSOR_AS(POLY_F3) = prim;
 }
 
 
@@ -168,7 +168,7 @@ void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
     u8 gLocal;
     u8 bLocal;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(POLY_F4);
+    prim = RENDER_PRIM_CURSOR_AS(POLY_F4);
     semiReg = semiTrans;
     flagsReg = flags;
     y1Reg = y1;
@@ -212,11 +212,11 @@ void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
         prim = cursor.polyF4;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(POLY_F4) = prim;
+    RENDER_PRIM_CURSOR_AS(POLY_F4) = prim;
 }
 
 /*
- * Packs a POLY_FT4 (textured quad) at the scratchpad cursor and links it into
+ * Packs a POLY_FT4 (textured quad) at the render state's cursor and links it into
  * the ordering table. clutIndex is a linear palette slot turned into VRAM clut
  * coordinates: 20 cluts per row starting at y = 0x1E0.
  */
@@ -226,7 +226,7 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,
                           u16 tpage) {
     RenderBufferAddress cursor;
-    POLY_FT4 *prim = SCRATCH_PRIM_CURSOR_AS(POLY_FT4);
+    POLY_FT4 *prim = RENDER_PRIM_CURSOR_AS(POLY_FT4);
     u32 d;
     u32 clutRow;
     u32 rem;
@@ -266,7 +266,7 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     oldPrim = cursor.bytes;
     prim++;
     AddPrim(ot, oldPrim);
-    SCRATCH_PRIM_CURSOR_AS(POLY_FT4) = prim;
+    RENDER_PRIM_CURSOR_AS(POLY_FT4) = prim;
 }
 
 
@@ -284,7 +284,7 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
     TILE *prim;
     u8 *oldPrim;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(TILE);
+    prim = RENDER_PRIM_CURSOR_AS(TILE);
     y1Reg = (u16)y1;
     rReg = (u8)r;
     gReg = (u8)g;
@@ -318,7 +318,7 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
         prim = cursor.tile;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(TILE) = prim;
+    RENDER_PRIM_CURSOR_AS(TILE) = prim;
 }
 
 
@@ -336,7 +336,7 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
     LINE_F2 *prim;
     u8 *oldPrim;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(LINE_F2);
+    prim = RENDER_PRIM_CURSOR_AS(LINE_F2);
     y1Reg = (u16)y1;
     rReg = (u8)r;
     gReg = (u8)g;
@@ -370,7 +370,7 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
         prim = cursor.lineF2;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(LINE_F2) = prim;
+    RENDER_PRIM_CURSOR_AS(LINE_F2) = prim;
 }
 
 
@@ -380,7 +380,7 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
     LINE_F3 *prim;
     u8 *oldPrim;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(LINE_F3);
+    prim = RENDER_PRIM_CURSOR_AS(LINE_F3);
     SetLineF3(prim);
     SetSemiTrans(prim, alpha != 0xFF);
 
@@ -405,7 +405,7 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
         prim = cursor.lineF3;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(LINE_F3) = prim;
+    RENDER_PRIM_CURSOR_AS(LINE_F3) = prim;
 }
 
 
@@ -426,7 +426,7 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8
     u8 g1Local;
     u8 b1Local;
 
-    prim = SCRATCH_PRIM_CURSOR_AS(LINE_G2);
+    prim = RENDER_PRIM_CURSOR_AS(LINE_G2);
     y1Reg = y1;
     r0Reg = r0;
     g0Reg = g0;
@@ -466,7 +466,7 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8
         prim = cursor.lineG2;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(LINE_G2) = prim;
+    RENDER_PRIM_CURSOR_AS(LINE_G2) = prim;
 }
 
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,

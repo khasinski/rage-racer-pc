@@ -137,7 +137,7 @@ void UpdateAttractDemoRace(void) {
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();
-    g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, 1);

@@ -6,7 +6,7 @@
 void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
 {
     OT_TYPE *base = GamePrimaryOrderingTable(51);
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *next;
     s32 i;
     s32 y;
@@ -36,7 +36,7 @@ void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
         next = AddTilePrim(base, next, 0x3C, ((barRow * 3) << 4) + 0xCC, 0xC8, 0x28, 0x89, 0xFF, 0x76);
     }
     next = AddTilePrim(base, next, 0, 0, 0x140, 0xF0, 0x85, 0x15, 0xE);
-    SCRATCH_PRIM_CURSOR_AS(u8) = next;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }
 
 void DrawMemoryCardMessage(s32 message) {
@@ -71,7 +71,7 @@ void DrawMemoryCardMessage(s32 message) {
     }
 
     base = GamePrimaryOrderingTable(51);
-    next = SCRATCH_PRIM_CURSOR_AS(u8);
+    next = RENDER_PRIM_CURSOR_AS(u8);
     if (index == 6 || index == 8 || index == 0xA || index == 0xC) {
         next = GameQueueSprite(base, next, 0xDE, 0x60, 0xC, 0x18, 0x84, 0x48, 0x7F81);
     }
@@ -88,5 +88,5 @@ void DrawMemoryCardMessage(s32 message) {
     } else {
         next = QueueDrawModePrim(base, next, 0x3D);
     }
-    SCRATCH_PRIM_CURSOR_AS(u8) = next;
+    RENDER_PRIM_CURSOR_AS(u8) = next;
 }

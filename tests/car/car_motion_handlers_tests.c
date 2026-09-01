@@ -18,7 +18,7 @@
 #include "game/car.h"
 #include "game/random.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/track.h"
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
  * neither runs here. The effect voice is recorded rather than ignored,
  * because which sound a spinning car asks for is part of what these do.
  */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 static s32 s_voiceIndex, s_voicePhase, s_voiceVolume;
 
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {

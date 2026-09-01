@@ -26,7 +26,7 @@ void DrawBootLogo(void) {
     fade = value;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
 
     next = *scratch;
     next = GameQueueShadedSprite(base, next, 0x64, 0xEC, 0x7C, 0x18, 0x80, 0, 0x3F97, fade);
@@ -133,12 +133,12 @@ void EnterAttractScene(void) {
         g_SceneId = 0x17;
         g_SceneTimer = 0;
         InstallSceneLighting();
-        g_RageScratchpadState.viewX = 0;
-        g_RageScratchpadState.viewY = 0;
-        g_RageScratchpadState.viewZ = -3520;
-        g_RageScratchpadState.viewAngleX = 0;
-        g_RageScratchpadState.viewAngleY = 0;
-        g_RageScratchpadState.viewAngleZ = 0;
+        g_RenderState.viewX = 0;
+        g_RenderState.viewY = 0;
+        g_RenderState.viewZ = -3520;
+        g_RenderState.viewAngleX = 0;
+        g_RenderState.viewAngleY = 0;
+        g_RenderState.viewAngleZ = 0;
         SetCameraRotMatrix();
         g_OptionLetterboxHeight = 0xF0;
         g_FadeLevel = 0x100;

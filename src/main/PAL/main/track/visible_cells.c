@@ -6,11 +6,11 @@
 /*
  * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For
  * each visible object (id != -1, passing the per-sector visibility bitmask test
- * against g_VisibleCellMask) it builds a Z-rotation matrix in the scratchpad
+ * against g_VisibleCellMask) it builds a Z-rotation matrix in the render state
  * (0x1F800028), transforms the object position through the GTE
  * (0x1F80011C -> 0x1F800124), sets the primitive shade/semi-trans mode word at
  * 0x1F800084, then dispatches a prim builder (SubmitCourseModel2 / SubmitCourseModel)
- * on the scratchpad OT at 0x1F800000.
+ * on the render state's OT.
  */
 void DrawCourseObjects(void) {
     Matrix mtx;
@@ -35,53 +35,53 @@ void DrawCourseObjects(void) {
         }
 
         BuildRotMatrixY(&mtx, obj->field2);
-        MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
+        MulMatrix2((&g_RenderState.matrix), &mtx);
         {
             s32 transformed;
             s32 camera;
 
             transformed = (u16)obj->x;
-            camera = SCRATCH_VIEW_STATE->position.components.x.half.low;
+            camera = RENDER_VIEW_STATE->position.components.x.half.low;
             transformed -= camera;
-            SCRATCH_OBJECT_MATRIX_WORK->relative[0] = transformed;
+            (&g_ObjectMatrixWork)->relative[0] = transformed;
             transformed = (u16)obj->y;
-            camera = SCRATCH_VIEW_STATE->position.components.y.half.low;
+            camera = RENDER_VIEW_STATE->position.components.y.half.low;
             transformed -= camera;
-            SCRATCH_OBJECT_MATRIX_WORK->relative[1] = transformed;
+            (&g_ObjectMatrixWork)->relative[1] = transformed;
             transformed = (u16)obj->z;
-            camera = SCRATCH_VIEW_STATE->position.components.z.half.low;
+            camera = RENDER_VIEW_STATE->position.components.z.half.low;
             transformed -= camera;
-            SCRATCH_OBJECT_MATRIX_WORK->relative[2] = transformed;
+            (&g_ObjectMatrixWork)->relative[2] = transformed;
 
-            ApplyMatrix((&g_RageScratchpadState.matrix),
-                        SCRATCH_OBJECT_MATRIX_WORK->relative,
-                        &SCRATCH_OBJECT_MATRIX_WORK->view);
-            transformed = SCRATCH_OBJECT_MATRIX_WORK->view.x;
-            camera = SCRATCH_OBJECT_MATRIX_WORK->view.z;
+            ApplyMatrix((&g_RenderState.matrix),
+                        (&g_ObjectMatrixWork)->relative,
+                        &(&g_ObjectMatrixWork)->view);
+            transformed = (&g_ObjectMatrixWork)->view.x;
+            camera = (&g_ObjectMatrixWork)->view.z;
             transformed *= 4;
-            SCRATCH_OBJECT_MATRIX_WORK->mtx.t[0] = transformed;
-            transformed = SCRATCH_OBJECT_MATRIX_WORK->view.y;
+            (&g_ObjectMatrixWork)->mtx.t[0] = transformed;
+            transformed = (&g_ObjectMatrixWork)->view.y;
             camera *= 4;
-            SCRATCH_OBJECT_MATRIX_WORK->mtx.t[2] = camera;
+            (&g_ObjectMatrixWork)->mtx.t[2] = camera;
             transformed *= 4;
-            SCRATCH_OBJECT_MATRIX_WORK->mtx.t[1] = transformed;
+            (&g_ObjectMatrixWork)->mtx.t[1] = transformed;
         }
         SetRotMatrix(&mtx);
-        SetTransMatrix(&SCRATCH_OBJECT_MATRIX_WORK->mtx);
+        SetTransMatrix(&(&g_ObjectMatrixWork)->mtx);
 
         flags = obj->flags;
         if (flags & 8) {
-            g_RageScratchpadState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
+            g_RenderState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
         } else if (flags & 4) {
-            g_RageScratchpadState.envMode4 = 0x10000;
+            g_RenderState.envMode4 = 0x10000;
         } else {
-            g_RageScratchpadState.envMode4 = 0;
+            g_RenderState.envMode4 = 0;
         }
 
         if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags % 2)) {
-            SubmitCourseModel2((&g_RageScratchpadState), obj->modelId);
+            SubmitCourseModel2((&g_RenderState), obj->modelId);
         } else {
-            SubmitCourseModel((&g_RageScratchpadState), obj->modelId);
+            SubmitCourseModel((&g_RenderState), obj->modelId);
         }
 
         }
@@ -105,7 +105,7 @@ u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
-    ScratchViewState *view = SCRATCH_VIEW_STATE;
+    GameViewState *view = RENDER_VIEW_STATE;
     s32 i;
     s32 j;
     s32 oct;
@@ -166,7 +166,7 @@ void BuildVisibleCells(s32 near, s32 far) {
             dy = g_CellScanOffsetY[k];
             /* The rear-view pass reflects this quadrant.  Applying its signs
              * to the main view drops the left-hand cells ahead of the car. */
-            if (g_RageScratchpadState.orderingFlag) {
+            if (g_RenderState.orderingFlag) {
                 sx = cx + dx;
                 sy = cy - dy;
             } else {
@@ -189,7 +189,7 @@ void BuildVisibleCells(s32 near, s32 far) {
                 vec[0] = ((sx << 11) - (view->position.components.x.value - center)) * 4;
                 vec[1] = (-view->position.components.y.value) * 4;
                 vec[2] = ((sy << 11) - (view->position.components.z.value - center)) * 4;
-                ApplyMatrixLV((&g_RageScratchpadState.matrix), vec, proj);
+                ApplyMatrixLV((&g_RenderState.matrix), vec, proj);
                 if (proj[2] >= near && far >= proj[2]) {
                     out->x = proj[0];
                     out->y = proj[1];

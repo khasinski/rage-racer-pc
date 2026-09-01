@@ -21,7 +21,7 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     rawX = g_CarSpec->tachometer.digitsX + x;
     rawY = g_CarSpec->tachometer.digitsY + y;
     color = g_HudGlyphClut;
-    scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    scratch = &RENDER_PRIM_CURSOR_AS(u8);
     prim = *scratch;
 
     tensAndOnes = value / 10;

@@ -1,6 +1,6 @@
 #include "game/menu.h"
 void DrawLogoSamplePanel(s32 step, s32 sample) {
-    void *ot = SCRATCH_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE_AS(void);
     s32 idx;
     u32 t;
     s16 y;
@@ -69,7 +69,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     u32 rise;
     u8 ch;
 
-    ot = SCRATCH_OT_BASE;
+    ot = RENDER_OT_BASE;
     if (step == 0) {
         g_TeamNameEntrySlide = 0;
         return;

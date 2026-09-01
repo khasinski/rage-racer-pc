@@ -11,7 +11,7 @@
 
 #include "game/render.h"
 #include "game/asset.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/track.h"
 #include "render/car_paint.h"
 
@@ -262,7 +262,7 @@ static int ImportVisitCourseStream(
 static int ImportVisitCourseBank(RageImportedFaceVisitor visitor,
                                      void *context, uint32_t *meshCount) {
     uint32_t mesh;
-    if (g_CourseModelCount <= 0 || g_RageScratchpadState.courseBank == NULL) return 0;
+    if (g_CourseModelCount <= 0 || g_RenderState.courseBank == NULL) return 0;
     *meshCount = (uint32_t)g_CourseModelCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         const NativeCourseModel *model = &g_NativeCourseModels[mesh];
@@ -317,10 +317,10 @@ static int ImportVisitTerrainStream(
 
 static int ImportVisitTerrainBank(RageImportedFaceVisitor visitor,
                                       void *context, uint32_t *meshCount) {
-    const SVec *vertices = g_RageScratchpadState.cellFaces;
+    const SVec *vertices = g_RenderState.cellFaces;
     uint32_t mesh;
     if (g_TerrainCellCount <= 0 || vertices == NULL ||
-        g_RageScratchpadState.cellTable == NULL) return 0;
+        g_RenderState.cellTable == NULL) return 0;
     *meshCount = (uint32_t)g_TerrainCellCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         if (g_NativeTerrainCells[mesh] == NULL ||

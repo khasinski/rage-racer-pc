@@ -19,23 +19,23 @@ s32 GetCarUnlockLevel(s32 model) {
 }
 
 void InitRenderState(s32 otShift) {
-    g_RageScratchpadState.faceOtShift = 0xA;
-    g_RageScratchpadState.ft4Color[2] = 0x80;
-    g_RageScratchpadState.ft4Color[1] = 0x80;
-    g_RageScratchpadState.ft4Color[0] = 0x80;
-    g_RageScratchpadState.ft4Color[3] = POLY_FT4_CODE;
-    g_RageScratchpadState.gt4Color[2] = 0xFF;
-    g_RageScratchpadState.gt4Color[1] = 0xFF;
-    g_RageScratchpadState.gt4Color[0] = 0xFF;
-    g_RageScratchpadState.gt4Color[3] = POLY_GT4_CODE;
-    SCRATCH_CLIP_X1 = SCREEN_WIDTH;
-    SCRATCH_CLIP_Y1 = SCREEN_HEIGHT;
+    g_RenderState.faceOtShift = 0xA;
+    g_RenderState.ft4Color[2] = 0x80;
+    g_RenderState.ft4Color[1] = 0x80;
+    g_RenderState.ft4Color[0] = 0x80;
+    g_RenderState.ft4Color[3] = POLY_FT4_CODE;
+    g_RenderState.gt4Color[2] = 0xFF;
+    g_RenderState.gt4Color[1] = 0xFF;
+    g_RenderState.gt4Color[0] = 0xFF;
+    g_RenderState.gt4Color[3] = POLY_GT4_CODE;
+    g_RenderState.x1 = SCREEN_WIDTH;
+    g_RenderState.y1 = SCREEN_HEIGHT;
     g_VisibleCellMask = g_MainVisibleCellMask;
-    g_RageScratchpadState.otShift = otShift;
-    SCRATCH_CLIP_X0 = 0;
-    SCRATCH_CLIP_Y0 = 0;
+    g_RenderState.otShift = otShift;
+    g_RenderState.x0 = 0;
+    g_RenderState.y0 = 0;
     g_VisibleCellList = g_MainVisibleCellList;
-    g_RageScratchpadState.orderingFlag = g_MirrorMode;
+    g_RenderState.orderingFlag = g_MirrorMode;
 }
 
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
@@ -56,9 +56,9 @@ void RegisterModelBank(ModelBankHeader *base, s32 index) {
 }
 
 /*
- * Point the scratchpad model-bank cursor at one registered bank. The bank
+ * Point the render state's model-bank cursor at one registered bank. The bank
  * pointer is re-read from the table before each store because the stores go
- * to the scratchpad, which cse has no reason to believe does not alias it.
+ * to the render state, which cse has no reason to believe does not alias it.
  * The two-step address (base into a local, then index it) is what gives
  * retail's base-first addu; `&g_ModelBanks[index]` loses it.
  */
@@ -66,10 +66,10 @@ void SelectModelBank(s32 index) {
     NativeModelBank *bank;
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
-    g_RageScratchpadState.modelTable1 = bank->table;
-    g_RageScratchpadState.modelNormals = bank->normals;
+    g_RenderState.modelTable1 = bank->table;
+    g_RenderState.modelNormals = bank->normals;
     g_ModelBankCount = bank->modelCount;
-    g_RageScratchpadState.modelModels = bank->models;
+    g_RenderState.modelModels = bank->models;
 }
 
 void RegisterCourseModels(CourseModelAssetHeader *base) {
@@ -80,7 +80,7 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
 
     entry = base->models;
     count = base->modelCount;
-    g_RageScratchpadState.courseBank = g_NativeCourseModels;
+    g_RenderState.courseBank = g_NativeCourseModels;
     if (count > GAME_COURSE_MODEL_LIMIT) count = GAME_COURSE_MODEL_LIMIT;
     g_CourseModelCount = count;
     i = 0;
@@ -112,9 +112,9 @@ void InstallTerrainCellData(void *data) {
     header = address.header;
     count = header->cellCount;
     if (count > GAME_TERRAIN_CELL_LIMIT) count = GAME_TERRAIN_CELL_LIMIT;
-    g_RageScratchpadState.cellTable = g_NativeTerrainCells;
+    g_RenderState.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    g_RageScratchpadState.cellFaces = address.bytes + header->facesOffset;
+    g_RenderState.cellFaces = address.bytes + header->facesOffset;
     for (i = 0; i < count; i++) {
         g_NativeTerrainCells[i] = address.bytes + header->cellOffsets[i];
     }

@@ -37,13 +37,13 @@ typedef struct RageCaptureGteState {
 
 typedef struct RageCaptureModelDraw {
     uint8_t kind;       /* RAGE_CAPTURE_KIND_* */
-    uint8_t mirror;     /* g_RageScratchpadState.orderingFlag at submission time */
+    uint8_t mirror;     /* g_RenderState.orderingFlag at submission time */
     uint8_t table;      /* ordering table index the draw targets (0/1) */
     uint8_t fogged;
-    uint8_t otShift;    /* g_RageScratchpadState.otShift: one bucket is 4<<shift z units */
+    uint8_t otShift;    /* g_RenderState.otShift: one bucket is 4<<shift z units */
     uint8_t pad[3];
     int32_t modelIndex;
-    int32_t otBaseBias; /* SCRATCH_OT_BASE offset from the table start */
+    int32_t otBaseBias; /* RENDER_OT_BASE offset from the table start */
     uint32_t renderMode; /* g_ScratchRenderMode (CLUT row select) */
     uint64_t bankId;     /* identity of the active model/course bank */
     RageCaptureGteState gte;
@@ -137,7 +137,7 @@ typedef struct RageSceneSnapshot {
     int32_t displayHeight; /* draw-env rows: 240, or 480 for menu scenes */
     int32_t displayPageY;  /* draw-env top row in VRAM: 0 or 240 */
     int32_t courseMirror;  /* g_MirrorMode: base pass polarity this frame */
-    RageCaptureMatrix viewMatrix; /* (&g_RageScratchpadState.matrix) at frame end */
+    RageCaptureMatrix viewMatrix; /* (&g_RenderState.matrix) at frame end */
     int32_t viewPosition[3];
     int32_t drawCount, terrainCount, packetCount, faceCount;
     int32_t drawOverflow, packetOverflow, oversizedPackets, faceOverflow;

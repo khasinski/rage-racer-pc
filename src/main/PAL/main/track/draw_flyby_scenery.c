@@ -13,13 +13,13 @@ void DrawFlybyScenery(void) {
         BuildRotMatrixY(&mtx0, 0x800 - state->rotationY);
         BuildRotMatrixX(&mtx1, state->rotationX);
         MulMatrix2(&mtx0, &mtx1);
-        MulMatrix2((&g_RageScratchpadState.matrix), &mtx1);
+        MulMatrix2((&g_RenderState.matrix), &mtx1);
         BuildRotMatrixZ(&mtx0, state->rotationZ);
         MulMatrix2(&mtx1, &mtx0);
         SelectModelBank(2);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state->position), &mtx0);
-        g_RageScratchpadState.envMode4 = 0;
-        SubmitModel((&g_RageScratchpadState), g_ModelBankCount < 1);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state->position), &mtx0);
+        g_RenderState.envMode4 = 0;
+        SubmitModel((&g_RenderState), g_ModelBankCount < 1);
     }
 }
 

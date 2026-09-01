@@ -23,7 +23,6 @@
 #endif
 
 void MainLoop(void);
-int MapPs1Scratchpad(void);
 int InitNativeGameData(void);
 int HostInitDisc(void);
 int HostDumpArchive(const char *path);
@@ -94,10 +93,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     ContentOptionsApply();
-    if (!MapPs1Scratchpad()) {
-        fprintf(stderr, "failed to initialize renderer scratchpad\n");
-        return EXIT_FAILURE;
-    }
     MainLoop();
     return EXIT_SUCCESS;
 }

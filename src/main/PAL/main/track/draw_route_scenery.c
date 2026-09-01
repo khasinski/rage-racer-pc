@@ -12,18 +12,18 @@ void DrawRouteScenery(void) {
     BuildRotMatrixY(&mtx0, 0x800 - g_RouteSceneryRotY);
     BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
     MulMatrix2(&mtx0, &mtx1);
-    MulMatrix2((&g_RageScratchpadState.matrix), &mtx1);
+    MulMatrix2((&g_RenderState.matrix), &mtx1);
     BuildRotMatrixZ(&mtx0, g_RouteSceneryRotZ);
     MulMatrix2(&mtx1, &mtx0);
     SelectModelBank(1);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(&g_RouteSceneryX), &mtx0);
+    SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&g_RouteSceneryX), &mtx0);
     frameValue = g_ModelBankCount;
-    g_RageScratchpadState.envMode4 = 0;
+    g_RenderState.envMode4 = 0;
     drawId = 1;
     if (frameValue >= 0x26) {
         drawId = 0x25;
     }
-    SubmitModel((&g_RageScratchpadState), drawId);
+    SubmitModel((&g_RenderState), drawId);
 }
 
 void InitShuttleScenery(void) {

@@ -7,7 +7,7 @@ void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     u32 idx;
     u32 shade;
 
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
     if (step == 0) {
         g_CarNamePlateFade = 0;
         return;

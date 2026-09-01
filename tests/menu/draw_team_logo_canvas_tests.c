@@ -17,7 +17,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/state.h"
 #include "game/team_logo.h"
 
@@ -49,7 +49,7 @@ s32 g_TeamLogoViewY;
 s32 g_TeamLogoZoomLevel;
 s32 g_TeamLogoZoomSpan;
 u8 g_PadType;
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
             g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
         }
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
 
         g_TeamLogoPanelStep = panelSteps[a];
         g_TeamLogoEditorStep = editorSteps[b];

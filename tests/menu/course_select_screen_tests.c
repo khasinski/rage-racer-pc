@@ -18,7 +18,7 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/state.h"
 
 #include <stdio.h>
@@ -75,7 +75,7 @@ u8 g_UiChromeScript;
 u8 g_UiChromeScript2;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
         memset(&s_progress, 0, sizeof(s_progress));
         memset(&s_course, 0, sizeof(s_course));
         memset(ot, 0, sizeof(ot));
-        SCRATCH_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE_AS(void) = ot;
         for (i = 0; i < 4; i++) {
             s_course.bestPlace[i] = (u8)(i + 1);
         }
@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
             memset(&s_progress, 0, sizeof(s_progress));
             memset(&s_course, 0, sizeof(s_course));
             memset(ot, 0, sizeof(ot));
-            SCRATCH_OT_BASE_AS(void) = ot;
+            RENDER_OT_BASE_AS(void) = ot;
             for (i = 0; i < 4; i++) {
                 s_course.bestPlace[i] = (u8)(i + 1);
             }
@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
             memset(&s_progress, 0, sizeof(s_progress));
             memset(&s_course, 0, sizeof(s_course));
             memset(ot, 0, sizeof(ot));
-            SCRATCH_OT_BASE_AS(void) = ot;
+            RENDER_OT_BASE_AS(void) = ot;
             s_progress.maxClassReached = 2;
 
             GameMenuBusy = chosen[ch];

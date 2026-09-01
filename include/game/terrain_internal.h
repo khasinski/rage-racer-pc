@@ -22,7 +22,7 @@ typedef struct SkyTileUV {
     SkyUV corner[4];
 } SkyTileUV;
 
-typedef struct SkyRenderScratchpad {
+typedef struct SkyRenderWork {
     u8 *packetCursor;
     OT_TYPE *orderingTable;
     s32 cameraX;
@@ -34,7 +34,7 @@ typedef struct SkyRenderScratchpad {
     s32 roll;
     s32 pad24[17];
     s32 mirrorFlag;
-} SkyRenderScratchpad;
+} SkyRenderWork;
 
 typedef struct SkyClipBounds {
     s16 xMinTop;

@@ -19,7 +19,7 @@
 #include "game/car.h"
 #include "game/render.h"
 #include "game/track.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -48,12 +48,12 @@ s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
 
 /*
  * The steering shares a translation unit with the jump handlers, which reach
- * for the scratchpad, the camera and the sound effects. None of that runs in
+ * for the render state, the camera and the sound effects. None of that runs in
  * this sweep, so answer it rather than link half the game in. Random15 is
  * answered with a fixed sequence: a sweep whose results depend on chance
  * cannot be folded into one number.
  */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z, int32_t pitch,
                               int32_t yaw, int32_t roll) {

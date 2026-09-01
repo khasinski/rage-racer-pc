@@ -72,8 +72,8 @@ extern FlybySceneryState g_FlybyScenery;
  * offsets from the arc centre, the angle each stands at, and the radius each
  * is out by. Callers decide for themselves what to do with the span between
  * the two points, which is where they stop agreeing. */
-struct CarTrackScratch;
-void CarTrackMeasureArc(struct CarTrackScratch *spad, s32 arcIndex, s32 carX,
+struct CarTrackWork;
+void CarTrackMeasureArc(struct CarTrackWork *spad, s32 arcIndex, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint);
 

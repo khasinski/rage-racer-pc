@@ -6,7 +6,7 @@
 
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {
-    void *scratch = SCRATCH_OT_BASE;
+    void *scratch = RENDER_OT_BASE;
     s32 value;
     s32 offset;
     s32 x0;
@@ -143,7 +143,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     verts[2] = g_CourseCardVerts[2];
     verts[3] = g_CourseCardVerts[3];
 
-    scratch2 = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
+    scratch2 = RENDER_OT_BASE_AS(OT_TYPE) + 1;
 
     n = *p0 - *p1;
     if (n != 0) {
@@ -224,7 +224,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
 }
 
 void DrawTimeAttackPlate(s32 stepArg) {
-    void *scratch = SCRATCH_OT_BASE;
+    void *scratch = RENDER_OT_BASE;
     s32 value;
     s32 renderValue;
     s32 y0;
@@ -316,14 +316,14 @@ void InitMenuMode(void) {
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
     InitMenuLighting();
 
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewY = -64;
-    g_RageScratchpadState.viewZ = -256;
-    g_RageScratchpadState.viewAngleX = 0x100;
-    g_RageScratchpadState.viewAngleY = 0;
-    g_RageScratchpadState.viewAngleZ = 0;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
+    g_RenderState.viewAngleX = 0x100;
+    g_RenderState.viewAngleY = 0;
+    g_RenderState.viewAngleZ = 0;
     SetCameraRotMatrix();
-    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
+    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
 
     g_CourseSelectModalScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;

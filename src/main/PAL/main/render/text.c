@@ -2,7 +2,7 @@
 #include "game/render_internal.h"
 
 void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
     packet.bytes = *scratch;
@@ -55,7 +55,7 @@ void GameDrawText8x8Shaded(
     const char *str,
     s32 clutIndex,
     u8 intensity) {
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
     u8 *prim;
     RenderBufferAddress primAddress;
@@ -115,7 +115,7 @@ void GameDrawText8x8Shaded(
  * glyph codes unsigned. */
 void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex) {
     const u8 *str = (const u8 *)text;
-    u8 **scratch = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
     packet.bytes = *scratch;
@@ -197,7 +197,7 @@ typedef union TextRenderWork {
         s32 clut;
     } home;
 
-    packet.bytes = SCRATCH_PRIM_CURSOR_AS(u8);
+    packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
     home.y = y;
     home.clut = clutIndex;
     first = *text;
@@ -344,7 +344,7 @@ typedef union TextRenderWork {
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    SCRATCH_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
+    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
 #undef OPAQUE_VALUE
 }
 

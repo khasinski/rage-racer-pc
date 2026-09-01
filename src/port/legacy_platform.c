@@ -47,7 +47,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include <psyz/cd.h>
 
 #include "psyq/cd_types.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -60,12 +60,12 @@ extern void SsSeqClose(short sequence);
 extern int _snd_ev_flag;
 extern void _SsVmFlush(void);
 
-/* Host storage for values which lived in the PS1 scratchpad or were aliases. */
+/* Values the game keeps between calls; on the PS1 these lived in fast RAM. */
 int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 ObjectMatrixWork g_ObjectMatrixWork;
-CarTrackScratch g_CarTrackScratch;
+CarTrackWork g_CarTrackWork;
 
 static char s_RageMemoryCardDirectory[PATH_MAX];
 
@@ -322,13 +322,6 @@ s32 (*g_MenuScreenDraw[14])(s32) = {
     (s32 (*)(s32))DrawEngineerShopScreen,
     DrawShopScreenNoOp,
 };
-
-int MapPs1Scratchpad(void) {
-    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
-    memset(&g_CarTrackScratch, 0, sizeof(g_CarTrackScratch));
-    memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
-    return 1;
-}
 
 enum { RAGE_CD_SECTOR_SIZE = 2352, RAGE_ISO_SECTOR_SIZE = 2048 };
 

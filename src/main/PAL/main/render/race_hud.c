@@ -37,7 +37,7 @@ void DrawRaceHudLabels(s32 mode) {
             AddPrim(ot, prim);
     }
 
-    scratch = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch = &RENDER_PRIM_CURSOR_AS(void);
     *scratch = QueueDrawModePrim(ot, *scratch, 9);
 }
 
@@ -64,7 +64,7 @@ u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s3
     return prim;
 }
 
-/* Expands a GameSpriteDesc into a scratchpad SPRT. */
+/* Expands a GameSpriteDesc into an SPRT at the render state's cursor. */
 void BuildSpriteFromDesc(SPRT *prim, GameSpriteDesc *src) {
     SetSprt(prim);
 

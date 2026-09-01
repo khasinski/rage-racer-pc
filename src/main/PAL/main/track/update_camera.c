@@ -72,7 +72,7 @@ static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
     Matrix matrixWork;
     Matrix objectRotation;
     CameraCarAddress playerAddress;
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
 
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];
@@ -125,7 +125,7 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
     CameraCarAddress playerAddress;
     s32 previousMode;
     s32 rawAngle;
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
     s32 speedDamping;
     s32 turnAccel;
     s32 turnFactor;
@@ -323,7 +323,7 @@ static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
     s32 nodeOffset[3];
     s32 nodeWorld[3];
     Matrix objectRotation;
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
 
         chaseNode = &g_TrackCameras[cameraNodeIndex];
         scratchAddress.words = &scratch[2];
@@ -393,7 +393,7 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
     s32 rollProbe[3];
     s32 rollProduct;
     s32 rollWork[3];
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
     s32 yawProduct;
 
         playerAddress.renderObject = car;
@@ -538,7 +538,7 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
     s32 nodeWorld[3];
     Matrix objectRotation;
     GameTrackCameraNode *orbitNode;
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
 
         scratchAddress.words = &scratch[2];
         scratchAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
@@ -590,7 +590,7 @@ static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
     Matrix matrixWork;
     Matrix objectRotation;
     CameraCarAddress playerAddress;
-    ScratchBlockAddress scratchAddress;
+    GameBlockAddress scratchAddress;
 
         playerAddress.renderObject = car;
         scratchAddress.words = &scratch[2];

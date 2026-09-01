@@ -14,9 +14,9 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
         color = 0xFF;
     }
 
-    next = GameQueueTileTrans(base, SCRATCH_PRIM_CURSOR_AS(u8), 0, 0,
+    next = GameQueueTileTrans(base, RENDER_PRIM_CURSOR_AS(u8), 0, 0,
                               0x140, 0x1E0, color, color, color);
-    SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, tpage);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, tpage);
 }
 
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */

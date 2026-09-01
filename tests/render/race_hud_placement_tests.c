@@ -58,7 +58,7 @@ int RuntimeConfigEnabled(const char *key) {
 GameFrameContext g_FrameContexts[2];
 u8 *g_DrawBuffer;
 volatile s32 g_FrameParity;
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 u8 g_DrawModeEnv[8];
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
@@ -168,7 +168,7 @@ static void ResetHud(void) {
      * context and in what the drawing passes were asked to draw. Clearing a
      * table for real needs the GPU brought up, which would cost this test
      * the machines it can run on. */
-    SCRATCH_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
+    RENDER_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
 }
 
 /* One full HUD, every pass a race runs, at values that put something in each

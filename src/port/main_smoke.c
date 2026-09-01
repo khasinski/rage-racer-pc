@@ -32,7 +32,6 @@
 #include "game/sound.h"
 
 void MainLoop(void);
-int MapPs1Scratchpad(void);
 int InitNativeGameData(void);
 int HostInitDisc(void);
 extern int g_SceneId;
@@ -203,7 +202,6 @@ int main(int argc, char **argv) {
     }
     if (!InitNativeGameData()) return EXIT_FAILURE;
     ContentOptionsApply();
-    if (!MapPs1Scratchpad()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
     if (RuntimeConfigEnabled("video.modern"))
@@ -310,9 +308,9 @@ int main(int argc, char **argv) {
         }
         printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
                "sky_row=%d key=%p",
-               g_RageScratchpadState.viewX, g_RageScratchpadState.viewY, g_RageScratchpadState.viewZ,
-               g_RageScratchpadState.viewAngleX, g_RageScratchpadState.viewAngleY,
-               g_RageScratchpadState.viewAngleZ, g_RageScratchpadState.orderingFlag, g_SkyRowBase,
+               g_RenderState.viewX, g_RenderState.viewY, g_RenderState.viewZ,
+               g_RenderState.viewAngleX, g_RenderState.viewAngleY,
+               g_RenderState.viewAngleZ, g_RenderState.orderingFlag, g_SkyRowBase,
                (void *)g_RaceIntroCameraCursor);
         printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
                g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],

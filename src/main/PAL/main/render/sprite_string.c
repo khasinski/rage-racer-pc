@@ -19,7 +19,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     RenderBufferAddress packetAddress;
 
     sr = str;
-    next = SCRATCH_PRIM_CURSOR_AS(u_char);
+    next = RENDER_PRIM_CURSOR_AS(u_char);
     if (*sr != 0) {
         tableA = g_SpriteFontU;
         tableB = g_SpriteFontV;
@@ -53,7 +53,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     packetAddress.bytes = next;
     SetDrawMode(packetAddress.drawPacket, 0, 1, 0x1D, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), next);
-    SCRATCH_PRIM_CURSOR_AS(u_char) = next + sizeof(DrawPacket);
+    RENDER_PRIM_CURSOR_AS(u_char) = next + sizeof(DrawPacket);
 }
 
 u8 *DrawShadowedTile(void *ot, u8 *prim, s32 x, s32 y) {

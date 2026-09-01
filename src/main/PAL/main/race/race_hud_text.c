@@ -262,11 +262,11 @@ void DrawStartCountdown(s32 sceneTimer) {
         g_CountdownBoardOffset = 0;
     }
 
-    cursor = SCRATCH_PRIM_CURSOR_AS(u8);
+    cursor = RENDER_PRIM_CURSOR_AS(u8);
     backdrop = QueueDrawModePrim(
         GamePrimaryOrderingTable(1), cursor, 9);
     pattern = g_CountdownBoardOffset;
-    SCRATCH_PRIM_CURSOR_AS(u8) = backdrop;
+    RENDER_PRIM_CURSOR_AS(u8) = backdrop;
     cursor = GameQueueTexturePacketWide(
         orderingTable,
         GameQueueTexturePacketWide(
@@ -331,9 +331,9 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    SCRATCH_PRIM_CURSOR_AS(u8) = cursor;
+    RENDER_PRIM_CURSOR_AS(u8) = cursor;
     cursor = QueueDrawModePrim(GamePrimaryOrderingTable(1), cursor, 0xC);
-    SCRATCH_PRIM_CURSOR_AS(u8) = cursor;
+    RENDER_PRIM_CURSOR_AS(u8) = cursor;
 
     if (phase.value > 0) {
         if (g_RacePaused == 0) {
@@ -341,7 +341,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    tiles = SCRATCH_PRIM_CURSOR_AS(TILE);
+    tiles = RENDER_PRIM_CURSOR_AS(TILE);
     SetTile(tiles);
     rangeTimer = (u16)g_CountdownBoardOffset + 88;
     tiles->w = 0x64;
@@ -352,7 +352,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     tiles->b0 = 5;
     tiles->y0 = rangeTimer;
     AddPrim(orderingTable, tiles++);
-    SCRATCH_PRIM_CURSOR_AS(TILE) = tiles;
+    RENDER_PRIM_CURSOR_AS(TILE) = tiles;
 }
 
 
@@ -368,7 +368,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     {
         void *drawPrim;
 
-        prim.bytes = SCRATCH_PRIM_CURSOR_AS(u8);
+        prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
         SetSprt(prim.sprite);
         SetShadeTex(prim.sprite, 0);
         prim.sprite->x0 = 0x8C;
@@ -416,7 +416,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
             s32 textColor = 0x7811;
 
             
-            SCRATCH_PRIM_CURSOR_AS(u8) = firstNext;
+            RENDER_PRIM_CURSOR_AS(u8) = firstNext;
             scroll0 = g_RaceOptionScroll0;
             marqueeBase = &g_RaceOptionMarquee[0][0];
             marquee = (g_SceneTimer & 3) * 40;
@@ -438,7 +438,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 0x7811);
         }
 
-        firstNext = SCRATCH_PRIM_CURSOR_AS(u8);
+        firstNext = RENDER_PRIM_CURSOR_AS(u8);
         drawPrim = QueueDrawAreaPrim(ot, (DrawPacket *)firstNext,
                                      0x72, 0x8A, 0x5C, 0xC);
         fontU = 0xD0;
@@ -550,7 +550,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                 AddPrim(GamePrimaryOrderingTable(0), drawPrim);
 
                 cursor.polyFT4 = quad;
-                SCRATCH_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(
+                RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(
                     GamePrimaryOrderingTable(0), cursor.bytes, 9);
             }
         }

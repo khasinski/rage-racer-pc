@@ -9,7 +9,7 @@
 #include "game/player_car_aliases.h"
 #include "game/vector.h"
 
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
@@ -151,7 +151,7 @@ typedef union TimedDrawCommandAddress {
     TimedDrawCommand *pointer;
 } TimedDrawCommandAddress;
 
-/* A ready-made SPRT description; BuildSpriteFromDesc expands it into a scratchpad
+/* A ready-made SPRT description; BuildSpriteFromDesc expands it into a render-state
  * SPRT. g_TachoNeedleSprite is the one instance. */
 typedef struct GameSpriteDesc {
     u16 x;
@@ -314,8 +314,8 @@ void BuildRotMatrixZ(void *mtx, s32 angle);
 void BuildRotMatrixY(void *mtx, s32 angle);
 void BuildRotMatrixX(void *mtx, s32 angle);
 /*
- * Composes Y*X*Z from the scratchpad camera angles (0x1F800018 / 0x1C / 0x20)
- * into the scratchpad matrix at 0x1F800028 and installs it with SetRotMatrix;
+ * Composes Y*X*Z from the render state's camera angles into its matrix and
+ * installs it with SetRotMatrix;
  * g_MirrorViewMatrix gets the same matrix pre-multiplied by a 180-degree Y turn.
  */
 void SetCameraRotMatrix(void);
@@ -348,14 +348,14 @@ void DrawPlayerCarModel(GameRenderObject *obj);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*
- * Model banks. SelectModelBank points the scratchpad bank cursor
+ * Model banks. SelectModelBank points the render state's bank cursor
  * (0x1F800050/54/58) and g_ModelBankCount at entry `index` of the registered
  * bank table g_ModelBanks; SubmitModel then walks model `index` of that bank
- * into the scratchpad ordering table. The Course variants use the separate
+ * into the render state's ordering table. The Course variants use the separate
  * course object bank at 0x1F800048 (size g_CourseModelCount); ...2 is the same
  * routine running the second opcode table (jtbl_8007DA64, not jtbl_8007DA54).
  * All four are entry points of the hand-written GTE engine, so `ctx` is always
- * the scratchpad base 0x1F800000.
+ * the render state.
  */
 void SelectModelBank(s32 index);
 void SubmitModel(void *ctx, s32 index);
@@ -375,7 +375,7 @@ void DrawCourseObjects(void);
 void UpdateEnvironment(void);
 
 /*
- * 2D/HUD primitive emitters. All of them pack the primitive at the scratchpad
+ * 2D/HUD primitive emitters. All of them pack the primitive at the render state's
  * cursor `*(u8 **)0x1F800000`, bump that cursor past the primitive and link it
  * into the ordering table `ot` with AddPrim. Sprites and textured quads turn a
  * linear CLUT index into VRAM clut coordinates (20 cluts per row, first row at
@@ -554,7 +554,7 @@ void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape,
  * controller-setup / top-level block). Unlike the GameDraw* emitters above,
  * these take the ordering table AND the packet cursor explicitly and return
  * the advanced cursor, so a caller can build a run of packets and write the
- * scratchpad cursor back once at the end.
+ * render-state cursor back once at the end.
  *   "Shaded" = takes an extra intensity written to r = g = b (SetShadeTex is
  *              NOT applied, so the texel is modulated).
  *   "Trans"  = calls SetSemiTrans(prim, 1).
@@ -682,7 +682,7 @@ static inline u8 *GameQueueTexturePacketWide(
  * fixed 8x8 SPRT_8 cells on tpage 9, uv from the two-byte-per-glyph table
  * g_Font8x8Cells indexed by (ch - 0x20), 8 pixels of advance per character. Each
  * variant closes the run with its own DR_MODE packet (tpage 9 / 0x29 / 0x49)
- * and stores the scratchpad cursor back itself.
+ * and stores the render-state cursor back itself.
  */
 void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex);
 void GameDrawText8x8Shaded(s32 x, s32 y, const char *str, s32 clutIndex,
@@ -713,7 +713,7 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 void SetGteLightMatrix(Matrix *view);
 /*
  * Per-object GTE setup: writes (object position - camera position) as an
- * SVECTOR into `work`, runs it through the scratchpad view matrix at
+ * SVECTOR into `work`, runs it through the render state's view matrix at
  * 0x1F800028, scales the result by 4 into work's Matrix translation, then
  * SetRotMatrix(rot) + SetTransMatrix(&work->mtx).
  * `work` layout: SVECTOR @0, VECTOR @8, Matrix @24 (m @24, t @44).
@@ -762,10 +762,10 @@ extern EnvironmentPalette *g_EnvPaletteTable;
 /* The 16 interpolated BGR555 entries uploaded to VRAM at (0xE0, 0x1E6). */
 extern u16 g_EnvironmentClut[16];
 /* g_EnvironmentMode == 4. Picks DrawStaticScenery's model 0x3B over 0x3A
- * and the `flags & 2` prop set over `flags & 1`; also forwarded to scratchpad
+ * and the `flags & 2` prop set over `flags & 1`; also forwarded to the render state
  * 0x1F800084 by every car/track renderer. */
 extern s32 g_IsEnvironmentMode4;
-/* That forwarding slot is g_RageScratchpadState.envMode4 in game/scratchpad.h. */
+/* That forwarding slot is g_RenderState.envMode4 in game/render_state.h. */
 
 /*
  * Per-view cell culling, rebuilt every frame by BuildVisibleCells and swapped in

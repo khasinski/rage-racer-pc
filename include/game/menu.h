@@ -5,7 +5,7 @@
 
 #include "game/menu_types.h"
 #include "game/player_car_aliases.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/state.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
@@ -199,7 +199,7 @@ void DrawFadingMenuSprites(
     s32 slot);
 
 /* Menu-mode entry: reloads the live globals from g_RaceProgress, seeds the
- * scratchpad render state, zeroes 0x8009B2F8..0x8009B378 and resets all
+ * render state, zeroes 0x8009B2F8..0x8009B378 and resets all
  * fourteen per-screen transition accumulators. */
 void InitMenuMode(void);
 

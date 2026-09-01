@@ -18,16 +18,16 @@ void SetGteLightMatrix(Matrix *view) {
  * the secondary table after the primary backdrop; its natural model depth
  * then keeps it behind the secondary-table callouts and labels. */
 static void SubmitControllerModel(s32 model) {
-    OT_TYPE *otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    OT_TYPE *otBase = RENDER_OT_BASE_AS(OT_TYPE);
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
 
-    SCRATCH_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[1];
-    SubmitModel((&g_RageScratchpadState), model);
-    SCRATCH_OT_BASE_AS(OT_TYPE) = otBase;
+    RENDER_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[1];
+    SubmitModel((&g_RenderState), model);
+    RENDER_OT_BASE_AS(OT_TYPE) = otBase;
 }
 
 /* Builds and submits the controller models shown by the pad and NeGcon setup
- * screens. The read-only scratchpad base is retained for the three camera
+ * screens. The read-only render state is retained for the three camera
  * matrix multiplies; write-only scratch locations stay absolute so each store
  * is independently rematerialized. */
 void DrawControllerSetupScene(s32 variant) {
@@ -39,20 +39,20 @@ void DrawControllerSetupScene(s32 variant) {
     s32 model;
     u32 setupMode;
 
-    g_RageScratchpadState.viewZ = -0x1080;
+    g_RenderState.viewZ = -0x1080;
     position.z = 0;
     position.y = 0;
     position.x = 0;
-    g_RageScratchpadState.viewY = 0;
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewAngleZ = 0;
-    g_RageScratchpadState.viewAngleY = 0;
-    g_RageScratchpadState.viewAngleX = 0;
+    g_RenderState.viewY = 0;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewAngleZ = 0;
+    g_RenderState.viewAngleY = 0;
+    g_RenderState.viewAngleX = 0;
     setupMode = g_GameMode - 10;
     if (setupMode < 2) {
-        g_RageScratchpadState.viewZ = -0xC80;
+        g_RenderState.viewZ = -0xC80;
     } else {
-        g_RageScratchpadState.viewY = -0x40;
+        g_RenderState.viewY = -0x40;
     }
     SetCameraRotMatrix();
 
@@ -60,15 +60,15 @@ void DrawControllerSetupScene(s32 variant) {
         BuildRotMatrixX(&xRot, -0xD0);
         BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
         MulMatrix2(&yRot, &xRot);
-        MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
+        MulMatrix2((&g_RenderState.matrix), &xRot);
         scale[2] = 0x1000;
         scale[0] = 0x1000;
         scale[1] = 0x2000;
         ScaleMatrix(&yRot, scale);
         MulMatrix2(&yRot, &xRot);
         SetGteLightMatrix(&xRot);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_RageScratchpadState.envMode4 = 0;
+        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        g_RenderState.envMode4 = 0;
         model = g_ModelBankCount < 1;
         SubmitControllerModel(model);
         return;
@@ -94,19 +94,19 @@ void DrawControllerSetupScene(s32 variant) {
     }
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
+    MulMatrix2((&g_RenderState.matrix), &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-    g_RageScratchpadState.envMode4 = 0;
+    SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+    g_RenderState.envMode4 = 0;
     SubmitControllerModel(1);
     if (variant != 0) {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_RageScratchpadState.envMode4 = 0;
+        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        g_RenderState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 4) {
             model = 3;
@@ -121,23 +121,23 @@ void DrawControllerSetupScene(s32 variant) {
     }
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
+    MulMatrix2((&g_RenderState.matrix), &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
     ScaleMatrix(&yRot, scale);
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
-    SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-    g_RageScratchpadState.envMode4 = 0;
+    SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+    g_RenderState.envMode4 = 0;
     model = 1;
     if (g_ModelBankCount >= 3) {
         model = 2;
     }
     SubmitControllerModel(model);
     if (variant != 0) {
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_RageScratchpadState.envMode4 = 0;
+        SetGteObjectMatrix((&g_ObjectMatrixWork), &position, &xRot);
+        g_RenderState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 5) {
             model = 4;

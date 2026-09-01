@@ -233,7 +233,7 @@ static void UpdateCarShopOutgoing(s32 price) {
 }
 
 void UpdateCarShopScreen(void) {
-    void *ot = SCRATCH_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE_AS(void);
     s32 price;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;

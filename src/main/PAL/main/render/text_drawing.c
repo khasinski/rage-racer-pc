@@ -21,7 +21,7 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
     str = str0;
     x = x0;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
         fixed = flags & 0x80;
@@ -108,8 +108,8 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
     {
         void *next = QueueDrawModePrim(
-            ot + 1, SCRATCH_PRIM_CURSOR_AS(u8), (fl & 0x7f) + 27);
-        SCRATCH_PRIM_CURSOR_AS(void) = next;
+            ot + 1, RENDER_PRIM_CURSOR_AS(u8), (fl & 0x7f) + 27);
+        RENDER_PRIM_CURSOR_AS(void) = next;
     }
 }
 
@@ -129,7 +129,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
     str = str0;
     x = x0;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
         fixed = flags & 0x80;
@@ -206,8 +206,8 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
         x += w;
     }
 
-    SCRATCH_PRIM_CURSOR_AS(void) =
-        QueueDrawModePrim(ot + 1, SCRATCH_PRIM_CURSOR_AS(void), (fl & 0x7f) + 27);
+    RENDER_PRIM_CURSOR_AS(void) =
+        QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), (fl & 0x7f) + 27);
 }
 
 
@@ -230,9 +230,9 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
 
     i = 9;
     if (flags & 8) {
-        ot = SCRATCH_OT_BASE_AS(OT_TYPE) + 1;
+        ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
     } else {
-        ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+        ot = RENDER_OT_BASE_AS(OT_TYPE);
     }
 
     height = 16;
@@ -297,14 +297,14 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
         }
     }
 
-    SCRATCH_PRIM_CURSOR_AS(void) =
-        QueueDrawModePrim(ot, SCRATCH_PRIM_CURSOR_AS(void), primitiveCount + 27);
+    RENDER_PRIM_CURSOR_AS(void) =
+        QueueDrawModePrim(ot, RENDER_PRIM_CURSOR_AS(void), primitiveCount + 27);
     return drawn;
 }
 
 
 void DrawBitPatternOverlay(s32 pattern) {
-    OT_TYPE *ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     u8 *patternTable = g_MenuOverlayPatternTable;
     u8 *row = patternTable;
     u8 *candidate;
@@ -385,5 +385,5 @@ void DrawBitPatternOverlay(s32 pattern) {
         outer++;
     } while (outer < 0x10);
 
-    SCRATCH_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot + 1, SCRATCH_PRIM_CURSOR_AS(void), 0x39);
+    RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), 0x39);
 }

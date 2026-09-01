@@ -16,7 +16,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,11 +24,11 @@
 void AdvanceCarPosition(GameCarRuntime *car);
 
 /*
- * Atan2 lives beside the camera code, which reaches for the scratchpad and
+ * Atan2 lives beside the camera code, which reaches for the render state and
  * the render world. None of that runs here, so answer it rather than link
  * the renderer in to divide two numbers.
  */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
     (void)m0;
     (void)m1;

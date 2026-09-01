@@ -76,7 +76,7 @@ static void ClearScratchRenderMode37AAC(void) {
 /*
  * Renders the 6 waypoints. For each active-shaped slot it builds a rotation
  * matrix from the waypoint's Y and Z rotations and emits
- * two GTE draw primitives (SubmitModel) into the scratchpad OT: the second is
+ * two GTE draw primitives (SubmitModel) into the render state's OT: the second is
  * the same billboard rotated by 0x800 (180 degrees).
  */
 void DrawWaypoints(void) {
@@ -97,10 +97,10 @@ void DrawWaypoints(void) {
 
     do {
         BuildRotMatrixY(&mtx0, waypoint->motion.rotationY);
-        MulMatrix2((&g_RageScratchpadState.matrix), &mtx0);
+        MulMatrix2((&g_RenderState.matrix), &mtx0);
         BuildRotMatrixZ(mtx1Ptr, waypoint->motion.rotationZ);
         MulMatrix(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+        SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&waypoint->motion.x), &mtx0);
         frameValue = g_ModelBankCount;
         ClearScratchRenderMode37AAC();
@@ -108,11 +108,11 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel((&g_RageScratchpadState), drawArg);
+        SubmitModel((&g_RenderState), drawArg);
 
         BuildRotMatrixY(mtx1Ptr, 0x800);
         MulMatrix2(&mtx0, mtx1Ptr);
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
+        SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&waypoint->motion.x), mtx1Ptr);
         frameValue = g_ModelBankCount;
         ClearScratchRenderMode37AAC();
@@ -120,7 +120,7 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel((&g_RageScratchpadState), drawArg);
+        SubmitModel((&g_RenderState), drawArg);
 
         i++;
         waypoint++;
@@ -136,7 +136,7 @@ void DrawLapNumber(void) {
     s32 quotient;
     SPRT *packet;
 
-    scratch = SCRATCH_PRIM_CURSOR_AS(SPRT);
+    scratch = RENDER_PRIM_CURSOR_AS(SPRT);
     track = g_PlayerCar.lap;
     divisor = 1;
     digitsDrawn = 0;
@@ -181,7 +181,7 @@ void DrawLapNumber(void) {
         /*
          * The digits are drawn with a texture page of their own, queued ahead
          * of them. The recovered code stored the queue's answer into the
-         * scratchpad twice over, at an address nothing ever read back; only
+         * render state twice over, at a slot nothing ever read back; only
          * the queueing itself does anything.
          */
         RenderBufferAddress scratchAddress;

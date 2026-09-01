@@ -1,7 +1,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "game/track_internal.h"
 
 /*
@@ -19,7 +19,7 @@
  * bracketing. They then diverge on what to do with the span between the two
  * points, which is why that part stays with them.
  */
-void CarTrackMeasureArc(struct CarTrackScratch *spad, s32 arcIndex, s32 carX,
+void CarTrackMeasureArc(struct CarTrackWork *spad, s32 arcIndex, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint) {
     const GameTrackArcCenter *arcCenter = &g_TrackArcCenters[arcIndex];

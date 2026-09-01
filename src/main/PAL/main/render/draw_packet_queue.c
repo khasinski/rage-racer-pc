@@ -119,14 +119,14 @@ u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
 }
 
 /* World position in full-precision components; the camera keeps one of these
- * in the scratchpad at 0x1F800008. */
-/* The per-frame scratchpad block: camera position at +8, view matrix at +0x28. */
-#define SCRATCH_CAMERA_POS (&SCRATCH_VIEW_STATE->position.vector)
-#define SCRATCH_VIEW_MATRIX ((&g_RageScratchpadState.matrix))
+ * in the render state. */
+/* The per-frame render state: the camera position and the view matrix. */
+#define SCRATCH_CAMERA_POS (&RENDER_VIEW_STATE->position.vector)
+#define SCRATCH_VIEW_MATRIX ((&g_RenderState.matrix))
 
 /*
  * Per-object GTE setup: takes the object's offset from the camera through the
- * scratchpad view matrix, scales the rotated offset by 4 into the work
+ * render state's view matrix, scales the rotated offset by 4 into the work
  * matrix's translation, and programs the GTE with the caller's rotation and
  * that translation.
  */
@@ -141,7 +141,7 @@ void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
     SetRotMatrix(rot);
     SetTransMatrix(&w->mtx);
     if (DiagnosticsEnabled("render.car_draw_trace") &&
-        g_RageScratchpadState.mode == 9) {
+        g_RenderState.mode == 9) {
         const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
         if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
             Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "

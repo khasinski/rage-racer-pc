@@ -93,13 +93,13 @@ void DrawShuttleScenery(s32 instance) {
         BuildRotMatrixZ(mtx1Ptr, state->angleZ);
         MulMatrix2(&mtx0, mtx1Ptr);
         renderWorldMtx = *mtx1Ptr;
-        MulMatrix2((&g_RageScratchpadState.matrix), mtx1Ptr);
+        MulMatrix2((&g_RenderState.matrix), mtx1Ptr);
         if ((SeriesCourseIndex()) >= 2) {
             drawArg = 0x3C;
         }
-        SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state->position), mtx1Ptr);
+        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state->position), mtx1Ptr);
         frameValue = g_CourseModelCount;
-        g_RageScratchpadState.envMode4 = 0;
+        g_RenderState.envMode4 = 0;
         drawValue = 1;
         if (drawArg < frameValue) {
             drawValue = drawArg;
@@ -107,6 +107,6 @@ void DrawShuttleScenery(s32 instance) {
         GameRenderWorldSubmitDynamicCourseObject(
             0x110 + instance, drawValue, state->position.x,
             state->position.y, state->position.z, renderWorldMtx.m, 0, 0);
-        SubmitCourseModel((&g_RageScratchpadState), drawValue);
+        SubmitCourseModel((&g_RenderState), drawValue);
     }
 }

@@ -17,7 +17,7 @@
 #include "game/track_internal.h"
 #include "game/track_camera_internal.h"
 #include "game/player_car_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 #include "rage/chase_camera.h"
 
 #include <stdio.h>
@@ -32,7 +32,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
  */
 /* The two the camera writes through, which the port allocates alongside the
  * renderer rather than in host state. */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 PlayerCarRuntime g_PlayerCar;
 
 static GameTrackCameraNode s_nodes[2];
@@ -93,21 +93,21 @@ static void PlaceCar(GameRenderObject *car) {
     car->bodyRoll = 0x60;
 }
 
-/* Drive one branch and read the view back out of the scratchpad. */
+/* Drive one branch and read the view back out of the render state. */
 static void Run(CameraViewMode selector, s32 *view) {
     GameRenderObject car;
 
     PlaceCar(&car);
     g_CameraNodeIndex = 0;
     g_CameraModePrev = 0;
-    memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
     UpdateCamera(selector, &car);
-    view[0] = g_RageScratchpadState.viewX;
-    view[1] = g_RageScratchpadState.viewY;
-    view[2] = g_RageScratchpadState.viewZ;
-    view[3] = g_RageScratchpadState.viewAngleX;
-    view[4] = g_RageScratchpadState.viewAngleY;
-    view[5] = g_RageScratchpadState.viewAngleZ;
+    view[0] = g_RenderState.viewX;
+    view[1] = g_RenderState.viewY;
+    view[2] = g_RenderState.viewZ;
+    view[3] = g_RenderState.viewAngleX;
+    view[4] = g_RenderState.viewAngleY;
+    view[5] = g_RenderState.viewAngleZ;
 }
 
 /*
@@ -124,7 +124,7 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     PlaceCar(&car);
     car.angleY = 0x800;
     car.speed = speed;
-    memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_CameraNodeIndex = 0;
     g_CameraModePrev = 1;
     g_ChaseYawPrev = startYaw;

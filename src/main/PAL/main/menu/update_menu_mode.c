@@ -5,7 +5,7 @@ void UpdateMenuMode(void) {
     OT_TYPE *scratch;
     u32 screenRange;
 
-    scratch = SCRATCH_OT_BASE_AS(OT_TYPE);
+    scratch = RENDER_OT_BASE_AS(OT_TYPE);
     g_AnimTimer++;
     g_SceneTimer++;
     if (g_SceneTimer == 2) {
@@ -15,9 +15,9 @@ void UpdateMenuMode(void) {
 
     screenRange = g_MenuScreen - 1;
     if (screenRange < 2) {
-        g_RageScratchpadState.otShift = 1;
+        g_RenderState.otShift = 1;
     } else {
-        g_RageScratchpadState.otShift = 5;
+        g_RenderState.otShift = 5;
     }
 
     if (g_MenuHandlerIndex > 0) {

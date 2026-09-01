@@ -7,14 +7,14 @@
 
 void DrawTerrainCells(void) {
     BuildVisibleCells(-12288, 0x14000);
-    SetRotMatrix((&g_RageScratchpadState.matrix));
-    SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
+    SetRotMatrix((&g_RenderState.matrix));
+    SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
 }
 
 void DrawTerrainCellsWide(void) {
     BuildVisibleCells(0xFFFF6000, 0x14000);
-    SetRotMatrix((&g_RageScratchpadState.matrix));
-    SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
+    SetRotMatrix((&g_RenderState.matrix));
+    SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
 }
 
 static s32 DivideSigned32(s32 value)
@@ -66,7 +66,7 @@ typedef struct SkyBandGeometry {
  * only thing the course index decides here. Returns where it left the packet
  * cursor.
  */
-static u8 *DrawCourseSkirt(SkyRenderScratchpad *scratch, SkyBandGeometry *band,
+static u8 *DrawCourseSkirt(SkyRenderWork *scratch, SkyBandGeometry *band,
                            u8 *packetCursor) {
     /* Carried from the wide half of the skirt to the near half. Both are
      * drawn on the same condition, for every course but the third, so the
@@ -255,7 +255,7 @@ typedef struct SkyBandSetup {
  * and column of it steps across the screen. All of it follows from the
  * camera angles, so none of the drawing below needs them again.
  */
-static void MeasureSkyBand(SkyRenderScratchpad *scratch,
+static void MeasureSkyBand(SkyRenderWork *scratch,
                            SkyBandSetup *band) {
     s32 cameraY;
     s32 bandRowY;
@@ -364,7 +364,7 @@ static void MeasureSkyBand(SkyRenderScratchpad *scratch,
     }
     leftViewAngle = rotatedBandY >> 0xC;
     band->coordinateAccumulator = leftViewAngle + 0x7800;
-    if (g_MirrorMode != g_RageScratchpadState.orderingFlag)
+    if (g_MirrorMode != g_RenderState.orderingFlag)
     {
       band->panelYFixed = 0x2400;
       band->panelYFixed = bandRowY + band->panelYFixed;
@@ -382,8 +382,8 @@ static void MeasureSkyBand(SkyRenderScratchpad *scratch,
 
 void DrawSkyBackground(void)
 {
-  SkyRenderScratchpad nativeScratch;
-  SkyRenderScratchpad *scratch = &nativeScratch;
+  SkyRenderWork nativeScratch;
+  SkyRenderWork *scratch = &nativeScratch;
   s32 panelXFixed;
   s32 panelYFixed;
   s32 columnStepX;
@@ -401,15 +401,15 @@ void DrawSkyBackground(void)
   s32 screenX1;
   s32 screenX2;
   s32 screenX3;
-  scratch->packetCursor = SCRATCH_PRIM_CURSOR_AS(u8);
-  scratch->orderingTable = SCRATCH_OT_BASE_AS(OT_TYPE);
-  scratch->cameraX = g_RageScratchpadState.viewX;
-  scratch->cameraY = g_RageScratchpadState.viewY;
-  scratch->cameraZ = g_RageScratchpadState.viewZ;
-  scratch->pitch = g_RageScratchpadState.viewAngleX;
-  scratch->yaw = g_RageScratchpadState.viewAngleY;
-  scratch->roll = g_RageScratchpadState.viewAngleZ;
-  scratch->mirrorFlag = g_RageScratchpadState.orderingFlag;
+  scratch->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
+  scratch->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
+  scratch->cameraX = g_RenderState.viewX;
+  scratch->cameraY = g_RenderState.viewY;
+  scratch->cameraZ = g_RenderState.viewZ;
+  scratch->pitch = g_RenderState.viewAngleX;
+  scratch->yaw = g_RenderState.viewAngleY;
+  scratch->roll = g_RenderState.viewAngleZ;
+  scratch->mirrorFlag = g_RenderState.orderingFlag;
   u8 *packetCursor = scratch->packetCursor;
   s32 heldBandY;
   s32 adjW;
@@ -899,7 +899,7 @@ void DrawSkyBackground(void)
     band.screenX3 = screenX3;
 
     packetCursor = DrawCourseSkirt(scratch, &band, packetCursor);
-    SCRATCH_PRIM_CURSOR_AS(u8) = packetCursor;
+    RENDER_PRIM_CURSOR_AS(u8) = packetCursor;
   }
   }
 }

@@ -19,7 +19,7 @@ typedef union TrackCarAddress {
  * and its successor: computes route angles/heights via atan2 (Atan2)
  * and rsin/rcos, builds the collision-boundary
  * offset, and writes the interpolated position/angle/height into the render
- * object `obj`. The scratchpad struct at 0x1F80011C ("spad") is the GTE
+ * object `obj`. The working struct ("spad") is the GTE
  * per-primitive transform scratch. `limits` supplies the boundary margins and
  * knockback modes.
  * Returns the boundary/skid response code.
@@ -32,7 +32,7 @@ typedef union TrackCarAddress {
  * having hit it. Only the player's car is moved by the push, a rival is told
  * about it and left where it is.
  */
-static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackScratch *spad,
+static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *spad,
                                 const CarTrackLimits *limits,
                                 const GameTrackPoint *point,
                                 const GameTrackPoint *nextPoint,
@@ -109,10 +109,10 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackScratch *spad,
  * far off the line it is, and cornering model 2 is the mirrored hand, so its
  * offset comes out negated.
  *
- * Everything it works out is left in the scratchpad, which is where the rest
+ * Everything it works out is left in that struct, which is where the rest
  * of the placement reads it from.
  */
-static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackScratch *spad,
+static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *spad,
                           const GameTrackPoint *point,
                           const GameTrackPoint *nextPoint, s32 arcIndex) {
     s32 arcAngle;
@@ -211,7 +211,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
-    CarTrackScratch *spad;
+    CarTrackWork *spad;
     static int traceEnabled = -1;
     static int traceTimer = -1;
     static int traceTimerMin = -1;
@@ -240,7 +240,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     }
 
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
-    spad = (&g_CarTrackScratch);
+    spad = (&g_CarTrackWork);
     spad->knockbackMode = 0;
     point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;

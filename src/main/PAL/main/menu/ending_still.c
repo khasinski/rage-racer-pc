@@ -42,7 +42,7 @@ void DrawEndingStill(void) {
     base = (u8 *)GamePrimaryOrderingTable(0);
     height = 0xF0;
     clut = 0x3FDB;
-    scratch = SCRATCH_PRIM_CURSOR_SLOT;
+    scratch = RENDER_PRIM_CURSOR_SLOT;
 
     next = *scratch;
     next = GameQueueSprite(base, next, 0, 0, 0x100, height, 0, 0, clut);

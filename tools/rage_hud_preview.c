@@ -26,7 +26,7 @@
 #include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include "port_config.h"
 #include "rage/hud_config.h"
@@ -68,13 +68,13 @@ int RuntimeConfigEnabled(const char *key) {
 }
 
 /*
- * The HUD reaches the scratchpad and the diagnostics; the state tables it
+ * The HUD reaches the render state and the diagnostics; the state tables it
  * shares a translation unit with reach the attract demo and the music menu.
  * None of that runs here, so answer it rather than link half the game in.
  */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 ObjectMatrixWork g_ObjectMatrixWork;
-CarTrackScratch g_CarTrackScratch;
+CarTrackWork g_CarTrackWork;
 
 int DiagnosticsEnabled(const char *key) { (void)key; return 0; }
 const char *DiagnosticsValue(const char *key) { (void)key; return NULL; }
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
     g_FrameParity = 0;
     ot = GamePrimaryOrderingTable(0);
     ClearOTagR(ot, GAME_FRAME_OT_LENGTH);
-    SCRATCH_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
+    RENDER_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
 
     g_GrandPrixMode = hudMode;
     g_GrandPrixClass = OptionNumber(argc, argv, "--class", 0);

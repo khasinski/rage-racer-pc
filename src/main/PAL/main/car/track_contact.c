@@ -5,7 +5,7 @@
 
 /*
  * Rebuilds a car's position and orientation relative to its current track
- * segment, including the curved-segment path kept in the PS1 scratchpad.
+ * segment, including the curved-segment path kept in the car's track working set.
  */
 void ResetCarTrackState(GameCarRuntime *car) {
     s32 headingAngle;
@@ -37,9 +37,9 @@ void ResetCarTrackState(GameCarRuntime *car) {
     u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
-    CarTrackScratch *spad;
+    CarTrackWork *spad;
 
-    spad = (&g_CarTrackScratch);
+    spad = (&g_CarTrackWork);
     spad->knockbackMode = 0;
     trackPointIndex = car->trackPointIndex;
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;

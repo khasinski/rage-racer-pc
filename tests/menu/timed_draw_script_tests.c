@@ -21,7 +21,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/render.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +75,7 @@ s32 g_AnimTimer;
 s32 g_MenuCursorPulsePhase;
 s32 g_MenuRowFlashLevels[16];
 TimedDrawCommand g_MenuRowScript[1];
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     RECORD("drawflattriangle", x0, y0, x1, (s32)y1, (s32)x2, (s32)y2, r, g, b, semiTrans, (s32)flags);

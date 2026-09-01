@@ -15,7 +15,7 @@
 /*
  * One-shot boot chain called from MainLoop: sequencer, sound runtime, GPU
  * and DMA, the pad, then the persistent settings block reset to its defaults
- * (NeGcon uncalibrated, both button mappings on preset 0) and the scratchpad
+ * (NeGcon uncalibrated, both button mappings on preset 0) and the render state
  * camera block primed before the first frame.
  */
 void InitSubsystems(void) {
@@ -47,13 +47,13 @@ void InitSubsystems(void) {
     InitRecordTables();
     InitRenderState(5);
     InitSaveDefaults();
-    g_RageScratchpadState.viewY = -64;
-    g_RageScratchpadState.viewZ = -256;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
     g_ExtraGrandPrixUnlocked = 0;
-    g_RageScratchpadState.viewX = 0;
-    g_RageScratchpadState.viewAngleX = 0x100;
-    g_RageScratchpadState.viewAngleY = 0;
-    g_RageScratchpadState.viewAngleZ = 0;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewAngleX = 0x100;
+    g_RenderState.viewAngleY = 0;
+    g_RenderState.viewAngleZ = 0;
     SetCameraRotMatrix();
 }
 
@@ -62,7 +62,7 @@ void InitSubsystems(void) {
 
 /*
  * The PS-EXE `main`. Boots the subsystems, then never returns: each pass picks
- * the frame context, resets its two ordering tables and the scratchpad packet
+ * the frame context, resets its two ordering tables and the render state packet
  * cursor, runs the CD / sequencer / loader services and the current scene
  * handler, waits for the frame deadline, swaps the display and refreshes the
  * pad.
@@ -95,8 +95,8 @@ void MainLoop(void) {
         g_DrawBuffer = frame;
         g_FrameParity = parity;
         frameAddress.bytes = frame;
-        SCRATCH_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
-        SCRATCH_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
+        RENDER_OT_BASE_AS(OT_TYPE) = frameAddress.context->layout.orderingTables[0];
+        RENDER_PRIM_CURSOR_AS(u8) = frameAddress.context->layout.primitiveBuffer;
         ClearOTagR(frameAddress.context->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
         ClearOTagR(frameAddress.context->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
         TickCdAudio();

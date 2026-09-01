@@ -14,7 +14,7 @@
 #include "game/car.h"
 #include "game/render.h"
 #include "game/track.h"
-#include "game/scratchpad.h"
+#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -25,7 +25,7 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
  * The search shares a translation unit with the jump handlers, which reach
  * for the steering, the camera and the sound. None of that runs here.
  */
-GameScratchpadRenderState g_RageScratchpadState;
+GameRenderState g_RenderState;
 GameCarSpec *g_CarSpec;
 
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {

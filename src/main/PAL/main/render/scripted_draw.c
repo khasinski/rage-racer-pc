@@ -18,7 +18,7 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteM
     s32 alpha;
 
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     packed = motionReg->packedVelocity;
     shapeReg = shape;
     if (limit < elapsed) {
@@ -115,7 +115,7 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion 
     s32 alpha;
 
     limit = motionReg->limit;
-    otBase = SCRATCH_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
     xPacked = motionReg->packedVelocity0;
     yPacked = motionReg->packedVelocity1;
     shapeReg = shape;
@@ -232,9 +232,9 @@ void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTri
     style = styleArg;
     record = recordArg;
     /* The barrier is load-bearing: without it the scheduler sinks the
-     * scratchpad load past the second record load. */
+     * render-state load past the second record load. */
     limit = record->limit;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     
     packedSpeed = record->packedVelocity;
     if (limit < time) {
@@ -350,7 +350,7 @@ void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx
     s32 flags;
 
     duration = ctx->limit;
-    table = (u8 *)SCRATCH_OT_BASE_AS(OT_TYPE);
+    table = (u8 *)RENDER_OT_BASE_AS(OT_TYPE);
     velocity0 = ctx->packedVelocity;
     velocity1 = ctx->packedSizeVelocity;
     entry = desc;
@@ -581,7 +581,7 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     shapePtr = g_MenuRowScript[0].shape.spriteShape;
     elapsed = progress - g_MenuRowScript[0].time;
     motionPtr = g_MenuRowScript[0].motion.spriteMotion;
-    ot = SCRATCH_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     countReg = count;
     packed = motionPtr->packedVelocity;
     i = 0;
@@ -667,7 +667,7 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
 void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1,
                    u8 r, u8 g, u8 b,
                    s32 flags, s32 textX, s32 textY, u8 *caption) {
-    void *ot = SCRATCH_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE_AS(void);
 
     if (flags & 0x10) {
         if (flags % 2) {
@@ -692,7 +692,7 @@ void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 useFlash) {
     s32 white;
     s32 counter;
 
-    ot = SCRATCH_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE_AS(void);
     if (useFlash != 0) {
         if (g_AnimTimer & 2) {
             color = 0xFF;

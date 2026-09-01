@@ -172,7 +172,7 @@ void DrawRoundScreen(void) {
 void DrawBgmSelector(void) {
     s32 x;
     char buf[88];
-    u8 **scr = &SCRATCH_PRIM_CURSOR_AS(u8);
+    u8 **scr = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *p;
     void *ot = GamePrimaryOrderingTable(1);
 

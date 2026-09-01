@@ -80,7 +80,7 @@ void UpdateTitleAttract(void) {
     x28 = 0x28;
     yA0 = 0xA0;
     color = 0x7E00;
-    scratch.pointerLink = &SCRATCH_PRIM_CURSOR_AS(void);
+    scratch.pointerLink = &RENDER_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
     tmp = 0x18;
     next = *scratch.pointerLink;
@@ -280,5 +280,5 @@ void SetupDisplay480(s32 mode, s32 x, s32 y) {
         i++;
     } while (i < 2);
 
-    SCRATCH_CLIP_Y1 = 0x1E0;
+    g_RenderState.y1 = 0x1E0;
 }
