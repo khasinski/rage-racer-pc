@@ -3,6 +3,17 @@
 
 #include <string.h>
 
+static u32 CalculateSaveHeaderChecksum(const GameSaveHeaderRow *row) {
+    const u8 *bytes = row->bytes;
+    u32 sum = 0;
+    s32 offset;
+
+    for (offset = 0; offset < 0x7C; offset += 2) {
+        sum += (u32)bytes[offset] | ((u32)bytes[offset + 1] << 8);
+    }
+    return ~sum;
+}
+
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     s32 row;
 
@@ -16,9 +27,6 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
 
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) {
     s32 i;
-    u32 checksumIndex;
-    u32 checksum;
-    u16 *scan;
 
     row->fields.nameLength = g_TeamNameLength;
 
@@ -26,17 +34,6 @@ void WriteSaveHeaderRow(GameSaveHeaderRow *row) {
         row->fields.name[i] = g_TeamNameChars[i];
     }
 
-    i = 0;
-    checksum = 0;
     row->fields.saveCounter = g_SaveElapsedTicks;
-    scan = row->halfwords;
-
-    do {
-        checksum += *scan++;
-        i++;
-        checksumIndex = i;
-    } while (checksumIndex < 0x3E);
-
-    checksum = ~checksum;
-    row->fields.checksum = checksum;
+    row->fields.checksum = CalculateSaveHeaderChecksum(row);
 }

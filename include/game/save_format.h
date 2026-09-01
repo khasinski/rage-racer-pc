@@ -22,11 +22,6 @@ typedef union GameSaveHeaderRow {
     u16 halfwords[0x40];
 } GameSaveHeaderRow;
 
-typedef union GameSaveHeaderRowAddress {
-    uintptr_t value;
-    GameSaveHeaderRow *pointer;
-} GameSaveHeaderRowAddress;
-
 typedef struct SavedCarSetup {
     u8 modelVariant;
     u8 tireCompound;
