@@ -135,66 +135,6 @@ void UpdateRankingScreen(void) {
     }
 }
 
-s32 DrawCarSelectScreen(s32 step) {
-    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
-    u32 *buf = (u32 *)(ot + 1);
-    s32 v;
-    s32 col;
-    s32 xpos;
-    s32 mode;
-    u8 tex;
-
-    if (step == 0) {
-        g_CarSelectFadeAccum = 0;
-        return 0;
-    }
-
-    if (step > 0) {
-        g_CarSelectFadeAccum += step;
-        if (g_CarSelectFadeAccum >= 509) {
-            g_CarSelectFadeAccum = 508;
-        }
-    } else {
-        g_CarSelectFadeAccum += step;
-        if (g_CarSelectFadeAccum < 0) {
-            g_CarSelectFadeAccum = 0;
-        }
-    }
-
-    v = g_CarSelectFadeAccum / 4U;
-    col = v & 0xff;
-    DrawRectOutline(buf, 0xa3, 0x180, 0x1a, 0x19, col, col, col, 0x20);
-
-    tex = g_CarTable[g_PlayerCarIndex].transmission;
-    if (tex != 0) {
-        DrawSprite(buf, 0xad, 0x185, 0x10, 0x10, 0x6c, 0x7c, col, col, col,
-                      0x244, 0, 1, 0x3b);
-        xpos = 0xa5;
-    } else {
-        DrawSprite(buf, 0xae, 0x185, 0xc, 0x10, 0x60, 0x7c, col, col, col,
-                      0x244, 0, 1, 0x3b);
-        xpos = 0xa6;
-    }
-
-    mode = g_CarModelAsset->gearCount;
-    switch (mode) {
-    case 4:
-        DrawSprite(buf, xpos, 0x185, 8, 0x10, 0x20, 0x18, v & 0xff, v & 0xff,
-                      v & 0xff, 0x244, 0, 1, 0x3b);
-        break;
-    case 5:
-        DrawSprite(buf, xpos, 0x185, 8, 0x10, 0x28, 0x18, v & 0xff, v & 0xff,
-                      v & 0xff, 0x244, 0, 1, 0x3b);
-        break;
-    case 6:
-        DrawSprite(buf, xpos, 0x185, 8, 0x10, 0x30, 0x18, v & 0xff, v & 0xff,
-                      v & 0xff, 0x244, 0, 1, 0x3b);
-        break;
-    }
-
-    return g_CarSelectFadeAccum;
-}
-
 void UpdateOwnedCarNeighbours(void) {
     s32 index;
 
