@@ -598,6 +598,25 @@ endif()
 add_test(NAME count_owned_cars COMMAND count_owned_cars_tests)
 set_tests_properties(count_owned_cars PROPERTIES LABELS unit)
 
+add_executable(ending_still_tests
+    ending_still_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/ending_still.c)
+target_include_directories(ending_still_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(ending_still_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(ending_still_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(ending_still_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME ending_still COMMAND ending_still_tests)
+set_tests_properties(ending_still PROPERTIES LABELS functional)
+
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c)
