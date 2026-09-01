@@ -31,7 +31,7 @@ s32 g_SeriesCleared;
 s32 g_SceneTimer;
 GameRaceProgress *g_RaceProgress;
 u16 g_PadPressed;
-volatile u16 g_PadHeld;
+u16 g_PadHeld;
 
 /* The screen only draws and plays cues through these; what it draws is not
  * this test's subject, but whether it asked to is. */

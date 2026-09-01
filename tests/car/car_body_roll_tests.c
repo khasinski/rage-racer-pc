@@ -18,7 +18,7 @@
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 
 u8 g_PadType;
-volatile u16 g_PadHeld;
+u16 g_PadHeld;
 u16 g_PadButtonMapping[16];
 s16 g_NegconSteer;
 

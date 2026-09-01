@@ -64,7 +64,7 @@ s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;
 s32 g_MenuViewOffsetTarget;
-volatile u16 g_PadHeld;
+u16 g_PadHeld;
 u16 g_PadPressed;
 s32 g_PlayerCarIndex;
 s32 g_PlayerMoney;

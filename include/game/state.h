@@ -229,19 +229,7 @@ extern u16 g_PadButtonPresets[];
 extern u8 g_PadConfigButtonRows[];
 extern u8 g_PadConfigLabelRows[];
 extern u16 g_PadPrevHeld;
-extern volatile u16 g_PadHeld;
-
-typedef union PadHeldAddress {
-    volatile u16 *live;
-    const u16 *stable;
-} PadHeldAddress;
-
-static inline u16 ReadStablePadHeld(void) {
-    PadHeldAddress address;
-
-    address.live = &g_PadHeld;
-    return *address.stable;
-}
+extern u16 g_PadHeld;
 extern u16 g_PadPressedRepeat;
 extern u16 g_PadPressed;
 

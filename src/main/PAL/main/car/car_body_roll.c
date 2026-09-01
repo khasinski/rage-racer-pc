@@ -25,7 +25,7 @@ static void DampBodyRoll(PlayerCarRuntime *car) {
 
 static void UpdateDigitalSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
-    u16 held = ReadStablePadHeld();
+    u16 held = g_PadHeld;
     s32 steerPosition = drive->steerPos;
 
     if (held & g_PadButtonMapping[0]) {

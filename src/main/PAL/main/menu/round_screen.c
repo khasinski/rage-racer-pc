@@ -222,7 +222,7 @@ void UpdateRoundScreen(void) {
         u32 sceneTime = g_SceneTimer;
         if (sceneTime >= 121) {
             g_SceneId = 0xb;
-            if ((ReadStablePadHeld() & (PAD_START | PAD_R1 | PAD_L1)) == 0x80c) {
+            if ((g_PadHeld & (PAD_START | PAD_R1 | PAD_L1)) == 0x80c) {
                 g_MirrorMode = 1;
             } else {
                 g_MirrorMode = 0;

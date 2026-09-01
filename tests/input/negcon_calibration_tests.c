@@ -47,7 +47,7 @@ PadState g_PadState;
 u8 g_PadType;
 u16 g_PadButtonMapping[16];
 u16 g_PadPrevHeld;
-volatile u16 g_PadHeld;
+u16 g_PadHeld;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 u8 g_PadRepeatTimer[4];

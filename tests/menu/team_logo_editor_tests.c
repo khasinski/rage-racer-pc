@@ -33,7 +33,7 @@ s32 g_TeamLogoPaintArmed;
 s32 g_TeamLogoPaletteMode;
 TeamLogoCoordinate g_TeamLogoViewX;
 s32 g_TeamLogoViewY;
-volatile u16 g_PadHeld;
+u16 g_PadHeld;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 
