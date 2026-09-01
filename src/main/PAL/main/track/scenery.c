@@ -189,40 +189,6 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
 }
 
 
-void SeedFlybyScenery(void) {
-    SceneryMotionData *data;
-    FlybySceneryState *out;
-    s32 count;
-    s16 value;
-    s32 index;
-    s32 recordIndex;
-
-    data = g_FlybySceneryData;
-    out = &g_FlybyScenery;
-    index = Random15();
-    count = g_LapCount;
-    value = index % count;
-    value++;
-    out->lap = value;
-    value = (s16)value;
-
-    if (value <= 0) {
-        out->lap = (u16)g_LapCount - 1;
-    } else {
-        if (count < value) {
-            out->lap = (u16)g_LapCount;
-        }
-    }
-
-    out->soundEnabled = 1;
-    out->timer = 0;
-
-    out->position = data->start[g_RaceSeries].position;
-    recordIndex = data->firstKeyframe[g_RaceSeries][0];
-    out->volume = 0;
-    g_FlybySceneryKeyframe = &data->keyframes[recordIndex];
-}
-
 /*
  * Ticks the course's one scripted airborne prop and its engine sound; the model
  * is submitted elsewhere. Armed by a scene-counter match, then runs 451 frames,
