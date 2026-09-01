@@ -13,125 +13,81 @@
 #include "game/state.h"
 #include "psyq/cd.h"
 
-typedef union RankingTextBuffer {
-    char value[56];
-    char first;
-} RankingTextBuffer;
-
 void DrawRankingPanel(s32 slideX) {
-    s32 panel;
-    s32 iter;
-    s32 countOrIndex;
-    s32 xOrField;
-    s32 destination;
-    s32 color;
-    s32 *lapTime;
-    s32 carNameY;
-    RankingTextBuffer text;
-    s32 mode;
+    char text[56];
+    s32 lapCount;
     s32 row;
-    s32 doubledRow;
-    s32 value;
-    s32 limit;
+    s32 course = SeriesCourseIndex();
 
-    panel = slideX;
-    DrawProportionalText(panel + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
-    mode = g_CourseIndex;
-    text.value[1] = 0x2F;
-    limit = 6;
-    if (mode != 3) {
-        limit = 3;
+    DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
+    text[1] = 0x2F;
+    lapCount = g_CourseIndex == 3 ? 6 : 3;
+    for (row = 0; row < lapCount; row++) {
+        s32 column = row % 2;
+        s32 x = slideX + 0x14 + (row / 2) * 0x60;
+        s32 y = 0x58 + column * 8;
+        s32 color = g_BestLapIndex == row ? 0x780F : 0x78CC;
+
+        text[0] = row + 0x31;
+        FormatLapTime(&text[2],
+                      g_PlayerCar.lapTimes.table.milliseconds[row]);
+        DrawText8x8(x, y, text, color);
     }
-    iter = 0;
-    if (limit > 0) {
-        lapTime = g_PlayerCar.lapTimes.table.milliseconds;
-        do {
-            row = iter / 2;
-            doubledRow = row * 2;
-            value = iter - doubledRow;
-            value <<= 3;
-            xOrField = value + 0x58;
-            text.first = iter + 0x31;
-            doubledRow = (doubledRow + row) << 5;
-            value = panel + 0x14;
-            FormatLapTime(&text.value[2], *lapTime);
-            destination = doubledRow;
-            destination = destination + value;
-            color = 0x78CC;
-            if (g_BestLapIndex == iter) {
-                color = 0x780F;
-            }
-            DrawText8x8(destination, xOrField, text.value, color);
-            iter++;
-            lapTime++;
-        } while (iter < limit);
+
+    DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
+    for (row = 0; row < 5; row++) {
+        const RaceRecord *record =
+            &g_RankingRecords[g_GrandPrixSeries][course][row];
+        s32 carIndex = record->carIndex;
+        s32 color = g_RankingInsertRow == row ? 0x780F : 0x78CC;
+        s32 y = 0x78 + row * 0x14;
+
+        text[0] = g_PlaceSuffixNames[row][0];
+        text[1] = g_PlaceSuffixNames[row][1];
+        text[2] = g_PlaceSuffixNames[row][2];
+        text[3] = 0x2F;
+        FormatLapTime(&text[4], record->raceTime);
+        sprintf(&text[0xC], g_FmtRecordName, record,
+                g_CarClassNames[carIndex]);
+        DrawText8x8(slideX + 0x14, y, text, color);
+
+        sprintf(text, g_FmtCarName, g_CarNames[carIndex]);
+        DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
     }
-    DrawProportionalText(panel + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
-    countOrIndex = 0;
-    carNameY = 0x82;
-    destination = 0x78;
-    do {
-        text.value[0] = g_PlaceSuffixNames[countOrIndex][0];
-        text.value[1] = g_PlaceSuffixNames[countOrIndex][1];
-        text.value[2] = g_PlaceSuffixNames[countOrIndex][2];
-        text.value[3] = 0x2F;
-        FormatLapTime(&text.value[4], g_RankingRecords[g_GrandPrixSeries][SeriesCourseIndex()][countOrIndex].raceTime);
-        xOrField = g_RankingRecords[g_GrandPrixSeries][SeriesCourseIndex()][countOrIndex].carIndex;
-        sprintf(&text.value[0xC], g_FmtRecordName,
-                      &g_RankingRecords[g_GrandPrixSeries][SeriesCourseIndex()][countOrIndex],
-                      g_CarClassNames[xOrField]);
-        color = 0x78CC;
-        if (g_RankingInsertRow == countOrIndex) {
-            color = 0x780F;
-        }
-        DrawText8x8(panel + 0x14, destination, text.value, color);
-        sprintf(text.value, g_FmtCarName, g_CarNames[xOrField]);
-        DrawText8x8(panel + 0x2C, carNameY, text.value, color);
-        destination += 0x14;
-        carNameY += 0x14;
-        countOrIndex++;
-    } while (countOrIndex < 5);
 }
 
-void DrawTimeRecordPanel(s32 s5) {
+void DrawTimeRecordPanel(s32 slideX) {
     char text[48];
-    s32 s4, s3;
-    s32 s2, color, idx;
+    s32 course = SeriesCourseIndex();
+    s32 row;
 
-    DrawProportionalText(s5 + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
+    DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
 
     text[0] = 0x54;
     text[1] = 0x2F;
     FormatLapTime(&text[2], g_RaceTotalTime);
-    DrawText8x8(s5 + 0x14, 0x58, text, 0x78CC);
+    DrawText8x8(slideX + 0x14, 0x58, text, 0x78CC);
 
-    DrawProportionalText(s5 + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
+    DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
 
-    s2 = 0;
-    s4 = 0x82;
-    s3 = 0x78;
-    for (; s2 < 5; s2++) {
-        text[0] = g_PlaceSuffixNames[s2][0];
-        text[1] = g_PlaceSuffixNames[s2][1];
-        text[2] = g_PlaceSuffixNames[s2][2];
+    for (row = 0; row < 5; row++) {
+        const RaceRecord *record =
+            &g_TimeRecords[g_GrandPrixSeries][course][row];
+        s32 carIndex = record->carIndex;
+        s32 color = g_TimeRecordInsertRow == row ? 0x780F : 0x78CC;
+        s32 y = 0x78 + row * 0x14;
+
+        text[0] = g_PlaceSuffixNames[row][0];
+        text[1] = g_PlaceSuffixNames[row][1];
+        text[2] = g_PlaceSuffixNames[row][2];
         text[3] = 0x2F;
-        FormatLapTime(&text[4], g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()][s2].raceTime);
+        FormatLapTime(&text[4], record->raceTime);
+        sprintf(&text[0xC], g_FmtRecordName, record,
+                g_CarClassNames[carIndex]);
+        DrawText8x8(slideX + 0x14, y, text, color);
 
-        idx = g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()][s2].carIndex;
-        sprintf(&text[0xC], g_FmtRecordName,
-                      &g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()][s2], g_CarClassNames[idx]);
-
-        color = 0x78CC;
-        if (g_TimeRecordInsertRow == s2) {
-            color = 0x780F;
-        }
-        DrawText8x8(s5 + 0x14, s3, text, color);
-
-        sprintf(text, g_FmtCarName, g_CarNames[idx]);
-
-        DrawText8x8(s5 + 0x2C, s4, text, color);
-        s3 += 0x14;
-        s4 += 0x14;
+        sprintf(text, g_FmtCarName, g_CarNames[carIndex]);
+        DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
     }
 }
 
@@ -155,34 +111,26 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
 }
 
 void InsertRaceRecords(void) {
-    s32 count;
+    s32 lapCount;
     s32 i;
-    s32 best;
-    s32 *score_ptr;
+    s32 bestLapTime;
     s32 course;
 
-    count = 3;
-    if (g_CourseIndex == 3) {
-        count = 6;
-    }
+    lapCount = g_CourseIndex == 3 ? 6 : 3;
+    bestLapTime = 0x927C0;
+    for (i = 0; i < lapCount; i++) {
+        s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[i];
 
-    best = 0x927C0;
-    i = 0;
-    if (i < count) {
-        score_ptr = g_PlayerCar.lapTimes.table.milliseconds;
-        while (i < count) {
-            if (*score_ptr < best) {
-                best = *score_ptr;
-                g_BestLapIndex = i;
-            }
-            i++;
-            score_ptr++;
+        if (lapTime < bestLapTime) {
+            bestLapTime = lapTime;
+            g_BestLapIndex = i;
         }
     }
 
     course = SeriesCourseIndex();
     g_RankingInsertRow = InsertRaceRecord(
-        g_RankingRecords[g_GrandPrixSeries][course], best, g_PlayerCarIndex,
+        g_RankingRecords[g_GrandPrixSeries][course], bestLapTime,
+        g_PlayerCarIndex,
         g_RankingNameCodes);
     g_TimeRecordInsertRow = InsertRaceRecord(
         g_TimeRecords[g_GrandPrixSeries][course], g_RaceTotalTime,
@@ -197,8 +145,55 @@ void EnterRecordEntry(void) {
     InsertRaceRecords();
 }
 
+enum {
+    RECORD_NAME_LENGTH = 6,
+    NAME_ENTRY_CHARACTER_COUNT = 42,
+};
+
+static void WriteRecordName(RaceRecord *record, const u8 *nameCodes) {
+    s32 character;
+
+    for (character = 0; character < RECORD_NAME_LENGTH; character++) {
+        record->driverName[character] =
+            g_NameEntryCharset[nameCodes[character]];
+    }
+}
+
+/* Updates one editable character and returns true once all six are accepted. */
+static s32 UpdateNameEntryInput(u8 *nameCodes) {
+    s32 previousCharacter = g_NameEntryChar;
+    u16 buttons;
+
+    if (g_PadPressedRepeat & PAD_LEFT) {
+        g_NameEntryChar--;
+    } else if (g_PadPressedRepeat & PAD_RIGHT) {
+        g_NameEntryChar++;
+    }
+    g_NameEntryChar =
+        (g_NameEntryChar + NAME_ENTRY_CHARACTER_COUNT) %
+        NAME_ENTRY_CHARACTER_COUNT;
+    if (previousCharacter != g_NameEntryChar) {
+        PlaySoundCue(1);
+    }
+
+    nameCodes[g_NameEntryCursor] = g_NameEntryChar;
+    buttons = g_PadPressed;
+    if (buttons & 0x860) {
+        PlaySoundCue(2);
+        g_NameEntryCursor++;
+        if (g_NameEntryCursor == RECORD_NAME_LENGTH) {
+            return 1;
+        }
+        g_NameEntryChar = nameCodes[g_NameEntryCursor];
+    } else if ((buttons & 0x90) && g_NameEntryCursor > 0) {
+        PlaySoundCue(3);
+        g_NameEntryCursor--;
+        g_NameEntryChar = nameCodes[g_NameEntryCursor];
+    }
+    return 0;
+}
+
 void UpdateRecordEntry(void) {
-    u8 *name;
     s32 i;
 
     g_AnimTimer++;
@@ -226,57 +221,27 @@ void UpdateRecordEntry(void) {
         break;
 
     case RECORD_ENTRY_STATE_EDIT_LAP_NAME: {
-        u8 *timeName;
-        s32 previous;
-        u16 buttons;
+        s32 course = SeriesCourseIndex();
 
-        previous = g_NameEntryChar;
-        if (g_PadPressedRepeat & PAD_LEFT) {
-            g_NameEntryChar = previous - 1;
-        } else if (g_PadPressedRepeat & PAD_RIGHT) {
-            g_NameEntryChar = previous + 1;
-        }
-        g_NameEntryChar = (g_NameEntryChar + 42) % 42;
-        if (previous != g_NameEntryChar) {
-            PlaySoundCue(1);
-        }
-
-        g_RankingNameCodes[g_NameEntryCursor] = g_NameEntryChar;
-        buttons = g_PadPressed;
-        name = g_RankingNameCodes;
-        if (buttons & 0x860) {
-            PlaySoundCue(2);
-            g_NameEntryCursor++;
-            if (g_NameEntryCursor == 6) {
-                g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
-                i = 0;
-                if (g_TimeRecordInsertRow < 5) {
-                    timeName = g_TimeRecordNameCodes;
-                    do {
-                        *timeName = g_RankingNameCodes[i];
-                        g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()]
-                                     [g_TimeRecordInsertRow].driverName[i] =
-                            g_NameEntryCharset[*timeName];
-                        i++;
-                        timeName++;
-                    } while (i < 6);
+        if (UpdateNameEntryInput(g_RankingNameCodes)) {
+            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
+            if (g_TimeRecordInsertRow < 5) {
+                for (i = 0; i < RECORD_NAME_LENGTH; i++) {
+                    g_TimeRecordNameCodes[i] = g_RankingNameCodes[i];
                 }
+                WriteRecordName(
+                    &g_TimeRecords[g_GrandPrixSeries][course]
+                                  [g_TimeRecordInsertRow],
+                    g_TimeRecordNameCodes);
             }
-            g_NameEntryChar = g_RankingNameCodes[g_NameEntryCursor];
-        } else if ((buttons & 0x90) && g_NameEntryCursor > 0) {
-            PlaySoundCue(3);
-            g_NameEntryCursor--;
-            g_NameEntryChar = name[g_NameEntryCursor];
         }
 
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_LAP_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_RankingInsertRow);
         }
-        for (i = 0; i < 6; i++) {
-            g_RankingRecords[g_GrandPrixSeries][SeriesCourseIndex()]
-                            [g_RankingInsertRow].driverName[i] =
-                g_NameEntryCharset[g_RankingNameCodes[i]];
-        }
+        WriteRecordName(
+            &g_RankingRecords[g_GrandPrixSeries][course][g_RankingInsertRow],
+            g_RankingNameCodes);
         DrawRankingPanel(0);
         break;
     }
@@ -305,44 +270,18 @@ void UpdateRecordEntry(void) {
         break;
 
     case RECORD_ENTRY_STATE_EDIT_RACE_NAME: {
-        s32 previous;
-        u16 buttons;
+        s32 course = SeriesCourseIndex();
 
-        previous = g_NameEntryChar;
-        if (g_PadPressedRepeat & PAD_LEFT) {
-            g_NameEntryChar = previous - 1;
-        } else if (g_PadPressedRepeat & PAD_RIGHT) {
-            g_NameEntryChar = previous + 1;
-        }
-        g_NameEntryChar = (g_NameEntryChar + 42) % 42;
-        if (previous != g_NameEntryChar) {
-            PlaySoundCue(1);
-        }
-
-        g_TimeRecordNameCodes[g_NameEntryCursor] = g_NameEntryChar;
-        buttons = g_PadPressed;
-        name = g_TimeRecordNameCodes;
-        if (buttons & 0x860) {
-            PlaySoundCue(2);
-            g_NameEntryCursor++;
-            if (g_NameEntryCursor == 6) {
-                g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
-            }
-            g_NameEntryChar = name[g_NameEntryCursor];
-        } else if ((buttons & 0x90) && g_NameEntryCursor > 0) {
-            PlaySoundCue(3);
-            g_NameEntryCursor--;
-            g_NameEntryChar = name[g_NameEntryCursor];
+        if (UpdateNameEntryInput(g_TimeRecordNameCodes)) {
+            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
         }
 
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_RACE_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_TimeRecordInsertRow);
         }
-        for (i = 0; i < 6; i++) {
-            g_TimeRecords[g_GrandPrixSeries][SeriesCourseIndex()]
-                         [g_TimeRecordInsertRow].driverName[i] =
-                g_NameEntryCharset[g_TimeRecordNameCodes[i]];
-        }
+        WriteRecordName(
+            &g_TimeRecords[g_GrandPrixSeries][course][g_TimeRecordInsertRow],
+            g_TimeRecordNameCodes);
         DrawTimeRecordPanel(0);
         break;
     }
