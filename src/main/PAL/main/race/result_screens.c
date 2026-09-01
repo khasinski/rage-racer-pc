@@ -138,14 +138,10 @@ void UpdateReplayScene(void) {
         }
     }
 
-    {
-        ReplayCarAddress player;
-        ReplayCarAddress rivals;
-
-        rivals.rivals = g_Cars;
-        player.player = &g_PlayerCar;
-        ApplyReplayFrame(g_ReplayReadCursor, player.state, rivals.state);
-    }
+    ApplyReplayFrame(
+        g_ReplayReadCursor,
+        (ReplayCarState *)(void *)&g_PlayerCar,
+        (ReplayCarState *)(void *)g_Cars);
     g_ReplayReadCursor++;
     if (g_ReplayReadCursor == g_ReplayFrameCount) {
         g_ReplayReadCursor = 0;

@@ -136,16 +136,16 @@ void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
 }
 
 void RecordReplayFrame(void) {
-    ReplayCarAddress player;
-    ReplayCarAddress rivals;
+    const GameRenderSourcePoint *player =
+        (const GameRenderSourcePoint *)(const void *)&g_PlayerCar;
 
     if (g_GrandPrixMode != 0) {
-        player.player = &g_PlayerCar;
-        rivals.rivals = g_Cars;
-        StoreReplayCarFrame(g_ReplayWriteCursor, player.source, rivals.source);
+        const GameRenderSourcePoint *rival =
+            (const GameRenderSourcePoint *)(const void *)g_Cars;
+
+        StoreReplayCarFrame(g_ReplayWriteCursor, player, rival);
     } else {
-        player.player = &g_PlayerCar;
-        StoreReplayTimeAttackFrame(g_ReplayWriteCursor, player.source);
+        StoreReplayTimeAttackFrame(g_ReplayWriteCursor, player);
     }
 
     g_ReplayWriteCursor++;

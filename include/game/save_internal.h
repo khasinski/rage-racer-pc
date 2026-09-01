@@ -27,13 +27,4 @@ extern s32 g_BestSectorTimes[2][4][3];
 
 u32 CalculateSaveBlockChecksum(const GameSaveBlock *block);
 
-typedef union SectorTimeTableAddress {
-    s32 value;
-    s32 *pointer;
-    s32 (*table)[4][3];
-    u8 *bytes;
-    GameSaveBlock *saveBlock;
-} SectorTimeTableAddress;
-
-
 #endif
