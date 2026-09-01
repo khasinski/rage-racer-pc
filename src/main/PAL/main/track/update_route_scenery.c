@@ -3,83 +3,71 @@
 
 #include "game/track_internal.h"
 
+static void RestartRouteScenery(void) {
+    const s32 series = g_RaceSeries;
+    const s16 firstKeyframe =
+        g_RouteSceneryData->firstKeyframe[series][0];
+    SceneryMotionKeyframe *keyframe =
+        &g_RouteSceneryData->keyframes[firstKeyframe];
+
+    g_RouteSceneryKeyIndex = 0;
+    g_RouteSceneryKeyframe = keyframe;
+    g_RouteSceneryRotX = keyframe->rotationX;
+    g_RouteSceneryRotY = keyframe->rotationY;
+    g_RouteSceneryRotZ = keyframe->rotationZ;
+    SetRouteSceneryPosition(&g_RouteSceneryData->start[series].position);
+    g_RouteSceneryClock = 1;
+    g_RouteSceneryFrame = 0;
+}
+
+void SeedRouteScenery(void) {
+    g_RouteSceneryArmed = 1;
+    RestartRouteScenery();
+}
+
 void UpdateRouteScenery(void) {
     Matrix mtx0;
     Matrix mtx1;
     SVec vin;
     LVec vout;
-    SceneryMotionData *base;
-    SceneryMotionKeyframe *kp;
-    s32 i;
-    s32 counter;
-    s32 c;
-    s32 r4354;
+    SceneryMotionKeyframe *keyframe;
+    s32 elapsed;
+    s32 remaining;
 
-    c = g_RouteSceneryClock;
-    base = g_RouteSceneryData;
-    if (c <= 0) {
+    if (g_RouteSceneryClock <= 0) {
         return;
     }
-    g_RouteSceneryClock = c + 1;
+    g_RouteSceneryClock++;
+    g_RouteSceneryFrame++;
 
-    counter = g_RouteSceneryFrame;
-    i = g_RouteSceneryKeyIndex;
-    kp = g_RouteSceneryKeyframe;
-    counter++;
-    {
-        g_RouteSceneryFrame = counter;
-        if (kp[i].duration == counter) {
-            c = i + 1;
-            g_RouteSceneryKeyIndex = c;
-            g_RouteSceneryFrame = 0;
-        }
+    keyframe = &g_RouteSceneryKeyframe[g_RouteSceneryKeyIndex];
+    if (keyframe->duration == g_RouteSceneryFrame) {
+        g_RouteSceneryKeyIndex++;
+        g_RouteSceneryFrame = 0;
+        keyframe++;
     }
 
-    {
-        s32 keyIndex = g_RouteSceneryKeyIndex;
-        if (kp[keyIndex].duration == -1) {
-            s32 idx;
-            SceneryMotionKeyframe *r3;
-            s32 n;
-            s32 value;
-
-            idx = g_RaceSeries;
-            n = base->firstKeyframe[idx][g_RouteSceneryKeyIndex = 0];
-            r3 = &base->keyframes[n];
-            value = r3->rotationX;
-            g_RouteSceneryRotX = value;
-            value = r3->rotationY;
-            g_RouteSceneryRotY = value;
-            value = r3->rotationZ;
-            g_RouteSceneryKeyframe = r3;
-            g_RouteSceneryRotZ = value;
-            SetRouteSceneryPosition(&(idx + base->start)->position);
-            g_RouteSceneryClock = 1;
-            g_RouteSceneryFrame = 0;
-        }
+    if (keyframe->duration == -1) {
+        RestartRouteScenery();
+        keyframe = g_RouteSceneryKeyframe;
     }
 
-    {
-        SceneryMotionKeyframe *rec;
-        s32 t;
-        s32 t0v;
+    elapsed = g_RouteSceneryFrame;
+    remaining = keyframe->duration - elapsed;
+    g_RouteSceneryRotX =
+        (keyframe[1].rotationX * elapsed +
+         keyframe->rotationX * remaining) / keyframe->duration;
+    g_RouteSceneryRotY =
+        (keyframe[1].rotationY * elapsed +
+         keyframe->rotationY * remaining) / keyframe->duration;
+    g_RouteSceneryRotZ =
+        (keyframe[1].rotationZ * elapsed +
+         keyframe->rotationZ * remaining) / keyframe->duration;
 
-        rec = g_RouteSceneryKeyframe + g_RouteSceneryKeyIndex;
-        t = g_RouteSceneryFrame;
-        t0v = rec->duration - t;
-        g_RouteSceneryRotX =
-            (rec[1].rotationX * t + rec->rotationX * t0v) / rec->duration;
-        r4354 = (rec[1].rotationY * t + rec->rotationY * t0v) /
-                rec->duration;
-        g_RouteSceneryRotY = r4354;
-        g_RouteSceneryRotZ =
-            (rec[1].rotationZ * t + rec->rotationZ * t0v) /
-            rec->duration;
-        vin.vx = 0;
-        vin.vy = 0;
-        vin.vz = -rec->speed * 4;
-        BuildRotMatrixY(&mtx0, 0x800 - r4354);
-    }
+    vin.vx = 0;
+    vin.vy = 0;
+    vin.vz = -keyframe->speed * 4;
+    BuildRotMatrixY(&mtx0, 0x800 - g_RouteSceneryRotY);
 
     BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
     MulMatrix2(&mtx0, &mtx1);

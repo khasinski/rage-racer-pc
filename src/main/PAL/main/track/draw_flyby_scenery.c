@@ -22,34 +22,3 @@ void DrawFlybyScenery(void) {
         SubmitModel((&g_RenderState), g_ModelBankCount < 1);
     }
 }
-
-/* 0 while the route prop is not running; the seeder sets it to 1 and
- * UpdateRouteScenery increments it every frame, so it is both the enable
- * and the frame count since the seed. */
-
-void SeedRouteScenery(void) {
-    s32 series0;
-    s32 series1;
-    SceneryMotionData *data;
-    SceneryMotionKeyframe *keyframe;
-    s32 keyframeIndex;
-    s32 value;
-
-    g_RouteSceneryArmed = 1;
-    g_RouteSceneryClock = 1;
-
-    series0 = g_RaceSeries;
-    data = g_RouteSceneryData;
-    series1 = g_RaceSeries;
-    SetRouteSceneryPosition(&(series0 + data->start)->position);
-
-    keyframeIndex = (series1 + data->firstKeyframe)[0]
-        [(g_RouteSceneryKeyIndex = 0, g_RouteSceneryFrame = 0, 0)];
-    keyframe = &data->keyframes[keyframeIndex];
-
-    g_RouteSceneryRotX = keyframe->rotationX;
-    g_RouteSceneryRotY = keyframe->rotationY;
-    value = keyframe->rotationZ;
-    g_RouteSceneryKeyframe = keyframe;
-    g_RouteSceneryRotZ = value;
-}
