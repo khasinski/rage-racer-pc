@@ -539,3 +539,23 @@ endif()
 target_link_libraries(traffic_avoidance_tests PRIVATE psyz)
 add_test(NAME traffic_avoidance COMMAND traffic_avoidance_tests)
 set_tests_properties(traffic_avoidance PROPERTIES LABELS functional)
+
+add_executable(lap_progress_tests
+    lap_progress_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/lap_progress.c)
+target_include_directories(lap_progress_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(lap_progress_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(lap_progress_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(lap_progress_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(lap_progress_tests PRIVATE psyz)
+add_test(NAME lap_progress COMMAND lap_progress_tests)
+set_tests_properties(lap_progress PROPERTIES LABELS unit)

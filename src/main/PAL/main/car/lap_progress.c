@@ -2,6 +2,19 @@
 #include "game/track.h"
 #include "game/race.h"
 
+static s32 WrapTrackPointIndex(s32 index) {
+    if (index < 0) {
+        index += g_TrackPointCount;
+    } else if (index >= g_TrackPointCount) {
+        index -= g_TrackPointCount;
+    }
+    return index;
+}
+
+static s32 TrackSegmentLength(s32 index) {
+    return (s16)g_TrackPoints[index].segmentLength;
+}
+
 /* Seeds the launch-spin value from how far the revs sit above the power peak;
  * a car already in gear 2 or higher also starts losing grip. */
 void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
@@ -32,187 +45,102 @@ void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
 /*
  * Walks the track-point ring from the event's start point to the car's current
  * point, summing segment lengths into progressA. `mode` picks which way round
- * to walk; the backwards arm then reuses the parameter as its own cursor.
+ * to walk and the race direction decides the sign of the accumulated distance.
  */
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
-    GameCarRuntime *obj = car;
-    s32 state = g_RaceSeries;
-    s32 cur = obj->trackPointIndex;
+    s32 current = car->trackPointIndex;
+    s32 index = g_TrackEventData->trackWalkStart;
     s32 total = 0;
-    s32 index;
 
-    obj->progressA = 0;
-    if (state != 0) {
-        index = g_TrackEventData->trackWalkStart;
+    if (g_RaceSeries != 0) {
         if (mode == 1) {
-            s32 count;
-            GameTrackPoint *table;
-            s32 wrapped;
-
-            count = g_TrackPointCount;
-            table = g_TrackPoints;
-while (1) {
-            index++;
-            wrapped = index % count;
-            if (cur == wrapped) {
-                break;
-            }
-            total += (s16)table[wrapped].segmentLength;
+            for (;;) {
+                index = WrapTrackPointIndex(index + 1);
+                if (index == current) {
+                    break;
+                }
+                total += TrackSegmentLength(index);
             }
         } else {
-            s32 count;
-            GameTrackPoint *table;
-            s32 wrapped;
-            s32 mod;
-
-            count = g_TrackPointCount;
-            table = g_TrackPoints;
-while (1) {
-            if (index < 0) {
-                wrapped = index + count;
-            } else {
-                wrapped = index;
-            }
-            mod = wrapped % count;
-            total -= (s16)table[mod].segmentLength;
-            if (cur == wrapped) {
-                break;
-            }
-            index--;
+            for (;;) {
+                index = WrapTrackPointIndex(index);
+                total -= TrackSegmentLength(index);
+                if (index == current) {
+                    break;
+                }
+                index--;
             }
         }
     } else {
-        index = g_TrackEventData->trackWalkStart;
         if (mode == 0) {
-            s32 count;
-            GameTrackPoint *table;
-            s32 wrapped;
-
-            count = g_TrackPointCount;
-            table = g_TrackPoints;
             do {
-                index++;
-                wrapped = index % count;
-                total -= (s16)table[wrapped].segmentLength;
-            } while (cur != wrapped);
-
+                index = WrapTrackPointIndex(index + 1);
+                total -= TrackSegmentLength(index);
+            } while (index != current);
         } else {
-            s32 count;
-            GameTrackPoint *table;
-            s32 mod;
-
-            count = g_TrackPointCount;
-            table = g_TrackPoints;
-            do {
-                if (index < 0) {
-                    mode = index + count;
-                } else {
-                    mode = index;
-                }
-                if (cur == mode) {
-                    break;
-                }
-                mod = mode % count;
-                total += (s16)table[mod].segmentLength;
+            while ((index = WrapTrackPointIndex(index)) != current) {
+                total += TrackSegmentLength(index);
                 index--;
-            } while (1);
+            }
         }
     }
-    obj->progressA = total;
+    car->progressA = total;
 }
 
 
 /*
  * Lap-progress accumulator. Relocates the car's trackPointIndex to the segment
  * that now contains it (FindTrackSegment), then walks the intervening points and
- * adds (forward) or subtracts (backward) their segmentLength into
- * car->progressA (progress). The two mirror-image branches select forward vs
- * reverse lap direction from the direction flag g_RaceSeries. Register-pinned
- * locals (bv/ir) are load-bearing for the match.
+ * adds or subtracts their segmentLength into car->progressA. The race direction
+ * controls which physical direction increases lap progress; equal-length paths
+ * keep retail's tie-break (backward for series 0, forward otherwise).
  */
 void AccumulateLapProgress(GameCarRuntime *car) {
-    s32 r;
-    s32 n;
+    s32 target;
+    s32 current = car->trackPointIndex;
+    s32 forwardDistance;
+    s32 backwardDistance;
+    s32 moveForward;
     s32 i;
-    s32 j;
-    s32 fwd;
-    s32 back;
-    s32 bv;
-    s32 count;
-    GameTrackPoint *array;
 
-    n = 1;
-    r = FindTrackSegment(car, car->trackPointIndex);
-    if (r < 0) {
+    target = FindTrackSegment(car, current);
+    if (target < 0) {
         car->activeFlag = -1;
         return;
     }
+    if (target == current) {
+        return;
+    }
+
+    forwardDistance = (target - current + g_TrackPointCount) % g_TrackPointCount;
+    backwardDistance = (current - target + g_TrackPointCount) % g_TrackPointCount;
+    moveForward = forwardDistance < backwardDistance ||
+                  (forwardDistance == backwardDistance && g_RaceSeries != 0);
 
     if (g_RaceSeries == 0) {
-        if (r != car->trackPointIndex) {
-            count = g_TrackPointCount;
-            array = g_TrackPoints;
-            do {
-                j = car->trackPointIndex - n;
-                back = j;
-                if (j < 0) {
-                    back = j + count;
-                }
-                fwd = (car->trackPointIndex + n) % count;
-                if (r == back) {
-                    s32 ir;
-                    for (i = 0; i < n; i++) {
-                        j = car->trackPointIndex - i;
-                        ir = j;
-                        if (j < 0) {
-                            ir = j + count;
-                        }
-                        car->progressA += (s16)array[ir].segmentLength;
-                    }
-                    break;
-                }
-                if (r == fwd) {
-                    for (i = 1; i <= n; i++) {
-                        car->progressA -= (s16)array[(car->trackPointIndex + i) % count].segmentLength;
-                    }
-                    break;
-                }
-                n++;
-            } while (r != car->trackPointIndex);
+        if (moveForward) {
+            for (i = 1; i <= forwardDistance; i++) {
+                car->progressA -= TrackSegmentLength(
+                    WrapTrackPointIndex(current + i));
+            }
+        } else {
+            for (i = 0; i < backwardDistance; i++) {
+                car->progressA += TrackSegmentLength(
+                    WrapTrackPointIndex(current - i));
+            }
         }
     } else {
-        if (r != car->trackPointIndex) {
-            count = g_TrackPointCount;
-            array = g_TrackPoints;
-            do {
-                j = car->trackPointIndex - n;
-                back = j;
-                if (j < 0) {
-                    back = j + count;
-                }
-                fwd = (car->trackPointIndex + n) % count;
-                bv = back;
-                if (r == fwd) {
-                    for (i = 0; i < n; i++) {
-                        car->progressA += (s16)array[(car->trackPointIndex + i) % count].segmentLength;
-                    }
-                    break;
-                }
-                if (r == bv) {
-                    s32 ir;
-                    for (i = 1; i <= n; i++) {
-                        j = car->trackPointIndex - i;
-                        ir = j;
-                        if (j < 0) {
-                            ir = j + count;
-                        }
-                        car->progressA -= (s16)array[ir].segmentLength;
-                    }
-                    break;
-                }
-                n++;
-            } while (r != car->trackPointIndex);
+        if (moveForward) {
+            for (i = 0; i < forwardDistance; i++) {
+                car->progressA += TrackSegmentLength(
+                    WrapTrackPointIndex(current + i));
+            }
+        } else {
+            for (i = 1; i <= backwardDistance; i++) {
+                car->progressA -= TrackSegmentLength(
+                    WrapTrackPointIndex(current - i));
+            }
         }
     }
-    car->trackPointIndex = r;
+    car->trackPointIndex = target;
 }
