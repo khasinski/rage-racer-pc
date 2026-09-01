@@ -377,6 +377,25 @@ target_link_libraries(find_track_segment_tests PRIVATE psyz)
 add_test(NAME find_track_segment COMMAND find_track_segment_tests)
 set_tests_properties(find_track_segment PROPERTIES LABELS functional)
 
+add_executable(find_nearest_track_camera_tests
+    find_nearest_track_camera_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/find_nearest_track_camera.c)
+target_include_directories(find_nearest_track_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(find_nearest_track_camera_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(find_nearest_track_camera_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(find_nearest_track_camera_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME find_nearest_track_camera COMMAND find_nearest_track_camera_tests)
+set_tests_properties(find_nearest_track_camera PROPERTIES LABELS unit)
+
 add_executable(car_track_state_tests
     car_track_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
