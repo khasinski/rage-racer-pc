@@ -73,6 +73,26 @@ target_link_libraries(interpolate_audio_parameter_tests PRIVATE psyz)
 add_test(NAME interpolate_audio_parameter COMMAND interpolate_audio_parameter_tests)
 set_tests_properties(interpolate_audio_parameter PROPERTIES LABELS unit)
 
+add_executable(sequence_playback_tests
+    sequence_playback_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sequence_playback.c)
+target_include_directories(sequence_playback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(sequence_playback_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(sequence_playback_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(sequence_playback_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(sequence_playback_tests PRIVATE psyz)
+add_test(NAME sequence_playback COMMAND sequence_playback_tests)
+set_tests_properties(sequence_playback PROPERTIES LABELS unit)
+
 add_executable(current_sequence_audio_tests
     current_sequence_audio_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/apply_current_sequence_audio.c)
