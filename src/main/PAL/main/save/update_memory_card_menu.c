@@ -178,6 +178,33 @@ static int CardSlotIsUsed(s32 slot) {
     return ((g_McSlotUsedMask >> slot) & 1) != 0;
 }
 
+typedef enum CardSlotActionState {
+    CARD_SLOT_ACTION_PICK = 0x00,
+    CARD_SLOT_ACTION_CONFIRM_OVERWRITE = 0x0A,
+    CARD_SLOT_ACTION_BEGIN_SAVE = 0x0B,
+    CARD_SLOT_ACTION_WAIT_SAVE_DELAY = 0x0C,
+    CARD_SLOT_ACTION_WRITE_SAVE = 0x0D,
+    CARD_SLOT_ACTION_FINISH_WRITE = 0x0F,
+    CARD_SLOT_ACTION_REFRESH_AFTER_SAVE = 0x10,
+    CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE = 0x11,
+    CARD_SLOT_ACTION_WAIT_SAVE_SETTLE = 0x12,
+    CARD_SLOT_ACTION_WAIT_SAVE_CARD = 0x13,
+    CARD_SLOT_ACTION_SHOW_SAVE_RESULT = 0x14,
+    CARD_SLOT_ACTION_WAIT_SAVE_RESULT = 0x15,
+    CARD_SLOT_ACTION_SHOW_CARD_FULL = 0x19,
+    CARD_SLOT_ACTION_BEGIN_LOAD = 0x1E,
+    CARD_SLOT_ACTION_WAIT_LOAD_PREP = 0x1F,
+    CARD_SLOT_ACTION_BEGIN_LOAD_DELAY = 0x20,
+    CARD_SLOT_ACTION_WAIT_LOAD_DELAY = 0x21,
+    CARD_SLOT_ACTION_READ_SAVE = 0x22,
+    CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE = 0x23,
+    CARD_SLOT_ACTION_WAIT_LOAD_SETTLE = 0x24,
+    CARD_SLOT_ACTION_WAIT_LOAD_CARD = 0x25,
+    CARD_SLOT_ACTION_SHOW_LOAD_RESULT = 0x26,
+    CARD_SLOT_ACTION_WAIT_LOAD_RESULT = 0x27,
+    CARD_SLOT_ACTION_SHOW_NO_FILE = 0x28,
+} CardSlotActionState;
+
 /*
  * Picking a slot, which is where the card menu spends most of its time.
  */
@@ -198,10 +225,10 @@ static void PickCardSlot(void) {
                 if (CardSlotIsUsed(g_McSlotCursor)) {
                     PlaySoundCue(2);
                     g_McConfirmChoice = 0;
-                    g_McActionState = 0x1E;
+                    g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD;
                 } else {
                     PlaySoundCue(5);
-                    g_McActionState = 0x28;
+                    g_McActionState = CARD_SLOT_ACTION_SHOW_NO_FILE;
                 }
             }
         } else {
@@ -217,11 +244,11 @@ static void PickCardSlot(void) {
             if (CardSlotIsUsed(g_McSlotCursor)) {
                 PlaySoundCue(2);
                 g_McConfirmChoice_v = 0;
-                g_McActionState = 0xA;
+                g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
             } else {
                 PlaySoundCue(2);
                 g_McActionTimer = 0x1E;
-                g_McActionState = 0xB;
+                g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE;
             }
         }
     } else if ((g_McSlotUsedMask % 8) != 0) {
@@ -230,10 +257,10 @@ static void PickCardSlot(void) {
             if (CardSlotIsUsed(g_McSlotCursor)) {
                 PlaySoundCue(2);
                 g_McConfirmChoice = 0;
-                g_McActionState = 0xA;
+                g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
             } else {
                 PlaySoundCue(2);
-                g_McActionState = 0x19;
+                g_McActionState = CARD_SLOT_ACTION_SHOW_CARD_FULL;
             }
         }
     } else {
@@ -251,46 +278,34 @@ static void PickCardSlot(void) {
 
 static void RunCardSlotActions(void) {
     switch (g_McActionState) {
-    case 0x00:
+    case CARD_SLOT_ACTION_PICK:
         PickCardSlot();
         break;
-    case 0x0A: {
+    case CARD_SLOT_ACTION_CONFIRM_OVERWRITE:
         g_McMenuPhase = (g_McSlotCursor * 2) + g_McConfirmChoice + 9;
         SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
-        if (g_McConfirmChoice != 0) {
         if ((PollMenuConfirmInput() & 0xFFFF) != 0) {
-        g_McActionState = 0xB;
+            g_McActionState = g_McConfirmChoice != 0
+                                  ? CARD_SLOT_ACTION_BEGIN_SAVE
+                                  : CARD_SLOT_ACTION_PICK;
+        } else if ((PollMenuBackInput() & 0xFFFF) != 0) {
+            g_McActionState = CARD_SLOT_ACTION_PICK;
+        }
         break;
-        }
-        if (g_McConfirmChoice != 0) {
-            if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-            g_McActionState = 0;
-            break;
-        }
-        }
-        if ((PollMenuConfirmInput() & 0xFFFF) != 0) {
-            g_McActionState = 0;
-            break;
-        }
-        if ((PollMenuBackInput() & 0xFFFF) == 0) break;
-        g_McActionState = 0;
-        break;
-    }
 
-    case 0x0B:
+    case CARD_SLOT_ACTION_BEGIN_SAVE:
         g_McMenuPhase = MC_PROMPT_ACCESSING;
         g_McActionTimer = 0xA;
-        g_McActionState = 0xC;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_DELAY;
         break;
 
-    case 0x0C: {
+    case CARD_SLOT_ACTION_WAIT_SAVE_DELAY:
         g_McActionBusy = 1;
         if (!CardActionTimerElapsed()) break;
-        g_McActionState = 0xD;
+        g_McActionState = CARD_SLOT_ACTION_WRITE_SAVE;
         break;
-    }
 
-    case 0x0D: {
+    case CARD_SLOT_ACTION_WRITE_SAVE: {
         s32 slot = g_McSlotCursor;
         s32 written;
 
@@ -299,16 +314,16 @@ static void RunCardSlotActions(void) {
         g_McActionResult = written;
         g_McActionOk = written != 0;
         g_McMenuSubState = written != 0 ? 6 : 0x10;
-        g_McActionState = 0xF;
+        g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
         g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     }
 
-    case 0x0F:
-        g_McActionState = 0x10;
+    case CARD_SLOT_ACTION_FINISH_WRITE:
+        g_McActionState = CARD_SLOT_ACTION_REFRESH_AFTER_SAVE;
         break;
 
-    case 0x10:
+    case CARD_SLOT_ACTION_REFRESH_AFTER_SAVE:
         if (g_McActionResult != 0) {
             s32 usedMask = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
 
@@ -322,93 +337,78 @@ static void RunCardSlotActions(void) {
             }
             g_McSavedLoadPhase = GameMenuLoadPhase;
         }
-        g_McActionState = 0x11;
+        g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE;
         break;
 
-    case 0x11:
+    case CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE:
         g_McActionTimer = 5;
-        g_McActionState = 0x12;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_SETTLE;
         break;
 
-    case 0x12: {
+    case CARD_SLOT_ACTION_WAIT_SAVE_SETTLE:
         if (!CardActionTimerElapsed()) break;
         g_McSettleTicks = 0;
-        g_McActionState = 0x13;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_CARD;
         break;
-    }
 
-    case 0x13: {
+    case CARD_SLOT_ACTION_WAIT_SAVE_CARD: {
         s32 t;
         if (PollMemoryCardStatus(0, 0) != 1) break;
         t = g_McSettleTicks + 1;
         g_McSettleTicks = t;
         if (t < 4) break;
-        g_McActionState = 0x14;
+        g_McActionState = CARD_SLOT_ACTION_SHOW_SAVE_RESULT;
         break;
     }
 
-    case 0x14: {
-        s32 x = g_McActionOk;
-        if (x != 0) {
-            x = 0x12;
-        } else {
-            x = 0x10;
-        }
-        g_McMenuPhase = x;
+    case CARD_SLOT_ACTION_SHOW_SAVE_RESULT:
+        g_McMenuPhase = g_McActionOk ? MC_PROMPT_SAVE_OK
+                                     : MC_PROMPT_CARD_ERROR;
         g_McActionTimer = 0x3C;
         g_McActionBusy = 0;
-        g_McActionState = 0x15;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_RESULT;
         break;
-    }
 
-    case 0x15: {
-        s32 lastRow;
-
+    case CARD_SLOT_ACTION_WAIT_SAVE_RESULT:
         if (!CardActionTimerElapsed()) break;
-        lastRow = g_McMenuRowCount;
         g_McMenuPage = 0;
-        g_McActionState = 0;
-        lastRow--;
-        g_McMenuRowCursor = lastRow;
+        g_McActionState = CARD_SLOT_ACTION_PICK;
+        g_McMenuRowCursor = g_McMenuRowCount - 1;
         break;
-    }
 
-    case 0x19:
+    case CARD_SLOT_ACTION_SHOW_CARD_FULL:
         g_McMenuPhase = MC_PROMPT_CARD_FULL;
         if ((PollMenuConfirmInput() & 0xFFFF) == 0) {
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
         }
         g_McMenuPage = 0;
-        g_McActionState = 0;
+        g_McActionState = CARD_SLOT_ACTION_PICK;
         break;
 
-    case 0x1E:
+    case CARD_SLOT_ACTION_BEGIN_LOAD:
         g_McMenuSubState = 7;
         g_McActionTimer = 5;
-        g_McActionState = 0x1F;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_PREP;
         break;
 
-    case 0x1F: {
+    case CARD_SLOT_ACTION_WAIT_LOAD_PREP:
         if (!CardActionTimerElapsed()) break;
-        g_McActionState = 0x20;
+        g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_DELAY;
         break;
-    }
 
-    case 0x20: {
-        g_McMenuPhase = 0xF;
+    case CARD_SLOT_ACTION_BEGIN_LOAD_DELAY:
+        g_McMenuPhase = MC_PROMPT_ACCESSING;
         g_McActionTimer = 0xF;
         g_McActionBusy = 1;
-        g_McActionState = 0x21;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_DELAY;
         break;
-    }
 
-    case 0x21: {
+    case CARD_SLOT_ACTION_WAIT_LOAD_DELAY:
         if (!CardActionTimerElapsed()) break;
-        g_McActionState = 0x22;
+        g_McActionState = CARD_SLOT_ACTION_READ_SAVE;
         break;
-    }
 
-    case 0x22: {
+    case CARD_SLOT_ACTION_READ_SAVE: {
         s32 slot = g_McSlotCursor;
         g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         if (g_McActionResult != 0) {
@@ -420,65 +420,53 @@ static void RunCardSlotActions(void) {
         g_McMenuSubState = 0xF;
         }
         g_McActionTimer = 0x3C;
-        g_McActionState = 0x23;
+        g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
         g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
     }
-    case 0x23:
+    case CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE:
         g_McActionTimer = 5;
-        g_McActionState = 0x24;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
         break;
 
-    case 0x24: {
+    case CARD_SLOT_ACTION_WAIT_LOAD_SETTLE:
         if (!CardActionTimerElapsed()) break;
         g_McSettleTicks = 0;
-        g_McActionState = 0x25;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_CARD;
         break;
-    }
 
-    case 0x25: {
+    case CARD_SLOT_ACTION_WAIT_LOAD_CARD: {
         s32 t;
         if (PollMemoryCardStatus(0, 0) != 1) break;
         t = g_McSettleTicks + 1;
         g_McSettleTicks = t;
         if (t < 4) break;
-        g_McActionState = 0x26;
+        g_McActionState = CARD_SLOT_ACTION_SHOW_LOAD_RESULT;
         break;
     }
 
-    case 0x26: {
-        s32 x = g_McActionOk;
-        if (x != 0) {
-            x = 0x11;
-        } else {
-            x = 0x10;
-        }
-        g_McMenuPhase = x;
+    case CARD_SLOT_ACTION_SHOW_LOAD_RESULT:
+        g_McMenuPhase = g_McActionOk ? MC_PROMPT_LOAD_OK
+                                     : MC_PROMPT_CARD_ERROR;
         g_McActionTimer = 0x3C;
         g_McActionBusy = 0;
-        g_McActionState = 0x27;
+        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_RESULT;
         break;
-    }
 
-    case 0x27: {
-        s32 lastRow;
-
+    case CARD_SLOT_ACTION_WAIT_LOAD_RESULT:
         if (!CardActionTimerElapsed()) break;
-        lastRow = g_McMenuRowCount;
         g_McMenuPage = 0;
-        g_McActionState = 0;
-        lastRow--;
-        g_McMenuRowCursor = lastRow;
+        g_McActionState = CARD_SLOT_ACTION_PICK;
+        g_McMenuRowCursor = g_McMenuRowCount - 1;
         break;
-    }
 
-    case 0x28:
+    case CARD_SLOT_ACTION_SHOW_NO_FILE:
         g_McMenuPhase = MC_PROMPT_NO_FILE;
         if ((PollMenuConfirmInput() & 0xFFFF) == 0) {
         if ((PollMenuBackInput() & 0xFFFF) == 0) break;
         }
         g_McMenuPage = 0;
-        g_McActionState = 0;
+        g_McActionState = CARD_SLOT_ACTION_PICK;
         break;
 
     default:
