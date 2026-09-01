@@ -35,5 +35,4 @@ void SeedWaypoints(void) {
         waypoint++;
     }
 
-    g_WaypointSpawnCooldown = 0;
 }

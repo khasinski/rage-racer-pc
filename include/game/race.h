@@ -290,7 +290,6 @@ extern s32 g_RivalCueFlags;
 extern s32 g_SectorEndDistance[];
 extern s32 g_SeriesCleared;
 extern s16 g_TrackZoneCode;
-extern s32 g_WaypointSpawnCooldown;
 
 /*
  * None of the Draw* functions below draw. Each one packs primitives at the
@@ -517,6 +516,5 @@ extern CVec g_CountdownCellColors[];
 extern TrackWaypointSeed g_WaypointSeeds[];
 extern TrackWaypointRuntime g_Waypoints[];
 
-s32 IsCarNearWaypoint(TrackWaypointRuntime *waypoint);
 
 #endif

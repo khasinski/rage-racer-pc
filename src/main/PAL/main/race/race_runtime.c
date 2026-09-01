@@ -7,62 +7,6 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
-s32 IsCarNearWaypoint(TrackWaypointRuntime *waypoint) {
-    return waypoint->motion.x > g_PlayerCar.x - 0x40 &&
-           waypoint->motion.x < g_PlayerCar.x + 0x40 &&
-           waypoint->motion.y > g_PlayerCar.z - 0x40 &&
-           waypoint->motion.y < g_PlayerCar.z + 0x40;
-}
-
-void UpdateWaypoints(void) {
-    TrackWaypointRuntime *waypoint;
-    s32 i;
-
-    if (g_WaypointSpawnCooldown != 0) {
-        g_WaypointSpawnCooldown--;
-    }
-
-    waypoint = g_Waypoints;
-    i = 0;
-    do {
-        if (waypoint->active == 0) {
-            if (IsCarNearWaypoint(waypoint) != 0) {
-                g_WaypointsCollected++;
-                PlaySoundCue(0xA);
-
-                waypoint->active = 1;
-                waypoint->motion.velocity.vector = g_PlayerVelocity[0];
-
-                waypoint->motion.velocity.fields.x *= 2;
-                waypoint->motion.velocity.fields.y *= 2;
-                waypoint->motion.velocityMagnitude =
-                    ((waypoint->motion.velocity.fields.x * waypoint->motion.velocity.fields.x) + (waypoint->motion.velocity.fields.y * waypoint->motion.velocity.fields.y)) /
-                    0x2000;
-            }
-        } else if (waypoint->active == 1) {
-            waypoint->motion.x += waypoint->motion.velocity.fields.x / 0x100;
-            waypoint->motion.y += waypoint->motion.velocity.fields.y / 0x100;
-            waypoint->motion.velocity.fields.x = (waypoint->motion.velocity.fields.x * 15) / 16;
-            waypoint->motion.velocity.fields.y = (waypoint->motion.velocity.fields.y * 15) / 16;
-            waypoint->motion.rotationY += waypoint->motion.velocityMagnitude / 0x100;
-            waypoint->motion.velocityMagnitude = (waypoint->motion.velocityMagnitude * 15) / 16;
-
-            if (waypoint->motion.rotationZ < 0x400) {
-                waypoint->motion.rotationZ += 0x80;
-            } else {
-                waypoint->motion.rotationZ = 0x400;
-            }
-
-            if ((waypoint->motion.velocity.fields.x == 0) && (waypoint->motion.velocity.fields.y == 0) && (waypoint->motion.velocityMagnitude == 0)) {
-                waypoint->active = 2;
-            }
-        }
-
-        i++;
-        waypoint++;
-    } while (i < 6);
-}
-
 /*
  * Renders the 6 waypoints. For each active-shaped slot it builds a rotation
  * matrix from the waypoint's Y and Z rotations and emits

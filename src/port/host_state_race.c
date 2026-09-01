@@ -157,7 +157,6 @@ unsigned char g_CourseProgress[8] __attribute__((aligned(16)));
 unsigned char g_CameraViewMode[8] __attribute__((aligned(16)));
 s32 g_ReplayBufferWrapped;
 unsigned char g_ReplayFramesGp[8] __attribute__((aligned(16)));
-s32 g_WaypointSpawnCooldown;
 unsigned char g_BestTotalTimes[68] __attribute__((aligned(16)));
 s16 g_PauseDebounce;
 s32 g_FrameSyncThreshold;
