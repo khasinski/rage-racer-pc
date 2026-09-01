@@ -25,9 +25,9 @@ s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarNamePlateStep;
 s32 g_CarSelectCursor;
-u8 g_CarSelectMenuScriptGp;
-u8 g_CarSelectMenuScriptTimeAttack;
-u8 *g_CarSelectPopupScript;
+TimedDrawCommand g_CarSelectMenuScriptGp[1];
+TimedDrawCommand g_CarSelectMenuScriptTimeAttack[1];
+const TimedDrawCommand *g_CarSelectPopupScript;
 /* The two modal scripts are decoded command arrays rather than raw bytes;
  * they are never walked here, only identified. */
 TimedDrawCommand g_CarShopUnavailableScript[2];
@@ -69,8 +69,8 @@ GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
 s32 g_ShopCarIndex;
 s32 g_TimeAttackPlateStep;
-u8 g_UiChromeScript;
-u8 g_UiChromeScript2;
+TimedDrawCommand g_UiChromeScript[1];
+TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 
@@ -125,16 +125,16 @@ static void Record(const char *name, const s32 *values, int count) {
 /* Which script a call names matters, so each one is recorded by an index
  * rather than by a pointer that would move between runs. */
 static s32 ScriptId(const void *commands) {
-    if (commands == &g_CarSelectMenuScriptGp) return 1;
-    if (commands == &g_CarSelectMenuScriptTimeAttack) return 2;
-    if (commands == &g_UiChromeScript) return 3;
-    if (commands == &g_UiChromeScript2) return 4;
+    if (commands == g_CarSelectMenuScriptGp) return 1;
+    if (commands == g_CarSelectMenuScriptTimeAttack) return 2;
+    if (commands == g_UiChromeScript) return 3;
+    if (commands == g_UiChromeScript2) return 4;
     if (commands == g_CarShopUnavailableScript) return 5;
     if (commands == g_EngineerShopUnavailableScript) return 6;
     return commands == NULL ? 0 : 7;
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step) {
     RECORD("script", ScriptId(commands), progress == &g_UiScriptProgress2,
            step);
     return s_scriptResult;

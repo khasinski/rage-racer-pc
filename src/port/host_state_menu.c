@@ -17,6 +17,7 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/menu_scripts_internal.h"
 
 unsigned char g_MsgInsertController[20] __attribute__((aligned(16))) = "INSERT CONTROLLER";
 unsigned char g_MsgControllerError[20] __attribute__((aligned(16))) = "CONTROLLER ERROR";
@@ -356,9 +357,9 @@ u16 g_NegconNeutralLSaved;
 unsigned char g_LogoSampleSubPanelScript[8] __attribute__((aligned(16)));
 s32 g_DesignModeOption;
 u16 g_NegconSteerPlaySaved;
-unsigned char g_CourseSelectModalScript[8] __attribute__((aligned(16)));
+const TimedDrawCommand *g_CourseSelectModalScript;
 s32 g_LogoSampleCursor;
-unsigned char g_CustomizePopupScript[8] __attribute__((aligned(16)));
+const TimedDrawCommand *g_CustomizePopupScript;
 s32 g_CourseSelectOption;
 u32 g_OptionMenuExitScene;
 s32 g_OptionMenuCursor;
@@ -380,7 +381,7 @@ s32 g_TeamLogoPaintArmed;
 s16 g_GrandPrixSeries;
 s16 g_ExtraGrandPrixUnlocked;
 unsigned char g_NegconSteerPlay[8] __attribute__((aligned(16)));
-unsigned char g_CarShopModalScript[8] __attribute__((aligned(16)));
+const TimedDrawCommand *g_CarShopModalScript;
 u16 g_NegconMaxTwistSaved;
 unsigned char g_NegconMappingIndex[8] __attribute__((aligned(16)));
 s32 g_MenuAltLayout;
@@ -399,13 +400,13 @@ u8 g_NegconAxisSteer;
 u8 g_NegconAxisI;
 u8 g_NegconAxisII;
 unsigned char g_NegconAxisL[33] __attribute__((aligned(16)));
-unsigned char g_CarSelectPopupScript[8] __attribute__((aligned(16)));
+const TimedDrawCommand *g_CarSelectPopupScript;
 s32 g_TrackWalkStart;
 s32 g_PlayerCarIndex;
 s32 g_BgmTrack;
 s32 g_CarSelectCursor;
 s32 g_TitleMenuSelection;
-unsigned char g_EngineerShopModalScript[8] __attribute__((aligned(16)));
+const TimedDrawCommand *g_EngineerShopModalScript;
 unsigned char g_NegconMaxTwist[8] __attribute__((aligned(16)));
 u16 g_NegconSteerNeutralSaved;
 s16 g_NextOwnedCarIndex;

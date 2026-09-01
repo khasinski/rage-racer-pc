@@ -62,11 +62,11 @@ static void DrawCourseArrows(s32 step) {
     DrawBrowseArrows(step, 1, previous, CanSelectNextCourse());
 }
 
-static void *CourseSelectMenuScript(void) {
+static const TimedDrawCommand *CourseSelectMenuScript(void) {
     if (g_GrandPrixMode != 0) {
-        return (u8 *)&g_CourseSelectGpScript;
+        return g_CourseSelectGpScript;
     }
-    return (u8 *)&g_CourseSelectTimeAttackScript;
+    return g_CourseSelectTimeAttackScript;
 }
 
 /* The save prompt's two buttons, and the box round whichever is picked. */
@@ -118,7 +118,7 @@ static void ChooseCourseSelectRow(s32 row) {
             /* Saving is only offered in a Grand Prix; class five is the extra
              * series, which has no round of its own to record. */
             PlaySoundCue(2);
-            g_CourseSelectModalScript = (u8 *)&g_CourseSelectSavePromptScript;
+            g_CourseSelectModalScript = g_CourseSelectSavePromptScript;
             GameMenuBusy = -1;
             g_GrandPrixSeries =
                 (g_GrandPrixClass < 5) ? (u16)g_GrandPrixSeries : 0;
@@ -139,7 +139,7 @@ static void ChooseCourseSelectRow(s32 row) {
     }
     PlaySoundCue(2);
     if (g_GrandPrixMode != 0) {
-        g_CourseSelectModalScript = (u8 *)&g_MenuDialogPanelLowerScript;
+        g_CourseSelectModalScript = g_MenuDialogPanelLowerScript;
         GameMenuBusy = -2;
         g_UiScriptProgress2 = 0;
         g_MenuSubCursor = g_GrandPrixClass;
@@ -209,7 +209,7 @@ static void UpdateCourseSelectIdle(void) {
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
     DrawMenuLightBurst(7);
-    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
+    if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
         UpdateCourseSelectInput();
     }
@@ -252,8 +252,8 @@ MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
 static void UpdateSavePrompt(void *ot) {
     MenuPromptOutcome choice;
     s32 cue;
-    RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
@@ -349,16 +349,16 @@ static void UpdateClassPrompt(void *ot) {
 static void UpdateSaveCountdown(void *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
-        RunTimedDrawScript(&g_CourseSelectSavePromptBanner,
+        RunTimedDrawScript(g_CourseSelectSavePromptBanner,
                            &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
         DrawSavePromptButtons(ot, 1);
         return;
     }
-    RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
+    RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
                        -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         StartSequenceFadeOut();
@@ -370,9 +370,9 @@ static void UpdateSaveCountdown(void *ot) {
 
 /* The save prompt refused: wait for it to slide off, then go back to idle. */
 static void UpdateSaveDismissed(void) {
-    RunTimedDrawScript(&g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
+    RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
                        -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = 0;
@@ -430,7 +430,7 @@ static void UpdateCourseSelectModal(void *ot, s32 state) {
     DrawCourseArrows(1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
     DrawMenuLightBurst(7);
 }
 
@@ -494,7 +494,7 @@ static void UpdateCourseSelectOutgoing(void) {
     g_MenuHandlerIndex2 = 1;
     DrawCourseArrows(-1);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
     DrawMenuLightBurst(-9);
     if (g_UiScriptProgress <= 0) {

@@ -34,14 +34,14 @@ s32 g_CourseCardSpin;
 s32 g_CourseCardSpinTarget;
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
-u8 g_CourseSelectGpScript;
-u8 *g_CourseSelectModalScript;
+TimedDrawCommand g_CourseSelectGpScript[1];
+const TimedDrawCommand *g_CourseSelectModalScript;
 s32 g_CourseSelectOption;
 /* The prompts are decoded command arrays; never walked here, only named. */
 TimedDrawCommand g_CourseSelectSavePromptBanner[2];
 TimedDrawCommand g_CourseSelectSavePromptScript[4];
 TimedDrawCommand g_MenuDialogPanelLowerScript[8];
-u8 g_CourseSelectTimeAttackScript;
+TimedDrawCommand g_CourseSelectTimeAttackScript[1];
 s32 g_CourseSwapDelay;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
@@ -71,8 +71,8 @@ s32 g_PlayerMoney;
 GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
 s32 g_TimeAttackPlateStep;
-u8 g_UiChromeScript;
-u8 g_UiChromeScript2;
+TimedDrawCommand g_UiChromeScript[1];
+TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 GameRenderState g_RenderState;
@@ -123,17 +123,17 @@ static void Record(const char *name, const s32 *values, int count) {
     } while (0)
 
 static s32 ScriptId(const void *commands) {
-    if (commands == &g_CourseSelectGpScript) return 1;
-    if (commands == &g_CourseSelectTimeAttackScript) return 2;
-    if (commands == &g_UiChromeScript) return 3;
-    if (commands == &g_UiChromeScript2) return 4;
+    if (commands == g_CourseSelectGpScript) return 1;
+    if (commands == g_CourseSelectTimeAttackScript) return 2;
+    if (commands == g_UiChromeScript) return 3;
+    if (commands == g_UiChromeScript2) return 4;
     if (commands == g_CourseSelectSavePromptScript) return 5;
     if (commands == g_CourseSelectSavePromptBanner) return 6;
     if (commands == g_MenuDialogPanelLowerScript) return 7;
     return commands == NULL ? 0 : 8;
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step) {
     RECORD("script", ScriptId(commands), progress == &g_UiScriptProgress2,
            step);
     return s_scriptResult;

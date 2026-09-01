@@ -28,8 +28,8 @@ static s32 ScriptOtOffset(u8 flags) {
     return 0;
 }
 
-void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape,
-                        ScriptedSpriteMotion *motion, s32 type) {
+void DrawScriptedSprite(s32 elapsed, const ScriptedSpriteShape *shape,
+                        const ScriptedSpriteMotion *motion, s32 type) {
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x;
     s32 y;
@@ -48,8 +48,8 @@ void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape,
                shape->flags & 8, shape->flags & 4, alpha);
 }
 
-void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape,
-                      ScriptedLineMotion *motion) {
+void DrawScriptedLine(s32 elapsed, const ScriptedLineShape *shape,
+                      const ScriptedLineMotion *motion) {
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x0;
     s32 y0;
@@ -72,8 +72,8 @@ void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape,
              (s16)x1, (s16)y1, shape->r, shape->g, shape->b, alpha);
 }
 
-void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape,
-                          ScriptedTriangleMotion *motion) {
+void DrawScriptedTriangle(s32 elapsed, const ScriptedTriangleShape *shape,
+                          const ScriptedTriangleMotion *motion) {
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x;
     s32 y;
@@ -95,8 +95,8 @@ void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape,
                      shape->r, shape->g, shape->b, semiTrans, alpha);
 }
 
-void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape,
-                      ScriptedQuadMotion *motion) {
+void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
+                      const ScriptedQuadMotion *motion) {
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x;
     s32 y;
@@ -146,9 +146,9 @@ static s32 TimedDrawScriptLength(const TimedDrawCommand *base) {
  * progress the commands are drawn at is the one before the advance, which is
  * why it is answered rather than left to the caller to work out.
  */
-TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
-                                           s32 step) {
-    TimedDrawCommand *base = commands;
+TimedDrawScriptTick AdvanceTimedDrawScript(
+    const TimedDrawCommand *commands, s32 *progress, s32 step) {
+    const TimedDrawCommand *base = commands;
     TimedDrawScriptTick tick;
 
     tick.finished = 0;
@@ -172,9 +172,9 @@ TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
 
 /* Draw every command the clock has reached, each with the time that has
  * passed since it was due. */
-void DrawTimedDrawScript(void *commands, s32 progress) {
-    TimedDrawCommand *base = commands;
-    TimedDrawCommand *cmd;
+void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress) {
+    const TimedDrawCommand *base = commands;
+    const TimedDrawCommand *cmd;
     s32 remaining;
     u32 type;
 
@@ -244,7 +244,8 @@ void DrawTimedDrawScript(void *commands, s32 progress) {
 
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
+                       s32 step) {
     TimedDrawScriptTick tick = AdvanceTimedDrawScript(commands, progress,
                                                       step);
     DrawTimedDrawScript(commands, tick.drawAt);

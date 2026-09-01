@@ -84,11 +84,11 @@ void UpdateDesignModeScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
     if (GameMenuBusy == 0) {
-        RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, -1);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, -1);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
-        RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
-        if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
+        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
+        if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
             g_MenuOverlayPattern = -1;
             if (g_PadPressed & PAD_UP) {
                 PlaySoundCue(1);
@@ -131,20 +131,20 @@ void UpdateDesignModeScreen(void) {
             }
         }
     } else if (GameMenuBusy < 0) {
-        RunTimedDrawScript(&g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
-        if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
+        RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
+        if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
             if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
                 GameMenuBusy = 0;
             }
         }
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
-        RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
     } else {
         g_MenuHandlerIndex = -1;
         g_MenuHandlerIndex2 = 6;
-        RunTimedDrawScript(&g_DesignModeScript, &g_UiScriptProgress, -1);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, -1);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
         if (g_UiScriptProgress <= 0) {
             switch (GameMenuBusy) {

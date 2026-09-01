@@ -20,11 +20,11 @@
  * rows above it: two in time attack, four in a Grand Prix. */
 static s32 CarSelectLastRow(void) { return g_GrandPrixMode != 0 ? 4 : 2; }
 
-static void *CarSelectMenuScript(void) {
+static const TimedDrawCommand *CarSelectMenuScript(void) {
     if (g_GrandPrixMode != 0) {
-        return (u8 *)&g_CarSelectMenuScriptGp;
+        return g_CarSelectMenuScriptGp;
     }
-    return (u8 *)&g_CarSelectMenuScriptTimeAttack;
+    return g_CarSelectMenuScriptTimeAttack;
 }
 
 /* Leaving the screen upwards, back to the course: the same wind-down whether
@@ -39,9 +39,9 @@ static void LeaveCarSelectScreen(void) {
 }
 
 /* A shop that will not take the player shows a modal instead of opening. */
-static void RefuseWithModal(void *script, s32 busyState) {
+static void RefuseWithModal(const TimedDrawCommand *script, s32 busyState) {
     PlaySoundCue(5);
-    g_CarSelectPopupScript = (u8 *)script;
+    g_CarSelectPopupScript = script;
     GameMenuBusy = busyState;
     g_UiScriptProgress2 = 0;
 }
@@ -83,7 +83,7 @@ static void ChooseCarSelectRow(s32 row) {
     }
     if (row == 2) {
         if (g_ShopCarIndex == -1) {
-            RefuseWithModal(&g_CarShopUnavailableScript, -1);
+            RefuseWithModal(g_CarShopUnavailableScript, -1);
             return;
         }
         PlaySoundCue(2);
@@ -110,7 +110,7 @@ static void ChooseCarSelectRow(s32 row) {
             PlaySoundCue(2);
             return;
         }
-        RefuseWithModal(&g_EngineerShopUnavailableScript, -2);
+        RefuseWithModal(g_EngineerShopUnavailableScript, -2);
     }
 }
 
@@ -162,7 +162,7 @@ static void UpdateCarSelectIdle(void) {
     g_CarSpecGraphStep = 3;
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
@@ -171,7 +171,7 @@ static void UpdateCarSelectIdle(void) {
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           g_CarSelectCursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
-    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
+    if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
         UpdateCarSelectInput();
     }
@@ -180,7 +180,7 @@ static void UpdateCarSelectIdle(void) {
 /* A modal is up over the screen; the only thing it takes is dismissal. */
 static void UpdateCarSelectModal(void) {
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
+    if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
             GameMenuBusy = 0;
         }
@@ -193,7 +193,7 @@ static void UpdateCarSelectModal(void) {
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           g_CarSelectCursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
 /*
@@ -271,7 +271,7 @@ static void UpdateCarSelectOutgoing(void) {
         DrawOwnedCarCounter(-1, CountOwnedCars());
     }
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           g_CarSelectCursor);
     if (g_UiScriptProgress <= 0) {

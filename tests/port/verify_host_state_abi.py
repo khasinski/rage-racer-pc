@@ -42,10 +42,16 @@ TYPED_ARRAY = re.compile(
     re.MULTILINE,
 )
 
+TYPED_POINTER = re.compile(
+    r"^(?:const )?(?:TimedDrawCommand)\s+\*(g_\w+)\s*(?:=|;)",
+    re.MULTILINE,
+)
+
 
 def declarations(text: str) -> dict[str, int]:
     found = {name: int(size) for name, size in BLOB.findall(text)}
     for name in (SCALAR.findall(text) + TYPED_ARRAY.findall(text)
+                 + TYPED_POINTER.findall(text)
                  + STRUCT_ARRAY.findall(text)):
         found.setdefault(name, 0)
     return found

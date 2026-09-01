@@ -1,10 +1,12 @@
 #ifndef GAME_MENU_SCRIPTS_INTERNAL_H
 #define GAME_MENU_SCRIPTS_INTERNAL_H
 
-extern u8 *g_CourseSelectModalScript;
-extern u8 *g_CarSelectPopupScript;
-extern u8 *g_CustomizePopupScript;
-extern u8 *g_CarShopModalScript;
-extern u8 *g_EngineerShopModalScript;
+typedef struct TimedDrawCommand TimedDrawCommand;
+
+extern const TimedDrawCommand *g_CourseSelectModalScript;
+extern const TimedDrawCommand *g_CarSelectPopupScript;
+extern const TimedDrawCommand *g_CustomizePopupScript;
+extern const TimedDrawCommand *g_CarShopModalScript;
+extern const TimedDrawCommand *g_EngineerShopModalScript;
 
 #endif

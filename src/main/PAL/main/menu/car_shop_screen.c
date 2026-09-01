@@ -15,25 +15,25 @@
 #include "game/menu_scripts_internal.h"
 
 /* Which of the four buy prompts a car gets. Cars past the table get none. */
-static void *CarShopBuyPrompt(s32 car) {
+static const TimedDrawCommand *CarShopBuyPrompt(s32 car) {
     switch (car) {
     case 0:
     case 1:
     case 2:
     case 10:
-        return (u8 *)&g_CarShopBuyPromptScript1;
+        return g_CarShopBuyPromptScript1;
     case 3:
-        return (u8 *)&g_CarShopBuyPromptScript2;
+        return g_CarShopBuyPromptScript2;
     case 4:
     case 5:
     case 6:
     case 11:
-        return (u8 *)&g_CarShopBuyPromptScript3;
+        return g_CarShopBuyPromptScript3;
     case 7:
     case 8:
     case 9:
     case 12:
-        return (u8 *)&g_CarShopBuyPromptScript4;
+        return g_CarShopBuyPromptScript4;
     }
     return NULL;
 }
@@ -44,9 +44,9 @@ static void DrawCarShopChrome(s32 price, s32 chromeStep) {
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(1, g_PlayerMoney, price);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, g_CarShopOption);
-    RunTimedDrawScript(&g_CarShopScreenScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_CarShopScreenScript, &g_UiScriptProgress, 0);
     if (chromeStep >= 0) {
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, chromeStep);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, chromeStep);
     }
 }
 
@@ -73,10 +73,10 @@ static void OfferToBuyCar(void) {
     g_UiScriptProgress2 = 0;
     g_MenuSubCursor = 0;
     {
-        void *prompt = CarShopBuyPrompt(g_CarListCursor);
+        const TimedDrawCommand *prompt = CarShopBuyPrompt(g_CarListCursor);
 
         if (prompt != NULL) {
-            g_CarShopModalScript = (u8 *)prompt;
+            g_CarShopModalScript = prompt;
         }
     }
 }
@@ -127,9 +127,9 @@ static void UpdateCarShopInput(void) {
 static void UpdateCarShopIdle(s32 price) {
     g_MenuPlateCarIndex = g_CarListCursor;
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawCarShopChrome(price, -1);
-    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
+    if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
         UpdateCarShopInput();
     }
@@ -139,7 +139,7 @@ static void UpdateCarShopIdle(s32 price) {
  * Only the prompt itself takes input; the refusal just waits to be dismissed. */
 static void UpdateBuyPrompt(void *ot, s32 price) {
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
+    if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
     if (GameMenuBusy == -1) {
@@ -153,7 +153,7 @@ static void UpdateBuyPrompt(void *ot, s32 price) {
                 g_MenuConfirmTimer = 0x23;
             } else {
                 PlaySoundCue(5);
-                g_CarShopModalScript = (u8 *)&g_CarShopNoFundsScript;
+                g_CarShopModalScript = g_CarShopNoFundsScript;
                 GameMenuBusy = -2;
             }
         }
@@ -182,12 +182,12 @@ static void UpdateSaleCountdown(void *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
         DrawShopPromptButtons(ot, 1);
         return;
     }
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         g_CarTable[g_CarListCursor].enabled = 1;
         g_TimeAttackCarEnabled[g_CarListCursor * 8] = 1;
@@ -214,8 +214,8 @@ static void UpdateCarShopOutgoing(s32 price) {
     DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price);
-    RunTimedDrawScript(&g_CarShopScreenScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_CarShopScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, g_CarShopOption);
     if (g_UiScriptProgress > 0) {
         return;

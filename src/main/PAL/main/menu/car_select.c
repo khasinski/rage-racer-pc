@@ -16,7 +16,7 @@ void UpdateRankingScreen(void) {
         g_UiScriptProgress2 = 0;
         GameMenuBusy = -1;
         DrawFadingMenuSprites(0, 2, g_RankingCursor);
-        RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1);
         /*
          * Having just arrived, draw the frame and wait for the next one.
          * Falling through from here reaches the code that leaves the screen,
@@ -24,14 +24,14 @@ void UpdateRankingScreen(void) {
          * straight back to the course select: the ranking could not be
          * entered at all.
          */
-        RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
     } else if (state < 0) {
         switch (state) {
         case -1:
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
-            if (RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, 1) != 0) {
+            if (RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1) != 0) {
                 g_MenuOverlayPattern = -1;
                 if (g_PadPressed & PAD_UP) {
                     PlaySoundCue(1);
@@ -67,7 +67,7 @@ void UpdateRankingScreen(void) {
             }
             break;
         case -2:
-            RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, -1);
+            RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (g_UiScriptProgress2 > 0) {
                 break;
@@ -109,16 +109,16 @@ void UpdateRankingScreen(void) {
             GameMenuBusy = -1;
             break;
         }
-        RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
     }
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 2;
-    RunTimedDrawScript(&g_RankingMenuScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
-    RunTimedDrawScript(&g_RankingPanelScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     if (g_UiScriptProgress > 0) {
         return;
     }
@@ -313,7 +313,7 @@ void UpdateCustomizeScreen(void) {
     void *ot;
     s32 mode;
     s32 lowMode;
-    u8 *cmdList;
+    const TimedDrawCommand *cmdList;
     u16 *pad;
     s32 sel;
 
@@ -322,9 +322,8 @@ void UpdateCustomizeScreen(void) {
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();
     mode = g_GrandPrixMode != 0 ? 3 : 2;
-    cmdList = g_GrandPrixMode != 0
-                  ? (u8 *)&g_CustomizeMenuScriptGp
-                  : (u8 *)&g_CustomizeMenuScriptTimeAttack;
+    cmdList = g_GrandPrixMode != 0 ? g_CustomizeMenuScriptGp
+                                   : g_CustomizeMenuScriptTimeAttack;
 
     if (GameMenuBusy == 0) {
         g_CarSpecGraphStep = 3;
@@ -332,7 +331,7 @@ void UpdateCustomizeScreen(void) {
         lowMode = mode & 0xFF;
         DrawFadingMenuSprites(g_UiScriptProgress, lowMode, g_RankingOption);
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
-        if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
+        if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0)) {
             g_MenuOverlayPattern = -1;
             if (g_PadPressed & PAD_UP) {
                 PlaySoundCue(1);
@@ -349,7 +348,7 @@ void UpdateCustomizeScreen(void) {
                 if (sel == 0) {
                     PlaySoundCue(2);
                     carByte = g_CarTable[g_PlayerCarIndex].tireCompound;
-                    g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelUpperScript;
+                    g_CustomizePopupScript = g_MenuDialogPanelUpperScript;
                     GameMenuBusy = -1;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = carByte;
@@ -359,14 +358,14 @@ void UpdateCustomizeScreen(void) {
                     if (g_CarModelAsset->transmissionAvailable != 0) {
                         PlaySoundCue(2);
                         carByte = g_CarTable[g_PlayerCarIndex].transmission;
-                        g_CustomizePopupScript = (u8 *)&g_MenuDialogPanelLowerScript;
+                        g_CustomizePopupScript = g_MenuDialogPanelLowerScript;
                         GameMenuBusy = -2;
                         g_UiScriptProgress2 = 0;
                         g_MenuSubCursor = carByte;
                         return;
                     }
                     PlaySoundCue(5);
-                    g_CustomizePopupScript = (u8 *)&g_TransmissionUnavailableScript;
+                    g_CustomizePopupScript = g_TransmissionUnavailableScript;
                     GameMenuBusy = -3;
                     g_UiScriptProgress2 = 0;
                     return;
@@ -450,14 +449,14 @@ void UpdateCustomizeScreen(void) {
             }
         } else if (GameMenuBusy == -3) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 0);
-            if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
+            if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
                 if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
                     GameMenuBusy = -4;
                 }
             }
         } else if (GameMenuBusy == -4) {
             RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
-            RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+            RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
             if (g_UiScriptProgress2 <= 0) {
                 GameMenuBusy = 0;
             }
@@ -492,14 +491,14 @@ void UpdateCustomizeScreen(void) {
         }
         DrawFadingMenuSprites(g_UiScriptProgress, mode, g_RankingOption);
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
     }
 
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 5;
     RunTimedDrawScript(cmdList, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, mode, g_RankingOption);
     if (g_UiScriptProgress <= 0) {
         switch (GameMenuBusy) {

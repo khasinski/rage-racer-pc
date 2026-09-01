@@ -18,7 +18,7 @@
 static void DrawEngineerShopChrome(s32 price) {
     DrawEngineerShopPricePanel(1, g_PlayerMoney, price);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, g_EngineerShopOption);
-    RunTimedDrawScript(&g_EngineerShopScreenScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, 0);
 }
 
 /* Backing out, and choosing the row that backs out, wind down the same way. */
@@ -45,14 +45,13 @@ static void UpdateEngineerShopInput(s32 price) {
         if (g_EngineerShopOption == 0) {
             if (g_PlayerMoney >= price) {
                 PlaySoundCue(2);
-                g_EngineerShopModalScript =
-                    (u8 *)&g_EngineerShopTuneUpPromptScript;
+                g_EngineerShopModalScript = g_EngineerShopTuneUpPromptScript;
                 GameMenuBusy = -1;
                 g_UiScriptProgress2 = 0;
                 g_MenuSubCursor = 0;
             } else {
                 PlaySoundCue(5);
-                g_EngineerShopModalScript = (u8 *)&g_EngineerShopNoFundsScript;
+                g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
                 GameMenuBusy = -3;
                 g_UiScriptProgress2 = 0;
             }
@@ -66,9 +65,9 @@ static void UpdateEngineerShopInput(s32 price) {
 
 static void UpdateEngineerShopIdle(s32 price) {
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawEngineerShopChrome(price);
-    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
+    if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
         UpdateEngineerShopInput(price);
     }
@@ -77,7 +76,7 @@ static void UpdateEngineerShopIdle(s32 price) {
 /* The tune-up prompt, with its own yes/no cursor. */
 static void UpdateTuneUpPrompt(void *ot) {
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
+    if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
     if (g_PadPressed & PAD_CONFIRM) {
@@ -116,12 +115,12 @@ static void UpdateTuneUpCountdown(void *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
         DrawShopPromptButtons(ot, 1);
         return;
     }
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         g_MenuViewAngle = 0x927C0;
         g_MenuViewAngleTarget = 0;
@@ -135,7 +134,7 @@ static void UpdateTuneUpCountdown(void *ot) {
 /* "You cannot afford this": nothing to do but dismiss it. */
 static void UpdateNoFundsModal(void) {
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
+    if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
             GameMenuBusy = 0;
         }
@@ -151,7 +150,7 @@ static void UpdateEngineerShopModal(void *ot, s32 price) {
         UpdateNoFundsModal();
     }
     DrawEngineerShopChrome(price);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
 /* On the way out, back to the car select screen. The tune-up is paid for and
@@ -160,8 +159,8 @@ static void UpdateEngineerShopOutgoing(s32 price) {
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 0xC;
     DrawEngineerShopPricePanel(-1, g_PlayerMoney, price);
-    RunTimedDrawScript(&g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, g_EngineerShopOption);
     if (g_UiScriptProgress > 0) {
         return;

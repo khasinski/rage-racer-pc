@@ -24,7 +24,7 @@ s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
 s32 g_CarTuneUpPriceTable[16];
-u8 *g_EngineerShopModalScript;
+const TimedDrawCommand *g_EngineerShopModalScript;
 /* The prompts are decoded command arrays; never walked here, only named. */
 TimedDrawCommand g_EngineerShopNoFundsScript[2];
 TimedDrawCommand g_EngineerShopScreenScript[68];
@@ -46,8 +46,8 @@ u16 g_PadPressed;
 s32 g_PlayerCarIndex;
 s32 g_PlayerMoney;
 CarEntry g_TimeAttackCars[16];
-u8 g_UiChromeScript;
-u8 g_UiChromeScript2;
+TimedDrawCommand g_UiChromeScript[1];
+TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 GameRenderState g_RenderState;
@@ -99,14 +99,14 @@ static void Record(const char *name, const s32 *values, int count) {
 
 static s32 ScriptId(const void *commands) {
     if (commands == g_EngineerShopScreenScript) return 1;
-    if (commands == &g_UiChromeScript) return 2;
-    if (commands == &g_UiChromeScript2) return 3;
+    if (commands == g_UiChromeScript) return 2;
+    if (commands == g_UiChromeScript2) return 3;
     if (commands == g_EngineerShopTuneUpPromptScript) return 4;
     if (commands == g_EngineerShopNoFundsScript) return 5;
     return commands == NULL ? 0 : 6;
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
+s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step) {
     RECORD("script", ScriptId(commands), progress == &g_UiScriptProgress2,
            step);
     return s_scriptResult;

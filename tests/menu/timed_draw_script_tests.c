@@ -127,7 +127,8 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     RECORD("gamedrawtexturedquad", x0, y0, x1, (s32)y1, (s32)x2, (s32)y2, (s32)x3, (s32)y3, u0, v0, u1, v1, r, g, b, (s32)clutIndex, shadeTex, semiTrans, (s32)tpage);
 }
 
-s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step);
+s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
+                       s32 step);
 
 /*
  * One command of every type the script walker knows, including the four that

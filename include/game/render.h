@@ -132,14 +132,9 @@ typedef struct TimedDrawScriptTick {
     s32 finished;
 } TimedDrawScriptTick;
 
-TimedDrawScriptTick AdvanceTimedDrawScript(void *commands, s32 *progress,
-                                           s32 step);
-void DrawTimedDrawScript(void *commands, s32 progress);
-
-typedef union TimedDrawCommandAddress {
-    s32 value;
-    TimedDrawCommand *pointer;
-} TimedDrawCommandAddress;
+TimedDrawScriptTick AdvanceTimedDrawScript(
+    const TimedDrawCommand *commands, s32 *progress, s32 step);
+void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress);
 
 /* A ready-made SPRT description; BuildSpriteFromDesc expands it into a render-state
  * SPRT. g_TachoNeedleSprite is the one instance. */
@@ -493,7 +488,7 @@ extern s32 g_FadeStep;
  * Returns 1 once the progress counter has reached the terminator's limit.
  */
 s32 RunTimedDrawScript(
-    void *commands,
+    const TimedDrawCommand *commands,
     s32 *progress,
     s32 step);
 
@@ -517,15 +512,15 @@ extern s32 g_UiScriptProgress;
 extern s32 g_UiScriptProgress2;
 void DrawScriptedSprite(
     s32 elapsed,
-    ScriptedSpriteShape *style,
-    ScriptedSpriteMotion *record,
+    const ScriptedSpriteShape *style,
+    const ScriptedSpriteMotion *record,
     s32 useAlpha);
-void DrawScriptedLine(s32 elapsed, ScriptedLineShape *style,
-                      ScriptedLineMotion *record);
-void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape,
-                          ScriptedTriangleMotion *motion);
-void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape,
-                      ScriptedQuadMotion *motion);
+void DrawScriptedLine(s32 elapsed, const ScriptedLineShape *style,
+                      const ScriptedLineMotion *record);
+void DrawScriptedTriangle(s32 elapsed, const ScriptedTriangleShape *shape,
+                          const ScriptedTriangleMotion *motion);
+void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
+                      const ScriptedQuadMotion *motion);
 
 /*
  * Low-level packet builders from the first 0x3900 bytes of .text (the boot /

@@ -23,8 +23,8 @@ void UpdateLogoSampleScreen(void) {
         DrawLogoSamplePanel(-1, g_LogoSampleSavedIndex + 1);
         RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2, -1);
         DrawFadingMenuSprites(g_UiScriptProgress, 2, g_LogoSampleCursor);
-        RunTimedDrawScript(&g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
-        if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) == 0) return;
+        RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
+        if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) == 0) return;
         if (g_UiScriptProgress2 > 0) return;
         g_MenuOverlayPattern = -1;
         if (g_PadPressed & PAD_UP) {
@@ -137,16 +137,16 @@ void UpdateLogoSampleScreen(void) {
         }
         DrawLogoSamplePanel(1, t + 1);
         DrawFadingMenuSprites(g_UiScriptProgress, 2, g_LogoSampleCursor);
-        RunTimedDrawScript(&g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
     }
 
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 8;
     DrawLogoSamplePanel(-1, 0);
-    RunTimedDrawScript(&g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_LogoSampleCursor);
     if (g_UiScriptProgress <= 0) {
         g_MenuScreen = 7;
@@ -193,7 +193,7 @@ void UpdateTeamNameScreen(void) {
     if (GameMenuBusy == 0) {
 
     DrawTeamNameEntry(1, GameMenuCursor);
-    if (RunTimedDrawScript(&g_TeamNameScreenScript, &g_UiScriptProgress, 1) == 0) return;
+    if (RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, 1) == 0) return;
     g_MenuOverlayPattern = -1;
 
     if (g_TeamNameLength < 6) {
@@ -266,7 +266,7 @@ void UpdateTeamNameScreen(void) {
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 9;
     DrawTeamNameEntry(-1, GameMenuCursor);
-    RunTimedDrawScript(&g_TeamNameScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0) return;
     if (0x3D08F < g_MenuViewOffset) {
         g_MenuScreen = 6;
@@ -311,8 +311,8 @@ void UpdatePaintColorScreen(void) {
         DrawPaintColorPalette(&g_UiScriptProgress2, -1, g_PaintColorIndex);
         DrawBrowseArrows(-1, 0, 1, 1);
         DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
-        RunTimedDrawScript(&g_PaintColorScreenScript, &g_UiScriptProgress, 0);
-        if (RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) == 0) {
+        RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, 0);
+        if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) == 0) {
             return;
         }
         if (g_UiScriptProgress2 > 0) {
@@ -405,15 +405,15 @@ void UpdatePaintColorScreen(void) {
 
         DrawBrowseArrows(1, 0, 1, 1);
         DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
-        RunTimedDrawScript(&g_PaintColorScreenScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+        RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, 0);
+        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
     }
 
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 10;
-    RunTimedDrawScript(&g_PaintColorScreenScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
     if (g_UiScriptProgress <= 0) {
         g_MenuScreen = 6;

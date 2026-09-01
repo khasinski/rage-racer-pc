@@ -33,7 +33,7 @@ void UpdateMenuMode(void) {
     if (g_MenuHintBarStep == 0) {
         return;
     }
-    if (RunTimedDrawScript(&g_MenuHintBarScript, &g_MenuHintBarProgress,
+    if (RunTimedDrawScript(g_MenuHintBarScript, &g_MenuHintBarProgress,
                            g_MenuHintBarStep) == 0) {
         return;
     }

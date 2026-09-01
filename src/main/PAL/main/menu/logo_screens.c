@@ -17,13 +17,13 @@ void UpdateTeamLogoScreen(void)
   if (state == 0)
   {
     RampTeamLogoCanvas(-13, -21);
-    RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
-    RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
     DrawTeamLogoCanvas(1, -1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
-    RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
-    if ((RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0))
+    RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
+    if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) && (g_UiScriptProgress2 <= 0))
     {
       g_MenuHintButtonsVisible = 1;
       g_MenuOverlayPattern = -1;
@@ -82,8 +82,8 @@ void UpdateTeamLogoScreen(void)
     if (state == (-1))
     {
       u16 *pad;
-      RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
-      RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+      RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
+      RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
       if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) != 0)
       {
         if (g_PadPressed & PAD_CONFIRM)
@@ -137,8 +137,8 @@ void UpdateTeamLogoScreen(void)
       cnt = g_MenuConfirmTimer;
       if (cnt <= 0)
       {
-        RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
         if (g_UiScriptProgress2 <= 0)
         {
@@ -149,8 +149,8 @@ void UpdateTeamLogoScreen(void)
       else
       {
         g_MenuConfirmTimer = cnt - 1;
-        RunTimedDrawScript(&g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(&g_UiChromeScript2, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1);
         DrawMenuCursorBox((g_MenuSubCursor != 0) ? (0xB8) : (0xDA), 0x44, 0x20, 0x20, 1);
         DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1, 0x3B);
@@ -195,16 +195,16 @@ void UpdateTeamLogoScreen(void)
       }
     }
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
-    RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 1);
+    RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
   }
   else
   {
     g_MenuHandlerIndex = -1;
     g_MenuHandlerIndex2 = 7;
     DrawTeamLogoCanvas((state == 2) ? (-1) : (1), 0);
-    RunTimedDrawScript(&g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
-    RunTimedDrawScript(&g_UiChromeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
     if (g_UiScriptProgress <= 0)
     {
