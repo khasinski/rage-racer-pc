@@ -35,6 +35,11 @@ typedef struct PadState {
     s16 steer;   /* twist after the neutral offset, play deadzone and clamp */
 } PadState;
 
+enum PadType {
+    PAD_TYPE_NEGCON = 0x23,
+    PAD_TYPE_DIGITAL = 0x41
+};
+
 /*
  * Button bits after UpdatePadState has inverted the BIOS packet. CONFIRM and
  * CANCEL are the composites the menus test: any of start, cross or circle

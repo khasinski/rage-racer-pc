@@ -5,87 +5,66 @@
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
 void DrawMenuCursorArrow(s32 x, s32 y) {
-    OT_TYPE *base = GamePrimaryOrderingTable(51);
-    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
-    u8 *prim;
-    u8 *cursorValue;
+    OT_TYPE *ot = GamePrimaryOrderingTable(51);
+    u8 *next = GameQueueSpriteTrans(ot, RENDER_PRIM_CURSOR_AS(u8), x, y,
+                                    0xC, 0x18, 0xE0, 0x48, 0x7F40);
 
-    cursorValue = *cursorSlot;
-    prim = GameQueueSpriteTrans(base, cursorValue, x, y, 0xC, 0x18, 0xE0, 0x48, 0x7F40);
-    *cursorSlot = QueueDrawModePrim(base, prim, 0x3F);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x3F);
 }
 
 /* The bottom hint bar: a left arrow, the caption `variant` selects, and a
  * right arrow. Variant 4 is the wide one and gets a fixed position plus an
  * extra 0x30-wide sprite between the caption and the closing arrow. */
 void DrawOptionHintBar(s32 variant) {
-    s32 index;
+    const OptionHintCaption *caption = &g_OptionHintCaptions[variant];
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
     s32 x;
-    s32 which;
-    u8 *base;
-    u8 *prim;
+    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    prim = RENDER_PRIM_CURSOR_AS(u8);
-    which = variant;
-
-    if (which == 4) {
+    if (variant == 4) {
         x = 0x5A;
     } else {
-        x = (0x120 - g_OptionHintCaptions[which].width) / 2;
+        x = (0x120 - caption->width) / 2;
     }
 
-    prim = GameQueueSpriteTrans(base, prim, x, 0x180, 0xC, 0x18, 0xE0, 0x78, 0x7F40);
+    next = GameQueueSpriteTrans(ot, next, x, 0x180, 0xC, 0x18,
+                                0xE0, 0x78, 0x7F40);
 
     x += 0x10;
-    index = which;
-    prim = GameQueueSpriteTrans(base, prim, x, 0x180, g_OptionHintCaptions[index].width, 0x18,
-                                g_OptionHintCaptions[index].u, g_OptionHintCaptions[index].v, 0x7F40);
+    next = GameQueueSpriteTrans(ot, next, x, 0x180, caption->width, 0x18,
+                                caption->u, caption->v, 0x7F40);
 
-    x += g_OptionHintCaptions[index].advance;
-    if (which == 4) {
-        prim = GameQueueSpriteTrans(base, prim, x, 0x180, 0x30, 0x18, 0, 0x78, 0x7F40);
+    x += caption->advance;
+    if (variant == 4) {
+        next = GameQueueSpriteTrans(ot, next, x, 0x180, 0x30, 0x18,
+                                    0, 0x78, 0x7F40);
         x += 0x34;
     }
 
-    prim = GameQueueSpriteTrans(base, prim, x, 0x180, 0xC, 0x18, 0xEC, 0x78, 0x7F40);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, prim, 0x3F);
+    next = GameQueueSpriteTrans(ot, next, x, 0x180, 0xC, 0x18,
+                                0xEC, 0x78, 0x7F40);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x3F);
 }
 
 /* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
 void DrawPadTypeHint(void) {
-    s32 clutIndex;
-    s32 v;
-    s32 h;
-    s32 w;
-    s32 u;
-    u8 *base;
-    s32 padType;
-    s32 rawPadType;
-    u8 *cursorSlot;
-    u8 *prim;
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    u8 padType = g_PadType;
+    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
+    s32 textureU;
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    rawPadType = g_PadType;
-    cursorSlot = RENDER_PRIM_CURSOR_AS(u8);
-    prim = cursorSlot;
-
-    if (rawPadType != 0x41 && rawPadType != 0x23) {
+    if (padType != PAD_TYPE_DIGITAL && padType != PAD_TYPE_NEGCON) {
         padType = g_LastValidPadType;
     } else {
-        rawPadType = g_PadType;
-        padType = (u8)rawPadType;
-        g_LastValidPadType = rawPadType;
+        g_LastValidPadType = padType;
     }
 
-    u = padType == 0x23 ? 0xA0 : 0x90;
-    w = 8;
-    h = 0x10;
-    v = 0xB8;
-    clutIndex = 0x7F40;
-
-    prim = GameQueueSpriteTrans(base, prim, 0x7A, 0x1A0, w, h, u, v, clutIndex);
-    prim = GameQueueSpriteTrans(base, prim, 0x92, 0x1A0, w, h, u + 8, v, clutIndex);
-    prim = GameQueueSpriteTrans(base, prim, 0x58, 0x1A0, 0x90, h, 0, v, clutIndex);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, prim, 0x3F);
+    textureU = padType == PAD_TYPE_NEGCON ? 0xA0 : 0x90;
+    next = GameQueueSpriteTrans(ot, next, 0x7A, 0x1A0, 8, 0x10,
+                                textureU, 0xB8, 0x7F40);
+    next = GameQueueSpriteTrans(ot, next, 0x92, 0x1A0, 8, 0x10,
+                                textureU + 8, 0xB8, 0x7F40);
+    next = GameQueueSpriteTrans(ot, next, 0x58, 0x1A0, 0x90, 0x10,
+                                0, 0xB8, 0x7F40);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x3F);
 }
