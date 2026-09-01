@@ -63,8 +63,9 @@ extern void _SsVmFlush(void);
 /* Host storage for values which lived in the PS1 scratchpad or were aliases. */
 int g_CourseSelectScrollValue;
 int g_McConfirmChoice_v;
-unsigned char g_RageScratchpad[0x400];
 GameScratchpadRenderState g_RageScratchpadState;
+ObjectMatrixWork g_ObjectMatrixWork;
+CarTrackScratch g_CarTrackScratch;
 
 static char s_RageMemoryCardDirectory[PATH_MAX];
 
@@ -323,7 +324,8 @@ s32 (*g_MenuScreenDraw[14])(s32) = {
 };
 
 int MapPs1Scratchpad(void) {
-    memset(g_RageScratchpad, 0, sizeof(g_RageScratchpad));
+    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
+    memset(&g_CarTrackScratch, 0, sizeof(g_CarTrackScratch));
     memset(&g_RageScratchpadState, 0, sizeof(g_RageScratchpadState));
     return 1;
 }

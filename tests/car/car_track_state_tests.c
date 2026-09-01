@@ -32,7 +32,8 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
  * merges tentative definitions would accept. */
 PlayerCarRuntime g_PlayerCar;
 /* The scratchpad the track code hands its intermediate values through. */
-u8 g_RageScratchpad[0x400] __attribute__((aligned(16)));
+ObjectMatrixWork g_ObjectMatrixWork;
+CarTrackScratch g_CarTrackScratch;
 GameScratchpadRenderState g_RageScratchpadState;
 
 /* The boundary response calls out to the knockback code; what that does with
@@ -204,8 +205,8 @@ int main(int argc, char **argv) {
                             s_lastKnockX = 0;
                             s_lastKnockZ = 0;
                             s_lastKnockMode = 0;
-                            memset(g_RageScratchpad, 0,
-                                   sizeof(g_RageScratchpad));
+                            memset(&g_CarTrackScratch, 0,
+                                   sizeof(g_CarTrackScratch));
 
                             result = UpdateCarTrackState(&car, point, &limits);
 

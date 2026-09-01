@@ -73,7 +73,8 @@ int RuntimeConfigEnabled(const char *key) {
  * None of that runs here, so answer it rather than link half the game in.
  */
 GameScratchpadRenderState g_RageScratchpadState;
-u8 g_RageScratchpad[0x400];
+ObjectMatrixWork g_ObjectMatrixWork;
+CarTrackScratch g_CarTrackScratch;
 
 int DiagnosticsEnabled(const char *key) { (void)key; return 0; }
 const char *DiagnosticsValue(const char *key) { (void)key; return NULL; }

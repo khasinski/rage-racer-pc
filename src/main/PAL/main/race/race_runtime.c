@@ -178,19 +178,16 @@ void DrawLapNumber(void) {
     }
 
     {
-        void *ot;
-        u8 *finalScratch;
-        s32 tpage;
+        /*
+         * The digits are drawn with a texture page of their own, queued ahead
+         * of them. The recovered code stored the queue's answer into the
+         * scratchpad twice over, at an address nothing ever read back; only
+         * the queueing itself does anything.
+         */
         RenderBufferAddress scratchAddress;
 
         scratchAddress.sprite = scratch;
-        finalScratch = scratchAddress.bytes;
-        packet = SCRATCHPAD_AS(SPRT);
-        ot = GamePrimaryOrderingTable(0);
-        tpage = 9;
-        scratchAddress.sprite = packet;
-        *scratchAddress.packetLink = finalScratch;
-        *scratchAddress.packetLink = QueueDrawModePrim(ot, finalScratch, tpage);
+        QueueDrawModePrim(GamePrimaryOrderingTable(0), scratchAddress.bytes, 9);
     }
 }
 

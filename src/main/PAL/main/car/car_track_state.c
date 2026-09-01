@@ -142,7 +142,7 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackScratch *spad,
                             ((arcAngle - (s16)sweptAngle) * spad->nextPointRadius.value)) /
                            arcAngle;
         }
-        CAR_TRACK_POINT_RADIUS = interpolated;
+        spad->pointRadius.value = interpolated;
     }
     {
         volatile u16 *carRadiusLow = &spad->carRadius.half.low;

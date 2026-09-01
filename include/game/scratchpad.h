@@ -2,22 +2,20 @@
 #define GAME_SCRATCHPAD_H
 
 #include "common.h"
+
+#include <stddef.h>
 #include "game/vector.h"
 #include "psyq/gte.h"
 
 /*
- * The PS1 scratchpad (fast RAM) at 0x1F800000, as the renderer lays it out.
+ * The working state the renderer and the car code keep between calls.
  *
- * Two views of the same 0x80 bytes exist because the code uses both: this
- * struct, for the routines that walk the block through a pointer, and the
- * named slot macros below, for the routines that touch one word at a time.
- * The hand-written GTE engine always runs with $a0 = 0x1F800000 and reads
- * these words by offset, so each macro name is what the engine does with the
- * word, cited from the disassembly.
- *
- * The slots are macros, not the `extern T x` spelling used
- * in render/set_gte_light_matrix.c: that spelling is a const-CSE lever and
- * moves the emitted code, a macro cannot.
+ * On the PS1 all of this lived in the kilobyte of fast RAM at 0x1F800000, and
+ * the game packed unrelated things into it by byte offset, overlaying two
+ * different structures on the same address because only one of them was in
+ * use at a time. There is no fast RAM here and nothing to pack into, so each
+ * piece has its own storage of its own type; what is left is an ordinary
+ * struct of named fields.
  */
 typedef struct GameScratchpadRenderState {
     void *packetCursor;
@@ -58,12 +56,15 @@ typedef struct ObjectMatrixWork {
     Matrix mtx;
 } ObjectMatrixWork;
 
-extern u8 g_RageScratchpad[0x400];
 extern GameScratchpadRenderState g_RageScratchpadState;
-#define SCRATCHPAD_ADDR ((void *)g_RageScratchpad)
-#define RAGE_SCRATCH_ADDRESS(offset) ((void *)(g_RageScratchpad + (offset)))
 
-#define SCRATCH_OBJECT_MATRIX_WORK ((ObjectMatrixWork *)RAGE_SCRATCH_ADDRESS(0x11C))
+/*
+ * The matrix the model path builds a transform in. It shared an address with
+ * the car's track working set, which is safe only for as long as no frame
+ * wants both; it does not share one now.
+ */
+extern ObjectMatrixWork g_ObjectMatrixWork;
+#define SCRATCH_OBJECT_MATRIX_WORK (&g_ObjectMatrixWork)
 
 typedef union ScratchViewCoordinate {
     s32 value;
@@ -155,30 +156,28 @@ typedef struct CarTrackScratch {
     u16 segmentLength;
 } CarTrackScratch;
 
-#define CAR_TRACK_SCRATCH ((CarTrackScratch *)RAGE_SCRATCH_ADDRESS(0x11C))
-#define CAR_TRACK_POINT_RADIUS (*(s32 *)RAGE_SCRATCH_ADDRESS(0x130))
+/* Where the car code works out where it sits on the track. */
+extern CarTrackScratch g_CarTrackScratch;
+#define CAR_TRACK_SCRATCH (&g_CarTrackScratch)
 
-#define SCRATCHPAD_AS(type) ((type *)SCRATCHPAD_ADDR)
 #define SCRATCHPAD (&g_RageScratchpadState)
-#define SCRATCHPAD_BYTES SCRATCHPAD_AS(u8)
 
 /*
  * The primitive-packing cursor. Every emitter packs a GPU packet at it, bumps
  * it past the packet and stores it back, so each one spells the slot with the
  * packet type it is building. SCRATCH_PRIM_CURSOR_AS gives that type without
- * repeating the address; _WORD is the same slot where the retail code carried
- * the cursor in an integer instead.
+ * repeating the address; The retail code also carried the cursor
+ * as an integer in this slot; reading it back that way would take half of a
+ * pointer here, so that spelling is gone.
  */
 #define SCRATCH_PRIM_CURSOR_AS(type) (*(type **)&g_RageScratchpadState.packetCursor)
 #define SCRATCH_PRIM_CURSOR          SCRATCH_PRIM_CURSOR_AS(void)
-#define SCRATCH_PRIM_CURSOR_WORD     (*(s32 *)&g_RageScratchpadState.packetCursor)
 #define SCRATCH_PRIM_CURSOR_VOLATILE (*(u8 *volatile *)&g_RageScratchpadState.packetCursor)
 #define SCRATCH_PRIM_CURSOR_SLOT     (&SCRATCH_PRIM_CURSOR_VOLATILE)
 
 /* Ordering table the emitters link finished packets into. */
 #define SCRATCH_OT_BASE_AS(type)     (*(type **)&g_RageScratchpadState.primData)
 #define SCRATCH_OT_BASE              SCRATCH_OT_BASE_AS(void)
-#define SCRATCH_OT_BASE_WORD         (*(s32 *)&g_RageScratchpadState.primData)
 
 /* The srav amount InitRenderState installs; see SCRATCH_FACE_OT_SHIFT below. */
 #define SCRATCH_OT_SHIFT             (g_RageScratchpadState.otShift)
@@ -192,8 +191,19 @@ typedef struct CarTrackScratch {
 #define SCRATCH_VIEW_ANGLE_X (g_RageScratchpadState.viewAngleX)
 #define SCRATCH_VIEW_ANGLE_Y (g_RageScratchpadState.viewAngleY)
 #define SCRATCH_VIEW_ANGLE_Z (g_RageScratchpadState.viewAngleZ)
-#define SCRATCH_VIEW_POSITION_BLOCK ((Vec4 *)&g_RageScratchpadState.viewX)
+/*
+ * The camera words are also read as one block, so the two spellings have to
+ * agree on where each word sits. They are checked rather than trusted.
+ */
 #define SCRATCH_VIEW_STATE   ((ScratchViewState *)&g_RageScratchpadState.viewX)
+_Static_assert(sizeof(ScratchViewState) ==
+                   offsetof(GameScratchpadRenderState, depth) -
+                       offsetof(GameScratchpadRenderState, viewX),
+               "the camera block and the camera fields have drifted apart");
+_Static_assert(offsetof(ScratchViewState, angleX) ==
+                   offsetof(GameScratchpadRenderState, viewAngleX) -
+                       offsetof(GameScratchpadRenderState, viewX),
+               "the camera block puts the angles somewhere else");
 #define SCRATCH_VIEW_MATRIX_GTE (&g_RageScratchpadState.matrix)
 
 static inline void LoadScratchLegacyView(ScratchLegacyViewWords *legacy) {
