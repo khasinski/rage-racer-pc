@@ -107,6 +107,20 @@ static void ResetCardAction(void) {
     g_McActionBusy = 0;
 }
 
+static void ClearPendingCardError(void) {
+    if (g_McErrorPending == 0) return;
+    g_McErrorPending = 0;
+    g_McErrorCountdown = 3;
+}
+
+static void TrackPersistentCardError(void) {
+    g_McErrorPending = 1;
+    if (g_McCardStatus != MC_MENU_STATE_ERROR) return;
+    if (--g_McErrorCountdown == 0) {
+        g_McMenuState = MC_MENU_STATE_ERROR;
+    }
+}
+
 typedef enum CardSlotActionState {
     CARD_SLOT_ACTION_PICK = 0x00,
     CARD_SLOT_ACTION_CONFIRM_OVERWRITE = 0x0A,
@@ -423,20 +437,11 @@ static void RunCardReadyState(s32 fadeBusy) {
         g_McMenuState = g_McMenuSelection;
         break;
     case MC_MENU_STATE_READY:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
+        ClearPendingCardError();
         break;
     case MC_MENU_STATE_ERROR:
     default:
-        g_McErrorPending = 1;
-        if (g_McCardStatus == MC_MENU_STATE_ERROR) {
-            g_McErrorCountdown--;
-            if (g_McErrorCountdown == 0) {
-                g_McMenuState = g_McCardStatus;
-            }
-        }
+        TrackPersistentCardError();
         break;
     }
     if (g_McMenuState != MC_MENU_STATE_READY) {
@@ -541,23 +546,14 @@ static void RunCardWorkingState(s32 fadeBusy) {
         g_McMenuState = g_McMenuSelection;
         break;
     case MC_MENU_STATE_WORKING:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
+        ClearPendingCardError();
         break;
     case MC_MENU_STATE_READY:
         break;
     case MC_MENU_STATE_ERROR:
     case 0:
     default:
-        g_McErrorPending = 1;
-        if (g_McCardStatus == MC_MENU_STATE_ERROR) {
-            g_McErrorCountdown--;
-            if (g_McErrorCountdown == 0) {
-                g_McMenuState = g_McCardStatus;
-            }
-        }
+        TrackPersistentCardError();
         break;
     }
 
@@ -639,9 +635,7 @@ static void RunNoCardState(s32 fadeBusy) {
         g_McMenuState = MC_MENU_STATE_WORKING;
         /* fall through */
     case MC_MENU_STATE_NO_CARD:
-        if (g_McErrorPending == 0) break;
-        g_McErrorPending = 0;
-        g_McErrorCountdown = 3;
+        ClearPendingCardError();
         break;
     case MC_MENU_STATE_UNFORMATTED:
         g_McMenuState = MC_MENU_STATE_UNFORMATTED;
@@ -649,12 +643,8 @@ static void RunNoCardState(s32 fadeBusy) {
     default:
     case MC_MENU_STATE_ERROR:
     case 0:
-        g_McErrorPending = 1;
-        if (g_McCardStatus != MC_MENU_STATE_ERROR) break;
-        g_McErrorCountdown -= 1;
-        if (g_McErrorCountdown != 0) break;
-        g_McMenuState = g_McCardStatus;
-        RAGE_FALLTHROUGH;
+        TrackPersistentCardError();
+        break;
     case MC_MENU_STATE_BUSY:
         break;
     }
@@ -827,20 +817,11 @@ static void RunUnformattedCardState(s32 fadeBusy) {
         g_McMenuState = MC_MENU_STATE_NO_CARD;
         break;
     case MC_MENU_STATE_UNFORMATTED:
-        if (g_McErrorPending != 0) {
-            g_McErrorPending = 0;
-            g_McErrorCountdown = 3;
-        }
+        ClearPendingCardError();
         break;
     case MC_MENU_STATE_ERROR:
     default:
-        g_McErrorPending = 1;
-        if (g_McCardStatus == MC_MENU_STATE_ERROR) {
-            g_McErrorCountdown--;
-            if (g_McErrorCountdown == 0) {
-                g_McMenuState = g_McCardStatus;
-            }
-        }
+        TrackPersistentCardError();
         break;
     }
 
@@ -869,10 +850,7 @@ static void RunCardErrorState(s32 fadeBusy) {
     }
     g_McMenuState = g_McMenuSelection;
     g_McStateChangeCount++;
-    if (g_McErrorPending != 0) {
-        g_McErrorPending = 0;
-        g_McErrorCountdown = 3;
-    }
+    ClearPendingCardError();
 }
 
 void UpdateMemoryCardMenu(void) {
