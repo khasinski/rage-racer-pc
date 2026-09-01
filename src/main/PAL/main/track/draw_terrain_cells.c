@@ -394,6 +394,71 @@ static void InitializeSkyRenderWork(SkyRenderWork *work) {
     work->mirrorFlag = g_RenderState.orderingFlag;
 }
 
+static u8 *DrawTexturedSkyGrid(SkyRenderWork *work,
+                               const SkyBandSetup *band,
+                               s32 screenX[4],
+                               u8 *packetCursor) {
+    s32 rowShearX = 0;
+    s32 rowShearY = 0;
+
+    for (s32 row = 0; row < 4; row++) {
+        s32 cellX = band->panelXFixed;
+        s32 cellY = band->panelYFixed;
+
+        for (s32 column = 0; column < 8; column++) {
+            POLY_FT4 *quad = (POLY_FT4 *)packetCursor;
+            s16 tileIndex = g_SkyTileMap[(row & 1) + g_SkyRowBase]
+                                             [(band->textureColumn + column) & 0xF];
+            const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
+            s32 nextCellX = cellX + band->columnStepX;
+            s32 nextCellY = cellY + band->columnStepY;
+            s32 leftX = cellX - rowShearX;
+            s32 rightX = nextCellX - rowShearX;
+            s32 topY = cellY - rowShearY;
+            s32 bottomY = nextCellY - rowShearY;
+            GpuUvAddress uvAddress;
+
+            SetPolyFT4(quad);
+            SetShadeTex(quad, 0);
+            quad->tpage = 0x18;
+            uvAddress.bytes = &quad->u0;
+            *uvAddress.packed = tileUv->corner[0].packed;
+            uvAddress.bytes = &quad->u1;
+            *uvAddress.packed = tileUv->corner[1].packed;
+            uvAddress.bytes = &quad->u2;
+            *uvAddress.packed = tileUv->corner[2].packed;
+            uvAddress.bytes = &quad->u3;
+            *uvAddress.packed = tileUv->corner[3].packed;
+            screenX[0] = GameRoundTerrainCoordinate(leftX);
+            screenX[1] = GameRoundTerrainCoordinate(rightX);
+            screenX[2] = GameRoundTerrainCoordinate(leftX + band->rowStepX);
+            screenX[3] = GameRoundTerrainCoordinate(rightX + band->rowStepX);
+            quad->x0 = screenX[0];
+            quad->x1 = screenX[1];
+            quad->x2 = screenX[2];
+            quad->x3 = screenX[3];
+            quad->y0 = GameRoundTerrainCoordinate(topY);
+            quad->y1 = GameRoundTerrainCoordinate(bottomY);
+            quad->y2 = GameRoundTerrainCoordinate(topY + band->rowStepY);
+            quad->y3 = GameRoundTerrainCoordinate(bottomY + band->rowStepY);
+            quad->r0 = 0x80;
+            quad->g0 = 0x80;
+            quad->b0 = 0x80;
+            quad->clut = 0x798E;
+            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
+
+            packetCursor += sizeof(*quad);
+            cellX = nextCellX;
+            cellY = nextCellY;
+        }
+
+        rowShearX += band->rowStepX;
+        rowShearY += band->rowStepY;
+    }
+
+    return packetCursor;
+}
+
 void DrawSkyBackground(void)
 {
   SkyRenderWork skyWork;
@@ -404,7 +469,6 @@ void DrawSkyBackground(void)
   s32 columnStepY;
   s32 rowStepX;
   s32 rowStepY;
-  s32 heldScreenY;
   s32 savedSinRoll;
   s32 savedCosRoll;
   s32 textureColumn;
@@ -419,14 +483,10 @@ void DrawSkyBackground(void)
   u8 *packetCursor = work->packetCursor;
   s32 heldBandY;
   s32 adjW;
-  s32 doubleRowStepY;
-  s32 nextCellXFixed;
-  s32 rowOffsetYFixed;
   s32 xWork;
   s32 upperBandYFixed;
   s32 savedCourseY1;
   s32 lowerPanelXFixed;
-  s32 cellXFixed;
   s32 coordinateAccumulator;
   {
     SkyBandSetup band;
@@ -444,7 +504,6 @@ void DrawSkyBackground(void)
     bandOriginXFixed = band.bandOriginXFixed;
     bandOriginYFixed = band.bandOriginYFixed;
     lowerPanelXFixed = band.lowerPanelXFixed;
-    cellXFixed = band.cellXFixed;
     coordinateAccumulator = band.coordinateAccumulator;
   }
   {
@@ -460,86 +519,21 @@ void DrawSkyBackground(void)
   RenderBufferAddress packetAddress;
     if (g_SkyRowBase != 0)
     {
-      {
-        s32 nextTileY;
-        s32 bandRowY;
-        POLY_FT4 *quad;
-        GpuUvAddress uvAddress;
-        POLY_FT4 *quadRow;
-        s16 tileIndex;
-        s32 tileBottomY;
-        s32 tileRightX;
-        s32 tileLeftX;
-        s32 tileTopY;
-        s32 column;
-        s32 rowShearY = 0;
-        s32 rowShearX = 0;
-        gridRow = 0;
-        do
-        {
-          column = 0;
-          packetAddress.bytes = packetCursor;
-          quadRow = packetAddress.polyFT4;
-          doubleRowStepY = rowShearX;
-          rowOffsetYFixed = rowShearY;
-          bandRowY = panelYFixed;
-          cellXFixed = panelXFixed;
-          do
-          {
-            quad = quadRow + column;
-            tileIndex = g_SkyTileMap[(gridRow % 2) + g_SkyRowBase][(textureColumn + column) & 0xF];
-            tileUv = &g_SkyTileUV[tileIndex];
-            tileLeftX = cellXFixed - doubleRowStepY;
-            screenX0 = GameRoundTerrainCoordinate(tileLeftX);
-            nextCellXFixed = cellXFixed + columnStepX;
-            tileRightX = nextCellXFixed - doubleRowStepY;
-            screenX1 = GameRoundTerrainCoordinate(tileRightX);
-            screenX2 = GameRoundTerrainCoordinate(tileLeftX + rowStepX);
-            screenX3 = GameRoundTerrainCoordinate(tileRightX + rowStepX);
-            tileTopY = bandRowY - rowOffsetYFixed;
-            screenY0 = GameRoundTerrainCoordinate(tileTopY);
-            nextTileY = bandRowY + columnStepY;
-            tileBottomY = nextTileY - rowOffsetYFixed;
-            screenY1 = GameRoundTerrainCoordinate(tileBottomY);
-            screenY2 = GameRoundTerrainCoordinate(tileTopY + rowStepY);
-            screenY3 = GameRoundTerrainCoordinate(tileBottomY + rowStepY);
-            SetPolyFT4(packetCursor);
-            SetShadeTex(packetCursor, 0);
-            quad->tpage = 0x18;
-            uvAddress.bytes = &quad->u0;
-            *uvAddress.packed = tileUv->corner[0].packed;
-            packetCursor += sizeof(POLY_FT4);
-            uvAddress.bytes = &quad->u1;
-            *uvAddress.packed = tileUv->corner[1].packed;
-            uvAddress.bytes = &quad->u2;
-            *uvAddress.packed = tileUv->corner[2].packed;
-            uvAddress.bytes = &quad->u3;
-            *uvAddress.packed = tileUv->corner[3].packed;
-            quad->x0 = screenX0;
-            quad->x1 = screenX1;
-            quad->x2 = screenX2;
-            quad->x3 = screenX3;
-            quad->r0 = 0x80;
-            quad->g0 = 0x80;
-            heldScreenY = screenY0;
-            quad->b0 = 0x80;
-            quad->y0 = heldScreenY;
-            quad->y1 = screenY1;
-            quad->y2 = screenY2;
-            quad->y3 = screenY3;
-            quad->clut = 0x798E;
-            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
-            column += 1;
-            cellXFixed = nextCellXFixed;
-            bandRowY = nextTileY;
-          }
-          while (column < 8);
-          gridRow += 1;
-          rowShearY += rowStepY;
-          rowShearX += rowStepX;
-        }
-        while (gridRow < 4);
-      }
+      SkyBandSetup band;
+      s32 gridScreenX[4];
+
+      band.panelXFixed = panelXFixed;
+      band.panelYFixed = panelYFixed;
+      band.columnStepX = columnStepX;
+      band.columnStepY = columnStepY;
+      band.rowStepX = rowStepX;
+      band.rowStepY = rowStepY;
+      band.textureColumn = textureColumn;
+      packetCursor = DrawTexturedSkyGrid(work, &band, gridScreenX, packetCursor);
+      screenX0 = gridScreenX[0];
+      screenX1 = gridScreenX[1];
+      screenX2 = gridScreenX[2];
+      screenX3 = gridScreenX[3];
       columnStepX *= 8;
       columnStepY *= 8;
     }
