@@ -302,9 +302,7 @@ void DrawBitPatternOverlay(s32 pattern) {
     u8 *patternTable = g_MenuOverlayPatternTable;
     u8 *row = patternTable;
     u8 *candidate;
-    s32 y;
-    s32 outer;
-    s32 x;
+    s32 patternRow;
     s32 bit;
 
     if (pattern == 0) {
@@ -325,17 +323,13 @@ void DrawBitPatternOverlay(s32 pattern) {
         row = &patternTable[(pattern - 1) * 8];
     }
 
-    y = 0x150;
-    outer = 0;
-    do {
-        x = 0x22;
-        bit = 0;
-        do {
-            if (((*row << bit) & 0x80) != 0) {
+    for (patternRow = 0; patternRow < 6; patternRow++, row++) {
+        for (bit = 0; bit < 8; bit++) {
+            if (((row[0] << bit) & 0x80) != 0) {
                 DrawSprite(
                     ot + 1,
-                    (s16)x,
-                    (s16)y,
+                    (s16)(0x22 + bit * 4),
+                    (s16)(0x150 + patternRow * 8),
                     4,
                     8,
                     0xFC,
@@ -348,21 +342,13 @@ void DrawBitPatternOverlay(s32 pattern) {
                     1,
                     0x80);
             }
-            bit++;
-            x += 4;
-        } while (bit < 8);
-        y += 8;
-        outer++;
-        row++;
-    } while (outer < 6);
+        }
+    }
 
-    outer = 0;
-    x = 1;
-    bit = 0x4C0000;
-    do {
+    for (bit = 0; bit < 16; bit++) {
         DrawSprite(
             ot + 1,
-            (s16)(bit >> 16),
+            (s16)(0x4C + bit * 5),
             0x33,
             4,
             8,
@@ -372,12 +358,10 @@ void DrawBitPatternOverlay(s32 pattern) {
             0,
             0,
             0x244,
-            x,
-            x,
+            1,
+            1,
             0x80);
-        bit += 0x50000;
-        outer++;
-    } while (outer < 0x10);
+    }
 
     RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), 0x39);
 }
