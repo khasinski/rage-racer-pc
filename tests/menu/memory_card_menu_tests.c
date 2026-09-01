@@ -47,7 +47,7 @@ s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;
 s32 g_McMenuState;
 s32 g_McNoCardTicks;
-GameSaveHeaderRow g_McSaveHeaders[4];
+GameSaveHeaderRow g_McSaveHeaders[3];
 s32 g_McSaveMode;
 s32 g_McSettleTicks;
 s32 g_McSlotCursor;
