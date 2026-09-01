@@ -9,58 +9,6 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 
-/* Darkens the scene colour matrix by GetTrackZoneBlend's 0..0x100 track-zone ramp; RestoreColorMatrix puts it back. */
-void ApplyZoneLighting(s32 a0, Matrix *mtx) {
-    Matrix out;
-    s32 s1;
-
-    if (g_TrackZoneCode != 0) {
-        s1 = 0x100 - (a0 * 3) / 4;
-        out.m[0][0] = g_SceneColorMatrix.m[0][0] * s1 / 256;
-        out.m[0][1] = g_SceneColorMatrix.m[0][1] * s1 / 256;
-        out.m[0][2] = g_SceneColorMatrix.m[0][2] * s1 / 256;
-        out.m[1][0] = g_SceneColorMatrix.m[1][0] * s1 / 256;
-        out.m[1][1] = g_SceneColorMatrix.m[1][1] * s1 / 256;
-        out.m[1][2] = g_SceneColorMatrix.m[1][2] * s1 / 256;
-        out.m[2][0] = g_SceneColorMatrix.m[2][0] * s1 / 256;
-        out.m[2][1] = g_SceneColorMatrix.m[2][1] * s1 / 256;
-        out.m[2][2] = g_SceneColorMatrix.m[2][2] * s1 / 256;
-        SetColorMatrix(&out);
-    } else {
-        s32 k;
-        s32 h;
-        s32 kb;
-        out.m[0][0] = g_SceneColorMatrix.m[0][0];
-        out.m[0][1] = g_SceneColorMatrix.m[0][1];
-        out.m[0][2] = g_SceneColorMatrix.m[0][2];
-        h = a0 / 2;
-        k = 0x100;
-        s1 = k - h;
-        out.m[1][0] = g_SceneColorMatrix.m[1][0] * s1 / 256;
-        out.m[1][1] = g_SceneColorMatrix.m[1][1] * s1 / 256;
-        out.m[1][2] = g_SceneColorMatrix.m[1][2] * s1 / 256;
-        s1 = k - (a0 * 3) / 4;
-        out.m[2][0] = g_SceneColorMatrix.m[2][0] * s1 / 256;
-        out.m[2][1] = g_SceneColorMatrix.m[2][1] * s1 / 256;
-        out.m[2][2] = g_SceneColorMatrix.m[2][2] * s1 / 256;
-        SetColorMatrix(&out);
-
-        kb = k - a0;
-        mtx->m[0][0] = mtx->m[0][0] * kb / 256 + g_TrackLightMatrix.m[0][0] * a0 / 256;
-        mtx->m[0][1] = mtx->m[0][1] * kb / 256 + g_TrackLightMatrix.m[0][1] * a0 / 256;
-        mtx->m[0][2] = mtx->m[0][2] * kb / 256 + g_TrackLightMatrix.m[0][2] * a0 / 256;
-        mtx->m[1][0] = mtx->m[1][0] * kb / 256 + g_TrackLightMatrix.m[1][0] * a0 / 256;
-        mtx->m[1][1] = mtx->m[1][1] * kb / 256 + g_TrackLightMatrix.m[1][1] * a0 / 256;
-        mtx->m[1][2] = mtx->m[1][2] * kb / 256 + g_TrackLightMatrix.m[1][2] * a0 / 256;
-        mtx->m[2][0] = mtx->m[2][0] * kb / 256 + g_TrackLightMatrix.m[2][0] * a0 / 256;
-        mtx->m[2][1] = mtx->m[2][1] * kb / 256 + g_TrackLightMatrix.m[2][1] * a0 / 256;
-        mtx->m[2][2] = mtx->m[2][2] * kb / 256 + g_TrackLightMatrix.m[2][2] * a0 / 256;
-    }
-}
-
-void RestoreColorMatrix(void) { SetColorMatrix(&g_SceneColorMatrix); }
-
-
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
 void EnterRoundScreen(void) {
     s32 count;
@@ -247,15 +195,4 @@ void UpdateRoundScreen(void) {
         g_BgmSelection = (g_BgmSelection + g_BgmTrackCount + 1) % (g_BgmTrackCount + 1);
         DrawBgmSelector();
     }
-}
-
-/* Installs the track colour/light matrices, back and far colours and the fog near distance. */
-void InitTrackLighting(void) {
-    g_SceneColorMatrix = g_TrackColorMatrix;
-    g_SceneLightMatrix = g_TrackLightMatrix;
-    SetColorMatrix(&g_SceneColorMatrix);
-    SetLightMatrix(&g_SceneLightMatrix);
-    SetBackColor(0x20, 0x20, 0x20);
-    SetFogNear(0x1770, 0x140);
-    SetFarColor(0x80, 0x80, 0x80);
 }

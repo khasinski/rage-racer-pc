@@ -595,6 +595,23 @@ endif()
 add_test(NAME track_lighting COMMAND track_lighting_tests)
 
 set_tests_properties(track_lighting PROPERTIES LABELS functional)
+add_executable(zone_lighting_tests
+    zone_lighting_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/track_lighting.c)
+target_include_directories(zone_lighting_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(zone_lighting_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(zone_lighting_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(zone_lighting_tests PRIVATE psyz)
+add_test(NAME zone_lighting COMMAND zone_lighting_tests)
+set_tests_properties(zone_lighting PROPERTIES LABELS unit)
+
 add_executable(course_coordinate_tests course_coordinate_tests.c)
 target_include_directories(course_coordinate_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
