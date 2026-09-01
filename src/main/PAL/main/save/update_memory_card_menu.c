@@ -653,46 +653,50 @@ static void RunCardWorkingState(s32 fadeBusy) {
 /*
  * Nothing in the slot.
  */
+typedef enum NoCardActionState {
+    NO_CARD_ACTION_INIT = 0,
+    NO_CARD_ACTION_WAIT = 1,
+    NO_CARD_ACTION_READY = 3,
+} NoCardActionState;
+
 static void RunNoCardState(s32 fadeBusy) {
     g_McMenuSubState = 0xA;
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
     switch (g_McActionState) {
-    case 0:
-    g_McActionTimer = 5;
-    g_McSlotUsedMask = 0;
-    ClearSaveHeaderRows(g_McSaveHeaders);
-    g_McLastSlot = 0;
-    g_McActionState = 1;
-    break;
+    case NO_CARD_ACTION_INIT:
+        g_McActionTimer = 5;
+        g_McSlotUsedMask = 0;
+        ClearSaveHeaderRows(g_McSaveHeaders);
+        g_McLastSlot = 0;
+        g_McActionState = NO_CARD_ACTION_WAIT;
+        break;
 
-    case 1:
-    g_McActionTimer -= 1;
-    if (g_McActionTimer == 0) {
-    g_McActionState = 3;
-    }
-    break;
+    case NO_CARD_ACTION_WAIT:
+        if (--g_McActionTimer == 0) {
+            g_McActionState = NO_CARD_ACTION_READY;
+        }
+        break;
 
-    case 3:
+    case NO_CARD_ACTION_READY:
         if (g_McMenuPage == 0) {
-            s32 *cursor = &g_McMenuRowCursor;
-
-            AdjustMenuSelectionHorizontal(cursor, 0, g_McMenuRowCount - 1);
+            AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
+                                          g_McMenuRowCount - 1);
             if (PollMenuConfirmInput() != 0) {
-                if (*cursor != g_McMenuRowCount - 1) {
+                if (g_McMenuRowCursor != g_McMenuRowCount - 1) {
                     PlaySoundCue(5);
                     break;
                 }
                 if (fadeBusy != 0) {
                     break;
                 }
-                g_McActionState = 0;
+                g_McActionState = NO_CARD_ACTION_INIT;
                 PlaySoundCue(2);
                 StartMenuExitFade();
                 break;
             }
             if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
-                g_McActionState = 0;
+                g_McActionState = NO_CARD_ACTION_INIT;
                 PlaySoundCue(3);
                 StartMenuExitFade();
             }
@@ -708,7 +712,7 @@ static void RunNoCardState(s32 fadeBusy) {
         break;
 
     default:
-    break;
+        break;
     }
     switch (g_McMenuSelection) {
     case 1:
@@ -731,13 +735,13 @@ static void RunNoCardState(s32 fadeBusy) {
         g_McErrorCountdown -= 1;
         if (g_McErrorCountdown != 0) break;
         g_McMenuState = g_McCardStatus;
-        /* fall through */
+        RAGE_FALLTHROUGH;
     case 3:
         break;
     }
 
     if (g_McMenuState != -1) {
-    g_McActionState = 0;
+        g_McActionState = NO_CARD_ACTION_INIT;
     }
 }
 
@@ -745,146 +749,152 @@ static void RunNoCardState(s32 fadeBusy) {
  * A card the game cannot read: offer to format it, then report how that
  * went.
  */
-static void RunUnformattedCardState(s32 fadeBusy) {
-    u16 pad;
+typedef enum FormatCardActionState {
+    FORMAT_CARD_ACTION_PROMPT = 0,
+    FORMAT_CARD_ACTION_CONFIRM = 1,
+    FORMAT_CARD_ACTION_BEGIN_DELAY = 2,
+    FORMAT_CARD_ACTION_WAIT_DELAY = 3,
+    FORMAT_CARD_ACTION_RUN = 5,
+    FORMAT_CARD_ACTION_SHOW_SUCCESS = 7,
+    FORMAT_CARD_ACTION_WAIT_TO_EXIT = 8,
+    FORMAT_CARD_ACTION_SHOW_ERROR = 0xA,
+} FormatCardActionState;
 
-    switch (g_McMenuPage) {
-    case 0:
-    {
-        s32 *p = &g_McMenuRowCursor;
-        g_McMenuSubState = 0xB;
-        g_McMenuPhase = MC_PROMPT_NONE;
-        AdjustMenuSelectionHorizontal(p, 0, g_McMenuRowCount - 1);
-        pad = g_PadPressed;
-        if (!((pad & 0x860) == 0)) {
-        if (!(*p != 0)) {
-        PlaySoundCue(2);
-        g_McMenuPage = 1;
-        g_McConfirmChoice = 0;
-        g_McSaveMode = *p;
-        break;
+static void RunUnformattedCardRootPage(s32 fadeBusy) {
+    g_McMenuSubState = 0xB;
+    g_McMenuPhase = MC_PROMPT_NONE;
+    AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
+                                  g_McMenuRowCount - 1);
+
+    if (g_PadPressed & PAD_CONFIRM) {
+        if (g_McMenuRowCursor == 0) {
+            PlaySoundCue(2);
+            g_McMenuPage = 1;
+            g_McConfirmChoice = 0;
+            g_McSaveMode = 0;
+        } else if (g_McMenuRowCursor == g_McMenuRowCount - 1) {
+            if (!fadeBusy) {
+                PlaySoundCue(2);
+                g_McActionBusy = 0;
+                StartMenuExitFade();
+            }
+        } else {
+            PlaySoundCue(5);
+            g_McMenuPage = 1;
+            g_McSaveMode = g_McMenuRowCursor;
         }
-        if (!(*p != g_McMenuRowCount - 1)) {
-        if (fadeBusy) break;
-        PlaySoundCue(2);
-    g_McActionBusy = 0;
-    StartMenuExitFade();
-    break;
-        }
-        PlaySoundCue(5);
-        g_McMenuPage = 1;
-        g_McSaveMode = *p;
-        break;
-        }
-        if ((pad & 0x90) == 0 || fadeBusy) break;
+    } else if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
         PlaySoundCue(3);
+        g_McActionBusy = 0;
+        StartMenuExitFade();
     }
+}
 
-    g_McActionBusy = 0;
-    StartMenuExitFade();
-    break;
+static void RunFormatCardActions(s32 fadeBusy) {
+    u16 confirm;
 
-    case 1:
     switch (g_McActionState) {
-    case 0:
+    case FORMAT_CARD_ACTION_PROMPT:
         if (g_McSaveMode != 0) {
-            /* Nothing to load: either button closes the prompt. */
             g_McMenuPhase = MC_PROMPT_NO_DATA;
             if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
                 g_McMenuPage = 0;
-                g_McActionState = 0;
+                g_McActionState = FORMAT_CARD_ACTION_PROMPT;
             }
             break;
         }
-        /* An unformatted card: confirming starts the format, backing out
-         * closes the prompt. */
         g_McMenuPhase = MC_PROMPT_NEW_CARD;
         if (PollMenuConfirmInput() != 0) {
-            g_McActionState = 1;
+            g_McActionState = FORMAT_CARD_ACTION_CONFIRM;
         } else if (PollMenuBackInput() != 0) {
             g_McMenuPage = 0;
-            g_McActionState = 0;
+            g_McActionState = FORMAT_CARD_ACTION_PROMPT;
         }
         break;
-    case 1:
-        g_McMenuPhase = g_McConfirmChoice + 7;
+
+    case FORMAT_CARD_ACTION_CONFIRM:
+        g_McMenuPhase = g_McConfirmChoice + MC_PROMPT_FORMAT_ASK;
         SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
-        if (g_McConfirmChoice == 0) {
-            /* Resting on "no": either button closes the prompt. Retail asked
-             * whether the choice was still zero a second time further down,
-             * which it always was, because nothing between the two changes
-             * it. */
-            if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
-                g_McMenuPage = 0;
-                g_McActionState = 0;
-            }
-            break;
-        }
-        if (PollMenuConfirmInput() != 0) {
-            g_McActionState = 2;
-        } else if (PollMenuBackInput() != 0) {
+        confirm = PollMenuConfirmInput();
+        if (g_McConfirmChoice != 0 && confirm != 0) {
+            g_McActionState = FORMAT_CARD_ACTION_BEGIN_DELAY;
+        } else if (confirm != 0 || PollMenuBackInput() != 0) {
             g_McMenuPage = 0;
-            g_McActionState = 0;
+            g_McActionState = FORMAT_CARD_ACTION_PROMPT;
         }
         break;
-    case 2:
+
+    case FORMAT_CARD_ACTION_BEGIN_DELAY:
         g_McActionBusy = 1;
         g_McActionTimer = 0x14;
-        g_McActionState = 3;
+        g_McActionState = FORMAT_CARD_ACTION_WAIT_DELAY;
         break;
-    case 3:
-        g_McActionTimer -= 1;
-        if (g_McActionTimer == 0) {
-            g_McActionState = 5;
+
+    case FORMAT_CARD_ACTION_WAIT_DELAY:
+        if (--g_McActionTimer == 0) {
+            g_McActionState = FORMAT_CARD_ACTION_RUN;
         }
         break;
-    case 5:
+
+    case FORMAT_CARD_ACTION_RUN:
         g_McActionResult = FormatMemoryCard(0, 0);
         if (g_McActionResult == 1) {
-            g_McActionState = 7;
+            g_McActionState = FORMAT_CARD_ACTION_SHOW_SUCCESS;
             g_McActionTimer = 0x3C;
         } else {
-            g_McActionState = 0xA;
+            g_McActionState = FORMAT_CARD_ACTION_SHOW_ERROR;
         }
         break;
-    case 7:
+
+    case FORMAT_CARD_ACTION_SHOW_SUCCESS:
         g_McMenuPhase = MC_PROMPT_FORMAT_OK;
-        g_McActionTimer -= 1;
-        if (g_McActionTimer == 0) {
+        if (--g_McActionTimer == 0) {
             g_McActionBusy = 0;
-            g_McActionState = 8;
+            g_McActionState = FORMAT_CARD_ACTION_WAIT_TO_EXIT;
         }
         break;
-    case 8:
-        {
-        u16 lpad = g_PadPressed;
+
+    case FORMAT_CARD_ACTION_WAIT_TO_EXIT:
         g_McMenuPhase = MC_PROMPT_FORMAT_OK;
-        if ((lpad & 0x90) == 0) break;
-        }
+        if (!(g_PadPressed & PAD_CANCEL)) break;
         g_McActionBusy = 0;
-        g_McActionState = 0;
+        g_McActionState = FORMAT_CARD_ACTION_PROMPT;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
         g_McActionTimer = 0;
-        if (fadeBusy) break;
-        PlaySoundCue(3);
-        StartMenuExitFade();
+        if (!fadeBusy) {
+            PlaySoundCue(3);
+            StartMenuExitFade();
+        }
         break;
-    case 0xA:
+
+    case FORMAT_CARD_ACTION_SHOW_ERROR:
         g_McMenuSubState = 0x12;
         g_McMenuPhase = MC_PROMPT_CARD_ERROR;
         g_McActionBusy = 0;
-        { u16 p = PollMenuConfirmInput(); if (!(p)) {
-        { u16 q = PollMenuBackInput(); if (q == 0) break; }
-        } }
-        g_McActionState = 0;
+        if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
+            g_McActionState = FORMAT_CARD_ACTION_PROMPT;
+        }
+        break;
+
     default:
         break;
     }
-    break;
+}
+
+static void RunUnformattedCardState(s32 fadeBusy) {
+
+    switch (g_McMenuPage) {
+    case 0:
+        RunUnformattedCardRootPage(fadeBusy);
+        break;
+
+    case 1:
+        RunFormatCardActions(fadeBusy);
+        break;
 
     default:
-    break;
+        break;
     }
     switch (g_McMenuSelection) {
     case 1:
@@ -906,17 +916,14 @@ static void RunUnformattedCardState(s32 fadeBusy) {
         break;
     case -3:
     default:
-        {
-            s32 sd = g_McCardStatus;
-            g_McErrorPending = 1;
-            if (sd == -3) {
-                s32 r = g_McErrorCountdown - 1;
-                g_McErrorCountdown = r;
-                if (r == 0) {
-                    g_McMenuState = sd;
-                }
+        g_McErrorPending = 1;
+        if (g_McCardStatus == -3) {
+            g_McErrorCountdown--;
+            if (g_McErrorCountdown == 0) {
+                g_McMenuState = g_McCardStatus;
             }
         }
+        break;
     }
 
         if (g_McMenuState != -2) {
