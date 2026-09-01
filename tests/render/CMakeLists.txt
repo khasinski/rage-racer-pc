@@ -328,6 +328,27 @@ target_link_libraries(draw_prims_tests PRIVATE psyz)
 add_test(NAME draw_prims COMMAND draw_prims_tests)
 set_tests_properties(draw_prims PROPERTIES LABELS functional)
 
+add_executable(basic_text_tests
+    basic_text_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text_8x8.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/sprite_string.c)
+target_include_directories(basic_text_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(basic_text_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(basic_text_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(basic_text_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(basic_text_tests PRIVATE psyz)
+add_test(NAME basic_text COMMAND basic_text_tests)
+set_tests_properties(basic_text PROPERTIES LABELS unit)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame

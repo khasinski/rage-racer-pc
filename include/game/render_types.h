@@ -16,9 +16,7 @@ typedef union RenderBufferAddress {
     void *pointer;
     DrawPacket *drawPacket;
     SPRT *sprite;
-    volatile SPRT *volatileSprite;
     SPRT_8 *sprite8;
-    volatile SPRT_8 *volatileSprite8;
     TILE *tile;
     LINE_F2 *lineF2;
     LINE_F3 *lineF3;
