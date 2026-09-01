@@ -5,11 +5,6 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
-typedef union CountdownPhase {
-    s32 value;
-    u32 unsignedValue;
-} CountdownPhase;
-
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     s32 whole;
     s32 fraction;
@@ -137,17 +132,14 @@ void BuildTileStrips(void) {
 
 void DrawStartCountdown(s32 sceneTimer) {
     s32 timer;
-    CountdownPhase phase;
+    s32 phase;
     s32 halfStep;
     s32 wipeStart;
     s32 row;
     s32 column;
     u32 pattern;
-    s32 colorBank;
     s32 phaseIsNegative;
-    s32 rowOffset;
     u32 *firstPattern;
-    u32 *patternBeforeFirst;
     u32 *phasePattern;
     TILE *tiles;
     u8 *cursor;
@@ -167,18 +159,18 @@ void DrawStartCountdown(s32 sceneTimer) {
         return;
     }
 
-    phase.value = rangeTimer / 30;
-    if (phase.value < 0) {
-        phase.value = 0;
-    } else if (phase.value >= 5) {
-        phase.value = -1;
+    phase = rangeTimer / 30;
+    if (phase < 0) {
+        phase = 0;
+    } else if (phase >= 5) {
+        phase = -1;
     }
 
     halfStep = (timer % 30) / 2;
 
-    if (phase.value == 4 || phase.value < 0) {
+    if (phase == 4 || phase < 0) {
         halfStep = (timer & 2) << 2;
-    } else if (phase.value == 0) {
+    } else if (phase == 0) {
         halfStep = 0;
     } else {
         if (halfStep >= 8) {
@@ -188,52 +180,39 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    row = 0;
-    phaseIsNegative = phase.value < row;
+    phaseIsNegative = phase < 0;
     wipeStart = 7 - halfStep;
     tiles = g_TileStripBuffers[g_FrameParity].tile;
+    firstPattern = g_CountdownDigitPatterns;
+    if (phase > 0 && phase < 4) {
+        phasePattern = g_CountdownGlyphTable + phase * 16;
+    } else {
+        phasePattern = firstPattern;
+    }
 
-    do {
-        firstPattern = g_CountdownDigitPatterns;
-        patternBeforeFirst = g_CountdownGlyphTable;
-        if (phase.value <= 0) {
-            phasePattern = firstPattern;
-        } else if (phase.value < 4) {
-            phasePattern = patternBeforeFirst + (phase.value * 16);
-        } else {
-            phasePattern = firstPattern + ((phase.value - 4) * 16);
-        }
-        if (phase.value == 0) {
+    for (row = 0; row < 16; row++) {
+        s32 colorBank = phase == 4 || phaseIsNegative;
+
+        if (phase == 0) {
             pattern = -1;
         } else if (phaseIsNegative) {
             pattern = firstPattern[row];
         } else {
             pattern = phasePattern[row];
         }
-        column = 0;
-        if (wipeStart < row) {
-            if (row < halfStep + 8) {
-                pattern = ~pattern;
-            }
+        if (wipeStart < row && row < halfStep + 8) {
+            pattern = ~pattern;
         }
-        rowOffset = row * 32;
-        do {
-            TILE *tile = &tiles[rowOffset + column];
-            colorBank = 0;
-            if (phase.value == 4 || phaseIsNegative) {
-                colorBank = 1;
-            }
-            {
-                CVec *colors = &g_CountdownCellColors[colorBank * 2];
-                *(CVec *)&tile->r0 = colors[pattern & 1];
-            }
-            pattern >>= 1;
-            column++;
-        } while (column < 32);
-        row++;
-    } while (row < 16);
+        for (column = 0; column < 32; column++) {
+            TILE *tile = &tiles[row * 32 + column];
+            CVec *colors = &g_CountdownCellColors[colorBank * 2];
 
-    if (phase.value < 0) {
+            *(CVec *)&tile->r0 = colors[pattern & 1];
+            pattern >>= 1;
+        }
+    }
+
+    if (phase < 0) {
         g_CountdownBoardOffset -= 16;
         if (g_CountdownBoardOffset < -240) {
             g_CountdownBoardOffset = -240;
@@ -269,8 +248,8 @@ void DrawStartCountdown(s32 sceneTimer) {
         sprite->y0 =
             (row / 3) * 56 + ((u16)g_CountdownBoardOffset + 66);
 
-        if (phase.unsignedValue < 4) {
-            if (phase.value - 1 == row % 3) {
+        if ((u32)phase < 4) {
+            if (phase - 1 == row % 3) {
                 halfStep = timer % 30;
                 if (halfStep < 16) {
                     pattern = halfStep * 8;
@@ -280,13 +259,13 @@ void DrawStartCountdown(s32 sceneTimer) {
             } else {
                 pattern = 0x80;
             }
-            if (phase.value - 1 >= row % 3) {
+            if (phase - 1 >= row % 3) {
                 sprite->clut = 0x7851;
             } else {
                 sprite->clut = 0x784F;
             }
         } else {
-            if (phase.value == 4) {
+            if (phase == 4) {
                 halfStep = timer % 30;
                 if (halfStep < 10) {
                     pattern = halfStep * 12;
@@ -302,20 +281,16 @@ void DrawStartCountdown(s32 sceneTimer) {
         sprite->r0 = pattern;
         sprite->g0 = pattern;
         sprite->b0 = pattern;
-        {
-            SPRT *currentSprite = sprite;
-
-            cursor += sizeof(SPRT);
-            sprite = (SPRT *)cursor;
-            AddPrim(orderingTable, currentSprite);
-        }
+        AddPrim(orderingTable, sprite);
+        cursor += sizeof(SPRT);
+        sprite = (SPRT *)cursor;
     }
 
     RENDER_PRIM_CURSOR_AS(u8) = cursor;
     cursor = QueueDrawModePrim(GamePrimaryOrderingTable(1), cursor, 0xC);
     RENDER_PRIM_CURSOR_AS(u8) = cursor;
 
-    if (phase.value > 0) {
+    if (phase > 0) {
         if (g_RacePaused == 0) {
             AddPrims(orderingTable, tiles, tiles + 511);
         }
