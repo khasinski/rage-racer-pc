@@ -66,12 +66,14 @@ typedef struct SkyBandGeometry {
     s32 rowStepY;
     s32 sinRoll;
     s32 cosRoll;
-    s32 textureColumn;
-    s32 screenX0;
-    s32 screenX1;
-    s32 screenX2;
-    s32 screenX3;
 } SkyBandGeometry;
+
+typedef struct SkySkirtEdge {
+    s32 x0;
+    s32 x1;
+    s32 y0;
+    s32 y1;
+} SkySkirtEdge;
 
 typedef struct SkyFrame {
     u8 *packetCursor;
@@ -89,137 +91,110 @@ typedef struct SkyFrame {
  * only thing the course index decides here. Returns where it left the packet
  * cursor.
  */
-static u8 *DrawCourseSkirt(SkyFrame *work, SkyBandGeometry *band,
+static u8 *DrawFarGroundGradient(SkyFrame *frame,
+                                 const SkyBandGeometry *band,
+                                 SkySkirtEdge *bottomEdge,
+                                 u8 *packetCursor) {
+    POLY_G4 *quad = (POLY_G4 *)packetCursor;
+    s32 leftX = (band->panelX + band->rowStepX) * 8;
+    s32 rightX = (band->panelX + band->columnStepX + band->rowStepX) * 8;
+    s32 topY = (band->panelY + band->rowStepY) * 8;
+    s32 bottomY = (band->panelY + band->columnStepY + band->rowStepY) * 8;
+
+    SetPolyG4(quad);
+    quad->x0 = GameRoundTerrainCoordinate11(leftX - band->sinRoll);
+    quad->x1 = GameRoundTerrainCoordinate11(rightX - band->sinRoll);
+    quad->x2 = GameRoundTerrainCoordinate11(leftX + band->sinRoll);
+    quad->x3 = GameRoundTerrainCoordinate11(rightX + band->sinRoll);
+    quad->y0 = GameRoundTerrainCoordinate11(topY - band->cosRoll);
+    quad->y1 = GameRoundTerrainCoordinate11(bottomY - band->cosRoll);
+    quad->y2 = GameRoundTerrainCoordinate11(topY + band->cosRoll);
+    quad->y3 = GameRoundTerrainCoordinate11(bottomY + band->cosRoll);
+    SetSkyGradientColors(
+        quad, g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_TOP].cur,
+        g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_BOTTOM].cur);
+    AddPrim(&frame->orderingTable[SKY_OT_FAR], quad);
+
+    bottomEdge->x0 = quad->x2;
+    bottomEdge->x1 = quad->x3;
+    bottomEdge->y0 = quad->y2;
+    bottomEdge->y1 = quad->y3;
+    return packetCursor + sizeof(*quad);
+}
+
+static SkySkirtEdge MeasureLowerSkirtEdge(const SkyBandGeometry *band) {
+    SkySkirtEdge edge;
+
+    edge.x0 = GameRoundTerrainCoordinate(band->panelX + band->rowStepX * 3);
+    edge.x1 = GameRoundTerrainCoordinate(
+        band->panelX + band->columnStepX + band->rowStepX * 3);
+    edge.y0 = GameRoundTerrainCoordinate(band->panelY + band->rowStepY * 3);
+    edge.y1 = GameRoundTerrainCoordinate(
+        band->panelY + band->columnStepY + band->rowStepY * 3);
+    return edge;
+}
+
+static u8 *DrawNearGroundGradient(SkyFrame *frame,
+                                  const SkyBandGeometry *band,
+                                  const SkySkirtEdge *bottomEdge,
+                                  u8 *packetCursor) {
+    POLY_G4 *quad = (POLY_G4 *)packetCursor;
+
+    SetPolyG4(quad);
+    quad->x0 = GameRoundTerrainCoordinate(band->panelX + band->rowStepX);
+    quad->x1 = GameRoundTerrainCoordinate(
+        band->panelX + band->columnStepX + band->rowStepX);
+    quad->x2 = bottomEdge->x0;
+    quad->x3 = bottomEdge->x1;
+    quad->y0 = GameRoundTerrainCoordinate(band->panelY + band->rowStepY);
+    quad->y1 = GameRoundTerrainCoordinate(
+        band->panelY + band->columnStepY + band->rowStepY);
+    quad->y2 = bottomEdge->y0;
+    quad->y3 = bottomEdge->y1;
+    SetSkyGradientColors(
+        quad, g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_TOP].cur,
+        g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_BOTTOM].cur);
+    AddPrim(&frame->orderingTable[SKY_OT_NEAR], quad);
+    return packetCursor + sizeof(*quad);
+}
+
+static u8 *DrawFlatCourseSkirt(SkyFrame *frame,
+                               const SkySkirtEdge *topEdge,
+                               const SkySkirtEdge *bottomEdge,
+                               u8 *packetCursor) {
+    POLY_F4 *quad = (POLY_F4 *)packetCursor;
+    GameEnvColor color =
+        g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur;
+
+    SetPolyF4(quad);
+    quad->x0 = topEdge->x0;
+    quad->x1 = topEdge->x1;
+    quad->x2 = bottomEdge->x0;
+    quad->x3 = bottomEdge->x1;
+    quad->y0 = topEdge->y0;
+    quad->y1 = topEdge->y1;
+    quad->y2 = bottomEdge->y0;
+    quad->y3 = bottomEdge->y1;
+    quad->r0 = color.bytes.r;
+    quad->g0 = color.bytes.g;
+    quad->b0 = color.bytes.b;
+    AddPrim(&frame->orderingTable[SKY_OT_NEAR], quad);
+    return packetCursor + sizeof(*quad);
+}
+
+static u8 *DrawCourseSkirt(SkyFrame *frame,
+                           const SkyBandGeometry *band,
                            u8 *packetCursor) {
-    /* Carried from the wide half of the skirt to the near half. Both are
-     * drawn on the same condition, for every course but the third, so the
-     * near half never reads what the wide half did not write. */
-    s32 courseX0;
-    s32 courseX1;
-    s32 courseY1;
-    s32 xWorkLate;
-  s32 leftXWorkFixed;
-  s32 rightXWorkFixed;
-  s32 screenY0;
-  s32 screenY1;
-  s32 screenY2;
-  s32 screenY3;
-  u8 *nextPacket;
-  RenderBufferAddress packetAddress;
-      s32 courseTopY;
-      s32 skirtBottomY;
-      s32 skirtRightX;
-      s32 courseBottomY;
-      s32 skirtStepX;
-      s32 skirtStepY;
-      s32 courseLeftX;
-      band->textureColumn = band->rowStepX * 4;
-      if (g_CourseIndex != 2)
-      {
-        POLY_G4 *courseG4;
-        RenderBufferAddress cursor;
-        cursor.bytes = packetCursor;
-        courseG4 = cursor.polyG4;
-        leftXWorkFixed = (band->panelX + band->rowStepX) * 8;
-        courseLeftX = leftXWorkFixed - band->sinRoll;
-        band->screenX0 = courseLeftX / 2048;
-        rightXWorkFixed = ((band->panelX + band->columnStepX) + band->rowStepX) * 8;
-        band->screenX1 = GameRoundTerrainCoordinate11(rightXWorkFixed - band->sinRoll);
-        band->screenX2 = GameRoundTerrainCoordinate11(leftXWorkFixed + band->sinRoll);
-        courseX0 = band->screenX2;
-        band->screenX3 = GameRoundTerrainCoordinate11(rightXWorkFixed + band->sinRoll);
-        courseTopY = (band->panelY + band->rowStepY) * 8;
-        courseX1 = band->screenX3;
-        screenY0 = GameRoundTerrainCoordinate11(courseTopY - band->cosRoll);
-        courseBottomY = ((band->panelY + band->columnStepY) + band->rowStepY) * 8;
-        screenY1 = GameRoundTerrainCoordinate11(courseBottomY - band->cosRoll);
-        screenY2 = GameRoundTerrainCoordinate11(courseTopY + band->cosRoll);
-        xWorkLate = screenY2;
-        screenY3 = GameRoundTerrainCoordinate11(courseBottomY + band->cosRoll);
-        SetPolyG4(courseG4);
-        courseG4->x0 = band->screenX0;
-        courseG4->x1 = band->screenX1;
-        courseG4->x2 = band->screenX2;
-        courseG4->x3 = band->screenX3;
-        courseG4->y0 = screenY0;
-        courseG4->y1 = screenY1;
-        courseG4->y2 = screenY2;
-        courseG4->y3 = screenY3;
-        courseY1 = screenY3;
-        cursor.polyG4 = courseG4 + 1;
-        nextPacket = cursor.bytes;
-        SetSkyGradientColors(
-            courseG4,
-            g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_TOP].cur,
-            g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_BOTTOM].cur);
-        AddPrim(&work->orderingTable[SKY_OT_FAR], courseG4);
-        packetCursor = nextPacket;
-      }
-      skirtStepX = band->rowStepX * 3;
-      band->screenX2 = GameRoundTerrainCoordinate(band->panelX + skirtStepX);
-      skirtRightX = band->panelX + band->columnStepX;
-      band->screenX3 = GameRoundTerrainCoordinate(skirtRightX + skirtStepX);
-      skirtStepY = band->rowStepY * 3;
-      screenY2 = GameRoundTerrainCoordinate(band->panelY + skirtStepY);
-      skirtBottomY = band->panelY + band->columnStepY;
-      screenY3 = GameRoundTerrainCoordinate(skirtBottomY + skirtStepY);
-      if (g_CourseIndex == 2)
-      {
-        POLY_G4 *courseG4;
-        RenderBufferAddress cursor;
-        cursor.bytes = packetCursor;
-        courseG4 = cursor.polyG4;
-        rightXWorkFixed = band->panelX;
-        band->screenX0 = GameRoundTerrainCoordinate(rightXWorkFixed + band->rowStepX);
-        band->screenX1 =
-            GameRoundTerrainCoordinate(skirtRightX + band->rowStepX);
-        screenY0 = GameRoundTerrainCoordinate(band->panelY + band->rowStepY);
-        screenY1 = GameRoundTerrainCoordinate(skirtBottomY + band->rowStepY);
-        cursor.polyG4 = courseG4 + 1;
-        nextPacket = cursor.bytes;
-        SetPolyG4(courseG4);
-        courseG4->x0 = band->screenX0;
-        courseG4->x1 = band->screenX1;
-        courseG4->x2 = band->screenX2;
-        courseG4->x3 = band->screenX3;
-        courseG4->y0 = screenY0;
-        courseG4->y1 = screenY1;
-        courseG4->y2 = screenY2;
-        courseG4->y3 = screenY3;
-        SetSkyGradientColors(
-            courseG4,
-            g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_TOP].cur,
-            g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_BOTTOM].cur);
-        AddPrim(&work->orderingTable[SKY_OT_NEAR], courseG4);
-        packetCursor = nextPacket;
-      }
-      else
-      {
-        POLY_F4 *courseF4;
-        packetAddress.bytes = packetCursor;
-        courseF4 = packetAddress.polyF4;
-        band->screenX0 = courseX0;
-        band->screenX1 = courseX1;
-        screenY0 = xWorkLate;
-        screenY1 = courseY1;
-        SetPolyF4(courseF4);
-        courseF4->x0 = band->screenX0;
-        courseF4->x1 = band->screenX1;
-        courseF4->x2 = band->screenX2;
-        courseF4->x3 = band->screenX3;
-        courseF4->y0 = screenY0;
-        courseF4->y1 = screenY1;
-        courseF4->y2 = screenY2;
-        courseF4->y3 = screenY3;
-        courseF4->r0 = (u8) g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur.bytes.r;
-        courseF4->g0 = (u8) g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur.bytes.g;
-        courseF4->b0 =
-            g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur.bytes.b;
-        AddPrim(&work->orderingTable[SKY_OT_NEAR], courseF4);
-        packetAddress.polyF4 = courseF4 + 1;
-        packetCursor = packetAddress.bytes;
-      }
-  return packetCursor;
+    SkySkirtEdge bottomEdge = MeasureLowerSkirtEdge(band);
+
+    if (g_CourseIndex == 2) {
+        return DrawNearGroundGradient(frame, band, &bottomEdge, packetCursor);
+    }
+
+    SkySkirtEdge topEdge;
+    packetCursor =
+        DrawFarGroundGradient(frame, band, &topEdge, packetCursor);
+    return DrawFlatCourseSkirt(frame, &topEdge, &bottomEdge, packetCursor);
 }
 
 typedef struct SkyBandSetup {
@@ -381,10 +356,10 @@ static void InitializeSkyFrame(SkyFrame *work) {
 
 static u8 *DrawTexturedSkyGrid(SkyFrame *work,
                                const SkyBandSetup *band,
-                               s32 screenX[4],
                                u8 *packetCursor) {
     s32 rowShearX = 0;
     s32 rowShearY = 0;
+    s32 screenX[4];
 
     for (s32 row = 0; row < 4; row++) {
         s32 cellX = band->panelXFixed;
@@ -537,7 +512,6 @@ static u8 *DrawSkyGradientQuad(SkyFrame *work,
 
 static u8 *DrawSkyGradientBands(SkyFrame *work,
                                 const SkyBandSetup *band,
-                                s32 finalScreenX[4],
                                 u8 *packetCursor) {
     const s32 panelX = band->bandOriginXFixed;
     const s32 panelY = band->bandOriginYFixed;
@@ -584,9 +558,6 @@ static u8 *DrawSkyGradientBands(SkyFrame *work,
         work, packetCursor, screenX, screenY,
         g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur, darkSky);
 
-    for (s32 corner = 0; corner < 4; corner++) {
-        finalScreenX[corner] = screenX[corner];
-    }
     return packetCursor;
 }
 
@@ -594,7 +565,6 @@ void DrawSkyBackground(void) {
     SkyFrame work;
     SkyBandSetup setup;
     SkyBandGeometry geometry;
-    s32 screenX[4];
     u8 *packetCursor;
 
     InitializeSkyFrame(&work);
@@ -609,21 +579,14 @@ void DrawSkyBackground(void) {
     geometry.rowStepY = setup.rowStepY;
     geometry.sinRoll = setup.savedSinRoll;
     geometry.cosRoll = setup.savedCosRoll;
-    geometry.textureColumn = setup.textureColumn;
 
     if (g_SkyRowBase != 0) {
-        packetCursor =
-            DrawTexturedSkyGrid(&work, &setup, screenX, packetCursor);
+        packetCursor = DrawTexturedSkyGrid(&work, &setup, packetCursor);
     } else {
         packetCursor = DrawHorizonTileStrip(&work, &setup, packetCursor);
-        packetCursor =
-            DrawSkyGradientBands(&work, &setup, screenX, packetCursor);
+        packetCursor = DrawSkyGradientBands(&work, &setup, packetCursor);
     }
 
-    geometry.screenX0 = screenX[0];
-    geometry.screenX1 = screenX[1];
-    geometry.screenX2 = screenX[2];
-    geometry.screenX3 = screenX[3];
     packetCursor = DrawCourseSkirt(&work, &geometry, packetCursor);
     RENDER_PRIM_CURSOR_AS(u8) = packetCursor;
 }
