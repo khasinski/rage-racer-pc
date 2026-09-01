@@ -4,18 +4,24 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 
+enum {
+    BOOT_ENDING_STILL_FRAMES = 110,
+    BOOT_ENDING_STILL_DISPLAY_AT = 10,
+    BOOT_LOGO_FADE_LIMIT = 0x100,
+    BOOT_LOGO_FADE_STEP = 8,
+    BOOT_FMV_START_DELAY = 21,
+};
 
 void UpdateBootLogoScene(void) {
-    BootLogoState state;
-
-    if (g_BootLogoTimer < 110) {
-        if (g_BootLogoTimer >= 10) {
+    if (g_BootLogoTimer < BOOT_ENDING_STILL_FRAMES) {
+        if (g_BootLogoTimer >= BOOT_ENDING_STILL_DISPLAY_AT) {
             SetDispMask(1);
         }
         DrawEndingStill();
         g_BootLogoTimer++;
         return;
-    } else if (g_BootLogoTimer == 110) {
+    }
+    if (g_BootLogoTimer == BOOT_ENDING_STILL_FRAMES) {
         SetDispMask(0);
         SetupDisplay480(0, 0, 0);
         g_BootLogoTimer++;
@@ -29,51 +35,39 @@ void UpdateBootLogoScene(void) {
         }
     }
 
-    state = g_BootLogoState;
-    switch (state) {
+    switch (g_BootLogoState) {
     case BOOT_LOGO_STATE_INVALID:
         break;
-    case BOOT_LOGO_STATE_FADE_IN: {
-        u32 sceneTime;
-
-        sceneTime = g_SceneTimer;
-        if (sceneTime < 0x100) {
-            g_SceneTimer += 8;
+    case BOOT_LOGO_STATE_FADE_IN:
+        if ((u32)g_SceneTimer < BOOT_LOGO_FADE_LIMIT) {
+            g_SceneTimer += BOOT_LOGO_FADE_STEP;
         } else {
             g_BootLogoState = BOOT_LOGO_STATE_HOLD;
         }
         break;
-    }
     case BOOT_LOGO_STATE_HOLD:
         if (g_BootLogoHoldTimer == 0) {
             g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
         }
         break;
     case BOOT_LOGO_STATE_FADE_OUT:
-        g_SceneTimer -= 8;
+        g_SceneTimer -= BOOT_LOGO_FADE_STEP;
         if (g_SceneTimer == 0) {
             g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
             SetupDisplay240(0, 0, 0);
         }
         break;
-    case BOOT_LOGO_STATE_START_FMV: {
-        u32 sceneTime;
-
+    case BOOT_LOGO_STATE_START_FMV:
         g_SceneTimer++;
-        sceneTime = g_SceneTimer;
-        if (sceneTime >= 21) {
+        if ((u32)g_SceneTimer >= BOOT_FMV_START_DELAY) {
             BeginIntroFmv(3);
         }
         break;
     }
-    }
 
     if (g_BootLogoState != BOOT_LOGO_STATE_START_FMV) {
-        u32 sceneTime;
-
         DrawBootLogo();
-        sceneTime = g_SceneTimer;
-        if (sceneTime >= 10) {
+        if ((u32)g_SceneTimer >= BOOT_ENDING_STILL_DISPLAY_AT) {
             SetDispMask(1);
         }
     }

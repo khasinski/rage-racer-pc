@@ -240,6 +240,7 @@ extern s16 g_NegconSteer;
 
 void BiosSetMemSize(s32 megabytes);
 void DrawBootLogo(void);
+void UpdateBootLogoScene(void);
 void DrawEndingStill(void);
 void UpdateEndingStill(void);
 void InitGeom(void);
