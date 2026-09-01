@@ -18,32 +18,39 @@ typedef enum FormatCardActionState {
     FORMAT_CARD_ACTION_SHOW_ERROR = 0xA,
 } FormatCardActionState;
 
+enum {
+    FORMAT_CARD_DELAY_FRAMES = 20,
+    FORMAT_RESULT_DISPLAY_FRAMES = 60,
+};
+
 static void RunUnformattedCardRootPage(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NONE;
     AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
                                   g_McMenuRowCount - 1);
 
-    if (g_PadPressed & PAD_CONFIRM) {
-        if (g_McMenuRowCursor == 0) {
-            PlaySoundCue(2);
-            g_McMenuPage = 1;
-            g_McConfirmChoice = 0;
-            g_McSaveMode = 0;
-        } else if (g_McMenuRowCursor == g_McMenuRowCount - 1) {
-            if (!fadeBusy) {
-                PlaySoundCue(2);
-                g_McActionBusy = 0;
-                StartMenuExitFade();
-            }
-        } else {
-            PlaySoundCue(5);
-            g_McMenuPage = 1;
-            g_McSaveMode = g_McMenuRowCursor;
+    if (!(g_PadPressed & PAD_CONFIRM)) {
+        if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
+            PlaySoundCue(3);
+            g_McActionBusy = 0;
+            StartMenuExitFade();
         }
-    } else if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
-        PlaySoundCue(3);
+        return;
+    }
+
+    if (g_McMenuRowCursor == 0) {
+        PlaySoundCue(2);
+        g_McMenuPage = 1;
+        g_McConfirmChoice = 0;
+        g_McSaveMode = 0;
+    } else if (g_McMenuRowCursor == g_McMenuRowCount - 1) {
+        if (fadeBusy) return;
+        PlaySoundCue(2);
         g_McActionBusy = 0;
         StartMenuExitFade();
+    } else {
+        PlaySoundCue(5);
+        g_McMenuPage = 1;
+        g_McSaveMode = g_McMenuRowCursor;
     }
 }
 
@@ -83,7 +90,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
 
     case FORMAT_CARD_ACTION_BEGIN_DELAY:
         g_McActionBusy = 1;
-        g_McActionTimer = 0x14;
+        g_McActionTimer = FORMAT_CARD_DELAY_FRAMES;
         g_McActionState = FORMAT_CARD_ACTION_WAIT_DELAY;
         break;
 
@@ -97,7 +104,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
         g_McActionResult = FormatMemoryCard(0, 0);
         if (g_McActionResult == 1) {
             g_McActionState = FORMAT_CARD_ACTION_SHOW_SUCCESS;
-            g_McActionTimer = 0x3C;
+            g_McActionTimer = FORMAT_RESULT_DISPLAY_FRAMES;
         } else {
             g_McActionState = FORMAT_CARD_ACTION_SHOW_ERROR;
         }
