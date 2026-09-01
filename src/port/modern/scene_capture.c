@@ -142,7 +142,7 @@ void CaptureModelBegin(int kind, int index, int fogged) {
     draw->fogged = (uint8_t)fogged;
     draw->otShift = (uint8_t)g_RenderState.otShift;
     draw->modelIndex = index;
-    draw->renderMode = (uint32_t)g_ScratchRenderMode;
+    draw->renderMode = (uint32_t)g_RenderState.envMode4;
     draw->bankId = (uint64_t)(uintptr_t)(kind == RAGE_CAPTURE_KIND_MODEL
                                              ? g_RenderState.modelModels
                                              : g_RenderState.courseBank);

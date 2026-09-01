@@ -249,7 +249,7 @@ def manifest_rows(directory)
     numeric_fields = %i[
       frame scene timer x z speed progress lap body_yaw body_pitch body_roll
       track_lateral model_yaw mirror_y view_x view_y view_z view_angle_x
-      view_angle_y view_angle_z environment_mode4 scratch_env_mode4
+      view_angle_y view_angle_z environment_mode4 render_state_env_mode4
       proj_m00 proj_m01 proj_m02 proj_m10 proj_m11 proj_m12 proj_m20 proj_m21
       proj_m22 proj_x0 proj_y0 proj_x1 proj_y1 proj_order
       mirror_m00 mirror_m01 mirror_m02 mirror_m10 mirror_m11 mirror_m12

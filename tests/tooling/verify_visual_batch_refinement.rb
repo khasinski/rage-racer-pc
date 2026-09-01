@@ -157,7 +157,7 @@ Dir.mktmpdir("rage-visual-blank-reference-") do |root|
     filename frame scene timer x z speed progress lap body_yaw body_pitch
     body_roll track_lateral model_yaw mirror_y view_x view_y view_z
     view_angle_x view_angle_y view_angle_z environment_mode4
-    scratch_env_mode4 random_seed anim_timer rival0_raw
+    render_state_env_mode4 random_seed anim_timer rival0_raw
   ].join(",")
   File.write(File.join(psx, "capture-manifest.csv"),
              blank_header + "\n" + rows.call(blank_name, 100) + "\n" +
@@ -189,7 +189,7 @@ Dir.mktmpdir("rage-visual-spinning-scenery-") do |root|
   header = %w[
     filename frame scene timer x z speed progress lap body_yaw body_pitch
     body_roll track_lateral model_yaw mirror_y view_x view_y view_z
-    view_angle_x view_angle_y view_angle_z environment_mode4 scratch_env_mode4
+    view_angle_x view_angle_y view_angle_z environment_mode4 render_state_env_mode4
     random_seed anim_timer spinning_angle0 spinning_angle1 spinning_angle2
     spinning_angle3
   ].join(",")
@@ -287,7 +287,7 @@ header = %w[
   filename frame scene timer x z speed progress lap body_yaw body_pitch
   body_roll track_lateral model_yaw mirror_y view_x view_y view_z
   view_angle_x view_angle_y view_angle_z environment_mode4
-  scratch_env_mode4 random_seed anim_timer rival0_raw
+  render_state_env_mode4 random_seed anim_timer rival0_raw
 ].join(",")
 
 Dir.mktmpdir("rage-visual-missing-tacho-") do |root|

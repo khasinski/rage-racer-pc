@@ -121,8 +121,6 @@ u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
 /* World position in full-precision components; the camera keeps one of these
  * in the render state. */
 /* The per-frame render state: the camera position and the view matrix. */
-#define SCRATCH_CAMERA_POS (&RENDER_VIEW_STATE->position.vector)
-#define SCRATCH_VIEW_MATRIX ((&g_RenderState.matrix))
 
 /*
  * Per-object GTE setup: takes the object's offset from the camera through the
@@ -131,10 +129,10 @@ u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
  * that translation.
  */
 void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot) {
-    w->relative[0] = pos->x - SCRATCH_CAMERA_POS->x;
-    w->relative[1] = pos->y - SCRATCH_CAMERA_POS->y;
-    w->relative[2] = pos->z - SCRATCH_CAMERA_POS->z;
-    ApplyMatrix(SCRATCH_VIEW_MATRIX, w->relative, &w->view);
+    w->relative[0] = pos->x - (&RENDER_VIEW_STATE->position.vector)->x;
+    w->relative[1] = pos->y - (&RENDER_VIEW_STATE->position.vector)->y;
+    w->relative[2] = pos->z - (&RENDER_VIEW_STATE->position.vector)->z;
+    ApplyMatrix((&g_RenderState.matrix), w->relative, &w->view);
     w->mtx.t[0] = w->view.x * 4;
     w->mtx.t[1] = w->view.y * 4;
     w->mtx.t[2] = w->view.z * 4;

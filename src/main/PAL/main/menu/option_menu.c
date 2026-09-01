@@ -12,11 +12,11 @@ void DrawOptionRootMenu(void) {
     s32 h18 = 0x18;
     s32 h48 = 0x48;
     s32 color = 0x7F40;
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *tmp;
     s32 state;
 
-    tmp = GameQueueSpriteTrans(base, *scratch, 0x24, 0x94, 0x3C, h18, 0, h48, color);
+    tmp = GameQueueSpriteTrans(base, *cursorSlot, 0x24, 0x94, 0x3C, h18, 0, h48, color);
     tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xB4, 0x88, h18, 0x40, h48, color);
     tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xD4, 0x74, h18, 0, 0x60, color);
     tmp = GameQueueSpriteTrans(base, tmp, 0x24, 0xF4, 0x5C, h18, 0x74, 0x60, color);
@@ -25,7 +25,7 @@ void DrawOptionRootMenu(void) {
     tmp = QueueDrawModePrim(base, tmp, 0x3F);
 
     state = g_GameMode;
-    *scratch = tmp;
+    *cursorSlot = tmp;
     if (state == 1) {
         DrawMenuCursorArrow(0x14, (g_OptionMenuCursor * 32) + 0x94);
     }
@@ -295,7 +295,7 @@ void DrawVolumeBar(s32 level, s32 y) {
 
 void DrawSoundOptionScreen(void) {
     u8 *base;
-    u8 **scratch;
+    u8 **cursorSlot;
     s32 color;
     s32 s0;
     s32 s3;
@@ -304,21 +304,21 @@ void DrawSoundOptionScreen(void) {
     DrawMenuCursorArrow(0x14, (g_SoundOptionCursor * 32) + 56);
     color = 0x7F;
 
-    scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     s3 = 0x18;
     s0 = 0x78;
     base = (u8 *)GamePrimaryOrderingTable(0);
 
-    n = *scratch;
+    n = *cursorSlot;
     n = GameQueueSpriteTrans(base, n, 0x24, 0x38, 0x2C, s3, 0x9C, s0, 0x7F40);
     n = GameQueueSpriteTrans(base, n, 0x24, 0x58, s3, s3, 0xC8, s0, 0x7F40);
     n = GameQueueSpriteTrans(base, n, 0x24, 0x78, 0x38, s3, 0, 0x90, 0x7F40);
     n = GameQueueSpriteTrans(base, n, 0x24, 0x98, 0x1C, s3, 0xD0, 0x60, 0x7F40);
-    *scratch = n;
+    *cursorSlot = n;
 
     DrawOptionHintBar(2);
 
-    n = *scratch;
+    n = *cursorSlot;
     if (g_MonoOutput != 0) {
         color = 0x20;
     }
@@ -335,7 +335,7 @@ void DrawSoundOptionScreen(void) {
     n = GameQueueShadedSpriteTrans(base, n, 0xBA, 0x12A, 0x28, 0xC, 0xB4, 0xD0, 0x7F40, color);
     n = AddTilePrim(base, n, 0xA3, 0x122, 0x56, 0x1C, 0x85, 0x15, 0xE);
     n = AddTilePrim(base, n, 0xA2, 0x120, 0x58, 0x20, color * 2, color * 2, color * 2);
-    *scratch = n;
+    *cursorSlot = n;
     DrawVolumeBar(g_BgmVolumeSetting, 0xD0);
     DrawVolumeBar(g_SfxVolumeSetting, 0xF8);
 
@@ -343,7 +343,7 @@ void DrawSoundOptionScreen(void) {
         return;
     }
 
-    n = *scratch;
+    n = *cursorSlot;
     switch (g_SoundOptionCursor) {
     case 0:
         n = AddTilePrim(base, n, 0x44, 0xCC, 0xB8, 0x28, 0x89, 0xFF, 0x76);

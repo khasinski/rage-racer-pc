@@ -9,7 +9,7 @@ void DrawBootLogo(void) {
     u8 *base;
     s32 height;
     s32 clut;
-    void **scratch;
+    void **cursorSlot;
     s32 fade;
     s32 value;
     void *next;
@@ -26,16 +26,16 @@ void DrawBootLogo(void) {
     fade = value;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &RENDER_PRIM_CURSOR_AS(void);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
 
-    next = *scratch;
+    next = *cursorSlot;
     next = GameQueueShadedSprite(base, next, 0x64, 0xEC, 0x7C, 0x18, 0x80, 0, 0x3F97, fade);
 
     height = 0x20;
     clut = 0x3FD7;
     next = GameQueueShadedSprite(base, next, 0xDC, 0xC4, 8, 0x10, 0, height, clut, fade);
     next = GameQueueShadedSprite(base, next, 0x64, 0xC4, 0x78, height, 0, 0, clut, fade);
-    *scratch = QueueDrawModePrim(base, next, 5);
+    *cursorSlot = QueueDrawModePrim(base, next, 5);
 }
 
 void UpdateBootLogoScene(void) {

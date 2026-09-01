@@ -73,7 +73,7 @@ extern FlybySceneryState g_FlybyScenery;
  * is out by. Callers decide for themselves what to do with the span between
  * the two points, which is where they stop agreeing. */
 struct CarTrackWork;
-void CarTrackMeasureArc(struct CarTrackWork *spad, s32 arcIndex, s32 carX,
+void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint);
 

@@ -6,13 +6,13 @@
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
 void DrawMenuCursorArrow(s32 x, s32 y) {
     OT_TYPE *base = GamePrimaryOrderingTable(51);
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *prim;
-    u8 *scratchValue;
+    u8 *cursorValue;
 
-    scratchValue = *scratch;
-    prim = GameQueueSpriteTrans(base, scratchValue, x, y, 0xC, 0x18, 0xE0, 0x48, 0x7F40);
-    *scratch = QueueDrawModePrim(base, prim, 0x3F);
+    cursorValue = *cursorSlot;
+    prim = GameQueueSpriteTrans(base, cursorValue, x, y, 0xC, 0x18, 0xE0, 0x48, 0x7F40);
+    *cursorSlot = QueueDrawModePrim(base, prim, 0x3F);
 }
 
 /* The bottom hint bar: a left arrow, the caption `variant` selects, and a
@@ -62,13 +62,13 @@ void DrawPadTypeHint(void) {
     u8 *base;
     s32 padType;
     s32 rawPadType;
-    u8 *scratch;
+    u8 *cursorSlot;
     u8 *prim;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
     rawPadType = g_PadType;
-    scratch = RENDER_PRIM_CURSOR_AS(u8);
-    prim = scratch;
+    cursorSlot = RENDER_PRIM_CURSOR_AS(u8);
+    prim = cursorSlot;
 
     if (rawPadType != 0x41 && rawPadType != 0x23) {
         padType = g_LastValidPadType;

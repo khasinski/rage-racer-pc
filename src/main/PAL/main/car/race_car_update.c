@@ -584,13 +584,13 @@ void UpdateAttractCars(void) {
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     PlayerCarPositionView target;
     GameViewWork viewWork;
-    GameViewWork *spad;
+    GameViewWork *view;
     /* The barrier this replaced carried the value in its operand. */
     s32 s0v = 28;
     s32 delta[3];
 
     LoadViewWork(&viewWork);
-    spad = &viewWork;
+    view = &viewWork;
     target.car = car;
     
     if (mode < 90) {
@@ -633,21 +633,21 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         }
 
         if (g_RaceIntroCameraCursor->mode == 0) {
-            spad->x = g_RaceIntroCameraCursor->x.word
+            view->x = g_RaceIntroCameraCursor->x.word
                       + (g_RaceIntroCameraDelta.vx * rcos((g_RaceIntroCameraTimer << 10) / g_RaceIntroCameraCursor->duration)) / 4096;
-            spad->y = g_RaceIntroCameraCursor->y.word
+            view->y = g_RaceIntroCameraCursor->y.word
                       + (g_RaceIntroCameraDelta.vy * rcos((g_RaceIntroCameraTimer << 10) / g_RaceIntroCameraCursor->duration)) / 4096;
-            spad->z = g_RaceIntroCameraCursor->z.word
+            view->z = g_RaceIntroCameraCursor->z.word
                       + (g_RaceIntroCameraDelta.vz * rcos((g_RaceIntroCameraTimer << 10) / g_RaceIntroCameraCursor->duration)) / 4096;
 
-            delta[0] = rsin(car->bodyYaw) / 128 + car->x - spad->x;
-            delta[1] = car->y - s0v - spad->y;
-            delta[2] = rcos(car->bodyYaw) / 128 + car->z - spad->z;
+            delta[0] = rsin(car->bodyYaw) / 128 + car->x - view->x;
+            delta[1] = car->y - s0v - view->y;
+            delta[2] = rcos(car->bodyYaw) / 128 + car->z - view->z;
             s0v = 0x400;
-            spad->angleY = s0v - Atan2(delta[0], delta[2]);
+            view->angleY = s0v - Atan2(delta[0], delta[2]);
             s0v = s0v - Atan2(delta[1], DistanceXZ(delta[0], delta[2]) >> 6);
-            spad->angleX = s0v;
-            spad->angleZ = 0;
+            view->angleX = s0v;
+            view->angleZ = 0;
             StoreViewWork(&viewWork);
             SetCameraRotMatrix();
             SelectModelBank(0);
@@ -659,22 +659,22 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                 s32 c1 = car->y;
                 s32 c2 = car->z;
                 s32 c3 = car->positionW;
-                spad->x = c0;
-                spad->y = c1;
-                spad->z = c2;
-                spad->reserved = c3;
+                view->x = c0;
+                view->y = c1;
+                view->z = c2;
+                view->reserved = c3;
             }
             
-            spad->y -= s0v;
+            view->y -= s0v;
             {
                 s32 c0 = car->bodyPitch;
                 s32 c1 = car->bodyYaw;
                 s32 c2 = car->bodyRoll;
                 s32 c3 = car->bodyRotationW;
-                spad->angleX = c0;
-                spad->angleY = c1;
-                spad->angleZ = c2;
-                spad->depth = c3;
+                view->angleX = c0;
+                view->angleY = c1;
+                view->angleZ = c2;
+                view->depth = c3;
             }
             
             StoreViewWork(&viewWork);

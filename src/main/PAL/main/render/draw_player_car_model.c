@@ -74,17 +74,17 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     modelPosition.z = obj->z;
     modelPosition.y = obj->modelY;
     SetGteObjectMatrix((&g_ObjectMatrixWork), &modelPosition, &m_10);
-    g_ScratchRenderMode = 0;
+    g_RenderState.envMode4 = 0;
     SubmitModel((&g_RenderState), 1);
 
     SetGteObjectMatrix((&g_ObjectMatrixWork), &modelPosition, &m_10);
-    g_ScratchRenderMode = 0;
+    g_RenderState.envMode4 = 0;
     SubmitModel((&g_RenderState), 1);
 
     BuildRotMatrixZ(&m_70, obj->bodyRoll);
     MulMatrix2(&m_30, &m_70);
     SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_70);
-    g_ScratchRenderMode = 0;
+    g_RenderState.envMode4 = 0;
     SubmitModel((&g_RenderState), g_ModelBankCount < 1);
 
     otDepth = obj->renderDepth * 2;
@@ -112,7 +112,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
     m_B0[1].m[2][1] = m_B0[0].m[2][1];
     m_B0[1].m[2][2] = -m_B0[0].m[2][2];
     SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_F0);
-    g_ScratchRenderMode = 0;
+    g_RenderState.envMode4 = 0;
     SubmitModel((&g_RenderState), (otDepth + 3 < g_ModelBankCount) ? (otDepth + 3) : 1);
 
     for (i = 0; i < 2; i++) {
@@ -129,7 +129,7 @@ void DrawPlayerCarModel(GameRenderObject *obj) {
         m_118[1] += obj->y;
         m_118[2] += obj->z;
         SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(m_118), &m_B0[i]);
-        g_ScratchRenderMode = 0;
+        g_RenderState.envMode4 = 0;
         SubmitModel((&g_RenderState), (otDepth + 2 < g_ModelBankCount) ? (otDepth + 2) : 1);
         SetLightMatrix(&m_90);
     }
@@ -234,19 +234,19 @@ void DrawCar(GameRenderObject *obj) {
             v_138[2] = obj->z;
             v_138[1] = obj->modelY;
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(v_138), &m_10);
-            g_ScratchRenderMode = 0;
+            g_RenderState.envMode4 = 0;
             SubmitModel((&g_RenderState),
                             (lod[0] + 1 < g_ModelBankCount) ? (lod[0] + 1) : 1);
 
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(v_138), &m_10);
-            g_ScratchRenderMode = 0;
+            g_RenderState.envMode4 = 0;
             SubmitModel((&g_RenderState),
                             (lod[0] + 1 < g_ModelBankCount) ? (lod[0] + 1) : 1);
 
             BuildRotMatrixZ(&m_70, obj->bodyRoll);
             MulMatrix2(&m_30, &m_70);
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_70);
-            g_ScratchRenderMode = lod[1] << 16;
+            g_RenderState.envMode4 = lod[1] << 16;
             SubmitModel((&g_RenderState),
                             (lod[0] < g_ModelBankCount) ? lod[0] : 1);
 
@@ -271,7 +271,7 @@ void DrawCar(GameRenderObject *obj) {
             m_B0[1].m[2][1] = m_B0[0].m[2][1];
             m_B0[1].m[2][2] = -m_B0[0].m[2][2];
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_F0);
-            g_ScratchRenderMode = 0;
+            g_RenderState.envMode4 = 0;
             SubmitModel((&g_RenderState),
                             (lod[0] + 3 < g_ModelBankCount) ? (lod[0] + 3) : 1);
 
@@ -288,7 +288,7 @@ void DrawCar(GameRenderObject *obj) {
                 m_118[1] += obj->y;
                 m_118[2] += obj->z;
                 SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(m_118), &m_B0[i]);
-                g_ScratchRenderMode = 0;
+                g_RenderState.envMode4 = 0;
                 SubmitModel((&g_RenderState),
                                 (lod[0] + 2 < g_ModelBankCount) ? (lod[0] + 2) : 1);
                 SetLightMatrix(&m_90);
@@ -308,7 +308,7 @@ void DrawCar(GameRenderObject *obj) {
             MulMatrix2(&m_50, &m_10);
             MulMatrix2((&g_RenderState.matrix), &m_10);
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_10);
-            g_ScratchRenderMode = lod[1] << 16;
+            g_RenderState.envMode4 = lod[1] << 16;
             SubmitModel((&g_RenderState),
                             (lod[0] + 4 < g_ModelBankCount) ? (lod[0] + 4) : 1);
         }

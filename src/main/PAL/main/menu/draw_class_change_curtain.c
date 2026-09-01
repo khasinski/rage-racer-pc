@@ -1,7 +1,7 @@
 #include "game/menu.h"
 
 s32 DrawClassChangeCurtain(s32 step) {
-    void *scratch;
+    void *ot;
     s32 delta;
     s32 value;
     s32 y1;
@@ -11,11 +11,11 @@ s32 DrawClassChangeCurtain(s32 step) {
     s32 alpha;
     s32 temp;
     s32 zero;
-    void *callScratch;
+    void *savedOt;
     s32 yArg;
     u32 curtainPhase;
 
-    scratch = RENDER_OT_BASE;
+    ot = RENDER_OT_BASE;
     delta = step;
 
     if (delta == 0) {
@@ -35,7 +35,7 @@ s32 DrawClassChangeCurtain(s32 step) {
             if (value >= 0x10) {
                 value = 0xF;
             }
-            callScratch = scratch;
+            savedOt = ot;
             zero = 0;
             
             curtainPhase = value;
@@ -46,14 +46,14 @@ s32 DrawClassChangeCurtain(s32 step) {
             green = 0x25;
             blue = 0x1E;
             alpha = 0xFF;
-            DrawSolidRect(callScratch, zero, yArg, 0x140, y1, red, green, blue, alpha);
-            callScratch = scratch;
+            DrawSolidRect(savedOt, zero, yArg, 0x140, y1, red, green, blue, alpha);
+            savedOt = ot;
             zero = 0;
             
             value = y1 - value;
             value <<= 0x10;
             yArg = value >> 0x10;
-            DrawSolidRect(callScratch, zero, yArg, 0x140, y1, red, green, blue, alpha);
+            DrawSolidRect(savedOt, zero, yArg, 0x140, y1, red, green, blue, alpha);
         }
 
         if (delta > 0) {

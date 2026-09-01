@@ -2,10 +2,10 @@
 #include "game/render_internal.h"
 
 void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex) {
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
-    packet.bytes = *scratch;
+    packet.bytes = *cursorSlot;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
         u8 *font = g_Font8x8Cells;
@@ -46,7 +46,7 @@ void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex) {
     }
     SetDrawMode(packet.drawPacket, 0, 1, 9, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    *scratch = packet.bytes + sizeof(DrawPacket);
+    *cursorSlot = packet.bytes + sizeof(DrawPacket);
 }
 
 void GameDrawText8x8Shaded(
@@ -55,12 +55,12 @@ void GameDrawText8x8Shaded(
     const char *str,
     s32 clutIndex,
     u8 intensity) {
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
     u8 *prim;
     RenderBufferAddress primAddress;
 
-    packet.bytes = *scratch;
+    packet.bytes = *cursorSlot;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
         u8 *font = g_Font8x8Cells;
@@ -108,17 +108,17 @@ void GameDrawText8x8Shaded(
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    *scratch = packet.bytes + sizeof(DrawPacket);
+    *cursorSlot = packet.bytes + sizeof(DrawPacket);
 }
 
 /* Callers hold these strings as char *, so take them that way and read the
  * glyph codes unsigned. */
 void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex) {
     const u8 *str = (const u8 *)text;
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     RenderBufferAddress packet;
 
-    packet.bytes = *scratch;
+    packet.bytes = *cursorSlot;
     if (*str != 0) {
         volatile SPRT_8 *sprt;
         u8 *font = g_Font8x8Cells;
@@ -160,7 +160,7 @@ void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex) {
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x49, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    *scratch = packet.bytes + sizeof(DrawPacket);
+    *cursorSlot = packet.bytes + sizeof(DrawPacket);
 }
 
 #undef INIT_TEXT_FONT

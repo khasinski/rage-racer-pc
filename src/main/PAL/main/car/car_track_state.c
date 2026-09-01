@@ -19,8 +19,8 @@ typedef union TrackCarAddress {
  * and its successor: computes route angles/heights via atan2 (Atan2)
  * and rsin/rcos, builds the collision-boundary
  * offset, and writes the interpolated position/angle/height into the render
- * object `obj`. The working struct ("spad") is the GTE
- * per-primitive transform scratch. `limits` supplies the boundary margins and
+ * object `obj`. The working struct ("work") is the GTE
+ * per-primitive transform working set. `limits` supplies the boundary margins and
  * knockback modes.
  * Returns the boundary/skid response code.
  */
@@ -32,7 +32,7 @@ typedef union TrackCarAddress {
  * having hit it. Only the player's car is moved by the push, a rival is told
  * about it and left where it is.
  */
-static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *spad,
+static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
                                 const CarTrackLimits *limits,
                                 const GameTrackPoint *point,
                                 const GameTrackPoint *nextPoint,
@@ -45,34 +45,34 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *spad,
     s16 segLenB;
     void *clampSource;
 
-    segLenA = (s16)spad->segmentLength;
-    spad->leftHalfWidth = (s16)((nextPoint->leftHalfWidth * alongSegment +
+    segLenA = (s16)work->segmentLength;
+    work->leftHalfWidth = (s16)((nextPoint->leftHalfWidth * alongSegment +
                            point->leftHalfWidth * (segLenA - alongSegment)) /
                           segLenA);
-    segLenB = (s16)spad->segmentLength;
+    segLenB = (s16)work->segmentLength;
     edgeHeight = (nextPoint->rightHalfWidth * alongSegment +
                   point->rightHalfWidth * (segLenB - alongSegment)) /
                  segLenB;
-    spad->rightHalfWidth = (s16) edgeHeight;
-    leftLimit = spad->leftHalfWidth + limits->leftInset;
-    clampSource = &spad->pad40[0];
+    work->rightHalfWidth = (s16) edgeHeight;
+    leftLimit = work->leftHalfWidth + limits->leftInset;
+    clampSource = &work->pad40[0];
     if (lateralOffset < (0 - leftLimit))
     {
         lateralOffset += leftLimit;
-        spad->offsetX = 0U;
-        spad->offsetY = 0;
-        spad->offsetZ = lateralOffset;
-        BuildRotMatrixY(clampSource, spad->heading);
-        ApplyMatrix(clampSource, &spad->offsetX, &spad->correctionX);
+        work->offsetX = 0U;
+        work->offsetY = 0;
+        work->offsetZ = lateralOffset;
+        BuildRotMatrixY(clampSource, work->heading);
+        ApplyMatrix(clampSource, &work->offsetX, &work->correctionX);
         playerAddress.player = &g_PlayerCar;
         if (obj == playerAddress.runtime)
         {
-            SetCarKnockback(obj, spad->correctionX, spad->correctionZ, limits->leftKnockbackMode);
+            SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->leftKnockbackMode);
         }
-        obj->x = obj->x - spad->correctionX;
-        obj->z = obj->z - spad->correctionZ;
-        lateralOffset = -spad->leftHalfWidth - limits->leftInset;
-        spad->knockbackMode = limits->leftKnockbackMode;
+        obj->x = obj->x - work->correctionX;
+        obj->z = obj->z - work->correctionZ;
+        lateralOffset = -work->leftHalfWidth - limits->leftInset;
+        work->knockbackMode = limits->leftKnockbackMode;
     }
     else
     {
@@ -80,20 +80,20 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *spad,
     if (rightLimit < lateralOffset)
     {
         lateralOffset -= rightLimit;
-        spad->offsetX = 0U;
-        spad->offsetY = 0;
-        spad->offsetZ = lateralOffset;
-        BuildRotMatrixY(clampSource, spad->heading);
-        ApplyMatrix(clampSource, &spad->offsetX, &spad->correctionX);
+        work->offsetX = 0U;
+        work->offsetY = 0;
+        work->offsetZ = lateralOffset;
+        BuildRotMatrixY(clampSource, work->heading);
+        ApplyMatrix(clampSource, &work->offsetX, &work->correctionX);
         playerAddress.player = &g_PlayerCar;
         if (obj == playerAddress.runtime)
         {
-            SetCarKnockback(obj, spad->correctionX, spad->correctionZ, limits->rightKnockbackMode);
+            SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->rightKnockbackMode);
         }
-        obj->x = obj->x - spad->correctionX;
-        obj->z = obj->z - spad->correctionZ;
-        lateralOffset = spad->rightHalfWidth - limits->rightInset;
-        spad->knockbackMode = limits->rightKnockbackMode;
+        obj->x = obj->x - work->correctionX;
+        obj->z = obj->z - work->correctionZ;
+        lateralOffset = work->rightHalfWidth - limits->rightInset;
+        work->knockbackMode = limits->rightKnockbackMode;
     }
     }
     return lateralOffset;
@@ -112,7 +112,7 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *spad,
  * Everything it works out is left in that struct, which is where the rest
  * of the placement reads it from.
  */
-static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *spad,
+static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
                           const GameTrackPoint *point,
                           const GameTrackPoint *nextPoint, s32 arcIndex) {
     s32 arcAngle;
@@ -123,62 +123,62 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *spad,
     s32 swept;
     s32 sweptAngle;
 
-    CarTrackMeasureArc(spad, arcIndex, obj->x, obj->z, point, nextPoint);
-    spad->arcSpan = GetAngleDistance(spad->pointAngle, spad->nextPointAngle);
-    sweptAngle = GetAngleDistance(spad->pointAngle, spad->sweptAngle);
-    arcAngle = spad->arcSpan;
-    spad->sweptAngle = sweptAngle;
+    CarTrackMeasureArc(work, arcIndex, obj->x, obj->z, point, nextPoint);
+    work->arcSpan = GetAngleDistance(work->pointAngle, work->nextPointAngle);
+    sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
+    arcAngle = work->arcSpan;
+    work->sweptAngle = sweptAngle;
     {
         s32 interpolated;
 
         if (arcAngle <= 0)
         {
-            interpolated = spad->pointRadius.value;
-            spad->arcSpan = 1;
+            interpolated = work->pointRadius.value;
+            work->arcSpan = 1;
         }
         else
         {
-            interpolated = (((s16)sweptAngle * spad->pointRadius.value) +
-                            ((arcAngle - (s16)sweptAngle) * spad->nextPointRadius.value)) /
+            interpolated = (((s16)sweptAngle * work->pointRadius.value) +
+                            ((arcAngle - (s16)sweptAngle) * work->nextPointRadius.value)) /
                            arcAngle;
         }
-        spad->pointRadius.value = interpolated;
+        work->pointRadius.value = interpolated;
     }
     {
-        volatile u16 *carRadiusLow = &spad->carRadius.half.low;
-        volatile u16 *pointRadiusLow = &spad->pointRadius.half.low;
+        volatile u16 *carRadiusLow = &work->carRadius.half.low;
+        volatile u16 *pointRadiusLow = &work->pointRadius.half.low;
 
         arcLateral = (s16)(*carRadiusLow - *pointRadiusLow);
     }
-    if (spad->curveMode == 2)
+    if (work->curveMode == 2)
     {
         arcLateral = 0 - arcLateral;
     }
-    spad->arcLateral = arcLateral;
+    work->arcLateral = arcLateral;
     {
         headingAngle = nextPoint->angle;
         pointHeading = point->angle;
         if ((headingAngle - pointHeading) >= 0x801)
         {
-            swept = spad->sweptAngle;
-            arcSpan = spad->arcSpan;
-            spad->heading = (s16)(((headingAngle - 0x1000) * swept +
+            swept = work->sweptAngle;
+            arcSpan = work->arcSpan;
+            work->heading = (s16)(((headingAngle - 0x1000) * swept +
                                    pointHeading * (arcSpan - swept)) /
                                   arcSpan);
         }
         else if ((pointHeading - headingAngle) >= 0x801)
         {
-            swept = spad->sweptAngle;
-            arcSpan = spad->arcSpan;
-            spad->heading = (s16)((headingAngle * swept +
+            swept = work->sweptAngle;
+            arcSpan = work->arcSpan;
+            work->heading = (s16)((headingAngle * swept +
                                    (pointHeading - 0x1000) * (arcSpan - swept)) /
                                   arcSpan);
         }
         else
         {
-            swept = spad->sweptAngle;
-            arcSpan = spad->arcSpan;
-            spad->heading =
+            swept = work->sweptAngle;
+            arcSpan = work->arcSpan;
+            work->heading =
                 (s16)((headingAngle * swept + pointHeading * (arcSpan - swept)) / arcSpan);
         }
     }
@@ -211,7 +211,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
-    CarTrackWork *spad;
+    CarTrackWork *work;
     static int traceEnabled = -1;
     static int traceTimer = -1;
     static int traceTimerMin = -1;
@@ -240,66 +240,66 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     }
 
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
-    spad = (&g_CarTrackWork);
-    spad->knockbackMode = 0;
+    work = (&g_CarTrackWork);
+    work->knockbackMode = 0;
     point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;
-    spad->segmentLength = segmentLength;
+    work->segmentLength = segmentLength;
     nextPoint = TrackPoint(nextPointIndex);
     if ((s16)segmentLength <= 0)
     {
-        spad->segmentLength = 1U;
+        work->segmentLength = 1U;
     }
-    spad->heading = (u16)point->angle;
+    work->heading = (u16)point->angle;
     arcIndex = (s16)point->arcRef >> 4;
-    spad->arcIndex = (s16)arcIndex;
+    work->arcIndex = (s16)arcIndex;
     curveMode = point->arcRef & 3;
-    spad->curveMode = curveMode;
+    work->curveMode = curveMode;
     if (curveMode != 0) {
-        PlaceCarOnArc(obj, spad, point, nextPoint, arcIndex);
+        PlaceCarOnArc(obj, work, point, nextPoint, arcIndex);
     }
 
-    spad->offsetX = (u16)(((u16)obj->x - (u16)point->x) * 4);
-    headingAngle = spad->heading;
-    spad->offsetZ = (s16)(((u16)obj->z - (u16)point->z) * 4);
-    spad->offsetY = 0;
+    work->offsetX = (u16)(((u16)obj->x - (u16)point->x) * 4);
+    headingAngle = work->heading;
+    work->offsetZ = (s16)(((u16)obj->z - (u16)point->z) * 4);
+    work->offsetY = 0;
     cosHeading = rcos(headingAngle);
-    rotated = (cosHeading * (s16) spad->offsetX) + (rsin(spad->heading) * spad->offsetZ);
+    rotated = (cosHeading * (s16) work->offsetX) + (rsin(work->heading) * work->offsetZ);
     if (rotated < 0)
     {
         rotated += 0xFFF;
     }
     alongSegment = rotated >> 0xE;
-    sinHeading = rsin(spad->heading);
-    rotated = ((0 - sinHeading) * (s16) spad->offsetX) + (rcos(spad->heading) * spad->offsetZ);
+    sinHeading = rsin(work->heading);
+    rotated = ((0 - sinHeading) * (s16) work->offsetX) + (rcos(work->heading) * work->offsetZ);
     if (rotated < 0)
     {
         rotated += 0xFFF;
     }
     lateralOffset = rotated >> 0xE;
-    if (spad->curveMode != 0)
+    if (work->curveMode != 0)
     {
-        lateralOffset = spad->arcLateral;
+        lateralOffset = work->arcLateral;
     }
-    lateralOffset = ClampCarToTrackEdges(obj, spad, limits, point,
+    lateralOffset = ClampCarToTrackEdges(obj, work, limits, point,
                                          nextPoint, alongSegment,
                                          lateralOffset);
-    if ((s16)spad->segmentLength < alongSegment)
+    if ((s16)work->segmentLength < alongSegment)
     {
-        alongSegment = (s16)spad->segmentLength;
+        alongSegment = (s16)work->segmentLength;
     }
     else if (alongSegment < 0)
     {
         alongSegment = 0;
     }
-    obj->segmentFraction = (alongSegment << 0xA) / (s16)spad->segmentLength;
+    obj->segmentFraction = (alongSegment << 0xA) / (s16)work->segmentLength;
     if (lateralOffset < 0)
     {
-        obj->normalizedLateralOffset = (lateralOffset * 0x400) / spad->leftHalfWidth;
+        obj->normalizedLateralOffset = (lateralOffset * 0x400) / work->leftHalfWidth;
     }
     else
     {
-        obj->normalizedLateralOffset = (lateralOffset * 0x400) / spad->rightHalfWidth;
+        obj->normalizedLateralOffset = (lateralOffset * 0x400) / work->rightHalfWidth;
     }
     {
         u32 outputProgress;
@@ -313,64 +313,64 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
         }
         else
         {
-            outputProgress = (s16)spad->segmentLength - alongSegment;
+            outputProgress = (s16)work->segmentLength - alongSegment;
         }
         obj->progressB = outputProgress;
     }
-    segLenC = (s16)spad->segmentLength;
-    spad->crossSlope = (s16)((nextPoint->crossSlope * alongSegment +
+    segLenC = (s16)work->segmentLength;
+    work->crossSlope = (s16)((nextPoint->crossSlope * alongSegment +
                            point->crossSlope * (segLenC - alongSegment)) /
                           segLenC);
-    segLenD = (s16)spad->segmentLength;
+    segLenD = (s16)work->segmentLength;
     surfaceHeight =
         (nextPoint->y * alongSegment + point->y * (segLenD - alongSegment)) / segLenD;
-    obj->y = ((spad->crossSlope * lateralOffset) >> 7) + surfaceHeight;
+    obj->y = ((work->crossSlope * lateralOffset) >> 7) + surfaceHeight;
     {
         s16 angle;
 
         angle = (u16)obj->bodyYaw;
         angle -= 0xC00;
-        spad->relativeHeading = angle + (u16)spad->heading;
+        work->relativeHeading = angle + (u16)work->heading;
     }
-    segLenE = (s16)spad->segmentLength;
-    spad->surfacePitch = (s16)((nextPoint->surfacePitch * alongSegment +
+    segLenE = (s16)work->segmentLength;
+    work->surfacePitch = (s16)((nextPoint->surfacePitch * alongSegment +
                            point->surfacePitch * (segLenE - alongSegment)) /
                           segLenE);
-    trackWidth = (u16) spad->rightHalfWidth + (u16) spad->leftHalfWidth;
-    spad->trackWidth = trackWidth;
+    trackWidth = (u16) work->rightHalfWidth + (u16) work->leftHalfWidth;
+    work->trackWidth = trackWidth;
     nextCamber = Atan2(trackWidth, (nextPoint->crossSlope * trackWidth) >> 7);
-    trackWidthCopy = spad->trackWidth;
+    trackWidthCopy = work->trackWidth;
     secondResult = Atan2(trackWidthCopy, (point->crossSlope * trackWidthCopy) >> 7);
-    segLenF = (s16)spad->segmentLength;
-    spad->camberAngle =
+    segLenF = (s16)work->segmentLength;
+    work->camberAngle =
         (s16)((nextCamber * alongSegment + secondResult * (segLenF - alongSegment)) / segLenF);
-    spad->headingCos = rcos(spad->relativeHeading);
+    work->headingCos = rcos(work->relativeHeading);
     {
         s32 firstProduct;
         s32 sinValue;
         s32 secondProduct;
 
-        sinValue = rsin(spad->relativeHeading);
-        spad->headingSin = sinValue;
-        firstProduct = spad->surfacePitch * spad->headingCos;
+        sinValue = rsin(work->relativeHeading);
+        work->headingSin = sinValue;
+        firstProduct = work->surfacePitch * work->headingCos;
         if (firstProduct < 0)
         {
             firstProduct += 0xFFF;
         }
         firstProduct >>= 0xC;
-        secondProduct = spad->camberAngle * sinValue;
+        secondProduct = work->camberAngle * sinValue;
         if (secondProduct < 0)
         {
             secondProduct += 0xFFF;
         }
         obj->bodyPitch = firstProduct + (secondProduct >> 0xC);
     }
-    forwardProduct = (0 - spad->headingCos) * spad->camberAngle;
+    forwardProduct = (0 - work->headingCos) * work->camberAngle;
     if (forwardProduct < 0)
     {
         forwardProduct += 0xFFF;
     }
-    lateralProduct = spad->surfacePitch * spad->headingSin;
+    lateralProduct = work->surfacePitch * work->headingSin;
     forwardComponent = forwardProduct >> 0xC;
     if (lateralProduct < 0)
     {
@@ -379,7 +379,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     trackLength = g_TrackLength;
     lapProgress = (obj->progressA + obj->progressB) % trackLength;
     obj->bodyRoll = forwardComponent + (lateralProduct >> 0xC);
-    obj->trackHeading.value = spad->heading;
+    obj->trackHeading.value = work->heading;
     obj->previousTrackProgress = obj->trackProgress;
     obj->trackProgress = lapProgress;
     if (lapProgress < 0)
@@ -406,10 +406,10 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
                "correction=%d,%d knockback=%d motion=%d,%d,%d,%d",
                g_SceneTimer, trackPointIndex, obj->x, obj->z,
                obj->trackProgress, obj->trackLateralOffset, alongSegment,
-               spad->heading, spad->curveMode, spad->leftHalfWidth,
-               spad->rightHalfWidth, spad->correctionX, spad->correctionZ,
-               spad->knockbackMode, obj->motionActive, obj->motionTimer,
+               work->heading, work->curveMode, work->leftHalfWidth,
+               work->rightHalfWidth, work->correctionX, work->correctionZ,
+               work->knockbackMode, obj->motionActive, obj->motionTimer,
                obj->velocityX, obj->velocityZ);
     }
-    return spad->knockbackMode;
+    return work->knockbackMode;
 }

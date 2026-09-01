@@ -58,14 +58,14 @@ void DrawScreenAdjustScreen(void) {
     s32 y48 = 0x48;
     s32 h18 = 0x18;
     s32 w0c = 0xC;
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *next;
 
-    next = *scratch;
+    next = *cursorSlot;
     next = GameQueueSpriteTrans(base, next, 0x9A, 0x88, w0c, h18, 0xC8, y48, color);
     next = GameQueueSpriteTrans(base, next, 0x9A, 0xB8, w0c, h18, 0xD4, y48, color);
     next = GameQueueSpriteTrans(base, next, 0xA6, 0xA0, w0c, h18, 0xE0, y48, color);
-    *scratch = GameQueueSpriteTrans(base, next, 0x8E, 0xA0, w0c, h18, 0xEC, y48, color);
+    *cursorSlot = GameQueueSpriteTrans(base, next, 0x8E, 0xA0, w0c, h18, 0xEC, y48, color);
     DrawOptionHintBar(3);
 }
 
@@ -134,7 +134,7 @@ void UpdateScreenAdjustScreen(void) {
 }
 
 void DrawOptionSceneOverlay(void) {
-    u8 **scratch;
+    u8 **cursorSlot;
     void *base;
     u8 *pkt;
     s32 target;
@@ -159,10 +159,10 @@ void DrawOptionSceneOverlay(void) {
         g_OptionLetterboxHeight = value - 4;
     }
 
-    scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     /* The OPTION backdrop lives behind the depth-0/51 2D foreground. */
     base = GamePrimaryOrderingTable(54);
-    pkt = *scratch;
+    pkt = *cursorSlot;
 
     if (g_GameMode == 6) {
         w120 = 0x120;
@@ -174,7 +174,7 @@ void DrawOptionSceneOverlay(void) {
         pkt = GameQueueLine(base, pkt, 0x130, 0x20, 0x130, h1c0, white, white, white);
     }
 
-    *scratch = AddTilePrim(base, pkt, 0, 0, 0x140, g_OptionLetterboxHeight, 0x85, 0x15, 0xE);
+    *cursorSlot = AddTilePrim(base, pkt, 0, 0, 0x140, g_OptionLetterboxHeight, 0x85, 0x15, 0xE);
 }
 
 /* Scene 23: the setup / OPTION scene, dispatching g_GameModeHandlers[g_GameMode]. */

@@ -135,13 +135,13 @@ void DrawTimeRecordPanel(s32 s5) {
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {
-    u8 **scratch;
+    u8 **cursorSlot;
 
     if (g_AnimTimer & 8) {
-        scratch = &RENDER_PRIM_CURSOR_AS(u8);
-        *scratch = AddTilePrim(
+        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
+        *cursorSlot = AddTilePrim(
             GamePrimaryOrderingTable(0),
-            *scratch,
+            *cursorSlot,
             (charIndex * 8) + 0x7C,
             ((row * 5) << 2) + 0x7E,
             9,

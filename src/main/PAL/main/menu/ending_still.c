@@ -36,17 +36,17 @@ void DrawEndingStill(void) {
     u8 *base;
     s32 clut;
     s32 height;
-    u8 *volatile *scratch;
+    u8 *volatile *cursorSlot;
     u8 *next;
 
     base = (u8 *)GamePrimaryOrderingTable(0);
     height = 0xF0;
     clut = 0x3FDB;
-    scratch = RENDER_PRIM_CURSOR_SLOT;
+    cursorSlot = RENDER_PRIM_CURSOR_SLOT;
 
-    next = *scratch;
+    next = *cursorSlot;
     next = GameQueueSprite(base, next, 0, 0, 0x100, height, 0, 0, clut);
     next = QueueDrawModePrim(base, next, 6);
     next = GameQueueSprite(base, next, 0x100, 0, 0x40, height, 0, 0, clut);
-    *scratch = QueueDrawModePrim(base, next, 7);
+    *cursorSlot = QueueDrawModePrim(base, next, 7);
 }

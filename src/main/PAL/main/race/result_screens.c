@@ -181,7 +181,7 @@ void UpdateReplayScene(void) {
 
 void DrawResultScreen(void) {
     u8 *base;
-    u8 **scratch;
+    u8 **cursorSlot;
     s32 width;
     s32 y;
     u8 *next;
@@ -197,11 +197,11 @@ void DrawResultScreen(void) {
 
     width = 0x140;
     base = (u8 *)GamePrimaryOrderingTable(0);
-    scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
 
-    next = *scratch;
+    next = *cursorSlot;
     next = AddTilePrim(base, next, 0, 0, width, 0x30, 0x85, 0x15, 0xE);
-    *scratch = AddTilePrim(base, next, 0, 0x30, width, 0x18, 0xF0, 0xF0, 0xF0);
+    *cursorSlot = AddTilePrim(base, next, 0, 0x30, width, 0x18, 0xF0, 0xF0, 0xF0);
 }
 
 void DrawGrandprixIntro(void) {
@@ -209,17 +209,17 @@ void DrawGrandprixIntro(void) {
     char text[0x30];
     if ((g_ClassResultPlace != 0) &&
         (g_PrizeScreenState >= PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM)) {
-        u8 **scratch;
+        u8 **cursorSlot;
         u8 *next;
         s32 height;
         s32 color;
 
-        scratch = &RENDER_PRIM_CURSOR_AS(u8);
+        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
         base = (u8 *)GamePrimaryOrderingTable(0);
         height = 8;
         color = 0x78CB;
         next = GameQueueSprite(
-            base, *scratch, 0x14, 0x1C, 0x38, height, 0, 0xE8, color);
+            base, *cursorSlot, 0x14, 0x1C, 0x38, height, 0, 0xE8, color);
         next = GameQueueSprite(
             base,
             next,
@@ -250,7 +250,7 @@ void DrawGrandprixIntro(void) {
             0,
             0xF8,
             color);
-        *scratch = next;
+        *cursorSlot = next;
     }
 
     {
@@ -269,13 +269,13 @@ void DrawGrandprixIntro(void) {
     DrawText8x8Trans(0x10, 0x3C, text, 0x78CC);
 
     {
-        u8 **scratch;
+        u8 **cursorSlot;
         GrandPrixIntroSelection *selection;
         GrandPrixIntroAddress selectionAddress;
         u8 *next;
         s32 selectionIndex;
 
-        scratch = &RENDER_PRIM_CURSOR_AS(u8);
+        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
         DrawResultScreen();
 
         base = (u8 *)GamePrimaryOrderingTable(0);
@@ -283,7 +283,7 @@ void DrawGrandprixIntro(void) {
         selection = selectionAddress.selection;
         next = GameQueueSprite(
             base,
-            *scratch,
+            *cursorSlot,
             0xB4,
             0x60,
             0x58,
@@ -304,7 +304,7 @@ void DrawGrandprixIntro(void) {
             g_ResultPlaceSprites[selection->width - 1].width,
             0xCC,
             g_ResultPlaceCluts[selection->color]);
-        *scratch = next;
+        *cursorSlot = next;
     }
 
     DrawProportionalText(0x10, 0x50, g_CaptionRanking, 0x7812);

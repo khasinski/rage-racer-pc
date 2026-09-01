@@ -58,19 +58,19 @@ void BuildRotMatrixX(Matrix *mtx, s32 angle) {
 
 void SetCameraRotMatrix(void) {
     Matrix mtx;
-    Matrix *scratch = (&g_RenderState.matrix);
+    Matrix *viewMatrix = (&g_RenderState.matrix);
 
     GameRenderWorldSetCamera(g_RenderState.viewX, g_RenderState.viewY, g_RenderState.viewZ,
                                  g_RenderState.viewAngleX, g_RenderState.viewAngleY,
                                  g_RenderState.viewAngleZ);
-    BuildRotMatrixY(scratch, g_RenderState.viewAngleY);
+    BuildRotMatrixY(viewMatrix, g_RenderState.viewAngleY);
     BuildRotMatrixX(&mtx, g_RenderState.viewAngleX);
-    MulMatrix2(&mtx, scratch);
+    MulMatrix2(&mtx, viewMatrix);
     BuildRotMatrixZ(&mtx, g_RenderState.viewAngleZ);
-    MulMatrix2(&mtx, scratch);
+    MulMatrix2(&mtx, viewMatrix);
     BuildRotMatrixY(&mtx, 0x800);
-    MulMatrix0(&mtx, scratch, &g_MirrorViewMatrix);
-    SetRotMatrix(scratch);
+    MulMatrix0(&mtx, viewMatrix, &g_MirrorViewMatrix);
+    SetRotMatrix(viewMatrix);
 }
 
 

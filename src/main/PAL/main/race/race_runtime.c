@@ -69,10 +69,6 @@ void UpdateWaypoints(void) {
     } while (i < 6);
 }
 
-static void ClearScratchRenderMode37AAC(void) {
-    g_ScratchRenderMode = 0;
-}
-
 /*
  * Renders the 6 waypoints. For each active-shaped slot it builds a rotation
  * matrix from the waypoint's Y and Z rotations and emits
@@ -103,7 +99,7 @@ void DrawWaypoints(void) {
         SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&waypoint->motion.x), &mtx0);
         frameValue = g_ModelBankCount;
-        ClearScratchRenderMode37AAC();
+        g_RenderState.envMode4 = 0;
         drawArg = 1;
         if (drawId < frameValue) {
             drawArg = drawId;
@@ -115,7 +111,7 @@ void DrawWaypoints(void) {
         SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&waypoint->motion.x), mtx1Ptr);
         frameValue = g_ModelBankCount;
-        ClearScratchRenderMode37AAC();
+        g_RenderState.envMode4 = 0;
         drawArg = 1;
         if (drawId < frameValue) {
             drawArg = drawId;
@@ -128,7 +124,7 @@ void DrawWaypoints(void) {
 }
 
 void DrawLapNumber(void) {
-    SPRT *scratch;
+    SPRT *cursor;
     s32 track;
     s32 divisor;
     s32 digitsDrawn;
@@ -136,12 +132,12 @@ void DrawLapNumber(void) {
     s32 quotient;
     SPRT *packet;
 
-    scratch = RENDER_PRIM_CURSOR_AS(SPRT);
+    cursor = RENDER_PRIM_CURSOR_AS(SPRT);
     track = g_PlayerCar.lap;
     divisor = 1;
     digitsDrawn = 0;
     xOffset = 0;
-    packet = scratch;
+    packet = cursor;
 
     while (1) {
         quotient = track / divisor;
@@ -154,8 +150,8 @@ void DrawLapNumber(void) {
             SPRT *oldPacket;
             s32 tens;
 
-            SetSprt(scratch);
-            SetShadeTex(scratch, 1);
+            SetSprt(cursor);
+            SetShadeTex(cursor, 1);
 
             y = 0x120 - xOffset;
             oldPacket = packet;
@@ -163,7 +159,7 @@ void DrawLapNumber(void) {
             divisor *= 10;
             xOffset += 0x18;
             digitsDrawn++;
-            scratch++;
+            cursor++;
             packet->v0 = 0x48;
             packet->w = 0x18;
             packet->h = 0x20;
@@ -184,10 +180,10 @@ void DrawLapNumber(void) {
          * render state twice over, at a slot nothing ever read back; only
          * the queueing itself does anything.
          */
-        RenderBufferAddress scratchAddress;
+        RenderBufferAddress packetAddress;
 
-        scratchAddress.sprite = scratch;
-        QueueDrawModePrim(GamePrimaryOrderingTable(0), scratchAddress.bytes, 9);
+        packetAddress.sprite = cursor;
+        QueueDrawModePrim(GamePrimaryOrderingTable(0), packetAddress.bytes, 9);
     }
 }
 

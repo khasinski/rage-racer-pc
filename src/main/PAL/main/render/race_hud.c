@@ -11,7 +11,7 @@ void DrawRaceHudLabels(s32 mode) {
     s32 count;
     s32 i;
     GameSpriteDesc *descs;
-    void **scratch;
+    void **cursorSlot;
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
 
@@ -37,8 +37,8 @@ void DrawRaceHudLabels(s32 mode) {
             AddPrim(ot, prim);
     }
 
-    scratch = &RENDER_PRIM_CURSOR_AS(void);
-    *scratch = QueueDrawModePrim(ot, *scratch, 9);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
+    *cursorSlot = QueueDrawModePrim(ot, *cursorSlot, 9);
 }
 
 u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s32 b) {

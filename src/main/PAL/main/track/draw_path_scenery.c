@@ -42,7 +42,7 @@ void DrawPathScenery(void) {
     SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(g_PathSceneryTransform.position.w), &mtx1);
     frameValue = g_ModelBankCount;
-    g_ScratchRenderMode = 0;
+    g_RenderState.envMode4 = 0;
     drawId = 1;
     if (frameValue >= 0x25) {
         drawId = 0x24;

@@ -6,14 +6,14 @@
 
 
 void DrawMenuAltPanel(s32 stepA, s32 stepB) {
-    void *scratch = RENDER_OT_BASE;
+    void *ot = RENDER_OT_BASE;
     s32 value;
     s32 offset;
     s32 x0;
     s32 y0;
     s32 render1;
     s16 y1;
-    void *callScratch;
+    void *savedOt;
     s32 callX;
 
     if (stepA == 0 && stepB == 0) {
@@ -43,13 +43,13 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
         offset = (value - 1) * 2;
         x0 = (g_MenuAltLayout != 0) ? 0x69 : 0xA8;
         y0 = 0x9E;
-        callScratch = scratch;
+        savedOt = ot;
         callX = x0;
         y0 = (s16)(y0 - offset);
         x0 += 0x1C;
         y1 = (s16)(offset + 0x9F);
         GameDrawTexturedQuad(
-            callScratch,
+            savedOt,
             callX,
             y0,
             x0,
@@ -80,13 +80,13 @@ void DrawMenuAltPanel(s32 stepA, s32 stepB) {
         offset = render1 - 1;
         x0 = (g_MenuAltLayout != 0) ? 0x92 : 0xC0;
         y0 = 0x128;
-        callScratch = scratch;
+        savedOt = ot;
         callX = x0;
         y0 = (s16)(y0 - offset);
         x0 += 0x4E;
         y1 = (s16)(render1 + 0x128);
         GameDrawTexturedQuad(
-            callScratch,
+            savedOt,
             callX,
             y0,
             x0,
@@ -133,7 +133,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     SVec verts[4];
     MenuProjectedVertex out[4];
     Matrix mtx;
-    OT_TYPE *scratch2;
+    OT_TYPE *otNext;
     s32 n;
     s32 v;
     s32 depth;
@@ -143,7 +143,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     verts[2] = g_CourseCardVerts[2];
     verts[3] = g_CourseCardVerts[3];
 
-    scratch2 = RENDER_OT_BASE_AS(OT_TYPE) + 1;
+    otNext = RENDER_OT_BASE_AS(OT_TYPE) + 1;
 
     n = *p0 - *p1;
     if (n != 0) {
@@ -213,7 +213,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
         y3 += 0x58;
         x1 += 0xE4;
 
-        GameDrawTexturedQuad(scratch2,
+        GameDrawTexturedQuad(otNext,
             x0, y0, x1, y1, x2, y2, x3, y3,
             0xA0, 0x70, 0xDF, 0x70, 0xA0, 0xBF, 0xDF, 0xBF,
             0x7F, 0x7F, 0x7F,
@@ -224,7 +224,7 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
 }
 
 void DrawTimeAttackPlate(s32 stepArg) {
-    void *scratch = RENDER_OT_BASE;
+    void *ot = RENDER_OT_BASE;
     s32 value;
     s32 renderValue;
     s32 y0;
@@ -249,7 +249,7 @@ void DrawTimeAttackPlate(s32 stepArg) {
         y0 = (s16)(y0 - renderValue);
         y1 = (s16)(renderValue + 0xD8);
         GameDrawTexturedQuad(
-            scratch,
+            ot,
             0x4C,
             y0,
             0x7C,

@@ -66,7 +66,7 @@ typedef struct SkyBandGeometry {
  * only thing the course index decides here. Returns where it left the packet
  * cursor.
  */
-static u8 *DrawCourseSkirt(SkyRenderWork *scratch, SkyBandGeometry *band,
+static u8 *DrawCourseSkirt(SkyRenderWork *work, SkyBandGeometry *band,
                            u8 *packetCursor) {
     /* Carried from the wide half of the skirt to the near half. Both are
      * drawn on the same condition, for every course but the third, so the
@@ -144,7 +144,7 @@ static u8 *DrawCourseSkirt(SkyRenderWork *scratch, SkyBandGeometry *band,
         color = g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_BOTTOM].cur.bytes.b;
         courseG4->b3 = color;
         courseG4->b2 = color;
-        AddPrim(&scratch->orderingTable[SKY_OT_FAR], courseG4);
+        AddPrim(&work->orderingTable[SKY_OT_FAR], courseG4);
         packetCursor = nextPacket;
       }
       skirtStepX = band->rowStepX * 3;
@@ -197,7 +197,7 @@ static u8 *DrawCourseSkirt(SkyRenderWork *scratch, SkyBandGeometry *band,
         color = g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_BOTTOM].cur.bytes.b;
         courseG4->b3 = color;
         courseG4->b2 = color;
-        AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseG4);
+        AddPrim(&work->orderingTable[SKY_OT_NEAR], courseG4);
         packetCursor = nextPacket;
       }
       else
@@ -226,7 +226,7 @@ static u8 *DrawCourseSkirt(SkyRenderWork *scratch, SkyBandGeometry *band,
           cursor.polyF4 = courseF4 + 1;
           nextPacket = cursor.bytes;
           courseF4->b0 = (u8) g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur.bytes.b;
-          AddPrim(&scratch->orderingTable[SKY_OT_NEAR], courseF4);
+          AddPrim(&work->orderingTable[SKY_OT_NEAR], courseF4);
           packetCursor = nextPacket;
         }
       }
@@ -255,7 +255,7 @@ typedef struct SkyBandSetup {
  * and column of it steps across the screen. All of it follows from the
  * camera angles, so none of the drawing below needs them again.
  */
-static void MeasureSkyBand(SkyRenderWork *scratch,
+static void MeasureSkyBand(SkyRenderWork *work,
                            SkyBandSetup *band) {
     s32 cameraY;
     s32 bandRowY;
@@ -275,13 +275,13 @@ static void MeasureSkyBand(SkyRenderWork *scratch,
     s32 yawAngle;
     s32 unroundedX;
     s32 unroundedY;
-    if (scratch->mirrorFlag != g_MirrorMode)
+    if (work->mirrorFlag != g_MirrorMode)
     {
-      pitchAngle = -scratch->pitch;
+      pitchAngle = -work->pitch;
     }
     else
     {
-      pitchAngle = scratch->pitch;
+      pitchAngle = work->pitch;
     }
     band->coordinateAccumulator = pitchAngle & 0xFFF;
     leftViewAngle = band->coordinateAccumulator;
@@ -293,7 +293,7 @@ static void MeasureSkyBand(SkyRenderWork *scratch,
     {
       band->coordinateAccumulator -= 0x1000;
     }
-    cameraY = scratch->cameraY;
+    cameraY = work->cameraY;
     {
       s32 leftPlusTwo;
       s32 rightPlusTwo;
@@ -303,9 +303,9 @@ static void MeasureSkyBand(SkyRenderWork *scratch,
       leftViewAngle = leftPlusTwo + band->cellXFixed;
       rightPlusTwo = band->coordinateAccumulator + 2;
       band->coordinateAccumulator = rightPlusTwo + band->cellXFixed;
-      yawAngle = scratch->mirrorFlag;
+      yawAngle = work->mirrorFlag;
     }
-    angleWork = scratch->yaw;
+    angleWork = work->yaw;
     if (yawAngle != 0)
     {
       angleWork = -angleWork;
@@ -321,7 +321,7 @@ static void MeasureSkyBand(SkyRenderWork *scratch,
     band->textureColumn = angleWork >> 7;
     horizontalFixed = ((u32)((-0x100) - ((angleWork >> 1) & 0x3F))) << 8;
     nearVerticalFixed = ((u32)((-0x80) - leftViewAngle)) << 8;
-    rollAngle = scratch->roll;
+    rollAngle = work->roll;
     farVerticalFixed = ((u32)((-0x80) - band->coordinateAccumulator)) << 8;
     if (g_MirrorMode == 0)
     {
@@ -382,8 +382,8 @@ static void MeasureSkyBand(SkyRenderWork *scratch,
 
 void DrawSkyBackground(void)
 {
-  SkyRenderWork nativeScratch;
-  SkyRenderWork *scratch = &nativeScratch;
+  SkyRenderWork skyWork;
+  SkyRenderWork *work = &skyWork;
   s32 panelXFixed;
   s32 panelYFixed;
   s32 columnStepX;
@@ -401,16 +401,16 @@ void DrawSkyBackground(void)
   s32 screenX1;
   s32 screenX2;
   s32 screenX3;
-  scratch->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
-  scratch->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
-  scratch->cameraX = g_RenderState.viewX;
-  scratch->cameraY = g_RenderState.viewY;
-  scratch->cameraZ = g_RenderState.viewZ;
-  scratch->pitch = g_RenderState.viewAngleX;
-  scratch->yaw = g_RenderState.viewAngleY;
-  scratch->roll = g_RenderState.viewAngleZ;
-  scratch->mirrorFlag = g_RenderState.orderingFlag;
-  u8 *packetCursor = scratch->packetCursor;
+  work->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
+  work->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
+  work->cameraX = g_RenderState.viewX;
+  work->cameraY = g_RenderState.viewY;
+  work->cameraZ = g_RenderState.viewZ;
+  work->pitch = g_RenderState.viewAngleX;
+  work->yaw = g_RenderState.viewAngleY;
+  work->roll = g_RenderState.viewAngleZ;
+  work->mirrorFlag = g_RenderState.orderingFlag;
+  u8 *packetCursor = work->packetCursor;
   s32 heldBandY;
   s32 adjW;
   s32 doubleRowStepY;
@@ -425,7 +425,7 @@ void DrawSkyBackground(void)
   {
     SkyBandSetup band;
 
-    MeasureSkyBand(scratch, &band);
+    MeasureSkyBand(work, &band);
     panelXFixed = band.panelXFixed;
     panelYFixed = band.panelYFixed;
     columnStepX = band.columnStepX;
@@ -522,7 +522,7 @@ void DrawSkyBackground(void)
             quad->y2 = screenY2;
             quad->y3 = screenY3;
             quad->clut = 0x798E;
-            AddPrim(&scratch->orderingTable[SKY_OT_NEAR], quad);
+            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
             column += 1;
             cellXFixed = nextCellXFixed;
             bandRowY = nextTileY;
@@ -692,7 +692,7 @@ void DrawSkyBackground(void)
             quad->y2 = screenY2;
             quad->y3 = screenY3;
             quad->clut = 0x798E;
-            AddPrim(&scratch->orderingTable[SKY_OT_NEAR], quad++);
+            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad++);
           }
           gridRow += 1;
           panelXFixed += columnStepX;
@@ -752,7 +752,7 @@ void DrawSkyBackground(void)
         {
           packetCursor = nextPacket;
           
-          AddPrim(&scratch->orderingTable[SKY_OT_NEAR], firstG4);
+          AddPrim(&work->orderingTable[SKY_OT_NEAR], firstG4);
         }
       }
       {
@@ -816,7 +816,7 @@ void DrawSkyBackground(void)
         color = g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.b;
         g4Cursor->b3 = color;
         g4Cursor->b2 = color;
-        orderingTableBase = scratch->orderingTable;
+        orderingTableBase = work->orderingTable;
         AddPrim(&orderingTableBase[SKY_OT_NEAR], g4Cursor++);
         cursor.polyG4 = g4Cursor;
         nextPacket = cursor.bytes;
@@ -876,7 +876,7 @@ void DrawSkyBackground(void)
             g4Cursor->b0 = (g4Cursor->b1 = packetColor);
             g4Cursor->b2 = (g4Cursor->b3 = 16);
           }
-          AddPrim(&scratch->orderingTable[SKY_OT_NEAR], g4Cursor);
+          AddPrim(&work->orderingTable[SKY_OT_NEAR], g4Cursor);
         }
         packetCursor = nextPacket;
       }
@@ -898,7 +898,7 @@ void DrawSkyBackground(void)
     band.screenX2 = screenX2;
     band.screenX3 = screenX3;
 
-    packetCursor = DrawCourseSkirt(scratch, &band, packetCursor);
+    packetCursor = DrawCourseSkirt(work, &band, packetCursor);
     RENDER_PRIM_CURSOR_AS(u8) = packetCursor;
   }
   }

@@ -368,7 +368,7 @@ static void SmokeInitialize(void) {
                       "mirror_m12,mirror_m20,mirror_m21,mirror_m22," \
                       "main_visible_hash,mirror_visible_hash," \
                       "main_visible_list_hash,mirror_visible_list_hash," \
-                      "environment_mode4,scratch_env_mode4,random_seed," \
+                      "environment_mode4,render_state_env_mode4,random_seed," \
                       "anim_timer,tacho_rpm,engine_rpm,engine_rpm_jitter," \
                       "tacho_needle_flash,player_throttle,rev_limit," \
                       "drive_engine_rpm,race_phase,pad_type,pad_held," \

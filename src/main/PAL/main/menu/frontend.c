@@ -54,7 +54,7 @@ void UpdateTitleAttract(void) {
     void *base;
     s32 color;
     s32 h88;
-    RenderBufferAddress scratch;
+    RenderBufferAddress cursor;
     s32 hF0;
     s32 clut0;
     void *next;
@@ -80,10 +80,10 @@ void UpdateTitleAttract(void) {
     x28 = 0x28;
     yA0 = 0xA0;
     color = 0x7E00;
-    scratch.pointerLink = &RENDER_PRIM_CURSOR_AS(void);
+    cursor.pointerLink = &RENDER_PRIM_CURSOR_AS(void);
     hF0 = 0xF0;
     tmp = 0x18;
-    next = *scratch.pointerLink;
+    next = *cursor.pointerLink;
     h88 = 0x88;
     clut0 = 0x7DC0;
 
@@ -97,7 +97,7 @@ void UpdateTitleAttract(void) {
     }
 
     next = GameQueueShadedSprite(base, next, 0x34, 0x18, 0x6C, h88, 0, 0, color, alpha);
-    *scratch.pointerLink = GameQueueShadedTexturedRect(base, next, 0xA0, 0x18, -0x6C, h88, 0, 0, color, 0x99, alpha);
+    *cursor.pointerLink = GameQueueShadedTexturedRect(base, next, 0xA0, 0x18, -0x6C, h88, 0, 0, color, 0x99, alpha);
 }
 
 

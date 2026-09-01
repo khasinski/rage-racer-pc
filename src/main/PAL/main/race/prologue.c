@@ -146,23 +146,23 @@ void DrawPrologueText(void) {
     }
     {
         s32 fadeLevel;
-        u8 **scratch;
+        u8 **cursorSlot;
         u8 *ptr;
         s32 greenScale;
         s32 tmp;
 
         fadeLevel = g_FadeLevel;
-        scratch = &RENDER_PRIM_CURSOR_AS(u8);
+        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
         tmp = fadeLevel * 7;
         greenScale = tmp * 32;
-        prim = *scratch;
+        prim = *cursorSlot;
         ptr = (u8 *)GamePrimaryOrderingTable(1);
         green = (greenScale / 0x100) + 0x20;
         blueScale = (fadeLevel * 3) << 6;
         blue = (blueScale / 0x100) + 0x40;
 
         next = GameQueueTileTrans(ptr, prim, 0, 0, 0x140, 0xF0, fadeLevel, green, blue);
-        *scratch = QueueDrawModePrim(ptr, next, 0x49);
+        *cursorSlot = QueueDrawModePrim(ptr, next, 0x49);
     }
 }
 

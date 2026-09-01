@@ -12,7 +12,6 @@
 
 /* The GPU packet cursor in the render state. Every emitter here packs its
  * primitive at this address and bumps it past what it wrote. */
-#define SCRATCH (RENDER_PRIM_CURSOR_AS(u8))
 
 typedef union TachometerColorAddress {
     u8 *components;
@@ -69,8 +68,8 @@ void DrawWrongWayWarning(void) {
 
     nextAddress.sprite = next;
     ret = GameQueueTileTrans(GamePrimaryOrderingTable(0), nextAddress.bytes, 0x64, 0x70, 0x78, 0x20, 8, 8, 8);
-    SCRATCH = ret;
-    SCRATCH = QueueDrawModePrim(GamePrimaryOrderingTable(0), ret, 9);
+    RENDER_PRIM_CURSOR_AS(u8) = ret;
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(GamePrimaryOrderingTable(0), ret, 9);
 }
 
 
@@ -186,18 +185,18 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
     {
         RenderBufferAddress cursor;
         cursor.polyF4 = prim;
-        SCRATCH = cursor.bytes;
+        RENDER_PRIM_CURSOR_AS(u8) = cursor.bytes;
     }
 
     {
         s32 x = cx + p->gearDigitDX;
         s32 y = cy + p->gearDigitDY;
-        /* Not SCRATCH: this read has to stay volatile. Spelling it as the
+        /* Not RENDER_PRIM_CURSOR_AS(u8): this read has to stay volatile. Spelling it as the
          * plain macro lets the cursor written above be reused instead of
          * reloaded, which changes the output. */
         u8 *q = DrawHudDigit(RENDER_PRIM_CURSOR_VOLATILE, x, y,
                              g_PlayerCar.drive.gear, g_HudGlyphClut);
-        SCRATCH = q;
+        RENDER_PRIM_CURSOR_AS(u8) = q;
         DrawSpeedDigits(cx, cy, g_PlayerCar.speed * 160 / 1168);
     }
 
@@ -237,7 +236,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt) {
         {
             RenderBufferAddress cursor;
             cursor.tile = q;
-            SCRATCH = cursor.bytes;
+            RENDER_PRIM_CURSOR_AS(u8) = cursor.bytes;
         }
     }
 }
@@ -271,7 +270,7 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     {
         RenderBufferAddress cursor;
         cursor.tile = packet;
-        SCRATCH = QueueDrawModePrim(GamePrimaryOrderingTable(0), cursor.bytes, tpage);
+        RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(GamePrimaryOrderingTable(0), cursor.bytes, tpage);
     }
 }
 

@@ -28,7 +28,7 @@ static void SubmitControllerModel(s32 model) {
 
 /* Builds and submits the controller models shown by the pad and NeGcon setup
  * screens. The read-only render state is retained for the three camera
- * matrix multiplies; write-only scratch locations stay absolute so each store
+ * matrix multiplies; write-only fields stay absolute so each store
  * is independently rematerialized. */
 void DrawControllerSetupScene(s32 variant) {
     s32 scale[3];

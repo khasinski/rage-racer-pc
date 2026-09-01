@@ -293,7 +293,7 @@ static int ProjectCourseFace(
         g_RageCourseVertexDepth[vertex] = vertexDepth[vertex];
     }
     /* The retail course transform first stores each GTE Z in its 16-bit
-     * scratch table at 1/8 of RotTransPers' result.  The face loop then adds
+     * working table at 1/8 of RotTransPers' result.  The face loop then adds
      * the already-quantized first and fourth values and shifts by three
      * (0x8002a37c..0x8002a43c).  Quantize before adding: averaging the wider
      * values first rounds some faces into the next OT bucket. */
@@ -530,7 +530,7 @@ static void RageSubmitModelFaces(
     const SVECTOR *normals) {
     static const uint8_t strides[4] = {16, 24, 24, 32};
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
-    /* Retail seeds t5 with scratch OT + 0x200 bytes before dispatching any
+    /* Retail seeds t5 with the ordering-table base + 0x200 bytes before dispatching any
      * model face.  On PS1 that is 128 four-byte OT entries. */
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) + 128;
     int i;
@@ -583,7 +583,7 @@ static void RageSubmitModelFaces(
                     "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                     g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
                     (int8_t)faces[strides[type] - 3],
-                    (void *)cursor, (unsigned)g_ScratchRenderMode,
+                    (void *)cursor, (unsigned)g_RenderState.envMode4,
                     (const void *)faces, recordBytes,
                     RageReadU16(faces), RageReadU16(faces + 2),
                     RageReadU16(faces + 4), RageReadU16(faces + 6),
@@ -629,7 +629,7 @@ static void RageSubmitModelFaces(
             SetShadeTex(poly, 1);
             poly->r0 = poly->g0 = poly->b0 = 0x80;
             CopyFt4UvWithMode(poly, faces + 8,
-                                  (uint32_t)g_ScratchRenderMode);
+                                  (uint32_t)g_RenderState.envMode4);
             StoreSxy(&poly->x0, &poly->y0, sxy[0]);
             StoreSxy(&poly->x1, &poly->y1, sxy[1]);
             StoreSxy(&poly->x2, &poly->y2, sxy[2]);
@@ -717,7 +717,7 @@ static void RageSubmitModelFaces(
             CVECTOR colors[4];
             SetPolyGT4(poly);
             CopyGt4UvWithMode(poly, faces + 16,
-                                  (uint32_t)g_ScratchRenderMode);
+                                  (uint32_t)g_RenderState.envMode4);
             NormalColor3(
                 (SVECTOR *)&normals[RageReadU16(faces + 8)],
                 (SVECTOR *)&normals[RageReadU16(faces + 10)],
@@ -917,7 +917,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 capture.colorCount = 1;
                 if (type == 1) {
                     uint32_t uv0 = RageReadU32(stream + 12) +
-                                   (uint32_t)g_ScratchRenderMode;
+                                   (uint32_t)g_RenderState.envMode4;
                     uint8_t uv[8] = {
                         (uint8_t)uv0, (uint8_t)(uv0 >> 8),
                         stream[16], stream[17],
@@ -947,7 +947,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     stream[20], stream[21], stream[22], stream[23]
                 };
                 uint32_t uv0 = RageReadU32(stream + 12) +
-                               (uint32_t)g_ScratchRenderMode;
+                               (uint32_t)g_RenderState.envMode4;
                 memcpy(&uv[0], &uv0, 2);
                 uint8_t *next = EmitCourseFt4(
                     cursor, ot, depth, sxy, uv, (uint16_t)(uv0 >> 16),
@@ -969,7 +969,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 memcpy(uvRecord, stream + 12, sizeof(uvRecord));
                 {
                     uint32_t uv0 = RageReadU32(uvRecord) +
-                                   (uint32_t)g_ScratchRenderMode;
+                                   (uint32_t)g_RenderState.envMode4;
                     memcpy(uvRecord, &uv0, sizeof(uv0));
                 }
                 if (type == 3) {
@@ -1085,7 +1085,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     void **cellTable = (void **)g_RenderState.cellTable;
     const SVECTOR *vertices = (const SVECTOR *)g_RenderState.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
-    /* func_80028E9C seeds its terrain OT register from scratch+4 + 0x200. */
+    /* func_80028E9C seeds its terrain OT register from the ordering-table base + 0x200. */
     OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) + 128;
     int cell;
     int decodedFaces = 0;
@@ -1095,10 +1095,10 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     if (visible == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
-     * negating RT11, RT12 and RT13 when scratch+0x68 is set.  It intentionally
+     * negating RT11, RT12 and RT13 when the render state's mirror flag is set.  It intentionally
      * leaves that matrix installed: DrawCourseObjects and DrawCars share it
      * for the remainder of the rear-view pass.  The negation must therefore
-     * happen IN PLACE on the shared scratch matrix, not on a local copy:
+     * happen IN PLACE on the shared view matrix, not on a local copy:
      * with only the GTE register updated, DrawCar composed rival cars with
      * the un-reflected matrix and the mirror showed them moving opposite to
      * the track.  EndMirrorPass restores the saved camera matrix. */

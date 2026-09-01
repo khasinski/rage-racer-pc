@@ -37,65 +37,65 @@ void ResetCarTrackState(GameCarRuntime *car) {
     u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
-    CarTrackWork *spad;
+    CarTrackWork *work;
 
-    spad = (&g_CarTrackWork);
-    spad->knockbackMode = 0;
+    work = (&g_CarTrackWork);
+    work->knockbackMode = 0;
     trackPointIndex = car->trackPointIndex;
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
     point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;
-    spad->segmentLength = segmentLength;
+    work->segmentLength = segmentLength;
     nextPoint = TrackPoint(nextPointIndex);
     if ((s16)segmentLength <= 0) {
-        spad->segmentLength = 1U;
+        work->segmentLength = 1U;
     }
-    spad->heading = (u16)point->angle;
+    work->heading = (u16)point->angle;
     arcIndex = (s16)point->arcRef >> 4;
-    spad->arcIndex = (s16)arcIndex;
+    work->arcIndex = (s16)arcIndex;
     curveMode = point->arcRef & 3;
-    spad->curveMode = curveMode;
+    work->curveMode = curveMode;
     if (curveMode != 0) {
-        CarTrackMeasureArc(spad, arcIndex, car->x, car->z, point,
+        CarTrackMeasureArc(work, arcIndex, car->x, car->z, point,
                            nextPoint);
-        spad->arcSpan = GetAngleDistance(spad->pointAngle, spad->nextPointAngle);
-        if (spad->arcSpan <= 0) {
-            spad->arcSpan = 1;
+        work->arcSpan = GetAngleDistance(work->pointAngle, work->nextPointAngle);
+        if (work->arcSpan <= 0) {
+            work->arcSpan = 1;
         }
         sweptAngle =
-            GetAngleDistance(spad->pointAngle, spad->sweptAngle);
-        arcAngle = spad->arcSpan;
-        spad->sweptAngle = sweptAngle;
-        spad->pointRadius.value =
-            (((s16)sweptAngle * spad->pointRadius.value) +
-             ((arcAngle - (s16)sweptAngle) * spad->nextPointRadius.value)) /
+            GetAngleDistance(work->pointAngle, work->sweptAngle);
+        arcAngle = work->arcSpan;
+        work->sweptAngle = sweptAngle;
+        work->pointRadius.value =
+            (((s16)sweptAngle * work->pointRadius.value) +
+             ((arcAngle - (s16)sweptAngle) * work->nextPointRadius.value)) /
             arcAngle;
-        arcLateral = (s16)(spad->carRadius.half.low - spad->pointRadius.half.low);
-        if (spad->curveMode == 2) {
+        arcLateral = (s16)(work->carRadius.half.low - work->pointRadius.half.low);
+        if (work->curveMode == 2) {
             arcLateral = 0 - arcLateral;
         }
-        spad->arcLateral = arcLateral;
+        work->arcLateral = arcLateral;
         {
             headingAngle = nextPoint->angle;
             pointHeading = point->angle;
             if ((headingAngle - pointHeading) >= 0x801) {
-                swept = spad->sweptAngle;
-                arcSpan = spad->arcSpan;
-                spad->heading =
+                swept = work->sweptAngle;
+                arcSpan = work->arcSpan;
+                work->heading =
                     (s16)((((headingAngle - 0x1000) * swept) +
                            (pointHeading * (arcSpan - swept))) /
                           arcSpan);
             } else if ((pointHeading - headingAngle) >= 0x801) {
-                swept = spad->sweptAngle;
-                arcSpan = spad->arcSpan;
-                spad->heading =
+                swept = work->sweptAngle;
+                arcSpan = work->arcSpan;
+                work->heading =
                     (s16)(((headingAngle * swept) +
                            ((pointHeading - 0x1000) * (arcSpan - swept))) /
                           arcSpan);
             } else {
-                swept = spad->sweptAngle;
-                arcSpan = spad->arcSpan;
-                spad->heading =
+                swept = work->sweptAngle;
+                arcSpan = work->arcSpan;
+                work->heading =
                     (s16)(((headingAngle * swept) +
                            (pointHeading * (arcSpan - swept))) /
                           arcSpan);
@@ -103,30 +103,30 @@ void ResetCarTrackState(GameCarRuntime *car) {
         }
     }
 
-    spad->offsetX = (u16)(((u16)car->x - (u16)point->x) * 4);
-    headingAngle = spad->heading;
-    spad->offsetZ = (s16)(((u16)car->z - (u16)point->z) * 4);
-    spad->offsetY = 0;
+    work->offsetX = (u16)(((u16)car->x - (u16)point->x) * 4);
+    headingAngle = work->heading;
+    work->offsetZ = (s16)(((u16)car->z - (u16)point->z) * 4);
+    work->offsetY = 0;
     cosHeading = rcos(headingAngle);
-    rotated = (cosHeading * (s16)spad->offsetX) +
-             (rsin(spad->heading) * spad->offsetZ);
+    rotated = (cosHeading * (s16)work->offsetX) +
+             (rsin(work->heading) * work->offsetZ);
     if (rotated < 0) {
         rotated += 0xFFF;
     }
     alongSegment = rotated >> 0xE;
 
-    if ((s16)spad->segmentLength < alongSegment) {
-        alongSegment = (s16)spad->segmentLength;
+    if ((s16)work->segmentLength < alongSegment) {
+        alongSegment = (s16)work->segmentLength;
     } else if (alongSegment < 0) {
         alongSegment = 0;
     }
-    segLenA = (s16)spad->segmentLength;
+    segLenA = (s16)work->segmentLength;
     edgeHeight = ((nextPoint->rightHalfWidth * alongSegment) +
                (point->rightHalfWidth * (segLenA - alongSegment))) /
               segLenA;
-    spad->rightHalfWidth = (s16)edgeHeight;
+    work->rightHalfWidth = (s16)edgeHeight;
     useProgress = g_RaceSeries;
-    segLenB = (s16)spad->segmentLength;
+    segLenB = (s16)work->segmentLength;
     {
         s32 widthSum;
         s32 remainingLength;
@@ -134,7 +134,7 @@ void ResetCarTrackState(GameCarRuntime *car) {
         widthSum = nextPoint->leftHalfWidth * alongSegment;
         remainingLength = segLenB - alongSegment;
         widthSum += point->leftHalfWidth * remainingLength;
-        spad->leftHalfWidth = (s16)(widthSum / segLenB);
+        work->leftHalfWidth = (s16)(widthSum / segLenB);
     }
     {
         u32 outputProgress;
@@ -142,12 +142,12 @@ void ResetCarTrackState(GameCarRuntime *car) {
         if (useProgress != 0) {
             outputProgress = alongSegment;
         } else {
-            outputProgress = (s16)spad->segmentLength - alongSegment;
+            outputProgress = (s16)work->segmentLength - alongSegment;
         }
         car->progressB = outputProgress;
     }
-    segLenC = (s16)spad->segmentLength;
-    spad->crossSlope =
+    segLenC = (s16)work->segmentLength;
+    work->crossSlope =
         (s16)(((nextPoint->crossSlope * alongSegment) +
                (point->crossSlope * (segLenC - alongSegment))) /
               segLenC);
@@ -156,34 +156,34 @@ void ResetCarTrackState(GameCarRuntime *car) {
 
         angle = (u16)car->bodyYaw;
         angle -= 0xC00;
-        spad->relativeHeading = angle + (u16)spad->heading;
+        work->relativeHeading = angle + (u16)work->heading;
     }
-    segLenD = (s16)spad->segmentLength;
-    spad->surfacePitch =
+    segLenD = (s16)work->segmentLength;
+    work->surfacePitch =
         (s16)(((nextPoint->surfacePitch * alongSegment) +
                (point->surfacePitch * (segLenD - alongSegment))) /
               segLenD);
-    trackWidth = (u16)spad->leftHalfWidth + (u16)spad->rightHalfWidth;
-    spad->trackWidth = trackWidth;
+    trackWidth = (u16)work->leftHalfWidth + (u16)work->rightHalfWidth;
+    work->trackWidth = trackWidth;
     nextCamber = Atan2(trackWidth, (nextPoint->crossSlope * trackWidth) >> 7);
-    trackWidthCopy = spad->trackWidth;
+    trackWidthCopy = work->trackWidth;
     secondResult = Atan2(trackWidthCopy, (point->crossSlope * trackWidthCopy) >> 7);
-    segLenE = (s16)spad->segmentLength;
-    spad->camberAngle =
+    segLenE = (s16)work->segmentLength;
+    work->camberAngle =
         (s16)(((nextCamber * alongSegment) +
                (secondResult * (segLenE - alongSegment))) /
               segLenE);
-    spad->headingCos = rcos(spad->relativeHeading);
+    work->headingCos = rcos(work->relativeHeading);
     {
         s32 firstProduct;
         s32 sinValue;
         s32 secondProduct;
 
-        sinValue = rsin(spad->relativeHeading);
-        spad->headingSin = sinValue;
-        firstProduct = spad->surfacePitch * spad->headingCos;
+        sinValue = rsin(work->relativeHeading);
+        work->headingSin = sinValue;
+        firstProduct = work->surfacePitch * work->headingCos;
         firstProduct /= 4096;
-        secondProduct = spad->camberAngle * sinValue;
+        secondProduct = work->camberAngle * sinValue;
         if (secondProduct < 0) {
             secondProduct += 0xFFF;
         }
@@ -196,11 +196,11 @@ void ResetCarTrackState(GameCarRuntime *car) {
             s32 firstProduct;
 
             firstProduct =
-                (0 - spad->headingCos) * spad->camberAngle;
+                (0 - work->headingCos) * work->camberAngle;
             if (firstProduct < 0) {
                 firstProduct += 0xFFF;
             }
-            lateralProduct = spad->surfacePitch * spad->headingSin;
+            lateralProduct = work->surfacePitch * work->headingSin;
             firstComponent = firstProduct >> 0xC;
         }
         if (lateralProduct < 0) {
@@ -217,7 +217,7 @@ void ResetCarTrackState(GameCarRuntime *car) {
             combinedComponent = firstComponent + (lateralProduct >> 0xC);
             car->modelRoll = combinedComponent;
             car->modelYaw = car->bodyYaw;
-            car->trackHeading.value = spad->heading;
+            car->trackHeading.value = work->heading;
             car->previousTrackProgress = car->trackProgress;
             car->trackProgress = progress;
             if (progress < 0) {

@@ -44,7 +44,7 @@ typedef struct RageCaptureModelDraw {
     uint8_t pad[3];
     int32_t modelIndex;
     int32_t otBaseBias; /* RENDER_OT_BASE offset from the table start */
-    uint32_t renderMode; /* g_ScratchRenderMode (CLUT row select) */
+    uint32_t renderMode; /* g_RenderState.envMode4 (CLUT row select) */
     uint64_t bankId;     /* identity of the active model/course bank */
     RageCaptureGteState gte;
 } RageCaptureModelDraw;

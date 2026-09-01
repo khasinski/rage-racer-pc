@@ -25,7 +25,7 @@ void ResetMirrorState(void) {
  * is active, else 0.
  */
 s32 BeginMirrorPass(void) {
-    GameRenderState *scratch;
+    GameRenderState *state;
     s32 mirrorEnabled;
     s32 v0reg;
     s32 v1reg;
@@ -33,7 +33,7 @@ s32 BeginMirrorPass(void) {
     MirrorPanelPositionAddress panelPosition;
 
     mirrorEnabled = 0;
-    scratch = (&g_RenderState);
+    state = (&g_RenderState);
 
     if ((g_MirrorUnlocked != 0) &&
         (g_MirrorViewEnabled != 0) &&
@@ -44,34 +44,34 @@ s32 BeginMirrorPass(void) {
     }
 
     if (mirrorEnabled != 0) {
-        g_CameraMatrixSaved = scratch->matrix;
-        scratch->matrix = g_MirrorViewMatrix;
+        g_CameraMatrixSaved = state->matrix;
+        state->matrix = g_MirrorViewMatrix;
 
         SetGeomOffset(0xA0, 0x24);
         SetGeomScreen(0xC0);
 
         v0reg = 9;
-        scratch->mode = v0reg;
-        /* Retail scratch+0x6c is one aliased word: the mirror mode write is
+        state->mode = v0reg;
+        /* Retail state+0x6c is one aliased word: the mirror mode write is
          * also the terrain OTZ/LOD shift read by SubmitTerrainCells.  The
-         * native scratch representation keeps the meanings separate, so
+         * native state representation keeps the meanings separate, so
          * reproduce the alias explicitly. */
-        scratch->faceOtShift = v0reg;
+        state->faceOtShift = v0reg;
         v0reg = 0x56;
-        scratch->x0 = v0reg;
+        state->x0 = v0reg;
         panelPosition.position = &g_MirrorPanelY;
         y0 = *panelPosition.screenY;
-        scratch->x1 = 0xEA;
+        state->x1 = 0xEA;
         
         v1reg = g_MirrorPanelY;
-        scratch->primData =
+        state->primData =
             &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][0];
-        v0reg = scratch->orderingFlag;
-        scratch->y0 = y0;
+        v0reg = state->orderingFlag;
+        state->y0 = y0;
         v0reg ^= 1;
-        scratch->orderingFlag = v0reg;
+        state->orderingFlag = v0reg;
         v0reg = y0 + 0x24;
-        scratch->y1 = v0reg;
+        state->y1 = v0reg;
 
         if (v1reg > 0) {
             g_FrameContexts[0].environment.mirrorDraw.clip.y = y0;
@@ -96,7 +96,7 @@ s32 BeginMirrorPass(void) {
 
         g_VisibleCellMask = g_MirrorVisibleCellMask;
         g_VisibleCellList = g_MirrorVisibleCellList;
-        scratch->depth += 0x800;
+        state->depth += 0x800;
     }
 
     return mirrorEnabled;
@@ -109,33 +109,33 @@ s32 BeginMirrorPass(void) {
  * saved main-view matrix from g_CameraMatrixSaved.
  */
 void EndMirrorPass(void) {
-    GameRenderState *scratch;
+    GameRenderState *state;
     s32 v0reg;
     s32 v1reg;
 
-    scratch = (&g_RenderState);
+    state = (&g_RenderState);
 
     SetGeomOffset(0xA0, 0x78);
     SetGeomScreen(0x140);
 
     v0reg = 0xA;
-    scratch->mode = v0reg;
-    scratch->faceOtShift = v0reg;
+    state->mode = v0reg;
+    state->faceOtShift = v0reg;
     v0reg = 0x140;
-    scratch->x1 = v0reg;
+    state->x1 = v0reg;
     v0reg = 0xF0;
-    scratch->y1 = v0reg;
+    state->y1 = v0reg;
     g_VisibleCellMask = g_MainVisibleCellMask;
     g_VisibleCellList = g_MainVisibleCellList;
-    v1reg = scratch->depth;
-    scratch->x0 = 0;
-    scratch->y0 = 0;
-    scratch->primData =
+    v1reg = state->depth;
+    state->x0 = 0;
+    state->y0 = 0;
+    state->primData =
         &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][0];
-    v0reg = scratch->orderingFlag;
-    scratch->depth = v1reg - 0x800;
-    scratch->orderingFlag = v0reg ^ 1;
-    scratch->matrix = g_CameraMatrixSaved;
+    v0reg = state->orderingFlag;
+    state->depth = v1reg - 0x800;
+    state->orderingFlag = v0reg ^ 1;
+    state->matrix = g_CameraMatrixSaved;
 }
 
 DrawPacket *DrawMirrorFrame(u8 *packet) {
@@ -180,7 +180,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 
 
 void DrawRearViewMirror(s32 mode) {
-    void **scratch;
+    void **state;
     DrawPacket *packet;
     DrawPacket *prim;
 
@@ -198,10 +198,10 @@ void DrawRearViewMirror(s32 mode) {
         }
 
         if (BeginMirrorPass() != 0) {
-            scratch = &RENDER_PRIM_CURSOR_AS(void);
+            state = &RENDER_PRIM_CURSOR_AS(void);
 
             DrawSkyBackground();
-            packet = DrawMirrorFrame(*scratch);
+            packet = DrawMirrorFrame(*state);
             SetDrawArea(packet,
                         &GetGameFrameContext(g_DrawBuffer)
                              ->environment.mirrorDraw.clip);
@@ -209,20 +209,20 @@ void DrawRearViewMirror(s32 mode) {
             packet++;
             AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1]
                          [GAME_FRAME_OT_LENGTH - 1], prim);
-            *scratch = packet;
+            *state = packet;
             BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
             SetRotMatrix((&g_RenderState.matrix));
             g_RenderState.envMode4 = g_IsEnvironmentMode4;
             SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
 
-            packet = *scratch;
+            packet = *state;
             SetDrawArea(packet,
                         &GetGameFrameContext(g_DrawBuffer)->environment.draw.clip);
             prim = packet;
             packet++;
             AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][1],
                     prim);
-            *scratch = packet;
+            *state = packet;
             DrawCourseObjects();
             DrawCars();
             EndMirrorPass();

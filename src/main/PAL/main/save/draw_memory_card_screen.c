@@ -6,12 +6,12 @@
 void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
 {
     OT_TYPE *base = GamePrimaryOrderingTable(51);
-    u8 **scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    u8 **cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *next;
     s32 i;
     s32 y;
 
-    next = GameQueueSpriteTrans(base, *scratch, 0x24, 0x38, 0x20, 0x18, 0xA0, 0x90, 0x7F40);
+    next = GameQueueSpriteTrans(base, *cursorSlot, 0x24, 0x38, 0x20, 0x18, 0xA0, 0x90, 0x7F40);
     if (variant != 0) {
         next = GameQueueSpriteTrans(base, next, 0x24, 0x58, 0x24, 0x18, 0xCC, 0x90, 0x7F40);
     }
@@ -20,13 +20,13 @@ void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow)
     next = GameQueueSpriteTrans(base, next, 0x48, 0xB8, 0x10, 0x10, 0, 0xC8, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0x68, 0xB8, 0x34, 0x10, 0x10, 0xC8, 0x7F40);
     next = GameQueueSpriteTrans(base, next, 0xB0, 0xB8, 0x14, 0x10, 0x44, 0xC8, 0x7F40);
-    *scratch = next;
+    *cursorSlot = next;
     DrawMenuCursorArrow(0x14, (cursor * 32) + 0x38);
     DrawOptionHintBar(variant + 5);
     DrawPadTypeHint();
 
     base = GamePrimaryOrderingTable(54);
-    next = AddTilePrim(base, *scratch, 0x5D, 0x3C, 0xE4, 0x40, 0, 0, 0);
+    next = AddTilePrim(base, *cursorSlot, 0x5D, 0x3C, 0xE4, 0x40, 0, 0, 0);
     next = AddTilePrim(base, next, 0x5C, 0x3A, 0xE5, 0x44, 0xFF, 0xFF, 0xFF);
     for (i = 0; i < 3; i++) {
         next = DrawShadowedTile(base, next, 0x3E, 0xD0 + i * 0x30);

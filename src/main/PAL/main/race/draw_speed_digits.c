@@ -5,7 +5,7 @@
 
 
 void DrawSpeedDigits(s32 x, s32 y, s32 value) {
-    u8 **scratch;
+    u8 **cursorSlot;
     u8 *prim;
     s32 screenX;
     s32 screenY;
@@ -21,8 +21,8 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     rawX = g_CarSpec->tachometer.digitsX + x;
     rawY = g_CarSpec->tachometer.digitsY + y;
     color = g_HudGlyphClut;
-    scratch = &RENDER_PRIM_CURSOR_AS(u8);
-    prim = *scratch;
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
+    prim = *cursorSlot;
 
     tensAndOnes = value / 10;
     screenX = (s16)rawX;
@@ -33,5 +33,5 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     prim = DrawHudDigit(prim, screenX, screenY, hundreds, color);
     prim = DrawHudDigit(prim, screenX + 8, screenY, tens, color);
     prim = DrawHudDigit(prim, screenX + 0x10, screenY, ones, color);
-    *scratch = QueueDrawModePrim(GamePrimaryOrderingTable(0), prim, 9);
+    *cursorSlot = QueueDrawModePrim(GamePrimaryOrderingTable(0), prim, 9);
 }

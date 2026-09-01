@@ -5,7 +5,7 @@
 
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     void *otReg;
-    u8 **scratch;
+    u8 **cursorSlot;
     u8 *packet;
     s16 xReg;
     s16 yReg;
@@ -20,9 +20,9 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
     xReg = x;
     yReg = y;
     wReg = w;
-    scratch = &RENDER_PRIM_CURSOR_AS(u8);
+    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
     hReg = h;
-    packet = *scratch;
+    packet = *cursorSlot;
 
     if ((s16)x + (s16)w > 0) {
         if ((s16)xReg < 0) {
@@ -57,7 +57,7 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
                     oldPacket = packet;
                     packet += sizeof(DrawPacket);
                     AddPrim(otReg, oldPacket);
-                    *scratch = packet;
+                    *cursorSlot = packet;
                 }
             }
         }

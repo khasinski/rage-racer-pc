@@ -5,7 +5,7 @@
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
 void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     OT_TYPE *ot;
-    OT_TYPE *scratch;
+    OT_TYPE *otBase;
     s32 gray;
     s32 alpha;
     s32 angle;
@@ -14,7 +14,7 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     s32 yLarge;
     s32 ySmall;
 
-    scratch = RENDER_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(OT_TYPE);
 
     switch ((u8)x) {
     case 4:
@@ -50,7 +50,7 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag) {
     }
 
     gray = 0xB4;
-    ot = scratch + 2;
+    ot = otBase + 2;
 
     DrawSprite(ot, 0xBC, 0x50, 0x14, 0x10, 0, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
     DrawSprite(ot, 0xE0, 0x72, 0x14, 0x10, 0x14, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);

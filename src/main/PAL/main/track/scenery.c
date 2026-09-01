@@ -9,10 +9,6 @@
 #include "rage/render_world_game.h"
 
 
-static void ClearScratchRenderMode3DF68(void) {
-    g_RenderState.envMode4 = 0;
-}
-
 void DrawStaticScenery(s32 shifted) {
     Matrix mtx;
     Matrix renderWorldMtx;
@@ -37,7 +33,7 @@ void DrawStaticScenery(s32 shifted) {
         if (g_IsEnvironmentMode4 != 0) {
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             frameValue = g_CourseModelCount;
-            ClearScratchRenderMode3DF68();
+            g_RenderState.envMode4 = 0;
             drawArg = 1;
             if (frameValue >= 0x3B) {
                 drawArg = 0x3A;
@@ -49,7 +45,7 @@ void DrawStaticScenery(s32 shifted) {
         } else {
             SetGteObjectMatrix((&g_ObjectMatrixWork), AsPosition(&state), &mtx);
             frameValue = g_CourseModelCount;
-            ClearScratchRenderMode3DF68();
+            g_RenderState.envMode4 = 0;
             drawArg = 1;
             if (frameValue >= 0x3A) {
                 drawArg = 0x39;

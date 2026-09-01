@@ -2,16 +2,16 @@
 #include "game/menu.h"
 
 void UpdateMenuMode(void) {
-    OT_TYPE *scratch;
+    OT_TYPE *ot;
     u32 screenRange;
 
-    scratch = RENDER_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(OT_TYPE);
     g_AnimTimer++;
     g_SceneTimer++;
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
-    DrawSolidRect(scratch, 0, 0, 0x140, 2, 0, 0, 0, 0xFF);
+    DrawSolidRect(ot, 0, 0, 0x140, 2, 0, 0, 0, 0xFF);
 
     screenRange = g_MenuScreen - 1;
     if (screenRange < 2) {
@@ -40,13 +40,13 @@ void UpdateMenuMode(void) {
 
     if (g_MenuHintButtonsVisible != 0) {
         if (g_PadType == 0x23) {
-            scratch++;
-            DrawSprite(scratch, 0xC0, 0x1A1, 0x20, 0xC, 0x94, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);
-            DrawSprite(scratch, 0xF0, 0x1A1, 0x2C, 0xC, 0xB4, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);
+            ot++;
+            DrawSprite(ot, 0xC0, 0x1A1, 0x20, 0xC, 0x94, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);
+            DrawSprite(ot, 0xF0, 0x1A1, 0x2C, 0xC, 0xB4, 0xF4, 0, 0, 0, 0x244, 1, 1, 0x3B);
         } else {
-            scratch++;
-            DrawSprite(scratch, 0xC0, 0x1A1, 0x20, 0xC, 0x94, 0xE8, 0, 0, 0, 0x244, 1, 1, 0x3B);
-            DrawSprite(scratch, 0xF0, 0x1A1, 0x2C, 0xC, 0xB4, 0xE8, 0, 0, 0, 0x244, 1, 1, 0x3B);
+            ot++;
+            DrawSprite(ot, 0xC0, 0x1A1, 0x20, 0xC, 0x94, 0xE8, 0, 0, 0, 0x244, 1, 1, 0x3B);
+            DrawSprite(ot, 0xF0, 0x1A1, 0x2C, 0xC, 0xB4, 0xE8, 0, 0, 0, 0x244, 1, 1, 0x3B);
         }
     }
     DrawBitPatternOverlay(g_MenuOverlayPattern);

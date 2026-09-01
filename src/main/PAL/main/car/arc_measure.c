@@ -19,7 +19,7 @@
  * bracketing. They then diverge on what to do with the span between the two
  * points, which is why that part stays with them.
  */
-void CarTrackMeasureArc(struct CarTrackWork *spad, s32 arcIndex, s32 carX,
+void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint) {
     const GameTrackArcCenter *arcCenter = &g_TrackArcCenters[arcIndex];
@@ -27,32 +27,32 @@ void CarTrackMeasureArc(struct CarTrackWork *spad, s32 arcIndex, s32 carX,
     s32 centerZ = arcCenter->z;
     s32 radius;
 
-    spad->arcCenterX = centerX;
-    spad->arcCenterZ = centerZ;
-    spad->carToCenterX = carX - centerX;
-    spad->carToCenterZ = carZ - centerZ;
-    spad->pointToCenterX = point->x - centerX;
-    spad->pointToCenterZ = point->z - centerZ;
-    spad->nextPointToCenterX = nextPoint->x - centerX;
-    spad->nextPointToCenterZ = nextPoint->z - centerZ;
+    work->arcCenterX = centerX;
+    work->arcCenterZ = centerZ;
+    work->carToCenterX = carX - centerX;
+    work->carToCenterZ = carZ - centerZ;
+    work->pointToCenterX = point->x - centerX;
+    work->pointToCenterZ = point->z - centerZ;
+    work->nextPointToCenterX = nextPoint->x - centerX;
+    work->nextPointToCenterZ = nextPoint->z - centerZ;
 
-    spad->sweptAngle = Atan2(spad->carToCenterX, spad->carToCenterZ) & 0xFFF;
-    spad->pointAngle = Atan2(spad->pointToCenterX, spad->pointToCenterZ) & 0xFFF;
-    spad->nextPointAngle =
-        Atan2(spad->nextPointToCenterX, spad->nextPointToCenterZ) & 0xFFF;
+    work->sweptAngle = Atan2(work->carToCenterX, work->carToCenterZ) & 0xFFF;
+    work->pointAngle = Atan2(work->pointToCenterX, work->pointToCenterZ) & 0xFFF;
+    work->nextPointAngle =
+        Atan2(work->nextPointToCenterX, work->nextPointToCenterZ) & 0xFFF;
 
-    radius = rcos(spad->sweptAngle) * spad->carToCenterX +
-             rsin(spad->sweptAngle) * spad->carToCenterZ;
+    radius = rcos(work->sweptAngle) * work->carToCenterX +
+             rsin(work->sweptAngle) * work->carToCenterZ;
     if (radius < 0) radius += 0xFFF;
-    spad->carRadius.value = radius >> 0xC;
+    work->carRadius.value = radius >> 0xC;
 
-    radius = rcos(spad->pointAngle) * spad->pointToCenterX +
-             rsin(spad->pointAngle) * spad->pointToCenterZ;
+    radius = rcos(work->pointAngle) * work->pointToCenterX +
+             rsin(work->pointAngle) * work->pointToCenterZ;
     if (radius < 0) radius += 0xFFF;
-    spad->pointRadius.value = radius >> 0xC;
+    work->pointRadius.value = radius >> 0xC;
 
-    radius = rcos(spad->nextPointAngle) * spad->nextPointToCenterX +
-             rsin(spad->nextPointAngle) * spad->nextPointToCenterZ;
+    radius = rcos(work->nextPointAngle) * work->nextPointToCenterX +
+             rsin(work->nextPointAngle) * work->nextPointToCenterZ;
     if (radius < 0) radius += 0xFFF;
-    spad->nextPointRadius.value = radius >> 0xC;
+    work->nextPointRadius.value = radius >> 0xC;
 }
