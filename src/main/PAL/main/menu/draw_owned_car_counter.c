@@ -31,9 +31,13 @@ void DrawOwnedCarCounter(s32 direction, s32 ownedCount) {
         }
         y = 0x21B - frame * 35;
 
-        GameDrawNumber(0x2C, y, 7, ownedCount, 0x7F, 0x7F, 0x7F, 0x259,
+        const s32 numberFlags = DRAW_NUMBER_LARGE_DIGITS |
+                                DRAW_NUMBER_TEN_DIGIT_FIELD |
+                                DRAW_NUMBER_ALT_DIGIT_ATLAS;
+        GameDrawNumber(0x2C, y, numberFlags, ownedCount, 0x7F, 0x7F, 0x7F,
+                       0x259, 0x20);
+        GameDrawNumber(0x44, y, numberFlags, 0xD, 0x7F, 0x7F, 0x7F, 0x259,
                        0x20);
-        GameDrawNumber(0x44, y, 7, 0xD, 0x7F, 0x7F, 0x7F, 0x259, 0x20);
         DrawSprite(ot, 0x17, (s16)y, 0x34, 0x10, 0x8C, 0x8C, 0, 0, 0,
                    0x244, 1, 1, 0x3B);
         DrawSprite(ot, 0x7C, (s16)y, 8, 0x10, 0x8C, 0xDC, 0, 0, 0, 0x259,

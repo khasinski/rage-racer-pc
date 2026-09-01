@@ -825,6 +825,25 @@ endif()
 add_test(NAME bit_pattern_overlay COMMAND bit_pattern_overlay_tests)
 set_tests_properties(bit_pattern_overlay PROPERTIES LABELS unit)
 
+add_executable(number_drawing_tests
+    number_drawing_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text_drawing.c)
+target_include_directories(number_drawing_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(number_drawing_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(number_drawing_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(number_drawing_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME number_drawing COMMAND number_drawing_tests)
+set_tests_properties(number_drawing PROPERTIES LABELS unit)
+
 add_executable(proportional_text_tests
     proportional_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text.c)

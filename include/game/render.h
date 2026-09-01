@@ -440,9 +440,15 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    u16 clut,
                    s32 flags);
-/* Right-aligned decimal, up to 10 digits, leading zeros blanked. Returns the
- * number of digit sprites emitted. flags: 1 = large font, 4 = fixed digits at
- * v=0xDC, 8 = draw into the overlay OT layer. */
+enum DrawNumberFlags {
+    DRAW_NUMBER_LARGE_DIGITS = 1 << 0,
+    DRAW_NUMBER_TEN_DIGIT_FIELD = 1 << 1,
+    DRAW_NUMBER_ALT_DIGIT_ATLAS = 1 << 2,
+    DRAW_NUMBER_OVERLAY_LAYER = 1 << 3,
+};
+
+/* Draws an unsigned decimal with leading zeros omitted. TEN_DIGIT_FIELD keeps
+ * their horizontal space, while the return value remains the sprite count. */
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
                    u16 clut, u8 primitiveCount);
 /* Blits an 8x6 bit pattern from g_MenuOverlayPatternTable as 4x8 blocks; negative argument

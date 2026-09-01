@@ -324,7 +324,8 @@ s32 DrawCourseSelectScreen(s32 step) {
         for (row = 0; row < 3; row++) {
             coordinateY = row * 0x10 - prizeOffset;
             digitCount = GameDrawNumber(
-                0x65, coordinateY, 9,
+                0x65, coordinateY,
+                DRAW_NUMBER_LARGE_DIGITS | DRAW_NUMBER_OVERLAY_LAYER,
                 g_PrizeMoney.values[course][g_GrandPrixClass][row],
                 fade, fade, fade, 0x244, 0x20);
             DrawSprite(

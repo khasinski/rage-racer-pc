@@ -35,9 +35,13 @@ static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
         moneyY = rise + SHOP_PANEL_MONEY_TEXT_Y;
         priceY = rise + SHOP_PANEL_PRICE_TEXT_Y;
 
-        GameDrawNumber(0x39, moneyY, 7, money, 0x7F, 0x7F, 0x7F, 0x259,
-                       0x20);
-        GameDrawNumber(0x39, priceY, 7, price, 0x7F, 0x7F, 0x7F, 0x259, 0x20);
+        const s32 numberFlags = DRAW_NUMBER_LARGE_DIGITS |
+                                DRAW_NUMBER_TEN_DIGIT_FIELD |
+                                DRAW_NUMBER_ALT_DIGIT_ATLAS;
+        GameDrawNumber(0x39, moneyY, numberFlags, money, 0x7F, 0x7F, 0x7F,
+                       0x259, 0x20);
+        GameDrawNumber(0x39, priceY, numberFlags, price, 0x7F, 0x7F, 0x7F,
+                       0x259, 0x20);
         DrawSprite(ot, 0x17, moneyY, 0x1D, 0x10, 0x1B, 0x8C, 0, 0, 0, 0x244,
                    1, 1, 0x3B);
         DrawSprite(ot, 0x18, priceY, priceCaption.width, 0x10,

@@ -304,9 +304,10 @@ static void DrawChannelSliders(void *ot, s32 slide) {
 
     /* The three readouts, to the left of the column. */
     for (i = 0; i < 3; i++) {
-        GameDrawNumber((s16)(sliderX - 0x3F), (s16)(top + (i * 0x30) + 0x14), (s16)3,
-                       (g_TeamLogoClut[g_TeamLogoPenColor] >> (i * 5)) & 0x1F, (u8)0x7F, (u8)0x7F,
-                       (u8)0x7F, 0x244, 0x20);
+        GameDrawNumber((s16)(sliderX - 0x3F), (s16)(top + (i * 0x30) + 0x14),
+                       DRAW_NUMBER_LARGE_DIGITS | DRAW_NUMBER_TEN_DIGIT_FIELD,
+                       (g_TeamLogoClut[g_TeamLogoPenColor] >> (i * 5)) & 0x1F,
+                       (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x244, 0x20);
     }
 
     /* Then the three wells, their midlines, their letters and their bars, each

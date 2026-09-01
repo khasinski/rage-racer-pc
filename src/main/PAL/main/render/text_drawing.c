@@ -207,93 +207,48 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
                    u16 clut, u8 primitiveCount) {
-    u8 digits[11];
-    u16 drawVValue;
-    OT_TYPE *ot;
+    u8 digits[10];
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE) +
+                  ((flags & DRAW_NUMBER_OVERLAY_LAYER) != 0);
     s32 width;
     s32 height;
-    s32 v;
-    s32 i;
-    s32 digit;
-    s32 drawn;
-    s32 drawWidth;
-    s32 drawHeight;
-    s32 newHeight;
-    s32 drawV;
-    s32 small;
+    s32 textureV;
+    s32 firstDigit;
+    s32 fieldStart;
+    s32 digitIndex;
 
-    i = 9;
-    if (flags & 8) {
-        ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
-    } else {
-        ot = RENDER_OT_BASE_AS(OT_TYPE);
-    }
-
-    height = 16;
-    if (flags & 4) {
+    if (flags & DRAW_NUMBER_ALT_DIGIT_ATLAS) {
         width = 8;
-        v = 0xDC;
+        height = 16;
+        textureV = 0xDC;
     } else {
-        small = flags & 1;
-        width = small ? 8 : 6;
-        height = small ? 16 : 12;
-        v = (-small) & 0x18;
+        const s32 useLargeDigits = flags & DRAW_NUMBER_LARGE_DIGITS;
+        width = useLargeDigits ? 8 : 6;
+        height = useLargeDigits ? 16 : 12;
+        textureV = useLargeDigits ? 0x18 : 0;
     }
 
-    for (digit = 0; digit <= i; digit++) {
-        digits[i - digit] = value % 10;
+    for (digitIndex = 9; digitIndex >= 0; digitIndex--) {
+        digits[digitIndex] = value % 10;
         value /= 10;
     }
 
-    digits[10] = 0xFF;
-    i = 0;
-    while ((digits[i] == 0) && (digits[i + 1] != 0xFF)) {
-        digits[i] = ' ';
-        i++;
+    firstDigit = 0;
+    while (firstDigit < 9 && digits[firstDigit] == 0) {
+        firstDigit++;
     }
 
-    drawn = 0;
-    if (flags & 2) {
-        i = 0;
-    }
-
-    if (digits[i] != 0xFF) {
-        drawWidth = width;
-        drawHeight = newHeight = height;
-        drawV = v;
-        while (digits[i] != 0xFF) {
-            drawVValue = drawV;
-            if (digits[i] == ' ') {
-                x += width;
-                i++;
-                continue;
-            }
-
-            DrawSprite(
-                ot,
-                (s16)x,
-                y,
-                drawWidth,
-                drawHeight,
-                digits[i] * drawWidth,
-                drawVValue,
-                r,
-                g,
-                b,
-                clut,
-                0,
-                1,
-                0x80);
-            i++;
-            digit = width;
-            drawn++;
-            x += digit;
-        }
+    fieldStart = (flags & DRAW_NUMBER_TEN_DIGIT_FIELD) != 0 ? 0 : firstDigit;
+    x += (firstDigit - fieldStart) * width;
+    for (digitIndex = firstDigit; digitIndex < 10; digitIndex++) {
+        DrawSprite(ot, (s16)x, y, width, height, digits[digitIndex] * width,
+                   textureV, r, g, b, clut, 0, 1, 0x80);
+        x += width;
     }
 
     RENDER_PRIM_CURSOR_AS(void) =
         QueueDrawModePrim(ot, RENDER_PRIM_CURSOR_AS(void), primitiveCount + 27);
-    return drawn;
+    return 10 - firstDigit;
 }
 
 
