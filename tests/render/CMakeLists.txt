@@ -454,6 +454,26 @@ target_link_libraries(race_cue_tests PRIVATE psyz)
 add_test(NAME race_cue COMMAND race_cue_tests)
 set_tests_properties(race_cue PROPERTIES LABELS functional)
 
+add_executable(environment_script_tests
+    environment_script_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/environment_script.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/load_environment_cue.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/env_palette.c)
+target_include_directories(environment_script_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(environment_script_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(environment_script_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(environment_script_tests PRIVATE psyz)
+add_test(NAME environment_script COMMAND environment_script_tests)
+set_tests_properties(environment_script PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)

@@ -343,10 +343,6 @@ extern s32 g_CameraCarZ;
 extern s32 g_CourseModelCount;
 extern s16 g_EnvLerpDuration;
 extern GameEnvironmentCue *g_EnvScriptCues;
-typedef union EnvironmentScriptLocation {
-    s32 time;
-    GameEnvironmentCue *pointer;
-} EnvironmentScriptLocation;
 extern s16 g_EnvSpareFrom;
 extern s16 g_EnvSpareLerp;
 extern s16 g_EnvSpareTo;
