@@ -418,6 +418,42 @@ target_link_libraries(point_ambience_tests PRIVATE psyz)
 add_test(NAME point_ambience COMMAND point_ambience_tests)
 set_tests_properties(point_ambience PROPERTIES LABELS functional)
 
+add_executable(zone_ambience_tests
+    zone_ambience_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_zone_ambience.c)
+target_include_directories(zone_ambience_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(zone_ambience_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(zone_ambience_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(zone_ambience_tests PRIVATE psyz)
+add_test(NAME zone_ambience COMMAND zone_ambience_tests)
+set_tests_properties(zone_ambience PROPERTIES LABELS functional)
+
+add_executable(race_cue_tests
+    race_cue_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/trigger_race_cues.c)
+target_include_directories(race_cue_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(race_cue_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_cue_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(race_cue_tests PRIVATE psyz)
+add_test(NAME race_cue COMMAND race_cue_tests)
+set_tests_properties(race_cue PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)

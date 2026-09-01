@@ -258,16 +258,6 @@ typedef struct CarSurfaceSampleView {
     s16 verticalMotionState;
 } CarSurfaceSampleView;
 
-typedef struct PlayerRaceCueState {
-    s16 trackSection;
-    u8 reserved02[8];
-    s16 motionMode;
-    u8 reserved0C[0x20];
-    s32 speed;
-    u8 reserved30[0xA0];
-    s32 speedScale;
-} PlayerRaceCueState;
-
 typedef struct CarCollisionPoint {
     s16 x;
     s16 z;
@@ -689,22 +679,10 @@ _Static_assert(
         __builtin_offsetof(GameCarDrive, hudLapHighlightRow) == 0x162,
     "HUD lap highlight must retain its retail alias offset");
 
-typedef union PlayerRaceCueStateAddress {
-    s16 *trackSection;
-    PlayerRaceCueState *state;
-} PlayerRaceCueStateAddress;
-
 static inline PlayerCarRaceState *GetPlayerCarRaceState(PlayerCarRuntime *car) {
     PlayerCarRaceStateAddress address;
 
     address.drive = &car->drive;
-    return address.state;
-}
-
-static inline PlayerRaceCueState *GetPlayerRaceCueState(PlayerCarRuntime *car) {
-    PlayerRaceCueStateAddress address;
-
-    address.trackSection = &car->trackSection;
     return address.state;
 }
 
