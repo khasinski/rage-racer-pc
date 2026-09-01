@@ -626,6 +626,26 @@ endif()
 target_link_libraries(paint_palette_counter_tests PRIVATE psyz)
 add_test(NAME paint_palette_counter COMMAND paint_palette_counter_tests)
 set_tests_properties(paint_palette_counter PROPERTIES LABELS unit)
+
+add_executable(menu_light_burst_tests
+    menu_light_burst_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/menu_light_burst.c)
+target_include_directories(menu_light_burst_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(menu_light_burst_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(menu_light_burst_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(menu_light_burst_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(menu_light_burst_tests PRIVATE psyz)
+add_test(NAME menu_light_burst COMMAND menu_light_burst_tests)
+set_tests_properties(menu_light_burst PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)

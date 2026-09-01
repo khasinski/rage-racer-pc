@@ -1,6 +1,5 @@
-#include "game/menu_internal.h"
 #include "game/menu.h"
-#include "game/audio.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/screens.h"
@@ -9,113 +8,6 @@
 void RestoreTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, &g_TeamLogoBlankClut); }
 
 void UploadTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut); }
-
-
-void DrawMenuLightBurst(s32 arg) {
-    void *s3;
-    MenuLightBurstBand l1;
-    MenuLightBurstBand l2;
-    s3 = &RENDER_OT_BASE_AS(OT_TYPE)[0x2BF];
-    l1 = g_MenuLightBurstBandX;
-    l2 = g_MenuLightBurstBandY;
-
-    if (arg == 0) {
-        g_MenuLightBurstLevel = 0;
-        return;
-    }
-    if (arg < 0) {
-        g_MenuLightBurstLevel += arg;
-        if (g_MenuLightBurstLevel < 0) {
-            g_MenuLightBurstLevel = 0;
-        }
-    }
-    if (g_MenuLightBurstLevel > 0) {
-        s32 s0;
-        s32 s1;
-        s32 s2;
-        u8 *prim;
-        s32 value;
-        u32 scaled;
-
-        SetDrawClipRect(s3, 0, 0, 0x140, 0x1E0);
-
-        s0 = 0;
-        s2 = 0;
-        s1 = 0x00300000;
-        do {
-            u32 cnt = g_MenuLightBurstLevel;
-            u8 c1;
-            value = cnt * 11;
-            scaled = value / 256U;
-            c1 = (cnt * 75) / 256;
-            value = (u8)scaled;
-            DrawGradientLine(s3, s1 >> 16, 0xAA, s2 >> 16, 0x1E0, value, value, value, c1, c1, c1, 0x60);
-            s2 += 0x000A0000;
-            s1 += 0x00070000;
-            s0++;
-        } while (s0 < 0x21);
-
-        s0 = 0;
-        do {
-            s32 x0 = l1.values[s0];
-            s32 y0 = l2.values[s0];
-            s16 x1 = (0xA0 - (u16)l1.values[s0]) * 2;
-            s32 v = ((((u16)l2.values[s0] - 0xAA) << 7) / 309 + 0x16) * g_MenuLightBurstLevel;
-            value = v;
-            scaled = value / 512U;
-            value = (u8)scaled;
-            DrawSolidRect(s3, x0, y0, x1, 2, value, value, value, 0x60);
-            s0++;
-        } while (s0 < 0x21);
-
-        prim = RENDER_PRIM_CURSOR_AS(u8);
-        SetPolyG4(prim);
-        SetSemiTrans(prim, 0);
-        {
-            RenderBufferAddress primAddress;
-            POLY_G4 *quad;
-            s32 x = g_MenuLightBurstLevel;
-
-            primAddress.bytes = prim;
-            quad = primAddress.polyG4;
-            value = x / 5 + (x >> 31);
-            scaled = value - (x >> 31);
-            quad->x3 = 0x13F;
-            quad->x1 = 0x13F;
-            quad->y1 = 0x28;
-            quad->y0 = 0x28;
-            quad->x2 = 0;
-            quad->x0 = 0;
-            quad->y3 = 0x1DF;
-            quad->y2 = 0x1DF;
-            quad->r1 = 0;
-            quad->r0 = 0;
-            quad->g1 = 0;
-            quad->g0 = 0;
-            quad->b1 = 0;
-            quad->b0 = 0;
-            quad->r3 = scaled;
-            quad->r2 = scaled;
-            quad->g3 = scaled;
-            quad->g2 = scaled;
-            quad->b3 = scaled;
-            quad->b2 = scaled;
-        }
-        {
-            u8 *oldPrim = prim;
-            prim += sizeof(POLY_G4);
-            AddPrim(s3, oldPrim);
-        }
-        RENDER_PRIM_CURSOR_AS(u8) = prim;
-        SetDrawClipRect(s3, 0x48, 0, 0x140, 0x1E0);
-    }
-    if (arg > 0) {
-        g_MenuLightBurstLevel += arg;
-        if (g_MenuLightBurstLevel >= 0x201) {
-            g_MenuLightBurstLevel = 0x200;
-        }
-    }
-}
 
 typedef union PackedCoordinate {
     s32 value;
