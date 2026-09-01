@@ -39,7 +39,7 @@ void EnterPrologue(void) {
     g_CameraCarIndex = 3;
 }
 
-void UpdatePrologueLoad(void) {
+static void UpdatePrologueLoad(void) {
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
@@ -72,7 +72,7 @@ void UpdatePrologueLoad(void) {
     DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);
 }
 
-void UpdatePrologueLoadStep0(void) {
+static void UpdatePrologueLoadStep0(void) {
     if (g_AssetLoadState == 0) {
         InstallCourseAssets();
         RequestTrackDataAssets();
@@ -82,7 +82,7 @@ void UpdatePrologueLoadStep0(void) {
     UpdatePrologueLoad();
 }
 
-void UpdatePrologueLoadStep1(void) {
+static void UpdatePrologueLoadStep1(void) {
     if (g_AssetLoadState == 0) {
         g_FadeStep = 4;
         RequestCdTrack(2);
@@ -92,7 +92,7 @@ void UpdatePrologueLoadStep1(void) {
     UpdatePrologueLoad();
 }
 
-void UpdatePrologueLoadStep2(void) {
+static void UpdatePrologueLoadStep2(void) {
     UpdatePrologueLoad();
 }
 
@@ -129,7 +129,7 @@ void ExitPrologue(void) {
     RequestSelectBgmAssets();
 }
 
-void UpdatePrologue(void) {
+static void UpdatePrologue(void) {
     s32 timer;
     s32 worldActive;
     s32 eventIndex;
@@ -185,4 +185,23 @@ void UpdatePrologue(void) {
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, worldActive);
+}
+
+void TickPrologueStep(void) {
+    g_SceneTimer++;
+
+    switch (g_PrologueStep) {
+    case 0:
+        UpdatePrologueLoadStep0();
+        break;
+    case 1:
+        UpdatePrologueLoadStep1();
+        break;
+    case 2:
+        UpdatePrologueLoadStep2();
+        break;
+    case 3:
+        UpdatePrologue();
+        break;
+    }
 }

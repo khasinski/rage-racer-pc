@@ -458,7 +458,6 @@ void SeedWaypoints(void);
 void TriggerRaceCues(void);
 void UpdateFinishCamera(void* obj);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
-void UpdatePrologueLoad(void);
 void UpdateRacePosition(void);
 void UpdateReplayCars(void);
 void UpdateRivalCueGate(void);

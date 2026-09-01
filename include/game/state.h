@@ -2,7 +2,6 @@
 #define GAME_STATE_H
 
 extern void (*g_SceneHandlers[40])(void);
-extern void (*g_PrologueSteps[4])(void);
 
 #include "common.h"
 

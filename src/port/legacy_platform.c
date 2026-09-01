@@ -213,16 +213,6 @@ void EnterPrologue(void);
 void TickPrologueStep(void);
 void ReturnFromEndingFmv(void);
 void UpdateEndingStill(void);
-void UpdatePrologueLoadStep0(void);
-void UpdatePrologueLoadStep1(void);
-void UpdatePrologueLoadStep2(void);
-void UpdatePrologue(void);
-void (*g_PrologueSteps[4])(void) = {
-    UpdatePrologueLoadStep0,
-    UpdatePrologueLoadStep1,
-    UpdatePrologueLoadStep2,
-    UpdatePrologue,
-};
 void (*g_NativeGameModeHandlers[13])(void) = {
     UpdateOptionMenuFade,
     UpdateOptionRootMenu,
