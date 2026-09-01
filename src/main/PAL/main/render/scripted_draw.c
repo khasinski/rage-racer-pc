@@ -1,429 +1,126 @@
 #include "game/menu.h"
 
-void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape, ScriptedSpriteMotion *motion, s32 type) {
-    ScriptedSpriteMotion *motionReg = motion;
-    ScriptedSpriteShape *shapeReg;
-    s32 flags8;
-    OT_TYPE *otBase;
-    s32 mode;
-    s32 flags4;
-    s32 limit;
-    s32 packed;
-    s32 x;
-    s32 y;
-    s32 temp;
-    s32 interp;
-    u32 interpProduct;
-    s32 flagByte;
-    s32 alpha;
-
-    limit = motionReg->limit;
-    otBase = RENDER_OT_BASE_AS(OT_TYPE);
-    packed = motionReg->packedVelocity;
-    shapeReg = shape;
-    if (limit < elapsed) {
-        elapsed = limit;
-    }
-
-    x = motionReg->x;
-    if (packed & 0x8000) {
-        temp = packed | 0xFFFF0000;
-    } else {
-        temp = packed & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-
-    
-    y = motionReg->y;
-    x += interp;
-    if (packed < 0) {
-        s32 hi;
-        s32 mask;
-
-        hi = packed >> 16;
-        mask = 0xFFFF0000;
-        temp = hi | mask;
-    } else {
-        temp = (packed >> 16) & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-    y += interp;
-    
-
-    switch (shapeReg->flags & 3) {
-    case 0:
-        mode = 0;
-        break;
-    case 1:
-        mode = 3;
-        break;
-    case 2:
-        mode = 5;
-        break;
-    case 3:
-        mode = 0x2BE;
-        break;
-    }
-
-    flagByte = shapeReg->flags;
-    flags8 = flagByte & 8;
-    flags4 = flagByte & 4;
-    if (type != 0) {
-        temp = shapeReg->alpha & 0x7F;
-        
-        alpha = (u8)temp;
-    } else {
-        alpha = 0x80;
-    }
-
-    DrawSprite(
-        otBase + mode,
-        (s16)x,
-        (s16)y,
-        shapeReg->width,
-        shapeReg->height,
-        shapeReg->u,
-        shapeReg->v,
-        motionReg->r,
-        motionReg->g,
-        motionReg->b,
-        motionReg->clut,
-        flags8,
-        flags4,
-        alpha);
+static s32 LimitScriptElapsed(s32 elapsed, s32 limit) {
+    return elapsed < limit ? elapsed : limit;
+}
+static s32 ScriptVelocity(s32 packed, s32 upperHalf) {
+    return upperHalf ? (s16)(packed >> 16) : (s16)packed;
 }
 
-void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape, ScriptedLineMotion *motion) {
-    ScriptedLineMotion *motionReg = motion;
-    ScriptedLineShape *shapeReg;
-    OT_TYPE *otBase;
-    s32 mode;
-    s32 y1Reg;
+/* Retail performs this multiply and division as unsigned operations. Keeping
+ * that rule also avoids signed-overflow undefined behaviour for malformed
+ * script data. The draw calls ultimately consume the low signed halfword. */
+static s32 ScriptOffset(s32 elapsed, s32 velocity) {
+    return (s32)(((u32)elapsed * (u32)velocity) / 32);
+}
+
+static s32 ScriptOtOffset(u8 flags) {
+    switch (flags & 3) {
+    case 0:
+        return 0;
+    case 1:
+        return 3;
+    case 2:
+        return 5;
+    case 3:
+        return 0x2BE;
+    }
+    return 0;
+}
+
+void DrawScriptedSprite(s32 elapsed, ScriptedSpriteShape *shape,
+                        ScriptedSpriteMotion *motion, s32 type) {
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
+    s32 x;
+    s32 y;
+    s32 alpha;
+
+    elapsed = LimitScriptElapsed(elapsed, motion->limit);
+    x = motion->x +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 0));
+    y = motion->y +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 1));
+    alpha = type != 0 ? shape->alpha & 0x7F : 0x80;
+
+    DrawSprite(ot + ScriptOtOffset(shape->flags), (s16)x, (s16)y,
+               shape->width, shape->height, shape->u, shape->v,
+               motion->r, motion->g, motion->b, motion->clut,
+               shape->flags & 8, shape->flags & 4, alpha);
+}
+
+void DrawScriptedLine(s32 elapsed, ScriptedLineShape *shape,
+                      ScriptedLineMotion *motion) {
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x0;
-    s32 y0Call;
-    s32 x1Base;
+    s32 y0;
     s32 x1;
     s32 y1;
-    s32 limit;
-    s32 xPacked;
-    s32 yPacked;
-    s32 temp;
-    s32 interp;
-    u32 interpProduct;
     s32 alpha;
 
-    limit = motionReg->limit;
-    otBase = RENDER_OT_BASE_AS(OT_TYPE);
-    xPacked = motionReg->packedVelocity0;
-    yPacked = motionReg->packedVelocity1;
-    shapeReg = shape;
-    if (limit < elapsed) {
-        elapsed = limit;
-    }
+    elapsed = LimitScriptElapsed(elapsed, motion->limit);
+    x0 = motion->x0 +
+         ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity0, 0));
+    y0 = motion->y0 +
+         ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity0, 1));
+    x1 = motion->x1 +
+         ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity1, 0));
+    y1 = motion->y1 +
+         ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity1, 1));
+    alpha = shape->flags & 4 ? shape->flags & 0x60 : 0xFF;
 
-    y1 = motionReg->x0;
-    if (xPacked & 0x8000) {
-        temp = xPacked | 0xFFFF0000;
-    } else {
-        temp = xPacked & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-    x0 = y1 + interp;
-
-    y1 = motionReg->y0;
-    if (xPacked < 0) {
-        s32 mask;
-
-        y1Reg = xPacked >> 16;
-        mask = 0xFFFF0000;
-        temp = y1Reg | mask;
-    } else {
-        temp = (xPacked >> 16) & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-    y1 += interp;
-
-    
-    x1Base = motionReg->x1;
-    if (yPacked & 0x8000) {
-        y0Call = y1;
-        temp = yPacked | 0xFFFF0000;
-    } else {
-        y0Call = y1;
-        temp = yPacked & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-
-    
-    y1 = motionReg->y1;
-    x1 = x1Base + interp;
-    if (yPacked < 0) {
-        y1Reg = yPacked >> 16;
-        x1Base = 0xFFFF0000;
-        temp = y1Reg | x1Base;
-    } else {
-        temp = (yPacked >> 16) & 0x7FFF;
-    }
-    interpProduct = elapsed * temp;
-    interp = interpProduct / 32;
-    y1 += interp;
-    
-
-    switch (shapeReg->flags & 3) {
-    case 0:
-        mode = 0;
-        break;
-    case 1:
-        mode = 3;
-        break;
-    case 2:
-        mode = 5;
-        break;
-    case 3:
-        mode = 0x2BE;
-        break;
-    }
-
-    if (shapeReg->flags & 4) {
-        alpha = shapeReg->flags & 0x60;
-    } else {
-        alpha = 0xFF;
-    }
-
-    y1Reg = (s16)y1;
-    /* Retail's sll/sra pair sign-extends the low halfword. */
-    x0 = (s16)x0;
-    y1 = (s16)y0Call;
-    x1 = (s16)x1;
-    
-    DrawLine(
-        &otBase[mode],
-        x0,
-        y1,
-        x1,
-        y1Reg,
-        shapeReg->r,
-        shapeReg->g,
-        shapeReg->b,
-        alpha);
+    DrawLine(ot + ScriptOtOffset(shape->flags), (s16)x0, (s16)y0,
+             (s16)x1, (s16)y1, shape->r, shape->g, shape->b, alpha);
 }
 
-void DrawScriptedTriangle(s32 time, ScriptedTriangleShape *styleArg, ScriptedTriangleMotion *recordArg) {
-    ScriptedTriangleShape *style;
-    ScriptedTriangleMotion *record;
-    OT_TYPE *ot;
-    s32 limit;
-    s32 packedSpeed;
-    s32 product;
+void DrawScriptedTriangle(s32 elapsed, ScriptedTriangleShape *shape,
+                          ScriptedTriangleMotion *motion) {
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x;
-    s32 y0;
     s32 y;
-    s32 y1;
-    s32 mode;
     s32 semiTrans;
-    s32 flags;
-    u32 productResult;
+    s32 alpha;
 
-    style = styleArg;
-    record = recordArg;
-    /* The barrier is load-bearing: without it the scheduler sinks the
-     * render-state load past the second record load. */
-    limit = record->limit;
-    ot = RENDER_OT_BASE_AS(OT_TYPE);
-    
-    packedSpeed = record->packedVelocity;
-    if (limit < time) {
-        time = limit;
-    }
+    elapsed = LimitScriptElapsed(elapsed, motion->limit);
+    x = motion->x +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 0));
+    y = motion->y +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 1));
+    semiTrans = shape->flags & 4;
+    alpha = semiTrans ? shape->flags & 0x60 : 0x80;
 
-    limit = record->x;
-    if (packedSpeed & 0x8000) {
-        product = packedSpeed | 0xFFFF0000;
-    } else {
-        product = packedSpeed & 0x7FFF;
-    }
-    productResult = time * product;
-    product = productResult / 32;
-    productResult = limit + product;
-    product = productResult;
-    
-
-    y = record->y;
-    x = product;
-    if (packedSpeed < 0) {
-        product = packedSpeed >> 16;
-        packedSpeed = 0xFFFF0000;
-        product |= packedSpeed;
-    } else {
-        product = packedSpeed >> 16;
-        product &= 0x7FFF;
-    }
-    productResult = time * product;
-    product = productResult;
-    
-    productResult = product;
-    product = productResult / 32;
-    y += product;
-
-    product = style->y1;
-    packedSpeed = style->y2;
-    y0 = product + y;
-    y1 = packedSpeed + y;
-    product = style->x1;
-    packedSpeed = style->x2;
-    productResult = x + product;
-    product = productResult;
-    
-    limit = product;
-    packedSpeed = x + packedSpeed;
-
-    switch (style->flags & 3) {
-    case 0:
-        mode = 0;
-        break;
-    case 1:
-        mode = 3;
-        break;
-    case 2:
-        mode = 5;
-        break;
-    case 3:
-        mode = 0x2BE;
-        break;
-    }
-
-    {
-        s32 alpha;
-
-        alpha = style->flags;
-        semiTrans = alpha & 4;
-        if (semiTrans != 0) {
-            alpha &= 0x60;
-            
-            flags = (u8)alpha;
-        } else {
-            flags = 0x80;
-        }
-    }
-
-    
-    DrawFlatTriangle(
-        ot + mode,
-        (s16)x,
-        (s16)y,
-        (s16)limit,
-        (s16)y0,
-        (s16)packedSpeed,
-        (s16)y1,
-        style->r,
-        style->g,
-        style->b,
-        semiTrans,
-        flags);
+    DrawFlatTriangle(ot + ScriptOtOffset(shape->flags),
+                     (s16)x, (s16)y,
+                     (s16)(x + shape->x1), (s16)(y + shape->y1),
+                     (s16)(x + shape->x2), (s16)(y + shape->y2),
+                     shape->r, shape->g, shape->b, semiTrans, alpha);
 }
 
-void DrawScriptedQuad(s32 time, ScriptedQuadShape *desc, ScriptedQuadMotion *ctx) {
-    s32 duration;
-    u8 *table;
-    ScriptedQuadShape *entry;
-    s32 velocity0;
-    s32 velocity1;
+void DrawScriptedQuad(s32 elapsed, ScriptedQuadShape *shape,
+                      ScriptedQuadMotion *motion) {
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 x;
     s32 y;
-    s32 dx;
-    s32 dy;
-    s32 index;
-    s32 posX;
-    s32 posY;
-    s32 posX2;
-    s32 posY2;
-    u32 velocityX;
-    u32 velocityY;
-    u32 velocityX2;
-    u32 velocityY2;
-    s32 value;
-    s32 flags;
+    s32 width;
+    s32 height;
 
-    duration = ctx->limit;
-    table = (u8 *)RENDER_OT_BASE_AS(OT_TYPE);
-    velocity0 = ctx->packedVelocity;
-    velocity1 = ctx->packedSizeVelocity;
-    entry = desc;
-    if (duration < time) {
-        time = duration;
-    }
+    elapsed = LimitScriptElapsed(elapsed, motion->limit);
+    x = motion->x +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 0));
+    y = motion->y +
+        ScriptOffset(elapsed, ScriptVelocity(motion->packedVelocity, 1));
+    width = motion->width + ScriptOffset(
+        elapsed, ScriptVelocity(motion->packedSizeVelocity, 0));
+    height = motion->height + ScriptOffset(
+        elapsed, ScriptVelocity(motion->packedSizeVelocity, 1));
 
-    posX = ctx->x;
-    if (velocity0 & 0x8000) {
-        velocityX = velocity0 | 0xFFFF0000;
-    } else {
-        velocityX = velocity0 & 0x7FFF;
-    }
-    posX += (time * velocityX) >> 5;
-    
-    x = posX;
-
-    posY = ctx->y;
-    if (velocity0 < 0) {
-        value = velocity0 >> 16;
-        velocityY = value | 0xFFFF0000;
-    } else {
-        value = velocity0 / 65536;
-        velocityY = value & 0x7FFF;
-    }
-    value = posY + ((time * velocityY) >> 5);
-    y = value;
-    
-
-    posX2 = ctx->width;
-    if (velocity1 & 0x8000) {
-        velocityX2 = velocity1 | 0xFFFF0000;
-    } else {
-        velocityX2 = velocity1 & 0x7FFF;
-    }
-    value = posX2 + ((time * velocityX2) >> 5);
-    
-    dx = value;
-
-    posY2 = ctx->height;
-    if (velocity1 < 0) {
-        value = velocity1 >> 16;
-        velocityY2 = value | 0xFFFF0000;
-    } else {
-        value = velocity1 / 65536;
-        velocityY2 = value & 0x7FFF;
-    }
-    posY2 += (time * velocityY2) >> 5;
-    
-    dy = posY2;
-
-    switch (entry->flags & 3) {
-    case 0:
-        index = 0;
-        break;
-    case 1:
-        index = 3;
-        break;
-    case 2:
-        index = 5;
-        break;
-    case 3:
-        index = 0x2BE;
-        break;
-    }
-
-    flags = entry->flags;
-    GameDrawTexturedQuad(&((OT_TYPE *)table)[index], (s16)x, (s16)y,
-                  (s16)(x + dx), (s16)y, (s16)x, (s16)(y + dy),
-                  (s16)(x + dx), (s16)(y + dy), entry->u0, entry->v0,
-                  entry->u1, entry->v1, entry->u2, entry->v2, entry->u3,
-                  entry->v3, entry->r, entry->g, entry->b, entry->clut,
-                  flags & 8, flags & 4, entry->alpha);
+    GameDrawTexturedQuad(ot + ScriptOtOffset(shape->flags),
+                         (s16)x, (s16)y, (s16)(x + width), (s16)y,
+                         (s16)x, (s16)(y + height),
+                         (s16)(x + width), (s16)(y + height),
+                         shape->u0, shape->v0, shape->u1, shape->v1,
+                         shape->u2, shape->v2, shape->u3, shape->v3,
+                         shape->r, shape->g, shape->b, shape->clut,
+                         shape->flags & 8, shape->flags & 4, shape->alpha);
 }
 
 /*
@@ -556,111 +253,41 @@ s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step) {
 
 
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
-    ScriptedSpriteShape *shapePtr;
-    ScriptedSpriteMotion *motionPtr;
-    OT_TYPE *ot;
-    s32 countReg;
+    ScriptedSpriteMotion *firstMotion;
+    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
     s32 i;
-    TimedDrawCommand *cmd;
-    s32 *timer;
     s32 xOffset;
     s32 yOffset;
-    s32 nextTimer;
-    s32 value;
-    s32 temporary;
-    s32 timerValue;
-    u32 fade;
-    s32 drawX;
-    s32 drawY;
-    s32 drawW;
     s32 elapsed;
-    s32 limit;
-    s32 packed;
-    u32 offsetProduct;
 
-    shapePtr = g_MenuRowScript[0].shape.spriteShape;
     elapsed = progress - g_MenuRowScript[0].time;
-    motionPtr = g_MenuRowScript[0].motion.spriteMotion;
-    ot = RENDER_OT_BASE_AS(OT_TYPE);
-    countReg = count;
-    packed = motionPtr->packedVelocity;
-    i = 0;
-
-    if (elapsed < 0) {
+    if (elapsed < 0 || count < 0) {
         return;
     }
 
-    limit = motionPtr->limit;
-    if (limit < elapsed) {
-        elapsed = limit;
-    }
-
+    firstMotion = g_MenuRowScript[0].motion.spriteMotion;
+    elapsed = LimitScriptElapsed(elapsed, firstMotion->limit);
     g_MenuRowFlashLevels[slot] = 0x1FC;
+    xOffset = ScriptOffset(
+        elapsed, ScriptVelocity(firstMotion->packedVelocity, 0));
+    yOffset = ScriptOffset(
+        elapsed, ScriptVelocity(firstMotion->packedVelocity, 1));
 
-    if (packed & 0x8000) {
-        value = packed | 0xFFFF0000;
-    } else {
-        value = packed & 0x7FFF;
-    }
-    value = elapsed * value;
-    offsetProduct = value;
-    xOffset = offsetProduct / 32;
+    for (i = 0; i <= count; i++) {
+        TimedDrawCommand *command = &g_MenuRowScript[i];
+        ScriptedSpriteShape *shape = command->shape.spriteShape;
+        ScriptedSpriteMotion *motion = command->motion.spriteMotion;
+        s32 *timer = &g_MenuRowFlashLevels[i];
+        u32 fade = *timer & 0x1FF;
 
-    if (packed < 0) {
-        value = packed >> 0x10;
-        temporary = 0xFFFF0000;
-        value |= temporary;
-    } else {
-        value = (packed >> 0x10) & 0x7FFF;
-    }
-    value = elapsed * value;
-    offsetProduct = value;
-    yOffset = offsetProduct / 32;
-
-    if (countReg < i) {
-        return;
-    }
-
-    cmd = &g_MenuRowScript[i];
-
-    for (; i <= countReg; i++, cmd++) {
-        shapePtr = cmd->shape.spriteShape;
-        motionPtr = cmd->motion.spriteMotion;
-        timer = &g_MenuRowFlashLevels[i];
-
-        fade = *timer & 0x1FF;
-        *timer = fade;
         fade >>= 2;
-
-        value = shapePtr->height;
-        drawX = (u16)motionPtr->x;
-        drawY = (u16)motionPtr->y;
-        drawW = shapePtr->width;
-        drawX = (s16)(drawX + xOffset);
-        drawY = (s16)(drawY + yOffset);
-
         DrawSprite(ot + 2,
-                      drawX,
-                      drawY,
-                      drawW,
-                      value,
-                      shapePtr->u,
-                      shapePtr->v,
-                      fade,
-                      fade,
-                      fade,
-                      motionPtr->clut,
-                      0,
-                      1,
-                      shapePtr->alpha);
-
-        timerValue = *timer;
-        nextTimer = 0;
-        if (timerValue >= 60) {
-            nextTimer = timerValue - 60;
-        }
-        *timer = nextTimer;
-        }
+                   (s16)(motion->x + xOffset),
+                   (s16)(motion->y + yOffset),
+                   shape->width, shape->height, shape->u, shape->v,
+                   fade, fade, fade, motion->clut, 0, 1, shape->alpha);
+        *timer = (*timer & 0x1FF) >= 60 ? (*timer & 0x1FF) - 60 : 0;
+    }
 }
 
 

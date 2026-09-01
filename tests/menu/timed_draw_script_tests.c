@@ -74,7 +74,7 @@ static void Record(const char *name, const s32 *values, int count) {
 s32 g_AnimTimer;
 s32 g_MenuCursorPulsePhase;
 s32 g_MenuRowFlashLevels[16];
-TimedDrawCommand g_MenuRowScript[1];
+TimedDrawCommand g_MenuRowScript[4];
 GameRenderState g_RenderState;
 void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
@@ -151,6 +151,59 @@ static ScriptedQuadMotion s_quadMotions[COMMAND_COUNT];
 
 static s32 PackVelocity(s16 x, s16 y) {
     return (s32)((u32)(u16)x | ((u32)(u16)y << 16));
+}
+
+static int TestFadingMenuSprites(void) {
+    ScriptedSpriteShape shapes[3];
+    ScriptedSpriteMotion motions[3];
+    int callsBefore;
+    int i;
+
+    memset(shapes, 0, sizeof(shapes));
+    memset(motions, 0, sizeof(motions));
+    memset(g_MenuRowScript, 0, sizeof(g_MenuRowScript));
+    memset(g_MenuRowFlashLevels, 0, sizeof(g_MenuRowFlashLevels));
+    for (i = 0; i < 3; i++) {
+        shapes[i].width = (s16)(20 + i);
+        shapes[i].height = (s16)(10 + i);
+        shapes[i].u = (u8)(2 + i);
+        shapes[i].v = (u8)(4 + i);
+        shapes[i].alpha = (u8)(0x50 + i);
+        motions[i].x = (s16)(100 + i * 10);
+        motions[i].y = (s16)(50 + i * 5);
+        motions[i].clut = (u16)(0x180 + i);
+        g_MenuRowScript[i].shape.spriteShape = &shapes[i];
+        g_MenuRowScript[i].motion.spriteMotion = &motions[i];
+    }
+    g_MenuRowScript[0].time = 4;
+    motions[0].limit = 16;
+    motions[0].packedVelocity = PackVelocity(-32, 64);
+
+    g_MenuRowFlashLevels[1] = 77;
+    callsBefore = s_calls;
+    DrawFadingMenuSprites(3, 2, 1);
+    if (s_calls != callsBefore || g_MenuRowFlashLevels[1] != 77) {
+        puts("FAIL fading rows draw before their start");
+        return 0;
+    }
+
+    g_MenuRowFlashLevels[0] = 59;
+    g_MenuRowFlashLevels[1] = 77;
+    g_MenuRowFlashLevels[2] = 120;
+    DrawFadingMenuSprites(12, 2, 1);
+    if (s_calls != callsBefore + 3 || g_MenuRowFlashLevels[0] != 0 ||
+        g_MenuRowFlashLevels[1] != 448 || g_MenuRowFlashLevels[2] != 60) {
+        puts("FAIL fading rows draw range or timers");
+        return 0;
+    }
+
+    callsBefore = s_calls;
+    DrawFadingMenuSprites(12, -1, 1);
+    if (s_calls != callsBefore) {
+        puts("FAIL fading rows accept a negative last row");
+        return 0;
+    }
+    return 1;
 }
 
 static void BuildScript(s32 limit) {
@@ -269,7 +322,7 @@ int main(void) {
     static const s32 progresses[] = {-4, 0, 1, 2, 4, 8, 16, 24, 31, 32, 40};
     static const s32 steps[] = {-8, -1, 0, 1, 3, 8, 40};
     static const s32 limits[] = {0, 1, 32, 33};
-    static const unsigned long expected = 171758789UL;
+    static const unsigned long expected = 1344526518UL;
     int pi, si, li, alt;
     int states = 0;
 
@@ -359,6 +412,8 @@ int main(void) {
             return 1;
         }
     }
+
+    if (!TestFadingMenuSprites()) return 1;
 
     if (s_out != NULL) fclose(s_out);
     if (s_digest != expected) {
