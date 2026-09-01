@@ -27,7 +27,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car);
 
 GameCarRuntime g_Cars[11];
 TrackEventData *g_TrackEventData;
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];
 

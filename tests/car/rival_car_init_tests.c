@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s32 g_TrackLength;
 TrackEventData *g_TrackEventData;
 

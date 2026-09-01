@@ -72,7 +72,7 @@ s16 g_SplitSign;
 s16 g_SplitSector;
 s32 g_SplitTargetTime;
 s16 g_SplitTimer;
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s32 g_BestTotalTimes[2][4][2];
 PlayerCarRuntime g_PlayerCar;
 GameSpriteDesc g_TachoNeedleSprite;

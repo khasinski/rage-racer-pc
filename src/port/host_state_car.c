@@ -50,7 +50,7 @@ unsigned char g_RaceIntroCameraScript[8] __attribute__((aligned(16)));
 unsigned char g_CameraCar[412] __attribute__((aligned(16)));
 unsigned char g_CameraCarSeedYaw[80] __attribute__((aligned(16)));
 unsigned char g_RaceIntroCameraCursor[8] __attribute__((aligned(16)));
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s32 g_TachoNeedleFlash;
 unsigned char g_RankedCars[32] __attribute__((aligned(16)));
 s32 g_TrackLength;

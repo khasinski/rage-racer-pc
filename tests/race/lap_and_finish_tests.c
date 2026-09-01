@@ -35,7 +35,7 @@ s32 g_LapTimeMs;
 s32 g_LapTimeSaturated;
 s16 g_MirrorViewEnabled;
 PlayerCarRuntime g_PlayerCar;
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s16 g_RaceCueDelay;
 s32 g_RaceCueFlags;
 s16 g_RaceFadeTimer;

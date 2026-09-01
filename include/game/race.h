@@ -64,31 +64,14 @@ extern s16 g_GrandPrixMode;
 /* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
  * index of the per-series tables and, because the Extra GP runs the
  * courses backwards, also the lap-direction flag. */
-typedef union RaceSeriesValue {
-    s32 series;
-    u16 trackDirection;
-} RaceSeriesValue;
-
-typedef union RaceSeriesAddress {
-    volatile s32 *series;
-    const s32 *stableSeries;
-    RaceSeriesValue *value;
-} RaceSeriesAddress;
-
-extern volatile s32 g_RaceSeries;
+extern s32 g_RaceSeries;
 
 static inline u16 ReadRaceTrackDirection(void) {
-    RaceSeriesAddress address;
-
-    address.series = &g_RaceSeries;
-    return address.value->trackDirection;
+    return (u16)g_RaceSeries;
 }
 
 static inline s32 ReadStableRaceSeries(void) {
-    RaceSeriesAddress address;
-
-    address.series = &g_RaceSeries;
-    return *address.stableSeries;
+    return g_RaceSeries;
 }
 
 /* Race phase: 0 pre-start (physics frozen), 1 countdown, 2 racing, 4/5

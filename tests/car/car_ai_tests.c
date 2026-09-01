@@ -26,7 +26,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
  * defines other functions that touch it. */
 GameCarRuntime g_Cars[11];
 TrackEventData *g_TrackEventData;
-volatile s32 g_RaceSeries;
+s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];
 
