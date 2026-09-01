@@ -91,6 +91,28 @@ target_link_libraries(car_motion_tests PRIVATE psyz)
 add_test(NAME car_motion COMMAND car_motion_tests)
 set_tests_properties(car_motion PROPERTIES LABELS functional)
 
+add_executable(car_body_roll_tests
+    car_body_roll_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_body_roll.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(car_body_roll_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_body_roll_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_body_roll_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_body_roll_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_body_roll_tests PRIVATE psyz)
+add_test(NAME car_body_roll COMMAND car_body_roll_tests)
+set_tests_properties(car_body_roll PROPERTIES LABELS functional)
+
 # The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
 add_executable(drivetrain_tests
     drivetrain_tests.c
