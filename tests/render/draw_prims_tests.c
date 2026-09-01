@@ -174,11 +174,43 @@ static void CheckRectOutline(void) {
              1, "outline cursor");
 }
 
+static void CheckClipRect(void) {
+    DrawPacket expected;
+    DrawPacket *actual;
+    Rect rect = {0, 0, 320, 480};
+
+    ResetPackets();
+    memset(&expected, 0, sizeof(expected));
+    SetDrawArea(&expected, &rect);
+    SetDrawClipRect(&s_ot, -5, -7, 400, 500);
+    actual = (DrawPacket *)s_packets.bytes;
+    CHECK_EQ(actual->code[0], expected.code[0], "clip top-left code");
+    CHECK_EQ(actual->code[1], expected.code[1], "clip bottom-right code");
+    CHECK_EQ(g_RenderState.packetCursor ==
+                 s_packets.bytes + sizeof(DrawPacket),
+             1, "clip cursor");
+
+    ResetPackets();
+    SetDrawClipRect(&s_ot, -20, 10, 10, 20);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects left rectangle");
+    SetDrawClipRect(&s_ot, 320, 10, 1, 20);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects right rectangle");
+    SetDrawClipRect(&s_ot, 10, -20, 20, 10);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects top rectangle");
+    SetDrawClipRect(&s_ot, 10, 480, 20, 1);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects bottom rectangle");
+}
+
 int main(void) {
     CheckFlatQuad();
     CheckSpriteAndPolygons();
     CheckSolidAndLines();
     CheckRectOutline();
+    CheckClipRect();
     if (s_failures != 0) return 1;
     puts("draw primitive packets passed");
     return 0;

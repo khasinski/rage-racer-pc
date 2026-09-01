@@ -9,64 +9,35 @@ static u16 LinearClutToVram(u16 index) {
 }
 
 void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
-    void *otReg;
-    u8 **cursorSlot;
-    u8 *packet;
-    s16 xReg;
-    s16 yReg;
-    s16 wReg;
-    s16 hReg;
-    u8 *oldPacket;
-    RenderBufferAddress packetAddress;
-    s32 tmp;
+    s16 left = x;
+    s16 top = y;
+    s16 width = w;
+    s16 height = h;
+    DrawPacket *packet;
     Rect rect;
 
-    otReg = ot;
-    xReg = x;
-    yReg = y;
-    wReg = w;
-    cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
-    hReg = h;
-    packet = *cursorSlot;
-
-    if ((s16)x + (s16)w > 0) {
-        if ((s16)xReg < 0) {
-            wReg = w + x;
-            xReg = 0;
-        }
-
-        if ((s16)xReg < 0x140) {
-            if ((s16)xReg + (s16)wReg >= 0x140) {
-                tmp = 0x140;
-                wReg = tmp - xReg;
-            }
-
-            if ((s16)y + (s16)h > 0) {
-                if ((s16)yReg < 0) {
-                    hReg = h + y;
-                    yReg = 0;
-                }
-
-                if ((s16)yReg < 0x1E0) {
-                    if ((s16)yReg + (s16)hReg >= 0x1E0) {
-                        tmp = 0x1E0;
-                        hReg = tmp - yReg;
-                    }
-
-                    rect.x = xReg;
-                    rect.y = yReg;
-                    rect.w = wReg;
-                    rect.h = hReg;
-                    packetAddress.bytes = packet;
-                    SetDrawArea(packetAddress.drawPacket, &rect);
-                    oldPacket = packet;
-                    packet += sizeof(DrawPacket);
-                    AddPrim(otReg, oldPacket);
-                    *cursorSlot = packet;
-                }
-            }
-        }
+    if ((s16)x + (s16)w <= 0 || left >= 320) return;
+    if (left < 0) {
+        width = w + x;
+        left = 0;
     }
+    if (left + width >= 320) width = 320 - left;
+
+    if ((s16)y + (s16)h <= 0 || top >= 480) return;
+    if (top < 0) {
+        height = h + y;
+        top = 0;
+    }
+    if (top + height >= 480) height = 480 - top;
+
+    rect.x = left;
+    rect.y = top;
+    rect.w = width;
+    rect.h = height;
+    packet = RENDER_PRIM_CURSOR_AS(DrawPacket);
+    SetDrawArea(packet, &rect);
+    AddPrim(ot, packet);
+    RENDER_PRIM_CURSOR_AS(DrawPacket) = packet + 1;
 }
 
 
