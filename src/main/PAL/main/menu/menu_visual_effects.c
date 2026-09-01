@@ -31,85 +31,31 @@ void ScrollTeamLogoDown(void);
 void ScrollTeamLogoLeft(void);
 void ScrollTeamLogoRight(void);
 
-/* The logo canvas is 64 rows of eight words, and each word packs eight
- * four-bit pixels. Flipping a row therefore swaps word j with word 7 - j and
- * reverses the nibble order inside both. */
+static u32 ReverseLogoWord(u32 word) {
+    u32 reversed = 0;
+    s32 pixel;
+
+    for (pixel = 0; pixel < 8; pixel++) {
+        reversed = (reversed << 4) | ((word >> (pixel * 4)) & 0xF);
+    }
+    return reversed;
+}
+
+/* Mirror every row about its centre. */
 void FlipTeamLogoHorizontal(void) {
-    u32 *base;
     s32 row;
-    s32 lastWord;
-    s32 rowOffset;
-    u32 *lowWordPtr;
-    s32 colOffset;
-    s32 highIndex;
-    s32 nibble;
-    u32 lowPacked;
-    u32 highPacked;
-    u32 lowWord;
-    u32 highWord;
-    u32 shift;
+    s32 word;
 
     PlaySoundCue(8);
+    for (row = 0; row < 64; row++) {
+        for (word = 0; word < 4; word++) {
+            u32 left = g_TeamLogoCanvas.words[row][word];
+            u32 right = g_TeamLogoCanvas.words[row][7 - word];
 
-    base = g_TeamLogoCanvas.words[0];
-    row = 0;
-    lastWord = 7;
-    do {
-        rowOffset = row * 32;
-        lowWordPtr = base;
-        colOffset = 0;
-        highIndex = lastWord;
-        do {
-            s32 addr;
-            s32 highOffset;
-            TeamLogoCanvasAddress lowAddress;
-            TeamLogoCanvasAddress highAddress;
-
-            nibble = 0;
-            lowPacked = 0;
-            highPacked = 0;
-            lowAddress.wordPointer = lowWordPtr;
-            addr = rowOffset + lowAddress.value;
-            lowAddress.value = addr;
-            lowWord = *lowAddress.wordPointer;
-            addr = highIndex << 2;
-            highAddress.wordPointer = base;
-            highOffset = addr + highAddress.value;
-            addr = rowOffset + highOffset;
-            highAddress.value = addr;
-            highWord = *highAddress.wordPointer;
-            do {
-                lowPacked <<= 4;
-                shift = nibble * 4;
-                lowPacked |= (lowWord >> shift) & 0xF;
-                highPacked <<= 4;
-                highPacked |= (highWord >> shift) & 0xF;
-                nibble++;
-            } while (nibble < 8);
-            {
-                s32 lowAddr;
-                s32 highAddr;
-                TeamLogoCanvasAddress lowStoreAddress;
-                TeamLogoCanvasAddress highStoreAddress;
-
-                lowStoreAddress.wordPointer = lowWordPtr;
-                lowAddr = rowOffset + lowStoreAddress.value;
-                lowWordPtr++;
-                colOffset += 4;
-                highAddr = highIndex << 2;
-                highStoreAddress.wordPointer = base;
-                highAddr += highStoreAddress.value;
-                highOffset = highAddr;
-                highAddr = rowOffset + highOffset;
-                highStoreAddress.value = highAddr;
-                lowStoreAddress.value = lowAddr;
-                *highStoreAddress.wordPointer = lowPacked;
-                *lowStoreAddress.wordPointer = highPacked;
-            }
-            highIndex--;
-        } while (colOffset < 0x10);
-        row++;
-    } while (row < 0x40);
+            g_TeamLogoCanvas.words[row][word] = ReverseLogoWord(right);
+            g_TeamLogoCanvas.words[row][7 - word] = ReverseLogoWord(left);
+        }
+    }
 }
 
 void RotateTeamLogoCcw(void) {

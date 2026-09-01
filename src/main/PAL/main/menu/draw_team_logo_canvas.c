@@ -2,6 +2,8 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
+#include <string.h>
+
 /*
  * The big canvas: its frame slides down, the brush outline blinks over the
  * cursor, and the canvas itself goes down as one zoomed textured quad.
@@ -524,242 +526,79 @@ void RampTeamLogoCanvas(s32 stepA, s32 stepB) {
 
 
 void ScrollTeamLogoUp(void) {
-    s32 i;
-    u32 *base;
-    u32 saved[8];
+    s32 row;
+    u32 firstRow[8];
 
     PlaySoundCue(1);
-
-    base = g_TeamLogoCanvas.words[0];
-    for (i = 0; i < 8; i++) {
-        saved[i] = base[i];
+    memcpy(firstRow, g_TeamLogoCanvas.words[0], sizeof(firstRow));
+    for (row = 0; row < 63; row++) {
+        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row + 1],
+               sizeof(firstRow));
     }
-    for (i = 0; i < 0x1F8; i++) {
-        base[i] = base[i + 8];
-    }
-    for (i = 0; i < 8; i++) {
-        base[i + 0x1F8] = saved[i];
-    }
+    memcpy(g_TeamLogoCanvas.words[63], firstRow, sizeof(firstRow));
 }
 
 void ScrollTeamLogoDown(void) {
-    s32 i;
-    u32 *newPtr;
-    u32 *stackPtr;
-    u32 *base;
-    u32 *cursor;
-    u32 saved[8];
-    u32 value;
+    s32 row;
+    u32 lastRow[8];
 
     PlaySoundCue(1);
-
-    i = 0;
-    stackPtr = saved;
-    base = g_TeamLogoCanvas.words[0];
-    cursor = base;
-    do {
-        value = cursor[0x1F8];
-        cursor++;
-        i++;
-        *stackPtr = value;
-        stackPtr++;
-    } while (i < 8);
-
-    i = 0x1F7;
-    newPtr = base + 0x1F7;
-    cursor = newPtr;
-    do {
-        value = *cursor;
-        i--;
-        cursor[8] = value;
-        cursor--;
-    } while (i >= 0);
-
-    i = 0;
-    stackPtr = base;
-    cursor = saved;
-    do {
-        value = *cursor;
-        cursor++;
-        i++;
-        newPtr = stackPtr;
-        *newPtr = value;
-        stackPtr++;
-    } while (8 > i);
+    memcpy(lastRow, g_TeamLogoCanvas.words[63], sizeof(lastRow));
+    for (row = 63; row > 0; row--) {
+        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row - 1],
+               sizeof(lastRow));
+    }
+    memcpy(g_TeamLogoCanvas.words[0], lastRow, sizeof(lastRow));
 }
 
 void ScrollTeamLogoLeft(void) {
     s32 row;
-    u32 *savePtr;
-    u32 *savePtr2;
-    u32 *rowBase;
-    s32 offset;
     s32 col;
-    u32 *base;
-    u32 *base2;
-    u32 *addr;
-    u32 *cursor;
-    u32 saved[64];
-    u32 value;
-    u32 next;
 
     PlaySoundCue(1);
+    for (row = 0; row < 64; row++) {
+        u32 wrap = g_TeamLogoCanvas.words[row][0] << 28;
 
-    row = 0;
-    savePtr = saved;
-    base = g_TeamLogoCanvas.words[0];
-    cursor = base;
-    do {
-        value = *cursor;
-        cursor += 8;
-        row++;
-        value <<= 28;
-        *savePtr = value;
-        savePtr++;
-    } while (row < 0x40);
-
-    row = 0;
-    savePtr2 = saved;
-    rowBase = base;
-    offset = 0;
-    do {
-        col = 0;
-        base2 = base;
-        do {
-            TeamLogoCanvasAddress address;
-
-            address.wordPointer = base2;
-            address.value = offset + address.value;
-            addr = address.wordPointer;
-            base2++;
-            value = addr[0];
-            next = addr[1];
-            value >>= 4;
-            next <<= 28;
-            value |= next;
-            addr[0] = value;
-            col++;
-        } while (col < 7);
-
-        value = *savePtr2;
-        savePtr2++;
-        offset += 0x20;
-        next = rowBase[7];
-        row++;
-        next >>= 4;
-        next |= value;
-        rowBase[7] = next;
-        rowBase += 8;
-    } while (row < 0x40);
+        for (col = 0; col < 7; col++) {
+            g_TeamLogoCanvas.words[row][col] =
+                (g_TeamLogoCanvas.words[row][col] >> 4) |
+                (g_TeamLogoCanvas.words[row][col + 1] << 28);
+        }
+        g_TeamLogoCanvas.words[row][7] =
+            (g_TeamLogoCanvas.words[row][7] >> 4) | wrap;
+    }
 }
 
 void ScrollTeamLogoRight(void) {
     s32 row;
-    u32 *savePtr;
-    u32 *savePtr2;
-    u32 *rowBase;
-    s32 offset;
     s32 col;
-    u32 *base;
-    u32 *base2;
-    u32 *cursor;
-    u32 saved[64];
 
     PlaySoundCue(1);
+    for (row = 0; row < 64; row++) {
+        u32 wrap = g_TeamLogoCanvas.words[row][7] >> 28;
 
-    row = 0;
-    savePtr = saved;
-    base = g_TeamLogoCanvas.words[0];
-    cursor = base;
-    do {
-        u32 last = cursor[7];
-        cursor += 8;
-        row++;
-        last >>= 28;
-        *savePtr = last;
-        savePtr++;
-    } while (row < 0x40);
-
-    row = 0;
-    rowBase = base;
-    savePtr2 = saved;
-    offset = 0;
-    do {
-        col = 7;
-        base2 = base + 7;
-        do {
-            TeamLogoCanvasAddress address;
-            u32 *word;
-            u32 hi;
-            u32 lo;
-
-            address.wordPointer = base2;
-            address.value = offset + address.value;
-            word = address.wordPointer;
-            base2--;
-            col--;
-            word--;
-            hi = word[1];
-            lo = word[0];
-            hi <<= 4;
-            lo >>= 28;
-            hi |= lo;
-            word[1] = hi;
-        } while (col > 0);
-
-        {
-            u32 wrap = *savePtr2;
-            u32 first;
-            savePtr2++;
-            offset += 0x20;
-            first = rowBase[0];
-            row++;
-            first <<= 4;
-            first |= wrap;
-            rowBase[0] = first;
-            rowBase += 8;
+        for (col = 7; col > 0; col--) {
+            g_TeamLogoCanvas.words[row][col] =
+                (g_TeamLogoCanvas.words[row][col] << 4) |
+                (g_TeamLogoCanvas.words[row][col - 1] >> 28);
         }
-    } while (row < 0x40);
+        g_TeamLogoCanvas.words[row][0] =
+            (g_TeamLogoCanvas.words[row][0] << 4) | wrap;
+    }
 }
 
 void FlipTeamLogoVertical(void) {
-    s32 i;
-    s32 j;
-    s32 mirror;
-    u32 *base;
+    s32 row;
+    s32 col;
 
     PlaySoundCue(8);
-    base = g_TeamLogoCanvas.words[0];
-    i = 0;
-    mirror = 0x3F;
-    do {
-        u8 *cursor;
-        s32 leftOffset;
-        s32 rightOffset;
+    for (row = 0; row < 32; row++) {
+        for (col = 0; col < 8; col++) {
+            u32 temp = g_TeamLogoCanvas.words[row][col];
 
-        j = 0;
-        leftOffset = i * 32;
-        rightOffset = (mirror - i) << 5;
-        cursor = GetTeamLogoCanvasBytes(base);
-        do {
-            u32 temp;
-            u32 *left;
-            u32 *right;
-            TeamLogoCanvasAddress leftAddress;
-            TeamLogoCanvasAddress rightAddress;
-
-            leftAddress.bytePointer = cursor;
-            leftAddress.value = leftOffset + leftAddress.value;
-            left = leftAddress.wordPointer;
-            rightAddress.bytePointer = cursor;
-            rightAddress.value = rightOffset + rightAddress.value;
-            right = rightAddress.wordPointer;
-            cursor += 4;
-            temp = *left;
-            *left = *right;
-            j++;
-            *right = temp;
-        } while (j < 8);
-        i++;
-    } while (i < 0x20);
+            g_TeamLogoCanvas.words[row][col] =
+                g_TeamLogoCanvas.words[63 - row][col];
+            g_TeamLogoCanvas.words[63 - row][col] = temp;
+        }
+    }
 }
