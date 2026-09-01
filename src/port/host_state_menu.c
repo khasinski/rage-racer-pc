@@ -343,7 +343,7 @@ s32 g_MenuPendingCourseIndex;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 s32 g_TeamNameCharModel;
-unsigned char GameMenuCursorAnim[56] __attribute__((aligned(16)));
+s32 GameMenuCursorAnim;
 s32 g_AnimTimer;
 unsigned char g_CarModelAsset[8] __attribute__((aligned(16)));
 s32 g_GrandPrixClass;
