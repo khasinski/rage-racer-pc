@@ -185,37 +185,14 @@ typedef struct GameCarRuntime {
     u8 pad16A[0x32];
 } GameCarRuntime;
 
-typedef union GameCarRuntimeAddress {
-    GameCarRuntime *runtime;
-    struct PlayerCarRuntime *player;
-    struct GameRenderObject *renderObject;
-    u32 *words;
-    Block16 *blocks;
-    LVec *vector;
-    Vec4 *vector4;
-} GameCarRuntimeAddress;
-
 static inline GameCarRuntime *GetPlayerCarRuntime(
     struct PlayerCarRuntime *car) {
-    GameCarRuntimeAddress address;
-
-    address.player = car;
-    return address.runtime;
+    return (GameCarRuntime *)(void *)car;
 }
 
 static inline struct GameRenderObject *GetCarRenderObject(
     GameCarRuntime *car) {
-    GameCarRuntimeAddress address;
-
-    address.runtime = car;
-    return address.renderObject;
-}
-
-static inline Vec4 *GetCarVector4(GameCarRuntime *car) {
-    GameCarRuntimeAddress address;
-
-    address.runtime = car;
-    return address.vector4;
+    return (struct GameRenderObject *)(void *)car;
 }
 
 typedef struct CarProgressWindow {
@@ -411,19 +388,8 @@ typedef struct GameCarSpec {
     CarTachometerSpec tachometer; /* +0x138 */
 } GameCarSpec;
 
-typedef union GameCarSpecAddress {
-    s32 value;
-    void *data;
-    u8 *bytes;
-    s32 *wordPointer;
-    GameCarSpec *pointer;
-} GameCarSpecAddress;
-
 static inline GameCarSpec *GetGameCarSpec(void *data) {
-    GameCarSpecAddress address;
-
-    address.data = data;
-    return address.pointer;
+    return (GameCarSpec *)data;
 }
 
 extern GameCarSpec *g_CarSpec;
@@ -433,14 +399,6 @@ extern GameCarSpec *g_CarSpec;
 typedef struct GearCurveRow {
     s32 values[16];
 } GearCurveRow;
-
-typedef union GearCurveAddress {
-    s32 value;
-    u8 *bytes;
-    s32 *valuePointer;
-    GearCurveRow *rowPointer;
-    GameCarSpec *specPointer;
-} GearCurveAddress;
 
 extern GearCurveRow g_GearTorqueCurve[];
 
@@ -526,17 +484,6 @@ typedef union PlayerLapTimes {
     } table;
     s32 words[12];
 } PlayerLapTimes;
-
-enum {
-    PLAYER_LAP_HIGHLIGHT_TO_MILLISECONDS = 0x22
-};
-
-typedef union PlayerLapTimeAddress {
-    s32 value;
-    u8 *bytes;
-    s16 *halfwordPointer;
-    s32 *timePointer;
-} PlayerLapTimeAddress;
 
 typedef union PlayerRaceTiming {
     struct {
@@ -689,56 +636,35 @@ static inline PlayerCarRaceState *GetPlayerCarRaceState(PlayerCarRuntime *car) {
 }
 
 static inline void CopyPlayerBodyRotationToModel(PlayerCarRuntime *car) {
-    GameCarRuntimeAddress source;
-    GameCarRuntimeAddress destination;
-
-    source.words = (u32 *)&car->bodyPitch;
-    destination.words = (u32 *)&car->modelPitch;
-    *destination.vector4 = *source.vector4;
+    car->modelPitch = car->bodyPitch;
+    car->modelYaw = car->bodyYaw;
+    car->modelRoll = car->bodyRoll;
+    car->field_5C = car->bodyRotationW;
 }
 
 static inline void SetPlayerPosition(PlayerCarRuntime *car, const Vec4 *position) {
-    GameCarRuntimeAddress address;
-
-    address.player = car;
-    *address.vector4 = *position;
+    car->x = position->x;
+    car->y = position->y;
+    car->z = position->z;
+    car->positionW = position->w;
 }
 
 static inline Vec4 GetPlayerPosition(PlayerCarRuntime *car) {
-    GameCarRuntimeAddress address;
+    Vec4 position;
 
-    address.player = car;
-    return *address.vector4;
+    position.x = car->x;
+    position.y = car->y;
+    position.z = car->z;
+    position.w = car->positionW;
+    return position;
 }
 
 static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
-    GameCarRuntimeAddress source;
-    GameCarRuntimeAddress destination;
-
-    source.words = (u32 *)&car->bodyPitch;
-    destination.words = (u32 *)&car->modelPitch;
-    *destination.vector4 = *source.vector4;
+    car->modelPitch = car->bodyPitch;
+    car->modelYaw = car->bodyYaw;
+    car->modelRoll = car->bodyRoll;
+    car->field_5C = car->bodyRotationW;
 }
-
-
-typedef union CarWorldCoordinate {
-    s32 value;
-    struct {
-        u16 low;
-        u16 high;
-    } half;
-} CarWorldCoordinate;
-
-typedef struct CarWorldPosition {
-    CarWorldCoordinate x;
-    CarWorldCoordinate y;
-    CarWorldCoordinate z;
-} CarWorldPosition;
-
-typedef union PlayerCarPositionView {
-    PlayerCarRuntime *car;
-    CarWorldPosition *position;
-} PlayerCarPositionView;
 
 /* A second, halfword-wide view of that same block, for the code that loads
  * 0x104..0x134 as s16 where GameCarDrive declares s32. */

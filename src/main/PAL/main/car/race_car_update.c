@@ -323,7 +323,6 @@ static void PlaceAllCarsOnTrack(void) {
  * The rest of the field skips that, because nobody can see it.
  */
 static void MoveAllCars(void) {
-    Vec4 position;
     Matrix bodyRotation;
     Matrix work;
     SVec lean;
@@ -375,18 +374,8 @@ static void MoveAllCars(void) {
                 car->x = car->x + car->motionX;
                 car->z = car->z + car->motionZ;
             }
-            /*
-             * Retail copied an otherwise uninitialized stack Vec4 after
-             * assigning only x and z. Its MIPS stack happened to leave zero
-             * in positionW, while a 64-bit host does not. Preserve the two
-             * untouched coordinates explicitly: positionW is later consumed
-             * by camera/render paths, so retaining the undefined copy makes
-             * game behaviour depend on the compiler ABI.
-             */
-            position = *GetCarVector4(car);
-            position.x = ai->worldVelocityX * 6 / 1280 + car->x;
-            position.z = ai->worldVelocityZ * 6 / 1280 + car->z;
-            *GetCarVector4(car) = position;
+            car->x += ai->worldVelocityX * 6 / 1280;
+            car->z += ai->worldVelocityZ * 6 / 1280;
             /* The body leans away from the steering and rights itself. */
             if (car->steeringAngle >= 0x41) {
                 car->bodyRollVelocity = car->bodyRollVelocity - 6;
@@ -480,7 +469,6 @@ void UpdateAttractCars(void) {
 }
 
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
-    PlayerCarPositionView target;
     GameViewWork viewWork;
     GameViewWork *view;
     s32 s0v = 28;
@@ -488,7 +476,6 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
 
     LoadViewWork(&viewWork);
     view = &viewWork;
-    target.car = car;
     
     if (mode < 90) {
         if (mode < 2) {
@@ -513,9 +500,9 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                 g_RaceIntroCameraCursor = &a[1];
                 g_RaceIntroCameraTimer = a[1].duration;
                 if (a[1].mode == 1) {
-                    g_RaceIntroCameraDelta.vx = -a[1].x.half.value + target.position->x.half.low;
-                    g_RaceIntroCameraDelta.vy = -a[1].y.half.value - 28 + target.position->y.half.low;
-                    g_RaceIntroCameraDelta.vz = -a[1].z.half.value + target.position->z.half.low;
+                    g_RaceIntroCameraDelta.vx = -a[1].x.half.value + (u16)car->x;
+                    g_RaceIntroCameraDelta.vy = -a[1].y.half.value - 28 + (u16)car->y;
+                    g_RaceIntroCameraDelta.vz = -a[1].z.half.value + (u16)car->z;
                 } else {
                     g_RaceIntroCameraDelta.vx = -a[1].x.half.value + a[2].x.half.value;
                     g_RaceIntroCameraDelta.vy = -a[1].y.half.value + a[2].y.half.value;

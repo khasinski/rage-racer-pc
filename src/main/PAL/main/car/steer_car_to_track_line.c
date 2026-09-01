@@ -192,9 +192,7 @@ void UpdateCarLaunch(PlayerCarRuntime *car) {
          */
         if (spinMagnitude < 0x1000) {
             GameCarSpec *spec = g_CarSpec;
-            GameCarSpecAddress specAddress;
             s32 landingRpm;
-            s32 gearOffset;
             s32 offAxis;
             u32 shiftRpmRange;
 
@@ -216,21 +214,16 @@ void UpdateCarLaunch(PlayerCarRuntime *car) {
             drive->spinRate = 0;
 
             landingRpm = car->speed * 0xA0 / 1168 * 10000;
-            specAddress.pointer = spec;
-            specAddress.bytes += drive->gear << 2;
-            landingRpm /= specAddress.pointer->gearRatio[0];
+            landingRpm /= spec->gearRatio[drive->gear];
 
-            gearOffset = drive->gear << 2;
             drive->jumpTimer = 0x14;
             drive->motionState = CAR_MOTION_AIRBORNE;
             g_ShiftTargetRpm = landingRpm;
             drive->shiftRpmDelta =
                 (s16)(g_ShiftTargetRpm - (u16)drive->engineRpm);
 
-            specAddress.pointer = spec;
-            specAddress.bytes += gearOffset;
             drive->engineLoad =
-                landingRpm * specAddress.pointer->gearLoad[0] / 0x20000;
+                landingRpm * spec->gearLoad[drive->gear] / 0x20000;
             if (drive->manual == 0) {
                 drive->engineLoad = drive->engineLoad * 985 / 1000;
             }
