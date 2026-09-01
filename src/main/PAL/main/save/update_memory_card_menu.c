@@ -341,12 +341,11 @@ static void RunCardSlotActions(void) {
 
     case CARD_SLOT_ACTION_READ_SAVE: {
         s32 slot = g_McSlotCursor;
+
         g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+        g_McActionOk = g_McActionResult != 0;
         if (g_McActionResult != 0) {
-            g_McActionOk = 1;
             g_McLastSlot = g_McSlotCursor;
-        } else {
-            g_McActionOk = 1;
         }
         g_McActionTimer = 0x3C;
         g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;

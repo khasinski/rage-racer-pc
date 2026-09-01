@@ -196,6 +196,39 @@ static void Record(FILE *out, const char *label) {
     }
 }
 
+static int TestFailedLoadReportsError(void) {
+    g_McMenuState = 1;
+    g_McMenuSelection = 1;
+    g_McCardStatus = 1;
+    g_McMenuPage = 1;
+    g_McMenuRowCount = 4;
+    g_McActionState = 0x22;
+    g_McActionBusy = 1;
+    g_McActionOk = 1;
+    g_McSlotCursor = 1;
+    g_McFadeLevel = 0;
+    g_McFadeStep = 0;
+    g_McErrorPending = 0;
+    g_SceneTimer = 0x40;
+    g_PadPressed = 0;
+    s_loadAnswer = 0;
+
+    UpdateMemoryCardMenu();
+    if (g_McActionOk != 0) {
+        printf("FAIL a failed load is still marked successful\n");
+        return 0;
+    }
+
+    g_McActionState = 0x26;
+    UpdateMemoryCardMenu();
+    if (g_McMenuPhase != MC_PROMPT_CARD_ERROR) {
+        printf("FAIL a failed load reports prompt %d instead of card error\n",
+               g_McMenuPhase);
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
     static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
@@ -211,12 +244,16 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 619536843UL;
+    static const unsigned long expected = 1783909075UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
     s32 steps = 0;
     char label[64];
+
+    if (!TestFailedLoadReportsError()) {
+        return 1;
+    }
 
     if (argc > 1) {
         out = fopen(argv[1], "w");
