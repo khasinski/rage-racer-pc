@@ -27,4 +27,14 @@ void PortDuringFrameWait(int frameLimit);
 int PortMirrorFarDepth(int retailFar);
 void PortSampleAnalogPad(void);
 
+/*
+ * Says that a case falling into the next one is meant. A comment saying so is
+ * not enough for gcc, which fails the build over it.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define RAGE_FALLTHROUGH __attribute__((fallthrough))
+#else
+#define RAGE_FALLTHROUGH ((void)0)
+#endif
+
 #endif

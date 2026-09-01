@@ -29,7 +29,8 @@ int main(void) {
         {"rear group beyond left", 10, -69, -68},
         {"centre remains centred", 0, 0, 0},
     };
-    GameTrackPoint points[2];
+    /* Static: the global keeps this address, and gcc is right to say so. */
+    static GameTrackPoint points[2];
     size_t i;
     int failures = 0;
 

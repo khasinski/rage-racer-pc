@@ -59,7 +59,7 @@ void StepCdPauseRequest(void) {
             CdPlaybackPassedLoopPoint(firstLoopPoint, loopPoint, elapsed);
 
         g_CdCommandStep = CD_PAUSE_SEND_COMMAND;
-        /* fallthrough */
+        RAGE_FALLTHROUGH;
     }
 
     case CD_PAUSE_SEND_COMMAND:

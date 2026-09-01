@@ -28,17 +28,6 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 
 /* Everything the file reaches for that this sweep does not exercise. The
  * sound cue belongs to the rival chatter further down the same file. */
-s32 g_ClosestRivalRank;
-s32 g_CourseIndex;
-s16 g_RacePhase;
-GameCarRuntime *g_RankedCars[4];
-s16 g_RivalCueCooldown0;
-s16 g_RivalCueCooldown1;
-s16 g_RivalCueCooldown2;
-s16 g_RivalCueCooldown3;
-s16 g_RivalCueEnabled;
-s32 g_RivalCueFlags;
-s32 g_SceneTimer;
 GameCarRuntime g_Cars[11];
 PlayerCarRuntime g_PlayerCar;
 

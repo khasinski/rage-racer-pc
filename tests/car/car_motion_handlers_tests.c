@@ -25,8 +25,6 @@ void UpdateCarLaunch(PlayerCarRuntime *car);
 void UpdateCarAirborne(PlayerCarRuntime *car);
 void UpdateCarStandingStart(PlayerCarRuntime *car);
 
-s32 g_TrackPointCount;
-GameCarSpec *g_CarSpec;
 
 /* A ring of points, so an index maps to a position without a course. */
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {

@@ -24,8 +24,6 @@
 
 void SteerCarToTrackLine(PlayerCarRuntime *car);
 
-s32 g_TrackPointCount;
-GameCarSpec *g_CarSpec;
 
 /*
  * A ring of points a thousand units across, so an index maps to a position

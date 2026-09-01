@@ -125,7 +125,8 @@ void UpdateBasicEffectVoices(void) {
         case 0:
             SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
                        channel->right.half[0], 0x3C, 0, 0, 0);
-            /* Fall through: a newly keyed voice needs the same volume update. */
+            /* A newly keyed voice needs the same volume update. */
+            RAGE_FALLTHROUGH;
         case 2:
             SsUtSetVVol(
                 voice,
