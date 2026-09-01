@@ -20,7 +20,7 @@ void StepCdPauseRequest(void) {
         /* fallthrough */
 
     case 1:
-        if (CdControl(0x11, 0, g_CdLocResult) != 0) {
+        if (CdControl(CD_DRIVE_GET_LOCATION, 0, g_CdLocResult) != 0) {
             g_CdCommandStep = 2;
         }
         break;
@@ -54,7 +54,7 @@ void StepCdPauseRequest(void) {
     }
 
     case 4:
-        if (CdControl(9, 0, 0) != 0) {
+        if (CdControl(CD_DRIVE_PAUSE, 0, 0) != 0) {
             g_CdCommandStep = 5;
         }
         break;
@@ -79,7 +79,7 @@ void InitCdAudio(void) {
     SsSetSpuInputAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
     g_CdModeParam = 7;
-    CdControl(0xE, &g_CdModeParam, 0);
+    CdControl(CD_DRIVE_SET_MODE, &g_CdModeParam, 0);
     BuildCdTrackTable();
 
     g_CdTrackPending = -1;

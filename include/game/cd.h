@@ -13,6 +13,14 @@ typedef enum CdCommandType {
     CD_COMMAND_RESUME
 } CdCommandType;
 
+typedef enum CdDriveCommand {
+    CD_DRIVE_PLAY = 0x03,
+    CD_DRIVE_PAUSE = 0x09,
+    CD_DRIVE_SET_MODE = 0x0E,
+    CD_DRIVE_GET_LOCATION = 0x11,
+    CD_DRIVE_SEEK_PLAY = 0x16,
+} CdDriveCommand;
+
 /* An asserted host EOF may be consumed only once the previous request has
  * finished. The backend keeps EOF asserted until the following Play. */
 static inline int CdAudioRequestsIdle(

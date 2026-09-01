@@ -18,14 +18,11 @@ void PauseCdAudio(void) {
 
 void ResumeCdAudio(void) {
     if (g_CdRestartOnResume != 0) {
-        u8 value;
-
-        value = g_CdCurrentTrack;
         g_CdTrackStep = 4;
         g_CdRestartOnResume = 0;
         g_CdCommandPending = CD_COMMAND_PLAY;
         g_CdCommandStep = 0;
-        g_CdTrackPending = value;
+        g_CdTrackPending = g_CdCurrentTrack;
     } else {
         g_CdCommandPending = CD_COMMAND_RESUME;
         g_CdCommandStep = 0;
