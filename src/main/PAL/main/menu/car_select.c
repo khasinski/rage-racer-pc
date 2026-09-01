@@ -274,41 +274,6 @@ void EnterCarSelectScreen(void) {
 }
 
 
-s32 DrawCustomizeScreen(s32 step) {
-    s32 value;
-
-    if (step == 0) {
-        g_CustomizeFadeAccum = 0;
-        return 0;
-    }
-
-    if (step > 0) {
-        value = step + g_CustomizeFadeAccum;
-        g_CustomizeFadeAccum = value;
-        if (value >= 0x1FD) {
-            g_CustomizeFadeAccum = 0x1FC;
-        }
-        value = 0;
-    } else {
-        s32 limit;
-        u32 product;
-
-        value = step + g_CustomizeFadeAccum;
-        g_CustomizeFadeAccum = value;
-        limit = 0x1FC;
-        if (value < 0) {
-            g_CustomizeFadeAccum = 0;
-        }
-        limit = limit - g_CustomizeFadeAccum;
-        product = limit * limit;
-        value = product / 2048;
-    }
-
-    DrawCarEngineSpec((s16)value, (g_CustomizeFadeAccum / 4U) & 0xFF);
-    return g_CustomizeFadeAccum;
-}
-
-
 void UpdateCustomizeScreen(void) {
     void *ot;
     s32 mode;
