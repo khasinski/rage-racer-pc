@@ -240,7 +240,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     }
 
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
-    spad = CAR_TRACK_SCRATCH;
+    spad = (&g_CarTrackScratch);
     spad->knockbackMode = 0;
     point = TrackPoint(trackPointIndex);
     segmentLength = point->segmentLength;

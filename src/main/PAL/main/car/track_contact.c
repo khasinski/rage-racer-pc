@@ -39,7 +39,7 @@ void ResetCarTrackState(GameCarRuntime *car) {
     GameTrackPoint *nextPoint;
     CarTrackScratch *spad;
 
-    spad = CAR_TRACK_SCRATCH;
+    spad = (&g_CarTrackScratch);
     spad->knockbackMode = 0;
     trackPointIndex = car->trackPointIndex;
     nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;

@@ -34,20 +34,20 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         BuildRotMatrixZ(&renderWorldMtx,
                         g_SpinningSceneryAngle[loopIndex]);
         MulMatrix2(&yawMatrix, &renderWorldMtx);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &yawMatrix);
+        MulMatrix2((&g_RageScratchpadState.matrix), &yawMatrix);
         BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[loopIndex]);
         MulMatrix2(&yawMatrix, &objectMatrix);
         SetGteObjectMatrix(
             SCRATCH_OBJECT_MATRIX_WORK,
             AsPosition(&g_SpinningSceneryPos[loopIndex]), &objectMatrix);
 
-        SCRATCH_ENV_MODE4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         limit = g_CourseModelCount >= 0x3F ? 0x3E : 1;
         GameRenderWorldSubmitDynamicCourseObject(
             0x100 + loopIndex, limit, g_SpinningSceneryPos[loopIndex].x,
             g_SpinningSceneryPos[loopIndex].y,
             g_SpinningSceneryPos[loopIndex].z, renderWorldMtx.m, 1, 0);
-        SubmitCourseModel2(SCRATCHPAD, limit);
+        SubmitCourseModel2((&g_RageScratchpadState), limit);
     }
 
     if ((timer & 0x1FF) == 0 && animate != 0) {

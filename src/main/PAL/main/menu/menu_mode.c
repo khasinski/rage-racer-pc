@@ -316,14 +316,14 @@ void InitMenuMode(void) {
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
     InitMenuLighting();
 
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewY = -64;
+    g_RageScratchpadState.viewZ = -256;
+    g_RageScratchpadState.viewAngleX = 0x100;
+    g_RageScratchpadState.viewAngleY = 0;
+    g_RageScratchpadState.viewAngleZ = 0;
     SetCameraRotMatrix();
-    ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
+    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
 
     g_CourseSelectModalScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;

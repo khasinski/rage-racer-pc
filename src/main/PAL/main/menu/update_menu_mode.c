@@ -15,9 +15,9 @@ void UpdateMenuMode(void) {
 
     screenRange = g_MenuScreen - 1;
     if (screenRange < 2) {
-        SCRATCH_OT_SHIFT = 1;
+        g_RageScratchpadState.otShift = 1;
     } else {
-        SCRATCH_OT_SHIFT = 5;
+        g_RageScratchpadState.otShift = 5;
     }
 
     if (g_MenuHandlerIndex > 0) {

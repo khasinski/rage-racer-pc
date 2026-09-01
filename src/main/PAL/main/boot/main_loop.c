@@ -47,13 +47,13 @@ void InitSubsystems(void) {
     InitRecordTables();
     InitRenderState(5);
     InitSaveDefaults();
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
+    g_RageScratchpadState.viewY = -64;
+    g_RageScratchpadState.viewZ = -256;
     g_ExtraGrandPrixUnlocked = 0;
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewAngleX = 0x100;
+    g_RageScratchpadState.viewAngleY = 0;
+    g_RageScratchpadState.viewAngleZ = 0;
     SetCameraRotMatrix();
 }
 

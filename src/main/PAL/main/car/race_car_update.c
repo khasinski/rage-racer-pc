@@ -601,9 +601,9 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             RaceIntroCameraKey *q;
             p = &script->keys[n];
             g_RaceIntroCameraCursor = p;
-            SCRATCH_VIEW_X = p->x.word;
-            SCRATCH_VIEW_Y = p->y.word;
-            SCRATCH_VIEW_Z = p->z.word;
+            g_RageScratchpadState.viewX = p->x.word;
+            g_RageScratchpadState.viewY = p->y.word;
+            g_RageScratchpadState.viewZ = p->z.word;
             g_RageScratchpadState.reserved14 = p->mode;
             q = g_RaceIntroCameraCursor;
             g_RaceIntroCameraDelta.vx = -q[0].x.half.value + q[1].x.half.value;

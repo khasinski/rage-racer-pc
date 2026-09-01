@@ -138,14 +138,14 @@ void CaptureModelBegin(int kind, int index, int fogged) {
     draw = &snapshot->draws[snapshot->drawCount++];
     memset(draw, 0, sizeof(*draw));
     draw->kind = (uint8_t)kind;
-    draw->mirror = SCRATCH_MIRROR != 0;
+    draw->mirror = g_RageScratchpadState.orderingFlag != 0;
     draw->fogged = (uint8_t)fogged;
-    draw->otShift = (uint8_t)SCRATCH_OT_SHIFT;
+    draw->otShift = (uint8_t)g_RageScratchpadState.otShift;
     draw->modelIndex = index;
     draw->renderMode = (uint32_t)g_ScratchRenderMode;
     draw->bankId = (uint64_t)(uintptr_t)(kind == RAGE_CAPTURE_KIND_MODEL
-                                             ? SCRATCH_MODEL_MODELS
-                                             : SCRATCH_COURSE_BANK);
+                                             ? g_RageScratchpadState.modelModels
+                                             : g_RageScratchpadState.courseBank);
     CaptureOtBase(&draw->table, &draw->otBaseBias);
     CaptureGte(&draw->gte);
 }
@@ -161,9 +161,9 @@ void CaptureTerrainBegin(const void *cells, int count) {
     if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN) return;
     batch = &snapshot->terrain[snapshot->terrainCount++];
     memset(batch, 0, sizeof(*batch));
-    batch->mirror = SCRATCH_MIRROR != 0;
-    batch->envMode4 = g_ScratchEnvMode4 != 0;
-    batch->otShift = (uint8_t)SCRATCH_OT_SHIFT;
+    batch->mirror = g_RageScratchpadState.orderingFlag != 0;
+    batch->envMode4 = g_RageScratchpadState.envMode4 != 0;
+    batch->otShift = (uint8_t)g_RageScratchpadState.otShift;
     if (count > RAGE_CAPTURE_MAX_CELLS) count = RAGE_CAPTURE_MAX_CELLS;
     batch->cellCount = (int16_t)count;
     for (i = 0; i < count * 4; i++) {
@@ -378,14 +378,14 @@ void CaptureFrameEnd(void) {
     snapshot->sceneId = g_SceneId;
     snapshot->courseMirror = g_MirrorMode != 0;
     snapshot->sceneTimer = g_SceneTimer;
-    view = SCRATCH_VIEW_MATRIX_GTE;
+    view = (&g_RageScratchpadState.matrix);
     memcpy(snapshot->viewMatrix.m, view->m, sizeof(snapshot->viewMatrix.m));
     snapshot->viewMatrix.t[0] = view->t[0];
     snapshot->viewMatrix.t[1] = view->t[1];
     snapshot->viewMatrix.t[2] = view->t[2];
-    snapshot->viewPosition[0] = SCRATCH_VIEW_X;
-    snapshot->viewPosition[1] = SCRATCH_VIEW_Y;
-    snapshot->viewPosition[2] = SCRATCH_VIEW_Z;
+    snapshot->viewPosition[0] = g_RageScratchpadState.viewX;
+    snapshot->viewPosition[1] = g_RageScratchpadState.viewY;
+    snapshot->viewPosition[2] = g_RageScratchpadState.viewZ;
     frame = CaptureFrameContext();
     if (frame != NULL) {
         snapshot->displayHeight = frame->layout.environment.draw.clip.h;

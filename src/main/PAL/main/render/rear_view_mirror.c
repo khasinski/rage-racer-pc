@@ -33,7 +33,7 @@ s32 BeginMirrorPass(void) {
     MirrorPanelPositionAddress panelPosition;
 
     mirrorEnabled = 0;
-    scratch = SCRATCHPAD;
+    scratch = (&g_RageScratchpadState);
 
     if ((g_MirrorUnlocked != 0) &&
         (g_MirrorViewEnabled != 0) &&
@@ -113,7 +113,7 @@ void EndMirrorPass(void) {
     s32 v0reg;
     s32 v1reg;
 
-    scratch = SCRATCHPAD;
+    scratch = (&g_RageScratchpadState);
 
     SetGeomOffset(0xA0, 0x78);
     SetGeomScreen(0x140);
@@ -211,9 +211,9 @@ void DrawRearViewMirror(s32 mode) {
                          [GAME_FRAME_OT_LENGTH - 1], prim);
             *scratch = packet;
             BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
-            SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-            SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
-            SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+            SetRotMatrix((&g_RageScratchpadState.matrix));
+            g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
+            SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
 
             packet = *scratch;
             SetDrawArea(packet,

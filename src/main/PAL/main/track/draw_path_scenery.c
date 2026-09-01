@@ -18,7 +18,7 @@ void DrawPathScenery(void) {
     BuildRotMatrixY(&mtx0, 0x800 - g_PathSceneryTransform.rotation.vy);
     BuildRotMatrixX(&mtx1, g_PathSceneryTransform.rotation.vx);
     MulMatrix2(&mtx0, &mtx1);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx1);
+    MulMatrix2((&g_RageScratchpadState.matrix), &mtx1);
     BuildRotMatrixZ(&mtx0, g_PathSceneryTransform.rotation.vz);
     MulMatrix2(&mtx1, &mtx0);
 
@@ -26,12 +26,12 @@ void DrawPathScenery(void) {
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
                        AsPositionWords(g_PathSceneryTransform.position.w), &mtx0);
     frameValue = g_ModelBankCount;
-    SCRATCH_ENV_MODE4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
     drawId = 1;
     if (frameValue >= 0x24) {
         drawId = 0x23;
     }
-    SubmitModel(SCRATCHPAD, drawId);
+    SubmitModel((&g_RageScratchpadState), drawId);
 
     {
         s32 angle = (s32)((u32)g_SceneTimer * 331u);
@@ -47,7 +47,7 @@ void DrawPathScenery(void) {
     if (frameValue >= 0x25) {
         drawId = 0x24;
     }
-    SubmitModel(SCRATCHPAD, drawId);
+    SubmitModel((&g_RageScratchpadState), drawId);
 }
 
 
@@ -92,7 +92,7 @@ void UpdateTrackEventSound(s16 arg) {
     }
     if (s0 != 0) {
         s0 = (s0 * g_PlayerCar.speed) / 12775;
-        t = SCRATCH_VIEW_ANGLE_Y - 0xC00;
+        t = g_RageScratchpadState.viewAngleY - 0xC00;
         s3 = (t + TrackPoint(g_PlayerCar.trackPointIndex)->angle) & 0xFFF;
         if (s0 < 0 && (data & 2) > 0) {
             val = s0 * rcos(s3);
@@ -207,8 +207,8 @@ void UpdatePointAmbience(s32 trackPosition) {
          * back to a large positive number; the clamp against the zone's own
          * level is what catches that, and both have to stay as they are.
          */
-        sourceX -= SCRATCH_VIEW_X;
-        sourceZ -= SCRATCH_VIEW_Z;
+        sourceX -= g_RageScratchpadState.viewX;
+        sourceZ -= g_RageScratchpadState.viewZ;
         attenuated = (s16)(level - (SquareRoot12((sourceX * sourceX) / 4 +
                                                  (sourceZ * sourceZ) / 4) >> 11));
         if ((s16)level < attenuated) {
@@ -220,7 +220,7 @@ void UpdatePointAmbience(s32 trackPosition) {
         /* Where the source lies relative to the way the camera faces, turned
          * into a left/right split around the zone's own level. */
         bearing = Atan2(sourceX, sourceZ);
-        pan = (SCRATCH_VIEW_ANGLE_Y - 0xC00 + bearing) & 0xFFF;
+        pan = (g_RageScratchpadState.viewAngleY - 0xC00 + bearing) & 0xFFF;
         sine = rsin(pan);
         leftVolume = level + (attenuated * sine) / 4096 + 0x20;
         rightVolume = level + (-attenuated * sine) / 4096 + 0x20;

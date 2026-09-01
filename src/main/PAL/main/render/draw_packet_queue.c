@@ -122,7 +122,7 @@ u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
  * in the scratchpad at 0x1F800008. */
 /* The per-frame scratchpad block: camera position at +8, view matrix at +0x28. */
 #define SCRATCH_CAMERA_POS (&SCRATCH_VIEW_STATE->position.vector)
-#define SCRATCH_VIEW_MATRIX (SCRATCH_VIEW_MATRIX_GTE)
+#define SCRATCH_VIEW_MATRIX ((&g_RageScratchpadState.matrix))
 
 /*
  * Per-object GTE setup: takes the object's offset from the camera through the

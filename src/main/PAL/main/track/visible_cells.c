@@ -35,7 +35,7 @@ void DrawCourseObjects(void) {
         }
 
         BuildRotMatrixY(&mtx, obj->field2);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+        MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
         {
             s32 transformed;
             s32 camera;
@@ -53,7 +53,7 @@ void DrawCourseObjects(void) {
             transformed -= camera;
             SCRATCH_OBJECT_MATRIX_WORK->relative[2] = transformed;
 
-            ApplyMatrix(SCRATCH_VIEW_MATRIX_GTE,
+            ApplyMatrix((&g_RageScratchpadState.matrix),
                         SCRATCH_OBJECT_MATRIX_WORK->relative,
                         &SCRATCH_OBJECT_MATRIX_WORK->view);
             transformed = SCRATCH_OBJECT_MATRIX_WORK->view.x;
@@ -71,17 +71,17 @@ void DrawCourseObjects(void) {
 
         flags = obj->flags;
         if (flags & 8) {
-            SCRATCH_ENV_MODE4 = ((g_AnimTimer & 0x10) == 0) << 16;
+            g_RageScratchpadState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
         } else if (flags & 4) {
-            SCRATCH_ENV_MODE4 = 0x10000;
+            g_RageScratchpadState.envMode4 = 0x10000;
         } else {
-            SCRATCH_ENV_MODE4 = 0;
+            g_RageScratchpadState.envMode4 = 0;
         }
 
         if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags % 2)) {
-            SubmitCourseModel2(SCRATCHPAD, obj->modelId);
+            SubmitCourseModel2((&g_RageScratchpadState), obj->modelId);
         } else {
-            SubmitCourseModel(SCRATCHPAD, obj->modelId);
+            SubmitCourseModel((&g_RageScratchpadState), obj->modelId);
         }
 
         }
@@ -166,7 +166,7 @@ void BuildVisibleCells(s32 near, s32 far) {
             dy = g_CellScanOffsetY[k];
             /* The rear-view pass reflects this quadrant.  Applying its signs
              * to the main view drops the left-hand cells ahead of the car. */
-            if (SCRATCH_MIRROR) {
+            if (g_RageScratchpadState.orderingFlag) {
                 sx = cx + dx;
                 sy = cy - dy;
             } else {
@@ -189,7 +189,7 @@ void BuildVisibleCells(s32 near, s32 far) {
                 vec[0] = ((sx << 11) - (view->position.components.x.value - center)) * 4;
                 vec[1] = (-view->position.components.y.value) * 4;
                 vec[2] = ((sy << 11) - (view->position.components.z.value - center)) * 4;
-                ApplyMatrixLV(SCRATCH_VIEW_MATRIX_GTE, vec, proj);
+                ApplyMatrixLV((&g_RageScratchpadState.matrix), vec, proj);
                 if (proj[2] >= near && far >= proj[2]) {
                     out->x = proj[0];
                     out->y = proj[1];

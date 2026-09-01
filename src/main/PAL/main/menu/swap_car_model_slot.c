@@ -30,15 +30,15 @@ void DrawMenuCarView(void) {
     s32 *q;
 
     vec = g_MenuCarPivotOffset;
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    g_RageScratchpadState.viewY = -64;
+    g_RageScratchpadState.viewZ = -256;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewAngleX = 0x100;
+    g_RageScratchpadState.viewAngleY = 0;
+    g_RageScratchpadState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
+    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -129,7 +129,7 @@ void DrawMenuCarView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - *p);
     BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
+    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
 
     altLayout = g_MenuAltLayout;
     outX = out.x;
@@ -167,13 +167,13 @@ void DrawMenuCarView(void) {
     SCRATCH_OT_BASE_AS(OT_TYPE) += 30;
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
                        AsPositionWords(&ShowroomPlayerCar()->pose.position[0]), &mtxA);
-    SCRATCH_ENV_MODE4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
     {
         s32 a1 = 1;
         if (g_ModelBankCount >= 6) {
             a1 = 5;
         }
-        SubmitModel(SCRATCHPAD, a1);
+        SubmitModel((&g_RageScratchpadState), a1);
     }
     SCRATCH_OT_BASE_AS(OT_TYPE) -= 30;
 }
@@ -187,15 +187,15 @@ void DrawMenuCourseView(void) {
     s32 s2;
     s32 *p;
 
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_ANGLE_X = 0x100;
-    SCRATCH_VIEW_ANGLE_Y = 0;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    g_RageScratchpadState.viewY = -64;
+    g_RageScratchpadState.viewZ = -256;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewAngleX = 0x100;
+    g_RageScratchpadState.viewAngleY = 0;
+    g_RageScratchpadState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
+    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -267,16 +267,16 @@ void DrawMenuCourseView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - *p);
     BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
+    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
     SelectModelBank(14);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(p - 9), &mtxA);
-    SCRATCH_ENV_MODE4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
     {
         s32 a1 = 1;
         if ((s2 & 3) < g_ModelBankCount) {
             a1 = s2 & 3;
         }
-        SubmitModel(SCRATCHPAD, a1);
+        SubmitModel((&g_RageScratchpadState), a1);
     }
 }
 
@@ -303,15 +303,15 @@ void DrawTeamNameCharModel(void) {
 
     vcopy = g_TeamNameCharScale;
 
-    SCRATCH_VIEW_Y = -64;
-    SCRATCH_VIEW_Z = -256;
-    SCRATCH_VIEW_X = 0;
-    SCRATCH_VIEW_ANGLE_X = 0;
-    SCRATCH_VIEW_ANGLE_Y = -104;
-    SCRATCH_VIEW_ANGLE_Z = 0;
+    g_RageScratchpadState.viewY = -64;
+    g_RageScratchpadState.viewZ = -256;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewAngleX = 0;
+    g_RageScratchpadState.viewAngleY = -104;
+    g_RageScratchpadState.viewAngleZ = 0;
 
     SetCameraRotMatrix();
-    ScaleMatrix(SCRATCH_VIEW_MATRIX_GTE, &g_MenuViewScale);
+    ScaleMatrix((&g_RageScratchpadState.matrix), &g_MenuViewScale);
 
     if (249999 < g_MenuViewOffsetTarget) {
         if (g_MenuViewOffset < 2500) {
@@ -372,7 +372,7 @@ void DrawTeamNameCharModel(void) {
     BuildRotMatrixY(&mtxB, 0x800 - transform.rotationY);
     BuildRotMatrixZ(&mtxA, transform.rotationZ);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtxA);
+    MulMatrix2((&g_RageScratchpadState.matrix), &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
     if (g_TeamNameCharModel != 10 &&
@@ -380,11 +380,11 @@ void DrawTeamNameCharModel(void) {
         s32 a1;
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
                            AsPositionWords(&transform.positionX), &mtxA);
-        SCRATCH_ENV_MODE4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         a1 = 1;
         if (g_TeamNameCharModel < g_CourseModelCount) {
             a1 = g_TeamNameCharModel;
         }
-        SubmitCourseModel(SCRATCHPAD, a1);
+        SubmitCourseModel((&g_RageScratchpadState), a1);
     }
 }

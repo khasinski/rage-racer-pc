@@ -19,23 +19,23 @@ s32 GetCarUnlockLevel(s32 model) {
 }
 
 void InitRenderState(s32 otShift) {
-    SCRATCH_FACE_OT_SHIFT = 0xA;
-    SCRATCH_FT4_B = 0x80;
-    SCRATCH_FT4_G = 0x80;
-    SCRATCH_FT4_R = 0x80;
-    SCRATCH_FT4_CODE = POLY_FT4_CODE;
-    SCRATCH_GT4_B = 0xFF;
-    SCRATCH_GT4_G = 0xFF;
-    SCRATCH_GT4_R = 0xFF;
-    SCRATCH_GT4_CODE = POLY_GT4_CODE;
+    g_RageScratchpadState.faceOtShift = 0xA;
+    g_RageScratchpadState.ft4Color[2] = 0x80;
+    g_RageScratchpadState.ft4Color[1] = 0x80;
+    g_RageScratchpadState.ft4Color[0] = 0x80;
+    g_RageScratchpadState.ft4Color[3] = POLY_FT4_CODE;
+    g_RageScratchpadState.gt4Color[2] = 0xFF;
+    g_RageScratchpadState.gt4Color[1] = 0xFF;
+    g_RageScratchpadState.gt4Color[0] = 0xFF;
+    g_RageScratchpadState.gt4Color[3] = POLY_GT4_CODE;
     SCRATCH_CLIP_X1 = SCREEN_WIDTH;
     SCRATCH_CLIP_Y1 = SCREEN_HEIGHT;
     g_VisibleCellMask = g_MainVisibleCellMask;
-    SCRATCH_OT_SHIFT = otShift;
+    g_RageScratchpadState.otShift = otShift;
     SCRATCH_CLIP_X0 = 0;
     SCRATCH_CLIP_Y0 = 0;
     g_VisibleCellList = g_MainVisibleCellList;
-    SCRATCH_MIRROR = g_MirrorMode;
+    g_RageScratchpadState.orderingFlag = g_MirrorMode;
 }
 
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
@@ -66,10 +66,10 @@ void SelectModelBank(s32 index) {
     NativeModelBank *bank;
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
-    SCRATCH_MODEL_TABLE1 = bank->table;
-    SCRATCH_MODEL_NORMALS = bank->normals;
+    g_RageScratchpadState.modelTable1 = bank->table;
+    g_RageScratchpadState.modelNormals = bank->normals;
     g_ModelBankCount = bank->modelCount;
-    SCRATCH_MODEL_MODELS = bank->models;
+    g_RageScratchpadState.modelModels = bank->models;
 }
 
 void RegisterCourseModels(CourseModelAssetHeader *base) {
@@ -80,7 +80,7 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
 
     entry = base->models;
     count = base->modelCount;
-    SCRATCH_COURSE_BANK = g_NativeCourseModels;
+    g_RageScratchpadState.courseBank = g_NativeCourseModels;
     if (count > GAME_COURSE_MODEL_LIMIT) count = GAME_COURSE_MODEL_LIMIT;
     g_CourseModelCount = count;
     i = 0;
@@ -112,9 +112,9 @@ void InstallTerrainCellData(void *data) {
     header = address.header;
     count = header->cellCount;
     if (count > GAME_TERRAIN_CELL_LIMIT) count = GAME_TERRAIN_CELL_LIMIT;
-    SCRATCH_CELL_TABLE = g_NativeTerrainCells;
+    g_RageScratchpadState.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    SCRATCH_CELL_FACES = address.bytes + header->facesOffset;
+    g_RageScratchpadState.cellFaces = address.bytes + header->facesOffset;
     for (i = 0; i < count; i++) {
         g_NativeTerrainCells[i] = address.bytes + header->cellOffsets[i];
     }

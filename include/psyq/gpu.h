@@ -307,8 +307,8 @@ void SetLineG4(void *prim);   /* 0x5C */
 
 /*
  * The same codes as constants, for the two the engine stamps itself rather than
- * going through the Set* helper: InitRenderState seeds SCRATCH_FT4_CODE and
- * SCRATCH_GT4_CODE, the fourth byte of the two packed GTE RGBC words the
+ * going through the Set* helper: InitRenderState seeds g_RageScratchpadState.ft4Color[3] and
+ * g_RageScratchpadState.gt4Color[3], the fourth byte of the two packed GTE RGBC words the
  * handwritten EmitPolyFT4Fog / EmitPolyGT4Fog emitters copy into each packet
  * (see game/scratchpad.h).
  */

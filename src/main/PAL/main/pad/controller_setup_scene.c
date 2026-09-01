@@ -22,7 +22,7 @@ static void SubmitControllerModel(s32 model) {
     GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
 
     SCRATCH_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[1];
-    SubmitModel(SCRATCHPAD, model);
+    SubmitModel((&g_RageScratchpadState), model);
     SCRATCH_OT_BASE_AS(OT_TYPE) = otBase;
 }
 
@@ -39,20 +39,20 @@ void DrawControllerSetupScene(s32 variant) {
     s32 model;
     u32 setupMode;
 
-    g_ScratchViewZVolatile = -0x1080;
+    g_RageScratchpadState.viewZ = -0x1080;
     position.z = 0;
     position.y = 0;
     position.x = 0;
-    g_ScratchViewY = 0;
-    g_ScratchViewX = 0;
-    g_ScratchViewAngleZ = 0;
-    g_ScratchViewAngleY = 0;
-    g_ScratchViewAngleX = 0;
+    g_RageScratchpadState.viewY = 0;
+    g_RageScratchpadState.viewX = 0;
+    g_RageScratchpadState.viewAngleZ = 0;
+    g_RageScratchpadState.viewAngleY = 0;
+    g_RageScratchpadState.viewAngleX = 0;
     setupMode = g_GameMode - 10;
     if (setupMode < 2) {
-        g_ScratchViewZVolatile = -0xC80;
+        g_RageScratchpadState.viewZ = -0xC80;
     } else {
-        g_ScratchViewY = -0x40;
+        g_RageScratchpadState.viewY = -0x40;
     }
     SetCameraRotMatrix();
 
@@ -60,7 +60,7 @@ void DrawControllerSetupScene(s32 variant) {
         BuildRotMatrixX(&xRot, -0xD0);
         BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
         MulMatrix2(&yRot, &xRot);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &xRot);
+        MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
         scale[2] = 0x1000;
         scale[0] = 0x1000;
         scale[1] = 0x2000;
@@ -68,7 +68,7 @@ void DrawControllerSetupScene(s32 variant) {
         MulMatrix2(&yRot, &xRot);
         SetGteLightMatrix(&xRot);
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_ScratchEnvMode4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         model = g_ModelBankCount < 1;
         SubmitControllerModel(model);
         return;
@@ -94,7 +94,7 @@ void DrawControllerSetupScene(s32 variant) {
     }
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &xRot);
+    MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
@@ -102,11 +102,11 @@ void DrawControllerSetupScene(s32 variant) {
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-    g_ScratchEnvMode4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
     SubmitControllerModel(1);
     if (variant != 0) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_ScratchEnvMode4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 4) {
             model = 3;
@@ -121,7 +121,7 @@ void DrawControllerSetupScene(s32 variant) {
     }
     BuildRotMatrixY(&yRot, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yRot, &xRot);
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &xRot);
+    MulMatrix2((&g_RageScratchpadState.matrix), &xRot);
     scale[2] = 0x1000;
     scale[0] = 0x1000;
     scale[1] = 0x2000;
@@ -129,7 +129,7 @@ void DrawControllerSetupScene(s32 variant) {
     MulMatrix2(&yRot, &xRot);
     SetGteLightMatrix(&xRot);
     SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-    g_ScratchEnvMode4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
     model = 1;
     if (g_ModelBankCount >= 3) {
         model = 2;
@@ -137,7 +137,7 @@ void DrawControllerSetupScene(s32 variant) {
     SubmitControllerModel(model);
     if (variant != 0) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, &position, &xRot);
-        g_ScratchEnvMode4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         model = 1;
         if (g_ModelBankCount >= 5) {
             model = 4;

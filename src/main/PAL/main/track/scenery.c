@@ -10,7 +10,7 @@
 
 
 static void ClearScratchRenderMode3DF68(void) {
-    SCRATCH_ENV_MODE4 = 0;
+    g_RageScratchpadState.envMode4 = 0;
 }
 
 void DrawStaticScenery(s32 shifted) {
@@ -32,7 +32,7 @@ void DrawStaticScenery(s32 shifted) {
     if (visible != 0) {
         BuildRotMatrixY(&mtx, g_StaticSceneryYaw);
         renderWorldMtx = mtx;
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+        MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
 
         if (g_IsEnvironmentMode4 != 0) {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
@@ -45,7 +45,7 @@ void DrawStaticScenery(s32 shifted) {
             GameRenderWorldSubmitDynamicCourseObject(
                 0, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 0, 0);
-            SubmitCourseModel(SCRATCHPAD, drawArg);
+            SubmitCourseModel((&g_RageScratchpadState), drawArg);
         } else {
             SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPosition(&state), &mtx);
             frameValue = g_CourseModelCount;
@@ -57,7 +57,7 @@ void DrawStaticScenery(s32 shifted) {
             GameRenderWorldSubmitDynamicCourseObject(
                 0, drawArg, state.x, state.y, state.z,
                 renderWorldMtx.m, 1, 0);
-            SubmitCourseModel2(SCRATCHPAD, drawArg);
+            SubmitCourseModel2((&g_RageScratchpadState), drawArg);
         }
     }
 }
@@ -71,12 +71,12 @@ void DrawHighClassScenery(void) {
     state = &g_HighClassSceneryYaw;
     BuildRotMatrixY(&mtx, state[0]);
     renderWorldMtx = mtx;
-    MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx);
+    MulMatrix2((&g_RageScratchpadState.matrix), &mtx);
 
     if (g_IsEnvironmentMode4 != 0) {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(state - 3),
                            &mtx);
-        SCRATCH_ENV_MODE4 = 0x10000;
+        g_RageScratchpadState.envMode4 = 0x10000;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
@@ -84,11 +84,11 @@ void DrawHighClassScenery(void) {
         GameRenderWorldSubmitDynamicCourseObject(
             1, drawArg, state[-3], state[-2], state[-1],
             renderWorldMtx.m, 0, 0);
-        SubmitCourseModel(SCRATCHPAD, drawArg);
+        SubmitCourseModel((&g_RageScratchpadState), drawArg);
     } else {
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK, AsPositionWords(state - 3),
                            &mtx);
-        SCRATCH_ENV_MODE4 = 0;
+        g_RageScratchpadState.envMode4 = 0;
         drawArg = 1;
         if (g_CourseModelCount >= 0x40) {
             drawArg = 0x3F;
@@ -96,7 +96,7 @@ void DrawHighClassScenery(void) {
         GameRenderWorldSubmitDynamicCourseObject(
             1, drawArg, state[-3], state[-2], state[-1],
             renderWorldMtx.m, 1, 0);
-        SubmitCourseModel2(SCRATCHPAD, drawArg);
+        SubmitCourseModel2((&g_RageScratchpadState), drawArg);
     }
 }
 

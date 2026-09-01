@@ -357,17 +357,17 @@ void GameRenderWorldPublishCurrentCamera(void) {
     RageRenderCamera mirrorCamera;
     int mirrorActive;
 
-    GameRenderWorldSetCamera(SCRATCH_VIEW_X, SCRATCH_VIEW_Y,
-                                 SCRATCH_VIEW_Z, SCRATCH_VIEW_ANGLE_X,
-                                 SCRATCH_VIEW_ANGLE_Y,
-                                 SCRATCH_VIEW_ANGLE_Z);
+    GameRenderWorldSetCamera(g_RageScratchpadState.viewX, g_RageScratchpadState.viewY,
+                                 g_RageScratchpadState.viewZ, g_RageScratchpadState.viewAngleX,
+                                 g_RageScratchpadState.viewAngleY,
+                                 g_RageScratchpadState.viewAngleZ);
     /* A car mirror is a second scene camera, not a recreation of the PS1
      * mirror pass. A 20 degree vertical FOV on the wide mirror target gives
      * a useful rearward field of view without the old projection distortion. */
     mirrorCamera = GameRenderWorldBuildCamera(
-        SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
-        SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-        SCRATCH_VIEW_ANGLE_Z, 20.0f, 1);
+        g_RageScratchpadState.viewX, g_RageScratchpadState.viewY, g_RageScratchpadState.viewZ,
+        g_RageScratchpadState.viewAngleX, g_RageScratchpadState.viewAngleY,
+        g_RageScratchpadState.viewAngleZ, 20.0f, 1);
     /* The tiny, wide mirror loses useful silhouettes when it reaches the
      * main view's full fog distance. It already consumes the complete native
      * scene, so extend only its semantic fog range rather than reviving the
@@ -400,11 +400,11 @@ static void GameRenderWorldSubmitCourseTransform(
     instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.transform.position.x =
-        (float)CourseCoordinateNearReference(x, SCRATCH_VIEW_X);
+        (float)CourseCoordinateNearReference(x, g_RageScratchpadState.viewX);
     instance.transform.position.y =
-        -(float)CourseCoordinateNearReference(y, SCRATCH_VIEW_Y);
+        -(float)CourseCoordinateNearReference(y, g_RageScratchpadState.viewY);
     instance.transform.position.z =
-        -(float)CourseCoordinateNearReference(z, SCRATCH_VIEW_Z);
+        -(float)CourseCoordinateNearReference(z, g_RageScratchpadState.viewZ);
     instance.transform.orientation = SceneQuaternionFromPsx(rotation);
     instance.transform.hasOrientation = 1;
     instance.transform.scale.x = 0.25f;
@@ -466,7 +466,7 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     GameRenderWorldSubmitCourseTransform(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
         depthOverlay ? 0 : 1,
-        depthOverlay, (uint8_t)((SCRATCH_ENV_MODE4 >> 16) & 3));
+        depthOverlay, (uint8_t)((g_RageScratchpadState.envMode4 >> 16) & 3));
 }
 
 void GameRenderWorldSubmitDynamicCourseObject(

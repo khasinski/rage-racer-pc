@@ -765,7 +765,7 @@ extern u16 g_EnvironmentClut[16];
  * and the `flags & 2` prop set over `flags & 1`; also forwarded to scratchpad
  * 0x1F800084 by every car/track renderer. */
 extern s32 g_IsEnvironmentMode4;
-/* That forwarding slot is SCRATCH_ENV_MODE4 in game/scratchpad.h. */
+/* That forwarding slot is g_RageScratchpadState.envMode4 in game/scratchpad.h. */
 
 /*
  * Per-view cell culling, rebuilt every frame by BuildVisibleCells and swapped in

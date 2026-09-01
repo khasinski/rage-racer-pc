@@ -290,7 +290,7 @@ void UpdateRaceScene(void) {
             DrawWrongWayWarning();
         }
         DrawSkyBackground();
-        SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+        g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
         DrawTerrainCells();
         DrawCourseObjects();
         if (g_GrandPrixMode != 0) {
@@ -430,7 +430,7 @@ void UpdateRaceScene(void) {
             g_WrongWayTimer = 0;
         }
 
-        SCRATCH_ENV_MODE4 = g_IsEnvironmentMode4;
+        g_RageScratchpadState.envMode4 = g_IsEnvironmentMode4;
         DrawTerrainCells();
         DrawCourseObjects();
         if (g_GrandPrixMode != 0) {

@@ -310,9 +310,9 @@ int main(int argc, char **argv) {
         }
         printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
                "sky_row=%d key=%p",
-               SCRATCH_VIEW_X, SCRATCH_VIEW_Y, SCRATCH_VIEW_Z,
-               SCRATCH_VIEW_ANGLE_X, SCRATCH_VIEW_ANGLE_Y,
-               SCRATCH_VIEW_ANGLE_Z, SCRATCH_MIRROR, g_SkyRowBase,
+               g_RageScratchpadState.viewX, g_RageScratchpadState.viewY, g_RageScratchpadState.viewZ,
+               g_RageScratchpadState.viewAngleX, g_RageScratchpadState.viewAngleY,
+               g_RageScratchpadState.viewAngleZ, g_RageScratchpadState.orderingFlag, g_SkyRowBase,
                (void *)g_RaceIntroCameraCursor);
         printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
                g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],

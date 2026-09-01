@@ -7,14 +7,14 @@
 
 void DrawTerrainCells(void) {
     BuildVisibleCells(-12288, 0x14000);
-    SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-    SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+    SetRotMatrix((&g_RageScratchpadState.matrix));
+    SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
 }
 
 void DrawTerrainCellsWide(void) {
     BuildVisibleCells(0xFFFF6000, 0x14000);
-    SetRotMatrix(SCRATCH_VIEW_MATRIX_GTE);
-    SubmitTerrainCells(SCRATCHPAD, g_VisibleCellList, 0x40);
+    SetRotMatrix((&g_RageScratchpadState.matrix));
+    SubmitTerrainCells((&g_RageScratchpadState), g_VisibleCellList, 0x40);
 }
 
 static s32 DivideSigned32(s32 value)
@@ -364,7 +364,7 @@ static void MeasureSkyBand(SkyRenderScratchpad *scratch,
     }
     leftViewAngle = rotatedBandY >> 0xC;
     band->coordinateAccumulator = leftViewAngle + 0x7800;
-    if (g_MirrorMode != SCRATCH_MIRROR)
+    if (g_MirrorMode != g_RageScratchpadState.orderingFlag)
     {
       band->panelYFixed = 0x2400;
       band->panelYFixed = bandRowY + band->panelYFixed;
@@ -403,13 +403,13 @@ void DrawSkyBackground(void)
   s32 screenX3;
   scratch->packetCursor = SCRATCH_PRIM_CURSOR_AS(u8);
   scratch->orderingTable = SCRATCH_OT_BASE_AS(OT_TYPE);
-  scratch->cameraX = SCRATCH_VIEW_X;
-  scratch->cameraY = SCRATCH_VIEW_Y;
-  scratch->cameraZ = SCRATCH_VIEW_Z;
-  scratch->pitch = SCRATCH_VIEW_ANGLE_X;
-  scratch->yaw = SCRATCH_VIEW_ANGLE_Y;
-  scratch->roll = SCRATCH_VIEW_ANGLE_Z;
-  scratch->mirrorFlag = SCRATCH_MIRROR;
+  scratch->cameraX = g_RageScratchpadState.viewX;
+  scratch->cameraY = g_RageScratchpadState.viewY;
+  scratch->cameraZ = g_RageScratchpadState.viewZ;
+  scratch->pitch = g_RageScratchpadState.viewAngleX;
+  scratch->yaw = g_RageScratchpadState.viewAngleY;
+  scratch->roll = g_RageScratchpadState.viewAngleZ;
+  scratch->mirrorFlag = g_RageScratchpadState.orderingFlag;
   u8 *packetCursor = scratch->packetCursor;
   s32 heldBandY;
   s32 adjW;

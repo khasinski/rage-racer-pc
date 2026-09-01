@@ -133,12 +133,12 @@ void EnterAttractScene(void) {
         g_SceneId = 0x17;
         g_SceneTimer = 0;
         InstallSceneLighting();
-        SCRATCH_VIEW_X = 0;
-        SCRATCH_VIEW_Y = 0;
-        SCRATCH_VIEW_Z = -3520;
-        SCRATCH_VIEW_ANGLE_X = 0;
-        SCRATCH_VIEW_ANGLE_Y = 0;
-        SCRATCH_VIEW_ANGLE_Z = 0;
+        g_RageScratchpadState.viewX = 0;
+        g_RageScratchpadState.viewY = 0;
+        g_RageScratchpadState.viewZ = -3520;
+        g_RageScratchpadState.viewAngleX = 0;
+        g_RageScratchpadState.viewAngleY = 0;
+        g_RageScratchpadState.viewAngleZ = 0;
         SetCameraRotMatrix();
         g_OptionLetterboxHeight = 0xF0;
         g_FadeLevel = 0x100;

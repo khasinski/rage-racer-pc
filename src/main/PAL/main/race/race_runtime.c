@@ -97,7 +97,7 @@ void DrawWaypoints(void) {
 
     do {
         BuildRotMatrixY(&mtx0, waypoint->motion.rotationY);
-        MulMatrix2(SCRATCH_VIEW_MATRIX_GTE, &mtx0);
+        MulMatrix2((&g_RageScratchpadState.matrix), &mtx0);
         BuildRotMatrixZ(mtx1Ptr, waypoint->motion.rotationZ);
         MulMatrix(&mtx0, mtx1Ptr);
         SetGteObjectMatrix(SCRATCH_OBJECT_MATRIX_WORK,
@@ -108,7 +108,7 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel(SCRATCHPAD, drawArg);
+        SubmitModel((&g_RageScratchpadState), drawArg);
 
         BuildRotMatrixY(mtx1Ptr, 0x800);
         MulMatrix2(&mtx0, mtx1Ptr);
@@ -120,7 +120,7 @@ void DrawWaypoints(void) {
         if (drawId < frameValue) {
             drawArg = drawId;
         }
-        SubmitModel(SCRATCHPAD, drawArg);
+        SubmitModel((&g_RageScratchpadState), drawArg);
 
         i++;
         waypoint++;
