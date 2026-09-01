@@ -223,67 +223,6 @@ void FlipCourseCard(s32 *p0, s32 *p1, s32 *p2) {
     }
 }
 
-void DrawTimeAttackPlate(s32 stepArg) {
-    void *ot = RENDER_OT_BASE;
-    s32 value;
-    s32 renderValue;
-    s32 y0;
-    s16 y1;
-
-    if (stepArg == 0) {
-        g_TimeAttackPlateProgress = 0;
-        return;
-    }
-
-    if (stepArg < 0) {
-        value = g_TimeAttackPlateProgress + stepArg;
-        g_TimeAttackPlateProgress = value;
-        if (value < 0) {
-            g_TimeAttackPlateProgress = 0;
-        }
-    }
-
-    renderValue = g_TimeAttackPlateProgress;
-    y0 = 0xD7;
-    if (renderValue != 0) {
-        y0 = (s16)(y0 - renderValue);
-        y1 = (s16)(renderValue + 0xD8);
-        GameDrawTexturedQuad(
-            ot,
-            0x4C,
-            y0,
-            0x7C,
-            y0,
-            0x4C,
-            y1,
-            0x7C,
-            y1,
-            0xCC,
-            0x38,
-            0xFC,
-            0x38,
-            0xCC,
-            0x50,
-            0xFC,
-            0x50,
-            0,
-            0,
-            0,
-            0x20F,
-            1,
-            0,
-            0x1C);
-    }
-
-    if (stepArg > 0) {
-        value = g_TimeAttackPlateProgress + stepArg;
-        g_TimeAttackPlateProgress = value;
-        if (value >= 0xD) {
-            g_TimeAttackPlateProgress = 0xC;
-        }
-    }
-}
-
 /* The menu-mode twin of InitTrackLighting. */
 void InitMenuLighting(void) {
     g_SceneColorMatrix = g_MenuColorMatrix;

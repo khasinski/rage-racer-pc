@@ -486,7 +486,7 @@ extern s32 g_ClassChangeCurtainSlide;
 extern s32 g_MenuAltPanelProgressA;
 extern s32 g_MenuAltPanelProgressB;
 extern s32 g_CourseCardFace;
-extern volatile s32 g_TimeAttackPlateProgress;
+extern s32 g_TimeAttackPlateProgress;
 extern u8 g_CourseSelectGpScript;
 extern u8 g_CourseSelectTimeAttackScript;
 extern u8 g_RankingPanelScript;

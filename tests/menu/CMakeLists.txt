@@ -20,6 +20,24 @@ add_test(NAME team_logo COMMAND team_logo_tests)
 
 set_tests_properties(team_logo PROPERTIES LABELS functional)
 
+add_executable(time_attack_plate_tests
+    time_attack_plate_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/time_attack_plate.c)
+target_include_directories(time_attack_plate_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(time_attack_plate_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(time_attack_plate_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(time_attack_plate_tests PRIVATE psyz)
+add_test(NAME time_attack_plate COMMAND time_attack_plate_tests)
+set_tests_properties(time_attack_plate PROPERTIES LABELS unit)
+
 add_executable(save_header_tests
     save_header_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_header.c)

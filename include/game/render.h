@@ -835,7 +835,6 @@ extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
 extern u8 g_TrackTextureShadowPageLast;
 extern s16 g_AtanTable[];
-extern volatile s32 g_CameraPathKey;
 extern s32 g_CameraPathNextKey;
 extern s32 g_CameraPathTick;
 extern volatile u16 g_DispEnv0H;
