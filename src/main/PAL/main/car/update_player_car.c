@@ -241,7 +241,7 @@ static void MeasureTrackLimits(Matrix *toTrack, CarTrackLimits *limits) {
         }
         /* The knockback modes are one-based, so that zero means no corner. */
         if (limits->rightInset < reach.x) {
-            limits->rightKnockbackMode = index + 2;
+            limits->rightKnockbackMode = index + 1;
             limits->rightInset = reach.x;
         } else if (reach.x < limits->leftInset) {
             limits->leftKnockbackMode = index + 1;
