@@ -3,11 +3,8 @@
  *
  * A car in the air runs one of three handlers: the takeoff frame that turns a
  * launch spin into yaw, the airborne frames that carry it, and the standing
- * start. All three are still in the shape they were recovered in, with names
- * like s4val, a8 and first24, and none of them was covered by anything.
- *
- * They read and write a lot of state and they call out to the steering, the
- * sound effects and the camera, so this is a characterisation test: it does
+ * start. They read and write a lot of state and call out to steering and sound
+ * effects, so this is a characterisation test: it does
  * not say the behaviour is right, only that it is what it was. Everything the
  * handlers reach for is supplied here so a sweep is repeatable.
  */
@@ -46,9 +43,9 @@ s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
 }
 
 /*
- * The handlers share a translation unit with the camera and the sound, and
- * neither runs here. The effect voice is recorded rather than ignored,
- * because which sound a spinning car asks for is part of what these do.
+ * The effect voice is recorded rather than ignored, because which sound a
+ * spinning car asks for is part of what these handlers do. The camera and
+ * matrix hooks below belong to the Atan2 implementation linked by steering.
  */
 GameRenderState g_RenderState;
 static s32 s_voiceIndex, s_voicePhase, s_voiceVolume;

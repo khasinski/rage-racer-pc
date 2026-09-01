@@ -3,10 +3,8 @@
  *
  * The function aims the car at a point on the racing line two track points
  * ahead of it, offset sideways by however far off the line the car is meant
- * to run, and turns the heading part of the way towards it. It had no test,
- * and it is written in the shape it was recovered in, which is why one is
- * needed before the shape can be changed: the arithmetic truncates in several
- * places and the truncation is part of the angle.
+ * to run, and turns the heading part of the way towards it. The arithmetic
+ * truncates in several places and that truncation is part of the angle.
  *
  * The track around the car is supplied here rather than loaded, so the sweep
  * is repeatable: a circle of points, with the interpolation and the smoothed
@@ -47,11 +45,8 @@ s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
 }
 
 /*
- * The steering shares a translation unit with the jump handlers, which reach
- * for the render state, the camera and the sound effects. None of that runs in
- * this sweep, so answer it rather than link half the game in. Random15 is
- * answered with a fixed sequence: a sweep whose results depend on chance
- * cannot be folded into one number.
+ * Atan2 shares an implementation file with matrix helpers, so its unrelated
+ * render hooks are supplied here rather than linking the whole renderer.
  */
 GameRenderState g_RenderState;
 
@@ -64,18 +59,6 @@ MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
     (void)m0;
     (void)m1;
     return m2;
-}
-
-s32 Random15(void) {
-    static s32 state;
-    state = (state * 1103515245 + 12345) & 0x7FFF;
-    return state;
-}
-
-void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
-    (void)index;
-    (void)phase;
-    (void)volume;
 }
 
 static unsigned long s_digest = 2166136261UL;
