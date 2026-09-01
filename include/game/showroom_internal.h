@@ -32,4 +32,8 @@ static inline ShowroomPlayerCarState *ShowroomPlayerCar(void) {
     return (ShowroomPlayerCarState *)&g_PlayerCar;
 }
 
+static inline struct GameRenderObject *ShowroomRenderObject(void) {
+    return GetCarRenderObject(GetPlayerCarRuntime(&g_PlayerCar));
+}
+
 #endif

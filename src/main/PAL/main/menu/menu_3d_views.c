@@ -11,7 +11,27 @@ void SwapCarModelSlot(void) {
     InstallCarModelSlot();
 }
 
+static void UpdateMenuViewSpin(void) {
+    if ((g_PadHeld & PAD_L1) && g_MenuViewSpin < 64) {
+        g_MenuViewSpin++;
+    }
+    if ((g_PadHeld & PAD_R1) && g_MenuViewSpin >= -63) {
+        g_MenuViewSpin--;
+    }
+}
+
+static void UpdateShowroomSteering(void) {
+    if ((g_PadHeld & PAD_R2) && g_PlayerSteerAngle < 6144) {
+        g_PlayerSteerAngle += 192;
+    }
+    if ((g_PadHeld & PAD_L2) && g_PlayerSteerAngle >= -6143) {
+        g_PlayerSteerAngle -= 192;
+    }
+}
+
 void DrawMenuCarView(void) {
+    ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
+    GameRenderObject *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
     Vec4 out;
@@ -20,14 +40,6 @@ void DrawMenuCarView(void) {
     s32 x;
     s32 targetAngle;
     s32 offset;
-    s32 outX;
-    s32 altLayout;
-    s32 result;
-    s32 outZ;
-    s32 qValue;
-    s32 modelSlot;
-    s32 *p;
-    s32 *q;
 
     vec = g_MenuCarPivotOffset;
     g_RenderState.viewY = -64;
@@ -92,73 +104,41 @@ void DrawMenuCarView(void) {
 
     g_MenuViewOffset = s2 + g_MenuViewOffset;
     s2 = g_MenuViewOffset / 1000;
-    ShowroomPlayerCar()->runtime.modelIndex = GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
+    showroom->runtime.modelIndex =
+        GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
     g_PlayerTireCompound = g_CarTable[s1].tireCompound;
 
-    if (g_PadHeld & 2) {
-        if (g_PlayerSteerAngle < 6144) {
-            g_PlayerSteerAngle = g_PlayerSteerAngle + 192;
-        }
-    }
-    if (g_PadHeld % 2) {
-        s32 *w = &g_PlayerSteerAngle;
-        if (*w >= -6143) {
-            *w = *w - 192;
-        }
-    }
-
+    UpdateShowroomSteering();
     g_PlayerTransmission = g_CarTable[s1].transmission;
     g_PlayerCarWheelAngle = (g_PlayerCarWheelAngle + 68) & 0xFFF;
 
-    if (g_PadHeld & 4) {
-        if (g_MenuViewSpin < 64) {
-            g_MenuViewSpin++;
-        }
-    }
-    if (g_PadHeld & 8) {
-        if (g_MenuViewSpin >= -63) {
-            g_MenuViewSpin--;
-        }
-    }
-
-    p = &ShowroomPlayerCar()->pose.rotation.y;
-    *p = *p + g_MenuViewSpin;
-    BuildRotMatrixY(&mtxA, *p);
+    UpdateMenuViewSpin();
+    showroom->pose.rotation.y += g_MenuViewSpin;
+    BuildRotMatrixY(&mtxA, showroom->pose.rotation.y);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
     ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
-    BuildRotMatrixY(&mtxB, 0x800 - *p);
-    BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->pose.rotation.x);
+    BuildRotMatrixY(&mtxB, 0x800 - showroom->pose.rotation.y);
+    BuildRotMatrixX(&mtxA, showroom->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2((&g_RenderState.matrix), &mtxA);
 
-    altLayout = g_MenuAltLayout;
-    outX = out.x;
-    
-    p = &ShowroomPlayerCar()->pose.position[0];
-    if (altLayout != 0) {
+    if (g_MenuAltLayout != 0) {
         offset = s3 - 23;
     } else {
         offset = s3 - 52;
     }
-    result = outX - offset;
-    modelSlot = g_CarModelSlot;
-    
-    q = &ShowroomPlayerCar()->pose.position[1];
-    *p = result;
-    outZ = out.z;
-    qValue = s2 + 30;
-    *q = qValue;
-    ShowroomPlayerCar()->pose.position[2] = -outZ;
-    g_PlayerRenderRotation = ShowroomPlayerCar()->pose.rotation;
-    g_PlayerRenderY = *q;
-    SelectModelBank(modelSlot);
-    q--;
-    DrawPlayerCarModel((GameRenderObject *)q);
+    showroom->pose.position[0] = out.x - offset;
+    showroom->pose.position[1] = s2 + 30;
+    showroom->pose.position[2] = -out.z;
+    g_PlayerRenderRotation = showroom->pose.rotation;
+    g_PlayerRenderY = showroom->pose.position[1];
+    SelectModelBank(g_CarModelSlot);
+    DrawPlayerCarModel(renderObject);
 
-    *q = (g_MenuAltLayout != 0 ? 23 : 52) - s3;
-    q = &ShowroomPlayerCar()->pose.position[1];
-    *q = s2 + 30;
-    ShowroomPlayerCar()->pose.position[2] = 0;
+    showroom->pose.position[0] =
+        (g_MenuAltLayout != 0 ? 23 : 52) - s3;
+    showroom->pose.position[1] = s2 + 30;
+    showroom->pose.position[2] = 0;
     SelectModelBank(14);
     /* The render state's ordering-table base. Keep the retail
      * 120-byte (30-entry) showroom-depth bias, but express it through the
@@ -166,26 +146,21 @@ void DrawMenuCarView(void) {
      * scalar alias. */
     RENDER_OT_BASE_AS(OT_TYPE) += 30;
     SetGteObjectMatrix((&g_ObjectMatrixWork),
-                       AsPositionWords(&ShowroomPlayerCar()->pose.position[0]), &mtxA);
+                       AsPositionWords(&showroom->pose.position[0]), &mtxA);
     g_RenderState.envMode4 = 0;
-    {
-        s32 a1 = 1;
-        if (g_ModelBankCount >= 6) {
-            a1 = 5;
-        }
-        SubmitModel((&g_RenderState), a1);
-    }
+    SubmitModel(&g_RenderState, g_ModelBankCount >= 6 ? 5 : 1);
     RENDER_OT_BASE_AS(OT_TYPE) -= 30;
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
 void DrawMenuCourseView(void) {
+    ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
+    GameRenderObject *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
     s32 s1;
     s32 s0;
     s32 s2;
-    s32 *p;
 
     g_RenderState.viewY = -64;
     g_RenderState.viewZ = -256;
@@ -245,39 +220,24 @@ void DrawMenuCourseView(void) {
         }
     }
 
-    ShowroomPlayerCar()->courseViewX = 23 - s1;
+    showroom->courseViewX = 23 - s1;
     g_MenuViewOffset = s0 + g_MenuViewOffset;
-    ShowroomPlayerCar()->runtime.z = -20;
+    showroom->runtime.z = -20;
     s0 = g_MenuViewOffset / 1000;
-    ShowroomPlayerCar()->runtime.y = s0 + 15;
+    showroom->runtime.y = s0 + 15;
 
-    if (g_PadHeld & 4) {
-        if (g_MenuViewSpin < 64) {
-            g_MenuViewSpin++;
-        }
-    }
-    if (g_PadHeld & 8) {
-        if (g_MenuViewSpin >= -63) {
-            g_MenuViewSpin--;
-        }
-    }
-
-    p = &ShowroomPlayerCar()->runtime.bodyYaw;
-    *p = *p + g_MenuViewSpin;
-    BuildRotMatrixY(&mtxB, 0x800 - *p);
-    BuildRotMatrixX(&mtxA, ShowroomPlayerCar()->runtime.bodyPitch);
+    UpdateMenuViewSpin();
+    showroom->runtime.bodyYaw += g_MenuViewSpin;
+    BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
+    BuildRotMatrixX(&mtxA, showroom->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2((&g_RenderState.matrix), &mtxA);
     SelectModelBank(14);
-    SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(p - 9), &mtxA);
+    SetGteObjectMatrix(&g_ObjectMatrixWork,
+                       AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.envMode4 = 0;
-    {
-        s32 a1 = 1;
-        if ((s2 & 3) < g_ModelBankCount) {
-            a1 = s2 & 3;
-        }
-        SubmitModel((&g_RenderState), a1);
-    }
+    SubmitModel(&g_RenderState,
+                (s2 & 3) < g_ModelBankCount ? s2 & 3 : 1);
 }
 
 typedef struct MenuModelTransform {
@@ -300,6 +260,8 @@ void DrawTeamNameCharModel(void) {
     s32 s1;
     s32 s0;
     s32 s2;
+    s32 nextAngle;
+    s32 modelIndex;
 
     vcopy = g_TeamNameCharScale;
 
@@ -328,17 +290,12 @@ void DrawTeamNameCharModel(void) {
         }
     }
 
-    {
-        s32 t = g_MenuViewAngle + s1;
-        g_MenuViewAngle = t;
-        if (t <= 3071999) {
-            s32 a = GameMenuCursorAnim;
-            if (a >= 0) {
-                g_MenuViewAngle = t - 2048000;
-                g_TeamNameCharModel = a;
-                GameMenuCursorAnim = -1;
-            }
-        }
+    nextAngle = g_MenuViewAngle + s1;
+    g_MenuViewAngle = nextAngle;
+    if (nextAngle <= 3071999 && GameMenuCursorAnim >= 0) {
+        g_MenuViewAngle = nextAngle - 2048000;
+        g_TeamNameCharModel = GameMenuCursorAnim;
+        GameMenuCursorAnim = -1;
     }
 
     s1 = g_MenuViewAngle / 1000;
@@ -377,14 +334,12 @@ void DrawTeamNameCharModel(void) {
 
     if (g_TeamNameCharModel != 10 &&
         (u32)(g_TeamNameCharModel - 42) >= 2U) {
-        s32 a1;
         SetGteObjectMatrix((&g_ObjectMatrixWork),
                            AsPositionWords(&transform.positionX), &mtxA);
         g_RenderState.envMode4 = 0;
-        a1 = 1;
-        if (g_TeamNameCharModel < g_CourseModelCount) {
-            a1 = g_TeamNameCharModel;
-        }
-        SubmitCourseModel((&g_RenderState), a1);
+        modelIndex = g_TeamNameCharModel < g_CourseModelCount
+                         ? g_TeamNameCharModel
+                         : 1;
+        SubmitCourseModel(&g_RenderState, modelIndex);
     }
 }
