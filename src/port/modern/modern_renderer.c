@@ -24,6 +24,10 @@
 #include "shaders/modern_frag_spv.h"
 #include "shaders/post_vert_spv.h"
 #include "shaders/post_frag_spv.h"
+#include "shaders/modern_frag_msl.h"
+#include "shaders/modern_vert_msl.h"
+#include "shaders/post_frag_msl.h"
+#include "shaders/post_vert_msl.h"
 
 /* The modern presentation path combines the native RenderWorld renderer,
  * including its sky, with captured PS1 2D layers that still own the HUD and
@@ -177,9 +181,9 @@ static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
 static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
     return ModernCreateFullscreenPipeline(
         post_vert_spv, post_vert_spv_len,
-        MODERN_POST_MSL, MODERN_POST_MSL_SIZE, "vs_post",
+        (const char *)post_vert_msl, post_vert_msl_len, "vs_post",
         post_frag_spv, post_frag_spv_len,
-        MODERN_POST_MSL, MODERN_POST_MSL_SIZE, "fs_post", 1);
+        (const char *)post_frag_msl, post_frag_msl_len, "fs_post", 1);
 }
 
 static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
@@ -365,11 +369,11 @@ static int ModernEnsureResources(void) {
     }
     vs = ModernCreateShader(
         modern_vert_spv, modern_vert_spv_len,
-        MODERN_SHADER_MSL, MODERN_SHADER_MSL_SIZE,
+        (const char *)modern_vert_msl, modern_vert_msl_len,
         SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
     fs = ModernCreateShader(
         modern_frag_spv, modern_frag_spv_len,
-        MODERN_SHADER_MSL, MODERN_SHADER_MSL_SIZE,
+        (const char *)modern_frag_msl, modern_frag_msl_len,
         SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
     if (vs && fs) {
         s_pipe2d = ModernCreateOverlayPipeline(vs, fs, 0);

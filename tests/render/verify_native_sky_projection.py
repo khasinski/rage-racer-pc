@@ -7,10 +7,10 @@ turn and never upwards. Projecting it as a plane overhead tiles it in both
 directions and turns the sky into wallpaper, and scaling does not hide that:
 the eye reads the repetition rather than the cloud.
 
-The two shader sources are checked against each other on purpose. This backend
-compiles MSL on Metal and SPIR-V elsewhere, and the two are separate texts:
-editing one and measuring the other wasted a lot of time, and produced changes
-that appeared to do nothing.
+The shader is checked as source, not as a picture, because it is cheap and it
+says which line is wrong. There used to be a second check here holding the
+hand-written Metal copy to the same numbers as the GLSL; both formats are now
+translated from this one source, so there is no second text to disagree with.
 """
 
 from pathlib import Path
@@ -29,15 +29,13 @@ def require(condition, message):
         failures.append(message)
 
 
-for name, source in (("glsl", glsl), ("msl", gpu)):
-    dense = source.replace(" ", "").replace("\n", "")
-    require("cloudBand" in dense,
-            f"{name}: the cloud sheet must stay a band round the horizon")
-    require("fract(atan" in dense or "fract(atan2" in dense,
-            f"{name}: the sheet must wrap by heading, so it repeats round "
-            "the turn")
-    require("cloudCoverage" in dense,
-            f"{name}: cloud must fade out rather than fill the sky")
+dense = glsl.replace(" ", "").replace("\n", "")
+require("cloudBand" in dense,
+        "the cloud sheet must stay a band round the horizon")
+require("fract(atan" in dense or "fract(atan2" in dense,
+        "the sheet must wrap by heading, so it repeats round the turn")
+require("cloudCoverage" in dense,
+        "cloud must fade out rather than fill the sky")
 
 # The sheet repeats round the horizon and never upwards. Tiling it vertically
 # as well turns the sky into wallpaper, which no scaling hides: the eye reads
@@ -61,18 +59,20 @@ for slot, band in ((1, "skyTopColor"), (2, "skyColor"),
     require(f"GameRenderWorldEnvironmentColor({slot}, &camera.{band})" in game,
             f"the sky gradient must take {band} from environment slot {slot}")
 
-# The two shaders must agree on the numbers, whichever one the host compiles.
-def constants(text, start, end):
-    body = text[text.find(start):text.find(end)]
-    body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
-    return re.findall(r"\d+\.\d+", body)
-
-
-glsl_numbers = constants(glsl, "if (height >= 0.0)", "outColor = vec4(color")
-msl_numbers = constants(gpu, "if(h>=0.0)", "return float4(c,1.0)")
-require(glsl_numbers == msl_numbers,
-        "the GLSL and MSL skies disagree: "
-        f"{glsl_numbers} against {msl_numbers}")
+# Both formats must be built from this source, and both must be present, or a
+# host quietly loses its sky.
+shaders = root / "src/port/modern/shaders"
+for generated in ("native_sky_frag_spv.h", "native_sky_frag_msl.h"):
+    require((shaders / generated).exists(),
+            f"{generated} is missing: run build_spirv.sh")
+# The header carries the Metal source as bytes, so read it back out.
+metal = bytes(int(byte, 16) for byte in re.findall(
+    r"0x([0-9a-fA-F]{2})", (shaders / "native_sky_frag_msl.h").read_text()))
+metal = metal.decode("utf-8", "replace")
+require("fs_native_sky" in metal,
+        "the Metal sky must keep the entry point the renderer asks for")
+require("cloudBand" in metal.replace(" ", ""),
+        "the Metal sky must be the one translated from this GLSL")
 
 if failures:
     for failure in failures:
