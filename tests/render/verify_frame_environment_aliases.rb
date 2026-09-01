@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-frontend = File.read(ARGV.fetch(0))
+display_setup = File.read(ARGV.fetch(0))
 mirror = File.read(ARGV.fetch(1))
 tachometer = File.read(ARGV.fetch(2))
 # Retail state is split across one file per owning subsystem. An alias could
@@ -9,7 +9,11 @@ tachometer = File.read(ARGV.fetch(2))
 host_state = ARGV.drop(3).map { |path| File.read(path) }.join("\n")
 
 abort "second frame draw environment is still initialized through a detached alias" if
-  frontend.match?(/\bg_DrawEnv1\b/) || frontend.match?(/\bg_MirrorDrawEnv1\b/)
+  display_setup.match?(/\bg_DrawEnv1\b/) || display_setup.match?(/\bg_MirrorDrawEnv1\b/)
+
+abort "display setup does not update both typed frame contexts" unless
+  display_setup.include?("g_FrameContexts[0].environment") &&
+  display_setup.include?("g_FrameContexts[1].environment")
 
 %w[g_MirrorDrawEnv0ClipY g_MirrorDrawEnv0ClipH
    g_MirrorDrawEnv1ClipY g_MirrorDrawEnv1ClipH].each do |name|

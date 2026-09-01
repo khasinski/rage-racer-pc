@@ -666,6 +666,26 @@ endif()
 target_link_libraries(ranking_table_tests PRIVATE psyz)
 add_test(NAME ranking_table COMMAND ranking_table_tests)
 set_tests_properties(ranking_table PROPERTIES LABELS unit)
+
+add_executable(frontend_tests
+    frontend_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c)
+target_include_directories(frontend_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(frontend_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(frontend_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(frontend_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(frontend_tests PRIVATE psyz)
+add_test(NAME frontend COMMAND frontend_tests)
+set_tests_properties(frontend PROPERTIES LABELS functional)
 endif()
 
 if(TARGET rage-racer-smoke)

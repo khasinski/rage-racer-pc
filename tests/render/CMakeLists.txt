@@ -646,7 +646,7 @@ add_test(
     NAME frame_environment_aliases
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/display_setup.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/mirror_pass.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
         ${RAGE_HOST_STATE_SOURCES}
@@ -662,6 +662,26 @@ add_test(
 
 set_tests_properties(capture_sync PROPERTIES LABELS functional)
 endif()
+
+add_executable(display_setup_tests
+    display_setup_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/display_setup.c)
+target_include_directories(display_setup_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(display_setup_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(display_setup_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(display_setup_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(display_setup_tests PRIVATE psyz)
+add_test(NAME display_setup COMMAND display_setup_tests)
+set_tests_properties(display_setup PROPERTIES LABELS unit)
 
 add_executable(track_math_tests
     track_math_tests.c
