@@ -30,12 +30,14 @@ jobs:
       - name: Build the save editor
         shell: pwsh
         run: |
+          # A failing compiler does not stop a PowerShell script on its own.
+          $ErrorActionPreference = "Stop"
+          function Invoke-Checked { & $args[0] @($args[1..($args.Count-1)]); if ($LASTEXITCODE -ne 0) { throw "$($args[0]) failed" } }
           # The same toolset as the game: the port's include directory holds a
           # stdint.h that forwards with include_next, which MSVC does not have.
-          cmake -S editor -B build/editor -G "Visual Studio 17 2022" -A x64 `
-            -T ClangCL
-          cmake --build build/editor --config Release --parallel
-          ctest --test-dir build/editor -C Release --output-on-failure
+          Invoke-Checked cmake -S editor -B build/editor -G "Visual Studio 17 2022" -A x64 -T ClangCL
+          Invoke-Checked cmake --build build/editor --config Release --parallel
+          Invoke-Checked ctest --test-dir build/editor -C Release --output-on-failure
       - name: Package the save editor
         shell: pwsh
         env:

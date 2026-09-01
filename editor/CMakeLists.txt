@@ -28,6 +28,10 @@ set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
 add_subdirectory("${RAGE_SDL}" sdl EXCLUDE_FROM_ALL)
+# Static: the ImGui backends this program compiles call ImGui's own C++
+# entry points, and a shared cimgui exports only its C wrapper, which leaves
+# those undefined at link time on Windows.
+set(IMGUI_STATIC "yes" CACHE STRING "" FORCE)
 add_subdirectory("${RAGE_CIMGUI}" cimgui EXCLUDE_FROM_ALL)
 target_compile_definitions(cimgui PUBLIC CIMGUI_USE_OPENGL3 CIMGUI_USE_SDL3)
 
