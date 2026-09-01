@@ -3,37 +3,6 @@
 #include "psyq/snd.h"
 #include "game/car.h"
 
-s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
-    const EngineSoundCurveRow *curve;
-    s32 index = 1;
-    s32 numerator;
-    s32 denominator;
-    s32 raw_result;
-    s32 result;
-
-    curve = &g_EngineSoundCurves[bank][parameter];
-    while (index < 9 && position >= curve->positions[index]) {
-        index++;
-    }
-    if (index == 9) return curve->values[8];
-    numerator =
-        (curve->values[index] - curve->values[index - 1]) *
-        (position - curve->positions[index - 1]);
-    denominator = curve->positions[index] - curve->positions[index - 1];
-    raw_result = numerator / denominator + curve->values[index - 1];
-
-    if (raw_result >= 0) {
-        result = raw_result;
-        if (result >= 0x80) {
-            result = 0x7F;
-        }
-    } else {
-        result = 0;
-    }
-
-    return result;
-}
-
 void UpdateLoadedAudioVoices(s32 value, s32 bank) {
     s32 odd_parameter;
     s32 index;
@@ -103,53 +72,28 @@ void InitEffectVoiceRuntime(void) {
     _SsVmInit(0);
     SsSetVoiceCount(8);
 
-    {
-        s32 neg;
-
-        i = 0;
-        neg = -1;
-        for (; i < 2; i++) {
-            g_MusicChannels[i].mode = neg;
-            g_MusicChannels[i].left.value = neg;
-            g_MusicChannels[i].right.value = neg;
-            g_MusicChannels[i].volLeft.value = 0;
-            /* Retail reaches this field as
-             * &g_AudioLoadedSlotMask + 0x78 + i * sizeof(MusicChannel).
-             * That only works while independently named PS1 globals retain
-             * their original contiguous addresses. Name the actual field so
-             * the same game state is updated on 32- and 64-bit hosts. */
-            g_MusicChannels[i].volRight.value = 0;
-        }
+    for (i = 0; i < 2; i++) {
+        g_MusicChannels[i].mode = -1;
+        g_MusicChannels[i].left.value = -1;
+        g_MusicChannels[i].right.value = -1;
+        g_MusicChannels[i].volLeft.value = 0;
+        g_MusicChannels[i].volRight.value = 0;
     }
 
-    {
-        s32 neg;
-        s32 value;
-
-        i = 0;
-        neg = -1;
-        value = 0x1E00;
-        for (; i < 4; i++) {
-            g_EffectVoices[i].state = neg;
-            g_EffectVoices[i].note.value = neg;
-            g_EffectVoices[i].tone = neg;
-            g_EffectVoices[i].pitch.value = value;
-            g_EffectVoices[i].volume = 0;
-        }
+    for (i = 0; i < 4; i++) {
+        g_EffectVoices[i].state = -1;
+        g_EffectVoices[i].note.value = -1;
+        g_EffectVoices[i].tone = -1;
+        g_EffectVoices[i].pitch.value = 0x1E00;
+        g_EffectVoices[i].volume = 0;
     }
 
-    {
-        s32 value;
-
-        value = -1;
-        g_PanVoiceVolumeR = value;
-        g_PanVoiceVolumeL = value;
-        g_IndexedEffectIndexPrev = value;
-        g_IndexedEffectIndex = value;
-        value = 0x1E00;
-        g_PanVoiceActive = 0;
-        g_IndexedEffectPitch = value;
-    }
+    g_PanVoiceVolumeR = -1;
+    g_PanVoiceVolumeL = -1;
+    g_IndexedEffectIndexPrev = -1;
+    g_IndexedEffectIndex = -1;
+    g_PanVoiceActive = 0;
+    g_IndexedEffectPitch = 0x1E00;
 
     SetEffectVoicesEnabled(1);
     SetReverbPreset(2, 0, 0);
@@ -157,41 +101,17 @@ void InitEffectVoiceRuntime(void) {
 }
 
 void ForcePanVoiceEnabled(s32 enabled) {
-    s32 values[2];
-    s32 scale;
-    s32 raw;
-    s32 voice;
     s32 left;
     s32 right;
-    s32 zeroArg;
-
-    values[0] = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
-    values[1] = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
 
     if (enabled != 0) {
-        raw = values[0];
-        scale = g_SoundScale.scale;
-        left = raw * scale;
-        raw = values[1];
-        if (left < 0) {
-            left += 0x7F;
-        }
-        
-        raw *= scale;
-        left >>= 7;
-        right = raw / 128;
-
-        left = ClampVoiceVolume(left);
-        right = ClampVoiceVolume(right);
+        left = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
+        right = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
+        left = ClampVoiceVolume(left * g_SoundScale.scale / 128);
+        right = ClampVoiceVolume(right * g_SoundScale.scale / 128);
 
         SsUtSetVVol(0x15, left, right);
-        voice = 0x15;
-        right = 0xF;
-        
-        raw = 0x3C;
-        left = g_SoundScale.vabIds[0];
-        zeroArg = 0;
-        SsUtKeyOnV(voice, left, right, zeroArg, raw, 0, 0, 0);
+        SsUtKeyOnV(0x15, g_SoundScale.vabIds[0], 0xF, 0, 0x3C, 0, 0, 0);
     } else {
         SsUtKeyOffV(0x15);
     }

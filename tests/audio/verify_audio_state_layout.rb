@@ -60,9 +60,15 @@ sources.each do |path, source|
     abort "#{path}: torque lookup still depends on adjacent linker symbols" if
       source.include?("(&g_TorqueBandStart) + bandIndex") ||
       source.include?("(&g_TorqueLossBandStart) + bandIndex")
-    abort "#{path}: missing explicit torque-band predecessor lookup" unless
+    explicit_predecessors =
       source.include?("g_TorqueBandEnd[bandIndex - 1]") &&
       source.include?("g_TorqueLossBandEnd[bandIndex - 1]")
+    shared_predecessor_helper =
+      source.include?("bandEnds[bandIndex - 1]") &&
+      source.include?("BandStartIndex(g_TorqueBandEnd, bandIndex)") &&
+      source.include?("BandStartIndex(g_TorqueLossBandEnd, bandIndex)")
+    abort "#{path}: missing explicit torque-band predecessor lookup" unless
+      explicit_predecessors || shared_predecessor_helper
     next
   end
 
