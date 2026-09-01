@@ -138,8 +138,8 @@ s32 RunTimedDrawScript(void *commands, s32 *progress, s32 step);
 #define COMMAND_COUNT 12
 static TimedDrawCommand s_script[COMMAND_COUNT + 1];
 
-/* Zeroed shapes and motions: the interpolation is deterministic, and what
- * matters here is which command ran and with how much time behind it. */
+/* Each primitive gets real geometry and both signs of packed velocity. This
+ * makes the sweep cover interpolation as well as command dispatch. */
 static ScriptedSpriteShape s_spriteShapes[COMMAND_COUNT];
 static ScriptedSpriteMotion s_spriteMotions[COMMAND_COUNT];
 static ScriptedLineShape s_lineShapes[COMMAND_COUNT];
@@ -148,6 +148,10 @@ static ScriptedTriangleShape s_triShapes[COMMAND_COUNT];
 static ScriptedTriangleMotion s_triMotions[COMMAND_COUNT];
 static ScriptedQuadShape s_quadShapes[COMMAND_COUNT];
 static ScriptedQuadMotion s_quadMotions[COMMAND_COUNT];
+
+static s32 PackVelocity(s16 x, s16 y) {
+    return (s32)((u32)(u16)x | ((u32)(u16)y << 16));
+}
 
 static void BuildScript(s32 limit) {
     static const s16 types[COMMAND_COUNT] = {0, 1, 9, 10, 19, 20, 29, 30, 39,
@@ -165,6 +169,72 @@ static void BuildScript(s32 limit) {
     memset(s_quadShapes, 0, sizeof(s_quadShapes));
     memset(s_quadMotions, 0, sizeof(s_quadMotions));
     for (i = 0; i < COMMAND_COUNT; i++) {
+        s16 vx = (i & 1) ? (s16)(-17 - i) : (s16)(11 + i);
+        s16 vy = (i & 2) ? (s16)(-9 - i) : (s16)(7 + i);
+
+        s_spriteShapes[i].width = (s16)(12 + i);
+        s_spriteShapes[i].height = (s16)(8 + i);
+        s_spriteShapes[i].u = (u8)(3 + i);
+        s_spriteShapes[i].v = (u8)(5 + i);
+        s_spriteShapes[i].flags = (u8)(i & 0xF);
+        s_spriteShapes[i].alpha = (u8)(0x40 + i);
+        s_spriteMotions[i].limit = 19 + i;
+        s_spriteMotions[i].x = (s16)(40 + i);
+        s_spriteMotions[i].y = (s16)(70 - i);
+        s_spriteMotions[i].clut = (u16)(0x120 + i);
+        s_spriteMotions[i].r = (u8)(20 + i);
+        s_spriteMotions[i].g = (u8)(40 + i);
+        s_spriteMotions[i].b = (u8)(60 + i);
+        s_spriteMotions[i].packedVelocity = PackVelocity(vx, vy);
+
+        s_lineShapes[i].r = (u8)(30 + i);
+        s_lineShapes[i].g = (u8)(50 + i);
+        s_lineShapes[i].b = (u8)(70 + i);
+        s_lineShapes[i].flags = (u8)(i & 7);
+        s_lineMotions[i].limit = 17 + i;
+        s_lineMotions[i].x0 = (s16)(10 + i);
+        s_lineMotions[i].y0 = (s16)(20 + i);
+        s_lineMotions[i].x1 = (s16)(80 - i);
+        s_lineMotions[i].y1 = (s16)(90 - i);
+        s_lineMotions[i].packedVelocity0 = PackVelocity(vx, vy);
+        s_lineMotions[i].packedVelocity1 = PackVelocity((s16)-vy, (s16)-vx);
+
+        s_triShapes[i].x1 = (u16)(15 + i);
+        s_triShapes[i].y1 = (u16)(5 + i);
+        s_triShapes[i].x2 = (u16)(7 + i);
+        s_triShapes[i].y2 = (u16)(18 + i);
+        s_triShapes[i].r = (u8)(80 + i);
+        s_triShapes[i].g = (u8)(90 + i);
+        s_triShapes[i].b = (u8)(100 + i);
+        s_triShapes[i].flags = (u8)(i & 7);
+        s_triMotions[i].limit = 23 + i;
+        s_triMotions[i].x = (s16)(100 + i);
+        s_triMotions[i].y = (s16)(50 - i);
+        s_triMotions[i].packedVelocity = PackVelocity(vx, vy);
+
+        s_quadShapes[i].u0 = (u8)i;
+        s_quadShapes[i].v0 = (u8)(i + 1);
+        s_quadShapes[i].u1 = (u8)(i + 2);
+        s_quadShapes[i].v1 = (u8)(i + 3);
+        s_quadShapes[i].u2 = (u8)(i + 4);
+        s_quadShapes[i].v2 = (u8)(i + 5);
+        s_quadShapes[i].u3 = (u8)(i + 6);
+        s_quadShapes[i].v3 = (u8)(i + 7);
+        s_quadShapes[i].clut = (u16)(0x220 + i);
+        s_quadShapes[i].r = (u8)(110 + i);
+        s_quadShapes[i].g = (u8)(120 + i);
+        s_quadShapes[i].b = (u8)(130 + i);
+        s_quadShapes[i].flags = (u8)(i & 0xF);
+        s_quadShapes[i].alpha = (u8)(0x60 + i);
+        s_quadMotions[i].limit = 29 + i;
+        s_quadMotions[i].x = (s16)(30 + i);
+        s_quadMotions[i].y = (s16)(35 + i);
+        s_quadMotions[i].width = (s16)(45 + i);
+        s_quadMotions[i].height = (s16)(25 + i);
+        s_quadMotions[i].packedVelocity = PackVelocity(vx, vy);
+        s_quadMotions[i].packedSizeVelocity =
+            PackVelocity((s16)-vy, (s16)-vx);
+
         s_script[i].time = times[i];
         s_script[i].type = types[i];
         switch (types[i]) {
@@ -199,7 +269,7 @@ int main(void) {
     static const s32 progresses[] = {-4, 0, 1, 2, 4, 8, 16, 24, 31, 32, 40};
     static const s32 steps[] = {-8, -1, 0, 1, 3, 8, 40};
     static const s32 limits[] = {0, 1, 32, 33};
-    static const unsigned long expected = 2945563909UL;
+    static const unsigned long expected = 171758789UL;
     int pi, si, li, alt;
     int states = 0;
 
