@@ -220,16 +220,11 @@ void RankContenders(void) {
     s32 minValue;
     s32 value;
     s32 sums[4];
-    s32 *sumPtr;
     s16 indices[4] = {0, 0, 0, 0};
 
-    i = 0;
-    sumPtr = sums;
-    do {
-        *sumPtr = g_Cars[i].progressA + g_Cars[i].progressB;
-        i++;
-        sumPtr++;
-    } while (i < 4);
+    for (i = 0; i < 4; i++) {
+        sums[i] = g_Cars[i].progressA + g_Cars[i].progressB;
+    }
 
     indices[0] = 0;
     indices[3] = 0;
@@ -273,63 +268,67 @@ void RankContenders(void) {
 }
 
 
-void UpdateRivalRubberBand(void) {
-    s32 s6;
-    s32 s5;
-    s32 s4;
-    s32 s3;
-    s16 *s2;
-    s32 s1;
-    s32 s0;
+static s16 *RivalCueCooldown(s32 rank) {
+    switch (rank) {
+    case 0: return &g_RivalCueCooldown0;
+    case 1: return &g_RivalCueCooldown1;
+    case 2: return &g_RivalCueCooldown2;
+    default: return &g_RivalCueCooldown3;
+    }
+}
 
-    s6 = g_PlayerCar.progressA + g_PlayerCar.progressB;
+void UpdateRivalRubberBand(void) {
+    s32 playerProgress;
+    s32 nearDistance;
+    s32 farDistance;
+    s32 rank;
+
+    playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
     if ((SeriesCourseIndex()) == 3) {
-        s5 = 0xC00;
-        s4 = 0x1400;
+        nearDistance = 0xC00;
+        farDistance = 0x1400;
     } else {
-        s5 = 0x600;
-        s4 = 0xE00;
+        nearDistance = 0x600;
+        farDistance = 0xE00;
     }
 
     if (g_RacePhase >= 4) {
         return;
     }
 
-    s1 = 3;
-    s3 = 0x20;
-    s2 = &g_RivalCueCooldown3;
-    s0 = 4;
+    for (rank = 3; rank >= 0; rank--) {
+        GameCarRuntime *rival = g_RankedCars[rank];
+        s16 *cooldown = RivalCueCooldown(rank);
+        s32 nearCueBit = 0x10 >> rank;
+        s32 farCueBit = 0x100 >> rank;
+        s32 gap = rival->progressA + rival->progressB - playerProgress;
 
-    do {
-        s32 a0 = g_RankedCars[s1]->progressA + g_RankedCars[s1]->progressB - s6;
-
-        if (a0 >= 0) {
-            if (s1 == 0) {
+        if (gap >= 0) {
+            if (rank == 0) {
                 g_RivalCueFlags &= ~1;
             }
-            g_ClosestRivalRank = s1;
-            if (s4 < a0) {
-                g_RivalCueFlags &= ~(0x200 >> s0);
-                if (g_RankedCars[s1]->speed >= 0x321) {
-                    g_RankedCars[s1]->accelerationLimit = g_RankedCars[s1]->accelerationLimit * 90 / 100;
+            g_ClosestRivalRank = rank;
+            if (farDistance < gap) {
+                g_RivalCueFlags &= ~farCueBit;
+                if (rival->speed >= 0x321) {
+                    rival->accelerationLimit = rival->accelerationLimit * 90 / 100;
                 }
                 return;
             }
-            if (s5 < a0) {
+            if (nearDistance < gap) {
                 s32 counter;
 
-                if (g_RankedCars[s1]->speed >= 0x3E9) {
-                    g_RankedCars[s1]->accelerationLimit = g_RankedCars[s1]->accelerationLimit * 98 / 100;
+                if (rival->speed >= 0x3E9) {
+                    rival->accelerationLimit = rival->accelerationLimit * 98 / 100;
                 }
-                counter = *s2;
-                g_RivalCueFlags |= (s3 >> s0);
+                counter = *cooldown;
+                g_RivalCueFlags |= nearCueBit;
                 if (counter >= 0x12D) {
-                    *s2 = 0;
+                    *cooldown = 0;
                 }
                 return;
             }
-            if (!((0x200 >> s0) & g_RivalCueFlags)) {
-                s32 bit;
+            if (!(farCueBit & g_RivalCueFlags)) {
                 s32 flags;
                 u32 cueVariant;
 
@@ -340,58 +339,52 @@ void UpdateRivalRubberBand(void) {
                 if (g_RivalCueEnabled != 0) {
                     PlaySoundCue(0x32);
                 }
-                bit = 0x200;
                     break;
                 case 1:
                 if (g_RivalCueEnabled != 0) {
                     PlaySoundCue(0x33);
                 }
-                bit = 0x200;
                     break;
                 case 2:
                 if (g_RivalCueEnabled != 0) {
                     PlaySoundCue(0x34);
                 }
-                bit = 0x200;
                 }
 
                 flags = g_RivalCueFlags;
-                *s2 = 0;
-                g_RivalCueFlags = (bit >> s0) | flags;
+                *cooldown = 0;
+                g_RivalCueFlags = farCueBit | flags;
                 return;
             }
-            *s2 = (s16)((u16)*s2 + 1);
+            *cooldown = (s16)((u16)*cooldown + 1);
             return;
         } else {
-            if (s1 == 0 && !(g_RivalCueFlags % 2) && a0 < -0x1C00) {
+            if (rank == 0 && !(g_RivalCueFlags % 2) && gap < -0x1C00) {
                 if (g_RivalCueEnabled != 0 && g_RacePosition == 1) {
                     PlaySoundCue(0x2D);
                 }
                 g_RivalCueFlags = (g_RivalCueFlags & ~0x10) | 1;
-            } else if (a0 >= -0x7FF && !((s3 >> s0) & g_RivalCueFlags)) {
+            } else if (gap >= -0x7FF && !(nearCueBit & g_RivalCueFlags)) {
                 if (g_SceneTimer % 2) {
                     if (g_RivalCueEnabled != 0) PlaySoundCue(0x2F);
                 } else {
                     if (g_RivalCueEnabled != 0) PlaySoundCue(0x30);
                 }
-                g_RivalCueFlags |= (s3 >> s0);
+                g_RivalCueFlags |= nearCueBit;
             } else {
-                if (a0 < -0x1000) {
-                    g_RivalCueFlags &= ~(s3 >> s0);
-                } else if (a0 < -0x800) {
-                    if (*s2 >= 0x12D) {
+                if (gap < -0x1000) {
+                    g_RivalCueFlags &= ~nearCueBit;
+                } else if (gap < -0x800) {
+                    if (*cooldown >= 0x12D) {
                         if (g_SceneTimer % 2) {
                             if (g_RivalCueEnabled != 0) PlaySoundCue(0x37);
                         } else {
                             if (g_RivalCueEnabled != 0) PlaySoundCue(0x36);
                         }
-                        *s2 = 0;
+                        *cooldown = 0;
                     }
                 }
             }
-            s2--;
-            s0--;
-            s1--;
         }
-    } while (s1 >= 0);
+    }
 }

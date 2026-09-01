@@ -32,6 +32,9 @@ s32 g_ClosestRivalRank;
 s32 g_CourseIndex;
 s16 g_RacePhase;
 GameCarRuntime *g_RankedCars[4];
+s16 g_RivalCueCooldown0;
+s16 g_RivalCueCooldown1;
+s16 g_RivalCueCooldown2;
 s16 g_RivalCueCooldown3;
 s16 g_RivalCueEnabled;
 s32 g_RivalCueFlags;
@@ -298,6 +301,36 @@ int main(int argc, char **argv) {
         printf("rival cue cooldown did not wrap: %d\n",
                g_RivalCueCooldown3);
         return 1;
+    }
+
+    /* Each rank owns an independent cooldown. These globals are deliberately
+     * not required to be adjacent in host state. */
+    {
+        s16 *cooldowns[4] = {
+            &g_RivalCueCooldown0, &g_RivalCueCooldown1,
+            &g_RivalCueCooldown2, &g_RivalCueCooldown3,
+        };
+        s32 rank;
+
+        for (rank = 0; rank < 4; rank++) {
+            s32 i;
+
+            for (i = 0; i < 4; i++) {
+                g_Cars[i].progressA = i > rank ? -0x2000 : 0;
+                *cooldowns[i] = (s16)(100 + i);
+            }
+            g_RivalCueFlags = 0x1E0;
+            UpdateRivalRubberBand();
+            for (i = 0; i < 4; i++) {
+                s16 expectedCooldown =
+                    (s16)(100 + i + (i == rank ? 1 : 0));
+                if (*cooldowns[i] != expectedCooldown) {
+                    printf("rank %d changed cooldown %d to %d, expected %d\n",
+                           rank, i, *cooldowns[i], expectedCooldown);
+                    return 1;
+                }
+            }
+        }
     }
 
     printf("traffic_avoidance: %d cases unchanged\n", cases);
