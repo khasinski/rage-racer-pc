@@ -2,9 +2,7 @@
   "version": 1,
   "symbols": {
     "g_CdSearchFile": 24,
-    "g_FlybyScenery": 52,
     "g_RouteSceneryPosition": 16,
-    "g_SpinningSceneryRecords": 64,
     "g_BestSectorTimes": 96,
     "g_BestLapTimes": 64,
     "g_BestTotalTimes": 68,
@@ -18,22 +16,21 @@
     "g_TrackTextureRect": 8,
     "g_RaceHudSpriteDescsGp": 240,
     "g_RaceHudSpriteDescsTimeTrial": 220,
-    "g_PaintBlendShades": 6,
     "g_ShuttlePathPoints": 96
   },
   "minimum_symbols": {
-    "src/port/host_state.c": 17,
+    "src/port/host_state.c": 16,
     "src/port/host_state_asset.c": 24,
     "src/port/host_state_audio.c": 39,
     "src/port/host_state_car.c": 60,
     "src/port/host_state_cd.c": 23,
     "src/port/host_state_menu.c": 256,
     "src/port/host_state_pad.c": 18,
-    "src/port/host_state_race.c": 136,
+    "src/port/host_state_race.c": 135,
     "src/port/host_state_render.c": 24,
     "src/port/host_state_save.c": 63,
-    "src/port/host_state_track.c": 102,
-    "src/port/host_state_unread.c": 463,
+    "src/port/host_state_track.c": 95,
+    "src/port/host_state_unread.c": 451,
     "src/port/native_initialized_state.c": 49
   },
   "forbidden_detached_aliases": [
