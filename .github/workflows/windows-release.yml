@@ -30,7 +30,10 @@ jobs:
       - name: Build the save editor
         shell: pwsh
         run: |
-          cmake -S editor -B build/editor -DCMAKE_BUILD_TYPE=Release
+          # The same toolset as the game: the port's include directory holds a
+          # stdint.h that forwards with include_next, which MSVC does not have.
+          cmake -S editor -B build/editor -G "Visual Studio 17 2022" -A x64 `
+            -T ClangCL
           cmake --build build/editor --config Release --parallel
           ctest --test-dir build/editor -C Release --output-on-failure
       - name: Package the save editor
