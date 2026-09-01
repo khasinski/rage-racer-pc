@@ -58,9 +58,28 @@ endif()
 add_test(NAME host_state_content COMMAND host_state_content_tests)
 set_tests_properties(host_state_content PROPERTIES LABELS functional)
 
-add_test(NAME host_state_abi COMMAND python3
-    ${CMAKE_CURRENT_SOURCE_DIR}/verify_host_state_abi.py ${CMAKE_SOURCE_DIR})
-
+add_executable(host_state_abi_tests
+    host_state_abi_asset.c
+    host_state_abi_cd.c
+    host_state_abi_forbidden.c
+    host_state_abi_menu.c
+    host_state_abi_native.c
+    host_state_abi_race.c
+    host_state_abi_save.c
+    host_state_abi_track.c
+    host_state_abi_unread.c)
+target_include_directories(host_state_abi_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(host_state_abi_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(host_state_abi_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME host_state_abi COMMAND host_state_abi_tests)
 set_tests_properties(host_state_abi PROPERTIES LABELS functional)
 add_test(NAME shipped_config COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})

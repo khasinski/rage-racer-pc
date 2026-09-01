@@ -44,8 +44,10 @@ another file, or giving it the type its header promises all leave the same
 bytes in the same order, so the number must not move. Flipping a single byte
 fails it.
 
-That property is the whole point, and it is what `host_state_abi` cannot do:
-the manifest pins names and sizes, not contents.
+That property is the whole point. The compiled `host_state_abi` probes cover
+the complementary invariant: selected raw-storage sizes and the absence of
+detached PS1-address aliases. They include the real definitions, so typed
+storage does not need to be rediscovered with a source-text parser.
 
 ## Order of work, and why this order
 
