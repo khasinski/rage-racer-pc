@@ -61,6 +61,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
     const s32 cosine = rsin(angle);
     POLY_F4 *needle = RENDER_PRIM_CURSOR_AS(POLY_F4);
     s16 *vertex = &needle->x0;
+    u8 *next;
     TILE *shiftLight;
     s32 i;
 
@@ -87,13 +88,10 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
                needle->x3, needle->y3);
     }
     AddPrim(ot, needle);
-    RENDER_PRIM_CURSOR_AS(u8) = (u8 *)(needle + 1);
-
-    /* This read must observe the cursor write above; the non-volatile alias
-     * can be reused by the compiler and changes the emitted packet stream. */
-    RENDER_PRIM_CURSOR_AS(u8) = DrawHudDigit(
-        RENDER_PRIM_CURSOR_VOLATILE, centerX + spec->gearDigitDX,
+    next = DrawHudDigit(
+        (u8 *)(needle + 1), centerX + spec->gearDigitDX,
         centerY + spec->gearDigitDY, g_PlayerCar.drive.gear, g_HudGlyphClut);
+    RENDER_PRIM_CURSOR_AS(u8) = next;
     DrawSpeedDigits(centerX, centerY, g_PlayerCar.speed * 160 / 1168);
 
     frame->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
