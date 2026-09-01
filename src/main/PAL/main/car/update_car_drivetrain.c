@@ -477,41 +477,84 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   return loads;
 }
 
+static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
+                               s32 steeringResistance) {
+  s32 brakeDrag = drive->brakeInput * 0x14;
+  s32 coefficient = 0x26FC - 1 - steeringResistance * 2;
+  s32 torque = drive->drivetrainTorque;
+
+  if (brakeDrag < 0) {
+    brakeDrag += 0xFF;
+  }
+  car->speed = (coefficient - (brakeDrag >> 8)) * car->speed / 10000;
+  if (torque < 0) {
+    torque += 0x1FFFFF;
+  }
+  car->acceleration = torque >> 21;
+}
+
+static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
+                              s32 gearTorque) {
+  s32 speedScale;
+
+  if (car->verticalMotionState != 0) {
+    car->acceleration = 0;
+    speedScale = 0x3E7;
+    car->speed = car->speed * speedScale / 1000;
+    return;
+  }
+
+  if (drive->clutch > 0 || drive->jumpTimer > 0) {
+    car->acceleration = drive->engineLoad;
+  } else {
+    s32 shiftedTorque = gearTorque;
+
+    if (shiftedTorque < 0) {
+      shiftedTorque += 0x1FFFF;
+    }
+    shiftedTorque >>= 17;
+    car->acceleration = drive->manual != 0
+        ? shiftedTorque
+        : g_CarSpec->automaticAccelerationScale * shiftedTorque / 1000;
+  }
+  if (g_GripLossTimer > 0) {
+    car->acceleration /= 2;
+  }
+  car->speed = car->speed * 0x5E / 100;
+}
+
+static void DispatchCarMotion(PlayerCarRuntime *car) {
+  switch (car->drive.motionState) {
+    case CAR_MOTION_DRIVING:
+      UpdateCarDriving(car);
+      break;
+    case CAR_MOTION_TAKEOFF:
+      UpdateCarLaunch(car);
+      break;
+    case CAR_MOTION_AIRBORNE:
+      UpdateCarAirborne(car);
+      break;
+    case CAR_MOTION_STANDING_START:
+      UpdateCarStandingStart(car);
+      break;
+  }
+}
+
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GearCurveAddress gearCurve;
   s16 gear;
-  s32 toCentreX;
   s32 gearTorqueLate;
-  s32 cosCentreAngle;
-  s32 toCentreZ;
   s32 frontLoad;
   s32 speedForPath;
-  s32 centreAngle;
-  s32 radialDistance;
-  s32 arcPointIndex;
-  s32 speedA;
-  s32 torqueShifted;
-  s32 speedB;
-  s32 driveModeLate;
   s32 frontLoadScaled;
-  s32 downforceScale;
-  s32 downforce;
   s32 gripBudget;
-  s32 dragTerm;
   s32 accel;
   s32 bandScale;
   s32 steerLoad;
   s32 throttleAccel;
   s32 gearRatio;
   s32 netTorque;
-  s32 dragBase;
-  s32 speedScaled;
-  s32 torqueLate;
-  s32 coefficientBase;
-  s32 coefficient;
-  u16 arcFlags;
   GameCarDrive *drive;
-  GameTrackArcCenter *arcCentre;
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;
@@ -572,132 +615,21 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   gearTorqueLate = gearRatio * drive->engineRpm;
   drive->drivetrainTorque = gearTorqueLate;
-  if (drive->motionState == CAR_MOTION_TAKEOFF)
-  {
-    arcPointIndex = car->trackPointIndex;
-    arcFlags = TrackPoint(arcPointIndex)->arcRef;
-    dragBase = arcFlags % 4;
-    if (dragBase > 0)
-    {
-      arcCentre = &g_TrackArcCenters[(s16)arcFlags >> 4];
-      toCentreX = car->x - arcCentre->x;
-      toCentreZ = car->z - arcCentre->z;
-      centreAngle = Atan2(toCentreX, toCentreZ);
-      cosCentreAngle = rcos(centreAngle);
-      radialDistance = (cosCentreAngle * toCentreX) + (rsin(centreAngle) * toCentreZ);
-      frontLoadScaled = radialDistance >> 0xC;
-      if (radialDistance < 0)
-      {
-        frontLoadScaled = (radialDistance + 0xFFF) >> 0xC;
-      }
-    }
-    else
-    {
-      frontLoadScaled = (g_CarSpec->referenceTurnRadius) * 0x64;
-    }
-    if ((frontLoadScaled <= 0) || ((downforceScale = (g_CarSpec->referenceTurnRadius) * 0x64, downforceScale <= 0)))
-    {
-      downforceScale = (g_CarSpec->referenceTurnRadius) * 0x64;
-    }
-    downforce = (g_CarSpec->referenceTurnRadius * 0x64) / downforceScale;
-    if (downforce <= 0)
-    {
-      downforce = 1;
-    }
-    dragTerm = drive->brakeInput * 0x14;
-    coefficientBase = 0x26FC - downforce;
-    coefficient = coefficientBase - (steerLoad * 2);
-    if (dragTerm < 0)
-    {
-      dragTerm += 0xFF;
-    }
-    car->speed = (coefficient - (dragTerm >> 8)) * car->speed / 10000;
-    arcPointIndex = drive->drivetrainTorque;
-    if (arcPointIndex < 0)
-    {
-      arcPointIndex += 0x1FFFFF;
-    }
-    dragBase = arcPointIndex >> 0x15;
-    car->acceleration = dragBase;
+  if (drive->motionState == CAR_MOTION_TAKEOFF) {
+    UpdateTakeoffSpeed(car, drive, steerLoad);
+  } else {
+    UpdateDrivenSpeed(car, drive, gearTorqueLate);
   }
-  else
-  {
-    if (car->verticalMotionState != 0)
-    {
-      speedA = car->speed;
-      car->acceleration = 0;
-      speedScaled = (speedA * 0x3E7) / 1000;
-    }
-    else
-    {
-      if (drive->clutch > 0)
-      {
-        car->acceleration = drive->engineLoad;
-      }
-      else
-      {
-        torqueLate = gearTorqueLate;
-        if (drive->jumpTimer > 0)
-        {
-          car->acceleration = drive->engineLoad;
-        }
-        else
-        {
-          if (torqueLate < 0)
-          {
-            torqueLate += 0x1FFFF;
-          }
-          torqueShifted = torqueLate >> 0x11;
-          car->acceleration = torqueShifted;
-          if (drive->manual == 0)
-          {
-            car->acceleration = g_CarSpec->automaticAccelerationScale * torqueShifted / 1000;
-          }
-        }
-      }
-      if (g_GripLossTimer > 0)
-      {
-        car->acceleration /= 2;
-      }
-      speedB = car->speed;
-      speedScaled = (speedB * 0x5E) / 100;
-    }
-    car->speed = speedScaled;
-  }
-  if (car->speed < 8)
-  {
+
+  if (car->speed < 8) {
     car->headingAngle = car->bodyYaw;
   }
-  if (g_RacePhase >= 2)
-  {
-    driveModeLate = drive->motionState;
-    switch (driveModeLate)
-    {
-      case 0:
-        UpdateCarDriving(car);
-        break;
-
-      case 1:
-        UpdateCarLaunch(car);
-        break;
-
-      case 2:
-        UpdateCarAirborne(car);
-        break;
-
-      case 3:
-        UpdateCarStandingStart(car);
-        break;
-
-    }
-
-  }
-  else
-  {
+  if (g_RacePhase >= 2) {
+    DispatchCarMotion(car);
+  } else {
     car->speed = 0;
   }
-  if (car->speed < 8)
-  {
+  if (car->speed < 8) {
     car->headingAngle = car->bodyYaw;
   }
 }
