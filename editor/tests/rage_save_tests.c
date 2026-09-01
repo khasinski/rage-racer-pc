@@ -149,6 +149,60 @@ static void TestRegions(void) {
           "and it is the name the game writes");
     Check(!RageRegionCardName(RAGE_REGION_PAL, 3, name, sizeof(name)),
           "there is no fourth slot");
+
+    /* The slot is read back out of the same name, so opening a file does not
+     * have to ask which one it is. */
+    CheckEqual((unsigned long)(RageSaveSlotFromPath("bu00/BESCES-00650 RAGE000") + 1),
+               1, "slot zero is read from the file name");
+    CheckEqual((unsigned long)(RageSaveSlotFromPath("BISLPS-00744 RAGE001") + 1),
+               2, "slot one is read from the file name");
+    CheckEqual((unsigned long)(RageSaveSlotFromPath("/tmp/BASLUS-00403 RAGE002") + 1),
+               3, "slot two is read from the file name");
+    CheckEqual((unsigned long)(RageSaveSlotFromPath("savegame.bin") + 1), 0,
+               "a name with no slot in it says so");
+}
+
+/* A new save must be one the game would have written itself. */
+static void TestNewSaveDefaults(void) {
+    RageSaveFile save;
+    int i;
+    int owned = 0;
+
+    RageSaveInit(&save, RAGE_REGION_PAL, 0);
+    CheckEqual(save.block.negconSteerPlay, 1,
+               "the neGcon steering keeps the play the game gives it");
+    CheckEqual((unsigned long)save.block.bgmVolume, 0xF,
+               "music starts at full volume");
+    CheckEqual((unsigned long)save.block.sfxVolume, 0xF,
+               "effects start at full volume");
+    CheckEqual((unsigned long)save.block.grandPrixProgress.carIndex, 3,
+               "the car you start in is the Gnade");
+    CheckEqual((unsigned long)(save.block.grandPrixProgress.maxClassReached + 1),
+               0, "no class has been entered yet");
+    for (i = 0; i < 13; i++) owned += save.block.carSetup[0][i].enabled != 0;
+    CheckEqual((unsigned long)owned, 1, "exactly one car is owned to begin");
+    Check(save.block.carSetup[0][3].enabled != 0, "and it is the Gnade");
+    CheckEqual((unsigned long)save.block.classRecords[1].grade, 0xFFFF,
+               "an empty class record is empty, not a first place");
+    CheckEqual((unsigned long)save.block.grandPrixCourseProgress[6], 5,
+               "five retries are left");
+}
+
+static void TestCarNames(void) {
+    Check(strcmp(RageCarName(0, RAGE_REGION_PAL), "Erriso") == 0,
+          "car zero is the Erriso outside Japan");
+    Check(strcmp(RageCarName(0, RAGE_REGION_NTSC_J), "Alouette") == 0,
+          "and the Alouette in Japan");
+    Check(strcmp(RageCarName(4, RAGE_REGION_NTSC_U), "Acceron") == 0,
+          "the American release keeps the international name");
+    Check(strcmp(RageCarName(12, RAGE_REGION_NTSC_J), "Dragone") == 0,
+          "the last car is renamed too");
+    Check(strcmp(RageCarName(1, RAGE_REGION_PAL),
+                 RageCarName(1, RAGE_REGION_NTSC_J)) == 0,
+          "a car with one name has it in both releases");
+    Check(RageCarName(13, RAGE_REGION_PAL) == NULL, "there is no car thirteen");
+    Check(strcmp(RageCarMaker(3), "Gnade") == 0,
+          "the car you start in is a Gnade");
 }
 
 static void TestTeamName(void) {
@@ -217,6 +271,8 @@ int main(void) {
     TestBrokenChecksumStillOpens();
     TestRefusesWhatIsNotASave();
     TestRegions();
+    TestNewSaveDefaults();
+    TestCarNames();
     TestTeamName();
     TestTeamLogo();
     TestLogoColours();

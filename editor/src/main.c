@@ -97,42 +97,92 @@ static int LoadFont(ImGuiIO *io) {
     return 0;
 }
 
-/* Room to breathe, soft corners and a calm palette. */
+/*
+ * A dark room with one warm colour in it. Everything that can be pressed or
+ * changed is amber; everything else is grey, so the eye finds the controls
+ * without reading. Red is kept for when something is wrong.
+ */
 static void ApplyStyle(int haveSystemFont) {
     ImGuiStyle *style = igGetStyle();
+    const ImVec4_c ink = {0.93f, 0.93f, 0.95f, 1.0f};
+    const ImVec4_c amber = {0.98f, 0.63f, 0.16f, 1.0f};
+    const ImVec4_c amberDim = {0.74f, 0.46f, 0.12f, 1.0f};
+    const ImVec4_c panel = {0.106f, 0.106f, 0.118f, 1.0f};
+    const ImVec4_c raised = {0.145f, 0.145f, 0.161f, 1.0f};
+    const ImVec4_c field = {0.192f, 0.196f, 0.212f, 1.0f};
+    int i;
 
     igStyleColorsDark(NULL);
     if (!haveSystemFont) style->FontScaleMain = 1.4f;
-    style->WindowPadding = (ImVec2_c){18.0f, 16.0f};
-    style->FramePadding = (ImVec2_c){10.0f, 7.0f};
-    style->ItemSpacing = (ImVec2_c){10.0f, 9.0f};
-    style->ItemInnerSpacing = (ImVec2_c){8.0f, 6.0f};
-    style->CellPadding = (ImVec2_c){8.0f, 5.0f};
-    style->FrameRounding = 6.0f;
-    style->GrabRounding = 6.0f;
-    style->PopupRounding = 6.0f;
-    style->ChildRounding = 8.0f;
-    style->TabRounding = 6.0f;
-    style->ScrollbarRounding = 8.0f;
+
+    style->WindowPadding = (ImVec2_c){20.0f, 18.0f};
+    style->FramePadding = (ImVec2_c){11.0f, 8.0f};
+    style->ItemSpacing = (ImVec2_c){12.0f, 10.0f};
+    style->ItemInnerSpacing = (ImVec2_c){9.0f, 7.0f};
+    style->CellPadding = (ImVec2_c){10.0f, 7.0f};
+    style->IndentSpacing = 22.0f;
+    style->ScrollbarSize = 13.0f;
+    style->GrabMinSize = 14.0f;
+    style->FrameRounding = 7.0f;
+    style->GrabRounding = 7.0f;
+    style->PopupRounding = 8.0f;
+    style->ChildRounding = 10.0f;
+    style->TabRounding = 7.0f;
+    style->ScrollbarRounding = 9.0f;
     style->WindowBorderSize = 0.0f;
+    style->ChildBorderSize = 0.0f;
     style->FrameBorderSize = 0.0f;
     style->SeparatorTextBorderSize = 1.0f;
-    style->Colors[ImGuiCol_WindowBg] = (ImVec4_c){0.10f, 0.11f, 0.13f, 1.0f};
-    style->Colors[ImGuiCol_ChildBg] = (ImVec4_c){0.12f, 0.13f, 0.16f, 1.0f};
-    style->Colors[ImGuiCol_FrameBg] = (ImVec4_c){0.17f, 0.19f, 0.23f, 1.0f};
-    style->Colors[ImGuiCol_FrameBgHovered] =
-        (ImVec4_c){0.22f, 0.25f, 0.30f, 1.0f};
-    style->Colors[ImGuiCol_Button] = (ImVec4_c){0.20f, 0.34f, 0.52f, 1.0f};
-    style->Colors[ImGuiCol_ButtonHovered] =
-        (ImVec4_c){0.26f, 0.44f, 0.66f, 1.0f};
-    style->Colors[ImGuiCol_ButtonActive] = (ImVec4_c){0.16f, 0.28f, 0.44f, 1.0f};
-    style->Colors[ImGuiCol_Header] = (ImVec4_c){0.20f, 0.34f, 0.52f, 1.0f};
-    style->Colors[ImGuiCol_HeaderHovered] =
-        (ImVec4_c){0.24f, 0.40f, 0.60f, 1.0f};
-    style->Colors[ImGuiCol_SliderGrab] = (ImVec4_c){0.42f, 0.62f, 0.86f, 1.0f};
-    style->Colors[ImGuiCol_CheckMark] = (ImVec4_c){0.55f, 0.78f, 1.00f, 1.0f};
-    style->Colors[ImGuiCol_TableHeaderBg] =
-        (ImVec4_c){0.16f, 0.18f, 0.22f, 1.0f};
+    style->SeparatorTextPadding = (ImVec2_c){0.0f, 10.0f};
+
+    for (i = 0; i < ImGuiCol_COUNT; i++) {
+        ImVec4_c *colour = &style->Colors[i];
+        /* Start from a single grey so nothing keeps ImGui's blue. */
+        colour->x = raised.x;
+        colour->y = raised.y;
+        colour->z = raised.z;
+    }
+    style->Colors[ImGuiCol_Text] = ink;
+    style->Colors[ImGuiCol_TextDisabled] = (ImVec4_c){0.55f, 0.56f, 0.60f, 1.0f};
+    style->Colors[ImGuiCol_WindowBg] = panel;
+    style->Colors[ImGuiCol_ChildBg] = (ImVec4_c){0.129f, 0.129f, 0.145f, 1.0f};
+    style->Colors[ImGuiCol_PopupBg] = raised;
+    style->Colors[ImGuiCol_Border] = (ImVec4_c){0.22f, 0.22f, 0.24f, 1.0f};
+    style->Colors[ImGuiCol_FrameBg] = field;
+    style->Colors[ImGuiCol_FrameBgHovered] = (ImVec4_c){0.24f, 0.24f, 0.26f, 1.0f};
+    style->Colors[ImGuiCol_FrameBgActive] = (ImVec4_c){0.27f, 0.27f, 0.30f, 1.0f};
+    style->Colors[ImGuiCol_TitleBg] = panel;
+    style->Colors[ImGuiCol_TitleBgActive] = panel;
+    style->Colors[ImGuiCol_MenuBarBg] = panel;
+    style->Colors[ImGuiCol_ScrollbarBg] = panel;
+    style->Colors[ImGuiCol_ScrollbarGrab] = (ImVec4_c){0.28f, 0.28f, 0.31f, 1.0f};
+    style->Colors[ImGuiCol_ScrollbarGrabHovered] =
+        (ImVec4_c){0.35f, 0.35f, 0.38f, 1.0f};
+    style->Colors[ImGuiCol_ScrollbarGrabActive] = amberDim;
+    style->Colors[ImGuiCol_CheckMark] = amber;
+    style->Colors[ImGuiCol_SliderGrab] = amberDim;
+    style->Colors[ImGuiCol_SliderGrabActive] = amber;
+    style->Colors[ImGuiCol_Button] = (ImVec4_c){0.23f, 0.23f, 0.26f, 1.0f};
+    style->Colors[ImGuiCol_ButtonHovered] = amberDim;
+    style->Colors[ImGuiCol_ButtonActive] = amber;
+    style->Colors[ImGuiCol_Header] = (ImVec4_c){0.26f, 0.20f, 0.10f, 1.0f};
+    style->Colors[ImGuiCol_HeaderHovered] = (ImVec4_c){0.32f, 0.25f, 0.12f, 1.0f};
+    style->Colors[ImGuiCol_HeaderActive] = amberDim;
+    style->Colors[ImGuiCol_Separator] = (ImVec4_c){0.24f, 0.24f, 0.27f, 1.0f};
+    style->Colors[ImGuiCol_Tab] = (ImVec4_c){0.17f, 0.17f, 0.19f, 1.0f};
+    style->Colors[ImGuiCol_TabHovered] = amberDim;
+    style->Colors[ImGuiCol_TabSelected] = (ImVec4_c){0.26f, 0.20f, 0.10f, 1.0f};
+    style->Colors[ImGuiCol_TabDimmed] = (ImVec4_c){0.15f, 0.15f, 0.17f, 1.0f};
+    style->Colors[ImGuiCol_TabDimmedSelected] =
+        (ImVec4_c){0.22f, 0.18f, 0.10f, 1.0f};
+    style->Colors[ImGuiCol_TableHeaderBg] = (ImVec4_c){0.17f, 0.17f, 0.19f, 1.0f};
+    style->Colors[ImGuiCol_TableBorderStrong] =
+        (ImVec4_c){0.24f, 0.24f, 0.27f, 1.0f};
+    style->Colors[ImGuiCol_TableBorderLight] =
+        (ImVec4_c){0.19f, 0.19f, 0.21f, 1.0f};
+    style->Colors[ImGuiCol_TableRowBg] = (ImVec4_c){0.0f, 0.0f, 0.0f, 0.0f};
+    style->Colors[ImGuiCol_TableRowBgAlt] = (ImVec4_c){1.0f, 1.0f, 1.0f, 0.022f};
+    style->Colors[ImGuiCol_NavCursor] = amber;
 }
 
 static const SDL_DialogFileFilter kFilters[] = {

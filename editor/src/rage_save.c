@@ -32,6 +32,35 @@ static const RageRegionInfo kRegions[] = {
     {RAGE_REGION_NTSC_J, "NTSC-J", "SLPS-00744", "BISLPS-00744", 0},
 };
 
+/*
+ * Both name tables come from the port's own content options, which carry them
+ * because the Japanese release renames five cars; the makers come from the
+ * series' published car lists.
+ */
+static const char *const kCarNames[2][13] = {
+    {"Erriso", "Abeille", "Pegase", "Esperanza", "Acceron", "Bayonet",
+     "Hijack", "Fatalita", "Istante", "Ghepardo", "Vainqure", "Bulshade",
+     "Squaldon"},
+    {"Alouette", "Abeille", "Pegase", "Esperanza", "Instinct", "Bayonet",
+     "Hijack", "Fatalita", "Istante", "Ghepardo", "Victoire", "Tempest",
+     "Dragone"},
+};
+
+static const char *const kCarMakers[13] = {
+    "Age", "Age", "Age", "Gnade", "Lizard", "Lizard", "Lizard",
+    "Assoluto", "Assoluto", "Assoluto", "Age", "Lizard", "Assoluto",
+};
+
+const char *RageCarName(int index, RageRegion region) {
+    if (index < 0 || index >= 13) return NULL;
+    return kCarNames[region == RAGE_REGION_NTSC_J ? 1 : 0][index];
+}
+
+const char *RageCarMaker(int index) {
+    if (index < 0 || index >= 13) return NULL;
+    return kCarMakers[index];
+}
+
 const char kRageNameCharset[] = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
 
 const RageRegionInfo *RageRegionTable(size_t *count) {
@@ -322,17 +351,72 @@ unsigned short RageLogoPackColour(const unsigned char *rgb, int transparent) {
                             (transparent ? 0x8000 : 0));
 }
 
+/*
+ * What the game itself holds after a fresh boot, rather than a block of
+ * zeroes. Zeroes are a legal save but not an honest one: the volumes would be
+ * silent, no car would be owned, every class record would read as a finished
+ * first place, and the neGcon would have no play in its steering.
+ */
+static const unsigned char kCarDefaults[13][6] = {
+    {0, 2, 0, 0, 0, 0}, {0, 3, 0, 1, 1, 0}, {0, 4, 1, 2, 2, 0},
+    {0, 1, 0, 3, 3, 1}, {0, 0, 0, 4, 4, 0}, {0, 0, 0, 5, 5, 0},
+    {0, 0, 1, 6, 6, 0}, {0, 2, 0, 7, 7, 0}, {0, 2, 1, 8, 8, 0},
+    {0, 3, 1, 9, 9, 0}, {0, 4, 0, 0, 0, 0}, {0, 0, 1, 0, 0, 0},
+    {0, 3, 1, 0, 0, 0},
+};
+
 void RageSaveInit(RageSaveFile *save, RageRegion region, int slot) {
+    int garage;
+    int car;
+    int i;
+
     if (save == NULL) return;
     memset(save, 0, sizeof(*save));
+    (void)region;
+    (void)slot;
+
     /* What the console looks for when it lists a card. */
     save->icon[0] = 'S';
     save->icon[1] = 'C';
     save->icon[2] = 0x11;
     save->icon[3] = 1;
-    (void)region;
-    (void)slot;
     RageSaveWriteTeamName(&save->header, "RAGE");
+
+    /* The one calibration value the game does not start at zero: without it
+     * the steering has no dead zone at all. */
+    save->block.negconSteerPlay = 1;
+
+    /* The Gnade is the car you begin with, and the only one owned. */
+    for (garage = 0; garage < 3; garage++) {
+        for (car = 0; car < 13; car++) {
+            SavedCarSetup *setup = &save->block.carSetup[garage][car];
+            setup->modelVariant = kCarDefaults[car][0];
+            setup->tireCompound = kCarDefaults[car][1];
+            setup->transmission = kCarDefaults[car][2];
+            setup->paintColor1 = kCarDefaults[car][3];
+            setup->paintColor2 = kCarDefaults[car][4];
+            setup->enabled = kCarDefaults[car][5];
+        }
+    }
+    save->block.grandPrixProgress.carIndex = 3;
+    save->block.extraGrandPrixProgress.carIndex = 3;
+    save->block.timeAttackProgress.carIndex = 3;
+    /* The grand prix has not been entered; time attack counts from zero. */
+    save->block.grandPrixProgress.maxClassReached = -1;
+    save->block.extraGrandPrixProgress.maxClassReached = -1;
+
+    /* An empty class record is -1, not a first place. */
+    for (i = 1; i < 11; i++) save->block.classRecords[i].grade = 0xFFFF;
+
+    /* Five retries, and no course finished. */
+    save->block.grandPrixCourseProgress[3] = 0xFF;
+    save->block.extraGrandPrixCourseProgress[3] = 0xFF;
+    save->block.grandPrixCourseProgress[6] = 5;
+    save->block.extraGrandPrixCourseProgress[6] = 5;
+
+    save->block.bgmVolume = 0xF;
+    save->block.sfxVolume = 0xF;
+
     RageSaveRefresh(save);
 }
 
@@ -344,9 +428,10 @@ int RageSaveSlotFromPath(const char *path) {
     if (path == NULL) return -1;
     name = BaseName(path);
     length = strlen(name);
-    /* The game names its files "... RAGE000" through "... RAGE002". */
-    if (length < 8) return -1;
-    if (strncmp(name + length - 8, "RAGE", 4) != 0) return -1;
+    /* The game names its files "... RAGE000" through "... RAGE002": four
+     * letters and three digits, seven characters at the end. */
+    if (length < 7) return -1;
+    if (strncmp(name + length - 7, "RAGE", 4) != 0) return -1;
     if (!isdigit((unsigned char)name[length - 1])) return -1;
     return name[length - 1] - '0';
 }

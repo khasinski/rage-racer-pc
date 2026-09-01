@@ -11,7 +11,10 @@ Everything in the save, not a chosen subset:
 - grand prix, extra grand prix and time attack progress: course, car, class,
   highest class reached and money
 - the three garages of thirteen cars each: grade, tyres, gearbox, both paint
-  colours and whether the car is owned
+  colours and whether the car is owned. Cars are listed by maker and name, and
+  the five the Japanese release renames follow the release the file belongs
+  to: the Erriso, Acceron, Vainqure, Bulshade and Squaldon are the Alouette,
+  Instinct, Victoire, Tempest and Dragone on a Japanese save
 - class records, best lap, total and sector times, and both sets of ranking
   and time attack records with their driver names
 - the 64 by 64 team logo and its sixteen colours, painted with the mouse
@@ -19,8 +22,13 @@ Everything in the save, not a chosen subset:
 - the bytes the game does not read, so a file edited here keeps whatever it
   arrived with
 
-Times are shown both as milliseconds and as the game writes them, so `100765`
-reads as `1'40"765`.
+Times are typed the way the game writes them, so `1'40"765` is what you enter.
+
+A new save is not a block of zeroes but what the game itself holds after a
+fresh boot: full volumes, the Gnade Esperanza owned and selected, no class
+entered, empty class records rather than a field of first places, five
+retries, and the one neGcon value the game does not start at zero, the play
+in its steering.
 
 ## The three releases
 

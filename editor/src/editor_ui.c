@@ -119,27 +119,17 @@ static int HalfwordField(const char *label, unsigned short *value,
     return 0;
 }
 
-/*
- * The five cars this port knows by name; the rest of the thirteen are shown
- * by their number, which is what the save actually stores.
- */
-static const char *CarName(int index) {
-    switch (index) {
-    case 0: return "Alouette";
-    case 4: return "Instinct";
-    case 10: return "Victoire";
-    case 11: return "Tempest";
-    case 12: return "Dragone";
-    default: return NULL;
-    }
-}
+/* Five of the thirteen are called something else in Japan, so the list
+ * follows whichever release the file belongs to. */
+static void CarLabel(const EditorState *state, int index, char *out,
+                     size_t size) {
+    const char *name = RageCarName(index, state->region);
+    const char *maker = RageCarMaker(index);
 
-static void CarLabel(int index, char *out, size_t size) {
-    const char *name = CarName(index);
-    if (name != NULL)
-        snprintf(out, size, "%2d  %s", index, name);
+    if (name != NULL && maker != NULL)
+        snprintf(out, size, "%s %s", maker, name);
     else
-        snprintf(out, size, "%2d", index);
+        snprintf(out, size, "car %d", index);
 }
 
 /* ------------------------------------------------------------------ */
@@ -219,13 +209,13 @@ static void DrawProgress(EditorState *state) {
 
         {
             char preview[64];
-            CarLabel(progress->carIndex, preview, sizeof(preview));
+            CarLabel(state, progress->carIndex, preview, sizeof(preview));
             igSetNextItemWidth(220.0f);
             if (igBeginCombo("car", preview, 0)) {
                 int car;
                 for (car = 0; car < 13; car++) {
                     char item[64];
-                    CarLabel(car, item, sizeof(item));
+                    CarLabel(state, car, item, sizeof(item));
                     if (igSelectable_Bool(item, progress->carIndex == car, 0,
                                           kAuto)) {
                         progress->carIndex = car;
@@ -272,31 +262,56 @@ static void DrawProgress(EditorState *state) {
         if (i == 0) igSameLine(0.0f, 20.0f);
     }
 
-    Heading("Best place on each course");
-    igTextDisabled("Eight courses per series, as the place finished.");
-    if (igBeginTable("course progress", 9,
-                     ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit,
+    Heading("Course progress");
+    igTextDisabled("Four places, then whether an unlock is waiting and how "
+                   "many retries are left.");
+    if (igBeginTable("course progress", 7,
+                     ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                         ImGuiTableFlags_SizingFixedFit,
                      kAuto, 0.0f)) {
         int row;
-        igTableSetupColumn("series", 0, 0.0f, 0);
-        for (i = 0; i < 8; i++) {
-            char header[16];
-            snprintf(header, sizeof(header), "%d", i + 1);
-            igTableSetupColumn(header, 0, 0.0f, 0);
+        igTableSetupColumn("series", 0, 150.0f, 0);
+        for (i = 0; i < 4; i++) {
+            char header[24];
+            snprintf(header, sizeof(header), "place %d", i + 1);
+            igTableSetupColumn(header, 0, 110.0f, 0);
         }
+        igTableSetupColumn("unlock waiting", 0, 120.0f, 0);
+        igTableSetupColumn("retries", 0, 110.0f, 0);
         igTableHeadersRow();
         for (row = 0; row < 2; row++) {
-            unsigned char *bytes =
-                row == 0 ? block->grandPrixCourseProgress
-                         : block->extraGrandPrixCourseProgress;
+            unsigned char *bytes = row == 0
+                                       ? block->grandPrixCourseProgress
+                                       : block->extraGrandPrixCourseProgress;
+            char id[32];
+            /* The last four bytes are two little-endian halfwords. */
+            int pending = bytes[4] | (bytes[5] << 8);
+            int retries = bytes[6] | (bytes[7] << 8);
+            bool waiting = pending != 0;
+
             igTableNextRow(0, 0.0f);
             igTableNextColumn();
-            igText("%s", row == 0 ? "grand prix" : "extra");
-            for (i = 0; i < 8; i++) {
-                char id[32];
+            igText("%s", row == 0 ? "Grand Prix" : "Extra Grand Prix");
+            for (i = 0; i < 4; i++) {
                 igTableNextColumn();
                 snprintf(id, sizeof(id), "##cp%d%d", row, i);
-                state->dirty |= ByteSlider(id, &bytes[i], 12, 70.0f);
+                state->dirty |= ByteSlider(id, &bytes[i], 255, 100.0f);
+            }
+            igTableNextColumn();
+            snprintf(id, sizeof(id), "##pending%d", row);
+            if (igCheckbox(id, &waiting)) {
+                pending = waiting ? 1 : 0;
+                bytes[4] = (unsigned char)(pending & 0xFF);
+                bytes[5] = (unsigned char)((pending >> 8) & 0xFF);
+                state->dirty = 1;
+            }
+            igTableNextColumn();
+            snprintf(id, sizeof(id), "##retries%d", row);
+            igSetNextItemWidth(100.0f);
+            if (igInputInt(id, &retries, 0, 0, 0)) {
+                bytes[6] = (unsigned char)(retries & 0xFF);
+                bytes[7] = (unsigned char)((retries >> 8) & 0xFF);
+                state->dirty = 1;
             }
         }
         igEndTable();
@@ -346,7 +361,7 @@ static void DrawGarage(EditorState *state) {
 
             igTableNextRow(0, 0.0f);
             igTableNextColumn();
-            CarLabel(car, label, sizeof(label));
+            CarLabel(state, car, label, sizeof(label));
             igText("%s", label);
             igTableNextColumn();
             snprintf(id2, sizeof(id2), "##own%d%d", garage, car);
@@ -441,14 +456,14 @@ static void DrawRecordSet(EditorState *state, const char *id,
             igTableNextColumn();
             {
                 char preview[64];
-                CarLabel(record->carIndex, preview, sizeof(preview));
+                CarLabel(state, record->carIndex, preview, sizeof(preview));
                 snprintf(field, sizeof(field), "##%s_c%d%d", id, course, place);
                 igSetNextItemWidth(200.0f);
                 if (igBeginCombo(field, preview, 0)) {
                     int car;
                     for (car = 0; car < 13; car++) {
                         char item[64];
-                        CarLabel(car, item, sizeof(item));
+                        CarLabel(state, car, item, sizeof(item));
                         if (igSelectable_Bool(item, record->carIndex == car, 0,
                                               kAuto)) {
                             record->carIndex = (short)car;
@@ -844,7 +859,7 @@ static const char *const kSectionNames[EDITOR_SECTION_COUNT] = {
 void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
     if (state->openTab != NULL) {
         int i;
-        for (i = 0; i < EDITOR_SECTION_COUNT; i++) {
+        for (i = 0; i < (int)EDITOR_SECTION_COUNT; i++) {
             if (strcmp(state->openTab, kSectionNames[i]) == 0)
                 state->section = (EditorSection)i;
         }
@@ -872,7 +887,7 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
     if (igBeginChild_Str("sections", Size(190.0f, -44.0f), 0, 0)) {
         int i;
         for (i = 0; i < EDITOR_SECTION_COUNT; i++) {
-            if (igSelectable_Bool(kSectionNames[i], state->section == i, 0,
+            if (igSelectable_Bool(kSectionNames[i], state->section == (EditorSection)i, 0,
                                   Size(0.0f, 30.0f)))
                 state->section = (EditorSection)i;
         }

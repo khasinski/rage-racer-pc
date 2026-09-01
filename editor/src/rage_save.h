@@ -117,6 +117,15 @@ int RageSaveCardDirectory(int card, char *out, size_t size);
 /* Reads the slot back out of a "... RAGE002" name; -1 when there is none. */
 int RageSaveSlotFromPath(const char *path);
 
+/*
+ * The thirteen cars, by the index the save stores. Five of them are called
+ * something else in Japan, which is why the release matters here and nowhere
+ * else in the file. The maker is not in the save; it is shown because a list
+ * of thirteen names is easier to read grouped by who built them.
+ */
+const char *RageCarName(int index, RageRegion region);
+const char *RageCarMaker(int index);
+
 /* Team logo: sixteen colours, and one nibble per pixel. */
 int RageLogoPixel(const GameSaveBlock *block, int x, int y);
 void RageLogoSetPixel(GameSaveBlock *block, int x, int y, int colour);
