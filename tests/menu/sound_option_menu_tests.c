@@ -25,6 +25,7 @@ static GameFrameContext s_frame;
 static u8 s_packets[128];
 static ChoiceRecord s_choices[2];
 static s32 s_choiceCount;
+static s32 s_applyCalls;
 static s32 s_lastCue;
 static s32 s_lastHighlightX;
 static s32 s_tileCount;
@@ -36,6 +37,7 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
     (void)y;
 }
 void DrawOptionHintBar(s32 variant) { (void)variant; }
+void ApplyAudioSettings(void) { s_applyCalls++; }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 void DrawVolumeBar(s32 level, s32 y) {
     (void)y;
@@ -103,6 +105,7 @@ static void Reset(void) {
     g_SoundOptionCursor = 0;
     g_PadPressed = 0;
     s_choiceCount = 0;
+    s_applyCalls = 0;
     s_lastCue = 0;
     s_lastHighlightX = -1;
     s_tileCount = 0;
@@ -155,6 +158,39 @@ int main(void) {
     g_PadPressed = PAD_CANCEL;
     UpdateSoundOptionMenu();
     CHECK(g_GameMode == 1 && s_lastCue == 3);
+
+    Reset();
+    g_GameMode = 5;
+    g_SoundOptionCursor = 0;
+    g_PadPressed = PAD_RIGHT;
+    UpdateSoundSettingAdjust();
+    CHECK(g_BgmVolumeSetting == 8 && g_GameMode == 5);
+    CHECK(s_lastCue == 1 && s_applyCalls == 1);
+
+    Reset();
+    g_GameMode = 5;
+    g_SoundOptionCursor = 1;
+    g_ScreenOffsetEditX = 9;
+    g_PadPressed = PAD_CANCEL;
+    UpdateSoundSettingAdjust();
+    CHECK(g_SfxVolumeSetting == 9 && g_GameMode == 4);
+    CHECK(s_lastCue == 3 && s_applyCalls == 1);
+
+    Reset();
+    g_GameMode = 5;
+    g_SoundOptionCursor = 2;
+    g_PadPressed = PAD_RIGHT | PAD_CONFIRM;
+    UpdateSoundSettingAdjust();
+    CHECK(g_MonoOutput == 1 && g_GameMode == 4);
+    CHECK(s_lastCue == 2 && s_applyCalls == 1);
+
+    Reset();
+    g_GameMode = 5;
+    g_SoundOptionCursor = 0;
+    g_BgmVolumeSetting = 15;
+    g_PadPressed = PAD_RIGHT;
+    UpdateSoundSettingAdjust();
+    CHECK(g_BgmVolumeSetting == 15 && s_lastCue == 0);
 
     puts("sound option menu preserves output rendering and navigation");
     return 0;

@@ -474,6 +474,7 @@ void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj);
 void UpdateBgmSelectLoad(void);
 void UpdateBgmSelectFadeIn(void);
+void EnterBgmSelectScreen(void);
 void UpdateBgmSelect(void);
 void ExitBgmSelect(void);
 

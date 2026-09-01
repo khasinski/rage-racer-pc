@@ -10,6 +10,7 @@ enum {
     SOUND_OPTION_OUTPUT = 2,
     SOUND_OPTION_EXIT = 3,
     OPTION_MODE_ROOT = 1,
+    OPTION_MODE_SOUND_MENU = 4,
     OPTION_MODE_SOUND_EDIT = 5,
 };
 
@@ -113,5 +114,55 @@ void UpdateSoundOptionMenu(void) {
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = OPTION_MODE_ROOT;
+    }
+}
+
+/* g_GameModeHandlers[5]: edits the setting selected by UpdateSoundOptionMenu.
+ * The original value is kept in g_ScreenOffsetEditX until confirm or cancel. */
+void UpdateSoundSettingAdjust(void) {
+    s32 *setting = NULL;
+    s32 maximum = 15;
+    s32 previous;
+
+    DrawSoundOptionScreen();
+
+    switch (g_SoundOptionCursor) {
+    case SOUND_OPTION_BGM:
+        setting = &g_BgmVolumeSetting;
+        break;
+    case SOUND_OPTION_SFX:
+        setting = &g_SfxVolumeSetting;
+        break;
+    case SOUND_OPTION_OUTPUT:
+        setting = &g_MonoOutput;
+        maximum = 1;
+        break;
+    }
+
+    if (setting != NULL) {
+        previous = *setting;
+        if ((g_PadPressed & PAD_LEFT) && *setting > 0) {
+            (*setting)--;
+        }
+        if ((g_PadPressed & PAD_RIGHT) && *setting < maximum) {
+            (*setting)++;
+        }
+        if (previous != *setting) {
+            PlaySoundCue(1);
+        }
+
+        if (g_PadPressed & PAD_CONFIRM) {
+            g_GameMode = OPTION_MODE_SOUND_MENU;
+        } else if (g_PadPressed & PAD_CANCEL) {
+            g_GameMode = OPTION_MODE_SOUND_MENU;
+            *setting = g_ScreenOffsetEditX;
+        }
+    }
+
+    ApplyAudioSettings();
+    if (g_PadPressed & PAD_CONFIRM) {
+        PlaySoundCue(2);
+    } else if (g_PadPressed & PAD_CANCEL) {
+        PlaySoundCue(3);
     }
 }
