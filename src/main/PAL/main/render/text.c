@@ -1,187 +1,79 @@
 #include "game/render_types.h"
 #include "game/render_internal.h"
 
-/*
- * Local wide-parameter declarations. Retail passes x / y / clutIndex straight
- * through in full words; the s16 / u16 typing in game/render.h would make gcc
- * insert sign-extends and a truncation here, so this TU declares both the
- * callee and this function with s32 parameters instead of including the header.
- */
+static void QueueProportionalGlyph(
+    RenderBufferAddress *packet,
+    s32 x,
+    s32 y,
+    s32 u,
+    s32 v,
+    s32 width,
+    s32 clut,
+    s32 shade) {
+    SPRT *sprite = packet->sprite;
+
+    SetSprt(sprite);
+    if (shade == 0x100) {
+        SetShadeTex(sprite, 1);
+    } else {
+        SetSemiTrans(sprite, 1);
+        sprite->r0 = shade;
+        sprite->g0 = shade;
+        sprite->b0 = shade;
+    }
+    sprite->x0 = x;
+    sprite->y0 = y;
+    sprite->u0 = u;
+    sprite->v0 = v;
+    sprite->w = width;
+    sprite->h = 12;
+    sprite->clut = clut;
+    packet->bytes += sizeof(*sprite);
+    AddPrim(GamePrimaryOrderingTable(0), sprite);
+}
+
 void GameDrawProportionalTextShaded(
     s32 x,
     s32 y,
     const char *str,
     s32 clutIndex,
     s32 intensity) {
-typedef union TextRenderWork {
-    s32 value;
-    u8 *bytes;
-} TextRenderWork;
-
-#define OPAQUE_VALUE (t0.value = 0x100)
     s32 xPos = x;
     RenderBufferAddress packet;
     const u8 *text = (const u8 *)str;
-    s32 shade;
-    TextRenderWork t0;
-    s32 s1;
-    u32 first;
-    s32 v;
-    s32 u;
-    struct {
-        s32 y;
-        s32 clut;
-    } home;
 
     packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
-    home.y = y;
-    home.clut = clutIndex;
-    first = *text;
-    shade = intensity;
 
-    if (first != 0) {
-        s32 height = 12;
-        SPRT *sprt = packet.sprite;
+    while (*text != 0) {
+        u32 ch = *text++;
+        s32 index;
 
-        do {
-            s32 advance;
-            u32 ch = *text;
-
-            if (ch >= 0x76) {
-                s32 offset = ch - 0x76;
-                s32 index = offset * 4;
-                s32 width;
-                SPRT *prim;
-                s16 yOffset;
-
-                
-                text++;
-                u = g_HighFontU[index];
-                v = g_HighFontV[index];
-                SetSprt(packet.bytes);
-                if (shade == OPAQUE_VALUE) {
-                    SetShadeTex(packet.bytes, 1);
-                    sprt->x0 = xPos;
-                } else {
-                    SetSemiTrans(packet.bytes, 1);
-                    sprt->r0 = shade;
-                    sprt->g0 = shade;
-                    sprt->b0 = shade;
-                    sprt->x0 = xPos;
-                }
-                yOffset = g_HighFontYOffset[index];
-                t0.value = home.y;
-                
-                packet.bytes += sizeof(SPRT);
-                sprt->y0 = yOffset + t0.value;
-                width = g_HighFontWidth[index];
-                prim = sprt;
-                sprt->u0 = u;
-                sprt->v0 = v;
-                /* Keep this store ahead of the g_DrawBuffer load; see the
-                 * RETAIL_ORDERED_ACCESS definition in common.h. */
-                RETAIL_ORDERED_ACCESS(sprt->h) = height;
-                t0.value = (u16)home.clut;
-                sprt->clut = t0.value;
-                sprt->w = width;
-                AddPrim(GamePrimaryOrderingTable(0), prim);
-                advance = g_WordFontWidth[index];
-                sprt++;
-                xPos += advance;
-                continue;
+        if (ch >= 'v') {
+            index = (ch - 'v') * 4;
+            QueueProportionalGlyph(
+                &packet, xPos, y + g_HighFontYOffset[index],
+                g_HighFontU[index], g_HighFontV[index],
+                g_HighFontWidth[index], clutIndex, intensity);
+            xPos += g_WordFontWidth[index];
+        } else if (ch >= 'a') {
+            index = (ch - 'a') * 4;
+            QueueProportionalGlyph(
+                &packet, xPos, y, g_WordFontU[index], g_WordFontV[index],
+                g_WordFontWidth[index], clutIndex, intensity);
+            xPos += g_WordFontAdvance[index];
+        } else {
+            if (ch != ' ') {
+                index = (ch - 0x20) * 2;
+                QueueProportionalGlyph(
+                    &packet, xPos, y, g_PropFontU[index], g_PropFontV[index],
+                    12, clutIndex, intensity);
             }
-            if (ch >= 0x61) {
-                s32 offset = ch - 0x61;
-                s32 width;
-                SPRT *prim;
-
-                s1 = offset * 4;
-                text++;
-                u = g_WordFontU[s1];
-                v = g_WordFontV[s1];
-                SetSprt(packet.bytes);
-                if (shade == OPAQUE_VALUE) {
-                    SetShadeTex(packet.bytes, 1);
-                    sprt->x0 = xPos;
-                } else {
-                    SetSemiTrans(packet.bytes, 1);
-                    sprt->r0 = shade;
-                    sprt->g0 = shade;
-                    sprt->b0 = shade;
-                    sprt->x0 = xPos;
-                }
-                t0.value = (u16)home.y;
-                packet.bytes += sizeof(SPRT);
-                sprt->y0 = t0.value;
-                width = g_WordFontWidth[s1];
-                prim = sprt;
-                sprt->u0 = u;
-                sprt->v0 = v;
-                /* Keep this store ahead of the g_DrawBuffer load; see the
-                 * RETAIL_ORDERED_ACCESS definition in common.h. */
-                RETAIL_ORDERED_ACCESS(sprt->h) = height;
-                t0.value = (u16)home.clut;
-                sprt->clut = t0.value;
-                sprt->w = width;
-                AddPrim(GamePrimaryOrderingTable(0), prim);
-                advance = g_WordFontAdvance[s1];
-                sprt++;
-                xPos += advance;
-                continue;
-            }
-            {
-                s1 = ch - 0x20;
-
-                
-                text++;
-                if (s1 != 0) {
-                    s32 index = s1 * 2;
-                    u8 *uCell;
-                    u8 *vCell;
-                    SPRT *prim;
-
-                    t0.bytes = g_PropFontU;
-                    uCell = index + t0.bytes;
-                    t0.bytes = g_PropFontV;
-                    vCell = index + t0.bytes;
-                    
-                    u = *uCell;
-                    v = *vCell;
-                    SetSprt(packet.bytes);
-                    if (shade == OPAQUE_VALUE) {
-                        SetShadeTex(packet.bytes, 1);
-                        sprt->x0 = xPos;
-                    } else {
-                        SetSemiTrans(packet.bytes, 1);
-                        sprt->r0 = shade;
-                        sprt->g0 = shade;
-                        sprt->b0 = shade;
-                        sprt->x0 = xPos;
-                    }
-                    t0.value = (u16)home.y;
-                    
-                    prim = sprt;
-                    
-                    sprt->u0 = u;
-                    sprt->v0 = v;
-                    packet.bytes += sizeof(SPRT);
-                    sprt->w = height;
-                    sprt->h = height;
-                    sprt->y0 = t0.value;
-                    t0.value = (u16)home.clut;
-                    sprt->clut = t0.value;
-                    
-                    sprt++;
-                    AddPrim(GamePrimaryOrderingTable(0), prim);
-                }
-                xPos += 12;
-            }
-        } while (*text != 0);
+            xPos += 12;
+        }
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
     RENDER_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
-#undef OPAQUE_VALUE
 }
 
 

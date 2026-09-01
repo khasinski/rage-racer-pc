@@ -750,6 +750,29 @@ target_link_libraries(basic_text_tests PRIVATE psyz)
 add_test(NAME basic_text COMMAND basic_text_tests)
 set_tests_properties(basic_text PROPERTIES LABELS unit)
 
+add_executable(proportional_text_tests
+    proportional_text_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text.c)
+target_include_directories(proportional_text_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(proportional_text_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(proportional_text_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(proportional_text_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(proportional_text_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(proportional_text_tests PRIVATE psyz)
+add_test(NAME proportional_text COMMAND proportional_text_tests)
+set_tests_properties(proportional_text PROPERTIES LABELS unit)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame
