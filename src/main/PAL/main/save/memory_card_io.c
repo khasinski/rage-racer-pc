@@ -3,6 +3,14 @@
 
 #include <string.h>
 
+static char *SaveFilePath(s32 slot) {
+    return g_SaveFilePath + slot * MC_SAVE_PATH_SIZE;
+}
+
+static char *SaveTitle(s32 slot) {
+    return g_SaveTitleSjis + slot * MC_SAVE_TITLE_SIZE;
+}
+
 static s32 OpenSaveFileForWrite(char *path, s32 attempt) {
     s32 fd = BiosFileOpen(path, 2);
 
@@ -28,7 +36,7 @@ static s32 SaveHeaderChecksumValid(const GameSaveHeaderRow *header) {
     s32 sum = 0;
     u32 i;
 
-    for (i = 0; i < 0x3E; i++) {
+    for (i = 0; i < MC_HEADER_DATA_HALFWORDS; i++) {
         sum += header->halfwords[i];
     }
     return header->fields.checksum == (u32)~sum;
@@ -95,8 +103,8 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
 
     GameMenuLoadPhase = 0x1000;
     return WriteMemoryCardSaveFile(
-        g_SaveFilePath + slot * 0x1A,
-        g_SaveTitleSjis + slot * 0x46,
+        SaveFilePath(slot),
+        SaveTitle(slot),
         block0,
         header,
         block1);
@@ -104,14 +112,14 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
 
 /* The header is stored twice, at 0x1280 and at 0x200; the first copy whose
  * 16-bit sum matches the complement stored in its last word wins. */
-s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
+s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header) {
     GameMenuLoadPhase = 0x120;
-    if (BiosFileSeek(slot, MC_BACKUP_HEADER_OFS, 0) < 0) {
+    if (BiosFileSeek(fd, MC_BACKUP_HEADER_OFS, 0) < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x130;
-    if (BiosFileRead(slot, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
+    if (BiosFileRead(fd, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
         return 0;
     }
 
@@ -121,12 +129,12 @@ s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
     }
 
     GameMenuLoadPhase = 0x150;
-    if (BiosFileSeek(slot, MC_ICON_BLOCK_SIZE, 0) < 0) {
+    if (BiosFileSeek(fd, MC_ICON_BLOCK_SIZE, 0) < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x160;
-    if (BiosFileRead(slot, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
+    if (BiosFileRead(fd, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
         return 0;
     }
 
@@ -147,7 +155,7 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
     mask = 0;
     GameMenuLoadPhase = 0x110;
     for (i = 0; i < MEMORY_CARD_SAVE_SLOT_COUNT; i++) {
-        fd = BiosFileOpen(g_SaveFilePath + i * 0x1A, 1);
+        fd = BiosFileOpen(SaveFilePath(i), 1);
         if (fd >= 0) {
             if (ReadVerifiedSaveHeader(fd, &headers[i]) == 0) {
                 mask |= 0x10000 << i;
@@ -170,7 +178,7 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
 
     GameMenuLoadPhase = 0x3000;
     for (tries = 0; tries < 2; tries++) {
-        fd = BiosFileOpen(g_SaveFilePath + slot * 0x1A, 1);
+        fd = BiosFileOpen(SaveFilePath(slot), 1);
         if (fd >= 0) break;
     }
 

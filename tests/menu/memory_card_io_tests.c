@@ -7,8 +7,8 @@
 enum { MOCK_FILE_SIZE = 0x1400, MOCK_FILE_COUNT = 3 };
 
 s32 GameMenuLoadPhase;
-char g_SaveFilePath[3 * 0x1A];
-char g_SaveTitleSjis[3 * 0x46];
+char g_SaveFilePath[MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_PATH_SIZE];
+char g_SaveTitleSjis[MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_TITLE_SIZE];
 char g_FmtCardWildcard[] = "bu%d%d:*";
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
@@ -49,9 +49,9 @@ static void ResetMock(void) {
     memset(g_SaveFilePath, 0, sizeof(g_SaveFilePath));
     memset(g_McDirEntries, 0, sizeof(g_McDirEntries));
     memset(g_TeamNameChars, 0, sizeof(g_TeamNameChars));
-    strcpy(&g_SaveFilePath[0x00], "slot-0");
-    strcpy(&g_SaveFilePath[0x1A], "slot-1");
-    strcpy(&g_SaveFilePath[0x34], "slot-2");
+    strcpy(&g_SaveFilePath[0 * MC_SAVE_PATH_SIZE], "slot-0");
+    strcpy(&g_SaveFilePath[1 * MC_SAVE_PATH_SIZE], "slot-1");
+    strcpy(&g_SaveFilePath[2 * MC_SAVE_PATH_SIZE], "slot-2");
     s_openResultCount = 0;
     s_openCalls = 0;
     s_closeCalls = 0;
@@ -70,7 +70,9 @@ static void SealHeader(GameSaveHeaderRow *header) {
     s32 i;
 
     header->fields.checksum = 0;
-    for (i = 0; i < 0x3E; i++) sum += header->halfwords[i];
+    for (i = 0; i < MC_HEADER_DATA_HALFWORDS; i++) {
+        sum += header->halfwords[i];
+    }
     header->fields.checksum = (u32)~sum;
 }
 
@@ -96,8 +98,8 @@ long BiosFileOpen(void *path, long mode) {
     }
     s_openCalls++;
     for (file = 0; file < MOCK_FILE_COUNT; file++) {
-        if (name == &g_SaveFilePath[file * 0x1A] ||
-            strcmp(name, &g_SaveFilePath[file * 0x1A]) == 0) {
+        if (name == &g_SaveFilePath[file * MC_SAVE_PATH_SIZE] ||
+            strcmp(name, &g_SaveFilePath[file * MC_SAVE_PATH_SIZE]) == 0) {
             return s_exists[file] ? 10 + file : -1;
         }
     }
