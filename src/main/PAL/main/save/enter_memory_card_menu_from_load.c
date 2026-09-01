@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/menu.h"
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 void EnterMemoryCardMenuFromLoad(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
@@ -8,7 +9,7 @@ void EnterMemoryCardMenuFromLoad(void) {
         UploadImageAsset(g_ImageBlockBuffer);
         g_McMenuRowCursor = 2;
         g_McMenuRowCount = 3;
-        g_McMenuState = -1;
+        g_McMenuState = MC_MENU_STATE_NO_CARD;
         g_SceneTimer = 0;
         g_McMenuPage = 0;
         g_McMenuSubState = 1;

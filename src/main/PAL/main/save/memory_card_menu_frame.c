@@ -46,10 +46,10 @@ s32 AdvanceMemoryCardMenuStartup(void) {
     if (next == 3) {
         g_McSlotUsedMask = 0;
         ClearSaveHeaderRows(g_McSaveHeaders);
-        g_McLastMenuState = -1;
+        g_McLastMenuState = MC_MENU_STATE_NO_CARD;
         g_McMenuPhase = MC_PROMPT_NONE;
-        g_McMenuSelection = next;
-        g_McMenuState = next;
+        g_McMenuSelection = MC_MENU_STATE_BUSY;
+        g_McMenuState = MC_MENU_STATE_BUSY;
         g_McActionState = 0;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
