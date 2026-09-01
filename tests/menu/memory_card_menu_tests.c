@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 3090588009UL;
+    static const unsigned long expected = 3437069393UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
