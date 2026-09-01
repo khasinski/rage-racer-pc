@@ -310,6 +310,24 @@ target_link_libraries(shuttle_scenery_draw_tests PRIVATE psyz)
 add_test(NAME shuttle_scenery_draw COMMAND shuttle_scenery_draw_tests)
 set_tests_properties(shuttle_scenery_draw PROPERTIES LABELS functional)
 
+add_executable(spinning_scenery_tests
+    spinning_scenery_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_spinning_scenery.c)
+target_include_directories(spinning_scenery_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(spinning_scenery_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(spinning_scenery_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(spinning_scenery_tests PRIVATE psyz)
+add_test(NAME spinning_scenery COMMAND spinning_scenery_tests)
+set_tests_properties(spinning_scenery PROPERTIES LABELS functional)
+
 add_executable(track_event_sound_tests
     track_event_sound_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_track_event_sound.c)

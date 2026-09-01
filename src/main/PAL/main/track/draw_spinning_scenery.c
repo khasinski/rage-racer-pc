@@ -7,47 +7,48 @@
 void DrawSpinningScenery(s32 timer, s32 animate) {
     Matrix yawMatrix;
     Matrix objectMatrix;
-    Matrix renderWorldMtx;
-    s32 end;
-    s32 start;
-    s32 loopIndex;
-    s32 limit;
-    s32 active;
+    Matrix worldMatrix;
+    s32 firstSpinner;
+    s32 spinnerLimit;
+    s32 spinner;
+    s32 modelId;
+    s32 multipleSpinners;
 
-    active = (g_CourseIndex & 3) != 0;
-    if (active) {
-        start = 1;
-        end = 4;
+    multipleSpinners = SeriesCourseIndex() != 0;
+    if (multipleSpinners) {
+        firstSpinner = 1;
+        spinnerLimit = 4;
     } else {
-        start = 0;
-        end = 1;
+        firstSpinner = 0;
+        spinnerLimit = 1;
     }
 
-    for (loopIndex = start; loopIndex < end; loopIndex++) {
-        if (animate != 0) {
-            g_SpinningSceneryAngle[loopIndex] +=
-                g_SpinningSceneryRate[active];
-        }
-        g_SpinningSceneryAngle[loopIndex] &= 0xFFF;
+    for (spinner = firstSpinner; spinner < spinnerLimit; spinner++) {
+        SpinningSceneryPlacement *placement =
+            &g_SpinningSceneryPlacements[spinner];
 
-        BuildRotMatrixY(&yawMatrix, g_SpinningSceneryYaw[loopIndex].yaw);
-        BuildRotMatrixZ(&renderWorldMtx,
-                        g_SpinningSceneryAngle[loopIndex]);
-        MulMatrix2(&yawMatrix, &renderWorldMtx);
-        MulMatrix2((&g_RenderState.matrix), &yawMatrix);
-        BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[loopIndex]);
+        if (animate != 0) {
+            g_SpinningSceneryAngle[spinner] +=
+                g_SpinningSceneryRate[multipleSpinners];
+        }
+        g_SpinningSceneryAngle[spinner] &= 0xFFF;
+
+        BuildRotMatrixY(&yawMatrix, placement->yaw);
+        BuildRotMatrixZ(&worldMatrix, g_SpinningSceneryAngle[spinner]);
+        MulMatrix2(&yawMatrix, &worldMatrix);
+        MulMatrix2(&g_RenderState.matrix, &yawMatrix);
+        BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[spinner]);
         MulMatrix2(&yawMatrix, &objectMatrix);
-        SetGteObjectMatrix(
-            (&g_ObjectMatrixWork),
-            AsPosition(&g_SpinningSceneryPos[loopIndex]), &objectMatrix);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, &placement->position,
+                           &objectMatrix);
 
         g_RenderState.envMode4 = 0;
-        limit = g_CourseModelCount >= 0x3F ? 0x3E : 1;
+        modelId = g_CourseModelCount >= 0x3F ? 0x3E : 1;
         GameRenderWorldSubmitDynamicCourseObject(
-            0x100 + loopIndex, limit, g_SpinningSceneryPos[loopIndex].x,
-            g_SpinningSceneryPos[loopIndex].y,
-            g_SpinningSceneryPos[loopIndex].z, renderWorldMtx.m, 1, 0);
-        SubmitCourseModel2((&g_RenderState), limit);
+            0x100 + spinner, modelId, placement->position.x,
+            placement->position.y, placement->position.z,
+            worldMatrix.m, 1, 0);
+        SubmitCourseModel2(&g_RenderState, modelId);
     }
 
     if ((timer & 0x1FF) == 0 && animate != 0) {

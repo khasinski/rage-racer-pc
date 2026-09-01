@@ -557,20 +557,13 @@ extern s16 g_ShuttlePathTravelMax[];
 extern s16 g_SkyTileMap[][16];
 extern s16 g_SpinningSceneryAngle[];
 extern u16 g_SpinningSceneryRate[];
-typedef struct SpinningSceneryOrientation {
+typedef struct SpinningSceneryPlacement {
+    LVec position;
     s32 yaw;
-    u8 reserved[12];
-} SpinningSceneryOrientation;
-extern u8 g_SpinningSceneryRecords[64];
-#define g_SpinningSceneryPos ((Vec4 *)(void *)g_SpinningSceneryRecords)
-#define g_SpinningSceneryYaw ((SpinningSceneryOrientation *)(void *)(g_SpinningSceneryRecords + 12))
-typedef union SpinningSceneryDataAddress {
-    s32 value;
-    u8 *bytes;
-    SpinningSceneryOrientation *orientationPointer;
-    Vec4 *positionPointer;
-    void *pointer;
-} SpinningSceneryDataAddress;
+} SpinningSceneryPlacement;
+_Static_assert(sizeof(SpinningSceneryPlacement) == 16,
+               "SpinningSceneryPlacement must match the retail layout");
+extern SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
 extern s32 g_StartGridSceneryAngle[];
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);

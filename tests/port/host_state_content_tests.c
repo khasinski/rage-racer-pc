@@ -312,7 +312,7 @@ extern unsigned char g_StartGridSceneryPos[32];
 extern unsigned char g_StartGridSceneryAngle[8];
 extern unsigned char g_AnimSceneryPos[32];
 extern unsigned char g_AnimSceneryPitch[8];
-extern unsigned char g_SpinningSceneryRecords[64];
+extern unsigned char g_SpinningSceneryPlacements[64];
 extern unsigned char g_SpinningSceneryAngle[8];
 extern unsigned char g_SpinningSceneryRate[8];
 extern StaticSceneryState g_StaticSceneryState;
@@ -827,7 +827,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_StartGridSceneryAngle", g_StartGridSceneryAngle, 8},
     {"g_AnimSceneryPos", g_AnimSceneryPos, 32},
     {"g_AnimSceneryPitch", g_AnimSceneryPitch, 8},
-    {"g_SpinningSceneryRecords", g_SpinningSceneryRecords, 64},
+    {"g_SpinningSceneryPlacements", g_SpinningSceneryPlacements, 64},
     {"g_SpinningSceneryAngle", g_SpinningSceneryAngle, 8},
     {"g_SpinningSceneryRate", g_SpinningSceneryRate, 8},
     {"g_StaticSceneryState", (const unsigned char *)&g_StaticSceneryState, 32},

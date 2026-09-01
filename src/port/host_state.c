@@ -20,9 +20,6 @@
 #include "common.h"
 
 s16 g_CdLoadPhase;
-s16 g_SpinningSceneryAngle[4] __attribute__((aligned(16))) = {
-    0, 64, 128, 256
-};
 s32 g_FmvStreamEnded;
 u32 g_RandomSeed;
 s32 g_GameClock;
