@@ -352,27 +352,142 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
   }
 }
 
-void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
-  GearCurveAddress gearCurve;
-  int assistArmed;
-  s16 gear;
-  s32 shiftRemaining;
+typedef struct DrivetrainLoads {
+  s32 accelerationResistance;
+  s32 steeringResistance;
+  s32 throttleAcceleration;
+} DrivetrainLoads;
+
+static DrivetrainLoads CalculateDrivetrainLoads(
+    PlayerCarRuntime *car, GameCarDrive *drive, s32 netTorque, s32 bandScale,
+    s32 initialAcceleration) {
+  DrivetrainLoads loads;
+  s32 throttleTorque;
+  s32 headingError;
   s32 trackHeadingError;
+  s32 assistStep;
+  s32 steerPosition;
   s32 pointIndex;
   s32 lateralOffset;
-  s32 dragProduct;
+  s32 pitchSum;
+  s32 roadGradeProduct;
+  s32 roadGrade;
+  s32 sideForce;
+  s32 roadSpeed;
+  s32 dragDivisor;
+
+  loads.accelerationResistance = initialAcceleration;
+  loads.steeringResistance = car->verticalMotionState == 0
+      ? drive->engineRpm / 256
+      : 0;
+
+  throttleTorque = netTorque * drive->acceleratorInput.value *
+                   drive->drivetrainCoupled;
+  if (throttleTorque < 0) {
+    throttleTorque += 0xFF;
+  }
+  loads.throttleAcceleration = throttleTorque >> 8;
+
+  if (g_GripLossTimer > 0) {
+    g_GripLossTimer--;
+  } else {
+    g_GripLossTimer = 0;
+  }
+  loads.accelerationResistance +=
+      drive->brakeInput * drive->engineRpm / 8192;
+  if (netTorque > 0) {
+    if (drive->acceleratorInput.value < 0x7F) {
+      loads.accelerationResistance += netTorque / 2;
+    }
+  } else {
+    loads.accelerationResistance -= netTorque / 2;
+  }
+
+  headingError = GetAngleDistance(car->bodyYaw, car->headingAngle);
+  drive->steeringLoadAngle = headingError < 0x401
+      ? headingError
+      : 0x800 - headingError;
+  loads.steeringResistance += drive->steeringLoadAngle / 256;
+  if (drive->motionState != CAR_MOTION_TAKEOFF && g_PadType == 0x41) {
+    assistStep = g_CarSpec->negconSteeringAssistScale *
+                 drive->steeringGripResponse / 1000;
+    if (assistStep <= 0) {
+      assistStep = 1;
+    }
+    steerPosition = drive->steerPos;
+    if (steerPosition >= 0) {
+      loads.steeringResistance += ((steerPosition * 5) / 6) / assistStep;
+    } else {
+      loads.steeringResistance -= ((steerPosition * 5) / 6) / assistStep;
+    }
+  }
+
+  trackHeadingError = GetAngleDistance(
+      car->headingAngle, 0xC00 - TrackPoint(car->trackPointIndex)->angle);
+  pointIndex = car->trackPointIndex;
+  lateralOffset = car->segmentFraction;
+  pitchSum = TrackPoint(pointIndex)->surfacePitch *
+             (0x400 - lateralOffset);
+  pitchSum += TrackPoint((pointIndex + 1) % g_TrackPointCount)->surfacePitch *
+              lateralOffset;
+  if (pitchSum < 0) {
+    pitchSum += 0x3FF;
+  }
+  roadGrade = pitchSum >> 10;
+  roadGradeProduct = roadGrade * rcos(trackHeadingError);
+  roadGrade = roadGradeProduct < 0
+      ? (roadGradeProduct + 0xFFF) >> 12
+      : roadGradeProduct >> 12;
+  if (roadGrade < -0xEE) {
+    roadGrade = -0xEE;
+  } else if (roadGrade >= 0xEF) {
+    roadGrade = 0xEE;
+  }
+  g_RoadGrade = roadGrade;
+  sideForce = (-rsin(roadGrade)) * 0x708 / 0xA000;
+  loads.steeringResistance += roadGrade < 0 ? sideForce : sideForce / 10;
+
+  if (g_RacePhase == 2 &&
+      drive->motionState == CAR_MOTION_STANDING_START) {
+    loads.steeringResistance += (g_StandingStartSpin & 0x1F) * 5;
+  }
+  if (g_DriveBoostTimer > 0) {
+    loads.steeringResistance += 0xC8 + g_DriveBoostTimer * 0x14;
+    g_DriveBoostTimer--;
+  }
+  if (drive->motionState == CAR_MOTION_TAKEOFF) {
+    loads.throttleAcceleration = loads.throttleAcceleration * 4 / 5;
+  }
+
+  roadSpeed = car->speed * 0xA0 / 1168;
+  dragDivisor = g_CarSpec->speedDragDivisor * 0x3E8 /
+                (s16)g_DragScale;
+  if (dragDivisor <= 0) {
+    dragDivisor = 1;
+  }
+  loads.steeringResistance += roadSpeed * roadSpeed / dragDivisor;
+  g_DragScale = 0x3E8;
+  if (car->verticalMotionState == 0) {
+    loads.steeringResistance =
+        loads.steeringResistance * (0x64 - bandScale) / 100;
+  } else {
+    loads.throttleAcceleration *= 2;
+    loads.steeringResistance = 0;
+  }
+  return loads;
+}
+
+void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
+  GearCurveAddress gearCurve;
+  s16 gear;
   s32 toCentreX;
   s32 gearTorqueLate;
   s32 cosCentreAngle;
   s32 toCentreZ;
-  s32 engineSpeed;
   s32 frontLoad;
   s32 speedForPath;
   s32 centreAngle;
   s32 radialDistance;
-  s32 headingError;
-  s32 sideForce;
-  s32 roadSpeed;
   s32 arcPointIndex;
   s32 speedA;
   s32 torqueShifted;
@@ -382,18 +497,14 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 downforceScale;
   s32 downforce;
   s32 gripBudget;
-  s32 assistStep;
   s32 dragTerm;
-  s32 slipAngle;
   s32 accel;
   s32 bandScale;
   s32 steerLoad;
   s32 throttleAccel;
   s32 gearRatio;
   s32 netTorque;
-  s32 lateralSum;
   s32 dragBase;
-  s32 throttleTorque;
   s32 speedScaled;
   s32 torqueLate;
   s32 coefficientBase;
@@ -404,6 +515,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   PlayerCarRuntime *car;
   GameCarSpecAddress config;
   GearCurveAddress base;
+  DrivetrainLoads loads;
   car = carArg;
   base.rowPointer = g_GearTorqueCurve;
   config.pointer = g_CarSpec;
@@ -440,136 +552,10 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
   ReadEngineTorque(drive, config, gearCurve, &netTorque, &bandScale);
   UpdateGearShiftState(car, drive, config.pointer, &accel);
-  throttleTorque = netTorque * drive->acceleratorInput.value * drive->drivetrainCoupled;
-  if (throttleTorque < 0)
-  {
-    throttleTorque += 0xFF;
-  }
-  throttleAccel = throttleTorque >> 8;
-  if (g_GripLossTimer > 0)
-  {
-    g_GripLossTimer -= 1;
-  }
-  else
-  {
-    g_GripLossTimer = 0;
-  }
-  if (car->verticalMotionState == 0)
-  {
-    steerLoad += drive->engineRpm / 256;
-  }
-  accel += drive->brakeInput * drive->engineRpm / 8192;
-  if (netTorque > 0)
-  {
-    if (drive->acceleratorInput.value < 0x7F)
-    {
-      accel += netTorque / 2;
-    }
-  }
-  else
-  {
-    accel -= netTorque / 2;
-  }
-  headingError = GetAngleDistance(car->bodyYaw, car->headingAngle);
-  drive->steeringLoadAngle = headingError;
-  if (headingError >= 0x401)
-  {
-    drive->steeringLoadAngle = 0x800 - headingError;
-  }
-  steerLoad += drive->steeringLoadAngle / 256;
-  if ((drive->motionState != CAR_MOTION_TAKEOFF) && (g_PadType == 0x41))
-  {
-    assistStep = g_CarSpec->negconSteeringAssistScale * drive->steeringGripResponse / 1000;
-    if (assistStep <= 0)
-    {
-      assistStep = 1;
-    }
-    shiftRemaining = drive->steerPos;
-    assistArmed = shiftRemaining >= 0;
-    if (assistArmed)
-    {
-      steerLoad += ((shiftRemaining * 5) / 6) / assistStep;
-    }
-    else
-    {
-      steerLoad -= ((shiftRemaining * 5) / 6) / assistStep;
-    }
-  }
-  trackHeadingError = GetAngleDistance(car->headingAngle,
-                                       0xC00 - TrackPoint(car->trackPointIndex)->angle);
-  frontLoadScaled = trackHeadingError;
-  pointIndex = car->trackPointIndex;
-  lateralOffset = car->segmentFraction;
-  engineSpeed = TrackPoint(pointIndex)->surfacePitch * (0x400 - lateralOffset);
-  pointIndex += 1;
-  lateralSum = engineSpeed +
-               TrackPoint(pointIndex % g_TrackPointCount)->surfacePitch * lateralOffset;
-  if (lateralSum < 0)
-  {
-    lateralSum += 0x3FF;
-  }
-  slipAngle = lateralSum >> 0xA;
-  dragProduct = slipAngle * rcos(frontLoadScaled);
-  slipAngle = dragProduct >> 0xC;
-  if (dragProduct < 0)
-  {
-    slipAngle = (dragProduct + 0xFFF) >> 0xC;
-  }
-  if (slipAngle < (-0xEE))
-  {
-    slipAngle = -0xEE;
-  }
-  else
-    if (slipAngle >= 0xEF)
-  {
-    slipAngle = 0xEE;
-  }
-  sideForce = (-rsin(slipAngle)) * 0x708;
-  g_RoadGrade = slipAngle;
-  frontLoadScaled = sideForce / 0xA000;
-  if (slipAngle < 0)
-  {
-    steerLoad += frontLoadScaled;
-  }
-  else
-  {
-    steerLoad += frontLoadScaled / 10;
-  }
-  if ((g_RacePhase == 2) && (drive->motionState == CAR_MOTION_STANDING_START))
-  {
-    steerLoad += (g_StandingStartSpin & 0x1F) * 5;
-  }
-  {
-    s32 counter = g_DriveBoostTimer;
-    if (counter > 0)
-    {
-      s32 baseValue = steerLoad + 0xC8;
-      steerLoad = baseValue + (counter * 0x14);
-      g_DriveBoostTimer = counter - 1;
-    }
-  }
-  if (drive->motionState == CAR_MOTION_TAKEOFF)
-  {
-    throttleAccel = (throttleAccel * 4) / 5;
-  }
-  roadSpeed = car->speed * 0xA0 / 1168;
-  dragBase = g_CarSpec->speedDragDivisor * 0x3E8;
-  dragTerm = dragBase / ((s16) g_DragScale);
-  if (dragTerm <= 0)
-  {
-    dragTerm = 1;
-  }
-  steerLoad += (roadSpeed * roadSpeed) / dragTerm;
-  g_DragScale = 0x3E8;
-  if (car->verticalMotionState == 0)
-  {
-    steerLoad = (steerLoad * (0x64 - bandScale)) / 100;
-  }
-  else
-  {
-    throttleAccel *= 2;
-    steerLoad = 0;
-  }
+  loads = CalculateDrivetrainLoads(car, drive, netTorque, bandScale, accel);
+  accel = loads.accelerationResistance;
+  steerLoad = loads.steeringResistance;
+  throttleAccel = loads.throttleAcceleration;
   if ((drive->jumpTimer <= 0) && (drive->clutch <= 0))
   {
     drive->engineRpm = throttleAccel - accel - steerLoad + drive->engineRpm;
