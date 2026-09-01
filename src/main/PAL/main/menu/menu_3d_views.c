@@ -29,6 +29,34 @@ static void UpdateShowroomSteering(void) {
     }
 }
 
+static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
+    g_RenderState.viewX = 0;
+    g_RenderState.viewY = -64;
+    g_RenderState.viewZ = -256;
+    g_RenderState.viewAngleX = pitch;
+    g_RenderState.viewAngleY = yaw;
+    g_RenderState.viewAngleZ = 0;
+    SetCameraRotMatrix();
+    ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
+
+    if (g_MenuViewOffsetTarget > 249999 && g_MenuViewOffset < 2500) {
+        g_MenuViewOffset = 2500;
+    }
+}
+
+static s32 AdvanceMenuViewOffset(void) {
+    s32 delta = g_MenuViewOffsetTarget - g_MenuViewOffset;
+    s32 step = 0;
+
+    if (delta > 0) {
+        step = (250008 - delta) / 8;
+    } else if (delta < 0) {
+        step = (delta - 12) / 12;
+    }
+    g_MenuViewOffset += step;
+    return g_MenuViewOffset / 1000;
+}
+
 void DrawMenuCarView(void) {
     ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
     GameRenderObject *renderObject = ShowroomRenderObject();
@@ -36,34 +64,21 @@ void DrawMenuCarView(void) {
     Matrix mtxB;
     Vec4 out;
     Vec4 vec;
-    s32 s1, s2, s3;
-    s32 x;
-    s32 targetAngle;
+    s32 carIndex;
+    s32 viewHeight;
+    s32 angleDelta;
+    s32 currentAngle;
+    s32 horizontalAngle;
     s32 offset;
 
     vec = g_MenuCarPivotOffset;
-    g_RenderState.viewY = -64;
-    g_RenderState.viewZ = -256;
-    g_RenderState.viewX = 0;
-    g_RenderState.viewAngleX = 0x100;
-    g_RenderState.viewAngleY = 0;
-    g_RenderState.viewAngleZ = 0;
+    SetupMenuViewCamera(0x100, 0);
 
-    SetCameraRotMatrix();
-    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
-
-    if (249999 < g_MenuViewOffsetTarget) {
-        if (g_MenuViewOffset < 2500) {
-            g_MenuViewOffset = 2500;
-        }
-    }
-
-    targetAngle = g_MenuViewAngleTarget;
-    x = g_MenuViewAngle;
-    s3 = targetAngle - x;
-    if (s3 != 0) {
-        if (s3 < 0) {
-            if (x <= 299999) {
+    currentAngle = g_MenuViewAngle;
+    angleDelta = g_MenuViewAngleTarget - currentAngle;
+    if (angleDelta != 0) {
+        if (angleDelta < 0) {
+            if (currentAngle <= 299999) {
                 if (g_CarSwapToIndex >= 0) {
                     if (g_AssetLoadState != 0) {
                         return;
@@ -72,13 +87,14 @@ void DrawMenuCarView(void) {
                     g_CarSwapFromIndex = g_CarSwapToIndex;
                     g_CarSwapToIndex = -1;
                 } else {
-                    g_MenuViewAngle = (s3 - 24) / 24 + x;
+                    g_MenuViewAngle =
+                        currentAngle + (angleDelta - 24) / 24;
                 }
             } else {
-                g_MenuViewAngle = (s3 - 24) / 24 + x;
+                g_MenuViewAngle = currentAngle + (angleDelta - 24) / 24;
             }
         } else {
-            if (x > 900000 && g_CarSwapToIndex >= 0) {
+            if (currentAngle > 900000 && g_CarSwapToIndex >= 0) {
                 if (g_AssetLoadState != 0) {
                     return;
                 }
@@ -86,30 +102,21 @@ void DrawMenuCarView(void) {
                 g_CarSwapFromIndex = g_CarSwapToIndex;
                 g_CarSwapToIndex = -1;
             } else {
-                g_MenuViewAngle = (s3 + 24) / 24 + x;
+                g_MenuViewAngle = currentAngle + (angleDelta + 24) / 24;
             }
         }
     }
 
-    s3 = ((g_MenuViewAngle + 300000) % 600000 - 300000) / 1000;
-    s1 = g_CarSwapFromIndex;
-    s2 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s2 != 0) {
-        if (s2 > 0) {
-            s2 = (250008 - s2) / 8;
-        } else {
-            s2 = (s2 - 12) / 12;
-        }
-    }
-
-    g_MenuViewOffset = s2 + g_MenuViewOffset;
-    s2 = g_MenuViewOffset / 1000;
+    horizontalAngle =
+        ((g_MenuViewAngle + 300000) % 600000 - 300000) / 1000;
+    carIndex = g_CarSwapFromIndex;
+    viewHeight = AdvanceMenuViewOffset();
     showroom->runtime.modelIndex =
-        GetCarAssetIndex(s1, g_CarTable[s1].modelVariant);
-    g_PlayerTireCompound = g_CarTable[s1].tireCompound;
+        GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
+    g_PlayerTireCompound = g_CarTable[carIndex].tireCompound;
 
     UpdateShowroomSteering();
-    g_PlayerTransmission = g_CarTable[s1].transmission;
+    g_PlayerTransmission = g_CarTable[carIndex].transmission;
     g_PlayerCarWheelAngle = (g_PlayerCarWheelAngle + 68) & 0xFFF;
 
     UpdateMenuViewSpin();
@@ -123,12 +130,12 @@ void DrawMenuCarView(void) {
     MulMatrix2((&g_RenderState.matrix), &mtxA);
 
     if (g_MenuAltLayout != 0) {
-        offset = s3 - 23;
+        offset = horizontalAngle - 23;
     } else {
-        offset = s3 - 52;
+        offset = horizontalAngle - 52;
     }
     showroom->pose.position[0] = out.x - offset;
-    showroom->pose.position[1] = s2 + 30;
+    showroom->pose.position[1] = viewHeight + 30;
     showroom->pose.position[2] = -out.z;
     g_PlayerRenderRotation = showroom->pose.rotation;
     g_PlayerRenderY = showroom->pose.position[1];
@@ -136,8 +143,8 @@ void DrawMenuCarView(void) {
     DrawPlayerCarModel(renderObject);
 
     showroom->pose.position[0] =
-        (g_MenuAltLayout != 0 ? 23 : 52) - s3;
-    showroom->pose.position[1] = s2 + 30;
+        (g_MenuAltLayout != 0 ? 23 : 52) - horizontalAngle;
+    showroom->pose.position[1] = viewHeight + 30;
     showroom->pose.position[2] = 0;
     SelectModelBank(14);
     /* The render state's ordering-table base. Keep the retail
@@ -158,29 +165,16 @@ void DrawMenuCourseView(void) {
     GameRenderObject *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
-    s32 s1;
-    s32 s0;
-    s32 s2;
+    s32 angleDelta;
+    s32 horizontalAngle;
+    s32 courseModelIndex;
+    s32 viewHeight;
 
-    g_RenderState.viewY = -64;
-    g_RenderState.viewZ = -256;
-    g_RenderState.viewX = 0;
-    g_RenderState.viewAngleX = 0x100;
-    g_RenderState.viewAngleY = 0;
-    g_RenderState.viewAngleZ = 0;
+    SetupMenuViewCamera(0x100, 0);
 
-    SetCameraRotMatrix();
-    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
-
-    if (249999 < g_MenuViewOffsetTarget) {
-        if (g_MenuViewOffset < 2500) {
-            g_MenuViewOffset = 2500;
-        }
-    }
-
-    s1 = g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (s1 != 0) {
-        if (s1 > 0) {
+    angleDelta = g_MenuViewAngleTarget - g_MenuViewAngle;
+    if (angleDelta != 0) {
+        if (angleDelta > 0) {
             if (g_MenuViewAngle > 750000 && g_MenuPendingCourseIndex >= 0) {
                 if (g_CourseSwapDelay >= 19) {
                     g_CourseSwapDelay = 0;
@@ -190,7 +184,7 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay++;
                 }
             } else {
-                g_MenuViewAngle = (s1 + 18) / 18 + g_MenuViewAngle;
+                g_MenuViewAngle += (angleDelta + 18) / 18;
             }
         } else {
             if (g_MenuViewAngle <= 249999 && g_MenuPendingCourseIndex >= 0) {
@@ -202,29 +196,19 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay++;
                 }
             } else {
-                g_MenuViewAngle = (s1 - 18) / 18 + g_MenuViewAngle;
+                g_MenuViewAngle += (angleDelta - 18) / 18;
             }
         }
     }
 
-    s1 = ((g_MenuViewAngle + 250000) % 500000 - 250000) / 1000;
+    horizontalAngle =
+        ((g_MenuViewAngle + 250000) % 500000 - 250000) / 1000;
+    courseModelIndex = g_MenuCourseModelIndex;
+    viewHeight = AdvanceMenuViewOffset();
 
-    s2 = g_MenuCourseModelIndex;
-
-    s0 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s0 != 0) {
-        if (s0 > 0) {
-            s0 = (250008 - s0) / 8;
-        } else {
-            s0 = (s0 - 12) / 12;
-        }
-    }
-
-    showroom->courseViewX = 23 - s1;
-    g_MenuViewOffset = s0 + g_MenuViewOffset;
+    showroom->courseViewX = 23 - horizontalAngle;
     showroom->runtime.z = -20;
-    s0 = g_MenuViewOffset / 1000;
-    showroom->runtime.y = s0 + 15;
+    showroom->runtime.y = viewHeight + 15;
 
     UpdateMenuViewSpin();
     showroom->runtime.bodyYaw += g_MenuViewSpin;
@@ -237,7 +221,9 @@ void DrawMenuCourseView(void) {
                        AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.envMode4 = 0;
     SubmitModel(&g_RenderState,
-                (s2 & 3) < g_ModelBankCount ? s2 & 3 : 1);
+                (courseModelIndex & 3) < g_ModelBankCount
+                    ? courseModelIndex & 3
+                    : 1);
 }
 
 typedef struct MenuModelTransform {
@@ -257,40 +243,26 @@ void DrawTeamNameCharModel(void) {
     Matrix mtxB;
     MenuModelTransform transform;
     Vec4 vcopy;
-    s32 s1;
-    s32 s0;
-    s32 s2;
+    s32 angleStep;
+    s32 viewHeight;
+    s32 baseHeight;
     s32 nextAngle;
     s32 modelIndex;
 
     vcopy = g_TeamNameCharScale;
 
-    g_RenderState.viewY = -64;
-    g_RenderState.viewZ = -256;
-    g_RenderState.viewX = 0;
-    g_RenderState.viewAngleX = 0;
-    g_RenderState.viewAngleY = -104;
-    g_RenderState.viewAngleZ = 0;
+    SetupMenuViewCamera(0, -104);
 
-    SetCameraRotMatrix();
-    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
-
-    if (249999 < g_MenuViewOffsetTarget) {
-        if (g_MenuViewOffset < 2500) {
-            g_MenuViewOffset = 2500;
-        }
-    }
-
-    s1 = g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (s1 != 0) {
-        if (s1 > 0) {
-            s1 = (s1 + 16) / 16;
+    angleStep = g_MenuViewAngleTarget - g_MenuViewAngle;
+    if (angleStep != 0) {
+        if (angleStep > 0) {
+            angleStep = (angleStep + 16) / 16;
         } else {
-            s1 = (s1 - 16) / 16;
+            angleStep = (angleStep - 16) / 16;
         }
     }
 
-    nextAngle = g_MenuViewAngle + s1;
+    nextAngle = g_MenuViewAngle + angleStep;
     g_MenuViewAngle = nextAngle;
     if (nextAngle <= 3071999 && GameMenuCursorAnim >= 0) {
         g_MenuViewAngle = nextAngle - 2048000;
@@ -298,31 +270,19 @@ void DrawTeamNameCharModel(void) {
         GameMenuCursorAnim = -1;
     }
 
-    s1 = g_MenuViewAngle / 1000;
-
-    s0 = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    if (s0 != 0) {
-        if (s0 > 0) {
-            s0 = (250008 - s0) / 8;
-        } else {
-            s0 = (s0 - 12) / 12;
-        }
-    }
-
-    g_MenuViewOffset = s0 + g_MenuViewOffset;
-    s0 = g_MenuViewOffset / 1000;
-
-    s2 = 40;
+    viewHeight = AdvanceMenuViewOffset();
+    baseHeight = 40;
     if (g_MenuAltLayout != 0) {
-        s2 = 64;
+        baseHeight = 64;
     }
 
     transform.positionX = 0;
     transform.positionY =
-        (s0 - s2) + rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
+        (viewHeight - baseHeight) +
+        rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
     transform.positionZ = 0;
     transform.rotationX = 0;
-    transform.rotationY = s1;
+    transform.rotationY = g_MenuViewAngle / 1000;
     transform.rotationZ =
         rsin((g_AnimTimer * 20) & 0xFFC) * 72 / 4096;
 
