@@ -846,7 +846,7 @@ extern u16 g_HudGlyphClut;
 extern s16 g_PeakOutputRpm;
 extern s16 g_PeakOutputValue;
 typedef struct RaceIntroCameraScript RaceIntroCameraScript;
-extern RaceIntroCameraScript *volatile g_RaceIntroCameraScript;
+extern RaceIntroCameraScript *g_RaceIntroCameraScript;
 extern s32 g_RoadGrade;
 extern s32 g_SharedAssetWord0;
 extern s32 g_ShiftSoundLevel;

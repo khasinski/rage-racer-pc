@@ -5,6 +5,4 @@
 
 extern u32 g_FrontendIdleTimer;
 
-extern volatile u16 g_DispEnv1X;
-
 #endif
