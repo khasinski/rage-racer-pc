@@ -14,6 +14,16 @@ static void StoreCarSetup(SavedCarSetup *saved, const CarEntry *car) {
     saved->enabled = car->enabled;
 }
 
+static void StoreRaceProgress(
+    SavedRaceProgress *saved,
+    const GameRaceProgress *progress) {
+    saved->course = progress->course;
+    saved->carIndex = progress->carIndex;
+    saved->classIndex = progress->classIndex;
+    saved->maxClassReached = progress->maxClassReached;
+    saved->money = progress->money.value;
+}
+
 void StoreSaveStateBlock(GameSaveBlock *block) {
     s32 i;
 
@@ -28,21 +38,9 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
     block->negconMaxTwist = g_NegconMaxTwist;
     block->negconNeutralL = g_NegconNeutralL;
 
-    block->grandPrixProgress.course = g_GrandPrixSave.course;
-    block->grandPrixProgress.carIndex = g_GrandPrixSave.carIndex;
-    block->grandPrixProgress.classIndex = g_GrandPrixSave.classIndex;
-    block->grandPrixProgress.maxClassReached = g_GrandPrixSave.maxClassReached;
-    block->grandPrixProgress.money = g_GrandPrixSave.money.value;
-    block->extraGrandPrixProgress.course = g_ExtraGrandPrixSave.course;
-    block->extraGrandPrixProgress.carIndex = g_ExtraGrandPrixSave.carIndex;
-    block->extraGrandPrixProgress.classIndex = g_ExtraGrandPrixSave.classIndex;
-    block->extraGrandPrixProgress.maxClassReached = g_ExtraGrandPrixSave.maxClassReached;
-    block->extraGrandPrixProgress.money = g_ExtraGrandPrixSave.money.value;
-    block->timeAttackProgress.course = g_TimeAttackSave.course;
-    block->timeAttackProgress.carIndex = g_TimeAttackSave.carIndex;
-    block->timeAttackProgress.classIndex = g_TimeAttackSave.classIndex;
-    block->timeAttackProgress.maxClassReached = g_TimeAttackSave.maxClassReached;
-    block->timeAttackProgress.money = g_TimeAttackSave.money.value;
+    StoreRaceProgress(&block->grandPrixProgress, &g_GrandPrixSave);
+    StoreRaceProgress(&block->extraGrandPrixProgress, &g_ExtraGrandPrixSave);
+    StoreRaceProgress(&block->timeAttackProgress, &g_TimeAttackSave);
     block->bgmSelection = g_BgmSelection;
     block->extraGrandPrixUnlocked = g_ExtraGrandPrixUnlocked;
     block->maxClassReached[0] = g_MaxClassReached[0];

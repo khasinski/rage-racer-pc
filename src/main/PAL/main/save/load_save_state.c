@@ -19,7 +19,17 @@ static void LoadCarSetup(CarEntry *car, const SavedCarSetup *saved) {
     car->enabled = saved->enabled;
 }
 
-s32 LoadSaveStateBlock(GameSaveBlock *block) {
+static void LoadRaceProgress(
+    GameRaceProgress *progress,
+    const SavedRaceProgress *saved) {
+    progress->course = saved->course;
+    progress->carIndex = saved->carIndex;
+    progress->classIndex = saved->classIndex;
+    progress->maxClassReached = saved->maxClassReached;
+    progress->money.value = saved->money;
+}
+
+s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     u32 checksum = CalculateSaveBlockChecksum(block);
     s32 i;
 
@@ -38,21 +48,9 @@ s32 LoadSaveStateBlock(GameSaveBlock *block) {
     g_NegconNeutralL = block->negconNeutralL;
     g_NegconMaxTwist = block->negconMaxTwist;
 
-    g_GrandPrixSave.course = block->grandPrixProgress.course;
-    g_GrandPrixSave.carIndex = block->grandPrixProgress.carIndex;
-    g_GrandPrixSave.classIndex = block->grandPrixProgress.classIndex;
-    g_GrandPrixSave.maxClassReached = block->grandPrixProgress.maxClassReached;
-    g_GrandPrixSave.money.value = block->grandPrixProgress.money;
-    g_ExtraGrandPrixSave.course = block->extraGrandPrixProgress.course;
-    g_ExtraGrandPrixSave.carIndex = block->extraGrandPrixProgress.carIndex;
-    g_ExtraGrandPrixSave.classIndex = block->extraGrandPrixProgress.classIndex;
-    g_ExtraGrandPrixSave.maxClassReached = block->extraGrandPrixProgress.maxClassReached;
-    g_ExtraGrandPrixSave.money.value = block->extraGrandPrixProgress.money;
-    g_TimeAttackSave.course = block->timeAttackProgress.course;
-    g_TimeAttackSave.carIndex = block->timeAttackProgress.carIndex;
-    g_TimeAttackSave.classIndex = block->timeAttackProgress.classIndex;
-    g_TimeAttackSave.maxClassReached = block->timeAttackProgress.maxClassReached;
-    g_TimeAttackSave.money.value = block->timeAttackProgress.money;
+    LoadRaceProgress(&g_GrandPrixSave, &block->grandPrixProgress);
+    LoadRaceProgress(&g_ExtraGrandPrixSave, &block->extraGrandPrixProgress);
+    LoadRaceProgress(&g_TimeAttackSave, &block->timeAttackProgress);
     g_BgmSelection = block->bgmSelection;
     g_ExtraGrandPrixUnlocked = block->extraGrandPrixUnlocked;
     g_MaxClassReached[0] = block->maxClassReached[0];

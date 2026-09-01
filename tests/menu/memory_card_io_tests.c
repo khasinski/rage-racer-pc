@@ -157,7 +157,7 @@ void BuildSaveIconBlock(u8 *block, char *title, s32 iconTile,
 
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) { SealHeader(row); }
 void StoreSaveStateBlock(GameSaveBlock *block) { memset(block, 0x22, sizeof(*block)); }
-s32 LoadSaveStateBlock(GameSaveBlock *block) { (void)block; return s_loadOk; }
+s32 LoadSaveStateBlock(const GameSaveBlock *block) { (void)block; return s_loadOk; }
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     memset(rows, 0, 3 * sizeof(*rows));
 }

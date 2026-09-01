@@ -52,7 +52,7 @@ void BuildSaveIconBlock(
     s32 imageX,
     s32 imageY);
 void WriteSaveHeaderRow(GameSaveHeaderRow *row);
-s32 LoadSaveStateBlock(GameSaveBlock *block);
+s32 LoadSaveStateBlock(const GameSaveBlock *block);
 s32 WriteMemoryCardSaveFile(
     char *path,
     char *title,
