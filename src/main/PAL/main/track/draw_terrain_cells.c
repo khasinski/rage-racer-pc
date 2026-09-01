@@ -5,16 +5,18 @@
 #include "game/terrain_internal.h"
 
 
+static void DrawTerrainCellsFrom(s32 viewOffset) {
+    BuildVisibleCells(viewOffset, 0x14000);
+    SetRotMatrix(&g_RenderState.matrix);
+    SubmitTerrainCells(&g_RenderState, g_VisibleCellList, 0x40);
+}
+
 void DrawTerrainCells(void) {
-    BuildVisibleCells(-12288, 0x14000);
-    SetRotMatrix((&g_RenderState.matrix));
-    SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
+    DrawTerrainCellsFrom(-12288);
 }
 
 void DrawTerrainCellsWide(void) {
-    BuildVisibleCells(0xFFFF6000, 0x14000);
-    SetRotMatrix((&g_RenderState.matrix));
-    SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
+    DrawTerrainCellsFrom((s32)0xFFFF6000);
 }
 
 static s32 DivideSigned32(s32 value)
@@ -380,6 +382,18 @@ static void MeasureSkyBand(SkyRenderWork *work,
     band->rowStepY = cosRoll * 8;
 }
 
+static void InitializeSkyRenderWork(SkyRenderWork *work) {
+    work->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
+    work->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
+    work->cameraX = g_RenderState.viewX;
+    work->cameraY = g_RenderState.viewY;
+    work->cameraZ = g_RenderState.viewZ;
+    work->pitch = g_RenderState.viewAngleX;
+    work->yaw = g_RenderState.viewAngleY;
+    work->roll = g_RenderState.viewAngleZ;
+    work->mirrorFlag = g_RenderState.orderingFlag;
+}
+
 void DrawSkyBackground(void)
 {
   SkyRenderWork skyWork;
@@ -401,15 +415,7 @@ void DrawSkyBackground(void)
   s32 screenX1;
   s32 screenX2;
   s32 screenX3;
-  work->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
-  work->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
-  work->cameraX = g_RenderState.viewX;
-  work->cameraY = g_RenderState.viewY;
-  work->cameraZ = g_RenderState.viewZ;
-  work->pitch = g_RenderState.viewAngleX;
-  work->yaw = g_RenderState.viewAngleY;
-  work->roll = g_RenderState.viewAngleZ;
-  work->mirrorFlag = g_RenderState.orderingFlag;
+  InitializeSkyRenderWork(work);
   u8 *packetCursor = work->packetCursor;
   s32 heldBandY;
   s32 adjW;
