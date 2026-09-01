@@ -56,7 +56,6 @@ s32 g_McSwEventIoe;
 s32 g_McSwEventError;
 s32 g_McSwEventTimeout;
 s32 g_McSwEventNew;
-Rect g_SaveIconRect;
 s32 g_McSlotUsedMask;
 GameSaveHeaderRow g_McSaveHeaders[MEMORY_CARD_SAVE_SLOT_COUNT];
 s32 g_McNoCardTicks;

@@ -47,7 +47,7 @@ void RestartMemoryCard(void);
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
 void BuildSaveIconBlock(
     u8 *block,
-    char *title,
+    const char *title,
     s32 iconTile,
     s32 imageX,
     s32 imageY);
@@ -199,10 +199,5 @@ void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(s32 a, s32 b);
 void StoreSaveStateBlock(GameSaveBlock *block);
 void DrawMemoryCardScreen(s32 showBar, s32 variant, s32 cursor, s32 barRow);
-
-/* Declared identically by 1 translation units before this
- * header carried them. */
-
-extern Rect g_SaveIconRect;
 
 #endif
