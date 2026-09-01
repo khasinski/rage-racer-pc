@@ -1,5 +1,6 @@
 #include "game/memcard.h"
 #include "game/menu.h"
+#include "game/save_internal.h"
 
 #include <string.h>
 
@@ -33,13 +34,7 @@ static s32 OpenSaveFileForWrite(char *path, s32 attempt) {
 }
 
 static s32 SaveHeaderChecksumValid(const GameSaveHeaderRow *header) {
-    s32 sum = 0;
-    u32 i;
-
-    for (i = 0; i < MC_HEADER_DATA_HALFWORDS; i++) {
-        sum += header->halfwords[i];
-    }
-    return header->fields.checksum == (u32)~sum;
+    return header->fields.checksum == CalculateSaveHeaderChecksum(header);
 }
 
 s32 WriteMemoryCardSaveFile(

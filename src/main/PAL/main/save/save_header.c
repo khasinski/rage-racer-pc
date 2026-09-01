@@ -1,18 +1,8 @@
 #include "game/memcard.h"
 #include "game/menu.h"
+#include "game/save_internal.h"
 
 #include <string.h>
-
-static u32 CalculateSaveHeaderChecksum(const GameSaveHeaderRow *row) {
-    const u8 *bytes = row->bytes;
-    u32 sum = 0;
-    s32 offset;
-
-    for (offset = 0; offset < 0x7C; offset += 2) {
-        sum += (u32)bytes[offset] | ((u32)bytes[offset + 1] << 8);
-    }
-    return ~sum;
-}
 
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     s32 row;

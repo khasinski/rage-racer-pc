@@ -1,5 +1,6 @@
 #include "game/memcard.h"
 #include "game/menu.h"
+#include "game/save_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -66,14 +67,8 @@ static void ResetMock(void) {
 }
 
 static void SealHeader(GameSaveHeaderRow *header) {
-    s32 sum = 0;
-    s32 i;
-
     header->fields.checksum = 0;
-    for (i = 0; i < MC_HEADER_DATA_HALFWORDS; i++) {
-        sum += header->halfwords[i];
-    }
-    header->fields.checksum = (u32)~sum;
+    header->fields.checksum = CalculateSaveHeaderChecksum(header);
 }
 
 static void PutHeader(s32 file, s32 offset, u8 marker, s32 valid) {

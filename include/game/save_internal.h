@@ -22,5 +22,6 @@ extern s32 g_BestTotalTimes[2][4][2];
 extern s32 g_BestSectorTimes[2][4][3];
 
 u32 CalculateSaveBlockChecksum(const GameSaveBlock *block);
+u32 CalculateSaveHeaderChecksum(const GameSaveHeaderRow *header);
 
 #endif

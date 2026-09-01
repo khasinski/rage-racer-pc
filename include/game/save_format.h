@@ -9,7 +9,7 @@
 #define MC_TIME_CARS_OFS  0x128
 #define MC_ICON_BLOCK_SIZE    0x200
 #define MC_HEADER_SIZE        0x80
-#define MC_HEADER_DATA_HALFWORDS 0x3E
+#define MC_HEADER_CHECKSUM_OFS 0x7C
 #define MC_BLOCK_SIZE         0x1000
 #define MC_SAVE_PATH_SIZE     0x1A
 #define MC_SAVE_TITLE_SIZE    0x46
