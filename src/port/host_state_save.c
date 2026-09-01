@@ -57,7 +57,6 @@ s32 g_McMenuState;
 s32 g_McCardStatus;
 s32 g_McMenuSelection;
 unsigned char g_McMenuPhase[8] __attribute__((aligned(16)));
-s32 g_McMenuSubState;
 s32 g_McFromLoadMenu;
 s32 g_McSaveMode;
 s32 g_McCardFileCount;

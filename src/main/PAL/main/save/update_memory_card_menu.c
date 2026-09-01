@@ -252,11 +252,9 @@ static void RunCardSlotActions(void) {
         s32 slot = g_McSlotCursor;
         s32 written;
 
-        g_McMenuSubState = 5;
         written = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         g_McActionResult = written;
         g_McActionOk = written != 0;
-        g_McMenuSubState = written != 0 ? 6 : 0x10;
         g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
         g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
@@ -271,13 +269,6 @@ static void RunCardSlotActions(void) {
             s32 usedMask = RefreshMemoryCardSaveStatus(0, g_McSaveHeaders);
 
             g_McSlotUsedMask = usedMask;
-            /* No files at all, or none in the first sixteen slots, each send
-             * the menu somewhere different. */
-            if (usedMask == 0) {
-                g_McMenuSubState = 0xC;
-            } else if ((usedMask & 0xFFFF) == 0) {
-                g_McMenuSubState = 0xE;
-            }
             g_McSavedLoadPhase = GameMenuLoadPhase;
         }
         g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE;
@@ -327,7 +318,6 @@ static void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_BEGIN_LOAD:
-        g_McMenuSubState = 7;
         g_McActionTimer = 5;
         g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_PREP;
         break;
@@ -354,11 +344,9 @@ static void RunCardSlotActions(void) {
         g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         if (g_McActionResult != 0) {
             g_McActionOk = 1;
-            g_McMenuSubState = 8;
             g_McLastSlot = g_McSlotCursor;
         } else {
             g_McActionOk = 1;
-            g_McMenuSubState = 0xF;
         }
         g_McActionTimer = 0x3C;
         g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
@@ -461,19 +449,11 @@ typedef enum CardWorkingActionState {
     CARD_WORK_RETURN_READY = 9,
 } CardWorkingActionState;
 
-static s32 MenuSubStateForUsedSlots(s32 usedMask) {
-    if (usedMask == 0) {
-        return 0xC;
-    }
-    return (usedMask & 7) != 0 ? 2 : 0xE;
-}
-
 /*
  * A format or a save running, stepping through its own stages while the
  * screen says it is busy.
  */
 static void RunCardWorkingState(s32 fadeBusy) {
-    g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (g_McActionState) {
     case CARD_WORK_WAIT_FOR_SCENE:
@@ -511,7 +491,6 @@ static void RunCardWorkingState(s32 fadeBusy) {
         break;
     case CARD_WORK_REFRESH_STATUS:
         g_McSlotUsedMask = RefreshMemoryCardSaveStatus(1, g_McSaveHeaders);
-        g_McMenuSubState = MenuSubStateForUsedSlots(g_McSlotUsedMask);
         g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
         g_McSavedLoadPhase = GameMenuLoadPhase;
         break;
@@ -558,7 +537,6 @@ static void RunCardWorkingState(s32 fadeBusy) {
     }
 
     if (g_McMenuState == MC_MENU_STATE_WORKING) return;
-    g_McMenuSubState = 1;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     g_McActionState = 0;
     g_McActionResult = 0;
@@ -575,7 +553,6 @@ typedef enum NoCardActionState {
 } NoCardActionState;
 
 static void RunNoCardState(s32 fadeBusy) {
-    g_McMenuSubState = 0xA;
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
     switch (g_McActionState) {
@@ -670,7 +647,6 @@ typedef enum FormatCardActionState {
 } FormatCardActionState;
 
 static void RunUnformattedCardRootPage(s32 fadeBusy) {
-    g_McMenuSubState = 0xB;
     g_McMenuPhase = MC_PROMPT_NONE;
     AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
                                   g_McMenuRowCount - 1);
@@ -778,7 +754,6 @@ static void RunFormatCardActions(s32 fadeBusy) {
         break;
 
     case FORMAT_CARD_ACTION_SHOW_ERROR:
-        g_McMenuSubState = 0x12;
         g_McMenuPhase = MC_PROMPT_CARD_ERROR;
         g_McActionBusy = 0;
         if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
@@ -834,7 +809,6 @@ static void RunUnformattedCardState(s32 fadeBusy) {
  * The card answered with something the menu has no name for.
  */
 static void RunCardErrorState(s32 fadeBusy) {
-    g_McMenuSubState = 0x11;
     g_McMenuPhase = MC_PROMPT_CARD_ERROR;
     if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
         PlaySoundCue(3);
@@ -877,30 +851,7 @@ void UpdateMemoryCardMenu(void) {
                 g_McMenuSelection = MC_MENU_STATE_BUSY;
             }
         } else {
-            s32 substate;
-
-            switch (status) {
-            case MC_MENU_STATE_READY:
-                substate = 2;
-                break;
-            case MC_MENU_STATE_WORKING:
-                substate = 1;
-                break;
-            case MC_MENU_STATE_NO_CARD:
-                substate = 0xA;
-                break;
-            case MC_MENU_STATE_UNFORMATTED:
-                substate = 0xB;
-                break;
-            case MC_MENU_STATE_ERROR:
-                substate = 0x11;
-                break;
-            default:
-                substate = 0x11;
-                break;
-            }
             g_McNoCardTicks = 0;
-            g_McMenuSubState = substate;
             g_McMenuSelection = g_McCardStatus;
         }
     }

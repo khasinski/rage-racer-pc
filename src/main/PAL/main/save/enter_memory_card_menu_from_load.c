@@ -12,7 +12,6 @@ void EnterMemoryCardMenuFromLoad(void) {
         g_McMenuState = MC_MENU_STATE_NO_CARD;
         g_SceneTimer = 0;
         g_McMenuPage = 0;
-        g_McMenuSubState = 1;
         g_McFromLoadMenu = 1;
         StartMemoryCardEvents();
         g_McFadeStep = -8;

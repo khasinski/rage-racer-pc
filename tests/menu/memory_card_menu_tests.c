@@ -49,7 +49,6 @@ s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;
 s32 g_McMenuState;
-s32 g_McMenuSubState;
 s32 g_McNoCardTicks;
 GameSaveHeaderRow g_McSaveHeaders[4];
 s32 g_McSaveMode;
@@ -170,11 +169,11 @@ static void Record(FILE *out, const char *label) {
     char line[512];
 
     snprintf(line, sizeof(line),
-            "%s state=%d sub=%d action=%d phase=%d page=%d row=%d slot=%d "
+            "%s state=%d action=%d phase=%d page=%d row=%d slot=%d "
             "sel=%d busy=%d timer=%d elapsed=%d ok=%d result=%d choice=%d/%d "
             "err=%d/%d/%d fade=%d/%d last=%d/%d mask=%x free=%d ticks=%d/%d/%d "
             "changes=%d draw=%d loadphase=%d/%d scene=%d/%d calls=%d\n",
-            label, g_McMenuState, g_McMenuSubState, g_McActionState,
+            label, g_McMenuState, g_McActionState,
             g_McMenuPhase, g_McMenuPage, g_McMenuRowCursor, g_McSlotCursor,
             g_McMenuSelection, g_McActionBusy, g_McActionTimer,
             g_McActionElapsed, g_McActionOk, g_McActionResult,
@@ -207,12 +206,12 @@ int main(int argc, char **argv) {
                                0x2000};
     static const s32 statuses[] = {0, 1, 2, -1, -2, -3};
     /*
-     * What the menu did before it was taken apart. Every step of the sweep is
-     * folded into this, so a change anywhere in the machine moves it. When it
-     * moves, run the test with a file name to write the sweep out and diff the
-     * two to see which steps changed.
+     * Every observable field and external call made by each step is folded
+     * into this. When it moves, run the test with a file name to write the
+     * sweep out and diff the two to see which steps changed. Dead internal
+     * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 528070523UL;
+    static const unsigned long expected = 619536843UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;

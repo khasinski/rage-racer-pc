@@ -85,14 +85,12 @@ extern RaceRecord g_TimeRecords[][4][5];
 extern u8 g_TeamNameLength;
 extern u8 g_TeamNameChars[];
 
-/* Memory-card menu sub-state, driven by UpdateMemoryCardMenu. g_McCardStatus is the
- * last PollMemoryCardStatus result (0 no card yet, 1/2 card present,
- * -1/-2/-3 error), not a record pointer; the others are selection/phase words.
- */
+/* g_McCardStatus is the last PollMemoryCardStatus result (0 no card yet, 1/2
+ * card present, -1/-2/-3 error), not a record pointer; the others are
+ * selection/phase words. */
 extern s32 g_McMenuState;
 extern s32 g_McCardStatus;
 extern s32 g_McMenuSelection;
-extern s32 g_McMenuSubState;
 
 /* The two eased current/target pairs of the 3D menu view, in 1/1000 units:
  * an angle (carousel wraps at 500000 per entry) and a translation. Screens set

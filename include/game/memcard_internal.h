@@ -7,7 +7,6 @@
 extern s32 g_McConfirmChoice_v;
 
 extern s32 g_FrameSyncThreshold;
-extern s32 g_McMenuSubState;
 extern s32 GameMenuLoadPhase;
 
 typedef enum MemoryCardMenuState {
