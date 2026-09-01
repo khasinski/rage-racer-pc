@@ -261,6 +261,23 @@ int main(int argc, char **argv) {
                s_digest, expected);
         return 1;
     }
+
+    g_TeamLogoFadeLevel = 0xF8;
+    g_TeamLogoZoomLevel = 0xF8;
+    RampTeamLogoCanvas(13, 21);
+    if (g_TeamLogoFadeLevel != 0x100 || g_TeamLogoZoomLevel != 0x100 ||
+        g_TeamLogoZoomSpan != 0x110) {
+        puts("FAIL logo canvas upper ramp limit");
+        return 1;
+    }
+    g_TeamLogoFadeLevel = 0x41;
+    g_TeamLogoZoomLevel = 1;
+    RampTeamLogoCanvas(-13, -21);
+    if (g_TeamLogoFadeLevel != 0x40 || g_TeamLogoZoomLevel != 0 ||
+        g_TeamLogoZoomSpan != 0x220) {
+        puts("FAIL logo canvas lower ramp limit");
+        return 1;
+    }
     printf("the logo screen draws the same %d commands over %d states it "
            "always did\n", s_calls, steps);
     return 0;
