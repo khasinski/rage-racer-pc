@@ -53,18 +53,13 @@ s32 AdvanceMemoryCardMenuStartup(void) {
         g_McActionState = 0;
         g_McActionResult = 0;
         g_McConfirmChoice = 0;
-        g_McStateChangeCount = 0;
         g_McActionTimer = 0;
         g_McActionBusy = 0;
-        g_McDrawEnabled = 1;
     }
     return 0;
 }
 
 void DrawMemoryCardMenu(void) {
-    if (g_McDrawEnabled == 0) {
-        return;
-    }
     DrawMemoryCardScreen(g_McMenuPage, g_McFromLoadMenu, g_McMenuRowCursor,
                          g_McSlotCursor);
     if (g_McMenuPhase != MC_PROMPT_NONE) {

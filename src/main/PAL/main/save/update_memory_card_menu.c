@@ -818,7 +818,6 @@ static void RunCardErrorState(s32 fadeBusy) {
         g_McLastMenuState = g_McMenuState;
     }
     g_McMenuState = g_McMenuSelection;
-    g_McStateChangeCount++;
     ClearPendingCardError();
 }
 

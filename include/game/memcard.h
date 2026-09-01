@@ -141,7 +141,6 @@ extern s32 g_McCardFileCount;
 extern s32 g_McCardOkFrames;
 extern s32 g_McConfirmChoice;
 extern DirEntry g_McDirEntries[];
-extern s32 g_McDrawEnabled;
 extern s32 g_McErrorCountdown;
 extern s32 g_McErrorPending;
 extern s32 g_McErrorTicks;
@@ -167,7 +166,6 @@ extern char g_McSlotLabelError[];
 extern char g_McSlotLabelNoFile[];
 extern char g_McSlotLabels[];
 extern s32 g_McSlotUsedMask;
-extern s32 g_McStateChangeCount;
 extern s32 g_McStatusResult;
 typedef enum MemoryCardStatusState {
     MC_STATUS_INVALID = -1,

@@ -27,13 +27,11 @@ unsigned char g_McSlotCursor[36] __attribute__((aligned(16))) =
 s32 g_McActionState;
 s32 g_McActionResult;
 s32 g_McConfirmChoice;
-s32 g_McStateChangeCount;
 s32 g_McActionTimer;
 s32 g_McActionBusy;
 s32 g_McErrorCountdown = 3;
 s32 g_McErrorPending;
 s32 g_McLastSlot;
-s32 g_McDrawEnabled = 1;
 s32 g_McHwEventIoe;
 s32 g_McHwEventError;
 s32 g_McHwEventTimeout;
