@@ -15,7 +15,7 @@ static void RestartRouteScenery(void) {
     g_RouteSceneryRotX = keyframe->rotationX;
     g_RouteSceneryRotY = keyframe->rotationY;
     g_RouteSceneryRotZ = keyframe->rotationZ;
-    SetRouteSceneryPosition(&g_RouteSceneryData->start[series].position);
+    g_RouteSceneryPosition = g_RouteSceneryData->start[series].position;
     g_RouteSceneryClock = 1;
     g_RouteSceneryFrame = 0;
 }

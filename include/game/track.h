@@ -324,35 +324,12 @@ extern s32 g_RaceCueFlags;
 extern s32 g_RouteSceneryFrame;
 extern s32 g_RouteSceneryRotX;
 extern s32 g_RouteSceneryRotZ;
-/*
- * The route prop's position: the four words g_RouteSceneryX/Y/Z/W at
- * 0x801E4340.  Both seeders assign the whole thing at once out of the course
- * record -- `*(Vec4 *)&g_RouteSceneryX = *(Vec4 *)(src + 0x10)` -- which is
- * what puts the address in a register with the four stores hanging off it,
- * and DrawRouteScenery hands the same address to SetGteObjectMatrix.
- *
- * The four names stay.  Declared as one Vec4 the components would be marked
- * as living in an aggregate, and gcc 2.6.3 keeps a repeated in-aggregate
- * address in a register instead of re-materialising the symbol; retail's
- * UpdateRouteScenery re-materialises it for each of the three `+=` in its
- * tail, so its component accesses were not member accesses.
- */
+/* Position of the animated route prop. The component aliases keep the motion
+ * update readable while seed/reset code can copy the complete vector. */
 extern Vec4 g_RouteSceneryPosition;
 #define g_RouteSceneryX g_RouteSceneryPosition.x
 #define g_RouteSceneryY g_RouteSceneryPosition.y
 #define g_RouteSceneryZ g_RouteSceneryPosition.z
-
-typedef union RouteSceneryPositionAddress {
-    s32 *x;
-    Vec4 *position;
-} RouteSceneryPositionAddress;
-
-static inline void SetRouteSceneryPosition(const Vec4 *position) {
-    RouteSceneryPositionAddress address;
-
-    address.position = &g_RouteSceneryPosition;
-    *address.position = *position;
-}
 
 extern s16 g_ShuttlePathDwellMax[];
 
