@@ -245,7 +245,6 @@ void UpdateEndingStill(void);
 void InitGeom(void);
 void InitPad(void *buf0, s32 len0, void *buf1, s32 len1);
 void InitRecordTables(void);
-void InstallSceneLighting(void);
 s32 ResetGraph(s32 mode);
 void ResetReplayFrameCounts(void);
 void StartPad(void);

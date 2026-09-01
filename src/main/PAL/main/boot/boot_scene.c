@@ -5,39 +5,6 @@
 #include "game/render_internal.h"
 
 
-void DrawBootLogo(void) {
-    u8 *base;
-    s32 height;
-    s32 clut;
-    void **cursorSlot;
-    s32 fade;
-    s32 value;
-    void *next;
-
-    fade = g_SceneTimer;
-    if (fade >= 0) {
-        value = fade;
-        if (value >= 0x100) {
-            value = 0xFF;
-        }
-    } else {
-        value = 0;
-    }
-    fade = value;
-
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
-
-    next = *cursorSlot;
-    next = GameQueueShadedSprite(base, next, 0x64, 0xEC, 0x7C, 0x18, 0x80, 0, 0x3F97, fade);
-
-    height = 0x20;
-    clut = 0x3FD7;
-    next = GameQueueShadedSprite(base, next, 0xDC, 0xC4, 8, 0x10, 0, height, clut, fade);
-    next = GameQueueShadedSprite(base, next, 0x64, 0xC4, 0x78, height, 0, 0, clut, fade);
-    *cursorSlot = QueueDrawModePrim(base, next, 5);
-}
-
 void UpdateBootLogoScene(void) {
     BootLogoState state;
 
@@ -109,40 +76,5 @@ void UpdateBootLogoScene(void) {
         if (sceneTime >= 10) {
             SetDispMask(1);
         }
-    }
-}
-
-void InstallSceneLighting(void) {
-    g_SceneColorMatrix = g_DefaultColorMatrix;
-    g_SceneLightMatrix = g_DefaultLightMatrix;
-    SetColorMatrix(&g_SceneColorMatrix);
-    SetLightMatrix(&g_SceneLightMatrix);
-    SetBackColor(0x20, 0x20, 0x20);
-    SetFarColor(0, 0, 0);
-    SetFogNear(0x4E20, 0x140);
-}
-
-void EnterAttractScene(void) {
-    SetDispMask(0);
-    g_FrameSyncThreshold = 0x80;
-    if (g_AssetLoadState == 0) {
-        UploadImageAsset(g_ImageBlockBuffer);
-        g_MirrorMode = 0;
-        InitRenderState(5);
-        SetupDisplay480(0, 0, 0);
-        g_SceneId = 0x17;
-        g_SceneTimer = 0;
-        InstallSceneLighting();
-        g_RenderState.viewX = 0;
-        g_RenderState.viewY = 0;
-        g_RenderState.viewZ = -3520;
-        g_RenderState.viewAngleX = 0;
-        g_RenderState.viewAngleY = 0;
-        g_RenderState.viewAngleZ = 0;
-        SetCameraRotMatrix();
-        g_OptionLetterboxHeight = 0xF0;
-        g_FadeLevel = 0x100;
-        g_GameMode = 0;
-        g_FadeStep = -8;
     }
 }
