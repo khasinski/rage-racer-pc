@@ -94,15 +94,12 @@ s32 DrawCourseSelectScreen(s32 step) {
     u16 slide;
     s16 headerWidth = 0;
     u32 deltaY;
-    /* Load-bearing in the prize loop: without this pin the function is 848 words. */
     s32 coordinateY;
     s32 lineColor;
     s32 row;
     s32 digitCount;
     s32 prizeOffset;
-    GrandPrixPrizeTable *prizeTable;
-    s32 prizeFade;
-    s32 prizeClut;
+    s32 course;
     s32 gpHeight;
     s32 gpClut;
     s32 gpSemiTrans;
@@ -139,6 +136,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     slide -= 0x28;
     fadeValue = g_CourseSelectScrollValue;
     fade = (u8)(fadeValue / 4);
+    course = SeriesCourseIndex();
 
     if (g_GrandPrixMode != 0) {
         if (g_SeriesSelection == 0) {
@@ -264,7 +262,7 @@ s32 DrawCourseSelectScreen(s32 step) {
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    switch (SeriesCourseIndex()) {
+    switch (course) {
     case 0:
         coordinateY = DrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 8, 0x18,
@@ -322,23 +320,18 @@ s32 DrawCourseSelectScreen(s32 step) {
             ot, 0x4C, 0x160 - (s16)slide, 0x18, 0x10,
             0xE4, 0xCC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-        row = 0;
         prizeOffset = (s16)slide - 0x140;
-        prizeTable = &g_PrizeMoney;
-        prizeFade = fade;
-        prizeClut = 0x244;
-        do {
+        for (row = 0; row < 3; row++) {
             coordinateY = row * 0x10 - prizeOffset;
             digitCount = GameDrawNumber(
                 0x65, coordinateY, 9,
-                prizeTable->values[SeriesCourseIndex()][g_GrandPrixClass][row],
-                prizeFade, prizeFade, prizeFade, prizeClut, 0x20);
-            row++;
+                g_PrizeMoney.values[course][g_GrandPrixClass][row],
+                fade, fade, fade, 0x244, 0x20);
             DrawSprite(
                 ot, digitCount * 8 + 0x65, coordinateY, 0xC, 0x10,
-                0xF4, 0x28, prizeFade, prizeFade, prizeFade,
-                prizeClut, 0, 1, 0x3B);
-        } while (row < 3);
+                0xF4, 0x28, fade, fade, fade,
+                0x244, 0, 1, 0x3B);
+        }
     }
 
     return g_CourseSelectScrollValue;
