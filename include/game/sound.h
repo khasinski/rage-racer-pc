@@ -84,38 +84,7 @@ typedef struct EffectVoice {
     s32 volume;    /* +0x10 volume */
 } EffectVoice; /* sizeof 0x14 */
 
-typedef union EffectVoiceAddress {
-    s32 value;
-    u8 *bytes;
-    s32 *wordPointer;
-    s16 *halfwordPointer;
-    EffectVoicePitch *pitchPointer;
-    EffectVoice *pointer;
-} EffectVoiceAddress;
-
-static inline EffectVoicePitch *GetEffectVoicePitchFromState(s32 *state) {
-    EffectVoiceAddress address;
-
-    address.wordPointer = state + 1;
-    return address.pitchPointer;
-}
-
-static inline s16 *GetEffectVoiceHalfwordsFromState(s32 *state) {
-    EffectVoiceAddress address;
-
-    address.wordPointer = state;
-    return address.halfwordPointer;
-}
-
 extern EffectVoice g_EffectVoices[];
-
-static inline EffectVoice *GetEffectVoiceAtByteOffset(s32 byteOffset) {
-    EffectVoiceAddress address;
-
-    address.pointer = g_EffectVoices;
-    address.bytes += byteOffset;
-    return address.pointer;
-}
 
 /* Scalar control block at 0x6D80. Retail addresses these individually by
  * symbol, never base+index, so they stay independent externs. */
@@ -123,9 +92,7 @@ extern s32 g_ReverbType; /* +0x00 */
 extern s32 g_ReverbDepthL; /* reverb depth left  */
 extern s32 g_ReverbDepthR; /* reverb depth right */
 /* Per-frame step added to g_ReverbDepthL/R by UpdateSequenceFadeOut; -3
- * while a BGM fade-out runs, 0 when it has finished. Kept on the raw spelling
- * because ForceBasicEffectVoicesEnabled also uses &g_ReverbFadeStep as the end
- * address of g_EffectVoices (= &g_EffectVoices[4].pitch). */
+ * while a BGM fade-out runs, 0 when it has finished. */
 extern s32 g_ReverbFadeStep;
 typedef union SequenceHandle {
     s32 storage;

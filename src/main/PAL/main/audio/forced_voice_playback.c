@@ -3,69 +3,30 @@
 #include "psyq/snd.h"
 
 void ForceBasicEffectVoicesEnabled(s32 enabled) {
-    s32 voicePacked;
-    s32 voice;
     s32 i;
-    s32 raw;
-    s32 scale;
     s32 left;
     s32 right;
-    s32 voiceArg;
-    s32 zeroArg;
 
-    i = 0;
-    voicePacked = 0x80000;
-    voice = 8;
-    do {
+    for (i = 0; i < 2; i++) {
+        s32 voice = 8 + i;
+
         if (enabled != 0) {
-            voiceArg = voicePacked >> 16;
-            raw = 0x3C;
-            left = g_SoundScale.vabIds[0];
-            right = g_MusicChannels[i].left.half[0];
-            zeroArg = 0;
-            SsUtKeyOnV(voiceArg, left, right, zeroArg, raw, 0, 0, 0);
-            
-
-            raw = g_MusicChannels[i].volLeft.value;
-            scale = g_SoundScale.scale;
-            left = raw * scale;
-            raw = g_MusicChannels[i].volRight.value;
-            voiceArg = voice;
-            if (left < 0) {
-                left += 0x7F;
-            }
-            raw *= scale;
-            if (raw < 0) {
-                raw += 0x7F;
-            }
-            left >>= 7;
-            right = raw >> 7;
-
-            left = ClampVoiceVolume(left);
-            right = ClampVoiceVolume(right);
-
-            SsUtSetVVol((s16)voiceArg, left, right);
+            SsUtKeyOnV((s16)voice, g_SoundScale.vabIds[0],
+                       g_MusicChannels[i].left.half[0], 0, 0x3C, 0, 0, 0);
+            left = ClampVoiceVolume(
+                g_MusicChannels[i].volLeft.value * g_SoundScale.scale / 128);
+            right = ClampVoiceVolume(
+                g_MusicChannels[i].volRight.value * g_SoundScale.scale / 128);
+            SsUtSetVVol((s16)voice, left, right);
         } else {
-            SsUtKeyOffV(voicePacked >> 16);
+            SsUtKeyOffV((s16)voice);
         }
-
-        voicePacked += 0x10000;
-        voice++;
-        i++;
-    } while (i < 2);
+    }
 }
 
 void ForceIndexedEffectVoiceEnabled(s32 enabled) {
-    s32 base;
-    s32 center;
-    s32 fine;
     s32 index;
-    s32 raw;
-    s32 product;
-    s32 scale;
-    s32 left;
-    s32 right;
-    s32 voice;
+    s32 volume;
 
     if (enabled != 0) {
         index = g_IndexedEffectIndexPrev;
@@ -77,167 +38,68 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
         StopIndexedEffectVoice();
     }
 
-    raw = g_IndexedEffectIndexPrev;
-    if (raw >= 0) {
-        index = raw;
-        product = g_IndexedEffectVolume * g_IndexedEffects[index].volume;
-        raw = g_IndexedEffectPitch;
-        base = g_IndexedEffects[index].tone;
-        center = raw >> 7;
-        fine = raw & 0x7F;
-        raw = product / 128;
-        scale = g_SoundScale.scale;
-        raw *= scale;
-        left = raw;
-        if (raw < 0) {
-            left = raw + 0x7F;
-        }
-        left >>= 7;
-        right = left;
-
-        if (right >= 0) {
-            if (right >= 0x81) {
-                left = 0x80;
-            }
-        } else {
-            left = 0;
-        }
-
-        right = ClampVoiceVolume(right);
-
-        SsUtSetVVol(0x14, left, right);
-        voice = 0x14;
-        left = 0;
-        
-        right = (s16)base;
-        raw = (s16)center;
-        SsUtChangePitch(voice, left, right, 0x3C, 0, raw, fine);
+    index = g_IndexedEffectIndexPrev;
+    if (index >= 0) {
+        volume = g_IndexedEffectVolume * g_IndexedEffects[index].volume /
+                 128 * g_SoundScale.scale / 128;
+        volume = ClampVoiceVolume(volume);
+        SsUtSetVVol(0x14, volume, volume);
+        SsUtChangePitch(0x14, 0, (s16)g_IndexedEffects[index].tone, 0x3C, 0,
+                        (s16)(g_IndexedEffectPitch >> 7),
+                        g_IndexedEffectPitch & 0x7F);
     }
 }
 
 void ForcePitchEffectVoicesEnabled(s32 enabled) {
-    EffectVoiceAddress cursorAddress;
-    EffectVoiceAddress endAddress;
-    s32 voicePacked;
-    s32 voice;
-    EffectVoicePitch *pitchCursor;
-    EffectVoiceNote *noteCursor;
-    s32 offset;
-    s32 state;
-    s32 raw;
-    s32 scale;
-    s32 left;
-    s32 right;
-    s32 voiceArg;
-    s32 keyTone;
+    s32 index;
 
-    state = enabled;
-    voicePacked = 0xA0000;
-    voice = 0xA;
-    pitchCursor = &g_EffectVoices[0].pitch;
-    noteCursor = &g_EffectVoices[0].note;
-    offset = 0;
-    do {
-        if (state != 0) {
-            voiceArg = voicePacked >> 16;
-            left = g_SoundScale.vabIds[0];
-            right = noteCursor->half.value;
-            keyTone = (s16)GetEffectVoiceAtByteOffset(offset)->tone;
-            raw = 0x3C;
-            SsUtKeyOnV(voiceArg, left, right, keyTone, raw, 0, 0, 0);
+    for (index = 0; index < 4; index++) {
+        EffectVoice *effect = &g_EffectVoices[index];
+        s32 voice = 10 + index;
 
-            scale = GetEffectVoiceAtByteOffset(offset)->volume;
-            
-            raw = g_SoundScale.scale;
-            raw = scale * raw;
-            voiceArg = voice;
-            left = raw;
-            if (raw < 0) {
-                left = raw + 0x7F;
-            }
-            left >>= 7;
-            right = left;
+        if (enabled != 0) {
+            s32 volume = ClampVoiceVolume(
+                effect->volume * g_SoundScale.scale / 128);
 
-            if (right >= 0) {
-                if (right >= 0x81) {
-                    left = 0x80;
-                }
-            } else {
-                left = 0;
-            }
-
-            right = ClampVoiceVolume(right);
-
-            SsUtSetVVol((s16)voiceArg, left, right);
-
-            right = noteCursor->half.value;
-            voiceArg = voicePacked >> 16;
-            SsUtChangePitch(voiceArg, 0, right, 0x3C, 0,
-                            (pitchCursor->value << 9) >> 16,
-                            pitchCursor->half.fraction & 0x7F);
+            SsUtKeyOnV((s16)voice, g_SoundScale.vabIds[0],
+                       effect->note.half.value, (s16)effect->tone,
+                       0x3C, 0, 0, 0);
+            SsUtSetVVol((s16)voice, volume, volume);
+            SsUtChangePitch((s16)voice, 0, effect->note.half.value, 0x3C, 0,
+                            (s16)(effect->pitch.value >> 7),
+                            effect->pitch.half.fraction & 0x7F);
         } else {
-            SsUtKeyOffV(voicePacked >> 16);
+            SsUtKeyOffV((s16)voice);
         }
-
-        voicePacked += 0x10000;
-        voice++;
-        pitchCursor += sizeof(EffectVoice) / sizeof(*pitchCursor);
-        noteCursor += sizeof(EffectVoice) / sizeof(*noteCursor);
-        offset += 0x14;
-        cursorAddress.pitchPointer = pitchCursor;
-        endAddress.wordPointer = &g_ReverbFadeStep;
-    } while (cursorAddress.value < endAddress.value);
+    }
 }
 
 void ForceSoundSlotVoicePlayback(s32 enabled) {
     s32 i;
-    s32 *base;
-    s32 *active;
-    s32 odd;
-    s32 first;
-    s32 second;
-    s32 factor;
-    s32 scaled;
-    s32 callSlot;
-    s32 callBend;
-    s32 callTone;
 
     SetSoundSlotVoicesEnabled(enabled);
 
-    i = 0;
     if (enabled != 0) {
-        base = g_EngineSoundState.slotActive;
-        active = base;
-        do {
-            if (*base++ != 0 && g_SoundSlotTone[i][0] != g_SoundSlotTone[i][1]) {
-                PlaySoundSlotVoice(i, active[-3], 3);
+        for (i = 0; i < 6; i++) {
+            if (g_EngineSoundState.slotActive[i] != 0 &&
+                g_SoundSlotTone[i][0] != g_SoundSlotTone[i][1]) {
+                PlaySoundSlotVoice(i, g_EngineSoundState.bank, 3);
             }
-            i++;
-        } while (i < 6);
+        }
 
-        i = 0;
-        odd = 1;
-        base = g_EngineSoundState.slotActive;
-        active = base;
-        do {
-            if (*active != 0) {
-                first = InterpolateAudioParameter(i * 2, base[-4], base[-3]);
-                second = InterpolateAudioParameter(odd, base[-4], base[-3]);
-                factor = base[6];
-                scaled = second * factor;
-                if (scaled < 0) {
-                    scaled += 0x7F;
-                }
-                callSlot = i;
-                callBend = first;
-                scaled >>= 7;
-                callTone = base[-3];
-                SetSoundSlotTone(callSlot, callBend, scaled, callTone, 3);
+        for (i = 0; i < 6; i++) {
+            if (g_EngineSoundState.slotActive[i] != 0) {
+                s32 bend = InterpolateAudioParameter(
+                    i * 2, g_EngineSoundState.position,
+                    g_EngineSoundState.bank);
+                s32 volume = InterpolateAudioParameter(
+                    i * 2 + 1, g_EngineSoundState.position,
+                    g_EngineSoundState.bank);
+
+                volume = volume * g_EngineSoundState.volumeScale / 128;
+                SetSoundSlotTone(i, bend, volume, g_EngineSoundState.bank, 3);
             }
-            odd += 2;
-            i++;
-            active++;
-        } while (i < 6);
+        }
     }
 }
 
