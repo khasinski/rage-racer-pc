@@ -27,23 +27,6 @@ typedef union GameSaveHeaderRowAddress {
     GameSaveHeaderRow *pointer;
 } GameSaveHeaderRowAddress;
 
-typedef union GameSaveHeaderWordAddress {
-    u8 *bytes;
-    volatile u32 *word;
-} GameSaveHeaderWordAddress;
-
-typedef struct GameSaveHeaderClearCursor {
-    u8 prefix[0xC];
-    u16 reservedHalfword;
-    u8 suffix[0x74];
-} GameSaveHeaderClearCursor;
-
-typedef union GameSaveHeaderRowsAddress {
-    u8 *bytes;
-    GameSaveHeaderRow *rows;
-    GameSaveHeaderClearCursor *clearCursors;
-} GameSaveHeaderRowsAddress;
-
 typedef struct SavedCarSetup {
     u8 modelVariant;
     u8 tireCompound;

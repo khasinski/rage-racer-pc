@@ -19,6 +19,27 @@ endif()
 add_test(NAME team_logo COMMAND team_logo_tests)
 
 set_tests_properties(team_logo PROPERTIES LABELS functional)
+
+add_executable(save_header_tests
+    save_header_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_header.c)
+target_include_directories(save_header_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(save_header_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(save_header_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(save_header_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(save_header_tests PRIVATE psyz)
+add_test(NAME save_header COMMAND save_header_tests)
+set_tests_properties(save_header PROPERTIES LABELS unit)
+
 add_test(NAME car_prices COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
 
