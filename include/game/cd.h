@@ -20,6 +20,16 @@ static inline int CdAudioRequestsIdle(
     return trackPending < 0 && commandPending == CD_COMMAND_NONE;
 }
 
+static inline int CdTrackHasLoopPoint(s32 firstLoopPoint, s32 loopPoint) {
+    return firstLoopPoint < loopPoint;
+}
+
+static inline int CdPlaybackPassedLoopPoint(
+    s32 firstLoopPoint, s32 loopPoint, s32 elapsed) {
+    return CdTrackHasLoopPoint(firstLoopPoint, loopPoint) &&
+           elapsed >= loopPoint;
+}
+
 extern u8 g_CdVolume;
 /*
  * CD-DA (music) front end. Nothing here talks to the drive directly: each call

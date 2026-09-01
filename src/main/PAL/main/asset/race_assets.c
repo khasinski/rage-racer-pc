@@ -3,6 +3,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/cd.h"
+#include "game/track_camera_internal.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
 

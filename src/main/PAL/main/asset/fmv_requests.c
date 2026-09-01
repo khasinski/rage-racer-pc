@@ -2,6 +2,7 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
+#include "game/track_camera_internal.h"
 #include "rage/track_asset_identity.h"
 
 

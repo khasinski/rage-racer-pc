@@ -1,0 +1,49 @@
+#include "game/race.h"
+#include "game/track_camera_internal.h"
+
+#include <stddef.h>
+#include <stdio.h>
+
+s16 g_GrandPrixSeries;
+GameTrackCameraNode *g_TrackCameras;
+
+typedef struct CameraTableFixture {
+    TrackCameraTable table;
+    GameTrackCameraNode defaultCamera;
+    GameTrackCameraNode firstSeriesCamera;
+    GameTrackCameraNode secondSeriesCamera;
+} CameraTableFixture;
+
+#define CHECK(condition)                                                       \
+    do {                                                                       \
+        if (!(condition)) {                                                    \
+            fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__,   \
+                    #condition);                                               \
+            return 1;                                                          \
+        }                                                                      \
+    } while (0)
+
+int main(void) {
+    CameraTableFixture fixture = {0};
+
+    fixture.table.defaultOffset = offsetof(CameraTableFixture, defaultCamera);
+    fixture.table.seriesOffset[0] =
+        offsetof(CameraTableFixture, firstSeriesCamera);
+    fixture.table.seriesOffset[1] =
+        offsetof(CameraTableFixture, secondSeriesCamera);
+
+    g_GrandPrixSeries = 1;
+    SelectTrackCameraTable(&fixture, 0);
+    CHECK(g_TrackCameras == &fixture.defaultCamera);
+
+    g_GrandPrixSeries = 0;
+    SelectTrackCameraTable(&fixture, 1);
+    CHECK(g_TrackCameras == &fixture.firstSeriesCamera);
+
+    g_GrandPrixSeries = 4;
+    SelectTrackCameraTable(&fixture, 1);
+    CHECK(g_TrackCameras == &fixture.secondSeriesCamera);
+
+    puts("track camera table selection tests passed");
+    return 0;
+}

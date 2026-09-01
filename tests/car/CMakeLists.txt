@@ -25,6 +25,25 @@ add_test(
 set_tests_properties(player_car_interior_aliases PROPERTIES LABELS functional)
 
 if(TARGET rage-host-state)
+add_executable(select_track_camera_table_tests
+    select_track_camera_table_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/select_track_camera_table.c)
+target_include_directories(select_track_camera_table_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(select_track_camera_table_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(select_track_camera_table_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(select_track_camera_table_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME select_track_camera_table COMMAND select_track_camera_table_tests)
+set_tests_properties(select_track_camera_table PROPERTIES LABELS unit)
+
 add_executable(track_camera_tests
     track_camera_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_camera.c

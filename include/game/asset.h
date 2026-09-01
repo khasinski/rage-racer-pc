@@ -467,7 +467,6 @@ void RegisterModelBank(ModelBankHeader *base, s32 index);
 void RegisterCourseModels(CourseModelAssetHeader *base);
 s32 RequestRaceStart(void);
 void ResetTrackTextureSwap(void);
-void SelectTrackCameraTable(void* block, s32 variant);
 void SetTrackCameraTable(void *table);
 void SetCourseObjects(void* table);
 void SetEnvPaletteTable(void* table);

@@ -1,7 +1,6 @@
 #include "psyq/cd.h"
 #include "game/cd.h"
 #include "game/cd_internal.h"
-#include "game/track_internal.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "psyq/snd.h"
@@ -10,15 +9,9 @@ long HostCdAudioEnded(void);
 
 
 void StepCdPauseRequest(void) {
-    s32 state;
-    s32 result;
-    s32 currentTime;
-    s32 bestTime;
-    s32 enteredTime;
+    s32 syncResult;
 
-    state = g_CdCommandStep;
-
-    switch (state) {
+    switch (g_CdCommandStep) {
     case 0:
         if (CdSync(1, 0) == 0) {
             break;
@@ -33,35 +26,32 @@ void StepCdPauseRequest(void) {
         break;
 
     case 2:
-        result = CdSync(1, 0);
-        if (result == 2) {
+        syncResult = CdSync(1, 0);
+        if (syncResult == 2) {
             g_CdCommandStep = 3;
-        } else if (result == 5) {
+        } else if (syncResult == 5) {
             g_CdCommandStep = 1;
         }
         break;
 
     case 3:
+    {
+        const s32 loopPoint =
+            CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
+        const s32 firstLoopPoint = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
+        s32 elapsed;
+
         g_CdTrackElapsedLoc.minute = g_CdLocResult[2];
         g_CdTrackElapsedLoc.sector = 0;
         g_CdTrackElapsedLoc.second = g_CdLocResult[3];
+        elapsed = CdPosToInt_Local(&g_CdTrackElapsedLoc);
 
-        currentTime = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
-        bestTime = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
-        if (bestTime < currentTime) {
-            enteredTime = CdPosToInt_Local(&g_CdTrackElapsedLoc);
-            currentTime = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
-            if (enteredTime >= currentTime) {
-                g_CdRestartOnResume = 1;
-            } else {
-                g_CdRestartOnResume = 0;
-            }
-        } else {
-            g_CdRestartOnResume = 0;
-        }
+        g_CdRestartOnResume =
+            CdPlaybackPassedLoopPoint(firstLoopPoint, loopPoint, elapsed);
 
         g_CdCommandStep = 4;
         /* fallthrough */
+    }
 
     case 4:
         if (CdControl(9, 0, 0) != 0) {
@@ -70,10 +60,10 @@ void StepCdPauseRequest(void) {
         break;
 
     case 5:
-        result = CdSync(1, 0);
-        if (result == 2) {
+        syncResult = CdSync(1, 0);
+        if (syncResult == 2) {
             g_CdCommandStep = 6;
-        } else if (result == 5) {
+        } else if (syncResult == 5) {
             g_CdCommandStep = 4;
         }
         break;
@@ -86,13 +76,10 @@ void StepCdPauseRequest(void) {
 }
 
 void InitCdAudio(void) {
-    u8 *status;
-
     SsSetSpuInputAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
-    status = &g_CdModeParam;
-    *status = 7;
-    CdControl(0xE, status, 0);
+    g_CdModeParam = 7;
+    CdControl(0xE, &g_CdModeParam, 0);
     BuildCdTrackTable();
 
     g_CdTrackPending = -1;
@@ -108,9 +95,6 @@ void InitCdAudio(void) {
 }
 
 void TickCdAudio(void) {
-    s32 temp;
-    s32 value;
-
     if (g_CdTrackPending < 0) {
         switch (g_CdCommandPending) {
         case CD_COMMAND_NONE:
@@ -139,9 +123,12 @@ void TickCdAudio(void) {
         if (g_SceneId == 0x1C) {
             g_CdTrackEnded = 1;
         } else {
-            temp = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
-            value = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
-            if (value < temp) {
+            const s32 loopPoint =
+                CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
+            const s32 firstLoopPoint =
+                CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
+
+            if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
                 g_CdTrackStep = 4;
                 g_CdCommandPending = CD_COMMAND_PLAY;
                 g_CdCommandStep = 0;
@@ -151,22 +138,4 @@ void TickCdAudio(void) {
     }
 
     StepCdVolumeFade();
-}
-
-
-void SelectTrackCameraTable(void *block, s32 variant) {
-    TrackCameraTable *table = block;
-    s32 offset;
-
-    if (variant != 0) {
-        if (g_GrandPrixSeries != 0) {
-            offset = table->seriesOffset[1];
-        } else {
-            offset = table->seriesOffset[0];
-        }
-    } else {
-        offset = table->defaultOffset;
-    }
-
-    g_TrackCameras = ResolveTrackCameraOffset(table, offset);
 }
