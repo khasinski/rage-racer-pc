@@ -463,7 +463,6 @@ void InstallTrackEventData(void* eventData);
 void InstallTrackPoints(void* trackData);
 void LoadCourseAssets(void);
 void LoadGrandPrixScreen(void);
-s32 PollAudioSlotLoad(void);
 void RegisterModelBank(ModelBankHeader *base, s32 index);
 void RegisterCourseModels(CourseModelAssetHeader *base);
 s32 RequestRaceStart(void);

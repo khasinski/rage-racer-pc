@@ -94,11 +94,6 @@ extern s32 g_PrizeCountStep; /* +0x20 */
  * of this table. Six slots. */
 extern s16 g_SoundSlotTone[][2];
 
-typedef union SoundToneTableAddress {
-    s32 value;
-    s16 *pointer;
-} SoundToneTableAddress;
-
 /*
  * Indexed effect table in rodata at g_IndexedEffects: three entries, twelve bytes
  * each, selected by SetIndexedEffectVoice (index clamped to 0..2). The old

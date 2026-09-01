@@ -2,10 +2,26 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
+static s16 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
+                             s32 spuAddress) {
+    s16 vabId = SsVabOpenHeadSticky(header, -1, spuAddress);
+
+    if (vabId == -1) {
+        printf("%s", g_MsgVabOpenHeadError);
+        BiosExit(1);
+    }
+
+    vabId = SsVabTransBody(body, vabId);
+    if (vabId == -1) {
+        printf("%s", g_MsgVabTransBodyError);
+        BiosExit(1);
+    }
+
+    g_SoundScale.vabIds[slot] = vabId;
+    return vabId;
+}
 
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
-    s16 vabId;
-
     if (slot == 3) {
         return (s16)StartVabTransferWithTable(header, body, table);
     }
@@ -14,36 +30,22 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     }
 
     g_AudioLoadSlot = slot;
-    g_SoundScale.vabIds[slot] = SsVabOpenHeadSticky(header, -1, g_VabSpuAddress[slot]);
-    /* Reading the slot back is what keeps the opened id in a register: the
-       store is a halfword, so the reload is folded into a sign-extend of the
-       call result and that value is still there to hand to SsVabTransBody. */
-    vabId = g_SoundScale.vabIds[slot];
-    if (vabId == -1) {
-        printf("%s", g_MsgVabOpenHeadError);
-        BiosExit(1);
-    }
-
-    g_SoundScale.vabIds[slot] = SsVabTransBody(body, vabId);
-    if (g_SoundScale.vabIds[slot] == -1) {
-        printf("%s", g_MsgVabTransBodyError);
-        BiosExit(1);
-    }
+    TransferVabToSlot(slot, header, body, g_VabSpuAddress[slot]);
 
     g_VabTransferDone = SsVabTransCompleted(0);
     return g_VabTransferDone;
 }
 
 s32 PollAudioSlotLoad(void) {
-    s32 completed;
+    s16 completed;
     s32 slot;
 
     completed = SsVabTransCompleted(0);
-    g_VabTransferDone = (s16)completed;
+    g_VabTransferDone = completed;
 
-    if ((s16)completed != 0) {
+    if (completed != 0) {
         slot = g_AudioLoadSlot;
-        g_AudioLoadedSlotMask |= (s16)(1 << slot);
+        g_AudioLoadedSlotMask |= 1 << slot;
 
         if (slot == 0) {
             g_SoundCueBank = 1;
@@ -54,7 +56,7 @@ s32 PollAudioSlotLoad(void) {
         }
     }
 
-    return (s16)g_VabTransferDone;
+    return completed;
 }
 
 s32 CloseVabOnlyAudioSlot(s32 slot) {
@@ -64,7 +66,7 @@ s32 CloseVabOnlyAudioSlot(s32 slot) {
         return 0;
     }
 
-    g_AudioLoadedSlotMask ^= bit;
+    g_AudioLoadedSlotMask &= ~bit;
     SsUtSetReverbDepth(0, 0);
     _SsVmInit(0);
     SsVabClose(g_SoundScale.vabIds[slot]);
@@ -86,31 +88,8 @@ s32 CloseLoadedAudioSlots(void) {
 }
 
 s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
-    /* $18 (s2) is the one thing this shape cannot reach on its own. The slot
-       pointer and `table` both want a callee-saved register, both have three
-       references, and gcc's priority is refs/live-length: 3/24 for the pointer
-       against 3/23 for `table`, so `table` is allocated first and takes s2.
-       Retail has the pointer in s2, which needs the pointer to win. Nothing in
-       the C decides that here -- the two live ranges are fixed by the call
-       sequence, and every shape tried (pointer vs array vs global, local copies
-       of every parameter, declaration order, the check reading the pointer or
-       the global or a second local) leaves 23 against 24 unchanged. */
-    s16 *vabIdPtr = &g_SoundScale.vabIds[3];
-    s16 vabId;
-
     g_AudioLoadSlot = 3;
-    *vabIdPtr = SsVabOpenHeadSticky(header, -1, g_VabSpuAddress[3]);
-    vabId = *vabIdPtr;
-    if (vabId == -1) {
-        printf("%s", g_MsgVabOpenHeadError);
-        BiosExit(1);
-    }
-
-    *vabIdPtr = SsVabTransBody(body, vabId);
-    if (*vabIdPtr == -1) {
-        printf("%s", g_MsgVabTransBodyError);
-        BiosExit(1);
-    }
+    TransferVabToSlot(3, header, body, g_VabSpuAddress[3]);
 
     if (table != 0) {
         LoadAudioParameterTable(table);
@@ -122,31 +101,14 @@ s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
 }
 
 s32 LoadExtraVabSlotWithTable(u8 *header, u8 *body, u16 *table) {
-    /* Same allocation tie as StartVabTransferWithTable: see the note there. */
-    s16 *vabIdPtr = &g_SoundScale.vabIds[3];
-    s16 vabId;
-    s32 flags;
-
-    *vabIdPtr = SsVabOpenHeadSticky(header, -1, 0x6A000);
-    vabId = *vabIdPtr;
-    if (vabId == -1) {
-        printf("%s", g_MsgVabOpenHeadError);
-        BiosExit(1);
-    }
-
-    *vabIdPtr = SsVabTransBody(body, vabId);
-    if (*vabIdPtr == -1) {
-        printf("%s", g_MsgVabTransBodyError);
-        BiosExit(1);
-    }
+    TransferVabToSlot(3, header, body, 0x6A000);
 
     SsVabTransCompleted(1);
     if (table != 0) {
         LoadAudioParameterTable(table);
     }
 
-    flags = g_AudioLoadedSlotMask;
     g_EngineSoundState.extraVabLoaded = 1;
-    g_AudioLoadedSlotMask = flags | 0x20;
+    g_AudioLoadedSlotMask |= 0x20;
     return 0;
 }

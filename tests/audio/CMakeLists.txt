@@ -153,6 +153,26 @@ target_link_libraries(engine_sound_runtime_tests PRIVATE psyz)
 add_test(NAME engine_sound_runtime COMMAND engine_sound_runtime_tests)
 set_tests_properties(engine_sound_runtime PROPERTIES LABELS unit)
 
+add_executable(audio_slot_loading_tests
+    audio_slot_loading_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_slot_loading.c)
+target_include_directories(audio_slot_loading_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(audio_slot_loading_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(audio_slot_loading_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(audio_slot_loading_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(audio_slot_loading_tests PRIVATE psyz)
+add_test(NAME audio_slot_loading COMMAND audio_slot_loading_tests)
+set_tests_properties(audio_slot_loading PROPERTIES LABELS unit)
+
 add_executable(update_effect_voice_states_tests
     update_effect_voice_states_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/update_effect_voice_states.c)
