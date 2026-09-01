@@ -3,14 +3,6 @@
 #include "game/audio.h"
 #include "game/state.h"
 
-/* The pen colour, reached as the slot it names. */
-static TeamLogoColorSlot *GetTeamLogoPenSlot(void) {
-    TeamLogoColorAddress address;
-
-    address.index = &g_TeamLogoPenColor;
-    return address.slot;
-}
-
 /* Four canvas pixels share a halfword, low nibble first. The editor can pan
  * the view, so keep the retail division rule for negative coordinates. */
 static u16 *TeamLogoCanvasPixelWord(s32 x, s32 y, s32 *shift) {
@@ -141,7 +133,7 @@ void EditLogoCanvas(void) {
         if (pressed & PAD_CIRCLE) {
             PlaySoundCue(4);
         }
-        PaintTeamLogoBrush(GetTeamLogoPenSlot()->low);
+        PaintTeamLogoBrush((u16)g_TeamLogoPenColor);
     }
     if (held & PAD_SQUARE) {
         if (pressed & PAD_SQUARE) {

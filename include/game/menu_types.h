@@ -16,37 +16,13 @@ typedef struct RaceRecord {
     s16 unused;
 } RaceRecord;
 
-typedef s32 RaceRecordOffset;
-
-typedef union RaceRecordAddress {
-    RaceRecordOffset recordOffset;
-    uintptr_t value;
-    RaceRecord *pointer;
-    s32 *wordPointer;
-    u16 *halfwordPointer;
-    u8 *bytePointer;
-} RaceRecordAddress;
-
 typedef struct TeamLogoSample {
     u16 clut[2][16];
     u16 canvas[64][16];
 } TeamLogoSample;
 
-typedef s32 TeamLogoSampleOffset;
-
-typedef union TeamLogoSampleAddress {
-    TeamLogoSampleOffset offset;
-    uintptr_t value;
-    void *data;
-    TeamLogoSample *samplePointer;
-    u16 *halfwordPointer;
-} TeamLogoSampleAddress;
-
 static inline TeamLogoSample *GetTeamLogoSample(void *data) {
-    TeamLogoSampleAddress address;
-
-    address.data = data;
-    return address.samplePointer;
+    return (TeamLogoSample *)data;
 }
 
 typedef union TeamLogoPixelWord {
@@ -61,41 +37,12 @@ typedef union TeamLogoCanvas {
     u32 words[64][8];
 } TeamLogoCanvas;
 
-typedef union TeamLogoCanvasAddress {
-    uintptr_t value;
-    u8 *bytePointer;
-    u32 *wordPointer;
-} TeamLogoCanvasAddress;
-
-static inline u8 *GetTeamLogoCanvasBytes(u32 *words) {
-    TeamLogoCanvasAddress address;
-
-    address.wordPointer = words;
-    return address.bytePointer;
-}
-
 typedef struct PaintColorTable {
     Rgb colors[18];
 } PaintColorTable;
 
-typedef union PaintColorAddress {
-    uintptr_t value;
-    u8 *bytes;
-    Rgb *pointer;
-} PaintColorAddress;
-
 typedef s32 TeamLogoCoordinate;
 typedef s32 TeamLogoColorIndex;
-
-typedef union TeamLogoColorSlot {
-    s32 value;
-    u16 low;
-} TeamLogoColorSlot;
-
-typedef union TeamLogoColorAddress {
-    TeamLogoColorIndex *index;
-    TeamLogoColorSlot *slot;
-} TeamLogoColorAddress;
 
 typedef struct TeamLogoClutPos {
     s16 x;

@@ -20,7 +20,6 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     s32 xFocusOffset;
     s32 sineColor;
     s32 xOffset;
-    s32 i;
     s32 colorIndex;
     s32 next;
     PaintColorTable *srcTable;
@@ -75,17 +74,13 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
                         (u8)0xB4, (u8)0xB4, (u8)0xB4, (u8)0xFF);
 
         xOffset = 0;
-        i = 0;
         colorIndex = 1;
         do {
-            PaintColorAddress colorAddress;
+            const Rgb *paletteColor = &localTable.colors[xOffset];
 
-            colorAddress.pointer = localTable.colors;
-            colorAddress.bytes += i;
             DrawSolidRect(ot, (s16)(xBaseHalf + colorIndex), (s16)(yBase + 0x210), 8,
-                          0x10, colorAddress.pointer->r, colorAddress.pointer->g,
-                          colorAddress.pointer->b, 0xFF);
-            i += 3;
+                          0x10, paletteColor->r, paletteColor->g,
+                          paletteColor->b, 0xFF);
             colorIndex += 8;
             xOffset++;
         } while (xOffset < MENU_PAINT_COLOR_COUNT);
