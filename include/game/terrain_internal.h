@@ -36,17 +36,6 @@ typedef struct SkyRenderWork {
     s32 mirrorFlag;
 } SkyRenderWork;
 
-typedef struct SkyClipBounds {
-    s16 xMinTop;
-    s16 xMaxTop;
-    s16 xMinBottom;
-    s16 xMaxBottom;
-    s16 yEdge0;
-    s16 yEdge1;
-    s16 yEdge2;
-    s16 yEdge3;
-} SkyClipBounds;
-
 extern SkyTileUV g_SkyTileUV[];
 
 #endif

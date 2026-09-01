@@ -459,6 +459,75 @@ static u8 *DrawTexturedSkyGrid(SkyRenderWork *work,
     return packetCursor;
 }
 
+static s32 SkyQuadIntersectsScreen(const s32 screenX[4]) {
+    s32 hasPointAtOrRightOfLeftEdge = 0;
+    s32 hasPointLeftOfRightEdge = 0;
+
+    for (s32 corner = 0; corner < 4; corner++) {
+        hasPointAtOrRightOfLeftEdge |= screenX[corner] >= 0;
+        hasPointLeftOfRightEdge |= screenX[corner] < 320;
+    }
+
+    return hasPointAtOrRightOfLeftEdge && hasPointLeftOfRightEdge;
+}
+
+static u8 *DrawHorizonTileStrip(SkyRenderWork *work,
+                                const SkyBandSetup *band,
+                                u8 *packetCursor) {
+    s32 panelX = band->lowerPanelXFixed;
+    s32 panelY = band->coordinateAccumulator;
+
+    for (s32 column = 0; column < 8; column++) {
+        s32 nextPanelX = panelX + band->columnStepX;
+        s32 nextPanelY = panelY + band->columnStepY;
+        s32 screenX[4] = {
+            GameRoundTerrainCoordinate(panelX),
+            GameRoundTerrainCoordinate(nextPanelX),
+            GameRoundTerrainCoordinate(panelX + band->rowStepX),
+            GameRoundTerrainCoordinate(nextPanelX + band->rowStepX),
+        };
+
+        if (SkyQuadIntersectsScreen(screenX)) {
+            POLY_FT4 *quad = (POLY_FT4 *)packetCursor;
+            s32 tileIndex = g_SkyTileMap[0]
+                                            [(band->textureColumn + column) & 0xF];
+            const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
+            GpuUvAddress uvAddress;
+
+            SetPolyFT4(quad);
+            SetShadeTex(quad, 0);
+            quad->tpage = 0x18;
+            uvAddress.bytes = &quad->u0;
+            *uvAddress.packed = tileUv->corner[0].packed;
+            uvAddress.bytes = &quad->u1;
+            *uvAddress.packed = tileUv->corner[1].packed;
+            uvAddress.bytes = &quad->u2;
+            *uvAddress.packed = tileUv->corner[2].packed;
+            uvAddress.bytes = &quad->u3;
+            *uvAddress.packed = tileUv->corner[3].packed;
+            quad->x0 = screenX[0];
+            quad->x1 = screenX[1];
+            quad->x2 = screenX[2];
+            quad->x3 = screenX[3];
+            quad->y0 = GameRoundTerrainCoordinate(panelY);
+            quad->y1 = GameRoundTerrainCoordinate(nextPanelY);
+            quad->y2 = GameRoundTerrainCoordinate(panelY + band->rowStepY);
+            quad->y3 = GameRoundTerrainCoordinate(nextPanelY + band->rowStepY);
+            quad->r0 = 0x80;
+            quad->g0 = 0x80;
+            quad->b0 = 0x80;
+            quad->clut = 0x798E;
+            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
+            packetCursor += sizeof(*quad);
+        }
+
+        panelX = nextPanelX;
+        panelY = nextPanelY;
+    }
+
+    return packetCursor;
+}
+
 void DrawSkyBackground(void)
 {
   SkyRenderWork skyWork;
@@ -474,7 +543,6 @@ void DrawSkyBackground(void)
   s32 textureColumn;
   s32 bandOriginXFixed;
   s32 bandOriginYFixed;
-  s32 horizonTopY;
   s32 screenX0;
   s32 screenX1;
   s32 screenX2;
@@ -511,10 +579,8 @@ void DrawSkyBackground(void)
     s32 screenY2;
     s32 screenY1;
     s32 screenY0;
-    s32 gridRow;
     s32 leftXWorkFixed;
     s32 rightXWorkFixed;
-  SkyTileUV *tileUv;
   u8 *nextPacket;
   RenderBufferAddress packetAddress;
     if (g_SkyRowBase != 0)
@@ -539,166 +605,22 @@ void DrawSkyBackground(void)
     }
     else
     {
-      SkyClipBounds clip;
       s32 rotatedBandY;
-      POLY_FT4 *quad;
-      GpuUvAddress uvAddress;
       s32 bandRightX;
-      s32 stripFarX;
-      s32 stripRightX;
-      s32 stripLowerY;
-      s32 horizonBottomY;
       s32 lowestY;
       s32 upperBandXFixed;
       s32 bandNextY;
-      panelYFixed = coordinateAccumulator;
       {
-        panelXFixed = lowerPanelXFixed;
-        horizonTopY = GameRoundTerrainCoordinate(panelYFixed);
-        horizonBottomY = GameRoundTerrainCoordinate(panelYFixed + rowStepY);
-        lowestY = 0xF0;
-        clip.xMinTop = (clip.xMinBottom = 0x140);
-        clip.xMaxBottom = 0;
-        clip.xMaxTop = 0;
-        clip.yEdge0 = (columnStepY > 0) ? (0xF0) : (-0xF0);
-        clip.yEdge1 = (columnStepY > 0) ? (-0xF0) : (0xF0);
-        clip.yEdge2 = (columnStepY > 0) ? (0xF0) : (-0xF0);
-        clip.yEdge3 = (columnStepY > 0) ? (-0xF0) : (0xF0);
-        gridRow = 0;
-        packetAddress.bytes = packetCursor;
-        quad = packetAddress.polyFT4;
-        do
-        {
-          screenX0 = GameRoundTerrainCoordinate(panelXFixed);
-          stripRightX = panelXFixed + columnStepX;
-          screenX1 = GameRoundTerrainCoordinate(stripRightX);
-          screenX2 = GameRoundTerrainCoordinate(panelXFixed + rowStepX);
-          stripFarX = GameRoundTerrainCoordinate(stripRightX + rowStepX);
-          screenX3 = stripFarX;
-          if (((((screenX0 >= 0) || (screenX1 >= 0)) || (screenX2 >= 0)) || (stripFarX >= 0)) && ((((screenX0 < 0x140) || (screenX1 < 0x140)) || (screenX2 < 0x140)) || (screenX3 < 0x140)))
-          {
-            screenY0 = GameRoundTerrainCoordinate(panelYFixed);
-            stripLowerY = panelYFixed + columnStepY;
-            screenY1 = GameRoundTerrainCoordinate(stripLowerY);
-            screenY2 = GameRoundTerrainCoordinate(panelYFixed + rowStepY);
-            screenY3 = GameRoundTerrainCoordinate(stripLowerY + rowStepY);
-            if (horizonTopY < screenY0)
-            {
-              horizonTopY = screenY0;
-            }
-            if (horizonTopY < screenY1)
-            {
-              horizonTopY = screenY1;
-            }
-            if (screenY2 < horizonBottomY)
-            {
-              horizonBottomY = screenY2;
-            }
-            if (screenY3 < horizonBottomY)
-            {
-              horizonBottomY = screenY3;
-            }
-            if (screenY2 < screenY3)
-            {
-              if (screenY2 < lowestY)
-              {
-                lowestY = screenY2;
-              }
-            }
-            else
-              if (screenY3 < lowestY)
-            {
-              lowestY = screenY3;
-            }
-            if (screenX0 < clip.xMinTop)
-            {
-              clip.xMinTop = screenX0;
-            }
-            if (screenX2 < clip.xMinBottom)
-            {
-              clip.xMinBottom = screenX2;
-            }
-            if (clip.xMaxTop < screenX1)
-            {
-              clip.xMaxTop = screenX1;
-            }
-            if (clip.xMaxBottom < screenX3)
-            {
-              clip.xMaxBottom = screenX3;
-            }
-            if (0 < columnStepY)
-            {
-              if (screenY0 < clip.yEdge0)
-              {
-                clip.yEdge0 = screenY0;
-              }
-              if (clip.yEdge1 < screenY1)
-              {
-                clip.yEdge1 = screenY1;
-              }
-              if (screenY2 < clip.yEdge2)
-              {
-                clip.yEdge2 = screenY2;
-              }
-              if (clip.yEdge3 < screenY3)
-              {
-                clip.yEdge3 = screenY3;
-              }
-            }
-            else
-            {
-              if (clip.yEdge0 < screenY0)
-              {
-                clip.yEdge0 = screenY0;
-              }
-              if (screenY1 < clip.yEdge1)
-              {
-                clip.yEdge1 = screenY1;
-              }
-              if (clip.yEdge2 < screenY2)
-              {
-                clip.yEdge2 = screenY2;
-              }
-              if (screenY3 < clip.yEdge3)
-              {
-                clip.yEdge3 = screenY3;
-              }
-            }
-            {
-              s32 lateTileIndex = g_SkyTileMap[0][(textureColumn + gridRow) & 0xF];
-              tileUv = &g_SkyTileUV[lateTileIndex];
-            }
-            SetPolyFT4(packetCursor);
-            SetShadeTex(packetCursor, 0);
-            quad->tpage = 0x18;
-            uvAddress.bytes = &quad->u0;
-            *uvAddress.packed = tileUv->corner[0].packed;
-            packetCursor += sizeof(POLY_FT4);
-            uvAddress.bytes = &quad->u1;
-            *uvAddress.packed = tileUv->corner[1].packed;
-            uvAddress.bytes = &quad->u2;
-            *uvAddress.packed = tileUv->corner[2].packed;
-            uvAddress.bytes = &quad->u3;
-            *uvAddress.packed = tileUv->corner[3].packed;
-            quad->x0 = screenX0;
-            quad->x1 = screenX1;
-            quad->x2 = screenX2;
-            quad->x3 = screenX3;
-            quad->r0 = 0x80;
-            quad->g0 = 0x80;
-            quad->b0 = 0x80;
-            quad->y0 = screenY0;
-            quad->y1 = screenY1;
-            quad->y2 = screenY2;
-            quad->y3 = screenY3;
-            quad->clut = 0x798E;
-            AddPrim(&work->orderingTable[SKY_OT_NEAR], quad++);
-          }
-          gridRow += 1;
-          panelXFixed += columnStepX;
-          panelYFixed += columnStepY;
-        }
-        while (gridRow < 8);
+        SkyBandSetup band;
+
+        band.lowerPanelXFixed = lowerPanelXFixed;
+        band.coordinateAccumulator = coordinateAccumulator;
+        band.columnStepX = columnStepX;
+        band.columnStepY = columnStepY;
+        band.rowStepX = rowStepX;
+        band.rowStepY = rowStepY;
+        band.textureColumn = textureColumn;
+        packetCursor = DrawHorizonTileStrip(work, &band, packetCursor);
       }
       panelXFixed = bandOriginXFixed;
       panelYFixed = bandOriginYFixed;
