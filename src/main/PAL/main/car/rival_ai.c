@@ -9,153 +9,183 @@ typedef union RivalCueCooldownAddress {
     u16 *unsignedCounter;
 } RivalCueCooldownAddress;
 
+/*
+ * Slot 11 holds the player; the rivals fill 0 to 10. Outside the race scene
+ * the player is not on the road to be avoided, so the walk stops before it.
+ */
+enum {
+    TRAFFIC_PLAYER_SLOT = 0xB,
+    TRAFFIC_SLOT_COUNT = 12,
+    TRAFFIC_RACE_SCENE = 0xC,
+    /* Half the width of the lane a car watches directly in front of itself. */
+    TRAFFIC_LANE_HALF_WIDTH = 0x30,
+    /* Beyond this to the side is not in the way, but is close enough to stop
+     * this car steering that way. */
+    TRAFFIC_SHOULDER = 0x40,
+    /* How far back down the road another car still counts as nearby. */
+    TRAFFIC_BEHIND = 0x400,
+    /* Where the rival aims once it has picked a side. */
+    TRAFFIC_TARGET_OFFSET = 0x50,
+};
+
+/*
+ * Decides which way a rival goes round the traffic in front of it.
+ *
+ * Every other car that is ahead and close enough to matter falls into one of
+ * three buckets by where it sits across the road: to the left, in front, or to
+ * the right. Each contributes its nearness, so a car about to be reached
+ * weighs more than one at the edge of sight, and the emptiest bucket is the
+ * side the rival steers towards. Two separate counts watch the ground just off
+ * either shoulder, and a side with anything on it is not chosen however empty
+ * its bucket looks. Being hemmed in on all three also damps how hard this car
+ * is allowed to accelerate.
+ *
+ * Nothing here moves the car: it leaves behind an offset to aim at and a step
+ * to get there by, and the steering does the rest.
+ */
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
+    /* The two views are the same memory, so which one a field is reached
+     * through makes no difference; the recovered code used both. */
     GameCarAiBlock *state = GetCarAiBlock(car);
-    s32 acc8 = 0;
-    s32 acc9 = 0;
-    s32 i = 0;
-    s32 k11 = 0xB;
-    s32 carProgress;
-    s32 carLateralOffset;
-    s32 carA4low;
-    s32 track;
-    s32 t6;
-    s32 lateralMin;
-    s32 lateralMax;
-    s32 trackMinus;
-    s32 total;
-    s32 sums[3];
+    s32 trackLength = g_TrackLength;
+    s32 progress = car->trackProgress;
+    s32 lateralOffset = car->trackLateralOffset;
+    s32 speed = (u16)car->speed;
+    /* The faster this car is going, the further ahead it looks. */
+    s32 ownLookahead = car->speed * 2 + 0xC00;
+    s32 laneLeft = (s16)(lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
+    s32 laneRight = (s16)(lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
+    s32 behindLine = trackLength - TRAFFIC_BEHIND;
+    /* Left, in front, right. */
+    s32 lane[3];
+    s32 blockingLeft = 0;
+    s32 blockingRight = 0;
+    s32 crowding;
+    s32 slot;
 
-    carProgress = car->trackProgress;
-    carLateralOffset = car->trackLateralOffset;
-    carA4low = (u16)car->speed;
-    car->avoidanceStep = 0;
-    car->nearbyCarCount = 0;
-    sums[2] = 0;
-    sums[1] = 0;
-    sums[0] = 0;
-    track = g_TrackLength;
-    {
-        s32 tmp = car->speed * 2;
-        t6 = tmp + 0xC00;
-    }
-    lateralMin = (s16)(carLateralOffset - 0x30);
-    lateralMax = (s16)(carLateralOffset + 0x30);
-    trackMinus = track - 0x400;
+    lane[0] = lane[1] = lane[2] = 0;
+    state->avoidanceStep = 0;
+    state->nearbyCarCount = 0;
 
-    for (; i < 12; i++) {
-        s32 otherLateralOffset;
-        s32 otherA4;
-        s32 a2;
-        s32 t1;
-        s32 diff;
-        s32 angleDiff;
-        s32 angleSaved;
-        s16 bucket;
-        s32 val;
+    for (slot = 0; slot < TRAFFIC_SLOT_COUNT; slot++) {
+        s32 otherOffset;
+        s32 otherSpeed;
+        s32 otherProgress;
+        s32 alreadyAvoiding;
+        /* How far ahead to look for this particular car. */
+        s32 lookahead = ownLookahead;
+        s32 sideways;
+        s32 gap;
 
-        if (g_SceneId != 0xC && i == k11) {
+        if (g_SceneId != TRAFFIC_RACE_SCENE && slot == TRAFFIC_PLAYER_SLOT)
             break;
+        if (slot == carIndex) continue;
+
+        if (slot == TRAFFIC_PLAYER_SLOT) {
+            otherProgress = g_PlayerCar.trackProgress + trackLength;
+            otherOffset = g_PlayerCar.trackLateralOffset;
+            /* The four cars at the front of the field are not told how fast
+             * the player is going, so they never treat it as pulling away. */
+            otherSpeed = carIndex < 4 ? 0 : (u16)g_PlayerCar.speed;
+            alreadyAvoiding = 0;
+            /* The player is watched over a range of its own, and that range
+             * shrinks as the player speeds up rather than growing. */
+            lookahead = 0x1800 - g_PlayerCar.speed * 2;
+        } else {
+            GameCarRuntime *other = &g_Cars[slot];
+            if (other->activeFlag == -1) continue;
+            otherProgress = other->trackProgress + trackLength;
+            otherOffset = other->trackLateralOffset;
+            otherSpeed = (u16)other->speed;
+            alreadyAvoiding = (u16)state->avoidanceActive;
         }
-        if (i == carIndex) {
+
+        sideways = otherOffset - lateralOffset;
+        gap = (otherProgress - progress) % trackLength;
+
+        if (gap <= 0 || gap >= lookahead) {
+            /* Behind, but not far behind. */
+            if (behindLine < gap) state->nearbyCarCount++;
             continue;
         }
-        if (i == k11) {
-            s32 op = g_PlayerCar.trackProgress;
-            a2 = op + track;
-            otherLateralOffset = g_PlayerCar.trackLateralOffset;
-            if (carIndex < 4) {
-                otherA4 = 0;
-            } else {
-                otherA4 = (u16)g_PlayerCar.speed;
+
+        state->nearbyCarCount++;
+
+        if (laneLeft < otherOffset && otherOffset < laneRight) {
+            /*
+             * A car that is pulling away is not in the way. One already being
+             * avoided stays in the way even if it is, so that a rival part way
+             * round something does not change its mind halfway.
+             */
+            s32 closing = otherSpeed - speed;
+            if (!((s16)closing > 0 && alreadyAvoiding == 0)) {
+                /*
+                 * The lane test above holds the offset inside the lane, so
+                 * this always picks 0, 1 or 2. The recovered code carried a
+                 * correction for a negative index that nothing can reach:
+                 * measured over the sweep and over all four courses, the value
+                 * stayed between 1 and 95 of a possible 0 to 95.
+                 */
+                s32 bucket = (sideways + TRAFFIC_LANE_HALF_WIDTH) >> 5;
+                state->avoidanceActive = 1;
+                if (slot == TRAFFIC_PLAYER_SLOT) {
+                    /* The player counts full weight until it is inside 0xC00,
+                     * and nearness only tells beyond that. */
+                    lane[bucket] += gap < 0xC00 ? 0xC00 - gap : 0xC00;
+                } else {
+                    lane[bucket] += lookahead - gap;
+                }
             }
-            t1 = 0;
-            t6 = 0x1800 - (g_PlayerCar.speed * 2);
-        } else {
-            GameCarRuntime *other = &g_Cars[i];
-            s32 op;
-            if (other->activeFlag == -1) continue;
-            otherLateralOffset = other->trackLateralOffset;
-            otherA4 = (u16)other->speed;
-            op = other->trackProgress;
-            a2 = op + track;
-            t1 = (u16)state->avoidanceActive;
         }
 
-        angleDiff = otherLateralOffset - carLateralOffset;
-        diff = (a2 - carProgress) % track;
-        angleSaved = angleDiff;
-        
-        otherA4 -= carA4low;
-
-        if (diff > 0 && diff < t6) {
-            state->nearbyCarCount++;
-            if (lateralMin < otherLateralOffset && otherLateralOffset < lateralMax) {
-                if (!((s16)otherA4 > 0 && t1 == 0)) {
-                    state->avoidanceActive = 1;
-                    val = angleDiff + 0x30;
-                    if (val < 0) {
-                        val = angleDiff + 0x4F;
-                    }
-                    bucket = val >> 5;
-                    if (i == k11) {
-                        if (diff < 0xC00) {
-                            s32 s = sums[bucket] + 0xC00;
-                            sums[bucket] = s - diff;
-                        } else {
-                            sums[bucket] = sums[bucket] + 0xC00;
-                        }
-                    } else {
-                        sums[bucket] = (t6 - diff) + sums[bucket];
-                    }
-                }
-            }
-            if (diff < 0x200) {
-                s32 ad = (s16)angleSaved;
-                if (ad >= 0x41) {
-                    s32 s = acc9 + 0xC00;
-                    acc9 = s - diff;
-                } else if (ad < -0x40) {
-                    s32 s = acc8 + 0xC00;
-                    acc8 = s - diff;
-                }
-            }
-        } else {
-            if (trackMinus < diff) {
-                state->nearbyCarCount++;
-            }
+        /* Just off either shoulder and almost alongside: not in the way, but
+         * no room to move over either. */
+        if (gap < 0x200) {
+            if ((s16)sideways >= TRAFFIC_SHOULDER + 1)
+                blockingRight += 0xC00 - gap;
+            else if ((s16)sideways < -TRAFFIC_SHOULDER)
+                blockingLeft += 0xC00 - gap;
         }
     }
 
-    total = sums[0] + sums[1] + sums[2];
-    if (total > 0) {
-        if (acc8 == 0 && carLateralOffset >= 0x51) {
-            s32 avoidanceStrength = state->avoidanceActive;
-            state->avoidanceTargetOffset = -0x50;
-            state->avoidanceStep = -8 - (avoidanceStrength * 2);
-        } else if (acc9 == 0 && carLateralOffset < -0x50) {
-            s32 avoidanceStrength = state->avoidanceActive;
-            state->avoidanceTargetOffset = 0x50;
-            state->avoidanceStep = (avoidanceStrength * 2) + 8;
-        } else if (sums[0] <= sums[1] && sums[0] <= sums[2] && acc8 == 0) {
-            s32 avoidanceStrength = state->avoidanceActive;
-            state->avoidanceTargetOffset = -0x50;
-            state->avoidanceStep = -6 - (avoidanceStrength * 2);
-        } else if (sums[2] <= sums[1] && sums[2] <= sums[0] && acc9 == 0) {
-            s32 avoidanceStrength = state->avoidanceActive;
-            state->avoidanceTargetOffset = 0x50;
-            state->avoidanceStep = (avoidanceStrength * 2) + 6;
-        }
-        if (total >= 0x3E9) {
-            s32 fv = state->accelerationLimit;
-            s32 d = (fv * 15) << 1;
-            state->accelerationLimit = d / 100;
-        }
-    } else {
+    crowding = lane[0] + lane[1] + lane[2];
+    if (crowding <= 0) {
         state->avoidanceStep = 0;
         state->avoidanceActive = 0;
         state->avoidanceTargetOffset = state->aiLateralOffset;
+        state->aiLateralOffset = state->aiLateralOffset + state->avoidanceStep;
+        return;
     }
+
+    /*
+     * Already out towards one edge with nothing on the other side is reason
+     * enough to cross, and it is crossed harder than a choice made on the
+     * buckets alone. Otherwise the emptiest side wins, if it is free.
+     */
+    {
+        s32 urgency = state->avoidanceActive;
+        if (blockingLeft == 0 && lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
+            state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+            state->avoidanceStep = -8 - urgency * 2;
+        } else if (blockingRight == 0 &&
+                   lateralOffset < -TRAFFIC_TARGET_OFFSET) {
+            state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+            state->avoidanceStep = 8 + urgency * 2;
+        } else if (lane[0] <= lane[1] && lane[0] <= lane[2] &&
+                   blockingLeft == 0) {
+            state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+            state->avoidanceStep = -6 - urgency * 2;
+        } else if (lane[2] <= lane[1] && lane[2] <= lane[0] &&
+                   blockingRight == 0) {
+            state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+            state->avoidanceStep = 6 + urgency * 2;
+        }
+    }
+
+    /* Boxed in badly enough, and the car is not allowed to press on as hard.
+     * Thirty hundredths, written as fifteen doubled. */
+    if (crowding >= 0x3E9)
+        state->accelerationLimit = (s16)(state->accelerationLimit * 30 / 100);
 
     state->aiLateralOffset = state->aiLateralOffset + state->avoidanceStep;
 }

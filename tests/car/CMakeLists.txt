@@ -321,3 +321,25 @@ set_tests_properties(direct_boot_car_setup PROPERTIES LABELS e2e)
 set_tests_properties(retire_camera PROPERTIES LABELS e2e)
     set_tests_properties(retire_camera PROPERTIES TIMEOUT 165)
 endif()
+
+add_executable(traffic_avoidance_tests
+    traffic_avoidance_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ai.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(traffic_avoidance_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(traffic_avoidance_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(traffic_avoidance_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(traffic_avoidance_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(traffic_avoidance_tests PRIVATE psyz)
+add_test(NAME traffic_avoidance COMMAND traffic_avoidance_tests)
+set_tests_properties(traffic_avoidance PROPERTIES LABELS functional)
