@@ -42,6 +42,7 @@ typedef struct MemoryCardMessageRow {
 } MemoryCardMessageRow;
 
 void AdvanceSaveHeaderCounter(void);
+void RestartMemoryCard(void);
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
 void BuildSaveIconBlock(
     u8 *block,

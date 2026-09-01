@@ -200,7 +200,6 @@ typedef enum PadErrorState {
 extern PadErrorState g_PadErrorState;
 extern u16 g_PadMappingIndexSaved;
 
-void RestartMemoryCard(void);
 
 /* Declared identically by 38 translation units before this
  * header carried them. */

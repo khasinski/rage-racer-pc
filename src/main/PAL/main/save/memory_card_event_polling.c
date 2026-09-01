@@ -1,6 +1,8 @@
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 
+enum { MEMORY_CARD_POLL_TIMEOUT_TICKS = 91 };
+
 void ClearMemoryCardHwEvents(void) {
     TestEvent(g_McHwEventIoe);
     TestEvent(g_McHwEventError);
@@ -16,8 +18,7 @@ void ClearMemoryCardSwEvents(void) {
 }
 
 MemoryCardEvent PollMemoryCardHwEvent(void) {
-    MemoryCardEvent result;
-    s32 count;
+    MemoryCardEvent result = MC_EVENT_NONE;
 
     if (TestEvent(g_McHwEventIoe) == 1) {
         result = MC_EVENT_IO_COMPLETE;
@@ -32,8 +33,7 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
         result = MC_EVENT_NEW_CARD;
     }
 
-    count = g_McPollTicks++;
-    if (count >= 90) {
+    if (++g_McPollTicks >= MEMORY_CARD_POLL_TIMEOUT_TICKS) {
         result = MC_EVENT_ERROR;
     }
 
