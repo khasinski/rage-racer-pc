@@ -13,6 +13,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/save_format.h"
+#include "game/save_types.h"
 #include "psyq/kernel.h"
 
 char g_FmtString[8] __attribute__((aligned(16))) = "%s";
@@ -76,12 +77,12 @@ DirEntry g_McDirEntries[15];
 s32 g_McFadeStep;
 s32 g_McFadeLevel;
 s32 g_McStatusState;
-unsigned char g_ExtraGrandPrixCourseProgress[8] __attribute__((aligned(16)));
+CourseProgressState g_ExtraGrandPrixCourseProgress;
 s32 g_BgmVolumeSetting;
 s32 g_McPollTicks;
 s32 g_McStatusResult;
 CarEntry g_ExtraGrandPrixCars[GAME_CAR_COUNT];
-unsigned char g_GrandPrixCourseProgress[8] __attribute__((aligned(16)));
+CourseProgressState g_GrandPrixCourseProgress;
 CarEntry g_TimeAttackCars[GAME_CAR_COUNT];
 CarEntry g_GrandPrixCars[GAME_CAR_COUNT];
 s32 g_MaxClassReached[2];
