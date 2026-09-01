@@ -357,11 +357,7 @@ set_tests_properties(car_motion_handlers PROPERTIES LABELS functional)
 
 add_executable(find_track_segment_tests
     find_track_segment_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/find_track_segment.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(find_track_segment_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include

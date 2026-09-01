@@ -3,9 +3,6 @@
  *
  * The search walks outwards from a guess, alternating sides, and asks each
  * segment whether the car is inside the quad its two centreline points span.
- * It was written in the shape it was recovered in, with names like f10a and
- * cos_c, and nothing covered it.
- *
  * A ring of points with varying widths is built here rather than loaded, so
  * the sweep is repeatable and the answers do not depend on a course.
  */
@@ -14,50 +11,11 @@
 #include "game/car.h"
 #include "game/render.h"
 #include "game/track.h"
-#include "game/render_state.h"
 
 #include <stdio.h>
 #include <string.h>
 
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
-
-/*
- * The search shares a translation unit with the jump handlers, which reach
- * for the steering, the camera and the sound. None of that runs here.
- */
-GameRenderState g_RenderState;
-GameCarSpec *g_CarSpec;
-
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
-    (void)pointIndex;
-    (void)weight;
-    out[0] = out[1] = out[2] = 0;
-}
-
-s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
-    (void)pointIndex;
-    (void)weight;
-    return 0;
-}
-
-void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
-    (void)index;
-    (void)phase;
-    (void)volume;
-}
-
-void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z, int32_t pitch,
-                              int32_t yaw, int32_t roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
-
-MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
-    (void)m0;
-    (void)m1;
-    return m2;
-}
-
-s32 Random15(void) { return 0; }
 
 enum { TRACK_POINTS = 24, TRACK_RADIUS = 20000 };
 
