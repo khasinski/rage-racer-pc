@@ -30,7 +30,7 @@ s32 g_McActionResult;
 s32 g_McActionState;
 s32 g_McActionTimer;
 s32 g_McCardOkFrames;
-volatile s32 g_McCardStatus;
+s32 g_McCardStatus;
 s32 g_McConfirmChoice;
 s32 g_McConfirmChoice_v;
 s32 g_McDrawEnabled;
@@ -49,7 +49,7 @@ s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;
 s32 g_McMenuState;
-volatile s32 g_McMenuSubState;
+s32 g_McMenuSubState;
 s32 g_McNoCardTicks;
 GameSaveHeaderRow g_McSaveHeaders[4];
 s32 g_McSaveMode;
@@ -61,7 +61,7 @@ s32 g_McStateChangeCount;
 u16 g_PadPressed;
 s32 g_SceneId;
 s32 g_SceneTimer;
-volatile s32 GameMenuLoadPhase;
+s32 GameMenuLoadPhase;
 
 /*
  * Everything the menu reaches outside itself. The card driver is a stub that

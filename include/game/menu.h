@@ -63,7 +63,7 @@ extern s32 g_TitleMenuSelection;
 extern s32 g_MenuOverlayPattern;
 
 /* Debug/status phase code written through an asset-load state machine. */
-extern volatile s32 GameMenuLoadPhase;
+extern s32 GameMenuLoadPhase;
 
 /*
  * Alternate menu layout. The garage screens copy the setting into the live
@@ -90,9 +90,9 @@ extern u8 g_TeamNameChars[];
  * -1/-2/-3 error), not a record pointer; the others are selection/phase words.
  */
 extern s32 g_McMenuState;
-extern volatile s32 g_McCardStatus;
+extern s32 g_McCardStatus;
 extern s32 g_McMenuSelection;
-extern volatile s32 g_McMenuSubState;
+extern s32 g_McMenuSubState;
 
 /* The two eased current/target pairs of the 3D menu view, in 1/1000 units:
  * an angle (carousel wraps at 500000 per entry) and a translation. Screens set
