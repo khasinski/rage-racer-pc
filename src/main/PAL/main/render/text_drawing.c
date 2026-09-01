@@ -9,9 +9,8 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    u16 clut, s32 flags) {
     const char *str;
     s32 x;
-    u8 fl = flags;
     OT_TYPE *ot;
-    s32 fixed;
+    s32 fixed = flags & 0x80;
     s32 idx;
     s32 u0;
     s32 v0;
@@ -24,7 +23,6 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
     ot = RENDER_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
-        fixed = flags & 0x80;
         c = *str;
         str++;
         switch (c) {
@@ -106,11 +104,8 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
         x += w;
     }
 
-    {
-        void *next = QueueDrawModePrim(
-            ot + 1, RENDER_PRIM_CURSOR_AS(u8), (fl & 0x7f) + 27);
-        RENDER_PRIM_CURSOR_AS(void) = next;
-    }
+    RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(
+        ot + 1, RENDER_PRIM_CURSOR_AS(u8), (flags & 0x7f) + 27);
 }
 
 
@@ -118,8 +113,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    u16 clut, s32 flags) {
     const char *str;
     s32 x;
-    u8 fl = flags;
-    s32 fixed;
+    s32 fixed = flags & 0x80;
     OT_TYPE *ot;
     s32 idx;
     s32 u0;
@@ -132,7 +126,6 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
     ot = RENDER_OT_BASE_AS(OT_TYPE);
 
     while (*str) {
-        fixed = flags & 0x80;
         c = *str;
         str++;
         switch (c) {
@@ -207,7 +200,8 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
     }
 
     RENDER_PRIM_CURSOR_AS(void) =
-        QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), (fl & 0x7f) + 27);
+        QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void),
+                          (flags & 0x7f) + 27);
 }
 
 
