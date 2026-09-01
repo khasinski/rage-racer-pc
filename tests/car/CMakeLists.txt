@@ -153,6 +153,27 @@ else()
 endif()
 target_link_libraries(car_performance_setup_tests PRIVATE psyz)
 add_test(NAME car_performance_setup COMMAND car_performance_setup_tests)
+
+add_executable(rival_car_init_tests
+    rival_car_init_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_car_init.c)
+target_include_directories(rival_car_init_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(rival_car_init_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(rival_car_init_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(rival_car_init_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rival_car_init_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME rival_car_init COMMAND rival_car_init_tests)
+set_tests_properties(rival_car_init PROPERTIES LABELS functional)
 set_tests_properties(car_performance_setup PROPERTIES LABELS unit)
 
 # The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
