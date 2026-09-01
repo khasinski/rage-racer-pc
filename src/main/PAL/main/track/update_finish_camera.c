@@ -23,8 +23,6 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     s32 angle;
     s32 value;
     s32 zValue;
-    GameCarRuntimeAddress cameraAddress;
-    GameBlockAddress viewAddress;
 
     LoadViewWork(&viewWork);
     view = &viewWork;
@@ -61,9 +59,10 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     markerClamp.leftKnockbackMode = 0;
     UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &markerClamp);
 
-    cameraAddress.runtime = &g_CameraCar;
-    viewAddress.words = &view->x;
-    viewAddress.blocks[0] = cameraAddress.blocks[0];
+    view->x = g_CameraCar.x;
+    view->y = g_CameraCar.y;
+    view->z = g_CameraCar.z;
+    view->reserved = g_CameraCar.positionW;
     view->y -= 64;
 
     delta[0] = obj->x - view->x;
