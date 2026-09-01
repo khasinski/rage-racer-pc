@@ -2,7 +2,6 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-#include <string.h>
 
 /*
  * The big canvas: its frame slides down, the brush outline blinks over the
@@ -83,7 +82,6 @@ static void DrawCanvasPanel(RenderBufferAddress ot, s32 slide)
   SetDrawClipRect(ot.pointer, (s16)(frameX + 1), (s16)(panelTop + 2),
                   (s16)0x80, (s16)0x100);
 }
-
 /*
  * The small unzoomed preview, with the guide lines that mark the brush and
  * its row across the whole logo.
@@ -522,83 +520,4 @@ void RampTeamLogoCanvas(s32 stepA, s32 stepB) {
         temp += 0xFF;
     }
     g_TeamLogoZoomSpan = 0x220 - (temp >> 8);
-}
-
-
-void ScrollTeamLogoUp(void) {
-    s32 row;
-    u32 firstRow[8];
-
-    PlaySoundCue(1);
-    memcpy(firstRow, g_TeamLogoCanvas.words[0], sizeof(firstRow));
-    for (row = 0; row < 63; row++) {
-        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row + 1],
-               sizeof(firstRow));
-    }
-    memcpy(g_TeamLogoCanvas.words[63], firstRow, sizeof(firstRow));
-}
-
-void ScrollTeamLogoDown(void) {
-    s32 row;
-    u32 lastRow[8];
-
-    PlaySoundCue(1);
-    memcpy(lastRow, g_TeamLogoCanvas.words[63], sizeof(lastRow));
-    for (row = 63; row > 0; row--) {
-        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row - 1],
-               sizeof(lastRow));
-    }
-    memcpy(g_TeamLogoCanvas.words[0], lastRow, sizeof(lastRow));
-}
-
-void ScrollTeamLogoLeft(void) {
-    s32 row;
-    s32 col;
-
-    PlaySoundCue(1);
-    for (row = 0; row < 64; row++) {
-        u32 wrap = g_TeamLogoCanvas.words[row][0] << 28;
-
-        for (col = 0; col < 7; col++) {
-            g_TeamLogoCanvas.words[row][col] =
-                (g_TeamLogoCanvas.words[row][col] >> 4) |
-                (g_TeamLogoCanvas.words[row][col + 1] << 28);
-        }
-        g_TeamLogoCanvas.words[row][7] =
-            (g_TeamLogoCanvas.words[row][7] >> 4) | wrap;
-    }
-}
-
-void ScrollTeamLogoRight(void) {
-    s32 row;
-    s32 col;
-
-    PlaySoundCue(1);
-    for (row = 0; row < 64; row++) {
-        u32 wrap = g_TeamLogoCanvas.words[row][7] >> 28;
-
-        for (col = 7; col > 0; col--) {
-            g_TeamLogoCanvas.words[row][col] =
-                (g_TeamLogoCanvas.words[row][col] << 4) |
-                (g_TeamLogoCanvas.words[row][col - 1] >> 28);
-        }
-        g_TeamLogoCanvas.words[row][0] =
-            (g_TeamLogoCanvas.words[row][0] << 4) | wrap;
-    }
-}
-
-void FlipTeamLogoVertical(void) {
-    s32 row;
-    s32 col;
-
-    PlaySoundCue(8);
-    for (row = 0; row < 32; row++) {
-        for (col = 0; col < 8; col++) {
-            u32 temp = g_TeamLogoCanvas.words[row][col];
-
-            g_TeamLogoCanvas.words[row][col] =
-                g_TeamLogoCanvas.words[63 - row][col];
-            g_TeamLogoCanvas.words[63 - row][col] = temp;
-        }
-    }
 }
