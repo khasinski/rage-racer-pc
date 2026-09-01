@@ -45,7 +45,7 @@ void SeekEnvironmentScript(s32 targetTime) {
             g_EnvScriptCursor->colors[count];
 
     g_EnvironmentMode = g_EnvScriptCursor->mode;
-    nextId = RAW(g_EnvScriptCursor[1].time);
+    nextId = g_EnvScriptCursor[1].time;
     g_EnvScriptCursor++;
     if (nextId < 0) {
         g_EnvScriptCursor = g_EnvScriptCues;
@@ -54,7 +54,7 @@ void SeekEnvironmentScript(s32 targetTime) {
     cue = g_EnvScriptCursor;
     duration = cue->duration;
     g_EnvLerpDuration = duration;
-    frame = (u16)g_EnvScriptClock - (u16)RAW(cue->time);
+    frame = (u16)g_EnvScriptClock - (u16)cue->time;
     g_EnvLerpFrame = frame;
     clampedFrame = frame;
     /* Keep the unclamped store and the call-value copy as distinct lifetimes. */

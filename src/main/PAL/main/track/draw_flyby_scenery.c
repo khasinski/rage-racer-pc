@@ -48,8 +48,8 @@ void SeedRouteScenery(void) {
     keyframe = &data->keyframes[keyframeIndex];
 
     g_RouteSceneryRotX = keyframe->rotationX;
-    g_RouteSceneryRotY = RAW(keyframe->rotationY);
-    value = RAW(keyframe->rotationZ);
+    g_RouteSceneryRotY = keyframe->rotationY;
+    value = keyframe->rotationZ;
     g_RouteSceneryKeyframe = keyframe;
     g_RouteSceneryRotZ = value;
 }

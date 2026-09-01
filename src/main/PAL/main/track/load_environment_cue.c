@@ -16,14 +16,14 @@ void LoadEnvironmentCue(GameEnvironmentCue *cue) {
 
     mode = g_EnvironmentMode;
     g_EnvLerpDuration = cue->duration;
-    g_EnvironmentMode = RAW(cue->mode);
-    flag = RAW(cue->spareTarget);
+    g_EnvironmentMode = cue->mode;
+    flag = cue->spareTarget;
     g_EnvironmentModePrev = mode;
     g_EnvSpareLerp = ((flag >> 15) ^ 1);
 
     if (g_EnvSpareLerp != 0) {
         g_EnvSpareFrom = g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused;
-        g_EnvSpareTo = RAW(cue->spareTarget);
+        g_EnvSpareTo = cue->spareTarget;
     }
 
     g_IsEnvironmentMode4 = (s16)g_EnvironmentMode == 4;

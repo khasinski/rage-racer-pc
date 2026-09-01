@@ -144,12 +144,7 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
         }
         work->pointRadius.value = interpolated;
     }
-    {
-        volatile u16 *carRadiusLow = &work->carRadius.half.low;
-        volatile u16 *pointRadiusLow = &work->pointRadius.half.low;
-
-        arcLateral = (s16)(*carRadiusLow - *pointRadiusLow);
-    }
+    arcLateral = (s16)(work->carRadius.half.low - work->pointRadius.half.low);
     if (work->curveMode == 2)
     {
         arcLateral = 0 - arcLateral;

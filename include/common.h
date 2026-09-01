@@ -20,6 +20,6 @@ typedef float f32;
  * access is just a load or store at a computed address, and the ordering is
  * restored without a memory clobber. Same address, same width, no barrier.
  */
-#define RAW(x) (*(__typeof__(x) *)(uintptr_t)&(x))
+#define RETAIL_ORDERED_ACCESS(x) (*(__typeof__(x) *)(uintptr_t)&(x))
 
 #endif

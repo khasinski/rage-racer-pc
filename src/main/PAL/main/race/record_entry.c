@@ -14,7 +14,7 @@
 
 typedef union RankingTextBuffer {
     char value[56];
-    volatile char first;
+    char first;
 } RankingTextBuffer;
 
 void DrawRankingPanel(s32 slideX) {

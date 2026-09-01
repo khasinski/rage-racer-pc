@@ -128,7 +128,7 @@ void InitPathScenery(void) {
         g_PathSceneryCursors.posIndex = 0;
         g_PathSceneryCursors.rotIndex = 0;
         g_PathSceneryHalfDelta[0] =
-            (positionKeys[1].fields.x - RAW(positionKeys[0].fields.x)) / 2;
+            (positionKeys[1].fields.x - positionKeys[0].fields.x) / 2;
         g_PathSceneryHalfDelta[1] =
             (positionKeys[1].fields.y - positionKeys[0].fields.y) / 2;
         g_PathSceneryHalfDelta[2] =

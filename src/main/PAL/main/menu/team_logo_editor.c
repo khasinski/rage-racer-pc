@@ -325,8 +325,7 @@ void EditLogoCanvas(void) {
     }
     }
     {
-        volatile u16 *held = &g_PadHeld;
-        u16 heldValue = *held;
+        u16 heldValue = g_PadHeld;
 
     if ((heldValue & 8) && (g_TeamLogoExpertMode != 0)) {
         if (heldValue & 4) {
@@ -346,13 +345,13 @@ void EditLogoCanvas(void) {
             if (heldValue & 0x1000) {
                 ScrollTeamLogoUp();
             }
-            if (*held & 0x4000) {
+            if (heldValue & 0x4000) {
                 ScrollTeamLogoDown();
             }
-            if (*held & 0x8000) {
+            if (heldValue & 0x8000) {
                 ScrollTeamLogoLeft();
             }
-            if (*held & 0x2000) {
+            if (heldValue & 0x2000) {
                 ScrollTeamLogoRight();
             }
         }

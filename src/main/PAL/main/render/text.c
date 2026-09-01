@@ -242,9 +242,9 @@ typedef union TextRenderWork {
                 prim = sprt;
                 sprt->u0 = u;
                 sprt->v0 = v;
-                /* RAW() keeps this store ahead of the g_DrawBuffer load --
-                 * see common.h. */
-                RAW(sprt->h) = height;
+                /* Keep this store ahead of the g_DrawBuffer load; see the
+                 * RETAIL_ORDERED_ACCESS definition in common.h. */
+                RETAIL_ORDERED_ACCESS(sprt->h) = height;
                 t0.value = (u16)home.clut;
                 sprt->clut = t0.value;
                 sprt->w = width;
@@ -281,9 +281,9 @@ typedef union TextRenderWork {
                 prim = sprt;
                 sprt->u0 = u;
                 sprt->v0 = v;
-                /* RAW() keeps this store ahead of the g_DrawBuffer load --
-                 * see common.h. */
-                RAW(sprt->h) = height;
+                /* Keep this store ahead of the g_DrawBuffer load; see the
+                 * RETAIL_ORDERED_ACCESS definition in common.h. */
+                RETAIL_ORDERED_ACCESS(sprt->h) = height;
                 t0.value = (u16)home.clut;
                 sprt->clut = t0.value;
                 sprt->w = width;

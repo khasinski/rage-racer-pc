@@ -28,7 +28,7 @@ void UpdateRouteScenery(void) {
     counter++;
     {
         g_RouteSceneryFrame = counter;
-        if (RAW(kp[i].duration) == counter) {
+        if (kp[i].duration == counter) {
             c = i + 1;
             g_RouteSceneryKeyIndex = c;
             g_RouteSceneryFrame = 0;
@@ -69,15 +69,15 @@ void UpdateRouteScenery(void) {
         t0v = rec->duration - t;
         g_RouteSceneryRotX =
             (rec[1].rotationX * t + rec->rotationX * t0v) / rec->duration;
-        r4354 = (RAW(rec[1].rotationY) * t + rec->rotationY * t0v) /
+        r4354 = (rec[1].rotationY * t + rec->rotationY * t0v) /
                 rec->duration;
         g_RouteSceneryRotY = r4354;
         g_RouteSceneryRotZ =
-            (RAW(rec[1].rotationZ) * t + rec->rotationZ * t0v) /
+            (rec[1].rotationZ * t + rec->rotationZ * t0v) /
             rec->duration;
         vin.vx = 0;
         vin.vy = 0;
-        vin.vz = -RAW(rec->speed) * 4;
+        vin.vz = -rec->speed * 4;
         BuildRotMatrixY(&mtx0, 0x800 - r4354);
     }
 

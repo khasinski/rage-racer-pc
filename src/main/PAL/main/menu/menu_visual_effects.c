@@ -317,10 +317,10 @@ void UpdateTeamLogoCanvas(void) {
         s32 input;
         s32 held;
         s32 repeat;
-        volatile u16 *state = &g_PadHeld;
+        u16 state = g_PadHeld;
 
-        input = (*state & 5) ? 0 : 3;
-        if (*state & g_TeamLogoDpadRepeatMask) {
+        input = (state & 5) ? 0 : 3;
+        if (state & g_TeamLogoDpadRepeatMask) {
             held = g_TeamLogoDpadRepeatTimer;
             repeat = 0x14;
             if (held < input + repeat) {

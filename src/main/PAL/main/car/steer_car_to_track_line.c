@@ -227,8 +227,8 @@ void UpdateCarLaunch(PlayerCarRuntime *car) {
             landingRpm /= specAddress.pointer->gearRatio[0];
 
             gearOffset = drive->gear << 2;
-            RAW(drive->jumpTimer) = 0x14;
-            RAW(drive->motionState) = CAR_MOTION_AIRBORNE;
+            drive->jumpTimer = 0x14;
+            drive->motionState = CAR_MOTION_AIRBORNE;
             g_ShiftTargetRpm = landingRpm;
             drive->shiftRpmDelta =
                 (s16)(g_ShiftTargetRpm - (u16)drive->engineRpm);
