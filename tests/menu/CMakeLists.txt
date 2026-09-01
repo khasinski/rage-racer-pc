@@ -584,6 +584,27 @@ endif()
 target_link_libraries(engineer_shop_screen_tests PRIVATE psyz)
 add_test(NAME engineer_shop_screen COMMAND engineer_shop_screen_tests)
 set_tests_properties(engineer_shop_screen PROPERTIES LABELS functional)
+
+add_executable(logo_name_panel_tests
+    logo_name_panel_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_logo_sample_panel.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_team_name_entry.c)
+target_include_directories(logo_name_panel_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(logo_name_panel_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(logo_name_panel_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(logo_name_panel_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(logo_name_panel_tests PRIVATE psyz)
+add_test(NAME logo_name_panel COMMAND logo_name_panel_tests)
+set_tests_properties(logo_name_panel PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
