@@ -686,57 +686,17 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
 }
 
 void SeedFinishCamera(PlayerCarRuntime *car) {
-    u32 word0;
-    Block16 *src;
-    Block16 *dst;
-    Block16 *end;
-    GameCarRuntimeAddress sourceAddress;
-    GameTrackPoint *track;
-    GameCarRuntimeAddress destinationAddress;
-    GameTrackPoint *point;
-    s32 index;
-    s32 lastIndex;
+    GameTrackPoint *point = &g_TrackPoints[car->trackPointIndex];
+    s32 heading;
 
-    sourceAddress.player = car;
-    destinationAddress.runtime = &g_CameraCar;
-    dst = destinationAddress.blocks;
-    src = sourceAddress.blocks;
-    end = src + sizeof(GameCarRuntime) / sizeof(*src);
-    do {
-        *dst = *src;
-        src++;
-        dst++;
-    } while (src != end);
-
-    sourceAddress.blocks = src;
-    destinationAddress.blocks = dst;
-    *destinationAddress.vector = *sourceAddress.vector;
-
-    index = car->trackPointIndex;
-    track = g_TrackPoints;
-    point = &track[index];
+    g_CameraCar = *GetPlayerCarRuntime(car);
     g_CameraCar.x = point->x;
-
-    index = car->trackPointIndex;
-    point = &track[index];
     g_CameraCar.z = point->z;
+    g_CameraCar.y = point->y - 0x40;
+    g_CameraCar.speed += 0x40;
 
-    index = car->trackPointIndex;
-    point = &track[index];
-    index = g_CameraCar.speed;
-    word0 = point->y;
-    index += 0x40;
-    word0 -= 0x40;
-    g_CameraCar.speed = index;
-    g_CameraCar.y = word0;
-
-    index = car->facingBackwards;
-    lastIndex = car->trackPointIndex;
-    index <<= 11;
-    point = &track[lastIndex];
-    index += 0xC00;
-    index -= point->angle;
-    g_CameraCar.headingAngle = index;
-    g_CameraCarSeedYaw = index;
-    g_CameraCar.bodyYaw = index;
+    heading = (car->facingBackwards << 11) + 0xC00 - point->angle;
+    g_CameraCar.headingAngle = heading;
+    g_CameraCarSeedYaw = heading;
+    g_CameraCar.bodyYaw = heading;
 }
