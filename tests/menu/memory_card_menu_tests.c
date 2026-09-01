@@ -25,7 +25,6 @@ void UpdateMemoryCardMenu(void);
 /* The menu's own state. */
 s32 g_McActionBusy;
 s32 g_McActionElapsed;
-s32 g_McActionOk;
 s32 g_McActionResult;
 s32 g_McActionState;
 s32 g_McActionTimer;
@@ -166,13 +165,13 @@ static void Record(FILE *out, const char *label) {
 
     snprintf(line, sizeof(line),
             "%s state=%d action=%d phase=%d page=%d row=%d slot=%d "
-            "sel=%d busy=%d timer=%d elapsed=%d ok=%d result=%d choice=%d "
+            "sel=%d busy=%d timer=%d elapsed=%d result=%d choice=%d "
             "err=%d/%d/%d fade=%d/%d last=%d/%d mask=%x free=%d ticks=%d/%d/%d "
             "loadphase=%d scene=%d/%d calls=%d\n",
             label, g_McMenuState, g_McActionState,
             g_McMenuPhase, g_McMenuPage, g_McMenuRowCursor, g_McSlotCursor,
             g_McMenuSelection, g_McActionBusy, g_McActionTimer,
-            g_McActionElapsed, g_McActionOk, g_McActionResult,
+            g_McActionElapsed, g_McActionResult,
             g_McConfirmChoice, g_McErrorPending,
             g_McErrorCountdown, g_McErrorTicks, g_McFadeLevel, g_McFadeStep,
             g_McLastMenuState, g_McLastSlot, g_McSlotUsedMask, g_McFreeBlocks,
@@ -199,7 +198,6 @@ static int TestFailedLoadReportsError(void) {
     g_McMenuRowCount = 4;
     g_McActionState = 0x22;
     g_McActionBusy = 1;
-    g_McActionOk = 1;
     g_McSlotCursor = 1;
     g_McFadeLevel = 0;
     g_McFadeStep = 0;
@@ -209,8 +207,8 @@ static int TestFailedLoadReportsError(void) {
     s_loadAnswer = 0;
 
     UpdateMemoryCardMenu();
-    if (g_McActionOk != 0) {
-        printf("FAIL a failed load is still marked successful\n");
+    if (g_McActionResult != 0) {
+        printf("FAIL a failed load returned %d\n", g_McActionResult);
         return 0;
     }
 
@@ -267,7 +265,7 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 3005791259UL;
+    static const unsigned long expected = 3090588009UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
@@ -308,7 +306,6 @@ int main(int argc, char **argv) {
                                      * one's. */
                                     g_McActionBusy = 0;
                                     g_McActionElapsed = 0;
-                                    g_McActionOk = 0;
                                     g_McActionResult = 0;
                                     g_McActionTimer = 3;
                                     g_McCardOkFrames = 0;

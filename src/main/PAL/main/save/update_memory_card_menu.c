@@ -254,7 +254,6 @@ static void RunCardSlotActions(void) {
 
         written = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
         g_McActionResult = written;
-        g_McActionOk = written != 0;
         g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
         break;
     }
@@ -294,8 +293,8 @@ static void RunCardSlotActions(void) {
     }
 
     case CARD_SLOT_ACTION_SHOW_SAVE_RESULT:
-        g_McMenuPhase = g_McActionOk ? MC_PROMPT_SAVE_OK
-                                     : MC_PROMPT_CARD_ERROR;
+        g_McMenuPhase = g_McActionResult != 0 ? MC_PROMPT_SAVE_OK
+                                             : MC_PROMPT_CARD_ERROR;
         g_McActionTimer = 0x3C;
         g_McActionBusy = 0;
         g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_RESULT;
@@ -341,7 +340,6 @@ static void RunCardSlotActions(void) {
         s32 slot = g_McSlotCursor;
 
         g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
-        g_McActionOk = g_McActionResult != 0;
         if (g_McActionResult != 0) {
             g_McLastSlot = g_McSlotCursor;
         }
@@ -371,8 +369,8 @@ static void RunCardSlotActions(void) {
     }
 
     case CARD_SLOT_ACTION_SHOW_LOAD_RESULT:
-        g_McMenuPhase = g_McActionOk ? MC_PROMPT_LOAD_OK
-                                     : MC_PROMPT_CARD_ERROR;
+        g_McMenuPhase = g_McActionResult != 0 ? MC_PROMPT_LOAD_OK
+                                             : MC_PROMPT_CARD_ERROR;
         g_McActionTimer = 0x3C;
         g_McActionBusy = 0;
         g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_RESULT;

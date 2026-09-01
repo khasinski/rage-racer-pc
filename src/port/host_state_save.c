@@ -46,7 +46,6 @@ unsigned char g_McSaveHeaders[384] __attribute__((aligned(16)));
 s32 g_McNoCardTicks;
 s32 g_McErrorTicks;
 s32 g_McLastMenuState;
-s32 g_McActionOk;
 s32 g_McSettleTicks;
 s32 g_McCardOkFrames;
 unsigned char g_McActionElapsed[20] __attribute__((aligned(16)));
