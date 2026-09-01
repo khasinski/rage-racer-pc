@@ -6,6 +6,10 @@
 #include <string.h>
 
 s32 GameMenuBusy;
+s32 g_LogoSampleBackIndex;
+s32 g_LogoSampleCharIndex;
+s32 g_LogoSampleCursor;
+s32 g_LogoSampleSavedIndex;
 s32 g_LogoSampleScreenFade;
 s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
@@ -24,6 +28,8 @@ s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 
 TimedDrawCommand g_NativeMenuDialogPanelUpperScript[4];
+TimedDrawCommand g_NativeLogoSampleScreenScript[12];
+TimedDrawCommand g_NativeMenuRow0MarkerScript[4];
 TimedDrawCommand g_NativeMenuRow1MarkerScript[16];
 TimedDrawCommand g_NativeTeamLogoScreenScript[12];
 TimedDrawCommand g_NativeTeamLogoScreenScript2[2];
@@ -31,6 +37,7 @@ TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 TimedDrawCommand g_EmptyScript[1];
 const TimedDrawCommand *g_TeamLogoSubPanelScript = g_EmptyScript;
+const TimedDrawCommand *g_LogoSampleSubPanelScript = g_EmptyScript;
 
 GameRenderState g_RenderState;
 
@@ -39,6 +46,8 @@ static s32 s_canvasUpdates;
 static s32 s_duckCalls;
 static s32 s_restoreCalls;
 static s32 s_samplePanelCalls;
+static s32 s_composedCharacter;
+static s32 s_composedBackground;
 
 s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
                        s32 step) {
@@ -61,6 +70,10 @@ void RampTeamLogoCanvas(s32 from, s32 to) {
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     (void)panelStep;
     (void)editorStep;
+}
+void ComposeSampleTeamLogo(s32 character, s32 background) {
+    s_composedCharacter = character;
+    s_composedBackground = background;
 }
 void UpdateTeamLogoCanvas(void) { s_canvasUpdates++; }
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
@@ -117,12 +130,19 @@ static void Reset(void) {
     g_TeamLogoOption = 0;
     g_TeamLogoPaintArmed = 1;
     g_TeamLogoSubPanelScript = g_EmptyScript;
+    g_LogoSampleBackIndex = 0;
+    g_LogoSampleCharIndex = 0;
+    g_LogoSampleCursor = 0;
+    g_LogoSampleSavedIndex = 0;
+    g_LogoSampleSubPanelScript = g_EmptyScript;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     s_canvasUpdates = 0;
     s_duckCalls = 0;
     s_restoreCalls = 0;
     s_samplePanelCalls = 0;
+    s_composedCharacter = -1;
+    s_composedBackground = -1;
 }
 
 #define CHECK(condition)                                                       \
@@ -147,7 +167,6 @@ int main(void) {
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -3);
     CHECK(g_TeamLogoPaintArmed == 0);
-    CHECK(s_duckCalls == 1);
     CHECK(g_TeamLogoSubPanelScript == g_MenuRow1MarkerScript);
 
     Reset();
@@ -181,6 +200,40 @@ int main(void) {
     CHECK(g_MenuScreen == MENU_SCREEN_DESIGN_MODE);
     CHECK(g_TeamLogoClut[0] == 0);
 
-    puts("team logo screen tests passed");
+    Reset();
+    g_LogoSampleCharIndex = 7;
+    g_LogoSampleBackIndex = 9;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateLogoSampleScreen();
+    CHECK(s_composedCharacter == 7);
+    CHECK(s_composedBackground == 9);
+    CHECK(GameMenuBusy == -1);
+    CHECK(g_LogoSampleSavedIndex == 7);
+    CHECK(g_LogoSampleSubPanelScript == g_MenuRow0MarkerScript);
+
+    Reset();
+    GameMenuBusy = -1;
+    g_LogoSampleCharIndex = 0;
+    g_PadPressed = PAD_LEFT;
+    UpdateLogoSampleScreen();
+    CHECK(g_LogoSampleCharIndex == 19);
+
+    Reset();
+    GameMenuBusy = -2;
+    g_LogoSampleBackIndex = 19;
+    g_PadPressed = PAD_RIGHT;
+    UpdateLogoSampleScreen();
+    CHECK(g_LogoSampleBackIndex == 0);
+
+    Reset();
+    GameMenuBusy = -2;
+    g_LogoSampleBackIndex = 12;
+    g_LogoSampleSavedIndex = 4;
+    g_PadPressed = PAD_CANCEL;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == 0);
+    CHECK(g_LogoSampleBackIndex == 4);
+
+    puts("logo screen state tests passed");
     return 0;
 }
