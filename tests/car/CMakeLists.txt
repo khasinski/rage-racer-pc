@@ -46,6 +46,9 @@ set_tests_properties(select_track_camera_table PROPERTIES LABELS unit)
 
 add_executable(track_camera_tests
     track_camera_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/camera_chase.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/camera_common.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/track_camera_modes.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_camera.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
