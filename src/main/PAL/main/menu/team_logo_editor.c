@@ -49,182 +49,75 @@ static void PaintTeamLogoBrush(u16 colour) {
     }
 }
 
-/*
- * Mixing a colour: the cursor walks the sixteen palette slots and the
- * three channels of the one it is on, and the shoulder buttons take the
- * selected channel up and down.
- */
+static void AdjustTeamLogoColour(s32 step) {
+    s32 shift = g_TeamLogoColorChannel * 5;
+    u16 mask = (u16)(0x1F << shift);
+    u16 colour = g_TeamLogoClut[g_TeamLogoPenColor] | 0x8000;
+    s32 component = (colour >> shift) & 0x1F;
+
+    component = (component + step) & 0x1F;
+    g_TeamLogoClut[g_TeamLogoPenColor] =
+        (u16)((colour & ~mask) | (component << shift));
+}
+
+/* Mixing a colour: the cursor walks the editable palette slots and the three
+ * five-bit channels of the selected colour. */
 void EditLogoPalette(void) {
-    u32 blueDown;
-    s32 blueUp;
-    s32 brighter;
-    u16 *clutEntry;
-    u16 colour;
-    s32 darker;
-    s32 greenUp;
-    s32 nextChannel;
-    s32 nextSlot;
-    u16 opaqueColour;
-    s32 prevChannel;
-    s32 prevSlot;
-    u32 redDown;
-    s32 redUp;
-    u32 slotValue;
+    u16 pressed = g_PadPressed;
+    u16 held = g_PadHeld;
 
-    u16 *input = &g_PadPressed;
-
-    if (*input & 0x60) {
+    if (pressed & (PAD_CROSS | PAD_CIRCLE)) {
         PlaySoundCue(2);
         g_TeamLogoPaletteMode = 0;
         g_TeamLogoPaintArmed = 0;
     }
-    {
-        s32 mask = 0xF;
+    if ((pressed & PAD_SELECT) &&
+        ((held & (PAD_L2 | PAD_R2 | PAD_L1 | PAD_R1)) ==
+         (PAD_L2 | PAD_R2 | PAD_L1 | PAD_R1))) {
+        g_TeamLogoExpertMode = g_TeamLogoExpertMode == 0;
+        g_TeamLogoGuideMode = g_TeamLogoGuideModePrev;
+    }
 
-        if ((*input & 0x100) &&
-            ((g_PadHeld & mask) == mask)) {
-            g_TeamLogoExpertMode = g_TeamLogoExpertMode == 0;
-            g_TeamLogoGuideMode = g_TeamLogoGuideModePrev;
+    if (g_TeamLogoDpadRepeatTimer == 0x14 ||
+        g_TeamLogoDpadRepeatTimer == 1) {
+        if (held & PAD_LEFT) {
+            PlaySoundCue(1);
+            g_TeamLogoPenColor = g_TeamLogoPenColor >= 2
+                                     ? g_TeamLogoPenColor - 1
+                                     : 0xF;
+        }
+        if (held & PAD_RIGHT) {
+            PlaySoundCue(1);
+            g_TeamLogoPenColor = g_TeamLogoPenColor < 0xF
+                                     ? g_TeamLogoPenColor + 1
+                                     : 1;
         }
     }
-    if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
-        if (g_PadHeld & PAD_LEFT) {
-            TeamLogoColorSlot output;
-            s32 selected;
 
-            PlaySoundCue(1);
-            selected = g_TeamLogoPenColor;
-            prevSlot = 0xF;
-            if (selected >= 2) {
-                prevSlot = selected - 1;
-            }
-            output.value = prevSlot;
-            g_TeamLogoPenColor = output.value;
+    if (g_TeamLogoExpertMode == 0) return;
+    if (held & (PAD_R1 | PAD_R2)) {
+        if (g_PadPressedRepeat & PAD_UP) {
+            PlaySoundCue(4);
+            AdjustTeamLogoColour(-1);
         }
-        if (g_PadHeld & PAD_RIGHT) {
-            TeamLogoColorSlot output;
-            s32 selected;
-
-            PlaySoundCue(1);
-            selected = g_TeamLogoPenColor;
-            nextSlot = 1;
-            if (selected < 0xF) {
-                nextSlot = selected + 1;
-            }
-            output.value = nextSlot;
-            g_TeamLogoPenColor = output.value;
+        if (g_PadPressedRepeat & PAD_DOWN) {
+            PlaySoundCue(4);
+            AdjustTeamLogoColour(1);
         }
+        return;
     }
-    if (g_TeamLogoExpertMode != 0) {
-        if (g_PadHeld & (PAD_R1 | PAD_R2)) {
-            if (g_PadPressedRepeat & PAD_UP) {
-                PlaySoundCue(4);
-                slotValue = g_TeamLogoPenColor;
-                clutEntry = g_TeamLogoClut + slotValue;
-                opaqueColour = *clutEntry | 0x8000;
-                *clutEntry = opaqueColour;
-                colour = opaqueColour;
-                switch (g_TeamLogoColorChannel) {
-                case 0:
-                    redUp = opaqueColour & 0x1F;
-                    if (redUp == 0) {
-                        darker = 0x1F;
-                    } else {
-                        darker = redUp - 1;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        darker |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0xFFE0);
-                    break;
-                case 1:
-                    greenUp = (colour >> 5) & 0x1F;
-                    if (greenUp != 0) {
-                        darker = (greenUp * 32) - 0x20;
-                    } else {
-                        darker = 0x3E0;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        darker |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0xFC1F);
-                    break;
-                case 2:
-                    blueUp = (colour >> 0xA) & 0x1F;
-                    if (blueUp != 0) {
-                        darker = (blueUp << 0xA) - 0x400;
-                    } else {
-                        darker = 0x7C00;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        darker |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0x83FF);
-                    break;
-                default:
-                    break;
-                }
-            }
-            if (g_PadPressedRepeat & PAD_DOWN) {
-                PlaySoundCue(4);
-                slotValue = g_TeamLogoPenColor;
-                clutEntry = g_TeamLogoClut + slotValue;
-                opaqueColour = *clutEntry | 0x8000;
-                *clutEntry = opaqueColour;
-                colour = opaqueColour;
-                switch (g_TeamLogoColorChannel) {
-                case 0:
-                    redDown = opaqueColour & 0x1F;
-                    if (redDown >= 0x1FU) {
-                        brighter = 0;
-                    } else {
-                        brighter = redDown + 1;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        brighter |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0xFFE0);
-                    return;
-                case 1:
-                    slotValue = (colour >> 5) & 0x1F;
-                    if (slotValue < 0x1FU) {
-                        brighter = (slotValue + 1) << 5;
-                    } else {
-                        brighter = 0;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        brighter |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0xFC1F);
-                    return;
-                case 2:
-                    blueDown = (colour >> 0xA) & 0x1F;
-                    if (blueDown < 0x1FU) {
-                        brighter = (blueDown + 1) << 0xA;
-                    } else {
-                        brighter = 0;
-                    }
-                    g_TeamLogoClut[g_TeamLogoPenColor] =
-                        brighter |
-                        (g_TeamLogoClut[g_TeamLogoPenColor] & 0x83FF);
-                    return;
-                default:
-                    return;
-                }
-            }
-        } else {
-            if (g_PadPressed & PAD_UP) {
-                PlaySoundCue(1);
-                prevChannel = 2;
-                if (g_TeamLogoColorChannel > 0) {
-                    prevChannel = g_TeamLogoColorChannel - 1;
-                }
-                g_TeamLogoColorChannel = prevChannel;
-            }
-            if (g_PadPressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                nextChannel = 0;
-                if (g_TeamLogoColorChannel < 2) {
-                    nextChannel = g_TeamLogoColorChannel + 1;
-                }
-                g_TeamLogoColorChannel = nextChannel;
-            }
-        }
+
+    if (pressed & PAD_UP) {
+        PlaySoundCue(1);
+        g_TeamLogoColorChannel = g_TeamLogoColorChannel > 0
+                                     ? g_TeamLogoColorChannel - 1
+                                     : 2;
+    }
+    if (pressed & PAD_DOWN) {
+        PlaySoundCue(1);
+        g_TeamLogoColorChannel = g_TeamLogoColorChannel < 2
+                                     ? g_TeamLogoColorChannel + 1
+                                     : 0;
     }
 }
 
