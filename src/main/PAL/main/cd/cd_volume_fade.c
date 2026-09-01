@@ -16,69 +16,41 @@ void StartCdVolumeFade(s32 frames) {
  * matching g_CdMixFull* four at +0x10 are the target the fade ramps toward.
  * Channel order is CdlATV's: L->L, L->R, R->R, R->L. */
 
+static u32 FadeChannelOut(u32 level, s32 framesRemaining) {
+    return level * (framesRemaining - 1) / framesRemaining;
+}
+
+static u32 FadeChannelIn(u32 level, u32 target, s32 framesRemaining) {
+    return target -
+           (target - level) * (framesRemaining - 1) / framesRemaining;
+}
+
 void StepCdVolumeFade(void) {
-    u8 buf[4];
-    s32 cnt;
+    u8 mix[4];
+    s32 framesRemaining = g_CdFadeFrames;
 
-    cnt = g_CdFadeFrames;
-    if (cnt > 0) {
-        u32 *p;
-        s32 n;
-        u32 q1;
-        u32 q2;
-        u32 q3;
-        u32 q4;
-
-        p = &g_CdMixLL;
-        n = cnt - 1;
-        q1 = (*p * n) / cnt;
-        q2 = (g_CdMixLR * n) / cnt;
-        q3 = (g_CdMixRR * n) / cnt;
-        q4 = (g_CdMixRL * n) / cnt;
-        g_CdFadeFrames = n;
-        *p = q1;
-        g_CdMixLR = q2;
-        g_CdMixRR = q3;
-        g_CdMixRL = q4;
-    } else if (cnt < 0) {
-        u32 *p;
-        u32 v184;
-        u32 inv;
-        u32 div2;
-        u32 d1;
-        u32 v188;
-        u32 d2;
-        u32 v18C;
-        u32 d3;
-        u32 v190;
-        u32 d4;
-        s32 c2;
-
-        p = &g_CdMixLL;
-        v184 = g_CdMixFullLL;
-        inv = ~cnt;
-        div2 = inv + 1;
-        d1 = ((v184 - *p) * inv) / div2;
-        v188 = g_CdMixFullLR;
-        d2 = ((v188 - g_CdMixLR) * inv) / div2;
-        v18C = g_CdMixFullRR;
-        d3 = ((v18C - g_CdMixRR) * inv) / div2;
-        v190 = g_CdMixFullRL;
-        d4 = ((v190 - g_CdMixRL) * inv) / div2;
-        v184 = v184 - d1;
-        *p = v184;
-        c2 = cnt + 1;
-        g_CdFadeFrames = c2;
-        v188 = v188 - d2;
-        g_CdMixLR = v188;
-        v18C = v18C - d3;
-        g_CdMixRR = v18C;
-        v190 = v190 - d4;
-        g_CdMixRL = v190;
+    if (framesRemaining > 0) {
+        g_CdMixLL = FadeChannelOut(g_CdMixLL, framesRemaining);
+        g_CdMixLR = FadeChannelOut(g_CdMixLR, framesRemaining);
+        g_CdMixRR = FadeChannelOut(g_CdMixRR, framesRemaining);
+        g_CdMixRL = FadeChannelOut(g_CdMixRL, framesRemaining);
+        g_CdFadeFrames--;
+    } else if (framesRemaining < 0) {
+        framesRemaining = -framesRemaining;
+        g_CdMixLL =
+            FadeChannelIn(g_CdMixLL, g_CdMixFullLL, framesRemaining);
+        g_CdMixLR =
+            FadeChannelIn(g_CdMixLR, g_CdMixFullLR, framesRemaining);
+        g_CdMixRR =
+            FadeChannelIn(g_CdMixRR, g_CdMixFullRR, framesRemaining);
+        g_CdMixRL =
+            FadeChannelIn(g_CdMixRL, g_CdMixFullRL, framesRemaining);
+        g_CdFadeFrames++;
     }
-    buf[0] = g_CdMixLL / 4096;
-    buf[1] = g_CdMixLR / 4096;
-    buf[2] = g_CdMixRR / 4096;
-    buf[3] = g_CdMixRL / 4096;
-    CdMix(buf);
+
+    mix[0] = g_CdMixLL / 4096;
+    mix[1] = g_CdMixLR / 4096;
+    mix[2] = g_CdMixRR / 4096;
+    mix[3] = g_CdMixRL / 4096;
+    CdMix(mix);
 }
