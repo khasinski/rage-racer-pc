@@ -19,11 +19,7 @@ unsigned char g_SaveDefaults[104] __attribute__((aligned(16))) = {0x00,0x02,0x00
 s32 g_McLastCardStatus;
 s32 g_McMenuPage;
 s32 g_McMenuRowCursor;
-unsigned char g_McSlotCursor[36] __attribute__((aligned(16))) =
-    "\0\0\0\0"
-    "SAVE\0\0\0\0\0\0"
-    "LOAD\0\0\0\0\0\0"
-    "EXIT";
+s32 g_McSlotCursor;
 s32 g_McActionState;
 s32 g_McActionResult;
 s32 g_McConfirmChoice;
@@ -48,21 +44,21 @@ s32 g_McErrorTicks;
 s32 g_McLastMenuState;
 s32 g_McSettleTicks;
 s32 g_McCardOkFrames;
-unsigned char g_McActionElapsed[20] __attribute__((aligned(16)));
+s32 g_McActionElapsed;
 s32 g_McMenuState;
 s32 g_McCardStatus;
 s32 g_McMenuSelection;
-unsigned char g_McMenuPhase[8] __attribute__((aligned(16)));
+s32 g_McMenuPhase;
 s32 g_McFromLoadMenu;
 s32 g_McSaveMode;
 s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
-unsigned char GameMenuLoadPhase[8] __attribute__((aligned(16)));
+s32 GameMenuLoadPhase;
 s32 g_McMenuRowCount;
 unsigned char g_McDirEntries[600] __attribute__((aligned(16)));
 s32 g_McFadeStep;
 s32 g_McFadeLevel;
-unsigned char g_McStatusState[8] __attribute__((aligned(16)));
+s32 g_McStatusState;
 unsigned char g_ExtraGrandPrixCourseProgress[8] __attribute__((aligned(16)));
 s32 g_BgmVolumeSetting;
 s32 g_McPollTicks;
