@@ -133,6 +133,26 @@ target_link_libraries(stereo_sound_cue_tests PRIVATE psyz)
 add_test(NAME stereo_sound_cue COMMAND stereo_sound_cue_tests)
 set_tests_properties(stereo_sound_cue PROPERTIES LABELS unit)
 
+add_executable(engine_sound_runtime_tests
+    engine_sound_runtime_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/engine_sound_runtime.c)
+target_include_directories(engine_sound_runtime_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(engine_sound_runtime_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(engine_sound_runtime_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(engine_sound_runtime_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(engine_sound_runtime_tests PRIVATE psyz)
+add_test(NAME engine_sound_runtime COMMAND engine_sound_runtime_tests)
+set_tests_properties(engine_sound_runtime PROPERTIES LABELS unit)
+
 add_executable(update_effect_voice_states_tests
     update_effect_voice_states_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/update_effect_voice_states.c)

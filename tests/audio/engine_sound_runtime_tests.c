@@ -1,0 +1,94 @@
+#include "common.h"
+#include "game/audio.h"
+#include "game/sound.h"
+
+#include <stdio.h>
+#include <string.h>
+
+EngineSoundState g_EngineSoundState;
+s16 g_SoundSlotTone[6][2];
+
+static s32 s_playCalls;
+static s32 s_playSlot;
+static s32 s_playBank;
+static s32 s_interpolateCalls;
+static s32 s_interpolateParam[4];
+static s32 s_interpolatePosition[4];
+static s32 s_interpolateBank[4];
+static s32 s_toneCalls;
+static s32 s_toneSlot[2];
+static s32 s_toneBend[2];
+static s32 s_toneVolume[2];
+static s32 s_tailCalls;
+
+void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
+    (void)vabSlot;
+    s_playCalls++;
+    s_playSlot = slot;
+    s_playBank = tone;
+}
+
+s32 InterpolateAudioParameter(s32 param, s32 position, s32 bank) {
+    s_interpolateParam[s_interpolateCalls] = param;
+    s_interpolatePosition[s_interpolateCalls] = position;
+    s_interpolateBank[s_interpolateCalls] = bank;
+    s_interpolateCalls++;
+    return param * 10 + 5;
+}
+
+void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex,
+                      u16 vabSlot) {
+    (void)toneIndex;
+    (void)vabSlot;
+    s_toneSlot[s_toneCalls] = slot;
+    s_toneBend[s_toneCalls] = bend;
+    s_toneVolume[s_toneCalls] = volume;
+    s_toneCalls++;
+}
+
+void ApplyPanVoiceVolume(void) { s_tailCalls++; }
+void UpdateBasicEffectVoices(void) { s_tailCalls++; }
+void UpdateIndexedEffectVoice(void) { s_tailCalls++; }
+void UpdateEffectVoiceStates(void) { s_tailCalls++; }
+
+#define CHECK(condition) do {                                                   \
+    if (!(condition)) {                                                         \
+        fprintf(stderr, "check failed at line %d: %s\n", __LINE__, #condition); \
+        return 1;                                                               \
+    }                                                                           \
+} while (0)
+
+int main(void) {
+    memset(&g_EngineSoundState, 0, sizeof(g_EngineSoundState));
+    memset(g_SoundSlotTone, 0, sizeof(g_SoundSlotTone));
+    g_EngineSoundState.maxRpm = 10000;
+    g_EngineSoundState.bank = 0;
+    g_EngineSoundState.slotActive[0] = 1;
+    g_EngineSoundState.slotActive[2] = 1;
+    g_EngineSoundState.volumeScale = 64;
+    g_SoundSlotTone[0][0] = 10;
+    g_SoundSlotTone[0][1] = 11;
+    g_SoundSlotTone[2][0] = 20;
+    g_SoundSlotTone[2][1] = 20;
+
+    UpdateLoadedAudioVoices(5000, 1);
+    CHECK(g_EngineSoundState.position == 5120);
+    CHECK(g_EngineSoundState.bank == 1);
+    CHECK(s_playCalls == 1 && s_playSlot == 0 && s_playBank == 1);
+    CHECK(s_interpolateCalls == 4);
+    CHECK(s_interpolateParam[0] == 0 && s_interpolateParam[1] == 1);
+    CHECK(s_interpolateParam[2] == 4 && s_interpolateParam[3] == 5);
+    CHECK(s_interpolatePosition[0] == 5120 && s_interpolateBank[0] == 1);
+    CHECK(s_toneCalls == 2);
+    CHECK(s_toneSlot[0] == 0 && s_toneBend[0] == 5 && s_toneVolume[0] == 7);
+    CHECK(s_toneSlot[1] == 2 && s_toneBend[1] == 45 && s_toneVolume[1] == 27);
+    CHECK(s_tailCalls == 4);
+
+    UpdateLoadedAudioVoices(2500, 1);
+    CHECK(g_EngineSoundState.position == 2560);
+    CHECK(s_playCalls == 1);
+    CHECK(s_tailCalls == 8);
+
+    puts("engine sound runtime preserves slot routing, scaling, and updates");
+    return 0;
+}

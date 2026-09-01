@@ -3,57 +3,6 @@
 #include "psyq/snd.h"
 #include "game/car.h"
 
-void UpdateLoadedAudioVoices(s32 value, s32 bank) {
-    s32 odd_parameter;
-    s32 index;
-    s32 second;
-    s32 scaled;
-    s32 *scale_base;
-    s32 *slot;
-    s32 *slot_base;
-    s32 first;
-
-    value = ((value * 5) << 11) / *(scale_base = &g_EngineSoundState.maxRpm);
-
-    if (bank != g_EngineSoundState.bank) {
-        index = 0;
-        slot = scale_base + 1;
-        do {
-            if (*slot++ != 0 &&
-                g_SoundSlotTone[index][0] != g_SoundSlotTone[index][1]) {
-                PlaySoundSlotVoice(index, bank, 3);
-            }
-            index++;
-        } while (index < 6);
-        g_EngineSoundState.bank = bank;
-    }
-
-    index = 0;
-    odd_parameter = 1;
-    scale_base = (slot_base = g_EngineSoundState.slotActive);
-    slot = scale_base;
-    do {
-        if (*slot != 0) {
-            first = InterpolateAudioParameter(index * 2, value, bank);
-            second = InterpolateAudioParameter(odd_parameter, value, bank);
-            scaled = second * slot_base[6];
-            if (scaled < 0) {
-                scaled += 0x7F;
-            }
-            SetSoundSlotTone(index, first, scaled >> 7, bank, 3);
-        }
-        odd_parameter += 2;
-        index++;
-        slot++;
-    } while (index < 6);
-
-    g_EngineSoundState.position = value;
-    ApplyPanVoiceVolume();
-    UpdateBasicEffectVoices();
-    UpdateIndexedEffectVoice();
-    UpdateEffectVoiceStates();
-}
-
 void SetDefaultReverbDepth(void) {
     SetReverbDepth(0x28, 0x28);
 }
