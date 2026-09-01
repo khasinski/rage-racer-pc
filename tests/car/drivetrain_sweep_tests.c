@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
         s_car.z = 0x900;
         p->gear = (s16)gears[gi];
         p->gearDisp = (s16)gears[gi];
-        p->acceleratorInput.sampled = (s16)pedals[ai];
+        p->acceleratorInput.value = (s16)pedals[ai];
         p->brakeInput = (s16)pedals[bi];
         p->acceleratorLatch = (s16)(ai & 1);
         p->brakeLatch = (s16)(bi & 1);
@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
             s_car.z = 0x900;
             p->gear = 3;
             p->gearDisp = (s16)(shifting ? 4 : 3);
-            p->acceleratorInput.sampled = 0x100;
+            p->acceleratorInput.value = 0x100;
             p->brakeInput = 0x40;
             p->motionState = (s16)(shifting ? CAR_MOTION_TAKEOFF
                                             : CAR_MOTION_DRIVING);

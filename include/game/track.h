@@ -103,12 +103,6 @@ typedef struct TrackEventOffsets {
     s32 flybyScenery;
 } TrackEventOffsets;
 
-typedef union TrackEventOffsetBase {
-    volatile TrackEventOffsets *offsets;
-    u8 *bytes;
-    struct PathSceneryRotationData *pathSceneryRotation;
-} TrackEventOffsetBase;
-
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 LerpColorChannel(s32 from, s32 to, s32 blend);
 

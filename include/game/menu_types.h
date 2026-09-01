@@ -25,7 +25,6 @@ typedef union RaceRecordAddress {
     s32 *wordPointer;
     u16 *halfwordPointer;
     u8 *bytePointer;
-    volatile u8 *volatileBytePointer;
 } RaceRecordAddress;
 
 typedef struct TeamLogoSample {

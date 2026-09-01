@@ -29,31 +29,25 @@
 static void SamplePlayerInput(GameCarDrive *p) {
     if (g_RacePhase < 4) {
         if (g_PadType == 0x41) {
-            p->acceleratorInput.sampled =
+            p->acceleratorInput.value =
                 ((g_PadHeld & g_PadButtonMapping[2]) != 0) << 8;
             p->brakeInput = ((g_PadHeld & g_PadButtonMapping[3]) != 0) << 8;
         } else if (g_PadType == 0x23) {
-            p->acceleratorInput.sampled =
+            p->acceleratorInput.value =
                 ((g_PadHeld & g_PadButtonMapping[10]) != 0) << 8;
             p->brakeInput = ((g_PadHeld & g_PadButtonMapping[11]) != 0) << 8;
             switch (g_NegconMappingIndex) {
             case 0:
             case 5:
             {
-                CarInputAddress acceleratorInput;
-
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogI << 8) / 106;
+                p->acceleratorInput.value = (g_NegconAnalogI << 8) / 106;
                 p->brakeInput = (g_NegconAnalogII << 8) / 106;
                 break;
             }
             case 1:
             case 6:
             {
-                CarInputAddress acceleratorInput;
-
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogII << 8) / 106;
+                p->acceleratorInput.value = (g_NegconAnalogII << 8) / 106;
                 p->brakeInput = (g_NegconAnalogI << 8) / 106;
                 break;
             }
@@ -62,10 +56,7 @@ static void SamplePlayerInput(GameCarDrive *p) {
                 break;
             case 3:
             {
-                CarInputAddress acceleratorInput;
-
-                acceleratorInput.pointer = &p->acceleratorInput.value;
-                *acceleratorInput.sampled = (g_NegconAnalogII << 8) / 106;
+                p->acceleratorInput.value = (g_NegconAnalogII << 8) / 106;
                 p->brakeInput = (g_NegconAnalogL << 8) / 106;
                 break;
             }

@@ -63,7 +63,6 @@ typedef union GameFrameContext {
     GameFrameEnvironmentHeader environment;
     GameFrameLayout layout;
     u8 bytes[sizeof(GameFrameLayout)];
-    volatile u8 volatileBytes[sizeof(GameFrameLayout)];
 } GameFrameContext;
 
 typedef union GameFrameContextAddress {
