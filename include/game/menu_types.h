@@ -25,15 +25,9 @@ static inline TeamLogoSample *GetTeamLogoSample(void *data) {
     return (TeamLogoSample *)data;
 }
 
-typedef union TeamLogoPixelWord {
-    u16 value;
-    u8 bytes[2];
-} TeamLogoPixelWord;
-
 typedef union TeamLogoCanvas {
     u8 bytes[0x800];
     u16 halfwords[0x400];
-    TeamLogoPixelWord pixels[0x400];
     u32 words[64][8];
 } TeamLogoCanvas;
 

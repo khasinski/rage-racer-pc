@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "common.h"
@@ -12,9 +12,16 @@ u16 g_TeamLogoSwatches[15];
 
 static TeamLogoSample samples[20];
 
-int main(void)
-{
+static int Check(int condition, const char *message) {
+    if (!condition) {
+        fprintf(stderr, "FAIL: %s\n", message);
+    }
+    return condition;
+}
+
+int main(void) {
     s32 index;
+    int ok = 1;
 
     memset(samples, 0, sizeof(samples));
     memset(g_TeamLogoClut, 0xA5, sizeof(g_TeamLogoClut));
@@ -30,14 +37,48 @@ int main(void)
 
     ComposeSampleTeamLogo(0, 0);
 
-    assert(g_TeamLogoClut[0] == 0xA5A5);
+    ok &= Check(g_TeamLogoClut[0] == 0xA5A5, "colour zero was overwritten");
     for (index = 1; index < 12; index++) {
-        assert(g_TeamLogoSwatches[index - 1] == (u16)(0x100 + index));
-        assert(g_TeamLogoClut[index] == (u16)(0x100 + index));
+        ok &= Check(g_TeamLogoSwatches[index - 1] == (u16)(0x100 + index),
+                    "character swatch differs");
+        ok &= Check(g_TeamLogoClut[index] == (u16)(0x100 + index),
+                    "character CLUT differs");
     }
     for (index = 12; index < 16; index++) {
-        assert(g_TeamLogoClut[index] == (u16)(0x200 + index));
+        ok &= Check(g_TeamLogoClut[index] == (u16)(0x200 + index),
+                    "background CLUT differs");
     }
 
+    memset(samples, 0, sizeof(samples));
+    for (index = 1; index < 12; index++) {
+        samples[1].clut[1][index] = (u16)(0x300 + index);
+    }
+    for (index = 12; index < 16; index++) {
+        samples[12].clut[1][index] = (u16)(0x400 + index);
+    }
+    samples[1].canvas[0][0] = 0x1020;
+    samples[12].canvas[0][0] = 0xABCD;
+    samples[1].canvas[63][15] = 0x0000;
+    samples[12].canvas[63][15] = 0x5678;
+
+    ComposeSampleTeamLogo(3, 5);
+
+    ok &= Check(g_TeamLogoCanvas.halfwords[0] == 0x1B2D,
+                "transparent character pixels were not composited");
+    ok &= Check(g_TeamLogoCanvas.halfwords[1023] == 0x5678,
+                "last background word was not copied");
+    for (index = 1; index < 12; index++) {
+        ok &= Check(g_TeamLogoClut[index] == (u16)(0x300 + index),
+                    "odd character variant was not selected");
+    }
+    for (index = 12; index < 16; index++) {
+        ok &= Check(g_TeamLogoClut[index] == (u16)(0x400 + index),
+                    "odd background variant was not selected");
+    }
+
+    if (!ok) {
+        return 1;
+    }
+    puts("team logo samples compose palettes and pixels correctly");
     return 0;
 }
