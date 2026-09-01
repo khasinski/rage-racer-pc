@@ -24,9 +24,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-# What the sky draws today. Run the test to see the number when it moves, and
-# change it here only when the change to the sky was meant.
-EXPECTED = 0xD4489E95
+# This hashes complete race frames because the terrain is needed to prove that
+# the skirt closes the horizon. A deliberate physics or camera correction can
+# therefore move it too; inspect the changed frames before accepting a value.
+# The current baseline includes the restored one-based right-edge knockback
+# mode (876d88f3) and synchronizes random state when the race scene starts.
+EXPECTED = 0xD728E09D
 
 
 def main() -> int:
@@ -36,7 +39,7 @@ def main() -> int:
         environment.update(
             SDL_AUDIODRIVER="dummy",
             RAGE_PORT_DISABLE_HOST_INPUT="1",
-            RAGE_PORT_SYNC_RANDOM="1",
+            RAGE_PORT_SYNC_RANDOM="12@0=1",
             RAGE_PORT_SMOKE_CAPTURE_DIR=directory,
             RAGE_PORT_SMOKE_CAPTURE_SCENE="12",
             RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN="100",
