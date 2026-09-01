@@ -441,6 +441,26 @@ target_link_libraries(browse_arrows_tests PRIVATE psyz)
 add_test(NAME browse_arrows COMMAND browse_arrows_tests)
 set_tests_properties(browse_arrows PROPERTIES LABELS unit)
 
+add_executable(car_spec_graph_tests
+    car_spec_graph_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_graph.c)
+target_include_directories(car_spec_graph_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_spec_graph_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_spec_graph_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_spec_graph_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(car_spec_graph_tests PRIVATE psyz)
+add_test(NAME car_spec_graph COMMAND car_spec_graph_tests)
+set_tests_properties(car_spec_graph PROPERTIES LABELS unit)
+
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c
