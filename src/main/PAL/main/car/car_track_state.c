@@ -8,22 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef union TrackCarAddress {
-    PlayerCarRuntime *player;
-    GameCarRuntime *runtime;
-} TrackCarAddress;
-
-/*
- * Track-segment / route-sprite geometry builder. Interpolates between the
- * GameTrackPoint at `trackPointIndex`
- * and its successor: computes route angles/heights via atan2 (Atan2)
- * and rsin/rcos, builds the collision-boundary
- * offset, and writes the interpolated position/angle/height into the render
- * object `obj`. The working struct ("work") is the GTE
- * per-primitive transform working set. `limits` supplies the boundary margins and
- * knockback modes.
- * Returns the boundary/skid response code.
- */
 /*
  * Work out where the track's edges are here, and hold the car inside them.
  *
@@ -37,64 +21,51 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
                                 const GameTrackPoint *point,
                                 const GameTrackPoint *nextPoint,
                                 s32 alongSegment, s32 lateralOffset) {
-    TrackCarAddress playerAddress;
     s32 edgeHeight;
     s32 leftLimit;
     s32 rightLimit;
-    s16 segLenA;
-    s16 segLenB;
-    void *clampSource;
+    s16 segmentLength;
 
-    segLenA = (s16)work->segmentLength;
+    segmentLength = (s16)work->segmentLength;
     work->leftHalfWidth = (s16)((nextPoint->leftHalfWidth * alongSegment +
-                           point->leftHalfWidth * (segLenA - alongSegment)) /
-                          segLenA);
-    segLenB = (s16)work->segmentLength;
+                           point->leftHalfWidth * (segmentLength - alongSegment)) /
+                          segmentLength);
     edgeHeight = (nextPoint->rightHalfWidth * alongSegment +
-                  point->rightHalfWidth * (segLenB - alongSegment)) /
-                 segLenB;
-    work->rightHalfWidth = (s16) edgeHeight;
+                  point->rightHalfWidth * (segmentLength - alongSegment)) /
+                 segmentLength;
+    work->rightHalfWidth = (s16)edgeHeight;
     leftLimit = work->leftHalfWidth + limits->leftInset;
-    clampSource = &work->pad40[0];
-    if (lateralOffset < (0 - leftLimit))
-    {
+    if (lateralOffset < -leftLimit) {
         lateralOffset += leftLimit;
         work->offsetX = 0U;
         work->offsetY = 0;
         work->offsetZ = lateralOffset;
-        BuildRotMatrixY(clampSource, work->heading);
-        ApplyMatrix(clampSource, &work->offsetX, &work->correctionX);
-        playerAddress.player = &g_PlayerCar;
-        if (obj == playerAddress.runtime)
-        {
+        BuildRotMatrixY(&work->pad40[0], work->heading);
+        ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
+        if (obj == (GameCarRuntime *)&g_PlayerCar) {
             SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->leftKnockbackMode);
         }
-        obj->x = obj->x - work->correctionX;
-        obj->z = obj->z - work->correctionZ;
+        obj->x -= work->correctionX;
+        obj->z -= work->correctionZ;
         lateralOffset = -work->leftHalfWidth - limits->leftInset;
         work->knockbackMode = limits->leftKnockbackMode;
+        return lateralOffset;
     }
-    else
-    {
     rightLimit = (s16)edgeHeight - limits->rightInset;
-    if (rightLimit < lateralOffset)
-    {
+    if (rightLimit < lateralOffset) {
         lateralOffset -= rightLimit;
         work->offsetX = 0U;
         work->offsetY = 0;
         work->offsetZ = lateralOffset;
-        BuildRotMatrixY(clampSource, work->heading);
-        ApplyMatrix(clampSource, &work->offsetX, &work->correctionX);
-        playerAddress.player = &g_PlayerCar;
-        if (obj == playerAddress.runtime)
-        {
+        BuildRotMatrixY(&work->pad40[0], work->heading);
+        ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
+        if (obj == (GameCarRuntime *)&g_PlayerCar) {
             SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->rightKnockbackMode);
         }
-        obj->x = obj->x - work->correctionX;
-        obj->z = obj->z - work->correctionZ;
+        obj->x -= work->correctionX;
+        obj->z -= work->correctionZ;
         lateralOffset = work->rightHalfWidth - limits->rightInset;
         work->knockbackMode = limits->rightKnockbackMode;
-    }
     }
     return lateralOffset;
 }
@@ -119,6 +90,7 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
     s32 arcLateral;
     s16 arcSpan;
     s32 headingAngle;
+    s32 interpolatedRadius;
     s32 pointHeading;
     s32 swept;
     s32 sweptAngle;
@@ -128,54 +100,39 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
     sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
     arcAngle = work->arcSpan;
     work->sweptAngle = sweptAngle;
-    {
-        s32 interpolated;
-
-        if (arcAngle <= 0)
-        {
-            interpolated = work->pointRadius.value;
-            work->arcSpan = 1;
-        }
-        else
-        {
-            interpolated = (((s16)sweptAngle * work->pointRadius.value) +
-                            ((arcAngle - (s16)sweptAngle) * work->nextPointRadius.value)) /
-                           arcAngle;
-        }
-        work->pointRadius.value = interpolated;
+    if (arcAngle <= 0) {
+        interpolatedRadius = work->pointRadius.value;
+        work->arcSpan = 1;
+    } else {
+        interpolatedRadius = (((s16)sweptAngle * work->pointRadius.value) +
+                              ((arcAngle - (s16)sweptAngle) * work->nextPointRadius.value)) /
+                             arcAngle;
     }
+    work->pointRadius.value = interpolatedRadius;
     arcLateral = (s16)(work->carRadius.half.low - work->pointRadius.half.low);
-    if (work->curveMode == 2)
-    {
-        arcLateral = 0 - arcLateral;
+    if (work->curveMode == 2) {
+        arcLateral = -arcLateral;
     }
     work->arcLateral = arcLateral;
-    {
-        headingAngle = nextPoint->angle;
-        pointHeading = point->angle;
-        if ((headingAngle - pointHeading) >= 0x801)
-        {
-            swept = work->sweptAngle;
-            arcSpan = work->arcSpan;
-            work->heading = (s16)(((headingAngle - 0x1000) * swept +
-                                   pointHeading * (arcSpan - swept)) /
-                                  arcSpan);
-        }
-        else if ((pointHeading - headingAngle) >= 0x801)
-        {
-            swept = work->sweptAngle;
-            arcSpan = work->arcSpan;
-            work->heading = (s16)((headingAngle * swept +
-                                   (pointHeading - 0x1000) * (arcSpan - swept)) /
-                                  arcSpan);
-        }
-        else
-        {
-            swept = work->sweptAngle;
-            arcSpan = work->arcSpan;
-            work->heading =
-                (s16)((headingAngle * swept + pointHeading * (arcSpan - swept)) / arcSpan);
-        }
+    headingAngle = nextPoint->angle;
+    pointHeading = point->angle;
+    if ((headingAngle - pointHeading) >= 0x801) {
+        swept = work->sweptAngle;
+        arcSpan = work->arcSpan;
+        work->heading = (s16)(((headingAngle - 0x1000) * swept +
+                               pointHeading * (arcSpan - swept)) /
+                              arcSpan);
+    } else if ((pointHeading - headingAngle) >= 0x801) {
+        swept = work->sweptAngle;
+        arcSpan = work->arcSpan;
+        work->heading = (s16)((headingAngle * swept +
+                               (pointHeading - 0x1000) * (arcSpan - swept)) /
+                              arcSpan);
+    } else {
+        swept = work->sweptAngle;
+        arcSpan = work->arcSpan;
+        work->heading =
+            (s16)((headingAngle * swept + pointHeading * (arcSpan - swept)) / arcSpan);
     }
 }
 
