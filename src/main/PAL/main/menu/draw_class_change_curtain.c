@@ -1,70 +1,53 @@
 #include "game/menu.h"
 
+#include <stdint.h>
+
+#define CLASS_CHANGE_CURTAIN_MAX_SLIDE 25
+#define CLASS_CHANGE_CURTAIN_MAX_DRAW_PHASE 15
+#define CLASS_CHANGE_CURTAIN_HEIGHT 240
+#define CLASS_CHANGE_CURTAIN_WIDTH 320
+
+static s32 ClampCurtainSlide(int64_t slide) {
+    if (slide < 0) return 0;
+    if (slide > CLASS_CHANGE_CURTAIN_MAX_SLIDE) {
+        return CLASS_CHANGE_CURTAIN_MAX_SLIDE;
+    }
+    return (s32)slide;
+}
+
+static void DrawClassChangeCurtainPanels(s32 slide) {
+    const s32 phase = slide < CLASS_CHANGE_CURTAIN_MAX_DRAW_PHASE
+                          ? slide
+                          : CLASS_CHANGE_CURTAIN_MAX_DRAW_PHASE;
+    const s32 upperPanelY = -CLASS_CHANGE_CURTAIN_HEIGHT + phase * 16;
+    const s32 lowerPanelY = CLASS_CHANGE_CURTAIN_HEIGHT - upperPanelY;
+    void *ot = RENDER_OT_BASE_AS(void);
+
+    DrawSolidRect(ot, 0, upperPanelY, CLASS_CHANGE_CURTAIN_WIDTH,
+                  CLASS_CHANGE_CURTAIN_HEIGHT, 0x95, 0x25, 0x1E, 0xFF);
+    DrawSolidRect(ot, 0, lowerPanelY, CLASS_CHANGE_CURTAIN_WIDTH,
+                  CLASS_CHANGE_CURTAIN_HEIGHT, 0x95, 0x25, 0x1E, 0xFF);
+}
+
 s32 DrawClassChangeCurtain(s32 step) {
-    void *ot;
-    s32 delta;
-    s32 value;
-    s32 y1;
-    s32 red;
-    s32 green;
-    s32 blue;
-    s32 alpha;
-    s32 temp;
-    s32 zero;
-    void *savedOt;
-    s32 yArg;
-    u32 curtainPhase;
-
-    ot = RENDER_OT_BASE;
-    delta = step;
-
-    if (delta == 0) {
+    if (step == 0) {
         g_ClassChangeCurtainSlide = 0;
-        return g_ClassChangeCurtainSlide;
-    } else {
-        if (delta < 0) {
-            temp = g_ClassChangeCurtainSlide + delta;
-            g_ClassChangeCurtainSlide = temp;
-            if (temp < 0) {
-                g_ClassChangeCurtainSlide = 0;
-            }
-        }
-
-        value = g_ClassChangeCurtainSlide;
-        if (value >= 0 && g_MenuAltLayout == 0) {
-            if (value >= 0x10) {
-                value = 0xF;
-            }
-            savedOt = ot;
-            zero = 0;
-            
-            curtainPhase = value;
-            value = ((curtainPhase << 9) / 32) + 0xFF10;
-            yArg = (s16)value;
-            y1 = 0xF0;
-            red = 0x95;
-            green = 0x25;
-            blue = 0x1E;
-            alpha = 0xFF;
-            DrawSolidRect(savedOt, zero, yArg, 0x140, y1, red, green, blue, alpha);
-            savedOt = ot;
-            zero = 0;
-            
-            value = y1 - value;
-            value <<= 0x10;
-            yArg = value >> 0x10;
-            DrawSolidRect(savedOt, zero, yArg, 0x140, y1, red, green, blue, alpha);
-        }
-
-        if (delta > 0) {
-            temp = g_ClassChangeCurtainSlide + delta;
-            g_ClassChangeCurtainSlide = temp;
-            if (temp >= 0x1A) {
-                g_ClassChangeCurtainSlide = 0x19;
-            }
-        }
+        return 0;
     }
 
-    value = g_ClassChangeCurtainSlide;
-    return value;
+    if (step < 0) {
+        g_ClassChangeCurtainSlide =
+            ClampCurtainSlide((int64_t)g_ClassChangeCurtainSlide + step);
+    }
+
+    if (g_MenuAltLayout == 0) {
+        DrawClassChangeCurtainPanels(g_ClassChangeCurtainSlide);
+    }
+
+    if (step > 0) {
+        g_ClassChangeCurtainSlide =
+            ClampCurtainSlide((int64_t)g_ClassChangeCurtainSlide + step);
+    }
+
+    return g_ClassChangeCurtainSlide;
 }
