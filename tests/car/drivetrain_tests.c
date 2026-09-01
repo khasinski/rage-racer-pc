@@ -431,6 +431,20 @@ static void TorqueBandTests(void) {
         }
     }
 
+    /* An empty band deliberately falls back to wheel torque minus drivetrain
+     * load instead of inventing a zero interpolation. */
+    BuildSpec();
+    g_TorqueBandEnd[2] = 4;
+    g_TorqueBandEnd[3] = 4;
+    PlaceCar();
+    s_car.drive.engineRpm = 3500;
+    s_car.drive.drivetrainTorque = -200000;
+    UpdateCarDrivetrain(&s_car);
+    Check(s_car.acceleration == 0, "empty torque band fallback",
+          s_car.acceleration, 0);
+    Check(s_car.drive.engineRpm == 0, "empty torque band rpm fallback",
+          s_car.drive.engineRpm, 0);
+
 }
 
 int main(void) {

@@ -11,11 +11,6 @@ typedef union DrivetrainWheelSpeed {
 } DrivetrainWheelSpeed;
 
 /*
- * Note on `gearCurve`: m2c merged two values into one temporary, so it starts
- * out as the per-gear torque curve pointer and is later reused to carry the
- * shift target speed. Splitting it changes the register assignment.
- */
-/*
  * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
  * confirms it, and it only clears once the pedal is back under 0x7C. The gap
  * between the two thresholds is what stops a pedal resting on the edge from
@@ -248,21 +243,123 @@ static void UpdateSteeringGrip(PlayerCarRuntime *car, GameCarDrive *drive,
                (gripBudget * drive->steeringGripResponse) / 1000) / 2);
 }
 
+static s32 CalculateInitialAcceleration(const GameCarDrive *drive,
+                                        s32 gearRatio) {
+  s32 gearTorque = gearRatio * drive->engineRpm;
+  s32 netLoad = gearTorque - drive->drivetrainTorque;
+  s32 roundedLoad;
+
+  if (drive->motionState == CAR_MOTION_TAKEOFF) {
+    roundedLoad = netLoad < 0 ? netLoad + 0xFFF : netLoad;
+    return roundedLoad >> 12;
+  }
+  if (netLoad < -0x30D3) {
+    if (drive->motionState == CAR_MOTION_STANDING_START) {
+      return netLoad / 768;
+    }
+    roundedLoad = netLoad + 0x7FF;
+    return roundedLoad >> 11;
+  }
+  if (netLoad > 0x186A0) {
+    roundedLoad = netLoad < 0 ? netLoad + 0xFF : netLoad;
+    return ((roundedLoad >> 8) * 0x46) / 200;
+  }
+  return 0;
+}
+
+static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
+                                 const GameCarSpec *spec, s32 *acceleration) {
+  s16 targetGear;
+  s32 countdown;
+
+  if (drive->motionState == CAR_MOTION_TAKEOFF ||
+      drive->motionState == CAR_MOTION_STANDING_START) {
+    drive->jumpTimer = 0;
+    drive->clutch = 0;
+    return;
+  }
+
+  if (drive->motionState == CAR_MOTION_AIRBORNE && drive->jumpTimer >= 0) {
+    s16 nextTimer = drive->jumpTimer - 1;
+
+    drive->jumpTimer = nextTimer < 0 ? 0 : nextTimer;
+    *acceleration = 0;
+    targetGear = drive->gear;
+    if (drive->gearDisp != targetGear) {
+      s32 targetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
+                      spec->gearRatio[targetGear];
+      u16 currentRpm = (u16)drive->engineRpm;
+
+      g_ShiftTargetRpm = targetRpm;
+      drive->shiftRpmDelta = (s16)((u16)targetRpm - currentRpm);
+    }
+    drive->engineRpm = drive->shiftRpmDelta * drive->jumpTimer / 20 +
+                       g_ShiftTargetRpm;
+    return;
+  }
+
+  targetGear = drive->gear;
+  if (drive->gearDisp != targetGear) {
+    DrivetrainWheelSpeed wheelSpeed;
+    s32 targetSpeed = (car->speed * 0x2710) /
+                      (spec->gearRatio[targetGear] * 0x490 / 160);
+
+    wheelSpeed.value = (u16)car->acceleration;
+    drive->engineLoad = wheelSpeed.value;
+    g_ShiftTargetSpeed = targetSpeed;
+    if (drive->manual != 0 && drive->gearDisp < targetGear &&
+        g_RoadGrade < 0 && targetGear >= 4) {
+      s32 gradePenalty;
+      s32 gradeScale;
+
+      if (targetGear == 4) {
+        gradePenalty = -g_RoadGrade / 120;
+      } else if (targetGear == 5) {
+        gradePenalty = -g_RoadGrade / 48;
+      } else {
+        gradePenalty = g_RoadGrade * -7 / 240;
+      }
+      wheelSpeed.unsignedValue <<= 16;
+      wheelSpeed.value >>= 16;
+      gradeScale = 0x64 - gradePenalty;
+      drive->engineLoad =
+          (u16)(wheelSpeed.value * gradeScale / 100);
+      g_ShiftTargetSpeed = gradeScale * targetSpeed / 100;
+    }
+
+    *acceleration = 0;
+    if (drive->gearDisp > targetGear) {
+      g_ShiftTargetSpeed += 0x1F4;
+    }
+    drive->clutch = 0xA;
+    drive->drivetrainCoupled = 0;
+    drive->shiftSpeedDelta =
+        (s16)((u16)g_ShiftTargetSpeed - (u16)drive->engineRpm);
+    return;
+  }
+
+  countdown = --drive->clutch;
+  if ((s16)countdown <= 0) {
+    drive->drivetrainCoupled = 1;
+    drive->engineLoad = 0;
+    drive->clutch = 0;
+  } else if (drive->manual != 0) {
+    drive->engineRpm = g_ShiftTargetSpeed -
+                       drive->shiftSpeedDelta * (s16)countdown / 15;
+  } else {
+    drive->engineRpm = g_ShiftTargetSpeed -
+                       drive->shiftSpeedDelta * (s16)countdown / 10;
+  }
+}
+
 void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   GearCurveAddress gearCurve;
-  s16 targetGear;
-  s16 targetGearAgain;
   int assistArmed;
-  s16 shiftTimerNext;
-  s32 assistEnabled;
   s16 gear;
-  s16 targetGearCheck;
   s32 shiftRemaining;
   s32 trackHeadingError;
   s32 pointIndex;
-  s32 wheelSpeed;
   s32 lateralOffset;
-  s32 gearTorque;
   s32 dragProduct;
   s32 toCentreX;
   s32 gearTorqueLate;
@@ -273,10 +370,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 speedForPath;
   s32 centreAngle;
   s32 radialDistance;
-  s32 shiftTargetRpm;
   s32 headingError;
-  s32 shiftMode;
-  s32 gradeScale;
   s32 sideForce;
   s32 roadSpeed;
   s32 arcPointIndex;
@@ -284,10 +378,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 torqueShifted;
   s32 speedB;
   s32 driveModeLate;
-  s32 loadTorque;
-  s32 driveMode;
   s32 frontLoadScaled;
-  s32 shiftTargetSpeed;
   s32 downforceScale;
   s32 downforce;
   s32 gripBudget;
@@ -299,23 +390,15 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 steerLoad;
   s32 throttleAccel;
   s32 gearRatio;
-  s32 *gearRatios;
   s32 netTorque;
-  s32 gradePenalty;
   s32 lateralSum;
   s32 dragBase;
-  s32 netTorqueRoundedA;
-  s32 netTorqueRoundedC;
-  s32 netTorqueRoundedB;
-  s32 lossBase;
   s32 throttleTorque;
   s32 speedScaled;
   s32 torqueLate;
   s32 coefficientBase;
   s32 coefficient;
-  DrivetrainWheelSpeed wheelSpeedScaled;
   u16 arcFlags;
-  u16 currentSpeed;
   GameCarDrive *drive;
   GameTrackArcCenter *arcCentre;
   PlayerCarRuntime *car;
@@ -350,163 +433,13 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   gripBudget = 0x17C - frontLoadScaled;
   gripBudget += (drive->brakeInput * 0x64) / 256;
   UpdateSteeringGrip(car, drive, gripBudget);
-  gearTorque = gearRatio * drive->engineRpm;
   steerLoad = 0;
-  loadTorque = drive->drivetrainTorque;
-  netTorque = gearTorque - loadTorque;
-  driveMode = drive->motionState;
-  accel = 0;
-  if (driveMode == CAR_MOTION_TAKEOFF)
-  {
-    netTorqueRoundedA = netTorque;
-    if (netTorque < 0)
-    {
-      netTorqueRoundedA = netTorque + 0xFFF;
-    }
-    accel = netTorqueRoundedA;
-    accel = accel >> 0xC;
-  }
-  else
-    if (netTorque >= (-0x30D3))
-  {
-    if (netTorque > 0x186A0)
-    {
-      netTorqueRoundedB = netTorque;
-      if (netTorque < 0)
-      {
-        netTorqueRoundedB = netTorque + 0xFF;
-      }
-      accel = ((netTorqueRoundedB >> 8) * 0x46) / 200;
-    }
-  }
-  else
-    if (driveMode == CAR_MOTION_STANDING_START)
-  {
-    accel = (gearTorque - loadTorque) / 768;
-  }
-  else
-  {
-    netTorqueRoundedC = netTorque;
-    if (netTorque < 0)
-    {
-      netTorqueRoundedC = netTorque + 0x7FF;
-    }
-    accel = netTorqueRoundedC >> 0xB;
-  }
+  accel = CalculateInitialAcceleration(drive, gearRatio);
+  /* If RPM falls between configured bands, retail keeps the raw wheel/load
+   * difference rather than replacing it with an interpolated curve value. */
+  netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
   ReadEngineTorque(drive, config, gearCurve, &netTorque, &bandScale);
-  shiftMode = drive->motionState;
-  if ((shiftMode == 1) || (shiftMode == 3))
-  {
-    drive->jumpTimer = 0;
-    drive->clutch = 0;
-  }
-  else if (shiftMode == 2 && drive->jumpTimer >= 0)
-  {
-    /*
-     * A shift is in progress: run the timer down and drag the engine speed
-     * towards where the new gear will put it. The target is recomputed only
-     * while the displayed gear still lags the real one.
-     */
-    shiftTimerNext = drive->jumpTimer - 1;
-    drive->jumpTimer = shiftTimerNext < 0 ? 0 : shiftTimerNext;
-    accel = 0;
-    targetGear = drive->gear;
-    if (drive->gearDisp != targetGear)
-    {
-      gearRatios = g_CarSpec->gearRatio;
-      shiftTargetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
-                       gearRatios[targetGear];
-      currentSpeed = (u16)drive->engineRpm;
-      g_ShiftTargetRpm = shiftTargetRpm;
-      drive->shiftRpmDelta = (s16)((u16)g_ShiftTargetRpm - currentSpeed);
-    }
-    drive->engineRpm =
-        (drive->shiftRpmDelta * drive->jumpTimer / 20) + g_ShiftTargetRpm;
-  }
-  else
-  {
-    targetGearAgain = drive->gear;
-    if (drive->gearDisp != targetGearAgain)
-    {
-      gearRatios = config.pointer->gearRatio;
-      gearCurve.value = (car->speed * 0x2710) /
-                            (gearRatios[targetGearAgain] * 0x490 / 160);
-      wheelSpeed = (u16)car->acceleration;
-      wheelSpeedScaled.value = wheelSpeed;
-      assistEnabled = drive->manual;
-      drive->engineLoad = wheelSpeedScaled.value;
-      g_ShiftTargetSpeed = gearCurve.value;
-      if (assistEnabled != 0)
-      {
-        targetGearCheck = drive->gear;
-        /*
-         * Climbing while the box is still catching up costs the engine some
-         * of its load, and the taller the gear the more of it. Below fourth
-         * nothing is taken off at all.
-         */
-        if (drive->gearDisp < targetGearCheck && g_RoadGrade < 0 &&
-            targetGearCheck >= 4)
-        {
-          if (targetGearCheck == 4)
-          {
-            gradePenalty = (-g_RoadGrade) / 120;
-          }
-          else if (targetGearCheck == 5)
-          {
-            gradePenalty = (-g_RoadGrade) / 48;
-          }
-          else
-          {
-            gradePenalty = (g_RoadGrade * (-7)) / 240;
-          }
-          /* Sign-extend the wheel speed's low halfword. */
-          wheelSpeedScaled.unsignedValue <<= 16;
-          wheelSpeedScaled.value >>= 16;
-          gradeScale = 0x64 - gradePenalty;
-          drive->engineLoad = (u16)((wheelSpeedScaled.value * gradeScale) / 100);
-          g_ShiftTargetSpeed = (gradeScale * gearCurve.value) / 100;
-        }
-      }
-      shiftTargetSpeed = g_ShiftTargetSpeed;
-
-      accel = 0;
-      if (drive->gearDisp > drive->gear)
-      {
-        shiftTargetSpeed += 0x1F4;
-      }
-      g_ShiftTargetSpeed = shiftTargetSpeed;
-      {
-        u16 targetSpeed = (u16) g_ShiftTargetSpeed;
-        u16 currentSpeed = (u16)drive->engineRpm;
-        drive->clutch = 0xA;
-        drive->drivetrainCoupled = 0;
-        drive->shiftSpeedDelta = (s16)(targetSpeed - currentSpeed);
-      }
-    }
-    else
-    {
-      {
-        s32 countdown = --drive->clutch;
-      if (((s16) countdown) <= 0)
-      {
-        drive->drivetrainCoupled = 1;
-        drive->engineLoad = 0;
-        drive->clutch = 0;
-      }
-      else
-        if (drive->manual != 0)
-      {
-        drive->engineRpm = g_ShiftTargetSpeed - drive->shiftSpeedDelta * (s16)countdown / 15;
-      }
-      else
-      {
-        shiftRemaining = drive->shiftSpeedDelta * (s16)countdown;
-        lossBase = shiftRemaining / 10;
-        drive->engineRpm = g_ShiftTargetSpeed - lossBase;
-      }
-      }
-    }
-  }
+  UpdateGearShiftState(car, drive, config.pointer, &accel);
   throttleTorque = netTorque * drive->acceleratorInput.value * drive->drivetrainCoupled;
   if (throttleTorque < 0)
   {
