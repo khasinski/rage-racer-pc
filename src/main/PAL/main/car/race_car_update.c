@@ -446,139 +446,50 @@ void UpdateRaceCars(void) {
     SettleAllCarBodies();
 }
 
+static void AccelerateAttractCars(void) {
+    s32 i;
+
+    for (i = 0; i < 11; i++) {
+        GameCarRuntime *car = &g_Cars[i];
+        GameCarAiBlock *ai = GetCarAiBlock(car);
+
+        if (car->activeFlag == -1) {
+            continue;
+        }
+        if (car->acceleration < car->accelerationLimit) {
+            car->acceleration += car->accelerationStep;
+        } else {
+            car->acceleration = car->accelerationLimit;
+        }
+        car->speed = car->speed * 94 / 100 + car->acceleration;
+        car->bodyYaw += GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5;
+    }
+}
+
 /* Runs the corresponding all-cars pass for attract and replay scenes. */
 void UpdateAttractCars(void) {
+    s32 i;
+
     TraceCarStates();
-    Vec4 vTmp;
-    /* See UpdateRaceCars: these two Matrix workspaces shape retail's frame. */
-    Matrix m1;
-    Matrix m2;
-    SVec sv1;
-    /* These pins reproduce the retail induction registers. */
-    GameCarRuntime *car;
-    GameCarRuntime *sub;
-    s16 i;
-    GameCarRuntime *c0;
-    c0 = g_Cars;
     for (i = 0; i < 11; i++) {
-        c0->reservedF8 = 0;
-        c0->collisionFlag = 0;
-        c0->bodyYaw = c0->baseBodyYaw;
-        c0->progressA = ((c0->progressA) % (g_TrackLength));
-        c0++;
+        GameCarRuntime *car = &g_Cars[i];
+
+        car->reservedF8 = 0;
+        car->collisionFlag = 0;
+        car->bodyYaw = car->baseBodyYaw;
+        car->progressA %= g_TrackLength;
     }
     for (i = 0; i < 11; i++) {
-        if (((g_Cars[(s16)i]).activeFlag != -1)) {
-            UpdateCarTrafficAvoidance(&g_Cars[(s16)i], (s16)i);
+        if (g_Cars[i].activeFlag != -1) {
+            UpdateCarTrafficAvoidance(&g_Cars[i], i);
         }
     }
     CollideAllCars();
     SteerAllCars();
-    {
-        GameCarAiBlock *drive;
-        i = 0;
-        car = g_Cars;
-        sub = g_Cars;
-        do {
-        if (sub->activeFlag != -1) {
-            drive = GetCarAiBlock(car);
-
-            if (sub->acceleration < sub->accelerationLimit) {
-                sub->acceleration = sub->accelerationStep + sub->acceleration;
-            } else {
-                sub->acceleration = sub->accelerationLimit;
-            }
-            sub->speed = sub->speed * 94 / 100;
-            sub->speed = sub->speed + sub->acceleration;
-            sub->bodyYaw =
-                GetAngleDelta(sub->bodyYaw, drive->targetYaw) / 5 + sub->bodyYaw;
-        }
-        i++;
-        sub++;
-        car++;
-        } while (i < 11);
-        {
-        GameCarRuntime *base;
-        i = 0;
-        car = g_Cars;
-        base = g_Cars;
-        do {
-        drive = GetCarAiBlock(car);
-
-        if (base->activeFlag != -1) {
-            s32 t;
-            base->baseBodyYaw = base->bodyYaw;
-            t = rsin(base->headingAngle) * base->speed;
-            if (t < 0) {
-                t += 0xFF;
-            }
-            base->worldVelocityX = t >> 8;
-            base->worldVelocityZ = rcos(base->headingAngle) * base->speed / 256;
-            if ((s16)i < 4) {
-                s32 sixth;
-                s32 yawStep;
-                car->x = car->x - base->motionX;
-                yawStep = base->yawRate;
-                base->z = base->z - base->motionZ;
-                if (yawStep < 0) {
-                    sixth = -yawStep / 6;
-                } else {
-                    sixth = yawStep / 6;
-                }
-                BuildRotMatrixY(&m1, base->bodyYaw);
-                BuildRotMatrixX(&m2, base->bodyPitch);
-                MulMatrix2(&m2, &m1);
-                BuildRotMatrixZ(&m2, base->bodyRoll);
-                MulMatrix2(&m2, &m1);
-                sv1.vx = 0;
-                sv1.vy = 0;
-                sv1.vz = -sixth - 0x32;
-                m2.m[0][0] = m1.m[0][0];
-                m2.m[0][1] = m1.m[1][0];
-                m2.m[0][2] = m1.m[2][0];
-                m2.m[1][0] = m1.m[0][1];
-                m2.m[1][1] = m1.m[1][1];
-                m2.m[1][2] = m1.m[2][1];
-                m2.m[2][0] = m1.m[0][2];
-                m2.m[2][1] = m1.m[1][2];
-                m2.m[2][2] = m1.m[2][2];
-                ApplyMatrix(&m2, &sv1, &car->motionX);
-                car->x = car->x + base->motionX;
-                base->z = base->z + base->motionZ;
-            }
-            /* Preserve the vertical coordinate and fourth word while moving
-             * the attract car in X/Z.  Copying an otherwise uninitialized
-             * stack Vec4 happened to work in the retail executable, but is
-             * undefined and makes the result depend on the host ABI. */
-            vTmp = *GetCarVector4(car);
-            vTmp.x = drive->worldVelocityX * 6 / 1280 + car->x;
-            vTmp.z = drive->worldVelocityZ * 6 / 1280 + base->z;
-            *GetCarVector4(car) = vTmp;
-            if (base->steeringAngle >= 0x41) {
-                base->bodyRollVelocity = base->bodyRollVelocity - 6;
-            } else if (base->steeringAngle < -0x40) {
-                base->bodyRollVelocity = base->bodyRollVelocity + 6;
-            }
-            if (base->bodyRollVelocity != 0) {
-                base->bodyRollVelocity = base->bodyRollVelocity * 7 / 8;
-            }
-            base->steeringAngle = base->steeringAngle + drive->yawRate;
-            if (base->steeringAngle >= 0x12C) {
-                base->steeringAngle = 0x12C;
-            } else if (base->steeringAngle < -0x12B) {
-                base->steeringAngle = -0x12C;
-            }
-            base->bodyYaw = base->bodyYaw + drive->yawRate;
-        }
-        i++;
-        base++;
-        car++;
-        } while (i < 11);
-        }
-    }
+    AccelerateAttractCars();
+    MoveAllCars();
     PlaceAllCarsOnTrack();
     SettleAllCarBodies();
-
 }
 
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
