@@ -1,6 +1,8 @@
 #include "game/memcard.h"
 #include "game/menu.h"
 
+#include <string.h>
+
 static s32 OpenSaveFileForWrite(char *path, s32 attempt) {
     s32 fd = BiosFileOpen(path, 2);
 
@@ -59,13 +61,14 @@ s32 WriteMemoryCardSaveFile(
     }
 
     GameMenuLoadPhase = attempt | 0x1530;
-    if (BiosFileWrite(fd, iconBlock, 0x200) != 0x200) {
+    if (BiosFileWrite(fd, iconBlock, MC_ICON_BLOCK_SIZE) !=
+        MC_ICON_BLOCK_SIZE) {
         BiosFileClose(fd);
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1540;
-    written = BiosFileWrite(fd, header, 0x80);
-    if (written != 0x80) {
+    written = BiosFileWrite(fd, header, MC_HEADER_SIZE);
+    if (written != MC_HEADER_SIZE) {
         BiosFileClose(fd);
         return 0;
     }
@@ -75,7 +78,7 @@ s32 WriteMemoryCardSaveFile(
         return 0;
     }
     GameMenuLoadPhase = attempt | 0x1560;
-    if (BiosFileWrite(fd, header, 0x80) != written) {
+    if (BiosFileWrite(fd, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
         BiosFileClose(fd);
         return 0;
     }
@@ -85,13 +88,10 @@ s32 WriteMemoryCardSaveFile(
 }
 
 s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
-    u8 block0[0x200];
+    u8 block0[MC_ICON_BLOCK_SIZE];
     _Alignas(GameSaveBlock) u8 block1[MC_BLOCK_SIZE];
-    s32 i;
 
-    for (i = 0x1FF; i >= 0; i--) {
-        block0[i] = 0;
-    }
+    memset(block0, 0, sizeof(block0));
 
     GameMenuLoadPhase = 0x1000;
     return WriteMemoryCardSaveFile(
@@ -106,12 +106,12 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
  * 16-bit sum matches the complement stored in its last word wins. */
 s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
     GameMenuLoadPhase = 0x120;
-    if (BiosFileSeek(slot, 0x1280, 0) < 0) {
+    if (BiosFileSeek(slot, MC_BACKUP_HEADER_OFS, 0) < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x130;
-    if (BiosFileRead(slot, header, 0x80) != 0x80) {
+    if (BiosFileRead(slot, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
         return 0;
     }
 
@@ -121,12 +121,12 @@ s32 ReadVerifiedSaveHeader(s32 slot, GameSaveHeaderRow *header) {
     }
 
     GameMenuLoadPhase = 0x150;
-    if (BiosFileSeek(slot, 0x200, 0) < 0) {
+    if (BiosFileSeek(slot, MC_ICON_BLOCK_SIZE, 0) < 0) {
         return 0;
     }
 
     GameMenuLoadPhase = 0x160;
-    if (BiosFileRead(slot, header, 0x80) != 0x80) {
+    if (BiosFileRead(slot, header, MC_HEADER_SIZE) != MC_HEADER_SIZE) {
         return 0;
     }
 
@@ -150,12 +150,11 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
         fd = BiosFileOpen(g_SaveFilePath + i * 0x1A, 1);
         if (fd >= 0) {
             if (ReadVerifiedSaveHeader(fd, &headers[i]) == 0) {
-                BiosFileClose(fd);
                 mask |= 0x10000 << i;
             } else {
-                BiosFileClose(fd);
                 mask |= 1 << i;
             }
+            BiosFileClose(fd);
         }
     }
 
@@ -165,14 +164,11 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
 
 s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     GameSaveBlock block;
-    GameSaveHeaderRow *header;
     s32 tries;
     s32 fd;
     s32 i;
 
-    header = outHeader;
     GameMenuLoadPhase = 0x3000;
-    tries = 0;
     for (tries = 0; tries < 2; tries++) {
         fd = BiosFileOpen(g_SaveFilePath + slot * 0x1A, 1);
         if (fd >= 0) break;
@@ -185,13 +181,13 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     }
 
     GameMenuLoadPhase = 0x3300;
-    if (ReadVerifiedSaveHeader(fd, header) == 0) {
+    if (ReadVerifiedSaveHeader(fd, outHeader) == 0) {
         BiosFileClose(fd);
         return 0;
     }
 
     GameMenuLoadPhase = 0x3500;
-    if (BiosFileSeek(fd, 0x280, 0) < 0) {
+    if (BiosFileSeek(fd, MC_SAVE_BLOCK_OFS, 0) < 0) {
         BiosFileClose(fd);
         return 0;
     }
@@ -209,12 +205,12 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     }
 
     GameMenuLoadPhase = 0x3800;
-    g_TeamNameLength = header->fields.nameLength;
+    g_TeamNameLength = outHeader->fields.nameLength;
     for (i = 0; i < 7; i++) {
-        g_TeamNameChars[i] = header->fields.name[i];
+        g_TeamNameChars[i] = outHeader->fields.name[i];
     }
     GameMenuLoadPhase = tries | 0x3900;
-    g_SaveElapsedTicks = header->fields.saveCounter;
+    g_SaveElapsedTicks = outHeader->fields.saveCounter;
     return 1;
 }
 

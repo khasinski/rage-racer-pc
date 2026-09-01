@@ -7,7 +7,11 @@
 #define MC_GP_CARS_OFS    0x58
 #define MC_EXTRA_CARS_OFS 0xC0
 #define MC_TIME_CARS_OFS  0x128
+#define MC_ICON_BLOCK_SIZE    0x200
+#define MC_HEADER_SIZE        0x80
 #define MC_BLOCK_SIZE         0x1000
+#define MC_SAVE_BLOCK_OFS     (MC_ICON_BLOCK_SIZE + MC_HEADER_SIZE)
+#define MC_BACKUP_HEADER_OFS  (MC_SAVE_BLOCK_OFS + MC_BLOCK_SIZE)
 #define MC_BLOCK_CHECKSUM_OFS 0xFFC
 
 typedef union GameSaveHeaderRow {
