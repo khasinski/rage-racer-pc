@@ -14,60 +14,43 @@
  */
 void DrawCourseObjects(void) {
     Matrix mtx;
-    CourseObject *obj;
     s32 i;
-    s32 visShift;
-    s32 vis;
-    s32 flags;
 
-    obj = g_CourseObjects;
-    i = 0;
-    if (g_CourseObjectCount <= 0) {
-        return;
-    }
+    for (i = 0; i < g_CourseObjectCount; i++) {
+        CourseObject *obj = &g_CourseObjects[i];
+        s32 cellX;
+        s32 cellZ;
+        s32 transformed;
+        s32 camera;
+        s32 flags;
 
-    do {
-        if (obj->modelId != -1) {
-        visShift = obj->x / 2048;  /* per-sector visibility bit index */
-        vis = g_VisibleCellMask[obj->z / 2048] & (1 << visShift);
-        if (vis == 0) {
-            continue;
-        }
+        if (obj->modelId == -1) continue;
+
+        cellX = obj->x / 2048;
+        cellZ = obj->z / 2048;
+        if ((g_VisibleCellMask[cellZ] & (1 << cellX)) == 0) continue;
 
         BuildRotMatrixY(&mtx, obj->field2);
-        MulMatrix2((&g_RenderState.matrix), &mtx);
-        {
-            s32 transformed;
-            s32 camera;
+        MulMatrix2(&g_RenderState.matrix, &mtx);
 
-            transformed = (u16)obj->x;
-            camera = RENDER_VIEW_STATE->position.components.x.half.low;
-            transformed -= camera;
-            (&g_ObjectMatrixWork)->relative[0] = transformed;
-            transformed = (u16)obj->y;
-            camera = RENDER_VIEW_STATE->position.components.y.half.low;
-            transformed -= camera;
-            (&g_ObjectMatrixWork)->relative[1] = transformed;
-            transformed = (u16)obj->z;
-            camera = RENDER_VIEW_STATE->position.components.z.half.low;
-            transformed -= camera;
-            (&g_ObjectMatrixWork)->relative[2] = transformed;
+        transformed = (u16)obj->x;
+        camera = RENDER_VIEW_STATE->position.components.x.half.low;
+        g_ObjectMatrixWork.relative[0] = transformed - camera;
+        transformed = (u16)obj->y;
+        camera = RENDER_VIEW_STATE->position.components.y.half.low;
+        g_ObjectMatrixWork.relative[1] = transformed - camera;
+        transformed = (u16)obj->z;
+        camera = RENDER_VIEW_STATE->position.components.z.half.low;
+        g_ObjectMatrixWork.relative[2] = transformed - camera;
 
-            ApplyMatrix((&g_RenderState.matrix),
-                        (&g_ObjectMatrixWork)->relative,
-                        &(&g_ObjectMatrixWork)->view);
-            transformed = (&g_ObjectMatrixWork)->view.x;
-            camera = (&g_ObjectMatrixWork)->view.z;
-            transformed *= 4;
-            (&g_ObjectMatrixWork)->mtx.t[0] = transformed;
-            transformed = (&g_ObjectMatrixWork)->view.y;
-            camera *= 4;
-            (&g_ObjectMatrixWork)->mtx.t[2] = camera;
-            transformed *= 4;
-            (&g_ObjectMatrixWork)->mtx.t[1] = transformed;
-        }
+        ApplyMatrix(&g_RenderState.matrix, g_ObjectMatrixWork.relative,
+                    &g_ObjectMatrixWork.view);
+        g_ObjectMatrixWork.mtx.t[0] = g_ObjectMatrixWork.view.x * 4;
+        g_ObjectMatrixWork.mtx.t[1] = g_ObjectMatrixWork.view.y * 4;
+        g_ObjectMatrixWork.mtx.t[2] = g_ObjectMatrixWork.view.z * 4;
+
         SetRotMatrix(&mtx);
-        SetTransMatrix(&(&g_ObjectMatrixWork)->mtx);
+        SetTransMatrix(&g_ObjectMatrixWork.mtx);
 
         flags = obj->flags;
         if (flags & 8) {
@@ -78,14 +61,12 @@ void DrawCourseObjects(void) {
             g_RenderState.envMode4 = 0;
         }
 
-        if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags % 2)) {
-            SubmitCourseModel2((&g_RenderState), obj->modelId);
+        if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags & 1)) {
+            SubmitCourseModel2(&g_RenderState, obj->modelId);
         } else {
-            SubmitCourseModel((&g_RenderState), obj->modelId);
+            SubmitCourseModel(&g_RenderState, obj->modelId);
         }
-
-        }
-    } while (i++, obj++, i < g_CourseObjectCount);
+    }
 }
 
 
