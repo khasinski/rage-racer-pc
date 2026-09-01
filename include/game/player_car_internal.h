@@ -5,4 +5,6 @@
 
 extern PlayerCarRuntime g_PlayerCar;
 
+void PrepareCarPerformance(GameCarDrive *drive);
+
 #endif

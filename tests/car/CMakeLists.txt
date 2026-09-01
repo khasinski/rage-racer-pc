@@ -134,6 +134,27 @@ target_link_libraries(car_spatial_queries_tests PRIVATE psyz)
 add_test(NAME car_spatial_queries COMMAND car_spatial_queries_tests)
 set_tests_properties(car_spatial_queries PROPERTIES LABELS unit)
 
+add_executable(car_performance_setup_tests
+    car_performance_setup_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_performance_setup.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(car_performance_setup_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_performance_setup_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_performance_setup_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_performance_setup_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(car_performance_setup_tests PRIVATE psyz)
+add_test(NAME car_performance_setup COMMAND car_performance_setup_tests)
+set_tests_properties(car_performance_setup PROPERTIES LABELS unit)
+
 # The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
 add_executable(drivetrain_tests
     drivetrain_tests.c

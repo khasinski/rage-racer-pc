@@ -4,6 +4,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/input_internal.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "game/audio.h"
@@ -12,28 +13,14 @@
 void InitPlayerCar(PlayerCarRuntime *car)
 {
   CarTrackLimits trackState = {0};
-  int scaledGearRatio;
   Matrix rotationMatrix;
   Matrix axisMatrix;
   SVec rotationOffset;
   PlayerCarRuntime *player;
   GameCarDrive *drive;
   TrackEventData *eventData;
-  s32 speedBandOffset;
-  s32 i;
   s32 headingBase;
-  s32 divisor;
-  s32 speedThreshold;
-  s16 *revLimitPtr;
-  s32 peakRpm;
   s32 value;
-  s32 j;
-  GameCarSpec *carSpec;
-  GameCarSpec *curveSpec;
-  s16 *torqueBand;
-  s16 *accelBand;
-  s16 *accelBandOut;
-  s32 bandSpeed;
   player = car;
   eventData = g_TrackEventData;
   printf("%s", g_MsgInitCar);
@@ -133,95 +120,8 @@ void InitPlayerCar(PlayerCarRuntime *car)
   g_ShiftTargetRpm = 0;
   drive = &car->drive;
   printf("%s", g_MsgInit0);
-  carSpec = g_CarSpec;
-  if (carSpec->topGear <= 0 || carSpec->topGear >= 6)
-  {
-    carSpec->topGear = 6;
-  }
-  drive->speedScale = (g_CarSpec->tachometer.speedScale * 0x490) / 160;
   printf("%s", g_MsgInit1);
-  j = 0;
-  for (i = 0; i < 16; i++)
-  {
-    g_GearTorqueCurve[0].values[i] = g_CarSpec->torqueCurve[i] / 20;
-    if (j < g_GearTorqueCurve[0].values[i])
-    {
-      g_PeakOutputRpm = i;
-      j = g_GearTorqueCurve[0].values[i];
-    }
-  }
-
-  g_PeakOutputValue = j;
-  peakRpm = g_CarSpec->torqueBand.halves[g_PeakOutputRpm * 2];
-  g_RedlineToPeakRpmHalf = (((s16) peakRpm) - g_CarSpec->redline) / 2;
-  revLimitPtr = &g_CarSpec->revLimit;
-  g_PeakToRevLimitRpmHalf = ((*revLimitPtr) - ((s16) peakRpm)) / 2;
-  g_PeakOutputRpm = peakRpm;
-  printf("%s", g_MsgInit1b);
-  printf(g_FmtDecimalLine, g_CarSpec->topGear);
-  for (j = 0; j < 6; j++)
-  {
-    scaledGearRatio = (g_CarSpec->gearRatio[j + 1] * 0x490) / 160;
-    /* Retail intentionally indexes one word past gearLoad: slot 6 is the
-     * adjacent gearRatio[0] word in the packed asset.  Address it as the
-     * contiguous 32-bit asset table instead of invoking C array-bounds UB. */
-    ((s32 *)(void *)((u8 *)g_CarSpec + 0xCC))[j + 1] =
-        (((scaledGearRatio * 6) / 100) << 17) / 10000;
-    value = (g_CarSpec->torqueScale[j] * g_CarSpec->gearRatio[j + 1]) / 100;
-    divisor = value;
-    divisor = (divisor > 0) ? divisor : g_CarSpec->gearRatio[j + 1];
-    for (i = 0; i < 16; i++)
-    {
-      g_GearTorqueCurve[j + 1].values[i] = g_CarSpec->torqueCurve[i] / divisor;
-    }
-
-  }
-
-  if (g_CarSpec->baseSteeringGrip < 2)
-  {
-    g_CarSpec->baseSteeringGrip = 1;
-  }
-  printf("%s", g_MsgInit2);
-  curveSpec = g_CarSpec;
-  accelBand = g_TorqueLossBandEnd;
-  speedBandOffset = 0;
-  speedThreshold = 0x3E8;
-  torqueBand = g_TorqueBandEnd;
-  do
-  {
-    for (i = 0; i < 16; i++)
-    {
-      if ((curveSpec->torqueBand.values[i] / speedThreshold) > 0)
-      {
-        *torqueBand = i;
-        break;
-      }
-    }
-
-    i = 0;
-    bandSpeed = speedThreshold;
-    accelBandOut = accelBand;
-    while (i < 10)
-    {
-      /* Likewise, the tenth loss boundary is the following gearLoad[0]
-       * word in the retail block. */
-      if (((s32 *)(void *)((u8 *)curveSpec + 0xA8))[i] / bandSpeed > 0)
-      {
-        *accelBandOut = i;
-        break;
-      }
-      i++;
-    }
-
-    accelBand++;
-    speedBandOffset += 2;
-    speedThreshold += 0x3E8;
-    torqueBand++;
-  }
-  while (speedBandOffset < 20);
-  printf("%s", g_MsgInit4);
-  drive->launchEnergyThreshold = g_LaunchEnergyThresholds[drive->launchThresholdIndex % 5] * 0xE;
-  drive->steeringGripResponse = g_CarSpec->steeringGripResponse;
+  PrepareCarPerformance(drive);
   printf("%s", g_MsgInit5);
   player->verticalMotionState = 0;
   drive->brakeLatch = 0;
