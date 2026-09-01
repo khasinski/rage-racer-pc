@@ -33,17 +33,33 @@ void ApplyPadButtonMapping(void) {
     LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
 }
 
+static s16 ClampNegconPressure(s32 pressure) {
+    if (pressure < 0) return 0;
+    if (pressure > 0x6A) return 0x6A;
+    return (s16)pressure;
+}
+
+static s16 CalibrateNegconSteering(s32 twist) {
+    s32 neutral = g_NegconSteerNeutral + 0x80;
+    s32 delta = twist - neutral;
+    s32 deadZone = g_NegconSteerDeadZone[g_NegconSteerPlay][0];
+    s32 range = g_NegconSteerRange[g_NegconMaxTwist];
+    s32 steering;
+
+    if (delta > 0) {
+        steering = delta - deadZone;
+        if (steering < 0) steering = 0;
+        if (steering > range) steering = range;
+    } else {
+        steering = delta + deadZone;
+        if (steering > 0) steering = 0;
+        if (steering < -range) steering = -range;
+    }
+    return (s16)steering;
+}
 
 void UpdatePadState(void) {
-    s32 mask;
-    s32 v;
-    s32 t;
-    s32 c;
-    s16 c1;
-    s16 c2;
-    s16 d;
-    s16 neutral;
-    s16 r;
+    s32 validationButtons;
     u8 *raw;
     PadState *pad;
 
@@ -53,19 +69,19 @@ void UpdatePadState(void) {
     pad->status = raw[0];
     g_PadType = g_PadBufferType;
     if (raw[0] != 0) {
-        v = PAD_ERROR_STATE_DISCONNECTED;
-        g_PadErrorState = v;
+        g_PadErrorState = PAD_ERROR_STATE_DISCONNECTED;
         g_PadValidateCountdown = 0x22;
         g_PadErrorHoldBits |= 0x10;
     } else {
         if (g_PadValidateCountdown != 0) {
             g_PadValidateCountdown--;
             if (g_PadBufferType == 0x23) {
-                mask = ~(g_PadBufferButtonsLow | (g_PadBufferButtonsHigh << 8));
-                if (!(((mask & 0x5000) != 0x5000) && ((mask & 0xA000) != 0xA000) &&
-                    ((mask & 0x1C4) == 0))) {
-                    v = PAD_ERROR_STATE_INVALID_INPUT;
-                    g_PadErrorState = v;
+                validationButtons =
+                    ~(g_PadBufferButtonsLow | (g_PadBufferButtonsHigh << 8));
+                if (!(((validationButtons & 0x5000) != 0x5000) &&
+                      ((validationButtons & 0xA000) != 0xA000) &&
+                      ((validationButtons & 0x1C4) == 0))) {
+                    g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
                     g_PadValidateCountdown = 0x22;
                     g_PadErrorHoldBits |= 0x10;
                 }
@@ -80,12 +96,14 @@ void UpdatePadState(void) {
         g_PadErrorState = PAD_ERROR_STATE_NONE;
     }
     if (raw[1] == 0x41) {
+        s32 steerRange = g_NegconSteerRange[g_NegconMaxTwist];
+
         pad->prevHeld = pad->held;
         pad->held = ~((raw[2] << 8) | raw[3]);
         pad->pressed = pad->held & ~pad->prevHeld;
-        t = (pad->held >> 13) & 1;
-        c = g_NegconSteerRange[g_NegconMaxTwist];
-        pad->twist = ((pad->held & PAD_LEFT) ? ((t - 1) * c) : (t * c)) + 0x80;
+        pad->twist = 0x80;
+        if (pad->held & PAD_RIGHT) pad->twist += steerRange;
+        if (pad->held & PAD_LEFT) pad->twist -= steerRange;
         pad->buttonI = (pad->held & PAD_CROSS) ? 0x6A : 0;
         pad->buttonII = (pad->held & PAD_SQUARE) ? 0x6A : 0;
         pad->buttonL = (pad->held & PAD_L1) ? 0x6A : 0;
@@ -93,18 +111,9 @@ void UpdatePadState(void) {
         pad->prevHeld = pad->held;
         pad->held = ~((raw[2] << 8) | raw[3]);
         pad->twist = raw[4];
-        pad->buttonI = raw[5] - g_NegconNeutralI;
-        pad->buttonII = raw[6] - g_NegconNeutralII;
-        pad->buttonL = raw[7] - g_NegconNeutralL;
-        if (pad->buttonI < 0) {
-            pad->buttonI = 0;
-        }
-        if (pad->buttonII < 0) {
-            pad->buttonII = 0;
-        }
-        if (pad->buttonL < 0) {
-            pad->buttonL = 0;
-        }
+        pad->buttonI = ClampNegconPressure(raw[5] - g_NegconNeutralI);
+        pad->buttonII = ClampNegconPressure(raw[6] - g_NegconNeutralII);
+        pad->buttonL = ClampNegconPressure(raw[7] - g_NegconNeutralL);
         if (pad->twist >= 0xA3) {
             pad->held |= PAD_RIGHT;
         }
@@ -138,42 +147,14 @@ void UpdatePadState(void) {
         if (g_PadRepeatTimer[0] == 0x1E) {
             pad->pressedRepeat = pad->pressedRepeat | pad->held;
         }
-        g_PadRepeatTimer[0] = (g_PadRepeatTimer[0] < 0x24) ? (g_PadRepeatTimer[0] + 1) : 0x1E;
+        g_PadRepeatTimer[0] = g_PadRepeatTimer[0] < 0x24
+                                  ? g_PadRepeatTimer[0] + 1
+                                  : 0x1E;
     } else {
         g_PadRepeatTimer[0] = 0;
     }
     g_PadPrevHeld = pad->held;
-    neutral = g_NegconSteerNeutral + 0x80;
-    d = pad->twist - neutral;
-    if (d > 0) {
-        r = d - g_NegconSteerDeadZone[g_NegconSteerPlay][0];
-        if (r < 0) {
-            r = 0;
-        }
-        c1 = g_NegconSteerRange[g_NegconMaxTwist];
-        if (r > c1) {
-            r = c1;
-        }
-    } else {
-        r = d + g_NegconSteerDeadZone[g_NegconSteerPlay][0];
-        if (r > 0) {
-            r = 0;
-        }
-        c2 = g_NegconSteerRange[g_NegconMaxTwist];
-        if (r < -c2) {
-            r = -c2;
-        }
-    }
-    pad->steer = r;
-    if (pad->buttonI >= 0x6B) {
-        pad->buttonI = 0x6A;
-    }
-    if (pad->buttonII >= 0x6B) {
-        pad->buttonII = 0x6A;
-    }
-    if (pad->buttonL >= 0x6B) {
-        pad->buttonL = 0x6A;
-    }
+    pad->steer = CalibrateNegconSteering(pad->twist);
     g_PadHeld = pad->held;
     g_PadPressed = pad->pressed;
     g_PadPressedRepeat = pad->pressedRepeat;
