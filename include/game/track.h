@@ -395,7 +395,6 @@ void InterpolateTrackPoint(s32 pointIndex, s32* out, s32 weight);
 /* Declared identically by 113 translation units before this
  * header carried them. */
 
-extern s16 g_RouteSceneryArmed;
 extern s16 g_AnimScenery2Frame;
 extern s32 g_AnimScenery2Tint;
 extern s16 g_AnimScenery2Variant;

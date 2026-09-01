@@ -13,7 +13,6 @@ s32 g_RaceSeries;
 SceneryMotionData *g_RouteSceneryData;
 s32 g_RouteSceneryClock;
 s32 g_RouteSceneryFrame;
-s16 g_RouteSceneryArmed;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
 s32 g_RouteSceneryRotY;
@@ -91,7 +90,6 @@ int main(void) {
 
     SeedRouteScenery();
     if (!CheckState("seed", 1, 0, 0, 100, 200, 300) ||
-        g_RouteSceneryArmed != 1 ||
         g_RouteSceneryKeyframe != fixture.keyframes) {
         puts("FAIL seed: route scenery was not initialized");
         return 1;

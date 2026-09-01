@@ -21,7 +21,6 @@ static void RestartRouteScenery(void) {
 }
 
 void SeedRouteScenery(void) {
-    g_RouteSceneryArmed = 1;
     RestartRouteScenery();
 }
 

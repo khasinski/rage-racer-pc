@@ -124,7 +124,6 @@ unsigned char g_EnvScriptCues[8] __attribute__((aligned(16)));
 unsigned char g_FlybyScenery[52] __attribute__((aligned(16)));
 s32 g_RouteSceneryClock;
 s32 g_RouteSceneryFrame;
-s16 g_RouteSceneryArmed;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
 s32 g_RouteSceneryRotY;
