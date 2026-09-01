@@ -294,15 +294,10 @@ typedef union CarPaintPalette {
     } fixed;
     struct {
         u16 reserved[0x2C1];
-        volatile u16 bodyColor1Gradient[5];
-        volatile u16 bodyColor2Gradient[5];
+        u16 bodyColor1Gradient[5];
+        u16 bodyColor2Gradient[5];
     } gradients;
 } CarPaintPalette;
-
-typedef union CarPaintPaletteAddress {
-    u16 *entries;
-    CarPaintPalette *palette;
-} CarPaintPaletteAddress;
 
 typedef struct CarImageData {
     u8 reserved[0x7060];
@@ -937,13 +932,9 @@ extern s16 g_NegconBrakeMask;
 extern s16 g_PadAccelMask;
 extern s16 g_PadBrakeMask;
 extern s16 g_PadShiftMasks[2][8];
-extern volatile u16 g_PaintBlendShades[3];
-#define g_PaintBlendShade0 g_PaintBlendShades[0]
-#define g_PaintBlendShade1 g_PaintBlendShades[1]
-#define g_PaintBlendShade2 g_PaintBlendShades[2]
-extern volatile u16 g_PaintSlots3StopA[];
-extern volatile u16 g_PaintSlots3StopB[];
-extern volatile u16 g_PaintSlots4Stop[];
+extern u16 g_PaintSlots3StopA[];
+extern u16 g_PaintSlots3StopB[];
+extern u16 g_PaintSlots4Stop[];
 extern RaceGridSlot g_RaceGridSlots[];
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:
@@ -961,9 +952,6 @@ extern s16 g_TorqueBandStart;
 extern s16 g_TorqueLossBandStart;
 
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
-void BlendPaintColor(u32 color0, u32 color1);
-void BlendPaintColorQuarters(u32 color0, u32 color1);
-void BlendPaintColorThirds(u32 color0, u32 color1);
 void BuildTachoNeedleQuad(void);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex);
 s32 GetCarCrestTrigger(GameCarRuntime* car);

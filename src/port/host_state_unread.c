@@ -627,7 +627,6 @@ s32 g_StInterruptPending;
 unsigned char g_SndVabHeader[68] __attribute__((aligned(16)));
 short g_SndDamper;
 unsigned char g_SndVabToneTable[64] __attribute__((aligned(16)));
-unsigned char g_PaintBlendShades[6] __attribute__((aligned(16)));
 u8 g_DrawEnv0Dither;
 volatile u16 g_DispEnv0X;
 volatile u16 g_DispEnv0Y;
