@@ -325,6 +325,31 @@ target_link_libraries(car_track_state_tests PRIVATE psyz)
 add_test(NAME car_track_state COMMAND car_track_state_tests)
 set_tests_properties(car_track_state PROPERTIES LABELS functional)
 
+add_executable(track_contact_tests
+    track_contact_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/track_contact.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(track_contact_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(track_contact_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(track_contact_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(track_contact_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Wno-error)
+endif()
+target_link_libraries(track_contact_tests PRIVATE psyz)
+add_test(NAME track_contact COMMAND track_contact_tests)
+set_tests_properties(track_contact PROPERTIES LABELS functional)
+
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
     gear_shift_tests.c

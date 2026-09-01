@@ -1,242 +1,171 @@
-#include "game/render.h"
-#include "game/race.h"
 #include "game/car.h"
+#include "game/race.h"
+#include "game/render.h"
 #include "game/track_internal.h"
 
-/*
- * Rebuilds a car's position and orientation relative to its current track
- * segment, including the curved-segment path kept in the car's track working set.
- */
-void ResetCarTrackState(GameCarRuntime *car) {
-    s32 headingAngle;
-    s32 secondResult;
-    s16 trackWidth;
-    s16 trackWidthCopy;
-    s16 arcSpan;
-    s16 segLenA;
-    s16 segLenB;
-    s16 segLenC;
-    s16 segLenD;
-    s32 arcAngle;
-    s16 segLenE;
-    s32 nextPointIndex;
-    s32 edgeHeight;
-    s32 cosHeading;
-    s32 nextCamber;
-    s32 sweptAngle;
-    s32 arcIndex;
-    s32 swept;
-    s32 trackPointIndex;
-    s32 useProgress;
-    s32 arcLateral;
-    s32 lateralProduct;
-    s32 pointHeading;
-    s32 alongSegment;
-    s32 rotated;
-    s16 curveMode;
-    u16 segmentLength;
-    GameTrackPoint *point;
-    GameTrackPoint *nextPoint;
-    CarTrackWork *work;
+static s32 InterpolateTrackValue(s32 start, s32 end, s32 alongSegment,
+                                 s16 segmentLength) {
+    return (end * alongSegment + start * (segmentLength - alongSegment)) /
+           segmentLength;
+}
 
-    work = (&g_CarTrackWork);
-    work->knockbackMode = 0;
-    trackPointIndex = car->trackPointIndex;
-    nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
-    point = TrackPoint(trackPointIndex);
-    segmentLength = point->segmentLength;
-    work->segmentLength = segmentLength;
-    nextPoint = TrackPoint(nextPointIndex);
-    if ((s16)segmentLength <= 0) {
-        work->segmentLength = 1U;
+static s32 ShiftFixed12(s32 value) {
+    if (value < 0) {
+        value += 0xFFF;
     }
-    work->heading = (u16)point->angle;
-    arcIndex = (s16)point->arcRef >> 4;
-    work->arcIndex = (s16)arcIndex;
-    curveMode = point->arcRef & 3;
-    work->curveMode = curveMode;
-    if (curveMode != 0) {
-        CarTrackMeasureArc(work, arcIndex, car->x, car->z, point,
-                           nextPoint);
-        work->arcSpan = GetAngleDistance(work->pointAngle, work->nextPointAngle);
-        if (work->arcSpan <= 0) {
-            work->arcSpan = 1;
-        }
-        sweptAngle =
-            GetAngleDistance(work->pointAngle, work->sweptAngle);
-        arcAngle = work->arcSpan;
-        work->sweptAngle = sweptAngle;
-        work->pointRadius.value =
-            (((s16)sweptAngle * work->pointRadius.value) +
-             ((arcAngle - (s16)sweptAngle) * work->nextPointRadius.value)) /
-            arcAngle;
-        arcLateral = (s16)(work->carRadius.half.low - work->pointRadius.half.low);
-        if (work->curveMode == 2) {
-            arcLateral = 0 - arcLateral;
-        }
-        work->arcLateral = arcLateral;
-        {
-            headingAngle = nextPoint->angle;
-            pointHeading = point->angle;
-            if ((headingAngle - pointHeading) >= 0x801) {
-                swept = work->sweptAngle;
-                arcSpan = work->arcSpan;
-                work->heading =
-                    (s16)((((headingAngle - 0x1000) * swept) +
-                           (pointHeading * (arcSpan - swept))) /
-                          arcSpan);
-            } else if ((pointHeading - headingAngle) >= 0x801) {
-                swept = work->sweptAngle;
-                arcSpan = work->arcSpan;
-                work->heading =
-                    (s16)(((headingAngle * swept) +
-                           ((pointHeading - 0x1000) * (arcSpan - swept))) /
-                          arcSpan);
-            } else {
-                swept = work->sweptAngle;
-                arcSpan = work->arcSpan;
-                work->heading =
-                    (s16)(((headingAngle * swept) +
-                           (pointHeading * (arcSpan - swept))) /
-                          arcSpan);
-            }
-        }
+    return value >> 12;
+}
+
+static s32 ProjectAlongTrack(s32 value) {
+    if (value < 0) {
+        value += 0xFFF;
     }
+    return value >> 14;
+}
+
+static s16 InterpolateTrackHeading(s16 pointHeading, s16 nextHeading,
+                                   s32 swept, s16 arcSpan) {
+    if (nextHeading - pointHeading >= 0x801) {
+        nextHeading -= 0x1000;
+    } else if (pointHeading - nextHeading >= 0x801) {
+        pointHeading -= 0x1000;
+    }
+    return (s16)((nextHeading * swept +
+                  pointHeading * (arcSpan - swept)) / arcSpan);
+}
+
+static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
+                             const GameTrackPoint *point,
+                             const GameTrackPoint *nextPoint) {
+    s32 arcAngle;
+    s32 sweptAngle;
+    s32 lateralOffset;
+
+    CarTrackMeasureArc(work, work->arcIndex, car->x, car->z, point,
+                       nextPoint);
+    work->arcSpan = GetAngleDistance(work->pointAngle, work->nextPointAngle);
+    if (work->arcSpan <= 0) {
+        work->arcSpan = 1;
+    }
+    sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
+    arcAngle = work->arcSpan;
+    work->sweptAngle = sweptAngle;
+    work->pointRadius.value =
+        ((s16)sweptAngle * work->pointRadius.value +
+         (arcAngle - (s16)sweptAngle) * work->nextPointRadius.value) /
+        arcAngle;
+
+    lateralOffset =
+        (s16)(work->carRadius.half.low - work->pointRadius.half.low);
+    work->arcLateral = work->curveMode == 2
+        ? -lateralOffset
+        : lateralOffset;
+    work->heading = InterpolateTrackHeading(
+        point->angle, nextPoint->angle, work->sweptAngle, work->arcSpan);
+}
+
+static s32 MeasureAlongSegment(const GameCarRuntime *car,
+                               CarTrackWork *work,
+                               const GameTrackPoint *point) {
+    s32 rotated;
+    s32 alongSegment;
 
     work->offsetX = (u16)(((u16)car->x - (u16)point->x) * 4);
-    headingAngle = work->heading;
-    work->offsetZ = (s16)(((u16)car->z - (u16)point->z) * 4);
     work->offsetY = 0;
-    cosHeading = rcos(headingAngle);
-    rotated = (cosHeading * (s16)work->offsetX) +
-             (rsin(work->heading) * work->offsetZ);
-    if (rotated < 0) {
-        rotated += 0xFFF;
+    work->offsetZ = (s16)(((u16)car->z - (u16)point->z) * 4);
+    rotated = rcos(work->heading) * (s16)work->offsetX +
+              rsin(work->heading) * work->offsetZ;
+    alongSegment = ProjectAlongTrack(rotated);
+    if (alongSegment > (s16)work->segmentLength) {
+        return (s16)work->segmentLength;
     }
-    alongSegment = rotated >> 0xE;
+    return alongSegment < 0 ? 0 : alongSegment;
+}
 
-    if ((s16)work->segmentLength < alongSegment) {
-        alongSegment = (s16)work->segmentLength;
-    } else if (alongSegment < 0) {
-        alongSegment = 0;
-    }
-    segLenA = (s16)work->segmentLength;
-    edgeHeight = ((nextPoint->rightHalfWidth * alongSegment) +
-               (point->rightHalfWidth * (segLenA - alongSegment))) /
-              segLenA;
-    work->rightHalfWidth = (s16)edgeHeight;
-    useProgress = g_RaceSeries;
-    segLenB = (s16)work->segmentLength;
-    {
-        s32 widthSum;
-        s32 remainingLength;
+static void UpdateReplayTrackPosition(GameCarRuntime *car, CarTrackWork *work,
+                                      const GameTrackPoint *point,
+                                      const GameTrackPoint *nextPoint,
+                                      s32 alongSegment) {
+    s16 segmentLength = (s16)work->segmentLength;
 
-        widthSum = nextPoint->leftHalfWidth * alongSegment;
-        remainingLength = segLenB - alongSegment;
-        widthSum += point->leftHalfWidth * remainingLength;
-        work->leftHalfWidth = (s16)(widthSum / segLenB);
-    }
-    {
-        u32 outputProgress;
+    work->rightHalfWidth = (s16)InterpolateTrackValue(
+        point->rightHalfWidth, nextPoint->rightHalfWidth, alongSegment,
+        segmentLength);
+    work->leftHalfWidth = (s16)InterpolateTrackValue(
+        point->leftHalfWidth, nextPoint->leftHalfWidth, alongSegment,
+        segmentLength);
+    car->progressB = g_RaceSeries != 0
+        ? (u32)alongSegment
+        : (u32)(segmentLength - alongSegment);
+    work->crossSlope = (s16)InterpolateTrackValue(
+        point->crossSlope, nextPoint->crossSlope, alongSegment,
+        segmentLength);
+    work->surfacePitch = (s16)InterpolateTrackValue(
+        point->surfacePitch, nextPoint->surfacePitch, alongSegment,
+        segmentLength);
+}
 
-        if (useProgress != 0) {
-            outputProgress = alongSegment;
-        } else {
-            outputProgress = (s16)work->segmentLength - alongSegment;
-        }
-        car->progressB = outputProgress;
-    }
-    segLenC = (s16)work->segmentLength;
-    work->crossSlope =
-        (s16)(((nextPoint->crossSlope * alongSegment) +
-               (point->crossSlope * (segLenC - alongSegment))) /
-              segLenC);
-    {
-        s16 angle;
+static void UpdateReplayTrackOrientation(GameCarRuntime *car,
+                                         CarTrackWork *work,
+                                         const GameTrackPoint *point,
+                                         const GameTrackPoint *nextPoint,
+                                         s32 alongSegment) {
+    s16 segmentLength = (s16)work->segmentLength;
+    s16 trackWidth = (u16)work->leftHalfWidth +
+                     (u16)work->rightHalfWidth;
+    s32 nextCamber;
+    s32 pointCamber;
+    s32 progress;
 
-        angle = (u16)car->bodyYaw;
-        angle -= 0xC00;
-        work->relativeHeading = angle + (u16)work->heading;
-    }
-    segLenD = (s16)work->segmentLength;
-    work->surfacePitch =
-        (s16)(((nextPoint->surfacePitch * alongSegment) +
-               (point->surfacePitch * (segLenD - alongSegment))) /
-              segLenD);
-    trackWidth = (u16)work->leftHalfWidth + (u16)work->rightHalfWidth;
+    work->relativeHeading = (s16)((u16)car->bodyYaw - 0xC00 +
+                                  (u16)work->heading);
     work->trackWidth = trackWidth;
-    nextCamber = Atan2(trackWidth, (nextPoint->crossSlope * trackWidth) >> 7);
-    trackWidthCopy = work->trackWidth;
-    secondResult = Atan2(trackWidthCopy, (point->crossSlope * trackWidthCopy) >> 7);
-    segLenE = (s16)work->segmentLength;
-    work->camberAngle =
-        (s16)(((nextCamber * alongSegment) +
-               (secondResult * (segLenE - alongSegment))) /
-              segLenE);
+    nextCamber = Atan2(trackWidth,
+                       (nextPoint->crossSlope * trackWidth) >> 7);
+    pointCamber = Atan2(work->trackWidth,
+                        (point->crossSlope * work->trackWidth) >> 7);
+    work->camberAngle = (s16)InterpolateTrackValue(
+        pointCamber, nextCamber, alongSegment, segmentLength);
     work->headingCos = rcos(work->relativeHeading);
-    {
-        s32 firstProduct;
-        s32 sinValue;
-        s32 secondProduct;
+    work->headingSin = rsin(work->relativeHeading);
 
-        sinValue = rsin(work->relativeHeading);
-        work->headingSin = sinValue;
-        firstProduct = work->surfacePitch * work->headingCos;
-        firstProduct /= 4096;
-        secondProduct = work->camberAngle * sinValue;
-        if (secondProduct < 0) {
-            secondProduct += 0xFFF;
-        }
-        car->modelPitch = firstProduct + (secondProduct >> 0xC);
+    car->modelPitch =
+        (work->surfacePitch * work->headingCos) / 4096 +
+        ShiftFixed12(work->camberAngle * work->headingSin);
+    car->modelRoll =
+        ShiftFixed12(-work->headingCos * work->camberAngle) +
+        ShiftFixed12(work->surfacePitch * work->headingSin);
+    car->modelYaw = car->bodyYaw;
+    car->trackHeading.value = work->heading;
+    car->previousTrackProgress = car->trackProgress;
+    progress = (car->progressA + car->progressB) % g_TrackLength;
+    car->trackProgress = progress < 0 ? progress + g_TrackLength : progress;
+    car->trackSection = (s16)((g_RaceSeries != 0
+        ? g_TrackLength - car->trackProgress
+        : car->trackProgress) >> 8);
+}
+
+void ResetCarTrackState(GameCarRuntime *car) {
+    CarTrackWork *work = &g_CarTrackWork;
+    s32 pointIndex = car->trackPointIndex;
+    const GameTrackPoint *point = TrackPoint(pointIndex);
+    const GameTrackPoint *nextPoint =
+        TrackPoint((pointIndex + 1) % g_TrackPointCount);
+    s32 alongSegment;
+
+    work->knockbackMode = 0;
+    work->segmentLength = point->segmentLength;
+    if ((s16)work->segmentLength <= 0) {
+        work->segmentLength = 1;
     }
-    {
-        s32 firstComponent;
-
-        {
-            s32 firstProduct;
-
-            firstProduct =
-                (0 - work->headingCos) * work->camberAngle;
-            if (firstProduct < 0) {
-                firstProduct += 0xFFF;
-            }
-            lateralProduct = work->surfacePitch * work->headingSin;
-            firstComponent = firstProduct >> 0xC;
-        }
-        if (lateralProduct < 0) {
-            lateralProduct += 0xFFF;
-        }
-        {
-            s32 trackLength;
-            s32 progress;
-            s32 combinedComponent;
-
-            trackLength = g_TrackLength;
-            progress =
-                (car->progressA + car->progressB) % trackLength;
-            combinedComponent = firstComponent + (lateralProduct >> 0xC);
-            car->modelRoll = combinedComponent;
-            car->modelYaw = car->bodyYaw;
-            car->trackHeading.value = work->heading;
-            car->previousTrackProgress = car->trackProgress;
-            car->trackProgress = progress;
-            if (progress < 0) {
-                s32 adjustedProgress;
-
-                adjustedProgress = progress + trackLength;
-                car->trackProgress = adjustedProgress;
-            }
-        }
+    work->heading = (u16)point->angle;
+    work->arcIndex = (s16)point->arcRef >> 4;
+    work->curveMode = point->arcRef & 3;
+    if (work->curveMode != 0) {
+        MeasureReplayArc(car, work, point, nextPoint);
     }
-    {
-        s32 finalAngle;
 
-        if (g_RaceSeries != 0) {
-            finalAngle = g_TrackLength - car->trackProgress;
-            car->trackSection = (s16)(finalAngle >> 8);
-        } else {
-            finalAngle = car->trackProgress;
-            car->trackSection = (s16)(finalAngle >> 8);
-        }
-    }
+    alongSegment = MeasureAlongSegment(car, work, point);
+    UpdateReplayTrackPosition(car, work, point, nextPoint, alongSegment);
+    UpdateReplayTrackOrientation(car, work, point, nextPoint, alongSegment);
 }
