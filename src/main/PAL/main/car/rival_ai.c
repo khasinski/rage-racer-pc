@@ -56,6 +56,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 blockingLeft = 0;
     s32 blockingRight = 0;
     s32 crowding;
+    s32 urgency;
     s32 slot;
 
     lane[0] = lane[1] = lane[2] = 0;
@@ -157,24 +158,22 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
      * enough to cross, and it is crossed harder than a choice made on the
      * buckets alone. Otherwise the emptiest side wins, if it is free.
      */
-    {
-        s32 urgency = state->avoidanceActive;
-        if (blockingLeft == 0 && lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
-            state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-            state->avoidanceStep = -8 - urgency * 2;
-        } else if (blockingRight == 0 &&
-                   lateralOffset < -TRAFFIC_TARGET_OFFSET) {
-            state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-            state->avoidanceStep = 8 + urgency * 2;
-        } else if (lane[0] <= lane[1] && lane[0] <= lane[2] &&
-                   blockingLeft == 0) {
-            state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-            state->avoidanceStep = -6 - urgency * 2;
-        } else if (lane[2] <= lane[1] && lane[2] <= lane[0] &&
-                   blockingRight == 0) {
-            state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-            state->avoidanceStep = 6 + urgency * 2;
-        }
+    urgency = state->avoidanceActive;
+    if (blockingLeft == 0 && lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
+        state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+        state->avoidanceStep = -8 - urgency * 2;
+    } else if (blockingRight == 0 &&
+               lateralOffset < -TRAFFIC_TARGET_OFFSET) {
+        state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+        state->avoidanceStep = 8 + urgency * 2;
+    } else if (lane[0] <= lane[1] && lane[0] <= lane[2] &&
+               blockingLeft == 0) {
+        state->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+        state->avoidanceStep = -6 - urgency * 2;
+    } else if (lane[2] <= lane[1] && lane[2] <= lane[0] &&
+               blockingRight == 0) {
+        state->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+        state->avoidanceStep = 6 + urgency * 2;
     }
 
     /* Boxed in badly enough, and the car is not allowed to press on as hard.

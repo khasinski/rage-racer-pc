@@ -7,14 +7,13 @@
  * Jump / launch setup: when GetCarCrestTrigger reports a marker crossing, seeds the
  * launch trajectory and snapshots the car's render offsets (bodyPitch/bodyRoll
  * and y). verticalMotionState 1 is the rising jump phase.
- * inline mult/mfhi block is the compiler's divide idiom; keep it verbatim.
  */
 
 void UpdateCarBodyKick(GameCarRuntime *car) {
     s32 value;
     s32 wave;
     s32 amplitude;
-    s32 product;
+    s32 timer;
 
     if (car->motionMode == 0) {
         return;
@@ -26,15 +25,9 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
         car->bodyKickOffset = 0;
     }
 
-    {
-        s32 timer;
-
-        timer = car->motionModeTimer;
-        product = timer * car->motionValue.value;
-        amplitude = product / 128;
-
-        wave = rsin(((timer * 3) << 12) / 30) * amplitude;
-    }
+    timer = car->motionModeTimer;
+    amplitude = timer * car->motionValue.value / 128;
+    wave = rsin(((timer * 3) << 12) / 30) * amplitude;
     value = wave / 2048;
 
     switch (car->motionMode) {
@@ -114,71 +107,38 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
 }
 
 void UpdateCarCrestHop(GameCarRuntime *car) {
-    GameCarRuntime *obj;
-    s32 value;
-    s32 temp;
-    s32 result;
+    s32 trigger;
 
-    obj = car;
+    if (car->verticalMotionState != 0) {
+        s32 curve = car->verticalMotionTimer * car->verticalMotionTimer / 6;
 
-    if (obj->verticalMotionState != 0) {
-        result = obj->verticalMotionTimer;
-        value = result * result;
-        temp = obj->verticalPitch;
-        /* /6 is the retail `mult` by 0x2AAAAAAB + `mfhi` - (x >> 31); gcc
-         * generates that magic-number sequence for a signed divide by 6. */
-        value = value / 6;
-        /* These barriers are load-bearing: without them the copy to `result`
-         * is scheduled ahead of the divide and the load delay needs a nop. */
-        
-        result = temp;
-        
-        if (temp >= 0x12C) {
-            value >>= 8;
+        if (car->verticalPitch >= 0x12C) {
+            curve >>= 8;
         }
-        result += value;
-        obj->verticalPitch = result;
-
-        temp = value;
-        if (value < 0) {
-            temp = value + 3;
-        }
-        result = (u16)obj->verticalRoll;
-        temp >>= 2;
-        result += temp;
-        obj->verticalRoll = result;
-
-        result = obj->verticalPitch;
-        temp = obj->verticalRoll;
-        obj->bodyPitch = result;
-        obj->bodyRoll = temp;
+        car->verticalPitch += curve;
+        car->verticalRoll = (u16)car->verticalRoll + curve / 4;
+        car->bodyPitch = car->verticalPitch;
+        car->bodyRoll = car->verticalRoll;
         return;
     }
 
-    value = GetCarCrestTrigger(obj);
-    if (value == 0) {
+    trigger = GetCarCrestTrigger(car);
+    if (trigger == 0) {
         return;
     }
 
-    obj->verticalMotionState = 1;
-    if (value > 0) {
-        temp = value * obj->speed;
-        temp = temp / -4800;
-        obj->verticalMotionRate = temp;
+    car->verticalMotionState = 1;
+    if (trigger > 0) {
+        car->verticalMotionRate = trigger * car->speed / -4800;
     } else {
-        result = 2;
-        obj->verticalMotionState = result;
-        result = -value;
-        obj->verticalMotionRate = result;
+        car->verticalMotionState = 2;
+        car->verticalMotionRate = -trigger;
     }
 
-    result = (u16)obj->bodyPitch;
-    temp = (u16)obj->bodyRoll;
-    value = (u16)obj->y;
-    obj->verticalMotionTimer = 0;
-    obj->verticalPitch = result;
-    obj->verticalRoll = temp;
-    obj->verticalTargetY = value;
+    car->verticalMotionTimer = 0;
+    car->verticalPitch = (u16)car->bodyPitch;
+    car->verticalRoll = (u16)car->bodyRoll;
+    car->verticalTargetY = (u16)car->y;
 }
 
 /* Ease a slide back towards straight: 15/16 of the yaw rate each frame,

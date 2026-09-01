@@ -19,15 +19,14 @@ static s32 TrackBoundaryPushStrength(const GameCarRuntime *car) {
     s32 outward = (s16)(0xC00 - car->trackHeading.half.low);
     s32 approach = GetAngleDistance(outward, car->bodyYaw);
     s32 sine = rsin(approach);
+    s32 speed;
 
     if (car->speed < 0x321) {
         return (sine * 50) / 4096 + 10;
     }
 
-    {
-        s32 speed = car->speed < 0x709 ? (u16)car->speed : 0x708;
-        return (speed * sine) / 65536 + 10;
-    }
+    speed = car->speed < 0x709 ? (u16)car->speed : 0x708;
+    return (speed * sine) / 65536 + 10;
 }
 
 static void SetKnockbackVector(GameCarRuntime *car, s32 angle, s32 strength,
