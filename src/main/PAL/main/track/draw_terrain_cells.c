@@ -582,111 +582,40 @@ static u8 *DrawSkyGradientBands(SkyRenderWork *work,
     return packetCursor;
 }
 
-void DrawSkyBackground(void)
-{
-  SkyRenderWork skyWork;
-  SkyRenderWork *work = &skyWork;
-  s32 panelXFixed;
-  s32 panelYFixed;
-  s32 columnStepX;
-  s32 columnStepY;
-  s32 rowStepX;
-  s32 rowStepY;
-  s32 savedSinRoll;
-  s32 savedCosRoll;
-  s32 textureColumn;
-  s32 bandOriginXFixed;
-  s32 bandOriginYFixed;
-  s32 screenX0;
-  s32 screenX1;
-  s32 screenX2;
-  s32 screenX3;
-  InitializeSkyRenderWork(work);
-  u8 *packetCursor = work->packetCursor;
-  s32 lowerPanelXFixed;
-  s32 coordinateAccumulator;
-  {
-    SkyBandSetup band;
+void DrawSkyBackground(void) {
+    SkyRenderWork work;
+    SkyBandSetup setup;
+    SkyBandGeometry geometry;
+    s32 screenX[4];
+    u8 *packetCursor;
 
-    MeasureSkyBand(work, &band);
-    panelXFixed = band.panelXFixed;
-    panelYFixed = band.panelYFixed;
-    columnStepX = band.columnStepX;
-    columnStepY = band.columnStepY;
-    rowStepX = band.rowStepX;
-    rowStepY = band.rowStepY;
-    savedSinRoll = band.savedSinRoll;
-    savedCosRoll = band.savedCosRoll;
-    textureColumn = band.textureColumn;
-    bandOriginXFixed = band.bandOriginXFixed;
-    bandOriginYFixed = band.bandOriginYFixed;
-    lowerPanelXFixed = band.lowerPanelXFixed;
-    coordinateAccumulator = band.coordinateAccumulator;
-  }
-    if (g_SkyRowBase != 0)
-    {
-      SkyBandSetup band;
-      s32 gridScreenX[4];
+    InitializeSkyRenderWork(&work);
+    MeasureSkyBand(&work, &setup);
+    packetCursor = work.packetCursor;
 
-      band.panelXFixed = panelXFixed;
-      band.panelYFixed = panelYFixed;
-      band.columnStepX = columnStepX;
-      band.columnStepY = columnStepY;
-      band.rowStepX = rowStepX;
-      band.rowStepY = rowStepY;
-      band.textureColumn = textureColumn;
-      packetCursor = DrawTexturedSkyGrid(work, &band, gridScreenX, packetCursor);
-      screenX0 = gridScreenX[0];
-      screenX1 = gridScreenX[1];
-      screenX2 = gridScreenX[2];
-      screenX3 = gridScreenX[3];
-      columnStepX *= 8;
-      columnStepY *= 8;
+    geometry.panelX = setup.bandOriginXFixed;
+    geometry.panelY = setup.bandOriginYFixed;
+    geometry.columnStepX = setup.columnStepX * 8;
+    geometry.columnStepY = setup.columnStepY * 8;
+    geometry.rowStepX = setup.rowStepX;
+    geometry.rowStepY = setup.rowStepY;
+    geometry.sinRoll = setup.savedSinRoll;
+    geometry.cosRoll = setup.savedCosRoll;
+    geometry.textureColumn = setup.textureColumn;
+
+    if (g_SkyRowBase != 0) {
+        packetCursor =
+            DrawTexturedSkyGrid(&work, &setup, screenX, packetCursor);
+    } else {
+        packetCursor = DrawHorizonTileStrip(&work, &setup, packetCursor);
+        packetCursor =
+            DrawSkyGradientBands(&work, &setup, screenX, packetCursor);
     }
-    else
-    {
-      SkyBandSetup band;
-      s32 gradientScreenX[4];
 
-      band.lowerPanelXFixed = lowerPanelXFixed;
-      band.coordinateAccumulator = coordinateAccumulator;
-      band.bandOriginXFixed = bandOriginXFixed;
-      band.bandOriginYFixed = bandOriginYFixed;
-      band.columnStepX = columnStepX;
-      band.columnStepY = columnStepY;
-      band.rowStepX = rowStepX;
-      band.rowStepY = rowStepY;
-      band.textureColumn = textureColumn;
-      packetCursor = DrawHorizonTileStrip(work, &band, packetCursor);
-      packetCursor = DrawSkyGradientBands(
-          work, &band, gradientScreenX, packetCursor);
-      panelXFixed = bandOriginXFixed;
-      panelYFixed = bandOriginYFixed;
-      columnStepX *= 8;
-      columnStepY *= 8;
-      screenX0 = gradientScreenX[0];
-      screenX1 = gradientScreenX[1];
-      screenX2 = gradientScreenX[2];
-      screenX3 = gradientScreenX[3];
-    }
-  {
-    SkyBandGeometry band;
-
-    band.panelX = panelXFixed;
-    band.panelY = panelYFixed;
-    band.columnStepX = columnStepX;
-    band.columnStepY = columnStepY;
-    band.rowStepX = rowStepX;
-    band.rowStepY = rowStepY;
-    band.sinRoll = savedSinRoll;
-    band.cosRoll = savedCosRoll;
-    band.textureColumn = textureColumn;
-    band.screenX0 = screenX0;
-    band.screenX1 = screenX1;
-    band.screenX2 = screenX2;
-    band.screenX3 = screenX3;
-
-    packetCursor = DrawCourseSkirt(work, &band, packetCursor);
+    geometry.screenX0 = screenX[0];
+    geometry.screenX1 = screenX[1];
+    geometry.screenX2 = screenX[2];
+    geometry.screenX3 = screenX[3];
+    packetCursor = DrawCourseSkirt(&work, &geometry, packetCursor);
     RENDER_PRIM_CURSOR_AS(u8) = packetCursor;
-  }
 }
