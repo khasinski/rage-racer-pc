@@ -61,20 +61,8 @@ void EnterCourseSelectScreen(void) {
     UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
 }
 
-typedef struct CourseSelectSpriteBounds {
-    s32 x;
-    s32 y;
-    s32 w;
-    s32 h;
-} CourseSelectSpriteBounds;
-
-
-/*
- * The menu lays out several two-sprite labels from the first sprite's sliding
- * Y. GCC 2.6.3 integrates this explicit inline at -O2; its optional bounds
- * result also preserves the retail caller frame before null outputs fold away.
- */
-static s32 GameDrawSlidingSprite(
+/* Draws the first half of a sliding label and returns its Y for the rest. */
+static s32 DrawSlidingSprite(
     void *ot,
     s32 x,
     s32 baseY,
@@ -89,28 +77,17 @@ static s32 GameDrawSlidingSprite(
     s32 clut,
     s32 shadeTex,
     s32 semiTrans,
-    s32 flags,
-    CourseSelectSpriteBounds *bounds)
-{
-    CourseSelectSpriteBounds result;
+    s32 flags) {
     s32 y;
 
     y = baseY - slide;
-    if (bounds != 0) {
-        result.x = x;
-        result.y = y;
-        result.w = w;
-        result.h = h;
-        *bounds = result;
-    }
     DrawSprite(
         ot, x, y, w, h, u, v, r, g, b, clut,
         shadeTex, semiTrans, flags);
     return y;
 }
 
-s32 DrawCourseSelectScreen(s32 step)
-{
+s32 DrawCourseSelectScreen(s32 step) {
     OT_TYPE *otBase;
     OT_TYPE *ot;
     u8 fade;
@@ -249,9 +226,9 @@ s32 DrawCourseSelectScreen(s32 step)
             gpHeight, 0xEC, 0x48, gpFade, gpFade, gpFade,
             gpClut, 0, gpSemiTrans, gpFlags);
 
-        coordinateY = GameDrawSlidingSprite(
+        coordinateY = DrawSlidingSprite(
             ot, 0x50, 0x97, gpSlide, 0x1A, gpHeight, 0x60, 0xCC,
-            gpFade, gpFade, gpFade, gpClut, 0, gpSemiTrans, gpFlags, 0);
+            gpFade, gpFade, gpFade, gpClut, 0, gpSemiTrans, gpFlags);
         DrawSprite(
             ot, 0x6C, coordinateY, 8, 0x10,
             g_GrandPrixClass * 8 + 8, 0x18,
@@ -273,25 +250,25 @@ s32 DrawCourseSelectScreen(s32 step)
             0x60, 0x88, fade, fade, fade, 0x25B, 0, 1, 0x39);
     }
 
-    coordinateY = GameDrawSlidingSprite(
+    coordinateY = DrawSlidingSprite(
         ot, 0x4C, 0xD0, (s16)slide, 0x18, 0xC, 0x18, 0xDC,
-        fade, fade, fade, 0x244, 0, 1, 0x3A, 0);
+        fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x12, 0xC,
         0x32, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    coordinateY = GameDrawSlidingSprite(
+    coordinateY = DrawSlidingSprite(
         ot, 0x4C, 0xF8, (s16)slide, 0x18, 0xC, 0x18, 0xDC,
-        fade, fade, fade, 0x244, 0, 1, 0x3A, 0);
+        fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
     switch (SeriesCourseIndex()) {
     case 0:
-        coordinateY = GameDrawSlidingSprite(
+        coordinateY = DrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 8, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B, 0);
+            fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x54, 0x10,
             0, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
@@ -300,9 +277,9 @@ s32 DrawCourseSelectScreen(s32 step)
             0x44, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 1:
-        coordinateY = GameDrawSlidingSprite(
+        coordinateY = DrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x10, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B, 0);
+            fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x4C, 0x10,
             0x54, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
@@ -311,9 +288,9 @@ s32 DrawCourseSelectScreen(s32 step)
             0x64, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 2:
-        coordinateY = GameDrawSlidingSprite(
+        coordinateY = DrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x18, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B, 0);
+            fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x48, 0x10,
             0, 0xAC, fade, fade, fade, 0x244, 0, 1, 0x3B);
@@ -322,9 +299,9 @@ s32 DrawCourseSelectScreen(s32 step)
             0x84, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 3:
-        coordinateY = GameDrawSlidingSprite(
+        coordinateY = DrawSlidingSprite(
             ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x20, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B, 0);
+            fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x5C, 0x10,
             0xA4, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
