@@ -1,35 +1,15 @@
 #include "game/memcard.h"
 #include "game/menu.h"
+#include <stdio.h>
 
-s32 CalculateMemoryCardFreeBlocks(s32 port) {
+s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
     s32 i;
-    s32 sum;
-    DirEntry *ptr;
-    s32 value;
+    s32 usedBytes = 0;
 
-    i = 0;
-    sum = 0;
-
-    if (port > 0) {
-        ptr = g_McDirEntries;
-        do {
-            value = ptr->size;
-            sum += value;
-            ptr++;
-        } while (++i < port);
+    for (i = 0; i < fileCount; i++) {
+        usedBytes += g_McDirEntries[i].size;
     }
-
-    {
-        s32 biased;
-
-        biased = sum;
-        if (sum < 0) {
-            biased = sum + 0x1FFF;
-        }
-        sum = biased >> 13;
-
-        return 0xF - sum;
-    }
+    return 0xF - usedBytes / 0x2000;
 }
 
 s32 RefreshMemoryCardSaveStatus(s32 slot, GameSaveHeaderRow *header) {
@@ -46,13 +26,12 @@ s32 RefreshMemoryCardSaveStatus(s32 slot, GameSaveHeaderRow *header) {
     return ret;
 }
 
-/* sprintf: every caller declares its own arity; keep it prototypeless. */
-
 char *FormatSaveElapsedTime(char *dst, u32 seconds) {
     u32 hours = seconds / 216000;
     u32 totalMinutes = seconds / 3600;
     u32 totalSeconds = seconds / 60;
 
-    sprintf(dst, g_FmtPlayTime, hours, totalMinutes - (hours * 60), totalSeconds - (totalMinutes * 60));
+    sprintf(dst, g_FmtPlayTime, hours, totalMinutes - hours * 60,
+            totalSeconds - totalMinutes * 60);
     return dst + 2;
 }

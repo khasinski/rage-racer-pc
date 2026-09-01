@@ -60,7 +60,8 @@ set_tests_properties(save_header PROPERTIES LABELS unit)
 
 add_executable(memory_card_io_tests
     memory_card_io_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_io.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_io.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_status.c)
 target_include_directories(memory_card_io_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

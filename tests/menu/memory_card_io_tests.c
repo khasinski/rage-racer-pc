@@ -14,6 +14,9 @@ u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_SaveElapsedTicks;
 DirEntry g_McDirEntries[12];
+s32 g_McCardFileCount;
+s32 g_McFreeBlocks;
+char g_FmtPlayTime[] = "%02d:%02d:%02d";
 
 static u8 s_files[MOCK_FILE_COUNT][MOCK_FILE_SIZE];
 static long s_positions[MOCK_FILE_COUNT];
@@ -157,6 +160,9 @@ void BuildSaveIconBlock(u8 *block, char *title, s32 iconTile,
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) { SealHeader(row); }
 void StoreSaveStateBlock(GameSaveBlock *block) { memset(block, 0x22, sizeof(*block)); }
 s32 LoadSaveStateBlock(GameSaveBlock *block) { (void)block; return s_loadOk; }
+void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
+    memset(rows, 0, 3 * sizeof(*rows));
+}
 
 static int TestVerifiedHeaders(void) {
     GameSaveHeaderRow header;
@@ -256,11 +262,33 @@ static int TestWriteAndDirectoryCount(void) {
     return 0;
 }
 
+static int TestCardStatus(void) {
+    GameSaveHeaderRow headers[3];
+
+    ResetMock();
+    g_McDirEntries[0].size = 0x2000;
+    g_McDirEntries[1].size = 0x1000;
+    CHECK(CalculateMemoryCardFreeBlocks(0) == 15);
+    CHECK(CalculateMemoryCardFreeBlocks(2) == 14);
+
+    s_directoryFiles = 2;
+    s_exists[0] = 1;
+    PutHeader(0, 0x1280, 31, 1);
+    memset(headers, 0xCC, sizeof(headers));
+    CHECK(RefreshMemoryCardSaveStatus(0, headers) == 1);
+    CHECK(g_McCardFileCount == 2);
+    CHECK(g_McFreeBlocks == 14);
+    CHECK(headers[0].fields.name[0] == 31);
+    CHECK(GameMenuLoadPhase == 0x200);
+    return 0;
+}
+
 int main(void) {
     if (TestVerifiedHeaders() != 0) return 1;
     if (TestHeaderScan() != 0) return 1;
     if (TestLoadAndFailuresClose() != 0) return 1;
     if (TestWriteAndDirectoryCount() != 0) return 1;
+    if (TestCardStatus() != 0) return 1;
     puts("memory_card_io: verified retries, checksums, cleanup and directory scan");
     return 0;
 }
