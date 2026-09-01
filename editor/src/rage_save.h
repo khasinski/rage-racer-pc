@@ -95,6 +95,28 @@ size_t RageNameCharsetSize(void);
 void RageSaveReadTeamName(const GameSaveHeaderRow *row, char *out, size_t size);
 void RageSaveWriteTeamName(GameSaveHeaderRow *row, const char *text);
 
+/*
+ * Saves the port has already written on this machine, so the usual answer to
+ * "which file" is a list to pick from rather than a file dialog.
+ */
+typedef struct RageSaveEntry {
+    char path[1024];
+    char team[RAGE_TEAM_NAME_LENGTH + 1];
+    RageRegion region;
+    int slot;
+    int money;
+    int valid;      /* 0 when it loaded but its checksums disagree */
+} RageSaveEntry;
+
+enum { RAGE_SAVE_DISCOVER_MAX = 32 };
+
+/* Returns how many were found, up to RAGE_SAVE_DISCOVER_MAX. */
+int RageSaveDiscover(RageSaveEntry *entries, int max);
+/* Where this platform keeps them, for showing and for saving into. */
+int RageSaveCardDirectory(int card, char *out, size_t size);
+/* Reads the slot back out of a "... RAGE002" name; -1 when there is none. */
+int RageSaveSlotFromPath(const char *path);
+
 /* Team logo: sixteen colours, and one nibble per pixel. */
 int RageLogoPixel(const GameSaveBlock *block, int x, int y);
 void RageLogoSetPixel(GameSaveBlock *block, int x, int y, int colour);

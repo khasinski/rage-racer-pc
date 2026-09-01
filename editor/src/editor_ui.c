@@ -1,11 +1,11 @@
 /*
- * Every field a Rage Racer save holds, laid out so it can be found.
+ * The editor's screen.
  *
- * The panels follow the save's own structure rather than a tidier one, so a
- * field here can be traced to a field in GameSaveBlock without a lookup table
- * in between. Nothing is hidden: what the game does not use is in the last
- * tab as bytes rather than left out, because a save editor that quietly drops
- * a field writes files that lose it.
+ * A header saying what is open, a list of sections down the side and the
+ * fields in the middle: the shape of an ordinary program rather than a list
+ * of every field the save happens to contain. What a field means is shown
+ * where the game gives it a meaning, and as a plain number where it does not,
+ * because a made-up name is worse than a number.
  */
 
 #include "editor_ui.h"
@@ -17,43 +17,100 @@
 
 static const ImVec2_c kAuto = {0.0f, 0.0f};
 
-/* Times are milliseconds. The game shows them as 1'40"765. */
+static ImVec2_c Size(float x, float y) {
+    ImVec2_c value;
+    value.x = x;
+    value.y = y;
+    return value;
+}
+
+/* An explanation the reader can ask for instead of one shouted at them. */
+static void Explain(const char *text) {
+    igSameLine(0.0f, -1.0f);
+    igTextDisabled("(?)");
+    if (igBeginItemTooltip()) {
+        igPushTextWrapPos(igGetFontSize() * 28.0f);
+        igTextUnformatted(text, NULL);
+        igPopTextWrapPos();
+        igEndTooltip();
+    }
+}
+
+static void Heading(const char *text) {
+    igDummy(Size(0.0f, 6.0f));
+    igSeparatorText(text);
+}
+
+static void FormatMoney(int money, char *out, size_t size) {
+    char digits[16];
+    int length;
+    int i;
+    int written = 0;
+
+    snprintf(digits, sizeof(digits), "%d", money < 0 ? -money : money);
+    length = (int)strlen(digits);
+    if (money < 0 && written + 1 < (int)size) out[written++] = '-';
+    for (i = 0; i < length; i++) {
+        if (i > 0 && ((length - i) % 3) == 0 && written + 1 < (int)size)
+            out[written++] = ' ';
+        if (written + 1 < (int)size) out[written++] = digits[i];
+    }
+    out[written] = '\0';
+}
+
 static void FormatTime(int milliseconds, char *out, size_t size) {
     int negative = milliseconds < 0;
     long value = negative ? -(long)milliseconds : milliseconds;
-    long minutes = value / 60000;
-    long seconds = (value / 1000) % 60;
-    long thousandths = value % 1000;
 
-    snprintf(out, size, "%s%ld'%02ld\"%03ld", negative ? "-" : "", minutes,
-             seconds, thousandths);
+    snprintf(out, size, "%s%ld'%02ld\"%03ld", negative ? "-" : "",
+             value / 60000, (value / 1000) % 60, value % 1000);
 }
 
-/* A number and, beside it, what that number means on screen. */
-static int TimeField(const char *label, int *milliseconds) {
-    char shown[32];
-    int changed = igInputInt(label, milliseconds, 1, 1000, 0);
+/*
+ * A time as the game writes it, edited as the game writes it. Typing
+ * 1'40"765 is easier than remembering it is 100765 milliseconds.
+ */
+static int TimeField(const char *label, int *milliseconds, float width) {
+    char text[32];
+    int minutes = 0;
+    long seconds = 0;
+    long thousandths = 0;
 
-    FormatTime(*milliseconds, shown, sizeof(shown));
-    igSameLine(0.0f, -1.0f);
-    igText("%s", shown);
-    return changed;
+    FormatTime(*milliseconds, text, sizeof(text));
+    igSetNextItemWidth(width);
+    if (!igInputText(label, text, sizeof(text), 0, NULL, NULL)) return 0;
+    if (sscanf(text, "%d'%ld\"%ld", &minutes, &seconds, &thousandths) == 3 ||
+        sscanf(text, "%d:%ld.%ld", &minutes, &seconds, &thousandths) == 3) {
+        *milliseconds =
+            (int)((long)minutes * 60000 + seconds * 1000 + thousandths);
+        return 1;
+    }
+    /* A bare number is still a number of milliseconds. */
+    if (sscanf(text, "%d", milliseconds) == 1) return 1;
+    return 0;
 }
 
-static int ByteField(const char *label, unsigned char *value) {
+static int ByteSlider(const char *label, unsigned char *value, int high,
+                      float width) {
     int wide = *value;
-    if (igInputInt(label, &wide, 1, 10, 0)) {
-        if (wide < 0) wide = 0;
-        if (wide > 255) wide = 255;
+    igSetNextItemWidth(width);
+    if (igSliderInt(label, &wide, 0, high, "%d", 0)) {
         *value = (unsigned char)wide;
         return 1;
     }
     return 0;
 }
 
-static int HalfwordField(const char *label, unsigned short *value) {
+static int WordField(const char *label, int *value, float width) {
+    igSetNextItemWidth(width);
+    return igInputInt(label, value, 0, 0, 0);
+}
+
+static int HalfwordField(const char *label, unsigned short *value,
+                         float width) {
     int wide = *value;
-    if (igInputInt(label, &wide, 1, 100, 0)) {
+    igSetNextItemWidth(width);
+    if (igInputInt(label, &wide, 0, 0, 0)) {
         if (wide < 0) wide = 0;
         if (wide > 0xFFFF) wide = 0xFFFF;
         *value = (unsigned short)wide;
@@ -62,244 +119,314 @@ static int HalfwordField(const char *label, unsigned short *value) {
     return 0;
 }
 
-static int SignedHalfwordField(const char *label, short *value) {
-    int wide = *value;
-    if (igInputInt(label, &wide, 1, 100, 0)) {
-        if (wide < -32768) wide = -32768;
-        if (wide > 32767) wide = 32767;
-        *value = (short)wide;
-        return 1;
+/*
+ * The five cars this port knows by name; the rest of the thirteen are shown
+ * by their number, which is what the save actually stores.
+ */
+static const char *CarName(int index) {
+    switch (index) {
+    case 0: return "Alouette";
+    case 4: return "Instinct";
+    case 10: return "Victoire";
+    case 11: return "Tempest";
+    case 12: return "Dragone";
+    default: return NULL;
     }
-    return 0;
 }
 
-static int WordField(const char *label, int *value) {
-    return igInputInt(label, value, 1, 100, 0);
+static void CarLabel(int index, char *out, size_t size) {
+    const char *name = CarName(index);
+    if (name != NULL)
+        snprintf(out, size, "%2d  %s", index, name);
+    else
+        snprintf(out, size, "%2d", index);
 }
 
-/* Opens the tab a screenshot asked for, once. */
-static ImGuiTabItemFlags TabFlags(EditorState *state, const char *name) {
-    if (state->openTab != NULL && strcmp(state->openTab, name) == 0)
-        return ImGuiTabItemFlags_SetSelected;
-    return 0;
-}
+/* ------------------------------------------------------------------ */
 
-static void DrawFilePanel(EditorState *state) {
-    const RageRegionInfo *regions;
-    size_t regionCount;
-    size_t i;
-    char name[64];
-    char team[RAGE_TEAM_NAME_LENGTH + 1];
-
-    igSeparatorText("File");
-    igText("%s", state->path[0] != '\0' ? state->path : "(nothing open)");
-
-    igSeparatorText("Release");
-    regions = RageRegionTable(&regionCount);
-    for (i = 0; i < regionCount; i++) {
-        char label[96];
-        snprintf(label, sizeof(label), "%s  (%s)%s", regions[i].name,
-                 regions[i].serial,
-                 regions[i].verified ? "" : "  [serial unconfirmed]");
-        if (igRadioButton_Bool(label, state->region == regions[i].region)) {
-            state->region = regions[i].region;
-            state->dirty = 1;
-        }
-    }
-    igText("The release changes the name the file needs on a memory card, and "
-           "nothing about the fields below: all three store the same save.");
-
-    igSeparatorText("Slot");
-    if (igSliderInt("slot", &state->slot, 0, RAGE_SAVE_SLOTS - 1, "%d", 0))
-        state->dirty = 1;
-    if (RageRegionCardName(state->region, state->slot, name, sizeof(name)))
-        igText("On a card this file is called  %s", name);
-
-    igSeparatorText("Team");
-    RageSaveReadTeamName(&state->save.header, team, sizeof(team));
-    if (igInputText("team name", team, sizeof(team), 0, NULL, NULL)) {
-        RageSaveWriteTeamName(&state->save.header, team);
-        state->dirty = 1;
-    }
-    igText("Up to seven of  %s", kRageNameCharset);
-    {
-        int counter = state->save.header.fields.saveCounter;
-        if (WordField("save counter", &counter)) {
-            state->save.header.fields.saveCounter = counter;
-            state->dirty = 1;
-        }
-    }
-
-    igSeparatorText("Checksums");
-    igText("These are recomputed when the file is written, so a save that "
-           "arrived damaged leaves here repaired.");
-    igText("memory card signature: %s",
-           state->report.iconRecognised ? "present" : "MISSING");
-    igText("header: %s   payload: %s   repeated header: %s   copies match: %s",
-           state->report.headerChecksumValid ? "ok" : "WRONG",
-           state->report.blockChecksumValid ? "ok" : "WRONG",
-           state->report.trailerChecksumValid ? "ok" : "WRONG",
-           state->report.trailerMatchesHeader ? "yes" : "NO");
-}
-
-static int DrawProgressGroup(const char *label, SavedRaceProgress *progress) {
-    int changed = 0;
-    char id[64];
-
-    igPushID_Str(label);
-    igSeparatorText(label);
-    snprintf(id, sizeof(id), "course");
-    changed |= WordField(id, &progress->course);
-    changed |= WordField("car", &progress->carIndex);
-    changed |= WordField("class", &progress->classIndex);
-    changed |= WordField("highest class reached", &progress->maxClassReached);
-    changed |= WordField("money", &progress->money);
-    igPopID();
-    return changed;
-}
-
-static void DrawProgressPanel(EditorState *state) {
-    GameSaveBlock *block = &state->save.block;
+static void DrawWelcome(EditorState *state, EditorRequests *requests) {
     int i;
 
-    state->dirty |= DrawProgressGroup("Grand Prix", &block->grandPrixProgress);
-    state->dirty |=
-        DrawProgressGroup("Extra Grand Prix", &block->extraGrandPrixProgress);
-    state->dirty |=
-        DrawProgressGroup("Time Attack", &block->timeAttackProgress);
+    igDummy(Size(0.0f, 20.0f));
+    igPushFont(NULL, igGetFontSize() * 1.6f);
+    igText("Rage Racer save editor");
+    igPopFont();
+    igTextDisabled("Open one of your saves, or start a new one.");
+    igDummy(Size(0.0f, 16.0f));
 
-    igSeparatorText("Unlocks");
-    state->dirty |= HalfwordField("extra grand prix unlocked",
-                                  &block->extraGrandPrixUnlocked);
-    for (i = 0; i < 2; i++) {
-        char label[64];
-        snprintf(label, sizeof(label), "highest class reached [%d]", i);
-        state->dirty |= WordField(label, &block->maxClassReached[i]);
+    if (!state->scanned) EditorRescan(state);
+
+    if (state->foundCount > 0) {
+        igSeparatorText("Saves on this computer");
+        for (i = 0; i < state->foundCount; i++) {
+            RageSaveEntry *entry = &state->found[i];
+            const RageRegionInfo *info = RageRegionFind(entry->region);
+            char money[24];
+            char label[512];
+
+            FormatMoney(entry->money, money, sizeof(money));
+            snprintf(label, sizeof(label), "%s%s##found%d",
+                     entry->team[0] != '\0' ? entry->team : "(no team name)",
+                     entry->valid ? "" : "   damaged", i);
+            if (igButton(label, Size(360.0f, 0.0f))) EditorOpen(state, entry->path);
+            igSameLine(0.0f, 12.0f);
+            igBeginGroup();
+            igTextDisabled("%s   slot %d   %s credits",
+                           info != NULL ? info->name : "unknown release",
+                           entry->slot, money);
+            igTextDisabled("%s", entry->path);
+            igEndGroup();
+            igDummy(Size(0.0f, 4.0f));
+        }
+    } else {
+        igSeparatorText("Saves on this computer");
+        igTextDisabled("None found. The game writes them here once you save:");
+        {
+            char directory[1024];
+            if (RageSaveCardDirectory(0, directory, sizeof(directory)))
+                igTextDisabled("%s", directory);
+        }
     }
 
-    igSeparatorText("Best place per course");
-    igText("One byte a course, as the game records the place finished.");
-    if (igBeginTable("course progress", 9, ImGuiTableFlags_Borders, kAuto,
-                     0.0f)) {
+    igDummy(Size(0.0f, 16.0f));
+    if (igButton("Open a file...", Size(200.0f, 40.0f))) requests->open = 1;
+    igSameLine(0.0f, 12.0f);
+    if (igButton("Start a new save", Size(200.0f, 40.0f))) EditorNew(state);
+    igSameLine(0.0f, 12.0f);
+    if (igButton("Look again", Size(140.0f, 40.0f))) EditorRescan(state);
+}
+
+/* ------------------------------------------------------------------ */
+
+static void DrawProgress(EditorState *state) {
+    GameSaveBlock *block = &state->save.block;
+    static const char *const kNames[3] = {"Grand Prix", "Extra Grand Prix",
+                                          "Time Attack"};
+    SavedRaceProgress *groups[3];
+    int i;
+
+    groups[0] = &block->grandPrixProgress;
+    groups[1] = &block->extraGrandPrixProgress;
+    groups[2] = &block->timeAttackProgress;
+
+    for (i = 0; i < 3; i++) {
+        SavedRaceProgress *progress = groups[i];
+        char money[24];
+        char label[64];
+
+        Heading(kNames[i]);
+        igPushID_Int(i);
+
+        {
+            char preview[64];
+            CarLabel(progress->carIndex, preview, sizeof(preview));
+            igSetNextItemWidth(220.0f);
+            if (igBeginCombo("car", preview, 0)) {
+                int car;
+                for (car = 0; car < 13; car++) {
+                    char item[64];
+                    CarLabel(car, item, sizeof(item));
+                    if (igSelectable_Bool(item, progress->carIndex == car, 0,
+                                          kAuto)) {
+                        progress->carIndex = car;
+                        state->dirty = 1;
+                    }
+                }
+                igEndCombo();
+            }
+        }
+        state->dirty |= WordField("course", &progress->course, 120.0f);
+        igSameLine(0.0f, 20.0f);
+        state->dirty |= WordField("class", &progress->classIndex, 120.0f);
+        igSameLine(0.0f, 20.0f);
+        state->dirty |=
+            WordField("highest class", &progress->maxClassReached, 120.0f);
+
+        state->dirty |= WordField("credits", &progress->money, 220.0f);
+        igSameLine(0.0f, 12.0f);
+        FormatMoney(progress->money, money, sizeof(money));
+        igText("%s", money);
+        igSameLine(0.0f, 20.0f);
+        snprintf(label, sizeof(label), "fill up##money%d", i);
+        if (igButton(label, kAuto)) {
+            progress->money = 999999999;
+            state->dirty = 1;
+        }
+        igPopID();
+    }
+
+    Heading("Unlocked");
+    {
+        bool unlocked = block->extraGrandPrixUnlocked != 0;
+        if (igCheckbox("extra grand prix", &unlocked)) {
+            block->extraGrandPrixUnlocked = unlocked ? 1 : 0;
+            state->dirty = 1;
+        }
+        Explain("The game stores a number here rather than a flag; anything "
+                "other than zero counts as unlocked.");
+    }
+    for (i = 0; i < 2; i++) {
+        char label[64];
+        snprintf(label, sizeof(label), "highest class reached %d", i + 1);
+        state->dirty |= WordField(label, &block->maxClassReached[i], 120.0f);
+        if (i == 0) igSameLine(0.0f, 20.0f);
+    }
+
+    Heading("Best place on each course");
+    igTextDisabled("Eight courses per series, as the place finished.");
+    if (igBeginTable("course progress", 9,
+                     ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit,
+                     kAuto, 0.0f)) {
         int row;
         igTableSetupColumn("series", 0, 0.0f, 0);
         for (i = 0; i < 8; i++) {
             char header[16];
-            snprintf(header, sizeof(header), "%d", i);
+            snprintf(header, sizeof(header), "%d", i + 1);
             igTableSetupColumn(header, 0, 0.0f, 0);
         }
         igTableHeadersRow();
         for (row = 0; row < 2; row++) {
-            unsigned char *bytes = row == 0 ? block->grandPrixCourseProgress
-                                            : block->extraGrandPrixCourseProgress;
+            unsigned char *bytes =
+                row == 0 ? block->grandPrixCourseProgress
+                         : block->extraGrandPrixCourseProgress;
             igTableNextRow(0, 0.0f);
             igTableNextColumn();
             igText("%s", row == 0 ? "grand prix" : "extra");
             for (i = 0; i < 8; i++) {
                 char id[32];
                 igTableNextColumn();
-                snprintf(id, sizeof(id), "##progress%d%d", row, i);
-                igSetNextItemWidth(60.0f);
-                state->dirty |= ByteField(id, &bytes[i]);
+                snprintf(id, sizeof(id), "##cp%d%d", row, i);
+                state->dirty |= ByteSlider(id, &bytes[i], 12, 70.0f);
             }
         }
         igEndTable();
     }
 }
 
-static void DrawGaragePanel(EditorState *state) {
+/* ------------------------------------------------------------------ */
+
+static void DrawGarage(EditorState *state) {
     GameSaveBlock *block = &state->save.block;
+    static const char *const kNames[3] = {"Grand Prix", "Extra Grand Prix",
+                                          "Time Attack"};
+    static const char *const kGearbox[2] = {"automatic", "manual"};
     int garage;
 
-    igText("Three sets of thirteen cars: one for the grand prix, one for the "
-           "extra grand prix and one for time attack.");
-    for (garage = 0; garage < 3; garage++) {
-        static const char *const kNames[3] = {"Grand Prix", "Extra Grand Prix",
-                                              "Time Attack"};
-        char id[32];
-        snprintf(id, sizeof(id), "garage%d", garage);
-        igSeparatorText(kNames[garage]);
-        if (igBeginTable(id, 7, ImGuiTableFlags_Borders |
-                                    ImGuiTableFlags_SizingFixedFit,
-                         kAuto, 0.0f)) {
-            int car;
-            igTableSetupColumn("car", 0, 0.0f, 0);
-            igTableSetupColumn("grade", 0, 0.0f, 0);
-            igTableSetupColumn("tyres", 0, 0.0f, 0);
-            igTableSetupColumn("gearbox", 0, 0.0f, 0);
-            igTableSetupColumn("paint 1", 0, 0.0f, 0);
-            igTableSetupColumn("paint 2", 0, 0.0f, 0);
-            igTableSetupColumn("owned", 0, 0.0f, 0);
-            igTableHeadersRow();
-            for (car = 0; car < 13; car++) {
-                SavedCarSetup *setup = &block->carSetup[garage][car];
-                bool owned = setup->enabled != 0;
-                char field[32];
-                igTableNextRow(0, 0.0f);
-                igTableNextColumn();
-                igText("%d", car);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##g%d%d", garage, car);
-                igSetNextItemWidth(70.0f);
-                state->dirty |= ByteField(field, &setup->modelVariant);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##t%d%d", garage, car);
-                igSetNextItemWidth(70.0f);
-                state->dirty |= ByteField(field, &setup->tireCompound);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##x%d%d", garage, car);
-                igSetNextItemWidth(70.0f);
-                state->dirty |= ByteField(field, &setup->transmission);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##p%d%d", garage, car);
-                igSetNextItemWidth(70.0f);
-                state->dirty |= ByteField(field, &setup->paintColor1);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##q%d%d", garage, car);
-                igSetNextItemWidth(70.0f);
-                state->dirty |= ByteField(field, &setup->paintColor2);
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##o%d%d", garage, car);
-                if (igCheckbox(field, &owned)) {
-                    setup->enabled = owned ? 1 : 0;
-                    state->dirty = 1;
-                }
-            }
-            igEndTable();
-        }
+    igTextDisabled("Three garages of thirteen cars.");
+    igSameLine(0.0f, 16.0f);
+    if (igButton("Give me every car, everywhere", kAuto)) {
+        int i;
+        int j;
+        for (i = 0; i < 3; i++)
+            for (j = 0; j < 13; j++) block->carSetup[i][j].enabled = 1;
+        state->dirty = 1;
     }
-}
 
-static void DrawRecordTable(EditorState *state, const char *id,
-                            RaceRecord records[4][5]) {
-    int course;
-
-    if (!igBeginTable(id, 4, ImGuiTableFlags_Borders, kAuto, 0.0f)) return;
-    igTableSetupColumn("course", 0, 0.0f, 0);
-    igTableSetupColumn("place", 0, 0.0f, 0);
-    igTableSetupColumn("driver", 0, 0.0f, 0);
-    igTableSetupColumn("time", 0, 0.0f, 0);
-    igTableHeadersRow();
-    for (course = 0; course < 4; course++) {
-        int place;
-        for (place = 0; place < 5; place++) {
-            RaceRecord *record = &records[course][place];
-            char name[sizeof(record->driverName) + 1];
-            char field[48];
-            int milliseconds = record->raceTime;
+    for (garage = 0; garage < 3; garage++) {
+        char id[32];
+        Heading(kNames[garage]);
+        snprintf(id, sizeof(id), "garage%d", garage);
+        if (!igBeginTable(id, 6,
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                              ImGuiTableFlags_SizingFixedFit,
+                          kAuto, 0.0f))
+            continue;
+        igTableSetupColumn("car", 0, 170.0f, 0);
+        igTableSetupColumn("owned", 0, 55.0f, 0);
+        igTableSetupColumn("grade", 0, 125.0f, 0);
+        igTableSetupColumn("tyres", 0, 125.0f, 0);
+        igTableSetupColumn("gearbox", 0, 125.0f, 0);
+        igTableSetupColumn("paint", 0, 250.0f, 0);
+        igTableHeadersRow();
+        for (int car = 0; car < 13; car++) {
+            SavedCarSetup *setup = &block->carSetup[garage][car];
+            bool owned = setup->enabled != 0;
+            char label[64];
+            char id2[48];
 
             igTableNextRow(0, 0.0f);
             igTableNextColumn();
-            if (place == 0) igText("%d", course);
+            CarLabel(car, label, sizeof(label));
+            igText("%s", label);
+            igTableNextColumn();
+            snprintf(id2, sizeof(id2), "##own%d%d", garage, car);
+            if (igCheckbox(id2, &owned)) {
+                setup->enabled = owned ? 1 : 0;
+                state->dirty = 1;
+            }
+            igTableNextColumn();
+            snprintf(id2, sizeof(id2), "##grade%d%d", garage, car);
+            state->dirty |= ByteSlider(id2, &setup->modelVariant, 4, 115.0f);
+            igTableNextColumn();
+            snprintf(id2, sizeof(id2), "##tyre%d%d", garage, car);
+            state->dirty |= ByteSlider(id2, &setup->tireCompound, 4, 115.0f);
+            igTableNextColumn();
+            snprintf(id2, sizeof(id2), "##gear%d%d", garage, car);
+            igSetNextItemWidth(115.0f);
+            {
+                int gearbox = setup->transmission != 0 ? 1 : 0;
+                if (igBeginCombo(id2, kGearbox[gearbox], 0)) {
+                    int option;
+                    for (option = 0; option < 2; option++) {
+                        if (igSelectable_Bool(kGearbox[option],
+                                              gearbox == option, 0, kAuto)) {
+                            setup->transmission = (unsigned char)option;
+                            state->dirty = 1;
+                        }
+                    }
+                    igEndCombo();
+                }
+            }
+            igTableNextColumn();
+            snprintf(id2, sizeof(id2), "##p1%d%d", garage, car);
+            state->dirty |= ByteSlider(id2, &setup->paintColor1, 15, 115.0f);
+            igSameLine(0.0f, 6.0f);
+            snprintf(id2, sizeof(id2), "##p2%d%d", garage, car);
+            state->dirty |= ByteSlider(id2, &setup->paintColor2, 15, 115.0f);
+        }
+        igEndTable();
+    }
+}
+
+/* ------------------------------------------------------------------ */
+
+static void DrawRecordSet(EditorState *state, const char *id,
+                          RaceRecord records[4][5]) {
+    int course;
+
+    for (course = 0; course < 4; course++) {
+        char title[64];
+        char tableId[64];
+        int place;
+
+        snprintf(title, sizeof(title), "Course %d", course + 1);
+        igSeparatorText(title);
+        snprintf(tableId, sizeof(tableId), "%s_%d", id, course);
+        if (!igBeginTable(tableId, 4,
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                              ImGuiTableFlags_SizingFixedFit,
+                          kAuto, 0.0f))
+            continue;
+        igTableSetupColumn("place", 0, 60.0f, 0);
+        igTableSetupColumn("driver", 0, 150.0f, 0);
+        igTableSetupColumn("time", 0, 160.0f, 0);
+        igTableSetupColumn("car", 0, 220.0f, 0);
+        igTableHeadersRow();
+        for (place = 0; place < 5; place++) {
+            RaceRecord *record = &records[course][place];
+            char name[sizeof(record->driverName) + 1];
+            char field[64];
+            int milliseconds = record->raceTime;
+
+            igTableNextRow(0, 0.0f);
             igTableNextColumn();
             igText("%d", place + 1);
             igTableNextColumn();
             memcpy(name, record->driverName, sizeof(record->driverName));
             name[sizeof(record->driverName)] = '\0';
             snprintf(field, sizeof(field), "##%s_n%d%d", id, course, place);
-            igSetNextItemWidth(110.0f);
+            igSetNextItemWidth(140.0f);
             if (igInputText(field, name, sizeof(name), 0, NULL, NULL)) {
-                /* The field is eight bytes and is not terminated. */
                 memset(record->driverName, 0, sizeof(record->driverName));
                 memcpy(record->driverName, name,
                        strnlen(name, sizeof(record->driverName)));
@@ -307,156 +434,189 @@ static void DrawRecordTable(EditorState *state, const char *id,
             }
             igTableNextColumn();
             snprintf(field, sizeof(field), "##%s_t%d%d", id, course, place);
-            igSetNextItemWidth(120.0f);
-            if (TimeField(field, &milliseconds)) {
+            if (TimeField(field, &milliseconds, 150.0f)) {
                 record->raceTime = milliseconds;
                 state->dirty = 1;
             }
-            igSameLine(0.0f, -1.0f);
+            igTableNextColumn();
             {
-                int carIndex = record->carIndex;
-                snprintf(field, sizeof(field), "car##%s_c%d%d", id, course,
-                         place);
-                igSetNextItemWidth(80.0f);
-                if (igInputInt(field, &carIndex, 1, 1, 0)) {
-                    record->carIndex = (short)carIndex;
-                    state->dirty = 1;
+                char preview[64];
+                CarLabel(record->carIndex, preview, sizeof(preview));
+                snprintf(field, sizeof(field), "##%s_c%d%d", id, course, place);
+                igSetNextItemWidth(200.0f);
+                if (igBeginCombo(field, preview, 0)) {
+                    int car;
+                    for (car = 0; car < 13; car++) {
+                        char item[64];
+                        CarLabel(car, item, sizeof(item));
+                        if (igSelectable_Bool(item, record->carIndex == car, 0,
+                                              kAuto)) {
+                            record->carIndex = (short)car;
+                            state->dirty = 1;
+                        }
+                    }
+                    igEndCombo();
                 }
             }
         }
-    }
-    igEndTable();
-}
-
-static void DrawRecordsPanel(EditorState *state) {
-    GameSaveBlock *block = &state->save.block;
-    int i;
-
-    igSeparatorText("Class records");
-    if (igBeginTable("class records", 3, ImGuiTableFlags_Borders, kAuto,
-                     0.0f)) {
-        igTableSetupColumn("class", 0, 0.0f, 0);
-        igTableSetupColumn("grade", 0, 0.0f, 0);
-        igTableSetupColumn("clears", 0, 0.0f, 0);
-        igTableHeadersRow();
-        for (i = 0; i < 11; i++) {
-            char field[32];
-            igTableNextRow(0, 0.0f);
-            igTableNextColumn();
-            igText("%d", i);
-            igTableNextColumn();
-            snprintf(field, sizeof(field), "##cg%d", i);
-            igSetNextItemWidth(90.0f);
-            state->dirty |= HalfwordField(field, &block->classRecords[i].grade);
-            igTableNextColumn();
-            snprintf(field, sizeof(field), "##cc%d", i);
-            igSetNextItemWidth(90.0f);
-            state->dirty |= HalfwordField(field, &block->classRecords[i].clears);
-        }
         igEndTable();
     }
+}
 
-    igSeparatorText("Best times");
-    igText("Two sets of four courses. The game keeps two laps, two totals and "
-           "three sector times for each.");
-    if (igBeginTable("best times", 8, ImGuiTableFlags_Borders, kAuto, 0.0f)) {
+static void DrawRecords(EditorState *state) {
+    GameSaveBlock *block = &state->save.block;
+
+    igTextDisabled("Times are written the way the game shows them, so 1'40\"765 "
+                   "is what you type.");
+    if (!igBeginTabBar("records", 0)) return;
+    if (igBeginTabItem("Best times", NULL, 0)) {
         int set;
-        igTableSetupColumn("set", 0, 0.0f, 0);
-        igTableSetupColumn("course", 0, 0.0f, 0);
-        igTableSetupColumn("lap 1", 0, 0.0f, 0);
-        igTableSetupColumn("lap 2", 0, 0.0f, 0);
-        igTableSetupColumn("total 1", 0, 0.0f, 0);
-        igTableSetupColumn("total 2", 0, 0.0f, 0);
-        igTableSetupColumn("sector 1", 0, 0.0f, 0);
-        igTableSetupColumn("sectors 2,3", 0, 0.0f, 0);
-        igTableHeadersRow();
         for (set = 0; set < 2; set++) {
+            char title[48];
+            char id[32];
             int course;
+            snprintf(title, sizeof(title), "Set %d", set + 1);
+            Heading(title);
+            snprintf(id, sizeof(id), "times%d", set);
+            if (!igBeginTable(id, 8,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_SizingFixedFit,
+                              kAuto, 0.0f))
+                continue;
+            igTableSetupColumn("course", 0, 80.0f, 0);
+            igTableSetupColumn("lap 1", 0, 160.0f, 0);
+            igTableSetupColumn("lap 2", 0, 160.0f, 0);
+            igTableSetupColumn("total 1", 0, 160.0f, 0);
+            igTableSetupColumn("total 2", 0, 160.0f, 0);
+            igTableSetupColumn("sector 1", 0, 160.0f, 0);
+            igTableSetupColumn("sector 2", 0, 160.0f, 0);
+            igTableSetupColumn("sector 3", 0, 160.0f, 0);
+            igTableHeadersRow();
             for (course = 0; course < 4; course++) {
                 char field[48];
                 int slot;
                 igTableNextRow(0, 0.0f);
                 igTableNextColumn();
-                igText("%d", set);
-                igTableNextColumn();
-                igText("%d", course);
+                igText("%d", course + 1);
                 for (slot = 0; slot < 2; slot++) {
                     igTableNextColumn();
                     snprintf(field, sizeof(field), "##l%d%d%d", set, course,
                              slot);
-                    igSetNextItemWidth(150.0f);
-                    state->dirty |=
-                        TimeField(field, &block->bestLapTimes[set][course][slot]);
+                    state->dirty |= TimeField(
+                        field, &block->bestLapTimes[set][course][slot], 150.0f);
                 }
                 for (slot = 0; slot < 2; slot++) {
                     igTableNextColumn();
                     snprintf(field, sizeof(field), "##T%d%d%d", set, course,
                              slot);
-                    igSetNextItemWidth(150.0f);
                     state->dirty |= TimeField(
-                        field, &block->bestTotalTimes[set][course][slot]);
+                        field, &block->bestTotalTimes[set][course][slot],
+                        150.0f);
                 }
-                igTableNextColumn();
-                snprintf(field, sizeof(field), "##s%d%d0", set, course);
-                igSetNextItemWidth(150.0f);
-                state->dirty |=
-                    TimeField(field, &block->bestSectorTimes[set][course][0]);
-                igTableNextColumn();
-                for (slot = 1; slot < 3; slot++) {
+                for (slot = 0; slot < 3; slot++) {
+                    igTableNextColumn();
                     snprintf(field, sizeof(field), "##s%d%d%d", set, course,
                              slot);
-                    igSetNextItemWidth(150.0f);
                     state->dirty |= TimeField(
-                        field, &block->bestSectorTimes[set][course][slot]);
+                        field, &block->bestSectorTimes[set][course][slot],
+                        150.0f);
                 }
             }
+            igEndTable();
         }
-        igEndTable();
+        igEndTabItem();
     }
-
-    igSeparatorText("Ranking records");
-    for (i = 0; i < 2; i++) {
-        char id[32];
-        snprintf(id, sizeof(id), "ranking set %d", i);
-        igSeparatorText(id);
-        snprintf(id, sizeof(id), "ranking%d", i);
-        DrawRecordTable(state, id, state->save.block.rankingRecords[i]);
+    if (igBeginTabItem("Ranking", NULL, 0)) {
+        int set;
+        for (set = 0; set < 2; set++) {
+            char title[48];
+            char id[32];
+            snprintf(title, sizeof(title), "Set %d", set + 1);
+            Heading(title);
+            snprintf(id, sizeof(id), "rank%d", set);
+            DrawRecordSet(state, id, block->rankingRecords[set]);
+        }
+        igEndTabItem();
     }
-    igSeparatorText("Time attack records");
-    for (i = 0; i < 2; i++) {
-        char id[32];
-        snprintf(id, sizeof(id), "time set %d", i);
-        igSeparatorText(id);
-        snprintf(id, sizeof(id), "time%d", i);
-        DrawRecordTable(state, id, state->save.block.timeRecords[i]);
+    if (igBeginTabItem("Time attack", NULL, 0)) {
+        int set;
+        for (set = 0; set < 2; set++) {
+            char title[48];
+            char id[32];
+            snprintf(title, sizeof(title), "Set %d", set + 1);
+            Heading(title);
+            snprintf(id, sizeof(id), "ta%d", set);
+            DrawRecordSet(state, id, block->timeRecords[set]);
+        }
+        igEndTabItem();
     }
+    if (igBeginTabItem("Class records", NULL, 0)) {
+        int i;
+        if (igBeginTable("classes", 3,
+                         ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                             ImGuiTableFlags_SizingFixedFit,
+                         kAuto, 0.0f)) {
+            igTableSetupColumn("class", 0, 80.0f, 0);
+            igTableSetupColumn("grade", 0, 160.0f, 0);
+            igTableSetupColumn("clears", 0, 160.0f, 0);
+            igTableHeadersRow();
+            for (i = 0; i < 11; i++) {
+                char field[32];
+                igTableNextRow(0, 0.0f);
+                igTableNextColumn();
+                igText("%d", i + 1);
+                igTableNextColumn();
+                snprintf(field, sizeof(field), "##cg%d", i);
+                state->dirty |=
+                    HalfwordField(field, &block->classRecords[i].grade, 150.0f);
+                igTableNextColumn();
+                snprintf(field, sizeof(field), "##cc%d", i);
+                state->dirty |= HalfwordField(
+                    field, &block->classRecords[i].clears, 150.0f);
+            }
+            igEndTable();
+        }
+        igEndTabItem();
+    }
+    igEndTabBar();
 }
 
-static void DrawLogoPanel(EditorState *state) {
+/* ------------------------------------------------------------------ */
+
+static void DrawLogo(EditorState *state) {
     GameSaveBlock *block = &state->save.block;
     ImDrawList *draw;
     ImVec2_c origin;
     float cell;
-    int x, y;
+    int x;
+    int y;
     int i;
 
-    igText("Sixty four by sixty four, sixteen colours, four pixels to a "
-           "halfword. This is the logo the game paints on the car.");
-    igSliderInt("zoom", &state->logoZoom, 2, 12, "%d", 0);
+    igTextDisabled("The logo painted on your car: 64 by 64, sixteen colours.");
+    igSetNextItemWidth(220.0f);
+    igSliderInt("zoom", &state->logoZoom, 3, 14, "%d", 0);
+    igSameLine(0.0f, 24.0f);
+    if (igButton("Wipe the canvas", kAuto)) {
+        memset(block->teamLogoCanvas, 0, sizeof(block->teamLogoCanvas));
+        state->dirty = 1;
+    }
 
-    igSeparatorText("Palette");
+    Heading("Colours");
+    igTextDisabled("Click a swatch to change it, the circle beside it to paint "
+                   "with it.");
     for (i = 0; i < 16; i++) {
         unsigned char rgb[3];
         int transparent;
         float colour[3];
-        char label[32];
+        char label[40];
 
         RageLogoColour(block->teamLogoClut[i], rgb, &transparent);
         colour[0] = rgb[0] / 255.0f;
         colour[1] = rgb[1] / 255.0f;
         colour[2] = rgb[2] / 255.0f;
+
+        igBeginGroup();
         snprintf(label, sizeof(label), "##clut%d", i);
-        igSetNextItemWidth(120.0f);
         if (igColorEdit3(label, colour,
                          ImGuiColorEditFlags_NoInputs |
                              ImGuiColorEditFlags_NoLabel)) {
@@ -467,24 +627,32 @@ static void DrawLogoPanel(EditorState *state) {
             block->teamLogoClut[i] = RageLogoPackColour(packed, transparent);
             state->dirty = 1;
         }
-        igSameLine(0.0f, -1.0f);
-        snprintf(label, sizeof(label), "%2d##pick%d", i, i);
+        igSameLine(0.0f, 4.0f);
+        snprintf(label, sizeof(label), "##pick%d", i);
         if (igRadioButton_Bool(label, state->logoColour == i))
             state->logoColour = i;
-        igSameLine(0.0f, -1.0f);
-        {
-            bool clear = transparent != 0;
-            snprintf(label, sizeof(label), "see through##t%d", i);
-            if (igCheckbox(label, &clear)) {
-                block->teamLogoClut[i] = RageLogoPackColour(rgb, clear ? 1 : 0);
-                state->dirty = 1;
-            }
+        igEndGroup();
+        if ((i % 8) != 7) igSameLine(0.0f, 10.0f);
+    }
+    {
+        unsigned char rgb[3];
+        int transparent;
+        bool clear;
+        RageLogoColour(block->teamLogoClut[state->logoColour], rgb,
+                       &transparent);
+        clear = transparent != 0;
+        if (igCheckbox("this colour is see through", &clear)) {
+            block->teamLogoClut[state->logoColour] =
+                RageLogoPackColour(rgb, clear ? 1 : 0);
+            state->dirty = 1;
         }
-        if ((i % 2) == 0) igSameLine(320.0f, -1.0f);
+        Explain("A see-through entry is drawn as a chequer here so it cannot "
+                "be mistaken for black.");
     }
 
-    igSeparatorText("Canvas");
-    igText("Left button paints the chosen colour, right button picks one up.");
+    Heading("Canvas");
+    igTextDisabled("Drag with the left button to paint, right button to pick a "
+                   "colour up.");
     cell = (float)state->logoZoom;
     origin = igGetCursorScreenPos();
     draw = igGetWindowDrawList();
@@ -492,146 +660,289 @@ static void DrawLogoPanel(EditorState *state) {
         for (x = 0; x < RAGE_LOGO_WIDTH; x++) {
             unsigned char rgb[3];
             int transparent;
-            ImVec2_c min;
-            ImVec2_c max;
             unsigned int packed;
 
             RageLogoColour(block->teamLogoClut[RageLogoPixel(block, x, y)], rgb,
                            &transparent);
-            min.x = origin.x + x * cell;
-            min.y = origin.y + y * cell;
-            max.x = min.x + cell;
-            max.y = min.y + cell;
-            /* A see-through entry is shown as a chequer rather than a colour,
-             * so it cannot be mistaken for black. */
-            if (transparent) {
-                packed = ((x + y) & 1) ? 0xFF404040u : 0xFF303030u;
-            } else {
+            if (transparent)
+                packed = ((x + y) & 1) ? 0xFF3A3A3Au : 0xFF2A2A2Au;
+            else
                 packed = 0xFF000000u | ((unsigned int)rgb[2] << 16) |
                          ((unsigned int)rgb[1] << 8) | rgb[0];
-            }
-            ImDrawList_AddRectFilled(draw, min, max, packed, 0.0f, 0);
+            ImDrawList_AddRectFilled(draw, Size(origin.x + x * cell,
+                                                origin.y + y * cell),
+                                     Size(origin.x + (x + 1) * cell,
+                                          origin.y + (y + 1) * cell),
+                                     packed, 0.0f, 0);
         }
     }
-    {
-        ImVec2_c size;
-        ImVec2_c mouse;
-        size.x = RAGE_LOGO_WIDTH * cell;
-        size.y = RAGE_LOGO_HEIGHT * cell;
-        igInvisibleButton("canvas", size, 0);
-        mouse = igGetMousePos();
-        if (igIsItemHovered(0)) {
-            int px = (int)((mouse.x - origin.x) / cell);
-            int py = (int)((mouse.y - origin.y) / cell);
-            if (px >= 0 && py >= 0 && px < RAGE_LOGO_WIDTH &&
-                py < RAGE_LOGO_HEIGHT) {
-                if (igIsMouseDown_Nil(ImGuiMouseButton_Left)) {
-                    RageLogoSetPixel(block, px, py, state->logoColour);
-                    state->dirty = 1;
-                } else if (igIsMouseDown_Nil(ImGuiMouseButton_Right)) {
-                    state->logoColour = RageLogoPixel(block, px, py);
-                }
+    ImDrawList_AddRect(draw, origin,
+                       Size(origin.x + RAGE_LOGO_WIDTH * cell,
+                            origin.y + RAGE_LOGO_HEIGHT * cell),
+                       0xFF808080u, 0.0f, 0, 1.0f);
+    igInvisibleButton("canvas",
+                      Size(RAGE_LOGO_WIDTH * cell, RAGE_LOGO_HEIGHT * cell), 0);
+    if (igIsItemHovered(0)) {
+        ImVec2_c mouse = igGetMousePos();
+        int px = (int)((mouse.x - origin.x) / cell);
+        int py = (int)((mouse.y - origin.y) / cell);
+        if (px >= 0 && py >= 0 && px < RAGE_LOGO_WIDTH &&
+            py < RAGE_LOGO_HEIGHT) {
+            if (igIsMouseDown_Nil(ImGuiMouseButton_Left)) {
+                RageLogoSetPixel(block, px, py, state->logoColour);
+                state->dirty = 1;
+            } else if (igIsMouseDown_Nil(ImGuiMouseButton_Right)) {
+                state->logoColour = RageLogoPixel(block, px, py);
             }
         }
     }
 }
 
-static void DrawControlsPanel(EditorState *state) {
+/* ------------------------------------------------------------------ */
+
+static void DrawSettings(EditorState *state) {
     GameSaveBlock *block = &state->save.block;
 
-    igSeparatorText("Controller");
-    state->dirty |= HalfwordField("pad mapping", &block->padMappingIndex);
-    state->dirty |= HalfwordField("neGcon mapping", &block->negconMappingIndex);
-    state->dirty |= HalfwordField("neGcon steering centre",
-                                  &block->negconSteerNeutral);
-    state->dirty |= HalfwordField("neGcon steering play",
-                                  &block->negconSteerPlay);
-    state->dirty |= HalfwordField("neGcon I centre", &block->negconNeutralI);
-    state->dirty |= HalfwordField("neGcon II centre", &block->negconNeutralII);
-    state->dirty |= HalfwordField("neGcon L centre", &block->negconNeutralL);
-    state->dirty |= HalfwordField("neGcon full twist", &block->negconMaxTwist);
-
-    igSeparatorText("Sound");
-    state->dirty |= SignedHalfwordField("music track", &block->bgmSelection);
-    state->dirty |= WordField("music volume", &block->bgmVolume);
-    state->dirty |= WordField("effects volume", &block->sfxVolume);
+    Heading("Sound");
     {
-        bool mono = block->monoOutput != 0;
-        if (igCheckbox("mono", &mono)) {
-            block->monoOutput = mono ? 1 : 0;
+        int track = block->bgmSelection;
+        igSetNextItemWidth(220.0f);
+        if (igInputInt("music track", &track, 1, 1, 0)) {
+            block->bgmSelection = (short)track;
+            state->dirty = 1;
+        }
+        state->dirty |= WordField("music volume", &block->bgmVolume, 220.0f);
+        state->dirty |= WordField("effects volume", &block->sfxVolume, 220.0f);
+        {
+            bool mono = block->monoOutput != 0;
+            if (igCheckbox("mono", &mono)) {
+                block->monoOutput = mono ? 1 : 0;
+                state->dirty = 1;
+            }
+        }
+    }
+
+    Heading("Controller");
+    state->dirty |= HalfwordField("pad layout", &block->padMappingIndex, 160.0f);
+    state->dirty |=
+        HalfwordField("neGcon layout", &block->negconMappingIndex, 160.0f);
+
+    Heading("neGcon calibration");
+    igTextDisabled("Set by the game when you calibrate the controller.");
+    state->dirty |=
+        HalfwordField("steering centre", &block->negconSteerNeutral, 160.0f);
+    igSameLine(0.0f, 20.0f);
+    state->dirty |=
+        HalfwordField("steering play", &block->negconSteerPlay, 160.0f);
+    state->dirty |= HalfwordField("I centre", &block->negconNeutralI, 160.0f);
+    igSameLine(0.0f, 20.0f);
+    state->dirty |= HalfwordField("II centre", &block->negconNeutralII, 160.0f);
+    igSameLine(0.0f, 20.0f);
+    state->dirty |= HalfwordField("L centre", &block->negconNeutralL, 160.0f);
+    state->dirty |= HalfwordField("full twist", &block->negconMaxTwist, 160.0f);
+}
+
+/* ------------------------------------------------------------------ */
+
+static void DrawFile(EditorState *state) {
+    const RageRegionInfo *regions;
+    size_t regionCount;
+    size_t i;
+    char name[64];
+    char team[RAGE_TEAM_NAME_LENGTH + 1];
+
+    Heading("Team");
+    RageSaveReadTeamName(&state->save.header, team, sizeof(team));
+    igSetNextItemWidth(240.0f);
+    if (igInputText("name", team, sizeof(team), 0, NULL, NULL)) {
+        RageSaveWriteTeamName(&state->save.header, team);
+        state->dirty = 1;
+    }
+    igTextDisabled("Up to seven letters, digits, or  . - ! ? @");
+
+    Heading("Which release");
+    regions = RageRegionTable(&regionCount);
+    for (i = 0; i < regionCount; i++) {
+        char label[96];
+        snprintf(label, sizeof(label), "%s   %s", regions[i].name,
+                 regions[i].serial);
+        if (igRadioButton_Bool(label, state->region == regions[i].region)) {
+            state->region = regions[i].region;
+            state->dirty = 1;
+        }
+        if (!regions[i].verified)
+            Explain("This disc's serial is not recorded in the port, so the "
+                    "file name below may need correcting by hand.");
+        if (i + 1 < regionCount) igSameLine(0.0f, 24.0f);
+    }
+    igTextDisabled("All three keep the same fields. Only the name the file "
+                   "needs on a memory card changes.");
+
+    Heading("Slot");
+    igSetNextItemWidth(300.0f);
+    if (igSliderInt("slot", &state->slot, 0, RAGE_SAVE_SLOTS - 1, "%d", 0))
+        state->dirty = 1;
+    EditorSuggestedName(state, name, sizeof(name));
+    igText("File name on a card:   %s", name);
+
+    Heading("Condition");
+    if (state->report.headerChecksumValid && state->report.blockChecksumValid &&
+        state->report.trailerChecksumValid && state->report.trailerMatchesHeader)
+        igText("This save is sound.");
+    else
+        igText("This save arrived damaged. Saving it repairs it.");
+    Explain("A save carries three checksums. They are recomputed every time "
+            "this program writes a file, so a save the game refused becomes "
+            "one it accepts.");
+    igTextDisabled("card signature %s   header %s   payload %s   copy %s",
+                   state->report.iconRecognised ? "ok" : "missing",
+                   state->report.headerChecksumValid ? "ok" : "wrong",
+                   state->report.blockChecksumValid ? "ok" : "wrong",
+                   state->report.trailerMatchesHeader ? "ok" : "differs");
+}
+
+/* ------------------------------------------------------------------ */
+
+static void DrawAdvanced(EditorState *state) {
+    unsigned int i;
+
+    igTextDisabled("Nothing here needs changing to play. It is shown so that a "
+                   "file edited by this program keeps everything it arrived "
+                   "with.");
+
+    Heading("Save counter");
+    {
+        int counter = state->save.header.fields.saveCounter;
+        if (WordField("counter", &counter, 220.0f)) {
+            state->save.header.fields.saveCounter = counter;
             state->dirty = 1;
         }
     }
-}
 
-/* Whatever the game does not read, shown rather than dropped. */
-static void DrawRawPanel(EditorState *state) {
-    unsigned int i;
-
-    igSeparatorText("Unused payload bytes");
-    igText("The save keeps 0x24 bytes the game never reads. They are here so "
-           "that a file edited by this program keeps whatever it arrived "
-           "with.");
+    Heading("Bytes the game never reads");
     for (i = 0; i < sizeof(state->save.block.reserved); i++) {
         char label[32];
         snprintf(label, sizeof(label), "##r%u", i);
-        igSetNextItemWidth(60.0f);
-        state->dirty |= ByteField(label, &state->save.block.reserved[i]);
-        if ((i % 12) != 11) igSameLine(0.0f, -1.0f);
+        state->dirty |= ByteSlider(label, &state->save.block.reserved[i], 255,
+                                   90.0f);
+        if ((i % 8) != 7) igSameLine(0.0f, 6.0f);
     }
 
-    igSeparatorText("Icon block");
-    igText("The first 0x200 bytes: the card signature, the title the console "
-           "shows, and the sixteen by sixteen icon. Kept as it was found.");
-    igText("signature %c%c   frames %02X   blocks %02X", state->save.icon[0],
+    Heading("Icon block");
+    igTextDisabled("The first 0x200 bytes: the card signature, the title the "
+                   "console shows and the icon. Kept exactly as found.");
+    igText("signature %c%c    frames %02X    blocks %02X", state->save.icon[0],
            state->save.icon[1], state->save.icon[2], state->save.icon[3]);
 }
 
-void EditorDrawWindow(EditorState *state) {
-    if (!igBeginTabBar("tabs", 0)) return;
-    if (igBeginTabItem("File", NULL, TabFlags(state, "File"))) {
-        DrawFilePanel(state);
-        igEndTabItem();
-    }
-    if (state->loaded) {
-        if (igBeginTabItem("Progress", NULL, TabFlags(state, "Progress"))) {
-            DrawProgressPanel(state);
-            igEndTabItem();
-        }
-        if (igBeginTabItem("Garage", NULL, TabFlags(state, "Garage"))) {
-            DrawGaragePanel(state);
-            igEndTabItem();
-        }
-        if (igBeginTabItem("Records", NULL, TabFlags(state, "Records"))) {
-            DrawRecordsPanel(state);
-            igEndTabItem();
-        }
-        if (igBeginTabItem("Team logo", NULL, TabFlags(state, "Team logo"))) {
-            DrawLogoPanel(state);
-            igEndTabItem();
-        }
-        if (igBeginTabItem("Controls and sound", NULL, TabFlags(state, "Controls and sound"))) {
-            DrawControlsPanel(state);
-            igEndTabItem();
-        }
-        if (igBeginTabItem("Everything else", NULL, TabFlags(state, "Everything else"))) {
-            DrawRawPanel(state);
-            igEndTabItem();
+/* ------------------------------------------------------------------ */
+
+static const char *const kSectionNames[EDITOR_SECTION_COUNT] = {
+    "Progress", "Garage", "Records", "Team logo", "Settings", "File", "Advanced"
+};
+
+void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
+    if (state->openTab != NULL) {
+        int i;
+        for (i = 0; i < EDITOR_SECTION_COUNT; i++) {
+            if (strcmp(state->openTab, kSectionNames[i]) == 0)
+                state->section = (EditorSection)i;
         }
     }
-    igEndTabBar();
+
+    if (!state->loaded) {
+        DrawWelcome(state, requests);
+        return;
+    }
+
+    /* Header: what is open, and what it is. */
+    {
+        const RageRegionInfo *info = RageRegionFind(state->region);
+        const char *name = state->path[0] != '\0' ? state->path : "new save";
+        igPushFont(NULL, igGetFontSize() * 1.25f);
+        igText("%s", RageSaveSlotFromPath(name) >= 0 || state->path[0] != '\0'
+                         ? strrchr(name, '/') ? strrchr(name, '/') + 1 : name
+                         : "New save");
+        igPopFont();
+        igTextDisabled("%s   slot %d%s", info != NULL ? info->name : "unknown",
+                       state->slot, state->dirty ? "   unsaved changes" : "");
+    }
+    igSeparator();
+
+    if (igBeginChild_Str("sections", Size(190.0f, -44.0f), 0, 0)) {
+        int i;
+        for (i = 0; i < EDITOR_SECTION_COUNT; i++) {
+            if (igSelectable_Bool(kSectionNames[i], state->section == i, 0,
+                                  Size(0.0f, 30.0f)))
+                state->section = (EditorSection)i;
+        }
+    }
+    igEndChild();
+    igSameLine(0.0f, 16.0f);
+    if (igBeginChild_Str("panel", Size(0.0f, -44.0f), 0, 0)) {
+        switch (state->section) {
+        case EDITOR_SECTION_PROGRESS: DrawProgress(state); break;
+        case EDITOR_SECTION_GARAGE: DrawGarage(state); break;
+        case EDITOR_SECTION_RECORDS: DrawRecords(state); break;
+        case EDITOR_SECTION_LOGO: DrawLogo(state); break;
+        case EDITOR_SECTION_SETTINGS: DrawSettings(state); break;
+        case EDITOR_SECTION_FILE: DrawFile(state); break;
+        case EDITOR_SECTION_ADVANCED: DrawAdvanced(state); break;
+        default: break;
+        }
+    }
+    igEndChild();
+
+    /* Footer: the things a person came here to do. */
+    igSeparator();
+    if (igButton("Save", Size(110.0f, 32.0f))) {
+        if (state->path[0] != '\0')
+            EditorSave(state, state->path);
+        else
+            requests->saveAs = 1;
+    }
+    igSameLine(0.0f, 10.0f);
+    if (igButton("Save as...", Size(130.0f, 32.0f))) requests->saveAs = 1;
+    igSameLine(0.0f, 10.0f);
+    if (igButton("Open...", Size(110.0f, 32.0f))) requests->open = 1;
+    igSameLine(0.0f, 10.0f);
+    if (igButton("Close", Size(110.0f, 32.0f))) {
+        state->loaded = 0;
+        state->dirty = 0;
+        state->path[0] = '\0';
+        EditorRescan(state);
+    }
+    igSameLine(0.0f, 20.0f);
+    if (state->statusIsError)
+        igTextColored((ImVec4_c){1.0f, 0.45f, 0.4f, 1.0f}, "%s", state->status);
+    else
+        igTextDisabled("%s", state->status);
+}
+
+void EditorSuggestedName(const EditorState *state, char *out, size_t size) {
+    if (!RageRegionCardName(state->region, state->slot, out, size))
+        snprintf(out, size, "RAGE%03d", state->slot);
+}
+
+void EditorRescan(EditorState *state) {
+    state->foundCount = RageSaveDiscover(state->found, RAGE_SAVE_DISCOVER_MAX);
+    state->scanned = 1;
 }
 
 void EditorOpen(EditorState *state, const char *path) {
     if (RageSaveLoad(path, &state->save, &state->report)) {
+        int slot = RageSaveSlotFromPath(path);
         snprintf(state->path, sizeof(state->path), "%s", path);
         state->loaded = 1;
         state->dirty = 0;
+        state->statusIsError = 0;
         if (state->report.region != RAGE_REGION_UNKNOWN)
             state->region = state->report.region;
-        snprintf(state->status, sizeof(state->status), "opened %s", path);
+        if (slot >= 0 && slot < RAGE_SAVE_SLOTS) state->slot = slot;
+        snprintf(state->status, sizeof(state->status), "opened");
     } else {
         state->loaded = 0;
+        state->statusIsError = 1;
         snprintf(state->status, sizeof(state->status), "%s",
                  state->report.detail);
     }
@@ -641,9 +952,11 @@ void EditorSave(EditorState *state, const char *path) {
     if (RageSaveStore(path, &state->save, &state->report)) {
         snprintf(state->path, sizeof(state->path), "%s", path);
         state->dirty = 0;
-        snprintf(state->status, sizeof(state->status),
-                 "written to %s, checksums recomputed", path);
+        state->statusIsError = 0;
+        snprintf(state->status, sizeof(state->status), "saved");
+        EditorRescan(state);
     } else {
+        state->statusIsError = 1;
         snprintf(state->status, sizeof(state->status), "%s",
                  state->report.detail);
     }
@@ -655,7 +968,8 @@ void EditorNew(EditorState *state) {
     state->report.status = RAGE_SAVE_OK;
     state->loaded = 1;
     state->dirty = 1;
+    state->statusIsError = 0;
     state->path[0] = '\0';
-    snprintf(state->status, sizeof(state->status),
-             "new save, not written anywhere yet");
+    state->section = EDITOR_SECTION_FILE;
+    snprintf(state->status, sizeof(state->status), "not saved yet");
 }

@@ -27,6 +27,28 @@ jobs:
         run: cmake --build build/release --config Release --target rage-racer release_package_tests --parallel
       - name: Verify portable tests
         run: ctest --test-dir build/release -C Release --output-on-failure -R '^release_package$'
+      - name: Build the save editor
+        shell: pwsh
+        run: |
+          cmake -S editor -B build/editor -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/editor --config Release --parallel
+          ctest --test-dir build/editor -C Release --output-on-failure
+      - name: Package the save editor
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          $package = "Rage-Racer-Save-Editor-$env:VERSION-windows-x86_64"
+          $root = "dist/$package"
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          $exe = Get-ChildItem build/editor -Recurse -Filter rage-save-editor.exe |
+                 Select-Object -First 1
+          if (!$exe) { throw "the save editor was not built" }
+          Copy-Item $exe.FullName $root
+          Copy-Item editor/README.md "$root/README.md"
+          Copy-Item LICENSE.md $root
+          Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
+
       - name: Package
         shell: pwsh
         env:

@@ -52,7 +52,8 @@ ctest --test-dir build/editor
 ```
 
 The editor takes a file to open on the command line, and files can be dropped
-on its window.
+on its window. `--screenshot FILE` draws one frame and writes it out, which is
+how its own screens are checked.
 
 ## What it does to a file
 
@@ -71,9 +72,11 @@ The port keeps them beside its other state, one directory per card:
 
 - macOS `~/Library/Application Support/Rage Racer/bu00`
 - Windows `%APPDATA%\Rage Racer\bu00`
-- Linux `~/.local/share/Rage Racer/bu00`
+- Linux `$XDG_STATE_HOME/rage-racer/bu00`, or `~/.local/state/rage-racer/bu00`
 
-A portable install keeps `bu00` beside the executable instead.
+A portable install keeps `bu00` beside the game instead. The editor looks in
+the first three by itself and lists what it finds, so the usual answer to
+"which file" is a name to click rather than a path to remember.
 
 ## How it knows the layout
 

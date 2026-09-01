@@ -1,6 +1,13 @@
 #include "rage_save.h"
 
 #include <ctype.h>
+#include <stdlib.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dirent.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
@@ -327,4 +334,110 @@ void RageSaveInit(RageSaveFile *save, RageRegion region, int slot) {
     (void)slot;
     RageSaveWriteTeamName(&save->header, "RAGE");
     RageSaveRefresh(save);
+}
+
+
+int RageSaveSlotFromPath(const char *path) {
+    const char *name;
+    size_t length;
+
+    if (path == NULL) return -1;
+    name = BaseName(path);
+    length = strlen(name);
+    /* The game names its files "... RAGE000" through "... RAGE002". */
+    if (length < 8) return -1;
+    if (strncmp(name + length - 8, "RAGE", 4) != 0) return -1;
+    if (!isdigit((unsigned char)name[length - 1])) return -1;
+    return name[length - 1] - '0';
+}
+
+int RageSaveCardDirectory(int card, char *out, size_t size) {
+    const char *base;
+    int written;
+
+    if (out == NULL || card < 0 || card > 1) return 0;
+#ifdef _WIN32
+    base = getenv("APPDATA");
+    if (base == NULL || base[0] == '\0') return 0;
+    written = snprintf(out, size, "%s\\Rage Racer\\bu%d0", base, card);
+#elif defined(__APPLE__)
+    base = getenv("HOME");
+    if (base == NULL || base[0] == '\0') return 0;
+    written = snprintf(out, size,
+                       "%s/Library/Application Support/Rage Racer/bu%d0", base,
+                       card);
+#else
+    base = getenv("XDG_STATE_HOME");
+    if (base != NULL && base[0] != '\0') {
+        written = snprintf(out, size, "%s/rage-racer/bu%d0", base, card);
+    } else {
+        base = getenv("HOME");
+        if (base == NULL || base[0] == '\0') return 0;
+        written = snprintf(out, size, "%s/.local/state/rage-racer/bu%d0", base,
+                           card);
+    }
+#endif
+    return written > 0 && (size_t)written < size;
+}
+
+static void DescribeEntry(const char *path, RageSaveEntry *entry) {
+    RageSaveFile save;
+    RageSaveReport report;
+
+    snprintf(entry->path, sizeof(entry->path), "%s", path);
+    entry->region = RageRegionFromPath(path);
+    entry->slot = RageSaveSlotFromPath(path);
+    entry->team[0] = '\0';
+    entry->money = 0;
+    entry->valid = 0;
+    if (!RageSaveLoad(path, &save, &report)) return;
+    RageSaveReadTeamName(&save.header, entry->team, sizeof(entry->team));
+    entry->money = save.block.grandPrixProgress.money;
+    entry->valid = report.headerChecksumValid && report.blockChecksumValid;
+    if (report.region != RAGE_REGION_UNKNOWN) entry->region = report.region;
+}
+
+static int ScanDirectory(const char *directory, RageSaveEntry *entries,
+                         int found, int max) {
+    char path[1024];
+#ifdef _WIN32
+    WIN32_FIND_DATAA data;
+    HANDLE search;
+
+    snprintf(path, sizeof(path), "%s\\*", directory);
+    search = FindFirstFileA(path, &data);
+    if (search == INVALID_HANDLE_VALUE) return found;
+    do {
+        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) continue;
+        if (found >= max) break;
+        snprintf(path, sizeof(path), "%s\\%s", directory, data.cFileName);
+        DescribeEntry(path, &entries[found++]);
+    } while (FindNextFileA(search, &data));
+    FindClose(search);
+#else
+    DIR *handle = opendir(directory);
+    struct dirent *item;
+
+    if (handle == NULL) return found;
+    while ((item = readdir(handle)) != NULL && found < max) {
+        if (item->d_name[0] == '.') continue;
+        snprintf(path, sizeof(path), "%s/%s", directory, item->d_name);
+        DescribeEntry(path, &entries[found++]);
+    }
+    closedir(handle);
+#endif
+    return found;
+}
+
+int RageSaveDiscover(RageSaveEntry *entries, int max) {
+    char directory[1024];
+    int found = 0;
+    int card;
+
+    if (entries == NULL || max <= 0) return 0;
+    for (card = 0; card < 2 && found < max; card++) {
+        if (RageSaveCardDirectory(card, directory, sizeof(directory)))
+            found = ScanDirectory(directory, entries, found, max);
+    }
+    return found;
 }

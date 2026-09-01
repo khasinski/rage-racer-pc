@@ -84,6 +84,49 @@ jobs:
           xcrun stapler staple "$app"
           xcrun stapler validate "$app"
           rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary.p8"
+      - name: Build the save editor
+        run: |
+          cmake -S editor -B build/editor -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/editor --parallel
+          ctest --test-dir build/editor --output-on-failure
+      - name: Package the save editor
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          package="Rage-Racer-Save-Editor-${VERSION}-macos-arm64"
+          mkdir -p "dist/${package}"
+          cp build/editor/rage-save-editor "dist/${package}/"
+          cp editor/README.md "dist/${package}/README.md"
+          cp LICENSE.md "dist/${package}/"
+          # An unsigned download is refused by Gatekeeper, so the editor is
+          # signed the same way the game is: with the Developer ID when one is
+          # configured, ad-hoc when it is not.
+          if [ -z "${CERT_P12:-}" ]; then
+            codesign --force --sign - "dist/${package}/rage-save-editor"
+          else
+            identity="$(security find-identity -v -p codesigning \
+              "$RUNNER_TEMP/signing.keychain-db" | awk 'NR==1 {print $2}')"
+            codesign --force --options runtime --timestamp \
+              --sign "$identity" "dist/${package}/rage-save-editor"
+            codesign --verify --strict "dist/${package}/rage-save-editor"
+          fi
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/${package}" "dist/${package}.zip"
+          if [ -n "${CERT_P12:-}" ]; then
+            printf '%s' "$NOTARY_KEY" | base64 --decode > "$RUNNER_TEMP/e.p8"
+            xcrun notarytool submit "dist/${package}.zip" \
+              --key "$RUNNER_TEMP/e.p8" --key-id "$NOTARY_KEY_ID" \
+              --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
+            # A lone executable cannot be stapled, so the ticket is fetched
+            # online the first time it runs.
+            rm -f "$RUNNER_TEMP/e.p8"
+          fi
       - name: Archive
         env:
           VERSION: ${{ inputs.version || github.ref_name }}

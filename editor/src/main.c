@@ -55,11 +55,85 @@ static int WriteFramePpm(const char *path, int width, int height) {
 
 typedef struct Shell {
     EditorState editor;
+    EditorRequests requests;
     SDL_Window *window;
     int pendingOpen;
     int pendingSave;
     char chosen[1024];
 } Shell;
+
+/*
+ * The bundled font is a bitmap one meant for debug overlays, and it makes an
+ * ordinary program look like a terminal. A system face is used when one is
+ * there, which on every desktop it is.
+ */
+static int LoadFont(ImGuiIO *io) {
+    static const char *const kCandidates[] = {
+#if defined(_WIN32)
+        "C:/Windows/Fonts/segoeui.ttf",
+        "C:/Windows/Fonts/tahoma.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+#elif defined(__APPLE__)
+        "/System/Library/Fonts/SFNS.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/Library/Fonts/Arial.ttf",
+#else
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/noto/NotoSans-Regular.ttf",
+#endif
+        NULL
+    };
+    int i;
+
+    for (i = 0; kCandidates[i] != NULL; i++) {
+        if (ImFontAtlas_AddFontFromFileTTF(io->Fonts, kCandidates[i], 18.0f,
+                                           NULL, NULL) != NULL)
+            return 1;
+    }
+    /* No system face: the bundled one, scaled up so it is still legible. */
+    ImFontAtlas_AddFontDefault(io->Fonts, NULL);
+    return 0;
+}
+
+/* Room to breathe, soft corners and a calm palette. */
+static void ApplyStyle(int haveSystemFont) {
+    ImGuiStyle *style = igGetStyle();
+
+    igStyleColorsDark(NULL);
+    if (!haveSystemFont) style->FontScaleMain = 1.4f;
+    style->WindowPadding = (ImVec2_c){18.0f, 16.0f};
+    style->FramePadding = (ImVec2_c){10.0f, 7.0f};
+    style->ItemSpacing = (ImVec2_c){10.0f, 9.0f};
+    style->ItemInnerSpacing = (ImVec2_c){8.0f, 6.0f};
+    style->CellPadding = (ImVec2_c){8.0f, 5.0f};
+    style->FrameRounding = 6.0f;
+    style->GrabRounding = 6.0f;
+    style->PopupRounding = 6.0f;
+    style->ChildRounding = 8.0f;
+    style->TabRounding = 6.0f;
+    style->ScrollbarRounding = 8.0f;
+    style->WindowBorderSize = 0.0f;
+    style->FrameBorderSize = 0.0f;
+    style->SeparatorTextBorderSize = 1.0f;
+    style->Colors[ImGuiCol_WindowBg] = (ImVec4_c){0.10f, 0.11f, 0.13f, 1.0f};
+    style->Colors[ImGuiCol_ChildBg] = (ImVec4_c){0.12f, 0.13f, 0.16f, 1.0f};
+    style->Colors[ImGuiCol_FrameBg] = (ImVec4_c){0.17f, 0.19f, 0.23f, 1.0f};
+    style->Colors[ImGuiCol_FrameBgHovered] =
+        (ImVec4_c){0.22f, 0.25f, 0.30f, 1.0f};
+    style->Colors[ImGuiCol_Button] = (ImVec4_c){0.20f, 0.34f, 0.52f, 1.0f};
+    style->Colors[ImGuiCol_ButtonHovered] =
+        (ImVec4_c){0.26f, 0.44f, 0.66f, 1.0f};
+    style->Colors[ImGuiCol_ButtonActive] = (ImVec4_c){0.16f, 0.28f, 0.44f, 1.0f};
+    style->Colors[ImGuiCol_Header] = (ImVec4_c){0.20f, 0.34f, 0.52f, 1.0f};
+    style->Colors[ImGuiCol_HeaderHovered] =
+        (ImVec4_c){0.24f, 0.40f, 0.60f, 1.0f};
+    style->Colors[ImGuiCol_SliderGrab] = (ImVec4_c){0.42f, 0.62f, 0.86f, 1.0f};
+    style->Colors[ImGuiCol_CheckMark] = (ImVec4_c){0.55f, 0.78f, 1.00f, 1.0f};
+    style->Colors[ImGuiCol_TableHeaderBg] =
+        (ImVec4_c){0.16f, 0.18f, 0.22f, 1.0f};
+}
 
 static const SDL_DialogFileFilter kFilters[] = {
     {"Rage Racer save", "*"},
@@ -78,30 +152,33 @@ static void ChoseFile(void *userdata, const char *const *files, int filter) {
     snprintf(shell->chosen, sizeof(shell->chosen), "%s", files[0]);
 }
 
-static void DrawMenuBar(Shell *shell) {
-    if (!igBeginMenuBar()) return;
-    if (igBeginMenu("File", true)) {
-        if (igMenuItem_Bool("New", NULL, false, true)) EditorNew(&shell->editor);
-        if (igMenuItem_Bool("Open...", NULL, false, true)) {
-            shell->pendingOpen = 1;
-            shell->chosen[0] = '\0';
-            SDL_ShowOpenFileDialog(ChoseFile, shell, shell->window, kFilters, 1,
-                                   NULL, false);
-        }
-        if (igMenuItem_Bool("Save", NULL, false,
-                            shell->editor.loaded &&
-                                shell->editor.path[0] != '\0')) {
-            EditorSave(&shell->editor, shell->editor.path);
-        }
-        if (igMenuItem_Bool("Save as...", NULL, false, shell->editor.loaded)) {
-            shell->pendingSave = 1;
-            shell->chosen[0] = '\0';
-            SDL_ShowSaveFileDialog(ChoseFile, shell, shell->window, kFilters, 1,
-                                   NULL);
-        }
-        igEndMenu();
+/* Asked for by a button in the editor, opened here. */
+static void ServeRequests(Shell *shell) {
+    if (shell->editor.dirty || 1) { /* nothing to confirm yet */ }
+    if (shell->requests.open) {
+        shell->requests.open = 0;
+        shell->pendingOpen = 1;
+        shell->chosen[0] = '\0';
+        SDL_ShowOpenFileDialog(ChoseFile, shell, shell->window, kFilters, 1,
+                               NULL, false);
     }
-    igEndMenuBar();
+    if (shell->requests.saveAs) {
+        char directory[1024];
+        char suggestion[1200];
+        char name[64];
+
+        shell->requests.saveAs = 0;
+        shell->pendingSave = 1;
+        shell->chosen[0] = '\0';
+        EditorSuggestedName(&shell->editor, name, sizeof(name));
+        /* Offer the card directory and the name the game expects. */
+        if (RageSaveCardDirectory(0, directory, sizeof(directory)))
+            snprintf(suggestion, sizeof(suggestion), "%s/%s", directory, name);
+        else
+            snprintf(suggestion, sizeof(suggestion), "%s", name);
+        SDL_ShowSaveFileDialog(ChoseFile, shell, shell->window, kFilters, 1,
+                               suggestion);
+    }
 }
 
 /* The dialogs answer on their own thread on some platforms, so the answer is
@@ -164,7 +241,8 @@ int main(int argc, char **argv) {
     igCreateContext(NULL);
     io = igGetIO_Nil();
     io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    igStyleColorsDark(NULL);
+    io->IniFilename = NULL;
+    ApplyStyle(LoadFont(io));
     ImGui_ImplSDL3_InitForOpenGL(shell.window, context);
     ImGui_ImplOpenGL3_Init("#version 150");
 
@@ -195,6 +273,7 @@ int main(int argc, char **argv) {
             if (event.type == SDL_EVENT_DROP_FILE && event.drop.data != NULL)
                 EditorOpen(&shell.editor, event.drop.data);
         }
+        ServeRequests(&shell);
         CollectDialogAnswer(&shell);
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -207,15 +286,11 @@ int main(int argc, char **argv) {
                                (ImVec2_c){0.0f, 0.0f});
             igSetNextWindowSize(viewport->WorkSize, ImGuiCond_Always);
             if (igBegin("Rage Racer save editor", NULL,
-                        ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize |
-                            ImGuiWindowFlags_NoMove |
+                        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                             ImGuiWindowFlags_NoCollapse |
-                            ImGuiWindowFlags_NoTitleBar)) {
-                DrawMenuBar(&shell);
-                igText("%s%s", shell.editor.status,
-                       shell.editor.dirty ? "   (unsaved changes)" : "");
-                igSeparator();
-                EditorDrawWindow(&shell.editor);
+                            ImGuiWindowFlags_NoTitleBar |
+                            ImGuiWindowFlags_NoBringToFrontOnFocus)) {
+                EditorDrawWindow(&shell.editor, &shell.requests);
             }
             igEnd();
         }

@@ -38,6 +38,21 @@ jobs:
         run: >-
           ctest --test-dir build/release --output-on-failure
           -R '^(game_logic|rmesh|rmesh_index|asset_id|car_paint|texture_mipmap|mod_manifest|render_material|rmesh_cache|render_world|render_world_snapshot|track_asset_identity|track_lighting|render_mesh_build|release_package|timing_restore|axis_curve)$'
+      - name: Build the save editor
+        run: |
+          cmake -S editor -B build/editor -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/editor --parallel
+          ctest --test-dir build/editor --output-on-failure
+      - name: Package the save editor
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          package="Rage-Racer-Save-Editor-${VERSION}-linux-x86_64"
+          mkdir -p "dist/${package}"
+          cp build/editor/rage-save-editor "dist/${package}/"
+          cp editor/README.md "dist/${package}/README.md"
+          cp LICENSE.md "dist/${package}/"
+          (cd dist && zip -r "${package}.zip" "${package}")
       - name: Package
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
