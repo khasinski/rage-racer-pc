@@ -31,11 +31,6 @@ typedef struct PathSceneryClock {
     s16 rotRateNeg;
 } PathSceneryClock;
 
-typedef union PathSceneryClockAddress {
-    PathSceneryClock *clock;
-    u16 *halfwords;
-} PathSceneryClockAddress;
-
 typedef struct PathSceneryTransform {
     Block16 position;
     SVec rotation;

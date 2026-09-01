@@ -512,33 +512,10 @@ typedef struct PathSceneryPositionData {
     PathSceneryPositionKey keys[1];
 } PathSceneryPositionData;
 
-typedef union SpinningSceneryAngleAddress {
-    s32 value;
-    s16 *pointer;
-} SpinningSceneryAngleAddress;
-
 typedef struct PathSceneryRotationData {
     s16 firstKey[2];
     PathSceneryRotationKey keys[1];
 } PathSceneryRotationData;
-
-typedef union PathSceneryKeyAddress {
-    s32 value;
-    PathSceneryPositionData *positionData;
-    PathSceneryRotationData *rotationData;
-    PathSceneryPositionKey *positionPointer;
-    PathSceneryRotationKey *rotationPointer;
-} PathSceneryKeyAddress;
-
-static inline PathSceneryPositionKey *GetPathSceneryPositionKey(
-    PathSceneryPositionData *data, s32 index) {
-    return &data->keys[index];
-}
-
-static inline PathSceneryRotationKey *GetPathSceneryRotationKey(
-    PathSceneryRotationData *data, s32 index) {
-    return &data->keys[index];
-}
 
 extern PathSceneryPositionKey *g_PathSceneryPosKeys;
 typedef union PathSceneryRate {
