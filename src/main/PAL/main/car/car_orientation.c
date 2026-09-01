@@ -11,7 +11,7 @@
 
 void InitPlayerCar(PlayerCarRuntime *car)
 {
-  CarTrackLimits trackState;
+  CarTrackLimits trackState = {0};
   int scaledGearRatio;
   Matrix rotationMatrix;
   Matrix axisMatrix;

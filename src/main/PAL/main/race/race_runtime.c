@@ -281,7 +281,7 @@ void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
         model = eventAddress.pointer->rivalStarts[0][0].modelId;
         ent->activeFlag = model;
         if ((s16)model != -1) {
-            CarTrackLimitWork pair;
+            CarTrackLimitWork pair = {0};
 
             pair.limits.rightInset = 20;
             pair.limits.leftInset = -20;
