@@ -1,13 +1,6 @@
 #include "game/race.h"
 #include "game/track_internal.h"
 
-static s16 NormalizePathRate(s16 rate) {
-    if (rate < 0) {
-        return (s16)-rate;
-    }
-    return rate == 0 ? 1 : rate;
-}
-
 void InitPathScenery(void) {
     PathSceneryPositionKey *positionKeys =
         &g_PathSceneryPosData->keys[
@@ -29,9 +22,9 @@ void InitPathScenery(void) {
     g_PathSceneryCursors.posSpan = positionKeys[0].fields.span;
     g_PathSceneryCursors.rotSpan = rotationKeys[0].fields.span;
     g_PathSceneryCursors.posRate.value =
-        NormalizePathRate(positionKeys[0].fields.rate);
+        NormalizePathSceneryRate(positionKeys[0].fields.rate);
     g_PathSceneryCursors.rotRate.value =
-        NormalizePathRate(rotationKeys[0].fields.rate);
+        NormalizePathSceneryRate(rotationKeys[0].fields.rate);
     g_PathSceneryCursors.posIndex = 0;
     g_PathSceneryCursors.rotIndex = 0;
     g_PathSceneryVolume = 0;

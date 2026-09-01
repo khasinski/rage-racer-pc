@@ -29,6 +29,13 @@ typedef struct PathSceneryClock {
     s16 rotFrame;
 } PathSceneryClock;
 
+static inline s16 NormalizePathSceneryRate(s16 rate) {
+    if (rate < 0) {
+        return (s16)-rate;
+    }
+    return rate == 0 ? 1 : rate;
+}
+
 typedef struct PathSceneryTransform {
     Block16 position;
     SVec rotation;
