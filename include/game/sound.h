@@ -125,22 +125,7 @@ typedef struct SoundModeEntry {
     SoundModeSlot slots[2];
 } SoundModeEntry;
 
-typedef union SoundModeEntryAddress {
-    s32 value;
-    u8 *bytes;
-    s32 *wordPointer;
-    SoundModeEntry *pointer;
-} SoundModeEntryAddress;
-
 extern SoundModeEntry g_SoundModes[];
-
-static inline SoundModeEntry *GetSoundModeAtByteOffset(s32 byteOffset) {
-    SoundModeEntryAddress address;
-
-    address.pointer = g_SoundModes;
-    address.bytes += byteOffset;
-    return address.pointer;
-}
 
 /*
  * Pre-race BGM picker (scene 0xA, left/right on the pad). Per-file types.
