@@ -4,11 +4,6 @@
 #include "game/race.h"
 #include "game/audio.h"
 
-typedef union RivalCueCooldownAddress {
-    s16 *signedCounter;
-    u16 *unsignedCounter;
-} RivalCueCooldownAddress;
-
 /*
  * Slot 11 holds the player; the rivals fill 0 to 10. Outside the race scene
  * the player is not on the road to be avoided, so the walk stops before it.
@@ -365,11 +360,7 @@ void UpdateRivalRubberBand(void) {
                 g_RivalCueFlags = (bit >> s0) | flags;
                 return;
             }
-            {
-                RivalCueCooldownAddress counter;
-                counter.signedCounter = s2;
-                (*counter.unsignedCounter)++;
-            }
+            *s2 = (s16)((u16)*s2 + 1);
             return;
         } else {
             if (s1 == 0 && !(g_RivalCueFlags % 2) && a0 < -0x1C00) {

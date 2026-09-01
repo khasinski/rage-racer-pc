@@ -4,12 +4,6 @@
 #include "game/audio.h"
 #include "game/random.h"
 
-typedef union EngineRpmAddress {
-    s32 *value;
-    u16 *rpm;
-} EngineRpmAddress;
-
-
 /*
  * AI route steering: projects a target point ahead of (or behind, per the
  * direction flag at car+0x110) the car on the track centre-line, offset

@@ -280,6 +280,26 @@ int main(int argc, char **argv) {
                cases, s_digest, expected);
         return 1;
     }
+
+    /* The retail counter increments through an unsigned halfword view. Keep
+     * the wrap defined when the decompiler's pointer union is removed. */
+    memset(g_Cars, 0, sizeof(g_Cars));
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_RankedCars[0] = &g_Cars[0];
+    g_RankedCars[1] = &g_Cars[1];
+    g_RankedCars[2] = &g_Cars[2];
+    g_RankedCars[3] = &g_Cars[3];
+    g_CourseIndex = 0;
+    g_RacePhase = 2;
+    g_RivalCueFlags = 0x20;
+    g_RivalCueCooldown3 = 0x7FFF;
+    UpdateRivalRubberBand();
+    if (g_RivalCueCooldown3 != (s16)0x8000) {
+        printf("rival cue cooldown did not wrap: %d\n",
+               g_RivalCueCooldown3);
+        return 1;
+    }
+
     printf("traffic_avoidance: %d cases unchanged\n", cases);
     return 0;
 }

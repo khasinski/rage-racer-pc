@@ -2,15 +2,9 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
-typedef union SequenceVolumeAddress {
-    s32 *value;
-    s16 *sdkVolume;
-} SequenceVolumeAddress;
-
 void ApplyCurrentSequenceAudio(void) {
-    SequenceVolumeAddress volumeAddress;
+    s16 volume = (s16)g_SeqVolume;
 
-    volumeAddress.value = &g_SeqVolume;
-    SsSeqSetVol(g_SeqHandle.value, *volumeAddress.sdkVolume, *volumeAddress.sdkVolume);
+    SsSeqSetVol(g_SeqHandle.value, volume, volume);
     SetReverbDepth(0x28, 0x28);
 }
