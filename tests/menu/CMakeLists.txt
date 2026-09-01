@@ -579,6 +579,25 @@ target_link_libraries(menu_alt_panel_tests PRIVATE psyz)
 add_test(NAME menu_alt_panel COMMAND menu_alt_panel_tests)
 set_tests_properties(menu_alt_panel PROPERTIES LABELS functional)
 
+add_executable(count_owned_cars_tests
+    count_owned_cars_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/count_owned_cars.c)
+target_include_directories(count_owned_cars_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(count_owned_cars_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(count_owned_cars_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(count_owned_cars_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME count_owned_cars COMMAND count_owned_cars_tests)
+set_tests_properties(count_owned_cars PROPERTIES LABELS unit)
+
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c)

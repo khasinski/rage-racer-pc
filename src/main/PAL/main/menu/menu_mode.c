@@ -108,17 +108,3 @@ void InitMenuMode(void) {
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);
 }
-
-/* Counts the enabled entries of g_CarTable. */
-s32 CountOwnedCars(void) {
-    s32 count = 0;
-    s32 i;
-
-    for (i = 0; i < 0xD; i++) {
-        if (g_CarTable[i].enabled != 0) {
-            count++;
-        }
-    }
-
-    return count;
-}
