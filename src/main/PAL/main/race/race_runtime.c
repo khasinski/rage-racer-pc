@@ -7,12 +7,6 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
-typedef struct CarTrackLimitWork {
-    s32 reserved[4];
-    CarTrackLimits limits;
-} CarTrackLimitWork;
-
-
 s32 IsCarNearWaypoint(TrackWaypointRuntime *waypoint) {
     return waypoint->motion.x > g_PlayerCar.x - 0x40 &&
            waypoint->motion.x < g_PlayerCar.x + 0x40 &&
@@ -188,126 +182,75 @@ void DrawLapNumber(void) {
 }
 
 void InitRivalCar(GameCarRuntime *ent, s32 pos, RaceGridSlot *slots) {
-    u8 *base;
-    s32 sub;
-    u8 *p;
-    u16 val122;
-    s32 scene;
-    u16 av;
-    TrackEventDataAddress eventAddress;
+    const TrackRivalStart *start =
+        &g_TrackEventData->rivalStarts[g_RaceSeries][pos + 1];
+    CarTrackLimits trackLimits = {
+        .rightInset = 20,
+        .leftInset = -20,
+    };
+    s32 trackPointIndex;
 
     ent->initializedFlag = 1;
-    av = slots[pos].halves.modelId;
-    sub = (pos + 1) * 12;
-    {
-        u8 *baseValue;
-        eventAddress.pointer = g_TrackEventData;
-        baseValue = eventAddress.bytePointer;
-        base = baseValue;
-    }
     ent->collisionFlag = 0;
     ent->aiEnabled = 1;
-    ent->modelIndex = av;
-    val122 = slots[pos].halves.modelId;
-    scene = g_RaceSeries;
-    ent->rivalModelId = val122;
-    {
-        TrackRivalStart *p1;
+    ent->modelIndex = slots[pos].halves.modelId;
+    ent->rivalModelId = slots[pos].halves.modelId;
+    ent->trackPointIndex = start->trackPointIndex;
+    ent->x = start->x;
+    ent->z = start->z;
+    ent->y = 0;
 
-        eventAddress.bytePointer = base + (sub + scene * 144) + 0x354;
-        p1 = eventAddress.rivalStart;
-        ent->trackPointIndex = p1->trackPointIndex;
-        ent->x = p1->x;
-        ent->z = p1->z;
-        ent->y = 0;
-    }
-    {
-        s32 ret = FindTrackSegment(ent, ent->trackPointIndex);
-        s32 lev = g_RaceSeries;
-        s32 idx;
-        s32 levShift;
-        s32 acc;
-        s32 angle;
+    trackPointIndex = FindTrackSegment(ent, ent->trackPointIndex);
+    ent->trackPointIndex = trackPointIndex;
+    ent->bodyPitch = 0;
+    ent->bodyYaw =
+        (0xC00 - (g_RaceSeries << 11) - TrackPoint(trackPointIndex)->angle) &
+        0xFFF;
+    ent->bodyRoll = 0;
+    ent->bodyRollVelocity = 0;
+    ent->progressB = 0;
+    ent->progressA = 0;
+    ent->trackProgress = 0;
+    ent->speed = 0;
+    ent->acceleration = 0;
+    ent->worldVelocityZ = 0;
+    ent->reservedCC = 0;
+    ent->worldVelocityX = 0;
+    ent->reservedE0 = 0;
+    ent->reservedDC = 0;
+    ent->reservedD8 = 0;
+    ent->motionZ = 0;
+    ent->motionY = 0;
+    ent->motionX = 0;
+    ent->routeIndex = 0;
+    ent->reserved116 = 0;
+    ent->reserved110 = 0;
+    ent->yawRate = 0;
+    ent->routeMarkerActive = 0;
+    ent->slideInput.value = 0;
+    ent->baseBodyYaw = ent->bodyYaw;
+    ent->targetYaw = ent->bodyYaw;
+    ent->headingAngle = ent->bodyYaw;
+    ent->reservedF8 = 0;
+    ent->avoidanceActive = 0;
+    ent->reservedC4 = 0;
+    ent->routeMarkerIndex = 0;
+    SeedCarLapProgress(ent, start->modelId);
 
-        ent->trackPointIndex = ret;
-        ent->bodyPitch = 0;
-        idx = ent->trackPointIndex;
-        acc = 0xC00;
-        levShift = lev << 11;
-        angle = TrackPoint(idx)->angle;
-        acc -= levShift;
-        ent->bodyYaw = (acc - angle) & 0xFFF;
-
-        ent->bodyRoll = 0;
-        ent->bodyRollVelocity = 0;
-        ent->progressB = 0;
-        ent->progressA = 0;
-        ent->trackProgress = 0;
-        ent->speed = 0;
-        ent->acceleration = 0;
-        ent->worldVelocityZ = 0;
-        ent->reservedCC = 0;
-        ent->worldVelocityX = 0;
-        ent->reservedE0 = 0;
-        ent->reservedDC = 0;
-        ent->reservedD8 = 0;
-        ent->motionZ = 0;
-        ent->motionY = 0;
-        ent->motionX = 0;
-        ent->routeIndex = 0;
-        ent->reserved116 = 0;
-        ent->reserved110 = 0;
-        ent->yawRate = 0;
-        ent->routeMarkerActive = 0;
-        ent->slideInput.value = 0;
-        ent->baseBodyYaw = ent->bodyYaw;
-        p = base + (sub + lev * 144);
-        ent->targetYaw = ent->bodyYaw;
-        ent->headingAngle = ent->bodyYaw;
-        ent->reservedF8 = 0;
-        ent->avoidanceActive = 0;
-        ent->reservedC4 = 0;
-        ent->routeMarkerIndex = 0;
-        eventAddress.bytePointer = p;
-        SeedCarLapProgress(ent, eventAddress.pointer->rivalStarts[0][0].modelId);
+    ent->activeFlag = start->modelId;
+    if (start->modelId != -1) {
+        UpdateCarTrackState(ent, ent->trackPointIndex, &trackLimits);
+        ent->modelY = ent->y;
+        ent->previousTrackProgress = ent->trackProgress;
     }
 
-    sub += g_RaceSeries * 144;
-    base += sub;
-    {
-        u16 model;
-
-        eventAddress.bytePointer = base;
-        model = eventAddress.pointer->rivalStarts[0][0].modelId;
-        ent->activeFlag = model;
-        if ((s16)model != -1) {
-            CarTrackLimitWork pair = {0};
-
-            pair.limits.rightInset = 20;
-            pair.limits.leftInset = -20;
-            UpdateCarTrackState(ent, ent->trackPointIndex, &pair.limits);
-            ent->modelY = ent->y;
-            ent->previousTrackProgress = ent->trackProgress;
-        }
-    }
-
-    {
-        s32 height;
-
-        height = ent->trackLateralOffset;
-        ent->avoidanceStep = 0;
-        ent->initialLateralOffset = height;
-        ent->avoidanceTargetOffset = height;
-        ent->aiLateralOffset = height;
-    }
+    ent->avoidanceStep = 0;
+    ent->initialLateralOffset = ent->trackLateralOffset;
+    ent->avoidanceTargetOffset = ent->trackLateralOffset;
+    ent->aiLateralOffset = ent->trackLateralOffset;
     CopyCarBodyRotationToModel(ent);
-    {
-        s32 lateral;
-
-        lateral = ent->y;
-        ent->reserved40 = 0;
-        ent->steeringAngle = 0;
-        ent->wheelRotation = 0;
-        ent->modelY = lateral;
-    }
+    ent->reserved40 = 0;
+    ent->steeringAngle = 0;
+    ent->wheelRotation = 0;
+    ent->modelY = ent->y;
 }
