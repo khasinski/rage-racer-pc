@@ -123,7 +123,6 @@ void UpdateIndexedEffectVoice(void);
  */
 void SetPitchedSoundCue(s32 cue, s32 pitch, s32 volume);
 void SetStereoSoundCue(s32 cue, s32 volLeft, s32 volRight);
-s32 StartSingleSpecialCue(s32 cue, s32 volume);
 void PlaySoundCue(s32 cue);
 void ForcePanVoiceEnabled(s32 enabled);
 void ForceIndexedEffectVoiceEnabled(s32 enabled);
@@ -216,7 +215,6 @@ extern s32 g_VabTransferDone;
  * from BiosExit into the code after the check, so every value still needed
  * there is live across two calls and has to sit in a callee-saved register. */
 void BiosExit(s32 code) __attribute__((noreturn));
-s32 StartSoundCueVoice(s32 cue, s32 note, s32 volL, s32 volR);
 void UpdateBasicEffectVoices(void);
 void UpdateEffectVoiceStates(void);
 
