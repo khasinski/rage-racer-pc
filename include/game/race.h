@@ -472,16 +472,10 @@ void UpdateBgmSelectInput(void);
 void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj);
 void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
                              ReplayCarState *rivalObj);
-extern void (*g_NativeAttractDemoSteps[])(void);
-extern void (*g_NativeBgmSelectSteps[])(void);
-#define g_AttractDemoSteps g_NativeAttractDemoSteps
-#define g_BgmSelectSteps g_NativeBgmSelectSteps
 void UpdateBgmSelectLoad(void);
 void UpdateBgmSelectFadeIn(void);
 void UpdateBgmSelect(void);
 void ExitBgmSelect(void);
-void UpdateAttractDemoStart(void);
-void UpdateAttractDemoRace(void);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */

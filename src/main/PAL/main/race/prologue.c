@@ -11,20 +11,6 @@
 #include "game/state.h"
 #include "game/track.h"
 
-void UpdateAttractDemoScene(void) {
-    g_AttractDemoSteps[g_AttractDemoStep]();
-
-    if ((g_SceneId == 0x1E) && ((g_PadPressed & PAD_CONFIRM) != 0)) {
-        if (g_AssetLoadState != 0) {
-            ResetAssetLoader();
-            g_SceneId = 3;
-            g_StreamReturnScene = 0;
-        } else {
-            ReturnToTitleScene();
-        }
-    }
-}
-
 void EnterPrologue(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);

@@ -258,13 +258,6 @@ char *g_NativeEngineSpecLabels[13] = {
     g_EngineSpecLabel09, g_EngineSpecLabel10, g_EngineSpecLabel11,
     g_EngineSpecLabel12
 };
-void (*g_NativeBgmSelectSteps[])(void) = {
-    UpdateBgmSelectLoad, UpdateBgmSelectFadeIn, UpdateBgmSelect,
-    ExitBgmSelect, NULL
-};
-void (*g_NativeAttractDemoSteps[])(void) = {
-    UpdateAttractDemoStart, UpdateAttractDemoRace, NULL
-};
 char g_SaveTitleSjis[212];
 char g_SaveFilePath[80];
 char g_FmtCardDevice[12];

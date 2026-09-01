@@ -9,11 +9,6 @@
 #include "game/track.h"
 
 
-void UpdateBgmSelectScene(void) {
-    g_SceneTimer++;
-    g_BgmSelectSteps[g_BgmSelectStep]();
-}
-
 void EnterAttractDemo(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
@@ -31,36 +26,40 @@ void EnterAttractDemo(void) {
 }
 
 s32 GetAttractTitleFade(s32 element) {
-    s32 value;
+    s32 fade;
 
     if (g_AttractDemoStep == ATTRACT_DEMO_STEP_LOAD) {
-        value = (g_SceneTimer * 4) - g_AttractTitleDelays[element];
+        fade = g_SceneTimer * 4 - g_AttractTitleDelays[element];
     } else {
         if (g_FadeLevel > 0) {
             g_FadeLevel--;
         }
-        value = g_FadeLevel;
+        fade = g_FadeLevel;
     }
 
-    return value < 0 ? 0 : (value < 0x80 ? value : 0x7F);
+    if (fade < 0) return 0;
+    if (fade > 0x7F) return 0x7F;
+    return fade;
 }
 
 void DrawAttractTitle(void) {
-    u8 *ptr;
-    s32 value;
-    u32 flags;
+    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    s32 fade;
 
-    ptr = (u8 *)GamePrimaryOrderingTable(0);
-    value = GetAttractTitleFade(0);
-    flags = 0x29;
-    DrawSprite(ptr, 0x74, 0x34, 0x58, 0x38, 0xA8, 0xA8, value, value, value, 0x1F, 0, 1, flags);
-    DrawSprite(ptr, 0x44, 0x70, 0xB8, 0x14, 0x48, 0xE8, value, value, value, 0x80, 0, 1, flags);
-    value = GetAttractTitleFade(1);
-    DrawSprite(ptr, 0x5E, 0x90, 0x84, 0xC, 0, (g_CourseIndex * 12) + 0x9C, value, value, value, 0x12, 0, 1, flags);
+    fade = GetAttractTitleFade(0);
+    DrawSprite(ot, 0x74, 0x34, 0x58, 0x38, 0xA8, 0xA8, fade, fade, fade,
+               0x1F, 0, 1, 0x29);
+    DrawSprite(ot, 0x44, 0x70, 0xB8, 0x14, 0x48, 0xE8, fade, fade, fade,
+               0x80, 0, 1, 0x29);
+    fade = GetAttractTitleFade(1);
+    DrawSprite(ot, 0x5E, 0x90, 0x84, 0xC, 0,
+               g_CourseIndex * 12 + 0x9C, fade, fade, fade, 0x12, 0, 1,
+               0x29);
 }
 
-void UpdateAttractDemoStart(void) {
-    s32 mode;
+static void UpdateAttractDemoStart(void) {
+    s32 shuffleTrack;
+    s32 cdTrack;
     u32 timer;
 
     timer = g_SceneTimer;
@@ -76,15 +75,15 @@ void UpdateAttractDemoStart(void) {
         InitTrackScene();
 
         g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
-        mode = g_BgmShuffleOrder[g_BgmShuffleIndex];
-        AdvanceBgmShuffleBag(mode);
+        shuffleTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
+        AdvanceBgmShuffleBag(shuffleTrack);
 
-        mode += 3;
-        if (mode == 0xC) {
-            mode = 0x11;
+        cdTrack = shuffleTrack + 3;
+        if (cdTrack == 0xC) {
+            cdTrack = 0x11;
         }
 
-        RequestCdTrack(mode);
+        RequestCdTrack(cdTrack);
         StartCdAudio();
     }
 
@@ -97,17 +96,15 @@ void ReturnToTitleScene(void) {
     ResetCdAudioState();
 }
 
-void UpdateAttractDemoRace(void) {
-    u32 value;
+static void UpdateAttractDemoRace(void) {
     u32 timer;
-    s32 index;
+    GameCarRuntime *cameraCar;
 
     g_SceneTimer++;
     timer = g_SceneTimer;
     if (timer < 0x3D) {
         DrawAttractTitle();
-        value = g_SceneTimer - 6;
-        DrawFullscreenFadeTile(0xFF - (((value * 3) * 4) - value), 0x49);
+        DrawFullscreenFadeTile(0xFF - (g_SceneTimer - 6) * 11, 0x49);
     }
 
     timer = g_SceneTimer;
@@ -116,10 +113,7 @@ void UpdateAttractDemoRace(void) {
         timer = g_SceneTimer;
     }
     if (timer >= 0x6CD) {
-        u32 adjusted;
-
-        adjusted = timer - 0x6CC;
-        DrawFullscreenFadeTile(adjusted * 5, 0x49);
+        DrawFullscreenFadeTile((timer - 0x6CC) * 5, 0x49);
     }
 
     if (g_SceneTimer == 0x708) {
@@ -130,10 +124,10 @@ void UpdateAttractDemoRace(void) {
     g_CameraCarIndex = CycleAttractCameraCar(0xFF, g_CameraCarIndex);
     UpdateAttractCars();
 
-    index = g_CameraCarIndex;
-    RequestTrackTexturePage(g_Cars[index].trackSection);
+    cameraCar = &g_Cars[g_CameraCarIndex];
+    RequestTrackTexturePage(cameraCar->trackSection);
 
-    UpdateCamera(g_CameraViewMode, (GameRenderObject *)&g_Cars[g_CameraCarIndex]);
+    UpdateCamera(g_CameraViewMode, (GameRenderObject *)cameraCar);
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();
@@ -141,4 +135,27 @@ void UpdateAttractDemoRace(void) {
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, 1);
+}
+
+void UpdateAttractDemoScene(void) {
+    switch (g_AttractDemoStep) {
+    case ATTRACT_DEMO_STEP_INVALID:
+        break;
+    case ATTRACT_DEMO_STEP_LOAD:
+        UpdateAttractDemoStart();
+        break;
+    case ATTRACT_DEMO_STEP_RACE:
+        UpdateAttractDemoRace();
+        break;
+    }
+
+    if (g_SceneId == 0x1E && (g_PadPressed & PAD_CONFIRM) != 0) {
+        if (g_AssetLoadState != 0) {
+            ResetAssetLoader();
+            g_SceneId = 3;
+            g_StreamReturnScene = 0;
+        } else {
+            ReturnToTitleScene();
+        }
+    }
 }

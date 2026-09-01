@@ -4,6 +4,10 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+void UpdateBgmSelectLoad(void);
+void UpdateBgmSelectFadeIn(void);
+void ExitBgmSelect(void);
+
 void UpdateBgmSelect(void) {
     UpdateBgmSelectPlayback();
 
@@ -39,4 +43,25 @@ void UpdateBgmSelect(void) {
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawCourseScenery2(g_AnimTimer, 1);
+}
+
+void UpdateBgmSelectScene(void) {
+    g_SceneTimer++;
+
+    switch (g_BgmSelectStep) {
+    case BGM_SELECT_STEP_INVALID:
+        break;
+    case BGM_SELECT_STEP_LOAD_ASSETS:
+        UpdateBgmSelectLoad();
+        break;
+    case BGM_SELECT_STEP_FADE_IN:
+        UpdateBgmSelectFadeIn();
+        break;
+    case BGM_SELECT_STEP_ACTIVE:
+        UpdateBgmSelect();
+        break;
+    case BGM_SELECT_STEP_EXIT:
+        ExitBgmSelect();
+        break;
+    }
 }
