@@ -7,17 +7,15 @@ void UpdateRacePosition(void) {
     s32 position;
     s32 i;
     s32 total;
-    CarProgressWindow *cars;
 
     position = 1;
     if (g_LapCount >= g_PlayerCar.lap) {
         total = g_PlayerCar.progressA + g_PlayerCar.progressB;
-        cars = GetCarProgressWindow(&g_Cars[0]);
-
         for (i = 0; i < 0xB; i++) {
-            CarProgressWindow *entry = &cars[i];
-            if (entry->activeFlag != -1) {
-                if ((GetCarProgressWindowProgressA(entry) + entry->progressB) - total > 0) {
+            GameCarRuntime *car = &g_Cars[i];
+
+            if (car->activeFlag != -1) {
+                if (car->progressA + car->progressB > total) {
                     position++;
                 }
             }

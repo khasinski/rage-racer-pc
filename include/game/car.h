@@ -195,34 +195,6 @@ static inline struct GameRenderObject *GetCarRenderObject(
     return (struct GameRenderObject *)(void *)car;
 }
 
-typedef struct CarProgressWindow {
-    s32 progressB;
-    u8 reserved[0x3C];
-    s16 activeFlag;
-    u8 trailing[0x15A];
-} CarProgressWindow;
-
-typedef union CarProgressWindowAddress {
-    s32 *progress;
-    CarProgressWindow *window;
-} CarProgressWindowAddress;
-
-static inline CarProgressWindow *GetCarProgressWindow(
-    GameCarRuntime *car) {
-    CarProgressWindowAddress address;
-
-    address.progress = &car->progressB;
-    return address.window;
-}
-
-static inline s32 GetCarProgressWindowProgressA(
-    CarProgressWindow *window) {
-    CarProgressWindowAddress address;
-
-    address.window = window;
-    return address.progress[-1];
-}
-
 typedef struct CarSurfaceSampleView {
     u16 x;
     u16 reserved02;
