@@ -31,46 +31,22 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
 }
 
 void ApplyPanVoiceVolume(void) {
-    s32 values[2];
-    s32 changed;
-    s32 raw;
-    s32 scale;
     s32 left;
     s32 right;
-    s32 voice;
-    s32 zeroArg;
+    s32 changed;
 
-    values[0] = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
-    values[1] = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
-    changed = values[0] != 0 || values[1] != 0;
+    left = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
+    right = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
+    changed = left != 0 || right != 0;
 
     if (changed != 0) {
-        raw = values[0];
-        scale = g_SoundScale.scale;
-        left = raw * scale;
-        raw = values[1];
-        if (left < 0) {
-            left += 0x7F;
-        }
-        raw *= scale;
-        if (raw < 0) {
-            raw += 0x7F;
-        }
-        left >>= 7;
-        right = raw >> 7;
-
-        left = ClampVoiceVolume(left);
-        right = ClampVoiceVolume(right);
+        left = ClampVoiceVolume(left * g_SoundScale.scale / 128);
+        right = ClampVoiceVolume(right * g_SoundScale.scale / 128);
 
         SsUtSetVVol(0x15, left, right);
         if (g_PanVoiceActive == 0) {
-            right = 0xF;
-            voice = 0x15;
-            
-            raw = 0x3C;
-            left = g_SoundScale.vabIds[0];
-            zeroArg = 0;
-            SsUtKeyOnV(voice, left, right, zeroArg, raw, 0, 0, 0);
+            SsUtKeyOnV(0x15, g_SoundScale.vabIds[0], 0xF, 0,
+                       0x3C, 0, 0, 0);
         }
     } else if (g_PanVoiceActive != 0) {
         SsUtKeyOffV(0x15);
@@ -106,60 +82,33 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
 }
 
 void UpdateIndexedEffectVoice(void) {
-    s32 base;
-    s32 center;
-    s32 fine;
     s32 index;
-    s32 raw;
-    s32 product;
-    s32 scale;
-    s32 left;
-    s32 right;
-    s32 voice;
+    s32 previous;
 
     /* Start on the way in, stop on the way out, restart on a change. The
      * early exit retail had for "nothing playing and nothing asked for" is
      * the same condition the rest of the function is already guarded by. */
-    raw = g_IndexedEffectIndexPrev;
+    previous = g_IndexedEffectIndexPrev;
     index = g_IndexedEffectIndex;
-    if (raw < 0) {
+    if (previous < 0) {
         if (index >= 0) {
             StartIndexedEffectVoice(g_IndexedEffects[index].tone);
         }
     } else if (index < 0) {
         StopIndexedEffectVoice();
-    } else if (index != raw) {
+    } else if (index != previous) {
         StartIndexedEffectVoice(g_IndexedEffects[index].tone);
     }
 
-    raw = g_IndexedEffectIndex;
-    if (raw >= 0) {
-        index = raw;
-        product = g_IndexedEffectVolume * g_IndexedEffects[index].volume;
-        raw = g_IndexedEffectPitch;
-        base = g_IndexedEffects[index].tone;
-        center = raw >> 7;
-        fine = raw & 0x7F;
-        raw = product / 128;
-        scale = g_SoundScale.scale;
-        raw *= scale;
-        left = raw;
-        if (raw < 0) {
-            left = raw + 0x7F;
-        }
-        left >>= 7;
-        right = left;
+    if (index >= 0) {
+        s32 volume = g_IndexedEffectVolume * g_IndexedEffects[index].volume /
+                     128 * g_SoundScale.scale / 128;
 
-        left = ClampVoiceVolume(left);
-        right = ClampVoiceVolume(right);
-
-        SsUtSetVVol(0x14, left, right);
-        voice = 0x14;
-        left = 0;
-        
-        right = (s16)base;
-        raw = (s16)center;
-        SsUtChangePitch(voice, left, right, 0x3C, 0, raw, fine);
+        volume = ClampVoiceVolume(volume);
+        SsUtSetVVol(0x14, volume, volume);
+        SsUtChangePitch(0x14, 0, (s16)g_IndexedEffects[index].tone, 0x3C, 0,
+                        (s16)(g_IndexedEffectPitch >> 7),
+                        g_IndexedEffectPitch & 0x7F);
     }
 
     g_IndexedEffectIndexPrev = g_IndexedEffectIndex;
