@@ -657,7 +657,6 @@ void DrawClassRecordDetail(void);
 void DrawClassRecordGrid(void);
 void DrawOptionSceneOverlay(void);
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
-void DrawRaceTimePanel(s32);
 void DrawScreenAdjustScreen(void);
 void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 x, s32 useFlag);
