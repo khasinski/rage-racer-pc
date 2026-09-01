@@ -1,24 +1,20 @@
 #include "game/car.h"
 #include "game/menu.h"
 
-void UpdateOwnedCarNeighbours(void) {
+static s32 FindOwnedCar(s32 from, s32 step) {
     s32 index;
 
-    g_PrevOwnedCarIndex = -1;
-    for (index = g_PlayerCarIndex - 1; index >= 0; index--) {
+    for (index = from; index >= 0 && index < GAME_CAR_COUNT; index += step) {
         if (g_CarTable[index].enabled == 1) {
-            g_PrevOwnedCarIndex = index;
-            break;
+            return index;
         }
     }
+    return -1;
+}
 
-    g_NextOwnedCarIndex = -1;
-    for (index = g_PlayerCarIndex + 1; index < GAME_CAR_COUNT; index++) {
-        if (g_CarTable[index].enabled == 1) {
-            g_NextOwnedCarIndex = index;
-            break;
-        }
-    }
+void UpdateOwnedCarNeighbours(void) {
+    g_PrevOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex - 1, -1);
+    g_NextOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex + 1, 1);
 }
 
 void EnterCarSelectScreen(void) {
