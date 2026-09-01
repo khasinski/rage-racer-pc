@@ -33,6 +33,26 @@ endif()
 add_test(NAME cd_audio_policy COMMAND cd_audio_policy_tests)
 set_tests_properties(cd_audio_policy PROPERTIES LABELS functional)
 
+add_executable(cd_pause_request_tests
+    cd_pause_request_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_pause_request.c)
+target_include_directories(cd_pause_request_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(cd_pause_request_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(cd_pause_request_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(cd_pause_request_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(cd_pause_request_tests PRIVATE psyz)
+add_test(NAME cd_pause_request COMMAND cd_pause_request_tests)
+set_tests_properties(cd_pause_request PROPERTIES LABELS functional)
+
 add_executable(cd_audio_control_tests
     cd_audio_control_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio_control.c)
