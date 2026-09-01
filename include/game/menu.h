@@ -638,7 +638,7 @@ void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(s32 arg);
 void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
-void DrawOwnedCarCounter(s32 owned, s32 step);
+void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
 void DrawSpriteString(long x, long y, const char *str, long clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
 void RequestCarModel(s32 carIndex);

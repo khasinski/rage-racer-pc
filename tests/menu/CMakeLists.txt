@@ -605,6 +605,27 @@ endif()
 target_link_libraries(logo_name_panel_tests PRIVATE psyz)
 add_test(NAME logo_name_panel COMMAND logo_name_panel_tests)
 set_tests_properties(logo_name_panel PROPERTIES LABELS unit)
+
+add_executable(paint_palette_counter_tests
+    paint_palette_counter_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_paint_color_palette.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_owned_car_counter.c)
+target_include_directories(paint_palette_counter_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(paint_palette_counter_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(paint_palette_counter_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(paint_palette_counter_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(paint_palette_counter_tests PRIVATE psyz)
+add_test(NAME paint_palette_counter COMMAND paint_palette_counter_tests)
+set_tests_properties(paint_palette_counter PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
