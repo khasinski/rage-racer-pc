@@ -2,13 +2,7 @@
 #include "game/cd.h"
 #include "game/cd_internal.h"
 
-typedef union CdTrackRequestAddress {
-    s32 *state;
-    u8 *track;
-} CdTrackRequestAddress;
-
 void StepCdTrackRequest(void) {
-    CdTrackRequestAddress requestAddress;
     s32 state;
     s32 status;
     u8 track;
@@ -53,8 +47,8 @@ void StepCdTrackRequest(void) {
         break;
     case 3:
         status = g_CdVolume;
-        requestAddress.state = &g_CdTrackPending;
-        track = (g_CdCurrentTrack = *requestAddress.track);
+        track = (u8)g_CdTrackPending;
+        g_CdCurrentTrack = track;
         g_CdTrackPending = -1;
         g_CdTrackStep = 0;
         SetCdVolume(status);
@@ -83,8 +77,7 @@ void StepCdTrackRequest(void) {
         }
         break;
     case 7:
-        requestAddress.state = &g_CdTrackPending;
-        track = *requestAddress.track;
+        track = (u8)g_CdTrackPending;
         g_CdTrackPending = -1;
         g_CdTrackStep = 0;
         g_CdCurrentTrack = track;
