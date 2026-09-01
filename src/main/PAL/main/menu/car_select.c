@@ -207,7 +207,7 @@ void UpdateOwnedCarNeighbours(void) {
     }
 
     g_NextOwnedCarIndex = -1;
-    for (index = g_PlayerCarIndex + 1; index < 13; index++) {
+    for (index = g_PlayerCarIndex + 1; index < GAME_CAR_COUNT; index++) {
         if (g_CarTable[index].enabled == 1) {
             g_NextOwnedCarIndex = index;
             break;

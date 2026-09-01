@@ -7,6 +7,8 @@
 struct PlayerCarRuntime;
 struct GameRenderObject;
 
+enum { GAME_CAR_COUNT = 13 };
+
 /*
  * Per-car entry. The two setup bytes are what the CUSTOMIZE screen edits and
  * the save file keeps; whether the transmission row can be opened at all is a

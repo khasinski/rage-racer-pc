@@ -3,43 +3,29 @@
 #include "game/race.h"
 
 s32 DrawCarShopScreen(s32 step) {
-    s32 value;
-    s32 limit;
-    s32 amount;
-    s32 phase;
+    s32 engineSpecStep = 0;
 
     if (step == 0) {
         g_CarShopScreenProgress = 0;
         return 0;
     }
 
+    g_CarShopScreenProgress += step;
     if (step > 0) {
-        value = g_CarShopScreenProgress + step;
-        g_CarShopScreenProgress = value;
-        if (value >= 0x1FD) {
-            g_CarShopScreenProgress = 0x1FC;
+        if (g_CarShopScreenProgress >= MENU_FADE_COMPLETE) {
+            g_CarShopScreenProgress = MENU_FADE_MAX;
         }
-        value = 0;
     } else {
-        u32 product;
+        s32 fadeRemaining;
 
-        value = g_CarShopScreenProgress + step;
-        g_CarShopScreenProgress = value;
-        if (value < 0) {
+        if (g_CarShopScreenProgress < 0) {
             g_CarShopScreenProgress = 0;
         }
-
-        value = g_CarShopScreenProgress;
-        limit = 0x1FC;
-        limit -= value;
-        product = limit * limit;
-        value = product >> 0xB;
+        fadeRemaining = MENU_FADE_MAX - g_CarShopScreenProgress;
+        engineSpecStep = fadeRemaining * fadeRemaining / 2048;
     }
 
-    amount = value << 16;
-    amount >>= 16;
-    phase = (u8)(g_CarShopScreenProgress / 4U);
-    DrawCarEngineSpec(amount, phase);
+    DrawCarEngineSpec(engineSpecStep, (u8)(g_CarShopScreenProgress / 4U));
 
     return g_CarShopScreenProgress;
 }
@@ -50,7 +36,7 @@ s32 DrawCarShopScreen(s32 step) {
 static s32 FindCarNotOwned(s32 from, s32 step) {
     s32 index;
 
-    for (index = from; index >= 0 && index < 13; index += step) {
+    for (index = from; index >= 0 && index < GAME_CAR_COUNT; index += step) {
         if (g_CarTable[index].enabled == 0) {
             return index;
         }
@@ -64,16 +50,15 @@ static s32 FindCarNotOwned(s32 from, s32 step) {
  * coming next; in the last class it does not.
  */
 static s32 FindCarOnOffer(s32 from, s32 step) {
+    s32 progress = g_RaceProgress->maxClassReached;
     s32 index;
 
-    for (index = from; index >= 0 && index < 13; index += step) {
+    for (index = from; index >= 0 && index < GAME_CAR_COUNT; index += step) {
         s32 unlockLevel = GetCarUnlockLevel(index);
-        s32 progress;
 
         if (g_CarTable[index].enabled != 0) {
             continue;
         }
-        progress = g_RaceProgress->maxClassReached;
         if (progress < 4 ? progress + 1 >= unlockLevel
                          : progress >= unlockLevel) {
             return index;
@@ -91,4 +76,3 @@ void UpdateCarListCursor(void) {
         g_NextOwnedCarIndex = FindCarOnOffer(g_CarListCursor + 1, 1);
     }
 }
-
