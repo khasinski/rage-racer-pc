@@ -328,6 +328,24 @@ target_link_libraries(spinning_scenery_tests PRIVATE psyz)
 add_test(NAME spinning_scenery COMMAND spinning_scenery_tests)
 set_tests_properties(spinning_scenery PROPERTIES LABELS functional)
 
+add_executable(scripted_scenery_dispatch_tests
+    scripted_scenery_dispatch_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_scripted_scenery.c)
+target_include_directories(scripted_scenery_dispatch_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(scripted_scenery_dispatch_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(scripted_scenery_dispatch_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(scripted_scenery_dispatch_tests PRIVATE psyz)
+add_test(NAME scripted_scenery_dispatch COMMAND scripted_scenery_dispatch_tests)
+set_tests_properties(scripted_scenery_dispatch PROPERTIES LABELS functional)
+
 add_executable(track_event_sound_tests
     track_event_sound_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_track_event_sound.c)

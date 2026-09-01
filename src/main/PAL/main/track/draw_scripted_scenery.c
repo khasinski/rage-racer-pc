@@ -1,33 +1,29 @@
 #include "game/race.h"
 #include "game/track_internal.h"
 
-void DrawScriptedScenery(s32 flags) {
-    switch (g_GrandPrixClass % 5) {
-    case 0:
-        if (flags != 0) {
-            UpdateRouteScenery();
-        }
-        DrawRouteScenery();
-        break;
-    case 1:
-    case 2:
-        if (flags != 0) {
-            UpdateRouteScenery();
+void DrawScriptedScenery(s32 animate) {
+    s32 sceneryTier = g_GrandPrixClass % 5;
+
+    /* Preserve the retail switch's no-op for values outside its cases. */
+    if (sceneryTier < 0 || sceneryTier > 4) {
+        return;
+    }
+
+    if (animate != 0) {
+        UpdateRouteScenery();
+        if (sceneryTier >= 1) {
             UpdateFlybyScenery();
         }
-        DrawRouteScenery();
-        DrawFlybyScenery();
-        break;
-    case 3:
-    case 4:
-        if (flags != 0) {
-            UpdateRouteScenery();
-            UpdateFlybyScenery();
+        if (sceneryTier >= 3) {
             UpdatePathScenerySound();
         }
-        DrawRouteScenery();
+    }
+
+    DrawRouteScenery();
+    if (sceneryTier >= 1) {
         DrawFlybyScenery();
+    }
+    if (sceneryTier >= 3) {
         DrawPathScenery();
-        break;
     }
 }

@@ -281,6 +281,10 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate);
  * 512 frames. */
 void DrawSpinningScenery(s32 timer, s32 animate);
 
+/* Update (when animate != 0) and draw the route/flyby/path prop layers enabled
+ * by the current Grand Prix class. Class 5 wraps to the class-0 route layer. */
+void DrawScriptedScenery(s32 animate);
+
 /* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;
  * pass 1 for THE EXTREME OVAL's +0x5000 z shift. Model 0x3A or 0x3B depending
  * on g_IsEnvironmentMode4. */
