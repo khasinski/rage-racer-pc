@@ -1,40 +1,81 @@
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 
-static s16 ClampS16(s16 value, s16 minimum, s16 maximum) {
-    if (value < minimum) return minimum;
-    if (value > maximum) return maximum;
-    return value;
-}
+void InitRivalCar(GameCarRuntime *car,
+                  s32 gridPosition,
+                  RaceGridSlot *grid) {
+    const TrackRivalStart *start =
+        &g_TrackEventData->rivalStarts[g_RaceSeries][gridPosition + 1];
+    CarTrackLimits trackLimits = {
+        .rightInset = 20,
+        .leftInset = -20,
+    };
+    s32 trackPointIndex;
 
-void InitRivalCarAi(GameCarRuntime *car,
-                    s32 gridPosition,
-                    RaceGridSlot *grid) {
-    s32 configIndex = grid[gridPosition].value;
-    const TrackRivalAiConfig *config;
-    GameCarAiBlock *ai = GetCarAiBlock(car);
+    car->initializedFlag = 1;
+    car->collisionFlag = 0;
+    car->aiEnabled = 1;
+    car->modelIndex = grid[gridPosition].halves.modelId;
+    car->rivalModelId = grid[gridPosition].halves.modelId;
+    car->trackPointIndex = start->trackPointIndex;
+    car->x = start->x;
+    car->z = start->z;
+    car->y = 0;
 
-    if ((u32)configIndex >= 12) configIndex = 0;
-    config = &g_TrackEventData->rivalAiConfigs[g_RaceSeries][configIndex];
+    trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
+    car->trackPointIndex = trackPointIndex;
+    car->bodyPitch = 0;
+    car->bodyYaw =
+        (0xC00 - (g_RaceSeries << 11) - TrackPoint(trackPointIndex)->angle) &
+        0xFFF;
+    car->bodyRoll = 0;
+    car->bodyRollVelocity = 0;
+    car->progressB = 0;
+    car->progressA = 0;
+    car->trackProgress = 0;
+    car->speed = 0;
+    car->acceleration = 0;
+    car->worldVelocityZ = 0;
+    car->reservedCC = 0;
+    car->worldVelocityX = 0;
+    car->reservedE0 = 0;
+    car->reservedDC = 0;
+    car->reservedD8 = 0;
+    car->motionZ = 0;
+    car->motionY = 0;
+    car->motionX = 0;
+    car->routeIndex = 0;
+    car->reserved116 = 0;
+    car->reserved110 = 0;
+    car->yawRate = 0;
+    car->routeMarkerActive = 0;
+    car->slideInput.value = 0;
+    car->baseBodyYaw = car->bodyYaw;
+    car->targetYaw = car->bodyYaw;
+    car->headingAngle = car->bodyYaw;
+    car->reservedF8 = 0;
+    car->avoidanceActive = 0;
+    car->reservedC4 = 0;
+    car->routeMarkerIndex = 0;
+    SeedCarLapProgress(car, start->modelId);
 
-    car->targetSpeed = (config->speed * 1168) / 160;
-    car->accelerationStep = config->accelerationStep;
-    car->boostAccelerationThreshold =
-        ClampS16((s16)config->boostAccelerationThreshold, 0, 10);
-    ai->collisionBoostDuration =
-        ClampS16((s16)config->collisionBoostDuration, 0, INT16_MAX);
-    ai->boostAcceleration =
-        ClampS16((s16)config->boostAcceleration, 0, 15);
-    ai->boostTimer = 0;
-    ai->minimumSpeed =
-        ClampS16((s16)config->minimumSpeed, 60, INT16_MAX);
-    ai->engineRpmLow =
-        ClampS16((s16)config->initialEngineRpm, 0, INT16_MAX);
-    ai->accelerationLimit = ai->targetSpeed * 6 / 100;
-    ai->gridTargetProgress = g_TrackLength / 12;
-    if (gridPosition >= 4) {
-        ai->gridTargetProgress +=
-            (g_TrackLength / 40) * (gridPosition - 4);
+    car->activeFlag = start->modelId;
+    if (start->modelId != -1) {
+        UpdateCarTrackState(car, car->trackPointIndex, &trackLimits);
+        car->modelY = car->y;
+        car->previousTrackProgress = car->trackProgress;
     }
+
+    car->avoidanceStep = 0;
+    car->initialLateralOffset = car->trackLateralOffset;
+    car->avoidanceTargetOffset = car->trackLateralOffset;
+    car->aiLateralOffset = car->trackLateralOffset;
+    CopyCarBodyRotationToModel(car);
+    car->reserved40 = 0;
+    car->steeringAngle = 0;
+    car->wheelRotation = 0;
+    car->modelY = car->y;
 }
