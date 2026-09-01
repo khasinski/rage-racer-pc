@@ -1,0 +1,175 @@
+/* Regression sweep for the player's collision response and slipstream. */
+
+#include "common.h"
+#include "game/car.h"
+#include "game/race.h"
+#include "game/render_state.h"
+#include "game/state.h"
+#include "game/track.h"
+
+#include <stdio.h>
+#include <string.h>
+
+ObjectMatrixWork g_ObjectMatrixWork;
+GameRenderState g_RenderState;
+GameCarRuntime g_Cars[11];
+
+static u32 s_digest = 2166136261U;
+static s32 s_sound;
+static s32 s_knockbackCount;
+static s32 s_knockbackValues[8];
+
+static void Fold(s32 value) {
+    int byte;
+
+    for (byte = 0; byte < 4; byte++) {
+        s_digest ^= ((u32)value >> (byte * 8)) & 0xFF;
+        s_digest *= 16777619U;
+    }
+}
+
+void PlaySoundCue(s32 cue) {
+    s_sound = cue;
+}
+
+void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
+    int slot = s_knockbackCount * 4;
+    s32 carIndex = car >= g_Cars && car < g_Cars + 11
+        ? (s32)(car - g_Cars)
+        : -1;
+
+    if (slot < 8) {
+        s_knockbackValues[slot] = carIndex;
+        s_knockbackValues[slot + 1] = x;
+        s_knockbackValues[slot + 2] = z;
+        s_knockbackValues[slot + 3] = mode;
+    }
+    s_knockbackCount++;
+}
+
+int DiagnosticsEnabled(const char *channel) {
+    (void)channel;
+    return 0;
+}
+
+const char *DiagnosticsValue(const char *key) {
+    (void)key;
+    return NULL;
+}
+
+void Trace(const char *channel, const char *format, ...) {
+    (void)channel;
+    (void)format;
+}
+
+MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
+    (void)a;
+    (void)b;
+    return out;
+}
+
+void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
+                              s32 roll) {
+    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
+}
+
+int main(void) {
+    static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
+    static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
+    static const s32 heights[] = {0, 25, 60};
+    static const s32 yaws[] = {0, 0x400, 0x800};
+    static const s32 nudges[] = {0, 40, 100, 200};
+    static const s32 speeds[] = {40, 80, 500};
+    static const u32 expected = 2498597253U;
+    PlayerCarRuntime player;
+    s32 calls = 0;
+    size_t gp, active, vertical, progress, lateral, height;
+    size_t playerYaw, opponentYaw, nudge, speed, backwards;
+
+    g_TrackLength = 0x8000;
+    for (gp = 0; gp < 2; gp++)
+    for (active = 0; active < 2; active++)
+    for (vertical = 0; vertical < 2; vertical++)
+    for (progress = 0; progress < sizeof(progressDeltas) / sizeof(progressDeltas[0]); progress++)
+    for (lateral = 0; lateral < sizeof(lateralDeltas) / sizeof(lateralDeltas[0]); lateral++)
+    for (height = 0; height < sizeof(heights) / sizeof(heights[0]); height++)
+    for (playerYaw = 0; playerYaw < sizeof(yaws) / sizeof(yaws[0]); playerYaw++)
+    for (opponentYaw = 0; opponentYaw < sizeof(yaws) / sizeof(yaws[0]); opponentYaw++)
+    for (nudge = 0; nudge < sizeof(nudges) / sizeof(nudges[0]); nudge++)
+    for (speed = 0; speed < sizeof(speeds) / sizeof(speeds[0]); speed++)
+    for (backwards = 0; backwards < 2; backwards++) {
+        GameCarRuntime *opponent = &g_Cars[5];
+        s32 result;
+        int index;
+
+        memset(&player, 0, sizeof(player));
+        memset(g_Cars, 0, sizeof(GameCarRuntime) * 11);
+        for (index = 0; index < 11; index++) {
+            g_Cars[index].activeFlag = -1;
+        }
+        g_GrandPrixMode = (s16)gp;
+        g_RaceSeries = 0;
+        g_RacePhase = 2;
+        g_MirrorMode = 0;
+        g_WrongWayTimer = 12;
+        g_DragScale = 1000;
+        g_GripLossTimer = 0;
+        s_sound = -1;
+        s_knockbackCount = 0;
+        memset(s_knockbackValues, 0, sizeof(s_knockbackValues));
+
+        player.x = 0x2000;
+        player.z = 0x3000;
+        player.trackProgress = 0x1000;
+        player.trackLateralOffset = 0;
+        player.bodyYaw = yaws[playerYaw];
+        player.verticalMotionState = 1;
+        player.speed = speeds[speed];
+        player.acceleration = 1200;
+        player.drive.drivetrainTorque = 2400;
+        player.drive.accelPos = 300;
+        player.drive.brakePos = -200;
+        player.facingBackwards = (s32)backwards;
+
+        opponent->activeFlag = active ? -1 : 0;
+        opponent->verticalMotionState = vertical ? 1 : 2;
+        opponent->trackProgress = player.trackProgress + progressDeltas[progress];
+        opponent->trackLateralOffset = lateralDeltas[lateral];
+        opponent->y = heights[height];
+        opponent->x = player.x + nudges[nudge];
+        opponent->z = player.z + nudges[(nudge + 1) % 4];
+        opponent->bodyYaw = yaws[opponentYaw];
+        opponent->speed = 100;
+        opponent->acceleration = 800;
+        opponent->worldVelocityX = 700;
+        opponent->worldVelocityZ = -500;
+        opponent->velocityX = 7;
+        opponent->velocityZ = -9;
+        opponent->collisionBoostDuration = 17;
+
+        result = CollidePlayerWithCars(&player);
+        Fold(result);
+        Fold(g_DragScale);
+        Fold(g_GripLossTimer);
+        Fold(player.acceleration);
+        Fold(player.drive.drivetrainTorque);
+        Fold(opponent->collisionFlag);
+        Fold(opponent->speed);
+        Fold(opponent->acceleration);
+        Fold(opponent->boostTimer);
+        Fold(s_sound);
+        Fold(s_knockbackCount);
+        for (index = 0; index < 8; index++) {
+            Fold(s_knockbackValues[index]);
+        }
+        calls++;
+    }
+
+    if (s_digest != expected) {
+        printf("FAIL: %d player collision states digest to %u, expected %u\n",
+               calls, s_digest, expected);
+        return 1;
+    }
+    printf("all %d player collision states preserved\n", calls);
+    return 0;
+}

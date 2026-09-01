@@ -9,14 +9,100 @@
 
 #include <stdlib.h>
 
+static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
+  CarCollisionPoint result;
+
+  result.x = (a.x + b.x) / 2;
+  result.z = (a.z + b.z) / 2;
+  return result;
+}
+
+static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
+                                     CarCollisionPoint grid[4][4]) {
+  CarCollisionPoint outline[6];
+  Matrix rotationMatrix;
+  SVec input;
+  Vec4 transformed;
+  s32 index;
+
+  input.vx = (u16)car->bodyPitch;
+  input.vz = (u16)car->bodyRoll;
+  input.vy = (u16)car->bodyYaw;
+  RotMatrix(&input, &rotationMatrix);
+  for (index = 0; index < 6; index++) {
+    input.vx = g_PlayerHullPoints[index].x;
+    input.vy = 0;
+    input.vz = g_PlayerHullPoints[index].z;
+    ApplyMatrix(&rotationMatrix, &input, &transformed);
+    outline[index].x = transformed.x >> 1;
+    outline[index].z = transformed.z >> 1;
+    if (index < 4) {
+      grid[index][index] = outline[index];
+    }
+  }
+
+  grid[0][1] = grid[1][0] = Midpoint(outline[0], outline[1]);
+  grid[0][2] = grid[2][0] = outline[4];
+  grid[1][3] = grid[3][1] = outline[5];
+  grid[2][3] = grid[3][2] = Midpoint(outline[2], outline[3]);
+  grid[0][3] = grid[1][2] = grid[2][1] = grid[3][0] =
+      Midpoint(outline[4], outline[5]);
+}
+
+static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
+                                          const GameCarRuntime *opponent,
+                                          CarCollisionPoint corners[4],
+                                          CarCollisionPoint samples[10]) {
+  Matrix rotationMatrix;
+  SVec input;
+  Vec4 transformed;
+  s32 offsetX = (u16)opponent->x - (u16)player->x;
+  s32 offsetZ = (u16)opponent->z - (u16)player->z;
+  s32 index;
+
+  input.vx = (u16)opponent->bodyPitch;
+  input.vz = (u16)opponent->bodyRoll;
+  input.vy = (u16)opponent->bodyYaw;
+  RotMatrix(&input, &rotationMatrix);
+  for (index = 0; index < 4; index++) {
+    input.vx = g_OpponentHullCorners[index].x;
+    input.vy = 0;
+    input.vz = g_OpponentHullCorners[index].z;
+    ApplyMatrix(&rotationMatrix, &input, &transformed);
+    corners[index].x = (transformed.x >> 1) + offsetX / 2;
+    corners[index].z = (transformed.z >> 1) + offsetZ / 2;
+  }
+
+  samples[0] = Midpoint(corners[0], corners[1]);
+  samples[1] = Midpoint(corners[0], corners[2]);
+  samples[2] = Midpoint(corners[1], corners[3]);
+  samples[3] = Midpoint(corners[2], corners[3]);
+  samples[4] = Midpoint(samples[0], samples[2]);
+  samples[6] = Midpoint(corners[0], samples[1]);
+  samples[7] = Midpoint(corners[1], samples[2]);
+  samples[8] = Midpoint(corners[2], samples[1]);
+  samples[9] = Midpoint(corners[3], samples[2]);
+}
+
+static s32 FindPlayerCollisionRegion(CarCollisionPoint grid[4][4],
+                                     const CarCollisionPoint corners[4],
+                                     const CarCollisionPoint samples[10],
+                                     s32 *sampleIndex, s32 *quadIndex) {
+  s32 region = FirstQuadHit(grid, corners, 4, sampleIndex, quadIndex);
+
+  if (region <= 0) {
+    region = FirstQuadHit(grid, samples, 5, sampleIndex, quadIndex);
+  }
+  if (region <= 0) {
+    region = FirstQuadHit(grid, &samples[6], 4, sampleIndex, quadIndex);
+  }
+  return region;
+}
+
 s32 CollidePlayerWithCars(PlayerCarRuntime *car)
 {
-  SVec rotation;
   s32 opponentX;
-  Vec4 transformed;
-  Matrix rotationMatrix;
   CarCollisionPoint velocityDelta;
-  CarCollisionPoint playerOutline[6];
   CarCollisionPoint playerGrid[4][4];
   CarCollisionPoint opponentSamples[10];
   CarCollisionPoint opponentCorners[4];
@@ -24,7 +110,6 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
   s32 index;
   s32 sampleIndex;
   s32 quadIndex;
-  s32 cornerIndex;
   s32 collisionRegion;
   s32 progressDelta;
   s32 playerProgress;
@@ -37,36 +122,7 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
   }
   opponent = g_Cars;
   collisionRegion = 0;
-  rotation.vx = (u16)car->bodyPitch;
-  rotation.vz = (u16)car->bodyRoll;
-  rotation.vy = (u16)car->bodyYaw;
-  RotMatrix(&rotation, &rotationMatrix);
-  index = 0;
-  do
-  {
-    rotation.vx = g_PlayerHullPoints[index].x;
-    rotation.vz = g_PlayerHullPoints[index].z;
-    rotation.vy = 0;
-    ApplyMatrix(&rotationMatrix, &rotation, &transformed);
-    playerOutline[index].x = transformed.x >> 1;
-    playerOutline[index].z = transformed.z >> 1;
-    if (index < 4)
-    {
-      playerGrid[index][index] = playerOutline[index];
-    }
-    index++;
-  }
-  while (index < 6);
-  playerGrid[0][1].x = (playerGrid[1][0].x = (playerOutline[0].x + playerOutline[1].x) / 2);
-  playerGrid[0][1].z = (playerGrid[1][0].z = (playerOutline[0].z + playerOutline[1].z) / 2);
-  playerGrid[0][2].x = (playerGrid[2][0].x = playerOutline[4].x);
-  playerGrid[0][2].z = (playerGrid[2][0].z = playerOutline[4].z);
-  playerGrid[1][3].x = (playerGrid[3][1].x = playerOutline[5].x);
-  playerGrid[1][3].z = (playerGrid[3][1].z = playerOutline[5].z);
-  playerGrid[2][3].x = (playerGrid[3][2].x = (playerOutline[2].x + playerOutline[3].x) / 2);
-  playerGrid[2][3].z = (playerGrid[3][2].z = (playerOutline[2].z + playerOutline[3].z) / 2);
-  playerGrid[0][3].x = (playerGrid[1][2].x = (playerGrid[2][1].x = (playerGrid[3][0].x = (playerOutline[4].x + playerOutline[5].x) / 2)));
-  playerGrid[0][3].z = (playerGrid[1][2].z = (playerGrid[2][1].z = (playerGrid[3][0].z = (playerOutline[4].z + playerOutline[5].z) / 2)));
+  BuildPlayerCollisionGrid(car, playerGrid);
   playerProgress = car->trackProgress;
   index = 0;
   playerTrackOffset = car->trackLateralOffset;
@@ -97,56 +153,11 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car)
           {
             g_DragScale = 0x2BC;
           }
-          velocityDelta.x = (u16)opponent->x - (u16)car->x;
-          velocityDelta.z = (u16)opponent->z - (u16)car->z;
-          rotation.vx = (u16)opponent->bodyPitch;
-          rotation.vz = (u16)opponent->bodyRoll;
-          rotation.vy = (u16)opponent->bodyYaw;
-          RotMatrix(&rotation, &rotationMatrix);
-          for (cornerIndex = 0; cornerIndex < 4; cornerIndex++)
-          {
-            rotation.vx = g_OpponentHullCorners[cornerIndex].x;
-            rotation.vz = g_OpponentHullCorners[cornerIndex].z;
-            rotation.vy = 0;
-            ApplyMatrix(&rotationMatrix, &rotation, &transformed);
-            opponentCorners[cornerIndex].x =
-                (transformed.x >> 1) + (velocityDelta.x / 2);
-            opponentCorners[cornerIndex].z =
-                (transformed.z >> 1) + (velocityDelta.z / 2);
-          }
-
-          opponentSamples[0].x = (opponentCorners[0].x + opponentCorners[1].x) / 2;
-          opponentSamples[0].z = (opponentCorners[0].z + opponentCorners[1].z) / 2;
-          opponentSamples[1].x = (opponentCorners[0].x + opponentCorners[2].x) / 2;
-          opponentSamples[1].z = (opponentCorners[0].z + opponentCorners[2].z) / 2;
-          opponentSamples[2].x = (opponentCorners[1].x + opponentCorners[3].x) / 2;
-          opponentSamples[2].z = (opponentCorners[1].z + opponentCorners[3].z) / 2;
-          opponentSamples[3].x = (opponentCorners[2].x + opponentCorners[3].x) / 2;
-          opponentSamples[3].z = (opponentCorners[2].z + opponentCorners[3].z) / 2;
-          opponentSamples[4].x = (opponentSamples[0].x + opponentSamples[2].x) / 2;
-          opponentSamples[4].z = (opponentSamples[0].z + opponentSamples[2].z) / 2;
-          opponentSamples[6].x = (opponentCorners[0].x + opponentSamples[1].x) / 2;
-          opponentSamples[6].z = (opponentCorners[0].z + opponentSamples[1].z) / 2;
-          opponentSamples[7].x = (opponentCorners[1].x + opponentSamples[2].x) / 2;
-          opponentSamples[7].z = (opponentCorners[1].z + opponentSamples[2].z) / 2;
-          opponentSamples[8].x = (opponentCorners[2].x + opponentSamples[1].x) / 2;
-          opponentSamples[8].z = (opponentCorners[2].z + opponentSamples[1].z) / 2;
-          opponentSamples[9].x = (opponentCorners[3].x + opponentSamples[2].x) / 2;
-          opponentSamples[9].z = (opponentCorners[3].z + opponentSamples[2].z) / 2;
-          /* Corners first, then the edge and centre points, then the
-             points between: the cheapest test that can hit, first. */
-          collisionRegion = FirstQuadHit(playerGrid, opponentCorners, 4,
-                                         &sampleIndex, &quadIndex);
-          if (collisionRegion <= 0)
-          {
-            collisionRegion = FirstQuadHit(playerGrid, opponentSamples, 5,
-                                           &sampleIndex, &quadIndex);
-          }
-          if (collisionRegion <= 0)
-          {
-            collisionRegion = FirstQuadHit(playerGrid, &opponentSamples[6], 4,
-                                           &sampleIndex, &quadIndex);
-          }
+          BuildOpponentCollisionSamples(car, opponent, opponentCorners,
+                                        opponentSamples);
+          collisionRegion = FindPlayerCollisionRegion(
+              playerGrid, opponentCorners, opponentSamples,
+              &sampleIndex, &quadIndex);
           if (collisionRegion > 0)
           {
             /* The check after the loop sends a hit to the same place. */
