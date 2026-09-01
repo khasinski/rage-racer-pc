@@ -153,40 +153,31 @@ typedef enum CardSlotActionState {
     CARD_SLOT_ACTION_SHOW_NO_FILE = 0x28,
 } CardSlotActionState;
 
-/*
- * Picking a slot, which is where the card menu spends most of its time.
- */
-static void PickCardSlot(void) {
-    /*
-     * Picking a slot. Which prompt the player sees, and what confirming
-     * does, depends on whether this is a save or a load, whether the card
-     * has room, and whether the slot under the cursor already holds a
-     * file. Retail asks the back button twice on the card-full path, once
-     * inside the branch and once on the way out, and each ask plays its
-     * own cue, so both stay.
-     */
-    AdjustMenuSelectionHorizontal(&g_McSlotCursor, 0, 2);
-    if (g_McSaveMode != 0) {
-        if ((g_McSlotUsedMask & 7) != 0) {
-            g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
-            if (g_PadPressed & PAD_CONFIRM) {
-                if (CardSlotIsUsed(g_McSlotCursor)) {
-                    PlaySoundCue(2);
-                    g_McConfirmChoice = 0;
-                    g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD;
-                } else {
-                    PlaySoundCue(5);
-                    g_McActionState = CARD_SLOT_ACTION_SHOW_NO_FILE;
-                }
-            }
-        } else {
-            g_McMenuPhase = MC_PROMPT_NO_DATA;
-            if (g_PadPressed & PAD_CONFIRM) {
-                PlaySoundCue(5);
-                g_McMenuPage = 0;
-            }
+static void PickLoadSlot(void) {
+    if ((g_McSlotUsedMask & 7) == 0) {
+        g_McMenuPhase = MC_PROMPT_NO_DATA;
+        if (g_PadPressed & PAD_CONFIRM) {
+            PlaySoundCue(5);
+            g_McMenuPage = 0;
         }
-    } else if (g_McFreeBlocks != 0) {
+        return;
+    }
+
+    g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
+    if (g_PadPressed & PAD_CONFIRM) {
+        if (CardSlotIsUsed(g_McSlotCursor)) {
+            PlaySoundCue(2);
+            g_McConfirmChoice = 0;
+            g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD;
+        } else {
+            PlaySoundCue(5);
+            g_McActionState = CARD_SLOT_ACTION_SHOW_NO_FILE;
+        }
+    }
+}
+
+static void PickSaveSlot(void) {
+    if (g_McFreeBlocks != 0) {
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
         if (g_PadPressed & PAD_CONFIRM) {
             if (CardSlotIsUsed(g_McSlotCursor)) {
@@ -198,7 +189,10 @@ static void PickCardSlot(void) {
                 g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE;
             }
         }
-    } else if ((g_McSlotUsedMask & 7) != 0) {
+        return;
+    }
+
+    if ((g_McSlotUsedMask & 7) != 0) {
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
         if (g_PadPressed & PAD_CONFIRM) {
             if (CardSlotIsUsed(g_McSlotCursor)) {
@@ -210,15 +204,30 @@ static void PickCardSlot(void) {
                 g_McActionState = CARD_SLOT_ACTION_SHOW_CARD_FULL;
             }
         }
-    } else {
-        g_McMenuPhase = MC_PROMPT_CARD_FULL;
-        if (g_PadPressed & PAD_CONFIRM) {
-            PlaySoundCue(5);
-            g_McMenuPage = 0;
-        } else if (PollMenuBackInput() != 0) {
-            g_McMenuPage = 0;
-        }
+        return;
     }
+
+    g_McMenuPhase = MC_PROMPT_CARD_FULL;
+    if (g_PadPressed & PAD_CONFIRM) {
+        PlaySoundCue(5);
+        g_McMenuPage = 0;
+    } else if (PollMenuBackInput() != 0) {
+        g_McMenuPage = 0;
+    }
+}
+
+/*
+ * Pick a slot to save or load. Retail asks for back twice on the card-full
+ * path, once in PickSaveSlot and once below, and each ask plays its own cue.
+ */
+static void PickCardSlot(void) {
+    AdjustMenuSelectionHorizontal(&g_McSlotCursor, 0, 2);
+    if (g_McSaveMode != 0) {
+        PickLoadSlot();
+    } else {
+        PickSaveSlot();
+    }
+
     if (PollMenuBackInput() == 0) return;
     g_McMenuPage = 0;
 }
