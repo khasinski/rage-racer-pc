@@ -161,7 +161,6 @@ void UpdateTeamNameScreen(void);
 void UpdatePaintColorScreen(void);
 void UpdateCarShopScreen(void);
 void UpdateEngineerShopScreen(void);
-void ShopScreenNoOp(void);
 int DrawCourseSelectScreen(int step);
 int DrawRankingScreen(int step);
 int DrawCarSelectScreen(int step);
@@ -172,7 +171,7 @@ int DrawLogoSampleScreen(int step);
 int DrawTeamNameScreen(int step);
 int DrawPaintColorScreen(int step);
 int DrawCarShopScreen(int step);
-unsigned DrawEngineerShopScreen(int step);
+int DrawEngineerShopScreen(int step);
 void InitMenuMode(void);
 void ReturnFromClassFmv(void);
 void UpdateMenuMode(void);
@@ -284,9 +283,10 @@ void (*g_FrontendDrawHandlers[4])(void) = {
 
 static s32 DrawShopScreenNoOp(s32 step) {
     (void)step;
-    ShopScreenNoOp();
     return 0;
 }
+
+static void ShopScreenNoOp(void) {}
 
 /* Retail main.exe tables at 0x80082EB8 and 0x80082EF0.  They contain code
  * addresses, so copying their 32-bit words into native storage is invalid. */
@@ -319,7 +319,7 @@ s32 (*g_MenuScreenDraw[14])(s32) = {
     DrawTeamNameScreen,
     DrawPaintColorScreen,
     DrawCarShopScreen,
-    (s32 (*)(s32))DrawEngineerShopScreen,
+    DrawEngineerShopScreen,
     DrawShopScreenNoOp,
 };
 

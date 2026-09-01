@@ -279,8 +279,7 @@ s32 DrawCarShopScreen(s32 step);
 
 /* id 12 -- "SHOP" (engineer shop): pay the tune-up fee to grade the car up. */
 void UpdateEngineerShopScreen(void);
-u32 DrawEngineerShopScreen(s32 step);
-void ShopScreenNoOp(void);
+s32 DrawEngineerShopScreen(s32 step);
 
 /*
  * Menu widgets shared across those screens. Each keeps its own accumulator and
@@ -519,7 +518,7 @@ extern s32 g_LogoSampleScreenFade;
 extern s32 g_TeamNameScreenProgress;
 extern s32 g_PaintColorScreenProgress;
 extern s32 g_CarShopScreenProgress;
-extern u32 g_EngineSpecStep;
+extern s32 g_EngineSpecStep;
 extern s32 D_8009B304;
 extern s32 D_8009B328;
 /* Retail address 0x8009E7B8 aliases g_PlayerCar + 0xE4. In the showroom this

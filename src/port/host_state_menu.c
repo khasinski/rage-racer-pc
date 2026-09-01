@@ -306,7 +306,7 @@ s32 g_LogoSampleScreenFade;
 s32 g_TeamNameScreenProgress;
 s32 g_PaintColorScreenProgress;
 s32 g_CarShopScreenProgress;
-u32 g_EngineSpecStep;
+s32 g_EngineSpecStep;
 u8 g_MenuSubCursor;
 unsigned char GameMenuCursor[8] __attribute__((aligned(16)));
 s32 g_UiScriptProgress2;
