@@ -89,11 +89,6 @@ typedef struct TrackZone {
     s16 value;
 } TrackZone;
 
-typedef union TrackZoneAddress {
-    s32 value;
-    TrackZone *pointer;
-} TrackZoneAddress;
-
 typedef struct TrackEventOffsets {
     s32 routeScenery;
     s32 raceIntroCamera;
@@ -133,11 +128,6 @@ typedef struct TrackEventSoundZone {
     s16 flags;
     u16 reserved;
 } TrackEventSoundZone;
-
-typedef union TrackEventSoundZoneAddress {
-    s32 value;
-    TrackEventSoundZone *pointer;
-} TrackEventSoundZoneAddress;
 
 /*
  * A sound that plays from one spot beside the track rather than filling a
@@ -187,13 +177,6 @@ typedef struct TrackEventData {
     TrackRaceCueData raceCues;
 } TrackEventData;
 
-typedef union TrackEventDataAddress {
-    s32 value;
-    u8 *bytePointer;
-    TrackEventData *pointer;
-    TrackRivalStart *rivalStart;
-} TrackEventDataAddress;
-
 /*
  * One corner's centre of curvature. `GameTrackPoint.arcRef >> 4` indexes this
  * array, which InstallTrackPoints publishes at `g_TrackArcCenters`
@@ -209,16 +192,6 @@ typedef struct GameTrackArcCenter {
     s32 z;      /* +0x04 */
     s32 reserved08;  /* +0x08 never read */
 } GameTrackArcCenter;
-
-typedef s32 TrackPointOffset;
-
-typedef union TrackPointTableAddress {
-    TrackPointOffset pointOffset;
-    s32 value;
-    GameTrackPoint *pointPointer;
-    GameTrackPointHalfwordView *halfwordPointer;
-    GameTrackArcCenter *arcCenterPointer;
-} TrackPointTableAddress;
 
 typedef struct TrackPointTable {
     s32 count;

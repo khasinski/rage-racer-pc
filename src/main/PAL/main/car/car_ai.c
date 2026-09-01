@@ -70,15 +70,12 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
  * for one direction of travel, ordered along the track and ended by a -1.
  */
 s32 GetCarCrestTrigger(GameCarRuntime *car) {
-    TrackEventData *base;
     s32 low;
     s32 high;
     s32 row;
     s32 i;
-    s32 offset;
-    TrackEventDataAddress cursor;
+    TrackCrestEvent *events;
 
-    base = g_TrackEventData;
     if (car->speed < 0x320) {
         return 0;
     }
@@ -86,6 +83,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
     high = car->trackProgress;
     low = car->previousTrackProgress;
     row = car->facingBackwards;
+    events = g_TrackEventData->crestEvents[row];
 
     if (g_RaceSeries != 0) {
         high = g_TrackLength - high;
@@ -104,18 +102,12 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
         high = 0;
     }
 
-    offset = row * sizeof(TrackCrestEvent[8]);
-    for (i = 0; i < 8; i++, offset += sizeof(TrackCrestEvent)) {
-        s32 progress;
-
-        cursor.pointer = base;
-        cursor.bytePointer += offset;
-        if (cursor.pointer->crestEvents[0][0].motionValue == -1) {
+    for (i = 0; i < 8; i++) {
+        if (events[i].motionValue == -1) {
             return 0;
         }
-        progress = cursor.pointer->crestEvents[0][0].progress;
-        if (low < progress && progress <= high) {
-            return cursor.pointer->crestEvents[0][0].motionValue;
+        if (low < events[i].progress && events[i].progress <= high) {
+            return events[i].motionValue;
         }
     }
     return 0;

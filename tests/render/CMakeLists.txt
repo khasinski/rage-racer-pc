@@ -474,6 +474,42 @@ target_link_libraries(environment_script_tests PRIVATE psyz)
 add_test(NAME environment_script COMMAND environment_script_tests)
 set_tests_properties(environment_script PROPERTIES LABELS functional)
 
+add_executable(track_zone_blend_tests
+    track_zone_blend_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/get_track_zone_blend.c)
+target_include_directories(track_zone_blend_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(track_zone_blend_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(track_zone_blend_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(track_zone_blend_tests PRIVATE psyz)
+add_test(NAME track_zone_blend COMMAND track_zone_blend_tests)
+set_tests_properties(track_zone_blend PROPERTIES LABELS functional)
+
+add_executable(install_track_points_tests
+    install_track_points_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_points.c)
+target_include_directories(install_track_points_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(install_track_points_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(install_track_points_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(install_track_points_tests PRIVATE psyz)
+add_test(NAME install_track_points COMMAND install_track_points_tests)
+set_tests_properties(install_track_points PROPERTIES LABELS functional)
+
 add_test(NAME hud_anchoring
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_hud_anchoring.py)
 set_tests_properties(hud_anchoring PROPERTIES LABELS functional)
