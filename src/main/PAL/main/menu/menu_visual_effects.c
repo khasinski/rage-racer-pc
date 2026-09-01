@@ -307,58 +307,6 @@ void RotateTeamLogoCw(void) {
         dst++;
     } while (i < 512);
 }
-
-
-
-void UpdateTeamLogoCanvas(void) {
-    s32 nextTool;
-
-    {
-        s32 input;
-        s32 held;
-        s32 repeat;
-        u16 state = g_PadHeld;
-
-        input = (state & 5) ? 0 : 3;
-        if (state & g_TeamLogoDpadRepeatMask) {
-            held = g_TeamLogoDpadRepeatTimer;
-            repeat = 0x14;
-            if (held < input + repeat) {
-                repeat = held + 1;
-            }
-            g_TeamLogoDpadRepeatTimer = repeat;
-        } else {
-            g_TeamLogoDpadRepeatTimer = 0;
-        }
-    }
-    {
-        u16 held = g_PadHeld;
-
-        g_TeamLogoDpadRepeatMask = held & 0xF000;
-        if (!(held & 0x20)) {
-            g_TeamLogoPaintArmed = 1;
-        }
-    }
-    if (g_TeamLogoExpertMode != 0) {
-        if (g_PadPressed & PAD_SELECT) {
-            g_TeamLogoGuideModePrev = g_TeamLogoGuideMode;
-            nextTool = 0;
-            if (g_TeamLogoGuideMode < 2) {
-                nextTool = g_TeamLogoGuideMode + 1;
-            }
-            g_TeamLogoGuideMode = nextTool;
-        }
-    } else {
-        g_TeamLogoGuideMode = 1;
-    }
-    if (g_TeamLogoPaletteMode == 1) {
-        EditLogoPalette();
-    } else {
-        EditLogoCanvas();
-    }
-}
-
-
 void RestoreTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, &g_TeamLogoBlankClut); }
 
 void UploadTeamLogoClut(void) { LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut); }

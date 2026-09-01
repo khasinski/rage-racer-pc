@@ -11,6 +11,44 @@ static TeamLogoColorSlot *GetTeamLogoPenSlot(void) {
     return address.slot;
 }
 
+/* Four canvas pixels share a halfword, low nibble first. The editor can pan
+ * the view, so keep the retail division rule for negative coordinates. */
+static u16 *TeamLogoCanvasPixelWord(s32 x, s32 y, s32 *shift) {
+    s32 adjustedX = x < 0 ? x + 3 : x;
+    s32 wordColumn = adjustedX >> 2;
+
+    *shift = (x - wordColumn * 4) * 4;
+    return &g_TeamLogoCanvas.halfwords[y * 16 + wordColumn];
+}
+
+static void SetTeamLogoCanvasPixel(s32 x, s32 y, u16 colour) {
+    s32 shift;
+    u16 *word = TeamLogoCanvasPixelWord(x, y, &shift);
+    u16 mask = (u16)(0xF << shift);
+
+    *word = (u16)((*word & ~mask) | ((colour & 0xF) << shift));
+}
+
+static u16 GetTeamLogoCanvasPixel(s32 x, s32 y) {
+    s32 shift;
+    u16 *word = TeamLogoCanvasPixelWord(x, y, &shift);
+
+    return (u16)((*word >> shift) & 0xF);
+}
+
+static void PaintTeamLogoBrush(u16 colour) {
+    s32 row;
+    s32 column;
+    s32 x = g_TeamLogoViewX + g_TeamLogoCursorX;
+    s32 y = g_TeamLogoViewY + g_TeamLogoCursorY;
+
+    for (row = 0; row < g_TeamLogoBrushSize; row++) {
+        for (column = 0; column < g_TeamLogoBrushSize; column++) {
+            SetTeamLogoCanvasPixel(x + column, y + row, colour);
+        }
+    }
+}
+
 /*
  * Mixing a colour: the cursor walks the sixteen palette slots and the
  * three channels of the one it is on, and the shoulder buttons take the
@@ -196,114 +234,29 @@ void EditLogoPalette(void) {
  * is set to. Every plot is a nibble inside a canvas word.
  */
 void EditLogoCanvas(void) {
-    TeamLogoPixelWord *canvasWord;
-    s32 cursorX;
-    s32 eraseColumn;
-    s32 eraseRow;
     s32 eraseStamp;
-    s32 nibbleShift;
     u32 pixelValue;
-    s32 pixelX;
-    s32 plotColumn;
-    s32 plotRow;
     s32 plotStamp;
-    s32 rowWords;
-    s32 wordColumn;
+    u16 pressed = g_PadPressed;
+    u16 held = g_PadHeld;
 
-    if ((g_PadHeld & PAD_CIRCLE) && (g_TeamLogoPaintArmed != 0)) {
-        if (g_PadPressed & PAD_CIRCLE) {
+    if ((held & PAD_CIRCLE) && (g_TeamLogoPaintArmed != 0)) {
+        if (pressed & PAD_CIRCLE) {
             PlaySoundCue(4);
         }
-        for (plotRow = 0; plotRow < g_TeamLogoBrushSize; plotRow++) {
-                for (plotColumn = 0; plotColumn < g_TeamLogoBrushSize; plotColumn++) {
-                        u16 *p;
-                        s32 sum;
-                        s32 adj;
-                        s32 row;
-                        s32 q;
-                        s32 rem;
-
-                        p = g_TeamLogoCanvas.halfwords;
-                        sum = g_TeamLogoViewX + g_TeamLogoCursorX + plotColumn;
-                        adj = sum;
-                        row = (g_TeamLogoViewY + g_TeamLogoCursorY + plotRow) * 0x10;
-                        if (sum < 0) {
-                            adj = sum + 3;
-                        }
-                        q = adj >> 2;
-                        p += row + q;
-                        rem = sum - (q * 4);
-                        switch (rem) {
-                        case 0:
-                            *p = (*p & 0xFFF0) |
-                                 GetTeamLogoPenSlot()->low;
-                            break;
-                        case 1:
-                            *p = (*p & 0xFF0F) |
-                                 (GetTeamLogoPenSlot()->low << 4);
-                            break;
-                        case 2:
-                            *p = (*p & 0xF0FF) |
-                                 (GetTeamLogoPenSlot()->low << 8);
-                            break;
-                        case 3:
-                            *p = (*p & 0xFFF) |
-                                 (GetTeamLogoPenSlot()->low << 0xC);
-                            break;
-                        }
-                }
-        }
+        PaintTeamLogoBrush(GetTeamLogoPenSlot()->low);
     }
-    if (g_PadHeld & PAD_SQUARE) {
-        if (g_PadPressed & PAD_SQUARE) {
+    if (held & PAD_SQUARE) {
+        if (pressed & PAD_SQUARE) {
             PlaySoundCue(4);
         }
-        for (eraseRow = 0; eraseRow < g_TeamLogoBrushSize; eraseRow++) {
-                for (eraseColumn = 0; eraseColumn < g_TeamLogoBrushSize; eraseColumn++) {
-                        u16 *p;
-                        s32 sum;
-                        s32 adj;
-                        s32 row;
-                        s32 q;
-                        s32 rem;
-
-                        sum = g_TeamLogoViewX + g_TeamLogoCursorX + eraseColumn;
-                        p = g_TeamLogoCanvas.halfwords;
-                        adj = sum;
-                        row = g_TeamLogoViewY + g_TeamLogoCursorY + eraseRow;
-                        row *= 0x10;
-                        if (sum < 0) {
-                            adj = sum + 3;
-                        }
-                        q = adj >> 2;
-                        adj = row;
-                        p += adj + q;
-                        rem = sum - (q * 4);
-                        switch (rem) {
-                        case 0:
-                            *p &= 0xFFF0;
-                            break;
-                        case 1:
-                            *p &= 0xFF0F;
-                            break;
-                        case 2:
-                            *p &= 0xF0FF;
-                            break;
-                        case 3:
-                            *p &= 0xFFF;
-                            break;
-                        }
-                }
-        }
+        PaintTeamLogoBrush(0);
     }
-    {
-        u16 *input = &g_PadPressed;
-
-    if (*input & 0x40) {
+    if (pressed & 0x40) {
         PlaySoundCue(2);
         g_TeamLogoPaletteMode = 1;
     }
-    if (*input & 0x10) {
+    if (pressed & 0x10) {
         PlaySoundCue(2);
         switch (g_TeamLogoBrushSize) {
         case 1:
@@ -323,43 +276,39 @@ void EditLogoCanvas(void) {
             g_TeamLogoCursorY = 0x20 - g_TeamLogoBrushSize;
         }
     }
-    }
-    {
-        u16 heldValue = g_PadHeld;
-
-    if ((heldValue & 8) && (g_TeamLogoExpertMode != 0)) {
-        if (heldValue & 4) {
-            if (g_PadPressed & PAD_UP) {
+    if ((held & 8) && (g_TeamLogoExpertMode != 0)) {
+        if (held & 4) {
+            if (pressed & PAD_UP) {
                 RotateTeamLogoCw();
             }
-            if (g_PadPressed & PAD_DOWN) {
+            if (pressed & PAD_DOWN) {
                 FlipTeamLogoVertical();
             }
-            if (g_PadPressed & PAD_LEFT) {
+            if (pressed & PAD_LEFT) {
                 RotateTeamLogoCcw();
             }
-            if (g_PadPressed & PAD_RIGHT) {
+            if (pressed & PAD_RIGHT) {
                 FlipTeamLogoHorizontal();
             }
         } else if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1)) {
-            if (heldValue & 0x1000) {
+            if (held & 0x1000) {
                 ScrollTeamLogoUp();
             }
-            if (heldValue & 0x4000) {
+            if (held & 0x4000) {
                 ScrollTeamLogoDown();
             }
-            if (heldValue & 0x8000) {
+            if (held & 0x8000) {
                 ScrollTeamLogoLeft();
             }
-            if (heldValue & 0x2000) {
+            if (held & 0x2000) {
                 ScrollTeamLogoRight();
             }
         }
     } else {
         eraseStamp = 0;
-        if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1) || (g_PadHeld & 5)) {
+        if ((g_TeamLogoDpadRepeatTimer == 0x14) || (g_TeamLogoDpadRepeatTimer == 1) || (held & 5)) {
             plotStamp = 0;
-            if (g_PadHeld & PAD_UP) {
+            if (held & PAD_UP) {
                 if (g_TeamLogoCursorY > 0) {
                     g_TeamLogoCursorY -= 1;
                     plotStamp = 1;
@@ -368,7 +317,7 @@ void EditLogoCanvas(void) {
                     plotStamp = 1;
                 }
             }
-            if (g_PadHeld & PAD_DOWN) {
+            if (held & PAD_DOWN) {
                 if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) < 0x20) {
                     g_TeamLogoCursorY += 1;
                     plotStamp = 1;
@@ -377,7 +326,7 @@ void EditLogoCanvas(void) {
                     plotStamp = 1;
                 }
             }
-            if (g_PadHeld & PAD_LEFT) {
+            if (held & PAD_LEFT) {
                 if (g_TeamLogoCursorX > 0) {
                     g_TeamLogoCursorX -= 1;
                     eraseStamp = 1;
@@ -386,7 +335,7 @@ void EditLogoCanvas(void) {
                     eraseStamp = 1;
                 }
             }
-            if (g_PadHeld & PAD_RIGHT) {
+            if (held & PAD_RIGHT) {
                 if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) < 0x20) {
                     g_TeamLogoCursorX += 1;
                     eraseStamp = 1;
@@ -395,44 +344,55 @@ void EditLogoCanvas(void) {
                     eraseStamp = 1;
                 }
             }
-            if ((g_PadHeld & (PAD_SQUARE | PAD_CIRCLE)) && ((eraseStamp != 0) || (plotStamp != 0))) {
+            if ((held & (PAD_SQUARE | PAD_CIRCLE)) && ((eraseStamp != 0) || (plotStamp != 0))) {
                 PlaySoundCue(4);
             }
         }
     }
-    }
-    if ((g_PadPressed & 2) && (g_TeamLogoExpertMode != 0)) {
+    if ((pressed & 2) && (g_TeamLogoExpertMode != 0)) {
         PlaySoundCue(4);
-        canvasWord = g_TeamLogoCanvas.pixels;
-        cursorX = g_TeamLogoViewX + g_TeamLogoCursorX;
-        pixelX = cursorX;
-        rowWords = (g_TeamLogoViewY + g_TeamLogoCursorY) * 0x10;
-        if (cursorX < 0) {
-            pixelX = cursorX + 3;
-        }
-        wordColumn = pixelX >> 2;
-        canvasWord += rowWords + wordColumn;
-        nibbleShift = cursorX;
-        nibbleShift = nibbleShift - (wordColumn * 4);
-        switch (nibbleShift) {
-        case 0:
-            pixelValue = canvasWord[0].value & 0xF;
-            break;
-        case 1:
-            pixelValue = canvasWord[0].bytes[0] / 16;
-            break;
-        case 2:
-            pixelValue = canvasWord[0].bytes[1] & 0xF;
-            break;
-        case 3:
-            pixelValue = canvasWord[0].value >> 0xC;
-            break;
-        default:
-            return;
-        }
+        pixelValue = GetTeamLogoCanvasPixel(
+            g_TeamLogoViewX + g_TeamLogoCursorX,
+            g_TeamLogoViewY + g_TeamLogoCursorY);
         if (pixelValue == 0) {
             pixelValue = g_TeamLogoPenColor;
         }
         g_TeamLogoPenColor = pixelValue;
+    }
+}
+
+void UpdateTeamLogoCanvas(void) {
+    u16 held = g_PadHeld;
+    s32 repeatDelay = (held & (PAD_L2 | PAD_L1)) ? 0 : 3;
+
+    if (held & g_TeamLogoDpadRepeatMask) {
+        if (g_TeamLogoDpadRepeatTimer < 0x14 + repeatDelay) {
+            g_TeamLogoDpadRepeatTimer++;
+        }
+    } else {
+        g_TeamLogoDpadRepeatTimer = 0;
+    }
+
+    g_TeamLogoDpadRepeatMask = held &
+        (PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT);
+    if (!(held & PAD_CIRCLE)) {
+        g_TeamLogoPaintArmed = 1;
+    }
+
+    if (g_TeamLogoExpertMode != 0) {
+        if (g_PadPressed & PAD_SELECT) {
+            g_TeamLogoGuideModePrev = g_TeamLogoGuideMode;
+            g_TeamLogoGuideMode = g_TeamLogoGuideMode < 2
+                                      ? g_TeamLogoGuideMode + 1
+                                      : 0;
+        }
+    } else {
+        g_TeamLogoGuideMode = 1;
+    }
+
+    if (g_TeamLogoPaletteMode == 1) {
+        EditLogoPalette();
+    } else {
+        EditLogoCanvas();
     }
 }

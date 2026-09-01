@@ -25,6 +25,7 @@ s32 g_TeamLogoColorChannel;
 TeamLogoCoordinate g_TeamLogoCursorX;
 s32 g_TeamLogoCursorY;
 s32 g_TeamLogoDpadRepeatTimer;
+s32 g_TeamLogoDpadRepeatMask;
 u8 g_TeamLogoExpertMode;
 s32 g_TeamLogoGuideMode;
 s32 g_TeamLogoGuideModePrev;
@@ -66,6 +67,42 @@ void RotateTeamLogoCw(void) { ShiftCanvas(1, 1); }
 void RotateTeamLogoCcw(void) { ShiftCanvas(-1, -1); }
 
 static unsigned long s_digest = 2166136261UL;
+
+static int TestEditorControl(void) {
+    memset(&g_TeamLogoCanvas, 0, sizeof(g_TeamLogoCanvas));
+    g_TeamLogoPaletteMode = 0;
+    g_TeamLogoExpertMode = 1;
+    g_TeamLogoGuideMode = 2;
+    g_TeamLogoGuideModePrev = 1;
+    g_TeamLogoDpadRepeatTimer = 7;
+    g_TeamLogoDpadRepeatMask = PAD_RIGHT;
+    g_TeamLogoPaintArmed = 0;
+    g_PadHeld = PAD_RIGHT;
+    g_PadPressed = PAD_SELECT;
+
+    UpdateTeamLogoCanvas();
+    if (g_TeamLogoDpadRepeatTimer != 8 ||
+        g_TeamLogoDpadRepeatMask != PAD_RIGHT ||
+        g_TeamLogoGuideMode != 0 || g_TeamLogoGuideModePrev != 2 ||
+        g_TeamLogoPaintArmed != 1) {
+        puts("FAIL team logo editor control state");
+        return 0;
+    }
+
+    g_TeamLogoExpertMode = 0;
+    g_TeamLogoGuideMode = 2;
+    g_TeamLogoDpadRepeatTimer = 5;
+    g_TeamLogoDpadRepeatMask = PAD_LEFT;
+    g_PadHeld = 0;
+    g_PadPressed = 0;
+    UpdateTeamLogoCanvas();
+    if (g_TeamLogoGuideMode != 1 || g_TeamLogoDpadRepeatTimer != 0 ||
+        g_TeamLogoDpadRepeatMask != 0) {
+        puts("FAIL team logo editor idle control state");
+        return 0;
+    }
+    return 1;
+}
 
 static void Fold(FILE *out, const char *label) {
     char line[320];
@@ -110,6 +147,8 @@ int main(int argc, char **argv) {
     size_t held, pressed;
     int expert, palette, channel, brush, repeat, steps = 0;
     char label[96];
+
+    if (!TestEditorControl()) return 1;
 
     if (argc > 1) {
         out = fopen(argv[1], "w");
