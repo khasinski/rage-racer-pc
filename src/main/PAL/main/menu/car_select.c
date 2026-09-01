@@ -5,6 +5,15 @@
 #include "game/save_internal.h"
 #include "game/race.h"
 
+enum RankingScreenState {
+    RANKING_MENU = -1,
+    RANKING_MENU_CLOSING = -2,
+    RANKING_TOTAL_TABLE = -3,
+    RANKING_TOTAL_TABLE_CLOSING = -4,
+    RANKING_LAP_TABLE = -5,
+    RANKING_LAP_TABLE_CLOSING = -6
+};
+
 void UpdateRankingScreen(void) {
     s32 state;
 
@@ -14,7 +23,7 @@ void UpdateRankingScreen(void) {
     state = GameMenuBusy;
     if (state == 0) {
         g_UiScriptProgress2 = 0;
-        GameMenuBusy = -1;
+        GameMenuBusy = RANKING_MENU;
         DrawFadingMenuSprites(0, 2, g_RankingCursor);
         RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1);
         /*
@@ -27,9 +36,10 @@ void UpdateRankingScreen(void) {
         RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
         RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
-    } else if (state < 0) {
+    }
+    if (state < 0) {
         switch (state) {
-        case -1:
+        case RANKING_MENU:
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1) != 0) {
                 g_MenuOverlayPattern = -1;
@@ -41,32 +51,28 @@ void UpdateRankingScreen(void) {
                     PlaySoundCue(1);
                     g_RankingCursor = (g_RankingCursor < 2) ? g_RankingCursor + 1 : 0;
                 }
-                {
-                    s32 flags = g_PadPressed;
-                    if (flags & 0x860) {
-                        s32 x = g_RankingCursor;
-                        if (x == 0) {
-                            PlaySoundCue(2);
-                            GameMenuBusy = -2;
-                            g_RankingPendingState = -3;
-                        } else if (x == 1) {
-                            PlaySoundCue(2);
-                            GameMenuBusy = -2;
-                            g_RankingPendingState = -5;
-                        } else if (x == 2) {
-                            PlaySoundCue(3);
-                            GameMenuBusy = 1;
-                            g_MenuOverlayPattern = x;
-                        }
-                    } else if (flags & 0x90) {
+                if (g_PadPressed & PAD_CONFIRM) {
+                    if (g_RankingCursor == 0) {
+                        PlaySoundCue(2);
+                        GameMenuBusy = RANKING_MENU_CLOSING;
+                        g_RankingPendingState = RANKING_TOTAL_TABLE;
+                    } else if (g_RankingCursor == 1) {
+                        PlaySoundCue(2);
+                        GameMenuBusy = RANKING_MENU_CLOSING;
+                        g_RankingPendingState = RANKING_LAP_TABLE;
+                    } else if (g_RankingCursor == 2) {
                         PlaySoundCue(3);
                         GameMenuBusy = 1;
                         g_MenuOverlayPattern = 2;
                     }
+                } else if (g_PadPressed & PAD_CANCEL) {
+                    PlaySoundCue(3);
+                    GameMenuBusy = 1;
+                    g_MenuOverlayPattern = 2;
                 }
             }
             break;
-        case -2:
+        case RANKING_MENU_CLOSING:
             RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
             DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
             if (g_UiScriptProgress2 > 0) {
@@ -74,39 +80,39 @@ void UpdateRankingScreen(void) {
             }
             GameMenuBusy = g_RankingPendingState;
             break;
-        case -3:
+        case RANKING_TOTAL_TABLE:
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 0) == 0) {
                 break;
             }
-            if (!(g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
+            if (!(g_PadPressed & (PAD_CONFIRM | PAD_CANCEL))) {
                 break;
             }
             PlaySoundCue(3);
-            GameMenuBusy = -4;
+            GameMenuBusy = RANKING_TOTAL_TABLE_CLOSING;
             break;
-        case -4:
+        case RANKING_TOTAL_TABLE_CLOSING:
             DrawRankingTable(&g_UiScriptProgress2, -1, 0);
             if (g_UiScriptProgress2 > 0) {
                 break;
             }
-            GameMenuBusy = -1;
+            GameMenuBusy = RANKING_MENU;
             break;
-        case -5:
+        case RANKING_LAP_TABLE:
             if (DrawRankingTable(&g_UiScriptProgress2, 1, 1) == 0) {
                 break;
             }
-            if (!(g_PadPressed & (PAD_START | PAD_SQUARE | PAD_CROSS | PAD_CIRCLE | PAD_TRIANGLE))) {
+            if (!(g_PadPressed & (PAD_CONFIRM | PAD_CANCEL))) {
                 break;
             }
             PlaySoundCue(3);
-            GameMenuBusy = -6;
+            GameMenuBusy = RANKING_LAP_TABLE_CLOSING;
             break;
-        case -6:
+        case RANKING_LAP_TABLE_CLOSING:
             DrawRankingTable(&g_UiScriptProgress2, -1, 1);
             if (g_UiScriptProgress2 > 0) {
                 break;
             }
-            GameMenuBusy = -1;
+            GameMenuBusy = RANKING_MENU;
             break;
         }
         RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
