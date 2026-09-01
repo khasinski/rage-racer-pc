@@ -844,6 +844,48 @@ endif()
 add_test(NAME number_drawing COMMAND number_drawing_tests)
 set_tests_properties(number_drawing PROPERTIES LABELS unit)
 
+add_executable(hud_packet_emitters_tests
+    hud_packet_emitters_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_hud_digit.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_wrong_way_warning.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/fullscreen_fade.c)
+target_include_directories(hud_packet_emitters_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(hud_packet_emitters_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(hud_packet_emitters_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(hud_packet_emitters_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(hud_packet_emitters_tests PRIVATE psyz)
+add_test(NAME hud_packet_emitters COMMAND hud_packet_emitters_tests)
+set_tests_properties(hud_packet_emitters PROPERTIES LABELS unit)
+
+add_executable(tachometer_tests
+    tachometer_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_tachometer.c)
+target_include_directories(tachometer_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(tachometer_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(tachometer_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(tachometer_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(tachometer_tests PRIVATE psyz)
+add_test(NAME tachometer COMMAND tachometer_tests)
+set_tests_properties(tachometer PROPERTIES LABELS functional)
+
 add_executable(proportional_text_tests
     proportional_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text.c)
