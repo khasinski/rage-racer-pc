@@ -94,12 +94,31 @@ typedef struct GameViewState {
     s32 angleZ;
 } GameViewState;
 
-/* Local compatibility view for algorithms recovered with the original PS1
- * word indices.  Keep it off the canonical scratch state: words 0 and 1 were
- * 32-bit pointers on PS1 and cannot share storage with native pointers. */
-typedef struct ScratchLegacyViewWords {
-    s32 words[10];
-} ScratchLegacyViewWords;
+/*
+ * A copy of the camera the camera code works in before storing it back. It
+ * exists because the routines that build a view read the current one while
+ * they compute the next, and because two of them decide part way through not
+ * to store anything at all.
+ *
+ * The position and the angles are each taken as a three-word block as well as
+ * one word at a time, so they have to stay adjacent.
+ */
+typedef struct GameViewWork {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 reserved;
+    s32 angleX;
+    s32 angleY;
+    s32 angleZ;
+    s32 depth;
+} GameViewWork;
+
+_Static_assert(offsetof(GameViewWork, z) == offsetof(GameViewWork, x) + 8,
+               "the camera position must stay one block");
+_Static_assert(offsetof(GameViewWork, angleZ) ==
+                   offsetof(GameViewWork, angleX) + 8,
+               "the camera angles must stay one block");
 
 typedef union GameBlockAddress {
     s32 *words;
@@ -194,26 +213,26 @@ _Static_assert(offsetof(GameViewState, angleX) ==
                        offsetof(GameRenderState, viewX),
                "the camera block puts the angles somewhere else");
 
-static inline void LoadScratchLegacyView(ScratchLegacyViewWords *legacy) {
-    legacy->words[2] = g_RenderState.viewX;
-    legacy->words[3] = g_RenderState.viewY;
-    legacy->words[4] = g_RenderState.viewZ;
-    legacy->words[5] = g_RenderState.reserved14;
-    legacy->words[6] = g_RenderState.viewAngleX;
-    legacy->words[7] = g_RenderState.viewAngleY;
-    legacy->words[8] = g_RenderState.viewAngleZ;
-    legacy->words[9] = g_RenderState.depth;
+static inline void LoadViewWork(GameViewWork *view) {
+    view->x = g_RenderState.viewX;
+    view->y = g_RenderState.viewY;
+    view->z = g_RenderState.viewZ;
+    view->reserved = g_RenderState.reserved14;
+    view->angleX = g_RenderState.viewAngleX;
+    view->angleY = g_RenderState.viewAngleY;
+    view->angleZ = g_RenderState.viewAngleZ;
+    view->depth = g_RenderState.depth;
 }
 
-static inline void StoreScratchLegacyView(const ScratchLegacyViewWords *legacy) {
-    g_RenderState.viewX = legacy->words[2];
-    g_RenderState.viewY = legacy->words[3];
-    g_RenderState.viewZ = legacy->words[4];
-    g_RenderState.reserved14 = legacy->words[5];
-    g_RenderState.viewAngleX = legacy->words[6];
-    g_RenderState.viewAngleY = legacy->words[7];
-    g_RenderState.viewAngleZ = legacy->words[8];
-    g_RenderState.depth = legacy->words[9];
+static inline void StoreViewWork(const GameViewWork *view) {
+    g_RenderState.viewX = view->x;
+    g_RenderState.viewY = view->y;
+    g_RenderState.viewZ = view->z;
+    g_RenderState.reserved14 = view->reserved;
+    g_RenderState.viewAngleX = view->angleX;
+    g_RenderState.viewAngleY = view->angleY;
+    g_RenderState.viewAngleZ = view->angleZ;
+    g_RenderState.depth = view->depth;
 }
 
 /* Course object bank. SubmitCourseModel / SubmitCourseModel2 (0x800296BC,

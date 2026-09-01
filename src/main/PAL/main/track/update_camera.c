@@ -48,20 +48,20 @@ static s32 ShortestAngleDelta(s32 delta) {
  * Point the camera at a place in the world: pitch and yaw from the camera to
  * the target, in the game's 0x1000-per-turn angle units, with no roll.
  */
-static void AimCameraAt(s32 *scratch, s32 targetX, s32 targetY, s32 targetZ) {
-    s32 dx = scratch[2] - targetX;
-    s32 dy = scratch[3] - targetY;
-    s32 dz = scratch[4] - targetZ;
-    scratch[6] = 0x400 - (Atan2(-dy, SquareRoot0(dx * dx + dz * dz)) & 0xFFF);
-    scratch[7] = 0x400 - (Atan2(-dx, -dz) & 0xFFF);
-    scratch[8] = 0;
+static void AimCameraAt(GameViewWork *scratch, s32 targetX, s32 targetY, s32 targetZ) {
+    s32 dx = scratch->x - targetX;
+    s32 dy = scratch->y - targetY;
+    s32 dz = scratch->z - targetZ;
+    scratch->angleX = 0x400 - (Atan2(-dy, SquareRoot0(dx * dx + dz * dz)) & 0xFFF);
+    scratch->angleY = 0x400 - (Atan2(-dx, -dz) & 0xFFF);
+    scratch->angleZ = 0;
 }
 
 /*
  * Mode 0: the camera sits where the car's own block says, lifted a fixed
  * amount along the car's up axis.
  */
-static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
+static void ViewFromCarBlock(GameRenderObject *car, GameViewWork *scratch,
                              s32 cameraNodeIndex, int nodeChanged) {
     /* The six camera modes share one signature so the entry point can
      * call any of them; not every mode wants every argument. */
@@ -75,24 +75,24 @@ static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
     GameBlockAddress scratchAddress;
 
         playerAddress.renderObject = car;
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = playerAddress.blocks[0];
-        scratchAddress.words = &scratch[6];
+        scratchAddress.words = &scratch->angleX;
         scratchAddress.blocks[0] = playerAddress.blocks[2];
-        BuildRotMatrixY(&objectRotation, scratch[7]);
-        BuildRotMatrixX(&matrixWork, scratch[6]);
+        BuildRotMatrixY(&objectRotation, scratch->angleY);
+        BuildRotMatrixX(&matrixWork, scratch->angleX);
         MulMatrix2(&matrixWork, &objectRotation);
-        BuildRotMatrixZ(&matrixWork, scratch[8]);
+        BuildRotMatrixZ(&matrixWork, scratch->angleZ);
         MulMatrix2(&matrixWork, &objectRotation);
         cameraLift[0] = 0;
         cameraLift[1] = -0x1C0;
         cameraLift[2] = 0;
         TransposeMatrix(&objectRotation, &matrixWork);
         ApplyMatrix(&matrixWork, &cameraLift[0], &cameraLiftWorld[0]);
-        scratch[2] += cameraLiftWorld[0] >> 4;
-        scratch[3] += cameraLiftWorld[1] >> 4;
-        scratch[4] += cameraLiftWorld[2] >> 4;
-        scratch[6] += car->tiltCounter;
+        scratch->x += cameraLiftWorld[0] >> 4;
+        scratch->y += cameraLiftWorld[1] >> 4;
+        scratch->z += cameraLiftWorld[2] >> 4;
+        scratch->angleX += car->tiltCounter;
         g_CameraModePrev = 0;
 }
 
@@ -101,7 +101,7 @@ static void ViewFromCarBlock(GameRenderObject *car, s32 *scratch,
  * distances, settling its yaw towards where the car is pointing rather than
  * snapping to it.
  */
-static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
+static void ViewFromChaseCamera(GameRenderObject *car, GameViewWork *scratch,
                                 s32 cameraNodeIndex, int nodeChanged) {
     /* The six camera modes share one signature so the entry point can
      * call any of them; not every mode wants every argument. */
@@ -136,7 +136,7 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
     s32 yawStepWrapped;
 
         playerAddress.renderObject = car;
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = playerAddress.blocks[0];
         chaseYawDamping = car->angleY;
         chaseTargetYaw = chaseYawDamping & 0xFFF;
@@ -261,9 +261,9 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
         focusOffset[2] = 0x32;
         ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                       &focusWorld[0]);
-        scratch[2] += focusWorld[0];
-        scratch[3] += focusWorld[1];
-        scratch[4] += focusWorld[2];
+        scratch->x += focusWorld[0];
+        scratch->y += focusWorld[1];
+        scratch->z += focusWorld[2];
         /* Retail kept both offsets in the same stack slot, so a preset
          * outside 0..2 leaves the eye sitting on the look-at offset. The
          * switch has no default and the eye starts on that offset so it
@@ -286,21 +286,21 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
             break;
         }
         ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
-        scratch[2] -= eyeWorld[0];
-        scratch[3] -= eyeWorld[1];
-        scratch[4] -= eyeWorld[2];
+        scratch->x -= eyeWorld[0];
+        scratch->y -= eyeWorld[1];
+        scratch->z -= eyeWorld[2];
         chaseDistance = SquareRoot0((eyeWorld[0] * eyeWorld[0]) +
                                     (eyeWorld[2] * eyeWorld[2]));
-        scratch[6] = 0x400 - (Atan2(eyeWorld[1] + 0x28, chaseDistance) & 0xFFF);
-        scratch[7] = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
-        scratch[7] += ChaseCameraYawOffset(car->steeringAngle);
-        scratch[8] = car->bodyRoll - car->bodyRollVelocity;
+        scratch->angleX = 0x400 - (Atan2(eyeWorld[1] + 0x28, chaseDistance) & 0xFFF);
+        scratch->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
+        scratch->angleY += ChaseCameraYawOffset(car->steeringAngle);
+        scratch->angleZ = car->bodyRoll - car->bodyRollVelocity;
         if (g_ChaseCameraPreset == 0) {
-            negatedAccel = scratch[6] - 0x90;
+            negatedAccel = scratch->angleX - 0x90;
         } else {
-            negatedAccel = scratch[6] - 0x60;
+            negatedAccel = scratch->angleX - 0x60;
         }
-        scratch[6] = negatedAccel;
+        scratch->angleX = negatedAccel;
         g_CameraModePrev = 1;
 }
 
@@ -308,7 +308,7 @@ static void ViewFromChaseCamera(GameRenderObject *car, s32 *scratch,
  * Mode 2: a camera watching the car from a fixed spot beside the track,
  * dragged towards it by the node's own blend.
  */
-static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
+static void ViewFromBlendedNode(GameRenderObject *car, GameViewWork *scratch,
                                 s32 cameraNodeIndex, int nodeChanged) {
     /* The six camera modes share one signature so the entry point can
      * call any of them; not every mode wants every argument. */
@@ -326,7 +326,7 @@ static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
     GameBlockAddress scratchAddress;
 
         chaseNode = &g_TrackCameras[cameraNodeIndex];
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = chaseNode->data.block;
         BuildRotMatrixY(&objectRotation, car->angleY);
         BuildRotMatrixX(&matrixWork, car->bodyPitch);
@@ -347,9 +347,9 @@ static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
         /* Pull the node's camera towards that point by the node's own blend,
          * then aim from where it ended up. */
         blend = chaseNode->data.world.blend;
-        scratch[2] -= ((scratch[2] - focusX) * blend) / 10000;
-        scratch[3] -= ((scratch[3] - focusY) * blend) / 10000;
-        scratch[4] -= ((scratch[4] - focusZ) * blend) / 10000;
+        scratch->x -= ((scratch->x - focusX) * blend) / 10000;
+        scratch->y -= ((scratch->y - focusY) * blend) / 10000;
+        scratch->z -= ((scratch->z - focusZ) * blend) / 10000;
         AimCameraAt(scratch, focusX, focusY, focusZ);
         g_CameraModePrev = 2;
 }
@@ -359,7 +359,7 @@ static void ViewFromBlendedNode(GameRenderObject *car, s32 *scratch,
  * from one node to the next across the node's duration, and the roll comes
  * off the finished view rather than off the car.
  */
-static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
+static void ViewFromCamPath(GameRenderObject *car, GameViewWork *scratch,
                             s32 cameraNodeIndex, int nodeChanged) {
     s32 camPathAngle;
     s32 camPathOffset;
@@ -397,7 +397,7 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
     s32 yawProduct;
 
         playerAddress.renderObject = car;
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = playerAddress.blocks[0];
         if (((u8)nodeChanged) || (g_CameraModePrev != 3)) {
             g_CamPathNode = cameraNodeIndex;
@@ -500,29 +500,29 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
         focusOffset[2] += 0x32;
         ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                       &focusWorld[0]);
-        focusX = scratch[2] + focusWorld[0];
-        focusY = scratch[3] + focusWorld[1];
-        focusZ = scratch[4] + focusWorld[2];
+        focusX = scratch->x + focusWorld[0];
+        focusY = scratch->y + focusWorld[1];
+        focusZ = scratch->z + focusWorld[2];
         /* Sit the path's distance behind the focus point, then look back at
          * it. */
         eyeOffset[0] = 0;
         eyeOffset[1] = 0;
         eyeOffset[2] = g_CamPathAngle[CAMPATH_DIST];
         ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
-        scratch[2] = focusX - eyeWorld[0];
-        scratch[3] = focusY - eyeWorld[1];
-        scratch[4] = focusZ - eyeWorld[2];
+        scratch->x = focusX - eyeWorld[0];
+        scratch->y = focusY - eyeWorld[1];
+        scratch->z = focusZ - eyeWorld[2];
         AimCameraAt(scratch, focusX, focusY, focusZ);
         /* Roll: take the camera's own right-hand axis back through the view
          * matrix and read how far off level it lands. */
         rollProbe[0] = 0x1000;
         rollProbe[1] = 0;
         rollProbe[2] = 0;
-        BuildRotMatrixY(&cameraRotation, 0 - scratch[7]);
+        BuildRotMatrixY(&cameraRotation, 0 - scratch->angleY);
         ApplyMatrixLV(&cameraRotation, &rollProbe[0], &rollWork[0]);
         TransposeMatrix(&matrixWork, &cameraRotation);
         ApplyMatrixLV(&cameraRotation, &rollWork[0], &rollProbe[0]);
-        scratch[8] = 0x400 - (Atan2(rollProbe[1], rollProbe[0]) & 0xFFF);
+        scratch->angleZ = 0x400 - (Atan2(rollProbe[1], rollProbe[0]) & 0xFFF);
         g_CameraModePrev = 3;
 }
 
@@ -530,7 +530,7 @@ static void ViewFromCamPath(GameRenderObject *car, s32 *scratch,
  * Mode 4: a node that slides to its own position across its duration, then
  * looks back at the car.
  */
-static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
+static void ViewFromSlidingNode(GameRenderObject *car, GameViewWork *scratch,
                                 s32 cameraNodeIndex, int nodeChanged) {
     Matrix inverseObjectRotation;
     Matrix matrixWork;
@@ -540,7 +540,7 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
     GameTrackCameraNode *orbitNode;
     GameBlockAddress scratchAddress;
 
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
         if (nodeChanged || g_CameraModePrev != 4) {
             g_CamPathFrame = 0;
@@ -561,11 +561,11 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
                       &nodeWorld[0]);
         /* Slide the camera from where it starts to the node's own position
          * across the node's duration, then aim back at the car. */
-        scratch[2] += ((orbitNode->offset[0] - scratch[2]) * g_CamPathFrame) /
+        scratch->x += ((orbitNode->offset[0] - scratch->x) * g_CamPathFrame) /
                       orbitNode->duration;
-        scratch[3] += ((orbitNode->offset[1] - scratch[3]) * g_CamPathFrame) /
+        scratch->y += ((orbitNode->offset[1] - scratch->y) * g_CamPathFrame) /
                       orbitNode->duration;
-        scratch[4] += ((orbitNode->offset[2] - scratch[4]) * g_CamPathFrame) /
+        scratch->z += ((orbitNode->offset[2] - scratch->z) * g_CamPathFrame) /
                       orbitNode->duration;
         AimCameraAt(scratch, car->x + nodeWorld[0], car->y + nodeWorld[1],
                     car->z + nodeWorld[2]);
@@ -575,7 +575,7 @@ static void ViewFromSlidingNode(GameRenderObject *car, s32 *scratch,
 /*
  * Mode 5: orbiting behind the car at a set distance.
  */
-static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
+static void ViewFromOrbit(GameRenderObject *car, GameViewWork *scratch,
                           s32 cameraNodeIndex, int nodeChanged) {
     /* The six camera modes share one signature so the entry point can
      * call any of them; not every mode wants every argument. */
@@ -593,7 +593,7 @@ static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
     GameBlockAddress scratchAddress;
 
         playerAddress.renderObject = car;
-        scratchAddress.words = &scratch[2];
+        scratchAddress.words = &scratch->x;
         scratchAddress.blocks[0] = playerAddress.blocks[0];
         BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
         BuildRotMatrixY(&objectRotation, car->angleY);
@@ -609,9 +609,9 @@ static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
         focusOffset[2] = 0x32;
         ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                       &focusWorld[0]);
-        scratch[2] += focusWorld[0];
-        scratch[3] += focusWorld[1];
-        scratch[4] += focusWorld[2];
+        scratch->x += focusWorld[0];
+        scratch->y += focusWorld[1];
+        scratch->z += focusWorld[2];
         eyeOffset[0] = 0;
         eyeOffset[1] = 0;
         eyeOffset[2] = g_OrbitCameraDistance;
@@ -619,13 +619,13 @@ static void ViewFromOrbit(GameRenderObject *car, s32 *scratch,
         /* Pitch uses the orbit distance rather than the flattened eye vector,
          * so a pitched camera tilts a shade less than a true look-at would.
          * Retail's, and the view players know. */
-        scratch[6] = 0x400 - (Atan2(eyeWorld[1], g_OrbitCameraDistance) & 0xFFF);
-        scratch[7] = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
-        scratch[8] = car->bodyRoll;
+        scratch->angleX = 0x400 - (Atan2(eyeWorld[1], g_OrbitCameraDistance) & 0xFFF);
+        scratch->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
+        scratch->angleZ = car->bodyRoll;
         g_CameraModePrev = 5;
-        scratch[2] -= eyeWorld[0];
-        scratch[3] = (scratch[3] - 0x28) - eyeWorld[1];
-        scratch[4] -= eyeWorld[2];
+        scratch->x -= eyeWorld[0];
+        scratch->y = (scratch->y - 0x28) - eyeWorld[1];
+        scratch->z -= eyeWorld[2];
 }
 
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
@@ -635,8 +635,8 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
      * relative to it. The *World pair is each of those rotated out. */
     /* The track-camera branches take their offset from the node instead. */
     /* Mode 3 alone reads a roll back out of the finished view. */
-    ScratchLegacyViewWords legacyView;
-    s32 *scratch;
+    GameViewWork viewWork;
+    GameViewWork *scratch;
     s32 cameraMode;
     s32 cameraNodeIndex;
     s32 previousNodeIndex;
@@ -644,8 +644,8 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     CameraCarAddress playerAddress;
 
     cameraNodeIndex = FindNearestTrackCamera(car);
-    LoadScratchLegacyView(&legacyView);
-    scratch = legacyView.words;
+    LoadViewWork(&viewWork);
+    scratch = &viewWork;
     previousNodeIndex = g_CameraNodeIndex;
     g_CameraNodeIndex = cameraNodeIndex;
     nodeChanged = cameraNodeIndex != previousNodeIndex;
@@ -674,7 +674,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         ViewFromOrbit(car, scratch, cameraNodeIndex, nodeChanged);
         break;
     }
-    StoreScratchLegacyView(&legacyView);
+    StoreViewWork(&viewWork);
     SetCameraRotMatrix();
     if (cameraModeSel > 0) {
         playerAddress.player = &g_PlayerCar;

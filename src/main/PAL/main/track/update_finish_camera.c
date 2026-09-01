@@ -6,14 +6,14 @@
 /*
  * Camera track-follower: advances a look-ahead track point, aims the eye object
  * g_CameraCar toward the sampled centre-line point
- * (InterpolateTrackPoint + atan2), nudges its position, then seeds the render state's view
- * state (view[2..4]=eye XYZ, view[6]=pitch, view[7]=yaw, view[8]=roll) from the
- * eye object and submits the render object (DrawPlayerCarModel). markerClamp is
+ * (InterpolateTrackPoint + atan2), nudges its position, then seeds the camera
+ * from the eye object, as a position and a pitch, yaw and roll, and submits
+ * the render object (DrawPlayerCarModel). markerClamp is
  * the complete zeroed track-limit record passed to UpdateCarTrackState.
  */
 void UpdateFinishCamera(GameRenderObject *obj) {
-    ScratchLegacyViewWords legacyView;
-    s32 *view;
+    GameViewWork viewWork;
+    GameViewWork *view;
     s32 delta[3];
     s32 coords[3];
     CarTrackLimits markerClamp;
@@ -26,8 +26,8 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     GameCarRuntimeAddress cameraAddress;
     GameBlockAddress viewAddress;
 
-    LoadScratchLegacyView(&legacyView);
-    view = legacyView.words;
+    LoadViewWork(&viewWork);
+    view = &viewWork;
     offset = g_CameraCarTrackPoint;
     if (obj->facingBackwards != 0) {
         index = offset + 2;
@@ -62,20 +62,20 @@ void UpdateFinishCamera(GameRenderObject *obj) {
     UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &markerClamp);
 
     cameraAddress.runtime = &g_CameraCar;
-    viewAddress.words = &view[2];
+    viewAddress.words = &view->x;
     viewAddress.blocks[0] = cameraAddress.blocks[0];
-    view[3] -= 64;
+    view->y -= 64;
 
-    delta[0] = obj->x - view[2];
-    delta[1] = obj->y - view[3];
-    delta[2] = obj->z - view[4];
+    delta[0] = obj->x - view->x;
+    delta[1] = obj->y - view->y;
+    delta[2] = obj->z - view->z;
 
-    view[7] = 0x400 - Atan2(delta[0], delta[2]);
+    view->angleY = 0x400 - Atan2(delta[0], delta[2]);
     value = DistanceXZ(delta[0], delta[2]);
-    view[6] = 0x400 - Atan2(delta[1], value >> 6);
-    view[8] = 0;
+    view->angleX = 0x400 - Atan2(delta[1], value >> 6);
+    view->angleZ = 0;
 
-    StoreScratchLegacyView(&legacyView);
+    StoreViewWork(&viewWork);
     SetCameraRotMatrix();
     SelectModelBank(0);
     DrawPlayerCarModel(obj);
