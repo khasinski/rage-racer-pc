@@ -142,6 +142,12 @@ static void TestImageAssetChain(void) {
               s_loadRects[1].x == 5,
           "image asset walks every positive-size entry");
 
+    words[1].size = sizeof(GameImageEntryHeader) - 1;
+    s_loadCount = 0;
+    UploadImageAsset(words);
+    Check(s_loadCount == 0, "undersized image entry stops the chain");
+    words[1].size = payloadSize;
+
     memcpy(g_LoadBuffer, chain.bytes, sizeof(chain.bytes));
     s_loadCount = 0;
     UploadLoadBufferImage();

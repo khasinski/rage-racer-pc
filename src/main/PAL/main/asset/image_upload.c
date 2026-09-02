@@ -14,11 +14,13 @@ static void UploadBlockPixels(GameImageBlock *block) {
 }
 
 void UploadImageEntry(GameImageEntryHeader *entry) {
-    GameImageBlock *block = (GameImageBlock *)(entry + 1);
+    GameImageAssetAddress address = {.entry = entry + 1};
+    GameImageBlock *block = address.block;
 
     if ((entry->flags & GAME_IMAGE_ENTRY_HAS_CLUT) != 0) {
         UploadBlockPixels(block);
-        block = (GameImageBlock *)((u8 *)block + block->size);
+        address.bytes += block->size;
+        block = address.block;
     }
 
     if (block->w > 0 && block->h > 0) {
@@ -41,6 +43,10 @@ void UploadImageAsset(GameImageAssetHeaderWord *asset) {
 
         ptr++;
         if (size <= 0) return;
+        if ((u32)size < sizeof(GameImageEntryHeader) +
+                            sizeof(GameImageBlock)) {
+            return;
+        }
         next = ptr + ((u32)size >> 2);
         UploadImageEntry(GetImageEntryHeader(ptr));
         ptr = next;

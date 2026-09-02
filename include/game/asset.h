@@ -286,6 +286,7 @@ enum {
 
 typedef union GameImageAssetAddress {
     void *pointer;
+    u8 *bytes;
     GameImageAssetHeaderWord *words;
     GameImageEntryHeader *entry;
     GameImageBlock *block;
@@ -304,6 +305,13 @@ static inline GameImageEntryHeader *GetImageEntryHeader(void *data) {
 
     address.pointer = data;
     return address.entry;
+}
+
+static inline GameImageBlock *GetImageBlock(void *data) {
+    GameImageAssetAddress address;
+
+    address.pointer = data;
+    return address.block;
 }
 
 /* The offset table every asset pack starts with; sub-blocks live at
