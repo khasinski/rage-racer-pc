@@ -205,6 +205,12 @@ static int TestFadingMenuSprites(void) {
         puts("FAIL fading rows accept a negative last row");
         return 0;
     }
+    DrawFadingMenuSprites(12, FADING_MENU_ROW_COUNT, 1);
+    DrawFadingMenuSprites(12, 2, FADING_MENU_ROW_COUNT);
+    if (s_calls != callsBefore) {
+        puts("FAIL fading rows accept an out-of-range row");
+        return 0;
+    }
     return 1;
 }
 

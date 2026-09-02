@@ -255,7 +255,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
 }
 
 
-void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
+void DrawFadingMenuSprites(s32 progress, s32 lastRow, s32 selectedRow) {
     ScriptedSpriteMotion *firstMotion;
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 i;
@@ -263,20 +263,22 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     s32 yOffset;
     s32 elapsed;
 
-    elapsed = progress - g_MenuRowScript[0].time;
-    if (elapsed < 0 || count < 0) {
+    if ((u32)lastRow >= FADING_MENU_ROW_COUNT ||
+        (u32)selectedRow >= FADING_MENU_ROW_COUNT) {
         return;
     }
+    elapsed = progress - g_MenuRowScript[0].time;
+    if (elapsed < 0) return;
 
     firstMotion = g_MenuRowScript[0].motion.spriteMotion;
     elapsed = LimitScriptElapsed(elapsed, firstMotion->limit);
-    g_MenuRowFlashLevels[slot] = 0x1FC;
+    g_MenuRowFlashLevels[selectedRow] = 0x1FC;
     xOffset = ScriptOffset(
         elapsed, ScriptVelocity(firstMotion->packedVelocity, 0));
     yOffset = ScriptOffset(
         elapsed, ScriptVelocity(firstMotion->packedVelocity, 1));
 
-    for (i = 0; i <= count; i++) {
+    for (i = 0; i <= lastRow; i++) {
         TimedDrawCommand *command = &g_MenuRowScript[i];
         ScriptedSpriteShape *shape = command->shape.spriteShape;
         ScriptedSpriteMotion *motion = command->motion.spriteMotion;

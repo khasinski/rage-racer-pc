@@ -157,6 +157,9 @@ typedef struct GameSpriteDesc {
 
 extern GameSpriteDesc g_TachoNeedleSprite;
 void BuildSpriteFromDesc(SPRT *sprite, const GameSpriteDesc *desc);
+enum {
+    FADING_MENU_ROW_COUNT = 5,
+};
 extern TimedDrawCommand g_MenuRowScript[];
 
 /* One display buffer, which is what InitRenderState sets that rectangle to.

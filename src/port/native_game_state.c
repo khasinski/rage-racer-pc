@@ -97,7 +97,7 @@ _Static_assert(sizeof(PlayerCarRuntime) == 0x19c,
 TimedDrawCommand g_CourseSelectGpScript[10];
 TimedDrawCommand g_CourseSelectTimeAttackScript[10];
 TimedDrawCommand g_UiChromeScript[16];
-TimedDrawCommand g_MenuRowScript[6];
+TimedDrawCommand g_MenuRowScript[FADING_MENU_ROW_COUNT + 1];
 TimedDrawCommand g_UiEmptyScript[1];
 TimedDrawCommand g_MenuHintBarScript[61];
 TimedDrawCommand g_CarSelectMenuScriptGp[18];
@@ -382,7 +382,8 @@ int InitNativeGameData(void) {
     return LoadTimedDrawScript(g_CourseSelectGpScript, 10, 0x800817a0u) &&
         LoadTimedDrawScript(g_CourseSelectTimeAttackScript, 10, 0x80081818u) &&
         LoadTimedDrawScript(g_UiChromeScript, 16, 0x80082460u) &&
-        LoadTimedDrawScript(g_MenuRowScript, 6, 0x80082520u) &&
+        LoadTimedDrawScript(g_MenuRowScript, FADING_MENU_ROW_COUNT + 1,
+                            0x80082520u) &&
         LoadTimedDrawScript(g_UiEmptyScript, 1, 0x80082568u) &&
         LoadTimedDrawScript(g_MenuHintBarScript, 61, 0x80082a90u) &&
         LoadTimedDrawScript(g_CarSelectMenuScriptGp, 18, 0x800818ccu) &&

@@ -185,8 +185,8 @@ void DrawMenuCursorBox(
     s32 flash);
 void DrawFadingMenuSprites(
     s32 progress,
-    s32 count,
-    s32 slot);
+    s32 lastRow,
+    s32 selectedRow);
 
 /* Menu-mode entry: reloads the live globals from g_RaceProgress, seeds the
  * render state, zeroes 0x8009B2F8..0x8009B378 and resets all
