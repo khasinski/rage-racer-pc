@@ -75,10 +75,12 @@ static void TestVolumeSettings(void) {
 }
 
 static void TestOutputMode(void) {
-    SetStereoOutput();
+    g_MonoOutput = 0;
+    ApplyAudioSettings();
     Check(g_StereoOutput == 1 && s_cdMixPreset == 0 && s_stereoCalls == 1,
           "stereo mode updates game, CD, and SPU state");
-    SetMonoOutput();
+    g_MonoOutput = 1;
+    ApplyAudioSettings();
     Check(g_StereoOutput == 0 && s_cdMixPreset == 1 && s_monoCalls == 1,
           "mono mode updates game, CD, and SPU state");
 }

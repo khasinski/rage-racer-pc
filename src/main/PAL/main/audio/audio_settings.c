@@ -16,14 +16,18 @@ void SetEffectVolumeSetting(s32 level) {
     g_SoundScale.scale = (level << 7) / AUDIO_SETTING_MAX;
 }
 
-void SetStereoOutput(void) {
-    g_StereoOutput = 1;
-    SetCdMixPreset(0);
-    SsSetStereo();
+static void ApplyOutputMode(s32 mono) {
+    g_StereoOutput = mono == 0;
+    SetCdMixPreset(mono != 0);
+    if (mono == 0) {
+        SsSetStereo();
+    } else {
+        SsSetMono();
+    }
 }
 
-void SetMonoOutput(void) {
-    g_StereoOutput = 0;
-    SetCdMixPreset(1);
-    SsSetMono();
+void ApplyAudioSettings(void) {
+    SetSequenceVolumeSetting(g_BgmVolumeSetting);
+    SetEffectVolumeSetting(g_SfxVolumeSetting);
+    ApplyOutputMode(g_MonoOutput);
 }

@@ -209,8 +209,7 @@ set_tests_properties(fmv_return PROPERTIES LABELS unit)
 add_executable(audio_settings_tests
     audio_settings_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_settings.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sequence_volume.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/apply_audio_settings.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sequence_volume.c)
 target_include_directories(audio_settings_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

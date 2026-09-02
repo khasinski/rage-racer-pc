@@ -94,8 +94,6 @@ void SetSequenceVolumeSetting(s32 setting);
 /* The effect-side twin of SetSequenceVolumeSetting: clamps the 0..15
  * option-screen level and scales it onto g_SoundScale.scale's 0..0x80 range. */
 void SetEffectVolumeSetting(s32 setting);
-void SetStereoOutput(void);
-void SetMonoOutput(void);
 /* Push all three saved audio settings (BGM level, SFX level, mono/stereo) into
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
