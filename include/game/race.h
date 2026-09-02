@@ -393,7 +393,6 @@ void EnterPrizeScreen(void);
 s32 CycleAttractCameraCar(u32 mask, s32 current);
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
 void DrawAttractTitle(void);
-void DrawLapNumber(void);
 void DrawLapTimes(void);
 void DrawPrologueText(void);
 void DrawRaceHudLabels(s32 mode);

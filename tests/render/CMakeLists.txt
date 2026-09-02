@@ -777,28 +777,6 @@ endif()
 add_test(NAME track_math COMMAND track_math_tests)
 set_tests_properties(track_math PROPERTIES LABELS functional)
 
-add_executable(draw_lap_number_tests
-    draw_lap_number_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_lap_number.c)
-target_include_directories(draw_lap_number_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port/include
-    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
-    ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(draw_lap_number_tests PRIVATE __psyz=1)
-if(MSVC)
-    target_compile_options(draw_lap_number_tests PRIVATE
-        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-else()
-    target_compile_options(draw_lap_number_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-endif()
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(draw_lap_number_tests PRIVATE -Wall -Wextra -Werror)
-endif()
-target_link_libraries(draw_lap_number_tests PRIVATE psyz)
-add_test(NAME draw_lap_number COMMAND draw_lap_number_tests)
-set_tests_properties(draw_lap_number PROPERTIES LABELS functional)
-
 add_executable(draw_prims_tests
     draw_prims_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_prims.c)
