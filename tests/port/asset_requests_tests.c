@@ -37,7 +37,8 @@ static s32 s_closeCalls;
 static s32 s_failures;
 static s32 s_lastAssetId;
 static s32 s_modelBankRegistrations;
-static s32 s_randomValue;
+static s32 s_randomValues[2];
+static s32 s_randomCallCount;
 static s32 s_selectModelBankCalls;
 
 s32 LoadAsset(s32 slot, void *destination) {
@@ -66,7 +67,11 @@ void SelectModelBank(s32 index) {
     (void)index;
     s_selectModelBankCalls++;
 }
-s32 Random15(void) { return s_randomValue; }
+s32 Random15(void) {
+    s32 index = s_randomCallCount < 2 ? s_randomCallCount : 1;
+    s_randomCallCount++;
+    return s_randomValues[index];
+}
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -159,9 +164,11 @@ int main(void) {
     g_CourseIndex = 1;
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
-    s_randomValue = 3;
+    s_randomValues[0] = 3;
+    s_randomCallCount = 0;
     Check(RequestRoundAssets() == 1, "new round request pending");
     Check(g_GrandPrixClass == 3, "time-attack class randomized");
+    Check(s_randomCallCount == 1, "time-attack class uses one random sample");
     Check(g_AssetRequestType == ASSET_REQUEST_ROUND_SCREEN,
           "round request type");
 
@@ -178,6 +185,11 @@ int main(void) {
     ((s32 *)(void *)(pack.bytes + 16))[0] = 123;
     ((s32 *)(void *)(pack.bytes + 16))[1] = 20;
     ((s32 *)(void *)(pack.bytes + 16))[2] = 40;
+    s_loadResult = 0;
+    g_SharedAssetWord0 = -1;
+    LoadRoundAssets();
+    Check(g_AssetLoadState == 2 && g_SharedAssetWord0 == -1,
+          "incomplete voice load installs nothing");
     s_loadResult = 1;
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_VOICE_BANK, "round voice asset id");
@@ -186,6 +198,33 @@ int main(void) {
               g_AssetSubBlockPtr == pack.bytes + 56,
           "round voice offsets relocated");
     Check(g_AssetLoadState == 0, "round load completes");
+
+    g_GrandPrixMode = 0;
+    g_CourseIndex = 3;
+    g_MaxClassReached[0] = 4;
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    s_randomValues[0] = 0;
+    s_randomValues[1] = 1;
+    s_randomCallCount = 0;
+    RequestRoundAssets();
+    Check(g_GrandPrixClass == 3 && s_randomCallCount == 2,
+          "oval rerolls classes below two");
+
+    g_GrandPrixMode = 1;
+    g_GrandPrixSeries = 1;
+    g_GrandPrixClass = 4;
+    g_AssetLoadState = 3;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    s_resetCalls = 0;
+    Check(RequestRoundAssets() == 1, "busy GP round request restarts");
+    Check(s_resetCalls == 1 && g_AssetLoadState == 1,
+          "busy GP round request resets loader");
+    g_ImageBlockBuffer = pack.bytes;
+    s_loadResult = 8;
+    LoadRoundAssets();
+    Check(s_lastAssetId == ASSET_ROUND_SCREEN_BASE + 10,
+          "Extra GP class round screen asset id");
 
     if (s_failures != 0) return 1;
     puts("asset requests acknowledge and install their BGM blocks");

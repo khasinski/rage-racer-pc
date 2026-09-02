@@ -283,6 +283,12 @@ typedef struct GameSceneAssetHeader {
     s32 offsets[11];
 } GameSceneAssetHeader;
 
+typedef struct VoiceBankAssetHeader {
+    s32 sharedHeaderSize;
+    s32 audioHeaderOffset;
+    s32 audioBodyOffset;
+} VoiceBankAssetHeader;
+
 typedef union GameSceneAssetAddress {
     s32 value;
     u8 *bytes;

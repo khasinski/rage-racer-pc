@@ -4,9 +4,20 @@
 #include "game/race.h"
 #include "game/render.h"
 
+enum {
+    OVAL_MINIMUM_CLASS = 2,
+    ROUND_SCREENS_PER_SERIES = 6
+};
+
+static s32 RandomClassInRange(s32 minimum, s32 maximum) {
+    if (maximum < minimum) {
+        return minimum;
+    }
+    return minimum + (Random15() & 0xFFF) % (maximum - minimum + 1);
+}
+
 static s32 RandomAvailableClass(void) {
-    s32 maximum = g_MaxClassReached[g_GrandPrixSeries];
-    return (Random15() & 0xFFF) % (maximum + 1);
+    return RandomClassInRange(0, g_MaxClassReached[g_GrandPrixSeries]);
 }
 
 s32 RequestRoundAssets(void) {
@@ -16,9 +27,11 @@ s32 RequestRoundAssets(void) {
 
     if (g_GrandPrixMode == 0) {
         g_GrandPrixClass = RandomAvailableClass();
-        if (SeriesCourseIndex() == 3 && g_GrandPrixClass < 2) {
+        if (SeriesCourseIndex() == 3 &&
+            g_GrandPrixClass < OVAL_MINIMUM_CLASS) {
             s32 maximum = g_MaxClassReached[g_GrandPrixSeries];
-            g_GrandPrixClass = (Random15() & 0xFFF) % (maximum - 1) + 2;
+            g_GrandPrixClass =
+                RandomClassInRange(OVAL_MINIMUM_CLASS, maximum);
         }
     }
 
@@ -36,26 +49,43 @@ static s32 RoundScreenAssetId(void) {
     if (g_GrandPrixMode == 0) {
         return ASSET_TIME_ATTACK_ROUND_SCREEN;
     }
-    return ASSET_ROUND_SCREEN_BASE + g_GrandPrixSeries * 6 +
+    return ASSET_ROUND_SCREEN_BASE +
+           g_GrandPrixSeries * ROUND_SCREENS_PER_SERIES +
            g_GrandPrixClass;
 }
 
 /* Asset ASSET_VOICE_BANK is written immediately after the round-screen block.
  * Its first three words contain one shared value and two relative offsets. */
-void LoadRoundAssets(void) {
-    if (g_AssetLoadState == 1) {
-        s32 roundSize = LoadAsset(RoundScreenAssetId(), g_ImageBlockBuffer);
-        if (roundSize != 0) {
-            g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
-            g_AssetLoadState = 2;
-        }
-    } else if (g_AssetLoadState == 2 &&
-               LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2) != 0) {
-        s32 *header = GetAssetWords(g_AssetBlockPtr2);
+static void LoadRoundScreen(void) {
+    s32 roundSize = LoadAsset(RoundScreenAssetId(), g_ImageBlockBuffer);
 
-        g_SharedAssetWord0 = header[0];
-        g_AssetBlockPtr = g_AssetBlockPtr2 + header[1];
-        g_AssetSubBlockPtr = g_AssetBlockPtr2 + header[2];
-        g_AssetLoadState = 0;
+    if (roundSize == 0) {
+        return;
+    }
+    g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
+    g_AssetLoadState = 2;
+}
+
+static void LoadRoundVoiceBank(void) {
+    VoiceBankAssetHeader *header;
+
+    if (LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2) == 0) {
+        return;
+    }
+    header = (VoiceBankAssetHeader *)g_AssetBlockPtr2;
+    g_SharedAssetWord0 = header->sharedHeaderSize;
+    g_AssetBlockPtr = g_AssetBlockPtr2 + header->audioHeaderOffset;
+    g_AssetSubBlockPtr = g_AssetBlockPtr2 + header->audioBodyOffset;
+    g_AssetLoadState = 0;
+}
+
+void LoadRoundAssets(void) {
+    switch (g_AssetLoadState) {
+    case 1:
+        LoadRoundScreen();
+        break;
+    case 2:
+        LoadRoundVoiceBank();
+        break;
     }
 }
