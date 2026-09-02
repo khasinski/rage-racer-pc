@@ -62,7 +62,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 texturePage) {
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
-    RENDER_PRIM_CURSOR_AS(u8) = s_packets;
+    g_RenderState.packetCursor = s_packets;
     g_BgmRandomLabelTimer = 0;
     g_BgmSelectCursor = 1;
     g_BgmSelectTrack = 4;

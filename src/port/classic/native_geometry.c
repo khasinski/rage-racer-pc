@@ -782,7 +782,7 @@ static void RageSubmitModelFaces(
             }
         }
     }
-    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
+    g_RenderState.packetCursor = cursor;
 }
 
 void SubmitModel(void *ctx, int index) {
@@ -1062,12 +1062,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
             }
         }
     }
-    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
+    g_RenderState.packetCursor = cursor;
     CaptureSubmitEnd();
     return;
 course_buffer_full:
     fprintf(stderr, "rage course: primitive buffer exhausted\n");
-    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
+    g_RenderState.packetCursor = cursor;
     CaptureSubmitEnd();
 }
 
@@ -1490,12 +1490,12 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
             }
         }
     }
-    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
+    g_RenderState.packetCursor = cursor;
     CaptureSubmitEnd();
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",
             decodedFaces, emittedFaces);
-    RENDER_PRIM_CURSOR_AS(uint8_t) = cursor;
+    g_RenderState.packetCursor = cursor;
     CaptureSubmitEnd();
 }

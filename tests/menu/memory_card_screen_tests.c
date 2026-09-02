@@ -101,7 +101,7 @@ static void Reset(void) {
     memset(s_sprites, 0, sizeof(s_sprites));
     memset(s_tiles, 0, sizeof(s_tiles));
     g_DrawBuffer = &s_frame;
-    RENDER_PRIM_CURSOR_AS(u8) = s_packets;
+    g_RenderState.packetCursor = s_packets;
     s_spriteCount = 0;
     s_tileCount = 0;
     s_shadowCount = 0;
@@ -134,7 +134,7 @@ int main(void) {
           s_shadowY[2] == 0x130);
     CHECK(s_arrowX == 0x14 && s_arrowY == 0x78);
     CHECK(s_hint == 5 && s_padHints == 1);
-    CHECK(RENDER_PRIM_CURSOR_AS(u8) == s_packets + 11);
+    CHECK(g_RenderState.packetCursor == s_packets + 11);
 
     Reset();
     DrawMemoryCardScreen(1, 1, 1, 2);
@@ -143,7 +143,7 @@ int main(void) {
     CHECK(s_tileCount == 4);
     CHECK(s_tiles[2].x == 0x3C && s_tiles[2].y == 0x12C);
     CHECK(s_arrowY == 0x58 && s_hint == 6 && s_padHints == 1);
-    CHECK(RENDER_PRIM_CURSOR_AS(u8) == s_packets + 13);
+    CHECK(g_RenderState.packetCursor == s_packets + 13);
 
     g_McMessageRows[6] = textRows;
     g_McMessageColumnX[2] = 42;

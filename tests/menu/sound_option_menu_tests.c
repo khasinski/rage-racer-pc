@@ -98,7 +98,7 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
-    RENDER_PRIM_CURSOR_AS(u8) = s_packets;
+    g_RenderState.packetCursor = s_packets;
     g_BgmVolumeSetting = 7;
     g_SfxVolumeSetting = 5;
     g_MonoOutput = 0;
