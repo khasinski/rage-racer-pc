@@ -15,17 +15,14 @@ void CommitClassProgress(void) {
     s32 nextRecordIndex;
     u8 *coursePlace;
     s32 courseCount;
-    s32 completedCourses;
-    s32 i;
     s32 grade;
     s32 carUnlockLevel;
 
     coursePlace = &g_CourseProgress->bestPlace[SeriesCourseIndex()];
     g_ClassClearFanfareTimer = 0;
 
-    if (*coursePlace == 0 || g_PlayerCar.drive.racePosition < *coursePlace) {
-        *coursePlace = g_PlayerCar.drive.racePosition;
-    }
+    *coursePlace = (u8)BestRacePlace(*coursePlace,
+                                    g_PlayerCar.drive.racePosition);
 
     carUnlockLevel = GetCarUnlockLevel(g_PlayerCarIndex);
     if (g_GrandPrixClass < carUnlockLevel) {
@@ -33,14 +30,8 @@ void CommitClassProgress(void) {
     }
 
     courseCount = GrandPrixCourseCount(g_GrandPrixClass);
-    completedCourses = 0;
-    for (i = 0; i < courseCount; i++) {
-        if (g_CourseProgress->bestPlace[i] != 0) {
-            completedCourses++;
-        }
-    }
-
-    g_ClassCompleted = completedCourses == courseCount;
+    g_ClassCompleted = GrandPrixClassIsComplete(
+        g_CourseProgress->bestPlace, courseCount);
     if (g_ClassCompleted) {
         classRecordIndex = g_GrandPrixSeries * 6 + g_GrandPrixClass;
         nextRecordIndex = NextUnlockedClassRecord(classRecordIndex);
@@ -52,18 +43,14 @@ void CommitClassProgress(void) {
                                            g_CourseProgress->unlockPending);
         g_ClassResultPlace = grade;
         if (grade != 0) {
-            if (g_ClassRecords[classRecordIndex].place == 0 ||
-                grade < g_ClassRecords[classRecordIndex].place) {
-                g_ClassRecords[classRecordIndex].place = (u16)grade;
-            }
+            g_ClassRecords[classRecordIndex].place = (s16)BestClassGrade(
+                g_ClassRecords[classRecordIndex].place, grade);
             g_ClassClearFanfareTimer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
         }
 
         UpdateBgmTrackCount();
-        if (g_ClassResultPlace == 1 &&
-            (s16)g_ClassRecords[classRecordIndex].clears < 99) {
-            g_ClassRecords[classRecordIndex].clears++;
-        }
+        g_ClassRecords[classRecordIndex].clears = UpdatedClassClearCount(
+            g_ClassRecords[classRecordIndex].clears, g_ClassResultPlace);
     } else {
         g_ClassResultPlace = 0;
     }

@@ -58,6 +58,10 @@ s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
                          s32 racePosition);
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount);
 s32 BgmTrackCountForClassWins(s32 classWinCount);
+s32 BestRacePlace(s32 previousPlace, s32 racePosition);
+s32 GrandPrixClassIsComplete(const u8 *bestPlaces, s32 courseCount);
+s32 BestClassGrade(s32 previousGrade, s32 grade);
+u16 UpdatedClassClearCount(u16 clears, s32 grade);
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending);
 s32 RaceEndBrightness(s32 level);
 s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons);

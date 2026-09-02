@@ -17,6 +17,7 @@ int main(void) {
     static const s32 expectedUnlocks[] = {1, 2, 3, 4, 6, -1, 7, 8, 9, 10, 5};
     static const u8 firstPlace[4] = {1, 1, 1, 1};
     static const u8 shortFirstPlace[4] = {1, 1, 1, 0xFF};
+    static const u8 missingFourthPlace[4] = {1, 1, 1, 0};
     static const u8 secondPlace[4] = {1, 1, 1, 2};
     static const u8 thirdPlace[4] = {1, 1, 1, 3};
     static const u8 noGrade[4] = {1, 1, 2, 3};
@@ -85,6 +86,27 @@ int main(void) {
     Check("fifth win unlocks BGM", BgmTrackCountForClassWins(5), 10);
     Check("later wins keep unlocked BGM",
           BgmTrackCountForClassWins(CLASS_RECORD_COUNT), 10);
+
+    Check("first course result", BestRacePlace(0, 3), 3);
+    Check("improved course result", BestRacePlace(3, 1), 1);
+    Check("worse course result", BestRacePlace(2, 3), 2);
+    Check("three-course class complete",
+          GrandPrixClassIsComplete(shortFirstPlace, 3), 1);
+    Check("fourth course still missing",
+          GrandPrixClassIsComplete(missingFourthPlace, 4), 0);
+    Check("four-course class complete",
+          GrandPrixClassIsComplete(firstPlace, 4), 1);
+
+    Check("first class grade", BestClassGrade(0, 3), 3);
+    Check("improved class grade", BestClassGrade(3, 1), 1);
+    Check("worse class grade", BestClassGrade(2, 3), 2);
+    Check("no new grade keeps record", BestClassGrade(2, 0), 2);
+    Check("first-place clear increments", UpdatedClassClearCount(98, 1), 99);
+    Check("clear count stops at 99", UpdatedClassClearCount(99, 1), 99);
+    Check("corrupt high clear count is preserved",
+          UpdatedClassClearCount(0xFFFF, 1), 0xFFFF);
+    Check("lower grade does not count as clear",
+          UpdatedClassClearCount(12, 2), 12);
 
     Check("first-place grade", ComputeClassGradeForPlaces(firstPlace, 0), 1);
     Check("unused fourth course",

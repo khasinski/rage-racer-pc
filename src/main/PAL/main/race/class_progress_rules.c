@@ -90,6 +90,36 @@ s32 BgmTrackCountForClassWins(s32 classWinCount) {
         : UNLOCKED_BGM_TRACK_COUNT;
 }
 
+s32 BestRacePlace(s32 previousPlace, s32 racePosition) {
+    return previousPlace == 0 || racePosition < previousPlace
+        ? racePosition
+        : previousPlace;
+}
+
+s32 GrandPrixClassIsComplete(const u8 *bestPlaces, s32 courseCount) {
+    s32 course;
+
+    for (course = 0; course < courseCount; course++) {
+        if (bestPlaces[course] == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+s32 BestClassGrade(s32 previousGrade, s32 grade) {
+    if (grade == 0) {
+        return previousGrade;
+    }
+    return previousGrade == 0 || grade < previousGrade
+        ? grade
+        : previousGrade;
+}
+
+u16 UpdatedClassClearCount(u16 clears, s32 grade) {
+    return grade == 1 && clears < 99 ? (u16)(clears + 1) : clears;
+}
+
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending) {
     s32 placeTotal = 0;
     s32 course;
