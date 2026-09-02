@@ -10,15 +10,6 @@ s32 _card_load(s32 port);
 
 typedef void (*KernelCallback)(void);
 
-typedef struct RootCounter {
-    u_short count;
-    short pad2;
-    short mode;
-    short pad6;
-    short target;
-    long padC;
-} RootCounter;
-
 void copyKernelWords(u_long *dst, u_long *src, u_long count, long unused);
 long VSync(long mode);
 void waitVSync(long target, long timeoutFrames);
@@ -88,43 +79,6 @@ long BiosFormatDevice(void *device);
 void *BiosFirstFile(char *path, void *entry);
 void *BiosNextFile(void *entry);
 
-/* Declared identically by 26 translation units before this
- * header carried them. */
-
-extern u_short g_IntrCallbackMask;
-extern u_short g_IntrInDispatch;
-extern u_long g_IntrSavedDpcr;
-extern u_short g_IntrSavedIrqMask;
-extern u_short g_IntrState[];
-extern volatile u_short *g_IrqMask;
-extern volatile u_short *g_IrqStatus;
-extern volatile u_long *g_KernelDpcr;
-extern volatile long g_VSyncCount;
-
-/* Declared identically by 20 translation units before this
- * header carried them. */
-
-extern char g_MsgVSyncTimeout[];
-extern u_char g_MsgUnexpectedInterrupt[];
-extern u_char g_MsgIntrTimeout[];
-extern u_char g_MsgDmaBusError[];
-extern u_char g_FmtDmaMadr[];
-extern u_short g_IntrJmpBufSp[];
-extern KernelCallback g_IntrCallbacks[];
-extern KernelCallback *g_IntrRpNode;
-extern long g_DmaInterruptState;
-extern u_long g_DmaCallbacks[];
-extern u_long *g_DmaChannelRegs;
-extern volatile u_long *g_DmaIrqControl;
-extern long g_IntrStuckCount;
-extern volatile u_long *g_IrqRegs;
-extern u_long g_RootCounterIrqBits[];
-extern volatile RootCounter *g_RootCounterRegs;
-extern volatile long *g_Timer1CountReg;
-extern u_long *g_Timer1ModeReg;
-extern void *g_VSyncCallbacks[];
-extern long g_VSyncCountBase;
-extern volatile long *g_VSyncGpuStat;
 typedef struct DirEntry {
     char name[20];
     s32 attributes;
@@ -132,7 +86,5 @@ typedef struct DirEntry {
     struct DirEntry *next;
     char system[8];
 } DirEntry;
-
-extern volatile long g_VSyncTimerBase;
 
 #endif

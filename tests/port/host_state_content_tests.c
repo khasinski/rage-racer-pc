@@ -142,11 +142,6 @@ extern unsigned char g_MsgSeqVabTransBodyError[44];
 extern unsigned char g_FmtString[8];
 extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
-extern unsigned char g_MsgVSyncTimeout[68];
-extern unsigned char g_MsgUnexpectedInterrupt[28];
-extern unsigned char g_MsgIntrTimeout[28];
-extern unsigned char g_MsgDmaBusError[28];
-extern unsigned char g_FmtDmaMadr[16];
 extern unsigned char g_MsgSeqNotSeqData[24];
 extern unsigned char g_MsgSeqOldFormat[36];
 extern unsigned char g_MsgSeqTableFull[688];
@@ -293,29 +288,6 @@ extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
-extern unsigned char g_VSyncGpuStat[8];
-extern unsigned char g_Timer1CountReg[8];
-extern unsigned char g_VSyncTimerBase[8];
-extern unsigned char g_VSyncCountBase[8];
-extern unsigned char g_IntrState[8];
-extern unsigned char g_IntrInDispatch[8];
-extern unsigned char g_IntrCallbacks[44];
-extern unsigned char g_IntrCallbackMask[8];
-extern unsigned char g_IntrSavedIrqMask[8];
-extern unsigned char g_IntrSavedDpcr[8];
-extern unsigned char g_IntrJmpBufSp[4172];
-extern unsigned char g_IntrRpNode[8];
-extern unsigned char g_IrqStatus[8];
-extern unsigned char g_IrqMask[8];
-extern unsigned char g_KernelDpcr[8];
-extern unsigned char g_IntrStuckCount[8];
-extern unsigned char g_VSyncCallbacks[32];
-extern unsigned char g_VSyncCount[8];
-extern unsigned char g_Timer1ModeReg[8];
-extern unsigned char g_DmaIrqControl[8];
-extern unsigned char g_DmaCallbacks[32];
-extern unsigned char g_DmaChannelRegs[8];
-extern unsigned char g_DmaInterruptState[12];
 extern unsigned char g_SndVoiceRegDefaults[16];
 extern unsigned char g_SndSpuCtrlDefaults[32];
 extern unsigned char g_SndTickMode[8];
@@ -326,9 +298,6 @@ extern unsigned char g_SndTickUsesVSync[8];
 extern unsigned char g_SndTickHalfRate[8];
 extern unsigned char g_SndTickIrq[8];
 extern unsigned char g_SndTickVSyncToggle[8];
-extern unsigned char g_IrqRegs[8];
-extern unsigned char g_RootCounterRegs[8];
-extern unsigned char g_RootCounterIrqBits[16];
 extern unsigned char g_SndSpuRegs[8];
 extern unsigned char g_SndPitchTable[392];
 extern unsigned char g_SpuTransferMode[8];
@@ -460,11 +429,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtString", g_FmtString, 8},
     {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
-    {"g_MsgVSyncTimeout", g_MsgVSyncTimeout, 68},
-    {"g_MsgUnexpectedInterrupt", g_MsgUnexpectedInterrupt, 28},
-    {"g_MsgIntrTimeout", g_MsgIntrTimeout, 28},
-    {"g_MsgDmaBusError", g_MsgDmaBusError, 28},
-    {"g_FmtDmaMadr", g_FmtDmaMadr, 16},
     {"g_MsgSeqNotSeqData", g_MsgSeqNotSeqData, 24},
     {"g_MsgSeqOldFormat", g_MsgSeqOldFormat, 36},
     {"g_MsgSeqTableFull", g_MsgSeqTableFull, 688},
@@ -610,29 +574,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},
-    {"g_VSyncGpuStat", g_VSyncGpuStat, 8},
-    {"g_Timer1CountReg", g_Timer1CountReg, 8},
-    {"g_VSyncTimerBase", g_VSyncTimerBase, 8},
-    {"g_VSyncCountBase", g_VSyncCountBase, 8},
-    {"g_IntrState", g_IntrState, 8},
-    {"g_IntrInDispatch", g_IntrInDispatch, 8},
-    {"g_IntrCallbacks", g_IntrCallbacks, 44},
-    {"g_IntrCallbackMask", g_IntrCallbackMask, 8},
-    {"g_IntrSavedIrqMask", g_IntrSavedIrqMask, 8},
-    {"g_IntrSavedDpcr", g_IntrSavedDpcr, 8},
-    {"g_IntrJmpBufSp", g_IntrJmpBufSp, 4172},
-    {"g_IntrRpNode", g_IntrRpNode, 8},
-    {"g_IrqStatus", g_IrqStatus, 8},
-    {"g_IrqMask", g_IrqMask, 8},
-    {"g_KernelDpcr", g_KernelDpcr, 8},
-    {"g_IntrStuckCount", g_IntrStuckCount, 8},
-    {"g_VSyncCallbacks", g_VSyncCallbacks, 32},
-    {"g_VSyncCount", g_VSyncCount, 8},
-    {"g_Timer1ModeReg", g_Timer1ModeReg, 8},
-    {"g_DmaIrqControl", g_DmaIrqControl, 8},
-    {"g_DmaCallbacks", g_DmaCallbacks, 32},
-    {"g_DmaChannelRegs", g_DmaChannelRegs, 8},
-    {"g_DmaInterruptState", g_DmaInterruptState, 12},
     {"g_SndVoiceRegDefaults", g_SndVoiceRegDefaults, 16},
     {"g_SndSpuCtrlDefaults", g_SndSpuCtrlDefaults, 32},
     {"g_SndTickMode", g_SndTickMode, 8},
@@ -643,9 +584,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SndTickHalfRate", g_SndTickHalfRate, 8},
     {"g_SndTickIrq", g_SndTickIrq, 8},
     {"g_SndTickVSyncToggle", g_SndTickVSyncToggle, 8},
-    {"g_IrqRegs", g_IrqRegs, 8},
-    {"g_RootCounterRegs", g_RootCounterRegs, 8},
-    {"g_RootCounterIrqBits", g_RootCounterIrqBits, 16},
     {"g_SndSpuRegs", g_SndSpuRegs, 8},
     {"g_SndPitchTable", g_SndPitchTable, 392},
     {"g_SpuTransferMode", g_SpuTransferMode, 8},
@@ -692,7 +630,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 4217244247UL;
+    const unsigned long expected = 864873213UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
