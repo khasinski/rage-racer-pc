@@ -27,6 +27,14 @@ static s32 s_RetireCameraActive;
  * so retain the retail ordering by waiting for those voices to become idle. */
 static s32 s_FinishFollowupCue = -1;
 
+enum {
+    RACE_END_MUSIC_FRAME = 10,
+    RACE_END_FADE_FRAME = 20,
+    RACE_END_BANNER_FRAME = 21,
+    RACE_END_EXIT_FRAME = 101,
+    RACE_RETRY_EXIT_FRAME = 126,
+};
+
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
     if (DiagnosticsEnabled("sound_cue_trace"))
@@ -44,6 +52,44 @@ static void UpdateFinishFollowupCue(void) {
         fprintf(stderr, "rage-port: finish follow-up released cue=0x%02x\n",
                 (unsigned)cue);
     PlaySoundCue(cue);
+}
+
+static void UpdateRaceEndState(void) {
+    RaceEndPresentation presentation;
+
+    if (g_RacePhase == 7) {
+        ExitRaceScene(6);
+        return;
+    }
+    if (g_RacePhase != 5) {
+        return;
+    }
+
+    presentation = ChooseRaceEndPresentation(
+        g_GrandPrixMode, g_CourseProgress->retriesRemaining);
+    if (presentation == RACE_END_PRESENTATION_FINAL) {
+        if (g_RaceFadeTimer >= RACE_END_BANNER_FRAME) {
+            s32 fade = (g_RaceFadeTimer - RACE_END_FADE_FRAME) * 3;
+
+            DrawRaceEndBanner(fade);
+            DrawFullscreenFadeTile(fade, 0x49);
+        }
+        if (g_RaceFadeTimer == RACE_END_MUSIC_FRAME) {
+            RequestCdTrack(0xF);
+            StartCdAudio();
+        }
+        if (g_RaceFadeTimer >= RACE_END_EXIT_FRAME) {
+            ExitRaceScene(0xF);
+        }
+    } else if (presentation == RACE_END_PRESENTATION_RETRY) {
+        DrawLostRaceCaption(g_RaceFadeTimer * 2);
+        DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x49);
+        if (g_RaceFadeTimer >= RACE_RETRY_EXIT_FRAME) {
+            ExitRaceScene(0xD);
+        }
+    }
+    g_MirrorViewEnabled = 0;
+    g_RaceFadeTimer++;
 }
 
 int RetireCameraActive(void) { return s_RetireCameraActive; }
@@ -189,32 +235,7 @@ void UpdateRaceScene(void) {
         }
     }
 
-    if (g_RacePhase == 5) {
-        if (((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining == 0)) ||
-            (g_GrandPrixMode == 0)) {
-            if (g_RaceFadeTimer >= 0x15) {
-                DrawRaceEndBanner((g_RaceFadeTimer - 0x14) * 3);
-                DrawFullscreenFadeTile((g_RaceFadeTimer - 0x14) * 3, 0x49);
-            }
-            if (g_RaceFadeTimer == 0xA) {
-                RequestCdTrack(0xF);
-                StartCdAudio();
-            }
-            if (g_RaceFadeTimer >= 0x65) {
-                ExitRaceScene(0xF);
-            }
-        } else if ((g_GrandPrixMode == 1) && (g_CourseProgress->retriesRemaining > 0)) {
-            DrawLostRaceCaption(g_RaceFadeTimer * 2);
-            DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x49);
-            if (g_RaceFadeTimer >= 0x7E) {
-                ExitRaceScene(0xD);
-            }
-        }
-        g_MirrorViewEnabled = 0;
-        g_RaceFadeTimer++;
-    } else if (g_RacePhase == 7) {
-        ExitRaceScene(6);
-    }
+    UpdateRaceEndState();
 
     if (g_RacePaused != 0) {
         SetReverbDepth(0x28, 0x28);

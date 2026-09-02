@@ -48,3 +48,15 @@ RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
     }
     return RACE_PAUSE_RESUME;
 }
+
+RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
+                                              s32 retriesRemaining) {
+    if (grandPrixMode == 0 ||
+        (grandPrixMode == 1 && retriesRemaining == 0)) {
+        return RACE_END_PRESENTATION_FINAL;
+    }
+    if (grandPrixMode == 1 && retriesRemaining > 0) {
+        return RACE_END_PRESENTATION_RETRY;
+    }
+    return RACE_END_PRESENTATION_NONE;
+}

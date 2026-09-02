@@ -62,10 +62,24 @@ static void TestPauseActions(void) {
           "Grand Prix final row retires after the start");
 }
 
+static void TestRaceEndPresentation(void) {
+    Check(ChooseRaceEndPresentation(0, 0) == RACE_END_PRESENTATION_FINAL &&
+              ChooseRaceEndPresentation(0, 3) == RACE_END_PRESENTATION_FINAL,
+          "time attack always uses the final result presentation");
+    Check(ChooseRaceEndPresentation(1, 0) == RACE_END_PRESENTATION_FINAL,
+          "Grand Prix without retries uses the final result presentation");
+    Check(ChooseRaceEndPresentation(1, 2) == RACE_END_PRESENTATION_RETRY,
+          "Grand Prix with retries offers another attempt");
+    Check(ChooseRaceEndPresentation(2, 0) == RACE_END_PRESENTATION_NONE &&
+              ChooseRaceEndPresentation(-1, 2) == RACE_END_PRESENTATION_NONE,
+          "non-race modes preserve the retail no-presentation path");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
     TestPauseActions();
+    TestRaceEndPresentation();
 
     if (s_failures != 0) {
         return 1;
