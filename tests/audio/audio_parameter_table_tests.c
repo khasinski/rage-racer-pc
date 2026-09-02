@@ -34,6 +34,7 @@ static void LoadWithMaxRpm(u16 maxRpm) {
 }
 
 int main(void) {
+    LoadAudioParameterTable(NULL);
     memset(g_SoundSlotTone, 0, sizeof(g_SoundSlotTone));
     LoadWithMaxRpm(9000);
     Check(g_EngineSoundCurves[0][0].positions[0], 100,

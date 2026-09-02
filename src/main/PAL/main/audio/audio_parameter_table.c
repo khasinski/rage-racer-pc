@@ -10,6 +10,8 @@ void LoadAudioParameterTable(const u16 *table) {
     s32 column;
     s32 maxRpm;
 
+    if (table == NULL) return;
+
     for (bank = 0; bank < ENGINE_SOUND_BANK_COUNT; bank++) {
         for (row = 0; row < ENGINE_SOUND_PARAMETER_COUNT; row++) {
             for (column = 0; column < ENGINE_SOUND_CURVE_POINT_COUNT;

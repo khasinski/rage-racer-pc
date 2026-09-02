@@ -76,8 +76,12 @@ static void LoadPlayerCarRaceAssets(void) {
     if (loadedSize < (s32)sizeof(*pack) ||
         pack->specificationOffset < (s32)sizeof(*pack) ||
         pack->audioHeaderOffset <= pack->specificationOffset ||
+        pack->audioHeaderOffset - pack->specificationOffset <
+            (s32)sizeof(GameCarSpec) ||
         pack->audioSequenceOffset <= pack->audioHeaderOffset ||
         pack->audioBodyOffset <= pack->audioSequenceOffset ||
+        pack->audioBodyOffset - pack->audioSequenceOffset <
+            ENGINE_SOUND_PARAMETER_TABLE_SIZE ||
         pack->imageOffset <= pack->audioBodyOffset ||
         pack->imageOffset >= loadedSize) {
         g_AssetLoadState = 0;
