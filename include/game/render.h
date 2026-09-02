@@ -254,7 +254,7 @@ typedef struct GameRenderObject {
     s32 renderDepth;   /* 0xE4 */
 } GameRenderObject;
 
-void DrawCar(GameRenderObject *obj);
+void DrawCar(GameRenderObject *object);
 
 typedef struct GameRenderSourcePoint {
     u16 x;
@@ -319,7 +319,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage);
 void DrawTerrainCellsWide(void);
 void RequestTrackTexturePage(s32 trackSection);
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
-void DrawPlayerCarModel(GameRenderObject *obj);
+void DrawPlayerCarModel(GameRenderObject *object);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*

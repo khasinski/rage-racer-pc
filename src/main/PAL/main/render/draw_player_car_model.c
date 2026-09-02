@@ -1,6 +1,7 @@
 #include "game/diagnostics.h"
 #include "game/asset.h"
 #include "game/car.h"
+#include "game/car_model_matrix.h"
 #include "game/car_render_rules.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -9,7 +10,6 @@
 #include "game/state.h"
 #include "rage/render_world_game.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 static s32 FindRenderedCarSlot(const GameRenderObject *object) {
@@ -27,144 +27,136 @@ static s32 FindRenderedCarSlot(const GameRenderObject *object) {
 }
 
 /*
- * GameRenderObject -> GPU-primitive submitter. Subtracts the active view's
- * horizon from the object's y, builds a stack of rotation matrices from the
- * object's angle sets, loads each transform into the GTE at 0x1F80011C and
- * dispatches the primitive builder SubmitModel on the render state's OT
- * (0x1F800000) at increasing depth buckets. The m_90 negation block and the
- * m_B0[1] block build the mirrored copies (flip X/Z columns). otDepth is the
- * base OT bucket; clipHandle is the optional clip volume from GetTrackZoneBlend.
+ * GameRenderObject -> GPU-primitive submitter. Applies the model asset's
+ * horizon offset, builds a stack of rotation matrices from the
+ * object's angle sets, loads each transform into the GTE and dispatches the
+ * primitive builder SubmitModel at increasing depth buckets. X/Z column flips
+ * build the opposite-side transforms; clipHandle is the optional lighting
+ * volume from GetTrackZoneBlend.
  */
-void DrawPlayerCarModel(GameRenderObject *obj) {
-    CarModelAsset *view = g_CarModelAsset;
-    Matrix m_10;
-    Matrix m_30;
-    Matrix m_50;
-    Matrix m_70;
-    Matrix m_90;
-    Matrix m_B0[2];
-    Matrix m_F0;
-    s16 v_110[4];
-    s32 m_118[8];
+void DrawPlayerCarModel(GameRenderObject *object) {
+    const CarModelAsset *modelAsset = g_CarModelAsset;
+    Matrix scratchMatrix;
+    Matrix bodyViewMatrix;
+    Matrix bodyLocalMatrix;
+    Matrix partMatrix;
+    Matrix lightMatrix;
+    Matrix wheelMatrices[2];
+    Matrix axleMatrix;
+    s16 wheelOffset[4];
+    s32 wheelPosition[8];
     LVec modelPosition;
     s32 clipHandle = 0;
-    s32 otDepth;
-    s32 i;
+    s32 modelBankBase;
+    s32 sideIndex;
 
-    GameRenderWorldSubmitPlayerCar(obj, g_RenderState.orderingFlag != 0);
+    GameRenderWorldSubmitPlayerCar(object, g_RenderState.orderingFlag != 0);
 
-    obj->y -= view->horizon;
-    obj->modelY -= view->horizon;
-    BuildRotMatrixY(&m_10, 0x800 - obj->angleY);
-    BuildRotMatrixX(&m_30, obj->bodyPitch);
-    MulMatrix2(&m_10, &m_30);
-    MulMatrix0(&g_SceneLightMatrix, &m_30, &m_90);
+    object->y -= modelAsset->horizon;
+    object->modelY -= modelAsset->horizon;
+    BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+    BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
+    MulMatrix2(&scratchMatrix, &bodyViewMatrix);
+    MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
 
     if (g_SceneId != 8) {
-        clipHandle = GetTrackZoneBlend(obj->trackProgress);
+        clipHandle = GetTrackZoneBlend(object->trackProgress);
         if (clipHandle != 0) {
-            ApplyZoneLighting(clipHandle, &m_90);
+            ApplyZoneLighting(clipHandle, &lightMatrix);
         }
     }
-    SetLightMatrix(&m_90);
+    SetLightMatrix(&lightMatrix);
 
-    m_90.m[0][0] = -m_90.m[0][0];
-    m_90.m[0][2] = -m_90.m[0][2];
-    m_90.m[1][0] = -m_90.m[1][0];
-    m_90.m[1][2] = -m_90.m[1][2];
-    m_90.m[2][0] = -m_90.m[2][0];
-    m_90.m[2][2] = -m_90.m[2][2];
+    FlipMatrixXZColumns(&lightMatrix, &lightMatrix);
 
-    m_50 = m_30;
-    MulMatrix2((&g_RenderState.matrix), &m_30);
+    bodyLocalMatrix = bodyViewMatrix;
+    MulMatrix2(&g_RenderState.matrix, &bodyViewMatrix);
 
-    BuildRotMatrixY(&m_10, 0x800 - obj->modelYaw);
-    BuildRotMatrixX(&m_70, obj->modelPitch);
-    MulMatrix2(&m_10, &m_70);
-    MulMatrix2((&g_RenderState.matrix), &m_70);
-    BuildRotMatrixZ(&m_10, obj->modelRoll);
-    MulMatrix2(&m_70, &m_10);
+    BuildRotMatrixY(&scratchMatrix, 0x800 - object->modelYaw);
+    BuildRotMatrixX(&partMatrix, object->modelPitch);
+    MulMatrix2(&scratchMatrix, &partMatrix);
+    MulMatrix2(&g_RenderState.matrix, &partMatrix);
+    BuildRotMatrixZ(&scratchMatrix, object->modelRoll);
+    MulMatrix2(&partMatrix, &scratchMatrix);
 
-    modelPosition.x = obj->x;
-    modelPosition.z = obj->z;
-    modelPosition.y = obj->modelY;
-    SetGteObjectMatrix((&g_ObjectMatrixWork), &modelPosition, &m_10);
+    modelPosition.x = object->x;
+    modelPosition.z = object->z;
+    modelPosition.y = object->modelY;
+    SetGteObjectMatrix(&g_ObjectMatrixWork, &modelPosition, &scratchMatrix);
     g_RenderState.envMode4 = 0;
-    SubmitModel((&g_RenderState), 1);
+    SubmitModel(&g_RenderState, 1);
 
-    SetGteObjectMatrix((&g_ObjectMatrixWork), &modelPosition, &m_10);
+    SetGteObjectMatrix(&g_ObjectMatrixWork, &modelPosition, &scratchMatrix);
     g_RenderState.envMode4 = 0;
-    SubmitModel((&g_RenderState), 1);
+    SubmitModel(&g_RenderState, 1);
 
-    BuildRotMatrixZ(&m_70, obj->bodyRoll);
-    MulMatrix2(&m_30, &m_70);
-    SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_70);
+    BuildRotMatrixZ(&partMatrix, object->bodyRoll);
+    MulMatrix2(&bodyViewMatrix, &partMatrix);
+    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
+                       &partMatrix);
     g_RenderState.envMode4 = 0;
-    SubmitModel((&g_RenderState), g_ModelBankCount < 1);
+    SubmitModel(&g_RenderState,
+                ResolveCarModelBank(0, 0, g_ModelBankCount));
 
-    otDepth = obj->renderDepth * 2;
-    if (obj->wheelRotation & 0x1000) {
-        otDepth += 10;
+    modelBankBase = object->renderDepth * 2;
+    if (object->wheelRotation & 0x1000) {
+        modelBankBase += 10;
     }
-    BuildRotMatrixZ(&m_10, obj->bodyRoll - obj->bodyRollVelocity);
-    MulMatrix(&m_50, &m_10);
-    MulMatrix(&m_30, &m_10);
-    BuildRotMatrixX(&m_F0, obj->wheelRotation);
-    MulMatrix2(&m_30, &m_F0);
+    BuildRotMatrixZ(&scratchMatrix, object->bodyRoll - object->bodyRollVelocity);
+    MulMatrix(&bodyLocalMatrix, &scratchMatrix);
+    MulMatrix(&bodyViewMatrix, &scratchMatrix);
+    BuildRotMatrixX(&axleMatrix, object->wheelRotation);
+    MulMatrix2(&bodyViewMatrix, &axleMatrix);
 
-    BuildRotMatrixY(&m_10, obj->steeringAngle / 12);
-    BuildRotMatrixX(&m_B0[0], obj->wheelRotation);
-    MulMatrix2(&m_10, &m_B0[0]);
-    MulMatrix2(&m_30, &m_B0[0]);
+    BuildRotMatrixY(&scratchMatrix, object->steeringAngle / 12);
+    BuildRotMatrixX(&wheelMatrices[0], object->wheelRotation);
+    MulMatrix2(&scratchMatrix, &wheelMatrices[0]);
+    MulMatrix2(&bodyViewMatrix, &wheelMatrices[0]);
 
-    m_B0[1].m[0][0] = -m_B0[0].m[0][0];
-    m_B0[1].m[0][1] = m_B0[0].m[0][1];
-    m_B0[1].m[0][2] = -m_B0[0].m[0][2];
-    m_B0[1].m[1][0] = -m_B0[0].m[1][0];
-    m_B0[1].m[1][1] = m_B0[0].m[1][1];
-    m_B0[1].m[1][2] = -m_B0[0].m[1][2];
-    m_B0[1].m[2][0] = -m_B0[0].m[2][0];
-    m_B0[1].m[2][1] = m_B0[0].m[2][1];
-    m_B0[1].m[2][2] = -m_B0[0].m[2][2];
-    SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_F0);
+    FlipMatrixXZColumns(&wheelMatrices[1], &wheelMatrices[0]);
+    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
+                       &axleMatrix);
     g_RenderState.envMode4 = 0;
-    SubmitModel((&g_RenderState), (otDepth + 3 < g_ModelBankCount) ? (otDepth + 3) : 1);
+    SubmitModel(&g_RenderState,
+                ResolveCarModelBank(modelBankBase, 3, g_ModelBankCount));
 
-    for (i = 0; i < 2; i++) {
-        CarModelAsset *v = g_CarModelAsset;
-        s32 ax = v->modelOffsetX;
-        if (i % 2) {
-            ax = -ax;
+    for (sideIndex = 0; sideIndex < 2; sideIndex++) {
+        s32 lateralOffset = modelAsset->modelOffsetX;
+        if (sideIndex != 0) {
+            lateralOffset = -lateralOffset;
         }
-        v_110[0] = ax;
-        v_110[1] = v->modelOffsetY;
-        v_110[2] = v->modelOffsetZ;
-        ApplyMatrix(&m_50, v_110, m_118);
-        m_118[0] += obj->x;
-        m_118[1] += obj->y;
-        m_118[2] += obj->z;
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(m_118), &m_B0[i]);
+        wheelOffset[0] = lateralOffset;
+        wheelOffset[1] = modelAsset->modelOffsetY;
+        wheelOffset[2] = modelAsset->modelOffsetZ;
+        ApplyMatrix(&bodyLocalMatrix, wheelOffset, wheelPosition);
+        wheelPosition[0] += object->x;
+        wheelPosition[1] += object->y;
+        wheelPosition[2] += object->z;
+        SetGteObjectMatrix(&g_ObjectMatrixWork,
+                           AsPositionWords(wheelPosition),
+                           &wheelMatrices[sideIndex]);
         g_RenderState.envMode4 = 0;
-        SubmitModel((&g_RenderState), (otDepth + 2 < g_ModelBankCount) ? (otDepth + 2) : 1);
-        SetLightMatrix(&m_90);
+        SubmitModel(&g_RenderState,
+                    ResolveCarModelBank(modelBankBase, 2,
+                                        g_ModelBankCount));
+        SetLightMatrix(&lightMatrix);
     }
 
-    obj->y += g_CarModelAsset->horizon;
-    obj->modelY += g_CarModelAsset->horizon;
+    object->y += g_CarModelAsset->horizon;
+    object->modelY += g_CarModelAsset->horizon;
     if (clipHandle != 0) {
         RestoreColorMatrix();
     }
 }
 
-
-void DrawCar(GameRenderObject *obj) {
-    Matrix m_10;
-    Matrix m_30;
-    Matrix m_50;
-    Matrix m_70;
-    Matrix m_90;
-    Matrix m_B0[2];
-    Matrix m_F0;
+void DrawCar(GameRenderObject *object) {
+    Matrix scratchMatrix;
+    Matrix bodyViewMatrix;
+    Matrix bodyLocalMatrix;
+    Matrix partMatrix;
+    Matrix lightMatrix;
+    Matrix wheelMatrices[2];
+    Matrix axleMatrix;
     s16 wheelOffset[4];
     s32 wheelPosition[4];
     s32 cameraOffset[4];
@@ -172,20 +164,20 @@ void DrawCar(GameRenderObject *obj) {
     s32 viewPosition[4];
     s32 clipHandle = 0;
     s32 renderDistance;
-    s32 i;
+    s32 sideIndex;
     s32 model;
     s16 *lod;
     CarRenderRange renderRange;
 
-    model = g_CarModelByCourse[SeriesCourseIndex()][obj->modelIndex];
+    model = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];
     lod = g_CarModelBankTable[model];
 
-    cameraOffset[0] = obj->x - g_RenderState.viewX;
+    cameraOffset[0] = object->x - g_RenderState.viewX;
     cameraOffset[1] = 0;
-    cameraOffset[2] = obj->z - g_RenderState.viewZ;
+    cameraOffset[2] = object->z - g_RenderState.viewZ;
     ApplyMatrixLV(&g_RenderState.matrix, cameraOffset, viewPosition);
     renderDistance = CarRenderManhattanDistance(
-        obj->x, obj->z, g_RenderState.viewX, g_RenderState.viewZ);
+        object->x, object->z, g_RenderState.viewX, g_RenderState.viewZ);
     renderRange = ClassifyCarRenderRange(viewPosition[2], renderDistance);
     if (DiagnosticsEnabled("render.car_draw_trace")) {
         const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
@@ -197,8 +189,8 @@ void DrawCar(GameRenderObject *obj) {
                    "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
                    "player=%d grade=%d asset=%d",
                    g_SceneTimer, g_RenderState.orderingFlag != 0,
-                   FindRenderedCarSlot(obj),
-                   obj->modelIndex, model, lod[0], lod[1], renderDistance,
+                   FindRenderedCarSlot(object),
+                   object->modelIndex, model, lod[0], lod[1], renderDistance,
                    viewPosition[2], rangeNames[renderRange], g_PlayerCarIndex,
                    g_CarTable[g_PlayerCarIndex].modelVariant,
                    GetCarAssetIndex(g_PlayerCarIndex,
@@ -207,132 +199,123 @@ void DrawCar(GameRenderObject *obj) {
     }
     if (renderRange == CAR_RENDER_CLOSE || renderRange == CAR_RENDER_FAR) {
         GameRenderWorldSubmitCar(
-            obj, g_RenderState.orderingFlag != 0,
+            object, g_RenderState.orderingFlag != 0,
             renderRange == CAR_RENDER_CLOSE ? RAGE_GAME_CAR_RENDER_CLOSE
                                             : RAGE_GAME_CAR_RENDER_FAR);
     } else {
         return;
     }
 
-    obj->y -= g_TrackRenderTable->models[model].horizon;
-    obj->modelY -= g_TrackRenderTable->models[model].horizon;
+    object->y -= g_TrackRenderTable->models[model].horizon;
+    object->modelY -= g_TrackRenderTable->models[model].horizon;
     if (renderRange == CAR_RENDER_CLOSE) {
-        BuildRotMatrixY(&m_10, 0x800 - obj->angleY);
-        BuildRotMatrixX(&m_30, obj->bodyPitch);
-        MulMatrix2(&m_10, &m_30);
-        MulMatrix0(&g_SceneLightMatrix, &m_30, &m_90);
-        clipHandle = GetTrackZoneBlend(obj->trackProgress);
+        BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+        BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
+        MulMatrix2(&scratchMatrix, &bodyViewMatrix);
+        MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
+        clipHandle = GetTrackZoneBlend(object->trackProgress);
         if (clipHandle != 0) {
-            ApplyZoneLighting(clipHandle, &m_90);
+            ApplyZoneLighting(clipHandle, &lightMatrix);
         }
-        SetLightMatrix(&m_90);
+        SetLightMatrix(&lightMatrix);
 
-        m_90.m[0][0] = -m_90.m[0][0];
-        m_90.m[0][2] = -m_90.m[0][2];
-        m_90.m[1][0] = -m_90.m[1][0];
-        m_90.m[1][2] = -m_90.m[1][2];
-        m_90.m[2][0] = -m_90.m[2][0];
-        m_90.m[2][2] = -m_90.m[2][2];
+        FlipMatrixXZColumns(&lightMatrix, &lightMatrix);
 
-        m_50 = m_30;
-        MulMatrix2((&g_RenderState.matrix), &m_30);
+        bodyLocalMatrix = bodyViewMatrix;
+        MulMatrix2(&g_RenderState.matrix, &bodyViewMatrix);
 
-        BuildRotMatrixY(&m_10, 0x800 - obj->modelYaw);
-        BuildRotMatrixX(&m_70, obj->modelPitch);
-        MulMatrix2(&m_10, &m_70);
-        MulMatrix2((&g_RenderState.matrix), &m_70);
-        BuildRotMatrixZ(&m_10, obj->modelRoll);
-        MulMatrix2(&m_70, &m_10);
+        BuildRotMatrixY(&scratchMatrix, 0x800 - object->modelYaw);
+        BuildRotMatrixX(&partMatrix, object->modelPitch);
+        MulMatrix2(&scratchMatrix, &partMatrix);
+        MulMatrix2(&g_RenderState.matrix, &partMatrix);
+        BuildRotMatrixZ(&scratchMatrix, object->modelRoll);
+        MulMatrix2(&partMatrix, &scratchMatrix);
 
-        modelPosition[0] = obj->x;
-        modelPosition[2] = obj->z;
-        modelPosition[1] = obj->modelY;
+        modelPosition[0] = object->x;
+        modelPosition[2] = object->z;
+        modelPosition[1] = object->modelY;
         SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(modelPosition), &m_10);
+                           AsPositionWords(modelPosition), &scratchMatrix);
         g_RenderState.envMode4 = 0;
-        SubmitModel((&g_RenderState),
+        SubmitModel(&g_RenderState,
                     ResolveCarModelBank(lod[0], 1, g_ModelBankCount));
 
         SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(modelPosition), &m_10);
+                           AsPositionWords(modelPosition), &scratchMatrix);
         g_RenderState.envMode4 = 0;
-        SubmitModel((&g_RenderState),
+        SubmitModel(&g_RenderState,
                     ResolveCarModelBank(lod[0], 1, g_ModelBankCount));
 
-        BuildRotMatrixZ(&m_70, obj->bodyRoll);
-        MulMatrix2(&m_30, &m_70);
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_70);
+        BuildRotMatrixZ(&partMatrix, object->bodyRoll);
+        MulMatrix2(&bodyViewMatrix, &partMatrix);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
+                           &partMatrix);
         g_RenderState.envMode4 = lod[1] << 16;
-        SubmitModel((&g_RenderState),
+        SubmitModel(&g_RenderState,
                     ResolveCarModelBank(lod[0], 0, g_ModelBankCount));
 
-        BuildRotMatrixZ(&m_10, obj->bodyRoll - obj->bodyRollVelocity);
-        MulMatrix(&m_50, &m_10);
-        MulMatrix(&m_30, &m_10);
-        BuildRotMatrixX(&m_F0, obj->wheelRotation);
-        MulMatrix2(&m_30, &m_F0);
+        BuildRotMatrixZ(&scratchMatrix, object->bodyRoll - object->bodyRollVelocity);
+        MulMatrix(&bodyLocalMatrix, &scratchMatrix);
+        MulMatrix(&bodyViewMatrix, &scratchMatrix);
+        BuildRotMatrixX(&axleMatrix, object->wheelRotation);
+        MulMatrix2(&bodyViewMatrix, &axleMatrix);
 
-        BuildRotMatrixY(&m_10, obj->steeringAngle * 2);
-        BuildRotMatrixX(&m_B0[0], obj->wheelRotation);
-        MulMatrix2(&m_10, &m_B0[0]);
-        MulMatrix2(&m_30, &m_B0[0]);
+        BuildRotMatrixY(&scratchMatrix, object->steeringAngle * 2);
+        BuildRotMatrixX(&wheelMatrices[0], object->wheelRotation);
+        MulMatrix2(&scratchMatrix, &wheelMatrices[0]);
+        MulMatrix2(&bodyViewMatrix, &wheelMatrices[0]);
 
-        m_B0[1].m[0][0] = -m_B0[0].m[0][0];
-        m_B0[1].m[0][1] = m_B0[0].m[0][1];
-        m_B0[1].m[0][2] = -m_B0[0].m[0][2];
-        m_B0[1].m[1][0] = -m_B0[0].m[1][0];
-        m_B0[1].m[1][1] = m_B0[0].m[1][1];
-        m_B0[1].m[1][2] = -m_B0[0].m[1][2];
-        m_B0[1].m[2][0] = -m_B0[0].m[2][0];
-        m_B0[1].m[2][1] = m_B0[0].m[2][1];
-        m_B0[1].m[2][2] = -m_B0[0].m[2][2];
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_F0);
+        FlipMatrixXZColumns(&wheelMatrices[1], &wheelMatrices[0]);
+        SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
+                           &axleMatrix);
         g_RenderState.envMode4 = 0;
-        SubmitModel((&g_RenderState),
+        SubmitModel(&g_RenderState,
                     ResolveCarModelBank(lod[0], 3, g_ModelBankCount));
 
-        for (i = 0; i < 2; i++) {
-            s32 ax = g_TrackRenderTable->models[model].axis0;
-            if (i % 2) {
-                ax = -ax;
+        for (sideIndex = 0; sideIndex < 2; sideIndex++) {
+            s32 lateralOffset = g_TrackRenderTable->models[model].axis0;
+            if (sideIndex != 0) {
+                lateralOffset = -lateralOffset;
             }
-            wheelOffset[0] = ax;
+            wheelOffset[0] = lateralOffset;
             wheelOffset[1] = g_TrackRenderTable->models[model].axis1;
             wheelOffset[2] = g_TrackRenderTable->models[model].axis2;
-            ApplyMatrix(&m_50, wheelOffset, wheelPosition);
-            wheelPosition[0] += obj->x;
-            wheelPosition[1] += obj->y;
-            wheelPosition[2] += obj->z;
+            ApplyMatrix(&bodyLocalMatrix, wheelOffset, wheelPosition);
+            wheelPosition[0] += object->x;
+            wheelPosition[1] += object->y;
+            wheelPosition[2] += object->z;
             SetGteObjectMatrix(&g_ObjectMatrixWork,
-                               AsPositionWords(wheelPosition), &m_B0[i]);
+                               AsPositionWords(wheelPosition),
+                               &wheelMatrices[sideIndex]);
             g_RenderState.envMode4 = 0;
-            SubmitModel((&g_RenderState),
+            SubmitModel(&g_RenderState,
                         ResolveCarModelBank(lod[0], 2,
                                            g_ModelBankCount));
-            SetLightMatrix(&m_90);
+            SetLightMatrix(&lightMatrix);
         }
     } else {
-        BuildRotMatrixY(&m_10, 0x800 - obj->angleY);
-        BuildRotMatrixX(&m_50, obj->bodyPitch);
-        MulMatrix2(&m_10, &m_50);
-        MulMatrix0(&g_SceneLightMatrix, &m_50, &m_90);
-        clipHandle = GetTrackZoneBlend(obj->trackProgress);
+        BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+        BuildRotMatrixX(&bodyLocalMatrix, object->bodyPitch);
+        MulMatrix2(&scratchMatrix, &bodyLocalMatrix);
+        MulMatrix0(&g_SceneLightMatrix, &bodyLocalMatrix, &lightMatrix);
+        clipHandle = GetTrackZoneBlend(object->trackProgress);
         if (clipHandle != 0) {
-            ApplyZoneLighting(clipHandle, &m_90);
+            ApplyZoneLighting(clipHandle, &lightMatrix);
         }
-        SetLightMatrix(&m_90);
+        SetLightMatrix(&lightMatrix);
 
-        BuildRotMatrixZ(&m_10, obj->bodyRoll);
-        MulMatrix2(&m_50, &m_10);
-        MulMatrix2((&g_RenderState.matrix), &m_10);
-        SetGteObjectMatrix((&g_ObjectMatrixWork), AsPositionWords(&obj->x), &m_10);
+        BuildRotMatrixZ(&scratchMatrix, object->bodyRoll);
+        MulMatrix2(&bodyLocalMatrix, &scratchMatrix);
+        MulMatrix2(&g_RenderState.matrix, &scratchMatrix);
+        SetGteObjectMatrix(&g_ObjectMatrixWork,
+                           AsPositionWords(&object->x), &scratchMatrix);
         g_RenderState.envMode4 = lod[1] << 16;
-        SubmitModel((&g_RenderState),
+        SubmitModel(&g_RenderState,
                     ResolveCarModelBank(lod[0], 4, g_ModelBankCount));
     }
 
-    obj->y += g_TrackRenderTable->models[model].horizon;
-    obj->modelY += g_TrackRenderTable->models[model].horizon;
+    object->y += g_TrackRenderTable->models[model].horizon;
+    object->modelY += g_TrackRenderTable->models[model].horizon;
     if (clipHandle != 0) {
         RestoreColorMatrix();
     }
