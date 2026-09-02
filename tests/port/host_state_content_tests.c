@@ -146,12 +146,6 @@ extern unsigned char g_FmtSaveChecksum[20];
 extern unsigned char g_LibcUpperDigits[20];
 extern unsigned char g_LibcLowerDigits[200];
 extern unsigned char g_LibcNullText[8];
-extern unsigned char g_FmtMdecBadOption[28];
-extern unsigned char g_MsgMdecInSync[16];
-extern unsigned char g_MsgMdecOutSync[16];
-extern unsigned char g_FmtMdecTimeoutDma[40];
-extern unsigned char g_FmtMdecTimeoutStatus[56];
-extern unsigned char g_FmtMdecTimeout[16];
 extern unsigned char g_MsgCdTrackRange[16];
 extern unsigned char g_MsgCdGetToc2Entry[28];
 extern unsigned char g_MsgCdGetToc2Error[20];
@@ -357,20 +351,6 @@ extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
 extern unsigned char g_LibcDefaultFormat[13];
 extern unsigned char g_LibcCtype[131];
-extern unsigned char g_MdecQuantCmd[8];
-extern unsigned char g_MdecQuantLuma[64];
-extern unsigned char g_MdecQuantChroma[64];
-extern unsigned char g_MdecIdctCmd[8];
-extern unsigned char g_MdecIdctTable[128];
-extern unsigned char g_MdecInDmaMadr[8];
-extern unsigned char g_MdecInDmaBcr[8];
-extern unsigned char g_MdecInDmaChcr[8];
-extern unsigned char g_MdecOutDmaMadr[8];
-extern unsigned char g_MdecOutDmaBcr[8];
-extern unsigned char g_MdecOutDmaChcr[28];
-extern unsigned char g_MdecCmdReg[8];
-extern unsigned char g_MdecCtrlReg[8];
-extern unsigned char g_MdecDpcr[69636];
 extern unsigned char g_SinTable[3236];
 extern unsigned char g_CdCommandNeedsSetloc[128];
 extern unsigned char g_CdSyncCallback[8];
@@ -414,7 +394,6 @@ extern unsigned char g_InterruptStatus[8];
 extern unsigned char g_InterruptMask[8];
 extern unsigned char g_DmaDpcr[8];
 extern unsigned char g_DmaDicr[8];
-extern unsigned char g_MdecOutDmaControl[16];
 extern unsigned char g_CdDmaControl[24];
 extern unsigned char g_VSyncGpuStat[8];
 extern unsigned char g_Timer1CountReg[8];
@@ -589,12 +568,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_LibcUpperDigits", g_LibcUpperDigits, 20},
     {"g_LibcLowerDigits", g_LibcLowerDigits, 200},
     {"g_LibcNullText", g_LibcNullText, 8},
-    {"g_FmtMdecBadOption", g_FmtMdecBadOption, 28},
-    {"g_MsgMdecInSync", g_MsgMdecInSync, 16},
-    {"g_MsgMdecOutSync", g_MsgMdecOutSync, 16},
-    {"g_FmtMdecTimeoutDma", g_FmtMdecTimeoutDma, 40},
-    {"g_FmtMdecTimeoutStatus", g_FmtMdecTimeoutStatus, 56},
-    {"g_FmtMdecTimeout", g_FmtMdecTimeout, 16},
     {"g_MsgCdTrackRange", g_MsgCdTrackRange, 16},
     {"g_MsgCdGetToc2Entry", g_MsgCdGetToc2Entry, 28},
     {"g_MsgCdGetToc2Error", g_MsgCdGetToc2Error, 20},
@@ -797,20 +770,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_McModeLabels", g_McModeLabels, 32},
     {"g_LibcDefaultFormat", g_LibcDefaultFormat, 13},
     {"g_LibcCtype", g_LibcCtype, 131},
-    {"g_MdecQuantCmd", g_MdecQuantCmd, 8},
-    {"g_MdecQuantLuma", g_MdecQuantLuma, 64},
-    {"g_MdecQuantChroma", g_MdecQuantChroma, 64},
-    {"g_MdecIdctCmd", g_MdecIdctCmd, 8},
-    {"g_MdecIdctTable", g_MdecIdctTable, 128},
-    {"g_MdecInDmaMadr", g_MdecInDmaMadr, 8},
-    {"g_MdecInDmaBcr", g_MdecInDmaBcr, 8},
-    {"g_MdecInDmaChcr", g_MdecInDmaChcr, 8},
-    {"g_MdecOutDmaMadr", g_MdecOutDmaMadr, 8},
-    {"g_MdecOutDmaBcr", g_MdecOutDmaBcr, 8},
-    {"g_MdecOutDmaChcr", g_MdecOutDmaChcr, 28},
-    {"g_MdecCmdReg", g_MdecCmdReg, 8},
-    {"g_MdecCtrlReg", g_MdecCtrlReg, 8},
-    {"g_MdecDpcr", g_MdecDpcr, 69636},
     {"g_SinTable", g_SinTable, 3236},
     {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
     {"g_CdSyncCallback", g_CdSyncCallback, 8},
@@ -854,7 +813,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_InterruptMask", g_InterruptMask, 8},
     {"g_DmaDpcr", g_DmaDpcr, 8},
     {"g_DmaDicr", g_DmaDicr, 8},
-    {"g_MdecOutDmaControl", g_MdecOutDmaControl, 16},
     {"g_CdDmaControl", g_CdDmaControl, 24},
     {"g_VSyncGpuStat", g_VSyncGpuStat, 8},
     {"g_Timer1CountReg", g_Timer1CountReg, 8},
@@ -938,7 +896,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 4289486611UL;
+    const unsigned long expected = 3760007346UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
