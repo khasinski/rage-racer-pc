@@ -413,6 +413,7 @@ if(RAGE_BUILD_PORT)
             src/main/PAL/main/render/draw_packet_queue.c
             src/main/PAL/main/race/countdown_tiles.c
             src/main/PAL/main/race/race_hud_text.c
+            src/main/PAL/main/race/race_option_animation.c
             src/main/PAL/main/race/race_time_text.c
             src/main/PAL/main/race/start_countdown_timing.c
             src/main/PAL/main/race/draw_split_times.c

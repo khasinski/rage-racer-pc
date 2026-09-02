@@ -48,6 +48,18 @@ endif()
 add_test(NAME countdown_tiles COMMAND countdown_tiles_tests)
 set_tests_properties(countdown_tiles PROPERTIES LABELS unit)
 
+add_executable(race_option_animation_tests
+    race_option_animation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c)
+target_include_directories(race_option_animation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(race_option_animation_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_option_animation COMMAND race_option_animation_tests)
+set_tests_properties(race_option_animation PROPERTIES LABELS unit)
+
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c

@@ -174,6 +174,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     char *marqueeBase;
     POLY_FT4 *quad;
     RenderBufferAddress prim;
+    RaceOptionMarqueeState marqueeState;
 
     ot = (u8 *)GamePrimaryOrderingTable(0);
     prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
@@ -186,26 +187,22 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     prim.sprite->u0 = 0xD8;
     prim.sprite->v0 = 0x38;
     prim.sprite->clut = 0x7893;
-    brightness = (g_RaceOptionScroll0 & 0x10) != 0 ? 0x80 : 0x40;
+    marqueeState = AdvanceRaceOptionMarquee(
+        g_RaceOptionScroll0, g_RaceOptionScroll1, g_SceneTimer);
+    brightness = marqueeState.brightness;
     prim.sprite->r0 = brightness;
     prim.sprite->g0 = brightness;
     prim.sprite->b0 = brightness;
     AddPrim(ot, prim.sprite);
     prim.bytes += sizeof(SPRT);
 
-    g_RaceOptionScroll0 -= 4;
-    g_RaceOptionScroll1 -= 4;
-    if ((g_RaceOptionScroll0 >> 2) < -0x9C) {
-        g_RaceOptionScroll0 = 0xF0;
-    }
-    if ((g_RaceOptionScroll1 >> 2) < -0x9C) {
-        g_RaceOptionScroll1 = 0xF0;
-    }
+    g_RaceOptionScroll0 = marqueeState.firstScroll;
+    g_RaceOptionScroll1 = marqueeState.secondScroll;
 
     next = QueueDrawAreaPrim(ot, prim.drawPacket, 0, 0, 0x140, 0xF0);
     RENDER_PRIM_CURSOR_AS(u8) = next;
     marqueeBase = &g_RaceOptionMarquee[0][0];
-    marquee = (g_SceneTimer & 3) * 40;
+    marquee = marqueeState.textOffset;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
                 &marqueeBase[marquee], 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,

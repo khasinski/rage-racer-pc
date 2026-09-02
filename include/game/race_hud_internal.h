@@ -11,4 +11,15 @@ typedef struct StartCountdownTiming {
 
 StartCountdownTiming CalculateStartCountdownTiming(s32 sceneTimer);
 
+typedef struct RaceOptionMarqueeState {
+    s32 firstScroll;
+    s32 secondScroll;
+    s32 brightness;
+    s32 textOffset;
+} RaceOptionMarqueeState;
+
+RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
+                                                s32 secondScroll,
+                                                s32 sceneTimer);
+
 #endif
