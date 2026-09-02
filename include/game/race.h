@@ -436,7 +436,7 @@ void DrawReplayBadge(void);
 void DrawSeriesClearedWash(s32 x, s32 y);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);
-void DrawStartGridScenery(s32 flags);
+void DrawStartGridScenery(s32 timer);
 void DrawTimeRecordPanel(s32 slideX);
 void DrawTimeRemaining(s32 time);
 void DrawWaypoints(void);

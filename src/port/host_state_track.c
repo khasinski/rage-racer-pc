@@ -20,6 +20,10 @@ typedef struct SceneryMotionData SceneryMotionData;
 typedef struct PathSceneryRotationData PathSceneryRotationData;
 typedef struct PathSceneryPositionData PathSceneryPositionData;
 typedef struct SceneryMotionKeyframe SceneryMotionKeyframe;
+typedef struct StartGridSceneryStep {
+    s16 x;
+    s16 y;
+} StartGridSceneryStep;
 typedef struct PathSceneryClock {
     s16 posFrame;
     s16 rotFrame;
@@ -50,7 +54,11 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-unsigned char g_StartGridSceneryStep[8] __attribute__((aligned(16))) = {0x48,0x00,0x04,0x00,0xbc,0xff,0xf2,0xff};
+StartGridSceneryStep g_StartGridSceneryStep[2]
+    __attribute__((aligned(16))) = {
+        {72, 4},
+        {-68, -14},
+    };
 StaticSceneryState g_StaticSceneryState = {
     {{40594, 6002, 11940}, 0x440},
     {{29266, 6039, 45612}, 0x655},

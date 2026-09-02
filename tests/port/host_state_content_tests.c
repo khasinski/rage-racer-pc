@@ -94,18 +94,6 @@ extern unsigned char g_TextNowLoading[436];
 extern unsigned char g_MsgCdReadSectorError[24];
 extern unsigned char g_MsgCdReadShellOpen[24];
 extern unsigned char g_MsgCdReadRetry[444];
-extern unsigned char g_MsgInitCar[12];
-extern unsigned char g_MsgHTbl[8];
-extern unsigned char g_MsgInit0[8];
-extern unsigned char g_MsgInit1[8];
-extern unsigned char g_MsgInit1b[8];
-extern unsigned char g_FmtDecimalLine[8];
-extern unsigned char g_MsgInit2[8];
-extern unsigned char g_MsgInit4[8];
-extern unsigned char g_MsgInit5[8];
-extern unsigned char g_MsgInit6[8];
-extern unsigned char g_FmtLongLine[8];
-extern unsigned char g_MsgInitOk[48];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
 extern unsigned char g_MsgSoundError[16];
@@ -307,7 +295,11 @@ extern unsigned char g_WaypointSeeds[128];
 extern unsigned char g_ReverbZones[32];
 extern unsigned char g_CarCollisionCorners[76];
 extern unsigned char g_FreeCameraAngleOffset[8];
-extern unsigned char g_StartGridSceneryStep[8];
+typedef struct StartGridSceneryStep {
+    int16_t x;
+    int16_t y;
+} StartGridSceneryStep;
+extern StartGridSceneryStep g_StartGridSceneryStep[2];
 extern unsigned char g_StartGridSceneryPos[32];
 extern unsigned char g_StartGridSceneryAngle[8];
 extern unsigned char g_AnimSceneryPos[32];
@@ -610,18 +602,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgCdReadSectorError", g_MsgCdReadSectorError, 24},
     {"g_MsgCdReadShellOpen", g_MsgCdReadShellOpen, 24},
     {"g_MsgCdReadRetry", g_MsgCdReadRetry, 444},
-    {"g_MsgInitCar", g_MsgInitCar, 12},
-    {"g_MsgHTbl", g_MsgHTbl, 8},
-    {"g_MsgInit0", g_MsgInit0, 8},
-    {"g_MsgInit1", g_MsgInit1, 8},
-    {"g_MsgInit1b", g_MsgInit1b, 8},
-    {"g_FmtDecimalLine", g_FmtDecimalLine, 8},
-    {"g_MsgInit2", g_MsgInit2, 8},
-    {"g_MsgInit4", g_MsgInit4, 8},
-    {"g_MsgInit5", g_MsgInit5, 8},
-    {"g_MsgInit6", g_MsgInit6, 8},
-    {"g_FmtLongLine", g_FmtLongLine, 8},
-    {"g_MsgInitOk", g_MsgInitOk, 48},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
     {"g_MsgSoundError", g_MsgSoundError, 16},
@@ -823,7 +803,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_ReverbZones", g_ReverbZones, 32},
     {"g_CarCollisionCorners", g_CarCollisionCorners, 76},
     {"g_FreeCameraAngleOffset", g_FreeCameraAngleOffset, 8},
-    {"g_StartGridSceneryStep", g_StartGridSceneryStep, 8},
+    {"g_StartGridSceneryStep",
+     (const unsigned char *)g_StartGridSceneryStep, 8},
     {"g_StartGridSceneryPos", g_StartGridSceneryPos, 32},
     {"g_StartGridSceneryAngle", g_StartGridSceneryAngle, 8},
     {"g_AnimSceneryPos", g_AnimSceneryPos, 32},
@@ -1068,7 +1049,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 1164892802UL;
+    const unsigned long expected = 340480252UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
