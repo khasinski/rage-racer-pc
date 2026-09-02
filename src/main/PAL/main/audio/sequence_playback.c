@@ -57,6 +57,7 @@ void UpdateSequenceFadeOut(void) {
     g_SeqVolume += g_SeqVolumeFadeStep;
     if (g_SeqVolume <= 0) {
         FinishSequenceFadeOut();
+        return;
     }
 
     SetSequenceVolume(g_SeqVolume);

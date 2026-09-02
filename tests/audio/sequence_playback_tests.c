@@ -18,6 +18,7 @@ static s32 s_sequenceLeft;
 static s32 s_sequenceRight;
 static s32 s_sequenceStops;
 static s32 s_setVolume;
+static s32 s_setVolumeCalls;
 static s32 s_sequencePlays;
 static s32 s_playMode;
 static s32 s_loopCount;
@@ -42,7 +43,10 @@ void SetReverbDepth(s32 left, s32 right) {
     s_reverbRight = right;
 }
 void SetDefaultReverbDepth(void) { SetReverbDepth(0x28, 0x28); }
-void SetSequenceVolume(s32 volume) { s_setVolume = volume; }
+void SetSequenceVolume(s32 volume) {
+    s_setVolume = volume;
+    s_setVolumeCalls++;
+}
 int CloseSequenceAudioSlot(void) {
     s_closeCalls++;
     return 0;
@@ -84,18 +88,20 @@ int main(void) {
     g_SeqVolume = 3;
     g_SeqVolumeFadeStep = -4;
     s_closeCalls = 0;
+    s_setVolumeCalls = 0;
     UpdateSequenceFadeOut();
     CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 1);
     CHECK(g_ReverbFadeStep == -3);
     CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
     CHECK(s_sequenceStops == 1 && s_closeCalls == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
-    CHECK(s_setVolume == 0);
+    CHECK(s_setVolumeCalls == 0);
 
     g_SeqVolume = 10;
     g_SeqVolumeFadeStep = 0;
     UpdateSequenceFadeOut();
     CHECK(g_ReverbDepthR == 0 && g_ReverbFadeStep == 0);
+    CHECK(s_setVolumeCalls == 1 && s_setVolume == 10);
 
     puts("sequence playback preserves ducking and fade completion");
     return 0;
