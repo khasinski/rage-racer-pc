@@ -6,7 +6,7 @@
 #include "psyq/snd.h"
 
 enum {
-    CD_AUDIO_MODE = 7,
+    CD_AUDIO_MODE = CD_MODE_CDDA | CD_MODE_AUTO_PAUSE | CD_MODE_REPORT,
     BGM_SELECT_SCENE = 0x1C,
 };
 
@@ -17,11 +17,7 @@ void InitCdAudio(void) {
     CdControl(CD_DRIVE_SET_MODE, &g_CdModeParam, 0);
     BuildCdTrackTable();
 
-    g_CdTrackPending = -1;
-    g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdCurrentTrack = CD_INITIAL_TRACK;
-    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+    ResetCdAudioState();
     g_CdMixPreset = 0;
     g_CdRestartOnResume = 0;
     g_CdVolume = CD_VOLUME_MAX;

@@ -21,6 +21,12 @@ typedef enum CdDriveCommand {
     CD_DRIVE_SEEK_PLAY = 0x16,
 } CdDriveCommand;
 
+typedef enum CdDriveMode {
+    CD_MODE_CDDA = 0x01,
+    CD_MODE_AUTO_PAUSE = 0x02,
+    CD_MODE_REPORT = 0x04,
+} CdDriveMode;
+
 typedef enum CdSyncResult {
     CD_SYNC_PENDING = 0,
     CD_SYNC_COMPLETE = 2,

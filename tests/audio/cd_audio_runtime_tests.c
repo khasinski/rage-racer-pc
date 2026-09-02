@@ -94,7 +94,9 @@ static int TestInitialization(void) {
     s_serialVolumeCalls = 0;
     InitCdAudio();
     CHECK(s_spuInputCalls == 1 && s_serialVolumeCalls == 1);
-    CHECK(s_cdCommand == CD_DRIVE_SET_MODE && g_CdModeParam == 7);
+    CHECK(s_cdCommand == CD_DRIVE_SET_MODE &&
+          g_CdModeParam ==
+              (CD_MODE_CDDA | CD_MODE_AUTO_PAUSE | CD_MODE_REPORT));
     CHECK(s_buildCalls == 1 && s_setVolume == 127);
     CHECK(g_CdTrackPending == -1 && g_CdCommandPending == CD_COMMAND_NONE);
     CHECK(g_CdCurrentTrack == 2 && g_CdVolume == 127);
