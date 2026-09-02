@@ -56,5 +56,6 @@ void UpdateRivalBodyMotion(void);
 void MoveRivalCars(void);
 void AccelerateRaceRivals(void);
 void AccelerateAttractRivals(void);
+void PlaceRivalCarsOnTrack(void);
 
 #endif

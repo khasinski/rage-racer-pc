@@ -28,6 +28,7 @@ static int s_knockbackCalls;
 static int s_trackStateCalls;
 static int s_bodyMotionCalls;
 static int s_attractAccelerationCalls;
+static int s_placementCalls;
 
 void TraceCarStates(void) { s_traceCalls++; }
 
@@ -93,6 +94,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
 void UpdateRivalBodyMotion(void) { s_bodyMotionCalls++; }
 void AccelerateRaceRivals(void) {}
 void AccelerateAttractRivals(void) { s_attractAccelerationCalls++; }
+void PlaceRivalCarsOnTrack(void) { s_placementCalls++; }
 
 s32 GetAngleDelta(s32 from, s32 to) { return to - from; }
 
@@ -149,11 +151,12 @@ int main(void) {
     CHECK_EQ(s_clampCalls, RACE_CAR_SLOT_COUNT);
     CHECK_EQ(s_steerCalls, RACE_CAR_SLOT_COUNT);
     CHECK_EQ(s_moveCalls, 1);
-    CHECK_EQ(s_progressCalls, 1);
-    CHECK_EQ(s_knockbackCalls, 1);
-    CHECK_EQ(s_trackStateCalls, 1);
+    CHECK_EQ(s_progressCalls, 0);
+    CHECK_EQ(s_knockbackCalls, 0);
+    CHECK_EQ(s_trackStateCalls, 0);
     CHECK_EQ(s_bodyMotionCalls, 1);
     CHECK_EQ(s_attractAccelerationCalls, 1);
+    CHECK_EQ(s_placementCalls, 1);
 
     g_TrackLength = 100;
     car->progressA = 123;

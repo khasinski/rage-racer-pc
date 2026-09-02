@@ -65,36 +65,6 @@ static void SteerAllCars(void) {
     }
 }
 
-/*
- * How far round each car is, and where the track has put it. A rival's hull is
- * a fixed width here rather than measured from its corners, which is what the
- * player's car does.
- */
-static void PlaceAllCarsOnTrack(void) {
-    CarTrackLimits limits;
-    s32 index;
-
-    limits.rightInset = 0x3C;
-    limits.leftInset = -0x3C;
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag != -1) {
-            AccumulateLapProgress(car);
-        }
-    }
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag != -1) {
-            if ((s16)car->motionTimer > 0) {
-                ApplyCarKnockback(car);
-            }
-            UpdateCarTrackState(car, car->trackPointIndex, &limits);
-        }
-    }
-}
-
 /* Everyone ahead of the player is held back a little, nearest one first. */
 static void SlowTheCarsAhead(void) {
     s16 rank = (s16)g_ClosestRivalRank;
@@ -117,7 +87,7 @@ void UpdateRaceCars(void) {
     SlowTheCarsAhead();
     AccelerateRaceRivals();
     MoveRivalCars();
-    PlaceAllCarsOnTrack();
+    PlaceRivalCarsOnTrack();
     UpdateRivalBodyMotion();
 }
 
@@ -145,6 +115,6 @@ void UpdateAttractCars(void) {
     SteerAllCars();
     AccelerateAttractRivals();
     MoveRivalCars();
-    PlaceAllCarsOnTrack();
+    PlaceRivalCarsOnTrack();
     UpdateRivalBodyMotion();
 }
