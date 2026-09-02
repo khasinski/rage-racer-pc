@@ -77,7 +77,7 @@ int main(void) {
 
     g_VabSpuAddress[1] = 0x24000;
     g_SeqVolumeFadeStep = -4;
-    Check(OpenVabSequenceSlot(1, header, body, sequence) == 1,
+    Check(OpenVabSequenceSlot(AUDIO_SLOT_SEQUENCE, header, body, sequence) == 1,
           "sequence slot returns asynchronous transfer state");
     Check(g_AudioLoadSlot == 1 && g_SoundScale.vabIds[1] == 8 &&
               s_openHeader == header && s_transferBody == body &&
@@ -90,11 +90,11 @@ int main(void) {
           "sequence slot opens score and clears fade state");
 
     g_AudioLoadedSlotMask = 0;
-    Check(CloseAudioSlot(1) == 0 && s_reverbCalls == 0,
+    Check(CloseAudioSlot(AUDIO_SLOT_SEQUENCE) == 0 && s_reverbCalls == 0,
           "absent sequence slot is not closed");
 
     g_AudioLoadedSlotMask = (1 << 1) | (1 << 3);
-    Check(CloseAudioSlot(1) == 1,
+    Check(CloseAudioSlot(AUDIO_SLOT_SEQUENCE) == 1,
           "loaded sequence slot reports successful close");
     Check(g_AudioLoadedSlotMask == (1 << 3) && s_reverbCalls == 1 &&
               s_vmInitCalls == 1 &&

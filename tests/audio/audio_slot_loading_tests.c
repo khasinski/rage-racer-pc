@@ -99,8 +99,9 @@ int main(void) {
     memset(&g_EngineSoundState, 0, sizeof(g_EngineSoundState));
     g_VabSpuAddress[0] = 0x12000;
 
-    CHECK(StartAudioSlotLoad(0, &header, &body, 0) == 1);
-    CHECK(g_AudioLoadSlot == 0 && g_SoundScale.vabIds[0] == 8);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, 0) == 1);
+    CHECK(g_AudioLoadSlot == AUDIO_SLOT_MAIN_CUES &&
+          g_SoundScale.vabIds[AUDIO_SLOT_MAIN_CUES] == 8);
     CHECK(s_openHeader == &header && s_body == &body);
     CHECK(s_openAddress == 0x12000);
 
@@ -109,14 +110,15 @@ int main(void) {
     CHECK(PollAudioSlotLoad() == 1);
     CHECK(g_AudioLoadedSlotMask == 1 && g_SoundCueBank == 1);
 
-    CHECK(StartAudioSlotLoad(1, &header, &body, &table) == 61);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &header, &body, &table) == 61);
     CHECK(s_sequenceCalls == 1);
-    CHECK(StartAudioSlotLoad(6, &header, &body, &table) == 61);
-    CHECK(s_sequenceCalls == 2);
+    CHECK(StartAudioSlotLoad(6, &header, &body, &table) == -1);
+    CHECK(StartAudioSlotLoad(-1, &header, &body, &table) == -1);
+    CHECK(s_sequenceCalls == 1);
 
     g_VabSpuAddress[3] = 0x34000;
-    CHECK(StartAudioSlotLoad(3, &header, &body, &table) == 1);
-    CHECK(g_AudioLoadSlot == 3 && s_openAddress == 0x34000);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &header, &body, &table) == 1);
+    CHECK(g_AudioLoadSlot == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
     CHECK(g_EngineSoundState.extraVabLoaded == 1 && s_tableCalls == 1);
 
     s_completed = 0;
@@ -133,22 +135,18 @@ int main(void) {
     g_AudioLoadSlot = 3;
     CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
 
-    g_AudioLoadedSlotMask = 1 << 2;
-    g_SoundScale.vabIds[2] = 12;
-    CHECK(CloseVabOnlyAudioSlot(2) == 1);
-    CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 12);
-    CHECK(s_reverbCalls == 1 && s_vmInitCalls == 1);
-    CHECK(CloseVabOnlyAudioSlot(2) == 0);
-
     g_AudioLoadedSlotMask = (1 << 2) | (1 << 3);
     g_SoundScale.vabIds[2] = 22;
     g_SoundScale.vabIds[3] = 23;
     s_closeAudioCalls = 0;
     s_damperCalls = 0;
+    s_reverbCalls = 0;
+    s_vmInitCalls = 0;
     s_closeAudioResult = 1;
     CHECK(CloseLoadedAudioSlots() == 1);
     CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
           g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
+    CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
 
     g_AudioLoadedSlotMask = 1 << 3;
     CHECK(CloseLoadedAudioSlots() == 0);

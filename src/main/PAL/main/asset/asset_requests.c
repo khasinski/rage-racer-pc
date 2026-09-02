@@ -31,7 +31,8 @@ static void LoadBootAudioHeader(void) {
 
 static void LoadBootAudioBody(void) {
     if (LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor) == 0) return;
-    StartAudioSlotLoad(0, g_AssetBlockPtr, g_AssetLoadCursor, NULL);
+    StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, g_AssetBlockPtr,
+                       g_AssetLoadCursor, NULL);
     g_AssetLoadState = 4;
 }
 

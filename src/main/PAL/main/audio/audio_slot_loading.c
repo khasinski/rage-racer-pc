@@ -2,16 +2,8 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
-enum {
-    MAIN_CUE_AUDIO_SLOT = 0,
-    SEQUENCE_AUDIO_SLOT = 1,
-    RACE_CUE_AUDIO_SLOT = 2,
-    ENGINE_AUDIO_SLOT = 3,
-    ALTERNATE_SEQUENCE_AUDIO_SLOT = 6,
-};
-
-static s16 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
-                             s32 spuAddress) {
+static void TransferVabToSlot(s32 slot, u8 *header, u8 *body,
+                              s32 spuAddress) {
     s16 vabId = SsVabOpenHeadSticky(header, -1, spuAddress);
 
     if (vabId == -1) {
@@ -26,15 +18,18 @@ static s16 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
     }
 
     g_SoundScale.vabIds[slot] = vabId;
-    return vabId;
 }
 
+static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table);
+
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
-    if (slot == ENGINE_AUDIO_SLOT) {
-        return StartVabTransferWithTable(header, body, table);
+    if (slot < 0 || slot >= AUDIO_SLOT_COUNT) {
+        return -1;
     }
-    if (slot == SEQUENCE_AUDIO_SLOT ||
-        slot == ALTERNATE_SEQUENCE_AUDIO_SLOT) {
+    if (slot == AUDIO_SLOT_ENGINE) {
+        return StartEngineAudioSlotLoad(header, body, table);
+    }
+    if (slot == AUDIO_SLOT_SEQUENCE) {
         return OpenVabSequenceSlot(slot, header, body, table);
     }
 
@@ -56,12 +51,12 @@ s32 PollAudioSlotLoad(void) {
         slot = g_AudioLoadSlot;
         g_AudioLoadedSlotMask |= 1 << slot;
 
-        if (slot == MAIN_CUE_AUDIO_SLOT) {
+        if (slot == AUDIO_SLOT_MAIN_CUES) {
             g_SoundCueBank = 1;
-        } else if (slot == SEQUENCE_AUDIO_SLOT) {
+        } else if (slot == AUDIO_SLOT_SEQUENCE) {
             g_SoundCueBank = slot;
-        } else if (slot == RACE_CUE_AUDIO_SLOT ||
-                   slot == ENGINE_AUDIO_SLOT) {
+        } else if (slot == AUDIO_SLOT_RACE_CUES ||
+                   slot == AUDIO_SLOT_ENGINE) {
             g_SoundCueBank = 2;
         }
     }
@@ -69,7 +64,11 @@ s32 PollAudioSlotLoad(void) {
     return completed;
 }
 
-s32 CloseVabOnlyAudioSlot(s32 slot) {
+static s32 CloseVabOnlyAudioSlot(s32 slot) {
+    if (slot < 0 || slot >= AUDIO_SLOT_COUNT) {
+        return 0;
+    }
+
     s32 bit = 1 << slot;
 
     if ((bit & g_AudioLoadedSlotMask) == 0) {
@@ -85,22 +84,22 @@ s32 CloseVabOnlyAudioSlot(s32 slot) {
 
 s32 CloseLoadedAudioSlots(void) {
     SpuVmDamperStep();
-    if (CloseAudioSlot(SEQUENCE_AUDIO_SLOT) == 0) {
+    if (CloseAudioSlot(AUDIO_SLOT_SEQUENCE) == 0) {
         return 0;
     }
-    if (CloseVabOnlyAudioSlot(RACE_CUE_AUDIO_SLOT) == 0) {
+    if (CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES) == 0) {
         return 0;
     }
-    if (CloseVabOnlyAudioSlot(ENGINE_AUDIO_SLOT) == 0) {
+    if (CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE) == 0) {
         return 0;
     }
     return 1;
 }
 
-s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table) {
-    g_AudioLoadSlot = ENGINE_AUDIO_SLOT;
-    TransferVabToSlot(ENGINE_AUDIO_SLOT, header, body,
-                      g_VabSpuAddress[ENGINE_AUDIO_SLOT]);
+static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table) {
+    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
+    TransferVabToSlot(AUDIO_SLOT_ENGINE, header, body,
+                      g_VabSpuAddress[AUDIO_SLOT_ENGINE]);
 
     if (table != NULL) {
         LoadAudioParameterTable(table);

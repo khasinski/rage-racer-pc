@@ -4,6 +4,10 @@
 #include "psyq/snd.h"
 
 s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *seq) {
+    if (slot != AUDIO_SLOT_SEQUENCE) {
+        return -1;
+    }
+
     g_AudioLoadSlot = slot;
     g_SoundScale.vabIds[slot] =
         SsVabOpenHeadSticky(header, -1, g_VabSpuAddress[slot]);
@@ -27,6 +31,10 @@ s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *seq) {
 }
 
 s32 CloseAudioSlot(s32 slot) {
+    if (slot != AUDIO_SLOT_SEQUENCE) {
+        return 0;
+    }
+
     s32 bit = 1 << slot;
 
     if ((bit & g_AudioLoadedSlotMask) == 0) {

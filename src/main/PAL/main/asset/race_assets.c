@@ -29,7 +29,8 @@ static void BeginRaceVoiceLoad(void) {
         *destination++ = *source++;
         wordsRemaining--;
     }
-    StartAudioSlotLoad(2, g_AssetLoadCursor, g_AssetSubBlockPtr, 0);
+    StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
+                       g_AssetSubBlockPtr, 0);
     g_AssetLoadCursor += g_SharedAssetWord0;
     g_AssetLoadState = 2;
 }
@@ -62,7 +63,7 @@ static void LoadPlayerCarRaceAssets(void) {
     g_AssetBlockPtr = audioHeader;
     g_AssetBlockPtr2 = audioTable;
     g_AssetSubBlockPtr = audioBody;
-    StartAudioSlotLoad(3, audioHeader, audioBody,
+    StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
                        GetAssetHalfwords(audioTable));
     g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));

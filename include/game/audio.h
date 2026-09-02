@@ -8,6 +8,14 @@ typedef struct EffectCueProgram {
     s32 tone;
 } EffectCueProgram;
 
+typedef enum AudioSlotId {
+    AUDIO_SLOT_MAIN_CUES,
+    AUDIO_SLOT_SEQUENCE,
+    AUDIO_SLOT_RACE_CUES,
+    AUDIO_SLOT_ENGINE,
+    AUDIO_SLOT_COUNT,
+} AudioSlotId;
+
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot);
 void SsSeqPlay(short sequence, char playMode, short loopCount);
 void SsSeqStop(short sequence);
@@ -96,7 +104,6 @@ void SetEffectVoicesEnabled(s32 enabled);
 void ResetSoundState(void);
 int InitSoundWithVab(u8 *header, u8 *body);
 int InitSoundRuntime(void);
-s32 CloseVabOnlyAudioSlot(s32 slot);
 s32 CloseLoadedAudioSlots(void);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolumeSetting(s32 setting);
@@ -109,7 +116,6 @@ void SetMonoOutput(void);
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
 void LoadAudioParameterTable(const u16 *table);
-s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table);
 /* Open audio slot `slot` on a VAB header/body pair and optional tone table. */
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table);
 s32 PollAudioSlotLoad(void);

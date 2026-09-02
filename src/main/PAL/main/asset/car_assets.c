@@ -23,7 +23,7 @@ s32 RequestCarSelectAssets(void) {
 }
 
 static void BeginCarSelectAudioLoad(void) {
-    StartAudioSlotLoad(1, g_AssetBlockPtr, g_AssetSubBlockPtr,
+    StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, g_AssetBlockPtr, g_AssetSubBlockPtr,
                        GetAssetHalfwords(g_AssetBlockPtr2));
     g_AssetLoadState = 2;
 }
