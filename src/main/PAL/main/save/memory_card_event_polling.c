@@ -3,34 +3,44 @@
 
 enum { MEMORY_CARD_POLL_TIMEOUT_TICKS = 91 };
 
+enum { MEMORY_CARD_EVENT_COUNT = 4 };
+
+static const MemoryCardEvent s_eventResults[MEMORY_CARD_EVENT_COUNT] = {
+    MC_EVENT_IO_COMPLETE, MC_EVENT_ERROR, MC_EVENT_TIMEOUT, MC_EVENT_NEW_CARD,
+};
+
+static s32 *const s_hwEventHandles[MEMORY_CARD_EVENT_COUNT] = {
+    &g_McHwEventIoe, &g_McHwEventError, &g_McHwEventTimeout, &g_McHwEventNew,
+};
+
+static s32 *const s_swEventHandles[MEMORY_CARD_EVENT_COUNT] = {
+    &g_McSwEventIoe, &g_McSwEventError, &g_McSwEventTimeout, &g_McSwEventNew,
+};
+
+static void ClearEventHandles(s32 *const *handles) {
+    s32 index;
+
+    for (index = 0; index < MEMORY_CARD_EVENT_COUNT; index++) {
+        TestEvent(*handles[index]);
+    }
+}
+
 void ClearMemoryCardHwEvents(void) {
-    TestEvent(g_McHwEventIoe);
-    TestEvent(g_McHwEventError);
-    TestEvent(g_McHwEventTimeout);
-    TestEvent(g_McHwEventNew);
+    ClearEventHandles(s_hwEventHandles);
 }
 
 void ClearMemoryCardSwEvents(void) {
-    TestEvent(g_McSwEventIoe);
-    TestEvent(g_McSwEventError);
-    TestEvent(g_McSwEventTimeout);
-    TestEvent(g_McSwEventNew);
+    ClearEventHandles(s_swEventHandles);
 }
 
 MemoryCardEvent PollMemoryCardHwEvent(void) {
     MemoryCardEvent result = MC_EVENT_NONE;
+    s32 index;
 
-    if (TestEvent(g_McHwEventIoe) == 1) {
-        result = MC_EVENT_IO_COMPLETE;
-    }
-    if (TestEvent(g_McHwEventError) == 1) {
-        result = MC_EVENT_ERROR;
-    }
-    if (TestEvent(g_McHwEventTimeout) == 1) {
-        result = MC_EVENT_TIMEOUT;
-    }
-    if (TestEvent(g_McHwEventNew) == 1) {
-        result = MC_EVENT_NEW_CARD;
+    for (index = 0; index < MEMORY_CARD_EVENT_COUNT; index++) {
+        if (TestEvent(*s_hwEventHandles[index]) == 1) {
+            result = s_eventResults[index];
+        }
     }
 
     if (++g_McPollTicks >= MEMORY_CARD_POLL_TIMEOUT_TICKS) {
@@ -40,38 +50,24 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
     return result;
 }
 
-MemoryCardEvent WaitMemoryCardHwEvent(void) {
+static MemoryCardEvent WaitForEvent(s32 *const *handles) {
     while (1) {
-        if (TestEvent(g_McHwEventIoe) == 1) {
-            return MC_EVENT_IO_COMPLETE;
-        }
-        if (TestEvent(g_McHwEventError) == 1) {
-            return MC_EVENT_ERROR;
-        }
-        if (TestEvent(g_McHwEventTimeout) == 1) {
-            return MC_EVENT_TIMEOUT;
-        }
-        if (TestEvent(g_McHwEventNew) == 1) {
-            return MC_EVENT_NEW_CARD;
+        s32 index;
+
+        for (index = 0; index < MEMORY_CARD_EVENT_COUNT; index++) {
+            if (TestEvent(*handles[index]) == 1) {
+                return s_eventResults[index];
+            }
         }
     }
 }
 
+MemoryCardEvent WaitMemoryCardHwEvent(void) {
+    return WaitForEvent(s_hwEventHandles);
+}
+
 MemoryCardEvent WaitMemoryCardSwEvent(void) {
-    while (1) {
-        if (TestEvent(g_McSwEventIoe) == 1) {
-            return MC_EVENT_IO_COMPLETE;
-        }
-        if (TestEvent(g_McSwEventError) == 1) {
-            return MC_EVENT_ERROR;
-        }
-        if (TestEvent(g_McSwEventTimeout) == 1) {
-            return MC_EVENT_TIMEOUT;
-        }
-        if (TestEvent(g_McSwEventNew) == 1) {
-            return MC_EVENT_NEW_CARD;
-        }
-    }
+    return WaitForEvent(s_swEventHandles);
 }
 void RestartMemoryCard(void) {
     BiosBuInit();

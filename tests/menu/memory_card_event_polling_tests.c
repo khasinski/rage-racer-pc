@@ -18,6 +18,14 @@ s32 g_SaveElapsedTicks;
 static int s_active[9];
 static int s_calls[9];
 static int s_buInitCalls;
+static int s_criticalDepth;
+static int s_openCalls;
+static int s_enableCalls;
+static int s_disableCalls;
+static int s_closeCalls;
+static long s_enabled[8];
+static long s_disabled[8];
+static long s_closed[8];
 
 #define CHECK(condition) do { \
     if (!(condition)) { \
@@ -33,6 +41,28 @@ long TestEvent(long event) {
 }
 
 void BiosBuInit(void) { s_buInitCalls++; }
+void EnterCriticalSection(void) { s_criticalDepth++; }
+void ExitCriticalSection(void) { s_criticalDepth--; }
+long OpenEvent(unsigned long descriptor, long spec, long mode,
+               long (*callback)()) {
+    (void)descriptor;
+    (void)spec;
+    (void)mode;
+    (void)callback;
+    return 100 + s_openCalls++;
+}
+long EnableEvent(long event) {
+    s_enabled[s_enableCalls++] = event;
+    return 1;
+}
+long DisableEvent(long event) {
+    s_disabled[s_disableCalls++] = event;
+    return 1;
+}
+long CloseEvent(long event) {
+    s_closed[s_closeCalls++] = event;
+    return 1;
+}
 
 static void ResetMock(void) {
     memset(s_active, 0, sizeof(s_active));
@@ -89,9 +119,35 @@ static int TestSaveCounter(void) {
     return 0;
 }
 
+static int TestEventSessionLifecycle(void) {
+    int index;
+
+    s_criticalDepth = 0;
+    s_openCalls = 0;
+    s_enableCalls = 0;
+    s_disableCalls = 0;
+    s_closeCalls = 0;
+    StartMemoryCardEvents();
+    CHECK(s_criticalDepth == 0 && s_openCalls == 8 && s_enableCalls == 8);
+    CHECK(g_McHwEventIoe == 100 && g_McHwEventNew == 103);
+    CHECK(g_McSwEventIoe == 104 && g_McSwEventNew == 107);
+    for (index = 0; index < 8; index++) {
+        CHECK(s_enabled[index] == 100 + index);
+    }
+
+    StopMemoryCardEvents();
+    CHECK(s_criticalDepth == 0 && s_disableCalls == 8 && s_closeCalls == 8);
+    for (index = 0; index < 8; index++) {
+        CHECK(s_disabled[index] == 100 + index);
+        CHECK(s_closed[index] == 100 + index);
+    }
+    return 0;
+}
+
 int main(void) {
     if (TestNoEventAndTimeout() || TestPollPriority() ||
-        TestWaitAndClear() || TestSaveCounter()) return 1;
+        TestWaitAndClear() || TestSaveCounter() ||
+        TestEventSessionLifecycle()) return 1;
     puts("memory card event polling: ok");
     return 0;
 }
