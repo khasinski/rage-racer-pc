@@ -45,7 +45,7 @@ static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
         }
         for (i = 0; i < POOLED_VOICE_COUNT; i++) {
             if (busy[i] == 0) {
-                result = (s16)SsUtKeyOnV(
+                result = SsUtKeyOnV(
                     (s16)(i + POOLED_VOICE_FIRST),
                     g_SoundScale.vabIds[params->vab],
                     (s16)params->program, (s16)params->toneA,
@@ -57,7 +57,7 @@ static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
         }
         for (i = 0; i < POOLED_VOICE_COUNT; i++) {
             if (busy[i] == 0) {
-                result = (s16)SsUtKeyOnV(
+                result = SsUtKeyOnV(
                     (s16)(i + POOLED_VOICE_FIRST),
                     g_SoundScale.vabIds[params->vab],
                     (s16)params->program, (s16)params->toneB,
@@ -67,13 +67,13 @@ static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
             }
         }
     } else {
-        result = (s16)SsUtKeyOn(g_SoundScale.vabIds[params->vab],
-                                params->program, params->toneA,
-                                SOUND_BASE_NOTE, 0, volL, volR);
+        result = SsUtKeyOn(g_SoundScale.vabIds[params->vab],
+                           params->program, params->toneA,
+                           SOUND_BASE_NOTE, 0, volL, volR);
         g_SpecialCueVoiceA = result;
-        result = (s16)SsUtKeyOn(g_SoundScale.vabIds[params->vab],
-                                params->program, params->toneB,
-                                SOUND_BASE_NOTE, 0, volL, volR);
+        result = SsUtKeyOn(g_SoundScale.vabIds[params->vab],
+                           params->program, params->toneB,
+                           SOUND_BASE_NOTE, 0, volL, volR);
         g_SpecialCueVoiceB = result;
     }
 
@@ -82,60 +82,42 @@ static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
     }
 }
 
-
 static void StartSingleSpecialCue(s32 cue, s32 volume) {
-    s32 result = -1;
+    const SoundCueParams *params = &g_SoundCueParams[cue];
     s32 voiceVolume;
-    s32 vab;
-    s32 program;
-    s32 tone;
 
     g_SpecialCueVoiceA = -1;
     g_SpecialCueVoiceB = -1;
 
     if (g_ActiveSpecialCue != cue) {
-        vab = g_SoundCueParams[cue].vab;
-        program = g_SoundCueParams[cue].program;
-        tone = g_SoundCueParams[cue].toneA;
-        voiceVolume = ScaleCueVolume(volume, g_SoundCueParams[cue].volume);
-        result = (s16)SsUtKeyOnV(SINGLE_SPECIAL_VOICE,
-                                 g_SoundScale.vabIds[vab],
-                                 (s16)program, (s16)tone, SOUND_BASE_NOTE, 0,
-                                 voiceVolume, voiceVolume);
-        g_SpecialCueVoiceA = result;
+        voiceVolume = ScaleCueVolume(volume, params->volume);
+        g_SpecialCueVoiceA = SsUtKeyOnV(
+            SINGLE_SPECIAL_VOICE, g_SoundScale.vabIds[params->vab],
+            (s16)params->program, (s16)params->toneA, SOUND_BASE_NOTE, 0,
+            voiceVolume, voiceVolume);
     }
 
     g_ActiveSpecialCue = cue;
 }
 
 static void StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
-    s32 vab;
-    s32 prog;
-    s32 tone;
-    s32 result = -1;
-    s32 baseVolume = g_SoundCueParams2[cue].volume;
+    const SoundCueParams *params = &g_SoundCueParams2[cue];
 
-    vab = g_SoundCueParams2[cue].vab;
-    prog = g_SoundCueParams2[cue].program;
-    tone = g_SoundCueParams2[cue].toneA;
-    volumeLeft = ScaleCueVolume(volumeLeft, baseVolume);
-    volumeRight = ScaleCueVolume(volumeRight, baseVolume);
+    volumeLeft = ScaleCueVolume(volumeLeft, params->volume);
+    volumeRight = ScaleCueVolume(volumeRight, params->volume);
 
     if (SpuGetKeyStatus(g_SpecialVoiceBits[STEREO_SPECIAL_STATUS_INDEX]) == 0 ||
         cue == ALWAYS_RESTART_SPECIAL_CUE_A ||
         cue == ALWAYS_RESTART_SPECIAL_CUE_B) {
-        result = (s16)SsUtKeyOnV(STEREO_SPECIAL_VOICE_LEFT,
-                                 g_SoundScale.vabIds[vab],
-                                 (s16)prog, (s16)tone, SOUND_BASE_NOTE, 0,
-                                 (s16)volumeLeft, (s16)volumeRight);
-        g_SpecialCueVoiceA = result;
-        result = (s16)SsUtKeyOnV(STEREO_SPECIAL_VOICE_RIGHT,
-                                 g_SoundScale.vabIds[vab],
-                                 (s16)prog, (s16)(tone + 1), SOUND_BASE_NOTE, 0,
-                                 (s16)volumeLeft, (s16)volumeRight);
-        g_SpecialCueVoiceB = result;
+        g_SpecialCueVoiceA = SsUtKeyOnV(
+            STEREO_SPECIAL_VOICE_LEFT, g_SoundScale.vabIds[params->vab],
+            (s16)params->program, (s16)params->toneA, SOUND_BASE_NOTE, 0,
+            (s16)volumeLeft, (s16)volumeRight);
+        g_SpecialCueVoiceB = SsUtKeyOnV(
+            STEREO_SPECIAL_VOICE_RIGHT, g_SoundScale.vabIds[params->vab],
+            (s16)params->program, (s16)(params->toneA + 1), SOUND_BASE_NOTE, 0,
+            (s16)volumeLeft, (s16)volumeRight);
     }
-
 }
 
 static s32 ClampCueIndex(s32 cue, s32 cueCount) {
@@ -185,7 +167,6 @@ void PlaySoundCue(s32 cue) {
     }
 }
 
-
 /* Sets one engine-sound slot: scales `volume` by the global effect scale,
  * pushes it to the slot's voice, then re-pitches that voice to the tone at
  * g_SoundSlotTone[slot][toneIndex]. */
@@ -195,7 +176,7 @@ void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot
         volume * g_SoundScale.scale / 128);
 
     SsUtSetVVol(voice, scaledVolume, scaledVolume);
-    SsUtPitchBend(voice, g_SoundScale.vabIds[(s16)vabSlot],
+    SsUtPitchBend(voice, g_SoundScale.vabIds[vabSlot],
                   g_SoundSlotTone[slot][toneIndex], SOUND_BASE_NOTE,
                   (s16)bend);
 }
