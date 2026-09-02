@@ -27,6 +27,7 @@ void ApplyReplayFrameAndTrackPoint(s32 subframe,
 void BeginReplay(void);
 void UpdateReplayScene(void);
 void UpdateReplayFade(void);
+void DrawSeriesClearedWash(s32 washProgress, s32 fadeLevel);
 void SeedReplayCars(void);
 void UpdateReplayCars(void);
 void RecordReplayFrame(void);

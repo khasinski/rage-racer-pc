@@ -37,6 +37,8 @@ void PlayCountdownCues(s32 timer);
 void UpdateRivalCueGate(void);
 void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode,
                       s32 lapEvent);
+void SeedFinishCamera(struct PlayerCarRuntime *car);
+void UpdateFinishCamera(struct PlayerCarRuntime *car);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);
 s32 WrapBgmTrackIndex(s32 track, s32 trackCount);

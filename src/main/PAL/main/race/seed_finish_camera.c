@@ -1,6 +1,7 @@
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/track.h"
 
 void SeedFinishCamera(PlayerCarRuntime *car) {

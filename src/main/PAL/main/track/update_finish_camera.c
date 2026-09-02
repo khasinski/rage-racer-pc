@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/angle.h"
 #include "game/render.h"
+#include "game/race_internal.h"
 #include "game/track.h"
 
 static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
