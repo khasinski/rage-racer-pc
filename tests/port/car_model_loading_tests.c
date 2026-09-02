@@ -123,10 +123,12 @@ static void Check(s32 condition, const char *label) {
 
 static void TestRequests(void) {
     g_AssetLoadState = 0;
+    g_AssetLoadFailed = 1;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     RequestCarModel(4);
     Check(g_AssetRequestType == ASSET_REQUEST_CAR_MODEL &&
-              g_PendingCarModelIndex == 4 && g_AssetLoadState == 1,
+              g_PendingCarModelIndex == 4 && g_AssetLoadState == 1 &&
+              !AssetLoadHasFailed(),
           "car model request");
 
     RequestUpgradedCarModel(7);

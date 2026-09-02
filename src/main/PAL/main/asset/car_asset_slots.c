@@ -57,6 +57,8 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 index) {
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
     u32 i;
 
+    if (nativeAsset == NULL) return NULL;
+
     for (i = 0; i < CAR_ASSET_SLOT_COUNT; i++) {
         if (nativeAsset == g_CarModelSlots[i]) {
             return s_SerializedCarModelAssets[i];

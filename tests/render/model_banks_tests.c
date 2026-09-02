@@ -273,6 +273,10 @@ static int TestCarAssetSlots(void) {
           storage.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE + 24);
     CHECK(FindSerializedCarModelAsset(g_CarModelSlots[1]) == view);
     CHECK(FindSerializedCarModelAsset(&unknownModel) == NULL);
+    CHECK(InstallSerializedCarModelSlot(view, 0) == 1);
+    g_CarModelSlots[0] = NULL;
+    CHECK(FindSerializedCarModelAsset(NULL) == NULL);
+    g_CarModelSlots[0] = &sentinelModel;
 
     CHECK(InstallSerializedCarModelSlot(NULL, 0) == 0);
     serialized->modelOffset++;

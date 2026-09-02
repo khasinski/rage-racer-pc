@@ -10,6 +10,7 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     }
 
     g_AssetRequestType = request;
+    g_AssetLoadFailed = 0;
     g_PendingCarModelIndex = carIndex;
     g_AssetLoadState = CAR_MODEL_LOAD_ASSET;
 }
