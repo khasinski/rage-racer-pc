@@ -9,11 +9,10 @@ enum {
     ENVIRONMENT_FOG_STEP = 0xFA,
 };
 
-/* The two-word header is followed immediately by GameEnvironmentCue records. */
-void SetEnvironmentScript(u32 *script) {
-    g_SkyRowBase = *script++;
-    g_EnvScriptLength = *script++;
-    g_EnvScriptCues = (GameEnvironmentCue *)(void *)script;
+void SetEnvironmentScript(GameEnvironmentScript *script) {
+    g_SkyRowBase = script->skyRowBase;
+    g_EnvScriptLength = script->length;
+    g_EnvScriptCues = script->cues;
 }
 
 static GameEnvironmentCue *LastEnvironmentCue(void) {

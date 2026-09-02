@@ -40,6 +40,15 @@ struct GameEnvironmentCue {
     u16 spareTarget;
 };
 
+typedef struct GameEnvironmentScript {
+    u32 skyRowBase;
+    u32 length;
+    struct GameEnvironmentCue cues[1];
+} GameEnvironmentScript;
+
+_Static_assert(offsetof(GameEnvironmentScript, cues) == 8,
+               "environment cues must immediately follow the script header");
+
 /*
  * The nine colours a course carries for its surroundings, each one held as a
  * current value plus the pair a cue is fading between. They were addressed by

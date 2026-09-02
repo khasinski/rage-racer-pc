@@ -81,18 +81,14 @@ static void SeedCue(GameEnvironmentCue *cue, s32 time, u8 color,
 }
 
 int main(void) {
-    struct {
-        u32 skyRowBase;
-        u32 length;
-        GameEnvironmentCue cues[1];
-    } script;
+    GameEnvironmentScript script;
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[5];
     s32 color;
 
     script.skyRowBase = 7;
     script.length = 123;
-    SetEnvironmentScript(&script.skyRowBase);
+    SetEnvironmentScript(&script);
     if (g_SkyRowBase != 7 || g_EnvScriptLength != 123 ||
         g_EnvScriptCues != script.cues) {
         puts("FAIL: environment script header");

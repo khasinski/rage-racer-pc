@@ -77,7 +77,10 @@ void SetTrackRenderTable(struct TrackRenderTable *table) {
 void SetEnvPaletteTable(struct EnvironmentPalette *table) {
     (void)table; s_installCount++;
 }
-void SetEnvironmentScript(u32 *script) { (void)script; s_installCount++; }
+void SetEnvironmentScript(struct GameEnvironmentScript *script) {
+    (void)script;
+    s_installCount++;
+}
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
     (void)base; (void)index; s_installCount++;
 }
