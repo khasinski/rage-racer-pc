@@ -24,7 +24,10 @@ jobs:
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        run: cmake --build build/release --parallel
+        # An unbounded --parallel runs this runner out of processes: three
+        # builds in a row died with "Resource temporarily unavailable" from
+        # make rather than from anything in the code.
+        run: cmake --build build/release --parallel 4
       - name: Verify portable tests
         run: >-
           ctest --test-dir build/release --output-on-failure
@@ -87,7 +90,7 @@ jobs:
       - name: Build the save editor
         run: |
           cmake -S editor -B build/editor -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/editor --parallel
+          cmake --build build/editor --parallel 4
           ctest --test-dir build/editor --output-on-failure
       - name: Package the save editor
         env:
