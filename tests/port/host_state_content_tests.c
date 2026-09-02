@@ -152,40 +152,6 @@ extern unsigned char g_MsgMdecOutSync[16];
 extern unsigned char g_FmtMdecTimeoutDma[40];
 extern unsigned char g_FmtMdecTimeoutStatus[56];
 extern unsigned char g_FmtMdecTimeout[16];
-extern unsigned char g_FmtGpuTPage[24];
-extern unsigned char g_FmtGpuClut[16];
-extern unsigned char g_FmtGpuDrawClip[24];
-extern unsigned char g_FmtGpuDrawOffset[16];
-extern unsigned char g_FmtGpuTextureWindow[24];
-extern unsigned char g_FmtGpuDither[12];
-extern unsigned char g_FmtGpuDrawOnDisplay[12];
-extern unsigned char g_FmtGpuDispArea[28];
-extern unsigned char g_FmtGpuScreenArea[28];
-extern unsigned char g_FmtGpuIsInterlace[12];
-extern unsigned char g_FmtGpuIsRgb24[64];
-extern unsigned char g_FmtGpuResetGraphTrace[32];
-extern unsigned char g_FmtGpuResetGraph[20];
-extern unsigned char g_FmtGpuSetGraphReverse[24];
-extern unsigned char g_FmtGpuSetGraphDebug[44];
-extern unsigned char g_MsgGpuSetGraphQueue[20];
-extern unsigned char g_MsgGpuDrawSyncCallback[28];
-extern unsigned char g_MsgGpuSetDispMask[20];
-extern unsigned char g_MsgGpuDrawSync[20];
-extern unsigned char g_MsgGpuBadRect[12];
-extern unsigned char g_FmtGpuRect[20];
-extern unsigned char g_FmtGpuPrimName[8];
-extern unsigned char g_GpuNameClearImage[12];
-extern unsigned char g_GpuNameLoadImage[12];
-extern unsigned char g_GpuNameStoreImage[12];
-extern unsigned char g_GpuNameMoveImage[12];
-extern unsigned char g_FmtGpuClearOTag[24];
-extern unsigned char g_FmtGpuClearOTagR[24];
-extern unsigned char g_GpuTraceDrawOTag[20];
-extern unsigned char g_GpuTracePutDrawEnv[24];
-extern unsigned char g_GpuTraceDrawOTagEnv[28];
-extern unsigned char g_FmtGpuPutDispEnv[24];
-extern unsigned char g_MsgGpuTimeout[52];
-extern unsigned char g_MsgGpuTimeoutCallback[24];
 extern unsigned char g_MsgCdTrackRange[16];
 extern unsigned char g_MsgCdGetToc2Entry[28];
 extern unsigned char g_MsgCdGetToc2Error[20];
@@ -629,40 +595,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtMdecTimeoutDma", g_FmtMdecTimeoutDma, 40},
     {"g_FmtMdecTimeoutStatus", g_FmtMdecTimeoutStatus, 56},
     {"g_FmtMdecTimeout", g_FmtMdecTimeout, 16},
-    {"g_FmtGpuTPage", g_FmtGpuTPage, 24},
-    {"g_FmtGpuClut", g_FmtGpuClut, 16},
-    {"g_FmtGpuDrawClip", g_FmtGpuDrawClip, 24},
-    {"g_FmtGpuDrawOffset", g_FmtGpuDrawOffset, 16},
-    {"g_FmtGpuTextureWindow", g_FmtGpuTextureWindow, 24},
-    {"g_FmtGpuDither", g_FmtGpuDither, 12},
-    {"g_FmtGpuDrawOnDisplay", g_FmtGpuDrawOnDisplay, 12},
-    {"g_FmtGpuDispArea", g_FmtGpuDispArea, 28},
-    {"g_FmtGpuScreenArea", g_FmtGpuScreenArea, 28},
-    {"g_FmtGpuIsInterlace", g_FmtGpuIsInterlace, 12},
-    {"g_FmtGpuIsRgb24", g_FmtGpuIsRgb24, 64},
-    {"g_FmtGpuResetGraphTrace", g_FmtGpuResetGraphTrace, 32},
-    {"g_FmtGpuResetGraph", g_FmtGpuResetGraph, 20},
-    {"g_FmtGpuSetGraphReverse", g_FmtGpuSetGraphReverse, 24},
-    {"g_FmtGpuSetGraphDebug", g_FmtGpuSetGraphDebug, 44},
-    {"g_MsgGpuSetGraphQueue", g_MsgGpuSetGraphQueue, 20},
-    {"g_MsgGpuDrawSyncCallback", g_MsgGpuDrawSyncCallback, 28},
-    {"g_MsgGpuSetDispMask", g_MsgGpuSetDispMask, 20},
-    {"g_MsgGpuDrawSync", g_MsgGpuDrawSync, 20},
-    {"g_MsgGpuBadRect", g_MsgGpuBadRect, 12},
-    {"g_FmtGpuRect", g_FmtGpuRect, 20},
-    {"g_FmtGpuPrimName", g_FmtGpuPrimName, 8},
-    {"g_GpuNameClearImage", g_GpuNameClearImage, 12},
-    {"g_GpuNameLoadImage", g_GpuNameLoadImage, 12},
-    {"g_GpuNameStoreImage", g_GpuNameStoreImage, 12},
-    {"g_GpuNameMoveImage", g_GpuNameMoveImage, 12},
-    {"g_FmtGpuClearOTag", g_FmtGpuClearOTag, 24},
-    {"g_FmtGpuClearOTagR", g_FmtGpuClearOTagR, 24},
-    {"g_GpuTraceDrawOTag", g_GpuTraceDrawOTag, 20},
-    {"g_GpuTracePutDrawEnv", g_GpuTracePutDrawEnv, 24},
-    {"g_GpuTraceDrawOTagEnv", g_GpuTraceDrawOTagEnv, 28},
-    {"g_FmtGpuPutDispEnv", g_FmtGpuPutDispEnv, 24},
-    {"g_MsgGpuTimeout", g_MsgGpuTimeout, 52},
-    {"g_MsgGpuTimeoutCallback", g_MsgGpuTimeoutCallback, 24},
     {"g_MsgCdTrackRange", g_MsgCdTrackRange, 16},
     {"g_MsgCdGetToc2Entry", g_MsgCdGetToc2Entry, 28},
     {"g_MsgCdGetToc2Error", g_MsgCdGetToc2Error, 20},
@@ -1006,7 +938,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 143137145UL;
+    const unsigned long expected = 4289486611UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

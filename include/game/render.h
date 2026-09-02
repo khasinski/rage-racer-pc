@@ -761,22 +761,6 @@ void SetTrackTexturePageNow(s32 trackSection);
 /* Declared identically by 95 translation units before this
  * header carried them. */
 
-extern char g_FmtGpuDrawClip[];
-extern char g_FmtGpuDrawOffset[];
-extern char g_FmtGpuTextureWindow[];
-extern char g_FmtGpuDither[];
-extern char g_FmtGpuDrawOnDisplay[];
-extern char g_FmtGpuDispArea[];
-extern char g_FmtGpuScreenArea[];
-extern char g_FmtGpuIsInterlace[];
-extern char g_FmtGpuIsRgb24[];
-extern char g_FmtGpuResetGraphTrace[];
-extern char g_FmtGpuResetGraph[];
-extern char g_FmtGpuSetGraphReverse[];
-extern char g_FmtGpuSetGraphDebug[];
-extern char g_GpuTraceDrawOTag[];
-extern char g_GpuTracePutDrawEnv[];
-extern char g_GpuTraceDrawOTagEnv[];
 extern Rect g_TrackTextureRowRect;
 extern u8 g_CarMirrorBadgeStyles[];
 extern u8 g_MirrorBadgeTexU[];
