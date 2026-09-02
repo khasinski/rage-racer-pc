@@ -58,6 +58,9 @@ static void SteerAllCars(void) {
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
+        if (car->activeFlag == -1) {
+            continue;
+        }
         UpdateCarAiTargetSpeed(car, index);
         ApplyCarRacingLineHint(car, index);
         ClampCarLateralOffset(car, index);

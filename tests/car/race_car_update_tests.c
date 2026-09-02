@@ -206,10 +206,10 @@ int main(void) {
     CHECK_EQ(s_traceCalls, 1);
     CHECK_EQ(s_trafficCalls, 1);
     CHECK_EQ(s_collisionCalls, RACE_CAR_SLOT_COUNT - 1);
-    CHECK_EQ(s_targetSpeedCalls, RACE_CAR_SLOT_COUNT);
-    CHECK_EQ(s_hintCalls, RACE_CAR_SLOT_COUNT);
-    CHECK_EQ(s_clampCalls, RACE_CAR_SLOT_COUNT);
-    CHECK_EQ(s_steerCalls, RACE_CAR_SLOT_COUNT);
+    CHECK_EQ(s_targetSpeedCalls, 1);
+    CHECK_EQ(s_hintCalls, 1);
+    CHECK_EQ(s_clampCalls, 1);
+    CHECK_EQ(s_steerCalls, 1);
     CHECK_EQ(s_moveCalls, 1);
     CHECK_EQ(s_progressCalls, 0);
     CHECK_EQ(s_knockbackCalls, 0);
@@ -217,8 +217,7 @@ int main(void) {
     CHECK_EQ(s_bodyMotionCalls, 1);
     CHECK_EQ(s_attractAccelerationCalls, 1);
     CHECK_EQ(s_placementCalls, 1);
-    CHECK_EVENTS("TACSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLR"
-                 "SHLREMPB");
+    CHECK_EVENTS("TACSHLREMPB");
 
     g_TrackLength = 100;
     car->progressA = 123;

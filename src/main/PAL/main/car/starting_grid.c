@@ -4,7 +4,6 @@
 
 enum {
     RACE_SCENE_ID = 11,
-    RIVAL_CAR_COUNT = 11,
 };
 
 void BuildStartingGrid(void) {
@@ -15,10 +14,10 @@ void BuildStartingGrid(void) {
     g_ClosestRivalRank = 3;
     g_RaceSeries = g_GrandPrixSeries;
 
-    for (index = 0; index < RIVAL_CAR_COUNT; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
-        car->activeFlag = 0;
+        car->activeFlag = -1;
         car->aiEnabled = 0;
         car->facingBackwards = (s16)ReadRaceTrackDirection();
         if (grid[index].value < 0) {
