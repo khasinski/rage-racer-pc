@@ -76,7 +76,6 @@ extern s16 g_VabIds[];
 
 void SetSequenceVolume(s32 volume);
 void RefreshSequenceVolumeScale(void);
-void SetSequenceVolumeScale(s32 scale);
 void PlaySequence(void);
 void StopSequence(void);
 void StartSequenceFadeOut(void);

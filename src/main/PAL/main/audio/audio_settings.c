@@ -8,13 +8,6 @@ void SetLoadedTableVolumeScale(s32 scale) {
     g_EngineSoundState.volumeScale = scale;
 }
 
-void SetSequenceVolumeSetting(s32 setting) {
-    setting = ClampAudioSetting(setting);
-
-    SetCdVolumeSetting(setting);
-    SetSequenceVolumeScale(setting);
-}
-
 /* Set the effect master volume scale (g_SoundScale.scale) from a
  * 0..15 level, mapping it onto the 0..0x80 fixed-point scale used by the
  * effect-voice volume math. */

@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/cd.h"
 #include "game/sound.h"
 
 enum {
@@ -18,7 +19,9 @@ void RefreshSequenceVolumeScale(void) {
     SetSequenceVolume(SequenceVolumeForSetting(g_SeqVolumeSetting));
 }
 
-void SetSequenceVolumeScale(s32 setting) {
+void SetSequenceVolumeSetting(s32 setting) {
+    setting = ClampAudioSetting(setting);
     g_SeqVolumeSetting = setting;
+    SetCdVolumeSetting(setting);
     SetSequenceVolume(SequenceVolumeForSetting(setting));
 }
