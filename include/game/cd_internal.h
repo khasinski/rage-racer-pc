@@ -41,6 +41,10 @@ enum {
     CD_TOC_CAPACITY = 100,
 };
 
+static inline int CdTrackIndexValid(s32 track) {
+    return (u32)track < CD_TRACK_LOCATION_COUNT;
+}
+
 extern CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 extern CdlLOC *g_CdBgmTrackLocs;
 extern CdlLOC g_CdTrackLoopPoint[CD_TRACK_LOCATION_COUNT];

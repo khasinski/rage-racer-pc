@@ -3,13 +3,19 @@
 #include "psyq/cd.h"
 
 static void CaptureCdPauseLocation(void) {
+    g_CdTrackElapsedLoc.minute = g_CdLocResult[2];
+    g_CdTrackElapsedLoc.sector = 0;
+    g_CdTrackElapsedLoc.second = g_CdLocResult[3];
+
+    if (!CdTrackIndexValid(g_CdCurrentTrack)) {
+        g_CdRestartOnResume = 0;
+        return;
+    }
+
     const s32 loopPoint =
         CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
     const s32 firstLoopPoint = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
 
-    g_CdTrackElapsedLoc.minute = g_CdLocResult[2];
-    g_CdTrackElapsedLoc.sector = 0;
-    g_CdTrackElapsedLoc.second = g_CdLocResult[3];
     g_CdRestartOnResume = CdPlaybackPassedLoopPoint(
         firstLoopPoint, loopPoint, CdPosToInt_Local(&g_CdTrackElapsedLoc));
 }

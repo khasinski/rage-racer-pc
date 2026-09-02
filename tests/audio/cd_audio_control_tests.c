@@ -20,6 +20,12 @@ s32 g_CdTrackStep;
     } while (0)
 
 int main(void) {
+    g_CdTrackPending = -1;
+    RequestCdTrack(-1);
+    CHECK(g_CdTrackPending == -1);
+    RequestCdTrack(CD_TRACK_LOCATION_COUNT);
+    CHECK(g_CdTrackPending == -1);
+
     RequestCdTrack(7);
     CHECK(g_CdTrackPending == 7 &&
           g_CdTrackStep == CD_TRACK_WAIT_FOR_DRIVE);
@@ -52,6 +58,13 @@ int main(void) {
     CHECK(g_CdCommandPending == CD_COMMAND_PLAY &&
           g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
     CHECK(g_CdRestartOnResume == 0);
+
+    g_CdCurrentTrack = 0xFF;
+    g_CdRestartOnResume = 1;
+    g_CdTrackPending = -1;
+    ResumeCdAudio();
+    CHECK(g_CdTrackPending == -1 && g_CdRestartOnResume == 0);
+    CHECK(g_CdCommandPending == CD_COMMAND_RESUME);
 
     g_CdCurrentTrack = 9;
     g_CdTrackPending = 4;

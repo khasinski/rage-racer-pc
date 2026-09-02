@@ -56,6 +56,14 @@ static void ResetCalls(void) {
 }
 
 static int TestTrackSelection(void) {
+    g_CdTrackPending = -9;
+    g_CdTrackStep = CD_TRACK_SEND_SEEK;
+    ResetCalls();
+    StepCdTrackRequest();
+    CHECK(g_CdTrackPending == -1 &&
+          g_CdTrackStep == CD_TRACK_WAIT_FOR_DRIVE);
+    CHECK(s_controlCalls == 0);
+
     g_CdTrackPending = 5;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdFadeFrames = 12;

@@ -145,6 +145,13 @@ static int TestEndOfTrackPolicy(void) {
 
     Reset();
     s_hostEnded = 1;
+    g_CdCurrentTrack = 0xFF;
+    TickCdAudio();
+    CHECK(g_CdTrackPending == -1 && g_CdCommandPending == CD_COMMAND_NONE);
+    CHECK(g_CdTrackEnded == 0);
+
+    Reset();
+    s_hostEnded = 1;
     g_CdTrackLoopPoint[0].second = 2;
     g_CdTrackLoopPoint[3].second = 1;
     TickCdAudio();

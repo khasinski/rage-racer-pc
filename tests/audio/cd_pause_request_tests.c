@@ -66,12 +66,20 @@ int main(void) {
     StepCdPauseRequest();
     CHECK(g_CdCommandStep == CD_PAUSE_CAPTURE_LOCATION);
 
+    g_CdCurrentTrack = 0xFF;
+    g_CdRestartOnResume = 1;
+    s_controlResult = 1;
+    StepCdPauseRequest();
+    CHECK(g_CdRestartOnResume == 0 &&
+          g_CdCommandStep == CD_PAUSE_WAIT_FOR_COMMAND);
+
     g_CdCurrentTrack = 1;
     g_CdTrackLoopPoint[0].second = 1;
     g_CdTrackLoopPoint[1].second = 2;
     g_CdLocResult[2] = 0;
     g_CdLocResult[3] = 3;
     s_controlResult = 1;
+    g_CdCommandStep = CD_PAUSE_CAPTURE_LOCATION;
     StepCdPauseRequest();
     CHECK(g_CdRestartOnResume == 1);
     CHECK(g_CdTrackElapsedLoc.second == 3 &&

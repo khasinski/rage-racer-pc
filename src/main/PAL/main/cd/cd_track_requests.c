@@ -30,6 +30,12 @@ static void FinishTrackRequest(int restoreVolume) {
 }
 
 void StepCdTrackRequest(void) {
+    if (!CdTrackIndexValid(g_CdTrackPending)) {
+        g_CdTrackPending = -1;
+        g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+        return;
+    }
+
     switch (g_CdTrackStep) {
     case CD_TRACK_WAIT_FOR_DRIVE:
         if (CdSync(1, 0) == 0) {

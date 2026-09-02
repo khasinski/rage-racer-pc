@@ -1,6 +1,9 @@
 #include "game/cd.h"
 #include "game/cd_internal.h"
 void RequestCdTrack(s32 track) {
+    if (!CdTrackIndexValid(track)) {
+        return;
+    }
     g_CdTrackPending = (u8)track;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdCommandPending = CD_COMMAND_NONE;
@@ -18,13 +21,15 @@ void PauseCdAudio(void) {
 }
 
 void ResumeCdAudio(void) {
-    if (g_CdRestartOnResume != 0) {
+    if (g_CdRestartOnResume != 0 &&
+        CdTrackIndexValid(g_CdCurrentTrack)) {
         g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
         g_CdRestartOnResume = 0;
         g_CdCommandPending = CD_COMMAND_PLAY;
         g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
         g_CdTrackPending = g_CdCurrentTrack;
     } else {
+        g_CdRestartOnResume = 0;
         g_CdCommandPending = CD_COMMAND_RESUME;
         g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
     }
