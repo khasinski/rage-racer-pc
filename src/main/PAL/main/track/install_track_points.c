@@ -10,18 +10,41 @@ static void ClearTrackPoints(void) {
     g_TrackSectionCount = 0;
 }
 
-/* Install the variable-length point table and its trailing arc-centre table. */
-s32 InstallTrackPoints(TrackPointTable *trackData, size_t size) {
+s32 IsValidTrackPointAsset(const TrackPointTable *trackData, size_t size) {
+    size_t pointBytes;
+    size_t arcCenterCount = 0;
     s32 i;
 
     if (trackData == NULL || size < offsetof(TrackPointTable, points)) {
-        ClearTrackPoints();
         return 0;
     }
     if (trackData->count <= 0 ||
         (size_t)trackData->count >
             (size - offsetof(TrackPointTable, points)) /
                 sizeof(trackData->points[0])) {
+        return 0;
+    }
+    pointBytes = offsetof(TrackPointTable, points) +
+                 (size_t)trackData->count * sizeof(trackData->points[0]);
+    for (i = 0; i < trackData->count; i++) {
+        if (TrackPointCurveMode(&trackData->points[i]) != TRACK_CURVE_NONE) {
+            s32 arcIndex = TrackPointArcIndex(&trackData->points[i]);
+
+            if (arcIndex < 0) return 0;
+            if ((size_t)arcIndex >= arcCenterCount) {
+                arcCenterCount = (size_t)arcIndex + 1;
+            }
+        }
+    }
+    return arcCenterCount <=
+           (size - pointBytes) / sizeof(GameTrackArcCenter);
+}
+
+/* Install the variable-length point table and its trailing arc-centre table. */
+s32 InstallTrackPoints(TrackPointTable *trackData, size_t size) {
+    s32 i;
+
+    if (!IsValidTrackPointAsset(trackData, size)) {
         ClearTrackPoints();
         return 0;
     }

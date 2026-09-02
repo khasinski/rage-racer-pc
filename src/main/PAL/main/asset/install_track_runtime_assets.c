@@ -75,7 +75,19 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             blockSizes[TRACK_RUNTIME_SECONDARY_MODELS]) ||
         !IsValidTerrainCellAsset(
             GetSceneAssetBlock(header, TRACK_RUNTIME_TERRAIN_CELLS),
-            blockSizes[TRACK_RUNTIME_TERRAIN_CELLS])) {
+            blockSizes[TRACK_RUNTIME_TERRAIN_CELLS]) ||
+        !IsValidEnvironmentScript(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT),
+            blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT]) ||
+        !IsValidTrackPointAsset(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS),
+            blockSizes[TRACK_RUNTIME_POINTS]) ||
+        !IsValidTrackEventAsset(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS),
+            blockSizes[TRACK_RUNTIME_EVENTS]) ||
+        !IsValidTrackCameraTable(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
+            blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
         return 0;
     }
 

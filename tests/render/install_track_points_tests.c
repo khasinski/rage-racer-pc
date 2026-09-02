@@ -23,6 +23,7 @@ int main(void) {
     memset(&fixture, 0, sizeof(fixture));
     fixture.count = 3;
     fixture.points[0].segmentLength = 100;
+    fixture.points[0].arcRef = (1 << 4) | TRACK_CURVE_PRIMARY;
     fixture.points[1].segmentLength = 200;
     fixture.points[2].segmentLength = 300;
 
@@ -70,6 +71,20 @@ int main(void) {
     }
 
     fixture.count = 3;
+    if (InstallTrackPoints(
+            (TrackPointTable *)&fixture,
+            offsetof(TrackFixture, arcCenters[1])) != 0 ||
+        g_TrackPoints != NULL || g_TrackArcCenters != NULL) {
+        puts("FAIL: truncated arc-centre table was published");
+        return 1;
+    }
+    fixture.points[0].arcRef = (u16)-15;
+    if (InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture)) != 0 ||
+        g_TrackPoints != NULL || g_TrackArcCenters != NULL) {
+        puts("FAIL: negative arc-centre index was published");
+        return 1;
+    }
+    fixture.points[0].arcRef = (1 << 4) | TRACK_CURVE_PRIMARY;
     if (InstallTrackPoints(
             (TrackPointTable *)&fixture,
             offsetof(TrackFixture, points[2]) + sizeof(GameTrackPoint) - 1) !=

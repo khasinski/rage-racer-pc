@@ -20,6 +20,12 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size);
 s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size);
 s32 IsValidTerrainCellAsset(const void *data, size_t size);
 s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size);
+s32 IsValidEnvironmentScript(const struct GameEnvironmentScript *script,
+                             size_t size);
+s32 IsValidTrackPointAsset(const struct TrackPointTable *trackData,
+                           size_t size);
+s32 IsValidTrackEventAsset(const struct TrackEventData *eventData,
+                           size_t size);
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 index);
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset);
 s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size);

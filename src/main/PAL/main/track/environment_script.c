@@ -15,29 +15,35 @@ static void ClearEnvironmentScript(void) {
     g_EnvScriptCues = NULL;
 }
 
-s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {
+s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
+                             size_t size) {
     size_t cueCount;
     size_t i;
 
     if (script == NULL || size < offsetof(GameEnvironmentScript, cues) ||
         script->length == 0 || script->length > INT32_MAX) {
-        ClearEnvironmentScript();
         return 0;
     }
     cueCount = (size - offsetof(GameEnvironmentScript, cues)) /
                sizeof(script->cues[0]);
     if (cueCount < 2 || script->cues[0].time < 0) {
-        ClearEnvironmentScript();
         return 0;
     }
     for (i = 1; i < cueCount; i++) {
         if (script->cues[i].time == -1) break;
         if (script->cues[i].time < 0) {
-            ClearEnvironmentScript();
             return 0;
         }
     }
     if (i == cueCount) {
+        return 0;
+    }
+
+    return 1;
+}
+
+s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {
+    if (!IsValidEnvironmentScript(script, size)) {
         ClearEnvironmentScript();
         return 0;
     }

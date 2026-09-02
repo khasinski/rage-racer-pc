@@ -21,14 +21,11 @@ static s32 CameraListHasTerminator(const TrackCameraTable *table, size_t size,
     return 0;
 }
 
-s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
-                           s32 useSeriesCamera) {
+s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
+                            s32 useSeriesCamera) {
     s32 offset;
 
-    if (table == NULL || size < sizeof(*table)) {
-        g_TrackCameras = NULL;
-        return 0;
-    }
+    if (table == NULL || size < sizeof(*table)) return 0;
 
     offset = table->defaultOffset;
 
@@ -36,10 +33,21 @@ s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
         offset = table->seriesOffset[g_GrandPrixSeries != 0];
     }
 
-    if (!CameraListHasTerminator(table, size, offset)) {
+    return CameraListHasTerminator(table, size, offset);
+}
+
+s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+                           s32 useSeriesCamera) {
+    s32 offset;
+
+    if (!IsValidTrackCameraTable(table, size, useSeriesCamera)) {
         g_TrackCameras = NULL;
         return 0;
     }
+
+    offset = useSeriesCamera
+                 ? table->seriesOffset[g_GrandPrixSeries != 0]
+                 : table->defaultOffset;
 
     g_TrackCameras = (GameTrackCameraNode *)((u8 *)table + offset);
     return 1;

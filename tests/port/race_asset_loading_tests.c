@@ -61,6 +61,7 @@ static s32 s_trackIdentity;
 static s32 s_installCount;
 static void *s_installs[8];
 static s32 s_seriesCamera;
+static s32 s_cameraTableValid = 1;
 static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
 static s32 s_failures;
@@ -126,6 +127,29 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     (void)data;
     (void)size;
     return 1;
+}
+s32 IsValidEnvironmentScript(const struct GameEnvironmentScript *script,
+                             size_t size) {
+    (void)script;
+    (void)size;
+    return 1;
+}
+s32 IsValidTrackPointAsset(const struct TrackPointTable *table, size_t size) {
+    (void)table;
+    (void)size;
+    return 1;
+}
+s32 IsValidTrackEventAsset(const struct TrackEventData *data, size_t size) {
+    (void)data;
+    (void)size;
+    return 1;
+}
+s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
+                            s32 useSeriesCamera) {
+    (void)table;
+    (void)size;
+    (void)useSeriesCamera;
+    return s_cameraTableValid;
 }
 s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size) {
     (void)size;
@@ -413,6 +437,17 @@ static void TestTrackPhases(void) {
               s_installCount == 0,
           "truncated environment palettes reject the runtime pack");
     pack->offsets[2] = 448;
+
+    s_cameraTableValid = 0;
+    s_installCount = 0;
+    s_trackIdentity = -1;
+    g_TrackRenderTable = NULL;
+    g_EnvPaletteTable = NULL;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1 &&
+              g_TrackRenderTable == NULL && g_EnvPaletteTable == NULL,
+          "invalid camera table rejects the pack before publication");
+    s_cameraTableValid = 1;
 
     s_enableCdResult = 0;
     LoadRaceAssets();
