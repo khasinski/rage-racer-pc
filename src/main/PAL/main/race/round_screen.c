@@ -6,14 +6,12 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/round_screen_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
 
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
 void EnterRoundScreen(void) {
-    s32 count;
-    s32 i;
-
     SetDispMask(0);
     g_FrameSyncThreshold = 0x80;
 
@@ -26,18 +24,9 @@ void EnterRoundScreen(void) {
         g_SceneTimer = 0;
         g_SceneId = 10;
         g_FadeLevel = 0;
-        count = (g_GrandPrixClass < 2) ? 3 : 4;
-        g_GrandPrixRound = 0;
-
-        for (i = 0; i < count; i++) {
-            if (g_CourseProgress->bestPlace[i] != 0) {
-                g_GrandPrixRound++;
-            }
-        }
-
-        if (g_CourseProgress->bestPlace[SeriesCourseIndex()] == 0) {
-            g_GrandPrixRound++;
-        }
+        g_GrandPrixRound = DetermineGrandPrixRound(
+            g_CourseProgress->bestPlace, g_GrandPrixClass,
+            SeriesCourseIndex());
     }
 }
 
@@ -144,6 +133,8 @@ static void DrawBgmSelector(void) {
 
 /* Scene 10: draws the ROUND screen, takes the BGM choice and starts the race at frame 121. */
 void UpdateRoundScreen(void) {
+    RoundBgmChoice bgm;
+
     if ((u32)g_SceneTimer < 10000) {
         g_SceneTimer++;
     }
@@ -169,17 +160,10 @@ void UpdateRoundScreen(void) {
         } else {
             g_MirrorMode = 0;
         }
-        if (g_BgmSelection == 0) {
-            g_BgmTrack = g_BgmShuffleOrder[g_BgmShuffleIndex++];
-            if (g_BgmShuffleIndex == g_BgmTrackCount) {
-                g_BgmShuffleIndex = 0;
-            }
-        } else {
-            g_BgmTrack = g_BgmSelection - 1;
-        }
-        if (g_BgmTrack == 9) {
-            g_BgmTrack = 0xe;
-        }
+        bgm = ChooseRoundBgm(g_BgmSelection, g_BgmShuffleOrder,
+                             g_BgmTrackCount, g_BgmShuffleIndex);
+        g_BgmTrack = bgm.track;
+        g_BgmShuffleIndex = bgm.shuffleIndex;
     }
     if (g_SceneId == 0xa) {
         u16 flags = g_PadPressed;
@@ -188,7 +172,8 @@ void UpdateRoundScreen(void) {
         } else if (flags & PAD_RIGHT) {
             g_BgmSelection++;
         }
-        g_BgmSelection = (g_BgmSelection + g_BgmTrackCount + 1) % (g_BgmTrackCount + 1);
+        g_BgmSelection =
+            WrapRoundBgmSelection(g_BgmSelection, g_BgmTrackCount);
         DrawBgmSelector();
     }
 }

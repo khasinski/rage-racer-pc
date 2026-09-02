@@ -1,0 +1,51 @@
+#include "game/round_screen_internal.h"
+
+s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
+                            s32 courseIndex) {
+    s32 courseCount = classIndex < 2 ? 3 : 4;
+    s32 round = 0;
+    s32 course;
+
+    for (course = 0; course < courseCount; course++) {
+        if (bestPlaces[course] != 0) {
+            round++;
+        }
+    }
+    if (bestPlaces[courseIndex] == 0) {
+        round++;
+    }
+    return round;
+}
+
+s32 WrapRoundBgmSelection(s32 selection, s32 trackCount) {
+    s32 optionCount = trackCount + 1;
+
+    if (optionCount <= 0) {
+        return 0;
+    }
+    selection %= optionCount;
+    return selection < 0 ? selection + optionCount : selection;
+}
+
+RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
+                              s32 trackCount, s32 shuffleIndex) {
+    RoundBgmChoice choice = {0, 0};
+
+    if (selection == 0 && trackCount > 0) {
+        shuffleIndex %= trackCount;
+        if (shuffleIndex < 0) {
+            shuffleIndex += trackCount;
+        }
+        choice.track = shuffleOrder[shuffleIndex];
+        choice.shuffleIndex = (shuffleIndex + 1) % trackCount;
+    } else if (selection > 0) {
+        choice.track = selection - 1;
+        choice.shuffleIndex = shuffleIndex;
+    }
+
+    /* The tenth authored entry is CD track 14 rather than track 9. */
+    if (choice.track == 9) {
+        choice.track = 0xE;
+    }
+    return choice;
+}

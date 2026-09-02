@@ -225,6 +225,18 @@ add_test(NAME record_defaults COMMAND record_defaults_tests)
 
 set_tests_properties(record_defaults PROPERTIES LABELS unit)
 
+add_executable(round_screen_rules_tests
+    round_screen_rules_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/round_screen_rules.c)
+target_include_directories(round_screen_rules_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(round_screen_rules_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME round_screen_rules COMMAND round_screen_rules_tests)
+set_tests_properties(round_screen_rules PROPERTIES LABELS unit)
+
 add_executable(save_checksum_tests
     save_checksum_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_checksum.c)

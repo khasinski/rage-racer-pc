@@ -11,6 +11,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/round_screen_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
 #include "game/track.h"
@@ -409,30 +410,6 @@ static void ScenarioApplyCarSetup(void) {
             entry->transmission != 0 ? "manual" : "automatic");
 }
 
-/* EnterRoundScreen counts the rounds already placed in this class, then adds
- * the one about to be run. */
-static void ScenarioCountRounds(void) {
-    int rounds = (g_GrandPrixClass < 2) ? 3 : 4;
-    int index;
-    g_GrandPrixRound = 0;
-    for (index = 0; index < rounds; index++) {
-        if (g_CourseProgress->bestPlace[index] != 0) g_GrandPrixRound++;
-    }
-    if (g_CourseProgress->bestPlace[SeriesCourseIndex()] == 0) {
-        g_GrandPrixRound++;
-    }
-}
-
-/* UpdateRoundScreen draws from the shuffle bag as it hands off to scene 11. */
-static void ScenarioSelectBgm(void) {
-    if (g_BgmSelection == 0) {
-        g_BgmTrack = g_BgmShuffleOrder[g_BgmShuffleIndex++];
-        if (g_BgmShuffleIndex == g_BgmTrackCount) g_BgmShuffleIndex = 0;
-    } else {
-        g_BgmTrack = (s16)(g_BgmSelection - 1);
-    }
-    if (g_BgmTrack == 9) g_BgmTrack = 0xE;
-}
 
 /* Load a race without the frontend. Of the retail route to scene 11, the
  * screens are what costs the time and the asset requests behind them are what
@@ -451,13 +428,12 @@ static void ScenarioDirectBoot(void) {
         "setup", "bgm-assets", "car-assets", "round-request", "round-wait",
         "race-assets", "done"
     };
-    {
-        static int lastStep = -1;
-        if (s_scenario.directStep != lastStep) {
-            lastStep = s_scenario.directStep;
-            fprintf(stderr, "rage-port: direct boot %s t=%.1fs\n",
-                    stepNames[s_scenario.directStep], ScenarioElapsed());
-        }
+    static int lastStep = -1;
+
+    if (s_scenario.directStep != lastStep) {
+        lastStep = s_scenario.directStep;
+        fprintf(stderr, "rage-port: direct boot %s t=%.1fs\n",
+                stepNames[s_scenario.directStep], ScenarioElapsed());
     }
     switch (s_scenario.directStep) {
     case RAGE_DIRECT_PENDING:
@@ -493,13 +469,20 @@ static void ScenarioDirectBoot(void) {
             CloseLoadedAudioSlots();
             UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
             RelocateCarModel();
-            ScenarioCountRounds();
+            g_GrandPrixRound = DetermineGrandPrixRound(
+                g_CourseProgress->bestPlace, g_GrandPrixClass,
+                SeriesCourseIndex());
             s_scenario.directStep = RAGE_DIRECT_RACE_ASSETS;
         }
         break;
-    case RAGE_DIRECT_RACE_ASSETS:
+    case RAGE_DIRECT_RACE_ASSETS: {
         if (RequestRaceAssets() == 0) {
-            ScenarioSelectBgm();
+            RoundBgmChoice bgm = ChooseRoundBgm(
+                g_BgmSelection, g_BgmShuffleOrder, g_BgmTrackCount,
+                g_BgmShuffleIndex);
+
+            g_BgmTrack = bgm.track;
+            g_BgmShuffleIndex = bgm.shuffleIndex;
             ScenarioApplyCarSetup();
             g_MirrorMode = 0;
             g_FrameSyncThreshold = 0x180;
@@ -510,6 +493,7 @@ static void ScenarioDirectBoot(void) {
                     ScenarioElapsed());
         }
         break;
+    }
     }
 }
 
