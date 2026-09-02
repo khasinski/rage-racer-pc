@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "disc_stream_table.h"
 #include "fmv_stream_index.h"
 #include "host_clock.h"
 
@@ -107,6 +108,13 @@ static void ReleaseFmvBuffers(void) {
     s_sectorCursor = 0;
 }
 
+static void ReleaseFmvPixels(void) {
+    free(s_pixels);
+    s_pixels = NULL;
+    s_width = 0;
+    s_height = 0;
+}
+
 static int HostExtractFmv(unsigned int first, unsigned int count) {
     unsigned int index;
     ReleaseFmvBuffers();
@@ -191,7 +199,7 @@ static int RageDecodeFmvFrame(void) {
                 if (y + row >= height) break;
                 for (column = 0; column < 16; column++) {
                     if (x + column >= width) break;
-                    memcpy(s_pixels + (((size_t)(y + row) * width) +
+                    memcpy(s_pixels + (((size_t)(y + row) * s_width) +
                                        (size_t)(x + column)) * 3,
                            src + ((size_t)row * 16 + column) * 3, 3);
                 }
@@ -232,13 +240,15 @@ int FmvXaStreaming(void) {
 }
 
 static int StartXaAudio(unsigned int firstSector,
-                            unsigned int sectorCount) {
-    unsigned char raw[2352], filter[2] = {0, 0};
+                        unsigned int sectorCount) {
+    unsigned char raw[RAGE_STR_SECTOR_SIZE], filter[2] = {0, 0};
     unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
     CdlLOC location;
     int absolute;
     unsigned int index;
-    for (index = 0; index < 16; index++) {
+    unsigned int searchCount = sectorCount < 16 ? sectorCount : 16;
+
+    for (index = 0; index < searchCount; index++) {
         if (!HostReadStreamSector(firstSector + index, raw)) return 0;
         if ((raw[0x12] & 0x0e) == 0x04) {
             filter[0] = raw[0x10];
@@ -247,7 +257,7 @@ static int StartXaAudio(unsigned int firstSector,
         }
     }
     absolute = HostStreamAbsoluteSector(firstSector);
-    if (index == 16 || absolute < 0) return 0;
+    if (index == searchCount || absolute < 0) return 0;
     CdIntToPos(absolute, &location);
     if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
         fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
@@ -286,7 +296,7 @@ static long ResolveFmvStreamIndex(long streamIndex) {
     const char *forced;
     long chosen;
 
-    if (streamIndex < 0 || streamIndex > 10) {
+    if (streamIndex < 0 || streamIndex >= RAGE_DISC_STREAM_COUNT) {
         streamIndex = 0;
     }
 
@@ -298,7 +308,7 @@ static long ResolveFmvStreamIndex(long streamIndex) {
     }
 
     chosen = strtol(forced, NULL, 10);
-    if (chosen < 0 || chosen > 10) {
+    if (chosen < 0 || chosen >= RAGE_DISC_STREAM_COUNT) {
         fprintf(stderr, "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
                 forced);
         return streamIndex;
@@ -312,13 +322,14 @@ static long ResolveFmvStreamIndex(long streamIndex) {
 void StartFmvPlayback(void) {
     RECT clearRect;
     long streamIndex = HostFmvStreamIndex(
-        g_StreamCdEntries, 11, g_StreamLoc);
+        g_StreamCdEntries, RAGE_DISC_STREAM_COUNT, g_StreamLoc);
     unsigned int firstSector;
     unsigned int sectorSpan;
 
+    ReleaseFmvPixels();
     streamIndex = ResolveFmvStreamIndex(streamIndex);
     s_width = 320;
-    s_height = streamIndex == 10 ? 240 : 192;
+    s_height = streamIndex == RAGE_DISC_STREAM_COUNT - 1 ? 240 : 192;
     sectorSpan = HostStreamSectorSpan((int)streamIndex);
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
     if (!HostExtractFmv(firstSector, sectorSpan)) {
@@ -327,7 +338,14 @@ void StartFmvPlayback(void) {
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
-    s_pixels = malloc((size_t)s_width * (size_t)s_height * 3);
+    s_pixels = calloc((size_t)s_width * (size_t)s_height, 3);
+    if (s_pixels == NULL) {
+        fprintf(stderr, "rage-port: could not allocate FMV %ld frame\n",
+                streamIndex);
+        ReleaseFmvBuffers();
+        g_FmvState = FMV_PLAYBACK_FINISH;
+        return;
+    }
     clearRect.x = 0;
     clearRect.y = 0;
     clearRect.w = s_width * 3 / 2;
@@ -405,8 +423,7 @@ void EndFmv(void) {
         fprintf(stderr, "fmv video end: xa tail continues\n");
     }
     ReleaseFmvBuffers();
-    free(s_pixels);
-    s_pixels = NULL;
+    ReleaseFmvPixels();
     g_SceneId = g_StreamReturnScene;
     g_StreamReturnScene = g_FmvStreamEnded;
 }
