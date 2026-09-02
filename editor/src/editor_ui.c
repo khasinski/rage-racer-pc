@@ -17,6 +17,8 @@
 
 static const ImVec2_c kAuto = {0.0f, 0.0f};
 
+static void OpenFromCard(EditorState *state, int index);
+
 static ImVec2_c Size(float x, float y) {
     ImVec2_c value;
     value.x = x;
@@ -865,6 +867,40 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
         }
     }
 
+    if (state->cardChoosing) {
+        int i;
+        igDummy(Size(0.0f, 16.0f));
+        igPushFont(NULL, igGetFontSize() * 1.5f);
+        igText("This memory card holds %d saves", state->card.count);
+        igPopFont();
+        igTextDisabled("%s", state->path);
+        igDummy(Size(0.0f, 14.0f));
+        for (i = 0; i < state->card.count; i++) {
+            RageCardEntry *entry = &state->card.entries[i];
+            const RageRegionInfo *info = RageRegionFind(entry->region);
+            char money[24];
+            char label[256];
+
+            FormatMoney(entry->money, money, sizeof(money));
+            snprintf(label, sizeof(label), "%s%s##card%d",
+                     entry->team[0] != '\0' ? entry->team : "(no team name)",
+                     entry->valid ? "" : "   damaged", i);
+            if (igButton(label, Size(320.0f, 0.0f))) OpenFromCard(state, i);
+            igSameLine(0.0f, 14.0f);
+            igBeginGroup();
+            igTextDisabled("%s   slot %d   %s credits",
+                           info != NULL ? info->name : "unknown release",
+                           entry->slot, money);
+            igTextDisabled("block %d   %s", entry->block, entry->name);
+            igEndGroup();
+            igDummy(Size(0.0f, 4.0f));
+        }
+        igDummy(Size(0.0f, 16.0f));
+        if (igButton("Open something else", Size(220.0f, 36.0f)))
+            requests->open = 1;
+        return;
+    }
+
     if (!state->loaded) {
         DrawWelcome(state, requests);
         return;
@@ -879,8 +915,10 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
                          ? strrchr(name, '/') ? strrchr(name, '/') + 1 : name
                          : "New save");
         igPopFont();
-        igTextDisabled("%s   slot %d%s", info != NULL ? info->name : "unknown",
-                       state->slot, state->dirty ? "   unsaved changes" : "");
+        igTextDisabled("%s   slot %d%s%s", info != NULL ? info->name : "unknown",
+                       state->slot,
+                       state->cardLoaded ? "   on a memory card" : "",
+                       state->dirty ? "   unsaved changes" : "");
     }
     igSeparator();
 
@@ -921,7 +959,17 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
     igSameLine(0.0f, 10.0f);
     if (igButton("Open...", Size(110.0f, 32.0f))) requests->open = 1;
     igSameLine(0.0f, 10.0f);
+    if (state->cardLoaded && state->card.count > 1) {
+        if (igButton("Other saves", Size(140.0f, 32.0f))) {
+            state->cardChoosing = 1;
+            state->loaded = 0;
+        }
+        igSameLine(0.0f, 10.0f);
+    }
     if (igButton("Close", Size(110.0f, 32.0f))) {
+        RageCardFree(&state->card);
+        state->cardLoaded = 0;
+        state->cardChoosing = 0;
         state->loaded = 0;
         state->dirty = 0;
         state->path[0] = '\0';
@@ -944,7 +992,57 @@ void EditorRescan(EditorState *state) {
     state->scanned = 1;
 }
 
+/* Takes the save at `index` out of the card already loaded. */
+static void OpenFromCard(EditorState *state, int index) {
+    if (!RageCardRead(&state->card, index, &state->save)) return;
+    state->cardIndex = index;
+    state->cardChoosing = 0;
+    state->loaded = 1;
+    state->dirty = 0;
+    state->statusIsError = 0;
+    RageSaveCheck(&state->save, &state->report);
+    state->report.status = RAGE_SAVE_OK;
+    if (state->card.entries[index].region != RAGE_REGION_UNKNOWN)
+        state->region = state->card.entries[index].region;
+    if (state->card.entries[index].slot >= 0)
+        state->slot = state->card.entries[index].slot;
+    snprintf(state->status, sizeof(state->status), "opened %s from the card",
+             state->card.entries[index].name);
+}
+
 void EditorOpen(EditorState *state, const char *path) {
+    /*
+     * A memory card holds up to fifteen games, so the save has to be found on
+     * it rather than assumed; a single save file is itself.
+     */
+    if (RageCardLooksLikeCard(path)) {
+        RageCardFree(&state->card);
+        state->cardLoaded = 0;
+        if (!RageCardLoad(path, &state->card, &state->report)) {
+            state->loaded = 0;
+            state->statusIsError = 1;
+            snprintf(state->status, sizeof(state->status), "%s",
+                     state->report.detail);
+            return;
+        }
+        snprintf(state->path, sizeof(state->path), "%s", path);
+        state->cardLoaded = 1;
+        if (state->card.count == 1) {
+            OpenFromCard(state, 0);
+        } else {
+            /* More than one: let the reader say which. */
+            state->cardChoosing = 1;
+            state->loaded = 0;
+            state->statusIsError = 0;
+            snprintf(state->status, sizeof(state->status),
+                     "%d saves on this card", state->card.count);
+        }
+        return;
+    }
+
+    RageCardFree(&state->card);
+    state->cardLoaded = 0;
+    state->cardChoosing = 0;
     if (RageSaveLoad(path, &state->save, &state->report)) {
         int slot = RageSaveSlotFromPath(path);
         snprintf(state->path, sizeof(state->path), "%s", path);
@@ -964,6 +1062,23 @@ void EditorOpen(EditorState *state, const char *path) {
 }
 
 void EditorSave(EditorState *state, const char *path) {
+    /* Saving a card writes the save back into its block and leaves the rest
+     * of the card, and the DexDrive header in front of it, untouched. */
+    if (state->cardLoaded) {
+        if (RageCardWrite(&state->card, state->cardIndex, &state->save) &&
+            RageCardStore(path, &state->card, &state->report)) {
+            snprintf(state->path, sizeof(state->path), "%s", path);
+            state->dirty = 0;
+            state->statusIsError = 0;
+            snprintf(state->status, sizeof(state->status),
+                     "written back into the card");
+        } else {
+            state->statusIsError = 1;
+            snprintf(state->status, sizeof(state->status), "%s",
+                     state->report.detail);
+        }
+        return;
+    }
     if (RageSaveStore(path, &state->save, &state->report)) {
         snprintf(state->path, sizeof(state->path), "%s", path);
         state->dirty = 0;

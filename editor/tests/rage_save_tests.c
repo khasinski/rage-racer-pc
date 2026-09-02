@@ -135,7 +135,7 @@ static void TestRegions(void) {
                RAGE_REGION_PAL, "the PAL card name is recognised");
     CheckEqual(RageRegionFromPath("/tmp/BASLUS-00403 RAGE002"),
                RAGE_REGION_NTSC_U, "the American card name is recognised");
-    CheckEqual(RageRegionFromPath("BISLPS-00744 RAGE001"),
+    CheckEqual(RageRegionFromPath("BISLPS-00600 RAGE001"),
                RAGE_REGION_NTSC_J, "the Japanese card name is recognised");
     /* An unfamiliar serial still says which territory it came from. */
     CheckEqual(RageRegionFromPath("BISLPS-99999 RAGE000"), RAGE_REGION_NTSC_J,
@@ -154,7 +154,7 @@ static void TestRegions(void) {
      * have to ask which one it is. */
     CheckEqual((unsigned long)(RageSaveSlotFromPath("bu00/BESCES-00650 RAGE000") + 1),
                1, "slot zero is read from the file name");
-    CheckEqual((unsigned long)(RageSaveSlotFromPath("BISLPS-00744 RAGE001") + 1),
+    CheckEqual((unsigned long)(RageSaveSlotFromPath("BISLPS-00600 RAGE001") + 1),
                2, "slot one is read from the file name");
     CheckEqual((unsigned long)(RageSaveSlotFromPath("/tmp/BASLUS-00403 RAGE002") + 1),
                3, "slot two is read from the file name");
@@ -203,6 +203,109 @@ static void TestCarNames(void) {
     Check(RageCarName(13, RAGE_REGION_PAL) == NULL, "there is no car thirteen");
     Check(strcmp(RageCarMaker(3), "Gnade") == 0,
           "the car you start in is a Gnade");
+}
+
+/*
+ * A memory card, built here rather than shipped: a DexDrive header, the card
+ * signature, one directory entry and a save in the block it names.
+ */
+static void BuildCard(const char *path, int withDexHeader) {
+    static const size_t kDex = 3904;
+    static const size_t kImage = 8192 * 16;
+    unsigned char *file;
+    unsigned char *image;
+    unsigned char *entry;
+    RageSaveFile save;
+    FILE *stream;
+    size_t size = kImage + (withDexHeader ? kDex : 0);
+
+    file = calloc(1, size);
+    if (file == NULL) return;
+    if (withDexHeader) memcpy(file, "123-456-STD", 11);
+    image = file + (withDexHeader ? kDex : 0);
+    memcpy(image, "MC", 2);
+
+    /* Block three holds the save, and the entry for it is frame three. */
+    entry = image + 3 * 128;
+    entry[0] = 0x51;
+    entry[4] = 0x00;
+    entry[5] = 0x20;   /* 8192, little endian */
+    entry[8] = 0xFF;
+    entry[9] = 0xFF;
+    memcpy(entry + 10, "BASLUS-00403 RAGE001", 20);
+
+    RageSaveInit(&save, RAGE_REGION_NTSC_U, 1);
+    RageSaveWriteTeamName(&save.header, "DEX");
+    save.block.grandPrixProgress.money = 4242;
+    RageSaveRefresh(&save);
+    memcpy(image + 3 * 8192, &save, sizeof(save));
+
+    stream = fopen(path, "wb");
+    if (stream != NULL) {
+        fwrite(file, 1, size, stream);
+        fclose(stream);
+    }
+    free(file);
+}
+
+static void TestMemoryCard(void) {
+    const char *path = "rage-editor-card.gme";
+    RageCard card;
+    RageSaveReport report;
+    RageSaveFile save;
+
+    BuildCard(path, 1);
+    Check(RageCardLooksLikeCard(path), "a DexDrive file is recognised by size");
+    Check(RageCardLoad(path, &card, &report), "the card loads");
+    CheckEqual((unsigned long)card.count, 1, "one Rage Racer save is found");
+    Check(card.fromDexDrive, "and the DexDrive header is noticed");
+    CheckEqual((unsigned long)card.entries[0].block, 3, "in the block the "
+                                                       "directory names");
+    CheckEqual((unsigned long)card.entries[0].region, RAGE_REGION_NTSC_U,
+               "the release comes from the name on the card");
+    CheckEqual((unsigned long)card.entries[0].slot, 1,
+               "and so does the slot");
+    Check(strcmp(card.entries[0].team, "DEX") == 0, "the team name is read");
+    CheckEqual((unsigned long)card.entries[0].money, 4242,
+               "and so is what it holds");
+    Check(card.entries[0].valid, "the save inside passes its checksums");
+
+    Check(RageCardRead(&card, 0, &save), "the save comes out of the card");
+    save.block.grandPrixProgress.money = 777;
+    Check(RageCardWrite(&card, 0, &save), "and goes back into it");
+    Check(RageCardStore(path, &card, &report), "the card writes");
+    RageCardFree(&card);
+
+    /* Everything else on the card has to survive being written through. */
+    Check(RageCardLoad(path, &card, &report), "the card loads again");
+    Check(RageCardRead(&card, 0, &save), "the save is still there");
+    CheckEqual((unsigned long)save.block.grandPrixProgress.money, 777,
+               "with the change kept");
+    {
+        FILE *stream = fopen(path, "rb");
+        char magic[12] = {0};
+        if (stream != NULL) {
+            fread(magic, 1, 11, stream);
+            fclose(stream);
+        }
+        Check(strcmp(magic, "123-456-STD") == 0,
+              "and the DexDrive header in front of it untouched");
+    }
+    RageCardFree(&card);
+    remove(path);
+
+    /* A card dumped without that header is the same card. */
+    BuildCard(path, 0);
+    Check(RageCardLooksLikeCard(path), "a raw card image is recognised too");
+    Check(RageCardLoad(path, &card, &report), "and loads");
+    Check(!card.fromDexDrive, "without claiming a header it does not have");
+    CheckEqual((unsigned long)card.count, 1, "with the save on it");
+    RageCardFree(&card);
+    remove(path);
+
+    /* One save is not a card. */
+    Check(!RageCardLooksLikeCard("rage-editor-tests.c"),
+          "an ordinary file is not mistaken for a card");
 }
 
 static void TestTeamName(void) {
@@ -273,6 +376,7 @@ int main(void) {
     TestRegions();
     TestNewSaveDefaults();
     TestCarNames();
+    TestMemoryCard();
     TestTeamName();
     TestTeamLogo();
     TestLogoColours();

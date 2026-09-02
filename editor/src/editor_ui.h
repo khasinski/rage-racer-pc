@@ -32,6 +32,12 @@ typedef struct EditorState {
     RageSaveEntry found[RAGE_SAVE_DISCOVER_MAX];
     int foundCount;
     int scanned;
+
+    /* When the file opened was a whole memory card rather than one save. */
+    RageCard card;
+    int cardLoaded;
+    int cardIndex;
+    int cardChoosing;
 } EditorState;
 
 /* Set by the shell so the panels can ask for a dialog without knowing SDL. */

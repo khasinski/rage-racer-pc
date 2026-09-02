@@ -21,15 +21,14 @@ _Static_assert(sizeof(RageSaveFile) == RAGE_SAVE_FILE_SIZE,
 
 /*
  * The PAL name is the one the port carries in g_SaveFilePath, and the
- * American serial is the one its disc table recognises. The Japanese release
- * is here because the editor is asked to read all three, but nothing in this
- * repository states its serial, so it is marked unverified and the file name
- * can be overridden.
+ * American serial is the one its disc table recognises. The Japanese serial
+ * is stated nowhere in this repository; it was read off a real Japanese card,
+ * whose save this program then opened with both checksums intact.
  */
 static const RageRegionInfo kRegions[] = {
     {RAGE_REGION_PAL, "PAL", "SCES-006.50", "BESCES-00650", 1},
     {RAGE_REGION_NTSC_U, "NTSC-U", "SLUS-004.03", "BASLUS-00403", 1},
-    {RAGE_REGION_NTSC_J, "NTSC-J", "SLPS-00744", "BISLPS-00744", 0},
+    {RAGE_REGION_NTSC_J, "NTSC-J", "SLPS-00600", "BISLPS-00600", 1},
 };
 
 /*
@@ -525,4 +524,208 @@ int RageSaveDiscover(RageSaveEntry *entries, int max) {
             found = ScanDirectory(directory, entries, found, max);
     }
     return found;
+}
+
+/*
+ * A DexDrive file is its own 3904-byte header followed by the card image; a
+ * card dumped any other way is the image on its own.
+ */
+enum {
+    RAGE_DEX_HEADER = 3904,
+    RAGE_CARD_IMAGE = RAGE_CARD_BLOCK_SIZE * 16,
+    RAGE_CARD_FRAME = 128,
+};
+
+static const char kDexMagic[] = "123-456-STD";
+
+int RageCardLooksLikeCard(const char *path) {
+    FILE *stream;
+    long size;
+
+    if (path == NULL) return 0;
+    stream = fopen(path, "rb");
+    if (stream == NULL) return 0;
+    if (fseek(stream, 0, SEEK_END) != 0) {
+        fclose(stream);
+        return 0;
+    }
+    size = ftell(stream);
+    fclose(stream);
+    return size == RAGE_CARD_IMAGE ||
+           size == (long)(RAGE_CARD_IMAGE + RAGE_DEX_HEADER);
+}
+
+/* A directory entry whose first byte is 0x51 starts a file; the others
+ * continue one, and a Rage Racer save is one block long. */
+static void ReadCardDirectory(RageCard *card) {
+    const unsigned char *image = card->bytes + card->imageOffset;
+    int block;
+
+    card->count = 0;
+    for (block = 1; block <= RAGE_CARD_BLOCKS; block++) {
+        const unsigned char *entry = image + (size_t)block * RAGE_CARD_FRAME;
+        RageCardEntry *found;
+        RageSaveFile save;
+        RageSaveReport report;
+        int i;
+
+        if (entry[0] != 0x51) continue;
+        found = &card->entries[card->count];
+        memset(found, 0, sizeof(*found));
+        for (i = 0; i < 20 && entry[10 + i] != '\0'; i++)
+            found->name[i] = (char)entry[10 + i];
+        found->name[i] = '\0';
+        found->block = block;
+        found->region = RageRegionFromPath(found->name);
+        found->slot = RageSaveSlotFromPath(found->name);
+
+        /* Only the ones this program can actually open are offered. */
+        if (!RageCardRead(card, card->count, &save)) continue;
+        RageSaveCheck(&save, &report);
+        if (!report.iconRecognised) continue;
+        RageSaveReadTeamName(&save.header, found->team, sizeof(found->team));
+        found->money = save.block.grandPrixProgress.money;
+        found->valid = report.headerChecksumValid && report.blockChecksumValid;
+        card->count++;
+    }
+}
+
+int RageCardLoad(const char *path, RageCard *card, RageSaveReport *report) {
+    FILE *stream;
+    long size;
+
+    if (path == NULL || card == NULL || report == NULL) return 0;
+    memset(card, 0, sizeof(*card));
+    memset(report, 0, sizeof(*report));
+
+    stream = fopen(path, "rb");
+    if (stream == NULL) {
+        report->status = RAGE_SAVE_UNREADABLE;
+        snprintf(report->detail, sizeof(report->detail), "cannot open %s",
+                 BaseName(path));
+        return 0;
+    }
+    if (fseek(stream, 0, SEEK_END) != 0 || (size = ftell(stream)) < 0 ||
+        fseek(stream, 0, SEEK_SET) != 0) {
+        fclose(stream);
+        report->status = RAGE_SAVE_UNREADABLE;
+        snprintf(report->detail, sizeof(report->detail), "cannot measure %s",
+                 BaseName(path));
+        return 0;
+    }
+    if (size != RAGE_CARD_IMAGE && size != RAGE_CARD_IMAGE + RAGE_DEX_HEADER) {
+        fclose(stream);
+        report->status = RAGE_SAVE_WRONG_SIZE;
+        snprintf(report->detail, sizeof(report->detail),
+                 "%ld bytes is not a memory card", size);
+        return 0;
+    }
+    card->size = (size_t)size;
+    card->bytes = malloc(card->size);
+    if (card->bytes == NULL || fread(card->bytes, 1, card->size, stream) !=
+                                   card->size) {
+        free(card->bytes);
+        card->bytes = NULL;
+        fclose(stream);
+        report->status = RAGE_SAVE_UNREADABLE;
+        snprintf(report->detail, sizeof(report->detail), "cannot read %s",
+                 BaseName(path));
+        return 0;
+    }
+    fclose(stream);
+
+    card->fromDexDrive = card->size == RAGE_CARD_IMAGE + RAGE_DEX_HEADER;
+    card->imageOffset = card->fromDexDrive ? RAGE_DEX_HEADER : 0;
+    if (card->fromDexDrive &&
+        memcmp(card->bytes, kDexMagic, sizeof(kDexMagic) - 1) != 0) {
+        RageCardFree(card);
+        report->status = RAGE_SAVE_NOT_A_SAVE;
+        snprintf(report->detail, sizeof(report->detail),
+                 "the right size for a DexDrive file but not its header");
+        return 0;
+    }
+    /* Every card starts with MC, whatever wrote it. */
+    if (memcmp(card->bytes + card->imageOffset, "MC", 2) != 0) {
+        RageCardFree(card);
+        report->status = RAGE_SAVE_NOT_A_SAVE;
+        snprintf(report->detail, sizeof(report->detail),
+                 "no memory card signature where one has to be");
+        return 0;
+    }
+
+    ReadCardDirectory(card);
+    if (card->count == 0) {
+        report->status = RAGE_SAVE_NOT_A_SAVE;
+        snprintf(report->detail, sizeof(report->detail),
+                 "a memory card with no Rage Racer save on it");
+        return 0;
+    }
+    report->status = RAGE_SAVE_OK;
+    return 1;
+}
+
+int RageCardRead(const RageCard *card, int index, RageSaveFile *save) {
+    size_t offset;
+
+    if (card == NULL || save == NULL || index < 0 ||
+        index >= RAGE_CARD_BLOCKS)
+        return 0;
+    offset = card->imageOffset +
+             (size_t)card->entries[index].block * RAGE_CARD_BLOCK_SIZE;
+    if (offset + sizeof(*save) > card->size) return 0;
+    memcpy(save, card->bytes + offset, sizeof(*save));
+    return 1;
+}
+
+int RageCardWrite(RageCard *card, int index, RageSaveFile *save) {
+    size_t offset;
+
+    if (card == NULL || save == NULL || index < 0 || index >= card->count)
+        return 0;
+    offset = card->imageOffset +
+             (size_t)card->entries[index].block * RAGE_CARD_BLOCK_SIZE;
+    if (offset + sizeof(*save) > card->size) return 0;
+    RageSaveRefresh(save);
+    /* Only the save's own bytes change: the rest of its block, the other
+     * games on the card and the DexDrive header are left alone. */
+    memcpy(card->bytes + offset, save, sizeof(*save));
+    RageSaveReadTeamName(&save->header, card->entries[index].team,
+                         sizeof(card->entries[index].team));
+    card->entries[index].money = save->block.grandPrixProgress.money;
+    card->entries[index].valid = 1;
+    return 1;
+}
+
+int RageCardStore(const char *path, const RageCard *card,
+                  RageSaveReport *report) {
+    FILE *stream;
+
+    if (path == NULL || card == NULL || card->bytes == NULL) return 0;
+    stream = fopen(path, "wb");
+    if (stream == NULL) {
+        if (report != NULL) {
+            report->status = RAGE_SAVE_UNREADABLE;
+            snprintf(report->detail, sizeof(report->detail), "cannot write %s",
+                     BaseName(path));
+        }
+        return 0;
+    }
+    if (fwrite(card->bytes, 1, card->size, stream) != card->size ||
+        fclose(stream) != 0) {
+        if (report != NULL) {
+            report->status = RAGE_SAVE_UNREADABLE;
+            snprintf(report->detail, sizeof(report->detail),
+                     "failed to write %s", BaseName(path));
+        }
+        return 0;
+    }
+    return 1;
+}
+
+void RageCardFree(RageCard *card) {
+    if (card == NULL) return;
+    free(card->bytes);
+    card->bytes = NULL;
+    card->size = 0;
+    card->count = 0;
 }

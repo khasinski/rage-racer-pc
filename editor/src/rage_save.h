@@ -126,6 +126,45 @@ int RageSaveSlotFromPath(const char *path);
 const char *RageCarName(int index, RageRegion region);
 const char *RageCarMaker(int index);
 
+/*
+ * A whole memory card, as a DexDrive .gme file or as a raw 128K image.
+ *
+ * A card holds fifteen blocks and names them in a directory, so a Rage Racer
+ * save inside one has to be found rather than assumed. The file is kept whole
+ * so that writing a save back leaves every other game on the card, and the
+ * DexDrive's own header, exactly as they were.
+ */
+enum { RAGE_CARD_BLOCKS = 15, RAGE_CARD_BLOCK_SIZE = 8192 };
+
+typedef struct RageCardEntry {
+    char name[24];   /* "BASLUS-00403 RAGE000" */
+    int block;       /* 1..15 */
+    RageRegion region;
+    int slot;
+    char team[RAGE_TEAM_NAME_LENGTH + 1];
+    int money;
+    int valid;       /* the save in it passes its own checksums */
+} RageCardEntry;
+
+typedef struct RageCard {
+    unsigned char *bytes;
+    size_t size;
+    size_t imageOffset;  /* where the 128K card starts; a DexDrive header
+                          * sits in front of it */
+    int fromDexDrive;
+    RageCardEntry entries[RAGE_CARD_BLOCKS];
+    int count;           /* Rage Racer saves found, not files on the card */
+} RageCard;
+
+/* Says whether a path looks like a card rather than a single save. */
+int RageCardLooksLikeCard(const char *path);
+int RageCardLoad(const char *path, RageCard *card, RageSaveReport *report);
+int RageCardRead(const RageCard *card, int index, RageSaveFile *save);
+int RageCardWrite(RageCard *card, int index, RageSaveFile *save);
+int RageCardStore(const char *path, const RageCard *card,
+                  RageSaveReport *report);
+void RageCardFree(RageCard *card);
+
 /* Team logo: sixteen colours, and one nibble per pixel. */
 int RageLogoPixel(const GameSaveBlock *block, int x, int y);
 void RageLogoSetPixel(GameSaveBlock *block, int x, int y, int colour);

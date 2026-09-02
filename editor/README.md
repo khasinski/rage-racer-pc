@@ -36,7 +36,7 @@ in its steering.
 | --- | --- | --- |
 | PAL | SCES-006.50 | `BESCES-00650 RAGE00N` |
 | NTSC-U | SLUS-004.03 | `BASLUS-00403 RAGE00N` |
-| NTSC-J | SLPS-00744 | `BISLPS-00744 RAGE00N` |
+| NTSC-J | SLPS-00600 | `BISLPS-00600 RAGE00N` |
 
 The three store the same fields in the same order; only the name the file
 needs on a card differs, and the editor sets that from the release you pick.
@@ -44,9 +44,9 @@ A file whose name it does not recognise still opens, and a card name it has
 never seen still tells it the territory, because the second letter of a PS1
 card file name is the region.
 
-The PAL and American serials come from this repository. **The Japanese serial
-is not stated anywhere here**, so it is marked as unconfirmed in the editor:
-if it turns out to be wrong, the fix is one line in `kRegions`.
+The PAL and American serials come from this repository. The Japanese one is
+stated nowhere here and was read off a real Japanese memory card, whose save
+this program then opened with both checksums intact.
 
 ## Building
 
@@ -63,6 +63,14 @@ The editor takes a file to open on the command line, and files can be dropped
 on its window. `--screenshot FILE` draws one frame and writes it out, which is
 how its own screens are checked.
 
+## Memory cards
+
+As well as a single save file, it opens a whole memory card: a DexDrive
+`.gme` file, or a raw 128K image as most emulators write one. It reads the
+card's directory, offers the Rage Racer saves on it by team name, and writes
+a change back into the block it came from, leaving every other game on the
+card and the DexDrive's own header exactly as they were.
+
 ## What it does to a file
 
 It reads the whole file, edits it in memory, and writes it back whole. The
@@ -71,8 +79,7 @@ broken one leaves repaired. That also means a save the game would have
 refused becomes one it accepts, which is usually why you are here.
 
 It refuses a file with no memory card signature, and says what it found
-instead; it refuses one of the wrong length, and says whether it looks like a
-whole card block rather than one save.
+instead; it refuses one of the wrong length, and says so.
 
 ## Where the saves are
 
