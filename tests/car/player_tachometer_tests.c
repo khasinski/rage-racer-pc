@@ -11,31 +11,33 @@ s16 g_TrackZoneDark;
 
 static s32 s_rpm;
 static s32 s_flash;
-static s32 s_type;
+static TachometerLightingMode s_lighting;
 static s32 s_amount;
 static int s_calls;
 static int s_failures;
 
-void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
+void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+                    s32 amount) {
     s_rpm = rpm;
     s_flash = flash;
-    s_type = type;
+    s_lighting = lighting;
     s_amount = amount;
     s_calls++;
 }
 
-static void CheckClock(s32 clock, s32 dark, s32 expectedType,
+static void CheckClock(s32 clock, s32 dark,
+                       TachometerLightingMode expectedLighting,
                        s32 expectedAmount) {
     g_EnvScriptClock = clock;
     g_TrackZoneDark = (s16)dark;
     s_calls = 0;
     DrawPlayerTachometer();
     if (s_calls != 1 || s_rpm != 5123 || s_flash != 2 ||
-        s_type != expectedType || s_amount != expectedAmount) {
+        s_lighting != expectedLighting || s_amount != expectedAmount) {
         printf("FAIL clock=%d dark=%d: calls=%d rpm=%d flash=%d "
                "type=%d amount=%d; expected type=%d amount=%d\n",
-               clock, dark, s_calls, s_rpm, s_flash, s_type, s_amount,
-               expectedType, expectedAmount);
+               clock, dark, s_calls, s_rpm, s_flash, s_lighting, s_amount,
+               expectedLighting, expectedAmount);
         s_failures++;
     }
 }
@@ -45,15 +47,15 @@ int main(void) {
     g_EngineRpmJitter = 123;
     g_TachoNeedleFlash = 2;
 
-    CheckClock(0x1153, 0, 2, 0);
-    CheckClock(0x1154, 0, 3, 0);
-    CheckClock(0x11D3, 0, 3, 0x7F);
-    CheckClock(0x11D4, 0, 0, 0);
-    CheckClock(0x541F, 0, 0, 0);
-    CheckClock(0x5420, 0, 1, 0);
-    CheckClock(0x549F, 0, 1, 0x7F);
-    CheckClock(0x54A0, 0, 2, 0);
-    CheckClock(0x1154, 3, 2, 0);
+    CheckClock(0x1153, 0, TACHOMETER_LIGHTING_DARK, 0);
+    CheckClock(0x1154, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 0);
+    CheckClock(0x11D3, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 0x7F);
+    CheckClock(0x11D4, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+    CheckClock(0x541F, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+    CheckClock(0x5420, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 0);
+    CheckClock(0x549F, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 0x7F);
+    CheckClock(0x54A0, 0, TACHOMETER_LIGHTING_DARK, 0);
+    CheckClock(0x1154, 3, TACHOMETER_LIGHTING_DARK, 0);
 
     if (s_failures != 0) {
         printf("%d player tachometer checks failed\n", s_failures);

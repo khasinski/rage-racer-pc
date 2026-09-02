@@ -838,6 +838,14 @@ extern SVec g_RaceIntroCameraDelta;
 extern s32 g_RaceIntroCameraTimer;
 extern s32 g_ShiftTargetSpeed;
 extern s32 g_TachoNeedleFlash;
+
+typedef enum TachometerLightingMode {
+    TACHOMETER_LIGHTING_NORMAL,
+    TACHOMETER_LIGHTING_FADE_TO_DARK,
+    TACHOMETER_LIGHTING_DARK,
+    TACHOMETER_LIGHTING_FADE_FROM_DARK,
+} TachometerLightingMode;
+
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
@@ -871,7 +879,8 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
 void UpdatePlayerTilt(PlayerCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         const CarTrackLimits *limits);
-void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
+void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+                    s32 blendAmount);
 void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car);
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode);

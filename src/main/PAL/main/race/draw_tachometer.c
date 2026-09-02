@@ -38,9 +38,10 @@ static void SetTachometerFaceBrightness(s32 brightness) {
 }
 
 static void SetTachometerNeedleColor(POLY_F4 *needle,
-                                    const CarTachometerSpec *spec, s32 type,
+                                    const CarTachometerSpec *spec,
+                                    TachometerLightingMode lighting,
                                     s32 amount, GameFrameContext *frame) {
-    if (type == 1) {
+    if (lighting == TACHOMETER_LIGHTING_FADE_TO_DARK) {
         amount = ClampTachometerBlend(amount);
         SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL - amount);
         needle->r0 = BlendTachometerChannel(
@@ -49,7 +50,7 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
             spec->needleColor[1], TACHOMETER_DARK_LEVEL, amount);
         needle->b0 = BlendTachometerChannel(
             spec->needleColor[2], TACHOMETER_DARK_LEVEL, amount);
-    } else if (type == 3) {
+    } else if (lighting == TACHOMETER_LIGHTING_FADE_FROM_DARK) {
         amount = ClampTachometerBlend(amount - TACHOMETER_DARK_LEVEL);
         SetTachometerFaceBrightness(TACHOMETER_DARK_LEVEL + amount);
         needle->r0 = BlendTachometerChannel(
@@ -59,7 +60,7 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
         needle->b0 = BlendTachometerChannel(
             TACHOMETER_DARK_LEVEL, spec->needleColor[2], amount);
         frame->layout.raceHud.tachometerFace.clut = 0x33A8;
-    } else if (type == 2) {
+    } else if (lighting == TACHOMETER_LIGHTING_DARK) {
         frame->layout.raceHud.tachometerFace.clut = 0x33E8;
         SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL);
         needle->r0 = spec->needleColorAlt[0];
@@ -74,7 +75,8 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
     }
 }
 
-void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
+void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+                    s32 amount) {
     const CarTachometerSpec *spec = &g_CarSpec->tachometer;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
@@ -98,7 +100,7 @@ void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
         *vertex++ = centerY + (cosine * localX + sine * localY) / 4096;
     }
 
-    SetTachometerNeedleColor(needle, spec, type, amount, frame);
+    SetTachometerNeedleColor(needle, spec, lighting, amount, frame);
 
     if (DiagnosticsEnabled("render.tachometer_trace")) {
         printf("tacho rpm=%d angle=%d color=%02x%02x%02x "

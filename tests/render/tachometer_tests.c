@@ -121,7 +121,7 @@ int main(void) {
     ResetState(packets);
     g_PlayerCar.drive.gear = 3;
     g_PlayerCar.speed = 1168;
-    DrawTachometer(5000, 1, 0, 0);
+    DrawTachometer(5000, 1, TACHOMETER_LIGHTING_NORMAL, 0);
 
     needle = (POLY_F4 *)packets;
     CHECK(s_sineAngle == 600 && s_cosineAngle == 600);
@@ -146,35 +146,35 @@ int main(void) {
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
-    DrawTachometer(0, 0, 2, 0);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_DARK, 0);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 40 && needle->g0 == 50 && needle->b0 == 60);
     CHECK(frame->layout.raceHud.tachometerFace.clut == 0x33E8);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
-    DrawTachometer(0, 0, 1, 200);
-    needle = (POLY_F4 *)packets;
-    CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
-    CHECK(g_TachoFaceR == (u8)(-224));
-
-    memset(packets, 0, sizeof(packets));
-    ResetState(packets);
-    DrawTachometer(0, 0, 3, 32);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 200);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
     CHECK(g_TachoFaceR == 32);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
-    DrawTachometer(0, 0, 1, 48);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 32);
+    needle = (POLY_F4 *)packets;
+    CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
+    CHECK(g_TachoFaceR == 32);
+
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 48);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
     CHECK(g_TachoFaceR == 80);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
-    DrawTachometer(0, 0, 3, 80);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 80);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
     CHECK(g_TachoFaceR == 80);
