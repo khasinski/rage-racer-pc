@@ -7,6 +7,13 @@ extern u16 g_PadButtonMapping[16];
 typedef s16 ControllerMappingIndex;
 extern ControllerMappingIndex g_PadMappingIndex;
 extern ControllerMappingIndex g_NegconMappingIndex;
+extern u16 g_PadMappingIndexSaved;
+extern u16 g_NegconMappingIndexSaved;
+extern s32 g_ControllerSceneAngleX;
+extern s32 g_ControllerSceneAngleY;
+extern s32 g_PadConfigFlipDirection;
+extern s32 g_PadConfigFlipPhase;
+extern s32 g_PadConfigFlipTimer;
 typedef s16 NegconCalibrationValue;
 extern NegconCalibrationValue g_NegconMaxTwist;
 extern NegconCalibrationValue g_NegconSteerPlay;
@@ -18,6 +25,10 @@ enum {
     NEGCON_STEER_RANGE_COUNT = 4,
 };
 extern s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
+
+/* Reset controller-screen animation and retain both mapping selections so
+ * cancelling the screen can restore them. */
+void BeginControllerConfig(void);
 
 static inline s32 GetNegconSteerRange(void) {
     s32 index = g_NegconMaxTwist;

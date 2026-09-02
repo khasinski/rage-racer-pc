@@ -615,7 +615,6 @@ extern u16 g_NegconNeutralLSaved;
 extern s16 g_NegconPlayPercent[];
 extern u16 g_NegconSteerNeutralSaved;
 extern u32 g_OptionMenuExitScene;
-extern s32 g_PadConfigFlipDirection;
 extern s16 g_RoundScreenFadeDelays[];
 
 void AdvanceGrandPrixClass(void);

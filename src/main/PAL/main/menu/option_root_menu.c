@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/audio.h"
+#include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/prim.h"
 #include "game/race.h"

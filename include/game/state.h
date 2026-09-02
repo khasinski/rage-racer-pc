@@ -102,10 +102,6 @@ void UpdateNegconMaxTwistScreen(void);
 void DrawNegconMaxTwistScreen(void);
 void DrawControllerSetupScene(s32 variant);
 
-/* Entry hook: backs both selections up to g_PadMappingIndexSaved / g_NegconMappingIndexSaved so a cancel
- * can restore them. Its caller sets g_GameMode = 7 in the same breath. */
-void BeginControllerConfig(void);
-
 /* Identity of the running scene: queried (`== 0xC`, `== 0x11`, `== 0x1E`, ...)
  * but never dispatched. Every writer also resets g_SceneTimer. */
 extern s32 g_SceneId;
@@ -160,14 +156,9 @@ void ResetCourseProgress(s32 mode);
 
 extern s32 g_PadErrorHoldBits;
 extern s32 g_PadValidateCountdown;
-extern s32 g_ControllerSceneAngleX;
-extern s32 g_ControllerSceneAngleY;
 extern s32 g_FrameSyncThreshold;
 extern s32 g_GameClock;
-extern u16 g_NegconMappingIndexSaved;
 extern s32 g_OptionLetterboxHeight;
-extern s32 g_PadConfigFlipPhase;
-extern s32 g_PadConfigFlipTimer;
 typedef enum PadErrorState {
     PAD_ERROR_STATE_INVALID = -1,
     PAD_ERROR_STATE_NONE,
@@ -176,7 +167,6 @@ typedef enum PadErrorState {
 } PadErrorState;
 
 extern PadErrorState g_PadErrorState;
-extern u16 g_PadMappingIndexSaved;
 
 
 /* Declared identically by 38 translation units before this
