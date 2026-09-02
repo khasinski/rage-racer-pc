@@ -47,6 +47,7 @@ static void *s_teamLogoSource;
 static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
 static s32 s_installCount;
+static void *s_installs[8];
 static s32 s_seriesCamera;
 static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
@@ -79,26 +80,27 @@ void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
 void SetEnvironmentScript(struct GameEnvironmentScript *script) {
-    (void)script;
-    s_installCount++;
+    s_installs[s_installCount++] = script;
 }
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
-    (void)base; (void)index; s_installCount++;
+    (void)index;
+    s_installs[s_installCount++] = base;
 }
 void InstallTrackPoints(struct TrackPointTable *table) {
-    (void)table; s_installCount++;
+    s_installs[s_installCount++] = table;
 }
 void RegisterCourseModels(CourseModelAssetHeader *base) {
-    (void)base; s_installCount++;
+    s_installs[s_installCount++] = base;
 }
-void InstallTerrainCellData(void *data) { (void)data; s_installCount++; }
+void InstallTerrainCellData(void *data) {
+    s_installs[s_installCount++] = data;
+}
 void InstallTrackEventData(struct TrackEventData *data) {
-    (void)data; s_installCount++;
+    s_installs[s_installCount++] = data;
 }
 void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
-    (void)table;
+    s_installs[s_installCount++] = table;
     s_seriesCamera = useSeriesCamera;
-    s_installCount++;
 }
 s32 EnableCdAudioMode(void) { return s_enableCdResult; }
 void ResetCdAudioState(void) { s_resetCdCalls++; }
@@ -188,6 +190,7 @@ static void TestVoiceAndCarPhases(void) {
 static void TestTrackPhases(void) {
     u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 1024];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
+    static const s32 runtimeInstallSlots[8] = {2, 3, 4, 5, 6, 7, 9, 10};
     s32 i;
 
     memset(storage, 0, sizeof(storage));
@@ -202,6 +205,12 @@ static void TestTrackPhases(void) {
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 28,
           "track texture asset index");
     Check(s_uploadCount == 5, "all track texture blocks uploaded");
+    for (i = 0; i < 5; i++) {
+        Check(s_uploads[i] ==
+                  (GameImageAssetHeaderWord *)(void *)(storage +
+                                                        pack->offsets[i]),
+              "track texture block address");
+    }
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
           "track texture shadow installed");
     Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE &&
@@ -221,6 +230,11 @@ static void TestTrackPhases(void) {
           "track runtime data installed");
     Check(s_installCount == 8 && s_seriesCamera == 1,
           "all runtime blocks use the series camera table");
+    for (i = 0; i < 8; i++) {
+        Check(s_installs[i] ==
+                  (void *)((u8 *)pack + pack->offsets[runtimeInstallSlots[i]]),
+              "track runtime block address");
+    }
     Check(g_TrackRenderTable ==
               (TrackRenderTable *)(void *)((u8 *)pack + pack->offsets[0]) &&
               g_EnvPaletteTable ==

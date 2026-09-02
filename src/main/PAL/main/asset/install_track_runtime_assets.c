@@ -20,24 +20,32 @@ enum {
 };
 
 void InstallTrackRuntimeAssetPack(s32 assetIndex, s32 useSeriesCamera) {
+    GameSceneAssetHeader *header = GetSceneAssetHeader(g_AssetLoadCursor);
     CourseObjectTable *courseObjects;
 
     TrackAssetIdentitySet(assetIndex);
-    g_TrackRenderTable = SceneAssetBlock(TRACK_RUNTIME_RENDER_TABLE);
-    g_EnvPaletteTable = SceneAssetBlock(TRACK_RUNTIME_ENVIRONMENT_PALETTE);
-    SetEnvironmentScript(SceneAssetBlock(TRACK_RUNTIME_ENVIRONMENT_SCRIPT));
+    g_TrackRenderTable = GetSceneAssetBlock(
+        header, TRACK_RUNTIME_RENDER_TABLE);
+    g_EnvPaletteTable = GetSceneAssetBlock(
+        header, TRACK_RUNTIME_ENVIRONMENT_PALETTE);
+    SetEnvironmentScript(GetSceneAssetBlock(
+        header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT));
     RegisterModelBank(
-        GetModelBankHeader(SceneAssetBlock(TRACK_RUNTIME_PRIMARY_MODELS)), 1);
-    InstallTrackPoints(SceneAssetBlock(TRACK_RUNTIME_POINTS));
+        GetModelBankHeader(GetSceneAssetBlock(
+            header, TRACK_RUNTIME_PRIMARY_MODELS)), 1);
+    InstallTrackPoints(GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS));
     RegisterCourseModels(GetCourseModelAssetHeader(
-        SceneAssetBlock(TRACK_RUNTIME_COURSE_MODELS)));
+        GetSceneAssetBlock(header, TRACK_RUNTIME_COURSE_MODELS)));
     RegisterModelBank(
-        GetModelBankHeader(SceneAssetBlock(TRACK_RUNTIME_SECONDARY_MODELS)), 2);
-    InstallTerrainCellData(SceneAssetBlock(TRACK_RUNTIME_TERRAIN_CELLS));
-    courseObjects = SceneAssetBlock(TRACK_RUNTIME_COURSE_OBJECTS);
+        GetModelBankHeader(GetSceneAssetBlock(
+            header, TRACK_RUNTIME_SECONDARY_MODELS)), 2);
+    InstallTerrainCellData(GetSceneAssetBlock(
+        header, TRACK_RUNTIME_TERRAIN_CELLS));
+    courseObjects = GetSceneAssetBlock(
+        header, TRACK_RUNTIME_COURSE_OBJECTS);
     g_CourseObjects = courseObjects->objects;
     g_CourseObjectCount = (s32)courseObjects->count;
-    InstallTrackEventData(SceneAssetBlock(TRACK_RUNTIME_EVENTS));
-    SelectTrackCameraTable(SceneAssetBlock(TRACK_RUNTIME_CAMERAS),
+    InstallTrackEventData(GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS));
+    SelectTrackCameraTable(GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
                            useSeriesCamera);
 }

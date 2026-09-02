@@ -10,24 +10,23 @@ enum {
 
 void InstallTrackTextureAssetPack(u8 *base) {
     GameSceneAssetHeader *header = GetSceneAssetHeader(base);
+    void *primaryImages = GetSceneAssetBlock(
+        header, TRACK_TEXTURE_PRIMARY_IMAGES);
+    void *secondaryImages = GetSceneAssetBlock(
+        header, TRACK_TEXTURE_SECONDARY_IMAGES);
+    void *carImage = GetSceneAssetBlock(header, TRACK_TEXTURE_CAR_IMAGE);
+    void *activeImages = GetSceneAssetBlock(
+        header, TRACK_TEXTURE_ACTIVE_IMAGES);
+    void *deferredImages = GetSceneAssetBlock(
+        header, TRACK_TEXTURE_DEFERRED_IMAGES);
 
-    g_AssetBlockPtr = GetSceneAssetAddress(
-        header, header->offsets[TRACK_TEXTURE_PRIMARY_IMAGES]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(
-        header, header->offsets[TRACK_TEXTURE_SECONDARY_IMAGES]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(
-        header, header->offsets[TRACK_TEXTURE_CAR_IMAGE]);
-    UploadImageEntry(GetImageEntryHeader(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(
-        header, header->offsets[TRACK_TEXTURE_ACTIVE_IMAGES]);
-    g_AssetSubBlockPtr = GetSceneAssetAddress(
-        header, header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    UploadImageAsset(GetImageAssetHeaderWords(primaryImages));
+    UploadImageAsset(GetImageAssetHeaderWords(secondaryImages));
+    UploadImageEntry(GetImageEntryHeader(carImage));
+    UploadImageAsset(GetImageAssetHeaderWords(activeImages));
     StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
+    UploadImageAsset(GetImageAssetHeaderWords(deferredImages));
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
 }
