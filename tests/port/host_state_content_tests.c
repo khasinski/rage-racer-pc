@@ -308,7 +308,15 @@ extern unsigned char g_SpinningSceneryPlacements[64];
 extern unsigned char g_SpinningSceneryAngle[8];
 extern unsigned char g_SpinningSceneryRate[8];
 extern StaticSceneryState g_StaticSceneryState;
-extern unsigned char g_ShuttlePathPoints[96];
+typedef struct ShuttlePath {
+    struct {
+        int32_t x;
+        int32_t y;
+        int32_t z;
+        int32_t w;
+    } endpoint[2];
+} ShuttlePath;
+extern ShuttlePath g_ShuttlePathPoints[3];
 extern unsigned char g_ShuttlePathAngles[24];
 extern unsigned char g_ShuttlePathTravelMax[8];
 extern unsigned char g_ShuttlePathDwellMax[124];
@@ -813,7 +821,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_SpinningSceneryAngle", g_SpinningSceneryAngle, 8},
     {"g_SpinningSceneryRate", g_SpinningSceneryRate, 8},
     {"g_StaticSceneryState", (const unsigned char *)&g_StaticSceneryState, 32},
-    {"g_ShuttlePathPoints", g_ShuttlePathPoints, 96},
+    {"g_ShuttlePathPoints",
+     (const unsigned char *)g_ShuttlePathPoints, 96},
     {"g_ShuttlePathAngles", g_ShuttlePathAngles, 24},
     {"g_ShuttlePathTravelMax", g_ShuttlePathTravelMax, 8},
     {"g_ShuttlePathDwellMax", g_ShuttlePathDwellMax, 124},
