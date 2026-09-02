@@ -47,7 +47,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include <psyz/cd.h>
 
 #include "psyq/cd_types.h"
-#include "game/render_state.h"
 #include "game/fmv.h"
 #include "game/records_internal.h"
 #include "game/replay_internal.h"
@@ -67,9 +66,6 @@ extern void _SsVmFlush(void);
 
 /* Values the game keeps between calls; on the PS1 these lived in fast RAM. */
 int g_CourseSelectScrollValue;
-GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
-CarTrackWork g_CarTrackWork;
 
 static char s_RageMemoryCardDirectory[PATH_MAX];
 
