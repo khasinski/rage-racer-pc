@@ -195,25 +195,15 @@ static int ProjectQuad(
     g_RageProjectionReject = 0;
     if (fog != NULL) *fog = p;
     if (rawDepth != NULL) *rawDepth = (int)otz;
-    {
-        int x[4], y[4], i;
-        int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
-        /* A widened modern view accepts faces the 4:3 screen rect would
-         * cull; the compat image is unchanged because the PS1 drawing area
-         * still clips them. Never widen the mirror's deliberate bounds. */
-        int marginX = g_RenderState.orderingFlag ? 0 : ModernCullMarginX();
-        for (i = 0; i < 4; i++) {
-            x[i] = (int16_t)(sxy[i] & 0xffff);
-            y[i] = (int16_t)((uint32_t)sxy[i] >> 16);
-            allLeft &= x[i] < g_RenderState.x0 - marginX;
-            allRight &= x[i] > g_RenderState.x1 + marginX;
-            allAbove &= y[i] < g_RenderState.y0;
-            allBelow &= y[i] > g_RenderState.y1;
-        }
-        if (allLeft || allRight || allAbove || allBelow) {
-            g_RageProjectionReject = 1;
-            return 0;
-        }
+    /* A widened modern view accepts faces the 4:3 screen rect would cull;
+     * the compat image is unchanged because the PS1 drawing area still clips
+     * them. Never widen the mirror's deliberate bounds. */
+    if (ScreenQuadOutsideBounds(
+            sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
+            g_RenderState.y1,
+            g_RenderState.orderingFlag ? 0 : ModernCullMarginX())) {
+        g_RageProjectionReject = 1;
+        return 0;
     }
     {
         int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
@@ -301,25 +291,15 @@ static int ProjectCourseFace(
     long retailDepth = ((vertexDepth[0] >> 3) +
                         (vertexDepth[3] >> 3)) >> 3;
     int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
-    int i;
-    int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
     g_RageProjectionReject = 0;
     if ((!g_RenderState.orderingFlag && clip <= 0) || (g_RenderState.orderingFlag && clip >= 0)) {
         g_RageProjectionReject = 2;
         return 0;
     }
-    {
-        int marginX = g_RenderState.orderingFlag ? 0 : ModernCullMarginX();
-        for (i = 0; i < 4; i++) {
-            int x = (int16_t)sxy[i];
-            int y = (int16_t)(sxy[i] >> 16);
-            allLeft &= x < g_RenderState.x0 - marginX;
-            allRight &= x > g_RenderState.x1 + marginX;
-            allAbove &= y < g_RenderState.y0;
-            allBelow &= y > g_RenderState.y1;
-        }
-    }
-    if (allLeft || allRight || allAbove || allBelow) {
+    if (ScreenQuadOutsideBounds(
+            sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
+            g_RenderState.y1,
+            g_RenderState.orderingFlag ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
         return 0;
     }
@@ -334,25 +314,17 @@ static int ProjectCourseFace(
 }
 
 static int CourseScreenQuadVisible(const int sxy[4]) {
-    int i;
     int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
     int clip1 = NormalClip(sxy[3], sxy[1], sxy[2]);
-    int allLeft = 1, allRight = 1, allAbove = 1, allBelow = 1;
     /* The second half is evaluated as v3/v1/v2, i.e. with the opposite
      * winding from v0/v1/v2.  Reject only when both halves are back-facing.
      * The old comparisons did the inverse and discarded every front-facing
      * child as soon as a course quad entered its near subdivision path. */
     if (!CourseQuadVisible(g_RenderState.orderingFlag, clip0, clip1))
         return 0;
-    for (i = 0; i < 4; i++) {
-        int x = (int16_t)sxy[i];
-        int y = (int16_t)(sxy[i] >> 16);
-        allLeft &= x < g_RenderState.x0;
-        allRight &= x > g_RenderState.x1;
-        allAbove &= y < g_RenderState.y0;
-        allBelow &= y > g_RenderState.y1;
-    }
-    return !(allLeft || allRight || allAbove || allBelow);
+    return !ScreenQuadOutsideBounds(
+        sxy, g_RenderState.x0, g_RenderState.x1,
+        g_RenderState.y0, g_RenderState.y1, 0);
 }
 
 static uint8_t *EmitTerrainFt4(

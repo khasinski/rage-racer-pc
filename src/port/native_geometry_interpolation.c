@@ -73,6 +73,26 @@ int CourseQuadVisible(int mirror, int clip0, int clip1) {
     return mirror ? (clip0 < 0 || clip1 > 0) : (clip0 > 0 || clip1 < 0);
 }
 
+int ScreenQuadOutsideBounds(const int sxy[4], int left, int right, int top,
+                            int bottom, int horizontalMargin) {
+    int allLeft = 1;
+    int allRight = 1;
+    int allAbove = 1;
+    int allBelow = 1;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        int x = (int16_t)sxy[i];
+        int y = (int16_t)((uint32_t)sxy[i] >> 16);
+
+        allLeft &= x < left - horizontalMargin;
+        allRight &= x > right + horizontalMargin;
+        allAbove &= y < top;
+        allBelow &= y > bottom;
+    }
+    return allLeft || allRight || allAbove || allBelow;
+}
+
 int OrthonormalizeMatrix3x3(void *matrixStorage,
                                 const void *fallbackStorage) {
     int16_t (*matrix)[3] = matrixStorage;

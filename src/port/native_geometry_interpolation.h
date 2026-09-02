@@ -15,6 +15,8 @@ uint8_t BilerpByte(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3,
 int ClampSubdivisionLevel(int level);
 int ModelFaceVisible(int mirror, int clip);
 int CourseQuadVisible(int mirror, int clip0, int clip1);
+int ScreenQuadOutsideBounds(const int sxy[4], int left, int right, int top,
+                            int bottom, int horizontalMargin);
 int OrthonormalizeMatrix3x3(void *matrixStorage,
                                 const void *fallbackStorage);
 

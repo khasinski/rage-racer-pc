@@ -2,6 +2,8 @@
 #include "native_geometry_interpolation.h"
 
 #define CHECK(expression) do { if (!(expression)) return __LINE__; } while (0)
+#define PACK_SXY(x, y) \
+    ((int)((uint16_t)(x) | ((uint32_t)(uint16_t)(y) << 16)))
 
 int main(void) {
     const int sxy[4] = {
@@ -51,6 +53,30 @@ int main(void) {
     CHECK(!CourseQuadVisible(1, 1, -1));
     CHECK(!CourseQuadVisible(0, 0, 0));
     CHECK(!CourseQuadVisible(1, 0, 0));
+    {
+        const int left[4] = {
+            PACK_SXY(-20, 10), PACK_SXY(-10, 20),
+            PACK_SXY(-30, 30), PACK_SXY(-1, 40)};
+        const int crossing[4] = {
+            PACK_SXY(-1, 10), PACK_SXY(20, 20),
+            PACK_SXY(20, 30), PACK_SXY(20, 40)};
+        const int above[4] = {
+            PACK_SXY(10, -20), PACK_SXY(20, -10),
+            PACK_SXY(30, -30), PACK_SXY(40, -1)};
+        const int right[4] = {
+            PACK_SXY(321, 10), PACK_SXY(330, 20),
+            PACK_SXY(340, 30), PACK_SXY(350, 40)};
+        const int below[4] = {
+            PACK_SXY(10, 241), PACK_SXY(20, 250),
+            PACK_SXY(30, 260), PACK_SXY(40, 270)};
+
+        CHECK(ScreenQuadOutsideBounds(left, 0, 320, 0, 240, 0));
+        CHECK(!ScreenQuadOutsideBounds(left, 0, 320, 0, 240, 32));
+        CHECK(!ScreenQuadOutsideBounds(crossing, 0, 320, 0, 240, 0));
+        CHECK(ScreenQuadOutsideBounds(above, 0, 320, 0, 240, 0));
+        CHECK(ScreenQuadOutsideBounds(right, 0, 320, 0, 240, 0));
+        CHECK(ScreenQuadOutsideBounds(below, 0, 320, 0, 240, 0));
+    }
     CHECK(OrthonormalizeMatrix3x3(rotating, fallback));
     CHECK(rotating[0][0] > 2890 && rotating[0][0] < 2905);
     CHECK(rotating[0][2] == rotating[0][0]);
@@ -59,3 +85,5 @@ int main(void) {
     CHECK(rotating[2][2] == rotating[0][0]);
     return 0;
 }
+
+#undef PACK_SXY
