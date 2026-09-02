@@ -1,4 +1,4 @@
-#include "game/track.h"
+#include "game/track_internal.h"
 
 static s32 InterpolateCoordinate(s32 from, s32 to, s32 step,
                                  s32 travelDuration) {
@@ -6,14 +6,32 @@ static s32 InterpolateCoordinate(s32 from, s32 to, s32 step,
 }
 
 void UpdateShuttleScenery(s32 instance) {
-    GameShuttleScenery *state = &g_ShuttleScenery[instance];
-    s32 pathIndex = state->pathIndex;
-    s32 step = state->travelStep;
-    s32 travelDuration = g_ShuttlePathTravelMax[pathIndex];
-    const Vec4 *from =
-        &g_ShuttlePathPoints[pathIndex].endpoint[state->startEndpoint];
-    const Vec4 *to =
-        &g_ShuttlePathPoints[pathIndex].endpoint[1 - state->startEndpoint];
+    GameShuttleScenery *state;
+    s32 pathIndex;
+    s32 step;
+    s32 travelDuration;
+    const Vec4 *from;
+    const Vec4 *to;
+
+    if (instance < 0 || instance >= SHUTTLE_INSTANCE_COUNT) {
+        return;
+    }
+    state = &g_ShuttleScenery[instance];
+    pathIndex = state->pathIndex;
+    if (pathIndex < 0 || pathIndex >= SHUTTLE_PATH_COUNT ||
+        state->startEndpoint < 0 ||
+        state->startEndpoint >= SHUTTLE_ENDPOINT_COUNT) {
+        return;
+    }
+
+    step = state->travelStep;
+    travelDuration = g_ShuttlePathTravelMax[pathIndex];
+    if (travelDuration <= 0) {
+        return;
+    }
+    from = &g_ShuttlePathPoints[pathIndex].endpoint[state->startEndpoint];
+    to = &g_ShuttlePathPoints[pathIndex]
+              .endpoint[1 - state->startEndpoint];
 
     state->position.x =
         InterpolateCoordinate(from->x, to->x, step, travelDuration);

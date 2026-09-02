@@ -284,12 +284,18 @@ typedef struct ShuttlePath {
     Vec4 endpoint[2];
 } ShuttlePath;
 
-extern ShuttlePath g_ShuttlePathPoints[3];
+enum {
+    SHUTTLE_INSTANCE_COUNT = 2,
+    SHUTTLE_PATH_COUNT = 3,
+    SHUTTLE_ENDPOINT_COUNT = 2,
+};
+
+extern ShuttlePath g_ShuttlePathPoints[SHUTTLE_PATH_COUNT];
 
 /* The two shuttle instances. Instance 1 used to carry eight split symbols of
  * its own, g_Shuttle1DwellCounter..g_Shuttle1AngleZ; they were this array's
  * second element all along and are addressed as g_ShuttleScenery[1] now. */
-extern GameShuttleScenery g_ShuttleScenery[2];
+extern GameShuttleScenery g_ShuttleScenery[SHUTTLE_INSTANCE_COUNT];
 
 void InitShuttleScenery(void);
 

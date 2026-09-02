@@ -1,5 +1,5 @@
 #include "common.h"
-#include "game/track.h"
+#include "game/track_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -29,6 +29,7 @@ static int ExpectState(const char *label, s32 x, s32 y, s32 z,
 
 int main(void) {
     GameShuttleScenery *state = &g_ShuttleScenery[0];
+    GameShuttleScenery snapshot[SHUTTLE_INSTANCE_COUNT];
 
     memset(g_ShuttleScenery, 0, sizeof(g_ShuttleScenery));
     g_ShuttlePathPoints[0].endpoint[0] = (Vec4){0, 10, 20, 30};
@@ -53,6 +54,28 @@ int main(void) {
     if (!ExpectState("return midpoint", 50, 110, 170, 1, 2, 1)) return 1;
     UpdateShuttleScenery(0);
     if (!ExpectState("return arrive", 0, 10, 20, 0, 0, 0)) return 1;
+
+    memcpy(snapshot, g_ShuttleScenery, sizeof(snapshot));
+    UpdateShuttleScenery(-1);
+    UpdateShuttleScenery(SHUTTLE_INSTANCE_COUNT);
+    if (memcmp(snapshot, g_ShuttleScenery, sizeof(snapshot)) != 0) {
+        puts("FAIL: invalid shuttle instance changed state");
+        return 1;
+    }
+
+    state->pathIndex = SHUTTLE_PATH_COUNT;
+    UpdateShuttleScenery(0);
+    state->pathIndex = 0;
+    state->startEndpoint = SHUTTLE_ENDPOINT_COUNT;
+    UpdateShuttleScenery(0);
+    state->startEndpoint = 0;
+    g_ShuttlePathTravelMax[0] = 0;
+    UpdateShuttleScenery(0);
+    if (state->position.x != 0 || state->position.y != 10 ||
+        state->position.z != 20) {
+        puts("FAIL: invalid shuttle path data changed position");
+        return 1;
+    }
 
     puts("shuttle scenery playback preserved");
     return 0;

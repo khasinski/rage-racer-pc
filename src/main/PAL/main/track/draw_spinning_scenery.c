@@ -1,7 +1,7 @@
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
-#include "game/track.h"
+#include "game/track_internal.h"
 #include "rage/render_world_game.h"
 
 typedef struct SpinningSceneryRange {
@@ -44,7 +44,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
                            &objectMatrix);
 
         g_RenderState.envMode4 = 0;
-        modelId = g_CourseModelCount >= 0x3F ? 0x3E : 1;
+        modelId = ModelOrFallback(0x3E, g_CourseModelCount);
         GameRenderWorldSubmitDynamicCourseObject(
             0x100 + spinner, modelId, placement->position.x,
             placement->position.y, placement->position.z,

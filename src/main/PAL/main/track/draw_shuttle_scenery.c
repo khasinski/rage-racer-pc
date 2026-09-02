@@ -1,15 +1,20 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-#include "game/track.h"
+#include "game/track_internal.h"
 #include "rage/render_world_game.h"
 
 void DrawShuttleScenery(s32 instance) {
-    GameShuttleScenery *state = &g_ShuttleScenery[instance];
+    GameShuttleScenery *state;
     Matrix yaw;
     Matrix objectMatrix;
     Matrix worldMatrix;
     s32 modelId;
+
+    if (instance < 0 || instance >= SHUTTLE_INSTANCE_COUNT) {
+        return;
+    }
+    state = &g_ShuttleScenery[instance];
 
     if (!TrackCellVisible(state->position.x, state->position.z) &&
         g_CourseIndex != 2) {
@@ -23,9 +28,7 @@ void DrawShuttleScenery(s32 instance) {
     MulMatrix2(&g_RenderState.matrix, &objectMatrix);
 
     modelId = SeriesCourseIndex() >= 2 ? 0x3C : 0x3F;
-    if (modelId >= g_CourseModelCount) {
-        modelId = 1;
-    }
+    modelId = ModelOrFallback(modelId, g_CourseModelCount);
 
     SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(&state->position),
                        &objectMatrix);

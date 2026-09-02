@@ -108,6 +108,12 @@ int main(void) {
     g_CourseIndex = 6;
     if (!ExpectDraw("other series still culled", 0, 0, 0)) return 1;
 
+    g_Visible = 1;
+    if (!ExpectDraw("negative instance", -1, 0, 0) ||
+        !ExpectDraw("past-last instance", SHUTTLE_INSTANCE_COUNT, 0, 0)) {
+        return 1;
+    }
+
     puts("shuttle scenery drawing preserved");
     return 0;
 }
