@@ -34,3 +34,17 @@ s32 CanToggleRaceCamera(s16 phase) { return phase == 2 || phase == 3; }
 s32 LastRacePauseOption(s16 grandPrixMode) {
     return grandPrixMode != 0 ? 1 : 2;
 }
+
+RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
+                                      s16 cursor) {
+    if (cursor == LastRacePauseOption(grandPrixMode)) {
+        if (grandPrixMode == 0 || phase < 2) {
+            return RACE_PAUSE_QUIT;
+        }
+        return RACE_PAUSE_RETIRE;
+    }
+    if (cursor == 1 && grandPrixMode == 0) {
+        return RACE_PAUSE_RESTART;
+    }
+    return RACE_PAUSE_RESUME;
+}

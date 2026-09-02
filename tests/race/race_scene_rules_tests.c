@@ -45,9 +45,27 @@ static void TestInputRules(void) {
           "time attack exposes one more pause option than Grand Prix");
 }
 
+static void TestPauseActions(void) {
+    Check(DecideRacePauseAction(2, 0, 0) == RACE_PAUSE_RESUME,
+          "time attack resume row resumes");
+    Check(DecideRacePauseAction(2, 0, 1) == RACE_PAUSE_RESTART,
+          "time attack middle row restarts");
+    Check(DecideRacePauseAction(1, 0, 2) == RACE_PAUSE_QUIT &&
+              DecideRacePauseAction(2, 0, 2) == RACE_PAUSE_QUIT,
+          "time attack final row quits before and during the race");
+
+    Check(DecideRacePauseAction(1, 1, 0) == RACE_PAUSE_RESUME,
+          "Grand Prix resume row resumes");
+    Check(DecideRacePauseAction(1, 1, 1) == RACE_PAUSE_QUIT,
+          "Grand Prix final row quits before the start");
+    Check(DecideRacePauseAction(2, 1, 1) == RACE_PAUSE_RETIRE,
+          "Grand Prix final row retires after the start");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
+    TestPauseActions();
 
     if (s_failures != 0) {
         return 1;

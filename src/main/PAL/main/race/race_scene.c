@@ -126,6 +126,7 @@ void UpdateRaceScene(void) {
     s32 textureSection;
     u16 mode;
     u32 paused;
+    RacePauseAction pauseAction;
 
     g_SceneTimer++;
     UpdateFinishFollowupCue();
@@ -152,32 +153,38 @@ void UpdateRaceScene(void) {
             ForceAllEffectVoicesEnabled(0);
             g_RaceOptionCursor = 0;
             PlaySoundCue(2);
-        } else if (g_RaceOptionCursor ==
-                   LastRacePauseOption(g_GrandPrixMode)) {
-            g_RaceFadeTimer = 0;
-            if (g_GrandPrixMode == 0 || (s16)mode < 2) {
+        } else {
+            pauseAction = DecideRacePauseAction(
+                mode, g_GrandPrixMode, g_RaceOptionCursor);
+            if (pauseAction == RACE_PAUSE_QUIT) {
+                g_RaceFadeTimer = 0;
                 g_RacePhase = 7;
                 if (g_GrandPrixMode == 0) {
-                    g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][0] =
-                        g_RankingRecords[ReadStableRaceSeries()][SeriesCourseIndex()][0].raceTime;
+                    s32 series = ReadStableRaceSeries();
+                    s32 course = SeriesCourseIndex();
+
+                    g_BestLapTimes[series][course][0] =
+                        g_RankingRecords[series][course][0].raceTime;
                 }
-            } else {
+                SeedFinishCamera(&g_PlayerCar);
+                StartCdVolumeFade(8);
+            } else if (pauseAction == RACE_PAUSE_RETIRE) {
+                g_RaceFadeTimer = 0;
                 g_RacePhase = 5;
                 s_RetireCameraActive = 1;
                 if (g_CourseProgress->retriesRemaining != 0) {
                     PlaySoundCue(0x3D);
                 }
-            }
-            if (!s_RetireCameraActive) SeedFinishCamera(&g_PlayerCar);
-            StartCdVolumeFade(8);
-        } else if (g_RaceOptionCursor == 1 && g_GrandPrixMode == 0) {
-            ExitRaceScene(0xB);
-            g_RacePhase = 8;
-        } else {
-            g_PauseDebounce = 0x1E;
-            ForceAllEffectVoicesEnabled(1);
-            if (g_RacePhase >= 2) {
-                ResumeCdAudio();
+                StartCdVolumeFade(8);
+            } else if (pauseAction == RACE_PAUSE_RESTART) {
+                ExitRaceScene(0xB);
+                g_RacePhase = 8;
+            } else {
+                g_PauseDebounce = 0x1E;
+                ForceAllEffectVoicesEnabled(1);
+                if (g_RacePhase >= 2) {
+                    ResumeCdAudio();
+                }
             }
         }
     }
