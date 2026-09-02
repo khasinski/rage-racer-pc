@@ -776,7 +776,6 @@ void ApplyZoneLighting(s32 zone, Matrix *mtx);
 void BuildVisibleCells(s32 near, s32 far);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
-s32 rsinCore(s32 angle);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
 void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output);
@@ -850,17 +849,13 @@ extern u8 g_WordFontCells[40];
 #define g_WordFontWidth (g_WordFontCells + 2)
 #define g_WordFontAdvance (g_WordFontCells + 3)
 
-s32 CdRead2(s32 mode);
 void DecDCTReset(s32 mode);
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color);
 DrawPacket *DrawMirrorFrame(u8 *packet);
-void GPU_cw(void *packet);
-void Gpu_BuildDrawEnvCmds(void* packet, void* env);
 s32 Gpu_Reset(s32 mode);
 void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX,
                                  s32 *outY, s32 *outZ);
 void MatrixApplyZRotation(Matrix* mtx, s32 degrees);
-s32 SetGraphReverse(s32 mode);
 void SwapTrackTexturePageNow(void);
 void SwapTrackTextureRow(void);
 

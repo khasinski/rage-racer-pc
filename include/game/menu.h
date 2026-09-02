@@ -653,7 +653,6 @@ void SetBodyColor2(s32);
 void TickClassClearFanfare(void);
 void UpdateCarListCursor(void);
 void UpdateFrontend(void);
-void UpdateOptionSceneFade(void);
 s32 UpdateRoundScreenFade(s32 stage);
 void UpdateTitleAttract(void);
 
