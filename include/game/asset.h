@@ -209,10 +209,19 @@ typedef struct CarModelAsset {
 
 #define SERIALIZED_CAR_MODEL_HEADER_SIZE 0x28
 
+typedef struct SerializedCarModelAssetHeader {
+    u8 metadata[0x20];
+    s32 modelOffset;
+    s32 imageOffset;
+} SerializedCarModelAssetHeader;
+
 _Static_assert(offsetof(CarModelAsset, serializedModelSize) == 0x18,
                "serialized car model size must remain at +0x18");
 _Static_assert(offsetof(CarModelAsset, modelData) == 0x20,
                "serialized car model offset must remain at +0x20");
+_Static_assert(sizeof(SerializedCarModelAssetHeader) ==
+                   SERIALIZED_CAR_MODEL_HEADER_SIZE,
+               "serialized car model header must remain 0x28 bytes");
 
 static inline CarModelAsset *GetCarModelAsset(void *data) {
     AssetAddress address;

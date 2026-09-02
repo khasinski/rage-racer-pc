@@ -4,7 +4,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/track.h"
-#include "string.h"
+#include <string.h>
 
 static s32 ClampAssetCount(s32 count, s32 limit) {
     if (count < 0) return 0;
@@ -107,10 +107,12 @@ void InstallTerrainCellData(void *data) {
 }
 
 void SetCarImageSlot(CarImageData *asset, s32 index) {
+    if ((u32)index >= 2) return;
     g_CarImageSlots[index] = asset;
 }
 
 void UploadCarImage(s32 index) {
+    if ((u32)index >= 2) return;
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
 }
 
@@ -118,15 +120,17 @@ static CarModelAsset g_NativeCarModelAssets[2];
 static CarModelAsset *g_SerializedCarModelAssets[2];
 
 void SetCarModelSlot(CarModelAsset *asset, s32 index) {
-    u8 *bytes = (u8 *)asset;
-    s32 modelOffset;
-    s32 imageOffset;
+    SerializedCarModelAssetHeader *serialized =
+        (SerializedCarModelAssetHeader *)asset;
+    u8 *bytes = (u8 *)serialized;
+
     if ((u32)index >= 2) return;
-    memcpy((u8 *)&g_NativeCarModelAssets[index], bytes, 0x20);
-    memcpy((u8 *)&modelOffset, bytes + 0x20, sizeof(modelOffset));
-    memcpy((u8 *)&imageOffset, bytes + 0x24, sizeof(imageOffset));
-    g_NativeCarModelAssets[index].modelData.pointer = bytes + modelOffset;
-    g_NativeCarModelAssets[index].imageData.pointer = bytes + imageOffset;
+    memcpy(&g_NativeCarModelAssets[index], serialized->metadata,
+           sizeof(serialized->metadata));
+    g_NativeCarModelAssets[index].modelData.pointer =
+        bytes + serialized->modelOffset;
+    g_NativeCarModelAssets[index].imageData.pointer =
+        bytes + serialized->imageOffset;
     g_SerializedCarModelAssets[index] = asset;
     g_CarModelSlots[index] = &g_NativeCarModelAssets[index];
 }
@@ -141,5 +145,6 @@ CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
 }
 
 void SelectCarModelSlot(s32 index) {
+    if ((u32)index >= 2) return;
     g_CarModelAsset = g_CarModelSlots[index];
 }

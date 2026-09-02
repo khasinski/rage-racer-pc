@@ -32,8 +32,17 @@ CarImageData *g_CarImageSlots[2];
 CarModelAsset *g_CarModelSlots[2];
 CarModelAsset *g_CarModelAsset;
 
+static s32 s_loadImageCalls;
+static RECT *s_loadedRect;
+static u_long *s_loadedPixels;
+
 #undef LoadImage
-int LoadImage(RECT *rect, u_long *data) { (void)rect; (void)data; return 0; }
+int LoadImage(RECT *rect, u_long *data) {
+    s_loadedRect = rect;
+    s_loadedPixels = data;
+    s_loadImageCalls++;
+    return 0;
+}
 
 #define CHECK(condition) do { \
     if (!(condition)) { \
@@ -188,10 +197,87 @@ static int TestTerrainCells(void) {
     return 0;
 }
 
+static int TestRenderStateAndCarIndexes(void) {
+    g_MirrorMode = 7;
+    InitRenderState(5);
+    CHECK(g_RenderState.faceOtShift == 0xA);
+    CHECK(g_RenderState.ft4Color[0] == 0x80);
+    CHECK(g_RenderState.ft4Color[3] == POLY_FT4_CODE);
+    CHECK(g_RenderState.gt4Color[0] == 0xFF);
+    CHECK(g_RenderState.gt4Color[3] == POLY_GT4_CODE);
+    CHECK(g_RenderState.x0 == 0 && g_RenderState.y0 == 0);
+    CHECK(g_RenderState.x1 == SCREEN_WIDTH &&
+          g_RenderState.y1 == SCREEN_HEIGHT);
+    CHECK(g_RenderState.otShift == 5 && g_RenderState.orderingFlag == 7);
+    CHECK(g_VisibleCellMask == g_MainVisibleCellMask);
+    CHECK(g_VisibleCellList == g_MainVisibleCellList);
+
+    g_CarModelBaseIndex[1] = 12;
+    g_CarModelUnlockBase[1] = 4;
+    g_CarTable[1].modelVariant = 3;
+    CHECK(GetCarAssetIndex(1, 2) == 14);
+    CHECK(GetCarUnlockLevel(1) == 7);
+    return 0;
+}
+
+static int TestCarAssetSlots(void) {
+    union {
+        max_align_t alignment;
+        u8 bytes[96];
+    } storage;
+    SerializedCarModelAssetHeader *serialized =
+        (SerializedCarModelAssetHeader *)(void *)storage.bytes;
+    CarModelAsset *view = (CarModelAsset *)(void *)storage.bytes;
+    CarModelAsset sentinelModel;
+    CarModelAsset unknownModel;
+    CarImageData image0;
+    CarImageData image1;
+    CarImageData sentinelImage;
+
+    memset(&storage, 0, sizeof(storage));
+    view->gearCount = 6;
+    view->serializedModelSize = 24;
+    serialized->modelOffset = 48;
+    serialized->imageOffset = 72;
+    g_CarModelSlots[0] = &sentinelModel;
+    SetCarModelSlot(view, -1);
+    CHECK(g_CarModelSlots[0] == &sentinelModel);
+    SetCarModelSlot(view, 1);
+    CHECK(g_CarModelSlots[1] != view);
+    CHECK(g_CarModelSlots[1]->gearCount == 6);
+    CHECK(g_CarModelSlots[1]->serializedModelSize == 24);
+    CHECK(g_CarModelSlots[1]->modelData.pointer == storage.bytes + 48);
+    CHECK(g_CarModelSlots[1]->imageData.pointer == storage.bytes + 72);
+    CHECK(GetSerializedCarModelAsset(g_CarModelSlots[1]) == view);
+    CHECK(GetSerializedCarModelAsset(&unknownModel) == &unknownModel);
+
+    g_CarModelAsset = &sentinelModel;
+    SelectCarModelSlot(2);
+    CHECK(g_CarModelAsset == &sentinelModel);
+    SelectCarModelSlot(1);
+    CHECK(g_CarModelAsset == g_CarModelSlots[1]);
+
+    g_CarImageSlots[0] = &sentinelImage;
+    SetCarImageSlot(&image0, -1);
+    CHECK(g_CarImageSlots[0] == &sentinelImage);
+    SetCarImageSlot(&image0, 0);
+    SetCarImageSlot(&image1, 1);
+    CHECK(g_CarImageSlots[0] == &image0 && g_CarImageSlots[1] == &image1);
+    s_loadImageCalls = 0;
+    UploadCarImage(2);
+    CHECK(s_loadImageCalls == 0);
+    UploadCarImage(1);
+    CHECK(s_loadImageCalls == 1 && s_loadedRect == &g_CarImageRect &&
+          s_loadedPixels == (u_long *)(void *)&image1);
+    return 0;
+}
+
 int main(void) {
     if (TestModelBank() != 0) return 1;
     if (TestCourseModels() != 0) return 1;
     if (TestTerrainCells() != 0) return 1;
-    puts("model_banks: offsets rebased and counts bounded");
+    if (TestRenderStateAndCarIndexes() != 0) return 1;
+    if (TestCarAssetSlots() != 0) return 1;
+    puts("model banks, render defaults and car slots retain bounded assets");
     return 0;
 }
