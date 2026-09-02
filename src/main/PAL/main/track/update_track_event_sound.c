@@ -7,7 +7,6 @@
 #include "game/track_internal.h"
 
 enum {
-    TRACK_EVENT_SOUND_ZONE_COUNT = 30,
     EVENT_SOUND_RIGHT_SIDE = 1,
     EVENT_SOUND_LEFT_SIDE = 2,
     LATERAL_LEAN_DEAD_ZONE = 0x100,
@@ -86,11 +85,11 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
 void UpdateTrackEventSound(s16 trackSection) {
     s32 left;
     s32 right;
+    s32 outputLeft;
+    s32 outputRight;
 
     CalculateEventSoundVolumes(FindEventSoundFlags(trackSection), &left, &right);
-    if (g_MirrorMode) {
-        SetPanVoiceTargetVolume(right, left);
-    } else {
-        SetPanVoiceTargetVolume(left, right);
-    }
+    outputLeft = g_MirrorMode != 0 ? right : left;
+    outputRight = g_MirrorMode != 0 ? left : right;
+    SetPanVoiceTargetVolume(outputLeft, outputRight);
 }

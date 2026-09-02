@@ -110,6 +110,24 @@ int main(void) {
         return 1;
     }
 
+    ResetRuntime();
+    g_TrackEventData = NULL;
+    TriggerRaceCues();
+    if (g_PlayCount != 0 || g_RaceCueFlags != 0) {
+        puts("FAIL: missing race cue data");
+        return 1;
+    }
+
+    g_TrackEventData = &events;
+    g_RaceSeries = -1;
+    TriggerRaceCues();
+    g_RaceSeries = TRACK_SERIES_COUNT;
+    TriggerRaceCues();
+    if (g_PlayCount != 0 || g_RaceCueFlags != 0) {
+        puts("FAIL: invalid race cue series");
+        return 1;
+    }
+
     puts("race cue behavior preserved");
     return 0;
 }

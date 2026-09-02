@@ -57,6 +57,11 @@ static void TriggerSpeedCue(void) {
 }
 
 void TriggerRaceCues(void) {
+    if (g_TrackEventData == NULL ||
+        (u32)g_RaceSeries >= TRACK_SERIES_COUNT) {
+        return;
+    }
+
     TriggerFinishCue();
     if (g_WrongWayTimer == 0) {
         TriggerSpeedCue();

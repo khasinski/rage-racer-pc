@@ -146,9 +146,11 @@ typedef struct TrackPointAmbienceZone {
 } TrackPointAmbienceZone;
 
 enum {
+    TRACK_SERIES_COUNT = 2,
     TRACK_ZONE_COUNT = 20,
     TRACK_POINT_AMBIENCE_ZONE_COUNT = 2,
     TRACK_AMBIENCE_ZONE_COUNT = 4,
+    TRACK_EVENT_SOUND_ZONE_COUNT = 30,
 };
 
 static inline s32 TrackPositionForSeries(s32 position, s32 trackLength,
@@ -167,22 +169,22 @@ typedef struct TrackSpeedCue {
 } TrackSpeedCue;
 
 typedef struct TrackRaceCueData {
-    TrackFinishCue finish[2];
+    TrackFinishCue finish[TRACK_SERIES_COUNT];
     u8 reserved08[8];
-    TrackSpeedCue speed[2][3];
+    TrackSpeedCue speed[TRACK_SERIES_COUNT][3];
 } TrackRaceCueData;
 
 typedef struct TrackEventData {
     s32 trackWalkStart;
-    TrackCrestEvent crestEvents[2][8];
-    TrackRacingLineHint racingLineHints[2][30];
-    TrackRivalStart rivalStarts[2][12];
-    TrackAiSpeedKey aiSpeedKeys[2][48];
-    TrackRivalAiConfig rivalAiConfigs[2][12];
+    TrackCrestEvent crestEvents[TRACK_SERIES_COUNT][8];
+    TrackRacingLineHint racingLineHints[TRACK_SERIES_COUNT][30];
+    TrackRivalStart rivalStarts[TRACK_SERIES_COUNT][12];
+    TrackAiSpeedKey aiSpeedKeys[TRACK_SERIES_COUNT][48];
+    TrackRivalAiConfig rivalAiConfigs[TRACK_SERIES_COUNT][12];
     TrackZone zones[TRACK_ZONE_COUNT];
     TrackEventOffsets offsets;
     u8 reservedB7C[0x1000];
-    TrackEventSoundZone eventSoundZones[30];
+    TrackEventSoundZone eventSoundZones[TRACK_EVENT_SOUND_ZONE_COUNT];
     TrackPointAmbienceZone pointAmbienceZones[TRACK_POINT_AMBIENCE_ZONE_COUNT];
     TrackAmbienceZone ambienceZones[TRACK_AMBIENCE_ZONE_COUNT];
     TrackRaceCueData raceCues;
