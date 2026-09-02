@@ -487,6 +487,27 @@ endif()
 add_test(NAME race_option_animation COMMAND race_option_animation_tests)
 set_tests_properties(race_option_animation PROPERTIES LABELS unit)
 
+add_executable(race_option_menu_draw_tests
+    race_option_menu_draw_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_race_option_menu.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c)
+target_include_directories(race_option_menu_draw_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_option_menu_draw_tests PRIVATE __psyz=1)
+target_link_libraries(race_option_menu_draw_tests PRIVATE psyz)
+if(MSVC)
+    target_compile_options(race_option_menu_draw_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_option_menu_draw_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_option_menu_draw COMMAND race_option_menu_draw_tests)
+set_tests_properties(race_option_menu_draw PROPERTIES LABELS unit)
+
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c)
