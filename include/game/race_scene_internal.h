@@ -27,6 +27,17 @@ typedef struct WrongWayUpdate {
     u8 playCue;
 } WrongWayUpdate;
 
+typedef enum RaceStartAction {
+    RACE_START_ACTION_NONE,
+    RACE_START_ACTION_UPDATE_INTRO_CAMERA,
+    RACE_START_ACTION_BEGIN,
+} RaceStartAction;
+
+typedef struct RaceStartUpdate {
+    s16 phase;
+    RaceStartAction action;
+} RaceStartUpdate;
+
 s32 RaceLapCount(s32 courseIndex);
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]);
 u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]);
@@ -42,5 +53,6 @@ RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
 s32 WrongWayWarningVisible(s16 timer);
 WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
                                    u32 sceneTimer);
+RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer);
 
 #endif

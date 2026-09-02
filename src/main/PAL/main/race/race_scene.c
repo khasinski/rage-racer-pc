@@ -307,7 +307,7 @@ void UpdateRaceScene(void) {
             EndMirrorPass();
         }
     } else {
-        u32 frameValue;
+        RaceStartUpdate raceStart;
         WrongWayUpdate wrongWay;
 
         g_AnimTimer++;
@@ -315,19 +315,13 @@ void UpdateRaceScene(void) {
             g_RaceTimeRemaining--;
         }
 
-        /* Before the flag the intro camera runs, then phase 1 arms the grid;
-         * from phase 1 on, the standing start fires on its own frame. */
-        frameValue = g_SceneTimer;
-        if (g_RacePhase == 0) {
-            if (frameValue >= 0x5A) {
-                g_RacePhase = 1;
-            } else {
-                RunRaceIntroCamera(&g_PlayerCar, frameValue);
-            }
-        } else if ((g_RacePhase == 1) && (g_SceneTimer >= 0xD3)) {
+        raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
+        g_RacePhase = raceStart.phase;
+        if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
+            RunRaceIntroCamera(&g_PlayerCar, g_SceneTimer);
+        } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
             BeginCarStandingStart(&g_PlayerCar);
             StartCdAudio();
-            g_RacePhase = 2;
             g_PauseDebounce = 0x1E;
         }
 

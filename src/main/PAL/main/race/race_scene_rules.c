@@ -9,6 +9,8 @@ enum {
     NEGCON_MAPPING_OFFSET = 8,
     WRONG_WAY_WARNING_FRAMES = 10,
     WRONG_WAY_COUNTER_RESET = 81,
+    RACE_INTRO_END_FRAME = 90,
+    RACE_START_FRAME = 211,
 };
 
 s32 RaceLapCount(s32 courseIndex) {
@@ -98,6 +100,22 @@ WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
             result.timer = WRONG_WAY_WARNING_FRAMES;
         }
         result.playCue = (u8)sceneTimer == 0;
+    }
+    return result;
+}
+
+RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer) {
+    RaceStartUpdate result = {phase, RACE_START_ACTION_NONE};
+
+    if (phase == 0) {
+        if (sceneTimer < RACE_INTRO_END_FRAME) {
+            result.action = RACE_START_ACTION_UPDATE_INTRO_CAMERA;
+        } else {
+            result.phase = 1;
+        }
+    } else if (phase == 1 && sceneTimer >= RACE_START_FRAME) {
+        result.phase = 2;
+        result.action = RACE_START_ACTION_BEGIN;
     }
     return result;
 }

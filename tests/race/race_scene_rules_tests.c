@@ -122,6 +122,29 @@ static void TestWrongWayState(void) {
           "paused rendering uses the same visibility threshold");
 }
 
+static void TestRaceStartState(void) {
+    RaceStartUpdate update;
+
+    update = UpdateRaceStartState(0, 89);
+    Check(update.phase == 0 &&
+              update.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA,
+          "intro camera runs through its final frame");
+    update = UpdateRaceStartState(0, 90);
+    Check(update.phase == 1 && update.action == RACE_START_ACTION_NONE,
+          "grid phase begins at the end of the intro");
+
+    update = UpdateRaceStartState(1, 210);
+    Check(update.phase == 1 && update.action == RACE_START_ACTION_NONE,
+          "grid remains armed before the standing start");
+    update = UpdateRaceStartState(1, 211);
+    Check(update.phase == 2 && update.action == RACE_START_ACTION_BEGIN,
+          "standing start fires on its authored frame");
+
+    update = UpdateRaceStartState(2, 300);
+    Check(update.phase == 2 && update.action == RACE_START_ACTION_NONE,
+          "live race state is left unchanged");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
@@ -129,6 +152,7 @@ int main(void) {
     TestPauseCursor();
     TestRaceEndPresentation();
     TestWrongWayState();
+    TestRaceStartState();
 
     if (s_failures != 0) {
         return 1;
