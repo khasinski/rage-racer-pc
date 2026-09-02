@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/fmv.h"
 #include "game/state.h"
 
 #include <stdio.h>

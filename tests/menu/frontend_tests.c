@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/fmv.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"

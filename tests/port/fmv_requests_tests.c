@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/fmv.h"
 #include "game/race.h"
 #include "game/state.h"
 
@@ -44,6 +45,7 @@ enum {
 };
 
 void BeginFmv(s32 returnScene) { s_beginReturnScene = returnScene; }
+void ResetCdAudioState(void) {}
 s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadAssetIndex = assetIndex;
     s_loadDestination = destination;

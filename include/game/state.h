@@ -116,32 +116,6 @@ extern s32 g_SceneTimer;
 extern s32 g_AnimTimer;
 
 /*
- * FMV playback ("\RAGE.STR;1" streams). One of the three GameBegin*Fmv wrappers
- * picks the stream entry in g_StreamCdEntries, records the scene to come back to
- * in g_StreamReturnScene and sets g_SceneId = 5; from then on UpdateFmv runs
- * per frame and walks g_FmvState through 0 (start) -> 1 (decode) -> 2 (finish).
- * Start (pad bit 0x800) or the end of the stream both move it to 2.
- * The per-TU-typed members of the family - StartFmvPlayback,
- * SetupFmvBuffers, InitFmvContext, OpenFmvStream,
- * PresentFmvFrame, WaitFmvDecode, StartStreamRead - keep their
- * aliased declarations in each file.
- */
-/* Start one of the three streams; returnScene is the g_SceneId to come back
- * to when it ends. Each is a thin wrapper that forwards its argument to
- * BeginFmv and then picks the g_StreamCdEntries entry. */
-/* Shared prologue of the three: close the audio slots, park g_SceneId at 5
- * and record returnScene in g_StreamReturnScene. */
-void BeginFmv(s32 returnScene);
-void BeginIntroFmv(s32 returnScene);
-void BeginClassFmv(s32 returnScene);
-void BeginEndingFmv(s32 returnScene);
-void UpdateFmv(void);
-/* Decode and present all movie frames whose sectors have arrived. */
-void DecodeFmvFrame(void);
-/* Release the extracted stream and decoder buffers, then restore g_SceneId. */
-void EndFmv(void);
-
-/*
  * Boot-time defaults for everything the memory card persists: the three car
  * tables, the three GameRaceProgress slots, both course-progress blocks,
  * g_MaxClassReached, the BGM selection and the three audio settings. Called

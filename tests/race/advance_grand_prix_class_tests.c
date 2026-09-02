@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/car.h"
+#include "game/fmv.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/state.h"

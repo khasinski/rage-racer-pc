@@ -1,6 +1,6 @@
 #include "game/asset.h"
+#include "game/fmv.h"
 #include "game/race.h"
-#include "game/state.h"
 
 enum {
     INTRO_FMV_STREAM = 0,

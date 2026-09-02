@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
+#include "game/fmv.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/frontend_internal.h"
