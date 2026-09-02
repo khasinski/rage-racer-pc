@@ -545,7 +545,7 @@ void GameRenderWorldPublishCourseObjects(void) {
          * keeps semantic scene data complete and applies normal frustum/depth
          * visibility when it builds GPU draws. */
         GameRenderWorldSubmitCourseObject((uint32_t)i, object->modelId,
-            object->x, object->y, object->z, object->field2,
+            object->x, object->y, object->z, object->rotationY,
             g_IsEnvironmentMode4 ? (object->flags & 2) != 0
                                  : (object->flags & 1) != 0,
             0);

@@ -19,7 +19,7 @@ static inline s32 ModelOrFallback(s32 modelId, s32 modelCount) {
 
 typedef struct CourseObject {
     s16 modelId;
-    s16 field2;
+    s16 rotationY;
     s32 x;
     s32 y;
     s32 z;

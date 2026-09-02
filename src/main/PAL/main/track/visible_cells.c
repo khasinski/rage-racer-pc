@@ -14,7 +14,7 @@ enum {
 /*
  * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For
  * each visible object (id != -1, passing the per-sector visibility bitmask test
- * against g_VisibleCellMask) it builds a Z-rotation matrix in the render state
+ * against g_VisibleCellMask) it builds a Y-rotation matrix in the render state
  * (0x1F800028), transforms the object position through the GTE
  * (0x1F80011C -> 0x1F800124), sets the primitive shade/semi-trans mode word at
  * 0x1F800084, then dispatches a prim builder (SubmitCourseModel2 / SubmitCourseModel)
@@ -40,7 +40,7 @@ void DrawCourseObjects(void) {
             continue;
         }
 
-        BuildRotMatrixY(&mtx, obj->field2);
+        BuildRotMatrixY(&mtx, obj->rotationY);
         MulMatrix2(&g_RenderState.matrix, &mtx);
 
         transformed = (u16)obj->x;
