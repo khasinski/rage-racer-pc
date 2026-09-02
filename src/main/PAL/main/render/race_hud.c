@@ -56,8 +56,8 @@ void DrawLapTimes(void) {
     for (lap = 0; lap < g_LapCount; lap++) {
         s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[lap];
         s32 color = lap == activeLap ? 0x780F
-                    : lapTime > 0x927BE ? 0x7890
-                                        : 0x78CC;
+                    : lapTime >= RACE_TIME_MAX_MS ? 0x7890
+                                                  : 0x78CC;
         SPRT *sprite = &frame->layout.raceHud.lapTimes[lap];
 
         DrawTimeValue(HudRightX(0xFA), 0x2E + lap * 0xA,

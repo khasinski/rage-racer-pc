@@ -21,9 +21,7 @@
 #include "game/screens.h"
 #include "game/track.h"
 
-
-
-
+enum { LAP_FRAME_COUNT_MAX = 0x10000 };
 /* A lap's clock counts frames, and the frame count is converted to a time as
  * it goes. Both saturate: 0x10000 frames and just under ten minutes. */
 static void TickRunningLapTime(PlayerCarRuntime *car) {
@@ -31,13 +29,13 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
     s32 slot = car->lap - 1;
 
     times->table.frameCounts[slot] += 1;
-    if (times->table.frameCounts[slot] > 0xFFFF) {
-        times->table.frameCounts[slot] = 0x10000;
+    if (times->table.frameCounts[slot] >= LAP_FRAME_COUNT_MAX) {
+        times->table.frameCounts[slot] = LAP_FRAME_COUNT_MAX;
     }
     times->table.milliseconds[slot] =
         FramesToMilliseconds(times->table.frameCounts[slot], Random15() % 40);
-    if (times->table.milliseconds[slot] > 0x927BE) {
-        times->table.milliseconds[slot] = 0x927BF;
+    if (times->table.milliseconds[slot] >= RACE_TIME_MAX_MS) {
+        times->table.milliseconds[slot] = RACE_TIME_MAX_MS;
         g_LapTimeSaturated = 1;
     }
     g_LapTimeMs = times->table.milliseconds[slot];
@@ -47,7 +45,7 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
  * The lap just completed, if it beats the best of this race, becomes the new
  * best and its sector times become the ones the next lap is measured against.
  */
-static void RecordBestLap(PlayerCarRuntime *car, s32 grandPrixMode) {
+static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
     s32 lap = car->lap;
     s32 lapTime = car->lapTimes.table.milliseconds[lap - 2];
 
@@ -57,7 +55,7 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 grandPrixMode) {
     car->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
     g_BestLapThisRace = lapTime;
     g_SectorTimes[2] = lapTime;
-    if (grandPrixMode == 0) {
+    if (recordMode == 0) {
         g_RefSectorTime2 = lapTime;
         g_RefSectorTimes.fields.first = g_SectorTimes[0];
         g_RefSectorTime1 = g_SectorTimes[1];
@@ -71,7 +69,7 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 grandPrixMode) {
 
 /* The race is over and the player finished it: add up the laps, keep whatever
  * beats the records, and hand over to the finish sequence. */
-static void FinishRace(PlayerCarRuntime *car, s32 grandPrixMode,
+static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
                        s32 lapsRun) {
     s32 series = ReadStableRaceSeries();
     s32 course = SeriesCourseIndex();
@@ -80,13 +78,13 @@ static void FinishRace(PlayerCarRuntime *car, s32 grandPrixMode,
     for (i = 0; i < lapsRun; i++) {
         g_RaceTotalTime += car->lapTimes.table.milliseconds[i];
     }
-    if (g_RaceTotalTime > 0x927BE) {
-        g_RaceTotalTime = 0x927BF;
+    if (g_RaceTotalTime >= RACE_TIME_MAX_MS) {
+        g_RaceTotalTime = RACE_TIME_MAX_MS;
     }
-    if (g_BestLapTimes[series][course][grandPrixMode] > g_BestLapThisRace) {
-        g_BestLapTimes[series][course][grandPrixMode] = g_BestLapThisRace;
+    if (g_BestLapTimes[series][course][recordMode] > g_BestLapThisRace) {
+        g_BestLapTimes[series][course][recordMode] = g_BestLapThisRace;
     }
-    if (grandPrixMode == 0) {
+    if (recordMode == 0) {
         g_BestSectorTimes[series][course][0] = g_RefSectorTimes.fields.first;
         g_BestSectorTimes[series][course][1] = g_RefSectorTime1;
         g_BestSectorTimes[series][course][2] = g_RefSectorTime2;
@@ -114,7 +112,7 @@ static void RetireAtLastLap(void) {
 }
 
 /* The car has covered the distance the current lap needs. */
-static s32 CrossTheLine(PlayerCarRuntime *car, s32 grandPrixMode) {
+static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
     s32 lapsRun;
 
     car->lap += 1;
@@ -123,13 +121,13 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 grandPrixMode) {
     if (g_RaceCueDelay == 0) {
         g_RaceCueDelay = 2;
     }
-    RecordBestLap(car, grandPrixMode);
+    RecordBestLap(car, recordMode);
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
         /* Anything below fourth is not a finish; the race is retired. */
         if (car->drive.racePosition < 4) {
-            FinishRace(car, grandPrixMode, lapsRun);
+            FinishRace(car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();
         }

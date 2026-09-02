@@ -140,6 +140,7 @@ void DrawRaceEndBanner(s32 level);
  * Live race timing. Times are milliseconds; 0x927BF is the saturation value
  * for anything over 9'59"998, which the HUD prints as dashes.
  */
+enum { RACE_TIME_MAX_MS = 0x927BF };
 
 /* Elapsed time of the lap in progress. */
 extern s32 g_LapTimeMs;
