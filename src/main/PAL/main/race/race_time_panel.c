@@ -5,11 +5,9 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 
-enum { SPECIAL_COURSE_INDEX = 3 };
-
 void DrawRaceTimePanel(s32 slideY) {
     char text[24];
-    s32 lapCount = g_CourseIndex == SPECIAL_COURSE_INDEX ? 6 : 3;
+    s32 lapCount = CourseLapCount(g_CourseIndex);
     s32 bestTimeColor;
     s32 lap;
 

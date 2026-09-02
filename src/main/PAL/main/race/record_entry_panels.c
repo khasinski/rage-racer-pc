@@ -18,7 +18,7 @@ void DrawRankingPanel(s32 slideX) {
 
     DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
     text[1] = 0x2F;
-    lapCount = g_CourseIndex == 3 ? 6 : 3;
+    lapCount = CourseLapCount(g_CourseIndex);
     for (row = 0; row < lapCount; row++) {
         s32 column = row % 2;
         s32 x = slideX + 0x14 + (row / 2) * 0x60;

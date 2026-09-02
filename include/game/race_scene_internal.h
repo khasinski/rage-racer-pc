@@ -71,7 +71,6 @@ typedef struct RaceViewSelection {
     u8 useFinishTextureSection;
 } RaceViewSelection;
 
-s32 RaceLapCount(s32 courseIndex);
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]);
 u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]);
 s32 CanPauseRace(s16 phase);

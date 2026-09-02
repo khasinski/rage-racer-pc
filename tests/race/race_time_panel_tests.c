@@ -73,7 +73,8 @@ int main(void) {
     CHECK(s_calls[5].y == 5 + 0xB0 + 2 * 0xC);
 
     Reset();
-    g_CourseIndex = 3;
+    g_CourseIndex = 7;
+    g_GrandPrixSeries = 1;
     g_PlayerCar.drive.hudLapHighlightRow = 5;
     g_PlayerCar.lapTimes.table.milliseconds[3] = 404;
     g_PlayerCar.lapTimes.table.milliseconds[4] = 505;

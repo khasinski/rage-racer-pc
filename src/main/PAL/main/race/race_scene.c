@@ -163,7 +163,7 @@ void EnterRaceScene(void) {
     ResetReplayWriteCursor();
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
-    g_LapCount = RaceLapCount(g_CourseIndex);
+    g_LapCount = CourseLapCount(g_CourseIndex);
     InitPlayerCar(&g_PlayerCar);
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();

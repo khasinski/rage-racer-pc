@@ -12,6 +12,8 @@ int main(void) {
         assert(SeriesCourseIndex() == physical % 4);
         assert(CourseSlot(physical) == physical % 4);
         assert(CourseSeries(physical) == physical / 4);
+        assert(CourseLapCount(physical) ==
+               (physical % 4 == 3 ? 6 : 3));
     }
     return 0;
 }

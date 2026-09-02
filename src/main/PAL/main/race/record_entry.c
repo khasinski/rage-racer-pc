@@ -14,7 +14,7 @@ void InsertRaceRecords(void) {
     s32 lapCount;
     s32 course;
 
-    lapCount = g_CourseIndex == 3 ? 6 : 3;
+    lapCount = CourseLapCount(g_CourseIndex);
     fastestLap = FindFastestLap(
         g_PlayerCar.lapTimes.table.milliseconds, lapCount);
     g_BestLapIndex = fastestLap.index;
