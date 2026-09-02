@@ -9,14 +9,14 @@ typedef struct Text8x8Style {
 
 static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                               Text8x8Style style) {
-    RenderBufferAddress packet = {.bytes = RENDER_PRIM_CURSOR_AS(u8)};
+    u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     while (*text != '\0') {
         s32 cell = PrintableAsciiGlyph((u8)*text++);
 
         if (cell != 0) {
-            SPRT_8 *sprite = packet.sprite8;
+            SPRT_8 *sprite = (SPRT_8 *)packet;
             s32 fontIndex = cell * 2;
 
             SetSprt8(sprite);
@@ -33,15 +33,14 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
             sprite->v0 = (u8)(g_Font8x8Cells[fontIndex + 1] * 8);
             sprite->clut = (u16)clutIndex;
             AddPrim(ot, sprite);
-            packet.sprite8++;
+            packet = (u8 *)(sprite + 1);
         }
         x += 8;
     }
 
-    SetDrawMode(packet.drawPacket, 0, 1, style.drawMode, g_DrawModeEnv);
-    AddPrim(ot, packet.drawPacket);
-    packet.drawPacket++;
-    g_RenderState.packetCursor = packet.bytes;
+    SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, g_DrawModeEnv);
+    AddPrim(ot, packet);
+    g_RenderState.packetCursor = (DrawPacket *)packet + 1;
 }
 
 void DrawText8x8(s32 x, s32 y, const char *text, s32 clutIndex) {

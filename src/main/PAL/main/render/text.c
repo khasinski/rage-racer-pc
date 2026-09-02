@@ -10,8 +10,8 @@ enum {
     HIGH_FONT_GLYPH_COUNT = sizeof(g_HighFontCell) / 4,
 };
 
-static void QueueProportionalGlyph(
-    RenderBufferAddress *packet,
+static u8 *QueueProportionalGlyph(
+    u8 *packet,
     s32 x,
     s32 y,
     s32 u,
@@ -19,7 +19,7 @@ static void QueueProportionalGlyph(
     s32 width,
     s32 clut,
     s32 shade) {
-    SPRT *sprite = packet->sprite;
+    SPRT *sprite = (SPRT *)packet;
 
     SetSprt(sprite);
     if (shade == 0x100) {
@@ -38,7 +38,7 @@ static void QueueProportionalGlyph(
     sprite->h = 12;
     sprite->clut = clut;
     AddPrim(GamePrimaryOrderingTable(0), sprite);
-    packet->sprite++;
+    return (u8 *)(sprite + 1);
 }
 
 void GameDrawProportionalTextShaded(
@@ -48,9 +48,7 @@ void GameDrawProportionalTextShaded(
     s32 clutIndex,
     s32 intensity) {
     s32 xPos = x;
-    RenderBufferAddress packet;
-
-    packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
+    u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
 
     while (*str != '\0') {
         u32 ch = (u8)*str++;
@@ -59,24 +57,24 @@ void GameDrawProportionalTextShaded(
         if (ch >= HIGH_FONT_FIRST_CHARACTER &&
             ch < HIGH_FONT_FIRST_CHARACTER + HIGH_FONT_GLYPH_COUNT) {
             index = (ch - HIGH_FONT_FIRST_CHARACTER) * 4;
-            QueueProportionalGlyph(
-                &packet, xPos, y + g_HighFontYOffset[index],
+            packet = QueueProportionalGlyph(
+                packet, xPos, y + g_HighFontYOffset[index],
                 g_HighFontU[index], g_HighFontV[index],
                 g_HighFontWidth[index], clutIndex, intensity);
             xPos += g_WordFontWidth[index];
         } else if (ch >= WORD_FONT_FIRST_CHARACTER &&
                    ch < WORD_FONT_FIRST_CHARACTER + WORD_FONT_GLYPH_COUNT) {
             index = (ch - WORD_FONT_FIRST_CHARACTER) * 4;
-            QueueProportionalGlyph(
-                &packet, xPos, y, g_WordFontU[index], g_WordFontV[index],
+            packet = QueueProportionalGlyph(
+                packet, xPos, y, g_WordFontU[index], g_WordFontV[index],
                 g_WordFontWidth[index], clutIndex, intensity);
             xPos += g_WordFontAdvance[index];
         } else if (ch >= PROP_FONT_FIRST_CHARACTER &&
                    ch < PROP_FONT_FIRST_CHARACTER + PROP_FONT_GLYPH_COUNT) {
             if (ch != ' ') {
                 index = (ch - PROP_FONT_FIRST_CHARACTER) * 2;
-                QueueProportionalGlyph(
-                    &packet, xPos, y, g_PropFontU[index], g_PropFontV[index],
+                packet = QueueProportionalGlyph(
+                    packet, xPos, y, g_PropFontU[index], g_PropFontV[index],
                     12, clutIndex, intensity);
             }
             xPos += 12;
@@ -84,10 +82,9 @@ void GameDrawProportionalTextShaded(
             continue;
         }
     }
-    SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
-    AddPrim(GamePrimaryOrderingTable(0), packet.drawPacket);
-    packet.drawPacket++;
-    g_RenderState.packetCursor = packet.bytes;
+    SetDrawMode((DrawPacket *)packet, 0, 1, 0x29, g_DrawModeEnv);
+    AddPrim(GamePrimaryOrderingTable(0), packet);
+    g_RenderState.packetCursor = (DrawPacket *)packet + 1;
 }
 
 
@@ -112,11 +109,7 @@ static u8 *QueueSpritePacket(
     s32 intensity,
     s32 shadeTexture,
     s32 semiTransparent) {
-    RenderBufferAddress address;
-    SPRT *sprt;
-
-    address.bytes = prim;
-    sprt = address.sprite;
+    SPRT *sprt = (SPRT *)prim;
 
     SetSprt(sprt);
     SetShadeTex(sprt, shadeTexture);
@@ -134,8 +127,7 @@ static u8 *QueueSpritePacket(
         sprt->b0 = intensity;
     }
     AddPrim(ot, sprt);
-    address.sprite++;
-    return address.bytes;
+    return (u8 *)(sprt + 1);
 }
 
 /* SPRT, 20 bytes: a raw textured sprite linked into `ot`. */
@@ -213,11 +205,7 @@ u8 *GameQueueTileTrans(
     s32 r,
     s32 g,
     s32 b) {
-    RenderBufferAddress address;
-    TILE *tile;
-
-    address.bytes = prim;
-    tile = address.tile;
+    TILE *tile = (TILE *)prim;
 
     SetTile(tile);
     SetSemiTrans(tile, 1);
@@ -229,8 +217,7 @@ u8 *GameQueueTileTrans(
     tile->g0 = g;
     tile->b0 = b;
     AddPrim(ot, tile);
-    address.tile++;
-    return address.bytes;
+    return (u8 *)(tile + 1);
 }
 
 /* LINE_F2, 16 bytes: one flat-shaded line, linked into `ot`. Returns the
@@ -245,11 +232,7 @@ u8 *GameQueueLine(
     s32 r,
     s32 g,
     s32 b) {
-    RenderBufferAddress address;
-    LINE_F2 *line;
-
-    address.bytes = prim;
-    line = address.lineF2;
+    LINE_F2 *line = (LINE_F2 *)prim;
 
     SetLineF2(line);
     line->x0 = x0;
@@ -260,6 +243,5 @@ u8 *GameQueueLine(
     line->g0 = g;
     line->b0 = b;
     AddPrim(ot, line);
-    address.lineF2++;
-    return address.bytes;
+    return (u8 *)(line + 1);
 }

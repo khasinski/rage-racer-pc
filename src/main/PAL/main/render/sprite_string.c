@@ -6,7 +6,7 @@
 
 
 void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
-    RenderBufferAddress packet = {.bytes = RENDER_PRIM_CURSOR_AS(u8)};
+    u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     while (*str != '\0') {
@@ -14,7 +14,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
         s32 width = g_SpriteFontWidth[glyph];
 
         if (glyph != 0) {
-            SPRT *sprite = packet.sprite;
+            SPRT *sprite = (SPRT *)packet;
             s32 fontIndex = glyph * 2;
 
             SetSprt(sprite);
@@ -27,15 +27,14 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
             sprite->h = 0x18;
             sprite->clut = (u16)clutIndex;
             AddPrim(ot, sprite);
-            packet.sprite++;
+            packet = (u8 *)(sprite + 1);
         }
         x += width;
     }
 
-    SetDrawMode(packet.drawPacket, 0, 1, 0x1D, g_DrawModeEnv);
-    AddPrim(ot, packet.drawPacket);
-    packet.drawPacket++;
-    g_RenderState.packetCursor = packet.bytes;
+    SetDrawMode((DrawPacket *)packet, 0, 1, 0x1D, g_DrawModeEnv);
+    AddPrim(ot, packet);
+    g_RenderState.packetCursor = (DrawPacket *)packet + 1;
 }
 
 u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
