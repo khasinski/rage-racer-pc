@@ -673,7 +673,6 @@ unsigned char g_SndTickResolution[8] __attribute__((aligned(16)));
 s32 g_StWriteCursor;
 s32 g_StReadCursor;
 s32 g_StRingSlot;
-unsigned char g_MaxClassReachedExtraGrandPrix[8] __attribute__((aligned(16)));
 unsigned char g_SndSeqTable[128] __attribute__((aligned(16)));
 unsigned char g_SndMarkCallbacks[2052] __attribute__((aligned(16)));
 short g_SndSeqTableSMax;

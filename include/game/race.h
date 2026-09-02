@@ -66,8 +66,8 @@ extern s16 g_SeriesSelection;
  * cleared). Saved at save+0x4E; gates title-menu entry 1. */
 extern s16 g_ExtraGrandPrixUnlocked;
 
-/* Highest class reached per series/save file ([1] is the old g_MaxClassReachedExtraGrandPrix).
- * Unlocks courses and bounds the attract-demo class roll. Saved at save+0x50. */
+/* Highest class reached per series/save file. Unlocks courses and bounds the
+ * attract-demo class roll. Saved at save+0x50. */
 extern s32 g_MaxClassReached[2];
 
 /* Mirror mode, armed by holding the 0x80C pad combination as the race starts:
