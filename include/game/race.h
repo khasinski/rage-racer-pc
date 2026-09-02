@@ -2,6 +2,7 @@
 #define GAME_RACE_H
 
 #include "common.h"
+#include "game/prize_money.h"
 #include "game/waypoint.h"
 #include "game/course_index.h"
 #include "game/vector.h"
@@ -33,24 +34,6 @@ extern char *g_GrandPrixNames[];
 
 /* Race position, 1 = leading; recomputed each frame from how many cars are
  * further along. At the finish it indexes g_PrizeMoney. */
-
-/* Prize money per [course][class][place], place 0 = 1st. */
-typedef enum GrandPrixPrizePlace {
-    PRIZE_PLACE_FIRST,
-    PRIZE_PLACE_SECOND,
-    PRIZE_PLACE_THIRD,
-    PRIZE_PLACE_COUNT
-} GrandPrixPrizePlace;
-
-typedef struct GrandPrixPrizeTable {
-    s32 values[4][6][PRIZE_PLACE_COUNT];
-} GrandPrixPrizeTable;
-
-extern struct RagePrizeMoneyStorage {
-    unsigned char prefix[8];
-    unsigned char values[280];
-} g_PrizeMoneyState;
-#define g_PrizeMoney (*(GrandPrixPrizeTable *)(void *)&g_PrizeMoneyState)
 
 /* Round number within the current class; drives the "R O U N D %d" overlay. */
 extern s32 g_GrandPrixRound;
