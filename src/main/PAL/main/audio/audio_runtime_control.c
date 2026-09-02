@@ -79,9 +79,9 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
 }
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
+    s16 hardwareVoice = (s16)(slot + FIRST_SOUND_SLOT_VOICE);
     s16 program = g_SoundSlotTone[slot][tone];
 
-    SsUtKeyOnV((s16)(slot + FIRST_SOUND_SLOT_VOICE),
-               g_SoundScale.vabIds[(s16)vabSlot], program, 0,
+    SsUtKeyOnV(hardwareVoice, g_SoundScale.vabIds[vabSlot], program, 0,
                SOUND_SLOT_NOTE, 0, 0, 0);
 }

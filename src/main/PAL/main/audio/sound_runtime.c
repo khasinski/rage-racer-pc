@@ -5,8 +5,7 @@
 
 enum {
     FIRST_SOUND_SLOT_VOICE = 14,
-    AUTO_SOUND_SLOT_COUNT = 5,
-    SOUND_SLOT_COUNT = 6,
+    AUTO_SOUND_SLOT_COUNT = ENGINE_SOUND_SLOT_COUNT - 1,
     SOUND_RUNTIME_VOICE_COUNT = 10,
     DEFAULT_SOUND_SCALE = 128,
 };
@@ -44,7 +43,7 @@ void SetSoundSlotVoicesEnabled(s32 enabled) {
 static void ResetSoundState(void) {
     s32 i;
 
-    for (i = 0; i < SOUND_SLOT_COUNT; i++) {
+    for (i = 0; i < ENGINE_SOUND_SLOT_COUNT; i++) {
         g_EngineSoundState.slotActive[i] = 0;
     }
 
