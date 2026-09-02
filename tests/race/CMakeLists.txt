@@ -469,7 +469,8 @@ set_tests_properties(asset_table_installation PROPERTIES LABELS unit)
 
 add_executable(course_event_runtime_tests
     course_event_runtime_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/course_event_runtime.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/countdown_cues.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/rival_cue_gate.c)
 target_include_directories(course_event_runtime_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
