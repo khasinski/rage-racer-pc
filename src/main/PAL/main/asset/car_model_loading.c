@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/car.h"
 
 enum { CAR_MODEL_LOAD_ASSET = 1 };
@@ -13,19 +14,25 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     g_AssetLoadState = CAR_MODEL_LOAD_ASSET;
 }
 
-void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
-    if ((u32)slot >= CAR_ASSET_SLOT_COUNT) {
-        return;
+s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
+                         s32 carIndex) {
+    ModelBankHeader *modelBank;
+
+    if ((u32)slot >= CAR_ASSET_SLOT_COUNT ||
+        !IsValidSerializedCarModelAsset(asset, size)) {
+        return 0;
     }
 
+    modelBank = GetModelBankHeader(
+        GetAssetBytes(asset) + SERIALIZED_CAR_MODEL_HEADER_SIZE);
+    if (!RegisterModelBank(modelBank,
+                           (size_t)asset->serializedModelSize, slot)) {
+        return 0;
+    }
     if (!InstallSerializedCarModelSlot(asset, slot)) {
-        return;
+        return 0;
     }
     asset = g_CarModelSlots[slot];
-    if (!RegisterModelBank(asset->modelData.modelBank,
-                           (size_t)asset->serializedModelSize, slot)) {
-        return;
-    }
     g_CarImageSlots[slot] = asset->imageData.carImage;
     if ((u32)carIndex < CUSTOM_PAINT_CAR_COUNT) {
         ApplyPrimaryBodyColor(g_CarTable[carIndex].paintColor1,
@@ -33,6 +40,7 @@ void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
         ApplySecondaryBodyColor(g_CarTable[carIndex].paintColor2,
                                 asset->imageData.carImage);
     }
+    return 1;
 }
 
 void RequestCarModel(s32 carIndex) {
@@ -52,6 +60,7 @@ void LoadPendingCarModelAsset(void) {
     u8 *destination;
     CarModelAsset *asset;
     s32 assetId;
+    s32 loadedSize;
 
     if (g_AssetLoadState != CAR_MODEL_LOAD_ASSET) {
         return;
@@ -66,11 +75,14 @@ void LoadPendingCarModelAsset(void) {
     variantIndex = GetCarAssetIndex(
         carIndex, g_CarTable[carIndex].modelVariant + gradeOffset);
     assetId = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
-    if (LoadAsset(assetId, destination) == 0) {
-        return;
-    }
+    loadedSize = LoadAsset(assetId, destination);
+    if (loadedSize == 0) return;
 
     asset = GetCarModelAsset(destination);
-    InstallCarModelAsset(asset, targetSlot, carIndex);
+    if (!InstallCarModelAsset(asset, (size_t)loadedSize, targetSlot,
+                              carIndex)) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetLoadState = 0;
 }

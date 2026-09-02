@@ -42,7 +42,10 @@ static u16 *s_audioTable;
 static s32 s_sequenceInitCalls;
 static CourseModelAssetHeader *s_courseModels;
 static GameImageAssetHeaderWord *s_uploadedImage;
-static s32 s_installCarModelSlotResult = 1;
+static s32 s_installCarModelSlotCalls;
+static s32 s_serializedModelValid = 1;
+static s32 s_registerModelBankResult = 1;
+static size_t s_validatedModelSize;
 
 void ResetCdAudioState(void) {}
 
@@ -53,15 +56,20 @@ s32 LoadAsset(s32 assetId, void *destination) {
     return s_loadResult;
 }
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
-    if (!s_installCarModelSlotResult) return 0;
+    s_installCarModelSlotCalls++;
     g_CarModelSlots[slot] = asset;
     return 1;
+}
+s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
+    (void)asset;
+    s_validatedModelSize = size;
+    return s_serializedModelValid;
 }
 s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
     (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;
-    return 1;
+    return s_registerModelBankResult;
 }
 void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
 s32 RegisterCourseModels(CourseModelAssetHeader *models, size_t size) {
@@ -136,8 +144,6 @@ static void TestModelVariantLoads(void) {
     CarModelAsset *upper =
         (CarModelAsset *)(void *)(buffers + CAR_MODEL_SLOT_SIZE);
     CarModelAsset *lower = (CarModelAsset *)(void *)buffers;
-    ModelBankHeader upperBank;
-    ModelBankHeader lowerBank;
     CarImageData upperImage;
     CarImageData lowerImage;
 
@@ -147,9 +153,7 @@ static void TestModelVariantLoads(void) {
     cars[2].paintColor1 = 4;
     cars[2].paintColor2 = 5;
     cars[10].modelVariant = 1;
-    upper->modelData.modelBank = &upperBank;
     upper->imageData.carImage = &upperImage;
-    lower->modelData.modelBank = &lowerBank;
     lower->imageData.carImage = &lowerImage;
     g_CarTable = cars;
     g_CarModelBuffer = buffers;
@@ -169,9 +173,14 @@ static void TestModelVariantLoads(void) {
     s_color1Calls = 0;
     s_color2Calls = 0;
     LoadPendingCarModelAsset();
-    Check(g_CarModelSlots[1] == upper && s_registeredBank == &upperBank &&
+    Check(g_CarModelSlots[1] == upper &&
+              s_registeredBank == GetModelBankHeader(
+                                      (u8 *)upper +
+                                      SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
               s_registeredSlot == 1,
           "normal model installs inactive model slot");
+    Check(s_validatedModelSize == (size_t)s_loadResult,
+          "normal model validates exactly the loaded bytes");
     Check(g_CarImageSlots[1] == &upperImage,
           "normal model installs inactive image slot");
     Check(s_color1Calls == 1 && s_color2Calls == 1 &&
@@ -189,7 +198,10 @@ static void TestModelVariantLoads(void) {
     Check(s_loadAssetId == 0xA + (102 << 1) &&
               s_loadDestination == buffers,
           "upgraded model asset and inactive slot");
-    Check(g_CarModelSlots[0] == lower && s_registeredBank == &lowerBank &&
+    Check(g_CarModelSlots[0] == lower &&
+              s_registeredBank == GetModelBankHeader(
+                                      (u8 *)lower +
+                                      SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
               s_registeredSlot == 0 && g_CarImageSlots[0] == &lowerImage,
           "upgraded model installs inactive slots");
     Check(s_color1Calls == 0 && s_color2Calls == 0,
@@ -203,6 +215,21 @@ static void TestModelVariantLoads(void) {
     LoadPendingCarModelAsset();
     Check(g_AssetLoadState == 0 && s_loadAssetId == -123,
           "invalid pending model is cancelled before asset lookup");
+
+    g_CarModelSlot = 0;
+    g_PendingCarModelIndex = 2;
+    g_AssetLoadState = 1;
+    s_loadResult = 1;
+    s_serializedModelValid = 0;
+    s_registeredBank = NULL;
+    g_CarModelSlots[1] = upper;
+    g_CarImageSlots[1] = &upperImage;
+    LoadPendingCarModelAsset();
+    Check(g_AssetLoadState == 0 && s_registeredBank == NULL &&
+              g_CarModelSlots[1] == upper &&
+              g_CarImageSlots[1] == &upperImage,
+          "invalid replacement model preserves the inactive slot");
+    s_serializedModelValid = 1;
 }
 
 static void TestInvalidCarSkipsCustomPaint(void) {
@@ -216,7 +243,7 @@ static void TestInvalidCarSkipsCustomPaint(void) {
     s_color1Calls = 0;
     s_color2Calls = 0;
 
-    InstallCarModelAsset(&model, 0, -1);
+    InstallCarModelAsset(&model, sizeof(model), 0, -1);
 
     Check(s_color1Calls == 0 && s_color2Calls == 0,
           "invalid car index skips custom paint");
@@ -231,7 +258,7 @@ static void TestInvalidSlotSkipsInstallation(void) {
     s_color1Calls = 0;
     s_color2Calls = 0;
 
-    InstallCarModelAsset(&model, CAR_ASSET_SLOT_COUNT, 0);
+    InstallCarModelAsset(&model, sizeof(model), CAR_ASSET_SLOT_COUNT, 0);
 
     Check(s_registeredBank == NULL && g_CarImageSlots[0] == NULL &&
               s_color1Calls == 0 && s_color2Calls == 0,
@@ -242,18 +269,41 @@ static void TestInvalidSerializedModelSkipsInstallation(void) {
     CarModelAsset model;
 
     memset(&model, 0, sizeof(model));
-    s_installCarModelSlotResult = 0;
+    s_serializedModelValid = 0;
+    s_installCarModelSlotCalls = 0;
     s_registeredBank = NULL;
     g_CarImageSlots[0] = NULL;
     s_color1Calls = 0;
     s_color2Calls = 0;
 
-    InstallCarModelAsset(&model, 0, 0);
+    InstallCarModelAsset(&model, sizeof(model), 0, 0);
 
-    Check(s_registeredBank == NULL && g_CarImageSlots[0] == NULL &&
+    Check(s_registeredBank == NULL && s_installCarModelSlotCalls == 0 &&
+              g_CarImageSlots[0] == NULL &&
               s_color1Calls == 0 && s_color2Calls == 0,
           "invalid serialized model skips dependent installation");
-    s_installCarModelSlotResult = 1;
+    s_serializedModelValid = 1;
+}
+
+static void TestInvalidModelBankPreservesSlot(void) {
+    CarModelAsset model;
+    CarModelAsset previousModel;
+    CarImageData previousImage;
+
+    memset(&model, 0, sizeof(model));
+    g_CarModelSlots[0] = &previousModel;
+    g_CarImageSlots[0] = &previousImage;
+    s_installCarModelSlotCalls = 0;
+    s_registerModelBankResult = 0;
+
+    Check(InstallCarModelAsset(&model, sizeof(model), 0, 0) == 0,
+          "invalid model bank rejects car asset");
+    Check(s_installCarModelSlotCalls == 0 &&
+              g_CarModelSlots[0] == &previousModel &&
+              g_CarImageSlots[0] == &previousImage,
+          "invalid model bank preserves the published slot");
+
+    s_registerModelBankResult = 1;
 }
 
 static void TestCarSelectAssetPhases(void) {
@@ -261,7 +311,6 @@ static void TestCarSelectAssetPhases(void) {
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
     CarEntry cars[2];
     CarModelAsset *model;
-    ModelBankHeader modelBank;
     CarImageData carImage;
 
     memset(storage, 0, sizeof(storage));
@@ -333,7 +382,6 @@ static void TestCarSelectAssetPhases(void) {
           "shared assets publish car buffers");
 
     model = (CarModelAsset *)(void *)(storage + 192);
-    model->modelData.modelBank = &modelBank;
     model->imageData.carImage = &carImage;
     cars[1].modelVariant = 2;
     cars[1].paintColor1 = 6;
@@ -346,13 +394,29 @@ static void TestCarSelectAssetPhases(void) {
           "initial showroom car asset index");
     Check(g_CarModelAsset == model && g_CarModelSlot == 0,
           "initial showroom model selected");
-    Check(s_registeredBank == &modelBank && s_registeredSlot == 0 &&
+    Check(s_registeredBank == GetModelBankHeader(
+                                  (u8 *)model +
+                                  SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
+              s_registeredSlot == 0 &&
               g_CarImageSlots[0] == &carImage,
           "initial showroom model installed");
+    Check(s_validatedModelSize == (size_t)s_loadResult,
+          "initial showroom model validates exactly the loaded bytes");
     Check(s_color1Calls == 1 && s_color2Calls == 1 &&
               s_color1 == 6 && s_color2 == 7,
           "initial showroom paint applied");
     Check(g_AssetLoadState == 0, "car select asset load completes");
+
+    g_AssetLoadState = 4;
+    g_CarModelSlot = 1;
+    g_CarModelAsset = NULL;
+    s_serializedModelValid = 0;
+    s_registeredBank = NULL;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && g_CarModelSlot == 1 &&
+              g_CarModelAsset == NULL && s_registeredBank == NULL,
+          "invalid initial showroom model is not selected");
+    s_serializedModelValid = 1;
 }
 
 int main(void) {
@@ -361,6 +425,7 @@ int main(void) {
     TestInvalidCarSkipsCustomPaint();
     TestInvalidSlotSkipsInstallation();
     TestInvalidSerializedModelSkipsInstallation();
+    TestInvalidModelBankPreservesSlot();
     TestCarSelectAssetPhases();
 
     if (s_failures != 0) return 1;

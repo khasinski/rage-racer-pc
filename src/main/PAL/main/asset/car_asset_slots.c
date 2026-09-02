@@ -7,6 +7,24 @@
 static CarModelAsset s_NativeCarModelAssets[CAR_ASSET_SLOT_COUNT];
 static CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
 
+s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
+    const SerializedCarModelAssetHeader *serialized;
+    size_t imageOffset;
+
+    if (asset == NULL || size < SERIALIZED_CAR_MODEL_HEADER_SIZE ||
+        size > CAR_MODEL_SLOT_SIZE ||
+        asset->serializedModelSize < 0) {
+        return 0;
+    }
+
+    serialized = (const SerializedCarModelAssetHeader *)(const void *)asset;
+    imageOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE +
+                  (size_t)asset->serializedModelSize;
+    return imageOffset <= size && sizeof(CarImageData) <= size - imageOffset &&
+           serialized->modelOffset == SERIALIZED_CAR_MODEL_HEADER_SIZE &&
+           serialized->imageOffset == (s32)imageOffset;
+}
+
 void UploadCarImage(s32 index) {
     if ((u32)index >= CAR_ASSET_SLOT_COUNT || g_CarImageSlots[index] == NULL) {
         return;
@@ -18,19 +36,12 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 index) {
     SerializedCarModelAssetHeader *serialized;
     u8 *bytes;
 
-    if (asset == NULL || (u32)index >= CAR_ASSET_SLOT_COUNT) return 0;
-
-    serialized = GetSerializedCarModelAssetHeader(asset);
-    if (asset->serializedModelSize < 0 ||
-        (u32)asset->serializedModelSize >
-            CAR_MODEL_SLOT_SIZE - SERIALIZED_CAR_MODEL_HEADER_SIZE -
-                sizeof(CarImageData) ||
-        serialized->modelOffset != SERIALIZED_CAR_MODEL_HEADER_SIZE ||
-        serialized->imageOffset != SERIALIZED_CAR_MODEL_HEADER_SIZE +
-                                       asset->serializedModelSize) {
+    if ((u32)index >= CAR_ASSET_SLOT_COUNT ||
+        !IsValidSerializedCarModelAsset(asset, CAR_MODEL_SLOT_SIZE)) {
         return 0;
     }
 
+    serialized = GetSerializedCarModelAssetHeader(asset);
     bytes = GetAssetBytes(serialized);
     memcpy(&s_NativeCarModelAssets[index], serialized->metadata,
            sizeof(serialized->metadata));

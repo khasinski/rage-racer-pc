@@ -16,11 +16,24 @@ static s32 s_installedSlot;
 static s32 s_selectedSlot;
 static ModelBankHeader *s_registeredBank;
 static s32 s_registeredSlot;
+static s32 s_registerResult = 1;
 static s32 s_failures;
 
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
     (void)nativeAsset;
     return s_serializedAsset;
+}
+s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
+    return asset != NULL && asset->serializedModelSize >= 0 &&
+           size >= SERIALIZED_CAR_MODEL_HEADER_SIZE &&
+           asset->serializedModelSize <=
+               CAR_MODEL_SLOT_SIZE - SERIALIZED_CAR_MODEL_HEADER_SIZE -
+                   (s32)sizeof(CarImageData);
+}
+s32 IsValidModelBankAsset(const ModelBankHeader *bank, size_t size) {
+    (void)bank;
+    (void)size;
+    return 1;
 }
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
     s_installedAsset = asset;
@@ -37,7 +50,7 @@ s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
     (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;
-    return 1;
+    return s_registerResult;
 }
 
 static void Check(s32 condition, const char *label) {
@@ -104,6 +117,14 @@ int main(void) {
     RelocateCarModel();
     Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
           "serialized model larger than its slot is rejected");
+
+    s_serializedAsset->serializedModelSize = MODEL_DATA_SIZE;
+    s_registerResult = 0;
+    s_installedAsset = NULL;
+    g_AssetLoadCursor = NULL;
+    RelocateCarModel();
+    Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
+          "unregistrable relocated bank is not published");
 
     if (s_failures != 0) return 1;
     puts("car model relocation copies its named serialized payload");

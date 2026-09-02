@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/car.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -254,13 +255,17 @@ static int TestCarAssetSlots(void) {
     CarModelAsset sentinelModel;
     CarModelAsset unknownModel;
     CarImageData image1;
+    size_t completeSize;
 
     memset(&storage, 0, sizeof(storage));
     view->gearCount = 6;
     view->serializedModelSize = 24;
     serialized->modelOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE;
     serialized->imageOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE + 24;
+    completeSize = (size_t)serialized->imageOffset + sizeof(CarImageData);
     g_CarModelSlots[0] = &sentinelModel;
+    CHECK(IsValidSerializedCarModelAsset(view, completeSize) == 1);
+    CHECK(IsValidSerializedCarModelAsset(view, completeSize - 1) == 0);
     CHECK(InstallSerializedCarModelSlot(view, -1) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
     CHECK(InstallSerializedCarModelSlot(view, 1) == 1);

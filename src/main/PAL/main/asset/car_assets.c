@@ -88,12 +88,16 @@ static void LoadInitialCarSelectModel(void) {
     s32 variantIndex = GetCarAssetIndex(
         carIndex, g_CarTable[carIndex].modelVariant);
     s32 assetIndex = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
+    s32 loadedSize;
 
-    if (LoadAsset(assetIndex, g_CarModelBuffer) == 0) {
+    loadedSize = LoadAsset(assetIndex, g_CarModelBuffer);
+    if (loadedSize == 0) return;
+
+    if (!InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer),
+                              (size_t)loadedSize, 0, carIndex)) {
+        g_AssetLoadState = 0;
         return;
     }
-
-    InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer), 0, carIndex);
     SelectCarModelSlot(0);
     g_CarModelSlot = 0;
     g_AssetLoadState = 0;
