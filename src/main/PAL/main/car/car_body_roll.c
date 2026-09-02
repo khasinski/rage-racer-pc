@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/car.h"
 #include "game/input_internal.h"
 #include "game/race.h"
@@ -94,7 +95,8 @@ static void UpdateNegconSteering(PlayerCarRuntime *car) {
 
 static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
-    s32 wantedHeading = (car->facingBackwards << 11) + 3072 -
+    s32 wantedHeading = (car->facingBackwards * ANGLE_HALF_TURN) +
+                        ANGLE_THREE_QUARTER_TURN -
                         car->trackHeading.value;
     s32 headingCorrection = GetAngleDelta(car->bodyYaw, wantedHeading) * 32;
     s32 lateralCorrection = 4096 - rcos(car->trackLateralOffset * 2);
@@ -127,9 +129,9 @@ void UpdateCarBodyRoll(PlayerCarRuntime *car) {
         car->drive.steerPos = 0;
         car->steeringAngle = 0;
     } else if (g_RacePhase < 4 && g_PlayerAutoSteer == 0) {
-        if (g_PadType == 0x41) {
+        if (g_PadType == PAD_TYPE_DIGITAL) {
             UpdateDigitalSteering(car);
-        } else if (g_PadType == 0x23) {
+        } else if (g_PadType == PAD_TYPE_NEGCON) {
             UpdateNegconSteering(car);
         } else {
             car->bodyRollVelocity = 0;

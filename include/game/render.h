@@ -310,9 +310,6 @@ void SetCameraRotMatrix(void);
  * Atan2(0, +y) is 0x400.
  */
 s32 Atan2(s32 x, s32 y);
-/* Shortest way round the 0x1000 circle between two 12-bit angles: the signed
- * delta from `from` to `to` in (-0x800, 0x800], and its magnitude. */
-s32 GetAngleDelta(s32 from, s32 to);
 /* (s32 a, s32 b); left unprototyped because UpdateCarDrivetrain calls it with two
  * extra arguments that the original left live in a2/a3. */
 

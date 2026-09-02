@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/diagnostics.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -10,13 +11,17 @@
  * outward track normal. Which quarter turn is chosen depends on the side of
  * the centre line the car occupies. */
 static s32 TrackBoundaryPushAngle(const GameCarRuntime *car) {
-    s32 outward = (s16)(0xC00 - car->trackHeading.half.low);
+    s32 outward =
+        (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
 
-    return (outward + (car->trackLateralOffset < 0 ? -0x400 : 0x400)) & 0xFFF;
+    return (outward + (car->trackLateralOffset < 0 ? -ANGLE_QUARTER_TURN
+                                                   : ANGLE_QUARTER_TURN)) &
+           ANGLE_MASK;
 }
 
 static s32 TrackBoundaryPushStrength(const GameCarRuntime *car) {
-    s32 outward = (s16)(0xC00 - car->trackHeading.half.low);
+    s32 outward =
+        (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
     s32 approach = GetAngleDistance(outward, car->bodyYaw);
     s32 sine = rsin(approach);
     s32 speed;
@@ -61,7 +66,7 @@ static void TraceCarKnockback(GameCarRuntime *car, s32 inputX, s32 inputZ,
         (lastTimer < 0 || g_SceneTimer <= lastTimer)) {
         Trace("car-knockback", "timer=%d player=%d input=%d,%d mode=%d "
               "output=%d,%d duration=%d heading=%d lateral=%d", g_SceneTimer,
-              car == (GameCarRuntime *)&g_PlayerCar, inputX, inputZ, mode,
+              car == AsRivalCar(&g_PlayerCar), inputX, inputZ, mode,
               car->velocityX, car->velocityZ, car->motionTimer,
               car->trackHeading.half.low, car->trackLateralOffset);
     }

@@ -34,7 +34,7 @@ static u32 FoldWord(u32 digest, s32 value) {
 
 int main(void) {
     static const s16 modes[] = {0, 2, 4};
-    static const u8 padTypes[] = {0x41, 0x23, 0};
+    static const u8 padTypes[] = {PAD_TYPE_DIGITAL, PAD_TYPE_NEGCON, 0};
     static const s32 speeds[] = {0, 80, 81, 799, 800, 1600};
     static const s32 offsets[] = {-512, 0, 512};
     static const s32 steerPositions[] = {-5000, -4095, -1000, 0,
@@ -98,7 +98,7 @@ int main(void) {
     memset(&car, 0, sizeof(car));
     g_RacePhase = 2;
     g_PlayerAutoSteer = 0;
-    g_PadType = 0x23;
+    g_PadType = PAD_TYPE_NEGCON;
     g_NegconSteer = 64;
     g_NegconMaxTwist = -1;
     UpdateCarBodyRoll(&car);
