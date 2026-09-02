@@ -2,6 +2,7 @@
 #include "game/state.h"
 #include "game/random.h"
 #include "game/asset.h"
+#include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include <string.h>
@@ -88,6 +89,9 @@ static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
     s32 candidate;
     s32 first;
 
+    if ((u32)current >= (u32)carCount) {
+        current = 0;
+    }
     if (mask & g_SceneTimer) {
         return current;
     }
