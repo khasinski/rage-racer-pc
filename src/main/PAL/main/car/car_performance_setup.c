@@ -2,6 +2,24 @@
 #include "game/car_internal.h"
 #include "game/player_car_internal.h"
 
+static s32 ClampPositiveInt64ToS32(int64_t value) {
+    return value > INT32_MAX ? INT32_MAX : (s32)value;
+}
+
+static s32 CalculatePackedGearLoad(s32 gearRatio) {
+    int64_t scaledGearRatio = (int64_t)gearRatio * 1168 / 160;
+    int64_t load = (scaledGearRatio * 6 / 100) * 0x20000 / 10000;
+
+    return ClampPositiveInt64ToS32(load);
+}
+
+static s32 CalculateTorqueCurveDivisor(s32 torqueScale, s32 gearRatio) {
+    int64_t divisor = (int64_t)torqueScale * gearRatio / 100;
+
+    if (divisor <= 0) return gearRatio;
+    return ClampPositiveInt64ToS32(divisor);
+}
+
 static s32 FindFirstBandAtOrAbove(const s32 *values, s32 count,
                                   s32 speedThreshold) {
     s32 index;
@@ -53,14 +71,10 @@ void PrepareCarPerformance(GameCarDrive *drive) {
 
     for (gear = 0; gear < 6; gear++) {
         s32 gearRatio = GetPositiveCarGearRatio(spec, gear + 1);
-        s32 scaledGearRatio = gearRatio * 0x490 / 160;
-        s32 divisor = spec->torqueScale[gear] * gearRatio / 100;
+        s32 divisor =
+            CalculateTorqueCurveDivisor(spec->torqueScale[gear], gearRatio);
 
-        SetCarGearLoad(spec, gear + 1,
-                       (((scaledGearRatio * 6) / 100) << 17) / 10000);
-        if (divisor <= 0) {
-            divisor = gearRatio;
-        }
+        SetCarGearLoad(spec, gear + 1, CalculatePackedGearLoad(gearRatio));
         for (index = 0; index < 16; index++) {
             g_GearTorqueCurve[gear + 1].values[index] =
                 spec->torqueCurve[index] / divisor;

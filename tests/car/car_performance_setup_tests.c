@@ -144,6 +144,15 @@ int main(void) {
     CHECK_EQ(g_GearTorqueCurve[1].values[0], spec.torqueCurve[0],
              "zero gear ratio uses a safe unit divisor");
 
+    spec.gearRatio[1] = INT32_MAX;
+    spec.torqueScale[0] = INT16_MAX;
+    spec.torqueCurve[0] = INT32_MAX;
+    PrepareCarPerformance(&drive);
+    CHECK_EQ(GetCarGearLoad(&spec, 1), INT32_MAX,
+             "large gear load saturates without signed overflow");
+    CHECK_EQ(g_GearTorqueCurve[1].values[0], 1,
+             "large torque divisor saturates without signed overflow");
+
     memset(spec.torqueCurve, 0, sizeof(spec.torqueCurve));
     spec.torqueBand.halves[0] = 4321;
     g_PeakOutputRpm = 12345;
