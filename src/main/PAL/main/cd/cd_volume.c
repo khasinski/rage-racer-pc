@@ -30,7 +30,7 @@ static s32 ClampCdMixPreset(s32 preset) {
 }
 
 static u32 ScaleCdMixLevel(u8 presetLevel, s32 volume) {
-    return (presetLevel * volume / CD_VOLUME_MAX) << 12;
+    return (presetLevel * volume / CD_VOLUME_MAX) << CD_MIX_FRACTION_BITS;
 }
 
 void SetCdVolume(s32 volume) {

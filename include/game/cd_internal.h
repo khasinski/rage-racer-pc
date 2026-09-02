@@ -39,6 +39,8 @@ enum {
     CD_TRACK_LOCATION_COUNT = 18,
     CD_FILE_TRACK_COUNT = 16,
     CD_TOC_CAPACITY = 100,
+    CD_MIX_FRACTION_BITS = 12,
+    CD_MIX_FIXED_ONE = 1 << CD_MIX_FRACTION_BITS,
 };
 
 static inline int CdTrackIndexValid(s32 track) {

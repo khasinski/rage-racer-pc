@@ -56,7 +56,7 @@ void StepCdTrackRequest(void) {
         }
         g_CdFadeFrames = 0;
         g_CdTrackStep = CD_TRACK_SEND_SEEK;
-        /* fall through */
+        RAGE_FALLTHROUGH;
     case CD_TRACK_SEND_SEEK:
         SendTrackSeek(CD_TRACK_WAIT_FOR_SEEK);
         break;
@@ -71,7 +71,7 @@ void StepCdTrackRequest(void) {
             break;
         }
         g_CdTrackStep = CD_TRACK_RESTART_SEND_SEEK;
-        /* fall through */
+        RAGE_FALLTHROUGH;
     case CD_TRACK_RESTART_SEND_SEEK:
         SendTrackSeek(CD_TRACK_RESTART_WAIT_FOR_SEEK);
         break;
@@ -94,7 +94,7 @@ void StepCdPlayRequest(void) {
             break;
         }
         g_CdCommandStep = CD_PLAY_SEND_COMMAND;
-        /* fall through */
+        RAGE_FALLTHROUGH;
     case CD_PLAY_SEND_COMMAND:
         if (CdControl(CD_DRIVE_PLAY, 0, 0) == 0) {
             break;

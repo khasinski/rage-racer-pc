@@ -15,8 +15,8 @@ void StartCdVolumeFade(s32 frames) {
     }
 }
 
-/* The live CdlATV mixer, in 12.12 fixed point: the four values are shifted
- * right 12 to make the 0..0x7F bytes CdMix wants, so 0x7F000 is full. The
+/* The live CdlATV mixer, in 12-bit fixed point: the four values are divided
+ * by CD_MIX_FIXED_ONE to make the 0..0x7F bytes CdMix wants, so 0x7F000 is full. The
  * matching g_CdMixFull* four at +0x10 are the target the fade ramps toward.
  * Channel order is CdlATV's: L->L, L->R, R->R, R->L. */
 
@@ -53,9 +53,9 @@ void StepCdVolumeFade(void) {
         g_CdFadeFrames++;
     }
 
-    mix[0] = g_CdMixLL / 4096;
-    mix[1] = g_CdMixLR / 4096;
-    mix[2] = g_CdMixRR / 4096;
-    mix[3] = g_CdMixRL / 4096;
+    mix[0] = g_CdMixLL / CD_MIX_FIXED_ONE;
+    mix[1] = g_CdMixLR / CD_MIX_FIXED_ONE;
+    mix[2] = g_CdMixRR / CD_MIX_FIXED_ONE;
+    mix[3] = g_CdMixRL / CD_MIX_FIXED_ONE;
     CdMix(mix);
 }
