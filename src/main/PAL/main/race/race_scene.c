@@ -10,6 +10,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/race_internal.h"
+#include "game/race_scene_internal.h"
 #include "game/screens.h"
 #include "game/track.h"
 #include <stdlib.h>
@@ -25,12 +26,6 @@ static s32 s_RetireCameraActive;
  * voices 22/23 in one frame makes 0x2B replace FINISHED before it is audible,
  * so retain the retail ordering by waiting for those voices to become idle. */
 static s32 s_FinishFollowupCue = -1;
-
-static u16 CameraButtonMask(void) {
-    s32 mappingBank = g_PadType == PAD_TYPE_NEGCON;
-
-    return g_PadButtonMapping[6 + mappingBank * 8];
-}
 
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
@@ -65,11 +60,7 @@ void EnterRaceScene(void) {
     ResetReplayWriteCursor();
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
-    if (g_CourseIndex == 3) {
-        g_LapCount = 6;
-    } else {
-        g_LapCount = 3;
-    }
+    g_LapCount = RaceLapCount(g_CourseIndex);
     player = &g_PlayerCar;
     InitPlayerCar(player);
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
@@ -79,9 +70,7 @@ void EnterRaceScene(void) {
     series = ReadStableRaceSeries();
     g_LapTimeMs = 0;
     g_LapTimeSaturated = 0;
-    g_SectorEndDistance[2] = trackLength;
-    g_SectorEndDistance[0] = trackLength / 3;
-    g_SectorEndDistance[1] = g_SectorEndDistance[0] * 2;
+    BuildRaceSectorEnds(trackLength, g_SectorEndDistance);
     g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
     g_RefSectorTime1 = g_BestSectorTimes[series][course][1];
     g_SectorIndex = -2;
@@ -89,8 +78,7 @@ void EnterRaceScene(void) {
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
-    g_RefLapTime =
-        g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][g_GrandPrixMode];
+    g_RefLapTime = g_BestLapTimes[series][course][g_GrandPrixMode];
     g_RaceTimeRemaining = 0x3A98;
     g_BestLapThisRace = g_RefLapTime;
     for (i = 0; i < g_LapCount; i++) {
@@ -137,7 +125,6 @@ void UpdateRaceScene(void) {
     s16 selection;
     s32 textureSection;
     u16 mode;
-    u32 pausePhase;
     u32 paused;
 
     g_SceneTimer++;
@@ -154,8 +141,8 @@ void UpdateRaceScene(void) {
     }
 
     mode = g_RacePhase;
-    pausePhase = mode - 1;
-    if (pausePhase < 2 && (g_PadPressed & PAD_START) && g_PauseDebounce <= 0) {
+    if (CanPauseRace(mode) && (g_PadPressed & PAD_START) &&
+        g_PauseDebounce <= 0) {
         g_PauseDebounce = 5;
         paused = g_RacePaused < 1;
         g_RacePaused = paused;
@@ -165,7 +152,8 @@ void UpdateRaceScene(void) {
             ForceAllEffectVoicesEnabled(0);
             g_RaceOptionCursor = 0;
             PlaySoundCue(2);
-        } else if (g_RaceOptionCursor == (2 - g_GrandPrixMode)) {
+        } else if (g_RaceOptionCursor ==
+                   LastRacePauseOption(g_GrandPrixMode)) {
             g_RaceFadeTimer = 0;
             if (g_GrandPrixMode == 0 || (s16)mode < 2) {
                 g_RacePhase = 7;
@@ -229,7 +217,7 @@ void UpdateRaceScene(void) {
         }
         if (g_PadPressed & PAD_DOWN) {
             selection = g_RaceOptionCursor;
-            if (selection < (2 - g_GrandPrixMode)) {
+            if (selection < LastRacePauseOption(g_GrandPrixMode)) {
                 g_RaceOptionCursor = selection + 1;
                 PlaySoundCue(1);
             }
@@ -250,11 +238,12 @@ void UpdateRaceScene(void) {
         GetTrackZoneBlend(g_PlayerCar.trackProgress);
         DrawPlayerTachometer();
 
-        if ((g_PadHeld & CameraButtonMask()) &&
+        if ((g_PadHeld &
+             RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
             g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
-            if (g_PadPressed & 8) {
+            if (g_PadPressed & PAD_R1) {
                 g_MirrorViewEnabled = 1;
-            } else if (g_PadPressed & 4) {
+            } else if (g_PadPressed & PAD_L1) {
                 g_MirrorViewEnabled = 0;
             }
         }
@@ -358,8 +347,9 @@ void UpdateRaceScene(void) {
             UpdateRaceCars();
         }
 
-        if ((g_PadPressed & CameraButtonMask()) &&
-            (u32)((u16)g_RacePhase - 2) < 2U) {
+        if ((g_PadPressed &
+             RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
+            CanToggleRaceCamera(g_RacePhase)) {
             g_CameraViewMode ^= 1;
         }
 
