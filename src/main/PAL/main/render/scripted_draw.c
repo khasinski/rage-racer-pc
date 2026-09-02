@@ -1,5 +1,7 @@
 #include "game/menu.h"
 
+#include <stdint.h>
+
 static s32 LimitScriptElapsed(s32 elapsed, s32 limit) {
     return elapsed < limit ? elapsed : limit;
 }
@@ -153,15 +155,15 @@ TimedDrawScriptTick AdvanceTimedDrawScript(
 
     tick.finished = 0;
     if (step < 0) {
-        s32 rewound = *progress + step;
-        *progress = (rewound > 0) ? rewound : 0;
+        int64_t rewound = (int64_t)*progress + step;
+        *progress = rewound > 0 ? (s32)rewound : 0;
     }
     tick.drawAt = *progress;
     if (step >= 0) {
         s32 limit = base[TimedDrawScriptLength(base)].motion.value;
-        s32 advanced = step + *progress;
+        int64_t advanced = (int64_t)*progress + step;
         if (advanced < limit) {
-            *progress = advanced;
+            *progress = (s32)advanced;
         } else {
             *progress = limit;
             tick.finished = 1;

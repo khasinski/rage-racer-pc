@@ -23,6 +23,7 @@
 #include "game/render.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -377,6 +378,10 @@ int main(void) {
             {"rewinding onto one keeps it", 2, -1, 32, 1, 1, 0},
             /* What is drawn is where the clock stood, not where it ends. */
             {"drawing happens before the advance", 0, 8, 32, 0, 8, 0},
+            {"large advance saturates at the end", INT_MAX, 1, INT_MAX,
+             INT_MAX, INT_MAX, 1},
+            {"large rewind saturates at the start", INT_MIN, -1, 32,
+             0, 0, 0},
         };
         size_t ci;
         int clockFailures = 0;
