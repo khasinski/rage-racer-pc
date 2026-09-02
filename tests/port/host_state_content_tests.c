@@ -145,7 +145,6 @@ extern unsigned char g_WordFontCells[40];
 extern unsigned char g_HighFontCell[4];
 extern unsigned char g_CarModelBaseIndex[16];
 extern unsigned char g_CarModelUnlockBase[16];
-extern unsigned char g_AssetRequestType[8];
 extern unsigned char g_TrackTextureRect[8];
 extern unsigned char g_TeamLogoClutLoadRect[8];
 extern unsigned char g_TeamLogoClutMoveRect[8];
@@ -354,7 +353,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_HighFontCell", g_HighFontCell, 4},
     {"g_CarModelBaseIndex", g_CarModelBaseIndex, 16},
     {"g_CarModelUnlockBase", g_CarModelUnlockBase, 16},
-    {"g_AssetRequestType", g_AssetRequestType, 8},
     {"g_TrackTextureRect", g_TrackTextureRect, 8},
     {"g_TeamLogoClutLoadRect", g_TeamLogoClutLoadRect, 8},
     {"g_TeamLogoClutMoveRect", g_TeamLogoClutMoveRect, 8},
@@ -474,7 +472,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3977169411UL;
+    const unsigned long expected = 653972611UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

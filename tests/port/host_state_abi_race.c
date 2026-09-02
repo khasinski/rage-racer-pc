@@ -4,5 +4,9 @@ _Static_assert(sizeof(g_BestSectorTimes) == 96,
                "g_BestSectorTimes ABI size changed");
 _Static_assert(sizeof(g_BestLapTimes) == 64,
                "g_BestLapTimes ABI size changed");
-_Static_assert(sizeof(g_BestTotalTimes) == 68,
+_Static_assert(sizeof(g_BestTotalTimes) == 64,
                "g_BestTotalTimes ABI size changed");
+_Static_assert(sizeof(g_FadeStep) == sizeof(s32),
+               "fade step must be a scalar");
+_Static_assert(sizeof(g_FrameParity) == sizeof(s32),
+               "frame parity must be a scalar");

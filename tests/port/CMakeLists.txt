@@ -289,6 +289,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME host_state_abi COMMAND host_state_abi_tests)
 set_tests_properties(host_state_abi PROPERTIES LABELS functional)
+
+add_executable(load_buffer_bounds_tests
+    load_buffer_bounds_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/host_state_asset.c)
+target_include_directories(load_buffer_bounds_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+add_test(NAME load_buffer_bounds COMMAND load_buffer_bounds_tests)
+set_tests_properties(load_buffer_bounds PROPERTIES LABELS unit)
+
 add_test(NAME shipped_config COMMAND python3
     ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})
 
