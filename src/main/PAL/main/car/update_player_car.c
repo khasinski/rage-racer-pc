@@ -232,84 +232,6 @@ static void SettleEngineRpm(GameCarDrive *p) {
     g_EngineRpm = shown;
 }
 
-/*
- * A jump. The body rises on one arc and falls on another, both drawn against
- * the tick count since it left the ground, and state two is the pause at the
- * top for a car that has not travelled far enough to start falling yet.
- */
-static void UpdateJumpArc(PlayerCarRuntime *car, s32 ground) {
-    s32 tick = car->verticalMotionTimer + 1;
-
-    car->verticalMotionTimer = tick;
-    if (car->verticalMotionState == 1) {
-        s32 rise = (s16)tick;
-
-        car->y = car->verticalMotionRate * rise + (rise * rise * 72) / 100 + car->y;
-        if (car->y >= ground) {
-            car->verticalMotionState = 0;
-        }
-    } else if (car->verticalMotionState == 2) {
-        if (ground - car->verticalMotionRate <= car->verticalTargetY) {
-            car->y = car->verticalTargetY;
-        } else {
-            car->verticalMotionState = 3;
-            car->verticalMotionRate = car->verticalMotionTimer;
-            car->y = car->verticalTargetY;
-        }
-    } else {
-        s32 fall = (s16)tick - car->verticalMotionRate;
-
-        car->y = car->verticalTargetY + (fall * fall * 216) / 100;
-        if (car->y >= ground) {
-            car->verticalMotionState = 0;
-        }
-    }
-}
-
-/*
- * Coming down. The drivetrain has to be restated for the gear the car landed
- * in, because it was turning freely in the air: the torque, the rev target and
- * the load all follow from the speed and the gear rather than from where they
- * had drifted to.
- */
-static void RelaunchDrivetrain(PlayerCarRuntime *car, GameCarDrive *p) {
-    GameCarSpec *spec = g_CarSpec;
-    s32 rpm;
-
-    p->drivetrainTorque = ((100 - (p->gear - 1) * 4) * 10000) * car->speed / 100;
-    g_ShiftSoundLevel = car->verticalMotionTimer & 0x3F;
-    p->yawOffset = 0;
-    p->launchHeading = car->headingAngle;
-    p->launchSpeed = car->speed / 0x100000;
-    p->spinRate = 0;
-    rpm = car->speed * 160 / 1168 * 10000 / spec->gearRatio[p->gear];
-    p->jumpTimer = 0x14;
-    p->motionState = CAR_MOTION_AIRBORNE;
-    g_ShiftTargetRpm = rpm;
-    p->shiftRpmDelta = (u16)g_ShiftTargetRpm - (u16)p->engineRpm;
-    p->engineLoad = rpm * spec->gearLoad[p->gear] / 0x20000;
-    /* An automatic box slips a little, so it asks the engine for less. */
-    if (p->manual == 0) {
-        p->engineLoad = p->engineLoad * 985 / 1000;
-    }
-}
-
-/* Back on the ground: the body stops where the wheels are and the suspension
- * takes the impact. A long enough drop lands audibly. */
-static void LandFromJump(PlayerCarRuntime *car, GameCarDrive *p, s32 ground) {
-    car->y = ground + 8;
-    car->verticalPitch = 0;
-    car->verticalRoll = 0;
-    StartCarBodyKick(1, AsRivalCar(car));
-    g_ShiftSoundLevel = 0;
-    if ((car->verticalMotionTimer >= 19) && (g_RacePhase < 3)) {
-        PlaySoundCue(0xE);
-    }
-    if ((p->motionState == CAR_MOTION_DRIVING) && (car->verticalMotionTimer >= 3)) {
-        RelaunchDrivetrain(car, p);
-    }
-}
-
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
     Matrix m2;
@@ -420,12 +342,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     /* Where the wheels sit, eight units under the body. */
     ground = bodyY - 8;
 
-    if (car->verticalMotionState != 0) {
-        UpdateJumpArc(car, ground);
-        if (car->verticalMotionState == 0) {
-            LandFromJump(car, p, ground);
-        }
-    }
+    UpdatePlayerJump(car, ground);
 
     UpdateCarTiltCounter(AsRivalCar(car));
     UpdateCarCrestHop(AsRivalCar(car));

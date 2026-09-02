@@ -78,6 +78,7 @@ s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,
 void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
                              s32 *acceleration);
 void ReadPlayerCarInput(GameCarDrive *drive);
+void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight);
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);
