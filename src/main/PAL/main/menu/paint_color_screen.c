@@ -107,9 +107,9 @@ static void UpdateSelectedPaintColor(void) {
             GameMenuBusy = 0;
         }
         if (editsPrimary) {
-            SetBodyColor1(g_PaintColorIndex);
+            SetPrimaryBodyColor(g_PaintColorIndex);
         } else {
-            SetBodyColor2(g_PaintColorIndex);
+            SetSecondaryBodyColor(g_PaintColorIndex);
         }
     }
 

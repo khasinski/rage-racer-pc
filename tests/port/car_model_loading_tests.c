@@ -79,12 +79,12 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
 void InitSequenceAudio(void) { s_sequenceInitCalls++; }
-void ApplyBodyColor1(u32 color, CarImageData *image) {
+void ApplyPrimaryBodyColor(u32 color, CarImageData *image) {
     (void)image;
     s_color1 = color;
     s_color1Calls++;
 }
-void ApplyBodyColor2(u32 color, CarImageData *image) {
+void ApplySecondaryBodyColor(u32 color, CarImageData *image) {
     (void)image;
     s_color2 = color;
     s_color2Calls++;

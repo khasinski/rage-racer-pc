@@ -795,10 +795,10 @@ extern u32 g_CarModelSlot;
 void SelectCarModelSlot(s32 index);
 struct CarModelAsset *GetSerializedCarModelAsset(struct CarModelAsset *nativeAsset);
 /* Repaint the loaded car's texture block in the two body colours. */
-void ApplyBodyColor1(u32 colour, CarImageData *imageData);
-void ApplyBodyColor2(u32 colour, CarImageData *imageData);
-void SetBodyColor1(s32 colour);
-void SetBodyColor2(s32 colour);
+void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData);
+void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData);
+void SetPrimaryBodyColor(s32 colour);
+void SetSecondaryBodyColor(s32 colour);
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 void UpdateRivalRubberBand(void);
 

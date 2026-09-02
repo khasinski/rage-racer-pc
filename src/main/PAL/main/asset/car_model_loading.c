@@ -23,10 +23,10 @@ void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
     RegisterModelBank(asset->modelData.modelBank, slot);
     SetCarImageSlot(asset->imageData.carImage, slot);
     if ((u32)carIndex < CUSTOM_PAINT_CAR_COUNT) {
-        ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
-                        asset->imageData.carImage);
-        ApplyBodyColor2(g_CarTable[carIndex].paintColor2,
-                        asset->imageData.carImage);
+        ApplyPrimaryBodyColor(g_CarTable[carIndex].paintColor1,
+                              asset->imageData.carImage);
+        ApplySecondaryBodyColor(g_CarTable[carIndex].paintColor2,
+                                asset->imageData.carImage);
     }
 }
 

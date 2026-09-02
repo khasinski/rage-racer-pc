@@ -58,8 +58,8 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     (void)count;
     (void)slot;
 }
-void SetBodyColor1(s32 color) { s_bodyColor1 = color; }
-void SetBodyColor2(s32 color) { s_bodyColor2 = color; }
+void SetPrimaryBodyColor(s32 color) { s_bodyColor1 = color; }
+void SetSecondaryBodyColor(s32 color) { s_bodyColor2 = color; }
 
 static void Reset(void) {
     memset(s_cars, 0, sizeof(s_cars));

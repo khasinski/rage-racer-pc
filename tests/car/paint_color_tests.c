@@ -60,18 +60,18 @@ int main(void) {
         memset(&image, 0x5A, sizeof(image));
         g_BodyColorPrimary[colour] = colours[colour][0];
         g_BodyColorSecondary[colour] = colours[colour][1];
-        ApplyBodyColor1((u32)colour, &image);
+        ApplyPrimaryBodyColor((u32)colour, &image);
         Fold(&image.paintPalette, sizeof(image.paintPalette));
 
         memset(&image, 0xA5, sizeof(image));
-        ApplyBodyColor2((u32)colour, &image);
+        ApplySecondaryBodyColor((u32)colour, &image);
         Fold(&image.paintPalette, sizeof(image.paintPalette));
     }
 
     memset(&firstColour, 0x5A, sizeof(firstColour));
     memset(&invalidColour, 0x5A, sizeof(invalidColour));
-    ApplyBodyColor1(0, &firstColour);
-    ApplyBodyColor1(18, &invalidColour);
+    ApplyPrimaryBodyColor(0, &firstColour);
+    ApplyPrimaryBodyColor(18, &invalidColour);
     if (memcmp(&firstColour.paintPalette, &invalidColour.paintPalette,
                sizeof(firstColour.paintPalette)) != 0) {
         puts("FAIL invalid paint colour did not use the first palette entry");
@@ -85,7 +85,7 @@ int main(void) {
     g_CarModelSlot = 7;
     s_uploadCalls = 0;
     s_uploadedSlot = -1;
-    SetBodyColor1(0);
+    SetPrimaryBodyColor(0);
     if (s_uploadCalls != 1 || s_uploadedSlot != 7 ||
         activeImage.paintPalette.gradients.bodyColor1Gradient[0] !=
             g_BodyColorPrimary[0] ||
@@ -97,7 +97,7 @@ int main(void) {
                activeImage.paintPalette.gradients.bodyColor1Gradient[4]);
         return 1;
     }
-    SetBodyColor2(0);
+    SetSecondaryBodyColor(0);
     if (s_uploadCalls != 2 || s_uploadedSlot != 7 ||
         activeImage.paintPalette.gradients.bodyColor2Gradient[0] !=
             g_BodyColorPrimary[0] ||

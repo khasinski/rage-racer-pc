@@ -139,20 +139,20 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
     }
 }
 
-void ApplyBodyColor1(u32 colour, CarImageData *imageData) {
+void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, PAINT_LAYER_PRIMARY);
 }
 
-void SetBodyColor1(s32 colour) {
-    ApplyBodyColor1((u32)colour, g_CarModelAsset->imageData.carImage);
+void SetPrimaryBodyColor(s32 colour) {
+    ApplyPrimaryBodyColor((u32)colour, g_CarModelAsset->imageData.carImage);
     UploadCarImage(g_CarModelSlot);
 }
 
-void ApplyBodyColor2(u32 colour, CarImageData *imageData) {
+void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, PAINT_LAYER_SECONDARY);
 }
 
-void SetBodyColor2(s32 colour) {
-    ApplyBodyColor2((u32)colour, g_CarModelAsset->imageData.carImage);
+void SetSecondaryBodyColor(s32 colour) {
+    ApplySecondaryBodyColor((u32)colour, g_CarModelAsset->imageData.carImage);
     UploadCarImage(g_CarModelSlot);
 }
