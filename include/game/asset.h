@@ -115,7 +115,8 @@ enum {
     ASSET_OPTION_SCREEN = 9
 };
 
-/* Load asset assetIndex into dst; returns loaded size/status. */
+/* Load asset assetIndex into dst; returns its positive byte count on success
+ * and zero on failure. */
 s32 LoadAsset(s32 assetIndex, void *dst);
 
 /* Phase of LoadAsset's own CD state machine, 0..6 (seek, SetLoc, CdRead,
@@ -354,12 +355,10 @@ void ServiceAssetLoad(void);
 /* Cancel an in-flight load: aborts a running CdRead and clears all three
  * state words (g_CdLoadPhase / g_AssetLoadState / g_AssetRequestType). */
 void ResetAssetLoader(void);
-/* Spin on LoadAsset until the transfer completes. */
-void LoadAssetBlocking(s32 assetIndex, void *dst);
 /* Boot: read the "\RAGE.BIN;1" first sector into g_AssetCdEntries (135 entries)
  * and rebase the 11 "\RAGE.STR;1" stream entries. Prints "Now Searching [%s]". */
 void LoadDiscArchiveIndex(void);
-/* LoadDiscArchiveIndex, then blocking-load asset 0 (LOGO.TMS) and upload it. */
+/* LoadDiscArchiveIndex, then load asset 0 (LOGO.TMS) and upload it. */
 void InitAssetSystem(void);
 /* Switch the drive to CD-DA mode (CdlSetmode 0x07 = report|autopause|CDDA);
  * the last step of every track load. */

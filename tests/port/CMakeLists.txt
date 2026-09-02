@@ -54,6 +54,26 @@ endif()
 add_test(NAME image_upload COMMAND image_upload_tests)
 set_tests_properties(image_upload PROPERTIES LABELS unit)
 
+add_executable(native_asset_loader_tests
+    native_asset_loader_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_asset_loader.c)
+target_include_directories(native_asset_loader_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(native_asset_loader_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(native_asset_loader_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(native_asset_loader_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME native_asset_loader COMMAND native_asset_loader_tests)
+set_tests_properties(native_asset_loader PROPERTIES LABELS unit)
+
 add_executable(relocate_car_model_tests
     relocate_car_model_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/relocate_car_model.c)

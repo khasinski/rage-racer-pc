@@ -22,21 +22,18 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
     if ((u32)assetIndex >= GAME_ASSET_COUNT) return 0;
     loaded = ModAssetLoad((int)assetIndex, dst,
                           g_AssetCdEntries[assetIndex].size);
-    if (loaded == 0) {
+    if (loaded <= 0) {
         loaded = HostLoadAsset(
             g_AssetCdEntries[assetIndex].position.sectorOffset,
             g_AssetCdEntries[assetIndex].size, dst);
     }
     /* Edited images are applied to the asset in memory, so a mod can carry
      * PNGs alone and the directory it lives in is never written to. */
-    if (loaded != 0) {
+    if (loaded > 0) {
         ModPatchTextures((int)assetIndex, dst, (size_t)loaded);
+        return loaded;
     }
-    return loaded;
-}
-
-void LoadAssetBlocking(s32 assetIndex, void *dst) {
-    LoadAsset(assetIndex, dst);
+    return 0;
 }
 
 void LoadDiscArchiveIndex(void) {
@@ -47,8 +44,9 @@ void LoadDiscArchiveIndex(void) {
 
 void InitAssetSystem(void) {
     LoadDiscArchiveIndex();
-    LoadAssetBlocking(ASSET_BOOT_LOGO, g_LoadBuffer);
-    UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
+    if (LoadAsset(ASSET_BOOT_LOGO, g_LoadBuffer) > 0) {
+        UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
+    }
 }
 
 s32 RequestBootAssets(void) {
