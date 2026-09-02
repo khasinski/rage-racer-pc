@@ -13,5 +13,6 @@ char g_PaintBlendShade0;
 char g_PaintBlendShade1;
 char g_PaintBlendShade2;
 char g_ShuttlePath2Points;
+char g_ChaseYawPrev;
 
 int main(void) { return 0; }

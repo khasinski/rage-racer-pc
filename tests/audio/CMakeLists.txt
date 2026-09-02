@@ -16,7 +16,6 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/reset_audio_voice_state.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_pause_request.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
         ${CMAKE_SOURCE_DIR}/include/game/track.h
         ${RAGE_HOST_STATE_SOURCES}
