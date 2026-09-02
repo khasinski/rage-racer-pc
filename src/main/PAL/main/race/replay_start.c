@@ -14,8 +14,10 @@ enum {
 };
 
 static s32 WrappedReplayStartCursor(s32 writeCursor) {
-    const s32 nextFramePair = (writeCursor & ~1) + 2;
-    return nextFramePair < g_ReplayFrameCount ? nextFramePair : 0;
+    const s32 nextSample =
+        (writeCursor & ~(REPLAY_SUBFRAMES_PER_SAMPLE - 1)) +
+        REPLAY_SUBFRAMES_PER_SAMPLE;
+    return nextSample < g_ReplayFrameCount ? nextSample : 0;
 }
 
 void BeginReplay(void) {
@@ -27,7 +29,9 @@ void BeginReplay(void) {
         g_ReplayReadCursor = WrappedReplayStartCursor(g_ReplayWriteCursor);
     } else {
         g_ReplayReadCursor = 0;
-        g_ReplayFrameCount = g_ReplayWriteCursor - 2;
+        /* The last sample straddles the transition out of the live race. */
+        g_ReplayFrameCount =
+            g_ReplayWriteCursor - REPLAY_SUBFRAMES_PER_SAMPLE;
     }
 
     if (g_GrandPrixClass != GRAND_PRIX_SHARED_FINAL_CLASS) {

@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/replay_internal.h"
 #include "game/render.h"
 #include "game/state.h"
@@ -79,7 +80,7 @@ static void TestWrappedCursorAtEndRestartsFromZero(void) {
 static void TestFinalClassKeepsEnvironmentPosition(void) {
     ResetState();
     g_ReplayWriteCursor = 20;
-    g_GrandPrixClass = 5;
+    g_GrandPrixClass = GRAND_PRIX_SHARED_FINAL_CLASS;
 
     BeginReplay();
 
