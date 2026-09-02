@@ -6,45 +6,41 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+enum {
+    MIRROR_FRAME_X = 0x54,
+    MIRROR_FRAME_WIDTH = 0x98,
+    MIRROR_FRAME_HEIGHT = 0x28,
+    MIRROR_CONTENT_X = 0x56,
+};
+
 DrawPacket *DrawMirrorFrame(u8 *packet) {
-    GameOrderingTableEntry *otArg;
-    u8 *prim;
-    GameOrderingTableEntry *ot;
+    GameOrderingTableEntry *frameOt =
+        &g_DrawBuffer->layout.orderingTables[0][1];
+    GameOrderingTableEntry *contentOt =
+        &g_DrawBuffer->layout.orderingTables[1][1];
     s32 badgeSpriteIndex;
-    s32 color;
     u8 *next;
-    TILE *tile;
-    RenderBufferAddress tileAddress;
+    TILE *tile = (TILE *)packet;
 
-    ot = &g_DrawBuffer->layout.orderingTables[0][1];
-
-    tileAddress.bytes = packet;
-    tile = tileAddress.tile;
     SetTile(tile);
-    otArg = ot;
-    prim = tileAddress.bytes;
-
-    tile->x0 = 0x54;
-    color = 0x98;
+    tile->x0 = MIRROR_FRAME_X;
     tile->r0 = 0;
     tile->g0 = 0;
     tile->b0 = 0;
-    tile->w = color;
+    tile->w = MIRROR_FRAME_WIDTH;
     tile->y0 = (s16)(g_MirrorPanelY - 2);
-    tile->h = 0x28;
-    packet += sizeof(*tile);
-    AddPrim(otArg, prim);
+    tile->h = MIRROR_FRAME_HEIGHT;
+    AddPrim(frameOt, tile);
+    packet = (u8 *)(tile + 1);
 
     badgeSpriteIndex = ResolveMirrorBadgeSpriteIndex(
         g_PlayerCarIndex, g_CarMirrorBadgeStyles, GAME_CAR_COUNT);
-    ot = &g_DrawBuffer->layout.orderingTables[1][1];
     next = GameQueueSprite(
-        ot, packet, 0x56, g_MirrorPanelY,
+        contentOt, packet, MIRROR_CONTENT_X, g_MirrorPanelY,
         g_MirrorBadgeWidths[badgeSpriteIndex], 8,
         g_MirrorBadgeTexU[badgeSpriteIndex],
         g_MirrorBadgeTexV[badgeSpriteIndex], 0x7800);
-    tileAddress.bytes = QueueDrawModePrim(ot, next, 9);
-    return tileAddress.drawPacket;
+    return (DrawPacket *)QueueDrawModePrim(contentOt, next, 9);
 }
 
 
@@ -63,7 +59,6 @@ static void UpdateMirrorPanelPosition(void) {
 
 void DrawRearViewMirror(s32 mode) {
     DrawPacket *packet;
-    DrawPacket *prim;
 
     if (mode >= 0x169) {
         g_MirrorUnlocked = 1;
@@ -81,11 +76,9 @@ void DrawRearViewMirror(s32 mode) {
     DrawSkyBackground();
     packet = DrawMirrorFrame(g_RenderState.packetCursor);
     SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
-    prim = packet;
-    packet++;
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
-            prim);
-    g_RenderState.packetCursor = packet;
+            packet);
+    g_RenderState.packetCursor = packet + 1;
     BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
     SetRotMatrix(&g_RenderState.matrix);
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
@@ -93,10 +86,8 @@ void DrawRearViewMirror(s32 mode) {
 
     packet = g_RenderState.packetCursor;
     SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
-    prim = packet;
-    packet++;
-    AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], prim);
-    g_RenderState.packetCursor = packet;
+    AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], packet);
+    g_RenderState.packetCursor = packet + 1;
     DrawCourseObjects();
     DrawCars();
     EndMirrorPass();
