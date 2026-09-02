@@ -215,11 +215,18 @@ extern s32 g_TrackPointCount;
  * handed a raw one to UpdateCarTrackState, which read past the array and took
  * the process down with it.
  */
-static inline GameTrackPoint *TrackPoint(s32 index) {
+static inline s32 WrapTrackPointIndex(s32 index) {
     s32 count = g_TrackPointCount;
-    if (count <= 0) return g_TrackPoints;
+
+    if (count <= 0) return 0;
     index %= count;
     if (index < 0) index += count;
+    return index;
+}
+
+static inline GameTrackPoint *TrackPoint(s32 index) {
+    if (g_TrackPointCount <= 0) return g_TrackPoints;
+    index = WrapTrackPointIndex(index);
     return &g_TrackPoints[index];
 }
 

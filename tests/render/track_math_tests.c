@@ -68,10 +68,13 @@ static void TrackPointWraps(void) {
     Check(TrackPoint(-1) == &points[3], "negative index wraps backwards");
     Check(TrackPoint(-4) == &points[0], "a whole lap backwards wraps");
     Check(TrackPoint(-5) == &points[3], "more than a lap backwards wraps");
+    Check(WrapTrackPointIndex(9) == 1, "wrapped positive index");
+    Check(WrapTrackPointIndex(-9) == 3, "wrapped negative index");
 
     /* A course whose points have not loaded must not divide by zero. */
     g_TrackPointCount = 0;
     Check(TrackPoint(7) == &points[0], "no points yet is not a crash");
+    Check(WrapTrackPointIndex(7) == 0, "empty ring has neutral index");
     g_TrackPointCount = 4;
 }
 

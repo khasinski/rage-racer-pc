@@ -2,11 +2,6 @@
 #include "game/track.h"
 #include "game/race.h"
 
-static s32 WrapTrackPointIndex(s32 index) {
-    index %= g_TrackPointCount;
-    return index < 0 ? index + g_TrackPointCount : index;
-}
-
 static s32 TrackSegmentLength(s32 index) {
     s32 length = (s16)g_TrackPoints[index].segmentLength;
 

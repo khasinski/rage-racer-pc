@@ -18,10 +18,7 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
         return -1;
     }
 
-    startIndex %= g_TrackPointCount;
-    if (startIndex < 0) {
-        startIndex += g_TrackPointCount;
-    }
+    startIndex = WrapTrackPointIndex(startIndex);
     index = startIndex;
 
     for (attempts = 0; attempts < g_TrackPointCount; attempts++) {
@@ -65,8 +62,7 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
          * ... . Its first point-count entries visit every segment once. */
         stride++;
         index += (stride % 2) != 0 ? stride : -stride;
-        index = index >= 0 ? index % g_TrackPointCount
-                           : (index + g_TrackPointCount) % g_TrackPointCount;
+        index = WrapTrackPointIndex(index);
     }
 
     car->x = TrackPoint(startIndex)->x;

@@ -7,11 +7,6 @@
 
 #include <string.h>
 
-static s32 NormalizeTrackPointIndex(s32 index) {
-    index %= g_TrackPointCount;
-    return index < 0 ? index + g_TrackPointCount : index;
-}
-
 void InitRivalCar(GameCarRuntime *car,
                   s32 gridPosition,
                   RaceGridSlot *grid) {
@@ -30,7 +25,7 @@ void InitRivalCar(GameCarRuntime *car,
     car->facingBackwards = (s16)ReadRaceTrackDirection();
     car->modelIndex = grid[gridPosition].halves.modelId;
     car->rivalModelId = grid[gridPosition].halves.modelId;
-    startPointIndex = NormalizeTrackPointIndex(start->trackPointIndex);
+    startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
     car->trackPointIndex = startPointIndex;
     car->x = start->x;
     car->z = start->z;

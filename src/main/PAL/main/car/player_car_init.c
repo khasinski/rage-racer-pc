@@ -25,11 +25,6 @@ static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
     car->drive.gearDisp = 1;
 }
 
-static s32 NormalizeTrackPointIndex(s32 index) {
-    index %= g_TrackPointCount;
-    return index < 0 ? index + g_TrackPointCount : index;
-}
-
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     CarTrackLimits trackLimits = {0};
     const TrackRivalStart *start;
@@ -42,7 +37,7 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     }
 
     start = &g_TrackEventData->rivalStarts[raceSeries][0];
-    startPointIndex = NormalizeTrackPointIndex(start->trackPointIndex);
+    startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
     car->trackPointIndex = startPointIndex;
     car->x = start->x;
     car->y = 0;

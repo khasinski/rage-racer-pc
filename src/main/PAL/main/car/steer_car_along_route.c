@@ -21,10 +21,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     }
 
     index = car->trackPointIndex + (raceSeries ? 2 : -2);
-    index %= g_TrackPointCount;
-    if (index < 0) {
-        index += g_TrackPointCount;
-    }
+    index = WrapTrackPointIndex(index);
 
     point = TrackPoint(index);
     if (lateral > point->rightHalfWidth) {
