@@ -122,21 +122,23 @@ void UpdateBasicEffectVoices(void) {
         s16 voice = (s16)(8 + i);
 
         switch (channel->mode) {
-        case 0:
+        case MUSIC_CHANNEL_START:
             SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
                        channel->right.half[0], 0x3C, 0, 0, 0);
             /* A newly keyed voice needs the same volume update. */
             RAGE_FALLTHROUGH;
-        case 2:
+        case MUSIC_CHANNEL_UPDATE:
             SsUtSetVVol(
                 voice,
                 ClampVoiceVolume(channel->volLeft * g_SoundScale.scale / 128),
                 ClampVoiceVolume(channel->volRight * g_SoundScale.scale / 128));
-            channel->mode = -1;
+            channel->mode = MUSIC_CHANNEL_IDLE;
             break;
-        case 1:
+        case MUSIC_CHANNEL_STOP:
             SsUtKeyOffV(voice);
-            channel->mode = -1;
+            channel->mode = MUSIC_CHANNEL_IDLE;
+            break;
+        case MUSIC_CHANNEL_IDLE:
             break;
         }
     }

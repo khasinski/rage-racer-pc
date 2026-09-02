@@ -12,7 +12,7 @@ void ResetAudioVoiceState(void) {
     s32 i;
 
     for (i = 0; i < MUSIC_CHANNEL_COUNT; i++) {
-        g_MusicChannels[i].mode = -1;
+        g_MusicChannels[i].mode = MUSIC_CHANNEL_IDLE;
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
         g_MusicChannels[i].volLeft = 0;

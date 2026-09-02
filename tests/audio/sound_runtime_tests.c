@@ -145,7 +145,7 @@ static void TestSoundStateReset(void) {
               "reset clears every sound slot");
     }
     for (index = 0; index < 2; index++) {
-        Check(g_MusicChannels[index].mode == -1 &&
+        Check(g_MusicChannels[index].mode == MUSIC_CHANNEL_IDLE &&
                   g_MusicChannels[index].left.value == -1 &&
                   g_MusicChannels[index].right.value == -1 &&
                   g_MusicChannels[index].volLeft == 0 &&

@@ -80,7 +80,7 @@ static void TestEffectInitialization(void) {
     Check(s_vmInitCalls == 1 && s_voiceCount == 8,
           "effect initialization resets libsnd with eight voices");
     for (index = 0; index < 2; index++) {
-        Check(g_MusicChannels[index].mode == -1 &&
+        Check(g_MusicChannels[index].mode == MUSIC_CHANNEL_IDLE &&
                   g_MusicChannels[index].volLeft == 0 &&
                   g_MusicChannels[index].volRight == 0,
               "effect initialization resets music channel state");

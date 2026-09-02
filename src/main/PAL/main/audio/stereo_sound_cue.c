@@ -18,7 +18,7 @@ static void StopStereoSoundCue(s32 cue) {
     for (i = 0; i < g_SoundModes[cue].count; i++) {
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
-        g_MusicChannels[i].mode = 1;
+        g_MusicChannels[i].mode = MUSIC_CHANNEL_STOP;
         g_MusicChannels[i].volLeft = 0;
         g_MusicChannels[i].volRight = 0;
     }
@@ -26,7 +26,7 @@ static void StopStereoSoundCue(s32 cue) {
 
 void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     SoundModeEntry *soundMode;
-    s32 mode;
+    MusicChannelState state;
     s32 i;
 
     if (cue < 0) {
@@ -43,7 +43,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     }
 
     soundMode = &g_SoundModes[cue];
-    mode = MusicChannelsOnMode(cue) ? 2 : 0;
+    state = MusicChannelsOnMode(cue) ? MUSIC_CHANNEL_UPDATE
+                                     : MUSIC_CHANNEL_START;
 
     for (i = 0; i < soundMode->count; i++) {
         MusicChannel *channel = &g_MusicChannels[i];
@@ -57,7 +58,7 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
 
         channel->left.value = soundMode->slots[i].left;
         channel->right.value = soundMode->slots[i].right;
-        channel->mode = mode;
+        channel->mode = state;
         channel->volLeft = channelLeft * soundMode->factor / 128;
         channel->volRight = channelRight * soundMode->factor / 128;
     }

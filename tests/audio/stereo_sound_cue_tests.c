@@ -40,12 +40,14 @@ int main(void) {
     SetStereoSoundCue(1, 64, 32);
     CHECK(g_MusicChannels[0].left.value == 12);
     CHECK(g_MusicChannels[1].left.value == 13);
-    CHECK(g_MusicChannels[0].mode == 0 && g_MusicChannels[1].mode == 0);
+    CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_START &&
+          g_MusicChannels[1].mode == MUSIC_CHANNEL_START);
     CHECK(g_MusicChannels[0].volLeft == 40);
     CHECK(g_MusicChannels[0].volRight == 20);
 
     SetStereoSoundCue(1, 32, 16);
-    CHECK(g_MusicChannels[0].mode == 2 && g_MusicChannels[1].mode == 2);
+    CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_UPDATE &&
+          g_MusicChannels[1].mode == MUSIC_CHANNEL_UPDATE);
 
     Reset();
     g_StereoOutput = 0;
@@ -66,14 +68,15 @@ int main(void) {
     SetStereoSoundCue(1, 0, 0);
     CHECK(g_MusicChannels[0].left.value == -1);
     CHECK(g_MusicChannels[1].left.value == -1);
-    CHECK(g_MusicChannels[0].mode == 1 && g_MusicChannels[1].mode == 1);
+    CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_STOP &&
+          g_MusicChannels[1].mode == MUSIC_CHANNEL_STOP);
     CHECK(g_MusicChannels[0].volLeft == 0 && g_MusicChannels[0].volRight == 0);
 
     Reset();
     SetStereoSoundCue(0, 64, 64);
     SetStereoSoundCue(2, 0, 0);
     CHECK(g_MusicChannels[0].left.value == 10);
-    CHECK(g_MusicChannels[0].mode == 0);
+    CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_START);
 
     puts("stereo sound cues preserve routing, reuse, mono mix, and stop groups");
     return 0;
