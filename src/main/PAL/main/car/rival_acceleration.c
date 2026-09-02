@@ -14,6 +14,35 @@ static void ApplyRivalSpeedDrag(GameCarRuntime *car) {
     car->speed = car->speed * RIVAL_SPEED_RETENTION_PERCENT / 100;
 }
 
+static void IncreaseRivalAcceleration(GameCarRuntime *car, s32 step) {
+    if (car->accelerationLimit >= car->acceleration) {
+        car->acceleration += step;
+    } else {
+        car->acceleration = car->accelerationLimit;
+    }
+}
+
+static void AdvanceRivalSpeedAndYaw(GameCarRuntime *car) {
+    ApplyRivalSpeedDrag(car);
+    car->speed += car->acceleration;
+    TurnRivalBodyTowardsTarget(car);
+}
+
+static void UpdateRaceRivalAcceleration(GameCarRuntime *car) {
+    if (car->boostTimer <= 0) {
+        IncreaseRivalAcceleration(car, car->accelerationStep);
+        return;
+    }
+
+    if (car->boostAccelerationThreshold < car->boostTimer &&
+        car->speed >= RIVAL_BOOST_COAST_SPEED) {
+        car->acceleration = 0;
+    } else {
+        IncreaseRivalAcceleration(car, car->boostAcceleration);
+    }
+    car->boostTimer--;
+}
+
 void AccelerateRaceRivals(void) {
     s32 index;
 
@@ -24,25 +53,8 @@ void AccelerateRaceRivals(void) {
             continue;
         }
 
-        if (car->boostTimer > 0) {
-            if (car->boostAccelerationThreshold < car->boostTimer &&
-                car->speed >= RIVAL_BOOST_COAST_SPEED) {
-                car->acceleration = 0;
-            } else if (car->accelerationLimit >= car->acceleration) {
-                car->acceleration += car->boostAcceleration;
-            } else {
-                car->acceleration = car->accelerationLimit;
-            }
-            car->boostTimer--;
-        } else if (car->accelerationLimit >= car->acceleration) {
-            car->acceleration += car->accelerationStep;
-        } else {
-            car->acceleration = car->accelerationLimit;
-        }
-
-        ApplyRivalSpeedDrag(car);
-        car->speed += car->acceleration;
-        TurnRivalBodyTowardsTarget(car);
+        UpdateRaceRivalAcceleration(car);
+        AdvanceRivalSpeedAndYaw(car);
     }
 }
 
@@ -60,8 +72,6 @@ void AccelerateAttractRivals(void) {
         } else {
             car->acceleration = car->accelerationLimit;
         }
-        ApplyRivalSpeedDrag(car);
-        car->speed += car->acceleration;
-        TurnRivalBodyTowardsTarget(car);
+        AdvanceRivalSpeedAndYaw(car);
     }
 }
