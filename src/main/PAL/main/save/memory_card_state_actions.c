@@ -101,6 +101,52 @@ typedef enum NoCardActionState {
 
 enum { NO_CARD_READY_DELAY_FRAMES = 5 };
 
+static void ExitNoCardMenu(s32 soundCue, int resetAction) {
+    if (resetAction) {
+        g_McActionState = NO_CARD_ACTION_INIT;
+    }
+    PlaySoundCue(soundCue);
+    StartMenuExitFade();
+}
+
+static void RunNoCardRootPage(s32 fadeBusy) {
+    AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
+                                g_McMenuRowCount - 1);
+
+    if (PollMenuConfirmInput() != 0) {
+        if (g_McMenuRowCursor != g_McMenuRowCount - 1) {
+            PlaySoundCue(5);
+        } else if (fadeBusy == 0) {
+            ExitNoCardMenu(2, 1);
+        }
+        return;
+    }
+
+    if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
+        ExitNoCardMenu(3, 1);
+    }
+}
+
+static void RunNoCardEmptyPage(s32 fadeBusy) {
+    if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
+        ExitNoCardMenu(3, 0);
+    }
+}
+
+static void RunNoCardReadyState(s32 fadeBusy) {
+    switch (g_McMenuPage) {
+    case 0:
+        RunNoCardRootPage(fadeBusy);
+        break;
+    case 1:
+        /* This page has no rows and deliberately preserves the action state. */
+        RunNoCardEmptyPage(fadeBusy);
+        break;
+    default:
+        break;
+    }
+}
+
 void RunNoCardActions(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     g_McActionBusy = 0;
@@ -120,36 +166,7 @@ void RunNoCardActions(s32 fadeBusy) {
         break;
 
     case NO_CARD_ACTION_READY:
-        if (g_McMenuPage == 0) {
-            AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
-                                        g_McMenuRowCount - 1);
-            if (PollMenuConfirmInput() != 0) {
-                if (g_McMenuRowCursor != g_McMenuRowCount - 1) {
-                    PlaySoundCue(5);
-                    break;
-                }
-                if (fadeBusy != 0) {
-                    break;
-                }
-                g_McActionState = NO_CARD_ACTION_INIT;
-                PlaySoundCue(2);
-                StartMenuExitFade();
-                break;
-            }
-            if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
-                g_McActionState = NO_CARD_ACTION_INIT;
-                PlaySoundCue(3);
-                StartMenuExitFade();
-            }
-        } else if (g_McMenuPage == 1) {
-            /* The second page has no rows to walk, so cancel is the only way
-             * off it, and unlike the first page it leaves the action state
-             * where it was. */
-            if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
-                PlaySoundCue(3);
-                StartMenuExitFade();
-            }
-        }
+        RunNoCardReadyState(fadeBusy);
         break;
 
     default:
