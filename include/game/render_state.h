@@ -120,11 +120,6 @@ _Static_assert(offsetof(GameViewWork, angleZ) ==
                    offsetof(GameViewWork, angleX) + 8,
                "the camera angles must stay one block");
 
-typedef union GameBlockAddress {
-    s32 *words;
-    Block16 *blocks;
-} GameBlockAddress;
-
 typedef union CarTrackRadius {
     s32 value;
     struct {

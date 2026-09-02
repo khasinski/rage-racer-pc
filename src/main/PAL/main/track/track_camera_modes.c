@@ -52,11 +52,12 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     s32 nodeOffset[3];
     s32 nodeWorld[3];
     Matrix objectRotation;
-    GameBlockAddress packetAddress;
 
     chaseNode = &g_TrackCameras[cameraNodeIndex];
-    packetAddress.words = &view->x;
-    packetAddress.blocks[0] = chaseNode->data.block;
+    view->x = chaseNode->data.world.x;
+    view->y = chaseNode->data.world.y;
+    view->z = chaseNode->data.world.z;
+    view->reserved = chaseNode->data.world.blend;
     BuildRotMatrixY(&objectRotation, car->angleY);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
@@ -242,11 +243,13 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     s32 nodeWorld[3];
     Matrix objectRotation;
     GameTrackCameraNode *orbitNode;
-    GameBlockAddress packetAddress;
     s32 duration;
 
-    packetAddress.words = &view->x;
-    packetAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
+    orbitNode = &g_TrackCameras[cameraNodeIndex];
+    view->x = orbitNode->data.world.x;
+    view->y = orbitNode->data.world.y;
+    view->z = orbitNode->data.world.z;
+    view->reserved = orbitNode->data.orientation.distance;
     if (nodeChanged || g_CameraModePrev != 4) {
         g_CamPathFrame = 0;
     } else if (g_CamPathFrame <
@@ -259,7 +262,6 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);
     MulMatrix2(&matrixWork, &objectRotation);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
-    orbitNode = &g_TrackCameras[cameraNodeIndex];
     duration = CameraNodeDuration(orbitNode);
     nodeOffset[0] = 0;
     nodeOffset[1] = orbitNode->data.orientation.distance;

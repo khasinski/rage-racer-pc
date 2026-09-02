@@ -225,6 +225,11 @@ int main(void) {
         s_nodes[0].offset[2] = 0x60;
         Run(2, view);
         Check("mode 2, blended node", view, wanted);
+        if (g_RenderState.reserved14 != s_nodes[0].data.world.blend) {
+            printf("FAIL mode 2 node metadata: got %d, expected %d\n",
+                   g_RenderState.reserved14, s_nodes[0].data.world.blend);
+            s_failures++;
+        }
     }
 
     /* Mode 3 is the scripted cam path: an offset that slides across the node's
@@ -261,6 +266,13 @@ int main(void) {
         g_CamPathFrame = 30;
         Run(2, view);
         Check("mode 4, sliding node", view, wanted);
+        if (g_RenderState.reserved14 !=
+            s_nodes[0].data.orientation.distance) {
+            printf("FAIL mode 4 node metadata: got %d, expected %d\n",
+                   g_RenderState.reserved14,
+                   s_nodes[0].data.orientation.distance);
+            s_failures++;
+        }
     }
 
     /* A malformed zero duration is treated as one frame in both modes that
