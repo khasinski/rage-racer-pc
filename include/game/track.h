@@ -99,7 +99,6 @@ typedef struct TrackEventOffsets {
 } TrackEventOffsets;
 
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
-s32 LerpColorChannel(s32 from, s32 to, s32 blend);
 
 typedef struct TrackAmbienceZone {
     s32 start;

@@ -5,6 +5,10 @@
 #include "game/track.h"
 #include "game/track_camera_internal.h"
 
+static inline s32 LerpColorChannel(s32 from, s32 to, s32 blend) {
+    return from + (((to - from) * blend) >> 12);
+}
+
 typedef struct CourseObject {
     s16 modelId;
     s16 field2;

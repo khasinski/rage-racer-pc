@@ -34,10 +34,6 @@ static s32 g_FarGreen;
 static s32 g_FarBlue;
 static s32 g_FogNearCall;
 
-s32 LerpColorChannel(s32 from, s32 to, s32 blend) {
-    return (from * (4096 - blend) + to * blend) >> 12;
-}
-
 #undef LoadImage
 int LoadImage(RECT *rect, u_long *data) {
     (void)rect;
@@ -66,6 +62,23 @@ static GameEnvColor Color(u8 value) {
     return color;
 }
 
+static s32 CheckColorInterpolation(void) {
+    GameEnvColor from = Color(10);
+    GameEnvColor to = Color(250);
+    GameEnvColor out = Color(0);
+
+    LerpEnvColor(&from, &to, &out, 0);
+    if (out.bytes.r != 10 || out.bytes.g != 10 || out.bytes.b != 10) {
+        return 0;
+    }
+    LerpEnvColor(&from, &to, &out, 0x1000);
+    if (out.bytes.r != 250 || out.bytes.g != 250 || out.bytes.b != 250) {
+        return 0;
+    }
+    LerpEnvColor(&to, &from, &out, 0x800);
+    return out.bytes.r == 130 && out.bytes.g == 130 && out.bytes.b == 130;
+}
+
 static void SeedCue(GameEnvironmentCue *cue, s32 time, u8 color,
                     u16 duration, u16 mode) {
     s32 slot;
@@ -85,6 +98,11 @@ int main(void) {
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[5];
     s32 color;
+
+    if (!CheckColorInterpolation()) {
+        puts("FAIL: environment color interpolation");
+        return 1;
+    }
 
     script.skyRowBase = 7;
     script.length = 123;

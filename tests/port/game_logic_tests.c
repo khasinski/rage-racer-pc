@@ -23,7 +23,6 @@ s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight);
-s32 LerpColorChannel(s32 from, s32 to, s32 blend);
 
 u32 g_RandomSeed;
 GameTrackPoint *g_TrackPoints;
@@ -328,13 +327,6 @@ static void test_portable_state_path(void) {
     rmdir(root);
 }
 
-static void test_color_interpolation(void) {
-    EXPECT_EQ(10, LerpColorChannel(10, 250, 0));
-    EXPECT_EQ(250, LerpColorChannel(10, 250, 0x1000));
-    EXPECT_EQ(130, LerpColorChannel(10, 250, 0x800));
-    EXPECT_EQ(130, LerpColorChannel(250, 10, 0x800));
-}
-
 int main(void) {
     test_time_conversion();
     test_random15();
@@ -346,7 +338,6 @@ int main(void) {
     test_port_config();
     test_platform_config_path();
     test_portable_state_path();
-    test_color_interpolation();
 
     if (failures != 0) {
         fprintf(stderr, "%d characterization assertion(s) failed\n", failures);
