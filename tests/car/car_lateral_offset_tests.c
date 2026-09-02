@@ -31,6 +31,7 @@ int main(void) {
     };
     /* Static: the global keeps this address, and gcc is right to say so. */
     static GameTrackPoint points[2];
+    GameCarRuntime car;
     size_t i;
     int failures = 0;
 
@@ -41,8 +42,6 @@ int main(void) {
     g_TrackPointCount = 2;
 
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-        GameCarRuntime car;
-
         memset(&car, 0, sizeof(car));
         car.trackPointIndex = 3; /* TrackPoint must wrap this to points[1]. */
         car.aiLateralOffset = cases[i].input;
@@ -54,20 +53,36 @@ int main(void) {
         }
     }
 
-    {
-        GameCarRuntime car;
-
-        memset(&car, 0, sizeof(car));
-        car.aiLateralOffset = -123;
-        g_TrackPointCount = 0;
-        ClampCarLateralOffset(&car, 0);
-        if (car.aiLateralOffset != -123) {
-            puts("FAIL empty track changed the lateral offset");
-            failures++;
-        }
+    memset(&car, 0, sizeof(car));
+    car.aiLateralOffset = -123;
+    g_TrackPointCount = 0;
+    ClampCarLateralOffset(&car, 0);
+    if (car.aiLateralOffset != -123) {
+        puts("FAIL empty track changed the lateral offset");
+        failures++;
     }
 
-    if (failures != 0) return 1;
+    g_TrackPointCount = 2;
+    g_TrackPoints = NULL;
+    ClampCarLateralOffset(&car, 0);
+    if (car.aiLateralOffset != -123) {
+        puts("FAIL missing track data changed the lateral offset");
+        failures++;
+    }
+
+    g_TrackPoints = points;
+    points[0].rightHalfWidth = -80;
+    car.trackPointIndex = 0;
+    car.aiLateralOffset = 25;
+    ClampCarLateralOffset(&car, 0);
+    if (car.aiLateralOffset != 0) {
+        puts("FAIL negative track width reversed the lateral offset");
+        failures++;
+    }
+
+    if (failures != 0) {
+        return 1;
+    }
     puts("car lateral offsets stay within their side of the racing line");
     return 0;
 }
