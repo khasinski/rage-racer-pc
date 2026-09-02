@@ -18,7 +18,7 @@ static void BeginCarSelectAudioLoad(void) {
 }
 
 static void FinishCarSelectAudioLoad(void) {
-    if ((s16)PollAudioSlotLoad() == 0) {
+    if (PollAudioSlotLoad() == 0) {
         return;
     }
 

@@ -36,7 +36,7 @@ static void LoadBootAudioBody(void) {
 }
 
 static void WaitForBootAudio(void) {
-    if ((s16)PollAudioSlotLoad() != 0) {
+    if (PollAudioSlotLoad() != 0) {
         g_AssetLoadState = 5;
     }
 }

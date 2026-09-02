@@ -26,7 +26,7 @@ static void BeginRaceVoiceLoad(void) {
 }
 
 static void AdvanceAfterAudioLoad(s32 nextState) {
-    if ((s16)PollAudioSlotLoad() != 0) {
+    if (PollAudioSlotLoad() != 0) {
         g_AssetLoadState = nextState;
     }
 }
