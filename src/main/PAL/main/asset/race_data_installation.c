@@ -13,8 +13,7 @@ void SetCarSpec(GameCarSpec *spec) {
     g_CarSpec = spec;
 }
 
-void InstallTrackEventData(void *resourceData) {
-    TrackEventData *eventData = resourceData;
+void InstallTrackEventData(TrackEventData *eventData) {
     TrackEventOffsets *offsets = &eventData->offsets;
     u8 *base = (u8 *)offsets;
 

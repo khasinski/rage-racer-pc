@@ -33,15 +33,15 @@ int main(void) {
         offsetof(CameraTableFixture, secondSeriesCamera);
 
     g_GrandPrixSeries = 1;
-    SelectTrackCameraTable(&fixture, 0);
+    SelectTrackCameraTable(&fixture.table, 0);
     CHECK(g_TrackCameras == &fixture.defaultCamera);
 
     g_GrandPrixSeries = 0;
-    SelectTrackCameraTable(&fixture, 1);
+    SelectTrackCameraTable(&fixture.table, 1);
     CHECK(g_TrackCameras == &fixture.firstSeriesCamera);
 
     g_GrandPrixSeries = 4;
-    SelectTrackCameraTable(&fixture, 1);
+    SelectTrackCameraTable(&fixture.table, 1);
     CHECK(g_TrackCameras == &fixture.secondSeriesCamera);
 
     puts("track camera table selection tests passed");

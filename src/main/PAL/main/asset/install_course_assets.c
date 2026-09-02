@@ -9,22 +9,22 @@ void InstallCourseAssets(void) {
     header = GetSceneAssetHeader(base);
 
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
-    UploadImageAsset(g_AssetBlockPtr);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
 
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
-    UploadImageAsset(g_AssetBlockPtr);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
 
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
     UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
 
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[3]);
     g_AssetSubBlockPtr = GetSceneAssetAddress(header, header->offsets[4]);
-    UploadImageAsset(g_AssetBlockPtr);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
 
     StoreTeamLogoImage(base);
 
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
-    UploadImageAsset(g_AssetSubBlockPtr);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
 }

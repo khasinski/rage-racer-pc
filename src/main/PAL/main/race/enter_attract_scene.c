@@ -21,7 +21,7 @@ void EnterAttractScene(void) {
         return;
     }
 
-    UploadImageAsset(g_ImageBlockBuffer);
+    UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
     g_MirrorMode = 0;
     InitRenderState(5);
     SetupDisplay480(0, 0, 0);

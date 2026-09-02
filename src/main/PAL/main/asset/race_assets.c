@@ -64,7 +64,7 @@ void LoadRaceAssets(void) {
             g_AssetSubBlockPtr = body;
             StartAudioSlotLoad(3, header, body, GetAssetHalfwords(table));
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-            UploadImageAsset(g_AssetBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
             g_AssetLoadState = 4;
             g_AssetLoadCursor = g_AssetSubBlockPtr;
         }
@@ -87,17 +87,17 @@ void LoadRaceAssets(void) {
 
             pack = GetSceneAssetHeader(g_AssetLoadCursor);
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
-            UploadImageAsset(g_AssetBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[1]);
-            UploadImageAsset(g_AssetBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[2]);
             UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[3]);
             g_AssetSubBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-            UploadImageAsset(g_AssetBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
             StoreTeamLogoImage(g_AssetLoadCursor);
             g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetLoadCursor);
-            UploadImageAsset(g_AssetSubBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
             ResetTrackTextureSwap();
             g_AssetLoadState = 6;
             g_AssetLoadCursor = g_AssetLoadCursor + TRACK_TEXTURE_SHADOW_SIZE;

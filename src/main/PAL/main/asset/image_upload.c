@@ -39,7 +39,7 @@ void UploadImageBlock(GameImageAssetHeaderWord *asset) {
  * zero or less. The size word is read first and skipped past, so a block
  * starts at the word after its own header.
  */
-void UploadImageAsset(void *asset) {
+void UploadImageAsset(GameImageAssetHeaderWord *asset) {
     GameImageAssetHeaderWord *ptr = asset;
 
     ptr++;
@@ -69,5 +69,5 @@ void StoreTeamLogoImage(void *dst) {
 }
 
 void UploadLoadBufferImage(void) {
-    UploadImageAsset(g_LoadBuffer);
+    UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
 }

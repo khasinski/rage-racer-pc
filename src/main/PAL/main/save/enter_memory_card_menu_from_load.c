@@ -6,7 +6,7 @@ void EnterMemoryCardMenuFromLoad(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
     if (g_AssetLoadState == 0) {
-        UploadImageAsset(g_ImageBlockBuffer);
+        UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
         g_McMenuRowCursor = 2;
         g_McMenuRowCount = 3;
         g_McMenuState = MC_MENU_STATE_NO_CARD;

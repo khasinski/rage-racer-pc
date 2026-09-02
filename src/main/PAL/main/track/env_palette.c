@@ -1,7 +1,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
-void SetEnvPaletteTable(void *table) {
+void SetEnvPaletteTable(EnvironmentPalette *table) {
     g_EnvPaletteTable = table;
 }
 

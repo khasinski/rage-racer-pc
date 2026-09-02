@@ -63,7 +63,7 @@ void LoadCarSelectAssets(void) {
             imageHeader = GetSceneAssetHeader(g_AssetLoadCursor);
             assetOffset = imageHeader->offsets[2];
             g_AssetBlockPtr = GetSceneAssetAddress(imageHeader, assetOffset);
-            UploadImageAsset(g_AssetBlockPtr);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
 
             g_AssetLoadState = 4;
             g_CarModelBuffer = g_AssetBlockPtr;

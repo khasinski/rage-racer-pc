@@ -44,7 +44,7 @@ void LoadDiscArchiveIndex(void) {
 void InitAssetSystem(void) {
     LoadDiscArchiveIndex();
     LoadAssetBlocking(0, &g_LoadBuffer);
-    UploadImageAsset(&g_LoadBuffer);
+    UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
 }
 
 s32 RequestBootAssets(void) {

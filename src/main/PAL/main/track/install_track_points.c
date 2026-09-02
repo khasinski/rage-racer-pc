@@ -7,8 +7,7 @@
  * sums every point's segmentLength into the total track length g_TrackLength and
  * derives g_TrackSectionCount = (total >> 8) + 1.
  */
-void InstallTrackPoints(void *data) {
-    TrackPointTable *trackData = data;
+void InstallTrackPoints(TrackPointTable *trackData) {
     s32 count;
     GameTrackPoint *points;
     s32 i;

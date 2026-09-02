@@ -46,6 +46,6 @@ static inline GameTrackCameraNode *ResolveTrackCameraOffset(
 
 extern GameTrackCameraNode *g_TrackCameras;
 extern u16 g_TrackSectionCount;
-void SelectTrackCameraTable(void *block, s32 useSeriesCamera);
+void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera);
 
 #endif

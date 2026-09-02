@@ -52,7 +52,7 @@ void LoadBootAssets(void) {
         if (LoadAsset(5, g_AssetLoadCursor) != 0) {
             u8 *assetBase;
 
-            UploadImageAsset(g_AssetLoadCursor);
+            UploadImageAsset(GetImageAssetHeaderWords(g_AssetLoadCursor));
             StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
             StoreImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
             DrawSync(0);

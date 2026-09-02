@@ -14,7 +14,7 @@ void EnterAttractDemo(void) {
     SetupDisplay240(0, 0, 0);
 
     g_FrameSyncThreshold = 0x80;
-    UploadImageAsset(g_ImageBlockBuffer);
+    UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
     InstallCourseAssets();
     RequestTrackDataAssets();
 

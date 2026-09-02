@@ -1,8 +1,7 @@
 #include "game/race.h"
 #include "game/track_camera_internal.h"
 
-void SelectTrackCameraTable(void *block, s32 useSeriesCamera) {
-    TrackCameraTable *table = block;
+void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
     s32 offset = table->defaultOffset;
 
     if (useSeriesCamera) {

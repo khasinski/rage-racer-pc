@@ -491,7 +491,7 @@ static void ScenarioDirectBoot(void) {
         if (g_AssetLoadState == 0) {
             /* EnterRoundScreen's own work, minus the screen it draws. */
             CloseLoadedAudioSlots();
-            UploadImageAsset(g_ImageBlockBuffer);
+            UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
             RelocateCarModel();
             ScenarioCountRounds();
             s_scenario.directStep = RAGE_DIRECT_RACE_ASSETS;

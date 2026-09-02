@@ -50,7 +50,7 @@ void StartAudioSlotLoad(s32 slot, void *header, void *body, s32 sequence) {
 }
 s32 PollAudioSlotLoad(void) { return 0; }
 void InstallResourceData(void *data) { (void)data; }
-void UploadImageAsset(void *data) { (void)data; }
+void UploadImageAsset(GameImageAssetHeaderWord *data) { (void)data; }
 void CloseLoadedAudioSlots(void) { s_closeCalls++; }
 void ResetCdAudioState(void) { s_resetCalls++; }
 void ResetAssetLoader(void) {
