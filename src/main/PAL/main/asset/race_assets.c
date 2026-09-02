@@ -87,12 +87,16 @@ static void LoadTrackTextureAssets(void) {
 static void LoadTrackRuntimeAssets(void) {
     s32 assetIndex = TrackCourseAssetIndex(
         ASSET_TRACK_2ND_BASE, g_GrandPrixClass, g_CourseIndex);
+    s32 loadedSize;
 
-    if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) {
+    loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
+    if (loadedSize == 0) return;
+
+    if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
+                                      assetIndex, 1)) {
+        g_AssetLoadState = 0;
         return;
     }
-
-    InstallTrackRuntimeAssetPack(assetIndex, 1);
     g_AssetLoadState = RACE_ENABLE_CD_AUDIO;
 }
 

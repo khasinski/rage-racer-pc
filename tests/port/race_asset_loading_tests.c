@@ -79,21 +79,42 @@ void UploadImageEntry(GameImageEntryHeader *entry) {
 void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
+s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
+    (void)base;
+    (void)size;
+    return 1;
+}
+s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
+    (void)base;
+    (void)size;
+    return 1;
+}
+s32 IsValidTerrainCellAsset(const void *data, size_t size) {
+    (void)data;
+    (void)size;
+    return 1;
+}
 void SetEnvironmentScript(struct GameEnvironmentScript *script) {
     s_installs[s_installCount++] = script;
 }
-void RegisterModelBank(ModelBankHeader *base, s32 index) {
+s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
+    (void)size;
     (void)index;
     s_installs[s_installCount++] = base;
+    return 1;
 }
 void InstallTrackPoints(struct TrackPointTable *table) {
     s_installs[s_installCount++] = table;
 }
-void RegisterCourseModels(CourseModelAssetHeader *base) {
+s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
+    (void)size;
     s_installs[s_installCount++] = base;
+    return 1;
 }
-void InstallTerrainCellData(void *data) {
+s32 InstallTerrainCellData(void *data, size_t size) {
+    (void)size;
     s_installs[s_installCount++] = data;
+    return 1;
 }
 void InstallTrackEventData(struct TrackEventData *data) {
     s_installs[s_installCount++] = data;
@@ -219,9 +240,10 @@ static void TestTrackPhases(void) {
           "track textures advance to runtime data");
 
     pack = (GameSceneAssetHeader *)g_AssetLoadCursor;
-    memset(pack, 0, 512);
-    for (i = 0; i < 11; i++) pack->offsets[i] = 128 + i * 32;
+    memset(pack, 0, 768);
+    for (i = 0; i < 11; i++) pack->offsets[i] = 64 + i * 64;
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
+    s_loadResult = 768;
     s_installCount = 0;
     s_seriesCamera = 0;
     LoadRaceAssets();
@@ -248,9 +270,23 @@ static void TestTrackPhases(void) {
           "runtime course objects published");
 
     s_installCount = 0;
-    InstallTrackRuntimeAssetPack(s_loadAssetIndex, 0);
+    Check(InstallTrackRuntimeAssetPack(pack, 768, s_loadAssetIndex, 0) == 1,
+          "resident runtime pack is valid");
     Check(s_installCount == 8 && s_seriesCamera == 0,
           "scene loads install the default camera table");
+
+    pack->offsets[1] = pack->offsets[0];
+    s_installCount = 0;
+    s_trackIdentity = -1;
+    Check(InstallTrackRuntimeAssetPack(pack, 768, 123, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "overlapping runtime blocks reject the pack before installation");
+    pack->offsets[1] = 128;
+    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 4;
+    Check(InstallTrackRuntimeAssetPack(pack, 768, 123, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "oversized course-object table rejects the runtime pack");
+    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
 
     s_enableCdResult = 0;
     LoadRaceAssets();

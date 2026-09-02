@@ -51,9 +51,13 @@ s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadDestination = destination;
     return s_loadResult;
 }
-void InstallTrackRuntimeAssetPack(s32 assetIndex, s32 useSeriesCamera) {
+s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
+                                 s32 useSeriesCamera) {
+    (void)data;
+    (void)size;
     s_installedAssetIndex = assetIndex;
     s_installedSeriesCamera = useSeriesCamera;
+    return 1;
 }
 s32 EnableCdAudioMode(void) { return s_enableCdResult; }
 

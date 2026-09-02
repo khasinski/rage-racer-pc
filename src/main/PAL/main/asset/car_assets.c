@@ -46,19 +46,36 @@ static void LoadCarSelectSharedAssets(void) {
     CarSelectAssetHeader *header;
     CourseModelAssetHeader *courseModels;
     u8 *image;
+    s32 loadedSize;
 
-    if (LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor) == 0) {
-        return;
-    }
+    loadedSize = LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor);
+    if (loadedSize == 0) return;
 
     header = (CarSelectAssetHeader *)g_AssetLoadCursor;
-    RegisterModelBank(&header->sceneModelBank, CAR_SELECT_SCENE_MODEL_BANK);
+    if (header->teamLogoSamplesOffset <=
+            (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
+        header->courseModelsOffset <= header->teamLogoSamplesOffset ||
+        header->imageOffset <= header->courseModelsOffset ||
+        header->imageOffset > loadedSize ||
+        !RegisterModelBank(
+            &header->sceneModelBank,
+            (size_t)header->teamLogoSamplesOffset -
+                offsetof(CarSelectAssetHeader, sceneModelBank),
+            CAR_SELECT_SCENE_MODEL_BANK)) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_TeamLogoSampleData =
         GetTeamLogoSample(ResolveAssetAddress(
             header, header->teamLogoSamplesOffset));
     courseModels = GetCourseModelAssetHeader(
         ResolveAssetAddress(header, header->courseModelsOffset));
-    RegisterCourseModels(courseModels);
+    if (!RegisterCourseModels(
+            courseModels,
+            (size_t)(header->imageOffset - header->courseModelsOffset))) {
+        g_AssetLoadState = 0;
+        return;
+    }
     image = ResolveAssetAddress(header, header->imageOffset);
     UploadImageAsset(GetImageAssetHeaderWords(image));
     g_CarModelBuffer = image;

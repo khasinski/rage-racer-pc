@@ -69,7 +69,7 @@ static int TestModelBank(void) {
     data.modelOffsets[0] = 48;
     data.modelOffsets[1] = 52;
     data.modelOffsets[2] = 60;
-    RegisterModelBank(header, 2);
+    CHECK(RegisterModelBank(header, sizeof(data), 2) == 1);
     CHECK(g_ModelBanks[2].modelCount == 3);
     CHECK(g_ModelBanks[2].table == (u8 *)&data + 32);
     CHECK(g_ModelBanks[2].normals == (u8 *)&data + 40);
@@ -82,8 +82,16 @@ static int TestModelBank(void) {
     CHECK(g_ModelBankCount == 3);
 
     g_ModelBanks[0].modelCount = 77;
-    RegisterModelBank(header, -1);
+    CHECK(RegisterModelBank(header, sizeof(data), -1) == 0);
     CHECK(g_ModelBanks[0].modelCount == 77);
+    CHECK(RegisterModelBank(NULL, sizeof(data), 2) == 0);
+    CHECK(RegisterModelBank(header,
+                            offsetof(ModelBankHeader, modelOffsets), 2) == 0);
+    CHECK(g_ModelBanks[2].modelCount == 3);
+    data.modelOffsets[1] = sizeof(data);
+    CHECK(RegisterModelBank(header, sizeof(data), 2) == 0);
+    CHECK(g_ModelBanks[2].modelCount == 3);
+    data.modelOffsets[1] = 52;
 
     {
         size_t size = sizeof(ModelBankHeader) +
@@ -93,7 +101,7 @@ static int TestModelBank(void) {
         CHECK(large != NULL);
         large->modelCount = UINT32_MAX;
         large->modelOffsets[GAME_MODEL_PER_BANK_LIMIT - 1] = (s32)size - 1;
-        RegisterModelBank(large, 3);
+        CHECK(RegisterModelBank(large, size, 3) == 1);
         CHECK(g_ModelBanks[3].modelCount == GAME_MODEL_PER_BANK_LIMIT);
         CHECK(g_ModelBanks[3].models[GAME_MODEL_PER_BANK_LIMIT - 1] ==
               (u8 *)large + size - 1);
@@ -121,15 +129,23 @@ static int TestCourseModels(void) {
     data.models[2].geometryOffset = 64;
     data.models[2].vertexCount = 56;
     data.models[2].modelOffset = 72;
-    RegisterCourseModels(header);
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 1);
     CHECK(g_CourseModelCount == 3);
     CHECK(g_RenderState.courseBank == g_NativeCourseModels);
     CHECK(g_NativeCourseModels[1].geometry == (u8 *)&data + 52);
     CHECK(g_NativeCourseModels[1].vertexCount == 34);
     CHECK(g_NativeCourseModels[1].model == (u8 *)&data + 60);
 
+    data.models[1].modelOffset = sizeof(data);
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
+    CHECK(g_CourseModelCount == 3);
+    data.models[1].modelOffset = 60;
+    CHECK(RegisterCourseModels(
+              header, offsetof(CourseModelAssetHeader, models)) == 0);
+    CHECK(g_CourseModelCount == 3);
+
     data.modelCount = -4;
-    RegisterCourseModels(header);
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 1);
     CHECK(g_CourseModelCount == 0);
 
     {
@@ -141,7 +157,7 @@ static int TestCourseModels(void) {
         CHECK(large != NULL);
         large->modelCount = GAME_COURSE_MODEL_LIMIT + 1;
         large->models[GAME_COURSE_MODEL_LIMIT - 1].vertexCount = 99;
-        RegisterCourseModels(large);
+        CHECK(RegisterCourseModels(large, size) == 1);
         CHECK(g_CourseModelCount == GAME_COURSE_MODEL_LIMIT);
         CHECK(g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT - 1].vertexCount ==
               99);
@@ -165,7 +181,7 @@ static int TestTerrainCells(void) {
     header->cellOffsets[0] = 40;
     header->cellOffsets[1] = 44;
     header->cellOffsets[2] = 52;
-    InstallTerrainCellData(data);
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 1);
     CHECK(g_TerrainCellGrid == (u16 *)data);
     CHECK(g_CellVisibilityTable ==
           (CellVisibilityRow *)&data[TERRAIN_CELL_GRID_BYTES]);
@@ -174,8 +190,15 @@ static int TestTerrainCells(void) {
     CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
     CHECK(g_NativeTerrainCells[2] == &data[HEADER_OFFSET + 52]);
 
+    header->cellOffsets[1] = 64;
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
+    CHECK(g_TerrainCellCount == 3);
+    header->cellOffsets[1] = 44;
+    CHECK(InstallTerrainCellData(data, HEADER_OFFSET) == 0);
+    CHECK(g_TerrainCellCount == 3);
+
     header->cellCount = -1;
-    InstallTerrainCellData(data);
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 1);
     CHECK(g_TerrainCellCount == 0);
 
     {
@@ -188,7 +211,7 @@ static int TestTerrainCells(void) {
         largeHeader = (TerrainCellAssetHeader *)&large[HEADER_OFFSET];
         largeHeader->cellCount = GAME_TERRAIN_CELL_LIMIT + 1;
         largeHeader->cellOffsets[GAME_TERRAIN_CELL_LIMIT - 1] = 1;
-        InstallTerrainCellData(large);
+        CHECK(InstallTerrainCellData(large, size) == 1);
         CHECK(g_TerrainCellCount == GAME_TERRAIN_CELL_LIMIT);
         CHECK(g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT - 1] ==
               (u8 *)largeHeader + 1);

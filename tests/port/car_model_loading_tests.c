@@ -57,13 +57,17 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
     g_CarModelSlots[slot] = asset;
     return 1;
 }
-void RegisterModelBank(ModelBankHeader *bank, s32 slot) {
+s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
+    (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;
+    return 1;
 }
 void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
-void RegisterCourseModels(CourseModelAssetHeader *models) {
+s32 RegisterCourseModels(CourseModelAssetHeader *models, size_t size) {
+    (void)size;
     s_courseModels = models;
+    return 1;
 }
 void UploadImageAsset(GameImageAssetHeaderWord *image) {
     s_uploadedImage = image;
@@ -302,7 +306,14 @@ static void TestCarSelectAssetPhases(void) {
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 3 && s_loadAssetId == 8,
           "pending shared car assets hold phase");
-    s_loadResult = 1;
+    s_loadResult = 512;
+    pack->offsets[2] = pack->offsets[1];
+    s_registeredBank = NULL;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && s_registeredBank == NULL,
+          "overlapping showroom blocks cancel installation");
+    g_AssetLoadState = 3;
+    pack->offsets[2] = 192;
     LoadCarSelectAssets();
     Check(s_registeredBank ==
               (ModelBankHeader *)(void *)(storage + 0xC) &&

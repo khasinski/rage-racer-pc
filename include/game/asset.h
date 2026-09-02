@@ -457,9 +457,8 @@ typedef struct NativeCourseModel {
 } NativeCourseModel;
 extern NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
 
-/* Asset-installation helpers. RegisterModelBank/RegisterCourseModels rebase a
- * pack's internal offsets to absolute addresses. The Set*Slot pair only
- * records a pointer in a small registry that Select/Upload reads. */
+/* Asset-installation helpers. RegisterModelBank/RegisterCourseModels validate
+ * a serialized block and rebase its internal offsets to native addresses. */
 void UploadCarImage(s32 slot);
 
 /* Declared identically by 42 translation units before this
@@ -468,16 +467,17 @@ void UploadCarImage(s32 slot);
 extern s32 g_PendingCarModelIndex;
 extern TrackTextureShadowRow *g_TrackTextureShadow;
 
-void InstallTerrainCellData(void *data);
+s32 InstallTerrainCellData(void *data, size_t size);
 void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex);
 void InstallTrackTextureAssetPack(u8 *base);
 void InstallTrackEventData(struct TrackEventData *eventData);
 void InstallTrackPoints(struct TrackPointTable *trackData);
-void InstallTrackRuntimeAssetPack(s32 assetIndex, s32 useSeriesCamera);
+s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
+                                 s32 useSeriesCamera);
 void LoadCourseAssets(void);
 void LoadGrandPrixScreen(void);
-void RegisterModelBank(ModelBankHeader *base, s32 index);
-void RegisterCourseModels(CourseModelAssetHeader *base);
+s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index);
+s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size);
 s32 RequestRaceStart(void);
 s32 RequestTrackLoad(void);
 void RequestCarModel(s32 carIndex);

@@ -21,9 +21,10 @@ void RelocateCarModel(void) {
     if (!InstallSerializedCarModelSlot(GetCarModelAsset(g_AssetBase), 0)) {
         return;
     }
+    if (!RegisterModelBank(
+        GetModelBankHeader(g_AssetBase + SERIALIZED_CAR_MODEL_HEADER_SIZE),
+        (size_t)source->serializedModelSize, 0)) {
+        return;
+    }
     SelectCarModelSlot(0);
-    g_CarModelAsset->modelData.pointer =
-        g_AssetBase + SERIALIZED_CAR_MODEL_HEADER_SIZE;
-    RegisterModelBank(
-        GetModelBankHeader(g_AssetBase + SERIALIZED_CAR_MODEL_HEADER_SIZE), 0);
 }

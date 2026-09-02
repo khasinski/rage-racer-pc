@@ -15,9 +15,15 @@ s32 RequestTrackDataAssets(void) {
 static void LoadStandaloneTrackRuntimeAssets(void) {
     s32 assetIndex = TrackCourseAssetIndex(
         ASSET_TRACK_2ND_BASE, g_GrandPrixClass, g_CourseIndex);
+    s32 loadedSize;
 
-    if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) return;
-    InstallTrackRuntimeAssetPack(assetIndex, 0);
+    loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
+    if (loadedSize == 0) return;
+    if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
+                                      assetIndex, 0)) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetLoadState = TRACK_DATA_ENABLE_CD_AUDIO;
 }
 

@@ -11,14 +11,24 @@ void RequestOptionScreenAssets(void) {
 
 void LoadOptionScreenAssets(void) {
     OptionScreenAsset *asset;
+    s32 loadedSize;
 
-    if (g_AssetLoadState != OPTION_SCREEN_LOAD_ASSET ||
-        LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase) == 0) {
-        return;
-    }
+    if (g_AssetLoadState != OPTION_SCREEN_LOAD_ASSET) return;
+
+    loadedSize = LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase);
+    if (loadedSize == 0) return;
 
     asset = GetOptionScreenAsset(g_AssetBase);
-    RegisterModelBank(&asset->modelBank, 0);
+    if (asset->imageOffset <= (s32)offsetof(OptionScreenAsset, modelBank) ||
+        asset->imageOffset > loadedSize ||
+        !RegisterModelBank(
+            &asset->modelBank,
+            (size_t)asset->imageOffset -
+                offsetof(OptionScreenAsset, modelBank),
+            0)) {
+        g_AssetLoadState = 0;
+        return;
+    }
     SelectModelBank(0);
     g_ImageBlockBuffer = g_AssetBase + asset->imageOffset;
     g_AssetLoadState = 0;

@@ -25,15 +25,19 @@ CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
     s_installedAsset = asset;
     s_installedSlot = slot;
+    s_nativeAsset.modelData.pointer =
+        (u8 *)asset + SERIALIZED_CAR_MODEL_HEADER_SIZE;
     return 1;
 }
 void SelectCarModelSlot(s32 slot) {
     s_selectedSlot = slot;
     g_CarModelAsset = &s_nativeAsset;
 }
-void RegisterModelBank(ModelBankHeader *bank, s32 slot) {
+s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
+    (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;
+    return 1;
 }
 
 static void Check(s32 condition, const char *label) {

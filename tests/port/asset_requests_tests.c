@@ -86,10 +86,12 @@ void ResetAssetLoader(void) {
     s_resetCalls++;
     g_AssetLoadState = 0;
 }
-void RegisterModelBank(ModelBankHeader *base, s32 index) {
+s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
     (void)base;
+    (void)size;
     (void)index;
     s_modelBankRegistrations++;
+    return 1;
 }
 void SelectModelBank(s32 index) {
     (void)index;
@@ -295,7 +297,7 @@ int main(void) {
     LoadOptionScreenAssets();
     Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
           "incomplete OPTION load installs nothing");
-    s_loadResult = 1;
+    s_loadResult = sizeof(pack.bytes);
     s_modelBankRegistrations = 0;
     s_selectModelBankCalls = 0;
     LoadOptionScreenAssets();
@@ -304,6 +306,13 @@ int main(void) {
     Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 1 &&
               s_selectModelBankCalls == 1,
           "OPTION asset installed");
+
+    ((OptionScreenAsset *)pack.bytes)->imageOffset = 2;
+    g_AssetLoadState = 1;
+    s_modelBankRegistrations = 0;
+    LoadOptionScreenAssets();
+    Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 0,
+          "invalid OPTION offsets cancel installation");
 
     g_GrandPrixMode = 0;
     g_GrandPrixSeries = 0;
