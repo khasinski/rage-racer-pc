@@ -1,10 +1,6 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
-void SetEnvPaletteTable(EnvironmentPalette *table) {
-    g_EnvPaletteTable = table;
-}
-
 void LerpEnvColor(GameEnvColor *from, GameEnvColor *to, GameEnvColor *out,
                   s32 blend) {
     out->bytes.r = LerpColorChannel(from->bytes.r, to->bytes.r, blend);

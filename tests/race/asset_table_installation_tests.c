@@ -64,25 +64,8 @@ static void TestTrackEventData(void) {
           "null event table clears published views");
 }
 
-static void TestSimpleTables(void) {
-    TrackRenderTable renderTable;
-    struct {
-        u32 count;
-        CourseObject objects[2];
-    } courseObjects;
-
-    SetTrackRenderTable(&renderTable);
-    courseObjects.count = 2;
-    SetCourseObjects((CourseObjectTable *)&courseObjects);
-
-    Check(g_TrackRenderTable == &renderTable, "track render table owner");
-    Check(g_CourseObjects == courseObjects.objects, "course object table");
-    Check(g_CourseObjectCount == 2, "course object count");
-}
-
 int main(void) {
     TestTrackEventData();
-    TestSimpleTables();
 
     if (s_failures != 0) {
         return 1;

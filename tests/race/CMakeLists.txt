@@ -128,9 +128,7 @@ set_tests_properties(race_option_animation PROPERTIES LABELS unit)
 
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_course_objects.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_track_render_table.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c)
 target_include_directories(asset_table_installation_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

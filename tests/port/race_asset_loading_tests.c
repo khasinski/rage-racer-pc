@@ -3,6 +3,9 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/race.h"
+#include "game/render.h"
+#include "game/render_internal.h"
+#include "game/track_internal.h"
 #include "game/track_camera_internal.h"
 
 #include <stdio.h>
@@ -24,6 +27,10 @@ s32 g_CourseIndex;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixSeries;
 TrackTextureShadowRow *g_TrackTextureShadow;
+TrackRenderTable *g_TrackRenderTable;
+EnvironmentPalette *g_EnvPaletteTable;
+CourseObject *g_CourseObjects;
+s32 g_CourseObjectCount;
 
 static s32 s_loadResult;
 static s32 s_loadAssetIndex;
@@ -71,12 +78,6 @@ void UploadImageEntry(GameImageEntryHeader *entry) {
 void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
-void SetTrackRenderTable(struct TrackRenderTable *table) {
-    (void)table; s_installCount++;
-}
-void SetEnvPaletteTable(struct EnvironmentPalette *table) {
-    (void)table; s_installCount++;
-}
 void SetEnvironmentScript(struct GameEnvironmentScript *script) {
     (void)script;
     s_installCount++;
@@ -91,9 +92,6 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
     (void)base; s_installCount++;
 }
 void InstallTerrainCellData(void *data) { (void)data; s_installCount++; }
-void SetCourseObjects(struct CourseObjectTable *table) {
-    (void)table; s_installCount++;
-}
 void InstallTrackEventData(struct TrackEventData *data) {
     (void)data; s_installCount++;
 }
@@ -213,6 +211,7 @@ static void TestTrackPhases(void) {
     pack = (GameSceneAssetHeader *)g_AssetLoadCursor;
     memset(pack, 0, 512);
     for (i = 0; i < 11; i++) pack->offsets[i] = 128 + i * 32;
+    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
     s_installCount = 0;
     s_seriesCamera = 0;
     LoadRaceAssets();
@@ -220,12 +219,22 @@ static void TestTrackPhases(void) {
           "track runtime asset index");
     Check(s_trackIdentity == s_loadAssetIndex && g_AssetLoadState == 7,
           "track runtime data installed");
-    Check(s_installCount == 11 && s_seriesCamera == 1,
+    Check(s_installCount == 8 && s_seriesCamera == 1,
           "all runtime blocks use the series camera table");
+    Check(g_TrackRenderTable ==
+              (TrackRenderTable *)(void *)((u8 *)pack + pack->offsets[0]) &&
+              g_EnvPaletteTable ==
+                  (EnvironmentPalette *)(void *)((u8 *)pack + pack->offsets[1]),
+          "runtime render tables published");
+    Check(g_CourseObjects ==
+                  ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))
+                      ->objects &&
+              g_CourseObjectCount == 2,
+          "runtime course objects published");
 
     s_installCount = 0;
     InstallTrackRuntimeAssetPack(s_loadAssetIndex, 0);
-    Check(s_installCount == 11 && s_seriesCamera == 0,
+    Check(s_installCount == 8 && s_seriesCamera == 0,
           "scene loads install the default camera table");
 
     s_enableCdResult = 0;

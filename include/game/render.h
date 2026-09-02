@@ -714,7 +714,7 @@ extern s16 g_EnvironmentMode;
 /* The mode the previous variant had; the sky-CLUT lerp's source palette. */
 extern s32 g_EnvironmentModePrev;
 /* Sky palette records, 48 bytes each, indexed by environment mode. Installed
- * from the loaded environment block by SetEnvPaletteTable. */
+ * from the loaded environment block by InstallTrackRuntimeAssetPack. */
 typedef struct EnvironmentPalette {
     Rgb colors[16];
 } EnvironmentPalette;
