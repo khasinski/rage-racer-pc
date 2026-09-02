@@ -37,9 +37,8 @@ static void DrawRecordRows(s32 slideX,
         text[2] = g_PlaceSuffixNames[row][2];
         text[3] = '/';
         FormatLapTime(&text[4], record->raceTime);
-        FormatRecordDriverClass(
-            &text[0xC], (s32)(textSize - 0xC), g_FmtRecordName, record,
-            g_CarClassNames[carIndex]);
+        snprintf(&text[0xC], textSize - 0xC, g_FmtRecordName,
+                 record->driverName, g_CarClassNames[carIndex]);
         DrawText8x8(slideX + 0x14, y, text, color);
 
         snprintf(text, textSize, g_FmtCarName, g_CarNames[carIndex]);

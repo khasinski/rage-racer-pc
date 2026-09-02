@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "game/audio.h"
 #include "game/race.h"
 #include "game/records_internal.h"
@@ -7,6 +5,9 @@
 
 enum {
     NAME_ENTRY_CHARACTER_COUNT = 42,
+    NAME_ENTRY_MOVE_CUE = 1,
+    NAME_ENTRY_CONFIRM_CUE = 2,
+    NAME_ENTRY_CANCEL_CUE = 3,
 };
 
 void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
@@ -16,12 +17,6 @@ void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
         record->driverName[character] =
             g_NameEntryCharset[nameCodes[character]];
     }
-}
-
-void FormatRecordDriverClass(char *dst, s32 dstSize, const char *format,
-                             const RaceRecord *record,
-                             const char *className) {
-    snprintf(dst, (size_t)dstSize, format, record->driverName, className);
 }
 
 s32 UpdateRecordNameEntry(u8 *nameCodes) {
@@ -36,19 +31,19 @@ s32 UpdateRecordNameEntry(u8 *nameCodes) {
         (g_NameEntryChar + NAME_ENTRY_CHARACTER_COUNT) %
         NAME_ENTRY_CHARACTER_COUNT;
     if (previousCharacter != g_NameEntryChar) {
-        PlaySoundCue(1);
+        PlaySoundCue(NAME_ENTRY_MOVE_CUE);
     }
 
     nameCodes[g_NameEntryCursor] = g_NameEntryChar;
     if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
+        PlaySoundCue(NAME_ENTRY_CONFIRM_CUE);
         g_NameEntryCursor++;
         if (g_NameEntryCursor == RECORD_NAME_LENGTH) {
             return 1;
         }
         g_NameEntryChar = nameCodes[g_NameEntryCursor];
     } else if ((g_PadPressed & PAD_CANCEL) && g_NameEntryCursor > 0) {
-        PlaySoundCue(3);
+        PlaySoundCue(NAME_ENTRY_CANCEL_CUE);
         g_NameEntryCursor--;
         g_NameEntryChar = nameCodes[g_NameEntryCursor];
     }

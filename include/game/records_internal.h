@@ -21,9 +21,6 @@ FastestLap FindFastestLap(const s32 *lapTimes, s32 lapCount);
 s32 InsertRaceRecord(RaceRecord records[RECORD_TABLE_LENGTH], s32 raceTime,
                      s16 carIndex, u8 nameCodes[RECORD_NAME_LENGTH]);
 void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes);
-void FormatRecordDriverClass(char *dst, s32 dstSize, const char *format,
-                             const RaceRecord *record,
-                             const char *className);
 s32 UpdateRecordNameEntry(u8 *nameCodes);
 void EnterRecordEntry(void);
 void UpdateRecordEntry(void);

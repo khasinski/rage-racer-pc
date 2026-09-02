@@ -103,21 +103,6 @@ static void TestWritesDriverName(void) {
     CHECK((u8)record.driverName[6] == 0xCC && (u8)record.driverName[7] == 0xCC);
 }
 
-static void TestFormatsRecordDriverClass(void) {
-    RaceRecord record;
-    char text[16];
-    char shortText[5];
-
-    memset(&record, 0, sizeof(record));
-    memcpy(record.driverName, "PLAYER", 7);
-    FormatRecordDriverClass(text, sizeof(text), "/%s/%s", &record, "CLASS");
-    CHECK(strcmp(text, "/PLAYER/CLASS") == 0);
-
-    FormatRecordDriverClass(shortText, sizeof(shortText), "/%s/%s", &record,
-                            "CLASS");
-    CHECK(strcmp(shortText, "/PLA") == 0);
-}
-
 int main(void) {
     u8 nameCodes[6];
 
@@ -126,6 +111,5 @@ int main(void) {
     TestConfirmAndCancel();
     TestSixthCharacterCompletes();
     TestWritesDriverName();
-    TestFormatsRecordDriverClass();
     return s_failures != 0;
 }
