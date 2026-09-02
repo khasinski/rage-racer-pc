@@ -65,17 +65,6 @@ typedef struct EffectCueBank {
     s32 volumeScale;
     EffectCueProgram programs[2];
 } EffectCueBank;
-
-
-/*
- * The libsnd VAB ids of the loaded banks, one per bank slot.
- * StartAudioSlotLoad fills it while each VAB is imported; every key-on passes
- * an element as the vabId argument of SsUtKeyOnV / func_80078130
- * (`g_VabIds[slot]`), and the callers that only ever use the first bank read
- * `g_VabIds[0]`.
- */
-extern s16 g_VabIds[];
-
 void SetSequenceVolume(s32 volume);
 void RefreshSequenceVolumeScale(void);
 void PlaySequence(void);
@@ -219,13 +208,10 @@ extern s32 g_SpecialVoiceBits[];
 extern s32 g_StereoOutput;
 /*
  * SPU addresses for the four VAB slots.  Slots 0..2 are loaded with
- * g_VabIds[slot] / g_VabSpuAddress[slot]; slot 3 is the extra bank, which had
- * both of its entries split off under their own names.
+ * g_SoundScale.vabIds[slot] and g_VabSpuAddress[slot]; slot 3 is the engine
+ * sound bank.
  */
 extern s32 g_VabSpuAddress[];
-
-/* The BIOS exit service does not return after a fatal asset-loading error. */
-void BiosExit(s32 code) __attribute__((noreturn));
 void UpdateBasicEffectVoices(void);
 void UpdateEffectVoiceStates(void);
 

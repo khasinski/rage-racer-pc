@@ -3,26 +3,13 @@
 
 #include "common.h"
 
-/* Volume-scale table at g_SoundScale. */
 typedef struct SoundScale {
     s32 scale;
     s16 vabIds[8];
 } SoundScale;
 
-/*
- * Volume-scale record at 0x801E6CA4. Its `.scale` word is the master scale
- * applied to every sound-effect voice volume, 0..0x80: SetEffectVolumeScale
- * clamps into that range and the voice code multiplies a cue's nominal volume
- * by it before writing the SPU. `.vabIds` is the VAB id table at 0x801E6CA8.
- */
+/* Master effect-volume scale plus the libsnd id of each loaded VAB. */
 extern SoundScale g_SoundScale;
-
-/*
- * Shared sound work area at 0x801E6D00..0x801E6DA8, three contiguous regions:
- *   0x6D00  MusicChannel[2]  stride 0x18
- *   0x6D30  EffectVoice[4]   stride 0x14 (hardware voices 10..13)
- *   0x6D80  scalar control block (reverb depth / volume scale / flags)
- */
 
 /* Music / sound-mode channel; `left` and `right` are also read as their low
  * halves. Reset to left=right=-1, mode=idle, vols=0. */
