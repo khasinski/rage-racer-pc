@@ -15,7 +15,11 @@ void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
         offset = table->seriesOffset[g_GrandPrixSeries != 0];
     }
 
-    g_TrackCameras = offset >= (s32)sizeof(*table)
-        ? ResolveTrackCameraOffset(table, offset)
-        : NULL;
+    if (offset < (s32)sizeof(*table) ||
+        offset % (s32)_Alignof(GameTrackCameraNode) != 0) {
+        g_TrackCameras = NULL;
+        return;
+    }
+
+    g_TrackCameras = ResolveTrackCameraOffset(table, offset);
 }
