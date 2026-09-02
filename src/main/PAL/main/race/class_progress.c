@@ -9,17 +9,8 @@
 #include "game/state.h"
 
 void UpdateBgmTrackCount(void) {
-    enum {
-        CLASS_RECORD_COUNT = 11,
-        DEFAULT_BGM_TRACK_COUNT = 9,
-        UNLOCKED_BGM_TRACK_COUNT = 10,
-        BGM_UNLOCK_WIN_COUNT = 5,
-    };
-
     g_ClassWinCount = CountClassWins(g_ClassRecords, CLASS_RECORD_COUNT);
-    g_BgmTrackCount = g_ClassWinCount < BGM_UNLOCK_WIN_COUNT
-        ? DEFAULT_BGM_TRACK_COUNT
-        : UNLOCKED_BGM_TRACK_COUNT;
+    g_BgmTrackCount = BgmTrackCountForClassWins(g_ClassWinCount);
 }
 
 void DrawPrizeMoneyPanel(s32 yOffset) {

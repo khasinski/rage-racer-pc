@@ -53,7 +53,7 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
         StoreCarSetup(&block->carSetup[2][i], &g_TimeAttackCars[i]);
     }
 
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < CLASS_RECORD_COUNT; i++) {
         block->classRecords[i].grade = g_ClassRecords[i].place;
         block->classRecords[i].clears = g_ClassRecords[i].clears;
     }

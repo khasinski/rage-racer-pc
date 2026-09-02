@@ -65,7 +65,7 @@ void DrawClassRecordGrid(void) {
 
     base = GamePrimaryOrderingTable(0);
 
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < CLASS_RECORD_COUNT; i++) {
         x = g_ClassRecordCellPoints[i].vx;
         y = g_ClassRecordCellPoints[i].vy;
         flag = g_ClassRecords[i].place;

@@ -20,7 +20,7 @@ int main(void) {
     static const u8 secondPlace[4] = {1, 1, 1, 2};
     static const u8 thirdPlace[4] = {1, 1, 1, 3};
     static const u8 noGrade[4] = {1, 1, 2, 3};
-    ScoreRecord records[11] = {0};
+    ScoreRecord records[CLASS_RECORD_COUNT] = {0};
     const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
     const s32 prizes[3] = {10000, 5000, 2500};
     s32 i;
@@ -79,8 +79,12 @@ int main(void) {
     records[3].place = 2;
     records[5].place = 1;
     records[10].place = -1;
-    Check("class wins", CountClassWins(records, 11), 2);
+    Check("class wins", CountClassWins(records, CLASS_RECORD_COUNT), 2);
     Check("empty class record range", CountClassWins(records, 0), 0);
+    Check("four wins keep default BGM", BgmTrackCountForClassWins(4), 9);
+    Check("fifth win unlocks BGM", BgmTrackCountForClassWins(5), 10);
+    Check("later wins keep unlocked BGM",
+          BgmTrackCountForClassWins(CLASS_RECORD_COUNT), 10);
 
     Check("first-place grade", ComputeClassGradeForPlaces(firstPlace, 0), 1);
     Check("unused fourth course",

@@ -92,7 +92,7 @@ typedef struct GameSaveBlock {
     u16 extraGrandPrixUnlocked;
     s32 maxClassReached[2];
     SavedCarSetup carSetup[3][13];
-    SavedClassRecord classRecords[11];
+    SavedClassRecord classRecords[CLASS_RECORD_COUNT];
     u16 teamLogoClut[16];
     u16 teamLogoCanvas[0x400];
     s32 bestLapTimes[2][4][2];

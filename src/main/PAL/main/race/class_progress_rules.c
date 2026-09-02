@@ -78,6 +78,18 @@ s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {
     return wins;
 }
 
+s32 BgmTrackCountForClassWins(s32 classWinCount) {
+    enum {
+        DEFAULT_BGM_TRACK_COUNT = 9,
+        UNLOCKED_BGM_TRACK_COUNT = 10,
+        BGM_UNLOCK_WIN_COUNT = 5,
+    };
+
+    return classWinCount < BGM_UNLOCK_WIN_COUNT
+        ? DEFAULT_BGM_TRACK_COUNT
+        : UNLOCKED_BGM_TRACK_COUNT;
+}
+
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending) {
     s32 placeTotal = 0;
     s32 course;

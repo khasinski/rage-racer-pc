@@ -73,7 +73,7 @@ void UpdateTitleAttract(void) {
                                  0xE0, 0xB0, 0x7DC0, alpha);
     next = QueueDrawModePrim(orderingTable, next, 0x19);
 
-    if (g_ClassWinCount >= 0xB) {
+    if (g_ClassWinCount >= CLASS_RECORD_COUNT) {
         panelClut = 0x7D80;
     }
 

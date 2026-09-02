@@ -4,6 +4,8 @@
 #include "common.h"
 #include "game/vector.h"
 
+enum { CLASS_RECORD_COUNT = 11 };
+
 typedef struct ScoreRecord {
     s16 place;
     u16 clears;

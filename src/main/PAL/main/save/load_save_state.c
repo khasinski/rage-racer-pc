@@ -57,7 +57,7 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
         LoadCarSetup(&g_TimeAttackCars[i], &block->carSetup[2][i]);
     }
 
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < CLASS_RECORD_COUNT; i++) {
         g_ClassRecords[i].place = block->classRecords[i].grade;
         g_ClassRecords[i].clears = block->classRecords[i].clears;
     }

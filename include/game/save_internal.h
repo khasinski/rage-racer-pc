@@ -10,7 +10,7 @@
 #include "psyq/gpu.h"
 
 extern CarEntry g_SaveDefaults[13];
-extern ScoreRecord g_ClassRecords[11];
+extern ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 extern s32 g_ClassWinCount;
 extern CourseProgressState g_GrandPrixCourseProgress;
 extern CourseProgressState g_ExtraGrandPrixCourseProgress;
