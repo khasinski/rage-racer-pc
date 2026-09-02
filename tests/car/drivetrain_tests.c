@@ -447,11 +447,28 @@ static void TorqueBandTests(void) {
 
 }
 
+static void GearBoundsTests(void) {
+    BuildSpec();
+    PlaceCar();
+    s_car.drive.gear = 0;
+    UpdateCarDrivetrain(&s_car);
+    Check(s_car.drive.gear == 1, "gear below first is repaired",
+          s_car.drive.gear, 1);
+
+    BuildSpec();
+    PlaceCar();
+    s_car.drive.gear = 7;
+    UpdateCarDrivetrain(&s_car);
+    Check(s_car.drive.gear == 6, "gear above sixth is repaired",
+          s_car.drive.gear, 6);
+}
+
 int main(void) {
     CurveBiasTests();
     ShiftInterpolationTests();
     GradePenaltyTests();
     TorqueBandTests();
+    GearBoundsTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);

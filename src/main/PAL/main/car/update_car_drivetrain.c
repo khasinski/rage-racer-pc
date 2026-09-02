@@ -5,6 +5,28 @@
 #include "game/track_internal.h"
 #include "game/render.h"
 
+enum {
+  FIRST_FORWARD_GEAR = 1,
+  MAX_FORWARD_GEAR = 6,
+};
+
+static s16 ClampDrivetrainGear(s16 gear) {
+  if (gear < FIRST_FORWARD_GEAR) {
+    return FIRST_FORWARD_GEAR;
+  }
+  if (gear > MAX_FORWARD_GEAR) {
+    return MAX_FORWARD_GEAR;
+  }
+  return gear;
+}
+
+static s32 GetGearLoad(const GameCarSpec *spec, s16 gear) {
+  /* Retail's sixth load is the adjacent gearRatio[0] word in the packed car
+   * specification. Name that layout boundary instead of indexing gearLoad[6]. */
+  return gear == MAX_FORWARD_GEAR ? spec->gearRatio[0]
+                                  : spec->gearLoad[gear];
+}
+
 /*
  * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
  * confirms it, and it only clears once the pedal is back under 0x7C. The gap
@@ -505,10 +527,11 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   DrivetrainLoads loads;
   car = carArg;
   spec = g_CarSpec;
-  gear = car->drive.gear;
-  gearCurve = g_GearTorqueCurve[gear].values;
-  gearRatio = spec->gearLoad[gear];
   drive = &car->drive;
+  gear = ClampDrivetrainGear(drive->gear);
+  drive->gear = gear;
+  gearCurve = g_GearTorqueCurve[gear].values;
+  gearRatio = GetGearLoad(spec, gear);
   if (g_RacePhase < 2) {
     car->drive.gearDisp = gear;
     gearRatio = spec->gearLoad[1];
