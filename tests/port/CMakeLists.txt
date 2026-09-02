@@ -41,6 +41,25 @@ endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
 set_tests_properties(content_options PROPERTIES LABELS functional)
+add_executable(fmv_requests_tests
+    fmv_requests_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/fmv_requests.c)
+target_include_directories(fmv_requests_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(fmv_requests_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(fmv_requests_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(fmv_requests_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME fmv_requests COMMAND fmv_requests_tests)
+set_tests_properties(fmv_requests PROPERTIES LABELS unit)
+
 add_executable(race_asset_loading_tests
     race_asset_loading_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
