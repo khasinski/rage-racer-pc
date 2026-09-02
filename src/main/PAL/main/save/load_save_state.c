@@ -5,11 +5,6 @@
 #include "game/input_internal.h"
 #include "game/save_internal.h"
 
-static s32 ClampVolumeSetting(s32 value) {
-    if (value < 0) return 0;
-    return value < 0x10 ? value : 0xF;
-}
-
 static void LoadCarSetup(CarEntry *car, const SavedCarSetup *saved) {
     car->modelVariant = saved->modelVariant;
     car->tireCompound = saved->tireCompound;
@@ -80,8 +75,8 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
            sizeof(block->bestSectorTimes));
     RepairRecordTimes();
 
-    g_BgmVolumeSetting = ClampVolumeSetting(block->bgmVolume);
-    g_SfxVolumeSetting = ClampVolumeSetting(block->sfxVolume);
+    g_BgmVolumeSetting = ClampAudioSetting(block->bgmVolume);
+    g_SfxVolumeSetting = ClampAudioSetting(block->sfxVolume);
     g_MonoOutput = block->monoOutput != 0;
 
     /* These fields are byte arrays in the on-disc format and typed at runtime. */

@@ -32,6 +32,15 @@ static inline s32 ClampCueLevel(s32 level) {
     return level >= 0x80 ? 0x7F : level;
 }
 
+enum { AUDIO_SETTING_MAX = 15 };
+
+static inline s32 ClampAudioSetting(s32 setting) {
+    if (setting < 0) {
+        return 0;
+    }
+    return setting > AUDIO_SETTING_MAX ? AUDIO_SETTING_MAX : setting;
+}
+
 typedef struct EffectCueBankHeader {
     s32 voiceCount;
     s32 volumeScale;

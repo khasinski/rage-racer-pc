@@ -9,13 +9,7 @@ void SetLoadedTableVolumeScale(s32 scale) {
 }
 
 void SetSequenceVolumeSetting(s32 setting) {
-    if (setting >= 0) {
-        if (setting >= 0x10) {
-            setting = 0xF;
-        }
-    } else {
-        setting = 0;
-    }
+    setting = ClampAudioSetting(setting);
 
     SetCdVolumeSetting(setting);
     SetSequenceVolumeScale(setting);
@@ -25,16 +19,18 @@ void SetSequenceVolumeSetting(s32 setting) {
  * 0..15 level, mapping it onto the 0..0x80 fixed-point scale used by the
  * effect-voice volume math. */
 void SetEffectVolumeSetting(s32 level) {
-    if (level >= 0) {
-        if (level >= 0x10) {
-            level = 0xF;
-        }
-    } else {
-        level = 0;
-    }
-    g_SoundScale.scale = (level << 7) / 15;
+    level = ClampAudioSetting(level);
+    g_SoundScale.scale = (level << 7) / AUDIO_SETTING_MAX;
 }
 
-void SetStereoOutput(void) { g_StereoOutput = 1; SetCdMixPreset(0); SsSetStereo(); }
+void SetStereoOutput(void) {
+    g_StereoOutput = 1;
+    SetCdMixPreset(0);
+    SsSetStereo();
+}
 
-void SetMonoOutput(void) { g_StereoOutput = 0; SetCdMixPreset(1); SsSetMono(); }
+void SetMonoOutput(void) {
+    g_StereoOutput = 0;
+    SetCdMixPreset(1);
+    SsSetMono();
+}
