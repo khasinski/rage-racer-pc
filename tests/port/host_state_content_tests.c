@@ -416,17 +416,6 @@ extern unsigned char g_DrawSyncCallback[8];
 extern unsigned char g_DispEnvCache[20];
 extern unsigned char g_VramWidthTable[20];
 extern unsigned char g_VramHeightTable[20];
-extern unsigned char g_MoveImagePacket[20];
-extern unsigned char g_OtagTerminator[20];
-extern unsigned char g_GpuGp0[8];
-extern unsigned char g_GpuGp1[8];
-extern unsigned char g_GpuDmaMadr[8];
-extern unsigned char g_GpuDmaBcr[8];
-extern unsigned char g_GpuDmaChcr[8];
-extern unsigned char g_OtcDmaMadr[8];
-extern unsigned char g_OtcDmaBcr[8];
-extern unsigned char g_OtcDmaChcr[8];
-extern unsigned char g_GpuDpcr[8];
 extern unsigned char g_SinTable[3236];
 extern unsigned char g_CdCommandNeedsSetloc[128];
 extern unsigned char g_CdSyncCallback[8];
@@ -912,17 +901,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_DispEnvCache", g_DispEnvCache, 20},
     {"g_VramWidthTable", g_VramWidthTable, 20},
     {"g_VramHeightTable", g_VramHeightTable, 20},
-    {"g_MoveImagePacket", g_MoveImagePacket, 20},
-    {"g_OtagTerminator", g_OtagTerminator, 20},
-    {"g_GpuGp0", g_GpuGp0, 8},
-    {"g_GpuGp1", g_GpuGp1, 8},
-    {"g_GpuDmaMadr", g_GpuDmaMadr, 8},
-    {"g_GpuDmaBcr", g_GpuDmaBcr, 8},
-    {"g_GpuDmaChcr", g_GpuDmaChcr, 8},
-    {"g_OtcDmaMadr", g_OtcDmaMadr, 8},
-    {"g_OtcDmaBcr", g_OtcDmaBcr, 8},
-    {"g_OtcDmaChcr", g_OtcDmaChcr, 8},
-    {"g_GpuDpcr", g_GpuDpcr, 8},
     {"g_SinTable", g_SinTable, 3236},
     {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
     {"g_CdSyncCallback", g_CdSyncCallback, 8},
@@ -1050,7 +1028,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3100927170UL;
+    const unsigned long expected = 810306427UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

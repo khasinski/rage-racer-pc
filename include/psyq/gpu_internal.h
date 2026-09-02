@@ -5,14 +5,6 @@
 #include "psyq/gpu_cache_types.h"
 #include "psyq/gpu.h"
 
-typedef struct GpuMovePacket {
-    u_long tag;
-    u_long code;
-    u_long src;
-    u_long dst;
-    u_long wh;
-} GpuMovePacket;
-
 extern u_long g_ClearImagePacket[];
 extern GpuDisplayEnvironmentCache g_DispEnvCache;
 extern u_char g_DrawSyncCbPending[];
@@ -34,12 +26,6 @@ extern char g_GpuNameClearImage[];
 extern char g_GpuNameLoadImage[];
 extern char g_GpuNameMoveImage[];
 extern char g_GpuNameStoreImage[];
-extern volatile u_long *g_GpuGp1;
-extern volatile u_long *g_GpuDmaBcr;
-extern volatile u_long *g_GpuDmaChcr;
-extern volatile u_long *g_GpuDmaMadr;
-extern volatile u_long *g_GpuDpcr;
-extern volatile u_long *g_GpuGp0;
 extern u_char g_GpuGp1Mirror[];
 extern char g_MsgGpuBadRect[];
 extern char g_MsgGpuDrawSync[];
@@ -48,10 +34,5 @@ extern char g_MsgGpuSetDispMask[];
 extern char g_MsgGpuSetGraphQueue[];
 extern char g_MsgGpuTimeout[];
 extern char g_MsgGpuTimeoutCallback[];
-extern GpuMovePacket g_MoveImagePacket;
-extern volatile u_long *g_OtcDmaBcr;
-extern volatile u_long *g_OtcDmaChcr;
-extern volatile u_long *g_OtcDmaMadr;
-extern u_long g_OtagTerminator;
 
 #endif
