@@ -40,6 +40,10 @@ _Static_assert(sizeof(g_VisibleCellMask) == sizeof(void *),
                "g_VisibleCellMask must be one pointer");
 _Static_assert(sizeof(g_RouteSceneryKeyframe) == sizeof(void *),
                "g_RouteSceneryKeyframe must be one pointer");
+_Static_assert(sizeof(g_RouteSceneryRotZ) == sizeof(s32),
+               "g_RouteSceneryRotZ must be one angle");
+_Static_assert(sizeof(g_RouteSceneryPosition) == 16,
+               "g_RouteSceneryPosition ABI size changed");
 _Static_assert(sizeof(g_PathSceneryTransform) == 24,
                "g_PathSceneryTransform ABI size changed");
 _Static_assert(sizeof(g_PathSceneryRotHalfDelta) == 6,

@@ -654,7 +654,6 @@ unsigned char g_SndCurrentToneTable[8] __attribute__((aligned(16)));
 s32 g_StCurrentChannel;
 s32 g_StDmaBusy;
 unsigned char g_SndVoiceCount[8] __attribute__((aligned(16)));
-unsigned char g_RouteSceneryPosition[16] __attribute__((aligned(16)));
 unsigned char D_801E4B5C[8] __attribute__((aligned(16)));
 s16 g_PadAccelMask;
 s16 g_PadBrakeMask;
