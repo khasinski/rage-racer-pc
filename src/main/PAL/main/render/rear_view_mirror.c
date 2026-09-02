@@ -43,6 +43,19 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 }
 
 
+static void UpdateMirrorPanelPosition(void) {
+    if (g_MirrorViewEnabled == 0) {
+        if (g_MirrorPanelY >= -0x2B) {
+            g_MirrorPanelY--;
+        }
+        return;
+    }
+
+    if (g_MirrorPanelY < 0x12) {
+        g_MirrorPanelY++;
+    }
+}
+
 void DrawRearViewMirror(s32 mode) {
     void **state;
     DrawPacket *packet;
@@ -52,41 +65,37 @@ void DrawRearViewMirror(s32 mode) {
         g_MirrorUnlocked = 1;
     }
 
-    if (g_MirrorUnlocked != 0) {
-        if (g_MirrorViewEnabled != 0) {
-            if (g_MirrorPanelY < 0x12) {
-                g_MirrorPanelY++;
-            }
-        } else if (g_MirrorPanelY >= -0x2B) {
-            g_MirrorPanelY--;
-        }
-
-        if (BeginMirrorPass() != 0) {
-            state = &RENDER_PRIM_CURSOR_AS(void);
-
-            DrawSkyBackground();
-            packet = DrawMirrorFrame(*state);
-            SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
-            prim = packet;
-            packet++;
-            AddPrim(&g_DrawBuffer->layout.orderingTables[1]
-                                              [GAME_FRAME_OT_LENGTH - 1],
-                    prim);
-            *state = packet;
-            BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
-            SetRotMatrix((&g_RenderState.matrix));
-            g_RenderState.envMode4 = g_IsEnvironmentMode4;
-            SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
-
-            packet = *state;
-            SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
-            prim = packet;
-            packet++;
-            AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], prim);
-            *state = packet;
-            DrawCourseObjects();
-            DrawCars();
-            EndMirrorPass();
-        }
+    if (g_MirrorUnlocked == 0) {
+        return;
     }
+
+    UpdateMirrorPanelPosition();
+    if (BeginMirrorPass() == 0) {
+        return;
+    }
+
+    state = &RENDER_PRIM_CURSOR_AS(void);
+
+    DrawSkyBackground();
+    packet = DrawMirrorFrame(*state);
+    SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
+    prim = packet;
+    packet++;
+    AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
+            prim);
+    *state = packet;
+    BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
+    SetRotMatrix(&g_RenderState.matrix);
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    SubmitTerrainCells(&g_RenderState, g_VisibleCellList, 0x40);
+
+    packet = *state;
+    SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
+    prim = packet;
+    packet++;
+    AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], prim);
+    *state = packet;
+    DrawCourseObjects();
+    DrawCars();
+    EndMirrorPass();
 }
