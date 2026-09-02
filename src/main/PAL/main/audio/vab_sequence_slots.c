@@ -8,7 +8,6 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
     s16 vabId;
     s16 sequenceHandle;
 
-    g_AudioLoadSlot = AUDIO_SLOT_SEQUENCE;
     openedVabId = SsVabOpenHeadSticky(
         header, -1, g_VabSpuAddress[AUDIO_SLOT_SEQUENCE]);
     if (openedVabId == -1) {
@@ -31,6 +30,7 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
     }
     g_SeqHandle.storage = sequenceHandle;
     g_SeqVolumeFadeStep = 0;
+    g_AudioLoadSlot = AUDIO_SLOT_SEQUENCE;
     return SsVabTransCompleted(0);
 }
 

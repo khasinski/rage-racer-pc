@@ -89,9 +89,12 @@ int main(void) {
               g_SeqVolumeFadeStep == 0,
           "sequence slot opens score and clears fade state");
 
+    g_AudioLoadSlot = 99;
     s_openResult = -1;
     Check(OpenSequenceAudioSlot(header, body, sequence) == -1,
           "sequence VAB header failure is reported");
+    Check(g_AudioLoadSlot == 99,
+          "failed sequence open does not publish its slot");
     s_openResult = 7;
     s_bodyResult = -1;
     s_closedVab = -1;
@@ -104,6 +107,8 @@ int main(void) {
     Check(OpenSequenceAudioSlot(header, body, sequence) == -1 &&
               s_closedVab == 8,
           "sequence-open failure closes its VAB");
+    Check(g_AudioLoadSlot == 99,
+          "failed sequence score does not publish its slot");
     s_sequenceOpenResult = (s16)0x8056;
 
     g_AudioLoadedSlotMask = 0;

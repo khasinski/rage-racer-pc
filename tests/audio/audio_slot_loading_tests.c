@@ -183,13 +183,16 @@ int main(void) {
     CHECK(StartAudioSlotLoad(-1, &asset) == -1);
     CHECK(s_sequenceCalls == 1);
 
+    g_AudioLoadSlot = 99;
     s_openResult = -1;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    CHECK(g_AudioLoadSlot == 99);
     s_openResult = 7;
     s_bodyResult = -1;
     s_closeVab = -1;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1 &&
           s_closeVab == 7);
+    CHECK(g_AudioLoadSlot == 99);
     s_bodyResult = 8;
 
     g_VabSpuAddress[3] = 0x34000;
