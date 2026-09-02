@@ -2,7 +2,7 @@
 #include "game/menu_internal.h"
 
 void RestoreTeamLogoClut(void) {
-    LoadImage(&g_TeamLogoClutRect, &g_TeamLogoBlankClut);
+    LoadImage(&g_TeamLogoClutRect, g_TeamLogoBlankClut);
 }
 
 void UploadTeamLogoClut(void) {

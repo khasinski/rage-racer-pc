@@ -26,6 +26,12 @@ _Static_assert(sizeof(g_TeamLogoCanvas) == 0x800,
                "team-logo canvas ABI changed");
 _Static_assert(sizeof(g_MenuCarPivotOffset) == 16,
                "menu car pivot ABI changed");
+_Static_assert(sizeof(g_TeamNameCharScale) == 16,
+               "team-name character scale ABI changed");
+_Static_assert(sizeof(g_FormatDecimal) == 4,
+               "decimal format size changed");
+_Static_assert(sizeof(g_MenuBlankCaption) == 1,
+               "blank menu caption size changed");
 _Static_assert(sizeof(g_TeamLogoClutRect) == 8,
                "team-logo CLUT rectangle ABI changed");
 _Static_assert(sizeof(g_TeamLogoRect) == 8,
@@ -48,3 +54,15 @@ _Static_assert(sizeof(g_CourseCardVerts) == 32,
                "course-card vertices ABI changed");
 _Static_assert(sizeof(g_DesignModeCellMask) == 36,
                "design-mode mask ABI changed");
+_Static_assert(sizeof(g_TeamLogoCursorX) == sizeof(TeamLogoCoordinate),
+               "team-logo cursor coordinate ABI changed");
+_Static_assert(sizeof(g_TeamLogoViewX) == sizeof(TeamLogoCoordinate),
+               "team-logo view coordinate ABI changed");
+_Static_assert(sizeof(g_TeamLogoPenColor) == sizeof(TeamLogoColorIndex),
+               "team-logo pen colour ABI changed");
+_Static_assert(sizeof(g_TeamLogoBlankClut) == sizeof(u16) * 16,
+               "blank team-logo CLUT ABI changed");
+_Static_assert(sizeof(g_TeamLogoFadedClut) == sizeof(u16) * 16,
+               "faded team-logo CLUT ABI changed");
+_Static_assert(sizeof(g_TeamLogoSwatches) == sizeof(u16) * 15,
+               "team-logo swatch ABI changed");

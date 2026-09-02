@@ -111,9 +111,9 @@ extern const char g_MsgOrdinalTh[8];
 extern PaintColorTable g_PaintColorTable;
 extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
-extern unsigned char g_TeamNameCharScale[152];
-extern unsigned char g_FormatDecimal[68];
-extern unsigned char g_MenuBlankCaption[52];
+extern const Vec4 g_TeamNameCharScale;
+extern const char g_FormatDecimal[4];
+extern unsigned char g_MenuBlankCaption;
 extern DesignModeCellMask g_DesignModeCellMask;
 extern unsigned char g_CarSoundVolumeScales[128];
 extern unsigned char g_MsgVabOpenHeadError[24];
@@ -212,10 +212,10 @@ extern unsigned char g_SkyTileUV[64];
 extern unsigned char g_CdMixPresets[8];
 extern int32_t g_CdCommandPending;
 extern unsigned char g_MenuOverlayPatternTable[584];
-extern unsigned char g_TeamLogoCursorX[8];
-extern unsigned char g_TeamLogoViewX[8];
-extern unsigned char g_TeamLogoPenColor[8];
-extern unsigned char g_TeamLogoBlankClut[32];
+extern TeamLogoCoordinate g_TeamLogoCursorX;
+extern TeamLogoCoordinate g_TeamLogoViewX;
+extern TeamLogoColorIndex g_TeamLogoPenColor;
+extern uint16_t g_TeamLogoBlankClut[16];
 extern unsigned char g_SmallFontGlyphs[184];
 extern unsigned char g_LargeFontGlyphs[196];
 extern unsigned char g_TimeAttackPlateProgress[7252];
@@ -319,9 +319,9 @@ static const HostStateBlob s_blobs[] = {
     {"g_PaintColorTable", (const unsigned char *)&g_PaintColorTable, 54},
     {"g_CourseCardVerts", (const unsigned char *)g_CourseCardVerts, 32},
     {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
-    {"g_TeamNameCharScale", g_TeamNameCharScale, 152},
-    {"g_FormatDecimal", g_FormatDecimal, 68},
-    {"g_MenuBlankCaption", g_MenuBlankCaption, 52},
+    {"g_TeamNameCharScale", (const unsigned char *)&g_TeamNameCharScale, 16},
+    {"g_FormatDecimal", (const unsigned char *)g_FormatDecimal, 4},
+    {"g_MenuBlankCaption", &g_MenuBlankCaption, 1},
     {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
     {"g_MsgVabOpenHeadError", g_MsgVabOpenHeadError, 24},
@@ -425,10 +425,10 @@ static const HostStateBlob s_blobs[] = {
     {"g_CdCommandPending", (const unsigned char *)&g_CdCommandPending,
      sizeof(g_CdCommandPending)},
     {"g_MenuOverlayPatternTable", g_MenuOverlayPatternTable, 584},
-    {"g_TeamLogoCursorX", g_TeamLogoCursorX, 8},
-    {"g_TeamLogoViewX", g_TeamLogoViewX, 8},
-    {"g_TeamLogoPenColor", g_TeamLogoPenColor, 8},
-    {"g_TeamLogoBlankClut", g_TeamLogoBlankClut, 32},
+    {"g_TeamLogoCursorX", (const unsigned char *)&g_TeamLogoCursorX, 4},
+    {"g_TeamLogoViewX", (const unsigned char *)&g_TeamLogoViewX, 4},
+    {"g_TeamLogoPenColor", (const unsigned char *)&g_TeamLogoPenColor, 4},
+    {"g_TeamLogoBlankClut", (const unsigned char *)g_TeamLogoBlankClut, 32},
     {"g_SmallFontGlyphs", g_SmallFontGlyphs, 184},
     {"g_LargeFontGlyphs", g_LargeFontGlyphs, 196},
     {"g_TimeAttackPlateProgress", g_TimeAttackPlateProgress, 7252},
@@ -477,7 +477,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3739560708UL;
+    const unsigned long expected = 1068139364UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

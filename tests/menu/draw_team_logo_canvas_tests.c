@@ -28,7 +28,7 @@
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
 u16 g_TeamLogoFadedClut[16];
-u16 g_TeamLogoSwatches[16];
+u16 g_TeamLogoSwatches[15];
 TeamLogoRect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 u16 g_TeamLogoFadedClutRect;
