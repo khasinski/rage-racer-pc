@@ -22,6 +22,7 @@ struct TrackRenderTable;
 struct CourseObjectTable;
 struct OptionScreenAsset;
 struct CarModelAsset;
+struct SerializedCarModelAssetHeader;
 struct SVec;
 
 typedef enum AssetRequestType {
@@ -148,6 +149,7 @@ typedef union AssetAddress {
     struct PathSceneryPositionData *pathSceneryPosition;
     struct OptionScreenAsset *optionScreen;
     struct CarModelAsset *carModel;
+    struct SerializedCarModelAssetHeader *serializedCarModel;
     struct SVec *shortVector;
     TrackTextureShadowRow *trackTextureRows;
 } AssetAddress;
@@ -239,6 +241,14 @@ _Static_assert(offsetof(CarModelAsset, modelData) == 0x20,
 _Static_assert(sizeof(SerializedCarModelAssetHeader) ==
                    SERIALIZED_CAR_MODEL_HEADER_SIZE,
                "serialized car model header must remain 0x28 bytes");
+
+static inline SerializedCarModelAssetHeader *GetSerializedCarModelAssetHeader(
+    void *data) {
+    AssetAddress address;
+
+    address.pointer = data;
+    return address.serializedCarModel;
+}
 
 static inline CarModelAsset *GetCarModelAsset(void *data) {
     AssetAddress address;

@@ -120,11 +120,12 @@ static CarModelAsset g_NativeCarModelAssets[2];
 static CarModelAsset *g_SerializedCarModelAssets[2];
 
 void SetCarModelSlot(CarModelAsset *asset, s32 index) {
-    SerializedCarModelAssetHeader *serialized =
-        (SerializedCarModelAssetHeader *)asset;
-    u8 *bytes = (u8 *)serialized;
+    SerializedCarModelAssetHeader *serialized;
+    u8 *bytes;
 
     if ((u32)index >= 2) return;
+    serialized = GetSerializedCarModelAssetHeader(asset);
+    bytes = GetAssetBytes(serialized);
     memcpy(&g_NativeCarModelAssets[index], serialized->metadata,
            sizeof(serialized->metadata));
     g_NativeCarModelAssets[index].modelData.pointer =

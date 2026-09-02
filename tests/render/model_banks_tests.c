@@ -226,8 +226,8 @@ static int TestCarAssetSlots(void) {
         u8 bytes[96];
     } storage;
     SerializedCarModelAssetHeader *serialized =
-        (SerializedCarModelAssetHeader *)(void *)storage.bytes;
-    CarModelAsset *view = (CarModelAsset *)(void *)storage.bytes;
+        GetSerializedCarModelAssetHeader(storage.bytes);
+    CarModelAsset *view = GetCarModelAsset(storage.bytes);
     CarModelAsset sentinelModel;
     CarModelAsset unknownModel;
     CarImageData image0;
