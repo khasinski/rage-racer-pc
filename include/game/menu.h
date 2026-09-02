@@ -491,8 +491,6 @@ extern s32 g_LogoSampleSavedIndex;
 extern s32 g_PaintColorIndex;
 extern s32 g_TireSliderPulsePhase;
 extern s32 g_BrowseArrowsPulsePhase;
-extern s32 g_MenuCurtainFade;
-extern u8 g_MenuCurtainShade;
 extern s32 g_TeamLogoColorCycleAngle;
 extern s32 g_TeamNameCursorPhase;
 extern s32 g_PaintPalettePulsePhase;

@@ -281,7 +281,6 @@ void UpdateZoneAmbience(s32 zone);
 /* Declared identically by 153 translation units before this
  * header carried them. */
 
-extern s16 g_EndingSceneLatch;
 extern s16 g_AttractTitleDelays[];
 extern s32 g_BestLapIndex;
 extern s32 g_BgmRandomLabelTimer;
