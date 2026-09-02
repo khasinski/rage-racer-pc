@@ -42,6 +42,12 @@ int main(void) {
           "refresh preserves the stored sequence setting");
     CheckAppliedVolume(38, "refresh applies volume to state and sequence");
 
+    g_SeqVolumeSetting = AUDIO_SETTING_MAX + 20;
+    RefreshSequenceVolumeScale();
+    Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX + 20,
+          "refresh does not rewrite the stored setting");
+    CheckAppliedVolume(114, "refresh clamps an invalid stored setting");
+
     SetSequenceVolumeSetting(7);
     Check(g_SeqVolumeSetting == 7,
           "setter stores an intermediate sequence setting");

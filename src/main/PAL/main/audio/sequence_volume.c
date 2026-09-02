@@ -12,6 +12,7 @@ void SetSequenceVolume(s32 volume) {
 }
 
 static s32 SequenceVolumeForSetting(s32 setting) {
+    setting = ClampAudioSetting(setting);
     return setting * SEQUENCE_VOLUME_AT_MAX_SETTING / AUDIO_SETTING_MAX;
 }
 
