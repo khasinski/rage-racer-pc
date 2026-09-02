@@ -39,9 +39,6 @@ void PlaySoundCue(s32 cue) {
     s_cueCalls++;
 }
 
-static PlayerCarRuntime s_playerStorage;
-void *GetPlayerCarStorage(void) { return &s_playerStorage; }
-
 enum { RIVAL_SLOTS = 11, TRACK_LENGTH = 0x8000 };
 
 /* No second car at all, for the cases that do not need one. */
@@ -136,7 +133,6 @@ static void ResetRubberBandState(void) {
 
     memset(g_Cars, 0, sizeof(g_Cars));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
-    memset(&s_playerStorage, 0, sizeof(s_playerStorage));
     for (rank = 0; rank < 4; rank++) {
         g_Cars[rank].progressA = -0x3000;
         g_Cars[rank].accelerationLimit = 1000;
@@ -150,7 +146,7 @@ static void ResetRubberBandState(void) {
     g_RivalCueCooldown1 = 0;
     g_RivalCueCooldown2 = 0;
     g_RivalCueCooldown3 = 0;
-    g_RacePosition = 1;
+    g_PlayerCar.drive.racePosition = 1;
     g_SceneTimer = 0;
     g_ClosestRivalRank = -1;
     s_lastCue = -1;

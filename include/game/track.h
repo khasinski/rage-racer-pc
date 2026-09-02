@@ -4,7 +4,6 @@
 #include "common.h"
 
 #include "game/vector.h"
-#include "game/player_car_aliases.h"
 #include "game/shuttle_scenery.h"
 #include "game/visibility.h"
 

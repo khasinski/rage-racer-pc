@@ -51,9 +51,6 @@ void *GetSndTableArea(void) {
     return g_SndTableArea;
 }
 
-void *GetPlayerCarStorage(void) {
-    return &g_PlayerCar;
-}
 GameSpriteDesc g_RaceHudSpriteDescsGp[12];
 GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[11];
 RaceGridSlot g_RaceGridSlots[12];

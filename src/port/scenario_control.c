@@ -401,8 +401,8 @@ static void ScenarioApplyCarSetup(void) {
                 s_scenario.car);
         entry->transmission = 1;
     }
-    g_PlayerTireCompound = entry->tireCompound;
-    g_PlayerTransmission = entry->transmission;
+    g_PlayerCar.showroomTireCompound = entry->tireCompound;
+    g_PlayerCar.drive.manual = entry->transmission;
     fprintf(stderr,
             "rage-port: direct boot car setup tires=%d transmission=%s\n",
             entry->tireCompound,

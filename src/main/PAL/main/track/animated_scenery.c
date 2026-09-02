@@ -65,7 +65,7 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     g_AnimSceneryFrame = (timer / 4) % 16;
     if (g_AnimSceneryFrame == 0 && timer % 8 == 0 && g_RacePaused == 0) {
         g_AnimSceneryTint = 0;
-        g_AnimSceneryRacePosition = g_RacePosition;
+        g_AnimSceneryRacePosition = g_PlayerCar.drive.racePosition;
         g_AnimSceneryVariant = (Random15() & 7) / 3;
         if (g_AnimSceneryRacePosition >= 4) {
             g_AnimSceneryRacePosition = 0;

@@ -83,16 +83,16 @@ void DrawTimeRemaining(s32 time) {
     DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, time, clutIndex);
 }
 
-/* The two race-position digits, from g_RacePosition; the tens digit is
+/* The two race-position digits, from g_PlayerCar.drive.racePosition; the tens digit is
  * blanked below 10 and the colour changes from 4th place down. */
 void DrawRacePosition(void) {
     GameFrameContext *frame = g_DrawBuffer;
     SPRT *tens = &frame->layout.raceHud.labels[3];
     SPRT *ones = &frame->layout.raceHud.labels[4];
-    u16 color = g_RacePosition < 4 ? 0x780B : 0x780E;
+    u16 color = g_PlayerCar.drive.racePosition < 4 ? 0x780B : 0x780E;
 
-    tens->u0 = g_RacePosition >= 10 ? 0x18 : 0;
-    ones->u0 = (g_RacePosition % 10) * 24;
+    tens->u0 = g_PlayerCar.drive.racePosition >= 10 ? 0x18 : 0;
+    ones->u0 = (g_PlayerCar.drive.racePosition % 10) * 24;
     tens->clut = color;
     ones->clut = color;
 }

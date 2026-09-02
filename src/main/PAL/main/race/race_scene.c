@@ -266,7 +266,7 @@ void UpdateRaceScene(void) {
         if (g_GrandPrixMode != 0) {
             DrawCars();
         }
-        if ((g_PlayerFacingBackwards != ReadStableRaceSeries()) && (g_WrongWayTimer >= 0xA)) {
+        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) && (g_WrongWayTimer >= 0xA)) {
             DrawWrongWayWarning();
         }
         DrawSkyBackground();
@@ -385,7 +385,7 @@ void UpdateRaceScene(void) {
         UpdateEnvironment();
         DrawSkyBackground();
 
-        if ((g_PlayerFacingBackwards != ReadStableRaceSeries()) && (g_RacePhase < 4)) {
+        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) && (g_RacePhase < 4)) {
             s16 counter;
 
             counter = g_WrongWayTimer + 1;

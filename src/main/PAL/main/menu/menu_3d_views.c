@@ -21,11 +21,11 @@ static void UpdateMenuViewSpin(void) {
 }
 
 static void UpdateShowroomSteering(void) {
-    if ((g_PadHeld & PAD_R2) && g_PlayerSteerAngle < 6144) {
-        g_PlayerSteerAngle += 192;
+    if ((g_PadHeld & PAD_R2) && g_PlayerCar.steeringAngle < 6144) {
+        g_PlayerCar.steeringAngle += 192;
     }
-    if ((g_PadHeld & PAD_L2) && g_PlayerSteerAngle >= -6143) {
-        g_PlayerSteerAngle -= 192;
+    if ((g_PadHeld & PAD_L2) && g_PlayerCar.steeringAngle >= -6143) {
+        g_PlayerCar.steeringAngle -= 192;
     }
 }
 
@@ -113,11 +113,11 @@ void DrawMenuCarView(void) {
     viewHeight = AdvanceMenuViewOffset();
     showroom->runtime.modelIndex =
         GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
-    g_PlayerTireCompound = g_CarTable[carIndex].tireCompound;
+    g_PlayerCar.showroomTireCompound = g_CarTable[carIndex].tireCompound;
 
     UpdateShowroomSteering();
-    g_PlayerTransmission = g_CarTable[carIndex].transmission;
-    g_PlayerCarWheelAngle = (g_PlayerCarWheelAngle + 68) & 0xFFF;
+    g_PlayerCar.drive.manual = g_CarTable[carIndex].transmission;
+    g_PlayerCar.wheelRotation = (g_PlayerCar.wheelRotation + 68) & 0xFFF;
 
     UpdateMenuViewSpin();
     showroom->pose.rotation.y += g_MenuViewSpin;
@@ -137,8 +137,8 @@ void DrawMenuCarView(void) {
     showroom->pose.position[0] = out.x - offset;
     showroom->pose.position[1] = viewHeight + 30;
     showroom->pose.position[2] = -out.z;
-    g_PlayerRenderRotation = showroom->pose.rotation;
-    g_PlayerRenderY = showroom->pose.position[1];
+    g_PlayerCar.modelRotation = showroom->pose.rotation;
+    g_PlayerCar.modelY = showroom->pose.position[1];
     SelectModelBank(g_CarModelSlot);
     DrawPlayerCarModel(renderObject);
 

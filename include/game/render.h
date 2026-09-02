@@ -6,7 +6,6 @@
 #include "game/camera_types.h"
 #include "game/environment.h"
 #include "game/render_types.h"
-#include "game/player_car_aliases.h"
 #include "game/vector.h"
 
 #include "game/render_state.h"

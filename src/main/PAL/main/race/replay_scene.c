@@ -108,7 +108,7 @@ void UpdateReplayScene(void) {
     g_SceneTimer++;
     if (g_SceneTimer == 0x3C && g_GrandPrixMode != 0 &&
         g_SeriesCleared == 0) {
-        PlaySoundCue(g_RacePosition == 1 ? 0x40 : 0x41);
+        PlaySoundCue(g_PlayerCar.drive.racePosition == 1 ? 0x40 : 0x41);
     }
 
     UpdateReplayFade();

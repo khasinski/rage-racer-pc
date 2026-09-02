@@ -41,8 +41,8 @@ void EnterCourseSelectScreen(void) {
     g_PlayerCar.bodyYaw = 0;
     g_PlayerCar.bodyRoll = 0;
     g_PlayerCar.trackProgress = 0;
-    g_PlayerSteerAngle = 0;
-    g_PlayerCarWheelAngle = 0;
+    g_PlayerCar.steeringAngle = 0;
+    g_PlayerCar.wheelRotation = 0;
     g_MenuViewAngleTarget = 0x7A120;
     g_MenuViewAngle = 0x7A120;
     g_MenuViewOffsetTarget = 0;

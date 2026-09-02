@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "game/race.h"
+#include "game/player_car_internal.h"
 #include "game/state.h"
 #include "game/audio.h"
 #include "game/sound.h"
@@ -37,8 +38,8 @@ void CommitClassProgress(void) {
     slots = &g_CourseProgress->bestPlace[SeriesCourseIndex()];
     g_ClassClearFanfareTimer = 0;
 
-    if (*slots == 0 || g_RacePosition < *slots) {
-        *slots = g_RacePosition;
+    if (*slots == 0 || g_PlayerCar.drive.racePosition < *slots) {
+        *slots = g_PlayerCar.drive.racePosition;
     }
 
     value = GetCarUnlockLevel(g_PlayerCarIndex);
@@ -164,7 +165,7 @@ void EnterPrizeScreen(void) {
     mode = g_CourseIndex;
     car = g_GrandPrixClass;
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
-    g_PrizeAmount = g_PrizeMoney.values[mode][car][g_RacePosition - 1];
+    g_PrizeAmount = g_PrizeMoney.values[mode][car][g_PlayerCar.drive.racePosition - 1];
     g_SceneId = 0x13;
 
     if (g_ClassPromoted != 0) {

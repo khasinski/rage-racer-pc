@@ -78,10 +78,6 @@ PlayerCarRuntime g_PlayerCar;
 GameSpriteDesc g_TachoNeedleSprite;
 s32 g_CourseIndex;
 
-/* The player car is reached through a storage hook so retail's aliases can
- * point into it; the HUD reads the lap table and the position through them. */
-void *GetPlayerCarStorage(void) { return &g_PlayerCar; }
-
 /*
  * The authored HUD, copied from the retail tables. Only the x matters here,
  * but the whole row is kept so the rows read as what they are.
@@ -182,7 +178,7 @@ static void DrawWholeHud(s32 mode) {
     g_PlayerCar.lap = 3;
     g_PlayerCar.drive.hudLapHighlightRow = 2;
     g_BestLapThisRace = 91875;
-    g_RacePosition = 12;  /* a macro onto the player car, not a global */
+    g_PlayerCar.drive.racePosition = 12;  /* a macro onto the player car, not a global */
     for (lap = 0; lap < 6; lap++)
         g_PlayerCar.lapTimes.table.milliseconds[lap] = 95000 + lap * 1234;
     g_SplitTimer = 0;
@@ -339,7 +335,7 @@ static void CheckRacePositionDigits(void) {
     BuildRaceHudPrims(1);
     frame = g_DrawBuffer;
 
-    g_RacePosition = 3;
+    g_PlayerCar.drive.racePosition = 3;
     DrawRacePosition();
     if (frame->layout.raceHud.labels[3].u0 != 0 ||
         frame->layout.raceHud.labels[4].u0 != 3 * 24 ||
@@ -349,7 +345,7 @@ static void CheckRacePositionDigits(void) {
         s_failures++;
     }
 
-    g_RacePosition = 12;
+    g_PlayerCar.drive.racePosition = 12;
     DrawRacePosition();
     if (frame->layout.raceHud.labels[3].u0 != 0x18 ||
         frame->layout.raceHud.labels[4].u0 != 2 * 24 ||

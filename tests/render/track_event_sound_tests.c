@@ -17,10 +17,6 @@ s32 g_MirrorMode;
 static s32 g_LeftVolume;
 static s32 g_RightVolume;
 
-void *GetPlayerCarStorage(void) {
-    return &g_PlayerCar;
-}
-
 void SetPanVoiceTargetVolume(s32 left, s32 right) {
     g_LeftVolume = left;
     g_RightVolume = right;
@@ -57,7 +53,7 @@ int main(void) {
     g_PlayerCar.speed = 12775;
     g_RenderState.viewAngleY = 0xC00;
 
-    g_PlayerField3C = 0x200;
+    g_PlayerCar.normalizedLateralOffset = 0x200;
     if (!ExpectVolumes(10, 0, 0x200) ||
         !ExpectVolumes(20, 0, 0x200) ||
         !ExpectVolumes(21, 0, 0) ||
@@ -65,7 +61,7 @@ int main(void) {
         return 1;
     }
 
-    g_PlayerField3C = -0x200;
+    g_PlayerCar.normalizedLateralOffset = -0x200;
     if (!ExpectVolumes(30, 0x200, 0) ||
         !ExpectVolumes(40, 0x200, 0) ||
         !ExpectVolumes(41, 0, 0) ||
@@ -78,7 +74,7 @@ int main(void) {
         return 1;
     }
 
-    g_PlayerField3C = 0x80;
+    g_PlayerCar.normalizedLateralOffset = 0x80;
     g_MirrorMode = 0;
     if (!ExpectVolumes(10, 0, 0)) {
         return 1;
@@ -90,7 +86,7 @@ int main(void) {
     }
     g_TrackEventData = &events;
     g_TrackPoints = NULL;
-    g_PlayerField3C = 0x200;
+    g_PlayerCar.normalizedLateralOffset = 0x200;
     if (!ExpectVolumes(10, 0, 0)) {
         return 1;
     }

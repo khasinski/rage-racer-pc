@@ -2,7 +2,7 @@
 #include "game/race.h"
 
 /* Counts the cars whose lap progress is ahead of the player and publishes the
- * result as g_RacePosition (1 = leader). Only runs on the final lap. */
+ * result as g_PlayerCar.drive.racePosition (1 = leader). Only runs on the final lap. */
 void UpdateRacePosition(void) {
     s32 position;
     s32 i;
@@ -21,6 +21,6 @@ void UpdateRacePosition(void) {
             }
         }
 
-        g_RacePosition = position;
+        g_PlayerCar.drive.racePosition = position;
     }
 }

@@ -16,7 +16,7 @@ static void CollectWaypoint(TrackWaypointRuntime *waypoint) {
     g_WaypointsCollected++;
     PlaySoundCue(0xA);
     waypoint->active = 1;
-    waypoint->motion.velocity.vector = g_PlayerVelocity[0];
+    waypoint->motion.velocity.vector = g_PlayerCar.waypointVelocity[0];
     waypoint->motion.velocity.fields.x *= 2;
     waypoint->motion.velocity.fields.y *= 2;
     velocityX = waypoint->motion.velocity.fields.x;

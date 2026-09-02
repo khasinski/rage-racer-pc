@@ -288,7 +288,8 @@ int main(int argc, char **argv) {
     g_PlayerCar.drive.hudLapHighlightRow =
         OptionNumber(argc, argv, "--current-lap", 1);
     g_BestLapThisRace = OptionNumber(argc, argv, "--best", 92345);
-    g_RacePosition = OptionNumber(argc, argv, "--position", 1);
+    g_PlayerCar.drive.racePosition =
+        OptionNumber(argc, argv, "--position", 1);
     for (index = 0; index < HUD_LAP_SLOTS; index++)
         g_PlayerCar.lapTimes.table.milliseconds[index] = 95000 + index * 1234;
     for (index = 1; index + 1 < argc; index++) {

@@ -4,7 +4,6 @@
 #include "common.h"
 
 #include "game/menu_types.h"
-#include "game/player_car_aliases.h"
 #include "game/render_state.h"
 #include "game/state.h"
 #include "game/vector.h"

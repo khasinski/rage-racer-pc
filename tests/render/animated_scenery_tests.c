@@ -39,7 +39,6 @@ static s32 g_Visible = 1;
 static s32 g_RandomValue;
 static s32 g_RandomCalls;
 
-void *GetPlayerCarStorage(void) { return &g_PlayerCar; }
 s32 Random15(void) {
     g_RandomCalls++;
     return g_RandomValue;
@@ -127,7 +126,7 @@ int main(void) {
 
     /* The race variant updates its state before the GP-mode draw guard. */
     g_GrandPrixMode = 0;
-    g_RacePosition = 2;
+    g_PlayerCar.drive.racePosition = 2;
     Reset();
     DrawAnimatedScenery(0, 0);
     if (g_SubmissionCount != 0 || g_RandomCalls != 1 ||

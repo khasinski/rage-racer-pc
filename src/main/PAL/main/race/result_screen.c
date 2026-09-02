@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/audio.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -43,16 +44,16 @@ static void DrawClassPlaceBanner(void) {
 static void DrawResultPlace(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const ResultPlaceSpriteLayout *placeSprite =
-        &g_ResultPlaceSprites[g_RacePosition - 1];
+        &g_ResultPlaceSprites[g_PlayerCar.drive.racePosition - 1];
     u8 *next;
 
     DrawResultScreen();
     next = GameQueueSprite(ot, RENDER_PRIM_CURSOR_AS(u8),
                            0xB4, 0x60, 0x58, 0x38, 0xA8, 0xA8,
-                           g_ResultPanelCluts[g_RacePosition]);
+                           g_ResultPanelCluts[g_PlayerCar.drive.racePosition]);
     RENDER_PRIM_CURSOR_AS(u8) = GameQueueSprite(
         ot, next, placeSprite->x, 0x5C, placeSprite->y, 0x1C,
-        placeSprite->width, 0xCC, g_ResultPlaceCluts[g_RacePosition]);
+        placeSprite->width, 0xCC, g_ResultPlaceCluts[g_PlayerCar.drive.racePosition]);
 }
 
 void DrawGrandPrixIntro(void) {

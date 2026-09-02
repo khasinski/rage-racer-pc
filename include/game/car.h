@@ -530,10 +530,15 @@ typedef struct PlayerCarRuntime {
     s32 steeringAngle;
     s32 wheelRotation;
     s32 field_4C;
-    s32 modelPitch;
-    s32 modelYaw;
-    s32 modelRoll;
-    s32 field_5C;
+    union {
+        struct {
+            s32 modelPitch;
+            s32 modelYaw;
+            s32 modelRoll;
+            s32 field_5C;
+        };
+        Vec4 modelRotation;
+    };
     s32 modelY;
     s32 bodyRollVelocity;
     s32 progressA;
@@ -569,17 +574,22 @@ typedef struct PlayerCarRuntime {
     CarTrackHeading trackHeading;
     s16 facingBackwards;
     u8 padBA[2];
-    GameCarDrive drive;
+    /* The waypoint pickup code reads +0xC4 as two launch vectors, while the
+     * showroom reuses +0xE4 for its tire selection. Both are retail views of
+     * the same storage occupied by GameCarDrive during a race. */
+    union {
+        GameCarDrive drive;
+        struct {
+            u8 reservedDrive00[8];
+            Vec4 waypointVelocity[2];
+            s32 showroomTireCompound;
+        };
+    };
     s32 previousTrackPointIndex;
     s16 lap;
     s16 field_16A;
     PlayerLapTimes lapTimes;
 } PlayerCarRuntime;
-
-/* These retail symbols are interior views of the single g_PlayerCar object,
- * not independent globals.  Keep the named views because the original game
- * uses them across subsystems, but preserve their shared storage on hosts. */
-#include "game/player_car_aliases.h"
 
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, segmentFraction) == 0x38,
                "player segment weight must retain its retail alias offset");
@@ -591,14 +601,17 @@ _Static_assert(__builtin_offsetof(PlayerCarRuntime, wheelRotation) == 0x48,
                "player wheel angle must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, modelPitch) == 0x50,
                "player render rotation must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, modelRotation) == 0x50,
+               "player render rotation view must retain the retail offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, modelY) == 0x60,
                "player render Y must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, facingBackwards) == 0xB8,
                "player facing flag must retain its retail alias offset");
-_Static_assert(
-    __builtin_offsetof(PlayerCarRuntime, drive) +
-        __builtin_offsetof(GameCarDrive, accelPos) == 0xC4,
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, waypointVelocity) == 0xC4,
     "player velocity view must retain its retail alias offset");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, showroomTireCompound) == 0xE4,
+    "showroom tire selection must retain its retail alias offset");
 _Static_assert(
     __builtin_offsetof(PlayerCarRuntime, drive) +
         __builtin_offsetof(GameCarDrive, manual) == 0x130,

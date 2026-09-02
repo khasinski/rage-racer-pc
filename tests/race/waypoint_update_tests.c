@@ -23,10 +23,6 @@ static int s_failures;
     } \
 } while (0)
 
-void *GetPlayerCarStorage(void) {
-    return &g_PlayerCar;
-}
-
 void PlaySoundCue(s32 soundId) {
     s_lastSound = soundId;
     s_soundCount++;
@@ -46,8 +42,8 @@ static void CheckCollection(void) {
     ResetState();
     g_PlayerCar.x = 1000;
     g_PlayerCar.z = 2000;
-    g_PlayerVelocity[0].x = 0x300;
-    g_PlayerVelocity[0].z = -0x200;
+    g_PlayerCar.waypointVelocity[0].x = 0x300;
+    g_PlayerCar.waypointVelocity[0].z = -0x200;
     waypoint = &g_Waypoints[2];
     waypoint->motion.x = 1001;
     waypoint->motion.y = 1999;

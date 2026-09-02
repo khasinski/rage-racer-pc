@@ -47,7 +47,7 @@ static void UpdateTrailingRivalCue(s32 rank, s32 gap, s32 nearCueBit,
                                    s16 *cooldown) {
     if (rank == 0 && !(g_RivalCueFlags & LEADER_TRAILING_CUE_BIT) &&
         gap < -DISTANT_TRAILING_GAP) {
-        if (g_RacePosition == 1) {
+        if (g_PlayerCar.drive.racePosition == 1) {
             PlayEnabledRivalCue(0x2D);
         }
         g_RivalCueFlags =

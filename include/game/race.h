@@ -6,7 +6,6 @@
 #include "game/waypoint.h"
 #include "game/course_index.h"
 #include "game/vector.h"
-#include "game/player_car_aliases.h"
 #include "game/replay.h"
 #include "game/render_types.h"
 
