@@ -231,6 +231,25 @@ endif()
 add_test(NAME exit_race_scene COMMAND exit_race_scene_tests)
 set_tests_properties(exit_race_scene PROPERTIES LABELS unit)
 
+add_executable(enter_attract_scene_tests
+    enter_attract_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/enter_attract_scene.c)
+target_include_directories(enter_attract_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(enter_attract_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(enter_attract_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(enter_attract_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME enter_attract_scene COMMAND enter_attract_scene_tests)
+set_tests_properties(enter_attract_scene PROPERTIES LABELS unit)
+
 add_executable(split_time_state_tests
     split_time_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_state.c)

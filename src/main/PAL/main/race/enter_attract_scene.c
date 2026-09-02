@@ -4,6 +4,15 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
+enum {
+    ATTRACT_SCENE_ID = 0x17,
+    ATTRACT_RENDER_OT_SHIFT = 5,
+    ATTRACT_VIEW_Z = -3520,
+    ATTRACT_LETTERBOX_HEIGHT = 240,
+    ATTRACT_INITIAL_FADE = 256,
+    ATTRACT_FADE_STEP = -8,
+};
+
 static void InitAttractLighting(void) {
     g_SceneColorMatrix = g_DefaultColorMatrix;
     g_SceneLightMatrix = g_DefaultLightMatrix;
@@ -23,20 +32,20 @@ void EnterAttractScene(void) {
 
     UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
     g_MirrorMode = 0;
-    InitRenderState(5);
+    InitRenderState(ATTRACT_RENDER_OT_SHIFT);
     SetupDisplay480(0, 0, 0);
-    g_SceneId = 0x17;
+    g_SceneId = ATTRACT_SCENE_ID;
     g_SceneTimer = 0;
     InitAttractLighting();
     g_RenderState.viewX = 0;
     g_RenderState.viewY = 0;
-    g_RenderState.viewZ = -3520;
+    g_RenderState.viewZ = ATTRACT_VIEW_Z;
     g_RenderState.viewAngleX = 0;
     g_RenderState.viewAngleY = 0;
     g_RenderState.viewAngleZ = 0;
     SetCameraRotMatrix();
-    g_OptionLetterboxHeight = 0xF0;
-    g_FadeLevel = 0x100;
+    g_OptionLetterboxHeight = ATTRACT_LETTERBOX_HEIGHT;
+    g_FadeLevel = ATTRACT_INITIAL_FADE;
     g_GameMode = 0;
-    g_FadeStep = -8;
+    g_FadeStep = ATTRACT_FADE_STEP;
 }

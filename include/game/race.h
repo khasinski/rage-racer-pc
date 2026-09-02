@@ -426,6 +426,7 @@ void UpdateReplayCars(void);
 void UpdateRivalCueGate(void);
 void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent);
 void ExitRaceScene(s32 sceneId);
+void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
 void PlayCountdownCues(s32 timer);
 void AdvanceBgmShuffleBag(u32 track);
