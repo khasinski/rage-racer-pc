@@ -404,7 +404,7 @@ s32 RequestSaveScreenAssets(void);
 void LoadSaveScreenAssets(void);
 /* Phase 3: SELBGM.BIN, split into its SEQ / VH / VB sub-blocks. */
 s32 RequestSelectBgmAssets(void);
-s32 RequestSelectBgmAssetsNoReset(void);
+s32 RequestSelectBgmAssetsKeepAudioSlots(void);
 void LoadSelectBgmAssets(void);
 /* Phase 4: upload the SELBGM bank, load SELECT.BIN and the player's CAR_xx.1ST. */
 s32 RequestCarSelectAssets(void);

@@ -187,6 +187,58 @@ static void TestBootAssetPhases(void) {
     Check(g_TeamLogoClut[0] == 0, "boot car screen clears logo CLUT entry");
 }
 
+static void TestSaveScreenAssets(u8 *assetBase) {
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    s_resetCalls = 0;
+    Check(RequestSaveScreenAssets() == 1, "new save request remains pending");
+    Check(g_AssetRequestType == ASSET_REQUEST_SAVE_SCREEN &&
+              g_AssetLoadState == 1 && s_resetCalls == 1,
+          "save request starts asset loader");
+    Check(RequestSaveScreenAssets() == 1,
+          "busy save request remains pending");
+    g_AssetLoadState = 0;
+    Check(RequestSaveScreenAssets() == 0 &&
+              g_AssetRequestType == ASSET_REQUEST_IDLE,
+          "completed save request acknowledges");
+
+    g_AssetBase = assetBase;
+    g_ImageBlockBuffer = NULL;
+    g_AssetLoadState = 1;
+    s_loadResult = 0;
+    LoadSaveScreenAssets();
+    Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
+          "pending save screen installs nothing");
+    s_loadResult = 1;
+    LoadSaveScreenAssets();
+    Check(s_lastAssetId == ASSET_SAVE_SCREEN &&
+              s_lastLoadDestination == assetBase &&
+              g_ImageBlockBuffer == assetBase && g_AssetLoadState == 0,
+          "save screen installs loaded image block");
+}
+
+static void TestSelectBgmRequests(void) {
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    s_resetCalls = 0;
+    Check(RequestSelectBgmAssets() == 1, "new BGM request remains pending");
+    Check(g_AssetRequestType == ASSET_REQUEST_SELECT_BGM,
+          "new BGM request type");
+    Check(g_AssetLoadState == 1, "BGM request closes audio before loading");
+    Check(s_resetCalls == 1, "new BGM request resets CD audio");
+    Check(RequestSelectBgmAssets() == 1, "busy BGM request remains pending");
+
+    g_AssetLoadState = 0;
+    Check(RequestSelectBgmAssets() == 0, "matching BGM request acknowledges");
+    Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
+          "acknowledged BGM request becomes idle");
+
+    Check(RequestSelectBgmAssetsKeepAudioSlots() == 1,
+          "keep-slots BGM request remains pending");
+    Check(g_AssetLoadState == 2 && s_resetCalls == 2,
+          "keep-slots request skips slot close phase but resets CD state");
+}
+
 int main(void) {
     union {
         max_align_t alignment;
@@ -195,20 +247,8 @@ int main(void) {
     GameSceneAssetHeader *header = (GameSceneAssetHeader *)pack.bytes;
 
     TestBootAssetPhases();
-
-    g_AssetLoadState = 0;
-    g_AssetRequestType = ASSET_REQUEST_IDLE;
-    Check(RequestSelectBgmAssets() == 1, "new request remains pending");
-    Check(g_AssetRequestType == ASSET_REQUEST_SELECT_BGM,
-          "new request type");
-    Check(g_AssetLoadState == 1, "new request first load state");
-    Check(s_resetCalls == 1, "new request resets CD audio");
-    Check(RequestSelectBgmAssets() == 1, "busy request remains pending");
-
-    g_AssetLoadState = 0;
-    Check(RequestSelectBgmAssets() == 0, "matching request acknowledges");
-    Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
-          "acknowledged request becomes idle");
+    TestSaveScreenAssets(pack.bytes);
+    TestSelectBgmRequests();
 
     memset(&pack, 0, sizeof(pack));
     header->offsets[0] = 16;

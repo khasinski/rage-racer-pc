@@ -262,7 +262,7 @@ void UpdateMainMenuInput(void) {
                 g_CourseIndex = 3;
                 RequestTrackLoad();
             } else {
-                RequestSelectBgmAssetsNoReset();
+                RequestSelectBgmAssetsKeepAudioSlots();
             }
             break;
         case 1:
@@ -275,14 +275,14 @@ void UpdateMainMenuInput(void) {
                 g_CourseIndex = 3;
                 RequestTrackLoad();
             } else {
-                RequestSelectBgmAssetsNoReset();
+                RequestSelectBgmAssetsKeepAudioSlots();
             }
             break;
         case 2:
             g_CarTable = g_TimeAttackCars;
             g_RaceProgress = &g_TimeAttackSave;
             g_SeriesSelection = 0;
-            RequestSelectBgmAssetsNoReset();
+            RequestSelectBgmAssetsKeepAudioSlots();
             break;
         case 3:
             RequestSaveScreenAssets();

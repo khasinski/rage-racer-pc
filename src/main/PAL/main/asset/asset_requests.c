@@ -115,7 +115,7 @@ void LoadSaveScreenAssets(void) {
     }
 }
 
-s32 RequestSelectBgmAssetsNoReset(void) {
+s32 RequestSelectBgmAssetsKeepAudioSlots(void) {
     return RequestAsset(ASSET_REQUEST_SELECT_BGM, 2);
 }
 
