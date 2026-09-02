@@ -18,7 +18,13 @@ static s32 s_archiveLoads;
 static s32 s_uploads;
 static GameImageAssetHeaderWord *s_uploadedAsset;
 static s32 s_requestCalls;
+static size_t s_availableRoom;
 static s32 s_failures;
+
+size_t PortAssetRoomAt(const void *destination) {
+    (void)destination;
+    return s_availableRoom;
+}
 
 int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     (void)index;
@@ -83,6 +89,7 @@ static void ResetCalls(void) {
     s_uploads = 0;
     s_uploadedAsset = NULL;
     s_requestCalls = 0;
+    s_availableRoom = 0;
 }
 
 int main(void) {
@@ -90,6 +97,11 @@ int main(void) {
 
     g_AssetCdEntries[3].position.sectorOffset = 123;
     g_AssetCdEntries[3].size = 24;
+
+    ResetCalls();
+    s_availableRoom = 23;
+    Check(LoadAsset(3, destination) == 0 && s_hostLoads == 0,
+          "asset larger than the destination is rejected before I/O");
 
     ResetCalls();
     s_modResult = 20;
