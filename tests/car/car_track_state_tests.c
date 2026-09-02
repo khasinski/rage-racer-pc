@@ -142,7 +142,10 @@ static void Fold(FILE *out, const char *label, s32 result,
     }
 }
 
-static int CheckPlayerBoundaryKnockback(const CarTrackLimits *limits) {
+static int CheckPlayerBoundaryKnockback(const CarTrackLimits *limits,
+                                        s32 lateralOffset,
+                                        s32 expectedMode,
+                                        const char *edgeName) {
     GameCarRuntime *car = AsRivalCar(&g_PlayerCar);
     s32 startZ;
     s32 result;
@@ -150,16 +153,17 @@ static int CheckPlayerBoundaryKnockback(const CarTrackLimits *limits) {
     BuildTrack();
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     car->x = s_points[0].x;
-    car->z = s_points[0].z + 0x600;
+    car->z = s_points[0].z + lateralOffset;
     startZ = car->z;
     s_knockbacks = 0;
     s_lastKnockMode = 0;
 
     result = UpdateCarTrackState(car, 0, limits);
-    if (result != limits->rightKnockbackMode || s_knockbacks != 1 ||
-        s_lastKnockMode != limits->rightKnockbackMode || car->z == startZ) {
-        printf("FAIL player boundary: result=%d calls=%d mode=%d z=%d/%d\n",
-               result, s_knockbacks, s_lastKnockMode, startZ, car->z);
+    if (result != expectedMode || s_knockbacks != 1 ||
+        s_lastKnockMode != expectedMode || car->z == startZ) {
+        printf("FAIL player %s boundary: result=%d calls=%d "
+               "mode=%d z=%d/%d\n", edgeName, result, s_knockbacks,
+               s_lastKnockMode, startZ, car->z);
         return 1;
     }
     return 0;
@@ -256,7 +260,14 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (CheckPlayerBoundaryKnockback(&limits) != 0) return 1;
+    if (CheckPlayerBoundaryKnockback(&limits, -0x600,
+                                     limits.leftKnockbackMode,
+                                     "left") != 0 ||
+        CheckPlayerBoundaryKnockback(&limits, 0x600,
+                                     limits.rightKnockbackMode,
+                                     "right") != 0) {
+        return 1;
+    }
 
     memset(&car, 0, sizeof(car));
     car.x = 123;

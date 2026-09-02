@@ -66,6 +66,25 @@ static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
           car->velocityX, car->velocityZ);
 }
 
+static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
+                                     CarTrackWork *work,
+                                     s32 edgePenetration,
+                                     s32 knockbackMode) {
+    work->edgeOffset.vx = 0;
+    work->edgeOffset.vy = 0;
+    work->edgeOffset.vz = (s16)edgePenetration;
+    BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
+    ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
+                &work->edgeCorrection);
+    if (car == AsRivalCar(&g_PlayerCar)) {
+        SetCarKnockback(car, work->edgeCorrection.x,
+                        work->edgeCorrection.z, knockbackMode);
+    }
+    car->x -= work->edgeCorrection.x;
+    car->z -= work->edgeCorrection.z;
+    work->knockbackMode = knockbackMode;
+}
+
 /*
  * Work out where the track's edges are here, and hold the car inside them.
  *
@@ -94,42 +113,15 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
     work->rightHalfWidth = (s16)rightHalfWidth;
     leftLimit = work->leftHalfWidth + limits->leftInset;
     if (lateralOffset < -leftLimit) {
-        lateralOffset += leftLimit;
-        work->edgeOffset.vx = 0;
-        work->edgeOffset.vy = 0;
-        work->edgeOffset.vz = (s16)lateralOffset;
-        BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
-        ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
-                    &work->edgeCorrection);
-        if (car == AsRivalCar(&g_PlayerCar)) {
-            SetCarKnockback(car, work->edgeCorrection.x,
-                            work->edgeCorrection.z,
-                            limits->leftKnockbackMode);
-        }
-        car->x -= work->edgeCorrection.x;
-        car->z -= work->edgeCorrection.z;
-        lateralOffset = -work->leftHalfWidth - limits->leftInset;
-        work->knockbackMode = limits->leftKnockbackMode;
-        return lateralOffset;
+        ApplyTrackEdgeCorrection(car, work, lateralOffset + leftLimit,
+                                 limits->leftKnockbackMode);
+        return -leftLimit;
     }
     rightLimit = (s16)rightHalfWidth - limits->rightInset;
     if (rightLimit < lateralOffset) {
-        lateralOffset -= rightLimit;
-        work->edgeOffset.vx = 0;
-        work->edgeOffset.vy = 0;
-        work->edgeOffset.vz = (s16)lateralOffset;
-        BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
-        ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
-                    &work->edgeCorrection);
-        if (car == AsRivalCar(&g_PlayerCar)) {
-            SetCarKnockback(car, work->edgeCorrection.x,
-                            work->edgeCorrection.z,
-                            limits->rightKnockbackMode);
-        }
-        car->x -= work->edgeCorrection.x;
-        car->z -= work->edgeCorrection.z;
-        lateralOffset = work->rightHalfWidth - limits->rightInset;
-        work->knockbackMode = limits->rightKnockbackMode;
+        ApplyTrackEdgeCorrection(car, work, lateralOffset - rightLimit,
+                                 limits->rightKnockbackMode);
+        lateralOffset = rightLimit;
     }
     return lateralOffset;
 }
