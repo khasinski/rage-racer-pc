@@ -598,7 +598,7 @@ set_tests_properties(steer_to_track_line PROPERTIES LABELS functional)
 
 add_executable(car_motion_handlers_tests
     car_motion_handlers_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_motion_handlers.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_launch.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_airborne.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
