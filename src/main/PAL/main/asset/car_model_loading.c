@@ -14,6 +14,10 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
 }
 
 void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
+    if ((u32)slot >= CAR_ASSET_SLOT_COUNT) {
+        return;
+    }
+
     SetCarModelSlot(asset, slot);
     asset = g_CarModelSlots[slot];
     RegisterModelBank(asset->modelData.modelBank, slot);

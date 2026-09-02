@@ -20,7 +20,7 @@ GameFrameContext g_FrameContexts[2];
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
-CarModelAsset *g_CarModelSlots[2];
+CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 GameCdLoadEntry g_AssetCdEntries[135];
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;

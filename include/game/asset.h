@@ -231,6 +231,10 @@ static inline CarModelAsset *GetCarModelAsset(void *data) {
 
 extern CarModelAsset *g_CarModelAsset;
 
+enum {
+    CAR_ASSET_SLOT_COUNT = 2,
+};
+
 /* One VRAM upload record inside an image entry. UploadImageAsset walks the
  * outer entry chain; UploadImageEntry uploads its optional CLUT and pixels. */
 typedef struct GameImageBlock {
@@ -498,8 +502,8 @@ s32 GetCarAssetIndex(s32 model, s32 grade);
 extern s32 g_TerrainCellCount;
 extern RECT g_CarImageRect;
 struct CarImageData;
-extern struct CarImageData *g_CarImageSlots[];
-extern CarModelAsset *g_CarModelSlots[];
+extern struct CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
+extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 void LoadCarModel(s32);
 void LoadUpgradedCarModel(s32);

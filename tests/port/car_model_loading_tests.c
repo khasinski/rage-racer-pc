@@ -19,7 +19,7 @@ u8 *g_CarModelBuffer;
 u32 g_CarModelSlot;
 s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
-CarModelAsset *g_CarModelSlots[2];
+CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 TeamLogoSample *g_TeamLogoSampleData;
 
@@ -198,6 +198,22 @@ static void TestInvalidCarSkipsCustomPaint(void) {
           "invalid car index skips custom paint");
 }
 
+static void TestInvalidSlotSkipsInstallation(void) {
+    CarModelAsset model;
+
+    memset(&model, 0, sizeof(model));
+    s_registeredBank = NULL;
+    s_image = NULL;
+    s_color1Calls = 0;
+    s_color2Calls = 0;
+
+    InstallCarModelAsset(&model, CAR_ASSET_SLOT_COUNT, 0);
+
+    Check(s_registeredBank == NULL && s_image == NULL &&
+              s_color1Calls == 0 && s_color2Calls == 0,
+          "invalid model slot skips installation");
+}
+
 static void TestCarSelectAssetPhases(void) {
     static u8 storage[CAR_MODEL_BUFFER_SIZE + 512];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
@@ -290,6 +306,7 @@ int main(void) {
     TestRequests();
     TestModelVariantLoads();
     TestInvalidCarSkipsCustomPaint();
+    TestInvalidSlotSkipsInstallation();
     TestCarSelectAssetPhases();
 
     if (s_failures != 0) return 1;

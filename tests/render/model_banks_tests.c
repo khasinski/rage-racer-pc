@@ -28,8 +28,8 @@ CarEntry *g_CarTable = s_cars;
 u8 g_CarModelBaseIndex[2];
 u8 g_CarModelUnlockBase[2];
 Rect g_CarImageRect;
-CarImageData *g_CarImageSlots[2];
-CarModelAsset *g_CarModelSlots[2];
+CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
+CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 
 static s32 s_loadImageCalls;

@@ -4,10 +4,6 @@
 #include "game/car.h"
 #include "game/render.h"
 
-enum {
-    CAR_ASSET_SLOT_COUNT = 2,
-};
-
 static CarModelAsset s_NativeCarModelAssets[CAR_ASSET_SLOT_COUNT];
 static CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
 
