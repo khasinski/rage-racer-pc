@@ -69,6 +69,7 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
 static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
     GameCarDrive *drive = &car->drive;
     GameCarSpec *spec;
+    s32 gearRatio;
     s32 landingRpm;
     s32 offAxis;
 
@@ -76,6 +77,7 @@ static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
     if (spinMagnitude >= 0x1000) return;
 
     spec = g_CarSpec;
+    gearRatio = GetPositiveCarGearRatio(spec, drive->gear);
     drive->drivetrainTorque =
         (100 - (drive->gear - 1) * 4) * 10000 * car->speed / 100;
     drive->yawOffset = GetAngleDelta(car->headingAngle, car->bodyYaw);
@@ -89,13 +91,14 @@ static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
     drive->spinRate = 0;
 
     landingRpm = car->speed * 0xA0 / 1168 * 10000;
-    landingRpm /= spec->gearRatio[drive->gear];
+    landingRpm /= gearRatio;
     drive->jumpTimer = 0x14;
     drive->motionState = CAR_MOTION_AIRBORNE;
     g_ShiftTargetRpm = landingRpm;
     drive->shiftRpmDelta =
         (s16)(g_ShiftTargetRpm - (u16)drive->engineRpm);
-    drive->engineLoad = landingRpm * spec->gearLoad[drive->gear] / 0x20000;
+    drive->engineLoad =
+        landingRpm * GetCarGearLoad(spec, drive->gear) / 0x20000;
     if (drive->manual == 0)
         drive->engineLoad = drive->engineLoad * 985 / 1000;
     g_ShiftSoundLevel =

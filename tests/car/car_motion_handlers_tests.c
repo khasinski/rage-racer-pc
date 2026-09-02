@@ -173,6 +173,34 @@ static int CheckLaunchShiftSoundRange(GameCarSpec *spec) {
     return 0;
 }
 
+static int CheckSixthGearLaunchAssets(GameCarSpec *spec) {
+    PlayerCarRuntime car;
+    s32 expectedRpm;
+    s32 expectedLoad;
+
+    PrepareCar(&car, spec);
+    car.speed = 1168;
+    car.drive.gear = CAR_FORWARD_GEAR_COUNT;
+    car.drive.launchEnergy = 0;
+    spec->gearRatio[CAR_FORWARD_GEAR_COUNT] = 0;
+    spec->gearRatio[0] = 123;
+
+    expectedRpm = car.speed * 0xA0 / 1168 * 10000;
+    expectedLoad = expectedRpm * spec->gearRatio[0] / 0x20000;
+    expectedLoad = expectedLoad * 985 / 1000;
+
+    UpdateCarLaunch(&car);
+
+    if (g_ShiftTargetRpm != expectedRpm ||
+        car.drive.engineLoad != expectedLoad) {
+        printf("sixth-gear launch produced RPM/load %d/%d, expected %d/%d\n",
+               g_ShiftTargetRpm, car.drive.engineLoad,
+               expectedRpm, expectedLoad);
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
     /*
      * What the handlers did before they were touched. Run with a file name to
@@ -207,7 +235,8 @@ int main(int argc, char **argv) {
     g_CarSpec = &spec;
 
     if (CheckAirborneYawSymmetry(&spec) != 0 ||
-        CheckLaunchShiftSoundRange(&spec) != 0)
+        CheckLaunchShiftSoundRange(&spec) != 0 ||
+        CheckSixthGearLaunchAssets(&spec) != 0)
         return 1;
 
     for (s = 0; s < sizeof(spins) / sizeof(spins[0]); s++)
