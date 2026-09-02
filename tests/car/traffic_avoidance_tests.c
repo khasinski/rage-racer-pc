@@ -82,6 +82,44 @@ static int CheckContenderRanking(void) {
     return 0;
 }
 
+static int CheckDistantRivalSlowdown(void) {
+    static const struct {
+        s32 gap;
+        s16 speed;
+        s16 expectedLimit;
+    } cases[] = {
+        {0x27FF, 0x385, 1000},
+        {0x2800, 0x384, 1000},
+        {0x2800, 0x385, 850},
+        {0x3000, 0x500, 850},
+    };
+    size_t test;
+
+    for (test = 0; test < sizeof(cases) / sizeof(cases[0]); test++) {
+        GameCarRuntime *car = &g_Cars[1];
+        GameCarRuntime *rivalAhead = &g_Cars[0];
+
+        memset(g_Cars, 0, sizeof(g_Cars));
+        car->progressA = 0x1000;
+        car->progressB = 0x200;
+        rivalAhead->progressA = 0x1000 + cases[test].gap;
+        rivalAhead->progressB = 0x200;
+        rivalAhead->speed = cases[test].speed;
+        rivalAhead->accelerationLimit = 1000;
+        g_RankedCars[0] = rivalAhead;
+        g_RankedCars[1] = car;
+
+        SlowRivalAhead(car, 1);
+        if (rivalAhead->accelerationLimit != cases[test].expectedLimit) {
+            printf("slowdown case %lu produced limit %d, expected %d\n",
+                   (unsigned long)test, rivalAhead->accelerationLimit,
+                   cases[test].expectedLimit);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static void Fold(FILE *out, const char *label, const GameCarRuntime *car) {
     const GameCarAiBlock *state = GetCarAiBlock((GameCarRuntime *)car);
     char line[256];
@@ -210,7 +248,8 @@ int main(int argc, char **argv) {
     size_t l, o, v, c, s, a, m;
     int cases = 0;
 
-    if (CheckContenderRanking() != 0) return 1;
+    if (CheckContenderRanking() != 0 || CheckDistantRivalSlowdown() != 0)
+        return 1;
 
     if (argc > 1) {
         out = fopen(argv[1], "w");

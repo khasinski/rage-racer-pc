@@ -185,26 +185,13 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
 }
 
 void SlowRivalAhead(GameCarRuntime *car, s32 carIndex) {
-    GameCarRuntime *entry;
-    s32 pos0Base;
-    s32 pos0;
-    s32 pos1;
-    s32 value;
+    GameCarRuntime *rivalAhead = g_RankedCars[carIndex - 1];
+    s32 progress = car->progressA + car->progressB;
+    s32 progressAhead = rivalAhead->progressA + rivalAhead->progressB;
 
-    pos0Base = car->progressA;
-    entry = g_RankedCars[carIndex - 1];
-    pos0 = pos0Base + car->progressB;
-    pos1 = entry->progressA + entry->progressB;
-
-    if ((pos1 - pos0) < 0x2800) {
-        return;
-    }
-
-    if (entry->speed >= 0x385) {
-        value = entry->accelerationLimit;
-        value = ((value * 5) + ((value * 5) << 4)) / 100;
-        entry->accelerationLimit = value;
-    }
+    if (progressAhead - progress >= 0x2800 && rivalAhead->speed >= 0x385)
+        rivalAhead->accelerationLimit =
+            (s32)rivalAhead->accelerationLimit * 85 / 100;
 }
 
 /*
