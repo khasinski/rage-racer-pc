@@ -5,13 +5,10 @@
 #include "game/race.h"
 #include "game/replay_internal.h"
 
-enum {
-    GRAND_PRIX_FRAME_COUNT = 0x2EE,
-    TIME_ATTACK_FRAME_COUNT = 0x505,
-};
-
-static ReplayGrandPrixFrame s_GrandPrixFrames[GRAND_PRIX_FRAME_COUNT];
-static ReplayTimeAttackFrame s_TimeAttackFrames[TIME_ATTACK_FRAME_COUNT];
+static ReplayGrandPrixFrame
+    s_GrandPrixFrames[GRAND_PRIX_REPLAY_SAMPLE_COUNT];
+static ReplayTimeAttackFrame
+    s_TimeAttackFrames[TIME_ATTACK_REPLAY_SAMPLE_COUNT];
 
 s16 g_GrandPrixMode;
 ReplayGrandPrixFrame *g_ReplayFramesGp = s_GrandPrixFrames;
@@ -122,7 +119,7 @@ static void TestGrandPrixFrames(void) {
 
     player.x = 300;
     rival.x = 500;
-    ApplyReplayFrameAndTrackPoint(GRAND_PRIX_FRAME_COUNT * 2 - 1,
+    ApplyReplayFrameAndTrackPoint(GRAND_PRIX_REPLAY_SUBFRAME_COUNT - 1,
                                   &player, &rival);
     assert(player.x == 200);
     assert(rival.x == 450);
@@ -192,7 +189,7 @@ static void TestTimeAttackFrames(void) {
     assert(player.tiltCounter == 82);
 
     player.x = 200;
-    ApplyReplayFrameAndTrackPoint(TIME_ATTACK_FRAME_COUNT * 2 - 1,
+    ApplyReplayFrameAndTrackPoint(TIME_ATTACK_REPLAY_SUBFRAME_COUNT - 1,
                                   &player, &rival);
     assert(player.x == 140);
     assert(player.trackPointIndex == 71);

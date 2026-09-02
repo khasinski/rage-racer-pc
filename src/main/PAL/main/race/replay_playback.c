@@ -2,11 +2,6 @@
 #include "game/race.h"
 #include "game/replay_internal.h"
 
-enum {
-    GRAND_PRIX_REPLAY_FRAME_COUNT = 0x2EE,
-    TIME_ATTACK_REPLAY_FRAME_COUNT = 0x505,
-};
-
 static s32 ReplaySampleIndex(s32 subframe, s32 frameCount) {
     s32 index = subframe >> 1;
 
@@ -114,7 +109,7 @@ void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
     player->modelIndex = g_ReplayPlayerModel.model;
     if (g_GrandPrixMode != 0) {
         const s32 index = ReplaySampleIndex(
-            subframe, GRAND_PRIX_REPLAY_FRAME_COUNT);
+            subframe, GRAND_PRIX_REPLAY_SAMPLE_COUNT);
         const ReplayGrandPrixFrame *frame = &g_ReplayFramesGp[index];
 
         rival->modelIndex = g_ReplayRivalModel.model;
@@ -123,7 +118,7 @@ void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
         player->tiltCounter = frame->tiltCounter;
     } else {
         const s32 index = ReplaySampleIndex(
-            subframe, TIME_ATTACK_REPLAY_FRAME_COUNT);
+            subframe, TIME_ATTACK_REPLAY_SAMPLE_COUNT);
         const ReplayTimeAttackFrame *frame = &g_ReplayFramesTimeAttack[index];
 
         ApplyTimeAttackPlayer(frame, player, interpolate);
@@ -137,13 +132,13 @@ void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
 
     if (g_GrandPrixMode != 0) {
         const s32 index = ReplaySampleIndex(
-            subframe, GRAND_PRIX_REPLAY_FRAME_COUNT);
+            subframe, GRAND_PRIX_REPLAY_SAMPLE_COUNT);
 
         player->trackPointIndex = g_ReplayFramesGp[index].trackPointIndex0;
         rival->trackPointIndex = g_ReplayFramesGp[index].trackPointIndex1;
     } else {
         const s32 index = ReplaySampleIndex(
-            subframe, TIME_ATTACK_REPLAY_FRAME_COUNT);
+            subframe, TIME_ATTACK_REPLAY_SAMPLE_COUNT);
 
         player->trackPointIndex =
             g_ReplayFramesTimeAttack[index].trackPointIndex;

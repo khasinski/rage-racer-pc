@@ -13,13 +13,16 @@ typedef struct SpuTransferSampleBuffer {
 typedef union GameWorkBuffer {
     u8 bytes[0x8CA0];
     SpuTransferSampleBuffer spuTransfer;
-    ReplayGrandPrixFrame grandPrixReplay[0x2EE];
-    ReplayTimeAttackFrame timeAttackReplay[0x505];
+    ReplayGrandPrixFrame grandPrixReplay[GRAND_PRIX_REPLAY_SAMPLE_COUNT];
+    ReplayTimeAttackFrame timeAttackReplay[TIME_ATTACK_REPLAY_SAMPLE_COUNT];
 } GameWorkBuffer;
 
-_Static_assert(sizeof(ReplayGrandPrixFrame) * 0x2EE <= 0x8CA0,
+_Static_assert(sizeof(ReplayGrandPrixFrame) * GRAND_PRIX_REPLAY_SAMPLE_COUNT <=
+                   0x8CA0,
                "Grand Prix replay frames must fit the shared work arena");
-_Static_assert(sizeof(ReplayTimeAttackFrame) * 0x505 <= 0x8CA0,
+_Static_assert(sizeof(ReplayTimeAttackFrame) *
+                       TIME_ATTACK_REPLAY_SAMPLE_COUNT <=
+                   0x8CA0,
                "Time Attack replay frames must fit the shared work arena");
 
 extern GameWorkBuffer g_ReplayFrameBuffer;

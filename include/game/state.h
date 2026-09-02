@@ -215,7 +215,6 @@ void InitGeom(void);
 void InitPad(void *buf0, s32 len0, void *buf1, s32 len1);
 void InitRecordTables(void);
 s32 ResetGraph(s32 mode);
-void ResetReplayFrameCounts(void);
 void StepTrackTextureSwap(void);
 
 /* Declared identically by 5 translation units before this

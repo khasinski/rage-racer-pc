@@ -27,7 +27,9 @@ void ResetReplayFrameCounts(void) {
 
 void ResetReplayWriteCursor(void) {
     g_ReplayWriteCursor = 0;
-    g_ReplayFrameCount = g_GrandPrixMode != 0 ? 0x5DC : 0xA0A;
+    g_ReplayFrameCount = g_GrandPrixMode != 0
+                             ? GRAND_PRIX_REPLAY_SUBFRAME_COUNT
+                             : TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
     g_ReplayBufferWrapped = 0;
 }
 

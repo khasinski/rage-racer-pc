@@ -6,6 +6,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/replay_internal.h"
 #include "game/state.h"
 #include "psyq/kernel.h"
 #include "psyq/snd.h"

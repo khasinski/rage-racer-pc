@@ -48,12 +48,12 @@ static void TestReplayBufferReset(void) {
     g_ReplayBufferWrapped = 1;
     ResetReplayWriteCursor();
     assert(g_ReplayWriteCursor == 0);
-    assert(g_ReplayFrameCount == 0x5DC);
+    assert(g_ReplayFrameCount == GRAND_PRIX_REPLAY_SUBFRAME_COUNT);
     assert(g_ReplayBufferWrapped == 0);
 
     g_GrandPrixMode = 0;
     ResetReplayWriteCursor();
-    assert(g_ReplayFrameCount == 0xA0A);
+    assert(g_ReplayFrameCount == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
 }
 
 static void TestGrandPrixRecording(void) {
