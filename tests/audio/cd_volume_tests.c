@@ -75,7 +75,14 @@ int main(void) {
     CHECK(g_CdMixPreset == 0 && g_CdMixLL == 127U * 4096);
     SetCdMixPreset(9);
     CHECK(g_CdMixPreset == 1 && g_CdMixLL == 10U * 4096);
-    CHECK(s_fadeSteps == 11);
+
+    g_CdMixPreset = -100;
+    SetCdVolume(127);
+    CHECK(g_CdMixPreset == 0 && g_CdMixLL == 127U * 4096);
+    g_CdMixPreset = 100;
+    SetCdVolume(127);
+    CHECK(g_CdMixPreset == 1 && g_CdMixLL == 10U * 4096);
+    CHECK(s_fadeSteps == 13);
 
     puts("CD volume tests passed");
     return 0;

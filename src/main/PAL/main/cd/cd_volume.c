@@ -22,14 +22,23 @@ static s32 ClampCdVolumeSetting(s32 setting) {
     return setting > CD_VOLUME_SETTING_MAX ? CD_VOLUME_SETTING_MAX : setting;
 }
 
+static s32 ClampCdMixPreset(s32 preset) {
+    if (preset < 0) {
+        return 0;
+    }
+    return preset >= CD_MIX_PRESET_COUNT ? CD_MIX_PRESET_COUNT - 1 : preset;
+}
+
 static u32 ScaleCdMixLevel(u8 presetLevel, s32 volume) {
     return (presetLevel * volume / CD_VOLUME_MAX) << 12;
 }
 
 void SetCdVolume(s32 volume) {
-    const s32 presetOffset = g_CdMixPreset * CD_MIX_CHANNEL_COUNT;
+    s32 presetOffset;
 
     volume = ClampCdVolume(volume);
+    g_CdMixPreset = ClampCdMixPreset(g_CdMixPreset);
+    presetOffset = g_CdMixPreset * CD_MIX_CHANNEL_COUNT;
 
     g_CdVolume = volume;
     g_CdMixLL = g_CdMixFullLL =
@@ -50,11 +59,6 @@ void SetCdVolumeSetting(s32 level) {
 }
 
 void SetCdMixPreset(s32 preset) {
-    if (preset < 0) {
-        preset = 0;
-    } else if (preset >= CD_MIX_PRESET_COUNT) {
-        preset = CD_MIX_PRESET_COUNT - 1;
-    }
-    g_CdMixPreset = preset;
+    g_CdMixPreset = ClampCdMixPreset(preset);
     SetCdVolume(g_CdVolume);
 }

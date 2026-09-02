@@ -2,25 +2,23 @@
 #include "game/cd_internal.h"
 #include "psyq/cd.h"
 
-#define CD_TRACK_LEAD_IN_SECTORS 0x3C
+enum { CD_TRACK_LEAD_IN_SECTORS = 60 };
 
-void BuildCdTrackTable(void) {
-    CdlLOC toc[CD_TOC_CAPACITY];
-    s32 audioTrackCount = CdGetToc(toc);
-    s32 copiedTrackCount = audioTrackCount;
+static void CopyTocTrackLocations(CdlLOC *toc, s32 trackCount) {
     s32 index;
 
-    if (copiedTrackCount >= CD_TRACK_LOCATION_COUNT) {
-        copiedTrackCount = CD_TRACK_LOCATION_COUNT - 1;
+    if (trackCount >= CD_TRACK_LOCATION_COUNT) {
+        trackCount = CD_TRACK_LOCATION_COUNT - 1;
     }
-    if (copiedTrackCount > 0) {
-        for (index = 1; index <= copiedTrackCount; index++) {
-            CdlLOC *track = &g_CdTrackLocs[index];
-            CdIntToPos(CdPosToInt_Local(&toc[index]) +
-                           CD_TRACK_LEAD_IN_SECTORS,
-                       track);
-        }
+
+    for (index = 1; index <= trackCount; index++) {
+        CdIntToPos(CdPosToInt_Local(&toc[index]) + CD_TRACK_LEAD_IN_SECTORS,
+                   &g_CdTrackLocs[index]);
     }
+}
+
+static void FindFileBackedTrackLocations(void) {
+    s32 index;
 
     for (index = 0; index < CD_FILE_TRACK_COUNT; index++) {
         if (DsSearchFile(&g_CdSearchFile, g_CdAudioFileNames[index]) == NULL) {
@@ -28,6 +26,15 @@ void BuildCdTrackTable(void) {
         }
         g_CdBgmTrackLocs[index] = g_CdSearchFile.pos;
     }
+}
 
+void BuildCdTrackTable(void) {
+    CdlLOC toc[CD_TOC_CAPACITY];
+
+    CopyTocTrackLocations(toc, CdGetToc(toc));
+    FindFileBackedTrackLocations();
+
+    /* Preserved retail state. Despite its name this is the number of
+     * file-backed BGM slots, not the number returned by CdGetToc. */
     g_CdTocEntryCount = CD_FILE_TRACK_COUNT;
 }
