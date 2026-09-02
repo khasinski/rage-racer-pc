@@ -29,8 +29,8 @@ void ClearCarMotionState(GameCarRuntime *car) {
     car->verticalTargetY = 0;
 }
 
-void UpdateCarTiltCounter(GameCarRuntime *car) {
-    GameCarAiBlock *ai = GetCarAiBlock(car);
+void UpdateCarTiltCounter(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
 
     if (g_RacePhase < ACTIVE_RACE_PHASE) {
         car->tiltCounter = TILT_REST;
@@ -38,18 +38,18 @@ void UpdateCarTiltCounter(GameCarRuntime *car) {
     }
 
     if (car->verticalMotionState == 0) {
-        if (car->engineRpm >= g_CarSpec->redline &&
-            car->acceleratorInput >= PEDAL_ACTIVE_THRESHOLD &&
-            car->slideInput.halves.low == 0) {
+        if (drive->engineRpm >= g_CarSpec->redline &&
+            drive->acceleratorInput.value >= PEDAL_ACTIVE_THRESHOLD &&
+            drive->clutch == 0) {
             s32 tilt = (s16)((u16)car->tiltCounter - 4);
-            s32 minimum = -(9 - car->currentGear) * 5;
+            s32 minimum = -(9 - drive->manual) * 5;
 
             car->tiltCounter = (s16)(tilt < minimum ? minimum : tilt);
             return;
         }
 
-        if ((ai->brakeInput >= PEDAL_ACTIVE_THRESHOLD ||
-             ai->slideInput.halves.low > 0) &&
+        if ((drive->brakeInput >= PEDAL_ACTIVE_THRESHOLD ||
+             drive->clutch > 0) &&
             car->speed >= TILT_BRAKE_MIN_SPEED) {
             s32 tilt = (s16)((u16)car->tiltCounter + 2);
 

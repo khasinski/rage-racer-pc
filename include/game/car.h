@@ -856,7 +856,7 @@ void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop(GameCarRuntime *car);
 void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
-void UpdateCarTiltCounter(GameCarRuntime *car);
+void UpdateCarTiltCounter(PlayerCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);

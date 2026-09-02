@@ -109,7 +109,7 @@ void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight) {
     Step('P');
 }
 
-void UpdateCarTiltCounter(GameCarRuntime *car) {
+void UpdateCarTiltCounter(PlayerCarRuntime *car) {
     (void)car;
     Step('Q');
 }

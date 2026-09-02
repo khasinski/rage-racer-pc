@@ -18,12 +18,12 @@ s16 g_RacePhase;
 
 int main(void) {
     GameCarSpec spec;
-    GameCarRuntime car;
+    PlayerCarRuntime car;
 
     memset(&spec, 0, sizeof(spec));
     memset(&car, 0x5A, sizeof(car));
     g_CarSpec = &spec;
-    ClearCarMotionState(&car);
+    ClearCarMotionState(GetPlayerCarRuntime(&car));
     CHECK(car.collisionFlag == 0 && car.motionMode == 0);
     CHECK(car.motionActive == 0 && car.motionTimer == 0);
     CHECK(car.velocityX == 0 && car.velocityZ == 0);
@@ -39,29 +39,35 @@ int main(void) {
     g_RacePhase = 2;
     spec.redline = 1000;
     car.verticalMotionState = 0;
-    car.engineRpm = 1000;
-    car.acceleratorInput = 0x81;
-    car.slideInput.halves.low = 0;
-    car.currentGear = 3;
-    car.tiltCounter = -29;
+    car.drive.engineRpm = 1000;
+    car.drive.acceleratorInput.value = 0x81;
+    car.drive.clutch = 0;
+    car.drive.manual = 1;
+    car.tiltCounter = -39;
     UpdateCarTiltCounter(&car);
-    CHECK(car.tiltCounter == -30);
+    CHECK(car.tiltCounter == -40);
 
-    car.engineRpm = 0;
+    car.drive.engineRpm = 0;
     car.speed = 0x51;
     car.tiltCounter = 7;
-    GetCarAiBlock(&car)->brakeInput = 0x81;
+    car.drive.brakeInput = 0x81;
     UpdateCarTiltCounter(&car);
     CHECK(car.tiltCounter == 8);
 
-    GetCarAiBlock(&car)->brakeInput = 0;
+    car.drive.brakeInput = 0;
+    car.drive.clutch = 1;
+    car.tiltCounter = 7;
+    UpdateCarTiltCounter(&car);
+    CHECK(car.tiltCounter == 8);
+
+    car.drive.clutch = 0;
     car.tiltCounter = -7;
     UpdateCarTiltCounter(&car);
     CHECK(car.tiltCounter == -5);
 
     car.verticalMotionState = 1;
-    car.engineRpm = 1000;
-    car.acceleratorInput = 0x81;
+    car.drive.engineRpm = 1000;
+    car.drive.acceleratorInput.value = 0x81;
     car.tiltCounter = 12;
     UpdateCarTiltCounter(&car);
     CHECK(car.tiltCounter == 9);
