@@ -5,10 +5,17 @@
 
 #include <string.h>
 
-void ResetProgressSlot(CarEntry *slot, GameRaceProgress *progress) {
-    memcpy(slot, g_SaveDefaults, sizeof(g_SaveDefaults));
+enum {
+    DEFAULT_PLAYER_CAR_INDEX = 3,
+    DEFAULT_RETRIES_REMAINING = 5,
+    DEFAULT_BGM_TRACK_COUNT = 9,
+    DEFAULT_AUDIO_SETTING = 0xF,
+};
 
-    progress->carIndex = 3;
+void ResetProgressSlot(CarEntry *cars, GameRaceProgress *progress) {
+    memcpy(cars, g_SaveDefaults, sizeof(g_SaveDefaults));
+
+    progress->carIndex = DEFAULT_PLAYER_CAR_INDEX;
     progress->course = 0;
     progress->classIndex = 0;
     progress->maxClassReached = -1;
@@ -17,19 +24,19 @@ void ResetProgressSlot(CarEntry *slot, GameRaceProgress *progress) {
 
 static void ResetCourseProgressState(
     CourseProgressState *progress,
-    s32 mode) {
-    progress->retriesRemaining = 5;
+    s32 classIndex) {
+    progress->retriesRemaining = DEFAULT_RETRIES_REMAINING;
     memset(progress->bestPlace, 0, sizeof(progress->bestPlace));
 
-    if (mode < 2) {
+    if (classIndex < 2) {
         progress->bestPlace[3] = 0xFF;
     }
 
     progress->unlockPending = 0;
 }
 
-void ResetCourseProgress(s32 mode) {
-    ResetCourseProgressState(g_CourseProgress, mode);
+void ResetCourseProgress(s32 classIndex) {
+    ResetCourseProgressState(g_CourseProgress, classIndex);
 }
 
 void InitSaveDefaults(void) {
@@ -47,7 +54,7 @@ void InitSaveDefaults(void) {
     }
 
     g_TimeAttackSave.course = 0;
-    g_TimeAttackSave.carIndex = 3;
+    g_TimeAttackSave.carIndex = DEFAULT_PLAYER_CAR_INDEX;
     g_TimeAttackSave.classIndex = 0;
     g_TimeAttackSave.maxClassReached = 0;
     g_TimeAttackSave.money.value = 0;
@@ -60,11 +67,11 @@ void InitSaveDefaults(void) {
 
     g_MaxClassReached[1] = 0;
     g_MaxClassReached[0] = 0;
-    g_BgmTrackCount = 9;
+    g_BgmTrackCount = DEFAULT_BGM_TRACK_COUNT;
     g_BgmSelection = 0;
     ShuffleBgmOrder();
-    g_BgmVolumeSetting = 0xF;
-    g_SfxVolumeSetting = 0xF;
+    g_BgmVolumeSetting = DEFAULT_AUDIO_SETTING;
+    g_SfxVolumeSetting = DEFAULT_AUDIO_SETTING;
     g_MonoOutput = 0;
     ApplyAudioSettings();
 }

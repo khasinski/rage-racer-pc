@@ -122,8 +122,8 @@ extern s32 g_AnimTimer;
  * once, from InitSubsystems.
  */
 void InitSaveDefaults(void);
-/* Reset the current g_CourseProgress block (arg < 2 also marks slot 3 free). */
-void ResetCourseProgress(s32 mode);
+/* Reset the current g_CourseProgress block (class < 2 marks slot 3 unused). */
+void ResetCourseProgress(s32 classIndex);
 
 /* Declared identically by 42 translation units before this
  * header carried them. */

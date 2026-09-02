@@ -84,7 +84,7 @@ static int TestAllDefaults(void) {
     CHECK(memcmp(g_TimeAttackCars, g_SaveDefaults,
                  sizeof(g_SaveDefaults)) == 0);
     CHECK(g_ClassRecords[0].place == 0 && g_ClassRecords[0].clears == 0);
-    for (i = 1; i < 11; i++) {
+    for (i = 1; i < CLASS_RECORD_COUNT; i++) {
         CHECK(g_ClassRecords[i].place == -1);
         CHECK(g_ClassRecords[i].clears == 0);
     }
