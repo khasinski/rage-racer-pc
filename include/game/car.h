@@ -783,18 +783,6 @@ void UpdateRivalRubberBand(void);
 /* Declared identically by 77 translation units before this
  * header carried them. */
 
-extern char g_MsgInitCar[];
-extern char g_MsgHTbl[];
-extern char g_MsgInit0[];
-extern char g_MsgInit1[];
-extern char g_MsgInit1b[];
-extern char g_FmtDecimalLine[];
-extern char g_MsgInit2[];
-extern char g_MsgInit4[];
-extern char g_MsgInit5[];
-extern char g_MsgInit6[];
-extern char g_FmtLongLine[];
-extern char g_MsgInitOk[];
 extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;

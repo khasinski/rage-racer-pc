@@ -2,8 +2,6 @@
 #include "game/car_internal.h"
 #include "game/player_car_internal.h"
 
-#include <stdio.h>
-
 static s32 FindFirstPositiveBand(const s32 *values, s32 count,
                                  s32 speedThreshold) {
     s32 index;
@@ -52,8 +50,6 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     g_RedlineToPeakRpmHalf = ((s16)g_PeakOutputRpm - spec->redline) / 2;
     g_PeakToRevLimitRpmHalf = (spec->revLimit - (s16)g_PeakOutputRpm) / 2;
 
-    printf("%s", g_MsgInit1b);
-    printf(g_FmtDecimalLine, spec->topGear);
     for (gear = 0; gear < 6; gear++) {
         s32 gearRatio = GetPositiveCarGearRatio(spec, gear + 1);
         s32 scaledGearRatio = gearRatio * 0x490 / 160;
@@ -73,8 +69,6 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     if (spec->baseSteeringGrip < 2) {
         spec->baseSteeringGrip = 1;
     }
-    printf("%s", g_MsgInit2);
-
     for (index = 0, speedThreshold = 0x3E8;
          index < CAR_TORQUE_BAND_COUNT;
          index++, speedThreshold += 0x3E8) {
@@ -86,7 +80,6 @@ void PrepareCarPerformance(GameCarDrive *drive) {
         g_TorqueLossBandEnd[index] = (s16)(lossBand >= 0 ? lossBand : 0);
     }
 
-    printf("%s", g_MsgInit4);
     drive->launchEnergyThreshold =
         g_LaunchEnergyThresholds[
             NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex)] *

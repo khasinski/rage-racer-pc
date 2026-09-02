@@ -7,8 +7,6 @@
 #include "game/race.h"
 #include "game/track.h"
 
-#include <stdio.h>
-
 static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
     car->modelIndex = 0x17;
     car->drive.brakePos = 0;
@@ -113,7 +111,6 @@ static void ResetPlayerDrivingGlobals(PlayerCarRuntime *car) {
 }
 
 void InitPlayerCar(PlayerCarRuntime *car) {
-    printf("%s", g_MsgInitCar);
     g_RacePhase = 2;
     g_RaceSeries = g_GrandPrixSeries & 1;
     BuildTachoNeedleQuad();
@@ -124,17 +121,10 @@ void InitPlayerCar(PlayerCarRuntime *car) {
     g_RoadGrade = 0;
 
     ResetPlayerCarRuntime(car);
-    printf("%s", g_MsgHTbl);
     PlacePlayerCarOnGrid(car);
     InitializePlayerDrive(&car->drive);
     g_ShiftTargetRpm = 0;
 
-    printf("%s", g_MsgInit0);
-    printf("%s", g_MsgInit1);
     PrepareCarPerformance(&car->drive);
-    printf("%s", g_MsgInit5);
     ResetPlayerDrivingGlobals(car);
-    printf("%s", g_MsgInit6);
-    printf(g_FmtLongLine, car->progressA);
-    printf("%s", g_MsgInitOk);
 }
