@@ -1,6 +1,8 @@
 #ifndef GAME_TRACK_CAMERA_INTERNAL_H
 #define GAME_TRACK_CAMERA_INTERNAL_H
 
+#include <stddef.h>
+
 #include "common.h"
 #include "game/vector.h"
 

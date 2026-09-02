@@ -1,6 +1,8 @@
 #ifndef GAME_AUDIO_H
 #define GAME_AUDIO_H
 
+#include <stddef.h>
+
 #include "common.h"
 
 typedef struct EffectCueProgram {
