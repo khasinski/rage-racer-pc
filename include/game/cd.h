@@ -125,7 +125,6 @@ extern u8 g_CdLocResult[8];
 extern u8 g_CdMixPresets[];
 extern u8 g_CdModeParam;
 extern struct CdlFILE g_CdSearchFile;
-extern s32 g_CdTocEntryCount;
 extern struct CdlLOC g_CdTrackElapsedLoc;
 
 void CdMix(u8* vol);

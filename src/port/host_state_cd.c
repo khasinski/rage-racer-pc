@@ -35,4 +35,3 @@ u8 g_CdVolume;
 CdlFILE g_CdSearchFile;
 u8 g_CdCurrentTrack;
 s32 g_CdFadeFrames;
-s32 g_CdTocEntryCount;

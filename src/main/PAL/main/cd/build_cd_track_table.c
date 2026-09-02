@@ -33,8 +33,4 @@ void BuildCdTrackTable(void) {
 
     CopyTocTrackLocations(toc, CdGetToc(toc));
     FindFileBackedTrackLocations();
-
-    /* Preserved retail state. Despite its name this is the number of
-     * file-backed BGM slots, not the number returned by CdGetToc. */
-    g_CdTocEntryCount = CD_FILE_TRACK_COUNT;
 }

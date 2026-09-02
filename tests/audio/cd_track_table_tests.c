@@ -9,7 +9,6 @@ CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 static CdlLOC s_bgmTracks[CD_FILE_TRACK_COUNT];
 CdlLOC *g_CdBgmTrackLocs = s_bgmTracks;
 CdlFILE g_CdSearchFile;
-s32 g_CdTocEntryCount;
 char *g_CdAudioFileNames[CD_FILE_TRACK_COUNT];
 
 static s32 s_searchCount;
@@ -67,7 +66,6 @@ int main(void) {
     CHECK(s_bgmTracks[1].minute == 2);
     CHECK(s_bgmTracks[2].minute == 3);
     CHECK(s_bgmTracks[3].minute == 0);
-    CHECK(g_CdTocEntryCount == 16);
 
     memset(g_CdTrackLocs, 0, sizeof(g_CdTrackLocs));
     s_searchCount = 0;
