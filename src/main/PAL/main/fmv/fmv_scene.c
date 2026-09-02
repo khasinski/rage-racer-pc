@@ -6,16 +6,19 @@
 #include "game/cd.h"
 #include "game/audio.h"
 
+enum {
+    FMV_SCENE_ID = 5,
+};
+
 void BeginFmv(s32 returnScene) {
     CloseLoadedAudioSlots();
     ResetCdAudioState();
     g_FmvState = FMV_PLAYBACK_START;
     g_StreamReturnScene = returnScene;
-    g_SceneId = 5;
-    CdSync(0, 0);
-    CdControl(9, 0, 0);
+    g_SceneId = FMV_SCENE_ID;
+    CdSync(0, NULL);
+    CdControl(CD_DRIVE_PAUSE, NULL, NULL);
 }
-
 
 void UpdateFmv(void) {
     switch (g_FmvState) {
