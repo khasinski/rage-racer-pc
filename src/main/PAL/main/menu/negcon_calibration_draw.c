@@ -5,8 +5,6 @@
 #include "game/input_internal.h"
 
 enum {
-    NEGCON_CALIBRATION_MIN = 0,
-    NEGCON_CALIBRATION_MAX = 3,
     NEGCON_GAUGE_CENTER_Y = 230,
 };
 
@@ -21,9 +19,11 @@ void DrawNegconSteerPlayScreen(void) {
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(
-        ot, prim, 0x28, 0xE0, g_NegconSteerPlay != NEGCON_CALIBRATION_MIN);
+        ot, prim, 0x28, 0xE0,
+        g_NegconSteerPlay != NEGCON_CALIBRATION_FIRST);
     prim = DrawRightArrow(
-        ot, prim, 0x108, 0xE0, g_NegconSteerPlay != NEGCON_CALIBRATION_MAX);
+        ot, prim, 0x108, 0xE0,
+        g_NegconSteerPlay != NEGCON_CALIBRATION_LAST);
     prim = GameQueueSpriteTrans(
         ot, prim, 0x70, 0x30, 0xC, 0x18, 0x8C, 0x18, 0x7F81);
     prim = GameQueueSpriteTrans(
@@ -57,10 +57,12 @@ void DrawNegconMaxTwistScreen(void) {
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(
-        ot, prim, 0x28, 0xE0, g_NegconMaxTwist != NEGCON_CALIBRATION_MIN);
+        ot, prim, 0x28, 0xE0,
+        g_NegconMaxTwist != NEGCON_CALIBRATION_FIRST);
     prim = DrawRightArrow(
-        ot, prim, 0x108, 0xE0, g_NegconMaxTwist != NEGCON_CALIBRATION_MAX);
-    if (g_NegconMaxTwist == NEGCON_CALIBRATION_MAX) {
+        ot, prim, 0x108, 0xE0,
+        g_NegconMaxTwist != NEGCON_CALIBRATION_LAST);
+    if (g_NegconMaxTwist == NEGCON_CALIBRATION_LAST) {
         gaugeXOffset = 0;
         gaugeWidth = 0x24;
     } else {

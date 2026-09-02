@@ -76,6 +76,21 @@ static void NormalizeRaceRecords(
     }
 }
 
+static void NormalizeCourseProgress(CourseProgressState *progress) {
+    s32 course;
+
+    for (course = 0; course <= COURSE_LONG_SLOT; course++) {
+        u8 place = progress->bestPlace[course];
+
+        if (place > 3 && place != 0xFF) {
+            progress->bestPlace[course] = 0;
+        }
+    }
+    progress->unlockPending = progress->unlockPending != 0;
+    progress->retriesRemaining = (s16)ClampSaveValue(
+        progress->retriesRemaining, 0, 5);
+}
+
 s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     u32 checksum = CalculateSaveBlockChecksum(block);
     s32 i;
@@ -89,11 +104,13 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     g_NegconMappingIndex =
         ClampControllerMappingIndex(block->negconMappingIndex);
     g_NegconSteerNeutral = block->negconSteerNeutral;
-    g_NegconSteerPlay = block->negconSteerPlay;
+    g_NegconSteerPlay =
+        ClampNegconCalibrationValue(block->negconSteerPlay);
     g_NegconNeutralI = block->negconNeutralI;
     g_NegconNeutralII = block->negconNeutralII;
     g_NegconNeutralL = block->negconNeutralL;
-    g_NegconMaxTwist = block->negconMaxTwist;
+    g_NegconMaxTwist =
+        ClampNegconCalibrationValue(block->negconMaxTwist);
 
     LoadRaceProgress(&g_GrandPrixSave, &block->grandPrixProgress);
     LoadRaceProgress(&g_ExtraGrandPrixSave, &block->extraGrandPrixProgress);
@@ -115,8 +132,11 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     }
 
     for (i = 0; i < CLASS_RECORD_COUNT; i++) {
-        g_ClassRecords[i].place = block->classRecords[i].grade;
-        g_ClassRecords[i].clears = block->classRecords[i].clears;
+        s16 place = (s16)block->classRecords[i].grade;
+
+        g_ClassRecords[i].place = (s16)ClampSaveValue(place, -1, 3);
+        g_ClassRecords[i].clears = (u16)ClampSaveValue(
+            block->classRecords[i].clears, 0, 99);
     }
 
     memcpy(g_TeamLogoClut, block->teamLogoClut, sizeof(block->teamLogoClut));
@@ -144,6 +164,8 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     memcpy(&g_ExtraGrandPrixCourseProgress,
            block->extraGrandPrixCourseProgress,
            sizeof(g_ExtraGrandPrixCourseProgress));
+    NormalizeCourseProgress(&g_GrandPrixCourseProgress);
+    NormalizeCourseProgress(&g_ExtraGrandPrixCourseProgress);
 
     LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
     ApplyAudioSettings();

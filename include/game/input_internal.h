@@ -38,8 +38,17 @@ extern NegconCalibrationValue g_NegconNeutralI;
 extern NegconCalibrationValue g_NegconNeutralII;
 extern NegconCalibrationValue g_NegconNeutralL;
 enum {
-    NEGCON_STEER_RANGE_COUNT = 4,
+    NEGCON_CALIBRATION_FIRST = 0,
+    NEGCON_CALIBRATION_COUNT = 4,
+    NEGCON_CALIBRATION_LAST = NEGCON_CALIBRATION_COUNT - 1,
+    NEGCON_STEER_RANGE_COUNT = NEGCON_CALIBRATION_COUNT,
 };
+
+static inline NegconCalibrationValue ClampNegconCalibrationValue(s32 value) {
+    if (value < NEGCON_CALIBRATION_FIRST) return NEGCON_CALIBRATION_FIRST;
+    if (value > NEGCON_CALIBRATION_LAST) return NEGCON_CALIBRATION_LAST;
+    return (NegconCalibrationValue)value;
+}
 extern s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
 
 /* Reset controller-screen animation and retain both mapping selections so

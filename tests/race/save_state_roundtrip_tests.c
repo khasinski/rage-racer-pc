@@ -45,11 +45,11 @@ static void SetRepresentativeState(void) {
     g_PadMappingIndex = 3;
     g_NegconMappingIndex = 4;
     g_NegconSteerNeutral = 101;
-    g_NegconSteerPlay = 202;
+    g_NegconSteerPlay = 2;
     g_NegconNeutralI = 303;
     g_NegconNeutralII = 404;
     g_NegconNeutralL = 505;
-    g_NegconMaxTwist = 606;
+    g_NegconMaxTwist = 3;
 
     g_GrandPrixSave.course = 2;
     g_GrandPrixSave.carIndex = 7;
@@ -68,7 +68,7 @@ static void SetRepresentativeState(void) {
     g_GrandPrixCars[4].paintColor1 = 6;
     g_GrandPrixCars[4].paintColor2 = 7;
     g_GrandPrixCars[4].enabled = 1;
-    g_ClassRecords[2].place = 4;
+    g_ClassRecords[2].place = 3;
     g_ClassRecords[2].clears = 12;
 
     for (series = 0; series < RECORD_SERIES_COUNT; series++) {
@@ -216,6 +216,8 @@ int main(void) {
     outOfRange = saved;
     outOfRange.padMappingIndex = 0xFF;
     outOfRange.negconMappingIndex = 0xFE;
+    outOfRange.negconSteerPlay = 0xFF;
+    outOfRange.negconMaxTwist = 0xFF;
     outOfRange.grandPrixProgress.course = 99;
     outOfRange.grandPrixProgress.carIndex = -20;
     outOfRange.grandPrixProgress.classIndex = 99;
@@ -235,10 +237,16 @@ int main(void) {
     memset(outOfRange.timeRecords[0][0][0].driverName, 'A',
            sizeof(outOfRange.timeRecords[0][0][0].driverName));
     outOfRange.timeRecords[0][0][0].carIndex = 100;
+    outOfRange.classRecords[0].grade = 0xFFFF;
+    outOfRange.classRecords[0].clears = 0xFFFF;
+    memset(outOfRange.grandPrixCourseProgress, 0xFF,
+           sizeof(outOfRange.grandPrixCourseProgress));
     outOfRange.checksum = CalculateSaveBlockChecksum(&outOfRange);
     CHECK(LoadSaveStateBlock(&outOfRange) == 1);
     CHECK(g_PadMappingIndex == CONTROLLER_MAPPING_LAST);
     CHECK(g_NegconMappingIndex == CONTROLLER_MAPPING_LAST);
+    CHECK(g_NegconSteerPlay == NEGCON_CALIBRATION_LAST);
+    CHECK(g_NegconMaxTwist == NEGCON_CALIBRATION_LAST);
     CHECK(s_loadedPadMapping == CONTROLLER_MAPPING_LAST);
     CHECK(s_loadedNegconMapping == CONTROLLER_MAPPING_LAST);
     CHECK(g_GrandPrixSave.course == COURSE_LONG_SLOT);
@@ -259,6 +267,11 @@ int main(void) {
     CHECK(g_RankingRecords[0][0][0].carIndex == 0);
     CHECK(memcmp(g_TimeRecords[0][0][0].driverName, "AAAAAA\0\0", 8) == 0);
     CHECK(g_TimeRecords[0][0][0].carIndex == GAME_CAR_COUNT - 1);
+    CHECK(g_ClassRecords[0].place == -1);
+    CHECK(g_ClassRecords[0].clears == 99);
+    CHECK(g_GrandPrixCourseProgress.bestPlace[0] == 0xFF);
+    CHECK(g_GrandPrixCourseProgress.unlockPending == 1);
+    CHECK(g_GrandPrixCourseProgress.retriesRemaining == 0);
 
     puts("save state blocks are deterministic and survive a full round trip");
     return 0;

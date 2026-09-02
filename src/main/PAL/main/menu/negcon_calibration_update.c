@@ -5,17 +5,15 @@
 #include "game/input_internal.h"
 
 enum {
-    NEGCON_CALIBRATION_MIN = 0,
-    NEGCON_CALIBRATION_MAX = 3,
     CONTROLLER_SCENE_ANGLE_X = -896,
 };
 
 static void AdjustCalibrationValue(NegconCalibrationValue *value) {
-    if ((g_PadPressed & PAD_LEFT) && *value > NEGCON_CALIBRATION_MIN) {
+    if ((g_PadPressed & PAD_LEFT) && *value > NEGCON_CALIBRATION_FIRST) {
         PlaySoundCue(8);
         (*value)--;
     }
-    if ((g_PadPressed & PAD_RIGHT) && *value < NEGCON_CALIBRATION_MAX) {
+    if ((g_PadPressed & PAD_RIGHT) && *value < NEGCON_CALIBRATION_LAST) {
         PlaySoundCue(8);
         (*value)++;
     }
