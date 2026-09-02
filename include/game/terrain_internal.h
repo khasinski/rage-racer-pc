@@ -17,6 +17,9 @@ typedef struct SkyTileUV {
     SkyUV corner[4];
 } SkyTileUV;
 
-extern SkyTileUV g_SkyTileUV[];
+enum {
+    SKY_TILE_COUNT = 8,
+};
+extern SkyTileUV g_SkyTileUV[SKY_TILE_COUNT];
 
 #endif

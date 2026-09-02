@@ -40,6 +40,14 @@
 
 #include "common.h"
 
+/* Unnamed retail words that followed the eight sky UV records. The final two
+ * words look like PSX addresses, not texture coordinates. */
+unsigned char g_UnreadSkyTileTrailer[24] __attribute__((aligned(16))) = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0x40, 0x16, 0x01, 0x80, 0x2C, 0x16, 0x01, 0x80,
+};
+
 unsigned char g_NegconSteerPlayUvQuad[8] __attribute__((aligned(16))) = {0x40,0x10,0x50,0x10,0x40,0x20,0x50,0x20};
 unsigned char g_NegconMaxTwistUvQuad[8] __attribute__((aligned(16))) = {0x38,0x60,0x38,0x70,0x58,0x70,0x58,0x60};
 unsigned char g_MsgNowLoading[32] __attribute__((aligned(16))) = "Now Loading [%s]->[0x%08x] ... ";

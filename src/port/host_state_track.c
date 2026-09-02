@@ -56,6 +56,20 @@ typedef struct StaticSceneryState {
 typedef struct ShuttlePath {
     Vec4 endpoint[2];
 } ShuttlePath;
+typedef union SkyUV {
+    struct {
+        u8 u;
+        u8 v;
+    } bytes;
+    u16 packed;
+} SkyUV;
+typedef struct SkyTileUV {
+    SkyUV corner[4];
+} SkyTileUV;
+
+enum {
+    SKY_TILE_COUNT = 8,
+};
 
 StartGridSceneryStep g_StartGridSceneryStep[2]
     __attribute__((aligned(16))) = {
@@ -127,7 +141,26 @@ s16 g_SkyTileMap[5][16] __attribute__((aligned(16))) = {
 };
 _Static_assert(sizeof(g_SkyTileMap) == 160,
                "sky tile map must preserve the retail data block");
-unsigned char g_SkyTileUV[88] __attribute__((aligned(16))) = {0x00,0x00,0x40,0x00,0x00,0x7f,0x40,0x7f,0x40,0x00,0x80,0x00,0x40,0x7f,0x80,0x7f,0x80,0x00,0xc0,0x00,0x80,0x7f,0xc0,0x7f,0xc0,0x00,0xff,0x00,0xc0,0x7f,0xff,0x7f,0x00,0x80,0x40,0x80,0x00,0xff,0x40,0xff,0x40,0x80,0x80,0x80,0x40,0xff,0x80,0xff,0x80,0x80,0xc0,0x80,0x80,0xff,0xc0,0xff,0xc0,0x80,0xff,0x80,0xc0,0xff,0xff,0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x40,0x16,0x01,0x80,0x2c,0x16,0x01,0x80};
+SkyTileUV g_SkyTileUV[SKY_TILE_COUNT] __attribute__((aligned(16))) = {
+    {{{.bytes = {0, 0}}, {.bytes = {64, 0}},
+      {.bytes = {0, 127}}, {.bytes = {64, 127}}}},
+    {{{.bytes = {64, 0}}, {.bytes = {128, 0}},
+      {.bytes = {64, 127}}, {.bytes = {128, 127}}}},
+    {{{.bytes = {128, 0}}, {.bytes = {192, 0}},
+      {.bytes = {128, 127}}, {.bytes = {192, 127}}}},
+    {{{.bytes = {192, 0}}, {.bytes = {255, 0}},
+      {.bytes = {192, 127}}, {.bytes = {255, 127}}}},
+    {{{.bytes = {0, 128}}, {.bytes = {64, 128}},
+      {.bytes = {0, 255}}, {.bytes = {64, 255}}}},
+    {{{.bytes = {64, 128}}, {.bytes = {128, 128}},
+      {.bytes = {64, 255}}, {.bytes = {128, 255}}}},
+    {{{.bytes = {128, 128}}, {.bytes = {192, 128}},
+      {.bytes = {128, 255}}, {.bytes = {192, 255}}}},
+    {{{.bytes = {192, 128}}, {.bytes = {255, 128}},
+      {.bytes = {192, 255}}, {.bytes = {255, 255}}}},
+};
+_Static_assert(sizeof(g_SkyTileUV) == 64,
+               "sky UV records must contain exactly eight tiles");
 s32 g_ChaseCameraPreset;
 s32 g_OrbitCameraYaw;
 s32 g_OrbitCameraDistance = 330;
