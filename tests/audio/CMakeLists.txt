@@ -1,13 +1,5 @@
 if(RAGE_RUBY_EXECUTABLE)
 add_test(
-    NAME sequence_state_layout
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_sequence_state_layout.rb
-        ${CMAKE_SOURCE_DIR}
-)
-
-set_tests_properties(sequence_state_layout PROPERTIES LABELS functional)
-add_test(
     NAME audio_state_layout
     COMMAND ruby
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb

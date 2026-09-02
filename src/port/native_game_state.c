@@ -47,7 +47,7 @@ GameRaceProgress g_ExtraGrandPrixSave;
 GameRaceProgress g_TimeAttackSave;
 SeqStruct g_SndTableArea[2];
 
-void *GetSndTableArea(void) {
+struct SeqStruct *GetSndTableArea(void) {
     return g_SndTableArea;
 }
 

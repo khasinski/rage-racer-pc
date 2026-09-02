@@ -36,7 +36,9 @@ static s32 s_reservedVoiceCalls;
 static s32 s_sequenceInitCalls;
 static s32 s_failures;
 
-void *GetSndTableArea(void) { return s_tableArea; }
+struct SeqStruct *GetSndTableArea(void) {
+    return (struct SeqStruct *)s_tableArea;
+}
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
     (void)tone;
     (void)vabSlot;
