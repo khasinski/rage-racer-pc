@@ -831,6 +831,25 @@ endif()
 add_test(NAME record_name_entry COMMAND record_name_entry_tests)
 set_tests_properties(record_name_entry PROPERTIES LABELS unit)
 
+add_executable(record_entry_scene_tests
+    record_entry_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/record_entry.c)
+target_include_directories(record_entry_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(record_entry_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(record_entry_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(record_entry_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME record_entry_scene COMMAND record_entry_scene_tests)
+set_tests_properties(record_entry_scene PROPERTIES LABELS functional)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME scenario_control

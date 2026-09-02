@@ -25,6 +25,8 @@ void FormatRecordDriverClass(char *dst, s32 dstSize, const char *format,
                              const RaceRecord *record,
                              const char *className);
 s32 UpdateRecordNameEntry(u8 *nameCodes);
+void EnterRecordEntry(void);
+void UpdateRecordEntry(void);
 void DrawNameEntryCursor(s32 charIndex, s32 row);
 void DrawRankingPanel(s32 slideX);
 void DrawTimeRecordPanel(s32 slideX);

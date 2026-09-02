@@ -399,7 +399,6 @@ void DrawTimeRemaining(s32 time);
 void ExitPrologue(void);
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 void InitPathScenery(void);
-void InsertRaceRecords(void);
 void RecordReplayFrame(void);
 void ResetMirrorState(void);
 void ResetReplayWriteCursor(void);

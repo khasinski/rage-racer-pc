@@ -49,6 +49,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "psyq/cd_types.h"
 #include "game/render_state.h"
 #include "game/fmv.h"
+#include "game/records_internal.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -185,8 +186,6 @@ void UpdateRaceEndScreen(void);
 void UpdateReplayScene(void);
 void EnterPrizeScreen(void);
 void UpdatePrizeMoneyScreen(void);
-void EnterRecordEntry(void);
-void UpdateRecordEntry(void);
 void EnterAttractScene(void);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);

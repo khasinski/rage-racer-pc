@@ -25,7 +25,7 @@ enum {
     BGM_SELECT_SCENE_ID = 6,
 };
 
-void InsertRaceRecords(void) {
+static void InsertRaceRecords(void) {
     FastestLap fastestLap;
     s32 lapCount;
     s32 course;
@@ -53,6 +53,119 @@ void EnterRecordEntry(void) {
     InsertRaceRecords();
 }
 
+static s32 RecordWasInserted(s32 row) {
+    return row < RECORD_TABLE_LENGTH;
+}
+
+static s32 AnyRecordWasInserted(void) {
+    return RecordWasInserted(g_RankingInsertRow) ||
+           RecordWasInserted(g_TimeRecordInsertRow);
+}
+
+static void UpdateRecordEntryFadeIn(void) {
+    g_SceneTimer -= RECORD_ENTRY_FADE_IN_STEP;
+    DrawFullscreenFadeTile(g_SceneTimer, 0x49);
+    if (g_SceneTimer == 0) {
+        if (AnyRecordWasInserted()) {
+            RequestCdTrack(RECORD_ENTRY_MUSIC_TRACK);
+            StartCdAudio();
+        }
+        if (RecordWasInserted(g_RankingInsertRow)) {
+            g_NameEntryChar = DEFAULT_NAME_ENTRY_CHARACTER;
+            g_NameEntryCursor = 0;
+            g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_LAP_NAME;
+        } else {
+            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
+        }
+    }
+    DrawRankingPanel(0);
+}
+
+static void UpdateLapRecordName(void) {
+    s32 course = SeriesCourseIndex();
+
+    if (UpdateRecordNameEntry(g_RankingNameCodes)) {
+        g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
+        if (RecordWasInserted(g_TimeRecordInsertRow)) {
+            memcpy(g_TimeRecordNameCodes, g_RankingNameCodes,
+                   RECORD_NAME_LENGTH);
+            WriteRecordDriverName(
+                &g_TimeRecords[g_GrandPrixSeries][course]
+                              [g_TimeRecordInsertRow],
+                g_TimeRecordNameCodes);
+        }
+    }
+
+    if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_LAP_NAME) {
+        DrawNameEntryCursor(g_NameEntryCursor, g_RankingInsertRow);
+    }
+    WriteRecordDriverName(
+        &g_RankingRecords[g_GrandPrixSeries][course][g_RankingInsertRow],
+        g_RankingNameCodes);
+    DrawRankingPanel(0);
+}
+
+static void UpdateAfterLapRecord(void) {
+    if (g_PadPressed & PAD_CONFIRM) {
+        g_RecordEntryState = RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD;
+        g_RecordPanelSlide = 0;
+    }
+    DrawRankingPanel(0);
+}
+
+static void UpdateRecordPanelSwitch(void) {
+    g_RecordPanelSlide -= RECORD_ENTRY_PANEL_STEP;
+    DrawRankingPanel(g_RecordPanelSlide);
+    DrawTimeRecordPanel(g_RecordPanelSlide + RECORD_ENTRY_PANEL_WIDTH);
+    if (g_RecordPanelSlide <= -RECORD_ENTRY_PANEL_WIDTH) {
+        if (RecordWasInserted(g_TimeRecordInsertRow)) {
+            g_NameEntryCursor = 0;
+            g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_RACE_NAME;
+            g_NameEntryChar = g_TimeRecordNameCodes[0];
+        } else {
+            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
+        }
+    }
+}
+
+static void UpdateRaceRecordName(void) {
+    s32 course = SeriesCourseIndex();
+
+    if (UpdateRecordNameEntry(g_TimeRecordNameCodes)) {
+        g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
+    }
+
+    if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_RACE_NAME) {
+        DrawNameEntryCursor(g_NameEntryCursor, g_TimeRecordInsertRow);
+    }
+    WriteRecordDriverName(
+        &g_TimeRecords[g_GrandPrixSeries][course][g_TimeRecordInsertRow],
+        g_TimeRecordNameCodes);
+    DrawTimeRecordPanel(0);
+}
+
+static void UpdateBeforeRecordEntryExit(void) {
+    if (g_PadPressed & PAD_CONFIRM) {
+        if (AnyRecordWasInserted()) {
+            StartCdVolumeFade(RECORD_ENTRY_MUSIC_FADE);
+            StartCdAudio();
+        }
+        g_RecordEntryState = RECORD_ENTRY_STATE_FADE_OUT;
+        g_RecordPanelSlide = 0;
+    }
+    DrawTimeRecordPanel(0);
+}
+
+static void UpdateRecordEntryFadeOut(void) {
+    g_SceneTimer += RECORD_ENTRY_FADE_OUT_STEP;
+    DrawFullscreenFadeTile(g_SceneTimer, 0x49);
+    if ((u32)g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE) {
+        RequestSelectBgmAssets();
+        g_SceneId = BGM_SELECT_SCENE_ID;
+    }
+    DrawTimeRecordPanel(0);
+}
+
 void UpdateRecordEntry(void) {
     g_AnimTimer++;
 
@@ -60,111 +173,25 @@ void UpdateRecordEntry(void) {
     case RECORD_ENTRY_STATE_INVALID:
         break;
     case RECORD_ENTRY_STATE_FADE_IN:
-        g_SceneTimer -= RECORD_ENTRY_FADE_IN_STEP;
-        DrawFullscreenFadeTile(g_SceneTimer, 0x49);
-        if (g_SceneTimer == 0) {
-            if (g_RankingInsertRow < RECORD_TABLE_LENGTH ||
-                g_TimeRecordInsertRow < RECORD_TABLE_LENGTH) {
-                RequestCdTrack(RECORD_ENTRY_MUSIC_TRACK);
-                StartCdAudio();
-            }
-            if (g_RankingInsertRow < RECORD_TABLE_LENGTH) {
-                g_NameEntryChar = DEFAULT_NAME_ENTRY_CHARACTER;
-                g_NameEntryCursor = 0;
-                g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_LAP_NAME;
-            } else {
-                g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
-            }
-        }
-        DrawRankingPanel(0);
+        UpdateRecordEntryFadeIn();
         break;
-
-    case RECORD_ENTRY_STATE_EDIT_LAP_NAME: {
-        s32 course = SeriesCourseIndex();
-
-        if (UpdateRecordNameEntry(g_RankingNameCodes)) {
-            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
-            if (g_TimeRecordInsertRow < RECORD_TABLE_LENGTH) {
-                memcpy(g_TimeRecordNameCodes, g_RankingNameCodes,
-                       RECORD_NAME_LENGTH);
-                WriteRecordDriverName(
-                    &g_TimeRecords[g_GrandPrixSeries][course]
-                                  [g_TimeRecordInsertRow],
-                    g_TimeRecordNameCodes);
-            }
-        }
-
-        if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_LAP_NAME) {
-            DrawNameEntryCursor(g_NameEntryCursor, g_RankingInsertRow);
-        }
-        WriteRecordDriverName(
-            &g_RankingRecords[g_GrandPrixSeries][course][g_RankingInsertRow],
-            g_RankingNameCodes);
-        DrawRankingPanel(0);
+    case RECORD_ENTRY_STATE_EDIT_LAP_NAME:
+        UpdateLapRecordName();
         break;
-    }
-
     case RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME:
-        if (g_PadPressed & PAD_CONFIRM) {
-            g_RecordEntryState = RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD;
-            g_RecordPanelSlide = 0;
-        }
-        DrawRankingPanel(0);
+        UpdateAfterLapRecord();
         break;
-
     case RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD:
-        g_RecordPanelSlide -= RECORD_ENTRY_PANEL_STEP;
-        DrawRankingPanel(g_RecordPanelSlide);
-        DrawTimeRecordPanel(g_RecordPanelSlide + RECORD_ENTRY_PANEL_WIDTH);
-        if (g_RecordPanelSlide < -(RECORD_ENTRY_PANEL_WIDTH - 1)) {
-            if (g_TimeRecordInsertRow < RECORD_TABLE_LENGTH) {
-                g_NameEntryCursor = 0;
-                g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_RACE_NAME;
-                g_NameEntryChar = g_TimeRecordNameCodes[0];
-            } else {
-                g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
-            }
-        }
+        UpdateRecordPanelSwitch();
         break;
-
-    case RECORD_ENTRY_STATE_EDIT_RACE_NAME: {
-        s32 course = SeriesCourseIndex();
-
-        if (UpdateRecordNameEntry(g_TimeRecordNameCodes)) {
-            g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
-        }
-
-        if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_RACE_NAME) {
-            DrawNameEntryCursor(g_NameEntryCursor, g_TimeRecordInsertRow);
-        }
-        WriteRecordDriverName(
-            &g_TimeRecords[g_GrandPrixSeries][course][g_TimeRecordInsertRow],
-            g_TimeRecordNameCodes);
-        DrawTimeRecordPanel(0);
+    case RECORD_ENTRY_STATE_EDIT_RACE_NAME:
+        UpdateRaceRecordName();
         break;
-    }
-
     case RECORD_ENTRY_STATE_WAIT_TO_FINISH:
-        if (g_PadPressed & PAD_CONFIRM) {
-            if (g_RankingInsertRow < RECORD_TABLE_LENGTH ||
-                g_TimeRecordInsertRow < RECORD_TABLE_LENGTH) {
-                StartCdVolumeFade(RECORD_ENTRY_MUSIC_FADE);
-                StartCdAudio();
-            }
-            g_RecordEntryState = RECORD_ENTRY_STATE_FADE_OUT;
-            g_RecordPanelSlide = 0;
-        }
-        DrawTimeRecordPanel(0);
+        UpdateBeforeRecordEntryExit();
         break;
-
     case RECORD_ENTRY_STATE_FADE_OUT:
-        g_SceneTimer += RECORD_ENTRY_FADE_OUT_STEP;
-        DrawFullscreenFadeTile(g_SceneTimer, 0x49);
-        if ((u32)g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE) {
-            RequestSelectBgmAssets();
-            g_SceneId = BGM_SELECT_SCENE_ID;
-        }
-        DrawTimeRecordPanel(0);
+        UpdateRecordEntryFadeOut();
         break;
     }
 
