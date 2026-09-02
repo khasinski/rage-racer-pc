@@ -2,6 +2,8 @@
 #include "game/race.h"
 #include "game/asset.h"
 
+#include <stddef.h>
+
 static void UploadBlockPixels(GameImageBlock *block) {
     Rect rect;
 
@@ -13,25 +15,68 @@ static void UploadBlockPixels(GameImageBlock *block) {
     DrawSync(0);
 }
 
-void UploadImageEntry(GameImageEntryHeader *entry) {
-    GameImageBlock *block;
+static s32 ImageBlockFits(const GameImageBlock *block, size_t size) {
+    size_t pixelCount;
+    size_t pixelBytes;
 
-    if (entry == NULL) return;
+    if (size < offsetof(GameImageBlock, pixels)) return 0;
+    pixelCount = (size_t)block->w * block->h;
+    if (pixelCount > (SIZE_MAX - offsetof(GameImageBlock, pixels)) /
+                         sizeof(u16)) {
+        return 0;
+    }
+    pixelBytes = pixelCount * sizeof(u16);
+    return pixelBytes <= size - offsetof(GameImageBlock, pixels);
+}
 
-    block = (GameImageBlock *)(entry + 1);
+s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
+    const GameImageBlock *clut = NULL;
+    const GameImageBlock *pixels;
+    const u8 *cursor;
+    size_t remaining;
+
+    if (entry == NULL || size < sizeof(*entry) +
+                                      offsetof(GameImageBlock, pixels)) {
+        return 0;
+    }
+
+    cursor = (const u8 *)(entry + 1);
+    remaining = size - sizeof(*entry);
+    pixels = (const GameImageBlock *)(const void *)cursor;
 
     if ((entry->flags & GAME_IMAGE_ENTRY_HAS_CLUT) != 0) {
-        if (block->size < sizeof(*block) ||
-            (block->size & (sizeof(u32) - 1)) != 0) {
-            return;
+        clut = pixels;
+        if (clut->size < offsetof(GameImageBlock, pixels) ||
+            (clut->size & (sizeof(u32) - 1)) != 0 ||
+            clut->size > remaining ||
+            !ImageBlockFits(clut, (size_t)clut->size)) {
+            return 0;
         }
-        UploadBlockPixels(block);
-        block = (GameImageBlock *)((u8 *)block + block->size);
+        cursor += clut->size;
+        remaining -= clut->size;
+        pixels = (const GameImageBlock *)(const void *)cursor;
     }
 
-    if (block->w > 0 && block->h > 0) {
-        UploadBlockPixels(block);
+    return ImageBlockFits(pixels, remaining);
+}
+
+s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size) {
+    GameImageBlock *clut = NULL;
+    GameImageBlock *pixels;
+
+    if (!IsValidImageEntry(entry, size)) return 0;
+
+    pixels = (GameImageBlock *)(entry + 1);
+    if ((entry->flags & GAME_IMAGE_ENTRY_HAS_CLUT) != 0) {
+        clut = pixels;
+        pixels = (GameImageBlock *)((u8 *)pixels + clut->size);
     }
+
+    if (clut != NULL) UploadBlockPixels(clut);
+    if (pixels->w > 0 && pixels->h > 0) {
+        UploadBlockPixels(pixels);
+    }
+    return 1;
 }
 
 /*
@@ -39,26 +84,49 @@ void UploadImageEntry(GameImageEntryHeader *entry) {
  * zero or less. The size word is read first and skipped past, so a block
  * starts at the word after its own header.
  */
-void UploadImageAsset(GameImageAssetHeaderWord *asset) {
-    GameImageAssetHeaderWord *ptr;
+s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
+    const u8 *cursor;
+    size_t remaining;
 
-    if (asset == NULL) return;
+    if (asset == NULL || size < sizeof(*asset)) return 0;
 
-    ptr = asset + 1;
-    for (;;) {
-        s32 size = ptr->size;
-        GameImageAssetHeaderWord *next;
+    cursor = (const u8 *)(asset + 1);
+    remaining = size - sizeof(*asset);
+    while (remaining >= sizeof(GameImageAssetHeaderWord)) {
+        s32 entrySize =
+            ((const GameImageAssetHeaderWord *)(const void *)cursor)->size;
 
-        ptr++;
-        if (size <= 0) return;
-        if ((u32)size < sizeof(GameImageEntryHeader) +
-                            sizeof(GameImageBlock) ||
-            ((u32)size & (sizeof(*ptr) - 1)) != 0) {
-            return;
+        cursor += sizeof(GameImageAssetHeaderWord);
+        remaining -= sizeof(GameImageAssetHeaderWord);
+        if (entrySize <= 0) return 1;
+        if ((u32)entrySize > remaining ||
+            (u32)entrySize < sizeof(GameImageEntryHeader) +
+                                 offsetof(GameImageBlock, pixels) ||
+            ((u32)entrySize & (sizeof(GameImageAssetHeaderWord) - 1)) != 0 ||
+            !IsValidImageEntry(
+                (const GameImageEntryHeader *)(const void *)cursor,
+                (size_t)entrySize)) {
+            return 0;
         }
-        next = ptr + ((u32)size >> 2);
-        UploadImageEntry(GetImageEntryHeader(ptr));
-        ptr = next;
+        cursor += entrySize;
+        remaining -= (size_t)entrySize;
+    }
+    return 0;
+}
+
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+    u8 *cursor;
+
+    if (!IsValidImageAsset(asset, size)) return 0;
+
+    cursor = (u8 *)(asset + 1);
+    for (;;) {
+        s32 entrySize = ((GameImageAssetHeaderWord *)(void *)cursor)->size;
+
+        cursor += sizeof(GameImageAssetHeaderWord);
+        if (entrySize <= 0) return 1;
+        UploadImageEntry(GetImageEntryHeader(cursor), (size_t)entrySize);
+        cursor += entrySize;
     }
 }
 
@@ -75,6 +143,7 @@ void StoreTeamLogoImage(void *dst) {
     g_TeamLogoClut[0] = 0;
 }
 
-void UploadLoadBufferImage(void) {
-    UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
+s32 UploadLoadBufferImage(void) {
+    return UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer),
+                            g_LoadBufferImageSize);
 }

@@ -77,9 +77,14 @@ static void LoadCarSelectSharedAssets(void) {
         return;
     }
     image = ResolveAssetAddress(header, header->imageOffset);
-    UploadImageAsset(GetImageAssetHeaderWords(image));
+    if (!UploadImageAsset(GetImageAssetHeaderWords(image),
+                          (size_t)(loadedSize - header->imageOffset))) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_CarModelBuffer = image;
     g_ImageBlockBuffer = image + CAR_MODEL_BUFFER_SIZE;
+    g_ImageBlockSize = 0;
     g_AssetLoadState = CAR_SELECT_LOAD_INITIAL_MODEL;
 }
 

@@ -64,6 +64,8 @@ u8 *g_CarModelBuffer;
 CarImageData *g_CarImageSlots[2];
 s32 (*g_TrackTextureShadow)[0xE0];
 u8 *g_ImageBlockBuffer;
+size_t g_ImageBlockSize;
+size_t g_LoadBufferImageSize;
 s32 g_RaceVoiceHeaderSize;
 GameCdLoadEntry *g_StreamLoc;
 u8 *g_AssetSubBlockPtr;

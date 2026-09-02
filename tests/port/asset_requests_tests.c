@@ -17,6 +17,8 @@ s32 g_LoadBuffer[64];
 u8 *g_AssetBlockPtr;
 u8 *g_AssetBlockPtr2;
 u8 *g_ImageBlockBuffer;
+size_t g_ImageBlockSize;
+size_t g_LoadBufferImageSize;
 u8 *g_AssetBase;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
@@ -41,6 +43,7 @@ static s32 s_randomCallCount;
 static s32 s_selectModelBankCalls;
 static void *s_lastLoadDestination;
 static s32 s_loadBufferUploads;
+static s32 s_loadBufferUploadResult = 1;
 static s32 s_audioSlot;
 static u8 *s_audioHeader;
 static u8 *s_audioBody;
@@ -56,7 +59,10 @@ s32 LoadAsset(s32 slot, void *destination) {
     s_lastLoadDestination = destination;
     return s_loadResult;
 }
-void UploadLoadBufferImage(void) { s_loadBufferUploads++; }
+s32 UploadLoadBufferImage(void) {
+    s_loadBufferUploads++;
+    return s_loadBufferUploadResult;
+}
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     s_audioSlot = slot;
     s_audioHeader = header;
@@ -65,9 +71,11 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     return 1;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
-void UploadImageAsset(GameImageAssetHeaderWord *data) {
+s32 UploadImageAsset(GameImageAssetHeaderWord *data, size_t size) {
+    (void)size;
     s_lastImageUpload = data;
     s_imageUploads++;
+    return 1;
 }
 void StoreImage(Rect *rect, void *data) {
     (void)rect;
@@ -120,12 +128,23 @@ static void TestBootAssetPhases(void) {
     LoadBootAssets();
     Check(g_AssetLoadState == 1 && s_loadBufferUploads == 0,
           "pending title screen holds boot phase");
+
+    s_loadResult = 8;
+    s_loadBufferUploadResult = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 0 && g_AssetBlockPtr == NULL,
+          "invalid title image cancels boot asset loading");
+
+    g_AssetLoadState = 1;
+    s_loadBufferUploads = 0;
+    s_loadBufferUploadResult = 1;
     s_loadResult = 8;
     LoadBootAssets();
     Check(s_lastAssetId == ASSET_TITLE_SCREEN &&
               s_lastLoadDestination == loadBase &&
               g_AssetBlockPtr == loadBase + 8 &&
-              g_AssetLoadState == 2 && s_loadBufferUploads == 1,
+              g_LoadBufferImageSize == 8 && g_AssetLoadState == 2 &&
+              s_loadBufferUploads == 1,
           "title screen advances boot loader");
 
     s_loadResult = 0;
@@ -212,7 +231,8 @@ static void TestSaveScreenAssets(u8 *assetBase) {
     LoadSaveScreenAssets();
     Check(s_lastAssetId == ASSET_SAVE_SCREEN &&
               s_lastLoadDestination == assetBase &&
-              g_ImageBlockBuffer == assetBase && g_AssetLoadState == 0,
+              g_ImageBlockBuffer == assetBase && g_ImageBlockSize == 1 &&
+              g_AssetLoadState == 0,
           "save screen installs loaded image block");
 }
 
@@ -311,7 +331,9 @@ int main(void) {
     s_selectModelBankCalls = 0;
     LoadOptionScreenAssets();
     Check(s_lastAssetId == 9, "OPTION asset id");
-    Check(g_ImageBlockBuffer == pack.bytes + 48, "OPTION image block");
+    Check(g_ImageBlockBuffer == pack.bytes + 48 &&
+              g_ImageBlockSize == sizeof(pack.bytes) - 48,
+          "OPTION image block and size");
     Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 1 &&
               s_selectModelBankCalls == 1,
           "OPTION asset installed");
@@ -344,7 +366,8 @@ int main(void) {
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_TIME_ATTACK_ROUND_SCREEN,
           "time-attack round asset id");
-    Check(g_AssetLoadState == 2 && g_AssetBlockPtr2 == pack.bytes + 16,
+    Check(g_AssetLoadState == 2 && g_AssetBlockPtr2 == pack.bytes + 16 &&
+              g_ImageBlockSize == 16,
           "round screen advances to voice bank");
 
     voiceHeader = GetVoiceBankAssetHeader(pack.bytes + 16);

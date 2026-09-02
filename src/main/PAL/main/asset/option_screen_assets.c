@@ -31,5 +31,6 @@ void LoadOptionScreenAssets(void) {
     }
     SelectModelBank(0);
     g_ImageBlockBuffer = g_AssetBase + asset->imageOffset;
+    g_ImageBlockSize = (size_t)(loadedSize - asset->imageOffset);
     g_AssetLoadState = 0;
 }

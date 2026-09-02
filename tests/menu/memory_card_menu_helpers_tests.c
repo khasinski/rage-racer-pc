@@ -9,6 +9,7 @@
 s32 g_AssetLoadState;
 static u8 s_imageData[16];
 u8 *g_ImageBlockBuffer = s_imageData;
+size_t g_ImageBlockSize = sizeof(s_imageData);
 s32 g_McFadeLevel;
 s32 g_McFadeStep;
 s32 g_McFreeBlocks;
@@ -104,9 +105,11 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
     s_fadeTpage = tpage;
 }
 
-void UploadImageAsset(GameImageAssetHeaderWord *asset) {
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
     CHECK(asset == GetImageAssetHeaderWords(g_ImageBlockBuffer));
+    CHECK(size == g_ImageBlockSize);
     s_imageUploads++;
+    return 1;
 }
 
 static void Reset(void) {

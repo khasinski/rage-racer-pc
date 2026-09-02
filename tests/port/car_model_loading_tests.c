@@ -15,6 +15,7 @@ u8 *g_AssetBlockPtr2;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
 u8 *g_ImageBlockBuffer;
+size_t g_ImageBlockSize;
 u8 *g_CarModelBuffer;
 u32 g_CarModelSlot;
 s32 g_PlayerCarIndex;
@@ -77,8 +78,10 @@ s32 RegisterCourseModels(CourseModelAssetHeader *models, size_t size) {
     s_courseModels = models;
     return 1;
 }
-void UploadImageAsset(GameImageAssetHeaderWord *image) {
+s32 UploadImageAsset(GameImageAssetHeaderWord *image, size_t size) {
+    (void)size;
     s_uploadedImage = image;
+    return 1;
 }
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     s_audioSlot = slot;

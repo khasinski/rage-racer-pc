@@ -19,6 +19,7 @@ u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
+size_t g_ImageBlockSize;
 s32 g_RaceVoiceHeaderSize;
 s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
@@ -43,6 +44,9 @@ static u16 *s_audioSequence;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
 static GameImageAssetHeaderWord *s_uploads[5];
+static size_t s_uploadSizes[5];
+static s32 s_validationCount;
+static s32 s_validationFailureAt = -1;
 static void *s_teamLogoSource;
 static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
@@ -70,11 +74,29 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *sequence) {
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
 s32 GetCarAssetIndex(s32 model, s32 grade) { return model * 10 + grade; }
 void GameRenderWorldSetTrackCarAsset(s32 asset) { s_renderCarAsset = asset; }
-void UploadImageAsset(GameImageAssetHeaderWord *asset) {
-    s_uploads[s_uploadCount++] = asset;
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+    s32 index = s_uploadCount++;
+    s_uploads[index] = asset;
+    s_uploadSizes[index] = size;
+    return 1;
 }
-void UploadImageEntry(GameImageEntryHeader *entry) {
-    s_uploads[s_uploadCount++] = (GameImageAssetHeaderWord *)entry;
+s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size) {
+    s32 index = s_uploadCount++;
+    s_uploads[index] = (GameImageAssetHeaderWord *)entry;
+    s_uploadSizes[index] = size;
+    return 1;
+}
+s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
+    s32 index = s_validationCount++;
+    (void)asset;
+    (void)size;
+    return index != s_validationFailureAt;
+}
+s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
+    s32 index = s_validationCount++;
+    (void)entry;
+    (void)size;
+    return index != s_validationFailureAt;
 }
 void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
@@ -337,7 +359,8 @@ static void TestRaceStartAndCourseRequests(void) {
     LoadGrandPrixScreen();
     Check(s_loadAssetIndex == ASSET_ROUND_SCREEN_BASE + 15,
           "Grand Prix screen asset index");
-    Check(s_loadDestination == storage && g_AssetLoadState == 0,
+    Check(s_loadDestination == storage && g_ImageBlockSize == 16 &&
+              g_AssetLoadState == 0,
           "Grand Prix screen completes after load");
 
     g_AssetRequestType = ASSET_REQUEST_IDLE;
@@ -354,6 +377,7 @@ static void TestRaceStartAndCourseRequests(void) {
     g_GrandPrixClass = 2;
     g_AssetBase = storage;
     g_ImageBlockBuffer = NULL;
+    g_ImageBlockSize = 99;
     s_loadAssetIndex = -1;
     g_AssetLoadState = 0;
     LoadCourseTextureAssets();
@@ -369,7 +393,7 @@ static void TestRaceStartAndCourseRequests(void) {
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 18,
           "standalone course asset index");
     Check(s_loadDestination == storage && g_ImageBlockBuffer == storage + 20 &&
-              g_AssetLoadState == 0,
+              g_ImageBlockSize == 0 && g_AssetLoadState == 0,
           "standalone course load publishes trailing image buffer");
 }
 
@@ -383,11 +407,17 @@ static void TestResidentCourseInstallation(void) {
     g_AssetBase = storage;
     g_AssetLoadCursor = NULL;
     s_uploadCount = 0;
+    s_validationCount = 0;
+    s_validationFailureAt = -1;
     s_teamLogoSource = NULL;
     s_textureResetCalls = 0;
     Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 1,
           "resident course texture pack is valid");
     Check(s_uploadCount == 5, "resident course uploads every texture block");
+    Check(s_uploadSizes[0] == 32 && s_uploadSizes[1] == 32 &&
+              s_uploadSizes[2] == 32 && s_uploadSizes[3] == 32 &&
+              s_uploadSizes[4] == sizeof(storage) - 192,
+          "course uploader bounds every image sub-block");
     Check(s_teamLogoSource == storage, "resident course stores team logo");
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
           "resident course installs texture shadow");
@@ -405,6 +435,20 @@ static void TestResidentCourseInstallation(void) {
               g_AssetLoadCursor == NULL,
           "invalid course pack publishes no texture state");
     pack->offsets[1] = 96;
+
+    g_AssetLoadCursor = NULL;
+    g_TrackTextureShadow = NULL;
+    s_teamLogoSource = NULL;
+    s_textureResetCalls = 0;
+    s_uploadCount = 0;
+    s_validationCount = 0;
+    s_validationFailureAt = 2;
+    Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
+          "invalid embedded image rejects the course pack");
+    Check(g_AssetLoadCursor == NULL && g_TrackTextureShadow == NULL &&
+              s_teamLogoSource == NULL && s_textureResetCalls == 0,
+          "invalid embedded image publishes no course texture state");
+    s_validationFailureAt = -1;
 
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;

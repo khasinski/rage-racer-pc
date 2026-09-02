@@ -467,7 +467,8 @@ static void ScenarioDirectBoot(void) {
         if (g_AssetLoadState == 0) {
             /* EnterRoundScreen's own work, minus the screen it draws. */
             CloseLoadedAudioSlots();
-            UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
+            UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                             g_ImageBlockSize);
             RelocateCarModel();
             g_GrandPrixRound = DetermineGrandPrixRound(
                 g_CourseProgress->bestPlace, g_GrandPrixClass,

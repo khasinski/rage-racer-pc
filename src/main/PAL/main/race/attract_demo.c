@@ -15,7 +15,10 @@ void EnterAttractDemo(void) {
     SetupDisplay240(0, 0, 0);
 
     g_FrameSyncThreshold = 0x80;
-    UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
+    if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                          g_ImageBlockSize)) {
+        return;
+    }
     if (g_ImageBlockBuffer <= g_AssetBase ||
         !InstallTrackTextureAssetPack(
             g_AssetBase, (size_t)(g_ImageBlockBuffer - g_AssetBase))) {

@@ -90,7 +90,11 @@ static void LoadPlayerCarRaceAssets(void) {
     StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
                        GetAssetHalfwords(audioTable));
     carImage = g_AssetLoadCursor + pack->imageOffset;
-    UploadImageAsset(GetImageAssetHeaderWords(carImage));
+    if (!UploadImageAsset(GetImageAssetHeaderWords(carImage),
+                          (size_t)(loadedSize - pack->imageOffset))) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetLoadCursor = audioBody;
     g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
 }
@@ -162,12 +166,15 @@ s32 RequestRaceStart(void) {
 
 void LoadGrandPrixScreen(void) {
     s32 assetIndex;
+    s32 loadedSize;
 
     if (g_AssetLoadState != GRAND_PRIX_SCREEN_LOAD_ASSET) return;
 
     assetIndex = ASSET_ROUND_SCREEN_BASE + g_GrandPrixSeries * 6 +
                  g_GrandPrixClass;
-    if (LoadAsset(assetIndex, g_ImageBlockBuffer) != 0) {
+    loadedSize = LoadAsset(assetIndex, g_ImageBlockBuffer);
+    if (loadedSize != 0) {
+        g_ImageBlockSize = (size_t)loadedSize;
         g_AssetLoadState = 0;
     }
 }
@@ -189,5 +196,6 @@ void LoadCourseTextureAssets(void) {
     if (loadedSize != 0) {
         g_AssetLoadState = 0;
         g_ImageBlockBuffer = g_AssetBase + loadedSize;
+        g_ImageBlockSize = 0;
     }
 }

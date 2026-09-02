@@ -50,9 +50,11 @@ int HostLoadArchiveIndex(void *entries, int count) {
     return 1;
 }
 
-void UploadImageAsset(GameImageAssetHeaderWord *asset) {
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+    (void)size;
     s_uploads++;
     s_uploadedAsset = asset;
+    return 1;
 }
 
 s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,

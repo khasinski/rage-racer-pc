@@ -61,6 +61,11 @@ extern s32 g_RaceVoiceHeaderSize;
 /* Scratch image buffer: whatever the last screen load left free, handed to
  * LoadAsset and UploadImageAsset by the round / save / attract screens. */
 extern u8 *g_ImageBlockBuffer;
+/* Exact serialized image lengths retained while those buffers cross scene
+ * boundaries. A zero length means the pointer is currently only a load
+ * destination. */
+extern size_t g_ImageBlockSize;
+extern size_t g_LoadBufferImageSize;
 
 /*
  * Index of the first entry of each variable-size family in that table. Read off
@@ -487,9 +492,9 @@ void RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
 void SetEnvironmentScript(struct GameEnvironmentScript *script);
 void StoreTeamLogoImage(void* dst);
-void UploadImageAsset(GameImageAssetHeaderWord *asset);
-void UploadImageEntry(GameImageEntryHeader *entry);
-void UploadLoadBufferImage(void);
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size);
+s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size);
+s32 UploadLoadBufferImage(void);
 s32 GetCarAssetIndex(s32 model, s32 grade);
 
 /* Declared identically by 19 translation units before this

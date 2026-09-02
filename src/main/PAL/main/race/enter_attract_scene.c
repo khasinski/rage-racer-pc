@@ -30,7 +30,10 @@ void EnterAttractScene(void) {
         return;
     }
 
-    UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
+    if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                          g_ImageBlockSize)) {
+        return;
+    }
     g_MirrorMode = 0;
     InitRenderState(ATTRACT_RENDER_OT_SHIFT);
     SetupDisplay480(0, 0, 0);

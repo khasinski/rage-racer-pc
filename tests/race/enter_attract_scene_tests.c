@@ -20,6 +20,7 @@ static s32 s_Fog[2];
 
 s32 g_AssetLoadState;
 u8 *g_ImageBlockBuffer = s_ImageData;
+size_t g_ImageBlockSize = sizeof(s_ImageData);
 s32 g_FrameSyncThreshold;
 s32 g_MirrorMode;
 s32 g_SceneId;
@@ -35,8 +36,10 @@ Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
 
 void SetDispMask(s32 enabled) { s_DisplayMask = enabled; }
-void UploadImageAsset(GameImageAssetHeaderWord *asset) {
+s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+    (void)size;
     s_UploadedImage = asset;
+    return 1;
 }
 void InitRenderState(s32 otShift) { s_RenderOtShift = otShift; }
 void SetupDisplay480(s32 r, s32 g, s32 b) {

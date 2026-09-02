@@ -31,7 +31,11 @@ static void LoadBootTitleScreen(void) {
     s32 loadedSize = LoadAsset(ASSET_TITLE_SCREEN, base);
 
     if (loadedSize == 0) return;
-    UploadLoadBufferImage();
+    g_LoadBufferImageSize = (size_t)loadedSize;
+    if (!UploadLoadBufferImage()) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetBlockPtr = base + loadedSize;
     g_AssetLoadState = BOOT_LOAD_AUDIO_HEADER;
 }
@@ -67,9 +71,15 @@ static void LoadBootResources(void) {
 
 static void LoadBootCarScreen(void) {
     u8 *assetBase = g_AssetLoadCursor;
+    s32 loadedSize;
 
-    if (LoadAsset(ASSET_BOOT_CAR_SCREEN, assetBase) == 0) return;
-    UploadImageAsset(GetImageAssetHeaderWords(assetBase));
+    loadedSize = LoadAsset(ASSET_BOOT_CAR_SCREEN, assetBase);
+    if (loadedSize == 0) return;
+    if (!UploadImageAsset(GetImageAssetHeaderWords(assetBase),
+                          (size_t)loadedSize)) {
+        g_AssetLoadState = 0;
+        return;
+    }
     StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
     StoreImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
     DrawSync(0);
@@ -107,13 +117,15 @@ s32 RequestSaveScreenAssets(void) {
 }
 
 void LoadSaveScreenAssets(void) {
-    if (g_AssetLoadState != SAVE_SCREEN_LOAD_ASSET ||
-        LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase) == 0) {
-        return;
-    }
+    s32 loadedSize;
+
+    if (g_AssetLoadState != SAVE_SCREEN_LOAD_ASSET) return;
+    loadedSize = LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase);
+    if (loadedSize == 0) return;
 
     g_AssetLoadState = 0;
     g_ImageBlockBuffer = g_AssetBase;
+    g_ImageBlockSize = (size_t)loadedSize;
 }
 
 s32 RequestSelectBgmAssetsKeepAudioSlots(void) {

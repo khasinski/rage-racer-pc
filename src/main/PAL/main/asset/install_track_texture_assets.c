@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 
 enum {
     TRACK_TEXTURE_PRIMARY_IMAGES = 0,
@@ -39,13 +40,34 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     activeImages = base + header->offsets[TRACK_TEXTURE_ACTIVE_IMAGES];
     deferredImages = base + header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES];
 
-    UploadImageAsset(GetImageAssetHeaderWords(primaryImages));
-    UploadImageAsset(GetImageAssetHeaderWords(secondaryImages));
-    UploadImageEntry(GetImageEntryHeader(carImage));
-    UploadImageAsset(GetImageAssetHeaderWords(activeImages));
+    if (!IsValidImageAsset(
+            GetImageAssetHeaderWords(primaryImages),
+            (size_t)(header->offsets[1] - header->offsets[0])) ||
+        !IsValidImageAsset(
+            GetImageAssetHeaderWords(secondaryImages),
+            (size_t)(header->offsets[2] - header->offsets[1])) ||
+        !IsValidImageEntry(
+            GetImageEntryHeader(carImage),
+            (size_t)(header->offsets[3] - header->offsets[2])) ||
+        !IsValidImageAsset(
+            GetImageAssetHeaderWords(activeImages),
+            (size_t)(header->offsets[4] - header->offsets[3])) ||
+        !IsValidImageAsset(GetImageAssetHeaderWords(deferredImages),
+                           size - (size_t)header->offsets[4])) {
+        return 0;
+    }
+    UploadImageAsset(GetImageAssetHeaderWords(primaryImages),
+                     (size_t)(header->offsets[1] - header->offsets[0]));
+    UploadImageAsset(GetImageAssetHeaderWords(secondaryImages),
+                     (size_t)(header->offsets[2] - header->offsets[1]));
+    UploadImageEntry(GetImageEntryHeader(carImage),
+                     (size_t)(header->offsets[3] - header->offsets[2]));
+    UploadImageAsset(GetImageAssetHeaderWords(activeImages),
+                     (size_t)(header->offsets[4] - header->offsets[3]));
     StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
-    UploadImageAsset(GetImageAssetHeaderWords(deferredImages));
+    UploadImageAsset(GetImageAssetHeaderWords(deferredImages),
+                     size - (size_t)header->offsets[4]);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
     return 1;

@@ -14,5 +14,7 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size);
 s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size);
 s32 IsValidTerrainCellAsset(const void *data, size_t size);
 s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size);
+s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size);
+s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size);
 
 #endif

@@ -31,7 +31,10 @@ void EnterRoundScreen(void) {
 
     if (g_AssetLoadState != 1) {
         CloseLoadedAudioSlots();
-        UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer));
+        if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                              g_ImageBlockSize)) {
+            return;
+        }
         RelocateCarModel();
 
         g_FrameSyncThreshold = 0x180;

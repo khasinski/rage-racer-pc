@@ -60,6 +60,7 @@ static void LoadRoundScreen(void) {
 
     if (roundSize <= 0) return;
 
+    g_ImageBlockSize = (size_t)roundSize;
     g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
     g_AssetLoadState = ROUND_LOAD_VOICE_BANK;
 }

@@ -43,9 +43,13 @@ void LoadDiscArchiveIndex(void) {
 }
 
 void InitAssetSystem(void) {
+    s32 loadedSize;
+
     LoadDiscArchiveIndex();
-    if (LoadAsset(ASSET_BOOT_LOGO, g_LoadBuffer) > 0) {
-        UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
+    loadedSize = LoadAsset(ASSET_BOOT_LOGO, g_LoadBuffer);
+    if (loadedSize > 0) {
+        UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer),
+                         (size_t)loadedSize);
     }
 }
 
