@@ -24,7 +24,9 @@ typedef struct TextCall {
 static TextCall s_calls[9];
 static s32 s_callCount;
 
-void FormatLapTime(char *dst, s32 timeMs) {
+/* Spelled as the header spells it: gcc holds a definition to the
+ * declaration's array bound. */
+void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 timeMs) {
     snprintf(dst, 22, "%d", timeMs);
 }
 

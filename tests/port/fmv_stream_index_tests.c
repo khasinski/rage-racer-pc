@@ -1,6 +1,7 @@
 #include "fmv_stream_index.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -12,9 +13,14 @@
     } while (0)
 
 int main(void) {
-    GameCdLoadEntry entries[11] = {{0}};
-    GameCdLoadEntry foreign = {0};
+    /* The first member is itself a struct, so a brace-initialiser needs
+     * three levels of them to satisfy gcc. Zeroing says the same thing once. */
+    GameCdLoadEntry entries[11];
+    GameCdLoadEntry foreign;
     const unsigned char *bytes = (const unsigned char *)entries;
+
+    memset(entries, 0, sizeof(entries));
+    memset(&foreign, 0, sizeof(foreign));
 
     CHECK(HostFmvStreamIndex(entries, 11, &entries[0]) == 0);
     CHECK(HostFmvStreamIndex(entries, 11, &entries[7]) == 7);
