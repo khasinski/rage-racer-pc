@@ -211,7 +211,7 @@ extern unsigned char g_TeamNameChars[16];
 extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[64];
 extern unsigned char g_CdMixPresets[8];
-extern unsigned char g_CdCommandPending[8];
+extern int32_t g_CdCommandPending;
 extern unsigned char g_MenuOverlayPatternTable[584];
 extern unsigned char g_TeamLogoCursorX[8];
 extern unsigned char g_TeamLogoViewX[8];
@@ -258,7 +258,7 @@ extern unsigned char g_McModeLabels[32];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
-extern unsigned char g_CdTrackElapsedLoc[8];
+extern unsigned char g_CdTrackElapsedLoc[4];
 
 typedef struct HostStateBlob {
     const char *name;
@@ -418,7 +418,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_SkyTileMap", (const unsigned char *)g_SkyTileMap, 160},
     {"g_SkyTileUV", g_SkyTileUV, 64},
     {"g_CdMixPresets", g_CdMixPresets, 8},
-    {"g_CdCommandPending", g_CdCommandPending, 8},
+    {"g_CdCommandPending", (const unsigned char *)&g_CdCommandPending,
+     sizeof(g_CdCommandPending)},
     {"g_MenuOverlayPatternTable", g_MenuOverlayPatternTable, 584},
     {"g_TeamLogoCursorX", g_TeamLogoCursorX, 8},
     {"g_TeamLogoViewX", g_TeamLogoViewX, 8},
@@ -467,12 +468,12 @@ static const HostStateBlob s_blobs[] = {
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_RaceIntroCameraDelta,
      sizeof(g_RaceIntroCameraDelta)},
-    {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 8},
+    {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 4},
 };
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 653972611UL;
+    const unsigned long expected = 2996725619UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
