@@ -101,6 +101,44 @@ static int ReservedBytesAreZero(const GameSaveBlock *block) {
     return 1;
 }
 
+static void ClearSerializedRuntimeState(void) {
+    g_PadMappingIndex = 0;
+    g_NegconMappingIndex = 0;
+    g_NegconSteerNeutral = 0;
+    g_NegconSteerPlay = 0;
+    g_NegconNeutralI = 0;
+    g_NegconNeutralII = 0;
+    g_NegconNeutralL = 0;
+    g_NegconMaxTwist = 0;
+    memset(&g_GrandPrixSave, 0, sizeof(g_GrandPrixSave));
+    memset(&g_ExtraGrandPrixSave, 0, sizeof(g_ExtraGrandPrixSave));
+    memset(&g_TimeAttackSave, 0, sizeof(g_TimeAttackSave));
+    g_BgmSelection = 0;
+    g_ExtraGrandPrixUnlocked = 0;
+    memset(g_MaxClassReached, 0, sizeof(g_MaxClassReached));
+    memset(g_GrandPrixCars, 0,
+           GAME_CAR_COUNT * sizeof(*g_GrandPrixCars));
+    memset(g_ExtraGrandPrixCars, 0,
+           GAME_CAR_COUNT * sizeof(*g_ExtraGrandPrixCars));
+    memset(g_TimeAttackCars, 0,
+           GAME_CAR_COUNT * sizeof(*g_TimeAttackCars));
+    memset(g_ClassRecords, 0, sizeof(g_ClassRecords));
+    memset(g_TeamLogoClut, 0, sizeof(g_TeamLogoClut));
+    memset(g_TeamLogoCanvas.bytes, 0, sizeof(g_TeamLogoCanvas.bytes));
+    memset(g_BestLapTimes, 0, sizeof(g_BestLapTimes));
+    memset(g_BestTotalTimes, 0, sizeof(g_BestTotalTimes));
+    memset(g_RankingRecords, 0, sizeof(g_RankingRecords));
+    memset(g_TimeRecords, 0, sizeof(g_TimeRecords));
+    memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
+    g_BgmVolumeSetting = 0;
+    g_SfxVolumeSetting = 0;
+    g_MonoOutput = 0;
+    memset(&g_GrandPrixCourseProgress, 0,
+           sizeof(g_GrandPrixCourseProgress));
+    memset(&g_ExtraGrandPrixCourseProgress, 0,
+           sizeof(g_ExtraGrandPrixCourseProgress));
+}
+
 int main(void) {
     GameSaveBlock saved;
     GameSaveBlock roundTrip;
@@ -115,19 +153,14 @@ int main(void) {
 
     corrupt = saved;
     corrupt.checksum++;
+    g_BgmSelection = 123;
     CHECK(LoadSaveStateBlock(&corrupt) == 0);
+    CHECK(g_BgmSelection == 123);
     CHECK(s_audioApplyCalls == 0);
     CHECK(s_mappingLoadCalls == 0);
     CHECK(s_recordRepairCalls == 0);
 
-    memset(g_GrandPrixCars, 0, 13 * sizeof(*g_GrandPrixCars));
-    memset(g_ClassRecords, 0, sizeof(g_ClassRecords));
-    memset(g_TeamLogoCanvas.bytes, 0, sizeof(g_TeamLogoCanvas.bytes));
-    g_GrandPrixSave.money.value = 0;
-    g_BgmSelection = 0;
-    g_BgmVolumeSetting = 0;
-    g_SfxVolumeSetting = 0;
-    g_MonoOutput = 0;
+    ClearSerializedRuntimeState();
 
     CHECK(LoadSaveStateBlock(&saved) == 1);
     CHECK(s_audioApplyCalls == 1);

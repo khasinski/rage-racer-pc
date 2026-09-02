@@ -28,8 +28,6 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     u32 checksum = CalculateSaveBlockChecksum(block);
     s32 i;
 
-    printf("%s", g_MsgSaveChecksumOk);
-    printf(g_FmtSaveChecksum, block->checksum, checksum);
     if (block->checksum != checksum) {
         return 0;
     }
