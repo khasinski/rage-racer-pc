@@ -15,83 +15,84 @@ enum {
 void DrawRaceOptionMenu(s32 cursorRow) {
     GameOrderingTableEntry *ot;
     u8 *next;
+    u8 *packet;
     s32 selectionY;
     POLY_FT4 *quad;
-    RenderBufferAddress prim;
+    SPRT *marquee;
     RaceOptionMarqueeState marqueeState;
     RaceOptionPulseState pulseState;
     s32 pass;
 
     ot = GamePrimaryOrderingTable(0);
-    prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
-    SetSprt(prim.sprite);
-    SetShadeTex(prim.sprite, 0);
-    prim.sprite->x0 = 0x8C;
-    prim.sprite->y0 = 0x5A;
-    prim.sprite->w = 0x28;
-    prim.sprite->h = 8;
-    prim.sprite->u0 = 0xD8;
-    prim.sprite->v0 = 0x38;
-    prim.sprite->clut = 0x7893;
+    marquee = RENDER_PRIM_CURSOR_AS(SPRT);
+    SetSprt(marquee);
+    SetShadeTex(marquee, 0);
+    marquee->x0 = 0x8C;
+    marquee->y0 = 0x5A;
+    marquee->w = 0x28;
+    marquee->h = 8;
+    marquee->u0 = 0xD8;
+    marquee->v0 = 0x38;
+    marquee->clut = 0x7893;
     marqueeState = AdvanceRaceOptionMarquee(
         g_RaceOptionScroll0, g_RaceOptionScroll1, g_SceneTimer);
-    prim.sprite->r0 = marqueeState.brightness;
-    prim.sprite->g0 = marqueeState.brightness;
-    prim.sprite->b0 = marqueeState.brightness;
-    AddPrim(ot, prim.sprite);
-    prim.sprite++;
+    marquee->r0 = marqueeState.brightness;
+    marquee->g0 = marqueeState.brightness;
+    marquee->b0 = marqueeState.brightness;
+    AddPrim(ot, marquee);
 
     g_RaceOptionScroll0 = marqueeState.firstScroll;
     g_RaceOptionScroll1 = marqueeState.secondScroll;
 
-    next = QueueDrawAreaPrim(ot, prim.drawPacket, 0, 0, 0x140, 0xF0);
+    next = QueueDrawAreaPrim(ot, (DrawPacket *)(marquee + 1),
+                             0, 0, 0x140, 0xF0);
     g_RenderState.packetCursor = next;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
                 &g_RaceOptionMarquee[marqueeState.textFrame][0], 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
                 &g_RaceOptionMarquee[marqueeState.textFrame][20], 0x7811);
 
-    prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
-    next = QueueDrawAreaPrim(ot, prim.drawPacket, 0x72, 0x8A, 0x5C, 0xC);
-    prim.bytes = GameQueueSprite(
+    next = QueueDrawAreaPrim(ot, RENDER_PRIM_CURSOR_AS(DrawPacket),
+                             0x72, 0x8A, 0x5C, 0xC);
+    packet = GameQueueSprite(
         ot, next, 0x88, 0x6A, 0x30, 8, 0xD0, 0x10, 0x7893);
     if (g_GrandPrixMode != 0) {
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0x88, 0x74, 0x30, 8, 0xA0, 0x28, 0x7893);
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0x84, 0x7E, 0x30, 8, 0xD0, 0x28, 0x7893);
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0xB8, 0x7E, 8, 8,
+        packet = GameQueueSprite(
+            ot, packet, 0x88, 0x74, 0x30, 8, 0xA0, 0x28, 0x7893);
+        packet = GameQueueSprite(
+            ot, packet, 0x84, 0x7E, 0x30, 8, 0xD0, 0x28, 0x7893);
+        packet = GameQueueSprite(
+            ot, packet, 0xB8, 0x7E, 8, 8,
             g_CourseProgress->retriesRemaining * 8, 0, 0x78CC);
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0x78, 0x7E, 8, 8, 0xD8, 8, 0x78CC);
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0xC0, 0x7E, 8, 8, 0xE8, 8, 0x78CC);
+        packet = GameQueueSprite(
+            ot, packet, 0x78, 0x7E, 8, 8, 0xD8, 8, 0x78CC);
+        packet = GameQueueSprite(
+            ot, packet, 0xC0, 0x7E, 8, 8, 0xE8, 8, 0x78CC);
     } else {
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0x85, 0x74, 0x38, 8, 0xA0, 0x40, 0x7893);
-        prim.bytes = GameQueueSprite(
-            ot, prim.bytes, 0x90, 0x7E, 0x28, 8, 0xD8, 0x40, 0x7893);
+        packet = GameQueueSprite(
+            ot, packet, 0x85, 0x74, 0x38, 8, 0xA0, 0x40, 0x7893);
+        packet = GameQueueSprite(
+            ot, packet, 0x90, 0x7E, 0x28, 8, 0xD8, 0x40, 0x7893);
     }
 
     selectionY = cursorRow * RACE_OPTION_SELECTION_ROW_HEIGHT +
                  RACE_OPTION_SELECTION_TOP;
-    prim.bytes = AddTilePrim(
-        ot, prim.bytes, 0x80, selectionY, 0x40, 1, 0xFF, 0xFF, 0);
-    prim.bytes = AddTilePrim(
-        ot, prim.bytes, 0x80, selectionY + 0xB, 0x40, 1, 0xFF, 0xFF, 0);
-    prim.bytes = AddTilePrim(
-        ot, prim.bytes, 0x80, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
-    prim.bytes = AddTilePrim(
-        ot, prim.bytes, 0xBF, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
+    packet = AddTilePrim(
+        ot, packet, 0x80, selectionY, 0x40, 1, 0xFF, 0xFF, 0);
+    packet = AddTilePrim(
+        ot, packet, 0x80, selectionY + 0xB, 0x40, 1, 0xFF, 0xFF, 0);
+    packet = AddTilePrim(
+        ot, packet, 0x80, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
+    packet = AddTilePrim(
+        ot, packet, 0xBF, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
 
     /* The original overlay deliberately applies the same translucent tile
      * twice to make the paused race dark enough behind the menu. */
     for (pass = 0; pass < RACE_OPTION_DIM_PASSES; pass++) {
-        prim.bytes = GameQueueTileTrans(
-            ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
+        packet = GameQueueTileTrans(
+            ot, packet, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
     }
-    quad = prim.polyFT4;
+    quad = (POLY_FT4 *)packet;
 
     pulseState = AdvanceRaceOptionPulse(g_RaceOptionPulseAngle);
     g_RaceOptionPulseAngle = pulseState.angle;
@@ -120,6 +121,5 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     quad->tpage = 9;
     AddPrim(ot, quad);
 
-    prim.polyFT4++;
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, prim.bytes, 9);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, (u8 *)(quad + 1), 9);
 }
