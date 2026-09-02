@@ -43,6 +43,45 @@ enum { RIVAL_SLOTS = 11, TRACK_LENGTH = 0x8000 };
 
 static unsigned long s_digest = 2166136261UL;
 
+static int CheckContenderRanking(void) {
+    static const s32 cases[][4] = {
+        {10, 40, 20, 30},
+        {40, 30, 20, 10},
+        {10, 20, 30, 40},
+        {20, 20, 20, 20},
+        {30, 10, 30, 10},
+    };
+    static const s32 expected[][4] = {
+        {1, 3, 2, 0},
+        {0, 1, 2, 3},
+        {3, 2, 1, 0},
+        {0, 1, 2, 3},
+        {0, 2, 1, 3},
+    };
+    size_t test;
+
+    for (test = 0; test < sizeof(cases) / sizeof(cases[0]); test++) {
+        s32 rank;
+
+        memset(g_Cars, 0, sizeof(g_Cars));
+        for (rank = 0; rank < 4; rank++) {
+            g_Cars[rank].progressA = cases[test][rank] - rank;
+            g_Cars[rank].progressB = rank;
+        }
+        RankContenders();
+
+        for (rank = 0; rank < 4; rank++) {
+            s32 actual = (s32)(g_RankedCars[rank] - g_Cars);
+            if (actual != expected[test][rank]) {
+                printf("ranking case %lu rank %d selected car %d, expected %d\n",
+                       (unsigned long)test, rank, actual, expected[test][rank]);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 static void Fold(FILE *out, const char *label, const GameCarRuntime *car) {
     const GameCarAiBlock *state = GetCarAiBlock((GameCarRuntime *)car);
     char line[256];
@@ -170,6 +209,8 @@ int main(int argc, char **argv) {
     FILE *out = NULL;
     size_t l, o, v, c, s, a, m;
     int cases = 0;
+
+    if (CheckContenderRanking() != 0) return 1;
 
     if (argc > 1) {
         out = fopen(argv[1], "w");

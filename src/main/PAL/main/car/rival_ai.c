@@ -210,59 +210,34 @@ void SlowRivalAhead(GameCarRuntime *car, s32 carIndex) {
 /*
  * Ranks the first four cars by race progress (`progressA + progressB`) and
  * publishes the ordering into g_RankedCars: slot 0 the leader, slot 3 the
- * last of the four, slots 1/2 the middle pair in order. UpdateRivalRubberBand reads
- * the result to rubber-band the AI.
+ * last of the four. Equal progress keeps the lower car slot first, making the
+ * order stable while cars share a start line or timing boundary.
  */
 void RankContenders(void) {
     s32 i;
-    s32 maxValue;
-    s32 minValue;
-    s32 value;
-    s32 sums[4];
-    s16 indices[4] = {0, 0, 0, 0};
+    s32 progress[4];
+    s32 indices[4] = {0, 1, 2, 3};
 
     for (i = 0; i < 4; i++) {
-        sums[i] = g_Cars[i].progressA + g_Cars[i].progressB;
+        progress[i] = g_Cars[i].progressA + g_Cars[i].progressB;
     }
 
-    indices[0] = 0;
-    indices[3] = 0;
-    maxValue = sums[0];
-    minValue = sums[0];
+    /* Four entries do not warrant a general sorter. Insertion sort also lets
+     * ties retain their existing slot order without an extra tie-breaker. */
     for (i = 1; i < 4; i++) {
-        value = sums[i];
-        if (maxValue < value) {
-            maxValue = value;
-            indices[0] = i;
-        } else if (value < minValue) {
-            minValue = value;
-            indices[3] = i;
-        }
-    }
+        s32 index = indices[i];
+        s32 position = i;
 
-    g_RankedCars[0] = &g_Cars[indices[0]];
-    g_RankedCars[3] = &g_Cars[indices[3]];
-
-    for (i = 0; i < 4; i++) {
-        if ((i != indices[0]) && (i != indices[3])) {
-            indices[1] = i;
-            break;
+        while (position > 0 &&
+               progress[indices[position - 1]] < progress[index]) {
+            indices[position] = indices[position - 1];
+            position--;
         }
+        indices[position] = index;
     }
 
     for (i = 0; i < 4; i++) {
-        if ((i != indices[0]) && (i != indices[3]) && (i != indices[1])) {
-            indices[2] = i;
-            break;
-        }
-    }
-
-    if (sums[indices[1]] > sums[indices[2]]) {
-        g_RankedCars[1] = &g_Cars[indices[1]];
-        g_RankedCars[2] = &g_Cars[indices[2]];
-    } else {
-        g_RankedCars[1] = &g_Cars[indices[2]];
-        g_RankedCars[2] = &g_Cars[indices[1]];
+        g_RankedCars[i] = &g_Cars[indices[i]];
     }
 }
 
