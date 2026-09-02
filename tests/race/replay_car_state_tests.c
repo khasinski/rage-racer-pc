@@ -138,9 +138,25 @@ static void TestUpdateCarsAndRequestPlayerTexture(void) {
     ExpectCall(4, CALL_REQUEST_TEXTURE, NULL, 27);
 }
 
+static void TestUpdateTimeAttackCarWithoutRival(void) {
+    GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
+
+    s_CallCount = 0;
+    g_GrandPrixMode = 0;
+    player->trackSection = 14;
+
+    UpdateReplayCars();
+
+    assert(s_CallCount == 3);
+    ExpectCall(0, CALL_ACCUMULATE_PROGRESS, player, 0);
+    ExpectCall(1, CALL_RESET_TRACK_STATE, player, 0);
+    ExpectCall(2, CALL_REQUEST_TEXTURE, NULL, 14);
+}
+
 int main(void) {
     TestSeedTimeAttackCar();
     TestSeedGrandPrixCarsForAnyNonzeroMode();
     TestUpdateCarsAndRequestPlayerTexture();
+    TestUpdateTimeAttackCarWithoutRival();
     return 0;
 }

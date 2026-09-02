@@ -1,9 +1,7 @@
-#include "game/asset.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
 #include "game/render.h"
-#include "game/state.h"
 #include "game/track.h"
 
 static void SeedReplayCarTrackState(GameCarRuntime *car) {
