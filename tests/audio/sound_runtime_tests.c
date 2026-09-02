@@ -20,8 +20,8 @@ s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
 s32 g_AudioLoadedSlotMask;
-char g_MsgVabOpenHeadError[] = "open error";
-char g_MsgVabTransBodyError[] = "body error";
+const char g_MsgVabOpenHeadError[] = "open error";
+const char g_MsgVabTransBodyError[] = "body error";
 
 static u8 s_tableArea[16];
 static s32 s_playCalls[6];

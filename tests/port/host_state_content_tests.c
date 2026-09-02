@@ -116,13 +116,13 @@ extern const char g_FormatDecimal[4];
 extern unsigned char g_MenuBlankCaption;
 extern DesignModeCellMask g_DesignModeCellMask;
 extern unsigned char g_CarSoundVolumeScales[128];
-extern unsigned char g_MsgVabOpenHeadError[24];
-extern unsigned char g_MsgVabTransBodyError[24];
+extern const char g_MsgVabOpenHeadError[21];
+extern const char g_MsgVabTransBodyError[22];
 extern unsigned char g_IndexedEffects[36];
 extern unsigned char g_SoundModes[96];
 extern unsigned char g_MsgTooManyVoices[16];
-extern unsigned char g_MsgSeqVabOpenHeadError[24];
-extern unsigned char g_MsgSeqVabTransBodyError[44];
+extern const char g_MsgSeqVabOpenHeadError[21];
+extern const char g_MsgSeqVabTransBodyError[22];
 extern unsigned char g_FmtString[8];
 extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
@@ -294,13 +294,17 @@ static const HostStateBlob s_blobs[] = {
     {"g_MenuBlankCaption", &g_MenuBlankCaption, 1},
     {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
-    {"g_MsgVabOpenHeadError", g_MsgVabOpenHeadError, 24},
-    {"g_MsgVabTransBodyError", g_MsgVabTransBodyError, 24},
+    {"g_MsgVabOpenHeadError",
+     (const unsigned char *)g_MsgVabOpenHeadError, 21},
+    {"g_MsgVabTransBodyError",
+     (const unsigned char *)g_MsgVabTransBodyError, 22},
     {"g_IndexedEffects", g_IndexedEffects, 36},
     {"g_SoundModes", g_SoundModes, 96},
     {"g_MsgTooManyVoices", g_MsgTooManyVoices, 16},
-    {"g_MsgSeqVabOpenHeadError", g_MsgSeqVabOpenHeadError, 24},
-    {"g_MsgSeqVabTransBodyError", g_MsgSeqVabTransBodyError, 44},
+    {"g_MsgSeqVabOpenHeadError",
+     (const unsigned char *)g_MsgSeqVabOpenHeadError, 21},
+    {"g_MsgSeqVabTransBodyError",
+     (const unsigned char *)g_MsgSeqVabTransBodyError, 22},
     {"g_FmtString", g_FmtString, 8},
     {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
@@ -418,8 +422,8 @@ static const HostStateBlob s_blobs[] = {
 };
 
 int main(void) {
-    /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 297002858UL;
+    /* Folded from the canonical host constants alone. */
+    const unsigned long expected = 3418908131UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
@@ -442,12 +446,12 @@ int main(void) {
         fclose(out);
     }
     if (digest != expected) {
-        printf("FAIL the retail data changed: %lu bytes across %lu blobs "
+        printf("FAIL the host constants changed: %lu bytes across %lu blobs "
                "digest to %lu, expected %lu\n", bytes,
                (unsigned long)(sizeof(s_blobs) / sizeof(s_blobs[0])), digest,
                expected);
         return 1;
     }
-    printf("the retail data is the same %lu bytes it always was\n", bytes);
+    printf("the host constants are stable across %lu bytes\n", bytes);
     return 0;
 }

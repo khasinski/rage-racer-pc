@@ -13,8 +13,8 @@ s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_SoundCueBank;
 s32 g_VabSpuAddress[4];
-char g_MsgVabOpenHeadError[] = "open";
-char g_MsgVabTransBodyError[] = "body";
+const char g_MsgVabOpenHeadError[] = "open";
+const char g_MsgVabTransBodyError[] = "body";
 
 static s16 s_openResult = 7;
 static s16 s_bodyResult = 8;

@@ -12,8 +12,8 @@ s32 g_SeqVolumeFadeStep;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_VabSpuAddress[7];
-char g_MsgSeqVabOpenHeadError[] = "open";
-char g_MsgSeqVabTransBodyError[] = "body";
+const char g_MsgSeqVabOpenHeadError[] = "open";
+const char g_MsgSeqVabTransBodyError[] = "body";
 
 static s16 s_openResult = 7;
 static s16 s_bodyResult = 8;
