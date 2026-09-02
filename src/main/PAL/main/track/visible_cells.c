@@ -3,6 +3,14 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 
+enum {
+    TERRAIN_CELL_SIZE = 2048,
+    TERRAIN_CELL_HALF_SIZE = TERRAIN_CELL_SIZE / 2,
+    TERRAIN_REGION_COUNT = 32,
+    TERRAIN_MISSING_CLUT = 0x3FF,
+    VIEW_ANGLE_PER_SCAN_DIRECTION = 128,
+};
+
 /*
  * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For
  * each visible object (id != -1, passing the per-sector visibility bitmask test
@@ -26,8 +34,8 @@ void DrawCourseObjects(void) {
 
         if (obj->modelId == -1) continue;
 
-        cellX = obj->x / 2048;
-        cellZ = obj->z / 2048;
+        cellX = obj->x / TERRAIN_CELL_SIZE;
+        cellZ = obj->z / TERRAIN_CELL_SIZE;
         if (!CellVisibilityMaskContains(g_VisibleCellMask, cellX, cellZ)) {
             continue;
         }
@@ -72,91 +80,94 @@ void DrawCourseObjects(void) {
 }
 
 
-static u32 GetCellRegion(s32 x, s32 z) {
-    z = (z * TERRAIN_CELL_GRID_SIZE) + x;
-    return g_TerrainCellGrid[z] >> 10;
+static u32 GetCellRegion(s32 cellX, s32 cellZ) {
+    return g_TerrainCellGrid[cellZ * TERRAIN_CELL_GRID_SIZE + cellX] >> 10;
 }
 
+static int IsCellVisibleFromRegion(s32 cellX, s32 cellZ, u32 region) {
+    if (region >= TERRAIN_REGION_COUNT) {
+        return 0;
+    }
+    return g_CellVisibilityTable[cellZ][cellX] & (1u << region);
+}
 
-static u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
-    u32 visibleRegions;
-    u32 mask;
+static void ClearVisibleCellOutput(void) {
+    s32 index;
 
-    visibleRegions = g_CellVisibilityTable[cellZ][cellX];
-    mask = 1;
-    return (mask << region) & visibleRegions;
+    for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
+        g_VisibleCellMask[index] = 0;
+    }
+    for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
+        g_VisibleCellList[index].w = -1;
+    }
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
     GameViewState *view = RENDER_VIEW_STATE;
-    s32 i;
-    s32 oct;
-    s32 cx, cy;
-    u32 ret0;
-    Vec4 *out;
-    s32 sx;
-    s32 sy;
-    s32 center;
-    s32 vec[3];
-    s32 proj[3];
+    const s32 direction =
+        (view->angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
+    const s32 cameraCellX =
+        view->position.components.x.value / TERRAIN_CELL_SIZE;
+    const s32 cameraCellZ =
+        view->position.components.z.value / TERRAIN_CELL_SIZE;
+    u32 cameraRegion;
+    s32 index;
 
-    for (i = TERRAIN_CELL_GRID_SIZE - 1; i >= 0; i--) {
-        g_VisibleCellMask[i] = 0;
-    }
-
-    oct = (view->angleY / 128) & 0x1F;
-    cx = view->position.components.x.value / 2048;
-    cy = view->position.components.z.value / 2048;
-    if ((u32)cx >= TERRAIN_CELL_GRID_SIZE ||
-        (u32)cy >= TERRAIN_CELL_GRID_SIZE) {
-        for (i = 0; i < VISIBLE_CELL_COUNT; i++) {
-            g_VisibleCellList[i].w = -1;
-        }
+    ClearVisibleCellOutput();
+    if ((u32)cameraCellX >= TERRAIN_CELL_GRID_SIZE ||
+        (u32)cameraCellZ >= TERRAIN_CELL_GRID_SIZE) {
         return;
     }
-    ret0 = GetCellRegion(cx, cy);
+    cameraRegion = GetCellRegion(cameraCellX, cameraCellZ);
 
-    i = 0;
-    out = g_VisibleCellList;
-    for (; i < VISIBLE_CELL_COUNT; i++, out++) {
+    for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
+        Vec4 *out = &g_VisibleCellList[index];
         s32 offset[2];
-        s32 invalid = -1;
+        s32 cellX;
+        s32 cellZ;
+        s32 clut;
+        s32 worldOffset[3];
+        s32 projected[3];
 
-        GetVisibleCellScanOffset(oct, i, g_RenderState.orderingFlag, offset);
-        sx = cx + offset[0];
-        sy = cy + offset[1];
-        if ((u32)sx < TERRAIN_CELL_GRID_SIZE &&
-            (u32)sy < TERRAIN_CELL_GRID_SIZE &&
-            IsCellVisibleFromRegion(sx, sy, ret0)) {
-            s32 clut =
-                g_TerrainCellGrid[(TERRAIN_CELL_GRID_SIZE - 1 - sy) *
-                                      TERRAIN_CELL_GRID_SIZE +
-                                  sx] &
-                0x3FF;
-
-            out->w = clut;
-            g_VisibleCellMask[sy] |= 1u << sx;
-            center = 1024;
-            if (clut != 0x3FF) {
-                /* Retail uses signed MIPS shifts here.  Multiplication has the
-                 * same result for this bounded cell/camera range without C's
-                 * undefined left-shift-of-negative behaviour. */
-                vec[0] = ((sx << 11) - (view->position.components.x.value - center)) * 4;
-                vec[1] = (-view->position.components.y.value) * 4;
-                vec[2] = ((sy << 11) - (view->position.components.z.value - center)) * 4;
-                ApplyMatrixLV((&g_RenderState.matrix), vec, proj);
-                if (proj[2] >= near && far >= proj[2]) {
-                    out->x = proj[0];
-                    out->y = proj[1];
-                    out->z = proj[2];
-                    continue;
-                }
-                out->w = invalid;
-                continue;
-            }
-            out->w = invalid;
+        GetVisibleCellScanOffset(direction, index,
+                                 g_RenderState.orderingFlag, offset);
+        cellX = cameraCellX + offset[0];
+        cellZ = cameraCellZ + offset[1];
+        if ((u32)cellX >= TERRAIN_CELL_GRID_SIZE ||
+            (u32)cellZ >= TERRAIN_CELL_GRID_SIZE ||
+            !IsCellVisibleFromRegion(cellX, cellZ, cameraRegion)) {
             continue;
         }
-        out->w = invalid;
+
+        clut = g_TerrainCellGrid[(TERRAIN_CELL_GRID_SIZE - 1 - cellZ) *
+                                     TERRAIN_CELL_GRID_SIZE +
+                                 cellX] &
+               TERRAIN_MISSING_CLUT;
+        g_VisibleCellMask[cellZ] |= 1u << cellX;
+        if (clut == TERRAIN_MISSING_CLUT) {
+            continue;
+        }
+
+        /* Retail uses signed MIPS shifts here. Multiplication has the same
+         * result for this bounded cell/camera range without C's undefined
+         * left-shift-of-negative behaviour. */
+        worldOffset[0] =
+            (cellX * TERRAIN_CELL_SIZE -
+             (view->position.components.x.value - TERRAIN_CELL_HALF_SIZE)) *
+            4;
+        worldOffset[1] = -view->position.components.y.value * 4;
+        worldOffset[2] =
+            (cellZ * TERRAIN_CELL_SIZE -
+             (view->position.components.z.value - TERRAIN_CELL_HALF_SIZE)) *
+            4;
+        ApplyMatrixLV(&g_RenderState.matrix, worldOffset, projected);
+        if (projected[2] < near || projected[2] > far) {
+            continue;
+        }
+
+        out->x = projected[0];
+        out->y = projected[1];
+        out->z = projected[2];
+        out->w = clut;
     }
 }
