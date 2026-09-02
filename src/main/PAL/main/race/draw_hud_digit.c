@@ -3,7 +3,8 @@
 #include "game/render_internal.h"
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut) {
-    SPRT_8 *sprite = (SPRT_8 *)packet;
+    RenderBufferAddress address = {.bytes = packet};
+    SPRT_8 *sprite = address.sprite8;
 
     SetSprt8(sprite);
     SetShadeTex(sprite, 1);
@@ -14,5 +15,6 @@ u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut) {
     sprite->clut = clut;
 
     AddPrim(GamePrimaryOrderingTable(0), sprite);
-    return (u8 *)(sprite + 1);
+    address.sprite8++;
+    return address.bytes;
 }

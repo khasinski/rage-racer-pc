@@ -9,15 +9,14 @@ typedef struct Text8x8Style {
 
 static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                               Text8x8Style style) {
-    const u8 *character = (const u8 *)text;
-    u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
-    void *ot = GamePrimaryOrderingTable(0);
+    RenderBufferAddress packet = {.bytes = RENDER_PRIM_CURSOR_AS(u8)};
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
-    while (*character != 0) {
-        s32 cell = *character++ - 0x20;
+    while (*text != '\0') {
+        s32 cell = (u8)*text++ - 0x20;
 
         if (cell != 0) {
-            SPRT_8 *sprite = (SPRT_8 *)packet;
+            SPRT_8 *sprite = packet.sprite8;
             s32 fontIndex = cell * 2;
 
             SetSprt8(sprite);
@@ -34,14 +33,15 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
             sprite->v0 = (u8)(g_Font8x8Cells[fontIndex + 1] * 8);
             sprite->clut = (u16)clutIndex;
             AddPrim(ot, sprite);
-            packet += sizeof(*sprite);
+            packet.sprite8++;
         }
         x += 8;
     }
 
-    SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, g_DrawModeEnv);
-    AddPrim(ot, packet);
-    RENDER_PRIM_CURSOR_AS(u8) = packet + sizeof(DrawPacket);
+    SetDrawMode(packet.drawPacket, 0, 1, style.drawMode, g_DrawModeEnv);
+    AddPrim(ot, packet.drawPacket);
+    packet.drawPacket++;
+    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
 }
 
 void DrawText8x8(s32 x, s32 y, const char *text, s32 clutIndex) {
