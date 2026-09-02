@@ -384,6 +384,18 @@ endif()
 add_test(NAME split_time_state COMMAND split_time_state_tests)
 set_tests_properties(split_time_state PROPERTIES LABELS unit)
 
+add_executable(split_time_display_tests
+    split_time_display_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_display.c)
+target_include_directories(split_time_display_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(split_time_display_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME split_time_display COMMAND split_time_display_tests)
+set_tests_properties(split_time_display PROPERTIES LABELS unit)
+
 add_executable(start_countdown_timing_tests
     start_countdown_timing_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/start_countdown_timing.c)

@@ -43,6 +43,7 @@ add_executable(race_hud_placement_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_sprite_from_desc.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/race_hud.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_split_times.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_display.c
     ${CMAKE_SOURCE_DIR}/src/port/hud_config.c)
 target_include_directories(race_hud_placement_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include

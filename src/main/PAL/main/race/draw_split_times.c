@@ -1,13 +1,12 @@
 #include "game/save_internal.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/render.h"
 #include "game/player_car_internal.h"
 
 #include "rage/hud_config.h"
 
 enum {
-    SPLIT_DISPLAY_FRAMES = 60,
-    MAX_DISPLAY_TIME_MS = 599998,
     TIME_DISPLAY_TIMEOUT = 1000,
 };
 
@@ -18,14 +17,15 @@ void DrawSplitTimes(void) {
         return;
     }
 
-    if (g_SplitTimer < SPLIT_DISPLAY_FRAMES && g_SectorIndex >= 0) {
-        if (g_SplitSign != 0 && g_LapCount >= g_PlayerCar.lap) {
-            tile = g_SplitSign > 0 ? 0x7810 : 0x780F;
+    if (SplitCurrentTimeVisible(g_SplitTimer, g_SectorIndex)) {
+        if (SplitDeltaVisible(g_SplitTimer, g_SectorIndex, g_SplitSign,
+                              g_LapCount, g_PlayerCar.lap)) {
+            tile = SplitDeltaClut(g_SplitSign);
             DrawTimeValue(0x80, 0x50, g_SplitDelta, tile,
                           TIME_DISPLAY_TIMEOUT);
         }
 
-        tile = g_LastSectorTime <= MAX_DISPLAY_TIME_MS ? 0x78CC : 0x7890;
+        tile = SplitTimeClut(g_LastSectorTime);
         DrawTimeValue(HudLeftX(0x12), 0x2A, g_LastSectorTime, tile,
                       TIME_DISPLAY_TIMEOUT);
     }

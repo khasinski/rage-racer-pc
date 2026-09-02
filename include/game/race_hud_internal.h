@@ -4,6 +4,11 @@
 #include "common.h"
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
+s32 SplitCurrentTimeVisible(s32 timer, s32 sectorIndex);
+s32 SplitDeltaVisible(s32 timer, s32 sectorIndex, s32 sign,
+                      s32 lapCount, s32 playerLap);
+s32 SplitDeltaClut(s32 sign);
+s32 SplitTimeClut(s32 timeMs);
 
 typedef struct StartCountdownTiming {
     s32 visible;
