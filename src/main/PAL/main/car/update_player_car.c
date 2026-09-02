@@ -1,4 +1,3 @@
-#include "game/diagnostics.h"
 #include "game/state.h"
 #include "game/race.h"
 #include "game/car.h"
@@ -8,7 +7,6 @@
 #include "game/audio.h"
 #include "game/random.h"
 
-#include <stdlib.h>
 #include "rage/trace.h"
 
 /* Per-frame player physics orchestration and track contact. */
@@ -73,46 +71,6 @@ static void ClampSteeringAngle(PlayerCarRuntime *car, GameCarDrive *p) {
     }
 }
 
-/*
- * How far the car reaches across the track, and which corner reaches
- * furthest each way. The corners are turned into the track's frame first, so
- * a car at an angle is measured across its diagonal.
- */
-static void MeasureTrackLimits(Matrix *toTrack, CarTrackLimits *limits) {
-    SVec corner;
-    Vec4 reach;
-    s32 index;
-
-    limits->rightInset = -1;
-    limits->leftInset = -1;
-    for (index = 0; index < 4; index++) {
-        corner.vx = g_CarCornerOffsets[index].x * 4;
-        corner.vz = g_CarCornerOffsets[index].z * 4;
-        corner.vy = 0;
-        ApplyMatrix(toTrack, &corner, &reach);
-        if (DiagnosticsEnabled("car.track_trace")) {
-            const char *timerText = DiagnosticsValue("car.track_trace_timer");
-            if (timerText == NULL ||
-                g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
-                Trace("car-limit", "timer=%d matrix=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                       "vector=%d,%d,%d output=%d,%d,%d", g_SceneTimer,
-                       toTrack->m[0][0], toTrack->m[0][1], toTrack->m[0][2],
-                       toTrack->m[1][0], toTrack->m[1][1], toTrack->m[1][2],
-                       toTrack->m[2][0], toTrack->m[2][1], toTrack->m[2][2],
-                       corner.vx, corner.vy, corner.vz, reach.x, reach.y,
-                       reach.z);
-            }
-        }
-        /* The knockback modes are one-based, so that zero means no corner. */
-        if (limits->rightInset < reach.x) {
-            limits->rightKnockbackMode = index + 1;
-            limits->rightInset = reach.x;
-        } else if (reach.x < limits->leftInset) {
-            limits->leftKnockbackMode = index + 1;
-            limits->leftInset = reach.x;
-        }
-    }
-}
 
 /*
  * What a scrape sounds like. Skids one and three are one side of the track and
@@ -221,7 +179,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     sv2.vy = slip;
     RotMatrix(&sv2, &mA);
 
-    MeasureTrackLimits(&mA, &limits);
+    MeasurePlayerTrackLimits(&mA, &limits);
 
     if ((s16)car->motionTimer > 0) {
         ApplyCarKnockback(AsRivalCar(car));

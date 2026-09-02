@@ -93,6 +93,26 @@ add_test(NAME player_engine_presentation
     COMMAND player_engine_presentation_tests)
 set_tests_properties(player_engine_presentation PROPERTIES LABELS unit)
 
+add_executable(player_track_limits_tests
+    player_track_limits_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_track_limits.c)
+target_include_directories(player_track_limits_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(player_track_limits_tests PRIVATE __psyz=1)
+target_link_libraries(player_track_limits_tests PRIVATE psyz)
+if(MSVC)
+    target_compile_options(player_track_limits_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(player_track_limits_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME player_track_limits COMMAND player_track_limits_tests)
+set_tests_properties(player_track_limits PROPERTIES LABELS unit)
+
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3

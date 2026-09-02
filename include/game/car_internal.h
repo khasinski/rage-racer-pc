@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/render.h"
 #include "game/vector.h"
 
 typedef union RaceIntroCameraCoordinate {
@@ -80,6 +81,8 @@ void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
 void ReadPlayerCarInput(GameCarDrive *drive);
 void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight);
 void UpdatePlayerEnginePresentation(PlayerCarRuntime *car);
+void MeasurePlayerTrackLimits(const Matrix *toTrack,
+                              CarTrackLimits *limits);
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);
