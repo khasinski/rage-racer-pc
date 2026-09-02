@@ -101,6 +101,16 @@ static void TestWrappedReplayAutoFadeKeepsAudio(void) {
     assert(s_AudioFade == -1);
 }
 
+static void TestLinearReplayAutoFadeFadesAudio(void) {
+    ResetState();
+    g_SceneTimer = 932;
+
+    UpdateReplayFade();
+
+    assert(g_FadeStep == 4);
+    assert(s_AudioFade == 60);
+}
+
 static void TestOpaqueFadeSelectsResultScene(void) {
     ResetState();
     g_FadeLevel = 254;
@@ -114,6 +124,14 @@ static void TestOpaqueFadeSelectsResultScene(void) {
     assert(g_SceneId == 0x12);
     assert(s_FadeDraws == 1 && s_FadeColor == 258 &&
            s_FadeTpage == 0x49);
+
+    ResetState();
+    g_FadeLevel = 254;
+    g_FadeStep = 4;
+
+    UpdateReplayFade();
+
+    assert(g_SceneId == 0x14);
 }
 
 int main(void) {
@@ -121,6 +139,7 @@ int main(void) {
     TestSeriesClearWashProgress();
     TestConfirmStartsAudioFade();
     TestWrappedReplayAutoFadeKeepsAudio();
+    TestLinearReplayAutoFadeFadesAudio();
     TestOpaqueFadeSelectsResultScene();
     return 0;
 }
