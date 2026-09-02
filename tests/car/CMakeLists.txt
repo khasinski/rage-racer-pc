@@ -134,6 +134,7 @@ set_tests_properties(player_contact_response PROPERTIES LABELS unit)
 
 add_executable(player_controls_tests
     player_controls_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_wheel_rotation.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_controls.c)
 target_include_directories(player_controls_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
@@ -1104,6 +1105,7 @@ set_tests_properties(steer_car_along_route PROPERTIES LABELS unit)
 
 add_executable(rival_body_motion_tests
     rival_body_motion_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_wheel_rotation.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_body_motion.c)
 target_include_directories(rival_body_motion_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include

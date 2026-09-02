@@ -17,19 +17,6 @@ void UpdatePlayerSteeringTarget(PlayerCarRuntime *car) {
     }
 }
 
-static void UpdatePlayerWheelRotation(PlayerCarRuntime *car) {
-    s32 step = car->speed * 3;
-    s32 rotation;
-
-    if (step > 4096) {
-        step = 0x249;
-    }
-    rotation = (step + car->wheelRotation) & 0xFFF;
-    car->wheelRotation = car->speed > 800
-        ? rotation | 0x1000
-        : rotation;
-}
-
 static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     int usesNegcon = g_PadType == PAD_TYPE_NEGCON;
@@ -50,6 +37,6 @@ static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
 }
 
 void UpdatePlayerControlFeedback(PlayerCarRuntime *car) {
-    UpdatePlayerWheelRotation(car);
+    UpdateCarWheelRotation(GetPlayerCarRuntime(car));
     ClampPlayerSteeringAngle(car);
 }

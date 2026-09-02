@@ -1,26 +1,11 @@
-#include "game/angle.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 
 enum RivalVerticalMotionState {
     RIVAL_VERTICAL_RISING = 1,
     RIVAL_VERTICAL_AT_CREST = 2,
     RIVAL_VERTICAL_FALLING = 3,
 };
-
-static void SpinRivalWheels(GameCarRuntime *car) {
-    s32 scaledSpeed = car->speed * 3;
-    s16 step = (s16)scaledSpeed;
-    s32 rotation;
-
-    if ((s16)scaledSpeed >= 0x1001) {
-        step = 0x249;
-    }
-    rotation = (step + car->wheelRotation) & ANGLE_MASK;
-    if (car->speed >= 0x321) {
-        rotation |= ANGLE_FULL_TURN;
-    }
-    car->wheelRotation = rotation;
-}
 
 static void UpdateRivalJumpArc(GameCarRuntime *car, s32 ground) {
     s32 tick = (u16)car->verticalMotionTimer + 1;
@@ -70,7 +55,7 @@ void UpdateRivalBodyMotion(void) {
         }
 
         ground = car->y - 8;
-        SpinRivalWheels(car);
+        UpdateCarWheelRotation(car);
         CopyCarBodyRotationToModel(car);
         car->bodyRoll += car->bodyRollVelocity;
         car->modelY = car->y;
