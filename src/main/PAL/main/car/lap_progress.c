@@ -8,43 +8,9 @@ static s32 WrapTrackPointIndex(s32 index) {
 }
 
 static s32 TrackSegmentLength(s32 index) {
-    return (s16)g_TrackPoints[index].segmentLength;
-}
+    s32 length = (s16)g_TrackPoints[index].segmentLength;
 
-/* Seeds the launch-spin value from how far the revs sit above the power peak;
- * a car already in gear 2 or higher also starts losing grip. */
-void BeginCarStandingStart(PlayerCarRuntime *car) {
-    s32 value;
-    s32 gear = car->drive.gear;
-    s32 revLimit = g_CarSpec->revLimit;
-
-    if (gear < 1) {
-        gear = 1;
-    } else if (gear > CAR_FORWARD_GEAR_COUNT) {
-        gear = CAR_FORWARD_GEAR_COUNT;
-    }
-    car->drive.gear = (s16)gear;
-    if (revLimit <= 0) {
-        revLimit = 1;
-    }
-
-    value = ((g_EngineRpm - g_PeakOutputRpm) * 10000) / revLimit;
-    g_StandingStartState = 0;
-
-    if (value < 0) {
-        value = g_EngineRpm - 1000;
-        if (g_EngineRpm < 2000) {
-            value = 0;
-        }
-    } else {
-        value *= g_PeakOutputValue / ((gear * 200) + 300);
-        car->drive.drivetrainTorque /= gear;
-        if (gear >= 2) {
-            g_GripLossTimer = 200;
-        }
-    }
-
-    g_StandingStartSpin = value;
+    return length > 0 ? length : 0;
 }
 
 /*
@@ -128,7 +94,9 @@ void AccumulateLapProgress(GameCarRuntime *car) {
         car->activeFlag = -1;
         return;
     }
+    target = WrapTrackPointIndex(target);
     if (target == current) {
+        car->trackPointIndex = current;
         return;
     }
 

@@ -1003,6 +1003,25 @@ target_link_libraries(lap_progress_tests PRIVATE psyz)
 add_test(NAME lap_progress COMMAND lap_progress_tests)
 set_tests_properties(lap_progress PROPERTIES LABELS unit)
 
+add_executable(standing_start_setup_tests
+    standing_start_setup_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/begin_car_standing_start.c)
+target_include_directories(standing_start_setup_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(standing_start_setup_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(standing_start_setup_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(standing_start_setup_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME standing_start_setup COMMAND standing_start_setup_tests)
+set_tests_properties(standing_start_setup PROPERTIES LABELS unit)
+
 add_executable(seed_finish_camera_tests
     seed_finish_camera_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/seed_finish_camera.c)
