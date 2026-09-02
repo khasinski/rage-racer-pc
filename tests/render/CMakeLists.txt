@@ -348,6 +348,24 @@ target_link_libraries(spinning_scenery_tests PRIVATE psyz)
 add_test(NAME spinning_scenery COMMAND spinning_scenery_tests)
 set_tests_properties(spinning_scenery PROPERTIES LABELS functional)
 
+add_executable(static_scenery_tests
+    static_scenery_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_static_scenery.c)
+target_include_directories(static_scenery_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(static_scenery_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(static_scenery_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(static_scenery_tests PRIVATE psyz)
+add_test(NAME static_scenery COMMAND static_scenery_tests)
+set_tests_properties(static_scenery PROPERTIES LABELS functional)
+
 add_executable(scripted_scenery_dispatch_tests
     scripted_scenery_dispatch_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_scripted_scenery.c)

@@ -34,12 +34,12 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
     }
 }
 
-void DrawStaticScenery(s32 shifted) {
-    SceneryPlacement *placement = &g_StaticSceneryState.standard;
+void DrawStaticScenery(s32 shiftForSeriesCourse) {
+    const SceneryPlacement *placement = &g_StaticSceneryState.standard;
     LVec position = placement->position;
     s32 modelLimit;
 
-    if (shifted != 0) {
+    if (shiftForSeriesCourse != 0) {
         position.z += 0x5000;
     }
     if (!TrackCellVisible(position.x, position.z)) {
@@ -52,7 +52,7 @@ void DrawStaticScenery(s32 shifted) {
 }
 
 void DrawHighClassScenery(void) {
-    SceneryPlacement *placement = &g_StaticSceneryState.highClass;
+    const SceneryPlacement *placement = &g_StaticSceneryState.highClass;
 
     SubmitStaticScenery(
         &placement->position, placement->yaw, 1,

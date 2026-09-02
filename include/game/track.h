@@ -261,7 +261,7 @@ void DrawScriptedScenery(s32 animate);
 /* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;
  * pass 1 for THE EXTREME OVAL's +0x5000 z shift. Model 0x3A or 0x3B depending
  * on g_IsEnvironmentMode4. */
-void DrawStaticScenery(s32 shifted);
+void DrawStaticScenery(s32 shiftForSeriesCourse);
 
 /* A second static landmark at (29266, 6039, 45612): MYTHICAL COAST only, from
  * g_GrandPrixClass >= 4, and the one prop with no visibility cull. */
