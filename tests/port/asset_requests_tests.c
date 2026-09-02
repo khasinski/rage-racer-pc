@@ -256,13 +256,22 @@ int main(void) {
     header->offsets[2] = 64;
     g_AssetBase = pack.bytes;
     g_AssetLoadState = 1;
-    s_loadResult = 1;
+    s_loadResult = sizeof(pack.bytes);
     LoadSelectBgmAssets();
     Check(s_closeCalls == 1, "BGM load closes previous audio slots");
     Check(g_AssetLoadState == 0, "BGM load completes");
     Check(g_AssetBlockPtr == pack.bytes + 16, "BGM first block");
     Check(g_AssetBlockPtr2 == pack.bytes + 32, "BGM second block");
     Check(g_AssetSubBlockPtr == pack.bytes + 64, "BGM third block");
+
+    header->offsets[1] = header->offsets[0];
+    g_AssetLoadState = 2;
+    g_AssetBlockPtr = NULL;
+    s_loadResult = sizeof(pack.bytes);
+    LoadSelectBgmAssets();
+    Check(g_AssetLoadState == 0 && g_AssetBlockPtr == NULL,
+          "overlapping BGM blocks cancel installation");
+    header->offsets[1] = 32;
 
     g_AssetLoadState = 2;
     s_loadResult = 0;

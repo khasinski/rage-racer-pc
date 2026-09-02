@@ -20,6 +20,12 @@ enum {
     SELECT_BGM_LOAD_ASSET = 2,
 };
 
+typedef struct SelectBgmAssetHeader {
+    s32 audioHeaderOffset;
+    s32 sequenceOffset;
+    s32 audioBodyOffset;
+} SelectBgmAssetHeader;
+
 static void LoadBootTitleScreen(void) {
     u8 *base = GetAssetBytes(g_LoadBuffer);
     s32 loadedSize = LoadAsset(ASSET_TITLE_SCREEN, base);
@@ -121,14 +127,24 @@ s32 RequestSelectBgmAssets(void) {
 }
 
 static void LoadSelectBgmAssetPack(void) {
-    GameSceneAssetHeader *header;
+    SelectBgmAssetHeader *header;
+    s32 loadedSize;
 
-    if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) == 0) return;
+    loadedSize = LoadAsset(ASSET_SELECT_BGM, g_AssetBase);
+    if (loadedSize == 0) return;
 
-    header = GetSceneAssetHeader(g_AssetBase);
-    g_AssetBlockPtr = GetSceneAssetBlock(header, 0);
-    g_AssetBlockPtr2 = GetSceneAssetBlock(header, 1);
-    g_AssetSubBlockPtr = GetSceneAssetBlock(header, 2);
+    header = (SelectBgmAssetHeader *)g_AssetBase;
+    if (loadedSize < (s32)sizeof(*header) ||
+        header->audioHeaderOffset < (s32)sizeof(*header) ||
+        header->sequenceOffset <= header->audioHeaderOffset ||
+        header->audioBodyOffset <= header->sequenceOffset ||
+        header->audioBodyOffset >= loadedSize) {
+        g_AssetLoadState = 0;
+        return;
+    }
+    g_AssetBlockPtr = g_AssetBase + header->audioHeaderOffset;
+    g_AssetBlockPtr2 = g_AssetBase + header->sequenceOffset;
+    g_AssetSubBlockPtr = g_AssetBase + header->audioBodyOffset;
     g_AssetLoadState = 0;
 }
 
