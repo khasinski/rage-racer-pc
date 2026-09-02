@@ -66,11 +66,20 @@ int main(void) {
     g_TrackLength = 1000;
 
     if (!ExpectAmbience(50, 3, 0, 0) ||
+        !ExpectAmbience(100, 3, 0, 0) ||
         !ExpectAmbience(110, 2, 32, 80) ||
         !ExpectAmbience(150, 2, 32, 128) ||
         !ExpectAmbience(390, 3, 32, 80)) {
         return 1;
     }
+
+    events.pointAmbienceZones[0].fadeInDistance = 0;
+    events.pointAmbienceZones[0].fadeOutDistance = 0;
+    if (!ExpectAmbience(150, 2, 32, 128)) {
+        return 1;
+    }
+    events.pointAmbienceZones[0].fadeInDistance = 20;
+    events.pointAmbienceZones[0].fadeOutDistance = 20;
 
     g_RaceSeries = 1;
     if (!ExpectAmbience(890, 2, 32, 80)) {
