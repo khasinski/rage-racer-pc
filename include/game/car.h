@@ -839,6 +839,7 @@ void InitRivalCarAi(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
 void RankContenders(void);
 void SeedCarRouteMarkers(void);
 void SlowRivalAhead(GameCarRuntime *car, s32 carIndex);
+void SteerCarAlongRoute(GameCarRuntime *car);
 void SteerCarToTrackLine(PlayerCarRuntime *car);
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear);
 void UpdateCarDrivetrain(PlayerCarRuntime *car);

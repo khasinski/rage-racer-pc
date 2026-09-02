@@ -771,3 +771,24 @@ endif()
 target_link_libraries(race_intro_camera_tests PRIVATE psyz)
 add_test(NAME race_intro_camera COMMAND race_intro_camera_tests)
 set_tests_properties(race_intro_camera PROPERTIES LABELS unit)
+
+add_executable(steer_car_along_route_tests
+    steer_car_along_route_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_along_route.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c)
+target_include_directories(steer_car_along_route_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(steer_car_along_route_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(steer_car_along_route_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(steer_car_along_route_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(steer_car_along_route_tests PRIVATE psyz)
+add_test(NAME steer_car_along_route COMMAND steer_car_along_route_tests)
+set_tests_properties(steer_car_along_route PROPERTIES LABELS unit)
