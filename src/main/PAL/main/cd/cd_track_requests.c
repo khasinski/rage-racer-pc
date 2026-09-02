@@ -38,7 +38,7 @@ void StepCdTrackRequest(void) {
 
     switch (g_CdTrackStep) {
     case CD_TRACK_WAIT_FOR_DRIVE:
-        if (CdSync(CD_SYNC_POLL, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
         /* Selecting a new track must silence the currently streaming one
@@ -51,7 +51,7 @@ void StepCdTrackRequest(void) {
         g_CdTrackStep = CD_TRACK_WAIT_FOR_PAUSE;
         break;
     case CD_TRACK_WAIT_FOR_PAUSE:
-        if (CdSync(CD_SYNC_POLL, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
         g_CdFadeFrames = 0;
@@ -67,7 +67,7 @@ void StepCdTrackRequest(void) {
         FinishTrackRequest(1);
         break;
     case CD_TRACK_RESTART_WAIT_FOR_DRIVE:
-        if (CdSync(CD_SYNC_POLL, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
         g_CdTrackStep = CD_TRACK_RESTART_SEND_SEEK;

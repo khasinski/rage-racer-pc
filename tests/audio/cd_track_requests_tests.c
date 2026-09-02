@@ -69,7 +69,7 @@ static int TestTrackSelection(void) {
     g_CdVolume = 73;
     ResetCalls();
 
-    s_syncResult = 0;
+    s_syncResult = CD_SYNC_PENDING;
     StepCdTrackRequest();
     CHECK(g_CdTrackStep == CD_TRACK_WAIT_FOR_DRIVE && s_controlCalls == 0);
     CHECK(s_syncMode == CD_SYNC_POLL);

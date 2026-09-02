@@ -27,7 +27,7 @@ void StepCdPauseRequest(void) {
 
     switch (g_CdCommandStep) {
     case CD_PAUSE_WAIT_FOR_DRIVE:
-        if (CdSync(CD_SYNC_POLL, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
         g_CdCommandStep = CD_PAUSE_GET_LOCATION;

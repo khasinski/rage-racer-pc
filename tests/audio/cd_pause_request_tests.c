@@ -48,7 +48,7 @@ long CdPosToInt_Local(CdlLOC *location) {
 int main(void) {
     memset(g_CdTrackLoopPoint, 0, sizeof(g_CdTrackLoopPoint));
     g_CdCommandStep = CD_PAUSE_WAIT_FOR_DRIVE;
-    s_syncResult = 0;
+    s_syncResult = CD_SYNC_PENDING;
     StepCdPauseRequest();
     CHECK(s_syncMode == CD_SYNC_POLL);
     CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_DRIVE);

@@ -22,6 +22,7 @@ typedef enum CdDriveCommand {
 } CdDriveCommand;
 
 typedef enum CdSyncResult {
+    CD_SYNC_PENDING = 0,
     CD_SYNC_COMPLETE = 2,
     CD_SYNC_DISK_ERROR = 5,
 } CdSyncResult;
