@@ -75,6 +75,7 @@ set_tests_properties(relocate_car_model PROPERTIES LABELS unit)
 
 add_executable(car_model_loading_tests
     car_model_loading_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_request.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_model_loading.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_assets.c)
 target_include_directories(car_model_loading_tests PRIVATE
@@ -174,6 +175,7 @@ set_tests_properties(audio_settings PROPERTIES LABELS unit)
 
 add_executable(race_asset_loading_tests
     race_asset_loading_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_request.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_course_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c
@@ -298,6 +300,7 @@ set_tests_properties(window_lifecycle PROPERTIES LABELS e2e)
 endif()
 add_executable(asset_requests_tests
     asset_requests_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_request.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_requests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/option_screen_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/round_screen_assets.c)

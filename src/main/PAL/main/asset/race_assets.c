@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/race.h"
@@ -6,18 +7,7 @@
 #include "rage/render_world_game.h"
 
 s32 RequestRaceAssets(void) {
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    if (g_AssetRequestType == ASSET_REQUEST_RACE) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    g_AssetRequestType = ASSET_REQUEST_RACE;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestAssetLoad(ASSET_REQUEST_RACE, 1, 0);
 }
 
 static void BeginRaceVoiceLoad(void) {
@@ -124,22 +114,7 @@ void LoadRaceAssets(void) {
 }
 
 s32 RequestRaceStart(void) {
-    s32 state;
-
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    state = ASSET_REQUEST_GRAND_PRIX_SCREEN;
-    if (g_AssetRequestType == state) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    ResetCdAudioState();
-    g_AssetRequestType = state;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestAssetLoad(ASSET_REQUEST_GRAND_PRIX_SCREEN, 1, 1);
 }
 
 void LoadGrandPrixScreen(void) {
@@ -158,18 +133,7 @@ void LoadGrandPrixScreen(void) {
 }
 
 s32 RequestTrackLoad(void) {
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    if (g_AssetRequestType == ASSET_REQUEST_COURSE) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    g_AssetRequestType = ASSET_REQUEST_COURSE;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestAssetLoad(ASSET_REQUEST_COURSE, 1, 0);
 }
 
 void LoadCourseAssets(void) {

@@ -30,8 +30,6 @@ u16 g_TeamLogoClut[16];
 TeamLogoCanvas g_TeamLogoCanvas;
 TeamLogoRect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
-char g_MsgResOk[] = "";
-
 static s32 s_loadResult;
 static s32 s_resetCalls;
 static s32 s_closeCalls;

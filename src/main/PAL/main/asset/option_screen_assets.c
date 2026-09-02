@@ -1,19 +1,10 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/cd.h"
 #include "game/render.h"
 
 void RequestOptionScreenAssets(void) {
-    if (g_AssetLoadState != 0) {
-        return;
-    }
-    if (g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return;
-    }
-
-    ResetCdAudioState();
-    g_AssetRequestType = ASSET_REQUEST_OPTION_SCREEN;
-    g_AssetLoadState = 1;
+    RequestAssetLoad(ASSET_REQUEST_OPTION_SCREEN, 1, 1);
 }
 
 void LoadOptionScreenAssets(void) {

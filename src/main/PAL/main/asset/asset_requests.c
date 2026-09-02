@@ -1,9 +1,8 @@
-#include <stdio.h>
-
-#include "game/menu_internal.h"
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/cd.h"
 #include "game/audio.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 
 /* The team-logo canvas and its two VRAM rects. Kept local: menu/ spells the
@@ -46,7 +45,6 @@ static void LoadBootResources(void) {
     s32 loadedSize = LoadAsset(ASSET_BOOT_RESOURCES, g_AssetLoadCursor);
 
     if (loadedSize == 0) return;
-    printf("%s", g_MsgResOk);
     g_AssetLoadCursor += loadedSize;
     g_AssetLoadState = 6;
 }
@@ -87,24 +85,8 @@ void LoadBootAssets(void) {
     }
 }
 
-static s32 RequestAsset(AssetRequestType request, s32 firstLoadState) {
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    if (g_AssetRequestType == request) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    ResetCdAudioState();
-    g_AssetRequestType = request;
-    g_AssetLoadState = firstLoadState;
-    return 1;
-}
-
 s32 RequestSaveScreenAssets(void) {
-    return RequestAsset(ASSET_REQUEST_SAVE_SCREEN, 1);
+    return RequestAssetLoad(ASSET_REQUEST_SAVE_SCREEN, 1, 1);
 }
 
 void LoadSaveScreenAssets(void) {
@@ -117,11 +99,11 @@ void LoadSaveScreenAssets(void) {
 }
 
 s32 RequestSelectBgmAssetsKeepAudioSlots(void) {
-    return RequestAsset(ASSET_REQUEST_SELECT_BGM, 2);
+    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM, 2, 1);
 }
 
 s32 RequestSelectBgmAssets(void) {
-    return RequestAsset(ASSET_REQUEST_SELECT_BGM, 1);
+    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM, 1, 1);
 }
 
 void LoadSelectBgmAssets(void) {

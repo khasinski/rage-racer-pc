@@ -44,6 +44,8 @@ static s32 s_sequenceInitCalls;
 static CourseModelAssetHeader *s_courseModels;
 static GameImageAssetHeaderWord *s_uploadedImage;
 
+void ResetCdAudioState(void) {}
+
 s32 GetCarAssetIndex(s32 model, s32 grade) { return model * 10 + grade; }
 s32 LoadAsset(s32 assetId, void *destination) {
     s_loadAssetId = assetId;

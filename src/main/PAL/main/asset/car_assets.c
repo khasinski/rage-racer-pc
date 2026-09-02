@@ -8,18 +8,7 @@
  * TeamLogoSample struct private to that file. */
 
 s32 RequestCarSelectAssets(void) {
-    if (g_AssetLoadState != 0) {
-        return 1;
-    }
-
-    if (g_AssetRequestType == ASSET_REQUEST_CAR_SELECT) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
-    }
-
-    g_AssetRequestType = ASSET_REQUEST_CAR_SELECT;
-    g_AssetLoadState = 1;
-    return 1;
+    return RequestAssetLoad(ASSET_REQUEST_CAR_SELECT, 1, 0);
 }
 
 static void BeginCarSelectAudioLoad(void) {
