@@ -751,3 +751,23 @@ endif()
 target_link_libraries(seed_finish_camera_tests PRIVATE psyz)
 add_test(NAME seed_finish_camera COMMAND seed_finish_camera_tests)
 set_tests_properties(seed_finish_camera PROPERTIES LABELS unit)
+
+add_executable(race_intro_camera_tests
+    race_intro_camera_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_intro_camera.c)
+target_include_directories(race_intro_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_intro_camera_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(race_intro_camera_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_intro_camera_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(race_intro_camera_tests PRIVATE psyz)
+add_test(NAME race_intro_camera COMMAND race_intro_camera_tests)
+set_tests_properties(race_intro_camera PROPERTIES LABELS unit)

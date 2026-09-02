@@ -4,14 +4,13 @@
 #include "game/render.h"
 #include "game/track.h"
 
+enum { INTRO_CAR_VIEW_HEIGHT = 28 };
+
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     GameViewWork viewWork;
-    GameViewWork *view;
-    s32 carViewHeight = 28;
     s32 delta[3];
 
     LoadViewWork(&viewWork);
-    view = &viewWork;
 
     if (mode >= 90) {
         UpdateCamera(CAMERA_VIEW_CAR, (GameRenderObject *)car);
@@ -20,7 +19,8 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
 
     if (mode < 2) {
         RaceIntroCameraScript *script = g_RaceIntroCameraScript;
-        s16 keyIndex = script->firstKeyIndex[ReadStableRaceSeries()];
+        s32 series = ReadStableRaceSeries() != 0;
+        s16 keyIndex = script->firstKeyIndex[series];
         RaceIntroCameraKey *key = &script->keys[keyIndex];
 
         g_RaceIntroCameraCursor = key;
@@ -41,7 +41,8 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             if (key[1].mode == 1) {
                 g_RaceIntroCameraDelta.vx = (u16)car->x - key[1].x.half.value;
                 g_RaceIntroCameraDelta.vy =
-                    (u16)car->y - carViewHeight - key[1].y.half.value;
+                    (u16)car->y - INTRO_CAR_VIEW_HEIGHT -
+                    key[1].y.half.value;
                 g_RaceIntroCameraDelta.vz = (u16)car->z - key[1].z.half.value;
             } else {
                 g_RaceIntroCameraDelta.vx =
@@ -60,39 +61,41 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     }
 
     if (g_RaceIntroCameraCursor->mode == 0) {
-        s32 interpolationAngle =
-            (g_RaceIntroCameraTimer << 10) /
-            g_RaceIntroCameraCursor->duration;
+        s32 duration = g_RaceIntroCameraCursor->duration;
+        s32 interpolationAngle = duration > 0
+                                     ? (g_RaceIntroCameraTimer << 10) / duration
+                                     : 0;
         s32 interpolation = rcos(interpolationAngle);
 
-        view->x = g_RaceIntroCameraCursor->x.word +
-                  g_RaceIntroCameraDelta.vx * interpolation / 4096;
-        view->y = g_RaceIntroCameraCursor->y.word +
-                  g_RaceIntroCameraDelta.vy * interpolation / 4096;
-        view->z = g_RaceIntroCameraCursor->z.word +
-                  g_RaceIntroCameraDelta.vz * interpolation / 4096;
+        viewWork.x = g_RaceIntroCameraCursor->x.word +
+                     g_RaceIntroCameraDelta.vx * interpolation / 4096;
+        viewWork.y = g_RaceIntroCameraCursor->y.word +
+                     g_RaceIntroCameraDelta.vy * interpolation / 4096;
+        viewWork.z = g_RaceIntroCameraCursor->z.word +
+                     g_RaceIntroCameraDelta.vz * interpolation / 4096;
 
-        delta[0] = rsin(car->bodyYaw) / 128 + car->x - view->x;
-        delta[1] = car->y - carViewHeight - view->y;
-        delta[2] = rcos(car->bodyYaw) / 128 + car->z - view->z;
-        view->angleY = ANGLE_QUARTER_TURN - Atan2(delta[0], delta[2]);
-        view->angleX = ANGLE_QUARTER_TURN -
-                       Atan2(delta[1], DistanceXZ(delta[0], delta[2]) >> 6);
-        view->angleZ = 0;
+        delta[0] = rsin(car->bodyYaw) / 128 + car->x - viewWork.x;
+        delta[1] = car->y - INTRO_CAR_VIEW_HEIGHT - viewWork.y;
+        delta[2] = rcos(car->bodyYaw) / 128 + car->z - viewWork.z;
+        viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta[0], delta[2]);
+        viewWork.angleX = ANGLE_QUARTER_TURN -
+                          Atan2(delta[1],
+                                DistanceXZ(delta[0], delta[2]) >> 6);
+        viewWork.angleZ = 0;
         StoreViewWork(&viewWork);
         SetCameraRotMatrix();
         SelectModelBank(0);
         DrawPlayerCarModel((GameRenderObject *)car);
     } else {
         DrawFullscreenFadeTile(g_RaceIntroCameraTimer * 26, 0x29);
-        view->x = car->x;
-        view->y = car->y - carViewHeight;
-        view->z = car->z;
-        view->reserved = car->positionW;
-        view->angleX = car->bodyPitch;
-        view->angleY = car->bodyYaw;
-        view->angleZ = car->bodyRoll;
-        view->depth = car->bodyRotationW;
+        viewWork.x = car->x;
+        viewWork.y = car->y - INTRO_CAR_VIEW_HEIGHT;
+        viewWork.z = car->z;
+        viewWork.reserved = car->positionW;
+        viewWork.angleX = car->bodyPitch;
+        viewWork.angleY = car->bodyYaw;
+        viewWork.angleZ = car->bodyRoll;
+        viewWork.depth = car->bodyRotationW;
         StoreViewWork(&viewWork);
         SetCameraRotMatrix();
     }
