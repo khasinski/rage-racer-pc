@@ -3,14 +3,16 @@
 #include "game/cd.h"
 #include "game/render.h"
 
+enum { OPTION_SCREEN_LOAD_ASSET = 1 };
+
 void RequestOptionScreenAssets(void) {
-    RequestAssetLoad(ASSET_REQUEST_OPTION_SCREEN, 1, 1);
+    RequestAssetLoad(ASSET_REQUEST_OPTION_SCREEN, OPTION_SCREEN_LOAD_ASSET, 1);
 }
 
 void LoadOptionScreenAssets(void) {
     OptionScreenAsset *asset;
 
-    if (g_AssetLoadState != 1 ||
+    if (g_AssetLoadState != OPTION_SCREEN_LOAD_ASSET ||
         LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase) == 0) {
         return;
     }

@@ -7,14 +7,22 @@
  * g_TeamLogoSampleData's other reader, menu/team_logo.c, walks it through a
  * TeamLogoSample struct private to that file. */
 
+enum {
+    CAR_SELECT_BEGIN_AUDIO = 1,
+    CAR_SELECT_WAIT_FOR_AUDIO,
+    CAR_SELECT_LOAD_SHARED_ASSETS,
+    CAR_SELECT_LOAD_INITIAL_MODEL,
+};
+
 s32 RequestCarSelectAssets(void) {
-    return RequestAssetLoad(ASSET_REQUEST_CAR_SELECT, 1, 0);
+    return RequestAssetLoad(ASSET_REQUEST_CAR_SELECT,
+                            CAR_SELECT_BEGIN_AUDIO, 0);
 }
 
 static void BeginCarSelectAudioLoad(void) {
     StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, g_AssetBlockPtr, g_AssetSubBlockPtr,
                        GetAssetHalfwords(g_AssetBlockPtr2));
-    g_AssetLoadState = 2;
+    g_AssetLoadState = CAR_SELECT_WAIT_FOR_AUDIO;
 }
 
 static void FinishCarSelectAudioLoad(void) {
@@ -24,7 +32,7 @@ static void FinishCarSelectAudioLoad(void) {
 
     InitSequenceAudio();
     g_AssetLoadCursor = g_AssetSubBlockPtr;
-    g_AssetLoadState = 3;
+    g_AssetLoadState = CAR_SELECT_LOAD_SHARED_ASSETS;
 }
 
 static void LoadCarSelectSharedAssets(void) {
@@ -44,7 +52,7 @@ static void LoadCarSelectSharedAssets(void) {
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
     g_CarModelBuffer = g_AssetBlockPtr;
     g_ImageBlockBuffer = g_CarModelBuffer + CAR_MODEL_BUFFER_SIZE;
-    g_AssetLoadState = 4;
+    g_AssetLoadState = CAR_SELECT_LOAD_INITIAL_MODEL;
 }
 
 static void LoadInitialCarSelectModel(void) {
@@ -65,16 +73,16 @@ static void LoadInitialCarSelectModel(void) {
 
 void LoadCarSelectAssets(void) {
     switch (g_AssetLoadState) {
-    case 1:
+    case CAR_SELECT_BEGIN_AUDIO:
         BeginCarSelectAudioLoad();
         break;
-    case 2:
+    case CAR_SELECT_WAIT_FOR_AUDIO:
         FinishCarSelectAudioLoad();
         break;
-    case 3:
+    case CAR_SELECT_LOAD_SHARED_ASSETS:
         LoadCarSelectSharedAssets();
         break;
-    case 4:
+    case CAR_SELECT_LOAD_INITIAL_MODEL:
         LoadInitialCarSelectModel();
         break;
     }

@@ -1,6 +1,8 @@
 #include "game/asset.h"
 #include "game/car.h"
 
+enum { CAR_MODEL_LOAD_ASSET = 1 };
+
 static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     if (g_AssetLoadState != 0) {
         return;
@@ -8,7 +10,7 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
 
     g_AssetRequestType = request;
     g_PendingCarModelIndex = carIndex;
-    g_AssetLoadState = 1;
+    g_AssetLoadState = CAR_MODEL_LOAD_ASSET;
 }
 
 void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
@@ -39,7 +41,7 @@ static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
     CarModelAsset *asset;
     s32 assetId;
 
-    if (g_AssetLoadState != 1) {
+    if (g_AssetLoadState != CAR_MODEL_LOAD_ASSET) {
         return;
     }
 

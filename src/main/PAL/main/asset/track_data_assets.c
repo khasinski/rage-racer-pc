@@ -1,5 +1,16 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/race.h"
+
+enum {
+    TRACK_DATA_LOAD_ASSET = 1,
+    TRACK_DATA_ENABLE_CD_AUDIO = 2,
+};
+
+s32 RequestTrackDataAssets(void) {
+    return RequestAssetLoad(ASSET_REQUEST_TRACK_DATA,
+                            TRACK_DATA_LOAD_ASSET, 0);
+}
 
 static void LoadStandaloneTrackRuntimeAssets(void) {
     s32 assetIndex = TrackCourseAssetIndex(
@@ -7,15 +18,15 @@ static void LoadStandaloneTrackRuntimeAssets(void) {
 
     if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) return;
     InstallTrackRuntimeAssetPack(assetIndex, 0);
-    g_AssetLoadState = 2;
+    g_AssetLoadState = TRACK_DATA_ENABLE_CD_AUDIO;
 }
 
 void LoadTrackDataAssets(void) {
     switch (g_AssetLoadState) {
-    case 1:
+    case TRACK_DATA_LOAD_ASSET:
         LoadStandaloneTrackRuntimeAssets();
         break;
-    case 2:
+    case TRACK_DATA_ENABLE_CD_AUDIO:
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;
         }

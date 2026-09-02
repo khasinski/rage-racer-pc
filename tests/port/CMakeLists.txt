@@ -178,6 +178,7 @@ add_executable(race_asset_loading_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_request.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_course_assets.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/track_data_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_runtime_assets.c)
 target_include_directories(race_asset_loading_tests PRIVATE

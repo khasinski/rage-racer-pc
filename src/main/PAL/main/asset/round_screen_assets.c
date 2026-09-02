@@ -6,7 +6,9 @@
 
 enum {
     OVAL_MINIMUM_CLASS = 2,
-    ROUND_SCREENS_PER_SERIES = 6
+    ROUND_SCREENS_PER_SERIES = 6,
+    ROUND_LOAD_SCREEN = 1,
+    ROUND_LOAD_VOICE_BANK = 2,
 };
 
 static s32 RandomClassInRange(s32 minimum, s32 maximum) {
@@ -41,7 +43,7 @@ s32 RequestRoundAssets(void) {
     }
 
     g_AssetRequestType = ASSET_REQUEST_ROUND_SCREEN;
-    g_AssetLoadState = 1;
+    g_AssetLoadState = ROUND_LOAD_SCREEN;
     return 1;
 }
 
@@ -63,7 +65,7 @@ static void LoadRoundScreen(void) {
         return;
     }
     g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
-    g_AssetLoadState = 2;
+    g_AssetLoadState = ROUND_LOAD_VOICE_BANK;
 }
 
 static void LoadRoundVoiceBank(void) {
@@ -81,10 +83,10 @@ static void LoadRoundVoiceBank(void) {
 
 void LoadRoundAssets(void) {
     switch (g_AssetLoadState) {
-    case 1:
+    case ROUND_LOAD_SCREEN:
         LoadRoundScreen();
         break;
-    case 2:
+    case ROUND_LOAD_VOICE_BANK:
         LoadRoundVoiceBank();
         break;
     }

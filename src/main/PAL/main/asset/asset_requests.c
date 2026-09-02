@@ -5,6 +5,21 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 
+enum {
+    BOOT_LOAD_TITLE_SCREEN = 1,
+    BOOT_LOAD_AUDIO_HEADER,
+    BOOT_LOAD_AUDIO_BODY,
+    BOOT_WAIT_FOR_AUDIO,
+    BOOT_LOAD_RESOURCES,
+    BOOT_LOAD_CAR_SCREEN,
+};
+
+enum {
+    SAVE_SCREEN_LOAD_ASSET = 1,
+    SELECT_BGM_CLOSE_AUDIO = 1,
+    SELECT_BGM_LOAD_ASSET = 2,
+};
+
 /* The team-logo canvas and its two VRAM rects. Kept local: menu/ spells the
  * canvas u32[] for the nibble transforms and u8[] where it only wants the
  * address, and draw_team_logo_canvas.c reads the two rects through its own
@@ -17,7 +32,7 @@ static void LoadBootTitleScreen(void) {
     if (loadedSize == 0) return;
     UploadLoadBufferImage();
     g_AssetBlockPtr = base + loadedSize;
-    g_AssetLoadState = 2;
+    g_AssetLoadState = BOOT_LOAD_AUDIO_HEADER;
 }
 
 static void LoadBootAudioHeader(void) {
@@ -25,19 +40,19 @@ static void LoadBootAudioHeader(void) {
 
     if (loadedSize == 0) return;
     g_AssetLoadCursor = g_AssetBlockPtr + loadedSize;
-    g_AssetLoadState = 3;
+    g_AssetLoadState = BOOT_LOAD_AUDIO_BODY;
 }
 
 static void LoadBootAudioBody(void) {
     if (LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor) == 0) return;
     StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, g_AssetBlockPtr,
                        g_AssetLoadCursor, NULL);
-    g_AssetLoadState = 4;
+    g_AssetLoadState = BOOT_WAIT_FOR_AUDIO;
 }
 
 static void WaitForBootAudio(void) {
     if (PollAudioSlotLoad() != 0) {
-        g_AssetLoadState = 5;
+        g_AssetLoadState = BOOT_LOAD_RESOURCES;
     }
 }
 
@@ -46,7 +61,7 @@ static void LoadBootResources(void) {
 
     if (loadedSize == 0) return;
     g_AssetLoadCursor += loadedSize;
-    g_AssetLoadState = 6;
+    g_AssetLoadState = BOOT_LOAD_CAR_SCREEN;
 }
 
 static void LoadBootCarScreen(void) {
@@ -64,33 +79,34 @@ static void LoadBootCarScreen(void) {
 
 void LoadBootAssets(void) {
     switch (g_AssetLoadState) {
-    case 1:
+    case BOOT_LOAD_TITLE_SCREEN:
         LoadBootTitleScreen();
         break;
-    case 2:
+    case BOOT_LOAD_AUDIO_HEADER:
         LoadBootAudioHeader();
         break;
-    case 3:
+    case BOOT_LOAD_AUDIO_BODY:
         LoadBootAudioBody();
         break;
-    case 4:
+    case BOOT_WAIT_FOR_AUDIO:
         WaitForBootAudio();
         break;
-    case 5:
+    case BOOT_LOAD_RESOURCES:
         LoadBootResources();
         break;
-    case 6:
+    case BOOT_LOAD_CAR_SCREEN:
         LoadBootCarScreen();
         break;
     }
 }
 
 s32 RequestSaveScreenAssets(void) {
-    return RequestAssetLoad(ASSET_REQUEST_SAVE_SCREEN, 1, 1);
+    return RequestAssetLoad(ASSET_REQUEST_SAVE_SCREEN,
+                            SAVE_SCREEN_LOAD_ASSET, 1);
 }
 
 void LoadSaveScreenAssets(void) {
-    if (g_AssetLoadState == 1) {
+    if (g_AssetLoadState == SAVE_SCREEN_LOAD_ASSET) {
         if (LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase) != 0) {
             g_AssetLoadState = 0;
             g_ImageBlockBuffer = g_AssetBase;
@@ -99,22 +115,24 @@ void LoadSaveScreenAssets(void) {
 }
 
 s32 RequestSelectBgmAssetsKeepAudioSlots(void) {
-    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM, 2, 1);
+    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM,
+                            SELECT_BGM_LOAD_ASSET, 1);
 }
 
 s32 RequestSelectBgmAssets(void) {
-    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM, 1, 1);
+    return RequestAssetLoad(ASSET_REQUEST_SELECT_BGM,
+                            SELECT_BGM_CLOSE_AUDIO, 1);
 }
 
 void LoadSelectBgmAssets(void) {
     GameSceneAssetHeader *header;
 
     switch (g_AssetLoadState) {
-    case 1:
+    case SELECT_BGM_CLOSE_AUDIO:
         CloseLoadedAudioSlots();
-        g_AssetLoadState = 2;
+        g_AssetLoadState = SELECT_BGM_LOAD_ASSET;
         /* fall through */
-    case 2:
+    case SELECT_BGM_LOAD_ASSET:
         if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) != 0) {
             header = GetSceneAssetHeader(g_AssetBase);
             g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);

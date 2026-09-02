@@ -6,8 +6,24 @@
 #include "game/cd.h"
 #include "rage/render_world_game.h"
 
+enum {
+    RACE_LOAD_VOICE_HEADER = 1,
+    RACE_WAIT_FOR_VOICE_AUDIO,
+    RACE_LOAD_PLAYER_CAR,
+    RACE_WAIT_FOR_ENGINE_AUDIO,
+    RACE_LOAD_TRACK_TEXTURES,
+    RACE_LOAD_TRACK_RUNTIME,
+    RACE_ENABLE_CD_AUDIO,
+};
+
+enum {
+    GRAND_PRIX_SCREEN_LOAD_ASSET = 1,
+    COURSE_LOAD_TEXTURE_ASSET = 1,
+};
+
 s32 RequestRaceAssets(void) {
-    return RequestAssetLoad(ASSET_REQUEST_RACE, 1, 0);
+    return RequestAssetLoad(ASSET_REQUEST_RACE,
+                            RACE_LOAD_VOICE_HEADER, 0);
 }
 
 static void BeginRaceVoiceLoad(void) {
@@ -22,7 +38,7 @@ static void BeginRaceVoiceLoad(void) {
     StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
                        g_AssetSubBlockPtr, 0);
     g_AssetLoadCursor += g_SharedAssetWord0;
-    g_AssetLoadState = 2;
+    g_AssetLoadState = RACE_WAIT_FOR_VOICE_AUDIO;
 }
 
 static void AdvanceAfterAudioLoad(s32 nextState) {
@@ -59,7 +75,7 @@ static void LoadPlayerCarRaceAssets(void) {
     g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
     g_AssetLoadCursor = audioBody;
-    g_AssetLoadState = 4;
+    g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
 }
 
 static void LoadTrackTextureAssets(void) {
@@ -71,7 +87,7 @@ static void LoadTrackTextureAssets(void) {
     }
 
     InstallTrackTextureAssetPack(g_AssetLoadCursor);
-    g_AssetLoadState = 6;
+    g_AssetLoadState = RACE_LOAD_TRACK_RUNTIME;
 }
 
 static void LoadTrackRuntimeAssets(void) {
@@ -83,30 +99,30 @@ static void LoadTrackRuntimeAssets(void) {
     }
 
     InstallTrackRuntimeAssetPack(assetIndex, 1);
-    g_AssetLoadState = 7;
+    g_AssetLoadState = RACE_ENABLE_CD_AUDIO;
 }
 
 void LoadRaceAssets(void) {
     switch (g_AssetLoadState) {
-    case 1:
+    case RACE_LOAD_VOICE_HEADER:
         BeginRaceVoiceLoad();
         break;
-    case 2:
-        AdvanceAfterAudioLoad(3);
+    case RACE_WAIT_FOR_VOICE_AUDIO:
+        AdvanceAfterAudioLoad(RACE_LOAD_PLAYER_CAR);
         break;
-    case 3:
+    case RACE_LOAD_PLAYER_CAR:
         LoadPlayerCarRaceAssets();
         break;
-    case 4:
-        AdvanceAfterAudioLoad(5);
+    case RACE_WAIT_FOR_ENGINE_AUDIO:
+        AdvanceAfterAudioLoad(RACE_LOAD_TRACK_TEXTURES);
         break;
-    case 5:
+    case RACE_LOAD_TRACK_TEXTURES:
         LoadTrackTextureAssets();
         break;
-    case 6:
+    case RACE_LOAD_TRACK_RUNTIME:
         LoadTrackRuntimeAssets();
         break;
-    case 7:
+    case RACE_ENABLE_CD_AUDIO:
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;
         }
@@ -115,7 +131,8 @@ void LoadRaceAssets(void) {
 }
 
 s32 RequestRaceStart(void) {
-    return RequestAssetLoad(ASSET_REQUEST_GRAND_PRIX_SCREEN, 1, 1);
+    return RequestAssetLoad(ASSET_REQUEST_GRAND_PRIX_SCREEN,
+                            GRAND_PRIX_SCREEN_LOAD_ASSET, 1);
 }
 
 void LoadGrandPrixScreen(void) {
@@ -123,7 +140,7 @@ void LoadGrandPrixScreen(void) {
     s32 offset;
     s32 loaded;
 
-    if (g_AssetLoadState == 1) {
+    if (g_AssetLoadState == GRAND_PRIX_SCREEN_LOAD_ASSET) {
         offset = g_GrandPrixSeries * 6;
         base = g_GrandPrixClass + ASSET_ROUND_SCREEN_BASE;
         loaded = LoadAsset(offset + base, g_ImageBlockBuffer);
@@ -134,13 +151,14 @@ void LoadGrandPrixScreen(void) {
 }
 
 s32 RequestTrackLoad(void) {
-    return RequestAssetLoad(ASSET_REQUEST_COURSE, 1, 0);
+    return RequestAssetLoad(ASSET_REQUEST_COURSE,
+                            COURSE_LOAD_TEXTURE_ASSET, 0);
 }
 
 void LoadCourseAssets(void) {
     s32 loaded;
 
-    if (g_AssetLoadState == 1) {
+    if (g_AssetLoadState == COURSE_LOAD_TEXTURE_ASSET) {
         s32 assetIndex = TrackCourseAssetIndex(
             ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
 
