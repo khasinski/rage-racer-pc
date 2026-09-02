@@ -118,7 +118,8 @@ set_tests_properties(fmv_requests PROPERTIES LABELS unit)
 
 add_executable(fmv_scene_tests
     fmv_scene_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_scene.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_scene.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_disc.c)
 target_include_directories(fmv_scene_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -137,7 +138,8 @@ set_tests_properties(fmv_scene PROPERTIES LABELS unit)
 
 add_executable(fmv_return_tests
     fmv_return_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_return.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_return.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_disc.c)
 target_include_directories(fmv_return_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
