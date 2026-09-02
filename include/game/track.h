@@ -194,8 +194,8 @@ typedef struct TrackEventData {
 /*
  * One corner's centre of curvature. `GameTrackPoint.arcRef >> 4` indexes this
  * array, which InstallTrackPoints publishes at `g_TrackArcCenters`
- * (g_TrackArcCenters) immediately after the point table. The stride is 12, proven by
- * three independent `* 0xC` sites (UpdateCarDrivetrain, and 8003237C /
+ * immediately after the point table. The stride is 12, proven by three
+ * independent `* 0xC` sites (UpdateCarDrivetrain, and 8003237C /
  * UpdateCarTrackState); the third word is never read anywhere in the image.
  *
  * The canonical global declaration lives in track_internal.h because the
@@ -212,20 +212,12 @@ typedef struct TrackPointTable {
     GameTrackPoint points[];
 } TrackPointTable;
 
-typedef union TrackPointAssetAddress {
-    GameTrackPoint *points;
-    GameTrackArcCenter *arcCenters;
-} TrackPointAssetAddress;
-
 /* The retail asset stores its variable-length arc-centre table immediately
  * after the declared number of centreline points. Keep that format arithmetic
  * at the asset boundary instead of repeating a layout cast in consumers. */
 static inline GameTrackArcCenter *TrackPointTableArcCenters(
     TrackPointTable *table) {
-    TrackPointAssetAddress address;
-
-    address.points = table->points + table->count;
-    return address.arcCenters;
+    return (GameTrackArcCenter *)(table->points + table->count);
 }
 
 /* Track centreline points of the loaded course, g_TrackPointCount of them;

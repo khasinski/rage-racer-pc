@@ -5,8 +5,13 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+enum {
+    TRACK_SCENE_RENDER_OT_SHIFT = 5,
+    TRACK_SCENE_FRAME_SYNC_THRESHOLD = 0x180,
+};
+
 void InitTrackScene(void) {
-    InitRenderState(5);
+    InitRenderState(TRACK_SCENE_RENDER_OT_SHIFT);
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
     BuildStartingGrid();
@@ -15,6 +20,6 @@ void InitTrackScene(void) {
     g_CameraViewMode = CAMERA_VIEW_TRACK;
     g_AnimTimer = 0;
     g_SceneTimer = 0;
-    g_FrameSyncThreshold = 0x180;
+    g_FrameSyncThreshold = TRACK_SCENE_FRAME_SYNC_THRESHOLD;
     InitShuttleScenery();
 }

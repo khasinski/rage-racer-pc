@@ -2,13 +2,7 @@
 
 #include "game/track_internal.h"
 
-/*
- * Installs the track-point table from a loaded blob: word 0 is the point count,
- * the rest is the GameTrackPoint array. Publishes g_TrackPoints (points),
- * g_TrackPointCount (count) and g_TrackArcCenters (marker array right after the points), then
- * sums every point's segmentLength into the total track length g_TrackLength and
- * derives g_TrackSectionCount = (total >> 8) + 1.
- */
+/* Install the variable-length point table and its trailing arc-centre table. */
 void InstallTrackPoints(TrackPointTable *trackData) {
     s32 i;
 
