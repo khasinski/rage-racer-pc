@@ -75,12 +75,16 @@ static void LoadPlayerCarRaceAssets(void) {
 static void LoadTrackTextureAssets(void) {
     s32 assetIndex = TrackCourseAssetIndex(
         ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
+    s32 loadedSize;
 
-    if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) {
+    loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
+    if (loadedSize == 0) return;
+
+    if (!InstallTrackTextureAssetPack(g_AssetLoadCursor,
+                                      (size_t)loadedSize)) {
+        g_AssetLoadState = 0;
         return;
     }
-
-    InstallTrackTextureAssetPack(g_AssetLoadCursor);
     g_AssetLoadState = RACE_LOAD_TRACK_RUNTIME;
 }
 

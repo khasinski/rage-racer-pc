@@ -73,9 +73,13 @@ static void UpdateBgmSelectTransition(void) {
 
 void UpdateBgmSelectLoad(void) {
     if (g_AssetLoadState == 0) {
-        InstallTrackTextureAssetPack(g_AssetBase);
-        RequestTrackDataAssets();
-        g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+        if (g_ImageBlockBuffer > g_AssetBase &&
+            InstallTrackTextureAssetPack(
+                g_AssetBase,
+                (size_t)(g_ImageBlockBuffer - g_AssetBase))) {
+            RequestTrackDataAssets();
+            g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+        }
     }
     UpdateBgmSelectTransition();
 }

@@ -469,7 +469,7 @@ extern TrackTextureShadowRow *g_TrackTextureShadow;
 
 s32 InstallTerrainCellData(void *data, size_t size);
 void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex);
-void InstallTrackTextureAssetPack(u8 *base);
+s32 InstallTrackTextureAssetPack(u8 *base, size_t size);
 void InstallTrackEventData(struct TrackEventData *eventData);
 void InstallTrackPoints(struct TrackPointTable *trackData);
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,

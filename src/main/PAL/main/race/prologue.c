@@ -59,9 +59,13 @@ static void UpdatePrologueLoad(void) {
 
 static void UpdatePrologueLoadStep0(void) {
     if (g_AssetLoadState == 0) {
-        InstallTrackTextureAssetPack(g_AssetBase);
-        RequestTrackDataAssets();
-        g_PrologueStep = 1;
+        if (g_ImageBlockBuffer > g_AssetBase &&
+            InstallTrackTextureAssetPack(
+                g_AssetBase,
+                (size_t)(g_ImageBlockBuffer - g_AssetBase))) {
+            RequestTrackDataAssets();
+            g_PrologueStep = 1;
+        }
     }
 
     UpdatePrologueLoad();

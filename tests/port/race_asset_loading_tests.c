@@ -221,7 +221,7 @@ static void TestTrackPhases(void) {
     g_GrandPrixClass = 3;
     g_AssetLoadCursor = storage;
     g_AssetLoadState = 5;
-    s_loadResult = 1;
+    s_loadResult = 512;
     s_uploadCount = 0;
     LoadRaceAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 28,
@@ -372,7 +372,8 @@ static void TestResidentCourseInstallation(void) {
     s_uploadCount = 0;
     s_teamLogoSource = NULL;
     s_textureResetCalls = 0;
-    InstallTrackTextureAssetPack(g_AssetBase);
+    Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 1,
+          "resident course texture pack is valid");
     Check(s_uploadCount == 5, "resident course uploads every texture block");
     Check(s_teamLogoSource == storage, "resident course stores team logo");
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
@@ -380,6 +381,17 @@ static void TestResidentCourseInstallation(void) {
     Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE,
           "resident course publishes runtime pack cursor");
     Check(s_textureResetCalls == 1, "resident course resets texture swapping");
+
+    pack->offsets[1] = pack->offsets[0];
+    g_AssetLoadCursor = NULL;
+    s_uploadCount = 0;
+    s_textureResetCalls = 0;
+    Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
+          "overlapping texture blocks reject the course pack");
+    Check(s_uploadCount == 0 && s_textureResetCalls == 0 &&
+              g_AssetLoadCursor == NULL,
+          "invalid course pack publishes no texture state");
+    pack->offsets[1] = 96;
 
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
