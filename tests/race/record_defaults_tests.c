@@ -54,6 +54,8 @@ int main(void) {
         CHECK(fastest.index == 1 && fastest.time == 650000);
         fastest = FindFastestLap(longLaps, 0);
         CHECK(fastest.index == -1 && fastest.time == 0);
+        fastest = FindFastestLap(NULL, -1);
+        CHECK(fastest.index == -1 && fastest.time == 0);
     }
 
     memset(g_RankingRecords, 0xA5, sizeof(g_RankingRecords));
@@ -130,7 +132,21 @@ int main(void) {
         CHECK(records[2].carIndex == 11);
         CHECK(memcmp(records[2].driverName, "AAAAAA\0\0", 8) == 0);
         for (slot = 0; slot < 6; slot++) CHECK(nameCodes[slot] == 0xB);
+
+        memset(nameCodes, 0, sizeof(nameCodes));
+        CHECK(InsertRaceRecord(records, 100000, 12, nameCodes) == 0);
+        CHECK(records[0].raceTime == 100000 && records[0].carIndex == 12);
+        CHECK(records[1].raceTime == 100765);
+        CHECK(records[4].raceTime == 104765);
+
+        memset(nameCodes, 0, sizeof(nameCodes));
+        CHECK(InsertRaceRecord(records, 100765, 13, nameCodes) == 2);
+        CHECK(records[1].raceTime == 100765);
+        CHECK(records[2].raceTime == 100765 && records[2].carIndex == 13);
+
+        memset(nameCodes, 0x55, sizeof(nameCodes));
         CHECK(InsertRaceRecord(records, 999999, 12, nameCodes) == 5);
+        for (slot = 0; slot < 6; slot++) CHECK(nameCodes[slot] == 0x55);
     }
 
     return 0;

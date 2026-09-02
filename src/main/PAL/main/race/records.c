@@ -10,6 +10,8 @@ enum {
     RECORD_COURSE_COUNT = 4,
     RECORD_REFERENCE_COUNT = 2,
     RECORD_SECTOR_COUNT = 3,
+    DEFAULT_RECORD_NAME_CODE = 0xB,
+    DEFAULT_RECORD_NAME_CHARACTER = 'A',
 };
 
 static const RaceRecord s_DefaultRecords[RECORD_TABLE_LENGTH] = {
@@ -52,8 +54,9 @@ s32 InsertRaceRecord(RaceRecord records[RECORD_TABLE_LENGTH], s32 raceTime,
         }
         records[row] = (RaceRecord){{0}, raceTime, carIndex, 0};
         for (character = 0; character < RECORD_NAME_LENGTH; character++) {
-            records[row].driverName[character] = 'A';
-            nameCodes[character] = 0xB;
+            records[row].driverName[character] =
+                DEFAULT_RECORD_NAME_CHARACTER;
+            nameCodes[character] = DEFAULT_RECORD_NAME_CODE;
         }
         return row;
     }
@@ -128,9 +131,8 @@ void RepairRecordTimes(void) {
 
 void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 value) {
     s32 minutes = value / 60000;
-    s32 ticks = value / 1000;
-    s32 seconds = ticks - (minutes * 60);
-    s32 fraction = value - (ticks * 1000);
+    s32 seconds = value / 1000 % 60;
+    s32 fraction = value % 1000;
 
     snprintf(dst, LAP_TIME_TEXT_CAPACITY, g_FmtLapTime, minutes, seconds,
              fraction);
