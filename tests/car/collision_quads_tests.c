@@ -3,13 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 point) {
-    (void)p1;
-    (void)p2;
-    (void)p3;
-    return p0 == point;
-}
-
 #define CHECK(condition)                                                       \
     do {                                                                       \
         if (!(condition)) {                                                    \
@@ -28,18 +21,31 @@ int main(void) {
     memset(grid, 0, sizeof(grid));
     memset(points, 0, sizeof(points));
     for (i = 0; i < 4; i++) {
-        grid[i][2].x = (s16)(100 + i);
-        grid[i][2].z = (s16)(-200 - i);
+        grid[i][0] = (CarCollisionPoint){10, 10};
+        grid[i][1] = (CarCollisionPoint){10, 30};
+        grid[i][2] = (CarCollisionPoint){30, 10};
+        grid[i][3] = (CarCollisionPoint){30, 30};
     }
-    CHECK(GetCarCollisionPointPacked(&grid[0][2]) == (s32)0xFF380064u);
-    points[1] = grid[2][2];
+    CHECK(GetCarCollisionPointPacked(&grid[0][2]) == (s32)0x000A001Eu);
+    points[1] = (CarCollisionPoint){20, 20};
 
     hit = FindFirstCarCollisionQuad(grid, points, 3);
-    CHECK(hit.region == 3);
-    CHECK(hit.sampleIndex == 1 && hit.quadIndex == 2);
+    CHECK(hit.region == 1);
+    CHECK(hit.sampleIndex == 1 && hit.quadIndex == 0);
 
-    points[1].x = 500;
+    points[1] = (CarCollisionPoint){10, 20};
     hit = FindFirstCarCollisionQuad(grid, points, 3);
+    CHECK(hit.region == 1);
+    CHECK(hit.sampleIndex == 1 && hit.quadIndex == 0);
+
+    points[1].x = 31;
+    hit = FindFirstCarCollisionQuad(grid, points, 3);
+    CHECK(hit.region == 0);
+    CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
+
+    memset(grid, 0, sizeof(grid));
+    points[0] = (CarCollisionPoint){0, 0};
+    hit = FindFirstCarCollisionQuad(grid, points, 1);
     CHECK(hit.region == 0);
     CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
 

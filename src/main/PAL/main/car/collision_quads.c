@@ -7,6 +7,36 @@
  */
 
 #include "game/car_internal.h"
+#include "psyq/gte.h"
+
+static int64_t CollisionQuadAreaTwice(const CarCollisionPoint quad[4]) {
+    static const u8 order[4] = {2, 3, 1, 0};
+    int64_t area = 0;
+    s32 edge;
+
+    for (edge = 0; edge < 4; edge++) {
+        const CarCollisionPoint *from = &quad[order[edge]];
+        const CarCollisionPoint *to = &quad[order[(edge + 1) & 3]];
+
+        area += (int64_t)from->x * to->z - (int64_t)from->z * to->x;
+    }
+    return area;
+}
+
+static int IsPointInsideCollisionQuad(const CarCollisionPoint quad[4],
+                                      const CarCollisionPoint *point) {
+    s32 p0 = GetCarCollisionPointPacked(&quad[2]);
+    s32 p1 = GetCarCollisionPointPacked(&quad[3]);
+    s32 p2 = GetCarCollisionPointPacked(&quad[0]);
+    s32 p3 = GetCarCollisionPointPacked(&quad[1]);
+    s32 packedPoint = GetCarCollisionPointPacked(point);
+
+    return CollisionQuadAreaTwice(quad) != 0 &&
+           NormalClip(p0, p1, packedPoint) >= 0 &&
+           NormalClip(p1, p3, packedPoint) >= 0 &&
+           NormalClip(p3, p2, packedPoint) >= 0 &&
+           NormalClip(p2, p0, packedPoint) >= 0;
+}
 
 /*
  * Reports which of the four collision quads contains the first candidate
@@ -22,12 +52,8 @@ CarCollisionHit FindFirstCarCollisionQuad(
 
     for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
         for (quadIndex = 0; quadIndex < 4; quadIndex++) {
-            if (IsPointInQuad(
-                    GetCarCollisionPointPacked(&grid[quadIndex][2]),
-                    GetCarCollisionPointPacked(&grid[quadIndex][3]),
-                    GetCarCollisionPointPacked(&grid[quadIndex][0]),
-                    GetCarCollisionPointPacked(&grid[quadIndex][1]),
-                    GetCarCollisionPointPacked(&points[sampleIndex])) > 0) {
+            if (IsPointInsideCollisionQuad(grid[quadIndex],
+                                           &points[sampleIndex])) {
                 hit.region = quadIndex + 1;
                 hit.sampleIndex = sampleIndex;
                 hit.quadIndex = quadIndex;

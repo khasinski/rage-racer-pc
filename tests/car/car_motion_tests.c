@@ -26,11 +26,6 @@ s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];
 
-/* The collision half of the file, which this does not drive. */
-s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
-    (void)p0; (void)p1; (void)p2; (void)p3; (void)pt;
-    return 0;
-}
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     (void)car; (void)x; (void)z; (void)mode;
 }

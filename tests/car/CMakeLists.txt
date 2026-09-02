@@ -775,6 +775,7 @@ else()
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Werror)
 endif()
+target_link_libraries(collision_quads_tests PRIVATE psyz)
 add_test(NAME collision_quads COMMAND collision_quads_tests)
 set_tests_properties(collision_quads PROPERTIES LABELS unit)
 

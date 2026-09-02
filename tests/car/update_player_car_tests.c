@@ -29,7 +29,7 @@ static void Step(char step) {
 
 void TraceCarStates(void) { Step('A'); }
 
-s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
+s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
     (void)car;
     Step('B');
     return 1;

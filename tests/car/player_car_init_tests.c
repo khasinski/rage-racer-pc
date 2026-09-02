@@ -72,7 +72,7 @@ void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     s_offsetCalls++;
 }
 
-s32 IsCarFacingBackwards(PlayerCarRuntime *car) {
+s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
     (void)car;
     return 1;
 }

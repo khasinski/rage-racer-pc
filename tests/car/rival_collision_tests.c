@@ -9,9 +9,9 @@
  * deep, most of it the same work written out twice, and nothing tested it.
  *
  * The geometry is real here rather than stubbed: the rotation matrix is the
- * library's, and transforming a corner is the multiply the GTE does. Every
- * quadrant test is recorded with all five of its packed points, so the digest
- * pins the whole hull construction, not just the answer.
+ * library's, and transforming a corner is the multiply the GTE does. The
+ * digest pins every result and knockback; collision_quads_tests owns the
+ * private point-in-quad geometry.
  */
 
 #include "common.h"
@@ -65,26 +65,6 @@ static void Record(const char *name, const s32 *values, int count) {
         Record(name, v, (int)(sizeof(v) / sizeof(v[0])));                       \
     } while (0)
 
-/*
- * The game's own predicate, copied rather than linked because the file it
- * lives in is the whole car orientation module. The clipping cross product is
- * the emulated GTE's, and the arguments are recorded so the digest pins the
- * hull the caller built and not just the answer.
- */
-s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt) {
-    s32 ret = 0;
-
-    RECORD("quadtest", p0, p1, p2, p3, pt);
-    if (NormalClip(p0, p1, pt) >= 0) {
-        if (NormalClip(p1, p3, pt) >= 0) {
-            if (NormalClip(p3, p2, pt) >= 0) {
-                ret = NormalClip(p2, p0, pt) >= 0;
-            }
-        }
-    }
-    return ret;
-}
-
 static int s_knockbacks;
 
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
@@ -97,7 +77,7 @@ int main(int argc, char **argv) {
      * What the collision did before it was taken apart. Run the test with a
      * file name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1138725312UL;
+    static const unsigned long expected = 53119887UL;
     static const s32 indices[] = {0, 5, 9};
     /* Either side of the two hundred units of track the check looks over, at
      * both ends of the lap. */
