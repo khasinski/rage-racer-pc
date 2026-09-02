@@ -91,8 +91,21 @@ static void CheckShadedText(void) {
     CHECK_EQ((sprite->code & 2) != 0, 1, "shade semitransparency");
 }
 
+static void CheckInvalidFontCodesAreSkipped(void) {
+    static const char invalid[] = {'`', 'k', 'w', (char)0x80, '\0'};
+    u8 *packets;
+
+    ResetTextState();
+    packets = g_RenderState.packetCursor;
+    DrawProportionalText(10, 20, invalid, 3);
+
+    CHECK_EQ(g_RenderState.packetCursor == packets + sizeof(DrawPacket), 1,
+             "invalid font codes only queue draw mode");
+}
+
 int main(void) {
     CheckFontClasses();
     CheckShadedText();
+    CheckInvalidFontCodesAreSkipped();
     return s_failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

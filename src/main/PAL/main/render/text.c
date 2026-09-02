@@ -1,6 +1,15 @@
 #include "game/render_types.h"
 #include "game/render_internal.h"
 
+enum {
+    PROP_FONT_FIRST_CHARACTER = 0x20,
+    PROP_FONT_GLYPH_COUNT = sizeof(g_PropFontCells) / 2,
+    WORD_FONT_FIRST_CHARACTER = 'a',
+    WORD_FONT_GLYPH_COUNT = sizeof(g_WordFontCells) / 4,
+    HIGH_FONT_FIRST_CHARACTER = 'v',
+    HIGH_FONT_GLYPH_COUNT = sizeof(g_HighFontCell) / 4,
+};
+
 static void QueueProportionalGlyph(
     RenderBufferAddress *packet,
     s32 x,
@@ -47,27 +56,32 @@ void GameDrawProportionalTextShaded(
         u32 ch = (u8)*str++;
         s32 index;
 
-        if (ch >= 'v') {
-            index = (ch - 'v') * 4;
+        if (ch >= HIGH_FONT_FIRST_CHARACTER &&
+            ch < HIGH_FONT_FIRST_CHARACTER + HIGH_FONT_GLYPH_COUNT) {
+            index = (ch - HIGH_FONT_FIRST_CHARACTER) * 4;
             QueueProportionalGlyph(
                 &packet, xPos, y + g_HighFontYOffset[index],
                 g_HighFontU[index], g_HighFontV[index],
                 g_HighFontWidth[index], clutIndex, intensity);
             xPos += g_WordFontWidth[index];
-        } else if (ch >= 'a') {
-            index = (ch - 'a') * 4;
+        } else if (ch >= WORD_FONT_FIRST_CHARACTER &&
+                   ch < WORD_FONT_FIRST_CHARACTER + WORD_FONT_GLYPH_COUNT) {
+            index = (ch - WORD_FONT_FIRST_CHARACTER) * 4;
             QueueProportionalGlyph(
                 &packet, xPos, y, g_WordFontU[index], g_WordFontV[index],
                 g_WordFontWidth[index], clutIndex, intensity);
             xPos += g_WordFontAdvance[index];
-        } else {
+        } else if (ch >= PROP_FONT_FIRST_CHARACTER &&
+                   ch < PROP_FONT_FIRST_CHARACTER + PROP_FONT_GLYPH_COUNT) {
             if (ch != ' ') {
-                index = (ch - 0x20) * 2;
+                index = (ch - PROP_FONT_FIRST_CHARACTER) * 2;
                 QueueProportionalGlyph(
                     &packet, xPos, y, g_PropFontU[index], g_PropFontV[index],
                     12, clutIndex, intensity);
             }
             xPos += 12;
+        } else {
+            continue;
         }
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
