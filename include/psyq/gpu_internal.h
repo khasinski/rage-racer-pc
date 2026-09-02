@@ -5,12 +5,6 @@
 #include "psyq/gpu_cache_types.h"
 #include "psyq/gpu.h"
 
-typedef struct GpuLastCallback {
-    void (*cb)(long, long);
-    long arg;
-    long tag;
-} GpuLastCallback;
-
 typedef struct GpuMovePacket {
     u_long tag;
     u_long code;
@@ -19,12 +13,10 @@ typedef struct GpuMovePacket {
     u_long wh;
 } GpuMovePacket;
 
-extern long g_AddQueueIntrMask;
 extern u_long g_ClearImagePacket[];
 extern GpuDisplayEnvironmentCache g_DispEnvCache;
 extern u_char g_DrawSyncCbPending[];
 extern volatile long g_DrawSyncCallback;
-extern long g_ExecQueueIntrMask;
 extern void (*GPU_printf)(char *, ...);
 extern GpuCallbacks *g_GpuFuncs;
 extern u_char g_GraphDebug;
@@ -49,14 +41,6 @@ extern volatile u_long *g_GpuDmaMadr;
 extern volatile u_long *g_GpuDpcr;
 extern volatile u_long *g_GpuGp0;
 extern u_char g_GpuGp1Mirror[];
-extern volatile GpuLastCallback g_GpuLastCb;
-extern long g_GpuLastCbArg;
-extern long g_GpuLastCbData;
-extern volatile long g_GpuQueueReadIdx;
-extern volatile long g_GpuQueueWriteIdx;
-extern long g_GpuResetIntrMask;
-extern long g_GpuTimeoutDeadline;
-extern long g_GpuTimeoutPolls;
 extern char g_MsgGpuBadRect[];
 extern char g_MsgGpuDrawSync[];
 extern char g_MsgGpuDrawSyncCallback[];

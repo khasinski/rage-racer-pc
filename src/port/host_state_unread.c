@@ -318,16 +318,6 @@ unsigned char g_OtcDmaMadr[8] __attribute__((aligned(16))) = {0xe0,0x10,0x80,0x1
 unsigned char g_OtcDmaBcr[8] __attribute__((aligned(16))) = {0xe4,0x10,0x80,0x1f,0};
 unsigned char g_OtcDmaChcr[8] __attribute__((aligned(16))) = {0xe8,0x10,0x80,0x1f,0};
 unsigned char g_GpuDpcr[8] __attribute__((aligned(16))) = {0xf0,0x10,0x80,0x1f,0};
-unsigned char g_GpuLastCb[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuLastCbArg[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuLastCbData[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-unsigned char g_GpuQueueWriteIdx[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuQueueReadIdx[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_AddQueueIntrMask[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_ExecQueueIntrMask[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuResetIntrMask[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuTimeoutDeadline[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
-unsigned char g_GpuTimeoutPolls[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
 s16 g_SinTable[1618] __attribute__((aligned(16))) = {
     0, 6, 13, 19, 25, 31, 38, 44, 50, 57, 63, 69, 75, 82, 88, 94, 101, 107,
     113, 119, 126, 132, 138, 144, 151, 157, 163, 170, 176, 182, 188, 195,

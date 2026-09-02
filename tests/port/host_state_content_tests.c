@@ -427,16 +427,6 @@ extern unsigned char g_OtcDmaMadr[8];
 extern unsigned char g_OtcDmaBcr[8];
 extern unsigned char g_OtcDmaChcr[8];
 extern unsigned char g_GpuDpcr[8];
-extern unsigned char g_GpuLastCb[8];
-extern unsigned char g_GpuLastCbArg[8];
-extern unsigned char g_GpuLastCbData[8];
-extern unsigned char g_GpuQueueWriteIdx[8];
-extern unsigned char g_GpuQueueReadIdx[8];
-extern unsigned char g_AddQueueIntrMask[8];
-extern unsigned char g_ExecQueueIntrMask[8];
-extern unsigned char g_GpuResetIntrMask[8];
-extern unsigned char g_GpuTimeoutDeadline[8];
-extern unsigned char g_GpuTimeoutPolls[8];
 extern unsigned char g_SinTable[3236];
 extern unsigned char g_CdCommandNeedsSetloc[128];
 extern unsigned char g_CdSyncCallback[8];
@@ -933,16 +923,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_OtcDmaBcr", g_OtcDmaBcr, 8},
     {"g_OtcDmaChcr", g_OtcDmaChcr, 8},
     {"g_GpuDpcr", g_GpuDpcr, 8},
-    {"g_GpuLastCb", g_GpuLastCb, 8},
-    {"g_GpuLastCbArg", g_GpuLastCbArg, 8},
-    {"g_GpuLastCbData", g_GpuLastCbData, 8},
-    {"g_GpuQueueWriteIdx", g_GpuQueueWriteIdx, 8},
-    {"g_GpuQueueReadIdx", g_GpuQueueReadIdx, 8},
-    {"g_AddQueueIntrMask", g_AddQueueIntrMask, 8},
-    {"g_ExecQueueIntrMask", g_ExecQueueIntrMask, 8},
-    {"g_GpuResetIntrMask", g_GpuResetIntrMask, 8},
-    {"g_GpuTimeoutDeadline", g_GpuTimeoutDeadline, 8},
-    {"g_GpuTimeoutPolls", g_GpuTimeoutPolls, 8},
     {"g_SinTable", g_SinTable, 3236},
     {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
     {"g_CdSyncCallback", g_CdSyncCallback, 8},
@@ -1070,7 +1050,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3673354434UL;
+    const unsigned long expected = 3100927170UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
