@@ -12,6 +12,9 @@ enum {
     GRAND_PRIX_STATIC_LABEL_COUNT = 6,
     GRAND_PRIX_LAP_TIMES_LABEL = 1,
     GRAND_PRIX_TIME_LIMIT_LABEL = 2,
+    HUD_DEFAULT_CLUT = 0x78CC,
+    TIME_LIMIT_WARNING_CLUT = 0x7811,
+    TIME_LIMIT_WARNING_MS = 1500,
 };
 
 static s32 RaceHudLabelVisible(s32 grandPrixMode, s32 label) {
@@ -96,16 +99,18 @@ void DrawLapTimes(void) {
                   0x78CC, 0x3E8);
 }
 
-void DrawTimeRemaining(s32 time) {
-    s32 clutIndex = 0x78CC;
+void DrawTimeRemaining(s32 timeMs) {
+    s32 clut = HUD_DEFAULT_CLUT;
 
-    if (!HudShowTimeLimit()) return;
-
-    if (time < 0x5DC) {
-        clutIndex = 0x7811;
+    if (!HudShowTimeLimit()) {
+        return;
     }
 
-    DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, time, clutIndex);
+    if (timeMs < TIME_LIMIT_WARNING_MS) {
+        clut = TIME_LIMIT_WARNING_CLUT;
+    }
+
+    DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, timeMs, clut);
 }
 
 /* The two race-position digits, from g_PlayerCar.drive.racePosition; the tens digit is

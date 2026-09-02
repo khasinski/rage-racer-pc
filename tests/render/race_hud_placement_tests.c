@@ -124,29 +124,31 @@ typedef struct Placement {
     int x;
     int y;
     int value;
+    int color;
 } Placement;
 
 static Placement s_placements[MAX_PLACEMENTS];
 static int s_placementCount;
 
-static void Record(const char *what, int x, int y, int value) {
+static void Record(const char *what, int x, int y, int value, int color) {
     if (s_placementCount >= MAX_PLACEMENTS) return;
     s_placements[s_placementCount].what = what;
     s_placements[s_placementCount].x = x;
     s_placements[s_placementCount].y = y;
     s_placements[s_placementCount].value = value;
+    s_placements[s_placementCount].color = color;
     s_placementCount++;
 }
 
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     (void)color;
     (void)divisor;
-    Record("time", (int)x, (int)y, (int)value);
+    Record("time", (int)x, (int)y, (int)value, (int)color);
 }
 
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
     (void)color;
-    Record("clock", (int)x, (int)y, (int)ticks);
+    Record("clock", (int)x, (int)y, (int)ticks, (int)color);
 }
 
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
@@ -215,6 +217,24 @@ static void CheckLapColumnCapacity(void) {
     if (CountPrimaryOtPrims() != COURSE_LONG_LAPS) {
         printf("FAIL lap column queued more than %d row sprites\n",
                COURSE_LONG_LAPS);
+        s_failures++;
+    }
+}
+
+static void CheckTimeLimitWarningBoundary(void) {
+    ResetHud();
+    DrawTimeRemaining(1500);
+    if (s_placementCount != 1 || s_placements[0].value != 1500 ||
+        s_placements[0].color != 0x78CC) {
+        printf("FAIL time limit warned at or before the 1500 ms boundary\n");
+        s_failures++;
+    }
+
+    ResetHud();
+    DrawTimeRemaining(1499);
+    if (s_placementCount != 1 || s_placements[0].value != 1499 ||
+        s_placements[0].color != 0x7811) {
+        printf("FAIL time limit did not warn below the 1500 ms boundary\n");
         s_failures++;
     }
 }
@@ -435,6 +455,7 @@ static void CheckSplitDeltaSprites(void) {
 int main(void) {
     CheckStaticLabelOwnership();
     CheckLapColumnCapacity();
+    CheckTimeLimitWarningBoundary();
     CheckMode(0);
     CheckMode(1);
     CheckSplitDeltaIsAMagnitude();

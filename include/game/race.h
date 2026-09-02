@@ -382,7 +382,7 @@ void DrawRaceHudLabels(s32 grandPrixMode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
-void DrawTimeRemaining(s32 time);
+void DrawTimeRemaining(s32 timeMs);
 void ExitPrologue(void);
 s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
 void ResetMirrorState(void);
