@@ -6,7 +6,10 @@
 enum {
     FINISH_CUE_FLAG = 8,
     FIRST_SPEED_CUE_FLAG = 0x10,
-    SPEED_CUE_COUNT = 3,
+    FINISH_SOUND_CUE = 0x2A,
+    SPEED_SOUND_CUE = 0x23,
+    WRONG_WAY_FINISH_SOUND_LIMIT = 10,
+    PERCENT_SCALE = 100,
 };
 
 static void TriggerFinishCue(void) {
@@ -20,8 +23,8 @@ static void TriggerFinishCue(void) {
     if (g_PlayerCar.trackSection == cue->trackSection &&
         g_PlayerCar.lap == g_LapCount) {
         g_RaceCueFlags |= FINISH_CUE_FLAG;
-        if (g_WrongWayTimer < 10) {
-            PlaySoundCue(0x2A);
+        if (g_WrongWayTimer < WRONG_WAY_FINISH_SOUND_LIMIT) {
+            PlaySoundCue(FINISH_SOUND_CUE);
         }
     }
 }
@@ -31,7 +34,7 @@ static void TriggerSpeedCue(void) {
         g_TrackEventData->raceCues.speed[g_RaceSeries];
     s32 index;
 
-    for (index = 0; index < SPEED_CUE_COUNT; index++) {
+    for (index = 0; index < TRACK_SPEED_CUE_COUNT; index++) {
         const TrackSpeedCue *cue = &cues[index];
         s32 flag = FIRST_SPEED_CUE_FLAG << index;
         s32 speedThreshold;
@@ -46,11 +49,12 @@ static void TriggerSpeedCue(void) {
             continue;
         }
 
-        speedThreshold = cue->speedPercent * g_PlayerCar.drive.speedScale / 100;
+        speedThreshold =
+            cue->speedPercent * g_PlayerCar.drive.speedScale / PERCENT_SCALE;
         if (g_PlayerCar.speed > speedThreshold &&
             g_PlayerCar.motionMode <= 0) {
             g_RaceCueFlags |= flag;
-            PlaySoundCue(0x23);
+            PlaySoundCue(SPEED_SOUND_CUE);
         }
         return;
     }

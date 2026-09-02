@@ -10,6 +10,7 @@ enum {
     EVENT_SOUND_RIGHT_SIDE = 1,
     EVENT_SOUND_LEFT_SIDE = 2,
     LATERAL_LEAN_DEAD_ZONE = 0x100,
+    EVENT_SOUND_SPEED_SCALE = 12775,
 };
 
 static s32 FindEventSoundFlags(s16 trackSection) {
@@ -69,7 +70,7 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
         return;
     }
 
-    lean = (lean * g_PlayerCar.speed) / 12775;
+    lean = (lean * g_PlayerCar.speed) / EVENT_SOUND_SPEED_SCALE;
     angle = (g_RenderState.viewAngleY - ANGLE_THREE_QUARTER_TURN +
              TrackPoint(g_PlayerCar.trackPointIndex)->angle) & ANGLE_MASK;
 

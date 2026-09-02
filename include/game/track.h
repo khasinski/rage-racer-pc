@@ -151,6 +151,7 @@ enum {
     TRACK_POINT_AMBIENCE_ZONE_COUNT = 2,
     TRACK_AMBIENCE_ZONE_COUNT = 4,
     TRACK_EVENT_SOUND_ZONE_COUNT = 30,
+    TRACK_SPEED_CUE_COUNT = 3,
 };
 
 static inline s32 TrackPositionForSeries(s32 position, s32 trackLength,
@@ -171,7 +172,7 @@ typedef struct TrackSpeedCue {
 typedef struct TrackRaceCueData {
     TrackFinishCue finish[TRACK_SERIES_COUNT];
     u8 reserved08[8];
-    TrackSpeedCue speed[TRACK_SERIES_COUNT][3];
+    TrackSpeedCue speed[TRACK_SERIES_COUNT][TRACK_SPEED_CUE_COUNT];
 } TrackRaceCueData;
 
 typedef struct TrackEventData {
