@@ -4,6 +4,7 @@
 #include "game/player_car_internal.h"
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/replay_internal.h"
@@ -25,13 +26,6 @@ static void DrawReplayBadge(void) {
     g_RenderState.packetCursor = QueueDrawModePrim(base, next, 9);
 }
 
-static s32 ClampWashLevel(s32 value) {
-    if (value < 0) {
-        return 0;
-    }
-    return value > 0xFF ? 0xFF : value;
-}
-
 static void UpdateReplayFade(void) {
     if (g_FadeStep < 0) {
         g_FadeLevel += g_FadeStep;
@@ -45,16 +39,17 @@ static void UpdateReplayFade(void) {
     }
 
     if (g_SeriesCleared != 0 &&
-        (u32)(g_ReplayFrameCount - 600) < (u32)g_SceneTimer) {
-        g_EndingWashLevel = ClampWashLevel(
-            g_SceneTimer + 600 - (s32)g_ReplayFrameCount);
+        ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount)) {
+        g_EndingWashLevel = ReplayEndingWashLevel(
+            g_SceneTimer, g_ReplayFrameCount);
     }
 
     if (g_FadeStep == 0) {
         if (g_PadPressed & PAD_CONFIRM) {
             g_FadeStep = 4;
             StartCdVolumeFade(0x3C);
-        } else if (g_SceneTimer == g_ReplayFrameCount - 68) {
+        } else if (ShouldStartReplayExitFade(
+                       g_SceneTimer, g_ReplayFrameCount)) {
             g_FadeStep = 4;
             if (g_ReplayBufferWrapped == 0) {
                 StartCdVolumeFade(0x3C);
@@ -69,7 +64,7 @@ static void UpdateReplayFade(void) {
     }
 
     if (g_SeriesCleared != 0) {
-        if ((u32)(g_ReplayFrameCount - 600) < (u32)g_SceneTimer ||
+        if (ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount) ||
             g_FadeLevel != 0) {
             DrawSeriesClearedWash(g_EndingWashLevel, g_FadeLevel);
         }
