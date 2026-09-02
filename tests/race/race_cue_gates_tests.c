@@ -96,6 +96,6 @@ int main(void) {
     if (s_failures != 0) {
         return 1;
     }
-    puts("course event cues honor their exact frame and track boundaries");
+    puts("race cue gates honor their exact frame and track boundaries");
     return 0;
 }
