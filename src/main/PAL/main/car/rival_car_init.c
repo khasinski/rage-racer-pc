@@ -5,6 +5,11 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
+static s32 NormalizeTrackPointIndex(s32 index) {
+    index %= g_TrackPointCount;
+    return index < 0 ? index + g_TrackPointCount : index;
+}
+
 void InitRivalCar(GameCarRuntime *car,
                   s32 gridPosition,
                   RaceGridSlot *grid) {
@@ -15,18 +20,23 @@ void InitRivalCar(GameCarRuntime *car,
         .leftInset = -20,
     };
     s32 trackPointIndex;
+    s32 startPointIndex;
 
     car->initializedFlag = 1;
     car->collisionFlag = 0;
     car->aiEnabled = 1;
     car->modelIndex = grid[gridPosition].halves.modelId;
     car->rivalModelId = grid[gridPosition].halves.modelId;
-    car->trackPointIndex = start->trackPointIndex;
+    startPointIndex = NormalizeTrackPointIndex(start->trackPointIndex);
+    car->trackPointIndex = startPointIndex;
     car->x = start->x;
     car->z = start->z;
     car->y = 0;
 
     trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
+    if (trackPointIndex < 0) {
+        trackPointIndex = startPointIndex;
+    }
     car->trackPointIndex = trackPointIndex;
     car->bodyPitch = 0;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -

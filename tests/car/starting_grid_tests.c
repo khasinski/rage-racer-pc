@@ -1,6 +1,8 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/state.h"
+#include "game/track.h"
+#include "game/track_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +14,9 @@ s32 g_ClosestRivalRank;
 s32 g_RaceSeries;
 s16 g_GrandPrixSeries;
 s32 g_SceneId;
+s32 g_TrackPointCount;
+GameTrackPoint *g_TrackPoints;
+TrackEventData *g_TrackEventData;
 
 static s32 s_clearCalls[RACE_CAR_SLOT_COUNT];
 static s32 s_initCalls[RACE_CAR_SLOT_COUNT];
@@ -55,6 +60,8 @@ void SeedCarRouteMarkers(void) {
     } while (0)
 
 int main(void) {
+    static GameTrackPoint trackPoint;
+    static TrackEventData trackEvents;
     s32 index;
 
     memset(g_Cars, 0x5A, sizeof(g_Cars));
@@ -65,6 +72,9 @@ int main(void) {
     }
     g_GrandPrixSeries = 1;
     g_SceneId = 11;
+    g_TrackPointCount = 1;
+    g_TrackPoints = &trackPoint;
+    g_TrackEventData = &trackEvents;
     s_expectedGrid = g_RaceGridSlots;
 
     BuildStartingGrid();
@@ -82,6 +92,14 @@ int main(void) {
         CHECK(s_aiCalls[index] == active);
     }
 
+    g_TrackEventData = NULL;
+    BuildStartingGrid();
+    CHECK(s_routeSeedCalls == 1);
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        CHECK(g_Cars[index].activeFlag == -1);
+        CHECK(g_Cars[index].aiEnabled == 0);
+    }
+
     memset(s_clearCalls, 0, sizeof(s_clearCalls));
     memset(s_initCalls, 0, sizeof(s_initCalls));
     memset(s_aiCalls, 0, sizeof(s_aiCalls));
@@ -91,6 +109,7 @@ int main(void) {
     }
     g_GrandPrixSeries = 0;
     g_SceneId = 3;
+    g_TrackEventData = &trackEvents;
     s_expectedGrid = g_AttractGridSlots;
 
     BuildStartingGrid();

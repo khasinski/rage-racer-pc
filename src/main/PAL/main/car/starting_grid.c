@@ -1,6 +1,8 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/state.h"
+#include "game/track.h"
+#include "game/track_internal.h"
 
 enum {
     RACE_SCENE_ID = 11,
@@ -13,6 +15,15 @@ void BuildStartingGrid(void) {
 
     g_ClosestRivalRank = 3;
     g_RaceSeries = g_GrandPrixSeries;
+
+    if (g_TrackEventData == NULL || g_TrackPoints == NULL ||
+        g_TrackPointCount <= 0) {
+        for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+            g_Cars[index].activeFlag = -1;
+            g_Cars[index].aiEnabled = 0;
+        }
+        return;
+    }
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
