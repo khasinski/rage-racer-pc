@@ -408,6 +408,26 @@ target_link_libraries(effect_voice_runtime_tests PRIVATE psyz)
 add_test(NAME effect_voice_runtime COMMAND effect_voice_runtime_tests)
 set_tests_properties(effect_voice_runtime PROPERTIES LABELS unit)
 
+add_executable(forced_voice_playback_tests
+    forced_voice_playback_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/forced_voice_playback.c)
+target_include_directories(forced_voice_playback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(forced_voice_playback_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(forced_voice_playback_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(forced_voice_playback_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(forced_voice_playback_tests PRIVATE psyz)
+add_test(NAME forced_voice_playback COMMAND forced_voice_playback_tests)
+set_tests_properties(forced_voice_playback PROPERTIES LABELS unit)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME audio_output

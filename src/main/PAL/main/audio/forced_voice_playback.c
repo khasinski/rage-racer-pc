@@ -1,30 +1,44 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
+enum {
+    ENGINE_SOUND_VAB_SLOT = 3,
+    PARAMETERS_PER_ENGINE_SLOT = 2,
+    ENGINE_SLOT_BEND_PARAMETER = 0,
+    ENGINE_SLOT_VOLUME_PARAMETER = 1,
+};
+
 void ForceSoundSlotVoicePlayback(s32 enabled) {
-    s32 i;
+    s32 slot;
 
     SetSoundSlotVoicesEnabled(enabled);
 
     if (enabled != 0) {
-        for (i = 0; i < 6; i++) {
-            if (g_EngineSoundState.slotActive[i] != 0 &&
-                g_SoundSlotTone[i][0] != g_SoundSlotTone[i][1]) {
-                PlaySoundSlotVoice(i, g_EngineSoundState.bank, 3);
+        for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
+            if (g_EngineSoundState.slotActive[slot] != 0 &&
+                g_SoundSlotTone[slot][0] != g_SoundSlotTone[slot][1]) {
+                PlaySoundSlotVoice(slot, g_EngineSoundState.bank,
+                                   ENGINE_SOUND_VAB_SLOT);
             }
         }
 
-        for (i = 0; i < 6; i++) {
-            if (g_EngineSoundState.slotActive[i] != 0) {
+        for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
+            if (g_EngineSoundState.slotActive[slot] != 0) {
                 s32 bend = InterpolateAudioParameter(
-                    i * 2, g_EngineSoundState.position,
+                    slot * PARAMETERS_PER_ENGINE_SLOT +
+                        ENGINE_SLOT_BEND_PARAMETER,
+                    g_EngineSoundState.position,
                     g_EngineSoundState.bank);
                 s32 volume = InterpolateAudioParameter(
-                    i * 2 + 1, g_EngineSoundState.position,
+                    slot * PARAMETERS_PER_ENGINE_SLOT +
+                        ENGINE_SLOT_VOLUME_PARAMETER,
+                    g_EngineSoundState.position,
                     g_EngineSoundState.bank);
 
                 volume = volume * g_EngineSoundState.volumeScale / 128;
-                SetSoundSlotTone(i, bend, volume, g_EngineSoundState.bank, 3);
+                SetSoundSlotTone(slot, bend, volume,
+                                 g_EngineSoundState.bank,
+                                 ENGINE_SOUND_VAB_SLOT);
             }
         }
     }
