@@ -379,7 +379,6 @@ extern u8 g_TimeRecordNameCodes[];
 extern char g_TimeTextBuffer[];
 
 s32 BeginMirrorPass(void);
-void BeginReplay(void);
 void BuildRaceHudPrims(s32);
 void BuildTileStrips(void);
 void CommitClassProgress(void);

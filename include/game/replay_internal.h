@@ -24,6 +24,8 @@ void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
 void ApplyReplayFrameAndTrackPoint(s32 subframe,
                                    struct GameCarRuntime *player,
                                    struct GameCarRuntime *rival);
+void BeginReplay(void);
+void UpdateReplayScene(void);
 void SeedReplayCars(void);
 void UpdateReplayCars(void);
 void RecordReplayFrame(void);
