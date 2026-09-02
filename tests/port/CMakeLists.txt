@@ -95,7 +95,9 @@ set_tests_properties(car_model_loading PROPERTIES LABELS unit)
 
 add_executable(fmv_requests_tests
     fmv_requests_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/fmv_requests.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/service_asset_load.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/track_data_assets.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/select_fmv_stream.c)
 target_include_directories(fmv_requests_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

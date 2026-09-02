@@ -120,9 +120,13 @@ extern GameCdLoadEntry g_AssetCdEntries[];
  * `1 + class` in the Grand Prix and `5 + class` in the Extra GP. */
 extern GameCdLoadEntry g_StreamCdEntries[];
 
-/* The one of them the streaming player is reading, set by BeginIntroFmv and
- * friends and handed straight to StartStreamRead. */
+/* The selected stream and its playback bounds, set by BeginIntroFmv and
+ * friends and handed to the FMV streamer. The limit intentionally exceeds
+ * the recorded size: the original player uses two passes for normal films
+ * and four for the ending. */
 extern GameCdLoadEntry *g_StreamLoc;
+extern u32 g_StreamSectorCount;
+extern u32 g_StreamSectorLimit;
 
 /* Boot CD scratch buffer: the RAGE.BIN index first, then asset 0. */
 extern s32 g_LoadBuffer[];
@@ -542,7 +546,6 @@ s32 GetCarAssetIndex(s32 model, s32 grade);
 /* Declared identically by 19 translation units before this
  * header carried them. */
 
-extern u32 g_StreamSectorLimit;
 extern s32 g_TerrainCellCount;
 extern RECT g_CarImageRect;
 struct CarImageData;
