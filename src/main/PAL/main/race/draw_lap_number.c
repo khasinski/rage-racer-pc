@@ -3,7 +3,8 @@
 #include "game/render_internal.h"
 
 void DrawLapNumber(void) {
-    SPRT *packet = RENDER_PRIM_CURSOR_AS(SPRT);
+    RenderBufferAddress packet = {.sprite = RENDER_PRIM_CURSOR_AS(SPRT)};
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 divisor = 1;
     s32 digitIndex = 0;
 
@@ -13,7 +14,7 @@ void DrawLapNumber(void) {
 
         if (quotient == 0 && digitIndex > 0) break;
 
-        digit = packet++;
+        digit = packet.sprite++;
         SetSprt(digit);
         SetShadeTex(digit, 1);
         digit->u0 = (quotient % 10) * 24;
@@ -23,11 +24,11 @@ void DrawLapNumber(void) {
         digit->y0 = 0x10;
         digit->w = 0x18;
         digit->h = 0x20;
-        AddPrim(GamePrimaryOrderingTable(0), digit);
+        AddPrim(ot, digit);
 
         divisor *= 10;
         digitIndex++;
     }
 
-    QueueDrawModePrim(GamePrimaryOrderingTable(0), (u8 *)packet, 9);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, packet.bytes, 9);
 }
