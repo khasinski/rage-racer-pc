@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "game/audio.h"
 #include "game/race.h"
 #include "game/records_internal.h"
@@ -14,6 +16,12 @@ void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
         record->driverName[character] =
             g_NameEntryCharset[nameCodes[character]];
     }
+}
+
+void FormatRecordDriverClass(char *dst, s32 dstSize, const char *format,
+                             const RaceRecord *record,
+                             const char *className) {
+    snprintf(dst, (size_t)dstSize, format, record->driverName, className);
 }
 
 s32 UpdateRecordNameEntry(u8 *nameCodes) {

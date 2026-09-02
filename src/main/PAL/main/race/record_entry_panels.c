@@ -10,6 +10,32 @@
 #include "game/screens.h"
 #include "game/state.h"
 
+static void DrawRecordRows(s32 slideX,
+                           const RaceRecord records[RECORD_TABLE_LENGTH],
+                           s32 insertedRow, char *text, size_t textSize) {
+    s32 row;
+
+    for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
+        const RaceRecord *record = &records[row];
+        s32 carIndex = record->carIndex;
+        s32 color = insertedRow == row ? 0x780F : 0x78CC;
+        s32 y = 0x78 + row * 0x14;
+
+        text[0] = g_PlaceSuffixNames[row][0];
+        text[1] = g_PlaceSuffixNames[row][1];
+        text[2] = g_PlaceSuffixNames[row][2];
+        text[3] = '/';
+        FormatLapTime(&text[4], record->raceTime);
+        FormatRecordDriverClass(
+            &text[0xC], (s32)(textSize - 0xC), g_FmtRecordName, record,
+            g_CarClassNames[carIndex]);
+        DrawText8x8(slideX + 0x14, y, text, color);
+
+        snprintf(text, textSize, g_FmtCarName, g_CarNames[carIndex]);
+        DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
+    }
+}
+
 void DrawRankingPanel(s32 slideX) {
     char text[56];
     s32 lapCount;
@@ -17,7 +43,7 @@ void DrawRankingPanel(s32 slideX) {
     s32 course = SeriesCourseIndex();
 
     DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
-    text[1] = 0x2F;
+    text[1] = '/';
     lapCount = CourseLapCount(g_CourseIndex);
     for (row = 0; row < lapCount; row++) {
         s32 column = row % 2;
@@ -25,66 +51,31 @@ void DrawRankingPanel(s32 slideX) {
         s32 y = 0x58 + column * 8;
         s32 color = g_BestLapIndex == row ? 0x780F : 0x78CC;
 
-        text[0] = row + 0x31;
+        text[0] = row + '1';
         FormatLapTime(&text[2],
                       g_PlayerCar.lapTimes.table.milliseconds[row]);
         DrawText8x8(x, y, text, color);
     }
 
     DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
-    for (row = 0; row < 5; row++) {
-        const RaceRecord *record =
-            &g_RankingRecords[g_GrandPrixSeries][course][row];
-        s32 carIndex = record->carIndex;
-        s32 color = g_RankingInsertRow == row ? 0x780F : 0x78CC;
-        s32 y = 0x78 + row * 0x14;
-
-        text[0] = g_PlaceSuffixNames[row][0];
-        text[1] = g_PlaceSuffixNames[row][1];
-        text[2] = g_PlaceSuffixNames[row][2];
-        text[3] = 0x2F;
-        FormatLapTime(&text[4], record->raceTime);
-        sprintf(&text[0xC], g_FmtRecordName, record,
-                g_CarClassNames[carIndex]);
-        DrawText8x8(slideX + 0x14, y, text, color);
-
-        sprintf(text, g_FmtCarName, g_CarNames[carIndex]);
-        DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
-    }
+    DrawRecordRows(slideX, g_RankingRecords[g_GrandPrixSeries][course],
+                   g_RankingInsertRow, text, sizeof(text));
 }
 
 void DrawTimeRecordPanel(s32 slideX) {
     char text[48];
     s32 course = SeriesCourseIndex();
-    s32 row;
 
     DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
 
-    text[0] = 0x54;
-    text[1] = 0x2F;
+    text[0] = 'T';
+    text[1] = '/';
     FormatLapTime(&text[2], g_RaceTotalTime);
     DrawText8x8(slideX + 0x14, 0x58, text, 0x78CC);
 
     DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
-    for (row = 0; row < 5; row++) {
-        const RaceRecord *record =
-            &g_TimeRecords[g_GrandPrixSeries][course][row];
-        s32 carIndex = record->carIndex;
-        s32 color = g_TimeRecordInsertRow == row ? 0x780F : 0x78CC;
-        s32 y = 0x78 + row * 0x14;
-
-        text[0] = g_PlaceSuffixNames[row][0];
-        text[1] = g_PlaceSuffixNames[row][1];
-        text[2] = g_PlaceSuffixNames[row][2];
-        text[3] = 0x2F;
-        FormatLapTime(&text[4], record->raceTime);
-        sprintf(&text[0xC], g_FmtRecordName, record,
-                g_CarClassNames[carIndex]);
-        DrawText8x8(slideX + 0x14, y, text, color);
-
-        sprintf(text, g_FmtCarName, g_CarNames[carIndex]);
-        DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
-    }
+    DrawRecordRows(slideX, g_TimeRecords[g_GrandPrixSeries][course],
+                   g_TimeRecordInsertRow, text, sizeof(text));
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {
