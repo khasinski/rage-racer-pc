@@ -75,15 +75,22 @@ int main(void) {
     CHECK(s_colorSet.m[2][2] == 625);
     CHECK(light.m[0][0] == 400 && light.m[2][2] == 400);
 
+    FillMatrix(&light, 200);
+    g_TrackZoneCode = 1;
+    ApplyZoneLighting(-1, &light);
+    CHECK(s_colorSet.m[0][0] == 1000 && s_colorSet.m[2][2] == 1000);
+    ApplyZoneLighting(500, &light);
+    CHECK(s_colorSet.m[0][0] == 250 && s_colorSet.m[2][2] == 250);
+
     RestoreColorMatrix();
-    CHECK(s_colorCalls == 3 && s_colorSet.m[0][0] == 1000);
+    CHECK(s_colorCalls == 5 && s_colorSet.m[0][0] == 1000);
 
     FillMatrix(&g_TrackColorMatrix, 300);
     FillMatrix(&g_TrackLightMatrix, 700);
     InitTrackLighting();
     CHECK(g_SceneColorMatrix.m[1][1] == 300);
     CHECK(g_SceneLightMatrix.m[1][1] == 700);
-    CHECK(s_colorCalls == 4 && s_lightCalls == 1);
+    CHECK(s_colorCalls == 6 && s_lightCalls == 1);
     CHECK(s_back[0] == 0x20 && s_back[1] == 0x20 && s_back[2] == 0x20);
     CHECK(s_far[0] == 0x80 && s_far[1] == 0x80 && s_far[2] == 0x80);
     CHECK(s_fog[0] == 0x1770 && s_fog[1] == 0x140);

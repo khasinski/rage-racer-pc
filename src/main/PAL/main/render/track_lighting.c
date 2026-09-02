@@ -35,6 +35,12 @@ void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
     Matrix colorMatrix;
     s32 row;
 
+    if (blend < 0) {
+        blend = 0;
+    } else if (blend > LIGHTING_BLEND_MAX) {
+        blend = LIGHTING_BLEND_MAX;
+    }
+
     if (g_TrackZoneCode != 0) {
         s32 scale = LIGHTING_BLEND_MAX - (blend * 3) / 4;
 
