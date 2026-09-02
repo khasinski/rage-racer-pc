@@ -29,6 +29,11 @@ static int s_trackStateCalls;
 static int s_bodyMotionCalls;
 static int s_attractAccelerationCalls;
 static int s_placementCalls;
+static int s_raceAccelerationCalls;
+static int s_rankCalls;
+static int s_rubberBandCalls;
+static s32 s_slowedRanks[3];
+static int s_slowedCount;
 
 void TraceCarStates(void) { s_traceCalls++; }
 
@@ -92,17 +97,19 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
 }
 
 void UpdateRivalBodyMotion(void) { s_bodyMotionCalls++; }
-void AccelerateRaceRivals(void) {}
+void AccelerateRaceRivals(void) { s_raceAccelerationCalls++; }
 void AccelerateAttractRivals(void) { s_attractAccelerationCalls++; }
 void PlaceRivalCarsOnTrack(void) { s_placementCalls++; }
 
 s32 GetAngleDelta(s32 from, s32 to) { return to - from; }
 
-void RankContenders(void) {}
-void UpdateRivalRubberBand(void) {}
+void RankContenders(void) { s_rankCalls++; }
+void UpdateRivalRubberBand(void) { s_rubberBandCalls++; }
 void SlowRivalAhead(GameCarRuntime *car, s32 index) {
     (void)car;
-    (void)index;
+    if (s_slowedCount < 3) {
+        s_slowedRanks[s_slowedCount++] = index;
+    }
 }
 
 #define CHECK_EQ(actual, expected) do {                                        \
@@ -162,6 +169,41 @@ int main(void) {
     car->progressA = 123;
     UpdateAttractCars();
     CHECK_EQ(car->progressA, 23);
+
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        g_Cars[index].activeFlag = 0;
+        g_Cars[index].collisionFlag = 6;
+        g_Cars[index].baseBodyYaw = 100 + index;
+    }
+    for (index = 0; index < 4; index++) {
+        g_RankedCars[index] = &g_Cars[index];
+    }
+    g_AnimTimer = 0;
+    g_ClosestRivalRank = 99;
+    s_trafficCalls = 0;
+    s_collisionCalls = 0;
+    s_targetSpeedCalls = 0;
+    s_hintCalls = 0;
+    s_clampCalls = 0;
+    s_steerCalls = 0;
+    s_slowedCount = 0;
+
+    UpdateRaceCars();
+    CHECK_EQ(s_rankCalls, 1);
+    CHECK_EQ(s_trafficCalls, 8);
+    CHECK_EQ(s_collisionCalls, RACE_CAR_SLOT_COUNT - 1);
+    CHECK_EQ(s_targetSpeedCalls, RACE_CAR_SLOT_COUNT);
+    CHECK_EQ(s_hintCalls, RACE_CAR_SLOT_COUNT);
+    CHECK_EQ(s_clampCalls, RACE_CAR_SLOT_COUNT);
+    CHECK_EQ(s_steerCalls, RACE_CAR_SLOT_COUNT);
+    CHECK_EQ(s_rubberBandCalls, 1);
+    CHECK_EQ(s_slowedCount, 3);
+    CHECK_EQ(s_slowedRanks[0], 3);
+    CHECK_EQ(s_slowedRanks[1], 2);
+    CHECK_EQ(s_slowedRanks[2], 1);
+    CHECK_EQ(s_raceAccelerationCalls, 1);
+    CHECK_EQ(g_Cars[5].bodyYaw, 105);
+    CHECK_EQ(g_Cars[5].collisionFlag, 0);
 
     puts("attract car update preserves pass coverage and empty-track progress");
     return 0;

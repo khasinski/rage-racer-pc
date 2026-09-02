@@ -67,10 +67,13 @@ static void SteerAllCars(void) {
 
 /* Everyone ahead of the player is held back a little, nearest one first. */
 static void SlowTheCarsAhead(void) {
-    s16 rank = (s16)g_ClosestRivalRank;
+    s32 rank = g_ClosestRivalRank;
 
-    while ((s16)rank > 0) {
-        s32 slot = (s16)rank;
+    if (rank >= 4) {
+        rank = 3;
+    }
+    while (rank > 0) {
+        s32 slot = rank;
 
         SlowRivalAhead(g_RankedCars[slot], slot);
         rank--;
