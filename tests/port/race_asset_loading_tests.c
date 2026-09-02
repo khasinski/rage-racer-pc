@@ -354,7 +354,7 @@ static void TestTrackPhases(void) {
     g_GrandPrixClass = 3;
     g_AssetLoadCursor = storage;
     g_AssetLoadState = 5;
-    s_loadResult = 512;
+    s_loadResult = sizeof(storage);
     s_uploadCount = 0;
     LoadRaceAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 28,
@@ -534,6 +534,9 @@ static void TestResidentCourseInstallation(void) {
     for (i = 0; i < 5; i++) pack->offsets[i] = 64 + i * 32;
     g_AssetBase = storage;
     g_AssetLoadCursor = NULL;
+    Check(InstallTrackTextureAssetPack(g_AssetBase, 256) == 0 &&
+              g_AssetLoadCursor == NULL,
+          "truncated texture-shadow storage rejects the course pack");
     s_uploadCount = 0;
     s_validationCount = 0;
     s_validationFailureAt = -1;

@@ -22,7 +22,10 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     void *deferredImages;
     s32 i;
 
-    if (base == NULL || size < sizeof(*header) || size > INT32_MAX) return 0;
+    if (base == NULL || size < TRACK_TEXTURE_SHADOW_SIZE ||
+        size > INT32_MAX) {
+        return 0;
+    }
 
     header = (TrackTextureAssetHeader *)base;
     for (i = 0; i < 5; i++) {
