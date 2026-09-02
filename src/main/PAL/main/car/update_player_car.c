@@ -8,77 +8,10 @@
 #include "game/audio.h"
 #include "game/random.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include "rage/trace.h"
 
-/*
- * Per-car physics driver (matched sibling of the ASM UpdateAttractCars).
- * Samples input, builds the car's orientation matrices, picks the gear through
- * ShiftPlayerGears, dispatches the engine audio and the boost/launch handlers,
- * and resolves track-boundary skid via UpdateCarTrackState. PlayerCarRuntime
- * and GameCarDrive describe the player layout, whose block at +0xBC is not the
- */
-static void UpdatePlayerEngineNote(PlayerCarRuntime *car, GameCarDrive *p) {
-    s32 revFlag = 0;
-
-    if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
-        p->acceleratorInput.value >= 129) {
-        s32 r = Random15();
-
-        g_TachoNeedleFlash = g_AnimTimer & 2;
-        g_EngineRpmJitter = r % 150 / 2;
-    } else {
-        revFlag = 0;
-        if (p->engineRpm == 0 && (g_AnimTimer & 8)) {
-            g_TachoNeedleFlash = 0;
-            g_EngineRpmJitter = rsin(Random15() & 0xFFF) * 150 / 4096;
-            if (g_EngineRpmJitter <= 0) {
-                g_EngineRpmJitter = 0;
-            }
-            revFlag = g_EngineRpmJitter < 37;
-        } else {
-            g_EngineRpmJitter = 0;
-            g_TachoNeedleFlash = 0;
-        }
-    }
-
-    g_EngineRpmSnapshot = g_EngineRpm;
-    if (p->engineRpm != 0) {
-        if (p->gear != 1) {
-            revFlag = 0;
-            if (g_EngineRpm >= g_CarSpec->redline - 2000) {
-                revFlag = 1;
-                if (g_EngineRpm < g_CarSpec->redline) {
-                    revFlag = Random15() & 1;
-                }
-            }
-        } else {
-            revFlag = 1;
-        }
-    }
-
-    if (g_RacePhase >= 4) {
-        SetIndexedEffectVoice(-1, 0, 0);
-    }
-
-    if (p->manual != 0) {
-        UpdateLoadedAudioVoices(g_EngineRpm + g_EngineRpmJitter,
-                      (0 < p->acceleratorInput.value) &
-                      (p->clutch == 0) & revFlag);
-    } else {
-        s32 flag = 0;
-        s32 vol = g_EngineRpm + g_EngineRpmJitter;
-
-        if (p->acceleratorInput.value > 0) {
-            flag = revFlag & 1;
-        }
-        UpdateLoadedAudioVoices(vol, flag);
-    }
-
-    p->gearDisp = p->gear;
-    TraceCarMotion("post-update", car);
-}
+/* Per-frame player physics orchestration and track contact. */
 
 /*
  * How far the steering turns the car this frame. Below walking pace the turn
@@ -210,27 +143,6 @@ static void PlaySkidCue(PlayerCarRuntime *car, s32 skid, s32 slip) {
     }
 }
 
-/*
- * The needle chases the engine, twice as fast with the clutch out as with it
- * in, and stops at the limiter and at idle.
- *
- * Retail address 0x8009E808 is not independent storage: it is the +0x78
- * engine-RPM word inside g_PlayerCar.drive. Keeping the symbol as a separate
- * native global leaves it zero and pins the needle to the 500-rpm clamp.
- */
-static void SettleEngineRpm(GameCarDrive *p) {
-    s32 shown = g_EngineRpm;
-    s32 gap = p->engineRpm - shown;
-    s32 limit = g_CarSpec->revLimit;
-
-    shown += (p->clutch > 0) ? gap / 2 : gap / 4;
-    if (shown >= limit) {
-        shown = limit;
-    } else if (shown < 500) {
-        shown = 500;
-    }
-    g_EngineRpm = shown;
-}
 
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
@@ -373,7 +285,5 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         }
     }
 
-    SettleEngineRpm(p);
-
-    UpdatePlayerEngineNote(car, p);
+    UpdatePlayerEnginePresentation(car);
 }

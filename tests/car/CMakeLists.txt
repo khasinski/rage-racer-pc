@@ -73,6 +73,26 @@ endif()
 add_test(NAME player_jump COMMAND player_jump_tests)
 set_tests_properties(player_jump PROPERTIES LABELS unit)
 
+add_executable(player_engine_presentation_tests
+    player_engine_presentation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_engine_presentation.c)
+target_include_directories(player_engine_presentation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(player_engine_presentation_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(player_engine_presentation_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(player_engine_presentation_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME player_engine_presentation
+    COMMAND player_engine_presentation_tests)
+set_tests_properties(player_engine_presentation PROPERTIES LABELS unit)
+
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3
