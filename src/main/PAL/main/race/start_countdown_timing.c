@@ -56,3 +56,25 @@ s32 AdvanceStartCountdownBoard(s32 phase, s32 currentOffset) {
     currentOffset -= 16;
     return currentOffset < -240 ? -240 : currentOffset;
 }
+
+StartCountdownLamp BuildStartCountdownLamp(s32 phase, s32 sceneTimer,
+                                           s32 lampIndex) {
+    StartCountdownLamp lamp;
+    s32 column = lampIndex % 3;
+
+    lamp.intensity = 0x80;
+    if ((u32)phase < 4) {
+        if (phase - 1 == column) {
+            lamp.intensity = (sceneTimer % 30) * 8;
+            if (lamp.intensity > 0x80) lamp.intensity = 0x80;
+        }
+        lamp.clut = phase - 1 >= column ? 0x7851 : 0x784F;
+    } else {
+        if (phase == 4) {
+            lamp.intensity = (sceneTimer % 30) * 12;
+            if (lamp.intensity > 0x80) lamp.intensity = 0x80;
+        }
+        lamp.clut = 0x7850;
+    }
+    return lamp;
+}

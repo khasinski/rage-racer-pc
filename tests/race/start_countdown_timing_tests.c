@@ -19,6 +19,7 @@ int main(void) {
     u32 glyphs[5 * 16] = {0};
     u32 first[16] = {0};
     StartCountdownRow row;
+    StartCountdownLamp lamp;
 
     if (Check(104, 0, 0, 0)) return 1;
     if (Check(105, 1, 0, 0)) return 1;
@@ -57,5 +58,22 @@ int main(void) {
     if (AdvanceStartCountdownBoard(4, -64) != 0) return 1;
     if (AdvanceStartCountdownBoard(-1, 0) != -16) return 1;
     if (AdvanceStartCountdownBoard(-1, -224) != -240) return 1;
-    return AdvanceStartCountdownBoard(-1, -240) != -240;
+    if (AdvanceStartCountdownBoard(-1, -240) != -240) return 1;
+
+    lamp = BuildStartCountdownLamp(0, 105, 0);
+    if (lamp.intensity != 0x80 || lamp.clut != 0x784F) return 1;
+    lamp = BuildStartCountdownLamp(1, 120, 0);
+    if (lamp.intensity != 0 || lamp.clut != 0x7851) return 1;
+    lamp = BuildStartCountdownLamp(1, 130, 0);
+    if (lamp.intensity != 80 || lamp.clut != 0x7851) return 1;
+    lamp = BuildStartCountdownLamp(1, 140, 3);
+    if (lamp.intensity != 0x80 || lamp.clut != 0x7851) return 1;
+    lamp = BuildStartCountdownLamp(2, 150, 2);
+    if (lamp.intensity != 0x80 || lamp.clut != 0x784F) return 1;
+    lamp = BuildStartCountdownLamp(4, 210, 4);
+    if (lamp.intensity != 0 || lamp.clut != 0x7850) return 1;
+    lamp = BuildStartCountdownLamp(4, 225, 4);
+    if (lamp.intensity != 0x80 || lamp.clut != 0x7850) return 1;
+    lamp = BuildStartCountdownLamp(-1, 250, 5);
+    return lamp.intensity != 0x80 || lamp.clut != 0x7850;
 }

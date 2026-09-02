@@ -22,6 +22,14 @@ StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
                                          const u32 *firstPattern);
 s32 AdvanceStartCountdownBoard(s32 phase, s32 currentOffset);
 
+typedef struct StartCountdownLamp {
+    s32 intensity;
+    u16 clut;
+} StartCountdownLamp;
+
+StartCountdownLamp BuildStartCountdownLamp(s32 phase, s32 sceneTimer,
+                                           s32 lampIndex);
+
 typedef struct RaceOptionMarqueeState {
     s32 firstScroll;
     s32 secondScroll;

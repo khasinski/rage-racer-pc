@@ -68,6 +68,9 @@ void DrawStartCountdown(s32 sceneTimer) {
     packetAddress.bytes = cursor;
     sprite = packetAddress.sprite;
     for (row = 0; row < 6; row++) {
+        StartCountdownLamp lamp =
+            BuildStartCountdownLamp(phase, sceneTimer, row);
+
         SetSprt(cursor);
         sprite->w = 0x20;
         sprite->h = 0x18;
@@ -77,39 +80,10 @@ void DrawStartCountdown(s32 sceneTimer) {
         sprite->y0 =
             (row / 3) * 56 + ((u16)g_CountdownBoardOffset + 66);
 
-        if ((u32)phase < 4) {
-            if (phase - 1 == row % 3) {
-                halfStep = sceneTimer % 30;
-                if (halfStep < 16) {
-                    pattern = halfStep * 8;
-                } else {
-                    pattern = 0x80;
-                }
-            } else {
-                pattern = 0x80;
-            }
-            if (phase - 1 >= row % 3) {
-                sprite->clut = 0x7851;
-            } else {
-                sprite->clut = 0x784F;
-            }
-        } else {
-            if (phase == 4) {
-                halfStep = sceneTimer % 30;
-                if (halfStep < 10) {
-                    pattern = halfStep * 12;
-                } else {
-                    pattern = 0x80;
-                }
-            } else {
-                pattern = 0x80;
-            }
-            sprite->clut = 0x7850;
-        }
-
-        sprite->r0 = pattern;
-        sprite->g0 = pattern;
-        sprite->b0 = pattern;
+        sprite->clut = lamp.clut;
+        sprite->r0 = lamp.intensity;
+        sprite->g0 = lamp.intensity;
+        sprite->b0 = lamp.intensity;
         AddPrim(orderingTable, sprite);
         cursor += sizeof(SPRT);
         sprite = (SPRT *)cursor;
