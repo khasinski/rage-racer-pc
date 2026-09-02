@@ -2,16 +2,6 @@
 #include "game/cd_internal.h"
 #include "psyq/cd.h"
 
-typedef enum CdPauseRequestStep {
-    CD_PAUSE_WAIT_FOR_DRIVE = 0,
-    CD_PAUSE_GET_LOCATION,
-    CD_PAUSE_WAIT_FOR_LOCATION,
-    CD_PAUSE_CAPTURE_LOCATION,
-    CD_PAUSE_SEND_COMMAND,
-    CD_PAUSE_WAIT_FOR_COMMAND,
-    CD_PAUSE_FINISH,
-} CdPauseRequestStep;
-
 static void CaptureCdPauseLocation(void) {
     const s32 loopPoint =
         CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);

@@ -72,8 +72,16 @@ int main(void) {
     CHECK(g_CdMixRR == g_CdMixFullRR && g_CdMixRL == g_CdMixFullRL);
     CHECK(s_mixCalls == 8);
 
+    g_CdMixLL = 0x40000;
+    g_CdMixFullLL = 0x20000;
+    StartCdVolumeFade(-2);
     StepCdVolumeFade();
-    CHECK(s_mixCalls == 9);
+    CHECK(g_CdMixLL == 0x30000 && g_CdFadeFrames == -1);
+    StepCdVolumeFade();
+    CHECK(g_CdMixLL == 0x20000 && g_CdFadeFrames == 0);
+
+    StepCdVolumeFade();
+    CHECK(s_mixCalls == 11);
     CHECK(g_CdFadeFrames == 0);
 
     puts("CD volume fade tests passed");

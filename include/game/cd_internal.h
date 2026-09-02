@@ -25,6 +25,16 @@ typedef enum CdPlayRequestStep {
     CD_PLAY_FINISH,
 } CdPlayRequestStep;
 
+typedef enum CdPauseRequestStep {
+    CD_PAUSE_WAIT_FOR_DRIVE,
+    CD_PAUSE_GET_LOCATION,
+    CD_PAUSE_WAIT_FOR_LOCATION,
+    CD_PAUSE_CAPTURE_LOCATION,
+    CD_PAUSE_SEND_COMMAND,
+    CD_PAUSE_WAIT_FOR_COMMAND,
+    CD_PAUSE_FINISH,
+} CdPauseRequestStep;
+
 enum {
     CD_TRACK_LOCATION_COUNT = 18,
     CD_FILE_TRACK_COUNT = 16,

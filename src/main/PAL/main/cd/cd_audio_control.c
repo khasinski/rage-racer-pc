@@ -14,7 +14,7 @@ void StartCdAudio(void) {
 
 void PauseCdAudio(void) {
     g_CdCommandPending = CD_COMMAND_PAUSE;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+    g_CdCommandStep = CD_PAUSE_WAIT_FOR_DRIVE;
 }
 
 void ResumeCdAudio(void) {

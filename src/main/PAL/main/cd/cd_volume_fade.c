@@ -1,13 +1,17 @@
 #include "game/cd.h"
 #include "game/cd_internal.h"
 
+#include <stdint.h>
+
+enum { CD_FADE_FRAME_LIMIT = 0xFFF };
+
 void StartCdVolumeFade(s32 frames) {
     g_CdFadeFrames = frames;
-    if (frames >= 0x1000) {
-        g_CdFadeFrames = 0xFFF;
+    if (frames > CD_FADE_FRAME_LIMIT) {
+        g_CdFadeFrames = CD_FADE_FRAME_LIMIT;
     }
-    if (g_CdFadeFrames < -0xFFF) {
-        g_CdFadeFrames = -0xFFF;
+    if (g_CdFadeFrames < -CD_FADE_FRAME_LIMIT) {
+        g_CdFadeFrames = -CD_FADE_FRAME_LIMIT;
     }
 }
 
@@ -21,8 +25,9 @@ static u32 FadeChannelOut(u32 level, s32 framesRemaining) {
 }
 
 static u32 FadeChannelIn(u32 level, u32 target, s32 framesRemaining) {
-    return target -
-           (target - level) * (framesRemaining - 1) / framesRemaining;
+    int64_t difference = (int64_t)target - level;
+
+    return (u32)((int64_t)level + difference / framesRemaining);
 }
 
 void StepCdVolumeFade(void) {

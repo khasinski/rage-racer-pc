@@ -46,24 +46,25 @@ long CdPosToInt_Local(CdlLOC *location) {
 
 int main(void) {
     memset(g_CdTrackLoopPoint, 0, sizeof(g_CdTrackLoopPoint));
-    g_CdCommandStep = 0;
+    g_CdCommandStep = CD_PAUSE_WAIT_FOR_DRIVE;
     s_syncResult = 0;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 0);
+    CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_DRIVE);
 
     s_syncResult = CD_SYNC_COMPLETE;
     s_controlResult = 1;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 2 && s_lastCommand == CD_DRIVE_GET_LOCATION);
+    CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_LOCATION &&
+          s_lastCommand == CD_DRIVE_GET_LOCATION);
 
     s_syncResult = CD_SYNC_DISK_ERROR;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 1);
+    CHECK(g_CdCommandStep == CD_PAUSE_GET_LOCATION);
 
-    g_CdCommandStep = 2;
+    g_CdCommandStep = CD_PAUSE_WAIT_FOR_LOCATION;
     s_syncResult = CD_SYNC_COMPLETE;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 3);
+    CHECK(g_CdCommandStep == CD_PAUSE_CAPTURE_LOCATION);
 
     g_CdCurrentTrack = 1;
     g_CdTrackLoopPoint[0].second = 1;
@@ -75,20 +76,22 @@ int main(void) {
     CHECK(g_CdRestartOnResume == 1);
     CHECK(g_CdTrackElapsedLoc.second == 3 &&
           g_CdTrackElapsedLoc.sector == 0);
-    CHECK(g_CdCommandStep == 5 && s_lastCommand == CD_DRIVE_PAUSE);
+    CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_COMMAND &&
+          s_lastCommand == CD_DRIVE_PAUSE);
 
     s_syncResult = CD_SYNC_DISK_ERROR;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 4);
+    CHECK(g_CdCommandStep == CD_PAUSE_SEND_COMMAND);
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 5);
+    CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_COMMAND);
 
     s_syncResult = CD_SYNC_COMPLETE;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 6);
+    CHECK(g_CdCommandStep == CD_PAUSE_FINISH);
     g_CdCommandPending = CD_COMMAND_PAUSE;
     StepCdPauseRequest();
-    CHECK(g_CdCommandStep == 0 && g_CdCommandPending == CD_COMMAND_NONE);
+    CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_DRIVE &&
+          g_CdCommandPending == CD_COMMAND_NONE);
 
     puts("CD pause request tests passed");
     return 0;
