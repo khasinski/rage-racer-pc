@@ -15,14 +15,7 @@ typedef struct AnimatedSceneryTransform {
 
 enum {
     ANIMATED_SCENERY_INSTANCE_COUNT = 2,
-    COURSE_MODEL_FALLBACK = 1,
 };
-
-static s32 CourseModelOrFallback(s32 modelId) {
-    return modelId >= 0 && modelId < g_CourseModelCount
-               ? modelId
-               : COURSE_MODEL_FALLBACK;
-}
 
 static Vec4 AnimatedSceneryPosition(s32 instance) {
     Vec4 position = g_AnimSceneryPos[instance];
@@ -48,7 +41,7 @@ static void SubmitAnimatedSceneryLayer(AnimatedSceneryTransform *transform,
                                        s32 entity, s32 modelId, s32 tint) {
     Vec4 *position = &transform->position;
 
-    modelId = CourseModelOrFallback(modelId);
+    modelId = ModelOrFallback(modelId, g_CourseModelCount);
     SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(position),
                        &transform->objectMatrix);
     g_RenderState.envMode4 = tint;

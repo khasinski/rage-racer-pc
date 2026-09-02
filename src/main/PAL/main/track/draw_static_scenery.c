@@ -3,10 +3,6 @@
 #include "game/track_internal.h"
 #include "rage/render_world_game.h"
 
-static s32 SceneryModelId(s32 modelCount, s32 modelLimit) {
-    return modelCount < modelLimit ? 1 : modelLimit - 1;
-}
-
 static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
                                 s32 worldObjectId, s32 modelId,
                                 s32 environmentMode) {
@@ -37,7 +33,7 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
 void DrawStaticScenery(s32 shiftForSeriesCourse) {
     const SceneryPlacement *placement = &g_StaticSceneryState.standard;
     LVec position = placement->position;
-    s32 modelLimit;
+    s32 modelId;
 
     if (shiftForSeriesCourse != 0) {
         position.z += 0x5000;
@@ -46,9 +42,9 @@ void DrawStaticScenery(s32 shiftForSeriesCourse) {
         return;
     }
 
-    modelLimit = g_IsEnvironmentMode4 != 0 ? 0x3B : 0x3A;
+    modelId = g_IsEnvironmentMode4 != 0 ? 0x3A : 0x39;
     SubmitStaticScenery(&position, placement->yaw, 0,
-                        SceneryModelId(g_CourseModelCount, modelLimit), 0);
+                        ModelOrFallback(modelId, g_CourseModelCount), 0);
 }
 
 void DrawHighClassScenery(void) {
@@ -56,5 +52,5 @@ void DrawHighClassScenery(void) {
 
     SubmitStaticScenery(
         &placement->position, placement->yaw, 1,
-        SceneryModelId(g_CourseModelCount, 0x40), 0x10000);
+        ModelOrFallback(0x3F, g_CourseModelCount), 0x10000);
 }

@@ -10,8 +10,6 @@
 void DrawPathScenery(void) {
     Matrix mtx0;
     Matrix mtx1;
-    s32 drawId;
-    s32 frameValue;
     s32 spinAngle;
 
     BuildRotMatrixY(&mtx0, 0x800 - g_PathSceneryTransform.rotation.vy);
@@ -24,13 +22,8 @@ void DrawPathScenery(void) {
     SelectModelBank(1);
     SetGteObjectMatrix(&g_ObjectMatrixWork,
                        AsPositionWords(g_PathSceneryTransform.position.w), &mtx0);
-    frameValue = g_ModelBankCount;
     g_RenderState.envMode4 = 0;
-    drawId = 1;
-    if (frameValue >= 0x24) {
-        drawId = 0x23;
-    }
-    SubmitModel(&g_RenderState, drawId);
+    SubmitModel(&g_RenderState, ModelOrFallback(0x23, g_ModelBankCount));
 
     spinAngle = (s32)((u32)g_SceneTimer * 331u) & 0xFFF;
     BuildRotMatrixY(&mtx1, spinAngle);
@@ -38,11 +31,6 @@ void DrawPathScenery(void) {
     MulMatrix2(&mtx0, &mtx1);
     SetGteObjectMatrix(&g_ObjectMatrixWork,
                        AsPositionWords(g_PathSceneryTransform.position.w), &mtx1);
-    frameValue = g_ModelBankCount;
     g_RenderState.envMode4 = 0;
-    drawId = 1;
-    if (frameValue >= 0x25) {
-        drawId = 0x24;
-    }
-    SubmitModel(&g_RenderState, drawId);
+    SubmitModel(&g_RenderState, ModelOrFallback(0x24, g_ModelBankCount));
 }

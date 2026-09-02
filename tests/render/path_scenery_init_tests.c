@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void InitPathScenery(void);
-
 s32 g_RaceSeries;
 PathSceneryPositionData *g_PathSceneryPosData;
 PathSceneryRotationData *g_PathSceneryRotData;

@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void SeedFlybyScenery(void);
-
 s32 g_RaceSeries;
 s32 g_LapCount;
 SceneryMotionData *g_FlybySceneryData;

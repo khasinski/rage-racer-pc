@@ -9,6 +9,14 @@ static inline s32 LerpColorChannel(s32 from, s32 to, s32 blend) {
     return from + (((to - from) * blend) >> 12);
 }
 
+enum { COURSE_MODEL_FALLBACK = 1 };
+
+static inline s32 ModelOrFallback(s32 modelId, s32 modelCount) {
+    return modelId >= 0 && modelId < modelCount
+               ? modelId
+               : COURSE_MODEL_FALLBACK;
+}
+
 typedef struct CourseObject {
     s16 modelId;
     s16 field2;

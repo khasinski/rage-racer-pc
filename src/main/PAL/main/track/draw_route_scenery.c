@@ -5,8 +5,6 @@
 void DrawRouteScenery(void) {
     Matrix mtx0;
     Matrix mtx1;
-    s32 frameValue;
-    s32 drawId;
 
     BuildRotMatrixY(&mtx0, 0x800 - g_RouteSceneryRotY);
     BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
@@ -17,11 +15,6 @@ void DrawRouteScenery(void) {
     SelectModelBank(1);
     SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&g_RouteSceneryX),
                        &mtx0);
-    frameValue = g_ModelBankCount;
     g_RenderState.envMode4 = 0;
-    drawId = 1;
-    if (frameValue >= 0x26) {
-        drawId = 0x25;
-    }
-    SubmitModel(&g_RenderState, drawId);
+    SubmitModel(&g_RenderState, ModelOrFallback(0x25, g_ModelBankCount));
 }
