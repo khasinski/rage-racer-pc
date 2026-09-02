@@ -4,21 +4,38 @@
 #include "game/race.h"
 #include "game/render.h"
 
-void DrawPrizeMoneyPanel(s32 yOffset) {
-    char moneyText[16];
+enum {
+    MONEY_TEXT_CAPACITY = 16,
+    MONEY_LABEL_X = 0x10,
+    MONEY_VALUE_X = 0x12,
+    PRIZE_LABEL_Y = 128,
+    PRIZE_VALUE_Y = 140,
+    TOTAL_LABEL_Y = 160,
+    TOTAL_VALUE_Y = 172,
+    BONUS_LABEL_Y = 192,
+    BONUS_VALUE_Y = 204,
+    MONEY_TEXT_CLUT = 0x7812,
+};
 
-    DrawProportionalText(0x10, yOffset + 128, g_CaptionPrizeMoney, 0x7812);
-    snprintf(moneyText, sizeof(moneyText), g_FmtMoney, g_PrizeAmount);
-    DrawProportionalText(0x12, yOffset + 140, moneyText, 0x7812);
-    DrawProportionalText(0x10, yOffset + 160, g_CaptionTotalMoney, 0x7812);
-    snprintf(moneyText, sizeof(moneyText), g_FmtMoney,
-             g_RaceProgress->money.value);
-    DrawProportionalText(0x12, yOffset + 172, moneyText, 0x7812);
+static void DrawMoneyRow(s32 yOffset, s32 labelY, s32 valueY,
+                         const char *label, s32 amount) {
+    char moneyText[MONEY_TEXT_CAPACITY];
+
+    DrawProportionalText(MONEY_LABEL_X, yOffset + labelY, label,
+                         MONEY_TEXT_CLUT);
+    snprintf(moneyText, sizeof(moneyText), g_FmtMoney, amount);
+    DrawProportionalText(MONEY_VALUE_X, yOffset + valueY, moneyText,
+                         MONEY_TEXT_CLUT);
+}
+
+void DrawPrizeMoneyPanel(s32 yOffset) {
+    DrawMoneyRow(yOffset, PRIZE_LABEL_Y, PRIZE_VALUE_Y,
+                 g_CaptionPrizeMoney, g_PrizeAmount);
+    DrawMoneyRow(yOffset, TOTAL_LABEL_Y, TOTAL_VALUE_Y,
+                 g_CaptionTotalMoney, g_RaceProgress->money.value);
 
     if (g_ClassPromoted) {
-        DrawProportionalText(0x10, yOffset + 192, g_CaptionPromotionBonus,
-                             0x7812);
-        snprintf(moneyText, sizeof(moneyText), g_FmtMoney, g_PromotionBonus);
-        DrawProportionalText(0x12, yOffset + 204, moneyText, 0x7812);
+        DrawMoneyRow(yOffset, BONUS_LABEL_Y, BONUS_VALUE_Y,
+                     g_CaptionPromotionBonus, g_PromotionBonus);
     }
 }
