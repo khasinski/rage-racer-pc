@@ -234,6 +234,13 @@ static void TargetSpeedTests(void) {
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
           "negative marker uses first speed pair", car.accelerationLimit,
           (((150 * 1168) / 160) * 6) / 100);
+
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x18 << 4;
+    car.routeMarkerIndex = 47;
+    UpdateCarAiTargetSpeed(&car, 0);
+    Check(car.routeMarkerIndex == 0, "last key cannot form a pair",
+          car.routeMarkerIndex, 0);
 }
 
 static void RouteMarkerSeedTests(void) {
@@ -374,6 +381,32 @@ static void RacingLineTests(void) {
           car.routeIndex, 0);
     Check(car.aiLateralOffset == 55, "lap start uses the first hint immediately",
           car.aiLateralOffset, 55);
+
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x10 << 4;
+    car.routeIndex = 30;
+    ApplyCarRacingLineHint(&car, 1);
+    Check(car.routeIndex == 0, "invalid racing-line index resets",
+          car.routeIndex, 0);
+}
+
+static void MissingAiDataTests(void) {
+    GameCarRuntime car;
+
+    Reset();
+    memset(&car, 0, sizeof(car));
+    car.routeIndex = 7;
+    car.routeMarkerIndex = 7;
+    g_TrackEventData = NULL;
+
+    ApplyCarRacingLineHint(&car, 0);
+    UpdateCarAiTargetSpeed(&car, 0);
+    SeedCarRouteMarkers();
+
+    Check(car.routeIndex == 7, "missing hints leave route unchanged",
+          car.routeIndex, 7);
+    Check(car.routeMarkerIndex == 7, "missing keys leave marker unchanged",
+          car.routeMarkerIndex, 7);
 }
 
 int main(void) {
@@ -381,6 +414,7 @@ int main(void) {
     TargetSpeedTests();
     RouteMarkerSeedTests();
     RacingLineTests();
+    MissingAiDataTests();
 
     if (s_failures != 0) {
         printf("%d AI table checks failed\n", s_failures);
