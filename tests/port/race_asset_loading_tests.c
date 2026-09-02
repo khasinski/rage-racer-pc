@@ -261,7 +261,16 @@ static void TestRaceStartAndCourseRequests(void) {
     g_GrandPrixSeries = 2;
     g_GrandPrixClass = 3;
     g_ImageBlockBuffer = storage;
+    s_loadAssetIndex = -1;
+    g_AssetLoadState = 0;
+    LoadGrandPrixScreen();
+    Check(s_loadAssetIndex == -1,
+          "Grand Prix screen ignores inactive loader states");
     g_AssetLoadState = 1;
+    s_loadResult = 0;
+    LoadGrandPrixScreen();
+    Check(g_AssetLoadState == 1,
+          "Grand Prix screen waits for an incomplete load");
     s_loadResult = 16;
     LoadGrandPrixScreen();
     Check(s_loadAssetIndex == ASSET_ROUND_SCREEN_BASE + 15,
@@ -280,7 +289,17 @@ static void TestRaceStartAndCourseRequests(void) {
     g_CourseIndex = 1;
     g_GrandPrixClass = 2;
     g_AssetBase = storage;
+    g_ImageBlockBuffer = NULL;
+    s_loadAssetIndex = -1;
+    g_AssetLoadState = 0;
+    LoadCourseAssets();
+    Check(s_loadAssetIndex == -1,
+          "course loader ignores inactive loader states");
     g_AssetLoadState = 1;
+    s_loadResult = 0;
+    LoadCourseAssets();
+    Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
+          "course loader waits without publishing an incomplete pack");
     s_loadResult = 20;
     LoadCourseAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 18,

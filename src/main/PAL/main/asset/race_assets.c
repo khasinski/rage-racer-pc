@@ -136,17 +136,14 @@ s32 RequestRaceStart(void) {
 }
 
 void LoadGrandPrixScreen(void) {
-    s32 base;
-    s32 offset;
-    s32 loaded;
+    s32 assetIndex;
 
-    if (g_AssetLoadState == GRAND_PRIX_SCREEN_LOAD_ASSET) {
-        offset = g_GrandPrixSeries * 6;
-        base = g_GrandPrixClass + ASSET_ROUND_SCREEN_BASE;
-        loaded = LoadAsset(offset + base, g_ImageBlockBuffer);
-        if (loaded != 0) {
-            g_AssetLoadState = 0;
-        }
+    if (g_AssetLoadState != GRAND_PRIX_SCREEN_LOAD_ASSET) return;
+
+    assetIndex = ASSET_ROUND_SCREEN_BASE + g_GrandPrixSeries * 6 +
+                 g_GrandPrixClass;
+    if (LoadAsset(assetIndex, g_ImageBlockBuffer) != 0) {
+        g_AssetLoadState = 0;
     }
 }
 
@@ -156,16 +153,16 @@ s32 RequestTrackLoad(void) {
 }
 
 void LoadCourseAssets(void) {
-    s32 loaded;
+    s32 loadedSize;
+    s32 assetIndex;
 
-    if (g_AssetLoadState == COURSE_LOAD_TEXTURE_ASSET) {
-        s32 assetIndex = TrackCourseAssetIndex(
-            ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
+    if (g_AssetLoadState != COURSE_LOAD_TEXTURE_ASSET) return;
 
-        loaded = LoadAsset(assetIndex, g_AssetBase);
-        if (loaded != 0) {
-            g_AssetLoadState = 0;
-            g_ImageBlockBuffer = g_AssetBase + loaded;
-        }
+    assetIndex = TrackCourseAssetIndex(
+        ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
+    loadedSize = LoadAsset(assetIndex, g_AssetBase);
+    if (loadedSize != 0) {
+        g_AssetLoadState = 0;
+        g_ImageBlockBuffer = g_AssetBase + loadedSize;
     }
 }
