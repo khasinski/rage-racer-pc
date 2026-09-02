@@ -22,7 +22,14 @@ enum {
     TRAFFIC_BEHIND = 0x400,
     /* Where the rival aims once it has picked a side. */
     TRAFFIC_TARGET_OFFSET = 0x50,
+    TRAFFIC_LANE_BUCKET_COUNT = 3,
 };
+
+typedef struct TrafficScan {
+    s32 lane[TRAFFIC_LANE_BUCKET_COUNT];
+    s32 blockingLeft;
+    s32 blockingRight;
+} TrafficScan;
 
 static void ResetTrafficAvoidance(GameCarRuntime *car) {
     car->avoidanceActive = 0;
@@ -35,6 +42,32 @@ static void ResetTrafficAvoidance(GameCarRuntime *car) {
 static void AdvanceTrafficLateralOffset(GameCarRuntime *car) {
     car->aiLateralOffset =
         (s16)((u16)car->aiLateralOffset + (u16)car->avoidanceStep);
+}
+
+static void SelectTrafficAvoidanceDirection(GameCarRuntime *car,
+                                            s32 lateralOffset,
+                                            const TrafficScan *scan) {
+    s32 urgency = car->avoidanceActive;
+
+    if (scan->blockingLeft == 0 &&
+        lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
+        car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+        car->avoidanceStep = -8 - urgency * 2;
+    } else if (scan->blockingRight == 0 &&
+               lateralOffset < -TRAFFIC_TARGET_OFFSET) {
+        car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+        car->avoidanceStep = 8 + urgency * 2;
+    } else if (scan->lane[0] <= scan->lane[1] &&
+               scan->lane[0] <= scan->lane[2] &&
+               scan->blockingLeft == 0) {
+        car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
+        car->avoidanceStep = -6 - urgency * 2;
+    } else if (scan->lane[2] <= scan->lane[1] &&
+               scan->lane[2] <= scan->lane[0] &&
+               scan->blockingRight == 0) {
+        car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
+        car->avoidanceStep = 6 + urgency * 2;
+    }
 }
 
 /*
@@ -62,12 +95,9 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 laneLeft = (s16)(lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
     s32 laneRight = (s16)(lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
     s32 behindLine = trackLength - TRAFFIC_BEHIND;
-    /* Left, in front, right. */
-    s32 lane[3];
-    s32 blockingLeft = 0;
-    s32 blockingRight = 0;
+    /* Lane buckets are left, in front, right. */
+    TrafficScan scan = {{0}, 0, 0};
     s32 crowding;
-    s32 urgency;
     s32 slot;
 
     if (trackLength <= 0 || carIndex < 0 ||
@@ -77,7 +107,6 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         return;
     }
 
-    lane[0] = lane[1] = lane[2] = 0;
     car->avoidanceStep = 0;
     car->nearbyCarCount = 0;
 
@@ -154,9 +183,10 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
                 if (slot == TRAFFIC_PLAYER_SLOT) {
                     /* The player counts full weight until it is inside 0xC00,
                      * and nearness only tells beyond that. */
-                    lane[bucket] += gap < 0xC00 ? 0xC00 - gap : 0xC00;
+                    scan.lane[bucket] +=
+                        gap < 0xC00 ? 0xC00 - gap : 0xC00;
                 } else {
-                    lane[bucket] += lookahead - gap;
+                    scan.lane[bucket] += lookahead - gap;
                 }
             }
         }
@@ -165,14 +195,14 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
          * no room to move over either. */
         if (gap < 0x200) {
             if ((s16)sideways >= TRAFFIC_SHOULDER + 1) {
-                blockingRight += 0xC00 - gap;
+                scan.blockingRight += 0xC00 - gap;
             } else if ((s16)sideways < -TRAFFIC_SHOULDER) {
-                blockingLeft += 0xC00 - gap;
+                scan.blockingLeft += 0xC00 - gap;
             }
         }
     }
 
-    crowding = lane[0] + lane[1] + lane[2];
+    crowding = scan.lane[0] + scan.lane[1] + scan.lane[2];
     if (crowding <= 0) {
         ResetTrafficAvoidance(car);
         AdvanceTrafficLateralOffset(car);
@@ -184,23 +214,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
      * enough to cross, and it is crossed harder than a choice made on the
      * buckets alone. Otherwise the emptiest side wins, if it is free.
      */
-    urgency = car->avoidanceActive;
-    if (blockingLeft == 0 && lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
-        car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = -8 - urgency * 2;
-    } else if (blockingRight == 0 &&
-               lateralOffset < -TRAFFIC_TARGET_OFFSET) {
-        car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = 8 + urgency * 2;
-    } else if (lane[0] <= lane[1] && lane[0] <= lane[2] &&
-               blockingLeft == 0) {
-        car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = -6 - urgency * 2;
-    } else if (lane[2] <= lane[1] && lane[2] <= lane[0] &&
-               blockingRight == 0) {
-        car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = 6 + urgency * 2;
-    }
+    SelectTrafficAvoidanceDirection(car, lateralOffset, &scan);
 
     /* Boxed in badly enough, and the car is not allowed to press on as hard.
      * Thirty hundredths, written as fifteen doubled. */
