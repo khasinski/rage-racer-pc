@@ -112,10 +112,7 @@ static void BuildHullSamples(const CarCollisionPoint *corners,
 static s16 ScaledSpeedDelta(s32 faster, s32 slower) {
     s32 delta = (s16)((u16)faster - (u16)slower);
 
-    if (delta < 0) {
-        delta += 31;
-    }
-    return (s16)(delta >> 5);
+    return (s16)(delta / 32);
 }
 
 /*
