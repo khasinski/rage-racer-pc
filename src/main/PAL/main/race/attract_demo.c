@@ -26,7 +26,7 @@ void EnterAttractDemo(void) {
     g_CameraCarIndex = 0;
 }
 
-s32 GetAttractTitleFade(s32 element) {
+static s32 GetAttractTitleFade(s32 element) {
     if (g_AttractDemoStep != ATTRACT_DEMO_STEP_LOAD && g_FadeLevel > 0) {
         g_FadeLevel--;
     }
@@ -35,7 +35,7 @@ s32 GetAttractTitleFade(s32 element) {
                                  g_AttractTitleDelays[element]);
 }
 
-void DrawAttractTitle(void) {
+static void DrawAttractTitle(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 fade;
 
