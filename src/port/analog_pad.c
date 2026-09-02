@@ -324,7 +324,7 @@ void PortSampleAnalogPad(void) {
     held = ~released;
     if (wheel != NULL) held |= WheelButtons(wheel, &wheelSetup);
     if (pad != NULL) held |= GamepadButtons(pad);
-    range = g_NegconSteerRange[g_NegconMaxTwist];
+    range = GetNegconSteerRange();
     twist = NegconTwist(AxisShaped(lx, &steering),
                             (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
                             range);

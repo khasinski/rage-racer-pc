@@ -79,8 +79,7 @@ void DrawControllerSetupScene(s32 variant) {
         return;
     }
     if (g_GameMode == 11) {
-        steer = (rsin(g_AnimTimer * 16) *
-                 g_NegconSteerRange[g_NegconMaxTwist]) / 512;
+        steer = (rsin(g_AnimTimer * 16) * GetNegconSteerRange()) / 512;
     } else if (g_GameMode == 10) {
         steer = ((rsin(g_AnimTimer * 16) * 16) *
                  g_NegconPlayScale[g_NegconSteerPlay]) / 4096;

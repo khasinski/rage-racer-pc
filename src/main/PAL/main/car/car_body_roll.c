@@ -55,8 +55,8 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
 
 static void UpdateNegconSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
-    s32 requestedSteer = (g_NegconSteer * 13 * 512) /
-                         g_NegconSteerRange[g_NegconMaxTwist];
+    s32 requestedSteer =
+        (g_NegconSteer * 13 * 512) / GetNegconSteerRange();
     s32 steerPosition = drive->steerPos;
 
     if (requestedSteer < 0) {

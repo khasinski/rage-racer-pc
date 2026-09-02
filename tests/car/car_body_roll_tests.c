@@ -94,6 +94,20 @@ int main(void) {
                calls, digest, expected);
         return 1;
     }
+
+    memset(&car, 0, sizeof(car));
+    g_RacePhase = 2;
+    g_PlayerAutoSteer = 0;
+    g_PadType = 0x23;
+    g_NegconSteer = 64;
+    g_NegconMaxTwist = -1;
+    UpdateCarBodyRoll(&car);
+    if (GetNegconSteerRange() != g_NegconSteerRange[0] ||
+        car.drive.trackCurveMode == 0) {
+        puts("FAIL: invalid NeGcon range selection was not repaired");
+        return 1;
+    }
+
     printf("all %d body-roll states preserved\n", calls);
     return 0;
 }

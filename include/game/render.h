@@ -774,7 +774,6 @@ extern s16 g_FmvStripWidth;
 extern s16 g_MirrorViewEnabled;
 extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;
-extern s16 g_NegconSteerRange[];
 extern s32 g_SetupArrowPulse;
 extern s16 g_SinTable[];
 extern s32 g_TrackTextureSectionHi;

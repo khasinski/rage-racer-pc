@@ -43,7 +43,7 @@ static s16 CalibrateNegconSteering(s32 twist) {
     s32 neutral = g_NegconSteerNeutral + 0x80;
     s32 delta = twist - neutral;
     s32 deadZone = g_NegconSteerDeadZone[g_NegconSteerPlay][0];
-    s32 range = g_NegconSteerRange[g_NegconMaxTwist];
+    s32 range = GetNegconSteerRange();
     s32 steering;
 
     if (delta > 0) {
@@ -96,7 +96,7 @@ void UpdatePadState(void) {
         g_PadErrorState = PAD_ERROR_STATE_NONE;
     }
     if (raw[1] == 0x41) {
-        s32 steerRange = g_NegconSteerRange[g_NegconMaxTwist];
+        s32 steerRange = GetNegconSteerRange();
 
         pad->prevHeld = pad->held;
         pad->held = ~((raw[2] << 8) | raw[3]);
