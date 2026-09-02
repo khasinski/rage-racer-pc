@@ -9,6 +9,8 @@
 #include "game/state.h"
 #include "game/race_internal.h"
 
+enum { RESULT_INTRO_TEXT_CAPACITY = 48 };
+
 void DrawResultScreen(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 courseNameY = g_GrandPrixMode != 0 ? 0x3C : 0x39;
@@ -57,7 +59,7 @@ static void DrawResultPlace(void) {
 }
 
 void DrawGrandPrixIntro(void) {
-    char text[0x30];
+    char text[RESULT_INTRO_TEXT_CAPACITY];
     s32 classIndex = g_GrandPrixClass;
     char *grandPrixName =
         g_GrandPrixNames[g_GrandPrixSeries ? classIndex + 6 : classIndex];
@@ -67,10 +69,11 @@ void DrawGrandPrixIntro(void) {
         DrawClassPlaceBanner();
     }
 
-    sprintf(text, g_FmtClassGrandPrix, classIndex + 1, grandPrixName);
+    snprintf(text, sizeof(text), g_FmtClassGrandPrix, classIndex + 1,
+             grandPrixName);
     DrawText8x8Trans(0x10, 0x34, text, 0x78CC);
 
-    sprintf(text, g_FmtRoundIn, g_GrandPrixRound);
+    snprintf(text, sizeof(text), g_FmtRoundIn, g_GrandPrixRound);
     DrawText8x8Trans(0x10, 0x3C, text, 0x78CC);
 
     DrawResultPlace();

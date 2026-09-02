@@ -8,7 +8,9 @@
  * best-effort. */
 
 /* Formats a lap/race time into dst as %1d'%02d"%03d. */
-void FormatLapTime(char *dst, s32 timeMs);
+enum { LAP_TIME_TEXT_CAPACITY = 16 };
+
+void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 timeMs);
 
 void DrawResultScreen(void);         /* "RESULT" */
 void DrawRaceEndPrompt(void);        /* "PRESS START BUTTON" */

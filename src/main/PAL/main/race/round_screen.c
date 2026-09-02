@@ -19,6 +19,7 @@ enum {
     ROUND_SCREEN_CUE_FRAME = 32,
     ROUND_SCREEN_RACE_FRAME = 121,
     ROUND_SCREEN_FADE_READY = 0x80,
+    ROUND_SCREEN_TEXT_CAPACITY = 88,
 };
 
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
@@ -58,7 +59,7 @@ static s32 NextRoundScreenFade(s32 stage) {
 
 /* The ROUND screen: course name, round number and either the prize lines or the best times. */
 void DrawRoundScreen(void) {
-    char buf[88];
+    char text[ROUND_SCREEN_TEXT_CAPACITY];
     s32 col;
     s32 y0;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
@@ -71,8 +72,8 @@ void DrawRoundScreen(void) {
 
     col = NextRoundScreenFade(1);
     if (g_GrandPrixMode != 0) {
-        sprintf(buf, g_FmtRound, g_GrandPrixRound);
-        GameDrawProportionalTextShaded(0x5e, 0x68, buf, 0x7812, col);
+        snprintf(text, sizeof(text), g_FmtRound, g_GrandPrixRound);
+        GameDrawProportionalTextShaded(0x5e, 0x68, text, 0x7812, col);
         y0 = 0x78;
     } else {
         y0 = 0x68;
@@ -84,32 +85,32 @@ void DrawRoundScreen(void) {
     if (g_GrandPrixMode != 0) {
         GameDrawProportionalTextShaded(0x80, 0x88, g_CaptionPrizeMoney2,
                                       0x7812, col);
-        sprintf(buf, g_FmtPrize1st,
-                g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass]
-                                   [PRIZE_PLACE_FIRST]);
-        GameDrawProportionalTextShaded(0x56, 0x98, buf, 0x7812, col);
-        sprintf(buf, g_FmtPrize2nd,
-                g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass]
-                                   [PRIZE_PLACE_SECOND]);
-        GameDrawProportionalTextShaded(0x56, 0xa4, buf, 0x7812, col);
-        sprintf(buf, g_FmtPrize3rd,
-                g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass]
-                                   [PRIZE_PLACE_THIRD]);
-        GameDrawProportionalTextShaded(0x56, 0xb0, buf, 0x7812, col);
+        const s32 *prizes =
+            g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass];
+
+        snprintf(text, sizeof(text), g_FmtPrize1st,
+                 prizes[PRIZE_PLACE_FIRST]);
+        GameDrawProportionalTextShaded(0x56, 0x98, text, 0x7812, col);
+        snprintf(text, sizeof(text), g_FmtPrize2nd,
+                 prizes[PRIZE_PLACE_SECOND]);
+        GameDrawProportionalTextShaded(0x56, 0xa4, text, 0x7812, col);
+        snprintf(text, sizeof(text), g_FmtPrize3rd,
+                 prizes[PRIZE_PLACE_THIRD]);
+        GameDrawProportionalTextShaded(0x56, 0xb0, text, 0x7812, col);
     } else {
         s32 course = SeriesCourseIndex();
 
         GameDrawProportionalTextShaded(0x62, 0x7c, g_CaptionBestTotalTime,
                                       0x7812, col);
         FormatLapTime(
-            buf,
+            text,
             g_BestTotalTimes[g_GrandPrixSeries][course][g_GrandPrixMode]);
-        GameDrawProportionalTextShaded(0x6a, 0x8c, buf, 0x7812, col);
+        GameDrawProportionalTextShaded(0x6a, 0x8c, text, 0x7812, col);
         GameDrawProportionalTextShaded(0x6a, 0x9c, g_CaptionBestLapTime,
                                       0x7812, col);
         FormatLapTime(
-            buf, g_BestLapTimes[g_GrandPrixSeries][course][g_GrandPrixMode]);
-        GameDrawProportionalTextShaded(0x6a, 0xac, buf, 0x7812, col);
+            text, g_BestLapTimes[g_GrandPrixSeries][course][g_GrandPrixMode]);
+        GameDrawProportionalTextShaded(0x6a, 0xac, text, 0x7812, col);
     }
 }
 
@@ -117,7 +118,7 @@ void DrawRoundScreen(void) {
 /* The BGM row: the selection number and the track title from g_BgmTrackNames. */
 static void DrawBgmSelector(void) {
     s32 x;
-    char buf[88];
+    char text[ROUND_SCREEN_TEXT_CAPACITY];
     u8 *p;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(1);
 
@@ -134,9 +135,9 @@ static void DrawBgmSelector(void) {
     p = AddTilePrim(ot, p, 0xf, 0xcb, 0x122, 0xe, 0xff, 0xff, 0xff);
     g_RenderState.packetCursor = p;
 
-    sprintf(buf, g_FmtBgmNumber, g_BgmSelection);
+    snprintf(text, sizeof(text), g_FmtBgmNumber, g_BgmSelection);
     x = (g_BgmSelection == 0xa) ? 0x74 : 0x78;
-    DrawText8x8(x, 0xce, buf, 0x78cc);
+    DrawText8x8(x, 0xce, text, 0x78cc);
     DrawText8x8(0x90, 0xce, g_BgmTrackNames[g_BgmSelection], 0x78cc);
 }
 

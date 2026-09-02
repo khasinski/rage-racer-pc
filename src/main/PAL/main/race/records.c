@@ -1,6 +1,9 @@
+#include <stdio.h>
+
 #include "game/race.h"
-#include "game/save_internal.h"
 #include "game/records_internal.h"
+#include "game/save_internal.h"
+#include "game/screens.h"
 
 enum {
     RECORD_SERIES_COUNT = 2,
@@ -123,11 +126,12 @@ void RepairRecordTimes(void) {
     }
 }
 
-void FormatLapTime(char *dst, s32 value) {
+void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 value) {
     s32 minutes = value / 60000;
     s32 ticks = value / 1000;
     s32 seconds = ticks - (minutes * 60);
     s32 fraction = value - (ticks * 1000);
 
-    sprintf(dst, g_FmtLapTime, minutes, seconds, fraction);
+    snprintf(dst, LAP_TIME_TEXT_CAPACITY, g_FmtLapTime, minutes, seconds,
+             fraction);
 }

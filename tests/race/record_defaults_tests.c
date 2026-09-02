@@ -61,12 +61,17 @@ int main(void) {
     InitRecordTables();
 
     {
-        char formatted[16];
+        struct {
+            char formatted[LAP_TIME_TEXT_CAPACITY];
+            char guard;
+        } output = {{0}, '!'};
 
-        FormatLapTime(formatted, 0);
-        CHECK(strcmp(formatted, "0'00\"000") == 0);
-        FormatLapTime(formatted, 125678);
-        CHECK(strcmp(formatted, "2'05\"678") == 0);
+        FormatLapTime(output.formatted, 0);
+        CHECK(strcmp(output.formatted, "0'00\"000") == 0);
+        FormatLapTime(output.formatted, 125678);
+        CHECK(strcmp(output.formatted, "2'05\"678") == 0);
+        FormatLapTime(output.formatted, 2147483647);
+        CHECK(output.guard == '!');
     }
 
     for (series = 0; series < 2; series++) {
