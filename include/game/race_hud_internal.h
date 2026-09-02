@@ -22,4 +22,11 @@ RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
                                                 s32 secondScroll,
                                                 s32 sceneTimer);
 
+typedef struct RaceOptionPulseState {
+    s32 angle;
+    s32 halfWidth;
+} RaceOptionPulseState;
+
+RaceOptionPulseState AdvanceRaceOptionPulse(s32 angle);
+
 #endif

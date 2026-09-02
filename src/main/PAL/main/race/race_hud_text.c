@@ -175,6 +175,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     POLY_FT4 *quad;
     RenderBufferAddress prim;
     RaceOptionMarqueeState marqueeState;
+    RaceOptionPulseState pulseState;
 
     ot = (u8 *)GamePrimaryOrderingTable(0);
     prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
@@ -248,12 +249,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
     quad = prim.polyFT4;
 
-    g_RaceOptionPulseAngle = (g_RaceOptionPulseAngle + 0x20) & 0xFFF;
-    pulse = rcos(g_RaceOptionPulseAngle) * 0x2C;
-    if (pulse < 0) {
-        pulse += 0xFFF;
-    }
-    pulse >>= 12;
+    pulseState = AdvanceRaceOptionPulse(g_RaceOptionPulseAngle);
+    g_RaceOptionPulseAngle = pulseState.angle;
+    pulse = pulseState.halfWidth;
 
     SetPolyFT4(quad);
     quad->r0 = 0x60;

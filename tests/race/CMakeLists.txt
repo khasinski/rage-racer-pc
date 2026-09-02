@@ -52,9 +52,18 @@ add_executable(race_option_animation_tests
     race_option_animation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c)
 target_include_directories(race_option_animation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_option_animation_tests PRIVATE __psyz=1)
+target_link_libraries(race_option_animation_tests PRIVATE psyz)
+if(MSVC)
+    target_compile_options(race_option_animation_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(race_option_animation_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Werror)
 endif()
 add_test(NAME race_option_animation COMMAND race_option_animation_tests)

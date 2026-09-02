@@ -1,4 +1,5 @@
 #include "game/race_hud_internal.h"
+#include "psyq/gte.h"
 
 static s32 AdvanceMarqueeLine(s32 scroll) {
     scroll -= 4;
@@ -14,5 +15,13 @@ RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
     state.firstScroll = AdvanceMarqueeLine(firstScroll);
     state.secondScroll = AdvanceMarqueeLine(secondScroll);
     state.textOffset = (sceneTimer & 3) * 40;
+    return state;
+}
+
+RaceOptionPulseState AdvanceRaceOptionPulse(s32 angle) {
+    RaceOptionPulseState state;
+
+    state.angle = (angle + 0x20) & 0xFFF;
+    state.halfWidth = rcos(state.angle) * 0x2C / 4096;
     return state;
 }
