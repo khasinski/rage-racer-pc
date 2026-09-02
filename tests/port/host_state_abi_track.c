@@ -28,3 +28,15 @@ _Static_assert(sizeof(g_EnvScriptCues) == sizeof(void *),
                "g_EnvScriptCues must be one pointer");
 _Static_assert(sizeof(g_CourseObjects) == sizeof(void *),
                "g_CourseObjects must be one pointer");
+_Static_assert(sizeof(g_EnvPaletteTable) == sizeof(void *),
+               "g_EnvPaletteTable must be one pointer");
+_Static_assert(sizeof(g_CellVisibilityTable) == sizeof(void *),
+               "g_CellVisibilityTable must be one pointer");
+_Static_assert(sizeof(g_VisibleCellList) == sizeof(void *),
+               "g_VisibleCellList must be one pointer");
+_Static_assert(sizeof(g_TerrainCellGrid) == sizeof(void *),
+               "g_TerrainCellGrid must be one pointer");
+_Static_assert(sizeof(g_VisibleCellMask) == sizeof(void *),
+               "g_VisibleCellMask must be one pointer");
+_Static_assert(sizeof(g_RouteSceneryKeyframe) == sizeof(void *),
+               "g_RouteSceneryKeyframe must be one pointer");
