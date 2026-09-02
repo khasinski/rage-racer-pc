@@ -150,7 +150,7 @@ static void TestRequestHandshake(void) {
 static void TestVoiceAndCarPhases(void) {
     u8 source[16];
     u8 destination[512];
-    GameSceneAssetHeader *pack = (GameSceneAssetHeader *)destination;
+    s32 *offsets = (s32 *)(void *)destination;
     CarEntry cars[2];
     s32 i;
 
@@ -176,26 +176,37 @@ static void TestVoiceAndCarPhases(void) {
     Check(g_AssetLoadState == 3, "voice audio advances to car phase");
 
     memset(destination, 0, sizeof(destination));
-    pack->offsets[0] = 64;
-    pack->offsets[1] = 128;
-    pack->offsets[2] = 160;
-    pack->offsets[3] = 192;
-    pack->offsets[4] = 224;
+    offsets[0] = 64;
+    offsets[1] = 128;
+    offsets[2] = 160;
+    offsets[3] = 192;
+    offsets[4] = 224;
     *(u16 *)(void *)(destination + 160) = 7;
     memset(cars, 0, sizeof(cars));
     cars[1].modelVariant = 3;
     g_CarTable = cars;
     g_PlayerCarIndex = 1;
     g_AssetLoadCursor = destination;
+    s_renderCarAsset = -1;
     s_loadResult = 0;
     LoadRaceAssets();
     Check(g_AssetLoadState == 3, "pending car pack holds phase");
-    Check(s_renderCarAsset == 13 && s_loadAssetIndex == 37,
-          "car asset index selected");
+    Check(s_renderCarAsset == -1 && s_loadAssetIndex == 37,
+          "pending car pack selects only its disc asset");
 
-    s_loadResult = 1;
+    s_loadResult = sizeof(destination);
+    offsets[4] = offsets[3];
     s_uploadCount = 0;
     LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && s_renderCarAsset == -1 &&
+              s_uploadCount == 0,
+          "overlapping car blocks cancel installation");
+
+    g_AssetLoadState = 3;
+    offsets[4] = 224;
+    s_uploadCount = 0;
+    LoadRaceAssets();
+    Check(s_renderCarAsset == 13, "loaded car asset is selected for rendering");
     Check(g_CarSpec == GetGameCarSpec(destination + 64),
           "car spec installed");
     Check(s_audioSlot == 3 && s_audioHeader == destination + 128 &&

@@ -23,6 +23,14 @@ enum {
     COURSE_LOAD_TEXTURE_ASSET = 1,
 };
 
+typedef struct RaceCarAssetHeader {
+    s32 specificationOffset;
+    s32 audioHeaderOffset;
+    s32 audioSequenceOffset;
+    s32 audioBodyOffset;
+    s32 imageOffset;
+} RaceCarAssetHeader;
+
 s32 RequestRaceAssets(void) {
     return RequestAssetLoad(ASSET_REQUEST_RACE,
                             RACE_LOAD_VOICE_HEADER, 0);
@@ -47,26 +55,41 @@ static void LoadPlayerCarRaceAssets(void) {
     s32 carIndex = g_PlayerCarIndex;
     s32 carAsset =
         GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
-    GameSceneAssetHeader *pack;
+    RaceCarAssetHeader *pack;
     u8 *audioHeader;
     u8 *audioTable;
     u8 *audioBody;
     u8 *carImage;
+    s32 loadedSize;
 
-    GameRenderWorldSetTrackCarAsset(carAsset);
-    if (LoadAsset(CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
-                  g_AssetLoadCursor) == 0) {
+    loadedSize = LoadAsset(
+        CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
+        g_AssetLoadCursor);
+    if (loadedSize == 0) {
         return;
     }
 
-    pack = GetSceneAssetHeader(g_AssetLoadCursor);
-    g_CarSpec = GetGameCarSpec(GetSceneAssetAddress(pack, pack->offsets[0]));
-    audioHeader = GetSceneAssetAddress(pack, pack->offsets[1]);
-    audioTable = GetSceneAssetAddress(pack, pack->offsets[2]);
-    audioBody = GetSceneAssetAddress(pack, pack->offsets[3]);
+    pack = (RaceCarAssetHeader *)g_AssetLoadCursor;
+    if (loadedSize < (s32)sizeof(*pack) ||
+        pack->specificationOffset < (s32)sizeof(*pack) ||
+        pack->audioHeaderOffset <= pack->specificationOffset ||
+        pack->audioSequenceOffset <= pack->audioHeaderOffset ||
+        pack->audioBodyOffset <= pack->audioSequenceOffset ||
+        pack->imageOffset <= pack->audioBodyOffset ||
+        pack->imageOffset >= loadedSize) {
+        g_AssetLoadState = 0;
+        return;
+    }
+
+    GameRenderWorldSetTrackCarAsset(carAsset);
+    g_CarSpec = GetGameCarSpec(
+        g_AssetLoadCursor + pack->specificationOffset);
+    audioHeader = g_AssetLoadCursor + pack->audioHeaderOffset;
+    audioTable = g_AssetLoadCursor + pack->audioSequenceOffset;
+    audioBody = g_AssetLoadCursor + pack->audioBodyOffset;
     StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
                        GetAssetHalfwords(audioTable));
-    carImage = GetSceneAssetAddress(pack, pack->offsets[4]);
+    carImage = g_AssetLoadCursor + pack->imageOffset;
     UploadImageAsset(GetImageAssetHeaderWords(carImage));
     g_AssetLoadCursor = audioBody;
     g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
