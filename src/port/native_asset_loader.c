@@ -2,12 +2,7 @@
 #include "mod_assets.h"
 #include <stdio.h>
 #include "game/asset.h"
-#include "game/render_internal.h"
 #include "rage/compat.h"
-
-void SetTrackCameraTable(void *table) {
-    g_TrackRenderTable = table;
-}
 
 void ResetAssetLoader(void) {
     g_CdLoadPhase = 0;

@@ -117,7 +117,7 @@ void LoadRaceAssets(void) {
 
             TrackAssetIdentitySet(assetIndex);
 
-            SetTrackCameraTable(SceneAssetBlock(0));
+            SetTrackRenderTable(SceneAssetBlock(0));
             SetEnvPaletteTable(SceneAssetBlock(1));
             SetEnvironmentScript(SceneAssetBlock(2));
             RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);

@@ -4,11 +4,6 @@
 #include "game/car.h"
 #include "game/race.h"
 
-void InstallResourceData(void *data) {
-    (void)data;
-    printf("%s", g_MsgResOk);
-}
-
 void SetCarSpec(GameCarSpec *spec) {
     g_CarSpec = spec;
 }

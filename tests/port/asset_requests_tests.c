@@ -29,6 +29,7 @@ u16 g_TeamLogoClut[16];
 TeamLogoCanvas g_TeamLogoCanvas;
 TeamLogoRect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
+u8 g_MsgResOk[] = "";
 
 static s32 s_loadResult;
 static s32 s_resetCalls;
@@ -49,7 +50,6 @@ void StartAudioSlotLoad(s32 slot, void *header, void *body, s32 sequence) {
     (void)slot; (void)header; (void)body; (void)sequence;
 }
 s32 PollAudioSlotLoad(void) { return 0; }
-void InstallResourceData(void *data) { (void)data; }
 void UploadImageAsset(GameImageAssetHeaderWord *data) { (void)data; }
 void CloseLoadedAudioSlots(void) { s_closeCalls++; }
 void ResetCdAudioState(void) { s_resetCalls++; }

@@ -20,7 +20,6 @@ void PlayCountdownCues(s32 timer) {
     }
 }
 
-
 void UpdateRivalCueGate(void) {
     s32 progress = g_PlayerCar.trackProgress;
 
@@ -33,9 +32,4 @@ void UpdateRivalCueGate(void) {
     if (g_WrongWayTimer >= 0xA) {
         g_RivalCueEnabled = 0;
     }
-}
-
-void SetCourseObjects(CourseObjectTable *table) {
-    g_CourseObjects = table->objects;
-    g_CourseObjectCount = table->count;
 }

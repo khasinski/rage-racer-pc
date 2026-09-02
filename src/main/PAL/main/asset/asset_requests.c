@@ -1,7 +1,10 @@
+#include <stdio.h>
+
 #include "game/menu_internal.h"
 #include "game/asset.h"
 #include "game/cd.h"
 #include "game/audio.h"
+#include "game/race.h"
 
 /* The team-logo canvas and its two VRAM rects. Kept local: menu/ spells the
  * canvas u32[] for the nibble transforms and u8[] where it only wants the
@@ -43,7 +46,7 @@ void LoadBootAssets(void) {
     case 5:
         loadedSize = LoadAsset(4, g_AssetLoadCursor);
         if (loadedSize != 0) {
-            InstallResourceData(g_AssetLoadCursor);
+            printf("%s", g_MsgResOk);
             g_AssetLoadState = 6;
             g_AssetLoadCursor += loadedSize;
         }

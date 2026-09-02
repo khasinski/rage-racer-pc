@@ -18,7 +18,7 @@ void LoadTrackDataAssets(void) {
         assetIndex = (g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE;
         if (LoadAsset(assetIndex, dst) != 0) {
             TrackAssetIdentitySet(assetIndex);
-            SetTrackCameraTable(SceneAssetBlock(0));
+            SetTrackRenderTable(SceneAssetBlock(0));
             SetEnvPaletteTable(SceneAssetBlock(1));
             SetEnvironmentScript(SceneAssetBlock(2));
             RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);

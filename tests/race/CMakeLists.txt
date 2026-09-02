@@ -1,3 +1,24 @@
+add_executable(asset_table_installation_tests
+    asset_table_installation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_data_installation.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_course_objects.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_track_render_table.c)
+target_include_directories(asset_table_installation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(asset_table_installation_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(asset_table_installation_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(asset_table_installation_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME asset_table_installation COMMAND asset_table_installation_tests)
+set_tests_properties(asset_table_installation PROPERTIES LABELS unit)
+
 add_executable(prologue_logic_tests
     prologue_logic_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue_logic.c)
