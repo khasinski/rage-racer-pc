@@ -14,7 +14,8 @@ static void KeyOnEffectVoice(s16 hardwareVoice, const EffectVoice *effect) {
                EFFECT_BASE_NOTE, 0, 0, 0);
 }
 
-static void WriteEffectVoicePitch(s16 hardwareVoice, EffectVoice *effect) {
+static void WriteEffectVoiceOutput(s16 hardwareVoice,
+                                   const EffectVoice *effect) {
     s32 volume = ClampVoiceVolume(
         effect->volume * g_SoundScale.scale / 128);
 
@@ -24,8 +25,8 @@ static void WriteEffectVoicePitch(s16 hardwareVoice, EffectVoice *effect) {
         (s16)(effect->pitch.value >> 7), effect->pitch.half.fraction & 0x7F);
 }
 
-static void ApplyEffectVoicePitch(s16 hardwareVoice, EffectVoice *effect) {
-    WriteEffectVoicePitch(hardwareVoice, effect);
+static void ConsumeEffectVoiceUpdate(s16 hardwareVoice, EffectVoice *effect) {
+    WriteEffectVoiceOutput(hardwareVoice, effect);
     effect->state = EFFECT_VOICE_IDLE;
 }
 
@@ -38,7 +39,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
 
         if (enabled != 0) {
             KeyOnEffectVoice(hardwareVoice, effect);
-            WriteEffectVoicePitch(hardwareVoice, effect);
+            WriteEffectVoiceOutput(hardwareVoice, effect);
         } else {
             SsUtKeyOffV(hardwareVoice);
         }
@@ -55,10 +56,10 @@ void UpdateEffectVoiceStates(void) {
         switch (effect->state) {
         case EFFECT_VOICE_START:
             KeyOnEffectVoice(hardwareVoice, effect);
-            ApplyEffectVoicePitch(hardwareVoice, effect);
+            ConsumeEffectVoiceUpdate(hardwareVoice, effect);
             break;
         case EFFECT_VOICE_UPDATE:
-            ApplyEffectVoicePitch(hardwareVoice, effect);
+            ConsumeEffectVoiceUpdate(hardwareVoice, effect);
             break;
         case EFFECT_VOICE_STOP:
             SsUtKeyOffV(hardwareVoice);
