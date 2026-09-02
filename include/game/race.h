@@ -382,7 +382,6 @@ void DrawRaceHudLabels(s32 mode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
-void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawTimeRemaining(s32 time);
 void ExitPrologue(void);
 s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);

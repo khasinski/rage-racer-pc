@@ -4,6 +4,7 @@
 #include "common.h"
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
+void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);
 void DrawSplitIndicator(s32 sector, s32 sign);
 void DrawStartCountdown(s32 sceneTimer);
