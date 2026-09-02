@@ -44,7 +44,7 @@ void SetReverbDepth(s32 left, s32 right) {
     s_reverbRight = right;
 }
 void RefreshSequenceVolumeScale(void) { s_refreshCalls++; }
-void SetEffectVoicesEnabled(s32 enabled) { s_slotEnable = enabled; }
+void SetSoundSlotVoicesEnabled(s32 enabled) { s_slotEnable = enabled; }
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     (void)left;
     (void)right;

@@ -17,7 +17,7 @@ void InitEffectVoiceRuntime(void) {
     SsSetVoiceCount(8);
     ResetAudioVoiceState();
 
-    SetEffectVoicesEnabled(1);
+    SetSoundSlotVoicesEnabled(1);
     SetReverbPreset(2, 0, 0);
     SetLoadedTableVolumeScale(g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
 }

@@ -76,8 +76,8 @@ typedef struct EffectCueBank {
 
 /*
  * The libsnd VAB ids of the loaded banks, one per bank slot.
- * InitSoundWithVab fills it from SsVabOpenHead; every key-on passes an
- * element as the vabId argument of SsUtKeyOnV / func_80078130
+ * StartAudioSlotLoad fills it while each VAB is imported; every key-on passes
+ * an element as the vabId argument of SsUtKeyOnV / func_80078130
  * (`g_VabIds[slot]`), and the callers that only ever use the first bank read
  * `g_VabIds[0]`.
  */
@@ -97,13 +97,8 @@ void TickSequenceAudio(void);
 void SetReverbDepth(s32 left, s32 right);
 void SetReverbPreset(s32 type, s32 left, s32 right);
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
-void StopSoundSlotVoice(s32 slot);
-void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled);
 void SetSoundSlotVoicesEnabled(s32 enabled);
-void SetEffectVoicesEnabled(s32 enabled);
-void ResetSoundState(void);
-int InitSoundWithVab(u8 *header, u8 *body);
-int InitSoundRuntime(void);
+void InitSoundRuntime(void);
 s32 CloseLoadedAudioSlots(void);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolumeSetting(s32 setting);

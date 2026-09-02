@@ -34,12 +34,6 @@ static s32 s_presetCalls;
 static s32 s_mainVolumeCalls;
 static s32 s_reservedVoiceCalls;
 static s32 s_sequenceInitCalls;
-static s16 s_openResult = 4;
-static s16 s_bodyResult = 6;
-static u8 *s_openHeader;
-static u8 *s_transferBody;
-static s16 s_transferVab;
-static s32 s_transferCompleteCalls;
 static s32 s_failures;
 
 void *GetSndTableArea(void) { return s_tableArea; }
@@ -69,21 +63,6 @@ void SsUtReverbOff(void) { s_reverbOffCalls++; }
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     if (type == 2 && left == 0 && right == 0) s_presetCalls++;
 }
-short SsVabOpenHeadSticky(u8 *header, short vabId, unsigned long address) {
-    if (vabId != -1 || address != 0x1000) abort();
-    s_openHeader = header;
-    return s_openResult;
-}
-short SsVabTransBody(u8 *body, short vabId) {
-    s_transferBody = body;
-    s_transferVab = vabId;
-    return s_bodyResult;
-}
-short SsVabTransCompleted(short immediate) {
-    if (immediate != 1) abort();
-    s_transferCompleteCalls++;
-    return 0;
-}
 void SsSetMVol(short left, short right) {
     if (left == 0x3FFF && right == 0x3FFF) s_mainVolumeCalls++;
 }
@@ -92,11 +71,6 @@ char SsSetReservedVoice(char voices) {
     return voices;
 }
 void InitSequenceAudio(void) { s_sequenceInitCalls++; }
-void BiosExit(s32 code) {
-    (void)code;
-    abort();
-}
-
 static void Check(s32 condition, const char *label) {
     if (!condition) {
         printf("FAIL %s\n", label);
@@ -110,7 +84,7 @@ static void TestSoundSlotSwitching(void) {
     memset(&g_EngineSoundState, 0, sizeof(g_EngineSoundState));
     memset(s_playCalls, 0, sizeof(s_playCalls));
     memset(s_keyOffCalls, 0, sizeof(s_keyOffCalls));
-    SetEffectVoicesEnabled(1);
+    SetSoundSlotVoicesEnabled(1);
     for (slot = 0; slot < 5; slot++) {
         Check(g_EngineSoundState.slotActive[slot] == 1 &&
                   s_playCalls[slot] == 1,
@@ -119,21 +93,18 @@ static void TestSoundSlotSwitching(void) {
     Check(g_EngineSoundState.slotActive[5] == 0 && s_playCalls[5] == 0,
           "automatic switching intentionally excludes slot five");
 
-    SetEffectVoicesEnabled(1);
+    SetSoundSlotVoicesEnabled(1);
     for (slot = 0; slot < 5; slot++) {
         Check(s_playCalls[slot] == 1, "enabled sound slot is idempotent");
     }
 
-    SetEffectVoicesEnabled(0);
+    SetSoundSlotVoicesEnabled(0);
     for (slot = 0; slot < 5; slot++) {
         Check(g_EngineSoundState.slotActive[slot] == 0 &&
                   s_keyOffCalls[slot] == 1,
               "automatic sound slot stops once");
     }
 
-    SetSoundSlotVoiceEnabled(5, 1);
-    Check(g_EngineSoundState.slotActive[5] == 1 && s_playCalls[5] == 1,
-          "slot five remains available to explicit playback");
 }
 
 static void TestSoundStateReset(void) {
@@ -146,7 +117,7 @@ static void TestSoundStateReset(void) {
     g_SpecialCueVoiceB = 20;
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
-    ResetSoundState();
+    InitSoundRuntime();
 
     for (index = 0; index < 6; index++) {
         Check(g_EngineSoundState.slotActive[index] == 0,
@@ -178,33 +149,19 @@ static void TestSoundStateReset(void) {
 }
 
 static void TestRuntimeInitialization(void) {
-    u8 header[4];
-    u8 body[4];
-
     s_prepareCalls = 0;
     s_reverbOffCalls = 0;
     s_presetCalls = 0;
     s_mainVolumeCalls = 0;
     s_reservedVoiceCalls = 0;
     s_sequenceInitCalls = 0;
-    s_transferCompleteCalls = 0;
-    InitSoundWithVab(header, body);
-    Check(s_prepareCalls == 1 && s_reverbOffCalls == 1 && s_presetCalls == 1,
-          "VAB initialization prepares the common runtime");
-    Check(s_openHeader == header && s_transferBody == body &&
-              s_transferVab == s_openResult &&
-              g_SoundScale.vabIds[0] == s_bodyResult &&
-              s_transferCompleteCalls == 1,
-          "VAB initialization opens and transfers the main bank");
-    Check(s_mainVolumeCalls == 1 && s_reservedVoiceCalls == 1,
-          "VAB initialization finishes output setup");
-
     InitSoundRuntime();
-    Check(s_prepareCalls == 2 && s_reverbOffCalls == 2 && s_presetCalls == 2,
-          "runtime-only initialization shares common preparation");
-    Check(s_mainVolumeCalls == 2 && s_reservedVoiceCalls == 2 &&
-              s_sequenceInitCalls == 1,
-          "runtime-only initialization finishes and starts sequence audio");
+    Check(s_prepareCalls == 1 && s_reverbOffCalls == 1 && s_presetCalls == 1,
+          "runtime initialization prepares libsnd");
+    Check(s_mainVolumeCalls == 1 && s_reservedVoiceCalls == 1,
+          "runtime initialization finishes output setup");
+    Check(s_sequenceInitCalls == 1,
+          "runtime initialization starts sequence audio");
 }
 
 int main(void) {

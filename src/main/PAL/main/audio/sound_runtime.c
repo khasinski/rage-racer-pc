@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "game/audio.h"
 #include "game/audio_state_internal.h"
 #include "game/sound.h"
@@ -10,14 +9,13 @@ enum {
     SOUND_SLOT_COUNT = 6,
     SOUND_RUNTIME_VOICE_COUNT = 10,
     DEFAULT_SOUND_SCALE = 128,
-    MAIN_VAB_SPU_ADDRESS = 0x1000,
 };
 
-void StopSoundSlotVoice(s32 slot) {
+static void StopSoundSlotVoice(s32 slot) {
     SsUtKeyOffV((s16)(slot + FIRST_SOUND_SLOT_VOICE));
 }
 
-void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
+static void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
     s32 *entry = &g_EngineSoundState.slotActive[slot];
 
     if (enabled != 0) {
@@ -43,11 +41,7 @@ void SetSoundSlotVoicesEnabled(s32 enabled) {
     }
 }
 
-void SetEffectVoicesEnabled(s32 enabled) {
-    SetSoundSlotVoicesEnabled(enabled);
-}
-
-void ResetSoundState(void) {
+static void ResetSoundState(void) {
     s32 i;
 
     for (i = 0; i < SOUND_SLOT_COUNT; i++) {
@@ -78,33 +72,8 @@ static void FinishSoundRuntimeInitialization(void) {
     SsSetReservedVoice(0);
 }
 
-s32 InitSoundWithVab(u8 *header, u8 *body) {
-    s16 *vabIdPtr = g_SoundScale.vabIds;
-    s16 vabId;
-
-    PrepareSoundRuntime();
-
-    *vabIdPtr = SsVabOpenHeadSticky(header, -1, MAIN_VAB_SPU_ADDRESS);
-    vabId = *vabIdPtr;
-    if (vabId == -1) {
-        printf("%s", g_MsgVabOpenHeadError);
-        BiosExit(1);
-    }
-
-    *vabIdPtr = SsVabTransBody(body, vabId);
-    if (*vabIdPtr == -1) {
-        printf("%s", g_MsgVabTransBodyError);
-        BiosExit(1);
-    }
-
-    SsVabTransCompleted(1);
-    FinishSoundRuntimeInitialization();
-    return 0;
-}
-
-s32 InitSoundRuntime(void) {
+void InitSoundRuntime(void) {
     PrepareSoundRuntime();
     FinishSoundRuntimeInitialization();
     InitSequenceAudio();
-    return 0;
 }
