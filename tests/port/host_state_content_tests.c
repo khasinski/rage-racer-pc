@@ -26,6 +26,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+typedef struct ContentCarPoint {
+    int16_t x;
+    int16_t z;
+} ContentCarPoint;
+
+typedef struct ContentLaunchSpeedThreshold {
+    int16_t initial;
+    int16_t sustain;
+} ContentLaunchSpeedThreshold;
+
+typedef struct ContentSVec {
+    int16_t vx;
+    int16_t vy;
+    int16_t vz;
+    int16_t pad;
+} ContentSVec;
+
 typedef struct SceneryPlacement {
     struct {
         int32_t x;
@@ -281,11 +298,12 @@ extern unsigned char g_CdReadSavedSyncCallback[8];
 extern unsigned char g_CdReadSavedReadyCallback[8];
 extern unsigned char g_SpriteFontCells[192];
 extern unsigned char g_SpriteFontWidth[288];
-extern unsigned char g_RoadGrade[16];
-extern unsigned char g_PlayerHullPoints[24];
-extern unsigned char g_OpponentHullCorners[16];
-extern unsigned char g_CarCornerOffsets[16];
-extern unsigned char g_LaunchSpeedThresholds[20];
+extern int32_t g_RoadGrade;
+extern uint8_t g_RoadGradeReserved[12];
+extern ContentCarPoint g_PlayerHullPoints[6];
+extern ContentCarPoint g_OpponentHullCorners[4];
+extern ContentCarPoint g_CarCornerOffsets[4];
+extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern unsigned char g_LaunchEnergyThresholds[12];
 extern unsigned char g_TachoNeedleSprite[20];
 extern unsigned char g_CountdownGlyphTable[256];
@@ -293,7 +311,8 @@ extern unsigned char g_ClockTextCells[8];
 extern unsigned char g_RaceOptionMarquee[160];
 extern unsigned char g_WaypointSeeds[128];
 extern unsigned char g_ReverbZones[32];
-extern unsigned char g_CarCollisionCorners[76];
+extern ContentCarPoint g_CarCollisionCorners[4];
+extern uint8_t g_CarCollisionTrailingData[60];
 extern unsigned char g_FreeCameraAngleOffset[8];
 typedef struct StartGridSceneryStep {
     int16_t x;
@@ -547,7 +566,8 @@ extern unsigned char g_FmvVlcBuffer1[8];
 extern unsigned char g_FmvStripBuffer0[8];
 extern unsigned char g_FmvStripBuffer1[8];
 extern unsigned char g_SectorTimes[12];
-extern unsigned char g_RaceIntroCameraDelta[16];
+extern ContentSVec g_RaceIntroCameraDelta;
+extern uint8_t g_RaceIntroCameraReserved[8];
 extern unsigned char g_CdTrackElapsedLoc[8];
 
 typedef struct HostStateBlob {
@@ -798,11 +818,19 @@ static const HostStateBlob s_blobs[] = {
     {"g_CdReadSavedReadyCallback", g_CdReadSavedReadyCallback, 8},
     {"g_SpriteFontCells", g_SpriteFontCells, 192},
     {"g_SpriteFontWidth", g_SpriteFontWidth, 288},
-    {"g_RoadGrade", g_RoadGrade, 16},
-    {"g_PlayerHullPoints", g_PlayerHullPoints, 24},
-    {"g_OpponentHullCorners", g_OpponentHullCorners, 16},
-    {"g_CarCornerOffsets", g_CarCornerOffsets, 16},
-    {"g_LaunchSpeedThresholds", g_LaunchSpeedThresholds, 20},
+    {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
+     sizeof(g_RoadGrade)},
+    {"g_RoadGradeReserved", g_RoadGradeReserved,
+     sizeof(g_RoadGradeReserved)},
+    {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,
+     sizeof(g_PlayerHullPoints)},
+    {"g_OpponentHullCorners", (const unsigned char *)g_OpponentHullCorners,
+     sizeof(g_OpponentHullCorners)},
+    {"g_CarCornerOffsets", (const unsigned char *)g_CarCornerOffsets,
+     sizeof(g_CarCornerOffsets)},
+    {"g_LaunchSpeedThresholds",
+     (const unsigned char *)g_LaunchSpeedThresholds,
+     sizeof(g_LaunchSpeedThresholds)},
     {"g_LaunchEnergyThresholds", g_LaunchEnergyThresholds, 12},
     {"g_TachoNeedleSprite", g_TachoNeedleSprite, 20},
     {"g_CountdownGlyphTable", g_CountdownGlyphTable, 256},
@@ -810,7 +838,10 @@ static const HostStateBlob s_blobs[] = {
     {"g_RaceOptionMarquee", g_RaceOptionMarquee, 160},
     {"g_WaypointSeeds", g_WaypointSeeds, 128},
     {"g_ReverbZones", g_ReverbZones, 32},
-    {"g_CarCollisionCorners", g_CarCollisionCorners, 76},
+    {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
+     sizeof(g_CarCollisionCorners)},
+    {"g_CarCollisionTrailingData", g_CarCollisionTrailingData,
+     sizeof(g_CarCollisionTrailingData)},
     {"g_FreeCameraAngleOffset", g_FreeCameraAngleOffset, 8},
     {"g_StartGridSceneryStep",
      (const unsigned char *)g_StartGridSceneryStep, 8},
@@ -1054,7 +1085,11 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmvStripBuffer0", g_FmvStripBuffer0, 8},
     {"g_FmvStripBuffer1", g_FmvStripBuffer1, 8},
     {"g_SectorTimes", g_SectorTimes, 12},
-    {"g_RaceIntroCameraDelta", g_RaceIntroCameraDelta, 16},
+    {"g_RaceIntroCameraDelta",
+     (const unsigned char *)&g_RaceIntroCameraDelta,
+     sizeof(g_RaceIntroCameraDelta)},
+    {"g_RaceIntroCameraReserved", g_RaceIntroCameraReserved,
+     sizeof(g_RaceIntroCameraReserved)},
     {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 8},
 };
 

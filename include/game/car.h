@@ -2,6 +2,7 @@
 #define GAME_CAR_H
 
 #include "common.h"
+#include "game/car_runtime_state.h"
 #include "game/vector.h"
 
 struct PlayerCarRuntime;
@@ -754,7 +755,6 @@ extern s16 g_GripLossTimer;
 extern u16 g_HudGlyphClut;
 extern s16 g_PeakOutputRpm;
 extern s16 g_PeakOutputValue;
-typedef struct RaceIntroCameraScript RaceIntroCameraScript;
 extern RaceIntroCameraScript *g_RaceIntroCameraScript;
 extern s32 g_RoadGrade;
 extern s32 g_SharedAssetWord0;

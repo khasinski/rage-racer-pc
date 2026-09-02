@@ -10,20 +10,46 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/car.h"
+#include "game/car_runtime_state.h"
+#include "game/track.h"
 
 s32 g_ShiftTargetSpeed;
-unsigned char g_RoadGrade[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-unsigned char g_PlayerHullPoints[24] __attribute__((aligned(16))) = {0xe0,0xff,0x40,0x00,0x20,0x00,0x40,0x00,0xe8,0xff,0xb8,0xff,0x18,0x00,0xb8,0xff,0xe0,0xff,0x10,0x00,0x20,0x00,0x10,0x00};
-unsigned char g_OpponentHullCorners[16] __attribute__((aligned(16))) = {0xe6,0xff,0x60,0x00,0x1a,0x00,0x60,0x00,0xe6,0xff,0xf0,0xff,0x1a,0x00,0xf0,0xff};
-unsigned char g_CarCornerOffsets[16] __attribute__((aligned(16))) = {0xf1,0xff,0x14,0x00,0x0f,0x00,0x14,0x00,0xf8,0xff,0xf6,0xff,0x08,0x00,0xf6,0xff};
-unsigned char g_LaunchSpeedThresholds[20] __attribute__((aligned(16))) = {0xc0,0x03,0x40,0x01,0xc0,0x03,0x40,0x01,0xc0,0x03,0x40,0x01,0xc0,0x03,0x40,0x01,0xc0,0x03,0x40,0x01};
+s32 g_RoadGrade;
+u8 g_RoadGradeReserved[12] __attribute__((aligned(16)));
+CarHullPoint g_PlayerHullPoints[6] __attribute__((aligned(16))) = {
+    {-32, 64}, {32, 64}, {-24, -72}, {24, -72}, {-32, 16}, {32, 16}
+};
+CarHullPoint g_OpponentHullCorners[4] __attribute__((aligned(16))) = {
+    {-26, 96}, {26, 96}, {-26, -16}, {26, -16}
+};
+CarHullPoint g_CarCornerOffsets[4] __attribute__((aligned(16))) = {
+    {-15, 20}, {15, 20}, {-8, -10}, {8, -10}
+};
+LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT]
+    __attribute__((aligned(16))) = {
+        {960, 320}, {960, 320}, {960, 320}, {960, 320}, {960, 320}
+    };
 s16 g_LaunchEnergyThresholds[6] __attribute__((aligned(16))) = {
     450, 900, 1000, 1300, 1550, 0
 };
-unsigned char g_CarCollisionCorners[76] __attribute__((aligned(16))) = {0xa0,0xff,0x00,0x02,0x60,0x00,0x00,0x02,0xa0,0xff,0x80,0xff,0x60,0x00,0x80,0xff,0x77,0xba,0x00,0x00,0x4c,0x17,0x00,0x00,0x7a,0x31,0x00,0x00,0x00,0x00,0x00,0x00,0x50,0x00,0x4b,0x00,0x38,0xbc,0x00,0x00,0x5b,0x17,0x00,0x00,0xd7,0x30,0x00,0x00,0x01,0x00,0x00,0x00,0x5a,0x00,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0xff,0xff,0x00,0x00};
+CarCollisionPoint g_CarCollisionCorners[4] __attribute__((aligned(16))) = {
+    {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
+};
+/* The retail data dump grouped these bytes under g_CarCollisionCorners even
+ * though collision code only addresses the four points above. Keep them
+ * losslessly until their original owner is identified. */
+u8 g_CarCollisionTrailingData[60] __attribute__((aligned(16))) = {
+    0x77,0xba,0x00,0x00,0x4c,0x17,0x00,0x00,0x7a,0x31,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x50,0x00,0x4b,0x00,0x38,0xbc,0x00,0x00,
+    0x5b,0x17,0x00,0x00,0xd7,0x30,0x00,0x00,0x01,0x00,0x00,0x00,
+    0x5a,0x00,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0xff,0xff,0x00,0x00
+};
 s32 g_RaceIntroCameraTimer;
-unsigned char g_RaceIntroCameraDelta[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-unsigned char g_TrackPoints[8] __attribute__((aligned(16)));
+SVec g_RaceIntroCameraDelta __attribute__((aligned(16)));
+u8 g_RaceIntroCameraReserved[8] __attribute__((aligned(16)));
+GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;
 s16 g_PeakOutputRpm;
@@ -32,23 +58,22 @@ s16 g_PlayerAutoSteer;
 s32 g_StandingStartSpin;
 s16 g_TrackZoneDark;
 s32 g_EngineRpm;
-unsigned char g_RaceIntroCameraScript[8] __attribute__((aligned(16)));
-/* GameCarRuntime: 412 bytes. Writing through the declared type ran 404
- * bytes past this object, into whatever the linker placed next. */
-unsigned char g_CameraCar[412] __attribute__((aligned(16)));
-unsigned char g_CameraCarSeedYaw[80] __attribute__((aligned(16)));
-unsigned char g_RaceIntroCameraCursor[8] __attribute__((aligned(16)));
+RaceIntroCameraScript *g_RaceIntroCameraScript;
+GameCarRuntime g_CameraCar __attribute__((aligned(16)));
+s32 g_CameraCarSeedYaw;
+RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
 s32 g_TachoNeedleFlash;
-unsigned char g_RankedCars[32] __attribute__((aligned(16)));
+GameCarRuntime *g_RankedCars[4] __attribute__((aligned(16)));
 s32 g_TrackLength;
-unsigned char g_TorqueBandEnd[20] __attribute__((aligned(16)));
+s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT] __attribute__((aligned(16)));
 u16 g_HudGlyphClut;
-unsigned char g_TrackEventData[8] __attribute__((aligned(16)));
-unsigned char g_TorqueLossBandEnd[20] __attribute__((aligned(16)));
+TrackEventData *g_TrackEventData;
+s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT]
+    __attribute__((aligned(16)));
 s32 g_EngineRpmJitter;
 s32 g_EngineRpmSnapshot;
-unsigned char g_CarSpec[8] __attribute__((aligned(16)));
+GameCarSpec *g_CarSpec;
 s16 g_PeakOutputValue;
 s16 g_GripLossTimer;
 s32 g_RivalCueFlags;
@@ -58,7 +83,7 @@ s16 g_RedlineToPeakRpmHalf;
 s16 g_PeakToRevLimitRpmHalf;
 s16 g_RivalCueCooldown3;
 s32 g_ClosestRivalRank;
-unsigned char g_GearTorqueCurve[448] __attribute__((aligned(16)));
+GearCurveRow g_GearTorqueCurve[7] __attribute__((aligned(16)));
 s16 g_StandingStartState;
 s32 g_ShiftSoundLevel;
 s16 g_SteerHoldFrames;
