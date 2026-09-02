@@ -34,7 +34,7 @@ void BeginReplay(void) {
             g_ReplayWriteCursor - REPLAY_SUBFRAMES_PER_SAMPLE;
     }
 
-    if (g_GrandPrixClass != GRAND_PRIX_SHARED_FINAL_CLASS) {
+    if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
         const s32 rewindFrames = g_GrandPrixMode != 0
             ? GRAND_PRIX_ENVIRONMENT_REWIND
             : TIME_ATTACK_ENVIRONMENT_REWIND;

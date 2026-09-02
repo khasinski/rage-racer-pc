@@ -80,7 +80,7 @@ int main(void) {
     Check("Extra GP count step", g_PrizeCountStep, 2);
 
     Reset();
-    g_GrandPrixClass = GRAND_PRIX_SHARED_FINAL_CLASS;
+    g_GrandPrixClass = GRAND_PRIX_FINAL_CLASS_INDEX;
     g_ClassPromoted = 1;
     g_PlayerCar.drive.racePosition = 4;
     EnterPrizeScreen();

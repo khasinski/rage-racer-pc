@@ -275,7 +275,7 @@ static void UpdatePausedRaceScene(void) {
     DrawTerrainCells();
     DrawCourseObjects();
     if (g_GrandPrixMode != 0) {
-        if (g_GrandPrixClass != 5) {
+        if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
             DrawStartGridScenery(g_SceneTimer);
         }
         SetLightMatrix(&g_SceneLightMatrix);
@@ -407,7 +407,7 @@ static void UpdateActiveRaceScene(void) {
     DrawTerrainCells();
     DrawCourseObjects();
     if (g_GrandPrixMode != 0) {
-        if (g_GrandPrixClass != 5) {
+        if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
             DrawStartGridScenery(g_SceneTimer);
         }
         SetLightMatrix(&g_SceneLightMatrix);

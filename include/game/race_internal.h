@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/menu_types.h"
+#include "game/race.h"
 
 struct PlayerCarRuntime;
 
@@ -68,8 +69,6 @@ typedef union SectorReferenceTimes {
     } fields;
 } SectorReferenceTimes;
 
-enum { GRAND_PRIX_SHARED_FINAL_CLASS = 5 };
-
 extern s32 g_RaceTotalTime;
 extern SectorReferenceTimes g_RefSectorTimes;
 
@@ -88,7 +87,7 @@ s32 GrandPrixCourseCount(s32 classIndex);
 s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
 static inline s32 GrandPrixAssetSeries(s32 selectedSeries, s32 classIndex) {
-    return classIndex < GRAND_PRIX_SHARED_FINAL_CLASS ? selectedSeries : 0;
+    return classIndex < GRAND_PRIX_FINAL_CLASS_INDEX ? selectedSeries : 0;
 }
 s32 PrizeCountStep(s32 amount, s32 frameCount);
 s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,

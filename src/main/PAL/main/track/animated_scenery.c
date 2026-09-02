@@ -13,8 +13,15 @@ typedef struct AnimatedSceneryTransform {
     Matrix worldMatrix;
 } AnimatedSceneryTransform;
 
+enum {
+    ANIMATED_SCENERY_INSTANCE_COUNT = 2,
+    COURSE_MODEL_FALLBACK = 1,
+};
+
 static s32 CourseModelOrFallback(s32 modelId) {
-    return modelId < g_CourseModelCount ? modelId : 1;
+    return modelId >= 0 && modelId < g_CourseModelCount
+               ? modelId
+               : COURSE_MODEL_FALLBACK;
 }
 
 static Vec4 AnimatedSceneryPosition(s32 instance) {
@@ -56,8 +63,12 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     s32 primaryModel;
     s32 secondaryModel;
 
+    if (instance < 0 || instance >= ANIMATED_SCENERY_INSTANCE_COUNT) {
+        return;
+    }
+
     transform.position = AnimatedSceneryPosition(instance);
-    if (g_GrandPrixClass == 5 ||
+    if (g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX ||
         !TrackCellVisible(transform.position.x, transform.position.z)) {
         return;
     }
@@ -99,7 +110,9 @@ void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
     s32 primaryModel;
     s32 secondaryModel;
 
-    if (g_GrandPrixMode == 0 || g_GrandPrixClass == 5) {
+    if (instance < 0 || instance >= ANIMATED_SCENERY_INSTANCE_COUNT ||
+        g_GrandPrixMode == 0 ||
+        g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX) {
         return;
     }
 

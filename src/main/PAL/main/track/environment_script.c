@@ -87,7 +87,7 @@ void SeekEnvironmentScript(s32 targetTime) {
     g_EnvScriptEnabled = 1;
     g_EnvironmentColors.fields.fogEnabled = 1;
     UpdateEnvironment();
-    if (g_GrandPrixClass >= 5) {
+    if (g_GrandPrixClass >= GRAND_PRIX_FINAL_CLASS_INDEX) {
         g_EnvScriptEnabled = 0;
     }
     ApplyFogSettings();

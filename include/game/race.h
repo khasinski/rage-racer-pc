@@ -13,6 +13,8 @@ struct GameCarRuntime;
 struct GameRenderSourcePoint;
 struct CarEntry;
 
+enum { GRAND_PRIX_FINAL_CLASS_INDEX = 5 };
+
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
  * tier: course asset index = 0x57 + (course << 1) + (class << 3). OVAL is
  * gated to class >= 2. */

@@ -80,7 +80,7 @@ static void TestWrappedCursorAtEndRestartsFromZero(void) {
 static void TestFinalClassKeepsEnvironmentPosition(void) {
     ResetState();
     g_ReplayWriteCursor = 20;
-    g_GrandPrixClass = GRAND_PRIX_SHARED_FINAL_CLASS;
+    g_GrandPrixClass = GRAND_PRIX_FINAL_CLASS_INDEX;
 
     BeginReplay();
 

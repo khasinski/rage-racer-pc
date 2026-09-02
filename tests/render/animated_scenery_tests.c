@@ -179,6 +179,14 @@ int main(void) {
     }
 
     g_GrandPrixMode = 1;
+    Reset();
+    DrawAnimatedScenery(0, -1);
+    DrawAnimatedScenery2(0, 2, 0, 1);
+    if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
+        puts("FAIL: animated scenery instance bounds");
+        return 1;
+    }
+
     g_AnimScenery2Variant = 1;
     Reset();
     DrawAnimatedScenery2(4, 1, 1, 0);

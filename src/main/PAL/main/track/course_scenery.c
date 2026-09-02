@@ -8,7 +8,7 @@ enum {
 
 static void DrawCourseObjects(s32 course, s32 timer, s32 animate,
                               s32 useAlternateAnimation) {
-    if (g_GrandPrixClass == 5) {
+    if (g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX) {
         animate = 0;
     }
 
@@ -58,6 +58,8 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
 
 void DrawCourseScenery2(s32 timer, s32 animate) {
     DrawAnimatedScenery2(timer, 0, g_SceneId == REPLAY_SCENE_ID,
-                         g_GrandPrixClass == 5 ? 0 : animate);
+                         g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX
+                             ? 0
+                             : animate);
     DrawCourseObjects(SeriesCourseIndex(), timer, animate, 1);
 }
