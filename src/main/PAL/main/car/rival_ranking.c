@@ -1,14 +1,12 @@
 #include "game/car.h"
 
-enum { RANKED_RIVAL_COUNT = 4 };
-
 void SlowRivalAhead(s32 rank) {
     GameCarRuntime *car;
     GameCarRuntime *rivalAhead;
     s32 progress;
     s32 progressAhead;
 
-    if (rank <= 0 || rank >= RANKED_RIVAL_COUNT ||
+    if (rank <= 0 || rank >= RIVAL_CONTENDER_COUNT ||
         g_RankedCars[rank] == NULL || g_RankedCars[rank - 1] == NULL) {
         return;
     }
@@ -27,15 +25,15 @@ void SlowRivalAhead(s32 rank) {
 /* Rank the front four cars by progress. Insertion sort keeps equal-progress
  * cars in stable slot order, which matters while they share the start line. */
 void RankContenders(void) {
-    s32 progress[RANKED_RIVAL_COUNT];
-    s32 indices[RANKED_RIVAL_COUNT] = {0, 1, 2, 3};
+    s32 progress[RIVAL_CONTENDER_COUNT];
+    s32 indices[RIVAL_CONTENDER_COUNT] = {0, 1, 2, 3};
     s32 i;
 
-    for (i = 0; i < RANKED_RIVAL_COUNT; i++) {
+    for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
         progress[i] = g_Cars[i].progressA + g_Cars[i].progressB;
     }
 
-    for (i = 1; i < RANKED_RIVAL_COUNT; i++) {
+    for (i = 1; i < RIVAL_CONTENDER_COUNT; i++) {
         s32 index = indices[i];
         s32 position = i;
 
@@ -47,7 +45,7 @@ void RankContenders(void) {
         indices[position] = index;
     }
 
-    for (i = 0; i < RANKED_RIVAL_COUNT; i++) {
+    for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
         g_RankedCars[i] = &g_Cars[indices[i]];
     }
 }

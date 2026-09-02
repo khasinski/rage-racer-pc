@@ -6,7 +6,6 @@
 #include "game/state.h"
 
 enum {
-    RANKED_RIVAL_COUNT = 4,
     EXTENDED_RUBBER_BAND_COURSE = 3,
     DEFAULT_NEAR_DISTANCE = 0x600,
     DEFAULT_FAR_DISTANCE = 0xE00,
@@ -91,7 +90,7 @@ void UpdateRivalRubberBand(void) {
     }
 
     g_ClosestRivalRank = -1;
-    for (rank = RANKED_RIVAL_COUNT - 1; rank >= 0; rank--) {
+    for (rank = RIVAL_CONTENDER_COUNT - 1; rank >= 0; rank--) {
         GameCarRuntime *rival = g_RankedCars[rank];
         s16 *cooldown = RivalCueCooldown(rank);
         s32 nearCueBit = 0x10 >> rank;

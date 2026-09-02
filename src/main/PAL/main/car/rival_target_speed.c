@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    FRONT_RIVAL_COUNT = 4,
     TRAILING_RIVAL_BASE_PERCENT = 85,
     TARGET_SPEED_SCALE = 1168,
     TARGET_SPEED_SOURCE_SCALE = 160,
@@ -11,10 +10,10 @@ enum {
 };
 
 static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
-    if (carIndex < FRONT_RIVAL_COUNT) {
+    if (carIndex < RIVAL_CONTENDER_COUNT) {
         return key->slotTargetSpeeds[carIndex];
     }
-    return key->slotTargetSpeeds[FRONT_RIVAL_COUNT - 1] *
+    return key->slotTargetSpeeds[RIVAL_CONTENDER_COUNT - 1] *
            (TRAILING_RIVAL_BASE_PERCENT - carIndex) / 100;
 }
 

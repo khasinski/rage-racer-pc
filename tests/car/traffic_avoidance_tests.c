@@ -47,14 +47,14 @@ enum { RIVAL_SLOTS = 11, TRACK_LENGTH = 0x8000 };
 static unsigned long s_digest = 2166136261UL;
 
 static int CheckContenderRanking(void) {
-    static const s32 cases[][4] = {
+    static const s32 cases[][RIVAL_CONTENDER_COUNT] = {
         {10, 40, 20, 30},
         {40, 30, 20, 10},
         {10, 20, 30, 40},
         {20, 20, 20, 20},
         {30, 10, 30, 10},
     };
-    static const s32 expected[][4] = {
+    static const s32 expected[][RIVAL_CONTENDER_COUNT] = {
         {1, 3, 2, 0},
         {0, 1, 2, 3},
         {3, 2, 1, 0},
@@ -67,13 +67,13 @@ static int CheckContenderRanking(void) {
         s32 rank;
 
         memset(g_Cars, 0, sizeof(g_Cars));
-        for (rank = 0; rank < 4; rank++) {
+        for (rank = 0; rank < RIVAL_CONTENDER_COUNT; rank++) {
             g_Cars[rank].progressA = cases[test][rank] - rank;
             g_Cars[rank].progressB = rank;
         }
         RankContenders();
 
-        for (rank = 0; rank < 4; rank++) {
+        for (rank = 0; rank < RIVAL_CONTENDER_COUNT; rank++) {
             s32 actual = (s32)(g_RankedCars[rank] - g_Cars);
             if (actual != expected[test][rank]) {
                 printf("ranking case %lu rank %d selected car %d, expected %d\n",
@@ -133,7 +133,7 @@ static void ResetRubberBandState(void) {
 
     memset(g_Cars, 0, sizeof(g_Cars));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
-    for (rank = 0; rank < 4; rank++) {
+    for (rank = 0; rank < RIVAL_CONTENDER_COUNT; rank++) {
         g_Cars[rank].progressA = -0x3000;
         g_Cars[rank].accelerationLimit = 1000;
         g_RankedCars[rank] = &g_Cars[rank];
@@ -554,13 +554,13 @@ int main(int argc, char **argv) {
     /* Each rank owns an independent cooldown. These globals are deliberately
      * not required to be adjacent in host state. */
     {
-        s16 *cooldowns[4] = {
+        s16 *cooldowns[RIVAL_CONTENDER_COUNT] = {
             &g_RivalCueCooldown0, &g_RivalCueCooldown1,
             &g_RivalCueCooldown2, &g_RivalCueCooldown3,
         };
         s32 rank;
 
-        for (rank = 0; rank < 4; rank++) {
+        for (rank = 0; rank < RIVAL_CONTENDER_COUNT; rank++) {
             s32 i;
 
             for (i = 0; i < 4; i++) {

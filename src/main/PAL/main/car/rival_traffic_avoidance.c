@@ -103,7 +103,9 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             otherOffset = g_PlayerCar.trackLateralOffset;
             /* The four cars at the front of the field are not told how fast
              * the player is going, so they never treat it as pulling away. */
-            otherSpeed = carIndex < 4 ? 0 : (u16)g_PlayerCar.speed;
+            otherSpeed = carIndex < RIVAL_CONTENDER_COUNT
+                ? 0
+                : (u16)g_PlayerCar.speed;
             alreadyAvoiding = 0;
             /* The player is watched over a range of its own, and that range
              * shrinks as the player speeds up rather than growing. */

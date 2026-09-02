@@ -11,6 +11,7 @@ struct GameRenderObject;
 enum {
     GAME_CAR_COUNT = 13,
     RACE_CAR_SLOT_COUNT = 11,
+    RIVAL_CONTENDER_COUNT = 4,
     CAR_MODEL_VARIANT_COUNT = 32,
     CAR_TIRE_COMPOUND_COUNT = 5,
     CAR_BODY_KICK_INACTIVE = 0,
@@ -292,7 +293,7 @@ extern GameCarRuntime g_CameraCar;
 
 /* The four contenders ordered by race progress (`progressA + progressB`), best
  * first; re-sorted every frame by RankContenders to rubber-band the AI. */
-extern GameCarRuntime *g_RankedCars[4];
+extern GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
 
 /* Active car-entry table; repointed at one of the three 13-entry tables below
  * per title-menu row, so it is a pointer rather than a fixed array. */

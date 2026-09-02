@@ -10,7 +10,7 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
-GameCarRuntime *g_RankedCars[4];
+GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
 s32 g_TrackLength;
 s32 g_AnimTimer;
 s32 g_ClosestRivalRank;
@@ -225,7 +225,7 @@ int main(void) {
         g_Cars[index].collisionFlag = 6;
         g_Cars[index].baseBodyYaw = 100 + index;
     }
-    for (index = 0; index < 4; index++) {
+    for (index = 0; index < RIVAL_CONTENDER_COUNT; index++) {
         g_RankedCars[index] = &g_Cars[index];
     }
     g_AnimTimer = 0;

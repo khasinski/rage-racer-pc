@@ -52,7 +52,8 @@ s32 g_CameraCarSeedYaw;
 RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
 s32 g_TachoNeedleFlash;
-GameCarRuntime *g_RankedCars[4] __attribute__((aligned(16)));
+GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT]
+    __attribute__((aligned(16)));
 s32 g_TrackLength;
 s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT] __attribute__((aligned(16)));
 u16 g_HudGlyphClut;

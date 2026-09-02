@@ -32,7 +32,8 @@ static void AvoidTrafficThisFrame(void) {
     s32 index;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        if (index >= 4 && (index & 1) != (g_AnimTimer & 1)) {
+        if (index >= RIVAL_CONTENDER_COUNT &&
+            (index & 1) != (g_AnimTimer & 1)) {
             continue;
         }
         if (g_Cars[index].activeFlag != -1) {
@@ -71,8 +72,8 @@ static void SteerAllCars(void) {
 static void SlowTheCarsAhead(void) {
     s32 rank = g_ClosestRivalRank;
 
-    if (rank >= 4) {
-        rank = 3;
+    if (rank >= RIVAL_CONTENDER_COUNT) {
+        rank = RIVAL_CONTENDER_COUNT - 1;
     }
     while (rank > 0) {
         SlowRivalAhead(rank);
