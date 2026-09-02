@@ -34,6 +34,8 @@ typedef enum MemoryCardPrompt {
     MC_PROMPT_NO_FILE = 0x14
 } MemoryCardPrompt;
 
+enum { MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE };
+
 extern MemoryCardPrompt g_McMenuPhase;
 
 typedef struct MemoryCardMessageRow {
@@ -161,7 +163,7 @@ extern s32 g_McLastCardStatus;
 extern s32 g_McLastMenuState;
 extern s32 g_McLastSlot;
 extern s16 g_McMessageColumnX[];
-extern MemoryCardMessageRow *g_McMessageRows[];
+extern MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 extern u8 g_McMessageText[];
 extern s32 g_McNoCardTicks;
 extern s32 g_McPollStatus;

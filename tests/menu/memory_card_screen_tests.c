@@ -11,7 +11,7 @@ GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 s32 g_SceneTimer;
 s16 g_McMessageColumnX[8];
-MemoryCardMessageRow *g_McMessageRows[32];
+MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 
 typedef struct DrawRecord {
     GameOrderingTableEntry *ot;
@@ -176,6 +176,15 @@ int main(void) {
         CHECK(s_messageSpriteV == (message - 0x10) * 0x18);
         CHECK(s_drawModeCount == 1 && s_drawMode == 0x3F);
     }
+
+    g_McMessageRows[MC_PROMPT_NO_FILE - 1] = textRows;
+    Reset();
+    DrawMemoryCardMessage(MC_PROMPT_NO_FILE - 1);
+    CHECK(s_textCount == 2);
+    CHECK(s_textRows[0].x == 0x60 && s_textRows[0].y == 0x40);
+    CHECK(s_textRows[1].x == 42 && s_textRows[1].y == 0x60);
+    CHECK(s_messageSpriteCount == 0);
+    CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
 
     puts("memory card screen and message drawing preserved");
     return 0;

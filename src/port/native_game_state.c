@@ -293,7 +293,7 @@ static MemoryCardMessageRow g_RageMcMessageRowStorage[24] = {
     MC_MESSAGE_ROW(g_McMessage21, 0), MC_MESSAGE_ROW(g_McMessage22, 2), MC_MESSAGE_ROW(g_McMessage23, 0)
 };
 #undef MC_MESSAGE_ROW
-MemoryCardMessageRow *g_McMessageRows[19] = {
+MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
     &g_RageMcMessageRowStorage[0], &g_RageMcMessageRowStorage[1],
     &g_RageMcMessageRowStorage[2], &g_RageMcMessageRowStorage[4],
     &g_RageMcMessageRowStorage[6], &g_RageMcMessageRowStorage[8],
@@ -303,7 +303,7 @@ MemoryCardMessageRow *g_McMessageRows[19] = {
     &g_RageMcMessageRowStorage[15], &g_RageMcMessageRowStorage[15],
     &g_RageMcMessageRowStorage[17], &g_RageMcMessageRowStorage[18],
     &g_RageMcMessageRowStorage[19], &g_RageMcMessageRowStorage[20],
-    &g_RageMcMessageRowStorage[21]
+    &g_RageMcMessageRowStorage[21], &g_RageMcMessageRowStorage[22]
 };
 s16 g_McMessageColumnX[70];
 char g_McSlotLabels[10];
