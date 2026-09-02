@@ -12,6 +12,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/track.h"
 #include "game/race.h"
 
@@ -31,10 +32,6 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
 }
 void TransformCollisionVector(const s16 *input, s32 *output) {
     (void)input; (void)output;
-}
-MATRIX *RotMatrix(SVECTOR *rotation, MATRIX *matrix) {
-    (void)rotation;
-    return matrix;
 }
 void SetRotMatrix(MATRIX *matrix) { (void)matrix; }
 s32 rsin(s32 angle) { (void)angle; return 0; }
@@ -120,6 +117,21 @@ static void CrestTests(void) {
     Check(GetCarCrestTrigger(&car) == 11, "reversed race",
           GetCarCrestTrigger(&car), 11);
     g_RaceSeries = 0;
+
+    /* Direction is a boolean state even if a damaged runtime contains a
+     * noncanonical nonzero value. */
+    row = &s_events.crestEvents[1][0];
+    row[0].progress = 0x100;
+    row[0].motionValue = 33;
+    row[1].motionValue = -1;
+    PlaceCar(&car, 0x0FF, 0x100);
+    car.facingBackwards = 7;
+    Check(GetCarCrestTrigger(&car) == 33, "normalized crest direction",
+          GetCarCrestTrigger(&car), 33);
+
+    g_TrackEventData = NULL;
+    Check(GetCarCrestTrigger(&car) == 0, "missing crest data",
+          GetCarCrestTrigger(&car), 0);
 }
 
 static void TargetSpeedTests(void) {
