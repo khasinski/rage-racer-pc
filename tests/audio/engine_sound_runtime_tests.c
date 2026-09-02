@@ -20,6 +20,7 @@ static s32 s_toneSlot[4];
 static s32 s_toneBend[4];
 static s32 s_toneVolume[4];
 static s32 s_tailCalls;
+static s32 s_slotsEnabled;
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
     (void)vabSlot;
@@ -50,6 +51,7 @@ void ApplyPanVoiceVolume(void) { s_tailCalls++; }
 void UpdateBasicEffectVoices(void) { s_tailCalls++; }
 void UpdateIndexedEffectVoice(void) { s_tailCalls++; }
 void UpdateEffectVoiceStates(void) { s_tailCalls++; }
+void SetSoundSlotVoicesEnabled(s32 enabled) { s_slotsEnabled = enabled; }
 
 #define CHECK(condition) do {                                                   \
     if (!(condition)) {                                                         \
@@ -97,6 +99,19 @@ int main(void) {
     CHECK(s_playCalls == 2);
     CHECK(s_interpolateCalls == 6 && s_toneCalls == 3);
     CHECK(s_tailCalls == 8);
+
+    s_interpolateCalls = 0;
+    s_toneCalls = 0;
+    s_playCalls = 0;
+    ForceSoundSlotVoicePlayback(1);
+    CHECK(s_slotsEnabled == 1 && s_playCalls == 2);
+    CHECK(s_interpolateCalls == 6 && s_toneCalls == 3);
+    CHECK(s_interpolatePosition[0] == 2560 && s_interpolateBank[0] == 1);
+
+    s_interpolateCalls = 0;
+    s_toneCalls = 0;
+    ForceSoundSlotVoicePlayback(0);
+    CHECK(s_slotsEnabled == 0 && s_interpolateCalls == 0 && s_toneCalls == 0);
 
     puts("engine sound runtime preserves slot routing, scaling, and updates");
     return 0;

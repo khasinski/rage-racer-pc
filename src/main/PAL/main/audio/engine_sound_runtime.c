@@ -15,19 +15,19 @@ static s32 SlotParameterIndex(s32 slot, s32 parameterOffset) {
     return slot * PARAMETERS_PER_SOUND_SLOT + parameterOffset;
 }
 
-void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
-    s32 position = EngineSoundPositionForRpm(rpm);
+static void RestartChangedBankVoices(s32 bank) {
     s32 slot;
 
-    if (bank != g_EngineSoundState.bank) {
-        for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
-            if (g_EngineSoundState.slotActive[slot] != 0 &&
-                g_SoundSlotTone[slot][0] != g_SoundSlotTone[slot][1]) {
-                PlaySoundSlotVoice(slot, bank, AUDIO_SLOT_ENGINE);
-            }
+    for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
+        if (g_EngineSoundState.slotActive[slot] != 0 &&
+            g_SoundSlotTone[slot][0] != g_SoundSlotTone[slot][1]) {
+            PlaySoundSlotVoice(slot, bank, AUDIO_SLOT_ENGINE);
         }
-        g_EngineSoundState.bank = bank;
     }
+}
+
+static void UpdateActiveSoundSlotOutputs(s32 position, s32 bank) {
+    s32 slot;
 
     for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
         if (g_EngineSoundState.slotActive[slot] != 0) {
@@ -42,10 +42,32 @@ void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
                              AUDIO_SLOT_ENGINE);
         }
     }
+}
+
+void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
+    s32 position = EngineSoundPositionForRpm(rpm);
+
+    if (bank != g_EngineSoundState.bank) {
+        RestartChangedBankVoices(bank);
+        g_EngineSoundState.bank = bank;
+    }
+
+    UpdateActiveSoundSlotOutputs(position, bank);
 
     g_EngineSoundState.position = position;
     ApplyPanVoiceVolume();
     UpdateBasicEffectVoices();
     UpdateIndexedEffectVoice();
     UpdateEffectVoiceStates();
+}
+
+void ForceSoundSlotVoicePlayback(s32 enabled) {
+    SetSoundSlotVoicesEnabled(enabled);
+    if (enabled == 0) {
+        return;
+    }
+
+    RestartChangedBankVoices(g_EngineSoundState.bank);
+    UpdateActiveSoundSlotOutputs(g_EngineSoundState.position,
+                                 g_EngineSoundState.bank);
 }
