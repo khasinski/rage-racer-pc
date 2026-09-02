@@ -4,7 +4,6 @@
 
 enum {
     FIRST_GEAR = 1,
-    MAX_FORWARD_GEARS = 6,
     PAD_MAPPING_STRIDE = 8,
 };
 
@@ -12,8 +11,8 @@ static s32 EffectiveTopGear(void) {
     if (g_CarSpec->topGear < FIRST_GEAR) {
         return FIRST_GEAR;
     }
-    if (g_CarSpec->topGear > MAX_FORWARD_GEARS) {
-        return MAX_FORWARD_GEARS;
+    if (g_CarSpec->topGear > CAR_FORWARD_GEAR_COUNT) {
+        return CAR_FORWARD_GEAR_COUNT;
     }
     return g_CarSpec->topGear;
 }
@@ -31,9 +30,9 @@ static s32 EffectiveTopGear(void) {
  * Coming to a stop drops it straight back to first, unless the car has not
  * pulled away yet.
  */
-void ShiftPlayerGears(PlayerCarRuntime *car, int mode23) {
+void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
     s32 topGear = EffectiveTopGear();
-    s32 mappingBase = mode23 != 0 ? PAD_MAPPING_STRIDE : 0;
+    s32 mappingBase = useAlternateMapping ? PAD_MAPPING_STRIDE : 0;
 
     if (car->drive.gear < FIRST_GEAR) {
         car->drive.gear = FIRST_GEAR;

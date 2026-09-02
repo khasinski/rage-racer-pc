@@ -740,9 +740,9 @@ void InitPlayerCar(PlayerCarRuntime *car);
  * and writes the reference triple at +0x50, for the init/reset paths only. */
 void ResetCarTrackState(GameCarRuntime *car);
 
-/* Pick the player's gear for this frame. `mode23` says the pad is a NeGcon,
- * which puts its two shift buttons at a different pair of mapping slots. */
-void ShiftPlayerGears(PlayerCarRuntime *car, int mode23);
+/* Pick the player's gear for this frame. Alternate controllers keep their two
+ * shift buttons in the second half of the mapping table. */
+void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);
 /* The two variants of the rival-car driver over all RACE_CAR_SLOT_COUNT
  * slots. Race runs
  * only while `g_RacePhase >= 2 && g_GrandPrixMode`, adds three race-only passes

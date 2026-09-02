@@ -35,9 +35,9 @@ s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
     return 1;
 }
 
-void ShiftPlayerGears(PlayerCarRuntime *car, int mapping) {
+void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
     (void)car;
-    s_shiftMapping = mapping;
+    s_shiftMapping = useAlternateMapping;
     Step('C');
 }
 

@@ -7,15 +7,14 @@
 
 enum {
     FIRST_FORWARD_GEAR = 1,
-    MAX_FORWARD_GEAR = 6,
 };
 
 static s16 ClampDrivetrainGear(s16 gear) {
     if (gear < FIRST_FORWARD_GEAR) {
         return FIRST_FORWARD_GEAR;
     }
-    if (gear > MAX_FORWARD_GEAR) {
-        return MAX_FORWARD_GEAR;
+    if (gear > CAR_FORWARD_GEAR_COUNT) {
+        return CAR_FORWARD_GEAR_COUNT;
     }
     return gear;
 }
