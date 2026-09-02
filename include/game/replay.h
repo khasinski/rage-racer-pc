@@ -3,27 +3,6 @@
 
 #include "common.h"
 
-typedef struct ReplayCarState {
-    s32 x;
-    s32 y;
-    s32 z;
-    u8 pad0C[0x14];
-    s32 bodyPitch;
-    s32 bodyYaw;
-    s32 bodyRoll;
-    u8 pad2C[4];
-    s32 trackPointIndex;
-    u8 pad34[0x10];
-    s32 steeringAngle;
-    s32 wheelRotation;
-    u8 pad4C[0x14];
-    s32 modelY;
-    u8 pad64[0x28];
-    s16 tiltCounter;
-    u8 pad8E[0x20];
-    s16 modelIndex;
-} ReplayCarState;
-
 typedef struct ReplayGrandPrixFrame {
     u16 x0;
     s16 y0;

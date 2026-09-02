@@ -10,7 +10,8 @@
 #define AVG(a, b) (((a) + (b)) / 2)
 
 
-void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj) {
+void ApplyReplayFrame(s32 subframe, GameCarRuntime *playerObj,
+                      GameCarRuntime *rivalObj) {
     s32 index;
     ReplayGrandPrixFrame *big;
     ReplayTimeAttackFrame *small;
@@ -102,8 +103,8 @@ void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *r
     }
 }
 
-void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
-                             ReplayCarState *rivalObj) {
+void ApplyReplayFrameAndTilt(s32 subframe, GameCarRuntime *playerObj,
+                             GameCarRuntime *rivalObj) {
     s32 frameIndex;
 
     ApplyReplayFrame(subframe, playerObj, rivalObj);

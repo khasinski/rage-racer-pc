@@ -467,9 +467,10 @@ void PlayCountdownCues(s32 timer);
 void AdvanceBgmShuffleBag(u32 track);
 void UpdateBgmSelectPlayback(void);
 void UpdateBgmSelectInput(void);
-void ApplyReplayFrame(s32 subframe, ReplayCarState *playerObj, ReplayCarState *rivalObj);
-void ApplyReplayFrameAndTilt(s32 subframe, ReplayCarState *playerObj,
-                             ReplayCarState *rivalObj);
+void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
+                      struct GameCarRuntime *rival);
+void ApplyReplayFrameAndTilt(s32 subframe, struct GameCarRuntime *player,
+                             struct GameCarRuntime *rival);
 void UpdateBgmSelectLoad(void);
 void UpdateBgmSelectFadeIn(void);
 void EnterBgmSelectScreen(void);

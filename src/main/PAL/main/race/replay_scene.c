@@ -72,9 +72,8 @@ void UpdateReplayScene(void) {
 
     UpdateReplayFade();
 
-    ApplyReplayFrame(g_ReplayReadCursor,
-                     (ReplayCarState *)(void *)&g_PlayerCar,
-                     (ReplayCarState *)(void *)g_Cars);
+    ApplyReplayFrame(g_ReplayReadCursor, AsRivalCar(&g_PlayerCar),
+                     &g_Cars[0]);
     g_ReplayReadCursor++;
     if (g_ReplayReadCursor == g_ReplayFrameCount) {
         g_ReplayReadCursor = 0;
