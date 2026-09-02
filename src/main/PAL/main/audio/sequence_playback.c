@@ -70,3 +70,10 @@ void ApplyDuckedSequenceAudio(void) {
     SsSeqSetVol(g_SeqHandle.value, volume, volume);
     SetReverbDepth(DUCKED_REVERB_DEPTH, DUCKED_REVERB_DEPTH);
 }
+
+void ApplyCurrentSequenceAudio(void) {
+    s16 volume = (s16)g_SeqVolume;
+
+    SsSeqSetVol(g_SeqHandle.value, volume, volume);
+    SetDefaultReverbDepth();
+}

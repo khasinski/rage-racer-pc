@@ -369,24 +369,6 @@ target_link_libraries(update_effect_voice_states_tests PRIVATE psyz)
 add_test(NAME update_effect_voice_states COMMAND update_effect_voice_states_tests)
 set_tests_properties(update_effect_voice_states PROPERTIES LABELS unit)
 
-add_executable(current_sequence_audio_tests
-    current_sequence_audio_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/apply_current_sequence_audio.c)
-target_include_directories(current_sequence_audio_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src/port/include
-    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
-target_compile_definitions(current_sequence_audio_tests PRIVATE __psyz=1)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(current_sequence_audio_tests PRIVATE
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Werror)
-endif()
-target_link_libraries(current_sequence_audio_tests PRIVATE psyz)
-add_test(NAME current_sequence_audio COMMAND current_sequence_audio_tests)
-set_tests_properties(current_sequence_audio PROPERTIES LABELS unit)
-
 if(TARGET rage-racer-smoke)
     add_test(
         NAME audio_output

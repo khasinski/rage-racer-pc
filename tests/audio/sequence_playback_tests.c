@@ -74,6 +74,12 @@ int main(void) {
     ApplyDuckedSequenceAudio();
     CHECK(s_sequenceLeft == -3 && s_sequenceRight == -3);
 
+    g_SeqVolume = 0x12348056;
+    ApplyCurrentSequenceAudio();
+    CHECK(s_sequenceLeft == (s16)0x8056 &&
+          s_sequenceRight == (s16)0x8056);
+    CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
+
     g_ReverbDepthL = 2;
     g_ReverbDepthR = 4;
     g_ReverbFadeStep = -3;
