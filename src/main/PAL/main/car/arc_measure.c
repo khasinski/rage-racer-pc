@@ -4,6 +4,15 @@
 #include "game/render_state.h"
 #include "game/track_internal.h"
 
+static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
+    s32 radius = rcos(angle) * offsetX + rsin(angle) * offsetZ;
+
+    if (radius < 0) {
+        radius += 0xFFF;
+    }
+    return radius >> 12;
+}
+
 /*
  * Where a car and the two track points around it sit on a curve's arc.
  *
@@ -25,7 +34,6 @@ void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
     const GameTrackArcCenter *arcCenter = &g_TrackArcCenters[arcIndex];
     s32 centerX = arcCenter->x;
     s32 centerZ = arcCenter->z;
-    s32 radius;
 
     work->arcCenterX = centerX;
     work->arcCenterZ = centerZ;
@@ -41,18 +49,11 @@ void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
     work->nextPointAngle =
         Atan2(work->nextPointToCenterX, work->nextPointToCenterZ) & 0xFFF;
 
-    radius = rcos(work->sweptAngle) * work->carToCenterX +
-             rsin(work->sweptAngle) * work->carToCenterZ;
-    if (radius < 0) radius += 0xFFF;
-    work->carRadius.value = radius >> 0xC;
-
-    radius = rcos(work->pointAngle) * work->pointToCenterX +
-             rsin(work->pointAngle) * work->pointToCenterZ;
-    if (radius < 0) radius += 0xFFF;
-    work->pointRadius.value = radius >> 0xC;
-
-    radius = rcos(work->nextPointAngle) * work->nextPointToCenterX +
-             rsin(work->nextPointAngle) * work->nextPointToCenterZ;
-    if (radius < 0) radius += 0xFFF;
-    work->nextPointRadius.value = radius >> 0xC;
+    work->carRadius.value = MeasureArcRadius(
+        work->sweptAngle, work->carToCenterX, work->carToCenterZ);
+    work->pointRadius.value = MeasureArcRadius(
+        work->pointAngle, work->pointToCenterX, work->pointToCenterZ);
+    work->nextPointRadius.value = MeasureArcRadius(
+        work->nextPointAngle, work->nextPointToCenterX,
+        work->nextPointToCenterZ);
 }
