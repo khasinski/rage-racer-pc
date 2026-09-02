@@ -17,6 +17,7 @@
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/save_internal.h"
 
 /* The course card has to have come to rest before it will take another one. */
@@ -120,8 +121,8 @@ static void ChooseCourseSelectRow(s32 row) {
             PlaySoundCue(2);
             g_CourseSelectModalScript = g_CourseSelectSavePromptScript;
             GameMenuBusy = -1;
-            g_GrandPrixSeries =
-                (g_GrandPrixClass < 5) ? (u16)g_GrandPrixSeries : 0;
+            g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
+                g_GrandPrixSeries, g_GrandPrixClass);
             g_UiScriptProgress2 = 0;
             g_MenuSubCursor = 1;
             return;

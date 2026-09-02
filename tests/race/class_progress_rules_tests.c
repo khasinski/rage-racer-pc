@@ -20,6 +20,7 @@ int main(void) {
     static const u8 thirdPlace[4] = {1, 1, 1, 3};
     static const u8 noGrade[4] = {1, 1, 2, 3};
     ScoreRecord records[11] = {0};
+    const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
     s32 i;
 
     Check("class 0 courses", GrandPrixCourseCount(0), 3);
@@ -39,11 +40,23 @@ int main(void) {
     Check("extra class 4", IsFinalGrandPrixClass(1, 4), 0);
     Check("extra class 5", IsFinalGrandPrixClass(1, 5), 1);
 
+    Check("standard asset series", GrandPrixAssetSeries(0, 4), 0);
+    Check("extra asset series", GrandPrixAssetSeries(1, 4), 1);
+    Check("shared finale asset series", GrandPrixAssetSeries(1, 5), 0);
+
     Check("zero prize", PrizeCountStep(0, 80), 1);
     Check("small prize", PrizeCountStep(79, 80), 1);
     Check("exact prize", PrizeCountStep(80, 80), 1);
     Check("large prize", PrizeCountStep(801, 80), 10);
     Check("negative prize", PrizeCountStep(-80, 80), 1);
+    Check("no promotion bonus", PrizeCountStep(0, 250), 1);
+
+    Check("class promotion bonus",
+          PromotionBonusForClass(promotionBonuses, 5, 3, 1), 100000);
+    Check("no bonus without promotion",
+          PromotionBonusForClass(promotionBonuses, 5, 3, 0), 0);
+    Check("shared finale has no bonus entry",
+          PromotionBonusForClass(promotionBonuses, 5, 5, 1), 0);
 
     records[0].place = 1;
     records[3].place = 2;

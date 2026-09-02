@@ -5,7 +5,7 @@ enum {
     ADVANCED_CLASS_COURSE_COUNT = 4,
     COURSE_UNLOCK_CLASS = 2,
     STANDARD_SERIES_FINAL_CLASS = 4,
-    EXTRA_SERIES_FINAL_CLASS = 5,
+    EXTRA_SERIES_FINAL_CLASS = GRAND_PRIX_SHARED_FINAL_CLASS,
     CLASS_RECORD_NO_UNLOCK = -1,
     CLASS_GRADE_COURSE_COUNT = 4,
     CLASS_GRADE_DISQUALIFIED = 0,
@@ -35,6 +35,9 @@ s32 NextUnlockedClassRecord(s32 classRecordIndex) {
 }
 
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
+    /* Standard class 4 unlocks Extra GP. Completing Extra class 4 advances to
+     * the shared class 5 finale, which uses standard-series assets and record
+     * slot 5 but retains the Extra series selection until it is cleared. */
     return classIndex == (extraSeries
         ? EXTRA_SERIES_FINAL_CLASS
         : STANDARD_SERIES_FINAL_CLASS);
@@ -43,6 +46,14 @@ s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
 s32 PrizeCountStep(s32 amount, s32 frameCount) {
     s32 step = amount / frameCount;
     return step > 0 ? step : 1;
+}
+
+s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
+                           s32 classIndex, s32 promoted) {
+    if (!promoted || classIndex < 0 || classIndex >= bonusCount) {
+        return 0;
+    }
+    return bonuses[classIndex];
 }
 
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {

@@ -14,8 +14,9 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
-#include "game/save_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
+#include "game/save_internal.h"
 
 /* The last row of the menu backs out, so its index is also the count of the
  * rows above it: two in time attack, four in a Grand Prix. */
@@ -71,8 +72,8 @@ static void ChooseCarSelectRow(s32 row) {
         StartSequenceFadeOut();
         if (g_GrandPrixMode != 0) {
             /* Class five is the extra series, which has no round of its own. */
-            g_GrandPrixSeries =
-                (g_GrandPrixClass < 5) ? (u16)g_GrandPrixSeries : 0;
+            g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
+                g_GrandPrixSeries, g_GrandPrixClass);
         } else {
             g_GrandPrixSeries = g_CourseIndex >> 2;
         }

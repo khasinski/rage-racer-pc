@@ -166,15 +166,13 @@ void EnterPrizeScreen(void) {
                                       [g_PlayerCar.drive.racePosition - 1];
     g_SceneId = 0x13;
 
-    if (g_ClassPromoted) {
-        g_PromotionBonus = g_PromotionBonusTable[classIndex];
-    } else {
-        g_PromotionBonus = 0;
-    }
+    g_PromotionBonus = PromotionBonusForClass(
+        g_PromotionBonusTable, PROMOTION_BONUS_COUNT, classIndex,
+        g_ClassPromoted);
 
     g_PrizeCountStep = PrizeCountStep(
         g_PrizeMoney.values[courseIndex][classIndex][PRIZE_PLACE_THIRD], 80);
-    g_BonusCountStep = PrizeCountStep(g_PromotionBonusTable[classIndex], 250);
+    g_BonusCountStep = PrizeCountStep(g_PromotionBonus, 250);
 }
 
 void TickClassClearFanfare(void) {

@@ -339,7 +339,8 @@ typedef struct PrologueLine {
 
 extern PrologueLine g_PrologueLines[17];
 extern s32 g_PrologueLineCount;
-extern s32 g_PromotionBonusTable[];
+enum { PROMOTION_BONUS_COUNT = 5 };
+extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 extern char g_RaceOptionMarquee[4][40];
 extern s32 g_RaceOptionPulseAngle;
 extern s16 g_RaceOptionScroll0;

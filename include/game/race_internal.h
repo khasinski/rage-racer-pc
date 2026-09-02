@@ -29,6 +29,8 @@ typedef union SectorReferenceTimes {
     } fields;
 } SectorReferenceTimes;
 
+enum { GRAND_PRIX_SHARED_FINAL_CLASS = 5 };
+
 extern s32 g_RaceTotalTime;
 extern SectorReferenceTimes g_RefSectorTimes;
 
@@ -46,7 +48,12 @@ extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 s32 GrandPrixCourseCount(s32 classIndex);
 s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
+static inline s32 GrandPrixAssetSeries(s32 selectedSeries, s32 classIndex) {
+    return classIndex < GRAND_PRIX_SHARED_FINAL_CLASS ? selectedSeries : 0;
+}
 s32 PrizeCountStep(s32 amount, s32 frameCount);
+s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
+                           s32 classIndex, s32 promoted);
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount);
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending);
 s32 RaceEndBrightness(s32 level);
