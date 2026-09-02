@@ -238,6 +238,32 @@ static s16 *RivalCueCooldown(s32 rank) {
     }
 }
 
+static void PlayEnabledRivalCue(s32 cue) {
+    if (g_RivalCueEnabled != 0) PlaySoundCue(cue);
+}
+
+static void UpdateTrailingRivalCue(s32 rank, s32 gap, s32 nearCueBit,
+                                   s16 *cooldown) {
+    if (rank == 0 && !(g_RivalCueFlags & 1) && gap < -0x1C00) {
+        if (g_RacePosition == 1) PlayEnabledRivalCue(0x2D);
+        g_RivalCueFlags = (g_RivalCueFlags & ~0x10) | 1;
+        return;
+    }
+
+    if (gap >= -0x7FF && !(nearCueBit & g_RivalCueFlags)) {
+        PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x2F : 0x30);
+        g_RivalCueFlags |= nearCueBit;
+        return;
+    }
+
+    if (gap < -0x1000) {
+        g_RivalCueFlags &= ~nearCueBit;
+    } else if (gap < -0x800 && *cooldown >= 0x12D) {
+        PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x37 : 0x36);
+        *cooldown = 0;
+    }
+}
+
 void UpdateRivalRubberBand(void) {
     s32 playerProgress;
     s32 nearDistance;
@@ -245,7 +271,7 @@ void UpdateRivalRubberBand(void) {
     s32 rank;
 
     playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
-    if ((SeriesCourseIndex()) == 3) {
+    if (SeriesCourseIndex() == 3) {
         nearDistance = 0xC00;
         farDistance = 0x1400;
     } else {
@@ -290,62 +316,15 @@ void UpdateRivalRubberBand(void) {
                 return;
             }
             if (!(farCueBit & g_RivalCueFlags)) {
-                s32 flags;
-                u32 cueVariant;
-
-                cueVariant = g_SceneTimer;
-                switch (cueVariant % 3) {
-                default:
-                case 0:
-                if (g_RivalCueEnabled != 0) {
-                    PlaySoundCue(0x32);
-                }
-                    break;
-                case 1:
-                if (g_RivalCueEnabled != 0) {
-                    PlaySoundCue(0x33);
-                }
-                    break;
-                case 2:
-                if (g_RivalCueEnabled != 0) {
-                    PlaySoundCue(0x34);
-                }
-                }
-
-                flags = g_RivalCueFlags;
+                PlayEnabledRivalCue(0x32 + g_SceneTimer % 3);
                 *cooldown = 0;
-                g_RivalCueFlags = farCueBit | flags;
+                g_RivalCueFlags |= farCueBit;
                 return;
             }
             *cooldown = (s16)((u16)*cooldown + 1);
             return;
-        } else {
-            if (rank == 0 && !(g_RivalCueFlags % 2) && gap < -0x1C00) {
-                if (g_RivalCueEnabled != 0 && g_RacePosition == 1) {
-                    PlaySoundCue(0x2D);
-                }
-                g_RivalCueFlags = (g_RivalCueFlags & ~0x10) | 1;
-            } else if (gap >= -0x7FF && !(nearCueBit & g_RivalCueFlags)) {
-                if (g_SceneTimer % 2) {
-                    if (g_RivalCueEnabled != 0) PlaySoundCue(0x2F);
-                } else {
-                    if (g_RivalCueEnabled != 0) PlaySoundCue(0x30);
-                }
-                g_RivalCueFlags |= nearCueBit;
-            } else {
-                if (gap < -0x1000) {
-                    g_RivalCueFlags &= ~nearCueBit;
-                } else if (gap < -0x800) {
-                    if (*cooldown >= 0x12D) {
-                        if (g_SceneTimer % 2) {
-                            if (g_RivalCueEnabled != 0) PlaySoundCue(0x37);
-                        } else {
-                            if (g_RivalCueEnabled != 0) PlaySoundCue(0x36);
-                        }
-                        *cooldown = 0;
-                    }
-                }
-            }
         }
+
+        UpdateTrailingRivalCue(rank, gap, nearCueBit, cooldown);
     }
 }

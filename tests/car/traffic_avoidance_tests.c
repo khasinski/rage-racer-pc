@@ -31,7 +31,13 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 GameCarRuntime g_Cars[11];
 PlayerCarRuntime g_PlayerCar;
 
-void PlaySoundCue(s32 cue) { (void)cue; }
+static s32 s_lastCue;
+static s32 s_cueCalls;
+
+void PlaySoundCue(s32 cue) {
+    s_lastCue = cue;
+    s_cueCalls++;
+}
 
 static PlayerCarRuntime s_playerStorage;
 void *GetPlayerCarStorage(void) { return &s_playerStorage; }
@@ -117,6 +123,123 @@ static int CheckDistantRivalSlowdown(void) {
             return 1;
         }
     }
+    return 0;
+}
+
+static void ResetRubberBandState(void) {
+    s32 rank;
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    memset(&s_playerStorage, 0, sizeof(s_playerStorage));
+    for (rank = 0; rank < 4; rank++) {
+        g_Cars[rank].progressA = -0x3000;
+        g_Cars[rank].accelerationLimit = 1000;
+        g_RankedCars[rank] = &g_Cars[rank];
+    }
+    g_CourseIndex = 0;
+    g_RacePhase = 2;
+    g_RivalCueEnabled = 1;
+    g_RivalCueFlags = 0;
+    g_RivalCueCooldown0 = 0;
+    g_RivalCueCooldown1 = 0;
+    g_RivalCueCooldown2 = 0;
+    g_RivalCueCooldown3 = 0;
+    g_RacePosition = 1;
+    g_SceneTimer = 0;
+    g_ClosestRivalRank = -1;
+    s_lastCue = -1;
+    s_cueCalls = 0;
+}
+
+static int CheckRubberBandBranches(void) {
+    GameCarRuntime *rival;
+
+    ResetRubberBandState();
+    rival = &g_Cars[3];
+    rival->progressA = 0xE01;
+    rival->speed = 0x321;
+    g_RivalCueFlags = 0x20;
+    UpdateRivalRubberBand();
+    if (rival->accelerationLimit != 900 || (g_RivalCueFlags & 0x20) ||
+        g_ClosestRivalRank != 3) {
+        printf("far-ahead rival branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    rival = &g_Cars[3];
+    rival->progressA = 0x601;
+    rival->speed = 0x3E9;
+    g_RivalCueCooldown3 = 0x12D;
+    UpdateRivalRubberBand();
+    if (rival->accelerationLimit != 980 || !(g_RivalCueFlags & 2) ||
+        g_RivalCueCooldown3 != 0) {
+        printf("near-ahead rival branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    rival = &g_Cars[3];
+    rival->progressA = 0x600;
+    g_SceneTimer = 2;
+    g_RivalCueCooldown3 = 123;
+    UpdateRivalRubberBand();
+    if (s_cueCalls != 1 || s_lastCue != 0x34 ||
+        !(g_RivalCueFlags & 0x20) || g_RivalCueCooldown3 != 0) {
+        printf("close-ahead rival cue branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_Cars[0].progressA = -0x1C01;
+    UpdateRivalRubberBand();
+    if (s_cueCalls != 1 || s_lastCue != 0x2D || !(g_RivalCueFlags & 1)) {
+        printf("distant trailing leader cue branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_Cars[2].progressA = -0x7FF;
+    g_SceneTimer = 1;
+    g_RivalCueFlags = 1;
+    UpdateRivalRubberBand();
+    if (s_cueCalls != 1 || s_lastCue != 0x2F || !(g_RivalCueFlags & 4)) {
+        printf("near trailing rival cue branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_Cars[1].progressA = -0x900;
+    g_RivalCueFlags = 8 | 1;
+    g_RivalCueCooldown1 = 0x12D;
+    UpdateRivalRubberBand();
+    if (s_cueCalls != 1 || s_lastCue != 0x36 || g_RivalCueCooldown1 != 0) {
+        printf("repeated trailing rival cue branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_CourseIndex = 3;
+    rival = &g_Cars[3];
+    rival->progressA = 0xE01;
+    rival->speed = 0x3E9;
+    UpdateRivalRubberBand();
+    if (rival->accelerationLimit != 980) {
+        printf("course-four rubber-band distance failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_RacePhase = 4;
+    g_Cars[3].progressA = 0x2000;
+    UpdateRivalRubberBand();
+    if (g_Cars[3].accelerationLimit != 1000 || g_ClosestRivalRank != -1 ||
+        s_cueCalls != 0) {
+        printf("finished-race rubber-band guard failed\n");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -248,7 +371,8 @@ int main(int argc, char **argv) {
     size_t l, o, v, c, s, a, m;
     int cases = 0;
 
-    if (CheckContenderRanking() != 0 || CheckDistantRivalSlowdown() != 0)
+    if (CheckContenderRanking() != 0 || CheckDistantRivalSlowdown() != 0 ||
+        CheckRubberBandBranches() != 0)
         return 1;
 
     if (argc > 1) {
