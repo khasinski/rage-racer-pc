@@ -80,6 +80,13 @@ int main(void) {
         failures++;
     }
 
+    car.aiLateralOffset = 25;
+    ClampCarLateralOffset(&car, -1);
+    if (car.aiLateralOffset != 25) {
+        puts("FAIL invalid rival slot changed the lateral offset");
+        failures++;
+    }
+
     if (failures != 0) {
         return 1;
     }
