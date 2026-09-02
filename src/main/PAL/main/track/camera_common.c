@@ -38,3 +38,13 @@ void CameraLoadViewPoseFromCar(GameViewWork *view,
     view->angleZ = car->bodyRoll;
     view->depth = car->bodyRotationW;
 }
+
+void CameraBuildCarRotation(Matrix *rotation, const GameRenderObject *car) {
+    Matrix axisRotation;
+
+    BuildRotMatrixY(rotation, car->bodyYaw);
+    BuildRotMatrixX(&axisRotation, car->bodyPitch);
+    MulMatrix2(&axisRotation, rotation);
+    BuildRotMatrixZ(&axisRotation, car->bodyRoll);
+    MulMatrix2(&axisRotation, rotation);
+}

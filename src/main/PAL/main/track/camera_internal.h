@@ -8,6 +8,7 @@ void CameraLoadViewPositionFromCar(GameViewWork *view,
                                    const GameRenderObject *car);
 void CameraLoadViewPoseFromCar(GameViewWork *view,
                                const GameRenderObject *car);
+void CameraBuildCarRotation(Matrix *rotation, const GameRenderObject *car);
 void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view);
 void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view);
 void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,

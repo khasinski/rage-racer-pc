@@ -38,18 +38,14 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     s32 focusOffset[3];
     s32 focusWorld[3];
     Matrix inverseObjectRotation;
-    Matrix matrixWork;
+    Matrix cameraToWorld;
     Matrix objectRotation;
     CameraLoadViewPositionFromCar(view, car);
     BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
-    BuildRotMatrixY(&objectRotation, car->bodyYaw);
-    BuildRotMatrixX(&matrixWork, car->bodyPitch);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, car->bodyRoll);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
-    TransposeMatrix(&objectRotation, &matrixWork);
+    TransposeMatrix(&objectRotation, &cameraToWorld);
     focusOffset[0] = 0;
     focusOffset[1] = 0;
     focusOffset[2] = 0x32;
@@ -61,7 +57,7 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     eyeOffset[0] = 0;
     eyeOffset[1] = 0;
     eyeOffset[2] = g_OrbitCameraDistance;
-    ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
+    ApplyMatrixLV(&cameraToWorld, &eyeOffset[0], &eyeWorld[0]);
     /* Pitch uses the orbit distance rather than the flattened eye vector,
      * so a pitched camera tilts a shade less than a true look-at would.
      * Retail's, and the view players know. */

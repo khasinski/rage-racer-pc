@@ -48,7 +48,6 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     s32 focusY;
     s32 focusZ;
     Matrix inverseObjectRotation;
-    Matrix matrixWork;
     s32 nodeOffset[3];
     s32 nodeWorld[3];
     Matrix objectRotation;
@@ -58,11 +57,7 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     view->y = chaseNode->data.world.y;
     view->z = chaseNode->data.world.z;
     view->reserved = chaseNode->data.world.blend;
-    BuildRotMatrixY(&objectRotation, car->bodyYaw);
-    BuildRotMatrixX(&matrixWork, car->bodyPitch);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, car->bodyRoll);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     /* The point on the car the node looks at, in the car's frame and
      * then in the world. */
@@ -194,11 +189,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     MulMatrix2(&matrixWork, &cameraRotation);
     BuildRotMatrixZ(&matrixWork, pathRoll);
     MulMatrix2(&matrixWork, &cameraRotation);
-    BuildRotMatrixY(&objectRotation, car->bodyYaw);
-    BuildRotMatrixX(&matrixWork, car->bodyPitch);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, car->bodyRoll);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &matrixWork);
@@ -238,7 +229,6 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
 void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
                                 s32 cameraNodeIndex, int nodeChanged) {
     Matrix inverseObjectRotation;
-    Matrix matrixWork;
     s32 nodeOffset[3];
     s32 nodeWorld[3];
     Matrix objectRotation;
@@ -256,11 +246,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
         g_CamPathFrame += 1;
     }
-    BuildRotMatrixY(&objectRotation, car->bodyYaw);
-    BuildRotMatrixX(&matrixWork, car->bodyPitch);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, car->bodyRoll);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     duration = CameraNodeDuration(orbitNode);
     nodeOffset[0] = 0;
