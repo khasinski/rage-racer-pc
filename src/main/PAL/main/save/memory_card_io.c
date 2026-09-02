@@ -94,6 +94,9 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
     GameSaveIconBlock block0;
     GameSaveBlock block1;
 
+    if (!MemoryCardSaveSlotValid(slot)) {
+        return 0;
+    }
     memset(&block0, 0, sizeof(block0));
 
     GameMenuLoadPhase = 0x1000;
@@ -171,6 +174,9 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     s32 fd;
     s32 i;
 
+    if (!MemoryCardSaveSlotValid(slot)) {
+        return 0;
+    }
     GameMenuLoadPhase = 0x3000;
     for (tries = 0; tries < 2; tries++) {
         fd = BiosFileOpen(SaveFilePath(slot), 1);
@@ -224,8 +230,12 @@ s32 CountMemoryCardFiles(s32 port, s32 slot) {
     char path[0x20];
     DirEntry *entry;
     s32 count;
+    s32 pathLength;
 
-    sprintf(path, g_FmtCardWildcard, port, slot);
+    pathLength = snprintf(path, sizeof(path), g_FmtCardWildcard, port, slot);
+    if (pathLength < 0 || (size_t)pathLength >= sizeof(path)) {
+        return 0;
+    }
     entry = g_McDirEntries;
     if (BiosFirstFile(path, entry) != entry) {
         return 0;

@@ -4,7 +4,8 @@
 
 s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
     s32 i;
-    s32 usedBytes = 0;
+    uint64_t usedBytes = 0;
+    uint64_t capacity = MEMORY_CARD_BLOCK_COUNT * MEMORY_CARD_BLOCK_SIZE;
 
     if (fileCount < 0) {
         fileCount = 0;
@@ -13,9 +14,15 @@ s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
         fileCount = MEMORY_CARD_MAX_FILES;
     }
     for (i = 0; i < fileCount; i++) {
-        usedBytes += g_McDirEntries[i].size;
+        if (g_McDirEntries[i].size > 0) {
+            usedBytes += (u32)g_McDirEntries[i].size;
+        }
+        if (usedBytes >= capacity) {
+            return 0;
+        }
     }
-    return MEMORY_CARD_BLOCK_COUNT - usedBytes / MEMORY_CARD_BLOCK_SIZE;
+    return MEMORY_CARD_BLOCK_COUNT -
+           (s32)(usedBytes / MEMORY_CARD_BLOCK_SIZE);
 }
 
 s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *header) {

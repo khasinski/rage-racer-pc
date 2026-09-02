@@ -242,6 +242,13 @@ static int TestWriteAndDirectoryCount(void) {
     GameSaveBlock block;
 
     ResetMock();
+    CHECK(WriteMemoryCardSaveSlot(-1, &header) == 0);
+    CHECK(WriteMemoryCardSaveSlot(MEMORY_CARD_SAVE_SLOT_COUNT, &header) == 0);
+    CHECK(LoadMemoryCardSaveSlot(-1, &header) == 0);
+    CHECK(LoadMemoryCardSaveSlot(MEMORY_CARD_SAVE_SLOT_COUNT, &header) == 0);
+    CHECK(s_openCalls == 0);
+
+    ResetMock();
     s_openResults[0] = -1;
     s_openResults[1] = 10;
     s_openResults[2] = 10;
@@ -284,6 +291,11 @@ static int TestCardStatus(void) {
     CHECK(CalculateMemoryCardFreeBlocks(-1) == 15);
     CHECK(CalculateMemoryCardFreeBlocks(2) == 14);
     CHECK(CalculateMemoryCardFreeBlocks(MEMORY_CARD_MAX_FILES + 5) == 14);
+    g_McDirEntries[0].size = 0x7FFFFFFF;
+    g_McDirEntries[1].size = 0x7FFFFFFF;
+    CHECK(CalculateMemoryCardFreeBlocks(2) == 0);
+    g_McDirEntries[0].size = 0x2000;
+    g_McDirEntries[1].size = 0x1000;
 
     visibleElapsed = FormatSaveElapsedTime(elapsed, 3723 * 60);
     CHECK(strcmp(elapsed, "    1:02:03") == 0);
