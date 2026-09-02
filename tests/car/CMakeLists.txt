@@ -770,31 +770,32 @@ target_link_libraries(car_track_state_tests PRIVATE psyz)
 add_test(NAME car_track_state COMMAND car_track_state_tests)
 set_tests_properties(car_track_state PROPERTIES LABELS functional)
 
-add_executable(track_contact_tests
-    track_contact_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/track_contact.c
+add_executable(replay_track_reconstruction_tests
+    replay_track_reconstruction_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/replay_track_reconstruction.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
-target_include_directories(track_contact_tests PRIVATE
+target_include_directories(replay_track_reconstruction_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(track_contact_tests PRIVATE __psyz=1)
+target_compile_definitions(replay_track_reconstruction_tests PRIVATE __psyz=1)
 if(MSVC)
-    target_compile_options(track_contact_tests PRIVATE
+    target_compile_options(replay_track_reconstruction_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
-    target_compile_options(track_contact_tests PRIVATE
+    target_compile_options(replay_track_reconstruction_tests PRIVATE
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Wno-error)
 endif()
-target_link_libraries(track_contact_tests PRIVATE psyz)
-add_test(NAME track_contact COMMAND track_contact_tests)
-set_tests_properties(track_contact PROPERTIES LABELS functional)
+target_link_libraries(replay_track_reconstruction_tests PRIVATE psyz)
+add_test(NAME replay_track_reconstruction
+         COMMAND replay_track_reconstruction_tests)
+set_tests_properties(replay_track_reconstruction PROPERTIES LABELS functional)
 
 add_executable(collision_quads_tests
     collision_quads_tests.c
