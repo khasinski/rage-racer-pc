@@ -17,10 +17,12 @@ static void CountTowardsMoney(s32 *owed, s32 step) {
 
     if (amount >= step) {
         *owed = amount - step;
-        g_RaceProgress->money.value += step;
+        g_RaceProgress->money.value =
+            CreditPrizeMoney(g_RaceProgress->money.value, step);
     } else {
         *owed = 0;
-        g_RaceProgress->money.value += amount;
+        g_RaceProgress->money.value =
+            CreditPrizeMoney(g_RaceProgress->money.value, amount);
     }
 }
 

@@ -151,7 +151,8 @@ if(TARGET rage-host-state)
 # The prize screen's arithmetic, which is what a race leaves behind.
 add_executable(prize_screen_tests
     prize_screen_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/prize_money_screen.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/prize_money_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prize_money.c)
 target_include_directories(prize_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

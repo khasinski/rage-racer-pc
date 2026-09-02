@@ -10,8 +10,6 @@
 #include "game/sound.h"
 #include "game/state.h"
 
-enum { MAX_PRIZE_MONEY = 999999999 };
-
 void UpdateBgmTrackCount(void) {
     enum {
         CLASS_RECORD_COUNT = 11,
@@ -29,9 +27,6 @@ void UpdateBgmTrackCount(void) {
 void DrawPrizeMoneyPanel(s32 yOffset) {
     char moneyText[16];
 
-    if (g_RaceProgress->money.value > MAX_PRIZE_MONEY) {
-        g_RaceProgress->money.value = MAX_PRIZE_MONEY;
-    }
     DrawProportionalText(0x10, yOffset + 128, g_CaptionPrizeMoney, 0x7812);
     snprintf(moneyText, sizeof(moneyText), g_FmtMoney, g_PrizeAmount);
     DrawProportionalText(0x12, yOffset + 140, moneyText, 0x7812);
@@ -128,7 +123,7 @@ void AdvanceGrandPrixClass(void) {
     if (g_SeriesCleared) {
         maxClassReached = g_RaceProgress->maxClassReached;
         ResetProgressSlot(g_CarTable, g_RaceProgress);
-        g_RaceProgress->money.value = MAX_PRIZE_MONEY;
+        g_RaceProgress->money.value = RACE_MAX_PRIZE_MONEY;
         g_RaceProgress->maxClassReached = maxClassReached;
         ResetCourseProgress(0);
         BeginEndingFmv(0x21);
@@ -159,6 +154,7 @@ void EnterPrizeScreen(void) {
 
     g_SceneTimer = 0x100;
     g_FrameSyncThreshold = 0x80;
+    g_RaceProgress->money.value = ClampPrizeMoney(g_RaceProgress->money.value);
 
     courseIndex = SeriesCourseIndex();
     classIndex = g_GrandPrixClass;

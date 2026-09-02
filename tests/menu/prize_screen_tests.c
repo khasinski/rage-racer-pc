@@ -117,6 +117,17 @@ int main(void) {
           "screen finishes on the fade", g_PrizeScreenState,
           PRIZE_SCREEN_STATE_FADE_OUT);
 
+    /* Paying a prize cannot overflow the save's advertised money limit. */
+    Reset(1000, 400);
+    s_progress.money.value = RACE_MAX_PRIZE_MONEY - 50;
+    RunToEnd(0, 4000);
+    Check(s_progress.money.value == RACE_MAX_PRIZE_MONEY,
+          "prize money saturates at the save limit", s_progress.money.value,
+          RACE_MAX_PRIZE_MONEY);
+    Check(g_PrizeAmount == 0 && g_PromotionBonus == 0,
+          "capped money still finishes both counters", g_PrizeAmount,
+          0);
+
     /* The counter waits out the panel before it starts, and the wait is
      * counted in frames rather than eyeballed. */
     {

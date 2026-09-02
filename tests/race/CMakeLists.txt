@@ -1,6 +1,7 @@
 add_executable(class_progress_rules_tests
     class_progress_rules_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prize_money.c)
 target_include_directories(class_progress_rules_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

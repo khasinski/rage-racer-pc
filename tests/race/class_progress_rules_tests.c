@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/prize_money.h"
 #include "game/race_internal.h"
 
 #include <stdio.h>
@@ -63,6 +64,16 @@ int main(void) {
     Check("third-place prize", PrizeForRacePosition(prizes, 3, 3), 2500);
     Check("zero-place prize", PrizeForRacePosition(prizes, 3, 0), 0);
     Check("place past prize table", PrizeForRacePosition(prizes, 3, 4), 0);
+
+    Check("money below cap", ClampPrizeMoney(1234), 1234);
+    Check("money above cap", ClampPrizeMoney(1000000000),
+          RACE_MAX_PRIZE_MONEY);
+    Check("ordinary prize credit", CreditPrizeMoney(1000, 500), 1500);
+    Check("prize credit reaches cap",
+          CreditPrizeMoney(RACE_MAX_PRIZE_MONEY - 100, 500),
+          RACE_MAX_PRIZE_MONEY);
+    Check("credit at cap", CreditPrizeMoney(RACE_MAX_PRIZE_MONEY, 500),
+          RACE_MAX_PRIZE_MONEY);
 
     records[0].place = 1;
     records[3].place = 2;
