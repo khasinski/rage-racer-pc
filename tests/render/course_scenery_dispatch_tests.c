@@ -117,6 +117,9 @@ int main(void) {
         {EVENT_DRAW_SHUTTLE, 0, 0, 0},
         {EVENT_STATIC, 0, 0, 0},
     };
+    static const Event unknownCourse[] = {
+        {EVENT_ANIMATED, 3, 0, 0},
+    };
     static const Event secondPass[] = {
         {EVENT_ANIMATED_2, 4, 0, 10},
         {EVENT_ANIMATED_2, 4, 1, 10},
@@ -140,6 +143,9 @@ int main(void) {
     g_GrandPrixClass = 5;
     DrawCourseScenery(1, 5, 1);
     if (!Expect("class 5", class5, 4)) return 1;
+
+    DrawCourseScenery(99, 3, 1);
+    if (!Expect("unknown course", unknownCourse, 1)) return 1;
 
     g_CourseIndex = 3;
     g_SceneId = 0x11;

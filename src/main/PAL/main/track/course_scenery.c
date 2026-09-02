@@ -2,17 +2,12 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
-static void DrawSecondaryAnimation(s32 timer, s32 animate,
-                                   s32 secondPass) {
-    if (secondPass) {
-        DrawAnimatedScenery2(timer, 1, g_SceneId == 0x11, animate);
-    } else {
-        DrawAnimatedScenery(timer, 1);
-    }
-}
+enum {
+    REPLAY_SCENE_ID = 0x11,
+};
 
 static void DrawCourseObjects(s32 course, s32 timer, s32 animate,
-                              s32 secondPass) {
+                              s32 useAlternateAnimation) {
     if (g_GrandPrixClass == 5) {
         animate = 0;
     }
@@ -45,7 +40,12 @@ static void DrawCourseObjects(s32 course, s32 timer, s32 animate,
         DrawStaticScenery(0);
         break;
     case 3:
-        DrawSecondaryAnimation(timer, animate, secondPass);
+        if (useAlternateAnimation) {
+            DrawAnimatedScenery2(timer, 1,
+                                 g_SceneId == REPLAY_SCENE_ID, animate);
+        } else {
+            DrawAnimatedScenery(timer, 1);
+        }
         DrawStaticScenery(1);
         break;
     }
@@ -57,7 +57,7 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
 }
 
 void DrawCourseScenery2(s32 timer, s32 animate) {
-    DrawAnimatedScenery2(timer, 0, g_SceneId == 0x11,
+    DrawAnimatedScenery2(timer, 0, g_SceneId == REPLAY_SCENE_ID,
                          g_GrandPrixClass == 5 ? 0 : animate);
     DrawCourseObjects(SeriesCourseIndex(), timer, animate, 1);
 }
