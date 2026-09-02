@@ -20,6 +20,26 @@
 #define MC_BACKUP_HEADER_OFS  (MC_SAVE_BLOCK_OFS + MC_BLOCK_SIZE)
 #define MC_BLOCK_CHECKSUM_OFS 0xFFC
 
+typedef struct GameSaveIconBlock {
+    u8 magic[2];
+    u8 format;
+    u8 frameCount;
+    char title[MC_ICON_CLUT_OFS - MC_ICON_TITLE_OFS];
+    u16 clut[(MC_ICON_PIXELS_OFS - MC_ICON_CLUT_OFS) / sizeof(u16)];
+    u8 pixels[MC_ICON_BLOCK_SIZE - MC_ICON_PIXELS_OFS];
+} GameSaveIconBlock;
+
+_Static_assert(sizeof(GameSaveIconBlock) == MC_ICON_BLOCK_SIZE,
+               "memory-card icon block size changed");
+_Static_assert(__builtin_offsetof(GameSaveIconBlock, title) ==
+                   MC_ICON_TITLE_OFS,
+               "memory-card icon title offset changed");
+_Static_assert(__builtin_offsetof(GameSaveIconBlock, clut) == MC_ICON_CLUT_OFS,
+               "memory-card icon CLUT offset changed");
+_Static_assert(__builtin_offsetof(GameSaveIconBlock, pixels) ==
+                   MC_ICON_PIXELS_OFS,
+               "memory-card icon pixels offset changed");
+
 typedef union GameSaveHeaderRow {
     struct {
         u8 nameLength;

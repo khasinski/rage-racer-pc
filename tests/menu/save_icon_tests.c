@@ -29,24 +29,24 @@ void DrawSync(long mode) {
 } while (0)
 
 int main(void) {
-    u8 block[MC_ICON_BLOCK_SIZE];
+    GameSaveIconBlock block;
     char longTitle[160];
 
-    memset(block, 0xCC, sizeof(block));
+    memset(&block, 0xCC, sizeof(block));
     memset(longTitle, 'A', sizeof(longTitle) - 1);
     longTitle[sizeof(longTitle) - 1] = '\0';
 
-    BuildSaveIconBlock(block, longTitle, 0x222, 0x3C0, 0x1F0);
+    BuildSaveIconBlock(&block, longTitle, 0x222, 0x3C0, 0x1F0);
 
-    CHECK(block[0] == 'S' && block[1] == 'C');
-    CHECK(block[2] == 0x11 && block[3] == 1);
-    CHECK(block[MC_ICON_CLUT_OFS - 1] == '\0');
-    CHECK(block[MC_ICON_CLUT_OFS] == 0xCC);
+    CHECK(block.magic[0] == 'S' && block.magic[1] == 'C');
+    CHECK(block.format == 0x11 && block.frameCount == 1);
+    CHECK(block.title[sizeof(block.title) - 1] == '\0');
+    CHECK(block.clut[0] == 0xCCCC);
     CHECK(s_storeCalls == 2 && s_syncCalls == 2);
-    CHECK(s_destinations[0] == block + MC_ICON_CLUT_OFS);
+    CHECK(s_destinations[0] == block.clut);
     CHECK(s_rects[0].x == 0x60 && s_rects[0].y == 0x1FB);
     CHECK(s_rects[0].w == 0x10 && s_rects[0].h == 1);
-    CHECK(s_destinations[1] == block + MC_ICON_PIXELS_OFS);
+    CHECK(s_destinations[1] == block.pixels);
     CHECK(s_rects[1].x == 0x3C0 && s_rects[1].y == 0x1F0);
     CHECK(s_rects[1].w == 4 && s_rects[1].h == 0x10);
 

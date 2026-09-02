@@ -46,7 +46,7 @@ void AdvanceSaveHeaderCounter(void);
 void RestartMemoryCard(void);
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
 void BuildSaveIconBlock(
-    u8 *block,
+    GameSaveIconBlock *block,
     const char *title,
     s32 iconTile,
     s32 imageX,
@@ -56,9 +56,9 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block);
 s32 WriteMemoryCardSaveFile(
     char *path,
     char *title,
-    void *iconBlock,
+    GameSaveIconBlock *iconBlock,
     GameSaveHeaderRow *header,
-    void *saveBlock);
+    GameSaveBlock *saveBlock);
 s32 WriteMemoryCardSaveSlot(
     s32 slot,
     GameSaveHeaderRow *header);

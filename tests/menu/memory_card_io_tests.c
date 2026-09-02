@@ -149,10 +149,10 @@ void *BiosNextFile(void *entry) {
     return s_directoryNextCalls < s_directoryFiles ? entry : NULL;
 }
 
-void BuildSaveIconBlock(u8 *block, const char *title, s32 iconTile,
+void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title, s32 iconTile,
                         s32 imageX, s32 imageY) {
     (void)title; (void)iconTile; (void)imageX; (void)imageY;
-    memset(block, 0x11, 0x200);
+    memset(block, 0x11, sizeof(*block));
 }
 
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) { SealHeader(row); }
@@ -231,7 +231,7 @@ static int TestLoadAndFailuresClose(void) {
 
 static int TestWriteAndDirectoryCount(void) {
     GameSaveHeaderRow header;
-    u8 icon[0x200];
+    GameSaveIconBlock icon;
     GameSaveBlock block;
 
     ResetMock();
@@ -239,7 +239,7 @@ static int TestWriteAndDirectoryCount(void) {
     s_openResults[1] = 10;
     s_openResults[2] = 10;
     s_openResultCount = 3;
-    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, icon,
+    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, &icon,
                                   &header, &block) == 1);
     CHECK(s_writeCalls == 4);
     CHECK(s_closeCalls == 2);
@@ -249,7 +249,7 @@ static int TestWriteAndDirectoryCount(void) {
     s_openResults[0] = 10;
     s_openResultCount = 1;
     s_failWriteCall = 2;
-    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, icon,
+    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, &icon,
                                   &header, &block) == 0);
     CHECK(s_closeCalls == 1);
 

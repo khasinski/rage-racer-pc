@@ -40,9 +40,9 @@ static s32 SaveHeaderChecksumValid(const GameSaveHeaderRow *header) {
 s32 WriteMemoryCardSaveFile(
     char *path,
     char *title,
-    void *iconBlock,
+    GameSaveIconBlock *iconBlock,
     GameSaveHeaderRow *header,
-    void *saveBlock) {
+    GameSaveBlock *saveBlock) {
     s32 fd;
     s32 written;
     s32 attempt;
@@ -91,18 +91,18 @@ s32 WriteMemoryCardSaveFile(
 }
 
 s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
-    u8 block0[MC_ICON_BLOCK_SIZE];
-    _Alignas(GameSaveBlock) u8 block1[MC_BLOCK_SIZE];
+    GameSaveIconBlock block0;
+    GameSaveBlock block1;
 
-    memset(block0, 0, sizeof(block0));
+    memset(&block0, 0, sizeof(block0));
 
     GameMenuLoadPhase = 0x1000;
     return WriteMemoryCardSaveFile(
         SaveFilePath(slot),
         SaveTitle(slot),
-        block0,
+        &block0,
         header,
-        block1);
+        &block1);
 }
 
 /* The header is stored twice, at 0x1280 and at 0x200; the first copy whose
