@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "game/asset.h"
 #include "game/memcard.h"
 #include "game/menu.h"
 #include "game/state.h"
 
+s32 g_AssetLoadState;
+static u8 s_imageData[16];
+u8 *g_ImageBlockBuffer = s_imageData;
 s32 g_McFadeLevel;
 s32 g_McFadeStep;
 s32 g_McFreeBlocks;
@@ -41,6 +45,7 @@ static s32 s_displayMask;
 static s32 s_displaySetup;
 static s32 s_fadeColor;
 static s32 s_fadeTpage;
+static s32 s_imageUploads;
 static s32 s_failures;
 
 #define CHECK(condition)                                                                  \
@@ -99,6 +104,11 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
     s_fadeTpage = tpage;
 }
 
+void UploadImageAsset(GameImageAssetHeaderWord *asset) {
+    CHECK(asset == GetImageAssetHeaderWords(g_ImageBlockBuffer));
+    s_imageUploads++;
+}
+
 static void Reset(void) {
     s32 i;
 
@@ -114,6 +124,8 @@ static void Reset(void) {
     s_displaySetup = 0;
     s_fadeColor = -1;
     s_fadeTpage = -1;
+    s_imageUploads = 0;
+    g_AssetLoadState = 0;
     g_McFreeBlocks = 1;
     g_McMenuPage = 1;
     g_McMenuRowCursor = 0;
@@ -189,6 +201,23 @@ static void TestMenuLifecycle(void) {
     CHECK(s_stopEvents == 1 && g_McFadeStep == 8);
     DrawMenuFadeOverlay(123);
     CHECK(s_fadeColor == 123 && s_fadeTpage == 0x40);
+
+    Reset();
+    g_AssetLoadState = 1;
+    g_McMenuState = 99;
+    EnterMemoryCardMenuFromLoad();
+    CHECK(s_displayMask == 0 && s_displaySetup == 1);
+    CHECK(s_imageUploads == 0 && s_startEvents == 0);
+    CHECK(g_McMenuState == 99);
+
+    g_AssetLoadState = 0;
+    EnterMemoryCardMenuFromLoad();
+    CHECK(s_displaySetup == 2 && s_imageUploads == 1 && s_startEvents == 1);
+    CHECK(g_McMenuRowCount == 3 && g_McMenuRowCursor == 2);
+    CHECK(g_McMenuState == -1 && g_McMenuPage == 0);
+    CHECK(g_McFromLoadMenu == 1 && g_SceneTimer == 0);
+    CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
+    CHECK(g_SceneId == 0x1A);
 }
 
 int main(void) {
