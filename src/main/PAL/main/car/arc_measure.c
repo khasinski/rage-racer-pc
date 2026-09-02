@@ -1,16 +1,13 @@
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_state.h"
 #include "game/track_internal.h"
 
 static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
-    s32 radius = rcos(angle) * offsetX + rsin(angle) * offsetZ;
-
-    if (radius < 0) {
-        radius += 0xFFF;
-    }
-    return radius >> 12;
+    return CarTrackFixed12ToInteger(
+        rcos(angle) * offsetX + rsin(angle) * offsetZ);
 }
 
 /*
@@ -19,10 +16,8 @@ static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
  * Everything here is measured from the arc's centre: the offsets to it, the
  * angle each one stands at, and the radius each one is out by. The radius is
  * the offset projected onto its own angle, which is the offset's own length:
- * geometry alone never makes it negative. The bias before the shift is there
- * for the case where the fixed-point product overflows, and it rounds that
- * the way retail's division did. Nothing in the test sweep reaches it, and
- * removing it passes: it guards arithmetic, not shape.
+ * geometry alone never makes it meaningfully negative; fixed-point rounding
+ * is shared with the other track projections.
  *
  * Two callers worked this out, thirty lines each, identical but for their
  * bracketing. They then diverge on what to do with the span between the two
