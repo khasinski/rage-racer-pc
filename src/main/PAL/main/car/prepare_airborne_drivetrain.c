@@ -10,12 +10,11 @@ enum {
 void PrepareAirborneDrivetrain(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     const GameCarSpec *spec = g_CarSpec;
-    s32 gearRatio = GetPositiveCarGearRatio(spec, drive->gear);
     s32 rpm;
 
     drive->drivetrainTorque =
         (100 - (drive->gear - 1) * 4) * 10000 * car->speed / 100;
-    rpm = car->speed * 160 / 1168 * 10000 / gearRatio;
+    rpm = CalculateAirborneEngineRpm(spec, drive->gear, car->speed);
 
     drive->jumpTimer = AIRBORNE_SHIFT_FRAMES;
     drive->motionState = CAR_MOTION_AIRBORNE;

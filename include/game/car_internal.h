@@ -12,6 +12,13 @@ static inline s32 NormalizeCarLaunchThresholdIndex(s32 index) {
     return index < 0 ? index + CAR_LAUNCH_THRESHOLD_COUNT : index;
 }
 
+static inline s32 CalculateAirborneEngineRpm(const GameCarSpec *spec,
+                                             s32 gear, s32 speed) {
+    s32 gearRatio = GetPositiveCarGearRatio(spec, gear);
+
+    return speed * 160 / 1168 * 10000 / gearRatio;
+}
+
 extern u32 g_CarModelSlot;
 extern RaceIntroCameraKey *g_RaceIntroCameraCursor;
 extern LaunchSpeedThreshold

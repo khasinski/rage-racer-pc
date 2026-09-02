@@ -22,9 +22,8 @@ void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
         *acceleration = 0;
         targetGear = drive->gear;
         if (drive->gearDisp != targetGear) {
-            s32 targetRatio = GetPositiveCarGearRatio(spec, targetGear);
-            s32 targetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
-                            targetRatio;
+            s32 targetRpm =
+                CalculateAirborneEngineRpm(spec, targetGear, car->speed);
             u16 currentRpm = (u16)drive->engineRpm;
 
             g_ShiftTargetRpm = targetRpm;
