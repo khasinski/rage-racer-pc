@@ -348,7 +348,7 @@ set_tests_properties(car_ai PROPERTIES LABELS functional)
 
 add_executable(car_motion_tests
     car_motion_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_body_motion.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_body_kick.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_crest_motion.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_slide.c)
 target_include_directories(car_motion_tests PRIVATE
