@@ -7,7 +7,16 @@
 
 enum {
     FIRST_FORWARD_GEAR = 1,
+    PEDAL_LATCH_ARM_THRESHOLD = 0x85,
+    PEDAL_LATCH_RELEASE_THRESHOLD = 0x7C,
+    ENGINE_RPM_LIMIT = 0x3A98,
+    STOPPED_SPEED_THRESHOLD = 8,
 };
+
+typedef struct DrivetrainGearData {
+    const s32 *torqueCurve;
+    s32 ratio;
+} DrivetrainGearData;
 
 static s16 ClampDrivetrainGear(s16 gear) {
     if (gear < FIRST_FORWARD_GEAR) {
@@ -27,13 +36,68 @@ static s16 ClampDrivetrainGear(s16 gear) {
  */
 static void LatchPedal(s16 *latch, s32 input) {
     if (*latch == 0) {
-        if (input >= 0x85) {
+        if (input >= PEDAL_LATCH_ARM_THRESHOLD) {
             *latch = 1;
         }
     } else if (*latch == 1) {
         *latch = 2;
-    } else if (input < 0x7C) {
+    } else if (input < PEDAL_LATCH_RELEASE_THRESHOLD) {
         *latch = 0;
+    }
+}
+
+static DrivetrainGearData SelectDrivetrainGearData(GameCarDrive *drive,
+                                                    const GameCarSpec *spec) {
+    DrivetrainGearData data = {
+        .torqueCurve = g_GearTorqueCurve[drive->gear].values,
+        .ratio = GetCarGearLoad(spec, drive->gear),
+    };
+
+    if (g_RacePhase < 2) {
+        drive->gearDisp = drive->gear;
+        data.ratio = GetCarGearLoad(spec, FIRST_FORWARD_GEAR);
+        data.torqueCurve = g_GearTorqueCurve[0].values;
+    } else if (drive->motionState == CAR_MOTION_STANDING_START &&
+               (drive->acceleratorInput.value < 0x40 ||
+                drive->brakeInput >= 0x80)) {
+        data.torqueCurve = g_GearTorqueCurve[0].values;
+    }
+    return data;
+}
+
+static s32 UpdatePedalLatchesAndGrip(GameCarDrive *drive) {
+    s32 acceleratorGripNumerator;
+    s32 acceleratorGripCost;
+    s32 gripBudget;
+
+    LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
+    LatchPedal(&drive->brakeLatch, drive->brakeInput);
+    acceleratorGripNumerator = drive->acceleratorInput.value * 0x64;
+    acceleratorGripCost = acceleratorGripNumerator >> 8;
+    if (acceleratorGripNumerator < 0) {
+        acceleratorGripCost = (acceleratorGripNumerator + 0xFF) >> 8;
+    }
+    gripBudget = 0x17C - acceleratorGripCost;
+    return gripBudget + drive->brakeInput * 0x64 / 256;
+}
+
+static void UpdateEngineRpm(GameCarDrive *drive,
+                            const CarDrivetrainLoads *loads) {
+    if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
+        drive->engineRpm += loads->throttleAcceleration -
+                            loads->accelerationResistance -
+                            loads->steeringResistance;
+    }
+    if (drive->engineRpm < 0) {
+        drive->engineRpm = 0;
+    } else if (drive->engineRpm > ENGINE_RPM_LIMIT) {
+        drive->engineRpm = ENGINE_RPM_LIMIT;
+    }
+}
+
+static void AlignStoppedCarHeading(PlayerCarRuntime *car) {
+    if (car->speed < STOPPED_SPEED_THRESHOLD) {
+        car->headingAngle = car->bodyYaw;
     }
 }
 
@@ -57,7 +121,7 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
                               const GameCarSpec *spec, s32 gearTorque) {
     s32 speedScale;
 
-    if (car->verticalMotionState != 0) {
+    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         car->acceleration = 0;
         speedScale = 0x3E7;
         car->speed = car->speed * speedScale / 1000;
@@ -85,18 +149,18 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
 
 static void DispatchCarMotion(PlayerCarRuntime *car) {
     switch (car->drive.motionState) {
-        case CAR_MOTION_DRIVING:
-            UpdateCarDriving(car);
-            break;
-        case CAR_MOTION_TAKEOFF:
-            UpdateCarLaunch(car);
-            break;
-        case CAR_MOTION_AIRBORNE:
-            UpdateCarAirborne(car);
-            break;
-        case CAR_MOTION_STANDING_START:
-            UpdateCarStandingStart(car);
-            break;
+    case CAR_MOTION_DRIVING:
+        UpdateCarDriving(car);
+        break;
+    case CAR_MOTION_TAKEOFF:
+        UpdateCarLaunch(car);
+        break;
+    case CAR_MOTION_AIRBORNE:
+        UpdateCarAirborne(car);
+        break;
+    case CAR_MOTION_STANDING_START:
+        UpdateCarStandingStart(car);
+        break;
     }
 }
 
@@ -104,10 +168,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     const GameCarSpec *spec = g_CarSpec;
     s16 gear = ClampDrivetrainGear(drive->gear);
-    const s32 *gearCurve = g_GearTorqueCurve[gear].values;
-    s32 gearRatio = GetCarGearLoad(spec, gear);
-    s32 acceleratorGripNumerator;
-    s32 acceleratorGripCost;
+    DrivetrainGearData gearData;
     s32 gripBudget;
     s32 initialAcceleration;
     s32 bandScale;
@@ -116,47 +177,23 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     CarDrivetrainLoads loads;
 
     drive->gear = gear;
-    if (g_RacePhase < 2) {
-        drive->gearDisp = gear;
-        gearRatio = spec->gearLoad[1];
-        gearCurve = g_GearTorqueCurve[0].values;
-    } else if (drive->motionState == CAR_MOTION_STANDING_START &&
-               (drive->acceleratorInput.value < 0x40 ||
-                drive->brakeInput >= 0x80)) {
-        gearCurve = g_GearTorqueCurve[0].values;
-    }
-
-    LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
-    LatchPedal(&drive->brakeLatch, drive->brakeInput);
-    acceleratorGripNumerator = drive->acceleratorInput.value * 0x64;
-    acceleratorGripCost = acceleratorGripNumerator >> 8;
-    if (acceleratorGripNumerator < 0) {
-        acceleratorGripCost = (acceleratorGripNumerator + 0xFF) >> 8;
-    }
-    gripBudget = 0x17C - acceleratorGripCost;
-    gripBudget += (drive->brakeInput * 0x64) / 256;
+    gearData = SelectDrivetrainGearData(drive, spec);
+    gripBudget = UpdatePedalLatchesAndGrip(drive);
     UpdateCarSteeringGrip(car, spec, gripBudget);
 
-    initialAcceleration = CalculateCarInitialAcceleration(drive, gearRatio);
+    initialAcceleration =
+        CalculateCarInitialAcceleration(drive, gearData.ratio);
     /* If RPM falls between configured bands, retail keeps the raw wheel/load
      * difference rather than replacing it with an interpolated curve value. */
-    netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
-    ReadCarEngineTorque(drive, spec, gearCurve, &netTorque, &bandScale);
+    netTorque = gearData.ratio * drive->engineRpm - drive->drivetrainTorque;
+    ReadCarEngineTorque(drive, spec, gearData.torqueCurve,
+                        &netTorque, &bandScale);
     UpdateCarGearShiftState(car, spec, &initialAcceleration);
     loads = CalculateCarDrivetrainLoads(
         car, spec, netTorque, bandScale, initialAcceleration);
-    if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
-        drive->engineRpm += loads.throttleAcceleration -
-                            loads.accelerationResistance -
-                            loads.steeringResistance;
-    }
-    if (drive->engineRpm < 0) {
-        drive->engineRpm = 0;
-    } else if (drive->engineRpm >= 0x3A99) {
-        drive->engineRpm = 0x3A98;
-    }
+    UpdateEngineRpm(drive, &loads);
 
-    gearTorque = gearRatio * drive->engineRpm;
+    gearTorque = gearData.ratio * drive->engineRpm;
     drive->drivetrainTorque = gearTorque;
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
         UpdateTakeoffSpeed(car, drive, loads.steeringResistance);
@@ -164,15 +201,11 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
         UpdateDrivenSpeed(car, drive, spec, gearTorque);
     }
 
-    if (car->speed < 8) {
-        car->headingAngle = car->bodyYaw;
-    }
+    AlignStoppedCarHeading(car);
     if (g_RacePhase >= 2) {
         DispatchCarMotion(car);
     } else {
         car->speed = 0;
     }
-    if (car->speed < 8) {
-        car->headingAngle = car->bodyYaw;
-    }
+    AlignStoppedCarHeading(car);
 }
