@@ -37,6 +37,28 @@ typedef struct PathSceneryClock {
     s16 posFrame;
     s16 rotFrame;
 } PathSceneryClock;
+typedef struct PathSceneryTransform {
+    Block16 position;
+    SVec rotation;
+} PathSceneryTransform;
+typedef union PathSceneryRate {
+    u16 value;
+    s16 signedValue;
+} PathSceneryRate;
+typedef union PathSceneryPhase {
+    u16 value;
+    s16 signedValue;
+} PathSceneryPhase;
+typedef struct PathSceneryCursors {
+    PathSceneryPhase posPhase;
+    PathSceneryPhase rotPhase;
+    s16 posSpan;
+    s16 rotSpan;
+    PathSceneryRate posRate;
+    PathSceneryRate rotRate;
+    s16 posIndex;
+    s16 rotIndex;
+} PathSceneryCursors;
 typedef struct SpinningSceneryPlacement {
     LVec position;
     s32 yaw;
@@ -240,10 +262,10 @@ PathSceneryPositionData *g_PathSceneryPosData;
 s32 g_CourseObjectCount;
 Vec4 *g_VisibleCellList;
 PathSceneryClock g_PathSceneryClock;
-unsigned char g_PathSceneryTransform[24] __attribute__((aligned(16)));
-unsigned char g_PathSceneryRotHalfDelta[8] __attribute__((aligned(16)));
-unsigned char g_PathSceneryHalfDelta[8] __attribute__((aligned(16)));
-unsigned char g_PathSceneryCursors[16] __attribute__((aligned(16)));
+PathSceneryTransform g_PathSceneryTransform __attribute__((aligned(16)));
+s16 g_PathSceneryRotHalfDelta[3] __attribute__((aligned(16)));
+s16 g_PathSceneryHalfDelta[3] __attribute__((aligned(16)));
+PathSceneryCursors g_PathSceneryCursors __attribute__((aligned(16)));
 s32 g_PathSceneryVolume;
 s32 g_EnvironmentModePrev;
 /* The symbol map split the two retail 0x34-byte shuttle records after the
