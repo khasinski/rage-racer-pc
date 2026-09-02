@@ -41,7 +41,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
 }
 
 s32 PollAudioSlotLoad(void) {
-    s16 completed;
+    s32 completed;
     s32 slot;
 
     completed = SsVabTransCompleted(0);
@@ -49,6 +49,9 @@ s32 PollAudioSlotLoad(void) {
 
     if (completed != 0) {
         slot = g_AudioLoadSlot;
+        if ((u32)slot >= AUDIO_SLOT_COUNT) {
+            return completed;
+        }
         g_AudioLoadedSlotMask |= 1 << slot;
 
         if (slot == AUDIO_SLOT_MAIN_CUES) {
@@ -65,11 +68,13 @@ s32 PollAudioSlotLoad(void) {
 }
 
 static s32 CloseVabOnlyAudioSlot(s32 slot) {
+    s32 bit;
+
     if (slot < 0 || slot >= AUDIO_SLOT_COUNT) {
         return 0;
     }
 
-    s32 bit = 1 << slot;
+    bit = 1 << slot;
 
     if ((bit & g_AudioLoadedSlotMask) == 0) {
         return 0;

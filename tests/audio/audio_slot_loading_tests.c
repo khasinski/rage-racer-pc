@@ -127,6 +127,12 @@ int main(void) {
     CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
 
     s_completed = 1;
+    g_AudioLoadSlot = -1;
+    g_AudioLoadedSlotMask = 0;
+    g_SoundCueBank = -1;
+    CHECK(PollAudioSlotLoad() == 1);
+    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
+
     g_AudioLoadSlot = 1;
     CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 1);
     g_AudioLoadSlot = 2;
