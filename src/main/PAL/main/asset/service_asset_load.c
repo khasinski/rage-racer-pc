@@ -35,8 +35,8 @@ void ServiceAssetLoad(void) {
     case ASSET_REQUEST_GRAND_PRIX_SCREEN:
         LoadGrandPrixScreen();
         break;
-    case ASSET_REQUEST_COURSE:
-        LoadCourseAssets();
+    case ASSET_REQUEST_COURSE_TEXTURES:
+        LoadCourseTextureAssets();
         break;
     case ASSET_REQUEST_TRACK_DATA:
         LoadTrackDataAssets();

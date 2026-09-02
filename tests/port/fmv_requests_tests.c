@@ -75,7 +75,7 @@ void LoadOptionScreenAssets(void) { s_loaderCall = LOADER_OPTION; }
 void LoadRoundAssets(void) { s_loaderCall = LOADER_ROUND; }
 void LoadRaceAssets(void) { s_loaderCall = LOADER_RACE; }
 void LoadGrandPrixScreen(void) { s_loaderCall = LOADER_GP_SCREEN; }
-void LoadCourseAssets(void) { s_loaderCall = LOADER_COURSE; }
+void LoadCourseTextureAssets(void) { s_loaderCall = LOADER_COURSE; }
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -178,7 +178,7 @@ static void TestAssetDispatch(void) {
     CheckDispatch(ASSET_REQUEST_ROUND_SCREEN, LOADER_ROUND);
     CheckDispatch(ASSET_REQUEST_RACE, LOADER_RACE);
     CheckDispatch(ASSET_REQUEST_GRAND_PRIX_SCREEN, LOADER_GP_SCREEN);
-    CheckDispatch(ASSET_REQUEST_COURSE, LOADER_COURSE);
+    CheckDispatch(ASSET_REQUEST_COURSE_TEXTURES, LOADER_COURSE);
 
     g_AssetRequestType = ASSET_REQUEST_INVALID;
     g_AssetLoadState = 1;

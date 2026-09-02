@@ -38,7 +38,7 @@ typedef enum AssetRequestType {
     ASSET_REQUEST_ROUND_SCREEN,
     ASSET_REQUEST_RACE,
     ASSET_REQUEST_GRAND_PRIX_SCREEN,
-    ASSET_REQUEST_COURSE,
+    ASSET_REQUEST_COURSE_TEXTURES,
     ASSET_REQUEST_TRACK_DATA
 } AssetRequestType;
 
@@ -390,10 +390,13 @@ void LoadRoundAssets(void);
  * course's <COURSE>n.1ST and <COURSE>n.2ND packs. */
 s32 RequestRaceAssets(void);
 void LoadRaceAssets(void);
+/* Phase 10: load <COURSE>n.1ST into g_AssetBase for later installation by a
+ * scene transition. */
+s32 RequestCourseTextureAssets(void);
+void LoadCourseTextureAssets(void);
 /* Phase 12: <COURSE>n.2ND, handing its 11 sub-blocks to the track subsystems. */
+s32 RequestTrackDataAssets(void);
 void LoadTrackDataAssets(void);
-/* Unpack the already-resident <COURSE>n.1ST pack out of g_AssetBase (the same
- * work LoadRaceAssets does in its step 5). */
 /* Copy the live car model into g_AssetBase and re-register its bank there. */
 void RelocateCarModel(void);
 
@@ -473,12 +476,10 @@ void InstallTrackEventData(struct TrackEventData *eventData);
 void InstallTrackPoints(struct TrackPointTable *trackData);
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera);
-void LoadCourseAssets(void);
 void LoadGrandPrixScreen(void);
 s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index);
 s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size);
 s32 RequestRaceStart(void);
-s32 RequestTrackLoad(void);
 void RequestCarModel(s32 carIndex);
 void RequestOptionScreenAssets(void);
 void RequestUpgradedCarModel(s32 carIndex);
@@ -488,7 +489,6 @@ void StoreTeamLogoImage(void* dst);
 void UploadImageAsset(GameImageAssetHeaderWord *asset);
 void UploadImageEntry(GameImageEntryHeader *entry);
 void UploadLoadBufferImage(void);
-s32 RequestTrackDataAssets(void);
 s32 GetCarAssetIndex(s32 model, s32 grade);
 
 /* Declared identically by 19 translation units before this

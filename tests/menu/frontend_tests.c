@@ -66,7 +66,7 @@ void BeginIntroFmv(s32 scene) {
     (void)scene;
     s_fmvCalls++;
 }
-s32 RequestTrackLoad(void) {
+s32 RequestCourseTextureAssets(void) {
     s_trackRequests++;
     return 0;
 }

@@ -341,12 +341,14 @@ static void TestRaceStartAndCourseRequests(void) {
           "Grand Prix screen completes after load");
 
     g_AssetRequestType = ASSET_REQUEST_IDLE;
-    Check(RequestTrackLoad() == 1, "new course request pending");
-    Check(g_AssetRequestType == ASSET_REQUEST_COURSE &&
+    Check(RequestCourseTextureAssets() == 1,
+          "new course-texture request pending");
+    Check(g_AssetRequestType == ASSET_REQUEST_COURSE_TEXTURES &&
               g_AssetLoadState == 1,
-          "course request initializes loader");
+          "course-texture request initializes loader");
     g_AssetLoadState = 0;
-    Check(RequestTrackLoad() == 0, "course request acknowledged");
+    Check(RequestCourseTextureAssets() == 0,
+          "course-texture request acknowledged");
 
     g_CourseIndex = 1;
     g_GrandPrixClass = 2;
@@ -354,16 +356,16 @@ static void TestRaceStartAndCourseRequests(void) {
     g_ImageBlockBuffer = NULL;
     s_loadAssetIndex = -1;
     g_AssetLoadState = 0;
-    LoadCourseAssets();
+    LoadCourseTextureAssets();
     Check(s_loadAssetIndex == -1,
           "course loader ignores inactive loader states");
     g_AssetLoadState = 1;
     s_loadResult = 0;
-    LoadCourseAssets();
+    LoadCourseTextureAssets();
     Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
           "course loader waits without publishing an incomplete pack");
     s_loadResult = 20;
-    LoadCourseAssets();
+    LoadCourseTextureAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_1ST_BASE + 18,
           "standalone course asset index");
     Check(s_loadDestination == storage && g_ImageBlockBuffer == storage + 20 &&

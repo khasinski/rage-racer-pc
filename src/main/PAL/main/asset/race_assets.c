@@ -172,12 +172,12 @@ void LoadGrandPrixScreen(void) {
     }
 }
 
-s32 RequestTrackLoad(void) {
-    return RequestAssetLoad(ASSET_REQUEST_COURSE,
+s32 RequestCourseTextureAssets(void) {
+    return RequestAssetLoad(ASSET_REQUEST_COURSE_TEXTURES,
                             COURSE_LOAD_TEXTURE_ASSET, 0);
 }
 
-void LoadCourseAssets(void) {
+void LoadCourseTextureAssets(void) {
     s32 loadedSize;
     s32 assetIndex;
 

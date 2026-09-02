@@ -254,7 +254,7 @@ void UpdateMainMenuInput(void) {
             if (g_GrandPrixSave.maxClassReached == -1) {
                 g_GrandPrixClass = 0;
                 g_CourseIndex = 3;
-                RequestTrackLoad();
+                RequestCourseTextureAssets();
             } else {
                 RequestSelectBgmAssetsKeepAudioSlots();
             }
@@ -267,7 +267,7 @@ void UpdateMainMenuInput(void) {
             if (g_ExtraGrandPrixSaveMaxClass == -1) {
                 g_GrandPrixClass = 0;
                 g_CourseIndex = 3;
-                RequestTrackLoad();
+                RequestCourseTextureAssets();
             } else {
                 RequestSelectBgmAssetsKeepAudioSlots();
             }

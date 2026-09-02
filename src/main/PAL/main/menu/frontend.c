@@ -103,7 +103,7 @@ static void UpdateAttractRaceLoading(void) {
         if (g_GrandPrixClass < 2 && randomCourse == 3) {
             g_CourseIndex = (Random15() & 0xFFF) % 3;
         }
-        RequestTrackLoad();
+        RequestCourseTextureAssets();
         g_SceneTimer++;
         break;
     case FRONTEND_ATTRACT_START_RACE:

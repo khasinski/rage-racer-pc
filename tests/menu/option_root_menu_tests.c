@@ -68,7 +68,7 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 void BeginControllerConfig(void) { s_controllerConfigCalls++; }
 s32 Random15(void) { return s_randomValues[s_randomIndex++]; }
-s32 RequestTrackLoad(void) {
+s32 RequestCourseTextureAssets(void) {
     s_trackLoadCalls++;
     return 0;
 }
