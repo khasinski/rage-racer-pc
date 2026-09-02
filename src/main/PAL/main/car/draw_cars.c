@@ -18,7 +18,7 @@ void DrawCars(void) {
     }
 }
 
-void DrawPlayerCarOnly(void) {
+void DrawReplayRivalCar(void) {
     SelectModelBank(CAR_MODEL_BANK);
     DrawCar(GetCarRenderObject(g_Cars));
 }

@@ -53,7 +53,7 @@ void UpdateReplayScene(void) {
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     if (g_GrandPrixMode != 0) {
-        DrawPlayerCarOnly();
+        DrawReplayRivalCar();
     }
     DrawCourseObjects();
     DrawCourseScenery2(g_SceneTimer, 1);

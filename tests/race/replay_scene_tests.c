@@ -28,7 +28,7 @@ static s32 s_FadeUpdates;
 static s32 s_CarUpdates;
 static s32 s_CameraUpdates;
 static s32 s_TerrainDraws;
-static s32 s_PlayerCarDraws;
+static s32 s_RivalCarDraws;
 static s32 s_ObjectDraws;
 static s32 s_SceneryDraws;
 static s32 s_EnvironmentUpdates;
@@ -58,7 +58,7 @@ void UpdateCamera(CameraViewMode mode, GameRenderObject *car) {
     s_CameraUpdates++;
 }
 void DrawTerrainCellsWide(void) { s_TerrainDraws++; }
-void DrawPlayerCarOnly(void) { s_PlayerCarDraws++; }
+void DrawReplayRivalCar(void) { s_RivalCarDraws++; }
 void DrawCourseObjects(void) { s_ObjectDraws++; }
 void DrawCourseScenery2(s32 timer, s32 animate) {
     assert(timer == g_SceneTimer);
@@ -107,7 +107,7 @@ static void ResetState(void) {
     s_CarUpdates = 0;
     s_CameraUpdates = 0;
     s_TerrainDraws = 0;
-    s_PlayerCarDraws = 0;
+    s_RivalCarDraws = 0;
     s_ObjectDraws = 0;
     s_SceneryDraws = 0;
     s_EnvironmentUpdates = 0;
@@ -129,7 +129,7 @@ static void TestFirstTimeAttackFrame(void) {
     assert(s_AppliedCursor == 7 && g_ReplayReadCursor == 8);
     assert(s_FadeUpdates == 1 && s_CarUpdates == 1);
     assert(s_CameraUpdates == 1 && s_TerrainDraws == 1);
-    assert(s_PlayerCarDraws == 0);
+    assert(s_RivalCarDraws == 0);
     assert(s_ObjectDraws == 1 && s_SceneryDraws == 1);
     assert(s_EnvironmentUpdates == 1 && s_SkyDraws == 1);
     assert(g_RenderState.envMode4 == 3);
@@ -144,7 +144,7 @@ static void TestGrandPrixResultCueAndCar(void) {
 
     UpdateReplayScene();
 
-    assert(s_PlayerCarDraws == 1);
+    assert(s_RivalCarDraws == 1);
     assert(s_SoundCues == 1 && s_LastSoundCue == 0x40);
     assert(s_TextureSets == 0);
 }

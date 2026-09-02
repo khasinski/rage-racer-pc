@@ -39,7 +39,7 @@ int main(void) {
 
     s_drawCount = 0;
     s_selectedBank = -1;
-    DrawPlayerCarOnly();
+    DrawReplayRivalCar();
     CHECK(s_selectedBank == 1 && s_drawCount == 1);
     CHECK(s_drawn[0] == &g_Cars[0]);
 

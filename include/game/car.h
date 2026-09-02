@@ -750,7 +750,7 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index);
 /* Selects model bank 1 and calls DrawCar for each of the 11 runtime cars
  * whose activeFlag != -1 and aiEnabled == 1. */
 void DrawCars(void);
-void DrawPlayerCarOnly(void);
+void DrawReplayRivalCar(void);
 /*
  * The player's own 0x19C-byte car object.
  */
