@@ -107,8 +107,6 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table);
 s32 PollAudioSlotLoad(void);
 void SetPanVoiceTargetVolume(s32 left, s32 right);
 void ApplyPanVoiceVolume(void);
-void StartIndexedEffectVoice(s32 baseTone);
-void StopIndexedEffectVoice(void);
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
 void UpdateIndexedEffectVoice(void);
 /*

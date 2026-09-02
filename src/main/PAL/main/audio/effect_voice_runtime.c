@@ -75,12 +75,12 @@ void ForcePanVoiceEnabled(s32 enabled) {
     }
 }
 
-void StartIndexedEffectVoice(s32 baseTone) {
+static void StartIndexedEffectVoice(s32 baseTone) {
     SsUtKeyOnV(INDEXED_EFFECT_VOICE, g_SoundScale.vabIds[0], (s16)baseTone,
                0, EFFECT_BASE_NOTE, 0, 0, 0);
 }
 
-void StopIndexedEffectVoice(void) {
+static void StopIndexedEffectVoice(void) {
     SsUtKeyOffV(INDEXED_EFFECT_VOICE);
 }
 
