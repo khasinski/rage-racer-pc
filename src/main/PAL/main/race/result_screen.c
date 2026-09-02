@@ -11,7 +11,7 @@
 
 enum { RESULT_INTRO_TEXT_CAPACITY = 48 };
 
-void DrawResultScreen(void) {
+static void DrawResultBackdrop(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 courseNameY = ResultCourseNameY(g_GrandPrixMode);
     u8 *next;
@@ -29,7 +29,7 @@ void DrawResultScreen(void) {
 void DrawCourseIntro(void) {
     DrawProportionalText(0x10, 0x1C, g_TextTimeAttack, 0x7812);
     DrawText8x8Trans(0x10, 0x39, g_TextCourseIn, 0x78CC);
-    DrawResultScreen();
+    DrawResultBackdrop();
 }
 
 static void DrawClassPlaceBanner(void) {
@@ -55,7 +55,7 @@ static void DrawResultPlace(void) {
     const ResultPlaceSpriteLayout *placeSprite;
     u8 *next;
 
-    DrawResultScreen();
+    DrawResultBackdrop();
     if (!IsValidRaceResultPlace(racePosition)) {
         return;
     }

@@ -12,7 +12,6 @@ enum { LAP_TIME_TEXT_CAPACITY = 16 };
 
 void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 timeMs);
 
-void DrawResultScreen(void);         /* "RESULT" */
 void DrawRaceEndPrompt(void);        /* "PRESS START BUTTON" */
 void DrawCourseIntro(void);          /* "COURSE IN" / "TIME ATTACK" */
 void DrawGrandPrixIntro(void);       /* "CLASS%d %s GRANDPRIX" */
