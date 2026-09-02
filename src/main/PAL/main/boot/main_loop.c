@@ -12,20 +12,7 @@
 #include "psyq/cd.h"
 #include "psyq/kernel.h"
 
-/* Scene handlers, indexed by g_SceneId. */
-
-/*
- * The PS-EXE `main`. Boots the subsystems, then never returns: each pass picks
- * the frame context, resets its two ordering tables and the render state packet
- * cursor, runs the CD / sequencer / loader services and the current scene
- * handler, waits for the frame deadline, swaps the display and refreshes the
- * pad.
- */
-void MainLoop(void) {
-    s32 frameLimit;
-    s32 elapsed;
-    s32 ticks;
-
+static void InitializeGameLoop(void) {
     KernelCallbackSlot3();
     BiosSetMemSize(2);
     CdInit();
@@ -41,44 +28,69 @@ void MainLoop(void) {
     RequestBootAssets();
     g_GameClock = 0;
     g_FrameCounter = 0;
-    for (;;) {
-        s32 parity = g_FrameCounter & 1;
-        GameFrameContext *frame = &g_FrameContexts[parity];
+}
 
-        g_DrawBuffer = frame;
-        g_FrameParity = parity;
-        RENDER_OT_BASE = frame->layout.orderingTables[0];
-        g_RenderState.packetCursor = frame->layout.primitiveBuffer;
-        GameClearOrderingTable(frame->layout.orderingTables[0],
-                               GAME_FRAME_OT_LENGTH);
-        GameClearOrderingTable(frame->layout.orderingTables[1],
-                               GAME_FRAME_OT_LENGTH);
-        TickCdAudio();
-        TickSequenceAudio();
-        ServiceAssetLoad();
-        AdvanceSaveHeaderCounter();
-        PortBeforeSceneHandler();
-        DispatchCurrentScene();
-        PortAfterSceneHandler();
-        DrawSync(0);
-        StepTrackTextureSwap();
-        frameLimit = g_FrameSyncThreshold;
-        while (VSync(1) < frameLimit) {
-            PortDuringFrameWait(frameLimit);
-        }
-        elapsed = VSync(1);
-        ticks = g_GameClock + 1;
-        g_GameClock = ticks + elapsed / 256;
-        VSync(0);
-        Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
-        PutDrawEnv(&frame->environment.draw);
-        PutDispEnv(&frame->environment.display);
-        GameDrawOrderingTable(
-            &frame->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
-        GameDrawOrderingTable(
-            &frame->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
-        PortSampleAnalogPad();
-        UpdatePadState();
+static GameFrameContext *BeginGameFrame(void) {
+    s32 parity = g_FrameCounter & 1;
+    GameFrameContext *frame = &g_FrameContexts[parity];
+
+    g_DrawBuffer = frame;
+    g_FrameParity = parity;
+    RENDER_OT_BASE = frame->layout.orderingTables[0];
+    g_RenderState.packetCursor = frame->layout.primitiveBuffer;
+    GameClearOrderingTable(frame->layout.orderingTables[0],
+                           GAME_FRAME_OT_LENGTH);
+    GameClearOrderingTable(frame->layout.orderingTables[1],
+                           GAME_FRAME_OT_LENGTH);
+    return frame;
+}
+
+static void ServiceGameFrame(void) {
+    TickCdAudio();
+    TickSequenceAudio();
+    ServiceAssetLoad();
+    AdvanceSaveHeaderCounter();
+    PortBeforeSceneHandler();
+    DispatchCurrentScene();
+    PortAfterSceneHandler();
+    DrawSync(0);
+    StepTrackTextureSwap();
+}
+
+static s32 WaitForFrameDeadline(void) {
+    s32 frameLimit = g_FrameSyncThreshold;
+
+    while (VSync(1) < frameLimit) {
+        PortDuringFrameWait(frameLimit);
+    }
+    return VSync(1);
+}
+
+static void PresentGameFrame(GameFrameContext *frame) {
+    VSync(0);
+    Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
+    PutDrawEnv(&frame->environment.draw);
+    PutDispEnv(&frame->environment.display);
+    GameDrawOrderingTable(
+        &frame->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
+    GameDrawOrderingTable(
+        &frame->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
+    PortSampleAnalogPad();
+    UpdatePadState();
+}
+
+/* Boots the game and runs frames until the host requests shutdown. */
+void MainLoop(void) {
+    InitializeGameLoop();
+
+    for (;;) {
+        GameFrameContext *frame = BeginGameFrame();
+        s32 elapsed;
+
+        ServiceGameFrame();
+        elapsed = WaitForFrameDeadline();
+        g_GameClock += 1 + elapsed / 256;
+        PresentGameFrame(frame);
         g_FrameCounter++;
         if (PortShouldExit(g_FrameCounter)) {
             return;

@@ -74,9 +74,7 @@ extern s32 g_GameMode;
 #define g_GameModeHandlers g_NativeGameModeHandlers
 extern void (*g_GameModeHandlers[])(void);
 
-/* MainLoop is the PS-EXE `main` and never returns: init chain, then an
- * endless per-frame loop (CD audio, sequencer, asset loads, the current
- * g_GameModeHandlers entry, VSync, display swap, UpdatePadState). */
+/* Boot the game and run frames until the host requests shutdown. */
 void MainLoop(void);
 void InitSubsystems(void);
 
