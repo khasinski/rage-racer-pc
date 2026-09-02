@@ -9,10 +9,23 @@ enum PaintColor {
     PAINT_BLUE_SHIFT = 10,
     PAINT_HALVED_MASK = 0x3DEF,
     PAINT_COLOR_COUNT = 18,
+    PAINT_GRADIENT_STOP_COUNT = 5,
+    PRIMARY_THREE_STOP_SLOT_COUNT = 9,
+    SECONDARY_THREE_STOP_SLOT_COUNT = 8,
+    FOUR_STOP_SLOT_COUNT = 4,
+    PRIMARY_THREE_STOP_COLUMN = 0,
+    SECONDARY_THREE_STOP_COLUMN = 3,
+    PRIMARY_FOUR_STOP_COLUMN = 0,
+    SECONDARY_FOUR_STOP_COLUMN = 4,
 };
 
+typedef enum PaintLayer {
+    PAINT_LAYER_PRIMARY,
+    PAINT_LAYER_SECONDARY,
+} PaintLayer;
+
 typedef struct PaintGradient {
-    u16 stops[5];
+    u16 stops[PAINT_GRADIENT_STOP_COUNT];
 } PaintGradient;
 
 static u16 AveragePaintColour(u32 colour0, u32 colour1) {
@@ -32,10 +45,13 @@ static PaintGradient BuildFourStopPaintGradient(u32 colour0, u32 colour1) {
                ((colour1 >> PAINT_BLUE_SHIFT) & PAINT_CHANNEL_MASK);
 
     gradient.stops[0] = (u16)colour0;
-    gradient.stops[1] = (u16)(((blue * 2 / 3) << PAINT_BLUE_SHIFT) +
-                              (green * 2 / 3) * 32 + red * 2 / 3 + PAINT_STP);
-    gradient.stops[2] = (u16)(((blue / 3) << PAINT_BLUE_SHIFT) +
-                              (green / 3) * 32 + red / 3 + PAINT_STP);
+    gradient.stops[1] =
+        (u16)(((blue * 2 / 3) << PAINT_BLUE_SHIFT) +
+              ((green * 2 / 3) << PAINT_GREEN_SHIFT) +
+              red * 2 / 3 + PAINT_STP);
+    gradient.stops[2] =
+        (u16)(((blue / 3) << PAINT_BLUE_SHIFT) +
+              ((green / 3) << PAINT_GREEN_SHIFT) + red / 3 + PAINT_STP);
     gradient.stops[3] = (u16)colour1;
     gradient.stops[4] = 0;
     return gradient;
@@ -86,7 +102,7 @@ static void WriteFourStopPaintGradient(u16 *palette, const u16 *slots,
 }
 
 static void ApplyBodyColours(u32 colour, CarImageData *imageData,
-                             s32 secondColour) {
+                             PaintLayer layer) {
     if (colour >= PAINT_COLOR_COUNT) {
         colour = 0;
     }
@@ -97,22 +113,26 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
     PaintGradient fiveStop = BuildFiveStopPaintGradient(primary, secondary);
     s32 i;
 
-    if (secondColour) {
-        WriteThreeStopPaintGradient(palette, g_PaintSlots3StopB, 8, 3,
-                                    primary, secondary);
-        WriteFourStopPaintGradient(palette, g_PaintSlots4Stop, 4, 4,
-                                   primary, secondary);
-        for (i = 0; i < 5; i++) {
+    if (layer == PAINT_LAYER_SECONDARY) {
+        WriteThreeStopPaintGradient(
+            palette, g_PaintSlots3StopB, SECONDARY_THREE_STOP_SLOT_COUNT,
+            SECONDARY_THREE_STOP_COLUMN, primary, secondary);
+        WriteFourStopPaintGradient(
+            palette, g_PaintSlots4Stop, FOUR_STOP_SLOT_COUNT,
+            SECONDARY_FOUR_STOP_COLUMN, primary, secondary);
+        for (i = 0; i < PAINT_GRADIENT_STOP_COUNT; i++) {
             imageData->paintPalette.gradients.bodyColor2Gradient[i] =
                 fiveStop.stops[i];
         }
     } else {
         imageData->paintPalette.fixed.bodyColor1 = primary;
-        WriteThreeStopPaintGradient(palette, g_PaintSlots3StopA, 9, 0,
-                                    primary, secondary);
-        WriteFourStopPaintGradient(palette, g_PaintSlots4Stop, 4, 0,
-                                   primary, secondary);
-        for (i = 0; i < 5; i++) {
+        WriteThreeStopPaintGradient(
+            palette, g_PaintSlots3StopA, PRIMARY_THREE_STOP_SLOT_COUNT,
+            PRIMARY_THREE_STOP_COLUMN, primary, secondary);
+        WriteFourStopPaintGradient(
+            palette, g_PaintSlots4Stop, FOUR_STOP_SLOT_COUNT,
+            PRIMARY_FOUR_STOP_COLUMN, primary, secondary);
+        for (i = 0; i < PAINT_GRADIENT_STOP_COUNT; i++) {
             imageData->paintPalette.gradients.bodyColor1Gradient[i] =
                 fiveStop.stops[i];
         }
@@ -120,7 +140,7 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
 }
 
 void ApplyBodyColor1(u32 colour, CarImageData *imageData) {
-    ApplyBodyColours(colour, imageData, 0);
+    ApplyBodyColours(colour, imageData, PAINT_LAYER_PRIMARY);
 }
 
 void SetBodyColor1(s32 colour) {
@@ -129,7 +149,7 @@ void SetBodyColor1(s32 colour) {
 }
 
 void ApplyBodyColor2(u32 colour, CarImageData *imageData) {
-    ApplyBodyColours(colour, imageData, 1);
+    ApplyBodyColours(colour, imageData, PAINT_LAYER_SECONDARY);
 }
 
 void SetBodyColor2(s32 colour) {
