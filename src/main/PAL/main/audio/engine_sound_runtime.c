@@ -8,7 +8,19 @@ enum {
 };
 
 static s32 EngineSoundPositionForRpm(s32 rpm) {
+    if (g_EngineSoundState.maxRpm <= 0) {
+        return 0;
+    }
     return rpm * ENGINE_SOUND_POSITION_RANGE / g_EngineSoundState.maxRpm;
+}
+
+static s32 ClampEngineSoundBank(s32 bank) {
+    if (bank < 0) {
+        return 0;
+    }
+    return bank >= ENGINE_SOUND_BANK_COUNT
+               ? ENGINE_SOUND_BANK_COUNT - 1
+               : bank;
 }
 
 static s32 SlotParameterIndex(s32 slot, s32 parameterOffset) {
@@ -45,6 +57,7 @@ static void UpdateActiveSoundSlotOutputs(s32 position, s32 bank) {
 }
 
 void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
+    bank = ClampEngineSoundBank(bank);
     s32 position = EngineSoundPositionForRpm(rpm);
 
     if (bank != g_EngineSoundState.bank) {

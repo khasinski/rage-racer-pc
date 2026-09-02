@@ -219,6 +219,12 @@ static int TestInactiveBankAndEngineSlot(void) {
     CHECK(s_volumeVoice == 16 && s_volumeLeft == 50 && s_volumeRight == 50);
     CHECK(s_bendVoice == 16 && s_bendVab == 12);
     CHECK(s_bendProgram == 55 && s_bendValue == 123);
+
+    s_volumeVoice = -1;
+    SetSoundSlotTone(-1, 123, 100, 1, 3);
+    SetSoundSlotTone(2, 123, 100, ENGINE_SOUND_BANK_COUNT, 3);
+    SetSoundSlotTone(2, 123, 100, 1, AUDIO_SLOT_COUNT);
+    CHECK(s_volumeVoice == -1);
     return 0;
 }
 

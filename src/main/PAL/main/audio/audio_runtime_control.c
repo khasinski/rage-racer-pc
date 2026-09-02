@@ -79,6 +79,12 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
 }
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
+    if ((u32)slot >= ENGINE_SOUND_SLOT_COUNT ||
+        (u32)tone >= ENGINE_SOUND_BANK_COUNT ||
+        (u32)vabSlot >= AUDIO_SLOT_COUNT) {
+        return;
+    }
+
     s16 hardwareVoice = (s16)(slot + FIRST_SOUND_SLOT_VOICE);
     s16 program = g_SoundSlotTone[slot][tone];
 

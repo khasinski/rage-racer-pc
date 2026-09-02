@@ -173,6 +173,12 @@ void PlaySoundCue(s32 cue) {
  * pushes it to the slot's voice, then re-pitches that voice to the tone at
  * g_SoundSlotTone[slot][toneIndex]. */
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot) {
+    if ((u32)slot >= ENGINE_SOUND_SLOT_COUNT ||
+        (u32)toneIndex >= ENGINE_SOUND_BANK_COUNT ||
+        vabSlot >= AUDIO_SLOT_COUNT) {
+        return;
+    }
+
     s16 voice = (s16)(slot + ENGINE_SLOT_VOICE_FIRST);
     s32 scaledVolume = ClampVoiceVolume(
         volume * g_SoundScale.scale / 128);

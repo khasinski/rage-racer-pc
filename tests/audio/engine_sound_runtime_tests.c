@@ -113,6 +113,15 @@ int main(void) {
     ForceSoundSlotVoicePlayback(0);
     CHECK(s_slotsEnabled == 0 && s_interpolateCalls == 0 && s_toneCalls == 0);
 
+    memset(g_EngineSoundState.slotActive, 0,
+           sizeof(g_EngineSoundState.slotActive));
+    g_EngineSoundState.maxRpm = 0;
+    UpdateLoadedAudioVoices(5000, -10);
+    CHECK(g_EngineSoundState.position == 0 && g_EngineSoundState.bank == 0);
+    UpdateLoadedAudioVoices(5000, ENGINE_SOUND_BANK_COUNT + 10);
+    CHECK(g_EngineSoundState.position == 0 &&
+          g_EngineSoundState.bank == ENGINE_SOUND_BANK_COUNT - 1);
+
     puts("engine sound runtime preserves slot routing, scaling, and updates");
     return 0;
 }

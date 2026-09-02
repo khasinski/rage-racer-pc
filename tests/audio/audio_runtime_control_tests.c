@@ -128,6 +128,12 @@ static void TestSoundSlotVoice(void) {
     PlaySoundSlotVoice(2, 1, 1);
     Check(s_voice == 16 && s_vabId == 23 && s_program == 71 && s_note == 60,
           "sound slot maps to its reserved hardware voice and program");
+
+    s_voice = -1;
+    PlaySoundSlotVoice(-1, 1, 1);
+    PlaySoundSlotVoice(2, ENGINE_SOUND_BANK_COUNT, 1);
+    PlaySoundSlotVoice(2, 1, AUDIO_SLOT_COUNT);
+    Check(s_voice == -1, "invalid sound slot routes are ignored");
 }
 
 int main(void) {
