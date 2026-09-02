@@ -283,7 +283,9 @@ set_tests_properties(car_performance_setup PROPERTIES LABELS unit)
 add_executable(drivetrain_tests
     drivetrain_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_shift.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_torque.c)
 target_include_directories(drivetrain_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -304,7 +306,9 @@ set_tests_properties(drivetrain PROPERTIES LABELS functional)
 add_executable(drivetrain_sweep_tests
     drivetrain_sweep_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_shift.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_torque.c)
 target_include_directories(drivetrain_sweep_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

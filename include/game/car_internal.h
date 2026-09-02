@@ -70,6 +70,13 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
 CarDrivetrainLoads CalculateCarDrivetrainLoads(
     PlayerCarRuntime *car, const GameCarSpec *spec, s32 netTorque,
     s32 bandScale, s32 initialAcceleration);
+void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
+                         const s32 *gearCurve, s32 *netTorque,
+                         s32 *bandScale);
+s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,
+                                    s32 gearRatio);
+void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
+                             s32 *acceleration);
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);
