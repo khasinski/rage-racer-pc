@@ -277,6 +277,7 @@ enum {
 typedef union GameImageAssetAddress {
     void *pointer;
     GameImageAssetHeaderWord *words;
+    GameImageEntryHeader *entry;
     GameImageBlock *block;
 } GameImageAssetAddress;
 
@@ -289,7 +290,10 @@ static inline GameImageAssetHeaderWord *GetImageAssetHeaderWords(
 }
 
 static inline GameImageEntryHeader *GetImageEntryHeader(void *data) {
-    return (GameImageEntryHeader *)data;
+    GameImageAssetAddress address;
+
+    address.pointer = data;
+    return address.entry;
 }
 
 /* The offset table every asset pack starts with; sub-blocks live at
@@ -309,6 +313,7 @@ typedef union GameSceneAssetAddress {
     u8 *bytes;
     void *pointer;
     GameSceneAssetHeader *header;
+    VoiceBankAssetHeader *voiceBankHeader;
 } GameSceneAssetAddress;
 
 static inline GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
@@ -316,6 +321,13 @@ static inline GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
 
     address.pointer = data;
     return address.header;
+}
+
+static inline VoiceBankAssetHeader *GetVoiceBankAssetHeader(void *data) {
+    GameSceneAssetAddress address;
+
+    address.pointer = data;
+    return address.voiceBankHeader;
 }
 
 static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offset) {
@@ -331,8 +343,8 @@ static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offse
  * advanced by byte counts (a load's returned size, TRACK_TEXTURE_SHADOW_SIZE,
  * g_SharedAssetWord0) and by offsets read out of the pack that happens to sit
  * there, so u8 * is the correct type. A pack header is a
- * view taken of the bytes at the pointer, spelled `(GameSceneAssetHeader *)cursor`
- * where a file wants one; that is a pointer-value cast and costs nothing.
+ * view taken through GetSceneAssetHeader/GetVoiceBankAssetHeader at the asset
+ * boundary; consumers then operate on a named serialized layout.
  */
 
 /*

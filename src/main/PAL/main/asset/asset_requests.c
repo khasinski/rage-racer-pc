@@ -134,7 +134,7 @@ void LoadSelectBgmAssets(void) {
         /* fall through */
     case 2:
         if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) != 0) {
-            header = (GameSceneAssetHeader *)g_AssetBase;
+            header = GetSceneAssetHeader(g_AssetBase);
             g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
             g_AssetBlockPtr2 = GetSceneAssetAddress(header, header->offsets[1]);
             g_AssetSubBlockPtr =

@@ -244,7 +244,8 @@ int main(void) {
         max_align_t alignment;
         u8 bytes[128];
     } pack;
-    GameSceneAssetHeader *header = (GameSceneAssetHeader *)pack.bytes;
+    GameSceneAssetHeader *header = GetSceneAssetHeader(pack.bytes);
+    VoiceBankAssetHeader *voiceHeader;
 
     TestBootAssetPhases();
     TestSaveScreenAssets(pack.bytes);
@@ -331,9 +332,10 @@ int main(void) {
     Check(g_AssetLoadState == 2 && g_AssetBlockPtr2 == pack.bytes + 16,
           "round screen advances to voice bank");
 
-    ((s32 *)(void *)(pack.bytes + 16))[0] = 123;
-    ((s32 *)(void *)(pack.bytes + 16))[1] = 20;
-    ((s32 *)(void *)(pack.bytes + 16))[2] = 40;
+    voiceHeader = GetVoiceBankAssetHeader(pack.bytes + 16);
+    voiceHeader->sharedHeaderSize = 123;
+    voiceHeader->audioHeaderOffset = 20;
+    voiceHeader->audioBodyOffset = 40;
     s_loadResult = 0;
     g_SharedAssetWord0 = -1;
     LoadRoundAssets();

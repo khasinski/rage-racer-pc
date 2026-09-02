@@ -72,7 +72,7 @@ static void LoadRoundVoiceBank(void) {
     if (LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2) == 0) {
         return;
     }
-    header = (VoiceBankAssetHeader *)g_AssetBlockPtr2;
+    header = GetVoiceBankAssetHeader(g_AssetBlockPtr2);
     g_SharedAssetWord0 = header->sharedHeaderSize;
     g_AssetBlockPtr = g_AssetBlockPtr2 + header->audioHeaderOffset;
     g_AssetSubBlockPtr = g_AssetBlockPtr2 + header->audioBodyOffset;
