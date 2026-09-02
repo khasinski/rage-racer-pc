@@ -17,6 +17,9 @@ enum {
     SLIPSTREAM_LATERAL_REACH = 0x32,
     SLIPSTREAM_PROGRESS_REACH = 0x3E8,
     CLOSE_SLIPSTREAM_DRAG = 0x2BC,
+    PLAYER_HULL_POINT_COUNT = 6,
+    OPPONENT_COLLISION_SAMPLE_COUNT = 9,
+    COARSE_COLLISION_SAMPLE_COUNT = 5,
 };
 
 static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
@@ -28,8 +31,10 @@ static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
 }
 
 static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
-                                     CarCollisionPoint grid[4][4]) {
-    CarCollisionPoint outline[6];
+                                     CarCollisionPoint
+                                         grid[CAR_COLLISION_QUAD_COUNT]
+                                             [CAR_COLLISION_QUAD_COUNT]) {
+    CarCollisionPoint outline[PLAYER_HULL_POINT_COUNT];
     Matrix rotationMatrix;
     SVec input;
     Vec4 transformed;
@@ -39,14 +44,14 @@ static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
     input.vz = (u16)car->bodyRoll;
     input.vy = (u16)car->bodyYaw;
     RotMatrix(&input, &rotationMatrix);
-    for (index = 0; index < 6; index++) {
+    for (index = 0; index < PLAYER_HULL_POINT_COUNT; index++) {
         input.vx = g_PlayerHullPoints[index].x;
         input.vy = 0;
         input.vz = g_PlayerHullPoints[index].z;
         ApplyMatrix(&rotationMatrix, &input, &transformed);
         outline[index].x = transformed.x >> 1;
         outline[index].z = transformed.z >> 1;
-        if (index < 4) {
+        if (index < CAR_COLLISION_QUAD_COUNT) {
             grid[index][index] = outline[index];
         }
     }
@@ -61,8 +66,10 @@ static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
 
 static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
                                           const GameCarRuntime *opponent,
-                                          CarCollisionPoint corners[4],
-                                          CarCollisionPoint samples[9]) {
+                                          CarCollisionPoint
+                                              corners[CAR_COLLISION_QUAD_COUNT],
+                                          CarCollisionPoint samples
+                                              [OPPONENT_COLLISION_SAMPLE_COUNT]) {
     Matrix rotationMatrix;
     SVec input;
     Vec4 transformed;
@@ -74,7 +81,7 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
     input.vz = (u16)opponent->bodyRoll;
     input.vy = (u16)opponent->bodyYaw;
     RotMatrix(&input, &rotationMatrix);
-    for (index = 0; index < 4; index++) {
+    for (index = 0; index < CAR_COLLISION_QUAD_COUNT; index++) {
         input.vx = g_OpponentHullCorners[index].x;
         input.vy = 0;
         input.vz = g_OpponentHullCorners[index].z;
@@ -95,16 +102,22 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
 }
 
 static CarCollisionHit FindPlayerCollisionRegion(
-    const CarCollisionPoint grid[4][4],
-    const CarCollisionPoint corners[4],
-    const CarCollisionPoint samples[9]) {
-    CarCollisionHit hit = FindFirstCarCollisionQuad(grid, corners, 4);
+    const CarCollisionPoint
+        grid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT],
+    const CarCollisionPoint corners[CAR_COLLISION_QUAD_COUNT],
+    const CarCollisionPoint samples[OPPONENT_COLLISION_SAMPLE_COUNT]) {
+    CarCollisionHit hit = FindFirstCarCollisionQuad(
+        grid, corners, CAR_COLLISION_QUAD_COUNT);
 
     if (hit.region <= 0) {
-        hit = FindFirstCarCollisionQuad(grid, samples, 5);
+        hit = FindFirstCarCollisionQuad(
+            grid, samples, COARSE_COLLISION_SAMPLE_COUNT);
     }
     if (hit.region <= 0) {
-        hit = FindFirstCarCollisionQuad(grid, &samples[5], 4);
+        hit = FindFirstCarCollisionQuad(
+            grid, &samples[COARSE_COLLISION_SAMPLE_COUNT],
+            OPPONENT_COLLISION_SAMPLE_COUNT -
+                COARSE_COLLISION_SAMPLE_COUNT);
     }
     return hit;
 }
@@ -120,16 +133,22 @@ typedef struct PlayerCollisionHit {
 } PlayerCollisionHit;
 
 static s32 AbsoluteDifference(s32 a, s32 b) {
-    s32 difference = a - b;
-    return difference < 0 ? -difference : difference;
+    int64_t difference = (int64_t)a - b;
+
+    if (difference < 0) {
+        difference = -difference;
+    }
+    return difference > INT32_MAX ? INT32_MAX : (s32)difference;
 }
 
 static PlayerCollisionHit FindPlayerCollision(
-    PlayerCarRuntime *player, CarCollisionPoint playerGrid[4][4]) {
+    PlayerCarRuntime *player,
+    CarCollisionPoint
+        playerGrid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT]) {
     PlayerCollisionHit hit = {0};
     CarCollisionHit quadHit;
-    CarCollisionPoint samples[9];
-    CarCollisionPoint corners[4];
+    CarCollisionPoint samples[OPPONENT_COLLISION_SAMPLE_COUNT];
+    CarCollisionPoint corners[CAR_COLLISION_QUAD_COUNT];
     s32 index;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
@@ -291,7 +310,8 @@ static void ApplyHighRegionCollision(PlayerCarRuntime *player,
 }
 
 s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
-    CarCollisionPoint playerGrid[4][4];
+    CarCollisionPoint playerGrid[CAR_COLLISION_QUAD_COUNT]
+                                [CAR_COLLISION_QUAD_COUNT];
     PlayerCollisionHit hit;
     s32 index;
 
@@ -312,7 +332,7 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
     TracePlayerCollision(car, &hit);
     PlayPlayerCollisionSound(car, &hit);
     g_GripLossTimer = 0;
-    if (hit.region < 3) {
+    if (hit.region <= LAST_FRONT_COLLISION_REGION) {
         ApplyLowRegionCollision(car, hit.opponent);
     } else {
         ApplyHighRegionCollision(car, hit.opponent);

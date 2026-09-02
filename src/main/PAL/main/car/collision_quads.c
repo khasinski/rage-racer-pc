@@ -9,22 +9,25 @@
 #include "game/car_internal.h"
 #include "psyq/gte.h"
 
-static int64_t CollisionQuadAreaTwice(const CarCollisionPoint quad[4]) {
-    static const u8 order[4] = {2, 3, 1, 0};
+static int64_t CollisionQuadAreaTwice(
+    const CarCollisionPoint quad[CAR_COLLISION_QUAD_COUNT]) {
+    static const u8 order[CAR_COLLISION_QUAD_COUNT] = {2, 3, 1, 0};
     int64_t area = 0;
     s32 edge;
 
-    for (edge = 0; edge < 4; edge++) {
+    for (edge = 0; edge < CAR_COLLISION_QUAD_COUNT; edge++) {
         const CarCollisionPoint *from = &quad[order[edge]];
-        const CarCollisionPoint *to = &quad[order[(edge + 1) & 3]];
+        const CarCollisionPoint *to =
+            &quad[order[(edge + 1) % CAR_COLLISION_QUAD_COUNT]];
 
         area += (int64_t)from->x * to->z - (int64_t)from->z * to->x;
     }
     return area;
 }
 
-static int IsPointInsideCollisionQuad(const CarCollisionPoint quad[4],
-                                      const CarCollisionPoint *point) {
+static int IsPointInsideCollisionQuad(
+    const CarCollisionPoint quad[CAR_COLLISION_QUAD_COUNT],
+    const CarCollisionPoint *point) {
     s32 p0 = GetCarCollisionPointPacked(&quad[2]);
     s32 p1 = GetCarCollisionPointPacked(&quad[3]);
     s32 p2 = GetCarCollisionPointPacked(&quad[0]);
@@ -44,8 +47,9 @@ static int IsPointInsideCollisionQuad(const CarCollisionPoint quad[4],
  * matching zero-based point and quad indices used by collision tracing.
  */
 CarCollisionHit FindFirstCarCollisionQuad(
-    const CarCollisionPoint grid[4][4], const CarCollisionPoint *points,
-    s32 count) {
+    const CarCollisionPoint
+        grid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT],
+    const CarCollisionPoint *points, s32 count) {
     CarCollisionHit hit = {.region = 0, .sampleIndex = -1, .quadIndex = -1};
     s32 sampleIndex;
     s32 quadIndex;
@@ -55,7 +59,8 @@ CarCollisionHit FindFirstCarCollisionQuad(
     }
 
     for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
-        for (quadIndex = 0; quadIndex < 4; quadIndex++) {
+        for (quadIndex = 0; quadIndex < CAR_COLLISION_QUAD_COUNT;
+             quadIndex++) {
             if (IsPointInsideCollisionQuad(grid[quadIndex],
                                            &points[sampleIndex])) {
                 hit.region = quadIndex + 1;

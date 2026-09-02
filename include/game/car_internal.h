@@ -60,9 +60,15 @@ typedef struct CarCollisionHit {
     s32 quadIndex;
 } CarCollisionHit;
 
+enum {
+    CAR_COLLISION_QUAD_COUNT = 4,
+    LAST_FRONT_COLLISION_REGION = 2,
+};
+
 CarCollisionHit FindFirstCarCollisionQuad(
-    const CarCollisionPoint grid[4][4], const CarCollisionPoint *points,
-    s32 count);
+    const CarCollisionPoint
+        grid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT],
+    const CarCollisionPoint *points, s32 count);
 
 void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
                            s32 gripBudget);

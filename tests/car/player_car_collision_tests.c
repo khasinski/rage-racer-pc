@@ -188,6 +188,21 @@ static int CheckMissingTrackLength(void) {
     return 0;
 }
 
+static int CheckExtremeCoordinateDifferences(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    player.y = INT32_MIN;
+    player.trackLateralOffset = INT32_MIN;
+    g_Cars[0].y = INT32_MAX;
+    g_Cars[0].trackLateralOffset = INT32_MAX;
+    if (CollidePlayerWithCars(&player) != 0 || s_knockbackCount != 0) {
+        puts("FAIL extreme coordinate differences produced a collision");
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
     static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
@@ -204,7 +219,8 @@ int main(void) {
     if (CheckCollisionSoundGates() != 0 ||
         CheckWrappedWorldCoordinates() != 0 ||
         CheckAllCollisionFlagsReset() != 0 ||
-        CheckMissingTrackLength() != 0)
+        CheckMissingTrackLength() != 0 ||
+        CheckExtremeCoordinateDifferences() != 0)
         return 1;
 
     g_TrackLength = 0x8000;

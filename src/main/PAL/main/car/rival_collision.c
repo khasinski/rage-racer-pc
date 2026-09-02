@@ -21,9 +21,7 @@
 #define COLLISION_LATERAL_REACH 100
 
 enum {
-    CAR_COLLISION_CORNER_COUNT = 4,
     CAR_COLLISION_SAMPLE_COUNT = 5,
-    LAST_FRONT_COLLISION_REGION = 2,
 };
 
 /* Transforms the four hull corners into the frame of `source`, offset by
@@ -45,7 +43,7 @@ static void TransformCarHull(const GameCarRuntime *source,
     SetRotMatrix(&matrix);
     input.vy = 0;
     input.pad = 0;
-    for (corner = 0; corner < CAR_COLLISION_CORNER_COUNT; corner++) {
+    for (corner = 0; corner < CAR_COLLISION_QUAD_COUNT; corner++) {
         input.vx = g_CarCollisionCorners[corner].x;
         input.vz = g_CarCollisionCorners[corner].z;
         ApplyRotMatrix(&input, &transformed);
@@ -69,8 +67,8 @@ static s16 AverageCoordinate(s16 first, s16 second) {
  */
 static void BuildCollisionQuads(const CarCollisionPoint *corners,
                                 CarCollisionPoint
-                                    grid[CAR_COLLISION_CORNER_COUNT]
-                                        [CAR_COLLISION_CORNER_COUNT]) {
+                                    grid[CAR_COLLISION_QUAD_COUNT]
+                                        [CAR_COLLISION_QUAD_COUNT]) {
     CarCollisionPoint average01;
     CarCollisionPoint average02;
     CarCollisionPoint average13;
@@ -169,10 +167,10 @@ static int WithinCollisionReach(const GameCarRuntime *car,
 }
 
 s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
-    CarCollisionPoint quads[CAR_COLLISION_CORNER_COUNT]
-                           [CAR_COLLISION_CORNER_COUNT];
-    CarCollisionPoint carCorners[CAR_COLLISION_CORNER_COUNT];
-    CarCollisionPoint otherCorners[CAR_COLLISION_CORNER_COUNT];
+    CarCollisionPoint quads[CAR_COLLISION_QUAD_COUNT]
+                           [CAR_COLLISION_QUAD_COUNT];
+    CarCollisionPoint carCorners[CAR_COLLISION_QUAD_COUNT];
+    CarCollisionPoint otherCorners[CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint samples[CAR_COLLISION_SAMPLE_COUNT];
     GameCarRuntime *other;
     s32 nextIndex;
@@ -205,7 +203,7 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
                test that can hit, first. */
             collision =
                 FindFirstCarCollisionQuad(quads, otherCorners,
-                                          CAR_COLLISION_CORNER_COUNT);
+                                          CAR_COLLISION_QUAD_COUNT);
             if (collision.region <= 0) {
                 collision = FindFirstCarCollisionQuad(
                     quads, samples, CAR_COLLISION_SAMPLE_COUNT);
