@@ -19,6 +19,7 @@ void BuildStartingGrid(void) {
         GameCarRuntime *car = &g_Cars[index];
 
         car->activeFlag = 0;
+        car->aiEnabled = 0;
         car->facingBackwards = (s16)ReadRaceTrackDirection();
         if (grid[index].value < 0) {
             continue;
