@@ -11,6 +11,8 @@ struct GameRenderObject;
 enum {
     GAME_CAR_COUNT = 13,
     RACE_CAR_SLOT_COUNT = 11,
+    CAR_MODEL_VARIANT_COUNT = 32,
+    CAR_TIRE_COMPOUND_COUNT = 5,
 };
 
 /*

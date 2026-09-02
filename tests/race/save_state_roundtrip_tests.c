@@ -55,8 +55,8 @@ static void SetRepresentativeState(void) {
     g_ExtraGrandPrixSave.course = 3;
     g_TimeAttackSave.carIndex = 9;
     g_ExtraGrandPrixUnlocked = 1;
-    g_MaxClassReached[0] = 6;
-    g_MaxClassReached[1] = 8;
+    g_MaxClassReached[0] = 5;
+    g_MaxClassReached[1] = 4;
 
     g_GrandPrixCars[4].modelVariant = 2;
     g_GrandPrixCars[4].tireCompound = 3;
@@ -97,6 +97,23 @@ static int ReservedBytesAreZero(const GameSaveBlock *block) {
     }
     for (car = 0; car < (s32)sizeof(block->reserved); car++) {
         if (block->reserved[car] != 0) return 0;
+    }
+    return 1;
+}
+
+static int SaveBlocksMatch(const GameSaveBlock *actual,
+                           const GameSaveBlock *expected) {
+    const u8 *actualBytes = (const u8 *)actual;
+    const u8 *expectedBytes = (const u8 *)expected;
+    size_t offset;
+
+    for (offset = 0; offset < sizeof(*actual); offset++) {
+        if (actualBytes[offset] != expectedBytes[offset]) {
+            fprintf(stderr,
+                    "save blocks differ at 0x%zx: got 0x%02x, expected 0x%02x\n",
+                    offset, actualBytes[offset], expectedBytes[offset]);
+            return 0;
+        }
     }
     return 1;
 }
@@ -175,17 +192,43 @@ int main(void) {
 
     memset(&roundTrip, 0x5A, sizeof(roundTrip));
     StoreSaveStateBlock(&roundTrip);
-    CHECK(memcmp(&roundTrip, &saved, sizeof(saved)) == 0);
+    CHECK(SaveBlocksMatch(&roundTrip, &saved));
 
     outOfRange = saved;
     outOfRange.padMappingIndex = 0xFF;
     outOfRange.negconMappingIndex = 0xFE;
+    outOfRange.grandPrixProgress.course = 99;
+    outOfRange.grandPrixProgress.carIndex = -20;
+    outOfRange.grandPrixProgress.classIndex = 99;
+    outOfRange.grandPrixProgress.maxClassReached = -20;
+    outOfRange.extraGrandPrixUnlocked = 7;
+    outOfRange.maxClassReached[0] = 99;
+    outOfRange.maxClassReached[1] = -20;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].modelVariant = 0xFF;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].tireCompound = 0xFF;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].transmission = 7;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].paintColor1 = 0xFF;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].paintColor2 = 0xFF;
+    outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].enabled = 7;
     outOfRange.checksum = CalculateSaveBlockChecksum(&outOfRange);
     CHECK(LoadSaveStateBlock(&outOfRange) == 1);
     CHECK(g_PadMappingIndex == CONTROLLER_MAPPING_LAST);
     CHECK(g_NegconMappingIndex == CONTROLLER_MAPPING_LAST);
     CHECK(s_loadedPadMapping == CONTROLLER_MAPPING_LAST);
     CHECK(s_loadedNegconMapping == CONTROLLER_MAPPING_LAST);
+    CHECK(g_GrandPrixSave.course == COURSE_LONG_SLOT);
+    CHECK(g_GrandPrixSave.carIndex == 0);
+    CHECK(g_GrandPrixSave.classIndex == GRAND_PRIX_FINAL_CLASS_INDEX);
+    CHECK(g_GrandPrixSave.maxClassReached == -1);
+    CHECK(g_ExtraGrandPrixUnlocked == 1);
+    CHECK(g_MaxClassReached[0] == GRAND_PRIX_FINAL_CLASS_INDEX);
+    CHECK(g_MaxClassReached[1] == 0);
+    CHECK(g_GrandPrixCars[0].modelVariant == 0);
+    CHECK(g_GrandPrixCars[0].tireCompound == CAR_TIRE_COMPOUND_COUNT - 1);
+    CHECK(g_GrandPrixCars[0].transmission == 1);
+    CHECK(g_GrandPrixCars[0].paintColor1 == MENU_PAINT_COLOR_COUNT - 1);
+    CHECK(g_GrandPrixCars[0].paintColor2 == MENU_PAINT_COLOR_COUNT - 1);
+    CHECK(g_GrandPrixCars[0].enabled == 1);
 
     puts("save state blocks are deterministic and survive a full round trip");
     return 0;
