@@ -19,7 +19,7 @@ void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     car->motionMode = (s16)mode;
     if (mode == CAR_BODY_KICK_LANDING) {
         car->motionModeTimer = BODY_KICK_DURATION;
-        car->motionValue.value = car->verticalMotionTimer << 3;
+        car->motionValue.value = (s16)(car->verticalMotionTimer * 8);
         return;
     }
     lean = GetAngleDistance(

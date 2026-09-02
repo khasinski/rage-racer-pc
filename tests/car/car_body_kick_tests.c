@@ -36,6 +36,11 @@ int main(void) {
     CHECK(car.motionValue.value == 56);
 
     memset(&car, 0, sizeof(car));
+    car.verticalMotionTimer = -1;
+    StartCarBodyKick(&car, CAR_BODY_KICK_LANDING);
+    CHECK(car.motionValue.value == -8);
+
+    memset(&car, 0, sizeof(car));
     car.speed = 0x140 + 0x1000;
     car.bodyYaw = 0x400;
     s_trackAngle = 0;
