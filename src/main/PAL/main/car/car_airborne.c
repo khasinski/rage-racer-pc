@@ -40,9 +40,9 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
 
     if (drive->acceleratorLatch != 1 && drive->brakeLatch != 1 &&
         drive->acceleratorInput.value < 128)
-        drive->groundedFrames++;
+        drive->coastFrames++;
     else
-        drive->groundedFrames = 0;
+        drive->coastFrames = 0;
 
     drive->spinRate = drive->spinRate * 31 / 32;
     drive->launchSpeed = drive->launchSpeed * 31 / 32;

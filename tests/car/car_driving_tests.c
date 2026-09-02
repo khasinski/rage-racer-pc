@@ -60,11 +60,11 @@ int main(void) {
     car.speed = 200;
     car.drive.launchThresholdIndex = -1;
     car.drive.acceleratorLatch = 1;
-    car.drive.groundedFrames = 2;
+    car.drive.coastFrames = 2;
     car.drive.steeringGripResponse = 1000;
     UpdateCarDriving(&car);
     CHECK(car.drive.motionState == CAR_MOTION_TAKEOFF);
-    CHECK(car.drive.launchEnergy == 400 && car.drive.groundedFrames == 0);
+    CHECK(car.drive.launchEnergy == 400 && car.drive.coastFrames == 0);
     CHECK(s_voiceIndex == 0);
 
     memset(&car, 0, sizeof(car));
@@ -79,9 +79,9 @@ int main(void) {
 
     memset(&car, 0, sizeof(car));
     car.drive.launchThresholdIndex = 8;
-    car.drive.groundedFrames = 4;
+    car.drive.coastFrames = 4;
     UpdateCarDriving(&car);
-    CHECK(car.drive.groundedFrames == 5 && car.drive.launchEnergy == 0);
+    CHECK(car.drive.coastFrames == 5 && car.drive.launchEnergy == 0);
 
     puts("normal car driving tests passed");
     return 0;

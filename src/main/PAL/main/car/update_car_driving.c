@@ -66,8 +66,8 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
     }
 
     if (drive->acceleratorLatch == 1) {
-        drive->launchEnergy = car->speed * drive->groundedFrames;
-        drive->groundedFrames = 0;
+        drive->launchEnergy = car->speed * drive->coastFrames;
+        drive->coastFrames = 0;
         if (launchThreshold->initial < car->speed &&
             drive->launchEnergy > drive->launchEnergyThreshold) {
             s32 spinScale =
@@ -86,7 +86,7 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
     }
 
     if (drive->acceleratorInput.value >= 128) {
-        drive->groundedFrames = 0;
+        drive->coastFrames = 0;
         drive->launchEnergy = 0;
         return;
     }
@@ -108,6 +108,6 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
         return;
     }
 
-    drive->groundedFrames++;
+    drive->coastFrames++;
     drive->launchEnergy = 0;
 }

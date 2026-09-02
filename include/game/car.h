@@ -474,7 +474,7 @@ typedef struct GameCarDrive {
     s16 bodyLiftOffset;
     s16 trackCurveMode;
     s16 trackCurveBias;
-    s32 groundedFrames;
+    s32 coastFrames;
     s32 launchEnergy;
     s32 steeringLoadAngle;
     s32 spinRate;
