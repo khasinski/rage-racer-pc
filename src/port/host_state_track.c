@@ -12,6 +12,7 @@
  */
 
 #include "game/vector.h"
+#include "game/environment.h"
 #include <stddef.h>
 
 #include "common.h"
@@ -200,9 +201,7 @@ s32 g_CameraCarHeading;
 s32 g_CameraCarSpeed;
 s32 g_CameraCarStepX;
 unsigned char g_CameraCarStepZ[128] __attribute__((aligned(16)));
-/* GameEnvironmentColors: 112 bytes. Writing through the declared type ran 2
- * bytes past this object, into whatever the linker placed next. */
-unsigned char g_EnvironmentColors[112] __attribute__((aligned(16)));
+GameEnvironmentColors g_EnvironmentColors __attribute__((aligned(16)));
 s16 g_EnvLerpFrame;
 s16 g_EnvLerpDuration;
 s16 g_EnvironmentMode;
