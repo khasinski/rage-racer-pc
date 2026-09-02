@@ -56,9 +56,9 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
     g_BestLapThisRace = lapTime;
     g_SectorTimes[2] = lapTime;
     if (recordMode == 0) {
-        g_RefSectorTime2 = lapTime;
         g_RefSectorTimes.fields.first = g_SectorTimes[0];
-        g_RefSectorTime1 = g_SectorTimes[1];
+        g_RefSectorTimes.fields.second = g_SectorTimes[1];
+        g_RefSectorTimes.fields.third = lapTime;
     }
     /* Announced only while there are still laps left to run. */
     if (g_LapCount >= lap) {
@@ -86,8 +86,8 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
     }
     if (recordMode == 0) {
         g_BestSectorTimes[series][course][0] = g_RefSectorTimes.fields.first;
-        g_BestSectorTimes[series][course][1] = g_RefSectorTime1;
-        g_BestSectorTimes[series][course][2] = g_RefSectorTime2;
+        g_BestSectorTimes[series][course][1] = g_RefSectorTimes.fields.second;
+        g_BestSectorTimes[series][course][2] = g_RefSectorTimes.fields.third;
     }
     g_RacePhase = 4;
     StartCdVolumeFade(8);

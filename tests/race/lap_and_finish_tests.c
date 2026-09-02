@@ -42,8 +42,6 @@ s16 g_RaceFadeTimer;
 s16 g_RacePhase;
 s32 g_RaceTotalTime;
 RaceRecord g_RankingRecords[2][4][5];
-s32 g_RefSectorTime1;
-s32 g_RefSectorTime2;
 SectorReferenceTimes g_RefSectorTimes;
 s16 g_RivalCueEnabled;
 s32 g_SectorTimes[3];
@@ -242,9 +240,7 @@ int main(int argc, char **argv) {
         g_RivalCueEnabled = 0;
         g_SeriesCleared = cleared;
         g_GrandPrixMode = (s16)gpGlobal;
-        g_RefSectorTime1 = 0;
-        g_RefSectorTime2 = 0;
-        g_RefSectorTimes.fields.first = 0;
+        memset(&g_RefSectorTimes, 0, sizeof(g_RefSectorTimes));
         s_course.retriesRemaining = (s16)retries;
 
         sprintf(label,
@@ -277,8 +273,8 @@ int main(int argc, char **argv) {
             after[14] = g_SectorTimes[0];
             after[15] = g_SectorTimes[1];
             after[16] = g_SectorTimes[2];
-            after[17] = g_RefSectorTime1;
-            after[18] = g_RefSectorTime2;
+            after[17] = g_RefSectorTimes.fields.second;
+            after[18] = g_RefSectorTimes.fields.third;
             after[19] = g_RefSectorTimes.fields.first;
             Record("state", after, 20);
             Record("laptimes", g_PlayerCar.lapTimes.words, 12);

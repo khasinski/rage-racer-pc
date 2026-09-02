@@ -140,11 +140,9 @@ s32 g_SectorTimes[3] __attribute__((aligned(16))) = {
     0, 0, 0
 };
 s32 g_RefLapTime;
-/* SectorReferenceTimes: 12 bytes. Writing through the declared type ran 4
- * bytes past this object, into whatever the linker placed next. */
+/* SectorReferenceTimes storage; kept untyped here because this translation
+ * unit reproduces the retail state layout without importing subsystem headers. */
 unsigned char g_RefSectorTimes[12] __attribute__((aligned(16)));
-s32 g_RefSectorTime1;
-s32 g_RefSectorTime2;
 s32 g_RaceTimeRemaining;
 s32 g_LapTimeSaturated;
 s16 g_SplitSector;

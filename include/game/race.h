@@ -160,13 +160,8 @@ extern s32 g_SectorTimes[3];
 extern s32 g_RefLapTime;
 
 /* Two 3-element arrays:
- *   g_SectorEndDistance[3]  g_SectorEndDistance/9C/A0  lap distance ending each sector
- *                                             (L/3, 2L/3, L)
- *   g_RefSectorTimes[3]     g_RefSectorTimes/94/98  the best lap's sector times
- * UpdateLapAndFinish uses the scalar fields of SectorReferenceTimes plus the
- * two trailing split symbols: indexing all three values there makes gcc 2.6.3
- * CSE the array base and reschedule the surrounding block. Other users use the
- * union's indexed view. g_SectorEndDistance does not need a split view.
+ *   g_SectorEndDistance[3] lap distance ending each sector (L/3, 2L/3, L)
+ *   g_RefSectorTimes[3]    the best lap's sector times
  */
 
 /* Split readout: the sector time just recorded, the unsigned difference from
@@ -346,8 +341,6 @@ typedef enum RecordEntryState {
 
 extern RecordEntryState g_RecordEntryState;
 extern s32 g_RecordPanelSlide;
-extern s32 g_RefSectorTime1;
-extern s32 g_RefSectorTime2;
 extern u16 g_ResultPanelCluts[];
 extern u16 g_ResultPlaceCluts[];
 extern s16 g_RivalCueCooldown0;

@@ -176,9 +176,9 @@ void EnterRaceScene(void) {
     g_LapTimeSaturated = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
     g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
-    g_RefSectorTime1 = g_BestSectorTimes[series][course][1];
+    g_RefSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
     g_SectorIndex = PRE_START_SECTOR;
-    g_RefSectorTime2 = g_BestSectorTimes[series][course][2];
+    g_RefSectorTimes.fields.third = g_BestSectorTimes[series][course][2];
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
