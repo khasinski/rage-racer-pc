@@ -1032,6 +1032,25 @@ target_link_libraries(tachometer_tests PRIVATE psyz)
 add_test(NAME tachometer COMMAND tachometer_tests)
 set_tests_properties(tachometer PROPERTIES LABELS functional)
 
+add_executable(speed_digits_tests
+    speed_digits_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_speed_digits.c)
+target_include_directories(speed_digits_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(speed_digits_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(speed_digits_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(speed_digits_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME speed_digits COMMAND speed_digits_tests)
+set_tests_properties(speed_digits PROPERTIES LABELS unit)
+
 add_executable(boot_logo_tests
     boot_logo_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/draw_boot_logo.c)
