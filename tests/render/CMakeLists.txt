@@ -927,6 +927,25 @@ endif()
 add_test(NAME boot_logo_scene COMMAND boot_logo_scene_tests)
 set_tests_properties(boot_logo_scene PROPERTIES LABELS functional)
 
+add_executable(init_subsystems_tests
+    init_subsystems_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/init_subsystems.c)
+target_include_directories(init_subsystems_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(init_subsystems_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(init_subsystems_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(init_subsystems_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME init_subsystems COMMAND init_subsystems_tests)
+set_tests_properties(init_subsystems PROPERTIES LABELS functional)
+
 add_executable(proportional_text_tests
     proportional_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text.c)
