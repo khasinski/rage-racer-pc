@@ -52,6 +52,28 @@ int main(void) {
     CHECK(car.motionX * car.motionX + car.motionZ * car.motionZ >= 74 * 74);
     CHECK(car.motionX * car.motionX + car.motionZ * car.motionZ <= 76 * 76);
 
+    memset(&car, 0, sizeof(car));
+    car.bodyPitch = 0x400;
+    car.drive.bodyLiftOffset = 25;
+    CalculatePlayerBodyOffset(&car);
+    CHECK(car.motionX == 0);
+    CHECK(car.motionY * car.motionY + car.motionZ * car.motionZ >= 74 * 74);
+    CHECK(car.motionY * car.motionY + car.motionZ * car.motionZ <= 76 * 76);
+
+    memset(&car, 0, sizeof(car));
+    car.bodyPitch = 0x200;
+    car.bodyYaw = 0x200;
+    car.bodyRoll = 0x200;
+    car.drive.bodyLiftOffset = 25;
+    CalculatePlayerBodyOffset(&car);
+    CHECK(car.motionX != 0 && car.motionY != 0 && car.motionZ != 0);
+    CHECK(car.motionX * car.motionX + car.motionY * car.motionY +
+              car.motionZ * car.motionZ >=
+          73 * 73);
+    CHECK(car.motionX * car.motionX + car.motionY * car.motionY +
+              car.motionZ * car.motionZ <=
+          77 * 77);
+
     if (s_failures != 0) {
         printf("%d player body offset checks failed\n", s_failures);
         return 1;

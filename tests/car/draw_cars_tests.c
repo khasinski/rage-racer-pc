@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-GameCarRuntime g_Cars[11];
+GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 
 static s32 s_selectedBank;
-static GameCarRuntime *s_drawn[11];
+static GameCarRuntime *s_drawn[RACE_CAR_SLOT_COUNT];
 static s32 s_drawCount;
 
 void SelectModelBank(s32 index) {

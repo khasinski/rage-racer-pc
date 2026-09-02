@@ -4,6 +4,7 @@
 
 void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     Matrix bodyRotation;
+    Matrix rotationStep;
     Matrix inverseBodyRotation;
     SVec bodyOffset = {
         .vx = 0,
@@ -12,10 +13,10 @@ void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     };
 
     BuildRotMatrixY(&bodyRotation, car->bodyYaw);
-    BuildRotMatrixX(&inverseBodyRotation, car->bodyPitch);
-    MulMatrix2(&inverseBodyRotation, &bodyRotation);
-    BuildRotMatrixZ(&inverseBodyRotation, car->bodyRoll);
-    MulMatrix2(&inverseBodyRotation, &bodyRotation);
+    BuildRotMatrixX(&rotationStep, car->bodyPitch);
+    MulMatrix2(&rotationStep, &bodyRotation);
+    BuildRotMatrixZ(&rotationStep, car->bodyRoll);
+    MulMatrix2(&rotationStep, &bodyRotation);
     TransposeMatrix(&bodyRotation, &inverseBodyRotation);
     ApplyMatrix(&inverseBodyRotation, &bodyOffset, &car->motionX);
 }
