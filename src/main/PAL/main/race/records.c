@@ -4,7 +4,7 @@
 #include "game/save_internal.h"
 #include "game/records_internal.h"
 
-static const RaceRecord s_DefaultRecords[5] = {
+static const RaceRecord s_DefaultRecords[RECORD_TABLE_LENGTH] = {
     {{'R', 'A', 'G', 'E', ' ', ' ', '\0', '\0'}, 0, 0, 0},
     {{'R', 'A', 'C', 'E', 'R', ' ', '\0', '\0'}, 0, 3, 0},
     {{'N', 'A', 'M', 'C', 'O', ' ', '\0', '\0'}, 0, 4, 0},
@@ -12,25 +12,44 @@ static const RaceRecord s_DefaultRecords[5] = {
     {{'R', 'A', 'C', 'E', 'R', ' ', '\0', '\0'}, 0, 3, 0},
 };
 
-s32 InsertRaceRecord(RaceRecord records[5], s32 raceTime, s16 carIndex,
-                     u8 nameCodes[6]) {
+FastestLap FindFastestLap(const s32 *lapTimes, s32 lapCount) {
+    FastestLap fastest = {-1, 0};
+    s32 lap;
+
+    if (lapCount <= 0) {
+        return fastest;
+    }
+
+    fastest.index = 0;
+    fastest.time = lapTimes[0];
+    for (lap = 1; lap < lapCount; lap++) {
+        if (lapTimes[lap] < fastest.time) {
+            fastest.index = lap;
+            fastest.time = lapTimes[lap];
+        }
+    }
+    return fastest;
+}
+
+s32 InsertRaceRecord(RaceRecord records[RECORD_TABLE_LENGTH], s32 raceTime,
+                     s16 carIndex, u8 nameCodes[RECORD_NAME_LENGTH]) {
     s32 row;
     s32 shift;
     s32 character;
 
-    for (row = 0; row < 5; row++) {
+    for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
         if (raceTime >= records[row].raceTime) continue;
-        for (shift = 4; shift > row; shift--) {
+        for (shift = RECORD_TABLE_LENGTH - 1; shift > row; shift--) {
             records[shift] = records[shift - 1];
         }
         records[row] = (RaceRecord){{0}, raceTime, carIndex, 0};
-        for (character = 0; character < 6; character++) {
+        for (character = 0; character < RECORD_NAME_LENGTH; character++) {
             records[row].driverName[character] = 'A';
             nameCodes[character] = 0xB;
         }
         return row;
     }
-    return 5;
+    return RECORD_TABLE_LENGTH;
 }
 
 void InitRecordTables(void) {
@@ -52,7 +71,7 @@ void InitRecordTables(void) {
                 g_BestSectorTimes[series][course][slot] =
                     defaultLapTimes[series * 4 + course];
             }
-            for (slot = 0; slot < 5; slot++) {
+            for (slot = 0; slot < RECORD_TABLE_LENGTH; slot++) {
                 g_RankingRecords[series][course][slot] =
                     s_DefaultRecords[slot];
                 g_RankingRecords[series][course][slot].raceTime =

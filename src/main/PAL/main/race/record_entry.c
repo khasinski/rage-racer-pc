@@ -10,25 +10,18 @@
 #include "game/state.h"
 
 void InsertRaceRecords(void) {
+    FastestLap fastestLap;
     s32 lapCount;
-    s32 i;
-    s32 bestLapTime;
     s32 course;
 
     lapCount = g_CourseIndex == 3 ? 6 : 3;
-    bestLapTime = 0x927C0;
-    for (i = 0; i < lapCount; i++) {
-        s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[i];
-
-        if (lapTime < bestLapTime) {
-            bestLapTime = lapTime;
-            g_BestLapIndex = i;
-        }
-    }
+    fastestLap = FindFastestLap(
+        g_PlayerCar.lapTimes.table.milliseconds, lapCount);
+    g_BestLapIndex = fastestLap.index;
 
     course = SeriesCourseIndex();
     g_RankingInsertRow = InsertRaceRecord(
-        g_RankingRecords[g_GrandPrixSeries][course], bestLapTime,
+        g_RankingRecords[g_GrandPrixSeries][course], fastestLap.time,
         g_PlayerCarIndex,
         g_RankingNameCodes);
     g_TimeRecordInsertRow = InsertRaceRecord(

@@ -55,6 +55,25 @@ int main(void) {
     s32 course;
     s32 slot;
 
+    {
+        const s32 threeLaps[] = {91000, 89999, 90000};
+        const s32 sixLaps[] = {81000, 80000, 79000, 78000, 77000, 76000};
+        const s32 tiedLaps[] = {70000, 70000, 71000};
+        const s32 longLaps[] = {700000, 650000, 800000};
+        FastestLap fastest;
+
+        fastest = FindFastestLap(threeLaps, 3);
+        CHECK(fastest.index == 1 && fastest.time == 89999);
+        fastest = FindFastestLap(sixLaps, 6);
+        CHECK(fastest.index == 5 && fastest.time == 76000);
+        fastest = FindFastestLap(tiedLaps, 3);
+        CHECK(fastest.index == 0 && fastest.time == 70000);
+        fastest = FindFastestLap(longLaps, 3);
+        CHECK(fastest.index == 1 && fastest.time == 650000);
+        fastest = FindFastestLap(longLaps, 0);
+        CHECK(fastest.index == -1 && fastest.time == 0);
+    }
+
     memset(g_RankingRecords, 0xA5, sizeof(g_RankingRecords));
     memset(g_TimeRecords, 0xA5, sizeof(g_TimeRecords));
     InitRecordTables();

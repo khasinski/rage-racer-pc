@@ -223,7 +223,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME record_defaults COMMAND record_defaults_tests)
 
-set_tests_properties(record_defaults PROPERTIES LABELS functional)
+set_tests_properties(record_defaults PROPERTIES LABELS unit)
 
 add_executable(save_checksum_tests
     save_checksum_tests.c
