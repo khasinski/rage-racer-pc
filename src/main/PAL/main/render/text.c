@@ -99,13 +99,46 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
 }
 
 
-/*
- * Local wide-parameter declaration: retail passes every coordinate, texel and
- * CLUT index as a full word (the stack arguments are read with `lw`), so the
- * narrow documentation types in game/render.h would make gcc shrink the loads.
- */
-/* SPRT, 20 bytes: a raw (SetShadeTex) textured sprite linked into `ot`.
- * Returns the advanced packet cursor. */
+static u8 *QueueSpritePacket(
+    GameOrderingTableEntry *ot,
+    u8 *prim,
+    s32 x,
+    s32 y,
+    s32 w,
+    s32 h,
+    s32 u,
+    s32 v,
+    s32 clutIndex,
+    s32 intensity,
+    s32 shadeTexture,
+    s32 semiTransparent) {
+    RenderBufferAddress address;
+    SPRT *sprt;
+
+    address.bytes = prim;
+    sprt = address.sprite;
+
+    SetSprt(sprt);
+    SetShadeTex(sprt, shadeTexture);
+    SetSemiTrans(sprt, semiTransparent);
+    sprt->x0 = x;
+    sprt->y0 = y;
+    sprt->w = w;
+    sprt->h = h;
+    sprt->u0 = u;
+    sprt->v0 = v;
+    sprt->clut = clutIndex;
+    if (!shadeTexture) {
+        sprt->r0 = intensity;
+        sprt->g0 = intensity;
+        sprt->b0 = intensity;
+    }
+    AddPrim(ot, sprt);
+    address.sprite++;
+    return address.bytes;
+}
+
+/* SPRT, 20 bytes: a raw textured sprite linked into `ot`. */
 u8 *GameQueueSprite(
     GameOrderingTableEntry *ot,
     u8 *prim,
@@ -116,29 +149,10 @@ u8 *GameQueueSprite(
     s32 u,
     s32 v,
     s32 clutIndex) {
-    RenderBufferAddress address;
-    SPRT *sprt;
-
-    address.bytes = prim;
-    sprt = address.sprite;
-
-    SetSprt(sprt);
-    SetShadeTex(sprt, 1);
-    sprt->x0 = x;
-    sprt->y0 = y;
-    sprt->w = w;
-    sprt->h = h;
-    sprt->u0 = u;
-    sprt->v0 = v;
-    sprt->clut = clutIndex;
-    AddPrim(ot, sprt);
-    address.sprite++;
-    return address.bytes;
+    return QueueSpritePacket(
+        ot, prim, x, y, w, h, u, v, clutIndex, 0, 1, 0);
 }
 
-/* Local wide-parameter declaration; see GameQueueSprite.c. `clutIndex` really
- * is the narrow one here - retail reads it back out of its argument slot with
- * `lhu` at the point of use. */
 /* SPRT, 20 bytes: a textured sprite modulated by `intensity` on all three
  * channels (no SetShadeTex, so the texel is shaded). */
 u8 *GameQueueShadedSprite(
@@ -152,26 +166,8 @@ u8 *GameQueueShadedSprite(
     s32 v,
     s32 clutIndex,
     s32 intensity) {
-    RenderBufferAddress address;
-    SPRT *sprt;
-
-    address.bytes = prim;
-    sprt = address.sprite;
-
-    SetSprt(sprt);
-    sprt->x0 = x;
-    sprt->y0 = y;
-    sprt->w = w;
-    sprt->h = h;
-    sprt->u0 = u;
-    sprt->v0 = v;
-    sprt->r0 = intensity;
-    sprt->g0 = intensity;
-    sprt->b0 = intensity;
-    sprt->clut = clutIndex;
-    AddPrim(ot, sprt);
-    address.sprite++;
-    return address.bytes;
+    return QueueSpritePacket(
+        ot, prim, x, y, w, h, u, v, clutIndex, intensity, 0, 0);
 }
 
 /* SPRT, 20 bytes: GameQueueShadedSprite plus SetSemiTrans. */
@@ -186,27 +182,8 @@ u8 *GameQueueShadedSpriteTrans(
     s32 v,
     s32 clutIndex,
     s32 intensity) {
-    RenderBufferAddress address;
-    SPRT *sprt;
-
-    address.bytes = prim;
-    sprt = address.sprite;
-
-    SetSprt(sprt);
-    SetSemiTrans(sprt, 1);
-    sprt->x0 = x;
-    sprt->y0 = y;
-    sprt->w = w;
-    sprt->h = h;
-    sprt->u0 = u;
-    sprt->v0 = v;
-    sprt->r0 = intensity;
-    sprt->g0 = intensity;
-    sprt->b0 = intensity;
-    sprt->clut = clutIndex;
-    AddPrim(ot, sprt);
-    address.sprite++;
-    return address.bytes;
+    return QueueSpritePacket(
+        ot, prim, x, y, w, h, u, v, clutIndex, intensity, 0, 1);
 }
 
 /* SPRT, 20 bytes: GameQueueSprite plus SetSemiTrans. */
@@ -220,25 +197,8 @@ u8 *GameQueueSpriteTrans(
     s32 u,
     s32 v,
     s32 clutIndex) {
-    RenderBufferAddress address;
-    SPRT *sprt;
-
-    address.bytes = prim;
-    sprt = address.sprite;
-
-    SetSprt(sprt);
-    SetSemiTrans(sprt, 1);
-    SetShadeTex(sprt, 1);
-    sprt->x0 = x;
-    sprt->y0 = y;
-    sprt->w = w;
-    sprt->h = h;
-    sprt->u0 = u;
-    sprt->v0 = v;
-    sprt->clut = clutIndex;
-    AddPrim(ot, sprt);
-    address.sprite++;
-    return address.bytes;
+    return QueueSpritePacket(
+        ot, prim, x, y, w, h, u, v, clutIndex, 0, 1, 1);
 }
 
 /* TILE, 16 bytes: a semi-transparent solid rectangle linked into `ot`.
@@ -273,13 +233,6 @@ u8 *GameQueueTileTrans(
     return address.bytes;
 }
 
-/*
- * Local wide-parameter declaration. Retail passes every coordinate and colour
- * component as a full word - the stack arguments are read with `lw` - so the
- * s16 / u8 typing that game/render.h uses for documentation would make gcc
- * narrow the loads here. Only this TU needs the wide view, so it declares the
- * symbol itself rather than changing the shared header.
- */
 /* LINE_F2, 16 bytes: one flat-shaded line, linked into `ot`. Returns the
  * advanced packet cursor. */
 u8 *GameQueueLine(

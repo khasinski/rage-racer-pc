@@ -103,9 +103,49 @@ static void CheckInvalidFontCodesAreSkipped(void) {
              "invalid font codes only queue draw mode");
 }
 
+static void CheckSpritePacketVariants(void) {
+    GameOrderingTableEntry *ot;
+    SPRT *sprite;
+    u8 *next;
+
+    ResetTextState();
+    ot = GamePrimaryOrderingTable(0);
+    sprite = (SPRT *)g_RenderState.packetCursor;
+    next = GameQueueSprite(
+        ot, (u8 *)sprite, 1, 2, 3, 4, 5, 6, 7);
+    CHECK_EQ(next == (u8 *)(sprite + 1), 1, "raw sprite cursor");
+    CHECK_EQ(sprite->code & 3, 1, "raw sprite flags");
+    CHECK_EQ(sprite->x0, 1, "raw sprite x");
+    CHECK_EQ(sprite->h, 4, "raw sprite height");
+    CHECK_EQ(sprite->clut, 7, "raw sprite clut");
+
+    ResetTextState();
+    sprite = (SPRT *)g_RenderState.packetCursor;
+    next = GameQueueShadedSprite(
+        ot, (u8 *)sprite, 8, 9, 10, 11, 12, 13, 14, 0x45);
+    CHECK_EQ(next == (u8 *)(sprite + 1), 1, "shaded sprite cursor");
+    CHECK_EQ(sprite->code & 3, 0, "shaded sprite flags");
+    CHECK_EQ(sprite->r0, 0x45, "shaded sprite red");
+    CHECK_EQ(sprite->g0, 0x45, "shaded sprite green");
+    CHECK_EQ(sprite->b0, 0x45, "shaded sprite blue");
+
+    ResetTextState();
+    sprite = (SPRT *)g_RenderState.packetCursor;
+    GameQueueShadedSpriteTrans(
+        ot, (u8 *)sprite, 1, 2, 3, 4, 5, 6, 7, 0x67);
+    CHECK_EQ(sprite->code & 3, 2, "transparent shaded sprite flags");
+    CHECK_EQ(sprite->r0, 0x67, "transparent shaded sprite intensity");
+
+    ResetTextState();
+    sprite = (SPRT *)g_RenderState.packetCursor;
+    GameQueueSpriteTrans(ot, (u8 *)sprite, 1, 2, 3, 4, 5, 6, 7);
+    CHECK_EQ(sprite->code & 3, 3, "transparent raw sprite flags");
+}
+
 int main(void) {
     CheckFontClasses();
     CheckShadedText();
     CheckInvalidFontCodesAreSkipped();
+    CheckSpritePacketVariants();
     return s_failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
