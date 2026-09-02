@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -40,7 +41,7 @@ int main(void) {
     g_Cars[0].activeFlag = 0;
     g_Cars[0].progressA = 9999;
     UpdateRacePosition();
-    Check("position is unchanged before the final lap",
+    Check("position is fixed after the final lap",
           g_PlayerCar.drive.racePosition, 9);
 
     Reset();
@@ -61,7 +62,7 @@ int main(void) {
     Reset();
     g_LapCount = 4;
     UpdateRacePosition();
-    Check("position updates after reaching the final lap",
+    Check("position updates on an earlier lap",
           g_PlayerCar.drive.racePosition, 1);
 
     return s_failures != 0;
