@@ -47,6 +47,12 @@ static void TestGrandPrixFrames(void) {
     first->trackPointIndex1 = 52;
     first->tiltCounter = 53;
 
+    player.trackPointIndex = 901;
+    rival.trackPointIndex = 902;
+    ApplyReplayFrame(0, &player, &rival);
+    assert(player.trackPointIndex == 901);
+    assert(rival.trackPointIndex == 902);
+
     ApplyReplayFrameAndTrackPoint(0, &player, &rival);
     assert(player.modelIndex == 12);
     assert(rival.modelIndex == 34);
@@ -147,6 +153,10 @@ static void TestTimeAttackFrames(void) {
     first->steeringAngle = -6;
     first->trackPointIndex = 71;
     first->tiltCounter = 72;
+
+    player.trackPointIndex = 903;
+    ApplyReplayFrame(0, &player, &rival);
+    assert(player.trackPointIndex == 903);
 
     ApplyReplayFrameAndTrackPoint(0, &player, &rival);
     assert(player.modelIndex == 7);
