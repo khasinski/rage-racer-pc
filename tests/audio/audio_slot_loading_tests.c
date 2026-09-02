@@ -12,7 +12,6 @@ s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_SoundCueBank;
 s32 g_VabSpuAddress[4];
-s32 g_VabTransferDone;
 char g_MsgVabOpenHeadError[] = "open";
 char g_MsgVabTransBodyError[] = "body";
 

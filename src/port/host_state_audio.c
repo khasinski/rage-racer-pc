@@ -53,4 +53,3 @@ unsigned char g_SeqHandle[8] __attribute__((aligned(16)));
 s32 g_SeqVolume;
 s32 g_SeqVolumeSetting;
 s32 g_SeqVolumeFadeStep;
-s32 g_VabTransferDone;

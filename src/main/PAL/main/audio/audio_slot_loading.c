@@ -36,8 +36,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     g_AudioLoadSlot = slot;
     TransferVabToSlot(slot, header, body, g_VabSpuAddress[slot]);
 
-    g_VabTransferDone = SsVabTransCompleted(0);
-    return g_VabTransferDone;
+    return SsVabTransCompleted(0);
 }
 
 s32 PollAudioSlotLoad(void) {
@@ -45,8 +44,6 @@ s32 PollAudioSlotLoad(void) {
     s32 slot;
 
     completed = SsVabTransCompleted(0);
-    g_VabTransferDone = completed;
-
     if (completed != 0) {
         slot = g_AudioLoadSlot;
         if ((u32)slot >= AUDIO_SLOT_COUNT) {
@@ -111,6 +108,5 @@ static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table) {
     }
 
     g_EngineSoundState.extraVabLoaded = 1;
-    g_VabTransferDone = SsVabTransCompleted(0);
-    return g_VabTransferDone;
+    return SsVabTransCompleted(0);
 }

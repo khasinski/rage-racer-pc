@@ -214,7 +214,6 @@ extern s32 g_StereoOutput;
  * both of its entries split off under their own names.
  */
 extern s32 g_VabSpuAddress[];
-extern s32 g_VabTransferDone;
 
 /* The BIOS exit service does not return after a fatal asset-loading error. */
 void BiosExit(s32 code) __attribute__((noreturn));
