@@ -136,6 +136,26 @@ endif()
 add_test(NAME fmv_stream_index COMMAND fmv_stream_index_tests)
 set_tests_properties(fmv_stream_index PROPERTIES LABELS unit)
 
+add_executable(fmv_audio_tests
+    fmv_audio_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/fmv_audio.c)
+target_include_directories(fmv_audio_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(fmv_audio_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(fmv_audio_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(fmv_audio_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME fmv_audio COMMAND fmv_audio_tests)
+set_tests_properties(fmv_audio PROPERTIES LABELS unit)
+
 add_executable(fmv_scene_tests
     fmv_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_scene.c

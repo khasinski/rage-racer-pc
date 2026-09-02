@@ -1,5 +1,6 @@
 #include "rage/render_world_game.h"
 #include "modern/modern_renderer.h"
+#include "fmv_audio.h"
 #include <libgte.h>
 
 extern int32_t g_FrameCounter;
@@ -30,8 +31,6 @@ void PortSmokeBeforeSceneHandler(void) {}
 void CaptureFrameBegin(void);
 void CaptureFrameEnd(void);
 void ModernFrameWaitTick(int frameLimit);
-void HostFmvAudioTick(void);
-
 void PortBeforeSceneHandler(void) {
     HostFmvAudioTick();
     {

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "disc_stream_table.h"
+#include "fmv_audio.h"
 #include "fmv_stream_index.h"
 #include "host_clock.h"
 
@@ -48,8 +49,6 @@ static unsigned int s_frame;
 static unsigned int s_tickSectors;
 static unsigned long long s_startNs;
 static int s_wallClock;
-static int s_xaPlaying;
-static int s_xaTailAllowed;
 
 /*
  * A movie in RAGE.STR carries no frame rate, and there is no single one to
@@ -80,14 +79,7 @@ static unsigned char *s_bitstream;
 static u_long *s_codes;
 static u_long s_macroblock[192];
 
-enum {
-    RAGE_CDL_SETLOC = 0x02, RAGE_CDL_READN = 0x06, RAGE_CDL_PAUSE = 0x09,
-    RAGE_CDL_SETFILTER = 0x0d, RAGE_CDL_SETMODE = 0x0e,
-    RAGE_CDL_MODE_DA = 0x01, RAGE_CDL_MODE_RT = 0x40
-};
-
 int HostReadStreamSector(unsigned int sector, unsigned char *raw);
-int HostStreamAbsoluteSector(unsigned int sector);
 /* How many sectors of RAGE.STR a movie occupies, which is where the next one
  * begins.  The mounted disc decides it; the movies do not sit in the same
  * places on a PAL disc and an American one. */
@@ -209,68 +201,6 @@ static int RageDecodeFmvFrame(void) {
     return 1;
 }
 
-/* Whether a movie's XA soundtrack is streaming. Asset loads pause CD audio,
- * because the console's drive cannot read data and play CD-DA at once; the
- * soundtrack interleaved into a movie is not CD-DA and must survive them. */
-static void FinishXaAudio(void) {
-    unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
-    Psyz_CdSetXaEndSector(-1);
-    CdControl(RAGE_CDL_SETMODE, &mode, NULL);
-    s_xaPlaying = 0;
-    s_xaTailAllowed = 0;
-}
-
-static void StopXaAudio(void) {
-    if (s_xaPlaying) CdControl(RAGE_CDL_PAUSE, NULL, NULL);
-    FinishXaAudio();
-}
-
-void HostFmvAudioTick(void) {
-    if (s_xaPlaying && !Psyz_CdAudioPlaying()) {
-        if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
-            fprintf(stderr, "fmv xa end\n");
-        }
-        FinishXaAudio();
-    }
-}
-
-int FmvXaStreaming(void) {
-    HostFmvAudioTick();
-    return s_xaPlaying;
-}
-
-static int StartXaAudio(unsigned int firstSector,
-                        unsigned int sectorCount) {
-    unsigned char raw[RAGE_STR_SECTOR_SIZE], filter[2] = {0, 0};
-    unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
-    CdlLOC location;
-    int absolute;
-    unsigned int index;
-    unsigned int searchCount = sectorCount < 16 ? sectorCount : 16;
-
-    for (index = 0; index < searchCount; index++) {
-        if (!HostReadStreamSector(firstSector + index, raw)) return 0;
-        if ((raw[0x12] & 0x0e) == 0x04) {
-            filter[0] = raw[0x10];
-            filter[1] = raw[0x11];
-            break;
-        }
-    }
-    absolute = HostStreamAbsoluteSector(firstSector);
-    if (index == searchCount || absolute < 0) return 0;
-    CdIntToPos(absolute, &location);
-    if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
-        fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
-                filter[0], filter[1]);
-    }
-    CdControl(RAGE_CDL_SETFILTER, filter, NULL);
-    CdControl(RAGE_CDL_SETMODE, &mode, NULL);
-    CdControl(RAGE_CDL_SETLOC, (unsigned char *)&location, NULL);
-    Psyz_CdSetXaEndSector(absolute + (int)sectorCount);
-    CdControl(RAGE_CDL_READN, NULL, NULL);
-    return Psyz_CdAudioPlaying();
-}
-
 static int HostDecodeFmvFrame(void) {
     if (s_pixels == NULL || !RageDecodeFmvFrame()) return 0;
     s_frame++;
@@ -282,7 +212,7 @@ static int HostDecodeFmvFrame(void) {
      * table names the last one it does. */
     if (g_StreamSectorCount != 0 && s_frame >= g_StreamSectorCount) {
         g_FmvStreamEnded = 1;
-        s_xaTailAllowed = 1;
+        HostFmvAudioAllowTail();
     }
     return 1;
 }
@@ -365,8 +295,7 @@ void StartFmvPlayback(void) {
     /* Every movie in RAGE.STR, including the opening movie, carries its own
      * interleaved XA stream.  The prologue CD-DA cue ends before playback and
      * must not be mistaken for the opening movie's soundtrack. */
-    s_xaTailAllowed = 0;
-    s_xaPlaying = StartXaAudio(firstSector, sectorSpan);
+    HostFmvAudioStart(firstSector, sectorSpan);
     if (!HostDecodeFmvFrame() || !HostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
@@ -416,12 +345,7 @@ void DecodeFmvFrame(void) {
 }
 
 void EndFmv(void) {
-    if (s_xaPlaying && !s_xaTailAllowed) {
-        StopXaAudio();
-    } else if (s_xaPlaying &&
-               RuntimeConfigEnabled("diagnostics.fmv_trace")) {
-        fprintf(stderr, "fmv video end: xa tail continues\n");
-    }
+    HostFmvAudioEnd();
     ReleaseFmvBuffers();
     ReleaseFmvPixels();
     g_SceneId = g_StreamReturnScene;

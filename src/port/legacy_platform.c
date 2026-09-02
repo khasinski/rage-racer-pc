@@ -57,6 +57,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "runtime_config.h"
 #include "chd_disc.h"
 #include "disc_stream_table.h"
+#include "fmv_audio.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern char SsSetReservedVoice(char voices);
@@ -802,8 +803,6 @@ int HostDumpArchive(const char *path) {
  * does not disturb. Pausing it silenced every movie the game loads behind,
  * which is all of them but the opening one.
  */
-int FmvXaStreaming(void);
-
 static void BeginDataRead(void) {
     if (FmvXaStreaming()) return;
     Psyz_CdBeginDataRead();
