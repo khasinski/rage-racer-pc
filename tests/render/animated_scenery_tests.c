@@ -157,6 +157,17 @@ int main(void) {
         return 1;
     }
 
+    /* Partially imported courses may not contain the animated overlays. Both
+     * layers then use the ordinary course fallback model. */
+    g_CourseModelCount = 5;
+    Reset();
+    DrawAnimatedScenery(4, 0);
+    if (!ExpectPair("missing overlay models", 0x20, 1, 1,
+                    100, 300, 0)) {
+        return 1;
+    }
+    g_CourseModelCount = 64;
+
     /* The replay variant returns before changing state when GP mode is off. */
     g_GrandPrixMode = 0;
     g_AnimScenery2Frame = 9;

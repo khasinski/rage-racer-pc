@@ -13,7 +13,7 @@ typedef struct AnimatedSceneryTransform {
     Matrix worldMatrix;
 } AnimatedSceneryTransform;
 
-static s32 AvailableCourseModel(s32 modelId) {
+static s32 CourseModelOrFallback(s32 modelId) {
     return modelId < g_CourseModelCount ? modelId : 1;
 }
 
@@ -41,7 +41,7 @@ static void SubmitAnimatedSceneryLayer(AnimatedSceneryTransform *transform,
                                        s32 entity, s32 modelId, s32 tint) {
     Vec4 *position = &transform->position;
 
-    modelId = AvailableCourseModel(modelId);
+    modelId = CourseModelOrFallback(modelId);
     SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(position),
                        &transform->objectMatrix);
     g_RenderState.envMode4 = tint;

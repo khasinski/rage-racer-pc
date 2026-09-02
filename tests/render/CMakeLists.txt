@@ -368,7 +368,7 @@ set_tests_properties(scripted_scenery_dispatch PROPERTIES LABELS functional)
 
 add_executable(animated_scenery_tests
     animated_scenery_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/dynamic_track_views.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/animated_scenery.c)
 target_include_directories(animated_scenery_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port
