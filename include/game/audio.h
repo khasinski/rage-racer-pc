@@ -42,6 +42,10 @@ static inline s32 ClampCueLevel(s32 level) {
 
 enum { AUDIO_SETTING_MAX = 15 };
 
+extern s32 g_BgmVolumeSetting;
+extern s32 g_SfxVolumeSetting;
+extern s32 g_MonoOutput;
+
 static inline s32 ClampAudioSetting(s32 setting) {
     if (setting < 0) {
         return 0;

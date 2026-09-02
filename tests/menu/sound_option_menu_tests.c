@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/audio.h"
 #include "game/menu.h"
 #include "game/render_internal.h"
 #include "game/render_state.h"

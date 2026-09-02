@@ -1,5 +1,4 @@
 #include "game/audio.h"
-#include "game/menu.h"
 
 void ApplyAudioSettings(void) {
     SetSequenceVolumeSetting(g_BgmVolumeSetting);

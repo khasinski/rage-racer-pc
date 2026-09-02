@@ -1,3 +1,4 @@
+#include "game/audio.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "game/input_internal.h"
