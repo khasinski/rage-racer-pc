@@ -130,12 +130,17 @@ static int PrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
     int i;
     for (i = 0; i < 2; i++) {
         const uint8_t *begin = g_FrameContexts[i].layout.primitiveBuffer;
-        const uint8_t *end = begin + sizeof(g_FrameContexts[i].layout.primitiveBuffer);
-        if (cursor >= begin && cursor <= end) {
-            if (size <= (size_t)(end - cursor)) return 1;
+        size_t capacity = sizeof(g_FrameContexts[i].layout.primitiveBuffer);
+
+        if (GeometryBufferHasSpace(begin, capacity, cursor, 0)) {
+            size_t used = (uintptr_t)cursor - (uintptr_t)begin;
+
+            if (GeometryBufferHasSpace(begin, capacity, cursor, size)) {
+                return 1;
+            }
             fprintf(stderr,
                     "rage geometry: primitive buffer exhausted (used=%zu capacity=%zu)\n",
-                    (size_t)(cursor - begin), (size_t)(end - begin));
+                    used, capacity);
             return 0;
         }
     }

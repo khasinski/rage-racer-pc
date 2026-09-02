@@ -6,6 +6,7 @@
     ((int)((uint16_t)(x) | ((uint32_t)(uint16_t)(y) << 16)))
 
 int main(void) {
+    uint8_t buffer[16];
     const int sxy[4] = {
         (10 & 0xffff) | (20 << 16),
         (30 & 0xffff) | (20 << 16),
@@ -75,8 +76,18 @@ int main(void) {
         CHECK(!ScreenQuadOutsideBounds(crossing, 0, 320, 0, 240, 0));
         CHECK(ScreenQuadOutsideBounds(above, 0, 320, 0, 240, 0));
         CHECK(ScreenQuadOutsideBounds(right, 0, 320, 0, 240, 0));
-        CHECK(ScreenQuadOutsideBounds(below, 0, 320, 0, 240, 0));
+    CHECK(ScreenQuadOutsideBounds(below, 0, 320, 0, 240, 0));
     }
+    CHECK(GeometryBufferHasSpace(buffer, sizeof(buffer), buffer, 16));
+    CHECK(GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 8, 8));
+    CHECK(!GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 8, 9));
+    CHECK(GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 16, 0));
+    CHECK(!GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 16, 1));
+    CHECK(!GeometryBufferHasSpace(
+        buffer, sizeof(buffer),
+        (void *)((uintptr_t)buffer - 1), 0));
+    CHECK(!GeometryBufferHasSpace(
+        (void *)(uintptr_t)(UINTPTR_MAX - 3), 8, buffer, 0));
     CHECK(OrthonormalizeMatrix3x3(rotating, fallback));
     CHECK(rotating[0][0] > 2890 && rotating[0][0] < 2905);
     CHECK(rotating[0][2] == rotating[0][0]);

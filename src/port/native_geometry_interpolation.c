@@ -93,6 +93,16 @@ int ScreenQuadOutsideBounds(const int sxy[4], int left, int right, int top,
     return allLeft || allRight || allAbove || allBelow;
 }
 
+int GeometryBufferHasSpace(const void *buffer, size_t capacity,
+                           const void *cursor, size_t required) {
+    uintptr_t begin = (uintptr_t)buffer;
+    uintptr_t at = (uintptr_t)cursor;
+
+    if (capacity > UINTPTR_MAX - begin) return 0;
+    if (at < begin || at > begin + capacity) return 0;
+    return required <= begin + capacity - at;
+}
+
 int OrthonormalizeMatrix3x3(void *matrixStorage,
                                 const void *fallbackStorage) {
     int16_t (*matrix)[3] = matrixStorage;
