@@ -18,6 +18,7 @@ enum {
     ROUND_SCREEN_SETUP_FRAME = 1,
     ROUND_SCREEN_DISPLAY_FRAME = 15,
     ROUND_SCREEN_CUE_FRAME = 32,
+    ROUND_SCREEN_CUE = 0x19,
     ROUND_SCREEN_RACE_FRAME = 121,
     ROUND_SCREEN_FADE_READY = 0x80,
     ROUND_SCREEN_TEXT_CAPACITY = 88,
@@ -159,7 +160,7 @@ void UpdateRoundScreen(void) {
     }
     DrawRoundScreen();
     if (g_SceneTimer == ROUND_SCREEN_CUE_FRAME) {
-        PlaySoundCue(0x19);
+        PlaySoundCue(ROUND_SCREEN_CUE);
     }
     if (g_FadeLevel == 0) {
         if (RequestRaceAssets() == 0) {

@@ -8,6 +8,8 @@ typedef struct RoundBgmChoice {
     s32 shuffleIndex;
 } RoundBgmChoice;
 
+void EnterRoundScreen(void);
+void UpdateRoundScreen(void);
 s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
                             s32 courseIndex);
 s32 WrapRoundBgmSelection(s32 selection, s32 trackCount);

@@ -51,6 +51,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/fmv.h"
 #include "game/records_internal.h"
 #include "game/replay_internal.h"
+#include "game/round_screen_internal.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -176,8 +177,6 @@ int DrawCarShopScreen(int step);
 int DrawEngineerShopScreen(int step);
 void InitMenuMode(void);
 void UpdateMenuMode(void);
-void EnterRoundScreen(void);
-void UpdateRoundScreen(void);
 void EnterRaceScene(void);
 void UpdateRaceScene(void);
 void EnterLostRaceScreen(void);
