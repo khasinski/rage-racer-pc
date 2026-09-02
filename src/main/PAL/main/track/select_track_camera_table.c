@@ -1,12 +1,33 @@
 #include "game/race.h"
 #include "game/track_camera_internal.h"
 
-void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
+static s32 CameraListHasTerminator(const TrackCameraTable *table, size_t size,
+                                   s32 offset) {
+    const GameTrackCameraNode *node;
+    size_t remaining;
+
+    if (offset < (s32)sizeof(*table) ||
+        offset % (s32)_Alignof(GameTrackCameraNode) != 0 ||
+        (size_t)offset > size) {
+        return 0;
+    }
+    remaining = size - (size_t)offset;
+    node = (const GameTrackCameraNode *)((const u8 *)table + offset);
+    while (remaining >= sizeof(*node)) {
+        if (node->trackSection.value == -1) return 1;
+        node++;
+        remaining -= sizeof(*node);
+    }
+    return 0;
+}
+
+s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+                           s32 useSeriesCamera) {
     s32 offset;
 
-    if (table == NULL) {
+    if (table == NULL || size < sizeof(*table)) {
         g_TrackCameras = NULL;
-        return;
+        return 0;
     }
 
     offset = table->defaultOffset;
@@ -15,11 +36,11 @@ void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
         offset = table->seriesOffset[g_GrandPrixSeries != 0];
     }
 
-    if (offset < (s32)sizeof(*table) ||
-        offset % (s32)_Alignof(GameTrackCameraNode) != 0) {
+    if (!CameraListHasTerminator(table, size, offset)) {
         g_TrackCameras = NULL;
-        return;
+        return 0;
     }
 
     g_TrackCameras = (GameTrackCameraNode *)((u8 *)table + offset);
+    return 1;
 }

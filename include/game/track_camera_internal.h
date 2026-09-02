@@ -41,6 +41,7 @@ typedef struct TrackCameraTable {
 
 extern GameTrackCameraNode *g_TrackCameras;
 extern u16 g_TrackSectionCount;
-void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera);
+s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+                           s32 useSeriesCamera);
 
 #endif

@@ -9,10 +9,43 @@ enum {
     ENVIRONMENT_FOG_STEP = 0xFA,
 };
 
-void SetEnvironmentScript(GameEnvironmentScript *script) {
+static void ClearEnvironmentScript(void) {
+    g_SkyRowBase = 0;
+    g_EnvScriptLength = 0;
+    g_EnvScriptCues = NULL;
+}
+
+s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {
+    size_t cueCount;
+    size_t i;
+
+    if (script == NULL || size < offsetof(GameEnvironmentScript, cues) ||
+        script->length == 0 || script->length > INT32_MAX) {
+        ClearEnvironmentScript();
+        return 0;
+    }
+    cueCount = (size - offsetof(GameEnvironmentScript, cues)) /
+               sizeof(script->cues[0]);
+    if (cueCount < 2 || script->cues[0].time < 0) {
+        ClearEnvironmentScript();
+        return 0;
+    }
+    for (i = 1; i < cueCount; i++) {
+        if (script->cues[i].time == -1) break;
+        if (script->cues[i].time < 0) {
+            ClearEnvironmentScript();
+            return 0;
+        }
+    }
+    if (i == cueCount) {
+        ClearEnvironmentScript();
+        return 0;
+    }
+
     g_SkyRowBase = script->skyRowBase;
-    g_EnvScriptLength = script->length;
+    g_EnvScriptLength = (s32)script->length;
     g_EnvScriptCues = script->cues;
+    return 1;
 }
 
 static GameEnvironmentCue *LastEnvironmentCue(void) {

@@ -126,8 +126,10 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     (void)size;
     return 1;
 }
-void SetEnvironmentScript(struct GameEnvironmentScript *script) {
+s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size) {
+    (void)size;
     s_installs[s_installCount++] = script;
+    return 1;
 }
 s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
     (void)size;
@@ -155,9 +157,12 @@ s32 InstallTrackEventData(struct TrackEventData *data, size_t size) {
     s_installs[s_installCount++] = data;
     return 1;
 }
-void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
+s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+                           s32 useSeriesCamera) {
+    (void)size;
     s_installs[s_installCount++] = table;
     s_seriesCamera = useSeriesCamera;
+    return 1;
 }
 s32 EnableCdAudioMode(void) { return s_enableCdResult; }
 void ResetCdAudioState(void) { s_resetCdCalls++; }

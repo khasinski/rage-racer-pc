@@ -94,7 +94,11 @@ static void SeedCue(GameEnvironmentCue *cue, s32 time, u8 color,
 }
 
 int main(void) {
-    GameEnvironmentScript script;
+    struct {
+        u32 skyRowBase;
+        u32 length;
+        GameEnvironmentCue cues[2];
+    } script;
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[5];
     s32 color;
@@ -106,10 +110,24 @@ int main(void) {
 
     script.skyRowBase = 7;
     script.length = 123;
-    SetEnvironmentScript(&script);
+    script.cues[0].time = 0;
+    script.cues[1].time = -1;
+    if (!SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script))) {
+        puts("FAIL: valid environment script rejected");
+        return 1;
+    }
     if (g_SkyRowBase != 7 || g_EnvScriptLength != 123 ||
         g_EnvScriptCues != script.cues) {
         puts("FAIL: environment script header");
+        return 1;
+    }
+
+    script.cues[1].time = 10;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0 ||
+        g_EnvScriptCues != NULL || g_EnvScriptLength != 0) {
+        puts("FAIL: unterminated environment script published");
         return 1;
     }
 

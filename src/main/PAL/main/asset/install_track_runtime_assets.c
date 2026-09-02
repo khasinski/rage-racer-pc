@@ -76,8 +76,11 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         header, TRACK_RUNTIME_RENDER_TABLE);
     g_EnvPaletteTable = GetSceneAssetBlock(
         header, TRACK_RUNTIME_ENVIRONMENT_PALETTE);
-    SetEnvironmentScript(GetSceneAssetBlock(
-        header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT));
+    if (!SetEnvironmentScript(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT),
+            blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT])) {
+        return 0;
+    }
     if (!RegisterModelBank(
             GetModelBankHeader(GetSceneAssetBlock(
                 header, TRACK_RUNTIME_PRIMARY_MODELS)),
@@ -109,7 +112,10 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             blockSizes[TRACK_RUNTIME_EVENTS])) {
         return 0;
     }
-    SelectTrackCameraTable(GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
-                           useSeriesCamera);
+    if (!SelectTrackCameraTable(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
+            blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
+        return 0;
+    }
     return 1;
 }

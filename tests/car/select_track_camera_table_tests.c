@@ -31,32 +31,42 @@ int main(void) {
         offsetof(CameraTableFixture, firstSeriesCamera);
     fixture.table.seriesOffset[1] =
         offsetof(CameraTableFixture, secondSeriesCamera);
+    fixture.defaultCamera.trackSection.value = -1;
+    fixture.firstSeriesCamera.trackSection.value = -1;
+    fixture.secondSeriesCamera.trackSection.value = -1;
 
     g_GrandPrixSeries = 1;
-    SelectTrackCameraTable(&fixture.table, 0);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
     CHECK(g_TrackCameras == &fixture.defaultCamera);
 
     g_GrandPrixSeries = 0;
-    SelectTrackCameraTable(&fixture.table, 1);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1);
     CHECK(g_TrackCameras == &fixture.firstSeriesCamera);
 
     g_GrandPrixSeries = 4;
-    SelectTrackCameraTable(&fixture.table, 1);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1);
     CHECK(g_TrackCameras == &fixture.secondSeriesCamera);
 
-    SelectTrackCameraTable(NULL, 0);
+    SelectTrackCameraTable(NULL, 0, 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = -1;
-    SelectTrackCameraTable(&fixture.table, 0);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = sizeof(fixture.table) - sizeof(s32);
-    SelectTrackCameraTable(&fixture.table, 0);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = sizeof(fixture.table) + 1;
-    SelectTrackCameraTable(&fixture.table, 0);
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(g_TrackCameras == NULL);
+
+    fixture.table.defaultOffset = offsetof(CameraTableFixture, defaultCamera);
+    fixture.defaultCamera.trackSection.value = 0;
+    SelectTrackCameraTable(
+        &fixture.table,
+        offsetof(CameraTableFixture, firstSeriesCamera), 0);
     CHECK(g_TrackCameras == NULL);
 
     puts("track camera table selection tests passed");
