@@ -18,11 +18,6 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 GetCarCrestTrigger(GameCarRuntime *car);
-void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear);
-void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
-void SeedCarRouteMarkers(void);
-
 /* The state the three of them read. g_Cars is only here because the file
  * defines other functions that touch it. */
 GameCarRuntime g_Cars[11];

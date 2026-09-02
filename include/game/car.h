@@ -821,7 +821,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex);
-s32 GetCarCrestTrigger(GameCarRuntime* car);
+s32 GetCarCrestTrigger(GameCarRuntime *car);
 void InitRivalCar(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
 void InitRivalCarAi(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
 void RankContenders(void);
@@ -855,6 +855,7 @@ void StartCarBodyKick(s32 strength, GameCarRuntime *car);
 void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop(GameCarRuntime *car);
+void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex);
 void UpdateCarTiltCounter(GameCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         CarTrackLimits *limits);

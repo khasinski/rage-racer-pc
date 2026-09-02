@@ -1,10 +1,10 @@
 /*
  * The three pieces of car motion nothing was watching.
  *
- * car_ai.c holds seven functions and the existing test drives three of them.
- * A mutation probe over the file found seven of ten injected mistakes
- * surviving, all of them in the other four: the body kick, the hop over a
- * crest, and the slide. Those are what this covers.
+ * These motion functions were recovered beside the AI table walkers even
+ * though they operate independently. They now live in focused modules; this
+ * characterisation sweep protects their arithmetic while that structure and
+ * the recovered expressions are cleaned up.
  *
  * They are arithmetic over one car, so this walks the states that decide which
  * branch runs and folds everything the call could have written into one
@@ -19,11 +19,6 @@
 
 #include <stdio.h>
 #include <string.h>
-
-void UpdateCarBodyKick(GameCarRuntime *car);
-void UpdateCarCrestHop(GameCarRuntime *car);
-void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex);
-s32 GetCarCrestTrigger(GameCarRuntime *car);
 
 GameCarRuntime g_Cars[11];
 TrackEventData *g_TrackEventData;
