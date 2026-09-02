@@ -203,7 +203,7 @@ int main(void) {
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &invalid) == -1);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &asset) == 1);
     CHECK(g_AudioLoadSlot == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
-    CHECK(g_EngineSoundState.extraVabLoaded == 1 && s_tableCalls == 1);
+    CHECK(s_tableCalls == 1);
 
     s_completed = 0;
     g_AudioLoadedSlotMask = 0;

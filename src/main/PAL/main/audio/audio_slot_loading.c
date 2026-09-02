@@ -195,6 +195,5 @@ static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
     }
 
     g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
-    g_EngineSoundState.extraVabLoaded = 1;
     return SsVabTransCompleted(0);
 }

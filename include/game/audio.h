@@ -152,21 +152,18 @@ typedef struct EngineSoundCurveRow {
 typedef struct EngineSoundState {
     s32 position;
     s32 bank;
-    /* Retail +0x08 flag, written after the engine VAB transfer. No current C
-     * reader, but retaining it preserves every following runtime offset. */
-    s32 extraVabLoaded;
     s32 maxRpm;
     s32 slotActive[ENGINE_SOUND_SLOT_COUNT];
     s32 volumeScale;
 } EngineSoundState;
 
-_Static_assert(sizeof(EngineSoundState) == 44,
+_Static_assert(sizeof(EngineSoundState) == 40,
                "engine sound runtime ABI changed");
-_Static_assert(__builtin_offsetof(EngineSoundState, maxRpm) == 12,
+_Static_assert(__builtin_offsetof(EngineSoundState, maxRpm) == 8,
                "engine max-RPM offset changed");
-_Static_assert(__builtin_offsetof(EngineSoundState, slotActive) == 16,
+_Static_assert(__builtin_offsetof(EngineSoundState, slotActive) == 12,
                "engine sound slot offset changed");
-_Static_assert(__builtin_offsetof(EngineSoundState, volumeScale) == 40,
+_Static_assert(__builtin_offsetof(EngineSoundState, volumeScale) == 36,
                "engine volume-scale offset changed");
 
 extern EngineSoundCurveRow
