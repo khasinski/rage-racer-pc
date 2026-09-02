@@ -7,8 +7,6 @@
 #include "game/state.h"
 #include "game/track.h"
 
-#include <stdlib.h>
-
 enum {
     COLLISION_PROGRESS_REACH = 0xC8,
     COLLISION_LATERAL_REACH = 0x64,
@@ -201,14 +199,11 @@ static PlayerCollisionHit FindPlayerCollision(
 
 static void TracePlayerCollision(const PlayerCarRuntime *player,
                                  const PlayerCollisionHit *hit) {
-    const char *timerText;
-
     if (!DiagnosticsEnabled("car.collision_trace")) {
         return;
     }
-    timerText = DiagnosticsValue("car.collision_trace_timer");
-    if (timerText != NULL &&
-        g_SceneTimer != (s32)strtol(timerText, NULL, 0)) {
+    if (g_SceneTimer != DiagnosticsIntValue(
+            "car.collision_trace_timer", g_SceneTimer)) {
         return;
     }
     Trace("car-collision", "timer=%d opponent=%d region=%d sample=%d quad=%d "

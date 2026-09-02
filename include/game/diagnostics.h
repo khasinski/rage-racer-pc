@@ -5,6 +5,9 @@
  * concepts; the host port owns INI and legacy environment-variable mapping. */
 int DiagnosticsEnabled(const char *key);
 const char *DiagnosticsValue(const char *key);
+/* Parse a complete base-0 integer, returning fallback for absent, malformed,
+ * overflowing, or out-of-int-range settings. */
+int DiagnosticsIntValue(const char *key, int fallback);
 
 /*
  * Write one trace line: the topic, then `key=value` fields, then a newline.

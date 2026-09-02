@@ -18,6 +18,11 @@ const char *DiagnosticsValue(const char *key) {
     return NULL;
 }
 
+int DiagnosticsIntValue(const char *key, int fallback) {
+    (void)key;
+    return fallback;
+}
+
 void Trace(const char *topic, const char *format, ...) {
     (void)topic;
     (void)format;

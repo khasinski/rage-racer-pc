@@ -55,6 +55,10 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
 /* The diagnostics hooks are off in a test run. */
 int DiagnosticsEnabled(const char *channel) { (void)channel; return 0; }
 const char *DiagnosticsValue(const char *key) { (void)key; return NULL; }
+int DiagnosticsIntValue(const char *key, int fallback) {
+    (void)key;
+    return fallback;
+}
 void Trace(const char *channel, const char *format, ...) {
     (void)channel;
     (void)format;

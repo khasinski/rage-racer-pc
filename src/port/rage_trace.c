@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "game/car.h"
 #include "game/diagnostics.h"
 #include "game/state.h"
@@ -10,9 +7,8 @@ void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
     static int timer = -1;
 
     if (enabled < 0) {
-        const char *text = DiagnosticsValue("car.motion_trace_timer");
         enabled = DiagnosticsEnabled("car.motion_trace");
-        timer = text != NULL ? (int)strtol(text, NULL, 0) : -1;
+        timer = DiagnosticsIntValue("car.motion_trace_timer", -1);
     }
     if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
 
@@ -35,11 +31,9 @@ void TraceCarStates(void) {
     int index;
 
     if (enabled < 0) {
-        const char *minText = DiagnosticsValue("car.state_trace_timer_min");
-        const char *maxText = DiagnosticsValue("car.state_trace_timer_max");
         enabled = DiagnosticsEnabled("car.state_trace");
-        timerMin = minText != NULL ? (int)strtol(minText, NULL, 0) : -1;
-        timerMax = maxText != NULL ? (int)strtol(maxText, NULL, 0) : -1;
+        timerMin = DiagnosticsIntValue("car.state_trace_timer_min", -1);
+        timerMax = DiagnosticsIntValue("car.state_trace_timer_max", -1);
     }
     if (!enabled || (timerMin >= 0 && g_SceneTimer < timerMin) ||
         (timerMax >= 0 && g_SceneTimer > timerMax)) return;

@@ -5,17 +5,12 @@
 #include "game/render.h"
 #include "game/state.h"
 
-#include <stdlib.h>
-
 static int ShouldTraceTrackLimits(void) {
-    const char *timerText;
-
     if (!DiagnosticsEnabled("car.track_trace")) {
         return 0;
     }
-    timerText = DiagnosticsValue("car.track_trace_timer");
-    return timerText == NULL ||
-           g_SceneTimer == (s32)strtol(timerText, NULL, 0);
+    return g_SceneTimer == DiagnosticsIntValue(
+        "car.track_trace_timer", g_SceneTimer);
 }
 
 static void TraceTrackLimit(const Matrix *toTrack, const SVec *corner,

@@ -5,6 +5,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 CarHullPoint g_CarCornerOffsets[4];
@@ -27,6 +28,12 @@ const char *DiagnosticsValue(const char *key) {
     (void)key;
     s_valueCalls++;
     return s_traceTimer;
+}
+
+int DiagnosticsIntValue(const char *key, int fallback) {
+    const char *text = DiagnosticsValue(key);
+
+    return text != NULL ? (int)strtol(text, NULL, 0) : fallback;
 }
 
 void Trace(const char *channel, const char *format, ...) {

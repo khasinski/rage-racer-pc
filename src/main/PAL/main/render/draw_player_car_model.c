@@ -11,8 +11,6 @@
 #include "game/state.h"
 #include "rage/render_world_game.h"
 
-#include <stdlib.h>
-
 enum {
     CAR_SHELL_PASS_COUNT = 2,
     CAR_SIDE_COUNT = 2,
@@ -187,8 +185,8 @@ void DrawCar(GameRenderObject *object) {
         object->x, object->z, g_RenderState.viewX, g_RenderState.viewZ);
     renderRange = ClassifyCarRenderRange(viewPosition[2], renderDistance);
     if (DiagnosticsEnabled("render.car_draw_trace")) {
-        const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
-        if (timerText == NULL || g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+        if (g_SceneTimer == DiagnosticsIntValue(
+                "render.car_draw_trace_timer", g_SceneTimer)) {
             static const char *const rangeNames[] = {
                 "behind", "close", "far", "culled"
             };

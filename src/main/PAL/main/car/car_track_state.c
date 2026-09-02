@@ -6,8 +6,6 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
-#include <stdlib.h>
-
 typedef struct {
     int enabled;
     int exactTimer;
@@ -15,23 +13,16 @@ typedef struct {
     int lastTimer;
 } CarTrackTraceConfig;
 
-static int ParseOptionalTraceTimer(const char *key) {
-    const char *text = DiagnosticsValue(key);
-
-    return text != NULL ? (int)strtol(text, NULL, 0) : -1;
-}
-
 static int ShouldTraceCarTrackState(const GameCarRuntime *car) {
     static CarTrackTraceConfig config = {-1, -1, -1, -1};
 
     if (config.enabled < 0) {
         config.enabled = DiagnosticsEnabled("car.track_trace");
-        config.exactTimer =
-            ParseOptionalTraceTimer("car.track_trace_timer");
-        config.firstTimer =
-            ParseOptionalTraceTimer("car.track_trace_timer_min");
-        config.lastTimer =
-            ParseOptionalTraceTimer("car.track_trace_timer_max");
+        config.exactTimer = DiagnosticsIntValue("car.track_trace_timer", -1);
+        config.firstTimer = DiagnosticsIntValue(
+            "car.track_trace_timer_min", -1);
+        config.lastTimer = DiagnosticsIntValue(
+            "car.track_trace_timer_max", -1);
     }
 
     return config.enabled && car == AsRivalCar(&g_PlayerCar) &&

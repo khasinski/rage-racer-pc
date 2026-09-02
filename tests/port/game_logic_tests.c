@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 
 #include "common.h"
+#include "game/diagnostics.h"
 #include "game/track.h"
 #include "input_config.h"
 #include "port_config.h"
@@ -233,6 +234,30 @@ static void test_port_config(void) {
     }
 }
 
+static void test_diagnostic_integer_values(void) {
+    char *valid[] = {
+        "rage-test", "--set", "diagnostics.test_number=0x2a"};
+    char *negative[] = {
+        "rage-test", "--set", "diagnostics.test_number=-17"};
+    char *trailing[] = {
+        "rage-test", "--set", "diagnostics.test_number=12frames"};
+    char *overflow[] = {
+        "rage-test", "--set",
+        "diagnostics.test_number=999999999999999999999999999999"};
+    char *missing[] = {"rage-test"};
+
+    EXPECT_EQ(1, RuntimeConfigInit(3, valid));
+    EXPECT_EQ(42, DiagnosticsIntValue("test_number", -1));
+    EXPECT_EQ(1, RuntimeConfigInit(3, negative));
+    EXPECT_EQ(-17, DiagnosticsIntValue("test_number", 4));
+    EXPECT_EQ(1, RuntimeConfigInit(3, trailing));
+    EXPECT_EQ(7, DiagnosticsIntValue("test_number", 7));
+    EXPECT_EQ(1, RuntimeConfigInit(3, overflow));
+    EXPECT_EQ(9, DiagnosticsIntValue("test_number", 9));
+    EXPECT_EQ(1, RuntimeConfigInit(1, missing));
+    EXPECT_EQ(11, DiagnosticsIntValue("test_number", 11));
+}
+
 static void test_platform_config_path(void) {
     char root[] = "/tmp/rage-path-test-XXXXXX";
     char directory[256], filePath[320], found[320];
@@ -335,6 +360,7 @@ int main(void) {
     test_track_point_interpolation();
     test_input_config();
     test_port_config();
+    test_diagnostic_integer_values();
     test_platform_config_path();
     test_portable_state_path();
 

@@ -57,6 +57,11 @@ const char *DiagnosticsValue(const char *key) {
     return NULL;
 }
 
+int DiagnosticsIntValue(const char *key, int fallback) {
+    (void)key;
+    return fallback;
+}
+
 void Trace(const char *channel, const char *format, ...) {
     (void)channel;
     (void)format;

@@ -2,8 +2,6 @@
 #include "game/render.h"
 #include "game/state.h"
 
-#include <stdlib.h>
-
 /* Converts a world-space object position to the camera-relative GTE matrix. */
 void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
                         Matrix *rotation) {
@@ -19,10 +17,8 @@ void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
 
     if (DiagnosticsEnabled("render.car_draw_trace") &&
         g_RenderState.mode == 9) {
-        const char *timerText = DiagnosticsValue("render.car_draw_trace_timer");
-
-        if (timerText == NULL ||
-            g_SceneTimer == (s32)strtol(timerText, NULL, 0)) {
+        if (g_SceneTimer == DiagnosticsIntValue(
+                "render.car_draw_trace_timer", g_SceneTimer)) {
             Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "
                   "view=%d,%d,%d rotation=%d,%d,%d,%d,%d,%d,%d,%d,%d "
                   "translation=%d,%d,%d", g_SceneTimer,

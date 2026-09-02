@@ -5,8 +5,6 @@
 #include "game/state.h"
 #include "game/render.h"
 
-#include <stdlib.h>
-
 enum {
     LOW_SPEED_KNOCKBACK_THRESHOLD = 0x321,
     MAX_SPEED_SCALED_KNOCKBACK = 0x708,
@@ -62,14 +60,12 @@ static void TraceCarKnockback(GameCarRuntime *car, s32 inputX, s32 inputZ,
     static int lastTimer = -1;
 
     if (enabled < 0) {
-        const char *exact = DiagnosticsValue("car.knockback_trace_timer");
-        const char *first = DiagnosticsValue("car.knockback_trace_timer_min");
-        const char *last = DiagnosticsValue("car.knockback_trace_timer_max");
-
         enabled = DiagnosticsEnabled("car.knockback_trace");
-        exactTimer = exact != NULL ? (int)strtol(exact, NULL, 0) : -1;
-        firstTimer = first != NULL ? (int)strtol(first, NULL, 0) : -1;
-        lastTimer = last != NULL ? (int)strtol(last, NULL, 0) : -1;
+        exactTimer = DiagnosticsIntValue("car.knockback_trace_timer", -1);
+        firstTimer = DiagnosticsIntValue(
+            "car.knockback_trace_timer_min", -1);
+        lastTimer = DiagnosticsIntValue(
+            "car.knockback_trace_timer_max", -1);
     }
 
     if (enabled &&
