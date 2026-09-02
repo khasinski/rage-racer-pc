@@ -856,3 +856,23 @@ else()
 endif()
 add_test(NAME race_car_update COMMAND race_car_update_tests)
 set_tests_properties(race_car_update PROPERTIES LABELS unit)
+
+add_executable(rival_acceleration_tests
+    rival_acceleration_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_acceleration.c)
+target_include_directories(rival_acceleration_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(rival_acceleration_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(rival_acceleration_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(rival_acceleration_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(rival_acceleration_tests PRIVATE psyz)
+add_test(NAME rival_acceleration COMMAND rival_acceleration_tests)
+set_tests_properties(rival_acceleration PROPERTIES LABELS unit)

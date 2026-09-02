@@ -54,5 +54,7 @@ extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 void UpdateRivalBodyMotion(void);
 /* World translation and steering/body-lean pass over the rival car slots. */
 void MoveRivalCars(void);
+void AccelerateRaceRivals(void);
+void AccelerateAttractRivals(void);
 
 #endif

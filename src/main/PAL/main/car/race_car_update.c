@@ -42,44 +42,6 @@ static void AvoidTrafficThisFrame(void) {
     }
 }
 
-/*
- * How hard each car pulls this frame, and how far it swings towards where it
- * wants to be pointing. A car on a boost gets the boost's own acceleration
- * until it is already quick enough, and its own otherwise; the speed keeps a
- * little under two thirds of itself each frame, so the acceleration is what
- * holds it up.
- */
-static void AccelerateAllCars(void) {
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-        GameCarAiBlock *ai = GetCarAiBlock(car);
-
-        if (car->activeFlag != -1) {
-            if (car->boostTimer > 0) {
-                if (car->boostAccelerationThreshold < car->boostTimer &&
-                    car->speed >= 0x321) {
-                    car->acceleration = 0;
-                } else if (ai->accelerationLimit >= car->acceleration) {
-                    car->acceleration = ai->boostAcceleration + car->acceleration;
-                } else {
-                    car->acceleration = ai->accelerationLimit;
-                }
-                ai->boostTimer--;
-            } else if (car->accelerationLimit >= car->acceleration) {
-                car->acceleration = car->accelerationStep + car->acceleration;
-            } else {
-                car->acceleration = car->accelerationLimit;
-            }
-            car->speed = car->speed * 0x5E / 100;
-            car->speed = car->speed + car->acceleration;
-            car->bodyYaw =
-                GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5 + car->bodyYaw;
-        }
-    }
-}
-
 /* Each car against the ones behind it, so every pair is tested once. */
 static void CollideAllCars(void) {
     s32 index;
@@ -153,30 +115,10 @@ void UpdateRaceCars(void) {
     SteerAllCars();
     UpdateRivalRubberBand();
     SlowTheCarsAhead();
-    AccelerateAllCars();
+    AccelerateRaceRivals();
     MoveRivalCars();
     PlaceAllCarsOnTrack();
     UpdateRivalBodyMotion();
-}
-
-static void AccelerateAttractCars(void) {
-    s32 i;
-
-    for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
-        GameCarRuntime *car = &g_Cars[i];
-        GameCarAiBlock *ai = GetCarAiBlock(car);
-
-        if (car->activeFlag == -1) {
-            continue;
-        }
-        if (car->acceleration < car->accelerationLimit) {
-            car->acceleration += car->accelerationStep;
-        } else {
-            car->acceleration = car->accelerationLimit;
-        }
-        car->speed = car->speed * 94 / 100 + car->acceleration;
-        car->bodyYaw += GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5;
-    }
 }
 
 /* Runs the corresponding all-cars pass for attract and replay scenes. */
@@ -201,7 +143,7 @@ void UpdateAttractCars(void) {
     }
     CollideAllCars();
     SteerAllCars();
-    AccelerateAttractCars();
+    AccelerateAttractRivals();
     MoveRivalCars();
     PlaceAllCarsOnTrack();
     UpdateRivalBodyMotion();
