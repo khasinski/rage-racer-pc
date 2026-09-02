@@ -319,6 +319,9 @@ static void UpdateActiveRaceScene(void) {
     if (g_RacePhase < 5) {
         lapUpdateResult = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
         UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
+        if (g_GrandPrixMode == 0 && lapUpdateResult != 2) {
+            DrawSplitTimes();
+        }
         if (lapUpdateResult < 2) {
             DrawLapTimes();
         }

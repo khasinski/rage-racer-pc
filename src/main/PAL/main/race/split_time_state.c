@@ -85,6 +85,4 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             g_SplitTargetTime = g_RefSectorTimes.values[0];
         }
     }
-
-    DrawSplitTimes();
 }

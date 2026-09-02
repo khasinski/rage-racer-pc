@@ -24,10 +24,8 @@ s32 g_LapCount;
 s32 g_TrackLength;
 s32 g_CourseIndex;
 
-static s32 s_DrawCalls;
 static s32 s_SoundCue;
 
-void DrawSplitTimes(void) { s_DrawCalls++; }
 void PlaySoundCue(s32 cue) { s_SoundCue = cue; }
 
 static void ResetState(void) {
@@ -49,7 +47,6 @@ static void ResetState(void) {
     g_LapCount = 0;
     g_TrackLength = 1000;
     g_CourseIndex = 2;
-    s_DrawCalls = 0;
     s_SoundCue = 0;
 }
 
@@ -59,7 +56,6 @@ static void TestModesThatDoNotHaveSplits(void) {
     ResetState();
     UpdateSplitTimes(&car, 1, 0);
     UpdateSplitTimes(&car, 0, 2);
-    assert(s_DrawCalls == 0);
     assert(g_SectorIndex == 0);
 }
 
@@ -76,7 +72,6 @@ static void TestInitialLapEvent(void) {
     assert(g_SplitTargetTime == 4321);
     assert(g_SplitTimer == 0x3C);
     assert(g_SplitSector == 0);
-    assert(s_DrawCalls == 1);
 }
 
 static void TestSectorClose(void) {
@@ -97,7 +92,6 @@ static void TestSectorClose(void) {
     assert(g_SplitTargetTime == 1000);
     assert(g_LastSectorTime == 900);
     assert(s_SoundCue == 0x3E);
-    assert(s_DrawCalls == 1);
 
     car.progressA = 0;
     car.progressB = 200;
