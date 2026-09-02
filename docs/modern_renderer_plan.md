@@ -180,8 +180,9 @@ MainLoop (src/main/PAL/main/boot/main_loop.c:96)
          -> src/port/native_geometry.c (portable GTE engine)
          -> GP0 packets into per-frame ordering tables
     sky: DrawSkyBackground (track/draw_terrain_cells.c:50) -> POLY_FT4/G4 bands
-    2D:  draw_prims.c / text.c / text_drawing.c / scripted_draw.c /
-         race_hud.c / sprite_string.c emitters -> GP0 packets
+    2D:  draw_prims.c / text.c / atlas_text.c / number_drawing.c /
+         bit_pattern_overlay.c / scripted_draw.c / race_hud.c /
+         sprite_string.c emitters -> GP0 packets
   DrawSync(0); VSync wait; PutDrawEnv/PutDispEnv
   DrawOTag(ot[0] tail); DrawOTag(ot[1] tail)   -> PsyZ GP0 interpreter
   PsyZ Draw_PushPrim -> SDL3 GPU (Metal) into emulated 1024×512 VRAM -> present
@@ -215,10 +216,10 @@ explicitly designates it: *"the enhanced path consumes semantic scene
 submissions before PS1 screen projection."*
 
 The 2D emitters are equally centralised (~20 functions in
-`render/draw_prims.c`, `render/text.c`, `render/text_drawing.c`,
-`render/scripted_draw.c`, `render/race_hud.c`, `render/sprite_string.c`,
-`render/draw_packet_queue.c`) and become the capture points for the overlay
-layer.
+`render/draw_prims.c`, `render/text.c`, `render/atlas_text.c`,
+`render/number_drawing.c`, `render/bit_pattern_overlay.c`,
+`render/scripted_draw.c`, `render/race_hud.c`, `render/sprite_string.c`, and
+`render/draw_packet_queue.c`) and become the capture points for the overlay layer.
 
 ## 3. Architecture: capture-alongside, render-instead
 
@@ -299,7 +300,7 @@ into the snapshot is cheap):
 | terrain | `SubmitTerrainCells` (`native_geometry.c:1236`) |
 | sky | `DrawSkyBackground` (`track/draw_terrain_cells.c:50`) — capture band parameters, not packets |
 | mirror pass | `BeginMirrorPass`/`EndMirrorPass` (`render/rear_view_mirror.c:31/115`) — marks a sub-camera scope |
-| 2D | the emitters in `draw_prims.c`, `text.c`, `text_drawing.c`, `scripted_draw.c`, `race_hud.c`, `sprite_string.c` — record the *arguments* (screen rect, UV, CLUT, blend, OT bucket), not the GP0 bytes |
+| 2D | the emitters in `draw_prims.c`, `text.c`, `atlas_text.c`, `number_drawing.c`, `bit_pattern_overlay.c`, `scripted_draw.c`, `race_hud.c`, `sprite_string.c` — record the *arguments* (screen rect, UV, CLUT, blend, OT bucket), not the GP0 bytes |
 
 Geometry itself is **not** copied per frame: model banks, terrain cell tables
 and course banks are static assets already resolved into native sidecars

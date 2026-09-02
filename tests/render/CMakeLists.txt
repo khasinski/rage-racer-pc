@@ -883,7 +883,7 @@ set_tests_properties(atlas_text PROPERTIES LABELS unit)
 
 add_executable(bit_pattern_overlay_tests
     bit_pattern_overlay_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text_drawing.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/bit_pattern_overlay.c)
 target_include_directories(bit_pattern_overlay_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -902,7 +902,7 @@ set_tests_properties(bit_pattern_overlay PROPERTIES LABELS unit)
 
 add_executable(number_drawing_tests
     number_drawing_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/text_drawing.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/number_drawing.c)
 target_include_directories(number_drawing_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

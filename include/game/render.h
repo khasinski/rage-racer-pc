@@ -438,7 +438,8 @@ enum DrawNumberFlags {
 
 /* Draws an unsigned decimal with leading zeros omitted. TEN_DIGIT_FIELD keeps
  * their horizontal space, while the return value remains the sprite count. */
-s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
+s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 red, u8 green,
+                   u8 blue,
                    u16 clut, u8 primitiveCount);
 /* Blits an 8x6 bit pattern from g_MenuOverlayPatternTable as 4x8 blocks; negative argument
  * animates through the table. */

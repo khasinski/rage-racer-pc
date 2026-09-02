@@ -5,12 +5,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-FontGlyph g_SmallFontGlyphs[64];
-FontGlyph g_LargeFontGlyphs[64];
-u8 g_MenuOverlayPatternTable[64];
-s32 g_MenuOverlayPatternAnimOffset;
-s32 g_AnimTimer;
-
 typedef struct SpriteCall {
     GameOrderingTableEntry *ot;
     s16 x;
@@ -110,6 +104,12 @@ int main(void) {
     CHECK(s_calls[0].x == 64 && s_calls[0].textureU == 8);
     CHECK(s_calls[0].textureV == 0xDC);
     CHECK(s_calls[1].x == 72 && s_calls[1].textureU == 16);
+
+    ResetCalls();
+    CHECK(GameDrawNumber(0, 0, 0, UINT32_MAX, 0, 0, 0, 0, 0) == 10);
+    CHECK(s_callCount == 10);
+    CHECK(s_calls[0].textureU == 24);
+    CHECK(s_calls[9].x == 54 && s_calls[9].textureU == 30);
 
     puts("number drawing tests passed");
     return 0;
