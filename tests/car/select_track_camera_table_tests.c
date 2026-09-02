@@ -44,6 +44,17 @@ int main(void) {
     SelectTrackCameraTable(&fixture.table, 1);
     CHECK(g_TrackCameras == &fixture.secondSeriesCamera);
 
+    SelectTrackCameraTable(NULL, 0);
+    CHECK(g_TrackCameras == NULL);
+
+    fixture.table.defaultOffset = -1;
+    SelectTrackCameraTable(&fixture.table, 0);
+    CHECK(g_TrackCameras == NULL);
+
+    fixture.table.defaultOffset = sizeof(fixture.table) - 1;
+    SelectTrackCameraTable(&fixture.table, 0);
+    CHECK(g_TrackCameras == NULL);
+
     puts("track camera table selection tests passed");
     return 0;
 }
