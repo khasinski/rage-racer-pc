@@ -2,22 +2,20 @@
 #include "psyq/snd.h"
 #include "game/sound.h"
 
-void SetPanVoiceTargetVolume(s32 left, s32 right) {
-    if (left >= 0) {
-        if (left > 0x80) {
-            left = 0x80;
-        }
-    } else {
-        left = 0;
-    }
+enum {
+    BASIC_EFFECT_VOICE_FIRST = 8,
+    BASIC_EFFECT_VOICE_COUNT = 2,
+    INDEXED_EFFECT_VOICE = 20,
+    PAN_EFFECT_VOICE = 21,
+    INDEXED_EFFECT_COUNT = 3,
+    PAN_EFFECT_PROGRAM = 15,
+    EFFECT_BASE_NOTE = 0x3C,
+    AUDIBLE_PAN_VOLUME_MIN = 2,
+};
 
-    if (right >= 0) {
-        if (right > 0x80) {
-            right = 0x80;
-        }
-    } else {
-        right = 0;
-    }
+void SetPanVoiceTargetVolume(s32 left, s32 right) {
+    left = ClampVoiceVolume(left);
+    right = ClampVoiceVolume(right);
 
     if (g_StereoOutput != 0) {
         g_PanVoiceVolumeL = left;
@@ -35,41 +33,42 @@ void ApplyPanVoiceVolume(void) {
     s32 right;
     s32 changed;
 
-    left = g_PanVoiceVolumeL < 2 ? 0 : g_PanVoiceVolumeL;
-    right = g_PanVoiceVolumeR < 2 ? 0 : g_PanVoiceVolumeR;
+    left = g_PanVoiceVolumeL < AUDIBLE_PAN_VOLUME_MIN ? 0
+                                                      : g_PanVoiceVolumeL;
+    right = g_PanVoiceVolumeR < AUDIBLE_PAN_VOLUME_MIN ? 0
+                                                       : g_PanVoiceVolumeR;
     changed = left != 0 || right != 0;
 
     if (changed != 0) {
         left = ClampVoiceVolume(left * g_SoundScale.scale / 128);
         right = ClampVoiceVolume(right * g_SoundScale.scale / 128);
 
-        SsUtSetVVol(0x15, left, right);
+        SsUtSetVVol(PAN_EFFECT_VOICE, left, right);
         if (g_PanVoiceActive == 0) {
-            SsUtKeyOnV(0x15, g_SoundScale.vabIds[0], 0xF, 0,
-                       0x3C, 0, 0, 0);
+            SsUtKeyOnV(PAN_EFFECT_VOICE, g_SoundScale.vabIds[0],
+                       PAN_EFFECT_PROGRAM, 0, EFFECT_BASE_NOTE, 0, 0, 0);
         }
     } else if (g_PanVoiceActive != 0) {
-        SsUtKeyOffV(0x15);
+        SsUtKeyOffV(PAN_EFFECT_VOICE);
     }
 
     g_PanVoiceActive = changed;
 }
 
 void StartIndexedEffectVoice(s32 baseTone) {
-    SsUtKeyOnV(0x14, g_SoundScale.vabIds[0], (s16)baseTone, 0, 0x3C, 0, 0, 0);
+    SsUtKeyOnV(INDEXED_EFFECT_VOICE, g_SoundScale.vabIds[0], (s16)baseTone,
+               0, EFFECT_BASE_NOTE, 0, 0, 0);
 }
 
 void StopIndexedEffectVoice(void) {
-    SsUtKeyOffV(0x14);
+    SsUtKeyOffV(INDEXED_EFFECT_VOICE);
 }
 
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
-    if (index >= -1) {
-        if (index >= 3) {
-            index = 2;
-        }
-    } else {
+    if (index < -1) {
         index = -1;
+    } else if (index >= INDEXED_EFFECT_COUNT) {
+        index = INDEXED_EFFECT_COUNT - 1;
     }
 
     volume = ClampCueLevel(volume);
@@ -105,9 +104,10 @@ void UpdateIndexedEffectVoice(void) {
                      128 * g_SoundScale.scale / 128;
 
         volume = ClampVoiceVolume(volume);
-        SsUtSetVVol(0x14, volume, volume);
-        SsUtChangePitch(0x14, 0, (s16)g_IndexedEffects[index].tone, 0x3C, 0,
-                        (s16)(g_IndexedEffectPitch >> 7),
+        SsUtSetVVol(INDEXED_EFFECT_VOICE, volume, volume);
+        SsUtChangePitch(INDEXED_EFFECT_VOICE, 0,
+                        (s16)g_IndexedEffects[index].tone, EFFECT_BASE_NOTE,
+                        0, (s16)(g_IndexedEffectPitch >> 7),
                         g_IndexedEffectPitch & 0x7F);
     }
 
@@ -117,14 +117,14 @@ void UpdateIndexedEffectVoice(void) {
 void UpdateBasicEffectVoices(void) {
     s32 i;
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < BASIC_EFFECT_VOICE_COUNT; i++) {
         MusicChannel *channel = &g_MusicChannels[i];
-        s16 voice = (s16)(8 + i);
+        s16 voice = (s16)(BASIC_EFFECT_VOICE_FIRST + i);
 
         switch (channel->mode) {
         case MUSIC_CHANNEL_START:
             SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
-                       channel->right.half[0], 0x3C, 0, 0, 0);
+                       channel->right.half[0], EFFECT_BASE_NOTE, 0, 0, 0);
             /* A newly keyed voice needs the same volume update. */
             RAGE_FALLTHROUGH;
         case MUSIC_CHANNEL_UPDATE:
