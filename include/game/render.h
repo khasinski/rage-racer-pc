@@ -425,11 +425,10 @@ void SetDrawClipRect(
  * (g_LargeFontGlyphs). Bit 0x80 of `flags` selects fixed-width cells instead of the
  * per-glyph widths in the table.
  */
-void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
+void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                    u16 clut, s32 flags);
-void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
-                   u16 clut,
-                   s32 flags);
+void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
+                   u16 clut, s32 flags);
 enum DrawNumberFlags {
     DRAW_NUMBER_LARGE_DIGITS = 1 << 0,
     DRAW_NUMBER_TEN_DIGIT_FIELD = 1 << 1,
