@@ -9,13 +9,9 @@
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
     s32 halfStep;
-    s32 wipeStart;
     s32 row;
     s32 column;
     u32 pattern;
-    s32 phaseIsNegative;
-    u32 *firstPattern;
-    u32 *phasePattern;
     TILE *tiles;
     u8 *cursor;
     s32 rangeTimer;
@@ -33,32 +29,18 @@ void DrawStartCountdown(s32 sceneTimer) {
     orderingTable = (u8 *)GamePrimaryOrderingTable(1);
     phase = timing.phase;
     halfStep = timing.wipeHalfStep;
-    phaseIsNegative = phase < 0;
-    wipeStart = 7 - halfStep;
     tiles = g_TileStripBuffers[g_FrameParity].tile;
-    firstPattern = g_CountdownDigitPatterns;
-    if (phase > 0 && phase < 4) {
-        phasePattern = g_CountdownGlyphTable + phase * 16;
-    } else {
-        phasePattern = firstPattern;
-    }
 
     for (row = 0; row < 16; row++) {
-        s32 colorBank = phase == 4 || phaseIsNegative;
+        StartCountdownRow countdownRow = BuildStartCountdownRow(
+            phase, row, halfStep, g_CountdownGlyphTable,
+            g_CountdownDigitPatterns);
 
-        if (phase == 0) {
-            pattern = -1;
-        } else if (phaseIsNegative) {
-            pattern = firstPattern[row];
-        } else {
-            pattern = phasePattern[row];
-        }
-        if (wipeStart < row && row < halfStep + 8) {
-            pattern = ~pattern;
-        }
+        pattern = countdownRow.pattern;
         for (column = 0; column < 32; column++) {
             TILE *tile = &tiles[row * 32 + column];
-            CVec *colors = &g_CountdownCellColors[colorBank * 2];
+            CVec *colors =
+                &g_CountdownCellColors[countdownRow.colorBank * 2];
 
             *(CVec *)&tile->r0 = colors[pattern & 1];
             pattern >>= 1;

@@ -26,3 +26,24 @@ StartCountdownTiming CalculateStartCountdownTiming(s32 sceneTimer) {
 
     return timing;
 }
+
+StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
+                                         s32 wipeHalfStep,
+                                         const u32 *glyphPatterns,
+                                         const u32 *firstPattern) {
+    StartCountdownRow result;
+
+    result.colorBank = phase >= 4 || phase < 0;
+    if (phase == 0) {
+        result.pattern = UINT32_MAX;
+    } else if (phase > 0 && phase < 4) {
+        result.pattern = glyphPatterns[phase * 16 + row];
+    } else {
+        result.pattern = firstPattern[row];
+    }
+
+    if (row >= 8 - wipeHalfStep && row <= 7 + wipeHalfStep) {
+        result.pattern = ~result.pattern;
+    }
+    return result;
+}

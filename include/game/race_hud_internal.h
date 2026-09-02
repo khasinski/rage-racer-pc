@@ -11,6 +11,16 @@ typedef struct StartCountdownTiming {
 
 StartCountdownTiming CalculateStartCountdownTiming(s32 sceneTimer);
 
+typedef struct StartCountdownRow {
+    u32 pattern;
+    s32 colorBank;
+} StartCountdownRow;
+
+StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
+                                         s32 wipeHalfStep,
+                                         const u32 *glyphPatterns,
+                                         const u32 *firstPattern);
+
 typedef struct RaceOptionMarqueeState {
     s32 firstScroll;
     s32 secondScroll;
