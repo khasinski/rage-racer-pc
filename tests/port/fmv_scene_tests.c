@@ -20,9 +20,8 @@ static s32 s_decodeCalls;
 static s32 s_endCalls;
 static s32 s_failures;
 
-s32 CloseLoadedAudioSlots(void) {
+void CloseLoadedAudioSlots(void) {
     s_closeCalls++;
-    return 0;
 }
 void ResetCdAudioState(void) { s_resetCalls++; }
 long CdSync(long mode, u8 *result) {

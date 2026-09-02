@@ -64,38 +64,30 @@ s32 PollAudioSlotLoad(void) {
     return completed;
 }
 
-static s32 CloseVabOnlyAudioSlot(s32 slot) {
+static void CloseVabOnlyAudioSlot(s32 slot) {
     s32 bit;
 
     if (slot < 0 || slot >= AUDIO_SLOT_COUNT) {
-        return 0;
+        return;
     }
 
     bit = 1 << slot;
 
     if ((bit & g_AudioLoadedSlotMask) == 0) {
-        return 0;
+        return;
     }
 
     g_AudioLoadedSlotMask &= ~bit;
     SsUtSetReverbDepth(0, 0);
     _SsVmInit(0);
     SsVabClose(g_SoundScale.vabIds[slot]);
-    return 1;
 }
 
-s32 CloseLoadedAudioSlots(void) {
+void CloseLoadedAudioSlots(void) {
     SpuVmDamperStep();
-    if (CloseSequenceAudioSlot() == 0) {
-        return 0;
-    }
-    if (CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES) == 0) {
-        return 0;
-    }
-    if (CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE) == 0) {
-        return 0;
-    }
-    return 1;
+    CloseSequenceAudioSlot();
+    CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
+    CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
 }
 
 static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table) {

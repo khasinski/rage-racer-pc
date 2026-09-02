@@ -147,14 +147,15 @@ int main(void) {
     s_reverbCalls = 0;
     s_vmInitCalls = 0;
     s_closeAudioResult = 1;
-    CHECK(CloseLoadedAudioSlots() == 1);
+    CloseLoadedAudioSlots();
     CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
           g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
 
     g_AudioLoadedSlotMask = 1 << 3;
-    CHECK(CloseLoadedAudioSlots() == 0);
-    CHECK(g_AudioLoadedSlotMask == (1 << 3));
+    s_closeAudioResult = 0;
+    CloseLoadedAudioSlots();
+    CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
 
     puts("audio slot loading preserves VAB routing, polling, and close state");
     return 0;

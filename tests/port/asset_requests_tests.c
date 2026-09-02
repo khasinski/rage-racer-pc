@@ -78,9 +78,8 @@ void DrawSync(long mode) {
     (void)mode;
     s_drawSyncCalls++;
 }
-s32 CloseLoadedAudioSlots(void) {
+void CloseLoadedAudioSlots(void) {
     s_closeCalls++;
-    return 0;
 }
 void ResetCdAudioState(void) { s_resetCalls++; }
 void ResetAssetLoader(void) {

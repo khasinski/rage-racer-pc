@@ -88,7 +88,7 @@ void SetReverbPreset(s32 type, s32 left, s32 right);
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
 void SetSoundSlotVoicesEnabled(s32 enabled);
 void InitSoundRuntime(void);
-s32 CloseLoadedAudioSlots(void);
+void CloseLoadedAudioSlots(void);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolumeSetting(s32 setting);
 /* The effect-side twin of SetSequenceVolumeSetting: clamps the 0..15
