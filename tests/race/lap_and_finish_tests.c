@@ -32,7 +32,6 @@ s32 g_CourseIndex;
 s16 g_GrandPrixMode;
 s32 g_LapCount;
 s32 g_LapTimeMs;
-s32 g_LapTimeSaturated;
 s16 g_MirrorViewEnabled;
 PlayerCarRuntime g_PlayerCar;
 s32 g_RaceSeries;
@@ -125,7 +124,7 @@ int main(int argc, char **argv) {
      */
     /* Digest produced with the real PAL 25 Hz frame-to-millisecond
      * conversion, not the former 20 ms test double. */
-    static const unsigned long expected = 3315525677UL;
+    static const unsigned long expected = 3859405365UL;
     static const s32 laps[] = {0, 1, 2, 3};
     static const s32 lapCounts[] = {2, 3};
     /* Where the car is against the distance the current lap needs: short of
@@ -235,7 +234,6 @@ int main(int argc, char **argv) {
         g_BestLapThisRace = best ? 0x7FFFFFFF : 100;
         g_RaceTotalTime = 150000;
         g_LapTimeMs = 0;
-        g_LapTimeSaturated = 0;
         g_MirrorViewEnabled = 1;
         g_RivalCueEnabled = 0;
         g_SeriesCleared = cleared;
@@ -254,7 +252,7 @@ int main(int argc, char **argv) {
         result = UpdateLapAndFinish(&g_PlayerCar, gp);
 
         {
-            s32 after[20];
+            s32 after[19];
 
             after[0] = result;
             after[1] = g_PlayerCar.lap;
@@ -266,17 +264,16 @@ int main(int argc, char **argv) {
             after[7] = g_RaceTotalTime;
             after[8] = g_BestLapThisRace;
             after[9] = g_LapTimeMs;
-            after[10] = g_LapTimeSaturated;
-            after[11] = g_MirrorViewEnabled;
-            after[12] = g_RivalCueEnabled;
-            after[13] = g_SeriesCleared;
-            after[14] = g_SectorTimes[0];
-            after[15] = g_SectorTimes[1];
-            after[16] = g_SectorTimes[2];
-            after[17] = g_RefSectorTimes.fields.second;
-            after[18] = g_RefSectorTimes.fields.third;
-            after[19] = g_RefSectorTimes.fields.first;
-            Record("state", after, 20);
+            after[10] = g_MirrorViewEnabled;
+            after[11] = g_RivalCueEnabled;
+            after[12] = g_SeriesCleared;
+            after[13] = g_SectorTimes[0];
+            after[14] = g_SectorTimes[1];
+            after[15] = g_SectorTimes[2];
+            after[16] = g_RefSectorTimes.fields.second;
+            after[17] = g_RefSectorTimes.fields.third;
+            after[18] = g_RefSectorTimes.fields.first;
+            Record("state", after, 19);
             Record("laptimes", g_PlayerCar.lapTimes.words, 12);
             Record("bestlap", &g_BestLapTimes[0][0][0], 2 * 4 * 2);
             Record("besttotal", &g_BestTotalTimes[0][0][0], 2 * 4 * 2);
@@ -313,7 +310,6 @@ int main(int argc, char **argv) {
             g_RaceTotalTime = 0;
             g_BestLapThisRace = 0x7FFFFFFF;
             g_LapTimeMs = 0;
-            g_LapTimeSaturated = 0;
             s_jitter = jitters[ji];
             g_PlayerCar.lap = 1;
             g_PlayerCar.lapTimes.table.frameCounts[0] =
@@ -328,7 +324,7 @@ int main(int argc, char **argv) {
             RECORD("saturation",
                    g_PlayerCar.lapTimes.table.frameCounts[0],
                    g_PlayerCar.lapTimes.table.milliseconds[0],
-                   g_LapTimeMs, g_LapTimeSaturated);
+                   g_LapTimeMs);
             steps++;
         }
     }

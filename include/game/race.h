@@ -176,9 +176,6 @@ extern s16 g_SplitSector;
 extern s32 g_SplitTargetTime;
 extern s16 g_SplitTimer;
 
-/* Set when a lap time saturates at 0x927BF; write-only in retail. */
-extern s32 g_LapTimeSaturated;
-
 /* Frames the player has been driving the wrong way. Past 10 the warning shows
  * and rival cues are muted; in Time Attack 60 on lap 0 aborts the run. */
 extern s16 g_WrongWayTimer;

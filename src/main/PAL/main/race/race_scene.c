@@ -174,7 +174,6 @@ void EnterRaceScene(void) {
     series = ReadStableRaceSeries();
     recordMode = RaceRecordMode(g_GrandPrixMode);
     g_LapTimeMs = 0;
-    g_LapTimeSaturated = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
     g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
     g_RefSectorTimes.fields.second = g_BestSectorTimes[series][course][1];

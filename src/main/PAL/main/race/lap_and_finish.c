@@ -36,7 +36,6 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
         FramesToMilliseconds(times->table.frameCounts[slot], Random15() % 40);
     if (times->table.milliseconds[slot] >= RACE_TIME_MAX_MS) {
         times->table.milliseconds[slot] = RACE_TIME_MAX_MS;
-        g_LapTimeSaturated = 1;
     }
     g_LapTimeMs = times->table.milliseconds[slot];
 }
@@ -116,7 +115,6 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
     s32 lapsRun;
 
     car->lap += 1;
-    g_LapTimeSaturated = 0;
     g_RaceCueFlags &= 0xF;
     if (g_RaceCueDelay == 0) {
         g_RaceCueDelay = 2;

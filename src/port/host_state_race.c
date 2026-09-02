@@ -144,7 +144,6 @@ s32 g_RefLapTime;
  * unit reproduces the retail state layout without importing subsystem headers. */
 unsigned char g_RefSectorTimes[12] __attribute__((aligned(16)));
 s32 g_RaceTimeRemaining;
-s32 g_LapTimeSaturated;
 s16 g_SplitSector;
 s16 g_SplitTimer;
 s16 g_SplitSign;
