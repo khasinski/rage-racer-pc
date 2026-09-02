@@ -10,9 +10,6 @@
 
 /* Per-frame player physics orchestration and track contact. */
 void UpdatePlayerCar(PlayerCarRuntime *car) {
-    Matrix m1;
-    Matrix m2;
-    SVec sv1;
     Vec4 tmp;
     Matrix mA;
     SVec sv2;
@@ -47,25 +44,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     TraceCarMotion("pre-integrate", car);
     car->x -= car->motionX;
     car->z -= car->motionZ;
-    BuildRotMatrixY(&m1, car->bodyYaw);
-    BuildRotMatrixX(&m2, car->bodyPitch);
-    MulMatrix2(&m2, &m1);
-    BuildRotMatrixZ(&m2, car->bodyRoll);
-    MulMatrix2(&m2, &m1);
-
-    sv1.vx = 0;
-    sv1.vy = 0;
-    m2.m[0][0] = m1.m[0][0];
-    m2.m[0][1] = m1.m[1][0];
-    m2.m[0][2] = m1.m[2][0];
-    m2.m[1][0] = m1.m[0][1];
-    m2.m[1][1] = m1.m[1][1];
-    m2.m[1][2] = m1.m[2][1];
-    m2.m[2][0] = m1.m[0][2];
-    m2.m[2][1] = m1.m[1][2];
-    m2.m[2][2] = m1.m[2][2];
-    sv1.vz = -p->bodyLiftOffset - 50;
-    ApplyMatrix(&m2, &sv1, &car->motionX);
+    CalculatePlayerBodyOffset(car);
 
     /* Retail copied a stack Vec4 after assigning only X/Z. Preserve Y/W
      * explicitly so player state does not depend on the host stack ABI. */

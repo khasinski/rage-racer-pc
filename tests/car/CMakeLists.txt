@@ -151,6 +151,29 @@ endif()
 add_test(NAME player_controls COMMAND player_controls_tests)
 set_tests_properties(player_controls PROPERTIES LABELS unit)
 
+add_executable(player_body_offset_tests
+    player_body_offset_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_body_offset.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(player_body_offset_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(player_body_offset_tests PRIVATE __psyz=1)
+target_link_libraries(player_body_offset_tests PRIVATE psyz)
+if(MSVC)
+    target_compile_options(player_body_offset_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(player_body_offset_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME player_body_offset COMMAND player_body_offset_tests)
+set_tests_properties(player_body_offset PROPERTIES LABELS unit)
+
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3

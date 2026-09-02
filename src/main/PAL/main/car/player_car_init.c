@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -33,9 +34,6 @@ static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
 
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     CarTrackLimits trackLimits = {0};
-    Matrix rotationMatrix;
-    Matrix inverseRotation;
-    SVec bodyOffset = {0};
     const TrackRivalStart *start;
     s32 raceSeries = ReadStableRaceSeries();
 
@@ -63,22 +61,7 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     CopyPlayerBodyRotationToModel(car);
     car->modelY = car->y;
 
-    BuildRotMatrixY(&rotationMatrix, car->bodyYaw);
-    BuildRotMatrixX(&inverseRotation, car->bodyPitch);
-    MulMatrix2(&inverseRotation, &rotationMatrix);
-    BuildRotMatrixZ(&inverseRotation, car->bodyRoll);
-    MulMatrix2(&inverseRotation, &rotationMatrix);
-    inverseRotation.m[0][0] = rotationMatrix.m[0][0];
-    inverseRotation.m[0][1] = rotationMatrix.m[1][0];
-    inverseRotation.m[0][2] = rotationMatrix.m[2][0];
-    inverseRotation.m[1][0] = rotationMatrix.m[0][1];
-    inverseRotation.m[1][1] = rotationMatrix.m[1][1];
-    inverseRotation.m[1][2] = rotationMatrix.m[2][1];
-    inverseRotation.m[2][0] = rotationMatrix.m[0][2];
-    inverseRotation.m[2][1] = rotationMatrix.m[1][2];
-    inverseRotation.m[2][2] = rotationMatrix.m[2][2];
-    bodyOffset.vz = -car->drive.bodyLiftOffset - 0x32;
-    ApplyMatrix(&inverseRotation, &bodyOffset, &car->motionX);
+    CalculatePlayerBodyOffset(car);
 
     car->x += car->motionX;
     car->z += car->motionZ;
