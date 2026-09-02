@@ -59,8 +59,8 @@ storage does not need to be rediscovered with a source-text parser.
    was worked out by counting which `.c` files read each symbol, then adjusted
    where the count and the subject disagreed. The result is one
    `host_state_<area>.c` per subsystem: menu 262, race 138, track 102, save 64,
-   car 60, audio 39, asset 25, render 24, cd 23, pad 18, and 471 in
-   `host_state_unread.c`. `host_state.c` keeps the 17 that belong to nobody:
+   car 60, audio 39, asset 25, render 24, cd 23, and pad 18. `host_state.c`
+   keeps the 17 that belong to nobody:
    the frame counter, the scene, the mirror, the random seed.
 
    The counting put the CD driver's state in a bucket with the boot loop's
@@ -77,9 +77,9 @@ storage does not need to be rediscovered with a source-text parser.
 6. **The 169 struct cases**, same idea, one struct at a time.
 7. **The 243 with residue attached.** Each is a real object plus a gap. Cut the
    gap off and name it for what it is, or establish that nothing reads it.
-8. **The 471 nobody reads**, now gathered in `host_state_unread.c` with the
-   three kinds they fall into written at the top. Decide per symbol: residue,
-   buffer, or something that should have a reader.
+8. **The 471 nobody read.** Done. Genuine shared tables were retained in
+   `host_state_shared.c`; obsolete library state, diagnostic strings, PS1
+   addresses and code stubs were removed.
 
 Readability first would have meant prettifying data sitting in the wrong
 symbol. Splitting the file first would have scattered the fused arrays across

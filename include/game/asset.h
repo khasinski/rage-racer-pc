@@ -59,17 +59,9 @@ extern u8 *g_AssetBlockPtr2;
 extern u8 *g_ImageBlockBuffer;
 
 /*
- * CD path of every loadable asset, 135 entries indexed by assetIndex:
- * [0..9] fixed assets, [10..73] the 32 car models in two halves,
- * [74..85] GP0..GP11.TMS, [86] VOICE.BIN, [87..134] the track packs
- * (index 0x57 + (course << 1) + (class << 3)).
- */
-extern char *g_AssetPaths[];
-
-/*
  * Index of the first entry of each variable-size family in that table. Read off
- * g_AssetPaths itself and cross-checked against the 135-entry RAGE.BIN
- * index on the retail PAL disc.
+ * the retail path table and cross-checked against the 135-entry RAGE.BIN index
+ * on the PAL disc.
  *
  * ROUND_SCREEN: [0x4A] = "\DATA\GP0.TMS". Six screens per series, the sixth
  * being GP10 / GP11, so LoadGrandPrixScreen wants base + series * 6 + class.
@@ -114,8 +106,8 @@ typedef struct GameCdLoadEntry {
     u32 size;
 } GameCdLoadEntry;
 
-/* Disc location + size of every asset, one per g_AssetPaths[] slot, read from
- * the "\RAGE.BIN;1" index by LoadDiscArchiveIndex and rebased onto its LBA. */
+/* Disc location + size of every asset, read from the "\RAGE.BIN;1" index by
+ * LoadDiscArchiveIndex and rebased onto its LBA. */
 extern GameCdLoadEntry g_AssetCdEntries[];
 
 /* The same for the 11 streams in "\RAGE.STR;1"; BeginClassFmv picks
@@ -414,7 +406,7 @@ extern u8 *g_AssetSubBlockPtr;
  * advances g_AssetLoadState until it reaches 0. A screen starts a load with the
  * matching GameRequest* (which sets g_AssetRequestType and returns 1 while busy) and
  * polls the same GameRequest* until it returns 0. Asset indices are documented
- * on g_AssetPaths above.
+ * with the constants near the top of this header.
  */
 void ServiceAssetLoad(void);
 /* Cancel an in-flight load: aborts a running CdRead and clears all three
@@ -580,16 +572,6 @@ struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[];
 extern CarModelAsset *g_CarModelSlots[];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
-extern char g_MsgFileNotFound[];
-extern char g_MsgFileReadError[];
-extern char g_MsgNowLoading[];
-extern char g_MsgNowSearching[];
-extern char g_MsgReadBytes[];
-extern char g_MsgReadSectors[];
-extern char g_MsgSearchOk[];
-extern char g_PathRageBin[];
-extern char g_PathRageStr[];
-
 void LoadCarModel(s32);
 void LoadUpgradedCarModel(s32);
 

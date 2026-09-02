@@ -80,11 +80,6 @@ typedef union MenuProjectedVertex {
     s16 components[4];
 } MenuProjectedVertex;
 
-/* Texture coordinates for the four glyph cells of a NeGcon setup panel. */
-typedef struct NegconUvTemplate {
-    u8 uv[8];
-} NegconUvTemplate;
-
 typedef struct ClassRecordSprite {
     u8 u1;
     u8 v1;

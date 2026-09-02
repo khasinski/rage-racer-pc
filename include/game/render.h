@@ -782,8 +782,6 @@ extern u8 g_HighFontCell[4];
 #define g_HighFontYOffset (g_HighFontCell + 3)
 extern s32 g_MirrorPanelY;
 extern s32 g_MirrorUnlocked;
-extern char g_MsgFmvDecodeTimeout[];
-extern char g_MsgFmvSector[];
 extern s32 g_NegconPlayScale[];
 extern u8 g_PropFontCells[0x80];
 #define g_PropFontU g_PropFontCells

@@ -123,8 +123,6 @@ extern RaceRecord g_TimeRecords[2][4][5];
 extern ClassRecordSprite g_ClassRecordCellSprites[];
 extern ScoreRecord g_ClassRecords[11];
 extern s32 g_ClassWinCount;
-extern NegconUvTemplate g_NegconSteerPlayUvQuad;
-extern NegconUvTemplate g_NegconMaxTwistUvQuad;
 extern DesignModeCellMask g_DesignModeCellMask;
 
 #endif

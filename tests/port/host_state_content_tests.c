@@ -63,19 +63,8 @@ extern unsigned char g_MsgInsertController[20];
 extern unsigned char g_MsgControllerError[20];
 extern unsigned char g_MsgNegconUntwistedLine1[36];
 extern unsigned char g_MsgNegconUntwistedLine2[36];
-extern unsigned char g_NegconSteerPlayUvQuad[8];
 extern unsigned char g_MsgNegconSteerPlay[12];
-extern unsigned char g_NegconMaxTwistUvQuad[8];
 extern unsigned char g_MsgNegconMaxTwist[2640];
-extern unsigned char g_MsgNowLoading[32];
-extern unsigned char g_MsgReadBytes[12];
-extern unsigned char g_MsgFileReadError[48];
-extern unsigned char g_PathRageBin[12];
-extern unsigned char g_MsgFileNotFound[20];
-extern unsigned char g_MsgReadSectors[16];
-extern unsigned char g_MsgNowSearching[24];
-extern unsigned char g_PathRageStr[12];
-extern unsigned char g_MsgSearchOk[164];
 extern unsigned char g_FmtRound[16];
 extern unsigned char g_CaptionPrizeMoney2[8];
 extern unsigned char g_FmtPrize1st[12];
@@ -83,8 +72,6 @@ extern unsigned char g_FmtPrize2nd[12];
 extern unsigned char g_FmtPrize3rd[12];
 extern unsigned char g_CaptionBestTotalTime[8];
 extern unsigned char g_CaptionBestLapTime[188];
-extern unsigned char g_MsgFmvSector[8];
-extern unsigned char g_MsgFmvDecodeTimeout[188];
 extern unsigned char g_TextResult[8];
 extern unsigned char g_FmtClassGrandPrix[24];
 extern unsigned char g_FmtRoundIn[12];
@@ -112,12 +99,8 @@ extern unsigned char g_NameEntryCharset[96];
 extern unsigned char g_TextNowLoading[436];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
-extern unsigned char g_MsgSoundError[16];
-extern unsigned char g_MsgInitSoundOk[16];
-extern unsigned char g_MsgInitEngineOk[16];
 extern unsigned char g_MsgGameExit[12];
 extern unsigned char g_MsgGame0Ok[12];
-extern unsigned char g_TextCongratulations[1028];
 extern unsigned char g_MenuLightBurstBandX[68];
 extern unsigned char g_MenuLightBurstBandY[68];
 extern unsigned char g_MsgOrdinalSt[8];
@@ -162,7 +145,6 @@ extern unsigned char g_WordFontCells[40];
 extern unsigned char g_HighFontCell[4];
 extern unsigned char g_CarModelBaseIndex[16];
 extern unsigned char g_CarModelUnlockBase[16];
-extern unsigned char g_AssetPaths[540];
 extern unsigned char g_AssetRequestType[8];
 extern unsigned char g_TrackTextureRect[8];
 extern unsigned char g_TeamLogoClutLoadRect[8];
@@ -191,7 +173,6 @@ extern unsigned char g_AttractTitleDelays[8];
 extern unsigned char g_SpriteFontCells[192];
 extern unsigned char g_SpriteFontWidth[288];
 extern int32_t g_RoadGrade;
-extern uint8_t D_8007DA7C[12];
 extern ContentCarPoint g_PlayerHullPoints[6];
 extern ContentCarPoint g_OpponentHullCorners[4];
 extern ContentCarPoint g_CarCornerOffsets[4];
@@ -201,10 +182,7 @@ extern unsigned char g_TachoNeedleSprite[20];
 extern unsigned char g_CountdownGlyphTable[256];
 extern unsigned char g_ClockTextCells[8];
 extern unsigned char g_RaceOptionMarquee[160];
-extern unsigned char g_ReverbZones[32];
 extern ContentCarPoint g_CarCollisionCorners[4];
-extern uint8_t D_8007E24C[60];
-extern unsigned char g_FreeCameraAngleOffset[8];
 typedef struct StartGridSceneryStep {
     int16_t x;
     int16_t y;
@@ -233,7 +211,6 @@ extern unsigned char g_ShuttlePathDwellMax[124];
 extern unsigned char g_TeamNameChars[16];
 extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[64];
-extern unsigned char g_UnreadSkyTileTrailer[24];
 extern unsigned char g_CdMixPresets[8];
 extern unsigned char g_CdCommandPending[8];
 extern unsigned char g_MenuOverlayPatternTable[584];
@@ -276,15 +253,12 @@ extern unsigned char g_EngineerShopTuneUpPromptScript[60];
 extern unsigned char g_MenuViewScale[16];
 extern unsigned char g_CarPriceTable[128];
 extern unsigned char g_CarTuneUpPriceTable[124];
-extern unsigned char g_CarManufacturerNames[52];
-extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
-extern uint8_t D_8009AFC4[8];
 extern unsigned char g_CdTrackElapsedLoc[8];
 
 typedef struct HostStateBlob {
@@ -298,19 +272,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgControllerError", g_MsgControllerError, 20},
     {"g_MsgNegconUntwistedLine1", g_MsgNegconUntwistedLine1, 36},
     {"g_MsgNegconUntwistedLine2", g_MsgNegconUntwistedLine2, 36},
-    {"g_NegconSteerPlayUvQuad", g_NegconSteerPlayUvQuad, 8},
     {"g_MsgNegconSteerPlay", g_MsgNegconSteerPlay, 12},
-    {"g_NegconMaxTwistUvQuad", g_NegconMaxTwistUvQuad, 8},
     {"g_MsgNegconMaxTwist", g_MsgNegconMaxTwist, 2640},
-    {"g_MsgNowLoading", g_MsgNowLoading, 32},
-    {"g_MsgReadBytes", g_MsgReadBytes, 12},
-    {"g_MsgFileReadError", g_MsgFileReadError, 48},
-    {"g_PathRageBin", g_PathRageBin, 12},
-    {"g_MsgFileNotFound", g_MsgFileNotFound, 20},
-    {"g_MsgReadSectors", g_MsgReadSectors, 16},
-    {"g_MsgNowSearching", g_MsgNowSearching, 24},
-    {"g_PathRageStr", g_PathRageStr, 12},
-    {"g_MsgSearchOk", g_MsgSearchOk, 164},
     {"g_FmtRound", g_FmtRound, 16},
     {"g_CaptionPrizeMoney2", g_CaptionPrizeMoney2, 8},
     {"g_FmtPrize1st", g_FmtPrize1st, 12},
@@ -318,8 +281,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtPrize3rd", g_FmtPrize3rd, 12},
     {"g_CaptionBestTotalTime", g_CaptionBestTotalTime, 8},
     {"g_CaptionBestLapTime", g_CaptionBestLapTime, 188},
-    {"g_MsgFmvSector", g_MsgFmvSector, 8},
-    {"g_MsgFmvDecodeTimeout", g_MsgFmvDecodeTimeout, 188},
     {"g_TextResult", g_TextResult, 8},
     {"g_FmtClassGrandPrix", g_FmtClassGrandPrix, 24},
     {"g_FmtRoundIn", g_FmtRoundIn, 12},
@@ -347,12 +308,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_TextNowLoading", g_TextNowLoading, 436},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
-    {"g_MsgSoundError", g_MsgSoundError, 16},
-    {"g_MsgInitSoundOk", g_MsgInitSoundOk, 16},
-    {"g_MsgInitEngineOk", g_MsgInitEngineOk, 16},
     {"g_MsgGameExit", g_MsgGameExit, 12},
     {"g_MsgGame0Ok", g_MsgGame0Ok, 12},
-    {"g_TextCongratulations", g_TextCongratulations, 1028},
     {"g_MenuLightBurstBandX", g_MenuLightBurstBandX, 68},
     {"g_MenuLightBurstBandY", g_MenuLightBurstBandY, 68},
     {"g_MsgOrdinalSt", g_MsgOrdinalSt, 8},
@@ -397,7 +354,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_HighFontCell", g_HighFontCell, 4},
     {"g_CarModelBaseIndex", g_CarModelBaseIndex, 16},
     {"g_CarModelUnlockBase", g_CarModelUnlockBase, 16},
-    {"g_AssetPaths", g_AssetPaths, 540},
     {"g_AssetRequestType", g_AssetRequestType, 8},
     {"g_TrackTextureRect", g_TrackTextureRect, 8},
     {"g_TeamLogoClutLoadRect", g_TeamLogoClutLoadRect, 8},
@@ -427,7 +383,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SpriteFontWidth", g_SpriteFontWidth, 288},
     {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
      sizeof(g_RoadGrade)},
-    {"D_8007DA7C", D_8007DA7C, sizeof(D_8007DA7C)},
     {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,
      sizeof(g_PlayerHullPoints)},
     {"g_OpponentHullCorners", (const unsigned char *)g_OpponentHullCorners,
@@ -442,11 +397,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_CountdownGlyphTable", g_CountdownGlyphTable, 256},
     {"g_ClockTextCells", g_ClockTextCells, 8},
     {"g_RaceOptionMarquee", g_RaceOptionMarquee, 160},
-    {"g_ReverbZones", g_ReverbZones, 32},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
      sizeof(g_CarCollisionCorners)},
-    {"D_8007E24C", D_8007E24C, sizeof(D_8007E24C)},
-    {"g_FreeCameraAngleOffset", g_FreeCameraAngleOffset, 8},
     {"g_StartGridSceneryStep",
      (const unsigned char *)g_StartGridSceneryStep, 8},
     {"g_StartGridSceneryPos", g_StartGridSceneryPos, 32},
@@ -467,7 +419,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamNameChars", g_TeamNameChars, 16},
     {"g_SkyTileMap", (const unsigned char *)g_SkyTileMap, 160},
     {"g_SkyTileUV", g_SkyTileUV, 64},
-    {"g_UnreadSkyTileTrailer", g_UnreadSkyTileTrailer, 24},
     {"g_CdMixPresets", g_CdMixPresets, 8},
     {"g_CdCommandPending", g_CdCommandPending, 8},
     {"g_MenuOverlayPatternTable", g_MenuOverlayPatternTable, 584},
@@ -510,8 +461,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_MenuViewScale", g_MenuViewScale, 16},
     {"g_CarPriceTable", g_CarPriceTable, 128},
     {"g_CarTuneUpPriceTable", g_CarTuneUpPriceTable, 124},
-    {"g_CarManufacturerNames", g_CarManufacturerNames, 52},
-    {"g_EngineSpecLabels", g_EngineSpecLabels, 52},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},
@@ -520,13 +469,12 @@ static const HostStateBlob s_blobs[] = {
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_RaceIntroCameraDelta,
      sizeof(g_RaceIntroCameraDelta)},
-    {"D_8009AFC4", D_8009AFC4, sizeof(D_8009AFC4)},
     {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 8},
 };
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 1481821081UL;
+    const unsigned long expected = 3977169411UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

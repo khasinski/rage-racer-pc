@@ -4,7 +4,7 @@
  * This file was once the whole retail data segment transcribed into C, in the
  * order the addresses happened to fall. It has been split up: each subsystem's
  * state now sits in host_state_<area>.c beside the code that reads it, and
- * host_state_unread.c holds what nothing in this port reads at all.
+ * obsolete state with no readers has been removed.
  *
  * What is left is the handful the split could not place. The frame counter and
  * the game clock, the scene the port is showing and the timer it has been

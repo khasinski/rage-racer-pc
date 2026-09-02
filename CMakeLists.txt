@@ -24,7 +24,7 @@ set(RAGE_HOST_STATE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_render.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_save.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_track.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_unread.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_shared.c
 )
 
 # The recovered game code relies on wrapping signed arithmetic and contains

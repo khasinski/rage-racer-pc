@@ -418,7 +418,6 @@ typedef struct FlybySceneryState {
 
 extern SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 extern s32 g_FogNear;
-extern s16 g_FreeCameraAngleOffset[];
 typedef struct SceneryPlacement {
     LVec position;
     s32 yaw;
