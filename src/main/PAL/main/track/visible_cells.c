@@ -11,15 +11,7 @@ enum {
     VIEW_ANGLE_PER_SCAN_DIRECTION = 128,
 };
 
-/*
- * Draw loop over the world-object array g_CourseObjects (g_CourseObjectCount entries). For
- * each visible object (id != -1, passing the per-sector visibility bitmask test
- * against g_VisibleCellMask) it builds a Y-rotation matrix in the render state
- * (0x1F800028), transforms the object position through the GTE
- * (0x1F80011C -> 0x1F800124), sets the primitive shade/semi-trans mode word at
- * 0x1F800084, then dispatches a prim builder (SubmitCourseModel2 / SubmitCourseModel)
- * on the render state's OT.
- */
+/* Draw each enabled object whose terrain cell is in the current view. */
 void DrawCourseObjects(void) {
     Matrix mtx;
     s32 i;
@@ -63,15 +55,17 @@ void DrawCourseObjects(void) {
         SetTransMatrix(&g_ObjectMatrixWork.mtx);
 
         flags = obj->flags;
-        if (flags & 8) {
+        if (flags & COURSE_OBJECT_BLINK_ENVIRONMENT_4) {
             g_RenderState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
-        } else if (flags & 4) {
+        } else if (flags & COURSE_OBJECT_ENVIRONMENT_4) {
             g_RenderState.envMode4 = 0x10000;
         } else {
             g_RenderState.envMode4 = 0;
         }
 
-        if (g_IsEnvironmentMode4 ? (obj->flags & 2) : (obj->flags & 1)) {
+        if (g_IsEnvironmentMode4
+                ? (flags & COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4)
+                : (flags & COURSE_OBJECT_ALTERNATE_NORMAL)) {
             SubmitCourseModel2(&g_RenderState, obj->modelId);
         } else {
             SubmitCourseModel(&g_RenderState, obj->modelId);

@@ -26,6 +26,13 @@ typedef struct CourseObject {
     s32 flags;
 } CourseObject;
 
+typedef enum CourseObjectFlags {
+    COURSE_OBJECT_ALTERNATE_NORMAL = 1 << 0,
+    COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4 = 1 << 1,
+    COURSE_OBJECT_ENVIRONMENT_4 = 1 << 2,
+    COURSE_OBJECT_BLINK_ENVIRONMENT_4 = 1 << 3,
+} CourseObjectFlags;
+
 typedef struct CourseObjectTable {
     u32 count;
     CourseObject objects[1];

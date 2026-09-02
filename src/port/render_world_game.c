@@ -546,8 +546,10 @@ void GameRenderWorldPublishCourseObjects(void) {
          * visibility when it builds GPU draws. */
         GameRenderWorldSubmitCourseObject((uint32_t)i, object->modelId,
             object->x, object->y, object->z, object->rotationY,
-            g_IsEnvironmentMode4 ? (object->flags & 2) != 0
-                                 : (object->flags & 1) != 0,
+            g_IsEnvironmentMode4
+                ? (object->flags &
+                   COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4) != 0
+                : (object->flags & COURSE_OBJECT_ALTERNATE_NORMAL) != 0,
             0);
     }
 }

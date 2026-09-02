@@ -16,6 +16,15 @@ s32 g_CourseObjectCount;
 s32 g_AnimTimer;
 s32 g_IsEnvironmentMode4;
 
+typedef struct CourseObjectSubmission {
+    s32 modelId;
+    s32 alternate;
+    s32 environmentMode4;
+} CourseObjectSubmission;
+
+static CourseObjectSubmission s_submissions[16];
+static s32 s_submissionCount;
+
 void BuildRotMatrixY(void *matrix, s32 angle) {
     (void)matrix;
     (void)angle;
@@ -44,13 +53,21 @@ void SetRotMatrix(MATRIX *matrix) { (void)matrix; }
 void SetTransMatrix(MATRIX *matrix) { (void)matrix; }
 
 void SubmitCourseModel(void *state, s32 model) {
-    (void)state;
-    (void)model;
+    GameRenderState *renderState = state;
+    CourseObjectSubmission *submission = &s_submissions[s_submissionCount++];
+
+    submission->modelId = model;
+    submission->alternate = 0;
+    submission->environmentMode4 = renderState->envMode4;
 }
 
 void SubmitCourseModel2(void *state, s32 model) {
-    (void)state;
-    (void)model;
+    GameRenderState *renderState = state;
+    CourseObjectSubmission *submission = &s_submissions[s_submissionCount++];
+
+    submission->modelId = model;
+    submission->alternate = 1;
+    submission->environmentMode4 = renderState->envMode4;
 }
 
 void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
@@ -71,7 +88,7 @@ void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
         }                                                                      \
     } while (0)
 
-int main(void) {
+static int TestVisibleCellOutputBounds(void) {
     struct {
         u32 before;
         u32 values[TERRAIN_CELL_GRID_SIZE];
@@ -105,6 +122,60 @@ int main(void) {
         CHECK(list.values[index].w == -1);
     }
 
-    puts("visible-cell output stays within its fixed buffers");
+    return 0;
+}
+
+static int TestCourseObjectFlags(void) {
+    CourseObject objects[] = {
+        {.modelId = -1},
+        {.modelId = 10, .x = 2048},
+        {.modelId = 11},
+        {.modelId = 12, .flags = COURSE_OBJECT_ALTERNATE_NORMAL},
+        {.modelId = 13,
+         .flags = COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4},
+        {.modelId = 14, .flags = COURSE_OBJECT_ENVIRONMENT_4},
+        {.modelId = 15, .flags = COURSE_OBJECT_BLINK_ENVIRONMENT_4},
+    };
+    u32 visibility[TERRAIN_CELL_GRID_SIZE] = {1};
+
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
+    memset(s_submissions, 0, sizeof(s_submissions));
+    g_CourseObjects = objects;
+    g_CourseObjectCount = sizeof(objects) / sizeof(objects[0]);
+    g_VisibleCellMask = visibility;
+    g_IsEnvironmentMode4 = 0;
+    g_AnimTimer = 0;
+
+    DrawCourseObjects();
+
+    CHECK(s_submissionCount == 5);
+    CHECK(s_submissions[0].modelId == 11 && !s_submissions[0].alternate &&
+          s_submissions[0].environmentMode4 == 0);
+    CHECK(s_submissions[1].modelId == 12 && s_submissions[1].alternate);
+    CHECK(s_submissions[2].modelId == 13 && !s_submissions[2].alternate);
+    CHECK(s_submissions[3].modelId == 14 &&
+          s_submissions[3].environmentMode4 == 0x10000);
+    CHECK(s_submissions[4].modelId == 15 &&
+          s_submissions[4].environmentMode4 == 0x10000);
+
+    s_submissionCount = 0;
+    g_IsEnvironmentMode4 = 1;
+    g_AnimTimer = 0x10;
+    DrawCourseObjects();
+
+    CHECK(s_submissionCount == 5);
+    CHECK(!s_submissions[1].alternate);
+    CHECK(s_submissions[2].alternate);
+    CHECK(s_submissions[4].environmentMode4 == 0);
+    return 0;
+}
+
+int main(void) {
+    if (TestVisibleCellOutputBounds() != 0 ||
+        TestCourseObjectFlags() != 0) {
+        return 1;
+    }
+    puts("visible-cell bounds and course-object flags behave as expected");
     return 0;
 }
