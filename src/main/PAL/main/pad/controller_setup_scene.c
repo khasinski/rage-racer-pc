@@ -139,7 +139,6 @@ void DrawControllerSetupScene(s32 variant) {
     }
 }
 
-/* Wide-parameter view of the packet builders; see GameQueueSprite.c. */
 /* The 16x32 left arrow, plus - while `pulse` is set - a tile over it whose
  * green channel breathes with rsin of the shared arrow angle. */
 u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
