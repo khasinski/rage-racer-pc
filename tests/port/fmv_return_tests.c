@@ -15,6 +15,7 @@ s32 g_SceneTimer;
 static s32 s_assetRequests;
 static s32 s_cdCommand;
 static s32 s_cdSyncCalls;
+static long s_cdSyncMode;
 static s32 s_displayBlue;
 static s32 s_displayCalls;
 static s32 s_displayGreen;
@@ -23,9 +24,9 @@ static s32 s_displayMask = -1;
 static s32 s_failures;
 
 long CdSync(long mode, u8 *result) {
-    (void)mode;
     (void)result;
     s_cdSyncCalls++;
+    s_cdSyncMode = mode;
     return 0;
 }
 
@@ -55,6 +56,7 @@ static void Check(s32 condition, const char *label) {
 
 static void ResetCalls(void) {
     s_cdSyncCalls = 0;
+    s_cdSyncMode = -1;
     s_cdCommand = -1;
     s_assetRequests = 0;
     s_displayCalls = 0;
@@ -67,7 +69,8 @@ static void TestClassFmvReturn(void) {
 
     ReturnFromClassFmv();
 
-    Check(s_cdSyncCalls == 1 && s_cdCommand == CD_DRIVE_PAUSE,
+    Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
+              s_cdCommand == CD_DRIVE_PAUSE,
           "class FMV return pauses disc playback");
     Check(g_SceneId == 6 && s_assetRequests == 1,
           "class FMV return enters BGM select");
@@ -85,7 +88,8 @@ static void TestEndingFmvReturn(void) {
 
     ReturnFromEndingFmv();
 
-    Check(s_cdSyncCalls == 1 && s_cdCommand == CD_DRIVE_PAUSE,
+    Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
+              s_cdCommand == CD_DRIVE_PAUSE,
           "ending FMV return pauses disc playback");
     Check(s_displayMask == 0 && s_displayCalls == 1 && s_displayRed == 0 &&
               s_displayGreen == 0 && s_displayBlue == 0,

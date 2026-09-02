@@ -11,7 +11,7 @@ static void SendTrackSeek(CdTrackRequestStep waitStep) {
 
 static void WaitForTrackSeek(CdTrackRequestStep retryStep,
                              CdTrackRequestStep finishStep) {
-    s32 syncResult = CdSync(1, 0);
+    s32 syncResult = CdSync(CD_SYNC_POLL, 0);
 
     if (syncResult == CD_SYNC_COMPLETE) {
         g_CdTrackStep = finishStep;
@@ -38,7 +38,7 @@ void StepCdTrackRequest(void) {
 
     switch (g_CdTrackStep) {
     case CD_TRACK_WAIT_FOR_DRIVE:
-        if (CdSync(1, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == 0) {
             break;
         }
         /* Selecting a new track must silence the currently streaming one
@@ -51,7 +51,7 @@ void StepCdTrackRequest(void) {
         g_CdTrackStep = CD_TRACK_WAIT_FOR_PAUSE;
         break;
     case CD_TRACK_WAIT_FOR_PAUSE:
-        if (CdSync(1, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == 0) {
             break;
         }
         g_CdFadeFrames = 0;
@@ -67,7 +67,7 @@ void StepCdTrackRequest(void) {
         FinishTrackRequest(1);
         break;
     case CD_TRACK_RESTART_WAIT_FOR_DRIVE:
-        if (CdSync(1, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == 0) {
             break;
         }
         g_CdTrackStep = CD_TRACK_RESTART_SEND_SEEK;

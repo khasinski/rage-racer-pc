@@ -7,7 +7,7 @@ void StepCdPlayRequest(void) {
 
     switch (g_CdCommandStep) {
     case CD_PLAY_WAIT_FOR_DRIVE:
-        if (CdSync(1, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == 0) {
             break;
         }
         g_CdCommandStep = CD_PLAY_SEND_COMMAND;
@@ -20,7 +20,7 @@ void StepCdPlayRequest(void) {
         break;
 
     case CD_PLAY_WAIT_FOR_COMMAND:
-        syncResult = CdSync(1, 0);
+        syncResult = CdSync(CD_SYNC_POLL, 0);
         if (syncResult == CD_SYNC_COMPLETE) {
             g_CdCommandStep = CD_PLAY_FINISH;
         } else if (syncResult == CD_SYNC_DISK_ERROR) {

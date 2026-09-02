@@ -16,6 +16,7 @@ CdlLOC g_CdTrackLoopPoint[18];
 static long s_controlResult;
 static long s_lastCommand;
 static long s_syncResult;
+static long s_syncMode;
 
 long CdControl(long command, void *param, u_char *result) {
     (void)param;
@@ -25,8 +26,8 @@ long CdControl(long command, void *param, u_char *result) {
 }
 
 long CdSync(long mode, u_char *result) {
-    (void)mode;
     (void)result;
+    s_syncMode = mode;
     return s_syncResult;
 }
 
@@ -49,6 +50,7 @@ int main(void) {
     g_CdCommandStep = CD_PAUSE_WAIT_FOR_DRIVE;
     s_syncResult = 0;
     StepCdPauseRequest();
+    CHECK(s_syncMode == CD_SYNC_POLL);
     CHECK(g_CdCommandStep == CD_PAUSE_WAIT_FOR_DRIVE);
 
     s_syncResult = CD_SYNC_COMPLETE;

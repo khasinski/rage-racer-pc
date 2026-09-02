@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/cd.h"
 #include "game/fmv.h"
 #include "game/state.h"
 
@@ -12,6 +13,7 @@ s32 g_StreamReturnScene;
 static s32 s_closeCalls;
 static s32 s_resetCalls;
 static s32 s_cdSyncCalls;
+static long s_cdSyncMode;
 static long s_cdCommand;
 static s32 s_startCalls;
 static s32 s_decodeCalls;
@@ -24,9 +26,9 @@ s32 CloseLoadedAudioSlots(void) {
 }
 void ResetCdAudioState(void) { s_resetCalls++; }
 long CdSync(long mode, u8 *result) {
-    (void)mode;
     (void)result;
     s_cdSyncCalls++;
+    s_cdSyncMode = mode;
     return 0;
 }
 long CdControl(long command, void *parameter, u8 *result) {
@@ -56,7 +58,8 @@ static void TestBeginFmv(void) {
     Check(g_FmvState == FMV_PLAYBACK_START && g_StreamReturnScene == 27 &&
               g_SceneId == 5,
           "FMV start records playback and return states");
-    Check(s_cdSyncCalls == 1 && s_cdCommand == 9,
+    Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
+              s_cdCommand == CD_DRIVE_PAUSE,
           "FMV start pauses the current CD operation");
 }
 

@@ -27,7 +27,7 @@ void StepCdPauseRequest(void) {
 
     switch (g_CdCommandStep) {
     case CD_PAUSE_WAIT_FOR_DRIVE:
-        if (CdSync(1, 0) == 0) {
+        if (CdSync(CD_SYNC_POLL, 0) == 0) {
             break;
         }
         g_CdCommandStep = CD_PAUSE_GET_LOCATION;
@@ -40,7 +40,7 @@ void StepCdPauseRequest(void) {
         break;
 
     case CD_PAUSE_WAIT_FOR_LOCATION:
-        syncResult = CdSync(1, 0);
+        syncResult = CdSync(CD_SYNC_POLL, 0);
         if (syncResult == CD_SYNC_COMPLETE) {
             g_CdCommandStep = CD_PAUSE_CAPTURE_LOCATION;
         } else if (syncResult == CD_SYNC_DISK_ERROR) {
@@ -60,7 +60,7 @@ void StepCdPauseRequest(void) {
         break;
 
     case CD_PAUSE_WAIT_FOR_COMMAND:
-        syncResult = CdSync(1, 0);
+        syncResult = CdSync(CD_SYNC_POLL, 0);
         if (syncResult == CD_SYNC_COMPLETE) {
             g_CdCommandStep = CD_PAUSE_FINISH;
         } else if (syncResult == CD_SYNC_DISK_ERROR) {

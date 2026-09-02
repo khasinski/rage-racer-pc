@@ -26,6 +26,11 @@ typedef enum CdSyncResult {
     CD_SYNC_DISK_ERROR = 5,
 } CdSyncResult;
 
+typedef enum CdSyncMode {
+    CD_SYNC_WAIT = 0,
+    CD_SYNC_POLL = 1,
+} CdSyncMode;
+
 /* An asserted host EOF may be consumed only once the previous request has
  * finished. The backend keeps EOF asserted until the following Play. */
 static inline int CdAudioRequestsIdle(

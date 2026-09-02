@@ -13,6 +13,7 @@ s32 g_CdFadeFrames;
 u8 g_CdVolume;
 
 static long s_syncResult;
+static long s_syncMode;
 static long s_controlResult;
 static long s_lastCommand;
 static void *s_lastParam;
@@ -21,8 +22,8 @@ static s32 s_volumeCalls;
 static s32 s_lastVolume;
 
 long CdSync(long mode, u_char *result) {
-    (void)mode;
     (void)result;
+    s_syncMode = mode;
     return s_syncResult;
 }
 
@@ -71,6 +72,7 @@ static int TestTrackSelection(void) {
     s_syncResult = 0;
     StepCdTrackRequest();
     CHECK(g_CdTrackStep == CD_TRACK_WAIT_FOR_DRIVE && s_controlCalls == 0);
+    CHECK(s_syncMode == CD_SYNC_POLL);
 
     s_syncResult = CD_SYNC_COMPLETE;
     s_controlResult = 1;

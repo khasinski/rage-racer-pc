@@ -9,13 +9,14 @@ CdCommandType g_CdCommandPending;
 s32 g_CdCommandStep;
 
 static long s_syncResult;
+static long s_syncMode;
 static long s_controlResult;
 static long s_lastCommand;
 static s32 s_controlCalls;
 
 long CdSync(long mode, u_char *result) {
-    (void)mode;
     (void)result;
+    s_syncMode = mode;
     return s_syncResult;
 }
 
@@ -44,6 +45,7 @@ int main(void) {
 
     StepCdPlayRequest();
     CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_COMMAND);
+    CHECK(s_syncMode == CD_SYNC_POLL);
     CHECK(s_controlCalls == 1 && s_lastCommand == CD_DRIVE_PLAY);
 
     s_syncResult = CD_SYNC_DISK_ERROR;
