@@ -144,6 +144,16 @@ int main(void) {
     CHECK_EQ(g_GearTorqueCurve[1].values[0], spec.torqueCurve[0],
              "zero gear ratio uses a safe unit divisor");
 
+    memset(spec.torqueCurve, 0, sizeof(spec.torqueCurve));
+    spec.torqueBand.halves[0] = 4321;
+    g_PeakOutputRpm = 12345;
+    g_PeakOutputValue = 12345;
+    PrepareCarPerformance(&drive);
+    CHECK_EQ(g_PeakOutputRpm, 4321,
+             "empty torque curve uses the first rpm band");
+    CHECK_EQ(g_PeakOutputValue, 0,
+             "empty torque curve clears stale peak output");
+
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
         return 1;

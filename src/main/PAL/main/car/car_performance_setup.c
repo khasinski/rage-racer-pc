@@ -2,24 +2,24 @@
 #include "game/car_internal.h"
 #include "game/player_car_internal.h"
 
-static s32 FindFirstPositiveBand(const s32 *values, s32 count,
-                                 s32 speedThreshold) {
+static s32 FindFirstBandAtOrAbove(const s32 *values, s32 count,
+                                  s32 speedThreshold) {
     s32 index;
 
     for (index = 0; index < count; index++) {
-        if (values[index] / speedThreshold > 0) {
+        if (values[index] >= speedThreshold) {
             return index;
         }
     }
     return -1;
 }
 
-static s32 FindFirstPositiveLossBand(const GameCarSpec *spec,
-                                     s32 speedThreshold) {
+static s32 FindFirstLossBandAtOrAbove(const GameCarSpec *spec,
+                                      s32 speedThreshold) {
     s32 index;
 
     for (index = 0; index < CAR_TORQUE_LOSS_BOUNDARY_COUNT; index++) {
-        if (GetCarTorqueLossBoundary(spec, index) / speedThreshold > 0) {
+        if (GetCarTorqueLossBoundary(spec, index) >= speedThreshold) {
             return index;
         }
     }
@@ -29,6 +29,7 @@ static s32 FindFirstPositiveLossBand(const GameCarSpec *spec,
 void PrepareCarPerformance(GameCarDrive *drive) {
     GameCarSpec *spec = g_CarSpec;
     s32 peakOutput = 0;
+    s32 peakIndex = 0;
     s32 speedThreshold;
     s32 gear;
     s32 index;
@@ -41,12 +42,12 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     for (index = 0; index < 16; index++) {
         g_GearTorqueCurve[0].values[index] = spec->torqueCurve[index] / 20;
         if (peakOutput < g_GearTorqueCurve[0].values[index]) {
-            g_PeakOutputRpm = index;
+            peakIndex = index;
             peakOutput = g_GearTorqueCurve[0].values[index];
         }
     }
     g_PeakOutputValue = peakOutput;
-    g_PeakOutputRpm = spec->torqueBand.halves[g_PeakOutputRpm * 2];
+    g_PeakOutputRpm = spec->torqueBand.halves[peakIndex * 2];
     g_RedlineToPeakRpmHalf = ((s16)g_PeakOutputRpm - spec->redline) / 2;
     g_PeakToRevLimitRpmHalf = (spec->revLimit - (s16)g_PeakOutputRpm) / 2;
 
@@ -72,9 +73,9 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     for (index = 0, speedThreshold = 0x3E8;
          index < CAR_TORQUE_BAND_COUNT;
          index++, speedThreshold += 0x3E8) {
-        s32 band = FindFirstPositiveBand(spec->torqueBand.values, 16,
-                                         speedThreshold);
-        s32 lossBand = FindFirstPositiveLossBand(spec, speedThreshold);
+        s32 band = FindFirstBandAtOrAbove(spec->torqueBand.values, 16,
+                                          speedThreshold);
+        s32 lossBand = FindFirstLossBandAtOrAbove(spec, speedThreshold);
 
         g_TorqueBandEnd[index] = (s16)(band >= 0 ? band : 0);
         g_TorqueLossBandEnd[index] = (s16)(lossBand >= 0 ? lossBand : 0);
