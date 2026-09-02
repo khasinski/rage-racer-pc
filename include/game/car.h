@@ -194,7 +194,13 @@ typedef struct GameCarRuntime {
 
 static inline struct GameRenderObject *GetCarRenderObject(
     GameCarRuntime *car) {
-    return (struct GameRenderObject *)(void *)car;
+    union {
+        GameCarRuntime *runtime;
+        struct GameRenderObject *renderObject;
+    } view;
+
+    view.runtime = car;
+    return view.renderObject;
 }
 
 typedef struct CarSurfaceSampleView {
