@@ -114,6 +114,7 @@ static void DigitalPadSynthesisTests(void) {
 
         Digital(0);
         Check("digital rest twist", g_PadState.twist, 0x80);
+        Check("digital packet type", g_PadState.type, PAD_TYPE_DIGITAL);
         Check("digital rest steer", g_PadState.steer, 0);
 
         Digital(PAD_RIGHT);
@@ -154,6 +155,7 @@ static void NegconPressureTests(void) {
     Reset();
 
     Negcon(0x80, 0x40, 0x30, 0x20);
+    Check("NeGcon packet type", g_PadState.type, PAD_TYPE_NEGCON);
     Check("pressure I passes through", g_PadState.buttonI, 0x40);
     Check("pressure II passes through", g_PadState.buttonII, 0x30);
     Check("pressure L passes through", g_PadState.buttonL, 0x20);
