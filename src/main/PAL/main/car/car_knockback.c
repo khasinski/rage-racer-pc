@@ -7,12 +7,24 @@
 
 #include <stdlib.h>
 
+enum {
+    LOW_SPEED_KNOCKBACK_THRESHOLD = 0x321,
+    MAX_SPEED_SCALED_KNOCKBACK = 0x708,
+    TRACK_BOUNDARY_KNOCKBACK_DURATION = 0x1E,
+    CAR_COLLISION_KNOCKBACK_DURATION = 0x0F,
+    FIXED_TRACK_KNOCKBACK_MODE = 2,
+    CAR_COLLISION_KNOCKBACK_MODE = 4,
+};
+
+static s32 TrackOutwardAngle(const GameCarRuntime *car) {
+    return (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
+}
+
 /* The road-edge response points a quarter turn into the course from the
  * outward track normal. Which quarter turn is chosen depends on the side of
  * the centre line the car occupies. */
 static s32 TrackBoundaryPushAngle(const GameCarRuntime *car) {
-    s32 outward =
-        (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
+    s32 outward = TrackOutwardAngle(car);
 
     return (outward + (car->trackLateralOffset < 0 ? -ANGLE_QUARTER_TURN
                                                    : ANGLE_QUARTER_TURN)) &
@@ -20,17 +32,18 @@ static s32 TrackBoundaryPushAngle(const GameCarRuntime *car) {
 }
 
 static s32 TrackBoundaryPushStrength(const GameCarRuntime *car) {
-    s32 outward =
-        (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
+    s32 outward = TrackOutwardAngle(car);
     s32 approach = GetAngleDistance(outward, car->bodyYaw);
     s32 sine = rsin(approach);
     s32 speed;
 
-    if (car->speed < 0x321) {
+    if (car->speed < LOW_SPEED_KNOCKBACK_THRESHOLD) {
         return (sine * 50) / 4096 + 10;
     }
 
-    speed = car->speed < 0x709 ? (u16)car->speed : 0x708;
+    speed = car->speed <= MAX_SPEED_SCALED_KNOCKBACK
+        ? car->speed
+        : MAX_SPEED_SCALED_KNOCKBACK;
     return (speed * sine) / 65536 + 10;
 }
 
@@ -91,14 +104,16 @@ void ApplyCarKnockback(GameCarRuntime *car) {
 }
 
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
-    if (mode < 2) {
+    if (mode < FIXED_TRACK_KNOCKBACK_MODE) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car),
-                           TrackBoundaryPushStrength(car), 0x1E);
-    } else if (mode < 4) {
-        SetKnockbackVector(car, TrackBoundaryPushAngle(car), 20, 0x0F);
+                           TrackBoundaryPushStrength(car),
+                           TRACK_BOUNDARY_KNOCKBACK_DURATION);
+    } else if (mode < CAR_COLLISION_KNOCKBACK_MODE) {
+        SetKnockbackVector(car, TrackBoundaryPushAngle(car), 20,
+                           CAR_COLLISION_KNOCKBACK_DURATION);
     } else {
         car->motionActive = 1;
-        car->motionTimer = 0x0F;
+        car->motionTimer = CAR_COLLISION_KNOCKBACK_DURATION;
         car->velocityX = (s16)(x / 2);
         car->velocityZ = (s16)(z / 2);
     }
