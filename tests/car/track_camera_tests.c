@@ -344,6 +344,36 @@ int main(void) {
         }
     }
 
+    /* Damping has separate low- and high-speed curves, including a clamp
+     * once the car reaches the top of the table. Keep representative points
+     * on both sides of that branch. */
+    {
+        static const struct {
+            s32 speed;
+            s32 damping;
+        } cases[] = {
+            {0, 222},
+            {0x320, 8},
+            {0x321, 8},
+            {0x4E2, 1},
+        };
+        size_t i;
+        for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+            ChaseAdvance(0x40, cases[i].speed);
+            if (g_ChaseYawDamping != cases[i].damping) {
+                printf("FAIL chase damping at speed %d: got %d, wanted %d\n",
+                       cases[i].speed, g_ChaseYawDamping, cases[i].damping);
+                s_failures++;
+            }
+        }
+    }
+
+    /* Errors within four angle units are the camera's settled dead zone. */
+    if (ChaseAdvance(4, 0x400) != 0 || ChaseAdvance(-4, 0x400) != 0) {
+        printf("FAIL chase yaw moved inside its dead zone\n");
+        s_failures++;
+    }
+
     if (s_failures != 0) {
         printf("%d camera branches moved\n", s_failures);
         return 1;
