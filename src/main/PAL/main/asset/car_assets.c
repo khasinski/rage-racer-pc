@@ -3,10 +3,6 @@
 #include "game/car.h"
 #include "game/audio.h"
 
-/* g_CarModelAsset really is per-screen typed; see game/asset.h.
- * g_TeamLogoSampleData's other reader, menu/team_logo.c, walks it through a
- * TeamLogoSample struct private to that file. */
-
 enum {
     CAR_SELECT_BEGIN_AUDIO = 1,
     CAR_SELECT_WAIT_FOR_AUDIO,
@@ -48,6 +44,8 @@ static void FinishCarSelectAudioLoad(void) {
 
 static void LoadCarSelectSharedAssets(void) {
     CarSelectAssetHeader *header;
+    CourseModelAssetHeader *courseModels;
+    u8 *image;
 
     if (LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor) == 0) {
         return;
@@ -58,12 +56,13 @@ static void LoadCarSelectSharedAssets(void) {
     g_TeamLogoSampleData =
         GetTeamLogoSample(ResolveAssetAddress(
             header, header->teamLogoSamplesOffset));
-    g_AssetBlockPtr = ResolveAssetAddress(header, header->courseModelsOffset);
-    RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
-    g_AssetBlockPtr = ResolveAssetAddress(header, header->imageOffset);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_CarModelBuffer = g_AssetBlockPtr;
-    g_ImageBlockBuffer = g_CarModelBuffer + CAR_MODEL_BUFFER_SIZE;
+    courseModels = GetCourseModelAssetHeader(
+        ResolveAssetAddress(header, header->courseModelsOffset));
+    RegisterCourseModels(courseModels);
+    image = ResolveAssetAddress(header, header->imageOffset);
+    UploadImageAsset(GetImageAssetHeaderWords(image));
+    g_CarModelBuffer = image;
+    g_ImageBlockBuffer = image + CAR_MODEL_BUFFER_SIZE;
     g_AssetLoadState = CAR_SELECT_LOAD_INITIAL_MODEL;
 }
 
