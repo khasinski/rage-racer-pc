@@ -681,7 +681,8 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 /* Callers spell the third argument Matrix *, void * or Vec4 *; an empty
  * parameter list lets each keep its own.  The body reads
  * (void *work, void *objectPos, Matrix *rot). */
-void SetGteObjectMatrix(ObjectMatrixWork *w, LVec *pos, Matrix *rot);
+void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
+                        Matrix *rotation);
 
 /*
  * The environment colour timeline and the sky it feeds. The state is nine

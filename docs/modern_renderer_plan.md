@@ -205,7 +205,7 @@ full semantic scene still exists:
   `SetGeomOffset`/`SetGeomScreen` (FOV), mirror matrix;
 - per object: model bank + model index + LOD, object rotation matrix and
   translation (set through `SetGteObjectMatrix`,
-  `render/draw_packet_queue.c:170`), light/colour matrices, palette row
+  `render/object_matrix.c`), light/colour matrices, palette row
   (`g_ScratchRenderMode`);
 - terrain: visible cell list + per-cell translation, dispatch mode, fog flags;
 - environment: `SetFarColor`/`SetFogNear` state, `g_EnvironmentColors`.

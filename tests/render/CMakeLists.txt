@@ -821,6 +821,46 @@ target_link_libraries(draw_prims_tests PRIVATE psyz)
 add_test(NAME draw_prims COMMAND draw_prims_tests)
 set_tests_properties(draw_prims PROPERTIES LABELS functional)
 
+add_executable(draw_packet_queue_tests
+    draw_packet_queue_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_packet_queue.c)
+target_include_directories(draw_packet_queue_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(draw_packet_queue_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(draw_packet_queue_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(draw_packet_queue_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(draw_packet_queue_tests PRIVATE psyz)
+add_test(NAME draw_packet_queue COMMAND draw_packet_queue_tests)
+set_tests_properties(draw_packet_queue PROPERTIES LABELS unit)
+
+add_executable(object_matrix_tests
+    object_matrix_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/object_matrix.c)
+target_include_directories(object_matrix_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(object_matrix_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(object_matrix_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(object_matrix_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(object_matrix_tests PRIVATE psyz)
+add_test(NAME object_matrix COMMAND object_matrix_tests)
+set_tests_properties(object_matrix PROPERTIES LABELS unit)
+
 add_executable(add_tile_prim_tests
     add_tile_prim_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/add_tile_prim.c)
