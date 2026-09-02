@@ -26,6 +26,12 @@ int main(void) {
     fixture.points[1].segmentLength = 200;
     fixture.points[2].segmentLength = 300;
 
+    if (TrackPointTableArcCenters((TrackPointTable *)&fixture) !=
+        fixture.arcCenters) {
+        puts("FAIL: arc table asset layout");
+        return 1;
+    }
+
     InstallTrackPoints((TrackPointTable *)&fixture);
     if (g_TrackPointCount != 3 ||
         g_TrackPoints != fixture.points ||

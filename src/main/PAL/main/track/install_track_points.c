@@ -8,19 +8,16 @@
  * derives g_TrackSectionCount = (total >> 8) + 1.
  */
 void InstallTrackPoints(TrackPointTable *trackData) {
-    s32 count;
-    GameTrackPoint *points;
     s32 i;
 
-    count = trackData->count;
-    points = trackData->points;
-    g_TrackPoints = points;
+    g_TrackPoints = trackData->points;
     g_TrackLength = 0;
-    g_TrackPointCount = count;
-    g_TrackArcCenters = (GameTrackArcCenter *)(void *)&points[count];
+    g_TrackPointCount = trackData->count;
+    g_TrackArcCenters = TrackPointTableArcCenters(trackData);
 
-    for (i = 0; i < count; i++)
-        g_TrackLength += (s16)points[i].segmentLength;
+    for (i = 0; i < trackData->count; i++) {
+        g_TrackLength += (s16)trackData->points[i].segmentLength;
+    }
 
     g_TrackSectionCount = (g_TrackLength >> 8) + 1;
 }
