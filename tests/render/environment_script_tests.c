@@ -156,6 +156,12 @@ int main(void) {
         return 1;
     }
 
+    SeekEnvironmentScript(-35);
+    if (g_EnvScriptClock != 26) {
+        puts("FAIL: negative environment seek normalization");
+        return 1;
+    }
+
     cues[1].duration = 0;
     SeekEnvironmentScript(15);
     if (g_EnvLerpDuration != 1 || g_EnvLerpFrame != 1 ||
@@ -189,6 +195,14 @@ int main(void) {
     SeekEnvironmentScript(15);
     if (g_EnvScriptEnabled != 0) {
         puts("FAIL: final class environment animation disabled");
+        return 1;
+    }
+
+    g_EnvScriptLength = 0;
+    g_EnvScriptEnabled = 1;
+    SeekEnvironmentScript(15);
+    if (g_EnvScriptEnabled != 0 || g_EnvScriptClock != 0) {
+        puts("FAIL: empty environment script seek");
         return 1;
     }
 

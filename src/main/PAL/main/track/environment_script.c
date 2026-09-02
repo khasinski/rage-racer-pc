@@ -41,6 +41,11 @@ static GameEnvironmentCue *PreviousCueAtClock(s32 clock) {
     return cue + cueCount - 2;
 }
 
+static s32 NormalizeEnvironmentTime(s32 time, s32 length) {
+    time %= length;
+    return time < 0 ? time + length : time;
+}
+
 static void SetCurrentEnvironmentColors(const GameEnvironmentCue *cue) {
     s32 slot;
 
@@ -72,7 +77,14 @@ void SeekEnvironmentScript(s32 targetTime) {
     GameEnvironmentCue *targetCue;
     s32 frame;
 
-    g_EnvScriptClock = (targetTime + g_EnvScriptLength) % g_EnvScriptLength;
+    if (g_EnvScriptLength <= 0 || g_EnvScriptCues == NULL) {
+        g_EnvScriptClock = 0;
+        g_EnvScriptEnabled = 0;
+        return;
+    }
+
+    g_EnvScriptClock =
+        NormalizeEnvironmentTime(targetTime, g_EnvScriptLength);
     previousCue = PreviousCueAtClock(g_EnvScriptClock);
     SetCurrentEnvironmentColors(previousCue);
 
@@ -162,6 +174,9 @@ void UpdateEnvironment(void) {
 
     if (g_EnvScriptEnabled == 0) {
         return;
+    }
+    if (g_EnvLerpDuration <= 0) {
+        g_EnvLerpDuration = 1;
     }
 
     if (g_EnvScriptCursor->time == g_EnvScriptClock) {
