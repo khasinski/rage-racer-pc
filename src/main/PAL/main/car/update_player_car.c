@@ -9,70 +9,6 @@
 #include "rage/trace.h"
 
 /* Per-frame player physics orchestration and track contact. */
-
-/*
- * How far the steering turns the car this frame. Below walking pace the turn
- * is scaled by the speed itself, so a stopped car does not pivot on the spot,
- * and a car pulling away from the grid is given twice the room.
- */
-static void SteerTowardsTarget(PlayerCarRuntime *car, GameCarDrive *p) {
-    s32 speed = car->speed;
-    s32 turn = (p->steerPos * 6) / 5 * p->steeringGrip;
-
-    if (speed < 256 && p->motionState == CAR_MOTION_DRIVING) {
-        p->targetHeading += (turn / 256) * speed / 0x10000;
-    } else if (speed < 512 && p->motionState == CAR_MOTION_STANDING_START) {
-        p->targetHeading += (turn / 256) * speed / 0x20000;
-    } else {
-        p->targetHeading += turn / 0x10000;
-    }
-}
-
-/*
- * The wheels turn with the speed until they would blur, then hold a fixed
- * rate; the top bit asks for the blurred texture.
- */
-static void SpinWheels(PlayerCarRuntime *car) {
-    s32 step = car->speed * 3;
-    s32 spin;
-
-    if (step > 4096) {
-        step = 0x249;
-    }
-    spin = (step + car->wheelRotation) & 0xFFF;
-    car->wheelRotation = spin;
-    if (car->speed > 800) {
-        car->wheelRotation = spin | 0x1000;
-    }
-}
-
-/*
- * The steering has a stop, and how long it has been held against it drives
- * the wheel-scrub sound. A NeGcon only counts the hold while the twist is
- * still past the stop, and starts its count ten frames in hand; a pad has no
- * travel left to check.
- */
-static void ClampSteeringAngle(PlayerCarRuntime *car, GameCarDrive *p) {
-    int negcon = g_PadType == 0x23;
-
-    if (car->steeringAngle >= 4096) {
-        car->steeringAngle = 4096;
-        if (!negcon || p->steerPos < -4096) {
-            g_SteerHoldFrames++;
-        }
-    } else if (car->steeringAngle < -4095) {
-        car->steeringAngle = -4096;
-        if (!negcon || p->steerPos > 4096) {
-            g_SteerHoldFrames++;
-        }
-    } else {
-        g_SteerHoldFrames = negcon ? -10 : 0;
-    }
-}
-
-
-
-
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Matrix m1;
     Matrix m2;
@@ -100,15 +36,13 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     UpdateCarBodyRoll(car);
 
     if (car->verticalMotionState == 0) {
-        SteerTowardsTarget(car, p);
+        UpdatePlayerSteeringTarget(car);
     }
 
     ReadPlayerCarInput(p);
     UpdateCarDrivetrain(car);
 
-    SpinWheels(car);
-
-    ClampSteeringAngle(car, p);
+    UpdatePlayerControlFeedback(car);
 
     TraceCarMotion("pre-integrate", car);
     car->x -= car->motionX;
