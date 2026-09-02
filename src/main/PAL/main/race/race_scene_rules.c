@@ -130,3 +130,20 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
     result.expired = phase < 4 && result.remaining <= 0;
     return result;
 }
+
+RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
+                                 CameraViewMode selectedView) {
+    RaceViewSelection result = {
+        RACE_CAMERA_ACTION_NONE, selectedView, 0};
+
+    if (phase == 5 && !retiring) {
+        result.cameraAction = RACE_CAMERA_ACTION_FINISH;
+        result.useFinishTextureSection = 1;
+    } else if (phase > 0) {
+        result.cameraAction = RACE_CAMERA_ACTION_FOLLOW_PLAYER;
+        if (retiring) {
+            result.cameraView = CAMERA_VIEW_CAR;
+        }
+    }
+    return result;
+}

@@ -173,6 +173,36 @@ static void TestRaceClock(void) {
           "time attack preserves the retail zero-clock fallback");
 }
 
+static void TestRaceViewSelection(void) {
+    RaceViewSelection view;
+
+    view = SelectRaceView(0, 0, CAMERA_VIEW_CHASE);
+    Check(view.cameraAction == RACE_CAMERA_ACTION_NONE &&
+              !view.useFinishTextureSection,
+          "intro phase owns its camera and uses the player texture section");
+
+    view = SelectRaceView(2, 0, CAMERA_VIEW_CHASE);
+    Check(view.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER &&
+              view.cameraView == CAMERA_VIEW_CHASE &&
+              !view.useFinishTextureSection,
+          "live race follows the selected player camera");
+    view = SelectRaceView(5, 0, CAMERA_VIEW_CHASE);
+    Check(view.cameraAction == RACE_CAMERA_ACTION_FINISH &&
+              view.useFinishTextureSection,
+          "normal finish advances its autonomous camera and texture section");
+
+    view = SelectRaceView(5, 1, CAMERA_VIEW_CHASE);
+    Check(view.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER &&
+              view.cameraView == CAMERA_VIEW_CAR &&
+              !view.useFinishTextureSection,
+          "retirement keeps the car camera and player texture section");
+    view = SelectRaceView(7, 0, CAMERA_VIEW_TRACK);
+    Check(view.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER &&
+              view.cameraView == CAMERA_VIEW_TRACK &&
+              !view.useFinishTextureSection,
+          "quit transition preserves the selected player camera");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
@@ -182,6 +212,7 @@ int main(void) {
     TestWrongWayState();
     TestRaceStartState();
     TestRaceClock();
+    TestRaceViewSelection();
 
     if (s_failures != 0) {
         return 1;

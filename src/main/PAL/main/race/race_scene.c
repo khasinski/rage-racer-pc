@@ -309,6 +309,7 @@ void UpdateRaceScene(void) {
     } else {
         RaceClockUpdate raceClock;
         RaceStartUpdate raceStart;
+        RaceViewSelection raceView;
         WrongWayUpdate wrongWay;
 
         g_AnimTimer++;
@@ -381,19 +382,18 @@ void UpdateRaceScene(void) {
             g_CameraViewMode ^= 1;
         }
 
-        if (g_RacePhase == 5 && !s_RetireCameraActive) {
+        raceView = SelectRaceView(g_RacePhase, s_RetireCameraActive,
+                                  g_CameraViewMode);
+        if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
             UpdateFinishCamera(&g_PlayerCar);
-        } else if (g_RacePhase > 0) {
-            UpdateCamera(s_RetireCameraActive ? CAMERA_VIEW_CAR
-                                              : g_CameraViewMode,
+        } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
+            UpdateCamera(raceView.cameraView,
                          GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
         }
 
-        if (g_RacePhase != 5 || s_RetireCameraActive) {
-            textureSection = g_PlayerCar.trackSection;
-        } else {
-            textureSection = g_CameraCarTrackSection;
-        }
+        textureSection = raceView.useFinishTextureSection
+                             ? g_CameraCarTrackSection
+                             : g_PlayerCar.trackSection;
         RequestTrackTexturePage(textureSection);
 
         if (g_GrandPrixMode != 0) {
