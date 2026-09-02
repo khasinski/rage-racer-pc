@@ -44,6 +44,28 @@ int main(void) {
         return 1;
     }
 
+    fixture.count = 0;
+    InstallTrackPoints((TrackPointTable *)&fixture);
+    if (g_TrackPoints != NULL || g_TrackPointCount != 0 ||
+        g_TrackArcCenters != NULL || g_TrackLength != 0 ||
+        g_TrackSectionCount != 0) {
+        puts("FAIL: empty table was published");
+        return 1;
+    }
+
+    g_TrackPoints = fixture.points;
+    g_TrackPointCount = 3;
+    g_TrackArcCenters = fixture.arcCenters;
+    g_TrackLength = 600;
+    g_TrackSectionCount = 3;
+    InstallTrackPoints(NULL);
+    if (g_TrackPoints != NULL || g_TrackPointCount != 0 ||
+        g_TrackArcCenters != NULL || g_TrackLength != 0 ||
+        g_TrackSectionCount != 0) {
+        puts("FAIL: null table was published");
+        return 1;
+    }
+
     puts("track point installation preserved");
     return 0;
 }

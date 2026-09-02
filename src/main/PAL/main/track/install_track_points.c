@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "game/track_internal.h"
 
 /*
@@ -9,6 +11,15 @@
  */
 void InstallTrackPoints(TrackPointTable *trackData) {
     s32 i;
+
+    if (trackData == NULL || trackData->count <= 0) {
+        g_TrackPoints = NULL;
+        g_TrackPointCount = 0;
+        g_TrackArcCenters = NULL;
+        g_TrackLength = 0;
+        g_TrackSectionCount = 0;
+        return;
+    }
 
     g_TrackPoints = trackData->points;
     g_TrackLength = 0;

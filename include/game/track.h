@@ -195,15 +195,23 @@ typedef struct GameTrackArcCenter {
 
 typedef struct TrackPointTable {
     s32 count;
-    GameTrackPoint points[1];
+    GameTrackPoint points[];
 } TrackPointTable;
+
+typedef union TrackPointAssetAddress {
+    GameTrackPoint *points;
+    GameTrackArcCenter *arcCenters;
+} TrackPointAssetAddress;
 
 /* The retail asset stores its variable-length arc-centre table immediately
  * after the declared number of centreline points. Keep that format arithmetic
  * at the asset boundary instead of repeating a layout cast in consumers. */
 static inline GameTrackArcCenter *TrackPointTableArcCenters(
     TrackPointTable *table) {
-    return (GameTrackArcCenter *)(void *)(table->points + table->count);
+    TrackPointAssetAddress address;
+
+    address.points = table->points + table->count;
+    return address.arcCenters;
 }
 
 /* Track centreline points of the loaded course, g_TrackPointCount of them;
