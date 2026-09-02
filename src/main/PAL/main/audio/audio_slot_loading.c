@@ -80,15 +80,17 @@ static s32 IsValidVabAsset(const AudioSlotAsset *asset) {
 
 static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
                              s32 spuAddress) {
-    s16 vabId = SsVabOpenHeadSticky(header, -1, spuAddress);
+    s16 openedVabId = SsVabOpenHeadSticky(header, -1, spuAddress);
+    s16 vabId;
 
-    if (vabId == -1) {
+    if (openedVabId == -1) {
         printf("%s", g_MsgVabOpenHeadError);
         return 0;
     }
 
-    vabId = SsVabTransBody(body, vabId);
+    vabId = SsVabTransBody(body, openedVabId);
     if (vabId == -1) {
+        SsVabClose(openedVabId);
         printf("%s", g_MsgVabTransBodyError);
         return 0;
     }

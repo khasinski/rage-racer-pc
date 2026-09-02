@@ -4,19 +4,21 @@
 #include "psyq/snd.h"
 
 s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
+    s16 openedVabId;
     s16 vabId;
     s16 sequenceHandle;
 
     g_AudioLoadSlot = AUDIO_SLOT_SEQUENCE;
-    vabId = SsVabOpenHeadSticky(
+    openedVabId = SsVabOpenHeadSticky(
         header, -1, g_VabSpuAddress[AUDIO_SLOT_SEQUENCE]);
-    if (vabId == -1) {
+    if (openedVabId == -1) {
         printf("%s", g_MsgSeqVabOpenHeadError);
         return -1;
     }
 
-    vabId = SsVabTransBody(body, vabId);
+    vabId = SsVabTransBody(body, openedVabId);
     if (vabId == -1) {
+        SsVabClose(openedVabId);
         printf("%s", g_MsgSeqVabTransBodyError);
         return -1;
     }

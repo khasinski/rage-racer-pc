@@ -187,7 +187,9 @@ int main(void) {
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
     s_openResult = 7;
     s_bodyResult = -1;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    s_closeVab = -1;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1 &&
+          s_closeVab == 7);
     s_bodyResult = 8;
 
     g_VabSpuAddress[3] = 0x34000;

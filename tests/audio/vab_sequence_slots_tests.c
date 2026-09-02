@@ -94,8 +94,10 @@ int main(void) {
           "sequence VAB header failure is reported");
     s_openResult = 7;
     s_bodyResult = -1;
-    Check(OpenSequenceAudioSlot(header, body, sequence) == -1,
-          "sequence VAB body failure is reported");
+    s_closedVab = -1;
+    Check(OpenSequenceAudioSlot(header, body, sequence) == -1 &&
+              s_closedVab == 7,
+          "sequence VAB body failure closes its header");
     s_bodyResult = 8;
     s_sequenceOpenResult = -1;
     s_closedVab = -1;
