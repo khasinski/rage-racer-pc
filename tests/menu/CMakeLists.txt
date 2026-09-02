@@ -1079,6 +1079,25 @@ else()
 endif()
 add_test(NAME controller_config_widgets COMMAND controller_config_widgets_tests)
 set_tests_properties(controller_config_widgets PROPERTIES LABELS unit)
+
+add_executable(controller_setup_scene_tests
+    controller_setup_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/controller_setup_scene.c)
+target_include_directories(controller_setup_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(controller_setup_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(controller_setup_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(controller_setup_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME controller_setup_scene COMMAND controller_setup_scene_tests)
+set_tests_properties(controller_setup_scene PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
