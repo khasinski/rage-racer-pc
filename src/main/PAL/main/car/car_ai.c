@@ -223,12 +223,12 @@ void SeedCarRouteMarkers(void) {
             s32 progress =
                 g_TrackEventData->aiSpeedKeys[series][index].progress;
 
-            if (position >= progress) {
-                g_Cars[carIndex].routeMarkerIndex = index;
-                break;
-            }
             if (progress == -1) {
                 g_Cars[carIndex].routeMarkerIndex = 0;
+                break;
+            }
+            if (position >= progress) {
+                g_Cars[carIndex].routeMarkerIndex = index;
                 break;
             }
         }
@@ -249,12 +249,12 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
     s32 position = car->trackProgress >> 4;
     TrackRacingLineHint *hint;
 
-    hint = &g_TrackEventData->racingLineHints[series][car->routeIndex];
     /* Before the first stretch of the lap, the list starts over. */
     if (position < 0x20) {
         car->routeIndex = 0;
         position = 0;
     }
+    hint = &g_TrackEventData->racingLineHints[series][car->routeIndex];
 
     if (hint->end < position) {
         ai->routeIndex++;

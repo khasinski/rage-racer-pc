@@ -21,6 +21,7 @@
 s32 GetCarCrestTrigger(GameCarRuntime *car);
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear);
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
+void SeedCarRouteMarkers(void);
 
 /* The state the three of them read. g_Cars is only here because the file
  * defines other functions that touch it. */
@@ -198,6 +199,38 @@ static void TargetSpeedTests(void) {
           (((100 * 1168) / 160) * 6) / 100);
 }
 
+static void RouteMarkerSeedTests(void) {
+    TrackAiSpeedKey *keys = s_events.aiSpeedKeys[0];
+    s32 carIndex;
+
+    Reset();
+    keys[0].progress = 0x300;
+    keys[1].progress = 0x200;
+    keys[2].progress = 0x100;
+    keys[3].progress = -1;
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_Cars[0].trackProgress = 0x350 << 4;
+    g_Cars[1].trackProgress = 0x250 << 4;
+    g_Cars[2].trackProgress = 0x150 << 4;
+    g_Cars[3].trackProgress = 0x050 << 4;
+
+    SeedCarRouteMarkers();
+
+    Check(g_Cars[0].routeMarkerIndex == 0, "seed at first speed key",
+          g_Cars[0].routeMarkerIndex, 0);
+    Check(g_Cars[1].routeMarkerIndex == 1, "seed at second speed key",
+          g_Cars[1].routeMarkerIndex, 1);
+    Check(g_Cars[2].routeMarkerIndex == 2, "seed at third speed key",
+          g_Cars[2].routeMarkerIndex, 2);
+    Check(g_Cars[3].routeMarkerIndex == 0, "seed before all speed keys",
+          g_Cars[3].routeMarkerIndex, 0);
+    for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
+        Check(g_Cars[carIndex].routeMarkerActive == 1,
+              "seed activates route marker", g_Cars[carIndex].routeMarkerActive,
+              1);
+    }
+}
+
 static void RacingLineTests(void) {
     GameCarRuntime car;
     TrackRacingLineHint *hints = s_events.racingLineHints[0];
@@ -290,11 +323,26 @@ static void RacingLineTests(void) {
           car.aiLateralOffset, 50);
     Check(car.racingLineHintState == 0, "before the stretch, state clears",
           car.racingLineHintState, 0);
+
+    /* Resetting the route index at the start of a lap must also select the
+     * first hint immediately, rather than retaining the old hint for a frame. */
+    hints[0].start = 0;
+    hints[0].end = 0x20;
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x10 << 4;
+    car.routeIndex = 1;
+    car.aiLateralOffset = 50;
+    ApplyCarRacingLineHint(&car, 1);
+    Check(car.routeIndex == 0, "lap start resets the racing-line hint",
+          car.routeIndex, 0);
+    Check(car.aiLateralOffset == 55, "lap start uses the first hint immediately",
+          car.aiLateralOffset, 55);
 }
 
 int main(void) {
     CrestTests();
     TargetSpeedTests();
+    RouteMarkerSeedTests();
     RacingLineTests();
 
     if (s_failures != 0) {
