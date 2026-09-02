@@ -41,9 +41,9 @@ int main(void) {
     static const s32 slots[] = {0, 3, 4, 10};
     static const s32 headings[] = {0, 0x400, 0x900};
     static const s32 speeds[] = {0, 801, 1600};
-    static const s32 steering[] = {-65, -64, 64, 65, 299, 300};
+    static const s32 steering[] = {-301, -300, -65, -64, 64, 65, 300, 301};
     static const s32 yawRates[] = {-20, 0, 20};
-    static const u32 expected = 3601508581U;
+    static const u32 expected = 3905550109U;
     size_t si, hi, vi, ti, yi;
     int cases = 0;
 
