@@ -675,7 +675,6 @@ unsigned char g_SndCurrentVag[8] __attribute__((aligned(16)));
 unsigned char g_SndCurrentVoice[8] __attribute__((aligned(16)));
 short g_SndCurrentVoiceRegOffset;
 short g_SndCurrentToneIndex;
-u8 g_TrackTextureShadowPageLast;
 unsigned char g_SndVabStatus[16] __attribute__((aligned(16)));
 unsigned char g_StCopySector[12] __attribute__((aligned(16)));
 unsigned char g_SndReservedVoiceCount[8] __attribute__((aligned(16)));

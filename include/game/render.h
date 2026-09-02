@@ -790,7 +790,6 @@ extern s32 g_MenuCursorPulsePhase;
 extern Vec4 g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
-extern u8 g_TrackTextureShadowPageLast;
 extern s16 g_AtanTable[];
 extern s32 g_CameraPathNextKey;
 extern s32 g_CameraPathTick;
