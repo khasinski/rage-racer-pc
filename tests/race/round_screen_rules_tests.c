@@ -22,6 +22,11 @@ static void TestRoundNumber(void) {
           "replaying a placed course keeps its original round count");
     Check(DetermineGrandPrixRound(laterClasses, 2, 3) == 3,
           "later classes count all four courses");
+    Check(DetermineGrandPrixRound(NULL, 2, 0) == 0,
+          "missing course progress has no round");
+    Check(DetermineGrandPrixRound(laterClasses, 2, -1) == 0 &&
+              DetermineGrandPrixRound(laterClasses, 2, 4) == 0,
+          "invalid course index has no round");
 }
 
 static void TestSelectionWrap(void) {
@@ -73,6 +78,10 @@ static void TestBgmChoice(void) {
     choice = ChooseRoundBgm(0, order, 0, 8);
     Check(choice.track == 0 && choice.shuffleIndex == 0,
           "empty shuffle is safe and deterministic");
+
+    choice = ChooseRoundBgm(0, NULL, 4, 2);
+    Check(choice.track == 0 && choice.shuffleIndex == 0,
+          "missing shuffle is safe and deterministic");
 }
 
 int main(void) {

@@ -21,10 +21,13 @@ static const RaceRecord s_DefaultRecords[RECORD_TABLE_LENGTH] = {
 };
 
 FastestLap FindFastestLap(const s32 *lapTimes, s32 lapCount) {
-    FastestLap fastest = {-1, 0};
+    FastestLap fastest = {
+        .index = -1,
+        .time = 0,
+    };
     s32 lap;
 
-    if (lapCount <= 0) {
+    if (lapTimes == NULL || lapCount <= 0) {
         return fastest;
     }
 

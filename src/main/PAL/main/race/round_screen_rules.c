@@ -1,6 +1,8 @@
 #include "game/round_screen_internal.h"
 #include "game/state.h"
 
+#include <stddef.h>
+
 s32 ClampRoundScreenFade(s32 value) {
     if (value < 0) {
         return 0;
@@ -19,6 +21,10 @@ s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
     s32 courseCount = classIndex < 2 ? 3 : 4;
     s32 round = 0;
     s32 course;
+
+    if (bestPlaces == NULL || courseIndex < 0 || courseIndex >= 4) {
+        return 0;
+    }
 
     for (course = 0; course < courseCount; course++) {
         if (bestPlaces[course] != 0) {
@@ -43,9 +49,12 @@ s32 WrapRoundBgmSelection(s32 selection, s32 trackCount) {
 
 RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
                               s32 trackCount, s32 shuffleIndex) {
-    RoundBgmChoice choice = {0, 0};
+    RoundBgmChoice choice = {
+        .track = 0,
+        .shuffleIndex = 0,
+    };
 
-    if (selection == 0 && trackCount > 0) {
+    if (selection == 0 && shuffleOrder != NULL && trackCount > 0) {
         shuffleIndex %= trackCount;
         if (shuffleIndex < 0) {
             shuffleIndex += trackCount;

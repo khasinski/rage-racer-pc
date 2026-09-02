@@ -56,6 +56,8 @@ int main(void) {
         CHECK(fastest.index == -1 && fastest.time == 0);
         fastest = FindFastestLap(NULL, -1);
         CHECK(fastest.index == -1 && fastest.time == 0);
+        fastest = FindFastestLap(NULL, 3);
+        CHECK(fastest.index == -1 && fastest.time == 0);
     }
 
     memset(g_RankingRecords, 0xA5, sizeof(g_RankingRecords));
