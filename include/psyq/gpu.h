@@ -16,8 +16,8 @@ typedef struct DispEnv {
 } DispEnv;
 
 typedef struct DrawEnvPacket {
-    u_long tag;
-    u_long code[15];
+    u32 tag;
+    u32 code[15];
 } DrawEnvPacket;
 
 typedef struct DrawEnv {
@@ -36,6 +36,7 @@ typedef struct DrawEnv {
 
 typedef char DrawEnvSizeCheck[sizeof(DrawEnv) == 0x5C ? 1 : -1];
 typedef char DispEnvSizeCheck[sizeof(DispEnv) == 0x14 ? 1 : -1];
+typedef char DrawEnvPacketSizeCheck[sizeof(DrawEnvPacket) == 0x40 ? 1 : -1];
 
 s32 SetGraphDebug(u8 level);
 DrawEnv *PutDrawEnv(DrawEnv *env);
@@ -180,7 +181,7 @@ typedef struct LINE_F3 {
     short y1;
     short x2;
     short y2;
-    u_long pad14;
+    u32 pad14;
 } LINE_F3;
 
 /* Gradient line, 0x14 bytes. Built by SetLineG2. */

@@ -13,18 +13,21 @@ typedef struct Rect {
 } Rect;
 
 typedef struct GpuRectPacked {
-    u_long xy;
+    u32 xy;
     short w;
     short h;
 } GpuRectPacked;
 
 typedef struct GpuTexWindow {
-    u_char x;
-    u_char pad1;
-    u_char y;
-    u_char pad3;
+    u8 x;
+    u8 pad1;
+    u8 y;
+    u8 pad3;
     short w;
     short h;
 } GpuTexWindow;
+
+typedef char GpuRectPackedSizeCheck[sizeof(GpuRectPacked) == 8 ? 1 : -1];
+typedef char GpuTexWindowSizeCheck[sizeof(GpuTexWindow) == 8 ? 1 : -1];
 
 #endif
