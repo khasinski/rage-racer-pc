@@ -13,7 +13,7 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     while (*text != '\0') {
-        s32 cell = (u8)*text++ - 0x20;
+        s32 cell = PrintableAsciiGlyph((u8)*text++);
 
         if (cell != 0) {
             SPRT_8 *sprite = packet.sprite8;

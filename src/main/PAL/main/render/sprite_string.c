@@ -10,7 +10,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     while (*str != '\0') {
-        s32 glyph = (u8)*str++ - 0x20;
+        s32 glyph = PrintableAsciiGlyph((u8)*str++);
         s32 width = g_SpriteFontWidth[glyph];
 
         if (glyph != 0) {

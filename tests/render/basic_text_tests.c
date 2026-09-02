@@ -107,9 +107,35 @@ static void TestSpriteString(void) {
           (s32)(sizeof(SPRT) + sizeof(DrawPacket)), "sprite string cursor");
 }
 
+static void TestInvalidBytesUseFallbackGlyph(void) {
+    const s32 fallback = '?' - PRINTABLE_ASCII_FIRST;
+    SPRT *sprite;
+    SPRT_8 *sprite8;
+
+    g_SpriteFontWidth[fallback] = 7;
+    g_SpriteFontCells[fallback * 2] = 9;
+    g_SpriteFontCells[fallback * 2 + 1] = 11;
+    g_Font8x8Cells[fallback * 2] = 4;
+    g_Font8x8Cells[fallback * 2 + 1] = 6;
+
+    Reset();
+    DrawSpriteString(10, 20, "\x01", 3);
+    sprite = (SPRT *)s_packets.bytes;
+    Check(sprite->u0, 9, "sprite invalid-byte fallback u");
+    Check(sprite->v0, 11, "sprite invalid-byte fallback v");
+    Check(sprite->w, 7, "sprite invalid-byte fallback width");
+
+    Reset();
+    DrawText8x8(10, 20, "\x80", 3);
+    sprite8 = (SPRT_8 *)s_packets.bytes;
+    Check(sprite8->u0, 32, "8x8 invalid-byte fallback u");
+    Check(sprite8->v0, 48, "8x8 invalid-byte fallback v");
+}
+
 int main(void) {
     TestText8x8();
     TestSpriteString();
+    TestInvalidBytesUseFallbackGlyph();
     if (s_failures != 0) return 1;
     puts("basic text emitters queue glyph and draw-mode packets");
     return 0;

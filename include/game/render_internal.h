@@ -15,6 +15,20 @@ typedef struct FontGlyph {
     u16 width;
 } FontGlyph;
 
+enum {
+    PRINTABLE_ASCII_FIRST = 0x20,
+    PRINTABLE_ASCII_GLYPH_COUNT = 96,
+    PRINTABLE_ASCII_FALLBACK_GLYPH = '?' - PRINTABLE_ASCII_FIRST,
+};
+
+static inline s32 PrintableAsciiGlyph(u8 character) {
+    s32 glyph = character - PRINTABLE_ASCII_FIRST;
+
+    return (u32)glyph < PRINTABLE_ASCII_GLYPH_COUNT
+        ? glyph
+        : PRINTABLE_ASCII_FALLBACK_GLYPH;
+}
+
 typedef struct CameraKey {
     s32 eyeX;
     s32 eyeY;
