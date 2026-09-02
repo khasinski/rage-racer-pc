@@ -1,6 +1,7 @@
 #include "game/prize_money.h"
 
 s32 ClampPrizeMoney(s32 money) {
+    if (money < 0) return 0;
     return money > RACE_MAX_PRIZE_MONEY ? RACE_MAX_PRIZE_MONEY : money;
 }
 

@@ -67,6 +67,7 @@ int main(void) {
     Check("place past prize table", PrizeForRacePosition(prizes, 3, 4), 0);
 
     Check("money below cap", ClampPrizeMoney(1234), 1234);
+    Check("negative money", ClampPrizeMoney(-1), 0);
     Check("money above cap", ClampPrizeMoney(1000000000),
           RACE_MAX_PRIZE_MONEY);
     Check("ordinary prize credit", CreditPrizeMoney(1000, 500), 1500);

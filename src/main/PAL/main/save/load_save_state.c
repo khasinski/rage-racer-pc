@@ -3,6 +3,7 @@
 #include "game/menu.h"
 #include "game/records_internal.h"
 #include "game/input_internal.h"
+#include "game/prize_money.h"
 #include "game/save_internal.h"
 
 static s32 ClampSaveValue(s32 value, s32 minimum, s32 maximum) {
@@ -43,7 +44,7 @@ static void LoadRaceProgress(
         saved->classIndex, 0, GRAND_PRIX_FINAL_CLASS_INDEX);
     progress->maxClassReached = ClampSaveValue(
         saved->maxClassReached, -1, GRAND_PRIX_FINAL_CLASS_INDEX);
-    progress->money.value = saved->money;
+    progress->money.value = ClampPrizeMoney(saved->money);
 }
 
 static void NormalizeRaceRecords(

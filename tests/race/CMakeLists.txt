@@ -621,6 +621,7 @@ set_tests_properties(save_checksum PROPERTIES LABELS unit)
 if(TARGET rage-host-state)
 add_executable(save_state_roundtrip_tests
     save_state_roundtrip_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prize_money.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/load_save_state.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/store_save_state.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_checksum.c)

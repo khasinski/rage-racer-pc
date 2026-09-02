@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/input_internal.h"
 #include "game/menu.h"
+#include "game/prize_money.h"
 #include "game/race.h"
 #include "game/records_internal.h"
 #include "game/save_internal.h"
@@ -222,6 +223,8 @@ int main(void) {
     outOfRange.grandPrixProgress.carIndex = -20;
     outOfRange.grandPrixProgress.classIndex = 99;
     outOfRange.grandPrixProgress.maxClassReached = -20;
+    outOfRange.grandPrixProgress.money = -1;
+    outOfRange.extraGrandPrixProgress.money = RACE_MAX_PRIZE_MONEY + 1;
     outOfRange.extraGrandPrixUnlocked = 7;
     outOfRange.maxClassReached[0] = 99;
     outOfRange.maxClassReached[1] = -20;
@@ -253,6 +256,8 @@ int main(void) {
     CHECK(g_GrandPrixSave.carIndex == 0);
     CHECK(g_GrandPrixSave.classIndex == GRAND_PRIX_FINAL_CLASS_INDEX);
     CHECK(g_GrandPrixSave.maxClassReached == -1);
+    CHECK(g_GrandPrixSave.money.value == 0);
+    CHECK(g_ExtraGrandPrixSave.money.value == RACE_MAX_PRIZE_MONEY);
     CHECK(g_ExtraGrandPrixUnlocked == 1);
     CHECK(g_MaxClassReached[0] == GRAND_PRIX_FINAL_CLASS_INDEX);
     CHECK(g_MaxClassReached[1] == 0);
