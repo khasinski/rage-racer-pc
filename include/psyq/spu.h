@@ -120,7 +120,6 @@ void SpuSetCommonAttr(SpuCommonAttr *attr);
 /* Declared identically by 50 translation units before this
  * header carried them. */
 
-extern SpuMallocEntry *_spu_memList;
 extern long _spu_mem_mode_unitM;
 extern volatile u_long *g_SpuDelayReg;
 extern volatile u_long *g_SpuDmaBcr;
@@ -144,8 +143,6 @@ extern long g_SpuWaitCount;
 extern long D_8009A710;
 extern u_short g_SpuVoiceCenterNoteLast;
 extern long g_SpuInTransfer;
-extern long _spu_AllocBlockNum;
-extern long _spu_AllocLastNum;
 extern long g_SpuDmaBlockCount;
 extern long g_SpuDmaTransferAddr;
 extern volatile long *g_SpuDpcr;
