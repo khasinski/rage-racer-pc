@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/angle.h"
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
@@ -47,8 +48,9 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
         FindTrackSegment(AsRivalCar(car), car->trackPointIndex);
 
     car->bodyPitch = 0;
-    car->bodyYaw = (0xC00 - (raceSeries << 11) -
-                    TrackPoint(car->trackPointIndex)->angle) & 0xFFF;
+    car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
+                    raceSeries * ANGLE_HALF_TURN -
+                    TrackPoint(car->trackPointIndex)->angle) & ANGLE_MASK;
     car->bodyRoll = 0;
     car->bodyRollVelocity = 0;
     car->previousTrackPointIndex = car->trackPointIndex;

@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -28,9 +29,9 @@ void InitRivalCar(GameCarRuntime *car,
     trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
     car->trackPointIndex = trackPointIndex;
     car->bodyPitch = 0;
-    car->bodyYaw =
-        (0xC00 - (g_RaceSeries << 11) - TrackPoint(trackPointIndex)->angle) &
-        0xFFF;
+    car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
+                    ReadStableRaceSeries() * ANGLE_HALF_TURN -
+                    TrackPoint(trackPointIndex)->angle) & ANGLE_MASK;
     car->bodyRoll = 0;
     car->bodyRollVelocity = 0;
     car->progressB = 0;
