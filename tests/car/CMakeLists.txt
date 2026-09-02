@@ -546,30 +546,30 @@ target_link_libraries(drivetrain_sweep_tests PRIVATE psyz)
 add_test(NAME drivetrain_sweep COMMAND drivetrain_sweep_tests)
 set_tests_properties(drivetrain_sweep PROPERTIES LABELS functional)
 
-# Where a car lands on the track, swept over a course built for the purpose.
-add_executable(advance_car_position_tests
+# Travel heading and speed over a sweep of body directions and acceleration.
+add_executable(car_travel_velocity_tests
     advance_car_position_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
-target_include_directories(advance_car_position_tests PRIVATE
+target_include_directories(car_travel_velocity_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(advance_car_position_tests PRIVATE __psyz=1)
+target_compile_definitions(car_travel_velocity_tests PRIVATE __psyz=1)
 if(MSVC)
-    target_compile_options(advance_car_position_tests PRIVATE
+    target_compile_options(car_travel_velocity_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
-    target_compile_options(advance_car_position_tests PRIVATE
+    target_compile_options(car_travel_velocity_tests PRIVATE
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Wno-error)
 endif()
-target_link_libraries(advance_car_position_tests PRIVATE psyz)
-add_test(NAME advance_car_position COMMAND advance_car_position_tests)
-set_tests_properties(advance_car_position PROPERTIES LABELS functional)
+target_link_libraries(car_travel_velocity_tests PRIVATE psyz)
+add_test(NAME car_travel_velocity COMMAND car_travel_velocity_tests)
+set_tests_properties(car_travel_velocity PROPERTIES LABELS functional)
 
 add_executable(steer_to_track_line_tests
     steer_to_track_line_tests.c
@@ -602,7 +602,7 @@ add_executable(car_motion_handlers_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_airborne.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/advance_car_position.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c

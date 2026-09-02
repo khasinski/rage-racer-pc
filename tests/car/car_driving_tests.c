@@ -26,7 +26,7 @@ s32 rcos(s32 angle) {
     return (angle & 0xFFF) == 0 ? 4096 : 0;
 }
 
-void AdvanceCarPosition(GameCarRuntime *car) {
+void UpdateCarTravelVelocity(GameCarRuntime *car) {
     (void)car;
 }
 

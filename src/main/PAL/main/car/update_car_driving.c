@@ -7,9 +7,9 @@
 /*
  * Car motion handler for motionState == CAR_MOTION_DRIVING (normal driving): turns steering into a
  * world velocity, triggers over-rev / redline engine-audio cues (comparing
- * against the spec block's redline at +0x100 / +0x106), advances the car
- * (AdvanceCarPosition), and detects the jump/launch trigger. The drive sub-block is
- * the GameCarDrive view beginning at offset +0xBC.
+ * against the spec block's redline at +0x100 / +0x106), updates its travel
+ * velocity, and detects the jump/launch trigger. The drive sub-block is the
+ * GameCarDrive view beginning at offset +0xBC.
  */
 void UpdateCarDriving(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
@@ -25,7 +25,7 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
 
     headingCorrection = GetAngleDelta(car->bodyYaw, drive->targetHeading);
     car->bodyYaw += headingCorrection / 5;
-    AdvanceCarPosition(AsRivalCar(car));
+    UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);

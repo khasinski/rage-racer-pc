@@ -1,5 +1,5 @@
 /*
- * What advancing a car does to its heading and its speed.
+ * What updating a car's travel velocity does to its heading and speed.
  *
  * The function had no test at all, and it is written in the shape it was
  * recovered in: a volatile array whose middle element is never used, the sine
@@ -8,9 +8,9 @@
  * tidied safely without something that says the answers did not move, because
  * every step is integer arithmetic and rounding is part of the result.
  *
- * So this folds a sweep of headings, body angles, speeds and accelerations
- * into one number. It is a characterisation test: it does not claim the
- * behaviour is right, only that it is what it was.
+ * This folds a sweep of headings, body angles, speeds and accelerations into
+ * one number, while separately asserting that a zero travel vector has no new
+ * direction and therefore preserves the previous heading.
  */
 
 #include "common.h"
@@ -20,8 +20,6 @@
 
 #include <stdio.h>
 #include <string.h>
-
-void AdvanceCarPosition(GameCarRuntime *car);
 
 /*
  * Atan2 lives beside the camera code, which reaches for the render state and
@@ -58,16 +56,25 @@ static void Fold(FILE *out, s32 heading, s32 yaw, s32 speed, s32 accel,
 
 int main(int argc, char **argv) {
     /*
-     * What the function did before it was touched. Run the test with a file
-     * name to write the sweep out, and diff two runs to see which cases moved.
+     * Run the test with a file name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1109809134UL;
+    static const unsigned long expected = 498435994UL;
     static const s32 angles[] = {0, 0x100, 0x400, 0x7FF, 0x800, 0xC00, 0xFFF};
     static const s32 speeds[] = {0, 1, 100, 4096, -100, 20000};
     static const s32 accelerations[] = {0, 1, -1, 50, -50, 1000};
     FILE *out = NULL;
     size_t h, y, s, a;
     int cases = 0;
+    GameCarRuntime stoppedCar;
+
+    memset(&stoppedCar, 0, sizeof(stoppedCar));
+    stoppedCar.headingAngle = 0x235;
+    stoppedCar.bodyYaw = 0x900;
+    UpdateCarTravelVelocity(&stoppedCar);
+    if (stoppedCar.headingAngle != 0x235 || stoppedCar.speed != 0) {
+        puts("stopped car lost its travel direction");
+        return 1;
+    }
 
     if (argc > 1) {
         out = fopen(argv[1], "w");
@@ -88,7 +95,7 @@ int main(int argc, char **argv) {
                     car.bodyYaw = (s16)angles[y];
                     car.speed = speeds[s];
                     car.acceleration = accelerations[a];
-                    AdvanceCarPosition(&car);
+                    UpdateCarTravelVelocity(&car);
                     Fold(out, angles[h], angles[y], speeds[s],
                          accelerations[a], &car);
                     cases++;
@@ -96,10 +103,10 @@ int main(int argc, char **argv) {
 
     if (out != NULL) fclose(out);
     if (s_digest != expected) {
-        printf("advance_car_position: %d cases folded to %lu, expected %lu\n",
+        printf("car travel velocity: %d cases folded to %lu, expected %lu\n",
                cases, s_digest, expected);
         return 1;
     }
-    printf("advance_car_position: %d cases unchanged\n", cases);
+    printf("car travel velocity: %d cases unchanged\n", cases);
     return 0;
 }

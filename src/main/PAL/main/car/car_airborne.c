@@ -23,7 +23,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
     }
 
     car->bodyYaw += GetAngleDelta(car->bodyYaw, drive->targetHeading) / 5;
-    AdvanceCarPosition(AsRivalCar(car));
+    UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);

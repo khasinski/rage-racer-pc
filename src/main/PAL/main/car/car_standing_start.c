@@ -11,7 +11,7 @@ void UpdateCarStandingStart(PlayerCarRuntime *car) {
     s32 alongBody;
 
     car->bodyYaw += GetAngleDelta(car->bodyYaw, drive->targetHeading) / 5;
-    AdvanceCarPosition(AsRivalCar(car));
+    UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);

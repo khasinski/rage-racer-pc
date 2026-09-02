@@ -121,7 +121,7 @@ static void FinishLaunchFrame(PlayerCarRuntime *car, s32 spinMagnitude) {
     }
 
     launchedHeading = car->headingAngle;
-    AdvanceCarPosition(AsRivalCar(car));
+    UpdateCarTravelVelocity(AsRivalCar(car));
     car->headingAngle = launchedHeading;
     drive->accelPos = rsin(car->headingAngle) * car->speed / 256;
     drive->brakePos = rcos(car->headingAngle) * car->speed / 256;

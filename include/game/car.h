@@ -844,7 +844,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car);
 void UpdateCarStandingStart(PlayerCarRuntime *car);
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 void AccumulateLapProgress(GameCarRuntime *car);
-void AdvanceCarPosition(GameCarRuntime *car);
+void UpdateCarTravelVelocity(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);
 void ClearCarMotionState(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
