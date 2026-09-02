@@ -25,7 +25,7 @@ static TextCall s_calls[9];
 static s32 s_callCount;
 
 void FormatLapTime(char *dst, s32 timeMs) {
-    snprintf(dst, 22, "%d", timeMs);
+    snprintf(dst, LAP_TIME_TEXT_CAPACITY, "%d", timeMs);
 }
 
 void DrawProportionalText(s32 x, s32 y, const char *text, s32 color) {
