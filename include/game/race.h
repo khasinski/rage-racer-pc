@@ -395,7 +395,7 @@ void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawStartGridScenery(s32 timer);
 void DrawTimeRemaining(s32 time);
 void ExitPrologue(void);
-s32 FramesToMilliseconds(s32 frames, s32 millis);
+s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
 void InitPathScenery(void);
 void ResetMirrorState(void);
 void SeedFlybyScenery(void);
