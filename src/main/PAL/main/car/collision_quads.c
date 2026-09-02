@@ -50,6 +50,10 @@ CarCollisionHit FindFirstCarCollisionQuad(
     s32 sampleIndex;
     s32 quadIndex;
 
+    if (grid == NULL || points == NULL || count <= 0) {
+        return hit;
+    }
+
     for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
         for (quadIndex = 0; quadIndex < 4; quadIndex++) {
             if (IsPointInsideCollisionQuad(grid[quadIndex],

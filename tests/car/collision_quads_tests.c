@@ -53,6 +53,18 @@ int main(void) {
     CHECK(hit.region == 0);
     CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
 
+    hit = FindFirstCarCollisionQuad(NULL, points, 1);
+    CHECK(hit.region == 0);
+    CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
+
+    hit = FindFirstCarCollisionQuad(grid, NULL, 1);
+    CHECK(hit.region == 0);
+    CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
+
+    hit = FindFirstCarCollisionQuad(grid, NULL, -1);
+    CHECK(hit.region == 0);
+    CHECK(hit.sampleIndex == -1 && hit.quadIndex == -1);
+
     puts("collision quad search tests passed");
     return 0;
 }
