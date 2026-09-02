@@ -4,7 +4,6 @@
 enum {
     ENGINE_SOUND_POSITION_RANGE = 10240,
     ENGINE_SOUND_VOLUME_ONE = 128,
-    ENGINE_SOUND_VAB_SLOT = 3,
     PARAMETERS_PER_SOUND_SLOT = 2,
 };
 
@@ -24,7 +23,7 @@ void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
         for (slot = 0; slot < ENGINE_SOUND_SLOT_COUNT; slot++) {
             if (g_EngineSoundState.slotActive[slot] != 0 &&
                 g_SoundSlotTone[slot][0] != g_SoundSlotTone[slot][1]) {
-                PlaySoundSlotVoice(slot, bank, ENGINE_SOUND_VAB_SLOT);
+                PlaySoundSlotVoice(slot, bank, AUDIO_SLOT_ENGINE);
             }
         }
         g_EngineSoundState.bank = bank;
@@ -40,7 +39,7 @@ void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
             volume = volume * g_EngineSoundState.volumeScale /
                      ENGINE_SOUND_VOLUME_ONE;
             SetSoundSlotTone(slot, bend, volume, bank,
-                             ENGINE_SOUND_VAB_SLOT);
+                             AUDIO_SLOT_ENGINE);
         }
     }
 

@@ -2,7 +2,6 @@
 #include "game/sound.h"
 
 enum {
-    ENGINE_SOUND_VAB_SLOT = 3,
     PARAMETERS_PER_ENGINE_SLOT = 2,
     ENGINE_SLOT_BEND_PARAMETER = 0,
     ENGINE_SLOT_VOLUME_PARAMETER = 1,
@@ -18,7 +17,7 @@ void ForceSoundSlotVoicePlayback(s32 enabled) {
             if (g_EngineSoundState.slotActive[slot] != 0 &&
                 g_SoundSlotTone[slot][0] != g_SoundSlotTone[slot][1]) {
                 PlaySoundSlotVoice(slot, g_EngineSoundState.bank,
-                                   ENGINE_SOUND_VAB_SLOT);
+                                   AUDIO_SLOT_ENGINE);
             }
         }
 
@@ -38,7 +37,7 @@ void ForceSoundSlotVoicePlayback(s32 enabled) {
                 volume = volume * g_EngineSoundState.volumeScale / 128;
                 SetSoundSlotTone(slot, bend, volume,
                                  g_EngineSoundState.bank,
-                                 ENGINE_SOUND_VAB_SLOT);
+                                 AUDIO_SLOT_ENGINE);
             }
         }
     }

@@ -77,6 +77,13 @@ static void TestSequenceTicking(void) {
     TickSequenceAudio();
     Check(s_sequenceTicks == 6 && s_fadeUpdates == 5 && s_damperSteps == 6,
           "sound-mode scene only services the voice damper");
+
+    g_SceneId = 0;
+    g_SeqVolumeFadeStep = 0;
+    s_frameHz = 60;
+    for (frame = 0; frame < 3; frame++) TickSequenceAudio();
+    Check(s_sequenceTicks == 9 && s_fadeUpdates == 5 && s_damperSteps == 9,
+          "NTSC frames service one sequence tick without an inactive fade");
 }
 
 static void TestReverbDepth(void) {
@@ -109,6 +116,10 @@ static void TestReverbPresets(void) {
     Check(s_reverbOffCalls == 3 && s_reverbOnCalls == 1 &&
               g_ReverbType == 0,
           "preset above the supported range disables reverb");
+    SetReverbPreset(-1, 50, 60);
+    Check(s_reverbOffCalls == 4 && s_reverbOnCalls == 1 &&
+              g_ReverbType == 0,
+          "preset below the supported range disables reverb");
 }
 
 static void TestSoundSlotVoice(void) {

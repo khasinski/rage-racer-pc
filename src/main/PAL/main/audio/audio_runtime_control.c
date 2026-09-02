@@ -58,23 +58,24 @@ void SetDefaultReverbDepth(void) {
     SetReverbDepth(DEFAULT_REVERB_DEPTH, DEFAULT_REVERB_DEPTH);
 }
 
-static s32 IsValidReverbPreset(s32 type) {
+static int IsValidReverbPreset(s32 type) {
     return type >= FIRST_REVERB_PRESET && type <= LAST_REVERB_PRESET;
 }
 
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     SsUtReverbOff();
 
-    if (IsValidReverbPreset(type)) {
-        g_ReverbType = type;
-        SsUtSetReverbType((s16)type);
-        SsUtReverbOn();
-        SetReverbDepth(left, right);
-    } else {
+    if (!IsValidReverbPreset(type)) {
         g_ReverbType = 0;
         g_ReverbDepthR = 0;
         g_ReverbDepthL = 0;
+        return;
     }
+
+    g_ReverbType = type;
+    SsUtSetReverbType((s16)type);
+    SsUtReverbOn();
+    SetReverbDepth(left, right);
 }
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {

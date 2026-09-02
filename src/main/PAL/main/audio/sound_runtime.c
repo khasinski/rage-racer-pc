@@ -20,7 +20,7 @@ static void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
 
     if (enabled != 0) {
         if (*entry == 0) {
-            PlaySoundSlotVoice(slot, 0, 3);
+            PlaySoundSlotVoice(slot, 0, AUDIO_SLOT_ENGINE);
             *entry = 1;
         }
     } else {
