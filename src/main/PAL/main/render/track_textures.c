@@ -1,8 +1,4 @@
-#include "game/car.h"
-#include "game/state.h"
-#include "game/random.h"
 #include "game/asset.h"
-#include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include <string.h>
@@ -83,34 +79,4 @@ void StepTrackTextureSwap(void) {
             SwapTrackTextureRow();
         }
     }
-}
-
-static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
-    s32 candidate;
-    s32 first;
-
-    if ((u32)current >= (u32)carCount) {
-        current = 0;
-    }
-    if (mask & g_SceneTimer) {
-        return current;
-    }
-    if ((g_TrackTextureCursorRow == 0) || (g_TrackTextureCursorRow == 0x100)) {
-        candidate = (Random15() & 0x7FFF) % carCount;
-
-        first = SelectTrackTexturePage(g_Cars[current].trackSection);
-
-        if (first == SelectTrackTexturePage(g_Cars[candidate].trackSection)) {
-            return candidate;
-        }
-    }
-    return current;
-}
-
-s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
-    return CycleCameraCar(mask, current, 11);
-}
-
-s32 CycleAttractCameraCar(s32 mask, s32 current) {
-    return CycleCameraCar(mask, current, 4);
 }

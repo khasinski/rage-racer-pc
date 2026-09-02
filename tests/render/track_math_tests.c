@@ -12,8 +12,6 @@
 
 #include "common.h"
 #include "game/asset.h"
-#include "game/car.h"
-#include "game/race.h"
 #include "game/render.h"
 #include "game/track.h"
 #include "game/vector.h"
@@ -25,24 +23,11 @@ s32 g_TrackTextureSectionLo;
 s32 g_TrackTextureSectionHi;
 s32 g_TrackTexturePageWanted;
 
-/*
- * SelectTrackTexturePage is four lines and touches three of the words above.
- * Its file also holds the page uploader and two camera cyclers, so linking
- * it drags these in as well. They are named here and never used; the day
- * that file is split by subject, this block goes away.
- */
-GameCarRuntime g_Cars[11];
-s32 g_SceneTimer;
 s32 g_TrackTextureCursorRow;
 Rect g_TrackTextureRowRect;
 u8 g_TrackTextureShadowPage[256];
 TrackTextureShadowRow *g_TrackTextureShadow;
 s32 g_TrackTextureTargetRow;
-static s32 s_random;
-s32 Random15(void) { return s_random; }
-
-s32 SelectTrackTexturePage(s32 section);
-
 static int s_failures;
 
 static void Check(int ok, const char *what) {
@@ -152,32 +137,11 @@ static void TextureSwapStateResetsAndSkipsMatchingRows(void) {
           "nonrequested row is not toggled unnecessarily");
 }
 
-static void CameraCarSelectionStaysInRange(void) {
-    g_SceneTimer = 1;
-    Check(CycleAttractCameraCar(0xFF, -1) == 0,
-          "negative attract camera index resets");
-    Check(CycleAttractCameraCar(0xFF, 4) == 0,
-          "past-end attract camera index resets");
-    Check(CycleBgmSelectCameraCar(0xFF, RACE_CAR_SLOT_COUNT) == 0,
-          "past-end BGM camera index resets");
-
-    g_SceneTimer = 0;
-    g_TrackTextureCursorRow = 0;
-    g_TrackTextureSectionLo = 10;
-    g_TrackTextureSectionHi = 20;
-    g_Cars[0].trackSection = 0;
-    g_Cars[2].trackSection = 1;
-    s_random = 2;
-    Check(CycleAttractCameraCar(0, 0) == 2,
-          "attract camera accepts a same-page random car");
-}
-
 int main(void) {
     TrackPointWraps();
     DistanceSurvivesLargeSeparations();
     SecondTexturePageIsOneRange();
     TextureSwapStateResetsAndSkipsMatchingRows();
-    CameraCarSelectionStaysInRange();
     if (s_failures != 0) {
         printf("%d track maths checks failed\n", s_failures);
         return 1;
