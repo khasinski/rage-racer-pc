@@ -7,6 +7,8 @@ enum {
     LONG_RACE_LAPS = 6,
     CAMERA_MAPPING_INDEX = 6,
     NEGCON_MAPPING_OFFSET = 8,
+    WRONG_WAY_WARNING_FRAMES = 10,
+    WRONG_WAY_COUNTER_RESET = 81,
 };
 
 s32 RaceLapCount(s32 courseIndex) {
@@ -73,6 +75,29 @@ RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
         result.cursor < LastRacePauseOption(grandPrixMode)) {
         result.cursor++;
         result.moveCount++;
+    }
+    return result;
+}
+
+s32 WrongWayWarningVisible(s16 timer) {
+    return timer >= WRONG_WAY_WARNING_FRAMES;
+}
+
+WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
+                                   u32 sceneTimer) {
+    WrongWayUpdate result = {0, 0, 0};
+
+    if (!facingWrongWay || phase >= 4) {
+        return result;
+    }
+
+    result.timer = timer + 1;
+    result.drawWarning = WrongWayWarningVisible(result.timer);
+    if (result.drawWarning) {
+        if (result.timer >= WRONG_WAY_COUNTER_RESET) {
+            result.timer = WRONG_WAY_WARNING_FRAMES;
+        }
+        result.playCue = (u8)sceneTimer == 0;
     }
     return result;
 }

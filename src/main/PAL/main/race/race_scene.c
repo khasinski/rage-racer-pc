@@ -285,7 +285,8 @@ void UpdateRaceScene(void) {
         if (g_GrandPrixMode != 0) {
             DrawCars();
         }
-        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) && (g_WrongWayTimer >= 0xA)) {
+        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) &&
+            WrongWayWarningVisible(g_WrongWayTimer)) {
             DrawWrongWayWarning();
         }
         DrawSkyBackground();
@@ -307,6 +308,7 @@ void UpdateRaceScene(void) {
         }
     } else {
         u32 frameValue;
+        WrongWayUpdate wrongWay;
 
         g_AnimTimer++;
         if ((g_RacePhase >= 2) && (g_GrandPrixMode != 0)) {
@@ -405,22 +407,16 @@ void UpdateRaceScene(void) {
         UpdateEnvironment();
         DrawSkyBackground();
 
-        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) && (g_RacePhase < 4)) {
-            s16 counter;
-
-            counter = g_WrongWayTimer + 1;
-            g_WrongWayTimer = counter;
-            if (counter >= 0xA) {
-                DrawWrongWayWarning();
-                if (g_WrongWayTimer >= 0x51) {
-                    g_WrongWayTimer = 0xA;
-                }
-                if ((u8)g_SceneTimer == 0) {
-                    PlaySoundCue(0x2C);
-                }
-            }
-        } else {
-            g_WrongWayTimer = 0;
+        wrongWay = UpdateWrongWayState(
+            g_WrongWayTimer,
+            g_PlayerCar.facingBackwards != ReadStableRaceSeries(), g_RacePhase,
+            g_SceneTimer);
+        g_WrongWayTimer = wrongWay.timer;
+        if (wrongWay.drawWarning) {
+            DrawWrongWayWarning();
+        }
+        if (wrongWay.playCue) {
+            PlaySoundCue(0x2C);
         }
 
         g_RenderState.envMode4 = g_IsEnvironmentMode4;

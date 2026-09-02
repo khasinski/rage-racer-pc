@@ -92,12 +92,43 @@ static void TestRaceEndPresentation(void) {
           "non-race modes preserve the retail no-presentation path");
 }
 
+static void TestWrongWayState(void) {
+    WrongWayUpdate update;
+
+    update = UpdateWrongWayState(8, 1, 2, 100);
+    Check(update.timer == 9 && !update.drawWarning && !update.playCue,
+          "wrong-way warning waits for ten frames");
+    update = UpdateWrongWayState(9, 1, 2, 100);
+    Check(update.timer == 10 && update.drawWarning && !update.playCue,
+          "wrong-way warning appears on its tenth frame");
+    update = UpdateWrongWayState(80, 1, 2, 100);
+    Check(update.timer == 10 && update.drawWarning,
+          "wrong-way counter returns to its visible baseline");
+
+    update = UpdateWrongWayState(20, 1, 2, 256);
+    Check(update.playCue,
+          "wrong-way cue follows the low byte of the scene timer");
+    update = UpdateWrongWayState(20, 1, 2, 255);
+    Check(!update.playCue,
+          "wrong-way cue remains silent between timer boundaries");
+
+    update = UpdateWrongWayState(20, 0, 2, 256);
+    Check(update.timer == 0 && !update.drawWarning && !update.playCue,
+          "correct direction clears the warning");
+    update = UpdateWrongWayState(20, 1, 4, 256);
+    Check(update.timer == 0 && !update.drawWarning && !update.playCue,
+          "finish phase clears the warning");
+    Check(!WrongWayWarningVisible(9) && WrongWayWarningVisible(10),
+          "paused rendering uses the same visibility threshold");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
     TestPauseActions();
     TestPauseCursor();
     TestRaceEndPresentation();
+    TestWrongWayState();
 
     if (s_failures != 0) {
         return 1;

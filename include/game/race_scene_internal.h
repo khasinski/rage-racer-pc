@@ -21,6 +21,12 @@ typedef struct RacePauseCursorResult {
     s16 moveCount;
 } RacePauseCursorResult;
 
+typedef struct WrongWayUpdate {
+    s16 timer;
+    u8 drawWarning;
+    u8 playCue;
+} WrongWayUpdate;
+
 s32 RaceLapCount(s32 courseIndex);
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]);
 u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]);
@@ -33,5 +39,8 @@ RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining);
 RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
                                           s16 grandPrixMode);
+s32 WrongWayWarningVisible(s16 timer);
+WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
+                                   u32 sceneTimer);
 
 #endif
