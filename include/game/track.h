@@ -19,7 +19,7 @@ typedef struct GameEnvironmentCue GameEnvironmentCue;
  * right half-widths (SteerCarAlongRoute clamps the lateral offset to
  * [-leftHalfWidth, rightHalfWidth]); the surface fields are interpolated between
  * a segment's two endpoints by UpdateCarTrackState and its non-clamping
- * twin ResetCarTrackState.
+ * replay reconstruction in ReconstructReplayCarTrackState.
  */
 typedef struct GameTrackPoint {
     s32 x;

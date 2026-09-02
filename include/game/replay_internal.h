@@ -33,5 +33,7 @@ void UpdateReplayCars(void);
 void RecordReplayFrame(void);
 void BindReplayFrameBuffers(void);
 void ResetReplayWriteCursor(void);
+/* Rebuild track-relative progress and model orientation from replay position. */
+void ReconstructReplayCarTrackState(struct GameCarRuntime *car);
 
 #endif

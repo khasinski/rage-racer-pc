@@ -3,6 +3,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/race.h"
+#include "game/replay_internal.h"
 #include "game/render_state.h"
 #include "game/track.h"
 #include "game/track_internal.h"
@@ -90,7 +91,7 @@ int main(void) {
         car.progressA = point * 0x1000;
         car.trackProgress = car.progressA;
 
-        ResetCarTrackState(&car);
+        ReconstructReplayCarTrackState(&car);
 
         Fold(car.modelPitch);
         Fold(car.modelYaw);
@@ -118,7 +119,7 @@ int main(void) {
     memset(&car, 0, sizeof(car));
     car.modelYaw = 123;
     g_TrackPointCount = 0;
-    ResetCarTrackState(&car);
+    ReconstructReplayCarTrackState(&car);
     if (car.modelYaw != 123) {
         puts("FAIL: empty track reset changed the car");
         return 1;

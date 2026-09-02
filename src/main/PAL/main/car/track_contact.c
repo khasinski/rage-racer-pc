@@ -2,12 +2,12 @@
 #include "game/car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/replay_internal.h"
 #include "game/track_internal.h"
 
 static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
                              const GameTrackPoint *point,
                              const GameTrackPoint *nextPoint) {
-    s32 arcAngle;
     s32 sweptAngle;
     s32 lateralOffset;
 
@@ -18,12 +18,12 @@ static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
         work->arcSpan = 1;
     }
     sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
-    arcAngle = work->arcSpan;
     work->sweptAngle = sweptAngle;
     work->pointRadius.value =
         ((s16)sweptAngle * work->pointRadius.value +
-         (arcAngle - (s16)sweptAngle) * work->nextPointRadius.value) /
-        arcAngle;
+         (work->arcSpan - (s16)sweptAngle) *
+             work->nextPointRadius.value) /
+        work->arcSpan;
 
     lateralOffset =
         (s16)(work->carRadius.half.low - work->pointRadius.half.low);
@@ -117,7 +117,7 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
         : car->trackProgress) >> 8);
 }
 
-void ResetCarTrackState(GameCarRuntime *car) {
+void ReconstructReplayCarTrackState(GameCarRuntime *car) {
     CarTrackWork *work = &g_CarTrackWork;
     s32 pointIndex;
     const GameTrackPoint *point;

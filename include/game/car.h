@@ -736,10 +736,6 @@ typedef union RaceGridSlot {
 /* Race-entry init for the player object: start pose plus the speed/gear lookup
  * tables g_GearTorqueCurve / g_TorqueBandEnd / g_TorqueLossBandEnd. Logs "init_car" .. "init_ok". */
 void InitPlayerCar(PlayerCarRuntime *car);
-/* Non-clamping twin of UpdateCarTrackState: recomputes the track-relative placement
- * and writes the reference triple at +0x50, for the init/reset paths only. */
-void ResetCarTrackState(GameCarRuntime *car);
-
 /* Pick the player's gear for this frame. Alternate controllers keep their two
  * shift buttons in the second half of the mapping table. */
 void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);

@@ -10,7 +10,7 @@ typedef enum ReplayCarCall {
     CALL_FIND_SEGMENT,
     CALL_SEED_PROGRESS,
     CALL_ACCUMULATE_PROGRESS,
-    CALL_RESET_TRACK_STATE,
+    CALL_RECONSTRUCT_TRACK_STATE,
     CALL_REQUEST_TEXTURE,
 } ReplayCarCall;
 
@@ -57,8 +57,8 @@ void AccumulateLapProgress(GameCarRuntime *car) {
     RecordCall(CALL_ACCUMULATE_PROGRESS, car, 0);
 }
 
-void ResetCarTrackState(GameCarRuntime *car) {
-    RecordCall(CALL_RESET_TRACK_STATE, car, 0);
+void ReconstructReplayCarTrackState(GameCarRuntime *car) {
+    RecordCall(CALL_RECONSTRUCT_TRACK_STATE, car, 0);
 }
 
 void RequestTrackTexturePage(s32 trackSection) {
@@ -94,7 +94,7 @@ static void TestSeedTimeAttackCar(void) {
     ExpectCall(2, CALL_FIND_SEGMENT, player, 7);
     ExpectCall(3, CALL_SEED_PROGRESS, player, 1);
     ExpectCall(4, CALL_ACCUMULATE_PROGRESS, player, 0);
-    ExpectCall(5, CALL_RESET_TRACK_STATE, player, 0);
+    ExpectCall(5, CALL_RECONSTRUCT_TRACK_STATE, player, 0);
     assert(player->trackPointIndex == 107);
 }
 
@@ -115,7 +115,7 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
     ExpectCall(6, CALL_FIND_SEGMENT, rival, 5);
     ExpectCall(7, CALL_SEED_PROGRESS, rival, 1);
     ExpectCall(8, CALL_ACCUMULATE_PROGRESS, rival, 0);
-    ExpectCall(9, CALL_RESET_TRACK_STATE, rival, 0);
+    ExpectCall(9, CALL_RECONSTRUCT_TRACK_STATE, rival, 0);
     assert(player->trackPointIndex == 103);
     assert(rival->trackPointIndex == 105);
 }
@@ -132,9 +132,9 @@ static void TestUpdateCarsAndRequestPlayerTexture(void) {
 
     assert(s_CallCount == 5);
     ExpectCall(0, CALL_ACCUMULATE_PROGRESS, player, 0);
-    ExpectCall(1, CALL_RESET_TRACK_STATE, player, 0);
+    ExpectCall(1, CALL_RECONSTRUCT_TRACK_STATE, player, 0);
     ExpectCall(2, CALL_ACCUMULATE_PROGRESS, rival, 0);
-    ExpectCall(3, CALL_RESET_TRACK_STATE, rival, 0);
+    ExpectCall(3, CALL_RECONSTRUCT_TRACK_STATE, rival, 0);
     ExpectCall(4, CALL_REQUEST_TEXTURE, NULL, 27);
 }
 
@@ -149,7 +149,7 @@ static void TestUpdateTimeAttackCarWithoutRival(void) {
 
     assert(s_CallCount == 3);
     ExpectCall(0, CALL_ACCUMULATE_PROGRESS, player, 0);
-    ExpectCall(1, CALL_RESET_TRACK_STATE, player, 0);
+    ExpectCall(1, CALL_RECONSTRUCT_TRACK_STATE, player, 0);
     ExpectCall(2, CALL_REQUEST_TEXTURE, NULL, 14);
 }
 

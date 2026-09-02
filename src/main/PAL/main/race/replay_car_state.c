@@ -8,12 +8,12 @@ static void SeedReplayCarTrackState(GameCarRuntime *car) {
     car->trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
     SeedCarLapProgress(car, 1);
     AccumulateLapProgress(car);
-    ResetCarTrackState(car);
+    ReconstructReplayCarTrackState(car);
 }
 
-static void UpdateReplayCarTrackState(GameCarRuntime *car) {
+static void AdvanceReplayCarTrackState(GameCarRuntime *car) {
     AccumulateLapProgress(car);
-    ResetCarTrackState(car);
+    ReconstructReplayCarTrackState(car);
 }
 
 void SeedReplayCars(void) {
@@ -33,10 +33,10 @@ void SeedReplayCars(void) {
 void UpdateReplayCars(void) {
     GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
 
-    UpdateReplayCarTrackState(player);
+    AdvanceReplayCarTrackState(player);
 
     if (g_GrandPrixMode != 0) {
-        UpdateReplayCarTrackState(&g_Cars[0]);
+        AdvanceReplayCarTrackState(&g_Cars[0]);
     }
 
     RequestTrackTexturePage(player->trackSection);
