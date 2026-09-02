@@ -59,7 +59,7 @@ static void UpdatePrologueLoad(void) {
 
 static void UpdatePrologueLoadStep0(void) {
     if (g_AssetLoadState == 0) {
-        InstallCourseAssets();
+        InstallTrackTextureAssetPack(g_AssetBase);
         RequestTrackDataAssets();
         g_PrologueStep = 1;
     }

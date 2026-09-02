@@ -395,7 +395,6 @@ void LoadRaceAssets(void);
 void LoadTrackDataAssets(void);
 /* Unpack the already-resident <COURSE>n.1ST pack out of g_AssetBase (the same
  * work LoadRaceAssets does in its step 5). */
-void InstallCourseAssets(void);
 /* Copy the live car model into g_AssetBase and re-register its bank there. */
 void RelocateCarModel(void);
 

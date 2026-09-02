@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 s32 g_AssetLoadState;
+u8 *g_AssetBase;
 s32 g_BgmChangeDelay;
 s32 g_BgmSelectCdTrack;
 s32 g_BgmSelectCursor;
@@ -30,6 +31,8 @@ static s32 s_fadeCalls;
 static s32 s_lastFade;
 static s32 s_textCalls;
 static s32 s_trackInits;
+static u8 s_courseAsset;
+static u8 *s_installedCourseBase;
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void SetupDisplay240(s32 r, s32 g, s32 b) {
@@ -38,7 +41,10 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     (void)b;
     s_displaySetups++;
 }
-void InstallCourseAssets(void) { s_courseInstalls++; }
+void InstallTrackTextureAssetPack(u8 *base) {
+    s_installedCourseBase = base;
+    s_courseInstalls++;
+}
 s32 RequestTrackDataAssets(void) {
     s_dataRequests++;
     return 1;
@@ -67,7 +73,9 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
     } while (0)
 
 static void ResetCalls(void) {
+    g_AssetBase = &s_courseAsset;
     s_courseInstalls = 0;
+    s_installedCourseBase = NULL;
     s_dataRequests = 0;
     s_displayMask = -1;
     s_displaySetups = 0;
@@ -102,7 +110,8 @@ int main(void) {
     g_FadeLevel = 0;
     g_FadeStep = 0;
     UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 1 && s_dataRequests == 1);
+    CHECK(s_courseInstalls == 1 && s_installedCourseBase == g_AssetBase);
+    CHECK(s_dataRequests == 1);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
 
     ResetCalls();

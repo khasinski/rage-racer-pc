@@ -302,7 +302,7 @@ static void TestResidentCourseInstallation(void) {
     s_uploadCount = 0;
     s_teamLogoSource = NULL;
     s_textureResetCalls = 0;
-    InstallCourseAssets();
+    InstallTrackTextureAssetPack(g_AssetBase);
     Check(s_uploadCount == 5, "resident course uploads every texture block");
     Check(s_teamLogoSource == storage, "resident course stores team logo");
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
