@@ -38,12 +38,22 @@ s32 RequestRaceAssets(void) {
 
 static void BeginRaceVoiceLoad(void) {
     AudioSlotAsset asset;
+    size_t headerSize;
 
-    memcpy(g_AssetLoadCursor, g_AssetBlockPtr,
-           (size_t)g_RaceVoiceHeaderSize);
+    if (g_RaceVoiceHeaderSize <= 0) {
+        FailAssetLoad();
+        return;
+    }
+    headerSize = (size_t)g_RaceVoiceHeaderSize;
+    if (g_AssetBlockPtr == NULL || headerSize > g_AssetBlockSize ||
+        PortAssetRoomAt(g_AssetLoadCursor) < headerSize) {
+        FailAssetLoad();
+        return;
+    }
+    memcpy(g_AssetLoadCursor, g_AssetBlockPtr, headerSize);
     asset = (AudioSlotAsset){
         .vabHeader = g_AssetLoadCursor,
-        .vabHeaderSize = (size_t)g_RaceVoiceHeaderSize,
+        .vabHeaderSize = headerSize,
         .vabBody = g_AssetSubBlockPtr,
         .vabBodySize = g_AssetSubBlockSize,
     };
@@ -63,8 +73,7 @@ static void AdvanceAfterAudioLoad(s32 nextState) {
 
 static void LoadPlayerCarRaceAssets(void) {
     s32 carIndex = g_PlayerCarIndex;
-    s32 carAsset =
-        GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
+    s32 carAsset;
     RaceCarAssetHeader *pack;
     u8 *audioHeader;
     u8 *audioTable;
@@ -72,6 +81,13 @@ static void LoadPlayerCarRaceAssets(void) {
     u8 *carImage;
     AudioSlotAsset audioAsset;
     s32 loadedSize;
+
+    if ((u32)carIndex >= GAME_CAR_COUNT) {
+        FailAssetLoad();
+        return;
+    }
+    carAsset = GetCarAssetIndex(carIndex,
+                                g_CarTable[carIndex].modelVariant);
 
     loadedSize = LoadAsset(
         CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),

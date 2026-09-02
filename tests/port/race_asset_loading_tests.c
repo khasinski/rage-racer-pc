@@ -65,6 +65,12 @@ static s32 s_cameraTableValid = 1;
 static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
 static s32 s_failures;
+static size_t s_assetRoom = SIZE_MAX;
+
+size_t PortAssetRoomAt(const void *at) {
+    (void)at;
+    return s_assetRoom;
+}
 
 s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadAssetIndex = assetIndex;
@@ -230,11 +236,13 @@ static void TestVoiceAndCarPhases(void) {
     for (i = 0; i < 16; i++) source[i] = (u8)(i + 1);
     memset(destination, 0, sizeof(destination));
     g_AssetBlockPtr = source;
+    g_AssetBlockSize = sizeof(source);
     g_AssetLoadCursor = destination;
     g_AssetSubBlockPtr = source + 12;
     g_AssetSubBlockSize = 4;
     g_RaceVoiceHeaderSize = 10;
     g_AssetLoadState = 1;
+    s_assetRoom = sizeof(destination);
     s_startAudioResult = -1;
     LoadRaceAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
@@ -242,6 +250,23 @@ static void TestVoiceAndCarPhases(void) {
           "failed race-voice transfer cancels loading without advancing");
 
     g_AssetLoadState = 1;
+    s_startAudioResult = 1;
+    s_assetRoom = 9;
+    memset(destination, 0, 10);
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              destination[0] == 0,
+          "voice header exceeding destination storage is rejected");
+
+    g_AssetLoadState = 1;
+    s_assetRoom = sizeof(destination);
+    g_AssetBlockSize = 9;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "voice header exceeding its source block is rejected");
+
+    g_AssetLoadState = 1;
+    g_AssetBlockSize = sizeof(source);
     s_startAudioResult = 1;
     LoadRaceAssets();
     Check(memcmp(source, destination, 10) == 0,
@@ -258,6 +283,12 @@ static void TestVoiceAndCarPhases(void) {
     s_pollResult = 1;
     LoadRaceAssets();
     Check(g_AssetLoadState == 3, "voice audio advances to car phase");
+
+    g_PlayerCarIndex = GAME_CAR_COUNT;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "out-of-range player car rejects the race asset request");
+    g_AssetLoadState = 3;
 
     memset(destination, 0, sizeof(destination));
     offsets[0] = specificationOffset;
