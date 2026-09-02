@@ -167,7 +167,7 @@ static void ReadEngineTorque(const GameCarDrive *drive,
  * that is the two agreeing.
  */
 static void UpdateSteeringGrip(PlayerCarRuntime *car, GameCarDrive *drive,
-                               s32 gripBudget) {
+                               const GameCarSpec *spec, s32 gripBudget) {
     GameTrackPoint *trackPoint;
     s16 curveModeNow;
     s32 camber;
@@ -188,7 +188,7 @@ static void UpdateSteeringGrip(PlayerCarRuntime *car, GameCarDrive *drive,
         } else if (steerBias < -0x1E) {
             drive->trackCurveBias = -0x1E;
         }
-        gripBudget += g_CarSpec->baseSteeringGrip - drive->trackCurveBias * 0xA;
+        gripBudget += spec->baseSteeringGrip - drive->trackCurveBias * 0xA;
         drive->steeringGrip = (s16)gripBudget;
         return;
     }
@@ -326,8 +326,8 @@ typedef struct DrivetrainLoads {
 } DrivetrainLoads;
 
 static DrivetrainLoads CalculateDrivetrainLoads(
-    PlayerCarRuntime *car, GameCarDrive *drive, s32 netTorque, s32 bandScale,
-    s32 initialAcceleration) {
+    PlayerCarRuntime *car, GameCarDrive *drive, const GameCarSpec *spec,
+    s32 netTorque, s32 bandScale, s32 initialAcceleration) {
   DrivetrainLoads loads;
   s32 throttleTorque;
   s32 headingError;
@@ -376,7 +376,7 @@ static DrivetrainLoads CalculateDrivetrainLoads(
       : 0x800 - headingError;
   loads.steeringResistance += drive->steeringLoadAngle / 256;
   if (drive->motionState != CAR_MOTION_TAKEOFF && g_PadType == 0x41) {
-    assistStep = g_CarSpec->negconSteeringAssistScale *
+    assistStep = spec->negconSteeringAssistScale *
                  drive->steeringGripResponse / 1000;
     if (assistStep <= 0) {
       assistStep = 1;
@@ -427,7 +427,7 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   }
 
   roadSpeed = car->speed * 0xA0 / 1168;
-  dragDivisor = g_CarSpec->speedDragDivisor * 0x3E8 /
+  dragDivisor = spec->speedDragDivisor * 0x3E8 /
                 (s16)g_DragScale;
   if (dragDivisor <= 0) {
     dragDivisor = 1;
@@ -461,7 +461,7 @@ static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
 }
 
 static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
-                              s32 gearTorque) {
+                              const GameCarSpec *spec, s32 gearTorque) {
   s32 speedScale;
 
   if (car->verticalMotionState != 0) {
@@ -482,7 +482,7 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
     shiftedTorque >>= 17;
     car->acceleration = drive->manual != 0
         ? shiftedTorque
-        : g_CarSpec->automaticAccelerationScale * shiftedTorque / 1000;
+        : spec->automaticAccelerationScale * shiftedTorque / 1000;
   }
   if (g_GripLossTimer > 0) {
     car->acceleration /= 2;
@@ -507,7 +507,7 @@ static void DispatchCarMotion(PlayerCarRuntime *car) {
   }
 }
 
-void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
+void UpdateCarDrivetrain(PlayerCarRuntime *car) {
   const s32 *gearCurve;
   s16 gear;
   s32 gearTorqueLate;
@@ -522,10 +522,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   s32 gearRatio;
   s32 netTorque;
   GameCarDrive *drive;
-  PlayerCarRuntime *car;
   const GameCarSpec *spec;
   DrivetrainLoads loads;
-  car = carArg;
   spec = g_CarSpec;
   drive = &car->drive;
   gear = ClampDrivetrainGear(drive->gear);
@@ -550,7 +548,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   }
   gripBudget = 0x17C - frontLoadScaled;
   gripBudget += (drive->brakeInput * 0x64) / 256;
-  UpdateSteeringGrip(car, drive, gripBudget);
+  UpdateSteeringGrip(car, drive, spec, gripBudget);
   steerLoad = 0;
   accel = CalculateInitialAcceleration(drive, gearRatio);
   /* If RPM falls between configured bands, retail keeps the raw wheel/load
@@ -558,7 +556,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
   ReadEngineTorque(drive, spec, gearCurve, &netTorque, &bandScale);
   UpdateGearShiftState(car, drive, spec, &accel);
-  loads = CalculateDrivetrainLoads(car, drive, netTorque, bandScale, accel);
+  loads = CalculateDrivetrainLoads(car, drive, spec, netTorque, bandScale,
+                                   accel);
   accel = loads.accelerationResistance;
   steerLoad = loads.steeringResistance;
   throttleAccel = loads.throttleAcceleration;
@@ -576,7 +575,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg) {
   if (drive->motionState == CAR_MOTION_TAKEOFF) {
     UpdateTakeoffSpeed(car, drive, steerLoad);
   } else {
-    UpdateDrivenSpeed(car, drive, gearTorqueLate);
+    UpdateDrivenSpeed(car, drive, spec, gearTorqueLate);
   }
 
   if (car->speed < 8) {
