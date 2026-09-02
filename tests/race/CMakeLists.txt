@@ -56,6 +56,27 @@ endif()
 add_test(NAME advance_grand_prix_class COMMAND advance_grand_prix_class_tests)
 set_tests_properties(advance_grand_prix_class PROPERTIES LABELS unit)
 
+add_executable(enter_prize_screen_tests
+    enter_prize_screen_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/enter_prize_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prize_money.c)
+target_include_directories(enter_prize_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(enter_prize_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(enter_prize_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(enter_prize_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME enter_prize_screen COMMAND enter_prize_screen_tests)
+set_tests_properties(enter_prize_screen PROPERTIES LABELS unit)
+
 add_executable(race_time_text_tests
     race_time_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)
