@@ -6,12 +6,25 @@
  * The +0x3FF/+0x7FF bias before the >>10 / >>11 shifts rounds toward zero.
  */
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
-    s32 next = (pointIndex + 1) % g_TrackPointCount;
+    s32 next;
     s32 inv = 0x400 - weight;
-    GameTrackPoint *cur = TrackPoint(pointIndex);
-    GameTrackPoint *nxt = TrackPoint(next);
+    GameTrackPoint *cur;
+    GameTrackPoint *nxt;
     s32 sum;
 
+    if (out == 0) {
+        return;
+    }
+    if (g_TrackPoints == 0 || g_TrackPointCount <= 0) {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+        return;
+    }
+
+    next = WrapTrackPointIndex(pointIndex + 1);
+    cur = TrackPoint(pointIndex);
+    nxt = TrackPoint(next);
     sum = (cur->x * inv) + (nxt->x * weight);
     if (sum < 0) {
         sum += 0x3FF;
@@ -30,4 +43,3 @@ void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     }
     out[2] = sum >> 10;
 }
-

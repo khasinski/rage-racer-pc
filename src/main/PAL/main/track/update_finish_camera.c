@@ -1,15 +1,11 @@
 #include "game/car.h"
+#include "game/angle.h"
 #include "game/render.h"
 #include "game/track.h"
 
 static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
     s32 offset = target->facingBackwards != 0 ? 2 : -2;
-    s32 point = g_CameraCarTrackPoint + offset;
-
-    if (point < 0) {
-        point += g_TrackPointCount;
-    }
-    return point % g_TrackPointCount;
+    return WrapTrackPointIndex(g_CameraCarTrackPoint + offset);
 }
 
 /* Follow the centre line while keeping the finished car in view. */
@@ -23,10 +19,14 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     s32 targetHeading;
     s32 distance;
 
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+        return;
+    }
+
     LoadViewWork(&viewWork);
     targetPoint = FinishCameraTargetPoint(obj);
     InterpolateTrackPoint(targetPoint, target, g_CameraCar.segmentFraction);
-    targetHeading = 0x400 -
+    targetHeading = ANGLE_QUARTER_TURN -
         Atan2(target[0] - g_CameraCar.x, target[2] - g_CameraCarZ);
     g_CameraCarHeading +=
         GetAngleDelta(g_CameraCarHeading, targetHeading);
@@ -49,9 +49,9 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     delta[0] = obj->x - viewWork.x;
     delta[1] = obj->y - viewWork.y;
     delta[2] = obj->z - viewWork.z;
-    viewWork.angleY = 0x400 - Atan2(delta[0], delta[2]);
+    viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta[0], delta[2]);
     distance = DistanceXZ(delta[0], delta[2]);
-    viewWork.angleX = 0x400 - Atan2(delta[1], distance >> 6);
+    viewWork.angleX = ANGLE_QUARTER_TURN - Atan2(delta[1], distance >> 6);
     viewWork.angleZ = 0;
 
     StoreViewWork(&viewWork);

@@ -22,6 +22,7 @@ s32 Random15(void);
 s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
+void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight);
 s32 LerpColorChannel(s32 from, s32 to, s32 blend);
 
 u32 g_RandomSeed;
@@ -102,6 +103,43 @@ static void test_track_angle_interpolation(void) {
     EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
     EXPECT_EQ(0x300, InterpolateTrackAngle(1, 0x200));
     EXPECT_EQ(0x200, InterpolateTrackAngle(2, 0x200));
+
+    g_TrackPoints = NULL;
+    EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
+    g_TrackPoints = points;
+    g_TrackPointCount = 0;
+    EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
+}
+
+static void test_track_point_interpolation(void) {
+    GameTrackPoint points[2] = {0};
+    s32 out[3] = {99, 99, 99};
+
+    points[0].x = 10;
+    points[0].y = 20;
+    points[0].z = 30;
+    points[1].x = -10;
+    points[1].y = -20;
+    points[1].z = -30;
+    g_TrackPoints = points;
+    g_TrackPointCount = 2;
+
+    InterpolateTrackPoint(0, out, 0x200);
+    EXPECT_EQ(0, out[0]);
+    EXPECT_EQ(0, out[1]);
+    EXPECT_EQ(0, out[2]);
+
+    InterpolateTrackPoint(1, out, 0x100);
+    EXPECT_EQ(-5, out[0]);
+    EXPECT_EQ(-5, out[1]);
+    EXPECT_EQ(-15, out[2]);
+
+    g_TrackPoints = NULL;
+    InterpolateTrackPoint(0, out, 0x200);
+    EXPECT_EQ(0, out[0]);
+    EXPECT_EQ(0, out[1]);
+    EXPECT_EQ(0, out[2]);
+    InterpolateTrackPoint(0, NULL, 0x200);
 }
 
 static void test_input_config(void) {
@@ -303,6 +341,7 @@ int main(void) {
     test_angle_math();
     test_angle_blending();
     test_track_angle_interpolation();
+    test_track_point_interpolation();
     test_input_config();
     test_port_config();
     test_platform_config_path();

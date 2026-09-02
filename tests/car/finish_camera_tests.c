@@ -15,6 +15,7 @@ static s32 s_atanCall;
 static s32 s_trackStateCalls;
 static s32 s_drawCalls;
 static CarTrackLimits s_trackLimits;
+static GameTrackPoint s_trackPoint;
 
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     (void)weight;
@@ -67,6 +68,7 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
     target.y = 2000;
     target.z = 3000;
     g_TrackPointCount = 10;
+    g_TrackPoints = &s_trackPoint;
     g_CameraCarTrackPoint = cameraPoint;
     g_CameraCar.x = 100;
     g_CameraCar.y = 200;
@@ -103,6 +105,16 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
 
 int main(void) {
     if (RunCase(1, 0, 9) || RunCase(9, 1, 1)) return 1;
+
+    g_TrackPoints = NULL;
+    g_TrackPointCount = 0;
+    s_trackStateCalls = 0;
+    s_drawCalls = 0;
+    UpdateFinishCamera(&(PlayerCarRuntime){0});
+    if (s_trackStateCalls != 0 || s_drawCalls != 0) {
+        puts("FAIL: finish camera ran without a loaded track");
+        return 1;
+    }
     puts("finish camera behavior preserved");
     return 0;
 }
