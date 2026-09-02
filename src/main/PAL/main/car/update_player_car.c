@@ -2,8 +2,6 @@
 #include "game/race.h"
 #include "game/car.h"
 #include "game/car_internal.h"
-#include "game/track_internal.h"
-#include "game/render.h"
 #include "game/random.h"
 
 #include "rage/trace.h"
@@ -11,17 +9,12 @@
 /* Per-frame player physics orchestration and track contact. */
 void UpdatePlayerCar(PlayerCarRuntime *car) {
     Vec4 tmp;
-    Matrix mA;
-    SVec sv2;
-    CarTrackLimits limits;
     GameCarDrive *p = &car->drive;
     s32 usesNegconMapping;
     s32 ground;
-    s32 slip;
     s32 skid;
     s32 crash;
     s32 bodyY;
-    u32 skidRange;
 
     TraceCarStates();
 
@@ -56,25 +49,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     AccumulateLapProgress(GetPlayerCarRuntime(car));
     TraceCarMotion("post-progress", car);
 
-    slip = (car->bodyYaw - 0xC00 +
-            TrackPoint(car->trackPointIndex)->angle) & 0xFFF;
-    sv2.vx = 0;
-    sv2.vz = 0;
-    sv2.vy = slip;
-    RotMatrix(&sv2, &mA);
-
-    MeasurePlayerTrackLimits(&mA, &limits);
-
-    if ((s16)car->motionTimer > 0) {
-        ApplyCarKnockback(AsRivalCar(car));
-    }
-    TraceCarMotion("post-knockback", car);
-    skid = UpdateCarTrackState(AsRivalCar(car), car->trackPointIndex, &limits);
-    TraceCarMotion("post-track", car);
-    skidRange = skid - 2;
-    if (skidRange < 2U && car->speed < 64) {
-        skid = 0;
-    }
+    skid = ResolvePlayerTrackContact(car);
 
     if (p->shiftRpmDelta != 0) {
         s32 d = (g_CarSpec->revLimit + g_CarSpec->redline) / 2 - g_ShiftTargetRpm;
