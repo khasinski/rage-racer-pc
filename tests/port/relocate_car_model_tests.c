@@ -22,9 +22,10 @@ CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
     (void)nativeAsset;
     return s_serializedAsset;
 }
-void SetCarModelSlot(CarModelAsset *asset, s32 slot) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
     s_installedAsset = asset;
     s_installedSlot = slot;
+    return 1;
 }
 void SelectCarModelSlot(s32 slot) {
     s_selectedSlot = slot;

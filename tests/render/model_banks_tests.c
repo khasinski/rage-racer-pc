@@ -235,19 +235,34 @@ static int TestCarAssetSlots(void) {
     memset(&storage, 0, sizeof(storage));
     view->gearCount = 6;
     view->serializedModelSize = 24;
-    serialized->modelOffset = 48;
-    serialized->imageOffset = 72;
+    serialized->modelOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    serialized->imageOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE + 24;
     g_CarModelSlots[0] = &sentinelModel;
-    SetCarModelSlot(view, -1);
+    CHECK(InstallSerializedCarModelSlot(view, -1) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
-    SetCarModelSlot(view, 1);
+    CHECK(InstallSerializedCarModelSlot(view, 1) == 1);
     CHECK(g_CarModelSlots[1] != view);
     CHECK(g_CarModelSlots[1]->gearCount == 6);
     CHECK(g_CarModelSlots[1]->serializedModelSize == 24);
-    CHECK(g_CarModelSlots[1]->modelData.pointer == storage.bytes + 48);
-    CHECK(g_CarModelSlots[1]->imageData.pointer == storage.bytes + 72);
+    CHECK(g_CarModelSlots[1]->modelData.pointer ==
+          storage.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE);
+    CHECK(g_CarModelSlots[1]->imageData.pointer ==
+          storage.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE + 24);
     CHECK(FindSerializedCarModelAsset(g_CarModelSlots[1]) == view);
     CHECK(FindSerializedCarModelAsset(&unknownModel) == NULL);
+
+    CHECK(InstallSerializedCarModelSlot(NULL, 0) == 0);
+    serialized->modelOffset++;
+    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(g_CarModelSlots[0] == &sentinelModel);
+    serialized->modelOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    serialized->imageOffset++;
+    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(g_CarModelSlots[0] == &sentinelModel);
+    serialized->imageOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE + 24;
+    view->serializedModelSize = -1;
+    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(g_CarModelSlots[0] == &sentinelModel);
 
     g_CarModelAsset = &sentinelModel;
     SelectCarModelSlot(2);

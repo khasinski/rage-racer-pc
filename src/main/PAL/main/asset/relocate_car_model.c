@@ -18,7 +18,9 @@ void RelocateCarModel(void) {
     g_AssetLoadCursor = g_AssetBase + byteCount;
     memcpy(g_AssetBase, source, byteCount);
 
-    SetCarModelSlot(GetCarModelAsset(g_AssetBase), 0);
+    if (!InstallSerializedCarModelSlot(GetCarModelAsset(g_AssetBase), 0)) {
+        return;
+    }
     SelectCarModelSlot(0);
     g_CarModelAsset->modelData.pointer =
         g_AssetBase + SERIALIZED_CAR_MODEL_HEADER_SIZE;

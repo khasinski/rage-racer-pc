@@ -42,6 +42,7 @@ static u16 *s_audioTable;
 static s32 s_sequenceInitCalls;
 static CourseModelAssetHeader *s_courseModels;
 static GameImageAssetHeaderWord *s_uploadedImage;
+static s32 s_installCarModelSlotResult = 1;
 
 void ResetCdAudioState(void) {}
 
@@ -51,8 +52,10 @@ s32 LoadAsset(s32 assetId, void *destination) {
     s_loadDestination = destination;
     return s_loadResult;
 }
-void SetCarModelSlot(CarModelAsset *asset, s32 slot) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
+    if (!s_installCarModelSlotResult) return 0;
     g_CarModelSlots[slot] = asset;
+    return 1;
 }
 void RegisterModelBank(ModelBankHeader *bank, s32 slot) {
     s_registeredBank = bank;
@@ -231,6 +234,24 @@ static void TestInvalidSlotSkipsInstallation(void) {
           "invalid model slot skips installation");
 }
 
+static void TestInvalidSerializedModelSkipsInstallation(void) {
+    CarModelAsset model;
+
+    memset(&model, 0, sizeof(model));
+    s_installCarModelSlotResult = 0;
+    s_registeredBank = NULL;
+    g_CarImageSlots[0] = NULL;
+    s_color1Calls = 0;
+    s_color2Calls = 0;
+
+    InstallCarModelAsset(&model, 0, 0);
+
+    Check(s_registeredBank == NULL && g_CarImageSlots[0] == NULL &&
+              s_color1Calls == 0 && s_color2Calls == 0,
+          "invalid serialized model skips dependent installation");
+    s_installCarModelSlotResult = 1;
+}
+
 static void TestCarSelectAssetPhases(void) {
     static u8 storage[CAR_MODEL_BUFFER_SIZE + 512];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
@@ -328,6 +349,7 @@ int main(void) {
     TestModelVariantLoads();
     TestInvalidCarSkipsCustomPaint();
     TestInvalidSlotSkipsInstallation();
+    TestInvalidSerializedModelSkipsInstallation();
     TestCarSelectAssetPhases();
 
     if (s_failures != 0) return 1;

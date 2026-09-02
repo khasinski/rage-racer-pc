@@ -18,7 +18,9 @@ void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
         return;
     }
 
-    SetCarModelSlot(asset, slot);
+    if (!InstallSerializedCarModelSlot(asset, slot)) {
+        return;
+    }
     asset = g_CarModelSlots[slot];
     RegisterModelBank(asset->modelData.modelBank, slot);
     g_CarImageSlots[slot] = asset->imageData.carImage;

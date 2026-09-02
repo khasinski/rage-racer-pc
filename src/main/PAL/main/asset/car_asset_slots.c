@@ -12,12 +12,23 @@ void UploadCarImage(s32 index) {
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
 }
 
-void SetCarModelSlot(CarModelAsset *asset, s32 index) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 index) {
     SerializedCarModelAssetHeader *serialized;
     u8 *bytes;
 
-    if ((u32)index >= CAR_ASSET_SLOT_COUNT) return;
+    if (asset == NULL || (u32)index >= CAR_ASSET_SLOT_COUNT) return 0;
+
     serialized = GetSerializedCarModelAssetHeader(asset);
+    if (asset->serializedModelSize < 0 ||
+        (u32)asset->serializedModelSize >
+            CAR_MODEL_SLOT_SIZE - SERIALIZED_CAR_MODEL_HEADER_SIZE -
+                sizeof(CarImageData) ||
+        serialized->modelOffset != SERIALIZED_CAR_MODEL_HEADER_SIZE ||
+        serialized->imageOffset != SERIALIZED_CAR_MODEL_HEADER_SIZE +
+                                       asset->serializedModelSize) {
+        return 0;
+    }
+
     bytes = GetAssetBytes(serialized);
     memcpy(&s_NativeCarModelAssets[index], serialized->metadata,
            sizeof(serialized->metadata));
@@ -27,6 +38,7 @@ void SetCarModelSlot(CarModelAsset *asset, s32 index) {
         bytes + serialized->imageOffset;
     s_SerializedCarModelAssets[index] = asset;
     g_CarModelSlots[index] = &s_NativeCarModelAssets[index];
+    return 1;
 }
 
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {

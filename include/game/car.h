@@ -783,7 +783,9 @@ s32 GetCarUnlockLevel(s32 model);
 /* Asset/price-table row for the model variant currently owned. */
 s32 GetOwnedCarAssetIndex(s32 model);
 struct CarModelAsset;
-void SetCarModelSlot(struct CarModelAsset *asset, s32 index);
+/* Decode a serialized car asset into a native slot. Returns zero when its
+ * offsets do not describe the expected model-plus-image layout. */
+s32 InstallSerializedCarModelSlot(struct CarModelAsset *asset, s32 index);
 /* Which of the two showroom model slots is live, 0 or 1. */
 extern u32 g_CarModelSlot;
 /* Point g_CarModelAsset at g_CarModelSlots[index]. */
