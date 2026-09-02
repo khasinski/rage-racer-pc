@@ -20,13 +20,6 @@ static s16 ClampDrivetrainGear(s16 gear) {
   return gear;
 }
 
-static s32 GetGearLoad(const GameCarSpec *spec, s16 gear) {
-  /* Retail's sixth load is the adjacent gearRatio[0] word in the packed car
-   * specification. Name that layout boundary instead of indexing gearLoad[6]. */
-  return gear == MAX_FORWARD_GEAR ? spec->gearRatio[0]
-                                  : spec->gearLoad[gear];
-}
-
 /*
  * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
  * confirms it, and it only clears once the pedal is back under 0x7C. The gap
@@ -101,14 +94,14 @@ static s32 InterpolateEngineBraking(const GameCarSpec *spec, s32 engineRpm,
 
   for (slot = BandStartIndex(g_TorqueLossBandEnd, bandIndex);
        slot < g_TorqueLossBandEnd[bandIndex]; slot++) {
-    s32 segmentStart = spec->torqueLossRpm[slot];
+    s32 segmentStart = GetCarTorqueLossBoundary(spec, slot);
     s32 segmentEnd;
     s32 segmentLength;
 
     if (engineRpm < segmentStart) {
       continue;
     }
-    segmentEnd = spec->torqueLossRpm[slot + 1];
+    segmentEnd = GetCarTorqueLossBoundary(spec, slot + 1);
     if (segmentEnd < engineRpm) {
       continue;
     }
@@ -533,7 +526,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
   gear = ClampDrivetrainGear(drive->gear);
   drive->gear = gear;
   gearCurve = g_GearTorqueCurve[gear].values;
-  gearRatio = GetGearLoad(spec, gear);
+  gearRatio = GetCarGearLoad(spec, gear);
   if (g_RacePhase < 2) {
     car->drive.gearDisp = gear;
     gearRatio = spec->gearLoad[1];

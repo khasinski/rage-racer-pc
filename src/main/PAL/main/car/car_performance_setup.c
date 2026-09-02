@@ -20,6 +20,18 @@ static s32 FindFirstPositiveBand(const s32 *values, s32 count,
     return -1;
 }
 
+static s32 FindFirstPositiveLossBand(const GameCarSpec *spec,
+                                     s32 speedThreshold) {
+    s32 index;
+
+    for (index = 0; index < CAR_TORQUE_LOSS_BOUNDARY_COUNT; index++) {
+        if (GetCarTorqueLossBoundary(spec, index) / speedThreshold > 0) {
+            return index;
+        }
+    }
+    return -1;
+}
+
 static s32 WrapLaunchThresholdIndex(s32 index) {
     index %= LAUNCH_THRESHOLD_COUNT;
     return index < 0 ? index + LAUNCH_THRESHOLD_COUNT : index;
@@ -27,10 +39,6 @@ static s32 WrapLaunchThresholdIndex(s32 index) {
 
 void PrepareCarPerformance(GameCarDrive *drive) {
     GameCarSpec *spec = g_CarSpec;
-    /* Both retail tables deliberately include one adjacent word: the tenth
-     * loss boundary is gearLoad[0], and load slot 6 is gearRatio[0]. */
-    s32 *lossBoundaries = (s32 *)(void *)&spec->torqueLossRpm[0];
-    s32 *gearLoads = (s32 *)(void *)&spec->gearLoad[0];
     s32 peakOutput = 0;
     s32 speedThreshold;
     s32 gear;
@@ -60,8 +68,8 @@ void PrepareCarPerformance(GameCarDrive *drive) {
         s32 divisor = (spec->torqueScale[gear] *
                        spec->gearRatio[gear + 1]) / 100;
 
-        /* Slot 6 is the adjacent gearRatio[0] word in the packed retail asset. */
-        gearLoads[gear + 1] = (((scaledGearRatio * 6) / 100) << 17) / 10000;
+        SetCarGearLoad(spec, gear + 1,
+                       (((scaledGearRatio * 6) / 100) << 17) / 10000);
         if (divisor <= 0) {
             divisor = spec->gearRatio[gear + 1];
         }
@@ -81,8 +89,7 @@ void PrepareCarPerformance(GameCarDrive *drive) {
          index++, speedThreshold += 0x3E8) {
         s32 band = FindFirstPositiveBand(spec->torqueBand.values, 16,
                                          speedThreshold);
-        s32 lossBand = FindFirstPositiveBand(lossBoundaries, 10,
-                                              speedThreshold);
+        s32 lossBand = FindFirstPositiveLossBand(spec, speedThreshold);
 
         if (band >= 0) {
             g_TorqueBandEnd[index] = (s16)band;

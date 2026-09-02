@@ -95,17 +95,27 @@ int main(void) {
     }
     for (gear = 0; gear < 6; gear++) {
         s32 scaled = spec.gearRatio[gear + 1] * 0x490 / 160;
-        s32 *gearLoads = (s32 *)(void *)&spec.gearLoad[0];
 
-        CHECK_EQ(gearLoads[gear + 1],
+        CHECK_EQ(GetCarGearLoad(&spec, gear + 1),
                  (((scaled * 6) / 100) << 17) / 10000,
                  "packed gear load");
     }
     for (index = 0; index < 10; index++) {
         s32 threshold = (index + 1) * 1000;
-        s32 *lossBoundaries = (s32 *)(void *)&spec.torqueLossRpm[0];
         s32 expected = FirstBand(spec.torqueBand.values, 16, threshold);
-        s32 expectedLoss = FirstBand(lossBoundaries, 10, threshold);
+        s32 lossBoundaries[CAR_TORQUE_LOSS_BOUNDARY_COUNT];
+        s32 expectedLoss;
+        s32 lossIndex;
+
+        for (lossIndex = 0;
+             lossIndex < CAR_TORQUE_LOSS_BOUNDARY_COUNT;
+             lossIndex++) {
+            lossBoundaries[lossIndex] =
+                GetCarTorqueLossBoundary(&spec, lossIndex);
+        }
+        expectedLoss = FirstBand(lossBoundaries,
+                                 CAR_TORQUE_LOSS_BOUNDARY_COUNT,
+                                 threshold);
 
         CHECK_EQ(g_TorqueBandEnd[index], expected, "torque band");
         CHECK_EQ(g_TorqueLossBandEnd[index], expectedLoss,

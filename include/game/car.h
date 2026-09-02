@@ -359,6 +359,34 @@ typedef struct GameCarSpec {
     CarTachometerSpec tachometer; /* +0x138 */
 } GameCarSpec;
 
+enum {
+    CAR_FORWARD_GEAR_COUNT = 6,
+    CAR_TORQUE_LOSS_BOUNDARY_COUNT = 10,
+};
+
+/* The retail asset stores these two logical tables across adjacent named
+ * fields. Keep access within the declared C arrays while preserving that
+ * packed format. */
+static inline s32 GetCarTorqueLossBoundary(const GameCarSpec *spec,
+                                           s32 index) {
+    return index == CAR_TORQUE_LOSS_BOUNDARY_COUNT - 1
+               ? spec->gearLoad[0]
+               : spec->torqueLossRpm[index];
+}
+
+static inline s32 GetCarGearLoad(const GameCarSpec *spec, s32 gear) {
+    return gear == CAR_FORWARD_GEAR_COUNT ? spec->gearRatio[0]
+                                         : spec->gearLoad[gear];
+}
+
+static inline void SetCarGearLoad(GameCarSpec *spec, s32 gear, s32 value) {
+    if (gear == CAR_FORWARD_GEAR_COUNT) {
+        spec->gearRatio[0] = value;
+    } else {
+        spec->gearLoad[gear] = value;
+    }
+}
+
 static inline GameCarSpec *GetGameCarSpec(void *data) {
     return (GameCarSpec *)data;
 }
