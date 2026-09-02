@@ -56,7 +56,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     UpdateCarBodyRoll(car);
 
-    if (car->verticalMotionState == 0) {
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         UpdatePlayerSteeringTarget(car);
     }
 

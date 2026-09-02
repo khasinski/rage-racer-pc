@@ -5,7 +5,7 @@
 #include "psyq/gte.h"
 
 static void UpdateLaunchTyreVoice(const PlayerCarRuntime *car, s32 skid) {
-    if (car->verticalMotionState != 0) {
+    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         SetIndexedEffectVoice(-1, 0, 0);
         return;
     }

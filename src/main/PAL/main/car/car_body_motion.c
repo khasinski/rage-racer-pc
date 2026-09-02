@@ -41,7 +41,7 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
         car->bodyRoll += car->bodyKickOffset / 2;
         break;
     case CAR_BODY_KICK_CORNERING:
-        if (car->verticalMotionState == 0) {
+        if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
             car->bodyRoll += value;
         }
         break;

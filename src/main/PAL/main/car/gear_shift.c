@@ -58,7 +58,7 @@ void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
             }
         }
     } else {
-        if (car->verticalMotionState == 0) {
+        if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
             s32 g;
 
             g = car->drive.gear;

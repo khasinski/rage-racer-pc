@@ -24,7 +24,7 @@ void SteerCarToTrackLine(PlayerCarRuntime *car) {
     wantedHeading = CalculateTrackOffsetHeading(
         aheadIndex, car->segmentFraction, car->x, car->z, lateral);
 
-    if (car->verticalMotionState == 0) {
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         /* Preserve the recovered signed 16-bit view of the response. */
         s32 response = (s16)spec->steerResponse;
         s32 towards;

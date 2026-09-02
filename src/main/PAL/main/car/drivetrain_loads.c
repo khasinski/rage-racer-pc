@@ -203,7 +203,7 @@ static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
     }
     loads->motionResistance += roadSpeed * roadSpeed / dragDivisor;
     g_DragScale = 0x3E8;
-    if (car->verticalMotionState == 0) {
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         loads->motionResistance =
             loads->motionResistance * (0x64 - bandScale) / 100;
     } else {

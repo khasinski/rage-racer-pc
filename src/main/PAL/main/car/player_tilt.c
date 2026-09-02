@@ -16,7 +16,7 @@ void UpdatePlayerTilt(PlayerCarRuntime *car) {
         return;
     }
 
-    if (car->verticalMotionState == 0) {
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         if (drive->engineRpm >= g_CarSpec->redline &&
             drive->acceleratorInput.value >= PEDAL_ACTIVE_THRESHOLD &&
             drive->clutch == 0) {

@@ -36,7 +36,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
                   ANGLE_THREE_QUARTER_TURN - car->trackHeading.value;
     car->steeringAngle = -GetAngleDelta(trackFacing, targetAngle) * 3;
 
-    if (car->verticalMotionState == 0) {
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         car->headingAngle += GetAngleDelta(car->headingAngle, targetAngle);
         car->targetYaw = car->headingAngle;
         car->bodyYaw = car->headingAngle;
