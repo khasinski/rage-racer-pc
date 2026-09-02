@@ -123,6 +123,38 @@ int main(int argc, char **argv) {
         cases++;
     }
 
+    {
+        GameCarRuntime normalized;
+        GameCarRuntime oversized;
+        s32 normalizedResult;
+        s32 oversizedResult;
+
+        memset(&normalized, 0, sizeof(normalized));
+        normalized.x = s_points[5].x;
+        normalized.z = s_points[5].z;
+        oversized = normalized;
+        normalizedResult = FindTrackSegment(&normalized, 5);
+        oversizedResult = FindTrackSegment(&oversized, TRACK_POINTS + 5);
+        if (oversizedResult != normalizedResult ||
+            oversized.x != normalized.x || oversized.z != normalized.z) {
+            fprintf(stderr, "oversized starting index was not normalized\n");
+            return 1;
+        }
+    }
+
+    {
+        GameCarRuntime car;
+
+        memset(&car, 0, sizeof(car));
+        car.x = 123;
+        car.z = 456;
+        g_TrackPointCount = 0;
+        if (FindTrackSegment(&car, 0) != -1 || car.x != 123 || car.z != 456) {
+            fprintf(stderr, "empty track search changed the car\n");
+            return 1;
+        }
+    }
+
     if (out != NULL) fclose(out);
     if (s_digest != expected) {
         printf("find_track_segment: %d cases folded to %lu, expected %lu\n",

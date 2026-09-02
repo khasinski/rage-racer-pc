@@ -863,7 +863,7 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
 void DrawPlayerTachometer(void);
-void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer);
+void BeginCarStandingStart(PlayerCarRuntime *car);
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode);
 void UpdatePlayerCar(PlayerCarRuntime *car);
 

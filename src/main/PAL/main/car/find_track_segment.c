@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/angle.h"
 #include "game/render.h"
 #include "game/track.h"
 
@@ -9,18 +10,28 @@
  */
 s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
     DVecValue corners[5];
-    s32 index = startIndex;
+    s32 index;
     s32 stride = 0;
+
+    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+        return -1;
+    }
+
+    startIndex %= g_TrackPointCount;
+    if (startIndex < 0) {
+        startIndex += g_TrackPointCount;
+    }
+    index = startIndex;
 
     do {
         const GameTrackPoint *near = TrackPoint(index);
-        const GameTrackPoint *far = TrackPoint((index + 1) % g_TrackPointCount);
+        const GameTrackPoint *far = TrackPoint(index + 1);
         s32 segmentX = far->x - near->x;
         s32 segmentZ = far->z - near->z;
-        s32 nearCos = rcos(0xC00 - near->angle);
-        s32 nearSin = rsin(0xC00 - near->angle);
-        s32 farCos = rcos(0xC00 - far->angle);
-        s32 farSin = rsin(0xC00 - far->angle);
+        s32 nearCos = rcos(ANGLE_THREE_QUARTER_TURN - near->angle);
+        s32 nearSin = rsin(ANGLE_THREE_QUARTER_TURN - near->angle);
+        s32 farCos = rcos(ANGLE_THREE_QUARTER_TURN - far->angle);
+        s32 farSin = rsin(ANGLE_THREE_QUARTER_TURN - far->angle);
         s32 nearLeft = (s16)(near->leftHalfWidth * 2);
         s32 nearRight = (s16)(near->rightHalfWidth * 2);
         s32 farLeft = (s16)(far->leftHalfWidth * 2);

@@ -3,12 +3,8 @@
 #include "game/race.h"
 
 static s32 WrapTrackPointIndex(s32 index) {
-    if (index < 0) {
-        index += g_TrackPointCount;
-    } else if (index >= g_TrackPointCount) {
-        index -= g_TrackPointCount;
-    }
-    return index;
+    index %= g_TrackPointCount;
+    return index < 0 ? index + g_TrackPointCount : index;
 }
 
 static s32 TrackSegmentLength(s32 index) {
@@ -17,12 +13,22 @@ static s32 TrackSegmentLength(s32 index) {
 
 /* Seeds the launch-spin value from how far the revs sit above the power peak;
  * a car already in gear 2 or higher also starts losing grip. */
-void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
+void BeginCarStandingStart(PlayerCarRuntime *car) {
     s32 value;
-    s16 index;
-    (void)sceneTimer;
+    s32 gear = car->drive.gear;
+    s32 revLimit = g_CarSpec->revLimit;
 
-    value = ((g_EngineRpm - g_PeakOutputRpm) * 10000) / g_CarSpec->revLimit;
+    if (gear < 1) {
+        gear = 1;
+    } else if (gear > CAR_FORWARD_GEAR_COUNT) {
+        gear = CAR_FORWARD_GEAR_COUNT;
+    }
+    car->drive.gear = (s16)gear;
+    if (revLimit <= 0) {
+        revLimit = 1;
+    }
+
+    value = ((g_EngineRpm - g_PeakOutputRpm) * 10000) / revLimit;
     g_StandingStartState = 0;
 
     if (value < 0) {
@@ -31,10 +37,9 @@ void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
             value = 0;
         }
     } else {
-        index = car->drive.gear;
-        value *= g_PeakOutputValue / ((index * 200) + 300);
-        car->drive.drivetrainTorque = car->drive.drivetrainTorque / index;
-        if (car->drive.gear >= 2) {
+        value *= g_PeakOutputValue / ((gear * 200) + 300);
+        car->drive.drivetrainTorque /= gear;
+        if (gear >= 2) {
             g_GripLossTimer = 200;
         }
     }
@@ -48,9 +53,18 @@ void BeginCarStandingStart(PlayerCarRuntime *car, s32 sceneTimer) {
  * to walk and the race direction decides the sign of the accumulated distance.
  */
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
-    s32 current = car->trackPointIndex;
-    s32 index = g_TrackEventData->trackWalkStart;
+    s32 current;
+    s32 index;
     s32 total = 0;
+
+    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
+        g_TrackEventData == NULL) {
+        car->progressA = 0;
+        return;
+    }
+
+    current = WrapTrackPointIndex(car->trackPointIndex);
+    index = WrapTrackPointIndex(g_TrackEventData->trackWalkStart);
 
     if (g_RaceSeries != 0) {
         if (mode == 1) {
@@ -103,6 +117,12 @@ void AccumulateLapProgress(GameCarRuntime *car) {
     s32 moveForward;
     s32 i;
 
+    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+        car->activeFlag = -1;
+        return;
+    }
+
+    current = WrapTrackPointIndex(current);
     target = FindTrackSegment(car, current);
     if (target < 0) {
         car->activeFlag = -1;

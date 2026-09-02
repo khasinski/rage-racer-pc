@@ -43,6 +43,8 @@ static void ResetCar(GameCarRuntime *car, s32 point, s32 progress) {
 int main(void) {
     static GameTrackPoint points[5];
     static TrackEventData events;
+    static GameCarSpec spec;
+    PlayerCarRuntime player;
     GameCarRuntime car;
     s32 i;
 
@@ -54,7 +56,27 @@ int main(void) {
     g_TrackPoints = points;
     g_TrackPointCount = 5;
     g_TrackEventData = &events;
+    g_CarSpec = &spec;
     events.trackWalkStart = 1;
+
+    memset(&player, 0, sizeof(player));
+    spec.revLimit = 8000;
+    g_EngineRpm = 4000;
+    g_PeakOutputRpm = 3000;
+    g_PeakOutputValue = 1000;
+    player.drive.gear = 2;
+    player.drive.drivetrainTorque = 600;
+    BeginCarStandingStart(&player);
+    CHECK_EQ(player.drive.drivetrainTorque, 300);
+    CHECK_EQ(g_StandingStartSpin, 1250);
+    CHECK_EQ(g_GripLossTimer, 200);
+
+    player.drive.gear = 0;
+    player.drive.drivetrainTorque = 600;
+    spec.revLimit = 0;
+    BeginCarStandingStart(&player);
+    CHECK_EQ(player.drive.gear, 1);
+    CHECK_EQ(player.drive.drivetrainTorque, 600);
 
     ResetCar(&car, 4, 999);
     g_RaceSeries = 0;
@@ -108,6 +130,14 @@ int main(void) {
     AccumulateLapProgress(&car);
     CHECK_EQ(car.activeFlag, -1);
     CHECK_EQ(car.progressA, 77);
+
+    g_TrackPointCount = 0;
+    ResetCar(&car, 2, 77);
+    SeedCarLapProgress(&car, 0);
+    CHECK_EQ(car.progressA, 0);
+    car.activeFlag = 0;
+    AccumulateLapProgress(&car);
+    CHECK_EQ(car.activeFlag, -1);
 
     puts("lap progress preserves seed directions, shortest paths, and ties");
     return 0;
