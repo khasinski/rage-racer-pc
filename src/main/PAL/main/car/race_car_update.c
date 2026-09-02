@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
@@ -78,101 +79,6 @@ static void AccelerateAllCars(void) {
             car->speed = car->speed + car->acceleration;
             car->bodyYaw =
                 GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5 + car->bodyYaw;
-        }
-    }
-}
-
-/*
- * A rival's wheels, turning with the speed until they would blur, then at a
- * fixed rate; the top bit asks for the blurred texture. The same rule the
- * player's car uses.
- */
-static void SpinCarWheels(GameCarRuntime *car) {
-    s32 scaled = car->speed * 3;
-    s16 step = scaled;
-    s32 spin;
-
-    if ((s16)scaled >= 0x1001) {
-        step = 0x249;
-    }
-    spin = (step + car->wheelRotation) & 0xFFF;
-    car->wheelRotation = spin;
-    if (car->speed >= 0x321) {
-        car->wheelRotation = spin | 0x1000;
-    }
-}
-
-/*
- * A rival in the air. It rises on one arc and falls on another, both drawn
- * against the tick count since it left the ground, and state two is the pause
- * at the top for a car that has not travelled far enough to fall yet. The
- * player's car does the same thing under different field names.
- */
-static void UpdateCarJumpArc(GameCarRuntime *car, s32 ground) {
-    s32 tick = (u16)car->verticalMotionTimer + 1;
-    s32 state;
-
-    car->verticalMotionTimer = tick;
-    state = car->verticalMotionState;
-    if (state == 1) {
-        s32 rise = (s16)tick;
-
-        car->y = car->verticalMotionRate * rise + rise * rise * 72 / 100 + car->y;
-        if (car->y >= ground) {
-            car->verticalMotionState = 0;
-        }
-    } else if (state == 2) {
-        if (car->verticalTargetY >= ground - car->verticalMotionRate) {
-            car->y = car->verticalTargetY;
-        } else {
-            car->verticalMotionState = 3;
-            car->verticalMotionRate = car->verticalMotionTimer;
-            car->y = car->verticalTargetY;
-        }
-    } else {
-        s16 fall = tick - (u16)car->verticalMotionRate;
-
-        car->y = car->verticalTargetY + fall * fall * 216 / 100;
-        if (car->y >= ground) {
-            car->verticalMotionState = 0;
-        }
-    }
-    if (car->verticalMotionState == 0) {
-        car->y = ground + 8;
-        car->verticalPitch = 0;
-        car->verticalRoll = 0;
-        StartCarBodyKick(1, car);
-    }
-}
-
-/*
- * What is left of a rival's frame once it has been steered and moved: the
- * wheels, the body following the chassis, the jump if it is in one, and either
- * the suspension settling or the speed lost to whatever it just hit.
- */
-static void SettleAllCarBodies(void) {
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag != -1) {
-            /* Where the wheels sit, eight units under the body. */
-            s32 ground = car->y - 8;
-
-            SpinCarWheels(car);
-            CopyCarBodyRotationToModel(car);
-            car->bodyRoll = car->bodyRoll + car->bodyRollVelocity;
-            car->modelY = car->y;
-            if (car->verticalMotionState != 0) {
-                UpdateCarJumpArc(car, ground);
-            }
-            if (car->collisionFlag == 0) {
-                UpdateCarBodyKick(car);
-                UpdateCarCrestHop(car);
-            } else {
-                car->speed = car->speed * 97 / 100 * 97 / 100;
-            }
         }
     }
 }
@@ -334,7 +240,7 @@ void UpdateRaceCars(void) {
     AccelerateAllCars();
     MoveAllCars();
     PlaceAllCarsOnTrack();
-    SettleAllCarBodies();
+    UpdateRivalBodyMotion();
 }
 
 static void AccelerateAttractCars(void) {
@@ -380,5 +286,5 @@ void UpdateAttractCars(void) {
     AccelerateAttractCars();
     MoveAllCars();
     PlaceAllCarsOnTrack();
-    SettleAllCarBodies();
+    UpdateRivalBodyMotion();
 }

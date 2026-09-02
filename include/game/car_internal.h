@@ -50,4 +50,7 @@ enum {
 extern s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
 extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 
+/* Final per-frame visual/vertical motion pass over the rival car slots. */
+void UpdateRivalBodyMotion(void);
+
 #endif
