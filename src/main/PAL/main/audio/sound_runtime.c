@@ -8,11 +8,8 @@ enum {
     FIRST_SOUND_SLOT_VOICE = 14,
     AUTO_SOUND_SLOT_COUNT = 5,
     SOUND_SLOT_COUNT = 6,
-    MUSIC_CHANNEL_COUNT = 2,
-    EFFECT_VOICE_COUNT = 4,
     SOUND_RUNTIME_VOICE_COUNT = 10,
     DEFAULT_SOUND_SCALE = 128,
-    DEFAULT_EFFECT_PITCH = 0x1E00,
     MAIN_VAB_SPU_ADDRESS = 0x1000,
 };
 
@@ -57,30 +54,10 @@ void ResetSoundState(void) {
         g_EngineSoundState.slotActive[i] = 0;
     }
 
-    for (i = 0; i < MUSIC_CHANNEL_COUNT; i++) {
-        g_MusicChannels[i].mode = -1;
-        g_MusicChannels[i].left.value = -1;
-        g_MusicChannels[i].right.value = -1;
-        g_MusicChannels[i].volLeft = 0;
-        g_MusicChannels[i].volRight = 0;
-    }
-
-    for (i = 0; i < EFFECT_VOICE_COUNT; i++) {
-        g_EffectVoices[i].state = -1;
-        g_EffectVoices[i].note.value = -1;
-        g_EffectVoices[i].tone = -1;
-        g_EffectVoices[i].pitch.value = DEFAULT_EFFECT_PITCH;
-        g_EffectVoices[i].volume = 0;
-    }
+    ResetAudioVoiceState();
 
     g_EngineSoundState.bank = -1;
-    g_PanVoiceVolumeR = -1;
-    g_PanVoiceVolumeL = -1;
-    g_IndexedEffectIndexPrev = -1;
-    g_IndexedEffectIndex = -1;
-    g_IndexedEffectPitch = DEFAULT_EFFECT_PITCH;
     g_SoundScale.scale = DEFAULT_SOUND_SCALE;
-    g_PanVoiceActive = 0;
     g_EngineSoundState.volumeScale = DEFAULT_SOUND_SCALE;
     g_AudioLoadedSlotMask = 1;
 }

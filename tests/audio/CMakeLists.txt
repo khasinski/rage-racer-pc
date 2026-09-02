@@ -13,6 +13,7 @@ add_test(
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_initialization.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/reset_audio_voice_state.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_pause_request.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
@@ -230,7 +231,8 @@ set_tests_properties(sequence_volume PROPERTIES LABELS unit)
 
 add_executable(sound_runtime_tests
     sound_runtime_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/reset_audio_voice_state.c)
 target_include_directories(sound_runtime_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -246,6 +248,26 @@ else()
 endif()
 add_test(NAME sound_runtime COMMAND sound_runtime_tests)
 set_tests_properties(sound_runtime PROPERTIES LABELS unit)
+
+add_executable(audio_initialization_tests
+    audio_initialization_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_initialization.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/reset_audio_voice_state.c)
+target_include_directories(audio_initialization_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(audio_initialization_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(audio_initialization_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(audio_initialization_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME audio_initialization COMMAND audio_initialization_tests)
+set_tests_properties(audio_initialization PROPERTIES LABELS unit)
 
 add_executable(pitched_sound_cue_tests
     pitched_sound_cue_tests.c

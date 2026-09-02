@@ -75,7 +75,9 @@ sources.each do |path, source|
     next
   end
 
-  next if path.end_with?("cd_audio.c")
+  next if path.end_with?("cd_audio.c") ||
+          path.end_with?("sound_runtime.c") ||
+          path.end_with?("audio_initialization.c")
 
   abort "#{path}: audio reset still derives channel fields from another global" if
     source.include?("ptr[0x78 / 4]")
