@@ -1,6 +1,7 @@
 #include "game/diagnostics.h"
 #include "game/asset.h"
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -10,6 +11,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static s32 FindRenderedCarSlot(const GameRenderObject *object) {
+    s32 slot;
+
+    if (object == GetCarRenderObject(AsRivalCar(&g_PlayerCar))) {
+        return -1;
+    }
+    for (slot = 0; slot < RACE_CAR_SLOT_COUNT; slot++) {
+        if (object == GetCarRenderObject(&g_Cars[slot])) {
+            return slot;
+        }
+    }
+    return -2;
+}
 
 /*
  * GameRenderObject -> GPU-primitive submitter. Subtracts the active view's
@@ -181,11 +195,11 @@ void DrawCar(GameRenderObject *obj) {
             const char *detail = v_148[2] < 0 ? "behind" :
                                  otDepth < 0xD00 ? "close" :
                                  otDepth < 0x2500 ? "far" : "culled";
-            Trace("car-draw", "timer=%d mirror=%d index=%ld source=%d "
+            Trace("car-draw", "timer=%d mirror=%d slot=%d source=%d "
                    "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
                    "player=%d grade=%d asset=%d",
                    g_SceneTimer, g_RenderState.orderingFlag != 0,
-                   (long)(((GameCarRuntime *)(void *)obj - g_Cars)),
+                   FindRenderedCarSlot(obj),
                    obj->modelIndex, model, lod[0], lod[1], otDepth,
                    v_148[2], detail, g_PlayerCarIndex,
                    g_CarTable[g_PlayerCarIndex].modelVariant,
