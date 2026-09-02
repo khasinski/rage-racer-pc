@@ -1,6 +1,8 @@
 #include "rage/render_world_game.h"
 #include "modern/modern_renderer.h"
+#include "modern/scene_capture.h"
 #include "fmv_audio.h"
+#include "timing_control.h"
 #include <libgte.h>
 
 extern int32_t g_FrameCounter;
@@ -28,15 +30,9 @@ void PortSmokeBeforeSceneHandler(void) {}
 #endif
 #endif
 
-void CaptureFrameBegin(void);
-void CaptureFrameEnd(void);
-void ModernFrameWaitTick(int frameLimit);
 void PortBeforeSceneHandler(void) {
     HostFmvAudioTick();
-    {
-        extern void TimingApply(void);
-        TimingApply();
-    }
+    TimingApply();
 #ifdef RAGE_SMOKE_TARGET
     PortSmokeBeforeSceneHandler();
     /* Scenario input is synthesized after physical/test input sampling so it

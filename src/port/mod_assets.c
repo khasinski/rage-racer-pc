@@ -23,28 +23,27 @@ static int s_legacyLayout;
 static int s_initialized;
 
 static void ModAssetsInit(void) {
+    char probe[1024];
+    FILE *test;
+
     if (s_initialized) return;
     s_initialized = 1;
     s_directory = RuntimeConfigGet("mods.directory");
     if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
     if (s_directory == NULL) return;
-    {
-        /* Say plainly when the directory is not the shape rage-extract writes,
-         * rather than silently playing the disc and leaving a modder to wonder
-         * why nothing changed. */
-        char probe[1024];
-        FILE *test;
-        snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin", s_directory);
-        test = fopen(probe, "rb");
-        if (test == NULL) {
-            fprintf(stderr,
-                    "rage-port: mods.directory %s has no raw/asset_000.bin; legacy archive overrides are disabled\n",
-                    s_directory);
-            return;
-        }
-        fclose(test);
-        s_legacyLayout = 1;
+    /* Say plainly when the directory is not the shape rage-extract writes,
+     * rather than silently playing the disc and leaving a modder to wonder
+     * why nothing changed. */
+    snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin", s_directory);
+    test = fopen(probe, "rb");
+    if (test == NULL) {
+        fprintf(stderr,
+                "rage-port: mods.directory %s has no raw/asset_000.bin; legacy archive overrides are disabled\n",
+                s_directory);
+        return;
     }
+    fclose(test);
+    s_legacyLayout = 1;
     fprintf(stderr, "rage-port: asset overrides from %s\n", s_directory);
 }
 
