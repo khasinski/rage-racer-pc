@@ -91,7 +91,7 @@ int main(void) {
 
     for (frame = 0; frame < 12; frame++) {
         g_RacePhase = frame < 10 ? 2 : 3;
-        UpdatePathScenerySound();
+        UpdatePathScenery();
         if (frame == 3 &&
             (g_PathSceneryCursors.rotRate.signedValue != 2 ||
              g_PathSceneryTransform.rotation.vx != 200 ||

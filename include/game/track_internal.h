@@ -91,7 +91,7 @@ void DrawRouteScenery(void);
 void DrawShuttleScenery(s32 instance);
 void DrawSpinningScenery(s32 timer, s32 animate);
 void UpdateFlybyScenery(void);
-void UpdatePathScenerySound(void);
+void UpdatePathScenery(void);
 void UpdateRouteScenery(void);
 void UpdateShuttleScenery(s32 instance);
 

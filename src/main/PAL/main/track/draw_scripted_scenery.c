@@ -15,7 +15,7 @@ void DrawScriptedScenery(s32 animate) {
             UpdateFlybyScenery();
         }
         if (sceneryTier >= 3) {
-            UpdatePathScenerySound();
+            UpdatePathScenery();
         }
     }
 

@@ -4,6 +4,13 @@
 #include "game/track_internal.h"
 #include "psyq/gte.h"
 
+enum {
+    PATH_SCENERY_AUDIO_RANGE = 0x1000,
+    PATH_SCENERY_MAX_VOLUME = 0x64,
+    PATH_SCENERY_MAX_VOLUME_STEP = 0x14,
+    PATH_SCENERY_BASE_PITCH = 0x3C,
+};
+
 static void AdvancePositionKeyframe(void) {
     PathSceneryPositionKey *keyframe;
     s16 index;
@@ -131,25 +138,28 @@ static void UpdatePathSceneryAudio(void) {
     s32 pitch = 0;
     s32 volume = 0;
 
-    if (dx < 0x1000 && dz < 0x1000 && dx >= -0xFFF && dz >= -0xFFF) {
+    if (dx < PATH_SCENERY_AUDIO_RANGE &&
+        dz < PATH_SCENERY_AUDIO_RANGE &&
+        dx > -PATH_SCENERY_AUDIO_RANGE &&
+        dz > -PATH_SCENERY_AUDIO_RANGE) {
         const s32 distance =
             SquareRoot12(dx * dx / 4 + dy * dy / 8 + dz * dz / 4) >> 10;
         s32 volumeDelta;
 
-        volume = 0x64 - distance;
-        if (volume > 0x64) {
-            volume = 0x64;
+        volume = PATH_SCENERY_MAX_VOLUME - distance;
+        if (volume > PATH_SCENERY_MAX_VOLUME) {
+            volume = PATH_SCENERY_MAX_VOLUME;
         } else if (volume < 0) {
             volume = 0;
         }
 
         volumeDelta = volume - g_PathSceneryVolume;
-        if (volumeDelta < -0x14) {
-            volumeDelta = -0x14;
-        } else if (volumeDelta > 0x14) {
-            volumeDelta = 0x14;
+        if (volumeDelta < -PATH_SCENERY_MAX_VOLUME_STEP) {
+            volumeDelta = -PATH_SCENERY_MAX_VOLUME_STEP;
+        } else if (volumeDelta > PATH_SCENERY_MAX_VOLUME_STEP) {
+            volumeDelta = PATH_SCENERY_MAX_VOLUME_STEP;
         }
-        pitch = (volumeDelta / 2 + 0x3C) << 7;
+        pitch = (volumeDelta / 2 + PATH_SCENERY_BASE_PITCH) << 7;
         g_PathSceneryVolume = volume;
     } else {
         g_PathSceneryVolume = 0;
@@ -162,7 +172,7 @@ static void UpdatePathSceneryAudio(void) {
     SetPitchedSoundCue(0, pitch, volume);
 }
 
-void UpdatePathScenerySound(void) {
+void UpdatePathScenery(void) {
     AdvancePositionKeyframe();
     UpdatePathPosition();
     AdvanceRotationKeyframe();

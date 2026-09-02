@@ -24,7 +24,7 @@ static void Record(enum Event event) {
 
 void UpdateRouteScenery(void) { Record(UPDATE_ROUTE); }
 void UpdateFlybyScenery(void) { Record(UPDATE_FLYBY); }
-void UpdatePathScenerySound(void) { Record(UPDATE_PATH); }
+void UpdatePathScenery(void) { Record(UPDATE_PATH); }
 void DrawRouteScenery(void) { Record(DRAW_ROUTE); }
 void DrawFlybyScenery(void) { Record(DRAW_FLYBY); }
 void DrawPathScenery(void) { Record(DRAW_PATH); }
