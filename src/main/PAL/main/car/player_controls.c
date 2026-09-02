@@ -2,6 +2,11 @@
 #include "game/car_internal.h"
 #include "game/state.h"
 
+enum {
+    STEERING_FULL_LOCK = 0x1000,
+    NEGCON_STEERING_RELEASE_FRAMES = -10,
+};
+
 void UpdatePlayerSteeringTarget(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 speed = car->speed;
@@ -21,18 +26,18 @@ static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     int usesNegcon = g_PadType == PAD_TYPE_NEGCON;
 
-    if (car->steeringAngle >= 4096) {
-        car->steeringAngle = 4096;
-        if (!usesNegcon || drive->steerPos < -4096) {
+    if (car->steeringAngle >= STEERING_FULL_LOCK) {
+        car->steeringAngle = STEERING_FULL_LOCK;
+        if (!usesNegcon || drive->steerPos < -STEERING_FULL_LOCK) {
             g_SteerHoldFrames++;
         }
-    } else if (car->steeringAngle < -4095) {
-        car->steeringAngle = -4096;
-        if (!usesNegcon || drive->steerPos > 4096) {
+    } else if (car->steeringAngle <= -STEERING_FULL_LOCK) {
+        car->steeringAngle = -STEERING_FULL_LOCK;
+        if (!usesNegcon || drive->steerPos > STEERING_FULL_LOCK) {
             g_SteerHoldFrames++;
         }
     } else {
-        g_SteerHoldFrames = usesNegcon ? -10 : 0;
+        g_SteerHoldFrames = usesNegcon ? NEGCON_STEERING_RELEASE_FRAMES : 0;
     }
 }
 

@@ -4,8 +4,23 @@
 #include "game/race.h"
 #include "game/state.h"
 
-static s16 ScaleNegconPedal(s16 input) {
-    return (s16)((input << 8) / 106);
+enum {
+    PEDAL_FULLY_PRESSED = 0x100,
+    NEGCON_PRESSURE_MAX = 0x6A,
+    DIGITAL_ACCELERATOR_MAPPING_SLOT = 2,
+    DIGITAL_BRAKE_MAPPING_SLOT = 3,
+    NEGCON_ACCELERATOR_MAPPING_SLOT = 10,
+    NEGCON_BRAKE_MAPPING_SLOT = 11,
+};
+
+static s16 ScaleNegconPedal(s16 pressure) {
+    return (s16)((s32)pressure * PEDAL_FULLY_PRESSED / NEGCON_PRESSURE_MAX);
+}
+
+static s16 ReadMappedButtonPressure(s32 mappingSlot) {
+    return (g_PadHeld & g_PadButtonMapping[mappingSlot]) != 0
+               ? PEDAL_FULLY_PRESSED
+               : 0;
 }
 
 void ReadPlayerCarInput(GameCarDrive *drive) {
@@ -17,9 +32,9 @@ void ReadPlayerCarInput(GameCarDrive *drive) {
 
     if (g_PadType == PAD_TYPE_DIGITAL) {
         drive->acceleratorInput.value =
-            ((g_PadHeld & g_PadButtonMapping[2]) != 0) << 8;
+            ReadMappedButtonPressure(DIGITAL_ACCELERATOR_MAPPING_SLOT);
         drive->brakeInput =
-            ((g_PadHeld & g_PadButtonMapping[3]) != 0) << 8;
+            ReadMappedButtonPressure(DIGITAL_BRAKE_MAPPING_SLOT);
         return;
     }
 
@@ -30,32 +45,28 @@ void ReadPlayerCarInput(GameCarDrive *drive) {
     }
 
     drive->acceleratorInput.value =
-        ((g_PadHeld & g_PadButtonMapping[10]) != 0) << 8;
-    drive->brakeInput =
-        ((g_PadHeld & g_PadButtonMapping[11]) != 0) << 8;
+        ReadMappedButtonPressure(NEGCON_ACCELERATOR_MAPPING_SLOT);
+    drive->brakeInput = ReadMappedButtonPressure(NEGCON_BRAKE_MAPPING_SLOT);
     switch (g_NegconMappingIndex) {
-        case 0:
-        case 5:
-            drive->acceleratorInput.value =
-                ScaleNegconPedal(g_NegconAnalogI);
-            drive->brakeInput = ScaleNegconPedal(g_NegconAnalogII);
-            break;
-        case 1:
-        case 6:
-            drive->acceleratorInput.value =
-                ScaleNegconPedal(g_NegconAnalogII);
-            drive->brakeInput = ScaleNegconPedal(g_NegconAnalogI);
-            break;
-        case 2:
-            drive->brakeInput = ScaleNegconPedal(g_NegconAnalogL);
-            break;
-        case 3:
-            drive->acceleratorInput.value =
-                ScaleNegconPedal(g_NegconAnalogII);
-            drive->brakeInput = ScaleNegconPedal(g_NegconAnalogL);
-            break;
-        case 4:
-        case 7:
-            break;
+    case 0:
+    case 5:
+        drive->acceleratorInput.value = ScaleNegconPedal(g_NegconAnalogI);
+        drive->brakeInput = ScaleNegconPedal(g_NegconAnalogII);
+        break;
+    case 1:
+    case 6:
+        drive->acceleratorInput.value = ScaleNegconPedal(g_NegconAnalogII);
+        drive->brakeInput = ScaleNegconPedal(g_NegconAnalogI);
+        break;
+    case 2:
+        drive->brakeInput = ScaleNegconPedal(g_NegconAnalogL);
+        break;
+    case 3:
+        drive->acceleratorInput.value = ScaleNegconPedal(g_NegconAnalogII);
+        drive->brakeInput = ScaleNegconPedal(g_NegconAnalogL);
+        break;
+    case 4:
+    case 7:
+        break;
     }
 }

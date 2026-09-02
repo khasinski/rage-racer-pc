@@ -79,6 +79,11 @@ int main(void) {
     CHECK(car.steeringAngle == -4096 && g_SteerHoldFrames == 1);
 
     Reset(&car);
+    car.steeringAngle = -4096;
+    UpdatePlayerControlFeedback(&car);
+    CHECK(car.steeringAngle == -4096 && g_SteerHoldFrames == 1);
+
+    Reset(&car);
     g_PadType = PAD_TYPE_NEGCON;
     car.steeringAngle = 5000;
     car.drive.steerPos = -4096;

@@ -73,6 +73,10 @@ int main(void) {
     CheckNegconMapping(6, 256, 128);
     CheckNegconMapping(7, 256, 256);
 
+    g_NegconAnalogI = 0;
+    g_NegconAnalogII = 106;
+    CheckNegconMapping(0, 0, 256);
+
     memset(&drive, 0x7F, sizeof(drive));
     g_PadType = 0;
     ReadPlayerCarInput(&drive);
