@@ -250,6 +250,26 @@ endif()
 add_test(NAME replay_scene_rules COMMAND replay_scene_rules_tests)
 set_tests_properties(replay_scene_rules PROPERTIES LABELS unit)
 
+add_executable(replay_fade_tests
+    replay_fade_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_fade.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_scene_rules.c)
+target_include_directories(replay_fade_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(replay_fade_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(replay_fade_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(replay_fade_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME replay_fade COMMAND replay_fade_tests)
+set_tests_properties(replay_fade PROPERTIES LABELS unit)
+
 add_executable(exit_race_scene_tests
     exit_race_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/exit_race_scene.c)

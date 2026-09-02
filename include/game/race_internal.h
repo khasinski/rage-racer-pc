@@ -27,6 +27,7 @@ static inline s32 RaceRecordMode(s32 grandPrixMode) {
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount);
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount);
 s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
+void UpdateReplayFade(void);
 
 typedef union SectorReferenceTimes {
     s32 values[3];

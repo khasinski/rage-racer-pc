@@ -1,6 +1,5 @@
 #include "game/audio.h"
 #include "game/car.h"
-#include "game/cd.h"
 #include "game/player_car_internal.h"
 #include "game/prim.h"
 #include "game/race.h"
@@ -24,53 +23,6 @@ static void DrawReplayBadge(void) {
     next = GameQueueSprite(base, RENDER_PRIM_CURSOR_AS(u8), 0x10, 0x10, 0x48,
                            0x10, 0, 0x68, 0x780D);
     g_RenderState.packetCursor = QueueDrawModePrim(base, next, 9);
-}
-
-static void UpdateReplayFade(void) {
-    if (g_FadeStep < 0) {
-        g_FadeLevel += g_FadeStep;
-        if (g_FadeLevel < 0) {
-            g_FadeLevel = 0;
-            g_FadeStep = 0;
-            g_EndingWashLevel = 0;
-        }
-        DrawFullscreenFadeTile(g_FadeLevel, 0x29);
-        return;
-    }
-
-    if (g_SeriesCleared != 0 &&
-        ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount)) {
-        g_EndingWashLevel = ReplayEndingWashLevel(
-            g_SceneTimer, g_ReplayFrameCount);
-    }
-
-    if (g_FadeStep == 0) {
-        if (g_PadPressed & PAD_CONFIRM) {
-            g_FadeStep = 4;
-            StartCdVolumeFade(0x3C);
-        } else if (ShouldStartReplayExitFade(
-                       g_SceneTimer, g_ReplayFrameCount)) {
-            g_FadeStep = 4;
-            if (g_ReplayBufferWrapped == 0) {
-                StartCdVolumeFade(0x3C);
-            }
-        }
-    } else {
-        g_FadeLevel += g_FadeStep;
-        if (g_FadeLevel >= 257) {
-            g_MirrorMode = 0;
-            g_SceneId = g_GrandPrixMode == 0 ? 0x14 : 0x12;
-        }
-    }
-
-    if (g_SeriesCleared != 0) {
-        if (ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount) ||
-            g_FadeLevel != 0) {
-            DrawSeriesClearedWash(g_EndingWashLevel, g_FadeLevel);
-        }
-    } else if (g_FadeLevel != 0) {
-        DrawFullscreenFadeTile(g_FadeLevel, 0x49);
-    }
 }
 
 void UpdateReplayScene(void) {
