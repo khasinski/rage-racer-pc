@@ -7,14 +7,18 @@
  * Each course draws one stretch of itself from a second page of track
  * textures. Says whether `section` is inside that stretch, both by the flag
  * the uploader watches and by the texture-page bit the caller ORs into its
- * primitives.
+ * primitives. This query deliberately does not request a texture upload.
  */
-s32 SelectTrackTexturePage(s32 section) {
-    s32 secondPage = section >= g_TrackTextureSectionLo &&
-                     section < g_TrackTextureSectionHi;
+s32 TrackTexturePageForSection(s32 section) {
+    return section >= g_TrackTextureSectionLo &&
+                   section < g_TrackTextureSectionHi
+               ? 0x100
+               : 0;
+}
 
-    g_TrackTexturePageWanted = secondPage;
-    return secondPage ? 0x100 : 0;
+static void SelectTrackTexturePage(s32 trackSection) {
+    g_TrackTextureTargetRow = TrackTexturePageForSection(trackSection);
+    g_TrackTexturePageWanted = g_TrackTextureTargetRow != 0;
 }
 
 static void SwapTrackTextureRowAt(s32 row) {
@@ -40,7 +44,7 @@ void SwapTrackTexturePageNow(void) {
 }
 
 void SetTrackTexturePageNow(s32 trackSection) {
-    g_TrackTextureTargetRow = SelectTrackTexturePage(trackSection);
+    SelectTrackTexturePage(trackSection);
     g_TrackTextureCursorRow = g_TrackTextureTargetRow;
     SwapTrackTexturePageNow();
 }
@@ -58,7 +62,7 @@ void ResetTrackTextureSwap(void) {
 }
 
 void RequestTrackTexturePage(s32 trackSection) {
-    g_TrackTextureTargetRow = SelectTrackTexturePage(trackSection);
+    SelectTrackTexturePage(trackSection);
 }
 
 void SwapTrackTextureRow(void) {

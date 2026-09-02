@@ -91,22 +91,35 @@ static void DistanceSurvivesLargeSeparations(void) {
 static void SecondTexturePageIsOneRange(void) {
     g_TrackTextureSectionLo = 10;
     g_TrackTextureSectionHi = 20;
+    g_TrackTexturePageWanted = 7;
 
-    Check(SelectTrackTexturePage(9) == 0 && g_TrackTexturePageWanted == 0,
-          "before the stretch");
-    Check(SelectTrackTexturePage(10) == 0x100 && g_TrackTexturePageWanted == 1,
+    Check(TrackTexturePageForSection(9) == 0, "before the stretch");
+    Check(TrackTexturePageForSection(10) == 0x100,
           "first section of the stretch");
-    Check(SelectTrackTexturePage(19) == 0x100 && g_TrackTexturePageWanted == 1,
+    Check(TrackTexturePageForSection(19) == 0x100,
           "last section of the stretch");
-    Check(SelectTrackTexturePage(20) == 0 && g_TrackTexturePageWanted == 0,
+    Check(TrackTexturePageForSection(20) == 0,
           "the upper bound is outside");
-    Check(SelectTrackTexturePage(99) == 0 && g_TrackTexturePageWanted == 0,
-          "past the stretch");
+    Check(TrackTexturePageForSection(99) == 0, "past the stretch");
+    Check(g_TrackTexturePageWanted == 7,
+          "querying a page does not request an upload");
 
     /* A course with no second page at all: the bounds meet. */
     g_TrackTextureSectionHi = g_TrackTextureSectionLo;
-    Check(SelectTrackTexturePage(10) == 0 && g_TrackTexturePageWanted == 0,
+    Check(TrackTexturePageForSection(10) == 0,
           "an empty stretch selects nothing");
+
+    g_TrackTextureSectionHi = 20;
+    RequestTrackTexturePage(10);
+    Check(g_TrackTextureTargetRow == 0x100,
+          "request targets the second texture page");
+    Check(g_TrackTexturePageWanted == 1,
+          "request tells the uploader to use the second page");
+    RequestTrackTexturePage(9);
+    Check(g_TrackTextureTargetRow == 0,
+          "request targets the first texture page");
+    Check(g_TrackTexturePageWanted == 0,
+          "request tells the uploader to use the first page");
 }
 
 static void TextureSwapStateResetsAndSkipsMatchingRows(void) {

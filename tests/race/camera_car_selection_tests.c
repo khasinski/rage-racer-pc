@@ -14,7 +14,7 @@ s32 Random15(void) {
     return s_random;
 }
 
-s32 SelectTrackTexturePage(s32 section) {
+s32 TrackTexturePageForSection(s32 section) {
     return section >= 10 && section < 20 ? 0x100 : 0;
 }
 

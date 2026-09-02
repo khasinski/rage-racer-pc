@@ -24,8 +24,9 @@ static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
     }
 
     candidate = (Random15() & 0x7FFF) % carCount;
-    currentPage = SelectTrackTexturePage(g_Cars[current].trackSection);
-    if (currentPage == SelectTrackTexturePage(g_Cars[candidate].trackSection)) {
+    currentPage = TrackTexturePageForSection(g_Cars[current].trackSection);
+    if (currentPage ==
+        TrackTexturePageForSection(g_Cars[candidate].trackSection)) {
         return candidate;
     }
     return current;
