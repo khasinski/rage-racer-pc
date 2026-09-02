@@ -49,10 +49,9 @@ static void LoadCarSelectSharedAssets(void) {
 
 static void LoadInitialCarSelectModel(void) {
     s32 carIndex = g_PlayerCarIndex;
-    s32 assetIndex = 0xA +
-                     (GetCarAssetIndex(
-                          carIndex,
-                          g_CarTable[carIndex].modelVariant) << 1);
+    s32 variantIndex = GetCarAssetIndex(
+        carIndex, g_CarTable[carIndex].modelVariant);
+    s32 assetIndex = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
 
     if (LoadAsset(assetIndex, g_CarModelBuffer) == 0) {
         return;

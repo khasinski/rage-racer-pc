@@ -41,7 +41,8 @@ static void LoadPlayerCarRaceAssets(void) {
     u8 *audioBody;
 
     GameRenderWorldSetTrackCarAsset(carAsset);
-    if (LoadAsset((carAsset * 2) + 11, g_AssetLoadCursor) == 0) {
+    if (LoadAsset(CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
+                  g_AssetLoadCursor) == 0) {
         return;
     }
 

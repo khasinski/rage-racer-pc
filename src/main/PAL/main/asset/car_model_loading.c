@@ -34,6 +34,7 @@ void RequestUpgradedCarModel(s32 carIndex) {
 
 static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
     s32 targetSlot;
+    s32 variantIndex;
     u8 *destination;
     CarModelAsset *asset;
     s32 assetId;
@@ -42,13 +43,11 @@ static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
         return;
     }
 
-    targetSlot = g_CarModelSlot < 1;
-    destination = g_CarModelBuffer +
-                  (g_CarModelSlot == 0 ? CAR_MODEL_SLOT_SIZE : 0);
-    assetId = 0xA +
-              (GetCarAssetIndex(
-                   carIndex,
-                   g_CarTable[carIndex].modelVariant + gradeOffset) << 1);
+    targetSlot = g_CarModelSlot == 0 ? 1 : 0;
+    destination = g_CarModelBuffer + targetSlot * CAR_MODEL_SLOT_SIZE;
+    variantIndex = GetCarAssetIndex(
+        carIndex, g_CarTable[carIndex].modelVariant + gradeOffset);
+    assetId = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
     if (LoadAsset(assetId, destination) == 0) {
         return;
     }

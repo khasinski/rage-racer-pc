@@ -63,6 +63,9 @@ extern u8 *g_ImageBlockBuffer;
  * the retail path table and cross-checked against the 135-entry RAGE.BIN index
  * on the PAL disc.
  *
+ * CAR_1ST / CAR_2ND: [0x0A] starts the model/image pair for the first car
+ * variant; every following variant occupies the next pair.
+ *
  * ROUND_SCREEN: [0x4A] = "\DATA\GP0.TMS". Six screens per series, the sixth
  * being GP10 / GP11, so LoadGrandPrixScreen wants base + series * 6 + class.
  *
@@ -71,6 +74,8 @@ extern u8 *g_ImageBlockBuffer;
  * both are indexed base + class * 8 + course * 2. Six classes fill [0x57..0x86],
  * which is exactly the end of the table.
  */
+#define ASSET_CAR_1ST_BASE      0x0A
+#define ASSET_CAR_2ND_BASE      0x0B
 #define ASSET_ROUND_SCREEN_BASE 0x4A
 #define ASSET_TIME_ATTACK_ROUND_SCREEN 0x55
 #define ASSET_VOICE_BANK        0x56
@@ -78,9 +83,14 @@ extern u8 *g_ImageBlockBuffer;
 #define ASSET_TRACK_2ND_BASE    0x58
 
 enum {
+    CAR_ASSETS_PER_VARIANT = 2,
     TRACK_ASSETS_PER_CLASS = 8,
     TRACK_ASSETS_PER_COURSE = 2,
 };
+
+static inline s32 CarVariantAssetIndex(s32 base, s32 variantIndex) {
+    return base + variantIndex * CAR_ASSETS_PER_VARIANT;
+}
 
 static inline s32 TrackCourseAssetIndex(s32 base, s32 classIndex,
                                         s32 courseIndex) {
