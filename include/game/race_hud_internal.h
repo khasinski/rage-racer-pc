@@ -4,6 +4,8 @@
 #include "common.h"
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
+void DrawSplitTimes(void);
+void DrawStartCountdown(s32 sceneTimer);
 s32 SplitCurrentTimeVisible(s32 timer, s32 sectorIndex);
 s32 SplitDeltaVisible(s32 timer, s32 sectorIndex, s32 sign,
                       s32 lapCount, s32 playerLap);

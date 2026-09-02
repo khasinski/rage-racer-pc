@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/track_internal.h"
 
 #include <stdio.h>

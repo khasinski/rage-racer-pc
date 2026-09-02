@@ -122,7 +122,6 @@ extern s32 g_ClosestRivalRank;
 /* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
  * "2" / "1" / "GO" dot-matrix board from g_CountdownGlyphTable[1..4] plus the six start
  * lamps. */
-void DrawStartCountdown(s32 sceneTimer);
 void DrawRaceEndBanner(s32 level);
 
 /*
@@ -399,7 +398,6 @@ void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
 void DrawSeriesClearedWash(s32 x, s32 y);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
-void DrawSplitTimes(void);
 void DrawStartGridScenery(s32 timer);
 void DrawTimeRemaining(s32 time);
 void ExitPrologue(void);
@@ -418,12 +416,9 @@ void UpdateFinishCamera(struct PlayerCarRuntime *car);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
 void UpdateRacePosition(void);
 void UpdateReplayCars(void);
-void UpdateRivalCueGate(void);
-void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent);
 void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
-void PlayCountdownCues(s32 timer);
 void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
                       struct GameCarRuntime *rival);
 void ApplyReplayFrameAndTilt(s32 subframe, struct GameCarRuntime *player,

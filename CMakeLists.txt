@@ -416,6 +416,7 @@ if(RAGE_BUILD_PORT)
             src/main/PAL/main/race/race_time_text.c
             src/main/PAL/main/race/start_countdown_timing.c
             src/main/PAL/main/race/draw_split_times.c
+            src/main/PAL/main/race/split_time_display.c
             src/main/PAL/main/render/add_tile_prim.c
             src/main/PAL/main/render/build_sprite_from_desc.c
             src/port/native_game_state.c

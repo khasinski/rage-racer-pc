@@ -8,6 +8,7 @@
 #include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/random.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"

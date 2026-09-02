@@ -4,6 +4,8 @@
 #include "common.h"
 #include "game/menu_types.h"
 
+struct PlayerCarRuntime;
+
 typedef struct PrologueCameraCut {
     s16 timer;
     s16 carIndex;
@@ -30,6 +32,10 @@ s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
 s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared);
 s32 NextReplayReadCursor(s32 cursor, s32 frameCount);
 void UpdateReplayFade(void);
+void PlayCountdownCues(s32 timer);
+void UpdateRivalCueGate(void);
+void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode,
+                      s32 lapEvent);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);
 s32 WrapBgmTrackIndex(s32 track, s32 trackCount);
