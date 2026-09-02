@@ -18,7 +18,6 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
     s32 delta;
-    s32 sectorClosed = 0;
 
     if (lapEvent == 2 || grandPrixMode != 0) {
         return;
@@ -68,32 +67,30 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
 
         g_LastSectorTime = g_SectorTimes[
             (g_SectorIndex + SPLIT_SECTOR_COUNT - 1) % SPLIT_SECTOR_COUNT];
-        sectorClosed = 1;
+        return;
     }
 
-    if (sectorClosed == 0) {
-        if (g_SectorIndex == SPLIT_STATE_WAITING_FOR_LAP && lapEvent != 0) {
-            g_SectorIndex = 0;
-            g_SplitSign = 0;
-            g_SplitTargetTime =
-                g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
-            g_SplitTimer = SPLIT_DISPLAY_FRAMES;
-            g_SplitSector = 0;
-        } else if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
-            if (g_SplitTimer < SPLIT_DISPLAY_FRAMES) {
-                g_SplitTimer++;
-                if (g_SplitTimer == SPLIT_DISPLAY_FRAMES) {
-                    g_SplitTargetTime =
-                        g_RefSectorTimes.values[g_SectorIndex];
-                    g_SplitSign = 0;
-                    g_SplitSector = (u16)g_SectorIndex;
-                }
+    if (g_SectorIndex == SPLIT_STATE_WAITING_FOR_LAP && lapEvent != 0) {
+        g_SectorIndex = 0;
+        g_SplitSign = 0;
+        g_SplitTargetTime =
+            g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
+        g_SplitTimer = SPLIT_DISPLAY_FRAMES;
+        g_SplitSector = 0;
+    } else if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
+        if (g_SplitTimer < SPLIT_DISPLAY_FRAMES) {
+            g_SplitTimer++;
+            if (g_SplitTimer == SPLIT_DISPLAY_FRAMES) {
+                g_SplitTargetTime =
+                    g_RefSectorTimes.values[g_SectorIndex];
+                g_SplitSign = 0;
+                g_SplitSector = (u16)g_SectorIndex;
             }
-        } else {
-            g_SplitSector = 0;
-            g_SplitTimer = 0;
-            g_SplitSign = 0;
-            g_SplitTargetTime = g_RefSectorTimes.values[0];
         }
+    } else {
+        g_SplitSector = 0;
+        g_SplitTimer = 0;
+        g_SplitSign = 0;
+        g_SplitTargetTime = g_RefSectorTimes.values[0];
     }
 }

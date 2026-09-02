@@ -11,7 +11,7 @@ enum {
 };
 
 void DrawSplitTimes(void) {
-    s32 tile;
+    s32 clut;
 
     if (!HudShowLapTimes()) {
         return;
@@ -20,13 +20,13 @@ void DrawSplitTimes(void) {
     if (SplitCurrentTimeVisible(g_SplitTimer, g_SectorIndex)) {
         if (SplitDeltaVisible(g_SplitTimer, g_SectorIndex, g_SplitSign,
                               g_LapCount, g_PlayerCar.lap)) {
-            tile = SplitDeltaClut(g_SplitSign);
-            DrawTimeValue(0x80, 0x50, g_SplitDelta, tile,
+            clut = SplitDeltaClut(g_SplitSign);
+            DrawTimeValue(0x80, 0x50, g_SplitDelta, clut,
                           TIME_DISPLAY_TIMEOUT);
         }
 
-        tile = SplitTimeClut(g_LastSectorTime);
-        DrawTimeValue(HudLeftX(0x12), 0x2A, g_LastSectorTime, tile,
+        clut = SplitTimeClut(g_LastSectorTime);
+        DrawTimeValue(HudLeftX(0x12), 0x2A, g_LastSectorTime, clut,
                       TIME_DISPLAY_TIMEOUT);
     }
 
