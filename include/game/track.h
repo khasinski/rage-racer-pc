@@ -5,6 +5,7 @@
 
 #include "game/vector.h"
 #include "game/player_car_aliases.h"
+#include "game/shuttle_scenery.h"
 #include "game/visibility.h"
 
 union GameEnvColor;
@@ -272,24 +273,6 @@ typedef struct ShuttlePath {
 } ShuttlePath;
 
 extern ShuttlePath g_ShuttlePathPoints[3];
-
-/* State of a shuttling prop: it runs between the two endpoints of its path in
- * g_ShuttlePathPoints, dwells, then reverses. */
-typedef struct GameShuttleScenery {
-    s32 dwellCounter;  /* +0x00 frames waited at the endpoint, capped at g_ShuttlePathDwellMax[path] */
-    s32 reserved04;
-    s32 travelStep;    /* +0x08 progress along the leg, capped at g_ShuttlePathTravelMax[path] */
-    s16 startEndpoint; /* +0x0C which of the path's two endpoints this leg started from */
-    s16 pathIndex;     /* +0x0E path: 0 OVER PASS CITY, 1 and 2 LAKESIDE GATE */
-    Vec4 position;     /* +0x10 interpolated world position; x/z also select the visibility cell */
-    s32 angleX;        /* +0x20 seeded from g_ShuttlePathAngles, never read by the drawer */
-    s32 angleY;        /* +0x24 Y rotation (BuildRotMatrixY) */
-    s32 angleZ;        /* +0x28 Z rotation (BuildRotMatrixZ) */
-    u8 pad2C[8];
-} GameShuttleScenery;
-
-_Static_assert(sizeof(GameShuttleScenery) == 0x34,
-               "GameShuttleScenery must match the retail layout");
 
 /* The two shuttle instances. Instance 1 used to carry eight split symbols of
  * its own, g_Shuttle1DwellCounter..g_Shuttle1AngleZ; they were this array's

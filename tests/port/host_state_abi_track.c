@@ -20,6 +20,16 @@ _Static_assert(sizeof(g_TrackCameras) == sizeof(void *),
                "g_TrackCameras must be one pointer");
 _Static_assert(sizeof(g_TrackArcCenters) == sizeof(void *),
                "g_TrackArcCenters must be one pointer");
+_Static_assert(sizeof(g_MainVisibleCellList) == sizeof(Vec4) * 64,
+               "g_MainVisibleCellList ABI size changed");
+_Static_assert(sizeof(g_MainVisibleCellMask) == sizeof(u32) * 32,
+               "g_MainVisibleCellMask ABI size changed");
+_Static_assert(sizeof(g_CameraCarZ) == sizeof(s32),
+               "g_CameraCarZ must be one coordinate");
+_Static_assert(sizeof(g_CameraCarStepZ) == sizeof(s32),
+               "g_CameraCarStepZ must be one coordinate step");
+_Static_assert(sizeof(g_EnvScriptCursor) == sizeof(void *),
+               "g_EnvScriptCursor must be one pointer");
 _Static_assert(sizeof(g_PathSceneryPosKeys) == sizeof(void *),
                "g_PathSceneryPosKeys must be one pointer");
 _Static_assert(sizeof(g_PathSceneryRotKeys) == sizeof(void *),
@@ -44,6 +54,10 @@ _Static_assert(sizeof(g_RouteSceneryRotZ) == sizeof(s32),
                "g_RouteSceneryRotZ must be one angle");
 _Static_assert(sizeof(g_RouteSceneryPosition) == 16,
                "g_RouteSceneryPosition ABI size changed");
+_Static_assert(sizeof(g_ShuttleScenery) == sizeof(GameShuttleScenery) * 2,
+               "g_ShuttleScenery ABI size changed");
+_Static_assert(sizeof(g_EnvironmentClut) == sizeof(u16) * 16,
+               "g_EnvironmentClut ABI size changed");
 _Static_assert(sizeof(g_PathSceneryTransform) == 24,
                "g_PathSceneryTransform ABI size changed");
 _Static_assert(sizeof(g_PathSceneryRotHalfDelta) == 6,

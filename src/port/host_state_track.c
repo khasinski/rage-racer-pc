@@ -13,6 +13,7 @@
 
 #include "game/vector.h"
 #include "game/environment.h"
+#include "game/shuttle_scenery.h"
 #include <stddef.h>
 
 #include "common.h"
@@ -216,20 +217,20 @@ s32 g_CameraNodeIndex;
 s32 g_CamPathFrame;
 s32 g_CamPathNode;
 s32 g_FogNear;
-unsigned char g_MainVisibleCellList[1024] __attribute__((aligned(16)));
+Vec4 g_MainVisibleCellList[64] __attribute__((aligned(16)));
 s32 g_EnvScriptLength;
 GameTrackCameraNode *g_TrackCameras;
 GameTrackArcCenter *g_TrackArcCenters;
-unsigned char g_MainVisibleCellMask[128] __attribute__((aligned(16)));
+u32 g_MainVisibleCellMask[32] __attribute__((aligned(16)));
 u8 g_EnvScriptEnabled;
 s32 g_EnvScriptClock;
 u16 g_TrackSectionCount;
-unsigned char g_CameraCarZ[28] __attribute__((aligned(16)));
+s32 g_CameraCarZ;
 s32 g_CameraCarTrackPoint;
 s32 g_CameraCarHeading;
 s32 g_CameraCarSpeed;
 s32 g_CameraCarStepX;
-unsigned char g_CameraCarStepZ[128] __attribute__((aligned(16)));
+s32 g_CameraCarStepZ;
 GameEnvironmentColors g_EnvironmentColors __attribute__((aligned(16)));
 s16 g_EnvLerpFrame;
 s16 g_EnvLerpDuration;
@@ -239,7 +240,7 @@ s16 g_EnvSpareFrom;
 s16 g_EnvSpareTo;
 s32 g_IsEnvironmentMode4;
 s32 g_CourseModelCount;
-unsigned char g_EnvScriptCursor[40] __attribute__((aligned(16)));
+GameEnvironmentCue *g_EnvScriptCursor;
 SceneryMotionData *g_RouteSceneryData;
 EnvironmentPalette *g_EnvPaletteTable;
 s32 g_TerrainCellCount;
@@ -269,11 +270,9 @@ s16 g_PathSceneryHalfDelta[3] __attribute__((aligned(16)));
 PathSceneryCursors g_PathSceneryCursors __attribute__((aligned(16)));
 s32 g_PathSceneryVolume;
 s32 g_EnvironmentModePrev;
-/* The symbol map split the two retail 0x34-byte shuttle records after the
- * first 0x0e bytes.  Game code addresses the complete pair through this base. */
-unsigned char g_ShuttleScenery[104] __attribute__((aligned(16)));
+GameShuttleScenery g_ShuttleScenery[2] __attribute__((aligned(16)));
 u16 *g_TerrainCellGrid;
 u32 *g_VisibleCellMask;
 SceneryMotionKeyframe *g_RouteSceneryKeyframe;
-unsigned char g_EnvironmentClut[208] __attribute__((aligned(16)));
+u16 g_EnvironmentClut[16] __attribute__((aligned(16)));
 s32 g_RaceCueFlags;
