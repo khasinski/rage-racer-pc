@@ -19,6 +19,13 @@ extern LaunchSpeedThreshold
 extern s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
 extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 
+enum {
+    CAR_WHEEL_GROUND_OFFSET = 8,
+    CAR_JUMP_RISE_CURVE = 72,
+    CAR_JUMP_FALL_CURVE = 216,
+    CAR_JUMP_CURVE_SCALE = 100,
+};
+
 /* Final per-frame visual/vertical motion pass over the rival car slots. */
 void UpdateRivalBodyMotion(void);
 /* Shared 12-bit wheel phase and high-speed blur flag update. */

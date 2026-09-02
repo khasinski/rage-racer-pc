@@ -438,6 +438,13 @@ typedef enum CarMotionState {
     CAR_MOTION_STANDING_START,
 } CarMotionState;
 
+typedef enum CarVerticalMotionState {
+    CAR_VERTICAL_GROUNDED,
+    CAR_VERTICAL_RISING,
+    CAR_VERTICAL_AT_CREST,
+    CAR_VERTICAL_FALLING,
+} CarVerticalMotionState;
+
 typedef struct CarInputValue {
     s16 value;
 } CarInputValue;

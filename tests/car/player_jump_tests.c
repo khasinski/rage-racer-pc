@@ -59,37 +59,38 @@ int main(void) {
     CHECK(car.y == 123 && car.verticalMotionTimer == 0 && s_kickCalls == 0);
 
     Reset(&car);
-    car.verticalMotionState = 1;
+    car.verticalMotionState = CAR_VERTICAL_RISING;
     car.verticalMotionRate = -20;
     car.y = 100;
     UpdatePlayerJump(&car, 500);
-    CHECK(car.verticalMotionState == 1);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_RISING);
     CHECK(car.verticalMotionTimer == 1 && car.y == 80);
 
     Reset(&car);
-    car.verticalMotionState = 2;
+    car.verticalMotionState = CAR_VERTICAL_AT_CREST;
     car.verticalMotionRate = 10;
     car.verticalTargetY = 100;
     UpdatePlayerJump(&car, 105);
-    CHECK(car.verticalMotionState == 2 && car.y == 100);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_AT_CREST && car.y == 100);
 
     Reset(&car);
-    car.verticalMotionState = 2;
+    car.verticalMotionState = CAR_VERTICAL_AT_CREST;
     car.verticalMotionRate = 10;
     car.verticalTargetY = 100;
     UpdatePlayerJump(&car, 200);
-    CHECK(car.verticalMotionState == 3 && car.verticalMotionRate == 1);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_FALLING &&
+          car.verticalMotionRate == 1);
     CHECK(car.y == 100);
 
     Reset(&car);
-    car.verticalMotionState = 3;
+    car.verticalMotionState = CAR_VERTICAL_FALLING;
     car.verticalMotionRate = 0;
     car.verticalTargetY = 100;
     UpdatePlayerJump(&car, 500);
-    CHECK(car.verticalMotionState == 3 && car.y == 102);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_FALLING && car.y == 102);
 
     Reset(&car);
-    car.verticalMotionState = 3;
+    car.verticalMotionState = CAR_VERTICAL_FALLING;
     car.verticalMotionTimer = 18;
     car.verticalMotionRate = 0;
     car.verticalTargetY = 0;
@@ -102,7 +103,7 @@ int main(void) {
     car.drive.motionState = CAR_MOTION_DRIVING;
     car.drive.engineRpm = 1200;
     UpdatePlayerJump(&car, 100);
-    CHECK(car.verticalMotionState == 0 && car.y == 108);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_GROUNDED && car.y == 108);
     CHECK(car.verticalPitch == 0 && car.verticalRoll == 0);
     CHECK(s_kickCalls == 1 && s_kickMode == 1);
     CHECK(s_soundCalls == 1 && s_soundCue == 0xE);
@@ -113,7 +114,7 @@ int main(void) {
 
     Reset(&car);
     s_spec.gearRatio[2] = 0;
-    car.verticalMotionState = 3;
+    car.verticalMotionState = CAR_VERTICAL_FALLING;
     car.verticalMotionTimer = 2;
     car.verticalTargetY = 0;
     car.speed = 1168;

@@ -55,7 +55,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
 void UpdateCarCrestHop(GameCarRuntime *car) {
     s32 trigger;
 
-    if (car->verticalMotionState != 0) {
+    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         s32 curve = car->verticalMotionTimer * car->verticalMotionTimer / 6;
 
         if (car->verticalPitch >= 0x12C) {
@@ -73,11 +73,11 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         return;
     }
 
-    car->verticalMotionState = 1;
+    car->verticalMotionState = CAR_VERTICAL_RISING;
     if (trigger > 0) {
         car->verticalMotionRate = trigger * car->speed / -4800;
     } else {
-        car->verticalMotionState = 2;
+        car->verticalMotionState = CAR_VERTICAL_AT_CREST;
         car->verticalMotionRate = -trigger;
     }
     car->verticalMotionTimer = 0;

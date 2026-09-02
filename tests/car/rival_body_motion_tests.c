@@ -73,22 +73,22 @@ int main(void) {
     colliding->collisionFlag = 1;
 
     rising = Activate(3);
-    rising->verticalMotionState = 1;
+    rising->verticalMotionState = CAR_VERTICAL_RISING;
     rising->verticalMotionRate = -20;
 
     crest = Activate(4);
-    crest->verticalMotionState = 2;
+    crest->verticalMotionState = CAR_VERTICAL_AT_CREST;
     crest->verticalMotionRate = 10;
     crest->verticalTargetY = 70;
 
     crestHold = Activate(6);
     crestHold->speed = 1400;
-    crestHold->verticalMotionState = 2;
+    crestHold->verticalMotionState = CAR_VERTICAL_AT_CREST;
     crestHold->verticalMotionRate = 10;
     crestHold->verticalTargetY = 83;
 
     falling = Activate(5);
-    falling->verticalMotionState = 3;
+    falling->verticalMotionState = CAR_VERTICAL_FALLING;
     falling->verticalMotionTimer = 10;
     falling->verticalMotionRate = 0;
     falling->verticalTargetY = 80;
@@ -114,20 +114,20 @@ int main(void) {
     CHECK_EQ(s_bodyKick[2], 0);
     CHECK_EQ(s_crestHop[2], 0);
 
-    CHECK_EQ(rising->verticalMotionState, 1);
+    CHECK_EQ(rising->verticalMotionState, CAR_VERTICAL_RISING);
     CHECK_EQ(rising->verticalMotionTimer, 1);
     CHECK_EQ(rising->y, 80);
     CHECK_EQ(s_startKick[3], 0);
 
-    CHECK_EQ(crest->verticalMotionState, 3);
+    CHECK_EQ(crest->verticalMotionState, CAR_VERTICAL_FALLING);
     CHECK_EQ(crest->verticalMotionRate, 1);
     CHECK_EQ(crest->y, 70);
 
-    CHECK_EQ(crestHold->verticalMotionState, 2);
+    CHECK_EQ(crestHold->verticalMotionState, CAR_VERTICAL_AT_CREST);
     CHECK_EQ(crestHold->y, 83);
     CHECK_EQ(crestHold->wheelRotation, 0x249 | 0x1000);
 
-    CHECK_EQ(falling->verticalMotionState, 0);
+    CHECK_EQ(falling->verticalMotionState, CAR_VERTICAL_GROUNDED);
     CHECK_EQ(falling->y, 100);
     CHECK_EQ(falling->verticalPitch, 0);
     CHECK_EQ(falling->verticalRoll, 0);

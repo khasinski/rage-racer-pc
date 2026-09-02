@@ -1,42 +1,38 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 
-enum RivalVerticalMotionState {
-    RIVAL_VERTICAL_RISING = 1,
-    RIVAL_VERTICAL_AT_CREST = 2,
-    RIVAL_VERTICAL_FALLING = 3,
-};
-
 static void UpdateRivalJumpArc(GameCarRuntime *car, s32 ground) {
     s32 tick = (u16)car->verticalMotionTimer + 1;
 
     car->verticalMotionTimer = tick;
-    if (car->verticalMotionState == RIVAL_VERTICAL_RISING) {
+    if (car->verticalMotionState == CAR_VERTICAL_RISING) {
         s32 rise = (s16)tick;
 
-        car->y += car->verticalMotionRate * rise + rise * rise * 72 / 100;
+        car->y += car->verticalMotionRate * rise +
+                  rise * rise * CAR_JUMP_RISE_CURVE / CAR_JUMP_CURVE_SCALE;
         if (car->y >= ground) {
-            car->verticalMotionState = 0;
+            car->verticalMotionState = CAR_VERTICAL_GROUNDED;
         }
-    } else if (car->verticalMotionState == RIVAL_VERTICAL_AT_CREST) {
+    } else if (car->verticalMotionState == CAR_VERTICAL_AT_CREST) {
         if (car->verticalTargetY >= ground - car->verticalMotionRate) {
             car->y = car->verticalTargetY;
         } else {
-            car->verticalMotionState = RIVAL_VERTICAL_FALLING;
+            car->verticalMotionState = CAR_VERTICAL_FALLING;
             car->verticalMotionRate = car->verticalMotionTimer;
             car->y = car->verticalTargetY;
         }
     } else {
         s16 fall = tick - (u16)car->verticalMotionRate;
 
-        car->y = car->verticalTargetY + fall * fall * 216 / 100;
+        car->y = car->verticalTargetY +
+                 fall * fall * CAR_JUMP_FALL_CURVE / CAR_JUMP_CURVE_SCALE;
         if (car->y >= ground) {
-            car->verticalMotionState = 0;
+            car->verticalMotionState = CAR_VERTICAL_GROUNDED;
         }
     }
 
-    if (car->verticalMotionState == 0) {
-        car->y = ground + 8;
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
+        car->y = ground + CAR_WHEEL_GROUND_OFFSET;
         car->verticalPitch = 0;
         car->verticalRoll = 0;
         StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
@@ -54,12 +50,12 @@ void UpdateRivalBodyMotion(void) {
             continue;
         }
 
-        ground = car->y - 8;
+        ground = car->y - CAR_WHEEL_GROUND_OFFSET;
         UpdateCarWheelRotation(car);
         CopyCarBodyRotationToModel(car);
         car->bodyRoll += car->bodyRollVelocity;
         car->modelY = car->y;
-        if (car->verticalMotionState != 0) {
+        if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
             UpdateRivalJumpArc(car, ground);
         }
         if (car->collisionFlag == 0) {
