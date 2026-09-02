@@ -174,6 +174,26 @@ static int CheckRubberBandBranches(void) {
 
     ResetRubberBandState();
     rival = &g_Cars[3];
+    rival->progressA = 0xE00;
+    rival->speed = 0x3E9;
+    UpdateRivalRubberBand();
+    if (rival->accelerationLimit != 980) {
+        printf("exact far boundary did not use near-ahead damping\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    rival = &g_Cars[3];
+    rival->progressA = 0xE01;
+    rival->speed = 0x320;
+    UpdateRivalRubberBand();
+    if (rival->accelerationLimit != 1000) {
+        printf("far-ahead damping ignored its speed threshold\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    rival = &g_Cars[3];
     rival->progressA = 0x601;
     rival->speed = 0x3E9;
     g_RivalCueCooldown3 = 0x12D;
@@ -201,6 +221,14 @@ static int CheckRubberBandBranches(void) {
     UpdateRivalRubberBand();
     if (s_cueCalls != 1 || s_lastCue != 0x2D || !(g_RivalCueFlags & 1)) {
         printf("distant trailing leader cue branch failed\n");
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_Cars[0].progressA = -0x1C00;
+    UpdateRivalRubberBand();
+    if (s_cueCalls != 0) {
+        printf("exact distant trailing boundary played a cue\n");
         return 1;
     }
 

@@ -5,6 +5,25 @@
 #include "game/race.h"
 #include "game/state.h"
 
+enum {
+    RANKED_RIVAL_COUNT = 4,
+    EXTENDED_RUBBER_BAND_COURSE = 3,
+    DEFAULT_NEAR_DISTANCE = 0x600,
+    DEFAULT_FAR_DISTANCE = 0xE00,
+    EXTENDED_NEAR_DISTANCE = 0xC00,
+    EXTENDED_FAR_DISTANCE = 0x1400,
+    FAR_AHEAD_MINIMUM_SPEED = 0x321,
+    NEAR_AHEAD_MINIMUM_SPEED = 0x3E9,
+    FAR_AHEAD_ACCELERATION_PERCENT = 90,
+    NEAR_AHEAD_ACCELERATION_PERCENT = 98,
+    RIVAL_CUE_COOLDOWN = 0x12D,
+    DISTANT_TRAILING_GAP = 0x1C00,
+    NEAR_TRAILING_GAP = 0x7FF,
+    RESET_TRAILING_CUE_GAP = 0x1000,
+    REPEAT_TRAILING_CUE_GAP = 0x800,
+    LEADER_TRAILING_CUE_BIT = 1,
+};
+
 static s16 *RivalCueCooldown(s32 rank) {
     switch (rank) {
     case 0:
@@ -26,23 +45,27 @@ static void PlayEnabledRivalCue(s32 cue) {
 
 static void UpdateTrailingRivalCue(s32 rank, s32 gap, s32 nearCueBit,
                                    s16 *cooldown) {
-    if (rank == 0 && !(g_RivalCueFlags & 1) && gap < -0x1C00) {
+    if (rank == 0 && !(g_RivalCueFlags & LEADER_TRAILING_CUE_BIT) &&
+        gap < -DISTANT_TRAILING_GAP) {
         if (g_RacePosition == 1) {
             PlayEnabledRivalCue(0x2D);
         }
-        g_RivalCueFlags = (g_RivalCueFlags & ~0x10) | 1;
+        g_RivalCueFlags =
+            (g_RivalCueFlags & ~0x10) | LEADER_TRAILING_CUE_BIT;
         return;
     }
 
-    if (gap >= -0x7FF && !(nearCueBit & g_RivalCueFlags)) {
+    if (gap >= -NEAR_TRAILING_GAP &&
+        !(nearCueBit & g_RivalCueFlags)) {
         PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x2F : 0x30);
         g_RivalCueFlags |= nearCueBit;
         return;
     }
 
-    if (gap < -0x1000) {
+    if (gap < -RESET_TRAILING_CUE_GAP) {
         g_RivalCueFlags &= ~nearCueBit;
-    } else if (gap < -0x800 && *cooldown >= 0x12D) {
+    } else if (gap < -REPEAT_TRAILING_CUE_GAP &&
+               *cooldown >= RIVAL_CUE_COOLDOWN) {
         PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x37 : 0x36);
         *cooldown = 0;
     }
@@ -54,21 +77,21 @@ void UpdateRivalRubberBand(void) {
     s32 farDistance;
     s32 rank;
 
-    playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
-    if (SeriesCourseIndex() == 3) {
-        nearDistance = 0xC00;
-        farDistance = 0x1400;
-    } else {
-        nearDistance = 0x600;
-        farDistance = 0xE00;
-    }
-
     if (g_RacePhase >= 4) {
         return;
     }
 
+    playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
+    if (SeriesCourseIndex() == EXTENDED_RUBBER_BAND_COURSE) {
+        nearDistance = EXTENDED_NEAR_DISTANCE;
+        farDistance = EXTENDED_FAR_DISTANCE;
+    } else {
+        nearDistance = DEFAULT_NEAR_DISTANCE;
+        farDistance = DEFAULT_FAR_DISTANCE;
+    }
+
     g_ClosestRivalRank = -1;
-    for (rank = 3; rank >= 0; rank--) {
+    for (rank = RANKED_RIVAL_COUNT - 1; rank >= 0; rank--) {
         GameCarRuntime *rival = g_RankedCars[rank];
         s16 *cooldown = RivalCueCooldown(rank);
         s32 nearCueBit = 0x10 >> rank;
@@ -82,27 +105,26 @@ void UpdateRivalRubberBand(void) {
 
         if (gap >= 0) {
             if (rank == 0) {
-                g_RivalCueFlags &= ~1;
+                g_RivalCueFlags &= ~LEADER_TRAILING_CUE_BIT;
             }
             g_ClosestRivalRank = rank;
             if (farDistance < gap) {
                 g_RivalCueFlags &= ~farCueBit;
-                if (rival->speed >= 0x321) {
+                if (rival->speed >= FAR_AHEAD_MINIMUM_SPEED) {
                     rival->accelerationLimit =
-                        rival->accelerationLimit * 90 / 100;
+                        rival->accelerationLimit *
+                        FAR_AHEAD_ACCELERATION_PERCENT / 100;
                 }
                 return;
             }
             if (nearDistance < gap) {
-                s32 counter;
-
-                if (rival->speed >= 0x3E9) {
+                if (rival->speed >= NEAR_AHEAD_MINIMUM_SPEED) {
                     rival->accelerationLimit =
-                        rival->accelerationLimit * 98 / 100;
+                        rival->accelerationLimit *
+                        NEAR_AHEAD_ACCELERATION_PERCENT / 100;
                 }
-                counter = *cooldown;
                 g_RivalCueFlags |= nearCueBit;
-                if (counter >= 0x12D) {
+                if (*cooldown >= RIVAL_CUE_COOLDOWN) {
                     *cooldown = 0;
                 }
                 return;
