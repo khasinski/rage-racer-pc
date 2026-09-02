@@ -839,9 +839,6 @@ extern SVec g_RaceIntroCameraDelta;
 extern s32 g_RaceIntroCameraTimer;
 extern s32 g_ShiftTargetSpeed;
 extern s32 g_TachoNeedleFlash;
-extern s16 g_TorqueBandStart;
-extern s16 g_TorqueLossBandStart;
-
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
