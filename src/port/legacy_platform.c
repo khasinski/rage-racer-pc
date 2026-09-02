@@ -872,20 +872,6 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
     return output;
 }
 
-void TransformCollisionVector(const int16_t *input, int32_t *output) {
-    SVECTOR vector;
-    VECTOR transformed;
-
-    vector.vx = input[0];
-    vector.vy = input[1];
-    vector.vz = input[2];
-    vector.pad = 0;
-    ApplyRotMatrix(&vector, &transformed);
-    output[0] = transformed.vx;
-    output[1] = transformed.vy;
-    output[2] = transformed.vz;
-}
-
 /* The following adapters keep optional PS1 services non-fatal on the host.
  * Their real filesystem/audio implementations are introduced before those
  * subsystems are enabled in the native startup path. */

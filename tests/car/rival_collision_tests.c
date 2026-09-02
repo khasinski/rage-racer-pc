@@ -66,25 +66,6 @@ static void Record(const char *name, const s32 *values, int count) {
     } while (0)
 
 /*
- * The port's own transform, which is the emulated GTE doing the multiply the
- * console does. Copied here rather than linked because the file it lives in is
- * the whole host platform layer.
- */
-void TransformCollisionVector(const s16 *input, s32 *output) {
-    SVECTOR vector;
-    VECTOR transformed;
-
-    vector.vx = input[0];
-    vector.vy = input[1];
-    vector.vz = input[2];
-    vector.pad = 0;
-    ApplyRotMatrix(&vector, &transformed);
-    output[0] = transformed.vx;
-    output[1] = transformed.vy;
-    output[2] = transformed.vz;
-}
-
-/*
  * The game's own predicate, copied rather than linked because the file it
  * lives in is the whole car orientation module. The clipping cross product is
  * the emulated GTE's, and the arguments are recorded so the digest pins the
@@ -226,6 +207,15 @@ int main(int argc, char **argv) {
         printf("FAIL rival collisions behave differently: %d states making %d "
                "calls digest to %lu, expected %lu\n", steps, s_calls, s_digest,
                expected);
+        return 1;
+    }
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_TrackLength = 0;
+    if (CollideRivalCars(&g_Cars[0], 0) != 0 ||
+        CollideRivalCars(&g_Cars[0], -1) != 0 ||
+        CollideRivalCars(&g_Cars[10], 10) != 0) {
+        puts("FAIL invalid collision search bounds reported a hit");
         return 1;
     }
     printf("rival collisions take the same %d states they always did\n", steps);
