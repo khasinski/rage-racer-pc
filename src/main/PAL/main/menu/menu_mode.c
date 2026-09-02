@@ -6,7 +6,7 @@
 
 
 /* The menu-mode twin of InitTrackLighting. */
-void InitMenuLighting(void) {
+static void InitMenuLighting(void) {
     g_SceneColorMatrix = g_MenuColorMatrix;
     g_SceneLightMatrix = g_MenuLightMatrix;
     SetColorMatrix(&g_SceneColorMatrix);

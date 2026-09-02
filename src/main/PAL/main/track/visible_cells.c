@@ -70,13 +70,13 @@ void DrawCourseObjects(void) {
 }
 
 
-u32 GetCellRegion(s32 x, s32 z) {
+static u32 GetCellRegion(s32 x, s32 z) {
     z = (z * 32) + x;
     return g_TerrainCellGrid[z] >> 10;
 }
 
 
-u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
+static u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
     u32 visibleRegions;
     u32 mask;
 

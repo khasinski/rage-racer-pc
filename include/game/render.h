@@ -155,12 +155,6 @@ extern GameSpriteDesc g_TachoNeedleSprite;
 void BuildSpriteFromDesc(SPRT *prim, GameSpriteDesc *src);
 extern TimedDrawCommand g_MenuRowScript[];
 
-/* Angles are 12 bits throughout: 0x1000 is one full turn, and any angle that
- * has to survive arithmetic is masked back down with ANGLE_MASK. */
-typedef struct GameRenderAxisMatrix {
-    s16 m[3][3];
-} GameRenderAxisMatrix;
-
 /* One display buffer, which is what InitRenderState sets that rectangle to.
  * See render/display_setup.c: the 240 mode is "two 320x240 buffers stacked at
  * y=0 / y=0xF0" and sets the GTE projection with SetGeomScreen(0x140). The
@@ -856,8 +850,6 @@ extern u8 g_WordFontCells[40];
 #define g_WordFontWidth (g_WordFontCells + 2)
 #define g_WordFontAdvance (g_WordFontCells + 3)
 
-void BuildAxisRotMatrix(GameRenderAxisMatrix *out, s32 sinTerm, s32 cosTerm,
-                        s32 axis);
 s32 CdRead2(s32 mode);
 void DecDCTReset(s32 mode);
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color);

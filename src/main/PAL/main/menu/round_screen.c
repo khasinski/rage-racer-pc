@@ -117,7 +117,7 @@ void DrawRoundScreen(void) {
 
 
 /* The BGM row: the selection number and the track title from g_BgmTrackNames. */
-void DrawBgmSelector(void) {
+static void DrawBgmSelector(void) {
     s32 x;
     char buf[88];
     u8 *p;

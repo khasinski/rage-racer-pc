@@ -9,7 +9,7 @@
 
 const char g_NowLoadingText[] = "NOW LOADING";
 /* Blinks the "NOW LOADING" string at g_NowLoadingText. */
-void DrawNowLoadingText(void) {
+static void DrawNowLoadingText(void) {
     if (g_SceneTimer & 8) {
         DrawText8x8(0x74, 0xEC, g_NowLoadingText, 0x78CC);
     }
