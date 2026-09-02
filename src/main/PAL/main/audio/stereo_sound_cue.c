@@ -1,7 +1,12 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
-enum { STEREO_SOUND_CHANNEL_COUNT = 2 };
+enum {
+    STEREO_SOUND_CHANNEL_COUNT = 2,
+    STEREO_SOUND_MODE_COUNT = 4,
+    STEREO_SOUND_GROUP_SIZE = 2,
+    SOUND_MODE_FACTOR_ONE = 128,
+};
 
 static s32 SoundModeChannelCount(const SoundModeEntry *mode) {
     if (mode->count < 0) {
@@ -18,7 +23,9 @@ static int MusicChannelsOnMode(s32 mode) {
 }
 
 static void StopStereoSoundCue(s32 cue) {
-    s32 groupStart = cue < 2 ? 0 : 2;
+    s32 groupStart = cue < STEREO_SOUND_GROUP_SIZE
+                         ? 0
+                         : STEREO_SOUND_GROUP_SIZE;
     s32 i;
 
     if (!MusicChannelsOnMode(groupStart) &&
@@ -42,8 +49,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
 
     if (cue < 0) {
         cue = 0;
-    } else if (cue > 3) {
-        cue = 3;
+    } else if (cue >= STEREO_SOUND_MODE_COUNT) {
+        cue = STEREO_SOUND_MODE_COUNT - 1;
     }
 
     left = ClampCueLevel(left);
@@ -52,6 +59,10 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         StopStereoSoundCue(cue);
         return;
     }
+    if (g_StereoOutput == 0) {
+        left = (left + right) / 2;
+        right = left;
+    }
 
     soundMode = &g_SoundModes[cue];
     state = MusicChannelsOnMode(cue) ? MUSIC_CHANNEL_UPDATE
@@ -59,18 +70,11 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
 
     for (i = 0; i < SoundModeChannelCount(soundMode); i++) {
         MusicChannel *channel = &g_MusicChannels[i];
-        s32 channelLeft = left;
-        s32 channelRight = right;
-
-        if (g_StereoOutput == 0) {
-            channelLeft = (left + right) / 2;
-            channelRight = channelLeft;
-        }
 
         channel->left.value = soundMode->slots[i].left;
         channel->right.value = soundMode->slots[i].right;
         channel->mode = state;
-        channel->volLeft = channelLeft * soundMode->factor / 128;
-        channel->volRight = channelRight * soundMode->factor / 128;
+        channel->volLeft = left * soundMode->factor / SOUND_MODE_FACTOR_ONE;
+        channel->volRight = right * soundMode->factor / SOUND_MODE_FACTOR_ONE;
     }
 }
