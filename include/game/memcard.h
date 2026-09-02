@@ -15,25 +15,6 @@
  * DrawMemoryCardMessage is called with the value minus one. The names come
  * from the retail strings the index reaches through g_McMessageRows, quoted here.
  */
-typedef enum MemoryCardPrompt {
-    MC_PROMPT_INVALID = -1,
-    MC_PROMPT_NONE = 0x00,
-    MC_PROMPT_SELECT_SAVE = 0x01,
-    MC_PROMPT_SELECT_LOAD = 0x02,
-    MC_PROMPT_NO_CARD = 0x03,
-    MC_PROMPT_CARD_FULL = 0x04,
-    MC_PROMPT_NO_DATA = 0x05,
-    MC_PROMPT_NEW_CARD = 0x06,
-    MC_PROMPT_FORMAT_ASK = 0x07,
-    MC_PROMPT_OVERWRITE_ASK = 0x09,
-    MC_PROMPT_ACCESSING = 0x0F,
-    MC_PROMPT_CARD_ERROR = 0x10,
-    MC_PROMPT_LOAD_OK = 0x11,
-    MC_PROMPT_SAVE_OK = 0x12,
-    MC_PROMPT_FORMAT_OK = 0x13,
-    MC_PROMPT_NO_FILE = 0x14
-} MemoryCardPrompt;
-
 enum { MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE };
 
 extern MemoryCardPrompt g_McMenuPhase;
@@ -177,14 +158,6 @@ extern char g_McSlotLabelNoFile[];
 extern char g_McSlotLabels[];
 extern s32 g_McSlotUsedMask;
 extern s32 g_McStatusResult;
-typedef enum MemoryCardStatusState {
-    MC_STATUS_INVALID = -1,
-    MC_STATUS_REQUEST_INFO,
-    MC_STATUS_WAIT_INFO,
-    MC_STATUS_REQUEST_LOAD,
-    MC_STATUS_WAIT_LOAD,
-    MC_STATUS_PUBLISH_RESULT
-} MemoryCardStatusState;
 extern MemoryCardStatusState g_McStatusState;
 extern s32 g_McSwEventError;
 extern s32 g_McSwEventIoe;
