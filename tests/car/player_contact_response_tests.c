@@ -123,6 +123,20 @@ int main(void) {
     ApplyPlayerContactResponse(&car, 1, 0);
     CHECK(s_soundCalls == 0);
 
+    Reset(&car);
+    g_TrackPoints = NULL;
+    car.speed = 81;
+    ApplyPlayerContactResponse(&car, 0, 1);
+    CHECK(car.drive.launchEnergy == 9000);
+    CHECK(car.speed == 78 && car.drive.drivetrainTorque == 9800);
+
+    Reset(&car);
+    g_TrackPointCount = 0;
+    car.speed = 100;
+    ApplyPlayerContactResponse(&car, 1, 0);
+    CHECK(car.drive.launchEnergy == 10000);
+    CHECK(car.speed == 100 && s_soundCalls == 0);
+
     if (s_failures != 0) {
         printf("%d player contact response checks failed\n", s_failures);
         return 1;

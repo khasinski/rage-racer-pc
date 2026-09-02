@@ -1,30 +1,45 @@
 #include "game/audio.h"
+#include "game/angle.h"
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/track_internal.h"
 
+enum {
+    CONTACT_EFFECT_MIN_SPEED = 81,
+    SKID_CUE_MIN_TIMER = 15,
+    STRAIGHT_SLIP_MIN = 768,
+    STRAIGHT_SLIP_SPAN = 257,
+    CUE_LIGHT_SKID = 0xA,
+    CUE_NEAR_SIDE_SKID = 0xB,
+    CUE_FAR_SIDE_SKID = 0xC,
+    CUE_HEAVY_SKID = 0xD,
+};
+
 static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
                               s32 slip) {
     int lightTouch = skid == 1 || skid == 2;
     int nearSide = skid == 1 || skid == 3;
 
-    if (skid < 1 || skid > 4 || (s16)car->motionTimer < 15) {
+    if (skid < 1 || skid > 4 ||
+        (s16)car->motionTimer < SKID_CUE_MIN_TIMER) {
         return;
     }
-    if ((u32)(slip - 768) < 257U) {
+    if ((u32)(slip - STRAIGHT_SLIP_MIN) < STRAIGHT_SLIP_SPAN) {
         if (lightTouch) {
-            PlaySoundCue(0xA);
-        } else if (car->speed >= 81) {
-            PlaySoundCue(0xD);
+            PlaySoundCue(CUE_LIGHT_SKID);
+        } else if (car->speed >= CONTACT_EFFECT_MIN_SPEED) {
+            PlaySoundCue(CUE_HEAVY_SKID);
         }
         return;
     }
     if (nearSide) {
-        PlaySoundCue(g_MirrorMode == 0 ? 0xB : 0xC);
+        PlaySoundCue(g_MirrorMode == 0 ? CUE_NEAR_SIDE_SKID
+                                      : CUE_FAR_SIDE_SKID);
     } else {
-        PlaySoundCue(g_MirrorMode == 0 ? 0xC : 0xB);
+        PlaySoundCue(g_MirrorMode == 0 ? CUE_FAR_SIDE_SKID
+                                      : CUE_NEAR_SIDE_SKID);
     }
 }
 
@@ -41,12 +56,9 @@ void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
         return;
     }
 
-    slip = GetAngleDistance(
-        0xC00 - TrackPoint(car->trackPointIndex)->angle,
-        car->headingAngle);
     if (crash != 0) {
         drive->launchEnergy -= 1000;
-        if (car->speed >= 81) {
+        if (car->speed >= CONTACT_EFFECT_MIN_SPEED) {
             drive->drivetrainTorque = drive->drivetrainTorque * 98 / 100;
             car->speed = car->speed * 97 / 100;
             drive->engineLoad = drive->engineLoad * 95 / 100;
@@ -54,6 +66,14 @@ void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
         }
         return;
     }
+
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+        return;
+    }
+    slip = GetAngleDistance(
+        ANGLE_THREE_QUARTER_TURN -
+            TrackPoint(car->trackPointIndex)->angle,
+        car->headingAngle);
 
     slipSin = rsin(slip);
     drivetrainScale = 85 - slipSin * 20 / 4096;
