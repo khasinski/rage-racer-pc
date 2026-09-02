@@ -1,6 +1,5 @@
+#include "game/car.h"
 #include "game/race.h"
-#include "game/player_car_internal.h"
-#include "game/render.h"
 #include "game/replay_internal.h"
 #include "game/work_buffer.h"
 
@@ -15,60 +14,60 @@ void ResetReplayWriteCursor(void) {
     g_ReplayBufferWrapped = 0;
 }
 
-void StoreReplayCarFrame(s32 pairIndex, const GameRenderSourcePoint *srcA,
-                         const GameRenderSourcePoint *srcB) {
+void StoreReplayCarFrame(s32 pairIndex, const GameCarRuntime *player,
+                         const GameCarRuntime *rival) {
     ReplayGrandPrixFrame *dst;
 
-    g_ReplayPlayerModel.word = g_PlayerCar.modelIndex;
-    g_ReplayRivalModel.word = srcB->modelIndex;
+    g_ReplayPlayerModel.word = player->modelIndex;
+    g_ReplayRivalModel.word = rival->modelIndex;
     if (pairIndex & 1) {
         return;
     }
 
     pairIndex >>= 1;
     dst = &g_ReplayFramesGp[pairIndex];
-    dst->x0 = srcA->x;
-    dst->y0 = srcA->y;
-    dst->z0 = srcA->z;
-    dst->modelY0 = srcA->modelY;
-    dst->bodyPitch0 = srcA->bodyPitch;
-    dst->bodyYaw0 = srcA->bodyYaw;
-    dst->bodyRoll0 = srcA->bodyRoll;
-    dst->wheelRotation0 = srcA->wheelRotation;
-    dst->steeringAngle0 = srcA->steeringAngle;
-    dst->x1 = srcB->x;
-    dst->y1 = srcB->y;
-    dst->z1 = srcB->z;
-    dst->modelY1 = srcB->modelY;
-    dst->bodyPitch1 = srcB->bodyPitch;
-    dst->bodyYaw1 = srcB->bodyYaw;
-    dst->bodyRoll1 = srcB->bodyRoll;
-    dst->wheelRotation1 = srcB->wheelRotation;
-    dst->steeringAngle1 = srcB->steeringAngle;
-    dst->trackPointIndex0 = srcA->trackPointIndex;
-    dst->trackPointIndex1 = srcB->trackPointIndex;
-    dst->tiltCounter = srcA->tiltCounter;
+    dst->x0 = player->x;
+    dst->y0 = player->y;
+    dst->z0 = player->z;
+    dst->modelY0 = player->modelY;
+    dst->bodyPitch0 = player->bodyPitch;
+    dst->bodyYaw0 = player->bodyYaw;
+    dst->bodyRoll0 = player->bodyRoll;
+    dst->wheelRotation0 = player->wheelRotation;
+    dst->steeringAngle0 = player->steeringAngle;
+    dst->x1 = rival->x;
+    dst->y1 = rival->y;
+    dst->z1 = rival->z;
+    dst->modelY1 = rival->modelY;
+    dst->bodyPitch1 = rival->bodyPitch;
+    dst->bodyYaw1 = rival->bodyYaw;
+    dst->bodyRoll1 = rival->bodyRoll;
+    dst->wheelRotation1 = rival->wheelRotation;
+    dst->steeringAngle1 = rival->steeringAngle;
+    dst->trackPointIndex0 = player->trackPointIndex;
+    dst->trackPointIndex1 = rival->trackPointIndex;
+    dst->tiltCounter = player->tiltCounter;
 }
 
-void StoreReplayTimeAttackFrame(s32 pointIndex, const GameRenderSourcePoint *srcPtr) {
+void StoreReplayTimeAttackFrame(s32 pointIndex, const GameCarRuntime *player) {
     ReplayTimeAttackFrame *dst;
 
-    g_ReplayPlayerModel.word = g_PlayerCar.modelIndex;
+    g_ReplayPlayerModel.word = player->modelIndex;
     if (pointIndex % 2) {
         return;
     }
 
     pointIndex >>= 1;
     dst = &g_ReplayFramesTimeAttack[pointIndex];
-    dst->x = srcPtr->x;
-    dst->y = srcPtr->y;
-    dst->z = srcPtr->z;
-    dst->modelY = srcPtr->modelY;
-    dst->bodyPitch = srcPtr->bodyPitch;
-    dst->bodyYaw = srcPtr->bodyYaw;
-    dst->bodyRoll = srcPtr->bodyRoll;
-    dst->wheelRotation = srcPtr->wheelRotation;
-    dst->steeringAngle = srcPtr->steeringAngle;
-    dst->trackPointIndex = srcPtr->trackPointIndex;
-    dst->tiltCounter = srcPtr->tiltCounter;
+    dst->x = player->x;
+    dst->y = player->y;
+    dst->z = player->z;
+    dst->modelY = player->modelY;
+    dst->bodyPitch = player->bodyPitch;
+    dst->bodyYaw = player->bodyYaw;
+    dst->bodyRoll = player->bodyRoll;
+    dst->wheelRotation = player->wheelRotation;
+    dst->steeringAngle = player->steeringAngle;
+    dst->trackPointIndex = player->trackPointIndex;
+    dst->tiltCounter = player->tiltCounter;
 }

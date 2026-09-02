@@ -36,6 +36,25 @@ endif()
 add_test(NAME replay_playback COMMAND replay_playback_tests)
 set_tests_properties(replay_playback PROPERTIES LABELS unit)
 
+add_executable(replay_recording_tests
+    replay_recording_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_recording.c)
+target_include_directories(replay_recording_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(replay_recording_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(replay_recording_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(replay_recording_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME replay_recording COMMAND replay_recording_tests)
+set_tests_properties(replay_recording PROPERTIES LABELS unit)
+
 add_executable(start_countdown_timing_tests
     start_countdown_timing_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/start_countdown_timing.c)

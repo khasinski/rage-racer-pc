@@ -8,14 +8,10 @@
 #include "game/track_internal.h"
 
 void RecordReplayFrame(void) {
-    const GameRenderSourcePoint *player =
-        (const GameRenderSourcePoint *)(const void *)&g_PlayerCar;
+    const GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
 
     if (g_GrandPrixMode != 0) {
-        const GameRenderSourcePoint *rival =
-            (const GameRenderSourcePoint *)(const void *)g_Cars;
-
-        StoreReplayCarFrame(g_ReplayWriteCursor, player, rival);
+        StoreReplayCarFrame(g_ReplayWriteCursor, player, &g_Cars[0]);
     } else {
         StoreReplayTimeAttackFrame(g_ReplayWriteCursor, player);
     }

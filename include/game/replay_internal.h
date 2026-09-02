@@ -4,7 +4,7 @@
 #include "common.h"
 #include "game/replay.h"
 
-struct GameRenderSourcePoint;
+struct GameCarRuntime;
 
 typedef union ReplayModelValue {
     s32 word;
@@ -19,8 +19,9 @@ extern s32 g_ReplayBufferWrapped;
 extern ReplayModelValue g_ReplayPlayerModel;
 extern ReplayModelValue g_ReplayRivalModel;
 
-void StoreReplayCarFrame(s32 pairIndex, const struct GameRenderSourcePoint *srcA,
-                         const struct GameRenderSourcePoint *srcB);
-void StoreReplayTimeAttackFrame(s32 pointIndex, const struct GameRenderSourcePoint *src);
+void StoreReplayCarFrame(s32 pairIndex, const struct GameCarRuntime *player,
+                         const struct GameCarRuntime *rival);
+void StoreReplayTimeAttackFrame(s32 pointIndex,
+                                const struct GameCarRuntime *player);
 
 #endif
