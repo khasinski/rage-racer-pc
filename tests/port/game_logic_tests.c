@@ -75,8 +75,11 @@ static void test_angle_math(void) {
     EXPECT_EQ(1, GetAngleDelta(0xFFF, 0));
     EXPECT_EQ(-1, GetAngleDelta(0, 0xFFF));
     EXPECT_EQ(0x800, GetAngleDelta(0, 0x800));
+    EXPECT_EQ(-0x800, GetAngleDelta(0x800, 0));
     EXPECT_EQ(0x7FF, GetAngleDelta(0x801, 0));
     EXPECT_EQ(-1, GetAngleDelta(0x1000, -1));
+    EXPECT_EQ(0x123, GetAngleDelta(0xF00, 0x023));
+    EXPECT_EQ(-0x123, GetAngleDelta(0x023, 0xF00));
 }
 
 static void test_angle_blending(void) {
