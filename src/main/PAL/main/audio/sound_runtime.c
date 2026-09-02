@@ -4,6 +4,14 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
+enum {
+    FIRST_SOUND_SLOT_VOICE = 14,
+};
+
+void StopSoundSlotVoice(s32 slot) {
+    SsUtKeyOffV((s16)(slot + FIRST_SOUND_SLOT_VOICE));
+}
+
 void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
     s32 *entry = &g_EngineSoundState.slotActive[slot];
 

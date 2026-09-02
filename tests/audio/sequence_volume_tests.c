@@ -5,11 +5,19 @@
 #include <stdio.h>
 
 s32 g_SeqVolumeSetting;
+SequenceHandle g_SeqHandle;
+s32 g_SeqVolume;
 
 static s32 s_appliedVolume;
+static s32 s_outputLeft;
+static s32 s_outputRight;
 static s32 s_failures;
 
-void SetSequenceVolume(s32 volume) { s_appliedVolume = volume; }
+void SsSeqSetVol(short sequence, short left, short right) {
+    (void)sequence;
+    s_outputLeft = left;
+    s_outputRight = right;
+}
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -18,19 +26,29 @@ static void Check(s32 condition, const char *label) {
     }
 }
 
+static void CheckAppliedVolume(s32 expected, const char *label) {
+    s_appliedVolume = g_SeqVolume;
+    Check(s_appliedVolume == expected && s_outputLeft == expected &&
+              s_outputRight == expected,
+          label);
+}
+
 int main(void) {
     g_SeqVolumeSetting = 5;
     RefreshSequenceVolumeScale();
-    Check(g_SeqVolumeSetting == 5 && s_appliedVolume == 38,
-          "refresh reapplies the stored setting without changing it");
+    Check(g_SeqVolumeSetting == 5,
+          "refresh preserves the stored sequence setting");
+    CheckAppliedVolume(38, "refresh applies volume to state and sequence");
 
     SetSequenceVolumeScale(7);
-    Check(g_SeqVolumeSetting == 7 && s_appliedVolume == 53,
-          "setter stores and applies an intermediate setting");
+    Check(g_SeqVolumeSetting == 7,
+          "setter stores an intermediate sequence setting");
+    CheckAppliedVolume(53, "setter applies intermediate sequence volume");
 
     SetSequenceVolumeScale(AUDIO_SETTING_MAX);
-    Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX && s_appliedVolume == 114,
-          "maximum setting maps to the sequence volume maximum");
+    Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX,
+          "setter stores the maximum sequence setting");
+    CheckAppliedVolume(114, "maximum setting maps to sequence volume maximum");
 
     if (s_failures != 0) return 1;
     puts("sequence volume refresh and setter share the same scale");
