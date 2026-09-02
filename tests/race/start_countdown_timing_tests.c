@@ -51,5 +51,11 @@ int main(void) {
     row = BuildStartCountdownRow(1, 5, 2, glyphs, first);
     if (row.pattern != 0x0F0F0F0F) return 1;
     row = BuildStartCountdownRow(1, 6, 2, glyphs, first);
-    return row.pattern != ~UINT32_C(0x00FF00FF);
+    if (row.pattern != ~UINT32_C(0x00FF00FF)) return 1;
+
+    if (AdvanceStartCountdownBoard(0, -64) != 0) return 1;
+    if (AdvanceStartCountdownBoard(4, -64) != 0) return 1;
+    if (AdvanceStartCountdownBoard(-1, 0) != -16) return 1;
+    if (AdvanceStartCountdownBoard(-1, -224) != -240) return 1;
+    return AdvanceStartCountdownBoard(-1, -240) != -240;
 }

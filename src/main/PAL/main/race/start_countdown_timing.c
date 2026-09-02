@@ -47,3 +47,12 @@ StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
     }
     return result;
 }
+
+s32 AdvanceStartCountdownBoard(s32 phase, s32 currentOffset) {
+    if (phase >= 0) {
+        return 0;
+    }
+
+    currentOffset -= 16;
+    return currentOffset < -240 ? -240 : currentOffset;
+}

@@ -47,14 +47,8 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    if (phase < 0) {
-        g_CountdownBoardOffset -= 16;
-        if (g_CountdownBoardOffset < -240) {
-            g_CountdownBoardOffset = -240;
-        }
-    } else {
-        g_CountdownBoardOffset = 0;
-    }
+    g_CountdownBoardOffset =
+        AdvanceStartCountdownBoard(phase, g_CountdownBoardOffset);
 
     cursor = RENDER_PRIM_CURSOR_AS(u8);
     backdrop = QueueDrawModePrim(

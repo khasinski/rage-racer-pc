@@ -20,6 +20,7 @@ StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
                                          s32 wipeHalfStep,
                                          const u32 *glyphPatterns,
                                          const u32 *firstPattern);
+s32 AdvanceStartCountdownBoard(s32 phase, s32 currentOffset);
 
 typedef struct RaceOptionMarqueeState {
     s32 firstScroll;
