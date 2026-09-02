@@ -110,9 +110,6 @@ extern unsigned char g_FmtCarName[8];
 extern unsigned char g_CaptionTotalTime2[8];
 extern unsigned char g_NameEntryCharset[96];
 extern unsigned char g_TextNowLoading[436];
-extern unsigned char g_MsgCdReadSectorError[24];
-extern unsigned char g_MsgCdReadShellOpen[24];
-extern unsigned char g_MsgCdReadRetry[444];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
 extern unsigned char g_MsgSoundError[16];
@@ -145,45 +142,6 @@ extern unsigned char g_MsgSeqVabTransBodyError[44];
 extern unsigned char g_FmtString[8];
 extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
-extern unsigned char g_MsgCdTrackRange[16];
-extern unsigned char g_MsgCdGetToc2Entry[28];
-extern unsigned char g_MsgCdGetToc2Error[20];
-extern unsigned char g_MsgCdInitFailed[24];
-extern unsigned char g_MsgCdNone[324];
-extern unsigned char g_MsgCdTimeout[16];
-extern unsigned char g_FmtCdTimeoutState[28];
-extern unsigned char g_MsgCdDiskError[12];
-extern unsigned char g_MsgCdErrorCommandCode[28];
-extern unsigned char g_MsgCdUnknownIntr[20];
-extern unsigned char g_MsgCdUnknownIntrCode[32];
-extern unsigned char g_MsgCdSyncName[8];
-extern unsigned char g_MsgCdReadyName[12];
-extern unsigned char g_FmtCdCommand[8];
-extern unsigned char g_FmtCdNoParam[16];
-extern unsigned char g_CdAlarmNameCw[60];
-extern unsigned char g_MsgCdInit[12];
-extern unsigned char g_MsgCdInitAddr[12];
-extern unsigned char g_MsgCdDataSync[12];
-extern unsigned char g_FmtCdPathLevelError[28];
-extern unsigned char g_FmtCdDirNotFound[24];
-extern unsigned char g_MsgCdDiscError[28];
-extern unsigned char g_FmtCdSearching[32];
-extern unsigned char g_FmtCdFileFound[12];
-extern unsigned char g_FmtCdFileNotFound[16];
-extern unsigned char g_MsgCdPvdReadError[44];
-extern unsigned char g_CdVolumeSignature[8];
-extern unsigned char g_MsgCdPvdFormatError[48];
-extern unsigned char g_MsgCdPathTableReadError[36];
-extern unsigned char g_MsgCdSearchingDir[32];
-extern unsigned char g_FmtCdPathEntry[20];
-extern unsigned char g_MsgCdDirEntriesFound[36];
-extern unsigned char g_MsgCdDirNotFound[32];
-extern unsigned char g_MsgCdSearchingFiles[28];
-extern unsigned char g_CdDotName[8];
-extern unsigned char g_CdDotDotNameNul[8];
-extern unsigned char g_FmtCdFileEntry[28];
-extern unsigned char g_MsgCdFilesFound[32];
-extern unsigned char g_MsgDmaStatusError[24];
 extern unsigned char g_MsgVSyncTimeout[68];
 extern unsigned char g_MsgUnexpectedInterrupt[28];
 extern unsigned char g_MsgIntrTimeout[28];
@@ -242,18 +200,6 @@ extern unsigned char g_ClassRecordCellSprites[132];
 extern unsigned char g_ClassRecordNameSprites[36];
 extern unsigned char g_BgmSelectSteps[20];
 extern unsigned char g_AttractTitleDelays[8];
-extern unsigned char g_CdReadCallback[8];
-extern unsigned char g_CdReadSectorCount[8];
-extern unsigned char g_CdReadBuffer[8];
-extern unsigned char g_CdReadPtr[8];
-extern unsigned char g_CdReadMode[8];
-extern unsigned char g_CdReadSectorWords[8];
-extern unsigned char g_CdReadRemaining[8];
-extern unsigned char g_CdReadLastVSync[8];
-extern unsigned char g_CdReadStartVSync[8];
-extern unsigned char g_CdReadExpectedSector[8];
-extern unsigned char g_CdReadSavedSyncCallback[8];
-extern unsigned char g_CdReadSavedReadyCallback[8];
 extern unsigned char g_SpriteFontCells[192];
 extern unsigned char g_SpriteFontWidth[288];
 extern int32_t g_RoadGrade;
@@ -347,42 +293,6 @@ extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
-extern unsigned char g_CdCommandNeedsSetloc[128];
-extern unsigned char g_CdSyncCallback[8];
-extern unsigned char g_CdReadyCallback[8];
-extern unsigned char g_CdDebugLevel[8];
-extern unsigned char g_CdStatusByte[8];
-extern unsigned char g_CdErrorByte[8];
-extern unsigned char g_CdShellOpenCount[8];
-extern unsigned char g_CdLastPos[8];
-extern unsigned char g_CdModeByte[8];
-extern unsigned char g_CdLastCommand[8];
-extern unsigned char g_CdCommandNames[128];
-extern unsigned char g_CdIntrNames[32];
-extern unsigned char g_CdCommandHasComplete[128];
-extern unsigned char g_CdCommandClearsReady[128];
-extern unsigned char g_CdCommandAckHasStatus[128];
-extern unsigned char g_CdCommandParamCount[100];
-extern unsigned char g_CdTestParamCount[28];
-extern unsigned char g_CdReg0[8];
-extern unsigned char g_CdReg1[8];
-extern unsigned char g_CdReg2[8];
-extern unsigned char g_CdReg3[8];
-extern unsigned char g_ComDelayReg[8];
-extern unsigned char g_CdSpuRegs[8];
-extern unsigned char g_CdSyncStatus[8];
-extern unsigned char g_CdDataEndStatus[8];
-extern unsigned char g_CdDebugInfo[24];
-extern unsigned char g_CdromDelayReg[8];
-extern unsigned char g_CdDpcr[8];
-extern unsigned char g_CdDmaMadr[8];
-extern unsigned char g_CdDmaBcr[8];
-extern unsigned char g_CdDmaChcr[8];
-extern unsigned char g_CdCachedDir[8];
-extern unsigned char g_CdCachedShellOpenCount[20];
-extern unsigned char g_DmaDpcr[8];
-extern unsigned char g_DmaDicr[8];
-extern unsigned char g_CdDmaControl[24];
 extern unsigned char g_VSyncGpuStat[8];
 extern unsigned char g_Timer1CountReg[8];
 extern unsigned char g_VSyncTimerBase[8];
@@ -518,9 +428,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CaptionTotalTime2", g_CaptionTotalTime2, 8},
     {"g_NameEntryCharset", g_NameEntryCharset, 96},
     {"g_TextNowLoading", g_TextNowLoading, 436},
-    {"g_MsgCdReadSectorError", g_MsgCdReadSectorError, 24},
-    {"g_MsgCdReadShellOpen", g_MsgCdReadShellOpen, 24},
-    {"g_MsgCdReadRetry", g_MsgCdReadRetry, 444},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
     {"g_MsgSoundError", g_MsgSoundError, 16},
@@ -553,45 +460,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtString", g_FmtString, 8},
     {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
-    {"g_MsgCdTrackRange", g_MsgCdTrackRange, 16},
-    {"g_MsgCdGetToc2Entry", g_MsgCdGetToc2Entry, 28},
-    {"g_MsgCdGetToc2Error", g_MsgCdGetToc2Error, 20},
-    {"g_MsgCdInitFailed", g_MsgCdInitFailed, 24},
-    {"g_MsgCdNone", g_MsgCdNone, 324},
-    {"g_MsgCdTimeout", g_MsgCdTimeout, 16},
-    {"g_FmtCdTimeoutState", g_FmtCdTimeoutState, 28},
-    {"g_MsgCdDiskError", g_MsgCdDiskError, 12},
-    {"g_MsgCdErrorCommandCode", g_MsgCdErrorCommandCode, 28},
-    {"g_MsgCdUnknownIntr", g_MsgCdUnknownIntr, 20},
-    {"g_MsgCdUnknownIntrCode", g_MsgCdUnknownIntrCode, 32},
-    {"g_MsgCdSyncName", g_MsgCdSyncName, 8},
-    {"g_MsgCdReadyName", g_MsgCdReadyName, 12},
-    {"g_FmtCdCommand", g_FmtCdCommand, 8},
-    {"g_FmtCdNoParam", g_FmtCdNoParam, 16},
-    {"g_CdAlarmNameCw", g_CdAlarmNameCw, 60},
-    {"g_MsgCdInit", g_MsgCdInit, 12},
-    {"g_MsgCdInitAddr", g_MsgCdInitAddr, 12},
-    {"g_MsgCdDataSync", g_MsgCdDataSync, 12},
-    {"g_FmtCdPathLevelError", g_FmtCdPathLevelError, 28},
-    {"g_FmtCdDirNotFound", g_FmtCdDirNotFound, 24},
-    {"g_MsgCdDiscError", g_MsgCdDiscError, 28},
-    {"g_FmtCdSearching", g_FmtCdSearching, 32},
-    {"g_FmtCdFileFound", g_FmtCdFileFound, 12},
-    {"g_FmtCdFileNotFound", g_FmtCdFileNotFound, 16},
-    {"g_MsgCdPvdReadError", g_MsgCdPvdReadError, 44},
-    {"g_CdVolumeSignature", g_CdVolumeSignature, 8},
-    {"g_MsgCdPvdFormatError", g_MsgCdPvdFormatError, 48},
-    {"g_MsgCdPathTableReadError", g_MsgCdPathTableReadError, 36},
-    {"g_MsgCdSearchingDir", g_MsgCdSearchingDir, 32},
-    {"g_FmtCdPathEntry", g_FmtCdPathEntry, 20},
-    {"g_MsgCdDirEntriesFound", g_MsgCdDirEntriesFound, 36},
-    {"g_MsgCdDirNotFound", g_MsgCdDirNotFound, 32},
-    {"g_MsgCdSearchingFiles", g_MsgCdSearchingFiles, 28},
-    {"g_CdDotName", g_CdDotName, 8},
-    {"g_CdDotDotNameNul", g_CdDotDotNameNul, 8},
-    {"g_FmtCdFileEntry", g_FmtCdFileEntry, 28},
-    {"g_MsgCdFilesFound", g_MsgCdFilesFound, 32},
-    {"g_MsgDmaStatusError", g_MsgDmaStatusError, 24},
     {"g_MsgVSyncTimeout", g_MsgVSyncTimeout, 68},
     {"g_MsgUnexpectedInterrupt", g_MsgUnexpectedInterrupt, 28},
     {"g_MsgIntrTimeout", g_MsgIntrTimeout, 28},
@@ -650,18 +518,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_ClassRecordNameSprites", g_ClassRecordNameSprites, 36},
     {"g_BgmSelectSteps", g_BgmSelectSteps, 20},
     {"g_AttractTitleDelays", g_AttractTitleDelays, 8},
-    {"g_CdReadCallback", g_CdReadCallback, 8},
-    {"g_CdReadSectorCount", g_CdReadSectorCount, 8},
-    {"g_CdReadBuffer", g_CdReadBuffer, 8},
-    {"g_CdReadPtr", g_CdReadPtr, 8},
-    {"g_CdReadMode", g_CdReadMode, 8},
-    {"g_CdReadSectorWords", g_CdReadSectorWords, 8},
-    {"g_CdReadRemaining", g_CdReadRemaining, 8},
-    {"g_CdReadLastVSync", g_CdReadLastVSync, 8},
-    {"g_CdReadStartVSync", g_CdReadStartVSync, 8},
-    {"g_CdReadExpectedSector", g_CdReadExpectedSector, 8},
-    {"g_CdReadSavedSyncCallback", g_CdReadSavedSyncCallback, 8},
-    {"g_CdReadSavedReadyCallback", g_CdReadSavedReadyCallback, 8},
     {"g_SpriteFontCells", g_SpriteFontCells, 192},
     {"g_SpriteFontWidth", g_SpriteFontWidth, 288},
     {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
@@ -754,42 +610,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},
-    {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
-    {"g_CdSyncCallback", g_CdSyncCallback, 8},
-    {"g_CdReadyCallback", g_CdReadyCallback, 8},
-    {"g_CdDebugLevel", g_CdDebugLevel, 8},
-    {"g_CdStatusByte", g_CdStatusByte, 8},
-    {"g_CdErrorByte", g_CdErrorByte, 8},
-    {"g_CdShellOpenCount", g_CdShellOpenCount, 8},
-    {"g_CdLastPos", g_CdLastPos, 8},
-    {"g_CdModeByte", g_CdModeByte, 8},
-    {"g_CdLastCommand", g_CdLastCommand, 8},
-    {"g_CdCommandNames", g_CdCommandNames, 128},
-    {"g_CdIntrNames", g_CdIntrNames, 32},
-    {"g_CdCommandHasComplete", g_CdCommandHasComplete, 128},
-    {"g_CdCommandClearsReady", g_CdCommandClearsReady, 128},
-    {"g_CdCommandAckHasStatus", g_CdCommandAckHasStatus, 128},
-    {"g_CdCommandParamCount", g_CdCommandParamCount, 100},
-    {"g_CdTestParamCount", g_CdTestParamCount, 28},
-    {"g_CdReg0", g_CdReg0, 8},
-    {"g_CdReg1", g_CdReg1, 8},
-    {"g_CdReg2", g_CdReg2, 8},
-    {"g_CdReg3", g_CdReg3, 8},
-    {"g_ComDelayReg", g_ComDelayReg, 8},
-    {"g_CdSpuRegs", g_CdSpuRegs, 8},
-    {"g_CdSyncStatus", g_CdSyncStatus, 8},
-    {"g_CdDataEndStatus", g_CdDataEndStatus, 8},
-    {"g_CdDebugInfo", g_CdDebugInfo, 24},
-    {"g_CdromDelayReg", g_CdromDelayReg, 8},
-    {"g_CdDpcr", g_CdDpcr, 8},
-    {"g_CdDmaMadr", g_CdDmaMadr, 8},
-    {"g_CdDmaBcr", g_CdDmaBcr, 8},
-    {"g_CdDmaChcr", g_CdDmaChcr, 8},
-    {"g_CdCachedDir", g_CdCachedDir, 8},
-    {"g_CdCachedShellOpenCount", g_CdCachedShellOpenCount, 20},
-    {"g_DmaDpcr", g_DmaDpcr, 8},
-    {"g_DmaDicr", g_DmaDicr, 8},
-    {"g_CdDmaControl", g_CdDmaControl, 24},
     {"g_VSyncGpuStat", g_VSyncGpuStat, 8},
     {"g_Timer1CountReg", g_Timer1CountReg, 8},
     {"g_VSyncTimerBase", g_VSyncTimerBase, 8},
@@ -872,7 +692,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 9607230UL;
+    const unsigned long expected = 4217244247UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

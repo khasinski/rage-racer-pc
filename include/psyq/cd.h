@@ -111,52 +111,8 @@ long CD_sync(long mode, u_char *result);
 long CD_ready(long mode, u_char *result);
 long CD_cw(u_char command, u_char *params, u_char *result, long async);
 
-/* Declared identically by 65 translation units before this
- * header carried them. */
-
-extern long g_CdCachedDir;
-extern long g_CdDebugLevel;
-extern volatile u_long *g_CdDmaChcr;
-extern u_char g_CdLastCommand;
-extern u_char g_CdModeByte;
-extern volatile long g_CdReadBuffer;
-extern volatile long g_CdReadMode;
-extern volatile long g_CdReadSavedReadyCallback;
-extern volatile long g_CdReadSavedSyncCallback;
-extern volatile long g_CdReadSectorCount;
-extern volatile long g_CdReadSectorWords;
-extern volatile long g_CdReadStartVSync;
-extern volatile u_char *g_CdReg0;
-extern volatile u_char *g_CdReg1;
-extern volatile u_char *g_CdReg2;
-extern volatile u_char *g_CdReg3;
-extern long g_CdTimeoutCounter;
-
 long CdReadInterruptStatus(void);
 void MDEC_in(volatile u_long* buf, long words);
-
-/* Declared identically by 54 translation units before this
- * header carried them. */
-
-extern long g_CdCachedShellOpenCount;
-extern u_long g_CdCommandAckHasStatus[];
-extern long g_CdCommandClearsReady[];
-extern u_long g_CdCommandHasComplete[];
-extern long g_CdCommandNeedsSetloc[];
-extern long g_CdCommandParamCount[];
-extern volatile u_char g_CdDataEndStatus;
-extern void *g_CdDebugInfo[];
-extern CdSearchDirEntry g_CdDirEntryName[];
-extern volatile u_long *g_CdDmaBcr;
-extern volatile u32 *g_CdDmaControl;
-extern volatile u_long *g_CdDmaMadr;
-extern volatile u_long *g_CdDpcr;
-extern volatile long g_CdReadExpectedSector;
-extern volatile long g_CdReadLastVSync;
-extern volatile long g_CdReadPtr;
-extern volatile long g_CdReadRemaining;
-extern CdRegisterMap *volatile g_CdSpuRegs;
-extern volatile u_long *g_CdromDelayReg;
 
 void CD_dmastart(
     s32 channel,
