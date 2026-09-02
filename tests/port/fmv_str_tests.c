@@ -30,6 +30,9 @@ static void MakeChunk(unsigned char *sector, unsigned int chunk,
     WriteLe16(body + 16, width);
     WriteLe16(body + 18, height);
     memset(body + STR_PAYLOAD_OFFSET, payload, HOST_FMV_PAYLOAD_SIZE);
+    if (chunk == 0) {
+        WriteLe16(body + STR_PAYLOAD_OFFSET, 1);
+    }
 }
 
 #define CHECK(condition)                                                       \
@@ -57,7 +60,7 @@ static int TestAssemblyAndResync(void) {
     CHECK(cursor == 4);
     CHECK(frame.bitstreamSize == sizeof(bitstream));
     CHECK(frame.width == 320 && frame.height == 192);
-    CHECK(bitstream[0] == 0x11);
+    CHECK(bitstream[8] == 0x11);
     CHECK(bitstream[HOST_FMV_PAYLOAD_SIZE] == 0x22);
     return 0;
 }
@@ -81,6 +84,20 @@ static int TestIncompleteAndOverflow(void) {
     return 0;
 }
 
+static int TestDeclaredBitstreamLength(void) {
+    unsigned char sector[HOST_FMV_SECTOR_SIZE];
+    unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE];
+    HostFmvStrFrame frame = {0};
+    size_t cursor = 0;
+
+    MakeChunk(sector, 0, 1, 320, 192, 0x11);
+    WriteLe16(sector + STR_HEADER_OFFSET + STR_PAYLOAD_OFFSET, 0xFFFF);
+    CHECK(!HostFmvAssembleStrFrame(sector, 1, &cursor, bitstream,
+                                   sizeof(bitstream), &frame));
+    CHECK(cursor == 1 && frame.bitstreamSize == 0);
+    return 0;
+}
+
 static int TestInvalidArguments(void) {
     unsigned char sector[HOST_FMV_SECTOR_SIZE] = {0};
     unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE];
@@ -101,6 +118,7 @@ static int TestInvalidArguments(void) {
 int main(void) {
     CHECK(TestAssemblyAndResync() == 0);
     CHECK(TestIncompleteAndOverflow() == 0);
+    CHECK(TestDeclaredBitstreamLength() == 0);
     CHECK(TestInvalidArguments() == 0);
     puts("STR frame assembly resynchronizes and rejects incomplete data");
     return 0;

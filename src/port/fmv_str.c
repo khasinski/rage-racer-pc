@@ -63,6 +63,11 @@ int HostFmvAssembleStrFrame(const unsigned char *sectors, size_t sectorCount,
         size += HOST_FMV_PAYLOAD_SIZE;
         chunksSeen++;
         if (chunkCount != 0 && chunksSeen >= chunkCount) {
+            size_t declaredSize = 8 + (size_t)ReadLe16(bitstream) * 4;
+
+            if (declaredSize > size) {
+                return 0;
+            }
             frame->bitstreamSize = size;
             return 1;
         }
