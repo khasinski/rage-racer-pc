@@ -61,7 +61,7 @@ typedef struct GameTrackPointHalfwordView {
 typedef struct TrackAiSpeedKey {
     s16 progress;
     u16 pitch;
-    s16 targetSpeeds[4];
+    s16 slotTargetSpeeds[4];
 } TrackAiSpeedKey;
 
 typedef struct TrackRivalStart {

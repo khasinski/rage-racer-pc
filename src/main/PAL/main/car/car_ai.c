@@ -77,12 +77,13 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
  * How hard an AI car is allowed to accelerate right now.
  *
  * The track carries a list of keys, each a position along the track and a
- * target speed per gear. A car sitting between two keys gets its limit
- * interpolated between them; a car that has run off either end of its current
- * pair steps its marker towards where it actually is and gets nothing this
- * frame. Above fourth the target is fourth's, scaled down as the gear climbs.
+ * target speed for each of the front four grid slots. A car sitting between
+ * two keys gets its limit interpolated between them; a car that has run off
+ * either end of its current pair steps its marker towards where it actually
+ * is and gets nothing this frame. Cars further back use fourth place's target,
+ * tapered by grid slot.
  */
-void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
+void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     TrackAiSpeedKey *lowKey;
     TrackAiSpeedKey *highKey;
     TrackAiSpeedKey *table;
@@ -108,13 +109,13 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 gear) {
     highKey = &table[marker + 1];
     lowProgress = lowKey->progress;
     highProgress = highKey->progress;
-    if (gear < 4) {
-        lowSpeed = lowKey->targetSpeeds[gear];
-        highSpeed = highKey->targetSpeeds[gear];
+    if (carIndex < 4) {
+        lowSpeed = lowKey->slotTargetSpeeds[carIndex];
+        highSpeed = highKey->slotTargetSpeeds[carIndex];
     } else {
-        s32 taper = 0x55 - gear;
-        lowSpeed = (lowKey->targetSpeeds[3] * taper) / 100;
-        highSpeed = (highKey->targetSpeeds[3] * taper) / 100;
+        s32 taper = 0x55 - carIndex;
+        lowSpeed = (lowKey->slotTargetSpeeds[3] * taper) / 100;
+        highSpeed = (highKey->slotTargetSpeeds[3] * taper) / 100;
     }
 
     pitch = 0;

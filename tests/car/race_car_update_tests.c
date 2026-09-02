@@ -50,9 +50,9 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
     return 0;
 }
 
-void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 index) {
+void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     (void)car;
-    (void)index;
+    (void)carIndex;
     s_targetSpeedCalls++;
 }
 

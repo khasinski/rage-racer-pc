@@ -135,10 +135,12 @@ static void TargetSpeedTests(void) {
     Reset();
     keys[0].progress = 0x10;
     keys[1].progress = 0x20;
-    keys[0].targetSpeeds[0] = 100;
-    keys[1].targetSpeeds[0] = 200;
-    keys[0].targetSpeeds[3] = 400;
-    keys[1].targetSpeeds[3] = 400;
+    keys[0].slotTargetSpeeds[0] = 100;
+    keys[1].slotTargetSpeeds[0] = 200;
+    keys[0].slotTargetSpeeds[2] = 300;
+    keys[1].slotTargetSpeeds[2] = 500;
+    keys[0].slotTargetSpeeds[3] = 400;
+    keys[1].slotTargetSpeeds[3] = 400;
     keys[0].pitch = 7;
 
     /* Halfway between two keys is halfway between their speeds, put through
@@ -151,6 +153,13 @@ static void TargetSpeedTests(void) {
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
           "limit halfway between two keys", car.accelerationLimit,
           (((150 * 1168) / 160) * 6) / 100);
+
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x18 << 4;
+    UpdateCarAiTargetSpeed(&car, 2);
+    Check(car.accelerationLimit == (((400 * 1168) / 160) * 6) / 100,
+          "third car uses third target-speed column", car.accelerationLimit,
+          (((400 * 1168) / 160) * 6) / 100);
 
     /* Past the far key the marker steps forward and no limit is set. */
     memset(&car, 0, sizeof(car));
@@ -172,14 +181,15 @@ static void TargetSpeedTests(void) {
     Check(car.routeMarkerIndex == 4, "marker steps back before the pair",
           car.routeMarkerIndex, 4);
 
-    /* Above fourth the target is fourth's, tapered by the gear. */
+    /* Cars behind the front four use fourth place's target, tapered by their
+     * grid slot. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
     car.routeMarkerIndex = 0;
     UpdateCarAiTargetSpeed(&car, 5);
     Check(car.accelerationLimit ==
               (((((400 * (0x55 - 5)) / 100) * 1168) / 160) * 6) / 100,
-          "fifth gear tapers fourth's target", car.accelerationLimit,
+          "fifth car tapers fourth place's target", car.accelerationLimit,
           (((((400 * (0x55 - 5)) / 100) * 1168) / 160) * 6) / 100);
 
     /* Two keys at the same position must not divide by zero. */
