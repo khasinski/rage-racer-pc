@@ -363,7 +363,7 @@ static void CheckSplitDeltaSprites(void) {
     BuildRaceHudPrims(0);
     frame = g_DrawBuffer;
 
-    DrawSplitDelta(7, 1);
+    DrawSplitIndicator(7, 1);
     if (frame->layout.raceHud.labels[3].u0 != 7 * 8 + 0x50 ||
         frame->layout.raceHud.labels[4].u0 != 0x88 ||
         frame->layout.raceHud.labels[4].clut != 0x7810) {
@@ -371,7 +371,7 @@ static void CheckSplitDeltaSprites(void) {
         s_failures++;
     }
 
-    DrawSplitDelta(2, -1);
+    DrawSplitIndicator(2, -1);
     if (frame->layout.raceHud.labels[3].u0 != 2 * 8 + 0x50 ||
         frame->layout.raceHud.labels[4].u0 != 0x78 ||
         frame->layout.raceHud.labels[4].clut != 0x780F) {

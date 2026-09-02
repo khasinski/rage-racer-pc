@@ -269,7 +269,7 @@ void DrawLostRaceCaption(s32 level);
 void DrawPathScenery(void);
 void DrawRoundScreen(void);
 void DrawRouteScenery(void);
-void DrawSplitDelta(s32 delta, s32 y);
+void DrawSplitIndicator(s32 sector, s32 sign);
 void DrawTerrainCells(void);
 void InitTrackScene(void);
 void ReturnToTitleScene(void);

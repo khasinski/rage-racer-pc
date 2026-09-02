@@ -97,14 +97,14 @@ void DrawRacePosition(void) {
     ones->clut = color;
 }
 
-void DrawSplitDelta(s32 delta, s32 sign) {
+void DrawSplitIndicator(s32 sector, s32 sign) {
     GameFrameContext *frame = g_DrawBuffer;
-    SPRT *deltaDigit = &frame->layout.raceHud.labels[3];
+    SPRT *sectorDigit = &frame->layout.raceHud.labels[3];
     SPRT *signSprite = &frame->layout.raceHud.labels[4];
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
-    deltaDigit->u0 = delta * 8 + 0x50;
-    AddPrim(ot, deltaDigit);
+    sectorDigit->u0 = sector * 8 + 0x50;
+    AddPrim(ot, sectorDigit);
 
     if (sign > 0) {
         signSprite->u0 = 0x88;
