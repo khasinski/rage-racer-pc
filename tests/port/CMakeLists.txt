@@ -294,6 +294,24 @@ endif()
 add_test(NAME host_state_abi COMMAND host_state_abi_tests)
 set_tests_properties(host_state_abi PROPERTIES LABELS functional)
 
+add_executable(native_ui_script_tests
+    native_ui_script_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_game_state.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_initialized_state.c)
+target_include_directories(native_ui_script_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(native_ui_script_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(native_ui_script_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME native_ui_scripts COMMAND native_ui_script_tests)
+set_tests_properties(native_ui_scripts PROPERTIES LABELS functional)
+
 add_executable(load_buffer_bounds_tests
     load_buffer_bounds_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/host_state_asset.c)

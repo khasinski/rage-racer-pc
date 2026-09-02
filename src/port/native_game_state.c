@@ -373,6 +373,10 @@ static int LoadTimedDrawScript(
                 ResolveUiDataAddress(source[i].shapeAddress);
             destination[i].motion.pointer =
                 ResolveUiDataAddress(source[i].motionAddress);
+            if (destination[i].shape.pointer == NULL ||
+                destination[i].motion.pointer == NULL) {
+                return 0;
+            }
         }
     }
     return 1;

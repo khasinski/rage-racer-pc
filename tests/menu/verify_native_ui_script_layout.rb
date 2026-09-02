@@ -15,7 +15,9 @@ unsafe = scripts.reject do |name|
   short_name = name.delete_prefix("g_")
   native_array = native_state.match?(/TimedDrawCommand\s+#{Regexp.escape(name)}\s*\[/)
   native_alias = menu_header.include?("#define #{name} g_Native#{short_name}")
-  pointer_variable = declarations.match?(/extern\s+(?:u8|void)\s*\*\s*#{Regexp.escape(name)}\s*;/)
+  pointer_variable = declarations.match?(
+    /extern\s+const\s+TimedDrawCommand\s*\*\s*#{Regexp.escape(name)}\s*;/
+  )
   native_array || native_alias || pointer_variable
 end
 

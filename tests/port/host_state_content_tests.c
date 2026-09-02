@@ -218,36 +218,6 @@ extern TeamLogoColorIndex g_TeamLogoPenColor;
 extern uint16_t g_TeamLogoBlankClut[16];
 extern unsigned char g_SmallFontGlyphs[184];
 extern unsigned char g_LargeFontGlyphs[196];
-extern unsigned char g_TimeAttackPlateProgress[7252];
-extern unsigned char g_RankingPanelScript[60];
-extern unsigned char g_CustomizeMenuScriptGp[156];
-extern unsigned char g_CustomizeMenuScriptTimeAttack[132];
-extern unsigned char g_DesignModeScript[192];
-extern unsigned char g_TeamLogoScreenScript[144];
-extern unsigned char g_LogoSampleScreenScript[144];
-extern unsigned char g_TeamNameScreenScript[732];
-extern unsigned char g_PaintColorScreenScript[180];
-extern unsigned char g_CarShopScreenScript[108];
-extern unsigned char g_EngineerShopScreenScript[816];
-extern unsigned char g_MenuDialogPanelUpperScript[48];
-extern unsigned char g_MenuDialogPanelLowerScript[96];
-extern unsigned char g_CourseSelectSavePromptScript[48];
-extern unsigned char g_MenuRow0MarkerScript[48];
-extern unsigned char g_MenuRow1MarkerScript[192];
-extern unsigned char g_RankingMenuScript[108];
-extern unsigned char g_CourseSelectSavePromptBanner[24];
-extern unsigned char g_TransmissionUnavailableScript[48];
-extern unsigned char g_TeamLogoScreenScript2[24];
-extern unsigned char g_CarShopUnavailableScript[24];
-extern unsigned char g_EngineerShopUnavailableScript[36];
-extern unsigned char g_EngineerShopNoFundsScript[24];
-extern unsigned char g_CarShopNoFundsScript[60];
-extern unsigned char g_DesignModeDeniedScript[24];
-extern unsigned char g_CarShopBuyPromptScript2[84];
-extern unsigned char g_CarShopBuyPromptScript1[84];
-extern unsigned char g_CarShopBuyPromptScript3[84];
-extern unsigned char g_CarShopBuyPromptScript4[84];
-extern unsigned char g_EngineerShopTuneUpPromptScript[60];
 extern Vec4 g_MenuViewScale;
 extern unsigned char g_CarPriceTable[128];
 extern unsigned char g_CarTuneUpPriceTable[124];
@@ -431,36 +401,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamLogoBlankClut", (const unsigned char *)g_TeamLogoBlankClut, 32},
     {"g_SmallFontGlyphs", g_SmallFontGlyphs, 184},
     {"g_LargeFontGlyphs", g_LargeFontGlyphs, 196},
-    {"g_TimeAttackPlateProgress", g_TimeAttackPlateProgress, 7252},
-    {"g_RankingPanelScript", g_RankingPanelScript, 60},
-    {"g_CustomizeMenuScriptGp", g_CustomizeMenuScriptGp, 156},
-    {"g_CustomizeMenuScriptTimeAttack", g_CustomizeMenuScriptTimeAttack, 132},
-    {"g_DesignModeScript", g_DesignModeScript, 192},
-    {"g_TeamLogoScreenScript", g_TeamLogoScreenScript, 144},
-    {"g_LogoSampleScreenScript", g_LogoSampleScreenScript, 144},
-    {"g_TeamNameScreenScript", g_TeamNameScreenScript, 732},
-    {"g_PaintColorScreenScript", g_PaintColorScreenScript, 180},
-    {"g_CarShopScreenScript", g_CarShopScreenScript, 108},
-    {"g_EngineerShopScreenScript", g_EngineerShopScreenScript, 816},
-    {"g_MenuDialogPanelUpperScript", g_MenuDialogPanelUpperScript, 48},
-    {"g_MenuDialogPanelLowerScript", g_MenuDialogPanelLowerScript, 96},
-    {"g_CourseSelectSavePromptScript", g_CourseSelectSavePromptScript, 48},
-    {"g_MenuRow0MarkerScript", g_MenuRow0MarkerScript, 48},
-    {"g_MenuRow1MarkerScript", g_MenuRow1MarkerScript, 192},
-    {"g_RankingMenuScript", g_RankingMenuScript, 108},
-    {"g_CourseSelectSavePromptBanner", g_CourseSelectSavePromptBanner, 24},
-    {"g_TransmissionUnavailableScript", g_TransmissionUnavailableScript, 48},
-    {"g_TeamLogoScreenScript2", g_TeamLogoScreenScript2, 24},
-    {"g_CarShopUnavailableScript", g_CarShopUnavailableScript, 24},
-    {"g_EngineerShopUnavailableScript", g_EngineerShopUnavailableScript, 36},
-    {"g_EngineerShopNoFundsScript", g_EngineerShopNoFundsScript, 24},
-    {"g_CarShopNoFundsScript", g_CarShopNoFundsScript, 60},
-    {"g_DesignModeDeniedScript", g_DesignModeDeniedScript, 24},
-    {"g_CarShopBuyPromptScript2", g_CarShopBuyPromptScript2, 84},
-    {"g_CarShopBuyPromptScript1", g_CarShopBuyPromptScript1, 84},
-    {"g_CarShopBuyPromptScript3", g_CarShopBuyPromptScript3, 84},
-    {"g_CarShopBuyPromptScript4", g_CarShopBuyPromptScript4, 84},
-    {"g_EngineerShopTuneUpPromptScript", g_EngineerShopTuneUpPromptScript, 60},
     {"g_MenuViewScale", (const unsigned char *)&g_MenuViewScale, 16},
     {"g_CarPriceTable", g_CarPriceTable, 128},
     {"g_CarTuneUpPriceTable", g_CarTuneUpPriceTable, 124},
@@ -477,7 +417,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 1068139364UL;
+    const unsigned long expected = 3872064214UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
