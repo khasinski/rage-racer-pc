@@ -193,6 +193,25 @@ endif()
 add_test(NAME player_track_contact COMMAND player_track_contact_tests)
 set_tests_properties(player_track_contact PROPERTIES LABELS unit)
 
+add_executable(update_player_car_tests
+    update_player_car_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_player_car.c)
+target_include_directories(update_player_car_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(update_player_car_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(update_player_car_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(update_player_car_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME update_player_car COMMAND update_player_car_tests)
+set_tests_properties(update_player_car PROPERTIES LABELS functional)
+
 add_test(
     NAME player_car_interior_aliases
     COMMAND python3
