@@ -1,4 +1,18 @@
 #include "game/round_screen_internal.h"
+#include "game/state.h"
+
+s32 ClampRoundScreenFade(s32 value) {
+    if (value < 0) {
+        return 0;
+    }
+    return value < 0x80 ? value : 0x7F;
+}
+
+s32 IsRoundMirrorMode(u16 heldButtons) {
+    const u16 mirrorChord = PAD_START | PAD_R1 | PAD_L1;
+
+    return (heldButtons & mirrorChord) == mirrorChord;
+}
 
 s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
                             s32 courseIndex) {

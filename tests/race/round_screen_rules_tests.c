@@ -1,4 +1,5 @@
 #include "game/round_screen_internal.h"
+#include "game/state.h"
 
 #include <stdio.h>
 
@@ -32,6 +33,23 @@ static void TestSelectionWrap(void) {
           "empty track list only exposes shuffle");
 }
 
+static void TestFadeAndMirrorRules(void) {
+    Check(ClampRoundScreenFade(-1) == 0,
+          "negative fade is fully transparent");
+    Check(ClampRoundScreenFade(0x40) == 0x40,
+          "fade preserves values in range");
+    Check(ClampRoundScreenFade(0x80) == 0x7F &&
+              ClampRoundScreenFade(1000) == 0x7F,
+          "fade saturates at the PS1 brightness limit");
+
+    Check(!IsRoundMirrorMode(PAD_START | PAD_R1),
+          "partial mirror chord stays in normal mode");
+    Check(IsRoundMirrorMode(PAD_START | PAD_R1 | PAD_L1),
+          "complete mirror chord enables mirror mode");
+    Check(IsRoundMirrorMode(PAD_START | PAD_R1 | PAD_L1 | PAD_CONFIRM),
+          "unrelated held buttons do not cancel mirror mode");
+}
+
 static void TestBgmChoice(void) {
     const u8 order[4] = {3, 9, 1, 7};
     RoundBgmChoice choice;
@@ -60,6 +78,7 @@ static void TestBgmChoice(void) {
 int main(void) {
     TestRoundNumber();
     TestSelectionWrap();
+    TestFadeAndMirrorRules();
     TestBgmChoice();
 
     if (s_failures != 0) {

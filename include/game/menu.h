@@ -640,7 +640,6 @@ void UpdateAndDrawCourseCard(void);
 void TickClassClearFanfare(void);
 void UpdateCarListCursor(void);
 void UpdateFrontend(void);
-s32 UpdateRoundScreenFade(s32 stage);
 void UpdateTitleAttract(void);
 
 /* Declared identically by 15 translation units before this
