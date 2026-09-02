@@ -20,10 +20,8 @@ void ServiceAssetLoad(void) {
         LoadCarSelectAssets();
         break;
     case ASSET_REQUEST_CAR_MODEL:
-        LoadCarModel(g_PendingCarModelIndex);
-        break;
     case ASSET_REQUEST_UPGRADED_CAR_MODEL:
-        LoadUpgradedCarModel(g_PendingCarModelIndex);
+        LoadPendingCarModelAsset();
         break;
     case ASSET_REQUEST_OPTION_SCREEN:
         LoadOptionScreenAssets();

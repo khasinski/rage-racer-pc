@@ -324,8 +324,8 @@ static inline void *GetSceneAssetBlock(GameSceneAssetHeader *header,
 #define TRACK_TEXTURE_SHADOW_SIZE 0x38000
 
 /*
- * The showroom's double-buffered car-model slot. LoadCarModel /
- * LoadUpgradedCarModel load into g_CarModelBuffer or that plus one stride, so
+ * The showroom's double-buffered car-model slot. LoadPendingCarModelAsset
+ * loads into g_CarModelBuffer or that plus one stride, so
  * the incoming model never lands on the one still being drawn; the buffer is
  * therefore two strides long, which is where g_ImageBlockBuffer starts.
  * The stride is generous rather than tight: the largest CAR_xx.1ST on the
@@ -501,8 +501,7 @@ struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
-void LoadCarModel(s32);
-void LoadUpgradedCarModel(s32);
+void LoadPendingCarModelAsset(void);
 
 /* Declared identically by 3 translation units before this
  * header carried them. */

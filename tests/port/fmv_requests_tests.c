@@ -61,11 +61,11 @@ void LoadBootAssets(void) { s_loaderCall = LOADER_BOOT; }
 void LoadSaveScreenAssets(void) { s_loaderCall = LOADER_SAVE; }
 void LoadSelectBgmAssets(void) { s_loaderCall = LOADER_BGM; }
 void LoadCarSelectAssets(void) { s_loaderCall = LOADER_CAR_SELECT; }
-void LoadCarModel(s32 model) {
-    s_loaderCall = LOADER_CAR_MODEL; s_loaderArgument = model;
-}
-void LoadUpgradedCarModel(s32 model) {
-    s_loaderCall = LOADER_UPGRADED_CAR; s_loaderArgument = model;
+void LoadPendingCarModelAsset(void) {
+    s_loaderCall = g_AssetRequestType == ASSET_REQUEST_UPGRADED_CAR_MODEL
+                       ? LOADER_UPGRADED_CAR
+                       : LOADER_CAR_MODEL;
+    s_loaderArgument = g_PendingCarModelIndex;
 }
 void LoadOptionScreenAssets(void) { s_loaderCall = LOADER_OPTION; }
 void LoadRoundAssets(void) { s_loaderCall = LOADER_ROUND; }

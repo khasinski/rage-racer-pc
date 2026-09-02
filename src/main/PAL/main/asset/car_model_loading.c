@@ -38,7 +38,10 @@ void RequestUpgradedCarModel(s32 carIndex) {
     RequestPendingCarModel(ASSET_REQUEST_UPGRADED_CAR_MODEL, carIndex);
 }
 
-static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
+void LoadPendingCarModelAsset(void) {
+    s32 carIndex = g_PendingCarModelIndex;
+    s32 gradeOffset =
+        g_AssetRequestType == ASSET_REQUEST_UPGRADED_CAR_MODEL ? 1 : 0;
     s32 targetSlot;
     s32 variantIndex;
     u8 *destination;
@@ -65,12 +68,4 @@ static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
     asset = GetCarModelAsset(destination);
     InstallCarModelAsset(asset, targetSlot, carIndex);
     g_AssetLoadState = 0;
-}
-
-void LoadCarModel(s32 carIndex) {
-    LoadCarModelVariant(carIndex, 0);
-}
-
-void LoadUpgradedCarModel(s32 carIndex) {
-    LoadCarModelVariant(carIndex, 1);
 }

@@ -153,9 +153,11 @@ static void TestModelVariantLoads(void) {
     g_CarModelBuffer = buffers;
 
     g_CarModelSlot = 0;
+    g_AssetRequestType = ASSET_REQUEST_CAR_MODEL;
+    g_PendingCarModelIndex = 2;
     g_AssetLoadState = 1;
     s_loadResult = 0;
-    LoadCarModel(2);
+    LoadPendingCarModelAsset();
     Check(s_loadAssetId == 0xA + (23 << 1) &&
               s_loadDestination == buffers + CAR_MODEL_SLOT_SIZE,
           "normal model asset and inactive slot");
@@ -164,7 +166,7 @@ static void TestModelVariantLoads(void) {
     s_loadResult = 1;
     s_color1Calls = 0;
     s_color2Calls = 0;
-    LoadCarModel(2);
+    LoadPendingCarModelAsset();
     Check(g_CarModelSlots[1] == upper && s_registeredBank == &upperBank &&
               s_registeredSlot == 1,
           "normal model installs inactive model slot");
@@ -176,10 +178,12 @@ static void TestModelVariantLoads(void) {
     Check(g_AssetLoadState == 0, "normal model completes loader");
 
     g_CarModelSlot = 1;
+    g_AssetRequestType = ASSET_REQUEST_UPGRADED_CAR_MODEL;
+    g_PendingCarModelIndex = 10;
     g_AssetLoadState = 1;
     s_color1Calls = 0;
     s_color2Calls = 0;
-    LoadUpgradedCarModel(10);
+    LoadPendingCarModelAsset();
     Check(s_loadAssetId == 0xA + (102 << 1) &&
               s_loadDestination == buffers,
           "upgraded model asset and inactive slot");
@@ -192,8 +196,10 @@ static void TestModelVariantLoads(void) {
     Check(g_AssetLoadState == 0, "upgraded model completes loader");
 
     g_AssetLoadState = 1;
+    g_AssetRequestType = ASSET_REQUEST_CAR_MODEL;
+    g_PendingCarModelIndex = -1;
     s_loadAssetId = -123;
-    LoadCarModel(-1);
+    LoadPendingCarModelAsset();
     Check(g_AssetLoadState == 0 && s_loadAssetId == -123,
           "invalid pending model is cancelled before asset lookup");
 }
