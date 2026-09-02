@@ -1,5 +1,7 @@
 #include "native_geometry_diagnostics.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,8 +12,13 @@ static int ParseValue(const char *value, int fallback, int base) {
     long parsed;
 
     if (value == NULL || value[0] == '\0') return fallback;
+    errno = 0;
     parsed = strtol(value, &end, base);
-    return end != value && *end == '\0' ? (int)parsed : fallback;
+    if (end == value || *end != '\0' || errno == ERANGE ||
+        parsed < INT_MIN || parsed > INT_MAX) {
+        return fallback;
+    }
+    return (int)parsed;
 }
 
 void GeometryDiagnosticsInit(RageGeometryDiagnostics *diagnostics) {

@@ -728,6 +728,20 @@ add_test(NAME native_geometry_interpolation
 
 set_tests_properties(native_geometry_interpolation PROPERTIES LABELS functional)
 
+add_executable(native_geometry_diagnostics_tests
+    native_geometry_diagnostics_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/classic/native_geometry_diagnostics.c)
+target_include_directories(native_geometry_diagnostics_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/classic)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(native_geometry_diagnostics_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME native_geometry_diagnostics
+         COMMAND native_geometry_diagnostics_tests)
+set_tests_properties(native_geometry_diagnostics PROPERTIES LABELS unit)
+
 if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME native_frame_offsets
