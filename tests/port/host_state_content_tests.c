@@ -145,9 +145,6 @@ extern unsigned char g_MsgSeqVabTransBodyError[44];
 extern unsigned char g_FmtString[8];
 extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
-extern unsigned char g_LibcUpperDigits[20];
-extern unsigned char g_LibcLowerDigits[200];
-extern unsigned char g_LibcNullText[8];
 extern unsigned char g_MsgCdTrackRange[16];
 extern unsigned char g_MsgCdGetToc2Entry[28];
 extern unsigned char g_MsgCdGetToc2Error[20];
@@ -350,8 +347,6 @@ extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
-extern unsigned char g_LibcDefaultFormat[13];
-extern unsigned char g_LibcCtype[131];
 extern unsigned char g_CdCommandNeedsSetloc[128];
 extern unsigned char g_CdSyncCallback[8];
 extern unsigned char g_CdReadyCallback[8];
@@ -558,9 +553,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtString", g_FmtString, 8},
     {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
-    {"g_LibcUpperDigits", g_LibcUpperDigits, 20},
-    {"g_LibcLowerDigits", g_LibcLowerDigits, 200},
-    {"g_LibcNullText", g_LibcNullText, 8},
     {"g_MsgCdTrackRange", g_MsgCdTrackRange, 16},
     {"g_MsgCdGetToc2Entry", g_MsgCdGetToc2Entry, 28},
     {"g_MsgCdGetToc2Error", g_MsgCdGetToc2Error, 20},
@@ -762,8 +754,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},
-    {"g_LibcDefaultFormat", g_LibcDefaultFormat, 13},
-    {"g_LibcCtype", g_LibcCtype, 131},
     {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
     {"g_CdSyncCallback", g_CdSyncCallback, 8},
     {"g_CdReadyCallback", g_CdReadyCallback, 8},
@@ -882,7 +872,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 2585364041UL;
+    const unsigned long expected = 9607230UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
