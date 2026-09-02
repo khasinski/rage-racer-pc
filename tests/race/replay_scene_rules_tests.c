@@ -29,6 +29,16 @@ static void TestReplayBadgeBlink(void) {
     assert(!ReplayBadgeVisible(16, 1));
 }
 
+static void TestReplayResultCue(void) {
+    assert(ReplayResultCue(59, 1, 0, 1) == -1);
+    assert(ReplayResultCue(60, 0, 0, 1) == -1);
+    assert(ReplayResultCue(60, 1, 1, 1) == -1);
+    assert(ReplayResultCue(60, 1, 0, 1) == 0x40);
+    assert(ReplayResultCue(60, 1, 0, 2) == 0x41);
+    assert(ReplayResultCue(60, 2, 0, 12) == 0x41);
+    assert(ReplayResultCue(61, 1, 0, 1) == -1);
+}
+
 static void TestReplayCursorWrap(void) {
     assert(NextReplayReadCursor(0, 100) == 1);
     assert(NextReplayReadCursor(98, 100) == 99);
@@ -40,6 +50,7 @@ int main(void) {
     TestEndingWashThreshold();
     TestAutomaticExitFadeThreshold();
     TestReplayBadgeBlink();
+    TestReplayResultCue();
     TestReplayCursorWrap();
     return 0;
 }

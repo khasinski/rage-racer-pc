@@ -30,6 +30,8 @@ s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount);
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount);
 s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
 s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared);
+s32 ReplayResultCue(s32 sceneTimer, s32 grandPrixMode, s32 seriesCleared,
+                    s32 racePosition);
 s32 NextReplayReadCursor(s32 cursor, s32 frameCount);
 void UpdateReplayFade(void);
 void PlayCountdownCues(s32 timer);

@@ -12,7 +12,6 @@
 #include "game/track_internal.h"
 
 enum {
-    REPLAY_RESULT_CUE_FRAME = 60,
     REPLAY_FIRST_FRAME = 1,
 };
 
@@ -31,11 +30,15 @@ static void DrawReplayBadge(void) {
 }
 
 void UpdateReplayScene(void) {
+    s32 resultCue;
+
     g_AnimTimer++;
     g_SceneTimer++;
-    if (g_SceneTimer == REPLAY_RESULT_CUE_FRAME && g_GrandPrixMode != 0 &&
-        g_SeriesCleared == 0) {
-        PlaySoundCue(g_PlayerCar.drive.racePosition == 1 ? 0x40 : 0x41);
+    resultCue = ReplayResultCue(g_SceneTimer, g_GrandPrixMode,
+                                g_SeriesCleared,
+                                g_PlayerCar.drive.racePosition);
+    if (resultCue >= 0) {
+        PlaySoundCue(resultCue);
     }
 
     UpdateReplayFade();
