@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    TRACK_ZONE_COUNT = 20,
     TRACK_ZONE_FADE_DISTANCE = 0x100,
 };
 
@@ -24,9 +23,7 @@ s32 GetTrackZoneBlend(s32 position) {
     const TrackZone *zone = g_TrackEventData->zones;
     s32 index;
 
-    if (g_RaceSeries != 0) {
-        position = g_TrackLength - position;
-    }
+    position = TrackPositionForSeries(position, g_TrackLength, g_RaceSeries);
 
     g_TrackZoneCode = 0;
     g_ReverbZoneDepth = 0;

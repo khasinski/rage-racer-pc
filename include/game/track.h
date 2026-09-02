@@ -145,6 +145,17 @@ typedef struct TrackPointAmbienceZone {
     s32 cue; /* 1 picks one sound, anything else the other; sign unused */
 } TrackPointAmbienceZone;
 
+enum {
+    TRACK_ZONE_COUNT = 20,
+    TRACK_POINT_AMBIENCE_ZONE_COUNT = 2,
+    TRACK_AMBIENCE_ZONE_COUNT = 4,
+};
+
+static inline s32 TrackPositionForSeries(s32 position, s32 trackLength,
+                                         s32 series) {
+    return series != 0 ? trackLength - position : position;
+}
+
 typedef struct TrackFinishCue {
     s16 trackSection;
     s16 reserved;
@@ -168,12 +179,12 @@ typedef struct TrackEventData {
     TrackRivalStart rivalStarts[2][12];
     TrackAiSpeedKey aiSpeedKeys[2][48];
     TrackRivalAiConfig rivalAiConfigs[2][12];
-    TrackZone zones[20];
+    TrackZone zones[TRACK_ZONE_COUNT];
     TrackEventOffsets offsets;
     u8 reservedB7C[0x1000];
     TrackEventSoundZone eventSoundZones[30];
-    TrackPointAmbienceZone pointAmbienceZones[2];
-    TrackAmbienceZone ambienceZones[4];
+    TrackPointAmbienceZone pointAmbienceZones[TRACK_POINT_AMBIENCE_ZONE_COUNT];
+    TrackAmbienceZone ambienceZones[TRACK_AMBIENCE_ZONE_COUNT];
     TrackRaceCueData raceCues;
 } TrackEventData;
 

@@ -5,7 +5,6 @@
 #include "game/track_internal.h"
 
 enum {
-    POINT_AMBIENCE_ZONE_COUNT = 2,
     POINT_AMBIENCE_MAX_LEVEL = 0x30,
     POINT_AMBIENCE_VOLUME_BIAS = 0x20,
     POINT_AMBIENCE_CUE_ONE_OUTPUT = 2,
@@ -18,7 +17,7 @@ static const TrackPointAmbienceZone *FindPointAmbienceZone(
         g_TrackEventData->pointAmbienceZones;
     s32 index;
 
-    for (index = 0; index < POINT_AMBIENCE_ZONE_COUNT; index++) {
+    for (index = 0; index < TRACK_POINT_AMBIENCE_ZONE_COUNT; index++) {
         if (zones[index].start == -1) {
             break;
         }
@@ -66,9 +65,8 @@ void UpdatePointAmbience(s32 trackPosition) {
     s32 outputLeft;
     s32 outputRight;
 
-    if (g_RaceSeries != 0) {
-        trackPosition = g_TrackLength - trackPosition;
-    }
+    trackPosition = TrackPositionForSeries(trackPosition, g_TrackLength,
+                                           g_RaceSeries);
 
     leftVolume = 0;
     rightVolume = 0;

@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    AMBIENCE_ZONE_COUNT = 4,
     AMBIENCE_MAX_VOLUME = 0x60,
     AMBIENCE_FADE_DISTANCE = 800,
 };
@@ -12,7 +11,8 @@ static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
     const TrackAmbienceZone *zone = g_TrackEventData->ambienceZones;
     s32 index;
 
-    for (index = 0; index < AMBIENCE_ZONE_COUNT && zone->start != -1;
+    for (index = 0;
+         index < TRACK_AMBIENCE_ZONE_COUNT && zone->start != -1;
          index++, zone++) {
         if (position < zone->start || position > zone->end) {
             continue;
@@ -33,14 +33,13 @@ static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
 }
 
 void UpdateZoneAmbience(s32 trackPosition) {
-    s32 sceneryTier = g_GrandPrixClass % 5;
+    s32 sceneryTier = g_GrandPrixClass % GRAND_PRIX_FINAL_CLASS_INDEX;
     s32 maximumVolume = sceneryTier >= 1 ? AMBIENCE_MAX_VOLUME : 0;
     s32 cue = sceneryTier >= 3 ? 1 : 0;
     s32 volume;
 
-    if (g_RaceSeries != 0) {
-        trackPosition = g_TrackLength - trackPosition;
-    }
+    trackPosition = TrackPositionForSeries(trackPosition, g_TrackLength,
+                                           g_RaceSeries);
     volume = (s16)AmbienceVolumeAtPosition(trackPosition, maximumVolume);
     SetStereoSoundCue(cue, volume, volume);
 }
