@@ -386,8 +386,7 @@ void LoadSelectBgmAssets(void);
 s32 RequestCarSelectAssets(void);
 void LoadCarSelectAssets(void);
 /* Phase 5/6: one car's CAR_xx.1ST pack into the double-buffered showroom slot;
- * the "Upgraded" pair asks for modelVariant + 1, i.e. the next grade's body.
- * The *Now wrappers request and then pump ServiceAssetLoad until idle. */
+ * the "Upgraded" pair asks for modelVariant + 1, i.e. the next grade's body. */
 /* Phase 7: OPTION.BIN. */
 void LoadOptionScreenAssets(void);
 /* Phase 8: the GP*.TMS round screen (series * 6 + class + 0x4A) plus VOICE.BIN.
@@ -471,9 +470,6 @@ extern NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
  * a serialized block and rebase its internal offsets to native addresses. */
 void UploadCarImage(s32 slot);
 
-/* Declared identically by 42 translation units before this
- * header carried them. */
-
 extern s32 g_PendingCarModelIndex;
 extern TrackTextureShadowRow *g_TrackTextureShadow;
 
@@ -500,9 +496,6 @@ s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size);
 s32 UploadLoadBufferImage(void);
 s32 GetCarAssetIndex(s32 model, s32 grade);
 
-/* Declared identically by 19 translation units before this
- * header carried them. */
-
 extern s32 g_TerrainCellCount;
 extern RECT g_CarImageRect;
 struct CarImageData;
@@ -511,9 +504,6 @@ extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset);
 void LoadPendingCarModelAsset(void);
-
-/* Declared identically by 3 translation units before this
- * header carried them. */
 
 extern Rect g_TeamLogoClutLoadRect;
 extern GpuRectPacked g_TeamLogoClutMoveRect;

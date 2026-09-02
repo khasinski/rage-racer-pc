@@ -754,9 +754,6 @@ void DrawReplayRivalCar(void);
  * The player's own 0x19C-byte car object.
  */
 
-/* Declared identically by 58 translation units before this
- * header carried them. */
-
 extern s32 g_DriveBoostTimer;
 extern s32 g_EngineRpmSnapshot;
 extern s32 g_AutoShiftCooldown;
@@ -797,9 +794,6 @@ void SetPrimaryBodyColor(s32 colour);
 void SetSecondaryBodyColor(s32 colour);
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 void UpdateRivalRubberBand(void);
-
-/* Declared identically by 77 translation units before this
- * header carried them. */
 
 extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;

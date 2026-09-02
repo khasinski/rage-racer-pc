@@ -343,9 +343,6 @@ extern s32 g_TrackLength;
  * and the per-series marker rows at + g_RaceSeries * 576 + 0x474. */
 extern TrackEventData *g_TrackEventData;
 
-/* Declared identically by 73 translation units before this
- * header carried them. */
-
 extern s32 g_CameraCarSeedYaw;
 extern s32 g_CameraCarHeading;
 extern s32 g_CameraCarSpeed;
@@ -373,9 +370,6 @@ extern Vec4 g_RouteSceneryPosition;
 extern s16 g_ShuttlePathDwellMax[];
 
 void InterpolateTrackPoint(s32 pointIndex, s32* out, s32 weight);
-
-/* Declared identically by 113 translation units before this
- * header carried them. */
 
 extern s16 g_PresentationSceneryFrame;
 extern s32 g_PresentationSceneryTint;
@@ -553,9 +547,6 @@ void LerpEnvColor(union GameEnvColor *from, union GameEnvColor *to,
                   union GameEnvColor *out, s32 blend);
 void LoadEnvironmentCue(GameEnvironmentCue *cue);
 void UpdateTrackEventSound(s16 trackSection);
-
-/* Declared identically by 5 translation units before this
- * header carried them. */
 
 extern Vec4 g_AnimSceneryPos[];
 extern SVec g_ShuttlePathAngles[];

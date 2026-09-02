@@ -325,9 +325,6 @@ void RotateTeamLogoCw(void);
  * g_ClassRecords g_ClassRecords is the 11 x {s16 grade, s16 clears} table.
  */
 
-/* Declared identically by 243 translation units before this
- * header carried them. */
-
 extern u8 g_TeamLogoExpertMode;
 extern s32 g_TeamLogoCursorY;
 extern s32 g_TeamLogoViewY;
@@ -424,9 +421,6 @@ void UpdateSoundSettingAdjust(void);
 void UpdateScreenAdjustScreen(void);
 void DrawTimeAttackPlate(s32 stepArg);
 void InstallCarModelSlot(void);
-
-/* Declared identically by 178 translation units before this
- * header carried them. */
 
 extern char g_MsgInsertController[];
 extern char g_MsgControllerError[];
@@ -632,9 +626,6 @@ void TickClassClearFanfare(void);
 void UpdateCarListCursor(void);
 void UpdateFrontend(void);
 void UpdateTitleAttract(void);
-
-/* Declared identically by 15 translation units before this
- * header carried them. */
 
 extern SVec g_CourseCardVerts[];
 extern Vec4 g_MenuCarPivotOffset;

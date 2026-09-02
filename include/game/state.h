@@ -123,9 +123,6 @@ void InitSaveDefaults(void);
 /* Reset the current g_CourseProgress block (class < 2 marks slot 3 unused). */
 void ResetCourseProgress(s32 classIndex);
 
-/* Declared identically by 42 translation units before this
- * header carried them. */
-
 extern s32 g_PadErrorHoldBits;
 extern s32 g_PadValidateCountdown;
 extern s32 g_FrameSyncThreshold;
@@ -140,9 +137,6 @@ typedef enum PadErrorState {
 
 extern PadErrorState g_PadErrorState;
 
-
-/* Declared identically by 38 translation units before this
- * header carried them. */
 
 extern u16 g_NegconSteerDeadZone[][2];
 extern s32 g_BootLogoHoldTimer;
@@ -188,9 +182,6 @@ void InitPad(void *buf0, s32 len0, void *buf1, s32 len1);
 void InitRecordTables(void);
 s32 ResetGraph(s32 mode);
 void StepTrackTextureSwap(void);
-
-/* Declared identically by 5 translation units before this
- * header carried them. */
 
 extern Matrix g_DefaultColorMatrix;
 extern Matrix g_DefaultLightMatrix;

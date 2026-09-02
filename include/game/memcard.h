@@ -101,9 +101,6 @@ void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
 
-/* Declared identically by 20 translation units before this
- * header carried them. */
-
 extern s32 g_McFadeLevel;
 extern s32 g_McFadeStep;
 extern s32 g_McFreeBlocks;
@@ -111,9 +108,6 @@ extern s32 g_McFromLoadMenu;
 extern s32 g_McMenuPage;
 extern s32 g_McMenuRowCount;
 extern s32 g_McMenuRowCursor;
-
-/* Declared identically by 64 translation units before this
- * header carried them. */
 
 extern char g_FmtCardDevice[];
 extern char g_FmtCardWildcard[];

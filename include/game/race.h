@@ -206,9 +206,6 @@ extern s16 g_RaceOptionCursor;
  * g_WrongWayTimer passes 10. */
 void DrawWrongWayWarning(void);
 
-/* Declared identically by 126 translation units before this
- * header carried them. */
-
 extern s16 g_PlayerAutoSteer;
 typedef enum AttractDemoStep {
     ATTRACT_DEMO_STEP_INVALID = -1,
@@ -264,9 +261,6 @@ void DrawRoundScreen(void);
 void ReturnToTitleScene(void);
 void RefreshClassWinState(void);
 void UpdateZoneAmbience(s32 zone);
-
-/* Declared identically by 153 translation units before this
- * header carried them. */
 
 extern s16 g_AttractTitleDelays[];
 extern s32 g_BestLapIndex;
@@ -380,9 +374,6 @@ void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
 void EnterBgmSelectScreen(void);
-
-/* Declared identically by 5 translation units before this
- * header carried them. */
 
 extern CVec g_CountdownCellColors[];
 #endif

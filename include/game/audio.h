@@ -140,9 +140,6 @@ void SetDefaultReverbDepth(void);
 void InitSequenceAudio(void);
 int CloseSequenceAudioSlot(void);
 
-/* Declared identically by 8 translation units before this
- * header carried them. */
-
 enum {
     ENGINE_SOUND_BANK_COUNT = 2,
     ENGINE_SOUND_PARAMETER_COUNT = 12,
@@ -184,9 +181,6 @@ _Static_assert(__builtin_offsetof(EngineSoundState, volumeScale) == 40,
 extern EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
-
-/* Declared identically by 62 translation units before this
- * header carried them. */
 
 extern s32 g_SpecialVoiceBits4;
 extern const char g_MsgTooManyVoices[];

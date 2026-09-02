@@ -744,9 +744,6 @@ extern s32 g_IsEnvironmentMode4;
  *                                  combined per object and set with gte_SetLightMatrix
  */
 
-/* Declared identically by 82 translation units before this
- * header carried them. */
-
 extern s16 g_CarModelBankTable[][2];
 extern Matrix g_MirrorViewMatrix;
 extern u8 g_CarModelByCourse[][11];
@@ -763,9 +760,6 @@ s32 rcos(s32 angle);
 void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output);
 void SubmitTerrainCells(void *ctx, void *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);
-
-/* Declared identically by 95 translation units before this
- * header carried them. */
 
 extern Rect g_TrackTextureRowRect;
 extern u8 g_CarMirrorBadgeStyles[];
