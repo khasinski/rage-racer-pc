@@ -492,7 +492,7 @@ static void EnterChosenScreen(void) {
 
 static void UpdateCourseSelectOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 1;
+    g_MenuOutgoingHandlerIndex = 1;
     DrawCourseArrows(-1);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);

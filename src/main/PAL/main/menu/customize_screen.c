@@ -241,7 +241,7 @@ void UpdateCustomizeScreen(void) {
     }
 
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 5;
+    g_MenuOutgoingHandlerIndex = 5;
     RunTimedDrawScript(cmdList, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, lastOption, g_RankingOption);

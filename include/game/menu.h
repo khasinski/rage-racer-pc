@@ -26,9 +26,9 @@ extern s32 GameMenuCursorAnim;
  * calls it with a step of 0x14. */
 extern s32 g_MenuHandlerIndex;
 
-/* Second, independent g_MenuScreenDraw slot, run with a step of -10; the
- * result is kept in g_MenuOutgoingScreenProgress. */
-extern s32 g_MenuHandlerIndex2;
+/* Screen being faded out during a transition. UpdateMenuMode draws it with a
+ * step of -10 and stores the result in g_MenuOutgoingScreenProgress. */
+extern s32 g_MenuOutgoingHandlerIndex;
 
 /* Which menu-mode screen is running; the id dispatched through
  * g_MenuScreenUpdate. */
@@ -38,7 +38,7 @@ extern s32 g_MenuScreen;
  * The two parallel screen tables UpdateMenuMode dispatches through, both indexed
  * by the same screen id: g_MenuScreenUpdate holds the per-frame state machines
  * (selected by g_MenuScreen) and g_MenuScreenDraw the matching fade/transition
- * overlays (selected by g_MenuHandlerIndex / g_MenuHandlerIndex2). See the
+ * overlays (selected by g_MenuHandlerIndex / g_MenuOutgoingHandlerIndex). See the
  * screen-table block at the bottom of this header for the entries.
  */
 extern void (*g_MenuScreenUpdate[14])(void);

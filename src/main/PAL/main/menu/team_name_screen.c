@@ -128,7 +128,7 @@ static void UpdateTeamNameIdle(void) {
 
 static void UpdateTeamNameOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 9;
+    g_MenuOutgoingHandlerIndex = 9;
     DrawTeamNameEntry(-1, GameMenuCursor);
     RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0 || g_MenuViewOffset <= 0x3D08F) {

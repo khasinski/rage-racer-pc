@@ -52,7 +52,7 @@ u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
         g_GrandPrixSeries = 3;
         g_MenuCourseModelIndex = 0;
         g_MenuHandlerIndex = 0;
-        g_MenuHandlerIndex2 = 0;
+        g_MenuOutgoingHandlerIndex = 0;
         g_MenuHintBarStep = 0;
         g_MenuOverlayPattern = 0;
         g_MenuPendingCourseIndex = 0;
@@ -312,7 +312,7 @@ int main(int argc, char **argv) {
             after[4] = g_MenuConfirmTimer;
             after[5] = g_MenuScreen;
             after[6] = g_MenuHandlerIndex;
-            after[7] = g_MenuHandlerIndex2;
+            after[7] = g_MenuOutgoingHandlerIndex;
             after[8] = g_MenuOverlayPattern;
             after[9] = g_MenuHintBarStep;
             after[10] = g_SceneId;
@@ -483,7 +483,7 @@ int main(int argc, char **argv) {
             Record(label, NULL, 0);
             UpdateCourseSelectScreen();
             RECORD("handed", g_MenuScreen, g_MenuHandlerIndex,
-                   g_MenuHandlerIndex2, g_MenuViewOffset, g_MenuViewAngle,
+                   g_MenuOutgoingHandlerIndex, g_MenuViewOffset, g_MenuViewAngle,
                    g_CarSwapToIndex, g_CourseIndex, g_UiScriptProgress);
             /* What the handover itself writes, which is the whole point of
              * reaching it: the scene it asks for and the record the race

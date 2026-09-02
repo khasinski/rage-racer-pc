@@ -14,7 +14,7 @@ s32 g_LogoSampleScreenFade;
 s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuHintButtonsVisible;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;

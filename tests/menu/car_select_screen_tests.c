@@ -48,7 +48,7 @@ s32 g_MenuAltPanelStep;
 s32 g_MenuAltPanelStep2;
 s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
@@ -268,7 +268,7 @@ int main(int argc, char **argv) {
         g_MenuAltPanelStep2 = 0;
         g_MenuCourseModelIndex = 0;
         g_MenuHandlerIndex = 0;
-        g_MenuHandlerIndex2 = 0;
+        g_MenuOutgoingHandlerIndex = 0;
         g_MenuHintBarStep = 0;
         g_MenuOverlayPattern = 0;
         g_MenuPendingCourseIndex = 0;
@@ -303,7 +303,7 @@ int main(int argc, char **argv) {
             after[8] = g_MenuViewOffsetTarget;
             after[9] = g_MenuScreen;
             after[10] = g_MenuHandlerIndex;
-            after[11] = g_MenuHandlerIndex2;
+            after[11] = g_MenuOutgoingHandlerIndex;
             after[12] = g_MenuOverlayPattern;
             after[13] = g_CarNamePlateStep;
             after[14] = g_CarSpecGraphStep;

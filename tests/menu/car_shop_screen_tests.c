@@ -46,7 +46,7 @@ s32 g_MenuAltPanelStep2;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
         g_MenuAltPanelStep = 0;
         g_MenuAltPanelStep2 = 0;
         g_MenuHandlerIndex = 0;
-        g_MenuHandlerIndex2 = 0;
+        g_MenuOutgoingHandlerIndex = 0;
         g_MenuOverlayPattern = 0;
         g_MenuScreen = 0;
         g_CarShopModalScript = NULL;
@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
             after[13] = g_MenuOverlayPattern;
             after[14] = g_MenuScreen;
             after[15] = g_MenuHandlerIndex;
-            after[16] = g_MenuHandlerIndex2;
+            after[16] = g_MenuOutgoingHandlerIndex;
             after[17] = ScriptId(g_CarShopModalScript);
             Record("state", after, 18);
             RECORD("owned", s_cars[cars[ci]].enabled,

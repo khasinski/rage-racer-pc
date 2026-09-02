@@ -268,7 +268,7 @@ static void EnterChosenScreen(void) {
 
 static void UpdateCarSelectOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 4;
+    g_MenuOutgoingHandlerIndex = 4;
     DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {

@@ -555,7 +555,7 @@ int PortShouldExit(int frame_number) {
             lastSweepScreen != screen) {
             g_MenuScreen = screen;
             g_MenuHandlerIndex = screen;
-            g_MenuHandlerIndex2 = -1;
+            g_MenuOutgoingHandlerIndex = -1;
             GameMenuBusy = 0;
             g_UiScriptProgress = 0;
             g_UiScriptProgress2 = 0;

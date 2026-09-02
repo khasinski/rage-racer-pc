@@ -8,7 +8,7 @@ s32 GameMenuBusy;
 s32 g_CourseIndex;
 s32 g_MenuAltLayout;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_RankingCursor;
@@ -120,7 +120,7 @@ int main(void) {
     g_UiScriptProgress = 0;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == 0 && g_MenuScreen == 1);
-    CHECK(g_MenuHandlerIndex == 1 && g_MenuHandlerIndex2 == 2);
+    CHECK(g_MenuHandlerIndex == 1 && g_MenuOutgoingHandlerIndex == 2);
     CHECK(g_RankingCursor == 0 && g_TimeAttackPlateStep == 1);
     CHECK(s_timeAttackPlateStep == 0);
 

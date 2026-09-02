@@ -326,7 +326,7 @@ s32 g_TimeAttackPlateStep;
 s32 g_MenuAltLayoutSetting;
 s32 g_CarShopUnlockAll;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;

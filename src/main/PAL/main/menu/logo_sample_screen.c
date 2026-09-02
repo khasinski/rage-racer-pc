@@ -105,7 +105,7 @@ static void UpdateLogoSampleModal(void) {
 
 static void UpdateLogoSampleOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = MENU_SCREEN_LOGO_SAMPLE;
+    g_MenuOutgoingHandlerIndex = MENU_SCREEN_LOGO_SAMPLE;
     DrawLogoSamplePanel(-1, 0);
     RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);

@@ -35,7 +35,7 @@ s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
         g_CarSwapFromIndex = 0;
         g_CarSwapToIndex = 0;
         g_MenuHandlerIndex = 0;
-        g_MenuHandlerIndex2 = 0;
+        g_MenuOutgoingHandlerIndex = 0;
         g_MenuOverlayPattern = 0;
         g_MenuScreen = 0;
         g_MenuViewAngle = 0;
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
             after[5] = g_MenuOverlayPattern;
             after[6] = g_MenuScreen;
             after[7] = g_MenuHandlerIndex;
-            after[8] = g_MenuHandlerIndex2;
+            after[8] = g_MenuOutgoingHandlerIndex;
             after[9] = g_MenuViewAngle;
             after[10] = g_MenuViewAngleTarget;
             after[11] = g_CarSwapFromIndex;

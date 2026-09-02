@@ -142,7 +142,7 @@ void UpdateDesignModeScreen(void) {
         RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
     } else {
         g_MenuHandlerIndex = -1;
-        g_MenuHandlerIndex2 = 6;
+        g_MenuOutgoingHandlerIndex = 6;
         RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, -1);
         RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
         DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);

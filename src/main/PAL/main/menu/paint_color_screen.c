@@ -121,7 +121,7 @@ static void UpdateSelectedPaintColor(void) {
 
 static void UpdatePaintColorOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 10;
+    g_MenuOutgoingHandlerIndex = 10;
     RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);

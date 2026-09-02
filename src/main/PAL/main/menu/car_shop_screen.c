@@ -210,7 +210,7 @@ static void UpdateCarShopModal(void *ot, s32 price) {
  * the money only leaves once the screen has actually finished. */
 static void UpdateCarShopOutgoing(s32 price) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 0xB;
+    g_MenuOutgoingHandlerIndex = 0xB;
     DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price);

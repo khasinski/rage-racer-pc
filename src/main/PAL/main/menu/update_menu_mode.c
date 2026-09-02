@@ -24,8 +24,8 @@ void UpdateMenuMode(void) {
     if (g_MenuHandlerIndex > 0) {
         g_MenuScreenDraw[g_MenuHandlerIndex](0x14);
     }
-    if (g_MenuHandlerIndex2 > 0) {
-        g_MenuOutgoingScreenProgress = g_MenuScreenDraw[g_MenuHandlerIndex2](-10);
+    if (g_MenuOutgoingHandlerIndex > 0) {
+        g_MenuOutgoingScreenProgress = g_MenuScreenDraw[g_MenuOutgoingHandlerIndex](-10);
     }
     g_MenuScreenUpdate[g_MenuScreen]();
 

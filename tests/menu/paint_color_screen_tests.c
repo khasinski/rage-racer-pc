@@ -12,7 +12,7 @@ CarEntry g_TimeAttackCars[13];
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHandlerIndex2;
+s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_MenuViewOffsetTarget;

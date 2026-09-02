@@ -157,7 +157,7 @@ static void UpdateEngineerShopModal(void *ot, s32 price) {
  * recorded here, so it only counts once the screen has actually finished. */
 static void UpdateEngineerShopOutgoing(s32 price) {
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 0xC;
+    g_MenuOutgoingHandlerIndex = 0xC;
     DrawEngineerShopPricePanel(-1, g_PlayerMoney, price);
     RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);

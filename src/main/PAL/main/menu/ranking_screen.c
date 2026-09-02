@@ -118,7 +118,7 @@ void UpdateRankingScreen(void) {
         return;
     }
     g_MenuHandlerIndex = -1;
-    g_MenuHandlerIndex2 = 2;
+    g_MenuOutgoingHandlerIndex = 2;
     RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
     RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, -1);
