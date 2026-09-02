@@ -6,18 +6,19 @@
  * use this; which quadrant answers is what decides who gets shoved.
  */
 
-#include "game/car.h"
+#include "game/car_internal.h"
 
 /*
- * Which of the four collision quads of a car's hull the first of `points` falls
- * inside, 1..4, or 0 when none of them does. `sample` and `quad` report where
- * it stopped, which is what the collision trace prints.
+ * Reports which of the four collision quads contains the first candidate
+ * point. A miss has region 0 and -1 indices; a hit has region 1..4 and the
+ * matching zero-based point and quad indices used by collision tracing.
  */
-s32 FirstQuadHit(CarCollisionPoint grid[4][4],
-                 const CarCollisionPoint *points, s32 count,
-                 s32 *sample, s32 *quad) {
+CarCollisionHit FindFirstCarCollisionQuad(
+    const CarCollisionPoint grid[4][4], const CarCollisionPoint *points,
+    s32 count) {
+    CarCollisionHit hit = {.region = 0, .sampleIndex = -1, .quadIndex = -1};
     s32 sampleIndex;
-    s32 quadIndex = 0;
+    s32 quadIndex;
 
     for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
         for (quadIndex = 0; quadIndex < 4; quadIndex++) {
@@ -27,13 +28,12 @@ s32 FirstQuadHit(CarCollisionPoint grid[4][4],
                     GetCarCollisionPointPacked(&grid[quadIndex][0]),
                     GetCarCollisionPointPacked(&grid[quadIndex][1]),
                     GetCarCollisionPointPacked(&points[sampleIndex])) > 0) {
-                *sample = sampleIndex;
-                *quad = quadIndex;
-                return quadIndex + 1;
+                hit.region = quadIndex + 1;
+                hit.sampleIndex = sampleIndex;
+                hit.quadIndex = quadIndex;
+                return hit;
             }
         }
     }
-    *sample = sampleIndex;
-    *quad = quadIndex;
-    return 0;
+    return hit;
 }

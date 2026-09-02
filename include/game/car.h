@@ -851,11 +851,6 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 IsCarFacingBackwards(PlayerCarRuntime *car);
 s32 IsPointInQuad(s32 p0, s32 p1, s32 p2, s32 p3, s32 pt);
-/* Which of the four quadrants of a car's hull the first of `points` falls
- * inside, 1..4, or 0 when none of them does. `sample` and `quad` report where
- * it stopped, which is what the collision trace prints. */
-s32 FirstQuadHit(CarCollisionPoint grid[4][4], const CarCollisionPoint *points,
-                 s32 count, s32 *sample, s32 *quad);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);
 void StartCarBodyKick(s32 strength, GameCarRuntime *car);

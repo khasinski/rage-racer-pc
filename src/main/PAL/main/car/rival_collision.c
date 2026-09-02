@@ -12,6 +12,7 @@
  */
 
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/track.h"
 #include "psyq/gte.h"
 
@@ -181,8 +182,7 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
 
     while (nextIndex < RACE_CAR_SLOT_COUNT) {
         if (WithinCollisionReach(car, other)) {
-            s32 sample;
-            s32 quad;
+            CarCollisionHit collision;
 
             if (!hullBuilt) {
                 TransformCarHull(car, carCorners, 0, 0);
@@ -196,10 +196,12 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
 
             /* Corners first, then the edge and centre points: the cheapest
                test that can hit, first. */
-            hit = FirstQuadHit(quads, otherCorners, 4, &sample, &quad);
-            if (hit <= 0) {
-                hit = FirstQuadHit(quads, samples, 5, &sample, &quad);
+            collision =
+                FindFirstCarCollisionQuad(quads, otherCorners, 4);
+            if (collision.region <= 0) {
+                collision = FindFirstCarCollisionQuad(quads, samples, 5);
             }
+            hit = collision.region;
             if (hit > 0) {
                 break;
             }

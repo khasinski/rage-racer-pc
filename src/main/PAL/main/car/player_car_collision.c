@@ -84,19 +84,19 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
   samples[8] = Midpoint(corners[3], samples[2]);
 }
 
-static s32 FindPlayerCollisionRegion(CarCollisionPoint grid[4][4],
-                                     const CarCollisionPoint corners[4],
-                                     const CarCollisionPoint samples[9],
-                                     s32 *sampleIndex, s32 *quadIndex) {
-  s32 region = FirstQuadHit(grid, corners, 4, sampleIndex, quadIndex);
+static CarCollisionHit FindPlayerCollisionRegion(
+    const CarCollisionPoint grid[4][4],
+    const CarCollisionPoint corners[4],
+    const CarCollisionPoint samples[9]) {
+  CarCollisionHit hit = FindFirstCarCollisionQuad(grid, corners, 4);
 
-  if (region <= 0) {
-    region = FirstQuadHit(grid, samples, 5, sampleIndex, quadIndex);
+  if (hit.region <= 0) {
+    hit = FindFirstCarCollisionQuad(grid, samples, 5);
   }
-  if (region <= 0) {
-    region = FirstQuadHit(grid, &samples[5], 4, sampleIndex, quadIndex);
+  if (hit.region <= 0) {
+    hit = FindFirstCarCollisionQuad(grid, &samples[5], 4);
   }
-  return region;
+  return hit;
 }
 
 typedef struct PlayerCollisionHit {
@@ -117,6 +117,7 @@ static s32 AbsoluteDifference(s32 a, s32 b) {
 static PlayerCollisionHit FindPlayerCollision(
     PlayerCarRuntime *player, CarCollisionPoint playerGrid[4][4]) {
   PlayerCollisionHit hit = {0};
+  CarCollisionHit quadHit;
   CarCollisionPoint samples[9];
   CarCollisionPoint corners[4];
   s32 index;
@@ -148,8 +149,10 @@ static PlayerCollisionHit FindPlayerCollision(
         g_DragScale = 0x2BC;
       }
       BuildOpponentCollisionSamples(player, opponent, corners, samples);
-      hit.region = FindPlayerCollisionRegion(
-          playerGrid, corners, samples, &hit.sampleIndex, &hit.quadIndex);
+      quadHit = FindPlayerCollisionRegion(playerGrid, corners, samples);
+      hit.region = quadHit.region;
+      hit.sampleIndex = quadHit.sampleIndex;
+      hit.quadIndex = quadHit.quadIndex;
       if (hit.region > 0) {
         hit.opponent = opponent;
         hit.opponentIndex = index;

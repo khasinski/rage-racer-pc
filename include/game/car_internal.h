@@ -66,6 +66,16 @@ typedef struct {
     s32 throttleAcceleration;
 } CarDrivetrainLoads;
 
+typedef struct CarCollisionHit {
+    s32 region;
+    s32 sampleIndex;
+    s32 quadIndex;
+} CarCollisionHit;
+
+CarCollisionHit FindFirstCarCollisionQuad(
+    const CarCollisionPoint grid[4][4], const CarCollisionPoint *points,
+    s32 count);
+
 void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
                            s32 gripBudget);
 CarDrivetrainLoads CalculateCarDrivetrainLoads(
