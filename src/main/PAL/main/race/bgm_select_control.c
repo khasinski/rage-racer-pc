@@ -11,6 +11,10 @@ enum {
 };
 
 static void PreventImmediateShuffleRepeat(u32 track) {
+    if (g_BgmTrackCount <= 1) {
+        return;
+    }
+
     if (track == g_BgmShuffleOrder[0]) {
         u8 replacement = g_BgmShuffleOrder[g_BgmTrackCount - 1];
 
@@ -20,15 +24,20 @@ static void PreventImmediateShuffleRepeat(u32 track) {
 }
 
 void AdvanceBgmShuffleBag(u32 track) {
+    if (g_BgmTrackCount <= 0) {
+        g_BgmShuffleIndex = 0;
+        return;
+    }
+
     g_BgmShuffleIndex++;
-    if (g_BgmShuffleIndex == g_BgmTrackCount) {
+    if (g_BgmShuffleIndex >= g_BgmTrackCount) {
         ShuffleBgmOrder();
         PreventImmediateShuffleRepeat(track);
     }
 }
 
 static void SelectNextBgmTrack(void) {
-    if (g_BgmRandomPlay != 0) {
+    if (g_BgmRandomPlay != 0 && g_BgmTrackCount > 0) {
         g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
         AdvanceBgmShuffleBag((u32)g_BgmSelectTrack);
     } else {

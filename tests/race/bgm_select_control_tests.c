@@ -90,6 +90,17 @@ int main(void) {
     CHECK(g_BgmShuffleOrder[0] == 2 && g_BgmShuffleOrder[2] == 1);
 
     Reset();
+    g_BgmTrackCount = 0;
+    g_BgmShuffleIndex = 8;
+    AdvanceBgmShuffleBag(1);
+    CHECK(g_BgmShuffleIndex == 0 && s_shuffleCalls == 0);
+
+    Reset();
+    g_BgmShuffleIndex = 8;
+    AdvanceBgmShuffleBag(1);
+    CHECK(g_BgmShuffleIndex == 0 && s_shuffleCalls == 1);
+
+    Reset();
     g_BgmSelectCursor = 0;
     g_BgmSelectTrack = 0;
     g_PadPressed = PAD_CONFIRM;
