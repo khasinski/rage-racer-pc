@@ -7,27 +7,22 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <string.h>
+
 static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
+    s16 manual = car->drive.manual;
+    s32 launchThresholdIndex = car->drive.launchThresholdIndex;
+
+    memset(car, 0, sizeof(*car));
     car->modelIndex = 0x17;
-    car->drive.brakePos = 0;
-    car->drive.reserved0C = 0;
-    car->drive.accelPos = 0;
-    car->drive.reserved20 = 0;
-    car->drive.steerPos = 0;
-    car->drive.reserved18 = 0;
-    car->motionX = 0;
-    car->motionY = 0;
-    car->motionZ = 0;
-    car->wheelRotation = 0;
-    car->steeringAngle = 0;
-    car->reserved40 = 0;
-    car->speed = 0;
-    car->acceleration = 0;
-    car->lap = 0;
-    car->drive.bodyLiftOffset = 0;
-    car->progressA = 0;
-    car->progressB = 0;
-    car->trackProgress = 0;
+    car->drive.manual = manual;
+    car->drive.launchThresholdIndex = launchThresholdIndex;
+    car->drive.hudLapHighlightRow = -1;
+    car->drive.motionState = CAR_MOTION_STANDING_START;
+    car->drive.drivetrainCoupled = 1;
+    car->drive.gear = 1;
+    car->drive.racePosition = 1;
+    car->drive.gearDisp = 1;
 }
 
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
@@ -66,37 +61,7 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     car->facingBackwards = IsCarFacingBackwards(car);
 }
 
-static void InitializePlayerDrive(GameCarDrive *drive) {
-    drive->hudLapHighlightRow = -1;
-    drive->motionState = CAR_MOTION_STANDING_START;
-    drive->engineLoad = 0;
-    drive->drivetrainCoupled = 1;
-    drive->shiftSpeedDelta = 0;
-    drive->steeringGrip = 0;
-    drive->trackCurveBias = 0;
-    drive->trackCurveMode = 0;
-    drive->jumpTimer = 0;
-    drive->clutch = 0;
-    drive->groundedFrames = 0;
-    drive->launchEnergy = 0;
-    drive->standingStartBounceY = 0;
-    drive->standingStartBounceX = 0;
-    drive->gear = 1;
-    drive->engineRpm = 0;
-    drive->reserved80 = 0;
-    drive->drivetrainTorque = 0;
-    drive->reserved7C = 0;
-    drive->racePosition = 1;
-    drive->gearDisp = 1;
-    drive->shiftRpmDelta = 0;
-}
-
-static void ResetPlayerDrivingGlobals(PlayerCarRuntime *car) {
-    GameCarDrive *drive = &car->drive;
-
-    car->verticalMotionState = 0;
-    drive->brakeLatch = 0;
-    drive->acceleratorLatch = 0;
+static void ResetPlayerDrivingGlobals(const GameCarDrive *drive) {
     g_EngineRpmJitter = 0;
     g_EngineRpm = 0;
     g_EngineRpmSnapshot = 0;
@@ -114,7 +79,6 @@ void InitPlayerCar(PlayerCarRuntime *car) {
     g_RacePhase = 2;
     g_RaceSeries = g_GrandPrixSeries & 1;
     BuildTachoNeedleQuad();
-    ClearCarMotionState(AsRivalCar(car));
     g_AutoShiftCooldown = 0;
     g_TrackZoneDark = 0;
     g_ShiftSoundLevel = 0;
@@ -122,9 +86,8 @@ void InitPlayerCar(PlayerCarRuntime *car) {
 
     ResetPlayerCarRuntime(car);
     PlacePlayerCarOnGrid(car);
-    InitializePlayerDrive(&car->drive);
     g_ShiftTargetRpm = 0;
 
     PrepareCarPerformance(&car->drive);
-    ResetPlayerDrivingGlobals(car);
+    ResetPlayerDrivingGlobals(&car->drive);
 }
