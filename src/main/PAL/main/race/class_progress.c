@@ -1,13 +1,11 @@
 #include <stdio.h>
 
-#include "game/audio.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/save_internal.h"
-#include "game/sound.h"
 #include "game/state.h"
 
 void UpdateBgmTrackCount(void) {
@@ -88,7 +86,7 @@ void CommitClassProgress(void) {
                 grade < g_ClassRecords[classRecordIndex].place) {
                 g_ClassRecords[classRecordIndex].place = (u16)grade;
             }
-            g_ClassClearFanfareTimer = 0xD2;
+            g_ClassClearFanfareTimer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
         }
 
         UpdateBgmTrackCount();
@@ -170,13 +168,4 @@ void EnterPrizeScreen(void) {
 
     g_PrizeCountStep = PrizeCountStep(prizes[PRIZE_PLACE_THIRD], 80);
     g_BonusCountStep = PrizeCountStep(g_PromotionBonus, 250);
-}
-
-void TickClassClearFanfare(void) {
-    if (g_ClassClearFanfareTimer > 0) {
-        g_ClassClearFanfareTimer--;
-    }
-    if (g_ClassClearFanfareTimer == 0xB4) {
-        PlaySoundCue(0x42);
-    }
 }
