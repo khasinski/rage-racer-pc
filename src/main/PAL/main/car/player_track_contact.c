@@ -6,6 +6,18 @@
 
 #include "rage/trace.h"
 
+enum {
+    SLOW_SKID_SPEED_LIMIT = 64,
+    SLOW_SKID_FIRST_SUPPRESSED = 2,
+    SLOW_SKID_LAST_SUPPRESSED = 3,
+};
+
+static int ShouldSuppressSlowSkid(s32 skid, s32 speed) {
+    return speed < SLOW_SKID_SPEED_LIMIT &&
+           skid >= SLOW_SKID_FIRST_SUPPRESSED &&
+           skid <= SLOW_SKID_LAST_SUPPRESSED;
+}
+
 s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
     Matrix toTrack;
     SVec trackRotation;
@@ -32,7 +44,7 @@ s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
         AsRivalCar(car), car->trackPointIndex, &limits);
     TraceCarMotion("post-track", car);
 
-    if ((u32)(skid - 2) < 2U && car->speed < 64) {
+    if (ShouldSuppressSlowSkid(skid, car->speed)) {
         return 0;
     }
     return skid;
