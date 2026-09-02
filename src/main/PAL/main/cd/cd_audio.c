@@ -7,23 +7,37 @@
 
 long HostCdAudioEnded(void);
 
+enum {
+    CD_AUDIO_MODE = 7,
+    INITIAL_CD_TRACK = 2,
+    FULL_CD_VOLUME = 0x7F,
+    BGM_SELECT_SCENE = 0x1C,
+};
+
+static void ScheduleCurrentTrackRestart(void) {
+    g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
+    g_CdCommandPending = CD_COMMAND_PLAY;
+    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+    g_CdTrackPending = g_CdCurrentTrack;
+}
+
 void InitCdAudio(void) {
     SsSetSpuInputAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
-    g_CdModeParam = 7;
+    g_CdModeParam = CD_AUDIO_MODE;
     CdControl(CD_DRIVE_SET_MODE, &g_CdModeParam, 0);
     BuildCdTrackTable();
 
     g_CdTrackPending = -1;
     g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdCurrentTrack = 2;
+    g_CdCurrentTrack = INITIAL_CD_TRACK;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
     g_CdMixPreset = 0;
     g_CdRestartOnResume = 0;
-    g_CdVolume = 0x7F;
+    g_CdVolume = FULL_CD_VOLUME;
     g_CdFadeFrames = 0;
-    SetCdVolume(0x7F);
+    SetCdVolume(FULL_CD_VOLUME);
 }
 
 void TickCdAudio(void) {
@@ -52,7 +66,7 @@ void TickCdAudio(void) {
      * seek step, or playback can never reach the command that clears EOF. */
     if (CdAudioRequestsIdle(g_CdTrackPending, g_CdCommandPending) &&
         HostCdAudioEnded()) {
-        if (g_SceneId == 0x1C) {
+        if (g_SceneId == BGM_SELECT_SCENE) {
             g_CdTrackEnded = 1;
         } else {
             const s32 loopPoint =
@@ -61,10 +75,7 @@ void TickCdAudio(void) {
                 CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
 
             if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
-                g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
-                g_CdCommandPending = CD_COMMAND_PLAY;
-                g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
-                g_CdTrackPending = g_CdCurrentTrack;
+                ScheduleCurrentTrackRestart();
             }
         }
     }
