@@ -22,117 +22,128 @@ s32 RequestRaceAssets(void) {
     return 1;
 }
 
+static void BeginRaceVoiceLoad(void) {
+    s32 *source = GetAssetWords(g_AssetBlockPtr);
+    s32 *destination = GetAssetWords(g_AssetLoadCursor);
+    s32 wordsRemaining = g_SharedAssetWord0 / sizeof(*source);
+
+    while (wordsRemaining != 0) {
+        *destination++ = *source++;
+        wordsRemaining--;
+    }
+    StartAudioSlotLoad(2, g_AssetLoadCursor, g_AssetSubBlockPtr, 0);
+    g_AssetLoadCursor += g_SharedAssetWord0;
+    g_AssetLoadState = 2;
+}
+
+static void AdvanceAfterAudioLoad(s32 nextState) {
+    if ((s16)PollAudioSlotLoad() != 0) {
+        g_AssetLoadState = nextState;
+    }
+}
+
+static void LoadPlayerCarRaceAssets(void) {
+    s32 carIndex = g_PlayerCarIndex;
+    s32 carAsset =
+        GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
+    GameSceneAssetHeader *pack;
+    u8 *audioHeader;
+    u8 *audioTable;
+    u8 *audioBody;
+
+    GameRenderWorldSetTrackCarAsset(carAsset);
+    if (LoadAsset((carAsset * 2) + 11, g_AssetLoadCursor) == 0) {
+        return;
+    }
+
+    pack = GetSceneAssetHeader(g_AssetLoadCursor);
+    g_CarSpec = GetGameCarSpec(GetSceneAssetAddress(pack, pack->offsets[0]));
+    audioHeader = GetSceneAssetAddress(pack, pack->offsets[1]);
+    audioTable = GetSceneAssetAddress(pack, pack->offsets[2]);
+    audioBody = GetSceneAssetAddress(pack, pack->offsets[3]);
+    g_AssetBlockPtr = audioHeader;
+    g_AssetBlockPtr2 = audioTable;
+    g_AssetSubBlockPtr = audioBody;
+    StartAudioSlotLoad(3, audioHeader, audioBody,
+                       GetAssetHalfwords(audioTable));
+    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    g_AssetLoadCursor = audioBody;
+    g_AssetLoadState = 4;
+}
+
+static s32 RaceCourseAssetIndex(s32 base) {
+    return base + (g_GrandPrixClass * 8) + (g_CourseIndex * 2);
+}
+
+static void LoadTrackTextureAssets(void) {
+    GameSceneAssetHeader *pack;
+
+    if (LoadAsset(RaceCourseAssetIndex(ASSET_TRACK_1ST_BASE),
+                  g_AssetLoadCursor) == 0) {
+        return;
+    }
+
+    pack = GetSceneAssetHeader(g_AssetLoadCursor);
+    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[1]);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[2]);
+    UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[3]);
+    g_AssetSubBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    StoreTeamLogoImage(g_AssetLoadCursor);
+    g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetLoadCursor);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
+    ResetTrackTextureSwap();
+    g_AssetLoadCursor += TRACK_TEXTURE_SHADOW_SIZE;
+    g_AssetLoadState = 6;
+}
+
+static void LoadTrackRuntimeAssets(void) {
+    s32 assetIndex = RaceCourseAssetIndex(ASSET_TRACK_2ND_BASE);
+
+    if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) {
+        return;
+    }
+
+    TrackAssetIdentitySet(assetIndex);
+    SetTrackRenderTable(SceneAssetBlock(0));
+    SetEnvPaletteTable(SceneAssetBlock(1));
+    SetEnvironmentScript(SceneAssetBlock(2));
+    RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);
+    InstallTrackPoints(SceneAssetBlock(4));
+    RegisterCourseModels(GetCourseModelAssetHeader(SceneAssetBlock(5)));
+    RegisterModelBank(GetModelBankHeader(SceneAssetBlock(6)), 2);
+    InstallTerrainCellData(SceneAssetBlock(7));
+    SetCourseObjects(SceneAssetBlock(8));
+    InstallTrackEventData(SceneAssetBlock(9));
+    SelectTrackCameraTable(SceneAssetBlock(10), 1);
+    g_AssetLoadState = 7;
+}
+
 void LoadRaceAssets(void) {
     switch (g_AssetLoadState) {
-    case 1: {
-        s32 *src = GetAssetWords(g_AssetBlockPtr);
-        s32 *dst = GetAssetWords(g_AssetLoadCursor);
-        s32 wordCount = g_SharedAssetWord0 / sizeof(*src);
-
-        while (wordCount != 0) {
-            *dst++ = *src++;
-            wordCount--;
-        }
-        StartAudioSlotLoad(2, g_AssetLoadCursor, g_AssetSubBlockPtr, 0);
-        g_AssetLoadState = 2;
-        g_AssetLoadCursor = g_AssetLoadCursor + g_SharedAssetWord0;
+    case 1:
+        BeginRaceVoiceLoad();
         break;
-    }
     case 2:
-        if ((s16)PollAudioSlotLoad() != 0) {
-            g_AssetLoadState = 3;
-        }
+        AdvanceAfterAudioLoad(3);
         break;
-    case 3: {
-        s32 carIndex = g_PlayerCarIndex;
-        s32 carAsset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
-        GameRenderWorldSetTrackCarAsset(carAsset);
-        if (LoadAsset((carAsset * 2) + 11, g_AssetLoadCursor) != 0) {
-            GameSceneAssetHeader *pack;
-            u8 *table;
-            u8 *header;
-            u8 *body;
-
-            pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
-            g_CarSpec = GetGameCarSpec(g_AssetBlockPtr);
-            header = GetSceneAssetAddress(pack, pack->offsets[1]);
-            table = GetSceneAssetAddress(pack, pack->offsets[2]);
-            body = GetSceneAssetAddress(pack, pack->offsets[3]);
-            g_AssetBlockPtr = header;
-            g_AssetBlockPtr2 = table;
-            g_AssetSubBlockPtr = body;
-            StartAudioSlotLoad(3, header, body, GetAssetHalfwords(table));
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            g_AssetLoadState = 4;
-            g_AssetLoadCursor = g_AssetSubBlockPtr;
-        }
+    case 3:
+        LoadPlayerCarRaceAssets();
         break;
-    }
     case 4:
-        if ((s16)PollAudioSlotLoad() != 0) {
-            g_AssetLoadState = 5;
-        }
+        AdvanceAfterAudioLoad(5);
         break;
-    case 5: {
-        u8 *dst;
-        s32 courseOffset;
-        s32 classBase;
-        dst = g_AssetLoadCursor;
-        courseOffset = g_CourseIndex * 2;
-        classBase = (g_GrandPrixClass * 8) + ASSET_TRACK_1ST_BASE;
-        if (LoadAsset(courseOffset + classBase, dst) != 0) {
-            GameSceneAssetHeader *pack;
-
-            pack = GetSceneAssetHeader(g_AssetLoadCursor);
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[1]);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[2]);
-            UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[3]);
-            g_AssetSubBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-            StoreTeamLogoImage(g_AssetLoadCursor);
-            g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetLoadCursor);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
-            ResetTrackTextureSwap();
-            g_AssetLoadState = 6;
-            g_AssetLoadCursor = g_AssetLoadCursor + TRACK_TEXTURE_SHADOW_SIZE;
-        }
+    case 5:
+        LoadTrackTextureAssets();
         break;
-    }
-    case 6: {
-        u8 *dst;
-        s32 assetIndex;
-        s32 courseOffset;
-        s32 offset;
-        dst = g_AssetLoadCursor;
-        courseOffset = g_CourseIndex * 2;
-        offset = (g_GrandPrixClass * 8) + courseOffset;
-        assetIndex = offset + ASSET_TRACK_2ND_BASE;
-        if (LoadAsset(assetIndex, dst) != 0) {
-
-            TrackAssetIdentitySet(assetIndex);
-
-            SetTrackRenderTable(SceneAssetBlock(0));
-            SetEnvPaletteTable(SceneAssetBlock(1));
-            SetEnvironmentScript(SceneAssetBlock(2));
-            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);
-            InstallTrackPoints(SceneAssetBlock(4));
-            RegisterCourseModels(GetCourseModelAssetHeader(SceneAssetBlock(5)));
-            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(6)), 2);
-            InstallTerrainCellData(SceneAssetBlock(7));
-            SetCourseObjects(SceneAssetBlock(8));
-            InstallTrackEventData(SceneAssetBlock(9));
-            SelectTrackCameraTable(SceneAssetBlock(10), 1);
-
-            g_AssetLoadState = 7;
-        }
+    case 6:
+        LoadTrackRuntimeAssets();
         break;
-    }
     case 7:
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;

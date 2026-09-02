@@ -41,6 +41,25 @@ endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
 set_tests_properties(content_options PROPERTIES LABELS functional)
+add_executable(race_asset_loading_tests
+    race_asset_loading_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c)
+target_include_directories(race_asset_loading_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_asset_loading_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(race_asset_loading_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_asset_loading_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_asset_loading COMMAND race_asset_loading_tests)
+set_tests_properties(race_asset_loading PROPERTIES LABELS unit)
+
 # The bytes themselves, which the manifest above cannot see.
 add_executable(host_state_content_tests
     host_state_content_tests.c

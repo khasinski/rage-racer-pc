@@ -438,7 +438,6 @@ void DrawTimeAttackPlate(s32 stepArg);
 void InitTrackLighting(void);
 void InstallCarModelSlot(void);
 void LoadTrackTexturePageRange(void);
-s32 RequestTrackLoad(void);
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 
