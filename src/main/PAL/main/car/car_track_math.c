@@ -3,6 +3,9 @@
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength) {
+    if (segmentLength <= 0) {
+        return start;
+    }
     return (end * alongSegment + start * (segmentLength - alongSegment)) /
            segmentLength;
 }
@@ -15,6 +18,8 @@ s32 CarTrackFixed12ToInteger(s32 value) {
 }
 
 s32 ProjectCarTrackAxis(s32 value) {
+    /* Retail first truncated the 12-bit fixed-point product, then divided the
+     * scaled edge offset by four. Keep that two-stage negative rounding. */
     if (value < 0) {
         value += ANGLE_MASK;
     }
@@ -23,6 +28,9 @@ s32 ProjectCarTrackAxis(s32 value) {
 
 s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
                                s32 swept, s16 arcSpan) {
+    if (arcSpan <= 0) {
+        return pointHeading;
+    }
     if (nextHeading - pointHeading > ANGLE_HALF_TURN) {
         nextHeading -= ANGLE_FULL_TURN;
     } else if (pointHeading - nextHeading > ANGLE_HALF_TURN) {

@@ -668,6 +668,25 @@ target_link_libraries(arc_measure_tests PRIVATE psyz)
 add_test(NAME arc_measure COMMAND arc_measure_tests)
 set_tests_properties(arc_measure PROPERTIES LABELS unit)
 
+add_executable(car_track_math_tests
+    car_track_math_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_track_math.c)
+target_include_directories(car_track_math_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_track_math_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_track_math_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_track_math_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_track_math COMMAND car_track_math_tests)
+set_tests_properties(car_track_math PROPERTIES LABELS unit)
+
 add_executable(find_nearest_track_camera_tests
     find_nearest_track_camera_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/find_nearest_track_camera.c)
