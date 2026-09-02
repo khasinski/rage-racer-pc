@@ -1,6 +1,5 @@
 #include "psyq/cd.h"
 #include "game/fmv.h"
-#include "game/asset.h"
 #include "game/state.h"
 #include "game/fmv_internal.h"
 #include "game/cd.h"
@@ -25,7 +24,7 @@ void UpdateFmv(void) {
     case FMV_PLAYBACK_INVALID:
         break;
     case FMV_PLAYBACK_START:
-        StartFmvPlayback((FmvWorkBuffers *)(void *)g_AssetBase);
+        StartFmvPlayback();
         RAGE_FALLTHROUGH;
     case FMV_PLAYBACK_DECODE:
         DecodeFmvFrame();

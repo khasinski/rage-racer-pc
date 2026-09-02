@@ -156,16 +156,10 @@ void BeginIntroFmv(s32 returnScene);
 void BeginClassFmv(s32 returnScene);
 void BeginEndingFmv(s32 returnScene);
 void UpdateFmv(void);
-/* One decoded frame: DecDCTin the next bitstream chunk, DecDCTout the previous
- * one, then top the ring up from the drive. */
+/* Decode and present all movie frames whose sectors have arrived. */
 void DecodeFmvFrame(void);
-/* Clear the DecDCTout callback, unhook the streamer, restore g_SceneId. */
+/* Release the extracted stream and decoder buffers, then restore g_SceneId. */
 void EndFmv(void);
-/* Pull the next ready ring frame and resize the display when the stream's
- * frame size changes; returns 0 when nothing is ready. */
-/* The DMA1 (MDECout) callback: LoadImage one decoded strip into VRAM and queue
- * the next strip, or flip to the other frame buffer at the end of a frame. */
-void UploadFmvSlice(void);
 
 /*
  * Boot-time defaults for everything the memory card persists: the three car

@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 
-u8 *g_AssetBase;
 FmvPlaybackState g_FmvState;
 s32 g_SceneId;
 s32 g_StreamReturnScene;
@@ -15,7 +14,6 @@ static s32 s_resetCalls;
 static s32 s_cdSyncCalls;
 static long s_cdCommand;
 static s32 s_startCalls;
-static FmvWorkBuffers *s_startBuffers;
 static s32 s_decodeCalls;
 static s32 s_endCalls;
 static s32 s_failures;
@@ -37,9 +35,8 @@ long CdControl(long command, void *parameter, u8 *result) {
     s_cdCommand = command;
     return 1;
 }
-void StartFmvPlayback(FmvWorkBuffers *buffers) {
+void StartFmvPlayback(void) {
     s_startCalls++;
-    s_startBuffers = buffers;
 }
 void DecodeFmvFrame(void) { s_decodeCalls++; }
 void EndFmv(void) { s_endCalls++; }
@@ -64,9 +61,6 @@ static void TestBeginFmv(void) {
 }
 
 static void TestUpdateFmv(void) {
-    u8 workBuffer[16];
-
-    g_AssetBase = workBuffer;
     g_FmvState = FMV_PLAYBACK_INVALID;
     UpdateFmv();
     Check(s_startCalls == 0 && s_decodeCalls == 0 && s_endCalls == 0,
@@ -74,9 +68,7 @@ static void TestUpdateFmv(void) {
 
     g_FmvState = FMV_PLAYBACK_START;
     UpdateFmv();
-    Check(s_startCalls == 1 &&
-              s_startBuffers == (FmvWorkBuffers *)(void *)workBuffer &&
-              s_decodeCalls == 1,
+    Check(s_startCalls == 1 && s_decodeCalls == 1,
           "FMV start initializes and decodes in the same frame");
 
     g_FmvState = FMV_PLAYBACK_DECODE;

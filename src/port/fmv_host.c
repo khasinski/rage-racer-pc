@@ -33,6 +33,7 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 #include "psyq/cd.h"
+#include "psyq/press.h"
 #include "runtime_config.h"
 #include "timing_control.h"
 
@@ -175,7 +176,7 @@ static int RageDecodeFmvFrame(void) {
 
     DecDCTReset(0);
     if (DecDCTvlc((u_long *)s_bitstream, s_codes) < 0) return 0;
-    DecDCTin((volatile u32 *)s_codes, 3);
+    DecDCTin(s_codes, 3);
 
     /* The decoder hands back macroblocks in the order the hardware did:
      * down each column of the frame, then on to the next column. */
@@ -280,31 +281,40 @@ static int HostUploadFmvFrame(void) {
            Psyz_VideoUploadRgb24Frame(s_pixels, s_width, s_height);
 }
 
-void StartFmvPlayback(FmvWorkBuffers *buffers) {
+static long ResolveFmvStreamIndex(long streamIndex) {
+    const char *forced;
+    long chosen;
+
+    if (streamIndex < 0 || streamIndex > 10) {
+        streamIndex = 0;
+    }
+
+    /* Every movie but the opening one sits behind hours of play, so this puts
+     * any of them where the opening one is asked for. */
+    forced = RuntimeConfigGet("diagnostics.fmv_stream");
+    if (forced == NULL || forced[0] == '\0') {
+        return streamIndex;
+    }
+
+    chosen = strtol(forced, NULL, 10);
+    if (chosen < 0 || chosen > 10) {
+        fprintf(stderr, "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
+                forced);
+        return streamIndex;
+    }
+
+    g_StreamSectorCount = g_StreamCdEntries[chosen].size;
+    fprintf(stderr, "rage-port: FMV stream forced to %ld\n", chosen);
+    return chosen;
+}
+
+void StartFmvPlayback(void) {
     RECT clearRect;
     long streamIndex = g_StreamLoc - g_StreamCdEntries;
     unsigned int firstSector;
     unsigned int sectorSpan;
 
-    (void)buffers;
-    if (streamIndex < 0 || streamIndex > 10) streamIndex = 0;
-    {
-        /* Every movie but the opening one sits behind hours of play, so this
-         * puts any of them where the opening one is asked for. */
-        const char *forced = RuntimeConfigGet("diagnostics.fmv_stream");
-        if (forced != NULL && forced[0] != '\0') {
-            long chosen = strtol(forced, NULL, 10);
-            if (chosen >= 0 && chosen <= 10) {
-                streamIndex = chosen;
-                g_StreamSectorCount = g_StreamCdEntries[streamIndex].size;
-                fprintf(stderr, "rage-port: FMV stream forced to %ld\n", chosen);
-            } else {
-                fprintf(stderr,
-                        "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
-                        forced);
-            }
-        }
-    }
+    streamIndex = ResolveFmvStreamIndex(streamIndex);
     s_width = 320;
     s_height = streamIndex == 10 ? 240 : 192;
     sectorSpan = HostStreamSectorSpan((int)streamIndex);

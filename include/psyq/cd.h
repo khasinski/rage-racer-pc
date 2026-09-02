@@ -39,10 +39,8 @@ long StGetBackloc(CdlLOC *loc);
 void StSetRing(void *base, long size);
 void StSetStream(long mode, long start_frame, long end_frame, long callback, long user_data);
 u_long StFreeRing(u_long *base);
-/* The libds streaming state machine: advances g_StInterruptState through states 1..0xA,
- * DMAs sector header then body, drives the StStrHeader ring. Installed via
- * CdReadyCallback behind the stub CdRead2Callback and also pumped directly from
- * UploadFmvSlice. */
+/* The libds streaming state machine: advances g_StInterruptState through states
+ * 1..0xA, DMAs the sector header then body and drives the StStrHeader ring. */
 void StCdInterrupt(void);
 
 /*
@@ -108,20 +106,6 @@ long StGetNext(StRingEventRecord **addr, StRingEventRecord **header);
 /* Tear the stream down: clears the CD data / ready callbacks and both kernel
  * callback slots inside a critical section. */
 void StUnSetRing(void);
-
-/*
- * libpress (MDEC) front end - thin wrappers over the MDEC_* primitives, which
- * is what identifies each one. DecDCTin/DecDCTout push a bitstream / pull the
- * decoded macroblocks; the *Callback pair installs the DMA0 (MDECin) and DMA1
- * (MDECout) completion callbacks, which is how UploadFmvSlice is reached.
- */
-void DecDCTout(volatile u_long *buf, long size);
-/* LibRef47 gives both as `long f(long mode)`; these two bodies take no argument
- * and return nothing, i.e. the blocking (mode 0) form only. */
-void DecDCTinSync(void);
-void DecDCToutSync(void);
-void DecDCTinCallback(long callback);
-void DecDCToutCallback(long callback);
 
 long CD_init(long mode);
 long CD_sync(long mode, u_char *result);
@@ -190,8 +174,6 @@ void CdDefaultReadyCallback(void);
 void CdDefaultSyncCallback(void);
 void CdDispatchInterrupts(void);
 void CdRead2Callback(void);
-u_long *DecDCTGetEnv(u_long* env);
-u_long *DecDCTPutEnv(u_long* env);
 void MDEC_reset(long mode);
 long MDEC_timeout(u_char* name);
 long cd_read(long sectors, long address, void *mode);
