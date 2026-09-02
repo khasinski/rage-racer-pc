@@ -12,7 +12,7 @@
 s32 TrackTexturePageForSection(s32 section) {
     return section >= g_TrackTextureSectionLo &&
                    section < g_TrackTextureSectionHi
-               ? 0x100
+               ? TRACK_TEXTURE_PAGE_ROW_COUNT
                : 0;
 }
 
@@ -22,9 +22,9 @@ static void SelectTrackTexturePage(s32 trackSection) {
 }
 
 static void SwapTrackTextureRowAt(s32 row) {
-    s32 buffer[0xE0];
+    TrackTextureShadowRow buffer;
 
-    g_TrackTextureRowRect.y = (s16)(row + 0x100);
+    g_TrackTextureRowRect.y = (s16)(row + TRACK_TEXTURE_PAGE_ROW_COUNT);
     if (g_TrackTextureShadowPage[row] != g_TrackTexturePageWanted) return;
 
     StoreImage(&g_TrackTextureRowRect, buffer);
@@ -35,10 +35,10 @@ static void SwapTrackTextureRowAt(s32 row) {
     g_TrackTextureShadowPage[row] = 1 - g_TrackTextureShadowPage[row];
 }
 
-void SwapTrackTexturePageNow(void) {
+static void SwapAllTrackTextureRows(void) {
     s32 row;
 
-    for (row = 0; row < 0x100; row++) {
+    for (row = 0; row < TRACK_TEXTURE_PAGE_ROW_COUNT; row++) {
         SwapTrackTextureRowAt(row);
     }
 }
@@ -46,13 +46,13 @@ void SwapTrackTexturePageNow(void) {
 void SetTrackTexturePageNow(s32 trackSection) {
     SelectTrackTexturePage(trackSection);
     g_TrackTextureCursorRow = g_TrackTextureTargetRow;
-    SwapTrackTexturePageNow();
+    SwapAllTrackTextureRows();
 }
 
 void ResetTrackTextureSwap(void) {
     s32 i;
 
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0; i < TRACK_TEXTURE_PAGE_ROW_COUNT; i++) {
         g_TrackTextureShadowPage[i] = 1;
     }
 
@@ -65,10 +65,6 @@ void RequestTrackTexturePage(s32 trackSection) {
     SelectTrackTexturePage(trackSection);
 }
 
-void SwapTrackTextureRow(void) {
-    SwapTrackTextureRowAt(g_TrackTextureCursorRow);
-}
-
 void StepTrackTextureSwap(void) {
     while (g_TrackTextureCursorRow != g_TrackTextureTargetRow) {
         if (VSync(1) >= 471) {
@@ -76,11 +72,11 @@ void StepTrackTextureSwap(void) {
         }
 
         if (g_TrackTextureCursorRow < g_TrackTextureTargetRow) {
-            SwapTrackTextureRow();
+            SwapTrackTextureRowAt(g_TrackTextureCursorRow);
             g_TrackTextureCursorRow++;
         } else {
             g_TrackTextureCursorRow--;
-            SwapTrackTextureRow();
+            SwapTrackTextureRowAt(g_TrackTextureCursorRow);
         }
     }
 }

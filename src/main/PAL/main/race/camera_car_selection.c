@@ -19,7 +19,8 @@ static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
     if ((mask & g_SceneTimer) != 0) {
         return current;
     }
-    if (g_TrackTextureCursorRow != 0 && g_TrackTextureCursorRow != 0x100) {
+    if (g_TrackTextureCursorRow != 0 &&
+        g_TrackTextureCursorRow != TRACK_TEXTURE_PAGE_ROW_COUNT) {
         return current;
     }
 

@@ -12,6 +12,10 @@
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
+enum {
+    TRACK_TEXTURE_PAGE_ROW_COUNT = 256
+};
+
 /*
  * One entry of a timed draw script. `type` picks the primitive and `time` is
  * when it starts; the two pointers split the description in two, which is what
@@ -802,7 +806,5 @@ s32 Gpu_Reset(s32 mode);
 void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX,
                                  s32 *outY, s32 *outZ);
 void MatrixApplyZRotation(Matrix* mtx, s32 degrees);
-void SwapTrackTexturePageNow(void);
-void SwapTrackTextureRow(void);
 
 #endif

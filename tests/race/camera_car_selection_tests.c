@@ -3,6 +3,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/race.h"
+#include "game/render.h"
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_SceneTimer;
@@ -15,7 +16,7 @@ s32 Random15(void) {
 }
 
 s32 TrackTexturePageForSection(s32 section) {
-    return section >= 10 && section < 20 ? 0x100 : 0;
+    return section >= 10 && section < 20 ? TRACK_TEXTURE_PAGE_ROW_COUNT : 0;
 }
 
 static int s_failures;
@@ -59,7 +60,7 @@ static void CameraOnlyChangesAtACompletedTexturePage(void) {
     g_TrackTextureCursorRow = 1;
     Check(CycleAttractCameraCar(0, 0) == 0,
           "camera waits while texture rows are changing");
-    g_TrackTextureCursorRow = 0x100;
+    g_TrackTextureCursorRow = TRACK_TEXTURE_PAGE_ROW_COUNT;
     Check(CycleAttractCameraCar(0, 0) == 2,
           "second completed texture page permits a camera change");
 }

@@ -94,9 +94,9 @@ static void SecondTexturePageIsOneRange(void) {
     g_TrackTexturePageWanted = 7;
 
     Check(TrackTexturePageForSection(9) == 0, "before the stretch");
-    Check(TrackTexturePageForSection(10) == 0x100,
+    Check(TrackTexturePageForSection(10) == TRACK_TEXTURE_PAGE_ROW_COUNT,
           "first section of the stretch");
-    Check(TrackTexturePageForSection(19) == 0x100,
+    Check(TrackTexturePageForSection(19) == TRACK_TEXTURE_PAGE_ROW_COUNT,
           "last section of the stretch");
     Check(TrackTexturePageForSection(20) == 0,
           "the upper bound is outside");
@@ -111,7 +111,7 @@ static void SecondTexturePageIsOneRange(void) {
 
     g_TrackTextureSectionHi = 20;
     RequestTrackTexturePage(10);
-    Check(g_TrackTextureTargetRow == 0x100,
+    Check(g_TrackTextureTargetRow == TRACK_TEXTURE_PAGE_ROW_COUNT,
           "request targets the second texture page");
     Check(g_TrackTexturePageWanted == 1,
           "request tells the uploader to use the second page");
@@ -122,7 +122,7 @@ static void SecondTexturePageIsOneRange(void) {
           "request tells the uploader to use the first page");
 }
 
-static void TextureSwapStateResetsAndSkipsMatchingRows(void) {
+static void TextureSwapStateResets(void) {
     s32 row;
 
     memset(g_TrackTextureShadowPage, 0, sizeof(g_TrackTextureShadowPage));
@@ -138,23 +138,13 @@ static void TextureSwapStateResetsAndSkipsMatchingRows(void) {
     Check(g_TrackTextureTargetRow == 0, "reset target row");
     Check(g_TrackTextureCursorRow == 0, "reset cursor row");
 
-    /* A mismatched state means there is nothing to exchange, so this path is
-     * testable without initialising the GPU. It must still select the row. */
-    g_TrackTextureCursorRow = 7;
-    g_TrackTexturePageWanted = 0;
-    g_TrackTextureShadowPage[7] = 1;
-    g_TrackTextureRowRect.y = 0;
-    SwapTrackTextureRow();
-    Check(g_TrackTextureRowRect.y == 0x107, "swap selects cursor row");
-    Check(g_TrackTextureShadowPage[7] == 1,
-          "nonrequested row is not toggled unnecessarily");
 }
 
 int main(void) {
     TrackPointWraps();
     DistanceSurvivesLargeSeparations();
     SecondTexturePageIsOneRange();
-    TextureSwapStateResetsAndSkipsMatchingRows();
+    TextureSwapStateResets();
     if (s_failures != 0) {
         printf("%d track maths checks failed\n", s_failures);
         return 1;
