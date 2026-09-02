@@ -156,6 +156,16 @@ endif()
 add_test(NAME fmv_audio COMMAND fmv_audio_tests)
 set_tests_properties(fmv_audio PROPERTIES LABELS unit)
 
+add_executable(fmv_str_tests
+    fmv_str_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/fmv_str.c)
+target_include_directories(fmv_str_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(fmv_str_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME fmv_str COMMAND fmv_str_tests)
+set_tests_properties(fmv_str PROPERTIES LABELS unit)
+
 add_executable(fmv_scene_tests
     fmv_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/fmv/fmv_scene.c

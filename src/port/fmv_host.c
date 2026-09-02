@@ -7,6 +7,7 @@
 #include <string.h>
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
+#include "fmv_str.h"
 #include "fmv_stream_index.h"
 #include "host_clock.h"
 
@@ -65,10 +66,6 @@ static int s_wallClock;
 #define RAGE_STR_SECTORS_PER_SECOND 150
 
 /* Movie sectors, held as read off the disc, plus the decoder's scratch. */
-#define RAGE_STR_SECTOR_SIZE 2352
-#define RAGE_STR_PAYLOAD_OFFSET 32
-#define RAGE_STR_PAYLOAD_SIZE 0x7E0
-#define RAGE_STR_MAGIC 0x80010160u
 #define RAGE_BS_MAX 0x20000
 #define RAGE_CODES_MAX 0x20000
 
@@ -111,7 +108,7 @@ static int HostExtractFmv(unsigned int first, unsigned int count) {
     unsigned int index;
     ReleaseFmvBuffers();
     if (count == 0) return 0;
-    s_sectors = malloc((size_t)count * RAGE_STR_SECTOR_SIZE);
+    s_sectors = malloc((size_t)count * HOST_FMV_SECTOR_SIZE);
     s_bitstream = malloc(RAGE_BS_MAX);
     s_codes = malloc((size_t)RAGE_CODES_MAX * 2 + 64);
     if (s_sectors == NULL || s_bitstream == NULL || s_codes == NULL) {
@@ -121,7 +118,7 @@ static int HostExtractFmv(unsigned int first, unsigned int count) {
     for (index = 0; index < count; index++) {
         if (!HostReadStreamSector(
                 first + index,
-                s_sectors + (size_t)index * RAGE_STR_SECTOR_SIZE)) {
+                s_sectors + (size_t)index * HOST_FMV_SECTOR_SIZE)) {
             ReleaseFmvBuffers();
             return 0;
         }
@@ -131,47 +128,24 @@ static int HostExtractFmv(unsigned int first, unsigned int count) {
     return 1;
 }
 
-static unsigned int ReadLe16(const unsigned char *data) {
-    return (unsigned int)data[0] | ((unsigned int)data[1] << 8);
-}
-
-static unsigned int ReadLe32(const unsigned char *data) {
-    return ReadLe16(data) | (ReadLe16(data + 2) << 16);
-}
-
 /* Reassembles the next frame from its STR chunks and decodes it with the
  * software MDEC. Returns 0 once the movie runs out of frames. */
 static int RageDecodeFmvFrame(void) {
-    size_t size = 0;
-    unsigned int chunks = 0;
-    unsigned int seen = 0;
-    int width = 0;
-    int height = 0;
+    HostFmvStrFrame frame;
+    size_t cursor = s_sectorCursor;
+    int width;
+    int height;
     int x;
     int y;
 
-    while (s_sectorCursor < s_sectorCount) {
-        const unsigned char *body =
-            s_sectors + (size_t)s_sectorCursor * RAGE_STR_SECTOR_SIZE + 24;
-        unsigned int chunk;
-        s_sectorCursor++;
-        if (ReadLe32(body) != RAGE_STR_MAGIC) continue;
-        chunk = ReadLe16(body + 4);
-        if (size == 0 && chunk != 0) continue; /* resynchronise on a frame */
-        if (chunk == 0) {
-            size = 0;
-            seen = 0;
-            chunks = ReadLe16(body + 6);
-            width = (int)ReadLe16(body + 16);
-            height = (int)ReadLe16(body + 18);
-        }
-        if (size + RAGE_STR_PAYLOAD_SIZE > RAGE_BS_MAX) return 0;
-        memcpy(s_bitstream + size, body + RAGE_STR_PAYLOAD_OFFSET,
-               RAGE_STR_PAYLOAD_SIZE);
-        size += RAGE_STR_PAYLOAD_SIZE;
-        if (++seen >= chunks && chunks != 0) break;
+    if (!HostFmvAssembleStrFrame(s_sectors, s_sectorCount, &cursor,
+                                 s_bitstream, RAGE_BS_MAX, &frame)) {
+        s_sectorCursor = (unsigned int)cursor;
+        return 0;
     }
-    if (size == 0 || chunks == 0 || seen < chunks) return 0;
+    s_sectorCursor = (unsigned int)cursor;
+    width = (int)frame.width;
+    height = (int)frame.height;
     if (width <= 0 || height <= 0 || width > s_width || height > s_height)
         return 0;
 

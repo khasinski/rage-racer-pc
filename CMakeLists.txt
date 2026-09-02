@@ -210,6 +210,7 @@ if(RAGE_BUILD_PORT)
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
         src/port/fmv_audio.c
+        src/port/fmv_str.c
         src/port/fmv_stream_index.c
         src/port/fmv_host.c
     )
