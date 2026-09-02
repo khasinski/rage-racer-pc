@@ -426,7 +426,6 @@ void DrawBgmSelectBar(void);
 void DrawLapNumber(void);
 void DrawLapTimes(void);
 void DrawNameEntryCursor(s32 charIndex, s32 row);
-void DrawPlayerCarOnly(void);
 void DrawPrologueText(void);
 void DrawRaceHudLabels(s32 mode);
 void DrawRacePosition(void);

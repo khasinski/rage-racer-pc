@@ -546,6 +546,45 @@ endif()
 add_test(NAME car_motion_state COMMAND car_motion_state_tests)
 set_tests_properties(car_motion_state PROPERTIES LABELS unit)
 
+add_executable(draw_cars_tests
+    draw_cars_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/draw_cars.c)
+target_include_directories(draw_cars_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(draw_cars_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(draw_cars_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(draw_cars_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME draw_cars COMMAND draw_cars_tests)
+set_tests_properties(draw_cars PROPERTIES LABELS unit)
+
+add_executable(car_body_kick_tests
+    car_body_kick_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_body_kick.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c)
+target_include_directories(car_body_kick_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_body_kick_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_body_kick_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_body_kick_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_body_kick COMMAND car_body_kick_tests)
+set_tests_properties(car_body_kick PROPERTIES LABELS unit)
+
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
     gear_shift_tests.c
