@@ -14,6 +14,10 @@ s32 g_IndexedEffectIndexPrev;
 s32 g_IndexedEffectIndex;
 s32 g_IndexedEffectPitch;
 s32 g_PanVoiceActive;
+s32 g_SpecialCueVoiceA;
+s32 g_SpecialCueVoiceB;
+s32 g_ActiveSpecialCue;
+s32 g_LastSpecialCueRequest;
 s32 g_ReverbFadeStep;
 s32 g_CarSoundVolumeScales[4];
 s32 g_PlayerCarIndex;
@@ -72,6 +76,10 @@ static void TestEffectInitialization(void) {
 
     memset(g_MusicChannels, 0x7F, sizeof(g_MusicChannels));
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
+    g_SpecialCueVoiceA = 19;
+    g_SpecialCueVoiceB = 20;
+    g_ActiveSpecialCue = 15;
+    g_LastSpecialCueRequest = 15;
     g_PlayerCarIndex = 2;
     g_CarSoundVolumeScales[3] = 91;
     s_vmInitCalls = 0;
@@ -90,6 +98,9 @@ static void TestEffectInitialization(void) {
                   g_EffectVoices[index].pitch.value == 0x1E00,
               "effect initialization resets effect voice state");
     }
+    Check(g_SpecialCueVoiceA == -1 && g_SpecialCueVoiceB == -1 &&
+              g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
+          "effect initialization clears special cue deduplication");
     Check(s_slotEnable == 1 && s_presetType == 2 && s_loadedScale == 91,
           "effect initialization enables slots and selects car volume");
 }

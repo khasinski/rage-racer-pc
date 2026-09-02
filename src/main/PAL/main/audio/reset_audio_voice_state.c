@@ -33,4 +33,8 @@ void ResetAudioVoiceState(void) {
     g_IndexedEffectIndex = -1;
     g_PanVoiceActive = 0;
     g_IndexedEffectPitch = DEFAULT_EFFECT_PITCH;
+    g_SpecialCueVoiceA = -1;
+    g_SpecialCueVoiceB = -1;
+    g_ActiveSpecialCue = -1;
+    g_LastSpecialCueRequest = -1;
 }
