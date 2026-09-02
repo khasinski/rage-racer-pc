@@ -56,7 +56,11 @@ RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
 RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
                                             s32 startPressed, s32 debounce,
                                             s16 grandPrixMode, s16 cursor) {
-    RacePauseToggleResult result = {paused, RACE_PAUSE_RESUME, 0};
+    RacePauseToggleResult result = {
+        .paused = paused,
+        .action = RACE_PAUSE_RESUME,
+        .toggled = 0,
+    };
 
     if (!CanPauseRace(phase) || !startPressed || debounce > 0) {
         return result;
@@ -86,7 +90,13 @@ RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
 RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
                                s32 retriesRemaining, s32 fadeTimer) {
     RaceEndFrame frame = {
-        RACE_END_PRESENTATION_NONE, 0, -1, 0, 0, 0};
+        .presentation = RACE_END_PRESENTATION_NONE,
+        .fade = 0,
+        .exitScene = -1,
+        .drawPresentation = 0,
+        .startMusic = 0,
+        .advanceTimer = 0,
+    };
 
     if (phase == 7) {
         frame.exitScene = RACE_QUIT_SCENE;
@@ -120,7 +130,10 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
 
 RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
                                           s16 grandPrixMode) {
-    RacePauseCursorResult result = {cursor, 0};
+    RacePauseCursorResult result = {
+        .cursor = cursor,
+        .moveCount = 0,
+    };
 
     if ((pressed & PAD_UP) && result.cursor > 0) {
         result.cursor--;
@@ -140,7 +153,11 @@ s32 WrongWayWarningVisible(s16 timer) {
 
 WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
                                    u32 sceneTimer) {
-    WrongWayUpdate result = {0, 0, 0};
+    WrongWayUpdate result = {
+        .timer = 0,
+        .drawWarning = 0,
+        .playCue = 0,
+    };
 
     if (!facingWrongWay || phase >= 4) {
         return result;
@@ -158,7 +175,10 @@ WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
 }
 
 RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer) {
-    RaceStartUpdate result = {phase, RACE_START_ACTION_NONE};
+    RaceStartUpdate result = {
+        .phase = phase,
+        .action = RACE_START_ACTION_NONE,
+    };
 
     if (phase == 0) {
         if (sceneTimer < RACE_INTRO_END_FRAME) {
@@ -175,7 +195,10 @@ RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer) {
 
 RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
                                 s16 grandPrixMode) {
-    RaceClockUpdate result = {remaining, 0};
+    RaceClockUpdate result = {
+        .remaining = remaining,
+        .expired = 0,
+    };
 
     if (phase >= 2 && grandPrixMode != 0) {
         result.remaining--;
@@ -187,7 +210,10 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
 RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
                                  CameraViewMode selectedView) {
     RaceViewSelection result = {
-        RACE_CAMERA_ACTION_NONE, selectedView, 0};
+        .cameraAction = RACE_CAMERA_ACTION_NONE,
+        .cameraView = selectedView,
+        .useFinishTextureSection = 0,
+    };
 
     if (phase == 5 && !retiring) {
         result.cameraAction = RACE_CAMERA_ACTION_FINISH;
