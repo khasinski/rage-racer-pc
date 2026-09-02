@@ -85,7 +85,8 @@ void CommitClassProgress(void) {
             g_ClassRecords[nextRecordIndex].place = 0;
         }
 
-        grade = ComputeClassGrade();
+        grade = ComputeClassGradeForPlaces(g_CourseProgress->bestPlace,
+                                           g_CourseProgress->unlockPending);
         g_ClassResultPlace = grade;
         if (grade != 0) {
             if (g_ClassRecords[classRecordIndex].place == 0 ||

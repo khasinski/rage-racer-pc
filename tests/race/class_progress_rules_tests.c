@@ -14,6 +14,11 @@ static void Check(const char *name, s32 actual, s32 expected) {
 
 int main(void) {
     static const s32 expectedUnlocks[] = {1, 2, 3, 4, 6, -1, 7, 8, 9, 10, 5};
+    static const u8 firstPlace[4] = {1, 1, 1, 1};
+    static const u8 shortFirstPlace[4] = {1, 1, 1, 0xFF};
+    static const u8 secondPlace[4] = {1, 1, 1, 2};
+    static const u8 thirdPlace[4] = {1, 1, 1, 3};
+    static const u8 noGrade[4] = {1, 1, 2, 3};
     ScoreRecord records[11] = {0};
     s32 i;
 
@@ -46,6 +51,15 @@ int main(void) {
     records[10].place = -1;
     Check("class wins", CountClassWins(records, 11), 2);
     Check("empty class record range", CountClassWins(records, 0), 0);
+
+    Check("first-place grade", ComputeClassGradeForPlaces(firstPlace, 0), 1);
+    Check("unused fourth course",
+          ComputeClassGradeForPlaces(shortFirstPlace, 0), 1);
+    Check("second-place grade", ComputeClassGradeForPlaces(secondPlace, 0), 2);
+    Check("third-place grade", ComputeClassGradeForPlaces(thirdPlace, 0), 3);
+    Check("no class grade", ComputeClassGradeForPlaces(noGrade, 0), 0);
+    Check("pending unlock blocks grade",
+          ComputeClassGradeForPlaces(firstPlace, 1), 0);
 
     return s_failures != 0;
 }

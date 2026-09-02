@@ -7,6 +7,9 @@ enum {
     STANDARD_SERIES_FINAL_CLASS = 4,
     EXTRA_SERIES_FINAL_CLASS = 5,
     CLASS_RECORD_NO_UNLOCK = -1,
+    CLASS_GRADE_COURSE_COUNT = 4,
+    CLASS_GRADE_DISQUALIFIED = 0,
+    UNUSED_COURSE_PLACE = 0xFF,
 };
 
 s32 GrandPrixCourseCount(s32 classIndex) {
@@ -52,4 +55,24 @@ s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {
         }
     }
     return wins;
+}
+
+s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending) {
+    s32 placeTotal = 0;
+    s32 course;
+
+    if (unlockPending != 0) {
+        return CLASS_GRADE_DISQUALIFIED;
+    }
+
+    for (course = 0; course < CLASS_GRADE_COURSE_COUNT; course++) {
+        s32 place = bestPlaces[course];
+
+        placeTotal += place == UNUSED_COURSE_PLACE ? 1 : place;
+    }
+
+    placeTotal -= CLASS_GRADE_COURSE_COUNT - 1;
+    return placeTotal < CLASS_GRADE_COURSE_COUNT
+        ? placeTotal
+        : CLASS_GRADE_DISQUALIFIED;
 }
