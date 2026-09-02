@@ -17,6 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef _WIN32
+#include <dirent.h>
+#endif
+
 /* OpenGL 1.1, so every platform's own library has these. */
 extern void glViewport(int x, int y, int width, int height);
 extern void glClearColor(float r, float g, float b, float a);
@@ -65,8 +69,80 @@ typedef struct Shell {
 /*
  * The bundled font is a bitmap one meant for debug overlays, and it makes an
  * ordinary program look like a terminal. A system face is used when one is
- * there, which on every desktop it is.
+ * there, which on most desktops it is.
+ *
+ * ImGui does not return a failure when it cannot open a font: it asserts and
+ * takes the program with it. So the file is opened here first, and only a
+ * path that actually exists is handed over. Anything else and the editor
+ * would die on a machine that simply has its fonts somewhere else, which is
+ * every distribution that is not the one this list was written on.
  */
+static int FileExists(const char *path) {
+    FILE *stream = fopen(path, "rb");
+    if (stream == NULL) return 0;
+    fclose(stream);
+    return 1;
+}
+
+#ifndef _WIN32
+/*
+ * Distributions put their fonts wherever they like, so when none of the
+ * usual paths is there the directories themselves are searched. A name from
+ * the list is preferred; failing that any face at all beats the bitmap one.
+ */
+static int FindFontIn(const char *directory, int depth, char *out,
+                      size_t size) {
+    static const char *const kPreferred[] = {
+        "DejaVuSans.ttf", "NotoSans-Regular.ttf", "LiberationSans-Regular.ttf",
+        "Ubuntu-R.ttf",   "Roboto-Regular.ttf",   "FreeSans.ttf",
+        NULL
+    };
+    DIR *handle;
+    struct dirent *item;
+    char fallback[1024];
+    int haveFallback = 0;
+
+    if (depth > 3) return 0;
+    handle = opendir(directory);
+    if (handle == NULL) return 0;
+    while ((item = readdir(handle)) != NULL) {
+        char path[1024];
+        const char *dot;
+        int i;
+
+        if (item->d_name[0] == '.') continue;
+        if (snprintf(path, sizeof(path), "%s/%s", directory, item->d_name) >=
+            (int)sizeof(path))
+            continue;
+        if (FindFontIn(path, depth + 1, out, size)) {
+            closedir(handle);
+            return 1;
+        }
+        dot = strrchr(item->d_name, '.');
+        if (dot == NULL || (strcmp(dot, ".ttf") != 0 &&
+                            strcmp(dot, ".otf") != 0))
+            continue;
+        for (i = 0; kPreferred[i] != NULL; i++) {
+            if (strcmp(item->d_name, kPreferred[i]) == 0) {
+                snprintf(out, size, "%s", path);
+                closedir(handle);
+                return 1;
+            }
+        }
+        if (!haveFallback) {
+            snprintf(fallback, sizeof(fallback), "%s", path);
+            haveFallback = 1;
+        }
+    }
+    closedir(handle);
+    if (haveFallback) {
+        snprintf(out, size, "%s", fallback);
+        return 1;
+    }
+    return 0;
+}
+#endif
+
 static int LoadFont(ImGuiIO *io) {
     static const char *const kCandidates[] = {
 #if defined(_WIN32)
@@ -76,23 +152,54 @@ static int LoadFont(ImGuiIO *io) {
 #elif defined(__APPLE__)
         "/System/Library/Fonts/SFNS.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/Library/Fonts/Arial.ttf",
 #else
+        /* Debian and Ubuntu */
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/TTF/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        /* Arch, Fedora and openSUSE */
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",
+        "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
         "/usr/share/fonts/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/TTF/LiberationSans-Regular.ttf",
+        /* Alpine and a few others */
+        "/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/noto-fonts/NotoSans-Regular.ttf",
 #endif
         NULL
     };
     int i;
 
     for (i = 0; kCandidates[i] != NULL; i++) {
+        if (!FileExists(kCandidates[i])) continue;
         if (ImFontAtlas_AddFontFromFileTTF(io->Fonts, kCandidates[i], 18.0f,
                                            NULL, NULL) != NULL)
             return 1;
     }
-    /* No system face: the bundled one, scaled up so it is still legible. */
+#ifndef _WIN32
+    {
+        static const char *const kRoots[] = {
+            "/usr/share/fonts", "/usr/local/share/fonts",
+            "/run/host/usr/share/fonts", NULL
+        };
+        char found[1024];
+        int root;
+
+        for (root = 0; kRoots[root] != NULL; root++) {
+            if (FindFontIn(kRoots[root], 0, found, sizeof(found)) &&
+                ImFontAtlas_AddFontFromFileTTF(io->Fonts, found, 18.0f, NULL,
+                                               NULL) != NULL)
+                return 1;
+        }
+    }
+#endif
+    /* No system face at all: the bundled one, scaled up so it is legible. */
     ImFontAtlas_AddFontDefault(io->Fonts, NULL);
     return 0;
 }
