@@ -339,7 +339,7 @@ int main(void) {
           "round screen advances to voice bank");
 
     voiceHeader = GetVoiceBankAssetHeader(pack.bytes + 16);
-    voiceHeader->sharedHeaderSize = 123;
+    voiceHeader->sharedHeaderSize = 20;
     voiceHeader->audioHeaderOffset = 20;
     voiceHeader->audioBodyOffset = 40;
     s_loadResult = 0;
@@ -347,14 +347,21 @@ int main(void) {
     LoadRoundAssets();
     Check(g_AssetLoadState == 2 && g_RaceVoiceHeaderSize == -1,
           "incomplete voice load installs nothing");
-    s_loadResult = 1;
+    s_loadResult = 80;
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_VOICE_BANK, "round voice asset id");
-    Check(g_RaceVoiceHeaderSize == 123, "round shared header size");
+    Check(g_RaceVoiceHeaderSize == 20, "round shared header size");
     Check(g_AssetBlockPtr == pack.bytes + 36 &&
               g_AssetSubBlockPtr == pack.bytes + 56,
           "round voice offsets relocated");
     Check(g_AssetLoadState == 0, "round load completes");
+
+    voiceHeader->audioBodyOffset = 39;
+    g_AssetLoadState = 2;
+    g_RaceVoiceHeaderSize = -1;
+    LoadRoundAssets();
+    Check(g_AssetLoadState == 0 && g_RaceVoiceHeaderSize == -1,
+          "inconsistent voice offsets cancel installation");
 
     g_GrandPrixMode = 0;
     g_CourseIndex = 3;

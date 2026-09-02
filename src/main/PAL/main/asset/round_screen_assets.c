@@ -58,20 +58,31 @@ static s32 RoundScreenAssetId(void) {
 static void LoadRoundScreen(void) {
     s32 roundSize = LoadAsset(RoundScreenAssetId(), g_ImageBlockBuffer);
 
-    if (roundSize == 0) {
-        return;
-    }
+    if (roundSize <= 0) return;
+
     g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
     g_AssetLoadState = ROUND_LOAD_VOICE_BANK;
 }
 
 static void LoadRoundVoiceBank(void) {
     VoiceBankAssetHeader *header;
+    s32 loadedSize;
 
-    if (LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2) == 0) {
+    loadedSize = LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2);
+    if (loadedSize == 0) return;
+
+    header = GetVoiceBankAssetHeader(g_AssetBlockPtr2);
+    if (loadedSize < (s32)sizeof(*header) || header->sharedHeaderSize < 0 ||
+        header->audioHeaderOffset < (s32)sizeof(*header) ||
+        header->audioHeaderOffset > loadedSize ||
+        header->sharedHeaderSize >
+            loadedSize - header->audioHeaderOffset ||
+        header->audioBodyOffset !=
+            header->audioHeaderOffset + header->sharedHeaderSize ||
+        header->audioBodyOffset >= loadedSize) {
+        g_AssetLoadState = 0;
         return;
     }
-    header = GetVoiceBankAssetHeader(g_AssetBlockPtr2);
     g_RaceVoiceHeaderSize = header->sharedHeaderSize;
     g_AssetBlockPtr = g_AssetBlockPtr2 + header->audioHeaderOffset;
     g_AssetSubBlockPtr = g_AssetBlockPtr2 + header->audioBodyOffset;
