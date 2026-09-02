@@ -43,7 +43,7 @@ void DrawTeamNameEntry(s32 step, s32 cursor) {
     (void)step;
     (void)cursor;
 }
-void UploadTeamNameTexture(u8 *text, s32 length) {
+void UploadTeamNameTexture(const u8 *text, s32 length) {
     (void)text;
     s_uploadCalls++;
     s_uploadedLength = length;

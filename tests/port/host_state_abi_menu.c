@@ -28,6 +28,10 @@ _Static_assert(sizeof(g_MenuCarPivotOffset) == 16,
                "menu car pivot ABI changed");
 _Static_assert(sizeof(g_TeamNameCharScale) == 16,
                "team-name character scale ABI changed");
+_Static_assert(sizeof(g_TeamNameFontGlyphs) == 84 * 32,
+               "team-name glyph atlas ABI changed");
+_Static_assert(sizeof(g_TeamNameBlankTile) == 12 * 8 * sizeof(u16),
+               "blank team-name texture ABI changed");
 _Static_assert(sizeof(g_FormatDecimal) == 4,
                "decimal format size changed");
 _Static_assert(sizeof(g_MenuBlankCaption) == 1,

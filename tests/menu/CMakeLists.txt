@@ -20,6 +20,23 @@ add_test(NAME team_logo COMMAND team_logo_tests)
 
 set_tests_properties(team_logo PROPERTIES LABELS functional)
 
+add_executable(team_name_texture_tests
+    team_name_texture_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)
+target_include_directories(team_name_texture_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(team_name_texture_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(team_name_texture_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME team_name_texture COMMAND team_name_texture_tests)
+set_tests_properties(team_name_texture PROPERTIES LABELS unit)
+
 add_executable(time_attack_plate_tests
     time_attack_plate_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/time_attack_plate.c)

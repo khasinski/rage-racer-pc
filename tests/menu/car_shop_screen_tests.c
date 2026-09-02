@@ -164,7 +164,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
 void UpdateCarListCursor(void) { RECORD("listcursor", 0); }
 void RequestCarModel(s32 carIndex) { RECORD("requestcar", carIndex); }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
-void UploadTeamNameTexture(u8 *str, s32 len) {
+void UploadTeamNameTexture(const u8 *str, s32 len) {
     RECORD("teamname", str == g_TeamNameChars, len);
 }
 void UploadTeamLogoClut(void) { RECORD("teamclut", 0); }
