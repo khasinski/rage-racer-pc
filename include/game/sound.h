@@ -81,9 +81,7 @@ _Static_assert(sizeof(EffectVoice) == 0x14,
 
 extern EffectVoice g_EffectVoices[];
 
-/* Scalar control block at 0x6D80. Retail addresses these individually by
- * symbol, never base+index, so they stay independent externs. */
-extern s32 g_ReverbType; /* +0x00 */
+/* Runtime reverb and sequence controls shared by the audio update paths. */
 extern s32 g_ReverbDepthL; /* reverb depth left  */
 extern s32 g_ReverbDepthR; /* reverb depth right */
 /* Per-frame step added to g_ReverbDepthL/R by UpdateSequenceFadeOut; -3
@@ -97,7 +95,8 @@ typedef union SequenceHandle {
 extern SequenceHandle g_SeqHandle;
 extern s32 g_SeqVolume; /* current SEQ volume, also read as s16 */
 extern s32 g_SeqVolumeSetting; /* 0..15 OPTIONS level; volume = n * 114 / 15 */
-extern s32 g_SeqVolumeFadeStep; /* step added to g_SeqVolume each frame; -4 while fading out */
+/* Step added to g_SeqVolume each frame; -4 while fading out. */
+extern s32 g_SeqVolumeFadeStep;
 /* Per-slot engine tone, one entry per bank; a slot is re-cued when its two
  * banks disagree. The old g_SoundSlotToneBank1 symbol (g_SoundSlotToneBank1) is [i][1]
  * of this table. Six slots. */

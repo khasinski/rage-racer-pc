@@ -170,7 +170,6 @@ extern EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
 
-extern s32 g_SpecialVoiceBits4;
 extern const char g_MsgTooManyVoices[];
 extern s32 g_ActiveSpecialCue;
 extern s32 g_AudioLoadSlot;

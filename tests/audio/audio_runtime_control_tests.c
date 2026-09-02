@@ -7,7 +7,6 @@
 s32 g_ReverbDepthL;
 s32 g_ReverbDepthR;
 s32 g_ReverbFadeStep;
-s32 g_ReverbType;
 s32 g_SeqVolumeFadeStep;
 s32 g_SceneId;
 SoundScale g_SoundScale;
@@ -102,23 +101,21 @@ static void TestReverbPresets(void) {
     s_reverbOnCalls = 0;
     SetReverbPreset(9, -3, 200);
     Check(s_reverbOffCalls == 1 && s_reverbOnCalls == 1 &&
-              s_reverbType == 9 && g_ReverbType == 9,
+              s_reverbType == 9,
           "valid reverb preset restarts the SPU effect");
     Check(g_ReverbDepthL == 0 && g_ReverbDepthR == 127,
           "reverb preset applies clamped depths");
 
     SetReverbPreset(0, 50, 60);
     Check(s_reverbOffCalls == 2 && s_reverbOnCalls == 1 &&
-              g_ReverbType == 0 && g_ReverbDepthL == 0 &&
+              g_ReverbDepthL == 0 &&
               g_ReverbDepthR == 0,
           "zero preset disables reverb");
     SetReverbPreset(10, 50, 60);
-    Check(s_reverbOffCalls == 3 && s_reverbOnCalls == 1 &&
-              g_ReverbType == 0,
+    Check(s_reverbOffCalls == 3 && s_reverbOnCalls == 1,
           "preset above the supported range disables reverb");
     SetReverbPreset(-1, 50, 60);
-    Check(s_reverbOffCalls == 4 && s_reverbOnCalls == 1 &&
-              g_ReverbType == 0,
+    Check(s_reverbOffCalls == 4 && s_reverbOnCalls == 1,
           "preset below the supported range disables reverb");
 }
 

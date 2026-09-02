@@ -66,13 +66,11 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
     SsUtReverbOff();
 
     if (!IsValidReverbPreset(type)) {
-        g_ReverbType = 0;
         g_ReverbDepthR = 0;
         g_ReverbDepthL = 0;
         return;
     }
 
-    g_ReverbType = type;
     SsUtSetReverbType((s16)type);
     SsUtReverbOn();
     SetReverbDepth(left, right);

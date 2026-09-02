@@ -59,7 +59,6 @@ s32 g_IndexedEffectPitch;
 s32 g_IndexedEffectVolume;
 MusicChannel g_MusicChannels[2];
 EffectVoice g_EffectVoices[4];
-s32 g_ReverbType;
 s32 g_ReverbDepthL;
 s32 g_ReverbDepthR;
 s32 g_ReverbFadeStep;
