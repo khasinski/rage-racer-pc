@@ -241,6 +241,25 @@ endif()
 add_test(NAME visible_cells COMMAND visible_cells_tests)
 set_tests_properties(visible_cells PROPERTIES LABELS unit)
 
+add_executable(sky_background_tests
+    sky_background_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_sky_background.c)
+target_include_directories(sky_background_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(sky_background_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(sky_background_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(sky_background_tests PRIVATE psyz)
+add_test(NAME sky_background COMMAND sky_background_tests)
+set_tests_properties(sky_background PROPERTIES LABELS unit)
+
 add_executable(route_scenery_tests
     route_scenery_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_route_scenery.c
