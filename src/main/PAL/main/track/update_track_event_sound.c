@@ -1,15 +1,27 @@
 #include "game/audio.h"
+#include "game/angle.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
 #include "game/track_internal.h"
 
-enum { TRACK_EVENT_SOUND_ZONE_COUNT = 30 };
+enum {
+    TRACK_EVENT_SOUND_ZONE_COUNT = 30,
+    EVENT_SOUND_RIGHT_SIDE = 1,
+    EVENT_SOUND_LEFT_SIDE = 2,
+    LATERAL_LEAN_DEAD_ZONE = 0x100,
+};
 
 static s32 FindEventSoundFlags(s16 trackSection) {
-    const TrackEventSoundZone *zone = g_TrackEventData->eventSoundZones;
-    const TrackEventSoundZone *end = zone + TRACK_EVENT_SOUND_ZONE_COUNT;
+    const TrackEventSoundZone *zone;
+    const TrackEventSoundZone *end;
+
+    if (g_TrackEventData == NULL) {
+        return 0;
+    }
+    zone = g_TrackEventData->eventSoundZones;
+    end = zone + TRACK_EVENT_SOUND_ZONE_COUNT;
 
     for (; zone < end && zone->start != -1; zone++) {
         if (trackSection >= zone->start && trackSection <= zone->end) {
@@ -48,19 +60,24 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
         return;
     }
 
-    lean = DecayTowardZero(g_PlayerField3C, 0x100);
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+        return;
+    }
+
+    lean = DecayTowardZero(g_PlayerCar.normalizedLateralOffset,
+                           LATERAL_LEAN_DEAD_ZONE);
     if (lean == 0) {
         return;
     }
 
     lean = (lean * g_PlayerCar.speed) / 12775;
-    angle = (g_RenderState.viewAngleY - 0xC00 +
-             TrackPoint(g_PlayerCar.trackPointIndex)->angle) & 0xFFF;
+    angle = (g_RenderState.viewAngleY - ANGLE_THREE_QUARTER_TURN +
+             TrackPoint(g_PlayerCar.trackPointIndex)->angle) & ANGLE_MASK;
 
-    if (lean < 0 && (flags & 2) != 0) {
+    if (lean < 0 && (flags & EVENT_SOUND_LEFT_SIDE) != 0) {
         *left = -(lean + MultiplyCosine(lean, angle));
         *right = -(lean + MultiplyCosine(-lean, angle));
-    } else if (lean > 0 && (flags & 1) != 0) {
+    } else if (lean > 0 && (flags & EVENT_SOUND_RIGHT_SIDE) != 0) {
         *right = lean + MultiplyCosine(lean, angle);
         *left = lean + MultiplyCosine(-lean, angle);
     }

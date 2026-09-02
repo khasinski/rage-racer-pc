@@ -84,6 +84,22 @@ int main(void) {
         return 1;
     }
 
+    g_TrackEventData = NULL;
+    if (!ExpectVolumes(10, 0, 0)) {
+        return 1;
+    }
+    g_TrackEventData = &events;
+    g_TrackPoints = NULL;
+    g_PlayerField3C = 0x200;
+    if (!ExpectVolumes(10, 0, 0)) {
+        return 1;
+    }
+    g_TrackPoints = &trackPoint;
+    g_TrackPointCount = 0;
+    if (!ExpectVolumes(10, 0, 0)) {
+        return 1;
+    }
+
     puts("track event sound behavior preserved");
     return 0;
 }
