@@ -118,7 +118,6 @@ s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table);
 /* Open audio slot `slot` on a VAB header/body pair and optional tone table. */
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table);
 s32 PollAudioSlotLoad(void);
-s32 LoadExtraVabSlotWithTable(u8 *header, u8 *body, u16 *table);
 void SetPanVoiceTargetVolume(s32 left, s32 right);
 void ApplyPanVoiceVolume(void);
 void StartIndexedEffectVoice(s32 baseTone);

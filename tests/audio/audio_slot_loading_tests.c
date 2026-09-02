@@ -27,6 +27,9 @@ static s32 s_tableCalls;
 static s32 s_closeVab;
 static s32 s_reverbCalls;
 static s32 s_vmInitCalls;
+static s32 s_damperCalls;
+static s32 s_closeAudioResult = 1;
+static s32 s_closeAudioCalls;
 
 short SsVabOpenHeadSticky(u8 *header, short vabId, unsigned long address) {
     (void)vabId;
@@ -68,8 +71,12 @@ void _SsVmInit(short voices) {
 }
 
 void SsVabClose(short vabId) { s_closeVab = vabId; }
-void SpuVmDamperStep(void) {}
-s32 CloseAudioSlot(s32 slot) { (void)slot; return 1; }
+void SpuVmDamperStep(void) { s_damperCalls++; }
+s32 CloseAudioSlot(s32 slot) {
+    (void)slot;
+    s_closeAudioCalls++;
+    return s_closeAudioResult;
+}
 
 void BiosExit(s32 code) {
     (void)code;
@@ -104,11 +111,27 @@ int main(void) {
 
     CHECK(StartAudioSlotLoad(1, &header, &body, &table) == 61);
     CHECK(s_sequenceCalls == 1);
+    CHECK(StartAudioSlotLoad(6, &header, &body, &table) == 61);
+    CHECK(s_sequenceCalls == 2);
 
     g_VabSpuAddress[3] = 0x34000;
     CHECK(StartAudioSlotLoad(3, &header, &body, &table) == 1);
     CHECK(g_AudioLoadSlot == 3 && s_openAddress == 0x34000);
     CHECK(g_EngineSoundState.extraVabLoaded == 1 && s_tableCalls == 1);
+
+    s_completed = 0;
+    g_AudioLoadedSlotMask = 0;
+    g_SoundCueBank = -1;
+    CHECK(PollAudioSlotLoad() == 0);
+    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
+
+    s_completed = 1;
+    g_AudioLoadSlot = 1;
+    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 1);
+    g_AudioLoadSlot = 2;
+    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
+    g_AudioLoadSlot = 3;
+    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
 
     g_AudioLoadedSlotMask = 1 << 2;
     g_SoundScale.vabIds[2] = 12;
@@ -116,6 +139,20 @@ int main(void) {
     CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 12);
     CHECK(s_reverbCalls == 1 && s_vmInitCalls == 1);
     CHECK(CloseVabOnlyAudioSlot(2) == 0);
+
+    g_AudioLoadedSlotMask = (1 << 2) | (1 << 3);
+    g_SoundScale.vabIds[2] = 22;
+    g_SoundScale.vabIds[3] = 23;
+    s_closeAudioCalls = 0;
+    s_damperCalls = 0;
+    s_closeAudioResult = 1;
+    CHECK(CloseLoadedAudioSlots() == 1);
+    CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
+          g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
+
+    g_AudioLoadedSlotMask = 1 << 3;
+    CHECK(CloseLoadedAudioSlots() == 0);
+    CHECK(g_AudioLoadedSlotMask == (1 << 3));
 
     puts("audio slot loading preserves VAB routing, polling, and close state");
     return 0;

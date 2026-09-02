@@ -10,8 +10,6 @@ long SpuTransferStatus(void *address, long mode);
 /* Spelled out rather than in the game's s32/u8/u16, because this header is
  * force-included ahead of the one that defines those. */
 int InitSoundWithVab(unsigned char *header, unsigned char *body);
-int LoadExtraVabSlotWithTable(unsigned char *header, unsigned char *body,
-                              unsigned short *table);
 void SetEffectVoicesEnabled(int enabled);
 void SetReverbPreset(int type, int left, int right);
 struct CdlLOC;
