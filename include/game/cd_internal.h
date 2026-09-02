@@ -53,4 +53,7 @@ extern u32 g_CdMixFullLR;
 extern u32 g_CdMixFullRR;
 extern u32 g_CdMixFullRL;
 
+/* Native CD backend notification used to advance to the next audio track. */
+s32 HostCdAudioEnded(void);
+
 #endif

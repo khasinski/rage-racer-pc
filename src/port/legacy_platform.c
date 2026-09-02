@@ -913,7 +913,7 @@ void *BiosNextFile(void *entry) { return nextfile(entry); }
 long BiosFormatDevice(void *device) { return format(device); }
 ZERO_ADAPTER(CdPosToInt_Local)
 ZERO_ADAPTER(CdReadBreak)
-long HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
+s32 HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
 }

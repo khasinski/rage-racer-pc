@@ -5,10 +5,6 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
-void UpdateBgmSelectLoad(void);
-void UpdateBgmSelectFadeIn(void);
-void ExitBgmSelect(void);
-
 void UpdateBgmSelect(void) {
     UpdateBgmSelectPlayback();
 

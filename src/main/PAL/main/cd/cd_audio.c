@@ -5,8 +5,6 @@
 #include "game/menu.h"
 #include "psyq/snd.h"
 
-long HostCdAudioEnded(void);
-
 enum {
     CD_AUDIO_MODE = 7,
     INITIAL_CD_TRACK = 2,
