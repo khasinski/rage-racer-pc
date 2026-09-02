@@ -10,8 +10,8 @@
  * the player is not on the road to be avoided, so the walk stops before it.
  */
 enum {
-    TRAFFIC_PLAYER_SLOT = 0xB,
-    TRAFFIC_SLOT_COUNT = 12,
+    TRAFFIC_PLAYER_SLOT = RACE_CAR_SLOT_COUNT,
+    TRAFFIC_SLOT_COUNT = RACE_CAR_SLOT_COUNT + 1,
     TRAFFIC_RACE_SCENE = 0xC,
     /* Half the width of the lane a car watches directly in front of itself. */
     TRAFFIC_LANE_HALF_WIDTH = 0x30,
