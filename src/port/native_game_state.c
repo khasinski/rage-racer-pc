@@ -15,6 +15,7 @@
 #include "game/work_buffer.h"
 #include "game/sound.h"
 #include "game/audio.h"
+#include "game/cd_internal.h"
 #include "game/memcard.h"
 
 GameFrameContext g_FrameContexts[2];
@@ -94,9 +95,9 @@ SoundCueParams g_SoundCueParams2[70];
 EffectCueBank g_EffectCueTable[3];
 s32 g_SpecialVoiceBits[6];
 s32 g_VabSpuAddress[4];
-CdlLOC g_CdTrackLocs[18];
+CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 CdlLOC *g_CdBgmTrackLocs = &g_CdTrackLocs[2];
-CdlLOC g_CdTrackLoopPoint[18];
+CdlLOC g_CdTrackLoopPoint[CD_TRACK_LOCATION_COUNT];
 _Static_assert(sizeof(GameCarRuntime) == 0x19c,
                "GameCarRuntime must retain its retail stride");
 _Static_assert(sizeof(PlayerCarRuntime) == 0x19c,

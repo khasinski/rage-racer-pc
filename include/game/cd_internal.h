@@ -25,9 +25,15 @@ typedef enum CdPlayRequestStep {
     CD_PLAY_FINISH,
 } CdPlayRequestStep;
 
-extern CdlLOC g_CdTrackLocs[18];
+enum {
+    CD_TRACK_LOCATION_COUNT = 18,
+    CD_FILE_TRACK_COUNT = 16,
+    CD_TOC_CAPACITY = 100,
+};
+
+extern CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 extern CdlLOC *g_CdBgmTrackLocs;
-extern CdlLOC g_CdTrackLoopPoint[18];
+extern CdlLOC g_CdTrackLoopPoint[CD_TRACK_LOCATION_COUNT];
 extern u32 g_CdMixLL;
 extern u32 g_CdMixLR;
 extern u32 g_CdMixRR;

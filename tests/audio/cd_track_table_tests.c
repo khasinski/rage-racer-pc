@@ -3,20 +3,25 @@
 #include "psyq/cd.h"
 
 #include <stdio.h>
+#include <string.h>
 
-CdlLOC g_CdTrackLocs[18];
-static CdlLOC s_bgmTracks[16];
+CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
+static CdlLOC s_bgmTracks[CD_FILE_TRACK_COUNT];
 CdlLOC *g_CdBgmTrackLocs = s_bgmTracks;
 CdlFILE g_CdSearchFile;
 s32 g_CdTocEntryCount;
-char *g_CdAudioFileNames[16];
+char *g_CdAudioFileNames[CD_FILE_TRACK_COUNT];
 
 static s32 s_searchCount;
+static s32 s_tocCount = 2;
 
 long CdGetToc(CdlLOC *tracks) {
-    tracks[1].sector = 10;
-    tracks[2].sector = 20;
-    return 2;
+    s32 index;
+
+    for (index = 1; index <= s_tocCount; index++) {
+        tracks[index].sector = (u8)(index * 10);
+    }
+    return s_tocCount;
 }
 
 long CdPosToInt_Local(CdlLOC *location) {
@@ -50,7 +55,7 @@ CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
 int main(void) {
     s32 index;
 
-    for (index = 0; index < 16; index++) {
+    for (index = 0; index < CD_FILE_TRACK_COUNT; index++) {
         g_CdAudioFileNames[index] = "track";
     }
 
@@ -63,6 +68,13 @@ int main(void) {
     CHECK(s_bgmTracks[2].minute == 3);
     CHECK(s_bgmTracks[3].minute == 0);
     CHECK(g_CdTocEntryCount == 16);
+
+    memset(g_CdTrackLocs, 0, sizeof(g_CdTrackLocs));
+    s_searchCount = 0;
+    s_tocCount = CD_TOC_CAPACITY - 1;
+    BuildCdTrackTable();
+    CHECK(g_CdTrackLocs[CD_TRACK_LOCATION_COUNT - 1].sector ==
+          (u8)(170 + 60));
 
     puts("CD track table tests passed");
     return 0;

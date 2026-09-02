@@ -3,16 +3,21 @@
 #include "psyq/cd.h"
 
 #define CD_TRACK_LEAD_IN_SECTORS 0x3C
-#define CD_FILE_TRACK_COUNT 0x10
 
 void BuildCdTrackTable(void) {
-    s32 audioTrackCount = CdGetToc(g_CdTrackLocs);
+    CdlLOC toc[CD_TOC_CAPACITY];
+    s32 audioTrackCount = CdGetToc(toc);
+    s32 copiedTrackCount = audioTrackCount;
     s32 index;
 
-    if (audioTrackCount > 0) {
-        for (index = 1; index <= audioTrackCount; index++) {
+    if (copiedTrackCount >= CD_TRACK_LOCATION_COUNT) {
+        copiedTrackCount = CD_TRACK_LOCATION_COUNT - 1;
+    }
+    if (copiedTrackCount > 0) {
+        for (index = 1; index <= copiedTrackCount; index++) {
             CdlLOC *track = &g_CdTrackLocs[index];
-            CdIntToPos(CdPosToInt_Local(track) + CD_TRACK_LEAD_IN_SECTORS,
+            CdIntToPos(CdPosToInt_Local(&toc[index]) +
+                           CD_TRACK_LEAD_IN_SECTORS,
                        track);
         }
     }
