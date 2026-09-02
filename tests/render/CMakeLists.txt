@@ -1033,6 +1033,27 @@ target_link_libraries(tachometer_tests PRIVATE psyz)
 add_test(NAME tachometer COMMAND tachometer_tests)
 set_tests_properties(tachometer PROPERTIES LABELS functional)
 
+add_executable(tachometer_needle_tests
+    tachometer_needle_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_sprite_from_desc.c)
+target_include_directories(tachometer_needle_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(tachometer_needle_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(tachometer_needle_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(tachometer_needle_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(tachometer_needle_tests PRIVATE psyz)
+add_test(NAME tachometer_needle COMMAND tachometer_needle_tests)
+set_tests_properties(tachometer_needle PROPERTIES LABELS unit)
+
 add_executable(speed_digits_tests
     speed_digits_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_speed_digits.c)
