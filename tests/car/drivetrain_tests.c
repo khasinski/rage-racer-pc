@@ -446,6 +446,22 @@ static void TorqueBandTests(void) {
     Check(s_car.drive.engineRpm == 0, "empty torque band rpm fallback",
           s_car.drive.engineRpm, 0);
 
+    {
+        s32 netTorque = 123;
+        s32 bandScale = -1;
+
+        BuildSpec();
+        PlaceCar();
+        s_car.drive.engineRpm = -1000;
+        ReadCarEngineTorque(&s_car.drive, &s_spec,
+                            g_GearTorqueCurve[1].values,
+                            &netTorque, &bandScale);
+        Check(netTorque == 123, "negative RPM uses the first torque band",
+              netTorque, 123);
+        Check(bandScale == 0, "negative RPM has no engine braking",
+              bandScale, 0);
+    }
+
 }
 
 static void GearBoundsTests(void) {

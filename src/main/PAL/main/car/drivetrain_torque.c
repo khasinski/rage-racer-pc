@@ -90,7 +90,9 @@ void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
         return;
     }
     bandIndex = drive->engineRpm / 1000;
-    if (bandIndex >= CAR_TORQUE_BAND_COUNT) {
+    if (bandIndex < 0) {
+        bandIndex = 0;
+    } else if (bandIndex >= CAR_TORQUE_BAND_COUNT) {
         bandIndex = CAR_TORQUE_BAND_COUNT - 1;
     }
     *netTorque = InterpolateDriveTorque(
