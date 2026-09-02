@@ -21,8 +21,16 @@ typedef struct TeamLogoSample {
     u16 canvas[64][16];
 } TeamLogoSample;
 
+typedef union TeamLogoSampleAddress {
+    void *data;
+    TeamLogoSample *sample;
+} TeamLogoSampleAddress;
+
 static inline TeamLogoSample *GetTeamLogoSample(void *data) {
-    return (TeamLogoSample *)data;
+    TeamLogoSampleAddress address;
+
+    address.data = data;
+    return address.sample;
 }
 
 typedef union TeamLogoCanvas {

@@ -231,7 +231,7 @@ static void TestCarSelectAssetPhases(void) {
           "pending shared car assets hold phase");
     s_loadResult = 1;
     LoadCarSelectAssets();
-    Check(g_TeamLogoSampleData == (TeamLogoSample *)(void *)(storage + 64),
+    Check(g_TeamLogoSampleData == GetTeamLogoSample(storage + 64),
           "team logo samples installed");
     Check(s_courseModels ==
               (CourseModelAssetHeader *)(void *)(storage + 128),

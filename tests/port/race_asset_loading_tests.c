@@ -174,7 +174,7 @@ static void TestVoiceAndCarPhases(void) {
     s_loadResult = 1;
     s_uploadCount = 0;
     LoadRaceAssets();
-    Check(g_CarSpec == (GameCarSpec *)(void *)(destination + 64),
+    Check(g_CarSpec == GetGameCarSpec(destination + 64),
           "car spec installed");
     Check(s_audioSlot == 3 && s_audioHeader == destination + 128 &&
               s_audioBody == destination + 192 &&

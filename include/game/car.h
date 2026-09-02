@@ -407,7 +407,13 @@ static inline void SetCarGearLoad(GameCarSpec *spec, s32 gear, s32 value) {
 }
 
 static inline GameCarSpec *GetGameCarSpec(void *data) {
-    return (GameCarSpec *)data;
+    union {
+        void *data;
+        GameCarSpec *spec;
+    } view;
+
+    view.data = data;
+    return view.spec;
 }
 
 extern GameCarSpec *g_CarSpec;
