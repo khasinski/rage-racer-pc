@@ -32,6 +32,17 @@ static u32 FoldWord(u32 digest, s32 value) {
     return digest;
 }
 
+static int CheckNeutralSteering(PlayerCarRuntime *car, const char *what) {
+    if (car->drive.trackCurveMode != 0 || car->drive.steerPos != 0 ||
+        car->steeringAngle != 0 || car->bodyRollVelocity != 0) {
+        printf("FAIL: %s left steering state %d/%d/%d/%d\n", what,
+               car->drive.trackCurveMode, car->drive.steerPos,
+               car->steeringAngle, car->bodyRollVelocity);
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s16 modes[] = {0, 2, 4};
     static const u8 padTypes[] = {PAD_TYPE_DIGITAL, PAD_TYPE_NEGCON, 0};
@@ -43,7 +54,7 @@ int main(void) {
     static const s32 rollVelocities[] = {-100, 0, 100};
     static const s16 negconPositions[] = {-128, 0, 127};
     static const u16 heldStates[] = {0, 1, 2, 3};
-    static const u32 expected = 1168540033U;
+    static const u32 expected = 2007581857U;
     PlayerCarRuntime car;
     u32 digest = 2166136261U;
     int calls = 0;
@@ -53,6 +64,18 @@ int main(void) {
     g_PadButtonMapping[0] = 1;
     g_PadButtonMapping[1] = 2;
     g_NegconMaxTwist = 0;
+
+    memset(&car, 0x55, sizeof(car));
+    g_RacePhase = 1;
+    UpdateCarBodyRoll(&car);
+    if (CheckNeutralSteering(&car, "pre-race phase") != 0) return 1;
+
+    memset(&car, 0x55, sizeof(car));
+    g_RacePhase = 2;
+    g_PlayerAutoSteer = 0;
+    g_PadType = 0;
+    UpdateCarBodyRoll(&car);
+    if (CheckNeutralSteering(&car, "unknown controller") != 0) return 1;
 
     for (mode = 0; mode < sizeof(modes) / sizeof(modes[0]); mode++)
     for (pad = 0; pad < sizeof(padTypes) / sizeof(padTypes[0]); pad++)

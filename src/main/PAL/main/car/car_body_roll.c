@@ -24,6 +24,13 @@ static void DampBodyRoll(PlayerCarRuntime *car) {
     }
 }
 
+static void CenterSteering(PlayerCarRuntime *car) {
+    car->drive.trackCurveMode = 0;
+    car->drive.steerPos = 0;
+    car->steeringAngle = 0;
+    car->bodyRollVelocity = 0;
+}
+
 static void UpdateDigitalSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     u16 held = g_PadHeld;
@@ -110,7 +117,6 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
         }
         steerPosition = lateralCorrection + headingCorrection;
     } else {
-        drive->steerPos = 0;
         steerPosition = 0;
     }
 
@@ -126,16 +132,14 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
 
 void UpdateCarBodyRoll(PlayerCarRuntime *car) {
     if (g_RacePhase < 2) {
-        car->drive.steerPos = 0;
-        car->steeringAngle = 0;
+        CenterSteering(car);
     } else if (g_RacePhase < 4 && g_PlayerAutoSteer == 0) {
         if (g_PadType == PAD_TYPE_DIGITAL) {
             UpdateDigitalSteering(car);
         } else if (g_PadType == PAD_TYPE_NEGCON) {
             UpdateNegconSteering(car);
         } else {
-            car->bodyRollVelocity = 0;
-            car->drive.steerPos = 0;
+            CenterSteering(car);
         }
     } else {
         UpdateAutomaticSteering(car);
