@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    RACING_LINE_HINT_COUNT = 30,
     FRONT_RIVAL_COUNT = 4,
 };
 
@@ -25,7 +24,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
     }
 
     if (position < 0x20 || car->routeIndex < 0 ||
-        car->routeIndex >= RACING_LINE_HINT_COUNT) {
+        car->routeIndex >= TRACK_RACING_LINE_HINT_COUNT) {
         car->routeIndex = 0;
         position = 0;
     }
@@ -34,7 +33,7 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
 
     if (hint->end < position) {
         car->routeIndex++;
-        if (car->routeIndex >= RACING_LINE_HINT_COUNT ||
+        if (car->routeIndex >= TRACK_RACING_LINE_HINT_COUNT ||
             hints[car->routeIndex].start == -1) {
             car->routeIndex = 0;
         }

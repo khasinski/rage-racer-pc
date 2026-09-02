@@ -2,8 +2,6 @@
 #include "game/race.h"
 #include "game/track.h"
 
-enum { AI_SPEED_KEY_COUNT = 48 };
-
 /*
  * Put every car on the speed key it has already reached at race start. The
  * list is ordered along the track and ends with a -1 sentinel.
@@ -22,7 +20,7 @@ void SeedCarRouteMarkers(void) {
 
         g_Cars[carIndex].routeMarkerActive = 1;
         g_Cars[carIndex].routeMarkerIndex = 0;
-        for (index = 0; index < AI_SPEED_KEY_COUNT; index++) {
+        for (index = 0; index < TRACK_AI_SPEED_KEY_COUNT; index++) {
             const s32 progress =
                 g_TrackEventData->aiSpeedKeys[series][index].progress;
 

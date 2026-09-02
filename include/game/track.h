@@ -147,6 +147,10 @@ typedef struct TrackPointAmbienceZone {
 
 enum {
     TRACK_SERIES_COUNT = 2,
+    TRACK_CREST_EVENT_COUNT = 8,
+    TRACK_RACING_LINE_HINT_COUNT = 30,
+    TRACK_RIVAL_COUNT = 12,
+    TRACK_AI_SPEED_KEY_COUNT = 48,
     TRACK_ZONE_COUNT = 20,
     TRACK_POINT_AMBIENCE_ZONE_COUNT = 2,
     TRACK_AMBIENCE_ZONE_COUNT = 4,
@@ -177,11 +181,14 @@ typedef struct TrackRaceCueData {
 
 typedef struct TrackEventData {
     s32 trackWalkStart;
-    TrackCrestEvent crestEvents[TRACK_SERIES_COUNT][8];
-    TrackRacingLineHint racingLineHints[TRACK_SERIES_COUNT][30];
-    TrackRivalStart rivalStarts[TRACK_SERIES_COUNT][12];
-    TrackAiSpeedKey aiSpeedKeys[TRACK_SERIES_COUNT][48];
-    TrackRivalAiConfig rivalAiConfigs[TRACK_SERIES_COUNT][12];
+    TrackCrestEvent crestEvents[TRACK_SERIES_COUNT][TRACK_CREST_EVENT_COUNT];
+    TrackRacingLineHint
+        racingLineHints[TRACK_SERIES_COUNT][TRACK_RACING_LINE_HINT_COUNT];
+    TrackRivalStart rivalStarts[TRACK_SERIES_COUNT][TRACK_RIVAL_COUNT];
+    TrackAiSpeedKey
+        aiSpeedKeys[TRACK_SERIES_COUNT][TRACK_AI_SPEED_KEY_COUNT];
+    TrackRivalAiConfig
+        rivalAiConfigs[TRACK_SERIES_COUNT][TRACK_RIVAL_COUNT];
     TrackZone zones[TRACK_ZONE_COUNT];
     TrackEventOffsets offsets;
     u8 reservedB7C[0x1000];
@@ -190,6 +197,9 @@ typedef struct TrackEventData {
     TrackAmbienceZone ambienceZones[TRACK_AMBIENCE_ZONE_COUNT];
     TrackRaceCueData raceCues;
 } TrackEventData;
+
+_Static_assert(__builtin_offsetof(TrackEventData, reservedB7C) == 0xB7C,
+               "track event table layout changed");
 
 /*
  * One corner's centre of curvature. `GameTrackPoint.arcRef >> 4` indexes this

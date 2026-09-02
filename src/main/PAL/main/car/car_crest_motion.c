@@ -4,7 +4,6 @@
 #include "game/track.h"
 
 enum {
-    CREST_EVENT_COUNT = 8,
     CREST_MINIMUM_SPEED = 0x320,
     MAX_CREST_PROGRESS_STEP = 0x1000,
 };
@@ -41,7 +40,7 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
         high = 0;
     }
 
-    for (i = 0; i < CREST_EVENT_COUNT; i++) {
+    for (i = 0; i < TRACK_CREST_EVENT_COUNT; i++) {
         if (events[i].motionValue == -1) {
             return 0;
         }

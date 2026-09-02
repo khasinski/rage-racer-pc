@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    AI_SPEED_KEY_COUNT = 48,
     FRONT_RIVAL_COUNT = 4,
 };
 
@@ -32,7 +31,8 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
 
     position = car->trackProgress >> 4;
     marker = car->routeMarkerIndex;
-    if (position < 0x20 || marker < 0 || marker >= AI_SPEED_KEY_COUNT - 1) {
+    if (position < 0x20 || marker < 0 ||
+        marker >= TRACK_AI_SPEED_KEY_COUNT - 1) {
         car->routeMarkerIndex = 0;
         marker = 0;
     }
