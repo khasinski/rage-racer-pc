@@ -75,7 +75,7 @@ int main(void) {
     g_BgmSelectTrack = 8;
     g_CdTrackEnded = 1;
     UpdateBgmSelectPlayback();
-    CHECK(g_BgmSelectTrack == 9 && g_BgmSelectCdTrack == 12);
+    CHECK(g_BgmSelectTrack == 9 && g_BgmSelectCdTrack == 17);
     CHECK(g_BgmChangeDelay == 6 && s_cdStarts == 0);
     for (frame = 0; frame < 6; frame++) {
         UpdateBgmSelectPlayback();

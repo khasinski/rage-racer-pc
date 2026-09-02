@@ -10,3 +10,12 @@ s32 BgmCdTrack(s32 selectedTrack) {
     const s32 cdTrack = selectedTrack + FIRST_BGM_CD_TRACK;
     return cdTrack == NON_BGM_CD_TRACK ? REMAPPED_BGM_CD_TRACK : cdTrack;
 }
+
+s32 WrapBgmTrackIndex(s32 track, s32 trackCount) {
+    if (trackCount <= 0) {
+        return 0;
+    }
+
+    track %= trackCount;
+    return track < 0 ? track + trackCount : track;
+}

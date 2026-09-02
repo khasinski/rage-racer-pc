@@ -32,6 +32,7 @@ s32 NextReplayReadCursor(s32 cursor, s32 frameCount);
 void UpdateReplayFade(void);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);
+s32 WrapBgmTrackIndex(s32 track, s32 trackCount);
 s32 AttractOpeningWashLevel(s32 timer);
 s32 AttractClosingWashLevel(s32 timer);
 s32 ShouldStartAttractExitFade(s32 timer);

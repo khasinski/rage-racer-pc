@@ -10,10 +10,6 @@ enum {
     BGM_RANDOM_LABEL_FRAMES = 60,
 };
 
-static s32 WrapBgmTrack(s32 track) {
-    return (track + g_BgmTrackCount) % g_BgmTrackCount;
-}
-
 static void PreventImmediateShuffleRepeat(u32 track) {
     if (track == g_BgmShuffleOrder[0]) {
         u8 replacement = g_BgmShuffleOrder[g_BgmTrackCount - 1];
@@ -36,9 +32,10 @@ static void SelectNextBgmTrack(void) {
         g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
         AdvanceBgmShuffleBag((u32)g_BgmSelectTrack);
     } else {
-        g_BgmSelectTrack = WrapBgmTrack(g_BgmSelectTrack + 1);
+        g_BgmSelectTrack =
+            WrapBgmTrackIndex(g_BgmSelectTrack + 1, g_BgmTrackCount);
     }
-    g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
+    g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
 }
 
 static void BeginManualTrackChange(void) {
@@ -46,14 +43,13 @@ static void BeginManualTrackChange(void) {
         StartCdVolumeFade(60);
         g_BgmChangeDelay = BGM_CHANGE_DELAY_MANUAL;
     }
-    g_BgmSelectCdTrack = g_BgmSelectTrack + 3;
+    g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
 }
 
 void UpdateBgmSelectPlayback(void) {
     if (g_BgmChangeDelay > 0) {
         g_BgmChangeDelay--;
         if (g_BgmChangeDelay == 0) {
-            g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
             RequestCdTrack(g_BgmSelectCdTrack);
             StartCdAudio();
             g_CdTrackEnded = 0;
@@ -97,7 +93,8 @@ void UpdateBgmSelectInput(void) {
         switch (g_BgmSelectCursor) {
         case 0:
             if (g_BgmRandomPlay == 0) {
-                g_BgmSelectTrack = WrapBgmTrack(g_BgmSelectTrack - 1);
+                g_BgmSelectTrack = WrapBgmTrackIndex(
+                    g_BgmSelectTrack - 1, g_BgmTrackCount);
             }
             BeginManualTrackChange();
             break;
