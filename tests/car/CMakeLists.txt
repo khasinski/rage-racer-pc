@@ -983,7 +983,9 @@ endif()
 
 add_executable(traffic_avoidance_tests
     traffic_avoidance_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ai.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_traffic_avoidance.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ranking.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_rubber_band.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(traffic_avoidance_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
