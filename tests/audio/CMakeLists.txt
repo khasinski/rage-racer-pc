@@ -208,6 +208,25 @@ endif()
 add_test(NAME audio_runtime_control COMMAND audio_runtime_control_tests)
 set_tests_properties(audio_runtime_control PROPERTIES LABELS unit)
 
+add_executable(sequence_volume_tests
+    sequence_volume_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sequence_volume.c)
+target_include_directories(sequence_volume_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(sequence_volume_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(sequence_volume_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(sequence_volume_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME sequence_volume COMMAND sequence_volume_tests)
+set_tests_properties(sequence_volume PROPERTIES LABELS unit)
+
 add_executable(pitched_sound_cue_tests
     pitched_sound_cue_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/pitched_sound_cue.c)

@@ -1,15 +1,19 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
-void RefreshSequenceVolumeScale(void) {
-    s32 temp = g_SeqVolumeSetting * 114;
+enum {
+    SEQUENCE_VOLUME_AT_MAX_SETTING = 114,
+};
 
-    SetSequenceVolume(temp / 15);
+static s32 SequenceVolumeForSetting(s32 setting) {
+    return setting * SEQUENCE_VOLUME_AT_MAX_SETTING / AUDIO_SETTING_MAX;
 }
 
-void SetSequenceVolumeScale(s32 scale) {
-    s32 temp = scale * 114;
+void RefreshSequenceVolumeScale(void) {
+    SetSequenceVolume(SequenceVolumeForSetting(g_SeqVolumeSetting));
+}
 
-    g_SeqVolumeSetting = scale;
-    SetSequenceVolume(temp / 15);
+void SetSequenceVolumeScale(s32 setting) {
+    g_SeqVolumeSetting = setting;
+    SetSequenceVolume(SequenceVolumeForSetting(setting));
 }
