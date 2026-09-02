@@ -1,5 +1,6 @@
 #include "game/car_render_rules.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 #define CHECK_EQ(actual, expected)                                             \
@@ -14,6 +15,9 @@
 int main(void) {
     CHECK_EQ(CarRenderManhattanDistance(100, -50, 70, -20), 60);
     CHECK_EQ(CarRenderManhattanDistance(-100, 50, -70, 20), 60);
+    CHECK_EQ(CarRenderManhattanDistance(INT_MIN, 0, INT_MAX, 0), INT_MAX);
+    CHECK_EQ(CarRenderManhattanDistance(INT_MIN, INT_MIN,
+                                        INT_MIN, INT_MIN), 0);
 
     CHECK_EQ(ClassifyCarRenderRange(-1, 0), CAR_RENDER_BEHIND);
     CHECK_EQ(ClassifyCarRenderRange(0, 0xCFF), CAR_RENDER_CLOSE);
@@ -25,6 +29,8 @@ int main(void) {
     CHECK_EQ(ResolveCarModelBank(3, 3, 6), 1);
     CHECK_EQ(ResolveCarModelBank(6, 0, 6), 1);
     CHECK_EQ(ResolveCarModelBank(-1, 0, 6), 1);
+    CHECK_EQ(ResolveCarModelBank(INT_MAX, 1, 6), 1);
+    CHECK_EQ(ResolveCarModelBank(INT_MIN, -1, 6), 1);
 
     puts("car render rules tests passed");
     return 0;
