@@ -63,7 +63,7 @@ void EnterRaceScene(void) {
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
     ResetReplayWriteCursor();
-    LoadTrackTexturePageRange();
+    ApplyTrackTextureSectionRange();
     InitTrackLighting();
     g_TrackWalkStart = g_TrackEventData->trackWalkStart;
     if (g_CourseIndex == 3) {

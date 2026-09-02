@@ -435,7 +435,6 @@ void UpdateScreenAdjustScreen(void);
 void DrawTimeAttackPlate(s32 stepArg);
 void InitTrackLighting(void);
 void InstallCarModelSlot(void);
-void LoadTrackTexturePageRange(void);
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 

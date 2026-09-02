@@ -89,6 +89,14 @@ typedef union ScreenOffset {
 extern Matrix g_MirrorViewMatrix;
 extern Matrix g_SceneLightMatrix;
 extern TrackRenderTable *g_TrackRenderTable;
+extern s32 g_TrackTextureSectionLo;
+extern s32 g_TrackTextureSectionHi;
+
+static inline void ApplyTrackTextureSectionRange(void) {
+    g_TrackTextureSectionLo = g_TrackRenderTable->textureSectionLo;
+    g_TrackTextureSectionHi = g_TrackRenderTable->textureSectionHi;
+}
+
 extern FontGlyph g_SmallFontGlyphs[];
 extern FontGlyph g_LargeFontGlyphs[];
 extern CameraKey g_CameraPath[];

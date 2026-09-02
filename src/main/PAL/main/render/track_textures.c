@@ -3,6 +3,7 @@
 #include "game/random.h"
 #include "game/asset.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include <string.h>
 
 /*

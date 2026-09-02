@@ -7,7 +7,7 @@
 
 void InitTrackScene(void) {
     InitRenderState(5);
-    LoadTrackTexturePageRange();
+    ApplyTrackTextureSectionRange();
     InitTrackLighting();
     g_TrackWalkStart = g_TrackEventData->trackWalkStart;
     BuildStartingGrid();
