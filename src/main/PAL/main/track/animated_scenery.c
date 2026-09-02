@@ -98,7 +98,8 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
                                secondaryModel, g_AnimSceneryTint);
 }
 
-void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate) {
+void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
+                                     s32 animate) {
     AnimatedSceneryTransform transform;
     s32 primaryModel;
     s32 secondaryModel;

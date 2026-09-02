@@ -56,7 +56,7 @@ void UpdateReplayScene(void) {
         DrawReplayRivalCar();
     }
     DrawCourseObjects();
-    DrawCourseScenery2(g_SceneTimer, 1);
+    DrawPresentationCourseScenery(g_SceneTimer, 1);
     UpdateEnvironment();
     DrawSkyBackground();
     DrawReplayBadge();

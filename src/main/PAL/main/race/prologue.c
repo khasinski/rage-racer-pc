@@ -170,7 +170,7 @@ static void UpdatePrologue(void) {
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
-    DrawCourseScenery2(g_AnimTimer, worldActive);
+    DrawPresentationCourseScenery(g_AnimTimer, worldActive);
 }
 
 void TickPrologueStep(void) {

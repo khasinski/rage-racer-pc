@@ -60,7 +60,7 @@ void UpdateCamera(CameraViewMode mode, GameRenderObject *car) {
 void DrawTerrainCellsWide(void) { s_TerrainDraws++; }
 void DrawReplayRivalCar(void) { s_RivalCarDraws++; }
 void DrawCourseObjects(void) { s_ObjectDraws++; }
-void DrawCourseScenery2(s32 timer, s32 animate) {
+void DrawPresentationCourseScenery(s32 timer, s32 animate) {
     assert(timer == g_SceneTimer);
     assert(animate == 1);
     s_SceneryDraws++;

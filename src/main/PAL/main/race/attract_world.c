@@ -19,5 +19,5 @@ void UpdateAndDrawAttractWorld(void) {
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
-    DrawCourseScenery2(g_AnimTimer, 1);
+    DrawPresentationCourseScenery(g_AnimTimer, 1);
 }

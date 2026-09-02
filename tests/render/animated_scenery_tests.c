@@ -171,7 +171,7 @@ int main(void) {
     g_GrandPrixMode = 0;
     g_AnimScenery2Frame = 9;
     Reset();
-    DrawAnimatedScenery2(0, 0, 1, 1);
+    DrawPresentationAnimatedScenery(0, 0, 1, 1);
     if (g_AnimScenery2Frame != 9 || g_RandomCalls != 0 ||
         g_SubmissionCount != 0) {
         puts("FAIL: replay early GP-mode guard");
@@ -181,7 +181,7 @@ int main(void) {
     g_GrandPrixMode = 1;
     Reset();
     DrawAnimatedScenery(0, -1);
-    DrawAnimatedScenery2(0, 2, 0, 1);
+    DrawPresentationAnimatedScenery(0, 2, 0, 1);
     if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
         puts("FAIL: animated scenery instance bounds");
         return 1;
@@ -189,14 +189,14 @@ int main(void) {
 
     g_AnimScenery2Variant = 1;
     Reset();
-    DrawAnimatedScenery2(4, 1, 1, 0);
+    DrawPresentationAnimatedScenery(4, 1, 1, 0);
     if (!ExpectPair("replay layers", 0x32, 11, 5, 110, 310, 0)) {
         return 1;
     }
 
     g_Visible = 0;
     Reset();
-    DrawAnimatedScenery2(8, 0, 0, 1);
+    DrawPresentationAnimatedScenery(8, 0, 0, 1);
     if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
         puts("FAIL: replay visibility culling");
         return 1;

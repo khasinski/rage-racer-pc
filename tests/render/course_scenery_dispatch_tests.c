@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
-void DrawCourseScenery2(s32 timer, s32 animate);
+void DrawPresentationCourseScenery(s32 timer, s32 animate);
 
 s32 g_CourseIndex;
 s32 g_GrandPrixClass;
@@ -38,7 +38,8 @@ void DrawAnimatedScenery(s32 timer, s32 variant) {
     Record(EVENT_ANIMATED, timer, variant, 0);
 }
 
-void DrawAnimatedScenery2(s32 timer, s32 variant, s32 night, s32 animate) {
+void DrawPresentationAnimatedScenery(s32 timer, s32 variant, s32 night,
+                                     s32 animate) {
     Record(EVENT_ANIMATED_2, timer, variant, night * 10 + animate);
 }
 
@@ -149,7 +150,7 @@ int main(void) {
 
     g_CourseIndex = 3;
     g_SceneId = 0x11;
-    DrawCourseScenery2(4, 1);
+    DrawPresentationCourseScenery(4, 1);
     if (!Expect("second pass", secondPass, 3)) return 1;
 
     puts("course scenery dispatch preserved");
