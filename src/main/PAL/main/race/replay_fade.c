@@ -16,7 +16,16 @@ enum {
     GRAND_PRIX_RESULT_SCENE = 0x12,
 };
 
+static void StartReplayExitFade(s32 fadeAudio) {
+    g_FadeStep = REPLAY_FADE_STEP;
+    if (fadeAudio != 0) {
+        StartCdVolumeFade(REPLAY_AUDIO_FADE_FRAMES);
+    }
+}
+
 void UpdateReplayFade(void) {
+    s32 endingWashActive;
+
     if (g_FadeStep < 0) {
         g_FadeLevel += g_FadeStep;
         if (g_FadeLevel < 0) {
@@ -28,22 +37,20 @@ void UpdateReplayFade(void) {
         return;
     }
 
-    if (g_SeriesCleared != 0 &&
-        ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount)) {
+    endingWashActive = g_SeriesCleared != 0 &&
+                       ReplayEndingWashActive(g_SceneTimer,
+                                              g_ReplayFrameCount);
+    if (endingWashActive) {
         g_EndingWashLevel = ReplayEndingWashLevel(
             g_SceneTimer, g_ReplayFrameCount);
     }
 
     if (g_FadeStep == 0) {
         if (g_PadPressed & PAD_CONFIRM) {
-            g_FadeStep = REPLAY_FADE_STEP;
-            StartCdVolumeFade(REPLAY_AUDIO_FADE_FRAMES);
+            StartReplayExitFade(1);
         } else if (ShouldStartReplayExitFade(
                        g_SceneTimer, g_ReplayFrameCount)) {
-            g_FadeStep = REPLAY_FADE_STEP;
-            if (g_ReplayBufferWrapped == 0) {
-                StartCdVolumeFade(REPLAY_AUDIO_FADE_FRAMES);
-            }
+            StartReplayExitFade(g_ReplayBufferWrapped == 0);
         }
     } else {
         g_FadeLevel += g_FadeStep;
@@ -56,8 +63,7 @@ void UpdateReplayFade(void) {
     }
 
     if (g_SeriesCleared != 0) {
-        if (ReplayEndingWashActive(g_SceneTimer, g_ReplayFrameCount) ||
-            g_FadeLevel != 0) {
+        if (endingWashActive || g_FadeLevel != 0) {
             DrawSeriesClearedWash(g_EndingWashLevel, g_FadeLevel);
         }
     } else if (g_FadeLevel != 0) {

@@ -88,6 +88,15 @@ static void TestConfirmStartsAudioFade(void) {
     assert(g_FadeStep == 4);
     assert(g_FadeLevel == 0);
     assert(s_AudioFade == 60);
+
+    ResetState();
+    g_ReplayBufferWrapped = 1;
+    g_PadPressed = PAD_CONFIRM;
+
+    UpdateReplayFade();
+
+    assert(g_FadeStep == 4);
+    assert(s_AudioFade == 60);
 }
 
 static void TestWrappedReplayAutoFadeKeepsAudio(void) {

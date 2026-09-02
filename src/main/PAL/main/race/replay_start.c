@@ -3,7 +3,6 @@
 #include "game/render.h"
 #include "game/replay_internal.h"
 #include "game/state.h"
-#include "game/track.h"
 #include "game/track_internal.h"
 
 enum {
