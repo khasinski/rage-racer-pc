@@ -11,6 +11,7 @@ s16 g_RacePhase;
 s16 g_SteerHoldFrames;
 
 static s32 s_voiceIndex;
+static s32 s_voiceLevel;
 
 s32 GetAngleDelta(s32 from, s32 to) {
     (void)from;
@@ -32,8 +33,8 @@ void UpdateCarTravelVelocity(GameCarRuntime *car) {
 
 void SetIndexedEffectVoice(s32 index, s32 pitch, s32 level) {
     (void)pitch;
-    (void)level;
     s_voiceIndex = index;
+    s_voiceLevel = level;
 }
 
 #define CHECK(condition)                                                       \
@@ -82,6 +83,21 @@ int main(void) {
     car.drive.coastFrames = 4;
     UpdateCarDriving(&car);
     CHECK(car.drive.coastFrames == 5 && car.drive.launchEnergy == 0);
+
+    memset(&car, 0, sizeof(car));
+    spec.redline = 7000;
+    spec.revLimit = 6000;
+    spec.topGear = 6;
+    car.drive.launchThresholdIndex = 0;
+    car.drive.engineRpm = 9000;
+    car.drive.gear = 5;
+    g_SteerHoldFrames = 100;
+    UpdateCarDriving(&car);
+    CHECK(s_voiceIndex == -1);
+
+    car.drive.gear = 6;
+    UpdateCarDriving(&car);
+    CHECK(s_voiceIndex == 2 && s_voiceLevel == 100);
 
     puts("normal car driving tests passed");
     return 0;

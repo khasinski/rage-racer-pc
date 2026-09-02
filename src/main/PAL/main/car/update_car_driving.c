@@ -4,19 +4,16 @@
 #include "game/render.h"
 #include "game/audio.h"
 
-/*
- * Car motion handler for motionState == CAR_MOTION_DRIVING (normal driving): turns steering into a
- * world velocity, triggers over-rev / redline engine-audio cues (comparing
- * against the spec block's redline at +0x100 / +0x106), updates its travel
- * velocity, and detects the jump/launch trigger. The drive sub-block is the
- * GameCarDrive view beginning at offset +0xBC.
- */
-void UpdateCarDriving(PlayerCarRuntime *car) {
+enum {
+    DRIVING_YAW_RESPONSE = 5,
+    PEDAL_INPUT_RELEASED = 128,
+    REDLINE_EFFECT_RPM_MARGIN = 1000,
+    REDLINE_EFFECT_HOLD_FRAMES = 41,
+    REDLINE_EFFECT_MAX_LEVEL = 100,
+};
+
+static s32 UpdateDrivingVelocity(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
-    const GameCarSpec *spec = g_CarSpec;
-    const LaunchSpeedThreshold *launchThreshold =
-        &g_LaunchSpeedThresholds[
-            NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex)];
     s32 bodySin;
     s32 bodyCos;
     s32 sidewaysMotion;
@@ -24,7 +21,7 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
     s32 headingCorrection;
 
     headingCorrection = GetAngleDelta(car->bodyYaw, drive->targetHeading);
-    car->bodyYaw += headingCorrection / 5;
+    car->bodyYaw += headingCorrection / DRIVING_YAW_RESPONSE;
     UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
@@ -39,31 +36,43 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
         (bodySin * drive->accelPos + bodyCos * drive->brakePos) / 4096;
     drive->accelPos = bodySin * forwardMotion / 4096;
     drive->brakePos = bodyCos * forwardMotion / 4096;
+    return sidewaysMotion;
+}
 
-    if (spec->revLimit + 2000 < drive->engineRpm && g_RacePhase >= 2) {
-        SetIndexedEffectVoice(0, 0x1800,
-                              (drive->engineRpm - spec->revLimit) / 100 + 128);
-    } else {
+static void UpdateDrivingRedlineEffect(const PlayerCarRuntime *car,
+                                       const GameCarSpec *spec) {
+    const GameCarDrive *drive = &car->drive;
+    s32 voiceLevel;
+
+    if (drive->engineRpm <= spec->redline + REDLINE_EFFECT_RPM_MARGIN ||
+        g_SteerHoldFrames < REDLINE_EFFECT_HOLD_FRAMES ||
+        drive->gear != spec->topGear ||
+        car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         SetIndexedEffectVoice(-1, 0, 0);
+        return;
     }
 
-    if (spec->redline + 1000 < drive->engineRpm) {
-        s16 holdFrames = g_SteerHoldFrames;
-
-        if (holdFrames >= 41 && drive->gear == spec->topGear &&
-            car->verticalMotionState == 0) {
-            s32 voiceLevel = holdFrames + 24;
-
-            if (voiceLevel >= 101) {
-                voiceLevel = 100;
-            }
-            SetIndexedEffectVoice(2, 0x1500, voiceLevel);
-        } else {
-            SetIndexedEffectVoice(-1, 0, 0);
-        }
-    } else {
-        SetIndexedEffectVoice(-1, 0, 0);
+    voiceLevel = g_SteerHoldFrames + 24;
+    if (voiceLevel > REDLINE_EFFECT_MAX_LEVEL) {
+        voiceLevel = REDLINE_EFFECT_MAX_LEVEL;
     }
+    SetIndexedEffectVoice(2, 0x1500, voiceLevel);
+}
+
+static void BeginDrivingTakeoff(PlayerCarRuntime *car, s32 spinRate) {
+    GameCarDrive *drive = &car->drive;
+
+    drive->motionState = CAR_MOTION_TAKEOFF;
+    drive->bodyLiftOffset = 0;
+    drive->spinRate = spinRate;
+    drive->launchDirection = car->facingBackwards;
+    SetIndexedEffectVoice(0, 0, 0);
+}
+
+static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
+                                 const LaunchSpeedThreshold *launchThreshold,
+                                 s32 sidewaysMotion) {
+    GameCarDrive *drive = &car->drive;
 
     if (drive->acceleratorLatch == 1) {
         drive->launchEnergy = car->speed * drive->coastFrames;
@@ -73,19 +82,16 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
             s32 spinScale =
                 1000 - (drive->steeringGripResponse - 1000) * 8;
 
-            drive->motionState = CAR_MOTION_TAKEOFF;
-            drive->bodyLiftOffset = 0;
-            SetIndexedEffectVoice(0, 0, 0);
             if (spinScale < 1000) {
                 spinScale = 1000;
             }
-            drive->spinRate = -sidewaysMotion * spinScale / 1000 * 2;
-            drive->launchDirection = car->facingBackwards;
+            BeginDrivingTakeoff(
+                car, -sidewaysMotion * spinScale / 1000 * 2);
         }
         return;
     }
 
-    if (drive->acceleratorInput.value >= 128) {
+    if (drive->acceleratorInput.value >= PEDAL_INPUT_RELEASED) {
         drive->coastFrames = 0;
         drive->launchEnergy = 0;
         return;
@@ -99,15 +105,22 @@ void UpdateCarDriving(PlayerCarRuntime *car) {
         drive->launchEnergy = sidewaysSpeed;
         if (launchThreshold->sustain < car->speed &&
             drive->launchEnergyThreshold < sidewaysSpeed) {
-            drive->motionState = CAR_MOTION_TAKEOFF;
-            drive->bodyLiftOffset = 0;
-            SetIndexedEffectVoice(0, 0, 0);
-            drive->spinRate = -sidewaysMotion;
-            drive->launchDirection = car->facingBackwards;
+            BeginDrivingTakeoff(car, -sidewaysMotion);
         }
         return;
     }
 
     drive->coastFrames++;
     drive->launchEnergy = 0;
+}
+
+void UpdateCarDriving(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+    const LaunchSpeedThreshold *launchThreshold =
+        &g_LaunchSpeedThresholds[
+            NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex)];
+    s32 sidewaysMotion = UpdateDrivingVelocity(car);
+
+    UpdateDrivingRedlineEffect(car, g_CarSpec);
+    UpdateDrivingTakeoff(car, launchThreshold, sidewaysMotion);
 }
