@@ -16,7 +16,6 @@
 
 s32 g_ShiftTargetSpeed;
 s32 g_RoadGrade;
-u8 g_RoadGradeReserved[12] __attribute__((aligned(16)));
 CarHullPoint g_PlayerHullPoints[6] __attribute__((aligned(16))) = {
     {-32, 64}, {32, 64}, {-24, -72}, {24, -72}, {-32, 16}, {32, 16}
 };
@@ -36,19 +35,8 @@ s16 g_LaunchEnergyThresholds[6] __attribute__((aligned(16))) = {
 CarCollisionPoint g_CarCollisionCorners[4] __attribute__((aligned(16))) = {
     {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
 };
-/* The retail data dump grouped these bytes under g_CarCollisionCorners even
- * though collision code only addresses the four points above. Keep them
- * losslessly until their original owner is identified. */
-u8 g_CarCollisionTrailingData[60] __attribute__((aligned(16))) = {
-    0x77,0xba,0x00,0x00,0x4c,0x17,0x00,0x00,0x7a,0x31,0x00,0x00,
-    0x00,0x00,0x00,0x00,0x50,0x00,0x4b,0x00,0x38,0xbc,0x00,0x00,
-    0x5b,0x17,0x00,0x00,0xd7,0x30,0x00,0x00,0x01,0x00,0x00,0x00,
-    0x5a,0x00,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0xff,0xff,0x00,0x00
-};
 s32 g_RaceIntroCameraTimer;
 SVec g_RaceIntroCameraDelta __attribute__((aligned(16)));
-u8 g_RaceIntroCameraReserved[8] __attribute__((aligned(16)));
 GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;

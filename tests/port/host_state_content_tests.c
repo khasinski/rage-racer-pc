@@ -299,7 +299,7 @@ extern unsigned char g_CdReadSavedReadyCallback[8];
 extern unsigned char g_SpriteFontCells[192];
 extern unsigned char g_SpriteFontWidth[288];
 extern int32_t g_RoadGrade;
-extern uint8_t g_RoadGradeReserved[12];
+extern uint8_t D_8007DA7C[12];
 extern ContentCarPoint g_PlayerHullPoints[6];
 extern ContentCarPoint g_OpponentHullCorners[4];
 extern ContentCarPoint g_CarCornerOffsets[4];
@@ -312,7 +312,7 @@ extern unsigned char g_RaceOptionMarquee[160];
 extern unsigned char g_WaypointSeeds[128];
 extern unsigned char g_ReverbZones[32];
 extern ContentCarPoint g_CarCollisionCorners[4];
-extern uint8_t g_CarCollisionTrailingData[60];
+extern uint8_t D_8007E24C[60];
 extern unsigned char g_FreeCameraAngleOffset[8];
 typedef struct StartGridSceneryStep {
     int16_t x;
@@ -567,7 +567,7 @@ extern unsigned char g_FmvStripBuffer0[8];
 extern unsigned char g_FmvStripBuffer1[8];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
-extern uint8_t g_RaceIntroCameraReserved[8];
+extern uint8_t D_8009AFC4[8];
 extern unsigned char g_CdTrackElapsedLoc[8];
 
 typedef struct HostStateBlob {
@@ -820,8 +820,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_SpriteFontWidth", g_SpriteFontWidth, 288},
     {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
      sizeof(g_RoadGrade)},
-    {"g_RoadGradeReserved", g_RoadGradeReserved,
-     sizeof(g_RoadGradeReserved)},
+    {"D_8007DA7C", D_8007DA7C, sizeof(D_8007DA7C)},
     {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,
      sizeof(g_PlayerHullPoints)},
     {"g_OpponentHullCorners", (const unsigned char *)g_OpponentHullCorners,
@@ -840,8 +839,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_ReverbZones", g_ReverbZones, 32},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
      sizeof(g_CarCollisionCorners)},
-    {"g_CarCollisionTrailingData", g_CarCollisionTrailingData,
-     sizeof(g_CarCollisionTrailingData)},
+    {"D_8007E24C", D_8007E24C, sizeof(D_8007E24C)},
     {"g_FreeCameraAngleOffset", g_FreeCameraAngleOffset, 8},
     {"g_StartGridSceneryStep",
      (const unsigned char *)g_StartGridSceneryStep, 8},
@@ -1088,8 +1086,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_RaceIntroCameraDelta,
      sizeof(g_RaceIntroCameraDelta)},
-    {"g_RaceIntroCameraReserved", g_RaceIntroCameraReserved,
-     sizeof(g_RaceIntroCameraReserved)},
+    {"D_8009AFC4", D_8009AFC4, sizeof(D_8009AFC4)},
     {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 8},
 };
 
