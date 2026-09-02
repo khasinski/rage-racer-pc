@@ -493,7 +493,7 @@ target_link_libraries(car_performance_setup_tests PRIVATE psyz)
 add_test(NAME car_performance_setup COMMAND car_performance_setup_tests)
 
 add_executable(rival_ai_setup_tests
-    rival_car_init_tests.c
+    rival_ai_setup_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ai_setup.c)
 target_include_directories(rival_ai_setup_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include

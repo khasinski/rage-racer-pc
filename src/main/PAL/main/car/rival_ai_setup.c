@@ -3,7 +3,6 @@
 #include "game/track.h"
 
 enum {
-    RIVAL_CONFIG_COUNT = 12,
     MAX_BOOST_ACCELERATION_THRESHOLD = 10,
     MAX_BOOST_ACCELERATION = 15,
     MIN_RIVAL_SPEED = 60,
@@ -30,7 +29,7 @@ void InitRivalCarAi(GameCarRuntime *car,
     const TrackRivalAiConfig *config;
     GameCarAiBlock *ai = GetCarAiBlock(car);
 
-    if ((u32)configIndex >= RIVAL_CONFIG_COUNT) {
+    if ((u32)configIndex >= TRACK_RIVAL_COUNT) {
         configIndex = 0;
     }
     config = &g_TrackEventData->rivalAiConfigs[
