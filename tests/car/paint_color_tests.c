@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-u16 g_BodyColorPrimary[8];
-u16 g_BodyColorSecondary[8];
+u16 g_BodyColorPrimary[18];
+u16 g_BodyColorSecondary[18];
 u16 g_PaintSlots3StopA[9];
 u16 g_PaintSlots3StopB[8];
 u16 g_PaintSlots4Stop[4];
@@ -34,6 +34,8 @@ int main(void) {
     };
     static const unsigned long expected = 101119966UL;
     CarImageData image;
+    CarImageData firstColour;
+    CarImageData invalidColour;
     size_t colour;
     s32 i;
 
@@ -51,6 +53,16 @@ int main(void) {
         memset(&image, 0xA5, sizeof(image));
         ApplyBodyColor2((u32)colour, &image);
         Fold(&image.paintPalette, sizeof(image.paintPalette));
+    }
+
+    memset(&firstColour, 0x5A, sizeof(firstColour));
+    memset(&invalidColour, 0x5A, sizeof(invalidColour));
+    ApplyBodyColor1(0, &firstColour);
+    ApplyBodyColor1(18, &invalidColour);
+    if (memcmp(&firstColour.paintPalette, &invalidColour.paintPalette,
+               sizeof(firstColour.paintPalette)) != 0) {
+        puts("FAIL invalid paint colour did not use the first palette entry");
+        return 1;
     }
 
     if (s_digest != expected) {

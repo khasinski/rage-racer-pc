@@ -7,7 +7,8 @@ enum PaintColor {
     PAINT_CHANNEL_MASK = 0x1F,
     PAINT_GREEN_SHIFT = 5,
     PAINT_BLUE_SHIFT = 10,
-    PAINT_HALVED_MASK = 0x3DEF
+    PAINT_HALVED_MASK = 0x3DEF,
+    PAINT_COLOR_COUNT = 18,
 };
 
 typedef struct PaintGradient {
@@ -86,6 +87,10 @@ static void WriteFourStopPaintGradient(u16 *palette, const u16 *slots,
 
 static void ApplyBodyColours(u32 colour, CarImageData *imageData,
                              s32 secondColour) {
+    if (colour >= PAINT_COLOR_COUNT) {
+        colour = 0;
+    }
+
     u16 primary = g_BodyColorPrimary[colour];
     u16 secondary = g_BodyColorSecondary[colour];
     u16 *palette = imageData->paintPalette.entries;
