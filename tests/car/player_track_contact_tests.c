@@ -86,10 +86,22 @@ int main(void) {
     CHECK(s_knockbackCalls == 0);
 
     Reset(&car);
+    car.motionActive = 1;
     car.motionTimer = 1;
     s_trackResult = 1;
     CHECK(ResolvePlayerTrackContact(&car) == 1);
     CHECK(s_knockbackCalls == 1);
+
+    Reset(&car);
+    car.motionActive = 1;
+    car.motionTimer = 0x8000;
+    CHECK(ResolvePlayerTrackContact(&car) == 0);
+    CHECK(s_knockbackCalls == 1);
+
+    Reset(&car);
+    car.motionTimer = 1;
+    CHECK(ResolvePlayerTrackContact(&car) == 0);
+    CHECK(s_knockbackCalls == 0);
 
     Reset(&car);
     car.speed = 63;

@@ -26,7 +26,7 @@ void PlaceRivalCarsOnTrack(void) {
         if (car->activeFlag == -1) {
             continue;
         }
-        if ((s16)car->motionTimer > 0) {
+        if (car->motionActive) {
             ApplyCarKnockback(car);
         }
         UpdateCarTrackState(car, car->trackPointIndex, &limits);

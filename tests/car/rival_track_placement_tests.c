@@ -44,7 +44,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
 int main(void) {
     static const s32 expected[] = {
         100, 102, 103,
-        200, 300, 302, 303,
+        200, 300, 302, 203, 303,
     };
     s32 index;
 
@@ -54,10 +54,12 @@ int main(void) {
         g_Cars[index].trackPointIndex = index + 10;
     }
     g_Cars[0].activeFlag = 0;
+    g_Cars[0].motionActive = 1;
     g_Cars[0].motionTimer = 1;
     g_Cars[2].activeFlag = 0;
     g_Cars[2].motionTimer = 0;
     g_Cars[3].activeFlag = 0;
+    g_Cars[3].motionActive = 1;
     g_Cars[3].motionTimer = 0x8000;
 
     PlaceRivalCarsOnTrack();

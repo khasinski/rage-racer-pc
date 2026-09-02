@@ -19,7 +19,7 @@ s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
     BuildRotMatrixY(&toTrack, trackRotation.vy);
     MeasurePlayerTrackLimits(&toTrack, &limits);
 
-    if ((s16)car->motionTimer > 0) {
+    if (car->motionActive) {
         ApplyCarKnockback(AsRivalCar(car));
     }
     TraceCarMotion("post-knockback", car);
