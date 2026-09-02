@@ -85,6 +85,26 @@ target_link_libraries(cd_track_requests_tests PRIVATE psyz)
 add_test(NAME cd_track_requests COMMAND cd_track_requests_tests)
 set_tests_properties(cd_track_requests PROPERTIES LABELS unit)
 
+add_executable(cd_play_request_tests
+    cd_play_request_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_play_request.c)
+target_include_directories(cd_play_request_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(cd_play_request_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(cd_play_request_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(cd_play_request_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(cd_play_request_tests PRIVATE psyz)
+add_test(NAME cd_play_request COMMAND cd_play_request_tests)
+set_tests_properties(cd_play_request PROPERTIES LABELS unit)
+
 add_executable(cd_audio_runtime_tests
     cd_audio_runtime_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c

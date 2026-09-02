@@ -11,8 +11,6 @@ s32 g_CdTrackStep;
 u8 g_CdCurrentTrack;
 s32 g_CdFadeFrames;
 u8 g_CdVolume;
-CdCommandType g_CdCommandPending;
-s32 g_CdCommandStep;
 
 static long s_syncResult;
 static long s_controlResult;
@@ -124,38 +122,9 @@ static int TestTrackRestart(void) {
     return 0;
 }
 
-static int TestPlayRequest(void) {
-    g_CdCommandPending = CD_COMMAND_PLAY;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
-    ResetCalls();
-    s_syncResult = CD_SYNC_COMPLETE;
-    s_controlResult = 1;
-
-    StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_COMMAND);
-    CHECK(s_controlCalls == 1 && s_lastCommand == CD_DRIVE_PLAY);
-    s_syncResult = CD_SYNC_DISK_ERROR;
-    StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_SEND_COMMAND);
-    s_controlResult = 0;
-    StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_SEND_COMMAND);
-    s_controlResult = 1;
-    StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_COMMAND);
-    s_syncResult = CD_SYNC_COMPLETE;
-    StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_FINISH);
-    StepCdPlayRequest();
-    CHECK(g_CdCommandPending == CD_COMMAND_NONE);
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
-    return 0;
-}
-
 int main(void) {
     CHECK(TestTrackSelection() == 0);
     CHECK(TestTrackRestart() == 0);
-    CHECK(TestPlayRequest() == 0);
-    puts("CD track requests preserve pause, seek retry, restart, and play");
+    puts("CD track requests preserve pause, seek retry, and restart");
     return 0;
 }
