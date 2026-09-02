@@ -6,22 +6,53 @@
 
 #include "rage/trace.h"
 
+enum {
+    PLAYER_BODY_GROUND_OFFSET = 8,
+    PEDAL_POSITION_SCALE = 6,
+    PEDAL_POSITION_DIVISOR = 1280,
+    RANDOM15_MAX = 0x7FFF,
+    SHIFT_PITCH_SCALE = 100,
+};
+
+static void IntegratePlayerHorizontalPosition(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+
+    car->x -= car->motionX;
+    car->z -= car->motionZ;
+    CalculatePlayerBodyOffset(car);
+    car->x += car->motionX +
+              drive->accelPos * PEDAL_POSITION_SCALE / PEDAL_POSITION_DIVISOR;
+    car->z += car->motionZ +
+              drive->brakePos * PEDAL_POSITION_SCALE / PEDAL_POSITION_DIVISOR;
+}
+
+static void ApplyGearShiftBodyPitch(PlayerCarRuntime *car) {
+    s32 rpmSurplus;
+
+    if (car->drive.shiftRpmDelta == 0) return;
+
+    rpmSurplus = (g_CarSpec->revLimit + g_CarSpec->redline) / 2 -
+                 g_ShiftTargetRpm;
+    if (rpmSurplus > 0) {
+        car->bodyPitch +=
+            rpmSurplus * Random15() / (SHIFT_PITCH_SCALE * RANDOM15_MAX);
+    }
+}
+
 /* Per-frame player physics orchestration and track contact. */
 void UpdatePlayerCar(PlayerCarRuntime *car) {
-    Vec4 tmp;
-    GameCarDrive *p = &car->drive;
-    s32 usesNegconMapping;
-    s32 ground;
+    GameCarDrive *drive = &car->drive;
+    s32 useAlternateGearMapping;
+    s32 groundHeight;
     s32 skid;
     s32 crash;
-    s32 bodyY;
 
     TraceCarStates();
 
-    usesNegconMapping = g_PadType == PAD_TYPE_NEGCON;
+    useAlternateGearMapping = g_PadType == PAD_TYPE_NEGCON;
     car->facingBackwards = IsCarFacingBackwards(car);
 
-    ShiftPlayerGears(car, usesNegconMapping);
+    ShiftPlayerGears(car, useAlternateGearMapping);
 
     UpdateCarBodyRoll(car);
 
@@ -29,34 +60,20 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         UpdatePlayerSteeringTarget(car);
     }
 
-    ReadPlayerCarInput(p);
+    ReadPlayerCarInput(drive);
     UpdateCarDrivetrain(car);
 
     UpdatePlayerControlFeedback(car);
 
     TraceCarMotion("pre-integrate", car);
-    car->x -= car->motionX;
-    car->z -= car->motionZ;
-    CalculatePlayerBodyOffset(car);
-
-    /* Retail copied a stack Vec4 after assigning only X/Z. Preserve Y/W
-     * explicitly so player state does not depend on the host stack ABI. */
-    tmp = GetPlayerPosition(car);
-    tmp.x = (p->accelPos * 6) / 1280 + car->x + car->motionX;
-    tmp.z = (p->brakePos * 6) / 1280 + car->z + car->motionZ;
-    SetPlayerPosition(car, &tmp);
+    IntegratePlayerHorizontalPosition(car);
     TraceCarMotion("post-position", car);
     AccumulateLapProgress(AsRivalCar(car));
     TraceCarMotion("post-progress", car);
 
     skid = ResolvePlayerTrackContact(car);
 
-    if (p->shiftRpmDelta != 0) {
-        s32 d = (g_CarSpec->revLimit + g_CarSpec->redline) / 2 - g_ShiftTargetRpm;
-        if (d > 0) {
-            car->bodyPitch += (d * Random15()) / 3276700;
-        }
-    }
+    ApplyGearShiftBodyPitch(car);
 
     crash = CollidePlayerWithCars(car);
     TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
@@ -64,14 +81,12 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
         StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_CORNERING);
     }
 
-    bodyY = car->y;
     CopyPlayerBodyRotationToModel(car);
     car->bodyRoll += car->bodyRollVelocity;
     car->modelY = car->y;
-    /* Where the wheels sit, eight units under the body. */
-    ground = bodyY - 8;
+    groundHeight = car->y - PLAYER_BODY_GROUND_OFFSET;
 
-    UpdatePlayerJump(car, ground);
+    UpdatePlayerJump(car, groundHeight);
 
     UpdatePlayerTilt(car);
     UpdateCarCrestHop(AsRivalCar(car));

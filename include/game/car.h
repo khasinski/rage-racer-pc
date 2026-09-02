@@ -649,23 +649,6 @@ static inline void CopyPlayerBodyRotationToModel(PlayerCarRuntime *car) {
     car->field_5C = car->bodyRotationW;
 }
 
-static inline void SetPlayerPosition(PlayerCarRuntime *car, const Vec4 *position) {
-    car->x = position->x;
-    car->y = position->y;
-    car->z = position->z;
-    car->positionW = position->w;
-}
-
-static inline Vec4 GetPlayerPosition(PlayerCarRuntime *car) {
-    Vec4 position;
-
-    position.x = car->x;
-    position.y = car->y;
-    position.z = car->z;
-    position.w = car->positionW;
-    return position;
-}
-
 static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
     car->modelPitch = car->bodyPitch;
     car->modelYaw = car->bodyYaw;

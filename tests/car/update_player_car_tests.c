@@ -157,6 +157,7 @@ static void Reset(PlayerCarRuntime *car) {
     car->x = 100;
     car->y = 50;
     car->z = 200;
+    car->positionW = 77;
     car->motionX = 10;
     car->motionZ = 20;
 }
@@ -179,10 +180,13 @@ int main(void) {
     PlayerCarRuntime car;
 
     Reset(&car);
+    car.drive.accelPos = 640;
+    car.drive.brakePos = 1280;
     UpdatePlayerCar(&car);
     CheckOrder("ABCDEFGHIJKMPQRST");
     CHECK(car.facingBackwards == 1 && s_shiftMapping == 0);
-    CHECK(car.x == 95 && car.z == 187);
+    CHECK(car.x == 98 && car.z == 193);
+    CHECK(car.y == 50 && car.positionW == 77);
     CHECK(s_jumpGround == 42);
     CHECK(s_responseSkid == 0 && s_responseCrash == 0);
     CHECK(s_traceCalls == 4);
