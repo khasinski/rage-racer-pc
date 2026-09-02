@@ -12,6 +12,8 @@
 #include <stdint.h>
 
 #include "common.h"
+#include "game/car.h"
+#include "psyq/gpu.h"
 
 typedef struct CarImageData CarImageData;
 typedef struct GameCdLoadEntry GameCdLoadEntry;
@@ -19,12 +21,18 @@ typedef struct GameCdLoadEntry GameCdLoadEntry;
 char g_MsgResOk[8] __attribute__((aligned(16))) = "res ok!";
 char g_MsgEventOk[12] __attribute__((aligned(16))) = "event ok\n";
 s32 g_AssetLoadState;
-unsigned char g_CarModelBaseIndex[16] __attribute__((aligned(16))) = {0x00,0x04,0x07,0x09,0x0e,0x12,0x15,0x17,0x1a,0x1c,0x1d,0x1e,0x1f,0x00,0x00,0x00};
-unsigned char g_CarModelUnlockBase[16] __attribute__((aligned(16))) = {0x01,0x02,0x03,0x00,0x01,0x02,0x03,0x02,0x03,0x04,0x05,0x05,0x05,0x00,0x00,0x00};
+u8 g_CarModelBaseIndex[GAME_CAR_COUNT] __attribute__((aligned(16))) = {
+    0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31
+};
+u8 g_CarModelUnlockBase[GAME_CAR_COUNT] __attribute__((aligned(16))) = {
+    1, 2, 3, 0, 1, 2, 3, 2, 3, 4, 5, 5, 5
+};
 s32 g_AssetRequestType;
-unsigned char g_TrackTextureRect[8] __attribute__((aligned(16))) = {0x40,0x02,0x00,0x01,0xc0,0x01,0x00,0x01};
-unsigned char g_TeamLogoClutLoadRect[8] __attribute__((aligned(16))) = {0x50,0x00,0xe5,0x01,0x10,0x00,0x01,0x00};
-unsigned char g_TeamLogoClutMoveRect[8] __attribute__((aligned(16))) = {0xf0,0x03,0xec,0x00,0x10,0x00,0x01,0x00};
+Rect g_TrackTextureRect __attribute__((aligned(16))) = {576, 256, 448, 256};
+Rect g_TeamLogoClutLoadRect __attribute__((aligned(16))) = {80, 485, 16, 1};
+GpuRectPacked g_TeamLogoClutMoveRect __attribute__((aligned(16))) = {
+    0x00EC03F0, 16, 1
+};
 s32 g_PendingCarModelIndex;
 u32 g_CarModelSlot;
 s32 g_LoadBuffer[1037896 / sizeof(s32)] __attribute__((aligned(16)));

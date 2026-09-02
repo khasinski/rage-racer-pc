@@ -323,11 +323,11 @@ extern s32 g_CarListCursor;
 
 /* Index of each car model's first grade in the 32-entry asset list; thirteen
  * entries, one per model. GetCarAssetIndex adds the owned grade to it. */
-extern u8 g_CarModelBaseIndex[];
+extern u8 g_CarModelBaseIndex[GAME_CAR_COUNT];
 
 /* Per-model base of the progress level a purchase requires; the level needed is
  * this plus the grade being bought (GetCarUnlockLevel). */
-extern u8 g_CarModelUnlockBase[];
+extern u8 g_CarModelUnlockBase[GAME_CAR_COUNT];
 
 /* One automatic-gearbox shift point; `spec->shiftPoints[gear - 1]`. */
 typedef struct GameCarSpecShiftPoint {

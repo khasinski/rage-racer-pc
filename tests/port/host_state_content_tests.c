@@ -142,11 +142,11 @@ extern unsigned char g_NegconConfigButtonRows[40];
 extern unsigned char g_NegconPlayPercent[8];
 extern unsigned char g_WordFontCells[40];
 extern unsigned char g_HighFontCell[4];
-extern unsigned char g_CarModelBaseIndex[16];
-extern unsigned char g_CarModelUnlockBase[16];
-extern unsigned char g_TrackTextureRect[8];
-extern unsigned char g_TeamLogoClutLoadRect[8];
-extern unsigned char g_TeamLogoClutMoveRect[8];
+extern unsigned char g_CarModelBaseIndex[13];
+extern unsigned char g_CarModelUnlockBase[13];
+extern Rect g_TrackTextureRect;
+extern Rect g_TeamLogoClutLoadRect;
+extern GpuRectPacked g_TeamLogoClutMoveRect;
 extern unsigned char g_CarMirrorBadgeStyles[16];
 extern unsigned char g_MirrorBadgeTexU[10];
 extern unsigned char g_MirrorBadgeTexV[10];
@@ -322,11 +322,13 @@ static const HostStateBlob s_blobs[] = {
     {"g_NegconPlayPercent", g_NegconPlayPercent, 8},
     {"g_WordFontCells", g_WordFontCells, 40},
     {"g_HighFontCell", g_HighFontCell, 4},
-    {"g_CarModelBaseIndex", g_CarModelBaseIndex, 16},
-    {"g_CarModelUnlockBase", g_CarModelUnlockBase, 16},
-    {"g_TrackTextureRect", g_TrackTextureRect, 8},
-    {"g_TeamLogoClutLoadRect", g_TeamLogoClutLoadRect, 8},
-    {"g_TeamLogoClutMoveRect", g_TeamLogoClutMoveRect, 8},
+    {"g_CarModelBaseIndex", g_CarModelBaseIndex, 13},
+    {"g_CarModelUnlockBase", g_CarModelUnlockBase, 13},
+    {"g_TrackTextureRect", (const unsigned char *)&g_TrackTextureRect, 8},
+    {"g_TeamLogoClutLoadRect",
+     (const unsigned char *)&g_TeamLogoClutLoadRect, 8},
+    {"g_TeamLogoClutMoveRect",
+     (const unsigned char *)&g_TeamLogoClutMoveRect, 8},
     {"g_CarMirrorBadgeStyles", g_CarMirrorBadgeStyles, 16},
     {"g_MirrorBadgeTexU", g_MirrorBadgeTexU, 10},
     {"g_MirrorBadgeTexV", g_MirrorBadgeTexV, 10},
@@ -417,7 +419,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3872064214UL;
+    const unsigned long expected = 297002858UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
