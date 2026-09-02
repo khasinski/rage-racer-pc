@@ -4,12 +4,6 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
-static s32 ClampAssetCount(s32 count, s32 limit) {
-    if (count < 0) return 0;
-    if (count > limit) return limit;
-    return count;
-}
-
 static s32 AssetOffsetIsValid(s32 offset, size_t size) {
     return offset >= 0 && (size_t)offset < size;
 }
@@ -22,9 +16,8 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
         return 0;
     }
 
-    count = base->modelCount > GAME_MODEL_PER_BANK_LIMIT
-                ? GAME_MODEL_PER_BANK_LIMIT
-                : base->modelCount;
+    if (base->modelCount > GAME_MODEL_PER_BANK_LIMIT) return 0;
+    count = base->modelCount;
     if (size < offsetof(ModelBankHeader, modelOffsets) +
                    count * sizeof(base->modelOffsets[0]) ||
         !AssetOffsetIsValid(base->tableOffset, size) ||
@@ -47,9 +40,7 @@ s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
         return 0;
     }
 
-    count = base->modelCount > GAME_MODEL_PER_BANK_LIMIT
-                ? GAME_MODEL_PER_BANK_LIMIT
-                : base->modelCount;
+    count = base->modelCount;
     bank = &g_ModelBanks[index];
     bank->modelCount = (s32)count;
     bank->table = ResolveAssetAddress(base, base->tableOffset);
@@ -77,7 +68,11 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
     if (base == NULL || size < offsetof(CourseModelAssetHeader, models)) {
         return 0;
     }
-    count = ClampAssetCount(base->modelCount, GAME_COURSE_MODEL_LIMIT);
+    if (base->modelCount < 0 ||
+        base->modelCount > GAME_COURSE_MODEL_LIMIT) {
+        return 0;
+    }
+    count = base->modelCount;
     if (size < offsetof(CourseModelAssetHeader, models) +
                    (size_t)count * sizeof(base->models[0])) {
         return 0;
@@ -99,7 +94,7 @@ s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
 
     if (!IsValidCourseModelAsset(base, size)) return 0;
 
-    count = ClampAssetCount(base->modelCount, GAME_COURSE_MODEL_LIMIT);
+    count = base->modelCount;
     g_RenderState.courseBank = g_NativeCourseModels;
     g_CourseModelCount = count;
     for (i = 0; i < count; i++) {
@@ -132,7 +127,11 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     cursor += CELL_VISIBILITY_TABLE_SIZE;
     header = (const TerrainCellAssetHeader *)cursor;
     payloadSize = size - (size_t)(cursor - (const u8 *)data);
-    count = ClampAssetCount(header->cellCount, GAME_TERRAIN_CELL_LIMIT);
+    if (header->cellCount < 0 ||
+        header->cellCount > GAME_TERRAIN_CELL_LIMIT) {
+        return 0;
+    }
+    count = header->cellCount;
     if (payloadSize < offsetof(TerrainCellAssetHeader, cellOffsets) +
                           (size_t)count * sizeof(header->cellOffsets[0]) ||
         !AssetOffsetIsValid(header->facesOffset, payloadSize)) {
@@ -155,7 +154,7 @@ s32 InstallTerrainCellData(void *data, size_t size) {
     cursor = data;
     cursor += TERRAIN_CELL_GRID_BYTES + CELL_VISIBILITY_TABLE_SIZE;
     header = (TerrainCellAssetHeader *)cursor;
-    count = ClampAssetCount(header->cellCount, GAME_TERRAIN_CELL_LIMIT);
+    count = header->cellCount;
     g_TerrainCellGrid = (u16 *)data;
     g_CellVisibilityTable =
         (CellVisibilityRow *)((u8 *)data + TERRAIN_CELL_GRID_BYTES);

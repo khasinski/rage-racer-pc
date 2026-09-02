@@ -102,10 +102,9 @@ static int TestModelBank(void) {
         CHECK(large != NULL);
         large->modelCount = UINT32_MAX;
         large->modelOffsets[GAME_MODEL_PER_BANK_LIMIT - 1] = (s32)size - 1;
-        CHECK(RegisterModelBank(large, size, 3) == 1);
-        CHECK(g_ModelBanks[3].modelCount == GAME_MODEL_PER_BANK_LIMIT);
-        CHECK(g_ModelBanks[3].models[GAME_MODEL_PER_BANK_LIMIT - 1] ==
-              (u8 *)large + size - 1);
+        g_ModelBanks[3].modelCount = 17;
+        CHECK(RegisterModelBank(large, size, 3) == 0);
+        CHECK(g_ModelBanks[3].modelCount == 17);
         free(large);
     }
     return 0;
@@ -146,8 +145,8 @@ static int TestCourseModels(void) {
     CHECK(g_CourseModelCount == 3);
 
     data.modelCount = -4;
-    CHECK(RegisterCourseModels(header, sizeof(data)) == 1);
-    CHECK(g_CourseModelCount == 0);
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
+    CHECK(g_CourseModelCount == 3);
 
     {
         size_t size = sizeof(CourseModelAssetHeader) +
@@ -158,10 +157,8 @@ static int TestCourseModels(void) {
         CHECK(large != NULL);
         large->modelCount = GAME_COURSE_MODEL_LIMIT + 1;
         large->models[GAME_COURSE_MODEL_LIMIT - 1].vertexCount = 99;
-        CHECK(RegisterCourseModels(large, size) == 1);
-        CHECK(g_CourseModelCount == GAME_COURSE_MODEL_LIMIT);
-        CHECK(g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT - 1].vertexCount ==
-              99);
+        CHECK(RegisterCourseModels(large, size) == 0);
+        CHECK(g_CourseModelCount == 3);
         free(large);
     }
     return 0;
@@ -199,8 +196,8 @@ static int TestTerrainCells(void) {
     CHECK(g_TerrainCellCount == 3);
 
     header->cellCount = -1;
-    CHECK(InstallTerrainCellData(data, sizeof(data)) == 1);
-    CHECK(g_TerrainCellCount == 0);
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
+    CHECK(g_TerrainCellCount == 3);
 
     {
         size_t size = HEADER_OFFSET + sizeof(TerrainCellAssetHeader) +
@@ -212,10 +209,8 @@ static int TestTerrainCells(void) {
         largeHeader = (TerrainCellAssetHeader *)&large[HEADER_OFFSET];
         largeHeader->cellCount = GAME_TERRAIN_CELL_LIMIT + 1;
         largeHeader->cellOffsets[GAME_TERRAIN_CELL_LIMIT - 1] = 1;
-        CHECK(InstallTerrainCellData(large, size) == 1);
-        CHECK(g_TerrainCellCount == GAME_TERRAIN_CELL_LIMIT);
-        CHECK(g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT - 1] ==
-              (u8 *)largeHeader + 1);
+        CHECK(InstallTerrainCellData(large, size) == 0);
+        CHECK(g_TerrainCellCount == 3);
         free(large);
     }
     return 0;
