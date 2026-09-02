@@ -58,7 +58,7 @@ typedef struct SkySkirtEdge {
 } SkySkirtEdge;
 
 typedef struct SkyFrame {
-    RenderBufferAddress packet;
+    u8 *packet;
     GameOrderingTableEntry *orderingTable;
     s32 cameraY;
     s32 pitch;
@@ -73,10 +73,10 @@ typedef struct SkyFrame {
  * only thing the course index decides here. Returns where it left the packet
  * cursor.
  */
-static RenderBufferAddress DrawFarGroundGradient(
+static u8 *DrawFarGroundGradient(
     SkyFrame *frame, const SkyBandGeometry *band, SkySkirtEdge *bottomEdge,
-    RenderBufferAddress packet) {
-    POLY_G4 *quad = packet.polyG4;
+    u8 *packet) {
+    POLY_G4 *quad = (POLY_G4 *)packet;
     s32 leftX = (band->panelX + band->rowStepX) * 8;
     s32 rightX = (band->panelX + band->columnStepX + band->rowStepX) * 8;
     s32 topY = (band->panelY + band->rowStepY) * 8;
@@ -100,8 +100,7 @@ static RenderBufferAddress DrawFarGroundGradient(
     bottomEdge->x1 = quad->x3;
     bottomEdge->y0 = quad->y2;
     bottomEdge->y1 = quad->y3;
-    packet.polyG4++;
-    return packet;
+    return (u8 *)(quad + 1);
 }
 
 static SkySkirtEdge MeasureLowerSkirtEdge(const SkyBandGeometry *band) {
@@ -116,10 +115,10 @@ static SkySkirtEdge MeasureLowerSkirtEdge(const SkyBandGeometry *band) {
     return edge;
 }
 
-static RenderBufferAddress DrawNearGroundGradient(
+static u8 *DrawNearGroundGradient(
     SkyFrame *frame, const SkyBandGeometry *band,
-    const SkySkirtEdge *bottomEdge, RenderBufferAddress packet) {
-    POLY_G4 *quad = packet.polyG4;
+    const SkySkirtEdge *bottomEdge, u8 *packet) {
+    POLY_G4 *quad = (POLY_G4 *)packet;
 
     SetPolyG4(quad);
     quad->x0 = Fixed8ToScreen(band->panelX + band->rowStepX);
@@ -136,14 +135,13 @@ static RenderBufferAddress DrawNearGroundGradient(
         quad, g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_TOP].cur,
         g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_BOTTOM].cur);
     AddPrim(&frame->orderingTable[SKY_OT_NEAR], quad);
-    packet.polyG4++;
-    return packet;
+    return (u8 *)(quad + 1);
 }
 
-static RenderBufferAddress DrawFlatCourseSkirt(
+static u8 *DrawFlatCourseSkirt(
     SkyFrame *frame, const SkySkirtEdge *topEdge,
-    const SkySkirtEdge *bottomEdge, RenderBufferAddress packet) {
-    POLY_F4 *quad = packet.polyF4;
+    const SkySkirtEdge *bottomEdge, u8 *packet) {
+    POLY_F4 *quad = (POLY_F4 *)packet;
     GameEnvColor color =
         g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur;
 
@@ -160,13 +158,11 @@ static RenderBufferAddress DrawFlatCourseSkirt(
     quad->g0 = color.bytes.g;
     quad->b0 = color.bytes.b;
     AddPrim(&frame->orderingTable[SKY_OT_NEAR], quad);
-    packet.polyF4++;
-    return packet;
+    return (u8 *)(quad + 1);
 }
 
-static RenderBufferAddress DrawCourseSkirt(SkyFrame *frame,
-                                           const SkyBandGeometry *band,
-                                           RenderBufferAddress packet) {
+static u8 *DrawCourseSkirt(SkyFrame *frame,
+                           const SkyBandGeometry *band, u8 *packet) {
     SkySkirtEdge bottomEdge = MeasureLowerSkirtEdge(band);
 
     if (g_CourseIndex == 2) {
@@ -238,7 +234,7 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
 }
 
 static void InitializeSkyFrame(SkyFrame *work) {
-    work->packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
+    work->packet = RENDER_PRIM_CURSOR_AS(u8);
     work->orderingTable = RENDER_OT_BASE;
     work->cameraY = g_RenderState.viewY;
     work->pitch = g_RenderState.viewAngleX;
@@ -258,9 +254,8 @@ static void SetSkyQuadUV(POLY_FT4 *quad, const SkyTileUV *tile) {
     quad->v3 = tile->corner[3].bytes.v;
 }
 
-static RenderBufferAddress DrawTexturedSkyGrid(SkyFrame *work,
-                                               const SkyBandSetup *band,
-                                               RenderBufferAddress packet) {
+static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
+                               u8 *packet) {
     s32 rowShearX = 0;
     s32 rowShearY = 0;
     s32 screenX[4];
@@ -270,7 +265,7 @@ static RenderBufferAddress DrawTexturedSkyGrid(SkyFrame *work,
         s32 cellY = band->panelYFixed;
 
         for (s32 column = 0; column < 8; column++) {
-            POLY_FT4 *quad = packet.polyFT4;
+            POLY_FT4 *quad = (POLY_FT4 *)packet;
             s16 tileIndex = g_SkyTileMap[(row & 1) + g_SkyRowBase]
                 [(band->textureColumn + column) &
                  (SKY_TILE_MAP_COLUMNS - 1)];
@@ -303,7 +298,7 @@ static RenderBufferAddress DrawTexturedSkyGrid(SkyFrame *work,
             quad->clut = 0x798E;
             AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
 
-            packet.polyFT4++;
+            packet = (u8 *)(quad + 1);
             cellX = nextCellX;
             cellY = nextCellY;
         }
@@ -327,9 +322,8 @@ static s32 SkyQuadIntersectsScreen(const s32 screenX[4]) {
     return hasPointAtOrRightOfLeftEdge && hasPointLeftOfRightEdge;
 }
 
-static RenderBufferAddress DrawHorizonTileStrip(SkyFrame *work,
-                                                const SkyBandSetup *band,
-                                                RenderBufferAddress packet) {
+static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
+                                u8 *packet) {
     s32 panelX = band->lowerPanelXFixed;
     s32 panelY = band->lowerPanelYFixed;
 
@@ -344,7 +338,7 @@ static RenderBufferAddress DrawHorizonTileStrip(SkyFrame *work,
         };
 
         if (SkyQuadIntersectsScreen(screenX)) {
-            POLY_FT4 *quad = packet.polyFT4;
+            POLY_FT4 *quad = (POLY_FT4 *)packet;
             s32 tileIndex = g_SkyTileMap[0]
                 [(band->textureColumn + column) &
                  (SKY_TILE_MAP_COLUMNS - 1)];
@@ -366,7 +360,7 @@ static RenderBufferAddress DrawHorizonTileStrip(SkyFrame *work,
             quad->b0 = 0x80;
             quad->clut = 0x798E;
             AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
-            packet.polyFT4++;
+            packet = (u8 *)(quad + 1);
         }
 
         panelX = nextPanelX;
@@ -376,10 +370,10 @@ static RenderBufferAddress DrawHorizonTileStrip(SkyFrame *work,
     return packet;
 }
 
-static RenderBufferAddress DrawSkyGradientQuad(
-    SkyFrame *work, RenderBufferAddress packet, const s32 screenX[4],
+static u8 *DrawSkyGradientQuad(
+    SkyFrame *work, u8 *packet, const s32 screenX[4],
     const s32 screenY[4], GameEnvColor nearColor, GameEnvColor farColor) {
-    POLY_G4 *quad = packet.polyG4;
+    POLY_G4 *quad = (POLY_G4 *)packet;
 
     SetPolyG4(quad);
     quad->x0 = screenX[0];
@@ -392,13 +386,11 @@ static RenderBufferAddress DrawSkyGradientQuad(
     quad->y3 = screenY[3];
     SetSkyGradientColors(quad, nearColor, farColor);
     AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
-    packet.polyG4++;
-    return packet;
+    return (u8 *)(quad + 1);
 }
 
-static RenderBufferAddress DrawSkyGradientBands(SkyFrame *work,
-                                                const SkyBandSetup *band,
-                                                RenderBufferAddress packet) {
+static u8 *DrawSkyGradientBands(SkyFrame *work, const SkyBandSetup *band,
+                                u8 *packet) {
     const s32 panelX = band->panelXFixed;
     const s32 panelY = band->panelYFixed;
     const s32 columnStepX = band->columnStepX * 8;
@@ -451,7 +443,7 @@ void DrawSkyBackground(void) {
     SkyFrame work;
     SkyBandSetup setup;
     SkyBandGeometry geometry;
-    RenderBufferAddress packet;
+    u8 *packet;
 
     InitializeSkyFrame(&work);
     MeasureSkyBand(&work, &setup);
@@ -474,5 +466,5 @@ void DrawSkyBackground(void) {
     }
 
     packet = DrawCourseSkirt(&work, &geometry, packet);
-    g_RenderState.packetCursor = packet.bytes;
+    g_RenderState.packetCursor = packet;
 }

@@ -28,8 +28,9 @@ from pathlib import Path
 # the skirt closes the horizon. A deliberate physics or camera correction can
 # therefore move it too; inspect the changed frames before accepting a value.
 # The current baseline includes the restored one-based right-edge knockback
-# mode (876d88f3) and synchronizes random state when the race scene starts.
-EXPECTED = 0xD728E09D
+# mode (876d88f3), synchronizes random state when the race scene starts, and
+# uses the bounded 32-row visible-cell mask (59701638).
+EXPECTED = 0x7EACFEEE
 
 
 def main() -> int:
