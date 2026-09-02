@@ -19,7 +19,8 @@ void RequestOptionScreenAssets(void) {
 void LoadOptionScreenAssets(void) {
     OptionScreenAsset *asset;
 
-    if (g_AssetLoadState != 1 || LoadAsset(9, g_AssetBase) == 0) {
+    if (g_AssetLoadState != 1 ||
+        LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase) == 0) {
         return;
     }
 

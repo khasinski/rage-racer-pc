@@ -82,6 +82,8 @@ extern char *g_AssetPaths[];
 #define ASSET_VOICE_BANK        0x56
 #define ASSET_TRACK_1ST_BASE    0x57
 #define ASSET_TRACK_2ND_BASE    0x58
+#define ASSET_CAR_SELECT_SCREEN 8
+#define ASSET_OPTION_SCREEN     9
 
 /* Load asset assetIndex into dst; returns loaded size/status. */
 s32 LoadAsset(s32 assetIndex, void *dst);
@@ -507,6 +509,7 @@ void RegisterCourseModels(CourseModelAssetHeader *base);
 s32 RequestRaceStart(void);
 s32 RequestTrackLoad(void);
 void RequestCarModel(s32 carIndex);
+void RequestOptionScreenAssets(void);
 void RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
 void SetTrackRenderTable(struct TrackRenderTable *table);

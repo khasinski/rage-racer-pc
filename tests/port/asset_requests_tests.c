@@ -125,6 +125,10 @@ int main(void) {
           "OPTION request type");
     Check(g_AssetLoadState == 1 && s_resetCalls == 1,
           "OPTION request starts loader and resets CD");
+    RequestOptionScreenAssets();
+    Check(g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN &&
+              g_AssetLoadState == 1 && s_resetCalls == 1,
+          "busy OPTION request preserves loader state");
     g_AssetLoadState = 0;
     RequestOptionScreenAssets();
     Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
@@ -133,7 +137,12 @@ int main(void) {
     memset(&pack, 0, sizeof(pack));
     ((OptionScreenAsset *)pack.bytes)->imageOffset = 48;
     g_AssetBase = pack.bytes;
+    g_ImageBlockBuffer = NULL;
     g_AssetLoadState = 1;
+    s_loadResult = 0;
+    LoadOptionScreenAssets();
+    Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
+          "incomplete OPTION load installs nothing");
     s_loadResult = 1;
     s_modelBankRegistrations = 0;
     s_selectModelBankCalls = 0;

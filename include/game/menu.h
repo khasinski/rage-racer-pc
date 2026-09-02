@@ -641,7 +641,6 @@ void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
 void DrawSpriteString(long x, long y, const char *str, long clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
-void RequestOptionScreenAssets(void);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);
 void UploadTeamNameTexture(u8 *str, s32 len);

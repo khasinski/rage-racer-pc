@@ -41,7 +41,7 @@ static void FinishCarSelectAudioLoad(void) {
 static void LoadCarSelectSharedAssets(void) {
     GameSceneAssetHeader *header;
 
-    if (LoadAsset(8, g_AssetLoadCursor) == 0) {
+    if (LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor) == 0) {
         return;
     }
 

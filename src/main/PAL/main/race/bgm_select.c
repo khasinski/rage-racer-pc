@@ -1,3 +1,4 @@
+#include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/race.h"
