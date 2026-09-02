@@ -197,7 +197,8 @@ set_tests_properties(memory_card_menu PROPERTIES LABELS functional)
 
 add_executable(memory_card_screen_tests
     memory_card_screen_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_screen.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_message.c)
 target_include_directories(memory_card_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

@@ -221,21 +221,21 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
 s32 CountMemoryCardFiles(s32 port, s32 slot) {
     char path[0x20];
     DirEntry *entry;
-    void *ret;
     s32 count;
 
-    count = 0;
     sprintf(path, g_FmtCardWildcard, port, slot);
     entry = g_McDirEntries;
-
-    if (BiosFirstFile(path, entry) == entry) {
-        do {
-            count++;
-            if (count >= MEMORY_CARD_MAX_FILES) break;
-            entry++;
-            ret = BiosNextFile(entry);
-        } while (ret == entry);
+    if (BiosFirstFile(path, entry) != entry) {
+        return 0;
     }
 
+    count = 1;
+    while (count < MEMORY_CARD_MAX_FILES) {
+        entry++;
+        if (BiosNextFile(entry) != entry) {
+            break;
+        }
+        count++;
+    }
     return count;
 }

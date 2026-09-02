@@ -67,7 +67,6 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
 void DrawOptionHintBar(s32 hint) { s_hint = hint; }
 void DrawPadTypeHint(void) { s_padHints++; }
 
-/* DrawMemoryCardMessage lives in the same translation unit. */
 u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                     s32 u, s32 v, s32 clut) {
     (void)w; (void)h; (void)u; (void)clut;
@@ -145,20 +144,18 @@ int main(void) {
     CHECK(s_arrowY == 0x58 && s_hint == 6 && s_padHints == 1);
     CHECK(g_RenderState.packetCursor == s_packets + 13);
 
-    g_McMessageRows[6] = textRows;
     g_McMessageColumnX[2] = 42;
-    Reset();
-    DrawMemoryCardMessage(6);
-    CHECK(s_textCount == 2);
-    CHECK(s_textRows[0].x == 0x60 && s_textRows[0].y == 0x40);
-    CHECK(s_textRows[1].x == 42 && s_textRows[1].y == 0x60);
-    CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0xDE);
-    CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
-
-    g_McMessageRows[7] = textRows;
-    Reset();
-    DrawMemoryCardMessage(7);
-    CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0xAC);
+    for (s32 message = 6; message <= 13; message++) {
+        g_McMessageRows[message] = textRows;
+        Reset();
+        DrawMemoryCardMessage(message);
+        CHECK(s_textCount == 2);
+        CHECK(s_textRows[0].x == 0x60 && s_textRows[0].y == 0x40);
+        CHECK(s_textRows[1].x == 42 && s_textRows[1].y == 0x60);
+        CHECK(s_messageSpriteCount == 1);
+        CHECK(s_messageSprite.x == ((message & 1) != 0 ? 0xAC : 0xDE));
+        CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
+    }
 
     g_McMessageRows[5] = textRows;
     Reset();
