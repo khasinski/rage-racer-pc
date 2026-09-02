@@ -37,6 +37,25 @@ endif()
 add_test(NAME class_clear_fanfare COMMAND class_clear_fanfare_tests)
 set_tests_properties(class_clear_fanfare PROPERTIES LABELS unit)
 
+add_executable(advance_grand_prix_class_tests
+    advance_grand_prix_class_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/advance_grand_prix_class.c)
+target_include_directories(advance_grand_prix_class_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(advance_grand_prix_class_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(advance_grand_prix_class_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(advance_grand_prix_class_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME advance_grand_prix_class COMMAND advance_grand_prix_class_tests)
+set_tests_properties(advance_grand_prix_class PROPERTIES LABELS unit)
+
 add_executable(race_time_text_tests
     race_time_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)

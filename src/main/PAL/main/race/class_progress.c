@@ -65,43 +65,6 @@ void CommitClassProgress(void) {
         g_RaceProgress->maxClassReached < g_GrandPrixClass + 1;
 }
 
-void AdvanceGrandPrixClass(void) {
-    s32 maxClassReached;
-    s32 nextClass;
-    s32 *seriesMaxClass;
-
-    if (!g_ClassCompleted) {
-        g_SceneId = 6;
-        return;
-    }
-
-    if (g_SeriesCleared) {
-        maxClassReached = g_RaceProgress->maxClassReached;
-        ResetProgressSlot(g_CarTable, g_RaceProgress);
-        g_RaceProgress->money.value = RACE_MAX_PRIZE_MONEY;
-        g_RaceProgress->maxClassReached = maxClassReached;
-        ResetCourseProgress(0);
-        BeginEndingFmv(0x21);
-        return;
-    }
-
-    BeginClassFmv(7);
-    nextClass = g_GrandPrixClass + 1;
-    g_GrandPrixClass = nextClass;
-    g_RaceProgress->classIndex = nextClass;
-    g_RaceProgress->course = 0;
-
-    if (g_ClassPromoted) {
-        g_RaceProgress->maxClassReached = nextClass;
-        seriesMaxClass = &g_MaxClassReached[g_SeriesSelection];
-        if (*seriesMaxClass < nextClass) {
-            *seriesMaxClass = nextClass;
-        }
-    }
-
-    ResetCourseProgress(nextClass);
-}
-
 void EnterPrizeScreen(void) {
     s32 courseIndex;
     s32 classIndex;
