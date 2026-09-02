@@ -194,23 +194,23 @@ static void TestAssetDispatch(void) {
     s_loaderCall = LOADER_NONE;
     ServiceAssetLoad();
     Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 1 &&
-              g_AssetLoadState == 0,
-          "invalid request resets an inconsistent active loader");
+              g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "invalid request rejects an inconsistent active loader");
 
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     g_AssetLoadState = 1;
     ServiceAssetLoad();
     Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 2 &&
-              g_AssetLoadState == 0,
-          "idle request resets an inconsistent active loader");
+              g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "idle request rejects an inconsistent active loader");
 
     g_AssetRequestType = (AssetRequestType)0x7FFF;
     g_AssetLoadState = 1;
     ServiceAssetLoad();
     Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 3 &&
               g_AssetRequestType == ASSET_REQUEST_IDLE &&
-              g_AssetLoadState == 0,
-          "unknown request resets an inconsistent active loader");
+              g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown request rejects an inconsistent active loader");
 
     g_AssetRequestType = ASSET_REQUEST_TRACK_DATA;
     g_AssetLoadState = 1;

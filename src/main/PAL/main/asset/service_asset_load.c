@@ -1,4 +1,9 @@
-#include "game/asset.h"
+#include "game/asset_internal.h"
+
+static void RejectInvalidActiveRequest(void) {
+    ResetAssetLoader();
+    FailAssetLoad();
+}
 
 void ServiceAssetLoad(void) {
     if (g_AssetLoadState == 0) return;
@@ -6,7 +11,7 @@ void ServiceAssetLoad(void) {
     switch (g_AssetRequestType) {
     case ASSET_REQUEST_INVALID:
     case ASSET_REQUEST_IDLE:
-        ResetAssetLoader();
+        RejectInvalidActiveRequest();
         break;
     case ASSET_REQUEST_BOOT:
         LoadBootAssets();
@@ -43,7 +48,7 @@ void ServiceAssetLoad(void) {
         LoadTrackDataAssets();
         break;
     default:
-        ResetAssetLoader();
+        RejectInvalidActiveRequest();
         break;
     }
 }
