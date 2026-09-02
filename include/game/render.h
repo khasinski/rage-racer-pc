@@ -192,20 +192,20 @@ typedef struct GameRenderObject {
     s32 x;          /* 0x00 */
     s32 y;          /* 0x04 */
     s32 z;          /* 0x08 */
-    s32 field_0C;
+    s32 positionW;
     s32 motionX;
     s32 motionY;
     s32 motionZ;
     s32 field_1C;
     s32 bodyPitch; /* 0x20 */
-    s32 angleY;   /* 0x24 */
+    s32 bodyYaw;   /* 0x24 */
     s32 bodyRoll;  /* 0x28 */
-    s32 field_2C;
+    s32 bodyRotationW;
     s32 trackPointIndex;
     s32 trackLateralOffset;
     s32 segmentFraction;
-    s32 field_3C;
-    s32 field_40;
+    s32 normalizedLateralOffset;
+    s32 reserved40;
     s32 steeringAngle; /* 0x44 */
     s32 wheelRotation; /* 0x48, 12-bit phase plus high-speed bit 0x1000 */
     s32 field_4C;
@@ -228,7 +228,7 @@ typedef struct GameRenderObject {
     s16 motionMode;
     s16 motionModeTimer;
     s16 motionValue;
-    s16 field_8A;
+    s16 collisionFlag;
     s16 tiltCounter;
     s16 reserved8E;
     s16 verticalPitch;
@@ -241,19 +241,19 @@ typedef struct GameRenderObject {
     s16 verticalTargetY;
     s32 headingAngle;
     s32 speed;
-    s32 speedRamp;
+    s32 acceleration;
     s16 activeFlag;
     s16 modelIndex;
-    s32 field_B0;
-    s32 field_B4;
+    s32 initializedFlag;
+    s32 trackHeadingPacked;
     s16 facingBackwards;
     u8 padBA[2];
-    s32 field_BC;
+    s32 aiEnabled;
     s32 field_C0;
-    s32 stepX;
-    s32 field_C8;
-    s32 stepZ;
-    s32 field_D0;
+    s32 reservedC4;
+    s32 worldVelocityX;
+    s32 reservedCC;
+    s32 worldVelocityZ;
     s32 field_D4;
     s32 reservedD8;
     s32 reservedDC;

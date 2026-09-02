@@ -89,7 +89,7 @@ static void PlaceCar(GameRenderObject *car) {
     car->x = 0x4000;
     car->y = 0x1000;
     car->z = 0x8000;
-    car->angleY = 0x300;
+    car->bodyYaw = 0x300;
     car->bodyPitch = 0x40;
     car->bodyRoll = 0x60;
 }
@@ -124,7 +124,7 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     s32 startYaw = (0x800 - yawError) & 0xFFF;
 
     PlaceCar(&car);
-    car.angleY = 0x800;
+    car.bodyYaw = 0x800;
     car.speed = speed;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_CameraNodeIndex = 0;

@@ -42,7 +42,7 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     Matrix objectRotation;
     CameraLoadViewPositionFromCar(view, car);
     BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
-    BuildRotMatrixY(&objectRotation, car->angleY);
+    BuildRotMatrixY(&objectRotation, car->bodyYaw);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);

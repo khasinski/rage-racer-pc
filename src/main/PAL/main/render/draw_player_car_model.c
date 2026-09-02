@@ -70,7 +70,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     GameRenderWorldSubmitPlayerCar(object, g_RenderState.orderingFlag != 0);
 
     OffsetCarHorizon(object, -modelAsset->horizon);
-    BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
+    BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->bodyYaw);
     BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
     MulMatrix2(&scratchMatrix, &bodyViewMatrix);
     MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
@@ -214,7 +214,7 @@ void DrawCar(GameRenderObject *object) {
     horizon = g_TrackRenderTable->models[model].horizon;
     OffsetCarHorizon(object, -horizon);
     if (renderRange == CAR_RENDER_CLOSE) {
-        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
+        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->bodyYaw);
         BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyViewMatrix);
         MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
@@ -285,7 +285,7 @@ void DrawCar(GameRenderObject *object) {
             SetLightMatrix(&lightMatrix);
         }
     } else {
-        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
+        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->bodyYaw);
         BuildRotMatrixX(&bodyLocalMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyLocalMatrix);
         MulMatrix0(&g_SceneLightMatrix, &bodyLocalMatrix, &lightMatrix);

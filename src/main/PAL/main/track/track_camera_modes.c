@@ -58,7 +58,7 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     view->y = chaseNode->data.world.y;
     view->z = chaseNode->data.world.z;
     view->reserved = chaseNode->data.world.blend;
-    BuildRotMatrixY(&objectRotation, car->angleY);
+    BuildRotMatrixY(&objectRotation, car->bodyYaw);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);
@@ -188,13 +188,13 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
         g_CamPathAngleStart[CAMPATH_DIST],
         g_CamPathAngleDelta[CAMPATH_DIST], pathBlend);
     g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
-    pathYawRelative = pathYaw - car->angleY;
+    pathYawRelative = pathYaw - car->bodyYaw;
     BuildRotMatrixY(&cameraRotation, pathYawRelative);
     BuildRotMatrixX(&matrixWork, pathPitch);
     MulMatrix2(&matrixWork, &cameraRotation);
     BuildRotMatrixZ(&matrixWork, pathRoll);
     MulMatrix2(&matrixWork, &cameraRotation);
-    BuildRotMatrixY(&objectRotation, car->angleY);
+    BuildRotMatrixY(&objectRotation, car->bodyYaw);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);
@@ -256,7 +256,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
         g_CamPathFrame += 1;
     }
-    BuildRotMatrixY(&objectRotation, car->angleY);
+    BuildRotMatrixY(&objectRotation, car->bodyYaw);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);

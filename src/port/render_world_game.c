@@ -572,7 +572,7 @@ static void GameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
     origin.z = (float)object->z;
     /* Scene-space counterpart of DrawCar/DrawPlayerCarModel. The view matrix
      * is intentionally absent: the camera owns it at presentation time. */
-    base = SceneMat3Multiply(SceneRotationY(0x800 - object->angleY),
+    base = SceneMat3Multiply(SceneRotationY(0x800 - object->bodyYaw),
                                  SceneRotationX(object->bodyPitch));
     body = SceneMat3Multiply(base, SceneRotationZ(object->bodyRoll));
     wheelBase = SceneMat3Multiply(
@@ -645,7 +645,7 @@ void GameRenderWorldSubmitCar(const GameRenderObject *object,
     if (detail == RAGE_GAME_CAR_RENDER_FAR) {
         RageSceneMat3 body = SceneMat3Multiply(
             SceneMat3Multiply(
-                SceneRotationY(0x800 - object->angleY),
+                SceneRotationY(0x800 - object->bodyYaw),
                 SceneRotationX(object->bodyPitch)),
             SceneRotationZ(object->bodyRoll));
         RageRenderVec3 origin = {

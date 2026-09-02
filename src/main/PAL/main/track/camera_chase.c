@@ -117,7 +117,7 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     s32 settledYaw;
 
     CameraLoadViewPositionFromCar(view, car);
-    chaseTargetYaw = car->angleY & 0xFFF;
+    chaseTargetYaw = car->bodyYaw & 0xFFF;
     g_ChaseCarSpeed = car->speed;
     g_ChaseTargetYaw = chaseTargetYaw;
     if (g_CameraModePrev == 1) {
@@ -149,7 +149,7 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     BuildRotMatrixX(&matrixWork, -0x80);
     MulMatrix2(&matrixWork, &cameraRotation);
     g_ChaseYawPrev = g_ChaseYaw;
-    BuildRotMatrixY(&objectRotation, car->angleY);
+    BuildRotMatrixY(&objectRotation, car->bodyYaw);
     BuildRotMatrixX(&matrixWork, car->bodyPitch);
     MulMatrix2(&matrixWork, &objectRotation);
     BuildRotMatrixZ(&matrixWork, car->bodyRoll);
