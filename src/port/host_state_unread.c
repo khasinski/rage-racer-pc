@@ -21,9 +21,8 @@
  * bytes, and the messages and format strings in this file are mostly that.
  *
  * Last, working memory. g_CdDirEntryName is five and a half kilobytes of
- * directory entries, g_CdFileCache and g_StEndFrame and g_CdRootDirLba
- * another kilobyte and a half each, all of them uninitialised: nothing is
- * being preserved there but the room.
+ * directory entries; g_CdFileCache and g_CdRootDirLba add more uninitialised
+ * storage. Nothing is being preserved there but the room.
  *
  * g_SinTable and g_CellScanOffsets are initialised too, and those two are the
  * ones that look like they ought to be read and are not; the port computes
@@ -387,17 +386,9 @@ unsigned char g_CdDmaBcr[8] __attribute__((aligned(16))) = {0xb4,0x10,0x80,0x1f,
 unsigned char g_CdDmaChcr[8] __attribute__((aligned(16))) = {0xb8,0x10,0x80,0x1f,0};
 unsigned char g_CdCachedDir[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
 unsigned char g_CdCachedShellOpenCount[20] __attribute__((aligned(16))) = {0xff,0xff,0xff,0xff,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f};
-unsigned char g_StreamCdReg0[12] __attribute__((aligned(16))) = {0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f};
-unsigned char g_StreamCdReg3[100] __attribute__((aligned(16))) = {0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f,0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f,0x02,0x18,0x80,0x1f,0x03,0x18,0x80,0x1f};
-unsigned char g_StCdReg0[8] __attribute__((aligned(16))) = {0x00,0x18,0x80,0x1f,0x01,0x18,0x80,0x1f};
-unsigned char g_StCdReg2[8] __attribute__((aligned(16))) = {0x02,0x18,0x80,0x1f,0};
-unsigned char g_StCdReg3[8] __attribute__((aligned(16))) = {0x03,0x18,0x80,0x1f,0};
-unsigned char g_InterruptStatus[8] __attribute__((aligned(16))) = {0x18,0x10,0x80,0x1f,0};
-unsigned char g_InterruptMask[8] __attribute__((aligned(16))) = {0x20,0x10,0x80,0x1f,0};
 unsigned char g_DmaDpcr[8] __attribute__((aligned(16))) = {0xf0,0x10,0x80,0x1f,0};
 unsigned char g_DmaDicr[8] __attribute__((aligned(16))) = {0xf4,0x10,0x80,0x1f,0};
 unsigned char g_CdDmaControl[24] __attribute__((aligned(16))) = {0xb8,0x10,0x80,0x1f,0xb0,0x10,0x80,0x1f,0xd8,0x10,0x80,0x1f,0xd0,0x10,0x80,0x1f,0x70,0x10,0x80,0x1f,0x74,0x10,0x80,0x1f};
-s32 g_StInterruptState;
 unsigned char g_VSyncGpuStat[8] __attribute__((aligned(16))) = {0x14,0x18,0x80,0x1f,0};
 unsigned char g_Timer1CountReg[8] __attribute__((aligned(16))) = {0x10,0x11,0x80,0x1f,0};
 unsigned char g_VSyncTimerBase[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0};
@@ -490,9 +481,6 @@ unsigned char g_CdPathEntryParentDir[8] __attribute__((aligned(16)));
 unsigned char g_CdDirEntryName[5620] __attribute__((aligned(16)));
 unsigned char g_CdSectorBuf[140] __attribute__((aligned(16)));
 unsigned char g_CdRootDirLba[1908] __attribute__((aligned(16)));
-unsigned char g_StBackLoc[8] __attribute__((aligned(16)));
-unsigned char g_StBackFrame[8] __attribute__((aligned(16)));
-unsigned char g_StActiveHeader[8] __attribute__((aligned(16)));
 unsigned char g_SndVoiceRegs[8] __attribute__((aligned(16)));
 unsigned char g_SndVoiceFlags[24] __attribute__((aligned(16)));
 unsigned char g_SndVoiceState[8] __attribute__((aligned(16)));
@@ -503,29 +491,18 @@ unsigned char g_SndKeyOnLow[8] __attribute__((aligned(16)));
 unsigned char g_SndKeyOnHigh[8] __attribute__((aligned(16)));
 unsigned char g_SndReverbOnLow[8] __attribute__((aligned(16)));
 unsigned char g_SndReverbOnHigh[8] __attribute__((aligned(16)));
-s32 g_StCurrentFrameCount;
 /* SpuReverbAttr: 24 bytes. Writing through the declared type ran 16
  * bytes past this object, into whatever the linker placed next. */
 unsigned char g_SndReverbAttr[24] __attribute__((aligned(16)));
-s16 g_StCurrentSector;
-s32 g_StColorMode;
-s32 g_StNotStream2Mode;
-unsigned char g_StFrameCallback[8] __attribute__((aligned(16)));
-unsigned char g_StEndCallback[8] __attribute__((aligned(16)));
 unsigned char g_SndVabProgTable[64] __attribute__((aligned(16)));
-s32 g_StInterruptPending;
 unsigned char g_SndVabHeader[68] __attribute__((aligned(16)));
 short g_SndDamper;
 unsigned char g_SndVabToneTable[64] __attribute__((aligned(16)));
-s32 g_StNextChannel;
-s32 g_StStartFrame;
 short g_SndMonoMode;
 short g_SndVabProgMax;
 unsigned char g_SndCurrentProgTable[8] __attribute__((aligned(16)));
 unsigned char g_SndCurrentVabHeader[8] __attribute__((aligned(16)));
 unsigned char g_SndCurrentToneTable[8] __attribute__((aligned(16)));
-s32 g_StCurrentChannel;
-s32 g_StDmaBusy;
 unsigned char g_SndVoiceCount[8] __attribute__((aligned(16)));
 unsigned char g_SndSeqOpenMask[8] __attribute__((aligned(16)));
 unsigned char g_SndCurrentAttr[8] __attribute__((aligned(16)));
@@ -552,19 +529,13 @@ short g_SndCurrentToneIndex;
 unsigned char g_SndVabStatus[16] __attribute__((aligned(16)));
 unsigned char g_SndReservedVoiceCount[8] __attribute__((aligned(16)));
 unsigned char g_SndTickResolution[8] __attribute__((aligned(16)));
-s32 g_StWriteCursor;
-s32 g_StReadCursor;
-s32 g_StRingSlot;
 unsigned char g_SndSeqTable[128] __attribute__((aligned(16)));
 unsigned char g_SndMarkCallbacks[2052] __attribute__((aligned(16)));
 short g_SndSeqTableSMax;
 short g_SndSeqTableTMax;
-unsigned char g_StEndFrame[1548] __attribute__((aligned(16)));
-s32 g_StStreamFlag;
 unsigned char g_SndVabBodySize[64] __attribute__((aligned(16)));
 unsigned char g_SndVabOpenCount[8] __attribute__((aligned(16)));
 unsigned char g_SndVabSpuAddr[64] __attribute__((aligned(16)));
 unsigned char g_SndVabBodyAddr[68] __attribute__((aligned(16)));
-s32 g_StRingSize;
 unsigned char g_SndKeyOffLow[8] __attribute__((aligned(16)));
 unsigned char g_SndKeyOffHigh[8] __attribute__((aligned(16)));

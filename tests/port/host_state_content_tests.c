@@ -385,13 +385,6 @@ extern unsigned char g_CdDmaBcr[8];
 extern unsigned char g_CdDmaChcr[8];
 extern unsigned char g_CdCachedDir[8];
 extern unsigned char g_CdCachedShellOpenCount[20];
-extern unsigned char g_StreamCdReg0[12];
-extern unsigned char g_StreamCdReg3[100];
-extern unsigned char g_StCdReg0[8];
-extern unsigned char g_StCdReg2[8];
-extern unsigned char g_StCdReg3[8];
-extern unsigned char g_InterruptStatus[8];
-extern unsigned char g_InterruptMask[8];
 extern unsigned char g_DmaDpcr[8];
 extern unsigned char g_DmaDicr[8];
 extern unsigned char g_CdDmaControl[24];
@@ -804,13 +797,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CdDmaChcr", g_CdDmaChcr, 8},
     {"g_CdCachedDir", g_CdCachedDir, 8},
     {"g_CdCachedShellOpenCount", g_CdCachedShellOpenCount, 20},
-    {"g_StreamCdReg0", g_StreamCdReg0, 12},
-    {"g_StreamCdReg3", g_StreamCdReg3, 100},
-    {"g_StCdReg0", g_StCdReg0, 8},
-    {"g_StCdReg2", g_StCdReg2, 8},
-    {"g_StCdReg3", g_StCdReg3, 8},
-    {"g_InterruptStatus", g_InterruptStatus, 8},
-    {"g_InterruptMask", g_InterruptMask, 8},
     {"g_DmaDpcr", g_DmaDpcr, 8},
     {"g_DmaDicr", g_DmaDicr, 8},
     {"g_CdDmaControl", g_CdDmaControl, 24},
@@ -896,7 +882,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 3760007346UL;
+    const unsigned long expected = 3499233978UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

@@ -39,8 +39,7 @@ long StGetBackloc(CdlLOC *loc);
 void StSetRing(void *base, long size);
 void StSetStream(long mode, long start_frame, long end_frame, long callback, long user_data);
 u_long StFreeRing(u_long *base);
-/* The libds streaming state machine: advances g_StInterruptState through states
- * 1..0xA, DMAs the sector header then body and drives the StStrHeader ring. */
+/* Legacy libds CD interrupt entry point. */
 void StCdInterrupt(void);
 
 /*
