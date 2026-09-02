@@ -5,8 +5,6 @@
 
 extern u32 g_RandomSeed;
 
-#include "common.h"
-
 s32 Random15(void);
 
 #endif
