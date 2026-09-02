@@ -104,6 +104,17 @@ static void TestImageEntries(void) {
     UploadImageEntry(&noClut.header);
     Check(s_loadCount == 1 && s_loadRects[0].x == 50,
           "entry without CLUT uploads its image directly");
+
+    s_loadCount = 0;
+    entry.clut.size = sizeof(entry.clut) - 1;
+    UploadImageEntry(&entry.header);
+    Check(s_loadCount == 0, "undersized CLUT block rejects the entry");
+    entry.clut.size = sizeof(entry.clut) + 1;
+    UploadImageEntry(&entry.header);
+    Check(s_loadCount == 0, "unaligned CLUT block rejects the entry");
+
+    UploadImageEntry(NULL);
+    Check(s_loadCount == 0, "null image entry is ignored");
 }
 
 static void TestImageAssetChain(void) {
@@ -146,7 +157,13 @@ static void TestImageAssetChain(void) {
     s_loadCount = 0;
     UploadImageAsset(words);
     Check(s_loadCount == 0, "undersized image entry stops the chain");
+    words[1].size = payloadSize + 1;
+    UploadImageAsset(words);
+    Check(s_loadCount == 0, "unaligned image entry stops the chain");
     words[1].size = payloadSize;
+
+    UploadImageAsset(NULL);
+    Check(s_loadCount == 0, "null image asset is ignored");
 
     memcpy(g_LoadBuffer, chain.bytes, sizeof(chain.bytes));
     s_loadCount = 0;
