@@ -91,7 +91,7 @@ static int TestModelBank(void) {
         ModelBankHeader *large = calloc(1, size);
 
         CHECK(large != NULL);
-        large->modelCount = GAME_MODEL_PER_BANK_LIMIT + 1;
+        large->modelCount = UINT32_MAX;
         large->modelOffsets[GAME_MODEL_PER_BANK_LIMIT - 1] = (s32)size - 1;
         RegisterModelBank(large, 3);
         CHECK(g_ModelBanks[3].modelCount == GAME_MODEL_PER_BANK_LIMIT);

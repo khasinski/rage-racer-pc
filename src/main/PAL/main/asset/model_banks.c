@@ -15,10 +15,9 @@ void RegisterModelBank(ModelBankHeader *base, s32 index) {
 
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
-    bank->modelCount = base->modelCount;
-    if (bank->modelCount > GAME_MODEL_PER_BANK_LIMIT) {
-        bank->modelCount = GAME_MODEL_PER_BANK_LIMIT;
-    }
+    bank->modelCount = base->modelCount > GAME_MODEL_PER_BANK_LIMIT
+                           ? GAME_MODEL_PER_BANK_LIMIT
+                           : (s32)base->modelCount;
     bank->table = ResolveAssetAddress(base, base->tableOffset);
     bank->normals = ResolveAssetAddress(base, base->normalsOffset);
     for (i = 0; i < (u32)bank->modelCount; i++) {
