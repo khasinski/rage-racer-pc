@@ -122,7 +122,7 @@ static void UpdateTransmissionDialog(void *ot) {
         GameMenuBusy = CUSTOMIZE_TRANSMISSION_CONFIRMING;
         g_MenuConfirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
         g_CarTable[g_PlayerCarIndex].transmission = g_MenuSubCursor;
-        g_TimeAttackCarTransmissions[g_PlayerCarIndex * 8] = g_MenuSubCursor;
+        g_TimeAttackCars[g_PlayerCarIndex].transmission = g_MenuSubCursor;
     }
     if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
@@ -166,7 +166,7 @@ static void UpdateTireConfirmation(void) {
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = 0;
         g_CarTable[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
-        g_TimeAttackCarTires[g_PlayerCarIndex * 8] = g_MenuSubCursor;
+        g_TimeAttackCars[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
     }
 }
 

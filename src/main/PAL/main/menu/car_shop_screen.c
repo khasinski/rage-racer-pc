@@ -190,7 +190,7 @@ static void UpdateSaleCountdown(void *ot) {
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         g_CarTable[g_CarListCursor].enabled = 1;
-        g_TimeAttackCarEnabled[g_CarListCursor * 8] = 1;
+        g_TimeAttackCars[g_CarListCursor].enabled = 1;
         GameMenuBusy = 2;
         g_MenuUpperAltPanelStep = -1;
         g_PlayerCarIndex = g_CarListCursor;

@@ -61,7 +61,7 @@ s32 g_PlayerMoney;
 s16 g_PrevOwnedCarIndex;
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
-u8 g_TimeAttackCarEnabled[128];
+CarEntry g_TimeAttackCars[16];
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
 
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
-        memset(g_TimeAttackCarEnabled, 0, sizeof(g_TimeAttackCarEnabled));
+        memset(g_TimeAttackCars, 0, sizeof(g_TimeAttackCars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
@@ -300,7 +300,7 @@ int main(int argc, char **argv) {
             after[17] = ScriptId(g_CarShopModalScript);
             Record("state", after, 18);
             RECORD("owned", s_cars[cars[ci]].enabled,
-                   g_TimeAttackCarEnabled[cars[ci] * 8], g_UiScriptProgress,
+                   g_TimeAttackCars[cars[ci]].enabled, g_UiScriptProgress,
                    g_MenuPlateCarIndex, g_MenuAltLayout);
         }
         steps++;
