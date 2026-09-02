@@ -282,7 +282,8 @@ set_tests_properties(car_performance_setup PROPERTIES LABELS unit)
 # The drivetrain branches a smoke run never reaches: tall gears and mid-shift.
 add_executable(drivetrain_tests
     drivetrain_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c)
 target_include_directories(drivetrain_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -302,7 +303,8 @@ set_tests_properties(drivetrain PROPERTIES LABELS functional)
 
 add_executable(drivetrain_sweep_tests
     drivetrain_sweep_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c)
 target_include_directories(drivetrain_sweep_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

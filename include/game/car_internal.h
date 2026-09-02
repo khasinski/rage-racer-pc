@@ -2,6 +2,7 @@
 #define GAME_CAR_INTERNAL_H
 
 #include "common.h"
+#include "game/car.h"
 #include "game/vector.h"
 
 typedef union RaceIntroCameraCoordinate {
@@ -57,6 +58,18 @@ void MoveRivalCars(void);
 void AccelerateRaceRivals(void);
 void AccelerateAttractRivals(void);
 void PlaceRivalCarsOnTrack(void);
+
+typedef struct {
+    s32 accelerationResistance;
+    s32 steeringResistance;
+    s32 throttleAcceleration;
+} CarDrivetrainLoads;
+
+void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
+                           s32 gripBudget);
+CarDrivetrainLoads CalculateCarDrivetrainLoads(
+    PlayerCarRuntime *car, const GameCarSpec *spec, s32 netTorque,
+    s32 bandScale, s32 initialAcceleration);
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);

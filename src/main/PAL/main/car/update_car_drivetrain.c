@@ -149,66 +149,6 @@ static void ReadEngineTorque(const GameCarDrive *drive,
       spec, drive->engineRpm, bandIndex, drive->gear);
 }
 
-/*
- * How much grip the steering has this frame.
- *
- * A car still on the ground works it out from the camber under it, and settles
- * halfway towards the answer rather than jumping to it. A car just off a crest
- * works it out from the curve instead: it carries the curve it thinks it is
- * on, the track point under it carries the curve it is really on, and agreeing
- * winds the bias up twice as fast as disagreeing unwinds it. A car on no curve
- * at all leaves the bias alone either way.
- *
- * Retail had a third path in the airborne case, for the two disagreeing with
- * the car on no curve and the point on no curve either, which cannot happen:
- * that is the two agreeing.
- */
-static void UpdateSteeringGrip(PlayerCarRuntime *car, GameCarDrive *drive,
-                               const GameCarSpec *spec, s32 gripBudget) {
-    GameTrackPoint *trackPoint;
-    s16 curveModeNow;
-    s32 camber;
-    s32 camberLean;
-
-    if (drive->motionState == CAR_MOTION_TAKEOFF) {
-        s16 driveCurveMode = drive->trackCurveMode;
-        s32 pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
-        s16 steerBias;
-
-        if (driveCurveMode != 0) {
-            drive->trackCurveBias = (u16)drive->trackCurveBias +
-                                    (driveCurveMode == pointCurveMode ? 2 : -1);
-        }
-        steerBias = drive->trackCurveBias;
-        if (steerBias >= 0x1F) {
-            drive->trackCurveBias = 0x1E;
-        } else if (steerBias < -0x1E) {
-            drive->trackCurveBias = -0x1E;
-        }
-        gripBudget += spec->baseSteeringGrip - drive->trackCurveBias * 0xA;
-        drive->steeringGrip = (s16)gripBudget;
-        return;
-    }
-    trackPoint = TrackPoint(car->trackPointIndex);
-    curveModeNow = drive->trackCurveMode;
-    if (curveModeNow != (trackPoint->arcRef & 3) && curveModeNow != 0) {
-        camber = trackPoint->crossSlope;
-        if (camber < -0x32) {
-            camber = -0x32;
-        } else if (camber >= 0x33) {
-            camber = 0x32;
-        }
-        /* The inside of a left-hander leans the other way. */
-        camberLean = (trackPoint->arcRef & 3) == 1
-            ? -(camber * 0x3C) / 20
-            : camber * 3;
-        gripBudget += camberLean;
-    }
-    drive->steeringGrip =
-        (s16)((drive->steeringGrip +
-               (gripBudget * drive->steeringGripResponse) / 1000) / 2);
-}
-
 static s32 CalculateInitialAcceleration(const GameCarDrive *drive,
                                         s32 gearRatio) {
   s32 gearTorque = gearRatio * drive->engineRpm;
@@ -318,138 +258,6 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
   }
 }
 
-typedef struct DrivetrainLoads {
-  s32 accelerationResistance;
-  s32 steeringResistance;
-  s32 throttleAcceleration;
-} DrivetrainLoads;
-
-static DrivetrainLoads CalculateDrivetrainLoads(
-    PlayerCarRuntime *car, GameCarDrive *drive, const GameCarSpec *spec,
-    s32 netTorque, s32 bandScale, s32 initialAcceleration) {
-  DrivetrainLoads loads;
-  s32 throttleTorque;
-  s32 headingError;
-  s32 trackHeadingError;
-  s32 assistStep;
-  s32 steerPosition;
-  s32 pointIndex;
-  const GameTrackPoint *trackPoint;
-  const GameTrackPoint *nextTrackPoint;
-  s32 lateralOffset;
-  s32 pitchSum;
-  s32 roadGradeProduct;
-  s32 roadGrade;
-  s32 sideForce;
-  s32 roadSpeed;
-  s32 dragScale;
-  s32 dragDivisor;
-
-  loads.accelerationResistance = initialAcceleration;
-  loads.steeringResistance = car->verticalMotionState == 0
-      ? drive->engineRpm / 256
-      : 0;
-
-  throttleTorque = netTorque * drive->acceleratorInput.value *
-                   drive->drivetrainCoupled;
-  if (throttleTorque < 0) {
-    throttleTorque += 0xFF;
-  }
-  loads.throttleAcceleration = throttleTorque >> 8;
-
-  if (g_GripLossTimer > 0) {
-    g_GripLossTimer--;
-  } else {
-    g_GripLossTimer = 0;
-  }
-  loads.accelerationResistance +=
-      drive->brakeInput * drive->engineRpm / 8192;
-  if (netTorque > 0) {
-    if (drive->acceleratorInput.value < 0x7F) {
-      loads.accelerationResistance += netTorque / 2;
-    }
-  } else {
-    loads.accelerationResistance -= netTorque / 2;
-  }
-
-  headingError = GetAngleDistance(car->bodyYaw, car->headingAngle);
-  drive->steeringLoadAngle = headingError <= ANGLE_QUARTER_TURN
-      ? headingError
-      : ANGLE_HALF_TURN - headingError;
-  loads.steeringResistance += drive->steeringLoadAngle / 256;
-  if (drive->motionState != CAR_MOTION_TAKEOFF && g_PadType == 0x41) {
-    assistStep = spec->negconSteeringAssistScale *
-                 drive->steeringGripResponse / 1000;
-    if (assistStep <= 0) {
-      assistStep = 1;
-    }
-    steerPosition = drive->steerPos;
-    if (steerPosition >= 0) {
-      loads.steeringResistance += ((steerPosition * 5) / 6) / assistStep;
-    } else {
-      loads.steeringResistance -= ((steerPosition * 5) / 6) / assistStep;
-    }
-  }
-
-  trackHeadingError = GetAngleDistance(
-      car->headingAngle,
-      ANGLE_THREE_QUARTER_TURN - TrackPoint(car->trackPointIndex)->angle);
-  pointIndex = car->trackPointIndex;
-  trackPoint = TrackPoint(pointIndex);
-  nextTrackPoint = TrackPoint(pointIndex + 1);
-  lateralOffset = car->segmentFraction;
-  pitchSum = trackPoint->surfacePitch * (0x400 - lateralOffset);
-  pitchSum += nextTrackPoint->surfacePitch * lateralOffset;
-  if (pitchSum < 0) {
-    pitchSum += 0x3FF;
-  }
-  roadGrade = pitchSum >> 10;
-  roadGradeProduct = roadGrade * rcos(trackHeadingError);
-  roadGrade = roadGradeProduct < 0
-      ? (roadGradeProduct + 0xFFF) >> 12
-      : roadGradeProduct >> 12;
-  if (roadGrade < -0xEE) {
-    roadGrade = -0xEE;
-  } else if (roadGrade >= 0xEF) {
-    roadGrade = 0xEE;
-  }
-  g_RoadGrade = roadGrade;
-  sideForce = (-rsin(roadGrade)) * 0x708 / 0xA000;
-  loads.steeringResistance += roadGrade < 0 ? sideForce : sideForce / 10;
-
-  if (g_RacePhase == 2 &&
-      drive->motionState == CAR_MOTION_STANDING_START) {
-    loads.steeringResistance += (g_StandingStartSpin & 0x1F) * 5;
-  }
-  if (g_DriveBoostTimer > 0) {
-    loads.steeringResistance += 0xC8 + g_DriveBoostTimer * 0x14;
-    g_DriveBoostTimer--;
-  }
-  if (drive->motionState == CAR_MOTION_TAKEOFF) {
-    loads.throttleAcceleration = loads.throttleAcceleration * 4 / 5;
-  }
-
-  roadSpeed = car->speed * 0xA0 / 1168;
-  dragScale = (s16)g_DragScale;
-  if (dragScale <= 0) {
-    dragScale = 1;
-  }
-  dragDivisor = spec->speedDragDivisor * 0x3E8 / dragScale;
-  if (dragDivisor <= 0) {
-    dragDivisor = 1;
-  }
-  loads.steeringResistance += roadSpeed * roadSpeed / dragDivisor;
-  g_DragScale = 0x3E8;
-  if (car->verticalMotionState == 0) {
-    loads.steeringResistance =
-        loads.steeringResistance * (0x64 - bandScale) / 100;
-  } else {
-    loads.throttleAcceleration *= 2;
-    loads.steeringResistance = 0;
-  }
-  return loads;
-}
-
 static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
                                s32 steeringResistance) {
   s32 brakeDrag = drive->brakeInput * 0x14;
@@ -514,85 +322,78 @@ static void DispatchCarMotion(PlayerCarRuntime *car) {
 }
 
 void UpdateCarDrivetrain(PlayerCarRuntime *car) {
-  const s32 *gearCurve;
-  s16 gear;
-  s32 gearTorqueLate;
-  s32 frontLoad;
-  s32 speedForPath;
-  s32 frontLoadScaled;
-  s32 gripBudget;
-  s32 accel;
-  s32 bandScale;
-  s32 steerLoad;
-  s32 throttleAccel;
-  s32 gearRatio;
-  s32 netTorque;
-  GameCarDrive *drive;
-  const GameCarSpec *spec;
-  DrivetrainLoads loads;
-  spec = g_CarSpec;
-  drive = &car->drive;
-  gear = ClampDrivetrainGear(drive->gear);
-  drive->gear = gear;
-  gearCurve = g_GearTorqueCurve[gear].values;
-  gearRatio = GetCarGearLoad(spec, gear);
-  if (g_RacePhase < 2) {
-    car->drive.gearDisp = gear;
-    gearRatio = spec->gearLoad[1];
-    gearCurve = g_GearTorqueCurve[0].values;
-  } else if (car->drive.motionState == CAR_MOTION_STANDING_START &&
-             (car->drive.acceleratorInput.value < 0x40 ||
-              car->drive.brakeInput >= 0x80)) {
-    gearCurve = g_GearTorqueCurve[0].values;
-  }
-  LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
-  LatchPedal(&drive->brakeLatch, drive->brakeInput);
-  frontLoad = drive->acceleratorInput.value * 0x64;
-  frontLoadScaled = frontLoad >> 8;
-  if (frontLoad < 0) {
-    frontLoadScaled = (frontLoad + 0xFF) >> 8;
-  }
-  gripBudget = 0x17C - frontLoadScaled;
-  gripBudget += (drive->brakeInput * 0x64) / 256;
-  UpdateSteeringGrip(car, drive, spec, gripBudget);
-  steerLoad = 0;
-  accel = CalculateInitialAcceleration(drive, gearRatio);
-  /* If RPM falls between configured bands, retail keeps the raw wheel/load
-   * difference rather than replacing it with an interpolated curve value. */
-  netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
-  ReadEngineTorque(drive, spec, gearCurve, &netTorque, &bandScale);
-  UpdateGearShiftState(car, drive, spec, &accel);
-  loads = CalculateDrivetrainLoads(car, drive, spec, netTorque, bandScale,
-                                   accel);
-  accel = loads.accelerationResistance;
-  steerLoad = loads.steeringResistance;
-  throttleAccel = loads.throttleAcceleration;
-  if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
-    drive->engineRpm = throttleAccel - accel - steerLoad + drive->engineRpm;
-  }
-  speedForPath = drive->engineRpm;
-  if (speedForPath < 0) {
-    drive->engineRpm = 0;
-  } else if (speedForPath >= 0x3A99) {
-    drive->engineRpm = 0x3A98;
-  }
-  gearTorqueLate = gearRatio * drive->engineRpm;
-  drive->drivetrainTorque = gearTorqueLate;
-  if (drive->motionState == CAR_MOTION_TAKEOFF) {
-    UpdateTakeoffSpeed(car, drive, steerLoad);
-  } else {
-    UpdateDrivenSpeed(car, drive, spec, gearTorqueLate);
-  }
+    GameCarDrive *drive = &car->drive;
+    const GameCarSpec *spec = g_CarSpec;
+    s16 gear = ClampDrivetrainGear(drive->gear);
+    const s32 *gearCurve = g_GearTorqueCurve[gear].values;
+    s32 gearRatio = GetCarGearLoad(spec, gear);
+    s32 acceleratorGripNumerator;
+    s32 acceleratorGripCost;
+    s32 gripBudget;
+    s32 initialAcceleration;
+    s32 bandScale;
+    s32 netTorque;
+    s32 gearTorque;
+    CarDrivetrainLoads loads;
 
-  if (car->speed < 8) {
-    car->headingAngle = car->bodyYaw;
-  }
-  if (g_RacePhase >= 2) {
-    DispatchCarMotion(car);
-  } else {
-    car->speed = 0;
-  }
-  if (car->speed < 8) {
-    car->headingAngle = car->bodyYaw;
-  }
+    drive->gear = gear;
+    if (g_RacePhase < 2) {
+        drive->gearDisp = gear;
+        gearRatio = spec->gearLoad[1];
+        gearCurve = g_GearTorqueCurve[0].values;
+    } else if (drive->motionState == CAR_MOTION_STANDING_START &&
+               (drive->acceleratorInput.value < 0x40 ||
+                drive->brakeInput >= 0x80)) {
+        gearCurve = g_GearTorqueCurve[0].values;
+    }
+
+    LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
+    LatchPedal(&drive->brakeLatch, drive->brakeInput);
+    acceleratorGripNumerator = drive->acceleratorInput.value * 0x64;
+    acceleratorGripCost = acceleratorGripNumerator >> 8;
+    if (acceleratorGripNumerator < 0) {
+        acceleratorGripCost = (acceleratorGripNumerator + 0xFF) >> 8;
+    }
+    gripBudget = 0x17C - acceleratorGripCost;
+    gripBudget += (drive->brakeInput * 0x64) / 256;
+    UpdateCarSteeringGrip(car, spec, gripBudget);
+
+    initialAcceleration = CalculateInitialAcceleration(drive, gearRatio);
+    /* If RPM falls between configured bands, retail keeps the raw wheel/load
+     * difference rather than replacing it with an interpolated curve value. */
+    netTorque = gearRatio * drive->engineRpm - drive->drivetrainTorque;
+    ReadEngineTorque(drive, spec, gearCurve, &netTorque, &bandScale);
+    UpdateGearShiftState(car, drive, spec, &initialAcceleration);
+    loads = CalculateCarDrivetrainLoads(
+        car, spec, netTorque, bandScale, initialAcceleration);
+    if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
+        drive->engineRpm += loads.throttleAcceleration -
+                            loads.accelerationResistance -
+                            loads.steeringResistance;
+    }
+    if (drive->engineRpm < 0) {
+        drive->engineRpm = 0;
+    } else if (drive->engineRpm >= 0x3A99) {
+        drive->engineRpm = 0x3A98;
+    }
+
+    gearTorque = gearRatio * drive->engineRpm;
+    drive->drivetrainTorque = gearTorque;
+    if (drive->motionState == CAR_MOTION_TAKEOFF) {
+        UpdateTakeoffSpeed(car, drive, loads.steeringResistance);
+    } else {
+        UpdateDrivenSpeed(car, drive, spec, gearTorque);
+    }
+
+    if (car->speed < 8) {
+        car->headingAngle = car->bodyYaw;
+    }
+    if (g_RacePhase >= 2) {
+        DispatchCarMotion(car);
+    } else {
+        car->speed = 0;
+    }
+    if (car->speed < 8) {
+        car->headingAngle = car->bodyYaw;
+    }
 }
