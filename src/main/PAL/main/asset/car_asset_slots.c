@@ -7,11 +7,6 @@
 static CarModelAsset s_NativeCarModelAssets[CAR_ASSET_SLOT_COUNT];
 static CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
 
-void SetCarImageSlot(CarImageData *asset, s32 index) {
-    if ((u32)index >= CAR_ASSET_SLOT_COUNT) return;
-    g_CarImageSlots[index] = asset;
-}
-
 void UploadCarImage(s32 index) {
     if ((u32)index >= CAR_ASSET_SLOT_COUNT) return;
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);

@@ -20,6 +20,7 @@ u32 g_CarModelSlot;
 s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 TeamLogoSample *g_TeamLogoSampleData;
 
@@ -28,8 +29,6 @@ static s32 s_loadAssetId;
 static void *s_loadDestination;
 static s32 s_registeredSlot;
 static ModelBankHeader *s_registeredBank;
-static s32 s_imageSlot;
-static CarImageData *s_image;
 static s32 s_color1Calls;
 static s32 s_color2Calls;
 static u32 s_color1;
@@ -58,10 +57,6 @@ void SetCarModelSlot(CarModelAsset *asset, s32 slot) {
 void RegisterModelBank(ModelBankHeader *bank, s32 slot) {
     s_registeredBank = bank;
     s_registeredSlot = slot;
-}
-void SetCarImageSlot(CarImageData *image, s32 slot) {
-    s_image = image;
-    s_imageSlot = slot;
 }
 void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
 void RegisterCourseModels(CourseModelAssetHeader *models) {
@@ -170,7 +165,7 @@ static void TestModelVariantLoads(void) {
     Check(g_CarModelSlots[1] == upper && s_registeredBank == &upperBank &&
               s_registeredSlot == 1,
           "normal model installs inactive model slot");
-    Check(s_image == &upperImage && s_imageSlot == 1,
+    Check(g_CarImageSlots[1] == &upperImage,
           "normal model installs inactive image slot");
     Check(s_color1Calls == 1 && s_color2Calls == 1 &&
               s_color1 == 4 && s_color2 == 5,
@@ -188,8 +183,7 @@ static void TestModelVariantLoads(void) {
               s_loadDestination == buffers,
           "upgraded model asset and inactive slot");
     Check(g_CarModelSlots[0] == lower && s_registeredBank == &lowerBank &&
-              s_registeredSlot == 0 && s_image == &lowerImage &&
-              s_imageSlot == 0,
+              s_registeredSlot == 0 && g_CarImageSlots[0] == &lowerImage,
           "upgraded model installs inactive slots");
     Check(s_color1Calls == 0 && s_color2Calls == 0,
           "non-player car entry skips custom paint");
@@ -226,13 +220,13 @@ static void TestInvalidSlotSkipsInstallation(void) {
 
     memset(&model, 0, sizeof(model));
     s_registeredBank = NULL;
-    s_image = NULL;
+    g_CarImageSlots[0] = NULL;
     s_color1Calls = 0;
     s_color2Calls = 0;
 
     InstallCarModelAsset(&model, CAR_ASSET_SLOT_COUNT, 0);
 
-    Check(s_registeredBank == NULL && s_image == NULL &&
+    Check(s_registeredBank == NULL && g_CarImageSlots[0] == NULL &&
               s_color1Calls == 0 && s_color2Calls == 0,
           "invalid model slot skips installation");
 }
@@ -321,7 +315,7 @@ static void TestCarSelectAssetPhases(void) {
     Check(g_CarModelAsset == model && g_CarModelSlot == 0,
           "initial showroom model selected");
     Check(s_registeredBank == &modelBank && s_registeredSlot == 0 &&
-              s_image == &carImage && s_imageSlot == 0,
+              g_CarImageSlots[0] == &carImage,
           "initial showroom model installed");
     Check(s_color1Calls == 1 && s_color2Calls == 1 &&
               s_color1 == 6 && s_color2 == 7,

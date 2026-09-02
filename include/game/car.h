@@ -782,7 +782,6 @@ extern s16 g_TrackZoneDark;
 s32 GetCarUnlockLevel(s32 model);
 /* Asset/price-table row for the model variant currently owned. */
 s32 GetOwnedCarAssetIndex(s32 model);
-void SetCarImageSlot(CarImageData *asset, s32 index);
 struct CarModelAsset;
 void SetCarModelSlot(struct CarModelAsset *asset, s32 index);
 /* Which of the two showroom model slots is live, 0 or 1. */

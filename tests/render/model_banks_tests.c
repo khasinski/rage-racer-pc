@@ -25,8 +25,8 @@ s32 g_MirrorMode;
 
 static CarEntry s_cars[2];
 CarEntry *g_CarTable = s_cars;
-u8 g_CarModelBaseIndex[2];
-u8 g_CarModelUnlockBase[2];
+u8 g_CarModelBaseIndex[GAME_CAR_COUNT];
+u8 g_CarModelUnlockBase[GAME_CAR_COUNT];
 Rect g_CarImageRect;
 CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
@@ -230,9 +230,7 @@ static int TestCarAssetSlots(void) {
     CarModelAsset *view = GetCarModelAsset(storage.bytes);
     CarModelAsset sentinelModel;
     CarModelAsset unknownModel;
-    CarImageData image0;
     CarImageData image1;
-    CarImageData sentinelImage;
 
     memset(&storage, 0, sizeof(storage));
     view->gearCount = 6;
@@ -257,12 +255,7 @@ static int TestCarAssetSlots(void) {
     SelectCarModelSlot(1);
     CHECK(g_CarModelAsset == g_CarModelSlots[1]);
 
-    g_CarImageSlots[0] = &sentinelImage;
-    SetCarImageSlot(&image0, -1);
-    CHECK(g_CarImageSlots[0] == &sentinelImage);
-    SetCarImageSlot(&image0, 0);
-    SetCarImageSlot(&image1, 1);
-    CHECK(g_CarImageSlots[0] == &image0 && g_CarImageSlots[1] == &image1);
+    g_CarImageSlots[1] = &image1;
     s_loadImageCalls = 0;
     UploadCarImage(2);
     CHECK(s_loadImageCalls == 0);
