@@ -72,6 +72,9 @@ extern s32 g_SkyRowBase;
 
 extern FlybySceneryState g_FlybyScenery;
 
+void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
+                              s32 offset[2]);
+
 /* Where a car and the two track points around it sit on a curve's arc: the
  * offsets from the arc centre, the angle each stands at, and the radius each
  * is out by. Callers decide for themselves what to do with the span between

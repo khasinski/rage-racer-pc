@@ -184,6 +184,22 @@ target_link_libraries(visible_cell_tests PRIVATE psyz)
 add_test(NAME visible_cell COMMAND visible_cell_tests)
 set_tests_properties(visible_cell PROPERTIES LABELS functional)
 
+add_executable(visible_cell_scan_tests
+    visible_cell_scan_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/visible_cell_scan.c)
+target_include_directories(visible_cell_scan_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(visible_cell_scan_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME visible_cell_scan COMMAND visible_cell_scan_tests)
+set_tests_properties(visible_cell_scan PROPERTIES LABELS unit)
+
 add_executable(route_scenery_tests
     route_scenery_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_route_scenery.c

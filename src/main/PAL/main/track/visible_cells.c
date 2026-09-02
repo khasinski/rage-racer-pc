@@ -88,7 +88,6 @@ static u32 IsCellVisibleFromRegion(s32 cellX, s32 cellZ, s32 region) {
 void BuildVisibleCells(s32 near, s32 far) {
     GameViewState *view = RENDER_VIEW_STATE;
     s32 i;
-    s32 j;
     s32 oct;
     s32 cx, cy;
     u32 ret0;
@@ -110,52 +109,13 @@ void BuildVisibleCells(s32 near, s32 far) {
 
     i = 0;
     out = g_VisibleCellList;
-    j = 0;
-    for (; i < 64; j += 2, i++, out++) {
-        s32 k;
-        s32 dx;
-        s32 dy;
+    for (; i < VISIBLE_CELL_COUNT; i++, out++) {
+        s32 offset[2];
         s32 invalid = -1;
 
-        switch (oct / 8) {
-        case 0:
-            k = j + (oct << 7);
-            dx = g_CellScanOffsetX[k];
-            dy = g_CellScanOffsetY[k];
-            sx = cx + dx;
-            sy = cy + dy;
-            break;
-        case 1:
-            k = j + ((8 - (oct % 8)) << 7);
-            dx = g_CellScanOffsetX[k];
-            dy = g_CellScanOffsetY[k];
-            sx = cx + dx;
-            sy = cy - dy;
-            break;
-        case 2:
-            k = j + ((oct - 16) << 7);
-            dx = g_CellScanOffsetX[k];
-            dy = g_CellScanOffsetY[k];
-            sx = cx - dx;
-            sy = cy - dy;
-            break;
-        case 3:
-            k = oct % 8;
-            k = 8 - k;
-            k = j + (k << 7);
-            dx = g_CellScanOffsetX[k];
-            dy = g_CellScanOffsetY[k];
-            /* The rear-view pass reflects this quadrant.  Applying its signs
-             * to the main view drops the left-hand cells ahead of the car. */
-            if (g_RenderState.orderingFlag) {
-                sx = cx + dx;
-                sy = cy - dy;
-            } else {
-                sx = cx - dx;
-                sy = cy + dy;
-            }
-            break;
-        }
+        GetVisibleCellScanOffset(oct, i, g_RenderState.orderingFlag, offset);
+        sx = cx + offset[0];
+        sy = cy + offset[1];
         if ((u32)sx < 32U && (u32)sy < 32U &&
             IsCellVisibleFromRegion(sx, sy, ret0)) {
             s32 clut = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;

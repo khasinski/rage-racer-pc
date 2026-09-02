@@ -6,6 +6,7 @@
 #include "game/vector.h"
 #include "game/shuttle_scenery.h"
 #include "game/visibility.h"
+#include "game/visible_cell_scan.h"
 
 union GameEnvColor;
 struct GameRenderObject;
@@ -368,9 +369,6 @@ extern s32 g_CamPathOffsetStart[3];
 extern s32 g_CameraCarTrackPoint;
 extern u8 g_CameraModePrev;
 extern s32 g_CameraNodeIndex;
-extern s8 g_CellScanOffsets[0x1000];
-#define g_CellScanOffsetX g_CellScanOffsets
-#define g_CellScanOffsetY (g_CellScanOffsets + 1)
 extern s32 g_ChaseCameraPreset;
 extern s32 g_ChaseCarSpeed;
 extern s32 g_ChaseTargetYaw;
