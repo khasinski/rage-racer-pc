@@ -18,6 +18,7 @@ char g_MsgSeqVabTransBodyError[] = "body";
 static s16 s_openResult = 7;
 static s16 s_bodyResult = 8;
 static s16 s_transferResult = 1;
+static s16 s_sequenceOpenResult = (s16)0x8056;
 static u8 *s_openHeader;
 static u8 *s_transferBody;
 static unsigned long s_openAddress;
@@ -43,7 +44,7 @@ short SsVabTransBody(u8 *body, short vabId) {
 short SsSeqOpen(unsigned long *sequence, short vabId) {
     s_sequenceData = sequence;
     s_sequenceVab = vabId;
-    return (short)0x8056;
+    return s_sequenceOpenResult;
 }
 short SsVabTransCompleted(short immediate) {
     if (immediate != 0) abort();
@@ -87,6 +88,21 @@ int main(void) {
               g_SeqHandle.storage == (s16)0x8056 &&
               g_SeqVolumeFadeStep == 0,
           "sequence slot opens score and clears fade state");
+
+    s_openResult = -1;
+    Check(OpenSequenceAudioSlot(header, body, sequence) == -1,
+          "sequence VAB header failure is reported");
+    s_openResult = 7;
+    s_bodyResult = -1;
+    Check(OpenSequenceAudioSlot(header, body, sequence) == -1,
+          "sequence VAB body failure is reported");
+    s_bodyResult = 8;
+    s_sequenceOpenResult = -1;
+    s_closedVab = -1;
+    Check(OpenSequenceAudioSlot(header, body, sequence) == -1 &&
+              s_closedVab == 8,
+          "sequence-open failure closes its VAB");
+    s_sequenceOpenResult = (s16)0x8056;
 
     g_AudioLoadedSlotMask = 0;
     Check(CloseSequenceAudioSlot() == 0 && s_reverbCalls == 0,

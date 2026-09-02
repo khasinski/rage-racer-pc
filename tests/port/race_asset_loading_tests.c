@@ -41,6 +41,7 @@ static s32 s_audioSlot;
 static void *s_audioHeader;
 static void *s_audioBody;
 static u16 *s_audioSequence;
+static s32 s_startAudioResult = 1;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
 static GameImageAssetHeaderWord *s_uploads[5];
@@ -68,7 +69,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *sequence) {
     s_audioHeader = header;
     s_audioBody = body;
     s_audioSequence = sequence;
-    return 1;
+    return s_startAudioResult;
 }
 
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
@@ -183,6 +184,13 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetSubBlockPtr = source + 12;
     g_RaceVoiceHeaderSize = 10;
     g_AssetLoadState = 1;
+    s_startAudioResult = -1;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && g_AssetLoadCursor == destination,
+          "failed race-voice transfer cancels loading without advancing");
+
+    g_AssetLoadState = 1;
+    s_startAudioResult = 1;
     LoadRaceAssets();
     Check(memcmp(source, destination, 10) == 0,
           "entire byte-sized voice header copied");
@@ -226,6 +234,17 @@ static void TestVoiceAndCarPhases(void) {
 
     g_AssetLoadState = 3;
     offsets[4] = 224;
+    s_startAudioResult = -1;
+    s_renderCarAsset = -1;
+    g_CarSpec = NULL;
+    s_uploadCount = 0;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && s_renderCarAsset == -1 &&
+              g_CarSpec == NULL && s_uploadCount == 0,
+          "failed engine transfer publishes no car pack state");
+
+    g_AssetLoadState = 3;
+    s_startAudioResult = 1;
     s_uploadCount = 0;
     LoadRaceAssets();
     Check(s_renderCarAsset == 13, "loaded car asset is selected for rendering");

@@ -40,6 +40,7 @@ static s32 s_audioSlot;
 static u8 *s_audioHeader;
 static u8 *s_audioBody;
 static u16 *s_audioTable;
+static s32 s_startAudioResult = 1;
 static s32 s_sequenceInitCalls;
 static CourseModelAssetHeader *s_courseModels;
 static GameImageAssetHeaderWord *s_uploadedImage;
@@ -59,7 +60,7 @@ s32 LoadAsset(s32 assetId, void *destination) {
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
     s_installCarModelSlotCalls++;
     g_CarModelSlots[slot] = asset;
-    return 1;
+    return s_startAudioResult;
 }
 s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
     (void)asset;
@@ -88,7 +89,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     s_audioHeader = header;
     s_audioBody = body;
     s_audioTable = table;
-    return 1;
+    return s_startAudioResult;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
 void InitSequenceAudio(void) { s_sequenceInitCalls++; }
@@ -334,6 +335,13 @@ static void TestCarSelectAssetPhases(void) {
     g_AssetBlockPtr = storage + 16;
     g_AssetBlockPtr2 = storage + 32;
     g_AssetSubBlockPtr = storage + 48;
+    s_startAudioResult = -1;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0,
+          "failed sequence audio transfer cancels car-select loading");
+
+    g_AssetLoadState = 1;
+    s_startAudioResult = 1;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 2 && s_audioSlot == 1 &&
               s_audioHeader == storage + 16 && s_audioBody == storage + 48 &&

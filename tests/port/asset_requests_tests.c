@@ -48,6 +48,7 @@ static s32 s_audioSlot;
 static u8 *s_audioHeader;
 static u8 *s_audioBody;
 static u16 *s_audioTable;
+static s32 s_startAudioResult = 1;
 static s32 s_pollResult;
 static s32 s_imageUploads;
 static GameImageAssetHeaderWord *s_lastImageUpload;
@@ -68,7 +69,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
     s_audioHeader = header;
     s_audioBody = body;
     s_audioTable = table;
-    return 1;
+    return s_startAudioResult;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
 s32 UploadImageAsset(GameImageAssetHeaderWord *data, size_t size) {
@@ -158,7 +159,14 @@ static void TestBootAssetPhases(void) {
               g_AssetLoadState == 3,
           "audio header advances boot loader");
 
+    s_startAudioResult = -1;
     s_loadResult = 1;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 0,
+          "failed main audio transfer cancels boot loading");
+
+    g_AssetLoadState = 3;
+    s_startAudioResult = 1;
     LoadBootAssets();
     Check(s_lastAssetId == ASSET_BOOT_AUDIO_BODY && s_audioSlot == 0 &&
               s_audioHeader == loadBase + 8 &&

@@ -39,8 +39,11 @@ s32 RequestRaceAssets(void) {
 static void BeginRaceVoiceLoad(void) {
     memcpy(g_AssetLoadCursor, g_AssetBlockPtr,
            (size_t)g_RaceVoiceHeaderSize);
-    StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
-                       g_AssetSubBlockPtr, 0);
+    if (StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
+                           g_AssetSubBlockPtr, NULL) < 0) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetLoadCursor += g_RaceVoiceHeaderSize;
     g_AssetLoadState = RACE_WAIT_FOR_VOICE_AUDIO;
 }
@@ -81,20 +84,26 @@ static void LoadPlayerCarRaceAssets(void) {
         return;
     }
 
-    GameRenderWorldSetTrackCarAsset(carAsset);
-    g_CarSpec = GetGameCarSpec(
-        g_AssetLoadCursor + pack->specificationOffset);
     audioHeader = g_AssetLoadCursor + pack->audioHeaderOffset;
     audioTable = g_AssetLoadCursor + pack->audioSequenceOffset;
     audioBody = g_AssetLoadCursor + pack->audioBodyOffset;
-    StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
-                       GetAssetHalfwords(audioTable));
     carImage = g_AssetLoadCursor + pack->imageOffset;
-    if (!UploadImageAsset(GetImageAssetHeaderWords(carImage),
-                          (size_t)(loadedSize - pack->imageOffset))) {
+    if (!IsValidImageAsset(
+            GetImageAssetHeaderWords(carImage),
+            (size_t)(loadedSize - pack->imageOffset))) {
         g_AssetLoadState = 0;
         return;
     }
+    if (StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
+                           GetAssetHalfwords(audioTable)) < 0) {
+        g_AssetLoadState = 0;
+        return;
+    }
+    GameRenderWorldSetTrackCarAsset(carAsset);
+    g_CarSpec = GetGameCarSpec(
+        g_AssetLoadCursor + pack->specificationOffset);
+    UploadImageAsset(GetImageAssetHeaderWords(carImage),
+                     (size_t)(loadedSize - pack->imageOffset));
     g_AssetLoadCursor = audioBody;
     g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
 }

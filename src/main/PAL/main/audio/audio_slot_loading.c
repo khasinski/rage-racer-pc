@@ -2,39 +2,44 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
-static void TransferVabToSlot(s32 slot, u8 *header, u8 *body,
-                              s32 spuAddress) {
+static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
+                             s32 spuAddress) {
     s16 vabId = SsVabOpenHeadSticky(header, -1, spuAddress);
 
     if (vabId == -1) {
         printf("%s", g_MsgVabOpenHeadError);
-        BiosExit(1);
+        return 0;
     }
 
     vabId = SsVabTransBody(body, vabId);
     if (vabId == -1) {
         printf("%s", g_MsgVabTransBodyError);
-        BiosExit(1);
+        return 0;
     }
 
     g_SoundScale.vabIds[slot] = vabId;
+    return 1;
 }
 
 static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table);
 
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
-    if (slot < 0 || slot >= AUDIO_SLOT_COUNT) {
+    if (slot < 0 || slot >= AUDIO_SLOT_COUNT || header == NULL ||
+        body == NULL) {
         return -1;
     }
     if (slot == AUDIO_SLOT_ENGINE) {
         return StartEngineAudioSlotLoad(header, body, table);
     }
     if (slot == AUDIO_SLOT_SEQUENCE) {
+        if (table == NULL) return -1;
         return OpenSequenceAudioSlot(header, body, table);
     }
 
     g_AudioLoadSlot = slot;
-    TransferVabToSlot(slot, header, body, g_VabSpuAddress[slot]);
+    if (!TransferVabToSlot(slot, header, body, g_VabSpuAddress[slot])) {
+        return -1;
+    }
 
     return SsVabTransCompleted(0);
 }
@@ -92,8 +97,10 @@ void CloseLoadedAudioSlots(void) {
 
 static s32 StartEngineAudioSlotLoad(u8 *header, u8 *body, u16 *table) {
     g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
-    TransferVabToSlot(AUDIO_SLOT_ENGINE, header, body,
-                      g_VabSpuAddress[AUDIO_SLOT_ENGINE]);
+    if (!TransferVabToSlot(AUDIO_SLOT_ENGINE, header, body,
+                           g_VabSpuAddress[AUDIO_SLOT_ENGINE])) {
+        return -1;
+    }
 
     if (table != NULL) {
         LoadAudioParameterTable(table);

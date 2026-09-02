@@ -110,9 +110,19 @@ int main(void) {
 
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &header, &body, &table) == 61);
     CHECK(s_sequenceCalls == 1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &header, &body, NULL) == -1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, NULL, &body, NULL) == -1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, NULL, NULL) == -1);
     CHECK(StartAudioSlotLoad(6, &header, &body, &table) == -1);
     CHECK(StartAudioSlotLoad(-1, &header, &body, &table) == -1);
     CHECK(s_sequenceCalls == 1);
+
+    s_openResult = -1;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, NULL) == -1);
+    s_openResult = 7;
+    s_bodyResult = -1;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, NULL) == -1);
+    s_bodyResult = 8;
 
     g_VabSpuAddress[3] = 0x34000;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &header, &body, &table) == 1);

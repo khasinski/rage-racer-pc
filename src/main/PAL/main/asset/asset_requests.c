@@ -50,8 +50,11 @@ static void LoadBootAudioHeader(void) {
 
 static void LoadBootAudioBody(void) {
     if (LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor) == 0) return;
-    StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, g_AssetBlockPtr,
-                       g_AssetLoadCursor, NULL);
+    if (StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, g_AssetBlockPtr,
+                           g_AssetLoadCursor, NULL) < 0) {
+        g_AssetLoadState = 0;
+        return;
+    }
     g_AssetLoadState = BOOT_WAIT_FOR_AUDIO;
 }
 
