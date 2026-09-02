@@ -76,6 +76,7 @@ set_tests_properties(player_input PROPERTIES LABELS unit)
 
 add_executable(player_jump_tests
     player_jump_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/prepare_airborne_drivetrain.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_jump.c)
 target_include_directories(player_jump_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
@@ -632,6 +633,7 @@ set_tests_properties(steer_to_track_line PROPERTIES LABELS functional)
 
 add_executable(car_motion_handlers_tests
     car_motion_handlers_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/prepare_airborne_drivetrain.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_launch.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_airborne.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c

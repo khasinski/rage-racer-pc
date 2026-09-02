@@ -39,26 +39,13 @@ static void AdvancePlayerJumpArc(PlayerCarRuntime *car, s32 groundHeight) {
 
 static void ReconnectPlayerDrivetrain(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
-    const GameCarSpec *spec = g_CarSpec;
-    s32 gearRatio = GetPositiveCarGearRatio(spec, drive->gear);
-    s32 rpm;
 
-    drive->drivetrainTorque =
-        ((100 - (drive->gear - 1) * 4) * 10000) * car->speed / 100;
     g_ShiftSoundLevel = car->verticalMotionTimer & 0x3F;
     drive->yawOffset = 0;
     drive->launchHeading = car->headingAngle;
     drive->launchSpeed = car->speed / 0x100000;
     drive->spinRate = 0;
-    rpm = car->speed * 160 / 1168 * 10000 / gearRatio;
-    drive->jumpTimer = 0x14;
-    drive->motionState = CAR_MOTION_AIRBORNE;
-    g_ShiftTargetRpm = rpm;
-    drive->shiftRpmDelta = (u16)rpm - (u16)drive->engineRpm;
-    drive->engineLoad = rpm * GetCarGearLoad(spec, drive->gear) / 0x20000;
-    if (drive->manual == 0) {
-        drive->engineLoad = drive->engineLoad * 985 / 1000;
-    }
+    PrepareAirborneDrivetrain(car);
 }
 
 static void LandPlayerCar(PlayerCarRuntime *car, s32 groundHeight) {

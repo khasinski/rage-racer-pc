@@ -72,6 +72,7 @@ void UpdatePlayerSteeringTarget(PlayerCarRuntime *car);
 void UpdatePlayerControlFeedback(PlayerCarRuntime *car);
 void CalculatePlayerBodyOffset(PlayerCarRuntime *car);
 s32 ResolvePlayerTrackContact(PlayerCarRuntime *car);
+void PrepareAirborneDrivetrain(PlayerCarRuntime *car);
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);

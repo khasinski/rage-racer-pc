@@ -1,6 +1,7 @@
 #include "game/angle.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "psyq/gte.h"
 
 static void UpdateLaunchTyreVoice(const PlayerCarRuntime *car, s32 skid) {
@@ -68,18 +69,11 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
 
 static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
     GameCarDrive *drive = &car->drive;
-    GameCarSpec *spec;
-    s32 gearRatio;
-    s32 landingRpm;
     s32 offAxis;
 
     drive->spinRate = drive->spinRate * 15 / 16;
     if (spinMagnitude >= 0x1000) return;
 
-    spec = g_CarSpec;
-    gearRatio = GetPositiveCarGearRatio(spec, drive->gear);
-    drive->drivetrainTorque =
-        (100 - (drive->gear - 1) * 4) * 10000 * car->speed / 100;
     drive->yawOffset = GetAngleDelta(car->headingAngle, car->bodyYaw);
     drive->launchHeading = car->headingAngle;
     car->headingAngle = car->bodyYaw;
@@ -90,17 +84,7 @@ static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
     drive->launchSpeed = offAxis * car->speed / 0x100000;
     drive->spinRate = 0;
 
-    landingRpm = car->speed * 0xA0 / 1168 * 10000;
-    landingRpm /= gearRatio;
-    drive->jumpTimer = 0x14;
-    drive->motionState = CAR_MOTION_AIRBORNE;
-    g_ShiftTargetRpm = landingRpm;
-    drive->shiftRpmDelta =
-        (s16)(g_ShiftTargetRpm - (u16)drive->engineRpm);
-    drive->engineLoad =
-        landingRpm * GetCarGearLoad(spec, drive->gear) / 0x20000;
-    if (drive->manual == 0)
-        drive->engineLoad = drive->engineLoad * 985 / 1000;
+    PrepareAirborneDrivetrain(car);
     g_ShiftSoundLevel =
         drive->shiftRpmDelta >= -99 && drive->shiftRpmDelta <= 99;
 }
