@@ -11,8 +11,8 @@ s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
     InterpolateTrackPoint(pointIndex, target, segmentFraction);
     trackAngle = ANGLE_FULL_TURN -
                  SmoothTrackAngle(pointIndex, segmentFraction);
-    target[0] += rsin(trackAngle) * lateralOffset / 4096;
-    target[2] += rcos(trackAngle) * lateralOffset / 4096;
+    target[0] += rsin(trackAngle) * lateralOffset / ANGLE_FULL_TURN;
+    target[2] += rcos(trackAngle) * lateralOffset / ANGLE_FULL_TURN;
 
     return ANGLE_QUARTER_TURN - Atan2(target[0] - carX, target[2] - carZ);
 }

@@ -9,7 +9,7 @@
  * it sideways onto the rival's racing line, then turns the car towards it.
  */
 void SteerCarAlongRoute(GameCarRuntime *car) {
-    GameTrackPoint *point;
+    const GameTrackPoint *point;
     s32 raceSeries = ReadStableRaceSeries() != 0;
     s32 index;
     s32 lateral = car->aiLateralOffset;

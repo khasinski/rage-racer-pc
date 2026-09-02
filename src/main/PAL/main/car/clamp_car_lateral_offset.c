@@ -2,7 +2,6 @@
 #include "game/track.h"
 
 enum {
-    DETAILED_RIVAL_LINE_COUNT = 4,
     FRONT_LINE_NUMERATOR = 5,
     FRONT_LINE_DENOMINATOR = 8,
     REAR_LINE_NUMERATOR = 4,
@@ -34,7 +33,7 @@ void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot) {
     if (halfWidth < 0) {
         halfWidth = 0;
     }
-    limit = rivalSlot < DETAILED_RIVAL_LINE_COUNT
+    limit = rivalSlot < RIVAL_CONTENDER_COUNT
         ? (halfWidth * FRONT_LINE_NUMERATOR) / FRONT_LINE_DENOMINATOR
         : (halfWidth * REAR_LINE_NUMERATOR) / REAR_LINE_DENOMINATOR;
 
