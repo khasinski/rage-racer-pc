@@ -76,5 +76,6 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
                                 s16 grandPrixMode);
 RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
                                  CameraViewMode selectedView);
+s32 ReleaseFinishFollowupCue(s32 *queuedCue, s32 specialVoicesActive);
 
 #endif

@@ -203,6 +203,21 @@ static void TestRaceViewSelection(void) {
           "quit transition preserves the selected player camera");
 }
 
+static void TestFinishFollowupQueue(void) {
+    s32 queuedCue = -1;
+
+    Check(ReleaseFinishFollowupCue(&queuedCue, 0) == -1 && queuedCue == -1,
+          "empty finish cue queue stays empty");
+
+    queuedCue = 0x2B;
+    Check(ReleaseFinishFollowupCue(&queuedCue, 1) == -1 &&
+              queuedCue == 0x2B,
+          "busy special voices keep the finish cue queued");
+    Check(ReleaseFinishFollowupCue(&queuedCue, 0) == 0x2B &&
+              queuedCue == -1,
+          "idle special voices release and clear the finish cue");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
@@ -213,6 +228,7 @@ int main(void) {
     TestRaceStartState();
     TestRaceClock();
     TestRaceViewSelection();
+    TestFinishFollowupQueue();
 
     if (s_failures != 0) {
         return 1;

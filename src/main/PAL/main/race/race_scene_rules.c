@@ -147,3 +147,14 @@ RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
     }
     return result;
 }
+
+s32 ReleaseFinishFollowupCue(s32 *queuedCue, s32 specialVoicesActive) {
+    s32 cue;
+
+    if (*queuedCue < 0 || specialVoicesActive) {
+        return -1;
+    }
+    cue = *queuedCue;
+    *queuedCue = -1;
+    return cue;
+}

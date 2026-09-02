@@ -1,10 +1,12 @@
-#include "game/diagnostics.h"
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "game/audio.h"
-#include "game/input_internal.h"
-#include "game/player_car_internal.h"
 #include "game/cd.h"
+#include "game/diagnostics.h"
+#include "game/input_internal.h"
 #include "game/menu.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render_internal.h"
@@ -13,7 +15,6 @@
 #include "game/race_scene_internal.h"
 #include "game/screens.h"
 #include "game/track.h"
-#include <stdlib.h>
 #include "psyq/snd.h"
 
 /* A retirement is not a finish-line event. Keep following the player's car
@@ -33,24 +34,34 @@ enum {
     RACE_END_BANNER_FRAME = 21,
     RACE_END_EXIT_FRAME = 101,
     RACE_RETRY_EXIT_FRAME = 126,
+    FINISH_CUE_SPECIAL_VOICE_GROUP = 4,
 };
 
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
-    if (DiagnosticsEnabled("sound_cue_trace"))
+    if (DiagnosticsEnabled("sound_cue_trace")) {
         fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
                 (unsigned)cue);
+    }
 }
 
 static void UpdateFinishFollowupCue(void) {
     s32 cue;
-    if (s_FinishFollowupCue < 0 ||
-        SpuGetKeyStatus(g_SpecialVoiceBits[4]) != 0) return;
-    cue = s_FinishFollowupCue;
-    s_FinishFollowupCue = -1;
-    if (DiagnosticsEnabled("sound_cue_trace"))
+
+    if (s_FinishFollowupCue < 0) {
+        return;
+    }
+    cue = ReleaseFinishFollowupCue(
+        &s_FinishFollowupCue,
+        SpuGetKeyStatus(
+            g_SpecialVoiceBits[FINISH_CUE_SPECIAL_VOICE_GROUP]) != 0);
+    if (cue < 0) {
+        return;
+    }
+    if (DiagnosticsEnabled("sound_cue_trace")) {
         fprintf(stderr, "rage-port: finish follow-up released cue=0x%02x\n",
                 (unsigned)cue);
+    }
     PlaySoundCue(cue);
 }
 
