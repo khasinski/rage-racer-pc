@@ -19,6 +19,10 @@ static s32 InterpolateCameraValue(s32 start, s32 delta, s32 blend) {
     return start + (product >> 13);
 }
 
+static s32 CameraNodeDuration(const GameTrackCameraNode *node) {
+    return node->duration > 0 ? node->duration : 1;
+}
+
 /*
  * Point the camera at a place in the world: pitch and yaw from the camera to
  * the target, in the game's 0x1000-per-turn angle units, with no roll.
@@ -108,6 +112,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 pathYaw;
     s32 pathYawRelative;
     s32 pitchDelta;
+    s32 duration;
     GameTrackCameraNode *prevNode;
     s32 rollProbe[3];
     s32 rollWork[3];
@@ -148,10 +153,12 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
             g_CamPathAngleDelta[CAMPATH_YAW]);
         g_CamPathAngleDelta[CAMPATH_ROLL] = ShortestAngleDelta(
             g_CamPathAngleDelta[CAMPATH_ROLL]);
-    } else if (g_CamPathFrame < g_TrackCameras[g_CamPathNode].duration) {
+    } else if (g_CamPathFrame <
+               CameraNodeDuration(&g_TrackCameras[g_CamPathNode])) {
         g_CamPathFrame += 1;
     }
-    pathBlend = 0x1000 - rcos((g_CamPathFrame << 0xB) / g_TrackCameras[g_CamPathNode].duration);
+    duration = CameraNodeDuration(&g_TrackCameras[g_CamPathNode]);
+    pathBlend = 0x1000 - rcos((g_CamPathFrame << 0xB) / duration);
     camPathOffset = InterpolateCameraValue(
         g_CamPathOffsetStart[0], g_CamPathOffsetDelta[0], pathBlend);
     focusOffset[0] = camPathOffset;
@@ -236,12 +243,14 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     Matrix objectRotation;
     GameTrackCameraNode *orbitNode;
     GameBlockAddress packetAddress;
+    s32 duration;
 
     packetAddress.words = &view->x;
     packetAddress.blocks[0] = g_TrackCameras[cameraNodeIndex].data.block;
     if (nodeChanged || g_CameraModePrev != 4) {
         g_CamPathFrame = 0;
-    } else if (g_CamPathFrame < g_TrackCameras[cameraNodeIndex].duration) {
+    } else if (g_CamPathFrame <
+               CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
         g_CamPathFrame += 1;
     }
     BuildRotMatrixY(&objectRotation, car->angleY);
@@ -251,6 +260,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     MulMatrix2(&matrixWork, &objectRotation);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     orbitNode = &g_TrackCameras[cameraNodeIndex];
+    duration = CameraNodeDuration(orbitNode);
     nodeOffset[0] = 0;
     nodeOffset[1] = orbitNode->data.orientation.distance;
     nodeOffset[2] = 0x32;
@@ -259,11 +269,11 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     /* Slide the camera from where it starts to the node's own position
      * across the node's duration, then aim back at the car. */
     view->x += ((orbitNode->offset[0] - view->x) * g_CamPathFrame) /
-                  orbitNode->duration;
+                  duration;
     view->y += ((orbitNode->offset[1] - view->y) * g_CamPathFrame) /
-                  orbitNode->duration;
+                  duration;
     view->z += ((orbitNode->offset[2] - view->z) * g_CamPathFrame) /
-                  orbitNode->duration;
+                  duration;
     AimCameraAt(view, car->x + nodeWorld[0], car->y + nodeWorld[1],
                 car->z + nodeWorld[2]);
     g_CameraModePrev = 4;

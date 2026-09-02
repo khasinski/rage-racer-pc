@@ -232,6 +232,28 @@ int main(void) {
         Check("mode 4, sliding node", view, wanted);
     }
 
+    /* A malformed zero duration is treated as one frame in both modes that
+     * divide by it. This keeps corrupt or partially imported camera data from
+     * taking down the race scene. */
+    {
+        s32 zeroDuration[6];
+        s32 oneFrame[6];
+
+        s_nodes[0].mode = 3;
+        s_nodes[0].duration = 0;
+        Run(2, zeroDuration);
+        s_nodes[0].duration = 1;
+        Run(2, oneFrame);
+        Check("mode 3, zero duration", zeroDuration, oneFrame);
+
+        s_nodes[0].mode = 4;
+        s_nodes[0].duration = 0;
+        Run(2, zeroDuration);
+        s_nodes[0].duration = 1;
+        Run(2, oneFrame);
+        Check("mode 4, zero duration", zeroDuration, oneFrame);
+    }
+
     /* Mode 5 orbits behind the car at a set distance. Its pitch comes off the
      * orbit distance rather than the flattened eye vector, which is a shade
      * different from a true look-at and is the view the game shipped. */
