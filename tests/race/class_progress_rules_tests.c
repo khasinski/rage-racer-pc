@@ -14,6 +14,7 @@ static void Check(const char *name, s32 actual, s32 expected) {
 
 int main(void) {
     static const s32 expectedUnlocks[] = {1, 2, 3, 4, 6, -1, 7, 8, 9, 10, 5};
+    ScoreRecord records[11] = {0};
     s32 i;
 
     Check("class 0 courses", GrandPrixCourseCount(0), 3);
@@ -38,6 +39,13 @@ int main(void) {
     Check("exact prize", PrizeCountStep(80, 80), 1);
     Check("large prize", PrizeCountStep(801, 80), 10);
     Check("negative prize", PrizeCountStep(-80, 80), 1);
+
+    records[0].place = 1;
+    records[3].place = 2;
+    records[5].place = 1;
+    records[10].place = -1;
+    Check("class wins", CountClassWins(records, 11), 2);
+    Check("empty class record range", CountClassWins(records, 0), 0);
 
     return s_failures != 0;
 }

@@ -6,18 +6,6 @@
 #include "game/menu.h"
 #include "game/save_internal.h"
 
-void UpdateBgmTrackCount(void) {
-    s32 index;
-
-    g_ClassWinCount = 0;
-    for (index = 0; index < 11; index++) {
-        if (g_ClassRecords[index].place == 1) {
-            g_ClassWinCount++;
-        }
-    }
-    g_BgmTrackCount = g_ClassWinCount < 5 ? 9 : 10;
-}
-
 void DrawLostRaceCaption(s32 level) {
     if (level >= 0x100) {
         level = 0xFF;

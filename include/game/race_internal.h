@@ -2,6 +2,7 @@
 #define GAME_RACE_INTERNAL_H
 
 #include "common.h"
+#include "game/menu_types.h"
 
 typedef struct PrologueCameraCut {
     s16 timer;
@@ -46,5 +47,6 @@ s32 GrandPrixCourseCount(s32 classIndex);
 s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
 s32 PrizeCountStep(s32 amount, s32 frameCount);
+s32 CountClassWins(const ScoreRecord *records, s32 recordCount);
 
 #endif

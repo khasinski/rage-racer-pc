@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "game/audio.h"
+#include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
@@ -10,6 +11,20 @@
 #include "game/state.h"
 
 enum { MAX_PRIZE_MONEY = 999999999 };
+
+void UpdateBgmTrackCount(void) {
+    enum {
+        CLASS_RECORD_COUNT = 11,
+        DEFAULT_BGM_TRACK_COUNT = 9,
+        UNLOCKED_BGM_TRACK_COUNT = 10,
+        BGM_UNLOCK_WIN_COUNT = 5,
+    };
+
+    g_ClassWinCount = CountClassWins(g_ClassRecords, CLASS_RECORD_COUNT);
+    g_BgmTrackCount = g_ClassWinCount < BGM_UNLOCK_WIN_COUNT
+        ? DEFAULT_BGM_TRACK_COUNT
+        : UNLOCKED_BGM_TRACK_COUNT;
+}
 
 void DrawPrizeMoneyPanel(s32 yOffset) {
     char moneyText[16];

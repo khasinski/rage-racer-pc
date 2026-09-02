@@ -41,3 +41,15 @@ s32 PrizeCountStep(s32 amount, s32 frameCount) {
     s32 step = amount / frameCount;
     return step > 0 ? step : 1;
 }
+
+s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {
+    s32 wins = 0;
+    s32 record;
+
+    for (record = 0; record < recordCount; record++) {
+        if (records[record].place == 1) {
+            wins++;
+        }
+    }
+    return wins;
+}
