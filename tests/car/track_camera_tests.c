@@ -36,11 +36,12 @@ GameRenderState g_RenderState;
 PlayerCarRuntime g_PlayerCar;
 
 static GameTrackCameraNode s_nodes[2];
+static s32 s_nearestCamera;
 
 /* The camera asks the track which node is nearest; the test says which. */
 s32 FindNearestTrackCamera(GameRenderObject *car) {
     (void)car;
-    return 0;
+    return s_nearestCamera;
 }
 
 void DrawPlayerCarModel(GameRenderObject *obj) { (void)obj; }
@@ -99,6 +100,7 @@ static void Run(CameraViewMode selector, s32 *view) {
 
     PlaceCar(&car);
     g_CameraNodeIndex = 0;
+    s_nearestCamera = 0;
     g_CameraModePrev = 0;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     UpdateCamera(selector, &car);
@@ -148,6 +150,25 @@ int main(void) {
         static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
         Run(0, view);
         Check("mode 0, car block", view, wanted);
+    }
+
+    /* A missing authored camera falls back to the car-block view. */
+    {
+        static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
+        GameRenderObject car;
+
+        PlaceCar(&car);
+        s_nearestCamera = -1;
+        memset(&g_RenderState, 0, sizeof(g_RenderState));
+        UpdateCamera(2, &car);
+        view[0] = g_RenderState.viewX;
+        view[1] = g_RenderState.viewY;
+        view[2] = g_RenderState.viewZ;
+        view[3] = g_RenderState.viewAngleX;
+        view[4] = g_RenderState.viewAngleY;
+        view[5] = g_RenderState.viewAngleZ;
+        Check("missing track camera", view, wanted);
+        s_nearestCamera = 0;
     }
 
     /* Mode 1 is the chase camera. Preset 2 is the furthest of the three. */

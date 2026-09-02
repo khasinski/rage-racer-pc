@@ -41,7 +41,15 @@ int main(void) {
     CHECK(FindNearestTrackCamera(&car) == 0);
 
     nodes[0].trackSection.value = -1;
-    CHECK(FindNearestTrackCamera(&car) == 0);
+    CHECK(FindNearestTrackCamera(&car) == -1);
+
+    g_TrackCameras = NULL;
+    CHECK(FindNearestTrackCamera(&car) == -1);
+
+    g_TrackCameras = nodes;
+    nodes[0].trackSection.value = 10;
+    g_TrackSectionCount = 0;
+    CHECK(FindNearestTrackCamera(&car) == -1);
 
     puts("find_nearest_track_camera: linear, wrapped and tied distances ok");
     return 0;

@@ -90,8 +90,10 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     nodeChanged = cameraNodeIndex != previousNodeIndex;
     if (cameraModeSel < 2) {
         cameraMode = cameraModeSel;
-    } else {
+    } else if (cameraNodeIndex >= 0) {
         cameraMode = g_TrackCameras[cameraNodeIndex].mode;
+    } else {
+        cameraMode = 0;
     }
     switch (cameraMode) {
     case 0:

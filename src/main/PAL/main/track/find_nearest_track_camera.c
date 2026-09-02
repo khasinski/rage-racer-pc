@@ -9,6 +9,11 @@ s32 FindNearestTrackCamera(GameRenderObject *car) {
     s32 target = car->trackSection;
     s32 index;
 
+    if (g_TrackCameras == NULL || trackLength <= 0 ||
+        g_TrackCameras[0].trackSection.value == -1) {
+        return -1;
+    }
+
     for (index = 0; g_TrackCameras[index].trackSection.value != -1; index++) {
         s32 cameraSection = g_TrackCameras[index].trackSection.value;
         s32 distance = cameraSection - target;
