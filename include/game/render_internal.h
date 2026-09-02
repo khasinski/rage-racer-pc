@@ -104,7 +104,6 @@ void InitTrackLighting(void);
 
 extern FontGlyph g_SmallFontGlyphs[];
 extern FontGlyph g_LargeFontGlyphs[];
-extern CameraKey g_CameraPath[];
 extern u32 g_MainVisibleCellMask[];
 extern Vec4 g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;

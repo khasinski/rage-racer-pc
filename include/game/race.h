@@ -286,7 +286,6 @@ extern s16 g_AttractTitleDelays[];
 extern s32 g_BestLapIndex;
 extern s32 g_BgmRandomLabelTimer;
 extern s32 g_BgmRandomPlay;
-extern s32 g_CameraCarProgressA;
 extern s16 g_CameraCarTrackSection;
 extern char g_CaptionLapTime[];
 extern char g_CaptionLapTime2[];

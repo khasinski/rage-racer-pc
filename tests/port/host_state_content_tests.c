@@ -345,7 +345,6 @@ extern unsigned char g_SkyTileUV[64];
 extern unsigned char g_UnreadSkyTileTrailer[24];
 extern unsigned char g_CdMixPresets[8];
 extern unsigned char g_CdCommandPending[8];
-extern unsigned char g_CameraPath[192];
 extern unsigned char g_MenuOverlayPatternTable[584];
 extern unsigned char g_TeamLogoCursorX[8];
 extern unsigned char g_TeamLogoViewX[8];
@@ -854,7 +853,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_UnreadSkyTileTrailer", g_UnreadSkyTileTrailer, 24},
     {"g_CdMixPresets", g_CdMixPresets, 8},
     {"g_CdCommandPending", g_CdCommandPending, 8},
-    {"g_CameraPath", g_CameraPath, 192},
     {"g_MenuOverlayPatternTable", g_MenuOverlayPatternTable, 584},
     {"g_TeamLogoCursorX", g_TeamLogoCursorX, 8},
     {"g_TeamLogoViewX", g_TeamLogoViewX, 8},
@@ -1076,7 +1074,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 2831020262UL;
+    const unsigned long expected = 1979897290UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

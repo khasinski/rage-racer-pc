@@ -791,8 +791,6 @@ extern Vec4 g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
 extern s16 g_AtanTable[];
-extern s32 g_CameraPathNextKey;
-extern s32 g_CameraPathTick;
 extern u8 g_DispEnv0Rgb24;
 extern u8 g_DispEnv1Rgb24;
 extern u8 g_DrawEnv0Dither;

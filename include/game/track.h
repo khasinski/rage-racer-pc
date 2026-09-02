@@ -310,12 +310,10 @@ extern TrackEventData *g_TrackEventData;
  * header carried them. */
 
 extern s32 g_CameraCarSeedYaw;
-extern s32 g_CameraCarAngleY;
 extern s32 g_CameraCarHeading;
 extern s32 g_CameraCarSpeed;
 extern s32 g_CameraCarStepX;
 extern s32 g_CameraCarStepZ;
-extern s32 g_CameraCarY;
 extern s32 g_CameraCarZ;
 extern s32 g_CourseModelCount;
 extern s16 g_EnvLerpDuration;
@@ -367,7 +365,6 @@ extern s32 g_CamPathNode;
 extern s32 g_CamPathOffset[3];
 extern s32 g_CamPathOffsetDelta[3];
 extern s32 g_CamPathOffsetStart[3];
-extern s32 g_CameraCarSpeedRamp;
 extern s32 g_CameraCarTrackPoint;
 extern u8 g_CameraModePrev;
 extern s32 g_CameraNodeIndex;
