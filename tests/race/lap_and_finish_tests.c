@@ -101,10 +101,6 @@ static void Record(const char *name, const s32 *values, int count) {
 static s32 s_jitter = 7;
 
 s32 Random15(void) { return s_jitter; }
-s32 FramesToMilliseconds(s32 frames, s32 millis) {
-    RECORD("toms", frames, millis);
-    return frames * 20 + millis;
-}
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 void QueueFinishFollowupCue(s32 cue) { RECORD("followup", cue); }
 void SeedFinishCamera(PlayerCarRuntime *car) {
@@ -129,7 +125,9 @@ int main(int argc, char **argv) {
      * What the lap update did before it was taken apart. Run the test with a
      * file name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 3210588476UL;
+    /* Digest produced with the real PAL 25 Hz frame-to-millisecond
+     * conversion, not the former 20 ms test double. */
+    static const unsigned long expected = 3315525677UL;
     static const s32 laps[] = {0, 1, 2, 3};
     static const s32 lapCounts[] = {2, 3};
     /* Where the car is against the distance the current lap needs: short of

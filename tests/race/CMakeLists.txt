@@ -298,7 +298,8 @@ endif()
 if(TARGET rage-host-state)
 add_executable(lap_and_finish_tests
     lap_and_finish_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/lap_and_finish.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/lap_and_finish.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/time_conversion.c)
 target_include_directories(lap_and_finish_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
