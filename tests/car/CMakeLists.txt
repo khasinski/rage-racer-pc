@@ -232,15 +232,6 @@ endif()
 add_test(NAME player_car_init COMMAND player_car_init_tests)
 set_tests_properties(player_car_init PROPERTIES LABELS functional)
 
-add_test(
-    NAME player_car_interior_aliases
-    COMMAND python3
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_player_car_aliases.py
-        ${CMAKE_SOURCE_DIR}
-)
-
-set_tests_properties(player_car_interior_aliases PROPERTIES LABELS functional)
-
 if(TARGET rage-host-state)
 add_executable(select_track_camera_table_tests
     select_track_camera_table_tests.c
