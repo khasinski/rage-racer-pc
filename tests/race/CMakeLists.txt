@@ -1,3 +1,22 @@
+add_executable(race_time_text_tests
+    race_time_text_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)
+target_include_directories(race_time_text_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_time_text_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(race_time_text_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_time_text_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_time_text COMMAND race_time_text_tests)
+set_tests_properties(race_time_text PROPERTIES LABELS unit)
+
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c
