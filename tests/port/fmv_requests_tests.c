@@ -25,6 +25,7 @@ static void *s_loadDestination;
 static s32 s_installedAssetIndex;
 static s32 s_installedSeriesCamera;
 static s32 s_enableCdResult;
+static s32 s_resetLoaderCalls;
 static s32 s_loaderCall;
 static s32 s_loaderArgument;
 static s32 s_failures;
@@ -46,6 +47,11 @@ enum {
 
 void BeginFmv(s32 returnScene) { s_beginReturnScene = returnScene; }
 void ResetCdAudioState(void) {}
+void ResetAssetLoader(void) {
+    s_resetLoaderCalls++;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    g_AssetLoadState = 0;
+}
 s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadAssetIndex = assetIndex;
     s_loadDestination = destination;
@@ -180,16 +186,32 @@ static void TestAssetDispatch(void) {
     CheckDispatch(ASSET_REQUEST_GRAND_PRIX_SCREEN, LOADER_GP_SCREEN);
     CheckDispatch(ASSET_REQUEST_COURSE_TEXTURES, LOADER_COURSE);
 
+    s_resetLoaderCalls = 0;
     g_AssetRequestType = ASSET_REQUEST_INVALID;
     g_AssetLoadState = 1;
     s_loaderCall = LOADER_NONE;
     ServiceAssetLoad();
-    Check(s_loaderCall == LOADER_NONE, "invalid request dispatch does nothing");
+    Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 1 &&
+              g_AssetLoadState == 0,
+          "invalid request resets an inconsistent active loader");
+
     g_AssetRequestType = ASSET_REQUEST_IDLE;
+    g_AssetLoadState = 1;
     ServiceAssetLoad();
-    Check(s_loaderCall == LOADER_NONE, "idle request dispatch does nothing");
+    Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 2 &&
+              g_AssetLoadState == 0,
+          "idle request resets an inconsistent active loader");
+
+    g_AssetRequestType = (AssetRequestType)0x7FFF;
+    g_AssetLoadState = 1;
+    ServiceAssetLoad();
+    Check(s_loaderCall == LOADER_NONE && s_resetLoaderCalls == 3 &&
+              g_AssetRequestType == ASSET_REQUEST_IDLE &&
+              g_AssetLoadState == 0,
+          "unknown request resets an inconsistent active loader");
 
     g_AssetRequestType = ASSET_REQUEST_TRACK_DATA;
+    g_AssetLoadState = 1;
     g_GrandPrixClass = 1;
     g_CourseIndex = 3;
     s_loadResult = 0;

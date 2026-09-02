@@ -6,6 +6,7 @@ void ServiceAssetLoad(void) {
     switch (g_AssetRequestType) {
     case ASSET_REQUEST_INVALID:
     case ASSET_REQUEST_IDLE:
+        ResetAssetLoader();
         break;
     case ASSET_REQUEST_BOOT:
         LoadBootAssets();
@@ -40,6 +41,9 @@ void ServiceAssetLoad(void) {
         break;
     case ASSET_REQUEST_TRACK_DATA:
         LoadTrackDataAssets();
+        break;
+    default:
+        ResetAssetLoader();
         break;
     }
 }
