@@ -38,6 +38,17 @@ int main(void) {
     curve->values[1] = 0;
     CHECK(InterpolateAudioParameter(3, 25, 1) == 0);
 
+    curve->positions[0] = 100;
+    curve->positions[1] = 100;
+    curve->values[1] = 45;
+    CHECK(InterpolateAudioParameter(3, 50, 1) == 45);
+
+    CHECK(InterpolateAudioParameter(-1, 100, 1) == 0);
+    CHECK(InterpolateAudioParameter(3, 100, -1) == 0);
+    CHECK(InterpolateAudioParameter(ENGINE_SOUND_PARAMETER_COUNT, 100, 1) ==
+          0);
+    CHECK(InterpolateAudioParameter(3, 100, ENGINE_SOUND_BANK_COUNT) == 0);
+
     puts("audio parameter interpolation preserves segments and clamping");
     return 0;
 }
