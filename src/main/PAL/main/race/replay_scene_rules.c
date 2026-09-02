@@ -26,3 +26,12 @@ s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount) {
     return frameCount >= REPLAY_EXIT_FADE_FRAMES &&
            sceneTimer == frameCount - REPLAY_EXIT_FADE_FRAMES;
 }
+
+s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared) {
+    return (sceneTimer & 16) != 0 && seriesCleared == 0;
+}
+
+s32 NextReplayReadCursor(s32 cursor, s32 frameCount) {
+    const s32 next = cursor + 1;
+    return next < frameCount ? next : 0;
+}

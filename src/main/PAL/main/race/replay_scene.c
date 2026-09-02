@@ -11,11 +11,16 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
+enum {
+    REPLAY_RESULT_CUE_FRAME = 60,
+    REPLAY_FIRST_FRAME = 1,
+};
+
 static void DrawReplayBadge(void) {
     GameOrderingTableEntry *base;
     u8 *next;
 
-    if ((g_SceneTimer & 0x10) == 0 || g_SeriesCleared != 0) {
+    if (!ReplayBadgeVisible(g_SceneTimer, g_SeriesCleared)) {
         return;
     }
 
@@ -28,7 +33,7 @@ static void DrawReplayBadge(void) {
 void UpdateReplayScene(void) {
     g_AnimTimer++;
     g_SceneTimer++;
-    if (g_SceneTimer == 0x3C && g_GrandPrixMode != 0 &&
+    if (g_SceneTimer == REPLAY_RESULT_CUE_FRAME && g_GrandPrixMode != 0 &&
         g_SeriesCleared == 0) {
         PlaySoundCue(g_PlayerCar.drive.racePosition == 1 ? 0x40 : 0x41);
     }
@@ -37,10 +42,8 @@ void UpdateReplayScene(void) {
 
     ApplyReplayFrame(g_ReplayReadCursor, AsRivalCar(&g_PlayerCar),
                      &g_Cars[0]);
-    g_ReplayReadCursor++;
-    if (g_ReplayReadCursor == g_ReplayFrameCount) {
-        g_ReplayReadCursor = 0;
-    }
+    g_ReplayReadCursor = NextReplayReadCursor(
+        g_ReplayReadCursor, g_ReplayFrameCount);
     UpdateReplayCars();
     UpdateCamera(CAMERA_VIEW_TRACK,
                  GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
@@ -54,7 +57,7 @@ void UpdateReplayScene(void) {
     UpdateEnvironment();
     DrawSkyBackground();
     DrawReplayBadge();
-    if (g_SceneTimer == 1) {
+    if (g_SceneTimer == REPLAY_FIRST_FRAME) {
         SetTrackTexturePageNow(g_PlayerCar.trackSection);
     }
 }

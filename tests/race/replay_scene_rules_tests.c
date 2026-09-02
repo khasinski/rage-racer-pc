@@ -21,8 +21,25 @@ static void TestAutomaticExitFadeThreshold(void) {
     assert(!ShouldStartReplayExitFade(933, 1000));
 }
 
+static void TestReplayBadgeBlink(void) {
+    assert(!ReplayBadgeVisible(15, 0));
+    assert(ReplayBadgeVisible(16, 0));
+    assert(ReplayBadgeVisible(31, 0));
+    assert(!ReplayBadgeVisible(32, 0));
+    assert(!ReplayBadgeVisible(16, 1));
+}
+
+static void TestReplayCursorWrap(void) {
+    assert(NextReplayReadCursor(0, 100) == 1);
+    assert(NextReplayReadCursor(98, 100) == 99);
+    assert(NextReplayReadCursor(99, 100) == 0);
+    assert(NextReplayReadCursor(100, 100) == 0);
+}
+
 int main(void) {
     TestEndingWashThreshold();
     TestAutomaticExitFadeThreshold();
+    TestReplayBadgeBlink();
+    TestReplayCursorWrap();
     return 0;
 }
