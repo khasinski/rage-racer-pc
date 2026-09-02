@@ -39,19 +39,6 @@ static s32 FarRivalCueBit(s32 rank) {
     return FIRST_FAR_RIVAL_CUE_BIT >> rank;
 }
 
-static s16 *RivalCueCooldown(s32 rank) {
-    switch (rank) {
-    case 0:
-        return &g_RivalCueCooldown0;
-    case 1:
-        return &g_RivalCueCooldown1;
-    case 2:
-        return &g_RivalCueCooldown2;
-    default:
-        return &g_RivalCueCooldown3;
-    }
-}
-
 static void PlayEnabledRivalCue(s32 cue) {
     if (g_RivalCueEnabled != 0) {
         PlaySoundCue(cue);
@@ -113,7 +100,7 @@ void UpdateRivalRubberBand(void) {
     g_ClosestRivalRank = -1;
     for (rank = RIVAL_CONTENDER_COUNT - 1; rank >= 0; rank--) {
         GameCarRuntime *rival = g_RankedCars[rank];
-        s16 *cooldown = RivalCueCooldown(rank);
+        s16 *cooldown = &g_RivalCueCooldowns[rank];
         s32 nearCueBit = NearRivalCueBit(rank);
         s32 farCueBit = FarRivalCueBit(rank);
         s32 gap;

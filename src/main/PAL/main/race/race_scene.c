@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "game/audio.h"
+#include "game/car.h"
 #include "game/cd.h"
 #include "game/diagnostics.h"
 #include "game/input_internal.h"
@@ -202,10 +203,9 @@ void EnterRaceScene(void) {
     s_FinishFollowupCue = -1;
     g_RaceCueFlags = 0;
     g_RivalCueFlags = INITIAL_RIVAL_CUE_FLAGS;
-    g_RivalCueCooldown3 = 0;
-    g_RivalCueCooldown2 = 0;
-    g_RivalCueCooldown1 = 0;
-    g_RivalCueCooldown0 = 0;
+    for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
+        g_RivalCueCooldowns[i] = 0;
+    }
     InitShuttleScenery();
     SeedFlybyScenery();
     SeedRouteScenery();

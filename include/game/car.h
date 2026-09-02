@@ -296,6 +296,8 @@ extern GameCarRuntime g_CameraCar;
 /* The four contenders ordered by race progress (`progressA + progressB`), best
  * first; re-sorted every frame by RankContenders to rubber-band the AI. */
 extern GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
+/* Per-ranked-rival delay before another proximity cue may play. */
+extern s16 g_RivalCueCooldowns[RIVAL_CONTENDER_COUNT];
 
 /* Active car-entry table; repointed at one of the three 13-entry tables below
  * per title-menu row, so it is a pointer rather than a fixed array. */

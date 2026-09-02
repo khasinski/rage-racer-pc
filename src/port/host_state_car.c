@@ -70,7 +70,6 @@ s32 g_ShiftTargetRpm;
 s16 g_DragScale;
 s16 g_RedlineToPeakRpmHalf;
 s16 g_PeakToRevLimitRpmHalf;
-s16 g_RivalCueCooldown3;
 s32 g_ClosestRivalRank;
 GearCurveRow g_GearTorqueCurve[7] __attribute__((aligned(16)));
 s32 g_ShiftSoundLevel;

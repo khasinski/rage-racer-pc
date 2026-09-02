@@ -142,10 +142,7 @@ static void ResetRubberBandState(void) {
     g_RacePhase = 2;
     g_RivalCueEnabled = 1;
     g_RivalCueFlags = 0;
-    g_RivalCueCooldown0 = 0;
-    g_RivalCueCooldown1 = 0;
-    g_RivalCueCooldown2 = 0;
-    g_RivalCueCooldown3 = 0;
+    memset(g_RivalCueCooldowns, 0, sizeof(g_RivalCueCooldowns));
     g_PlayerCar.drive.racePosition = 1;
     g_SceneTimer = 0;
     g_ClosestRivalRank = -1;
@@ -192,10 +189,10 @@ static int CheckRubberBandBranches(void) {
     rival = &g_Cars[3];
     rival->progressA = 0x601;
     rival->speed = 0x3E9;
-    g_RivalCueCooldown3 = 0x12D;
+    g_RivalCueCooldowns[3] = 0x12D;
     UpdateRivalRubberBand();
     if (rival->accelerationLimit != 980 || !(g_RivalCueFlags & 2) ||
-        g_RivalCueCooldown3 != 0) {
+        g_RivalCueCooldowns[3] != 0) {
         printf("near-ahead rival branch failed\n");
         return 1;
     }
@@ -204,10 +201,10 @@ static int CheckRubberBandBranches(void) {
     rival = &g_Cars[3];
     rival->progressA = 0x600;
     g_SceneTimer = 2;
-    g_RivalCueCooldown3 = 123;
+    g_RivalCueCooldowns[3] = 123;
     UpdateRivalRubberBand();
     if (s_cueCalls != 1 || s_lastCue != 0x34 ||
-        !(g_RivalCueFlags & 0x20) || g_RivalCueCooldown3 != 0) {
+        !(g_RivalCueFlags & 0x20) || g_RivalCueCooldowns[3] != 0) {
         printf("close-ahead rival cue branch failed\n");
         return 1;
     }
@@ -241,9 +238,9 @@ static int CheckRubberBandBranches(void) {
     ResetRubberBandState();
     g_Cars[1].progressA = -0x900;
     g_RivalCueFlags = 8 | 1;
-    g_RivalCueCooldown1 = 0x12D;
+    g_RivalCueCooldowns[1] = 0x12D;
     UpdateRivalRubberBand();
-    if (s_cueCalls != 1 || s_lastCue != 0x36 || g_RivalCueCooldown1 != 0) {
+    if (s_cueCalls != 1 || s_lastCue != 0x36 || g_RivalCueCooldowns[1] != 0) {
         printf("repeated trailing rival cue branch failed\n");
         return 1;
     }
@@ -543,21 +540,16 @@ int main(int argc, char **argv) {
     g_CourseIndex = 0;
     g_RacePhase = 2;
     g_RivalCueFlags = 0x20;
-    g_RivalCueCooldown3 = 0x7FFF;
+    g_RivalCueCooldowns[3] = 0x7FFF;
     UpdateRivalRubberBand();
-    if (g_RivalCueCooldown3 != (s16)0x8000) {
+    if (g_RivalCueCooldowns[3] != (s16)0x8000) {
         printf("rival cue cooldown did not wrap: %d\n",
-               g_RivalCueCooldown3);
+               g_RivalCueCooldowns[3]);
         return 1;
     }
 
-    /* Each rank owns an independent cooldown. These globals are deliberately
-     * not required to be adjacent in host state. */
+    /* Each rank owns an independent cooldown. */
     {
-        s16 *cooldowns[RIVAL_CONTENDER_COUNT] = {
-            &g_RivalCueCooldown0, &g_RivalCueCooldown1,
-            &g_RivalCueCooldown2, &g_RivalCueCooldown3,
-        };
         s32 rank;
 
         for (rank = 0; rank < RIVAL_CONTENDER_COUNT; rank++) {
@@ -565,16 +557,16 @@ int main(int argc, char **argv) {
 
             for (i = 0; i < 4; i++) {
                 g_Cars[i].progressA = i > rank ? -0x2000 : 0;
-                *cooldowns[i] = (s16)(100 + i);
+                g_RivalCueCooldowns[i] = (s16)(100 + i);
             }
             g_RivalCueFlags = 0x1E0;
             UpdateRivalRubberBand();
             for (i = 0; i < 4; i++) {
                 s16 expectedCooldown =
                     (s16)(100 + i + (i == rank ? 1 : 0));
-                if (*cooldowns[i] != expectedCooldown) {
+                if (g_RivalCueCooldowns[i] != expectedCooldown) {
                     printf("rank %d changed cooldown %d to %d, expected %d\n",
-                           rank, i, *cooldowns[i], expectedCooldown);
+                           rank, i, g_RivalCueCooldowns[i], expectedCooldown);
                     return 1;
                 }
             }
