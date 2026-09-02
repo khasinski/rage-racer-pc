@@ -174,6 +174,20 @@ static int CheckAllCollisionFlagsReset(void) {
     return 0;
 }
 
+static int CheckMissingTrackLength(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    g_TrackLength = 0;
+    g_Cars[0].collisionFlag = 1;
+    if (CollidePlayerWithCars(&player) != 0 ||
+        g_Cars[0].collisionFlag != 1 || s_knockbackCount != 0) {
+        puts("FAIL missing track length did not leave collision state alone");
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
     static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
@@ -189,7 +203,8 @@ int main(void) {
 
     if (CheckCollisionSoundGates() != 0 ||
         CheckWrappedWorldCoordinates() != 0 ||
-        CheckAllCollisionFlagsReset() != 0)
+        CheckAllCollisionFlagsReset() != 0 ||
+        CheckMissingTrackLength() != 0)
         return 1;
 
     g_TrackLength = 0x8000;

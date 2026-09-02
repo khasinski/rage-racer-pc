@@ -9,6 +9,16 @@
 
 #include <stdlib.h>
 
+enum {
+    COLLISION_PROGRESS_REACH = 0xC8,
+    COLLISION_LATERAL_REACH = 0x64,
+    COLLISION_HEIGHT_REACH = 0x3C,
+    DIFFERENT_LEVEL_HEIGHT = 0x1A,
+    SLIPSTREAM_LATERAL_REACH = 0x32,
+    SLIPSTREAM_PROGRESS_REACH = 0x3E8,
+    CLOSE_SLIPSTREAM_DRAG = 0x2BC,
+};
+
 static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
     CarCollisionPoint result;
 
@@ -137,16 +147,17 @@ static PlayerCollisionHit FindPlayerCollision(
                                          player->trackLateralOffset);
     heightDistance = AbsoluteDifference(opponent->y, player->y);
     if (opponent->verticalMotionState != player->verticalMotionState &&
-        heightDistance >= 0x1A) {
+        heightDistance >= DIFFERENT_LEVEL_HEIGHT) {
       continue;
     }
 
-    if (lateralDistance < 0x64 &&
-        (progressDistance < 0xC8 ||
-         g_TrackLength - 0xC8 < progressDistance) &&
-        heightDistance < 0x3C) {
-      if (progressDistance < 0xC8 && lateralDistance < 0x32) {
-        g_DragScale = 0x2BC;
+    if (lateralDistance < COLLISION_LATERAL_REACH &&
+        (progressDistance < COLLISION_PROGRESS_REACH ||
+         g_TrackLength - COLLISION_PROGRESS_REACH < progressDistance) &&
+        heightDistance < COLLISION_HEIGHT_REACH) {
+      if (progressDistance < COLLISION_PROGRESS_REACH &&
+          lateralDistance < SLIPSTREAM_LATERAL_REACH) {
+        g_DragScale = CLOSE_SLIPSTREAM_DRAG;
       }
       BuildOpponentCollisionSamples(player, opponent, corners, samples);
       quadHit = FindPlayerCollisionRegion(playerGrid, corners, samples);
@@ -160,8 +171,10 @@ static PlayerCollisionHit FindPlayerCollision(
         hit.lateralDistance = lateralDistance;
         return hit;
       }
-    } else if (lateralDistance < 0x32 && progressDistance < 0x3E8) {
-      g_DragScale = 0x3E8 - ((0x3E8 - progressDistance) >> 2);
+    } else if (lateralDistance < SLIPSTREAM_LATERAL_REACH &&
+               progressDistance < SLIPSTREAM_PROGRESS_REACH) {
+      g_DragScale = SLIPSTREAM_PROGRESS_REACH -
+                    ((SLIPSTREAM_PROGRESS_REACH - progressDistance) >> 2);
     }
   }
   return hit;
@@ -275,7 +288,7 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
   PlayerCollisionHit hit;
   s32 index;
 
-  if (g_GrandPrixMode == 0) {
+  if (g_GrandPrixMode == 0 || g_TrackLength <= 0) {
     return 0;
   }
 
