@@ -266,6 +266,10 @@ static void TestCarSelectAssetPhases(void) {
           "pending shared car assets hold phase");
     s_loadResult = 1;
     LoadCarSelectAssets();
+    Check(s_registeredBank ==
+              (ModelBankHeader *)(void *)(storage + 0xC) &&
+              s_registeredSlot == 14,
+          "showroom scene model bank follows its three offsets");
     Check(g_TeamLogoSampleData == GetTeamLogoSample(storage + 64),
           "team logo samples installed");
     Check(s_courseModels ==

@@ -12,7 +12,18 @@ enum {
     CAR_SELECT_WAIT_FOR_AUDIO,
     CAR_SELECT_LOAD_SHARED_ASSETS,
     CAR_SELECT_LOAD_INITIAL_MODEL,
+    CAR_SELECT_SCENE_MODEL_BANK = 14,
 };
+
+typedef struct CarSelectAssetHeader {
+    s32 teamLogoSamplesOffset;
+    s32 courseModelsOffset;
+    s32 imageOffset;
+    ModelBankHeader sceneModelBank;
+} CarSelectAssetHeader;
+
+_Static_assert(offsetof(CarSelectAssetHeader, sceneModelBank) == 0xC,
+               "car-select model bank must remain at +0xC");
 
 s32 RequestCarSelectAssets(void) {
     return RequestAssetLoad(ASSET_REQUEST_CAR_SELECT,
@@ -36,19 +47,20 @@ static void FinishCarSelectAudioLoad(void) {
 }
 
 static void LoadCarSelectSharedAssets(void) {
-    GameSceneAssetHeader *header;
+    CarSelectAssetHeader *header;
 
     if (LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor) == 0) {
         return;
     }
 
-    RegisterModelBank(GetModelBankHeader(g_AssetLoadCursor + 0xC), 0xE);
-    header = GetSceneAssetHeader(g_AssetLoadCursor);
+    header = (CarSelectAssetHeader *)g_AssetLoadCursor;
+    RegisterModelBank(&header->sceneModelBank, CAR_SELECT_SCENE_MODEL_BANK);
     g_TeamLogoSampleData =
-        GetTeamLogoSample(GetSceneAssetAddress(header, header->offsets[0]));
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
+        GetTeamLogoSample(ResolveAssetAddress(
+            header, header->teamLogoSamplesOffset));
+    g_AssetBlockPtr = ResolveAssetAddress(header, header->courseModelsOffset);
     RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
+    g_AssetBlockPtr = ResolveAssetAddress(header, header->imageOffset);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
     g_CarModelBuffer = g_AssetBlockPtr;
     g_ImageBlockBuffer = g_CarModelBuffer + CAR_MODEL_BUFFER_SIZE;

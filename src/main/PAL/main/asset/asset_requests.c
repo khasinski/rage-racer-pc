@@ -20,11 +20,6 @@ enum {
     SELECT_BGM_LOAD_ASSET = 2,
 };
 
-/* The team-logo canvas and its two VRAM rects. Kept local: menu/ spells the
- * canvas u32[] for the nibble transforms and u8[] where it only wants the
- * address, and draw_team_logo_canvas.c reads the two rects through its own
- * TeamLogoClutPos / TeamLogoTexturePos structs, so there is no single type
- * to hoist without rewriting those indices. */
 static void LoadBootTitleScreen(void) {
     u8 *base = GetAssetBytes(g_LoadBuffer);
     s32 loadedSize = LoadAsset(ASSET_TITLE_SCREEN, base);
