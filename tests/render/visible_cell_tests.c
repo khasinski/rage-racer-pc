@@ -65,12 +65,12 @@ int main(void) {
     Expect("its far corner", TrackCellVisible(3071, 3071), 1);
     Expect("one past it", TrackCellVisible(3072, 3072), 0);
 
-    /*
-     * Further back than -3071 the rule produces a negative cell, which is off
-     * the grid the mask describes: it covers thirty-two cells of positive
-     * space and the game never asks behind them. Nothing here asks either,
-     * because the answer would come from a shift by a negative count.
-     */
+    Expect("negative row and column are outside the mask",
+           TrackCellVisible(-4096, -4096), 0);
+    Expect("column past the mask is invisible",
+           TrackCellVisible(65536, 0), 0);
+    Expect("row past the mask is invisible",
+           TrackCellVisible(0, 65536), 0);
 
     /* A cleared mask hides everything, whatever the coordinate. */
     ClearMask();

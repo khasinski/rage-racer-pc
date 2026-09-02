@@ -23,5 +23,6 @@ int TrackCellVisible(s32 x, s32 z) {
 
     if (row < 0) row = z + 0xBFF;
     if (column < 0) column = x + 0xBFF;
-    return (g_VisibleCellMask[row >> 11] & (1 << (column >> 11))) != 0;
+    return CellVisibilityMaskContains(g_VisibleCellMask, column >> 11,
+                                      row >> 11);
 }

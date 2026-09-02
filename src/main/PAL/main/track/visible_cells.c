@@ -28,7 +28,9 @@ void DrawCourseObjects(void) {
 
         cellX = obj->x / 2048;
         cellZ = obj->z / 2048;
-        if ((g_VisibleCellMask[cellZ] & (1 << cellX)) == 0) continue;
+        if (!CellVisibilityMaskContains(g_VisibleCellMask, cellX, cellZ)) {
+            continue;
+        }
 
         BuildRotMatrixY(&mtx, obj->field2);
         MulMatrix2(&g_RenderState.matrix, &mtx);
@@ -71,7 +73,7 @@ void DrawCourseObjects(void) {
 
 
 static u32 GetCellRegion(s32 x, s32 z) {
-    z = (z * 32) + x;
+    z = (z * TERRAIN_CELL_GRID_SIZE) + x;
     return g_TerrainCellGrid[z] >> 10;
 }
 
@@ -98,13 +100,20 @@ void BuildVisibleCells(s32 near, s32 far) {
     s32 vec[3];
     s32 proj[3];
 
-    for (i = 31; i >= 0; i--) {
+    for (i = TERRAIN_CELL_GRID_SIZE - 1; i >= 0; i--) {
         g_VisibleCellMask[i] = 0;
     }
 
     oct = (view->angleY / 128) & 0x1F;
     cx = view->position.components.x.value / 2048;
     cy = view->position.components.z.value / 2048;
+    if ((u32)cx >= TERRAIN_CELL_GRID_SIZE ||
+        (u32)cy >= TERRAIN_CELL_GRID_SIZE) {
+        for (i = 0; i < VISIBLE_CELL_COUNT; i++) {
+            g_VisibleCellList[i].w = -1;
+        }
+        return;
+    }
     ret0 = GetCellRegion(cx, cy);
 
     i = 0;
@@ -116,12 +125,17 @@ void BuildVisibleCells(s32 near, s32 far) {
         GetVisibleCellScanOffset(oct, i, g_RenderState.orderingFlag, offset);
         sx = cx + offset[0];
         sy = cy + offset[1];
-        if ((u32)sx < 32U && (u32)sy < 32U &&
+        if ((u32)sx < TERRAIN_CELL_GRID_SIZE &&
+            (u32)sy < TERRAIN_CELL_GRID_SIZE &&
             IsCellVisibleFromRegion(sx, sy, ret0)) {
-            s32 clut = g_TerrainCellGrid[((31 - sy) << 5) + sx] & 0x3FF;
+            s32 clut =
+                g_TerrainCellGrid[(TERRAIN_CELL_GRID_SIZE - 1 - sy) *
+                                      TERRAIN_CELL_GRID_SIZE +
+                                  sx] &
+                0x3FF;
 
             out->w = clut;
-            g_VisibleCellMask[sy] |= 1 << sx;
+            g_VisibleCellMask[sy] |= 1u << sx;
             center = 1024;
             if (clut != 0x3FF) {
                 /* Retail uses signed MIPS shifts here.  Multiplication has the
