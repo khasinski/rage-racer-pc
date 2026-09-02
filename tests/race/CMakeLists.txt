@@ -602,6 +602,26 @@ endif()
 add_test(NAME race_end_rules COMMAND race_end_rules_tests)
 set_tests_properties(race_end_rules PROPERTIES LABELS unit)
 
+add_executable(race_end_screens_tests
+    race_end_screens_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_end_screens.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_end_rules.c)
+target_include_directories(race_end_screens_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_end_screens_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(race_end_screens_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_end_screens_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_end_screens COMMAND race_end_screens_tests)
+set_tests_properties(race_end_screens PROPERTIES LABELS functional)
+
 add_executable(result_screen_rules_tests
     result_screen_rules_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/result_screen_rules.c)

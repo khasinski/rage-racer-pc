@@ -6,6 +6,7 @@
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/save_internal.h"
+#include "game/screens.h"
 
 enum {
     SCENE_TITLE = 6,
