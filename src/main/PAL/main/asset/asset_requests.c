@@ -44,14 +44,23 @@ static void LoadBootAudioHeader(void) {
     s32 loadedSize = LoadAsset(ASSET_BOOT_AUDIO_HEADER, g_AssetBlockPtr);
 
     if (loadedSize == 0) return;
+    g_AssetBlockSize = (size_t)loadedSize;
     g_AssetLoadCursor = g_AssetBlockPtr + loadedSize;
     g_AssetLoadState = BOOT_LOAD_AUDIO_BODY;
 }
 
 static void LoadBootAudioBody(void) {
-    if (LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor) == 0) return;
-    if (StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, g_AssetBlockPtr,
-                           g_AssetLoadCursor, NULL) < 0) {
+    AudioSlotAsset asset;
+    s32 loadedSize = LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor);
+
+    if (loadedSize == 0) return;
+    asset = (AudioSlotAsset){
+        .vabHeader = g_AssetBlockPtr,
+        .vabHeaderSize = g_AssetBlockSize,
+        .vabBody = g_AssetLoadCursor,
+        .vabBodySize = (size_t)loadedSize,
+    };
+    if (StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) < 0) {
         g_AssetLoadState = 0;
         return;
     }
@@ -158,8 +167,14 @@ static void LoadSelectBgmAssetPack(void) {
         return;
     }
     g_AssetBlockPtr = g_AssetBase + header->audioHeaderOffset;
+    g_AssetBlockSize =
+        (size_t)(header->sequenceOffset - header->audioHeaderOffset);
     g_AssetBlockPtr2 = g_AssetBase + header->sequenceOffset;
+    g_AssetBlock2Size =
+        (size_t)(header->audioBodyOffset - header->sequenceOffset);
     g_AssetSubBlockPtr = g_AssetBase + header->audioBodyOffset;
+    g_AssetSubBlockSize =
+        (size_t)(loadedSize - header->audioBodyOffset);
     g_AssetLoadState = 0;
 }
 

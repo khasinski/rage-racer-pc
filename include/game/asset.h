@@ -50,9 +50,11 @@ extern s32 g_AssetLoadState;
 /* The asset sub-block currently being installed: `assetBase + <header offset>`,
  * then handed to UploadImageAsset / UploadImageEntry. */
 extern u8 *g_AssetBlockPtr;
+extern size_t g_AssetBlockSize;
 
 /* Its companion, the third pointer of the sub-block triple. */
 extern u8 *g_AssetBlockPtr2;
+extern size_t g_AssetBlock2Size;
 
 /* Bytes of the shared voice header published by the round-screen load and
  * copied into the race asset arena before its audio slot starts. */
@@ -347,6 +349,7 @@ extern u8 *g_AssetLoadCursor;
 
 /* Second sub-block cursor: base + header->offsets[n + 1]. */
 extern u8 *g_AssetSubBlockPtr;
+extern size_t g_AssetSubBlockSize;
 
 /*
  * Asset-load state machine. ServiceAssetLoad runs once per frame and

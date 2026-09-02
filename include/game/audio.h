@@ -98,8 +98,19 @@ void SetEffectVolumeSetting(s32 setting);
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
 void LoadAudioParameterTable(const u16 *table);
-/* Open audio slot `slot` on a VAB header/body pair and optional tone table. */
-s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table);
+typedef struct AudioSlotAsset {
+    u8 *vabHeader;
+    size_t vabHeaderSize;
+    u8 *vabBody;
+    size_t vabBodySize;
+    void *auxiliaryData;
+    size_t auxiliarySize;
+} AudioSlotAsset;
+
+/* Validate and open one VAB plus either SEQ data or the engine parameter
+ * table. Zero means an asynchronous transfer is still in progress, a
+ * positive value means complete, and -1 reports malformed data or failure. */
+s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset);
 s32 PollAudioSlotLoad(void);
 void SetPanVoiceTargetVolume(s32 left, s32 right);
 void ApplyPanVoiceVolume(void);

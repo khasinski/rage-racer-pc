@@ -86,7 +86,10 @@ static void LoadRoundVoiceBank(void) {
     }
     g_RaceVoiceHeaderSize = header->sharedHeaderSize;
     g_AssetBlockPtr = g_AssetBlockPtr2 + header->audioHeaderOffset;
+    g_AssetBlockSize = (size_t)header->sharedHeaderSize;
     g_AssetSubBlockPtr = g_AssetBlockPtr2 + header->audioBodyOffset;
+    g_AssetSubBlockSize =
+        (size_t)(loadedSize - header->audioBodyOffset);
     g_AssetLoadState = 0;
 }
 

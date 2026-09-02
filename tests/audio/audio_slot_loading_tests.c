@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/audio.h"
 #include "game/sound.h"
+#include "psyq/snd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,7 +65,7 @@ void SsUtSetReverbDepth(short left, short right) {
     s_reverbCalls++;
 }
 
-void _SsVmInit(short voices) {
+void _SsVmInit(int voices) {
     (void)voices;
     s_vmInitCalls++;
 }
@@ -88,19 +89,63 @@ void BiosExit(s32 code) {
     }                                                                           \
 } while (0)
 
+enum {
+    TEST_VAB_HEADER_SIZE = 32,
+    TEST_VAB_PROGRAM_ATTRIBUTE_SIZE = 16,
+    TEST_VAB_LENGTH_TABLE_ENTRIES = 256,
+};
+
+static void WriteLittleEndianU16(u8 *destination, u16 value) {
+    destination[0] = (u8)value;
+    destination[1] = (u8)(value >> 8);
+}
+
+static void WriteLittleEndianU32(u8 *destination, u32 value) {
+    destination[0] = (u8)value;
+    destination[1] = (u8)(value >> 8);
+    destination[2] = (u8)(value >> 16);
+    destination[3] = (u8)(value >> 24);
+}
+
 int main(void) {
-    u8 header;
-    u8 body;
-    u16 table;
+    u8 header[2048];
+    u8 body[16];
+    u8 sequence[16];
+    u16 table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT];
+    AudioSlotAsset asset;
+    AudioSlotAsset invalid;
+    u8 *vagLengths;
 
     memset(&g_SoundScale, 0, sizeof(g_SoundScale));
     memset(&g_EngineSoundState, 0, sizeof(g_EngineSoundState));
+    memset(header, 0, sizeof(header));
+    memset(body, 0, sizeof(body));
+    memset(sequence, 0, sizeof(sequence));
+    memcpy(header, "pBAV", 4);
+    WriteLittleEndianU32(header + 4, 4);
+    WriteLittleEndianU16(header + 18, 0);
+    WriteLittleEndianU16(header + 22, 0);
+    vagLengths = header + TEST_VAB_HEADER_SIZE +
+                 64 * TEST_VAB_PROGRAM_ATTRIBUTE_SIZE;
+    WriteLittleEndianU16(vagLengths, 1);
+    sequence[0] = 'p';
+    sequence[7] = 1;
+    sequence[9] = 1;
+    sequence[12] = 1;
+    asset = (AudioSlotAsset){
+        .vabHeader = header,
+        .vabHeaderSize = TEST_VAB_HEADER_SIZE +
+                         64 * TEST_VAB_PROGRAM_ATTRIBUTE_SIZE +
+                         TEST_VAB_LENGTH_TABLE_ENTRIES * sizeof(u16),
+        .vabBody = body,
+        .vabBodySize = sizeof(body),
+    };
     g_VabSpuAddress[0] = 0x12000;
 
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, 0) == 1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == 1);
     CHECK(g_AudioLoadSlot == AUDIO_SLOT_MAIN_CUES &&
           g_SoundScale.vabIds[AUDIO_SLOT_MAIN_CUES] == 8);
-    CHECK(s_openHeader == &header && s_body == &body);
+    CHECK(s_openHeader == header && s_body == body);
     CHECK(s_openAddress == 0x12000);
 
     g_AudioLoadedSlotMask = 0;
@@ -108,24 +153,50 @@ int main(void) {
     CHECK(PollAudioSlotLoad() == 1);
     CHECK(g_AudioLoadedSlotMask == 1 && g_SoundCueBank == 1);
 
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &header, &body, &table) == 61);
+    asset.auxiliaryData = sequence;
+    asset.auxiliarySize = sizeof(sequence);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) == 61);
     CHECK(s_sequenceCalls == 1);
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &header, &body, NULL) == -1);
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, NULL, &body, NULL) == -1);
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, NULL, NULL) == -1);
-    CHECK(StartAudioSlotLoad(6, &header, &body, &table) == -1);
-    CHECK(StartAudioSlotLoad(-1, &header, &body, &table) == -1);
+    invalid = asset;
+    invalid.auxiliaryData = NULL;
+    invalid.auxiliarySize = 0;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &invalid) == -1);
+    invalid = asset;
+    invalid.auxiliarySize = sizeof(sequence) - 1;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &invalid) == -1);
+    invalid = asset;
+    invalid.vabHeaderSize--;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &invalid) == -1);
+    invalid = asset;
+    invalid.vabBodySize = 3;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &invalid) == -1);
+    header[1] = 'X';
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    header[1] = 'B';
+    WriteLittleEndianU16(header + 18, 65);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    WriteLittleEndianU16(header + 18, 0);
+    WriteLittleEndianU16(header + 22, 256);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    WriteLittleEndianU16(header + 22, 0);
+    CHECK(StartAudioSlotLoad(6, &asset) == -1);
+    CHECK(StartAudioSlotLoad(-1, &asset) == -1);
     CHECK(s_sequenceCalls == 1);
 
     s_openResult = -1;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, NULL) == -1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
     s_openResult = 7;
     s_bodyResult = -1;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &header, &body, NULL) == -1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
     s_bodyResult = 8;
 
     g_VabSpuAddress[3] = 0x34000;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &header, &body, &table) == 1);
+    asset.auxiliaryData = table;
+    asset.auxiliarySize = sizeof(table);
+    invalid = asset;
+    invalid.auxiliarySize--;
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &invalid) == -1);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &asset) == 1);
     CHECK(g_AudioLoadSlot == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
     CHECK(g_EngineSoundState.extraVabLoaded == 1 && s_tableCalls == 1);
 

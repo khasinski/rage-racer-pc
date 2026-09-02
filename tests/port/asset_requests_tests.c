@@ -15,13 +15,16 @@ AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
 s32 g_LoadBuffer[64];
 u8 *g_AssetBlockPtr;
+size_t g_AssetBlockSize;
 u8 *g_AssetBlockPtr2;
+size_t g_AssetBlock2Size;
 u8 *g_ImageBlockBuffer;
 size_t g_ImageBlockSize;
 size_t g_LoadBufferImageSize;
 u8 *g_AssetBase;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
+size_t g_AssetSubBlockSize;
 s32 g_RaceVoiceHeaderSize;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
@@ -48,6 +51,8 @@ static s32 s_audioSlot;
 static u8 *s_audioHeader;
 static u8 *s_audioBody;
 static u16 *s_audioTable;
+static size_t s_audioHeaderSize;
+static size_t s_audioBodySize;
 static s32 s_startAudioResult = 1;
 static s32 s_pollResult;
 static s32 s_imageUploads;
@@ -64,11 +69,13 @@ s32 UploadLoadBufferImage(void) {
     s_loadBufferUploads++;
     return s_loadBufferUploadResult;
 }
-s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
+s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     s_audioSlot = slot;
-    s_audioHeader = header;
-    s_audioBody = body;
-    s_audioTable = table;
+    s_audioHeader = asset->vabHeader;
+    s_audioHeaderSize = asset->vabHeaderSize;
+    s_audioBody = asset->vabBody;
+    s_audioBodySize = asset->vabBodySize;
+    s_audioTable = asset->auxiliaryData;
     return s_startAudioResult;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
@@ -156,6 +163,7 @@ static void TestBootAssetPhases(void) {
     Check(s_lastAssetId == ASSET_BOOT_AUDIO_HEADER &&
               s_lastLoadDestination == loadBase + 8 &&
               g_AssetLoadCursor == loadBase + 20 &&
+              g_AssetBlockSize == 12 &&
               g_AssetLoadState == 3,
           "audio header advances boot loader");
 
@@ -170,7 +178,8 @@ static void TestBootAssetPhases(void) {
     LoadBootAssets();
     Check(s_lastAssetId == ASSET_BOOT_AUDIO_BODY && s_audioSlot == 0 &&
               s_audioHeader == loadBase + 8 &&
-              s_audioBody == loadBase + 20 && s_audioTable == NULL &&
+              s_audioHeaderSize == 12 && s_audioBody == loadBase + 20 &&
+              s_audioBodySize == 1 && s_audioTable == NULL &&
               g_AssetLoadState == 4,
           "audio body starts boot audio slot");
 
@@ -291,6 +300,9 @@ int main(void) {
     Check(g_AssetBlockPtr == pack.bytes + 16, "BGM first block");
     Check(g_AssetBlockPtr2 == pack.bytes + 32, "BGM second block");
     Check(g_AssetSubBlockPtr == pack.bytes + 64, "BGM third block");
+    Check(g_AssetBlockSize == 16 && g_AssetBlock2Size == 32 &&
+              g_AssetSubBlockSize == 64,
+          "BGM publishes exact audio sub-block sizes");
 
     header->offsets[1] = header->offsets[0];
     g_AssetLoadState = 2;
@@ -392,7 +404,9 @@ int main(void) {
     Check(s_lastAssetId == ASSET_VOICE_BANK, "round voice asset id");
     Check(g_RaceVoiceHeaderSize == 20, "round shared header size");
     Check(g_AssetBlockPtr == pack.bytes + 36 &&
-              g_AssetSubBlockPtr == pack.bytes + 56,
+              g_AssetBlockSize == 20 &&
+              g_AssetSubBlockPtr == pack.bytes + 56 &&
+              g_AssetSubBlockSize == 40,
           "round voice offsets relocated");
     Check(g_AssetLoadState == 0, "round load completes");
 

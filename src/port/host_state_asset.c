@@ -58,6 +58,7 @@ size_t PortAssetRoomAt(const void *at) {
 }
 u32 g_StreamSectorLimit;
 u8 *g_AssetBlockPtr2;
+size_t g_AssetBlock2Size;
 u32 g_StreamSectorCount;
 u8 *g_AssetLoadCursor;
 u8 *g_CarModelBuffer;
@@ -69,4 +70,6 @@ size_t g_LoadBufferImageSize;
 s32 g_RaceVoiceHeaderSize;
 GameCdLoadEntry *g_StreamLoc;
 u8 *g_AssetSubBlockPtr;
+size_t g_AssetSubBlockSize;
 u8 *g_AssetBlockPtr;
+size_t g_AssetBlockSize;

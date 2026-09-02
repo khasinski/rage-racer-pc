@@ -11,9 +11,12 @@ AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
 s32 g_PendingCarModelIndex;
 u8 *g_AssetBlockPtr;
+size_t g_AssetBlockSize;
 u8 *g_AssetBlockPtr2;
+size_t g_AssetBlock2Size;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
+size_t g_AssetSubBlockSize;
 u8 *g_ImageBlockBuffer;
 size_t g_ImageBlockSize;
 u8 *g_CarModelBuffer;
@@ -40,6 +43,9 @@ static s32 s_audioSlot;
 static u8 *s_audioHeader;
 static u8 *s_audioBody;
 static u16 *s_audioTable;
+static size_t s_audioHeaderSize;
+static size_t s_audioBodySize;
+static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_sequenceInitCalls;
 static CourseModelAssetHeader *s_courseModels;
@@ -84,11 +90,14 @@ s32 UploadImageAsset(GameImageAssetHeaderWord *image, size_t size) {
     s_uploadedImage = image;
     return 1;
 }
-s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
+s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     s_audioSlot = slot;
-    s_audioHeader = header;
-    s_audioBody = body;
-    s_audioTable = table;
+    s_audioHeader = asset->vabHeader;
+    s_audioHeaderSize = asset->vabHeaderSize;
+    s_audioBody = asset->vabBody;
+    s_audioBodySize = asset->vabBodySize;
+    s_audioTable = asset->auxiliaryData;
+    s_audioAuxiliarySize = asset->auxiliarySize;
     return s_startAudioResult;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
@@ -333,8 +342,11 @@ static void TestCarSelectAssetPhases(void) {
 
     g_AssetLoadState = 1;
     g_AssetBlockPtr = storage + 16;
+    g_AssetBlockSize = 16;
     g_AssetBlockPtr2 = storage + 32;
+    g_AssetBlock2Size = 16;
     g_AssetSubBlockPtr = storage + 48;
+    g_AssetSubBlockSize = 32;
     s_startAudioResult = -1;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0,
@@ -345,7 +357,9 @@ static void TestCarSelectAssetPhases(void) {
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 2 && s_audioSlot == 1 &&
               s_audioHeader == storage + 16 && s_audioBody == storage + 48 &&
-              s_audioTable == (u16 *)(void *)(storage + 32),
+              s_audioTable == (u16 *)(void *)(storage + 32) &&
+              s_audioHeaderSize == 16 && s_audioBodySize == 32 &&
+              s_audioAuxiliarySize == 16,
           "car select audio phase");
 
     s_pollResult = 0;

@@ -27,9 +27,16 @@ s32 RequestCarSelectAssets(void) {
 }
 
 static void BeginCarSelectAudioLoad(void) {
-    if (StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, g_AssetBlockPtr,
-                           g_AssetSubBlockPtr,
-                           GetAssetHalfwords(g_AssetBlockPtr2)) < 0) {
+    AudioSlotAsset asset = {
+        .vabHeader = g_AssetBlockPtr,
+        .vabHeaderSize = g_AssetBlockSize,
+        .vabBody = g_AssetSubBlockPtr,
+        .vabBodySize = g_AssetSubBlockSize,
+        .auxiliaryData = g_AssetBlockPtr2,
+        .auxiliarySize = g_AssetBlock2Size,
+    };
+
+    if (StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) < 0) {
         g_AssetLoadState = 0;
         return;
     }

@@ -37,10 +37,17 @@ s32 RequestRaceAssets(void) {
 }
 
 static void BeginRaceVoiceLoad(void) {
+    AudioSlotAsset asset;
+
     memcpy(g_AssetLoadCursor, g_AssetBlockPtr,
            (size_t)g_RaceVoiceHeaderSize);
-    if (StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
-                           g_AssetSubBlockPtr, NULL) < 0) {
+    asset = (AudioSlotAsset){
+        .vabHeader = g_AssetLoadCursor,
+        .vabHeaderSize = (size_t)g_RaceVoiceHeaderSize,
+        .vabBody = g_AssetSubBlockPtr,
+        .vabBodySize = g_AssetSubBlockSize,
+    };
+    if (StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, &asset) < 0) {
         g_AssetLoadState = 0;
         return;
     }
@@ -63,6 +70,7 @@ static void LoadPlayerCarRaceAssets(void) {
     u8 *audioTable;
     u8 *audioBody;
     u8 *carImage;
+    AudioSlotAsset audioAsset;
     s32 loadedSize;
 
     loadedSize = LoadAsset(
@@ -98,8 +106,17 @@ static void LoadPlayerCarRaceAssets(void) {
         g_AssetLoadState = 0;
         return;
     }
-    if (StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
-                           GetAssetHalfwords(audioTable)) < 0) {
+    audioAsset = (AudioSlotAsset){
+        .vabHeader = audioHeader,
+        .vabHeaderSize =
+            (size_t)(pack->audioSequenceOffset - pack->audioHeaderOffset),
+        .vabBody = audioBody,
+        .vabBodySize = (size_t)(pack->imageOffset - pack->audioBodyOffset),
+        .auxiliaryData = audioTable,
+        .auxiliarySize =
+            (size_t)(pack->audioBodyOffset - pack->audioSequenceOffset),
+    };
+    if (StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &audioAsset) < 0) {
         g_AssetLoadState = 0;
         return;
     }

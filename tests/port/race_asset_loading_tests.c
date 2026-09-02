@@ -14,9 +14,12 @@
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
 u8 *g_AssetBlockPtr;
+size_t g_AssetBlockSize;
 u8 *g_AssetBlockPtr2;
+size_t g_AssetBlock2Size;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
+size_t g_AssetSubBlockSize;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
 size_t g_ImageBlockSize;
@@ -41,6 +44,9 @@ static s32 s_audioSlot;
 static void *s_audioHeader;
 static void *s_audioBody;
 static u16 *s_audioSequence;
+static size_t s_audioHeaderSize;
+static size_t s_audioBodySize;
+static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
@@ -64,11 +70,14 @@ s32 LoadAsset(s32 assetIndex, void *destination) {
     return s_loadResult;
 }
 
-s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *sequence) {
+s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     s_audioSlot = slot;
-    s_audioHeader = header;
-    s_audioBody = body;
-    s_audioSequence = sequence;
+    s_audioHeader = asset->vabHeader;
+    s_audioHeaderSize = asset->vabHeaderSize;
+    s_audioBody = asset->vabBody;
+    s_audioBodySize = asset->vabBodySize;
+    s_audioSequence = asset->auxiliaryData;
+    s_audioAuxiliarySize = asset->auxiliarySize;
     return s_startAudioResult;
 }
 
@@ -189,6 +198,7 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetBlockPtr = source;
     g_AssetLoadCursor = destination;
     g_AssetSubBlockPtr = source + 12;
+    g_AssetSubBlockSize = 4;
     g_RaceVoiceHeaderSize = 10;
     g_AssetLoadState = 1;
     s_startAudioResult = -1;
@@ -204,6 +214,8 @@ static void TestVoiceAndCarPhases(void) {
     Check(g_AssetLoadCursor == destination + 10, "voice cursor advanced");
     Check(g_AssetLoadState == 2 && s_audioSlot == 2,
           "voice audio load started");
+    Check(s_audioHeaderSize == 10 && s_audioBodySize == 4,
+          "voice audio load keeps both source bounds");
 
     s_pollResult = 0;
     LoadRaceAssets();
@@ -279,7 +291,11 @@ static void TestVoiceAndCarPhases(void) {
               s_audioHeader == destination + audioHeaderOffset &&
               s_audioBody == destination + audioBodyOffset &&
               s_audioSequence ==
-                  (u16 *)(void *)(destination + audioSequenceOffset),
+                  (u16 *)(void *)(destination + audioSequenceOffset) &&
+              s_audioHeaderSize ==
+                  (size_t)(audioSequenceOffset - audioHeaderOffset) &&
+              s_audioBodySize == (size_t)(imageOffset - audioBodyOffset) &&
+              s_audioAuxiliarySize == ENGINE_SOUND_PARAMETER_TABLE_SIZE,
           "car audio blocks installed");
     Check(s_uploadCount == 1 &&
               s_uploads[0] ==
