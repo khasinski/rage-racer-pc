@@ -7,6 +7,7 @@
  */
 
 #include <libgte.h>
+#include <stdint.h>
 
 MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     MATRIX result = *right;
@@ -16,9 +17,10 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 
     for (row = 0; row < 3; row++) {
         for (column = 0; column < 3; column++) {
-            long sum = 0;
+            int64_t sum = 0;
             for (inner = 0; inner < 3; inner++) {
-                sum += (long)left->m[row][inner] * right->m[inner][column];
+                sum += (int64_t)left->m[row][inner] *
+                       right->m[inner][column];
             }
             result.m[row][column] = (short)(sum >> 12);
         }
@@ -37,9 +39,9 @@ short *ApplyMatrixSV(void *matrix, void *input, short *output) {
     int row;
 
     for (row = 0; row < 3; row++) {
-        long sum = (long)m->m[row][0] * v->vx
-                 + (long)m->m[row][1] * v->vy
-                 + (long)m->m[row][2] * v->vz;
+        int64_t sum = (int64_t)m->m[row][0] * v->vx
+                    + (int64_t)m->m[row][1] * v->vy
+                    + (int64_t)m->m[row][2] * v->vz;
         output[row] = (short)(sum >> 12);
     }
     return output;

@@ -742,6 +742,19 @@ add_test(NAME native_geometry_diagnostics
          COMMAND native_geometry_diagnostics_tests)
 set_tests_properties(native_geometry_diagnostics PROPERTIES LABELS unit)
 
+add_executable(gte_matrix_tests
+    gte_matrix_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c)
+target_include_directories(gte_matrix_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_link_libraries(gte_matrix_tests PRIVATE psyz)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(gte_matrix_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME gte_matrix COMMAND gte_matrix_tests)
+set_tests_properties(gte_matrix PROPERTIES LABELS unit)
+
 if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME native_frame_offsets
