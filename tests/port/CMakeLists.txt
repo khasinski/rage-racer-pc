@@ -62,7 +62,8 @@ set_tests_properties(relocate_car_model PROPERTIES LABELS unit)
 
 add_executable(car_model_loading_tests
     car_model_loading_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_model_loading.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_model_loading.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_assets.c)
 target_include_directories(car_model_loading_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

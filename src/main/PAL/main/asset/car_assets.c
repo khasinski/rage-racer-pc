@@ -22,77 +22,72 @@ s32 RequestCarSelectAssets(void) {
     return 1;
 }
 
-void LoadCarSelectAssets(void) {
-    s32 state = g_AssetLoadState;
-    u8 *carModelBase;
-    GameSceneAssetHeader *header;
-    GameSceneAssetHeader *imageHeader;
-    CarModelAsset *model;
-    s32 carIndex;
-    s32 firstOffset;
-    u8 *secondBlock;
-    s32 blockOffset;
-    s32 assetOffset;
+static void BeginCarSelectAudioLoad(void) {
+    StartAudioSlotLoad(1, g_AssetBlockPtr, g_AssetSubBlockPtr,
+                       GetAssetHalfwords(g_AssetBlockPtr2));
+    g_AssetLoadState = 2;
+}
 
-    switch (state) {
-    case 1:
-        StartAudioSlotLoad(1, g_AssetBlockPtr, g_AssetSubBlockPtr,
-                           GetAssetHalfwords(g_AssetBlockPtr2));
-        g_AssetLoadState = 2;
+static void FinishCarSelectAudioLoad(void) {
+    if ((s16)PollAudioSlotLoad() == 0) {
         return;
-    case 2:
-        if ((s16)PollAudioSlotLoad() != 0) {
-            InitSequenceAudio();
-            g_AssetLoadState = 3;
-            g_AssetLoadCursor = g_AssetSubBlockPtr;
-        }
-        return;
-    case 3:
-        if (LoadAsset(8, g_AssetLoadCursor) != 0) {
-            RegisterModelBank(GetModelBankHeader(g_AssetLoadCursor + 0xC), 0xE);
-
-            header = GetSceneAssetHeader(g_AssetLoadCursor);
-            blockOffset = header->offsets[1];
-            firstOffset = header->offsets[0];
-            secondBlock = GetSceneAssetAddress(header, blockOffset);
-            header = GetSceneAssetAddress(header, firstOffset);
-            g_TeamLogoSampleData = GetTeamLogoSample(header);
-            g_AssetBlockPtr = secondBlock;
-            RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
-
-            imageHeader = GetSceneAssetHeader(g_AssetLoadCursor);
-            assetOffset = imageHeader->offsets[2];
-            g_AssetBlockPtr = GetSceneAssetAddress(imageHeader, assetOffset);
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-
-            g_AssetLoadState = 4;
-            g_CarModelBuffer = g_AssetBlockPtr;
-            g_ImageBlockBuffer = g_AssetBlockPtr + CAR_MODEL_BUFFER_SIZE;
-        }
-        return;
-    case 4:
-        carIndex = g_PlayerCarIndex;
-        assetOffset = GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant) << 1;
-        carModelBase = g_CarModelBuffer;
-
-        if (LoadAsset(assetOffset + 0xA, carModelBase) != 0) {
-            SetCarModelSlot(GetCarModelAsset(carModelBase), 0);
-            SelectCarModelSlot(0);
-
-            model = g_CarModelAsset;
-            RegisterModelBank(model->modelData.modelBank, 0);
-            SetCarImageSlot(model->imageData.carImage, 0);
-
-            if (carIndex < 10) {
-                ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
-                                model->imageData.carImage);
-                ApplyBodyColor2(g_CarTable[carIndex].paintColor2,
-                                model->imageData.carImage);
-            }
-
-            g_CarModelSlot = 0;
-            g_AssetLoadState = 0;
-        }
     }
-    return;
+
+    InitSequenceAudio();
+    g_AssetLoadCursor = g_AssetSubBlockPtr;
+    g_AssetLoadState = 3;
+}
+
+static void LoadCarSelectSharedAssets(void) {
+    GameSceneAssetHeader *header;
+
+    if (LoadAsset(8, g_AssetLoadCursor) == 0) {
+        return;
+    }
+
+    RegisterModelBank(GetModelBankHeader(g_AssetLoadCursor + 0xC), 0xE);
+    header = GetSceneAssetHeader(g_AssetLoadCursor);
+    g_TeamLogoSampleData =
+        GetTeamLogoSample(GetSceneAssetAddress(header, header->offsets[0]));
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
+    RegisterCourseModels(GetCourseModelAssetHeader(g_AssetBlockPtr));
+    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
+    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    g_CarModelBuffer = g_AssetBlockPtr;
+    g_ImageBlockBuffer = g_CarModelBuffer + CAR_MODEL_BUFFER_SIZE;
+    g_AssetLoadState = 4;
+}
+
+static void LoadInitialCarSelectModel(void) {
+    s32 carIndex = g_PlayerCarIndex;
+    s32 assetIndex = 0xA +
+                     (GetCarAssetIndex(
+                          carIndex,
+                          g_CarTable[carIndex].modelVariant) << 1);
+
+    if (LoadAsset(assetIndex, g_CarModelBuffer) == 0) {
+        return;
+    }
+
+    InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer), 0, carIndex);
+    SelectCarModelSlot(0);
+    g_CarModelSlot = 0;
+    g_AssetLoadState = 0;
+}
+
+void LoadCarSelectAssets(void) {
+    switch (g_AssetLoadState) {
+    case 1:
+        BeginCarSelectAudioLoad();
+        break;
+    case 2:
+        FinishCarSelectAudioLoad();
+        break;
+    case 3:
+        LoadCarSelectSharedAssets();
+        break;
+    case 4:
+        LoadInitialCarSelectModel();
+        break;
+    }
 }

@@ -1,5 +1,7 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/asset_internal.h"
+#include "game/audio.h"
 #include "game/car.h"
 
 #include <stdio.h>
@@ -8,10 +10,18 @@
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
 s32 g_PendingCarModelIndex;
+u8 *g_AssetBlockPtr;
+u8 *g_AssetBlockPtr2;
+u8 *g_AssetLoadCursor;
+u8 *g_AssetSubBlockPtr;
+u8 *g_ImageBlockBuffer;
 u8 *g_CarModelBuffer;
 u32 g_CarModelSlot;
+s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelSlots[2];
+CarModelAsset *g_CarModelAsset;
+TeamLogoSample *g_TeamLogoSampleData;
 
 static s32 s_loadResult;
 static s32 s_loadAssetId;
@@ -25,6 +35,14 @@ static s32 s_color2Calls;
 static u32 s_color1;
 static u32 s_color2;
 static s32 s_failures;
+static s32 s_pollResult;
+static s32 s_audioSlot;
+static u8 *s_audioHeader;
+static u8 *s_audioBody;
+static u16 *s_audioTable;
+static s32 s_sequenceInitCalls;
+static CourseModelAssetHeader *s_courseModels;
+static GameImageAssetHeaderWord *s_uploadedImage;
 
 s32 GetCarAssetIndex(s32 model, s32 grade) { return model * 10 + grade; }
 s32 LoadAsset(s32 assetId, void *destination) {
@@ -43,6 +61,22 @@ void SetCarImageSlot(CarImageData *image, s32 slot) {
     s_image = image;
     s_imageSlot = slot;
 }
+void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
+void RegisterCourseModels(CourseModelAssetHeader *models) {
+    s_courseModels = models;
+}
+void UploadImageAsset(GameImageAssetHeaderWord *image) {
+    s_uploadedImage = image;
+}
+s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
+    s_audioSlot = slot;
+    s_audioHeader = header;
+    s_audioBody = body;
+    s_audioTable = table;
+    return 1;
+}
+s32 PollAudioSlotLoad(void) { return s_pollResult; }
+void InitSequenceAudio(void) { s_sequenceInitCalls++; }
 void ApplyBodyColor1(u32 color, CarImageData *image) {
     (void)image;
     s_color1 = color;
@@ -145,9 +179,98 @@ static void TestModelVariantLoads(void) {
     Check(g_AssetLoadState == 0, "upgraded model completes loader");
 }
 
+static void TestCarSelectAssetPhases(void) {
+    static u8 storage[CAR_MODEL_BUFFER_SIZE + 512];
+    GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
+    CarEntry cars[2];
+    CarModelAsset *model;
+    ModelBankHeader modelBank;
+    CarImageData carImage;
+
+    memset(storage, 0, sizeof(storage));
+    memset(cars, 0, sizeof(cars));
+    g_CarTable = cars;
+
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    Check(RequestCarSelectAssets() == 1, "new car select request pending");
+    Check(g_AssetRequestType == ASSET_REQUEST_CAR_SELECT &&
+              g_AssetLoadState == 1,
+          "car select request initializes loader");
+    Check(RequestCarSelectAssets() == 1, "busy car select remains pending");
+    g_AssetLoadState = 0;
+    Check(RequestCarSelectAssets() == 0, "car select request acknowledged");
+
+    g_AssetLoadState = 1;
+    g_AssetBlockPtr = storage + 16;
+    g_AssetBlockPtr2 = storage + 32;
+    g_AssetSubBlockPtr = storage + 48;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 2 && s_audioSlot == 1 &&
+              s_audioHeader == storage + 16 && s_audioBody == storage + 48 &&
+              s_audioTable == (u16 *)(void *)(storage + 32),
+          "car select audio phase");
+
+    s_pollResult = 0;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 2, "pending car select audio holds phase");
+    s_pollResult = 1;
+    s_sequenceInitCalls = 0;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 3 && g_AssetLoadCursor == storage + 48 &&
+              s_sequenceInitCalls == 1,
+          "car select audio completion");
+
+    g_AssetLoadCursor = storage;
+    pack->offsets[0] = 64;
+    pack->offsets[1] = 128;
+    pack->offsets[2] = 192;
+    s_loadResult = 0;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 3 && s_loadAssetId == 8,
+          "pending shared car assets hold phase");
+    s_loadResult = 1;
+    LoadCarSelectAssets();
+    Check(g_TeamLogoSampleData == (TeamLogoSample *)(void *)(storage + 64),
+          "team logo samples installed");
+    Check(s_courseModels ==
+              (CourseModelAssetHeader *)(void *)(storage + 128),
+          "showroom course models installed");
+    Check(s_uploadedImage ==
+              (GameImageAssetHeaderWord *)(void *)(storage + 192),
+          "showroom image uploaded");
+    Check(g_CarModelBuffer == storage + 192 &&
+              g_ImageBlockBuffer == storage + 192 + CAR_MODEL_BUFFER_SIZE &&
+              g_AssetLoadState == 4,
+          "shared assets publish car buffers");
+
+    model = (CarModelAsset *)(void *)(storage + 192);
+    model->modelData.modelBank = &modelBank;
+    model->imageData.carImage = &carImage;
+    cars[1].modelVariant = 2;
+    cars[1].paintColor1 = 6;
+    cars[1].paintColor2 = 7;
+    g_PlayerCarIndex = 1;
+    s_color1Calls = 0;
+    s_color2Calls = 0;
+    LoadCarSelectAssets();
+    Check(s_loadAssetId == 0xA + (12 << 1),
+          "initial showroom car asset index");
+    Check(g_CarModelAsset == model && g_CarModelSlot == 0,
+          "initial showroom model selected");
+    Check(s_registeredBank == &modelBank && s_registeredSlot == 0 &&
+              s_image == &carImage && s_imageSlot == 0,
+          "initial showroom model installed");
+    Check(s_color1Calls == 1 && s_color2Calls == 1 &&
+              s_color1 == 6 && s_color2 == 7,
+          "initial showroom paint applied");
+    Check(g_AssetLoadState == 0, "car select asset load completes");
+}
+
 int main(void) {
     TestRequests();
     TestModelVariantLoads();
+    TestCarSelectAssetPhases();
 
     if (s_failures != 0) return 1;
     puts("car model requests load the selected grade into the inactive slot");

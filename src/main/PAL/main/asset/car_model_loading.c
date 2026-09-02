@@ -11,6 +11,19 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     g_AssetLoadState = 1;
 }
 
+void InstallCarModelAsset(CarModelAsset *asset, s32 slot, s32 carIndex) {
+    SetCarModelSlot(asset, slot);
+    asset = g_CarModelSlots[slot];
+    RegisterModelBank(asset->modelData.modelBank, slot);
+    SetCarImageSlot(asset->imageData.carImage, slot);
+    if (carIndex < 10) {
+        ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
+                        asset->imageData.carImage);
+        ApplyBodyColor2(g_CarTable[carIndex].paintColor2,
+                        asset->imageData.carImage);
+    }
+}
+
 void RequestCarModel(s32 carIndex) {
     RequestPendingCarModel(ASSET_REQUEST_CAR_MODEL, carIndex);
 }
@@ -40,16 +53,8 @@ static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
         return;
     }
 
-    SetCarModelSlot(GetCarModelAsset(destination), targetSlot);
-    asset = g_CarModelSlots[targetSlot];
-    RegisterModelBank(asset->modelData.modelBank, targetSlot);
-    SetCarImageSlot(asset->imageData.carImage, targetSlot);
-    if (carIndex < 10) {
-        ApplyBodyColor1(g_CarTable[carIndex].paintColor1,
-                        asset->imageData.carImage);
-        ApplyBodyColor2(g_CarTable[carIndex].paintColor2,
-                        asset->imageData.carImage);
-    }
+    asset = GetCarModelAsset(destination);
+    InstallCarModelAsset(asset, targetSlot, carIndex);
     g_AssetLoadState = 0;
 }
 
