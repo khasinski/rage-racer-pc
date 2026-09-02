@@ -6,7 +6,17 @@
 enum {
     CAR_LAUNCH_THRESHOLD_COUNT = 5,
     CAR_TORQUE_BAND_COUNT = 10,
+    /* Eleven live cars followed by retail's -1 sentinel entry. */
+    RACE_GRID_STORAGE_COUNT = 12,
 };
+
+typedef union RaceGridSlot {
+    s32 value;
+    struct {
+        u16 modelId;
+        u16 reserved;
+    } halves;
+} RaceGridSlot;
 
 typedef union RaceIntroCameraCoordinate {
     s32 word;

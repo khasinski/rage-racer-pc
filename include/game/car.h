@@ -21,6 +21,9 @@ enum {
     CAR_WHEEL_BLUR_FLAG = 0x1000,
 };
 
+_Static_assert(RACE_GRID_STORAGE_COUNT == RACE_CAR_SLOT_COUNT + 1,
+               "starting grid needs one sentinel after the live cars");
+
 /*
  * Per-car entry. The two setup bytes are what the CUSTOMIZE screen edits and
  * the save file keeps; whether the transmission row can be opened at all is a
@@ -718,14 +721,6 @@ static inline GameCarAiBlock *GetCarAiBlock(GameCarRuntime *car) {
     return (GameCarAiBlock *)&car->aiEnabled;
 }
 
-typedef union RaceGridSlot {
-    s32 value;
-    struct {
-        u16 modelId;
-        u16 reserved;
-    } halves;
-} RaceGridSlot;
-
 /*
  * The car pipeline.
  */
@@ -810,7 +805,7 @@ void UpdateRivalRubberBand(void);
 extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;
-extern RaceGridSlot g_AttractGridSlots[];
+extern RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 extern u16 g_BodyColorPrimary[];
 extern u16 g_BodyColorSecondary[];
 extern s16 g_NegconAnalogI;
@@ -819,7 +814,7 @@ extern s16 g_NegconAnalogL;
 extern u16 g_PaintSlots3StopA[];
 extern u16 g_PaintSlots3StopB[];
 extern u16 g_PaintSlots4Stop[];
-extern RaceGridSlot g_RaceGridSlots[];
+extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:
  * the three halfwords at 0x8009AFBC.  All three writers take them from one

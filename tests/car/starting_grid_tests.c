@@ -8,8 +8,8 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
-RaceGridSlot g_RaceGridSlots[RACE_CAR_SLOT_COUNT];
-RaceGridSlot g_AttractGridSlots[RACE_CAR_SLOT_COUNT];
+RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
+RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 s32 g_ClosestRivalRank;
 s32 g_RaceSeries;
 s16 g_GrandPrixSeries;

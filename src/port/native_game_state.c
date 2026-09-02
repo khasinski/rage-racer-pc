@@ -47,8 +47,8 @@ struct SeqStruct *GetSndTableArea(void) {
 
 GameSpriteDesc g_RaceHudSpriteDescsGp[12];
 GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[11];
-RaceGridSlot g_RaceGridSlots[12];
-RaceGridSlot g_AttractGridSlots[12];
+RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
+RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 RECT g_CarImageRect;
 RenderBufferAddress g_TileStripBuffers[2];
 u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
