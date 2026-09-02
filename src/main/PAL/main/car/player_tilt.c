@@ -8,28 +8,7 @@ enum {
     TILT_REST = 8,
 };
 
-void ClearCarMotionState(GameCarRuntime *car) {
-    car->collisionFlag = 0;
-    car->motionMode = 0;
-    car->motionModeTimer = 0;
-    car->motionValue.value = 0;
-    car->motionActive = 0;
-    car->motionTimer = 0;
-    car->velocityX = 0;
-    car->velocityZ = 0;
-    car->tiltCounter = 0;
-    car->reserved8E = 0;
-    car->verticalPitch = 0;
-    car->bodyKickOffset = 0;
-    car->verticalRoll = 0;
-    car->reserved96 = 0;
-    car->verticalMotionState = 0;
-    car->verticalMotionTimer = 0;
-    car->verticalMotionRate = 0;
-    car->verticalTargetY = 0;
-}
-
-void UpdateCarTiltCounter(PlayerCarRuntime *car) {
+void UpdatePlayerTilt(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
     if (g_RacePhase < ACTIVE_RACE_PHASE) {

@@ -73,7 +73,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     UpdatePlayerJump(car, ground);
 
-    UpdateCarTiltCounter(car);
+    UpdatePlayerTilt(car);
     UpdateCarCrestHop(AsRivalCar(car));
 
     ApplyPlayerContactResponse(car, skid, crash);

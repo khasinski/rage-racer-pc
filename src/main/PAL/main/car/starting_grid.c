@@ -4,9 +4,17 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
+#include <string.h>
+
 enum {
     RACE_SCENE_ID = 11,
 };
+
+static void DisableRivalCar(GameCarRuntime *car) {
+    memset(car, 0, sizeof(*car));
+    car->activeFlag = -1;
+    car->facingBackwards = (s16)ReadRaceTrackDirection();
+}
 
 void BuildStartingGrid(void) {
     RaceGridSlot *grid =
@@ -19,8 +27,7 @@ void BuildStartingGrid(void) {
     if (g_TrackEventData == NULL || g_TrackPoints == NULL ||
         g_TrackPointCount <= 0) {
         for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-            g_Cars[index].activeFlag = -1;
-            g_Cars[index].aiEnabled = 0;
+            DisableRivalCar(&g_Cars[index]);
         }
         return;
     }
@@ -28,15 +35,11 @@ void BuildStartingGrid(void) {
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
-        car->activeFlag = -1;
-        car->aiEnabled = 0;
-        car->facingBackwards = (s16)ReadRaceTrackDirection();
         if (grid[index].value < 0) {
+            DisableRivalCar(car);
             continue;
         }
 
-        ClearCarMotionState(car);
-        car->activeFlag = 1;
         InitRivalCar(car, index, grid);
         InitRivalCarAi(car, index, grid);
     }

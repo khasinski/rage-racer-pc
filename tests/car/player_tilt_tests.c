@@ -21,19 +21,12 @@ int main(void) {
     PlayerCarRuntime car;
 
     memset(&spec, 0, sizeof(spec));
-    memset(&car, 0x5A, sizeof(car));
+    memset(&car, 0, sizeof(car));
     g_CarSpec = &spec;
-    ClearCarMotionState(GetPlayerCarRuntime(&car));
-    CHECK(car.collisionFlag == 0 && car.motionMode == 0);
-    CHECK(car.motionActive == 0 && car.motionTimer == 0);
-    CHECK(car.velocityX == 0 && car.velocityZ == 0);
-    CHECK(car.tiltCounter == 0 && car.verticalMotionState == 0);
-    CHECK(car.verticalMotionTimer == 0 && car.verticalMotionRate == 0);
-    CHECK(car.verticalTargetY == 0);
 
     g_RacePhase = 1;
     car.tiltCounter = -20;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == 8);
 
     g_RacePhase = 2;
@@ -44,34 +37,34 @@ int main(void) {
     car.drive.clutch = 0;
     car.drive.manual = 1;
     car.tiltCounter = -39;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == -40);
 
     car.drive.engineRpm = 0;
     car.speed = 0x51;
     car.tiltCounter = 7;
     car.drive.brakeInput = 0x81;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == 8);
 
     car.drive.brakeInput = 0;
     car.drive.clutch = 1;
     car.tiltCounter = 7;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == 8);
 
     car.drive.clutch = 0;
     car.tiltCounter = -7;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == -5);
 
     car.verticalMotionState = 1;
     car.drive.engineRpm = 1000;
     car.drive.acceleratorInput.value = 0x81;
     car.tiltCounter = 12;
-    UpdateCarTiltCounter(&car);
+    UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == 9);
 
-    puts("car motion state tests passed");
+    puts("player tilt tests passed");
     return 0;
 }

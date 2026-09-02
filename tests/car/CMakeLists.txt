@@ -822,24 +822,24 @@ endif()
 add_test(NAME starting_grid COMMAND starting_grid_tests)
 set_tests_properties(starting_grid PROPERTIES LABELS functional)
 
-add_executable(car_motion_state_tests
-    car_motion_state_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_motion_state.c)
-target_include_directories(car_motion_state_tests PRIVATE
+add_executable(player_tilt_tests
+    player_tilt_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_tilt.c)
+target_include_directories(player_tilt_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(car_motion_state_tests PRIVATE __psyz=1)
+target_compile_definitions(player_tilt_tests PRIVATE __psyz=1)
 if(MSVC)
-    target_compile_options(car_motion_state_tests PRIVATE
+    target_compile_options(player_tilt_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
-    target_compile_options(car_motion_state_tests PRIVATE
+    target_compile_options(player_tilt_tests PRIVATE
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Werror)
 endif()
-add_test(NAME car_motion_state COMMAND car_motion_state_tests)
-set_tests_properties(car_motion_state PROPERTIES LABELS unit)
+add_test(NAME player_tilt COMMAND player_tilt_tests)
+set_tests_properties(player_tilt PROPERTIES LABELS unit)
 
 add_executable(draw_cars_tests
     draw_cars_tests.c

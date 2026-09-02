@@ -86,6 +86,12 @@ int main(void) {
     CHECK(s_seedMode == 4 && s_trackCalls == 1);
     CHECK(car.speed == 0 && car.acceleration == 0);
     CHECK(car.motionX == 0 && car.motionY == 0 && car.motionZ == 0);
+    CHECK(car.motionMode == 0 && car.verticalMotionState == 0);
+    CHECK(car.reserved40 == 0 && car.reservedC4 == 0);
+    CHECK(car.reservedCC == 0 && car.reservedD8 == 0);
+    CHECK(car.reservedDC == 0 && car.reservedE0 == 0);
+    CHECK(car.reservedF8 == 0 && car.reserved110 == 0);
+    CHECK(car.reserved116 == 0);
 
     memset(&car, 0x5A, sizeof(car));
     start->modelId = -1;

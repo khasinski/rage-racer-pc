@@ -845,7 +845,6 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 void AccumulateLapProgress(GameCarRuntime *car);
 void UpdateCarTravelVelocity(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);
-void ClearCarMotionState(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
@@ -856,7 +855,7 @@ void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop(GameCarRuntime *car);
 void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
-void UpdateCarTiltCounter(PlayerCarRuntime *car);
+void UpdatePlayerTilt(PlayerCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
