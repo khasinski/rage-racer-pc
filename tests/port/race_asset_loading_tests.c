@@ -135,8 +135,10 @@ s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
     s_installs[s_installCount++] = base;
     return 1;
 }
-void InstallTrackPoints(struct TrackPointTable *table) {
+s32 InstallTrackPoints(struct TrackPointTable *table, size_t size) {
+    (void)size;
     s_installs[s_installCount++] = table;
+    return 1;
 }
 s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
     (void)size;
@@ -148,8 +150,10 @@ s32 InstallTerrainCellData(void *data, size_t size) {
     s_installs[s_installCount++] = data;
     return 1;
 }
-void InstallTrackEventData(struct TrackEventData *data) {
+s32 InstallTrackEventData(struct TrackEventData *data, size_t size) {
+    (void)size;
     s_installs[s_installCount++] = data;
+    return 1;
 }
 void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
     s_installs[s_installCount++] = table;

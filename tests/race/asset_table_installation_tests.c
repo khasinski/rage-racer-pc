@@ -36,7 +36,8 @@ static void TestTrackEventData(void) {
     data.offsets.pathSceneryRotation = 128;
     data.offsets.flybyScenery = 160;
 
-    InstallTrackEventData(&data);
+    Check(InstallTrackEventData(&data, sizeof(data)) == 1,
+          "valid event data accepted");
 
     Check(g_TrackEventData == &data, "event data owner");
     Check((u8 *)g_RouteSceneryData == offsetBase + 32,
@@ -51,14 +52,22 @@ static void TestTrackEventData(void) {
           "flyby scenery relocation");
 
     data.offsets.routeScenery = sizeof(data.offsets) - sizeof(s32);
-    InstallTrackEventData(&data);
-    Check(g_RouteSceneryData == NULL, "event header offset rejected");
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "event header offset rejected");
+    Check(g_TrackEventData == NULL && g_RouteSceneryData == NULL,
+          "invalid event data clears published views");
 
     data.offsets.routeScenery = sizeof(data.offsets) + 1;
-    InstallTrackEventData(&data);
+    InstallTrackEventData(&data, sizeof(data));
     Check(g_RouteSceneryData == NULL, "misaligned event offset rejected");
 
-    InstallTrackEventData(NULL);
+    data.offsets.routeScenery = (s32)(sizeof(data) -
+                                      offsetof(TrackEventData, offsets));
+    InstallTrackEventData(&data, sizeof(data));
+    Check(g_TrackEventData == NULL && g_RouteSceneryData == NULL,
+          "event offset beyond block rejected");
+
+    InstallTrackEventData(NULL, 0);
     Check(g_TrackEventData == NULL && g_RouteSceneryData == NULL &&
               g_RaceIntroCameraScript == NULL &&
               g_PathSceneryPosData == NULL && g_PathSceneryRotData == NULL &&

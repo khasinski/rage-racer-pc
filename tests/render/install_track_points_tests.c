@@ -32,7 +32,10 @@ int main(void) {
         return 1;
     }
 
-    InstallTrackPoints((TrackPointTable *)&fixture);
+    if (!InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture))) {
+        puts("FAIL: valid point table rejected");
+        return 1;
+    }
     if (g_TrackPointCount != 3 ||
         g_TrackPoints != fixture.points ||
         g_TrackArcCenters != fixture.arcCenters ||
@@ -45,7 +48,7 @@ int main(void) {
     }
 
     fixture.count = 0;
-    InstallTrackPoints((TrackPointTable *)&fixture);
+    InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture));
     if (g_TrackPoints != NULL || g_TrackPointCount != 0 ||
         g_TrackArcCenters != NULL || g_TrackLength != 0 ||
         g_TrackSectionCount != 0) {
@@ -58,11 +61,21 @@ int main(void) {
     g_TrackArcCenters = fixture.arcCenters;
     g_TrackLength = 600;
     g_TrackSectionCount = 3;
-    InstallTrackPoints(NULL);
+    InstallTrackPoints(NULL, 0);
     if (g_TrackPoints != NULL || g_TrackPointCount != 0 ||
         g_TrackArcCenters != NULL || g_TrackLength != 0 ||
         g_TrackSectionCount != 0) {
         puts("FAIL: null table was published");
+        return 1;
+    }
+
+    fixture.count = 3;
+    if (InstallTrackPoints(
+            (TrackPointTable *)&fixture,
+            offsetof(TrackFixture, points[2]) + sizeof(GameTrackPoint) - 1) !=
+            0 ||
+        g_TrackPoints != NULL || g_TrackPointCount != 0) {
+        puts("FAIL: truncated point table was published");
         return 1;
     }
 

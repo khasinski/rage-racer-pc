@@ -84,7 +84,11 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             blockSizes[TRACK_RUNTIME_PRIMARY_MODELS], 1)) {
         return 0;
     }
-    InstallTrackPoints(GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS));
+    if (!InstallTrackPoints(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS),
+            blockSizes[TRACK_RUNTIME_POINTS])) {
+        return 0;
+    }
     if (!RegisterCourseModels(
             GetCourseModelAssetHeader(GetSceneAssetBlock(
                 header, TRACK_RUNTIME_COURSE_MODELS)),
@@ -100,7 +104,11 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
     }
     g_CourseObjects = courseObjects->objects;
     g_CourseObjectCount = (s32)courseObjects->count;
-    InstallTrackEventData(GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS));
+    if (!InstallTrackEventData(
+            GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS),
+            blockSizes[TRACK_RUNTIME_EVENTS])) {
+        return 0;
+    }
     SelectTrackCameraTable(GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
                            useSeriesCamera);
     return 1;
