@@ -378,7 +378,7 @@ s32 CycleAttractCameraCar(s32 mask, s32 current);
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
 void DrawLapTimes(void);
 void DrawPrologueText(void);
-void DrawRaceHudLabels(s32 mode);
+void DrawRaceHudLabels(s32 grandPrixMode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);

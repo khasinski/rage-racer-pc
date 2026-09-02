@@ -7,24 +7,42 @@
 
 #include "rage/hud_config.h"
 
+enum {
+    HUD_LAP_TIME_DESC_COUNT = 6,
+    TIME_ATTACK_STATIC_LABEL_COUNT = 3,
+    GRAND_PRIX_STATIC_LABEL_COUNT = 6,
+    GRAND_PRIX_LAP_TIMES_LABEL = 1,
+    GRAND_PRIX_TIME_LIMIT_LABEL = 2,
+};
 
-void DrawRaceHudLabels(s32 mode) {
-    s32 labelCount = mode != 0 ? 6 : 3;
-    const GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
-                                            : g_RaceHudSpriteDescsTimeTrial;
+static s32 RaceHudLabelVisible(s32 grandPrixMode, s32 label) {
+    if (grandPrixMode == 0) {
+        return HudShowLapTimes();
+    }
+    if (label == GRAND_PRIX_LAP_TIMES_LABEL) {
+        return HudShowLapTimes();
+    }
+    if (label == GRAND_PRIX_TIME_LIMIT_LABEL) {
+        return HudShowTimeLimit();
+    }
+    return 1;
+}
+
+void DrawRaceHudLabels(s32 grandPrixMode) {
+    s32 labelCount = grandPrixMode != 0 ? GRAND_PRIX_STATIC_LABEL_COUNT
+                                        : TIME_ATTACK_STATIC_LABEL_COUNT;
+    const GameSpriteDesc *descs = grandPrixMode != 0
+                                      ? g_RaceHudSpriteDescsGp
+                                      : g_RaceHudSpriteDescsTimeTrial;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 label;
 
     for (label = 0; label < labelCount; label++) {
         SPRT *sprite = &frame->layout.raceHud.labels[label];
-        s32 visible = mode != 0
-                          ? (label != 1 || HudShowLapTimes()) &&
-                                (label != 2 || HudShowTimeLimit())
-                          : HudShowLapTimes();
 
-        sprite->x0 = HudAnchorX(descs[label + 6].x);
-        if (visible) {
+        sprite->x0 = HudAnchorX(descs[label + HUD_LAP_TIME_DESC_COUNT].x);
+        if (RaceHudLabelVisible(grandPrixMode, label)) {
             AddPrim(ot, sprite);
         }
     }

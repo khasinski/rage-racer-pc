@@ -168,6 +168,36 @@ static void ResetHud(void) {
     g_RenderState.packetCursor = g_FrameContexts[0].layout.primitiveBuffer;
 }
 
+static int CountPrimaryOtPrims(void) {
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    void *prim = (void *)getaddr(ot);
+    int count = 0;
+
+    while (prim != NULL && count < 16) {
+        prim = nextPrim(prim);
+        count++;
+    }
+    return count;
+}
+
+static void CheckStaticLabelOwnership(void) {
+    ResetHud();
+    BuildRaceHudPrims(0);
+    DrawRaceHudLabels(0);
+    if (CountPrimaryOtPrims() != 3) {
+        printf("FAIL time attack static label pass did not queue 3 labels\n");
+        s_failures++;
+    }
+
+    ResetHud();
+    BuildRaceHudPrims(1);
+    DrawRaceHudLabels(1);
+    if (CountPrimaryOtPrims() != 6) {
+        printf("FAIL Grand Prix static label pass did not queue 6 labels\n");
+        s_failures++;
+    }
+}
+
 /* One full HUD, every pass a race runs, at values that put something in each
  * of them. */
 static void DrawWholeHud(s32 mode) {
@@ -382,6 +412,7 @@ static void CheckSplitDeltaSprites(void) {
 }
 
 int main(void) {
+    CheckStaticLabelOwnership();
     CheckMode(0);
     CheckMode(1);
     CheckSplitDeltaIsAMagnitude();
