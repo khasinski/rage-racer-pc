@@ -3,14 +3,29 @@
 
 #include "common.h"
 
-typedef union CourseSelectScrollState {
-    s32 value;
-} CourseSelectScrollState;
+extern s32 g_CourseSelectScrollProgress;
 
-extern CourseSelectScrollState g_CourseSelectScrollState;
-/* Host storage. Retail aliased this onto g_CourseSelectScrollState with an
- * asm label, which the port never honoured: common.h defined asm() away, so
- * the two have always been separate words here. */
-extern s32 g_CourseSelectScrollValue;
+typedef struct CourseSelectScrollFrame {
+    s32 progress;
+    u16 slide;
+} CourseSelectScrollFrame;
+
+static inline CourseSelectScrollFrame AdvanceCourseSelectScroll(
+    s32 progress, s32 step) {
+    CourseSelectScrollFrame frame;
+
+    progress += step;
+    if (progress < 0) progress = 0;
+    if (progress > 0x1FC) progress = 0x1FC;
+
+    frame.progress = progress;
+    if (step < 0) {
+        u32 remaining = (u32)(0x1FC - progress);
+        frame.slide = (u16)(remaining * remaining / 2048);
+    } else {
+        frame.slide = 0;
+    }
+    return frame;
+}
 
 #endif

@@ -330,7 +330,7 @@ s32 g_PaintPalettePulsePhase;
 s32 g_TeamLogoFadeLevel;
 s32 g_TeamLogoZoomLevel;
 unsigned char g_TeamLogoFadedClut[32] __attribute__((aligned(16)));
-CourseSelectScrollState g_CourseSelectScrollState __attribute__((aligned(16)));
+s32 g_CourseSelectScrollProgress __attribute__((aligned(16)));
 s32 g_RankingScrollState;
 s32 g_RankingPendingState;
 s32 g_CarSelectFadeAccum;

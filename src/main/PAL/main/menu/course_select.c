@@ -93,7 +93,6 @@ s32 DrawCourseSelectScreen(s32 step) {
     u8 fade;
     u16 slide;
     s16 headerWidth = 0;
-    u32 deltaY;
     s32 coordinateY;
     s32 lineColor;
     s32 row;
@@ -107,34 +106,24 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 gpSlide;
     u32 gpFade;
     u32 fadeValue;
+    CourseSelectScrollFrame scroll;
     otBase = RENDER_OT_BASE;
     ot = otBase + 1;
     if (step == 0) {
-        g_CourseSelectScrollValue = 0;
+        g_CourseSelectScrollProgress = 0;
         return 0;
     }
 
-    if (step > 0) {
-        g_CourseSelectScrollValue += step;
-        if (g_CourseSelectScrollValue >= 0x1FD) {
-            g_CourseSelectScrollValue = 0x1FC;
-        }
-        slide = 0;
-    } else {
-        g_CourseSelectScrollValue += step;
-        if (g_CourseSelectScrollValue < 0) {
-            g_CourseSelectScrollValue = 0;
-        }
-        deltaY = 0x1FC - g_CourseSelectScrollValue;
-        slide = (u16)(deltaY * deltaY / 2048);
-    }
+    scroll = AdvanceCourseSelectScroll(g_CourseSelectScrollProgress, step);
+    g_CourseSelectScrollProgress = scroll.progress;
+    slide = scroll.slide;
 
     if (g_MenuAltLayout != 0) {
-        return g_CourseSelectScrollState.value;
+        return g_CourseSelectScrollProgress;
     }
 
     slide -= 0x28;
-    fadeValue = g_CourseSelectScrollValue;
+    fadeValue = g_CourseSelectScrollProgress;
     fade = (u8)(fadeValue / 4);
     course = SeriesCourseIndex();
 
@@ -335,7 +324,7 @@ s32 DrawCourseSelectScreen(s32 step) {
         }
     }
 
-    return g_CourseSelectScrollValue;
+    return g_CourseSelectScrollProgress;
 }
 
 s32 DrawRankingScreen(s32 step) {

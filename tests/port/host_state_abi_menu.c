@@ -6,7 +6,7 @@ _Static_assert(sizeof(g_CarTuneUpPriceTable) == 124,
                "g_CarTuneUpPriceTable ABI size changed");
 _Static_assert(sizeof(g_CarSpecBars) == sizeof(s32) * 4,
                "car-spec bar state ABI changed");
-_Static_assert(sizeof(g_CourseSelectScrollState) == sizeof(s32),
+_Static_assert(sizeof(g_CourseSelectScrollProgress) == sizeof(s32),
                "course-select scroll state ABI changed");
 _Static_assert(sizeof(GameMenuCursor) == sizeof(s32),
                "menu cursor state ABI changed");

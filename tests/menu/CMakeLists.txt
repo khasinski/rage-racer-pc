@@ -1141,6 +1141,23 @@ else()
 endif()
 add_test(NAME memory_card_menu_helpers COMMAND memory_card_menu_helpers_tests)
 set_tests_properties(memory_card_menu_helpers PROPERTIES LABELS unit)
+
+add_executable(course_select_scroll_tests course_select_scroll_tests.c)
+target_include_directories(course_select_scroll_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_select_scroll_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_select_scroll_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_select_scroll_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_select_scroll COMMAND course_select_scroll_tests)
+set_tests_properties(course_select_scroll PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
