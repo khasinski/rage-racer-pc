@@ -21,13 +21,14 @@ TrackEventData *g_TrackEventData;
 static s32 s_initCalls[RACE_CAR_SLOT_COUNT];
 static s32 s_aiCalls[RACE_CAR_SLOT_COUNT];
 static s32 s_routeSeedCalls;
-static RaceGridSlot *s_expectedGrid;
+static const RaceGridSlot *s_expectedGrid;
 
 static s32 CarIndex(GameCarRuntime *car) {
     return (s32)(car - g_Cars);
 }
 
-void InitRivalCar(GameCarRuntime *car, s32 index, RaceGridSlot *grid) {
+void InitRivalCar(GameCarRuntime *car, s32 index,
+                  const RaceGridSlot *grid) {
     if (grid == s_expectedGrid && index == CarIndex(car)) {
         s_initCalls[index]++;
         car->activeFlag = 1;
@@ -36,7 +37,8 @@ void InitRivalCar(GameCarRuntime *car, s32 index, RaceGridSlot *grid) {
     }
 }
 
-void InitRivalCarAi(GameCarRuntime *car, s32 index, RaceGridSlot *grid) {
+void InitRivalCarAi(GameCarRuntime *car, s32 index,
+                    const RaceGridSlot *grid) {
     if (grid == s_expectedGrid && index == CarIndex(car)) {
         s_aiCalls[index]++;
     }

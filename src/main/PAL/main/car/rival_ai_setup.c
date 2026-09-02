@@ -24,7 +24,7 @@ static s16 DecodeClampedConfigValue(u16 encoded,
 
 void InitRivalCarAi(GameCarRuntime *car,
                     s32 gridPosition,
-                    RaceGridSlot *grid) {
+                    const RaceGridSlot *grid) {
     s32 configIndex = grid[gridPosition].value;
     const TrackRivalAiConfig *config;
     GameCarAiBlock *ai = GetCarAiBlock(car);

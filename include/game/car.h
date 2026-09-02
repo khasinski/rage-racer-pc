@@ -839,8 +839,10 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot);
-void InitRivalCar(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
-void InitRivalCarAi(GameCarRuntime* ent, s32 pos, RaceGridSlot* slots);
+void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
+                  const RaceGridSlot *grid);
+void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
+                    const RaceGridSlot *grid);
 void RankContenders(void);
 void SeedCarRouteMarkers(void);
 void SlowRivalAhead(s32 rank);

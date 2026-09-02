@@ -9,7 +9,7 @@
 
 void InitRivalCar(GameCarRuntime *car,
                   s32 gridPosition,
-                  RaceGridSlot *grid) {
+                  const RaceGridSlot *grid) {
     const TrackRivalStart *start =
         &g_TrackEventData->rivalStarts[g_RaceSeries][gridPosition + 1];
     CarTrackLimits trackLimits = {

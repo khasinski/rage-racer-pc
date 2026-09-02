@@ -17,7 +17,7 @@ static void DisableRivalCar(GameCarRuntime *car) {
 }
 
 void BuildStartingGrid(void) {
-    RaceGridSlot *grid =
+    const RaceGridSlot *grid =
         g_SceneId == RACE_SCENE_ID ? g_RaceGridSlots : g_AttractGridSlots;
     s32 index;
 
