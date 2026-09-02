@@ -18,19 +18,21 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/vector.h"
+#include "psyq/gte.h"
 
 s16 g_CdLoadPhase;
 s32 g_FmvStreamEnded;
 u32 g_RandomSeed;
 s32 g_GameClock;
 s32 g_FrameCounter;
-unsigned char g_MirrorVisibleCellList[1024] __attribute__((aligned(16)));
-unsigned char g_FmvState[8] __attribute__((aligned(16)));
-unsigned char g_FrontendState[8] __attribute__((aligned(16)));
+Vec4 g_MirrorVisibleCellList[64];
+s32 g_FmvState;
+s32 g_FrontendState;
 s32 g_StreamReturnScene;
-unsigned char g_MirrorVisibleCellMask[128] __attribute__((aligned(16)));
+u32 g_MirrorVisibleCellMask[32];
 s32 g_MirrorMode;
-unsigned char g_MirrorViewMatrix[32] __attribute__((aligned(16)));
+Matrix g_MirrorViewMatrix;
 s32 g_SceneTimer;
 s32 g_SceneId;
 s32 g_SkyRowBase;
