@@ -1,24 +1,49 @@
 #include "game/race.h"
 #include "game/render.h"
 
+enum {
+    TIME_MINUTES = 0,
+    TIME_SECONDS_TENS = 2,
+    TIME_SECONDS_UNITS = 3,
+    TIME_FRACTION_HUNDREDS = 5,
+    TIME_FRACTION_TENS = 6,
+    TIME_FRACTION_UNITS = 7,
+    CLOCK_MINUTES_TENS = 0,
+    CLOCK_MINUTES_UNITS = 1,
+    CLOCK_SECONDS_TENS = 3,
+    CLOCK_SECONDS_UNITS = 4,
+};
+
+static void FillTimeDigits(char digit) {
+    static const u8 digitSlots[] = {
+        TIME_MINUTES,
+        TIME_SECONDS_TENS,
+        TIME_SECONDS_UNITS,
+        TIME_FRACTION_HUNDREDS,
+        TIME_FRACTION_TENS,
+        TIME_FRACTION_UNITS,
+    };
+    s32 index;
+
+    for (index = 0;
+         index < (s32)(sizeof(digitSlots) / sizeof(digitSlots[0])); index++) {
+        g_TimeTextBuffer[digitSlots[index]] = digit;
+    }
+}
+
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     if (value >= 0 && divisor > 0) {
         s32 totalSeconds = value / divisor;
         s32 fraction = (value % divisor) * 1000 / divisor;
 
-        g_TimeTextBuffer[0] = totalSeconds / 60 + '0';
-        g_TimeTextBuffer[2] = totalSeconds % 60 / 10 + '0';
-        g_TimeTextBuffer[3] = totalSeconds % 10 + '0';
-        g_TimeTextBuffer[5] = fraction / 100 + '0';
-        g_TimeTextBuffer[6] = fraction / 10 % 10 + '0';
-        g_TimeTextBuffer[7] = fraction % 10 + '0';
+        g_TimeTextBuffer[TIME_MINUTES] = totalSeconds / 60 + '0';
+        g_TimeTextBuffer[TIME_SECONDS_TENS] = totalSeconds % 60 / 10 + '0';
+        g_TimeTextBuffer[TIME_SECONDS_UNITS] = totalSeconds % 10 + '0';
+        g_TimeTextBuffer[TIME_FRACTION_HUNDREDS] = fraction / 100 + '0';
+        g_TimeTextBuffer[TIME_FRACTION_TENS] = fraction / 10 % 10 + '0';
+        g_TimeTextBuffer[TIME_FRACTION_UNITS] = fraction % 10 + '0';
     } else {
-        static const u8 digitSlots[] = {0, 2, 3, 5, 6, 7};
-        s32 index;
-
-        for (index = 0; index < (s32)(sizeof(digitSlots)); index++) {
-            g_TimeTextBuffer[digitSlots[index]] = '-';
-        }
+        FillTimeDigits('-');
     }
 
     DrawText8x8(x, y, g_TimeTextBuffer, color);
@@ -29,9 +54,10 @@ void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
     s32 minutes = totalSeconds / 60;
     s32 seconds = totalSeconds % 60;
 
-    g_ClockTextBuffer = minutes < 10 ? ' ' : minutes / 10 + '0';
-    g_ClockTextMinUnits[0] = minutes % 10 + '0';
-    g_ClockTextSecTens = seconds / 10 + '0';
-    g_ClockTextSecUnits = seconds % 10 + '0';
+    g_ClockTextCells[CLOCK_MINUTES_TENS] =
+        minutes < 10 ? ' ' : minutes / 10 + '0';
+    g_ClockTextCells[CLOCK_MINUTES_UNITS] = minutes % 10 + '0';
+    g_ClockTextCells[CLOCK_SECONDS_TENS] = seconds / 10 + '0';
+    g_ClockTextCells[CLOCK_SECONDS_UNITS] = seconds % 10 + '0';
     DrawText8x8(x, y, g_ClockTextCells, color);
 }

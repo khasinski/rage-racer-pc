@@ -39,6 +39,12 @@ int main(void) {
     DrawTimeValue(4, 5, 1000, 6, 0);
     if (CheckDraw("-'--\"---", 4, 5, 6)) return 1;
 
+    DrawTimeValue(13, 14, 599999, 0x784C, 1000);
+    if (CheckDraw("9'59\"999", 13, 14, 0x784C)) return 1;
+
+    DrawTimeValue(15, 16, 1, 0x7812, 25);
+    if (CheckDraw("0'00\"040", 15, 16, 0x7812)) return 1;
+
     DrawMinuteSecondTime(7, 8, 9 * 60 * 25 + 59 * 25, 0x780F);
     if (CheckDraw(" 9'59\"", 7, 8, 0x780F)) return 1;
 

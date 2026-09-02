@@ -303,10 +303,6 @@ extern char *g_NativeCarNames[];
 extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern char g_ClockTextCells[8];
-#define g_ClockTextBuffer (g_ClockTextCells[0])
-#define g_ClockTextMinUnits (g_ClockTextCells + 1)
-#define g_ClockTextSecTens (g_ClockTextCells[3])
-#define g_ClockTextSecUnits (g_ClockTextCells[4])
 extern s32 g_CountdownBoardOffset;
 extern u32 g_CountdownGlyphTable[64];
 extern u32 g_CountdownDigitPatterns[16];
