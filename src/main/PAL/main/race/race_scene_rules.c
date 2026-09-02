@@ -61,6 +61,24 @@ RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
     return RACE_PAUSE_RESUME;
 }
 
+RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
+                                            s32 startPressed, s32 debounce,
+                                            s16 grandPrixMode, s16 cursor) {
+    RacePauseToggleResult result = {paused, RACE_PAUSE_RESUME, 0};
+
+    if (!CanPauseRace(phase) || !startPressed || debounce > 0) {
+        return result;
+    }
+
+    result.toggled = 1;
+    result.paused = paused < 1;
+    if (!result.paused) {
+        result.action =
+            DecideRacePauseAction(phase, grandPrixMode, cursor);
+    }
+    return result;
+}
+
 RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining) {
     if (grandPrixMode == 0 ||

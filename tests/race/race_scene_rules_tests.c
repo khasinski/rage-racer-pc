@@ -62,6 +62,29 @@ static void TestPauseActions(void) {
           "Grand Prix final row retires after the start");
 }
 
+static void TestPauseToggle(void) {
+    RacePauseToggleResult toggle;
+
+    toggle = DecideRacePauseToggle(0, 0, 1, 0, 1, 0);
+    Check(!toggle.toggled && !toggle.paused,
+          "intro phase rejects pause toggles");
+    toggle = DecideRacePauseToggle(2, 0, 0, 0, 1, 0);
+    Check(!toggle.toggled, "pause toggle requires the start button");
+    toggle = DecideRacePauseToggle(2, 0, 1, 1, 1, 0);
+    Check(!toggle.toggled, "pause debounce blocks repeated toggles");
+
+    toggle = DecideRacePauseToggle(2, 0, 1, 0, 1, 0);
+    Check(toggle.toggled && toggle.paused,
+          "live race enters pause on an accepted toggle");
+    toggle = DecideRacePauseToggle(2, 1, 1, 0, 1, 1);
+    Check(toggle.toggled && !toggle.paused &&
+              toggle.action == RACE_PAUSE_RETIRE,
+          "leaving Grand Prix pause carries the selected retire action");
+    toggle = DecideRacePauseToggle(1, 1, 1, 0, 1, 1);
+    Check(toggle.action == RACE_PAUSE_QUIT,
+          "leaving pre-start pause carries the quit action");
+}
+
 static void TestPauseCursor(void) {
     RacePauseCursorResult result;
 
@@ -260,6 +283,7 @@ int main(void) {
     TestRaceGeometry();
     TestInputRules();
     TestPauseActions();
+    TestPauseToggle();
     TestPauseCursor();
     TestRaceEndPresentation();
     TestRaceEndFrames();

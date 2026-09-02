@@ -31,6 +31,12 @@ typedef struct RacePauseCursorResult {
     s16 moveCount;
 } RacePauseCursorResult;
 
+typedef struct RacePauseToggleResult {
+    s32 paused;
+    RacePauseAction action;
+    u8 toggled;
+} RacePauseToggleResult;
+
 typedef struct WrongWayUpdate {
     s16 timer;
     u8 drawWarning;
@@ -73,6 +79,9 @@ s32 CanToggleRaceCamera(s16 phase);
 s32 LastRacePauseOption(s16 grandPrixMode);
 RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
                                       s16 cursor);
+RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
+                                            s32 startPressed, s32 debounce,
+                                            s16 grandPrixMode, s16 cursor);
 RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining);
 RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,

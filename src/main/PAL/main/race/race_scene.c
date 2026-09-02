@@ -31,6 +31,8 @@ static s32 s_FinishFollowupCue = -1;
 enum {
     FINISH_CUE_SPECIAL_VOICE_GROUP = 4,
     RACE_END_MUSIC_TRACK = 15,
+    PAUSE_TOGGLE_DEBOUNCE = 5,
+    PAUSE_RESUME_DEBOUNCE = 30,
 };
 
 void QueueFinishFollowupCue(s32 cue) {
@@ -90,19 +92,18 @@ static void UpdateRaceEndState(void) {
 }
 
 static void ToggleRacePause(void) {
-    u16 phase = g_RacePhase;
-    u32 paused;
-    RacePauseAction action;
+    RacePauseToggleResult toggle;
 
-    if (!CanPauseRace(phase) || !(g_PadPressed & PAD_START) ||
-        g_PauseDebounce > 0) {
+    toggle = DecideRacePauseToggle(
+        g_RacePhase, g_RacePaused, (g_PadPressed & PAD_START) != 0,
+        g_PauseDebounce, g_GrandPrixMode, g_RaceOptionCursor);
+    if (!toggle.toggled) {
         return;
     }
 
-    g_PauseDebounce = 5;
-    paused = g_RacePaused < 1;
-    g_RacePaused = paused;
-    if (paused != 0) {
+    g_PauseDebounce = PAUSE_TOGGLE_DEBOUNCE;
+    g_RacePaused = toggle.paused;
+    if (toggle.paused) {
         PauseCdAudio();
         ForceAllEffectVoicesEnabled(0);
         g_RaceOptionCursor = 0;
@@ -110,9 +111,7 @@ static void ToggleRacePause(void) {
         return;
     }
 
-    action = DecideRacePauseAction(
-        phase, g_GrandPrixMode, g_RaceOptionCursor);
-    if (action == RACE_PAUSE_QUIT) {
+    if (toggle.action == RACE_PAUSE_QUIT) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 7;
         if (g_GrandPrixMode == 0) {
@@ -124,7 +123,7 @@ static void ToggleRacePause(void) {
         }
         SeedFinishCamera(&g_PlayerCar);
         StartCdVolumeFade(8);
-    } else if (action == RACE_PAUSE_RETIRE) {
+    } else if (toggle.action == RACE_PAUSE_RETIRE) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 5;
         s_RetireCameraActive = 1;
@@ -132,11 +131,11 @@ static void ToggleRacePause(void) {
             PlaySoundCue(0x3D);
         }
         StartCdVolumeFade(8);
-    } else if (action == RACE_PAUSE_RESTART) {
+    } else if (toggle.action == RACE_PAUSE_RESTART) {
         ExitRaceScene(0xB);
         g_RacePhase = 8;
     } else {
-        g_PauseDebounce = 0x1E;
+        g_PauseDebounce = PAUSE_RESUME_DEBOUNCE;
         ForceAllEffectVoicesEnabled(1);
         if (g_RacePhase >= 2) {
             ResumeCdAudio();
