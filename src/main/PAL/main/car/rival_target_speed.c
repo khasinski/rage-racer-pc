@@ -4,7 +4,26 @@
 
 enum {
     FRONT_RIVAL_COUNT = 4,
+    TRAILING_RIVAL_BASE_PERCENT = 85,
+    TARGET_SPEED_SCALE = 1168,
+    TARGET_SPEED_SOURCE_SCALE = 160,
+    ACCELERATION_LIMIT_PERCENT = 6,
 };
+
+static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
+    if (carIndex < FRONT_RIVAL_COUNT) {
+        return key->slotTargetSpeeds[carIndex];
+    }
+    return key->slotTargetSpeeds[FRONT_RIVAL_COUNT - 1] *
+           (TRAILING_RIVAL_BASE_PERCENT - carIndex) / 100;
+}
+
+static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
+    s32 scaledSpeed = targetSpeed * TARGET_SPEED_SCALE /
+                      TARGET_SPEED_SOURCE_SCALE;
+
+    return scaledSpeed * ACCELERATION_LIMIT_PERCENT / 100;
+}
 
 /*
  * Interpolate the course speed limit between the rival's current marker pair.
@@ -42,15 +61,8 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     highKey = &table[marker + 1];
     lowProgress = lowKey->progress;
     highProgress = highKey->progress;
-    if (carIndex < FRONT_RIVAL_COUNT) {
-        lowSpeed = lowKey->slotTargetSpeeds[carIndex];
-        highSpeed = highKey->slotTargetSpeeds[carIndex];
-    } else {
-        const s32 taper = 0x55 - carIndex;
-
-        lowSpeed = (lowKey->slotTargetSpeeds[3] * taper) / 100;
-        highSpeed = (highKey->slotTargetSpeeds[3] * taper) / 100;
-    }
+    lowSpeed = RivalTargetSpeed(lowKey, carIndex);
+    highSpeed = RivalTargetSpeed(highKey, carIndex);
 
     if (position >= lowProgress && position <= highProgress) {
         s32 range = highProgress - lowProgress;
@@ -62,7 +74,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
         }
         blended = lowSpeed +
                   ((highSpeed - lowSpeed) * (position - lowProgress)) / range;
-        car->accelerationLimit = (((blended * 1168) / 160) * 6) / 100;
+        car->accelerationLimit = TargetSpeedAccelerationLimit(blended);
     } else {
         car->routeMarkerActive = 1;
         car->routeMarkerIndex += highProgress < position ? 1 : -1;
