@@ -8,6 +8,7 @@
 void DrawRaceTimePanel(s32 slideY) {
     char text[24];
     s32 lapCount = CourseLapCount(g_CourseIndex);
+    s32 recordMode = g_GrandPrixMode != 0;
     s32 bestTimeColor;
     s32 lap;
 
@@ -18,7 +19,7 @@ void DrawRaceTimePanel(s32 slideY) {
     FormatLapTime(&text[2], g_RaceTotalTime);
     bestTimeColor =
         g_BestTotalTimes[g_GrandPrixSeries][SeriesCourseIndex()]
-                        [g_GrandPrixMode] == g_RaceTotalTime
+                        [recordMode] == g_RaceTotalTime
             ? 0x784C
             : 0x7812;
     DrawProportionalText(0x14, slideY + 0x90, text, bestTimeColor);

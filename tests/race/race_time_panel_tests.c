@@ -86,6 +86,12 @@ int main(void) {
     CHECK(strcmp(s_calls[8].text, "6/606") == 0);
     CHECK(s_calls[8].x == 0xB0 && s_calls[8].color == 0x784C);
 
+    Reset();
+    g_GrandPrixMode = 2;
+    g_BestTotalTimes[0][1][1] = g_RaceTotalTime;
+    DrawRaceTimePanel(0);
+    CHECK(s_calls[1].color == 0x784C);
+
     puts("race time panel tests passed");
     return 0;
 }
