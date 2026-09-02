@@ -29,6 +29,25 @@ endif()
 add_test(NAME start_countdown_timing COMMAND start_countdown_timing_tests)
 set_tests_properties(start_countdown_timing PROPERTIES LABELS unit)
 
+add_executable(countdown_tiles_tests
+    countdown_tiles_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/countdown_tiles.c)
+target_include_directories(countdown_tiles_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(countdown_tiles_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(countdown_tiles_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(countdown_tiles_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME countdown_tiles COMMAND countdown_tiles_tests)
+set_tests_properties(countdown_tiles PROPERTIES LABELS unit)
+
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c

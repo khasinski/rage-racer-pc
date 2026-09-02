@@ -29,41 +29,6 @@ u8 *QueueDrawAreaPrim(void *ot, DrawPacket *packet, s16 x, s16 y, s32 w, s32 h) 
     return nextPacket.bytes;
 }
 
-void BuildTileStrips(void) {
-    s32 row;
-    s32 col;
-    s32 bufferIndex;
-
-    g_TileStripBuffers[0].bytes = g_TileStripStorage;
-    g_TileStripBuffers[1].bytes =
-        g_TileStripStorage + 512 * sizeof(TILE);
-    DrawSync(0);
-
-    for (bufferIndex = 0; bufferIndex < 2; bufferIndex++) {
-        TILE *tiles = g_TileStripBuffers[bufferIndex].tile;
-
-        for (row = 0; row < 16; row++) {
-            for (col = 0; col < 32; col++) {
-                s32 linear = row * 32 + col;
-                TILE *tile = &tiles[linear];
-
-                SetTile(tile);
-                tile->w = 2;
-                tile->h = 1;
-                tile->x0 = 0xCD - col * 3;
-                tile->y0 = 0x5A + row * 2;
-                tile->r0 = 0x20;
-                tile->g0 = 0x20;
-                tile->b0 = 0x20;
-
-                if (linear > 0) {
-                    AddPrim(tile - 1, tile);
-                }
-            }
-        }
-    }
-}
-
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
     s32 halfStep;
