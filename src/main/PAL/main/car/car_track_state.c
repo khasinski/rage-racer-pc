@@ -161,7 +161,7 @@ static void PlaceCarOnArc(GameCarRuntime *car, CarTrackWork *work,
     }
     work->pointRadius.value = interpolatedRadius;
     arcLateral = (s16)(work->carRadius.half.low - work->pointRadius.half.low);
-    if (work->curveMode == 2) {
+    if (work->curveMode == TRACK_CURVE_MIRRORED) {
         arcLateral = -arcLateral;
     }
     work->arcLateral = arcLateral;
@@ -300,16 +300,18 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     work->segmentLength = point->segmentLength;
     if ((s16)work->segmentLength <= 0) work->segmentLength = 1;
     work->heading = (u16)point->angle;
-    arcIndex = (s16)point->arcRef >> 4;
+    arcIndex = TrackPointArcIndex(point);
     work->arcIndex = (s16)arcIndex;
-    work->curveMode = point->arcRef & 3;
-    if (work->curveMode != 0) {
+    work->curveMode = TrackPointCurveMode(point);
+    if (work->curveMode != TRACK_CURVE_NONE) {
         PlaceCarOnArc(car, work, point, nextPoint, arcIndex);
     }
 
     MeasureCarSegmentPosition(car, work, point, &alongSegment,
                               &lateralOffset);
-    if (work->curveMode != 0) lateralOffset = work->arcLateral;
+    if (work->curveMode != TRACK_CURVE_NONE) {
+        lateralOffset = work->arcLateral;
+    }
     lateralOffset = ClampCarToTrackEdges(car, work, limits, point,
                                          nextPoint, alongSegment,
                                          lateralOffset);

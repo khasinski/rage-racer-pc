@@ -46,6 +46,21 @@ typedef struct GameTrackPoint {
     u16 segmentLength;
 } GameTrackPoint;
 
+typedef enum TrackCurveMode {
+    TRACK_CURVE_NONE,
+    TRACK_CURVE_PRIMARY,
+    TRACK_CURVE_MIRRORED,
+} TrackCurveMode;
+
+static inline TrackCurveMode TrackPointCurveMode(
+    const GameTrackPoint *point) {
+    return (TrackCurveMode)(point->arcRef & 3);
+}
+
+static inline s32 TrackPointArcIndex(const GameTrackPoint *point) {
+    return (s16)point->arcRef >> 4;
+}
+
 typedef struct GameTrackPointHalfwordView {
     u16 x;
     u16 reserved02;

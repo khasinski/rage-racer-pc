@@ -58,8 +58,8 @@ static void BuildTrack(void) {
     s_arcs[0].z = 0x4800;
     s_arcs[1].x = 0x5000;
     s_arcs[1].z = -0x3800;
-    s_points[4].arcRef = 1;
-    s_points[5].arcRef = (1 << 4) | 2;
+    s_points[4].arcRef = TRACK_CURVE_PRIMARY;
+    s_points[5].arcRef = (1 << 4) | TRACK_CURVE_MIRRORED;
     g_TrackPoints = s_points;
     g_TrackPointCount = 8;
     g_TrackArcCenters = s_arcs;

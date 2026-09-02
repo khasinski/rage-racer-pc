@@ -23,17 +23,19 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
                            s32 gripBudget) {
     GameCarDrive *drive = &car->drive;
     const GameTrackPoint *trackPoint;
-    s16 curveModeNow;
+    TrackCurveMode curveModeNow;
     s32 camber;
     s32 camberLean;
     const int hasTrack = g_TrackPoints != NULL && g_TrackPointCount > 0;
 
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
-        s16 driveCurveMode = drive->trackCurveMode;
+        TrackCurveMode driveCurveMode =
+            (TrackCurveMode)drive->trackCurveMode;
         s16 steerBias;
 
-        if (hasTrack && driveCurveMode != 0) {
-            s32 pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
+        if (hasTrack && driveCurveMode != TRACK_CURVE_NONE) {
+            TrackCurveMode pointCurveMode =
+                TrackPointCurveMode(TrackPoint(car->trackPointIndex));
 
             drive->trackCurveBias = (u16)drive->trackCurveBias +
                                     (driveCurveMode == pointCurveMode ? 2 : -1);
@@ -49,21 +51,22 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
         return;
     }
 
-    curveModeNow = drive->trackCurveMode;
+    curveModeNow = (TrackCurveMode)drive->trackCurveMode;
     if (!hasTrack) {
         SettleSteeringGrip(drive, gripBudget);
         return;
     }
 
     trackPoint = TrackPoint(car->trackPointIndex);
-    if (curveModeNow != (trackPoint->arcRef & 3) && curveModeNow != 0) {
+    if (curveModeNow != TrackPointCurveMode(trackPoint) &&
+        curveModeNow != TRACK_CURVE_NONE) {
         camber = trackPoint->crossSlope;
         if (camber < -0x32) {
             camber = -0x32;
         } else if (camber >= 0x33) {
             camber = 0x32;
         }
-        camberLean = (trackPoint->arcRef & 3) == 1
+        camberLean = TrackPointCurveMode(trackPoint) == TRACK_CURVE_PRIMARY
             ? -(camber * 0x3C) / 20
             : camber * 3;
         gripBudget += camberLean;

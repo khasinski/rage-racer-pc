@@ -27,7 +27,7 @@ static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
 
     lateralOffset =
         (s16)(work->carRadius.half.low - work->pointRadius.half.low);
-    work->arcLateral = work->curveMode == 2
+    work->arcLateral = work->curveMode == TRACK_CURVE_MIRRORED
         ? -lateralOffset
         : lateralOffset;
     work->heading = InterpolateCarTrackHeading(
@@ -139,9 +139,9 @@ void ReconstructReplayCarTrackState(GameCarRuntime *car) {
         work->segmentLength = 1;
     }
     work->heading = (u16)point->angle;
-    work->arcIndex = (s16)point->arcRef >> 4;
-    work->curveMode = point->arcRef & 3;
-    if (work->curveMode != 0) {
+    work->arcIndex = (s16)TrackPointArcIndex(point);
+    work->curveMode = TrackPointCurveMode(point);
+    if (work->curveMode != TRACK_CURVE_NONE) {
         MeasureReplayArc(car, work, point, nextPoint);
     }
 
