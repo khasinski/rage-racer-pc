@@ -105,7 +105,8 @@ static int RunCase(s16 positionRate, s16 rotationRate,
 int main(void) {
     if (!RunCase(5, 6, 5, 6) ||
         !RunCase(0, 0, 1, 1) ||
-        !RunCase(-7, -8, 7, 8)) {
+        !RunCase(-7, -8, 7, 8) ||
+        !RunCase(-32767 - 1, -32767 - 1, 32767, 32767)) {
         return 1;
     }
     puts("path scenery initialization preserved");

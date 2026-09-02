@@ -42,6 +42,9 @@ typedef struct PathSceneryClock {
 } PathSceneryClock;
 
 static inline s16 NormalizePathSceneryRate(s16 rate) {
+    if (rate == -32767 - 1) {
+        return 32767;
+    }
     if (rate < 0) {
         return (s16)-rate;
     }
