@@ -17,8 +17,8 @@ void InitCdAudio(void) {
     g_CdTrackPending = -1;
     g_CdCommandPending = CD_COMMAND_NONE;
     g_CdCurrentTrack = 2;
-    g_CdTrackStep = 0;
-    g_CdCommandStep = 0;
+    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
     g_CdMixPreset = 0;
     g_CdRestartOnResume = 0;
     g_CdVolume = 0x7F;
@@ -61,9 +61,9 @@ void TickCdAudio(void) {
                 CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
 
             if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
-                g_CdTrackStep = 4;
+                g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
                 g_CdCommandPending = CD_COMMAND_PLAY;
-                g_CdCommandStep = 0;
+                g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
                 g_CdTrackPending = g_CdCurrentTrack;
             }
         }

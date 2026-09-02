@@ -530,24 +530,6 @@ target_link_libraries(install_track_points_tests PRIVATE psyz)
 add_test(NAME install_track_points COMMAND install_track_points_tests)
 set_tests_properties(install_track_points PROPERTIES LABELS functional)
 
-add_executable(cd_track_requests_tests
-    cd_track_requests_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_track_requests.c)
-target_include_directories(cd_track_requests_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src/port
-    ${CMAKE_SOURCE_DIR}/src/port/include)
-target_compile_definitions(cd_track_requests_tests PRIVATE __psyz=1)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(cd_track_requests_tests PRIVATE
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Werror)
-endif()
-target_link_libraries(cd_track_requests_tests PRIVATE psyz)
-add_test(NAME cd_track_requests COMMAND cd_track_requests_tests)
-set_tests_properties(cd_track_requests PROPERTIES LABELS functional)
-
 add_executable(mirror_pass_tests
     mirror_pass_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/mirror_pass.c)

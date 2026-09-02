@@ -74,6 +74,26 @@ endif()
 add_test(NAME cd_audio_control COMMAND cd_audio_control_tests)
 set_tests_properties(cd_audio_control PROPERTIES LABELS unit)
 
+add_executable(cd_track_requests_tests
+    cd_track_requests_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_track_requests.c)
+target_include_directories(cd_track_requests_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(cd_track_requests_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(cd_track_requests_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(cd_track_requests_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(cd_track_requests_tests PRIVATE psyz)
+add_test(NAME cd_track_requests COMMAND cd_track_requests_tests)
+set_tests_properties(cd_track_requests PROPERTIES LABELS unit)
+
 add_executable(cd_track_table_tests
     cd_track_table_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/build_cd_track_table.c)
