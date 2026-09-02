@@ -320,12 +320,18 @@ void UpdateRivalRubberBand(void) {
         return;
     }
 
+    g_ClosestRivalRank = -1;
     for (rank = 3; rank >= 0; rank--) {
         GameCarRuntime *rival = g_RankedCars[rank];
         s16 *cooldown = RivalCueCooldown(rank);
         s32 nearCueBit = 0x10 >> rank;
         s32 farCueBit = 0x100 >> rank;
-        s32 gap = rival->progressA + rival->progressB - playerProgress;
+        s32 gap;
+
+        if (rival == NULL) {
+            continue;
+        }
+        gap = rival->progressA + rival->progressB - playerProgress;
 
         if (gap >= 0) {
             if (rank == 0) {

@@ -245,6 +245,15 @@ static int CheckRubberBandBranches(void) {
         return 1;
     }
 
+    ResetRubberBandState();
+    g_ClosestRivalRank = 3;
+    UpdateRivalRubberBand();
+    if (g_ClosestRivalRank != -1) {
+        printf("trailing field retained stale closest rank %d\n",
+               g_ClosestRivalRank);
+        return 1;
+    }
+
     return 0;
 }
 
