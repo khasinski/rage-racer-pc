@@ -269,6 +269,25 @@ endif()
 add_test(NAME audio_initialization COMMAND audio_initialization_tests)
 set_tests_properties(audio_initialization PROPERTIES LABELS unit)
 
+add_executable(vab_sequence_slots_tests
+    vab_sequence_slots_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/vab_sequence_slots.c)
+target_include_directories(vab_sequence_slots_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(vab_sequence_slots_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(vab_sequence_slots_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(vab_sequence_slots_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME vab_sequence_slots COMMAND vab_sequence_slots_tests)
+set_tests_properties(vab_sequence_slots PROPERTIES LABELS unit)
+
 add_executable(pitched_sound_cue_tests
     pitched_sound_cue_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/pitched_sound_cue.c)

@@ -31,7 +31,6 @@ unsigned char g_SoundSlotTone[24] __attribute__((aligned(16))) = {0x01,0x00,0x01
 s32 g_StereoOutput = 1;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest = 17;
-unsigned char g_VabSlotVoices[40] __attribute__((aligned(16)));
 s32 g_AudioLoadSlot;
 unsigned char g_EngineSoundCurves[1728] __attribute__((aligned(16)));
 s32 g_SpecialCueVoiceA;
