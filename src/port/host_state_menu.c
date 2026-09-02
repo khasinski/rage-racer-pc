@@ -399,7 +399,6 @@ u8 g_NegconAxisI;
 u8 g_NegconAxisII;
 unsigned char g_NegconAxisL[33] __attribute__((aligned(16)));
 const TimedDrawCommand *g_CarSelectPopupScript;
-s32 g_TrackWalkStart;
 s32 g_PlayerCarIndex;
 s32 g_BgmTrack;
 s32 g_CarSelectCursor;

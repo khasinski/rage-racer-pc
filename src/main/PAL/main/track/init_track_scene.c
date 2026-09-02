@@ -9,7 +9,6 @@ void InitTrackScene(void) {
     InitRenderState(5);
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
-    g_TrackWalkStart = g_TrackEventData->trackWalkStart;
     BuildStartingGrid();
     SetTrackTexturePageNow(g_Cars[g_CameraCarIndex].trackSection);
     SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);

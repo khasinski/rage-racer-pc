@@ -412,7 +412,6 @@ extern s32 g_TimeAttackPlateStep;
 extern s32 g_TitleAttractTimer;
 extern s32 g_TitleExitTimer;
 extern s32 g_TitlePulse;
-extern s32 g_TrackWalkStart;
 extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
