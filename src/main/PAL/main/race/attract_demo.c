@@ -71,7 +71,7 @@ static void UpdateAttractDemoStart(void) {
         shuffleTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
         AdvanceBgmShuffleBag(shuffleTrack);
 
-        cdTrack = AttractDemoCdTrack(shuffleTrack);
+        cdTrack = BgmCdTrack(shuffleTrack);
         RequestCdTrack(cdTrack);
         StartCdAudio();
     }

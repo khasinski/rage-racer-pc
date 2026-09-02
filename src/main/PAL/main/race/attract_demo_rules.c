@@ -4,9 +4,6 @@
 enum {
     ATTRACT_TITLE_MAX_FADE = 0x7F,
     ATTRACT_TITLE_FADE_SPEED = 4,
-    FIRST_BGM_CD_TRACK = 3,
-    REMAPPED_BGM_INDEX = 9,
-    REMAPPED_BGM_CD_TRACK = 0x11,
     ATTRACT_OPENING_FADE_OFFSET = 6,
     ATTRACT_OPENING_FADE_START = 0xFF,
     ATTRACT_OPENING_FADE_SPEED = 11,
@@ -30,13 +27,6 @@ s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay) {
         return ClampAttractTitleFade(timer * ATTRACT_TITLE_FADE_SPEED - delay);
     }
     return ClampAttractTitleFade(fadeLevel);
-}
-
-s32 AttractDemoCdTrack(s32 shuffleTrack) {
-    if (shuffleTrack == REMAPPED_BGM_INDEX) {
-        return REMAPPED_BGM_CD_TRACK;
-    }
-    return shuffleTrack + FIRST_BGM_CD_TRACK;
 }
 
 s32 AttractOpeningWashLevel(s32 timer) {

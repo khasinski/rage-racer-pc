@@ -2,6 +2,7 @@
 #include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 
 enum {
     BGM_CHANGE_DELAY_AUTO = 6,
@@ -52,9 +53,7 @@ void UpdateBgmSelectPlayback(void) {
     if (g_BgmChangeDelay > 0) {
         g_BgmChangeDelay--;
         if (g_BgmChangeDelay == 0) {
-            if (g_BgmSelectCdTrack == 12) {
-                g_BgmSelectCdTrack = 17;
-            }
+            g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
             RequestCdTrack(g_BgmSelectCdTrack);
             StartCdAudio();
             g_CdTrackEnded = 0;

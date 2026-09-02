@@ -13,13 +13,6 @@ static void TestTitleFade(void) {
     assert(AttractTitleFadeLevel(ATTRACT_DEMO_STEP_RACE, 0, 128, 0) == 0x7F);
 }
 
-static void TestCdTrackMapping(void) {
-    assert(AttractDemoCdTrack(0) == 3);
-    assert(AttractDemoCdTrack(8) == 11);
-    assert(AttractDemoCdTrack(9) == 0x11);
-    assert(AttractDemoCdTrack(10) == 13);
-}
-
 static void TestRaceFadeSchedule(void) {
     assert(AttractOpeningWashLevel(6) == 255);
     assert(AttractOpeningWashLevel(7) == 244);
@@ -35,7 +28,6 @@ static void TestRaceFadeSchedule(void) {
 
 int main(void) {
     TestTitleFade();
-    TestCdTrackMapping();
     TestRaceFadeSchedule();
     return 0;
 }
