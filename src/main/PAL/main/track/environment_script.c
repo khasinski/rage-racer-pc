@@ -78,12 +78,11 @@ void SeekEnvironmentScript(s32 targetTime) {
     SetCurrentEnvironmentColors(previousCue);
 
     targetCue = NextEnvironmentCue(previousCue);
-    g_EnvLerpDuration = targetCue->duration;
-    frame = (u16)g_EnvScriptClock - (u16)targetCue->time;
-    g_EnvLerpFrame = (s16)frame > (s16)targetCue->duration
-        ? targetCue->duration
-        : (s16)frame;
     LoadEnvironmentCue(targetCue);
+    frame = (u16)g_EnvScriptClock - (u16)targetCue->time;
+    g_EnvLerpFrame = (s16)frame > g_EnvLerpDuration
+        ? g_EnvLerpDuration
+        : (s16)frame;
     g_EnvScriptCursor = NextEnvironmentCue(targetCue);
 
     g_EnvScriptEnabled = 1;

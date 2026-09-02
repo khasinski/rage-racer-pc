@@ -1,6 +1,13 @@
 #include "game/render.h"
 #include "game/track.h"
 
+static s16 EnvironmentCueDuration(u16 duration) {
+    if (duration == 0) {
+        return 1;
+    }
+    return duration > 0x7FFF ? 0x7FFF : (s16)duration;
+}
+
 void LoadEnvironmentCue(GameEnvironmentCue *cue) {
     s32 i;
     s32 mode;
@@ -15,7 +22,10 @@ void LoadEnvironmentCue(GameEnvironmentCue *cue) {
     }
 
     mode = g_EnvironmentMode;
-    g_EnvLerpDuration = cue->duration;
+    /* A zero-duration authored cue is an instantaneous transition. Treat it
+     * as one update so all interpolation paths reach their target without
+     * dividing by zero. */
+    g_EnvLerpDuration = EnvironmentCueDuration(cue->duration);
     g_EnvironmentMode = cue->mode;
     flag = cue->spareTarget;
     g_EnvironmentModePrev = mode;

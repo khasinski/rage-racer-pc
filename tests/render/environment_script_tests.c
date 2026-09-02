@@ -142,6 +142,21 @@ int main(void) {
         return 1;
     }
 
+    cues[1].duration = 0;
+    SeekEnvironmentScript(15);
+    if (g_EnvLerpDuration != 1 || g_EnvLerpFrame != 1 ||
+        g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.r != 12) {
+        puts("FAIL: zero-duration environment cue");
+        return 1;
+    }
+    cues[1].duration = 0xFFFF;
+    LoadEnvironmentCue(&cues[1]);
+    if (g_EnvLerpDuration != 0x7FFF) {
+        puts("FAIL: oversized environment cue duration");
+        return 1;
+    }
+    cues[1].duration = 10;
+
     g_EnvScriptEnabled = 1;
     g_EnvironmentColors.fields.fogEnabled = 0;
     g_EnvScriptClock = 29;
