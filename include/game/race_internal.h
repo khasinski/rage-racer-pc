@@ -30,6 +30,12 @@ s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
 s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared);
 s32 NextReplayReadCursor(s32 cursor, s32 frameCount);
 void UpdateReplayFade(void);
+s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
+s32 AttractDemoCdTrack(s32 shuffleTrack);
+s32 AttractOpeningWashLevel(s32 timer);
+s32 AttractClosingWashLevel(s32 timer);
+s32 ShouldStartAttractExitFade(s32 timer);
+s32 ShouldReturnFromAttractDemo(s32 timer);
 
 typedef union SectorReferenceTimes {
     s32 values[3];

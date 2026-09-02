@@ -250,6 +250,25 @@ endif()
 add_test(NAME replay_scene_rules COMMAND replay_scene_rules_tests)
 set_tests_properties(replay_scene_rules PROPERTIES LABELS unit)
 
+add_executable(attract_demo_rules_tests
+    attract_demo_rules_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/attract_demo_rules.c)
+target_include_directories(attract_demo_rules_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(attract_demo_rules_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(attract_demo_rules_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(attract_demo_rules_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME attract_demo_rules COMMAND attract_demo_rules_tests)
+set_tests_properties(attract_demo_rules PROPERTIES LABELS unit)
+
 add_executable(replay_fade_tests
     replay_fade_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_fade.c

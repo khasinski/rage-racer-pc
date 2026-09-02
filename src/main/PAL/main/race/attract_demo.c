@@ -5,6 +5,7 @@
 #include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/track.h"
 
@@ -26,20 +27,12 @@ void EnterAttractDemo(void) {
 }
 
 s32 GetAttractTitleFade(s32 element) {
-    s32 fade;
-
-    if (g_AttractDemoStep == ATTRACT_DEMO_STEP_LOAD) {
-        fade = g_SceneTimer * 4 - g_AttractTitleDelays[element];
-    } else {
-        if (g_FadeLevel > 0) {
-            g_FadeLevel--;
-        }
-        fade = g_FadeLevel;
+    if (g_AttractDemoStep != ATTRACT_DEMO_STEP_LOAD && g_FadeLevel > 0) {
+        g_FadeLevel--;
     }
 
-    if (fade < 0) return 0;
-    if (fade > 0x7F) return 0x7F;
-    return fade;
+    return AttractTitleFadeLevel(g_AttractDemoStep, g_SceneTimer, g_FadeLevel,
+                                 g_AttractTitleDelays[element]);
 }
 
 void DrawAttractTitle(void) {
@@ -78,11 +71,7 @@ static void UpdateAttractDemoStart(void) {
         shuffleTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
         AdvanceBgmShuffleBag(shuffleTrack);
 
-        cdTrack = shuffleTrack + 3;
-        if (cdTrack == 0xC) {
-            cdTrack = 0x11;
-        }
-
+        cdTrack = AttractDemoCdTrack(shuffleTrack);
         RequestCdTrack(cdTrack);
         StartCdAudio();
     }
@@ -104,19 +93,18 @@ static void UpdateAttractDemoRace(void) {
     timer = g_SceneTimer;
     if (timer < 0x3D) {
         DrawAttractTitle();
-        DrawFullscreenFadeTile(0xFF - (g_SceneTimer - 6) * 11, 0x49);
+        DrawFullscreenFadeTile(AttractOpeningWashLevel(timer), 0x49);
     }
 
     timer = g_SceneTimer;
-    if (timer == 0x6CC) {
+    if (ShouldStartAttractExitFade(timer)) {
         StartCdVolumeFade(0x38);
-        timer = g_SceneTimer;
     }
     if (timer >= 0x6CD) {
-        DrawFullscreenFadeTile((timer - 0x6CC) * 5, 0x49);
+        DrawFullscreenFadeTile(AttractClosingWashLevel(timer), 0x49);
     }
 
-    if (g_SceneTimer == 0x708) {
+    if (ShouldReturnFromAttractDemo(timer)) {
         ReturnToTitleScene();
     }
 
