@@ -413,7 +413,6 @@ extern unsigned char g_GraphDebug[8];
 extern unsigned char g_GraphReverse[8];
 extern unsigned char g_DrawSyncCbPending[8];
 extern unsigned char g_DrawSyncCallback[8];
-extern unsigned char g_DrawEnvCache[92];
 extern unsigned char g_DispEnvCache[20];
 extern unsigned char g_VramWidthTable[20];
 extern unsigned char g_VramHeightTable[20];
@@ -920,7 +919,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_GraphReverse", g_GraphReverse, 8},
     {"g_DrawSyncCbPending", g_DrawSyncCbPending, 8},
     {"g_DrawSyncCallback", g_DrawSyncCallback, 8},
-    {"g_DrawEnvCache", g_DrawEnvCache, 92},
     {"g_DispEnvCache", g_DispEnvCache, 20},
     {"g_VramWidthTable", g_VramWidthTable, 20},
     {"g_VramHeightTable", g_VramHeightTable, 20},
@@ -1072,7 +1070,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 2938219570UL;
+    const unsigned long expected = 3673354434UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
