@@ -10,6 +10,14 @@ typedef struct SpinningSceneryRange {
     s32 rateIndex;
 } SpinningSceneryRange;
 
+enum {
+    SPINNER_ENTITY_BASE = 0x100,
+    SPINNER_MODEL = 0x3E,
+    SPINNER_RATE_REFRESH_MASK = 0x1FF,
+    SINGLE_SPINNER_RATE_MASK = 0x1F,
+    MULTIPLE_SPINNER_RATE_MASK = 0x3F,
+};
+
 static const SpinningSceneryRange s_singleSpinnerRange = {0, 1, 0};
 static const SpinningSceneryRange s_multipleSpinnerRange = {1, 4, 1};
 
@@ -19,7 +27,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
     Matrix worldMatrix;
     const SpinningSceneryRange *range;
     s32 spinner;
-    s32 modelId;
+    const s32 modelId = ModelOrFallback(SPINNER_MODEL, g_CourseModelCount);
 
     range = SeriesCourseIndex() == 0
         ? &s_singleSpinnerRange
@@ -44,16 +52,15 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
                            &objectMatrix);
 
         g_RenderState.envMode4 = 0;
-        modelId = ModelOrFallback(0x3E, g_CourseModelCount);
         GameRenderWorldSubmitDynamicCourseObject(
-            0x100 + spinner, modelId, placement->position.x,
+            SPINNER_ENTITY_BASE + spinner, modelId, placement->position.x,
             placement->position.y, placement->position.z,
             worldMatrix.m, 1, 0);
         SubmitCourseModel2(&g_RenderState, modelId);
     }
 
-    if ((timer & 0x1FF) == 0 && animate != 0) {
-        g_SpinningSceneryRate[0] = Random15() & 0x1F;
-        g_SpinningSceneryRate[1] = Random15() & 0x3F;
+    if ((timer & SPINNER_RATE_REFRESH_MASK) == 0 && animate != 0) {
+        g_SpinningSceneryRate[0] = Random15() & SINGLE_SPINNER_RATE_MASK;
+        g_SpinningSceneryRate[1] = Random15() & MULTIPLE_SPINNER_RATE_MASK;
     }
 }
