@@ -156,41 +156,6 @@ void SsSeqSetChannelMode(long seq, long sep, u_char mode);
 void SsSeqSetChannelParam13(long seq, long sep, u_char value);
 void SsSeqSetChannelParam14(long seq, long sep, u_char value);
 
-/* Declared identically by 80 translation units before this
- * header carried them. */
-
-extern u_char g_SndTickHalfRate;
-extern u_char g_SndCurrentPriority;
-extern u_char g_SndCurrentProgActual;
-extern u_char g_SndCurrentTone;
-extern long g_SndNoTickFlag;
-extern long g_SndSeqOpenMask;
-extern short g_SndSeqTableSMax;
-extern short g_SndSeqTableTMax;
-extern u_char g_SndTickIrq;
-extern long g_SndTickMode;
-extern u_char g_SndTickUsesVSync;
-extern u_long g_SndVabSpuAddr[];
-extern u_char g_SndVabStatus[];
-extern u_long g_SndVoiceSilenceHistory[];
-
-/* Declared identically by 24 translation units before this
- * header carried them. */
-
-extern char g_MsgSeqTableFull[];
-extern u_char g_SndCurrentNote;
-extern u_char g_SndCurrentProg;
-extern u_char g_SndCurrentToneCenter;
-extern u_char g_SndCurrentToneShift;
-extern u_char g_SndCurrentVabId;
-extern u_short g_SndPitchTable[];
-extern u_short g_SndSpuCtrlDefaults[];
-extern long g_SndTickVSyncToggle;
-extern u_short *g_SndVabBodyAddr[];
-extern u_short g_SndVoiceRegDefaults[];
-extern long g_SndVoiceSilenceIndex;
-extern void (*g_SndMarkCallbacks[][0x10])(long seq, long sep, u_char value);
-
 void SpuVmAutoPanTick(long voice);
 short SpuVmGetSeqVolLeft(long seq_sep);
 short SpuVmGetSeqVolRight(long seq_sep);

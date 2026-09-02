@@ -2,10 +2,9 @@
  * Retail state the sound code reads: the engine note, the sample and sequence
  * handles in play, the cues a race raises, and the output settings.
  *
- * Most of the SPU and sequencer library state is not here. It sits in
- * host_state_unread.c, because nothing in this port reads it: the port drives
- * audio through its own backend and the retail library globals are carried
- * for their bytes. Order is retail's address order.
+ * The port drives audio through PsyZ, whose libsnd/libspu implementation owns
+ * its internal state.  The obsolete retail work areas are intentionally not
+ * reproduced here.
  */
 
 #include <stddef.h>

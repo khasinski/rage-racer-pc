@@ -142,13 +142,6 @@ extern unsigned char g_MsgSeqVabTransBodyError[44];
 extern unsigned char g_FmtString[8];
 extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
-extern unsigned char g_MsgSeqNotSeqData[24];
-extern unsigned char g_MsgSeqOldFormat[36];
-extern unsigned char g_MsgSeqTableFull[688];
-extern unsigned char g_SpuTimeoutFmt[16];
-extern unsigned char g_SpuTimeoutMsgReset[16];
-extern unsigned char g_SpuTimeoutMsgWrdy[20];
-extern unsigned char g_SpuTimeoutMsgDmaf[1828];
 extern unsigned char g_SaveDefaults[104];
 extern unsigned char g_DrawModeEnv[8];
 extern unsigned char g_TeamLogoClutRect[8];
@@ -288,51 +281,6 @@ extern unsigned char g_EngineSpecLabels[52];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
-extern unsigned char g_SndVoiceRegDefaults[16];
-extern unsigned char g_SndSpuCtrlDefaults[32];
-extern unsigned char g_SndTickMode[8];
-extern unsigned char g_SndNoTickFlag[8];
-extern unsigned char g_SndTickCallback[8];
-extern unsigned char g_SndPrevVSyncCallback[8];
-extern unsigned char g_SndTickUsesVSync[8];
-extern unsigned char g_SndTickHalfRate[8];
-extern unsigned char g_SndTickIrq[8];
-extern unsigned char g_SndTickVSyncToggle[8];
-extern unsigned char g_SndSpuRegs[8];
-extern unsigned char g_SndPitchTable[392];
-extern unsigned char g_SpuTransferMode[8];
-extern unsigned char g_SpuRevState[8];
-extern unsigned char g_SpuRevReserveWa[8];
-extern unsigned char g_SpuRevWorkAreaAddr[8];
-extern unsigned char g_SpuRevAttr[8];
-extern unsigned char g_SpuRevAttrDelay[8];
-extern unsigned char g_SpuRevAttrFeedback[50];
-extern unsigned char g_SpuVoiceCenterNoteLast[8];
-extern unsigned char g_SpuTransferEvent[8];
-extern unsigned char g_SpuKeyStatus[8];
-extern unsigned char g_SpuZeroBuf[1024];
-extern unsigned char g_SpuIsStarted[8];
-extern unsigned char g_SpuWaitCount[8];
-extern unsigned char g_SpuTransferStartAddr[8];
-extern unsigned char g_SpuRegBase[8];
-extern unsigned char g_SpuDmaMadr[8];
-extern unsigned char g_SpuDmaBcr[8];
-extern unsigned char g_SpuDmaChcr[8];
-extern unsigned char g_SpuDpcr[8];
-extern unsigned char g_SpuDelayReg[8];
-extern unsigned char g_SpuTransferByIo[8];
-extern unsigned char g_SpuInTransfer[8];
-extern unsigned char g_SpuMemMode[8];
-extern unsigned char g_SpuMemModeUnit[8];
-extern unsigned char g_SpuTransferCompleted[8];
-extern unsigned char g_SpuTransferCallback[8];
-extern unsigned char g_SpuIrqCallback[8];
-extern unsigned char g_SpuDummyAdpcmBlock[16];
-extern unsigned char g_SpuTransferIsRead[8];
-extern unsigned char g_SpuDmaTransferAddr[8];
-extern unsigned char g_SpuDmaBlockCount[8];
-extern unsigned char g_SpuRevWorkAreaStartAddr[80];
-extern unsigned char g_SpuRevAttrTable[700];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
@@ -429,13 +377,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtString", g_FmtString, 8},
     {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
-    {"g_MsgSeqNotSeqData", g_MsgSeqNotSeqData, 24},
-    {"g_MsgSeqOldFormat", g_MsgSeqOldFormat, 36},
-    {"g_MsgSeqTableFull", g_MsgSeqTableFull, 688},
-    {"g_SpuTimeoutFmt", g_SpuTimeoutFmt, 16},
-    {"g_SpuTimeoutMsgReset", g_SpuTimeoutMsgReset, 16},
-    {"g_SpuTimeoutMsgWrdy", g_SpuTimeoutMsgWrdy, 20},
-    {"g_SpuTimeoutMsgDmaf", g_SpuTimeoutMsgDmaf, 1828},
     {"g_SaveDefaults", g_SaveDefaults, 104},
     {"g_DrawModeEnv", g_DrawModeEnv, 8},
     {"g_TeamLogoClutRect", g_TeamLogoClutRect, 8},
@@ -574,51 +515,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},
-    {"g_SndVoiceRegDefaults", g_SndVoiceRegDefaults, 16},
-    {"g_SndSpuCtrlDefaults", g_SndSpuCtrlDefaults, 32},
-    {"g_SndTickMode", g_SndTickMode, 8},
-    {"g_SndNoTickFlag", g_SndNoTickFlag, 8},
-    {"g_SndTickCallback", g_SndTickCallback, 8},
-    {"g_SndPrevVSyncCallback", g_SndPrevVSyncCallback, 8},
-    {"g_SndTickUsesVSync", g_SndTickUsesVSync, 8},
-    {"g_SndTickHalfRate", g_SndTickHalfRate, 8},
-    {"g_SndTickIrq", g_SndTickIrq, 8},
-    {"g_SndTickVSyncToggle", g_SndTickVSyncToggle, 8},
-    {"g_SndSpuRegs", g_SndSpuRegs, 8},
-    {"g_SndPitchTable", g_SndPitchTable, 392},
-    {"g_SpuTransferMode", g_SpuTransferMode, 8},
-    {"g_SpuRevState", g_SpuRevState, 8},
-    {"g_SpuRevReserveWa", g_SpuRevReserveWa, 8},
-    {"g_SpuRevWorkAreaAddr", g_SpuRevWorkAreaAddr, 8},
-    {"g_SpuRevAttr", g_SpuRevAttr, 8},
-    {"g_SpuRevAttrDelay", g_SpuRevAttrDelay, 8},
-    {"g_SpuRevAttrFeedback", g_SpuRevAttrFeedback, 50},
-    {"g_SpuVoiceCenterNoteLast", g_SpuVoiceCenterNoteLast, 8},
-    {"g_SpuTransferEvent", g_SpuTransferEvent, 8},
-    {"g_SpuKeyStatus", g_SpuKeyStatus, 8},
-    {"g_SpuZeroBuf", g_SpuZeroBuf, 1024},
-    {"g_SpuIsStarted", g_SpuIsStarted, 8},
-    {"g_SpuWaitCount", g_SpuWaitCount, 8},
-    {"g_SpuTransferStartAddr", g_SpuTransferStartAddr, 8},
-    {"g_SpuRegBase", g_SpuRegBase, 8},
-    {"g_SpuDmaMadr", g_SpuDmaMadr, 8},
-    {"g_SpuDmaBcr", g_SpuDmaBcr, 8},
-    {"g_SpuDmaChcr", g_SpuDmaChcr, 8},
-    {"g_SpuDpcr", g_SpuDpcr, 8},
-    {"g_SpuDelayReg", g_SpuDelayReg, 8},
-    {"g_SpuTransferByIo", g_SpuTransferByIo, 8},
-    {"g_SpuInTransfer", g_SpuInTransfer, 8},
-    {"g_SpuMemMode", g_SpuMemMode, 8},
-    {"g_SpuMemModeUnit", g_SpuMemModeUnit, 8},
-    {"g_SpuTransferCompleted", g_SpuTransferCompleted, 8},
-    {"g_SpuTransferCallback", g_SpuTransferCallback, 8},
-    {"g_SpuIrqCallback", g_SpuIrqCallback, 8},
-    {"g_SpuDummyAdpcmBlock", g_SpuDummyAdpcmBlock, 16},
-    {"g_SpuTransferIsRead", g_SpuTransferIsRead, 8},
-    {"g_SpuDmaTransferAddr", g_SpuDmaTransferAddr, 8},
-    {"g_SpuDmaBlockCount", g_SpuDmaBlockCount, 8},
-    {"g_SpuRevWorkAreaStartAddr", g_SpuRevWorkAreaStartAddr, 80},
-    {"g_SpuRevAttrTable", g_SpuRevAttrTable, 700},
     {"g_CameraMatrixSaved", g_CameraMatrixSaved, 32},
     {"g_SectorTimes", g_SectorTimes, 12},
     {"g_RaceIntroCameraDelta",
@@ -630,7 +526,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 864873213UL;
+    const unsigned long expected = 1481821081UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

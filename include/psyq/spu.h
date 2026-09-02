@@ -6,22 +6,6 @@
 #include "common.h"
 #include "psyq/spu_internal_types.h"
 
-/*
- * One block of the SPU heap. The two top bits of `addr` are flags, not
- * address: FREE marks a released block that _spu_gcSPU may coalesce, END
- * marks the block that closes the list. EMPTY is the whole word written over
- * a block that has been merged away.
- */
-typedef struct SpuMallocEntry {
-    u_long addr;
-    u_long size;
-} SpuMallocEntry;
-
-#define SPU_BLOCK_FREE  0x80000000
-#define SPU_BLOCK_END   0x40000000
-#define SPU_BLOCK_ADDR  0x0FFFFFFF
-#define SPU_BLOCK_EMPTY 0x2FFFFFFF
-
 typedef struct SpuCommonAttr {
     u_long mask;
     struct {
@@ -114,50 +98,5 @@ long SpuIsTransferCompleted(long wait);
 void _spu_setTransferCompletionFlag(long completed);
 u_long _spu_isTransferIdle(void);
 void SpuSetCommonAttr(SpuCommonAttr *attr);
-
-/* The SPU hardware register file at g_SpuRegBase, as a struct and as the raw
- * half-word window the transfer paths use. */
-/* Declared identically by 50 translation units before this
- * header carried them. */
-
-extern long _spu_mem_mode_unitM;
-extern volatile u_long *g_SpuDelayReg;
-extern volatile u_long *g_SpuDmaBcr;
-extern volatile u_long *g_SpuDmaChcr;
-extern volatile u_long *g_SpuDmaMadr;
-extern long g_SpuIsStarted;
-extern long g_SpuMemMode;
-extern long g_SpuRevReserveWa;
-extern long g_SpuRevWorkAreaAddr;
-extern long g_SpuTransferByIo;
-extern long g_SpuTransferCompleted;
-extern long g_SpuTransferEvent;
-extern long g_SpuTransferIsRead;
-extern long g_SpuTransferMode;
-extern u_short g_SpuTransferStartAddr;
-extern long g_SpuWaitCount;
-
-/* Declared identically by 19 translation units before this
- * header carried them. */
-
-extern long D_8009A710;
-extern u_short g_SpuVoiceCenterNoteLast;
-extern long g_SpuInTransfer;
-extern long g_SpuDmaBlockCount;
-extern long g_SpuDmaTransferAddr;
-extern volatile long *g_SpuDpcr;
-extern long g_SpuDummyAdpcmBlock;
-extern u_char g_SpuMallocArea[];
-extern long g_SpuRevAttrDelay;
-extern short g_SpuRevAttrDepthLeft;
-extern short g_SpuRevAttrDepthRight;
-extern long g_SpuRevAttrFeedback;
-extern SpuReverbRegAttr g_SpuRevAttrTable[];
-extern u_char g_SpuTimeoutMsgDmaf[];
-extern char g_SpuTimeoutMsgReset[];
-extern u_char g_SpuTimeoutMsgWrdy[];
-extern long g_SpuZeroBuf[];
-extern void (*volatile g_SpuTransferCallback)(void);
-extern void (*volatile g_SpuIrqCallback)(void);
 
 #endif

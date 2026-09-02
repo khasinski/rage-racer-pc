@@ -2,9 +2,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "psyq/snd_internal.h"
-#include <psyz/audio.h>
-
+#include "psyq/snd_types.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/asset.h"
@@ -19,10 +17,6 @@
 #include "game/memcard.h"
 
 GameFrameContext g_FrameContexts[2];
-SpuCommonRegs *g_HostSndSpuRegs;
-SpuVoiceRegs g_HostSndVoiceRegs[24];
-u_char g_HostSndVoiceFlags[24];
-SpuVoice g_HostSndVoiceState[24];
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
@@ -385,7 +379,6 @@ static int LoadTimedDrawScript(
 }
 
 int InitNativeGameData(void) {
-    g_HostSndSpuRegs = (SpuCommonRegs *)Psyz_SpuRegisterBase();
     return LoadTimedDrawScript(g_CourseSelectGpScript, 10, 0x800817a0u) &&
         LoadTimedDrawScript(g_CourseSelectTimeAttackScript, 10, 0x80081818u) &&
         LoadTimedDrawScript(g_UiChromeScript, 16, 0x80082460u) &&
