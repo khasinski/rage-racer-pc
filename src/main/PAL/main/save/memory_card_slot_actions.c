@@ -86,32 +86,18 @@ static void PickLoadSlot(void) {
 }
 
 static void PickSaveSlot(void) {
-    if (g_McFreeBlocks != 0) {
+    if (g_McFreeBlocks != 0 || (g_McSlotUsedMask & 7) != 0) {
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
-        if (g_PadPressed & PAD_CONFIRM) {
-            if (CardSlotIsUsed(g_McSlotCursor)) {
-                PlaySoundCue(2);
-                g_McConfirmChoice = 0;
-                g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
-            } else {
-                PlaySoundCue(2);
-                g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE;
-            }
-        }
-        return;
-    }
+        if (!(g_PadPressed & PAD_CONFIRM)) return;
 
-    if ((g_McSlotUsedMask & 7) != 0) {
-        g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
-        if (g_PadPressed & PAD_CONFIRM) {
-            if (CardSlotIsUsed(g_McSlotCursor)) {
-                PlaySoundCue(2);
-                g_McConfirmChoice = 0;
-                g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
-            } else {
-                PlaySoundCue(2);
-                g_McActionState = CARD_SLOT_ACTION_SHOW_CARD_FULL;
-            }
+        PlaySoundCue(2);
+        if (CardSlotIsUsed(g_McSlotCursor)) {
+            g_McConfirmChoice = 0;
+            g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
+        } else if (g_McFreeBlocks != 0) {
+            g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE;
+        } else {
+            g_McActionState = CARD_SLOT_ACTION_SHOW_CARD_FULL;
         }
         return;
     }
@@ -139,6 +125,31 @@ static void PickCardSlot(void) {
 
     if (PollMenuBackInput() == 0) return;
     g_McMenuPage = 0;
+}
+
+static void WriteSelectedSaveSlot(void) {
+    s32 slot = g_McSlotCursor;
+
+    g_McActionResult = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
+}
+
+static void RefreshSlotsAfterSave(void) {
+    if (g_McActionResult != 0) {
+        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
+    }
+    g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE;
+}
+
+static void ReadSelectedSaveSlot(void) {
+    s32 slot = g_McSlotCursor;
+
+    g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    if (g_McActionResult != 0) {
+        g_McLastSlot = slot;
+    }
+    g_McActionTimer = CARD_RESULT_DISPLAY_FRAMES;
+    g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
 }
 
 void RunCardSlotActions(void) {
@@ -171,27 +182,16 @@ void RunCardSlotActions(void) {
         g_McActionState = CARD_SLOT_ACTION_WRITE_SAVE;
         break;
 
-    case CARD_SLOT_ACTION_WRITE_SAVE: {
-        s32 slot = g_McSlotCursor;
-        s32 written;
-
-        written = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
-        g_McActionResult = written;
-        g_McActionState = CARD_SLOT_ACTION_FINISH_WRITE;
+    case CARD_SLOT_ACTION_WRITE_SAVE:
+        WriteSelectedSaveSlot();
         break;
-    }
 
     case CARD_SLOT_ACTION_FINISH_WRITE:
         g_McActionState = CARD_SLOT_ACTION_REFRESH_AFTER_SAVE;
         break;
 
     case CARD_SLOT_ACTION_REFRESH_AFTER_SAVE:
-        if (g_McActionResult != 0) {
-            s32 usedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
-
-            g_McSlotUsedMask = usedMask;
-        }
-        g_McActionState = CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE;
+        RefreshSlotsAfterSave();
         break;
 
     case CARD_SLOT_ACTION_BEGIN_SAVE_SETTLE:
@@ -254,17 +254,9 @@ void RunCardSlotActions(void) {
         g_McActionState = CARD_SLOT_ACTION_READ_SAVE;
         break;
 
-    case CARD_SLOT_ACTION_READ_SAVE: {
-        s32 slot = g_McSlotCursor;
-
-        g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
-        if (g_McActionResult != 0) {
-            g_McLastSlot = g_McSlotCursor;
-        }
-        g_McActionTimer = CARD_RESULT_DISPLAY_FRAMES;
-        g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE;
+    case CARD_SLOT_ACTION_READ_SAVE:
+        ReadSelectedSaveSlot();
         break;
-    }
     case CARD_SLOT_ACTION_BEGIN_LOAD_SETTLE:
         g_McActionTimer = CARD_IO_SETTLE_DELAY_FRAMES;
         g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
