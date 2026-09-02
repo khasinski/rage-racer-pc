@@ -142,6 +142,29 @@ static void Fold(FILE *out, const char *label, s32 result,
     }
 }
 
+static int CheckPlayerBoundaryKnockback(CarTrackLimits *limits) {
+    GameCarRuntime *car = AsRivalCar(&g_PlayerCar);
+    s32 startZ;
+    s32 result;
+
+    BuildTrack();
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    car->x = s_points[0].x;
+    car->z = s_points[0].z + 0x600;
+    startZ = car->z;
+    s_knockbacks = 0;
+    s_lastKnockMode = 0;
+
+    result = UpdateCarTrackState(car, 0, limits);
+    if (result != limits->rightKnockbackMode || s_knockbacks != 1 ||
+        s_lastKnockMode != limits->rightKnockbackMode || car->z == startZ) {
+        printf("FAIL player boundary: result=%d calls=%d mode=%d z=%d/%d\n",
+               result, s_knockbacks, s_lastKnockMode, startZ, car->z);
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
     /*
      * What the function did before it was touched. A change anywhere in it
@@ -232,6 +255,8 @@ int main(int argc, char **argv) {
                steps, s_digest, expected);
         return 1;
     }
+
+    if (CheckPlayerBoundaryKnockback(&limits) != 0) return 1;
 
     memset(&car, 0, sizeof(car));
     car.x = 123;

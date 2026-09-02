@@ -141,7 +141,6 @@ typedef struct CarTrackWork {
     CarTrackRadius carRadius;
     CarTrackRadius pointRadius;
     CarTrackRadius nextPointRadius;
-    u8 pad1C[8];
     s32 pointToCenterX;
     s32 nextPointToCenterX;
     s32 pointToCenterZ;
@@ -149,15 +148,9 @@ typedef struct CarTrackWork {
     s32 headingSin;
     s32 headingCos;
     s32 knockbackMode;
-    u8 pad40[0x20];
-    u16 offsetX;
-    s16 offsetY;
-    s16 offsetZ;
-    s16 offsetPad;
-    s32 correctionX;
-    s32 correctionY;
-    s32 correctionZ;
-    s32 reserved74;
+    MATRIX edgeCorrectionMatrix;
+    SVec edgeOffset;
+    LVec edgeCorrection;
     s16 curveMode;
     s16 arcIndex;
     s16 arcSpan;

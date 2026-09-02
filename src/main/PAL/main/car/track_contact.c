@@ -40,11 +40,13 @@ static s32 MeasureAlongSegment(const GameCarRuntime *car,
     s32 rotated;
     s32 alongSegment;
 
-    work->offsetX = (u16)(((u16)car->x - (u16)point->x) * 4);
-    work->offsetY = 0;
-    work->offsetZ = (s16)(((u16)car->z - (u16)point->z) * 4);
-    rotated = rcos(work->heading) * (s16)work->offsetX +
-              rsin(work->heading) * work->offsetZ;
+    work->edgeOffset.vx =
+        (s16)(u16)(((u16)car->x - (u16)point->x) * 4);
+    work->edgeOffset.vy = 0;
+    work->edgeOffset.vz =
+        (s16)(((u16)car->z - (u16)point->z) * 4);
+    rotated = rcos(work->heading) * work->edgeOffset.vx +
+              rsin(work->heading) * work->edgeOffset.vz;
     alongSegment = ProjectCarTrackAxis(rotated);
     if (alongSegment > (s16)work->segmentLength) {
         return (s16)work->segmentLength;

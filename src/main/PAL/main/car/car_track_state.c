@@ -60,7 +60,8 @@ static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
           g_SceneTimer, trackPointIndex, car->x, car->z,
           car->trackProgress, car->trackLateralOffset, alongSegment,
           work->heading, work->curveMode, work->leftHalfWidth,
-          work->rightHalfWidth, work->correctionX, work->correctionZ,
+          work->rightHalfWidth, work->edgeCorrection.x,
+          work->edgeCorrection.z,
           work->knockbackMode, car->motionActive, car->motionTimer,
           car->velocityX, car->velocityZ);
 }
@@ -70,8 +71,8 @@ static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
  *
  * Both half-widths are interpolated along the segment and widened by their own
  * inset; a car outside either is pushed back to the edge and reported as
- * having hit it. Only the player's car is moved by the push, a rival is told
- * about it and left where it is.
+ * having hit it. Every car is moved back inside; only the player additionally
+ * receives a knockback impulse.
  */
 static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
                                 const CarTrackLimits *limits,
@@ -94,16 +95,19 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
     leftLimit = work->leftHalfWidth + limits->leftInset;
     if (lateralOffset < -leftLimit) {
         lateralOffset += leftLimit;
-        work->offsetX = 0U;
-        work->offsetY = 0;
-        work->offsetZ = lateralOffset;
-        BuildRotMatrixY(&work->pad40[0], work->heading);
-        ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
+        work->edgeOffset.vx = 0;
+        work->edgeOffset.vy = 0;
+        work->edgeOffset.vz = (s16)lateralOffset;
+        BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
+        ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
+                    &work->edgeCorrection);
         if (obj == AsRivalCar(&g_PlayerCar)) {
-            SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->leftKnockbackMode);
+            SetCarKnockback(obj, work->edgeCorrection.x,
+                            work->edgeCorrection.z,
+                            limits->leftKnockbackMode);
         }
-        obj->x -= work->correctionX;
-        obj->z -= work->correctionZ;
+        obj->x -= work->edgeCorrection.x;
+        obj->z -= work->edgeCorrection.z;
         lateralOffset = -work->leftHalfWidth - limits->leftInset;
         work->knockbackMode = limits->leftKnockbackMode;
         return lateralOffset;
@@ -111,16 +115,19 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
     rightLimit = (s16)edgeHeight - limits->rightInset;
     if (rightLimit < lateralOffset) {
         lateralOffset -= rightLimit;
-        work->offsetX = 0U;
-        work->offsetY = 0;
-        work->offsetZ = lateralOffset;
-        BuildRotMatrixY(&work->pad40[0], work->heading);
-        ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
+        work->edgeOffset.vx = 0;
+        work->edgeOffset.vy = 0;
+        work->edgeOffset.vz = (s16)lateralOffset;
+        BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
+        ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
+                    &work->edgeCorrection);
         if (obj == AsRivalCar(&g_PlayerCar)) {
-            SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->rightKnockbackMode);
+            SetCarKnockback(obj, work->edgeCorrection.x,
+                            work->edgeCorrection.z,
+                            limits->rightKnockbackMode);
         }
-        obj->x -= work->correctionX;
-        obj->z -= work->correctionZ;
+        obj->x -= work->edgeCorrection.x;
+        obj->z -= work->edgeCorrection.z;
         lateralOffset = work->rightHalfWidth - limits->rightInset;
         work->knockbackMode = limits->rightKnockbackMode;
     }
@@ -282,17 +289,19 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
         PlaceCarOnArc(obj, work, point, nextPoint, arcIndex);
     }
 
-    work->offsetX = (u16)(((u16)obj->x - (u16)point->x) * 4);
+    work->edgeOffset.vx =
+        (s16)(u16)(((u16)obj->x - (u16)point->x) * 4);
     headingAngle = work->heading;
-    work->offsetZ = (s16)(((u16)obj->z - (u16)point->z) * 4);
-    work->offsetY = 0;
+    work->edgeOffset.vz =
+        (s16)(((u16)obj->z - (u16)point->z) * 4);
+    work->edgeOffset.vy = 0;
     cosHeading = rcos(headingAngle);
-    rotated = (cosHeading * (s16)work->offsetX) +
-              (rsin(work->heading) * work->offsetZ);
+    rotated = cosHeading * work->edgeOffset.vx +
+              rsin(work->heading) * work->edgeOffset.vz;
     alongSegment = ProjectCarTrackAxis(rotated);
     sinHeading = rsin(work->heading);
-    rotated = (-sinHeading * (s16)work->offsetX) +
-              (rcos(work->heading) * work->offsetZ);
+    rotated = -sinHeading * work->edgeOffset.vx +
+              rcos(work->heading) * work->edgeOffset.vz;
     lateralOffset = ProjectCarTrackAxis(rotated);
     if (work->curveMode != 0) {
         lateralOffset = work->arcLateral;
