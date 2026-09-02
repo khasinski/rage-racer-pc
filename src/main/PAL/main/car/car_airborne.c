@@ -3,26 +3,40 @@
 #include "game/car.h"
 #include "psyq/gte.h"
 
-static s32 YawMagnitude(s32 yawOffset) {
+enum {
+    AIRBORNE_YAW_RESPONSE = 5,
+    AIRBORNE_SKID_PHASE_LIMIT = 513,
+    AIRBORNE_LARGE_YAW = 1537,
+    AIRBORNE_INPUT_RELEASED = 128,
+    AIRBORNE_DECAY_NUMERATOR = 31,
+    AIRBORNE_DECAY_DENOMINATOR = 32,
+};
+
+static s32 AbsoluteYawOffset(s32 yawOffset) {
     return yawOffset < 0 ? -yawOffset : yawOffset;
 }
 
-void UpdateCarAirborne(PlayerCarRuntime *car) {
-    GameCarDrive *drive = &car->drive;
-    s32 bodySin;
-    s32 bodyCos;
-    s32 alongBody;
-
+static void UpdateAirborneTyreVoice(const GameCarDrive *drive) {
     if (g_ShiftSoundLevel == 0) {
-        s32 offAxis = YawMagnitude(drive->yawOffset);
-        s32 phase = offAxis < 513 ? offAxis * 3 + 6144 : 0x1E00;
+        s32 offAxis = AbsoluteYawOffset(drive->yawOffset);
+        s32 phase = offAxis < AIRBORNE_SKID_PHASE_LIMIT
+                        ? offAxis * 3 + 0x1800
+                        : 0x1E00;
 
         SetIndexedEffectVoice(0, phase, drive->jumpTimer * 2 + 80);
     } else {
         SetIndexedEffectVoice(0, 0x1800, g_ShiftSoundLevel + 25);
     }
+}
 
-    car->bodyYaw += GetAngleDelta(car->bodyYaw, drive->targetHeading) / 5;
+static void UpdateAirborneVelocity(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+    s32 bodySin;
+    s32 bodyCos;
+    s32 alongBody;
+
+    car->bodyYaw += GetAngleDelta(car->bodyYaw, drive->targetHeading) /
+                    AIRBORNE_YAW_RESPONSE;
     UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
@@ -37,29 +51,52 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
                       bodySin * alongBody / 4096;
     drive->brakePos = rcos(drive->launchHeading) * drive->launchSpeed / 256 +
                       bodyCos * alongBody / 4096;
+}
 
+static void UpdateAirborneCoastFrames(GameCarDrive *drive) {
     if (drive->acceleratorLatch != 1 && drive->brakeLatch != 1 &&
-        drive->acceleratorInput.value < 128)
+        drive->acceleratorInput.value < AIRBORNE_INPUT_RELEASED) {
         drive->coastFrames++;
-    else
+    } else {
         drive->coastFrames = 0;
+    }
+}
 
-    drive->spinRate = drive->spinRate * 31 / 32;
-    drive->launchSpeed = drive->launchSpeed * 31 / 32;
-    drive->yawOffset = drive->yawOffset * 31 / 32;
+static void DecayAirborneMotion(GameCarDrive *drive) {
+    drive->spinRate = drive->spinRate * AIRBORNE_DECAY_NUMERATOR /
+                      AIRBORNE_DECAY_DENOMINATOR;
+    drive->launchSpeed = drive->launchSpeed * AIRBORNE_DECAY_NUMERATOR /
+                         AIRBORNE_DECAY_DENOMINATOR;
+    drive->yawOffset = drive->yawOffset * AIRBORNE_DECAY_NUMERATOR /
+                       AIRBORNE_DECAY_DENOMINATOR;
     drive->bodyLiftOffset = drive->bodyLiftOffset * 2 / 3;
+}
 
-    if (YawMagnitude(drive->yawOffset) >= 1537)
+static void FinishAirborneMotion(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+
+    SetIndexedEffectVoice(-1, 0, 0);
+    car->bodyYaw -= drive->spinRate;
+    g_ShiftSoundLevel = 0;
+    drive->shiftRpmDelta = 0;
+    drive->yawOffset = 0;
+    drive->launchSpeed = 0;
+    drive->motionState = CAR_MOTION_DRIVING;
+    drive->bodyLiftOffset = 0;
+}
+
+void UpdateCarAirborne(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+
+    UpdateAirborneTyreVoice(drive);
+    UpdateAirborneVelocity(car);
+    UpdateAirborneCoastFrames(drive);
+    DecayAirborneMotion(drive);
+
+    if (AbsoluteYawOffset(drive->yawOffset) >= AIRBORNE_LARGE_YAW) {
         car->speed = car->speed * 4 / 5;
-
+    }
     if (drive->jumpTimer <= 0) {
-        SetIndexedEffectVoice(-1, 0, 0);
-        car->bodyYaw -= drive->spinRate;
-        g_ShiftSoundLevel = 0;
-        drive->shiftRpmDelta = 0;
-        drive->yawOffset = 0;
-        drive->launchSpeed = 0;
-        drive->motionState = CAR_MOTION_DRIVING;
-        drive->bodyLiftOffset = 0;
+        FinishAirborneMotion(car);
     }
 }
