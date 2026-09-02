@@ -6,7 +6,7 @@
 #include <string.h>
 
 EffectCueBank g_EffectCueTable[3];
-EffectVoice g_EffectVoices[4];
+EffectVoice g_EffectVoices[5];
 
 #define CHECK(condition) do {                                                  \
     if (!(condition)) {                                                        \
@@ -66,6 +66,14 @@ int main(void) {
     CHECK(g_EffectVoices[3].note.value == 41);
     SetPitchedSoundCue(-2, 0x2222, 64);
     CHECK(g_EffectVoices[0].note.value == 20);
+
+    Reset();
+    g_EffectCueTable[0].voiceCount = 99;
+    g_EffectVoices[2].note.value = 1234;
+    SetPitchedSoundCue(0, 0x3333, 64);
+    CHECK(g_EffectVoices[0].note.value == 20 &&
+          g_EffectVoices[1].note.value == 21);
+    CHECK(g_EffectVoices[2].note.value == 1234);
 
     puts("pitched sound cues preserve bank routing, reuse, and reset");
     return 0;

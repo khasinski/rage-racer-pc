@@ -3,9 +3,19 @@
 
 enum {
     EFFECT_CUE_BANK_COUNT = 3,
+    EFFECT_CUE_VOICE_COUNT = 2,
     EFFECT_CUE_SECONDARY_VOICE = 2,
     EFFECT_CUE_DEFAULT_PITCH = 0x1E00,
 };
+
+static s32 CueVoiceCount(const EffectCueBank *cue) {
+    if (cue->voiceCount < 0) {
+        return 0;
+    }
+    return cue->voiceCount > EFFECT_CUE_VOICE_COUNT
+               ? EFFECT_CUE_VOICE_COUNT
+               : cue->voiceCount;
+}
 
 static s32 CueBankVoiceStart(s32 bank) {
     return bank == 0 ? 0 : EFFECT_CUE_SECONDARY_VOICE;
@@ -39,7 +49,7 @@ static void StartCueVoices(s32 voiceStart, s32 bank, s32 pitch, s32 volume) {
                                  : EFFECT_VOICE_START;
     s32 voice;
 
-    for (voice = 0; voice < cue->voiceCount; voice++) {
+    for (voice = 0; voice < CueVoiceCount(cue); voice++) {
         EffectVoice *effect = &g_EffectVoices[voiceStart + voice];
 
         effect->state = state;
@@ -66,7 +76,8 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
     } else if (bank == 0 || VoicePairMatchesBank(voiceStart, bank)) {
         if (g_EffectVoices[voiceStart].note.value >= 0 ||
             g_EffectVoices[voiceStart + 1].note.value >= 0) {
-            ResetCueVoices(voiceStart, g_EffectCueTable[bank].voiceCount);
+            ResetCueVoices(voiceStart,
+                           CueVoiceCount(&g_EffectCueTable[bank]));
         }
     }
 }

@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-MusicChannel g_MusicChannels[2];
+MusicChannel g_MusicChannels[3];
 SoundModeEntry g_SoundModes[4];
 s32 g_StereoOutput;
 
@@ -77,6 +77,14 @@ int main(void) {
     SetStereoSoundCue(2, 0, 0);
     CHECK(g_MusicChannels[0].left.value == 10);
     CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_START);
+
+    Reset();
+    g_SoundModes[0].count = 99;
+    g_MusicChannels[2].left.value = 1234;
+    SetStereoSoundCue(0, 64, 64);
+    CHECK(g_MusicChannels[0].left.value == 10 &&
+          g_MusicChannels[1].left.value == 11);
+    CHECK(g_MusicChannels[2].left.value == 1234);
 
     puts("stereo sound cues preserve routing, reuse, mono mix, and stop groups");
     return 0;

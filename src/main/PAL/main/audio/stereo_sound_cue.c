@@ -1,6 +1,17 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
+enum { STEREO_SOUND_CHANNEL_COUNT = 2 };
+
+static s32 SoundModeChannelCount(const SoundModeEntry *mode) {
+    if (mode->count < 0) {
+        return 0;
+    }
+    return mode->count > STEREO_SOUND_CHANNEL_COUNT
+               ? STEREO_SOUND_CHANNEL_COUNT
+               : mode->count;
+}
+
 static int MusicChannelsOnMode(s32 mode) {
     return g_MusicChannels[0].left.value == g_SoundModes[mode].slots[0].left &&
            g_MusicChannels[1].left.value == g_SoundModes[mode].slots[1].left;
@@ -15,7 +26,7 @@ static void StopStereoSoundCue(s32 cue) {
         return;
     }
 
-    for (i = 0; i < g_SoundModes[cue].count; i++) {
+    for (i = 0; i < SoundModeChannelCount(&g_SoundModes[cue]); i++) {
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
         g_MusicChannels[i].mode = MUSIC_CHANNEL_STOP;
@@ -46,7 +57,7 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
     state = MusicChannelsOnMode(cue) ? MUSIC_CHANNEL_UPDATE
                                      : MUSIC_CHANNEL_START;
 
-    for (i = 0; i < soundMode->count; i++) {
+    for (i = 0; i < SoundModeChannelCount(soundMode); i++) {
         MusicChannel *channel = &g_MusicChannels[i];
         s32 channelLeft = left;
         s32 channelRight = right;
