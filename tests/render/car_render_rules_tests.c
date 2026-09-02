@@ -13,6 +13,8 @@
     } while (0)
 
 int main(void) {
+    static const u8 badgeStyles[] = {0, 1, 2, 3, 4};
+
     CHECK_EQ(CarRenderManhattanDistance(100, -50, 70, -20), 60);
     CHECK_EQ(CarRenderManhattanDistance(-100, 50, -70, 20), 60);
     CHECK_EQ(CarRenderManhattanDistance(INT_MIN, 0, INT_MAX, 0), INT_MAX);
@@ -31,6 +33,16 @@ int main(void) {
     CHECK_EQ(ResolveCarModelBank(-1, 0, 6), 1);
     CHECK_EQ(ResolveCarModelBank(INT_MAX, 1, 6), 1);
     CHECK_EQ(ResolveCarModelBank(INT_MIN, -1, 6), 1);
+
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(0, badgeStyles, 5), 0);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(1, badgeStyles, 5), 3);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(2, badgeStyles, 5), 6);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(3, badgeStyles, 5), 9);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(4, badgeStyles, 5), 0);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(-1, badgeStyles, 5), 0);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(5, badgeStyles, 5), 0);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(0, NULL, 5), 0);
+    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(1, badgeStyles, -1), 0);
 
     puts("car render rules tests passed");
     return 0;

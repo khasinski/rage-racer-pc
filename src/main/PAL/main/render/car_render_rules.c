@@ -1,12 +1,15 @@
 #include "game/car_render_rules.h"
 
 #include <limits.h>
+#include <stddef.h>
 #include <stdint.h>
 
 enum {
     CAR_CLOSE_DISTANCE = 0xD00,
     CAR_CULL_DISTANCE = 0x2500,
     CAR_MODEL_BANK_FALLBACK = 1,
+    MIRROR_BADGE_STYLE_COUNT = 4,
+    MIRROR_BADGE_SPRITE_STRIDE = 3,
 };
 
 s32 CarRenderManhattanDistance(s32 x, s32 z, s32 viewX, s32 viewZ) {
@@ -39,4 +42,17 @@ s32 ResolveCarModelBank(s32 baseBank, s32 offset, s32 bankCount) {
     return requestedBank >= 0 && requestedBank < bankCount
         ? (s32)requestedBank
         : CAR_MODEL_BANK_FALLBACK;
+}
+
+s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex, const u8 *styles,
+                                  s32 carCount) {
+    u8 style;
+
+    if (styles == NULL || carCount <= 0 || (u32)carIndex >= (u32)carCount) {
+        return 0;
+    }
+    style = styles[carIndex];
+    return style < MIRROR_BADGE_STYLE_COUNT
+        ? style * MIRROR_BADGE_SPRITE_STRIDE
+        : 0;
 }

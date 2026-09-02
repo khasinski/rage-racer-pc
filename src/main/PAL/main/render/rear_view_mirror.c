@@ -1,5 +1,6 @@
 #include "game/prim.h"
 #include "game/car.h"
+#include "game/car_render_rules.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -9,8 +10,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
     GameOrderingTableEntry *otArg;
     u8 *prim;
     GameOrderingTableEntry *ot;
-    s32 colorIndex;
-    s32 paletteIndex;
+    s32 badgeSpriteIndex;
     s32 color;
     u8 *next;
     TILE *tile;
@@ -35,10 +35,14 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
     packet += sizeof(*tile);
     AddPrim(otArg, prim);
 
-    colorIndex = g_CarMirrorBadgeStyles[g_PlayerCarIndex];
-    paletteIndex = colorIndex * 3;
+    badgeSpriteIndex = ResolveMirrorBadgeSpriteIndex(
+        g_PlayerCarIndex, g_CarMirrorBadgeStyles, GAME_CAR_COUNT);
     ot = &g_DrawBuffer->layout.orderingTables[1][1];
-    next = GameQueueSprite(ot, packet, 0x56, g_MirrorPanelY, g_MirrorBadgeWidths[paletteIndex], 8, g_MirrorBadgeTexU[paletteIndex], g_MirrorBadgeTexV[paletteIndex], 0x7800);
+    next = GameQueueSprite(
+        ot, packet, 0x56, g_MirrorPanelY,
+        g_MirrorBadgeWidths[badgeSpriteIndex], 8,
+        g_MirrorBadgeTexU[badgeSpriteIndex],
+        g_MirrorBadgeTexV[badgeSpriteIndex], 0x7800);
     tileAddress.bytes = QueueDrawModePrim(ot, next, 9);
     return tileAddress.drawPacket;
 }
