@@ -307,13 +307,14 @@ void UpdateRaceScene(void) {
             EndMirrorPass();
         }
     } else {
+        RaceClockUpdate raceClock;
         RaceStartUpdate raceStart;
         WrongWayUpdate wrongWay;
 
         g_AnimTimer++;
-        if ((g_RacePhase >= 2) && (g_GrandPrixMode != 0)) {
-            g_RaceTimeRemaining--;
-        }
+        raceClock = UpdateRaceClock(g_RaceTimeRemaining, g_RacePhase,
+                                    g_GrandPrixMode);
+        g_RaceTimeRemaining = raceClock.remaining;
 
         raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
         g_RacePhase = raceStart.phase;
@@ -342,7 +343,7 @@ void UpdateRaceScene(void) {
             if (g_GrandPrixMode != 0) {
                 DrawTimeRemaining(g_RaceTimeRemaining);
             }
-            if (g_RaceTimeRemaining <= 0) {
+            if (raceClock.expired) {
                 if (g_CourseProgress->retriesRemaining != 0) {
                     PlaySoundCue(0x3D);
                 }

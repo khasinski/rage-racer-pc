@@ -38,6 +38,11 @@ typedef struct RaceStartUpdate {
     RaceStartAction action;
 } RaceStartUpdate;
 
+typedef struct RaceClockUpdate {
+    s32 remaining;
+    u8 expired;
+} RaceClockUpdate;
+
 s32 RaceLapCount(s32 courseIndex);
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]);
 u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]);
@@ -54,5 +59,7 @@ s32 WrongWayWarningVisible(s16 timer);
 WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
                                    u32 sceneTimer);
 RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer);
+RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
+                                s16 grandPrixMode);
 
 #endif

@@ -119,3 +119,14 @@ RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer) {
     }
     return result;
 }
+
+RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
+                                s16 grandPrixMode) {
+    RaceClockUpdate result = {remaining, 0};
+
+    if (phase >= 2 && grandPrixMode != 0) {
+        result.remaining--;
+    }
+    result.expired = phase < 4 && result.remaining <= 0;
+    return result;
+}

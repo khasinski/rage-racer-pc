@@ -145,6 +145,34 @@ static void TestRaceStartState(void) {
           "live race state is left unchanged");
 }
 
+static void TestRaceClock(void) {
+    RaceClockUpdate update;
+
+    update = UpdateRaceClock(2, 2, 1);
+    Check(update.remaining == 1 && !update.expired,
+          "Grand Prix clock advances during the live race");
+    update = UpdateRaceClock(1, 2, 1);
+    Check(update.remaining == 0 && update.expired,
+          "Grand Prix expires on the frame its clock reaches zero");
+
+    update = UpdateRaceClock(10, 1, 1);
+    Check(update.remaining == 10 && !update.expired,
+          "grid phase does not consume race time");
+    update = UpdateRaceClock(0, 1, 1);
+    Check(update.remaining == 0 && update.expired,
+          "an exhausted grid clock retains the retail timeout path");
+    update = UpdateRaceClock(0, 4, 1);
+    Check(update.remaining == -1 && !update.expired,
+          "finish presentation cannot trigger another timeout");
+
+    update = UpdateRaceClock(5, 2, 0);
+    Check(update.remaining == 5 && !update.expired,
+          "time attack does not consume its compatibility clock");
+    update = UpdateRaceClock(0, 2, 0);
+    Check(update.remaining == 0 && update.expired,
+          "time attack preserves the retail zero-clock fallback");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
@@ -153,6 +181,7 @@ int main(void) {
     TestRaceEndPresentation();
     TestWrongWayState();
     TestRaceStartState();
+    TestRaceClock();
 
     if (s_failures != 0) {
         return 1;
