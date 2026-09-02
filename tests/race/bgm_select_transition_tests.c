@@ -121,6 +121,25 @@ int main(void) {
     UpdateBgmSelectFadeIn();
     CHECK(s_displayMask == 1 && s_fadeCalls == 0 && s_textCalls == 1);
 
+    ResetCalls();
+    g_AssetLoadState = 1;
+    g_FadeLevel = 2;
+    g_FadeStep = -4;
+    g_SceneId = 0x1C;
+    ExitBgmSelect();
+    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
+    CHECK(g_SceneId == 0x1C);
+    CHECK(s_fadeCalls == 1 && s_lastFade == 0 && s_textCalls == 1);
+
+    ResetCalls();
+    g_AssetLoadState = 0;
+    g_FadeLevel = 254;
+    g_FadeStep = 0;
+    ExitBgmSelect();
+    CHECK(g_FadeLevel == 258 && g_FadeStep == 4);
+    CHECK(g_SceneId == 0x16);
+    CHECK(s_fadeCalls == 1 && s_lastFade == 258 && s_textCalls == 1);
+
     puts("BGM select transition tests passed");
     return 0;
 }
