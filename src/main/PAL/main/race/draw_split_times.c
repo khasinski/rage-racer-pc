@@ -7,7 +7,15 @@
 #include "rage/hud_config.h"
 
 enum {
-    TIME_DISPLAY_TIMEOUT = 1000,
+    MILLISECONDS_PER_SECOND = 1000,
+    SPLIT_DELTA_X = 0x80,
+    SPLIT_DELTA_Y = 0x50,
+    SPLIT_TIME_X = 0x12,
+    LAST_SPLIT_TIME_Y = 0x2A,
+    TARGET_SPLIT_TIME_Y = 0x20,
+    BEST_TOTAL_TIME_X = 0xFA,
+    BEST_TOTAL_TIME_Y = 0x7C,
+    DEFAULT_TIME_CLUT = 0x78CC,
 };
 
 void DrawSplitTimes(void) {
@@ -21,20 +29,21 @@ void DrawSplitTimes(void) {
         if (SplitDeltaVisible(g_SplitTimer, g_SectorIndex, g_SplitSign,
                               g_LapCount, g_PlayerCar.lap)) {
             clut = SplitDeltaClut(g_SplitSign);
-            DrawTimeValue(0x80, 0x50, g_SplitDelta, clut,
-                          TIME_DISPLAY_TIMEOUT);
+            DrawTimeValue(SPLIT_DELTA_X, SPLIT_DELTA_Y, g_SplitDelta, clut,
+                          MILLISECONDS_PER_SECOND);
         }
 
         clut = SplitTimeClut(g_LastSectorTime);
-        DrawTimeValue(HudLeftX(0x12), 0x2A, g_LastSectorTime, clut,
-                      TIME_DISPLAY_TIMEOUT);
+        DrawTimeValue(HudLeftX(SPLIT_TIME_X), LAST_SPLIT_TIME_Y,
+                      g_LastSectorTime, clut, MILLISECONDS_PER_SECOND);
     }
 
-    DrawTimeValue(HudLeftX(0x12), 0x20, g_SplitTargetTime,
-                  0x78CC, TIME_DISPLAY_TIMEOUT);
+    DrawTimeValue(HudLeftX(SPLIT_TIME_X), TARGET_SPLIT_TIME_Y,
+                  g_SplitTargetTime, DEFAULT_TIME_CLUT,
+                  MILLISECONDS_PER_SECOND);
     DrawSplitIndicator(g_SplitSector, g_SplitSign);
 
-    DrawTimeValue(HudRightX(0xFA), 0x7C,
+    DrawTimeValue(HudRightX(BEST_TOTAL_TIME_X), BEST_TOTAL_TIME_Y,
                   g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][0],
-                  0x78CC, TIME_DISPLAY_TIMEOUT);
+                  DEFAULT_TIME_CLUT, MILLISECONDS_PER_SECOND);
 }
