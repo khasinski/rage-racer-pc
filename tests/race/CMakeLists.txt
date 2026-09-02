@@ -720,7 +720,8 @@ set_tests_properties(bgm_select_control PROPERTIES LABELS functional)
 
 add_executable(bgm_select_transition_tests
     bgm_select_transition_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select_transition.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select_transition.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)
 target_include_directories(bgm_select_transition_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
