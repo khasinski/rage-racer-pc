@@ -15,7 +15,7 @@ void PlaySequence(void) {
     SsSeqPlay(g_SeqHandle.value, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
 }
 
-void StopSequence(void) { SsSeqStop(g_SeqHandle.value); }
+static void StopSequence(void) { SsSeqStop(g_SeqHandle.value); }
 
 void StartSequenceFadeOut(void) {
     g_SeqVolumeFadeStep = SEQUENCE_VOLUME_FADE_STEP;

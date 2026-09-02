@@ -59,8 +59,6 @@ int main(void) {
     g_SeqHandle.value = 7;
     PlaySequence();
     CHECK(s_sequencePlays == 1 && s_playMode == 1 && s_loopCount == 0);
-    StopSequence();
-    CHECK(s_sequenceStops == 1);
 
     StartSequenceFadeOut();
     CHECK(g_SeqVolumeFadeStep == -4 && g_ReverbFadeStep == -3);
@@ -90,7 +88,7 @@ int main(void) {
     CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 1);
     CHECK(g_ReverbFadeStep == -3);
     CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
-    CHECK(s_sequenceStops == 2 && s_closeCalls == 1);
+    CHECK(s_sequenceStops == 1 && s_closeCalls == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolume == 0);
 

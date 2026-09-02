@@ -77,7 +77,6 @@ extern s16 g_VabIds[];
 void SetSequenceVolume(s32 volume);
 void RefreshSequenceVolumeScale(void);
 void PlaySequence(void);
-void StopSequence(void);
 void StartSequenceFadeOut(void);
 void UpdateSequenceFadeOut(void);
 void ApplyDuckedSequenceAudio(void);
