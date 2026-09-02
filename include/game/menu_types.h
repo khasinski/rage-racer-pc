@@ -66,6 +66,14 @@ enum MenuPalette {
     MENU_PAINT_COLOR_COUNT = 18
 };
 
+/* One entry in the setup-screen hint bar. */
+typedef struct OptionHintCaption {
+    u8 u;
+    u8 v;
+    u8 width;
+    u8 advance;
+} OptionHintCaption;
+
 /* 6x6 mask selecting the DESIGN MODE script cells to draw. */
 typedef struct DesignModeCellMask {
     u8 cells[6][6];

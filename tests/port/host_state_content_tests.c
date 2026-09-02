@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "game/menu_types.h"
+#include "game/team_logo.h"
 #include "game/visible_cell_scan.h"
 
 typedef struct ContentCarPoint {
@@ -109,7 +111,7 @@ extern unsigned char g_MsgOrdinalRd[8];
 extern unsigned char g_MsgOrdinalTh[116];
 extern unsigned char g_PaintColorTable[168];
 extern unsigned char g_CourseCardVerts[108];
-extern unsigned char g_MenuCarPivotOffset[16];
+extern Vec4 g_MenuCarPivotOffset;
 extern unsigned char g_TeamNameCharScale[152];
 extern unsigned char g_FormatDecimal[68];
 extern unsigned char g_MenuBlankCaption[52];
@@ -127,8 +129,6 @@ extern unsigned char g_MsgSaveChecksumOk[8];
 extern unsigned char g_FmtSaveChecksum[20];
 extern unsigned char g_SaveDefaults[104];
 extern unsigned char g_DrawModeEnv[8];
-extern unsigned char g_TeamLogoClutRect[8];
-extern unsigned char g_TeamLogoRect[8];
 extern unsigned char g_PromotionBonusTable[20];
 extern unsigned char g_NegconSteerRange[8];
 extern unsigned char g_NegconSteerDeadZone[16];
@@ -163,10 +163,10 @@ extern unsigned char g_ChanceDigits[12];
 extern unsigned char g_PlaceSuffixNames[20];
 extern unsigned char g_CarNames[52];
 extern unsigned char g_CarClassNames[52];
-extern unsigned char g_OptionHintCaptions[28];
-extern unsigned char g_ClassRecordCellPoints[44];
-extern unsigned char g_ClassRecordCellSprites[132];
-extern unsigned char g_ClassRecordNameSprites[36];
+extern OptionHintCaption g_OptionHintCaptions[7];
+extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
+extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
+extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
 extern unsigned char g_BgmSelectSteps[20];
 extern unsigned char g_AttractTitleDelays[8];
 extern unsigned char g_SpriteFontCells[192];
@@ -249,7 +249,7 @@ extern unsigned char g_CarShopBuyPromptScript1[84];
 extern unsigned char g_CarShopBuyPromptScript3[84];
 extern unsigned char g_CarShopBuyPromptScript4[84];
 extern unsigned char g_EngineerShopTuneUpPromptScript[60];
-extern unsigned char g_MenuViewScale[16];
+extern Vec4 g_MenuViewScale;
 extern unsigned char g_CarPriceTable[128];
 extern unsigned char g_CarTuneUpPriceTable[124];
 extern unsigned char g_SoundSlotTone[24];
@@ -317,7 +317,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgOrdinalTh", g_MsgOrdinalTh, 116},
     {"g_PaintColorTable", g_PaintColorTable, 168},
     {"g_CourseCardVerts", g_CourseCardVerts, 108},
-    {"g_MenuCarPivotOffset", g_MenuCarPivotOffset, 16},
+    {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
     {"g_TeamNameCharScale", g_TeamNameCharScale, 152},
     {"g_FormatDecimal", g_FormatDecimal, 68},
     {"g_MenuBlankCaption", g_MenuBlankCaption, 52},
@@ -335,8 +335,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
     {"g_SaveDefaults", g_SaveDefaults, 104},
     {"g_DrawModeEnv", g_DrawModeEnv, 8},
-    {"g_TeamLogoClutRect", g_TeamLogoClutRect, 8},
-    {"g_TeamLogoRect", g_TeamLogoRect, 8},
+    {"g_TeamLogoClutRect", (const unsigned char *)&g_TeamLogoClutRect, 8},
+    {"g_TeamLogoRect", (const unsigned char *)&g_TeamLogoRect, 8},
     {"g_PromotionBonusTable", g_PromotionBonusTable, 20},
     {"g_NegconSteerRange", g_NegconSteerRange, 8},
     {"g_NegconSteerDeadZone", g_NegconSteerDeadZone, 16},
@@ -371,10 +371,13 @@ static const HostStateBlob s_blobs[] = {
     {"g_PlaceSuffixNames", g_PlaceSuffixNames, 20},
     {"g_CarNames", g_CarNames, 52},
     {"g_CarClassNames", g_CarClassNames, 52},
-    {"g_OptionHintCaptions", g_OptionHintCaptions, 28},
-    {"g_ClassRecordCellPoints", g_ClassRecordCellPoints, 44},
-    {"g_ClassRecordCellSprites", g_ClassRecordCellSprites, 132},
-    {"g_ClassRecordNameSprites", g_ClassRecordNameSprites, 36},
+    {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 28},
+    {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,
+     44},
+    {"g_ClassRecordCellSprites",
+     (const unsigned char *)g_ClassRecordCellSprites, 132},
+    {"g_ClassRecordNameSprites",
+     (const unsigned char *)g_ClassRecordNameSprites, 36},
     {"g_BgmSelectSteps", g_BgmSelectSteps, 20},
     {"g_AttractTitleDelays", g_AttractTitleDelays, 8},
     {"g_SpriteFontCells", g_SpriteFontCells, 192},
@@ -457,7 +460,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_CarShopBuyPromptScript3", g_CarShopBuyPromptScript3, 84},
     {"g_CarShopBuyPromptScript4", g_CarShopBuyPromptScript4, 84},
     {"g_EngineerShopTuneUpPromptScript", g_EngineerShopTuneUpPromptScript, 60},
-    {"g_MenuViewScale", g_MenuViewScale, 16},
+    {"g_MenuViewScale", (const unsigned char *)&g_MenuViewScale, 16},
     {"g_CarPriceTable", g_CarPriceTable, 128},
     {"g_CarTuneUpPriceTable", g_CarTuneUpPriceTable, 124},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},

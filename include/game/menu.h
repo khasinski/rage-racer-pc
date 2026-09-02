@@ -127,12 +127,6 @@ enum MenuLayout {
  * centres it, and `advance` is how far down the bar the next element starts.
  * Seven records, indexed by the DrawOptionHintBar argument.
  */
-typedef struct OptionHintCaption {
-    u8 u;
-    u8 v;
-    u8 width;
-    u8 advance;
-} OptionHintCaption;
 extern OptionHintCaption g_OptionHintCaptions[];
 
 /*
