@@ -31,7 +31,6 @@ void UpdateRouteScenery(void) {
     LVec vout;
     SceneryMotionKeyframe *keyframe;
     s32 elapsed;
-    s32 remaining;
 
     if (g_RouteSceneryClock <= 0) {
         return;
@@ -46,22 +45,21 @@ void UpdateRouteScenery(void) {
         keyframe++;
     }
 
-    if (keyframe->duration == -1) {
+    if (keyframe->duration == SCENERY_MOTION_END) {
         RestartRouteScenery();
         keyframe = g_RouteSceneryKeyframe;
     }
 
     elapsed = g_RouteSceneryFrame;
-    remaining = keyframe->duration - elapsed;
-    g_RouteSceneryRotX =
-        (keyframe[1].rotationX * elapsed +
-         keyframe->rotationX * remaining) / keyframe->duration;
-    g_RouteSceneryRotY =
-        (keyframe[1].rotationY * elapsed +
-         keyframe->rotationY * remaining) / keyframe->duration;
-    g_RouteSceneryRotZ =
-        (keyframe[1].rotationZ * elapsed +
-         keyframe->rotationZ * remaining) / keyframe->duration;
+    g_RouteSceneryRotX = InterpolateSceneryMotionValue(
+        keyframe->rotationX, keyframe[1].rotationX, elapsed,
+        keyframe->duration);
+    g_RouteSceneryRotY = InterpolateSceneryMotionValue(
+        keyframe->rotationY, keyframe[1].rotationY, elapsed,
+        keyframe->duration);
+    g_RouteSceneryRotZ = InterpolateSceneryMotionValue(
+        keyframe->rotationZ, keyframe[1].rotationZ, elapsed,
+        keyframe->duration);
 
     vin.vx = 0;
     vin.vy = 0;

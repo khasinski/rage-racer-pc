@@ -40,6 +40,15 @@ static inline s16 NormalizePathSceneryRate(s16 rate) {
     return rate == 0 ? 1 : rate;
 }
 
+enum { SCENERY_MOTION_END = -1 };
+
+static inline s32 InterpolateSceneryMotionValue(s16 current, s16 next,
+                                                s32 elapsed, s16 duration) {
+    const s32 remaining = duration - elapsed;
+
+    return (next * elapsed + current * remaining) / duration;
+}
+
 typedef struct PathSceneryTransform {
     Block16 position;
     SVec rotation;

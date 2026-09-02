@@ -5,6 +5,12 @@
 #include "game/track_internal.h"
 #include "psyq/gte.h"
 
+enum {
+    FLYBY_LIFETIME_FRAMES = 0x1C3,
+    FLYBY_MAX_VOLUME = 0x74,
+    FLYBY_ENGINE_PITCH = 0x1900,
+};
+
 static void StartFlybyIfTriggered(void) {
     const s32 series = g_RaceSeries;
     const s32 keyframeIndex =
@@ -34,7 +40,7 @@ static SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
 
     g_FlybyScenery.timer++;
     g_FlybyScenery.keyframeTime++;
-    if (g_FlybyScenery.timer >= 0x1C3) {
+    if (g_FlybyScenery.timer >= FLYBY_LIFETIME_FRAMES) {
         g_FlybyScenery.timer = 0;
     }
 
@@ -44,7 +50,7 @@ static SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
         g_FlybyScenery.keyframeTime = 0;
         keyframe++;
     }
-    if (keyframe->duration == -1) {
+    if (keyframe->duration == SCENERY_MOTION_END) {
         g_FlybyScenery.keyframeIndex = 0;
         keyframe = g_FlybySceneryKeyframe;
     }
@@ -57,17 +63,16 @@ static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
     SVec direction = {0, 0, (s16)(-keyframe->speed * 4), 0};
     LVec step;
     const s32 elapsed = g_FlybyScenery.keyframeTime;
-    const s32 remaining = keyframe->duration - elapsed;
 
-    g_FlybyScenery.rotationX =
-        (keyframe[1].rotationX * elapsed +
-         keyframe->rotationX * remaining) / keyframe->duration;
-    g_FlybyScenery.rotationY =
-        (keyframe[1].rotationY * elapsed +
-         keyframe->rotationY * remaining) / keyframe->duration;
-    g_FlybyScenery.rotationZ =
-        (keyframe[1].rotationZ * elapsed +
-         keyframe->rotationZ * remaining) / keyframe->duration;
+    g_FlybyScenery.rotationX = InterpolateSceneryMotionValue(
+        keyframe->rotationX, keyframe[1].rotationX, elapsed,
+        keyframe->duration);
+    g_FlybyScenery.rotationY = InterpolateSceneryMotionValue(
+        keyframe->rotationY, keyframe[1].rotationY, elapsed,
+        keyframe->duration);
+    g_FlybyScenery.rotationZ = InterpolateSceneryMotionValue(
+        keyframe->rotationZ, keyframe[1].rotationZ, elapsed,
+        keyframe->duration);
 
     BuildRotMatrixY(&rotationY, 0x800 - g_FlybyScenery.rotationY);
     BuildRotMatrixX(&rotationX, g_FlybyScenery.rotationX);
@@ -99,16 +104,16 @@ static void GetFlybyAudio(s32 active, s32 *pitch, s32 *volume) {
     distance = SquareRoot12(dx * dx / 8 + dy * dy / 16 + dz * dz / 8) >> 12;
     if (distance < 0) {
         g_FlybyScenery.soundEnabled = 0;
-        distance = 0x74;
+        distance = FLYBY_MAX_VOLUME;
     }
 
-    *volume = 0x74 - distance;
-    if (*volume > 0x74) {
-        *volume = 0x74;
+    *volume = FLYBY_MAX_VOLUME - distance;
+    if (*volume > FLYBY_MAX_VOLUME) {
+        *volume = FLYBY_MAX_VOLUME;
     } else if (*volume < 0) {
         *volume = 0;
     }
-    *pitch = 0x1900;
+    *pitch = FLYBY_ENGINE_PITCH;
     g_FlybyScenery.volume = *volume;
 }
 
