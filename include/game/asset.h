@@ -44,11 +44,12 @@ typedef enum AssetRequestType {
 
 extern AssetRequestType g_AssetRequestType;
 
-/* Asset-load state machine phase (0 idle; 1..6 drive LoadAsset loads). */
+/* Asset-load state machine phase (0 finished; positive values drive loads).
+ * State 0 alone does not imply success: use the predicates below. */
 extern s32 g_AssetLoadState;
 
-/* Request functions return 1 while loading, 0 after successful completion,
- * and -1 after a loader rejected the asset. */
+/* Polling request functions return 1 while loading, 0 after successful
+ * completion, and -1 after the loader rejected an asset. */
 s32 AssetLoadHasFailed(void);
 s32 AssetLoadCompletedSuccessfully(void);
 
@@ -358,15 +359,15 @@ extern size_t g_AssetSubBlockSize;
 
 /*
  * Asset-load state machine. ServiceAssetLoad runs once per frame and
- * dispatches g_AssetRequestType 1..12 to the GameLoad*Assets step below; each step
- * advances g_AssetLoadState until it reaches 0. A screen starts a load with the
- * matching GameRequest* (which sets g_AssetRequestType and returns 1 while busy) and
- * polls the same GameRequest* until it returns 0. Asset indices are documented
+ * dispatches g_AssetRequestType 1..12 to the Load*Assets step below. Each step
+ * advances g_AssetLoadState until it reaches 0, recording success or failure
+ * separately. A screen starts a load with the matching Request*Assets and may
+ * poll the same function until it returns 0 or -1. Asset indices are documented
  * with the constants near the top of this header.
  */
 void ServiceAssetLoad(void);
-/* Cancel an in-flight load: aborts a running CdRead and clears all three
- * state words (g_CdLoadPhase / g_AssetLoadState / g_AssetRequestType). */
+/* Cancel an in-flight load: aborts a running CdRead and clears its request,
+ * phase and failure state. */
 void ResetAssetLoader(void);
 /* Boot: read the "\RAGE.BIN;1" first sector into g_AssetCdEntries (135 entries)
  * and rebase the 11 "\RAGE.STR;1" stream entries. Prints "Now Searching [%s]". */
