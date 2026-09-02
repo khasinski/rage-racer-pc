@@ -17,6 +17,6 @@ void UpdateCarWheelRotation(GameCarRuntime *car) {
     }
     rotation = (car->wheelRotation + step) & ANGLE_MASK;
     car->wheelRotation = car->speed > WHEEL_BLUR_SPEED
-        ? rotation | ANGLE_FULL_TURN
+        ? rotation | CAR_WHEEL_BLUR_FLAG
         : rotation;
 }

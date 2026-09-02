@@ -1,4 +1,5 @@
 #include "game/diagnostics.h"
+#include "game/angle.h"
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/car_model_matrix.h"
@@ -11,6 +12,11 @@
 #include "rage/render_world_game.h"
 
 #include <stdlib.h>
+
+enum {
+    CAR_SHELL_PASS_COUNT = 2,
+    CAR_SIDE_COUNT = 2,
+};
 
 static s32 FindRenderedCarSlot(const GameRenderObject *object) {
     s32 slot;
@@ -31,6 +37,11 @@ static void SubmitCarPart(LVec *position, Matrix *transform, s32 materialMode,
     SetGteObjectMatrix(&g_ObjectMatrixWork, position, transform);
     g_RenderState.envMode4 = materialMode;
     SubmitModel(&g_RenderState, modelBank);
+}
+
+static void OffsetCarHorizon(GameRenderObject *object, s32 offset) {
+    object->y += offset;
+    object->modelY += offset;
 }
 
 /*
@@ -60,9 +71,8 @@ void DrawPlayerCarModel(GameRenderObject *object) {
 
     GameRenderWorldSubmitPlayerCar(object, g_RenderState.orderingFlag != 0);
 
-    object->y -= modelAsset->horizon;
-    object->modelY -= modelAsset->horizon;
-    BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+    OffsetCarHorizon(object, -modelAsset->horizon);
+    BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
     BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
     MulMatrix2(&scratchMatrix, &bodyViewMatrix);
     MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
@@ -80,7 +90,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     bodyLocalMatrix = bodyViewMatrix;
     MulMatrix2(&g_RenderState.matrix, &bodyViewMatrix);
 
-    BuildRotMatrixY(&scratchMatrix, 0x800 - object->modelYaw);
+    BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->modelYaw);
     BuildRotMatrixX(&partMatrix, object->modelPitch);
     MulMatrix2(&scratchMatrix, &partMatrix);
     MulMatrix2(&g_RenderState.matrix, &partMatrix);
@@ -91,7 +101,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     modelPosition.z = object->z;
     modelPosition.y = object->modelY;
     /* The recovered retail path submits this shell twice with the same bank. */
-    for (passIndex = 0; passIndex < 2; passIndex++) {
+    for (passIndex = 0; passIndex < CAR_SHELL_PASS_COUNT; passIndex++) {
         SubmitCarPart(&modelPosition, &scratchMatrix, 0, 1);
     }
 
@@ -101,7 +111,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
                   ResolveCarModelBank(0, 0, g_ModelBankCount));
 
     modelBankBase = object->renderDepth * 2;
-    if (object->wheelRotation & 0x1000) {
+    if (object->wheelRotation & CAR_WHEEL_BLUR_FLAG) {
         modelBankBase += 10;
     }
     BuildRotMatrixZ(&scratchMatrix, object->bodyRoll - object->bodyRollVelocity);
@@ -119,7 +129,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     SubmitCarPart(AsPositionWords(&object->x), &axleMatrix, 0,
                   ResolveCarModelBank(modelBankBase, 3, g_ModelBankCount));
 
-    for (sideIndex = 0; sideIndex < 2; sideIndex++) {
+    for (sideIndex = 0; sideIndex < CAR_SIDE_COUNT; sideIndex++) {
         s32 lateralOffset = modelAsset->modelOffsetX;
         if (sideIndex != 0) {
             lateralOffset = -lateralOffset;
@@ -138,8 +148,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
         SetLightMatrix(&lightMatrix);
     }
 
-    object->y += g_CarModelAsset->horizon;
-    object->modelY += g_CarModelAsset->horizon;
+    OffsetCarHorizon(object, modelAsset->horizon);
     if (clipHandle != 0) {
         RestoreColorMatrix();
     }
@@ -163,6 +172,7 @@ void DrawCar(GameRenderObject *object) {
     s32 passIndex;
     s32 sideIndex;
     s32 model;
+    s32 horizon;
     s16 *lod;
     CarRenderRange renderRange;
 
@@ -203,10 +213,10 @@ void DrawCar(GameRenderObject *object) {
         return;
     }
 
-    object->y -= g_TrackRenderTable->models[model].horizon;
-    object->modelY -= g_TrackRenderTable->models[model].horizon;
+    horizon = g_TrackRenderTable->models[model].horizon;
+    OffsetCarHorizon(object, -horizon);
     if (renderRange == CAR_RENDER_CLOSE) {
-        BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
         BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyViewMatrix);
         MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
@@ -221,7 +231,7 @@ void DrawCar(GameRenderObject *object) {
         bodyLocalMatrix = bodyViewMatrix;
         MulMatrix2(&g_RenderState.matrix, &bodyViewMatrix);
 
-        BuildRotMatrixY(&scratchMatrix, 0x800 - object->modelYaw);
+        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->modelYaw);
         BuildRotMatrixX(&partMatrix, object->modelPitch);
         MulMatrix2(&scratchMatrix, &partMatrix);
         MulMatrix2(&g_RenderState.matrix, &partMatrix);
@@ -232,7 +242,7 @@ void DrawCar(GameRenderObject *object) {
         modelPosition[2] = object->z;
         modelPosition[1] = object->modelY;
         /* The recovered retail path submits this shell twice with one bank. */
-        for (passIndex = 0; passIndex < 2; passIndex++) {
+        for (passIndex = 0; passIndex < CAR_SHELL_PASS_COUNT; passIndex++) {
             SubmitCarPart(AsPositionWords(modelPosition), &scratchMatrix, 0,
                           ResolveCarModelBank(lod[0], 1,
                                               g_ModelBankCount));
@@ -258,7 +268,7 @@ void DrawCar(GameRenderObject *object) {
         SubmitCarPart(AsPositionWords(&object->x), &axleMatrix, 0,
                       ResolveCarModelBank(lod[0], 3, g_ModelBankCount));
 
-        for (sideIndex = 0; sideIndex < 2; sideIndex++) {
+        for (sideIndex = 0; sideIndex < CAR_SIDE_COUNT; sideIndex++) {
             s32 lateralOffset = g_TrackRenderTable->models[model].axis0;
             if (sideIndex != 0) {
                 lateralOffset = -lateralOffset;
@@ -277,7 +287,7 @@ void DrawCar(GameRenderObject *object) {
             SetLightMatrix(&lightMatrix);
         }
     } else {
-        BuildRotMatrixY(&scratchMatrix, 0x800 - object->angleY);
+        BuildRotMatrixY(&scratchMatrix, ANGLE_HALF_TURN - object->angleY);
         BuildRotMatrixX(&bodyLocalMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyLocalMatrix);
         MulMatrix0(&g_SceneLightMatrix, &bodyLocalMatrix, &lightMatrix);
@@ -295,8 +305,7 @@ void DrawCar(GameRenderObject *object) {
                       ResolveCarModelBank(lod[0], 4, g_ModelBankCount));
     }
 
-    object->y += g_TrackRenderTable->models[model].horizon;
-    object->modelY += g_TrackRenderTable->models[model].horizon;
+    OffsetCarHorizon(object, horizon);
     if (clipHandle != 0) {
         RestoreColorMatrix();
     }
