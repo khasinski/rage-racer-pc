@@ -101,12 +101,13 @@ s32 RequestSaveScreenAssets(void) {
 }
 
 void LoadSaveScreenAssets(void) {
-    if (g_AssetLoadState == SAVE_SCREEN_LOAD_ASSET) {
-        if (LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase) != 0) {
-            g_AssetLoadState = 0;
-            g_ImageBlockBuffer = g_AssetBase;
-        }
+    if (g_AssetLoadState != SAVE_SCREEN_LOAD_ASSET ||
+        LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase) == 0) {
+        return;
     }
+
+    g_AssetLoadState = 0;
+    g_ImageBlockBuffer = g_AssetBase;
 }
 
 s32 RequestSelectBgmAssetsKeepAudioSlots(void) {
@@ -119,23 +120,27 @@ s32 RequestSelectBgmAssets(void) {
                             SELECT_BGM_CLOSE_AUDIO, 1);
 }
 
-void LoadSelectBgmAssets(void) {
+static void LoadSelectBgmAssetPack(void) {
     GameSceneAssetHeader *header;
 
+    if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) == 0) return;
+
+    header = GetSceneAssetHeader(g_AssetBase);
+    g_AssetBlockPtr = GetSceneAssetBlock(header, 0);
+    g_AssetBlockPtr2 = GetSceneAssetBlock(header, 1);
+    g_AssetSubBlockPtr = GetSceneAssetBlock(header, 2);
+    g_AssetLoadState = 0;
+}
+
+void LoadSelectBgmAssets(void) {
     switch (g_AssetLoadState) {
     case SELECT_BGM_CLOSE_AUDIO:
         CloseLoadedAudioSlots();
         g_AssetLoadState = SELECT_BGM_LOAD_ASSET;
-        /* fall through */
+        LoadSelectBgmAssetPack();
+        break;
     case SELECT_BGM_LOAD_ASSET:
-        if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) != 0) {
-            header = GetSceneAssetHeader(g_AssetBase);
-            g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
-            g_AssetBlockPtr2 = GetSceneAssetAddress(header, header->offsets[1]);
-            g_AssetSubBlockPtr =
-                GetSceneAssetAddress(header, header->offsets[2]);
-            g_AssetLoadState = 0;
-        }
+        LoadSelectBgmAssetPack();
         break;
     }
 }
