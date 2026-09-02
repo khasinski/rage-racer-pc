@@ -173,7 +173,8 @@ void EnterPrizeScreen(void) {
         g_PromotionBonus = 0;
     }
 
-    value = g_PrizeMoney3rd[g_CourseIndex][g_GrandPrixClass][0] / 80;
+    value = g_PrizeMoney.values[g_CourseIndex][g_GrandPrixClass]
+                               [PRIZE_PLACE_THIRD] / 80;
     g_PrizeCountStep = value;
     if (value <= 0) {
         g_PrizeCountStep = 1;

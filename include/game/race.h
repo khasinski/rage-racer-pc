@@ -35,8 +35,15 @@ extern char *g_GrandPrixNames[];
  * further along. At the finish it indexes g_PrizeMoney. */
 
 /* Prize money per [course][class][place], place 0 = 1st. */
+typedef enum GrandPrixPrizePlace {
+    PRIZE_PLACE_FIRST,
+    PRIZE_PLACE_SECOND,
+    PRIZE_PLACE_THIRD,
+    PRIZE_PLACE_COUNT
+} GrandPrixPrizePlace;
+
 typedef struct GrandPrixPrizeTable {
-    s32 values[4][6][3];
+    s32 values[4][6][PRIZE_PLACE_COUNT];
 } GrandPrixPrizeTable;
 
 extern struct RagePrizeMoneyStorage {
@@ -352,7 +359,6 @@ extern s32 g_NameEntryCursor;
 extern s16 g_PadMirrorMasks[];
 extern u8 *g_NativePlaceSuffixNames[];
 #define g_PlaceSuffixNames g_NativePlaceSuffixNames
-#define g_PrizeMoney3rd ((s32 (*)[6][3])(void *)g_PrizeMoneyState.values)
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
     s16 x;
