@@ -20,6 +20,12 @@
 #define COLLISION_TRACK_REACH 200
 #define COLLISION_LATERAL_REACH 100
 
+enum {
+    CAR_COLLISION_CORNER_COUNT = 4,
+    CAR_COLLISION_SAMPLE_COUNT = 5,
+    LAST_FRONT_COLLISION_REGION = 2,
+};
+
 /* Transforms the four hull corners into the frame of `source`, offset by
  * however far `source` is from the car the frame belongs to. */
 static void TransformCarHull(const GameCarRuntime *source,
@@ -39,7 +45,7 @@ static void TransformCarHull(const GameCarRuntime *source,
     SetRotMatrix(&matrix);
     input.vy = 0;
     input.pad = 0;
-    for (corner = 0; corner < 4; corner++) {
+    for (corner = 0; corner < CAR_COLLISION_CORNER_COUNT; corner++) {
         input.vx = g_CarCollisionCorners[corner].x;
         input.vz = g_CarCollisionCorners[corner].z;
         ApplyRotMatrix(&input, &transformed);
@@ -62,7 +68,9 @@ static s16 AverageCoordinate(s16 first, s16 second) {
  * unsigned shifts and divisions without changing the resulting halfwords.
  */
 static void BuildCollisionQuads(const CarCollisionPoint *corners,
-                                CarCollisionPoint grid[4][4]) {
+                                CarCollisionPoint
+                                    grid[CAR_COLLISION_CORNER_COUNT]
+                                        [CAR_COLLISION_CORNER_COUNT]) {
     CarCollisionPoint average01;
     CarCollisionPoint average02;
     CarCollisionPoint average13;
@@ -124,7 +132,7 @@ static void ShoveApart(GameCarRuntime *car, GameCarRuntime *other, s32 hit) {
     s16 pushX = ScaledSpeedDelta(other->worldVelocityX, car->worldVelocityX);
     s16 pushZ = ScaledSpeedDelta(other->worldVelocityZ, car->worldVelocityZ);
 
-    if (hit < 3) {
+    if (hit <= LAST_FRONT_COLLISION_REGION) {
         SetCarKnockback(car, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
         SetCarKnockback(other, pushX, pushZ, CAR_KNOCKBACK_VECTOR_MODE);
         car->acceleration = (car->acceleration * 90) / 100;
@@ -161,10 +169,11 @@ static int WithinCollisionReach(const GameCarRuntime *car,
 }
 
 s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
-    CarCollisionPoint quads[4][4];
-    CarCollisionPoint carCorners[4];
-    CarCollisionPoint otherCorners[4];
-    CarCollisionPoint samples[5];
+    CarCollisionPoint quads[CAR_COLLISION_CORNER_COUNT]
+                           [CAR_COLLISION_CORNER_COUNT];
+    CarCollisionPoint carCorners[CAR_COLLISION_CORNER_COUNT];
+    CarCollisionPoint otherCorners[CAR_COLLISION_CORNER_COUNT];
+    CarCollisionPoint samples[CAR_COLLISION_SAMPLE_COUNT];
     GameCarRuntime *other;
     s32 nextIndex;
     int hullBuilt = 0;
@@ -174,10 +183,11 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
         return 0;
     }
 
-    other = &g_Cars[index + 1];
-    nextIndex = index + 1;
-
-    while (nextIndex < RACE_CAR_SLOT_COUNT) {
+    other = NULL;
+    for (nextIndex = index + 1;
+         nextIndex < RACE_CAR_SLOT_COUNT;
+         nextIndex++) {
+        other = &g_Cars[nextIndex];
         if (WithinCollisionReach(car, other)) {
             CarCollisionHit collision;
 
@@ -194,17 +204,17 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
             /* Corners first, then the edge and centre points: the cheapest
                test that can hit, first. */
             collision =
-                FindFirstCarCollisionQuad(quads, otherCorners, 4);
+                FindFirstCarCollisionQuad(quads, otherCorners,
+                                          CAR_COLLISION_CORNER_COUNT);
             if (collision.region <= 0) {
-                collision = FindFirstCarCollisionQuad(quads, samples, 5);
+                collision = FindFirstCarCollisionQuad(
+                    quads, samples, CAR_COLLISION_SAMPLE_COUNT);
             }
             hit = collision.region;
             if (hit > 0) {
                 break;
             }
         }
-        other++;
-        nextIndex++;
     }
 
     if (hit > 0) {
