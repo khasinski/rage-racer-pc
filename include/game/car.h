@@ -7,7 +7,10 @@
 struct PlayerCarRuntime;
 struct GameRenderObject;
 
-enum { GAME_CAR_COUNT = 13 };
+enum {
+    GAME_CAR_COUNT = 13,
+    RACE_CAR_SLOT_COUNT = 11,
+};
 
 /*
  * Per-car entry. The two setup bytes are what the CUSTOMIZE screen edits and
@@ -269,7 +272,7 @@ extern CarCollisionPoint g_CarCollisionCorners[4];
 
 /* Per-car runtime state, player in slot 0. Individual slots and single fields
  * also have their own split symbols. */
-extern GameCarRuntime g_Cars[11];
+extern GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 extern GameCarRuntime g_CameraCar;
 
 /* The four contenders ordered by race progress (`progressA + progressB`), best
@@ -710,7 +713,8 @@ void ResetCarTrackState(GameCarRuntime *car);
 /* Pick the player's gear for this frame. `mode23` says the pad is a NeGcon,
  * which puts its two shift buttons at a different pair of mapping slots. */
 void ShiftPlayerGears(PlayerCarRuntime *car, int mode23);
-/* The two variants of the rival-car driver over GameCarRuntime[11]. Race runs
+/* The two variants of the rival-car driver over all RACE_CAR_SLOT_COUNT
+ * slots. Race runs
  * only while `g_RacePhase >= 2 && g_GrandPrixMode`, adds three race-only passes
  * and time-slices cars 4..10; attract has no player so every car runs. */
 void UpdateRaceCars(void);

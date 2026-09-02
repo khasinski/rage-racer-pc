@@ -121,7 +121,7 @@ static PlayerCollisionHit FindPlayerCollision(
   CarCollisionPoint corners[4];
   s32 index;
 
-  for (index = 0; index < 11; index++) {
+  for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
     GameCarRuntime *opponent = &g_Cars[index];
     s32 heightDistance;
     s32 progressDistance;

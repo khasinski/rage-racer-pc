@@ -99,7 +99,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
 static void StartCarFrames(void) {
     s32 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
         car->reservedF8 = 0;
@@ -116,7 +116,7 @@ static void StartCarFrames(void) {
 static void AvoidTrafficThisFrame(void) {
     s16 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         s32 slot = (s16)index;
 
         if (slot >= 4 && (index & 1) != (g_AnimTimer & 1)) {
@@ -138,7 +138,7 @@ static void AvoidTrafficThisFrame(void) {
 static void AccelerateAllCars(void) {
     s32 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
         GameCarAiBlock *ai = GetCarAiBlock(car);
 
@@ -237,7 +237,7 @@ static void UpdateCarJumpArc(GameCarRuntime *car, s32 ground) {
 static void SettleAllCarBodies(void) {
     s32 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
         if (car->activeFlag != -1) {
@@ -265,7 +265,7 @@ static void SettleAllCarBodies(void) {
 static void CollideAllCars(void) {
     s32 index;
 
-    for (index = 0; index < 10; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT - 1; index++) {
         CollideRivalCars(&g_Cars[index], index);
     }
 }
@@ -274,7 +274,7 @@ static void CollideAllCars(void) {
 static void SteerAllCars(void) {
     s32 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
         UpdateCarAiTargetSpeed(car, index);
@@ -295,14 +295,14 @@ static void PlaceAllCarsOnTrack(void) {
 
     limits.rightInset = 0x3C;
     limits.leftInset = -0x3C;
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[(s16)index];
 
         if (car->activeFlag != -1) {
             AccumulateLapProgress(car);
         }
     }
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[(s16)index];
 
         if (car->activeFlag != -1) {
@@ -327,7 +327,7 @@ static void MoveAllCars(void) {
     SVec lean;
     s32 index;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
         GameCarAiBlock *ai = GetCarAiBlock(car);
 
@@ -424,7 +424,7 @@ void UpdateRaceCars(void) {
 static void AccelerateAttractCars(void) {
     s32 i;
 
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         GameCarRuntime *car = &g_Cars[i];
         GameCarAiBlock *ai = GetCarAiBlock(car);
 
@@ -446,7 +446,7 @@ void UpdateAttractCars(void) {
     s32 i;
 
     TraceCarStates();
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         GameCarRuntime *car = &g_Cars[i];
 
         car->reservedF8 = 0;
@@ -454,7 +454,7 @@ void UpdateAttractCars(void) {
         car->bodyYaw = car->baseBodyYaw;
         car->progressA %= g_TrackLength;
     }
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         if (g_Cars[i].activeFlag != -1) {
             UpdateCarTrafficAvoidance(&g_Cars[i], i);
         }

@@ -214,7 +214,7 @@ void SeedCarRouteMarkers(void) {
     s32 series = g_RaceSeries;
     s32 carIndex;
 
-    for (carIndex = 0; carIndex < 11; carIndex++) {
+    for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
         s32 position = g_Cars[carIndex].trackProgress >> 4;
         s32 index;
 

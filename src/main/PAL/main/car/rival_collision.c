@@ -172,14 +172,14 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
     int hullBuilt = 0;
     s32 hit = 0;
 
-    if (index < 0 || index >= 10) {
+    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1) {
         return 0;
     }
 
     other = &g_Cars[index + 1];
     nextIndex = index + 1;
 
-    while (nextIndex < 11) {
+    while (nextIndex < RACE_CAR_SLOT_COUNT) {
         if (WithinCollisionReach(car, other)) {
             s32 sample;
             s32 quad;
