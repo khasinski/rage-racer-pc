@@ -17,8 +17,8 @@ why the names of the courses live inside `g_CaptionBestLapTime` under a
 four-letter caption code. Sixteen arrays are runs of strings like this.
 
 **The definitions do not have the types their headers promise.** 614 of the
-740 raw byte arrays are declared in a header as something else: `s16
-g_SinTable[]`, `Vec4 g_MainVisibleCellList[]`, `CdlFILE g_CdFileCache[64]`,
+740 raw byte arrays are declared in a header as something else: `Vec4
+g_MainVisibleCellList[]`, `CdlFILE g_CdFileCache[64]`,
 `TeamLogoCanvas g_TeamLogoCanvas`. Of those 614:
 
 - **262** have a size the promised type divides cleanly. These are a pure type

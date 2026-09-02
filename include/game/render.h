@@ -746,7 +746,6 @@ extern s16 g_MirrorViewEnabled;
 extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;
 extern s32 g_SetupArrowPulse;
-extern s16 g_SinTable[];
 
 void ApplyZoneLighting(s32 zone, Matrix *mtx);
 void BuildVisibleCells(s32 near, s32 far);
