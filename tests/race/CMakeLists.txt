@@ -55,6 +55,25 @@ endif()
 add_test(NAME replay_recording COMMAND replay_recording_tests)
 set_tests_properties(replay_recording PROPERTIES LABELS unit)
 
+add_executable(split_time_state_tests
+    split_time_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_state.c)
+target_include_directories(split_time_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(split_time_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(split_time_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(split_time_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME split_time_state COMMAND split_time_state_tests)
+set_tests_properties(split_time_state PROPERTIES LABELS unit)
+
 add_executable(start_countdown_timing_tests
     start_countdown_timing_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/start_countdown_timing.c)

@@ -120,7 +120,8 @@ void UpdateReplayScene(void) {
         g_ReplayReadCursor = 0;
     }
     UpdateReplayCars();
-    UpdateCamera(CAMERA_VIEW_TRACK, (GameRenderObject *)&g_PlayerCar);
+    UpdateCamera(CAMERA_VIEW_TRACK,
+                 GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     if (g_GrandPrixMode != 0) {
