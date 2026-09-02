@@ -489,6 +489,25 @@ target_link_libraries(track_contact_tests PRIVATE psyz)
 add_test(NAME track_contact COMMAND track_contact_tests)
 set_tests_properties(track_contact PROPERTIES LABELS functional)
 
+add_executable(collision_quads_tests
+    collision_quads_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/collision_quads.c)
+target_include_directories(collision_quads_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(collision_quads_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(collision_quads_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(collision_quads_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME collision_quads COMMAND collision_quads_tests)
+set_tests_properties(collision_quads PROPERTIES LABELS unit)
+
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
     gear_shift_tests.c

@@ -217,13 +217,9 @@ typedef struct CarCollisionPoint {
     s16 z;
 } CarCollisionPoint;
 
-typedef union CarCollisionPointValue {
-    CarCollisionPoint point;
-    s32 packed;
-} CarCollisionPointValue;
-
-#define GetCarCollisionPointPacked(point) \
-    (((CarCollisionPointValue *)(point))->packed)
+static inline s32 GetCarCollisionPointPacked(const CarCollisionPoint *point) {
+    return (s32)((u32)(u16)point->x | ((u32)(u16)point->z << 16));
+}
 
 typedef struct CarHullPoint {
     u16 x;

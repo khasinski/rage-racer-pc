@@ -17,7 +17,7 @@ s32 FirstQuadHit(CarCollisionPoint grid[4][4],
                  const CarCollisionPoint *points, s32 count,
                  s32 *sample, s32 *quad) {
     s32 sampleIndex;
-    s32 quadIndex;
+    s32 quadIndex = 0;
 
     for (sampleIndex = 0; sampleIndex < count; sampleIndex++) {
         for (quadIndex = 0; quadIndex < 4; quadIndex++) {
@@ -37,4 +37,3 @@ s32 FirstQuadHit(CarCollisionPoint grid[4][4],
     *quad = quadIndex;
     return 0;
 }
-
