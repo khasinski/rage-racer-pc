@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "fmv_stream_index.h"
 #include "host_clock.h"
 
 #ifdef _WIN32
@@ -310,7 +311,8 @@ static long ResolveFmvStreamIndex(long streamIndex) {
 
 void StartFmvPlayback(void) {
     RECT clearRect;
-    long streamIndex = g_StreamLoc - g_StreamCdEntries;
+    long streamIndex = HostFmvStreamIndex(
+        g_StreamCdEntries, 11, g_StreamLoc);
     unsigned int firstSector;
     unsigned int sectorSpan;
 

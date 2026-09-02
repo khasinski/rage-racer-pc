@@ -209,6 +209,7 @@ if(RAGE_BUILD_PORT)
         src/port/classic/native_geometry.c
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
+        src/port/fmv_stream_index.c
         src/port/fmv_host.c
     )
     add_library(rage-port-legacy OBJECT ${RAGE_PORT_LEGACY_SOURCES})
