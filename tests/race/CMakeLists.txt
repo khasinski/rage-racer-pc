@@ -17,6 +17,18 @@ endif()
 add_test(NAME race_time_text COMMAND race_time_text_tests)
 set_tests_properties(race_time_text PROPERTIES LABELS unit)
 
+add_executable(start_countdown_timing_tests
+    start_countdown_timing_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/start_countdown_timing.c)
+target_include_directories(start_countdown_timing_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(start_countdown_timing_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME start_countdown_timing COMMAND start_countdown_timing_tests)
+set_tests_properties(start_countdown_timing PROPERTIES LABELS unit)
+
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c

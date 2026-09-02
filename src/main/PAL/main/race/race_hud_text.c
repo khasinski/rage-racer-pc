@@ -3,6 +3,7 @@
 #include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/race_hud_internal.h"
 #include "game/state.h"
 
 /* Which of the two frame buffers is being drawn, 0 or 1; the main loop sets
@@ -64,7 +65,6 @@ void BuildTileStrips(void) {
 }
 
 void DrawStartCountdown(s32 sceneTimer) {
-    s32 timer;
     s32 phase;
     s32 halfStep;
     s32 wipeStart;
@@ -81,38 +81,16 @@ void DrawStartCountdown(s32 sceneTimer) {
     SPRT *sprite;
     u8 *backdrop;
     RenderBufferAddress packetAddress;
+    StartCountdownTiming timing;
 
-    timer = sceneTimer;
+    timing = CalculateStartCountdownTiming(sceneTimer);
+    if (!timing.visible) {
+        return;
+    }
+
     orderingTable = (u8 *)GamePrimaryOrderingTable(1);
-    if (timer < 105) {
-        return;
-    }
-    rangeTimer = timer - 90;
-    if (rangeTimer >= 210) {
-        return;
-    }
-
-    phase = rangeTimer / 30;
-    if (phase < 0) {
-        phase = 0;
-    } else if (phase >= 5) {
-        phase = -1;
-    }
-
-    halfStep = (timer % 30) / 2;
-
-    if (phase == 4 || phase < 0) {
-        halfStep = (timer & 2) << 2;
-    } else if (phase == 0) {
-        halfStep = 0;
-    } else {
-        if (halfStep >= 8) {
-            halfStep = 8;
-        } else if (halfStep <= 0) {
-            halfStep = 0;
-        }
-    }
-
+    phase = timing.phase;
+    halfStep = timing.wipeHalfStep;
     phaseIsNegative = phase < 0;
     wipeStart = 7 - halfStep;
     tiles = g_TileStripBuffers[g_FrameParity].tile;
@@ -183,7 +161,7 @@ void DrawStartCountdown(s32 sceneTimer) {
 
         if ((u32)phase < 4) {
             if (phase - 1 == row % 3) {
-                halfStep = timer % 30;
+                halfStep = sceneTimer % 30;
                 if (halfStep < 16) {
                     pattern = halfStep * 8;
                 } else {
@@ -199,7 +177,7 @@ void DrawStartCountdown(s32 sceneTimer) {
             }
         } else {
             if (phase == 4) {
-                halfStep = timer % 30;
+                halfStep = sceneTimer % 30;
                 if (halfStep < 10) {
                     pattern = halfStep * 12;
                 } else {
