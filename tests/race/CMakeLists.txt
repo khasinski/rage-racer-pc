@@ -173,6 +173,25 @@ endif()
 add_test(NAME replay_recording COMMAND replay_recording_tests)
 set_tests_properties(replay_recording PROPERTIES LABELS unit)
 
+add_executable(replay_car_state_tests
+    replay_car_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_car_state.c)
+target_include_directories(replay_car_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(replay_car_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(replay_car_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(replay_car_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME replay_car_state COMMAND replay_car_state_tests)
+set_tests_properties(replay_car_state PROPERTIES LABELS unit)
+
 add_executable(split_time_state_tests
     split_time_state_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_state.c)

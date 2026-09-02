@@ -5,6 +5,18 @@
 #include "game/state.h"
 #include "game/track.h"
 
+static void SeedReplayCarTrackState(GameCarRuntime *car) {
+    car->trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
+    SeedCarLapProgress(car, 1);
+    AccumulateLapProgress(car);
+    ResetCarTrackState(car);
+}
+
+static void UpdateReplayCarTrackState(GameCarRuntime *car) {
+    AccumulateLapProgress(car);
+    ResetCarTrackState(car);
+}
+
 void SeedReplayCars(void) {
     GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
     GameCarRuntime *rival = &g_Cars[0];
@@ -12,28 +24,20 @@ void SeedReplayCars(void) {
     InitShuttleScenery();
     ApplyReplayFrameAndTilt(g_ReplayReadCursor, player, rival);
 
-    player->trackPointIndex = FindTrackSegment(player, player->trackPointIndex);
-    SeedCarLapProgress(player, 1);
-    AccumulateLapProgress(player);
-    ResetCarTrackState(player);
+    SeedReplayCarTrackState(player);
 
-    if (g_GrandPrixMode == 1) {
-        rival->trackPointIndex = FindTrackSegment(rival, rival->trackPointIndex);
-        SeedCarLapProgress(rival, 1);
-        AccumulateLapProgress(rival);
-        ResetCarTrackState(rival);
+    if (g_GrandPrixMode != 0) {
+        SeedReplayCarTrackState(rival);
     }
 }
 
 void UpdateReplayCars(void) {
     GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
 
-    AccumulateLapProgress(player);
-    ResetCarTrackState(player);
+    UpdateReplayCarTrackState(player);
 
-    if (g_GrandPrixMode == 1) {
-        AccumulateLapProgress(&g_Cars[0]);
-        ResetCarTrackState(&g_Cars[0]);
+    if (g_GrandPrixMode != 0) {
+        UpdateReplayCarTrackState(&g_Cars[0]);
     }
 
     RequestTrackTexturePage(player->trackSection);
