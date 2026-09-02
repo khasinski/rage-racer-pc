@@ -14,7 +14,7 @@ RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
     state.brightness = (firstScroll & 0x10) != 0 ? 0x80 : 0x40;
     state.firstScroll = AdvanceMarqueeLine(firstScroll);
     state.secondScroll = AdvanceMarqueeLine(secondScroll);
-    state.textOffset = (sceneTimer & 3) * 40;
+    state.textFrame = sceneTimer & 3;
     return state;
 }
 

@@ -34,7 +34,7 @@ typedef struct RaceOptionMarqueeState {
     s32 firstScroll;
     s32 secondScroll;
     s32 brightness;
-    s32 textOffset;
+    s32 textFrame;
 } RaceOptionMarqueeState;
 
 RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,

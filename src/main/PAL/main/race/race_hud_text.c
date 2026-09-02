@@ -8,17 +8,13 @@
 
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
-    s32 halfStep;
     s32 row;
     s32 column;
-    u32 pattern;
     TILE *tiles;
     u8 *cursor;
-    s32 rangeTimer;
     u8 *orderingTable;
     SPRT *sprite;
     u8 *backdrop;
-    RenderBufferAddress packetAddress;
     StartCountdownTiming timing;
 
     timing = CalculateStartCountdownTiming(sceneTimer);
@@ -28,15 +24,14 @@ void DrawStartCountdown(s32 sceneTimer) {
 
     orderingTable = (u8 *)GamePrimaryOrderingTable(1);
     phase = timing.phase;
-    halfStep = timing.wipeHalfStep;
     tiles = g_TileStripBuffers[g_FrameParity].tile;
 
     for (row = 0; row < 16; row++) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(
-            phase, row, halfStep, g_CountdownGlyphTable,
+            phase, row, timing.wipeHalfStep, g_CountdownGlyphTable,
             g_CountdownDigitPatterns);
+        u32 pattern = countdownRow.pattern;
 
-        pattern = countdownRow.pattern;
         for (column = 0; column < 32; column++) {
             TILE *tile = &tiles[row * 32 + column];
             CVec *colors =
@@ -52,21 +47,19 @@ void DrawStartCountdown(s32 sceneTimer) {
 
     cursor = RENDER_PRIM_CURSOR_AS(u8);
     backdrop = QueueDrawModePrim(
-        GamePrimaryOrderingTable(1), cursor, 9);
-    pattern = g_CountdownBoardOffset;
+        orderingTable, cursor, 9);
     RENDER_PRIM_CURSOR_AS(u8) = backdrop;
     cursor = GameQueueTexturePacketWide(
         orderingTable,
         GameQueueTexturePacketWide(
-            orderingTable, backdrop, 0x70, pattern + 66,
+            orderingTable, backdrop, 0x70, g_CountdownBoardOffset + 66,
             0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
             GAME_TEXTURE_PACKET_SPRT),
         0x70, g_CountdownBoardOffset + 122,
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
 
-    packetAddress.bytes = cursor;
-    sprite = packetAddress.sprite;
+    sprite = (SPRT *)cursor;
     for (row = 0; row < 6; row++) {
         StartCountdownLamp lamp =
             BuildStartCountdownLamp(phase, sceneTimer, row);
@@ -90,25 +83,22 @@ void DrawStartCountdown(s32 sceneTimer) {
     }
 
     RENDER_PRIM_CURSOR_AS(u8) = cursor;
-    cursor = QueueDrawModePrim(GamePrimaryOrderingTable(1), cursor, 0xC);
+    cursor = QueueDrawModePrim(orderingTable, cursor, 0xC);
     RENDER_PRIM_CURSOR_AS(u8) = cursor;
 
-    if (phase > 0) {
-        if (g_RacePaused == 0) {
-            AddPrims(orderingTable, tiles, tiles + 511);
-        }
+    if (phase > 0 && g_RacePaused == 0) {
+        AddPrims(orderingTable, tiles, tiles + 511);
     }
 
     tiles = RENDER_PRIM_CURSOR_AS(TILE);
     SetTile(tiles);
-    rangeTimer = (u16)g_CountdownBoardOffset + 88;
     tiles->w = 0x64;
     tiles->h = 0x24;
     tiles->x0 = 0x6E;
     tiles->r0 = 5;
     tiles->g0 = 5;
     tiles->b0 = 5;
-    tiles->y0 = rangeTimer;
+    tiles->y0 = (u16)g_CountdownBoardOffset + 88;
     AddPrim(orderingTable, tiles++);
     RENDER_PRIM_CURSOR_AS(TILE) = tiles;
 }
@@ -117,11 +107,7 @@ void DrawStartCountdown(s32 sceneTimer) {
 void DrawRaceOptionMenu(s32 cursorRow) {
     u8 *ot;
     u8 *next;
-    s32 brightness;
-    s32 marquee;
     s32 selectionY;
-    s32 pulse;
-    char *marqueeBase;
     POLY_FT4 *quad;
     RenderBufferAddress prim;
     RaceOptionMarqueeState marqueeState;
@@ -140,10 +126,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     prim.sprite->clut = 0x7893;
     marqueeState = AdvanceRaceOptionMarquee(
         g_RaceOptionScroll0, g_RaceOptionScroll1, g_SceneTimer);
-    brightness = marqueeState.brightness;
-    prim.sprite->r0 = brightness;
-    prim.sprite->g0 = brightness;
-    prim.sprite->b0 = brightness;
+    prim.sprite->r0 = marqueeState.brightness;
+    prim.sprite->g0 = marqueeState.brightness;
+    prim.sprite->b0 = marqueeState.brightness;
     AddPrim(ot, prim.sprite);
     prim.bytes += sizeof(SPRT);
 
@@ -152,12 +137,10 @@ void DrawRaceOptionMenu(s32 cursorRow) {
 
     next = QueueDrawAreaPrim(ot, prim.drawPacket, 0, 0, 0x140, 0xF0);
     RENDER_PRIM_CURSOR_AS(u8) = next;
-    marqueeBase = &g_RaceOptionMarquee[0][0];
-    marquee = marqueeState.textOffset;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
-                &marqueeBase[marquee], 0x7811);
+                &g_RaceOptionMarquee[marqueeState.textFrame][0], 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
-                &marqueeBase[marquee + 20], 0x7811);
+                &g_RaceOptionMarquee[marqueeState.textFrame][20], 0x7811);
 
     next = QueueDrawAreaPrim(ot,
                              (DrawPacket *)RENDER_PRIM_CURSOR_AS(u8),
@@ -201,16 +184,15 @@ void DrawRaceOptionMenu(s32 cursorRow) {
 
     pulseState = AdvanceRaceOptionPulse(g_RaceOptionPulseAngle);
     g_RaceOptionPulseAngle = pulseState.angle;
-    pulse = pulseState.halfWidth;
 
     SetPolyFT4(quad);
     quad->r0 = 0x60;
     quad->g0 = 0x60;
     quad->b0 = 0x60;
-    quad->x0 = 0xA0 - pulse;
-    quad->x2 = 0xA0 - pulse;
-    quad->x1 = 0xA0 + pulse;
-    quad->x3 = 0xA0 + pulse;
+    quad->x0 = 0xA0 - pulseState.halfWidth;
+    quad->x2 = 0xA0 - pulseState.halfWidth;
+    quad->x1 = 0xA0 + pulseState.halfWidth;
+    quad->x3 = 0xA0 + pulseState.halfWidth;
     quad->y0 = 0x58;
     quad->y1 = 0x58;
     quad->y2 = 0x90;
