@@ -80,10 +80,35 @@ static void CheckInvalidConfigIndex(void) {
              "front grid target");
 }
 
+static void CheckNegativeMotionConfig(void) {
+    TrackEventData events;
+    RaceGridSlot grid = {0};
+    GameCarRuntime car;
+    TrackRivalAiConfig *config;
+
+    memset(&events, 0, sizeof(events));
+    memset(&car, 0, sizeof(car));
+    g_TrackEventData = &events;
+    g_RaceSeries = 0;
+    g_TrackLength = 12000;
+    config = &events.rivalAiConfigs[0][0];
+    config->speed = -1;
+    config->accelerationStep = 0xFFFF;
+
+    InitRivalCarAi(&car, 0, &grid);
+
+    CHECK_EQ(car.targetSpeed, 0, "negative target speed");
+    CHECK_EQ(car.accelerationStep, 0, "negative acceleration step");
+    CHECK_EQ(car.accelerationLimit, 0, "negative speed acceleration limit");
+}
+
 int main(void) {
     CheckConfiguredRival();
     CheckInvalidConfigIndex();
-    if (s_failures != 0) return 1;
+    CheckNegativeMotionConfig();
+    if (s_failures != 0) {
+        return 1;
+    }
     puts("rival car initialization passed");
     return 0;
 }
