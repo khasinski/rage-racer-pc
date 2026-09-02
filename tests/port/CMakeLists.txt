@@ -43,7 +43,8 @@ add_test(NAME content_options COMMAND content_options_tests)
 set_tests_properties(content_options PROPERTIES LABELS functional)
 add_executable(race_asset_loading_tests
     race_asset_loading_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_runtime_assets.c)
 target_include_directories(race_asset_loading_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

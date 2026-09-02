@@ -37,6 +37,8 @@ static s32 s_renderCarAsset;
 static s32 s_uploadCount;
 static GameImageAssetHeaderWord *s_uploads[5];
 static s32 s_trackIdentity;
+static s32 s_installCount;
+static s32 s_seriesCamera;
 static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
 static s32 s_failures;
@@ -67,19 +69,33 @@ void UploadImageBlock(GameImageAssetHeaderWord *asset) {
 void StoreTeamLogoImage(void *destination) { (void)destination; }
 void ResetTrackTextureSwap(void) {}
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
-void SetTrackRenderTable(struct TrackRenderTable *table) { (void)table; }
-void SetEnvPaletteTable(struct EnvironmentPalette *table) { (void)table; }
-void SetEnvironmentScript(u32 *script) { (void)script; }
-void RegisterModelBank(ModelBankHeader *base, s32 index) {
-    (void)base; (void)index;
+void SetTrackRenderTable(struct TrackRenderTable *table) {
+    (void)table; s_installCount++;
 }
-void InstallTrackPoints(struct TrackPointTable *table) { (void)table; }
-void RegisterCourseModels(CourseModelAssetHeader *base) { (void)base; }
-void InstallTerrainCellData(void *data) { (void)data; }
-void SetCourseObjects(struct CourseObjectTable *table) { (void)table; }
-void InstallTrackEventData(struct TrackEventData *data) { (void)data; }
+void SetEnvPaletteTable(struct EnvironmentPalette *table) {
+    (void)table; s_installCount++;
+}
+void SetEnvironmentScript(u32 *script) { (void)script; s_installCount++; }
+void RegisterModelBank(ModelBankHeader *base, s32 index) {
+    (void)base; (void)index; s_installCount++;
+}
+void InstallTrackPoints(struct TrackPointTable *table) {
+    (void)table; s_installCount++;
+}
+void RegisterCourseModels(CourseModelAssetHeader *base) {
+    (void)base; s_installCount++;
+}
+void InstallTerrainCellData(void *data) { (void)data; s_installCount++; }
+void SetCourseObjects(struct CourseObjectTable *table) {
+    (void)table; s_installCount++;
+}
+void InstallTrackEventData(struct TrackEventData *data) {
+    (void)data; s_installCount++;
+}
 void SelectTrackCameraTable(TrackCameraTable *table, s32 useSeriesCamera) {
-    (void)table; (void)useSeriesCamera;
+    (void)table;
+    s_seriesCamera = useSeriesCamera;
+    s_installCount++;
 }
 s32 EnableCdAudioMode(void) { return s_enableCdResult; }
 void ResetCdAudioState(void) { s_resetCdCalls++; }
@@ -192,11 +208,20 @@ static void TestTrackPhases(void) {
     pack = (GameSceneAssetHeader *)g_AssetLoadCursor;
     memset(pack, 0, 512);
     for (i = 0; i < 11; i++) pack->offsets[i] = 128 + i * 32;
+    s_installCount = 0;
+    s_seriesCamera = 0;
     LoadRaceAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_2ND_BASE + 28,
           "track runtime asset index");
     Check(s_trackIdentity == s_loadAssetIndex && g_AssetLoadState == 7,
           "track runtime data installed");
+    Check(s_installCount == 11 && s_seriesCamera == 1,
+          "all runtime blocks use the series camera table");
+
+    s_installCount = 0;
+    InstallTrackRuntimeAssetPack(s_loadAssetIndex, 0);
+    Check(s_installCount == 11 && s_seriesCamera == 0,
+          "scene loads install the default camera table");
 
     s_enableCdResult = 0;
     LoadRaceAssets();

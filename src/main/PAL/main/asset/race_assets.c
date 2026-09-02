@@ -3,9 +3,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/cd.h"
-#include "game/track_camera_internal.h"
 #include "rage/render_world_game.h"
-#include "rage/track_asset_identity.h"
 
 s32 RequestRaceAssets(void) {
     if (g_AssetLoadState != 0) {
@@ -109,18 +107,7 @@ static void LoadTrackRuntimeAssets(void) {
         return;
     }
 
-    TrackAssetIdentitySet(assetIndex);
-    SetTrackRenderTable(SceneAssetBlock(0));
-    SetEnvPaletteTable(SceneAssetBlock(1));
-    SetEnvironmentScript(SceneAssetBlock(2));
-    RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);
-    InstallTrackPoints(SceneAssetBlock(4));
-    RegisterCourseModels(GetCourseModelAssetHeader(SceneAssetBlock(5)));
-    RegisterModelBank(GetModelBankHeader(SceneAssetBlock(6)), 2);
-    InstallTerrainCellData(SceneAssetBlock(7));
-    SetCourseObjects(SceneAssetBlock(8));
-    InstallTrackEventData(SceneAssetBlock(9));
-    SelectTrackCameraTable(SceneAssetBlock(10), 1);
+    InstallTrackRuntimeAssetPack(assetIndex, 1);
     g_AssetLoadState = 7;
 }
 

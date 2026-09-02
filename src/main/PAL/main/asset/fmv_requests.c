@@ -2,38 +2,21 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/render.h"
-#include "game/track_camera_internal.h"
-#include "rage/track_asset_identity.h"
+static void LoadStandaloneTrackRuntimeAssets(void) {
+    s32 assetIndex = ASSET_TRACK_2ND_BASE + (g_GrandPrixClass * 8) +
+                     (g_CourseIndex * 2);
 
+    if (LoadAsset(assetIndex, g_AssetLoadCursor) != 0) {
+        InstallTrackRuntimeAssetPack(assetIndex, 0);
+        g_AssetLoadState = 2;
+    }
+}
 
 void LoadTrackDataAssets(void) {
-    void *dst;
-    s32 offset;
-
     switch (g_AssetLoadState) {
-    case 1: {
-        s32 assetIndex;
-        dst = g_AssetLoadCursor;
-        offset = g_CourseIndex * 2;
-        assetIndex = (g_GrandPrixClass * 8) + offset + ASSET_TRACK_2ND_BASE;
-        if (LoadAsset(assetIndex, dst) != 0) {
-            TrackAssetIdentitySet(assetIndex);
-            SetTrackRenderTable(SceneAssetBlock(0));
-            SetEnvPaletteTable(SceneAssetBlock(1));
-            SetEnvironmentScript(SceneAssetBlock(2));
-            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(3)), 1);
-            InstallTrackPoints(SceneAssetBlock(4));
-            RegisterCourseModels(GetCourseModelAssetHeader(SceneAssetBlock(5)));
-            RegisterModelBank(GetModelBankHeader(SceneAssetBlock(6)), 2);
-            InstallTerrainCellData(SceneAssetBlock(7));
-            SetCourseObjects(SceneAssetBlock(8));
-            InstallTrackEventData(SceneAssetBlock(9));
-            SelectTrackCameraTable(SceneAssetBlock(10), 0);
-
-            g_AssetLoadState = 2;
-        }
+    case 1:
+        LoadStandaloneTrackRuntimeAssets();
         break;
-    }
     case 2:
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;

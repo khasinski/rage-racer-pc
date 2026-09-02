@@ -465,6 +465,7 @@ extern TrackTextureShadowRow *g_TrackTextureShadow;
 void InstallTerrainCellData(void *data);
 void InstallTrackEventData(struct TrackEventData *eventData);
 void InstallTrackPoints(struct TrackPointTable *trackData);
+void InstallTrackRuntimeAssetPack(s32 assetIndex, s32 useSeriesCamera);
 void LoadCourseAssets(void);
 void LoadGrandPrixScreen(void);
 void RegisterModelBank(ModelBankHeader *base, s32 index);
