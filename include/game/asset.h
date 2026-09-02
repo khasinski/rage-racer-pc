@@ -199,10 +199,18 @@ typedef struct CarModelAsset {
     u8 maxTorqueFraction;
     u8 maxTorqueWhole;
     s16 maxTorqueRpm;
-    u8 reserved1A[6];
+    s32 serializedModelSize;
+    u8 reserved1C[4];
     AssetAddress modelData;
     AssetAddress imageData;
 } CarModelAsset;
+
+#define SERIALIZED_CAR_MODEL_HEADER_SIZE 0x28
+
+_Static_assert(offsetof(CarModelAsset, serializedModelSize) == 0x18,
+               "serialized car model size must remain at +0x18");
+_Static_assert(offsetof(CarModelAsset, modelData) == 0x20,
+               "serialized car model offset must remain at +0x20");
 
 static inline CarModelAsset *GetCarModelAsset(void *data) {
     AssetAddress address;
