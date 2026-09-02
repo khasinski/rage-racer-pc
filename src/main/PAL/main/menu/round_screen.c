@@ -120,11 +120,10 @@ void DrawRoundScreen(void) {
 void DrawBgmSelector(void) {
     s32 x;
     char buf[88];
-    u8 **scr = &RENDER_PRIM_CURSOR_AS(u8);
     u8 *p;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(1);
 
-    p = *scr;
+    p = RENDER_PRIM_CURSOR_AS(u8);
     p = GameQueueSprite(ot, p, 0x14, 0xce, 0x58, 8, 0xa8, 0xe0, 0x7812);
     x = (g_BgmSelection == 0xa) ? 0x6c : 0x70;
     p = GameQueueSprite(ot, p, x, 0xce, 8, 8, 0x84, 0xc4, 0x7812);
@@ -134,7 +133,7 @@ void DrawBgmSelector(void) {
     p = AddTilePrim(ot, p, 0x6c, 0xcc, 0x1f, 0xc, 0x40, 0x40, 0x40);
     p = AddTilePrim(ot, p, 0x8c, 0xcc, 0xa4, 0xc, 0, 0, 0);
     p = AddTilePrim(ot, p, 0xf, 0xcb, 0x122, 0xe, 0xff, 0xff, 0xff);
-    *scr = p;
+    g_RenderState.packetCursor = p;
 
     sprintf(buf, g_FmtBgmNumber, g_BgmSelection);
     x = (g_BgmSelection == 0xa) ? 0x74 : 0x78;

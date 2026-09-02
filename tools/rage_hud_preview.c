@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
     g_FrameParity = 0;
     ot = GamePrimaryOrderingTable(0);
     GameClearOrderingTable(ot, GAME_FRAME_OT_LENGTH);
-    RENDER_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
+    g_RenderState.packetCursor = g_FrameContexts[0].layout.primitiveBuffer;
 
     g_GrandPrixMode = hudMode;
     g_GrandPrixClass = OptionNumber(argc, argv, "--class", 0);

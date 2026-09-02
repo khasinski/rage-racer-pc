@@ -20,7 +20,7 @@ void DrawResultScreen(void) {
 
     next = AddTilePrim(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0,
                        0x140, 0x30, 0x85, 0x15, 0xE);
-    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(
+    g_RenderState.packetCursor = AddTilePrim(
         ot, next, 0, 0x30, 0x140, 0x18, 0xF0, 0xF0, 0xF0);
 }
 
@@ -36,7 +36,7 @@ static void DrawClassPlaceBanner(void) {
                            0x84, bar->left, 0x78CB);
     next = GameQueueSprite(ot, next, bar->right + 0x4E, 0x1C,
                            0x30, 8, 0, 0xF0, 0x78CB);
-    RENDER_PRIM_CURSOR_AS(u8) = GameQueueSprite(
+    g_RenderState.packetCursor = GameQueueSprite(
         ot, next, bar->right + 0x7C, 0x1C, 0x20, 8,
         0, 0xF8, 0x78CB);
 }
@@ -51,7 +51,7 @@ static void DrawResultPlace(void) {
     next = GameQueueSprite(ot, RENDER_PRIM_CURSOR_AS(u8),
                            0xB4, 0x60, 0x58, 0x38, 0xA8, 0xA8,
                            g_ResultPanelCluts[g_PlayerCar.drive.racePosition]);
-    RENDER_PRIM_CURSOR_AS(u8) = GameQueueSprite(
+    g_RenderState.packetCursor = GameQueueSprite(
         ot, next, placeSprite->x, 0x5C, placeSprite->y, 0x1C,
         placeSprite->width, 0xCC, g_ResultPlaceCluts[g_PlayerCar.drive.racePosition]);
 }

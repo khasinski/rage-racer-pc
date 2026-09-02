@@ -23,6 +23,6 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     tile->b0 = color;
 
     AddPrim(ot, tile);
-    RENDER_PRIM_CURSOR_AS(u8) =
+    g_RenderState.packetCursor =
         QueueDrawModePrim(ot, (u8 *)(tile + 1), tpage);
 }

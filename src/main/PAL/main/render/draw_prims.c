@@ -37,7 +37,7 @@ void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
     packet = RENDER_PRIM_CURSOR_AS(DrawPacket);
     SetDrawArea(packet, &rect);
     AddPrim(ot, packet);
-    RENDER_PRIM_CURSOR_AS(DrawPacket) = packet + 1;
+    g_RenderState.packetCursor = packet + 1;
 }
 
 
@@ -67,7 +67,7 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 
     if ((flags & 0x80) == 0) {
         next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 
@@ -94,7 +94,7 @@ void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1
     if ((flags & 0x80) == 0) {
         next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 
@@ -122,7 +122,7 @@ void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u1
     if ((flags & 0x80) == 0) {
         next = QueueDrawModePrim(ot, next, flags & 0xFFFF);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 /*
@@ -162,7 +162,7 @@ void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u1
     prim->tpage = tpage;
     prim->clut = LinearClutToVram(clutIndex);
     AddPrim(ot, prim);
-    RENDER_PRIM_CURSOR_AS(POLY_FT4) = prim + 1;
+    g_RenderState.packetCursor = prim + 1;
 }
 
 
@@ -186,7 +186,7 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s
     if (alphaValue != 0xFF) {
         next = QueueDrawModePrim(ot, next, alphaValue);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 
@@ -210,7 +210,7 @@ void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r,
     if (alphaValue != 0xFF) {
         next = QueueDrawModePrim(ot, next, alphaValue);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 
@@ -237,7 +237,7 @@ void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s
     if (alpha != 0xFF) {
         next = QueueDrawModePrim(ot, next, alpha);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 
@@ -263,7 +263,7 @@ void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, u16 y1
     if (alpha != 0xFF) {
         next = QueueDrawModePrim(ot, next, alpha);
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,

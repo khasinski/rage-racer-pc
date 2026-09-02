@@ -47,7 +47,7 @@ void DrawNegconSteerPlayScreen(void) {
     span = span + 231;
     prim = GameQueueLine(ot, prim, 0x94, span, 0xA8, span, 0x20, 0x40, 0xFF);
     prim = GameQueueLine(ot, prim, 0x94, 0xE6, 0xA8, 0xE6, 0, 0, 0);
-    RENDER_PRIM_CURSOR_AS(u8) =
+    g_RenderState.packetCursor =
         GameQueueLine(ot, prim, 0x94, 0xE7, 0xA8, 0xE7, 0, 0, 0);
 }
 
@@ -122,7 +122,7 @@ void DrawNegconMaxTwistScreen(void) {
     prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30, 0x7F81);
     prim = QueueDrawModePrim(ot, prim, 0x3F);
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);
-    RENDER_PRIM_CURSOR_AS(u8) =
+    g_RenderState.packetCursor =
         AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);
 }
 

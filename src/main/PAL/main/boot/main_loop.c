@@ -47,7 +47,7 @@ void MainLoop(void) {
         g_DrawBuffer = frame;
         g_FrameParity = parity;
         RENDER_OT_BASE = frame->layout.orderingTables[0];
-        RENDER_PRIM_CURSOR_AS(u8) = frame->layout.primitiveBuffer;
+        g_RenderState.packetCursor = frame->layout.primitiveBuffer;
         GameClearOrderingTable(frame->layout.orderingTables[0],
                                GAME_FRAME_OT_LENGTH);
         GameClearOrderingTable(frame->layout.orderingTables[1],

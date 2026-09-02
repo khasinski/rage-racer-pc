@@ -19,7 +19,7 @@ static void DrawLightBurstFadeQuad(void *ot, s32 level) {
     setRGB2(quad, shade, shade, shade);
     setRGB3(quad, shade, shade, shade);
     AddPrim(ot, quad);
-    RENDER_PRIM_CURSOR_AS(POLY_G4) = quad + 1;
+    g_RenderState.packetCursor = quad + 1;
 }
 
 static void DrawLightBurstRays(void *ot, s32 level) {

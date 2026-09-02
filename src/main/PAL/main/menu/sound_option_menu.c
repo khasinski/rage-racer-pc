@@ -41,7 +41,7 @@ void DrawSoundOptionScreen(void) {
                                 0x7F40);
     next = GameQueueSpriteTrans(ot, next, 0x24, 0x98, 0x1C, 0x18, 0xD0,
                                 0x60, 0x7F40);
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 
     DrawOptionHintBar(2);
     next = RENDER_PRIM_CURSOR_AS(u8);
@@ -49,7 +49,7 @@ void DrawSoundOptionScreen(void) {
                          0xC4);
     DrawOutputModeChoice(ot, &next, g_MonoOutput != 0, 0xA2, 0x28, 0xB4,
                          0xD0);
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 
     DrawVolumeBar(g_BgmVolumeSetting, 0xD0);
     DrawVolumeBar(g_SfxVolumeSetting, 0xF8);
@@ -73,7 +73,7 @@ void DrawSoundOptionScreen(void) {
                            0x5C, 0x28, 0x89, 0xFF, 0x76);
         break;
     }
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
 }
 
 /* g_GameModeHandlers[4]: choose a setting, then mode 5 edits it. */

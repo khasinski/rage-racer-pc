@@ -105,7 +105,7 @@ void DrawPrologueText(void) {
     blue = g_FadeLevel * 3 / 4 + 0x40;
     next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140,
                               0xF0, g_FadeLevel, green, blue);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x49);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x49);
 }
 
 void ExitPrologue(void) {

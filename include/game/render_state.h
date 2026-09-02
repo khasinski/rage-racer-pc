@@ -175,8 +175,8 @@ extern CarTrackWork g_CarTrackWork;
  * as an integer in this slot; reading it back that way would take half of a
  * pointer here, so that spelling is gone.
  */
-#define RENDER_PRIM_CURSOR_AS(type) (*(type **)&g_RenderState.packetCursor)
-#define RENDER_PRIM_CURSOR          RENDER_PRIM_CURSOR_AS(void)
+#define RENDER_PRIM_CURSOR_AS(type) ((type *)g_RenderState.packetCursor)
+#define RENDER_PRIM_CURSOR          g_RenderState.packetCursor
 
 /* Ordering table the emitters link finished packets into. */
 #define RENDER_OT_BASE g_RenderState.primData

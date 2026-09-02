@@ -79,7 +79,7 @@ void UpdateTitleAttract(void) {
 
     next = GameQueueShadedSprite(orderingTable, next, 0x34, 0x18, 0x6C,
                                  0x88, 0, 0, panelClut, alpha);
-    RENDER_PRIM_CURSOR = GameQueueShadedTexturedRect(
+    g_RenderState.packetCursor = GameQueueShadedTexturedRect(
         orderingTable, next, 0xA0, 0x18, -0x6C, 0x88, 0, 0, panelClut, 0x99,
         alpha);
 }

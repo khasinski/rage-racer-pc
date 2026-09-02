@@ -40,5 +40,5 @@ void DrawBgmSelectBar(void) {
     next = GameQueueSprite(ot, next, 0x62, 0xC0, 0xBE, 0x10, 0x3C, 0,
                            0x3FEE);
     next = GameQueueTileTrans(ot, next, 0x14, 0xB8, 0x118, 0x20, 0, 0, 0);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0xB);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0xB);
 }

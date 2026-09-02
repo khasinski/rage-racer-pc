@@ -51,7 +51,7 @@ void DrawControllerConfigScreen(void) {
             prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, g_PadMappingIndex);
             prim = DrawPadConfigDiagram(ot, prim);
         }
-        RENDER_PRIM_CURSOR_AS(u8) = prim;
+        g_RenderState.packetCursor = prim;
     }
 }
 
@@ -126,16 +126,16 @@ void UpdateControllerConfigScreen(void) {
  * inside a white border, both drawn into the 0xD0 sub-buffer of the current
  * draw buffer from the shared render-state packet cursor. */
 void DrawNegconNeutralScreen(void) {
-    u8 **cursor = &RENDER_PRIM_CURSOR_AS(u8);
     GameOrderingTableEntry *ot;
     u8 *prim;
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconUntwistedLine1, 0x7F81);
     DrawSpriteString(0x18, 0x48, g_MsgNegconUntwistedLine2, 0x7F81);
     ot = GamePrimaryOrderingTable(52);
-    prim = *cursor;
+    prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);
-    *cursor = AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);
+    g_RenderState.packetCursor =
+        AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);
 }
 
 /*

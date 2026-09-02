@@ -84,7 +84,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     }
 
     packet.bytes = QueueDrawModePrim(orderingTable, packet.bytes, 0xC);
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
+    g_RenderState.packetCursor = packet.bytes;
 
     if (phase > 0 && g_RacePaused == 0) {
         AddPrims(orderingTable, tiles, tiles + 511);
@@ -101,7 +101,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     tiles->y0 = (u16)g_CountdownBoardOffset + 88;
     AddPrim(orderingTable, tiles++);
     packet.tile = tiles;
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
+    g_RenderState.packetCursor = packet.bytes;
 }
 
 
@@ -137,7 +137,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     g_RaceOptionScroll1 = marqueeState.secondScroll;
 
     next = QueueDrawAreaPrim(ot, prim.drawPacket, 0, 0, 0x140, 0xF0);
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
                 &g_RaceOptionMarquee[marqueeState.textFrame][0], 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
@@ -210,5 +210,5 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     AddPrim(ot, quad);
 
     prim.polyFT4++;
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, prim.bytes, 9);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, prim.bytes, 9);
 }

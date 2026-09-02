@@ -30,5 +30,5 @@ void DrawLapNumber(void) {
         digitIndex++;
     }
 
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, packet.bytes, 9);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, packet.bytes, 9);
 }

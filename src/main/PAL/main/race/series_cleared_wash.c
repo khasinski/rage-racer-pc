@@ -19,5 +19,5 @@ void DrawSeriesClearedWash(s32 washProgress, s32 fadeLevel) {
         ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140, 0xF0,
         red, green, blue);
 
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x49);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x49);
 }

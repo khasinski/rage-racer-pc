@@ -40,7 +40,7 @@ void DrawClassRecordDetail(void) {
     next = AddTilePrim(base, next, x + 78, y + 47, 0x14, 2, 0xFF, 0xFF, 0xFF);
     next = AddTilePrim(base, next, x, y, 0x7C, 0x1E, 0, 0, 0);
     next = AddTilePrim(base, next, x, y + 32, 0x7C, 0x1E, 0, 0, 0);
-    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(base, next, x - 1, y - 2, 0x7E, 0x42, 0xFF, 0xFF, 0xFF);
+    g_RenderState.packetCursor = AddTilePrim(base, next, x - 1, y - 2, 0x7E, 0x42, 0xFF, 0xFF, 0xFF);
 }
 
 void DrawClassRecordGrid(void) {
@@ -59,7 +59,7 @@ void DrawClassRecordGrid(void) {
     next = RENDER_PRIM_CURSOR_AS(u8);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(labelBase, next, 0x3F);
+    g_RenderState.packetCursor = QueueDrawModePrim(labelBase, next, 0x3F);
     DrawMenuCursorArrow(0x14, (g_ClassRecordMenuCursor * 32) + 56);
     next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -92,7 +92,7 @@ void DrawClassRecordGrid(void) {
 
     next = QueueDrawModePrim(base, next, 0x3E);
     next = QueueDrawModePrim(base + 1, next, 0x3C);
-    RENDER_PRIM_CURSOR_AS(u8) = next;
+    g_RenderState.packetCursor = next;
     DrawOptionHintBar(0);
 }
 

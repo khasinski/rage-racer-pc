@@ -73,7 +73,7 @@ void GameDrawProportionalTextShaded(
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet.drawPacket);
     packet.drawPacket++;
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
+    g_RenderState.packetCursor = packet.bytes;
 }
 
 

@@ -28,7 +28,7 @@ void DrawRaceHudLabels(s32 mode) {
         }
     }
 
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(
+    g_RenderState.packetCursor = QueueDrawModePrim(
         ot, RENDER_PRIM_CURSOR_AS(u8), 9);
 }
 

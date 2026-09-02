@@ -40,5 +40,5 @@ void DrawEndingStill(void) {
     next = QueueDrawModePrim(ot, next, 6);
     next =
         GameQueueSprite(ot, next, 0x100, 0, 0x40, 0xF0, 0, 0, 0x3FDB);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 7);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 7);
 }

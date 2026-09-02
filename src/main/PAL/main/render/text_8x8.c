@@ -41,7 +41,7 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
     SetDrawMode(packet.drawPacket, 0, 1, style.drawMode, g_DrawModeEnv);
     AddPrim(ot, packet.drawPacket);
     packet.drawPacket++;
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
+    g_RenderState.packetCursor = packet.bytes;
 }
 
 void DrawText8x8(s32 x, s32 y, const char *text, s32 clutIndex) {

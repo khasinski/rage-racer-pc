@@ -104,7 +104,7 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
         x += w;
     }
 
-    RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(
+    g_RenderState.packetCursor = QueueDrawModePrim(
         ot + 1, RENDER_PRIM_CURSOR_AS(u8), (flags & 0x7f) + 27);
 }
 
@@ -199,7 +199,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
         x += w;
     }
 
-    RENDER_PRIM_CURSOR_AS(void) =
+    g_RenderState.packetCursor =
         QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void),
                           (flags & 0x7f) + 27);
 }
@@ -246,7 +246,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
         x += width;
     }
 
-    RENDER_PRIM_CURSOR_AS(void) =
+    g_RenderState.packetCursor =
         QueueDrawModePrim(ot, RENDER_PRIM_CURSOR_AS(void), primitiveCount + 27);
     return 10 - firstDigit;
 }
@@ -318,5 +318,5 @@ void DrawBitPatternOverlay(s32 pattern) {
             0x80);
     }
 
-    RENDER_PRIM_CURSOR_AS(void) = QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), 0x39);
+    g_RenderState.packetCursor = QueueDrawModePrim(ot + 1, RENDER_PRIM_CURSOR_AS(void), 0x39);
 }

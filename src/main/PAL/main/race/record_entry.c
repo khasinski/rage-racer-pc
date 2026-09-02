@@ -92,13 +92,10 @@ void DrawTimeRecordPanel(s32 slideX) {
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {
-    u8 **cursorSlot;
-
     if (g_AnimTimer & 8) {
-        cursorSlot = &RENDER_PRIM_CURSOR_AS(u8);
-        *cursorSlot = AddTilePrim(
+        g_RenderState.packetCursor = AddTilePrim(
             GamePrimaryOrderingTable(0),
-            *cursorSlot,
+            RENDER_PRIM_CURSOR_AS(u8),
             (charIndex * 8) + 0x7C,
             ((row * 5) << 2) + 0x7E,
             9,

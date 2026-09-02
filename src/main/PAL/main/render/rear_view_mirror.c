@@ -57,7 +57,6 @@ static void UpdateMirrorPanelPosition(void) {
 }
 
 void DrawRearViewMirror(s32 mode) {
-    void **state;
     DrawPacket *packet;
     DrawPacket *prim;
 
@@ -74,27 +73,25 @@ void DrawRearViewMirror(s32 mode) {
         return;
     }
 
-    state = &RENDER_PRIM_CURSOR_AS(void);
-
     DrawSkyBackground();
-    packet = DrawMirrorFrame(*state);
+    packet = DrawMirrorFrame(g_RenderState.packetCursor);
     SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
     prim = packet;
     packet++;
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             prim);
-    *state = packet;
+    g_RenderState.packetCursor = packet;
     BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
     SetRotMatrix(&g_RenderState.matrix);
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     SubmitTerrainCells(&g_RenderState, g_VisibleCellList, 0x40);
 
-    packet = *state;
+    packet = g_RenderState.packetCursor;
     SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
     prim = packet;
     packet++;
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], prim);
-    *state = packet;
+    g_RenderState.packetCursor = packet;
     DrawCourseObjects();
     DrawCars();
     EndMirrorPass();

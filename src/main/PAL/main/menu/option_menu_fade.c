@@ -16,7 +16,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
 
     next = GameQueueTileTrans(base, RENDER_PRIM_CURSOR_AS(u8), 0, 0,
                               0x140, 0x1E0, color, color, color);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, tpage);
+    g_RenderState.packetCursor = QueueDrawModePrim(base, next, tpage);
 }
 
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */

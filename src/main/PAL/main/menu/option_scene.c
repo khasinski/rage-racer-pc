@@ -31,13 +31,13 @@ void DrawOptionSceneOverlay(void) {
                              0xFF, 0xFF, 0xFF);
     }
 
-    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(
+    g_RenderState.packetCursor = AddTilePrim(
         ot, next, 0, 0, 0x140, g_OptionLetterboxHeight, 0x85, 0x15, 0xE);
 }
 
 /* Scene 23: the setup / OPTION scene, dispatching g_GameModeHandlers[g_GameMode]. */
 void UpdateOptionScene(void) {
-    RENDER_PRIM_CURSOR_AS(u8) = AddTilePrim(
+    g_RenderState.packetCursor = AddTilePrim(
         GamePrimaryOrderingTable(0), RENDER_PRIM_CURSOR_AS(u8),
         0, 0, 0x140, 2, 0, 0, 0);
     g_AnimTimer++;

@@ -47,7 +47,7 @@ static void DrawReplayBadge(void) {
     base = GamePrimaryOrderingTable(0);
     next = GameQueueSprite(base, RENDER_PRIM_CURSOR_AS(u8), 0x10, 0x10, 0x48,
                            0x10, 0, 0x68, 0x780D);
-    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 9);
+    g_RenderState.packetCursor = QueueDrawModePrim(base, next, 9);
 }
 
 static s32 ClampWashLevel(s32 value) {

@@ -474,5 +474,5 @@ void DrawSkyBackground(void) {
     }
 
     packet = DrawCourseSkirt(&work, &geometry, packet);
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
+    g_RenderState.packetCursor = packet.bytes;
 }
