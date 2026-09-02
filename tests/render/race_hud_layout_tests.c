@@ -48,7 +48,7 @@ GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[11];
 
 /* Building one sprite from a description is somebody else's business; what
  * matters here is the position the builder puts on it afterwards. */
-void BuildSpriteFromDesc(SPRT *sprite, GameSpriteDesc *desc) {
+void BuildSpriteFromDesc(SPRT *sprite, const GameSpriteDesc *desc) {
     memset(sprite, 0, sizeof(*sprite));
     sprite->x0 = (s16)desc->x;
     sprite->y0 = (s16)desc->y;

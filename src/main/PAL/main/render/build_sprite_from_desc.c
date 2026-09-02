@@ -1,7 +1,7 @@
 #include "game/prim.h"
 #include "game/render.h"
 
-void BuildSpriteFromDesc(SPRT *sprite, GameSpriteDesc *desc) {
+void BuildSpriteFromDesc(SPRT *sprite, const GameSpriteDesc *desc) {
     SetSprt(sprite);
     sprite->x0 = desc->x;
     sprite->y0 = desc->y;

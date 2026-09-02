@@ -1013,6 +1013,26 @@ target_link_libraries(hud_packet_emitters_tests PRIVATE psyz)
 add_test(NAME hud_packet_emitters COMMAND hud_packet_emitters_tests)
 set_tests_properties(hud_packet_emitters PROPERTIES LABELS unit)
 
+add_executable(build_sprite_from_desc_tests
+    build_sprite_from_desc_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/build_sprite_from_desc.c)
+target_include_directories(build_sprite_from_desc_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(build_sprite_from_desc_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(build_sprite_from_desc_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(build_sprite_from_desc_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(build_sprite_from_desc_tests PRIVATE psyz)
+add_test(NAME build_sprite_from_desc COMMAND build_sprite_from_desc_tests)
+set_tests_properties(build_sprite_from_desc PROPERTIES LABELS unit)
+
 add_executable(tachometer_tests
     tachometer_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_tachometer.c)

@@ -10,8 +10,8 @@
 
 void DrawRaceHudLabels(s32 mode) {
     s32 labelCount = mode != 0 ? 6 : 3;
-    GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
-                                      : g_RaceHudSpriteDescsTimeTrial;
+    const GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
+                                            : g_RaceHudSpriteDescsTimeTrial;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 label;
@@ -41,9 +41,9 @@ void DrawLapTimes(void) {
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    GameSpriteDesc *descs = g_GrandPrixMode != 0
-                                ? g_RaceHudSpriteDescsGp
-                                : g_RaceHudSpriteDescsTimeTrial;
+    const GameSpriteDesc *descs = g_GrandPrixMode != 0
+                                      ? g_RaceHudSpriteDescsGp
+                                      : g_RaceHudSpriteDescsTimeTrial;
     s32 lap;
 
     if (!HudShowLapTimes()) {

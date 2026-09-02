@@ -9,8 +9,8 @@ void BuildRaceHudPrims(s32 mode) {
     s32 col;
     s32 row;
     s32 rowCount = mode != 0 ? 12 : 11;
-    GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
-                                      : g_RaceHudSpriteDescsTimeTrial;
+    const GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
+                                            : g_RaceHudSpriteDescsTimeTrial;
 
     /* Retail stores these three packets as a tightly packed 32-bit block.
      * Native OT links are pointer-sized, so relying on the original adjacent

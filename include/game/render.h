@@ -139,8 +139,8 @@ TimedDrawScriptTick AdvanceTimedDrawScript(
     const TimedDrawCommand *commands, s32 *progress, s32 step);
 void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress);
 
-/* A ready-made SPRT description; BuildSpriteFromDesc expands it into a render-state
- * SPRT. g_TachoNeedleSprite is the one instance. */
+/* A ready-made SPRT description stored in the game's data tables.
+ * BuildSpriteFromDesc expands it into a render-state SPRT. */
 typedef struct GameSpriteDesc {
     u16 x;
     u16 y;
@@ -156,7 +156,7 @@ typedef struct GameSpriteDesc {
 } GameSpriteDesc;
 
 extern GameSpriteDesc g_TachoNeedleSprite;
-void BuildSpriteFromDesc(SPRT *prim, GameSpriteDesc *src);
+void BuildSpriteFromDesc(SPRT *sprite, const GameSpriteDesc *desc);
 extern TimedDrawCommand g_MenuRowScript[];
 
 /* One display buffer, which is what InitRenderState sets that rectangle to.
