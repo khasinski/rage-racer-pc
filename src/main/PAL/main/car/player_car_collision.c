@@ -130,7 +130,6 @@ static PlayerCollisionHit FindPlayerCollision(
     if (opponent->activeFlag == -1) {
       continue;
     }
-    opponent->collisionFlag = 0;
     progressDistance = (opponent->trackProgress + g_TrackLength -
                         player->trackProgress) % g_TrackLength;
     lateralDistance = AbsoluteDifference(opponent->trackLateralOffset,
@@ -271,9 +270,14 @@ static void ApplyHighRegionCollision(PlayerCarRuntime *player,
 s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
   CarCollisionPoint playerGrid[4][4];
   PlayerCollisionHit hit;
+  s32 index;
 
   if (g_GrandPrixMode == 0) {
     return 0;
+  }
+
+  for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+    g_Cars[index].collisionFlag = 0;
   }
 
   BuildPlayerCollisionGrid(car, playerGrid);

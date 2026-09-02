@@ -159,6 +159,21 @@ static int CheckWrappedWorldCoordinates(void) {
     return 0;
 }
 
+static int CheckAllCollisionFlagsReset(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    g_Cars[10].activeFlag = 0;
+    g_Cars[10].collisionFlag = 1;
+    if (CollidePlayerWithCars(&player) <= 0 ||
+        g_Cars[0].collisionFlag != 1 || g_Cars[10].collisionFlag != 0) {
+        printf("FAIL collision flags after early hit: first=%d later=%d\n",
+               g_Cars[0].collisionFlag, g_Cars[10].collisionFlag);
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
     static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
@@ -173,7 +188,8 @@ int main(void) {
     size_t playerYaw, opponentYaw, nudge, speed, backwards;
 
     if (CheckCollisionSoundGates() != 0 ||
-        CheckWrappedWorldCoordinates() != 0)
+        CheckWrappedWorldCoordinates() != 0 ||
+        CheckAllCollisionFlagsReset() != 0)
         return 1;
 
     g_TrackLength = 0x8000;
