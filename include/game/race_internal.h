@@ -42,4 +42,9 @@ s32 IsPrologueWorldActive(s32 sceneTimer);
 extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];
 extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 
+s32 GrandPrixCourseCount(s32 classIndex);
+s32 NextUnlockedClassRecord(s32 classRecordIndex);
+s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
+s32 PrizeCountStep(s32 amount, s32 frameCount);
+
 #endif

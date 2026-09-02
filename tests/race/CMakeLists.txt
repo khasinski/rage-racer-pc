@@ -1,3 +1,22 @@
+add_executable(class_progress_rules_tests
+    class_progress_rules_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c)
+target_include_directories(class_progress_rules_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(class_progress_rules_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(class_progress_rules_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(class_progress_rules_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME class_progress_rules COMMAND class_progress_rules_tests)
+set_tests_properties(class_progress_rules PROPERTIES LABELS unit)
+
 add_executable(race_time_text_tests
     race_time_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)

@@ -1,0 +1,43 @@
+#include "game/race_internal.h"
+
+enum {
+    BEGINNER_CLASS_COURSE_COUNT = 3,
+    ADVANCED_CLASS_COURSE_COUNT = 4,
+    COURSE_UNLOCK_CLASS = 2,
+    STANDARD_SERIES_FINAL_CLASS = 4,
+    EXTRA_SERIES_FINAL_CLASS = 5,
+    CLASS_RECORD_NO_UNLOCK = -1,
+};
+
+s32 GrandPrixCourseCount(s32 classIndex) {
+    return classIndex < COURSE_UNLOCK_CLASS
+        ? BEGINNER_CLASS_COURSE_COUNT
+        : ADVANCED_CLASS_COURSE_COUNT;
+}
+
+s32 NextUnlockedClassRecord(s32 classRecordIndex) {
+    /* Finishing standard GP class 4 opens extra GP class 0 (record 6).
+     * Finishing extra GP class 4 opens standard GP class 5 (record 5), while
+     * standard class 5 is the branch point and opens no single next record. */
+    if (classRecordIndex == 4) {
+        return 6;
+    }
+    if (classRecordIndex == 5) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
+    if (classRecordIndex == 10) {
+        return 5;
+    }
+    return classRecordIndex + 1;
+}
+
+s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
+    return classIndex == (extraSeries
+        ? EXTRA_SERIES_FINAL_CLASS
+        : STANDARD_SERIES_FINAL_CLASS);
+}
+
+s32 PrizeCountStep(s32 amount, s32 frameCount) {
+    s32 step = amount / frameCount;
+    return step > 0 ? step : 1;
+}
