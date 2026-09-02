@@ -767,11 +767,7 @@ extern s32 g_IsEnvironmentMode4;
 /* Declared identically by 82 translation units before this
  * header carried them. */
 
-extern char g_FmtGpuTPage[];
 extern s16 g_CarModelBankTable[][2];
-extern s16 D_80092B08[];
-extern s16 D_80093308[];
-extern s16 D_80093B08[];
 extern Matrix g_MirrorViewMatrix;
 extern u8 g_CarModelByCourse[][11];
 extern s16 g_MirrorViewEnabled;
