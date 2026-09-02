@@ -17,12 +17,12 @@ sources.each do |path, source|
       abort "#{path}: #{name} incorrectly detaches a byte from CdlGetlocP response" if
         source.match?(/^unsigned char #{name}\b/)
     end
-    abort "#{path}: best-sector backing object is smaller than its game declaration" unless
-      source.include?("unsigned char g_BestSectorTimes[96]")
-    { "g_SectorEndDistance" => 12,
-      "g_CarSpecBars" => 16, "g_TeamLogoClut" => 32 }.each do |name, bytes|
-      abort "#{path}: #{name} backing object is truncated" unless
-        source.include?("unsigned char #{name}[#{bytes}]")
+    { "g_BestSectorTimes" => "s32 g_BestSectorTimes[2][4][3]",
+      "g_SectorEndDistance" => "s32 g_SectorEndDistance[3]",
+      "g_CarSpecBars" => "s32 g_CarSpecBars[4]",
+      "g_TeamLogoClut" => "u16 g_TeamLogoClut[16]" }.each do |name, declaration|
+      abort "#{path}: #{name} backing object has the wrong typed dimensions" unless
+        source.include?(declaration)
     end
     %w[g_GrandPrixCars g_ExtraGrandPrixCars g_TimeAttackCars].each do |name|
       abort "#{path}: #{name} must remain one complete typed car table" unless
@@ -48,7 +48,8 @@ sources.each do |path, source|
   if path.end_with?("records.c")
     abort "#{path}: default sector records are not initialized" unless
       source.include?("g_BestSectorTimes[series][course][slot]") &&
-      source.include?("defaultLapTimes[series * 4 + course]")
+      source.include?("series * RECORD_COURSE_COUNT + course") &&
+      source.include?("defaultLapTimes[index]")
     next
   end
 
