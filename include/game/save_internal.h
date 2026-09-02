@@ -9,7 +9,7 @@
 #include "game/team_logo.h"
 #include "psyq/gpu.h"
 
-extern CarEntry g_SaveDefaults[13];
+extern CarEntry g_SaveDefaults[GAME_CAR_COUNT];
 extern ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 extern s32 g_ClassWinCount;
 extern CourseProgressState g_GrandPrixCourseProgress;

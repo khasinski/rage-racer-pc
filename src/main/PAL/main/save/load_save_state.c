@@ -52,9 +52,12 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     g_MaxClassReached[1] = block->maxClassReached[1];
 
     for (i = 0; i < GAME_CAR_COUNT; i++) {
-        LoadCarSetup(&g_GrandPrixCars[i], &block->carSetup[0][i]);
-        LoadCarSetup(&g_ExtraGrandPrixCars[i], &block->carSetup[1][i]);
-        LoadCarSetup(&g_TimeAttackCars[i], &block->carSetup[2][i]);
+        LoadCarSetup(&g_GrandPrixCars[i],
+                     &block->carSetup[SAVED_CARS_GRAND_PRIX][i]);
+        LoadCarSetup(&g_ExtraGrandPrixCars[i],
+                     &block->carSetup[SAVED_CARS_EXTRA_GRAND_PRIX][i]);
+        LoadCarSetup(&g_TimeAttackCars[i],
+                     &block->carSetup[SAVED_CARS_TIME_ATTACK][i]);
     }
 
     for (i = 0; i < CLASS_RECORD_COUNT; i++) {

@@ -48,9 +48,12 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
     block->maxClassReached[1] = g_MaxClassReached[1];
 
     for (i = 0; i < GAME_CAR_COUNT; i++) {
-        StoreCarSetup(&block->carSetup[0][i], &g_GrandPrixCars[i]);
-        StoreCarSetup(&block->carSetup[1][i], &g_ExtraGrandPrixCars[i]);
-        StoreCarSetup(&block->carSetup[2][i], &g_TimeAttackCars[i]);
+        StoreCarSetup(&block->carSetup[SAVED_CARS_GRAND_PRIX][i],
+                      &g_GrandPrixCars[i]);
+        StoreCarSetup(&block->carSetup[SAVED_CARS_EXTRA_GRAND_PRIX][i],
+                      &g_ExtraGrandPrixCars[i]);
+        StoreCarSetup(&block->carSetup[SAVED_CARS_TIME_ATTACK][i],
+                      &g_TimeAttackCars[i]);
     }
 
     for (i = 0; i < CLASS_RECORD_COUNT; i++) {

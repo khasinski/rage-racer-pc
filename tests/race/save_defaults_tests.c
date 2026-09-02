@@ -26,7 +26,7 @@ void ApplyAudioSettings(void) { s_audioApplyCalls++; }
 } while (0)
 
 static int TestProgressSlotReset(void) {
-    CarEntry cars[13];
+    CarEntry cars[GAME_CAR_COUNT];
     GameRaceProgress progress;
 
     memset(cars, 0xA5, sizeof(cars));
@@ -63,9 +63,12 @@ static int TestCourseProgressModes(void) {
 static int TestAllDefaults(void) {
     s32 i;
 
-    memset(g_GrandPrixCars, 0xA5, 13 * sizeof(*g_GrandPrixCars));
-    memset(g_ExtraGrandPrixCars, 0xA5, 13 * sizeof(*g_ExtraGrandPrixCars));
-    memset(g_TimeAttackCars, 0xA5, 13 * sizeof(*g_TimeAttackCars));
+    memset(g_GrandPrixCars, 0xA5,
+           GAME_CAR_COUNT * sizeof(*g_GrandPrixCars));
+    memset(g_ExtraGrandPrixCars, 0xA5,
+           GAME_CAR_COUNT * sizeof(*g_ExtraGrandPrixCars));
+    memset(g_TimeAttackCars, 0xA5,
+           GAME_CAR_COUNT * sizeof(*g_TimeAttackCars));
     memset(g_ClassRecords, 0xA5, sizeof(g_ClassRecords));
     memset(&g_GrandPrixCourseProgress, 0xA5,
            sizeof(g_GrandPrixCourseProgress));

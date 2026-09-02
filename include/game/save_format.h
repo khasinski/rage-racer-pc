@@ -2,6 +2,7 @@
 #define GAME_SAVE_FORMAT_H
 
 #include "common.h"
+#include "game/car.h"
 #include "game/menu_types.h"
 
 #include <stddef.h>
@@ -85,6 +86,13 @@ typedef struct SavedRaceProgress {
     s32 money;
 } SavedRaceProgress;
 
+typedef enum SavedCarTableIndex {
+    SAVED_CARS_GRAND_PRIX,
+    SAVED_CARS_EXTRA_GRAND_PRIX,
+    SAVED_CARS_TIME_ATTACK,
+    SAVED_CAR_TABLE_COUNT,
+} SavedCarTableIndex;
+
 /* Retail file: 0x200 icon, 0x80 header, this payload, repeated header. */
 typedef struct GameSaveBlock {
     u16 padMappingIndex;
@@ -101,7 +109,7 @@ typedef struct GameSaveBlock {
     s16 bgmSelection;
     u16 extraGrandPrixUnlocked;
     s32 maxClassReached[2];
-    SavedCarSetup carSetup[3][13];
+    SavedCarSetup carSetup[SAVED_CAR_TABLE_COUNT][GAME_CAR_COUNT];
     SavedClassRecord classRecords[CLASS_RECORD_COUNT];
     u16 teamLogoClut[16];
     u16 teamLogoCanvas[0x400];
@@ -123,5 +131,14 @@ _Static_assert(sizeof(GameSaveBlock) == MC_BLOCK_SIZE,
                "memory-card save block size changed");
 _Static_assert(offsetof(GameSaveBlock, checksum) == MC_BLOCK_CHECKSUM_OFS,
                "memory-card save block checksum offset changed");
+_Static_assert(offsetof(GameSaveBlock, carSetup[SAVED_CARS_GRAND_PRIX]) ==
+                   MC_GP_CARS_OFS,
+               "Grand Prix car table offset changed");
+_Static_assert(offsetof(GameSaveBlock, carSetup[SAVED_CARS_EXTRA_GRAND_PRIX]) ==
+                   MC_EXTRA_CARS_OFS,
+               "Extra Grand Prix car table offset changed");
+_Static_assert(offsetof(GameSaveBlock, carSetup[SAVED_CARS_TIME_ATTACK]) ==
+                   MC_TIME_CARS_OFS,
+               "Time Attack car table offset changed");
 
 #endif

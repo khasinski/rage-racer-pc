@@ -87,8 +87,8 @@ static int ReservedBytesAreZero(const GameSaveBlock *block) {
     s32 group;
     s32 car;
 
-    for (group = 0; group < 3; group++) {
-        for (car = 0; car < 13; car++) {
+    for (group = 0; group < SAVED_CAR_TABLE_COUNT; group++) {
+        for (car = 0; car < GAME_CAR_COUNT; car++) {
             if (block->carSetup[group][car].reserved[0] != 0 ||
                 block->carSetup[group][car].reserved[1] != 0) {
                 return 0;
