@@ -290,12 +290,18 @@ static int TestCarAssetSlots(void) {
     g_CarModelAsset = &sentinelModel;
     SelectCarModelSlot(2);
     CHECK(g_CarModelAsset == &sentinelModel);
+    g_CarModelSlots[0] = NULL;
+    SelectCarModelSlot(0);
+    CHECK(g_CarModelAsset == &sentinelModel);
     SelectCarModelSlot(1);
     CHECK(g_CarModelAsset == g_CarModelSlots[1]);
 
     g_CarImageSlots[1] = &image1;
+    g_CarImageSlots[0] = NULL;
     s_loadImageCalls = 0;
     UploadCarImage(2);
+    CHECK(s_loadImageCalls == 0);
+    UploadCarImage(0);
     CHECK(s_loadImageCalls == 0);
     UploadCarImage(1);
     CHECK(s_loadImageCalls == 1 && s_loadedRect == &g_CarImageRect &&

@@ -8,7 +8,9 @@ static CarModelAsset s_NativeCarModelAssets[CAR_ASSET_SLOT_COUNT];
 static CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
 
 void UploadCarImage(s32 index) {
-    if ((u32)index >= CAR_ASSET_SLOT_COUNT) return;
+    if ((u32)index >= CAR_ASSET_SLOT_COUNT || g_CarImageSlots[index] == NULL) {
+        return;
+    }
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
 }
 
@@ -53,6 +55,8 @@ CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
 }
 
 void SelectCarModelSlot(s32 index) {
-    if ((u32)index >= CAR_ASSET_SLOT_COUNT) return;
+    if ((u32)index >= CAR_ASSET_SLOT_COUNT || g_CarModelSlots[index] == NULL) {
+        return;
+    }
     g_CarModelAsset = g_CarModelSlots[index];
 }
