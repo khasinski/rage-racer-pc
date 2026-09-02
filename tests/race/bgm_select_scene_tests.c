@@ -22,6 +22,7 @@ static s32 s_fadeInUpdates;
 static s32 s_exitUpdates;
 static s32 s_playbackUpdates;
 static s32 s_uiDraws;
+static s32 s_uiUpdates;
 static s32 s_worldUpdates;
 
 void UpdateBgmSelectPlayback(void) { s_playbackUpdates++; }
@@ -33,6 +34,7 @@ void DrawFullscreenFadeTile(s32 level, s32 tpage) {
     s_fadeLevel = level;
 }
 void DrawBgmSelectBar(void) { s_uiDraws++; }
+void UpdateBgmSelectBar(void) { s_uiUpdates++; }
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
     assert(mask == 0xFF);
     return current + 1;
@@ -59,6 +61,7 @@ static void Reset(void) {
     s_exitUpdates = 0;
     s_playbackUpdates = 0;
     s_uiDraws = 0;
+    s_uiUpdates = 0;
     s_worldUpdates = 0;
 }
 
@@ -69,7 +72,7 @@ static void TestActiveFrame(void) {
     UpdateBgmSelect();
 
     assert(s_playbackUpdates == 1 && s_inputUpdates == 1);
-    assert(s_displayMask == 1 && s_uiDraws == 1);
+    assert(s_displayMask == 1 && s_uiUpdates == 1 && s_uiDraws == 1);
     assert(g_AnimTimer == 11 && g_CameraCarIndex == 3);
     assert(s_worldUpdates == 1);
 }

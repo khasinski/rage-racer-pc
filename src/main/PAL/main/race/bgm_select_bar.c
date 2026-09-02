@@ -11,6 +11,12 @@ enum {
     BGM_SELECT_CLUT_INACTIVE = 0x3FEF,
 };
 
+void UpdateBgmSelectBar(void) {
+    if (g_BgmRandomLabelTimer > 0) {
+        g_BgmRandomLabelTimer--;
+    }
+}
+
 void DrawBgmSelectBar(void) {
     void *ot = GamePrimaryOrderingTable(1);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
@@ -29,7 +35,6 @@ void DrawBgmSelectBar(void) {
     }
 
     if (g_BgmRandomLabelTimer != 0) {
-        g_BgmRandomLabelTimer--;
         labelV = 0x10;
     } else {
         labelV = g_BgmSelectTrack * 12 + 0x1C;

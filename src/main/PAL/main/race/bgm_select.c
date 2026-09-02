@@ -33,6 +33,7 @@ void UpdateBgmSelect(void) {
     }
 
     if (g_BgmSelectShowUi != 0) {
+        UpdateBgmSelectBar();
         DrawBgmSelectBar();
     }
     g_AnimTimer++;

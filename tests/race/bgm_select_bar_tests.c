@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
@@ -87,8 +88,14 @@ int main(void) {
     g_BgmSelectCursor = 2;
     g_BgmRandomLabelTimer = 2;
     DrawBgmSelectBar();
-    CHECK(g_BgmRandomLabelTimer == 1 && s_sprites[3].v == 0x10);
+    CHECK(g_BgmRandomLabelTimer == 2 && s_sprites[3].v == 0x10);
     CHECK(s_sprites[2].clut == 0x3FEC);
+
+    UpdateBgmSelectBar();
+    CHECK(g_BgmRandomLabelTimer == 1);
+    UpdateBgmSelectBar();
+    UpdateBgmSelectBar();
+    CHECK(g_BgmRandomLabelTimer == 0);
 
     puts("BGM selector bar preserves layout, highlight, and random label");
     return 0;
