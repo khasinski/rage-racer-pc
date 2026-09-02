@@ -29,7 +29,7 @@ void SetCarModelSlot(CarModelAsset *asset, s32 index) {
     g_CarModelSlots[index] = &s_NativeCarModelAssets[index];
 }
 
-CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
+CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
     u32 i;
 
     for (i = 0; i < CAR_ASSET_SLOT_COUNT; i++) {
@@ -37,7 +37,7 @@ CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
             return s_SerializedCarModelAssets[i];
         }
     }
-    return nativeAsset;
+    return NULL;
 }
 
 void SelectCarModelSlot(s32 index) {

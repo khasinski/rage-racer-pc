@@ -788,7 +788,6 @@ void SetCarModelSlot(struct CarModelAsset *asset, s32 index);
 extern u32 g_CarModelSlot;
 /* Point g_CarModelAsset at g_CarModelSlots[index]. */
 void SelectCarModelSlot(s32 index);
-struct CarModelAsset *GetSerializedCarModelAsset(struct CarModelAsset *nativeAsset);
 /* Repaint the loaded car's texture block in the two body colours. */
 void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData);
 void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData);

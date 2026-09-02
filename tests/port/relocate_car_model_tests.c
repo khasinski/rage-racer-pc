@@ -18,7 +18,7 @@ static ModelBankHeader *s_registeredBank;
 static s32 s_registeredSlot;
 static s32 s_failures;
 
-CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
+CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
     (void)nativeAsset;
     return s_serializedAsset;
 }
@@ -81,6 +81,24 @@ int main(void) {
                                           SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
               s_registeredSlot == 0,
           "relocated model bank registered");
+
+    s_serializedAsset = NULL;
+    s_installedAsset = NULL;
+    g_AssetLoadCursor = NULL;
+    RelocateCarModel();
+    Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
+          "unknown native model is not treated as serialized bytes");
+
+    s_serializedAsset = (CarModelAsset *)(void *)source.bytes;
+    s_serializedAsset->serializedModelSize = -1;
+    RelocateCarModel();
+    Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
+          "negative serialized model size is rejected");
+
+    s_serializedAsset->serializedModelSize = CAR_MODEL_SLOT_SIZE;
+    RelocateCarModel();
+    Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
+          "serialized model larger than its slot is rejected");
 
     if (s_failures != 0) return 1;
     puts("car model relocation copies its named serialized payload");

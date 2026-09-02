@@ -501,6 +501,7 @@ struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
+CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset);
 void LoadPendingCarModelAsset(void);
 
 /* Declared identically by 3 translation units before this

@@ -4,9 +4,16 @@
 #include <string.h>
 
 void RelocateCarModel(void) {
-    CarModelAsset *source = GetSerializedCarModelAsset(g_CarModelAsset);
-    u32 byteCount = (u32)source->serializedModelSize +
-                    SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    CarModelAsset *source = FindSerializedCarModelAsset(g_CarModelAsset);
+    size_t byteCount;
+
+    if (source == NULL || source->serializedModelSize < 0 ||
+        source->serializedModelSize >
+            CAR_MODEL_SLOT_SIZE - SERIALIZED_CAR_MODEL_HEADER_SIZE) {
+        return;
+    }
+    byteCount = SERIALIZED_CAR_MODEL_HEADER_SIZE +
+                (size_t)source->serializedModelSize;
 
     g_AssetLoadCursor = g_AssetBase + byteCount;
     memcpy(g_AssetBase, source, byteCount);

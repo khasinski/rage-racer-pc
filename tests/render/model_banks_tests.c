@@ -246,8 +246,8 @@ static int TestCarAssetSlots(void) {
     CHECK(g_CarModelSlots[1]->serializedModelSize == 24);
     CHECK(g_CarModelSlots[1]->modelData.pointer == storage.bytes + 48);
     CHECK(g_CarModelSlots[1]->imageData.pointer == storage.bytes + 72);
-    CHECK(GetSerializedCarModelAsset(g_CarModelSlots[1]) == view);
-    CHECK(GetSerializedCarModelAsset(&unknownModel) == &unknownModel);
+    CHECK(FindSerializedCarModelAsset(g_CarModelSlots[1]) == view);
+    CHECK(FindSerializedCarModelAsset(&unknownModel) == NULL);
 
     g_CarModelAsset = &sentinelModel;
     SelectCarModelSlot(2);
