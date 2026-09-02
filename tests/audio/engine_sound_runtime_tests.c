@@ -6,19 +6,19 @@
 #include <string.h>
 
 EngineSoundState g_EngineSoundState;
-s16 g_SoundSlotTone[6][2];
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 
 static s32 s_playCalls;
 static s32 s_playSlot;
 static s32 s_playBank;
 static s32 s_interpolateCalls;
-static s32 s_interpolateParam[4];
-static s32 s_interpolatePosition[4];
-static s32 s_interpolateBank[4];
+static s32 s_interpolateParam[8];
+static s32 s_interpolatePosition[8];
+static s32 s_interpolateBank[8];
 static s32 s_toneCalls;
-static s32 s_toneSlot[2];
-static s32 s_toneBend[2];
-static s32 s_toneVolume[2];
+static s32 s_toneSlot[4];
+static s32 s_toneBend[4];
+static s32 s_toneVolume[4];
 static s32 s_tailCalls;
 
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
@@ -65,28 +65,37 @@ int main(void) {
     g_EngineSoundState.bank = 0;
     g_EngineSoundState.slotActive[0] = 1;
     g_EngineSoundState.slotActive[2] = 1;
+    g_EngineSoundState.slotActive[5] = 1;
     g_EngineSoundState.volumeScale = 64;
     g_SoundSlotTone[0][0] = 10;
     g_SoundSlotTone[0][1] = 11;
     g_SoundSlotTone[2][0] = 20;
     g_SoundSlotTone[2][1] = 20;
+    g_SoundSlotTone[5][0] = 30;
+    g_SoundSlotTone[5][1] = 31;
 
     UpdateLoadedAudioVoices(5000, 1);
     CHECK(g_EngineSoundState.position == 5120);
     CHECK(g_EngineSoundState.bank == 1);
-    CHECK(s_playCalls == 1 && s_playSlot == 0 && s_playBank == 1);
-    CHECK(s_interpolateCalls == 4);
+    CHECK(s_playCalls == 2 && s_playSlot == 5 && s_playBank == 1);
+    CHECK(s_interpolateCalls == 6);
     CHECK(s_interpolateParam[0] == 0 && s_interpolateParam[1] == 1);
     CHECK(s_interpolateParam[2] == 4 && s_interpolateParam[3] == 5);
     CHECK(s_interpolatePosition[0] == 5120 && s_interpolateBank[0] == 1);
-    CHECK(s_toneCalls == 2);
+    CHECK(s_interpolateParam[4] == 10 && s_interpolateParam[5] == 11);
+    CHECK(s_toneCalls == 3);
     CHECK(s_toneSlot[0] == 0 && s_toneBend[0] == 5 && s_toneVolume[0] == 7);
     CHECK(s_toneSlot[1] == 2 && s_toneBend[1] == 45 && s_toneVolume[1] == 27);
+    CHECK(s_toneSlot[2] == 5 && s_toneBend[2] == 105 &&
+          s_toneVolume[2] == 57);
     CHECK(s_tailCalls == 4);
 
+    s_interpolateCalls = 0;
+    s_toneCalls = 0;
     UpdateLoadedAudioVoices(2500, 1);
     CHECK(g_EngineSoundState.position == 2560);
-    CHECK(s_playCalls == 1);
+    CHECK(s_playCalls == 2);
+    CHECK(s_interpolateCalls == 6 && s_toneCalls == 3);
     CHECK(s_tailCalls == 8);
 
     puts("engine sound runtime preserves slot routing, scaling, and updates");
