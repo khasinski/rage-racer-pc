@@ -177,7 +177,6 @@ int main(void) {
     memset(g_Cars, 0, sizeof(g_Cars));
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         g_Cars[index].activeFlag = -1;
-        g_Cars[index].reservedF8 = 99;
         g_Cars[index].collisionFlag = 7;
         g_Cars[index].baseBodyYaw = index * 10;
     }
@@ -197,10 +196,8 @@ int main(void) {
     UpdateAttractCars();
 
     CHECK_EQ(car->progressA, 123);
-    CHECK_EQ(car->reservedF8, 0);
     CHECK_EQ(car->collisionFlag, 0);
     CHECK_EQ(car->bodyYaw, 0);
-    CHECK_EQ(g_Cars[1].reservedF8, 0);
     CHECK_EQ(g_Cars[1].bodyYaw, 10);
     CHECK_EQ(s_traceCalls, 1);
     CHECK_EQ(s_trafficCalls, 1);

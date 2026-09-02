@@ -16,7 +16,6 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     s32 targetAngle;
     s32 trackFacing;
 
-    car->reservedDC = 0;
     if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
         return;
     }

@@ -18,7 +18,6 @@ static void StartCarFrames(void) {
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
-        car->reservedF8 = 0;
         car->bodyYaw = car->baseBodyYaw;
         car->collisionFlag = (u16)car->collisionFlag & 1;
     }
@@ -103,7 +102,6 @@ void UpdateAttractCars(void) {
     for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         GameCarRuntime *car = &g_Cars[i];
 
-        car->reservedF8 = 0;
         car->collisionFlag = 0;
         car->bodyYaw = car->baseBodyYaw;
         if (g_TrackLength > 0) {

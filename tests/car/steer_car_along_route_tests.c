@@ -46,7 +46,6 @@ s32 Atan2(s32 x, s32 z) {
 
 static void ResetCar(GameCarRuntime *car) {
     memset(car, 0, sizeof(*car));
-    car->reservedDC = 123;
     car->trackPointIndex = 0;
     car->normalizedLateralOffset = 1024;
     car->headingAngle = 500;
@@ -89,7 +88,6 @@ int main(void) {
     CHECK_EQ(car.headingAngle, targetAngle);
     CHECK_EQ(car.bodyYaw, targetAngle);
     CHECK_EQ(car.targetYaw, targetAngle);
-    CHECK_EQ(car.reservedDC, 0);
 
     ResetCar(&car);
     g_RaceSeries = 1;
@@ -109,7 +107,6 @@ int main(void) {
     g_TrackPointCount = 0;
     SteerCarAlongRoute(&car);
     CHECK_EQ(s_sampledIndex, -1);
-    CHECK_EQ(car.reservedDC, 0);
     CHECK_EQ(car.headingAngle, 500);
 
     puts("route steering preserves direction, road limits, and airborne yaw");
