@@ -12,6 +12,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
 /* Which of the four buy prompts a car gets. Cars past the table get none. */

@@ -12,6 +12,7 @@
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/save_internal.h"
 #include "game/race.h"

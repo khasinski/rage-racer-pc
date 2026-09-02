@@ -434,8 +434,6 @@ void UpdateSoundSettingAdjust(void);
 void UpdateScreenAdjustScreen(void);
 void DrawTimeAttackPlate(s32 stepArg);
 void InstallCarModelSlot(void);
-void RestoreTeamLogoClut(void);
-void UploadTeamLogoClut(void);
 
 /* Declared identically by 178 translation units before this
  * header carried them. */

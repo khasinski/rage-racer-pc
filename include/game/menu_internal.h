@@ -6,6 +6,9 @@
 #include "game/team_logo.h"
 #include "psyq/gpu.h"
 
+void RestoreTeamLogoClut(void);
+void UploadTeamLogoClut(void);
+
 /*
  * What a prompt makes of a button press: the sound cues it plays, in the
  * order it plays them, and the state it leaves behind.
