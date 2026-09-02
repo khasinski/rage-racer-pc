@@ -17,6 +17,11 @@ enum {
     CUE_HEAVY_SKID = 0xD,
 };
 
+static int IsStraightSlip(s32 slip) {
+    return slip >= STRAIGHT_SLIP_MIN &&
+           slip < STRAIGHT_SLIP_MIN + STRAIGHT_SLIP_SPAN;
+}
+
 static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
                               s32 slip) {
     int lightTouch = skid == 1 || skid == 2;
@@ -26,7 +31,7 @@ static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
         (s16)car->motionTimer < SKID_CUE_MIN_TIMER) {
         return;
     }
-    if ((u32)(slip - STRAIGHT_SLIP_MIN) < STRAIGHT_SLIP_SPAN) {
+    if (IsStraightSlip(slip)) {
         if (lightTouch) {
             PlaySoundCue(CUE_LIGHT_SKID);
         } else if (car->speed >= CONTACT_EFFECT_MIN_SPEED) {
@@ -43,29 +48,24 @@ static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
     }
 }
 
-void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
+static void ApplyPlayerCrashResponse(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+
+    drive->launchEnergy -= 1000;
+    if (car->speed < CONTACT_EFFECT_MIN_SPEED) return;
+
+    drive->drivetrainTorque = drive->drivetrainTorque * 98 / 100;
+    car->speed = car->speed * 97 / 100;
+    drive->engineLoad = drive->engineLoad * 95 / 100;
+    g_ShiftTargetRpm = g_ShiftTargetRpm * 95 / 100;
+}
+
+static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
     GameCarDrive *drive = &car->drive;
     s32 slip;
     s32 slipSin;
     s32 drivetrainScale;
     s32 speedScale;
-
-    if (skid == 0 && crash == 0) {
-        car->y += drive->standingStartBounceY;
-        UpdateCarBodyKick(AsRivalCar(car));
-        return;
-    }
-
-    if (crash != 0) {
-        drive->launchEnergy -= 1000;
-        if (car->speed >= CONTACT_EFFECT_MIN_SPEED) {
-            drive->drivetrainTorque = drive->drivetrainTorque * 98 / 100;
-            car->speed = car->speed * 97 / 100;
-            drive->engineLoad = drive->engineLoad * 95 / 100;
-            g_ShiftTargetRpm = g_ShiftTargetRpm * 95 / 100;
-        }
-        return;
-    }
 
     if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
         return;
@@ -86,5 +86,16 @@ void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
     g_ShiftTargetRpm = drivetrainScale * g_ShiftTargetRpm / 100;
     if (g_RacePhase < 3) {
         PlayPlayerSkidCue(car, skid, slip);
+    }
+}
+
+void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
+    if (skid == 0 && crash == 0) {
+        car->y += car->drive.standingStartBounceY;
+        UpdateCarBodyKick(AsRivalCar(car));
+    } else if (crash != 0) {
+        ApplyPlayerCrashResponse(car);
+    } else {
+        ApplyPlayerSkidResponse(car, skid);
     }
 }

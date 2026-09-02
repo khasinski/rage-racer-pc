@@ -105,6 +105,10 @@ int main(void) {
     CHECK(car.drive.engineLoad == 950 && g_ShiftTargetRpm == 1900);
 
     CheckSkidCue(1, 800, 0, 100, 47, 0xA);
+    CheckSkidCue(1, 768, 0, 100, 47, 0xA);
+    CheckSkidCue(1, 1024, 0, 100, 47, 0xA);
+    CheckSkidCue(1, 767, 0, 100, 47, 0xB);
+    CheckSkidCue(1, 1025, 0, 100, 47, 0xB);
     CheckSkidCue(3, 800, 0, 200, 94, 0xD);
     CheckSkidCue(1, 500, 0, 100, 47, 0xB);
     CheckSkidCue(1, 500, 1, 100, 47, 0xC);
