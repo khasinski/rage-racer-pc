@@ -26,7 +26,7 @@ void UpdateFmv(void) {
         break;
     case FMV_PLAYBACK_START:
         StartFmvPlayback((FmvWorkBuffers *)(void *)g_AssetBase);
-        /* fall through */
+        RAGE_FALLTHROUGH;
     case FMV_PLAYBACK_DECODE:
         DecodeFmvFrame();
         break;

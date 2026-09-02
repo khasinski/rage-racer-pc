@@ -103,6 +103,15 @@ static void TestFmvSelection(void) {
               g_StreamSectorCount == 107 && g_StreamSectorLimit == 214,
           "Extra Grand Prix class stream selection");
 
+    g_GrandPrixClass = -4;
+    BeginClassFmv(8);
+    Check(g_StreamLoc == &g_StreamCdEntries[5],
+          "negative class clamps to the first class stream");
+    g_GrandPrixClass = 9;
+    BeginClassFmv(8);
+    Check(g_StreamLoc == &g_StreamCdEntries[8],
+          "high class clamps to the last class stream");
+
     BeginEndingFmv(0x21);
     Check(s_beginReturnScene == 0x21, "ending return scene");
     Check(g_StreamLoc == &g_StreamCdEntries[10] &&

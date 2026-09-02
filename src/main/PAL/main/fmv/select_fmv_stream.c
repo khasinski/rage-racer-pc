@@ -7,9 +7,19 @@ enum {
     GRAND_PRIX_FMV_STREAM_BASE = 1,
     EXTRA_GRAND_PRIX_FMV_STREAM_BASE = 5,
     ENDING_FMV_STREAM = 10,
+    GRAND_PRIX_CLASS_COUNT = 4,
     STANDARD_FMV_SECTOR_LIMIT_MULTIPLIER = 2,
     ENDING_FMV_SECTOR_LIMIT_MULTIPLIER = 4,
 };
+
+static s32 ClampGrandPrixClass(s32 classIndex) {
+    if (classIndex < 0) {
+        return 0;
+    }
+    return classIndex >= GRAND_PRIX_CLASS_COUNT
+               ? GRAND_PRIX_CLASS_COUNT - 1
+               : classIndex;
+}
 
 static void SelectFmvStream(s32 index, u32 sectorLimitMultiplier) {
     GameCdLoadEntry *stream = &g_StreamCdEntries[index];
@@ -30,7 +40,7 @@ void BeginClassFmv(s32 returnScene) {
                    : EXTRA_GRAND_PRIX_FMV_STREAM_BASE;
 
     BeginFmv(returnScene);
-    SelectFmvStream(base + g_GrandPrixClass,
+    SelectFmvStream(base + ClampGrandPrixClass(g_GrandPrixClass),
                     STANDARD_FMV_SECTOR_LIMIT_MULTIPLIER);
 }
 
