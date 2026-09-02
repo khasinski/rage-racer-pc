@@ -71,6 +71,9 @@ void ForcePanVoiceEnabled(s32 enabled) {
         s32 left;
         s32 right;
 
+        if (g_PanVoiceActive == 0) {
+            return;
+        }
         GetPanVoiceOutputVolume(&left, &right);
         SsUtSetVVol(PAN_EFFECT_VOICE, left, right);
         SsUtKeyOnV(PAN_EFFECT_VOICE, g_SoundScale.vabIds[0],
@@ -151,12 +154,9 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
             return;
         }
         StartIndexedEffectVoice(g_IndexedEffects[index].tone);
+        ApplyIndexedEffectVoiceOutput(index);
     } else {
         StopIndexedEffectVoice();
-    }
-
-    if (index >= 0) {
-        ApplyIndexedEffectVoiceOutput(index);
     }
 }
 
@@ -201,6 +201,9 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
             s32 left = ScaleVoiceVolume(channel->volLeft);
             s32 right = ScaleVoiceVolume(channel->volRight);
 
+            if (channel->left.value < 0) {
+                continue;
+            }
             SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
                        0, EFFECT_BASE_NOTE, 0, 0, 0);
             SsUtSetVVol(voice, left, right);

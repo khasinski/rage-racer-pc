@@ -122,8 +122,13 @@ static int TestPanVoice(void) {
 
     ResetCalls();
     ForcePanVoiceEnabled(1);
+    CHECK(s_keyOnCount == 0 && s_volumeCount == 0);
+    g_PanVoiceActive = 1;
+    g_PanVoiceVolumeL = 20;
+    g_PanVoiceVolumeR = 40;
+    ForcePanVoiceEnabled(1);
     CHECK(s_keyOnCount == 1 && s_volumeCount == 1);
-    CHECK(s_volume[0].left == 0 && s_volume[0].right == 0);
+    CHECK(s_volume[0].left == 10 && s_volume[0].right == 20);
     ForcePanVoiceEnabled(0);
     CHECK(s_keyOffCount == 1 && s_keyOff[0].voice == 21);
     return 0;
@@ -172,7 +177,7 @@ static int TestIndexedEffectVoice(void) {
     CHECK(s_volumeCount == 1 && s_pitchCount == 1);
     ResetCalls();
     ForceIndexedEffectVoiceEnabled(0);
-    CHECK(s_keyOffCount == 1 && s_volumeCount == 1 && s_pitchCount == 1);
+    CHECK(s_keyOffCount == 1 && s_volumeCount == 0 && s_pitchCount == 0);
     return 0;
 }
 
@@ -203,11 +208,11 @@ static int TestBasicEffectVoices(void) {
     UpdateBasicEffectVoices();
     CHECK(s_keyOnCount == 0 && s_keyOffCount == 0 && s_volumeCount == 1);
 
+    g_MusicChannels[1].left.value = -1;
     ResetCalls();
     ForceBasicEffectVoicesEnabled(1);
-    CHECK(s_keyOnCount == 2 && s_volumeCount == 2);
+    CHECK(s_keyOnCount == 1 && s_volumeCount == 1);
     CHECK(s_keyOn[0].voice == 8 && s_keyOn[0].tone == 0);
-    CHECK(s_keyOn[1].voice == 9);
     ResetCalls();
     ForceBasicEffectVoicesEnabled(0);
     CHECK(s_keyOffCount == 2 && s_keyOff[0].voice == 8);

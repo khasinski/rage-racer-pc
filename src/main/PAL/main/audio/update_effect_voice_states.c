@@ -38,6 +38,9 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
         s16 hardwareVoice = (s16)(EFFECT_HARDWARE_VOICE_FIRST + index);
 
         if (enabled != 0) {
+            if (effect->note.value < 0) {
+                continue;
+            }
             KeyOnEffectVoice(hardwareVoice, effect);
             WriteEffectVoiceOutput(hardwareVoice, effect);
         } else {
