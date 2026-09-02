@@ -268,6 +268,7 @@ set_tests_properties(host_state_content PROPERTIES LABELS functional)
 
 add_executable(host_state_abi_tests
     host_state_abi_asset.c
+    host_state_abi_audio.c
     host_state_abi_car.c
     host_state_abi_cd.c
     host_state_abi_forbidden.c
