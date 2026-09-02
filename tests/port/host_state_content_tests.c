@@ -309,7 +309,6 @@ extern unsigned char g_TachoNeedleSprite[20];
 extern unsigned char g_CountdownGlyphTable[256];
 extern unsigned char g_ClockTextCells[8];
 extern unsigned char g_RaceOptionMarquee[160];
-extern unsigned char g_WaypointSeeds[128];
 extern unsigned char g_ReverbZones[32];
 extern ContentCarPoint g_CarCollisionCorners[4];
 extern uint8_t D_8007E24C[60];
@@ -835,7 +834,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CountdownGlyphTable", g_CountdownGlyphTable, 256},
     {"g_ClockTextCells", g_ClockTextCells, 8},
     {"g_RaceOptionMarquee", g_RaceOptionMarquee, 160},
-    {"g_WaypointSeeds", g_WaypointSeeds, 128},
     {"g_ReverbZones", g_ReverbZones, 32},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
      sizeof(g_CarCollisionCorners)},
@@ -1092,7 +1090,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 340480252UL;
+    const unsigned long expected = 11814630UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
