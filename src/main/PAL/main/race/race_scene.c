@@ -286,16 +286,163 @@ static void UpdatePausedRaceScene(void) {
     }
 }
 
-void UpdateRaceScene(void) {
+static void UpdateActiveRaceScene(void) {
     s32 lapUpdateResult;
-    u32 timerValue;
     s32 textureSection;
+    RaceClockUpdate raceClock;
+    RaceStartUpdate raceStart;
+    RaceViewSelection raceView;
+    WrongWayUpdate wrongWay;
 
+    lapUpdateResult = 0;
+    g_AnimTimer++;
+    raceClock = UpdateRaceClock(g_RaceTimeRemaining, g_RacePhase,
+                                g_GrandPrixMode);
+    g_RaceTimeRemaining = raceClock.remaining;
+
+    raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
+    g_RacePhase = raceStart.phase;
+    if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
+        RunRaceIntroCamera(&g_PlayerCar, g_SceneTimer);
+    } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
+        BeginCarStandingStart(&g_PlayerCar);
+        StartCdAudio();
+        g_PauseDebounce = 0x1E;
+    }
+
+    if (g_RacePhase < 4) {
+        DrawStartCountdown(g_SceneTimer);
+        PlayCountdownCues(g_SceneTimer);
+    }
+
+    if (g_RacePhase < 5) {
+        lapUpdateResult = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
+        UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
+        if (lapUpdateResult < 2) {
+            DrawLapTimes();
+        }
+    }
+
+    if (g_RacePhase < 4) {
+        if (g_GrandPrixMode != 0) {
+            DrawTimeRemaining(g_RaceTimeRemaining);
+        }
+        if (raceClock.expired) {
+            if (g_CourseProgress->retriesRemaining != 0) {
+                PlaySoundCue(0x3D);
+            }
+            ForceAllEffectVoicesEnabled(0);
+            g_RacePhase = 5;
+            g_RaceFadeTimer = 0;
+            SeedFinishCamera(&g_PlayerCar);
+            StartCdVolumeFade(8);
+        }
+    }
+
+    if (g_GrandPrixMode != 0) {
+        if (g_RacePhase < 4) {
+            UpdateRacePosition();
+            DrawRacePosition();
+        }
+    }
+    if (lapUpdateResult < 2 && g_RacePhase < 5) {
+        DrawRaceHudLabels(g_GrandPrixMode);
+    }
+
+    if (g_RacePhase > 0) {
+        UpdatePlayerCar(&g_PlayerCar);
+    } else if (g_RacePhase == 0) {
+        UpdateLoadedAudioVoices(0, 0);
+    }
+
+    if ((g_RacePhase >= 2) && (g_GrandPrixMode != 0)) {
+        UpdateRaceCars();
+    }
+
+    if ((g_PadPressed &
+         RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
+        CanToggleRaceCamera(g_RacePhase)) {
+        g_CameraViewMode ^= 1;
+    }
+
+    raceView = SelectRaceView(g_RacePhase, s_RetireCameraActive,
+                              g_CameraViewMode);
+    if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
+        UpdateFinishCamera(&g_PlayerCar);
+    } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
+        UpdateCamera(raceView.cameraView,
+                     GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
+    }
+
+    textureSection = raceView.useFinishTextureSection
+                         ? g_CameraCarTrackSection
+                         : g_PlayerCar.trackSection;
+    RequestTrackTexturePage(textureSection);
+
+    if (g_GrandPrixMode != 0) {
+        DrawCars();
+    }
+    UpdateEnvironment();
+    DrawSkyBackground();
+
+    wrongWay = UpdateWrongWayState(
+        g_WrongWayTimer,
+        g_PlayerCar.facingBackwards != ReadStableRaceSeries(), g_RacePhase,
+        g_SceneTimer);
+    g_WrongWayTimer = wrongWay.timer;
+    if (wrongWay.drawWarning) {
+        DrawWrongWayWarning();
+    }
+    if (wrongWay.playCue) {
+        PlaySoundCue(0x2C);
+    }
+
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    DrawTerrainCells();
+    DrawCourseObjects();
+    if (g_GrandPrixMode != 0) {
+        if (g_GrandPrixClass != 5) {
+            DrawStartGridScenery(g_SceneTimer);
+        }
+        SetLightMatrix(&g_SceneLightMatrix);
+        DrawScriptedScenery(1);
+        DrawRearViewMirror(g_SceneTimer);
+    }
+    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
+    if (BeginMirrorPass() != 0) {
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
+        EndMirrorPass();
+    }
+
+    GetTrackZoneBlend(g_PlayerCar.trackProgress);
+    if (g_RacePhase >= 4) {
+        g_ReverbZoneDepth = 0;
+    }
+    SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
+    if ((g_RacePhase != 0) && (lapUpdateResult < 2) &&
+        (g_RacePhase < 5)) {
+        DrawPlayerTachometer();
+    }
+
+    if (g_RacePhase < 4) {
+        UpdateZoneAmbience(g_PlayerCar.trackProgress);
+        UpdatePointAmbience(g_PlayerCar.trackProgress);
+        UpdateTrackEventSound(g_PlayerCar.trackSection);
+        TriggerRaceCues();
+    } else {
+        SetPanVoiceTargetVolume(0, 0);
+        SetStereoSoundCue(2, 0, 0);
+        SetStereoSoundCue(3, 0, 0);
+        SetStereoSoundCue(0, 0, 0);
+        SetStereoSoundCue(1, 0, 0);
+    }
+    RecordReplayFrame();
+}
+
+void UpdateRaceScene(void) {
     g_SceneTimer++;
     UpdateFinishFollowupCue();
-    lapUpdateResult = 0;
-    timerValue = g_SceneTimer;
-    if (timerValue < 0x3D) {
+    if (g_SceneTimer < 0x3D) {
         DrawRoundScreen();
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
     }
@@ -305,159 +452,11 @@ void UpdateRaceScene(void) {
     }
 
     ToggleRacePause();
-
     UpdateRaceEndState();
 
     if (g_RacePaused != 0) {
         UpdatePausedRaceScene();
     } else {
-        RaceClockUpdate raceClock;
-        RaceStartUpdate raceStart;
-        RaceViewSelection raceView;
-        WrongWayUpdate wrongWay;
-
-        g_AnimTimer++;
-        raceClock = UpdateRaceClock(g_RaceTimeRemaining, g_RacePhase,
-                                    g_GrandPrixMode);
-        g_RaceTimeRemaining = raceClock.remaining;
-
-        raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
-        g_RacePhase = raceStart.phase;
-        if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
-            RunRaceIntroCamera(&g_PlayerCar, g_SceneTimer);
-        } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
-            BeginCarStandingStart(&g_PlayerCar);
-            StartCdAudio();
-            g_PauseDebounce = 0x1E;
-        }
-
-        if (g_RacePhase < 4) {
-            DrawStartCountdown(g_SceneTimer);
-            PlayCountdownCues(g_SceneTimer);
-        }
-
-        if (g_RacePhase < 5) {
-            lapUpdateResult = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
-            UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
-            if (lapUpdateResult < 2) {
-                DrawLapTimes();
-            }
-        }
-
-        if (g_RacePhase < 4) {
-            if (g_GrandPrixMode != 0) {
-                DrawTimeRemaining(g_RaceTimeRemaining);
-            }
-            if (raceClock.expired) {
-                if (g_CourseProgress->retriesRemaining != 0) {
-                    PlaySoundCue(0x3D);
-                }
-                ForceAllEffectVoicesEnabled(0);
-                g_RacePhase = 5;
-                g_RaceFadeTimer = 0;
-                SeedFinishCamera(&g_PlayerCar);
-                StartCdVolumeFade(8);
-            }
-        }
-
-        if (g_GrandPrixMode != 0) {
-            if (g_RacePhase < 4) {
-                UpdateRacePosition();
-                DrawRacePosition();
-            }
-        }
-        if (lapUpdateResult < 2 && g_RacePhase < 5) {
-            DrawRaceHudLabels(g_GrandPrixMode);
-        }
-
-        if (g_RacePhase > 0) {
-            UpdatePlayerCar(&g_PlayerCar);
-        } else if (g_RacePhase == 0) {
-            UpdateLoadedAudioVoices(0, 0);
-        }
-
-        if ((g_RacePhase >= 2) && (g_GrandPrixMode != 0)) {
-            UpdateRaceCars();
-        }
-
-        if ((g_PadPressed &
-             RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
-            CanToggleRaceCamera(g_RacePhase)) {
-            g_CameraViewMode ^= 1;
-        }
-
-        raceView = SelectRaceView(g_RacePhase, s_RetireCameraActive,
-                                  g_CameraViewMode);
-        if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
-            UpdateFinishCamera(&g_PlayerCar);
-        } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
-            UpdateCamera(raceView.cameraView,
-                         GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
-        }
-
-        textureSection = raceView.useFinishTextureSection
-                             ? g_CameraCarTrackSection
-                             : g_PlayerCar.trackSection;
-        RequestTrackTexturePage(textureSection);
-
-        if (g_GrandPrixMode != 0) {
-            DrawCars();
-        }
-        UpdateEnvironment();
-        DrawSkyBackground();
-
-        wrongWay = UpdateWrongWayState(
-            g_WrongWayTimer,
-            g_PlayerCar.facingBackwards != ReadStableRaceSeries(), g_RacePhase,
-            g_SceneTimer);
-        g_WrongWayTimer = wrongWay.timer;
-        if (wrongWay.drawWarning) {
-            DrawWrongWayWarning();
-        }
-        if (wrongWay.playCue) {
-            PlaySoundCue(0x2C);
-        }
-
-        g_RenderState.envMode4 = g_IsEnvironmentMode4;
-        DrawTerrainCells();
-        DrawCourseObjects();
-        if (g_GrandPrixMode != 0) {
-            if (g_GrandPrixClass != 5) {
-                DrawStartGridScenery(g_SceneTimer);
-            }
-            SetLightMatrix(&g_SceneLightMatrix);
-            DrawScriptedScenery(1);
-            DrawRearViewMirror(g_SceneTimer);
-        }
-        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
-        if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-            EndMirrorPass();
-        }
-
-        GetTrackZoneBlend(g_PlayerCar.trackProgress);
-        if (g_RacePhase >= 4) {
-            g_ReverbZoneDepth = 0;
-        }
-        SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
-        if ((g_RacePhase != 0) && (lapUpdateResult < 2) &&
-            (g_RacePhase < 5)) {
-            DrawPlayerTachometer();
-        }
-
-        if (g_RacePhase < 4) {
-            UpdateZoneAmbience(g_PlayerCar.trackProgress);
-            UpdatePointAmbience(g_PlayerCar.trackProgress);
-            UpdateTrackEventSound(g_PlayerCar.trackSection);
-            TriggerRaceCues();
-        } else {
-            SetPanVoiceTargetVolume(0, 0);
-            SetStereoSoundCue(2, 0, 0);
-            SetStereoSoundCue(3, 0, 0);
-            SetStereoSoundCue(0, 0, 0);
-            SetStereoSoundCue(1, 0, 0);
-        }
-        RecordReplayFrame();
+        UpdateActiveRaceScene();
     }
-
 }
