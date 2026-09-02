@@ -36,6 +36,8 @@ static u16 *s_audioSequence;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
 static GameImageAssetHeaderWord *s_uploads[5];
+static void *s_teamLogoSource;
+static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
 static s32 s_installCount;
 static s32 s_seriesCamera;
@@ -66,8 +68,8 @@ void UploadImageAsset(GameImageAssetHeaderWord *asset) {
 void UploadImageBlock(GameImageAssetHeaderWord *asset) {
     s_uploads[s_uploadCount++] = asset;
 }
-void StoreTeamLogoImage(void *destination) { (void)destination; }
-void ResetTrackTextureSwap(void) {}
+void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
+void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
 void SetTrackRenderTable(struct TrackRenderTable *table) {
     (void)table; s_installCount++;
@@ -276,11 +278,43 @@ static void TestRaceStartAndCourseRequests(void) {
           "standalone course load publishes trailing image buffer");
 }
 
+static void TestResidentCourseInstallation(void) {
+    static u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 512];
+    GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
+    s32 i;
+
+    memset(storage, 0, sizeof(storage));
+    for (i = 0; i < 5; i++) pack->offsets[i] = 64 + i * 32;
+    g_AssetBase = storage;
+    g_AssetLoadCursor = NULL;
+    s_uploadCount = 0;
+    s_teamLogoSource = NULL;
+    s_textureResetCalls = 0;
+    InstallCourseAssets();
+    Check(s_uploadCount == 5, "resident course uploads every texture block");
+    Check(s_teamLogoSource == storage, "resident course stores team logo");
+    Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
+          "resident course installs texture shadow");
+    Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE,
+          "resident course publishes runtime pack cursor");
+    Check(s_textureResetCalls == 1, "resident course resets texture swapping");
+
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    Check(RequestTrackDataAssets() == 1, "new track data request pending");
+    Check(g_AssetRequestType == ASSET_REQUEST_TRACK_DATA &&
+              g_AssetLoadState == 1,
+          "track data request initializes loader");
+    g_AssetLoadState = 0;
+    Check(RequestTrackDataAssets() == 0, "track data request acknowledged");
+}
+
 int main(void) {
     TestRequestHandshake();
     TestVoiceAndCarPhases();
     TestTrackPhases();
     TestRaceStartAndCourseRequests();
+    TestResidentCourseInstallation();
 
     if (s_failures != 0) return 1;
     puts("race asset loading advances through each completed phase");

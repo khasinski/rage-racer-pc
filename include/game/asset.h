@@ -463,6 +463,7 @@ extern s32 g_PendingCarModelIndex;
 extern TrackTextureShadowRow *g_TrackTextureShadow;
 
 void InstallTerrainCellData(void *data);
+void InstallTrackTextureAssetPack(u8 *base);
 void InstallTrackEventData(struct TrackEventData *eventData);
 void InstallTrackPoints(struct TrackPointTable *trackData);
 void InstallTrackRuntimeAssetPack(s32 assetIndex, s32 useSeriesCamera);

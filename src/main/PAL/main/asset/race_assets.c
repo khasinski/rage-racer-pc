@@ -75,28 +75,12 @@ static s32 RaceCourseAssetIndex(s32 base) {
 }
 
 static void LoadTrackTextureAssets(void) {
-    GameSceneAssetHeader *pack;
-
     if (LoadAsset(RaceCourseAssetIndex(ASSET_TRACK_1ST_BASE),
                   g_AssetLoadCursor) == 0) {
         return;
     }
 
-    pack = GetSceneAssetHeader(g_AssetLoadCursor);
-    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[1]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[2]);
-    UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[3]);
-    g_AssetSubBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    StoreTeamLogoImage(g_AssetLoadCursor);
-    g_TrackTextureShadow = GetTrackTextureShadowRows(g_AssetLoadCursor);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetSubBlockPtr));
-    ResetTrackTextureSwap();
-    g_AssetLoadCursor += TRACK_TEXTURE_SHADOW_SIZE;
+    InstallTrackTextureAssetPack(g_AssetLoadCursor);
     g_AssetLoadState = 6;
 }
 
