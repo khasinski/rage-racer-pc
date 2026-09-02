@@ -38,6 +38,54 @@ static void Explain(const char *text) {
     }
 }
 
+/*
+ * One row of a list of saves: a band the whole width that can be clicked,
+ * with the name on it and the details under them. Written by hand because a
+ * plain button gives a wide empty box with a word in the middle of it.
+ */
+static int SaveRow(const char *team, const char *detail, const char *under,
+                   int damaged, int id) {
+    ImVec2_c start;
+    ImVec2_c at;
+    int clicked;
+
+    igPushID_Int(id);
+    start = igGetCursorPos();
+    /* A selectable paints nothing until it is hovered, so a row of plain text
+     * gives no sign it can be clicked. The band is drawn first. */
+    {
+        ImVec2_c screen = igGetCursorScreenPos();
+        float width = igGetContentRegionAvail().x;
+        ImDrawList *draw = igGetWindowDrawList();
+        ImDrawList_AddRectFilled(draw, screen,
+                                 Size(screen.x + width, screen.y + 58.0f),
+                                 0xFF232326u, 8.0f, 0);
+    }
+    clicked = igSelectable_Bool("##row", false, 0, Size(0.0f, 58.0f));
+
+    at.x = start.x + 14.0f;
+    at.y = start.y + 8.0f;
+    igSetCursorPos(at);
+    igText("%s", team);
+    if (damaged) {
+        igSameLine(0.0f, 10.0f);
+        igTextColored((ImVec4_c){0.98f, 0.55f, 0.35f, 1.0f}, "damaged");
+    }
+    igSameLine(0.0f, 16.0f);
+    igTextDisabled("%s", detail);
+
+    at.y = start.y + 32.0f;
+    igSetCursorPos(at);
+    igTextDisabled("%s", under);
+
+    /* Put the cursor back where the row ends, not where the text left it. */
+    at.x = start.x;
+    at.y = start.y + 58.0f + 4.0f;
+    igSetCursorPos(at);
+    igPopID();
+    return clicked;
+}
+
 static void Heading(const char *text) {
     igDummy(Size(0.0f, 6.0f));
     igSeparatorText(text);
@@ -154,21 +202,15 @@ static void DrawWelcome(EditorState *state, EditorRequests *requests) {
             RageSaveEntry *entry = &state->found[i];
             const RageRegionInfo *info = RageRegionFind(entry->region);
             char money[24];
-            char label[512];
+            char detail[128];
 
             FormatMoney(entry->money, money, sizeof(money));
-            snprintf(label, sizeof(label), "%s%s##found%d",
-                     entry->team[0] != '\0' ? entry->team : "(no team name)",
-                     entry->valid ? "" : "   damaged", i);
-            if (igButton(label, Size(360.0f, 0.0f))) EditorOpen(state, entry->path);
-            igSameLine(0.0f, 12.0f);
-            igBeginGroup();
-            igTextDisabled("%s   slot %d   %s credits",
-                           info != NULL ? info->name : "unknown release",
-                           entry->slot, money);
-            igTextDisabled("%s", entry->path);
-            igEndGroup();
-            igDummy(Size(0.0f, 4.0f));
+            snprintf(detail, sizeof(detail), "%s   slot %d   %s credits",
+                     info != NULL ? info->name : "unknown release", entry->slot,
+                     money);
+            if (SaveRow(entry->team[0] != '\0' ? entry->team : "(no team name)",
+                        detail, entry->path, !entry->valid, i))
+                EditorOpen(state, entry->path);
         }
     } else {
         igSeparatorText("Saves on this computer");
@@ -353,7 +395,9 @@ static void DrawGarage(EditorState *state) {
         igTableSetupColumn("grade", 0, 125.0f, 0);
         igTableSetupColumn("tyres", 0, 125.0f, 0);
         igTableSetupColumn("gearbox", 0, 125.0f, 0);
-        igTableSetupColumn("paint", 0, 250.0f, 0);
+        /* The last column takes what is left, so the two paint sliders fit
+         * whatever the window is. */
+        igTableSetupColumn("paint", ImGuiTableColumnFlags_WidthStretch, 1.0f, 0);
         igTableHeadersRow();
         for (int car = 0; car < 13; car++) {
             SavedCarSetup *setup = &block->carSetup[garage][car];
@@ -395,11 +439,15 @@ static void DrawGarage(EditorState *state) {
                 }
             }
             igTableNextColumn();
-            snprintf(id2, sizeof(id2), "##p1%d%d", garage, car);
-            state->dirty |= ByteSlider(id2, &setup->paintColor1, 15, 115.0f);
-            igSameLine(0.0f, 6.0f);
-            snprintf(id2, sizeof(id2), "##p2%d%d", garage, car);
-            state->dirty |= ByteSlider(id2, &setup->paintColor2, 15, 115.0f);
+            {
+                float half = (igGetContentRegionAvail().x - 8.0f) / 2.0f;
+                if (half < 40.0f) half = 40.0f;
+                snprintf(id2, sizeof(id2), "##p1%d%d", garage, car);
+                state->dirty |= ByteSlider(id2, &setup->paintColor1, 15, half);
+                igSameLine(0.0f, 8.0f);
+                snprintf(id2, sizeof(id2), "##p2%d%d", garage, car);
+                state->dirty |= ByteSlider(id2, &setup->paintColor2, 15, half);
+            }
         }
         igEndTable();
     }
@@ -488,58 +536,86 @@ static void DrawRecords(EditorState *state) {
     if (!igBeginTabBar("records", 0)) return;
     if (igBeginTabItem("Best times", NULL, 0)) {
         int set;
+        /*
+         * Laps and totals in one table, sectors in another. Eight time fields
+         * across does not fit a window anyone would open, and squeezing them
+         * turns the headings into "s..." and the times into nothing.
+         */
         for (set = 0; set < 2; set++) {
             char title[48];
             char id[32];
             int course;
+
             snprintf(title, sizeof(title), "Set %d", set + 1);
             Heading(title);
-            snprintf(id, sizeof(id), "times%d", set);
-            if (!igBeginTable(id, 8,
-                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-                                  ImGuiTableFlags_SizingFixedFit,
-                              kAuto, 0.0f))
-                continue;
-            igTableSetupColumn("course", 0, 80.0f, 0);
-            igTableSetupColumn("lap 1", 0, 160.0f, 0);
-            igTableSetupColumn("lap 2", 0, 160.0f, 0);
-            igTableSetupColumn("total 1", 0, 160.0f, 0);
-            igTableSetupColumn("total 2", 0, 160.0f, 0);
-            igTableSetupColumn("sector 1", 0, 160.0f, 0);
-            igTableSetupColumn("sector 2", 0, 160.0f, 0);
-            igTableSetupColumn("sector 3", 0, 160.0f, 0);
-            igTableHeadersRow();
-            for (course = 0; course < 4; course++) {
-                char field[48];
-                int slot;
-                igTableNextRow(0, 0.0f);
-                igTableNextColumn();
-                igText("%d", course + 1);
-                for (slot = 0; slot < 2; slot++) {
+
+            snprintf(id, sizeof(id), "laps%d", set);
+            if (igBeginTable(id, 5,
+                             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                 ImGuiTableFlags_SizingStretchProp,
+                             kAuto, 0.0f)) {
+                igTableSetupColumn("course", ImGuiTableColumnFlags_WidthFixed,
+                                   70.0f, 0);
+                igTableSetupColumn("lap 1", 0, 1.0f, 0);
+                igTableSetupColumn("lap 2", 0, 1.0f, 0);
+                igTableSetupColumn("total 1", 0, 1.0f, 0);
+                igTableSetupColumn("total 2", 0, 1.0f, 0);
+                igTableHeadersRow();
+                for (course = 0; course < 4; course++) {
+                    char field[48];
+                    int slot;
+                    igTableNextRow(0, 0.0f);
                     igTableNextColumn();
-                    snprintf(field, sizeof(field), "##l%d%d%d", set, course,
-                             slot);
-                    state->dirty |= TimeField(
-                        field, &block->bestLapTimes[set][course][slot], 150.0f);
+                    igText("%d", course + 1);
+                    for (slot = 0; slot < 2; slot++) {
+                        igTableNextColumn();
+                        snprintf(field, sizeof(field), "##l%d%d%d", set, course,
+                                 slot);
+                        state->dirty |= TimeField(
+                            field, &block->bestLapTimes[set][course][slot],
+                            igGetContentRegionAvail().x);
+                    }
+                    for (slot = 0; slot < 2; slot++) {
+                        igTableNextColumn();
+                        snprintf(field, sizeof(field), "##T%d%d%d", set, course,
+                                 slot);
+                        state->dirty |= TimeField(
+                            field, &block->bestTotalTimes[set][course][slot],
+                            igGetContentRegionAvail().x);
+                    }
                 }
-                for (slot = 0; slot < 2; slot++) {
-                    igTableNextColumn();
-                    snprintf(field, sizeof(field), "##T%d%d%d", set, course,
-                             slot);
-                    state->dirty |= TimeField(
-                        field, &block->bestTotalTimes[set][course][slot],
-                        150.0f);
-                }
-                for (slot = 0; slot < 3; slot++) {
-                    igTableNextColumn();
-                    snprintf(field, sizeof(field), "##s%d%d%d", set, course,
-                             slot);
-                    state->dirty |= TimeField(
-                        field, &block->bestSectorTimes[set][course][slot],
-                        150.0f);
-                }
+                igEndTable();
             }
-            igEndTable();
+
+            igDummy(Size(0.0f, 8.0f));
+            snprintf(id, sizeof(id), "sectors%d", set);
+            if (igBeginTable(id, 4,
+                             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                 ImGuiTableFlags_SizingStretchProp,
+                             kAuto, 0.0f)) {
+                igTableSetupColumn("course", ImGuiTableColumnFlags_WidthFixed,
+                                   70.0f, 0);
+                igTableSetupColumn("sector 1", 0, 1.0f, 0);
+                igTableSetupColumn("sector 2", 0, 1.0f, 0);
+                igTableSetupColumn("sector 3", 0, 1.0f, 0);
+                igTableHeadersRow();
+                for (course = 0; course < 4; course++) {
+                    char field[48];
+                    int slot;
+                    igTableNextRow(0, 0.0f);
+                    igTableNextColumn();
+                    igText("%d", course + 1);
+                    for (slot = 0; slot < 3; slot++) {
+                        igTableNextColumn();
+                        snprintf(field, sizeof(field), "##s%d%d%d", set, course,
+                                 slot);
+                        state->dirty |= TimeField(
+                            field, &block->bestSectorTimes[set][course][slot],
+                            igGetContentRegionAvail().x);
+                    }
+                }
+                igEndTable();
+            }
         }
         igEndTabItem();
     }
@@ -724,12 +800,16 @@ static void DrawSettings(EditorState *state) {
     {
         int track = block->bgmSelection;
         igSetNextItemWidth(220.0f);
-        if (igInputInt("music track", &track, 1, 1, 0)) {
+        if (igInputInt("music track", &track, 0, 0, 0)) {
             block->bgmSelection = (short)track;
             state->dirty = 1;
         }
-        state->dirty |= WordField("music volume", &block->bgmVolume, 220.0f);
-        state->dirty |= WordField("effects volume", &block->sfxVolume, 220.0f);
+        igSetNextItemWidth(260.0f);
+        state->dirty |= igSliderInt("music volume", &block->bgmVolume, 0, 15,
+                                    "%d", 0);
+        igSetNextItemWidth(260.0f);
+        state->dirty |= igSliderInt("effects volume", &block->sfxVolume, 0, 15,
+                                    "%d", 0);
         {
             bool mono = block->monoOutput != 0;
             if (igCheckbox("mono", &mono)) {
@@ -859,6 +939,8 @@ static const char *const kSectionNames[EDITOR_SECTION_COUNT] = {
 };
 
 void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
+    float footer;
+
     if (state->openTab != NULL) {
         int i;
         for (i = 0; i < (int)EDITOR_SECTION_COUNT; i++) {
@@ -879,21 +961,18 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
             RageCardEntry *entry = &state->card.entries[i];
             const RageRegionInfo *info = RageRegionFind(entry->region);
             char money[24];
-            char label[256];
+            char detail[128];
+            char under[128];
 
             FormatMoney(entry->money, money, sizeof(money));
-            snprintf(label, sizeof(label), "%s%s##card%d",
-                     entry->team[0] != '\0' ? entry->team : "(no team name)",
-                     entry->valid ? "" : "   damaged", i);
-            if (igButton(label, Size(320.0f, 0.0f))) OpenFromCard(state, i);
-            igSameLine(0.0f, 14.0f);
-            igBeginGroup();
-            igTextDisabled("%s   slot %d   %s credits",
-                           info != NULL ? info->name : "unknown release",
-                           entry->slot, money);
-            igTextDisabled("block %d   %s", entry->block, entry->name);
-            igEndGroup();
-            igDummy(Size(0.0f, 4.0f));
+            snprintf(detail, sizeof(detail), "%s   slot %d   %s credits",
+                     info != NULL ? info->name : "unknown release", entry->slot,
+                     money);
+            snprintf(under, sizeof(under), "block %d   %s", entry->block,
+                     entry->name);
+            if (SaveRow(entry->team[0] != '\0' ? entry->team : "(no team name)",
+                        detail, under, !entry->valid, i))
+                OpenFromCard(state, i);
         }
         igDummy(Size(0.0f, 16.0f));
         if (igButton("Open something else", Size(220.0f, 36.0f)))
@@ -907,6 +986,7 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
     }
 
     /* Header: what is open, and what it is. */
+    igDummy(Size(0.0f, 4.0f));
     {
         const RageRegionInfo *info = RageRegionFind(state->region);
         const char *name = state->path[0] != '\0' ? state->path : "new save";
@@ -920,19 +1000,34 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
                        state->cardLoaded ? "   on a memory card" : "",
                        state->dirty ? "   unsaved changes" : "");
     }
+    igDummy(Size(0.0f, 2.0f));
     igSeparator();
+    igDummy(Size(0.0f, 4.0f));
 
-    if (igBeginChild_Str("sections", Size(190.0f, -44.0f), 0, 0)) {
+    /*
+     * A child window without a border is given no padding of its own, which
+     * is why the text sat against its edges.
+     *
+     * The height left for the footer is worked out rather than guessed: the
+     * buttons, the spacing above and below the rule, and the window's own
+     * bottom padding.
+     */
+    footer = 34.0f + igGetStyle()->ItemSpacing.y * 2.0f + 12.0f +
+             igGetStyle()->WindowPadding.y;
+    if (igBeginChild_Str("sections", Size(210.0f, -footer),
+                         ImGuiChildFlags_AlwaysUseWindowPadding, 0)) {
         int i;
         for (i = 0; i < EDITOR_SECTION_COUNT; i++) {
-            if (igSelectable_Bool(kSectionNames[i], state->section == (EditorSection)i, 0,
-                                  Size(0.0f, 30.0f)))
+            if (igSelectable_Bool(kSectionNames[i],
+                                  state->section == (EditorSection)i, 0,
+                                  Size(0.0f, 34.0f)))
                 state->section = (EditorSection)i;
         }
     }
     igEndChild();
-    igSameLine(0.0f, 16.0f);
-    if (igBeginChild_Str("panel", Size(0.0f, -44.0f), 0, 0)) {
+    igSameLine(0.0f, 14.0f);
+    if (igBeginChild_Str("panel", Size(0.0f, -footer),
+                         ImGuiChildFlags_AlwaysUseWindowPadding, 0)) {
         switch (state->section) {
         case EDITOR_SECTION_PROGRESS: DrawProgress(state); break;
         case EDITOR_SECTION_GARAGE: DrawGarage(state); break;
@@ -947,26 +1042,28 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
     igEndChild();
 
     /* Footer: the things a person came here to do. */
+    igDummy(Size(0.0f, 2.0f));
     igSeparator();
-    if (igButton("Save", Size(110.0f, 32.0f))) {
+    igDummy(Size(0.0f, 3.0f));
+    if (igButton("Save", Size(110.0f, 34.0f))) {
         if (state->path[0] != '\0')
             EditorSave(state, state->path);
         else
             requests->saveAs = 1;
     }
     igSameLine(0.0f, 10.0f);
-    if (igButton("Save as...", Size(130.0f, 32.0f))) requests->saveAs = 1;
+    if (igButton("Save as...", Size(130.0f, 34.0f))) requests->saveAs = 1;
     igSameLine(0.0f, 10.0f);
-    if (igButton("Open...", Size(110.0f, 32.0f))) requests->open = 1;
+    if (igButton("Open...", Size(110.0f, 34.0f))) requests->open = 1;
     igSameLine(0.0f, 10.0f);
     if (state->cardLoaded && state->card.count > 1) {
-        if (igButton("Other saves", Size(140.0f, 32.0f))) {
+        if (igButton("Other saves", Size(140.0f, 34.0f))) {
             state->cardChoosing = 1;
             state->loaded = 0;
         }
         igSameLine(0.0f, 10.0f);
     }
-    if (igButton("Close", Size(110.0f, 32.0f))) {
+    if (igButton("Close", Size(110.0f, 34.0f))) {
         RageCardFree(&state->card);
         state->cardLoaded = 0;
         state->cardChoosing = 0;
@@ -976,6 +1073,7 @@ void EditorDrawWindow(EditorState *state, EditorRequests *requests) {
         EditorRescan(state);
     }
     igSameLine(0.0f, 20.0f);
+    igAlignTextToFramePadding();
     if (state->statusIsError)
         igTextColored((ImVec4_c){1.0f, 0.45f, 0.4f, 1.0f}, "%s", state->status);
     else

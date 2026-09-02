@@ -134,6 +134,10 @@ static void ApplyStyle(int haveSystemFont) {
     style->FrameBorderSize = 0.0f;
     style->SeparatorTextBorderSize = 1.0f;
     style->SeparatorTextPadding = (ImVec2_c){0.0f, 10.0f};
+    /* Selectables carry the sidebar, so their text is inset rather than
+     * pressed against the edge of the strip. */
+    style->SelectableTextAlign = (ImVec2_c){0.0f, 0.5f};
+    style->WindowMinSize = (ImVec2_c){64.0f, 64.0f};
 
     for (i = 0; i < ImGuiCol_COUNT; i++) {
         ImVec4_c *colour = &style->Colors[i];
