@@ -220,6 +220,72 @@ void EnterRaceScene(void) {
     printf("%s", g_MsgGame0Ok);
 }
 
+static void UpdatePausedRaceScene(void) {
+    RacePauseCursorResult cursor;
+    s32 move;
+
+    SetReverbDepth(0x28, 0x28);
+    cursor = MoveRacePauseCursor(
+        g_PadPressed, g_RaceOptionCursor, g_GrandPrixMode);
+    g_RaceOptionCursor = cursor.cursor;
+    for (move = 0; move < cursor.moveCount; move++) {
+        PlaySoundCue(1);
+    }
+
+    g_SceneTimer--;
+    DrawRaceOptionMenu(g_RaceOptionCursor);
+    if (g_GrandPrixMode == 0) {
+        DrawSplitTimes();
+    }
+    DrawRaceHudLabels(g_GrandPrixMode);
+    if (g_GrandPrixMode != 0) {
+        DrawTimeRemaining(g_RaceTimeRemaining);
+        DrawRacePosition();
+    }
+    DrawLapTimes();
+    DrawStartCountdown(g_SceneTimer);
+    GetTrackZoneBlend(g_PlayerCar.trackProgress);
+    DrawPlayerTachometer();
+
+    if ((g_PadHeld &
+         RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
+        g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
+        if (g_PadPressed & PAD_R1) {
+            g_MirrorViewEnabled = 1;
+        } else if (g_PadPressed & PAD_L1) {
+            g_MirrorViewEnabled = 0;
+        }
+    }
+
+    UpdateCamera(g_CameraViewMode,
+                 GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
+    RequestTrackTexturePage(g_PlayerCar.trackSection);
+    if (g_GrandPrixMode != 0) {
+        DrawCars();
+    }
+    if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) &&
+        WrongWayWarningVisible(g_WrongWayTimer)) {
+        DrawWrongWayWarning();
+    }
+    DrawSkyBackground();
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    DrawTerrainCells();
+    DrawCourseObjects();
+    if (g_GrandPrixMode != 0) {
+        if (g_GrandPrixClass != 5) {
+            DrawStartGridScenery(g_SceneTimer);
+        }
+        SetLightMatrix(&g_SceneLightMatrix);
+        DrawScriptedScenery(0);
+        DrawRearViewMirror(g_SceneTimer);
+    }
+    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
+    if (BeginMirrorPass() != 0) {
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
+        EndMirrorPass();
+    }
+}
+
 void UpdateRaceScene(void) {
     s32 lapUpdateResult;
     u32 timerValue;
@@ -243,69 +309,7 @@ void UpdateRaceScene(void) {
     UpdateRaceEndState();
 
     if (g_RacePaused != 0) {
-        RacePauseCursorResult cursor;
-        s32 move;
-
-        SetReverbDepth(0x28, 0x28);
-        cursor = MoveRacePauseCursor(
-            g_PadPressed, g_RaceOptionCursor, g_GrandPrixMode);
-        g_RaceOptionCursor = cursor.cursor;
-        for (move = 0; move < cursor.moveCount; move++) {
-            PlaySoundCue(1);
-        }
-
-        g_SceneTimer--;
-        DrawRaceOptionMenu(g_RaceOptionCursor);
-        if (g_GrandPrixMode == 0) {
-            DrawSplitTimes();
-        }
-        DrawRaceHudLabels(g_GrandPrixMode);
-        if (g_GrandPrixMode != 0) {
-            DrawTimeRemaining(g_RaceTimeRemaining);
-            DrawRacePosition();
-        }
-        DrawLapTimes();
-        DrawStartCountdown(g_SceneTimer);
-        GetTrackZoneBlend(g_PlayerCar.trackProgress);
-        DrawPlayerTachometer();
-
-        if ((g_PadHeld &
-             RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
-            g_CameraViewMode == CAMERA_VIEW_CAR && g_RacePhase == 2) {
-            if (g_PadPressed & PAD_R1) {
-                g_MirrorViewEnabled = 1;
-            } else if (g_PadPressed & PAD_L1) {
-                g_MirrorViewEnabled = 0;
-            }
-        }
-
-        UpdateCamera(g_CameraViewMode,
-                     GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
-        RequestTrackTexturePage(g_PlayerCar.trackSection);
-        if (g_GrandPrixMode != 0) {
-            DrawCars();
-        }
-        if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) &&
-            WrongWayWarningVisible(g_WrongWayTimer)) {
-            DrawWrongWayWarning();
-        }
-        DrawSkyBackground();
-        g_RenderState.envMode4 = g_IsEnvironmentMode4;
-        DrawTerrainCells();
-        DrawCourseObjects();
-        if (g_GrandPrixMode != 0) {
-            if (g_GrandPrixClass != 5) {
-                DrawStartGridScenery(g_SceneTimer);
-            }
-            SetLightMatrix(&g_SceneLightMatrix);
-            DrawScriptedScenery(0);
-            DrawRearViewMirror(g_SceneTimer);
-        }
-        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-        if (BeginMirrorPass() != 0) {
-            DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-            EndMirrorPass();
-        }
+        UpdatePausedRaceScene();
     } else {
         RaceClockUpdate raceClock;
         RaceStartUpdate raceStart;
