@@ -61,6 +61,9 @@ static void TestGrandPrixRecording(void) {
     GameCarRuntime rival = MakeCar(200, 4);
     ReplayGrandPrixFrame untouched;
     ReplayGrandPrixFrame *frame;
+    /* Only the assertions read it, and a release build compiles those
+     * away, which leaves it set but unused. */
+    (void)frame;
 
     memset(&untouched, 0xA5, sizeof(untouched));
     g_ReplayFrameBuffer.grandPrixReplay[0] = untouched;
@@ -99,6 +102,9 @@ static void TestTimeAttackRecording(void) {
     GameCarRuntime player = MakeCar(300, 5);
     ReplayTimeAttackFrame untouched;
     ReplayTimeAttackFrame *frame;
+    /* Only the assertions read it, and a release build compiles those
+     * away, which leaves it set but unused. */
+    (void)frame;
 
     memset(&untouched, 0x5A, sizeof(untouched));
     g_ReplayFrameBuffer.timeAttackReplay[0] = untouched;

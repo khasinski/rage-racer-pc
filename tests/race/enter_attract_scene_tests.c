@@ -40,6 +40,9 @@ void UploadImageAsset(GameImageAssetHeaderWord *asset) {
 }
 void InitRenderState(s32 otShift) { s_RenderOtShift = otShift; }
 void SetupDisplay480(s32 r, s32 g, s32 b) {
+    (void)b;
+    (void)g;
+    (void)r;
     assert(r == 0 && g == 0 && b == 0);
     s_DisplaySetups++;
 }

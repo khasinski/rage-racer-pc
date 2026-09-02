@@ -40,6 +40,7 @@ void InitShuttleScenery(void) {
 void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
                                    GameCarRuntime *rival) {
     RecordCall(CALL_APPLY_FRAME, player, subframe);
+    (void)rival;
     assert(rival == &g_Cars[0]);
 }
 
@@ -66,6 +67,12 @@ void RequestTrackTexturePage(s32 trackSection) {
 
 static void ExpectCall(s32 index, ReplayCarCall call, GameCarRuntime *car,
                        s32 value) {
+    /* Only the assertions read these, and a release build compiles those
+     * away, which leaves them unused and the build refusing them. */
+    (void)index;
+    (void)call;
+    (void)car;
+    (void)value;
     assert(s_Calls[index].call == call);
     assert(s_Calls[index].car == car);
     assert(s_Calls[index].value == value);

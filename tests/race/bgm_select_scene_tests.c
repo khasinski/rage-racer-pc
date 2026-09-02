@@ -30,12 +30,16 @@ void UpdateBgmSelectInput(void) { s_inputUpdates++; }
 void RequestOptionScreenAssets(void) { s_assetRequests++; }
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void DrawFullscreenFadeTile(s32 level, s32 tpage) {
+    /* The assertion is the only reader, and a release build compiles it
+     * away, which leaves the parameter unused and the build refusing it. */
+    (void)tpage;
     assert(tpage == 0x49);
     s_fadeLevel = level;
 }
 void DrawBgmSelectBar(void) { s_uiDraws++; }
 void UpdateBgmSelectBar(void) { s_uiUpdates++; }
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
+    (void)mask;
     assert(mask == 0xFF);
     return current + 1;
 }

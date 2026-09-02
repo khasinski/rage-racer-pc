@@ -38,6 +38,9 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
 }
 
 static void CheckSpeed(s32 value, s32 hundreds, s32 tens, s32 ones) {
+    (void)hundreds;
+    (void)ones;
+    (void)tens;
     u8 packets[64];
 
     memset(packets, 0, sizeof(packets));

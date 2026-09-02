@@ -24,6 +24,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"
+#include "game/race_hud_internal.h"
 #include "port_config.h"
 #include "rage/hud_config.h"
 
