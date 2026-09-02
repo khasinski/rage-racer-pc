@@ -48,6 +48,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 
 #include "psyq/cd_types.h"
 #include "game/render_state.h"
+#include "game/fmv.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -172,7 +173,6 @@ int DrawPaintColorScreen(int step);
 int DrawCarShopScreen(int step);
 int DrawEngineerShopScreen(int step);
 void InitMenuMode(void);
-void ReturnFromClassFmv(void);
 void UpdateMenuMode(void);
 void EnterRoundScreen(void);
 void UpdateRoundScreen(void);
@@ -210,7 +210,6 @@ void EnterAttractDemo(void);
 void UpdateAttractDemoScene(void);
 void EnterPrologue(void);
 void TickPrologueStep(void);
-void ReturnFromEndingFmv(void);
 void UpdateEndingStill(void);
 void (*g_NativeGameModeHandlers[13])(void) = {
     UpdateOptionMenuFade,

@@ -13,5 +13,7 @@ extern FmvPlaybackState g_FmvState;
 extern s32 g_FmvStreamEnded;
 
 void StartFmvPlayback(void);
+void ReturnFromClassFmv(void);
+void ReturnFromEndingFmv(void);
 
 #endif
