@@ -63,8 +63,8 @@ static void Place(int manual, s32 gear, s32 speed) {
     s_car.drive.gear = (s16)gear;
     s_car.speed = speed;
     s_car.drive.clutch = 0;
-    s_car.verticalMotionState = 0;
-    s_car.drive.motionState = 0;
+    s_car.verticalMotionState = CAR_VERTICAL_GROUNDED;
+    s_car.drive.motionState = CAR_MOTION_DRIVING;
     g_PadPressed = 0;
     g_AutoShiftCooldown = 0;
     g_SteerHoldFrames = 7;
@@ -83,6 +83,12 @@ static void ManualTests(void) {
     g_PadPressed = SHIFT_DOWN;
     ShiftPlayerGears(&s_car, 0);
     Check(s_car.drive.gear == 2, "manual down", s_car.drive.gear, 2);
+
+    Place(1, 3, 2000);
+    g_PadPressed = SHIFT_UP | SHIFT_DOWN;
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 3, "simultaneous shifts cancel in order",
+          s_car.drive.gear, 3);
 
     /* Neither goes past its end of the box. */
     Place(1, 6, 2000);
@@ -224,7 +230,7 @@ static void AutomaticTests(void) {
     /* A shift already in progress is left alone, but the cooldown still runs
      * and stopping still drops the gear. */
     Place(0, 1, 1500);
-    s_car.verticalMotionState = 1;
+    s_car.verticalMotionState = CAR_VERTICAL_RISING;
     ShiftPlayerGears(&s_car, 0);
     Check(s_car.drive.gear == 1, "no shift while one is in progress",
           s_car.drive.gear, 1);

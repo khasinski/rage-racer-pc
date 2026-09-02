@@ -5,92 +5,100 @@
 enum {
     FIRST_GEAR = 1,
     PAD_MAPPING_STRIDE = 8,
+    SHIFT_UP_MAPPING_SLOT = 4,
+    SHIFT_DOWN_MAPPING_SLOT = 5,
+    AUTO_SHIFT_COOLDOWN_FRAMES = 25,
+    HARD_BRAKE_THRESHOLD = 129,
 };
 
-static s32 EffectiveTopGear(void) {
-    if (g_CarSpec->topGear < FIRST_GEAR) {
+static s32 EffectiveTopGear(const GameCarSpec *spec) {
+    if (spec->topGear < FIRST_GEAR) {
         return FIRST_GEAR;
     }
-    if (g_CarSpec->topGear > CAR_FORWARD_GEAR_COUNT) {
+    if (spec->topGear > CAR_FORWARD_GEAR_COUNT) {
         return CAR_FORWARD_GEAR_COUNT;
     }
-    return g_CarSpec->topGear;
+    return spec->topGear;
 }
 
-/*
- * Pick the gear for this frame.
- *
- * With a manual box the two shift buttons do it, bounded by the car's top gear
- * and by the clutch being free. Automatic reads the car's own shift-point
- * table: below the current gear's downshift speed it drops one, above the next
- * one's upshift speed it takes one, and a cooldown keeps it from hunting -
- * counted down twice as fast while the brake is on, because a car slowing hard
- * needs the gears sooner.
- *
- * Coming to a stop drops it straight back to first, unless the car has not
- * pulled away yet.
- */
-void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
-    s32 topGear = EffectiveTopGear();
-    s32 mappingBase = useAlternateMapping ? PAD_MAPPING_STRIDE : 0;
-
-    if (car->drive.gear < FIRST_GEAR) {
-        car->drive.gear = FIRST_GEAR;
-    } else if (car->drive.gear > topGear) {
-        car->drive.gear = (s16)topGear;
+static void ClampSelectedGear(GameCarDrive *drive, s32 topGear) {
+    if (drive->gear < FIRST_GEAR) {
+        drive->gear = FIRST_GEAR;
+    } else if (drive->gear > topGear) {
+        drive->gear = (s16)topGear;
     }
+}
 
-    if (car->drive.manual != 0) {
-        if (g_PadPressed & g_PadButtonMapping[4 + mappingBase]) {
-            s32 g = car->drive.gear;
+static void ShiftManualGears(GameCarDrive *drive, s32 topGear,
+                             s32 mappingBase) {
+    if ((g_PadPressed &
+         g_PadButtonMapping[SHIFT_UP_MAPPING_SLOT + mappingBase]) != 0 &&
+        drive->gear < topGear && drive->clutch == 0) {
+        drive->gear++;
+        g_SteerHoldFrames = 0;
+    }
+    if ((g_PadPressed &
+         g_PadButtonMapping[SHIFT_DOWN_MAPPING_SLOT + mappingBase]) != 0 &&
+        drive->gear >= 2) {
+        drive->gear--;
+        g_SteerHoldFrames = 0;
+    }
+}
 
-            if (g < topGear && car->drive.clutch == 0) {
-                car->drive.gear++;
+static void UpdateAutoShiftCooldown(const GameCarDrive *drive) {
+    if (g_AutoShiftCooldown <= 0) return;
+
+    g_AutoShiftCooldown -=
+        drive->brakeInput >= HARD_BRAKE_THRESHOLD ? 2 : 1;
+}
+
+static void ResetStoppedAutomaticGear(PlayerCarRuntime *car) {
+    GameCarDrive *drive = &car->drive;
+
+    if (car->speed != 0 || drive->gear < 2 ||
+        drive->motionState == CAR_MOTION_STANDING_START) {
+        return;
+    }
+    drive->gear = FIRST_GEAR;
+    drive->clutch = 0;
+    g_AutoShiftCooldown = 0;
+}
+
+static void ShiftAutomaticGears(PlayerCarRuntime *car, s32 topGear) {
+    GameCarDrive *drive = &car->drive;
+
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED &&
+        g_AutoShiftCooldown <= 0 && drive->clutch == 0) {
+        s32 gear = drive->gear;
+
+        if (car->speed < g_CarSpec->shiftPoints[gear - 1].downshiftSpeed) {
+            if (gear >= 2) {
+                drive->gear--;
+                g_AutoShiftCooldown = AUTO_SHIFT_COOLDOWN_FRAMES;
                 g_SteerHoldFrames = 0;
             }
+        } else if (g_CarSpec->shiftPoints[gear - 1].upshiftSpeed < car->speed &&
+                   gear < topGear) {
+            drive->gear++;
+            g_AutoShiftCooldown = AUTO_SHIFT_COOLDOWN_FRAMES;
+            g_SteerHoldFrames = 0;
         }
-        if (g_PadPressed & g_PadButtonMapping[5 + mappingBase]) {
-            s32 g = car->drive.gear;
+    }
+    UpdateAutoShiftCooldown(drive);
+    ResetStoppedAutomaticGear(car);
+}
 
-            if (g >= 2) {
-                car->drive.gear--;
-                g_SteerHoldFrames = 0;
-            }
-        }
+/* Pick the bounded manual or automatic gear for this frame. */
+void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
+    GameCarDrive *drive = &car->drive;
+    s32 topGear = EffectiveTopGear(g_CarSpec);
+
+    ClampSelectedGear(drive, topGear);
+    if (drive->manual != 0) {
+        s32 mappingBase = useAlternateMapping ? PAD_MAPPING_STRIDE : 0;
+
+        ShiftManualGears(drive, topGear, mappingBase);
     } else {
-        if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-            s32 g;
-
-            g = car->drive.gear;
-            if (car->speed < g_CarSpec->shiftPoints[g - 1].downshiftSpeed &&
-                g_AutoShiftCooldown <= 0 && car->drive.clutch == 0) {
-                if (g >= 2) {
-                    car->drive.gear--;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            } else {
-                if (g_CarSpec->shiftPoints[g - 1].upshiftSpeed < car->speed &&
-                    g_AutoShiftCooldown <= 0 && car->drive.clutch == 0 &&
-                    g < topGear) {
-                    car->drive.gear++;
-                    g_AutoShiftCooldown = 25;
-                    g_SteerHoldFrames = 0;
-                }
-            }
-        }
-        if (g_AutoShiftCooldown > 0) {
-            if (car->drive.brakeInput >= 129) {
-                g_AutoShiftCooldown = g_AutoShiftCooldown - 2;
-            } else {
-                g_AutoShiftCooldown--;
-            }
-        }
-        if (car->speed == 0 && car->drive.gear >= 2 &&
-            car->drive.motionState != CAR_MOTION_STANDING_START) {
-            car->drive.gear = FIRST_GEAR;
-            car->drive.clutch = 0;
-            g_AutoShiftCooldown = 0;
-        }
+        ShiftAutomaticGears(car, topGear);
     }
 }
