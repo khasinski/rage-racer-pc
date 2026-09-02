@@ -77,6 +77,26 @@ endif()
 add_test(NAME enter_prize_screen COMMAND enter_prize_screen_tests)
 set_tests_properties(enter_prize_screen PROPERTIES LABELS unit)
 
+add_executable(commit_class_progress_tests
+    commit_class_progress_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/commit_class_progress.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c)
+target_include_directories(commit_class_progress_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(commit_class_progress_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(commit_class_progress_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(commit_class_progress_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME commit_class_progress COMMAND commit_class_progress_tests)
+set_tests_properties(commit_class_progress PROPERTIES LABELS unit)
+
 add_executable(race_time_text_tests
     race_time_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)
