@@ -16,7 +16,7 @@ static void ApplyEffectVoicePitch(s32 hardwareVoice, EffectVoice *effect) {
     SsUtChangePitch(
         (s16)hardwareVoice, 0, effect->note.half.value, EFFECT_BASE_NOTE, 0,
         (s16)(effect->pitch.value >> 7), effect->pitch.half.fraction & 0x7F);
-    effect->state = -1;
+    effect->state = EFFECT_VOICE_IDLE;
 }
 
 void UpdateEffectVoiceStates(void) {
@@ -27,18 +27,20 @@ void UpdateEffectVoiceStates(void) {
         s32 hardwareVoice = EFFECT_HARDWARE_VOICE_FIRST + index;
 
         switch (effect->state) {
-        case 0:
+        case EFFECT_VOICE_START:
             SsUtKeyOnV((s16)hardwareVoice, g_SoundScale.vabIds[0],
                        effect->note.half.value, (s16)effect->tone,
                        EFFECT_BASE_NOTE, 0, 0, 0);
             ApplyEffectVoicePitch(hardwareVoice, effect);
             break;
-        case 2:
+        case EFFECT_VOICE_UPDATE:
             ApplyEffectVoicePitch(hardwareVoice, effect);
             break;
-        case 1:
+        case EFFECT_VOICE_STOP:
             SsUtKeyOffV((s16)hardwareVoice);
-            effect->state = -1;
+            effect->state = EFFECT_VOICE_IDLE;
+            break;
+        case EFFECT_VOICE_IDLE:
             break;
         }
     }

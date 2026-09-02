@@ -67,17 +67,17 @@ int main(void) {
     g_SoundScale.scale = 128;
     g_SoundScale.vabIds[0] = 7;
 
-    g_EffectVoices[0].state = 0;
+    g_EffectVoices[0].state = EFFECT_VOICE_START;
     g_EffectVoices[0].note.value = 22;
     g_EffectVoices[0].tone = 3;
     g_EffectVoices[0].pitch.value = 0x12345;
     g_EffectVoices[0].volume = 64;
-    g_EffectVoices[1].state = 2;
+    g_EffectVoices[1].state = EFFECT_VOICE_UPDATE;
     g_EffectVoices[1].note.value = 33;
     g_EffectVoices[1].pitch.value = 0x23456;
     g_EffectVoices[1].volume = 200;
-    g_EffectVoices[2].state = 1;
-    g_EffectVoices[3].state = -1;
+    g_EffectVoices[2].state = EFFECT_VOICE_STOP;
+    g_EffectVoices[3].state = EFFECT_VOICE_IDLE;
 
     UpdateEffectVoiceStates();
     CHECK(s_keyOnVoice == 10 && s_keyOnProgram == 22 && s_keyOnTone == 3);
@@ -88,9 +88,9 @@ int main(void) {
     CHECK(s_pitchVoice[0] == 10 && s_pitchProgram[0] == 22);
     CHECK(s_pitchNote[0] == (s16)(0x12345 >> 7));
     CHECK(s_pitchFine[0] == (0x12345 & 0x7F));
-    CHECK(g_EffectVoices[0].state == -1);
-    CHECK(g_EffectVoices[1].state == -1);
-    CHECK(g_EffectVoices[2].state == -1);
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
+    CHECK(g_EffectVoices[1].state == EFFECT_VOICE_IDLE);
+    CHECK(g_EffectVoices[2].state == EFFECT_VOICE_IDLE);
 
     puts("effect voice states preserve SPU key, volume, and pitch updates");
     return 0;

@@ -153,7 +153,7 @@ static void TestSoundStateReset(void) {
               "reset initializes every music channel");
     }
     for (index = 0; index < 4; index++) {
-        Check(g_EffectVoices[index].state == -1 &&
+        Check(g_EffectVoices[index].state == EFFECT_VOICE_IDLE &&
                   g_EffectVoices[index].note.value == -1 &&
                   g_EffectVoices[index].tone == -1 &&
                   g_EffectVoices[index].pitch.value == 0x1E00 &&

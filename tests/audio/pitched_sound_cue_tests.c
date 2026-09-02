@@ -35,14 +35,16 @@ static void Reset(void) {
 int main(void) {
     Reset();
     SetPitchedSoundCue(0, 0x2345, 64);
-    CHECK(g_EffectVoices[0].state == 0 && g_EffectVoices[1].state == 0);
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_START &&
+          g_EffectVoices[1].state == EFFECT_VOICE_START);
     CHECK(g_EffectVoices[0].note.value == 20);
     CHECK(g_EffectVoices[1].note.value == 21);
     CHECK(g_EffectVoices[0].pitch.value == 0x2345);
     CHECK(g_EffectVoices[0].volume == 32);
 
     SetPitchedSoundCue(0, 0x3456, 200);
-    CHECK(g_EffectVoices[0].state == 2 && g_EffectVoices[1].state == 2);
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_UPDATE &&
+          g_EffectVoices[1].state == EFFECT_VOICE_UPDATE);
     CHECK(g_EffectVoices[0].volume == 63);
 
     Reset();
@@ -53,7 +55,8 @@ int main(void) {
     g_EffectVoices[2].note.value = 30;
     g_EffectVoices[3].note.value = 31;
     SetPitchedSoundCue(1, 0, 0);
-    CHECK(g_EffectVoices[2].state == 1 && g_EffectVoices[3].state == 1);
+    CHECK(g_EffectVoices[2].state == EFFECT_VOICE_STOP &&
+          g_EffectVoices[3].state == EFFECT_VOICE_STOP);
     CHECK(g_EffectVoices[2].note.value == -1);
     CHECK(g_EffectVoices[2].pitch.value == 0x1E00);
 

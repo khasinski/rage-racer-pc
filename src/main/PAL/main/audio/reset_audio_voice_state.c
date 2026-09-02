@@ -20,7 +20,7 @@ void ResetAudioVoiceState(void) {
     }
 
     for (i = 0; i < EFFECT_VOICE_COUNT; i++) {
-        g_EffectVoices[i].state = -1;
+        g_EffectVoices[i].state = EFFECT_VOICE_IDLE;
         g_EffectVoices[i].note.value = -1;
         g_EffectVoices[i].tone = -1;
         g_EffectVoices[i].pitch.value = DEFAULT_EFFECT_PITCH;

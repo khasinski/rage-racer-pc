@@ -86,7 +86,7 @@ static void TestEffectInitialization(void) {
               "effect initialization resets music channel state");
     }
     for (index = 0; index < 4; index++) {
-        Check(g_EffectVoices[index].state == -1 &&
+        Check(g_EffectVoices[index].state == EFFECT_VOICE_IDLE &&
                   g_EffectVoices[index].pitch.value == 0x1E00,
               "effect initialization resets effect voice state");
     }

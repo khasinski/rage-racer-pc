@@ -60,13 +60,25 @@ typedef union EffectVoiceNote {
     } half;
 } EffectVoiceNote;
 
+typedef enum EffectVoiceState {
+    EFFECT_VOICE_IDLE = -1,
+    EFFECT_VOICE_START,
+    EFFECT_VOICE_STOP,
+    EFFECT_VOICE_UPDATE,
+} EffectVoiceState;
+
 typedef struct EffectVoice {
     EffectVoiceNote note; /* +0x00 note/detune base */
     s32 tone;      /* +0x04 tone */
-    s32 state;     /* +0x08 state 0/1/2/-1 */
+    EffectVoiceState state; /* +0x08 */
     EffectVoicePitch pitch; /* +0x0C pitch */
     s32 volume;    /* +0x10 volume */
 } EffectVoice; /* sizeof 0x14 */
+
+_Static_assert(sizeof(EffectVoiceState) == sizeof(s32),
+               "effect voice state ABI changed");
+_Static_assert(sizeof(EffectVoice) == 0x14,
+               "effect voice record ABI changed");
 
 extern EffectVoice g_EffectVoices[];
 

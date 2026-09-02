@@ -24,7 +24,7 @@ static void ResetCueVoices(s32 voiceStart, s32 voiceCount) {
     for (voice = 0; voice < voiceCount; voice++) {
         EffectVoice *effect = &g_EffectVoices[voiceStart + voice];
 
-        effect->state = 1;
+        effect->state = EFFECT_VOICE_STOP;
         effect->note.value = -1;
         effect->tone = -1;
         effect->pitch.value = EFFECT_CUE_DEFAULT_PITCH;
@@ -34,7 +34,9 @@ static void ResetCueVoices(s32 voiceStart, s32 voiceCount) {
 
 static void StartCueVoices(s32 voiceStart, s32 bank, s32 pitch, s32 volume) {
     const EffectCueBank *cue = &g_EffectCueTable[bank];
-    s32 state = VoicePairMatchesBank(voiceStart, bank) ? 2 : 0;
+    EffectVoiceState state = VoicePairMatchesBank(voiceStart, bank)
+                                 ? EFFECT_VOICE_UPDATE
+                                 : EFFECT_VOICE_START;
     s32 voice;
 
     for (voice = 0; voice < cue->voiceCount; voice++) {
