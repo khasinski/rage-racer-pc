@@ -90,6 +90,7 @@ int main(int argc, char **argv) {
     static const s32 launchDirections[] = {0, 1};
     static const s16 verticalStates[] = {0, 1};
     GameCarSpec spec;
+    static GameTrackPoint points[16];
     FILE *out = NULL;
     size_t l, p, h, f, s, d, v;
     int cases = 0;
@@ -103,6 +104,7 @@ int main(int argc, char **argv) {
     }
 
     g_TrackPointCount = 16;
+    g_TrackPoints = points;
     memset(&spec, 0, sizeof(spec));
     g_CarSpec = &spec;
 
@@ -142,6 +144,27 @@ int main(int argc, char **argv) {
         printf("steer_to_track_line: %d cases folded to %lu, expected %lu\n",
                cases, s_digest, expected);
         return 1;
+    }
+
+    {
+        PlayerCarRuntime car;
+
+        memset(&car, 0, sizeof(car));
+        car.headingAngle = 123;
+        g_TrackPointCount = 0;
+        SteerCarToTrackLine(&car);
+        if (car.headingAngle != 123) {
+            puts("missing track changed steering heading");
+            return 1;
+        }
+
+        g_TrackPointCount = 16;
+        g_CarSpec = NULL;
+        SteerCarToTrackLine(&car);
+        if (car.headingAngle != 123) {
+            puts("missing car spec changed steering heading");
+            return 1;
+        }
     }
     printf("steer_to_track_line: %d cases unchanged\n", cases);
     return 0;

@@ -56,6 +56,9 @@ extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 void UpdateRivalBodyMotion(void);
 /* Shared 12-bit wheel phase and high-speed blur flag update. */
 void UpdateCarWheelRotation(GameCarRuntime *car);
+/* Heading from a car position to a laterally offset interpolated track point. */
+s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
+                                s32 carX, s32 carZ, s32 lateralOffset);
 /* Internal course-event query used by the crest-hop state machine. */
 s32 GetCarCrestTrigger(GameCarRuntime *car);
 /* World translation and steering/body-lean pass over the rival car slots. */

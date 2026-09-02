@@ -189,6 +189,7 @@ int main(int argc, char **argv) {
     static const s16 gears[] = {1, 3, 5};
     /* Zero never reaches the wheelspin the standing start counts down. */
     static const s32 standingSpins[] = {0, 20, 200};
+    static GameTrackPoint points[16];
     GameCarSpec spec;
     FILE *out = NULL;
     size_t s, e, v, y, h, g, vert, ss;
@@ -202,6 +203,7 @@ int main(int argc, char **argv) {
         }
     }
     g_TrackPointCount = 16;
+    g_TrackPoints = points;
     g_CarSpec = &spec;
 
     if (CheckAirborneYawSymmetry(&spec) != 0 ||

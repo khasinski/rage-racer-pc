@@ -593,6 +593,7 @@ set_tests_properties(car_travel_velocity PROPERTIES LABELS functional)
 
 add_executable(steer_to_track_line_tests
     steer_to_track_line_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/track_steering_target.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
@@ -621,6 +622,7 @@ add_executable(car_motion_handlers_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_launch.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_airborne.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/track_steering_target.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
@@ -1086,6 +1088,7 @@ set_tests_properties(race_intro_camera PROPERTIES LABELS unit)
 
 add_executable(steer_car_along_route_tests
     steer_car_along_route_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/track_steering_target.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_along_route.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c)
 target_include_directories(steer_car_along_route_tests PRIVATE
