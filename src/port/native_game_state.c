@@ -476,23 +476,6 @@ u8 g_Font8x8Cells[0xC0] = {
     0x1d,0x00,0x1e,0x00,0x1f,0x00,0x00,0x01,0x01,0x01,0x02,0x01,
     0x03,0x01,0x1b,0x01,0x1c,0x01,0x1d,0x01,0x1e,0x01,0x1f,0x01,
 };
-static u8 g_RageAssetMemory[64 * 1024 * 1024];
-u8 *g_AssetBase = g_RageAssetMemory;
-
-/* The console had two megabytes for all of this; the port has sixty-four, which
- * is the room an oversized asset grows into. Overrides are checked against the
- * end of whichever buffer they are being read into. */
-size_t PortAssetRoomAt(const void *at) {
-    const u8 *p = at;
-    if (p >= g_RageAssetMemory && p < g_RageAssetMemory + sizeof(g_RageAssetMemory))
-        return (size_t)(g_RageAssetMemory + sizeof(g_RageAssetMemory) - p);
-    {
-        extern unsigned long PortLoadBufferRoomAt(const void *at);
-        unsigned long room = PortLoadBufferRoomAt(at);
-        if (room != 0) return (size_t)room;
-    }
-    return 0;
-}
 BootLogoState g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
 s32 g_BootLogoTimer = 0;
 s32 g_BootLogoHoldTimer = 150;

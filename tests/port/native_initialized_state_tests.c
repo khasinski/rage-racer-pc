@@ -7,11 +7,6 @@
 
 static int s_failures;
 
-unsigned long PortLoadBufferRoomAt(const void *at) {
-    (void)at;
-    return 0;
-}
-
 static void Check(int condition, const char *message) {
     if (condition) return;
     s_failures++;

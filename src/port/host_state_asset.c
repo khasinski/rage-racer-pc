@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "mod_assets.h"
 #include "psyq/gpu.h"
 
 typedef struct CarImageData CarImageData;
@@ -36,15 +37,24 @@ GpuRectPacked g_TeamLogoClutMoveRect __attribute__((aligned(16))) = {
 s32 g_PendingCarModelIndex;
 u32 g_CarModelSlot;
 s32 g_LoadBuffer[1037896 / sizeof(s32)] __attribute__((aligned(16)));
-/* Extent of the boot load buffer, for the override bounds check. */
-unsigned long PortLoadBufferRoomAt(const void *at) {
-    const uintptr_t address = (uintptr_t)at;
-    const uintptr_t begin = (uintptr_t)g_LoadBuffer;
-    const uintptr_t end = begin + sizeof(g_LoadBuffer);
+static u8 s_AssetMemory[64 * 1024 * 1024];
+u8 *g_AssetBase = s_AssetMemory;
 
-    if (address >= begin && address < end)
-        return (unsigned long)(end - address);
-    return 0;
+static size_t BufferRoomAt(const void *at, const void *buffer, size_t size) {
+    const uintptr_t address = (uintptr_t)at;
+    const uintptr_t begin = (uintptr_t)buffer;
+
+    if (address < begin || address - begin >= size) return 0;
+    return size - (size_t)(address - begin);
+}
+
+/* Overrides may target either the large native asset arena or retail's boot
+ * load buffer. Return the writable tail of whichever one contains `at`. */
+size_t PortAssetRoomAt(const void *at) {
+    size_t room = BufferRoomAt(at, s_AssetMemory, sizeof(s_AssetMemory));
+
+    if (room != 0) return room;
+    return BufferRoomAt(at, g_LoadBuffer, sizeof(g_LoadBuffer));
 }
 u32 g_StreamSectorLimit;
 u8 *g_AssetBlockPtr2;
