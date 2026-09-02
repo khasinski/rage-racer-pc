@@ -17,6 +17,25 @@ endif()
 add_test(NAME draw_area_packet COMMAND draw_area_packet_tests)
 set_tests_properties(draw_area_packet PROPERTIES LABELS unit)
 
+add_executable(scene_dispatch_tests
+    scene_dispatch_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/dispatch_scene.c)
+target_include_directories(scene_dispatch_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(scene_dispatch_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(scene_dispatch_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(scene_dispatch_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME scene_dispatch COMMAND scene_dispatch_tests)
+set_tests_properties(scene_dispatch PROPERTIES LABELS unit)
+
 # Where the race HUD's sprites are built, as opposed to what the drawing
 # repositions each frame.
 add_executable(race_hud_layout_tests
