@@ -242,6 +242,7 @@ add_executable(asset_requests_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/option_screen_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/round_screen_assets.c)
 target_include_directories(asset_requests_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/image_upload
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)

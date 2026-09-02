@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/asset.h"
+#include "game/audio.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/random.h"
@@ -12,7 +13,7 @@
 
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
-s32 g_LoadBuffer[4];
+s32 g_LoadBuffer[64];
 u8 *g_AssetBlockPtr;
 u8 *g_AssetBlockPtr2;
 u8 *g_ImageBlockBuffer;
@@ -40,19 +41,49 @@ static s32 s_modelBankRegistrations;
 static s32 s_randomValues[2];
 static s32 s_randomCallCount;
 static s32 s_selectModelBankCalls;
+static void *s_lastLoadDestination;
+static s32 s_loadBufferUploads;
+static s32 s_audioSlot;
+static u8 *s_audioHeader;
+static u8 *s_audioBody;
+static u16 *s_audioTable;
+static s32 s_pollResult;
+static s32 s_imageUploads;
+static GameImageAssetHeaderWord *s_lastImageUpload;
+static s32 s_storeImageCalls;
+static s32 s_drawSyncCalls;
 
 s32 LoadAsset(s32 slot, void *destination) {
-    (void)destination;
     s_lastAssetId = slot;
+    s_lastLoadDestination = destination;
     return s_loadResult;
 }
-void UploadLoadBufferImage(void) {}
-void StartAudioSlotLoad(s32 slot, void *header, void *body, s32 sequence) {
-    (void)slot; (void)header; (void)body; (void)sequence;
+void UploadLoadBufferImage(void) { s_loadBufferUploads++; }
+s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
+    s_audioSlot = slot;
+    s_audioHeader = header;
+    s_audioBody = body;
+    s_audioTable = table;
+    return 1;
 }
-s32 PollAudioSlotLoad(void) { return 0; }
-void UploadImageAsset(GameImageAssetHeaderWord *data) { (void)data; }
-void CloseLoadedAudioSlots(void) { s_closeCalls++; }
+s32 PollAudioSlotLoad(void) { return s_pollResult; }
+void UploadImageAsset(GameImageAssetHeaderWord *data) {
+    s_lastImageUpload = data;
+    s_imageUploads++;
+}
+void StoreImage(Rect *rect, void *data) {
+    (void)rect;
+    (void)data;
+    s_storeImageCalls++;
+}
+void DrawSync(long mode) {
+    (void)mode;
+    s_drawSyncCalls++;
+}
+s32 CloseLoadedAudioSlots(void) {
+    s_closeCalls++;
+    return 0;
+}
 void ResetCdAudioState(void) { s_resetCalls++; }
 void ResetAssetLoader(void) {
     s_resetCalls++;
@@ -80,12 +111,90 @@ static void Check(s32 condition, const char *label) {
     }
 }
 
+static void TestBootAssetPhases(void) {
+    u8 *loadBase = (u8 *)(void *)g_LoadBuffer;
+    u8 *resourceBase;
+
+    g_AssetLoadState = 1;
+    s_loadResult = 0;
+    s_loadBufferUploads = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 1 && s_loadBufferUploads == 0,
+          "pending title screen holds boot phase");
+    s_loadResult = 8;
+    LoadBootAssets();
+    Check(s_lastAssetId == ASSET_TITLE_SCREEN &&
+              s_lastLoadDestination == loadBase &&
+              g_AssetBlockPtr == loadBase + 8 &&
+              g_AssetLoadState == 2 && s_loadBufferUploads == 1,
+          "title screen advances boot loader");
+
+    s_loadResult = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 2, "pending audio header holds boot phase");
+    s_loadResult = 12;
+    LoadBootAssets();
+    Check(s_lastAssetId == ASSET_BOOT_AUDIO_HEADER &&
+              s_lastLoadDestination == loadBase + 8 &&
+              g_AssetLoadCursor == loadBase + 20 &&
+              g_AssetLoadState == 3,
+          "audio header advances boot loader");
+
+    s_loadResult = 1;
+    LoadBootAssets();
+    Check(s_lastAssetId == ASSET_BOOT_AUDIO_BODY && s_audioSlot == 0 &&
+              s_audioHeader == loadBase + 8 &&
+              s_audioBody == loadBase + 20 && s_audioTable == NULL &&
+              g_AssetLoadState == 4,
+          "audio body starts boot audio slot");
+
+    s_pollResult = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 4, "pending boot audio holds phase");
+    s_pollResult = 1;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 5, "ready boot audio advances phase");
+
+    resourceBase = g_AssetLoadCursor;
+    s_loadResult = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 5 && g_AssetLoadCursor == resourceBase,
+          "pending resources hold boot phase");
+    s_loadResult = 16;
+    LoadBootAssets();
+    Check(s_lastAssetId == ASSET_BOOT_RESOURCES &&
+              g_AssetLoadCursor == resourceBase + 16 &&
+              g_AssetLoadState == 6,
+          "resources advance boot loader cursor");
+
+    s_loadResult = 0;
+    s_imageUploads = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 6 && s_imageUploads == 0,
+          "pending car screen holds boot phase");
+    s_loadResult = 1;
+    g_TeamLogoClut[0] = 7;
+    s_storeImageCalls = 0;
+    s_drawSyncCalls = 0;
+    LoadBootAssets();
+    Check(s_lastAssetId == ASSET_BOOT_CAR_SCREEN &&
+              s_lastImageUpload ==
+                  (GameImageAssetHeaderWord *)(void *)(resourceBase + 16) &&
+              g_AssetBase == resourceBase + 16 && g_AssetLoadState == 0,
+          "car screen completes boot loader");
+    Check(s_storeImageCalls == 2 && s_drawSyncCalls == 1,
+          "car screen captures team logo image and CLUT");
+    Check(g_TeamLogoClut[0] == 0, "boot car screen clears logo CLUT entry");
+}
+
 int main(void) {
     union {
         max_align_t alignment;
         u8 bytes[128];
     } pack;
     GameSceneAssetHeader *header = (GameSceneAssetHeader *)pack.bytes;
+
+    TestBootAssetPhases();
 
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;

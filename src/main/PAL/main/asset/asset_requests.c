@@ -11,59 +11,77 @@
  * address, and draw_team_logo_canvas.c reads the two rects through its own
  * TeamLogoClutPos / TeamLogoTexturePos structs, so there is no single type
  * to hoist without rewriting those indices. */
-void LoadBootAssets(void) {
-    s32 loadedSize;
-    u8 *base;
+static void LoadBootTitleScreen(void) {
+    u8 *base = GetAssetBytes(g_LoadBuffer);
+    s32 loadedSize = LoadAsset(ASSET_TITLE_SCREEN, base);
 
+    if (loadedSize == 0) return;
+    UploadLoadBufferImage();
+    g_AssetBlockPtr = base + loadedSize;
+    g_AssetLoadState = 2;
+}
+
+static void LoadBootAudioHeader(void) {
+    s32 loadedSize = LoadAsset(ASSET_BOOT_AUDIO_HEADER, g_AssetBlockPtr);
+
+    if (loadedSize == 0) return;
+    g_AssetLoadCursor = g_AssetBlockPtr + loadedSize;
+    g_AssetLoadState = 3;
+}
+
+static void LoadBootAudioBody(void) {
+    if (LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor) == 0) return;
+    StartAudioSlotLoad(0, g_AssetBlockPtr, g_AssetLoadCursor, NULL);
+    g_AssetLoadState = 4;
+}
+
+static void WaitForBootAudio(void) {
+    if ((s16)PollAudioSlotLoad() != 0) {
+        g_AssetLoadState = 5;
+    }
+}
+
+static void LoadBootResources(void) {
+    s32 loadedSize = LoadAsset(ASSET_BOOT_RESOURCES, g_AssetLoadCursor);
+
+    if (loadedSize == 0) return;
+    printf("%s", g_MsgResOk);
+    g_AssetLoadCursor += loadedSize;
+    g_AssetLoadState = 6;
+}
+
+static void LoadBootCarScreen(void) {
+    u8 *assetBase = g_AssetLoadCursor;
+
+    if (LoadAsset(ASSET_BOOT_CAR_SCREEN, assetBase) == 0) return;
+    UploadImageAsset(GetImageAssetHeaderWords(assetBase));
+    StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
+    StoreImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+    DrawSync(0);
+    g_TeamLogoClut[0] = 0;
+    g_AssetBase = assetBase;
+    g_AssetLoadState = 0;
+}
+
+void LoadBootAssets(void) {
     switch (g_AssetLoadState) {
     case 1:
-        base = GetAssetBytes(g_LoadBuffer);
-        loadedSize = LoadAsset(1, base);
-        if (loadedSize != 0) {
-            UploadLoadBufferImage();
-            g_AssetBlockPtr = base + loadedSize;
-            g_AssetLoadState = 2;
-        }
+        LoadBootTitleScreen();
         break;
     case 2:
-        loadedSize = LoadAsset(2, g_AssetBlockPtr);
-        if (loadedSize != 0) {
-            g_AssetLoadState = 3;
-            g_AssetLoadCursor = g_AssetBlockPtr + loadedSize;
-        }
+        LoadBootAudioHeader();
         break;
     case 3:
-        if (LoadAsset(3, g_AssetLoadCursor) != 0) {
-            StartAudioSlotLoad(0, g_AssetBlockPtr, g_AssetLoadCursor, 0);
-            g_AssetLoadState = 4;
-        }
+        LoadBootAudioBody();
         break;
     case 4:
-        if ((s16)PollAudioSlotLoad() != 0) {
-            g_AssetLoadState = 5;
-        }
+        WaitForBootAudio();
         break;
     case 5:
-        loadedSize = LoadAsset(4, g_AssetLoadCursor);
-        if (loadedSize != 0) {
-            printf("%s", g_MsgResOk);
-            g_AssetLoadState = 6;
-            g_AssetLoadCursor += loadedSize;
-        }
+        LoadBootResources();
         break;
     case 6:
-        if (LoadAsset(5, g_AssetLoadCursor) != 0) {
-            u8 *assetBase;
-
-            UploadImageAsset(GetImageAssetHeaderWords(g_AssetLoadCursor));
-            StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
-            StoreImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
-            DrawSync(0);
-            assetBase = g_AssetLoadCursor;
-            g_TeamLogoClut[0] = 0;
-            g_AssetLoadState = 0;
-            g_AssetBase = assetBase;
-        }
+        LoadBootCarScreen();
         break;
     }
 }
@@ -90,7 +108,7 @@ s32 RequestSaveScreenAssets(void) {
 
 void LoadSaveScreenAssets(void) {
     if (g_AssetLoadState == 1) {
-        if (LoadAsset(6, g_AssetBase) != 0) {
+        if (LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase) != 0) {
             g_AssetLoadState = 0;
             g_ImageBlockBuffer = g_AssetBase;
         }
@@ -114,7 +132,7 @@ void LoadSelectBgmAssets(void) {
         g_AssetLoadState = 2;
         /* fall through */
     case 2:
-        if (LoadAsset(7, g_AssetBase) != 0) {
+        if (LoadAsset(ASSET_SELECT_BGM, g_AssetBase) != 0) {
             header = (GameSceneAssetHeader *)g_AssetBase;
             g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
             g_AssetBlockPtr2 = GetSceneAssetAddress(header, header->offsets[1]);

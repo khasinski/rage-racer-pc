@@ -82,8 +82,18 @@ extern char *g_AssetPaths[];
 #define ASSET_VOICE_BANK        0x56
 #define ASSET_TRACK_1ST_BASE    0x57
 #define ASSET_TRACK_2ND_BASE    0x58
-#define ASSET_CAR_SELECT_SCREEN 8
-#define ASSET_OPTION_SCREEN     9
+enum {
+    ASSET_BOOT_LOGO = 0,
+    ASSET_TITLE_SCREEN = 1,
+    ASSET_BOOT_AUDIO_HEADER = 2,
+    ASSET_BOOT_AUDIO_BODY = 3,
+    ASSET_BOOT_RESOURCES = 4,
+    ASSET_BOOT_CAR_SCREEN = 5,
+    ASSET_SAVE_SCREEN = 6,
+    ASSET_SELECT_BGM = 7,
+    ASSET_CAR_SELECT_SCREEN = 8,
+    ASSET_OPTION_SCREEN = 9
+};
 
 /* Load asset assetIndex into dst; returns loaded size/status. */
 s32 LoadAsset(s32 assetIndex, void *dst);

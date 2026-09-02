@@ -38,7 +38,7 @@ void LoadDiscArchiveIndex(void) {
 
 void InitAssetSystem(void) {
     LoadDiscArchiveIndex();
-    LoadAssetBlocking(0, &g_LoadBuffer);
+    LoadAssetBlocking(ASSET_BOOT_LOGO, g_LoadBuffer);
     UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer));
 }
 
