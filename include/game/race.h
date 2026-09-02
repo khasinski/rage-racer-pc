@@ -432,7 +432,6 @@ void DrawRacePosition(void);
 void DrawRankingPanel(s32 slideX);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
-void DrawReplayBadge(void);
 void DrawSeriesClearedWash(s32 x, s32 y);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);

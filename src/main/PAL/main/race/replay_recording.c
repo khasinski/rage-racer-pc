@@ -1,7 +1,24 @@
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
 #include "game/work_buffer.h"
+
+void RecordReplayFrame(void) {
+    const GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
+
+    if (g_GrandPrixMode != 0) {
+        StoreReplayCarFrame(g_ReplayWriteCursor, player, &g_Cars[0]);
+    } else {
+        StoreReplayTimeAttackFrame(g_ReplayWriteCursor, player);
+    }
+
+    g_ReplayWriteCursor++;
+    if (g_ReplayWriteCursor == g_ReplayFrameCount) {
+        g_ReplayWriteCursor = 0;
+        g_ReplayBufferWrapped = 1;
+    }
+}
 
 void ResetReplayFrameCounts(void) {
     g_ReplayFramesGp = g_ReplayFrameBuffer.grandPrixReplay;

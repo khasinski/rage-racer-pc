@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
 #include "game/state.h"
@@ -16,6 +17,8 @@ s32 g_ReplayBufferWrapped;
 ReplayModelValue g_ReplayPlayerModel;
 ReplayModelValue g_ReplayRivalModel;
 s16 g_GrandPrixMode;
+PlayerCarRuntime g_PlayerCar;
+GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 
 static GameCarRuntime MakeCar(s32 base, s16 modelIndex) {
     GameCarRuntime car = {0};
@@ -105,9 +108,23 @@ static void TestTimeAttackRecording(void) {
     assert(frame->tiltCounter == 311);
 }
 
+static void TestRecordingCursorWrap(void) {
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_GrandPrixMode = 1;
+    g_ReplayWriteCursor = 1;
+    g_ReplayFrameCount = 2;
+    g_ReplayBufferWrapped = 0;
+
+    RecordReplayFrame();
+    assert(g_ReplayWriteCursor == 0);
+    assert(g_ReplayBufferWrapped == 1);
+}
+
 int main(void) {
     TestReplayBufferReset();
     TestGrandPrixRecording();
     TestTimeAttackRecording();
+    TestRecordingCursorWrap();
     return 0;
 }
