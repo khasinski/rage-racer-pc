@@ -482,6 +482,23 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    /* Invalid track state must not reach the modulo used for lap-relative
+     * gaps, and it leaves a neutral avoidance decision behind. */
+    memset(&g_Cars[0], 0, sizeof(g_Cars[0]));
+    g_Cars[0].avoidanceActive = 1;
+    g_Cars[0].avoidanceStep = 9;
+    g_Cars[0].nearbyCarCount = 4;
+    g_Cars[0].aiLateralOffset = 23;
+    g_TrackLength = 0;
+    UpdateCarTrafficAvoidance(&g_Cars[0], 0);
+    if (g_Cars[0].avoidanceActive != 0 || g_Cars[0].avoidanceStep != 0 ||
+        g_Cars[0].nearbyCarCount != 0 ||
+        g_Cars[0].avoidanceTargetOffset != 23) {
+        puts("invalid track did not reset traffic avoidance");
+        return 1;
+    }
+    g_TrackLength = TRACK_LENGTH;
+
     /* The retail counter increments through an unsigned halfword view. Keep
      * the wrap defined when the decompiler's pointer union is removed. */
     memset(g_Cars, 0, sizeof(g_Cars));
