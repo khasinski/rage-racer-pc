@@ -51,7 +51,7 @@ int main(void) {
     SelectTrackCameraTable(&fixture.table, 0);
     CHECK(g_TrackCameras == NULL);
 
-    fixture.table.defaultOffset = sizeof(fixture.table) - 1;
+    fixture.table.defaultOffset = sizeof(fixture.table) - sizeof(s32);
     SelectTrackCameraTable(&fixture.table, 0);
     CHECK(g_TrackCameras == NULL);
 

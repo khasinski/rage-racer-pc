@@ -16,8 +16,6 @@ PathSceneryRotationData *g_PathSceneryRotData;
 TrackRenderTable *g_TrackRenderTable;
 CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
-char g_MsgEventOk[] = "";
-
 static s32 s_failures;
 
 static void Check(s32 condition, const char *label) {
@@ -52,7 +50,11 @@ static void TestTrackEventData(void) {
     Check((u8 *)g_FlybySceneryData == offsetBase + 160,
           "flyby scenery relocation");
 
-    data.offsets.routeScenery = 1;
+    data.offsets.routeScenery = sizeof(data.offsets) - sizeof(s32);
+    InstallTrackEventData(&data);
+    Check(g_RouteSceneryData == NULL, "event header offset rejected");
+
+    data.offsets.routeScenery = sizeof(data.offsets) + 1;
     InstallTrackEventData(&data);
     Check(g_RouteSceneryData == NULL, "misaligned event offset rejected");
 
