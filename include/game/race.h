@@ -264,7 +264,6 @@ extern s16 g_TrackZoneCode;
  * convention, not the exception.
  */
 void DrawFlybyScenery(void);
-u8 *DrawHudDigit(u8 *prim, s32 x, s32 y, s32 digit, u16 clut);
 void DrawLostRaceCaption(s32 level);
 void DrawPathScenery(void);
 void DrawRoundScreen(void);

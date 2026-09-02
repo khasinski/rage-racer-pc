@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
+
 typedef struct StartCountdownTiming {
     s32 visible;
     s32 phase;

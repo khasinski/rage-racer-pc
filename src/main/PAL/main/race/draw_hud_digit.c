@@ -1,5 +1,6 @@
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/render_internal.h"
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut) {
