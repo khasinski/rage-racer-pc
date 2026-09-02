@@ -51,6 +51,17 @@ static void TestTrackEventData(void) {
           "path rotation relocation");
     Check((u8 *)g_FlybySceneryData == offsetBase + 160,
           "flyby scenery relocation");
+
+    data.offsets.routeScenery = 1;
+    InstallTrackEventData(&data);
+    Check(g_RouteSceneryData == NULL, "misaligned event offset rejected");
+
+    InstallTrackEventData(NULL);
+    Check(g_TrackEventData == NULL && g_RouteSceneryData == NULL &&
+              g_RaceIntroCameraScript == NULL &&
+              g_PathSceneryPosData == NULL && g_PathSceneryRotData == NULL &&
+              g_FlybySceneryData == NULL,
+          "null event table clears published views");
 }
 
 static void TestSimpleTables(void) {
