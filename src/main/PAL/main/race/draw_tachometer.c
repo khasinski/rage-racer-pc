@@ -9,40 +9,64 @@
 
 #include "rage/hud_config.h"
 
+enum {
+    TACHOMETER_BLEND_FRAMES = 96,
+    TACHOMETER_DARK_LEVEL = 32,
+    TACHOMETER_NORMAL_LEVEL = 128,
+};
+
+static s32 ClampTachometerBlend(s32 amount) {
+    if (amount < 0) {
+        return 0;
+    }
+    if (amount > TACHOMETER_BLEND_FRAMES) {
+        return TACHOMETER_BLEND_FRAMES;
+    }
+    return amount;
+}
+
+static u8 BlendTachometerChannel(s32 from, s32 to, s32 amount) {
+    return (u8)((from * (TACHOMETER_BLEND_FRAMES - amount) + to * amount) /
+                TACHOMETER_BLEND_FRAMES);
+}
+
+static void SetTachometerFaceBrightness(s32 brightness) {
+    g_TachoFaceR = (u8)brightness;
+    g_TachoFaceG = (u8)brightness;
+    g_TachoFaceB = (u8)brightness;
+}
+
 static void SetTachometerNeedleColor(POLY_F4 *needle,
                                     const CarTachometerSpec *spec, s32 type,
                                     s32 amount, GameFrameContext *frame) {
     if (type == 1) {
-        if (amount > 96) amount = 96;
-        g_TachoFaceR = -128 - amount;
-        g_TachoFaceG = -128 - amount;
-        g_TachoFaceB = -128 - amount;
-        needle->r0 = (amount * 32 + spec->needleColor[0] * (96 - amount)) / 96;
-        needle->g0 = (amount * 32 + spec->needleColor[1] * (96 - amount)) / 96;
-        needle->b0 = (amount * 32 + spec->needleColor[2] * (96 - amount)) / 96;
+        amount = ClampTachometerBlend(amount);
+        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL - amount);
+        needle->r0 = BlendTachometerChannel(
+            spec->needleColor[0], TACHOMETER_DARK_LEVEL, amount);
+        needle->g0 = BlendTachometerChannel(
+            spec->needleColor[1], TACHOMETER_DARK_LEVEL, amount);
+        needle->b0 = BlendTachometerChannel(
+            spec->needleColor[2], TACHOMETER_DARK_LEVEL, amount);
     } else if (type == 3) {
-        amount -= 32;
-        if (amount < 0) amount = 0;
-        g_TachoFaceR = amount + 32;
-        g_TachoFaceG = amount + 32;
-        g_TachoFaceB = amount + 32;
-        needle->r0 = ((96 - amount) * 32 + spec->needleColor[0] * amount) / 96;
-        needle->g0 = ((96 - amount) * 32 + spec->needleColor[1] * amount) / 96;
-        needle->b0 = ((96 - amount) * 32 + spec->needleColor[2] * amount) / 96;
+        amount = ClampTachometerBlend(amount - TACHOMETER_DARK_LEVEL);
+        SetTachometerFaceBrightness(TACHOMETER_DARK_LEVEL + amount);
+        needle->r0 = BlendTachometerChannel(
+            TACHOMETER_DARK_LEVEL, spec->needleColor[0], amount);
+        needle->g0 = BlendTachometerChannel(
+            TACHOMETER_DARK_LEVEL, spec->needleColor[1], amount);
+        needle->b0 = BlendTachometerChannel(
+            TACHOMETER_DARK_LEVEL, spec->needleColor[2], amount);
         frame->layout.raceHud.tachometerFace.clut = 0x33A8;
     } else if (type == 2) {
         frame->layout.raceHud.tachometerFace.clut = 0x33E8;
-        g_TachoFaceR = 0x80;
-        g_TachoFaceG = 0x80;
-        g_TachoFaceB = 0x80;
+        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL);
         needle->r0 = spec->needleColorAlt[0];
         needle->g0 = spec->needleColorAlt[1];
         needle->b0 = spec->needleColorAlt[2];
     } else {
         frame->layout.raceHud.tachometerFace.clut = 0x33A8;
-        g_TachoFaceR = 0x80;
-        g_TachoFaceG = 0x80;
-        g_TachoFaceB = 0x80;
+        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL);
         needle->r0 = spec->needleColor[0];
         needle->g0 = spec->needleColor[1];
         needle->b0 = spec->needleColor[2];

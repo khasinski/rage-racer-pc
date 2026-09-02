@@ -165,6 +165,20 @@ int main(void) {
     CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
     CHECK(g_TachoFaceR == 32);
 
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    DrawTachometer(0, 0, 1, 48);
+    needle = (POLY_F4 *)packets;
+    CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
+    CHECK(g_TachoFaceR == 80);
+
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    DrawTachometer(0, 0, 3, 80);
+    needle = (POLY_F4 *)packets;
+    CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
+    CHECK(g_TachoFaceR == 80);
+
     puts("tachometer tests passed");
     return 0;
 }
