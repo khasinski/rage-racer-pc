@@ -317,7 +317,7 @@ static void TestVoiceAndCarPhases(void) {
 }
 
 static void TestTrackPhases(void) {
-    u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 1024];
+    u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 2048];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
     static const s32 runtimeInstallSlots[8] = {2, 3, 4, 5, 6, 7, 9, 10};
     s32 i;
@@ -347,10 +347,13 @@ static void TestTrackPhases(void) {
           "track textures advance to runtime data");
 
     pack = (GameSceneAssetHeader *)g_AssetLoadCursor;
-    memset(pack, 0, 768);
-    for (i = 0; i < 11; i++) pack->offsets[i] = 64 + i * 64;
+    memset(pack, 0, 1088);
+    pack->offsets[0] = 64;
+    pack->offsets[1] = 192;
+    pack->offsets[2] = 448;
+    for (i = 3; i < 11; i++) pack->offsets[i] = 512 + (i - 3) * 64;
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
-    s_loadResult = 768;
+    s_loadResult = 1088;
     s_installCount = 0;
     s_seriesCamera = 0;
     LoadRaceAssets();
@@ -377,7 +380,7 @@ static void TestTrackPhases(void) {
           "runtime course objects published");
 
     s_installCount = 0;
-    Check(InstallTrackRuntimeAssetPack(pack, 768, s_loadAssetIndex, 0) == 1,
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, s_loadAssetIndex, 0) == 1,
           "resident runtime pack is valid");
     Check(s_installCount == 8 && s_seriesCamera == 0,
           "scene loads install the default camera table");
@@ -385,15 +388,29 @@ static void TestTrackPhases(void) {
     pack->offsets[1] = pack->offsets[0];
     s_installCount = 0;
     s_trackIdentity = -1;
-    Check(InstallTrackRuntimeAssetPack(pack, 768, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1,
           "overlapping runtime blocks reject the pack before installation");
-    pack->offsets[1] = 128;
+    pack->offsets[1] = 192;
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 4;
-    Check(InstallTrackRuntimeAssetPack(pack, 768, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1,
           "oversized course-object table rejects the runtime pack");
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
+
+    pack->offsets[1] = pack->offsets[0] + 64;
+    s_installCount = 0;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+              s_installCount == 0,
+          "truncated render table rejects the runtime pack");
+    pack->offsets[1] = 192;
+
+    pack->offsets[2] = pack->offsets[1] + 128;
+    s_installCount = 0;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+              s_installCount == 0,
+          "truncated environment palettes reject the runtime pack");
+    pack->offsets[2] = 448;
 
     s_enableCdResult = 0;
     LoadRaceAssets();
