@@ -19,6 +19,7 @@ static s32 s_FarColor[3];
 static s32 s_Fog[2];
 
 s32 g_AssetLoadState;
+static s32 s_AssetLoadFailed;
 u8 *g_ImageBlockBuffer = s_ImageData;
 size_t g_ImageBlockSize = sizeof(s_ImageData);
 s32 g_FrameSyncThreshold;
@@ -34,6 +35,10 @@ Matrix g_DefaultColorMatrix;
 Matrix g_DefaultLightMatrix;
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
+
+s32 AssetLoadCompletedSuccessfully(void) {
+    return g_AssetLoadState == 0 && !s_AssetLoadFailed;
+}
 
 void SetDispMask(s32 enabled) { s_DisplayMask = enabled; }
 s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
@@ -79,6 +84,7 @@ static void ResetCalls(void) {
 
 static void TestWaitsForAssets(void) {
     ResetCalls();
+    s_AssetLoadFailed = 0;
     g_AssetLoadState = 1;
     g_SceneId = 99;
 
@@ -91,12 +97,26 @@ static void TestWaitsForAssets(void) {
     assert(g_SceneId == 99);
 }
 
+static void TestRejectsFailedAssets(void) {
+    ResetCalls();
+    g_AssetLoadState = 0;
+    s_AssetLoadFailed = 1;
+    g_SceneId = 99;
+
+    EnterAttractScene();
+
+    assert(s_UploadedImage == NULL);
+    assert(s_DisplaySetups == 0);
+    assert(g_SceneId == 99);
+}
+
 static void TestInitializesAttractScene(void) {
     ResetCalls();
     memset(&g_DefaultColorMatrix, 0x12, sizeof(g_DefaultColorMatrix));
     memset(&g_DefaultLightMatrix, 0x34, sizeof(g_DefaultLightMatrix));
     memset(&g_RenderState, 0x55, sizeof(g_RenderState));
     g_AssetLoadState = 0;
+    s_AssetLoadFailed = 0;
 
     EnterAttractScene();
 
@@ -128,6 +148,7 @@ static void TestInitializesAttractScene(void) {
 
 int main(void) {
     TestWaitsForAssets();
+    TestRejectsFailedAssets();
     TestInitializesAttractScene();
     return 0;
 }

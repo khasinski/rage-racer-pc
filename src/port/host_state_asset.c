@@ -57,6 +57,7 @@ size_t PortAssetRoomAt(const void *at) {
     return BufferRoomAt(at, g_LoadBuffer, sizeof(g_LoadBuffer));
 }
 u32 g_StreamSectorLimit;
+s32 g_AssetLoadFailed;
 u8 *g_AssetBlockPtr2;
 size_t g_AssetBlock2Size;
 u32 g_StreamSectorCount;

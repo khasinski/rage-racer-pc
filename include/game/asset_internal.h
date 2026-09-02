@@ -7,6 +7,12 @@
 
 extern TeamLogoSample *g_TeamLogoSampleData;
 extern char g_TextNowLoading[];
+extern s32 g_AssetLoadFailed;
+
+static inline void FailAssetLoad(void) {
+    g_AssetLoadFailed = 1;
+    g_AssetLoadState = 0;
+}
 
 s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,
                      s32 resetCdAudio);

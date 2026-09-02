@@ -13,6 +13,7 @@
 
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
 u8 *g_AssetBlockPtr;
 size_t g_AssetBlockSize;
 u8 *g_AssetBlockPtr2;
@@ -212,7 +213,8 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetLoadState = 1;
     s_startAudioResult = -1;
     LoadRaceAssets();
-    Check(g_AssetLoadState == 0 && g_AssetLoadCursor == destination,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_AssetLoadCursor == destination,
           "failed race-voice transfer cancels loading without advancing");
 
     g_AssetLoadState = 1;

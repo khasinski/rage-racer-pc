@@ -13,6 +13,7 @@
 
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
 s32 g_LoadBuffer[64];
 u8 *g_AssetBlockPtr;
 size_t g_AssetBlockSize;
@@ -101,6 +102,7 @@ void ResetCdAudioState(void) { s_resetCalls++; }
 void ResetAssetLoader(void) {
     s_resetCalls++;
     g_AssetLoadState = 0;
+    g_AssetLoadFailed = 0;
 }
 s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
     (void)base;
@@ -140,8 +142,10 @@ static void TestBootAssetPhases(void) {
     s_loadResult = 8;
     s_loadBufferUploadResult = 0;
     LoadBootAssets();
-    Check(g_AssetLoadState == 0 && g_AssetBlockPtr == NULL,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_AssetBlockPtr == NULL,
           "invalid title image cancels boot asset loading");
+    g_AssetLoadFailed = 0;
 
     g_AssetLoadState = 1;
     s_loadBufferUploads = 0;
@@ -170,8 +174,9 @@ static void TestBootAssetPhases(void) {
     s_startAudioResult = -1;
     s_loadResult = 1;
     LoadBootAssets();
-    Check(g_AssetLoadState == 0,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
           "failed main audio transfer cancels boot loading");
+    g_AssetLoadFailed = 0;
 
     g_AssetLoadState = 3;
     s_startAudioResult = 1;
@@ -269,9 +274,19 @@ static void TestSelectBgmRequests(void) {
     Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
           "acknowledged BGM request becomes idle");
 
+    Check(RequestSelectBgmAssets() == 1,
+          "new BGM request can follow an acknowledged request");
+    g_AssetLoadState = 0;
+    g_AssetLoadFailed = 1;
+    Check(RequestSelectBgmAssets() == -1,
+          "failed BGM request reports failure");
+    Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
+          "failed BGM request becomes idle after acknowledgement");
+
     Check(RequestSelectBgmAssetsKeepAudioSlots() == 1,
           "keep-slots BGM request remains pending");
-    Check(g_AssetLoadState == 2 && s_resetCalls == 2,
+    Check(!AssetLoadHasFailed(), "new request clears prior failure");
+    Check(g_AssetLoadState == 2 && s_resetCalls == 3,
           "keep-slots request skips slot close phase but resets CD state");
 }
 
@@ -309,7 +324,8 @@ int main(void) {
     g_AssetBlockPtr = NULL;
     s_loadResult = sizeof(pack.bytes);
     LoadSelectBgmAssets();
-    Check(g_AssetLoadState == 0 && g_AssetBlockPtr == NULL,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_AssetBlockPtr == NULL,
           "overlapping BGM blocks cancel installation");
     header->offsets[1] = 32;
 
@@ -362,7 +378,8 @@ int main(void) {
     g_AssetLoadState = 1;
     s_modelBankRegistrations = 0;
     LoadOptionScreenAssets();
-    Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 0,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_modelBankRegistrations == 0,
           "invalid OPTION offsets cancel installation");
 
     ((OptionScreenAsset *)pack.bytes)->imageOffset = 48;
@@ -371,7 +388,8 @@ int main(void) {
     s_loadResult = sizeof(s32) - 1;
     s_modelBankRegistrations = 0;
     LoadOptionScreenAssets();
-    Check(g_AssetLoadState == 0 && g_ImageBlockBuffer == NULL &&
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_ImageBlockBuffer == NULL &&
               s_modelBankRegistrations == 0,
           "truncated OPTION header cancels installation");
 
@@ -424,7 +442,8 @@ int main(void) {
     g_AssetLoadState = 2;
     g_RaceVoiceHeaderSize = -1;
     LoadRoundAssets();
-    Check(g_AssetLoadState == 0 && g_RaceVoiceHeaderSize == -1,
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_RaceVoiceHeaderSize == -1,
           "inconsistent voice offsets cancel installation");
 
     g_GrandPrixMode = 0;

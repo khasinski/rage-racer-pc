@@ -37,7 +37,7 @@ static void BeginCarSelectAudioLoad(void) {
     };
 
     if (StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) < 0) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = CAR_SELECT_WAIT_FOR_AUDIO;
@@ -74,7 +74,7 @@ static void LoadCarSelectSharedAssets(void) {
             (size_t)header->teamLogoSamplesOffset -
                 offsetof(CarSelectAssetHeader, sceneModelBank),
             CAR_SELECT_SCENE_MODEL_BANK)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_TeamLogoSampleData =
@@ -85,13 +85,13 @@ static void LoadCarSelectSharedAssets(void) {
     if (!RegisterCourseModels(
             courseModels,
             (size_t)(header->imageOffset - header->courseModelsOffset))) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     image = ResolveAssetAddress(header, header->imageOffset);
     if (!UploadImageAsset(GetImageAssetHeaderWords(image),
                           (size_t)(loadedSize - header->imageOffset))) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_CarModelBuffer = image;
@@ -112,7 +112,7 @@ static void LoadInitialCarSelectModel(void) {
 
     if (!InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer),
                               (size_t)loadedSize, 0, carIndex)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     SelectCarModelSlot(0);

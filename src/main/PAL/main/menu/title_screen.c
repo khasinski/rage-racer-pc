@@ -241,7 +241,7 @@ void UpdateMainMenuInput(void) {
 
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
-        if (g_AssetLoadState != 0) {
+        if (!AssetLoadCompletedSuccessfully()) {
             ResetAssetLoader();
         }
         ShuffleBgmOrder();

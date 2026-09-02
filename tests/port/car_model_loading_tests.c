@@ -9,6 +9,7 @@
 
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
 s32 g_PendingCarModelIndex;
 u8 *g_AssetBlockPtr;
 size_t g_AssetBlockSize;

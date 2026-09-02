@@ -5,6 +5,7 @@
 
 s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
 AssetRequestType g_AssetRequestType;
 GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
 s32 g_LoadBuffer[64];

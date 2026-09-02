@@ -55,7 +55,7 @@ void UpdateBootLogoScene(void) {
 
     if (g_BootLogoHoldTimer > 0) {
         g_BootLogoHoldTimer--;
-        if ((g_AssetLoadState == 0) && (g_PadHeld != 0)) {
+        if (AssetLoadCompletedSuccessfully() && g_PadHeld != 0) {
             g_BootLogoHoldTimer = 0;
         }
     } else {

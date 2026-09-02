@@ -48,7 +48,7 @@ static void BeginRaceVoiceLoad(void) {
         .vabBodySize = g_AssetSubBlockSize,
     };
     if (StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, &asset) < 0) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadCursor += g_RaceVoiceHeaderSize;
@@ -92,7 +92,7 @@ static void LoadPlayerCarRaceAssets(void) {
             ENGINE_SOUND_PARAMETER_TABLE_SIZE ||
         pack->imageOffset <= pack->audioBodyOffset ||
         pack->imageOffset >= loadedSize) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
 
@@ -103,7 +103,7 @@ static void LoadPlayerCarRaceAssets(void) {
     if (!IsValidImageAsset(
             GetImageAssetHeaderWords(carImage),
             (size_t)(loadedSize - pack->imageOffset))) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     audioAsset = (AudioSlotAsset){
@@ -117,7 +117,7 @@ static void LoadPlayerCarRaceAssets(void) {
             (size_t)(pack->audioBodyOffset - pack->audioSequenceOffset),
     };
     if (StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &audioAsset) < 0) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     GameRenderWorldSetTrackCarAsset(carAsset);
@@ -139,7 +139,7 @@ static void LoadTrackTextureAssets(void) {
 
     if (!InstallTrackTextureAssetPack(g_AssetLoadCursor,
                                       (size_t)loadedSize)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = RACE_LOAD_TRACK_RUNTIME;
@@ -155,7 +155,7 @@ static void LoadTrackRuntimeAssets(void) {
 
     if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
                                       assetIndex, 1)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = RACE_ENABLE_CD_AUDIO;

@@ -19,7 +19,7 @@ void LoadOptionScreenAssets(void) {
     if (loadedSize == 0) return;
     asset = GetOptionScreenAsset(g_AssetBase);
     if (loadedSize < (s32)sizeof(asset->imageOffset)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
 
@@ -30,7 +30,7 @@ void LoadOptionScreenAssets(void) {
             (size_t)asset->imageOffset -
                 offsetof(OptionScreenAsset, modelBank),
             0)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     SelectModelBank(0);

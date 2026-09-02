@@ -71,7 +71,7 @@ static void UpdateAttractDemoStart(void) {
         SetDispMask(1);
     }
 
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         InitTrackScene();
 
         g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
@@ -132,7 +132,7 @@ void UpdateAttractDemoScene(void) {
     }
 
     if (g_SceneId == 0x1E && (g_PadPressed & PAD_CONFIRM) != 0) {
-        if (g_AssetLoadState != 0) {
+        if (!AssetLoadCompletedSuccessfully()) {
             ResetAssetLoader();
             g_SceneId = 3;
             g_StreamReturnScene = 0;

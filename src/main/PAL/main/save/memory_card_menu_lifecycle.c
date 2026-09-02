@@ -34,7 +34,7 @@ void EnterMemoryCardMenu(void) {
 void EnterMemoryCardMenuFromLoad(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
-    if (g_AssetLoadState != 0) return;
+    if (!AssetLoadCompletedSuccessfully()) return;
 
     if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
                           g_ImageBlockSize)) {

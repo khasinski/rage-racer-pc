@@ -26,7 +26,7 @@ static void InitAttractLighting(void) {
 void EnterAttractScene(void) {
     SetDispMask(0);
     g_FrameSyncThreshold = 0x80;
-    if (g_AssetLoadState != 0) {
+    if (!AssetLoadCompletedSuccessfully()) {
         return;
     }
 

@@ -58,7 +58,7 @@ static void UpdatePrologueLoad(void) {
 }
 
 static void UpdatePrologueLoadStep0(void) {
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         if (g_ImageBlockBuffer > g_AssetBase &&
             InstallTrackTextureAssetPack(
                 g_AssetBase,
@@ -72,7 +72,7 @@ static void UpdatePrologueLoadStep0(void) {
 }
 
 static void UpdatePrologueLoadStep1(void) {
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         g_FadeStep = 4;
         RequestCdTrack(2);
         g_PrologueStep = 2;

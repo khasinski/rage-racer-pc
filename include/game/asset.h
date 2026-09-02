@@ -47,6 +47,11 @@ extern AssetRequestType g_AssetRequestType;
 /* Asset-load state machine phase (0 idle; 1..6 drive LoadAsset loads). */
 extern s32 g_AssetLoadState;
 
+/* Request functions return 1 while loading, 0 after successful completion,
+ * and -1 after a loader rejected the asset. */
+s32 AssetLoadHasFailed(void);
+s32 AssetLoadCompletedSuccessfully(void);
+
 /* The asset sub-block currently being installed: `assetBase + <header offset>`,
  * then handed to UploadImageAsset / UploadImageEntry. */
 extern u8 *g_AssetBlockPtr;

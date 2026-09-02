@@ -21,7 +21,7 @@ static void LoadStandaloneTrackRuntimeAssets(void) {
     if (loadedSize == 0) return;
     if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
                                       assetIndex, 0)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = TRACK_DATA_ENABLE_CD_AUDIO;

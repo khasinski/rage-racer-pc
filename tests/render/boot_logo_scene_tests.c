@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 s32 g_AssetLoadState;
+static s32 s_assetLoadFailed;
 s32 g_BootLogoHoldTimer;
 BootLogoState g_BootLogoState;
 s32 g_BootLogoTimer;
@@ -17,6 +18,10 @@ static s32 s_display480Calls;
 static s32 s_endingDraws;
 static s32 s_logoDraws;
 static s32 s_fmvReturnScene;
+
+s32 AssetLoadCompletedSuccessfully(void) {
+    return g_AssetLoadState == 0 && !s_assetLoadFailed;
+}
 
 void SetDispMask(s32 enabled) {
     s_displayMask = enabled;
@@ -92,8 +97,15 @@ int main(void) {
     CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_OUT);
 
     g_BootLogoHoldTimer = 10;
+    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
     g_AssetLoadState = 0;
+    s_assetLoadFailed = 1;
     g_PadHeld = 1;
+    UpdateBootLogoScene();
+    CHECK(g_BootLogoHoldTimer == 9);
+    CHECK(g_BootLogoState == BOOT_LOGO_STATE_HOLD);
+
+    s_assetLoadFailed = 0;
     UpdateBootLogoScene();
     CHECK(g_BootLogoHoldTimer == 0);
     CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_OUT);

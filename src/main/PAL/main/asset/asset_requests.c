@@ -33,7 +33,7 @@ static void LoadBootTitleScreen(void) {
     if (loadedSize == 0) return;
     g_LoadBufferImageSize = (size_t)loadedSize;
     if (!UploadLoadBufferImage()) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetBlockPtr = base + loadedSize;
@@ -61,7 +61,7 @@ static void LoadBootAudioBody(void) {
         .vabBodySize = (size_t)loadedSize,
     };
     if (StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) < 0) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = BOOT_WAIT_FOR_AUDIO;
@@ -89,7 +89,7 @@ static void LoadBootCarScreen(void) {
     if (loadedSize == 0) return;
     if (!UploadImageAsset(GetImageAssetHeaderWords(assetBase),
                           (size_t)loadedSize)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
@@ -163,7 +163,7 @@ static void LoadSelectBgmAssetPack(void) {
         header->sequenceOffset <= header->audioHeaderOffset ||
         header->audioBodyOffset <= header->sequenceOffset ||
         header->audioBodyOffset >= loadedSize) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetBlockPtr = g_AssetBase + header->audioHeaderOffset;

@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 s32 g_AssetLoadState;
+static s32 s_assetLoadFailed;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
 s32 g_BgmChangeDelay;
@@ -35,6 +36,10 @@ static s32 s_trackInits;
 static u8 s_courseAsset[2];
 static u8 *s_installedCourseBase;
 static size_t s_installedCourseSize;
+
+s32 AssetLoadCompletedSuccessfully(void) {
+    return g_AssetLoadState == 0 && !s_assetLoadFailed;
+}
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void SetupDisplay240(s32 r, s32 g, s32 b) {
@@ -89,6 +94,7 @@ static void ResetCalls(void) {
     s_lastFade = -1;
     s_textCalls = 0;
     s_trackInits = 0;
+    s_assetLoadFailed = 0;
 }
 
 int main(void) {
@@ -120,6 +126,14 @@ int main(void) {
           s_installedCourseSize == sizeof(s_courseAsset));
     CHECK(s_dataRequests == 1);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
+
+    ResetCalls();
+    g_AssetLoadState = 0;
+    s_assetLoadFailed = 1;
+    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
+    UpdateBgmSelectLoad();
+    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
+    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
 
     ResetCalls();
     g_AssetLoadState = 0;

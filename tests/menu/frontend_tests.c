@@ -13,6 +13,7 @@
 
 s32 g_AnimTimer;
 s32 g_AssetLoadState;
+static s32 s_assetLoadFailed;
 s32 g_AttractCycleCount;
 s32 g_ClassWinCount;
 s32 g_CourseIndex;
@@ -48,6 +49,10 @@ static s32 s_lastAlpha;
 static s32 s_lastPanelClut;
 static s32 s_randomValues[4];
 static s32 s_randomIndex;
+
+s32 AssetLoadCompletedSuccessfully(void) {
+    return g_AssetLoadState == 0 && !s_assetLoadFailed;
+}
 
 static void DrawHandler(void) { s_drawHandlerCalls++; }
 
@@ -154,6 +159,7 @@ static void Reset(void) {
     g_MainMenuSlide = 0;
     g_ClassWinCount = 0;
     g_AssetLoadState = 0;
+    s_assetLoadFailed = 0;
     s_drawHandlerCalls = 0;
     s_fmvCalls = 0;
     s_lastCue = 0;
@@ -197,6 +203,10 @@ int main(void) {
     g_AssetLoadState = 0;
     UpdateFrontend();
     CHECK(g_SceneTimer == 0x1CE && s_raceRequests == 1);
+    s_assetLoadFailed = 1;
+    UpdateFrontend();
+    CHECK(g_SceneTimer == 0x1CE);
+    s_assetLoadFailed = 0;
     UpdateFrontend();
     CHECK(g_SceneTimer == 0x1CF);
 

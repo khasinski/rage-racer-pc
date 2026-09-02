@@ -80,7 +80,7 @@ void DrawMenuCarView(void) {
         if (angleDelta < 0) {
             if (currentAngle <= 299999) {
                 if (g_CarSwapToIndex >= 0) {
-                    if (g_AssetLoadState != 0) {
+                    if (!AssetLoadCompletedSuccessfully()) {
                         return;
                     }
                     SwapCarModelSlot();
@@ -95,7 +95,7 @@ void DrawMenuCarView(void) {
             }
         } else {
             if (currentAngle > 900000 && g_CarSwapToIndex >= 0) {
-                if (g_AssetLoadState != 0) {
+                if (!AssetLoadCompletedSuccessfully()) {
                     return;
                 }
                 SwapCarModelSlot();

@@ -419,10 +419,21 @@ static void ScenarioApplyCarSetup(void) {
  * the race request loads the course, the track data and the car audio.
  *
  * The two request styles differ and cannot be polled the same way.
- * RequestCarSelectAssets and RequestRaceAssets return 1 while busy and 0 once,
- * on the call after the load lands. RequestRoundAssets has no busy guard: it
+ * RequestCarSelectAssets and RequestRaceAssets return 1 while busy, 0 after
+ * success and -1 after failure, on the call after the load lands.
+ * RequestRoundAssets has no busy guard: it
  * resets the loader whenever it is called mid-load, so it is issued once and
  * waited on through g_AssetLoadState. */
+static int ScenarioAssetRequestSucceeded(s32 result, const char *stage) {
+    if (result < 0) {
+        fprintf(stderr, "rage-port: direct boot %s asset load failed\n",
+                stage);
+        s_scenario.enabled = 0;
+        return 0;
+    }
+    return result == 0;
+}
+
 static void ScenarioDirectBoot(void) {
     static const char *const stepNames[] = {
         "setup", "bgm-assets", "car-assets", "round-request", "round-wait",
@@ -444,12 +455,14 @@ static void ScenarioDirectBoot(void) {
     case RAGE_DIRECT_BGM_ASSETS:
         /* Asset 7 carries the sequence bank, and leaves behind the three block
          * pointers LoadCarSelectAssets opens its own first state with. */
-        if (RequestSelectBgmAssets() == 0) {
+        if (ScenarioAssetRequestSucceeded(RequestSelectBgmAssets(),
+                                          "BGM")) {
             s_scenario.directStep = RAGE_DIRECT_CAR_ASSETS;
         }
         break;
     case RAGE_DIRECT_CAR_ASSETS:
-        if (RequestCarSelectAssets() == 0) {
+        if (ScenarioAssetRequestSucceeded(RequestCarSelectAssets(),
+                                          "car-select")) {
             /* EnterCarSelectScreen's one piece of non-UI work. The load above
              * leaves the player's model in slot 0 but its texture still out of
              * VRAM; RelocateCarModel below moves the model without uploading
@@ -464,7 +477,11 @@ static void ScenarioDirectBoot(void) {
         s_scenario.directStep = RAGE_DIRECT_ROUND_WAIT;
         break;
     case RAGE_DIRECT_ROUND_WAIT:
-        if (g_AssetLoadState == 0) {
+        if (AssetLoadHasFailed()) {
+            fprintf(stderr,
+                    "rage-port: direct boot round asset load failed\n");
+            s_scenario.enabled = 0;
+        } else if (g_AssetLoadState == 0) {
             /* EnterRoundScreen's own work, minus the screen it draws. */
             CloseLoadedAudioSlots();
             UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
@@ -477,7 +494,7 @@ static void ScenarioDirectBoot(void) {
         }
         break;
     case RAGE_DIRECT_RACE_ASSETS: {
-        if (RequestRaceAssets() == 0) {
+        if (ScenarioAssetRequestSucceeded(RequestRaceAssets(), "race")) {
             RoundBgmChoice bgm = ChooseRoundBgm(
                 g_BgmSelection, g_BgmShuffleOrder, g_BgmTrackCount,
                 g_BgmShuffleIndex);

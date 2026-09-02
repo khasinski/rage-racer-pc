@@ -7,6 +7,7 @@
 #include "game/state.h"
 
 s32 g_AssetLoadState;
+static s32 s_assetLoadFailed;
 static u8 s_imageData[16];
 u8 *g_ImageBlockBuffer = s_imageData;
 size_t g_ImageBlockSize = sizeof(s_imageData);
@@ -48,6 +49,10 @@ static s32 s_fadeColor;
 static s32 s_fadeTpage;
 static s32 s_imageUploads;
 static s32 s_failures;
+
+s32 AssetLoadCompletedSuccessfully(void) {
+    return g_AssetLoadState == 0 && !s_assetLoadFailed;
+}
 
 #define CHECK(condition)                                                                  \
     do {                                                                                  \

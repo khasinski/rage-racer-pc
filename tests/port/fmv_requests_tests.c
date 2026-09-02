@@ -8,6 +8,7 @@
 
 AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
 s32 g_PendingCarModelIndex;
 u8 *g_AssetLoadCursor;
 s32 g_CourseIndex;
@@ -51,6 +52,7 @@ void ResetAssetLoader(void) {
     s_resetLoaderCalls++;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     g_AssetLoadState = 0;
+    g_AssetLoadFailed = 0;
 }
 s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadAssetIndex = assetIndex;

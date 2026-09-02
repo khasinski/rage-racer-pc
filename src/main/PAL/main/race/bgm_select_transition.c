@@ -72,7 +72,7 @@ static void UpdateBgmSelectTransition(void) {
 }
 
 void UpdateBgmSelectLoad(void) {
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         if (g_ImageBlockBuffer > g_AssetBase &&
             InstallTrackTextureAssetPack(
                 g_AssetBase,
@@ -85,14 +85,14 @@ void UpdateBgmSelectLoad(void) {
 }
 
 void UpdateBgmSelectFadeIn(void) {
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         g_FadeStep = BGM_SELECT_FADE_OUT_STEP;
     }
     UpdateBgmSelectTransition();
 }
 
 void ExitBgmSelect(void) {
-    if (g_AssetLoadState == 0) {
+    if (AssetLoadCompletedSuccessfully()) {
         g_FadeStep = BGM_SELECT_FADE_OUT_STEP;
     }
 

@@ -66,7 +66,7 @@ void LoadPendingCarModelAsset(void) {
         return;
     }
     if ((u32)carIndex >= GAME_CAR_COUNT) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
 
@@ -81,7 +81,7 @@ void LoadPendingCarModelAsset(void) {
     asset = GetCarModelAsset(destination);
     if (!InstallCarModelAsset(asset, (size_t)loadedSize, targetSlot,
                               carIndex)) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_AssetLoadState = 0;

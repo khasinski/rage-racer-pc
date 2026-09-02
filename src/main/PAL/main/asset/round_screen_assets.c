@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/car.h"
 #include "game/random.h"
 #include "game/race.h"
@@ -36,10 +37,11 @@ s32 RequestRoundAssets(void) {
 
     if (g_AssetRequestType == ASSET_REQUEST_ROUND_SCREEN) {
         g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return 0;
+        return g_AssetLoadFailed != 0 ? -1 : 0;
     }
 
     g_AssetRequestType = ASSET_REQUEST_ROUND_SCREEN;
+    g_AssetLoadFailed = 0;
     g_AssetLoadState = ROUND_LOAD_SCREEN;
     return 1;
 }
@@ -81,7 +83,7 @@ static void LoadRoundVoiceBank(void) {
         header->audioBodyOffset !=
             header->audioHeaderOffset + header->sharedHeaderSize ||
         header->audioBodyOffset >= loadedSize) {
-        g_AssetLoadState = 0;
+        FailAssetLoad();
         return;
     }
     g_RaceVoiceHeaderSize = header->sharedHeaderSize;

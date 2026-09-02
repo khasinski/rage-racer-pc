@@ -107,13 +107,13 @@ static void UpdateAttractRaceLoading(void) {
         g_SceneTimer++;
         break;
     case FRONTEND_ATTRACT_START_RACE:
-        if (g_AssetLoadState == 0) {
+        if (AssetLoadCompletedSuccessfully()) {
             RequestRaceStart();
             g_SceneTimer++;
         }
         break;
     case FRONTEND_ATTRACT_WAIT_RACE:
-        if (g_AssetLoadState == 0) {
+        if (AssetLoadCompletedSuccessfully()) {
             g_SceneTimer = FRONTEND_ATTRACT_READY;
         }
         break;
