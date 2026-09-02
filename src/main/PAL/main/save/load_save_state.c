@@ -34,8 +34,10 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
         return 0;
     }
 
-    g_PadMappingIndex = block->padMappingIndex;
-    g_NegconMappingIndex = block->negconMappingIndex;
+    g_PadMappingIndex =
+        ClampControllerMappingIndex(block->padMappingIndex);
+    g_NegconMappingIndex =
+        ClampControllerMappingIndex(block->negconMappingIndex);
     g_NegconSteerNeutral = block->negconSteerNeutral;
     g_NegconSteerPlay = block->negconSteerPlay;
     g_NegconNeutralI = block->negconNeutralI;

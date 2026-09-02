@@ -5,11 +5,6 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 
-enum {
-    CONTROLLER_MAPPING_FIRST = 0,
-    CONTROLLER_MAPPING_LAST = 7,
-};
-
 void DrawControllerConfigScreen(void) {
     s32 selection;
     GameOrderingTableEntry *ot;
@@ -17,6 +12,7 @@ void DrawControllerConfigScreen(void) {
 
     selection = g_PadType == PAD_TYPE_NEGCON ? g_NegconMappingIndex
                                               : g_PadMappingIndex;
+    selection = ClampControllerMappingIndex(selection);
     if (g_PadErrorState != PAD_ERROR_STATE_NONE) {
         if (g_PadErrorState == PAD_ERROR_STATE_DISCONNECTED) {
             DrawProportionalText(0x3A, 0xEA, g_MsgInsertController, 0x7812);

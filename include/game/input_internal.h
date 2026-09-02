@@ -5,6 +5,22 @@
 
 extern u16 g_PadButtonMapping[16];
 typedef s16 ControllerMappingIndex;
+enum {
+    CONTROLLER_MAPPING_COUNT = 8,
+    CONTROLLER_MAPPING_FIRST = 0,
+    CONTROLLER_MAPPING_LAST = CONTROLLER_MAPPING_COUNT - 1,
+};
+
+static inline ControllerMappingIndex ClampControllerMappingIndex(s32 index) {
+    if (index < CONTROLLER_MAPPING_FIRST) {
+        return CONTROLLER_MAPPING_FIRST;
+    }
+    if (index > CONTROLLER_MAPPING_LAST) {
+        return CONTROLLER_MAPPING_LAST;
+    }
+    return (ControllerMappingIndex)index;
+}
+
 extern ControllerMappingIndex g_PadMappingIndex;
 extern ControllerMappingIndex g_NegconMappingIndex;
 extern u16 g_PadMappingIndexSaved;

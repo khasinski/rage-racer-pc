@@ -21,6 +21,8 @@ void GameInitPad(void) {
 void LoadPadButtonMapping(s32 mapping0, s32 mapping1) {
     s32 i;
 
+    mapping0 = ClampControllerMappingIndex(mapping0);
+    mapping1 = ClampControllerMappingIndex(mapping1);
     for (i = 0; i < 8; i++) {
         g_PadButtonMapping[i] = g_PadButtonPresets[mapping0 * 8 + i];
         g_PadButtonMapping[8 + i] = g_NegconButtonPresets[mapping1 * 8 + i];

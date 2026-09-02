@@ -18,6 +18,26 @@ if(NOT MSVC)
 endif()
 add_test(NAME axis_curve COMMAND axis_curve_tests)
 set_tests_properties(axis_curve PROPERTIES LABELS functional)
+
+add_executable(controller_config_begin_tests
+    controller_config_begin_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/begin_controller_config.c)
+target_include_directories(controller_config_begin_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(controller_config_begin_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(controller_config_begin_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(controller_config_begin_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME controller_config_begin COMMAND controller_config_begin_tests)
+set_tests_properties(controller_config_begin PROPERTIES LABELS unit)
+
 # Everything UpdatePadState makes of a raw pad packet: the synthetic twist and
 # pressure a digital pad gets, the NeGcon's thresholds, the steering shaping,
 # auto-repeat and the two error paths.

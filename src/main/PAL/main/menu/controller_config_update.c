@@ -5,8 +5,6 @@
 #include "game/state.h"
 
 enum {
-    CONTROLLER_MAPPING_FIRST = 0,
-    CONTROLLER_MAPPING_LAST = 7,
     CONTROLLER_FLIP_FRAMES = 30,
     CONTROLLER_HALF_TURN = 2048,
 };

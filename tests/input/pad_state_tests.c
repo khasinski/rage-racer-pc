@@ -415,6 +415,13 @@ static void ButtonMappingTests(void) {
         Check("negcon row", g_PadButtonMapping[8 + i], 0x200 + 5 * 8 + i);
     }
 
+    LoadPadButtonMapping(-1, CONTROLLER_MAPPING_COUNT);
+    for (i = 0; i < 8; i++) {
+        Check("low pad mapping clamps", g_PadButtonMapping[i], 0x100 + i);
+        Check("high negcon mapping clamps", g_PadButtonMapping[8 + i],
+              0x200 + CONTROLLER_MAPPING_LAST * 8 + i);
+    }
+
     /* The saved selections are what ApplyPadButtonMapping reinstates. */
     g_PadMappingIndex = 1;
     g_NegconMappingIndex = 3;

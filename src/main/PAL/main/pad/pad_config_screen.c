@@ -109,8 +109,9 @@ u8 *DrawPadConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
 /* One whole standard-pad diagram for the current selection: the five action
  * labels, then the five callout lines from each label to its button. */
 u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
-    const u8 *labelRow = &g_PadConfigLabelRows[g_PadMappingIndex * 5];
-    const u8 *buttonRow = &g_PadConfigButtonRows[g_PadMappingIndex * 5];
+    const s32 mapping = ClampControllerMappingIndex(g_PadMappingIndex);
+    const u8 *labelRow = &g_PadConfigLabelRows[mapping * 5];
+    const u8 *buttonRow = &g_PadConfigButtonRows[mapping * 5];
 
     prim = DrawPadConfigLabels(ot, prim, labelRow);
     return DrawPadConfigCallouts(
@@ -120,8 +121,9 @@ u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
 
 /* One whole NeGcon diagram for the current selection: labels, then callouts. */
 u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
-    const u8 *labelRow = &g_NegconConfigLabelRows[g_NegconMappingIndex * 5];
-    const u8 *buttonRow = &g_NegconConfigButtonRows[g_NegconMappingIndex * 5];
+    const s32 mapping = ClampControllerMappingIndex(g_NegconMappingIndex);
+    const u8 *labelRow = &g_NegconConfigLabelRows[mapping * 5];
+    const u8 *buttonRow = &g_NegconConfigButtonRows[mapping * 5];
 
     prim = DrawPadConfigLabels(ot, prim, labelRow);
     return DrawPadConfigCallouts(

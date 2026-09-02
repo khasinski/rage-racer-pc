@@ -105,6 +105,7 @@ int main(void) {
     GameSaveBlock saved;
     GameSaveBlock roundTrip;
     GameSaveBlock corrupt;
+    GameSaveBlock outOfRange;
 
     SetRepresentativeState();
     memset(&saved, 0xA5, sizeof(saved));
@@ -142,6 +143,16 @@ int main(void) {
     memset(&roundTrip, 0x5A, sizeof(roundTrip));
     StoreSaveStateBlock(&roundTrip);
     CHECK(memcmp(&roundTrip, &saved, sizeof(saved)) == 0);
+
+    outOfRange = saved;
+    outOfRange.padMappingIndex = 0xFF;
+    outOfRange.negconMappingIndex = 0xFE;
+    outOfRange.checksum = CalculateSaveBlockChecksum(&outOfRange);
+    CHECK(LoadSaveStateBlock(&outOfRange) == 1);
+    CHECK(g_PadMappingIndex == CONTROLLER_MAPPING_LAST);
+    CHECK(g_NegconMappingIndex == CONTROLLER_MAPPING_LAST);
+    CHECK(s_loadedPadMapping == CONTROLLER_MAPPING_LAST);
+    CHECK(s_loadedNegconMapping == CONTROLLER_MAPPING_LAST);
 
     puts("save state blocks are deterministic and survive a full round trip");
     return 0;
