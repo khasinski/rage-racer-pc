@@ -92,6 +92,61 @@ static void UpdateRaceEndState(void) {
     g_RaceFadeTimer++;
 }
 
+static void ToggleRacePause(void) {
+    u16 phase = g_RacePhase;
+    u32 paused;
+    RacePauseAction action;
+
+    if (!CanPauseRace(phase) || !(g_PadPressed & PAD_START) ||
+        g_PauseDebounce > 0) {
+        return;
+    }
+
+    g_PauseDebounce = 5;
+    paused = g_RacePaused < 1;
+    g_RacePaused = paused;
+    if (paused != 0) {
+        PauseCdAudio();
+        ForceAllEffectVoicesEnabled(0);
+        g_RaceOptionCursor = 0;
+        PlaySoundCue(2);
+        return;
+    }
+
+    action = DecideRacePauseAction(
+        phase, g_GrandPrixMode, g_RaceOptionCursor);
+    if (action == RACE_PAUSE_QUIT) {
+        g_RaceFadeTimer = 0;
+        g_RacePhase = 7;
+        if (g_GrandPrixMode == 0) {
+            s32 series = ReadStableRaceSeries();
+            s32 course = SeriesCourseIndex();
+
+            g_BestLapTimes[series][course][0] =
+                g_RankingRecords[series][course][0].raceTime;
+        }
+        SeedFinishCamera(&g_PlayerCar);
+        StartCdVolumeFade(8);
+    } else if (action == RACE_PAUSE_RETIRE) {
+        g_RaceFadeTimer = 0;
+        g_RacePhase = 5;
+        s_RetireCameraActive = 1;
+        if (g_CourseProgress->retriesRemaining != 0) {
+            PlaySoundCue(0x3D);
+        }
+        StartCdVolumeFade(8);
+    } else if (action == RACE_PAUSE_RESTART) {
+        ExitRaceScene(0xB);
+        g_RacePhase = 8;
+    } else {
+        g_PauseDebounce = 0x1E;
+        ForceAllEffectVoicesEnabled(1);
+        if (g_RacePhase >= 2) {
+            ResumeCdAudio();
+        }
+    }
+}
+
 int RetireCameraActive(void) { return s_RetireCameraActive; }
 
 void EnterRaceScene(void) {
@@ -168,11 +223,7 @@ void EnterRaceScene(void) {
 void UpdateRaceScene(void) {
     s32 lapUpdateResult;
     u32 timerValue;
-    s16 selection;
     s32 textureSection;
-    u16 mode;
-    u32 paused;
-    RacePauseAction pauseAction;
 
     g_SceneTimer++;
     UpdateFinishFollowupCue();
@@ -187,68 +238,20 @@ void UpdateRaceScene(void) {
         g_PauseDebounce--;
     }
 
-    mode = g_RacePhase;
-    if (CanPauseRace(mode) && (g_PadPressed & PAD_START) &&
-        g_PauseDebounce <= 0) {
-        g_PauseDebounce = 5;
-        paused = g_RacePaused < 1;
-        g_RacePaused = paused;
-
-        if (paused != 0) {
-            PauseCdAudio();
-            ForceAllEffectVoicesEnabled(0);
-            g_RaceOptionCursor = 0;
-            PlaySoundCue(2);
-        } else {
-            pauseAction = DecideRacePauseAction(
-                mode, g_GrandPrixMode, g_RaceOptionCursor);
-            if (pauseAction == RACE_PAUSE_QUIT) {
-                g_RaceFadeTimer = 0;
-                g_RacePhase = 7;
-                if (g_GrandPrixMode == 0) {
-                    s32 series = ReadStableRaceSeries();
-                    s32 course = SeriesCourseIndex();
-
-                    g_BestLapTimes[series][course][0] =
-                        g_RankingRecords[series][course][0].raceTime;
-                }
-                SeedFinishCamera(&g_PlayerCar);
-                StartCdVolumeFade(8);
-            } else if (pauseAction == RACE_PAUSE_RETIRE) {
-                g_RaceFadeTimer = 0;
-                g_RacePhase = 5;
-                s_RetireCameraActive = 1;
-                if (g_CourseProgress->retriesRemaining != 0) {
-                    PlaySoundCue(0x3D);
-                }
-                StartCdVolumeFade(8);
-            } else if (pauseAction == RACE_PAUSE_RESTART) {
-                ExitRaceScene(0xB);
-                g_RacePhase = 8;
-            } else {
-                g_PauseDebounce = 0x1E;
-                ForceAllEffectVoicesEnabled(1);
-                if (g_RacePhase >= 2) {
-                    ResumeCdAudio();
-                }
-            }
-        }
-    }
+    ToggleRacePause();
 
     UpdateRaceEndState();
 
     if (g_RacePaused != 0) {
+        RacePauseCursorResult cursor;
+        s32 move;
+
         SetReverbDepth(0x28, 0x28);
-        if ((g_PadPressed & PAD_UP) && g_RaceOptionCursor > 0) {
-            g_RaceOptionCursor--;
+        cursor = MoveRacePauseCursor(
+            g_PadPressed, g_RaceOptionCursor, g_GrandPrixMode);
+        g_RaceOptionCursor = cursor.cursor;
+        for (move = 0; move < cursor.moveCount; move++) {
             PlaySoundCue(1);
-        }
-        if (g_PadPressed & PAD_DOWN) {
-            selection = g_RaceOptionCursor;
-            if (selection < LastRacePauseOption(g_GrandPrixMode)) {
-                g_RaceOptionCursor = selection + 1;
-                PlaySoundCue(1);
-            }
         }
 
         g_SceneTimer--;

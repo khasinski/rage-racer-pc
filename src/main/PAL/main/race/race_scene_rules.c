@@ -60,3 +60,19 @@ RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
     }
     return RACE_END_PRESENTATION_NONE;
 }
+
+RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
+                                          s16 grandPrixMode) {
+    RacePauseCursorResult result = {cursor, 0};
+
+    if ((pressed & PAD_UP) && result.cursor > 0) {
+        result.cursor--;
+        result.moveCount++;
+    }
+    if ((pressed & PAD_DOWN) &&
+        result.cursor < LastRacePauseOption(grandPrixMode)) {
+        result.cursor++;
+        result.moveCount++;
+    }
+    return result;
+}

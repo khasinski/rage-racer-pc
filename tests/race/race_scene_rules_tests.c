@@ -62,6 +62,23 @@ static void TestPauseActions(void) {
           "Grand Prix final row retires after the start");
 }
 
+static void TestPauseCursor(void) {
+    RacePauseCursorResult result;
+
+    result = MoveRacePauseCursor(PAD_UP, 0, 0);
+    Check(result.cursor == 0 && result.moveCount == 0,
+          "pause cursor does not move above the first row");
+    result = MoveRacePauseCursor(PAD_DOWN, 2, 0);
+    Check(result.cursor == 2 && result.moveCount == 0,
+          "time attack cursor does not move below its final row");
+    result = MoveRacePauseCursor(PAD_DOWN, 0, 1);
+    Check(result.cursor == 1 && result.moveCount == 1,
+          "Grand Prix cursor reaches its second and final row");
+    result = MoveRacePauseCursor(PAD_UP | PAD_DOWN, 2, 0);
+    Check(result.cursor == 2 && result.moveCount == 2,
+          "simultaneous directions retain sequential retail input");
+}
+
 static void TestRaceEndPresentation(void) {
     Check(ChooseRaceEndPresentation(0, 0) == RACE_END_PRESENTATION_FINAL &&
               ChooseRaceEndPresentation(0, 3) == RACE_END_PRESENTATION_FINAL,
@@ -79,6 +96,7 @@ int main(void) {
     TestRaceGeometry();
     TestInputRules();
     TestPauseActions();
+    TestPauseCursor();
     TestRaceEndPresentation();
 
     if (s_failures != 0) {
