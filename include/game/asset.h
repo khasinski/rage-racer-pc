@@ -83,6 +83,7 @@ extern u8 *g_ImageBlockBuffer;
 #define ASSET_TRACK_2ND_BASE    0x58
 
 enum {
+    GAME_ASSET_COUNT = 135,
     CAR_ASSETS_PER_VARIANT = 2,
     TRACK_ASSETS_PER_CLASS = 8,
     TRACK_ASSETS_PER_COURSE = 2,
@@ -129,7 +130,7 @@ typedef struct GameCdLoadEntry {
 
 /* Disc location + size of every asset, read from the "\RAGE.BIN;1" index by
  * LoadDiscArchiveIndex and rebased onto its LBA. */
-extern GameCdLoadEntry g_AssetCdEntries[];
+extern GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
 
 /* The same for the 11 streams in "\RAGE.STR;1"; BeginClassFmv picks
  * `1 + class` in the Grand Prix and `5 + class` in the Extra GP. */

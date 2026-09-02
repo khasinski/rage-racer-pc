@@ -4,7 +4,7 @@
 enum { CAR_MODEL_LOAD_ASSET = 1 };
 
 static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
-    if (g_AssetLoadState != 0) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_AssetLoadState != 0) {
         return;
     }
 
@@ -46,6 +46,10 @@ static void LoadCarModelVariant(s32 carIndex, s32 gradeOffset) {
     s32 assetId;
 
     if (g_AssetLoadState != CAR_MODEL_LOAD_ASSET) {
+        return;
+    }
+    if ((u32)carIndex >= GAME_CAR_COUNT) {
+        g_AssetLoadState = 0;
         return;
     }
 

@@ -115,6 +115,17 @@ static void TestRequests(void) {
     Check(g_AssetRequestType == ASSET_REQUEST_UPGRADED_CAR_MODEL &&
               g_PendingCarModelIndex == 7 && g_AssetLoadState == 1,
           "upgraded car model request");
+
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    RequestCarModel(-1);
+    Check(g_AssetRequestType == ASSET_REQUEST_IDLE &&
+              g_AssetLoadState == 0,
+          "negative car model request is rejected");
+    RequestUpgradedCarModel(GAME_CAR_COUNT);
+    Check(g_AssetRequestType == ASSET_REQUEST_IDLE &&
+              g_AssetLoadState == 0,
+          "out-of-range upgraded model request is rejected");
 }
 
 static void TestModelVariantLoads(void) {
@@ -179,6 +190,12 @@ static void TestModelVariantLoads(void) {
     Check(s_color1Calls == 0 && s_color2Calls == 0,
           "non-player car entry skips custom paint");
     Check(g_AssetLoadState == 0, "upgraded model completes loader");
+
+    g_AssetLoadState = 1;
+    s_loadAssetId = -123;
+    LoadCarModel(-1);
+    Check(g_AssetLoadState == 0 && s_loadAssetId == -123,
+          "invalid pending model is cancelled before asset lookup");
 }
 
 static void TestInvalidCarSkipsCustomPaint(void) {
