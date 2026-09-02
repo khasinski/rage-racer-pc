@@ -156,6 +156,7 @@ int RetireCameraActive(void) {
 void EnterRaceScene(void) {
     s32 course;
     s32 series;
+    s32 recordMode;
     s32 i;
 
     SetupDisplay240(0, 0, 0);
@@ -169,6 +170,7 @@ void EnterRaceScene(void) {
     BuildStartingGrid();
     course = SeriesCourseIndex();
     series = ReadStableRaceSeries();
+    recordMode = RaceRecordMode(g_GrandPrixMode);
     g_LapTimeMs = 0;
     g_LapTimeSaturated = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
@@ -179,7 +181,7 @@ void EnterRaceScene(void) {
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
-    g_RefLapTime = g_BestLapTimes[series][course][g_GrandPrixMode];
+    g_RefLapTime = g_BestLapTimes[series][course][recordMode];
     g_RaceTimeRemaining = INITIAL_RACE_TIME;
     g_BestLapThisRace = g_RefLapTime;
     for (i = 0; i < g_LapCount; i++) {

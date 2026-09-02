@@ -5,6 +5,7 @@
 #include "game/audio_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/save_internal.h"
@@ -99,17 +100,18 @@ void DrawRoundScreen(void) {
         GameDrawProportionalTextShaded(0x56, 0xb0, text, 0x7812, col);
     } else {
         s32 course = SeriesCourseIndex();
+        s32 recordMode = RaceRecordMode(g_GrandPrixMode);
 
         GameDrawProportionalTextShaded(0x62, 0x7c, g_CaptionBestTotalTime,
                                       0x7812, col);
         FormatLapTime(
             text,
-            g_BestTotalTimes[g_GrandPrixSeries][course][g_GrandPrixMode]);
+            g_BestTotalTimes[g_GrandPrixSeries][course][recordMode]);
         GameDrawProportionalTextShaded(0x6a, 0x8c, text, 0x7812, col);
         GameDrawProportionalTextShaded(0x6a, 0x9c, g_CaptionBestLapTime,
                                       0x7812, col);
         FormatLapTime(
-            text, g_BestLapTimes[g_GrandPrixSeries][course][g_GrandPrixMode]);
+            text, g_BestLapTimes[g_GrandPrixSeries][course][recordMode]);
         GameDrawProportionalTextShaded(0x6a, 0xac, text, 0x7812, col);
     }
 }

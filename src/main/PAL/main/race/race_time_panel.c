@@ -8,7 +8,7 @@
 void DrawRaceTimePanel(s32 slideY) {
     char text[24];
     s32 lapCount = CourseLapCount(g_CourseIndex);
-    s32 recordMode = g_GrandPrixMode != 0;
+    s32 recordMode = RaceRecordMode(g_GrandPrixMode);
     s32 bestTimeColor;
     s32 lap;
 

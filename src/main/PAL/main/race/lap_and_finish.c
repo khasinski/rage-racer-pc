@@ -205,6 +205,7 @@ static void CountDownTheLaps(PlayerCarRuntime *car) {
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 series = ReadStableRaceSeries();
     s32 course = SeriesCourseIndex();
+    s32 recordMode = RaceRecordMode(grandPrixMode);
     s16 lapAtEntry;
     u16 returnValue;
 
@@ -212,8 +213,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
         TickRunningLapTime(car);
     } else if (g_LapCount < car->lap) {
         /* Past the last lap the clock stops and the total is kept instead. */
-        if (g_RaceTotalTime < g_BestTotalTimes[series][course][grandPrixMode]) {
-            g_BestTotalTimes[series][course][grandPrixMode] = g_RaceTotalTime;
+        if (g_RaceTotalTime < g_BestTotalTimes[series][course][recordMode]) {
+            g_BestTotalTimes[series][course][recordMode] = g_RaceTotalTime;
         }
     }
 
@@ -221,7 +222,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     if ((lapAtEntry * g_TrackLength <=
          g_PlayerCar.progressB + g_PlayerCar.progressA) &&
         (lapAtEntry <= g_LapCount)) {
-        returnValue = (u16)CrossTheLine(car, grandPrixMode);
+        returnValue = (u16)CrossTheLine(car, recordMode);
     } else {
         returnValue = 0;
     }

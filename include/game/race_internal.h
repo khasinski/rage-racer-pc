@@ -20,6 +20,10 @@ typedef struct ResultPlaceSpriteLayout {
     u8 width;
 } ResultPlaceSpriteLayout;
 
+static inline s32 RaceRecordMode(s32 grandPrixMode) {
+    return grandPrixMode != 0;
+}
+
 typedef union SectorReferenceTimes {
     s32 values[3];
     struct {
