@@ -6,29 +6,6 @@
 #include "game/race_hud_internal.h"
 #include "game/state.h"
 
-/* Which of the two frame buffers is being drawn, 0 or 1; the main loop sets
- * it beside g_DrawBuffer. Here it turns into the 240-line y bias of the
- * drawing-area rect. */
-
-u8 *QueueDrawAreaPrim(void *ot, DrawPacket *packet, s16 x, s16 y, s32 w, s32 h) {
-    DrawPacket *oldPacket;
-    RenderBufferAddress nextPacket;
-    Rect rect;
-    s32 offset;
-
-    offset = (g_FrameParity * 15) << 4;
-    rect.x = x;
-    rect.y = y + offset;
-    rect.w = w;
-    rect.h = h;
-    SetDrawArea(packet, &rect);
-    oldPacket = packet;
-    packet++;
-    AddPrim(ot, oldPacket);
-    nextPacket.drawPacket = packet;
-    return nextPacket.bytes;
-}
-
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
     s32 halfStep;
