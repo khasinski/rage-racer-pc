@@ -585,6 +585,25 @@ endif()
 add_test(NAME car_body_kick COMMAND car_body_kick_tests)
 set_tests_properties(car_body_kick PROPERTIES LABELS unit)
 
+add_executable(car_driving_tests
+    car_driving_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_driving.c)
+target_include_directories(car_driving_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_driving_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_driving_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_driving_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_driving COMMAND car_driving_tests)
+set_tests_properties(car_driving PROPERTIES LABELS unit)
+
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
     gear_shift_tests.c

@@ -31,9 +31,19 @@ typedef struct LaunchSpeedThreshold {
     s16 sustain;
 } LaunchSpeedThreshold;
 
+enum {
+    CAR_LAUNCH_THRESHOLD_COUNT = 5,
+};
+
+static inline s32 NormalizeCarLaunchThresholdIndex(s32 index) {
+    index %= CAR_LAUNCH_THRESHOLD_COUNT;
+    return index < 0 ? index + CAR_LAUNCH_THRESHOLD_COUNT : index;
+}
+
 extern u32 g_CarModelSlot;
 extern RaceIntroCameraKey *g_RaceIntroCameraCursor;
-extern LaunchSpeedThreshold g_LaunchSpeedThresholds[];
+extern LaunchSpeedThreshold
+    g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
 enum {
     CAR_TORQUE_BAND_COUNT = 10,
 };
