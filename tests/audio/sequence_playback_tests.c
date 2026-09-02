@@ -18,9 +18,15 @@ static s32 s_sequenceLeft;
 static s32 s_sequenceRight;
 static s32 s_sequenceStops;
 static s32 s_setVolume;
+static s32 s_sequencePlays;
+static s32 s_playMode;
+static s32 s_loopCount;
 
 void SsSeqPlay(short sequence, char playMode, short loopCount) {
-    (void)sequence; (void)playMode; (void)loopCount;
+    (void)sequence;
+    s_sequencePlays++;
+    s_playMode = playMode;
+    s_loopCount = loopCount;
 }
 void SsSeqStop(short sequence) {
     (void)sequence;
@@ -35,6 +41,7 @@ void SetReverbDepth(s32 left, s32 right) {
     s_reverbLeft = left;
     s_reverbRight = right;
 }
+void SetDefaultReverbDepth(void) { SetReverbDepth(0x28, 0x28); }
 void SetSequenceVolume(s32 volume) { s_setVolume = volume; }
 int CloseAudioSlot(s32 slot) {
     s_closeSlot = slot;
@@ -50,6 +57,14 @@ int CloseAudioSlot(s32 slot) {
 
 int main(void) {
     g_SeqHandle.value = 7;
+    PlaySequence();
+    CHECK(s_sequencePlays == 1 && s_playMode == 1 && s_loopCount == 0);
+    StopSequence();
+    CHECK(s_sequenceStops == 1);
+
+    StartSequenceFadeOut();
+    CHECK(g_SeqVolumeFadeStep == -4 && g_ReverbFadeStep == -3);
+
     g_SeqVolume = 100;
     ApplyDuckedSequenceAudio();
     CHECK(s_sequenceLeft == 75 && s_sequenceRight == 75);
@@ -69,7 +84,7 @@ int main(void) {
     CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 1);
     CHECK(g_ReverbFadeStep == -3);
     CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
-    CHECK(s_sequenceStops == 1 && s_closeSlot == 6);
+    CHECK(s_sequenceStops == 2 && s_closeSlot == 6);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolume == 0);
 
