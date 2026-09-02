@@ -121,7 +121,10 @@ set_tests_properties(asset_id PROPERTIES LABELS functional)
 
 add_executable(model_banks_tests
     model_banks_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/model_banks.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/model_banks.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_asset_slots.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_catalog.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/init_render_state.c)
 target_include_directories(model_banks_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

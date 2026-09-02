@@ -1,43 +1,12 @@
 #include "game/asset.h"
-#include "game/car.h"
-#include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/track.h"
-#include <string.h>
 
 static s32 ClampAssetCount(s32 count, s32 limit) {
     if (count < 0) return 0;
     if (count > limit) return limit;
     return count;
-}
-
-s32 GetCarAssetIndex(s32 model, s32 grade) {
-    return g_CarModelBaseIndex[model] + grade;
-}
-
-s32 GetCarUnlockLevel(s32 model) {
-    return g_CarTable[model].modelVariant + g_CarModelUnlockBase[model];
-}
-
-void InitRenderState(s32 otShift) {
-    g_RenderState.faceOtShift = 0xA;
-    g_RenderState.ft4Color[2] = 0x80;
-    g_RenderState.ft4Color[1] = 0x80;
-    g_RenderState.ft4Color[0] = 0x80;
-    g_RenderState.ft4Color[3] = POLY_FT4_CODE;
-    g_RenderState.gt4Color[2] = 0xFF;
-    g_RenderState.gt4Color[1] = 0xFF;
-    g_RenderState.gt4Color[0] = 0xFF;
-    g_RenderState.gt4Color[3] = POLY_GT4_CODE;
-    g_RenderState.x1 = SCREEN_WIDTH;
-    g_RenderState.y1 = SCREEN_HEIGHT;
-    g_VisibleCellMask = g_MainVisibleCellMask;
-    g_RenderState.otShift = otShift;
-    g_RenderState.x0 = 0;
-    g_RenderState.y0 = 0;
-    g_VisibleCellList = g_MainVisibleCellList;
-    g_RenderState.orderingFlag = g_MirrorMode;
 }
 
 void RegisterModelBank(ModelBankHeader *base, s32 index) {
@@ -104,48 +73,4 @@ void InstallTerrainCellData(void *data) {
     for (i = 0; i < count; i++) {
         g_NativeTerrainCells[i] = cursor + header->cellOffsets[i];
     }
-}
-
-void SetCarImageSlot(CarImageData *asset, s32 index) {
-    if ((u32)index >= 2) return;
-    g_CarImageSlots[index] = asset;
-}
-
-void UploadCarImage(s32 index) {
-    if ((u32)index >= 2) return;
-    LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
-}
-
-static CarModelAsset g_NativeCarModelAssets[2];
-static CarModelAsset *g_SerializedCarModelAssets[2];
-
-void SetCarModelSlot(CarModelAsset *asset, s32 index) {
-    SerializedCarModelAssetHeader *serialized;
-    u8 *bytes;
-
-    if ((u32)index >= 2) return;
-    serialized = GetSerializedCarModelAssetHeader(asset);
-    bytes = GetAssetBytes(serialized);
-    memcpy(&g_NativeCarModelAssets[index], serialized->metadata,
-           sizeof(serialized->metadata));
-    g_NativeCarModelAssets[index].modelData.pointer =
-        bytes + serialized->modelOffset;
-    g_NativeCarModelAssets[index].imageData.pointer =
-        bytes + serialized->imageOffset;
-    g_SerializedCarModelAssets[index] = asset;
-    g_CarModelSlots[index] = &g_NativeCarModelAssets[index];
-}
-
-CarModelAsset *GetSerializedCarModelAsset(CarModelAsset *nativeAsset) {
-    u32 i;
-    for (i = 0; i < 2; i++) {
-        if (nativeAsset == g_CarModelSlots[i])
-            return g_SerializedCarModelAssets[i];
-    }
-    return nativeAsset;
-}
-
-void SelectCarModelSlot(s32 index) {
-    if ((u32)index >= 2) return;
-    g_CarModelAsset = g_CarModelSlots[index];
 }
