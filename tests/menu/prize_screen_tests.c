@@ -104,6 +104,47 @@ static int RunToEnd(int hold, int budget) {
 }
 
 int main(void) {
+    /* The opening panels retain the original frame-exact slide sequence. */
+    {
+        int i;
+
+        Reset(1000, 0);
+        for (i = 0; i < 31; i++) {
+            UpdatePrizeMoneyScreen();
+        }
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_INTRO_FADE_IN,
+              "intro fade lasts 32 frames", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_INTRO_FADE_IN);
+        UpdatePrizeMoneyScreen();
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM,
+              "intro fade reaches its wait state", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM);
+
+        g_PadPressed = PAD_CONFIRM;
+        UpdatePrizeMoneyScreen();
+        g_PadPressed = 0;
+        for (i = 0; i < 16; i++) {
+            UpdatePrizeMoneyScreen();
+        }
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_HIDE_RACE_TIME,
+              "race panel remains through offset 128", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_HIDE_RACE_TIME);
+        UpdatePrizeMoneyScreen();
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL,
+              "race panel leaves after offset 128", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL);
+        for (i = 0; i < 16; i++) {
+            UpdatePrizeMoneyScreen();
+        }
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL,
+              "prize panel takes 17 frames to slide in", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL);
+        UpdatePrizeMoneyScreen();
+        Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_COUNT_PRIZE,
+              "prize panel reaches the counting state", g_PrizeScreenState,
+              PRIZE_SCREEN_STATE_COUNT_PRIZE);
+    }
+
     /* Everything owed reaches the player, prize first and then the bonus. */
     Reset(1000, 400);
     RunToEnd(0, 4000);
