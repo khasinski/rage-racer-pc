@@ -20,7 +20,7 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
     str = str0;
     x = x0;
-    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    ot = RENDER_OT_BASE;
 
     while (*str) {
         c = *str;
@@ -123,7 +123,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 
     str = str0;
     x = x0;
-    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    ot = RENDER_OT_BASE;
 
     while (*str) {
         c = *str;
@@ -208,7 +208,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
                    u16 clut, u8 primitiveCount) {
     u8 digits[10];
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) +
+    GameOrderingTableEntry *ot = RENDER_OT_BASE +
                   ((flags & DRAW_NUMBER_OVERLAY_LAYER) != 0);
     s32 width;
     s32 height;
@@ -253,7 +253,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
 
 
 void DrawBitPatternOverlay(s32 pattern) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     u8 *patternTable = g_MenuOverlayPatternTable;
     u8 *row = patternTable;
     u8 *candidate;

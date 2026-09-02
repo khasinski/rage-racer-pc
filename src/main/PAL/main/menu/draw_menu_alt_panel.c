@@ -39,7 +39,7 @@ static void DrawLowerAltPanel(void *ot, s32 progress) {
 }
 
 void DrawMenuAltPanel(s32 upperStep, s32 lowerStep) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
 
     if (upperStep == 0 && lowerStep == 0) {
         g_MenuAltPanelProgressA = 0;

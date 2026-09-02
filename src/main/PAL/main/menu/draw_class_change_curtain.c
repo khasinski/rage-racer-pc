@@ -21,7 +21,7 @@ static void DrawClassChangeCurtainPanels(s32 slide) {
                           : CLASS_CHANGE_CURTAIN_MAX_DRAW_PHASE;
     const s32 upperPanelY = -CLASS_CHANGE_CURTAIN_HEIGHT + phase * 16;
     const s32 lowerPanelY = CLASS_CHANGE_CURTAIN_HEIGHT - upperPanelY;
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
 
     DrawSolidRect(ot, 0, upperPanelY, CLASS_CHANGE_CURTAIN_WIDTH,
                   CLASS_CHANGE_CURTAIN_HEIGHT, 0x95, 0x25, 0x1E, 0xFF);

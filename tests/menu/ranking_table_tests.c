@@ -179,7 +179,7 @@ int main(void) {
     s32 batch;
     s32 row;
 
-    RENDER_OT_BASE_AS(GameOrderingTableEntry) = orderingTable;
+    RENDER_OT_BASE = orderingTable;
     strcpy(g_RankingRecords[0][0][0].driverName, "RANK");
     strcpy(g_TimeRecords[0][0][0].driverName, "TIME");
 

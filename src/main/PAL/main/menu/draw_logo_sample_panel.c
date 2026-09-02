@@ -11,7 +11,7 @@ static s32 SlideUp(s32 base, s32 frame, s32 distanceTimes32) {
 }
 
 void DrawLogoSamplePanel(s32 step, s32 sample) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
     s32 frame;
     s32 y;
     s32 i;

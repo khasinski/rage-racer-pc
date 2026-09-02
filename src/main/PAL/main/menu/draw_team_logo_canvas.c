@@ -374,7 +374,7 @@ static void AnimateLogoClut(void) {
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     void *ot;
 
-    ot = RENDER_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE;
     if (panelStep == 0) {
         g_TeamLogoPanelStep = 0;
         g_TeamLogoEditorStep = 0;

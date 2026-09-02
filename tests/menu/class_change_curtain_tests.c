@@ -53,7 +53,7 @@ static void ResetDraws(void) {
 
 static int CheckPanel(s32 index, s32 y) {
     SolidRectCall *rect = &s_rects[index];
-    CHECK(rect->ot == RENDER_OT_BASE_AS(void));
+    CHECK(rect->ot == RENDER_OT_BASE);
     CHECK(rect->x == 0 && rect->y == y);
     CHECK(rect->width == 320 && rect->height == 240);
     CHECK(rect->red == 0x95 && rect->green == 0x25 && rect->blue == 0x1E);
@@ -62,7 +62,7 @@ static int CheckPanel(s32 index, s32 y) {
 }
 
 int main(void) {
-    g_RenderState.primData = (void *)0x1234;
+    g_RenderState.primData = (GameOrderingTableEntry *)0x1234;
 
     g_ClassChangeCurtainSlide = 9;
     CHECK(DrawClassChangeCurtain(0) == 0);

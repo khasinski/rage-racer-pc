@@ -532,7 +532,7 @@ static void RageSubmitModelFaces(
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* Retail seeds t5 with the ordering-table base + 0x200 bytes before dispatching any
      * model face.  On PS1 that is 128 four-byte OT entries. */
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 128;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
     int i;
 
     GeometryDiagnosticsInit(&s_diagnostics);
@@ -821,7 +821,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
     uint8_t *stream;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* The course dispatcher applies the same fixed +0x200-byte OT base. */
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 128;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
     const SVECTOR *vertices;
     uint32_t opcode;
     GeometryDiagnosticsInit(&s_diagnostics);
@@ -1086,7 +1086,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     const SVECTOR *vertices = (const SVECTOR *)g_RenderState.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* func_80028E9C seeds its terrain OT register from the ordering-table base + 0x200. */
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 128;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
     int cell;
     int decodedFaces = 0;
     int emittedFaces = 0;

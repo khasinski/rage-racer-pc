@@ -18,12 +18,12 @@ void SetGteLightMatrix(Matrix *view) {
  * the secondary table after the primary backdrop; its natural model depth
  * then keeps it behind the secondary-table callouts and labels. */
 static void SubmitControllerModel(s32 model) {
-    GameOrderingTableEntry *otBase = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *otBase = RENDER_OT_BASE;
     GameFrameContext *frame = g_DrawBuffer;
 
-    RENDER_OT_BASE_AS(GameOrderingTableEntry) = frame->layout.orderingTables[1];
+    RENDER_OT_BASE = frame->layout.orderingTables[1];
     SubmitModel((&g_RenderState), model);
-    RENDER_OT_BASE_AS(GameOrderingTableEntry) = otBase;
+    RENDER_OT_BASE = otBase;
 }
 
 /* Builds and submits the controller models shown by the pad and NeGcon setup

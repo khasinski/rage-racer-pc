@@ -76,7 +76,7 @@ static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
 /* The animated five-row ranking/time-record panel. */
 s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     char text[16];
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 phase;
     s32 slide;
     s16 panelY;

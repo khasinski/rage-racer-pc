@@ -88,7 +88,7 @@ static GameFrameContext *CaptureFrameContext(void) {
  * +30-entry bias and the mirror pass's OT[1] both come through as data. */
 static void CaptureOtBase(uint8_t *table, int32_t *bias) {
     GameFrameContext *frame = CaptureFrameContext();
-    GameOrderingTableEntry *base = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *base = RENDER_OT_BASE;
     int t;
     *table = 0;
     *bias = 0;

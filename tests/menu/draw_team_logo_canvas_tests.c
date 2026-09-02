@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     static const s32 channels[] = {0, 1, 2};
     static const s32 pads[] = {0x23, 0x10};
     static const s32 args[] = {1, -1};
-    s32 ot[64];
+    GameOrderingTableEntry ot[64];
     int a, b, c, e, gi, bi, ci, pi, ai, x;
     int steps = 0;
 
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
             g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
         }
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
 
         g_TeamLogoPanelStep = panelSteps[a];
         g_TeamLogoEditorStep = editorSteps[b];

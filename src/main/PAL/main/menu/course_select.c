@@ -107,7 +107,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 gpSlide;
     u32 gpFade;
     u32 fadeValue;
-    otBase = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    otBase = RENDER_OT_BASE;
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;

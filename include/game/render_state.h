@@ -4,7 +4,7 @@
 #include "common.h"
 
 #include <stddef.h>
-#include "game/vector.h"
+#include "game/render_types.h"
 #include "psyq/gte.h"
 
 /*
@@ -19,7 +19,7 @@
  */
 typedef struct GameRenderState {
     void *packetCursor;
-    void *primData;
+    GameOrderingTableEntry *primData;
     s32 viewX;
     s32 viewY;
     s32 viewZ;
@@ -179,8 +179,7 @@ extern CarTrackWork g_CarTrackWork;
 #define RENDER_PRIM_CURSOR          RENDER_PRIM_CURSOR_AS(void)
 
 /* Ordering table the emitters link finished packets into. */
-#define RENDER_OT_BASE_AS(type)     (*(type **)&g_RenderState.primData)
-#define RENDER_OT_BASE              RENDER_OT_BASE_AS(void)
+#define RENDER_OT_BASE g_RenderState.primData
 
 /* View transform consumed by the model render path. SetCameraRotMatrix builds
  * the matrix at 0x28 from the three angles; the position words are the camera

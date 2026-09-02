@@ -5,7 +5,7 @@ void UpdateMenuMode(void) {
     GameOrderingTableEntry *ot;
     u32 screenRange;
 
-    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    ot = RENDER_OT_BASE;
     g_AnimTimer++;
     g_SceneTimer++;
     if (g_SceneTimer == 2) {

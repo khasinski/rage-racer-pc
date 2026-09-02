@@ -2,7 +2,7 @@
 
 void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height,
                         u8 r, u8 g, u8 b) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
 
     DrawRectOutline(ot, (s16)x, (s16)y, (s16)width, (s16)height,
                     0xB4, 0xB4, 0xB4, 0xFF);
@@ -11,7 +11,7 @@ void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height,
 }
 
 void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 useFlash) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
     s32 colour;
 
     if (useFlash) {

@@ -211,7 +211,7 @@ void UpdateCustomizeScreen(void) {
     s32 lastOption;
     const TimedDrawCommand *cmdList;
 
-    ot = RENDER_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE;
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();

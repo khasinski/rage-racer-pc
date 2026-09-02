@@ -28,7 +28,7 @@ void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
         }
     }
 
-    ot = RENDER_OT_BASE_AS(void);
+    ot = RENDER_OT_BASE;
     halfWidth = wide != 0 || g_MenuAltLayout != 0 ? 0x58 : 1;
     y = wide != 0 ? 0x144 : 0x119;
     slidePhase = g_BrowseArrowsFade - BROWSE_ARROWS_VISIBLE_AT;

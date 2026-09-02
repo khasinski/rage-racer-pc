@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   PAD_LEFT, PAD_RIGHT};
     static const s32 cars[] = {0, 5, 9};
-    s32 ot[64];
+    GameOrderingTableEntry ot[64];
     int bi, sr, p2, opt, pb, sub, rich, timer, prog, ci, variant;
     int steps = 0;
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(g_TimeAttackCars, 0, sizeof(g_TimeAttackCars));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
             g_CarTuneUpPriceTable[i] = 1000 * (i + 1);
         }

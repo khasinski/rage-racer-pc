@@ -28,7 +28,7 @@ void DrawCarEngineSpec(s32 slide, s32 brightness) {
     if (g_MenuAltLayout != 0) {
         return;
     }
-    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1;
+    ot = RENDER_OT_BASE + 1;
     intensity = (u8)brightness;
     powerY = 0xCC - slide;
     torqueY = 0xDA - slide;

@@ -143,7 +143,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
         return;
     }
 
-    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 3;
+    ot = RENDER_OT_BASE + 3;
     DrawSprite(ot, 0x4A, 0x166, 4, 8, 0xF0, 8, 0, 0, 0, 0x26C, 1, 0,
                0x19);
     DrawSprite(ot, 0x4A, 0x173, 4, 8, 0xF4, 8, 0, 0, 0, 0x26C, 1, 0,

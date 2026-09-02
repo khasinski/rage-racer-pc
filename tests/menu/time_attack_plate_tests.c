@@ -29,7 +29,7 @@ void GameDrawTexturedQuad(
 }
 
 int main(void) {
-    int orderingTable;
+    GameOrderingTableEntry orderingTable;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_RenderState.primData = &orderingTable;

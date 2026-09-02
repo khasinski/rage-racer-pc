@@ -95,7 +95,7 @@ int main(void) {
     POLY_G4 *quad = (POLY_G4 *)packets;
     memset(orderingTable, 0, sizeof(orderingTable));
     memset(packets, 0, sizeof(packets));
-    RENDER_OT_BASE_AS(GameOrderingTableEntry) = orderingTable;
+    RENDER_OT_BASE = orderingTable;
     RENDER_PRIM_CURSOR_AS(u8) = packets;
 
     g_MenuLightBurstLevel = 99;

@@ -36,7 +36,7 @@ static void DrawRightSliderArrow(void *ot, s16 x, u8 green) {
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
 void DrawTireCompoundSlider(u8 compound, s32 confirming) {
-    void *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 2;
+    void *ot = RENDER_OT_BASE + 2;
     s16 x = compound < TIRE_COMPOUND_COUNT ? s_tireCompoundX[compound]
                                            : compound;
     u8 highlight = GetSliderHighlight(confirming);

@@ -30,7 +30,7 @@ static s32 ScriptOtOffset(u8 flags) {
 
 void DrawScriptedSprite(s32 elapsed, const ScriptedSpriteShape *shape,
                         const ScriptedSpriteMotion *motion, s32 type) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 x;
     s32 y;
     s32 alpha;
@@ -50,7 +50,7 @@ void DrawScriptedSprite(s32 elapsed, const ScriptedSpriteShape *shape,
 
 void DrawScriptedLine(s32 elapsed, const ScriptedLineShape *shape,
                       const ScriptedLineMotion *motion) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 x0;
     s32 y0;
     s32 x1;
@@ -74,7 +74,7 @@ void DrawScriptedLine(s32 elapsed, const ScriptedLineShape *shape,
 
 void DrawScriptedTriangle(s32 elapsed, const ScriptedTriangleShape *shape,
                           const ScriptedTriangleMotion *motion) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 x;
     s32 y;
     s32 semiTrans;
@@ -97,7 +97,7 @@ void DrawScriptedTriangle(s32 elapsed, const ScriptedTriangleShape *shape,
 
 void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
                       const ScriptedQuadMotion *motion) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 x;
     s32 y;
     s32 width;
@@ -255,7 +255,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
 
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     ScriptedSpriteMotion *firstMotion;
-    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 i;
     s32 xOffset;
     s32 yOffset;

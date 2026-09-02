@@ -503,7 +503,7 @@ static void UpdateCourseSelectOutgoing(void) {
 }
 
 void UpdateCourseSelectScreen(void) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
     s32 state = GameMenuBusy;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;

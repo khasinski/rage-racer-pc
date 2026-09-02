@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     /* Class five is the extra series, which has no round of its own, so the
      * sweep sits either side of that as well as on it. */
     static const s32 classes[] = {2, 4, 5};
-    s32 ot[64];
+    GameOrderingTableEntry ot[64];
     int bi, sr, p2, gp, opt, pb, sub, cur, timer, prog, off, ci, applied, kl;
     int steps = 0;
     int promptFailures = 0;
@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
         memset(&s_progress, 0, sizeof(s_progress));
         memset(&s_course, 0, sizeof(s_course));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 4; i++) {
             s_course.bestPlace[i] = (u8)(i + 1);
         }
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
             memset(&s_progress, 0, sizeof(s_progress));
             memset(&s_course, 0, sizeof(s_course));
             memset(ot, 0, sizeof(ot));
-            RENDER_OT_BASE_AS(void) = ot;
+            RENDER_OT_BASE = ot;
             for (i = 0; i < 4; i++) {
                 s_course.bestPlace[i] = (u8)(i + 1);
             }
@@ -439,7 +439,7 @@ int main(int argc, char **argv) {
             memset(&s_progress, 0, sizeof(s_progress));
             memset(&s_course, 0, sizeof(s_course));
             memset(ot, 0, sizeof(ot));
-            RENDER_OT_BASE_AS(void) = ot;
+            RENDER_OT_BASE = ot;
             s_progress.maxClassReached = 2;
 
             GameMenuBusy = chosen[ch];

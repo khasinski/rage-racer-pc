@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
     /* The turntable's rest window is 0x493DF wide, so the sweep sits on both
      * sides of it and on both sides of the target. */
     static const s32 settledOffsets[] = {0, 0x493DF, 0x493E0, -0x493DF};
-    s32 ot[64];
+    GameOrderingTableEntry ot[64];
     int bi, sr, p2, opt, pb, hb, settled, swap, oi, ci, sub, rich, timer,
         transmission, prog, same;
     int steps = 0;
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(g_TimeAttackCarEnabled, 0, sizeof(g_TimeAttackCarEnabled));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
             s_cars[i].enabled = (u8)(i & 1);
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
@@ -352,7 +352,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
         memset(&s_model, 0, sizeof(s_model));
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
-        RENDER_OT_BASE_AS(void) = ot;
+        RENDER_OT_BASE = ot;
         for (i = 0; i < 16; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }

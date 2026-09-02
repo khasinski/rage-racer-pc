@@ -84,7 +84,7 @@ void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u1
 
 static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    RENDER_OT_BASE_AS(GameOrderingTableEntry) = s_orderingTable;
+    RENDER_OT_BASE = s_orderingTable;
     g_CourseCardFace = 1;
     g_CourseCardPendingGrade = -1;
     g_CourseCardSpin = 0;

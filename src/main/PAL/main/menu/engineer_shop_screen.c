@@ -183,7 +183,7 @@ static void UpdateEngineerShopOutgoing(s32 price) {
 }
 
 void UpdateEngineerShopScreen(void) {
-    void *ot = RENDER_OT_BASE_AS(void);
+    void *ot = RENDER_OT_BASE;
     s32 price;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
