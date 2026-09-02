@@ -46,6 +46,7 @@ int main(void) {
     GameCarRuntime *coastingBoost;
     GameCarRuntime *pullingBoost;
     GameCarRuntime *limitedBoost;
+    GameCarRuntime *equalRace;
     GameCarRuntime *equalAttract;
 
     ResetCars();
@@ -60,6 +61,7 @@ int main(void) {
     limitedBoost = Activate(4, 30, 100);
     limitedBoost->boostTimer = 4;
     limitedBoost->boostAccelerationThreshold = 5;
+    equalRace = Activate(5, 20, 100);
 
     AccelerateRaceRivals();
     CHECK_EQ(normal->acceleration, 15);
@@ -74,7 +76,10 @@ int main(void) {
     CHECK_EQ(pullingBoost->boostTimer, 3);
     CHECK_EQ(limitedBoost->acceleration, 20);
     CHECK_EQ(limitedBoost->boostTimer, 3);
-    CHECK_EQ(g_Cars[5].speed, 0);
+    CHECK_EQ(equalRace->acceleration, 25);
+    CHECK_EQ(equalRace->speed, 119);
+    CHECK_EQ(g_Cars[6].speed, 0);
+    CHECK_EQ(g_Cars[6].bodyYaw, 0);
 
     ResetCars();
     normal = Activate(0, 10, 100);
@@ -88,6 +93,6 @@ int main(void) {
     CHECK_EQ(equalAttract->speed, 114);
     CHECK_EQ(equalAttract->boostTimer, 10);
 
-    puts("rival acceleration preserves limits, boost branches, and attract");
+    puts("rival acceleration preserves thresholds, boost branches, and attract");
     return 0;
 }

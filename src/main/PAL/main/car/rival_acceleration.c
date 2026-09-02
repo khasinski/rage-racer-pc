@@ -6,9 +6,12 @@ enum {
     RIVAL_BOOST_COAST_SPEED = 0x321,
 };
 
-static void TurnRivalBodyTowardsTarget(GameCarRuntime *car,
-                                       const GameCarAiBlock *ai) {
-    car->bodyYaw += GetAngleDelta(car->bodyYaw, ai->targetYaw) / 5;
+static void TurnRivalBodyTowardsTarget(GameCarRuntime *car) {
+    car->bodyYaw += GetAngleDelta(car->bodyYaw, car->targetYaw) / 5;
+}
+
+static void ApplyRivalSpeedDrag(GameCarRuntime *car) {
+    car->speed = car->speed * RIVAL_SPEED_RETENTION_PERCENT / 100;
 }
 
 void AccelerateRaceRivals(void) {
@@ -16,7 +19,6 @@ void AccelerateRaceRivals(void) {
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
-        GameCarAiBlock *ai = GetCarAiBlock(car);
 
         if (car->activeFlag == -1) {
             continue;
@@ -26,21 +28,21 @@ void AccelerateRaceRivals(void) {
             if (car->boostAccelerationThreshold < car->boostTimer &&
                 car->speed >= RIVAL_BOOST_COAST_SPEED) {
                 car->acceleration = 0;
-            } else if (ai->accelerationLimit >= car->acceleration) {
-                car->acceleration += ai->boostAcceleration;
+            } else if (car->accelerationLimit >= car->acceleration) {
+                car->acceleration += car->boostAcceleration;
             } else {
-                car->acceleration = ai->accelerationLimit;
+                car->acceleration = car->accelerationLimit;
             }
-            ai->boostTimer--;
+            car->boostTimer--;
         } else if (car->accelerationLimit >= car->acceleration) {
             car->acceleration += car->accelerationStep;
         } else {
             car->acceleration = car->accelerationLimit;
         }
 
-        car->speed = car->speed * RIVAL_SPEED_RETENTION_PERCENT / 100;
+        ApplyRivalSpeedDrag(car);
         car->speed += car->acceleration;
-        TurnRivalBodyTowardsTarget(car, ai);
+        TurnRivalBodyTowardsTarget(car);
     }
 }
 
@@ -49,7 +51,6 @@ void AccelerateAttractRivals(void) {
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
-        GameCarAiBlock *ai = GetCarAiBlock(car);
 
         if (car->activeFlag == -1) {
             continue;
@@ -59,8 +60,8 @@ void AccelerateAttractRivals(void) {
         } else {
             car->acceleration = car->accelerationLimit;
         }
-        car->speed = car->speed * RIVAL_SPEED_RETENTION_PERCENT / 100 +
-                     car->acceleration;
-        TurnRivalBodyTowardsTarget(car, ai);
+        ApplyRivalSpeedDrag(car);
+        car->speed += car->acceleration;
+        TurnRivalBodyTowardsTarget(car);
     }
 }
