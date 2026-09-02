@@ -6,8 +6,8 @@ enum {
     REPLAY_SCENE_ID = 0x11,
 };
 
-static void DrawCourseObjects(s32 course, s32 timer, s32 animate,
-                              s32 useAlternateAnimation) {
+static void DrawCourseLandmarks(s32 course, s32 timer, s32 animate,
+                                s32 useAlternateAnimation) {
     if (g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX) {
         animate = 0;
     }
@@ -53,7 +53,7 @@ static void DrawCourseObjects(s32 course, s32 timer, s32 animate,
 
 void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
     DrawAnimatedScenery(timer, 0);
-    DrawCourseObjects(course, timer, animate, 0);
+    DrawCourseLandmarks(course, timer, animate, 0);
 }
 
 void DrawCourseScenery2(s32 timer, s32 animate) {
@@ -61,5 +61,5 @@ void DrawCourseScenery2(s32 timer, s32 animate) {
                          g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX
                              ? 0
                              : animate);
-    DrawCourseObjects(SeriesCourseIndex(), timer, animate, 1);
+    DrawCourseLandmarks(SeriesCourseIndex(), timer, animate, 1);
 }

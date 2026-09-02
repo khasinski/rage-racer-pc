@@ -316,7 +316,6 @@ void SetupDisplay480(s32 r, s32 g, s32 b);
 void InitRenderState(s32 otShift);
 void DrawFullscreenFadeTile(s32 color, s32 tpage);
 void DrawFullscreenFadeTile480(s32 color, s32 tpage);
-void DrawTerrainCellsWide(void);
 void RequestTrackTexturePage(s32 trackSection);
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
 void DrawPlayerCarModel(GameRenderObject *object);
@@ -339,7 +338,6 @@ void SubmitCourseModel2(void *ctx, s32 index);
 
 /* Per-frame draw loop over the world object array g_CourseObjects: culls each entry
  * against the visibility bitmask, transforms it and submits its model. */
-void DrawCourseObjects(void);
 
 /*
  * Per-frame environment step: advances the course's environment command script
@@ -750,7 +748,6 @@ extern s16 g_NegconSteer;
 extern s32 g_SetupArrowPulse;
 
 void ApplyZoneLighting(s32 zone, Matrix *mtx);
-void BuildVisibleCells(s32 near, s32 far);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
 s32 rsin(s32 angle);

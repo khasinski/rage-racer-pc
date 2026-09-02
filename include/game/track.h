@@ -259,6 +259,10 @@ static inline GameTrackPoint *TrackPoint(s32 index) {
  * animation state. `animate` == 0 draws a frozen frame. */
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
 void DrawCourseScenery2(s32 timer, s32 animate);
+void BuildVisibleCells(s32 near, s32 far);
+void DrawCourseObjects(void);
+void DrawTerrainCells(void);
+void DrawTerrainCellsWide(void);
 
 /* Update (when animate != 0) and draw the route/flyby/path prop layers enabled
  * by the current Grand Prix class. Class 5 wraps to the class-0 route layer. */

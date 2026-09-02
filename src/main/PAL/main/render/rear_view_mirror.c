@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/track.h"
 
 DrawPacket *DrawMirrorFrame(u8 *packet) {
     GameOrderingTableEntry *otArg;
