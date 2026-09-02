@@ -110,7 +110,7 @@ void UpdateDesignModeScreen(void) {
                     GameMenuBusy = 2;
                     g_MenuOverlayPattern = sel;
                 } else if (sel == 2) {
-                    if (g_PlayerCarIndex < 10) {
+                    if ((u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT) {
                         GameMenuBusy = 3;
                         g_MenuOverlayPattern = 1;
                         PlaySoundCue(2);

@@ -10,6 +10,7 @@ struct GameRenderObject;
 
 enum {
     GAME_CAR_COUNT = 13,
+    CUSTOM_PAINT_CAR_COUNT = 10,
     RACE_CAR_SLOT_COUNT = 11,
     RIVAL_CONTENDER_COUNT = 4,
     CAR_MODEL_VARIANT_COUNT = 32,

@@ -181,6 +181,23 @@ static void TestModelVariantLoads(void) {
     Check(g_AssetLoadState == 0, "upgraded model completes loader");
 }
 
+static void TestInvalidCarSkipsCustomPaint(void) {
+    CarModelAsset model;
+    ModelBankHeader bank;
+    CarImageData image;
+
+    memset(&model, 0, sizeof(model));
+    model.modelData.modelBank = &bank;
+    model.imageData.carImage = &image;
+    s_color1Calls = 0;
+    s_color2Calls = 0;
+
+    InstallCarModelAsset(&model, 0, -1);
+
+    Check(s_color1Calls == 0 && s_color2Calls == 0,
+          "invalid car index skips custom paint");
+}
+
 static void TestCarSelectAssetPhases(void) {
     static u8 storage[CAR_MODEL_BUFFER_SIZE + 512];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
@@ -272,6 +289,7 @@ static void TestCarSelectAssetPhases(void) {
 int main(void) {
     TestRequests();
     TestModelVariantLoads();
+    TestInvalidCarSkipsCustomPaint();
     TestCarSelectAssetPhases();
 
     if (s_failures != 0) return 1;
