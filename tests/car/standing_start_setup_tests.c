@@ -6,7 +6,6 @@
 s32 g_EngineRpm;
 s16 g_PeakOutputRpm;
 s16 g_PeakOutputValue;
-s16 g_StandingStartState;
 s32 g_StandingStartSpin;
 s16 g_GripLossTimer;
 GameCarSpec *g_CarSpec;
@@ -36,7 +35,6 @@ int main(void) {
     CHECK_EQ(car.drive.drivetrainTorque, 300);
     CHECK_EQ(g_StandingStartSpin, 1250);
     CHECK_EQ(g_GripLossTimer, 200);
-    CHECK_EQ(g_StandingStartState, 0);
 
     car.drive.gear = 0;
     car.drive.drivetrainTorque = 600;

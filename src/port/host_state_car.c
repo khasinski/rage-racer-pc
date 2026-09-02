@@ -72,7 +72,6 @@ s16 g_PeakToRevLimitRpmHalf;
 s16 g_RivalCueCooldown3;
 s32 g_ClosestRivalRank;
 GearCurveRow g_GearTorqueCurve[7] __attribute__((aligned(16)));
-s16 g_StandingStartState;
 s32 g_ShiftSoundLevel;
 s16 g_SteerHoldFrames;
 s32 g_AutoShiftCooldown;

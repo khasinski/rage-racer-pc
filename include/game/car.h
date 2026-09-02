@@ -818,7 +818,6 @@ void UpdateRivalRubberBand(void);
 extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;
-extern s16 g_StandingStartState;
 extern RaceGridSlot g_AttractGridSlots[];
 extern u16 g_BodyColorPrimary[];
 extern u16 g_BodyColorSecondary[];
