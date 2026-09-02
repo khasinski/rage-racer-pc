@@ -26,7 +26,7 @@ typedef struct CameraKey {
     s32 control;
 } CameraKey;
 
-/* The environment block at the head of each 0x237E8-byte frame context. */
+/* The environment block at the head of each frame context. */
 typedef struct GameFrameEnvironmentHeader {
     DrawEnv draw;
     DispEnv display;
@@ -66,6 +66,12 @@ typedef union GameFrameContext {
     u8 bytes[sizeof(GameFrameLayout)];
 } GameFrameContext;
 
+/* Current frame work area, selected by the display swap. Emulation traces of
+ * the retail game identified its two 1408-entry ordering tables; the native
+ * layout keeps the same ownership while sizing packet storage for native
+ * pointer-width links. */
+extern GameFrameContext *g_DrawBuffer;
+
 static inline void GameClearOrderingTable(GameOrderingTableEntry *table,
                                           s32 count) {
     ClearOTagR((void *)table, count);
@@ -92,8 +98,6 @@ extern u32 *g_VisibleCellMask;
 extern Vec4 *g_VisibleCellList;
 extern CameraViewMode g_CameraViewMode;
 extern s16 g_AtanTable[];
-extern GameFrameContext *g_DrawBuffer;
-
 static inline GameOrderingTableEntry *GamePrimaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[0][depth];
 }

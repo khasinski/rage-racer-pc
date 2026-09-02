@@ -446,26 +446,6 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
 void DrawBitPatternOverlay(s32 pattern);
 
 /*
- * Base of the draw work area for the frame being built. Almost every drawing
- * routine takes its ordering table from g_DrawBuffer + 0xCC and links
- * primitives into it (AddPrim / QueueDrawModePrim); further sub-buffers live
- * at +0x70, +0xBD0 and +0x16C8. Set by the display swap, not from C yet.
- *
- * Six translation units need a different declared type (four `volatile`, one
- * plain s32) and carry their own aliased declaration so that the name is the
- * same everywhere without changing the generated load.
- */
-/*
- * Measured under emulation (2026-08-03, in-race, ~/Projects/rage-trace):
- * Gpu_ClearOTagDma is the only writer of two ordering tables, each exactly
- * 0x1600 bytes = 1408 entries, at 0x8019CF04 and 0x801C06EC -- one per frame
- * context, so the contexts are 0x237E8 apart. Those two runs are also the
- * busiest memory in a race frame.
- */
-union GameFrameContext;
-extern union GameFrameContext *g_DrawBuffer;
-
-/*
  * Full-screen fade level, 0..0x100, passed straight to
  * DrawFullscreenFadeTile and DrawRaceEndBanner. Each frame the
  * owning scene adds g_FadeStep and clamps back into range, so a scene fades in
