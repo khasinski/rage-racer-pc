@@ -379,6 +379,12 @@ static inline s32 GetCarGearLoad(const GameCarSpec *spec, s32 gear) {
                                          : spec->gearLoad[gear];
 }
 
+static inline s32 GetPositiveCarGearRatio(const GameCarSpec *spec, s32 gear) {
+    s32 ratio = spec->gearRatio[gear];
+
+    return ratio > 0 ? ratio : 1;
+}
+
 static inline void SetCarGearLoad(GameCarSpec *spec, s32 gear, s32 value) {
     if (gear == CAR_FORWARD_GEAR_COUNT) {
         spec->gearRatio[0] = value;

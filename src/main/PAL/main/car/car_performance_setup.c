@@ -64,14 +64,14 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     printf("%s", g_MsgInit1b);
     printf(g_FmtDecimalLine, spec->topGear);
     for (gear = 0; gear < 6; gear++) {
-        s32 scaledGearRatio = (spec->gearRatio[gear + 1] * 0x490) / 160;
-        s32 divisor = (spec->torqueScale[gear] *
-                       spec->gearRatio[gear + 1]) / 100;
+        s32 gearRatio = GetPositiveCarGearRatio(spec, gear + 1);
+        s32 scaledGearRatio = gearRatio * 0x490 / 160;
+        s32 divisor = spec->torqueScale[gear] * gearRatio / 100;
 
         SetCarGearLoad(spec, gear + 1,
                        (((scaledGearRatio * 6) / 100) << 17) / 10000);
         if (divisor <= 0) {
-            divisor = spec->gearRatio[gear + 1];
+            divisor = gearRatio;
         }
         for (index = 0; index < 16; index++) {
             g_GearTorqueCurve[gear + 1].values[index] =

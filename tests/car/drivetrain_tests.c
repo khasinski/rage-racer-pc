@@ -469,6 +469,17 @@ static void GearBoundsTests(void) {
     UpdateCarDrivetrain(&s_car);
     Check(g_DragScale == 1000, "zero drag scale is repaired",
           g_DragScale, 1000);
+
+    BuildSpec();
+    PlaceCar();
+    s_spec.gearRatio[1] = 0;
+    s_car.drive.motionState = CAR_MOTION_AIRBORNE;
+    s_car.drive.jumpTimer = 10;
+    s_car.drive.gearDisp = 2;
+    UpdateCarDrivetrain(&s_car);
+    Check(g_ShiftTargetRpm == (((2000 * 0xA0) / 1168) * 0x2710),
+          "zero shift ratio uses a unit divisor", g_ShiftTargetRpm,
+          (((2000 * 0xA0) / 1168) * 0x2710));
 }
 
 int main(void) {

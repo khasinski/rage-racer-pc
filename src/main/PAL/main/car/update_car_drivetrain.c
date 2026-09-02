@@ -251,8 +251,9 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
     *acceleration = 0;
     targetGear = drive->gear;
     if (drive->gearDisp != targetGear) {
+      s32 targetRatio = GetPositiveCarGearRatio(spec, targetGear);
       s32 targetRpm = (((car->speed * 0xA0) / 1168) * 0x2710) /
-                      spec->gearRatio[targetGear];
+                      targetRatio;
       u16 currentRpm = (u16)drive->engineRpm;
 
       g_ShiftTargetRpm = targetRpm;
@@ -266,8 +267,9 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
   targetGear = drive->gear;
   if (drive->gearDisp != targetGear) {
     s32 wheelSpeed = (u16)car->acceleration;
+    s32 targetRatio = GetPositiveCarGearRatio(spec, targetGear);
     s32 targetSpeed = (car->speed * 0x2710) /
-                      (spec->gearRatio[targetGear] * 0x490 / 160);
+                      (targetRatio * 0x490 / 160);
 
     drive->engineLoad = wheelSpeed;
     g_ShiftTargetSpeed = targetSpeed;

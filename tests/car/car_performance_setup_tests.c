@@ -139,6 +139,11 @@ int main(void) {
                  "missing loss band clears previous car value");
     }
 
+    spec.gearRatio[1] = 0;
+    PrepareCarPerformance(&drive);
+    CHECK_EQ(g_GearTorqueCurve[1].values[0], spec.torqueCurve[0],
+             "zero gear ratio uses a safe unit divisor");
+
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
         return 1;
