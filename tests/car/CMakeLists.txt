@@ -1042,7 +1042,9 @@ set_tests_properties(lap_progress PROPERTIES LABELS unit)
 
 add_executable(standing_start_setup_tests
     standing_start_setup_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/begin_car_standing_start.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/begin_car_standing_start.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c)
 target_include_directories(standing_start_setup_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -1056,6 +1058,7 @@ else()
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Werror)
 endif()
+target_link_libraries(standing_start_setup_tests PRIVATE psyz)
 add_test(NAME standing_start_setup COMMAND standing_start_setup_tests)
 set_tests_properties(standing_start_setup PROPERTIES LABELS unit)
 

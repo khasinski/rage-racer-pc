@@ -10,6 +10,14 @@ s32 g_StandingStartSpin;
 s16 g_GripLossTimer;
 GameCarSpec *g_CarSpec;
 
+void UpdateCarTravelVelocity(GameCarRuntime *car) { (void)car; }
+void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
+    (void)index;
+    (void)phase;
+    (void)volume;
+}
+s32 Random15(void) { return 0; }
+
 #define CHECK_EQ(actual, expected) do {                                        \
     if ((actual) != (expected)) {                                               \
         fprintf(stderr, "line %d: %s = %d, expected %d\n", __LINE__, #actual, \
@@ -62,6 +70,15 @@ int main(void) {
     CHECK_EQ(car.drive.gear, CAR_FORWARD_GEAR_COUNT);
     CHECK_EQ(car.drive.drivetrainTorque, 100);
     CHECK_EQ(g_GripLossTimer, 200);
+
+    memset(&car, 0, sizeof(car));
+    car.drive.motionState = CAR_MOTION_STANDING_START;
+    car.drive.engineRpm = 2000;
+    car.drive.acceleratorInput.value = 0;
+    g_StandingStartSpin = 1000;
+    UpdateCarStandingStart(&car);
+    CHECK_EQ(g_StandingStartSpin, 968);
+    CHECK_EQ(car.drive.motionState, CAR_MOTION_STANDING_START);
 
     puts("standing start setup tests passed");
     return 0;
