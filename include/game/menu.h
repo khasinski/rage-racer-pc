@@ -641,7 +641,6 @@ void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
 void DrawSpriteString(long x, long y, const char *str, long clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
-void RequestCarModel(s32 carIndex);
 void RequestOptionScreenAssets(void);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);
@@ -657,9 +656,6 @@ void DrawTireCompoundSlider(u8 x, s32 useFlag);
 void DrawTitleFadeOverlay(s32 brightness);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(void);
-/* All three return 1 while the load is still running, as defined in
- * asset/asset_requests.c and asset/car_assets.c; every caller drops it. */
-s32 RequestUpgradedCarModel(s32 carIndex);
 void SetBodyColor1(s32);
 void SetBodyColor2(s32);
 void TickClassClearFanfare(void);

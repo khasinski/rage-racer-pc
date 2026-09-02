@@ -7,6 +7,7 @@
  * differ only in where the turntable is asked to stop.
  */
 
+#include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"

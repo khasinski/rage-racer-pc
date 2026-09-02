@@ -138,9 +138,8 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     RECORD("assetindex", model);
     return model & 7;
 }
-s32 RequestUpgradedCarModel(s32 carIndex) {
+void RequestUpgradedCarModel(s32 carIndex) {
     RECORD("upgradedmodel", carIndex);
-    return 0;
 }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 

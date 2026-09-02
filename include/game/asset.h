@@ -473,6 +473,8 @@ void RegisterModelBank(ModelBankHeader *base, s32 index);
 void RegisterCourseModels(CourseModelAssetHeader *base);
 s32 RequestRaceStart(void);
 s32 RequestTrackLoad(void);
+void RequestCarModel(s32 carIndex);
+void RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
 void SetTrackRenderTable(struct TrackRenderTable *table);
 void SetCourseObjects(struct CourseObjectTable *table);
