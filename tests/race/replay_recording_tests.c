@@ -74,13 +74,24 @@ static void TestGrandPrixRecording(void) {
     frame = &g_ReplayFrameBuffer.grandPrixReplay[1];
     assert(frame->x0 == 101);
     assert(frame->y0 == 102);
+    assert(frame->z0 == 103);
+    assert(frame->modelY0 == 104);
+    assert(frame->bodyPitch0 == 105);
     assert(frame->bodyYaw0 == 106);
+    assert(frame->bodyRoll0 == 107);
+    assert(frame->wheelRotation0 == 108);
     assert(frame->steeringAngle0 == 109);
     assert(frame->trackPointIndex0 == 110);
     assert(frame->tiltCounter == 111);
     assert(frame->x1 == 201);
+    assert(frame->y1 == 202);
+    assert(frame->z1 == 203);
+    assert(frame->modelY1 == 204);
+    assert(frame->bodyPitch1 == 205);
+    assert(frame->bodyYaw1 == 206);
     assert(frame->bodyRoll1 == 207);
     assert(frame->wheelRotation1 == 208);
+    assert(frame->steeringAngle1 == 209);
     assert(frame->trackPointIndex1 == 210);
 }
 
@@ -100,8 +111,11 @@ static void TestTimeAttackRecording(void) {
     frame = &g_ReplayFrameBuffer.timeAttackReplay[1];
     assert(frame->x == 301);
     assert(frame->y == 302);
+    assert(frame->z == 303);
     assert(frame->modelY == 304);
     assert(frame->bodyPitch == 305);
+    assert(frame->bodyYaw == 306);
+    assert(frame->bodyRoll == 307);
     assert(frame->wheelRotation == 308);
     assert(frame->steeringAngle == 309);
     assert(frame->trackPointIndex == 310);
