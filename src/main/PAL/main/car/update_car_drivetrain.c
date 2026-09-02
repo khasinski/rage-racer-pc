@@ -5,11 +5,6 @@
 #include "game/track_internal.h"
 #include "game/render.h"
 
-typedef union DrivetrainWheelSpeed {
-  s32 value;
-  u32 unsignedValue;
-} DrivetrainWheelSpeed;
-
 /*
  * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
  * confirms it, and it only clears once the pedal is back under 0x7C. The gap
@@ -252,12 +247,11 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
 
   targetGear = drive->gear;
   if (drive->gearDisp != targetGear) {
-    DrivetrainWheelSpeed wheelSpeed;
+    s32 wheelSpeed = (u16)car->acceleration;
     s32 targetSpeed = (car->speed * 0x2710) /
                       (spec->gearRatio[targetGear] * 0x490 / 160);
 
-    wheelSpeed.value = (u16)car->acceleration;
-    drive->engineLoad = wheelSpeed.value;
+    drive->engineLoad = wheelSpeed;
     g_ShiftTargetSpeed = targetSpeed;
     if (drive->manual != 0 && drive->gearDisp < targetGear &&
         g_RoadGrade < 0 && targetGear >= 4) {
@@ -271,11 +265,10 @@ static void UpdateGearShiftState(PlayerCarRuntime *car, GameCarDrive *drive,
       } else {
         gradePenalty = g_RoadGrade * -7 / 240;
       }
-      wheelSpeed.unsignedValue <<= 16;
-      wheelSpeed.value >>= 16;
+      wheelSpeed = (s16)wheelSpeed;
       gradeScale = 0x64 - gradePenalty;
       drive->engineLoad =
-          (u16)(wheelSpeed.value * gradeScale / 100);
+          (u16)(wheelSpeed * gradeScale / 100);
       g_ShiftTargetSpeed = gradeScale * targetSpeed / 100;
     }
 
