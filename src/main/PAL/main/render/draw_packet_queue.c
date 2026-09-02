@@ -6,28 +6,23 @@
  * the advanced packet cursor. */
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packetCursor,
                       s32 tpage) {
-    RenderBufferAddress cursor;
-    u8 *packetStart = packetCursor;
+    DrawPacket *packet = (DrawPacket *)packetCursor;
 
-    cursor.bytes = packetCursor;
-    SetDrawMode(cursor.drawPacket, 0, 1, (u16)tpage, g_DrawModeEnv);
-    packetCursor += sizeof(DrawPacket);
-    AddPrim(ot, packetStart);
-    return packetCursor;
+    SetDrawMode(packet, 0, 1, (u16)tpage, g_DrawModeEnv);
+    AddPrim(ot, packet);
+    return (u8 *)(packet + 1);
 }
 
 u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
                                 s32 x, s32 y, s32 w, s32 h, s32 u, s32 v,
                                 s32 clutIndex, s32 tpage, s32 intensity) {
-    POLY_FT4 *packet;
-    RenderBufferAddress packetAddress;
+    POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
     s16 width = w;
     s16 height = h;
     u8 textureU = u;
     u8 textureV = v;
 
-    packetAddress.bytes = packetCursor;
-    SetPolyFT4(packetAddress.polyFT4);
+    SetPolyFT4(packet);
     if (width < 0) {
         width += 1;
         textureU -= width;
@@ -37,7 +32,6 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
         textureV -= height;
     }
 
-    packet = packetAddress.polyFT4;
     packet->x0 = x;
     packet->y0 = y;
     packet->x1 = x + (width < 0 ? -width : width);
@@ -59,24 +53,21 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
     packet->b0 = intensity;
     packet->clut = clutIndex;
     packet->tpage = tpage;
-    packetCursor += sizeof(POLY_FT4);
     AddPrim(ot, packet);
-    return packetCursor;
+    return (u8 *)(packet + 1);
 }
 
 u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
                           s32 y, s32 w, s32 h, s32 u, s32 v, s32 uSpan,
                           s32 vSpan, s32 clutIndex, s32 tpage) {
-    POLY_FT4 *packet;
-    RenderBufferAddress packetAddress;
+    POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
     s16 width = w;
     s16 height = h;
     u8 textureU = u;
     u8 textureV = v;
 
-    packetAddress.bytes = packetCursor;
-    SetPolyFT4(packetAddress.polyFT4);
-    SetShadeTex(packetAddress.polyFT4, 1);
+    SetPolyFT4(packet);
+    SetShadeTex(packet, 1);
 
     if (width < 0) {
         textureU -= width + 1;
@@ -85,7 +76,6 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
         textureV -= height + 1;
     }
 
-    packet = packetAddress.polyFT4;
     packet->x0 = x;
     packet->y0 = y;
     packet->x1 = x + (width < 0 ? -width : width);
@@ -104,7 +94,6 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
     packet->v3 = textureV + vSpan;
     packet->clut = clutIndex;
     packet->tpage = tpage;
-    packetCursor += sizeof(POLY_FT4);
     AddPrim(ot, packet);
-    return packetCursor;
+    return (u8 *)(packet + 1);
 }

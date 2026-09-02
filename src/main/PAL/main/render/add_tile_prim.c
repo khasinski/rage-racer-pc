@@ -4,8 +4,7 @@
 
 u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                 s32 width, s32 height, s32 red, s32 green, s32 blue) {
-    RenderBufferAddress packet = {.bytes = prim};
-    TILE *tile = packet.tile;
+    TILE *tile = (TILE *)prim;
 
     SetTile(tile);
     tile->x0 = x;
@@ -16,6 +15,5 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
     tile->g0 = green;
     tile->b0 = blue;
     AddPrim(ot, tile);
-    packet.tile++;
-    return packet.bytes;
+    return (u8 *)(tile + 1);
 }
