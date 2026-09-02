@@ -76,7 +76,7 @@ s32 g_MenuCursorPulsePhase;
 s32 g_MenuRowFlashLevels[16];
 TimedDrawCommand g_MenuRowScript[4];
 GameRenderState g_RenderState;
-void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     RECORD("drawflattriangle", x0, y0, x1, (s32)y1, (s32)x2, (s32)y2, r, g, b, semiTrans, (s32)flags);
 }
@@ -85,7 +85,7 @@ void DrawLargeText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    s32 flags) {
 }
 void DrawLine(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x0,
     s32 y0,
     s32 x1,
@@ -103,7 +103,7 @@ void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,
                    u16 clut, s32 flags) {
 }
 void DrawSolidRect(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x,
     s32 y,
     s32 w,
@@ -114,12 +114,12 @@ void DrawSolidRect(
     s32 alpha) {
     RECORD("drawsolidrect", x, y, w, h, r, g, b, alpha);
 }
-void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
                 u32 flags) {
     RECORD("drawsprite", x0, y0, x1, (s32)y1, (s32)u0, (s32)v0, r, g, b, (s32)clutX, shadeTex, semiTrans, (s32)flags);
 }
-void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
                           u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,

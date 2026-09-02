@@ -46,7 +46,7 @@ void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height,
     call->alpha = alpha;
 }
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height,
                    s32 r, s32 g, s32 b, s32 alpha) {
     RectCall *call = &s_fills[s_fillCount++];
     (void)ot;

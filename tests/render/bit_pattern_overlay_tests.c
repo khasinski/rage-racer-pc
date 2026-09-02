@@ -22,7 +22,7 @@ static s32 s_drawMode;
 static GameOrderingTableEntry s_ot[2];
 static u8 s_packet[64];
 
-void DrawSprite(void *ot, s16 x, s16 y, s16 w, u16 h, u16 u, u16 v,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 w, u16 h, u16 u, u16 v,
                 u8 r, u8 g, u8 b, u16 clut, s32 shade, s32 semi,
                 u32 flags) {
     (void)ot; (void)w; (void)h; (void)u; (void)v; (void)r; (void)g;
@@ -32,7 +32,7 @@ void DrawSprite(void *ot, s16 x, s16 y, s16 w, u16 h, u16 u, u16 v,
     s_callCount++;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
     s_drawMode = tpage;
     return prim;

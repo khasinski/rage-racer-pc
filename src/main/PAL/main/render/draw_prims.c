@@ -8,7 +8,7 @@ static u16 LinearClutToVram(u16 index) {
     return ((row + 0x1E0) << 6) + index % 20;
 }
 
-void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
+void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
     s16 left = x;
     s16 top = y;
     s16 width = w;
@@ -41,7 +41,7 @@ void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
 }
 
 
-void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
                 u32 flags) {
     SPRT *prim = RENDER_PRIM_CURSOR_AS(SPRT);
@@ -71,7 +71,7 @@ void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
 }
 
 
-void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     POLY_F3 *prim = RENDER_PRIM_CURSOR_AS(POLY_F3);
     u8 *next;
@@ -98,7 +98,7 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
 }
 
 
-void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
+void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
                   u16 x3, u16 y3, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     POLY_F4 *prim = RENDER_PRIM_CURSOR_AS(POLY_F4);
     u8 *next;
@@ -130,7 +130,7 @@ void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
  * the ordering table. clutIndex is a linear palette slot turned into VRAM clut
  * coordinates: 20 cluts per row starting at y = 0x1E0.
  */
-void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
                           u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,
@@ -166,7 +166,7 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
 }
 
 
-void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
     TILE *prim = RENDER_PRIM_CURSOR_AS(TILE);
     u8 alphaValue = (u8)alpha;
     u8 *next;
@@ -190,7 +190,7 @@ void DrawSolidRect(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b
 }
 
 
-void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
+void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32 alpha) {
     LINE_F2 *prim = RENDER_PRIM_CURSOR_AS(LINE_F2);
     u8 alphaValue = (u8)alpha;
     u8 *next;
@@ -214,7 +214,7 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b, s32
 }
 
 
-void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
+void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
                    u8 r, u8 g, u8 b, u8 alpha) {
     LINE_F3 *prim = RENDER_PRIM_CURSOR_AS(LINE_F3);
     u8 *next;
@@ -241,7 +241,7 @@ void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
 }
 
 
-void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u8 alpha) {
+void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u8 alpha) {
     LINE_G2 *prim = RENDER_PRIM_CURSOR_AS(LINE_G2);
     u8 *next;
 

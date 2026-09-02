@@ -93,7 +93,7 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
 /* SPRT, 20 bytes: a raw (SetShadeTex) textured sprite linked into `ot`.
  * Returns the advanced packet cursor. */
 u8 *GameQueueSprite(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -128,7 +128,7 @@ u8 *GameQueueSprite(
 /* SPRT, 20 bytes: a textured sprite modulated by `intensity` on all three
  * channels (no SetShadeTex, so the texel is shaded). */
 u8 *GameQueueShadedSprite(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -162,7 +162,7 @@ u8 *GameQueueShadedSprite(
 
 /* SPRT, 20 bytes: GameQueueShadedSprite plus SetSemiTrans. */
 u8 *GameQueueShadedSpriteTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -197,7 +197,7 @@ u8 *GameQueueShadedSpriteTrans(
 
 /* SPRT, 20 bytes: GameQueueSprite plus SetSemiTrans. */
 u8 *GameQueueSpriteTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -230,7 +230,7 @@ u8 *GameQueueSpriteTrans(
 /* TILE, 16 bytes: a semi-transparent solid rectangle linked into `ot`.
  * Returns the advanced packet cursor. */
 u8 *GameQueueTileTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -269,7 +269,7 @@ u8 *GameQueueTileTrans(
 /* LINE_F2, 16 bytes: one flat-shaded line, linked into `ot`. Returns the
  * advanced packet cursor. */
 u8 *GameQueueLine(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x0,
     s32 y0,

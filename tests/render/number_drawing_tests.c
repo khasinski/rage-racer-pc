@@ -12,7 +12,7 @@ s32 g_MenuOverlayPatternAnimOffset;
 s32 g_AnimTimer;
 
 typedef struct SpriteCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s16 x;
     s16 y;
     s16 width;
@@ -32,7 +32,7 @@ static s32 s_drawMode;
 static GameOrderingTableEntry s_ot[2];
 static u8 s_packet[64];
 
-void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
                 u16 textureV, u8 red, u8 green, u8 blue, u16 clut, s32 shade,
                 s32 semi, u32 flags) {
     SpriteCall *call = &s_calls[s_callCount++];
@@ -52,7 +52,7 @@ void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
     call->clut = clut;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     s_drawModeOt = ot;
     s_drawMode = tpage;
     return prim;

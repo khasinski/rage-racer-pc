@@ -23,7 +23,7 @@ void AddPrim(void *orderingTable, void *packet) {
 
 static int Check(s32 parity, s16 expectedY) {
     DrawPacket packets[2];
-    u32 orderingTable = 0;
+    GameOrderingTableEntry orderingTable = {0};
     u8 *next;
 
     g_FrameParity = parity;

@@ -44,7 +44,7 @@ void DrawVolumeBar(s32 level, s32 y) {
     s_volumeLevels[s_volumeCalls++] = level;
 }
 
-u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
     (void)x;
@@ -57,7 +57,7 @@ u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *GameQueueShadedSpriteTrans(void *ot, u8 *prim, s32 x, s32 y,
+u8 *GameQueueShadedSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                                s32 width, s32 height, s32 u, s32 v,
                                s32 clut, s32 intensity) {
     (void)ot;

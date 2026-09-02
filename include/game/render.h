@@ -363,22 +363,22 @@ void UpdateEnvironment(void);
  * y = 0x1E0). Where an `alpha` argument exists, 0xFF means opaque; anything
  * else enables semi-transparency and appends a blend packet via func_80017390.
  */
-void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
                 u32 flags);
-void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags);
-void DrawFlatQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
+void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2,
                   u16 x3, u16 y3, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags);
 /* POLY_FT4: four xy/uv pairs, flat rgb, tpage and a CLUT index as depth key. */
-void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
                           u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,
                           u16 tpage);
 /* TILE: solid rectangle at (x, y) sized (w, h). */
 void DrawSolidRect(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x,
     s32 y,
     s32 w,
@@ -388,7 +388,7 @@ void DrawSolidRect(
     s32 b,
     s32 alpha);
 void DrawLine(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x0,
     s32 y0,
     s32 x1,
@@ -398,11 +398,11 @@ void DrawLine(
     s32 b,
     s32 alpha);
 /* LINE_F3: flat-shaded 3-point polyline. */
-void DrawPolyLine3(void *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
+void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
                    u8 r, u8 g, u8 b, u8 alpha);
 /* LINE_G2: line interpolating rgb0 -> rgb1. */
 void DrawGradientLine(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x0,
     s32 y0,
     s32 x1,
@@ -419,7 +419,7 @@ void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
                      u8 b, u8 code);
 /* Clips (x, y, w, h) to the 320x480 frame and queues a SetDrawArea packet. */
 void SetDrawClipRect(
-    void *ot,
+    GameOrderingTableEntry *ot,
     s32 x,
     s32 y,
     s32 w,
@@ -538,10 +538,10 @@ void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
  * the texture is drawn raw.
  */
 /* SPRT, 20 bytes. */
-u8 *GameQueueShadedSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                           s32 u, s32 v, s32 clutIndex, s32 intensity);
 u8 *GameQueueShadedSpriteTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -552,7 +552,7 @@ u8 *GameQueueShadedSpriteTrans(
     s32 clutIndex,
     s32 intensity);
 u8 *GameQueueSpriteTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -576,7 +576,7 @@ u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 /* TILE, 16 bytes. */
 u8 *GameQueueTileTrans(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -587,7 +587,7 @@ u8 *GameQueueTileTrans(
     s32 b);
 /* LINE_F2, 16 bytes. */
 u8 *GameQueueLine(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x0,
     s32 y0,
@@ -603,7 +603,7 @@ u8 *GameQueueLine(
  * GameQueueTexturedRect takes uSpan/vSpan separately.
  */
 u8 *GameQueueShadedTexturedRect(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -615,10 +615,10 @@ u8 *GameQueueShadedTexturedRect(
     s32 tpage,
     s32 intensity);
 
-u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 u,
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h, s32 u,
                     s32 v, s32 clutIndex);
 u8 *GameQueueTexturedRect(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,
@@ -637,7 +637,7 @@ typedef enum GameTexturePacketKind {
 } GameTexturePacketKind;
 
 static inline u8 *GameQueueTexturePacketWide(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,

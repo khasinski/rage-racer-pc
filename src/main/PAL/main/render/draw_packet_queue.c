@@ -10,7 +10,7 @@
 /* DR_MODE, 12 bytes: sets the texture page (and the blend mode packed into it)
  * for the primitives that follow, links it into the ordering table and returns
  * the advanced packet cursor. */
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     RenderBufferAddress cursor;
     u8 *pkt;
 
@@ -22,7 +22,7 @@ u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
     return prim;
 }
 
-u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w,
+u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w,
                                 s32 h, s32 u, s32 v, s32 clutIndex, s32 tpage,
                                 s32 intensity) {
     POLY_FT4 *packet;
@@ -71,7 +71,7 @@ u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w,
     return prim;
 }
 
-u8 *GameQueueTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                           s32 u, s32 v, s32 uSpan, s32 vSpan, s32 clutIndex,
                           s32 tpage) {
     POLY_FT4 *packet;

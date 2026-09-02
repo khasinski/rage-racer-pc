@@ -10,7 +10,7 @@ s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
 typedef struct SolidRectCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 x;
     s32 y;
     s32 width;
@@ -24,7 +24,7 @@ typedef struct SolidRectCall {
 static SolidRectCall s_rects[2];
 static s32 s_rectCount;
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height, s32 red,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height, s32 red,
                    s32 green, s32 blue, s32 alpha) {
     SolidRectCall *rect = &s_rects[s_rectCount++];
     rect->ot = ot;

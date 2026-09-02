@@ -25,7 +25,7 @@ static s32 s_tileCount;
 static s32 s_lastTileX;
 static s32 s_lastTileY;
 
-u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
     (void)x;
@@ -39,7 +39,7 @@ u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                     s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
     (void)width;
@@ -51,7 +51,7 @@ u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
     s_drawModes[s_drawModeCount++] = tpage;
     return prim + 1;

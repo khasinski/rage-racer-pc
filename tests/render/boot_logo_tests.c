@@ -26,7 +26,7 @@ static SpriteCall s_calls[3];
 static s32 s_callCount;
 static s32 s_drawMode;
 
-u8 *GameQueueShadedSprite(void *ot, u8 *packet, s32 x, s32 y, s32 width,
+u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y, s32 width,
                           s32 height, s32 u, s32 v, s32 clut,
                           s32 intensity) {
     SpriteCall *call = &s_calls[s_callCount++];
@@ -42,7 +42,7 @@ u8 *GameQueueShadedSprite(void *ot, u8 *packet, s32 x, s32 y, s32 width,
     return packet + 8;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *packet, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
     (void)ot;
     s_drawMode = tpage;
     return packet + 4;

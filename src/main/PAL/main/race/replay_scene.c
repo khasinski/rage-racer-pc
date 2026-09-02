@@ -37,14 +37,14 @@ void BeginReplay(void) {
 }
 
 static void DrawReplayBadge(void) {
-    u8 *base;
+    GameOrderingTableEntry *base;
     u8 *next;
 
     if ((g_SceneTimer & 0x10) == 0 || g_SeriesCleared != 0) {
         return;
     }
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
+    base = GamePrimaryOrderingTable(0);
     next = GameQueueSprite(base, RENDER_PRIM_CURSOR_AS(u8), 0x10, 0x10, 0x48,
                            0x10, 0, 0x68, 0x780D);
     RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(base, next, 9);

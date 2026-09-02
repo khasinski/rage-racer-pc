@@ -14,7 +14,7 @@ s16 g_McMessageColumnX[8];
 MemoryCardMessageRow *g_McMessageRows[32];
 
 typedef struct DrawRecord {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 x;
     s32 y;
 } DrawRecord;
@@ -39,7 +39,7 @@ static s32 s_textCount;
 static s32 s_drawMode;
 static s32 s_drawModeCount;
 
-u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
     (void)width; (void)height; (void)u; (void)v; (void)clut;
     s_sprites[s_spriteCount++] = (DrawRecord){ot, x, y};
@@ -68,7 +68,7 @@ void DrawOptionHintBar(s32 hint) { s_hint = hint; }
 void DrawPadTypeHint(void) { s_padHints++; }
 
 /* DrawMemoryCardMessage lives in the same translation unit. */
-u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                     s32 u, s32 v, s32 clut) {
     (void)w; (void)h; (void)u; (void)clut;
     s_messageSprite = (DrawRecord){ot, x, y};
@@ -76,7 +76,7 @@ u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
     s_messageSpriteCount++;
     return prim + 1;
 }
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
     s_drawMode = tpage;
     s_drawModeCount++;

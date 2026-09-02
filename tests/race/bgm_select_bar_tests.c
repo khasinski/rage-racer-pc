@@ -30,7 +30,7 @@ static s32 s_spriteCount;
 static s32 s_tileCount;
 static s32 s_drawMode;
 
-u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                     s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
     s_sprites[s_spriteCount++] =
@@ -38,7 +38,7 @@ u8 *GameQueueSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *GameQueueTileTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                        s32 height, s32 r, s32 g, s32 b) {
     (void)ot; (void)x; (void)y; (void)width; (void)height;
     (void)r; (void)g; (void)b;
@@ -46,7 +46,7 @@ u8 *GameQueueTileTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 texturePage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 texturePage) {
     (void)ot;
     s_drawMode = texturePage;
     return prim + 1;

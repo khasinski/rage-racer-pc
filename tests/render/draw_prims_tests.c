@@ -28,7 +28,7 @@ static int s_failures;
     } \
 } while (0)
 
-u8 *QueueDrawModePrim(void *ot, u8 *packet, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
     (void)ot;
     s_queuePackets[s_queueCount] = packet;
     s_queuePages[s_queueCount] = tpage;

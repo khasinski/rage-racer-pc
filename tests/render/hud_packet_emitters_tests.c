@@ -17,14 +17,14 @@ static s32 s_tileCallCount;
 static u8 *s_tilePacket;
 static s32 s_tileArgs[7];
 
-u8 *QueueDrawModePrim(void *ot, u8 *packet, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
     s_queueOt = ot;
     s_queuePacket = packet;
     s_queueTpage = tpage;
     return packet + 4;
 }
 
-u8 *GameQueueTileTrans(void *ot, u8 *packet, s32 x, s32 y, s32 width,
+u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y, s32 width,
                        s32 height, s32 red, s32 green, s32 blue) {
     s_queueOt = ot;
     s_tilePacket = packet;

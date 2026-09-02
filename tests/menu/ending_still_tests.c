@@ -31,7 +31,7 @@ void DrawRaceEndBanner(s32 fade) {
     s_bannerFade = fade;
 }
 
-u8 *GameQueueSprite(void *ot, u8 *packet, s32 x, s32 y, s32 width,
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y, s32 width,
                     s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
     (void)y;
@@ -45,7 +45,7 @@ u8 *GameQueueSprite(void *ot, u8 *packet, s32 x, s32 y, s32 width,
     return packet + 8;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *packet, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
     (void)ot;
     s_drawModes[s_spriteCount - 1] = tpage;
     return packet + 4;

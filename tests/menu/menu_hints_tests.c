@@ -10,7 +10,7 @@ GameRenderState g_RenderState;
 OptionHintCaption g_OptionHintCaptions[7];
 
 typedef struct SpriteCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 x, y, width, height, u, v, clut;
 } SpriteCall;
 
@@ -21,13 +21,13 @@ static s32 s_callCount;
 static void *s_drawModeOt;
 static s32 s_drawMode;
 
-u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
     s_calls[s_callCount++] = (SpriteCall){ot, x, y, width, height, u, v, clut};
     return prim + 1;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 texturePage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 texturePage) {
     s_drawModeOt = ot;
     s_drawMode = texturePage;
     return prim + 1;
@@ -50,8 +50,8 @@ static void ResetCalls(void) {
 }
 
 int main(void) {
-    void *ot0;
-    void *ot51;
+    GameOrderingTableEntry *ot0;
+    GameOrderingTableEntry *ot51;
 
     g_DrawBuffer = &s_frame;
     ot0 = GamePrimaryOrderingTable(0);

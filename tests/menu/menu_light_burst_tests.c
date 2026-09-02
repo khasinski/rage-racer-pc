@@ -39,7 +39,7 @@ static s32 s_clipCount;
 static s32 s_firstClipX;
 static s32 s_lastClipX;
 
-void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0,
+void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0,
                       u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u8 alpha) {
     (void)ot;
     (void)y0;
@@ -52,7 +52,7 @@ void DrawGradientLine(void *ot, s32 x0, s32 y0, s32 x1, u16 y1, u8 r0,
     s_lines[s_lineCount++] = (LineRecord){x0, x1, r0, r1};
 }
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
                    s32 g, s32 b, s32 alpha) {
     (void)ot;
     (void)height;
@@ -62,7 +62,7 @@ void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
     s_bands[s_bandCount++] = (BandRecord){x, y, width, r};
 }
 
-void SetDrawClipRect(void *ot, s32 x, s32 y, s32 width, s32 height) {
+void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height) {
     (void)ot;
     (void)y;
     (void)width;

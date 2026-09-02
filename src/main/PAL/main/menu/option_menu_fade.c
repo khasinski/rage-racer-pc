@@ -5,7 +5,7 @@
 /* The 0x140x0x1E0 twin of DrawFullscreenFadeTile, for the 480-line setup scene. */
 
 void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
-    u8 *base = (u8 *)GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *base = GamePrimaryOrderingTable(0);
     u8 *next;
 
     if (color < 0) {

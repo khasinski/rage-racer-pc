@@ -19,7 +19,7 @@ s32 rsin(s32 angle) {
     return s_rsinValue;
 }
 
-void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g,
+void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g,
               s32 b, s32 alpha) {
     (void)ot;
     (void)x0;
@@ -33,7 +33,7 @@ void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g,
     }
 }
 
-void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                       u16 y2, u8 r, u8 g, u8 b, s32 semiTrans, u32 flags) {
     (void)ot;
     (void)x0;
@@ -51,7 +51,7 @@ void DrawFlatTriangle(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
     }
 }
 
-void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
                 u16 textureV, u8 r, u8 g, u8 b, u16 clut, s32 shadeTex,
                 s32 semiTrans, u32 flags) {
     (void)ot;
@@ -83,7 +83,7 @@ void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height, u8 r,
     (void)code;
 }
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
                    s32 g, s32 b, s32 alpha) {
     (void)ot;
     (void)x;

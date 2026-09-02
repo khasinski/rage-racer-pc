@@ -18,7 +18,7 @@ ScreenOffset g_ScreenOffsetX;
 ScreenOffset g_ScreenOffsetY;
 
 typedef struct SpriteCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 x, y, u, v;
 } SpriteCall;
 
@@ -29,7 +29,7 @@ static s32 s_callCount;
 static s32 s_hintVariant;
 static s32 s_lastCue;
 
-u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                          s32 height, s32 u, s32 v, s32 clut) {
     (void)width;
     (void)height;

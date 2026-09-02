@@ -156,7 +156,7 @@ void DrawOwnedCarCounter(s32 owned, s32 step) {
 void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 flash) {
     RECORD("cursorbox", x0, y0, x1, y1, flash);
 }
-void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0, u8 r,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0, u8 r,
                 u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans, u32 flags) {
     (void)ot;
     RECORD("sprite", x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex,

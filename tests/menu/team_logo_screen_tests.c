@@ -88,7 +88,7 @@ void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 flash) {
     (void)height;
     (void)flash;
 }
-void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 u, u16 v,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 u, u16 v,
                 u8 r, u8 g, u8 b, u16 clut, s32 shade, s32 semiTrans,
                 u32 flags) {
     (void)ot;

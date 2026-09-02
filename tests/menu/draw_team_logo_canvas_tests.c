@@ -87,26 +87,26 @@ void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g, u8 b,
     RECORD("outline", xa, ya, w, h, r, g, b, code);
 }
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s32 b,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h, s32 r, s32 g, s32 b,
                    s32 alpha) {
     (void)ot;
     RECORD("rect", x, y, w, h, r, g, b, alpha);
 }
 
-void DrawLine(void *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b,
+void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1, s32 r, s32 g, s32 b,
               s32 alpha) {
     (void)ot;
     RECORD("line", x0, y0, x1, y1, r, g, b, alpha);
 }
 
-void DrawSprite(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0, u8 r,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0, u8 r,
                 u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans, u32 flags) {
     (void)ot;
     RECORD("sprite", x0, y0, x1, y1, u0, v0, r, g, b, clutX, shadeTex,
            semiTrans, (s32)flags);
 }
 
-void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1, u8 v1,
                           u8 u2, u8 v2, u8 u3, u8 v3, u8 r, u8 g, u8 b,
                           u16 clutIndex, s32 shadeTex, s32 semiTrans,
@@ -122,7 +122,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
     return 0;
 }
 
-void SetDrawClipRect(void *ot, s32 x, s32 y, s32 w, s32 h) {
+void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
     (void)ot;
     RECORD("clip", x, y, w, h);
 }

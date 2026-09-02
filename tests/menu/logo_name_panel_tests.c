@@ -40,7 +40,7 @@ s32 rsin(s32 angle) {
     return angle == 0 ? 4096 : 0;
 }
 
-void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 u,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 u,
                 u16 v, u8 r, u8 g, u8 b, u16 clut, s32 shade,
                 s32 semiTrans, u32 flags) {
     (void)ot;
@@ -54,7 +54,7 @@ void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 u,
     s_sprites[s_spriteCount++] = (SpriteRecord){x, y, height, u, v, flags};
 }
 
-void DrawSolidRect(void *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
+void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
                    s32 g, s32 b, s32 alpha) {
     (void)ot;
     (void)width;

@@ -7,7 +7,7 @@ GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 typedef struct TileCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 width, height, red, green, blue;
 } TileCall;
 
@@ -17,7 +17,7 @@ static TileCall s_tile;
 static void *s_drawModeOt;
 static s32 s_tpage;
 
-u8 *GameQueueTileTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                        s32 height, s32 red, s32 green, s32 blue) {
     (void)x;
     (void)y;
@@ -25,7 +25,7 @@ u8 *GameQueueTileTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     s_drawModeOt = ot;
     s_tpage = tpage;
     return prim + 1;

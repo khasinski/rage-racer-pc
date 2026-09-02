@@ -89,7 +89,7 @@ void SetDispMask(s32 enabled) {
     (void)enabled;
 }
 
-u8 *GameQueueShadedSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                           s32 height, s32 u, s32 v, s32 clut, s32 shade) {
     (void)ot;
     (void)x;
@@ -104,7 +104,7 @@ u8 *GameQueueShadedSprite(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 width,
+u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
                                 s32 height, s32 u, s32 v, s32 clut,
                                 s32 tpage, s32 shade) {
     (void)ot;
@@ -121,7 +121,7 @@ u8 *GameQueueShadedTexturedRect(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
+u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
     (void)tpage;
     return prim + 1;

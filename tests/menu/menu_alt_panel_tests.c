@@ -11,7 +11,7 @@ s32 g_MenuAltPanelProgressB;
 GameRenderState g_RenderState;
 
 typedef struct QuadCall {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s16 x[4];
     u16 y[4];
     u8 u[4];
@@ -22,7 +22,7 @@ typedef struct QuadCall {
 static QuadCall s_calls[2];
 static s32 s_callCount;
 
-void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
+void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
                           u16 y2, u16 x3, u16 y3, u8 u0, u8 v0, u8 u1,
                           u8 v1, u8 u2, u8 v2, u8 u3, u8 v3, u8 red,
                           u8 green, u8 blue, u16 clut, s32 shade,

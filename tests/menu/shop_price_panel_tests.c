@@ -33,7 +33,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 digits, u32 value, u8 r, u8 g, u8 b,
     return digits;
 }
 
-void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
+void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,
                 u16 textureV, u8 r, u8 g, u8 b, u16 clut, s32 shadeTex,
                 s32 semiTrans, u32 flags) {
     (void)ot;

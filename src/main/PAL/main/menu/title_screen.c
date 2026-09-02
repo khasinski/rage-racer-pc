@@ -63,25 +63,20 @@ void EnterTitleScreen(void) {
 
 
 void DrawTitleFadeOverlay(s32 brightness) {
-    void *current;
-    void **cursorSlot;
-    u8 *base;
-    void *next;
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    u8 *next;
     s32 color;
 
     color = (u8)brightness;
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
-    current = *cursorSlot;
-    next = GameQueueTileTrans(base, current, 0, 0x18, 0x140, 0xC0, color, color, color);
-    *cursorSlot = QueueDrawModePrim(base, next, 0x29);
+    next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0x18,
+                              0x140, 0xC0, color, color, color);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x29);
 }
 
 
 void DrawPressStartPrompt(void) {
-    void **cursorSlot;
-    u8 *base;
-    void *next;
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    u8 *next;
     s32 sinValue;
     s32 frame;
 
@@ -93,11 +88,9 @@ void DrawPressStartPrompt(void) {
     sinValue = rsin(((g_AnimTimer * 3) << 5) & 0xFE0);
     frame = (sinValue / 64) + 0x80;
 
-    cursorSlot = &RENDER_PRIM_CURSOR_AS(void);
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    next = *cursorSlot;
-    next = GameQueueShadedSprite(base, next, 0x68, 0xC8, 0x70, 0x10, 0x70, 0xA0, 0x7E84, frame);
-    *cursorSlot = QueueDrawModePrim(base, next, 0x39);
+    next = GameQueueShadedSprite(ot, RENDER_PRIM_CURSOR_AS(u8), 0x68, 0xC8,
+                                 0x70, 0x10, 0x70, 0xA0, 0x7E84, frame);
+    RENDER_PRIM_CURSOR_AS(u8) = QueueDrawModePrim(ot, next, 0x39);
 }
 
 
@@ -117,15 +110,14 @@ void UpdateTitleScreen(void) {
 
 
 void DrawMainMenuRows(void) {
-    void *cursorSlot;
-    u8 *base;
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    u8 *packet;
     s32 row;
     s32 i;
     s32 width;
     s32 y;
 
-    base = (u8 *)GamePrimaryOrderingTable(0);
-    cursorSlot = RENDER_PRIM_CURSOR_AS(void);
+    packet = RENDER_PRIM_CURSOR_AS(u8);
     row = 0;
     i = 0;
     width = 0x70;
@@ -164,13 +156,15 @@ void DrawMainMenuRows(void) {
             frame = 0;
         }
 
-        cursorSlot = GameQueueTexturedRect(base, cursorSlot, 0x68, y, width, frame, 0, (i * 16) + 0xA0, width, 0x10, code, 0x39);
+        packet = GameQueueTexturedRect(ot, packet, 0x68, y, width, frame, 0,
+                                       (i * 16) + 0xA0, width, 0x10, code,
+                                       0x39);
         y += 0x18;
         i++;
         row++;
     }
 
-    RENDER_PRIM_CURSOR_AS(void) = cursorSlot;
+    RENDER_PRIM_CURSOR_AS(u8) = packet;
 }
 
 void UpdateMainMenuOpen(void) {
