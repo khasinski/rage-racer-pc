@@ -34,7 +34,10 @@ typedef struct LaunchSpeedThreshold {
 extern u32 g_CarModelSlot;
 extern RaceIntroCameraKey *g_RaceIntroCameraCursor;
 extern LaunchSpeedThreshold g_LaunchSpeedThresholds[];
-extern s16 g_TorqueBandEnd[];
-extern s16 g_TorqueLossBandEnd[];
+enum {
+    CAR_TORQUE_BAND_COUNT = 10,
+};
+extern s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
+extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 
 #endif

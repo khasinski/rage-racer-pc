@@ -14,6 +14,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/track.h"
 #include "game/race.h"
 #include "game/state.h"
@@ -26,8 +27,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg);
 /* The tables the drivetrain reads. */
 GameCarSpec *g_CarSpec;
 GearCurveRow g_GearTorqueCurve[8];
-s16 g_TorqueBandEnd[8];
-s16 g_TorqueLossBandEnd[8];
+s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
+s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 GameTrackArcCenter *g_TrackArcCenters;

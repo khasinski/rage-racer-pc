@@ -128,6 +128,17 @@ int main(void) {
              g_LaunchEnergyThresholds[4] * 0xE,
              "negative launch threshold wraps safely");
 
+    memset(spec.torqueBand.values, 0, sizeof(spec.torqueBand.values));
+    memset(spec.torqueLossRpm, 0, sizeof(spec.torqueLossRpm));
+    spec.gearLoad[0] = 0;
+    PrepareCarPerformance(&drive);
+    for (index = 0; index < CAR_TORQUE_BAND_COUNT; index++) {
+        CHECK_EQ(g_TorqueBandEnd[index], 0,
+                 "missing torque band clears previous car value");
+        CHECK_EQ(g_TorqueLossBandEnd[index], 0,
+                 "missing loss band clears previous car value");
+    }
+
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
         return 1;

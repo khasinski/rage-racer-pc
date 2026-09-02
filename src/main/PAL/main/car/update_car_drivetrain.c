@@ -139,6 +139,9 @@ static void ReadEngineTorque(const GameCarDrive *drive,
     return;
   }
   bandIndex = drive->engineRpm / 1000;
+  if (bandIndex >= CAR_TORQUE_BAND_COUNT) {
+    bandIndex = CAR_TORQUE_BAND_COUNT - 1;
+  }
   *netTorque = InterpolateDriveTorque(
       spec, gearCurve, drive->engineRpm, bandIndex, *netTorque);
   *bandScale = InterpolateEngineBraking(

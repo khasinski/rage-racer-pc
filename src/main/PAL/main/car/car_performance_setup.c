@@ -85,18 +85,14 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     printf("%s", g_MsgInit2);
 
     for (index = 0, speedThreshold = 0x3E8;
-         index < 10;
+         index < CAR_TORQUE_BAND_COUNT;
          index++, speedThreshold += 0x3E8) {
         s32 band = FindFirstPositiveBand(spec->torqueBand.values, 16,
                                          speedThreshold);
         s32 lossBand = FindFirstPositiveLossBand(spec, speedThreshold);
 
-        if (band >= 0) {
-            g_TorqueBandEnd[index] = (s16)band;
-        }
-        if (lossBand >= 0) {
-            g_TorqueLossBandEnd[index] = (s16)lossBand;
-        }
+        g_TorqueBandEnd[index] = (s16)(band >= 0 ? band : 0);
+        g_TorqueLossBandEnd[index] = (s16)(lossBand >= 0 ? lossBand : 0);
     }
 
     printf("%s", g_MsgInit4);
