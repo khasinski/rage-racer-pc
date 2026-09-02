@@ -21,10 +21,13 @@ sources.each do |path, source|
       source.include?("unsigned char g_BestSectorTimes[96]")
     { "g_RankedCars" => 32, "g_SectorEndDistance" => 12,
       "g_CarSpecBars" => 16, "g_TeamLogoClut" => 32,
-      "g_PadShiftMasks" => 32, "g_GrandPrixCars" => 104,
-      "g_ExtraGrandPrixCars" => 104, "g_TimeAttackCars" => 104 }.each do |name, bytes|
+      "g_PadShiftMasks" => 32 }.each do |name, bytes|
       abort "#{path}: #{name} backing object is truncated" unless
         source.include?("unsigned char #{name}[#{bytes}]")
+    end
+    %w[g_GrandPrixCars g_ExtraGrandPrixCars g_TimeAttackCars].each do |name|
+      abort "#{path}: #{name} must remain one complete typed car table" unless
+        source.include?("CarEntry #{name}[GAME_CAR_COUNT]")
     end
     { "g_CamPathOffsetDelta" => 12, "g_CamPathOffsetStart" => 12,
       "g_CamPathOffset" => 12, "g_CamPathAngleDelta" => 16,
@@ -35,9 +38,9 @@ sources.each do |path, source|
     next
   end
 
-  if path.end_with?("cd_audio.c")
+  if path.end_with?("cd_pause_request.c")
     abort "#{path}: pause request does not pass the complete GetlocP response" unless
-      source.include?("CdControl(0x11, 0, g_CdLocResult)")
+      source.include?("CdControl(CD_DRIVE_GET_LOCATION, 0, g_CdLocResult)")
     abort "#{path}: pause snapshot does not use GetlocP relative MSF bytes" unless
       source.include?("g_CdLocResult[2]") && source.include?("g_CdLocResult[3]")
     next
@@ -71,6 +74,8 @@ sources.each do |path, source|
       explicit_predecessors || shared_predecessor_helper
     next
   end
+
+  next if path.end_with?("cd_audio.c")
 
   abort "#{path}: audio reset still derives channel fields from another global" if
     source.include?("ptr[0x78 / 4]")

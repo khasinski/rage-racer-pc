@@ -24,6 +24,9 @@ typedef struct CarEntry {
     u8 pad6[2];
 } CarEntry;
 
+_Static_assert(sizeof(CarEntry) * GAME_CAR_COUNT == 104,
+               "saved car table ABI changed");
+
 typedef union CarSlideInput {
     s32 value;
     struct {

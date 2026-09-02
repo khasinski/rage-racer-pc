@@ -14,6 +14,7 @@ add_test(
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_initialization.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_pause_request.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_drivetrain.c
         ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
         ${CMAKE_SOURCE_DIR}/include/game/track.h
