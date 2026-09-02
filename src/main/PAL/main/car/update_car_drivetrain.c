@@ -1,4 +1,5 @@
 #include "game/state.h"
+#include "game/angle.h"
 #include "game/race.h"
 #include "game/car.h"
 #include "game/car_internal.h"
@@ -333,6 +334,8 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   s32 assistStep;
   s32 steerPosition;
   s32 pointIndex;
+  const GameTrackPoint *trackPoint;
+  const GameTrackPoint *nextTrackPoint;
   s32 lateralOffset;
   s32 pitchSum;
   s32 roadGradeProduct;
@@ -370,9 +373,9 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   }
 
   headingError = GetAngleDistance(car->bodyYaw, car->headingAngle);
-  drive->steeringLoadAngle = headingError < 0x401
+  drive->steeringLoadAngle = headingError <= ANGLE_QUARTER_TURN
       ? headingError
-      : 0x800 - headingError;
+      : ANGLE_HALF_TURN - headingError;
   loads.steeringResistance += drive->steeringLoadAngle / 256;
   if (drive->motionState != CAR_MOTION_TAKEOFF && g_PadType == 0x41) {
     assistStep = spec->negconSteeringAssistScale *
@@ -389,13 +392,14 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   }
 
   trackHeadingError = GetAngleDistance(
-      car->headingAngle, 0xC00 - TrackPoint(car->trackPointIndex)->angle);
+      car->headingAngle,
+      ANGLE_THREE_QUARTER_TURN - TrackPoint(car->trackPointIndex)->angle);
   pointIndex = car->trackPointIndex;
+  trackPoint = TrackPoint(pointIndex);
+  nextTrackPoint = TrackPoint(pointIndex + 1);
   lateralOffset = car->segmentFraction;
-  pitchSum = TrackPoint(pointIndex)->surfacePitch *
-             (0x400 - lateralOffset);
-  pitchSum += TrackPoint((pointIndex + 1) % g_TrackPointCount)->surfacePitch *
-              lateralOffset;
+  pitchSum = trackPoint->surfacePitch * (0x400 - lateralOffset);
+  pitchSum += nextTrackPoint->surfacePitch * lateralOffset;
   if (pitchSum < 0) {
     pitchSum += 0x3FF;
   }
