@@ -108,7 +108,7 @@ int main(void) {
         return 1;
     }
 
-    script.skyRowBase = 7;
+    script.skyRowBase = SKY_TILE_MAP_ROWS - 2;
     script.length = 123;
     script.cues[0].time = 0;
     script.cues[1].time = -1;
@@ -117,12 +117,22 @@ int main(void) {
         puts("FAIL: valid environment script rejected");
         return 1;
     }
-    if (g_SkyRowBase != 7 || g_EnvScriptLength != 123 ||
+    if (g_SkyRowBase != SKY_TILE_MAP_ROWS - 2 || g_EnvScriptLength != 123 ||
         g_EnvScriptCues != script.cues) {
         puts("FAIL: environment script header");
         return 1;
     }
 
+    script.skyRowBase = SKY_TILE_MAP_ROWS - 1;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0 ||
+        g_SkyRowBase != 0 || g_EnvScriptCues != NULL ||
+        g_EnvScriptLength != 0) {
+        puts("FAIL: out-of-range sky rows published");
+        return 1;
+    }
+
+    script.skyRowBase = 0;
     script.cues[1].time = 10;
     if (SetEnvironmentScript(
             (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0 ||

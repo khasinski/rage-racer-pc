@@ -21,6 +21,7 @@ s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
     size_t i;
 
     if (script == NULL || size < offsetof(GameEnvironmentScript, cues) ||
+        script->skyRowBase > SKY_TILE_MAP_ROWS - 2 ||
         script->length == 0 || script->length > INT32_MAX) {
         return 0;
     }
