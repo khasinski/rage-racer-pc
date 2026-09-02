@@ -15,16 +15,15 @@ void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
     s32 lean;
     s32 speedOverMinimum;
 
+    if (strength != BODY_KICK_LANDING && strength != BODY_KICK_CORNERING) {
+        return;
+    }
     car->motionMode = (s16)strength;
     if (strength == BODY_KICK_LANDING) {
         car->motionModeTimer = BODY_KICK_DURATION;
         car->motionValue.value = car->verticalMotionTimer << 3;
         return;
     }
-    if (strength != BODY_KICK_CORNERING) {
-        return;
-    }
-
     lean = GetAngleDistance(
         InterpolateTrackAngle(car->trackPointIndex, car->segmentFraction),
         car->bodyYaw);

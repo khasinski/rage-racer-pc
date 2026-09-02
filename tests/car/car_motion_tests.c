@@ -137,12 +137,12 @@ static void BuildEvents(void) {
 
 int main(int argc, char **argv) {
     /*
-     * What these three did before anything moved them. Run the test with a
-     * file name to write the sweep out and diff two runs.
+     * Sweep the body kick, crest hop, and slide state machines. Run the test
+     * with a file name to write the cases out and diff two runs.
      */
-    static const unsigned long expected = 3499363269UL;
-    static const s32 modes[] = {0, 1, 2, 3};
-    static const s32 timers[] = {1, 2, 30};
+    static const unsigned long expected = 530766605UL;
+    static const s32 modes[] = {0, 1, 2, 3, 4, 5, 7};
+    static const s32 timers[] = {0, 1, 2, 30};
     static const s32 amounts[] = {0, 0x100, -0x100};
     static const s32 hopStates[] = {0, 1, 2, 3};
     static const s32 hopTimers[] = {0, 1, 12, 300};
@@ -163,8 +163,8 @@ int main(int argc, char **argv) {
     BuildEvents();
 
     /* The body kick: a wave whose amplitude falls with the timer. */
-    for (mi = 0; mi < 4; mi++)
-    for (ti = 0; ti < 3; ti++)
+    for (mi = 0; mi < 7; mi++)
+    for (ti = 0; ti < 4; ti++)
     for (ai_ = 0; ai_ < 3; ai_++) {
         char label[96];
 
@@ -278,6 +278,6 @@ int main(int argc, char **argv) {
                s_digest, expected);
         return 1;
     }
-    printf("car motion takes the same %d states it always did\n", steps);
+    printf("car motion preserves %d validated states\n", steps);
     return 0;
 }

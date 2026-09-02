@@ -52,8 +52,9 @@ int main(void) {
 
     car.motionModeTimer = 12;
     car.motionValue.value = 34;
+    car.motionMode = 2;
     StartCarBodyKick(7, &car);
-    CHECK(car.motionMode == 7);
+    CHECK(car.motionMode == 2);
     CHECK(car.motionModeTimer == 12 && car.motionValue.value == 34);
 
     puts("car body kick tests passed");
