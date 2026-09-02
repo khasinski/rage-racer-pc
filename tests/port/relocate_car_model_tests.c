@@ -17,6 +17,7 @@ static s32 s_selectedSlot;
 static ModelBankHeader *s_registeredBank;
 static s32 s_registeredSlot;
 static s32 s_registerResult = 1;
+static size_t s_destinationRoom;
 static s32 s_failures;
 
 CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
@@ -52,6 +53,9 @@ s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
     s_registeredSlot = slot;
     return s_registerResult;
 }
+size_t PortAssetRoomAt(const void *at) {
+    return at == g_AssetBase ? s_destinationRoom : 0;
+}
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -79,8 +83,9 @@ int main(void) {
     s_serializedAsset->serializedModelSize = MODEL_DATA_SIZE;
     g_CarModelAsset = &s_nativeAsset;
     g_AssetBase = destination.bytes;
+    s_destinationRoom = sizeof(destination.bytes);
 
-    RelocateCarModel();
+    Check(RelocateCarModel() == 1, "valid serialized model is relocated");
 
     Check(memcmp(destination.bytes, source.bytes, TOTAL_SIZE) == 0,
           "serialized model bytes copied");
@@ -103,18 +108,18 @@ int main(void) {
     s_serializedAsset = NULL;
     s_installedAsset = NULL;
     g_AssetLoadCursor = NULL;
-    RelocateCarModel();
+    Check(RelocateCarModel() == 0, "unknown native model is rejected");
     Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
           "unknown native model is not treated as serialized bytes");
 
     s_serializedAsset = (CarModelAsset *)(void *)source.bytes;
     s_serializedAsset->serializedModelSize = -1;
-    RelocateCarModel();
+    Check(RelocateCarModel() == 0, "negative model size reports failure");
     Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
           "negative serialized model size is rejected");
 
     s_serializedAsset->serializedModelSize = CAR_MODEL_SLOT_SIZE;
-    RelocateCarModel();
+    Check(RelocateCarModel() == 0, "oversized model reports failure");
     Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
           "serialized model larger than its slot is rejected");
 
@@ -122,9 +127,17 @@ int main(void) {
     s_registerResult = 0;
     s_installedAsset = NULL;
     g_AssetLoadCursor = NULL;
-    RelocateCarModel();
+    Check(RelocateCarModel() == 0, "model-bank failure is reported");
     Check(s_installedAsset == NULL && g_AssetLoadCursor == NULL,
           "unregistrable relocated bank is not published");
+
+    s_registerResult = 1;
+    s_destinationRoom = TOTAL_SIZE - 1;
+    memset(destination.bytes, 0xCC, sizeof(destination.bytes));
+    Check(RelocateCarModel() == 0,
+          "model exceeding destination storage is rejected");
+    Check(destination.bytes[0] == 0xCC && g_AssetLoadCursor == NULL,
+          "undersized destination remains untouched");
 
     if (s_failures != 0) return 1;
     puts("car model relocation copies its named serialized payload");

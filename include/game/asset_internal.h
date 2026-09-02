@@ -9,6 +9,9 @@ extern TeamLogoSample *g_TeamLogoSampleData;
 extern char g_TextNowLoading[];
 extern s32 g_AssetLoadFailed;
 
+/* Writable bytes remaining in the port-owned buffer containing `at`. */
+size_t PortAssetRoomAt(const void *at);
+
 static inline void FailAssetLoad(void) {
     g_AssetLoadFailed = 1;
     g_AssetLoadState = 0;

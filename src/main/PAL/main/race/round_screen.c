@@ -35,7 +35,9 @@ void EnterRoundScreen(void) {
                               g_ImageBlockSize)) {
             return;
         }
-        RelocateCarModel();
+        if (!RelocateCarModel()) {
+            return;
+        }
 
         g_FrameSyncThreshold = 0x180;
         g_SceneTimer = 0;

@@ -410,7 +410,7 @@ void LoadCourseTextureAssets(void);
 s32 RequestTrackDataAssets(void);
 void LoadTrackDataAssets(void);
 /* Copy the live car model into g_AssetBase and re-register its bank there. */
-void RelocateCarModel(void);
+s32 RelocateCarModel(void);
 
 typedef struct ModelBankHeader {
     u32 modelCount;

@@ -486,7 +486,12 @@ static void ScenarioDirectBoot(void) {
             CloseLoadedAudioSlots();
             UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
                              g_ImageBlockSize);
-            RelocateCarModel();
+            if (!RelocateCarModel()) {
+                fprintf(stderr,
+                        "rage-port: direct boot car relocation failed\n");
+                s_scenario.enabled = 0;
+                break;
+            }
             g_GrandPrixRound = DetermineGrandPrixRound(
                 g_CourseProgress->bestPlace, g_GrandPrixClass,
                 SeriesCourseIndex());
