@@ -16,7 +16,7 @@ PathSceneryRotationData *g_PathSceneryRotData;
 TrackRenderTable *g_TrackRenderTable;
 CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
-u8 g_MsgEventOk[] = "";
+char g_MsgEventOk[] = "";
 
 static s32 s_failures;
 

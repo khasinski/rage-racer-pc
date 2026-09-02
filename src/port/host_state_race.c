@@ -76,8 +76,8 @@ unsigned char g_TextNowLoading[436] __attribute__((aligned(16))) =
     "AS RAGE RACERS.\0"
     "OR HOW ITS DRIVERS BECAME KNOWN\0"
     "NO ONE KNOWS HOW THE RACE BEGAN";
-unsigned char g_MsgGameExit[12] __attribute__((aligned(16))) = {0x67,0x61,0x6d,0x65,0x5f,0x65,0x78,0x69,0x74,0x0a,0x00,0x00};
-unsigned char g_MsgGame0Ok[12] __attribute__((aligned(16))) = {0x67,0x61,0x6d,0x65,0x30,0x20,0x6f,0x6b,0x0a,0x00,0x00,0x00};
+char g_MsgGameExit[12] __attribute__((aligned(16))) = "game_exit\n";
+char g_MsgGame0Ok[12] __attribute__((aligned(16))) = "game0 ok\n";
 s32 g_PromotionBonusTable[5] __attribute__((aligned(16))) = {
     500, 4800, 20000, 100000, 500000
 };

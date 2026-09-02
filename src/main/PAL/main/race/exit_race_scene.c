@@ -12,5 +12,5 @@ void ExitRaceScene(s32 sceneId) {
     if (sceneId == 6) {
         RequestSelectBgmAssets();
     }
-    printf("%s", &g_MsgGameExit);
+    printf("%s", g_MsgGameExit);
 }
