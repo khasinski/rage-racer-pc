@@ -8,7 +8,7 @@ void InstallTrackTextureAssetPack(u8 *base) {
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
-    UploadImageBlock(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    UploadImageEntry(GetImageEntryHeader(g_AssetBlockPtr));
     g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[3]);
     g_AssetSubBlockPtr = GetSceneAssetAddress(header, header->offsets[4]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));

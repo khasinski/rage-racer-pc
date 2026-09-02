@@ -1,6 +1,8 @@
 #ifndef GAME_ASSET_H
 #define GAME_ASSET_H
 
+#include <stddef.h>
+
 #include "common.h"
 #include "game/visibility.h"
 #include "psyq/cd_location.h"
@@ -44,7 +46,7 @@ extern AssetRequestType g_AssetRequestType;
 extern s32 g_AssetLoadState;
 
 /* The asset sub-block currently being installed: `assetBase + <header offset>`,
- * then handed to UploadImageAsset / UploadImageBlock. */
+ * then handed to UploadImageAsset / UploadImageEntry. */
 extern u8 *g_AssetBlockPtr;
 
 /* Its companion, the third pointer of the sub-block triple. */
@@ -221,8 +223,8 @@ static inline CarModelAsset *GetCarModelAsset(void *data) {
 
 extern CarModelAsset *g_CarModelAsset;
 
-/* One VRAM upload record inside an image asset; UploadImageAsset walks a chain of
- * them and UploadImageBlock uploads each. */
+/* One VRAM upload record inside an image entry. UploadImageAsset walks the
+ * outer entry chain; UploadImageEntry uploads its optional CLUT and pixels. */
 typedef struct GameImageBlock {
     u32 size;   /* +0x00 block size in bytes, rounded down to a word */
     u16 x;      /* +0x04 VRAM destination */
@@ -237,6 +239,15 @@ typedef union GameImageAssetHeaderWord {
     s32 flags;
 } GameImageAssetHeaderWord;
 
+typedef struct GameImageEntryHeader {
+    s32 reserved;
+    u32 flags;
+} GameImageEntryHeader;
+
+enum {
+    GAME_IMAGE_ENTRY_HAS_CLUT = 1 << 3
+};
+
 typedef union GameImageAssetAddress {
     void *pointer;
     GameImageAssetHeaderWord *words;
@@ -249,6 +260,10 @@ static inline GameImageAssetHeaderWord *GetImageAssetHeaderWords(
 
     address.pointer = data;
     return address.words;
+}
+
+static inline GameImageEntryHeader *GetImageEntryHeader(void *data) {
+    return (GameImageEntryHeader *)data;
 }
 
 /* The offset table every asset pack starts with; sub-blocks live at
@@ -491,7 +506,7 @@ void SetEnvPaletteTable(struct EnvironmentPalette *table);
 void SetEnvironmentScript(u32 *script);
 void StoreTeamLogoImage(void* dst);
 void UploadImageAsset(GameImageAssetHeaderWord *asset);
-void UploadImageBlock(GameImageAssetHeaderWord *asset);
+void UploadImageEntry(GameImageEntryHeader *entry);
 void UploadLoadBufferImage(void);
 s32 RequestTrackDataAssets(void);
 s32 GetCarAssetIndex(s32 model, s32 grade);

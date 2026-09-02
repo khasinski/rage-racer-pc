@@ -65,8 +65,8 @@ void GameRenderWorldSetTrackCarAsset(s32 asset) { s_renderCarAsset = asset; }
 void UploadImageAsset(GameImageAssetHeaderWord *asset) {
     s_uploads[s_uploadCount++] = asset;
 }
-void UploadImageBlock(GameImageAssetHeaderWord *asset) {
-    s_uploads[s_uploadCount++] = asset;
+void UploadImageEntry(GameImageEntryHeader *entry) {
+    s_uploads[s_uploadCount++] = (GameImageAssetHeaderWord *)entry;
 }
 void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }

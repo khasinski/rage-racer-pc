@@ -41,6 +41,19 @@ endif()
 add_test(NAME content_options COMMAND content_options_tests)
 
 set_tests_properties(content_options PROPERTIES LABELS functional)
+add_executable(image_upload_tests
+    image_upload_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/image_upload.c)
+target_include_directories(image_upload_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/image_upload
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(image_upload_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME image_upload COMMAND image_upload_tests)
+set_tests_properties(image_upload PROPERTIES LABELS unit)
+
 add_executable(relocate_car_model_tests
     relocate_car_model_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/relocate_car_model.c)
