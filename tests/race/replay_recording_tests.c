@@ -39,7 +39,7 @@ static GameCarRuntime MakeCar(s32 base, s16 modelIndex) {
 }
 
 static void TestReplayBufferReset(void) {
-    ResetReplayFrameCounts();
+    BindReplayFrameBuffers();
     assert(g_ReplayFramesGp == g_ReplayFrameBuffer.grandPrixReplay);
     assert(g_ReplayFramesTimeAttack == g_ReplayFrameBuffer.timeAttackReplay);
 
@@ -65,15 +65,22 @@ static void TestGrandPrixRecording(void) {
      * away, which leaves it set but unused. */
     (void)frame;
 
+    BindReplayFrameBuffers();
     memset(&untouched, 0xA5, sizeof(untouched));
     g_ReplayFrameBuffer.grandPrixReplay[0] = untouched;
-    StoreReplayCarFrame(1, &player, &rival);
+    *AsRivalCar(&g_PlayerCar) = player;
+    g_Cars[0] = rival;
+    g_GrandPrixMode = 1;
+    g_ReplayWriteCursor = 1;
+    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
+    RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.grandPrixReplay[0], &untouched,
                   sizeof(untouched)) == 0);
     assert(g_ReplayPlayerModel.model == 3);
     assert(g_ReplayRivalModel.model == 4);
 
-    StoreReplayCarFrame(2, &player, &rival);
+    assert(g_ReplayWriteCursor == 2);
+    RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.grandPrixReplay[1];
     assert(frame->x0 == 101);
     assert(frame->y0 == 102);
@@ -106,14 +113,20 @@ static void TestTimeAttackRecording(void) {
      * away, which leaves it set but unused. */
     (void)frame;
 
+    BindReplayFrameBuffers();
     memset(&untouched, 0x5A, sizeof(untouched));
     g_ReplayFrameBuffer.timeAttackReplay[0] = untouched;
-    StoreReplayTimeAttackFrame(1, &player);
+    *AsRivalCar(&g_PlayerCar) = player;
+    g_GrandPrixMode = 0;
+    g_ReplayWriteCursor = 1;
+    g_ReplayFrameCount = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.timeAttackReplay[0], &untouched,
                   sizeof(untouched)) == 0);
     assert(g_ReplayPlayerModel.model == 5);
 
-    StoreReplayTimeAttackFrame(2, &player);
+    assert(g_ReplayWriteCursor == 2);
+    RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.timeAttackReplay[1];
     assert(frame->x == 301);
     assert(frame->y == 302);

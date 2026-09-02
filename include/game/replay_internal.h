@@ -31,11 +31,7 @@ void DrawSeriesClearedWash(s32 washProgress, s32 fadeLevel);
 void SeedReplayCars(void);
 void UpdateReplayCars(void);
 void RecordReplayFrame(void);
-void ResetReplayFrameCounts(void);
+void BindReplayFrameBuffers(void);
 void ResetReplayWriteCursor(void);
-void StoreReplayCarFrame(s32 pairIndex, const struct GameCarRuntime *player,
-                         const struct GameCarRuntime *rival);
-void StoreReplayTimeAttackFrame(s32 pointIndex,
-                                const struct GameCarRuntime *player);
 
 #endif

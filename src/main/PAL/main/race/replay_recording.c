@@ -4,13 +4,19 @@
 #include "game/replay_internal.h"
 #include "game/work_buffer.h"
 
+static void StoreGrandPrixReplaySample(s32 subframe,
+                                       const GameCarRuntime *player,
+                                       const GameCarRuntime *rival);
+static void StoreTimeAttackReplaySample(s32 subframe,
+                                        const GameCarRuntime *player);
+
 void RecordReplayFrame(void) {
     const GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
 
     if (g_GrandPrixMode != 0) {
-        StoreReplayCarFrame(g_ReplayWriteCursor, player, &g_Cars[0]);
+        StoreGrandPrixReplaySample(g_ReplayWriteCursor, player, &g_Cars[0]);
     } else {
-        StoreReplayTimeAttackFrame(g_ReplayWriteCursor, player);
+        StoreTimeAttackReplaySample(g_ReplayWriteCursor, player);
     }
 
     g_ReplayWriteCursor++;
@@ -20,7 +26,7 @@ void RecordReplayFrame(void) {
     }
 }
 
-void ResetReplayFrameCounts(void) {
+void BindReplayFrameBuffers(void) {
     g_ReplayFramesGp = g_ReplayFrameBuffer.grandPrixReplay;
     g_ReplayFramesTimeAttack = g_ReplayFrameBuffer.timeAttackReplay;
 }
@@ -33,18 +39,18 @@ void ResetReplayWriteCursor(void) {
     g_ReplayBufferWrapped = 0;
 }
 
-void StoreReplayCarFrame(s32 pairIndex, const GameCarRuntime *player,
-                         const GameCarRuntime *rival) {
+static void StoreGrandPrixReplaySample(s32 subframe,
+                                       const GameCarRuntime *player,
+                                       const GameCarRuntime *rival) {
     ReplayGrandPrixFrame *dst;
 
     g_ReplayPlayerModel.word = player->modelIndex;
     g_ReplayRivalModel.word = rival->modelIndex;
-    if (pairIndex & 1) {
+    if ((subframe & 1) != 0) {
         return;
     }
 
-    pairIndex >>= 1;
-    dst = &g_ReplayFramesGp[pairIndex];
+    dst = &g_ReplayFramesGp[subframe >> 1];
     dst->x0 = player->x;
     dst->y0 = player->y;
     dst->z0 = player->z;
@@ -68,16 +74,16 @@ void StoreReplayCarFrame(s32 pairIndex, const GameCarRuntime *player,
     dst->tiltCounter = player->tiltCounter;
 }
 
-void StoreReplayTimeAttackFrame(s32 pointIndex, const GameCarRuntime *player) {
+static void StoreTimeAttackReplaySample(s32 subframe,
+                                        const GameCarRuntime *player) {
     ReplayTimeAttackFrame *dst;
 
     g_ReplayPlayerModel.word = player->modelIndex;
-    if (pointIndex % 2) {
+    if ((subframe & 1) != 0) {
         return;
     }
 
-    pointIndex >>= 1;
-    dst = &g_ReplayFramesTimeAttack[pointIndex];
+    dst = &g_ReplayFramesTimeAttack[subframe >> 1];
     dst->x = player->x;
     dst->y = player->y;
     dst->z = player->z;
