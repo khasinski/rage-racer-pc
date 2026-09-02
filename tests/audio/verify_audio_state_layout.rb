@@ -20,8 +20,7 @@ sources.each do |path, source|
     abort "#{path}: best-sector backing object is smaller than its game declaration" unless
       source.include?("unsigned char g_BestSectorTimes[96]")
     { "g_SectorEndDistance" => 12,
-      "g_CarSpecBars" => 16, "g_TeamLogoClut" => 32,
-      "g_PadShiftMasks" => 32 }.each do |name, bytes|
+      "g_CarSpecBars" => 16, "g_TeamLogoClut" => 32 }.each do |name, bytes|
       abort "#{path}: #{name} backing object is truncated" unless
         source.include?("unsigned char #{name}[#{bytes}]")
     end

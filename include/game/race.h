@@ -331,7 +331,6 @@ extern char g_MsgSoundError[];
 extern s32 g_NameEntryChar;
 extern u8 g_NameEntryCharset[];
 extern s32 g_NameEntryCursor;
-extern s16 g_PadMirrorMasks[];
 extern u8 *g_NativePlaceSuffixNames[];
 #define g_PlaceSuffixNames g_NativePlaceSuffixNames
 extern s32 g_PrologueCutIndex;

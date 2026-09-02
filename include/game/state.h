@@ -80,9 +80,9 @@ extern void (*g_GameModeHandlers[])(void);
 void MainLoop(void);
 void InitSubsystems(void);
 
-/* Controller layer. GameInitPad hands the BIOS the two 0x28-byte buffers at
- * g_PadBuffers / g_Pad2Buffer. UpdatePadState maintains the held / previous /
- * newly-pressed halfwords in the block at g_PadState. */
+/* Controller layer. GameInitPad hands the BIOS the two 0x28-byte halves of
+ * g_PadBuffers. UpdatePadState maintains the held / previous / newly-pressed
+ * halfwords in the block at g_PadState. */
 void GameInitPad(void);
 void UpdatePadState(void);
 void LoadPadButtonMapping(s32 mapping0, s32 mapping1);
