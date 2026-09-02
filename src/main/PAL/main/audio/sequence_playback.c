@@ -6,7 +6,6 @@ enum {
     SEQUENCE_LOOP_COUNT = 0,
     SEQUENCE_VOLUME_FADE_STEP = -4,
     REVERB_VOLUME_FADE_STEP = -3,
-    SEQUENCE_AUDIO_SLOT = 6,
     DUCKED_VOLUME_NUMERATOR = 3,
     DUCKED_VOLUME_DENOMINATOR = 4,
     DUCKED_REVERB_DEPTH = 0x3C,
@@ -46,7 +45,7 @@ static void FinishSequenceFadeOut(void) {
     g_SeqVolume = 0;
     g_SeqVolumeFadeStep = 0;
     StopSequence();
-    CloseAudioSlot(SEQUENCE_AUDIO_SLOT);
+    CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
 }
 

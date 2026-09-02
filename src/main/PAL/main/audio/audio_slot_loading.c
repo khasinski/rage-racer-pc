@@ -30,7 +30,7 @@ s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table) {
         return StartEngineAudioSlotLoad(header, body, table);
     }
     if (slot == AUDIO_SLOT_SEQUENCE) {
-        return OpenVabSequenceSlot(slot, header, body, table);
+        return OpenSequenceAudioSlot(header, body, table);
     }
 
     g_AudioLoadSlot = slot;
@@ -84,7 +84,7 @@ static s32 CloseVabOnlyAudioSlot(s32 slot) {
 
 s32 CloseLoadedAudioSlots(void) {
     SpuVmDamperStep();
-    if (CloseAudioSlot(AUDIO_SLOT_SEQUENCE) == 0) {
+    if (CloseSequenceAudioSlot() == 0) {
         return 0;
     }
     if (CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES) == 0) {

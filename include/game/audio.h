@@ -144,10 +144,10 @@ void ForceBasicEffectVoicesEnabled(s32 enabled);
 void ForcePitchEffectVoicesEnabled(s32 enabled);
 void ForceSoundSlotVoicePlayback(s32 enabled);
 void ForceAllEffectVoicesEnabled(s32 enabled);
-s32 OpenVabSequenceSlot(s32 slot, u8 *vabHeader, u8 *vabBody, void *seqData);
+s32 OpenSequenceAudioSlot(u8 *vabHeader, u8 *vabBody, void *seqData);
 void SetDefaultReverbDepth(void);
 void InitSequenceAudio(void);
-int CloseAudioSlot(s32 slot);
+int CloseSequenceAudioSlot(void);
 
 /* Declared identically by 8 translation units before this
  * header carried them. */

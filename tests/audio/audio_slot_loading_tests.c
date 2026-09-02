@@ -49,8 +49,8 @@ short SsVabTransCompleted(short immediate) {
     return s_completed;
 }
 
-s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *sequence) {
-    (void)slot; (void)header; (void)body; (void)sequence;
+s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *sequence) {
+    (void)header; (void)body; (void)sequence;
     s_sequenceCalls++;
     return 61;
 }
@@ -72,8 +72,7 @@ void _SsVmInit(short voices) {
 
 void SsVabClose(short vabId) { s_closeVab = vabId; }
 void SpuVmDamperStep(void) { s_damperCalls++; }
-s32 CloseAudioSlot(s32 slot) {
-    (void)slot;
+s32 CloseSequenceAudioSlot(void) {
     s_closeAudioCalls++;
     return s_closeAudioResult;
 }

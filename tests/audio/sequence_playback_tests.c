@@ -11,7 +11,7 @@ SequenceHandle g_SeqHandle;
 s32 g_SeqVolume;
 s32 g_SeqVolumeFadeStep;
 
-static s32 s_closeSlot;
+static s32 s_closeCalls;
 static s32 s_reverbLeft;
 static s32 s_reverbRight;
 static s32 s_sequenceLeft;
@@ -43,8 +43,8 @@ void SetReverbDepth(s32 left, s32 right) {
 }
 void SetDefaultReverbDepth(void) { SetReverbDepth(0x28, 0x28); }
 void SetSequenceVolume(s32 volume) { s_setVolume = volume; }
-int CloseAudioSlot(s32 slot) {
-    s_closeSlot = slot;
+int CloseSequenceAudioSlot(void) {
+    s_closeCalls++;
     return 0;
 }
 
@@ -85,12 +85,12 @@ int main(void) {
     g_ReverbFadeStep = -3;
     g_SeqVolume = 3;
     g_SeqVolumeFadeStep = -4;
-    s_closeSlot = -1;
+    s_closeCalls = 0;
     UpdateSequenceFadeOut();
     CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 1);
     CHECK(g_ReverbFadeStep == -3);
     CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
-    CHECK(s_sequenceStops == 2 && s_closeSlot == 6);
+    CHECK(s_sequenceStops == 2 && s_closeCalls == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolume == 0);
 
