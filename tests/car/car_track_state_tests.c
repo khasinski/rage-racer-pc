@@ -232,6 +232,28 @@ int main(int argc, char **argv) {
                steps, s_digest, expected);
         return 1;
     }
+
+    memset(&car, 0, sizeof(car));
+    car.x = 123;
+    g_TrackPointCount = 0;
+    if (UpdateCarTrackState(&car, 0, &limits) != 0 || car.x != 123) {
+        puts("FAIL empty track placement changed the car");
+        return 1;
+    }
+
+    BuildTrack();
+    s_points[0].leftHalfWidth = 0;
+    s_points[0].rightHalfWidth = 0;
+    s_points[1].leftHalfWidth = 0;
+    s_points[1].rightHalfWidth = 0;
+    memset(&car, 0, sizeof(car));
+    car.x = s_points[0].x;
+    car.z = s_points[0].z;
+    UpdateCarTrackState(&car, 0, &limits);
+    if (car.normalizedLateralOffset != 0) {
+        puts("FAIL zero-width track produced a normalized offset");
+        return 1;
+    }
     printf("all %d placements put the car where they always did\n", steps);
     return 0;
 }

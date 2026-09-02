@@ -58,4 +58,11 @@ void AccelerateRaceRivals(void);
 void AccelerateAttractRivals(void);
 void PlaceRivalCarsOnTrack(void);
 
+s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
+                             s16 segmentLength);
+s32 CarTrackFixed12ToInteger(s32 value);
+s32 ProjectCarTrackAxis(s32 value);
+s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
+                               s32 swept, s16 arcSpan);
+
 #endif

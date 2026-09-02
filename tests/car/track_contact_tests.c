@@ -114,6 +114,15 @@ int main(void) {
                calls, s_digest, expected);
         return 1;
     }
+
+    memset(&car, 0, sizeof(car));
+    car.modelYaw = 123;
+    g_TrackPointCount = 0;
+    ResetCarTrackState(&car);
+    if (car.modelYaw != 123) {
+        puts("FAIL: empty track reset changed the car");
+        return 1;
+    }
     printf("all %d reset track states preserved\n", calls);
     return 0;
 }

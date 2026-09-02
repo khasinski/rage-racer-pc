@@ -1,12 +1,69 @@
 #include "game/diagnostics.h"
+#include "game/car_internal.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/track_internal.h"
 
-#include <stdio.h>
 #include <stdlib.h>
+
+typedef struct {
+    int enabled;
+    int exactTimer;
+    int firstTimer;
+    int lastTimer;
+} CarTrackTraceConfig;
+
+static int ParseOptionalTraceTimer(const char *key) {
+    const char *text = DiagnosticsValue(key);
+
+    return text != NULL ? (int)strtol(text, NULL, 0) : -1;
+}
+
+static int ShouldTraceCarTrackState(const GameCarRuntime *car) {
+    static CarTrackTraceConfig config = {-1, -1, -1, -1};
+
+    if (config.enabled < 0) {
+        config.enabled = DiagnosticsEnabled("car.track_trace");
+        config.exactTimer =
+            ParseOptionalTraceTimer("car.track_trace_timer");
+        config.firstTimer =
+            ParseOptionalTraceTimer("car.track_trace_timer_min");
+        config.lastTimer =
+            ParseOptionalTraceTimer("car.track_trace_timer_max");
+    }
+
+    return config.enabled && car == AsRivalCar(&g_PlayerCar) &&
+           (config.exactTimer < 0 || g_SceneTimer == config.exactTimer) &&
+           (config.firstTimer < 0 || g_SceneTimer >= config.firstTimer) &&
+           (config.lastTimer < 0 || g_SceneTimer <= config.lastTimer);
+}
+
+static void TraceCarTrackEnter(const GameCarRuntime *car,
+                               s32 trackPointIndex,
+                               const CarTrackLimits *limits) {
+    Trace("car-track-enter", "timer=%d point=%d x=%d z=%d speed=%d "
+          "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d",
+          g_SceneTimer, trackPointIndex, car->x, car->z, car->speed,
+          car->trackProgress, car->trackLateralOffset, car->bodyYaw,
+          limits->leftInset, limits->rightInset, limits->leftKnockbackMode,
+          limits->rightKnockbackMode);
+}
+
+static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
+                              s32 alongSegment,
+                              const CarTrackWork *work) {
+    Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
+          "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
+          "correction=%d,%d knockback=%d motion=%d,%d,%d,%d",
+          g_SceneTimer, trackPointIndex, car->x, car->z,
+          car->trackProgress, car->trackLateralOffset, alongSegment,
+          work->heading, work->curveMode, work->leftHalfWidth,
+          work->rightHalfWidth, work->correctionX, work->correctionZ,
+          work->knockbackMode, car->motionActive, car->motionTimer,
+          car->velocityX, car->velocityZ);
+}
 
 /*
  * Work out where the track's edges are here, and hold the car inside them.
@@ -27,12 +84,12 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
     s16 segmentLength;
 
     segmentLength = (s16)work->segmentLength;
-    work->leftHalfWidth = (s16)((nextPoint->leftHalfWidth * alongSegment +
-                           point->leftHalfWidth * (segmentLength - alongSegment)) /
-                          segmentLength);
-    edgeHeight = (nextPoint->rightHalfWidth * alongSegment +
-                  point->rightHalfWidth * (segmentLength - alongSegment)) /
-                 segmentLength;
+    work->leftHalfWidth = (s16)InterpolateCarTrackValue(
+        point->leftHalfWidth, nextPoint->leftHalfWidth, alongSegment,
+        segmentLength);
+    edgeHeight = InterpolateCarTrackValue(
+        point->rightHalfWidth, nextPoint->rightHalfWidth, alongSegment,
+        segmentLength);
     work->rightHalfWidth = (s16)edgeHeight;
     leftLimit = work->leftHalfWidth + limits->leftInset;
     if (lateralOffset < -leftLimit) {
@@ -42,7 +99,7 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
         work->offsetZ = lateralOffset;
         BuildRotMatrixY(&work->pad40[0], work->heading);
         ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
-        if (obj == (GameCarRuntime *)&g_PlayerCar) {
+        if (obj == AsRivalCar(&g_PlayerCar)) {
             SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->leftKnockbackMode);
         }
         obj->x -= work->correctionX;
@@ -59,7 +116,7 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *obj, CarTrackWork *work,
         work->offsetZ = lateralOffset;
         BuildRotMatrixY(&work->pad40[0], work->heading);
         ApplyMatrix(&work->pad40[0], &work->offsetX, &work->correctionX);
-        if (obj == (GameCarRuntime *)&g_PlayerCar) {
+        if (obj == AsRivalCar(&g_PlayerCar)) {
             SetCarKnockback(obj, work->correctionX, work->correctionZ, limits->rightKnockbackMode);
         }
         obj->x -= work->correctionX;
@@ -88,11 +145,7 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
                           const GameTrackPoint *nextPoint, s32 arcIndex) {
     s32 arcAngle;
     s32 arcLateral;
-    s16 arcSpan;
-    s32 headingAngle;
     s32 interpolatedRadius;
-    s32 pointHeading;
-    s32 swept;
     s32 sweptAngle;
 
     CarTrackMeasureArc(work, arcIndex, obj->x, obj->z, point, nextPoint);
@@ -114,47 +167,8 @@ static void PlaceCarOnArc(GameCarRuntime *obj, CarTrackWork *work,
         arcLateral = -arcLateral;
     }
     work->arcLateral = arcLateral;
-    headingAngle = nextPoint->angle;
-    pointHeading = point->angle;
-    if ((headingAngle - pointHeading) >= 0x801) {
-        swept = work->sweptAngle;
-        arcSpan = work->arcSpan;
-        work->heading = (s16)(((headingAngle - 0x1000) * swept +
-                               pointHeading * (arcSpan - swept)) /
-                              arcSpan);
-    } else if ((pointHeading - headingAngle) >= 0x801) {
-        swept = work->sweptAngle;
-        arcSpan = work->arcSpan;
-        work->heading = (s16)((headingAngle * swept +
-                               (pointHeading - 0x1000) * (arcSpan - swept)) /
-                              arcSpan);
-    } else {
-        swept = work->sweptAngle;
-        arcSpan = work->arcSpan;
-        work->heading =
-            (s16)((headingAngle * swept + pointHeading * (arcSpan - swept)) / arcSpan);
-    }
-}
-
-static s32 InterpolateTrackValue(s32 start, s32 end, s32 alongSegment,
-                                 s16 segmentLength) {
-    return (end * alongSegment + start * (segmentLength - alongSegment)) /
-           segmentLength;
-}
-
-/* The original fixed-point maths rounds negative products towards zero. */
-static s32 ShiftFixed12(s32 value) {
-    if (value < 0) {
-        value += 0xFFF;
-    }
-    return value >> 12;
-}
-
-static s32 ProjectTrackAxis(s32 value) {
-    if (value < 0) {
-        value += 0xFFF;
-    }
-    return value >> 14;
+    work->heading = InterpolateCarTrackHeading(
+        point->angle, nextPoint->angle, work->sweptAngle, work->arcSpan);
 }
 
 static void UpdateCarSurfaceOrientation(GameCarRuntime *obj,
@@ -169,15 +183,15 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *obj,
     s32 pointCamber;
     s32 surfaceHeight;
 
-    work->crossSlope = (s16)InterpolateTrackValue(
+    work->crossSlope = (s16)InterpolateCarTrackValue(
         point->crossSlope, nextPoint->crossSlope, alongSegment, segmentLength);
-    surfaceHeight = InterpolateTrackValue(
+    surfaceHeight = InterpolateCarTrackValue(
         point->y, nextPoint->y, alongSegment, segmentLength);
     obj->y = ((work->crossSlope * lateralOffset) >> 7) + surfaceHeight;
 
     work->relativeHeading = (s16)((u16)obj->bodyYaw - 0xC00 +
                                   (u16)work->heading);
-    work->surfacePitch = (s16)InterpolateTrackValue(
+    work->surfacePitch = (s16)InterpolateCarTrackValue(
         point->surfacePitch, nextPoint->surfacePitch, alongSegment,
         segmentLength);
 
@@ -187,15 +201,17 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *obj,
                        (nextPoint->crossSlope * trackWidth) >> 7);
     pointCamber = Atan2(work->trackWidth,
                         (point->crossSlope * work->trackWidth) >> 7);
-    work->camberAngle = (s16)InterpolateTrackValue(
+    work->camberAngle = (s16)InterpolateCarTrackValue(
         pointCamber, nextCamber, alongSegment, segmentLength);
 
     work->headingCos = rcos(work->relativeHeading);
     work->headingSin = rsin(work->relativeHeading);
-    obj->bodyPitch = ShiftFixed12(work->surfacePitch * work->headingCos) +
-                     ShiftFixed12(work->camberAngle * work->headingSin);
-    obj->bodyRoll = ShiftFixed12(-work->headingCos * work->camberAngle) +
-                    ShiftFixed12(work->surfacePitch * work->headingSin);
+    obj->bodyPitch =
+        CarTrackFixed12ToInteger(work->surfacePitch * work->headingCos) +
+        CarTrackFixed12ToInteger(work->camberAngle * work->headingSin);
+    obj->bodyRoll =
+        CarTrackFixed12ToInteger(-work->headingCos * work->camberAngle) +
+        CarTrackFixed12ToInteger(work->surfacePitch * work->headingSin);
 }
 
 static void UpdateCarTrackProgress(GameCarRuntime *obj, CarTrackWork *work,
@@ -235,34 +251,19 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
     CarTrackWork *work;
-    static int traceEnabled = -1;
-    static int traceTimer = -1;
-    static int traceTimerMin = -1;
-    static int traceTimerMax = -1;
     int traceThisCall;
-    if (traceEnabled < 0) {
-        const char *timerText = DiagnosticsValue("car.track_trace_timer");
-        const char *timerMinText = DiagnosticsValue("car.track_trace_timer_min");
-        const char *timerMaxText = DiagnosticsValue("car.track_trace_timer_max");
-        traceEnabled = DiagnosticsEnabled("car.track_trace");
-        traceTimer = timerText != NULL ? (int)strtol(timerText, NULL, 0) : -1;
-        traceTimerMin = timerMinText != NULL ? (int)strtol(timerMinText, NULL, 0) : -1;
-        traceTimerMax = timerMaxText != NULL ? (int)strtol(timerMaxText, NULL, 0) : -1;
-    }
-    traceThisCall = traceEnabled && obj == (GameCarRuntime *)&g_PlayerCar &&
-        (traceTimer < 0 || g_SceneTimer == traceTimer) &&
-        (traceTimerMin < 0 || g_SceneTimer >= traceTimerMin) &&
-        (traceTimerMax < 0 || g_SceneTimer <= traceTimerMax);
-    if (traceThisCall) {
-        Trace("car-track-enter", "timer=%d point=%d x=%d z=%d speed=%d "
-               "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d",
-               g_SceneTimer, trackPointIndex, obj->x, obj->z, obj->speed,
-               obj->trackProgress, obj->trackLateralOffset, obj->bodyYaw,
-               limits->leftInset, limits->rightInset,
-               limits->leftKnockbackMode, limits->rightKnockbackMode);
+
+    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
+        g_TrackLength <= 0 || limits == NULL) {
+        return 0;
     }
 
-    nextPointIndex = (trackPointIndex + 1) % g_TrackPointCount;
+    traceThisCall = ShouldTraceCarTrackState(obj);
+    if (traceThisCall) {
+        TraceCarTrackEnter(obj, trackPointIndex, limits);
+    }
+
+    nextPointIndex = trackPointIndex + 1;
     work = &g_CarTrackWork;
     work->knockbackMode = 0;
     point = TrackPoint(trackPointIndex);
@@ -288,11 +289,11 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
     cosHeading = rcos(headingAngle);
     rotated = (cosHeading * (s16)work->offsetX) +
               (rsin(work->heading) * work->offsetZ);
-    alongSegment = ProjectTrackAxis(rotated);
+    alongSegment = ProjectCarTrackAxis(rotated);
     sinHeading = rsin(work->heading);
     rotated = (-sinHeading * (s16)work->offsetX) +
               (rcos(work->heading) * work->offsetZ);
-    lateralOffset = ProjectTrackAxis(rotated);
+    lateralOffset = ProjectCarTrackAxis(rotated);
     if (work->curveMode != 0) {
         lateralOffset = work->arcLateral;
     }
@@ -305,24 +306,20 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
         alongSegment = 0;
     }
     obj->segmentFraction = (alongSegment << 0xA) / (s16)work->segmentLength;
-    if (lateralOffset < 0) {
-        obj->normalizedLateralOffset = (lateralOffset * 0x400) / work->leftHalfWidth;
+    if (lateralOffset < 0 && work->leftHalfWidth != 0) {
+        obj->normalizedLateralOffset =
+            (lateralOffset * 0x400) / work->leftHalfWidth;
+    } else if (lateralOffset >= 0 && work->rightHalfWidth != 0) {
+        obj->normalizedLateralOffset =
+            (lateralOffset * 0x400) / work->rightHalfWidth;
     } else {
-        obj->normalizedLateralOffset = (lateralOffset * 0x400) / work->rightHalfWidth;
+        obj->normalizedLateralOffset = 0;
     }
     UpdateCarSurfaceOrientation(obj, work, point, nextPoint, alongSegment,
                                 lateralOffset);
     UpdateCarTrackProgress(obj, work, alongSegment, lateralOffset);
     if (traceThisCall) {
-        Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
-               "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
-               "correction=%d,%d knockback=%d motion=%d,%d,%d,%d",
-               g_SceneTimer, trackPointIndex, obj->x, obj->z,
-               obj->trackProgress, obj->trackLateralOffset, alongSegment,
-               work->heading, work->curveMode, work->leftHalfWidth,
-               work->rightHalfWidth, work->correctionX, work->correctionZ,
-               work->knockbackMode, obj->motionActive, obj->motionTimer,
-               obj->velocityX, obj->velocityZ);
+        TraceCarTrackExit(obj, trackPointIndex, alongSegment, work);
     }
     return work->knockbackMode;
 }
