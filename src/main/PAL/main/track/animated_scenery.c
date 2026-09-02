@@ -115,19 +115,21 @@ void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
         return;
     }
 
-    g_AnimScenery2Frame = (timer / 4) % 16;
-    if (g_AnimScenery2Frame == 0 && timer % 8 == 0 && animate == 1) {
-        g_AnimScenery2Tint = 0;
-        g_AnimScenery2Variant = (Random15() & 7) / 3;
+    g_PresentationSceneryFrame = (timer / 4) % 16;
+    if (g_PresentationSceneryFrame == 0 && timer % 8 == 0 && animate == 1) {
+        g_PresentationSceneryTint = 0;
+        g_PresentationSceneryVariant = (Random15() & 7) / 3;
     }
 
     BuildAnimatedSceneryTransform(&transform, instance);
-    g_AnimScenery2Tint = ((timer >> 3) & 3) << 16;
-    primaryModel = g_AnimScenery2Frame + (isReplay != 0 ? 0xA : 0x18);
-    secondaryModel = g_AnimScenery2Variant + (isReplay != 0 ? 4 : 7);
+    g_PresentationSceneryTint = ((timer >> 3) & 3) << 16;
+    primaryModel = g_PresentationSceneryFrame +
+                   (isReplay != 0 ? 0xA : 0x18);
+    secondaryModel = g_PresentationSceneryVariant +
+                     (isReplay != 0 ? 4 : 7);
 
     SubmitAnimatedSceneryLayer(&transform, 0x30 + instance * 2,
                                primaryModel, 0);
     SubmitAnimatedSceneryLayer(&transform, 0x31 + instance * 2,
-                               secondaryModel, g_AnimScenery2Tint);
+                               secondaryModel, g_PresentationSceneryTint);
 }

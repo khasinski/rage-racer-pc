@@ -21,9 +21,9 @@ s16 g_AnimSceneryFrame;
 s32 g_AnimSceneryTint;
 s16 g_AnimSceneryRacePosition;
 s16 g_AnimSceneryVariant;
-s16 g_AnimScenery2Frame;
-s32 g_AnimScenery2Tint;
-s16 g_AnimScenery2Variant;
+s16 g_PresentationSceneryFrame;
+s32 g_PresentationSceneryTint;
+s16 g_PresentationSceneryVariant;
 
 typedef struct Submission {
     u32 entity;
@@ -169,10 +169,10 @@ int main(void) {
 
     /* The replay variant returns before changing state when GP mode is off. */
     g_GrandPrixMode = 0;
-    g_AnimScenery2Frame = 9;
+    g_PresentationSceneryFrame = 9;
     Reset();
     DrawPresentationAnimatedScenery(0, 0, 1, 1);
-    if (g_AnimScenery2Frame != 9 || g_RandomCalls != 0 ||
+    if (g_PresentationSceneryFrame != 9 || g_RandomCalls != 0 ||
         g_SubmissionCount != 0) {
         puts("FAIL: replay early GP-mode guard");
         return 1;
@@ -187,7 +187,7 @@ int main(void) {
         return 1;
     }
 
-    g_AnimScenery2Variant = 1;
+    g_PresentationSceneryVariant = 1;
     Reset();
     DrawPresentationAnimatedScenery(4, 1, 1, 0);
     if (!ExpectPair("replay layers", 0x32, 11, 5, 110, 310, 0)) {

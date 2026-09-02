@@ -225,7 +225,7 @@ static long g_SmokeRandomSyncScene;
 static long g_SmokeRandomSyncTimer;
 static unsigned long g_SmokeRandomSyncSeed;
 static long g_SmokeRandomSyncVariant;
-static long g_SmokeRandomSyncVariant2;
+static long g_SmokeRandomSyncPresentationVariant;
 static int g_SmokeRandomSyncHasVariants;
 static int g_SmokeRandomSyncEachFrame;
 static void SmokeInitialize(void);
@@ -246,7 +246,8 @@ void PortSmokeBeforeSceneHandler(void) {
         g_RandomSeed = (unsigned int)g_SmokeRandomSyncSeed;
         if (g_SmokeRandomSyncHasVariants) {
             g_AnimSceneryVariant = (s16)g_SmokeRandomSyncVariant;
-            g_AnimScenery2Variant = (s16)g_SmokeRandomSyncVariant2;
+            g_PresentationSceneryVariant =
+                (s16)g_SmokeRandomSyncPresentationVariant;
         }
         g_SmokeRandomSyncFired = 1;
         if (!g_SmokeRandomSyncEachFrame ||
@@ -254,7 +255,7 @@ void PortSmokeBeforeSceneHandler(void) {
                 "random sync before-scene frame=%d scene=%d timer=%d "
                 "seed=%08x variants=%d,%d\n",
                 g_FrameCounter, g_SceneId, g_SceneTimer, g_RandomSeed,
-                g_AnimSceneryVariant, g_AnimScenery2Variant);
+                g_AnimSceneryVariant, g_PresentationSceneryVariant);
     }
 }
 static int g_SmokeStateInputCount;
@@ -335,7 +336,8 @@ static void SmokeInitialize(void) {
                 if (*end == ':') {
                     g_SmokeRandomSyncVariant = strtol(end + 1, &end, 0);
                     if (*end == ':') {
-                        g_SmokeRandomSyncVariant2 = strtol(end + 1, &end, 0);
+                        g_SmokeRandomSyncPresentationVariant =
+                            strtol(end + 1, &end, 0);
                         g_SmokeRandomSyncHasVariants = *end == '\0';
                     }
                 }
@@ -756,7 +758,7 @@ int PortShouldExit(int frame_number) {
                         g_CourseObjectCount,
                         SmokeHashBytes(g_CourseObjects,
                             (size_t)g_CourseObjectCount * sizeof(CourseObject)),
-                        g_AnimSceneryVariant, g_AnimScenery2Variant,
+                        g_AnimSceneryVariant, g_PresentationSceneryVariant,
                         g_SpinningSceneryAngle[0], g_SpinningSceneryAngle[1],
                         g_SpinningSceneryAngle[2], g_SpinningSceneryAngle[3],
                         SmokeHashCarRenderState(g_Cars, 11),

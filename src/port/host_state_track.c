@@ -49,9 +49,9 @@ s16 g_AnimSceneryPitch[4] __attribute__((aligned(16))) = {
 s32 g_AnimSceneryTint;
 s16 g_AnimSceneryRacePosition;
 s16 g_AnimSceneryFrame;
-s32 g_AnimScenery2Tint;
-s16 g_AnimScenery2Variant;
-s16 g_AnimScenery2Frame;
+s32 g_PresentationSceneryTint;
+s16 g_PresentationSceneryVariant;
+s16 g_PresentationSceneryFrame;
 u16 g_SpinningSceneryRate[4] __attribute__((aligned(16))) = {
     32, 64, 0, 0
 };
