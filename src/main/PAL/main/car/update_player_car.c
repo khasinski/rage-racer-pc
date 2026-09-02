@@ -4,7 +4,6 @@
 #include "game/car_internal.h"
 #include "game/track_internal.h"
 #include "game/render.h"
-#include "game/audio.h"
 #include "game/random.h"
 
 #include "rage/trace.h"
@@ -72,34 +71,6 @@ static void ClampSteeringAngle(PlayerCarRuntime *car, GameCarDrive *p) {
 }
 
 
-/*
- * What a scrape sounds like. Skids one and three are one side of the track and
- * two and four the other, which is why the wall cue is the other way round
- * between the pairs; the first of each pair is a light touch and the second is
- * the one that costs speed. A car nearly straight on scrapes; one at an angle
- * hits the wall.
- */
-static void PlaySkidCue(PlayerCarRuntime *car, s32 skid, s32 slip) {
-    int lightTouch = (skid == 1) || (skid == 2);
-    int nearSide = (skid == 1) || (skid == 3);
-
-    if ((skid < 1) || (skid > 4) || ((s16)car->motionTimer < 15)) {
-        return;
-    }
-    if ((u32)(slip - 768) < 257U) {
-        if (lightTouch) {
-            PlaySoundCue(0xA);
-        } else if (car->speed >= 81) {
-            PlaySoundCue(0xD);
-        }
-        return;
-    }
-    if (nearSide) {
-        PlaySoundCue(g_MirrorMode == 0 ? 0xB : 0xC);
-    } else {
-        PlaySoundCue(g_MirrorMode == 0 ? 0xC : 0xB);
-    }
-}
 
 
 void UpdatePlayerCar(PlayerCarRuntime *car) {
@@ -217,31 +188,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     UpdateCarTiltCounter(AsRivalCar(car));
     UpdateCarCrestHop(AsRivalCar(car));
 
-    if (skid == 0 && crash == 0) {
-        car->y += p->standingStartBounceY;
-        UpdateCarBodyKick(AsRivalCar(car));
-    } else {
-        slip = GetAngleDistance(0xC00 - TrackPoint(car->trackPointIndex)->angle,
-                             car->headingAngle);
-        if (crash != 0) {
-            p->launchEnergy -= 1000;
-            if (car->speed >= 81) {
-                p->drivetrainTorque = p->drivetrainTorque * 98 / 100;
-                car->speed = car->speed * 97 / 100;
-                p->engineLoad = p->engineLoad * 95 / 100;
-                g_ShiftTargetRpm = g_ShiftTargetRpm * 95 / 100;
-            }
-        } else {
-            p->launchEnergy -= 5000;
-            p->drivetrainTorque = (85 - rsin(slip) * 20 / 4096) * p->drivetrainTorque / 100;
-            car->speed = (87 - rsin(slip) * 40 / 4096) * car->speed / 100;
-            p->engineLoad = p->engineLoad * (85 - rsin(slip) * 20 / 4096) / 100;
-            g_ShiftTargetRpm = (85 - rsin(slip) * 20 / 4096) * g_ShiftTargetRpm / 100;
-            if (g_RacePhase < 3) {
-                PlaySkidCue(car, skid, slip);
-            }
-        }
-    }
+    ApplyPlayerContactResponse(car, skid, crash);
 
     UpdatePlayerEnginePresentation(car);
 }
