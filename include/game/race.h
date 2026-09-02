@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "game/prize_money.h"
-#include "game/waypoint.h"
 #include "game/course_index.h"
 #include "game/vector.h"
 #include "game/replay.h"
@@ -399,7 +398,6 @@ extern u8 g_TileStripStorage[];
 extern s32 g_TimeRecordInsertRow;
 extern u8 g_TimeRecordNameCodes[];
 extern char g_TimeTextBuffer[];
-extern s32 g_WaypointsCollected;
 
 s32 BeginMirrorPass(void);
 void BeginReplay(void);
@@ -426,7 +424,6 @@ void DrawSplitTimes(void);
 void DrawStartGridScenery(s32 timer);
 void DrawTimeRecordPanel(s32 slideX);
 void DrawTimeRemaining(s32 time);
-void DrawWaypoints(void);
 void ExitPrologue(void);
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 GetAttractTitleFade(s32 element);
@@ -439,7 +436,6 @@ void SeedFinishCamera(struct PlayerCarRuntime *car);
 void SeedFlybyScenery(void);
 void SeedReplayCars(void);
 void SeedRouteScenery(void);
-void SeedWaypoints(void);
 void TriggerRaceCues(void);
 void UpdateFinishCamera(struct PlayerCarRuntime *car);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
@@ -447,7 +443,6 @@ void UpdateRacePosition(void);
 void UpdateReplayCars(void);
 void UpdateRivalCueGate(void);
 void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent);
-void UpdateWaypoints(void);
 void ExitRaceScene(s32 sceneId);
 s32 GetTrackZoneBlend(s32 position);
 void PlayCountdownCues(s32 timer);
@@ -468,8 +463,4 @@ void ExitBgmSelect(void);
  * header carried them. */
 
 extern CVec g_CountdownCellColors[];
-extern TrackWaypointSeed g_WaypointSeeds[];
-extern TrackWaypointRuntime g_Waypoints[];
-
-
 #endif

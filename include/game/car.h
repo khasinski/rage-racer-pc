@@ -586,14 +586,12 @@ typedef struct PlayerCarRuntime {
     CarTrackHeading trackHeading;
     s16 facingBackwards;
     u8 padBA[2];
-    /* The waypoint pickup code reads +0xC4 as two launch vectors, while the
-     * showroom reuses +0xE4 for its tire selection. Both are retail views of
-     * the same storage occupied by GameCarDrive during a race. */
+    /* The showroom reuses +0xE4 for its tire selection. It is a retail view
+     * of the same storage occupied by GameCarDrive during a race. */
     union {
         GameCarDrive drive;
         struct {
-            u8 reservedDrive00[8];
-            Vec4 waypointVelocity[2];
+            u8 reservedDrive00[0x28];
             s32 showroomTireCompound;
         };
     };
@@ -619,8 +617,6 @@ _Static_assert(__builtin_offsetof(PlayerCarRuntime, modelY) == 0x60,
                "player render Y must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, facingBackwards) == 0xB8,
                "player facing flag must retain its retail alias offset");
-_Static_assert(__builtin_offsetof(PlayerCarRuntime, waypointVelocity) == 0xC4,
-    "player velocity view must retain its retail alias offset");
 _Static_assert(
     __builtin_offsetof(PlayerCarRuntime, showroomTireCompound) == 0xE4,
     "showroom tire selection must retain its retail alias offset");

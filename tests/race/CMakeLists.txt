@@ -286,27 +286,6 @@ add_test(NAME course_index COMMAND course_index_tests)
 
 set_tests_properties(course_index PROPERTIES LABELS functional)
 
-add_executable(waypoint_update_tests
-    waypoint_update_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/waypoint_update.c)
-target_include_directories(waypoint_update_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port/include
-    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
-    ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(waypoint_update_tests PRIVATE __psyz=1)
-if(MSVC)
-    target_compile_options(waypoint_update_tests PRIVATE
-        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-else()
-    target_compile_options(waypoint_update_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-endif()
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(waypoint_update_tests PRIVATE -Wall -Wextra -Werror)
-endif()
-add_test(NAME waypoint_update COMMAND waypoint_update_tests)
-set_tests_properties(waypoint_update PROPERTIES LABELS functional)
-
 if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME race_progress_layout
