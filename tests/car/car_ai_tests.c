@@ -197,6 +197,32 @@ static void TargetSpeedTests(void) {
     Check(car.accelerationLimit == (((100 * 1168) / 160) * 6) / 100,
           "two keys at one position", car.accelerationLimit,
           (((100 * 1168) / 160) * 6) / 100);
+
+    /* A stale marker at the lap boundary is reset before the table is read,
+     * so this frame already uses the first pair. */
+    keys[0].progress = 0x10;
+    keys[1].progress = 0x20;
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x18 << 4;
+    car.routeMarkerIndex = 5;
+    UpdateCarAiTargetSpeed(&car, 0);
+    Check(car.routeMarkerIndex == 0, "lap start resets speed marker",
+          car.routeMarkerIndex, 0);
+    Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
+          "lap start immediately uses first speed pair", car.accelerationLimit,
+          (((150 * 1168) / 160) * 6) / 100);
+
+    /* A negative signed marker is invalid input, not permission to read the
+     * key immediately before the table. */
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x18 << 4;
+    car.routeMarkerIndex = -1;
+    UpdateCarAiTargetSpeed(&car, 0);
+    Check(car.routeMarkerIndex == 0, "negative speed marker resets",
+          car.routeMarkerIndex, 0);
+    Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
+          "negative marker uses first speed pair", car.accelerationLimit,
+          (((150 * 1168) / 160) * 6) / 100);
 }
 
 static void RouteMarkerSeedTests(void) {
