@@ -581,8 +581,10 @@ extern CellVisibilityRow *g_CellVisibilityTable;
  * 32 u32 entries per row, and 32 such rows are 0x1000. It also caps region ids
  * at 32, even though the grid word has room for 64 in its top six bits.
  */
-#define TERRAIN_CELL_GRID_SIZE      0x800
-#define CELL_VISIBILITY_TABLE_SIZE  0x1000
+#define TERRAIN_CELL_GRID_BYTES                                            \
+    (TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE * sizeof(u16))
+#define CELL_VISIBILITY_TABLE_SIZE                                         \
+    (TERRAIN_CELL_GRID_SIZE * sizeof(CellVisibilityRow))
 
 /* Whether the visibility mask holds the cell a world point falls in. The mask
  * is one bit per 2048-unit cell, a word per row of z and a bit per column of

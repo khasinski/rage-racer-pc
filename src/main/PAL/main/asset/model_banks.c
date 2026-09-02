@@ -62,7 +62,7 @@ void InstallTerrainCellData(void *data) {
 
     cursor = data;
     g_TerrainCellGrid = (u16 *)cursor;
-    cursor += TERRAIN_CELL_GRID_SIZE;
+    cursor += TERRAIN_CELL_GRID_BYTES;
     g_CellVisibilityTable = (CellVisibilityRow *)cursor;
     cursor += CELL_VISIBILITY_TABLE_SIZE;
     header = (TerrainCellAssetHeader *)cursor;

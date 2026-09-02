@@ -152,7 +152,7 @@ static int TestCourseModels(void) {
 
 static int TestTerrainCells(void) {
     enum {
-        HEADER_OFFSET = TERRAIN_CELL_GRID_SIZE + CELL_VISIBILITY_TABLE_SIZE,
+        HEADER_OFFSET = TERRAIN_CELL_GRID_BYTES + CELL_VISIBILITY_TABLE_SIZE,
         BUFFER_SIZE = HEADER_OFFSET + 64,
     };
     u8 data[BUFFER_SIZE];
@@ -168,7 +168,7 @@ static int TestTerrainCells(void) {
     InstallTerrainCellData(data);
     CHECK(g_TerrainCellGrid == (u16 *)data);
     CHECK(g_CellVisibilityTable ==
-          (CellVisibilityRow *)&data[TERRAIN_CELL_GRID_SIZE]);
+          (CellVisibilityRow *)&data[TERRAIN_CELL_GRID_BYTES]);
     CHECK(g_TerrainCellCount == 3);
     CHECK(g_RenderState.cellTable == g_NativeTerrainCells);
     CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
