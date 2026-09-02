@@ -34,18 +34,35 @@ static int s_rankCalls;
 static int s_rubberBandCalls;
 static s32 s_slowedRanks[3];
 static int s_slowedCount;
+static char s_events[128];
+static size_t s_eventCount;
 
-void TraceCarStates(void) { s_traceCalls++; }
+static void RecordEvent(char event) {
+    if (s_eventCount != 0 && s_events[s_eventCount - 1] == event) {
+        return;
+    }
+    if (s_eventCount + 1 < sizeof(s_events)) {
+        s_events[s_eventCount++] = event;
+        s_events[s_eventCount] = '\0';
+    }
+}
+
+void TraceCarStates(void) {
+    RecordEvent('T');
+    s_traceCalls++;
+}
 
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 index) {
     (void)car;
     (void)index;
+    RecordEvent('A');
     s_trafficCalls++;
 }
 
 s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
     (void)car;
     (void)index;
+    RecordEvent('C');
     s_collisionCalls++;
     return 0;
 }
@@ -53,27 +70,34 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     (void)car;
     (void)carIndex;
+    RecordEvent('S');
     s_targetSpeedCalls++;
 }
 
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 index) {
     (void)car;
     (void)index;
+    RecordEvent('H');
     s_hintCalls++;
 }
 
 void ClampCarLateralOffset(GameCarRuntime *car, s32 index) {
     (void)car;
     (void)index;
+    RecordEvent('L');
     s_clampCalls++;
 }
 
 void SteerCarAlongRoute(GameCarRuntime *car) {
     (void)car;
+    RecordEvent('R');
     s_steerCalls++;
 }
 
-void MoveRivalCars(void) { s_moveCalls++; }
+void MoveRivalCars(void) {
+    RecordEvent('M');
+    s_moveCalls++;
+}
 
 void AccumulateLapProgress(GameCarRuntime *car) {
     (void)car;
@@ -96,17 +120,36 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
     return 0;
 }
 
-void UpdateRivalBodyMotion(void) { s_bodyMotionCalls++; }
-void AccelerateRaceRivals(void) { s_raceAccelerationCalls++; }
-void AccelerateAttractRivals(void) { s_attractAccelerationCalls++; }
-void PlaceRivalCarsOnTrack(void) { s_placementCalls++; }
+void UpdateRivalBodyMotion(void) {
+    RecordEvent('B');
+    s_bodyMotionCalls++;
+}
+void AccelerateRaceRivals(void) {
+    RecordEvent('E');
+    s_raceAccelerationCalls++;
+}
+void AccelerateAttractRivals(void) {
+    RecordEvent('E');
+    s_attractAccelerationCalls++;
+}
+void PlaceRivalCarsOnTrack(void) {
+    RecordEvent('P');
+    s_placementCalls++;
+}
 
 s32 GetAngleDelta(s32 from, s32 to) { return to - from; }
 
-void RankContenders(void) { s_rankCalls++; }
-void UpdateRivalRubberBand(void) { s_rubberBandCalls++; }
+void RankContenders(void) {
+    RecordEvent('K');
+    s_rankCalls++;
+}
+void UpdateRivalRubberBand(void) {
+    RecordEvent('U');
+    s_rubberBandCalls++;
+}
 void SlowRivalAhead(GameCarRuntime *car, s32 index) {
     (void)car;
+    RecordEvent('W');
     if (s_slowedCount < 3) {
         s_slowedRanks[s_slowedCount++] = index;
     }
@@ -118,6 +161,14 @@ void SlowRivalAhead(GameCarRuntime *car, s32 index) {
                 (int)(actual), (int)(expected));                                \
         return 1;                                                               \
     }                                                                           \
+} while (0)
+
+#define CHECK_EVENTS(expected) do {                                            \
+    if (strcmp(s_events, (expected)) != 0) {                                   \
+        fprintf(stderr, "line %d: events = %s, expected %s\n", __LINE__,     \
+                s_events, (expected));                                         \
+        return 1;                                                              \
+    }                                                                          \
 } while (0)
 
 int main(void) {
@@ -141,6 +192,8 @@ int main(void) {
     car->targetYaw = 50;
     car->motionTimer = 2;
     g_TrackLength = 0;
+    s_eventCount = 0;
+    s_events[0] = '\0';
 
     UpdateAttractCars();
 
@@ -164,6 +217,8 @@ int main(void) {
     CHECK_EQ(s_bodyMotionCalls, 1);
     CHECK_EQ(s_attractAccelerationCalls, 1);
     CHECK_EQ(s_placementCalls, 1);
+    CHECK_EVENTS("TACSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLR"
+                 "SHLREMPB");
 
     g_TrackLength = 100;
     car->progressA = 123;
@@ -187,6 +242,8 @@ int main(void) {
     s_clampCalls = 0;
     s_steerCalls = 0;
     s_slowedCount = 0;
+    s_eventCount = 0;
+    s_events[0] = '\0';
 
     UpdateRaceCars();
     CHECK_EQ(s_rankCalls, 1);
@@ -204,6 +261,8 @@ int main(void) {
     CHECK_EQ(s_raceAccelerationCalls, 1);
     CHECK_EQ(g_Cars[5].bodyYaw, 105);
     CHECK_EQ(g_Cars[5].collisionFlag, 0);
+    CHECK_EVENTS("KACSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLR"
+                 "UWEMPB");
 
     puts("attract car update preserves pass coverage and empty-track progress");
     return 0;
