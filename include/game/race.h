@@ -264,20 +264,12 @@ extern s16 g_TrackZoneCode;
  * included, which is why they are not spelled Queue* - the queueing is the
  * convention, not the exception.
  */
-void DrawFlybyScenery(void);
 void DrawLostRaceCaption(s32 level);
-void DrawPathScenery(void);
 void DrawRoundScreen(void);
-void DrawRouteScenery(void);
 void DrawSplitIndicator(s32 sector, s32 sign);
 void DrawTerrainCells(void);
-void InitTrackScene(void);
 void ReturnToTitleScene(void);
 void RefreshClassWinState(void);
-void UpdateFlybyScenery(void);
-void UpdatePathScenerySound(void);
-void UpdatePointAmbience(s32 arg);
-void UpdateRouteScenery(void);
 void UpdateZoneAmbience(s32 zone);
 
 /* Declared identically by 153 translation units before this
@@ -394,15 +386,10 @@ void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
-void DrawStartGridScenery(s32 timer);
 void DrawTimeRemaining(s32 time);
 void ExitPrologue(void);
 s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
-void InitPathScenery(void);
 void ResetMirrorState(void);
-void SeedFlybyScenery(void);
-void SeedRouteScenery(void);
-void TriggerRaceCues(void);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
 void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);

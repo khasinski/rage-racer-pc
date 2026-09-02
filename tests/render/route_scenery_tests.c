@@ -6,9 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void UpdateRouteScenery(void);
-void SeedRouteScenery(void);
-
 s32 g_RaceSeries;
 SceneryMotionData *g_RouteSceneryData;
 s32 g_RouteSceneryClock;

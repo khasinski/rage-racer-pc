@@ -1,6 +1,6 @@
 #include "common.h"
 #include "game/race.h"
-#include "game/track.h"
+#include "game/track_internal.h"
 
 #include <stdio.h>
 

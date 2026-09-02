@@ -260,19 +260,16 @@ static inline GameTrackPoint *TrackPoint(s32 index) {
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
 void DrawCourseScenery2(s32 timer, s32 animate);
 
-/* The two-part animated prop at g_AnimSceneryPos[0..1]: a 16-phase model swap plus a
- * companion part. Grand Prix only, nothing drawn in class 5. */
-void DrawAnimatedScenery(s32 timer, s32 instance);
-void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate);
-
-/* The spinners: 1 on MYTHICAL COAST, 3 on OVER PASS CITY from class 2 up. A
- * 12-bit angle in g_SpinningSceneryAngle[] spins about Z at a rate re-randomised every
- * 512 frames. */
-void DrawSpinningScenery(s32 timer, s32 animate);
-
 /* Update (when animate != 0) and draw the route/flyby/path prop layers enabled
  * by the current Grand Prix class. Class 5 wraps to the class-0 route layer. */
 void DrawScriptedScenery(s32 animate);
+void DrawStartGridScenery(s32 timer);
+void InitTrackScene(void);
+void InitPathScenery(void);
+void SeedFlybyScenery(void);
+void SeedRouteScenery(void);
+void TriggerRaceCues(void);
+void UpdatePointAmbience(s32 trackPosition);
 
 /* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;
  * pass 1 for THE EXTREME OVAL's +0x5000 z shift. Model 0x3A or 0x3B depending
@@ -294,8 +291,6 @@ extern ShuttlePath g_ShuttlePathPoints[3];
  * second element all along and are addressed as g_ShuttleScenery[1] now. */
 extern GameShuttleScenery g_ShuttleScenery[2];
 
-void UpdateShuttleScenery(s32 instance);
-void DrawShuttleScenery(s32 instance);
 void InitShuttleScenery(void);
 
 /* Lap distance: the sum of every g_TrackPoints[].segmentLength. Cars' along-

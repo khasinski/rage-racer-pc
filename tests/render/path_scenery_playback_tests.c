@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void InitPathScenery(void);
-void UpdatePathScenerySound(void);
-
 s32 g_RaceSeries;
 s16 g_RacePhase;
 PlayerCarRuntime g_PlayerCar;

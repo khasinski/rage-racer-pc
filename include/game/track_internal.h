@@ -72,6 +72,20 @@ extern s32 g_SkyRowBase;
 
 extern FlybySceneryState g_FlybyScenery;
 
+/* Course-scene implementation details. Keep these out of the cross-module
+ * track API: only the dispatchers in this directory compose them. */
+void DrawAnimatedScenery(s32 timer, s32 instance);
+void DrawAnimatedScenery2(s32 timer, s32 instance, s32 isReplay, s32 animate);
+void DrawFlybyScenery(void);
+void DrawPathScenery(void);
+void DrawRouteScenery(void);
+void DrawShuttleScenery(s32 instance);
+void DrawSpinningScenery(s32 timer, s32 animate);
+void UpdateFlybyScenery(void);
+void UpdatePathScenerySound(void);
+void UpdateRouteScenery(void);
+void UpdateShuttleScenery(s32 instance);
+
 void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
                               s32 offset[2]);
 

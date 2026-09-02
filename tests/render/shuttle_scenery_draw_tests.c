@@ -1,7 +1,7 @@
 #include "common.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/track.h"
+#include "game/track_internal.h"
 
 #include <stdio.h>
 #include <string.h>

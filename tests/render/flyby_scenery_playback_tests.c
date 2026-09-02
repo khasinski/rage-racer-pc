@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void UpdateFlybyScenery(void);
-
 s32 g_CourseIndex;
 s32 g_RaceSeries;
 s16 g_RacePhase;
