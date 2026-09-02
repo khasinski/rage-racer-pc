@@ -735,6 +735,25 @@ target_link_libraries(course_select_screen_tests PRIVATE psyz)
 add_test(NAME course_select_screen COMMAND course_select_screen_tests)
 set_tests_properties(course_select_screen PROPERTIES LABELS functional)
 
+add_executable(course_navigation_tests
+    course_navigation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_navigation.c)
+target_include_directories(course_navigation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_navigation_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_navigation_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_navigation_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_navigation COMMAND course_navigation_tests)
+set_tests_properties(course_navigation PROPERTIES LABELS unit)
+
 add_executable(car_shop_screen_tests
     car_shop_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_shop_screen.c

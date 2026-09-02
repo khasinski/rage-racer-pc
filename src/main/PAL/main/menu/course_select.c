@@ -338,33 +338,6 @@ s32 DrawCourseSelectScreen(s32 step) {
     return g_CourseSelectScrollValue;
 }
 
-/* The mirror of CanSelectNextCourse. */
-s32 CanSelectPrevCourse(void) {
-    s32 v1 = 0;
-    if (g_GrandPrixMode != 0) {
-        v1 = (g_SeriesSelection != 0) << 2;
-    }
-    return v1 < g_CourseIndex;
-}
-
-s32 CanSelectNextCourse(void) {
-    s32 limit;
-
-    if (g_GrandPrixMode != 0) {
-        if (g_SeriesSelection != 0) {
-            limit = (g_GrandPrixClass < 2) ? 6 : 7;
-        } else {
-            limit = (g_GrandPrixClass < 2) ? 2 : 3;
-        }
-    } else if (g_ExtraGrandPrixUnlocked != 0) {
-        limit = (g_MaxClassReached[1] < 2) ? 6 : 7;
-    } else {
-        limit = (g_MaxClassReached[0] < 2) ? 2 : 3;
-    }
-
-    return g_CourseIndex < limit;
-}
-
 s32 DrawRankingScreen(s32 step) {
     s32 value;
 

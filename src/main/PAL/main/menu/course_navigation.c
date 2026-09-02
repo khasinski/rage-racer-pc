@@ -1,0 +1,48 @@
+#include "game/menu.h"
+#include "game/race.h"
+#include "game/state.h"
+
+enum {
+    STANDARD_SERIES_FIRST_COURSE = 0,
+    EXTRA_SERIES_FIRST_COURSE = 4,
+    STANDARD_SERIES_LAST_COURSE_LOCKED = 2,
+    STANDARD_SERIES_LAST_COURSE_UNLOCKED = 3,
+    EXTRA_SERIES_LAST_COURSE_LOCKED = 6,
+    EXTRA_SERIES_LAST_COURSE_UNLOCKED = 7,
+    COURSE_UNLOCK_CLASS = 2,
+};
+
+static s32 LastSelectableCourse(s32 extraSeries, s32 maxClassReached) {
+    if (extraSeries) {
+        return maxClassReached < COURSE_UNLOCK_CLASS
+            ? EXTRA_SERIES_LAST_COURSE_LOCKED
+            : EXTRA_SERIES_LAST_COURSE_UNLOCKED;
+    }
+    return maxClassReached < COURSE_UNLOCK_CLASS
+        ? STANDARD_SERIES_LAST_COURSE_LOCKED
+        : STANDARD_SERIES_LAST_COURSE_UNLOCKED;
+}
+
+s32 CanSelectPrevCourse(void) {
+    s32 firstCourse = STANDARD_SERIES_FIRST_COURSE;
+
+    if (g_GrandPrixMode && g_SeriesSelection) {
+        firstCourse = EXTRA_SERIES_FIRST_COURSE;
+    }
+    return g_CourseIndex > firstCourse;
+}
+
+s32 CanSelectNextCourse(void) {
+    s32 extraSeries;
+    s32 maxClassReached;
+
+    if (g_GrandPrixMode) {
+        extraSeries = g_SeriesSelection != 0;
+        maxClassReached = g_GrandPrixClass;
+    } else {
+        extraSeries = g_ExtraGrandPrixUnlocked != 0;
+        maxClassReached = g_MaxClassReached[extraSeries];
+    }
+
+    return g_CourseIndex < LastSelectableCourse(extraSeries, maxClassReached);
+}
