@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 s32 g_SceneTimer;
 s16 g_McMessageColumnX[8];
@@ -99,7 +99,7 @@ static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(s_sprites, 0, sizeof(s_sprites));
     memset(s_tiles, 0, sizeof(s_tiles));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     s_spriteCount = 0;
     s_tileCount = 0;

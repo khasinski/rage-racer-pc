@@ -10,7 +10,7 @@
 
 GameRenderState g_RenderState;
 GameFrameContext g_FrameContexts[2];
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 u8 g_Font8x8Cells[192];
 u8 g_DrawModeEnv[8];
 u8 g_SpriteFontCells[192];
@@ -41,7 +41,7 @@ static void Reset(void) {
     memset(&g_FrameContexts[0].layout.orderingTables[0][0], 0,
            sizeof(OT_TYPE));
     g_RenderState.packetCursor = s_packets.bytes;
-    g_DrawBuffer = g_FrameContexts[0].bytes;
+    g_DrawBuffer = &g_FrameContexts[0];
 }
 
 static void TestText8x8(void) {

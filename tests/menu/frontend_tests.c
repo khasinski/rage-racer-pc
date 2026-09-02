@@ -29,7 +29,7 @@ s32 g_TitleExitTimer;
 s32 g_TitleMenuSelection;
 s32 g_TitlePulse;
 void (*g_FrontendDrawHandlers[4])(void);
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 static GameFrameContext s_frame;
@@ -140,7 +140,7 @@ static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&s_progress, 0, sizeof(s_progress));
     memset(s_packets, 0, sizeof(s_packets));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     g_RaceProgress = &s_progress;
     g_FrontendState = FRONTEND_STATE_TITLE;

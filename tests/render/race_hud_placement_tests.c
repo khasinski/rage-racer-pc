@@ -56,7 +56,7 @@ int RuntimeConfigEnabled(const char *key) {
 
 /* The game's state the HUD reads. */
 GameFrameContext g_FrameContexts[2];
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 s32 g_FrameParity;
 GameRenderState g_RenderState;
 u8 g_DrawModeEnv[8];
@@ -161,7 +161,7 @@ u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
 static void ResetHud(void) {
     memset(g_FrameContexts, 0, sizeof(g_FrameContexts));
     s_placementCount = 0;
-    g_DrawBuffer = g_FrameContexts[0].bytes;
+    g_DrawBuffer = &g_FrameContexts[0];
     g_FrameParity = 0;
     /* No ordering table is wound up here. AddPrim only writes links into
      * memory, and nothing walks them: the positions live in the frame
@@ -231,7 +231,7 @@ static void CheckSprites(s32 mode, const int *narrow, const int *wide) {
 }
 
 static void CollectSprites(s32 mode, int *out) {
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     s32 rowCount = mode != 0 ? 12 : 11;
     s32 row;
     for (row = 0; row < rowCount; row++)
@@ -308,7 +308,7 @@ static void CheckSplitSignStaysWithItsTime(void) {
 
     s_config.modernAspect = RAGE_MODERN_ASPECT_16_9;
     DrawWholeHud(0);
-    frame = GetGameFrameContext(g_DrawBuffer);
+    frame = g_DrawBuffer;
     signX = frame->layout.raceHud.labels[4].x0;
     for (index = 0; index < s_placementCount; index++)
         if (s_placements[index].y == 0x50) timeX = s_placements[index].x;
@@ -337,7 +337,7 @@ static void CheckRacePositionDigits(void) {
     s_config.modernAspect = RAGE_MODERN_ASPECT_4_3;
     ResetHud();
     BuildRaceHudPrims(1);
-    frame = GetGameFrameContext(g_DrawBuffer);
+    frame = g_DrawBuffer;
 
     g_RacePosition = 3;
     DrawRacePosition();
@@ -365,7 +365,7 @@ static void CheckSplitDeltaSprites(void) {
 
     ResetHud();
     BuildRaceHudPrims(0);
-    frame = GetGameFrameContext(g_DrawBuffer);
+    frame = g_DrawBuffer;
 
     DrawSplitDelta(7, 1);
     if (frame->layout.raceHud.labels[3].u0 != 7 * 8 + 0x50 ||

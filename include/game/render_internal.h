@@ -65,10 +65,6 @@ typedef union GameFrameContext {
     u8 bytes[sizeof(GameFrameLayout)];
 } GameFrameContext;
 
-static inline GameFrameContext *GetGameFrameContext(u8 *bytes) {
-    return (GameFrameContext *)(void *)bytes;
-}
-
 typedef union ScreenOffset {
     s32 value;
     u16 displayValue;
@@ -86,13 +82,13 @@ extern u32 *g_VisibleCellMask;
 extern Vec4 *g_VisibleCellList;
 extern CameraViewMode g_CameraViewMode;
 extern s16 g_AtanTable[];
-extern u8 *g_DrawBuffer;
+extern GameFrameContext *g_DrawBuffer;
 
 static inline OT_TYPE *GamePrimaryOrderingTable(s32 depth) {
-    return &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][depth];
+    return &g_DrawBuffer->layout.orderingTables[0][depth];
 }
 static inline OT_TYPE *GameSecondaryOrderingTable(s32 depth) {
-    return &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][depth];
+    return &g_DrawBuffer->layout.orderingTables[1][depth];
 }
 extern GameFrameContext g_FrameContexts[2];
 extern ScreenOffset g_ScreenOffsetX;

@@ -12,7 +12,7 @@ u16 g_DispEnv1ScreenX;
 u16 g_DispEnv1ScreenY;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 ScreenOffset g_ScreenOffsetX;
 ScreenOffset g_ScreenOffsetY;
@@ -51,7 +51,7 @@ void PlaySoundCue(s32 cue) { s_lastCue = cue; }
     } while (0)
 
 static void Reset(void) {
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     g_RenderState.packetCursor = s_packets;
     g_GameMode = 6;
     g_ScreenOffsetEditX = 0;

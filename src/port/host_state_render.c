@@ -38,7 +38,8 @@ s32 g_MenuCursorPulsePhase;
 /* Eight consecutive s16 coordinates.  The seven D_* labels in the symbol
  * map are interior halfwords of this array, not independent globals. */
 unsigned char g_TachoNeedleQuad[16] __attribute__((aligned(16)));
-unsigned char g_DrawBuffer[8] __attribute__((aligned(16)));
+union GameFrameContext;
+union GameFrameContext *g_DrawBuffer __attribute__((aligned(16)));
 unsigned char g_TrackRenderTable[8] __attribute__((aligned(16)));
 s32 g_TrackTextureCursorRow;
 s32 g_ModelBankCount;

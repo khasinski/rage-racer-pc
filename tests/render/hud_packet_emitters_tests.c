@@ -8,7 +8,7 @@
 
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
-u8 *g_DrawBuffer = s_frame.bytes;
+GameFrameContext *g_DrawBuffer = &s_frame;
 
 static void *s_queueOt;
 static u8 *s_queuePacket;

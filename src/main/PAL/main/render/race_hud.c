@@ -11,7 +11,7 @@ void DrawRaceHudLabels(s32 mode) {
     s32 labelCount = mode != 0 ? 6 : 3;
     GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
                                       : g_RaceHudSpriteDescsTimeTrial;
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
     s32 label;
 
@@ -38,7 +38,7 @@ void DrawRaceHudLabels(s32 mode) {
 void DrawLapTimes(void) {
     s32 visibleCount = g_PlayerCar.lap;
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
     GameSpriteDesc *descs = g_GrandPrixMode != 0
                                 ? g_RaceHudSpriteDescsGp
@@ -86,7 +86,7 @@ void DrawTimeRemaining(s32 time) {
 /* The two race-position digits, from g_RacePosition; the tens digit is
  * blanked below 10 and the colour changes from 4th place down. */
 void DrawRacePosition(void) {
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     SPRT *tens = &frame->layout.raceHud.labels[3];
     SPRT *ones = &frame->layout.raceHud.labels[4];
     u16 color = g_RacePosition < 4 ? 0x780B : 0x780E;
@@ -98,7 +98,7 @@ void DrawRacePosition(void) {
 }
 
 void DrawSplitDelta(s32 delta, s32 sign) {
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     SPRT *deltaDigit = &frame->layout.raceHud.labels[3];
     SPRT *signSprite = &frame->layout.raceHud.labels[4];
     OT_TYPE *ot = GamePrimaryOrderingTable(0);

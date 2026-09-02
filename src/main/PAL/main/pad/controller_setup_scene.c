@@ -19,7 +19,7 @@ void SetGteLightMatrix(Matrix *view) {
  * then keeps it behind the secondary-table callouts and labels. */
 static void SubmitControllerModel(s32 model) {
     OT_TYPE *otBase = RENDER_OT_BASE_AS(OT_TYPE);
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
 
     RENDER_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[1];
     SubmitModel((&g_RenderState), model);

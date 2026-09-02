@@ -15,7 +15,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
     TILE *tile;
     RenderBufferAddress tileAddress;
 
-    ot = &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][1];
+    ot = &g_DrawBuffer->layout.orderingTables[0][1];
 
     tileAddress.bytes = packet;
     tile = tileAddress.tile;
@@ -36,7 +36,7 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 
     colorIndex = g_CarMirrorBadgeStyles[g_PlayerCarIndex];
     paletteIndex = colorIndex * 3;
-    ot = &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][1];
+    ot = &g_DrawBuffer->layout.orderingTables[1][1];
     next = GameQueueSprite(ot, packet, 0x56, g_MirrorPanelY, g_MirrorBadgeWidths[paletteIndex], 8, g_MirrorBadgeTexU[paletteIndex], g_MirrorBadgeTexV[paletteIndex], 0x7800);
     tileAddress.bytes = QueueDrawModePrim(ot, next, 9);
     return tileAddress.drawPacket;
@@ -66,13 +66,12 @@ void DrawRearViewMirror(s32 mode) {
 
             DrawSkyBackground();
             packet = DrawMirrorFrame(*state);
-            SetDrawArea(packet,
-                        &GetGameFrameContext(g_DrawBuffer)
-                             ->environment.mirrorDraw.clip);
+            SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
             prim = packet;
             packet++;
-            AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1]
-                         [GAME_FRAME_OT_LENGTH - 1], prim);
+            AddPrim(&g_DrawBuffer->layout.orderingTables[1]
+                                              [GAME_FRAME_OT_LENGTH - 1],
+                    prim);
             *state = packet;
             BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
             SetRotMatrix((&g_RenderState.matrix));
@@ -80,12 +79,10 @@ void DrawRearViewMirror(s32 mode) {
             SubmitTerrainCells((&g_RenderState), g_VisibleCellList, 0x40);
 
             packet = *state;
-            SetDrawArea(packet,
-                        &GetGameFrameContext(g_DrawBuffer)->environment.draw.clip);
+            SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
             prim = packet;
             packet++;
-            AddPrim(&GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][1],
-                    prim);
+            AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], prim);
             *state = packet;
             DrawCourseObjects();
             DrawCars();

@@ -44,7 +44,7 @@ void MainLoop(void) {
         s32 parity = g_FrameCounter & 1;
         GameFrameContext *frame = &g_FrameContexts[parity];
 
-        g_DrawBuffer = frame->bytes;
+        g_DrawBuffer = frame;
         g_FrameParity = parity;
         RENDER_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[0];
         RENDER_PRIM_CURSOR_AS(u8) = frame->layout.primitiveBuffer;

@@ -14,7 +14,7 @@ s32 g_SceneId;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
-u8 *g_DrawBuffer = s_frame.bytes;
+GameFrameContext *g_DrawBuffer = &s_frame;
 
 static s32 s_displayMask;
 static s32 s_bannerFade;

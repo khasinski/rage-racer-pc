@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 typedef struct TileCall {
@@ -51,7 +51,7 @@ static void DrawAndCheck(s32 progress, s32 fade, s32 red, s32 green,
 }
 
 int main(void) {
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
 
     DrawAndCheck(80, 20, 20, 30, 40);
     CHECK(s_tile.red == 20 && s_tile.green == 30 && s_tile.blue == 40);

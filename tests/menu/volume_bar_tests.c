@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 typedef struct SegmentRecord {
@@ -82,7 +82,7 @@ u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
 
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     s_segmentCount = 0;
     s_capCount = 0;

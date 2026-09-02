@@ -12,7 +12,7 @@ u8 g_WordFontCells[40];
 u8 g_HighFontCell[4];
 
 static GameFrameContext s_frame;
-u8 *g_DrawBuffer = s_frame.bytes;
+GameFrameContext *g_DrawBuffer = &s_frame;
 static int s_failures;
 
 #define CHECK_EQ(actual, expected, label) do { \

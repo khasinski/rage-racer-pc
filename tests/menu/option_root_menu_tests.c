@@ -9,7 +9,7 @@
 
 s32 g_ClassRecordMenuCursor;
 s32 g_CourseIndex;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 s32 g_GameMode;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
@@ -85,7 +85,7 @@ void StartOptionMenuExit(u32 scene) { s_lastExitScene = (s32)scene; }
 
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     g_GameMode = 1;
     g_OptionMenuCursor = 0;

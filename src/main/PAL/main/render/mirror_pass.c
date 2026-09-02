@@ -55,7 +55,7 @@ s32 BeginMirrorPass(void) {
     state->x1 = 0xEA;
     state->y1 = (s16)(g_MirrorPanelY + 0x24);
     state->primData =
-        &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[1][0];
+        &g_DrawBuffer->layout.orderingTables[1][0];
     state->orderingFlag ^= 1;
 
     SetMirrorClip(g_MirrorPanelY);
@@ -78,7 +78,7 @@ void EndMirrorPass(void) {
     state->x1 = 0x140;
     state->y1 = 0xF0;
     state->primData =
-        &GetGameFrameContext(g_DrawBuffer)->layout.orderingTables[0][0];
+        &g_DrawBuffer->layout.orderingTables[0][0];
     state->depth -= 0x800;
     state->orderingFlag ^= 1;
     state->matrix = g_CameraMatrixSaved;

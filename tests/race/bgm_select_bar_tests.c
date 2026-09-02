@@ -10,7 +10,7 @@
 s32 g_BgmRandomLabelTimer;
 s32 g_BgmSelectCursor;
 s32 g_BgmSelectTrack;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 typedef struct SpriteRecord {
@@ -61,7 +61,7 @@ u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 texturePage) {
 
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     g_BgmRandomLabelTimer = 0;
     g_BgmSelectCursor = 1;

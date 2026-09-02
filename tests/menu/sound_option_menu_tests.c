@@ -13,7 +13,7 @@ u16 g_PadPressed;
 s32 g_ScreenOffsetEditX;
 s32 g_SfxVolumeSetting;
 s32 g_SoundOptionCursor;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 typedef struct ChoiceRecord {
@@ -96,7 +96,7 @@ u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
 
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     RENDER_PRIM_CURSOR_AS(u8) = s_packets;
     g_BgmVolumeSetting = 7;
     g_SfxVolumeSetting = 5;

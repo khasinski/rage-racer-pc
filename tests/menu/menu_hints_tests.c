@@ -5,7 +5,7 @@
 
 u8 g_LastValidPadType;
 u8 g_PadType;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 OptionHintCaption g_OptionHintCaptions[7];
 
@@ -53,7 +53,7 @@ int main(void) {
     void *ot0;
     void *ot51;
 
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     ot0 = GamePrimaryOrderingTable(0);
     ot51 = GamePrimaryOrderingTable(51);
 

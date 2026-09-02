@@ -186,7 +186,7 @@ static int WritePpm(const char *path) {
 /* What the builder decided, printed beside the picture: a sprite in the wrong
  * place is easier to recognise as a number than as a few pixels. */
 static void ReportSprites(s32 mode) {
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
                                       : g_RaceHudSpriteDescsTimeTrial;
     s32 rowCount = mode != 0 ? 12 : 11;
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
 
     /* The game's frame context, wound up far enough for the HUD: one
      * ordering table, and a primitive cursor with room to build into. */
-    g_DrawBuffer = g_FrameContexts[0].bytes;
+    g_DrawBuffer = &g_FrameContexts[0];
     g_FrameParity = 0;
     ot = GamePrimaryOrderingTable(0);
     ClearOTagR(ot, GAME_FRAME_OT_LENGTH);

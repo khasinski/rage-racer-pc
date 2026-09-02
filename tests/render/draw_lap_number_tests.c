@@ -9,7 +9,7 @@
 
 GameRenderState g_RenderState;
 PlayerCarRuntime g_PlayerCar;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 
 static GameFrameContext s_frame;
 static SPRT s_packets[8];
@@ -39,7 +39,7 @@ static void ResetPackets(s32 lap) {
     memset(s_packets, 0, sizeof(s_packets));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
-    g_DrawBuffer = s_frame.bytes;
+    g_DrawBuffer = &s_frame;
     g_RenderState.packetCursor = s_packets;
     g_PlayerCar.lap = lap;
     s_drawModePacket = NULL;

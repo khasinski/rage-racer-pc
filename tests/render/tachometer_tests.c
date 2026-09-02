@@ -10,7 +10,7 @@
 
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
-u8 *g_DrawBuffer = s_frame.bytes;
+GameFrameContext *g_DrawBuffer = &s_frame;
 static GameCarSpec s_carSpec;
 GameCarSpec *g_CarSpec = &s_carSpec;
 PlayerCarRuntime g_PlayerCar;
@@ -89,7 +89,7 @@ int main(void) {
     CarTachometerSpec *spec = &g_CarSpec->tachometer;
     POLY_F4 *needle;
     TILE *shiftLight;
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
 
     memset(&s_carSpec, 0, sizeof(s_carSpec));
     spec->needleX = 20;

@@ -9,7 +9,7 @@
 s32 g_SceneTimer;
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
-u8 *g_DrawBuffer = s_frame.bytes;
+GameFrameContext *g_DrawBuffer = &s_frame;
 
 typedef struct SpriteCall {
     s32 x;

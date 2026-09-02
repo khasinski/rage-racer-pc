@@ -16,7 +16,7 @@ Vec4 g_MirrorVisibleCellList[1];
 u32 *g_VisibleCellMask;
 Vec4 *g_VisibleCellList;
 CameraViewMode g_CameraViewMode;
-u8 *g_DrawBuffer;
+GameFrameContext *g_DrawBuffer;
 s16 g_GrandPrixMode;
 s16 g_RacePhase;
 s16 g_MirrorViewEnabled;
@@ -41,7 +41,7 @@ static void SetAvailable(s32 panelY) {
     memset(g_FrameContexts, 0, sizeof(g_FrameContexts));
     memset(&g_CameraMatrixSaved, 0, sizeof(g_CameraMatrixSaved));
     memset(&g_MirrorViewMatrix, 0x35, sizeof(g_MirrorViewMatrix));
-    g_DrawBuffer = g_FrameContexts[0].bytes;
+    g_DrawBuffer = &g_FrameContexts[0];
     g_MirrorUnlocked = 1;
     g_MirrorViewEnabled = 1;
     g_CameraViewMode = CAMERA_VIEW_CAR;

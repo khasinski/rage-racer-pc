@@ -469,7 +469,8 @@ void DrawBitPatternOverlay(s32 pattern);
  * context, so the contexts are 0x237E8 apart. Those two runs are also the
  * busiest memory in a race frame.
  */
-extern u8 *g_DrawBuffer;
+union GameFrameContext;
+extern union GameFrameContext *g_DrawBuffer;
 
 /*
  * Full-screen fade level, 0..0x100, passed straight to

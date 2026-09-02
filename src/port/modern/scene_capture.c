@@ -81,7 +81,7 @@ static void CaptureGte(RageCaptureGteState *out) {
 }
 
 static GameFrameContext *CaptureFrameContext(void) {
-    return GetGameFrameContext(g_DrawBuffer);
+    return g_DrawBuffer;
 }
 
 /* Locate the active OT base within the frame's two tables so the showroom

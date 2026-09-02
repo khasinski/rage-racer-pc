@@ -51,7 +51,7 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
 
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amount) {
     const CarTachometerSpec *spec = &g_CarSpec->tachometer;
-    GameFrameContext *frame = GetGameFrameContext(g_DrawBuffer);
+    GameFrameContext *frame = g_DrawBuffer;
     OT_TYPE *ot = GamePrimaryOrderingTable(0);
     const s32 centerX = HudRightX(spec->needleX);
     const s32 centerY = spec->needleY;
