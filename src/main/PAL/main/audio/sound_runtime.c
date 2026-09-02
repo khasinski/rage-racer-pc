@@ -6,6 +6,14 @@
 
 enum {
     FIRST_SOUND_SLOT_VOICE = 14,
+    AUTO_SOUND_SLOT_COUNT = 5,
+    SOUND_SLOT_COUNT = 6,
+    MUSIC_CHANNEL_COUNT = 2,
+    EFFECT_VOICE_COUNT = 4,
+    SOUND_RUNTIME_VOICE_COUNT = 10,
+    DEFAULT_SOUND_SCALE = 128,
+    DEFAULT_EFFECT_PITCH = 0x1E00,
+    MAIN_VAB_SPU_ADDRESS = 0x1000,
 };
 
 void StopSoundSlotVoice(s32 slot) {
@@ -31,7 +39,9 @@ void SetSoundSlotVoiceEnabled(s32 slot, s32 enabled) {
 void SetSoundSlotVoicesEnabled(s32 enabled) {
     s32 i;
 
-    for (i = 0; i < 5; i++) {
+    /* Slot 5 is managed by ForceSoundSlotVoicePlayback and intentionally
+     * excluded here, as in the retail i != 5 loop. */
+    for (i = 0; i < AUTO_SOUND_SLOT_COUNT; i++) {
         SetSoundSlotVoiceEnabled(i, enabled);
     }
 }
@@ -43,11 +53,11 @@ void SetEffectVoicesEnabled(s32 enabled) {
 void ResetSoundState(void) {
     s32 i;
 
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < SOUND_SLOT_COUNT; i++) {
         g_EngineSoundState.slotActive[i] = 0;
     }
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < MUSIC_CHANNEL_COUNT; i++) {
         g_MusicChannels[i].mode = -1;
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
@@ -55,11 +65,11 @@ void ResetSoundState(void) {
         g_MusicChannels[i].volRight = 0;
     }
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < EFFECT_VOICE_COUNT; i++) {
         g_EffectVoices[i].state = -1;
         g_EffectVoices[i].note.value = -1;
         g_EffectVoices[i].tone = -1;
-        g_EffectVoices[i].pitch.value = 0x1E00;
+        g_EffectVoices[i].pitch.value = DEFAULT_EFFECT_PITCH;
         g_EffectVoices[i].volume = 0;
     }
 
@@ -68,27 +78,36 @@ void ResetSoundState(void) {
     g_PanVoiceVolumeL = -1;
     g_IndexedEffectIndexPrev = -1;
     g_IndexedEffectIndex = -1;
-    g_IndexedEffectPitch = 0x1E00;
-    g_SoundScale.scale = 0x80;
+    g_IndexedEffectPitch = DEFAULT_EFFECT_PITCH;
+    g_SoundScale.scale = DEFAULT_SOUND_SCALE;
     g_PanVoiceActive = 0;
-    g_EngineSoundState.volumeScale = 0x80;
+    g_EngineSoundState.volumeScale = DEFAULT_SOUND_SCALE;
     g_AudioLoadedSlotMask = 1;
+}
+
+static void PrepareSoundRuntime(void) {
+    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
+    /* The native port owns the sequence clock in TickSequenceAudio; it does
+     * not install a simulated PlayStation counter interrupt. */
+    SsSetTickMode(SS_NOTICK);
+    SsSetVoiceCount(SOUND_RUNTIME_VOICE_COUNT);
+    SsUtReverbOff();
+    SetReverbPreset(2, 0, 0);
+    ResetSoundState();
+}
+
+static void FinishSoundRuntimeInitialization(void) {
+    SsSetMVol(0x3FFF, 0x3FFF);
+    SsSetReservedVoice(0);
 }
 
 s32 InitSoundWithVab(u8 *header, u8 *body) {
     s16 *vabIdPtr = g_SoundScale.vabIds;
     s16 vabId;
 
-    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
-    /* The native port owns the sequence clock in TickSequenceAudio; it does
-     * not install a simulated PlayStation counter interrupt. */
-    SsSetTickMode(SS_NOTICK);
-    SsSetVoiceCount(0xA);
-    SsUtReverbOff();
-    SetReverbPreset(2, 0, 0);
-    ResetSoundState();
+    PrepareSoundRuntime();
 
-    *vabIdPtr = SsVabOpenHeadSticky(header, -1, 0x1000);
+    *vabIdPtr = SsVabOpenHeadSticky(header, -1, MAIN_VAB_SPU_ADDRESS);
     vabId = *vabIdPtr;
     if (vabId == -1) {
         printf("%s", g_MsgVabOpenHeadError);
@@ -102,20 +121,13 @@ s32 InitSoundWithVab(u8 *header, u8 *body) {
     }
 
     SsVabTransCompleted(1);
-    SsSetMVol(0x3FFF, 0x3FFF);
-    SsSetReservedVoice(0);
+    FinishSoundRuntimeInitialization();
     return 0;
 }
 
 s32 InitSoundRuntime(void) {
-    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
-    SsSetTickMode(SS_NOTICK);
-    SsSetVoiceCount(0xA);
-    SsUtReverbOff();
-    SetReverbPreset(2, 0, 0);
-    ResetSoundState();
-    SsSetMVol(0x3FFF, 0x3FFF);
-    SsSetReservedVoice(0);
+    PrepareSoundRuntime();
+    FinishSoundRuntimeInitialization();
     InitSequenceAudio();
     return 0;
 }
