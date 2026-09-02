@@ -170,6 +170,26 @@ target_link_libraries(prize_screen_tests PRIVATE psyz)
 add_test(NAME prize_screen COMMAND prize_screen_tests)
 set_tests_properties(prize_screen PROPERTIES LABELS functional)
 
+add_executable(prize_money_panel_tests
+    prize_money_panel_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_prize_money_panel.c)
+target_include_directories(prize_money_panel_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(prize_money_panel_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(prize_money_panel_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(prize_money_panel_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(prize_money_panel_tests PRIVATE psyz)
+add_test(NAME prize_money_panel COMMAND prize_money_panel_tests)
+set_tests_properties(prize_money_panel PROPERTIES LABELS unit)
+
 # The memory card menu, swept across its whole state space.
 add_executable(memory_card_menu_tests
     memory_card_menu_tests.c
