@@ -19,7 +19,7 @@ u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
-s32 g_SharedAssetWord0;
+s32 g_RaceVoiceHeaderSize;
 s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
 GameCarSpec *g_CarSpec;
@@ -138,7 +138,7 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetBlockPtr = source;
     g_AssetLoadCursor = destination;
     g_AssetSubBlockPtr = source + 12;
-    g_SharedAssetWord0 = 10;
+    g_RaceVoiceHeaderSize = 10;
     g_AssetLoadState = 1;
     LoadRaceAssets();
     Check(memcmp(source, destination, 10) == 0,

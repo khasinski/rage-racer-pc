@@ -18,17 +18,14 @@ static s32 RandomClassInRange(s32 minimum, s32 maximum) {
     return minimum + (Random15() & 0xFFF) % (maximum - minimum + 1);
 }
 
-static s32 RandomAvailableClass(void) {
-    return RandomClassInRange(0, g_MaxClassReached[g_GrandPrixSeries]);
-}
-
 s32 RequestRoundAssets(void) {
     if (g_AssetLoadState != 0) {
         ResetAssetLoader();
     }
 
     if (g_GrandPrixMode == 0) {
-        g_GrandPrixClass = RandomAvailableClass();
+        g_GrandPrixClass = RandomClassInRange(
+            0, g_MaxClassReached[g_GrandPrixSeries]);
         if (SeriesCourseIndex() == 3 &&
             g_GrandPrixClass < OVAL_MINIMUM_CLASS) {
             s32 maximum = g_MaxClassReached[g_GrandPrixSeries];
@@ -75,7 +72,7 @@ static void LoadRoundVoiceBank(void) {
         return;
     }
     header = GetVoiceBankAssetHeader(g_AssetBlockPtr2);
-    g_SharedAssetWord0 = header->sharedHeaderSize;
+    g_RaceVoiceHeaderSize = header->sharedHeaderSize;
     g_AssetBlockPtr = g_AssetBlockPtr2 + header->audioHeaderOffset;
     g_AssetSubBlockPtr = g_AssetBlockPtr2 + header->audioBodyOffset;
     g_AssetLoadState = 0;

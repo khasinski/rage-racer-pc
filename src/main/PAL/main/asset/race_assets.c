@@ -29,10 +29,11 @@ s32 RequestRaceAssets(void) {
 }
 
 static void BeginRaceVoiceLoad(void) {
-    memcpy(g_AssetLoadCursor, g_AssetBlockPtr, (size_t)g_SharedAssetWord0);
+    memcpy(g_AssetLoadCursor, g_AssetBlockPtr,
+           (size_t)g_RaceVoiceHeaderSize);
     StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
                        g_AssetSubBlockPtr, 0);
-    g_AssetLoadCursor += g_SharedAssetWord0;
+    g_AssetLoadCursor += g_RaceVoiceHeaderSize;
     g_AssetLoadState = RACE_WAIT_FOR_VOICE_AUDIO;
 }
 

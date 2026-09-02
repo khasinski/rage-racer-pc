@@ -20,7 +20,7 @@ u8 *g_ImageBlockBuffer;
 u8 *g_AssetBase;
 u8 *g_AssetLoadCursor;
 u8 *g_AssetSubBlockPtr;
-s32 g_SharedAssetWord0;
+s32 g_RaceVoiceHeaderSize;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
 s32 g_GrandPrixClass;
@@ -334,14 +334,14 @@ int main(void) {
     voiceHeader->audioHeaderOffset = 20;
     voiceHeader->audioBodyOffset = 40;
     s_loadResult = 0;
-    g_SharedAssetWord0 = -1;
+    g_RaceVoiceHeaderSize = -1;
     LoadRoundAssets();
-    Check(g_AssetLoadState == 2 && g_SharedAssetWord0 == -1,
+    Check(g_AssetLoadState == 2 && g_RaceVoiceHeaderSize == -1,
           "incomplete voice load installs nothing");
     s_loadResult = 1;
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_VOICE_BANK, "round voice asset id");
-    Check(g_SharedAssetWord0 == 123, "round shared header word");
+    Check(g_RaceVoiceHeaderSize == 123, "round shared header size");
     Check(g_AssetBlockPtr == pack.bytes + 36 &&
               g_AssetSubBlockPtr == pack.bytes + 56,
           "round voice offsets relocated");

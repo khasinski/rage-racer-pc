@@ -54,6 +54,10 @@ extern u8 *g_AssetBlockPtr;
 /* Its companion, the third pointer of the sub-block triple. */
 extern u8 *g_AssetBlockPtr2;
 
+/* Bytes of the shared voice header published by the round-screen load and
+ * copied into the race asset arena before its audio slot starts. */
+extern s32 g_RaceVoiceHeaderSize;
+
 /* Scratch image buffer: whatever the last screen load left free, handed to
  * LoadAsset and UploadImageAsset by the round / save / attract screens. */
 extern u8 *g_ImageBlockBuffer;
@@ -303,7 +307,7 @@ static inline void *GetSceneAssetBlock(GameSceneAssetHeader *header,
 /*
  * Asset-region pointers. All three address the load region in bytes: they are
  * advanced by byte counts (a load's returned size, TRACK_TEXTURE_SHADOW_SIZE,
- * g_SharedAssetWord0) and by offsets read out of the pack that happens to sit
+ * g_RaceVoiceHeaderSize) and by offsets read out of the pack that happens to sit
  * there, so u8 * is the correct type. A pack header is a
  * view taken through GetSceneAssetHeader/GetVoiceBankAssetHeader at the asset
  * boundary; consumers then operate on a named serialized layout.
