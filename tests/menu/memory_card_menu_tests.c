@@ -116,7 +116,7 @@ void DrawMemoryCardSaveRows(s32 mask, GameSaveHeaderRow *headers) {
     (void)headers;
     s_calls++;
 }
-void AdjustMenuSelectionHorizontal(s32 *value, s32 low, s32 high) {
+void AdjustMenuSelectionVertical(s32 *value, s32 low, s32 high) {
     /* The real one moves on left/right; this one moves the same way so the
      * cursor walks, without pulling the whole pad layer in. */
     if (g_PadPressed & PAD_LEFT) {
@@ -132,20 +132,20 @@ void AdjustMenuSelectionHorizontal(s32 *value, s32 low, s32 high) {
         *value = low;
     }
 }
-void SetMenuBinaryChoiceVertical(s32 *choice) {
+void SetMenuBinaryChoiceHorizontal(s32 *choice) {
     if (g_PadPressed & (PAD_UP | PAD_DOWN)) {
         *choice = *choice == 0 ? 1 : 0;
     }
 }
 u16 PollMenuConfirmInput(void) {
-    u16 value = g_PadPressed & 0x860;
+    u16 value = g_PadPressed & PAD_CONFIRM;
     if (value != 0) {
         s_calls += 10;
     }
     return value;
 }
 u16 PollMenuBackInput(void) {
-    u16 value = g_PadPressed & 0x90;
+    u16 value = g_PadPressed & PAD_CANCEL;
     if (value != 0) {
         s_calls += 20;
     }

@@ -59,8 +59,8 @@ static void RunCardMenuRows(s32 fadeBusy) {
     u16 pad;
 
     g_McMenuPhase = MC_PROMPT_NONE;
-    AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
-                                  g_McMenuRowCount - 1);
+    AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
+                                g_McMenuRowCount - 1);
     pad = g_PadPressed;
     if (pad & PAD_CONFIRM) {
         if (g_McMenuRowCursor < g_McMenuRowCount - 1) {

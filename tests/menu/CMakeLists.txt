@@ -1098,6 +1098,27 @@ else()
 endif()
 add_test(NAME controller_setup_scene COMMAND controller_setup_scene_tests)
 set_tests_properties(controller_setup_scene PROPERTIES LABELS unit)
+
+add_executable(memory_card_menu_helpers_tests
+    memory_card_menu_helpers_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_save_rows.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_menu_controls.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/memory_card_menu_lifecycle.c)
+target_include_directories(memory_card_menu_helpers_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(memory_card_menu_helpers_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(memory_card_menu_helpers_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(memory_card_menu_helpers_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME memory_card_menu_helpers COMMAND memory_card_menu_helpers_tests)
+set_tests_properties(memory_card_menu_helpers PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)

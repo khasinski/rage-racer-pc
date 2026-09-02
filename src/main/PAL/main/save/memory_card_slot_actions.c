@@ -130,7 +130,7 @@ static void PickSaveSlot(void) {
  * path, once in PickSaveSlot and once below, and each ask plays its own cue.
  */
 static void PickCardSlot(void) {
-    AdjustMenuSelectionHorizontal(&g_McSlotCursor, 0, 2);
+    AdjustMenuSelectionVertical(&g_McSlotCursor, 0, 2);
     if (g_McSaveMode != 0) {
         PickLoadSlot();
     } else {
@@ -149,7 +149,7 @@ void RunCardSlotActions(void) {
     case CARD_SLOT_ACTION_CONFIRM_OVERWRITE:
         g_McMenuPhase = MC_PROMPT_OVERWRITE_ASK + (g_McSlotCursor * 2) +
                         g_McConfirmChoice;
-        SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
+        SetMenuBinaryChoiceHorizontal(&g_McConfirmChoice);
         if (PollMenuConfirmInput() != 0) {
             g_McActionState = g_McConfirmChoice != 0
                                   ? CARD_SLOT_ACTION_BEGIN_SAVE

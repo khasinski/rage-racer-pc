@@ -121,8 +121,8 @@ void RunNoCardActions(s32 fadeBusy) {
 
     case NO_CARD_ACTION_READY:
         if (g_McMenuPage == 0) {
-            AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
-                                          g_McMenuRowCount - 1);
+            AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
+                                        g_McMenuRowCount - 1);
             if (PollMenuConfirmInput() != 0) {
                 if (g_McMenuRowCursor != g_McMenuRowCount - 1) {
                     PlaySoundCue(5);

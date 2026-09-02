@@ -25,8 +25,8 @@ enum {
 
 static void RunUnformattedCardRootPage(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NONE;
-    AdjustMenuSelectionHorizontal(&g_McMenuRowCursor, 0,
-                                  g_McMenuRowCount - 1);
+    AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
+                                g_McMenuRowCount - 1);
 
     if (!(g_PadPressed & PAD_CONFIRM)) {
         if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
@@ -78,7 +78,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
 
     case FORMAT_CARD_ACTION_CONFIRM:
         g_McMenuPhase = g_McConfirmChoice + MC_PROMPT_FORMAT_ASK;
-        SetMenuBinaryChoiceVertical(&g_McConfirmChoice);
+        SetMenuBinaryChoiceHorizontal(&g_McConfirmChoice);
         confirm = PollMenuConfirmInput();
         if (g_McConfirmChoice != 0 && confirm != 0) {
             g_McActionState = FORMAT_CARD_ACTION_BEGIN_DELAY;
