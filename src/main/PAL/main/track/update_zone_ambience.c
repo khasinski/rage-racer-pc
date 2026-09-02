@@ -5,6 +5,10 @@
 enum {
     AMBIENCE_MAX_VOLUME = 0x60,
     AMBIENCE_FADE_DISTANCE = 800,
+    AMBIENCE_FADE_IN = 1,
+    AMBIENCE_FADE_OUT = 2,
+    AMBIENCE_MINIMUM_CLASS_TIER = 1,
+    AMBIENCE_ALTERNATE_CUE_CLASS_TIER = 3,
 };
 
 static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
@@ -18,12 +22,12 @@ static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
             continue;
         }
         if (position < zone->start + AMBIENCE_FADE_DISTANCE &&
-            (zone->flags & 1) != 0) {
+            (zone->flags & AMBIENCE_FADE_IN) != 0) {
             return maximumVolume * (position - zone->start) /
                    AMBIENCE_FADE_DISTANCE;
         }
         if (position > zone->end - AMBIENCE_FADE_DISTANCE &&
-            (zone->flags & 2) != 0) {
+            (zone->flags & AMBIENCE_FADE_OUT) != 0) {
             return maximumVolume * (zone->end - position) /
                    AMBIENCE_FADE_DISTANCE;
         }
@@ -34,8 +38,10 @@ static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
 
 void UpdateZoneAmbience(s32 trackPosition) {
     s32 sceneryTier = g_GrandPrixClass % GRAND_PRIX_FINAL_CLASS_INDEX;
-    s32 maximumVolume = sceneryTier >= 1 ? AMBIENCE_MAX_VOLUME : 0;
-    s32 cue = sceneryTier >= 3 ? 1 : 0;
+    s32 maximumVolume = sceneryTier >= AMBIENCE_MINIMUM_CLASS_TIER
+                            ? AMBIENCE_MAX_VOLUME
+                            : 0;
+    s32 cue = sceneryTier >= AMBIENCE_ALTERNATE_CUE_CLASS_TIER ? 1 : 0;
     s32 volume;
 
     trackPosition = TrackPositionForSeries(trackPosition, g_TrackLength,
