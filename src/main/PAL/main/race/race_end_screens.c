@@ -30,7 +30,7 @@ void EnterLostRaceScreen(void) {
     DrawLostRaceCaption(0xFF);
 }
 
-void DrawRaceEndPrompt(void) {
+static void DrawRaceEndPrompt(void) {
     s32 color = 0x7812;
     s32 drawColor;
     s16 index;
