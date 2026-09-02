@@ -25,18 +25,33 @@ static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
     car->drive.gearDisp = 1;
 }
 
+static s32 NormalizeTrackPointIndex(s32 index) {
+    index %= g_TrackPointCount;
+    return index < 0 ? index + g_TrackPointCount : index;
+}
+
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     CarTrackLimits trackLimits = {0};
     const TrackRivalStart *start;
     s32 raceSeries = ReadStableRaceSeries();
+    s32 startPointIndex;
+
+    if (g_TrackEventData == NULL || g_TrackPoints == NULL ||
+        g_TrackPointCount <= 0) {
+        return;
+    }
 
     start = &g_TrackEventData->rivalStarts[raceSeries][0];
-    car->trackPointIndex = start->trackPointIndex;
+    startPointIndex = NormalizeTrackPointIndex(start->trackPointIndex);
+    car->trackPointIndex = startPointIndex;
     car->x = start->x;
     car->y = 0;
     car->z = start->z;
     car->trackPointIndex =
         FindTrackSegment(AsRivalCar(car), car->trackPointIndex);
+    if (car->trackPointIndex < 0) {
+        car->trackPointIndex = startPointIndex;
+    }
 
     car->bodyPitch = 0;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -

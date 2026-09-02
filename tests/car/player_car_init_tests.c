@@ -39,6 +39,7 @@ static int s_trackCalls;
 static int s_offsetCalls;
 static int s_performanceCalls;
 static int s_failures;
+static s32 s_findResult;
 
 void BuildTachoNeedleQuad(void) { s_tachoCalls++; }
 
@@ -46,7 +47,7 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 pointIndex) {
     (void)car;
     (void)pointIndex;
     s_findCalls++;
-    return 1;
+    return s_findResult;
 }
 
 void SeedCarLapProgress(GameCarRuntime *car, s32 progress) {
@@ -119,6 +120,7 @@ static void ResetFixtures(void) {
     s_trackCalls = 0;
     s_offsetCalls = 0;
     s_performanceCalls = 0;
+    s_findResult = 1;
 }
 
 #define CHECK(condition) do {                                                \
@@ -172,6 +174,35 @@ int main(void) {
     InitPlayerCar(&car);
     CHECK(car.drive.manual == 0 && car.drive.launchThresholdIndex == 4);
     CHECK(g_HudGlyphClut == 0x78CF);
+
+    ResetFixtures();
+    memset(&car, 0x55, sizeof(car));
+    car.drive.manual = 1;
+    car.drive.launchThresholdIndex = 2;
+    s_findResult = -1;
+    InitPlayerCar(&car);
+    CHECK(car.trackPointIndex == 0);
+    CHECK(car.bodyYaw == ANGLE_QUARTER_TURN);
+    CHECK(car.x == 1005 && car.z == 1993);
+
+    ResetFixtures();
+    memset(&car, 0x55, sizeof(car));
+    car.drive.manual = 1;
+    car.drive.launchThresholdIndex = 2;
+    g_TrackEventData = NULL;
+    InitPlayerCar(&car);
+    CHECK(s_findCalls == 0 && s_seedCalls == 0 && s_trackCalls == 0);
+    CHECK(s_offsetCalls == 0 && s_performanceCalls == 1);
+    CHECK(car.x == 0 && car.y == 0 && car.z == 0);
+
+    ResetFixtures();
+    memset(&car, 0x55, sizeof(car));
+    car.drive.manual = 1;
+    car.drive.launchThresholdIndex = 2;
+    g_TrackPoints = NULL;
+    InitPlayerCar(&car);
+    CHECK(s_findCalls == 0 && s_seedCalls == 0 && s_trackCalls == 0);
+    CHECK(car.x == 0 && car.y == 0 && car.z == 0);
 
     if (s_failures != 0) {
         printf("%d player initialization checks failed\n", s_failures);
