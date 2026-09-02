@@ -19,6 +19,25 @@ endif()
 add_test(NAME asset_table_installation COMMAND asset_table_installation_tests)
 set_tests_properties(asset_table_installation PROPERTIES LABELS unit)
 
+add_executable(course_event_runtime_tests
+    course_event_runtime_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/course_event_runtime.c)
+target_include_directories(course_event_runtime_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_event_runtime_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_event_runtime_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_event_runtime_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_event_runtime COMMAND course_event_runtime_tests)
+set_tests_properties(course_event_runtime PROPERTIES LABELS unit)
+
 add_executable(prologue_logic_tests
     prologue_logic_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue_logic.c)
