@@ -37,6 +37,7 @@ s32 AttractClosingWashLevel(s32 timer);
 s32 ShouldStartAttractExitFade(s32 timer);
 s32 ShouldReturnFromAttractDemo(s32 timer);
 void UpdateAndDrawAttractWorld(void);
+void UpdateBgmSelectScene(void);
 
 typedef union SectorReferenceTimes {
     s32 values[3];

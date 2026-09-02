@@ -288,6 +288,25 @@ endif()
 add_test(NAME bgm_track COMMAND bgm_track_tests)
 set_tests_properties(bgm_track PROPERTIES LABELS unit)
 
+add_executable(bgm_select_scene_tests
+    bgm_select_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select.c)
+target_include_directories(bgm_select_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(bgm_select_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(bgm_select_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(bgm_select_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME bgm_select_scene COMMAND bgm_select_scene_tests)
+set_tests_properties(bgm_select_scene PROPERTIES LABELS unit)
+
 add_executable(replay_fade_tests
     replay_fade_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_fade.c
