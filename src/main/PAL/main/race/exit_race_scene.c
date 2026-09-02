@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/race.h"
@@ -12,5 +10,4 @@ void ExitRaceScene(s32 sceneId) {
     if (sceneId == 6) {
         RequestSelectBgmAssets();
     }
-    printf("%s", g_MsgGameExit);
 }

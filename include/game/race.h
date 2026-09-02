@@ -325,7 +325,6 @@ extern char g_FmtRoundIn[];
 extern s32 g_LostRaceChoice;
 extern char g_MsgEventOk[];
 extern char g_MsgGame0Ok[];
-extern char g_MsgGameExit[];
 extern char g_MsgResOk[];
 extern s32 g_NameEntryChar;
 extern u8 g_NameEntryCharset[];
