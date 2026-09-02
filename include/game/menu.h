@@ -420,7 +420,6 @@ extern s32 g_TrackWalkStart;
 extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
-void BuildStartingGrid(void);
 void ClearTeamNameTexture(void);
 void DrawCarNamePlate(s32 step, s32 model, s32 grade);
 void DrawMenuAltPanel(s32 stepA, s32 stepB);

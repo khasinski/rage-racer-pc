@@ -1,44 +1,7 @@
 #include "game/player_car_internal.h"
 #include "game/race.h"
-#include "game/state.h"
 #include "game/render.h"
 #include "game/random.h"
-
-
-void BuildStartingGrid(void) {
-    GameCarRuntime *entryBase;
-    RaceGridSlot *table;
-    s32 i;
-    s16 *flagPtr;
-    s32 one;
-    RaceGridSlot *cursor;
-    u16 track;
-
-    entryBase = g_Cars;
-    g_ClosestRivalRank = 3;
-    table = g_SceneId == 0xB ? g_RaceGridSlots : g_AttractGridSlots;
-    one = 1;
-    flagPtr = &entryBase->activeFlag;
-    g_RaceSeries = g_GrandPrixSeries;
-    cursor = table;
-    for (i = 0; i < 0xB; i++) {
-        track = ReadRaceTrackDirection();
-        *flagPtr = 0;
-        flagPtr[6] = track;
-        if (cursor->value >= 0) {
-            ClearCarMotionState(entryBase);
-            *flagPtr = one;
-            InitRivalCar(entryBase, i, table);
-            InitRivalCarAi(entryBase, i, table);
-        }
-        cursor++;
-        flagPtr += sizeof(GameCarRuntime) / sizeof(*flagPtr);
-        entryBase++;
-    }
-
-    SeedCarRouteMarkers();
-}
-
 void DrawCars(void) {
     GameCarRuntime *base;
     s32 i;

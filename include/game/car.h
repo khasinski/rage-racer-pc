@@ -786,6 +786,7 @@ extern s16 g_TorqueBandStart;
 extern s16 g_TorqueLossBandStart;
 
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
+void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex);
 s32 GetCarCrestTrigger(GameCarRuntime* car);

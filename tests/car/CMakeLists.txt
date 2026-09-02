@@ -508,6 +508,25 @@ endif()
 add_test(NAME collision_quads COMMAND collision_quads_tests)
 set_tests_properties(collision_quads PROPERTIES LABELS unit)
 
+add_executable(starting_grid_tests
+    starting_grid_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/starting_grid.c)
+target_include_directories(starting_grid_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(starting_grid_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(starting_grid_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(starting_grid_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME starting_grid COMMAND starting_grid_tests)
+set_tests_properties(starting_grid PROPERTIES LABELS functional)
+
 # The gearbox, on its own rather than through a whole race.
 add_executable(gear_shift_tests
     gear_shift_tests.c
