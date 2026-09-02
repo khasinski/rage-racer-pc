@@ -23,6 +23,11 @@ enum {
     FORMAT_RESULT_DISPLAY_FRAMES = 60,
 };
 
+static void ReturnToUnformattedCardRoot(void) {
+    g_McMenuPage = 0;
+    g_McActionState = FORMAT_CARD_ACTION_PROMPT;
+}
+
 static void RunUnformattedCardRootPage(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NONE;
     AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
@@ -54,38 +59,54 @@ static void RunUnformattedCardRootPage(s32 fadeBusy) {
     }
 }
 
-static void RunFormatCardActions(s32 fadeBusy) {
+static void RunFormatPrompt(void) {
+    if (g_McSaveMode != 0) {
+        g_McMenuPhase = MC_PROMPT_NO_DATA;
+        if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
+            ReturnToUnformattedCardRoot();
+        }
+        return;
+    }
+
+    g_McMenuPhase = MC_PROMPT_NEW_CARD;
+    if (PollMenuConfirmInput() != 0) {
+        g_McActionState = FORMAT_CARD_ACTION_CONFIRM;
+    } else if (PollMenuBackInput() != 0) {
+        ReturnToUnformattedCardRoot();
+    }
+}
+
+static void RunFormatConfirmation(void) {
     u16 confirm;
 
+    g_McMenuPhase = g_McConfirmChoice + MC_PROMPT_FORMAT_ASK;
+    SetMenuBinaryChoiceHorizontal(&g_McConfirmChoice);
+    confirm = PollMenuConfirmInput();
+    if (g_McConfirmChoice != 0 && confirm != 0) {
+        g_McActionState = FORMAT_CARD_ACTION_BEGIN_DELAY;
+    } else if (confirm != 0 || PollMenuBackInput() != 0) {
+        ReturnToUnformattedCardRoot();
+    }
+}
+
+static void RunFormatOperation(void) {
+    g_McActionResult = FormatMemoryCard(0, 0);
+    if (g_McActionResult == 1) {
+        g_McActionState = FORMAT_CARD_ACTION_SHOW_SUCCESS;
+        g_McActionTimer = FORMAT_RESULT_DISPLAY_FRAMES;
+    } else {
+        g_McActionState = FORMAT_CARD_ACTION_SHOW_ERROR;
+    }
+}
+
+static void RunFormatCardActions(s32 fadeBusy) {
     switch (g_McActionState) {
     case FORMAT_CARD_ACTION_PROMPT:
-        if (g_McSaveMode != 0) {
-            g_McMenuPhase = MC_PROMPT_NO_DATA;
-            if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
-                g_McMenuPage = 0;
-                g_McActionState = FORMAT_CARD_ACTION_PROMPT;
-            }
-            break;
-        }
-        g_McMenuPhase = MC_PROMPT_NEW_CARD;
-        if (PollMenuConfirmInput() != 0) {
-            g_McActionState = FORMAT_CARD_ACTION_CONFIRM;
-        } else if (PollMenuBackInput() != 0) {
-            g_McMenuPage = 0;
-            g_McActionState = FORMAT_CARD_ACTION_PROMPT;
-        }
+        RunFormatPrompt();
         break;
 
     case FORMAT_CARD_ACTION_CONFIRM:
-        g_McMenuPhase = g_McConfirmChoice + MC_PROMPT_FORMAT_ASK;
-        SetMenuBinaryChoiceHorizontal(&g_McConfirmChoice);
-        confirm = PollMenuConfirmInput();
-        if (g_McConfirmChoice != 0 && confirm != 0) {
-            g_McActionState = FORMAT_CARD_ACTION_BEGIN_DELAY;
-        } else if (confirm != 0 || PollMenuBackInput() != 0) {
-            g_McMenuPage = 0;
-            g_McActionState = FORMAT_CARD_ACTION_PROMPT;
-        }
+        RunFormatConfirmation();
         break;
 
     case FORMAT_CARD_ACTION_BEGIN_DELAY:
@@ -101,13 +122,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
         break;
 
     case FORMAT_CARD_ACTION_RUN:
-        g_McActionResult = FormatMemoryCard(0, 0);
-        if (g_McActionResult == 1) {
-            g_McActionState = FORMAT_CARD_ACTION_SHOW_SUCCESS;
-            g_McActionTimer = FORMAT_RESULT_DISPLAY_FRAMES;
-        } else {
-            g_McActionState = FORMAT_CARD_ACTION_SHOW_ERROR;
-        }
+        RunFormatOperation();
         break;
 
     case FORMAT_CARD_ACTION_SHOW_SUCCESS:

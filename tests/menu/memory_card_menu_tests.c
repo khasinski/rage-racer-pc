@@ -14,13 +14,12 @@
 
 #include "common.h"
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 #include "game/menu.h"
 #include "game/state.h"
 
 #include <stdio.h>
 #include <string.h>
-
-void UpdateMemoryCardMenu(void);
 
 /* The menu's own state. */
 s32 g_McActionBusy;
@@ -249,6 +248,44 @@ static int TestOverwritePromptResetsChoice(void) {
     return 1;
 }
 
+static void PrepareFormatOperation(s32 formatAnswer) {
+    g_McMenuState = MC_MENU_STATE_UNFORMATTED;
+    g_McMenuSelection = MC_MENU_STATE_UNFORMATTED;
+    g_McCardStatus = MC_MENU_STATE_UNFORMATTED;
+    g_McMenuPage = 1;
+    g_McMenuRowCount = 2;
+    g_McActionState = 5;
+    g_McActionBusy = 1;
+    g_McActionResult = 0;
+    g_McFadeLevel = 0;
+    g_McFadeStep = 0;
+    g_McErrorPending = 0;
+    g_SceneTimer = 0x40;
+    g_PadPressed = 0;
+    s_cardStatusAnswer = MC_MENU_STATE_UNFORMATTED;
+    s_formatAnswer = formatAnswer;
+}
+
+static int TestFormatOperationReportsItsResult(void) {
+    PrepareFormatOperation(1);
+    UpdateMemoryCardMenu();
+    if (g_McActionResult != 1 || g_McActionState != 7 ||
+        g_McActionTimer != 60) {
+        printf("FAIL successful format result=%d action=%x timer=%d\n",
+               g_McActionResult, g_McActionState, g_McActionTimer);
+        return 0;
+    }
+
+    PrepareFormatOperation(0);
+    UpdateMemoryCardMenu();
+    if (g_McActionResult != 0 || g_McActionState != 0xA) {
+        printf("FAIL failed format result=%d action=%x\n",
+               g_McActionResult, g_McActionState);
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
     static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
@@ -271,7 +308,8 @@ int main(int argc, char **argv) {
     s32 steps = 0;
     char label[64];
 
-    if (!TestFailedLoadReportsError() || !TestOverwritePromptResetsChoice()) {
+    if (!TestFailedLoadReportsError() || !TestOverwritePromptResetsChoice() ||
+        !TestFormatOperationReportsItsResult()) {
         return 1;
     }
 
