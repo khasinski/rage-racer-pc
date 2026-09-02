@@ -17,6 +17,7 @@ u16 g_SpinningSceneryRate[4];
 static s32 g_SubmissionCount;
 static s32 g_Models[4];
 static u32 g_Entities[4];
+static s32 g_Positions[4][3];
 static s32 g_RandomValues[2];
 static s32 g_RandomIndex;
 
@@ -58,19 +59,20 @@ void GameRenderWorldSubmitDynamicCourseObject(
     s32 index = g_SubmissionCount;
 
     (void)model;
-    (void)x;
-    (void)y;
-    (void)z;
     (void)rotation;
     (void)fogged;
     (void)mirrorPass;
     g_Entities[index] = entity;
+    g_Positions[index][0] = x;
+    g_Positions[index][1] = y;
+    g_Positions[index][2] = z;
 }
 
 static void ResetSubmissions(void) {
     g_SubmissionCount = 0;
     memset(g_Models, 0, sizeof(g_Models));
     memset(g_Entities, 0, sizeof(g_Entities));
+    memset(g_Positions, 0, sizeof(g_Positions));
 }
 
 int main(void) {
@@ -78,6 +80,10 @@ int main(void) {
     g_SpinningSceneryRate[0] = 32;
     g_SpinningSceneryRate[1] = 64;
     g_CourseModelCount = 63;
+    g_SpinningSceneryPlacements[0].position = (LVec){10, 20, 30};
+    g_SpinningSceneryPlacements[1].position = (LVec){40, 50, 60};
+    g_SpinningSceneryPlacements[2].position = (LVec){70, 80, 90};
+    g_SpinningSceneryPlacements[3].position = (LVec){100, 110, 120};
 
     g_CourseIndex = 0;
     ResetSubmissions();
@@ -96,6 +102,9 @@ int main(void) {
     if (g_SubmissionCount != 3 || g_Entities[0] != 0x101 ||
         g_Entities[1] != 0x102 || g_Entities[2] != 0x103 ||
         g_Models[0] != 1 || g_Models[1] != 1 || g_Models[2] != 1 ||
+        g_Positions[0][0] != 40 || g_Positions[0][2] != 60 ||
+        g_Positions[1][0] != 70 || g_Positions[1][2] != 90 ||
+        g_Positions[2][0] != 100 || g_Positions[2][2] != 120 ||
         g_SpinningSceneryAngle[1] != 64 ||
         g_SpinningSceneryAngle[2] != 64 ||
         g_SpinningSceneryAngle[3] != 64) {

@@ -4,32 +4,33 @@
 #include "game/track.h"
 #include "rage/render_world_game.h"
 
+typedef struct SpinningSceneryRange {
+    s32 first;
+    s32 limit;
+    s32 rateIndex;
+} SpinningSceneryRange;
+
+static const SpinningSceneryRange s_singleSpinnerRange = {0, 1, 0};
+static const SpinningSceneryRange s_multipleSpinnerRange = {1, 4, 1};
+
 void DrawSpinningScenery(s32 timer, s32 animate) {
     Matrix yawMatrix;
     Matrix objectMatrix;
     Matrix worldMatrix;
-    s32 firstSpinner;
-    s32 spinnerLimit;
+    const SpinningSceneryRange *range;
     s32 spinner;
     s32 modelId;
-    s32 multipleSpinners;
 
-    multipleSpinners = SeriesCourseIndex() != 0;
-    if (multipleSpinners) {
-        firstSpinner = 1;
-        spinnerLimit = 4;
-    } else {
-        firstSpinner = 0;
-        spinnerLimit = 1;
-    }
-
-    for (spinner = firstSpinner; spinner < spinnerLimit; spinner++) {
+    range = SeriesCourseIndex() == 0
+        ? &s_singleSpinnerRange
+        : &s_multipleSpinnerRange;
+    for (spinner = range->first; spinner < range->limit; spinner++) {
         SpinningSceneryPlacement *placement =
             &g_SpinningSceneryPlacements[spinner];
 
         if (animate != 0) {
             g_SpinningSceneryAngle[spinner] +=
-                g_SpinningSceneryRate[multipleSpinners];
+                g_SpinningSceneryRate[range->rateIndex];
         }
         g_SpinningSceneryAngle[spinner] &= 0xFFF;
 
