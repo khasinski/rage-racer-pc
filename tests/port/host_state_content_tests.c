@@ -4,9 +4,8 @@
  * host_state.c is the retail data segment transcribed into C, and it is being
  * untangled: strings written as hexadecimal are becoming strings, arrays that
  * swallowed their neighbours are being cut apart and named, and the whole file
- * is being split up by subsystem. Every one of those changes has to leave the
- * bytes exactly as they were, and the ABI manifest cannot say so: it pins the
- * names and the sizes of the raw blobs, not what is in them.
+ * is being split up by subsystem. Meaningful data has to retain its bytes;
+ * padding and dead retail pointer tables are deliberately dropped.
  *
  * So this folds the contents themselves. Only the bytes are folded, never the
  * names or the sizes, which is deliberate: cutting one array into two named
@@ -103,19 +102,19 @@ extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
 extern unsigned char g_MsgGameExit[12];
 extern unsigned char g_MsgGame0Ok[12];
-extern unsigned char g_MenuLightBurstBandX[68];
-extern unsigned char g_MenuLightBurstBandY[68];
-extern unsigned char g_MsgOrdinalSt[8];
-extern unsigned char g_MsgOrdinalNd[8];
-extern unsigned char g_MsgOrdinalRd[8];
-extern unsigned char g_MsgOrdinalTh[116];
-extern unsigned char g_PaintColorTable[168];
-extern unsigned char g_CourseCardVerts[108];
+extern const MenuLightBurstBand g_MenuLightBurstBandX;
+extern const MenuLightBurstBand g_MenuLightBurstBandY;
+extern const char g_MsgOrdinalSt[4];
+extern const char g_MsgOrdinalNd[4];
+extern const char g_MsgOrdinalRd[4];
+extern const char g_MsgOrdinalTh[8];
+extern PaintColorTable g_PaintColorTable;
+extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern unsigned char g_TeamNameCharScale[152];
 extern unsigned char g_FormatDecimal[68];
 extern unsigned char g_MenuBlankCaption[52];
-extern unsigned char g_DesignModeCellMask[160];
+extern DesignModeCellMask g_DesignModeCellMask;
 extern unsigned char g_CarSoundVolumeScales[128];
 extern unsigned char g_MsgVabOpenHeadError[24];
 extern unsigned char g_MsgVabTransBodyError[24];
@@ -309,19 +308,21 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgEventOk", g_MsgEventOk, 12},
     {"g_MsgGameExit", g_MsgGameExit, 12},
     {"g_MsgGame0Ok", g_MsgGame0Ok, 12},
-    {"g_MenuLightBurstBandX", g_MenuLightBurstBandX, 68},
-    {"g_MenuLightBurstBandY", g_MenuLightBurstBandY, 68},
-    {"g_MsgOrdinalSt", g_MsgOrdinalSt, 8},
-    {"g_MsgOrdinalNd", g_MsgOrdinalNd, 8},
-    {"g_MsgOrdinalRd", g_MsgOrdinalRd, 8},
-    {"g_MsgOrdinalTh", g_MsgOrdinalTh, 116},
-    {"g_PaintColorTable", g_PaintColorTable, 168},
-    {"g_CourseCardVerts", g_CourseCardVerts, 108},
+    {"g_MenuLightBurstBandX",
+     (const unsigned char *)&g_MenuLightBurstBandX, 66},
+    {"g_MenuLightBurstBandY",
+     (const unsigned char *)&g_MenuLightBurstBandY, 66},
+    {"g_MsgOrdinalSt", (const unsigned char *)g_MsgOrdinalSt, 4},
+    {"g_MsgOrdinalNd", (const unsigned char *)g_MsgOrdinalNd, 4},
+    {"g_MsgOrdinalRd", (const unsigned char *)g_MsgOrdinalRd, 4},
+    {"g_MsgOrdinalTh", (const unsigned char *)g_MsgOrdinalTh, 8},
+    {"g_PaintColorTable", (const unsigned char *)&g_PaintColorTable, 54},
+    {"g_CourseCardVerts", (const unsigned char *)g_CourseCardVerts, 32},
     {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
     {"g_TeamNameCharScale", g_TeamNameCharScale, 152},
     {"g_FormatDecimal", g_FormatDecimal, 68},
     {"g_MenuBlankCaption", g_MenuBlankCaption, 52},
-    {"g_DesignModeCellMask", g_DesignModeCellMask, 160},
+    {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
     {"g_MsgVabOpenHeadError", g_MsgVabOpenHeadError, 24},
     {"g_MsgVabTransBodyError", g_MsgVabTransBodyError, 24},
@@ -476,7 +477,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 2996725619UL;
+    const unsigned long expected = 3739560708UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

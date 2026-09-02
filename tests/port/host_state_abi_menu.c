@@ -40,3 +40,11 @@ _Static_assert(sizeof(g_ClassRecordNameSprites) == 36,
                "class record name-colour ABI changed");
 _Static_assert(sizeof(g_MenuViewScale) == 16,
                "menu view scale ABI changed");
+_Static_assert(sizeof(g_MenuLightBurstBandX) == 66,
+               "menu light-burst band ABI changed");
+_Static_assert(sizeof(g_PaintColorTable) == 54,
+               "paint colour table ABI changed");
+_Static_assert(sizeof(g_CourseCardVerts) == 32,
+               "course-card vertices ABI changed");
+_Static_assert(sizeof(g_DesignModeCellMask) == 36,
+               "design-mode mask ABI changed");
