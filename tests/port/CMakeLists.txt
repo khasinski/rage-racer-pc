@@ -275,6 +275,7 @@ add_executable(host_state_abi_tests
     host_state_abi_menu.c
     host_state_abi_native.c
     host_state_abi_race.c
+    host_state_abi_render.c
     host_state_abi_save.c
     host_state_abi_shared.c
     host_state_abi_track.c)
