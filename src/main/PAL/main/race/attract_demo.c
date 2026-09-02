@@ -127,7 +127,7 @@ static void UpdateAttractDemoRace(void) {
     cameraCar = &g_Cars[g_CameraCarIndex];
     RequestTrackTexturePage(cameraCar->trackSection);
 
-    UpdateCamera(g_CameraViewMode, (GameRenderObject *)cameraCar);
+    UpdateCamera(g_CameraViewMode, GetCarRenderObject(cameraCar));
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();

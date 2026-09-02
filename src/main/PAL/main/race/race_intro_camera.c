@@ -13,7 +13,8 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     LoadViewWork(&viewWork);
 
     if (mode >= 90) {
-        UpdateCamera(CAMERA_VIEW_CAR, (GameRenderObject *)car);
+        UpdateCamera(CAMERA_VIEW_CAR,
+                     GetCarRenderObject(AsRivalCar(car)));
         return;
     }
 
@@ -85,7 +86,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         StoreViewWork(&viewWork);
         SetCameraRotMatrix();
         SelectModelBank(0);
-        DrawPlayerCarModel((GameRenderObject *)car);
+        DrawPlayerCarModel(GetCarRenderObject(AsRivalCar(car)));
     } else {
         DrawFullscreenFadeTile(g_RaceIntroCameraTimer * 26, 0x29);
         viewWork.x = car->x;

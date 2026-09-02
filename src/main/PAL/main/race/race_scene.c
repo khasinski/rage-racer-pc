@@ -260,7 +260,8 @@ void UpdateRaceScene(void) {
             }
         }
 
-        UpdateCamera(g_CameraViewMode, (GameRenderObject *)&g_PlayerCar);
+        UpdateCamera(g_CameraViewMode,
+                     GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
         RequestTrackTexturePage(g_PlayerCar.trackSection);
         if (g_GrandPrixMode != 0) {
             DrawCars();
@@ -366,8 +367,9 @@ void UpdateRaceScene(void) {
         if (g_RacePhase == 5 && !s_RetireCameraActive) {
             UpdateFinishCamera(&g_PlayerCar);
         } else if (g_RacePhase > 0) {
-            UpdateCamera(s_RetireCameraActive ? CAMERA_VIEW_CAR : g_CameraViewMode,
-                         (GameRenderObject *)&g_PlayerCar);
+            UpdateCamera(s_RetireCameraActive ? CAMERA_VIEW_CAR
+                                              : g_CameraViewMode,
+                         GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
         }
 
         if (g_RacePhase != 5 || s_RetireCameraActive) {

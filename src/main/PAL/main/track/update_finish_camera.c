@@ -10,7 +10,7 @@ static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
 
 /* Follow the centre line while keeping the finished car in view. */
 void UpdateFinishCamera(PlayerCarRuntime *car) {
-    GameRenderObject *obj = (GameRenderObject *)(void *)car;
+    GameRenderObject *obj = GetCarRenderObject(AsRivalCar(car));
     GameViewWork viewWork;
     s32 delta[3];
     s32 target[3];

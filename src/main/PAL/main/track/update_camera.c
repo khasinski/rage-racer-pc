@@ -118,7 +118,8 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     }
     StoreViewWork(&viewWork);
     SetCameraRotMatrix();
-    if (cameraModeSel > 0 && car == (GameRenderObject *)&g_PlayerCar) {
+    if (cameraModeSel > 0 &&
+        car == GetCarRenderObject(AsRivalCar(&g_PlayerCar))) {
         SelectModelBank(0);
         DrawPlayerCarModel(car);
     }
