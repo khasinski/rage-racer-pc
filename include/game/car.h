@@ -225,9 +225,12 @@ static inline s32 GetCarCollisionPointPacked(const CarCollisionPoint *point) {
 }
 
 typedef struct CarHullPoint {
-    u16 x;
-    u16 z;
+    s16 x;
+    s16 z;
 } CarHullPoint;
+
+_Static_assert(sizeof(CarHullPoint) == 4,
+               "car hull points must retain their retail stride");
 
 typedef union CarPaintPalette {
     /* The uploaded car image is a 64x256 halfword rectangle (0x8000 bytes),
