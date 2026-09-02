@@ -87,14 +87,14 @@ static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
     } else {
         g_GripLossTimer = 0;
     }
-    loads->accelerationResistance +=
+    loads->longitudinalResistance +=
         drive->brakeInput * drive->engineRpm / 8192;
     if (netTorque > 0) {
         if (drive->acceleratorInput.value < 0x7F) {
-            loads->accelerationResistance += netTorque / 2;
+            loads->longitudinalResistance += netTorque / 2;
         }
     } else {
-        loads->accelerationResistance -= netTorque / 2;
+        loads->longitudinalResistance -= netTorque / 2;
     }
 }
 
@@ -107,7 +107,7 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
     drive->steeringLoadAngle = headingError <= ANGLE_QUARTER_TURN
         ? headingError
         : ANGLE_HALF_TURN - headingError;
-    loads->steeringResistance += drive->steeringLoadAngle / 256;
+    loads->motionResistance += drive->steeringLoadAngle / 256;
     if (drive->motionState != CAR_MOTION_TAKEOFF &&
         g_PadType == PAD_TYPE_DIGITAL) {
         s32 assistStep = spec->negconSteeringAssistScale *
@@ -118,10 +118,10 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
             assistStep = 1;
         }
         if (steerPosition >= 0) {
-            loads->steeringResistance +=
+            loads->motionResistance +=
                 ((steerPosition * 5) / 6) / assistStep;
         } else {
-            loads->steeringResistance -=
+            loads->motionResistance -=
                 ((steerPosition * 5) / 6) / assistStep;
         }
     }
@@ -166,7 +166,7 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     }
     g_RoadGrade = roadGrade;
     sideForce = -rsin(roadGrade) * 0x708 / 0xA000;
-    loads->steeringResistance +=
+    loads->motionResistance +=
         roadGrade < 0 ? sideForce : sideForce / 10;
 }
 
@@ -174,10 +174,10 @@ static void ApplyTransientDriveLoads(CarDrivetrainLoads *loads,
                                      const GameCarDrive *drive) {
     if (g_RacePhase == 2 &&
         drive->motionState == CAR_MOTION_STANDING_START) {
-        loads->steeringResistance += (g_StandingStartSpin & 0x1F) * 5;
+        loads->motionResistance += (g_StandingStartSpin & 0x1F) * 5;
     }
     if (g_DriveBoostTimer > 0) {
-        loads->steeringResistance += 0xC8 + g_DriveBoostTimer * 0x14;
+        loads->motionResistance += 0xC8 + g_DriveBoostTimer * 0x14;
         g_DriveBoostTimer--;
     }
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
@@ -201,14 +201,14 @@ static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
     if (dragDivisor <= 0) {
         dragDivisor = 1;
     }
-    loads->steeringResistance += roadSpeed * roadSpeed / dragDivisor;
+    loads->motionResistance += roadSpeed * roadSpeed / dragDivisor;
     g_DragScale = 0x3E8;
     if (car->verticalMotionState == 0) {
-        loads->steeringResistance =
-            loads->steeringResistance * (0x64 - bandScale) / 100;
+        loads->motionResistance =
+            loads->motionResistance * (0x64 - bandScale) / 100;
     } else {
         loads->throttleAcceleration *= 2;
-        loads->steeringResistance = 0;
+        loads->motionResistance = 0;
     }
 }
 
@@ -217,8 +217,9 @@ CarDrivetrainLoads CalculateCarDrivetrainLoads(
     s32 bandScale, s32 initialAcceleration) {
     GameCarDrive *drive = &car->drive;
     CarDrivetrainLoads loads = {
-        .accelerationResistance = initialAcceleration,
-        .steeringResistance = car->verticalMotionState == 0
+        .longitudinalResistance = initialAcceleration,
+        .motionResistance =
+            car->verticalMotionState == CAR_VERTICAL_GROUNDED
             ? drive->engineRpm / 256
             : 0,
         .throttleAcceleration = 0,

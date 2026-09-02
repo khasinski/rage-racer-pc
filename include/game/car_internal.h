@@ -42,8 +42,8 @@ void AccelerateAttractRivals(void);
 void PlaceRivalCarsOnTrack(void);
 
 typedef struct {
-    s32 accelerationResistance;
-    s32 steeringResistance;
+    s32 longitudinalResistance;
+    s32 motionResistance;
     s32 throttleAcceleration;
 } CarDrivetrainLoads;
 

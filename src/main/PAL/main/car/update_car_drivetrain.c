@@ -85,8 +85,8 @@ static void UpdateEngineRpm(GameCarDrive *drive,
                             const CarDrivetrainLoads *loads) {
     if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
         drive->engineRpm += loads->throttleAcceleration -
-                            loads->accelerationResistance -
-                            loads->steeringResistance;
+                            loads->longitudinalResistance -
+                            loads->motionResistance;
     }
     if (drive->engineRpm < 0) {
         drive->engineRpm = 0;
@@ -102,9 +102,9 @@ static void AlignStoppedCarHeading(PlayerCarRuntime *car) {
 }
 
 static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
-                               s32 steeringResistance) {
+                               s32 motionResistance) {
     s32 brakeDrag = drive->brakeInput * 0x14;
-    s32 coefficient = 0x26FC - 1 - steeringResistance * 2;
+    s32 coefficient = 0x26FC - 1 - motionResistance * 2;
     s32 torque = drive->drivetrainTorque;
 
     if (brakeDrag < 0) {
@@ -196,7 +196,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     gearTorque = gearData.ratio * drive->engineRpm;
     drive->drivetrainTorque = gearTorque;
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
-        UpdateTakeoffSpeed(car, drive, loads.steeringResistance);
+        UpdateTakeoffSpeed(car, drive, loads.motionResistance);
     } else {
         UpdateDrivenSpeed(car, drive, spec, gearTorque);
     }
