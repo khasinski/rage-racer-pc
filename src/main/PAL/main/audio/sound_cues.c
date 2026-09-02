@@ -28,12 +28,34 @@ static s32 ScaleCueVolume(s32 volume, s32 cueScale) {
     return volume * cueScale / 128 * g_SoundScale.scale / 128;
 }
 
-static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
+static s32 StartPooledCueTone(const SoundCueParams *params, s32 tone,
+                              s32 volumeLeft, s32 volumeRight,
+                              s32 busy[POOLED_VOICE_COUNT]) {
+    s32 i;
+
+    for (i = 0; i < POOLED_VOICE_COUNT; i++) {
+        if (busy[i] == 0) {
+            s32 voice = SsUtKeyOnV(
+                (s16)(i + POOLED_VOICE_FIRST),
+                g_SoundScale.vabIds[params->vab],
+                (s16)params->program, (s16)tone, SOUND_BASE_NOTE, 0,
+                (s16)volumeLeft, (s16)volumeRight);
+
+            busy[i] = 1;
+            return voice;
+        }
+    }
+    return -1;
+}
+
+static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
     const SoundCueParams *params = g_SoundCueBank == 1
                                        ? &g_SoundCueParams[cue]
                                        : &g_SoundCueParams2[cue];
     s32 busy[POOLED_VOICE_COUNT];
-    s32 result = -1;
+    int failed;
+    s32 voiceA;
+    s32 voiceB;
     s32 i;
 
     volL = ScaleCueVolume(volL, params->volume);
@@ -43,55 +65,35 @@ static void StartSoundCueVoice(s32 cue, s32 volL, s32 volR) {
         for (i = 0; i < POOLED_VOICE_COUNT; i++) {
             busy[i] = SpuGetKeyStatus(g_SpecialVoiceBits[i]);
         }
-        for (i = 0; i < POOLED_VOICE_COUNT; i++) {
-            if (busy[i] == 0) {
-                result = SsUtKeyOnV(
-                    (s16)(i + POOLED_VOICE_FIRST),
-                    g_SoundScale.vabIds[params->vab],
-                    (s16)params->program, (s16)params->toneA,
-                    SOUND_BASE_NOTE, 0, (s16)volL, (s16)volR);
-                g_SpecialCueVoiceA = result;
-                busy[i] = 1;
-                break;
-            }
-        }
-        for (i = 0; i < POOLED_VOICE_COUNT; i++) {
-            if (busy[i] == 0) {
-                result = SsUtKeyOnV(
-                    (s16)(i + POOLED_VOICE_FIRST),
-                    g_SoundScale.vabIds[params->vab],
-                    (s16)params->program, (s16)params->toneB,
-                    SOUND_BASE_NOTE, 0, (s16)volL, (s16)volR);
-                g_SpecialCueVoiceB = result;
-                break;
-            }
-        }
+        voiceA = StartPooledCueTone(
+            params, params->toneA, volL, volR, busy);
+        voiceB = StartPooledCueTone(
+            params, params->toneB, volL, volR, busy);
+        failed = voiceA < 0;
     } else {
-        result = SsUtKeyOn(g_SoundScale.vabIds[params->vab],
-                           params->program, params->toneA,
-                           SOUND_BASE_NOTE, 0, volL, volR);
-        g_SpecialCueVoiceA = result;
-        result = SsUtKeyOn(g_SoundScale.vabIds[params->vab],
-                           params->program, params->toneB,
-                           SOUND_BASE_NOTE, 0, volL, volR);
-        g_SpecialCueVoiceB = result;
+        voiceA = SsUtKeyOn(
+            g_SoundScale.vabIds[params->vab], params->program,
+            params->toneA, SOUND_BASE_NOTE, 0, volL, volR);
+        voiceB = SsUtKeyOn(
+            g_SoundScale.vabIds[params->vab], params->program,
+            params->toneB, SOUND_BASE_NOTE, 0, volL, volR);
+        failed = voiceB < 0;
     }
 
-    if (result < 0) {
+    if (failed) {
         printf("%s", g_MsgTooManyVoices);
     }
 }
 
-static void StartSingleSpecialCue(s32 cue, s32 volume) {
+/* Cues 15..17 always live in the main cue bank, including while the race cue
+ * bank is active. They share fixed voice 19 and suppress repeat requests. */
+static void StartSharedSingleCue(s32 cue, s32 volume) {
     const SoundCueParams *params = &g_SoundCueParams[cue];
     s32 voiceVolume;
 
-    g_SpecialCueVoiceA = -1;
-    g_SpecialCueVoiceB = -1;
-
     if (g_ActiveSpecialCue != cue) {
         voiceVolume = ScaleCueVolume(volume, params->volume);
-        g_SpecialCueVoiceA = SsUtKeyOnV(
+        SsUtKeyOnV(
             SINGLE_SPECIAL_VOICE, g_SoundScale.vabIds[params->vab],
             (s16)params->program, (s16)params->toneA, SOUND_BASE_NOTE, 0,
             voiceVolume, voiceVolume);
@@ -109,11 +111,11 @@ static void StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
     if (SpuGetKeyStatus(g_SpecialVoiceBits[STEREO_SPECIAL_STATUS_INDEX]) == 0 ||
         cue == ALWAYS_RESTART_SPECIAL_CUE_A ||
         cue == ALWAYS_RESTART_SPECIAL_CUE_B) {
-        g_SpecialCueVoiceA = SsUtKeyOnV(
+        SsUtKeyOnV(
             STEREO_SPECIAL_VOICE_LEFT, g_SoundScale.vabIds[params->vab],
             (s16)params->program, (s16)params->toneA, SOUND_BASE_NOTE, 0,
             (s16)volumeLeft, (s16)volumeRight);
-        g_SpecialCueVoiceB = SsUtKeyOnV(
+        SsUtKeyOnV(
             STEREO_SPECIAL_VOICE_RIGHT, g_SoundScale.vabIds[params->vab],
             (s16)params->program, (s16)(params->toneA + 1), SOUND_BASE_NOTE, 0,
             (s16)volumeLeft, (s16)volumeRight);
@@ -142,11 +144,11 @@ void PlaySoundCue(s32 cue) {
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
                 g_LastSpecialCueRequest = cue;
-                StartSingleSpecialCue(cue, CUE_VOLUME_FULL);
+                StartSharedSingleCue(cue, CUE_VOLUME_FULL);
             }
             return;
         }
-        StartSoundCueVoice(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
+        StartPairedSoundCue(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
         return;
     }
 
@@ -155,12 +157,12 @@ void PlaySoundCue(s32 cue) {
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
                 g_LastSpecialCueRequest = cue;
-                StartSingleSpecialCue(cue, CUE_VOLUME_FULL);
+                StartSharedSingleCue(cue, CUE_VOLUME_FULL);
             }
             return;
         }
         if (cue < BANK_TWO_FIXED_VOICE_FIRST_CUE) {
-            StartSoundCueVoice(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
+            StartPairedSoundCue(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
             return;
         }
         StartSpecialCueVoice(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);

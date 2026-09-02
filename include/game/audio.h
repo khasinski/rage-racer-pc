@@ -208,8 +208,6 @@ typedef struct SoundCueParams {
 
 extern SoundCueParams g_SoundCueParams[];
 extern SoundCueParams g_SoundCueParams2[];
-extern s32 g_SpecialCueVoiceA;
-extern s32 g_SpecialCueVoiceB;
 extern s32 g_SpecialVoiceBits[];
 extern s32 g_StereoOutput;
 /*

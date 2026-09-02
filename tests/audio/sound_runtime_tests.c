@@ -17,8 +17,6 @@ s32 g_IndexedEffectIndexPrev;
 s32 g_IndexedEffectIndex;
 s32 g_IndexedEffectPitch;
 s32 g_PanVoiceActive;
-s32 g_SpecialCueVoiceA;
-s32 g_SpecialCueVoiceB;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
 s32 g_AudioLoadedSlotMask;
@@ -115,8 +113,6 @@ static void TestSoundStateReset(void) {
     memset(&g_EngineSoundState, 0x7F, sizeof(g_EngineSoundState));
     memset(g_MusicChannels, 0x7F, sizeof(g_MusicChannels));
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
-    g_SpecialCueVoiceA = 19;
-    g_SpecialCueVoiceB = 20;
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
     InitSoundRuntime();
@@ -141,8 +137,7 @@ static void TestSoundStateReset(void) {
                   g_EffectVoices[index].volume == 0,
               "reset initializes every effect voice");
     }
-    Check(g_SpecialCueVoiceA == -1 && g_SpecialCueVoiceB == -1 &&
-              g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
+    Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
           "reset clears special cue deduplication");
     Check(g_EngineSoundState.bank == -1 &&
               g_EngineSoundState.volumeScale == 128 &&

@@ -11,8 +11,6 @@ SoundCueParams g_SoundCueParams2[70];
 s32 g_SpecialVoiceBits[6];
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][2];
 s32 g_SoundCueBank;
-s32 g_SpecialCueVoiceA;
-s32 g_SpecialCueVoiceB;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
 const char g_MsgTooManyVoices[] = "too many voices\n";
@@ -135,8 +133,6 @@ static void Reset(void) {
     g_SoundScale.vabIds[2] = 8;
     g_ActiveSpecialCue = -1;
     g_LastSpecialCueRequest = -1;
-    g_SpecialCueVoiceA = -1;
-    g_SpecialCueVoiceB = -1;
     s_fixedCount = 0;
     s_dynamicCount = 0;
     s_volumeVoice = -1;
@@ -165,6 +161,16 @@ static int TestBankOne(void) {
     CHECK(g_ActiveSpecialCue == 15 && g_LastSpecialCueRequest == 15);
     PlaySoundCue(15);
     CHECK(s_fixedCount == 1);
+
+    Reset();
+    g_SoundCueBank = 1;
+    s_keyStatus[0] = 1;
+    s_keyStatus[1] = 1;
+    s_keyStatus[2] = 1;
+    s_keyStatus[3] = 1;
+    s_keyStatus[4] = 1;
+    PlaySoundCue(0);
+    CHECK(s_fixedCount == 1 && s_fixed[0].voice == 23);
     return 0;
 }
 
@@ -190,6 +196,13 @@ static int TestBankTwo(void) {
     CHECK(s_fixedCount == 0);
     PlaySoundCue(43);
     CHECK(s_fixedCount == 2);
+
+    Reset();
+    g_SoundCueBank = 2;
+    PlaySoundCue(16);
+    CHECK(s_fixedCount == 1 && s_fixed[0].voice == 19);
+    CHECK(s_fixed[0].vab == 7 && s_fixed[0].program == 116);
+    CHECK(s_fixed[0].tone == 26 && s_fixed[0].left == 32);
     return 0;
 }
 

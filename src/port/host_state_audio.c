@@ -32,8 +32,6 @@ s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest = 17;
 s32 g_AudioLoadSlot;
 unsigned char g_EngineSoundCurves[1728] __attribute__((aligned(16)));
-s32 g_SpecialCueVoiceA;
-s32 g_SpecialCueVoiceB;
 s32 g_MonoOutput;
 s32 g_AudioLoadedSlotMask;
 s32 g_SoundCueBank;
