@@ -96,6 +96,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         cameraMode = 0;
     }
     switch (cameraMode) {
+    default:
     case 0:
         CameraViewFromCarBlock(car, view);
         break;

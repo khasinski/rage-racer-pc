@@ -152,6 +152,16 @@ int main(void) {
         Check("mode 0, car block", view, wanted);
     }
 
+    /* Unknown authored modes use the same stable fallback as a missing
+     * camera table instead of retaining an unrelated previous view. */
+    {
+        static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
+
+        s_nodes[0].mode = 99;
+        Run(2, view);
+        Check("unknown track camera mode", view, wanted);
+    }
+
     /* A missing authored camera falls back to the car-block view. */
     {
         static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
