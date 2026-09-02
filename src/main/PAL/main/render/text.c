@@ -28,8 +28,8 @@ static void QueueProportionalGlyph(
     sprite->w = width;
     sprite->h = 12;
     sprite->clut = clut;
-    packet->bytes += sizeof(*sprite);
     AddPrim(GamePrimaryOrderingTable(0), sprite);
+    packet->sprite++;
 }
 
 void GameDrawProportionalTextShaded(
@@ -40,12 +40,11 @@ void GameDrawProportionalTextShaded(
     s32 intensity) {
     s32 xPos = x;
     RenderBufferAddress packet;
-    const u8 *text = (const u8 *)str;
 
     packet.bytes = RENDER_PRIM_CURSOR_AS(u8);
 
-    while (*text != 0) {
-        u32 ch = *text++;
+    while (*str != '\0') {
+        u32 ch = (u8)*str++;
         s32 index;
 
         if (ch >= 'v') {
@@ -72,8 +71,9 @@ void GameDrawProportionalTextShaded(
         }
     }
     SetDrawMode(packet.drawPacket, 0, 1, 0x29, g_DrawModeEnv);
-    AddPrim(GamePrimaryOrderingTable(0), packet.pointer);
-    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes + sizeof(DrawPacket);
+    AddPrim(GamePrimaryOrderingTable(0), packet.drawPacket);
+    packet.drawPacket++;
+    RENDER_PRIM_CURSOR_AS(u8) = packet.bytes;
 }
 
 
@@ -117,9 +117,9 @@ u8 *GameQueueSprite(
     sprt->u0 = u;
     sprt->v0 = v;
     sprt->clut = clutIndex;
-    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
-    return prim;
+    address.sprite++;
+    return address.bytes;
 }
 
 /* Local wide-parameter declaration; see GameQueueSprite.c. `clutIndex` really
@@ -155,9 +155,9 @@ u8 *GameQueueShadedSprite(
     sprt->g0 = intensity;
     sprt->b0 = intensity;
     sprt->clut = clutIndex;
-    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
-    return prim;
+    address.sprite++;
+    return address.bytes;
 }
 
 /* SPRT, 20 bytes: GameQueueShadedSprite plus SetSemiTrans. */
@@ -190,9 +190,9 @@ u8 *GameQueueShadedSpriteTrans(
     sprt->g0 = intensity;
     sprt->b0 = intensity;
     sprt->clut = clutIndex;
-    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
-    return prim;
+    address.sprite++;
+    return address.bytes;
 }
 
 /* SPRT, 20 bytes: GameQueueSprite plus SetSemiTrans. */
@@ -222,9 +222,9 @@ u8 *GameQueueSpriteTrans(
     sprt->u0 = u;
     sprt->v0 = v;
     sprt->clut = clutIndex;
-    prim += sizeof(*sprt);
     AddPrim(ot, sprt);
-    return prim;
+    address.sprite++;
+    return address.bytes;
 }
 
 /* TILE, 16 bytes: a semi-transparent solid rectangle linked into `ot`.
@@ -254,9 +254,9 @@ u8 *GameQueueTileTrans(
     tile->r0 = r;
     tile->g0 = g;
     tile->b0 = b;
-    prim += sizeof(*tile);
     AddPrim(ot, tile);
-    return prim;
+    address.tile++;
+    return address.bytes;
 }
 
 /*
@@ -292,7 +292,7 @@ u8 *GameQueueLine(
     line->r0 = r;
     line->g0 = g;
     line->b0 = b;
-    prim += sizeof(*line);
     AddPrim(ot, line);
-    return prim;
+    address.lineF2++;
+    return address.bytes;
 }
