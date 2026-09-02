@@ -21,7 +21,23 @@ enum {
     RESET_TRAILING_CUE_GAP = 0x1000,
     REPEAT_TRAILING_CUE_GAP = 0x800,
     LEADER_TRAILING_CUE_BIT = 1,
+    FIRST_NEAR_RIVAL_CUE_BIT = 0x10,
+    FIRST_FAR_RIVAL_CUE_BIT = 0x100,
+    CUE_LEADER_FAR_BEHIND = 0x2D,
+    CUE_RIVAL_NEAR_BEHIND_A = 0x2F,
+    CUE_RIVAL_NEAR_BEHIND_B = 0x30,
+    CUE_RIVAL_CLOSE_AHEAD_FIRST = 0x32,
+    CUE_RIVAL_REPEATED_BEHIND_A = 0x36,
+    CUE_RIVAL_REPEATED_BEHIND_B = 0x37,
 };
+
+static s32 NearRivalCueBit(s32 rank) {
+    return FIRST_NEAR_RIVAL_CUE_BIT >> rank;
+}
+
+static s32 FarRivalCueBit(s32 rank) {
+    return FIRST_FAR_RIVAL_CUE_BIT >> rank;
+}
 
 static s16 *RivalCueCooldown(s32 rank) {
     switch (rank) {
@@ -47,16 +63,19 @@ static void UpdateTrailingRivalCue(s32 rank, s32 gap, s32 nearCueBit,
     if (rank == 0 && !(g_RivalCueFlags & LEADER_TRAILING_CUE_BIT) &&
         gap < -DISTANT_TRAILING_GAP) {
         if (g_PlayerCar.drive.racePosition == 1) {
-            PlayEnabledRivalCue(0x2D);
+            PlayEnabledRivalCue(CUE_LEADER_FAR_BEHIND);
         }
         g_RivalCueFlags =
-            (g_RivalCueFlags & ~0x10) | LEADER_TRAILING_CUE_BIT;
+            (g_RivalCueFlags & ~NearRivalCueBit(0)) |
+            LEADER_TRAILING_CUE_BIT;
         return;
     }
 
     if (gap >= -NEAR_TRAILING_GAP &&
         !(nearCueBit & g_RivalCueFlags)) {
-        PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x2F : 0x30);
+        PlayEnabledRivalCue(g_SceneTimer % 2
+                                ? CUE_RIVAL_NEAR_BEHIND_A
+                                : CUE_RIVAL_NEAR_BEHIND_B);
         g_RivalCueFlags |= nearCueBit;
         return;
     }
@@ -65,7 +84,9 @@ static void UpdateTrailingRivalCue(s32 rank, s32 gap, s32 nearCueBit,
         g_RivalCueFlags &= ~nearCueBit;
     } else if (gap < -REPEAT_TRAILING_CUE_GAP &&
                *cooldown >= RIVAL_CUE_COOLDOWN) {
-        PlayEnabledRivalCue(g_SceneTimer % 2 ? 0x37 : 0x36);
+        PlayEnabledRivalCue(g_SceneTimer % 2
+                                ? CUE_RIVAL_REPEATED_BEHIND_B
+                                : CUE_RIVAL_REPEATED_BEHIND_A);
         *cooldown = 0;
     }
 }
@@ -93,8 +114,8 @@ void UpdateRivalRubberBand(void) {
     for (rank = RIVAL_CONTENDER_COUNT - 1; rank >= 0; rank--) {
         GameCarRuntime *rival = g_RankedCars[rank];
         s16 *cooldown = RivalCueCooldown(rank);
-        s32 nearCueBit = 0x10 >> rank;
-        s32 farCueBit = 0x100 >> rank;
+        s32 nearCueBit = NearRivalCueBit(rank);
+        s32 farCueBit = FarRivalCueBit(rank);
         s32 gap;
 
         if (rival == NULL) {
@@ -129,7 +150,8 @@ void UpdateRivalRubberBand(void) {
                 return;
             }
             if (!(farCueBit & g_RivalCueFlags)) {
-                PlayEnabledRivalCue(0x32 + g_SceneTimer % 3);
+                PlayEnabledRivalCue(CUE_RIVAL_CLOSE_AHEAD_FIRST +
+                                    g_SceneTimer % 3);
                 *cooldown = 0;
                 g_RivalCueFlags |= farCueBit;
                 return;
