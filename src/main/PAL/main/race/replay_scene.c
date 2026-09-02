@@ -11,31 +11,6 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
-void BeginReplay(void) {
-    g_FadeLevel = 0xFF;
-    g_SceneTimer = 0;
-    g_FadeStep = -4;
-
-    if (g_ReplayBufferWrapped != 0) {
-        g_ReplayReadCursor = (g_ReplayWriteCursor & -2) + 2;
-    } else {
-        g_ReplayReadCursor = 0;
-        g_ReplayFrameCount = g_ReplayWriteCursor - 2;
-    }
-
-    if (g_ReplayReadCursor >= g_ReplayFrameCount) {
-        g_ReplayReadCursor = 0;
-    }
-
-    if (g_GrandPrixClass != 5) {
-        const s32 rewindFrames = g_GrandPrixMode != 0 ? 1800 : 3000;
-
-        SeekEnvironmentScript(g_EnvScriptClock - rewindFrames);
-    }
-
-    SeedReplayCars();
-}
-
 static void DrawReplayBadge(void) {
     GameOrderingTableEntry *base;
     u8 *next;
