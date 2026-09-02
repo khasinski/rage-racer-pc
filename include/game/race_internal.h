@@ -54,6 +54,8 @@ static inline s32 GrandPrixAssetSeries(s32 selectedSeries, s32 classIndex) {
 s32 PrizeCountStep(s32 amount, s32 frameCount);
 s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
                            s32 classIndex, s32 promoted);
+s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
+                         s32 racePosition);
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount);
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending);
 s32 RaceEndBrightness(s32 level);

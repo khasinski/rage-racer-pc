@@ -21,6 +21,7 @@ int main(void) {
     static const u8 noGrade[4] = {1, 1, 2, 3};
     ScoreRecord records[11] = {0};
     const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
+    const s32 prizes[3] = {10000, 5000, 2500};
     s32 i;
 
     Check("class 0 courses", GrandPrixCourseCount(0), 3);
@@ -57,6 +58,11 @@ int main(void) {
           PromotionBonusForClass(promotionBonuses, 5, 3, 0), 0);
     Check("shared finale has no bonus entry",
           PromotionBonusForClass(promotionBonuses, 5, 5, 1), 0);
+
+    Check("first-place prize", PrizeForRacePosition(prizes, 3, 1), 10000);
+    Check("third-place prize", PrizeForRacePosition(prizes, 3, 3), 2500);
+    Check("zero-place prize", PrizeForRacePosition(prizes, 3, 0), 0);
+    Check("place past prize table", PrizeForRacePosition(prizes, 3, 4), 0);
 
     records[0].place = 1;
     records[3].place = 2;

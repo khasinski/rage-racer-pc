@@ -56,6 +56,16 @@ s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
     return bonuses[classIndex];
 }
 
+s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
+                         s32 racePosition) {
+    s32 prizeIndex = racePosition - 1;
+
+    if (prizeIndex < 0 || prizeIndex >= prizeCount) {
+        return 0;
+    }
+    return prizes[prizeIndex];
+}
+
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {
     s32 wins = 0;
     s32 record;

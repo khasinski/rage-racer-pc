@@ -155,23 +155,24 @@ void AdvanceGrandPrixClass(void) {
 void EnterPrizeScreen(void) {
     s32 courseIndex;
     s32 classIndex;
+    const s32 *prizes;
 
     g_SceneTimer = 0x100;
     g_FrameSyncThreshold = 0x80;
 
-    courseIndex = g_CourseIndex;
+    courseIndex = SeriesCourseIndex();
     classIndex = g_GrandPrixClass;
+    prizes = g_PrizeMoney.values[courseIndex][classIndex];
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
-    g_PrizeAmount = g_PrizeMoney.values[courseIndex][classIndex]
-                                      [g_PlayerCar.drive.racePosition - 1];
+    g_PrizeAmount = PrizeForRacePosition(
+        prizes, PRIZE_PLACE_COUNT, g_PlayerCar.drive.racePosition);
     g_SceneId = 0x13;
 
     g_PromotionBonus = PromotionBonusForClass(
         g_PromotionBonusTable, PROMOTION_BONUS_COUNT, classIndex,
         g_ClassPromoted);
 
-    g_PrizeCountStep = PrizeCountStep(
-        g_PrizeMoney.values[courseIndex][classIndex][PRIZE_PLACE_THIRD], 80);
+    g_PrizeCountStep = PrizeCountStep(prizes[PRIZE_PLACE_THIRD], 80);
     g_BonusCountStep = PrizeCountStep(g_PromotionBonus, 250);
 }
 
