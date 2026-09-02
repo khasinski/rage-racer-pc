@@ -341,6 +341,7 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   s32 roadGrade;
   s32 sideForce;
   s32 roadSpeed;
+  s32 dragScale;
   s32 dragDivisor;
 
   loads.accelerationResistance = initialAcceleration;
@@ -427,8 +428,11 @@ static DrivetrainLoads CalculateDrivetrainLoads(
   }
 
   roadSpeed = car->speed * 0xA0 / 1168;
-  dragDivisor = spec->speedDragDivisor * 0x3E8 /
-                (s16)g_DragScale;
+  dragScale = (s16)g_DragScale;
+  if (dragScale <= 0) {
+    dragScale = 1;
+  }
+  dragDivisor = spec->speedDragDivisor * 0x3E8 / dragScale;
   if (dragDivisor <= 0) {
     dragDivisor = 1;
   }

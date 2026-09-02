@@ -461,6 +461,13 @@ static void GearBoundsTests(void) {
     UpdateCarDrivetrain(&s_car);
     Check(s_car.drive.gear == 6, "gear above sixth is repaired",
           s_car.drive.gear, 6);
+
+    BuildSpec();
+    PlaceCar();
+    g_DragScale = 0;
+    UpdateCarDrivetrain(&s_car);
+    Check(g_DragScale == 1000, "zero drag scale is repaired",
+          g_DragScale, 1000);
 }
 
 int main(void) {
