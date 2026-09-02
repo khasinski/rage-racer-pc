@@ -5,6 +5,13 @@
 #include "game/race_hud_internal.h"
 #include "game/state.h"
 
+enum {
+    COUNTDOWN_TILE_COLUMNS = 32,
+    COUNTDOWN_TILE_ROWS = 16,
+    COUNTDOWN_TILE_COUNT = COUNTDOWN_TILE_COLUMNS * COUNTDOWN_TILE_ROWS,
+    COUNTDOWN_LAMP_COUNT = 6,
+};
+
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
     s32 row;
@@ -24,14 +31,14 @@ void DrawStartCountdown(s32 sceneTimer) {
     phase = timing.phase;
     tiles = g_TileStripBuffers[g_FrameParity].tile;
 
-    for (row = 0; row < 16; row++) {
+    for (row = 0; row < COUNTDOWN_TILE_ROWS; row++) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(
             phase, row, timing.wipeHalfStep, g_CountdownGlyphTable,
             g_CountdownDigitPatterns);
         u32 pattern = countdownRow.pattern;
 
-        for (column = 0; column < 32; column++) {
-            TILE *tile = &tiles[row * 32 + column];
+        for (column = 0; column < COUNTDOWN_TILE_COLUMNS; column++) {
+            TILE *tile = &tiles[row * COUNTDOWN_TILE_COLUMNS + column];
             CVec *colors =
                 &g_CountdownCellColors[countdownRow.colorBank * 2];
             CVec color = colors[pattern & 1];
@@ -60,7 +67,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
 
-    for (row = 0; row < 6; row++) {
+    for (row = 0; row < COUNTDOWN_LAMP_COUNT; row++) {
         StartCountdownLamp lamp =
             BuildStartCountdownLamp(phase, sceneTimer, row);
         SPRT *sprite = packet.sprite;
@@ -86,7 +93,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     g_RenderState.packetCursor = packet.bytes;
 
     if (phase > 0 && g_RacePaused == 0) {
-        AddPrims(orderingTable, tiles, tiles + 511);
+        AddPrims(orderingTable, tiles, tiles + COUNTDOWN_TILE_COUNT - 1);
     }
 
     tiles = packet.tile;

@@ -6,6 +6,12 @@
 #include "game/race_hud_internal.h"
 #include "game/state.h"
 
+enum {
+    RACE_OPTION_SELECTION_TOP = 0x68,
+    RACE_OPTION_SELECTION_ROW_HEIGHT = 10,
+    RACE_OPTION_DIM_PASSES = 2,
+};
+
 void DrawRaceOptionMenu(s32 cursorRow) {
     GameOrderingTableEntry *ot;
     u8 *next;
@@ -14,6 +20,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     RenderBufferAddress prim;
     RaceOptionMarqueeState marqueeState;
     RaceOptionPulseState pulseState;
+    s32 pass;
 
     ot = GamePrimaryOrderingTable(0);
     prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
@@ -67,7 +74,8 @@ void DrawRaceOptionMenu(s32 cursorRow) {
             ot, prim.bytes, 0x90, 0x7E, 0x28, 8, 0xD8, 0x40, 0x7893);
     }
 
-    selectionY = cursorRow * 10 + 0x68;
+    selectionY = cursorRow * RACE_OPTION_SELECTION_ROW_HEIGHT +
+                 RACE_OPTION_SELECTION_TOP;
     prim.bytes = AddTilePrim(
         ot, prim.bytes, 0x80, selectionY, 0x40, 1, 0xFF, 0xFF, 0);
     prim.bytes = AddTilePrim(
@@ -77,10 +85,12 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     prim.bytes = AddTilePrim(
         ot, prim.bytes, 0xBF, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
 
-    prim.bytes = GameQueueTileTrans(
-        ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
-    prim.bytes = GameQueueTileTrans(
-        ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
+    /* The original overlay deliberately applies the same translucent tile
+     * twice to make the paused race dark enough behind the menu. */
+    for (pass = 0; pass < RACE_OPTION_DIM_PASSES; pass++) {
+        prim.bytes = GameQueueTileTrans(
+            ot, prim.bytes, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
+    }
     quad = prim.polyFT4;
 
     pulseState = AdvanceRaceOptionPulse(g_RaceOptionPulseAngle);
