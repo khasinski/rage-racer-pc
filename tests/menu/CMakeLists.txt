@@ -1000,6 +1000,25 @@ endif()
 target_link_libraries(course_card_tests PRIVATE psyz)
 add_test(NAME course_card COMMAND course_card_tests)
 set_tests_properties(course_card PROPERTIES LABELS unit)
+
+add_executable(negcon_calibration_update_tests
+    negcon_calibration_update_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/negcon_calibration_update.c)
+target_include_directories(negcon_calibration_update_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(negcon_calibration_update_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(negcon_calibration_update_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(negcon_calibration_update_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME negcon_calibration_update COMMAND negcon_calibration_update_tests)
+set_tests_properties(negcon_calibration_update PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
