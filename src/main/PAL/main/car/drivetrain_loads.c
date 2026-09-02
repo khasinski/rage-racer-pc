@@ -6,6 +6,12 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
+static void SettleSteeringGrip(GameCarDrive *drive, s32 gripBudget) {
+    drive->steeringGrip =
+        (s16)((drive->steeringGrip +
+               (gripBudget * drive->steeringGripResponse) / 1000) / 2);
+}
+
 /*
  * Work out how much steering grip is available this frame.
  *
@@ -20,13 +26,15 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
     s16 curveModeNow;
     s32 camber;
     s32 camberLean;
+    const int hasTrack = g_TrackPoints != NULL && g_TrackPointCount > 0;
 
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
         s16 driveCurveMode = drive->trackCurveMode;
-        s32 pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
         s16 steerBias;
 
-        if (driveCurveMode != 0) {
+        if (hasTrack && driveCurveMode != 0) {
+            s32 pointCurveMode = TrackPoint(car->trackPointIndex)->arcRef & 3;
+
             drive->trackCurveBias = (u16)drive->trackCurveBias +
                                     (driveCurveMode == pointCurveMode ? 2 : -1);
         }
@@ -41,8 +49,13 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
         return;
     }
 
-    trackPoint = TrackPoint(car->trackPointIndex);
     curveModeNow = drive->trackCurveMode;
+    if (!hasTrack) {
+        SettleSteeringGrip(drive, gripBudget);
+        return;
+    }
+
+    trackPoint = TrackPoint(car->trackPointIndex);
     if (curveModeNow != (trackPoint->arcRef & 3) && curveModeNow != 0) {
         camber = trackPoint->crossSlope;
         if (camber < -0x32) {
@@ -55,9 +68,7 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
             : camber * 3;
         gripBudget += camberLean;
     }
-    drive->steeringGrip =
-        (s16)((drive->steeringGrip +
-               (gripBudget * drive->steeringGripResponse) / 1000) / 2);
+    SettleSteeringGrip(drive, gripBudget);
 }
 
 static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
@@ -117,15 +128,22 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
 
 static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
                                       const PlayerCarRuntime *car) {
-    const GameTrackPoint *trackPoint = TrackPoint(car->trackPointIndex);
-    const GameTrackPoint *nextTrackPoint =
-        TrackPoint(car->trackPointIndex + 1);
+    const GameTrackPoint *trackPoint;
+    const GameTrackPoint *nextTrackPoint;
     s32 alongSegment = car->segmentFraction;
     s32 trackHeadingError;
     s32 pitchSum;
     s32 roadGradeProduct;
     s32 roadGrade;
     s32 sideForce;
+
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+        g_RoadGrade = 0;
+        return;
+    }
+
+    trackPoint = TrackPoint(car->trackPointIndex);
+    nextTrackPoint = TrackPoint(car->trackPointIndex + 1);
 
     trackHeadingError = GetAngleDistance(
         car->headingAngle,

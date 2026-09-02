@@ -482,12 +482,42 @@ static void GearBoundsTests(void) {
           (((2000 * 0xA0) / 1168) * 0x2710));
 }
 
+static void MissingTrackTests(void) {
+    CarDrivetrainLoads loads;
+
+    BuildSpec();
+    PlaceCar();
+    g_TrackPoints = NULL;
+    g_TrackPointCount = 0;
+    s_car.drive.steeringGrip = 20;
+    s_car.drive.steeringGripResponse = 1000;
+    UpdateCarSteeringGrip(&s_car, &s_spec, 100);
+    Check(s_car.drive.steeringGrip == 60,
+          "missing track keeps neutral steering grip",
+          s_car.drive.steeringGrip, 60);
+
+    s_car.drive.motionState = CAR_MOTION_TAKEOFF;
+    s_car.drive.trackCurveMode = 1;
+    s_car.drive.trackCurveBias = 7;
+    UpdateCarSteeringGrip(&s_car, &s_spec, 0);
+    Check(s_car.drive.trackCurveBias == 7,
+          "missing track does not change curve bias",
+          s_car.drive.trackCurveBias, 7);
+
+    g_RoadGrade = 123;
+    loads = CalculateCarDrivetrainLoads(&s_car, &s_spec, 0, 0, 0);
+    (void)loads;
+    Check(g_RoadGrade == 0, "missing track clears road grade",
+          g_RoadGrade, 0);
+}
+
 int main(void) {
     CurveBiasTests();
     ShiftInterpolationTests();
     GradePenaltyTests();
     TorqueBandTests();
     GearBoundsTests();
+    MissingTrackTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);
