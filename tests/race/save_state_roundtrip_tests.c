@@ -38,6 +38,10 @@ void LoadPadButtonMapping(s32 padMapping, s32 negconMapping) {
 void RepairRecordTimes(void) { s_recordRepairCalls++; }
 
 static void SetRepresentativeState(void) {
+    s32 series;
+    s32 course;
+    s32 row;
+
     g_PadMappingIndex = 3;
     g_NegconMappingIndex = 4;
     g_NegconSteerNeutral = 101;
@@ -66,6 +70,21 @@ static void SetRepresentativeState(void) {
     g_GrandPrixCars[4].enabled = 1;
     g_ClassRecords[2].place = 4;
     g_ClassRecords[2].clears = 12;
+
+    for (series = 0; series < RECORD_SERIES_COUNT; series++) {
+        for (course = 0; course < RECORD_COURSE_COUNT; course++) {
+            for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
+                RaceRecord *ranking = &g_RankingRecords[series][course][row];
+                RaceRecord *time = &g_TimeRecords[series][course][row];
+
+                memcpy(ranking->driverName, "DRIVER\0\0", 8);
+                ranking->raceTime = 1000 + row;
+                ranking->carIndex = row;
+                ranking->unused = 0;
+                *time = *ranking;
+            }
+        }
+    }
 
     g_TeamLogoClut[3] = 0x4210;
     g_TeamLogoCanvas.halfwords[17] = 0x1357;
@@ -210,6 +229,12 @@ int main(void) {
     outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].paintColor1 = 0xFF;
     outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].paintColor2 = 0xFF;
     outOfRange.carSetup[SAVED_CARS_GRAND_PRIX][0].enabled = 7;
+    memset(outOfRange.rankingRecords[0][0][0].driverName, 0xFF,
+           sizeof(outOfRange.rankingRecords[0][0][0].driverName));
+    outOfRange.rankingRecords[0][0][0].carIndex = -1;
+    memset(outOfRange.timeRecords[0][0][0].driverName, 'A',
+           sizeof(outOfRange.timeRecords[0][0][0].driverName));
+    outOfRange.timeRecords[0][0][0].carIndex = 100;
     outOfRange.checksum = CalculateSaveBlockChecksum(&outOfRange);
     CHECK(LoadSaveStateBlock(&outOfRange) == 1);
     CHECK(g_PadMappingIndex == CONTROLLER_MAPPING_LAST);
@@ -229,6 +254,11 @@ int main(void) {
     CHECK(g_GrandPrixCars[0].paintColor1 == MENU_PAINT_COLOR_COUNT - 1);
     CHECK(g_GrandPrixCars[0].paintColor2 == MENU_PAINT_COLOR_COUNT - 1);
     CHECK(g_GrandPrixCars[0].enabled == 1);
+    CHECK(memcmp(g_RankingRecords[0][0][0].driverName, "??????\0\0", 8) ==
+          0);
+    CHECK(g_RankingRecords[0][0][0].carIndex == 0);
+    CHECK(memcmp(g_TimeRecords[0][0][0].driverName, "AAAAAA\0\0", 8) == 0);
+    CHECK(g_TimeRecords[0][0][0].carIndex == GAME_CAR_COUNT - 1);
 
     puts("save state blocks are deterministic and survive a full round trip");
     return 0;

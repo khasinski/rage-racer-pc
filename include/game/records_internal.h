@@ -4,13 +4,19 @@
 #include "common.h"
 #include "game/menu_types.h"
 
-extern RaceRecord g_RankingRecords[2][4][5];
-extern RaceRecord g_TimeRecords[2][4][5];
-
 enum {
+    RECORD_SERIES_COUNT = 2,
+    RECORD_COURSE_COUNT = 4,
     RECORD_NAME_LENGTH = 6,
     RECORD_TABLE_LENGTH = 5,
 };
+
+extern RaceRecord
+    g_RankingRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                    [RECORD_TABLE_LENGTH];
+extern RaceRecord
+    g_TimeRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                 [RECORD_TABLE_LENGTH];
 
 typedef struct FastestLap {
     s32 index;

@@ -46,6 +46,36 @@ static void LoadRaceProgress(
     progress->money.value = saved->money;
 }
 
+static void NormalizeRaceRecords(
+    RaceRecord records[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                      [RECORD_TABLE_LENGTH]) {
+    s32 series;
+    s32 course;
+    s32 row;
+
+    for (series = 0; series < RECORD_SERIES_COUNT; series++) {
+        for (course = 0; course < RECORD_COURSE_COUNT; course++) {
+            for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
+                RaceRecord *record = &records[series][course][row];
+                s32 character;
+
+                record->carIndex = (s16)ClampSaveValue(
+                    record->carIndex, 0, GAME_CAR_COUNT - 1);
+                for (character = 0; character < RECORD_NAME_LENGTH;
+                     character++) {
+                    u8 value = (u8)record->driverName[character];
+
+                    if (value < ' ' || value > '~') {
+                        record->driverName[character] = '?';
+                    }
+                }
+                record->driverName[RECORD_NAME_LENGTH] = '\0';
+                record->driverName[RECORD_NAME_LENGTH + 1] = '\0';
+            }
+        }
+    }
+}
+
 s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     u32 checksum = CalculateSaveBlockChecksum(block);
     s32 i;
@@ -98,6 +128,8 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     memcpy(g_RankingRecords, block->rankingRecords,
            sizeof(block->rankingRecords));
     memcpy(g_TimeRecords, block->timeRecords, sizeof(block->timeRecords));
+    NormalizeRaceRecords(g_RankingRecords);
+    NormalizeRaceRecords(g_TimeRecords);
     memcpy(g_BestSectorTimes, block->bestSectorTimes,
            sizeof(block->bestSectorTimes));
     RepairRecordTimes();
