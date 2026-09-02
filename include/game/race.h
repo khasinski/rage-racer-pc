@@ -370,7 +370,7 @@ extern u8 g_TimeRecordNameCodes[];
 extern char g_TimeTextBuffer[];
 
 s32 BeginMirrorPass(void);
-void BuildRaceHudPrims(s32);
+void BuildRaceHudPrims(s32 grandPrixMode);
 void BuildTileStrips(void);
 void CommitClassProgress(void);
 void EnterPrizeScreen(void);

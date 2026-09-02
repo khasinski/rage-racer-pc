@@ -13,6 +13,7 @@
  */
 
 #include "common.h"
+#include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "port_config.h"
@@ -102,6 +103,29 @@ static void CheckMode(const char *what, s32 mode, int rows,
     }
 }
 
+static void CheckFinalClassBadge(void) {
+    const s32 badgeRow = 11;
+    const s32 badgeLabel = 5;
+    s32 frame;
+
+    g_RaceHudSpriteDescsGp[badgeRow].u0 = 7;
+    g_GrandPrixClass = GRAND_PRIX_FINAL_CLASS_INDEX;
+    BuildRaceHudPrims(1);
+    for (frame = 0; frame < 2; frame++) {
+        Expect("final-class badge texture", frame,
+               g_FrameContexts[frame].layout.raceHud.labels[badgeLabel].u0,
+               7 + 0xE8);
+    }
+
+    g_GrandPrixClass = 0;
+    BuildRaceHudPrims(1);
+    for (frame = 0; frame < 2; frame++) {
+        Expect("ordinary-class badge texture", frame,
+               g_FrameContexts[frame].layout.raceHud.labels[badgeLabel].u0,
+               7);
+    }
+}
+
 int main(void) {
     LayOutDescs();
     s_config.modernAspect = RAGE_MODERN_ASPECT_16_9;
@@ -110,6 +134,7 @@ int main(void) {
      * ten are the two DrawRaceHud never repositions. */
     CheckMode("time attack, anchored", 0, 11, g_RaceHudSpriteDescsTimeTrial);
     CheckMode("grand prix, anchored", 1, 12, g_RaceHudSpriteDescsGp);
+    CheckFinalClassBadge();
 
     /* The three cases, spelled out rather than left to the loop above. */
     Expect("left edge follows the left", 0, HudAnchorX(8), HudLeftX(8));
