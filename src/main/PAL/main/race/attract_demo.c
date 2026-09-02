@@ -87,7 +87,6 @@ void ReturnToTitleScene(void) {
 
 static void UpdateAttractDemoRace(void) {
     u32 timer;
-    GameCarRuntime *cameraCar;
 
     g_SceneTimer++;
     timer = g_SceneTimer;
@@ -110,19 +109,7 @@ static void UpdateAttractDemoRace(void) {
 
     g_AnimTimer++;
     g_CameraCarIndex = CycleAttractCameraCar(0xFF, g_CameraCarIndex);
-    UpdateAttractCars();
-
-    cameraCar = &g_Cars[g_CameraCarIndex];
-    RequestTrackTexturePage(cameraCar->trackSection);
-
-    UpdateCamera(g_CameraViewMode, GetCarRenderObject(cameraCar));
-    DrawCars();
-    UpdateEnvironment();
-    DrawSkyBackground();
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCellsWide();
-    DrawCourseObjects();
-    DrawCourseScenery2(g_AnimTimer, 1);
+    UpdateAndDrawAttractWorld();
 }
 
 void UpdateAttractDemoScene(void) {

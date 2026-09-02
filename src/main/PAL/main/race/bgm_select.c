@@ -2,8 +2,8 @@
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
-#include "game/track.h"
 
 void UpdateBgmSelect(void) {
     UpdateBgmSelectPlayback();
@@ -29,17 +29,7 @@ void UpdateBgmSelect(void) {
     }
     g_AnimTimer++;
     g_CameraCarIndex = CycleBgmSelectCameraCar(0xff, g_CameraCarIndex);
-    UpdateAttractCars();
-    RequestTrackTexturePage(g_Cars[g_CameraCarIndex].trackSection);
-    UpdateCamera(g_CameraViewMode,
-                 GetCarRenderObject(&g_Cars[g_CameraCarIndex]));
-    DrawCars();
-    UpdateEnvironment();
-    DrawSkyBackground();
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCellsWide();
-    DrawCourseObjects();
-    DrawCourseScenery2(g_AnimTimer, 1);
+    UpdateAndDrawAttractWorld();
 }
 
 void UpdateBgmSelectScene(void) {
