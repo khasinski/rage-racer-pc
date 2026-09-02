@@ -4,6 +4,8 @@
 #include "common.h"
 #include "game/menu_types.h"
 
+#include <stddef.h>
+
 #define MC_GP_CARS_OFS    0x58
 #define MC_EXTRA_CARS_OFS 0xC0
 #define MC_TIME_CARS_OFS  0x128
@@ -19,6 +21,8 @@
 #define MC_SAVE_BLOCK_OFS     (MC_ICON_BLOCK_SIZE + MC_HEADER_SIZE)
 #define MC_BACKUP_HEADER_OFS  (MC_SAVE_BLOCK_OFS + MC_BLOCK_SIZE)
 #define MC_BLOCK_CHECKSUM_OFS 0xFFC
+
+enum { SAVE_TEAM_NAME_CAPACITY = 7 };
 
 typedef struct GameSaveIconBlock {
     u8 magic[2];
@@ -43,7 +47,7 @@ _Static_assert(__builtin_offsetof(GameSaveIconBlock, pixels) ==
 typedef union GameSaveHeaderRow {
     struct {
         u8 nameLength;
-        u8 name[7];
+        u8 name[SAVE_TEAM_NAME_CAPACITY];
         s32 saveCounter;
         u8 reserved[0x70];
         u32 checksum;
@@ -51,6 +55,12 @@ typedef union GameSaveHeaderRow {
     u8 bytes[0x80];
     u16 halfwords[0x40];
 } GameSaveHeaderRow;
+
+_Static_assert(sizeof(GameSaveHeaderRow) == MC_HEADER_SIZE,
+               "memory-card save header size changed");
+_Static_assert(offsetof(GameSaveHeaderRow, fields.checksum) ==
+                   MC_HEADER_CHECKSUM_OFS,
+               "memory-card save header checksum offset changed");
 
 typedef struct SavedCarSetup {
     u8 modelVariant;
@@ -108,5 +118,10 @@ typedef struct GameSaveBlock {
     u8 reserved[0x24];
     u32 checksum;
 } GameSaveBlock;
+
+_Static_assert(sizeof(GameSaveBlock) == MC_BLOCK_SIZE,
+               "memory-card save block size changed");
+_Static_assert(offsetof(GameSaveBlock, checksum) == MC_BLOCK_CHECKSUM_OFS,
+               "memory-card save block checksum offset changed");
 
 #endif

@@ -208,8 +208,10 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     }
 
     GameMenuLoadPhase = 0x3800;
-    g_TeamNameLength = outHeader->fields.nameLength;
-    for (i = 0; i < 7; i++) {
+    g_TeamNameLength = outHeader->fields.nameLength < SAVE_TEAM_NAME_CAPACITY
+                           ? outHeader->fields.nameLength
+                           : SAVE_TEAM_NAME_CAPACITY;
+    for (i = 0; i < SAVE_TEAM_NAME_CAPACITY; i++) {
         g_TeamNameChars[i] = outHeader->fields.name[i];
     }
     GameMenuLoadPhase = tries | 0x3900;

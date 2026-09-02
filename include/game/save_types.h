@@ -9,4 +9,7 @@ typedef struct CourseProgressState {
     s16 retriesRemaining;
 } CourseProgressState;
 
+_Static_assert(sizeof(CourseProgressState) == 8,
+               "saved course progress size changed");
+
 #endif

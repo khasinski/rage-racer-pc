@@ -53,7 +53,7 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     g_MaxClassReached[0] = block->maxClassReached[0];
     g_MaxClassReached[1] = block->maxClassReached[1];
 
-    for (i = 0; i < 13; i++) {
+    for (i = 0; i < GAME_CAR_COUNT; i++) {
         LoadCarSetup(&g_GrandPrixCars[i], &block->carSetup[0][i]);
         LoadCarSetup(&g_ExtraGrandPrixCars[i], &block->carSetup[1][i]);
         LoadCarSetup(&g_TimeAttackCars[i], &block->carSetup[2][i]);
@@ -82,8 +82,11 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     g_MonoOutput = block->monoOutput != 0;
 
     /* These fields are byte arrays in the on-disc format and typed at runtime. */
-    memcpy(&g_GrandPrixCourseProgress, block->grandPrixCourseProgress, 8);
-    memcpy(&g_ExtraGrandPrixCourseProgress, block->extraGrandPrixCourseProgress, 8);
+    memcpy(&g_GrandPrixCourseProgress, block->grandPrixCourseProgress,
+           sizeof(g_GrandPrixCourseProgress));
+    memcpy(&g_ExtraGrandPrixCourseProgress,
+           block->extraGrandPrixCourseProgress,
+           sizeof(g_ExtraGrandPrixCourseProgress));
 
     LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
     ApplyAudioSettings();

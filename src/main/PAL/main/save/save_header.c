@@ -8,7 +8,8 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     s32 row;
 
     for (row = 0; row < MEMORY_CARD_SAVE_SLOT_COUNT; row++) {
-        memset(rows[row].bytes, 0, 7);
+        rows[row].fields.nameLength = 0;
+        memset(rows[row].fields.name, 0, sizeof(rows[row].fields.name));
         rows[row].fields.saveCounter = 0;
         rows[row].halfwords[6] = 0;
         rows[row].fields.checksum = 0;
@@ -18,9 +19,11 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
 void WriteSaveHeaderRow(GameSaveHeaderRow *row) {
     s32 i;
 
-    row->fields.nameLength = g_TeamNameLength;
+    row->fields.nameLength = g_TeamNameLength < SAVE_TEAM_NAME_CAPACITY
+                                 ? g_TeamNameLength
+                                 : SAVE_TEAM_NAME_CAPACITY;
 
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < SAVE_TEAM_NAME_CAPACITY; i++) {
         row->fields.name[i] = g_TeamNameChars[i];
     }
 

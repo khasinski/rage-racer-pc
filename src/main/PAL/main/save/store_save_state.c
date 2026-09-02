@@ -47,7 +47,7 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
     block->maxClassReached[0] = g_MaxClassReached[0];
     block->maxClassReached[1] = g_MaxClassReached[1];
 
-    for (i = 0; i < 13; i++) {
+    for (i = 0; i < GAME_CAR_COUNT; i++) {
         StoreCarSetup(&block->carSetup[0][i], &g_GrandPrixCars[i]);
         StoreCarSetup(&block->carSetup[1][i], &g_ExtraGrandPrixCars[i]);
         StoreCarSetup(&block->carSetup[2][i], &g_TimeAttackCars[i]);
@@ -73,7 +73,10 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
     block->bgmVolume = g_BgmVolumeSetting;
     block->sfxVolume = g_SfxVolumeSetting;
     block->monoOutput = g_MonoOutput;
-    memcpy(block->grandPrixCourseProgress, &g_GrandPrixCourseProgress, 8);
-    memcpy(block->extraGrandPrixCourseProgress, &g_ExtraGrandPrixCourseProgress, 8);
+    memcpy(block->grandPrixCourseProgress, &g_GrandPrixCourseProgress,
+           sizeof(g_GrandPrixCourseProgress));
+    memcpy(block->extraGrandPrixCourseProgress,
+           &g_ExtraGrandPrixCourseProgress,
+           sizeof(g_ExtraGrandPrixCourseProgress));
     block->checksum = CalculateSaveBlockChecksum(block);
 }

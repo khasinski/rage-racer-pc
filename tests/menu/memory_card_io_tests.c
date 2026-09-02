@@ -202,12 +202,17 @@ static int TestHeaderScan(void) {
 
 static int TestLoadAndFailuresClose(void) {
     GameSaveHeaderRow header;
+    GameSaveHeaderRow storedHeader;
     GameSaveBlock block;
     s32 i;
 
     ResetMock();
     s_exists[1] = 1;
     PutHeader(1, 0x1280, 21, 1);
+    memcpy(&storedHeader, &s_files[1][0x1280], sizeof(storedHeader));
+    storedHeader.fields.nameLength = 0xFF;
+    SealHeader(&storedHeader);
+    memcpy(&s_files[1][0x1280], &storedHeader, sizeof(storedHeader));
     memset(&block, 0, sizeof(block));
     memcpy(&s_files[1][0x280], &block, sizeof(block));
     s_openResults[0] = -1;
@@ -215,8 +220,10 @@ static int TestLoadAndFailuresClose(void) {
     s_openResultCount = 2;
     CHECK(LoadMemoryCardSaveSlot(1, &header) == 1);
     CHECK(GameMenuLoadPhase == 0x3901);
-    CHECK(g_TeamNameLength == 7);
-    for (i = 0; i < 7; i++) CHECK(g_TeamNameChars[i] == header.fields.name[i]);
+    CHECK(g_TeamNameLength == SAVE_TEAM_NAME_CAPACITY);
+    for (i = 0; i < SAVE_TEAM_NAME_CAPACITY; i++) {
+        CHECK(g_TeamNameChars[i] == header.fields.name[i]);
+    }
     CHECK(g_SaveElapsedTicks == header.fields.saveCounter);
     CHECK(s_closeCalls == 1);
 

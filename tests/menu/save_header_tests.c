@@ -27,7 +27,7 @@ static void TestClearRows(void) {
     ClearSaveHeaderRows(rows);
     for (row = 0; row < 3; row++) {
         for (byte = 0; byte < 0x80; byte++) {
-            s32 cleared = byte < 7 || (byte >= 8 && byte < 14) || byte >= 0x7C;
+            s32 cleared = byte < 8 || (byte >= 8 && byte < 14) || byte >= 0x7C;
             u8 expected = cleared ? 0 : 0xA5;
             if (rows[row].bytes[byte] != expected) {
                 printf("FAIL clear row %d byte %d: got %02x expected %02x\n",
@@ -54,6 +54,11 @@ static void TestWriteRow(void) {
     Check(row.fields.saveCounter == 0x12345678, "save elapsed ticks");
     for (i = 0; i < 0x3E; i++) sum += row.halfwords[i];
     Check(row.fields.checksum == ~sum, "save header checksum");
+
+    g_TeamNameLength = 0xFF;
+    WriteSaveHeaderRow(&row);
+    Check(row.fields.nameLength == SAVE_TEAM_NAME_CAPACITY,
+          "save name length clamps to the stored field");
 }
 
 int main(void) {
