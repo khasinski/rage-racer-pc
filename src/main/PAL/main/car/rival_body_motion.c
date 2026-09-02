@@ -39,7 +39,7 @@ static void UpdateRivalJumpArc(GameCarRuntime *car, s32 ground) {
         car->y = ground + 8;
         car->verticalPitch = 0;
         car->verticalRoll = 0;
-        StartCarBodyKick(1, car);
+        StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
     }
 }
 

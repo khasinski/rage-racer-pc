@@ -17,7 +17,7 @@ static int s_soundCalls;
 static int s_soundCue;
 static int s_failures;
 
-void StartCarBodyKick(s32 mode, GameCarRuntime *car) {
+void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     (void)car;
     s_kickCalls++;
     s_kickMode = mode;

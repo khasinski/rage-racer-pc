@@ -30,8 +30,9 @@ int main(void) {
 
     memset(&car, 0, sizeof(car));
     car.verticalMotionTimer = 7;
-    StartCarBodyKick(1, &car);
-    CHECK(car.motionMode == 1 && car.motionModeTimer == 30);
+    StartCarBodyKick(&car, CAR_BODY_KICK_LANDING);
+    CHECK(car.motionMode == CAR_BODY_KICK_LANDING &&
+          car.motionModeTimer == 30);
     CHECK(car.motionValue.value == 56);
 
     memset(&car, 0, sizeof(car));
@@ -39,22 +40,22 @@ int main(void) {
     car.bodyYaw = 0x400;
     s_trackAngle = 0;
     s_random = 0;
-    StartCarBodyKick(2, &car);
+    StartCarBodyKick(&car, CAR_BODY_KICK_CORNERING);
     CHECK(car.motionModeTimer == 30 && car.motionValue.value == 0x400);
 
     s_random = 0x80;
-    StartCarBodyKick(2, &car);
+    StartCarBodyKick(&car, CAR_BODY_KICK_CORNERING);
     CHECK(car.motionValue.value == -0x400);
 
     car.speed = 0x13F;
-    StartCarBodyKick(2, &car);
+    StartCarBodyKick(&car, CAR_BODY_KICK_CORNERING);
     CHECK(car.motionValue.value == 0);
 
     car.motionModeTimer = 12;
     car.motionValue.value = 34;
-    car.motionMode = 2;
-    StartCarBodyKick(7, &car);
-    CHECK(car.motionMode == 2);
+    car.motionMode = CAR_BODY_KICK_CORNERING;
+    StartCarBodyKick(&car, 7);
+    CHECK(car.motionMode == CAR_BODY_KICK_CORNERING);
     CHECK(car.motionModeTimer == 12 && car.motionValue.value == 34);
 
     puts("car body kick tests passed");

@@ -1,14 +1,8 @@
 #include "game/car.h"
 #include "psyq/gte.h"
 
-enum {
-    BODY_KICK_INACTIVE = 0,
-    BODY_KICK_LANDING = 1,
-    BODY_KICK_CORNERING = 2,
-};
-
 static void StopCarBodyKick(GameCarRuntime *car) {
-    car->motionMode = BODY_KICK_INACTIVE;
+    car->motionMode = CAR_BODY_KICK_INACTIVE;
     car->motionModeTimer = 0;
     car->bodyKickOffset = 0;
 }
@@ -20,11 +14,11 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     s32 amplitude;
     s32 timer;
 
-    if (car->motionMode == BODY_KICK_INACTIVE) {
+    if (car->motionMode == CAR_BODY_KICK_INACTIVE) {
         return;
     }
-    if (car->motionMode != BODY_KICK_LANDING &&
-        car->motionMode != BODY_KICK_CORNERING) {
+    if (car->motionMode != CAR_BODY_KICK_LANDING &&
+        car->motionMode != CAR_BODY_KICK_CORNERING) {
         StopCarBodyKick(car);
         return;
     }
@@ -40,13 +34,13 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     value = wave / 2048;
 
     switch (car->motionMode) {
-    case BODY_KICK_LANDING:
+    case CAR_BODY_KICK_LANDING:
         car->bodyKickOffset = value + amplitude;
         car->bodyPitch += car->bodyKickOffset;
         car->bodyKickOffset = value + amplitude / 2;
         car->bodyRoll += car->bodyKickOffset / 2;
         break;
-    case BODY_KICK_CORNERING:
+    case CAR_BODY_KICK_CORNERING:
         if (car->verticalMotionState == 0) {
             car->bodyRoll += value;
         }

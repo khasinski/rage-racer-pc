@@ -61,7 +61,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     crash = CollidePlayerWithCars(car);
     TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
     if (skid != 0 || crash != 0) {
-        StartCarBodyKick(2, AsRivalCar(car));
+        StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_CORNERING);
     }
 
     bodyY = car->y;

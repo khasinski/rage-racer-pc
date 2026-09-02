@@ -13,6 +13,9 @@ enum {
     RACE_CAR_SLOT_COUNT = 11,
     CAR_MODEL_VARIANT_COUNT = 32,
     CAR_TIRE_COMPOUND_COUNT = 5,
+    CAR_BODY_KICK_INACTIVE = 0,
+    CAR_BODY_KICK_LANDING = 1,
+    CAR_BODY_KICK_CORNERING = 2,
 };
 
 /*
@@ -871,13 +874,13 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);
-void StartCarBodyKick(s32 strength, GameCarRuntime *car);
+void StartCarBodyKick(GameCarRuntime *car, s32 mode);
 void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop(GameCarRuntime *car);
 void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
 void UpdatePlayerTilt(PlayerCarRuntime *car);
-s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
+s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
                     s32 blendAmount);

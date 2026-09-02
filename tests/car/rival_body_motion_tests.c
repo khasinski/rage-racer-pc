@@ -15,8 +15,8 @@ static s32 CarIndex(const GameCarRuntime *car) {
     return (s32)(car - g_Cars);
 }
 
-void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
-    if (strength == 1) {
+void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
+    if (mode == CAR_BODY_KICK_LANDING) {
         s_startKick[CarIndex(car)]++;
     }
 }

@@ -95,9 +95,9 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
     return s_crash;
 }
 
-void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
+void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     (void)car;
-    if (strength != 2) {
+    if (mode != CAR_BODY_KICK_CORNERING) {
         s_failures++;
     }
     Step('N');

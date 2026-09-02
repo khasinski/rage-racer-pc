@@ -67,7 +67,7 @@ static void LandPlayerCar(PlayerCarRuntime *car, s32 groundHeight) {
     car->y = groundHeight + 8;
     car->verticalPitch = 0;
     car->verticalRoll = 0;
-    StartCarBodyKick(1, AsRivalCar(car));
+    StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_LANDING);
     g_ShiftSoundLevel = 0;
     if (car->verticalMotionTimer >= 19 && g_RacePhase < 3) {
         PlaySoundCue(0xE);

@@ -4,22 +4,20 @@
 #include "game/track.h"
 
 enum {
-    BODY_KICK_LANDING = 1,
-    BODY_KICK_CORNERING = 2,
     BODY_KICK_DURATION = 30,
     BODY_KICK_MIN_SPEED = 0x140,
 };
 
 /* Start the short body impulse produced by a landing or a fast sideways hit. */
-void StartCarBodyKick(s32 strength, GameCarRuntime *car) {
+void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     s32 lean;
     s32 speedOverMinimum;
 
-    if (strength != BODY_KICK_LANDING && strength != BODY_KICK_CORNERING) {
+    if (mode != CAR_BODY_KICK_LANDING && mode != CAR_BODY_KICK_CORNERING) {
         return;
     }
-    car->motionMode = (s16)strength;
-    if (strength == BODY_KICK_LANDING) {
+    car->motionMode = (s16)mode;
+    if (mode == CAR_BODY_KICK_LANDING) {
         car->motionModeTimer = BODY_KICK_DURATION;
         car->motionValue.value = car->verticalMotionTimer << 3;
         return;
