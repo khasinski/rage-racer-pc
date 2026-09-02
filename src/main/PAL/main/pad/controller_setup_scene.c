@@ -45,6 +45,10 @@ static void SubmitControllerPart(LVec *position, Matrix *transform, s32 model) {
     SubmitControllerModel(model);
 }
 
+static s32 ControllerModelOrFallback(s32 model, s32 requiredModelCount) {
+    return g_ModelBankCount >= requiredModelCount ? model : 1;
+}
+
 /* Builds and submits the controller models shown by the pad and NeGcon setup
  * screens. The read-only render state is retained for the three camera
  * matrix multiplies; write-only fields stay absolute so each store
@@ -73,7 +77,7 @@ void DrawControllerSetupScene(s32 variant) {
 
     if (g_PadType == PAD_TYPE_DIGITAL) {
         BuildControllerPartTransform(&partTransform, -0xD0);
-        model = g_ModelBankCount < 1;
+        model = ControllerModelOrFallback(0, 1);
         SubmitControllerPart(&position, &partTransform, model);
         return;
     }
@@ -94,24 +98,15 @@ void DrawControllerSetupScene(s32 variant) {
     BuildControllerPartTransform(&partTransform, baseAngle + steer);
     SubmitControllerPart(&position, &partTransform, 1);
     if (variant != 0) {
-        model = 1;
-        if (g_ModelBankCount >= 4) {
-            model = 3;
-        }
+        model = ControllerModelOrFallback(3, 4);
         SubmitControllerPart(&position, &partTransform, model);
     }
 
     BuildControllerPartTransform(&partTransform, baseAngle - steer);
-    model = 1;
-    if (g_ModelBankCount >= 3) {
-        model = 2;
-    }
+    model = ControllerModelOrFallback(2, 3);
     SubmitControllerPart(&position, &partTransform, model);
     if (variant != 0) {
-        model = 1;
-        if (g_ModelBankCount >= 5) {
-            model = 4;
-        }
+        model = ControllerModelOrFallback(4, 5);
         SubmitControllerPart(&position, &partTransform, model);
     }
 }
