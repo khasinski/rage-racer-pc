@@ -191,11 +191,6 @@ typedef struct GameCarRuntime {
     u8 pad16A[0x32];
 } GameCarRuntime;
 
-static inline GameCarRuntime *GetPlayerCarRuntime(
-    struct PlayerCarRuntime *car) {
-    return (GameCarRuntime *)(void *)car;
-}
-
 static inline struct GameRenderObject *GetCarRenderObject(
     GameCarRuntime *car) {
     return (struct GameRenderObject *)(void *)car;

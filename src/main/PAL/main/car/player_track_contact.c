@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/angle.h"
 #include "game/car_internal.h"
 #include "game/render.h"
 #include "game/track_internal.h"
@@ -7,15 +8,19 @@
 
 s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
     Matrix toTrack;
-    SVec trackRotation = {
-        .vx = 0,
-        .vy = (s16)((car->bodyYaw - 0xC00 +
-                     TrackPoint(car->trackPointIndex)->angle) & 0xFFF),
-        .vz = 0,
-    };
+    SVec trackRotation;
     CarTrackLimits limits;
     s32 skid;
 
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+        return 0;
+    }
+
+    trackRotation.vx = 0;
+    trackRotation.vy =
+        (s16)((car->bodyYaw - ANGLE_THREE_QUARTER_TURN +
+               TrackPoint(car->trackPointIndex)->angle) & ANGLE_MASK);
+    trackRotation.vz = 0;
     BuildRotMatrixY(&toTrack, trackRotation.vy);
     MeasurePlayerTrackLimits(&toTrack, &limits);
 

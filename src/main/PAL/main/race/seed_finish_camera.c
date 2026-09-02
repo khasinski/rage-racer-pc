@@ -12,7 +12,7 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     }
 
     point = TrackPoint(car->trackPointIndex);
-    g_CameraCar = *GetPlayerCarRuntime(car);
+    g_CameraCar = *AsRivalCar(car);
     g_CameraCar.x = point->x;
     g_CameraCar.z = point->z;
     g_CameraCar.y = point->y - 0x40;

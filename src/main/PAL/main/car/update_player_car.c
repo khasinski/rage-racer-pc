@@ -46,7 +46,7 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     tmp.z = (p->brakePos * 6) / 1280 + car->z + car->motionZ;
     SetPlayerPosition(car, &tmp);
     TraceCarMotion("post-position", car);
-    AccumulateLapProgress(GetPlayerCarRuntime(car));
+    AccumulateLapProgress(AsRivalCar(car));
     TraceCarMotion("post-progress", car);
 
     skid = ResolvePlayerTrackContact(car);

@@ -63,7 +63,7 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     car->headingAngle = car->bodyYaw;
     car->drive.targetHeading = car->headingAngle;
 
-    SeedCarLapProgress(GetPlayerCarRuntime(car), 0);
+    SeedCarLapProgress(AsRivalCar(car), 0);
     UpdateCarTrackState(AsRivalCar(car), car->trackPointIndex, &trackLimits);
     car->previousTrackProgress = car->trackProgress;
     CopyPlayerBodyRotationToModel(car);

@@ -37,6 +37,6 @@ static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
 }
 
 void UpdatePlayerControlFeedback(PlayerCarRuntime *car) {
-    UpdateCarWheelRotation(GetPlayerCarRuntime(car));
+    UpdateCarWheelRotation(AsRivalCar(car));
     ClampPlayerSteeringAngle(car);
 }

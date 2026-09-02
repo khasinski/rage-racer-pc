@@ -122,6 +122,16 @@ int main(void) {
     s_trackResult = 2;
     CHECK(ResolvePlayerTrackContact(&car) == 2);
 
+    Reset(&car);
+    g_TrackPoints = NULL;
+    CHECK(ResolvePlayerTrackContact(&car) == 0);
+    CHECK(s_measureCalls == 0 && s_trackCalls == 0 && s_traceCalls == 0);
+
+    Reset(&car);
+    g_TrackPointCount = 0;
+    CHECK(ResolvePlayerTrackContact(&car) == 0);
+    CHECK(s_measureCalls == 0 && s_trackCalls == 0 && s_traceCalls == 0);
+
     if (s_failures != 0) {
         printf("%d player track contact checks failed\n", s_failures);
         return 1;
