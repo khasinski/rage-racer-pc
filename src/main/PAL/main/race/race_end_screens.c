@@ -1,25 +1,32 @@
 #include "game/asset.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/cd.h"
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/save_internal.h"
 
+enum {
+    SCENE_TITLE = 6,
+    SCENE_LOST_RACE = 14,
+    SCENE_RACE_END = 16,
+    LOST_RACE_INPUT_TIMER = -1,
+    SCREEN_FADE_COMPLETE = 256,
+    RACE_END_INITIAL_TIMER = 555,
+};
+
 void DrawLostRaceCaption(s32 level) {
-    if (level >= 0x100) {
-        level = 0xFF;
-    }
-    level >>= 1;
-    GameDrawProportionalTextShaded(0x28, 0x40, &g_CaptionLostRace, 0x7812, level);
+    GameDrawProportionalTextShaded(0x28, 0x40, g_CaptionLostRace, 0x7812,
+                                  RaceEndBrightness(level));
 }
 
 void EnterLostRaceScreen(void) {
     g_FrameSyncThreshold = 0x80;
     SetReverbDepth(0x28, 0x28);
-    g_SceneId = 0xE;
+    g_SceneId = SCENE_LOST_RACE;
     g_LostRaceChoice = 0;
-    g_SceneTimer = -1;
+    g_SceneTimer = LOST_RACE_INPUT_TIMER;
     DrawLostRaceCaption(0xFF);
 }
 
@@ -54,19 +61,14 @@ void DrawRaceEndPrompt(void) {
 }
 
 void UpdateLostRaceScreen(void) {
-    s32 timer;
-    s32 old;
+    s32 timer = g_SceneTimer;
 
-    timer = g_SceneTimer;
-    if (timer == -1) {
-        old = g_LostRaceChoice;
-        if ((g_PadPressed & PAD_UP) && (old == 1)) {
-            g_LostRaceChoice = 0;
-        }
-        if ((g_PadPressed & PAD_DOWN) && (g_LostRaceChoice == 0)) {
-            g_LostRaceChoice = 1;
-        }
-        if (old != g_LostRaceChoice) {
+    if (timer == LOST_RACE_INPUT_TIMER) {
+        s32 previousChoice = g_LostRaceChoice;
+
+        g_LostRaceChoice =
+            UpdateLostRaceChoice(previousChoice, g_PadPressed);
+        if (previousChoice != g_LostRaceChoice) {
             PlaySoundCue(1);
         }
         if (g_PadPressed & PAD_START) {
@@ -81,12 +83,8 @@ void UpdateLostRaceScreen(void) {
         timer += 2;
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
-        if (g_SceneTimer == 0x100) {
-            if (g_LostRaceChoice != 0) {
-                g_SceneId = 6;
-            } else {
-                g_SceneId = 0xB;
-            }
+        if (g_SceneTimer == SCREEN_FADE_COMPLETE) {
+            g_SceneId = LostRaceExitScene(g_LostRaceChoice);
         }
     }
 
@@ -94,31 +92,31 @@ void UpdateLostRaceScreen(void) {
 }
 
 void DrawRaceEndBanner(s32 level) {
-    if (level >= 256) {
-        level = 0xFF;
-    }
-    level >>= 1;
-    DrawSprite(GamePrimaryOrderingTable(0), 0x50, 0x6C, 0xA0, 0x18, 0, 0x28, level, level, level, 0xC, 0, 1, 0x29);
+    s32 brightness = RaceEndBrightness(level);
+
+    DrawSprite(GamePrimaryOrderingTable(0), 0x50, 0x6C, 0xA0, 0x18, 0,
+               0x28, brightness, brightness, brightness, 0xC, 0, 1, 0x29);
 }
 
 void EnterRaceEndScreen(void) {
     g_FrameSyncThreshold = 0x80;
-    g_SceneId = 0x10;
-    g_SceneTimer = 0x22B;
-    DrawRaceEndBanner(0x22B);
+    g_SceneId = SCENE_RACE_END;
+    g_SceneTimer = RACE_END_INITIAL_TIMER;
+    DrawRaceEndBanner(RACE_END_INITIAL_TIMER);
 }
 
 void UpdateRaceEndScreen(void) {
-    u32 v = g_SceneTimer - 1;
-    g_SceneTimer = v;
-    if ((g_PadPressed & PAD_CONFIRM) && v >= 261) {
+    s32 timer = g_SceneTimer - 1;
+
+    g_SceneTimer = timer;
+    if (CanSkipRaceEndScreen(timer, g_PadPressed)) {
         StartCdVolumeFade(0xFA);
         g_SceneTimer = 0xFF;
     }
     if (g_SceneTimer == 0) {
         RequestSelectBgmAssets();
         ResetCourseProgress(g_GrandPrixClass);
-        g_SceneId = 6;
+        g_SceneId = SCENE_TITLE;
     }
     DrawRaceEndBanner(g_SceneTimer);
 }

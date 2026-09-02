@@ -288,7 +288,7 @@ extern s32 g_BgmRandomPlay;
 extern s16 g_CameraCarTrackSection;
 extern char g_CaptionLapTime[];
 extern char g_CaptionLapTime2[];
-extern char g_CaptionLostRace;
+extern char g_CaptionLostRace[];
 extern char g_CaptionPrizeMoney[];
 extern char g_CaptionPromotionBonus[];
 extern char g_CaptionRanking[];

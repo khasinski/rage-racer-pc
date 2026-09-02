@@ -48,5 +48,9 @@ s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
 s32 PrizeCountStep(s32 amount, s32 frameCount);
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount);
+s32 RaceEndBrightness(s32 level);
+s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons);
+s32 LostRaceExitScene(s32 choice);
+s32 CanSkipRaceEndScreen(s32 timer, u16 pressedButtons);
 
 #endif
