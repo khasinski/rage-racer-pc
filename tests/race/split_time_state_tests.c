@@ -105,9 +105,63 @@ static void TestSectorClose(void) {
     assert(s_SoundCue == 0x3F);
 }
 
+static void TestSplitDisplayExpiry(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    car.lap = 1;
+    g_LapCount = 1;
+    g_SectorEndDistance[0] = 500;
+    g_RefSectorTimes.values[0] = 1234;
+    g_SplitTimer = 59;
+    g_SplitSign = -1;
+
+    UpdateSplitTimes(&car, 0, 0);
+
+    assert(g_SplitTimer == 60);
+    assert(g_SplitTargetTime == 1234);
+    assert(g_SplitSign == 0 && g_SplitSector == 0);
+}
+
+static void TestInactiveLapResetsSplit(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    car.lap = 1;
+    g_SectorIndex = 1;
+    g_SectorEndDistance[1] = 500;
+    g_RefSectorTimes.values[0] = 4321;
+    g_SplitTimer = 12;
+    g_SplitSign = -1;
+
+    UpdateSplitTimes(&car, 0, 0);
+
+    assert(g_SplitSector == 0 && g_SplitTimer == 0 && g_SplitSign == 0);
+    assert(g_SplitTargetTime == 4321);
+}
+
+static void TestUnrepresentableTimeHasNoDelta(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    car.lap = 1;
+    car.progressA = 100;
+    g_SectorEndDistance[0] = 100;
+    g_LapTimeMs = 599999;
+    g_SplitSign = -1;
+
+    UpdateSplitTimes(&car, 0, 0);
+
+    assert(g_SectorTimes[0] == 599999);
+    assert(g_SplitSign == 0 && s_SoundCue == 0);
+}
+
 int main(void) {
     TestModesThatDoNotHaveSplits();
     TestInitialLapEvent();
     TestSectorClose();
+    TestSplitDisplayExpiry();
+    TestInactiveLapResetsSplit();
+    TestUnrepresentableTimeHasNoDelta();
     return 0;
 }
