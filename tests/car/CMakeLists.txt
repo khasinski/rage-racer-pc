@@ -312,7 +312,9 @@ set_tests_properties(finish_camera PROPERTIES LABELS functional)
 # The three AI walks over the course's own crest, speed and racing-line tables.
 add_executable(car_ai_tests
     car_ai_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_ai.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/seed_car_route_markers.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_racing_line.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_target_speed.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_crest_motion.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_slide.c)
 target_include_directories(car_ai_tests PRIVATE
