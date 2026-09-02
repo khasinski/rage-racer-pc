@@ -124,9 +124,24 @@ static void ManualTests(void) {
     ShiftPlayerGears(&s_car, 1);
     Check(s_car.drive.gear == 3, "a pad button does nothing on a negcon",
           s_car.drive.gear, 3);
+
+    Place(1, 0, 0);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 1, "invalid low gear is repaired",
+          s_car.drive.gear, 1);
+
+    Place(1, 7, 0);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 6, "invalid high gear is repaired",
+          s_car.drive.gear, 6);
 }
 
 static void AutomaticTests(void) {
+    Place(0, 0, 500);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 1, "auto repairs gear before table lookup",
+          s_car.drive.gear, 1);
+
     /* Above the current gear's upshift speed it takes the next one. */
     Place(0, 1, 1500);
     ShiftPlayerGears(&s_car, 0);

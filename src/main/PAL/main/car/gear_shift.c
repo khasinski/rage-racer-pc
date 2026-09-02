@@ -2,6 +2,22 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 
+enum {
+    FIRST_GEAR = 1,
+    MAX_FORWARD_GEARS = 6,
+    PAD_MAPPING_STRIDE = 8,
+};
+
+static s32 EffectiveTopGear(void) {
+    if (g_CarSpec->topGear < FIRST_GEAR) {
+        return FIRST_GEAR;
+    }
+    if (g_CarSpec->topGear > MAX_FORWARD_GEARS) {
+        return MAX_FORWARD_GEARS;
+    }
+    return g_CarSpec->topGear;
+}
+
 /*
  * Pick the gear for this frame.
  *
@@ -16,16 +32,25 @@
  * pulled away yet.
  */
 void ShiftPlayerGears(PlayerCarRuntime *car, int mode23) {
+    s32 topGear = EffectiveTopGear();
+    s32 mappingBase = mode23 != 0 ? PAD_MAPPING_STRIDE : 0;
+
+    if (car->drive.gear < FIRST_GEAR) {
+        car->drive.gear = FIRST_GEAR;
+    } else if (car->drive.gear > topGear) {
+        car->drive.gear = (s16)topGear;
+    }
+
     if (car->drive.manual != 0) {
-        if (g_PadPressed & g_PadButtonMapping[4 + mode23 * 8]) {
+        if (g_PadPressed & g_PadButtonMapping[4 + mappingBase]) {
             s32 g = car->drive.gear;
 
-            if (g < g_CarSpec->topGear && car->drive.clutch == 0) {
+            if (g < topGear && car->drive.clutch == 0) {
                 car->drive.gear++;
                 g_SteerHoldFrames = 0;
             }
         }
-        if (g_PadPressed & g_PadButtonMapping[5 + mode23 * 8]) {
+        if (g_PadPressed & g_PadButtonMapping[5 + mappingBase]) {
             s32 g = car->drive.gear;
 
             if (g >= 2) {
@@ -48,7 +73,7 @@ void ShiftPlayerGears(PlayerCarRuntime *car, int mode23) {
             } else {
                 if (g_CarSpec->shiftPoints[g - 1].upshiftSpeed < car->speed &&
                     g_AutoShiftCooldown <= 0 && car->drive.clutch == 0 &&
-                    g < g_CarSpec->topGear) {
+                    g < topGear) {
                     car->drive.gear++;
                     g_AutoShiftCooldown = 25;
                     g_SteerHoldFrames = 0;
@@ -62,8 +87,9 @@ void ShiftPlayerGears(PlayerCarRuntime *car, int mode23) {
                 g_AutoShiftCooldown--;
             }
         }
-        if (car->speed == 0 && car->drive.gear >= 2 && car->drive.motionState != CAR_MOTION_STANDING_START) {
-            car->drive.gear = 1;
+        if (car->speed == 0 && car->drive.gear >= 2 &&
+            car->drive.motionState != CAR_MOTION_STANDING_START) {
+            car->drive.gear = FIRST_GEAR;
             car->drive.clutch = 0;
             g_AutoShiftCooldown = 0;
         }

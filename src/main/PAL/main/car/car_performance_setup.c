@@ -4,6 +4,10 @@
 
 #include <stdio.h>
 
+enum {
+    LAUNCH_THRESHOLD_COUNT = 5,
+};
+
 static s32 FindFirstPositiveBand(const s32 *values, s32 count,
                                  s32 speedThreshold) {
     s32 index;
@@ -14,6 +18,11 @@ static s32 FindFirstPositiveBand(const s32 *values, s32 count,
         }
     }
     return -1;
+}
+
+static s32 WrapLaunchThresholdIndex(s32 index) {
+    index %= LAUNCH_THRESHOLD_COUNT;
+    return index < 0 ? index + LAUNCH_THRESHOLD_COUNT : index;
 }
 
 void PrepareCarPerformance(GameCarDrive *drive) {
@@ -85,6 +94,7 @@ void PrepareCarPerformance(GameCarDrive *drive) {
 
     printf("%s", g_MsgInit4);
     drive->launchEnergyThreshold =
-        g_LaunchEnergyThresholds[drive->launchThresholdIndex % 5] * 0xE;
+        g_LaunchEnergyThresholds[
+            WrapLaunchThresholdIndex(drive->launchThresholdIndex)] * 0xE;
     drive->steeringGripResponse = spec->steeringGripResponse;
 }

@@ -112,6 +112,12 @@ int main(void) {
                  "torque loss band");
     }
 
+    drive.launchThresholdIndex = -1;
+    PrepareCarPerformance(&drive);
+    CHECK_EQ(drive.launchEnergyThreshold,
+             g_LaunchEnergyThresholds[4] * 0xE,
+             "negative launch threshold wraps safely");
+
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
         return 1;
