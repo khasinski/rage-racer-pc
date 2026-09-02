@@ -81,7 +81,7 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     view->y -= ((view->y - focusY) * blend) / 10000;
     view->z -= ((view->z - focusZ) * blend) / 10000;
     AimCameraAt(view, focusX, focusY, focusZ);
-    g_CameraModePrev = 2;
+    g_CameraModePrev = TRACK_CAMERA_BLENDED_NODE;
 }
 
 /*
@@ -119,10 +119,10 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 rollWork[3];
 
     CameraLoadViewPositionFromCar(view, car);
-    if (((u8)nodeChanged) || (g_CameraModePrev != 3)) {
+    if (nodeChanged || g_CameraModePrev != TRACK_CAMERA_PATH) {
         g_CamPathNode = cameraNodeIndex;
         g_CamPathFrame = 0;
-        if (g_CameraModePrev == 3) {
+        if (g_CameraModePrev == TRACK_CAMERA_PATH) {
             g_CamPathOffsetStart[0] = g_CamPathOffset[0];
             g_CamPathOffsetStart[1] = g_CamPathOffset[1];
             g_CamPathOffsetStart[2] = g_CamPathOffset[2];
@@ -228,7 +228,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     TransposeMatrix(&matrixWork, &cameraRotation);
     ApplyMatrixLV(&cameraRotation, &rollWork[0], &rollProbe[0]);
     view->angleZ = 0x400 - (Atan2(rollProbe[1], rollProbe[0]) & 0xFFF);
-    g_CameraModePrev = 3;
+    g_CameraModePrev = TRACK_CAMERA_PATH;
 }
 
 /*
@@ -250,7 +250,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     view->y = orbitNode->data.world.y;
     view->z = orbitNode->data.world.z;
     view->reserved = orbitNode->data.orientation.distance;
-    if (nodeChanged || g_CameraModePrev != 4) {
+    if (nodeChanged || g_CameraModePrev != TRACK_CAMERA_SLIDING_NODE) {
         g_CamPathFrame = 0;
     } else if (g_CamPathFrame <
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
@@ -278,5 +278,5 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
                   duration;
     AimCameraAt(view, car->x + nodeWorld[0], car->y + nodeWorld[1],
                 car->z + nodeWorld[2]);
-    g_CameraModePrev = 4;
+    g_CameraModePrev = TRACK_CAMERA_SLIDING_NODE;
 }

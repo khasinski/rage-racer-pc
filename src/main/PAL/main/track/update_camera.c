@@ -25,7 +25,7 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
     view->y += cameraLiftWorld[1] >> 4;
     view->z += cameraLiftWorld[2] >> 4;
     view->angleX += car->tiltCounter;
-    g_CameraModePrev = 0;
+    g_CameraModePrev = TRACK_CAMERA_CAR;
 }
 
 /*
@@ -68,7 +68,7 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     view->angleX = 0x400 - (Atan2(eyeWorld[1], g_OrbitCameraDistance) & 0xFFF);
     view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
     view->angleZ = car->bodyRoll;
-    g_CameraModePrev = 5;
+    g_CameraModePrev = TRACK_CAMERA_ORBIT;
     view->x -= eyeWorld[0];
     view->y = (view->y - 0x28) - eyeWorld[1];
     view->z -= eyeWorld[2];
@@ -88,7 +88,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     previousNodeIndex = g_CameraNodeIndex;
     g_CameraNodeIndex = cameraNodeIndex;
     nodeChanged = cameraNodeIndex != previousNodeIndex;
-    if (cameraModeSel < 2) {
+    if (cameraModeSel < CAMERA_VIEW_TRACK) {
         cameraMode = cameraModeSel;
     } else if (cameraNodeIndex >= 0) {
         cameraMode = g_TrackCameras[cameraNodeIndex].mode;
@@ -97,22 +97,22 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     }
     switch (cameraMode) {
     default:
-    case 0:
+    case TRACK_CAMERA_CAR:
         CameraViewFromCarBlock(car, view);
         break;
-    case 1:
+    case TRACK_CAMERA_CHASE:
         CameraViewFromChaseCamera(car, view);
         break;
-    case 2:
+    case TRACK_CAMERA_BLENDED_NODE:
         CameraViewFromBlendedNode(car, view, cameraNodeIndex);
         break;
-    case 3:
+    case TRACK_CAMERA_PATH:
         CameraViewFromCamPath(car, view, cameraNodeIndex, nodeChanged);
         break;
-    case 4:
+    case TRACK_CAMERA_SLIDING_NODE:
         CameraViewFromSlidingNode(car, view, cameraNodeIndex, nodeChanged);
         break;
-    case 5:
+    case TRACK_CAMERA_ORBIT:
         CameraViewFromOrbit(car, view);
         break;
     }

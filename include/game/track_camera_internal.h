@@ -28,6 +28,15 @@ typedef union TrackCameraSection {
     u16 raw;
 } TrackCameraSection;
 
+typedef enum TrackCameraNodeMode {
+    TRACK_CAMERA_CAR = 0,
+    TRACK_CAMERA_CHASE = 1,
+    TRACK_CAMERA_BLENDED_NODE = 2,
+    TRACK_CAMERA_PATH = 3,
+    TRACK_CAMERA_SLIDING_NODE = 4,
+    TRACK_CAMERA_ORBIT = 5,
+} TrackCameraNodeMode;
+
 typedef struct GameTrackCameraNode {
     GameTrackCameraData data;
     s32 offset[3];

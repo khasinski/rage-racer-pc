@@ -120,7 +120,7 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     chaseTargetYaw = car->bodyYaw & 0xFFF;
     g_ChaseCarSpeed = car->speed;
     g_ChaseTargetYaw = chaseTargetYaw;
-    if (g_CameraModePrev == 1) {
+    if (g_CameraModePrev == TRACK_CAMERA_CHASE) {
         g_ChaseYawPrev &= 0xFFF;
         g_ChaseYawRampNeg &= 0xFFF;
         g_ChaseYawRampPos &= 0xFFF;
@@ -202,5 +202,5 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
         pitchOffset = view->angleX - 0x60;
     }
     view->angleX = pitchOffset;
-    g_CameraModePrev = 1;
+    g_CameraModePrev = TRACK_CAMERA_CHASE;
 }
