@@ -10,7 +10,7 @@
 /* The 0..3 steering-play setting this screen edits. */
 
 
-/* Local wide-parameter views; see GameQueueSprite.c / SetGteLightMatrix.c. */
+/* Local wide-parameter views retained from the packed menu data. */
 
 /*
  * Game mode 10's overlay: the caption, the two nudge arrows, the three digit

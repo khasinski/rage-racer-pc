@@ -6,7 +6,7 @@
 
 /* Loads the GTE light matrix with g_SceneLightMatrix * `view`, working on a
  * local copy so the caller's view matrix is left alone. */
-void SetGteLightMatrix(Matrix *view) {
+static void SetGteLightMatrix(Matrix *view) {
     Matrix m;
 
     m = *view;

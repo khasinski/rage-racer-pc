@@ -671,8 +671,6 @@ void GameDrawProportionalTextShaded(
     s32 intensity);
 void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 
-/* Loads the GTE light matrix with g_SceneLightMatrix * `view`. */
-void SetGteLightMatrix(Matrix *view);
 /*
  * Per-object GTE setup: writes (object position - camera position) as an
  * SVECTOR into `work`, runs it through the render state's view matrix at
