@@ -203,53 +203,6 @@ typedef struct DrawPacket {
 } DrawPacket;
 
 /*
- * The libgpu driver table at 0x800941A0 (g_GpuFuncs points at it). Slots
- * holding a `u_long` are worker
- * function addresses passed to `send` rather than called directly:
- *   +0x04 _addque        +0x08 Gpu_AddQueue      +0x0C Gpu_ClearImage
- *   +0x10 Gpu_WriteGp1   +0x14 Gpu_WriteGp0Words +0x18 Gpu_StartDmaTransfer
- *   +0x1C Gpu_StoreImage +0x20 Gpu_LoadImage     +0x24 Gpu_ExecuteQueue
- *   +0x28 Gpu_GetControlMirrorByte               +0x2C Gpu_ClearOTagDma
- *   +0x30 _param         +0x34 Gpu_Reset         +0x38 _status
- *   +0x3C Gpu_DrawSync
- */
-typedef struct GpuCallbacks {
-    u_char pad0[0x8];
-    long (*send)(u_long worker, void *buf, long size, u_long data);
-    u_long cmd0C;
-    void (*submit)(long cmd);
-    void (*writeGp0Words)(void *src, long count);
-    u_long sendList;
-    u_long storeImage;
-    u_long loadImage;
-    u_char pad24[0x28 - 0x24];
-    long (*read)(long cmd);
-    void (*clearOTag)(void *ot, long count);
-    u_char pad30[0x34 - 0x30];
-    void (*resetGraph)(long mode);
-    long (*status)(void);
-    void (*drawSync)(long mode);
-} GpuCallbacks;
-
-/*
- * The libgpu global env head at g_GpuFuncs. The same twelve bytes are spelled
- * as separate globals elsewhere (g_GpuFuncs, the printf hook, g_GraphType,
- * g_GraphQueue, g_GraphDebug, g_GraphReverse, g_VramWidth, g_VramHeight);
- * both spellings are load-bearing, because gcc 2.6.3 treats a struct member
- * reference as non-aliasing and the two forms schedule differently.
- */
-typedef struct GfxState {
-    GpuCallbacks *funcs;
-    void (*printf)(char *, ...);
-    u_char graphType;
-    u_char graphQueue;
-    volatile u_char graphDebug;
-    volatile u_char graphReverse;
-    short vramWidth;
-    short vramHeight;
-} GfxState;
-
-/*
  * libgpu primitive initialisers. Each stamps the word count into prim[3] and
  * the GPU command byte into prim[7] (see the GP0 opcode in the comment).
  */
@@ -349,7 +302,7 @@ void SetDrawMode(
     void *tw);
 long LoadClut(void *clut, long x, long y);
 long LoadClut2(void *clut, long x, long y);
-/* g_GraphType (mode) and g_GraphDebug (debug level) accessors. */
+/* Graphics mode and debug-level accessors. */
 long GetGraphType(void);
 long GetGraphDebug(void);
 /* GP1(03h) display enable: 0 blanks the screen (and clears the cached

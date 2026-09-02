@@ -792,7 +792,6 @@ extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
 extern s16 g_AtanTable[];
 extern u8 g_Font8x8Cells[];
-extern u8 g_GpuJumpTable[];
 extern u8 g_HighFontCell[4];
 #define g_HighFontU g_HighFontCell
 #define g_HighFontV (g_HighFontCell + 1)
@@ -809,8 +808,6 @@ extern u8 g_PropFontCells[0x80];
 extern s32 g_TrackTextureCursorRow;
 extern s32 g_TrackTexturePageWanted;
 extern s32 g_TrackTextureTargetRow;
-extern u8 g_VramHeightTable[];
-extern u8 g_VramWidthTable[];
 extern u8 g_WordFontCells[40];
 #define g_WordFontU g_WordFontCells
 #define g_WordFontV (g_WordFontCells + 1)

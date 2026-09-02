@@ -405,17 +405,6 @@ extern unsigned char g_MdecOutDmaChcr[28];
 extern unsigned char g_MdecCmdReg[8];
 extern unsigned char g_MdecCtrlReg[8];
 extern unsigned char g_MdecDpcr[69636];
-extern unsigned char g_GpuJumpTable[64];
-extern unsigned char g_GpuFuncs[8];
-extern unsigned char g_GraphType[8];
-extern unsigned char g_GraphQueue[8];
-extern unsigned char g_GraphDebug[8];
-extern unsigned char g_GraphReverse[8];
-extern unsigned char g_DrawSyncCbPending[8];
-extern unsigned char g_DrawSyncCallback[8];
-extern unsigned char g_DispEnvCache[20];
-extern unsigned char g_VramWidthTable[20];
-extern unsigned char g_VramHeightTable[20];
 extern unsigned char g_SinTable[3236];
 extern unsigned char g_CdCommandNeedsSetloc[128];
 extern unsigned char g_CdSyncCallback[8];
@@ -890,17 +879,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_MdecCmdReg", g_MdecCmdReg, 8},
     {"g_MdecCtrlReg", g_MdecCtrlReg, 8},
     {"g_MdecDpcr", g_MdecDpcr, 69636},
-    {"g_GpuJumpTable", g_GpuJumpTable, 64},
-    {"g_GpuFuncs", g_GpuFuncs, 8},
-    {"g_GraphType", g_GraphType, 8},
-    {"g_GraphQueue", g_GraphQueue, 8},
-    {"g_GraphDebug", g_GraphDebug, 8},
-    {"g_GraphReverse", g_GraphReverse, 8},
-    {"g_DrawSyncCbPending", g_DrawSyncCbPending, 8},
-    {"g_DrawSyncCallback", g_DrawSyncCallback, 8},
-    {"g_DispEnvCache", g_DispEnvCache, 20},
-    {"g_VramWidthTable", g_VramWidthTable, 20},
-    {"g_VramHeightTable", g_VramHeightTable, 20},
     {"g_SinTable", g_SinTable, 3236},
     {"g_CdCommandNeedsSetloc", g_CdCommandNeedsSetloc, 128},
     {"g_CdSyncCallback", g_CdSyncCallback, 8},
@@ -1028,7 +1006,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 810306427UL;
+    const unsigned long expected = 143137145UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
