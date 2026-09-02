@@ -6,16 +6,30 @@
 enum {
     PATTERN_FRAME_SIZE = 8,
     PATTERN_VISIBLE_ROWS = 6,
+    PATTERN_STATIC_COUNT = 2,
     PATTERN_ANIMATION_START = 16,
     PATTERN_ANIMATION_PERIOD = 6,
     PATTERN_FOOTER_BLOCKS = 16,
+    PATTERN_TABLE_SIZE = 584,
 };
 
 static const u8 *AnimatedPatternRows(void) {
     const u8 *candidate;
 
+    if (g_MenuOverlayPatternAnimOffset < PATTERN_ANIMATION_START ||
+        g_MenuOverlayPatternAnimOffset >
+            PATTERN_TABLE_SIZE - PATTERN_FRAME_SIZE ||
+        g_MenuOverlayPatternAnimOffset % PATTERN_FRAME_SIZE != 0) {
+        g_MenuOverlayPatternAnimOffset = PATTERN_ANIMATION_START;
+    }
+
     if ((g_AnimTimer % PATTERN_ANIMATION_PERIOD) == 0) {
-        g_MenuOverlayPatternAnimOffset += PATTERN_FRAME_SIZE;
+        if (g_MenuOverlayPatternAnimOffset <=
+            PATTERN_TABLE_SIZE - 2 * PATTERN_FRAME_SIZE) {
+            g_MenuOverlayPatternAnimOffset += PATTERN_FRAME_SIZE;
+        } else {
+            g_MenuOverlayPatternAnimOffset = PATTERN_ANIMATION_START;
+        }
     }
 
     candidate = &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimOffset];
@@ -31,7 +45,7 @@ void DrawBitPatternOverlay(s32 pattern) {
     s32 rowIndex;
     s32 bitIndex;
 
-    if (pattern == 0) {
+    if (pattern == 0 || pattern > PATTERN_STATIC_COUNT) {
         return;
     }
 

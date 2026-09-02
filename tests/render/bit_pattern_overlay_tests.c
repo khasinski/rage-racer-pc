@@ -55,6 +55,10 @@ int main(void) {
     DrawBitPatternOverlay(0);
     CHECK(s_callCount == 0);
 
+    DrawBitPatternOverlay(3);
+    DrawBitPatternOverlay(INT32_MAX);
+    CHECK(s_callCount == 0);
+
     DrawBitPatternOverlay(1);
     CHECK(s_callCount == 18);
     CHECK(s_calls[0].x == 0x22 && s_calls[0].y == 0x150);
@@ -79,6 +83,21 @@ int main(void) {
     DrawBitPatternOverlay(-1);
     CHECK(g_MenuOverlayPatternAnimOffset == 16);
     CHECK(s_callCount == 16);
+
+    s_callCount = 0;
+    g_AnimTimer = 1;
+    g_MenuOverlayPatternAnimOffset = -8;
+    g_MenuOverlayPatternTable[16] = 0x80;
+    DrawBitPatternOverlay(-1);
+    CHECK(g_MenuOverlayPatternAnimOffset == 16);
+    CHECK(s_callCount == 17);
+
+    s_callCount = 0;
+    g_AnimTimer = 6;
+    g_MenuOverlayPatternAnimOffset = 576;
+    DrawBitPatternOverlay(-1);
+    CHECK(g_MenuOverlayPatternAnimOffset == 16);
+    CHECK(s_callCount == 17);
 
     puts("bit_pattern_overlay: pattern grid and footer positions ok");
     return 0;
