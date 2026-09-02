@@ -54,7 +54,9 @@ static void BuildRing(void) {
          * the truncation is in the code and this reaches it. */
         s_points[i].leftHalfWidth = (s16)(600 + (i % 5) * 120);
         s_points[i].rightHalfWidth = (s16)(600 + ((i + 2) % 5) * 120);
-        if (i == 9) s_points[i].leftHalfWidth = 20000;
+        if (i == 9) {
+            s_points[i].leftHalfWidth = 20000;
+        }
     }
     g_TrackPoints = s_points;
     g_TrackPointCount = TRACK_POINTS;
@@ -69,6 +71,11 @@ int main(int argc, char **argv) {
     static const s32 radii[] = {0, 19000, 19700, 20000, 20400, 21000, 40000};
     static const s32 guesses[] = {0, 5, 12, 23};
     FILE *out = NULL;
+    GameCarRuntime normalized;
+    GameCarRuntime oversized;
+    GameCarRuntime emptyTrackCar;
+    s32 normalizedResult;
+    s32 oversizedResult;
     s32 step;
     size_t r, g;
     int cases = 0;
@@ -84,8 +91,8 @@ int main(int argc, char **argv) {
 
     /* Positions all the way round the ring, at several distances from its
      * centre: on the line, inside it, outside it, and far away. */
-    for (step = 0; step < 24; step++)
-        for (r = 0; r < sizeof(radii) / sizeof(radii[0]); r++)
+    for (step = 0; step < 24; step++) {
+        for (r = 0; r < sizeof(radii) / sizeof(radii[0]); r++) {
             for (g = 0; g < sizeof(guesses) / sizeof(guesses[0]); g++) {
                 GameCarRuntime car;
                 char label[160];
@@ -102,6 +109,8 @@ int main(int argc, char **argv) {
                 Fold(out, label, result, &car);
                 cases++;
             }
+        }
+    }
 
     /*
      * A car standing exactly on a centreline point sits on the boundary
@@ -123,39 +132,38 @@ int main(int argc, char **argv) {
         cases++;
     }
 
-    {
-        GameCarRuntime normalized;
-        GameCarRuntime oversized;
-        s32 normalizedResult;
-        s32 oversizedResult;
-
-        memset(&normalized, 0, sizeof(normalized));
-        normalized.x = s_points[5].x;
-        normalized.z = s_points[5].z;
-        oversized = normalized;
-        normalizedResult = FindTrackSegment(&normalized, 5);
-        oversizedResult = FindTrackSegment(&oversized, TRACK_POINTS + 5);
-        if (oversizedResult != normalizedResult ||
-            oversized.x != normalized.x || oversized.z != normalized.z) {
-            fprintf(stderr, "oversized starting index was not normalized\n");
-            return 1;
-        }
+    memset(&normalized, 0, sizeof(normalized));
+    normalized.x = s_points[5].x;
+    normalized.z = s_points[5].z;
+    oversized = normalized;
+    normalizedResult = FindTrackSegment(&normalized, 5);
+    oversizedResult = FindTrackSegment(&oversized, TRACK_POINTS + 5);
+    if (oversizedResult != normalizedResult ||
+        oversized.x != normalized.x || oversized.z != normalized.z) {
+        fprintf(stderr, "oversized starting index was not normalized\n");
+        return 1;
     }
 
-    {
-        GameCarRuntime car;
-
-        memset(&car, 0, sizeof(car));
-        car.x = 123;
-        car.z = 456;
-        g_TrackPointCount = 0;
-        if (FindTrackSegment(&car, 0) != -1 || car.x != 123 || car.z != 456) {
-            fprintf(stderr, "empty track search changed the car\n");
-            return 1;
-        }
+    memset(&emptyTrackCar, 0, sizeof(emptyTrackCar));
+    emptyTrackCar.x = 123;
+    emptyTrackCar.z = 456;
+    g_TrackPointCount = 0;
+    if (FindTrackSegment(&emptyTrackCar, 0) != -1 ||
+        emptyTrackCar.x != 123 || emptyTrackCar.z != 456) {
+        fprintf(stderr, "empty track search changed the car\n");
+        return 1;
+    }
+    g_TrackPointCount = TRACK_POINTS;
+    g_TrackPoints = NULL;
+    if (FindTrackSegment(&emptyTrackCar, 0) != -1 ||
+        emptyTrackCar.x != 123 || emptyTrackCar.z != 456) {
+        fprintf(stderr, "missing track search changed the car\n");
+        return 1;
     }
 
-    if (out != NULL) fclose(out);
+    if (out != NULL) {
+        fclose(out);
+    }
     if (s_digest != expected) {
         printf("find_track_segment: %d cases folded to %lu, expected %lu\n",
                cases, s_digest, expected);

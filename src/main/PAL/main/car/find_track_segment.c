@@ -10,6 +10,7 @@
  */
 s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
     DVecValue corners[5];
+    s32 attempts;
     s32 index;
     s32 stride = 0;
 
@@ -23,7 +24,7 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
     }
     index = startIndex;
 
-    do {
+    for (attempts = 0; attempts < g_TrackPointCount; attempts++) {
         const GameTrackPoint *near = TrackPoint(index);
         const GameTrackPoint *far = TrackPoint(index + 1);
         s32 segmentX = far->x - near->x;
@@ -60,16 +61,15 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
             return index;
         }
 
-        /* Preserve the recovered one-step wrapping. Properly normalising a
-         * large negative stride changes which segment an off-track car gets
-         * and has been observed to prevent a race from finishing. */
+        /* Preserve the recovered alternating order: start, +1, -1, +2, -2,
+         * ... . Its first point-count entries visit every segment once. */
         stride++;
         index += (stride % 2) != 0 ? stride : -stride;
         index = index >= 0 ? index % g_TrackPointCount
                            : (index + g_TrackPointCount) % g_TrackPointCount;
-    } while (index != startIndex);
+    }
 
-    car->x = TrackPoint(index)->x;
-    car->z = TrackPoint(index)->z;
+    car->x = TrackPoint(startIndex)->x;
+    car->z = TrackPoint(startIndex)->z;
     return -1;
 }
