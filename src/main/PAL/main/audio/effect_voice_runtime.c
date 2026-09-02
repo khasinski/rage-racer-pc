@@ -11,7 +11,12 @@ enum {
     PAN_EFFECT_PROGRAM = 15,
     EFFECT_BASE_NOTE = 0x3C,
     AUDIBLE_PAN_VOLUME_MIN = 2,
+    SOUND_SCALE_ONE = 128,
 };
+
+static s32 ScaleVoiceVolume(s32 volume) {
+    return ClampVoiceVolume(volume * g_SoundScale.scale / SOUND_SCALE_ONE);
+}
 
 static int GetPanVoiceOutputVolume(s32 *left, s32 *right) {
     int audible;
@@ -21,8 +26,8 @@ static int GetPanVoiceOutputVolume(s32 *left, s32 *right) {
     *right = g_PanVoiceVolumeR < AUDIBLE_PAN_VOLUME_MIN ? 0
                                                         : g_PanVoiceVolumeR;
     audible = *left != 0 || *right != 0;
-    *left = ClampVoiceVolume(*left * g_SoundScale.scale / 128);
-    *right = ClampVoiceVolume(*right * g_SoundScale.scale / 128);
+    *left = ScaleVoiceVolume(*left);
+    *right = ScaleVoiceVolume(*right);
     return audible;
 }
 
@@ -44,11 +49,11 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
 void ApplyPanVoiceVolume(void) {
     s32 left;
     s32 right;
-    s32 changed;
+    s32 audible;
 
-    changed = GetPanVoiceOutputVolume(&left, &right);
+    audible = GetPanVoiceOutputVolume(&left, &right);
 
-    if (changed != 0) {
+    if (audible != 0) {
         SsUtSetVVol(PAN_EFFECT_VOICE, left, right);
         if (g_PanVoiceActive == 0) {
             SsUtKeyOnV(PAN_EFFECT_VOICE, g_SoundScale.vabIds[0],
@@ -58,7 +63,7 @@ void ApplyPanVoiceVolume(void) {
         SsUtKeyOffV(PAN_EFFECT_VOICE);
     }
 
-    g_PanVoiceActive = changed;
+    g_PanVoiceActive = audible;
 }
 
 void ForcePanVoiceEnabled(s32 enabled) {
@@ -86,9 +91,9 @@ static void StopIndexedEffectVoice(void) {
 
 static void ApplyIndexedEffectVoiceOutput(s32 index) {
     s32 volume = g_IndexedEffectVolume * g_IndexedEffects[index].volume /
-                 128 * g_SoundScale.scale / 128;
+                 SOUND_SCALE_ONE;
 
-    volume = ClampVoiceVolume(volume);
+    volume = ScaleVoiceVolume(volume);
     SsUtSetVVol(INDEXED_EFFECT_VOICE, volume, volume);
     SsUtChangePitch(INDEXED_EFFECT_VOICE, 0,
                     (s16)g_IndexedEffects[index].tone, EFFECT_BASE_NOTE, 0,
@@ -171,8 +176,8 @@ void UpdateBasicEffectVoices(void) {
         case MUSIC_CHANNEL_UPDATE:
             SsUtSetVVol(
                 voice,
-                ClampVoiceVolume(channel->volLeft * g_SoundScale.scale / 128),
-                ClampVoiceVolume(channel->volRight * g_SoundScale.scale / 128));
+                ScaleVoiceVolume(channel->volLeft),
+                ScaleVoiceVolume(channel->volRight));
             channel->mode = MUSIC_CHANNEL_IDLE;
             break;
         case MUSIC_CHANNEL_STOP:
@@ -193,10 +198,8 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
         s16 voice = (s16)(BASIC_EFFECT_VOICE_FIRST + index);
 
         if (enabled != 0) {
-            s32 left = ClampVoiceVolume(
-                channel->volLeft * g_SoundScale.scale / 128);
-            s32 right = ClampVoiceVolume(
-                channel->volRight * g_SoundScale.scale / 128);
+            s32 left = ScaleVoiceVolume(channel->volLeft);
+            s32 right = ScaleVoiceVolume(channel->volRight);
 
             SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
                        0, EFFECT_BASE_NOTE, 0, 0, 0);
