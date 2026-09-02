@@ -3,6 +3,10 @@
 #include "game/car.h"
 #include "psyq/gte.h"
 
+static s32 YawMagnitude(s32 yawOffset) {
+    return yawOffset < 0 ? -yawOffset : yawOffset;
+}
+
 void UpdateCarAirborne(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 bodySin;
@@ -10,7 +14,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
     s32 alongBody;
 
     if (g_ShiftSoundLevel == 0) {
-        s32 offAxis = drive->yawOffset;
+        s32 offAxis = YawMagnitude(drive->yawOffset);
         s32 phase = offAxis < 513 ? offAxis * 3 + 6144 : 0x1E00;
 
         SetIndexedEffectVoice(0, phase, drive->jumpTimer * 2 + 80);
@@ -45,7 +49,8 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
     drive->yawOffset = drive->yawOffset * 31 / 32;
     drive->bodyLiftOffset = drive->bodyLiftOffset * 2 / 3;
 
-    if (drive->yawOffset >= 1537) car->speed = car->speed * 4 / 5;
+    if (YawMagnitude(drive->yawOffset) >= 1537)
+        car->speed = car->speed * 4 / 5;
 
     if (drive->jumpTimer <= 0) {
         SetIndexedEffectVoice(-1, 0, 0);

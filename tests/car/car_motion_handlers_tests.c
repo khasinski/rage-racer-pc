@@ -119,6 +119,32 @@ static void PrepareCar(PlayerCarRuntime *car, GameCarSpec *spec) {
     car->acceleration = 500;
 }
 
+static int CheckAirborneYawSymmetry(GameCarSpec *spec) {
+    PlayerCarRuntime left;
+    PlayerCarRuntime right;
+    s32 leftPhase;
+    s32 rightPhase;
+
+    PrepareCar(&left, spec);
+    PrepareCar(&right, spec);
+    left.speed = right.speed = 0x800;
+    left.drive.jumpTimer = right.drive.jumpTimer = 10;
+    left.drive.yawOffset = -1600;
+    right.drive.yawOffset = 1600;
+
+    UpdateCarAirborne(&left);
+    leftPhase = s_voicePhase;
+    UpdateCarAirborne(&right);
+    rightPhase = s_voicePhase;
+
+    if (left.speed != right.speed || leftPhase != rightPhase) {
+        printf("airborne yaw is asymmetric: left %d/%d, right %d/%d\n",
+               left.speed, leftPhase, right.speed, rightPhase);
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
     /*
      * What the handlers did before they were touched. Run with a file name to
@@ -149,6 +175,8 @@ int main(int argc, char **argv) {
     }
     g_TrackPointCount = 16;
     g_CarSpec = &spec;
+
+    if (CheckAirborneYawSymmetry(&spec) != 0) return 1;
 
     for (s = 0; s < sizeof(spins) / sizeof(spins[0]); s++)
     for (e = 0; e < sizeof(energies) / sizeof(energies[0]); e++)
