@@ -138,11 +138,12 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetBlockPtr = source;
     g_AssetLoadCursor = destination;
     g_AssetSubBlockPtr = source + 12;
-    g_SharedAssetWord0 = 8;
+    g_SharedAssetWord0 = 10;
     g_AssetLoadState = 1;
     LoadRaceAssets();
-    Check(memcmp(source, destination, 8) == 0, "voice header copied");
-    Check(g_AssetLoadCursor == destination + 8, "voice cursor advanced");
+    Check(memcmp(source, destination, 10) == 0,
+          "entire byte-sized voice header copied");
+    Check(g_AssetLoadCursor == destination + 10, "voice cursor advanced");
     Check(g_AssetLoadState == 2 && s_audioSlot == 2,
           "voice audio load started");
 

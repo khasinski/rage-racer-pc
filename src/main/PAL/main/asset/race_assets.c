@@ -6,6 +6,8 @@
 #include "game/cd.h"
 #include "rage/render_world_game.h"
 
+#include <string.h>
+
 enum {
     RACE_LOAD_VOICE_HEADER = 1,
     RACE_WAIT_FOR_VOICE_AUDIO,
@@ -27,14 +29,7 @@ s32 RequestRaceAssets(void) {
 }
 
 static void BeginRaceVoiceLoad(void) {
-    s32 *source = GetAssetWords(g_AssetBlockPtr);
-    s32 *destination = GetAssetWords(g_AssetLoadCursor);
-    s32 wordsRemaining = g_SharedAssetWord0 / sizeof(*source);
-
-    while (wordsRemaining != 0) {
-        *destination++ = *source++;
-        wordsRemaining--;
-    }
+    memcpy(g_AssetLoadCursor, g_AssetBlockPtr, (size_t)g_SharedAssetWord0);
     StartAudioSlotLoad(AUDIO_SLOT_RACE_CUES, g_AssetLoadCursor,
                        g_AssetSubBlockPtr, 0);
     g_AssetLoadCursor += g_SharedAssetWord0;
@@ -55,6 +50,7 @@ static void LoadPlayerCarRaceAssets(void) {
     u8 *audioHeader;
     u8 *audioTable;
     u8 *audioBody;
+    u8 *carImage;
 
     GameRenderWorldSetTrackCarAsset(carAsset);
     if (LoadAsset(CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
@@ -67,13 +63,10 @@ static void LoadPlayerCarRaceAssets(void) {
     audioHeader = GetSceneAssetAddress(pack, pack->offsets[1]);
     audioTable = GetSceneAssetAddress(pack, pack->offsets[2]);
     audioBody = GetSceneAssetAddress(pack, pack->offsets[3]);
-    g_AssetBlockPtr = audioHeader;
-    g_AssetBlockPtr2 = audioTable;
-    g_AssetSubBlockPtr = audioBody;
     StartAudioSlotLoad(AUDIO_SLOT_ENGINE, audioHeader, audioBody,
                        GetAssetHalfwords(audioTable));
-    g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[4]);
-    UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
+    carImage = GetSceneAssetAddress(pack, pack->offsets[4]);
+    UploadImageAsset(GetImageAssetHeaderWords(carImage));
     g_AssetLoadCursor = audioBody;
     g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
 }
