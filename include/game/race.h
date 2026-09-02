@@ -404,20 +404,14 @@ void ResetMirrorState(void);
 void ResetReplayWriteCursor(void);
 void SeedFinishCamera(struct PlayerCarRuntime *car);
 void SeedFlybyScenery(void);
-void SeedReplayCars(void);
 void SeedRouteScenery(void);
 void TriggerRaceCues(void);
 void UpdateFinishCamera(struct PlayerCarRuntime *car);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
 void UpdateRacePosition(void);
-void UpdateReplayCars(void);
 void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
-void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
-                      struct GameCarRuntime *rival);
-void ApplyReplayFrameAndTilt(s32 subframe, struct GameCarRuntime *player,
-                             struct GameCarRuntime *rival);
 void EnterBgmSelectScreen(void);
 
 /* Declared identically by 5 translation units before this

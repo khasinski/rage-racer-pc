@@ -2,6 +2,7 @@
 
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/replay_internal.h"
 
 typedef enum ReplayCarCall {
     CALL_INIT_SCENERY,
@@ -36,8 +37,8 @@ void InitShuttleScenery(void) {
     RecordCall(CALL_INIT_SCENERY, NULL, 0);
 }
 
-void ApplyReplayFrameAndTilt(s32 subframe, GameCarRuntime *player,
-                             GameCarRuntime *rival) {
+void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
+                                   GameCarRuntime *rival) {
     RecordCall(CALL_APPLY_FRAME, player, subframe);
     assert(rival == &g_Cars[0]);
 }

@@ -38,7 +38,7 @@ static void TestGrandPrixFrames(void) {
     first->trackPointIndex1 = 52;
     first->tiltCounter = 53;
 
-    ApplyReplayFrameAndTilt(0, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(0, &player, &rival);
     assert(player.modelIndex == 12);
     assert(rival.modelIndex == 34);
     assert(player.x == 100);
@@ -61,7 +61,7 @@ static void TestGrandPrixFrames(void) {
     second->trackPointIndex1 = 62;
     second->tiltCounter = 63;
 
-    ApplyReplayFrameAndTilt(1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(1, &player, &rival);
     assert(player.x == 150);
     assert(player.y == -15);
     assert(player.bodyYaw == 10);
@@ -74,7 +74,8 @@ static void TestGrandPrixFrames(void) {
 
     player.x = 300;
     rival.x = 500;
-    ApplyReplayFrameAndTilt(GRAND_PRIX_FRAME_COUNT * 2 - 1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(GRAND_PRIX_FRAME_COUNT * 2 - 1,
+                                  &player, &rival);
     assert(player.x == 200);
     assert(rival.x == 450);
     assert(player.trackPointIndex == 51);
@@ -97,7 +98,7 @@ static void TestTimeAttackFrames(void) {
     first->trackPointIndex = 71;
     first->tiltCounter = 72;
 
-    ApplyReplayFrameAndTilt(0, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(0, &player, &rival);
     assert(player.modelIndex == 7);
     assert(player.x == 80);
     assert(player.y == -30);
@@ -114,7 +115,7 @@ static void TestTimeAttackFrames(void) {
     second->trackPointIndex = 81;
     second->tiltCounter = 82;
 
-    ApplyReplayFrameAndTilt(1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(1, &player, &rival);
     assert(player.x == 100);
     assert(player.y == -10);
     assert(player.wheelRotation == 2);
@@ -123,7 +124,8 @@ static void TestTimeAttackFrames(void) {
     assert(player.tiltCounter == 82);
 
     player.x = 200;
-    ApplyReplayFrameAndTilt(TIME_ATTACK_FRAME_COUNT * 2 - 1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(TIME_ATTACK_FRAME_COUNT * 2 - 1,
+                                  &player, &rival);
     assert(player.x == 140);
     assert(player.trackPointIndex == 71);
 }

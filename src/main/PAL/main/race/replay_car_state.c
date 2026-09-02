@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/replay_internal.h"
 #include "game/render.h"
 #include "game/state.h"
 #include "game/track.h"
@@ -22,7 +23,7 @@ void SeedReplayCars(void) {
     GameCarRuntime *rival = &g_Cars[0];
 
     InitShuttleScenery();
-    ApplyReplayFrameAndTilt(g_ReplayReadCursor, player, rival);
+    ApplyReplayFrameAndTrackPoint(g_ReplayReadCursor, player, rival);
 
     SeedReplayCarTrackState(player);
 

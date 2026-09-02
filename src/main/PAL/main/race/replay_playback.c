@@ -131,8 +131,8 @@ void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
     }
 }
 
-void ApplyReplayFrameAndTilt(s32 subframe, GameCarRuntime *player,
-                             GameCarRuntime *rival) {
+void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
+                                   GameCarRuntime *rival) {
     ApplyReplayFrame(subframe, player, rival);
 
     if (g_GrandPrixMode != 0) {

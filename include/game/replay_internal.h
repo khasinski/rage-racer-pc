@@ -19,6 +19,13 @@ extern s32 g_ReplayBufferWrapped;
 extern ReplayModelValue g_ReplayPlayerModel;
 extern ReplayModelValue g_ReplayRivalModel;
 
+void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
+                      struct GameCarRuntime *rival);
+void ApplyReplayFrameAndTrackPoint(s32 subframe,
+                                   struct GameCarRuntime *player,
+                                   struct GameCarRuntime *rival);
+void SeedReplayCars(void);
+void UpdateReplayCars(void);
 void StoreReplayCarFrame(s32 pairIndex, const struct GameCarRuntime *player,
                          const struct GameCarRuntime *rival);
 void StoreReplayTimeAttackFrame(s32 pointIndex,
