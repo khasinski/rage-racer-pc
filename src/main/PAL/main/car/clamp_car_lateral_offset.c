@@ -17,6 +17,10 @@ void ClampCarLateralOffset(GameCarRuntime *car, s32 carIndex) {
     s32 limit;
     GameTrackPoint *point;
 
+    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+        return;
+    }
+
     magnitude = current < 0 ? -current : current;
     point = TrackPoint(car->trackPointIndex);
     halfWidth = current < 0 ? point->leftHalfWidth : point->rightHalfWidth;

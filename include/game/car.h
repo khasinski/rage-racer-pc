@@ -660,9 +660,14 @@ typedef struct GameCarAiBlock {
     s16 racingLineHintState;
     u8 pad54[8];
     s32 gridTargetProgress;  /* grid-seeded target progress (g_TrackLength / 12 steps) */
-    u16 aiLateralOffset;  /* current lateral racing-line offset */
+    /* These two are physically the same halfwords as the signed fields in
+     * GameCarRuntime. The recovered AI arithmetic reads them unsigned before
+     * narrowing its results back to 16 bits; changing this view to s16 changes
+     * rival avoidance behaviour. Cast explicitly at sites that need a signed
+     * lateral comparison. */
+    u16 aiLateralOffset;
     s16 avoidanceTargetOffset;  /* traffic-avoidance target, +-0x50 */
-    u16 avoidanceStep;  /* per-frame step towards the avoidance target */
+    u16 avoidanceStep;
     u8 pad66[2];
     s16 targetSpeed;  /* grid-seeded speed, clamped >= 0 */
     u8 pad6A[4];

@@ -54,6 +54,19 @@ int main(void) {
         }
     }
 
+    {
+        GameCarRuntime car;
+
+        memset(&car, 0, sizeof(car));
+        car.aiLateralOffset = -123;
+        g_TrackPointCount = 0;
+        ClampCarLateralOffset(&car, 0);
+        if (car.aiLateralOffset != -123) {
+            puts("FAIL empty track changed the lateral offset");
+            failures++;
+        }
+    }
+
     if (failures != 0) return 1;
     puts("car lateral offsets stay within their side of the racing line");
     return 0;
