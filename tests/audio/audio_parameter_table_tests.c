@@ -5,9 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-EngineSoundCurveRow g_EngineSoundCurves[2][12];
+EngineSoundCurveRow
+    g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 EngineSoundState g_EngineSoundState;
-s16 g_SoundSlotTone[6][2];
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 
 static s32 s_volumeScale;
 static s32 s_failures;
@@ -22,17 +23,17 @@ static void Check(s32 actual, s32 expected, const char *label) {
 }
 
 static void LoadWithMaxRpm(u16 maxRpm) {
-    u16 table[446];
+    u16 table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT];
     s32 i;
 
-    for (i = 0; i < 446; i++) table[i] = (u16)(100 + i);
-    table[445] = maxRpm;
+    for (i = 0; i < ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT; i++) {
+        table[i] = (u16)(100 + i);
+    }
+    table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT - 1] = maxRpm;
     LoadAudioParameterTable(table);
 }
 
 int main(void) {
-    s32 previous;
-
     memset(g_SoundSlotTone, 0, sizeof(g_SoundSlotTone));
     LoadWithMaxRpm(9000);
     Check(g_EngineSoundCurves[0][0].positions[0], 100,
@@ -58,14 +59,6 @@ int main(void) {
     Check(g_EngineSoundState.maxRpm, 0x2800, "maximum rpm upper fallback");
     LoadWithMaxRpm(0xFFFF);
     Check(g_EngineSoundState.maxRpm, 0x2800, "oversized maximum rpm fallback");
-
-    g_SoundSlotTone[2][1] = 17;
-    previous = SetSoundToneTableEntry(2, 1, -1);
-    Check(previous, 17, "tone query result");
-    Check(g_SoundSlotTone[2][1], 17, "tone query does not write");
-    previous = SetSoundToneTableEntry(2, 1, 23);
-    Check(previous, 17, "tone write previous value");
-    Check(g_SoundSlotTone[2][1], 23, "tone write result");
 
     if (s_failures != 0) return 1;
     puts("audio parameter tables map curves, tones and rpm limits");

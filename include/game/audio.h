@@ -113,8 +113,7 @@ void SetMonoOutput(void);
 /* Push all three saved audio settings (BGM level, SFX level, mono/stereo) into
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
-s32 SetSoundToneTableEntry(s32 row, s32 bank, s32 value);
-void LoadAudioParameterTable(u16 *table);
+void LoadAudioParameterTable(const u16 *table);
 s32 StartVabTransferWithTable(u8 *header, u8 *body, u16 *table);
 /* Open audio slot `slot` on a VAB header/body pair and optional tone table. */
 s32 StartAudioSlotLoad(s32 slot, u8 *header, u8 *body, u16 *table);
@@ -155,9 +154,20 @@ int CloseAudioSlot(s32 slot);
 /* Declared identically by 8 translation units before this
  * header carried them. */
 
+enum {
+    ENGINE_SOUND_BANK_COUNT = 2,
+    ENGINE_SOUND_PARAMETER_COUNT = 12,
+    ENGINE_SOUND_CURVE_POINT_COUNT = 9,
+    ENGINE_SOUND_SLOT_COUNT = 6,
+    ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT =
+        ENGINE_SOUND_BANK_COUNT * ENGINE_SOUND_PARAMETER_COUNT *
+            ENGINE_SOUND_CURVE_POINT_COUNT * 2 +
+        1 + ENGINE_SOUND_BANK_COUNT * ENGINE_SOUND_SLOT_COUNT + 1,
+};
+
 typedef struct EngineSoundCurveRow {
-    s32 positions[9];
-    s32 values[9];
+    s32 positions[ENGINE_SOUND_CURVE_POINT_COUNT];
+    s32 values[ENGINE_SOUND_CURVE_POINT_COUNT];
 } EngineSoundCurveRow;
 
 typedef struct EngineSoundState {
@@ -165,11 +175,12 @@ typedef struct EngineSoundState {
     s32 bank;
     s32 extraVabLoaded;
     s32 maxRpm;
-    s32 slotActive[6];
+    s32 slotActive[ENGINE_SOUND_SLOT_COUNT];
     s32 volumeScale;
 } EngineSoundState;
 
-extern EngineSoundCurveRow g_EngineSoundCurves[2][12];
+extern EngineSoundCurveRow
+    g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
 
 s32 GetOwnedCarAssetIndex(s32 model);

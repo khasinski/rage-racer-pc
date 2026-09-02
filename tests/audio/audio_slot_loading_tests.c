@@ -52,7 +52,7 @@ s32 OpenVabSequenceSlot(s32 slot, u8 *header, u8 *body, void *sequence) {
     return 61;
 }
 
-void LoadAudioParameterTable(u16 *table) {
+void LoadAudioParameterTable(const u16 *table) {
     (void)table;
     s_tableCalls++;
 }

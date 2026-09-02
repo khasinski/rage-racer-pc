@@ -2,8 +2,7 @@
 #include "game/sound.h"
 
 enum {
-    ENGINE_SOUND_CURVE_POINT_COUNT = 9,
-    AUDIO_PARAMETER_MAX = 0x7F,
+    LAST_ENGINE_SOUND_CURVE_POINT = ENGINE_SOUND_CURVE_POINT_COUNT - 1,
 };
 
 s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
@@ -17,7 +16,9 @@ s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
         upperPoint++;
     }
     if (upperPoint == ENGINE_SOUND_CURVE_POINT_COUNT) {
-        return curve->values[ENGINE_SOUND_CURVE_POINT_COUNT - 1];
+        /* Retail returns the final stored value verbatim; only interpolated
+         * values are cue-level clamped. */
+        return curve->values[LAST_ENGINE_SOUND_CURVE_POINT];
     }
 
     value = (curve->values[upperPoint] - curve->values[upperPoint - 1]) *
@@ -25,11 +26,5 @@ s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
                 (curve->positions[upperPoint] -
                  curve->positions[upperPoint - 1]) +
             curve->values[upperPoint - 1];
-    if (value < 0) {
-        return 0;
-    }
-    if (value > AUDIO_PARAMETER_MAX) {
-        return AUDIO_PARAMETER_MAX;
-    }
-    return value;
+    return ClampCueLevel(value);
 }
