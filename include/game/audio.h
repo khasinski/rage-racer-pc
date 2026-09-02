@@ -174,8 +174,6 @@ extern EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
 
-s32 GetOwnedCarAssetIndex(s32 model);
-
 /* Declared identically by 62 translation units before this
  * header carried them. */
 
