@@ -557,13 +557,6 @@ extern unsigned char g_SpuDmaBlockCount[8];
 extern unsigned char g_SpuRevWorkAreaStartAddr[80];
 extern unsigned char g_SpuRevAttrTable[700];
 extern unsigned char g_CameraMatrixSaved[32];
-extern unsigned char g_FmvStripBuffers[8];
-extern unsigned char g_FmvStripRects[16];
-extern unsigned char g_FmvRingBuffer[8];
-extern unsigned char g_FmvVlcBuffer0[8];
-extern unsigned char g_FmvVlcBuffer1[8];
-extern unsigned char g_FmvStripBuffer0[8];
-extern unsigned char g_FmvStripBuffer1[8];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
 extern uint8_t D_8009AFC4[8];
@@ -1073,13 +1066,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_SpuRevWorkAreaStartAddr", g_SpuRevWorkAreaStartAddr, 80},
     {"g_SpuRevAttrTable", g_SpuRevAttrTable, 700},
     {"g_CameraMatrixSaved", g_CameraMatrixSaved, 32},
-    {"g_FmvStripBuffers", g_FmvStripBuffers, 8},
-    {"g_FmvStripRects", g_FmvStripRects, 16},
-    {"g_FmvRingBuffer", g_FmvRingBuffer, 8},
-    {"g_FmvVlcBuffer0", g_FmvVlcBuffer0, 8},
-    {"g_FmvVlcBuffer1", g_FmvVlcBuffer1, 8},
-    {"g_FmvStripBuffer0", g_FmvStripBuffer0, 8},
-    {"g_FmvStripBuffer1", g_FmvStripBuffer1, 8},
     {"g_SectorTimes", g_SectorTimes, 12},
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_RaceIntroCameraDelta,
@@ -1090,7 +1076,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the bytes alone; see the note above on why. */
-    const unsigned long expected = 11814630UL;
+    const unsigned long expected = 2831020262UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
