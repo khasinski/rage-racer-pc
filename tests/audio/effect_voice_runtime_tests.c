@@ -119,6 +119,13 @@ static int TestPanVoice(void) {
     ApplyPanVoiceVolume();
     CHECK(s_keyOffCount == 1 && s_keyOff[0].voice == 21);
     CHECK(g_PanVoiceActive == 0);
+
+    ResetCalls();
+    ForcePanVoiceEnabled(1);
+    CHECK(s_keyOnCount == 1 && s_volumeCount == 1);
+    CHECK(s_volume[0].left == 0 && s_volume[0].right == 0);
+    ForcePanVoiceEnabled(0);
+    CHECK(s_keyOffCount == 1 && s_keyOff[0].voice == 21);
     return 0;
 }
 
@@ -155,6 +162,17 @@ static int TestIndexedEffectVoice(void) {
     UpdateIndexedEffectVoice();
     CHECK(s_keyOffCount == 1 && s_keyOff[0].voice == 20);
     CHECK(s_volumeCount == 0 && s_pitchCount == 0);
+
+    ResetCalls();
+    ForceIndexedEffectVoiceEnabled(1);
+    CHECK(s_keyOnCount == 0 && s_volumeCount == 0);
+    g_IndexedEffectIndexPrev = 1;
+    ForceIndexedEffectVoiceEnabled(1);
+    CHECK(s_keyOnCount == 1 && s_keyOn[0].program == 31);
+    CHECK(s_volumeCount == 1 && s_pitchCount == 1);
+    ResetCalls();
+    ForceIndexedEffectVoiceEnabled(0);
+    CHECK(s_keyOffCount == 1 && s_volumeCount == 1 && s_pitchCount == 1);
     return 0;
 }
 
@@ -184,6 +202,16 @@ static int TestBasicEffectVoices(void) {
     ResetCalls();
     UpdateBasicEffectVoices();
     CHECK(s_keyOnCount == 0 && s_keyOffCount == 0 && s_volumeCount == 1);
+
+    ResetCalls();
+    ForceBasicEffectVoicesEnabled(1);
+    CHECK(s_keyOnCount == 2 && s_volumeCount == 2);
+    CHECK(s_keyOn[0].voice == 8 && s_keyOn[0].tone == 0);
+    CHECK(s_keyOn[1].voice == 9);
+    ResetCalls();
+    ForceBasicEffectVoicesEnabled(0);
+    CHECK(s_keyOffCount == 2 && s_keyOff[0].voice == 8);
+    CHECK(s_keyOff[1].voice == 9);
     return 0;
 }
 

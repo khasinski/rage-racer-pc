@@ -8,7 +8,7 @@ enum {
     EFFECT_BASE_NOTE = 0x3C,
 };
 
-static void ApplyEffectVoicePitch(s32 hardwareVoice, EffectVoice *effect) {
+static void WriteEffectVoicePitch(s32 hardwareVoice, EffectVoice *effect) {
     s32 volume = ClampVoiceVolume(
         effect->volume * g_SoundScale.scale / 128);
 
@@ -16,7 +16,29 @@ static void ApplyEffectVoicePitch(s32 hardwareVoice, EffectVoice *effect) {
     SsUtChangePitch(
         (s16)hardwareVoice, 0, effect->note.half.value, EFFECT_BASE_NOTE, 0,
         (s16)(effect->pitch.value >> 7), effect->pitch.half.fraction & 0x7F);
+}
+
+static void ApplyEffectVoicePitch(s32 hardwareVoice, EffectVoice *effect) {
+    WriteEffectVoicePitch(hardwareVoice, effect);
     effect->state = EFFECT_VOICE_IDLE;
+}
+
+void ForcePitchEffectVoicesEnabled(s32 enabled) {
+    s32 index;
+
+    for (index = 0; index < EFFECT_VOICE_COUNT; index++) {
+        EffectVoice *effect = &g_EffectVoices[index];
+        s32 hardwareVoice = EFFECT_HARDWARE_VOICE_FIRST + index;
+
+        if (enabled != 0) {
+            SsUtKeyOnV((s16)hardwareVoice, g_SoundScale.vabIds[0],
+                       effect->note.half.value, (s16)effect->tone,
+                       EFFECT_BASE_NOTE, 0, 0, 0);
+            WriteEffectVoicePitch(hardwareVoice, effect);
+        } else {
+            SsUtKeyOffV((s16)hardwareVoice);
+        }
+    }
 }
 
 void UpdateEffectVoiceStates(void) {

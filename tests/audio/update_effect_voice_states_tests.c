@@ -13,13 +13,13 @@ static s32 s_keyOnProgram;
 static s32 s_keyOnTone;
 static s32 s_keyOffVoice = -1;
 static s32 s_volumeCalls;
-static s32 s_volumeVoice[2];
-static s32 s_volumeValue[2];
+static s32 s_volumeVoice[8];
+static s32 s_volumeValue[8];
 static s32 s_pitchCalls;
-static s32 s_pitchVoice[2];
-static s32 s_pitchProgram[2];
-static s32 s_pitchNote[2];
-static s32 s_pitchFine[2];
+static s32 s_pitchVoice[8];
+static s32 s_pitchProgram[8];
+static s32 s_pitchNote[8];
+static s32 s_pitchFine[8];
 
 short SsUtKeyOnV(short voice, short vabId, short program, short tone,
                  short note, short fine, short volumeLeft,
@@ -92,6 +92,15 @@ int main(void) {
     CHECK(g_EffectVoices[1].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[2].state == EFFECT_VOICE_IDLE);
 
-    puts("effect voice states preserve SPU key, volume, and pitch updates");
+    g_EffectVoices[3].state = EFFECT_VOICE_UPDATE;
+    ForcePitchEffectVoicesEnabled(1);
+    CHECK(s_keyOnVoice == 13);
+    CHECK(s_volumeCalls == 6 && s_volumeVoice[5] == 13);
+    CHECK(s_pitchCalls == 6 && s_pitchVoice[5] == 13);
+    CHECK(g_EffectVoices[3].state == EFFECT_VOICE_UPDATE);
+    ForcePitchEffectVoicesEnabled(0);
+    CHECK(s_keyOffVoice == 13);
+
+    puts("effect voice states preserve regular and forced SPU updates");
     return 0;
 }
