@@ -254,7 +254,6 @@ s32 ResetGraph(s32 mode);
 void ResetReplayFrameCounts(void);
 void StartPad(void);
 void StepTrackTextureSwap(void);
-void TickSequenceAudio(void);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */

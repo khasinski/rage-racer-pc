@@ -189,6 +189,25 @@ target_link_libraries(sequence_playback_tests PRIVATE psyz)
 add_test(NAME sequence_playback COMMAND sequence_playback_tests)
 set_tests_properties(sequence_playback PROPERTIES LABELS unit)
 
+add_executable(audio_runtime_control_tests
+    audio_runtime_control_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_runtime_control.c)
+target_include_directories(audio_runtime_control_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(audio_runtime_control_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(audio_runtime_control_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(audio_runtime_control_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME audio_runtime_control COMMAND audio_runtime_control_tests)
+set_tests_properties(audio_runtime_control PROPERTIES LABELS unit)
+
 add_executable(pitched_sound_cue_tests
     pitched_sound_cue_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/pitched_sound_cue.c)

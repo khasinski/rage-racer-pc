@@ -12,13 +12,21 @@
  * The host has no such interrupt and services the sequencer from the game
  * loop, so it has to pay the same sixty ticks a second out of frames that
  * arrive at fifty. */
-#define SEQUENCE_TICK_HZ 60
+enum {
+    SEQUENCE_TICK_HZ = 60,
+    SOUND_MODE_SCENE_ID = 0xC,
+    DEFAULT_REVERB_DEPTH = 0x28,
+    FIRST_REVERB_PRESET = 1,
+    LAST_REVERB_PRESET = 9,
+    FIRST_SOUND_SLOT_VOICE = 0xE,
+    SOUND_SLOT_NOTE = 0x3C,
+};
 
 void TickSequenceAudio(void) {
     /* Ticks the sequencer is owed, in units of one game frame. */
     static s32 tickCredit;
 
-    if (g_SceneId == 0xC) {
+    if (g_SceneId == SOUND_MODE_SCENE_ID) {
         SpuVmDamperStep();
     } else {
         s32 frameHz = TimingBaseHz();
@@ -47,41 +55,18 @@ void SetReverbDepth(s32 left, s32 right) {
 }
 
 void SetDefaultReverbDepth(void) {
-    SetReverbDepth(0x28, 0x28);
+    SetReverbDepth(DEFAULT_REVERB_DEPTH, DEFAULT_REVERB_DEPTH);
+}
+
+static s32 IsValidReverbPreset(s32 type) {
+    return type >= FIRST_REVERB_PRESET && type <= LAST_REVERB_PRESET;
 }
 
 void SetReverbPreset(s32 type, s32 left, s32 right) {
-    s32 tempLeft;
-    s32 tempRight;
-    u32 presetIndex;
-
-    if (left >= 0) {
-        tempLeft = left;
-        if (tempLeft >= 0x80) {
-            tempLeft = 0x7F;
-        }
-    } else {
-        tempLeft = 0;
-    }
-
-    left = tempLeft;
-    if (right >= 0) {
-        tempRight = right;
-        if (tempRight >= 0x80) {
-            tempRight = 0x7F;
-        }
-    } else {
-        tempRight = 0;
-    }
-    right = tempRight;
-
     SsUtReverbOff();
 
-    presetIndex = type - 1;
-    if (presetIndex < 9) {
+    if (IsValidReverbPreset(type)) {
         g_ReverbType = type;
-        g_ReverbDepthL = left;
-        g_ReverbDepthR = right;
         SsUtSetReverbType((s16)type);
         SsUtReverbOn();
         SetReverbDepth(left, right);
@@ -95,5 +80,7 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
     s16 program = g_SoundSlotTone[slot][tone];
 
-    SsUtKeyOnV((s16)(slot + 0xE), g_SoundScale.vabIds[(s16)vabSlot], program, 0, 0x3C, 0, 0, 0);
+    SsUtKeyOnV((s16)(slot + FIRST_SOUND_SLOT_VOICE),
+               g_SoundScale.vabIds[(s16)vabSlot], program, 0,
+               SOUND_SLOT_NOTE, 0, 0, 0);
 }

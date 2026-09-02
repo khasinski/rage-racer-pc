@@ -89,6 +89,8 @@ void StartSequenceFadeOut(void);
 void UpdateSequenceFadeOut(void);
 void ApplyDuckedSequenceAudio(void);
 void ApplyCurrentSequenceAudio(void);
+/* Service libsnd's 60 Hz sequence clock from the game frame loop. */
+void TickSequenceAudio(void);
 void SetReverbDepth(s32 left, s32 right);
 void SetReverbPreset(s32 type, s32 left, s32 right);
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
