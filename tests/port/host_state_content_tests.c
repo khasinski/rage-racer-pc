@@ -322,7 +322,7 @@ extern unsigned char g_ShuttlePathTravelMax[8];
 extern unsigned char g_ShuttlePathDwellMax[124];
 extern unsigned char g_CellScanOffsets[4096];
 extern unsigned char g_TeamNameChars[16];
-extern unsigned char g_SkyTileMap[160];
+extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[88];
 extern unsigned char g_CdMixPresets[8];
 extern unsigned char g_CdCommandPending[8];
@@ -828,7 +828,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_ShuttlePathDwellMax", g_ShuttlePathDwellMax, 124},
     {"g_CellScanOffsets", g_CellScanOffsets, 4096},
     {"g_TeamNameChars", g_TeamNameChars, 16},
-    {"g_SkyTileMap", g_SkyTileMap, 160},
+    {"g_SkyTileMap", (const unsigned char *)g_SkyTileMap, 160},
     {"g_SkyTileUV", g_SkyTileUV, 88},
     {"g_CdMixPresets", g_CdMixPresets, 8},
     {"g_CdCommandPending", g_CdCommandPending, 8},

@@ -504,7 +504,11 @@ extern PathSceneryRotationKey *g_PathSceneryRotKeys;
 extern s32 g_PathSceneryVolume;
 #define g_ShuttlePath2Points g_ShuttlePathPoints[2]
 extern s16 g_ShuttlePathTravelMax[];
-extern s16 g_SkyTileMap[][16];
+enum {
+    SKY_TILE_MAP_ROWS = 5,
+    SKY_TILE_MAP_COLUMNS = 16,
+};
+extern s16 g_SkyTileMap[SKY_TILE_MAP_ROWS][SKY_TILE_MAP_COLUMNS];
 extern s16 g_SpinningSceneryAngle[];
 extern u16 g_SpinningSceneryRate[];
 typedef struct SpinningSceneryPlacement {

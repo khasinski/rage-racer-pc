@@ -273,7 +273,8 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work,
         for (s32 column = 0; column < 8; column++) {
             POLY_FT4 *quad = (POLY_FT4 *)packetCursor;
             s16 tileIndex = g_SkyTileMap[(row & 1) + g_SkyRowBase]
-                                             [(band->textureColumn + column) & 0xF];
+                [(band->textureColumn + column) &
+                 (SKY_TILE_MAP_COLUMNS - 1)];
             const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
             s32 nextCellX = cellX + band->columnStepX;
             s32 nextCellY = cellY + band->columnStepY;
@@ -346,7 +347,8 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work,
         if (SkyQuadIntersectsScreen(screenX)) {
             POLY_FT4 *quad = (POLY_FT4 *)packetCursor;
             s32 tileIndex = g_SkyTileMap[0]
-                                            [(band->textureColumn + column) & 0xF];
+                [(band->textureColumn + column) &
+                 (SKY_TILE_MAP_COLUMNS - 1)];
             const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
             SetPolyFT4(quad);
             SetShadeTex(quad, 0);
