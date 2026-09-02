@@ -15,6 +15,18 @@ enum {
     HUD_DEFAULT_CLUT = 0x78CC,
     TIME_LIMIT_WARNING_CLUT = 0x7811,
     TIME_LIMIT_WARNING_MS = 1500,
+    HUD_DYNAMIC_DIGIT_LABEL = 3,
+    HUD_DYNAMIC_SIGN_OR_ONES_LABEL = 4,
+    RACE_POSITION_DIGIT_WIDTH = 24,
+    RACE_POSITION_PODIUM_LIMIT = 4,
+    RACE_POSITION_PODIUM_CLUT = 0x780B,
+    RACE_POSITION_FIELD_CLUT = 0x780E,
+    SPLIT_SECTOR_DIGIT_BASE_U = 0x50,
+    SPLIT_SECTOR_DIGIT_WIDTH = 8,
+    SPLIT_AHEAD_SIGN_U = 0x88,
+    SPLIT_AHEAD_CLUT = 0x7810,
+    SPLIT_BEHIND_SIGN_U = 0x78,
+    SPLIT_BEHIND_CLUT = 0x780F,
 };
 
 static s32 RaceHudLabelVisible(s32 grandPrixMode, s32 label) {
@@ -117,31 +129,40 @@ void DrawTimeRemaining(s32 timeMs) {
  * blanked below 10 and the colour changes from 4th place down. */
 void DrawRacePosition(void) {
     GameFrameContext *frame = g_DrawBuffer;
-    SPRT *tens = &frame->layout.raceHud.labels[3];
-    SPRT *ones = &frame->layout.raceHud.labels[4];
-    u16 color = g_PlayerCar.drive.racePosition < 4 ? 0x780B : 0x780E;
+    SPRT *tens = &frame->layout.raceHud.labels[HUD_DYNAMIC_DIGIT_LABEL];
+    SPRT *ones =
+        &frame->layout.raceHud.labels[HUD_DYNAMIC_SIGN_OR_ONES_LABEL];
+    u16 color = g_PlayerCar.drive.racePosition < RACE_POSITION_PODIUM_LIMIT
+                    ? RACE_POSITION_PODIUM_CLUT
+                    : RACE_POSITION_FIELD_CLUT;
 
-    tens->u0 = g_PlayerCar.drive.racePosition >= 10 ? 0x18 : 0;
-    ones->u0 = (g_PlayerCar.drive.racePosition % 10) * 24;
+    tens->u0 = g_PlayerCar.drive.racePosition >= 10
+                   ? RACE_POSITION_DIGIT_WIDTH
+                   : 0;
+    ones->u0 = (g_PlayerCar.drive.racePosition % 10) *
+               RACE_POSITION_DIGIT_WIDTH;
     tens->clut = color;
     ones->clut = color;
 }
 
-void DrawSplitIndicator(s32 sector, s32 sign) {
+void DrawSplitIndicator(s32 sectorIndex, s32 direction) {
     GameFrameContext *frame = g_DrawBuffer;
-    SPRT *sectorDigit = &frame->layout.raceHud.labels[3];
-    SPRT *signSprite = &frame->layout.raceHud.labels[4];
+    SPRT *sectorDigit =
+        &frame->layout.raceHud.labels[HUD_DYNAMIC_DIGIT_LABEL];
+    SPRT *signSprite =
+        &frame->layout.raceHud.labels[HUD_DYNAMIC_SIGN_OR_ONES_LABEL];
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
-    sectorDigit->u0 = sector * 8 + 0x50;
+    sectorDigit->u0 = SPLIT_SECTOR_DIGIT_BASE_U +
+                      sectorIndex * SPLIT_SECTOR_DIGIT_WIDTH;
     AddPrim(ot, sectorDigit);
 
-    if (sign > 0) {
-        signSprite->u0 = 0x88;
-        signSprite->clut = 0x7810;
-    } else if (sign < 0) {
-        signSprite->u0 = 0x78;
-        signSprite->clut = 0x780F;
+    if (direction > 0) {
+        signSprite->u0 = SPLIT_AHEAD_SIGN_U;
+        signSprite->clut = SPLIT_AHEAD_CLUT;
+    } else if (direction < 0) {
+        signSprite->u0 = SPLIT_BEHIND_SIGN_U;
+        signSprite->clut = SPLIT_BEHIND_CLUT;
     } else {
         return;
     }

@@ -6,7 +6,7 @@
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);
-void DrawSplitIndicator(s32 sector, s32 sign);
+void DrawSplitIndicator(s32 sectorIndex, s32 direction);
 void DrawStartCountdown(s32 sceneTimer);
 /* Draws the in-race option overlay. The "RAGE RACER GE" text is one half of
  * its scrolling marquee, not a title-screen label. */
