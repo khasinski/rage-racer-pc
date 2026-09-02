@@ -33,6 +33,12 @@ enum {
     RACE_END_MUSIC_TRACK = 15,
     PAUSE_TOGGLE_DEBOUNCE = 5,
     PAUSE_RESUME_DEBOUNCE = 30,
+    PRE_START_SECTOR = -2,
+    INITIAL_RACE_TIME = 15000,
+    INITIAL_RIVAL_CUE_FLAGS = 0x1FE,
+    RACE_BGM_TRACK_OFFSET = 3,
+    RACE_SCENE_ID = 12,
+    RACE_FRAME_SYNC_THRESHOLD = 0x180,
 };
 
 void QueueFinishFollowupCue(s32 cue) {
@@ -143,13 +149,13 @@ static void ToggleRacePause(void) {
     }
 }
 
-int RetireCameraActive(void) { return s_RetireCameraActive; }
+int RetireCameraActive(void) {
+    return s_RetireCameraActive;
+}
 
 void EnterRaceScene(void) {
-    PlayerCarRuntime *player;
     s32 course;
     s32 series;
-    s32 trackLength;
     s32 i;
 
     SetupDisplay240(0, 0, 0);
@@ -158,29 +164,27 @@ void EnterRaceScene(void) {
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
     g_LapCount = RaceLapCount(g_CourseIndex);
-    player = &g_PlayerCar;
-    InitPlayerCar(player);
+    InitPlayerCar(&g_PlayerCar);
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
-    trackLength = g_TrackLength;
-    course = g_CourseIndex & 3;
+    course = SeriesCourseIndex();
     series = ReadStableRaceSeries();
     g_LapTimeMs = 0;
     g_LapTimeSaturated = 0;
-    BuildRaceSectorEnds(trackLength, g_SectorEndDistance);
+    BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
     g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
     g_RefSectorTime1 = g_BestSectorTimes[series][course][1];
-    g_SectorIndex = -2;
+    g_SectorIndex = PRE_START_SECTOR;
     g_RefSectorTime2 = g_BestSectorTimes[series][course][2];
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
     g_RefLapTime = g_BestLapTimes[series][course][g_GrandPrixMode];
-    g_RaceTimeRemaining = 0x3A98;
+    g_RaceTimeRemaining = INITIAL_RACE_TIME;
     g_BestLapThisRace = g_RefLapTime;
     for (i = 0; i < g_LapCount; i++) {
-        player->lapTimes.table.frameCounts[i] = 0;
-        player->lapTimes.table.milliseconds[i] = 0;
+        g_PlayerCar.lapTimes.table.frameCounts[i] = 0;
+        g_PlayerCar.lapTimes.table.milliseconds[i] = 0;
     }
     g_RaceTotalTime = 0;
     ResetMirrorState();
@@ -194,7 +198,7 @@ void EnterRaceScene(void) {
     s_RetireCameraActive = 0;
     s_FinishFollowupCue = -1;
     g_RaceCueFlags = 0;
-    g_RivalCueFlags = 0x1FE;
+    g_RivalCueFlags = INITIAL_RIVAL_CUE_FLAGS;
     g_RivalCueCooldown3 = 0;
     g_RivalCueCooldown2 = 0;
     g_RivalCueCooldown1 = 0;
@@ -203,15 +207,15 @@ void EnterRaceScene(void) {
     SeedFlybyScenery();
     SeedRouteScenery();
     InitPathScenery();
-    RequestCdTrack(g_BgmTrack + 3);
+    RequestCdTrack(g_BgmTrack + RACE_BGM_TRACK_OFFSET);
     g_PauseDebounce = 0;
     g_RaceFadeTimer = 0;
     InitEffectVoiceRuntime();
     g_RivalCueEnabled = 1;
     g_PlayerAutoSteer = 0;
     g_RaceCueDelay = 0;
-    g_SceneId = 12;
-    g_FrameSyncThreshold = 0x180;
+    g_SceneId = RACE_SCENE_ID;
+    g_FrameSyncThreshold = RACE_FRAME_SYNC_THRESHOLD;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
 }

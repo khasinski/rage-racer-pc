@@ -15,10 +15,11 @@ static void Check(s32 condition, const char *label) {
 static void TestRaceGeometry(void) {
     s32 sectors[3];
 
-    Check(RaceLapCount(0) == 3 && RaceLapCount(2) == 3,
-          "standard courses run three laps");
-    Check(RaceLapCount(3) == 6,
-          "the long final course runs six laps");
+    Check(RaceLapCount(0) == 3 && RaceLapCount(2) == 3 &&
+              RaceLapCount(4) == 3 && RaceLapCount(6) == 3,
+          "standard courses run three laps in both series");
+    Check(RaceLapCount(3) == 6 && RaceLapCount(7) == 6,
+          "the long final course runs six laps in both series");
 
     BuildRaceSectorEnds(100, sectors);
     Check(sectors[0] == 33 && sectors[1] == 66 && sectors[2] == 100,

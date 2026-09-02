@@ -1,3 +1,4 @@
+#include "game/course_index.h"
 #include "game/race_scene_internal.h"
 #include "game/state.h"
 
@@ -22,8 +23,8 @@ enum {
 };
 
 s32 RaceLapCount(s32 courseIndex) {
-    return courseIndex == LONG_COURSE_INDEX ? LONG_RACE_LAPS
-                                            : STANDARD_RACE_LAPS;
+    return CourseSlot(courseIndex) == LONG_COURSE_INDEX ? LONG_RACE_LAPS
+                                                         : STANDARD_RACE_LAPS;
 }
 
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]) {
