@@ -238,7 +238,7 @@ static void DrawSwatchStrip(void *ot, s32 slide) {
         u16 glyphClut;
         s32 glyphTpage;
 
-        if (g_PadType == 0x23) {
+        if (g_PadType == PAD_TYPE_NEGCON) {
             glyphU = (i * 0xC) - 0x30;
             glyphV = 0;
             glyphClut = 0x233;

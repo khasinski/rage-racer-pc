@@ -142,54 +142,6 @@ void EnterRecordEntry(void) {
     InsertRaceRecords();
 }
 
-enum {
-    RECORD_NAME_LENGTH = 6,
-    NAME_ENTRY_CHARACTER_COUNT = 42,
-};
-
-static void WriteRecordName(RaceRecord *record, const u8 *nameCodes) {
-    s32 character;
-
-    for (character = 0; character < RECORD_NAME_LENGTH; character++) {
-        record->driverName[character] =
-            g_NameEntryCharset[nameCodes[character]];
-    }
-}
-
-/* Updates one editable character and returns true once all six are accepted. */
-static s32 UpdateNameEntryInput(u8 *nameCodes) {
-    s32 previousCharacter = g_NameEntryChar;
-    u16 buttons;
-
-    if (g_PadPressedRepeat & PAD_LEFT) {
-        g_NameEntryChar--;
-    } else if (g_PadPressedRepeat & PAD_RIGHT) {
-        g_NameEntryChar++;
-    }
-    g_NameEntryChar =
-        (g_NameEntryChar + NAME_ENTRY_CHARACTER_COUNT) %
-        NAME_ENTRY_CHARACTER_COUNT;
-    if (previousCharacter != g_NameEntryChar) {
-        PlaySoundCue(1);
-    }
-
-    nameCodes[g_NameEntryCursor] = g_NameEntryChar;
-    buttons = g_PadPressed;
-    if (buttons & 0x860) {
-        PlaySoundCue(2);
-        g_NameEntryCursor++;
-        if (g_NameEntryCursor == RECORD_NAME_LENGTH) {
-            return 1;
-        }
-        g_NameEntryChar = nameCodes[g_NameEntryCursor];
-    } else if ((buttons & 0x90) && g_NameEntryCursor > 0) {
-        PlaySoundCue(3);
-        g_NameEntryCursor--;
-        g_NameEntryChar = nameCodes[g_NameEntryCursor];
-    }
-    return 0;
-}
-
 void UpdateRecordEntry(void) {
     s32 i;
 
@@ -220,13 +172,13 @@ void UpdateRecordEntry(void) {
     case RECORD_ENTRY_STATE_EDIT_LAP_NAME: {
         s32 course = SeriesCourseIndex();
 
-        if (UpdateNameEntryInput(g_RankingNameCodes)) {
+        if (UpdateRecordNameEntry(g_RankingNameCodes)) {
             g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
             if (g_TimeRecordInsertRow < 5) {
                 for (i = 0; i < RECORD_NAME_LENGTH; i++) {
                     g_TimeRecordNameCodes[i] = g_RankingNameCodes[i];
                 }
-                WriteRecordName(
+                WriteRecordDriverName(
                     &g_TimeRecords[g_GrandPrixSeries][course]
                                   [g_TimeRecordInsertRow],
                     g_TimeRecordNameCodes);
@@ -236,7 +188,7 @@ void UpdateRecordEntry(void) {
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_LAP_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_RankingInsertRow);
         }
-        WriteRecordName(
+        WriteRecordDriverName(
             &g_RankingRecords[g_GrandPrixSeries][course][g_RankingInsertRow],
             g_RankingNameCodes);
         DrawRankingPanel(0);
@@ -269,14 +221,14 @@ void UpdateRecordEntry(void) {
     case RECORD_ENTRY_STATE_EDIT_RACE_NAME: {
         s32 course = SeriesCourseIndex();
 
-        if (UpdateNameEntryInput(g_TimeRecordNameCodes)) {
+        if (UpdateRecordNameEntry(g_TimeRecordNameCodes)) {
             g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
         }
 
         if (g_RecordEntryState == RECORD_ENTRY_STATE_EDIT_RACE_NAME) {
             DrawNameEntryCursor(g_NameEntryCursor, g_TimeRecordInsertRow);
         }
-        WriteRecordName(
+        WriteRecordDriverName(
             &g_TimeRecords[g_GrandPrixSeries][course][g_TimeRecordInsertRow],
             g_TimeRecordNameCodes);
         DrawTimeRecordPanel(0);

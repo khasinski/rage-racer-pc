@@ -108,7 +108,8 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
         ? headingError
         : ANGLE_HALF_TURN - headingError;
     loads->steeringResistance += drive->steeringLoadAngle / 256;
-    if (drive->motionState != CAR_MOTION_TAKEOFF && g_PadType == 0x41) {
+    if (drive->motionState != CAR_MOTION_TAKEOFF &&
+        g_PadType == PAD_TYPE_DIGITAL) {
         s32 assistStep = spec->negconSteeringAssistScale *
                          drive->steeringGripResponse / 1000;
         s32 steerPosition = drive->steerPos;

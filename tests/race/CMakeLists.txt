@@ -438,6 +438,25 @@ target_link_libraries(bgm_select_bar_tests PRIVATE psyz)
 add_test(NAME bgm_select_bar COMMAND bgm_select_bar_tests)
 set_tests_properties(bgm_select_bar PROPERTIES LABELS unit)
 
+add_executable(record_name_entry_tests
+    record_name_entry_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/record_name_entry.c)
+target_include_directories(record_name_entry_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(record_name_entry_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(record_name_entry_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(record_name_entry_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME record_name_entry COMMAND record_name_entry_tests)
+set_tests_properties(record_name_entry PROPERTIES LABELS unit)
+
 if(TARGET rage-racer-smoke)
     add_test(
         NAME scenario_control
