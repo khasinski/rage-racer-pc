@@ -6,8 +6,8 @@
 #include <stdio.h>
 
 s32 g_MenuAltLayout;
-s32 g_MenuAltPanelProgressA;
-s32 g_MenuAltPanelProgressB;
+s32 g_MenuUpperAltPanelProgress;
+s32 g_MenuLowerAltPanelProgress;
 GameRenderState g_RenderState;
 
 typedef struct QuadCall {
@@ -70,16 +70,16 @@ static void ResetCalls(void) {
 int main(void) {
     g_RenderState.primData = (GameOrderingTableEntry *)0x1234;
 
-    g_MenuAltPanelProgressA = 7;
-    g_MenuAltPanelProgressB = 8;
+    g_MenuUpperAltPanelProgress = 7;
+    g_MenuLowerAltPanelProgress = 8;
     DrawMenuAltPanel(0, 0);
-    CHECK(g_MenuAltPanelProgressA == 0 && g_MenuAltPanelProgressB == 0);
+    CHECK(g_MenuUpperAltPanelProgress == 0 && g_MenuLowerAltPanelProgress == 0);
     CHECK(s_callCount == 0);
 
     DrawMenuAltPanel(1, 0);
-    CHECK(g_MenuAltPanelProgressA == 1 && s_callCount == 0);
+    CHECK(g_MenuUpperAltPanelProgress == 1 && s_callCount == 0);
     DrawMenuAltPanel(1, 0);
-    CHECK(g_MenuAltPanelProgressA == 2 && s_callCount == 1);
+    CHECK(g_MenuUpperAltPanelProgress == 2 && s_callCount == 1);
     CHECK(s_calls[0].ot == RENDER_OT_BASE);
     CHECK(s_calls[0].x[0] == 0xA8 && s_calls[0].x[1] == 0xC4);
     CHECK(s_calls[0].y[0] == 0x9E && s_calls[0].y[2] == 0x9F);
@@ -89,15 +89,15 @@ int main(void) {
 
     ResetCalls();
     DrawMenuAltPanel(-1, 0);
-    CHECK(g_MenuAltPanelProgressA == 1 && s_callCount == 1);
+    CHECK(g_MenuUpperAltPanelProgress == 1 && s_callCount == 1);
     CHECK(s_calls[0].y[0] == 0x9E && s_calls[0].y[2] == 0x9F);
 
     ResetCalls();
     DrawMenuAltPanel(0, 0);
     DrawMenuAltPanel(0, 1);
-    CHECK(g_MenuAltPanelProgressB == 1 && s_callCount == 0);
+    CHECK(g_MenuLowerAltPanelProgress == 1 && s_callCount == 0);
     DrawMenuAltPanel(0, 1);
-    CHECK(g_MenuAltPanelProgressB == 2 && s_callCount == 1);
+    CHECK(g_MenuLowerAltPanelProgress == 2 && s_callCount == 1);
     CHECK(s_calls[0].x[0] == 0xC0 && s_calls[0].x[1] == 0x10E);
     CHECK(s_calls[0].y[0] == 0x128 && s_calls[0].y[2] == 0x129);
     CHECK(s_calls[0].u[0] == 0x61 && s_calls[0].u[1] == 0xAF);
@@ -105,17 +105,17 @@ int main(void) {
 
     ResetCalls();
     g_MenuAltLayout = 1;
-    g_MenuAltPanelProgressA = 1;
-    g_MenuAltPanelProgressB = 1;
+    g_MenuUpperAltPanelProgress = 1;
+    g_MenuLowerAltPanelProgress = 1;
     DrawMenuAltPanel(INT_MAX, INT_MAX);
     CHECK(s_callCount == 2);
     CHECK(s_calls[0].x[0] == 0x69 && s_calls[1].x[0] == 0x92);
-    CHECK(g_MenuAltPanelProgressA == 14);
-    CHECK(g_MenuAltPanelProgressB == 16);
+    CHECK(g_MenuUpperAltPanelProgress == 14);
+    CHECK(g_MenuLowerAltPanelProgress == 16);
 
     ResetCalls();
     DrawMenuAltPanel(INT_MIN, INT_MIN);
-    CHECK(g_MenuAltPanelProgressA == 0 && g_MenuAltPanelProgressB == 0);
+    CHECK(g_MenuUpperAltPanelProgress == 0 && g_MenuLowerAltPanelProgress == 0);
     CHECK(s_callCount == 0);
 
     puts("menu alternate panel tests passed");

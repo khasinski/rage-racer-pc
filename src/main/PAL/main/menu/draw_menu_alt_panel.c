@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-#define MENU_ALT_PANEL_A_MAX_PROGRESS 14
-#define MENU_ALT_PANEL_B_MAX_PROGRESS 16
+#define MENU_UPPER_ALT_PANEL_MAX_PROGRESS 14
+#define MENU_LOWER_ALT_PANEL_MAX_PROGRESS 16
 
 static s32 AdvancePanelProgress(s32 progress, s32 step, s32 maximum) {
     const int64_t advanced = (int64_t)progress + step;
@@ -42,37 +42,37 @@ void DrawMenuAltPanel(s32 upperStep, s32 lowerStep) {
     void *ot = RENDER_OT_BASE;
 
     if (upperStep == 0 && lowerStep == 0) {
-        g_MenuAltPanelProgressA = 0;
-        g_MenuAltPanelProgressB = 0;
+        g_MenuUpperAltPanelProgress = 0;
+        g_MenuLowerAltPanelProgress = 0;
         return;
     }
 
     if (upperStep < 0) {
-        g_MenuAltPanelProgressA = AdvancePanelProgress(
-            g_MenuAltPanelProgressA, upperStep,
-            MENU_ALT_PANEL_A_MAX_PROGRESS);
+        g_MenuUpperAltPanelProgress = AdvancePanelProgress(
+            g_MenuUpperAltPanelProgress, upperStep,
+            MENU_UPPER_ALT_PANEL_MAX_PROGRESS);
     }
     if (lowerStep < 0) {
-        g_MenuAltPanelProgressB = AdvancePanelProgress(
-            g_MenuAltPanelProgressB, lowerStep,
-            MENU_ALT_PANEL_B_MAX_PROGRESS);
+        g_MenuLowerAltPanelProgress = AdvancePanelProgress(
+            g_MenuLowerAltPanelProgress, lowerStep,
+            MENU_LOWER_ALT_PANEL_MAX_PROGRESS);
     }
 
-    if (g_MenuAltPanelProgressA != 0) {
-        DrawUpperAltPanel(ot, g_MenuAltPanelProgressA);
+    if (g_MenuUpperAltPanelProgress != 0) {
+        DrawUpperAltPanel(ot, g_MenuUpperAltPanelProgress);
     }
-    if (g_MenuAltPanelProgressB != 0) {
-        DrawLowerAltPanel(ot, g_MenuAltPanelProgressB);
+    if (g_MenuLowerAltPanelProgress != 0) {
+        DrawLowerAltPanel(ot, g_MenuLowerAltPanelProgress);
     }
 
     if (upperStep > 0) {
-        g_MenuAltPanelProgressA = AdvancePanelProgress(
-            g_MenuAltPanelProgressA, upperStep,
-            MENU_ALT_PANEL_A_MAX_PROGRESS);
+        g_MenuUpperAltPanelProgress = AdvancePanelProgress(
+            g_MenuUpperAltPanelProgress, upperStep,
+            MENU_UPPER_ALT_PANEL_MAX_PROGRESS);
     }
     if (lowerStep > 0) {
-        g_MenuAltPanelProgressB = AdvancePanelProgress(
-            g_MenuAltPanelProgressB, lowerStep,
-            MENU_ALT_PANEL_B_MAX_PROGRESS);
+        g_MenuLowerAltPanelProgress = AdvancePanelProgress(
+            g_MenuLowerAltPanelProgress, lowerStep,
+            MENU_LOWER_ALT_PANEL_MAX_PROGRESS);
     }
 }

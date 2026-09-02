@@ -76,8 +76,8 @@ void InitMenuMode(void) {
     g_MenuPlateCarIndex = 0;
     g_CarSpecGraphStep = 0;
     g_MenuCourseModelIndex = g_CourseIndex;
-    g_MenuAltPanelStep = 0;
-    g_MenuAltPanelStep2 = 0;
+    g_MenuUpperAltPanelStep = 0;
+    g_MenuLowerAltPanelStep = 0;
     g_TimeAttackPlateStep = 0;
     g_MenuHintButtonsVisible = 1;
     g_MenuHandlerIndex = -1;

@@ -59,8 +59,8 @@ static void LeaveCarShop(s32 busyState) {
     PlaySoundCue(3);
     GameMenuBusy = busyState;
     g_MenuOverlayPattern = 2;
-    g_MenuAltPanelStep = -1;
-    g_MenuAltPanelStep2 = -1;
+    g_MenuUpperAltPanelStep = -1;
+    g_MenuLowerAltPanelStep = -1;
 }
 
 /* Confirm on the car itself: put up the buy prompt, unless it is already
@@ -107,8 +107,8 @@ static void UpdateCarShopInput(void) {
                       0x124F80);
     }
 
-    /* The second panel only opens for a car whose gearbox can be changed. */
-    g_MenuAltPanelStep = (g_CarModelAsset->transmissionAvailable == 0) ? 1 : -1;
+    /* The upper panel only opens for a car whose gearbox can be changed. */
+    g_MenuUpperAltPanelStep = (g_CarModelAsset->transmissionAvailable == 0) ? 1 : -1;
 
     if (!MenuCarViewSettled() || (g_CarSwapToIndex >= 0)) {
         return;
@@ -192,7 +192,7 @@ static void UpdateSaleCountdown(void *ot) {
         g_CarTable[g_CarListCursor].enabled = 1;
         g_TimeAttackCarEnabled[g_CarListCursor * 8] = 1;
         GameMenuBusy = 2;
-        g_MenuAltPanelStep = -1;
+        g_MenuUpperAltPanelStep = -1;
         g_PlayerCarIndex = g_CarListCursor;
     }
 }
@@ -237,7 +237,7 @@ void UpdateCarShopScreen(void) {
     s32 price;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawMenuAltPanel(g_MenuAltPanelStep, g_MenuAltPanelStep2);
+    DrawMenuAltPanel(g_MenuUpperAltPanelStep, g_MenuLowerAltPanelStep);
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();
     price = g_CarPriceTable[GetOwnedCarAssetIndex(g_CarListCursor)];

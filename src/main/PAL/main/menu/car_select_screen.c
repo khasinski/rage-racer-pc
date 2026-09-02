@@ -232,8 +232,8 @@ static void EnterChosenScreen(void) {
         DrawCarShopPricePanel(0, 0, 0);
         DrawBrowseArrows(0, 0, 0, 0);
         DrawMenuAltPanel(0, 0);
-        g_MenuAltPanelStep = 0;
-        g_MenuAltPanelStep2 = 0;
+        g_MenuUpperAltPanelStep = 0;
+        g_MenuLowerAltPanelStep = 0;
         ClearTeamNameTexture();
         RestoreTeamLogoClut();
         break;
