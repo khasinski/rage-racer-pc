@@ -145,6 +145,34 @@ static int CheckAirborneYawSymmetry(GameCarSpec *spec) {
     return 0;
 }
 
+static int CheckLaunchShiftSoundRange(GameCarSpec *spec) {
+    static const s16 rpmDelta[] = {-100, -99, 99, 100};
+    static const s16 expectedSound[] = {0, 1, 1, 0};
+    size_t test;
+
+    for (test = 0; test < sizeof(rpmDelta) / sizeof(rpmDelta[0]); test++) {
+        PlayerCarRuntime car;
+        s32 landingRpm;
+
+        PrepareCar(&car, spec);
+        car.speed = 1168;
+        car.drive.gear = 1;
+        car.drive.launchEnergy = 0;
+        spec->gearRatio[1] = 10000;
+        landingRpm = car.speed * 0xA0 / 1168;
+        car.drive.engineRpm = landingRpm - rpmDelta[test];
+        g_ShiftSoundLevel = -1;
+
+        UpdateCarLaunch(&car);
+        if (g_ShiftSoundLevel != expectedSound[test]) {
+            printf("launch RPM delta %d produced shift sound %d, expected %d\n",
+                   rpmDelta[test], g_ShiftSoundLevel, expectedSound[test]);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
     /*
      * What the handlers did before they were touched. Run with a file name to
@@ -176,7 +204,9 @@ int main(int argc, char **argv) {
     g_TrackPointCount = 16;
     g_CarSpec = &spec;
 
-    if (CheckAirborneYawSymmetry(&spec) != 0) return 1;
+    if (CheckAirborneYawSymmetry(&spec) != 0 ||
+        CheckLaunchShiftSoundRange(&spec) != 0)
+        return 1;
 
     for (s = 0; s < sizeof(spins) / sizeof(spins[0]); s++)
     for (e = 0; e < sizeof(energies) / sizeof(energies[0]); e++)
