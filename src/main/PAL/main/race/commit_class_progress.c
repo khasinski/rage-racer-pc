@@ -42,7 +42,7 @@ void CommitClassProgress(void) {
             g_ClassClearFanfareTimer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
         }
 
-        UpdateBgmTrackCount();
+        RefreshClassWinState();
         g_ClassRecords[classRecordIndex].clears = UpdatedClassClearCount(
             g_ClassRecords[classRecordIndex].clears, g_ClassResultPlace);
     } else {

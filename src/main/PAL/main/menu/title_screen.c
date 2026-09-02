@@ -32,7 +32,7 @@ void EnterFrontend(void) {
     g_TitleExitTimer = 0;
     g_TitleAttractTimer = -1;
 
-    UpdateBgmTrackCount();
+    RefreshClassWinState();
     SetDefaultReverbDepth();
 }
 
@@ -56,7 +56,7 @@ void EnterTitleScreen(void) {
     g_FrontendIdleTimer = 0;
     g_MainMenuSlide = 0;
     g_FrontendState = FRONTEND_STATE_TITLE;
-    UpdateBgmTrackCount();
+    RefreshClassWinState();
     SetDefaultReverbDepth();
     DrawPressStartPrompt();
 }

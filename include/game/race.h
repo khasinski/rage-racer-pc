@@ -273,7 +273,7 @@ void DrawSplitDelta(s32 delta, s32 y);
 void DrawTerrainCells(void);
 void InitTrackScene(void);
 void ReturnToTitleScene(void);
-void UpdateBgmTrackCount(void);
+void RefreshClassWinState(void);
 void UpdateFlybyScenery(void);
 void UpdatePathScenerySound(void);
 void UpdatePointAmbience(s32 arg);

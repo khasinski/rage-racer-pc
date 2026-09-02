@@ -33,7 +33,7 @@ s32 GetCarUnlockLevel(s32 carIndex) {
     return s_carUnlockLevel;
 }
 
-void UpdateBgmTrackCount(void) {
+void RefreshClassWinState(void) {
     s_bgmUpdates++;
 }
 
