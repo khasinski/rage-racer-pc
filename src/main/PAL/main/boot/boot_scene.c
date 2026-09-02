@@ -10,7 +10,31 @@ enum {
     BOOT_LOGO_FADE_LIMIT = 0x100,
     BOOT_LOGO_FADE_STEP = 8,
     BOOT_FMV_START_DELAY = 21,
+    TITLE_SCENE_ID = 3,
 };
+
+static void AdvanceBootLogoFadeIn(void) {
+    if (g_SceneTimer < BOOT_LOGO_FADE_LIMIT) {
+        g_SceneTimer += BOOT_LOGO_FADE_STEP;
+        if (g_SceneTimer > BOOT_LOGO_FADE_LIMIT) {
+            g_SceneTimer = BOOT_LOGO_FADE_LIMIT;
+        }
+        return;
+    }
+
+    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
+}
+
+static void AdvanceBootLogoFadeOut(void) {
+    if (g_SceneTimer > BOOT_LOGO_FADE_STEP) {
+        g_SceneTimer -= BOOT_LOGO_FADE_STEP;
+        return;
+    }
+
+    g_SceneTimer = 0;
+    g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
+    SetupDisplay240(0, 0, 0);
+}
 
 void UpdateBootLogoScene(void) {
     if (g_BootLogoTimer < BOOT_ENDING_STILL_FRAMES) {
@@ -28,22 +52,20 @@ void UpdateBootLogoScene(void) {
         return;
     }
 
-    if (g_BootLogoHoldTimer != 0) {
+    if (g_BootLogoHoldTimer > 0) {
         g_BootLogoHoldTimer--;
         if ((g_AssetLoadState == 0) && (g_PadHeld != 0)) {
             g_BootLogoHoldTimer = 0;
         }
+    } else {
+        g_BootLogoHoldTimer = 0;
     }
 
     switch (g_BootLogoState) {
     case BOOT_LOGO_STATE_INVALID:
         break;
     case BOOT_LOGO_STATE_FADE_IN:
-        if ((u32)g_SceneTimer < BOOT_LOGO_FADE_LIMIT) {
-            g_SceneTimer += BOOT_LOGO_FADE_STEP;
-        } else {
-            g_BootLogoState = BOOT_LOGO_STATE_HOLD;
-        }
+        AdvanceBootLogoFadeIn();
         break;
     case BOOT_LOGO_STATE_HOLD:
         if (g_BootLogoHoldTimer == 0) {
@@ -51,16 +73,12 @@ void UpdateBootLogoScene(void) {
         }
         break;
     case BOOT_LOGO_STATE_FADE_OUT:
-        g_SceneTimer -= BOOT_LOGO_FADE_STEP;
-        if (g_SceneTimer == 0) {
-            g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
-            SetupDisplay240(0, 0, 0);
-        }
+        AdvanceBootLogoFadeOut();
         break;
     case BOOT_LOGO_STATE_START_FMV:
         g_SceneTimer++;
         if ((u32)g_SceneTimer >= BOOT_FMV_START_DELAY) {
-            BeginIntroFmv(3);
+            BeginIntroFmv(TITLE_SCENE_ID);
         }
         break;
     }

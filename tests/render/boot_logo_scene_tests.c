@@ -79,6 +79,17 @@ int main(void) {
     UpdateBootLogoScene();
     CHECK(g_BootLogoState == BOOT_LOGO_STATE_HOLD);
 
+    g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+    g_SceneTimer = 251;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == 256 && g_BootLogoState == BOOT_LOGO_STATE_FADE_IN);
+
+    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
+    g_BootLogoHoldTimer = -1;
+    UpdateBootLogoScene();
+    CHECK(g_BootLogoHoldTimer == 0);
+    CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_OUT);
+
     g_BootLogoHoldTimer = 10;
     g_AssetLoadState = 0;
     g_PadHeld = 1;
@@ -91,6 +102,12 @@ int main(void) {
     UpdateBootLogoScene();
     CHECK(g_SceneTimer == 0 && g_BootLogoState == BOOT_LOGO_STATE_START_FMV);
     CHECK(s_display240Calls == 1);
+
+    g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
+    g_SceneTimer = 5;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == 0 && g_BootLogoState == BOOT_LOGO_STATE_START_FMV);
+    CHECK(s_display240Calls == 2);
 
     g_SceneTimer = 20;
     s_fmvReturnScene = -1;
