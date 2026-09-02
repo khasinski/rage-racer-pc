@@ -7,8 +7,6 @@
 
 enum {
     CD_AUDIO_MODE = 7,
-    INITIAL_CD_TRACK = 2,
-    FULL_CD_VOLUME = 0x7F,
     BGM_SELECT_SCENE = 0x1C,
 };
 
@@ -21,14 +19,14 @@ void InitCdAudio(void) {
 
     g_CdTrackPending = -1;
     g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdCurrentTrack = INITIAL_CD_TRACK;
+    g_CdCurrentTrack = CD_INITIAL_TRACK;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
     g_CdMixPreset = 0;
     g_CdRestartOnResume = 0;
-    g_CdVolume = FULL_CD_VOLUME;
+    g_CdVolume = CD_VOLUME_MAX;
     g_CdFadeFrames = 0;
-    SetCdVolume(FULL_CD_VOLUME);
+    SetCdVolume(CD_VOLUME_MAX);
 }
 
 void TickCdAudio(void) {

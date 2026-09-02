@@ -2,7 +2,6 @@
 #include "game/cd_internal.h"
 
 enum {
-    CD_VOLUME_MAX = 127,
     CD_VOLUME_SETTING_MAX = 15,
     CD_MIX_PRESET_COUNT = 2,
     CD_MIX_CHANNEL_COUNT = 4,

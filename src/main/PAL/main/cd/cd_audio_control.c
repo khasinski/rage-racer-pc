@@ -16,7 +16,7 @@ void RequestCdTrack(s32 track) {
     if (!CdTrackIndexValid(track)) {
         return;
     }
-    g_CdTrackPending = (u8)track;
+    g_CdTrackPending = track;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdCommandPending = CD_COMMAND_NONE;
     g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
@@ -33,8 +33,7 @@ void PauseCdAudio(void) {
 }
 
 void ResumeCdAudio(void) {
-    if (g_CdRestartOnResume != 0 &&
-        CdTrackIndexValid(g_CdCurrentTrack)) {
+    if (g_CdRestartOnResume != 0 && CdTrackIndexValid(g_CdCurrentTrack)) {
         QueueCdTrackRestart(g_CdCurrentTrack);
         g_CdRestartOnResume = 0;
     } else {
@@ -49,5 +48,5 @@ void ResetCdAudioState(void) {
     g_CdCommandPending = CD_COMMAND_NONE;
     g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
     g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
-    g_CdCurrentTrack = 2;
+    g_CdCurrentTrack = CD_INITIAL_TRACK;
 }

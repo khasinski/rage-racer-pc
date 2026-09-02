@@ -36,6 +36,8 @@ typedef enum CdPauseRequestStep {
 } CdPauseRequestStep;
 
 enum {
+    CD_INITIAL_TRACK = 2,
+    CD_VOLUME_MAX = 127,
     CD_TRACK_LOCATION_COUNT = 18,
     CD_FILE_TRACK_COUNT = 16,
     CD_TOC_CAPACITY = 100,
