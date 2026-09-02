@@ -33,11 +33,9 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
             hints[car->routeIndex].start == -1) {
             car->routeIndex = 0;
         }
-        car->racingLineHintState = 0;
         return;
     }
     if (position < hint->start) {
-        car->racingLineHintState = 0;
         return;
     }
     if (carIndex < RIVAL_CONTENDER_COUNT && car->nearbyCarCount == 0) {

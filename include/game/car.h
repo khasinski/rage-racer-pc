@@ -158,7 +158,7 @@ typedef struct GameCarRuntime {
     u8 pad106[2];
     s32 baseBodyYaw;
     s16 nearbyCarCount;
-    s16 racingLineHintState;
+    s16 reserved10E;
     s16 reserved110;
     s16 field_112;
     s16 field_114;
@@ -682,7 +682,7 @@ typedef struct GameCarAiBlock {
     s16 avoidanceActive;  /* set to 1 while another car blocks this one */
     u8 pad4A[6];
     u16 nearbyCarCount;  /* count of cars close enough to matter this frame */
-    s16 racingLineHintState;
+    s16 reserved10E;
     u8 pad54[8];
     s32 gridTargetProgress;  /* grid-seeded target progress (g_TrackLength / 12 steps) */
     /* These two are physically the same halfwords as the signed fields in

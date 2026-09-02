@@ -344,11 +344,8 @@ static void RacingLineTests(void) {
     /* Past the stretch, the next one is taken. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x250 << 4;
-    car.racingLineHintState = 9;
     ApplyCarRacingLineHint(&car, 1);
     Check(car.routeIndex == 1, "advance to the next hint", car.routeIndex, 1);
-    Check(car.racingLineHintState == 0, "advancing clears the hint state",
-          car.racingLineHintState, 0);
 
     /* Past the last one, the list starts over rather than reading the -1. */
     memset(&car, 0, sizeof(car));
@@ -357,16 +354,13 @@ static void RacingLineTests(void) {
     ApplyCarRacingLineHint(&car, 1);
     Check(car.routeIndex == 0, "wrap at the end of the list", car.routeIndex, 0);
 
-    /* Short of the stretch, nothing moves but the state clears. */
+    /* Short of the stretch, the lateral target does not move. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x080 << 4;
     car.aiLateralOffset = 50;
-    car.racingLineHintState = 9;
     ApplyCarRacingLineHint(&car, 1);
     Check(car.aiLateralOffset == 50, "before the stretch, no drift",
           car.aiLateralOffset, 50);
-    Check(car.racingLineHintState == 0, "before the stretch, state clears",
-          car.racingLineHintState, 0);
 
     /* Resetting the route index at the start of a lap must also select the
      * first hint immediately, rather than retaining the old hint for a frame. */
