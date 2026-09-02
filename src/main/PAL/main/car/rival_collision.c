@@ -125,12 +125,12 @@ static void ShoveApart(GameCarRuntime *car, GameCarRuntime *other, s32 hit) {
     s16 pushZ = ScaledSpeedDelta(other->worldVelocityZ, car->worldVelocityZ);
 
     if (hit < 3) {
-        SetCarKnockback(car, 0, 0, 4);
-        SetCarKnockback(other, pushX, pushZ, 4);
+        SetCarKnockback(car, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarKnockback(other, pushX, pushZ, CAR_KNOCKBACK_VECTOR_MODE);
         car->acceleration = (car->acceleration * 90) / 100;
     } else {
-        SetCarKnockback(car, -pushX, -pushZ, 4);
-        SetCarKnockback(other, 0, 0, 4);
+        SetCarKnockback(car, -pushX, -pushZ, CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarKnockback(other, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
         other->acceleration = (other->acceleration * 90) / 100;
     }
     car->collisionFlag = 1;

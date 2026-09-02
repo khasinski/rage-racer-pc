@@ -380,6 +380,7 @@ typedef struct GameCarSpec {
 enum {
     CAR_FORWARD_GEAR_COUNT = 6,
     CAR_TORQUE_LOSS_BOUNDARY_COUNT = 10,
+    CAR_KNOCKBACK_VECTOR_MODE = 4,
 };
 
 /* The retail asset stores these two logical tables across adjacent named

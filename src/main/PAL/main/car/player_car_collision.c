@@ -255,16 +255,20 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
         player->speed - opponent->speed >= 0x191 ? 0x1E : 0xF;
 
     if (IsWrongWayImpact(player)) {
-        SetCarKnockback(opponent, 0, 0, 4);
-        SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarKnockback(AsRivalCar(player), 0, 0,
+                        CAR_KNOCKBACK_VECTOR_MODE);
         return;
     }
     if (player->speed >= 0x29) {
-        SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+        SetCarKnockback(AsRivalCar(player), 0, 0,
+                        CAR_KNOCKBACK_VECTOR_MODE);
     } else {
-        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z, 4);
+        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z,
+                        CAR_KNOCKBACK_VECTOR_MODE);
     }
-    SetCarKnockback(opponent, velocity.x, velocity.z, 4);
+    SetCarKnockback(opponent, velocity.x, velocity.z,
+                    CAR_KNOCKBACK_VECTOR_MODE);
 }
 
 static void ApplyHighRegionCollision(PlayerCarRuntime *player,
@@ -276,11 +280,13 @@ static void ApplyHighRegionCollision(PlayerCarRuntime *player,
     opponent->boostTimer = opponent->collisionBoostDuration;
     velocity = GetCollisionVelocity(player, opponent, 1);
     if (IsWrongWayImpact(player)) {
-        SetCarKnockback(opponent, 0, 0, 4);
-        SetCarKnockback(AsRivalCar(player), 0, 0, 4);
+        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarKnockback(AsRivalCar(player), 0, 0,
+                        CAR_KNOCKBACK_VECTOR_MODE);
     } else {
-        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z, 4);
-        SetCarKnockback(opponent, 0, 0, 4);
+        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z,
+                        CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
     }
 }
 

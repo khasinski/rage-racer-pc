@@ -12,8 +12,7 @@ enum {
     MAX_SPEED_SCALED_KNOCKBACK = 0x708,
     TRACK_BOUNDARY_KNOCKBACK_DURATION = 0x1E,
     CAR_COLLISION_KNOCKBACK_DURATION = 0x0F,
-    FIXED_TRACK_KNOCKBACK_MODE = 2,
-    CAR_COLLISION_KNOCKBACK_MODE = 4,
+    FIXED_TRACK_KNOCKBACK_FIRST_MODE = 2,
 };
 
 static s32 TrackOutwardAngle(const GameCarRuntime *car) {
@@ -104,11 +103,14 @@ void ApplyCarKnockback(GameCarRuntime *car) {
 }
 
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
-    if (mode < FIXED_TRACK_KNOCKBACK_MODE) {
+    /* Track contact passes its one-based hull-corner index. Corners 0/1 use
+     * the speed-scaled response, 2/3 the fixed response, and 4 (also used by
+     * car collisions) consumes the supplied vector. */
+    if (mode < FIXED_TRACK_KNOCKBACK_FIRST_MODE) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car),
                            TrackBoundaryPushStrength(car),
                            TRACK_BOUNDARY_KNOCKBACK_DURATION);
-    } else if (mode < CAR_COLLISION_KNOCKBACK_MODE) {
+    } else if (mode < CAR_KNOCKBACK_VECTOR_MODE) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car), 20,
                            CAR_COLLISION_KNOCKBACK_DURATION);
     } else {
