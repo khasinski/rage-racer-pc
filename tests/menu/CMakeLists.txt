@@ -1020,6 +1020,26 @@ else()
 endif()
 add_test(NAME negcon_calibration_update COMMAND negcon_calibration_update_tests)
 set_tests_properties(negcon_calibration_update PROPERTIES LABELS unit)
+
+add_executable(controller_config_update_tests
+    controller_config_update_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/controller_config_update.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/negcon_calibration_state.c)
+target_include_directories(controller_config_update_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(controller_config_update_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(controller_config_update_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(controller_config_update_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME controller_config_update COMMAND controller_config_update_tests)
+set_tests_properties(controller_config_update PROPERTIES LABELS unit)
 endif()
 
 if(TARGET rage-racer-smoke)
