@@ -115,7 +115,7 @@ static int CheckDistantRivalSlowdown(void) {
         g_RankedCars[0] = rivalAhead;
         g_RankedCars[1] = car;
 
-        SlowRivalAhead(car, 1);
+        SlowRivalAhead(1);
         if (rivalAhead->accelerationLimit != cases[test].expectedLimit) {
             printf("slowdown case %lu produced limit %d, expected %d\n",
                    (unsigned long)test, rivalAhead->accelerationLimit,
@@ -123,6 +123,11 @@ static int CheckDistantRivalSlowdown(void) {
             return 1;
         }
     }
+
+    memset(g_RankedCars, 0, sizeof(g_RankedCars));
+    SlowRivalAhead(0);
+    SlowRivalAhead(4);
+    SlowRivalAhead(1);
     return 0;
 }
 

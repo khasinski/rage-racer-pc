@@ -76,9 +76,7 @@ static void SlowTheCarsAhead(void) {
         rank = 3;
     }
     while (rank > 0) {
-        s32 slot = rank;
-
-        SlowRivalAhead(g_RankedCars[slot], slot);
+        SlowRivalAhead(rank);
         rank--;
     }
 }

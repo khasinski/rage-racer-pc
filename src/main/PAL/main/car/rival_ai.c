@@ -184,14 +184,26 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     state->aiLateralOffset = state->aiLateralOffset + state->avoidanceStep;
 }
 
-void SlowRivalAhead(GameCarRuntime *car, s32 carIndex) {
-    GameCarRuntime *rivalAhead = g_RankedCars[carIndex - 1];
-    s32 progress = car->progressA + car->progressB;
-    s32 progressAhead = rivalAhead->progressA + rivalAhead->progressB;
+void SlowRivalAhead(s32 rank) {
+    GameCarRuntime *car;
+    GameCarRuntime *rivalAhead;
+    s32 progress;
+    s32 progressAhead;
 
-    if (progressAhead - progress >= 0x2800 && rivalAhead->speed >= 0x385)
+    if (rank <= 0 || rank >= 4 || g_RankedCars[rank] == NULL ||
+        g_RankedCars[rank - 1] == NULL) {
+        return;
+    }
+
+    car = g_RankedCars[rank];
+    rivalAhead = g_RankedCars[rank - 1];
+    progress = car->progressA + car->progressB;
+    progressAhead = rivalAhead->progressA + rivalAhead->progressB;
+
+    if (progressAhead - progress >= 0x2800 && rivalAhead->speed >= 0x385) {
         rivalAhead->accelerationLimit =
             (s32)rivalAhead->accelerationLimit * 85 / 100;
+    }
 }
 
 /*

@@ -147,8 +147,7 @@ void UpdateRivalRubberBand(void) {
     RecordEvent('U');
     s_rubberBandCalls++;
 }
-void SlowRivalAhead(GameCarRuntime *car, s32 index) {
-    (void)car;
+void SlowRivalAhead(s32 index) {
     RecordEvent('W');
     if (s_slowedCount < 3) {
         s_slowedRanks[s_slowedCount++] = index;
