@@ -11,6 +11,14 @@ enum {
     WRONG_WAY_COUNTER_RESET = 81,
     RACE_INTRO_END_FRAME = 90,
     RACE_START_FRAME = 211,
+    RACE_END_MUSIC_FRAME = 10,
+    RACE_END_FADE_FRAME = 20,
+    RACE_END_BANNER_FRAME = 21,
+    RACE_END_EXIT_FRAME = 101,
+    RACE_RETRY_EXIT_FRAME = 126,
+    RACE_QUIT_SCENE = 6,
+    RACE_RESULT_SCENE = 15,
+    RACE_RETRY_SCENE = 13,
 };
 
 s32 RaceLapCount(s32 courseIndex) {
@@ -63,6 +71,41 @@ RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
         return RACE_END_PRESENTATION_RETRY;
     }
     return RACE_END_PRESENTATION_NONE;
+}
+
+RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
+                               s32 retriesRemaining, s32 fadeTimer) {
+    RaceEndFrame frame = {
+        RACE_END_PRESENTATION_NONE, 0, -1, 0, 0, 0};
+
+    if (phase == 7) {
+        frame.exitScene = RACE_QUIT_SCENE;
+        return frame;
+    }
+    if (phase != 5) {
+        return frame;
+    }
+
+    frame.advanceTimer = 1;
+    frame.presentation =
+        ChooseRaceEndPresentation(grandPrixMode, retriesRemaining);
+    if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
+        if (fadeTimer >= RACE_END_BANNER_FRAME) {
+            frame.drawPresentation = 1;
+            frame.fade = (fadeTimer - RACE_END_FADE_FRAME) * 3;
+        }
+        frame.startMusic = fadeTimer == RACE_END_MUSIC_FRAME;
+        if (fadeTimer >= RACE_END_EXIT_FRAME) {
+            frame.exitScene = RACE_RESULT_SCENE;
+        }
+    } else if (frame.presentation == RACE_END_PRESENTATION_RETRY) {
+        frame.drawPresentation = 1;
+        frame.fade = fadeTimer * 2;
+        if (fadeTimer >= RACE_RETRY_EXIT_FRAME) {
+            frame.exitScene = RACE_RETRY_SCENE;
+        }
+    }
+    return frame;
 }
 
 RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,

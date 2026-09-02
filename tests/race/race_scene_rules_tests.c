@@ -92,6 +92,44 @@ static void TestRaceEndPresentation(void) {
           "non-race modes preserve the retail no-presentation path");
 }
 
+static void TestRaceEndFrames(void) {
+    RaceEndFrame frame;
+
+    frame = BuildRaceEndFrame(2, 1, 1, 50);
+    Check(!frame.advanceTimer && frame.exitScene == -1,
+          "live race has no end presentation frame");
+    frame = BuildRaceEndFrame(7, 1, 1, 50);
+    Check(!frame.advanceTimer && frame.exitScene == 6,
+          "quit phase exits immediately without advancing the fade");
+
+    frame = BuildRaceEndFrame(5, 0, 0, 10);
+    Check(frame.advanceTimer && frame.startMusic &&
+              !frame.drawPresentation && frame.exitScene == -1,
+          "final presentation starts music on frame ten");
+    frame = BuildRaceEndFrame(5, 0, 0, 20);
+    Check(!frame.drawPresentation,
+          "final presentation waits through its fade baseline");
+    frame = BuildRaceEndFrame(5, 0, 0, 21);
+    Check(frame.drawPresentation && frame.fade == 3,
+          "final banner begins one frame after the fade baseline");
+    frame = BuildRaceEndFrame(5, 0, 0, 101);
+    Check(frame.exitScene == 15,
+          "final presentation exits to the result scene");
+
+    frame = BuildRaceEndFrame(5, 1, 2, 0);
+    Check(frame.presentation == RACE_END_PRESENTATION_RETRY &&
+              frame.drawPresentation && frame.fade == 0,
+          "retry presentation draws from its first frame");
+    frame = BuildRaceEndFrame(5, 1, 2, 126);
+    Check(frame.fade == 252 && frame.exitScene == 13,
+          "retry presentation exits on its authored boundary");
+
+    frame = BuildRaceEndFrame(5, 2, 0, 30);
+    Check(frame.advanceTimer && !frame.drawPresentation &&
+              frame.exitScene == -1,
+          "unsupported race modes still advance the retail fade timer");
+}
+
 static void TestWrongWayState(void) {
     WrongWayUpdate update;
 
@@ -224,6 +262,7 @@ int main(void) {
     TestPauseActions();
     TestPauseCursor();
     TestRaceEndPresentation();
+    TestRaceEndFrames();
     TestWrongWayState();
     TestRaceStartState();
     TestRaceClock();

@@ -29,12 +29,8 @@ static s32 s_RetireCameraActive;
 static s32 s_FinishFollowupCue = -1;
 
 enum {
-    RACE_END_MUSIC_FRAME = 10,
-    RACE_END_FADE_FRAME = 20,
-    RACE_END_BANNER_FRAME = 21,
-    RACE_END_EXIT_FRAME = 101,
-    RACE_RETRY_EXIT_FRAME = 126,
     FINISH_CUE_SPECIAL_VOICE_GROUP = 4,
+    RACE_END_MUSIC_TRACK = 15,
 };
 
 void QueueFinishFollowupCue(s32 cue) {
@@ -66,38 +62,28 @@ static void UpdateFinishFollowupCue(void) {
 }
 
 static void UpdateRaceEndState(void) {
-    RaceEndPresentation presentation;
+    RaceEndFrame frame;
 
-    if (g_RacePhase == 7) {
-        ExitRaceScene(6);
-        return;
+    frame = BuildRaceEndFrame(g_RacePhase, g_GrandPrixMode,
+                              g_CourseProgress->retriesRemaining,
+                              g_RaceFadeTimer);
+    if (frame.drawPresentation) {
+        if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
+            DrawRaceEndBanner(frame.fade);
+        } else {
+            DrawLostRaceCaption(frame.fade);
+        }
+        DrawFullscreenFadeTile(frame.fade, 0x49);
     }
-    if (g_RacePhase != 5) {
-        return;
+    if (frame.startMusic) {
+        RequestCdTrack(RACE_END_MUSIC_TRACK);
+        StartCdAudio();
     }
-
-    presentation = ChooseRaceEndPresentation(
-        g_GrandPrixMode, g_CourseProgress->retriesRemaining);
-    if (presentation == RACE_END_PRESENTATION_FINAL) {
-        if (g_RaceFadeTimer >= RACE_END_BANNER_FRAME) {
-            s32 fade = (g_RaceFadeTimer - RACE_END_FADE_FRAME) * 3;
-
-            DrawRaceEndBanner(fade);
-            DrawFullscreenFadeTile(fade, 0x49);
-        }
-        if (g_RaceFadeTimer == RACE_END_MUSIC_FRAME) {
-            RequestCdTrack(0xF);
-            StartCdAudio();
-        }
-        if (g_RaceFadeTimer >= RACE_END_EXIT_FRAME) {
-            ExitRaceScene(0xF);
-        }
-    } else if (presentation == RACE_END_PRESENTATION_RETRY) {
-        DrawLostRaceCaption(g_RaceFadeTimer * 2);
-        DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x49);
-        if (g_RaceFadeTimer >= RACE_RETRY_EXIT_FRAME) {
-            ExitRaceScene(0xD);
-        }
+    if (frame.exitScene >= 0) {
+        ExitRaceScene(frame.exitScene);
+    }
+    if (!frame.advanceTimer) {
+        return;
     }
     g_MirrorViewEnabled = 0;
     g_RaceFadeTimer++;

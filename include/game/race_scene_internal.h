@@ -17,6 +17,15 @@ typedef enum RaceEndPresentation {
     RACE_END_PRESENTATION_RETRY,
 } RaceEndPresentation;
 
+typedef struct RaceEndFrame {
+    RaceEndPresentation presentation;
+    s32 fade;
+    s16 exitScene;
+    u8 drawPresentation;
+    u8 startMusic;
+    u8 advanceTimer;
+} RaceEndFrame;
+
 typedef struct RacePauseCursorResult {
     s16 cursor;
     s16 moveCount;
@@ -66,6 +75,8 @@ RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
                                       s16 cursor);
 RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining);
+RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
+                               s32 retriesRemaining, s32 fadeTimer);
 RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
                                           s16 grandPrixMode);
 s32 WrongWayWarningVisible(s16 timer);
