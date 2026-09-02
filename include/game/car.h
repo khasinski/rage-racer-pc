@@ -787,7 +787,6 @@ extern s16 g_TachoNeedleQuad[4][2];
 extern s16 g_TrackZoneDark;
 
 /* (model, owned grade) -> index of the CAR_xx asset pair, 0..31. */
-s32 GetCarAssetIndex(s32 model, s32 grade);
 /* Progress level needed to buy this model's next grade. */
 s32 GetCarUnlockLevel(s32 model);
 void SetCarImageSlot(CarImageData *asset, s32 index);
@@ -865,7 +864,6 @@ void AccumulateLapProgress(GameCarRuntime *car);
 void UpdateCarTravelVelocity(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
-s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);

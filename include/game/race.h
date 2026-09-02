@@ -118,7 +118,6 @@ extern s32 g_ClosestRivalRank;
 
 /* Course-select gate: `g_CourseIndex < (class < 2 ? 2 : 3)`, or 6 : 7 for the
  * Extra GP. This is the OVAL unlock. */
-s32 CanSelectNextCourse(void);
 
 /* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
  * "2" / "1" / "GO" dot-matrix board from g_CountdownGlyphTable[1..4] plus the six start

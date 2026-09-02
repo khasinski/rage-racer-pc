@@ -21,8 +21,6 @@ s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 Random15(void);
 s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
-s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight);
 
 u32 g_RandomSeed;
 GameTrackPoint *g_TrackPoints;
