@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-GameCarSpec *g_CarSpec;
 TrackEventData *g_TrackEventData;
 SceneryMotionData *g_FlybySceneryData;
 RaceIntroCameraScript *g_RaceIntroCameraScript;
@@ -55,19 +54,16 @@ static void TestTrackEventData(void) {
 }
 
 static void TestSimpleTables(void) {
-    GameCarSpec carSpec;
     TrackRenderTable renderTable;
     struct {
         u32 count;
         CourseObject objects[2];
     } courseObjects;
 
-    SetCarSpec(&carSpec);
     SetTrackRenderTable(&renderTable);
     courseObjects.count = 2;
     SetCourseObjects((CourseObjectTable *)&courseObjects);
 
-    Check(g_CarSpec == &carSpec, "car spec owner");
     Check(g_TrackRenderTable == &renderTable, "track render table owner");
     Check(g_CourseObjects == courseObjects.objects, "course object table");
     Check(g_CourseObjectCount == 2, "course object count");

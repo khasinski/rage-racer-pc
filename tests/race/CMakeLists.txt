@@ -1,6 +1,6 @@
 add_executable(asset_table_installation_tests
     asset_table_installation_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_data_installation.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/install_track_event_data.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_course_objects.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/set_track_render_table.c)
 target_include_directories(asset_table_installation_tests PRIVATE

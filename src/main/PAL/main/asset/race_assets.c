@@ -55,7 +55,7 @@ void LoadRaceAssets(void) {
 
             pack = GetSceneAssetHeader(g_AssetLoadCursor);
             g_AssetBlockPtr = GetSceneAssetAddress(pack, pack->offsets[0]);
-            SetCarSpec(GetGameCarSpec(g_AssetBlockPtr));
+            g_CarSpec = GetGameCarSpec(g_AssetBlockPtr);
             header = GetSceneAssetAddress(pack, pack->offsets[1]);
             table = GetSceneAssetAddress(pack, pack->offsets[2]);
             body = GetSceneAssetAddress(pack, pack->offsets[3]);

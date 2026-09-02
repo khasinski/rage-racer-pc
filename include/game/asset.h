@@ -6,7 +6,6 @@
 #include "psyq/cd_location.h"
 #include "psyq/gpu.h"
 
-struct GameCarSpec;
 struct CarImageData;
 struct ModelBankHeader;
 struct CourseModelAssetHeader;
@@ -505,7 +504,6 @@ extern char g_PathRageStr[];
 
 void LoadCarModel(s32);
 void LoadUpgradedCarModel(s32);
-void SetCarSpec(struct GameCarSpec *spec);
 
 /* Declared identically by 3 translation units before this
  * header carried them. */
