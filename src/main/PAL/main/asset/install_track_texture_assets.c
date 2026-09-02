@@ -1,16 +1,29 @@
 #include "game/asset.h"
 
+enum {
+    TRACK_TEXTURE_PRIMARY_IMAGES = 0,
+    TRACK_TEXTURE_SECONDARY_IMAGES = 1,
+    TRACK_TEXTURE_CAR_IMAGE = 2,
+    TRACK_TEXTURE_ACTIVE_IMAGES = 3,
+    TRACK_TEXTURE_DEFERRED_IMAGES = 4,
+};
+
 void InstallTrackTextureAssetPack(u8 *base) {
     GameSceneAssetHeader *header = GetSceneAssetHeader(base);
 
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[0]);
+    g_AssetBlockPtr = GetSceneAssetAddress(
+        header, header->offsets[TRACK_TEXTURE_PRIMARY_IMAGES]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[1]);
+    g_AssetBlockPtr = GetSceneAssetAddress(
+        header, header->offsets[TRACK_TEXTURE_SECONDARY_IMAGES]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[2]);
+    g_AssetBlockPtr = GetSceneAssetAddress(
+        header, header->offsets[TRACK_TEXTURE_CAR_IMAGE]);
     UploadImageEntry(GetImageEntryHeader(g_AssetBlockPtr));
-    g_AssetBlockPtr = GetSceneAssetAddress(header, header->offsets[3]);
-    g_AssetSubBlockPtr = GetSceneAssetAddress(header, header->offsets[4]);
+    g_AssetBlockPtr = GetSceneAssetAddress(
+        header, header->offsets[TRACK_TEXTURE_ACTIVE_IMAGES]);
+    g_AssetSubBlockPtr = GetSceneAssetAddress(
+        header, header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES]);
     UploadImageAsset(GetImageAssetHeaderWords(g_AssetBlockPtr));
     StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);

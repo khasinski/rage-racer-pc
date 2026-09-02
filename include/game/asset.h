@@ -76,6 +76,17 @@ extern u8 *g_ImageBlockBuffer;
 #define ASSET_VOICE_BANK        0x56
 #define ASSET_TRACK_1ST_BASE    0x57
 #define ASSET_TRACK_2ND_BASE    0x58
+
+enum {
+    TRACK_ASSETS_PER_CLASS = 8,
+    TRACK_ASSETS_PER_COURSE = 2,
+};
+
+static inline s32 TrackCourseAssetIndex(s32 base, s32 classIndex,
+                                        s32 courseIndex) {
+    return base + classIndex * TRACK_ASSETS_PER_CLASS +
+           courseIndex * TRACK_ASSETS_PER_COURSE;
+}
 enum {
     ASSET_BOOT_LOGO = 0,
     ASSET_TITLE_SCREEN = 1,
@@ -264,7 +275,8 @@ static inline VoiceBankAssetHeader *GetVoiceBankAssetHeader(void *data) {
     return (VoiceBankAssetHeader *)data;
 }
 
-static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offset) {
+static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header,
+                                         s32 offset) {
     return (u8 *)header + offset;
 }
 

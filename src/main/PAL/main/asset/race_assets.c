@@ -71,13 +71,11 @@ static void LoadPlayerCarRaceAssets(void) {
     g_AssetLoadState = 4;
 }
 
-static s32 RaceCourseAssetIndex(s32 base) {
-    return base + (g_GrandPrixClass * 8) + (g_CourseIndex * 2);
-}
-
 static void LoadTrackTextureAssets(void) {
-    if (LoadAsset(RaceCourseAssetIndex(ASSET_TRACK_1ST_BASE),
-                  g_AssetLoadCursor) == 0) {
+    s32 assetIndex = TrackCourseAssetIndex(
+        ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
+
+    if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) {
         return;
     }
 
@@ -86,7 +84,8 @@ static void LoadTrackTextureAssets(void) {
 }
 
 static void LoadTrackRuntimeAssets(void) {
-    s32 assetIndex = RaceCourseAssetIndex(ASSET_TRACK_2ND_BASE);
+    s32 assetIndex = TrackCourseAssetIndex(
+        ASSET_TRACK_2ND_BASE, g_GrandPrixClass, g_CourseIndex);
 
     if (LoadAsset(assetIndex, g_AssetLoadCursor) == 0) {
         return;
@@ -177,10 +176,10 @@ void LoadCourseAssets(void) {
     s32 loaded;
 
     if (g_AssetLoadState == 1) {
-        s32 courseOffset = g_CourseIndex * 2;
-        s32 classBase = (g_GrandPrixClass * 8) + ASSET_TRACK_1ST_BASE;
+        s32 assetIndex = TrackCourseAssetIndex(
+            ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
 
-        loaded = LoadAsset(courseOffset + classBase, g_AssetBase);
+        loaded = LoadAsset(assetIndex, g_AssetBase);
         if (loaded != 0) {
             g_AssetLoadState = 0;
             g_ImageBlockBuffer = g_AssetBase + loaded;
